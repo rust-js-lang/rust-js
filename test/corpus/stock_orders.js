@@ -24,18 +24,11 @@ import {
   $zeroPad,
 } from "@rust-js/runtime";
 
-var $categoryDisplay, $stockErrorDisplay, $linePriced;
-
 export function entry() {
   main();
 }
 
-export function categoryDisplay() {
-  if ($categoryDisplay === undefined) {
-    $categoryDisplay = { fmt: categoryDisplay_fmt };
-  }
-  return $categoryDisplay;
-}
+export const categoryDisplay = { fmt: categoryDisplay_fmt };
 
 function categoryDisplay_fmt(category, options) {
   let name;
@@ -65,12 +58,7 @@ function stockErrorDebug_fmt(stockError, options) {
   return "EmptyOrder";
 }
 
-export function stockErrorDisplay() {
-  if ($stockErrorDisplay === undefined) {
-    $stockErrorDisplay = { fmt: stockErrorDisplay_fmt };
-  }
-  return $stockErrorDisplay;
-}
+export const stockErrorDisplay = { fmt: stockErrorDisplay_fmt };
 
 function stockErrorDisplay_fmt(stockError, options) {
   if (stockError.TAG === "UnknownSku") {
@@ -82,19 +70,14 @@ function stockErrorDisplay_fmt(stockError, options) {
   return "an order needs a line";
 }
 
-function linePriced() {
-  if ($linePriced === undefined) {
-    $linePriced = {
-      unitCents: linePriced_unitCents,
-      quantity: linePriced_quantity,
-      totalCents: (self) => {
-        const value = BigInt(linePriced_unitCents(self));
-        return BigInt.asUintN(64, value * BigInt(linePriced_quantity(self)));
-      },
-    };
-  }
-  return $linePriced;
-}
+const linePriced = {
+  unitCents: linePriced_unitCents,
+  quantity: linePriced_quantity,
+  totalCents: (self) => {
+    const value = BigInt(linePriced_unitCents(self));
+    return BigInt.asUintN(64, value * BigInt(linePriced_quantity(self)));
+  },
+};
 
 function linePriced_unitCents(line) {
   return line.unitCents;
@@ -261,7 +244,7 @@ function main() {
       const place = Inventory.place(inventory, order);
       if (place.TAG === "Ok") {
         const total = place._0
-          .map((arg0) => linePriced().totalCents(arg0))
+          .map((arg0) => linePriced.totalCents(arg0))
           .reduce((a, b) => BigInt.asUintN(64, a + b), 0n);
         totals.push(total);
         const skus = place._0.map((line) => line.sku);

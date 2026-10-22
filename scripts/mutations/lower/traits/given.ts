@@ -67,4 +67,37 @@ export const mutations: Mutation[] = [
     replace: "        let typing_env = self.given.self_env.unwrap_or(self.typing_env);\n        crate::lower::items::resolve_instance_in(",
     tests: ["test/corpus.test.ts", "-t", "^default_crate_index.rs$"],
   },
+  {
+    name: "drop-evidence-unseen",
+    breaks: "a dictionary given only its type parameter's drop is taken to take nothing, its function read as its object",
+    file: "src/lower/traits/given.rs",
+    find: "            || !self.drops_taken(id).is_empty()\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^associated_consts.rs$"],
+  },
+  {
+    name: "bound-evidence-unseen",
+    breaks: "a dictionary given its type parameter's dictionary is taken to take nothing, its function read as its object",
+    file: "src/lower/traits/given.rs",
+    find: "            || !bounds(self.tcx, self.krate.foreign, self.krate.given, id).is_empty()\n",
+    replace: "",
+    tests: ["test/lowering.test.ts", "-t", "a dictionary that takes nothing"],
+  },
+  {
+    name: "const-param-evidence-unseen",
+    breaks: "a dictionary given a const parameter's value is taken to take nothing",
+    file: "src/lower/traits/given.rs",
+    find: "        !const_params(self.tcx, id).is_empty()\n            || ",
+    replace: "        ",
+    tests: ["test/corpus.test.ts", "-t", "^(array_vec_raw|associated_type_facts|borrow_mut_supertrait).rs$"],
+  },
+  {
+    name: "type-fact-evidence-unseen",
+    breaks: "a dictionary given a type's fact, its size, is taken to take nothing",
+    file: "src/lower/traits/given.rs",
+    find: "            || !self.facts_asked(id).is_empty()\n",
+    replace: "",
+    tests: ["test/lowering.test.ts", "-t", "a dictionary that takes nothing"],
+  },
+
 ];

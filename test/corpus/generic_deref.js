@@ -2,18 +2,11 @@
 
 import { $byteLen } from "@rust-js/runtime";
 
-var $trackedDeref;
-
 export function entry() {
   main();
 }
 
-export function trackedDeref() {
-  if ($trackedDeref === undefined) {
-    $trackedDeref = { deref: trackedDeref_deref };
-  }
-  return $trackedDeref;
-}
+export const trackedDeref = { deref: trackedDeref_deref };
 
 function trackedDeref_deref(tracked) {
   console.log(`deref ${tracked.name}`);
@@ -38,7 +31,7 @@ function main() {
   console.log(`${shout("box", { deref: (x) => x })}`);
   console.log(`${shout("string", { deref: (s) => s })}`);
   console.log(`${length("rc", { deref: (x) => x }, { asRef: (value) => value })}`);
-  console.log(`${length({ name: "mine" }, trackedDeref(), { asRef: (value) => value })}`);
+  console.log(`${length({ name: "mine" }, trackedDeref, { asRef: (value) => value })}`);
   const n = 21;
   console.log(
     `${Wrapper.doubled([n], { deref: (n) => n })} ${Wrapper.doubled([4], { deref: (x) => x })}`,

@@ -1,6 +1,7 @@
 # 0049. Traits carry dictionaries; ordinary values stay untagged
 
-Status: Accepted. (Amended: a copied default's own `where Self: PartialEq` is
+Status: Accepted; amended by [0592](0592-a-dictionary-is-its-modules-const.md),
+whose dictionary is its module's `const`, no `var`. (Amended: a copied default's own `where Self: PartialEq` is
 found as the impl's type's too, and `==` of a type of a type parameter
 whose `PartialEq` a bound gives is that dictionary's, as num-traits'
 `is_one` asks; a number's `<`, `-` and the like in a copied default, `self <
@@ -87,7 +88,8 @@ export function circleShape() {
 }
 ```
 
-`var` without an initializer is intentional. Its binding exists before
+(Amended by [0592](0592-a-dictionary-is-its-modules-const.md): a dictionary
+taking nothing is its module's `const`, no `var`.) `var` without an initializer is intentional. Its binding exists before
 module evaluation, and reaching the declaration later cannot overwrite a
 dictionary created by an early call through a cycle. This only solves
 initialization of trait dictionaries; it does not change the initialization

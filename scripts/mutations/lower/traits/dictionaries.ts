@@ -346,4 +346,12 @@ export const mutations: Mutation[] = [
     replace: "            && !crate::lower::recognition::known_by_bounds(ty)\n",
     tests: ["test/corpus.test.ts", "-t", "^into_iter_of_a_bound.rs$"],
   },
+  {
+    name: "dictionary-const-called",
+    breaks: "a dictionary that's its module's `const` is called, `circleShape()`",
+    file: "src/lower/traits/dictionaries.rs",
+    find: "                false => callee,\n",
+    replace: "                false => Expr::call(callee, Vec::new()),\n",
+    tests: ["test/lowering.test.ts", "-t", "a dictionary that takes nothing"],
+  },
 ];

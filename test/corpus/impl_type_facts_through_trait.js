@@ -2,8 +2,6 @@
 
 import { $assign, $byteLen, $iter, $traitImpl, $unwrapOk } from "@rust-js/runtime";
 
-var $stackClone, $stackPushT, $stackFromStr;
-
 export function entry() {
   main();
 }
@@ -23,10 +21,9 @@ function stackFromIteratorT_fromIter(iter, TSize) {
   return stack;
 }
 
+const $stackClone = new Map();
+
 export function stackClone(TClone, TSize) {
-  if ($stackClone === undefined) {
-    $stackClone = new Map();
-  }
   return $traitImpl($stackClone, [TClone, TSize], () => ({
     clone: (arg0) => stackClone_clone(arg0, TClone, TSize),
   }));
@@ -39,10 +36,9 @@ function stackClone_clone(stack, TClone, TSize) {
   );
 }
 
+const $stackPushT = new Map();
+
 function stackPushT(TSize) {
-  if ($stackPushT === undefined) {
-    $stackPushT = new Map();
-  }
   return $traitImpl($stackPushT, [TSize], () => ({
     put: (arg0, arg1) => stackPushT_put(arg0.value, arg1, TSize),
   }));
@@ -72,10 +68,9 @@ function stackFromTSlice_from(items, TClone, TSize) {
   return { items: items.map((item) => TClone.clone(item)), sized };
 }
 
+const $stackFromStr = new Map();
+
 export function stackFromStr(TSize) {
-  if ($stackFromStr === undefined) {
-    $stackFromStr = new Map();
-  }
   return $traitImpl($stackFromStr, [TSize], () => ({
     fromStr: (arg0) => stackFromStr_fromStr(arg0, TSize),
   }));

@@ -13,8 +13,6 @@ import {
   $withBorrow,
 } from "@rust-js/runtime";
 
-var $peekClone, $nodeClone, $nodePartialEq, $nodeDebug;
-
 export function entry() {
   main();
 }
@@ -44,12 +42,7 @@ function probeDrop_drop(probe) {
   }
 }
 
-export function peekClone() {
-  if ($peekClone === undefined) {
-    $peekClone = { clone: peekClone_clone };
-  }
-  return $peekClone;
-}
+export const peekClone = { clone: peekClone_clone };
 
 function peekClone_clone(peek) {
   const tryBorrowMut = $tryBorrow(peek[0], true);
@@ -96,51 +89,36 @@ const Node = {
   },
 };
 
-export function nodeClone() {
-  if ($nodeClone === undefined) {
-    $nodeClone = {
-      clone: nodeClone_clone,
-      $drop: (node) => {
-        $weakDrop(node.me);
-      },
-    };
-  }
-  return $nodeClone;
-}
+export const nodeClone = {
+  clone: nodeClone_clone,
+  $drop: (node) => {
+    $weakDrop(node.me);
+  },
+};
 
 function nodeClone_clone(node) {
   console.log(`node clone sees it borrowed: ${Node.asks(node)}`);
   return { me: { strong: 0, weak: 0 } };
 }
 
-export function nodePartialEq() {
-  if ($nodePartialEq === undefined) {
-    $nodePartialEq = {
-      eq: nodePartialEq_eq,
-      $drop: (node) => {
-        $weakDrop(node.me);
-      },
-    };
-  }
-  return $nodePartialEq;
-}
+export const nodePartialEq = {
+  eq: nodePartialEq_eq,
+  $drop: (node) => {
+    $weakDrop(node.me);
+  },
+};
 
 function nodePartialEq_eq(node, _) {
   console.log(`node == sees it borrowed: ${Node.asks(node)}`);
   return true;
 }
 
-export function nodeDebug() {
-  if ($nodeDebug === undefined) {
-    $nodeDebug = {
-      fmt: nodeDebug_fmt,
-      $drop: (node) => {
-        $weakDrop(node.me);
-      },
-    };
-  }
-  return $nodeDebug;
-}
+export const nodeDebug = {
+  fmt: nodeDebug_fmt,
+  $drop: (node) => {
+    $weakDrop(node.me);
+  },
+};
 
 function nodeDebug_fmt(node) {
   return `Node(${Node.asks(node)})`;

@@ -19,8 +19,6 @@ import {
   $unwrapOk,
 } from "@rust-js/runtime";
 
-var $lexErrorDisplay, $valueDisplay;
-
 export function entry() {
   main();
 }
@@ -69,12 +67,7 @@ function lexErrorDebug_fmt(lexError) {
   return "Unterminated";
 }
 
-export function lexErrorDisplay() {
-  if ($lexErrorDisplay === undefined) {
-    $lexErrorDisplay = { fmt: lexErrorDisplay_fmt };
-  }
-  return $lexErrorDisplay;
-}
+export const lexErrorDisplay = { fmt: lexErrorDisplay_fmt };
 
 function lexErrorDisplay_fmt(lexError) {
   if (lexError.TAG === "Unexpected") {
@@ -396,12 +389,7 @@ const Parser = {
   },
 };
 
-export function valueDisplay() {
-  if ($valueDisplay === undefined) {
-    $valueDisplay = { fmt: valueDisplay_fmt };
-  }
-  return $valueDisplay;
-}
+export const valueDisplay = { fmt: valueDisplay_fmt };
 
 function valueDisplay_fmt(value) {
   if (value.TAG === "Num") {

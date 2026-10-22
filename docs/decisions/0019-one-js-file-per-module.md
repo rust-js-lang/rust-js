@@ -1,6 +1,6 @@
 # 0019. One JS file per Rust module
 
-Status: Accepted. Supersedes the "functions inside modules" limit of
+Status: Accepted; amended by [0592](0592-a-dictionary-is-its-modules-const.md). Supersedes the "functions inside modules" limit of
 [0016](0016-crate-shape.md) and the single output file of
 [0005](0005-input-and-output.md). Amended by
 [0382](0382-a-module-has-a-file-for-what-it-has.md): the root, too, has a
@@ -65,7 +65,9 @@ mod helpers { .. }  ──► out/helpers.js       inline modules too
 - **Exports**: a function is exported if it's `pub`, *or* if another module
   calls it. The second case matters because a child module may call its
   parent's private function, and in JS that call crosses a file.
-- **Cycles are fine.** ES modules allow cyclic imports, and rust-js emits
+- **Cycles are fine** (amended by [0592](0592-a-dictionary-is-its-modules-const.md):
+  a dictionary in a cycle with a module's load-time code is refused).
+  ES modules allow cyclic imports, and rust-js emits
   only function declarations, which are hoisted, so nothing runs at import
   time that could see a half-initialized module.
 - **Source maps**: each JS file gets its own map, pointing into the `.rs`

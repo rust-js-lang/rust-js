@@ -2,8 +2,6 @@
 
 import { $assign, $byteLen, $mutWriter, $pad, $stringWriter, $zeroPad } from "@rust-js/runtime";
 
-var $timeDisplay, $counterWrite, $flagsDisplay;
-
 export function entry() {
   main();
 }
@@ -27,12 +25,7 @@ function writeTime(w, hours, minutes, label, WWrite) {
   }
 }
 
-export function timeDisplay() {
-  if ($timeDisplay === undefined) {
-    $timeDisplay = { fmt: timeDisplay_fmt };
-  }
-  return $timeDisplay;
-}
+export const timeDisplay = { fmt: timeDisplay_fmt };
 
 function timeDisplay_fmt(time) {
   let f = "at ";
@@ -43,13 +36,13 @@ function timeDisplay_fmt(time) {
   return f;
 }
 
-export function counterWrite() {
-  if ($counterWrite === undefined) {
-    const writeStr = (arg0, arg1) => counterWrite_writeStr(arg0.value, arg1);
-    $counterWrite = { writeStr, writeChar: writeStr, writeFmt: writeStr };
-  }
-  return $counterWrite;
-}
+const $counterWrite_writeStr = (arg0, arg1) => counterWrite_writeStr(arg0.value, arg1);
+
+export const counterWrite = {
+  writeStr: $counterWrite_writeStr,
+  writeChar: $counterWrite_writeStr,
+  writeFmt: $counterWrite_writeStr,
+};
 
 function counterWrite_writeStr(counter, s) {
   const length = Array.from(s).length;
@@ -73,12 +66,7 @@ function toWriter(bits, writer, Write) {
   return result;
 }
 
-export function flagsDisplay() {
-  if ($flagsDisplay === undefined) {
-    $flagsDisplay = { fmt: flagsDisplay_fmt };
-  }
-  return $flagsDisplay;
-}
+export const flagsDisplay = { fmt: flagsDisplay_fmt };
 
 function flagsDisplay_fmt(flags) {
   let f = "";
@@ -100,7 +88,7 @@ function main() {
   console.log(`${timeDisplay_fmt(time)} [${$pad(value, 12, ">")}] ${arg}`);
   const counter = { text: "", chars: 0 };
   const w$1 = { value: counter };
-  writeTime(w$1, 7, 30, "c", counterWrite());
+  writeTime(w$1, 7, 30, "c", counterWrite);
   $assign(counter, w$1.value);
   console.log(`${counter.text} ${counter.chars}`);
   let alone = "";
@@ -119,7 +107,7 @@ function main() {
   const arg$1 = flagsDisplay_fmt([255]);
   console.log(`${bits} ${flagsDisplay_fmt([10])} ${$pad(arg$1, 12, ">")}|`);
   const writer$1 = { value: counter };
-  toWriter(9, writer$1, $mutWriter(counterWrite()));
+  toWriter(9, writer$1, $mutWriter(counterWrite));
   $assign(counter, writer$1.value);
   console.log(`${counter.text} ${counter.chars}`);
 }

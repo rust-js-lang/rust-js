@@ -20,8 +20,6 @@ import {
   $slice,
 } from "@rust-js/runtime";
 
-var $calcErrorDisplay;
-
 export function entry() {
   main();
 }
@@ -48,12 +46,7 @@ function tokenDebug_fmt(token) {
   return "Assign";
 }
 
-export function calcErrorDisplay() {
-  if ($calcErrorDisplay === undefined) {
-    $calcErrorDisplay = { fmt: calcErrorDisplay_fmt };
-  }
-  return $calcErrorDisplay;
-}
+export const calcErrorDisplay = { fmt: calcErrorDisplay_fmt };
 
 function calcErrorDisplay_fmt(calcError) {
   if (calcError.TAG === "Unexpected") {

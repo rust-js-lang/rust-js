@@ -2,8 +2,6 @@
 
 import { $debugStr } from "@rust-js/runtime";
 
-var $messageDisplay;
-
 export function entry() {
   main();
 }
@@ -14,12 +12,7 @@ const Message = {
   },
 };
 
-export function messageDisplay() {
-  if ($messageDisplay === undefined) {
-    $messageDisplay = { fmt: messageDisplay_fmt };
-  }
-  return $messageDisplay;
-}
+export const messageDisplay = { fmt: messageDisplay_fmt };
 
 function messageDisplay_fmt(message) {
   if (message.TAG === "Literal") {

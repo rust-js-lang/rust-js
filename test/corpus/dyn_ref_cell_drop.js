@@ -2,22 +2,15 @@
 
 import { $borrow, $borrowMut, $unborrow } from "@rust-js/runtime";
 
-var $noisyNamed;
-
 export function entry() {
   main();
 }
 
-function noisyNamed() {
-  if ($noisyNamed === undefined) {
-    $noisyNamed = {
-      name: noisyNamed_name,
-      rename: (arg0, arg1) => noisyNamed_rename(arg0.value, arg1),
-      $drop: noisyDrop_drop,
-    };
-  }
-  return $noisyNamed;
-}
+const noisyNamed = {
+  name: noisyNamed_name,
+  rename: (arg0, arg1) => noisyNamed_rename(arg0.value, arg1),
+  $drop: noisyDrop_drop,
+};
 
 function noisyNamed_name(noisy) {
   return noisy[0];
@@ -32,57 +25,22 @@ function noisyDrop_drop(noisy) {
 }
 
 function main() {
-  const named = { value: ["first"], impl: noisyNamed() };
-  let borrowMut;
+  const named = { value: ["first"], impl: noisyNamed };
   try {
-    borrowMut = $borrowMut(named, true);
-  } catch (error) {
-    named.impl.$drop?.(named.value);
-    throw error;
-  }
-  try {
-    borrowMut.impl.rename(borrowMut, "renamed");
-  } catch (error) {
-    $unborrow(borrowMut);
-    named.impl.$drop?.(named.value);
-    throw error;
-  }
-  try {
-    $unborrow(borrowMut);
-  } catch (error) {
-    named.impl.$drop?.(named.value);
-    throw error;
-  }
-  let borrow;
-  try {
-    borrow = $borrow(named, true);
-  } catch (error) {
-    named.impl.$drop?.(named.value);
-    throw error;
-  }
-  let tmp;
-  try {
-    tmp = borrow.impl.name(borrow.value);
-  } catch (error) {
-    $unborrow(borrow);
-    named.impl.$drop?.(named.value);
-    throw error;
-  }
-  try {
-    console.log(`${tmp}`);
-  } catch (error) {
-    $unborrow(borrow);
-    named.impl.$drop?.(named.value);
-    throw error;
-  }
-  try {
-    $unborrow(borrow);
-  } catch (error) {
-    named.impl.$drop?.(named.value);
-    throw error;
-  }
-  const inner = { value: ["inner"], impl: noisyNamed() };
-  try {
+    const borrowMut = $borrowMut(named, true);
+    try {
+      borrowMut.impl.rename(borrowMut, "renamed");
+    } finally {
+      $unborrow(borrowMut);
+    }
+    const borrow = $borrow(named, true);
+    try {
+      const tmp = borrow.impl.name(borrow.value);
+      console.log(`${tmp}`);
+    } finally {
+      $unborrow(borrow);
+    }
+    const inner = { value: ["inner"], impl: noisyNamed };
     try {
       const tmp = $borrow(inner, true);
       try {

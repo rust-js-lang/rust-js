@@ -2,16 +2,13 @@
 
 import { $debugStr, $some, $someValue, $traitImpl } from "@rust-js/runtime";
 
-var $formatClone;
-
 export function entry() {
   main();
 }
 
+const $formatClone = new WeakMap();
+
 export function formatClone(IClone) {
-  if ($formatClone === undefined) {
-    $formatClone = new WeakMap();
-  }
   return $traitImpl($formatClone, [IClone], () => ({
     clone: (arg0) => formatClone_clone(arg0, IClone),
   }));

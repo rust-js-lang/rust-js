@@ -2,29 +2,17 @@
 
 import { $formatted, $lowerExp } from "@rust-js/runtime";
 
-var $rangedLowerExp, $rangedUpperExp, $measureLowerExp;
-
 export function entry() {
   main();
 }
 
-export function rangedLowerExp() {
-  if ($rangedLowerExp === undefined) {
-    $rangedLowerExp = { fmt: rangedLowerExp_fmt };
-  }
-  return $rangedLowerExp;
-}
+export const rangedLowerExp = { fmt: rangedLowerExp_fmt };
 
 function rangedLowerExp_fmt(ranged, options) {
   return $formatted($lowerExp(ranged[0], false, options?.precision), options, true);
 }
 
-export function rangedUpperExp() {
-  if ($rangedUpperExp === undefined) {
-    $rangedUpperExp = { fmt: rangedUpperExp_fmt };
-  }
-  return $rangedUpperExp;
-}
+export const rangedUpperExp = { fmt: rangedUpperExp_fmt };
 
 function rangedUpperExp_fmt(ranged, options) {
   return $formatted(
@@ -34,12 +22,7 @@ function rangedUpperExp_fmt(ranged, options) {
   );
 }
 
-export function measureLowerExp() {
-  if ($measureLowerExp === undefined) {
-    $measureLowerExp = { fmt: measureLowerExp_fmt };
-  }
-  return $measureLowerExp;
-}
+export const measureLowerExp = { fmt: measureLowerExp_fmt };
 
 function measureLowerExp_fmt(measure, options) {
   return $formatted($lowerExp(measure[0], false, options?.precision), options, true);

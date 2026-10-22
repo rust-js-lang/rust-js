@@ -2,16 +2,13 @@
 
 import { $traitImpl } from "@rust-js/runtime";
 
-var $varPointer, $varLowerHex, $handlePointer, $handleLowerHex;
-
 export function entry() {
   main();
 }
 
+const $varPointer = new WeakMap();
+
 export function varPointer(TPointer) {
-  if ($varPointer === undefined) {
-    $varPointer = new WeakMap();
-  }
   return $traitImpl($varPointer, [TPointer], () => ({
     fmt: (arg0, arg1) => varPointer_fmt(arg0, arg1, TPointer),
   }));
@@ -21,10 +18,9 @@ function varPointer_fmt(var$, options, TPointer) {
   return TPointer.fmt(var$[0], options);
 }
 
+const $varLowerHex = new WeakMap();
+
 export function varLowerHex(TLowerHex) {
-  if ($varLowerHex === undefined) {
-    $varLowerHex = new WeakMap();
-  }
   return $traitImpl($varLowerHex, [TLowerHex], () => ({
     fmt: (arg0, arg1) => varLowerHex_fmt(arg0, arg1, TLowerHex),
   }));
@@ -34,23 +30,13 @@ function varLowerHex_fmt(var$, options, TLowerHex) {
   return TLowerHex.fmt(var$[0], options);
 }
 
-export function handlePointer() {
-  if ($handlePointer === undefined) {
-    $handlePointer = { fmt: handlePointer_fmt };
-  }
-  return $handlePointer;
-}
+export const handlePointer = { fmt: handlePointer_fmt };
 
 function handlePointer_fmt(handle, options) {
   return `@${handle[0]}`;
 }
 
-export function handleLowerHex() {
-  if ($handleLowerHex === undefined) {
-    $handleLowerHex = { fmt: handleLowerHex_fmt };
-  }
-  return $handleLowerHex;
-}
+export const handleLowerHex = { fmt: handleLowerHex_fmt };
 
 function handleLowerHex_fmt(handle, options) {
   let f = "";
@@ -67,8 +53,8 @@ function hex(t, TLowerHex) {
 
 function main() {
   console.log(
-    `${varPointer_fmt([[7]], undefined, handlePointer())} ${varLowerHex_fmt([[255]], undefined, handleLowerHex())} ${varLowerHex_fmt([[16]], { alternate: true }, handleLowerHex())}`,
+    `${varPointer_fmt([[7]], undefined, handlePointer)} ${varLowerHex_fmt([[255]], undefined, handleLowerHex)} ${varLowerHex_fmt([[16]], { alternate: true }, handleLowerHex)}`,
   );
-  console.log(`${hex([10], handleLowerHex())} ${hex([[11]], varLowerHex(handleLowerHex()))}`);
+  console.log(`${hex([10], handleLowerHex)} ${hex([[11]], varLowerHex(handleLowerHex))}`);
 }
 //# sourceMappingURL=case.js.map

@@ -2,8 +2,6 @@
 
 import { $debugStr, $index, $rangeInclusiveNext, $removeAt, $traitImpl } from "@rust-js/runtime";
 
-var $ringShow, $ringDisplay, $gridShow;
-
 export function entry() {
   main();
 }
@@ -58,10 +56,9 @@ function scaled(values, K) {
   return values.map((v) => Math.imul(v, K) >>> 0);
 }
 
+const $ringShow = new Map();
+
 function ringShow(CAP) {
-  if ($ringShow === undefined) {
-    $ringShow = new Map();
-  }
   return $traitImpl($ringShow, [CAP], () => ({ show: (arg0) => ringShow_show(arg0, CAP) }));
 }
 
@@ -69,10 +66,9 @@ function ringShow_show(ring, CAP) {
   return `${ring.items.length}/${CAP}`;
 }
 
+const $ringDisplay = new Map();
+
 export function ringDisplay(CAP) {
-  if ($ringDisplay === undefined) {
-    $ringDisplay = new Map();
-  }
   return $traitImpl($ringDisplay, [CAP], () => ({ fmt: (arg0) => ringDisplay_fmt(arg0, CAP) }));
 }
 
@@ -80,10 +76,9 @@ function ringDisplay_fmt(ring, CAP) {
   return `ring of ${Ring.capacity(ring, CAP)}`;
 }
 
+const $gridShow = new Map();
+
 function gridShow(W, H) {
-  if ($gridShow === undefined) {
-    $gridShow = new Map();
-  }
   return $traitImpl($gridShow, [W, H], () => ({ show: (arg0) => gridShow_show(arg0, W, H) }));
 }
 

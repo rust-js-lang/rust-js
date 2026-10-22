@@ -22,21 +22,14 @@ import {
   $sizeHint,
 } from "@rust-js/runtime";
 
-var $steadyDebug, $flipDebug;
-
 export function entry() {
   main();
 }
 
+export const steadyDebug = { fmt: steadyDebug_fmt };
+
 function steadyDebug_fmt(steady) {
   return `Steady(${steady[0]})`;
-}
-
-export function steadyDebug() {
-  if ($steadyDebug === undefined) {
-    $steadyDebug = { fmt: steadyDebug_fmt };
-  }
-  return $steadyDebug;
 }
 
 function steadyIterator_next(steady) {
@@ -53,15 +46,10 @@ function steadyDoubleEndedIterator_nextBack(steady) {
   return steadyIterator_next(steady);
 }
 
+export const flipDebug = { fmt: flipDebug_fmt };
+
 function flipDebug_fmt(flip) {
   return `Flip(${flip[0]})`;
-}
-
-export function flipDebug() {
-  if ($flipDebug === undefined) {
-    $flipDebug = { fmt: flipDebug_fmt };
-  }
-  return $flipDebug;
 }
 
 function flipIterator_next(flip) {
@@ -135,7 +123,7 @@ function main() {
     f: iterator_fuse([3], { next: steadyIterator_next, sizeHint: steadyIterator_sizeHint }, true),
   };
   console.log(
-    `${Held.drainedBack(held, { next_back: steadyDoubleEndedIterator_nextBack }, steadyDebug(), true)}`,
+    `${Held.drainedBack(held, { next_back: steadyDoubleEndedIterator_nextBack }, steadyDebug, true)}`,
   );
   const value = fusedOf(
     [3],
@@ -146,7 +134,7 @@ function main() {
     true,
   );
   console.log(
-    `${Held.drainedBack(value, { next_back: steadyDoubleEndedIterator_nextBack }, steadyDebug(), true)}`,
+    `${Held.drainedBack(value, { next_back: steadyDoubleEndedIterator_nextBack }, steadyDebug, true)}`,
   );
   const value$1 = fusedOf(
     [3],
@@ -156,23 +144,23 @@ function main() {
     },
     true,
   );
-  console.log(`${Held.drainedFront(value$1, steadyDebug())}`);
+  console.log(`${Held.drainedFront(value$1, steadyDebug)}`);
   const value$2 = fusedOf(
     [0],
     { intoIter: (items) => items, IntoIterIterator: () => ({ next: flipIterator_next }) },
     false,
   );
   console.log(
-    `${Held.drainedBack(value$2, { next_back: flipDoubleEndedIterator_nextBack }, flipDebug(), false)}`,
+    `${Held.drainedBack(value$2, { next_back: flipDoubleEndedIterator_nextBack }, flipDebug, false)}`,
   );
   const value$3 = drained(
     [4],
     { next: steadyIterator_next, sizeHint: steadyIterator_sizeHint },
-    steadyDebug(),
+    steadyDebug,
     true,
   );
   console.log(`(${value$3[0]}, ${$debugStr(value$3[1])})`);
-  const value$4 = drained([0], { next: flipIterator_next }, flipDebug(), false);
+  const value$4 = drained([0], { next: flipIterator_next }, flipDebug, false);
   console.log(`(${value$4[0]}, ${$debugStr(value$4[1])})`);
   const value$5 = drained(
     { start: 1, end: 3 },
@@ -208,7 +196,7 @@ function main() {
   const value$8 = $next(f);
   const value$9 = $next(f);
   console.log(
-    `${next == null ? "None" : `Some(${next})`} ${value$8 == null ? "None" : `Some(${value$8})`} ${value$9 == null ? "None" : `Some(${value$9})`} ${fuseDebug_fmt(f, undefined, flipDebug())}`,
+    `${next == null ? "None" : `Some(${next})`} ${value$8 == null ? "None" : `Some(${value$8})`} ${value$9 == null ? "None" : `Some(${value$9})`} ${fuseDebug_fmt(f, undefined, flipDebug)}`,
   );
   const s = iterator_fuse($iter([1, 2]), { next: $next }, true);
   const sizeHint = $sizeHint(s);

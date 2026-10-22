@@ -13,8 +13,6 @@ import {
   $traitImpl,
 } from "@rust-js/runtime";
 
-var $iSorted;
-
 export function entry() {
   main();
 }
@@ -33,10 +31,9 @@ function smallest(items, k, TOrd, TClone, TSort) {
   return $slice(items, 0, k).map((item) => TClone.clone(item));
 }
 
+const $iSorted = new WeakMap();
+
 function iSorted(IIterator) {
-  if ($iSorted === undefined) {
-    $iSorted = new WeakMap();
-  }
   return $traitImpl($iSorted, [IIterator], () => ({
     sortedUnstable: (self, SelfItemOrd, SelfItemSort) => {
       const v = $iterator(self, IIterator.next, true).toArray();

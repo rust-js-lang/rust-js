@@ -2,8 +2,6 @@
 
 import { $byteLen, $cmp, $cmpItems, $eq } from "@rust-js/runtime";
 
-var $anyPartialEq;
-
 export function entry() {
   main();
 }
@@ -16,12 +14,7 @@ const Counter = {
   },
 };
 
-export function anyPartialEq() {
-  if ($anyPartialEq === undefined) {
-    $anyPartialEq = { eq: anyPartialEq_eq };
-  }
-  return $anyPartialEq;
-}
+export const anyPartialEq = { eq: anyPartialEq_eq };
 
 function anyPartialEq_eq(any, _) {
   console.log("any ==");

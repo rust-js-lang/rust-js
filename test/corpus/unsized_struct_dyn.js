@@ -2,18 +2,11 @@
 
 import { $dynCell } from "@rust-js/runtime";
 
-var $sevenShow, $noisyShow;
-
 export function entry() {
   main();
 }
 
-function sevenShow() {
-  if ($sevenShow === undefined) {
-    $sevenShow = { show: sevenShow_show };
-  }
-  return $sevenShow;
-}
+const sevenShow = { show: sevenShow_show };
 
 function sevenShow_show(seven) {
   return 7;
@@ -23,12 +16,7 @@ function noisyDrop_drop(noisy) {
   console.log(`drop ${noisy[0]}`);
 }
 
-function noisyShow() {
-  if ($noisyShow === undefined) {
-    $noisyShow = { show: noisyShow_show, $drop: noisyDrop_drop };
-  }
-  return $noisyShow;
-}
+const noisyShow = { show: noisyShow_show, $drop: noisyDrop_drop };
 
 function noisyShow_show(noisy) {
   return noisy[0] | 0;
@@ -44,14 +32,14 @@ function read(fat) {
 }
 
 function main() {
-  const fat = $dynCell({ size: 1 }, sevenShow());
+  const fat = $dynCell({ size: 1 }, sevenShow);
   try {
     console.log(`${read(fat)}`);
   } catch (error) {
     fat.impl.$drop?.(fat.inner);
     throw error;
   }
-  const noisy = $dynCell({ size: 2, inner: [20] }, noisyShow());
+  const noisy = $dynCell({ size: 2, inner: [20] }, noisyShow);
 
   try {
     console.log(`${read(noisy)}`);

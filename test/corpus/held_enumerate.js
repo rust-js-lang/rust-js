@@ -21,8 +21,6 @@ import {
   $traitImpl,
 } from "@rust-js/runtime";
 
-var $positionsDebug;
-
 export function entry() {
   main();
 }
@@ -75,10 +73,9 @@ function positionsDoubleEndedIterator_rfold(
   );
 }
 
+const $positionsDebug = new WeakMap();
+
 export function positionsDebug(IDebug) {
-  if ($positionsDebug === undefined) {
-    $positionsDebug = new WeakMap();
-  }
   return $traitImpl($positionsDebug, [IDebug], () => ({
     fmt: (arg0, arg1) => positionsDebug_fmt(arg0, arg1, IDebug),
   }));

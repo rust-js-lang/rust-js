@@ -149,28 +149,16 @@ pub fn direct() -> String {
 ```js
 import { $displayF64 } from "@rust-js/runtime";
 
-var $circleShape, $rectShape;
-
-export function circleShape() {
-  if ($circleShape === undefined) {
-    $circleShape = {
-      area: circleShape_area,
-      describe: (self) => `a shape of area ${$displayF64(circleShape_area(self))}`,
-    };
-  }
-  return $circleShape;
-}
+export const circleShape = {
+  area: circleShape_area,
+  describe: (self) => `a shape of area ${$displayF64(circleShape_area(self))}`,
+};
 
 function circleShape_area(circle) {
   return 3.141592653589793 * circle.radius * circle.radius;
 }
 
-export function rectShape() {
-  if ($rectShape === undefined) {
-    $rectShape = { area: rectShape_area, describe: rectShape_describe };
-  }
-  return $rectShape;
-}
+export const rectShape = { area: rectShape_area, describe: rectShape_describe };
 
 function rectShape_area(rect) {
   return rect.width * rect.height;
@@ -187,9 +175,13 @@ export function direct() {
 
 - **A call on a known type is a direct call**: `rect.describe()` of a
   `Rect` is `rectShape_describe(rect)`. Nothing is looked up at run time.
-- **Each impl has a dictionary**, an object of its methods, made the
-  first time it's asked for: `circleShape()`, its type's name then its
-  trait's ([ADR 0049](../../decisions/0049-traits-and-generics.md)). It's exported where the trait is `pub`.
+- **Each impl has a dictionary**, an object of its methods, its module's
+  `const`: `circleShape`, its type's name then its trait's
+  ([ADR 0049](../../decisions/0049-traits-and-generics.md),
+  [ADR 0592](../../decisions/0592-a-dictionary-is-its-modules-const.md)).
+  An impl generic code gives its own dictionaries, `impl<T: Display>
+  Display for Wrapper<T>`, is a function of them, `wrapperDisplay(TDisplay)`.
+  It's exported where the trait is `pub`.
 - **A default method is copied into each impl's dictionary** that doesn't
   write its own, so a call inside it reaches the impl's own methods.
 
@@ -214,11 +206,11 @@ export function totalArea(shapes, SShape) {
 }
 
 export function circles() {
-  return totalArea([{ radius: 1 }, { radius: 2 }], circleShape());
+  return totalArea([{ radius: 1 }, { radius: 2 }], circleShape);
 }
 ```
 
-A JS caller gives it the same way: `totalArea([{ radius: 1 }], circleShape())`.
+A JS caller gives it the same way: `totalArea([{ radius: 1 }], circleShape)`.
 A type parameter with no bound takes none.
 
 ## `dyn Trait` is a value and its dictionary
@@ -264,7 +256,7 @@ export function largest(shapes) {
 
 export function mixed() {
   const shapes = [
-    { value: { radius: 1 }, impl: circleShape() },
+    { value: { radius: 1 }, impl: circleShape },
     { value: { width: 2, height: 3 }, impl: rectShape() },
   ];
   return largest(shapes);
@@ -366,8 +358,6 @@ pub fn show(p: Point) -> String {
 ```js
 import { $debugF64, $displayF64 } from "@rust-js/runtime";
 
-var $pointDisplay;
-
 function pointDebug_fmt(point) {
   return `Point { x: ${$debugF64(point.x)}, y: ${$debugF64(point.y)} }`;
 }
@@ -376,12 +366,7 @@ function pointAdd_add(point, other) {
   return { x: point.x + other.x, y: point.y + other.y };
 }
 
-export function pointDisplay() {
-  if ($pointDisplay === undefined) {
-    $pointDisplay = { fmt: pointDisplay_fmt };
-  }
-  return $pointDisplay;
-}
+export const pointDisplay = { fmt: pointDisplay_fmt };
 
 function pointDisplay_fmt(point) {
   return `(${$displayF64(point.x)}, ${$displayF64(point.y)})`;

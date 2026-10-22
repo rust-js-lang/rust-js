@@ -11,8 +11,6 @@ import {
   $rangeNext,
 } from "@rust-js/runtime";
 
-var $intoIterKeyed;
-
 export function entry() {
   main();
 }
@@ -78,12 +76,7 @@ function second(w, IIterator) {
   return IIterator.next(w[0]);
 }
 
-export function intoIterKeyed() {
-  if ($intoIterKeyed === undefined) {
-    $intoIterKeyed = {};
-  }
-  return $intoIterKeyed;
-}
+export const intoIterKeyed = {};
 
 function sumKeyed(f, FKeyed) {
   return Iterator.from(f).reduce((a, b) => (a + b) | 0, 0);
@@ -166,7 +159,7 @@ function main() {
   console.log(
     `${value$1 == null ? "None" : `Some(${value$1})`} ${value$2 == null ? "None" : `Some(${value$2})`} ${value$3 == null ? "None" : `Some(${value$3})`}`,
   );
-  console.log(`${sumKeyed($iter([11, 10, 1]), intoIterKeyed())}`);
+  console.log(`${sumKeyed($iter([11, 10, 1]), intoIterKeyed)}`);
   const [t, spare] = totalOf(
     { inner: { start: 1, end: 4 } },
     { start: 7, end: 8 },

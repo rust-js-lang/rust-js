@@ -2,8 +2,6 @@
 
 import { $traitImpl } from "@rust-js/runtime";
 
-var $bufferDescribed;
-
 export function entry() {
   main();
 }
@@ -23,10 +21,9 @@ function made(SIZE) {
   return (buffer.bytes.length + buffer.len) >>> 0;
 }
 
+const $bufferDescribed = new Map();
+
 function bufferDescribed(SIZE) {
-  if ($bufferDescribed === undefined) {
-    $bufferDescribed = new Map();
-  }
   return $traitImpl($bufferDescribed, [SIZE], () => ({
     size: (arg0) => bufferDescribed_size(arg0, SIZE),
     described: (self) => `${bufferDescribed_size(self, SIZE)} bytes`,

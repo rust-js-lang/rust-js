@@ -2,16 +2,13 @@
 
 import { $traitImpl } from "@rust-js/runtime";
 
-var $holderCapacity;
-
 export function entry() {
   main();
 }
 
+const $holderCapacity = new Map();
+
 function holderCapacity(CAP) {
-  if ($holderCapacity === undefined) {
-    $holderCapacity = new Map();
-  }
   return $traitImpl($holderCapacity, [CAP], () => ({
     len: (arg0) => holderCapacity_len(arg0, CAP),
     capacity: (arg0) => holderCapacity_capacity(arg0, CAP),

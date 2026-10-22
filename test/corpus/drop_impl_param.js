@@ -2,16 +2,13 @@
 
 import { $traitImpl } from "@rust-js/runtime";
 
-var $wrapPeek;
-
 export function entry() {
   main();
 }
 
+const $wrapPeek = new WeakMap();
+
 function wrapPeek(TClone, dropT) {
-  if ($wrapPeek === undefined) {
-    $wrapPeek = new WeakMap();
-  }
   return $traitImpl($wrapPeek, [TClone, dropT], () => ({
     peek: (arg0) => wrapPeek_peek(arg0, TClone, dropT),
     $drop: (wrap) => {

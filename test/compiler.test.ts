@@ -920,7 +920,7 @@ test("std trait impls are direct calls, and a clone copies only what changes", a
   const js = await Bun.file(join(target, "std_traits.js")).text();
   // Hand-written: called where the type is known, a dictionary for a generic.
   expect(js).toContain("const b = trackedClone_clone(a);");
-  expect(js).toContain("const both = twice(copy.tracked, trackedClone());");
+  expect(js).toContain("const both = twice(copy.tracked, trackedClone);");
   expect(js).toContain("export function twice(x, TClone) {\n  return [TClone.clone(x), TClone.clone(x)];");
   // Derived: written in place, copying only the `Vec` that's pushed to.
   expect(js).toContain("  const t = { ...s, tags: s.tags.slice() };");
@@ -957,7 +957,7 @@ test("== calls a hand-written eq wherever it's inside, and generics take a dicti
   // A fieldless variant is a string: only itself is equal to it.
   expect(js).toContain("} === \"Nothing\"");
   // A `T: Eq` is given `T`'s `PartialEq`, and one that compares field by field is `$eq`.
-  expect(js).toContain("countEqual(all, version(1, \"z\"), versionPartialEq())");
+  expect(js).toContain("countEqual(all, version(1, \"z\"), versionPartialEq)");
   expect(js).toContain("{ eq: $eq }");
   // `!=` of a hand-written `PartialEq<f64>` negates its `eq`.
   expect(js).toContain("return [metersPartialEqF64_eq(m, 2), !metersPartialEqF64_eq(m, 3");

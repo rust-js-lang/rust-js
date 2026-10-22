@@ -2,29 +2,22 @@
 
 import { $assign } from "@rust-js/runtime";
 
-var $tallyCounter, $i32Counter;
-
 export function entry() {
   main();
 }
 
-function tallyCounter() {
-  if ($tallyCounter === undefined) {
-    $tallyCounter = {
-      get: tallyCounter_get,
-      set: (arg0, arg1) => tallyCounter_set(arg0.value, arg1),
-      bump: (self, by) => {
-        const next = (tallyCounter_get(self.value) + by) | 0;
-        tallyCounter_set(self.value, next);
-        return next;
-      },
-      replaceWith: (self, other) => {
-        self.value = other;
-      },
-    };
-  }
-  return $tallyCounter;
-}
+const tallyCounter = {
+  get: tallyCounter_get,
+  set: (arg0, arg1) => tallyCounter_set(arg0.value, arg1),
+  bump: (self, by) => {
+    const next = (tallyCounter_get(self.value) + by) | 0;
+    tallyCounter_set(self.value, next);
+    return next;
+  },
+  replaceWith: (self, other) => {
+    self.value = other;
+  },
+};
 
 function tallyCounter_get(tally) {
   return tally[0];
@@ -34,23 +27,18 @@ function tallyCounter_set(tally, n) {
   tally[0] = n;
 }
 
-function i32Counter() {
-  if ($i32Counter === undefined) {
-    $i32Counter = {
-      get: i32Counter_get,
-      set: i32Counter_set,
-      bump: (self, by) => {
-        const next = (i32Counter_get(self.value) + by) | 0;
-        i32Counter_set(self, next);
-        return next;
-      },
-      replaceWith: (self, other) => {
-        self.value = other;
-      },
-    };
-  }
-  return $i32Counter;
-}
+const i32Counter = {
+  get: i32Counter_get,
+  set: i32Counter_set,
+  bump: (self, by) => {
+    const next = (i32Counter_get(self.value) + by) | 0;
+    i32Counter_set(self, next);
+    return next;
+  },
+  replaceWith: (self, other) => {
+    self.value = other;
+  },
+};
 
 function i32Counter_get(self) {
   return self;
@@ -63,7 +51,7 @@ function i32Counter_set(self, n) {
 function main() {
   const bump = (a, b) => {
     const self = { value: a };
-    const value = tallyCounter().bump(self, b);
+    const value = tallyCounter.bump(self, b);
     $assign(a, self.value);
     return value;
   };
@@ -74,13 +62,13 @@ function main() {
   console.log(`${bump(tally, 2)} ${tally[0]}`);
   const replace = (a, b) => {
     const self = { value: a };
-    const value = tallyCounter().replaceWith(self, b);
+    const value = tallyCounter.replaceWith(self, b);
     $assign(a, self.value);
     return value;
   };
   replace(tally, [9]);
   console.log(`${tally[0]}`);
-  const bumpNumber = (arg0, arg1) => i32Counter().bump(arg0, arg1);
+  const bumpNumber = (arg0, arg1) => i32Counter.bump(arg0, arg1);
   let n = 40;
   console.log(
     `${bumpNumber(

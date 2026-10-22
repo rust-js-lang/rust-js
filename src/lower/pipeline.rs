@@ -21,12 +21,14 @@ struct Pass {
     functions: HashMap<LocalModId, Vec<js::Function>>,
     namespaces: HashMap<LocalModId, Vec<js::Namespace>>,
     jsx: HashSet<LocalModId>,
-    caches: HashMap<LocalModId, Vec<String>>,
     /// What each module runs when it's loaded, each `js::on_load!`'s
     /// (ADR 0267).
     statements: HashMap<LocalModId, Vec<Vec<js::Stmt>>>,
     /// `thread_local!`s' values, made from their lowered `init`s.
     local_consts: HashMap<LocalModId, Vec<js::Const>>,
+    /// Each dictionary that's its module's `const`, or whose cache is, by
+    /// its impl (ADR 0592).
+    dictionary_consts: Vec<(LocalModId, DefId)>,
     /// The functions a block makes and gives, by their items' indices, for
     /// their holes (ADR 0296).
     holes: HashMap<u32, js::Function>,
@@ -249,6 +251,8 @@ pub fn lower_crate<'tcx>(
             (id, cache)
         })
         .collect();
+    // A generic dictionary's cache's value, its module's `const` (ADR 0592).
+    let mut cache_values: HashMap<DefId, Expr> = HashMap::new();
     let mut work: Vec<(DefId, Option<&Body<'tcx>>)> = bodies
         .iter()
         // A trait's default is copied into each impl (ADR 0049); a library's
@@ -328,10 +332,15 @@ pub fn lower_crate<'tcx>(
             }),
             None => cx
                 .lower_dictionary(def_id, &cache_of[&def_id])
-                .map(|function| super::LoweredFn {
-                    function,
-                    jsx: cx.jsx,
-                    dependencies: cx.dependencies.take(),
+                .map(|(function, cache)| {
+                    if let Some(cache) = cache {
+                        cache_values.insert(def_id, cache);
+                    }
+                    super::LoweredFn {
+                        function,
+                        jsx: cx.jsx,
+                        dependencies: cx.dependencies.take(),
+                    }
                 }),
         };
         match result {
@@ -403,8 +412,45 @@ pub fn lower_crate<'tcx>(
         let initializer = initialized.iter().any(|body| body.def_id == def_id);
         pass.references.extend(lowered.dependencies.references.drain());
         pass.package_uses.extend(lowered.dependencies.package_uses.drain());
+        // A dictionary given nothing is its module's `const`, what its entries
+        // share beside it; one given something, its function, its cache a
+        // `const` beside it (ADR 0592).
         if dictionaries.contains(&def_id) {
-            pass.caches.entry(module).or_default().push(cache_of[&def_id].clone());
+            let span = def_id
+                .as_local()
+                .map_or(js::Span::NONE, |local| sources.item_span(tcx, local));
+            let constant = |name: String, value: Expr, export: bool| js::Const {
+                name,
+                value,
+                mutable: false,
+                export,
+                span,
+            };
+            pass.dictionary_consts.push((module, def_id));
+            let consts = pass.local_consts.entry(module).or_default();
+            if let Some(cache) = cache_values.remove(&def_id) {
+                consts.push(constant(cache_of[&def_id].clone(), cache, false));
+            } else if lowered.function.params.is_empty() {
+                let export = lowered.function.export || called_from_elsewhere.contains(&def_id);
+                let mut body = std::mem::take(&mut lowered.function.body);
+                let Some(js::Stmt {
+                    kind: StmtKind::Return(Some(object)),
+                    ..
+                }) = body.pop()
+                else {
+                    unreachable!("a dictionary given nothing returns its object")
+                };
+                for stmt in body {
+                    if let StmtKind::Const(name, value) = stmt.kind {
+                        consts.push(constant(name, value, false));
+                    }
+                }
+                consts.push(constant(fns[&def_id].name.clone(), object, export));
+                if lowered.jsx {
+                    pass.jsx.insert(module);
+                }
+                continue;
+            }
         }
         match lowered {
             lowered
@@ -579,6 +625,7 @@ pub fn lower_crate<'tcx>(
         .filter(|&&(from, id)| fns[&id].module != from)
         .map(|&(_, id)| id)
         .collect();
+    refuse_dictionaries_in_load_cycles(tcx, &pass, &const_items, &targets);
     let lowered = modules
         .into_iter()
         .map(|module| {
@@ -716,7 +763,6 @@ pub fn lower_crate<'tcx>(
                     )
                     .collect(),
                 ),
-                caches: pass.caches.remove(&module).unwrap_or_default(),
                 default_export: default_export.map(|function| super::bindings::fn_name(tcx, function)),
                 declarations,
                 runtime: Vec::new(),
@@ -937,5 +983,59 @@ fn located(tcx: TyCtxt<'_>, module: LocalModId) -> bool {
             return false;
         }
         at = tcx.parent_module_from_def_id(at.to_local_def_id());
+    }
+}
+
+/// A dictionary that's its module's `const` (ADR 0592) is made when its
+/// module loads. Where its module and one whose load runs code, a
+/// `js::on_load!` or a value made by a call, import each other, the other
+/// may load first and reach it before it's made: refused, naming both, as
+/// JS's would throw where Rust's runs.
+fn refuse_dictionaries_in_load_cycles(
+    tcx: TyCtxt<'_>,
+    pass: &Pass,
+    const_items: &HashMap<LocalModId, Vec<js::Const>>,
+    targets: &HashMap<LocalModId, HashSet<(LocalModId, String, bool, String)>>,
+) {
+    let runs_code = |module: &LocalModId| {
+        pass.statements.get(module).is_some_and(|stmts| !stmts.is_empty())
+            || const_items
+                .get(module)
+                .is_some_and(|consts| consts.iter().any(|c| c.value.has_effects()))
+    };
+    let reaches = |from: LocalModId, to: LocalModId| {
+        let mut seen = HashSet::from([from]);
+        let mut pending = vec![from];
+        while let Some(at) = pending.pop() {
+            for &(next, ..) in targets.get(&at).into_iter().flatten() {
+                if next == to {
+                    return true;
+                }
+                if seen.insert(next) {
+                    pending.push(next);
+                }
+            }
+        }
+        false
+    };
+    let loaders: Vec<LocalModId> = targets
+        .keys()
+        .chain(pass.statements.keys())
+        .copied()
+        .filter(runs_code)
+        .collect();
+    for &(module, impl_id) in &pass.dictionary_consts {
+        if let Some(&other) = loaders
+            .iter()
+            .find(|&&other| other != module && reaches(module, other) && reaches(other, module))
+        {
+            let what = format!(
+                "this impl's dictionary, made where `{}` loads, in an import cycle with `{}`, which runs code where it loads",
+                tcx.def_path_str(module.to_def_id()),
+                tcx.def_path_str(other.to_def_id()),
+            );
+            let why = "that code may reach the dictionary before it's made: move one out of the cycle (ADR 0592)";
+            super::refusal::refuse(tcx, tcx.def_span(impl_id), super::refusal::Refused::Because(&what, why));
+        }
     }
 }

@@ -2,18 +2,11 @@
 
 import { $KeyMap, $eq, $mapEq, $setEq } from "@rust-js/runtime";
 
-var $namePartialEq;
-
 export function entry() {
   main();
 }
 
-export function namePartialEq() {
-  if ($namePartialEq === undefined) {
-    $namePartialEq = { eq: namePartialEq_eq };
-  }
-  return $namePartialEq;
-}
+export const namePartialEq = { eq: namePartialEq_eq };
 
 function namePartialEq_eq(name, other) {
   return name[0].toLowerCase() === other[0].toLowerCase();

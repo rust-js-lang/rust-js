@@ -2,29 +2,11 @@
 
 import { $formatted, $iter, $lowerExp, $next, $traitImpl } from "@rust-js/runtime";
 
-var $idLowerHex,
-  $idUpperHex,
-  $idOctal,
-  $idBinary,
-  $ratioLowerExp,
-  $handlePointer,
-  $flagsDisplay,
-  $bitsLowerHex,
-  $bitsUpperHex,
-  $bitsOctal,
-  $bitsBinary,
-  $circleDisplay;
-
 export function entry() {
   main();
 }
 
-export function idLowerHex() {
-  if ($idLowerHex === undefined) {
-    $idLowerHex = { fmt: idLowerHex_fmt };
-  }
-  return $idLowerHex;
-}
+export const idLowerHex = { fmt: idLowerHex_fmt };
 
 function idLowerHex_fmt(id, options) {
   let f = "";
@@ -35,24 +17,14 @@ function idLowerHex_fmt(id, options) {
   return f;
 }
 
-export function idUpperHex() {
-  if ($idUpperHex === undefined) {
-    $idUpperHex = { fmt: idUpperHex_fmt };
-  }
-  return $idUpperHex;
-}
+export const idUpperHex = { fmt: idUpperHex_fmt };
 
 function idUpperHex_fmt(id, options) {
   return id[0].toString(16).toUpperCase().padStart(8, "0");
 }
 
 // Delegating to another of the crate's impls, as uuid's do.
-export function idOctal() {
-  if ($idOctal === undefined) {
-    $idOctal = { fmt: idOctal_fmt };
-  }
-  return $idOctal;
-}
+export const idOctal = { fmt: idOctal_fmt };
 
 function idOctal_fmt(id, options) {
   let f = idLowerHex_fmt(id, options);
@@ -61,45 +33,25 @@ function idOctal_fmt(id, options) {
   return f;
 }
 
-export function idBinary() {
-  if ($idBinary === undefined) {
-    $idBinary = { fmt: idBinary_fmt };
-  }
-  return $idBinary;
-}
+export const idBinary = { fmt: idBinary_fmt };
 
 function idBinary_fmt(id, options) {
   return $formatted(id[0].toString(2), options);
 }
 
-export function ratioLowerExp() {
-  if ($ratioLowerExp === undefined) {
-    $ratioLowerExp = { fmt: ratioLowerExp_fmt };
-  }
-  return $ratioLowerExp;
-}
+export const ratioLowerExp = { fmt: ratioLowerExp_fmt };
 
 function ratioLowerExp_fmt(ratio, options) {
   return `${$lowerExp(ratio[0])}~`;
 }
 
-export function handlePointer() {
-  if ($handlePointer === undefined) {
-    $handlePointer = { fmt: handlePointer_fmt };
-  }
-  return $handlePointer;
-}
+export const handlePointer = { fmt: handlePointer_fmt };
 
 function handlePointer_fmt(handle, options) {
   return `@${handle[0]}`;
 }
 
-export function flagsDisplay() {
-  if ($flagsDisplay === undefined) {
-    $flagsDisplay = { fmt: flagsDisplay_fmt };
-  }
-  return $flagsDisplay;
-}
+export const flagsDisplay = { fmt: flagsDisplay_fmt };
 
 function flagsDisplay_fmt(flags, options) {
   let f = "";
@@ -128,10 +80,9 @@ function flagsDisplay_fmt(flags, options) {
   return f;
 }
 
+const $bitsLowerHex = new WeakMap();
+
 export function bitsLowerHex(TLowerHex) {
-  if ($bitsLowerHex === undefined) {
-    $bitsLowerHex = new WeakMap();
-  }
   return $traitImpl($bitsLowerHex, [TLowerHex], () => ({
     fmt: (arg0, arg1) => bitsLowerHex_fmt(arg0, arg1, TLowerHex),
   }));
@@ -141,12 +92,7 @@ function bitsLowerHex_fmt(bits, options, TLowerHex) {
   return TLowerHex.fmt(bits[0], options);
 }
 
-export function bitsUpperHex() {
-  if ($bitsUpperHex === undefined) {
-    $bitsUpperHex = { fmt: bitsUpperHex_fmt };
-  }
-  return $bitsUpperHex;
-}
+export const bitsUpperHex = { fmt: bitsUpperHex_fmt };
 
 function bitsUpperHex_fmt(bits, options) {
   return $formatted(
@@ -156,34 +102,19 @@ function bitsUpperHex_fmt(bits, options) {
   );
 }
 
-export function bitsOctal() {
-  if ($bitsOctal === undefined) {
-    $bitsOctal = { fmt: bitsOctal_fmt };
-  }
-  return $bitsOctal;
-}
+export const bitsOctal = { fmt: bitsOctal_fmt };
 
 function bitsOctal_fmt(bits, options) {
   return $formatted((options?.alternate ? "0o" : "") + bits[0].toString(8), options, true);
 }
 
-export function bitsBinary() {
-  if ($bitsBinary === undefined) {
-    $bitsBinary = { fmt: bitsBinary_fmt };
-  }
-  return $bitsBinary;
-}
+export const bitsBinary = { fmt: bitsBinary_fmt };
 
 function bitsBinary_fmt(bits, options) {
   return $formatted((options?.alternate ? "0b" : "") + (bits[0] & 255).toString(2), options, true);
 }
 
-export function circleDisplay() {
-  if ($circleDisplay === undefined) {
-    $circleDisplay = { fmt: circleDisplay_fmt };
-  }
-  return $circleDisplay;
-}
+export const circleDisplay = { fmt: circleDisplay_fmt };
 
 function circleDisplay_fmt(circle, options) {
   return `circle of ${circle[0]}`;

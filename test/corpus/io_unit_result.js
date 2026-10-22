@@ -20,8 +20,6 @@ import {
   $writeTry,
 } from "@rust-js/runtime";
 
-var $limitedWrite;
-
 export function entry() {
   main();
 }
@@ -81,18 +79,14 @@ function doubled(s) {
   }
 }
 
-export function limitedWrite() {
-  if ($limitedWrite === undefined) {
-    const write = (arg0, arg1) => limitedWrite_write(arg0.value, arg1);
-    $limitedWrite = {
-      write,
-      flush: (arg0) => limitedWrite_flush(arg0.value),
-      writeAll: $ioWriteAll(write),
-      writeFmt: $ioWriteFmt(write),
-    };
-  }
-  return $limitedWrite;
-}
+const $limitedWrite_write = (arg0, arg1) => limitedWrite_write(arg0.value, arg1);
+
+export const limitedWrite = {
+  write: $limitedWrite_write,
+  flush: (arg0) => limitedWrite_flush(arg0.value),
+  writeAll: $ioWriteAll($limitedWrite_write),
+  writeFmt: $ioWriteFmt($limitedWrite_write),
+};
 
 function limitedWrite_write(limited, bytes) {
   if (limited.room === 0) {
@@ -108,7 +102,7 @@ function limitedWrite_flush(limited) {}
 
 // Only std's `write_all` of the crate's writer, whose `write` may fail.
 function put(w) {
-  limitedWrite().writeAll({ value: w }, [120, 121, 122]);
+  limitedWrite.writeAll({ value: w }, [120, 121, 122]);
 }
 
 // `?` of one that gives std's `write_all`'s: its error passed on.
@@ -146,8 +140,8 @@ function main() {
     );
   }
   const w = { room: 5, out: [] };
-  const a = $writeTry(() => limitedWrite().writeAll({ value: w }, [97, 98, 99]));
-  const b = $writeTry(() => limitedWrite().writeAll({ value: w }, [100, 101, 102, 103]));
+  const a = $writeTry(() => limitedWrite.writeAll({ value: w }, [97, 98, 99]));
+  const b = $writeTry(() => limitedWrite.writeAll({ value: w }, [100, 101, 102, 103]));
   const arg = $utf8Lossy(w.out);
   console.log(`${$ioResultDebug(a)} ${$ioResultDebug(b)} ${$debugStr(arg._0)}`);
   const result = $writeTry(() => parsedOnly("x"));

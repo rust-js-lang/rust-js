@@ -2,18 +2,11 @@
 
 import { $debugStr, $pretty } from "@rust-js/runtime";
 
-var $pairDebug, $evensDebug, $openDebug, $rowDebug, $tagsDebug;
-
 export function entry() {
   main();
 }
 
-export function pairDebug() {
-  if ($pairDebug === undefined) {
-    $pairDebug = { fmt: pairDebug_fmt };
-  }
-  return $pairDebug;
-}
+export const pairDebug = { fmt: pairDebug_fmt };
 
 function pairDebug_fmt(pair, options) {
   const parts = [];
@@ -30,12 +23,7 @@ function pairDebug_fmt(pair, options) {
       : `Pair { ${parts.join(", ")} }`;
 }
 
-export function evensDebug() {
-  if ($evensDebug === undefined) {
-    $evensDebug = { fmt: evensDebug_fmt };
-  }
-  return $evensDebug;
-}
+export const evensDebug = { fmt: evensDebug_fmt };
 
 function evensDebug_fmt(evens, options) {
   const parts = [];
@@ -47,12 +35,7 @@ function evensDebug_fmt(evens, options) {
   return options?.alternate ? $pretty("[", parts, "]") : `[${parts.join(", ")}]`;
 }
 
-export function openDebug() {
-  if ($openDebug === undefined) {
-    $openDebug = { fmt: openDebug_fmt };
-  }
-  return $openDebug;
-}
+export const openDebug = { fmt: openDebug_fmt };
 
 function openDebug_fmt(open, options) {
   const parts = [];
@@ -65,12 +48,7 @@ function openDebug_fmt(open, options) {
     : `Open { ${parts.concat([".."]).join(", ")} }`;
 }
 
-export function rowDebug() {
-  if ($rowDebug === undefined) {
-    $rowDebug = { fmt: rowDebug_fmt };
-  }
-  return $rowDebug;
-}
+export const rowDebug = { fmt: rowDebug_fmt };
 
 function rowDebug_fmt(row, options) {
   const parts = [];
@@ -84,12 +62,7 @@ function rowDebug_fmt(row, options) {
       : `Row(${parts.join(", ")})`;
 }
 
-export function tagsDebug() {
-  if ($tagsDebug === undefined) {
-    $tagsDebug = { fmt: tagsDebug_fmt };
-  }
-  return $tagsDebug;
-}
+export const tagsDebug = { fmt: tagsDebug_fmt };
 
 function tagsDebug_fmt(tags, options) {
   const parts = [];

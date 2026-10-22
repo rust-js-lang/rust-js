@@ -7,6 +7,6 @@ export function entry() {
 }
 
 function main() {
-  console.log(`${standardEngine().size(undefined, 10)} ${standardEngine().size(undefined, 3)}`);
+  console.log(`${standardEngine.size(undefined, 10)} ${standardEngine.size(undefined, 3)}`);
 }
 //# sourceMappingURL=case.js.map

@@ -2,16 +2,13 @@
 
 import { $debugStr, $traitImpl, $unwrap } from "@rust-js/runtime";
 
-var $vecStoreMutKV;
-
 export function entry() {
   main();
 }
 
+const $vecStoreMutKV = new WeakMap();
+
 export function vecStoreMutKV(dropK, dropV) {
-  if ($vecStoreMutKV === undefined) {
-    $vecStoreMutKV = new WeakMap();
-  }
   return $traitImpl($vecStoreMutKV, [dropK, dropV], () => ({
     lmGetMut: (arg0, arg1) => vecStoreMutKV_lmGetMut(arg0.value, arg1, dropK, dropV),
     $drop: (vec) => {

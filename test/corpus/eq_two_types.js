@@ -2,16 +2,13 @@
 
 import { $traitImpl } from "@rust-js/runtime";
 
-var $_T__N_Array, $smallPartialEqSmall;
-
 export function entry() {
   main();
 }
 
+const $_T__N_Array = new Map();
+
 function _T__N_Array(N) {
-  if ($_T__N_Array === undefined) {
-    $_T__N_Array = new Map();
-  }
   return $traitImpl($_T__N_Array, [N], () => ({ items: (arg0) => _T__N_Array_items(arg0, N) }));
 }
 
@@ -19,10 +16,9 @@ function _T__N_Array_items(self, N) {
   return self;
 }
 
+const $smallPartialEqSmall = new WeakMap();
+
 export function smallPartialEqSmall(AArray, BArray, AItemPartialEqBItem) {
-  if ($smallPartialEqSmall === undefined) {
-    $smallPartialEqSmall = new WeakMap();
-  }
   return $traitImpl($smallPartialEqSmall, [AArray, BArray, AItemPartialEqBItem], () => ({
     eq: (arg0, arg1) => smallPartialEqSmall_eq(arg0, arg1, AArray, BArray, AItemPartialEqBItem),
   }));

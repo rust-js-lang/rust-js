@@ -2,18 +2,11 @@
 
 import { $makeMut, $rcClone, $rcDrop } from "@rust-js/runtime";
 
-var $failsClone;
-
 export function entry() {
   main();
 }
 
-export function failsClone() {
-  if ($failsClone === undefined) {
-    $failsClone = { clone: failsClone_clone };
-  }
-  return $failsClone;
-}
+export const failsClone = { clone: failsClone_clone };
 
 function failsClone_clone(fails) {
   throw new Error("clone failed");

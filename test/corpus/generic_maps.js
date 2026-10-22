@@ -16,8 +16,6 @@ import {
   $traitImpl,
 } from "@rust-js/runtime";
 
-var $tCounting, $pHash;
-
 export function entry() {
   main();
 }
@@ -34,10 +32,9 @@ function distinct(items, THash, TPartialEq, TClone, TSet) {
   return new TSet(items.values().map((item) => TClone.clone(item)));
 }
 
+const $tCounting = new WeakMap();
+
 function tCounting(TIterator) {
-  if ($tCounting === undefined) {
-    $tCounting = new WeakMap();
-  }
   return $traitImpl($tCounting, [TIterator], () => ({
     countsBy: (self, f, KHash, KPartialEq, KMap) => {
       const counts = new KMap();
@@ -61,16 +58,11 @@ function tCounting(TIterator) {
   }));
 }
 
+export const pHash = { hash: pHash_hash, hashSlice: $hashSlice(pHash_hash) };
+
 function pHash_hash(p, state, HHasher) {
   HHasher.writeU8(state, p[0]);
   HHasher.writeU8(state, p[1]);
-}
-
-export function pHash() {
-  if ($pHash === undefined) {
-    $pHash = { hash: pHash_hash, hashSlice: $hashSlice(pHash_hash) };
-  }
-  return $pHash;
 }
 
 function main() {
@@ -102,7 +94,7 @@ function main() {
       [[1, 2], 1],
       [[1, 2], 2],
     ]),
-    pHash(),
+    pHash,
     { eq: $eq },
     $KeyMap,
   );
@@ -114,7 +106,7 @@ function main() {
       [1, 1],
       [2, 2],
     ],
-    pHash(),
+    pHash,
     { eq: $eq },
     { clone: (value) => value },
     $KeySet,
@@ -162,7 +154,7 @@ function main() {
       [0, 1],
       [0, 1],
     ]),
-    pHash(),
+    pHash,
     { eq: $eq },
     $KeyMap,
   );

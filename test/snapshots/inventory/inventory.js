@@ -20,14 +20,7 @@ import {
   $unwrap,
 } from "@rust-js/runtime";
 
-var $minStockRule, $revenueRule, $storeDisplay;
-
-export function minStockRule() {
-  if ($minStockRule === undefined) {
-    $minStockRule = { name: minStockRule_name, check: minStockRule_check };
-  }
-  return $minStockRule;
-}
+export const minStockRule = { name: minStockRule_name, check: minStockRule_check };
 
 function minStockRule_name(minStock) {
   return `min-stock(${minStock.item})`;
@@ -40,12 +33,7 @@ function minStockRule_check(minStock, store) {
   }
 }
 
-export function revenueRule() {
-  if ($revenueRule === undefined) {
-    $revenueRule = { name: revenueRule_name, check: revenueRule_check };
-  }
-  return $revenueRule;
-}
+export const revenueRule = { name: revenueRule_name, check: revenueRule_check };
 
 function revenueRule_name(revenue) {
   return "revenue";
@@ -57,12 +45,7 @@ function revenueRule_check(revenue, store) {
     : undefined;
 }
 
-export function storeDisplay() {
-  if ($storeDisplay === undefined) {
-    $storeDisplay = { fmt: storeDisplay_fmt };
-  }
-  return $storeDisplay;
-}
+export const storeDisplay = { fmt: storeDisplay_fmt };
 
 function storeDisplay_fmt(store) {
   let f = "";
@@ -150,8 +133,8 @@ export function report() {
     }
   }
   const rules = [
-    { value: { item: "pear", min: 5 }, impl: minStockRule() },
-    { value: [10], impl: revenueRule() },
+    { value: { item: "pear", min: 5 }, impl: minStockRule },
+    { value: [10], impl: revenueRule },
   ];
   for (const r of rules) {
     const w = r.impl.check(r.value, store);

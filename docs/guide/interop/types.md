@@ -755,21 +755,14 @@ pub fn each(items: &[u32], f: &dyn Fn(u32)) {
 ```
 
 ```js
-var $squareShape;
-
-export function squareShape() {
-  if ($squareShape === undefined) {
-    $squareShape = { area: squareShape_area };
-  }
-  return $squareShape;
-}
+export const squareShape = { area: squareShape_area };
 
 function squareShape_area(square) {
   return square.side * square.side;
 }
 
 export function shapes() {
-  return [{ value: { side: 2 }, impl: squareShape() }];
+  return [{ value: { side: 2 }, impl: squareShape }];
 }
 
 export function adder(by) {

@@ -2,18 +2,11 @@
 
 import { $debugStr, $json, $splitOnce, $trim } from "@rust-js/runtime";
 
-var $contactDebug, $newContactDebug, $fieldErrorDebug, $problemDebug;
-
 /** A contact the server has stored. */
+export const contactDebug = { fmt: contactDebug_fmt };
+
 export function contactDebug_fmt(contact) {
   return `Contact { id: ${contact.id}, name: ${$debugStr(contact.name)}, email: ${$debugStr(contact.email)}, age: ${contact.age} }`;
-}
-
-export function contactDebug() {
-  if ($contactDebug === undefined) {
-    $contactDebug = { fmt: contactDebug_fmt };
-  }
-  return $contactDebug;
 }
 
 export function contactSerialize_serialize(contact, json) {
@@ -43,15 +36,10 @@ export function contactDeserialize_deserialize(json) {
 }
 
 /** A contact as a form sends it, before the server gives it an id. */
+export const newContactDebug = { fmt: newContactDebug_fmt };
+
 export function newContactDebug_fmt(newContact) {
   return `NewContact { name: ${$debugStr(newContact.name)}, email: ${$debugStr(newContact.email)}, age: ${newContact.age} }`;
-}
-
-export function newContactDebug() {
-  if ($newContactDebug === undefined) {
-    $newContactDebug = { fmt: newContactDebug_fmt };
-  }
-  return $newContactDebug;
 }
 
 export function newContactSerialize_serialize(newContact, json) {
@@ -78,15 +66,10 @@ export function newContactDeserialize_deserialize(json) {
 }
 
 /** What's wrong with one field of a form. */
+export const fieldErrorDebug = { fmt: fieldErrorDebug_fmt };
+
 export function fieldErrorDebug_fmt(fieldError) {
   return `FieldError { field: ${$debugStr(fieldError.field)}, message: ${$debugStr(fieldError.message)} }`;
-}
-
-export function fieldErrorDebug() {
-  if ($fieldErrorDebug === undefined) {
-    $fieldErrorDebug = { fmt: fieldErrorDebug_fmt };
-  }
-  return $fieldErrorDebug;
 }
 
 export function fieldErrorSerialize_serialize(fieldError, json) {
@@ -110,15 +93,10 @@ export function fieldErrorDeserialize_deserialize(json) {
 }
 
 /** Why the server refused a request: a message, and the fields to blame. */
+export const problemDebug = { fmt: problemDebug_fmt };
+
 export function problemDebug_fmt(problem) {
   return `Problem { message: ${$debugStr(problem.message)}, errors: [${problem.errors.map((item) => fieldErrorDebug_fmt(item)).join(", ")}] }`;
-}
-
-export function problemDebug() {
-  if ($problemDebug === undefined) {
-    $problemDebug = { fmt: problemDebug_fmt };
-  }
-  return $problemDebug;
 }
 
 export function problemSerialize_serialize(problem, json) {

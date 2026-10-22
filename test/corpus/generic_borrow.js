@@ -2,13 +2,6 @@
 
 import { $cmp, $eq, $index, $position, $traitImpl } from "@rust-js/runtime";
 
-var $qEquivalentK,
-  $hyphenatedBorrowUuid,
-  $tagBorrowStr,
-  $labelledPartialEq,
-  $labelledPartialOrd,
-  $labelledOrd;
-
 export function entry() {
   main();
 }
@@ -21,10 +14,9 @@ function total(values, VBorrowI32Slice) {
   return VBorrowI32Slice.borrow(values).reduce((a, b) => (a + b) | 0, 0);
 }
 
+const $qEquivalentK = new WeakMap();
+
 function qEquivalentK(QPartialEq, KBorrowQ) {
-  if ($qEquivalentK === undefined) {
-    $qEquivalentK = new WeakMap();
-  }
   return $traitImpl($qEquivalentK, [QPartialEq, KBorrowQ], () => ({
     equivalent: (arg0, arg1) => qEquivalentK_equivalent(arg0, arg1, QPartialEq, KBorrowQ),
   }));
@@ -42,32 +34,21 @@ function uuidDebug_fmt(uuid) {
   return `Uuid(${uuid[0]})`;
 }
 
-export function hyphenatedBorrowUuid() {
-  if ($hyphenatedBorrowUuid === undefined) {
-    $hyphenatedBorrowUuid = { borrow: hyphenatedBorrowUuid_borrow };
-  }
-  return $hyphenatedBorrowUuid;
-}
+export const hyphenatedBorrowUuid = { borrow: hyphenatedBorrowUuid_borrow };
 
 function hyphenatedBorrowUuid_borrow(hyphenated) {
   return hyphenated[0];
 }
 
-export function tagBorrowStr() {
-  if ($tagBorrowStr === undefined) {
-    $tagBorrowStr = { borrow: tagBorrowStr_borrow };
-  }
-  return $tagBorrowStr;
-}
+export const tagBorrowStr = { borrow: tagBorrowStr_borrow };
 
 function tagBorrowStr_borrow(tag) {
   return tag.name;
 }
 
+const $labelledPartialEq = new WeakMap();
+
 export function labelledPartialEq(KBorrowStr) {
-  if ($labelledPartialEq === undefined) {
-    $labelledPartialEq = new WeakMap();
-  }
   return $traitImpl($labelledPartialEq, [KBorrowStr], () => ({
     eq: (arg0, arg1) => labelledPartialEq_eq(arg0, arg1, KBorrowStr),
   }));
@@ -77,10 +58,9 @@ function labelledPartialEq_eq(labelled, other, KBorrowStr) {
   return KBorrowStr.borrow(labelled[0]) === KBorrowStr.borrow(other[0]);
 }
 
+const $labelledPartialOrd = new WeakMap();
+
 export function labelledPartialOrd(KBorrowStr) {
-  if ($labelledPartialOrd === undefined) {
-    $labelledPartialOrd = new WeakMap();
-  }
   return $traitImpl($labelledPartialOrd, [KBorrowStr], () => ({
     PartialEq: () => labelledPartialEq(KBorrowStr),
     partialCmp: (arg0, arg1) => labelledPartialOrd_partialCmp(arg0, arg1, KBorrowStr),
@@ -91,10 +71,9 @@ function labelledPartialOrd_partialCmp(labelled, other, KBorrowStr) {
   return labelledOrd_cmp(labelled, other, KBorrowStr);
 }
 
+const $labelledOrd = new WeakMap();
+
 export function labelledOrd(KBorrowStr) {
-  if ($labelledOrd === undefined) {
-    $labelledOrd = new WeakMap();
-  }
   return $traitImpl($labelledOrd, [KBorrowStr], () => ({
     PartialOrd: () => labelledPartialOrd(KBorrowStr),
     cmp: (arg0, arg1) => labelledOrd_cmp(arg0, arg1, KBorrowStr),
@@ -120,10 +99,10 @@ function main() {
   );
   const tags = [{ name: "red" }, { name: "blue" }];
   console.log(
-    `${contains(tags, "blue", tagBorrowStr(), { eq: (a, b) => a === b })} ${contains(tags, "green", tagBorrowStr(), { eq: (a, b) => a === b })}`,
+    `${contains(tags, "blue", tagBorrowStr, { eq: (a, b) => a === b })} ${contains(tags, "green", tagBorrowStr, { eq: (a, b) => a === b })}`,
   );
   const ids = [[[7]], [[9]]];
-  console.log(`${contains(ids, [9], hyphenatedBorrowUuid(), { eq: $eq })}`);
+  console.log(`${contains(ids, [9], hyphenatedBorrowUuid, { eq: $eq })}`);
 
   console.log(
     `${total([1, 2, 3], {
@@ -149,11 +128,11 @@ function main() {
     6,
     qEquivalentK({ eq: (a, b) => a === b }, { borrow: (value) => value }),
   );
-  const value$3 = position(tags, "red", qEquivalentK({ eq: (a, b) => a === b }, tagBorrowStr()));
+  const value$3 = position(tags, "red", qEquivalentK({ eq: (a, b) => a === b }, tagBorrowStr));
   console.log(
     `${value$2 == null ? "None" : `Some(${value$2})`} ${value$3 == null ? "None" : `Some(${value$3})`}`,
   );
-  const value$4 = position(ids, [7], qEquivalentK({ eq: $eq }, hyphenatedBorrowUuid()));
+  const value$4 = position(ids, [7], qEquivalentK({ eq: $eq }, hyphenatedBorrowUuid));
   console.log(`${value$4 == null ? "None" : `Some(${value$4})`}`);
 
   const id = hyphenatedBorrowUuid_borrow(ids[1]);
@@ -165,7 +144,7 @@ function main() {
   console.log(`${uuidDebug_fmt(id)} ${name} ${text} [${items.join(", ")}] ${boxed} ${shared}`);
 
   const labelled = [[{ name: "pear" }], [{ name: "fig" }]];
-  labelled.sort((a, b) => labelledOrd_cmp(a, b, tagBorrowStr()));
+  labelled.sort((a, b) => labelledOrd_cmp(a, b, tagBorrowStr));
   console.log(`${$index(labelled, 0)[0].name} ${$index(labelled, 1)[0].name}`);
 }
 //# sourceMappingURL=case.js.map

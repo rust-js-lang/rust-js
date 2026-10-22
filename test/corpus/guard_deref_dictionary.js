@@ -2,16 +2,13 @@
 
 import { $borrow, $borrowMut, $byteLen, $traitImpl, $tryBorrow, $unborrow } from "@rust-js/runtime";
 
-var $vecStableDeref, $stringStableDeref, $rcStableDeref, $refStableDeref, $refMutStableDeref;
-
 export function entry() {
   main();
 }
 
+const $vecStableDeref = new WeakMap();
+
 export function vecStableDeref(dropT) {
-  if ($vecStableDeref === undefined) {
-    $vecStableDeref = new WeakMap();
-  }
   return $traitImpl($vecStableDeref, [dropT], () => ({
     Deref: () => ({ deref: (x) => x }),
     $drop: (vec) => {
@@ -22,34 +19,25 @@ export function vecStableDeref(dropT) {
   }));
 }
 
-export function stringStableDeref() {
-  if ($stringStableDeref === undefined) {
-    $stringStableDeref = { Deref: () => ({ deref: (s) => s }) };
-  }
-  return $stringStableDeref;
-}
+export const stringStableDeref = { Deref: () => ({ deref: (s) => s }) };
+const $rcStableDeref = new WeakMap();
 
 export function rcStableDeref(dropT) {
-  if ($rcStableDeref === undefined) {
-    $rcStableDeref = new WeakMap();
-  }
   return $traitImpl($rcStableDeref, [dropT], () => ({ Deref: () => ({ deref: (x) => x }) }));
 }
 
+const $refStableDeref = new WeakMap();
+
 export function refStableDeref(dropT) {
-  if ($refStableDeref === undefined) {
-    $refStableDeref = new WeakMap();
-  }
   return $traitImpl($refStableDeref, [dropT], () => ({
     Deref: () => ({ deref: (x) => x.value }),
     $drop: $unborrow,
   }));
 }
 
+const $refMutStableDeref = new WeakMap();
+
 export function refMutStableDeref(dropT) {
-  if ($refMutStableDeref === undefined) {
-    $refMutStableDeref = new WeakMap();
-  }
   return $traitImpl($refMutStableDeref, [dropT], () => ({
     Deref: () => ({ deref: (x) => x.value }),
     $drop: $unborrow,
@@ -81,7 +69,7 @@ function main() {
   }
   console.log(`${total($borrowMut(cell, true), refMutStableDeref(), $unborrow)}`);
   console.log(`${total([5, 6], rcStableDeref())}`);
-  console.log(`${length("ada", stringStableDeref())} ${length("lovelace", rcStableDeref())}`);
+  console.log(`${length("ada", stringStableDeref)} ${length("lovelace", rcStableDeref())}`);
   const tryBorrowMut = $tryBorrow(cell, true);
   const value = tryBorrowMut.TAG === "Ok";
   try {

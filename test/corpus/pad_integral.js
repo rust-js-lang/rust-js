@@ -2,18 +2,11 @@
 
 import { $padIntegral } from "@rust-js/runtime";
 
-var $fixedDisplay;
-
 export function entry() {
   main();
 }
 
-export function fixedDisplay() {
-  if ($fixedDisplay === undefined) {
-    $fixedDisplay = { fmt: fixedDisplay_fmt };
-  }
-  return $fixedDisplay;
-}
+export const fixedDisplay = { fmt: fixedDisplay_fmt };
 
 function fixedDisplay_fmt(fixed, options) {
   return $padIntegral(!fixed.negative, "0d", fixed.digits, options);

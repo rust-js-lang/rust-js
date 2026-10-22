@@ -2,22 +2,15 @@
 
 import { $dynPtrEq, $ptrEq, $ptrTo } from "@rust-js/runtime";
 
-var $squareShape, $rectShape, $squareNamed;
-
 export function entry() {
   main();
 }
 
-function squareShape() {
-  if ($squareShape === undefined) {
-    $squareShape = {
-      area: squareShape_area,
-      grow: (arg0, arg1) => squareShape_grow(arg0.value, arg1),
-      name: squareShape_name,
-    };
-  }
-  return $squareShape;
-}
+const squareShape = {
+  area: squareShape_area,
+  grow: (arg0, arg1) => squareShape_grow(arg0.value, arg1),
+  name: squareShape_name,
+};
 
 function squareShape_area(square) {
   return Math.imul(square.side, square.side) >>> 0;
@@ -31,16 +24,11 @@ function squareShape_name(square) {
   return "square";
 }
 
-function rectShape() {
-  if ($rectShape === undefined) {
-    $rectShape = {
-      area: rectShape_area,
-      grow: (arg0, arg1) => rectShape_grow(arg0.value, arg1),
-      name: (self) => "shape",
-    };
-  }
-  return $rectShape;
-}
+const rectShape = {
+  area: rectShape_area,
+  grow: (arg0, arg1) => rectShape_grow(arg0.value, arg1),
+  name: (self) => "shape",
+};
 
 function rectShape_area(rect) {
   return Math.imul(rect.w, rect.h) >>> 0;
@@ -58,13 +46,13 @@ const Slot = {
 
 function main() {
   const square = { side: 3 };
-  const z = { value: square, impl: squareShape() };
+  const z = { value: square, impl: squareShape };
   const area = z.impl.area(z.value);
   const named = z.impl.name(z.value);
   console.log(`${area} ${named} ${z === null}`);
 
   // Written through a `*mut`.
-  const m = { value: square, impl: squareShape() };
+  const m = { value: square, impl: squareShape };
   m.impl.grow(m, 2);
   console.log(`${square.side} ${m.impl.area(m.value)}`);
 
@@ -73,17 +61,17 @@ function main() {
   console.log(`${thin.value.side} ${$ptrEq(thin, $ptrTo(square), 4)}`);
 
   // A boxed `dyn` taken apart and put back.
-  const raw = { value: { w: 4, h: 4 }, impl: rectShape() };
+  const raw = { value: { w: 4, h: 4 }, impl: rectShape };
   raw.impl.grow(raw, 1);
   const back = raw;
   console.log(`${back.impl.area(back.value)} ${back.impl.name(back.value)}`);
 
   // Compared: the same value and vtable, `==`; the same value whatever the
   // vtable, `addr_eq`.
-  const again = { value: square, impl: squareShape() };
+  const again = { value: square, impl: squareShape };
   const twin = { side: 5 };
-  const other = { value: twin, impl: squareShape() };
-  const asNamed = { value: square, impl: squareNamed() };
+  const other = { value: twin, impl: squareShape };
+  const asNamed = { value: square, impl: squareNamed };
   console.log(
     `${$dynPtrEq(z, again)} ${$dynPtrEq(z, other)} ${$dynPtrEq(z, again)} ${$dynPtrEq(z, asNamed)}`,
   );
@@ -91,19 +79,14 @@ function main() {
   // Kept in a struct, called later.
   const rect = { w: 2, h: 5 };
   const slots = [
-    { shape: { value: square, impl: squareShape() } },
-    { shape: { value: rect, impl: rectShape() } },
+    { shape: { value: square, impl: squareShape } },
+    { shape: { value: rect, impl: rectShape } },
   ];
   const areas = slots.map((item) => Slot.area(item));
   console.log(`[${areas.join(", ")}]`);
 }
 
-function squareNamed() {
-  if ($squareNamed === undefined) {
-    $squareNamed = { label: squareNamed_label };
-  }
-  return $squareNamed;
-}
+const squareNamed = { label: squareNamed_label };
 
 function squareNamed_label(square) {
   return "square";

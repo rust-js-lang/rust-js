@@ -2,8 +2,6 @@
 
 import { $debugF64, $displayF64, $position } from "@rust-js/runtime";
 
-var $shapeArea;
-
 export function entry() {
   main();
 }
@@ -18,12 +16,7 @@ function shapeDebug_fmt(shape) {
   return "Dot";
 }
 
-function shapeArea() {
-  if ($shapeArea === undefined) {
-    $shapeArea = { area: shapeArea_area, unit: shapeArea_unit };
-  }
-  return $shapeArea;
-}
+const shapeArea = { area: shapeArea_area, unit: shapeArea_unit };
 
 function shapeArea_area(shape) {
   if (shape.TAG === "Circle") {

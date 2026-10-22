@@ -142,6 +142,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         (*owner == self.body_owner).then(|| location.clone())
     }
 
+    /// Whether an impl's dictionary takes any of `evidence_params`': a const
+    /// parameter's value, a bound's dictionary, a type's fact or a drop; not
+    /// a caller's location, which only a `#[track_caller]` function takes. One
+    /// that takes none is its module's `const` (ADR 0592).
+    pub(in crate::lower) fn takes_evidence(&self, id: DefId) -> bool {
+        !const_params(self.tcx, id).is_empty()
+            || !bounds(self.tcx, self.krate.foreign, self.krate.given, id).is_empty()
+            || !self.facts_asked(id).is_empty()
+            || !self.drops_taken(id).is_empty()
+    }
+
     pub(in crate::lower) fn evidence_params(&mut self, id: DefId) -> Vec<js::Pattern> {
         let mut params: Vec<js::Pattern> = Vec::new();
         // Its caller's location first, of a function that tracks it (ADR 0427).

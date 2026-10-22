@@ -2,8 +2,6 @@
 
 import { $assign, $displayF64 } from "@rust-js/runtime";
 
-var $countCounter;
-
 export function entry() {
   main();
 }
@@ -30,15 +28,10 @@ const Scale = {
   },
 };
 
-function countCounter() {
-  if ($countCounter === undefined) {
-    $countCounter = {
-      get: countCounter_get,
-      bump: (self, ...args) => (countCounter_get(self.value) + args.shift()) | 0,
-    };
-  }
-  return $countCounter;
-}
+const countCounter = {
+  get: countCounter_get,
+  bump: (self, ...args) => (countCounter_get(self.value) + args.shift()) | 0,
+};
 
 function countCounter_get(count) {
   return count[0];
@@ -53,7 +46,7 @@ function main() {
   console.log(`${pointer(2, 10n, 20n)}`);
   const bump = (x, ...args) => {
     const self = { value: x };
-    const value = countCounter().bump(self, ...args);
+    const value = countCounter.bump(self, ...args);
     $assign(x, self.value);
     return value;
   };

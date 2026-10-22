@@ -3,18 +3,11 @@
 import { iterator_peekable } from "@rust-js/std/iter.js";
 import { $debugStr, $iter, $lazyRange, $next, $peekCell, $repeatingN } from "@rust-js/runtime";
 
-var $loudClone;
-
 export function entry() {
   main();
 }
 
-export function loudClone() {
-  if ($loudClone === undefined) {
-    $loudClone = { clone: loudClone_clone, $drop: loudDrop_drop };
-  }
-  return $loudClone;
-}
+export const loudClone = { clone: loudClone_clone, $drop: loudDrop_drop };
 
 function loudClone_clone(loud) {
   console.log(`clone ${loud[0]}`);

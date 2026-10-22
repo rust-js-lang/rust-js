@@ -2,18 +2,11 @@
 
 import { $dynCell, $rcClone, $rcDrop } from "@rust-js/runtime";
 
-var $i32Weight;
-
 export function entry() {
   main();
 }
 
-function i32Weight() {
-  if ($i32Weight === undefined) {
-    $i32Weight = { weight: i32Weight_weight };
-  }
-  return $i32Weight;
-}
+const i32Weight = { weight: i32Weight_weight };
 
 function i32Weight_weight(self) {
   return Math.imul(self, 10);
@@ -114,7 +107,7 @@ function main() {
     });
     throw error;
   }
-  const weighed = $dynCell({ id: 4, label: 2 }, i32Weight());
+  const weighed = $dynCell({ id: 4, label: 2 }, i32Weight);
   const value = weighed.id | 0;
   const { label: value$1, impl } = weighed;
   try {

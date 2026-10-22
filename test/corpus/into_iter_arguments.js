@@ -2,18 +2,11 @@
 
 import { $extend, $iter, $iterator, $lazyRange, $lazyZip, $rangeNext } from "@rust-js/runtime";
 
-var $listedDebug;
-
 export function entry() {
   main();
 }
 
-export function listedDebug() {
-  if ($listedDebug === undefined) {
-    $listedDebug = { fmt: listedDebug_fmt };
-  }
-  return $listedDebug;
-}
+export const listedDebug = { fmt: listedDebug_fmt };
 
 function listedDebug_fmt(listed) {
   return `[${Array.from(listed[0] == null ? [] : [listed[0]], (entry) => String(entry))

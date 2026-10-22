@@ -80,19 +80,19 @@ describe.each([["MIR", {}]] as const)("from %s", (_, env) => {
     expect(module.dynArgumentName(7)).toBe(9);
   });
 
-  test("dictionaries are explicit, cached and usable from JavaScript", () => {
-    expect(module.total([[1], [2]], module.squareShape())).toBe(5);
-    expect(module.total([], module.squareShape())).toBe(-0);
-    expect(module.total([-0], module.f64Shape())).toBe(-0);
-    expect(module.fresh({ default: () => 3 }, module.f64Shape())).toBe(3);
-    expect(module.squareShape()).toBe(module.squareShape());
-    expect(module.vecShape(module.squareShape())).toBe(module.vecShape(module.squareShape()));
-    expect(module.vecShape(module.vecShape(module.squareShape())).area([[[2]], [[3]]])).toBe(13);
-    expect(module.circleLabeled().Shape()).toBe(module.circleShape());
-    expect(module.largest([{ value: NaN, impl: module.f64Shape() }])).toBe(0);
+  test("dictionaries are explicit, their module's consts and usable from JavaScript", () => {
+    expect(module.total([[1], [2]], module.squareShape)).toBe(5);
+    expect(module.total([], module.squareShape)).toBe(-0);
+    expect(module.total([-0], module.f64Shape)).toBe(-0);
+    expect(module.fresh({ default: () => 3 }, module.f64Shape)).toBe(3);
+    expect(module.squareShape).toBe(module.squareShape);
+    expect(module.vecShape(module.squareShape)).toBe(module.vecShape(module.squareShape));
+    expect(module.vecShape(module.vecShape(module.squareShape)).area([[[2]], [[3]]])).toBe(13);
+    expect(module.circleLabeled.Shape()).toBe(module.circleShape);
+    expect(module.largest([{ value: NaN, impl: module.f64Shape }])).toBe(0);
     // An impl for a reference, `impl<'a> Named<'a> for &'a str`, is named by
     // it, `refStrNamed`, and not by the lifetime, which isn't in the JS.
-    expect(module.refStrNamed().get("hi")).toBe("hi");
+    expect(module.refStrNamed.get("hi")).toBe("hi");
     expect(output).toContain("circleShape_area(c)");
     // Its dictionary, and no drop for `T`: nothing in a crate with no
     // destructor has one to drop (ADR 0098).
@@ -105,7 +105,7 @@ describe.each([["MIR", {}]] as const)("from %s", (_, env) => {
     // No IIFEs: an upcast of a variable reads it twice, a conversion to the same
     // trait is the pair itself, and a receiver with effects is one `const`.
     expect(output).toContain("  const s = { value: x.value, impl: x.impl.Shape() };");
-    expect(output).toContain("function make(c) {\n  return { value: bump(c), impl: i32Compute() };");
+    expect(output).toContain("function make(c) {\n  return { value: bump(c), impl: i32Compute };");
     expect(output).toContain("  const receiver = make(c);\n  return (receiver.impl.add(receiver.value, (bump(c) + shape) | 0) + Math.imul(c.value, 100)) | 0;");
     // A copied default knows its Self: Circle's `name` and `area` are called directly.
     expect(output).toContain("label: (self) => `${circleShape_name(self)} of area ${$displayF64(circleShape_area(self))}`");
@@ -148,9 +148,9 @@ test("an empty trait implementation needs no function body", async () => {
   writeFileSync(join(dir, "lib.rs"), "pub trait Marker {} impl Marker for u32 {} pub fn boxed() -> Box<dyn Marker> { Box::new(1u32) }");
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const m = await import(join(dir, "lib.js"));
-  expect(m.u32Marker()).toEqual({});
-  expect(m.u32Marker()).toBe(m.u32Marker());
-  expect(m.boxed().impl).toBe(m.u32Marker());
+  expect(m.u32Marker).toEqual({});
+  expect(m.u32Marker).toBe(m.u32Marker);
+  expect(m.boxed().impl).toBe(m.u32Marker);
 });
 
 // A bound of a trait with nothing in it, and supertraits with nothing,
@@ -216,8 +216,7 @@ test("impls and default bodies retain their defining modules across cycles", asy
     #[rust_js::link_name = "./support.js#suffix"] fn suffix() -> String { unreachable!() }
     pub trait Shape { fn area(&self) -> f64; fn name(&self) -> String { default_name() + &suffix() } }
     pub fn area<T: Shape>(value: &T) -> f64 { value.area() }
-    thread_local! { static INITIAL: std::cell::Cell<f64> = std::cell::Cell::new(super::implementations::read()); }
-    pub fn initial() -> f64 { INITIAL.get() }`);
+    pub fn initial() -> f64 { super::implementations::read() }`);
   writeFileSync(join(dir, "types.rs"), `pub struct Point { pub x: f64 }`);
   writeFileSync(join(dir, "implementations.rs"), `impl super::contracts::Shape for super::types::Point { fn area(&self) -> f64 { self.x } }
     pub fn read() -> f64 { super::contracts::area(&super::types::Point { x: 2.0 }) }
@@ -227,8 +226,10 @@ test("impls and default bodies retain their defining modules across cycles", asy
   const m = await import(join(dir, "lib.js"));
   expect(m.result()).toBe(5);
   expect(m.label()).toBe("from trait module from JS");
+  // Its module's \`const\` (ADR 0592); one its module's load-time code
+  // reaches through the cycle is refused (test/lowering.test.ts).
   const impl = await import(join(dir, "implementations.js"));
-  expect(impl.pointShape()).toBe(impl.pointShape());
+  expect(impl.pointShape.area({ x: 4 })).toBe(4);
 });
 
 test("copied JSX defaults select the implementation module's JSX extension", () => {

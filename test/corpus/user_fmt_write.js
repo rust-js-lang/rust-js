@@ -2,36 +2,30 @@
 
 import { $byteLen, $debugStr, $pad } from "@rust-js/runtime";
 
-var $collectorWrite, $shoutingWrite, $pointDisplay;
-
 export function entry() {
   main();
 }
 
-export function collectorWrite() {
-  if ($collectorWrite === undefined) {
-    const writeStr = (arg0, arg1) => collectorWrite_writeStr(arg0.value, arg1);
-    $collectorWrite = { writeStr, writeChar: writeStr, writeFmt: writeStr };
-  }
-  return $collectorWrite;
-}
+const $collectorWrite_writeStr = (arg0, arg1) => collectorWrite_writeStr(arg0.value, arg1);
+
+export const collectorWrite = {
+  writeStr: $collectorWrite_writeStr,
+  writeChar: $collectorWrite_writeStr,
+  writeFmt: $collectorWrite_writeStr,
+};
 
 function collectorWrite_writeStr(collector, s) {
   collector.text += s;
   collector.bytes = (collector.bytes + $byteLen(s)) >>> 0;
 }
 
-export function shoutingWrite() {
-  if ($shoutingWrite === undefined) {
-    const writeStr = (arg0, arg1) => shoutingWrite_writeStr(arg0.value, arg1);
-    $shoutingWrite = {
-      writeStr,
-      writeChar: (arg0, arg1) => shoutingWrite_writeChar(arg0.value, arg1),
-      writeFmt: writeStr,
-    };
-  }
-  return $shoutingWrite;
-}
+const $shoutingWrite_writeStr = (arg0, arg1) => shoutingWrite_writeStr(arg0.value, arg1);
+
+export const shoutingWrite = {
+  writeStr: $shoutingWrite_writeStr,
+  writeChar: (arg0, arg1) => shoutingWrite_writeChar(arg0.value, arg1),
+  writeFmt: $shoutingWrite_writeStr,
+};
 
 function shoutingWrite_writeStr(shouting, s) {
   shouting[0] += s.toUpperCase();
@@ -43,12 +37,7 @@ function shoutingWrite_writeChar(shouting, c) {
   shouting[0] += ">";
 }
 
-export function pointDisplay() {
-  if ($pointDisplay === undefined) {
-    $pointDisplay = { fmt: pointDisplay_fmt };
-  }
-  return $pointDisplay;
-}
+export const pointDisplay = { fmt: pointDisplay_fmt };
 
 function pointDisplay_fmt(point) {
   return `(${point.x}, ${point.y})`;

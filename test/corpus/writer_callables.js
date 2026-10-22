@@ -12,8 +12,6 @@ import {
   $strSlice,
 } from "@rust-js/runtime";
 
-var $kebabDisplay, $titleDisplay, $numberedDisplay, $columnsDisplay;
-
 export function entry() {
   main();
 }
@@ -103,34 +101,19 @@ function transform(s, withWord, boundary, options) {
   return f;
 }
 
-export function kebabDisplay() {
-  if ($kebabDisplay === undefined) {
-    $kebabDisplay = { fmt: kebabDisplay_fmt };
-  }
-  return $kebabDisplay;
-}
+export const kebabDisplay = { fmt: kebabDisplay_fmt };
 
 function kebabDisplay_fmt(kebab, options) {
   return transform(kebab[0], lowercase, (options) => "-", options);
 }
 
-export function titleDisplay() {
-  if ($titleDisplay === undefined) {
-    $titleDisplay = { fmt: titleDisplay_fmt };
-  }
-  return $titleDisplay;
-}
+export const titleDisplay = { fmt: titleDisplay_fmt };
 
 function titleDisplay_fmt(title, options) {
   return transform(title[0], capitalize, (options) => " ", options);
 }
 
-export function numberedDisplay() {
-  if ($numberedDisplay === undefined) {
-    $numberedDisplay = { fmt: numberedDisplay_fmt };
-  }
-  return $numberedDisplay;
-}
+export const numberedDisplay = { fmt: numberedDisplay_fmt };
 
 function numberedDisplay_fmt(numbered, options) {
   let n = numbered[1];
@@ -144,12 +127,7 @@ function numberedDisplay_fmt(numbered, options) {
   return transform(numbered[0], numbered$1, (options) => ", ", options);
 }
 
-export function columnsDisplay() {
-  if ($columnsDisplay === undefined) {
-    $columnsDisplay = { fmt: columnsDisplay_fmt };
-  }
-  return $columnsDisplay;
-}
+export const columnsDisplay = { fmt: columnsDisplay_fmt };
 
 function columnsDisplay_fmt(columns, options) {
   return transform(

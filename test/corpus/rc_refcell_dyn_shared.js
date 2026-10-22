@@ -14,21 +14,14 @@ import {
   $weakDrop,
 } from "@rust-js/runtime";
 
-var $loggerListener, $counterSink, $loudSink;
-
 export function entry() {
   main();
 }
 
-function loggerListener() {
-  if ($loggerListener === undefined) {
-    $loggerListener = {
-      notify: (arg0, arg1) => loggerListener_notify(arg0.value, arg1),
-      count: loggerListener_count,
-    };
-  }
-  return $loggerListener;
-}
+const loggerListener = {
+  notify: (arg0, arg1) => loggerListener_notify(arg0.value, arg1),
+  count: loggerListener_count,
+};
 
 function loggerListener_notify(logger, event) {
   logger.seen.push(event.toUpperCase());
@@ -42,15 +35,10 @@ function loudDrop_drop(loud) {
   console.log(`drop ${loud.name}`);
 }
 
-function counterSink() {
-  if ($counterSink === undefined) {
-    $counterSink = {
-      take: (arg0, arg1) => counterSink_take(arg0.value, arg1),
-      total: counterSink_total,
-    };
-  }
-  return $counterSink;
-}
+const counterSink = {
+  take: (arg0, arg1) => counterSink_take(arg0.value, arg1),
+  total: counterSink_total,
+};
 
 function counterSink_take(counter, n) {
   counter.sum = (counter.sum + n) >>> 0;
@@ -60,16 +48,11 @@ function counterSink_total(counter) {
   return counter.sum;
 }
 
-function loudSink() {
-  if ($loudSink === undefined) {
-    $loudSink = {
-      take: (arg0, arg1) => loudSink_take(arg0.value, arg1),
-      total: loudSink_total,
-      $drop: loudDrop_drop,
-    };
-  }
-  return $loudSink;
-}
+const loudSink = {
+  take: (arg0, arg1) => loudSink_take(arg0.value, arg1),
+  total: loudSink_total,
+  $drop: loudDrop_drop,
+};
 
 function loudSink_take(loud, n) {
   console.log(`${loud.name} takes ${n}`);
@@ -82,8 +65,8 @@ function loudSink_total(loud) {
 function main() {
   const logger = { value: { seen: [] } };
   const listeners = [
-    $dynCell(logger, loggerListener()),
-    { value: { seen: [] }, impl: loggerListener() },
+    $dynCell(logger, loggerListener),
+    { value: { seen: [] }, impl: loggerListener },
   ];
   for (const listener of listeners) {
     const value = $borrowMut(listener, true);
@@ -246,7 +229,7 @@ function main() {
   let tmp$3;
   try {
     tmp$3 = $rcClone(counter);
-    $dynCell(tmp$3.value, counterSink());
+    $dynCell(tmp$3.value, counterSink);
   } catch (error) {
     $rcDrop(counter);
     $rcDrop(leaf, (value) => {
@@ -258,7 +241,7 @@ function main() {
     throw error;
   }
   const rc = { value: { value: { name: "loud" } }, strong: 1, weak: 0 };
-  $dynCell(rc.value, loudSink());
+  $dynCell(rc.value, loudSink);
   const sinks = [tmp$3, rc];
   let iter;
   try {

@@ -26,8 +26,6 @@ import {
   $unwrap,
 } from "@rust-js/runtime";
 
-var $labeledDisplay, $taskOrd, $taskPartialOrd;
-
 export const Stack = {
   new(TClone, TDebug) {
     return { items: [] };
@@ -50,10 +48,9 @@ function gridIndex_usize__usize__index(grid, [r, c]) {
   return $index(grid.cells, ((Math.imul(r, grid.w) >>> 0) + c) >>> 0);
 }
 
+const $labeledDisplay = new WeakMap();
+
 export function labeledDisplay(TDisplay) {
-  if ($labeledDisplay === undefined) {
-    $labeledDisplay = new WeakMap();
-  }
   return $traitImpl($labeledDisplay, [TDisplay], () => ({
     fmt: (arg0) => labeledDisplay_fmt(arg0, TDisplay),
   }));
@@ -133,23 +130,16 @@ export function bfsOrder(n, edges) {
   return order;
 }
 
-export function taskOrd() {
-  if ($taskOrd === undefined) {
-    $taskOrd = { PartialOrd: () => taskPartialOrd(), cmp: taskOrd_cmp };
-  }
-  return $taskOrd;
-}
-
 function taskOrd_cmp(task, other) {
   return $cmp(task.pri, other.pri);
 }
 
-export function taskPartialOrd() {
-  if ($taskPartialOrd === undefined) {
-    $taskPartialOrd = { PartialEq: () => ({ eq: $eq }), partialCmp: taskPartialOrd_partialCmp };
-  }
-  return $taskPartialOrd;
-}
+export const taskPartialOrd = {
+  PartialEq: () => ({ eq: $eq }),
+  partialCmp: taskPartialOrd_partialCmp,
+};
+
+export const taskOrd = { PartialOrd: () => taskPartialOrd, cmp: taskOrd_cmp };
 
 function taskPartialOrd_partialCmp(task, other) {
   return taskOrd_cmp(task, other);

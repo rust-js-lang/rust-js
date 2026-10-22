@@ -2,8 +2,6 @@
 
 import { $clone, $cloning, $dispose, $dropping, $index, $rcClone, $rcDrop } from "@rust-js/runtime";
 
-var $tagClone;
-
 export function entry() {
   main();
 }
@@ -12,12 +10,7 @@ function noisyDrop_drop(noisy) {
   console.log(`drop ${noisy[0]}`);
 }
 
-export function tagClone() {
-  if ($tagClone === undefined) {
-    $tagClone = { clone: tagClone_clone, $drop: tagDrop_drop };
-  }
-  return $tagClone;
-}
+export const tagClone = { clone: tagClone_clone, $drop: tagDrop_drop };
 
 function tagClone_clone(tag) {
   return [(tag[0] + 10) >>> 0];

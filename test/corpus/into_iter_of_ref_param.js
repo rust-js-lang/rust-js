@@ -11,8 +11,6 @@ import {
   $sortedEntries,
 } from "@rust-js/runtime";
 
-var $refBagIntoIterator, $refMutBagIntoIterator;
-
 export function entry() {
   main();
 }
@@ -51,23 +49,15 @@ function sumPastThree(it) {
   return [n, Iterator.from(it).reduce((n) => n + 1, 0)];
 }
 
-export function refBagIntoIterator() {
-  if ($refBagIntoIterator === undefined) {
-    $refBagIntoIterator = { intoIter: refBagIntoIterator_intoIter };
-  }
-  return $refBagIntoIterator;
-}
+export const refBagIntoIterator = { intoIter: refBagIntoIterator_intoIter };
 
 function refBagIntoIterator_intoIter(bag) {
   return $iter(bag.items);
 }
 
-export function refMutBagIntoIterator() {
-  if ($refMutBagIntoIterator === undefined) {
-    $refMutBagIntoIterator = { intoIter: (arg0) => refMutBagIntoIterator_intoIter(arg0.value) };
-  }
-  return $refMutBagIntoIterator;
-}
+export const refMutBagIntoIterator = {
+  intoIter: (arg0) => refMutBagIntoIterator_intoIter(arg0.value),
+};
 
 function refMutBagIntoIterator_intoIter(bag) {
   return $iter($mutItems(bag.items));
@@ -101,7 +91,7 @@ function main() {
 
   const bag = { items: [1, 10] };
   const c$4 = { value: bag };
-  const value$1 = doubleThenTotal(c$4, refBagIntoIterator(), refMutBagIntoIterator());
+  const value$1 = doubleThenTotal(c$4, refBagIntoIterator, refMutBagIntoIterator);
   $assign(bag, c$4.value);
   console.log(`${value$1} [${bag.items.join(", ")}]`);
 

@@ -10,32 +10,20 @@ import {
   $unborrow,
 } from "@rust-js/runtime";
 
-var $wrapperDeref, $wrapperDerefMut, $eitherDeref, $eitherDerefMut;
-
 export function entry() {
   main();
 }
 
-export function wrapperDeref() {
-  if ($wrapperDeref === undefined) {
-    $wrapperDeref = { deref: wrapperDeref_deref };
-  }
-  return $wrapperDeref;
-}
+export const wrapperDeref = { deref: wrapperDeref_deref };
 
 function wrapperDeref_deref(wrapper) {
   return wrapper[0];
 }
 
-export function wrapperDerefMut() {
-  if ($wrapperDerefMut === undefined) {
-    $wrapperDerefMut = {
-      Deref: () => wrapperDeref(),
-      derefMut: (arg0) => $cellOf(wrapperDerefMut_derefMut(arg0.value)),
-    };
-  }
-  return $wrapperDerefMut;
-}
+export const wrapperDerefMut = {
+  Deref: () => wrapperDeref,
+  derefMut: (arg0) => $cellOf(wrapperDerefMut_derefMut(arg0.value)),
+};
 
 function wrapperDerefMut_derefMut(wrapper) {
   return wrapper[0];
@@ -76,7 +64,7 @@ function shout(p, PDerefMut) {
 }
 
 function main() {
-  console.log(`[${pushOne([[7]], wrapperDerefMut())[0].join(", ")}]`);
+  console.log(`[${pushOne([[7]], wrapperDerefMut)[0].join(", ")}]`);
   console.log(
     `[${pushOne([8], { Deref: () => ({ deref: (x) => x }), derefMut: (cell) => cell }).join(
       ", ",
@@ -139,10 +127,9 @@ function main() {
   eitherSides();
 }
 
+const $eitherDeref = new WeakMap();
+
 export function eitherDeref(LDeref, RDeref, dropL, dropR) {
-  if ($eitherDeref === undefined) {
-    $eitherDeref = new WeakMap();
-  }
   return $traitImpl($eitherDeref, [LDeref, RDeref, dropL, dropR], () => ({
     deref: (arg0) => eitherDeref_deref(arg0, LDeref, RDeref, dropL, dropR),
     $drop: (either) => {
@@ -160,10 +147,9 @@ function eitherDeref_deref(either, LDeref, RDeref, dropL, dropR) {
   return either.TAG === "Left" ? LDeref.deref(either._0) : RDeref.deref(either._0);
 }
 
+const $eitherDerefMut = new WeakMap();
+
 export function eitherDerefMut(LDerefMut, RDerefMut, dropL, dropR) {
-  if ($eitherDerefMut === undefined) {
-    $eitherDerefMut = new WeakMap();
-  }
   return $traitImpl($eitherDerefMut, [LDerefMut, RDerefMut, dropL, dropR], () => ({
     Deref: () => eitherDeref(LDerefMut.Deref(), RDerefMut.Deref(), dropL, dropR),
     derefMut: (arg0) => eitherDerefMut_derefMut(arg0.value, LDerefMut, RDerefMut, dropL, dropR),
@@ -203,13 +189,13 @@ function eitherSides() {
   eitherDerefMut_derefMut(
     left,
     { Deref: () => ({ deref: (x) => x }), derefMut: (cell) => cell },
-    wrapperDerefMut(),
+    wrapperDerefMut,
   ).value.push(2);
   $assign(
     eitherDerefMut_derefMut(
       left,
       { Deref: () => ({ deref: (x) => x }), derefMut: (cell) => cell },
-      wrapperDerefMut(),
+      wrapperDerefMut,
     ).value,
     [3, 4],
   );
@@ -217,10 +203,10 @@ function eitherSides() {
   eitherDerefMut_derefMut(
     right,
     { Deref: () => ({ deref: (x) => x }), derefMut: (cell) => cell },
-    wrapperDerefMut(),
+    wrapperDerefMut,
   ).value.push(6);
   console.log(
-    `[${eitherDeref_deref(left, { deref: (x) => x }, wrapperDeref()).join(", ")}] [${eitherDeref_deref(right, { deref: (x) => x }, wrapperDeref()).join(", ")}]`,
+    `[${eitherDeref_deref(left, { deref: (x) => x }, wrapperDeref).join(", ")}] [${eitherDeref_deref(right, { deref: (x) => x }, wrapperDeref).join(", ")}]`,
   );
   console.log(
     `${
@@ -229,11 +215,11 @@ function eitherSides() {
           right,
           eitherDerefMut(
             { Deref: () => ({ deref: (x) => x }), derefMut: (cell) => cell },
-            wrapperDerefMut(),
+            wrapperDerefMut,
           ),
         ),
         { deref: (x) => x },
-        wrapperDeref(),
+        wrapperDeref,
       ).length
     }`,
   );

@@ -2,8 +2,6 @@
 
 import { $formatted } from "@rust-js/runtime";
 
-var $joinedDisplay, $joinedLowerHex, $joinedDebug;
-
 export function entry() {
   main();
 }
@@ -25,12 +23,7 @@ function quoted(x, options) {
   return `'${x}'`;
 }
 
-export function joinedDisplay() {
-  if ($joinedDisplay === undefined) {
-    $joinedDisplay = { fmt: joinedDisplay_fmt };
-  }
-  return $joinedDisplay;
-}
+export const joinedDisplay = { fmt: joinedDisplay_fmt };
 
 function joinedDisplay_fmt(joined, options) {
   return Joined.format(
@@ -40,12 +33,7 @@ function joinedDisplay_fmt(joined, options) {
   );
 }
 
-export function joinedLowerHex() {
-  if ($joinedLowerHex === undefined) {
-    $joinedLowerHex = { fmt: joinedLowerHex_fmt };
-  }
-  return $joinedLowerHex;
-}
+export const joinedLowerHex = { fmt: joinedLowerHex_fmt };
 
 function joinedLowerHex_fmt(joined, options) {
   return Joined.format(
@@ -56,12 +44,7 @@ function joinedLowerHex_fmt(joined, options) {
   );
 }
 
-export function joinedDebug() {
-  if ($joinedDebug === undefined) {
-    $joinedDebug = { fmt: joinedDebug_fmt };
-  }
-  return $joinedDebug;
-}
+export const joinedDebug = { fmt: joinedDebug_fmt };
 
 function joinedDebug_fmt(joined, options) {
   return Joined.format(joined, quoted, options);

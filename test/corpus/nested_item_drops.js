@@ -13,8 +13,6 @@ import {
   $traitImpl,
 } from "@rust-js/runtime";
 
-var $groupsFirstOfNext;
-
 export function entry() {
   main();
 }
@@ -139,10 +137,9 @@ function concat(iter, IItemExtendIItemItem, dropIItem, dropIIntoIter, dropIItemI
   return result;
 }
 
+const $groupsFirstOfNext = new WeakMap();
+
 function groupsFirstOfNext(IIterator, dropI, dropIItem, dropIItemItem, dropIItemIntoIter) {
-  if ($groupsFirstOfNext === undefined) {
-    $groupsFirstOfNext = new WeakMap();
-  }
   return $traitImpl(
     $groupsFirstOfNext,
     [IIterator, dropI, dropIItem, dropIItemItem, dropIItemIntoIter],

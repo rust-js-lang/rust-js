@@ -2,69 +2,43 @@
 
 import { $debugStr, $displayF64, $print, $stringError } from "@rust-js/runtime";
 
-var $pointDisplay, $counterDisplay, $missingDebug, $missingDisplay, $missingError;
-
 export function entry() {
   main();
 }
 
-export function pointDisplay() {
-  if ($pointDisplay === undefined) {
-    $pointDisplay = { fmt: pointDisplay_fmt };
-  }
-  return $pointDisplay;
-}
+export const pointDisplay = { fmt: pointDisplay_fmt };
 
 function pointDisplay_fmt(point) {
   return `(${point.x}, ${point.y})`;
 }
 
-export function counterDisplay() {
-  if ($counterDisplay === undefined) {
-    $counterDisplay = { fmt: counterDisplay_fmt };
-  }
-  return $counterDisplay;
-}
+export const counterDisplay = { fmt: counterDisplay_fmt };
 
 function counterDisplay_fmt(counter) {
   return `counted ${counter[0].value}`;
 }
 
+export const missingDebug = { fmt: missingDebug_fmt };
+
 function missingDebug_fmt(missing) {
   return `Missing(${$debugStr(missing[0])})`;
 }
 
-export function missingDebug() {
-  if ($missingDebug === undefined) {
-    $missingDebug = { fmt: missingDebug_fmt };
-  }
-  return $missingDebug;
-}
-
-export function missingDisplay() {
-  if ($missingDisplay === undefined) {
-    $missingDisplay = { fmt: missingDisplay_fmt };
-  }
-  return $missingDisplay;
-}
+export const missingDisplay = { fmt: missingDisplay_fmt };
 
 function missingDisplay_fmt(missing) {
   return `missing ${missing[0]}`;
 }
 
-export function missingError() {
-  if ($missingError === undefined) {
-    const source = () => undefined;
-    $missingError = {
-      Debug: () => missingDebug(),
-      Display: () => missingDisplay(),
-      source,
-      description: () => "description() is deprecated; use Display",
-      cause: source,
-    };
-  }
-  return $missingError;
-}
+const $missingError_source = () => undefined;
+
+export const missingError = {
+  Debug: () => missingDebug,
+  Display: () => missingDisplay,
+  source: $missingError_source,
+  description: () => "description() is deprecated; use Display",
+  cause: $missingError_source,
+};
 
 function find(name) {
   if (name === "one") {
@@ -76,7 +50,7 @@ function find(name) {
 function lookup(name) {
   const result = find(name);
   if (result.TAG === "Err") {
-    return { TAG: "Err", _0: { value: result._0, impl: missingError() } };
+    return { TAG: "Err", _0: { value: result._0, impl: missingError } };
   }
   const n = result._0;
   if (n > 10) {
@@ -91,7 +65,7 @@ function describe(d) {
 
 function main() {
   const byte = { value: 33, impl: { fmt: String } };
-  const boxed = { value: { x: 1, y: 2 }, impl: pointDisplay() };
+  const boxed = { value: { x: 1, y: 2 }, impl: pointDisplay };
   const value = describe({ value: "text", impl: { fmt: (value) => value } });
   console.log(`${byte.impl.fmt(byte.value)} ${boxed.impl.fmt(boxed.value)} ${value}`);
   console.log(`${boxed.impl.fmt(boxed.value)}`);
@@ -99,7 +73,7 @@ function main() {
   const all = [
     { value: 1.5, impl: { fmt: $displayF64 } },
     { value: "s", impl: { fmt: (value) => value } },
-    { value: { x: 3, y: 4 }, impl: pointDisplay() },
+    { value: { x: 3, y: 4 }, impl: pointDisplay },
   ];
   for (const d of all) {
     $print(`${d.impl.fmt(d.value)} `);
@@ -107,7 +81,7 @@ function main() {
   console.log("");
 
   const counter = [{ value: 1 }];
-  const shown = { value: counter, impl: counterDisplay() };
+  const shown = { value: counter, impl: counterDisplay };
   counter[0].value = 2;
   console.log(`${shown.impl.fmt(shown.value)}`);
 

@@ -2,8 +2,6 @@
 
 import { $traitImpl } from "@rust-js/runtime";
 
-var $wrapPeek, $wrapPass, $rcValue, $wrapTake, $pairTake, $loudTake;
-
 export function entry() {
   main();
 }
@@ -13,10 +11,9 @@ function helper(u, UClone, dropU) {
   dropU?.(_copy);
 }
 
+const $wrapPeek = new WeakMap();
+
 function wrapPeek(TClone, dropT) {
-  if ($wrapPeek === undefined) {
-    $wrapPeek = new WeakMap();
-  }
   return $traitImpl($wrapPeek, [TClone, dropT], () => ({
     peek: (arg0) => wrapPeek_peek(arg0, TClone, dropT),
     $drop: (wrap) => {
@@ -38,10 +35,9 @@ function helperTaking(_u, dropU) {
   dropU?.(_u);
 }
 
+const $wrapPass = new WeakMap();
+
 function wrapPass(dropT) {
-  if ($wrapPass === undefined) {
-    $wrapPass = new WeakMap();
-  }
   return $traitImpl($wrapPass, [dropT], () => ({
     pass: (self) => {
       const dropSelf = (wrap) => {
@@ -55,10 +51,9 @@ function wrapPass(dropT) {
   }));
 }
 
+const $rcValue = new WeakMap();
+
 function rcValue(dropT) {
-  if ($rcValue === undefined) {
-    $rcValue = new WeakMap();
-  }
   return $traitImpl($rcValue, [dropT], () => ({ value: (self) => 7 }));
 }
 
@@ -66,10 +61,9 @@ function valued(v, VValue) {
   return VValue.value(v);
 }
 
+const $wrapTake = new WeakMap();
+
 function wrapTake(dropT) {
-  if ($wrapTake === undefined) {
-    $wrapTake = new WeakMap();
-  }
   return $traitImpl($wrapTake, [dropT], () => ({
     take: (self) => {
       const dropSelf = (wrap) => {
@@ -83,10 +77,9 @@ function wrapTake(dropT) {
   }));
 }
 
+const $pairTake = new WeakMap();
+
 function pairTake(dropA, dropB) {
-  if ($pairTake === undefined) {
-    $pairTake = new WeakMap();
-  }
   return $traitImpl($pairTake, [dropA, dropB], () => ({
     take: (self) => {
       const dropSelf = (pair) => {
@@ -102,17 +95,12 @@ function pairTake(dropA, dropB) {
   }));
 }
 
-function loudTake() {
-  if ($loudTake === undefined) {
-    $loudTake = {
-      take: (self) => {
-        loudDrop_drop?.(self);
-      },
-      $drop: loudDrop_drop,
-    };
-  }
-  return $loudTake;
-}
+const loudTake = {
+  take: (self) => {
+    loudDrop_drop?.(self);
+  },
+  $drop: loudDrop_drop,
+};
 
 function take(value, TTake) {
   TTake.take(value);
@@ -128,7 +116,7 @@ function main() {
     console.log(`${peeked(lent, wrapPeek({ clone: (value) => value }, loudDrop_drop))}`);
     take([["taken by a default"]], wrapTake(loudDrop_drop));
     take([["first of a pair"], ["second of a pair"]], pairTake(loudDrop_drop, loudDrop_drop));
-    take(["taken itself"], loudTake());
+    take(["taken itself"], loudTake);
     wrapPass(loudDrop_drop).pass([["passed to a helper"]]);
     console.log(`${valued(1, rcValue())}`);
     console.log("end");

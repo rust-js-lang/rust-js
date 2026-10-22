@@ -17,8 +17,6 @@ import {
   $range,
 } from "@rust-js/runtime";
 
-var $loudPartialEq;
-
 export function entry() {
   main();
 }
@@ -27,12 +25,7 @@ function loudDrop_drop(loud) {
   console.log(`drop ${loud[0]}`);
 }
 
-export function loudPartialEq() {
-  if ($loudPartialEq === undefined) {
-    $loudPartialEq = { eq: loudPartialEq_eq, $drop: loudDrop_drop };
-  }
-  return $loudPartialEq;
-}
+export const loudPartialEq = { eq: loudPartialEq_eq, $drop: loudDrop_drop };
 
 function loudPartialEq_eq(loud, other) {
   console.log(`eq ${loud[0]} ${other[0]}`);
@@ -2435,7 +2428,7 @@ function main() {
     tmp$34 = equal(
       tmp$32,
       tmp$33,
-      loudPartialEq(),
+      loudPartialEq,
       $dropEach(loudDrop_drop),
       loudDrop_drop,
       $dropEach(loudDrop_drop),

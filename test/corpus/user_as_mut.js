@@ -2,8 +2,6 @@
 
 import { $at, $mutItems, $swap } from "@rust-js/runtime";
 
-var $stackBorrowI32Slice;
-
 export function entry() {
   main();
 }
@@ -17,12 +15,7 @@ function stackBorrowMutI32Slice_borrowMut(stack) {
 }
 
 // `BorrowMut` needs `Borrow`, its supertrait.
-export function stackBorrowI32Slice() {
-  if ($stackBorrowI32Slice === undefined) {
-    $stackBorrowI32Slice = { borrow: stackBorrowI32Slice_borrow };
-  }
-  return $stackBorrowI32Slice;
-}
+export const stackBorrowI32Slice = { borrow: stackBorrowI32Slice_borrow };
 
 function stackBorrowI32Slice_borrow(stack) {
   return stack.items;

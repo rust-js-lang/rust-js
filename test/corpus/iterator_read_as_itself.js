@@ -2,21 +2,14 @@
 
 import { $iter, $iterator, $next } from "@rust-js/runtime";
 
-var $countDebug;
-
 export function entry() {
   main();
 }
 
+export const countDebug = { fmt: countDebug_fmt };
+
 function countDebug_fmt(count) {
   return `Count(${count[0]})`;
-}
-
-export function countDebug() {
-  if ($countDebug === undefined) {
-    $countDebug = { fmt: countDebug_fmt };
-  }
-  return $countDebug;
 }
 
 function countIterator_next(count) {
@@ -40,7 +33,7 @@ function main() {
     [0],
     { next: countIterator_next },
     { clone: (value) => [value[0]] },
-    countDebug(),
+    countDebug,
   );
   console.log(`([${value[0].join(", ")}], [${value[1].join(", ")}])`);
   const value$1 = dup(

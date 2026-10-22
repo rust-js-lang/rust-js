@@ -89,7 +89,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(props)
     }
 
-    pub(in crate::lower) fn lower_dictionary(&mut self, id: DefId, cache: &str) -> R<js::Function> {
+    /// An impl's dictionary: given nothing, the function whose one `return`
+    /// is its module's `const` (ADR 0592); given its type parameters' and
+    /// consts', a function of them, and its cache's value, made where its
+    /// module is: a `WeakMap` of what it's given, or a `Map` of numbers.
+    pub(in crate::lower) fn lower_dictionary(&mut self, id: DefId, cache: &str) -> R<(js::Function, Option<Expr>)> {
         let span = self.tcx.def_span(id);
         // An impl of a generic trait, `Convert<f64>`, or of a std one,
         // `PartialEq<Rhs>`, is for its arguments: a dictionary of its own.
@@ -534,38 +538,39 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             true => Expr::call(Expr::helper("$hasher"), vec![Expr::object(props)]),
             false => Expr::object(props),
         };
-        let undefined = Expr::bin(Op::Eq, Expr::var(cache), Expr::undefined());
         let mut body = Vec::new();
-        if params.is_empty() {
-            body.push(
-                StmtKind::If(
-                    undefined,
-                    [
-                        shared,
-                        vec![StmtKind::Assign(Expr::var(cache), object).at(js::Span::NONE)],
-                    ]
-                    .concat(),
-                    None,
-                )
-                .at(js::Span::NONE),
-            );
-            body.push(StmtKind::Return(Some(Expr::var(cache))).at(js::Span::NONE));
+        let mut made = None;
+        if !self.takes_evidence(id) {
+            // Given nothing, it's its module's `const` (ADR 0592): what its
+            // entries share is the module's too, named apart by its cache's
+            // name, `$smallWrite_writeStr`.
+            let renamed: Vec<(String, String)> = (shared.iter())
+                .filter_map(|stmt| match &stmt.kind {
+                    StmtKind::Const(name, _) => Some((name.clone(), format!("{cache}_{name}"))),
+                    _ => None,
+                })
+                .collect();
+            let rename = |v: &str| {
+                (renamed.iter())
+                    .find(|(from, _)| from == v)
+                    .map(|(_, to)| Expr::var(to))
+            };
+            for stmt in &mut shared {
+                if let StmtKind::Const(name, value) = &mut stmt.kind {
+                    *value = value.substitute(&rename).unwrap_or(value.clone());
+                    *name = format!("{cache}_{name}");
+                }
+            }
+            body.extend(shared);
+            body.push(StmtKind::Return(Some(object.substitute(&rename).unwrap_or(object))).at(js::Span::NONE));
         } else {
             // Keyed by a const parameter's value first, or a type's fact, a
             // number, which only a `Map` holds (ADRs 0107, 0145).
-            let map = if self.given.const_params.is_empty() && self.given.type_facts.is_empty() {
-                "WeakMap"
-            } else {
-                "Map"
+            let map = match self.given.const_params.is_empty() && self.given.type_facts.is_empty() {
+                true => "WeakMap",
+                false => "Map",
             };
-            body.push(
-                StmtKind::If(
-                    undefined,
-                    vec![StmtKind::Assign(Expr::var(cache), Expr::new_(Expr::var(map), Vec::new())).at(js::Span::NONE)],
-                    None,
-                )
-                .at(js::Span::NONE),
-            );
+            made = Some(Expr::new_(Expr::var(map), Vec::new()));
             // One dictionary for each set of what it's given: its const
             // parameters' values, its dictionaries, what it asks of its type
             // parameters, `TSize` (ADR 0145), and its drops, which may be none.
@@ -591,7 +596,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .at(js::Span::NONE),
             );
         }
-        Ok(js::Function {
+        let function = js::Function {
             name: self.krate.fns[&id].name.clone(),
             params,
             body,
@@ -599,7 +604,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             is_async: false,
             span: self.js_span(span),
             name_span: js::Span::NONE,
-        })
+        };
+        Ok((function, made))
     }
 
     /// Copy the default body into this implementation. Its Rust bindings still

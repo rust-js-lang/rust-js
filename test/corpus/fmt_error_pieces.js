@@ -2,18 +2,11 @@
 
 import { $debugStr, $fmtError, $fmtPartial, $fmtWritten, $writeTry } from "@rust-js/runtime";
 
-var $hoursDisplay, $pairDisplay;
-
 export function entry() {
   main();
 }
 
-export function hoursDisplay() {
-  if ($hoursDisplay === undefined) {
-    $hoursDisplay = { fmt: hoursDisplay_fmt };
-  }
-  return $hoursDisplay;
-}
+export const hoursDisplay = { fmt: hoursDisplay_fmt };
 
 function hoursDisplay_fmt(hours) {
   let f = "";
@@ -29,12 +22,7 @@ function hoursDisplay_fmt(hours) {
   return f;
 }
 
-export function pairDisplay() {
-  if ($pairDisplay === undefined) {
-    $pairDisplay = { fmt: pairDisplay_fmt };
-  }
-  return $pairDisplay;
-}
+export const pairDisplay = { fmt: pairDisplay_fmt };
 
 function pairDisplay_fmt(pair) {
   let f = "";

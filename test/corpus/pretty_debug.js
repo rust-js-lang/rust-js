@@ -11,8 +11,6 @@ import {
   $traitImpl,
 } from "@rust-js/runtime";
 
-var $wrapDebug, $builtDebug, $listyDebug, $rawDebug, $asksDebug, $shownDisplay, $delegateDebug;
-
 export function entry() {
   main();
 }
@@ -75,6 +73,8 @@ function wideDebug_fmt(wide, options) {
   );
 }
 
+const $wrapDebug = new WeakMap();
+
 function wrapDebug_fmt(wrap, options, TDebug) {
   const shown = TDebug.fmt(wrap.inner, options);
   const shown$1 = options?.alternate
@@ -90,20 +90,12 @@ function wrapDebug_fmt(wrap, options, TDebug) {
 }
 
 export function wrapDebug(TDebug) {
-  if ($wrapDebug === undefined) {
-    $wrapDebug = new WeakMap();
-  }
   return $traitImpl($wrapDebug, [TDebug], () => ({
     fmt: (arg0, arg1) => wrapDebug_fmt(arg0, arg1, TDebug),
   }));
 }
 
-export function builtDebug() {
-  if ($builtDebug === undefined) {
-    $builtDebug = { fmt: builtDebug_fmt };
-  }
-  return $builtDebug;
-}
+export const builtDebug = { fmt: builtDebug_fmt };
 
 function builtDebug_fmt(built, options) {
   return options?.alternate
@@ -135,36 +127,21 @@ function builtDebug_fmt(built, options) {
       }, .. }`;
 }
 
-export function listyDebug() {
-  if ($listyDebug === undefined) {
-    $listyDebug = { fmt: listyDebug_fmt };
-  }
-  return $listyDebug;
-}
-
 function listyDebug_fmt(listy, options) {
   return options?.alternate
     ? $pretty("[", ["0"].concat(Array.from(listy[0], (entry) => String(entry))), "]")
     : `[${["0"].concat(Array.from(listy[0], (entry) => String(entry))).join(", ")}]`;
 }
 
-export function rawDebug() {
-  if ($rawDebug === undefined) {
-    $rawDebug = { fmt: rawDebug_fmt };
-  }
-  return $rawDebug;
-}
+export const rawDebug = { fmt: rawDebug_fmt };
+
+export const listyDebug = { fmt: listyDebug_fmt };
 
 function rawDebug_fmt(raw, options) {
   return `[${raw[0]} [${[raw[0]].join(", ")}]]`;
 }
 
-export function asksDebug() {
-  if ($asksDebug === undefined) {
-    $asksDebug = { fmt: asksDebug_fmt };
-  }
-  return $asksDebug;
-}
+export const asksDebug = { fmt: asksDebug_fmt };
 
 function asksDebug_fmt(asks, options) {
   if (options?.alternate === true) {
@@ -173,12 +150,7 @@ function asksDebug_fmt(asks, options) {
   return "plain";
 }
 
-export function shownDisplay() {
-  if ($shownDisplay === undefined) {
-    $shownDisplay = { fmt: shownDisplay_fmt };
-  }
-  return $shownDisplay;
-}
+export const shownDisplay = { fmt: shownDisplay_fmt };
 
 function shownDisplay_fmt(shown, options) {
   if (options?.alternate === true) {
@@ -187,12 +159,7 @@ function shownDisplay_fmt(shown, options) {
   return String(shown[0]);
 }
 
-export function delegateDebug() {
-  if ($delegateDebug === undefined) {
-    $delegateDebug = { fmt: delegateDebug_fmt };
-  }
-  return $delegateDebug;
-}
+export const delegateDebug = { fmt: delegateDebug_fmt };
 
 function delegateDebug_fmt(delegate, options) {
   return options?.alternate
@@ -322,7 +289,7 @@ function main() {
   console.log(
     `${pretty([1, "a"], { fmt: (value, options) => (value == null ? "None" : options?.alternate ? $pretty("Some(", [options?.alternate ? $pretty("(", [String(value[0]), $debugStr(value[1])], ")") : `(${value[0]}, ${$debugStr(value[1])})`], ")") : `Some(${options?.alternate ? $pretty("(", [String(value[0]), $debugStr(value[1])], ")") : `(${value[0]}, ${$debugStr(value[1])})`})`) })}\n${pretty(
       { inner: [1], list: [] },
-      wrapDebug(rawDebug()),
+      wrapDebug(rawDebug),
     )}`,
   );
   // What `dbg!` writes: a `&dyn Debug` made in its arguments.

@@ -2,8 +2,6 @@
 
 import { $some, $someValue } from "@rust-js/runtime";
 
-var $dCheckedDouble;
-
 export function entry() {
   main();
 }
@@ -130,12 +128,7 @@ function go(d) {
   return result;
 }
 
-function dCheckedDouble() {
-  if ($dCheckedDouble === undefined) {
-    $dCheckedDouble = { checkedDouble: dCheckedDouble_checkedDouble, $drop: dDrop_drop };
-  }
-  return $dCheckedDouble;
-}
+const dCheckedDouble = { checkedDouble: dCheckedDouble_checkedDouble, $drop: dDrop_drop };
 
 function dCheckedDouble_checkedDouble(d) {
   if (d[0] < 10) {
@@ -240,7 +233,7 @@ function main() {
     }
   }
   for (const start of [1, 3]) {
-    const d = twice([start], dCheckedDouble(), dDrop_drop);
+    const d = twice([start], dCheckedDouble, dDrop_drop);
     d$0$live$1 = true;
     if (d) {
       d$0$live$1 = false;

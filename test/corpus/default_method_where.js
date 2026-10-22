@@ -2,18 +2,11 @@
 
 import { $debugStr, $some, $someValue, $unwrap } from "@rust-js/runtime";
 
-var $counterSource, $namesSource;
-
 export function entry() {
   main();
 }
 
-function counterSource() {
-  if ($counterSource === undefined) {
-    $counterSource = { next: (arg0) => counterSource_next(arg0.value), label: (self) => "source" };
-  }
-  return $counterSource;
-}
+const counterSource = { next: (arg0) => counterSource_next(arg0.value), label: (self) => "source" };
 
 function counterSource_next(counter) {
   const x = counter.value;
@@ -21,19 +14,14 @@ function counterSource_next(counter) {
   return { value: x };
 }
 
-function namesSource() {
-  if ($namesSource === undefined) {
-    $namesSource = {
-      next: (arg0) => namesSource_next(arg0.value),
-      firstCloned: (self, SelfItemDeref, SelfItemTargetClone) => {
-        const x = namesSource_next(self);
-        return x != null ? $some(SelfItemDeref.deref($someValue(x))) : undefined;
-      },
-      label: namesSource_label,
-    };
-  }
-  return $namesSource;
-}
+const namesSource = {
+  next: (arg0) => namesSource_next(arg0.value),
+  firstCloned: (self, SelfItemDeref, SelfItemTargetClone) => {
+    const x = namesSource_next(self);
+    return x != null ? $some(SelfItemDeref.deref($someValue(x))) : undefined;
+  },
+  label: namesSource_label,
+};
 
 function namesSource_next(names) {
   return names.names.pop();
@@ -48,14 +36,14 @@ function labelOf(s, SSource) {
 }
 
 function main() {
-  const boxed = { value: { value: 22 }, impl: counterSource() };
+  const boxed = { value: { value: 22 }, impl: counterSource };
   console.log(`${$unwrap(boxed.impl.next(boxed)).value} ${boxed.impl.label(boxed.value)}`);
-  console.log(`${labelOf({ value: 0 }, counterSource())}`);
+  console.log(`${labelOf({ value: 0 }, counterSource)}`);
   const names = { names: ["a", "b"] };
-  console.log(`${labelOf(names, namesSource())}`);
-  const value = namesSource().firstCloned(names, { deref: (x) => x }, { clone: (value) => value });
+  console.log(`${labelOf(names, namesSource)}`);
+  const value = namesSource.firstCloned(names, { deref: (x) => x }, { clone: (value) => value });
   console.log(`${value == null ? "None" : `Some(${$debugStr(value)})`}`);
-  const dynNames = { value: { names: [] }, impl: namesSource() };
+  const dynNames = { value: { names: [] }, impl: namesSource };
   const next = dynNames.impl.next(dynNames);
   console.log(
     `${next == null ? "None" : `Some(${$debugStr(next)})`} ${dynNames.impl.label(dynNames.value)}`,

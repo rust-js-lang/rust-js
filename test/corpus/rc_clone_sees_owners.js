@@ -11,20 +11,13 @@ import {
   $withBorrowMut,
 } from "@rust-js/runtime";
 
-var $loneClone, $probeClone;
-
 export function entry() {
   main();
 }
 
 const kept = {};
 
-export function loneClone() {
-  if ($loneClone === undefined) {
-    $loneClone = { clone: loneClone_clone, $drop: loneDrop_drop };
-  }
-  return $loneClone;
-}
+export const loneClone = { clone: loneClone_clone, $drop: loneDrop_drop };
 
 function loneClone_clone(lone) {
   $withBorrowMut(
@@ -47,17 +40,12 @@ function loneDrop_drop(lone) {
   console.log(`drop lone ${lone[0]}`);
 }
 
-export function probeClone() {
-  if ($probeClone === undefined) {
-    $probeClone = {
-      clone: probeClone_clone,
-      $drop: (probe) => {
-        $weakDrop(probe.me);
-      },
-    };
-  }
-  return $probeClone;
-}
+export const probeClone = {
+  clone: probeClone_clone,
+  $drop: (probe) => {
+    $weakDrop(probe.me);
+  },
+};
 
 function probeClone_clone(probe) {
   console.log(`owners while cloning: ${probe.me.strong}`);

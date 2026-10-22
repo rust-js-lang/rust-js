@@ -2,85 +2,57 @@
 
 import { $cmp, $displayF64, $eq, $partialCmp, $traitImpl } from "@rust-js/runtime";
 
-var $f64Zero, $f64Signed, $i32Zero, $i32Signed, $u8One, $wrappingOne;
-
 export function entry() {
   main();
 }
 
-function f64Zero() {
-  if ($f64Zero === undefined) {
-    $f64Zero = { zero: f64Zero_zero };
-  }
-  return $f64Zero;
-}
+const f64Zero = { zero: f64Zero_zero };
 
 function f64Zero_zero() {
   return 0;
 }
 
-function f64Signed() {
-  if ($f64Signed === undefined) {
-    $f64Signed = {
-      Zero: () => f64Zero(),
-      PartialOrd: () => ({ partialCmp: $partialCmp }),
-      Copy: () => ({ copy: (value) => value }),
-      Sub: () => ({ sub: (a, b) => a - b }),
-      Neg: () => ({ neg: (value) => -value }),
-      negative: (self) => self < f64Zero_zero(),
-      atMostZero: (self) => self <= f64Zero_zero(),
-      distance: (self, other) => (self < other ? other - self : -(other - self)),
-    };
-  }
-  return $f64Signed;
-}
+const f64Signed = {
+  Zero: () => f64Zero,
+  PartialOrd: () => ({ partialCmp: $partialCmp }),
+  Copy: () => ({ copy: (value) => value }),
+  Sub: () => ({ sub: (a, b) => a - b }),
+  Neg: () => ({ neg: (value) => -value }),
+  negative: (self) => self < f64Zero_zero(),
+  atMostZero: (self) => self <= f64Zero_zero(),
+  distance: (self, other) => (self < other ? other - self : -(other - self)),
+};
 
-function i32Zero() {
-  if ($i32Zero === undefined) {
-    $i32Zero = { zero: i32Zero_zero };
-  }
-  return $i32Zero;
-}
+const i32Zero = { zero: i32Zero_zero };
 
 function i32Zero_zero() {
   return 0;
 }
 
-function i32Signed() {
-  if ($i32Signed === undefined) {
-    $i32Signed = {
-      Zero: () => i32Zero(),
-      PartialOrd: () => ({ partialCmp: $cmp }),
-      Copy: () => ({ copy: (value) => value }),
-      Sub: () => ({ sub: (a, b) => (a - b) | 0 }),
-      Neg: () => ({ neg: (value) => -value | 0 }),
-      negative: (self) => self < i32Zero_zero(),
-      atMostZero: (self) => self <= i32Zero_zero(),
-      distance: (self, other) => (self < other ? (other - self) | 0 : -((other - self) | 0) | 0),
-    };
-  }
-  return $i32Signed;
-}
+const i32Signed = {
+  Zero: () => i32Zero,
+  PartialOrd: () => ({ partialCmp: $cmp }),
+  Copy: () => ({ copy: (value) => value }),
+  Sub: () => ({ sub: (a, b) => (a - b) | 0 }),
+  Neg: () => ({ neg: (value) => -value | 0 }),
+  negative: (self) => self < i32Zero_zero(),
+  atMostZero: (self) => self <= i32Zero_zero(),
+  distance: (self, other) => (self < other ? (other - self) | 0 : -((other - self) | 0) | 0),
+};
 
-function u8One() {
-  if ($u8One === undefined) {
-    $u8One = {
-      Mul: () => ({ mul: (a, b) => (a * b) & 255 }),
-      one: u8One_one,
-      isOne: (self, SelfPartialEq) => self === u8One_one(),
-    };
-  }
-  return $u8One;
-}
+const u8One = {
+  Mul: () => ({ mul: (a, b) => (a * b) & 255 }),
+  one: u8One_one,
+  isOne: (self, SelfPartialEq) => self === u8One_one(),
+};
 
 function u8One_one() {
   return 1;
 }
 
+const $wrappingOne = new WeakMap();
+
 function wrappingOne(TOne, WrappingMul) {
-  if ($wrappingOne === undefined) {
-    $wrappingOne = new WeakMap();
-  }
   return $traitImpl($wrappingOne, [TOne, WrappingMul], () => ({
     Mul: () => WrappingMul,
     one: () => wrappingOne_one(TOne, WrappingMul),
@@ -94,13 +66,13 @@ function wrappingOne_one(TOne, WrappingMul) {
 
 function main() {
   console.log(
-    `${f64Signed().negative(-1.5)} ${f64Signed().negative(2)} ${f64Signed().negative(NaN)} ${i32Signed().atMostZero(0)}`,
+    `${f64Signed.negative(-1.5)} ${f64Signed.negative(2)} ${f64Signed.negative(NaN)} ${i32Signed.atMostZero(0)}`,
   );
   console.log(
-    `${wrappingOne(u8One(), { mul: (a, b) => [(a[0] * b[0]) & 255] }).isOne([1], { eq: $eq })} ${wrappingOne(u8One(), { mul: (a, b) => [(a[0] * b[0]) & 255] }).isOne([3], { eq: $eq })} ${u8One().isOne(1, { eq: (a, b) => a === b })}`,
+    `${wrappingOne(u8One, { mul: (a, b) => [(a[0] * b[0]) & 255] }).isOne([1], { eq: $eq })} ${wrappingOne(u8One, { mul: (a, b) => [(a[0] * b[0]) & 255] }).isOne([3], { eq: $eq })} ${u8One.isOne(1, { eq: (a, b) => a === b })}`,
   );
   console.log(
-    `${$displayF64(f64Signed().distance(2.5, -1))} ${i32Signed().distance(7, 3)} ${i32Signed().distance(-5, 5)}`,
+    `${$displayF64(f64Signed.distance(2.5, -1))} ${i32Signed.distance(7, 3)} ${i32Signed.distance(-5, 5)}`,
   );
 }
 //# sourceMappingURL=case.js.map

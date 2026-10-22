@@ -17,47 +17,31 @@ import {
   $unwrapErr,
 } from "@rust-js/runtime";
 
-var $negativeDebug, $negativeDisplay, $negativeError, $tAsDyn, $eReport;
-
 export function entry() {
   main();
 }
+
+export const negativeDebug = { fmt: negativeDebug_fmt };
 
 function negativeDebug_fmt(negative) {
   return `Negative(${negative[0]})`;
 }
 
-export function negativeDebug() {
-  if ($negativeDebug === undefined) {
-    $negativeDebug = { fmt: negativeDebug_fmt };
-  }
-  return $negativeDebug;
-}
-
-export function negativeDisplay() {
-  if ($negativeDisplay === undefined) {
-    $negativeDisplay = { fmt: negativeDisplay_fmt };
-  }
-  return $negativeDisplay;
-}
+export const negativeDisplay = { fmt: negativeDisplay_fmt };
 
 function negativeDisplay_fmt(negative) {
   return `${negative[0]} is negative`;
 }
 
-export function negativeError() {
-  if ($negativeError === undefined) {
-    const source = () => undefined;
-    $negativeError = {
-      Debug: () => negativeDebug(),
-      Display: () => negativeDisplay(),
-      source,
-      description: () => "description() is deprecated; use Display",
-      cause: source,
-    };
-  }
-  return $negativeError;
-}
+const $negativeError_source = () => undefined;
+
+export const negativeError = {
+  Debug: () => negativeDebug,
+  Display: () => negativeDisplay,
+  source: $negativeError_source,
+  description: () => "description() is deprecated; use Display",
+  cause: $negativeError_source,
+};
 
 function parsePositive(s) {
   const result = $parseBig($trim(s), -9223372036854775808n, 9223372036854775807n);
@@ -66,7 +50,7 @@ function parsePositive(s) {
   }
   const n = result._0;
   if (n < 0n) {
-    return { TAG: "Err", _0: { value: [n], impl: negativeError() } };
+    return { TAG: "Err", _0: { value: [n], impl: negativeError } };
   }
   return { TAG: "Ok", _0: n };
 }
@@ -101,10 +85,9 @@ function settings(text) {
   return { TAG: "Err", _0: { value: result._0, impl: $parseErrorDyn("ParseFloatError") } };
 }
 
+const $tAsDyn = new WeakMap();
+
 function tAsDyn(TError) {
-  if ($tAsDyn === undefined) {
-    $tAsDyn = new WeakMap();
-  }
   return $traitImpl($tAsDyn, [TError], () => ({ asDyn: (arg0) => tAsDyn_asDyn(arg0, TError) }));
 }
 
@@ -117,10 +100,9 @@ function describe(e, EError) {
   return `${EError.Display().fmt(e)} | ${EError.Debug().fmt(e)} | ${value}`;
 }
 
+const $eReport = new WeakMap();
+
 function eReport(EError) {
-  if ($eReport === undefined) {
-    $eReport = new WeakMap();
-  }
   return $traitImpl($eReport, [EError], () => ({
     Error: () => EError,
     code: (arg0) => eReport_code(arg0, EError),

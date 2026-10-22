@@ -10,8 +10,6 @@ import {
   $rangeNext,
 } from "@rust-js/runtime";
 
-var $counterClone;
-
 export function entry() {
   main();
 }
@@ -35,17 +33,12 @@ function genIterator_next(gen) {
   }
 }
 
-export function counterClone() {
-  if ($counterClone === undefined) {
-    $counterClone = {
-      clone: counterClone_clone,
-      $drop: (counter) => {
-        loudDrop_drop(counter.tag);
-      },
-    };
-  }
-  return $counterClone;
-}
+export const counterClone = {
+  clone: counterClone_clone,
+  $drop: (counter) => {
+    loudDrop_drop(counter.tag);
+  },
+};
 
 function counterClone_clone(counter) {
   console.log(`clone ${counter.tag[0]}`);
@@ -144,7 +137,7 @@ function main() {
     .toArray();
   console.log(`[${counted.join(", ")}]`);
   console.log(
-    `[${firsts({ n: 1, tag: [2] }, 3, { next: counterIterator_next }, counterClone(), (counter) => {
+    `[${firsts({ n: 1, tag: [2] }, 3, { next: counterIterator_next }, counterClone, (counter) => {
       loudDrop_drop(counter.tag);
     }).join(", ")}]`,
   );

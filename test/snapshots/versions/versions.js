@@ -29,33 +29,21 @@ import {
   $zeroPad,
 } from "@rust-js/runtime";
 
-var $dogDescribe, $catDescribe, $tLabeled;
-
-export function dogDescribe() {
-  if ($dogDescribe === undefined) {
-    $dogDescribe = {
-      name: dogDescribe_name,
-      describe: (self) => `<${dogDescribe_name(self)}>`,
-      shout: (self) => dogDescribe().describe(self).toUpperCase(),
-    };
-  }
-  return $dogDescribe;
-}
+export const dogDescribe = {
+  name: dogDescribe_name,
+  describe: (self) => `<${dogDescribe_name(self)}>`,
+  shout: (self) => dogDescribe.describe(self).toUpperCase(),
+};
 
 function dogDescribe_name(dog) {
   return "dog";
 }
 
-export function catDescribe() {
-  if ($catDescribe === undefined) {
-    $catDescribe = {
-      name: catDescribe_name,
-      describe: catDescribe_describe,
-      shout: (self) => catDescribe_describe(self).toUpperCase(),
-    };
-  }
-  return $catDescribe;
-}
+export const catDescribe = {
+  name: catDescribe_name,
+  describe: catDescribe_describe,
+  shout: (self) => catDescribe_describe(self).toUpperCase(),
+};
 
 function catDescribe_name(cat) {
   return `cat${cat.lives}`;
@@ -65,10 +53,9 @@ function catDescribe_describe(cat) {
   return `[${catDescribe_name(cat)}]`;
 }
 
+const $tLabeled = new WeakMap();
+
 export function tLabeled(TDisplay) {
-  if ($tLabeled === undefined) {
-    $tLabeled = new WeakMap();
-  }
   return $traitImpl($tLabeled, [TDisplay], () => ({
     label: (arg0) => tLabeled_label(arg0, TDisplay),
   }));
@@ -103,7 +90,7 @@ function largest(items, TPartialOrd) {
 
 export function tour() {
   let out = "";
-  const pets = [{ impl: dogDescribe() }, { value: { lives: 9 }, impl: catDescribe() }];
+  const pets = [{ impl: dogDescribe }, { value: { lives: 9 }, impl: catDescribe }];
   for (const p of pets) {
     out += `${p.impl.name(p.value)} ${p.impl.describe(p.value)} ${p.impl.shout(p.value)}\n`;
   }

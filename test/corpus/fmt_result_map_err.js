@@ -2,8 +2,6 @@
 
 import { $byteLen, $debugStr, $fmtError, $writeTry } from "@rust-js/runtime";
 
-var $smallWrite;
-
 export function entry() {
   main();
 }
@@ -12,13 +10,13 @@ function fullDebug_fmt(full, TDebug) {
   return `Full(${TDebug.fmt(full[0])}, ${full[1]})`;
 }
 
-export function smallWrite() {
-  if ($smallWrite === undefined) {
-    const writeStr = (arg0, arg1) => smallWrite_writeStr(arg0.value, arg1);
-    $smallWrite = { writeStr, writeChar: writeStr, writeFmt: writeStr };
-  }
-  return $smallWrite;
-}
+const $smallWrite_writeStr = (arg0, arg1) => smallWrite_writeStr(arg0.value, arg1);
+
+export const smallWrite = {
+  writeStr: $smallWrite_writeStr,
+  writeChar: $smallWrite_writeStr,
+  writeFmt: $smallWrite_writeStr,
+};
 
 function smallWrite_writeStr(small, s) {
   if (($byteLen(small.text) + $byteLen(s)) >>> 0 > small.cap) {

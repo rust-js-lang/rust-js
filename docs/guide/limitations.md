@@ -68,6 +68,14 @@ depends on what the program does:
 - A `RefCell`'s guard mapped to part of what it holds, `Ref::map` or `RefMut::map`: `let c = std::cell::RefCell::new((1, 2)); let r = std::cell::Ref::map(c.borrow(), |p| &p.0); println!("{}", *r);`
 - A `&mut` to an object given for a type parameter that's a closure's parameter: `fn apply<D, F: Fn(D) -> usize>(d: D, f: F) -> usize { f(d) } let mut v = vec![1]; println!("{}", apply(&mut v, |w: &mut Vec<i32>| w.len()));`
 
+## Modules
+
+- An impl's dictionary made where its module loads, in an import cycle
+  with a module that runs code where it loads, a `thread_local!` made by
+  a call that may reach the dictionary before it's made. Move the impl or
+  that code out of the cycle
+  ([ADR 0592](../decisions/0592-a-dictionary-is-its-modules-const.md)).
+
 ## Iterators and collections
 
 - A clone of a lazy iterator generic code makes where its source isn't bound by `Clone`: `fn doubled<I: Iterator<Item = i32>>(it: I) -> std::iter::Map<I, fn(i32) -> i32> { it.map(|x| x * 2) } let d = doubled(1..4); let e = d.clone(); println!("{:?} {:?}", d.count(), e.count());`

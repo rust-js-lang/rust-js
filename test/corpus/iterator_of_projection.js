@@ -2,16 +2,13 @@
 
 import { $pop, $someValue, $traitImpl } from "@rust-js/runtime";
 
-var $_T__N_Array;
-
 export function entry() {
   main();
 }
 
+const $_T__N_Array = new Map();
+
 function _T__N_Array(N, dropT) {
-  if ($_T__N_Array === undefined) {
-    $_T__N_Array = new Map();
-  }
   return $traitImpl($_T__N_Array, [N, dropT], () => ({
     $drop: (value) => {
       for (const item of value) {

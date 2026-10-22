@@ -13,18 +13,11 @@ import {
   $unwrapOk,
 } from "@rust-js/runtime";
 
-var $debugByteDebug;
-
 export function entry() {
   main();
 }
 
-export function debugByteDebug() {
-  if ($debugByteDebug === undefined) {
-    $debugByteDebug = { fmt: debugByteDebug_fmt };
-  }
-  return $debugByteDebug;
-}
+export const debugByteDebug = { fmt: debugByteDebug_fmt };
 
 function debugByteDebug_fmt(debugByte) {
   if (debugByte[0] === 32) {

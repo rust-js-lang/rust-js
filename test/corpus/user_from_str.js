@@ -9,18 +9,11 @@ import {
   $trim,
 } from "@rust-js/runtime";
 
-var $roleFromStr, $pointErrorDisplay, $pointFromStr;
-
 export function entry() {
   main();
 }
 
-export function roleFromStr() {
-  if ($roleFromStr === undefined) {
-    $roleFromStr = { fromStr: roleFromStr_fromStr };
-  }
-  return $roleFromStr;
-}
+export const roleFromStr = { fromStr: roleFromStr_fromStr };
 
 function roleFromStr_fromStr(s) {
   const other = $trim(s).toLowerCase();
@@ -44,12 +37,7 @@ function pointErrorDebug_fmt(pointError) {
   return `Number(${$debugParseError(pointError._0, "ParseIntError")})`;
 }
 
-export function pointErrorDisplay() {
-  if ($pointErrorDisplay === undefined) {
-    $pointErrorDisplay = { fmt: pointErrorDisplay_fmt };
-  }
-  return $pointErrorDisplay;
-}
+export const pointErrorDisplay = { fmt: pointErrorDisplay_fmt };
 
 function pointErrorDisplay_fmt(pointError) {
   if (pointError === "Shape") {
@@ -58,12 +46,7 @@ function pointErrorDisplay_fmt(pointError) {
   return `bad number: ${pointError._0}`;
 }
 
-export function pointFromStr() {
-  if ($pointFromStr === undefined) {
-    $pointFromStr = { fromStr: pointFromStr_fromStr };
-  }
-  return $pointFromStr;
-}
+export const pointFromStr = { fromStr: pointFromStr_fromStr };
 
 function pointFromStr_fromStr(s) {
   const option = $splitOnce(s, ",");

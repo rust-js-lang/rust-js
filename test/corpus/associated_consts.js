@@ -2,36 +2,17 @@
 
 import { $displayF64 } from "@rust-js/runtime";
 
-var $squareShape,
-  $triangleShape,
-  $wrapShape,
-  $counterDebug,
-  $counterZero,
-  $counterBump,
-  $u32Zero,
-  $u32Bump;
-
 export function entry() {
   main();
 }
 
-function squareShape() {
-  if ($squareShape === undefined) {
-    $squareShape = { SIDES: 4, NAME: "square", area: squareShape_area };
-  }
-  return $squareShape;
-}
+const squareShape = { SIDES: 4, NAME: "square", area: squareShape_area };
 
 function squareShape_area(square) {
   return square[0] * square[0];
 }
 
-function triangleShape() {
-  if ($triangleShape === undefined) {
-    $triangleShape = { SIDES: 3, NAME: "shape", area: triangleShape_area };
-  }
-  return $triangleShape;
-}
+const triangleShape = { SIDES: 3, NAME: "shape", area: triangleShape_area };
 
 function triangleShape_area(triangle) {
   return (triangle[0] * triangle[0]) / 2;
@@ -45,63 +26,33 @@ function total(shapes, SShape) {
   return Math.imul(shapes.length, SShape.SIDES) >>> 0;
 }
 
-function wrapShape() {
-  if ($wrapShape === undefined) {
-    $wrapShape = { SIDES: 0, NAME: "shape", area: wrapShape_area };
-  }
-  return $wrapShape;
-}
+const wrapShape = { SIDES: 0, NAME: "shape", area: wrapShape_area };
 
 function wrapShape_area(wrap) {
   return 0;
 }
 
+export const counterDebug = { fmt: counterDebug_fmt };
+
 function counterDebug_fmt(counter) {
   return `Counter { n: ${counter.n} }`;
 }
 
-export function counterDebug() {
-  if ($counterDebug === undefined) {
-    $counterDebug = { fmt: counterDebug_fmt };
-  }
-  return $counterDebug;
-}
+const counterZero = {
+  get ZERO() {
+    return { n: 0 };
+  },
+};
 
-function counterZero() {
-  if ($counterZero === undefined) {
-    $counterZero = {
-      get ZERO() {
-        return { n: 0 };
-      },
-    };
-  }
-  return $counterZero;
-}
-
-function counterBump() {
-  if ($counterBump === undefined) {
-    $counterBump = { bump: (arg0) => counterBump_bump(arg0.value) };
-  }
-  return $counterBump;
-}
+const counterBump = { bump: (arg0) => counterBump_bump(arg0.value) };
 
 function counterBump_bump(counter) {
   counter.n = (counter.n + 1) >>> 0;
 }
 
-function u32Zero() {
-  if ($u32Zero === undefined) {
-    $u32Zero = { ZERO: 0 };
-  }
-  return $u32Zero;
-}
+const u32Zero = { ZERO: 0 };
 
-function u32Bump() {
-  if ($u32Bump === undefined) {
-    $u32Bump = { bump: u32Bump_bump };
-  }
-  return $u32Bump;
-}
+const u32Bump = { bump: u32Bump_bump };
 
 function u32Bump_bump(self) {
   self.value = (self.value + 1) >>> 0;
@@ -117,10 +68,10 @@ function fresh(TZero, TBump, TDebug) {
 
 function main() {
   console.log("4 shape square 90");
-  console.log(`${describe([2], squareShape())} | ${describe([3], triangleShape())}`);
-  console.log(`${total([[1], [2]], squareShape())} ${describe([1], wrapShape())}`);
-  const value = fresh(counterZero(), counterBump(), counterDebug());
-  const value$1 = fresh(u32Zero(), u32Bump(), { fmt: (value) => String(value) });
+  console.log(`${describe([2], squareShape)} | ${describe([3], triangleShape)}`);
+  console.log(`${total([[1], [2]], squareShape)} ${describe([1], wrapShape)}`);
+  const value = fresh(counterZero, counterBump, counterDebug);
+  const value$1 = fresh(u32Zero, u32Bump, { fmt: (value) => String(value) });
   console.log(
     `(${counterDebug_fmt(value[0])}, ${counterDebug_fmt(value[1])}) (${value$1[0]}, ${value$1[1]})`,
   );

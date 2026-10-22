@@ -16,8 +16,6 @@ import {
   $sortedEntries,
 } from "@rust-js/runtime";
 
-var $valueDisplay;
-
 export const Value = {
   get(value, key) {
     if (value.TAG === "Obj") {
@@ -96,12 +94,7 @@ export const Value = {
   },
 };
 
-export function valueDisplay() {
-  if ($valueDisplay === undefined) {
-    $valueDisplay = { fmt: valueDisplay_fmt };
-  }
-  return $valueDisplay;
-}
+export const valueDisplay = { fmt: valueDisplay_fmt };
 
 function valueDisplay_fmt(value) {
   let f = "";

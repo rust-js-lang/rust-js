@@ -2,25 +2,13 @@
 
 import { $debugStr, $eq, $some, $someValue } from "@rust-js/runtime";
 
-var $i32Key, $refStrKey;
-
 export function entry() {
   main();
 }
 
-function i32Key() {
-  if ($i32Key === undefined) {
-    $i32Key = {};
-  }
-  return $i32Key;
-}
+const i32Key = {};
 
-function refStrKey() {
-  if ($refStrKey === undefined) {
-    $refStrKey = {};
-  }
-  return $refStrKey;
-}
+const refStrKey = {};
 
 function nodeDebug_fmt(node, KDebug, KKey, KValueDebug) {
   return `Node { key: ${KDebug.fmt(node.key)}, value: ${KValueDebug.fmt(node.value)} }`;
@@ -43,9 +31,9 @@ function fill(slot) {
 function main() {
   const a = { key: 1, value: 22 };
   const b = { key: "k", value: ["x"] };
-  const value = get(a, i32Key(), { clone: (value) => value });
+  const value = get(a, i32Key, { clone: (value) => value });
   console.log(
-    `${value == null ? "None" : `Some(${value})`} ${nodeDebug_fmt(a, { fmt: (value) => String(value) }, i32Key(), { fmt: (value) => (value == null ? "None" : `Some(${value})`) })} ${nodeDebug_fmt(b, { fmt: (value) => $debugStr(value) }, refStrKey(), { fmt: (value) => `[${value.map((item) => $debugStr(item)).join(", ")}]` })}`,
+    `${value == null ? "None" : `Some(${value})`} ${nodeDebug_fmt(a, { fmt: (value) => String(value) }, i32Key, { fmt: (value) => (value == null ? "None" : `Some(${value})`) })} ${nodeDebug_fmt(b, { fmt: (value) => $debugStr(value) }, refStrKey, { fmt: (value) => `[${value.map((item) => $debugStr(item)).join(", ")}]` })}`,
   );
   const c = a;
   console.log(`${$eq(c, a)} ${c.value != null ? (c.value + 1) >>> 0 : 0}`);

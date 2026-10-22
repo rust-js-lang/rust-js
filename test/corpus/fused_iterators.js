@@ -3,8 +3,6 @@
 import { fuseClone_clone, fuseDebug_fmt, iterator_fuse } from "@rust-js/std/iter.js";
 import { $iter, $iterator, $lent, $next, $nextSome, $sizeHint } from "@rust-js/runtime";
 
-var $flipDebug;
-
 export function entry() {
   main();
 }
@@ -27,15 +25,10 @@ function steadyDrop_drop(steady) {
   console.log("drop steady");
 }
 
+export const flipDebug = { fmt: flipDebug_fmt };
+
 function flipDebug_fmt(flip) {
   return `Flip(${flip[0]})`;
-}
-
-export function flipDebug() {
-  if ($flipDebug === undefined) {
-    $flipDebug = { fmt: flipDebug_fmt };
-  }
-  return $flipDebug;
 }
 
 function flipIterator_next(flip) {
@@ -66,13 +59,13 @@ function pair(i, IIntoIterator, IIntoIterFused) {
 
 function main() {
   const f = iterator_fuse([0], { next: flipIterator_next }, false);
-  console.log(`${fuseDebug_fmt(f, undefined, flipDebug())}`);
+  console.log(`${fuseDebug_fmt(f, undefined, flipDebug)}`);
   const copy = fuseClone_clone(f, { clone: (value) => [value[0]] });
   const next = $next(f);
   const value = $next(f);
   const value$1 = $next(f);
   console.log(
-    `${next == null ? "None" : `Some(${next})`} ${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`} ${fuseDebug_fmt(f, undefined, flipDebug())}`,
+    `${next == null ? "None" : `Some(${next})`} ${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`} ${fuseDebug_fmt(f, undefined, flipDebug)}`,
   );
   console.log(`[${copy.take(4).toArray().join(", ")}]`);
   const v = iterator_fuse($iter([1, 2, 3]), { next: $next }, true);
@@ -92,14 +85,14 @@ function main() {
     { intoIter: (items) => items, IntoIterIterator: () => ({ next: flipIterator_next }) },
     false,
   );
-  console.log(`${pairDebug_fmt(flips, flipDebug())}`);
+  console.log(`${pairDebug_fmt(flips, flipDebug)}`);
   const again = { ...flips, i: fuseClone_clone(flips.i, { clone: (value) => [value[0]] }) };
   const value$3 = pairIterator_next(flips);
   const value$4 = pairIterator_next(flips);
   console.log(
-    `${value$3 == null ? "None" : `Some(${value$3})`} ${value$4 == null ? "None" : `Some(${value$4})`} ${pairDebug_fmt(flips, flipDebug())}`,
+    `${value$3 == null ? "None" : `Some(${value$3})`} ${value$4 == null ? "None" : `Some(${value$4})`} ${pairDebug_fmt(flips, flipDebug)}`,
   );
-  console.log(`${pairDebug_fmt(again, flipDebug())}`);
+  console.log(`${pairDebug_fmt(again, flipDebug)}`);
   console.log(`[${$iterator(again, pairIterator_next, true).take(3).toArray().join(", ")}]`);
   const loud = iterator_fuse(["loud", 3], { next: loudIterator_next }, false, loudDrop_drop);
   let loud$live;

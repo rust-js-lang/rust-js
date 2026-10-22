@@ -2,8 +2,6 @@
 
 import { $byteLen } from "@rust-js/runtime";
 
-var $personGreet;
-
 export function entry() {
   main();
 }
@@ -16,81 +14,76 @@ function noisyDrop_drop(noisy) {
   console.log(`drop ${noisy[0]}`);
 }
 
-function personGreet() {
-  if ($personGreet === undefined) {
-    $personGreet = {
-      id: personGreet_id,
-      greet: (self) => {
-        const noisy = [1];
-        if (noisy) {
-          try {
-            console.log("hello");
-          } finally {
-            if (noisy != null) {
-              noisyDrop_drop(noisy);
-            }
-          }
-        } else if (noisy != null) {
+const personGreet = {
+  id: personGreet_id,
+  greet: (self) => {
+    const noisy = [1];
+    if (noisy) {
+      try {
+        console.log("hello");
+      } finally {
+        if (noisy != null) {
           noisyDrop_drop(noisy);
         }
-      },
-      parts: (self) => {
-        const first = [2];
-        try {
-          noisyDrop_drop([3]);
-        } catch (error) {
-          noisyDrop_drop(first);
-          throw error;
-        }
-        const shown = noisyDebug_fmt(first);
-        const all = [[4], [5]];
-        const slice = all;
-        const result = ($byteLen(shown) + slice.length) >>> 0;
-        try {
-          for (const item of all) {
-            noisyDrop_drop(item);
-          }
-        } finally {
-          noisyDrop_drop(first);
-        }
-        return result;
-      },
-      lists: (self, long) => {
-        const dropList = (list) => {
-          noisyDrop_drop(list.item);
-          if (list.next != null) {
-            dropList(list.next);
-          }
-        };
-        const first = { item: [6] };
-        let result;
-        if (long) {
-          const second = { item: [7], next: { item: [8] } };
-          result = second.item[0];
-          try {
-            dropList(second);
-          } catch (error) {
-            dropList(first);
-            throw error;
-          }
-        } else {
-          result = first.item[0];
-        }
-        dropList(first);
-        return result;
-      },
+      }
+    } else if (noisy != null) {
+      noisyDrop_drop(noisy);
+    }
+  },
+  parts: (self) => {
+    const first = [2];
+    try {
+      noisyDrop_drop([3]);
+    } catch (error) {
+      noisyDrop_drop(first);
+      throw error;
+    }
+    const shown = noisyDebug_fmt(first);
+    const all = [[4], [5]];
+    const slice = all;
+    const result = ($byteLen(shown) + slice.length) >>> 0;
+    try {
+      for (const item of all) {
+        noisyDrop_drop(item);
+      }
+    } finally {
+      noisyDrop_drop(first);
+    }
+    return result;
+  },
+  lists: (self, long) => {
+    const dropList = (list) => {
+      noisyDrop_drop(list.item);
+      if (list.next != null) {
+        dropList(list.next);
+      }
     };
-  }
-  return $personGreet;
-}
+    const first = { item: [6] };
+    let result;
+    if (long) {
+      const second = { item: [7], next: { item: [8] } };
+      result = second.item[0];
+      try {
+        dropList(second);
+      } catch (error) {
+        dropList(first);
+        throw error;
+      }
+    } else {
+      result = first.item[0];
+    }
+    dropList(first);
+    return result;
+  },
+};
 
 function personGreet_id(person) {
   return 7;
 }
 
 function main() {
-  personGreet().greet(undefined);
-  console.log(`${personGreet().parts(undefined)}`);
-  console.log(`${personGreet().lists(undefined, true)} ${personGreet().lists(undefined, false)}`);
+  personGreet.greet(undefined);
+  console.log(`${personGreet.parts(undefined)}`);
+  console.log(`${personGreet.lists(undefined, true)} ${personGreet.lists(undefined, false)}`);
 }
 //# sourceMappingURL=case.js.map

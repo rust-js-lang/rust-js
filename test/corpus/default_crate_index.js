@@ -2,8 +2,6 @@
 
 import { $index } from "@rust-js/runtime";
 
-var $fixedAutomaton;
-
 export function entry() {
   main();
 }
@@ -12,26 +10,21 @@ function tSliceIndexId_index(self, index) {
   return $index(self, index[0]);
 }
 
-function fixedAutomaton() {
-  if ($fixedAutomaton === undefined) {
-    $fixedAutomaton = {
-      ids: fixedAutomaton_ids,
-      each: (self, f) => {
-        for (const id of fixedAutomaton_ids(self)) {
-          f(id);
-        }
-      },
-      replaceAll: (self, replaceWith, BAsRefStr) => {
-        let dst = "";
-        fixedAutomaton().each(self, (id) => {
-          dst += BAsRefStr.asRef(tSliceIndexId_index(replaceWith, id));
-        });
-        return dst;
-      },
-    };
-  }
-  return $fixedAutomaton;
-}
+const fixedAutomaton = {
+  ids: fixedAutomaton_ids,
+  each: (self, f) => {
+    for (const id of fixedAutomaton_ids(self)) {
+      f(id);
+    }
+  },
+  replaceAll: (self, replaceWith, BAsRefStr) => {
+    let dst = "";
+    fixedAutomaton.each(self, (id) => {
+      dst += BAsRefStr.asRef(tSliceIndexId_index(replaceWith, id));
+    });
+    return dst;
+  },
+};
 
 function fixedAutomaton_ids(fixed) {
   return [[2], [0]];
@@ -39,7 +32,7 @@ function fixedAutomaton_ids(fixed) {
 
 function main() {
   console.log(
-    `${fixedAutomaton().replaceAll(undefined, ["a", "bb", "ccc"], { asRef: (value) => value })}`,
+    `${fixedAutomaton.replaceAll(undefined, ["a", "bb", "ccc"], { asRef: (value) => value })}`,
   );
 }
 //# sourceMappingURL=case.js.map

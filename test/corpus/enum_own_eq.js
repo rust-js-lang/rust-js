@@ -2,19 +2,12 @@
 
 import { $position } from "@rust-js/runtime";
 
-var $modePartialEq;
-
 export function entry() {
   main();
 }
 
 // `Auto` is either.
-export function modePartialEq() {
-  if ($modePartialEq === undefined) {
-    $modePartialEq = { eq: modePartialEq_eq };
-  }
-  return $modePartialEq;
-}
+export const modePartialEq = { eq: modePartialEq_eq };
 
 function modePartialEq_eq(mode, other) {
   if (mode === "Auto" || other === "Auto") {

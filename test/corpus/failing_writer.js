@@ -2,19 +2,17 @@
 
 import { $byteLen, $fmtError, $writeTry } from "@rust-js/runtime";
 
-var $fullWrite;
-
 export function entry() {
   main();
 }
 
-export function fullWrite() {
-  if ($fullWrite === undefined) {
-    const writeStr = (arg0, arg1) => fullWrite_writeStr(arg0.value, arg1);
-    $fullWrite = { writeStr, writeChar: writeStr, writeFmt: writeStr };
-  }
-  return $fullWrite;
-}
+const $fullWrite_writeStr = (arg0, arg1) => fullWrite_writeStr(arg0.value, arg1);
+
+export const fullWrite = {
+  writeStr: $fullWrite_writeStr,
+  writeChar: $fullWrite_writeStr,
+  writeFmt: $fullWrite_writeStr,
+};
 
 function fullWrite_writeStr(full, s) {
   if ($byteLen(s) > full[0]) {

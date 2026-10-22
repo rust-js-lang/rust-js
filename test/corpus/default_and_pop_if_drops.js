@@ -2,8 +2,6 @@
 
 import { $popFrontIf, $popIf } from "@rust-js/runtime";
 
-var $loudDefault;
-
 export function entry() {
   main();
 }
@@ -12,12 +10,7 @@ function loudDrop_drop(loud) {
   console.log(`drop ${loud[0]}`);
 }
 
-export function loudDefault() {
-  if ($loudDefault === undefined) {
-    $loudDefault = { default: loudDefault_default, $drop: loudDrop_drop };
-  }
-  return $loudDefault;
-}
+export const loudDefault = { default: loudDefault_default, $drop: loudDrop_drop };
 
 function loudDefault_default() {
   console.log("default");

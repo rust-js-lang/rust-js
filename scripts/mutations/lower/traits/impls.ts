@@ -86,8 +86,8 @@ export const mutations: Mutation[] = [
     name: "const-dictionary-weak-cache",
     breaks: "`ringShow(2)` caches its dictionary in a `WeakMap`, which throws on the number `2`",
     file: "src/lower/traits/impls.rs",
-    find: "            let map = if self.given.const_params.is_empty() && self.given.type_facts.is_empty() {\n                \"WeakMap\"\n            } else {\n                \"Map\"\n            };\n",
-    replace: "            let map = \"WeakMap\";\n",
+    find: "                false => \"Map\",\n",
+    replace: "                false => \"WeakMap\",\n",
     tests: ["test/corpus.test.ts","-t","const_generics"],
   },
   {
@@ -197,12 +197,13 @@ export const mutations: Mutation[] = [
   },
   {
     name: "dictionary-uncached",
-    breaks: "an impl's dictionary is made anew on each call, so two of the same impl aren't the same object",
+    breaks: "a generic impl's dictionary is made anew on each call, so two of the same impl given the same aren't the same object",
     file: "src/lower/traits/impls.rs",
-    find: "        let undefined = Expr::bin(Op::Eq, Expr::var(cache), Expr::undefined());\n        let mut body = Vec::new();\n        if params.is_empty() {\n            body.push(\n                StmtKind::If(\n                    undefined,",
-    replace: "        let undefined = Expr::bin(Op::Eq, Expr::var(cache), Expr::undefined());\n        let mut body = Vec::new();\n        if params.is_empty() {\n            body.push(\n                StmtKind::If(\n                    Expr::bool(true),",
-    tests: ["test/traits.test.ts", "-t", "an empty trait implementation needs no function body"],
+    find: "                    vec![Expr::var(cache), keys, make],\n",
+    replace: "                    vec![Expr::new_(Expr::var(\"WeakMap\"), Vec::new()), keys, make],\n",
+    tests: ["test/traits.test.ts", "-t", "dictionaries are explicit"],
   },
+
   {
     name: "binding-in-dictionary",
     breaks: "an impl of a trait of bindings is refused: its methods aren't the crate's",
@@ -459,5 +460,13 @@ export const mutations: Mutation[] = [
     find: "                        Some(own) if crate::lower::analysis::impl_const(self.tcx, own) => Expr::arrow(\n",
     replace: "                        Some(own) if false && crate::lower::analysis::impl_const(self.tcx, own) => Expr::arrow(\n",
     tests: ["test/corpus.test.ts", "-t", "^impl_fn_consts.rs$"],
+  },
+  {
+    name: "dictionary-const-a-function",
+    breaks: "a dictionary that takes nothing is a function, which its readers take for the object",
+    file: "src/lower/traits/impls.rs",
+    find: "        if !self.takes_evidence(id) {\n",
+    replace: "        if false {\n",
+    tests: ["test/lowering.test.ts", "-t", "a dictionary that takes nothing"],
   },
 ];

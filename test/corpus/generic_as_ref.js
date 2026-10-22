@@ -2,8 +2,6 @@
 
 import { $byteLen, $max } from "@rust-js/runtime";
 
-var $nameAsRefStr, $scoresAsRefI32Slice;
-
 export function entry() {
   main();
 }
@@ -20,23 +18,13 @@ function longest(words, SAsRefStr) {
   return $max(words.map((w) => $byteLen(SAsRefStr.asRef(w)))) ?? 0;
 }
 
-export function nameAsRefStr() {
-  if ($nameAsRefStr === undefined) {
-    $nameAsRefStr = { asRef: nameAsRefStr_asRef };
-  }
-  return $nameAsRefStr;
-}
+export const nameAsRefStr = { asRef: nameAsRefStr_asRef };
 
 function nameAsRefStr_asRef(name) {
   return name.first;
 }
 
-export function scoresAsRefI32Slice() {
-  if ($scoresAsRefI32Slice === undefined) {
-    $scoresAsRefI32Slice = { asRef: scoresAsRefI32Slice_asRef };
-  }
-  return $scoresAsRefI32Slice;
-}
+export const scoresAsRefI32Slice = { asRef: scoresAsRefI32Slice_asRef };
 
 function scoresAsRefI32Slice_asRef(scores) {
   return scores[0];
@@ -45,12 +33,12 @@ function scoresAsRefI32Slice_asRef(scores) {
 function main() {
   const owned = "tea";
   console.log(
-    `${shout("hi", { asRef: (value) => value })} ${shout(owned, { asRef: (value) => value })} ${shout(owned, { asRef: (value) => value })} ${shout({ first: "ada" }, nameAsRefStr())}`,
+    `${shout("hi", { asRef: (value) => value })} ${shout(owned, { asRef: (value) => value })} ${shout(owned, { asRef: (value) => value })} ${shout({ first: "ada" }, nameAsRefStr)}`,
   );
   console.log(
     `${total([1, 2, 3], {
       asRef: (value) => value,
-    })} ${total([4, 5], { asRef: (value) => value })} ${total([6], { asRef: (value) => value })} ${total([[7, 8]], scoresAsRefI32Slice())}`,
+    })} ${total([4, 5], { asRef: (value) => value })} ${total([6], { asRef: (value) => value })} ${total([[7, 8]], scoresAsRefI32Slice)}`,
   );
   console.log(
     `${longest(["a", "abc"], { asRef: (value) => value })} ${longest(["four"], { asRef: (value) => value })}`,

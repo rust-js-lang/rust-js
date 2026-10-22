@@ -2,25 +2,18 @@
 
 import { $traitImpl } from "@rust-js/runtime";
 
-var $__Trait, $wrapTrait;
-
 export function entry() {
   main();
 }
 
-function __Trait() {
-  if ($__Trait === undefined) {
-    $__Trait = {
-      get ASSOC() {
-        return ASSOC;
-      },
-      LIMIT: 9,
-    };
-  }
-  return $__Trait;
-}
-
 const ASSOC = (x) => (x + 1) >>> 0;
+
+const __Trait = {
+  get ASSOC() {
+    return ASSOC;
+  },
+  LIMIT: 9,
+};
 
 export const S = {
   ID: (s) => s,
@@ -36,10 +29,9 @@ const Ops = {
   ],
 };
 
+const $wrapTrait = new WeakMap();
+
 function wrapTrait(TDefault, TIntoU32) {
-  if ($wrapTrait === undefined) {
-    $wrapTrait = new WeakMap();
-  }
   return $traitImpl($wrapTrait, [TDefault, TIntoU32], () => ({
     get ASSOC() {
       return (x) => (((x + TIntoU32.into(TDefault.default())) >>> 0) + 3) >>> 0;
@@ -58,7 +50,7 @@ function main() {
   const s = [10];
   console.log(`${S.ID(s)[0]} ${S.id(s)[0]} 0`);
   console.log(
-    `${apply(1, __Trait())} ${apply(1, wrapTrait({ default: () => 0 }, { into: (n) => n }))}`,
+    `${apply(1, __Trait)} ${apply(1, wrapTrait({ default: () => 0 }, { into: (n) => n }))}`,
   );
   for (const [name, op] of Ops.TABLE) {
     const arg = op(5);

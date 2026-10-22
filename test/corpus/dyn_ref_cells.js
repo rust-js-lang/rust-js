@@ -12,22 +12,15 @@ import {
   $unborrow,
 } from "@rust-js/runtime";
 
-var $circleShape, $circleLabeled, $squareShape;
-
 export function entry() {
   main();
 }
 
-function circleShape() {
-  if ($circleShape === undefined) {
-    $circleShape = {
-      area: circleShape_area,
-      grow: (arg0, arg1) => circleShape_grow(arg0.value, arg1),
-      name: circleShape_name,
-    };
-  }
-  return $circleShape;
-}
+const circleShape = {
+  area: circleShape_area,
+  grow: (arg0, arg1) => circleShape_grow(arg0.value, arg1),
+  name: circleShape_name,
+};
 
 function circleShape_area(circle) {
   return 3 * circle.r * circle.r;
@@ -41,27 +34,17 @@ function circleShape_name(circle) {
   return `circle ${$displayF64(circle.r)}`;
 }
 
-function circleLabeled() {
-  if ($circleLabeled === undefined) {
-    $circleLabeled = { label: circleLabeled_label };
-  }
-  return $circleLabeled;
-}
+const circleLabeled = { label: circleLabeled_label };
 
 function circleLabeled_label(circle) {
   return `r=${$displayF64(circle.r)}`;
 }
 
-function squareShape() {
-  if ($squareShape === undefined) {
-    $squareShape = {
-      area: squareShape_area,
-      grow: (arg0, arg1) => squareShape_grow(arg0.value, arg1),
-      name: squareShape_name,
-    };
-  }
-  return $squareShape;
-}
+const squareShape = {
+  area: squareShape_area,
+  grow: (arg0, arg1) => squareShape_grow(arg0.value, arg1),
+  name: squareShape_name,
+};
 
 function squareShape_area(square) {
   return square.side * square.side;
@@ -101,7 +84,7 @@ function growAll(shapes, by) {
 
 function main() {
   const circle = { value: { r: 1 } };
-  const shapes = [$dynCell(circle, circleShape()), { value: { side: 2 }, impl: squareShape() }];
+  const shapes = [$dynCell(circle, circleShape), { value: { side: 2 }, impl: squareShape }];
   console.log(`${$displayF64(total(shapes))}`);
   growAll(shapes, 1);
   // Through the concrete `Rc`, the same cell.
@@ -133,7 +116,7 @@ function main() {
     $unborrow(receiver);
   }
   // The same cell, a `dyn` of another trait too.
-  const labeled = $dynCell(circle, circleLabeled());
+  const labeled = $dynCell(circle, circleLabeled);
   const value$1 = $borrowMut($index(shapes, 0), true);
   try {
     value$1.impl.grow(value$1, 1);
@@ -154,7 +137,7 @@ function main() {
   }
   // Its `impl` isn't one of its fields: it's equal to a cell of its value.
   console.log(`${$eq(circle, { value: { r: 1.5 } })}`);
-  const boxed = { value: { side: 1 }, impl: squareShape() };
+  const boxed = { value: { side: 1 }, impl: squareShape };
   const value$3 = $borrowMut(boxed, true);
   try {
     value$3.impl.grow(value$3, 2);

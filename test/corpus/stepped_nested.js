@@ -2,26 +2,19 @@
 
 import { $iter, $next } from "@rust-js/runtime";
 
-var $numbersSecond;
-
 export function entry() {
   main();
 }
 
-function numbersSecond() {
-  if ($numbersSecond === undefined) {
-    $numbersSecond = {
-      items: numbersSecond_items,
-      second: (self) => {
-        const items = numbersSecond_items(self);
-        const it = $iter(items);
-        $next(it);
-        return $next(it) ?? 0;
-      },
-    };
-  }
-  return $numbersSecond;
-}
+const numbersSecond = {
+  items: numbersSecond_items,
+  second: (self) => {
+    const items = numbersSecond_items(self);
+    const it = $iter(items);
+    $next(it);
+    return $next(it) ?? 0;
+  },
+};
 
 function numbersSecond_items(numbers) {
   return [4, 5, 6];
@@ -33,6 +26,6 @@ function main() {
     $next(it);
     return it.map((x) => Math.imul(x, 10) >>> 0).toArray();
   };
-  console.log(`[${skipOne([1, 2, 3]).join(", ")}] ${numbersSecond().second(undefined)}`);
+  console.log(`[${skipOne([1, 2, 3]).join(", ")}] ${numbersSecond.second(undefined)}`);
 }
 //# sourceMappingURL=case.js.map

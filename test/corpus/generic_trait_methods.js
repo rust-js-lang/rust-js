@@ -2,26 +2,19 @@
 
 import { $debugF64, $debugStr, $displayF64 } from "@rust-js/runtime";
 
-var $circleShape, $squareShape;
-
 export function entry() {
   main();
 }
 
-function circleShape() {
-  if ($circleShape === undefined) {
-    $circleShape = {
-      area: circleShape_area,
-      describe: (self, label, TDisplay) => {
-        const arg = circleShape_area(self);
-        return `${TDisplay.fmt(label)}: ${$displayF64(arg)}`;
-      },
-      scaled: circleShape_scaled,
-      tagged: circleShape_tagged,
-    };
-  }
-  return $circleShape;
-}
+const circleShape = {
+  area: circleShape_area,
+  describe: (self, label, TDisplay) => {
+    const arg = circleShape_area(self);
+    return `${TDisplay.fmt(label)}: ${$displayF64(arg)}`;
+  },
+  scaled: circleShape_scaled,
+  tagged: circleShape_tagged,
+};
 
 function circleShape_area(circle) {
   return 3 * circle[0] * circle[0];
@@ -35,18 +28,13 @@ function circleShape_tagged(circle, a, b, AClone, ADebug, BDisplay) {
   return `circle ${ADebug.fmt(AClone.clone(a))} ${BDisplay.fmt(b)} ${ADebug.fmt(a)}`;
 }
 
-function squareShape() {
-  if ($squareShape === undefined) {
-    $squareShape = {
-      area: squareShape_area,
-      describe: squareShape_describe,
-      scaled: squareShape_scaled,
-      tagged: (arg0, arg1, arg2, AClone, ADebug, BDisplay) =>
-        squareShape_tagged(arg0, arg1, arg2, ADebug, AClone, BDisplay),
-    };
-  }
-  return $squareShape;
-}
+const squareShape = {
+  area: squareShape_area,
+  describe: squareShape_describe,
+  scaled: squareShape_scaled,
+  tagged: (arg0, arg1, arg2, AClone, ADebug, BDisplay) =>
+    squareShape_tagged(arg0, arg1, arg2, ADebug, AClone, BDisplay),
+};
 
 function squareShape_area(square) {
   return square[0] * square[0];
@@ -88,12 +76,12 @@ function main() {
   const c = [1];
   const s = [2];
   console.log(
-    `${circleShape().describe(c, "c", { fmt: (value) => value })} | ${squareShape_describe(s, 3.5, { fmt: $displayF64 })} | ${circleShape_tagged(c, "a", 1, { clone: (value) => value }, { fmt: (value) => $debugStr(value) }, { fmt: String })}`,
+    `${circleShape.describe(c, "c", { fmt: (value) => value })} | ${squareShape_describe(s, 3.5, { fmt: $displayF64 })} | ${circleShape_tagged(c, "a", 1, { clone: (value) => value }, { fmt: (value) => $debugStr(value) }, { fmt: String })}`,
   );
-  console.log(`${report(c, circleShape())} | ${report(s, squareShape())}`);
-  const value = everything(c, circleShape());
+  console.log(`${report(c, circleShape)} | ${report(s, squareShape)}`);
+  const value = everything(c, circleShape);
   console.log(`(${$debugStr(value[0])}, ${$debugF64(value[1])}, ${$debugStr(value[2])})`);
-  const value$1 = everything(s, squareShape());
+  const value$1 = everything(s, squareShape);
   console.log(`(${$debugStr(value$1[0])}, ${$debugF64(value$1[1])}, ${$debugStr(value$1[2])})`);
 }
 //# sourceMappingURL=case.js.map

@@ -2,8 +2,6 @@
 
 import { $next, $traitImpl } from "@rust-js/runtime";
 
-var $sinkTakeA, $relayTakeA, $wrapTakeNoisy, $keepTakeA;
-
 export function entry() {
   main();
 }
@@ -12,10 +10,9 @@ function noisyDrop_drop(noisy) {
   console.log(`drop ${noisy[0]}`);
 }
 
+const $sinkTakeA = new WeakMap();
+
 function sinkTakeA(dropA) {
-  if ($sinkTakeA === undefined) {
-    $sinkTakeA = new WeakMap();
-  }
   return $traitImpl($sinkTakeA, [dropA], () => ({
     take: (arg0, arg1) => sinkTakeA_take(arg0, arg1, dropA),
     make: (arg0) => sinkTakeA_make(arg0, dropA),
@@ -35,10 +32,9 @@ function sinkTakeA_make(_a, dropA) {
   dropA?.(_a);
 }
 
+const $relayTakeA = new WeakMap();
+
 function relayTakeA(STakeA, dropA, dropS) {
-  if ($relayTakeA === undefined) {
-    $relayTakeA = new WeakMap();
-  }
   return $traitImpl($relayTakeA, [STakeA, dropA, dropS], () => ({
     take: (arg0, arg1) => relayTakeA_take(arg0, arg1, STakeA, dropA, dropS),
     make: (arg0) => relayTakeA_make(arg0, STakeA, dropA, dropS),
@@ -62,10 +58,9 @@ function relayTakeA_make(a, STakeA, dropA, dropS) {
   return [STakeA.make(a)];
 }
 
+const $wrapTakeNoisy = new WeakMap();
+
 function wrapTakeNoisy(TDefault, dropT) {
-  if ($wrapTakeNoisy === undefined) {
-    $wrapTakeNoisy = new WeakMap();
-  }
   return $traitImpl($wrapTakeNoisy, [TDefault, dropT], () => ({
     take: (self, a) => {
       try {
@@ -91,10 +86,9 @@ function wrapTakeNoisy_make(a, TDefault, dropT) {
   }
 }
 
+const $keepTakeA = new WeakMap();
+
 function keepTakeA(dropA) {
-  if ($keepTakeA === undefined) {
-    $keepTakeA = new WeakMap();
-  }
   return $traitImpl($keepTakeA, [dropA], () => ({
     take: (arg0, arg1) => keepTakeA_take(arg0, arg1, dropA),
     make: (arg0) => keepTakeA_make(arg0, dropA),

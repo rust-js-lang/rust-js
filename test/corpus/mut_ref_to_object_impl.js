@@ -2,8 +2,6 @@
 
 import { $assign } from "@rust-js/runtime";
 
-var $refMutMoneyAddAssignMoney;
-
 export function entry() {
   main();
 }
@@ -16,14 +14,9 @@ function moneyAddAssign_addAssign(money, other) {
   money.cents = BigInt.asIntN(64, money.cents + other.cents);
 }
 
-export function refMutMoneyAddAssignMoney() {
-  if ($refMutMoneyAddAssignMoney === undefined) {
-    $refMutMoneyAddAssignMoney = {
-      addAssign: (arg0, arg1) => refMutMoneyAddAssignMoney_addAssign(arg0.value, arg1),
-    };
-  }
-  return $refMutMoneyAddAssignMoney;
-}
+export const refMutMoneyAddAssignMoney = {
+  addAssign: (arg0, arg1) => refMutMoneyAddAssignMoney_addAssign(arg0.value, arg1),
+};
 
 function refMutMoneyAddAssignMoney_addAssign(money, other) {
   moneyAddAssign_addAssign(money.value, { ...other });
@@ -44,7 +37,7 @@ function main() {
   refMutMoneyAddAssignMoney_addAssign(self, { ...five });
   r = self.value;
   const total = { value: r };
-  const r$1 = bump(total, { ...five }, refMutMoneyAddAssignMoney()).value;
+  const r$1 = bump(total, { ...five }, refMutMoneyAddAssignMoney).value;
   $assign(r, total.value);
   r$1.cents = BigInt.asIntN(64, r$1.cents + 1n);
   const other = { cents: 100n, note: [0, 0] };

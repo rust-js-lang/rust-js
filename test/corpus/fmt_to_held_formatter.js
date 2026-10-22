@@ -2,30 +2,23 @@
 
 import { $debugStr, $escapeDebug, $pretty } from "@rust-js/runtime";
 
-var $quotedWrite, $messageDebug, $pairDisplay, $spotDisplay;
-
 export function entry() {
   main();
 }
 
-export function quotedWrite() {
-  if ($quotedWrite === undefined) {
-    const writeStr = (arg0, arg1) => quotedWrite_writeStr(arg0.value, arg1);
-    $quotedWrite = { writeStr, writeChar: writeStr, writeFmt: writeStr };
-  }
-  return $quotedWrite;
-}
+const $quotedWrite_writeStr = (arg0, arg1) => quotedWrite_writeStr(arg0.value, arg1);
+
+export const quotedWrite = {
+  writeStr: $quotedWrite_writeStr,
+  writeChar: $quotedWrite_writeStr,
+  writeFmt: $quotedWrite_writeStr,
+};
 
 function quotedWrite_writeStr(quoted, s) {
   quoted[0].value += $escapeDebug(s, true);
 }
 
-export function messageDebug() {
-  if ($messageDebug === undefined) {
-    $messageDebug = { fmt: messageDebug_fmt };
-  }
-  return $messageDebug;
-}
+export const messageDebug = { fmt: messageDebug_fmt };
 
 function messageDebug_fmt(message, options) {
   let f = '"';
@@ -55,12 +48,7 @@ const Tagged = {
   },
 };
 
-export function pairDisplay() {
-  if ($pairDisplay === undefined) {
-    $pairDisplay = { fmt: pairDisplay_fmt };
-  }
-  return $pairDisplay;
-}
+export const pairDisplay = { fmt: pairDisplay_fmt };
 
 function pairDisplay_fmt(pair, options) {
   let f = "";
@@ -117,12 +105,7 @@ const At = {
   },
 };
 
-export function spotDisplay() {
-  if ($spotDisplay === undefined) {
-    $spotDisplay = { fmt: spotDisplay_fmt };
-  }
-  return $spotDisplay;
-}
+export const spotDisplay = { fmt: spotDisplay_fmt };
 
 function spotDisplay_fmt(spot, options) {
   let f = "";

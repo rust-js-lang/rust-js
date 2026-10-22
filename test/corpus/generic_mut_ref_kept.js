@@ -2,8 +2,6 @@
 
 import { $debugStr, $eq, $index } from "@rust-js/runtime";
 
-var $cSlot;
-
 export function entry() {
   main();
 }
@@ -104,12 +102,7 @@ function totalDerefMut_derefMut(total) {
   };
 }
 
-function cSlot() {
-  if ($cSlot === undefined) {
-    $cSlot = { slot: (arg0) => cSlot_slot(arg0.value) };
-  }
-  return $cSlot;
-}
+const cSlot = { slot: (arg0) => cSlot_slot(arg0.value) };
 
 function cSlot_slot(c) {
   return {

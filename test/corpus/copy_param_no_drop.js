@@ -2,16 +2,13 @@
 
 import { $traitImpl } from "@rust-js/runtime";
 
-var $holderShow;
-
 export function entry() {
   main();
 }
 
+const $holderShow = new WeakMap();
+
 function holderShow(TCopy, TDisplay) {
-  if ($holderShow === undefined) {
-    $holderShow = new WeakMap();
-  }
   return $traitImpl($holderShow, [TCopy, TDisplay], () => ({
     show: (arg0) => holderShow_show(arg0, TCopy, TDisplay),
   }));

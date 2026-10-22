@@ -15,8 +15,6 @@ import {
   $unborrow,
 } from "@rust-js/runtime";
 
-var $pointDebug, $secretDebug, $pairDebug, $bagDebug, $lettersDebug, $tableDebug;
-
 export function entry() {
   main();
 }
@@ -49,67 +47,37 @@ function versionDebug_fmt(version) {
   return `Version(${version[0]}, ${$debugStr(version[1])})`;
 }
 
-export function pointDebug() {
-  if ($pointDebug === undefined) {
-    $pointDebug = { fmt: pointDebug_fmt };
-  }
-  return $pointDebug;
-}
+export const pointDebug = { fmt: pointDebug_fmt };
 
 function pointDebug_fmt(point) {
   return `Point { x: ${point.x}, label: ${$debugStr(point.label)}, tags: [${point.tags.join(", ")}] }`;
 }
 
-export function secretDebug() {
-  if ($secretDebug === undefined) {
-    $secretDebug = { fmt: secretDebug_fmt };
-  }
-  return $secretDebug;
-}
+export const secretDebug = { fmt: secretDebug_fmt };
 
 function secretDebug_fmt(secret) {
   return `Secret { hint: ${secret[0]}, .. }`;
 }
 
-export function pairDebug() {
-  if ($pairDebug === undefined) {
-    $pairDebug = { fmt: pairDebug_fmt };
-  }
-  return $pairDebug;
-}
+export const pairDebug = { fmt: pairDebug_fmt };
 
 function pairDebug_fmt(pair) {
   return `Pair(${pair[0]}, ${$debugStr(pair[1])})`;
 }
 
-export function bagDebug() {
-  if ($bagDebug === undefined) {
-    $bagDebug = { fmt: bagDebug_fmt };
-  }
-  return $bagDebug;
-}
+export const bagDebug = { fmt: bagDebug_fmt };
 
 function bagDebug_fmt(bag) {
   return `[${["0"].concat(Array.from(bag[0], (entry) => String(entry))).join(", ")}]`;
 }
 
-export function lettersDebug() {
-  if ($lettersDebug === undefined) {
-    $lettersDebug = { fmt: lettersDebug_fmt };
-  }
-  return $lettersDebug;
-}
+export const lettersDebug = { fmt: lettersDebug_fmt };
 
 function lettersDebug_fmt(letters) {
   return `{${Array.from(letters[0], (entry) => $debugStr(entry, "'")).join(", ")}}`;
 }
 
-export function tableDebug() {
-  if ($tableDebug === undefined) {
-    $tableDebug = { fmt: tableDebug_fmt };
-  }
-  return $tableDebug;
-}
+export const tableDebug = { fmt: tableDebug_fmt };
 
 function tableDebug_fmt(table) {
   return `{${Array.from($sortedEntries(table[0], $cmp), (entry) => `${$debugStr(entry[0])}: ${entry[1]}`).join(", ")}}`;

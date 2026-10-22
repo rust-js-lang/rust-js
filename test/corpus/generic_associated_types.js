@@ -13,61 +13,44 @@ import {
   $successors,
 } from "@rust-js/runtime";
 
-var $shelfContainer, $countsContainer, $countdownContainer, $byteFilled, $uptoSource, $from3Source;
-
 export function entry() {
   main();
 }
 
-function shelfContainer() {
-  if ($shelfContainer === undefined) {
-    $shelfContainer = {
-      ItemDebug: () => ({ fmt: (value) => $debugStr(value) }),
-      items: shelfContainer_items,
-      last: (self) => {
-        const items = shelfContainer_items(self).toArray();
-        return $someAt(items, items.length - 1);
-      },
-    };
-  }
-  return $shelfContainer;
-}
+const shelfContainer = {
+  ItemDebug: () => ({ fmt: (value) => $debugStr(value) }),
+  items: shelfContainer_items,
+  last: (self) => {
+    const items = shelfContainer_items(self).toArray();
+    return $someAt(items, items.length - 1);
+  },
+};
 
 function shelfContainer_items(shelf) {
   return $iter(shelf.books);
 }
 
-function countsContainer() {
-  if ($countsContainer === undefined) {
-    $countsContainer = {
-      ItemDebug: () => ({ fmt: (value) => String(value) }),
-      items: countsContainer_items,
-      last: (self) => {
-        const items = countsContainer_items(self).toArray();
-        return $someAt(items, items.length - 1);
-      },
-    };
-  }
-  return $countsContainer;
-}
+const countsContainer = {
+  ItemDebug: () => ({ fmt: (value) => String(value) }),
+  items: countsContainer_items,
+  last: (self) => {
+    const items = countsContainer_items(self).toArray();
+    return $someAt(items, items.length - 1);
+  },
+};
 
 function countsContainer_items(counts) {
   return $iter(counts[0]);
 }
 
-function countdownContainer() {
-  if ($countdownContainer === undefined) {
-    $countdownContainer = {
-      ItemDebug: () => ({ fmt: (value) => String(value) }),
-      items: countdownContainer_items,
-      last: (self) => {
-        const items = countdownContainer_items(self).toArray();
-        return $someAt(items, items.length - 1);
-      },
-    };
-  }
-  return $countdownContainer;
-}
+const countdownContainer = {
+  ItemDebug: () => ({ fmt: (value) => String(value) }),
+  items: countdownContainer_items,
+  last: (self) => {
+    const items = countdownContainer_items(self).toArray();
+    return $someAt(items, items.length - 1);
+  },
+};
 
 function countdownContainer_items(countdown) {
   return $successors(countdown[0], (n) => $checked(n - 1, 0, 4294967295));
@@ -96,23 +79,13 @@ function show(c, CContainer) {
   return value == null ? "None" : `Some(${CContainer.ItemDebug().fmt($someValue(value))})`;
 }
 
-function byteFilled() {
-  if ($byteFilled === undefined) {
-    $byteFilled = { filled: byteFilled_filled };
-  }
-  return $byteFilled;
-}
+const byteFilled = { filled: byteFilled_filled };
 
 function byteFilled_filled(byte, N) {
   return new Array(N).fill(byte[0]);
 }
 
-function uptoSource() {
-  if ($uptoSource === undefined) {
-    $uptoSource = { numbers: (arg0) => $iterator(uptoSource_numbers(arg0), $rangeNext) };
-  }
-  return $uptoSource;
-}
+const uptoSource = { numbers: (arg0) => $iterator(uptoSource_numbers(arg0), $rangeNext) };
 
 function uptoSource_numbers(upto) {
   return { start: 0, end: upto[0] };
@@ -126,12 +99,7 @@ function downIterator_next(down) {
   return down[0] > 0 ? value() : undefined;
 }
 
-function from3Source() {
-  if ($from3Source === undefined) {
-    $from3Source = { numbers: (arg0) => $iterator(from3Source_numbers(arg0), downIterator_next) };
-  }
-  return $from3Source;
-}
+const from3Source = { numbers: (arg0) => $iterator(from3Source_numbers(arg0), downIterator_next) };
 
 function from3Source_numbers(from3) {
   return [3];
@@ -152,27 +120,27 @@ function summed(s, SSource) {
 function main() {
   const shelf = { books: ["Dune", "Emma"] };
   const counts = [[3, 1, 4]];
-  const last = shelfContainer().last(shelf);
-  const value = countsContainer().last(counts);
+  const last = shelfContainer.last(shelf);
+  const value = countsContainer.last(counts);
   console.log(
     `${last == null ? "None" : `Some(${$debugStr(last)})`} ${value == null ? "None" : `Some(${value})`}`,
   );
   console.log(
-    `${count(shelf, shelfContainer())} ${count(counts, countsContainer())} ${count([3], countdownContainer())}`,
+    `${count(shelf, shelfContainer)} ${count(counts, countsContainer)} ${count([3], countdownContainer)}`,
   );
-  const value$1 = countdownContainer().last([2]);
+  const value$1 = countdownContainer.last([2]);
   console.log(
-    `${value$1 == null ? "None" : `Some(${value$1})`} ${show(shelf, shelfContainer())} ${show([1], countdownContainer())}`,
+    `${value$1 == null ? "None" : `Some(${value$1})`} ${show(shelf, shelfContainer)} ${show([1], countdownContainer)}`,
   );
-  const value$2 = first(shelf, shelfContainer());
-  const value$3 = first(counts, countsContainer());
-  const value$4 = first([5], countdownContainer());
+  const value$2 = first(shelf, shelfContainer);
+  const value$3 = first(counts, countsContainer);
+  const value$4 = first([5], countdownContainer);
   console.log(
     `${value$2 == null ? "None" : `Some(${$debugStr(value$2)})`} ${value$3 == null ? "None" : `Some(${value$3})`} ${value$4 == null ? "None" : `Some(${value$4})`}`,
   );
-  const value$5 = second(shelf, shelfContainer());
-  const value$6 = second(counts, countsContainer());
-  const value$7 = second([5], countdownContainer());
+  const value$5 = second(shelf, shelfContainer);
+  const value$6 = second(counts, countsContainer);
+  const value$7 = second([5], countdownContainer);
   console.log(
     `${value$5 == null ? "None" : `Some(${$debugStr(value$5)})`} ${value$6 == null ? "None" : `Some(${value$6})`} ${value$7 == null ? "None" : `Some(${value$7})`}`,
   );
@@ -186,7 +154,7 @@ function main() {
     `[${byteFilled_filled([7], 3).join(", ")}] [${byteFilled_filled([1], 0).join(", ")}]`,
   );
   console.log(
-    `${summed([4], uptoSource())} ${summed(undefined, from3Source())} ${((range) => `${range.start}..${range.end}`)(uptoSource_numbers([2]))}`,
+    `${summed([4], uptoSource)} ${summed(undefined, from3Source)} ${((range) => `${range.start}..${range.end}`)(uptoSource_numbers([2]))}`,
   );
 }
 //# sourceMappingURL=case.js.map

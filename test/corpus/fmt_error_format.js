@@ -2,18 +2,11 @@
 
 import { $fmtError, $fmtOrPanic, $fmtWritten } from "@rust-js/runtime";
 
-var $hoursDisplay, $spanDisplay;
-
 export function entry() {
   main();
 }
 
-export function hoursDisplay() {
-  if ($hoursDisplay === undefined) {
-    $hoursDisplay = { fmt: hoursDisplay_fmt };
-  }
-  return $hoursDisplay;
-}
+export const hoursDisplay = { fmt: hoursDisplay_fmt };
 
 function hoursDisplay_fmt(hours) {
   let f = "";
@@ -29,12 +22,7 @@ function hoursDisplay_fmt(hours) {
   return f;
 }
 
-export function spanDisplay() {
-  if ($spanDisplay === undefined) {
-    $spanDisplay = { fmt: spanDisplay_fmt };
-  }
-  return $spanDisplay;
-}
+export const spanDisplay = { fmt: spanDisplay_fmt };
 
 function spanDisplay_fmt(span) {
   let f = "";

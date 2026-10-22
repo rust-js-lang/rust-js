@@ -2,29 +2,17 @@
 
 import { $assign, $cellOf, $ptr } from "@rust-js/runtime";
 
-var $holderGet, $numGet, $slotGet;
-
 export function entry() {
   main();
 }
 
-function holderGet() {
-  if ($holderGet === undefined) {
-    $holderGet = { get: (arg0) => $cellOf(holderGet_get(arg0.value)) };
-  }
-  return $holderGet;
-}
+const holderGet = { get: (arg0) => $cellOf(holderGet_get(arg0.value)) };
 
 function holderGet_get(holder) {
   return holder[0];
 }
 
-function numGet() {
-  if ($numGet === undefined) {
-    $numGet = { get: (arg0) => numGet_get(arg0.value) };
-  }
-  return $numGet;
-}
+const numGet = { get: (arg0) => numGet_get(arg0.value) };
 
 function numGet_get(num) {
   return {
@@ -37,12 +25,7 @@ function numGet_get(num) {
   };
 }
 
-function slotGet() {
-  if ($slotGet === undefined) {
-    $slotGet = { get: (arg0) => slotGet_get(arg0.value) };
-  }
-  return $slotGet;
-}
+const slotGet = { get: (arg0) => slotGet_get(arg0.value) };
 
 function slotGet_get(slot) {
   return {
@@ -75,7 +58,7 @@ function bump(g, GGet) {
 function main() {
   let h = [[5]];
   const g = { value: h };
-  push(g, holderGet());
+  push(g, holderGet);
   $assign(h, g.value);
   first(
     {
@@ -86,12 +69,12 @@ function main() {
         h = value;
       },
     },
-    holderGet(),
+    holderGet,
   ).value.push(2);
   console.log(`[${h[0].join(", ")}]`);
   const kept = $ptr(h, 0);
   const g$1 = { value: h };
-  reset(g$1, [7, 8], holderGet());
+  reset(g$1, [7, 8], holderGet);
   $assign(h, g$1.value);
   $assign(
     first(
@@ -103,7 +86,7 @@ function main() {
           h = value;
         },
       },
-      holderGet(),
+      holderGet,
     ).value,
     [9],
   );
@@ -111,7 +94,7 @@ function main() {
 
   let n = [1];
   const g$2 = { value: n };
-  bump(g$2, numGet());
+  bump(g$2, numGet);
   $assign(n, g$2.value);
   const value = first(
     {
@@ -122,20 +105,20 @@ function main() {
         n = value;
       },
     },
-    numGet(),
+    numGet,
   );
   value.value = (value.value + 5) >>> 0;
   const g$3 = { value: n };
-  reset(g$3, 40, numGet());
+  reset(g$3, 40, numGet);
   $assign(n, g$3.value);
   const g$4 = { value: n };
-  bump(g$4, numGet());
+  bump(g$4, numGet);
   $assign(n, g$4.value);
   console.log(`${n[0]}`);
 
   let slot = [[1]];
   const g$5 = { value: slot };
-  push(g$5, slotGet());
+  push(g$5, slotGet);
   $assign(slot, g$5.value);
   first(
     {
@@ -146,10 +129,10 @@ function main() {
         slot = value;
       },
     },
-    slotGet(),
+    slotGet,
   ).value.push(2);
   const g$6 = { value: slot };
-  reset(g$6, [3, 4], slotGet());
+  reset(g$6, [3, 4], slotGet);
   $assign(slot, g$6.value);
   first(
     {
@@ -160,11 +143,11 @@ function main() {
         slot = value;
       },
     },
-    slotGet(),
+    slotGet,
   ).value.push(5);
   const count = [1];
   const g$7 = { value: count };
-  bump(g$7, slotGet());
+  bump(g$7, slotGet);
   $assign(count, g$7.value);
   console.log(`[${slot[0].join(", ")}] ${count[0]}`);
 }

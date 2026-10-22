@@ -2,20 +2,13 @@
 
 import { $debugStr } from "@rust-js/runtime";
 
-var $tIterExt;
-
 export function entry() {
   main();
 }
 
-function tIterExt() {
-  if ($tIterExt === undefined) {
-    $tIterExt = {
-      defaultForSize: (self, N, SelfItemArrayDefault) => SelfItemArrayDefault.default(),
-    };
-  }
-  return $tIterExt;
-}
+const tIterExt = {
+  defaultForSize: (self, N, SelfItemArrayDefault) => SelfItemArrayDefault.default(),
+};
 
 function zeros(N, TDefault, TArrayDefault) {
   return TArrayDefault.default();
@@ -26,7 +19,7 @@ function defaults(N, StringArrayDefault) {
 }
 
 function main() {
-  const arr = tIterExt().defaultForSize({ start: 0, end: 10 }, 10, {
+  const arr = tIterExt.defaultForSize({ start: 0, end: 10 }, 10, {
     default: () => [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
   });
   console.log(`[${arr.join(", ")}]`);

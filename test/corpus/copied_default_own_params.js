@@ -11,16 +11,13 @@ import {
   $traitImpl,
 } from "@rust-js/runtime";
 
-var $iCollectSlice;
-
 export function entry() {
   main();
 }
 
+const $iCollectSlice = new WeakMap();
+
 function iCollectSlice(IIterator) {
-  if ($iCollectSlice === undefined) {
-    $iCollectSlice = new WeakMap();
-  }
   return $traitImpl($iCollectSlice, [IIterator], () => ({
     innerArray: (arg0, N) => iCollectSlice_innerArray(arg0, N, IIterator),
     collectArray: (self, N) => {

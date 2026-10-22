@@ -219,7 +219,7 @@ console.log(await fetchCount()); // 1
 - **A `Result` is a value, not a throw.** JS reads its `TAG`. A panic is
   what throws ([Errors, panics and exceptions](exceptions.md)).
 - **A generic function takes its trait dictionaries after its
-  arguments**, `totalArea(shapes, circleShape())`: see
+  arguments**, `totalArea(shapes, circleShape)`: see
   [Structs, enums and traits](objects.md#generic-code-takes-a-dictionary).
 
 ## Optional parameters
@@ -485,7 +485,7 @@ for hand-written JS. A JS caller gives each value in that shape:
   `bigint`, not a `number`; an enum `{ TAG, .. }`; a `&mut u32` a
   `{ value }`. Nothing checks it at run time: a wrong one is wrong data.
 - **A generic function needs its dictionaries**, which only the crate's
-  own trait impls export, `circleShape()`.
+  own trait impls export, `circleShape`.
 - **A value with a destructor that JS holds isn't dropped** until JS
   gives it back to Rust code that drops it
   ([Drop](objects.md#drop)).

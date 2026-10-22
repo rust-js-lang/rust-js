@@ -2,18 +2,11 @@
 
 import { $intoIter, $iter, $iterator, $next, $rangeNext, $traitImpl } from "@rust-js/runtime";
 
-var $_u32__u32_Collect, $iExt;
-
 export function entry() {
   main();
 }
 
-function _u32__u32_Collect() {
-  if ($_u32__u32_Collect === undefined) {
-    $_u32__u32_Collect = { fromIterNoBuf: _u32__u32_Collect_fromIterNoBuf };
-  }
-  return $_u32__u32_Collect;
-}
+const _u32__u32_Collect = { fromIterNoBuf: _u32__u32_Collect_fromIterNoBuf };
 
 function _u32__u32_Collect_fromIterNoBuf(iter) {
   const it = $intoIter(iter);
@@ -26,10 +19,9 @@ function _u32__u32_Collect_fromIterNoBuf(iter) {
   }
 }
 
+const $iExt = new WeakMap();
+
 function iExt(IIterator) {
-  if ($iExt === undefined) {
-    $iExt = new WeakMap();
-  }
   return $traitImpl($iExt, [IIterator], () => ({
     nextPair: (self, TCollect) => TCollect.fromIterNoBuf($iterator(self, IIterator.next, true)),
   }));
@@ -41,7 +33,7 @@ function pairOf(it) {
 
 function main() {
   const r = { start: 0, end: 5 };
-  const p = iExt({ next: $rangeNext }).nextPair(r, _u32__u32_Collect());
+  const p = iExt({ next: $rangeNext }).nextPair(r, _u32__u32_Collect);
   const arg = $rangeNext(r);
   console.log(
     `${p == null ? "None" : `Some((${p[0]}, ${p[1]}))`} ${arg == null ? "None" : `Some(${arg})`}`,

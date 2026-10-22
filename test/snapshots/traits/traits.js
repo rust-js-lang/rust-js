@@ -2,14 +2,7 @@
 
 import { $displayF64, $f64Max, $traitImpl } from "@rust-js/runtime";
 
-var $circleShape, $squareShape, $blobShape, $f64Shape, $vecShape, $circleLabeled;
-
-export function circleShape() {
-  if ($circleShape === undefined) {
-    $circleShape = { area: circleShape_area, name: circleShape_name };
-  }
-  return $circleShape;
-}
+export const circleShape = { area: circleShape_area, name: circleShape_name };
 
 function circleShape_area(circle) {
   return 3.14 * circle.r * circle.r;
@@ -19,23 +12,13 @@ function circleShape_name(circle) {
   return "circle";
 }
 
-export function squareShape() {
-  if ($squareShape === undefined) {
-    $squareShape = { area: squareShape_area, name: (self) => "shape" };
-  }
-  return $squareShape;
-}
+export const squareShape = { area: squareShape_area, name: (self) => "shape" };
 
 function squareShape_area(square) {
   return square[0] * square[0];
 }
 
-export function blobShape() {
-  if ($blobShape === undefined) {
-    $blobShape = { area: blobShape_area, name: (self) => "shape" };
-  }
-  return $blobShape;
-}
+export const blobShape = { area: blobShape_area, name: (self) => "shape" };
 
 function blobShape_area(blob) {
   if (blob === "Dot") {
@@ -44,21 +27,15 @@ function blobShape_area(blob) {
   return 0;
 }
 
-export function f64Shape() {
-  if ($f64Shape === undefined) {
-    $f64Shape = { area: f64Shape_area, name: (self) => "shape" };
-  }
-  return $f64Shape;
-}
+export const f64Shape = { area: f64Shape_area, name: (self) => "shape" };
 
 function f64Shape_area(self) {
   return self;
 }
 
+const $vecShape = new WeakMap();
+
 export function vecShape(TShape) {
-  if ($vecShape === undefined) {
-    $vecShape = new WeakMap();
-  }
   return $traitImpl($vecShape, [TShape], () => ({
     area: (arg0) => vecShape_area(arg0, TShape),
     name: (self) => "shape",
@@ -69,15 +46,10 @@ function vecShape_area(vec, TShape) {
   return total(vec, TShape);
 }
 
-export function circleLabeled() {
-  if ($circleLabeled === undefined) {
-    $circleLabeled = {
-      Shape: () => circleShape(),
-      label: (self) => `${circleShape_name(self)} of area ${$displayF64(circleShape_area(self))}`,
-    };
-  }
-  return $circleLabeled;
-}
+export const circleLabeled = {
+  Shape: () => circleShape,
+  label: (self) => `${circleShape_name(self)} of area ${$displayF64(circleShape_area(self))}`,
+};
 
 export function total(shapes, TShape) {
   return shapes.map((s) => TShape.area(s)).reduce((a, b) => a + b, -0);
@@ -95,12 +67,12 @@ export function demo() {
   const c = { r: 1 };
   const direct = circleShape_area(c); // the type is known here
   const mixed = [
-    { value: c, impl: circleShape() },
-    { value: [2], impl: squareShape() },
-    { value: 3, impl: f64Shape() },
+    { value: c, impl: circleShape },
+    { value: [2], impl: squareShape },
+    { value: 3, impl: f64Shape },
   ];
   return (
-    direct + total([[1], [2]], squareShape()) + largest(mixed) + vecShape_area([[1]], squareShape())
+    direct + total([[1], [2]], squareShape) + largest(mixed) + vecShape_area([[1]], squareShape)
   );
 }
 //# sourceMappingURL=traits.js.map

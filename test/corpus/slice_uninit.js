@@ -2,8 +2,6 @@
 
 import { $at, $copyFromSlice, $debugStr, $writeCloneOfSlice } from "@rust-js/runtime";
 
-var $noisyClone;
-
 export function entry() {
   main();
 }
@@ -12,12 +10,7 @@ function noisyDrop_drop(noisy) {
   console.log(`drop ${noisy[0]}`);
 }
 
-export function noisyClone() {
-  if ($noisyClone === undefined) {
-    $noisyClone = { clone: noisyClone_clone, $drop: noisyDrop_drop };
-  }
-  return $noisyClone;
-}
+export const noisyClone = { clone: noisyClone_clone, $drop: noisyDrop_drop };
 
 function noisyClone_clone(noisy) {
   console.log(`clone ${noisy[0]}`);

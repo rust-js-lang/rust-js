@@ -2,16 +2,13 @@
 
 import { $iter, $lazyRange, $next, $rangeNext, $traitImpl } from "@rust-js/runtime";
 
-var $tExt;
-
 export function entry() {
   main();
 }
 
+const $tExt = new WeakMap();
+
 function tExt(TIterator) {
-  if ($tExt === undefined) {
-    $tExt = new WeakMap();
-  }
   return $traitImpl($tExt, [TIterator], () => ({
     second: (self) => {
       TIterator.next(self);

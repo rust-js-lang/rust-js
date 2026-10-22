@@ -9,11 +9,11 @@ import {
   $unwrapErr,
 } from "@rust-js/runtime";
 
-var $appErrorDebug, $appErrorDisplay, $appErrorError;
-
 export function entry() {
   main();
 }
+
+export const appErrorDebug = { fmt: appErrorDebug_fmt };
 
 function appErrorDebug_fmt(appError) {
   if (appError.TAG === "Parse") {
@@ -25,19 +25,7 @@ function appErrorDebug_fmt(appError) {
   return `Invalid { field: ${$debugStr(appError.field)}, value: ${appError.value} }`;
 }
 
-export function appErrorDebug() {
-  if ($appErrorDebug === undefined) {
-    $appErrorDebug = { fmt: appErrorDebug_fmt };
-  }
-  return $appErrorDebug;
-}
-
-export function appErrorDisplay() {
-  if ($appErrorDisplay === undefined) {
-    $appErrorDisplay = { fmt: appErrorDisplay_fmt };
-  }
-  return $appErrorDisplay;
-}
+export const appErrorDisplay = { fmt: appErrorDisplay_fmt };
 
 function appErrorDisplay_fmt(appError) {
   if (appError.TAG === "Parse") {
@@ -49,19 +37,15 @@ function appErrorDisplay_fmt(appError) {
   return `${appError.field} = ${appError.value} is invalid`;
 }
 
-export function appErrorError() {
-  if ($appErrorError === undefined) {
-    const source = () => undefined;
-    $appErrorError = {
-      Debug: () => appErrorDebug(),
-      Display: () => appErrorDisplay(),
-      source,
-      description: () => "description() is deprecated; use Display",
-      cause: source,
-    };
-  }
-  return $appErrorError;
-}
+const $appErrorError_source = () => undefined;
+
+export const appErrorError = {
+  Debug: () => appErrorDebug,
+  Display: () => appErrorDisplay,
+  source: $appErrorError_source,
+  description: () => "description() is deprecated; use Display",
+  cause: $appErrorError_source,
+};
 
 function appErrorFromParseIntError_from(e) {
   return { TAG: "Parse", _0: e };
@@ -91,7 +75,7 @@ function total(config, keys) {
   for (const k of keys) {
     const result = field(config, k);
     if (result.TAG === "Err") {
-      return { TAG: "Err", _0: { value: result._0, impl: appErrorError() } };
+      return { TAG: "Err", _0: { value: result._0, impl: appErrorError } };
     }
     sum = BigInt.asIntN(64, sum + result._0);
   }

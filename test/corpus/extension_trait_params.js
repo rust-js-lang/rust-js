@@ -2,16 +2,13 @@
 
 import { $checked, $cmp, $iter, $iterator, $next, $traitImpl } from "@rust-js/runtime";
 
-var $iSorted, $countSummed, $intoIterSummed;
-
 export function entry() {
   main();
 }
 
+const $iSorted = new WeakMap();
+
 function iSorted(IIterator) {
-  if ($iSorted === undefined) {
-    $iSorted = new WeakMap();
-  }
   return $traitImpl($iSorted, [IIterator], () => ({
     sorted: (self, SelfItemOrd) => {
       const v = $iterator(self, IIterator.next, true).toArray();
@@ -21,43 +18,33 @@ function iSorted(IIterator) {
   }));
 }
 
-function countSummed() {
-  if ($countSummed === undefined) {
-    $countSummed = {
-      total: (self) => {
-        let n = 0;
-        while (true) {
-          const x = countIterator_next(self);
-          if (x == null) {
-            break;
-          }
-          n = (n + x) >>> 0;
-        }
-        return n;
-      },
-    };
-  }
-  return $countSummed;
-}
+const countSummed = {
+  total: (self) => {
+    let n = 0;
+    while (true) {
+      const x = countIterator_next(self);
+      if (x == null) {
+        break;
+      }
+      n = (n + x) >>> 0;
+    }
+    return n;
+  },
+};
 
-function intoIterSummed() {
-  if ($intoIterSummed === undefined) {
-    $intoIterSummed = {
-      total: (self) => {
-        let n = 0;
-        while (true) {
-          const x = $next(self);
-          if (x == null) {
-            break;
-          }
-          n = (n + x) >>> 0;
-        }
-        return n;
-      },
-    };
-  }
-  return $intoIterSummed;
-}
+const intoIterSummed = {
+  total: (self) => {
+    let n = 0;
+    while (true) {
+      const x = $next(self);
+      if (x == null) {
+        break;
+      }
+      n = (n + x) >>> 0;
+    }
+    return n;
+  },
+};
 
 function countIterator_next(count) {
   const value = $checked(count[0] - 1, 0, 255);
@@ -94,16 +81,16 @@ function main() {
   console.log(
     `${counted([3], { next: countIterator_next }, iSorted({ next: countIterator_next }))} ${counted($iter([1, 2]), { next: $next }, iSorted({ next: $next }))}`,
   );
-  console.log(`${summed([3], countSummed())} ${summed($iter([1, 2]), intoIterSummed())}`);
+  console.log(`${summed([3], countSummed)} ${summed($iter([1, 2]), intoIterSummed)}`);
   console.log(
-    `${dynamic({ value: [4], impl: countSummed() })} ${dynamic({
+    `${dynamic({ value: [4], impl: countSummed })} ${dynamic({
       value: $iter([4, 5]),
-      impl: intoIterSummed(),
+      impl: intoIterSummed,
     })}`,
   );
   const c = [5];
   console.log(
-    `${countSummed().total(c)} ${((value) => (value == null ? "None" : `Some(${value})`))(countIterator_next(c))}`,
+    `${countSummed.total(c)} ${((value) => (value == null ? "None" : `Some(${value})`))(countIterator_next(c))}`,
   );
 }
 //# sourceMappingURL=case.js.map

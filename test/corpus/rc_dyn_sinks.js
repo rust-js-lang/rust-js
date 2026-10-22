@@ -12,8 +12,6 @@ import {
   $unborrow,
 } from "@rust-js/runtime";
 
-var $counterSink, $loudSink;
-
 export function entry() {
   main();
 }
@@ -22,15 +20,10 @@ function loudDrop_drop(loud) {
   console.log("drop loud");
 }
 
-function counterSink() {
-  if ($counterSink === undefined) {
-    $counterSink = {
-      take: (arg0, arg1) => counterSink_take(arg0.value, arg1),
-      total: counterSink_total,
-    };
-  }
-  return $counterSink;
-}
+const counterSink = {
+  take: (arg0, arg1) => counterSink_take(arg0.value, arg1),
+  total: counterSink_total,
+};
 
 function counterSink_take(counter, n) {
   counter.sum = (counter.sum + n) >>> 0;
@@ -40,18 +33,13 @@ function counterSink_total(counter) {
   return counter.sum;
 }
 
-function loudSink() {
-  if ($loudSink === undefined) {
-    $loudSink = {
-      take: loudSink_take,
-      total: loudSink_total,
-      $drop: (loud) => {
-        loudDrop_drop({ value: loud });
-      },
-    };
-  }
-  return $loudSink;
-}
+const loudSink = {
+  take: loudSink_take,
+  total: loudSink_total,
+  $drop: (loud) => {
+    loudDrop_drop({ value: loud });
+  },
+};
 
 function loudSink_take(loud, n) {
   console.log(`loud takes ${n}`);
@@ -66,13 +54,13 @@ function main() {
   let tmp;
   try {
     tmp = $rcClone(counter);
-    $dynCell(tmp.value, counterSink());
+    $dynCell(tmp.value, counterSink);
   } catch (error) {
     $rcDrop(counter);
     throw error;
   }
   const rc = { value: {}, strong: 1, weak: 0 };
-  $dynCell(rc.value, loudSink());
+  $dynCell(rc.value, loudSink);
   const sinks = [tmp, rc];
   let iter;
   try {

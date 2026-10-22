@@ -24,16 +24,13 @@ import {
   $traitImpl,
 } from "@rust-js/runtime";
 
-var $withPositionClone, $withPositionDebug;
-
 export function entry() {
   main();
 }
 
+const $withPositionClone = new WeakMap();
+
 export function withPositionClone(IClone, IItemClone) {
-  if ($withPositionClone === undefined) {
-    $withPositionClone = new WeakMap();
-  }
   return $traitImpl($withPositionClone, [IClone, IItemClone], () => ({
     clone: (arg0) => withPositionClone_clone(arg0, IClone, IItemClone),
   }));
@@ -70,10 +67,9 @@ function withPositionIterator_next(withPosition) {
   return [first ? (last ? "only" : "first") : last ? "last" : "middle", item];
 }
 
+const $withPositionDebug = new WeakMap();
+
 export function withPositionDebug(PeekableDebug) {
-  if ($withPositionDebug === undefined) {
-    $withPositionDebug = new WeakMap();
-  }
   return $traitImpl($withPositionDebug, [PeekableDebug], () => ({
     fmt: (arg0, arg1) => withPositionDebug_fmt(arg0, arg1, PeekableDebug),
   }));

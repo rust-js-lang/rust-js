@@ -2,16 +2,13 @@
 
 import { $traitImpl } from "@rust-js/runtime";
 
-var $wrapConsume, $wrapTake, $wrapReset, $loudDefault;
-
 export function entry() {
   main();
 }
 
+const $wrapConsume = new WeakMap();
+
 function wrapConsume(TClone, dropT) {
-  if ($wrapConsume === undefined) {
-    $wrapConsume = new WeakMap();
-  }
   return $traitImpl($wrapConsume, [TClone, dropT], () => ({
     consume: (arg0) => wrapConsume_consume(arg0, TClone, dropT),
     $drop: (wrap) => {
@@ -29,10 +26,9 @@ function eat(c, CConsume) {
   return CConsume.consume(c);
 }
 
+const $wrapTake = new WeakMap();
+
 function wrapTake(dropT) {
-  if ($wrapTake === undefined) {
-    $wrapTake = new WeakMap();
-  }
   return $traitImpl($wrapTake, [dropT], () => ({
     take: (arg0) => wrapTake_take(arg0, dropT),
     $drop: (wrap) => {
@@ -50,10 +46,9 @@ function taken(c, CTake) {
   return CTake.take(c);
 }
 
+const $wrapReset = new WeakMap();
+
 function wrapReset(TDefault, dropT) {
-  if ($wrapReset === undefined) {
-    $wrapReset = new WeakMap();
-  }
   return $traitImpl($wrapReset, [TDefault, dropT], () => ({
     reset: (arg0) => wrapReset_reset(arg0.value, TDefault, dropT),
     $drop: (wrap) => {
@@ -71,12 +66,7 @@ function wrapReset_reset(wrap, TDefault, dropT) {
   }
 }
 
-export function loudDefault() {
-  if ($loudDefault === undefined) {
-    $loudDefault = { default: loudDefault_default, $drop: loudDrop_drop };
-  }
-  return $loudDefault;
-}
+export const loudDefault = { default: loudDefault_default, $drop: loudDrop_drop };
 
 function loudDefault_default() {
   return ["made by default"];
@@ -98,7 +88,7 @@ function main() {
   console.log(`${taken([8], wrapTake())}`);
   const wrapped = [["replaced"]];
   try {
-    wrapReset_reset(wrapped, loudDefault(), loudDrop_drop);
+    wrapReset_reset(wrapped, loudDefault, loudDrop_drop);
     console.log("reset");
   } finally {
     loudDrop_drop(wrapped[0]);

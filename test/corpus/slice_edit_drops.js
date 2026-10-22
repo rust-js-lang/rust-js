@@ -15,8 +15,6 @@ import {
   $take,
 } from "@rust-js/runtime";
 
-var $trackedClone, $modeClone;
-
 export function entry() {
   main();
 }
@@ -29,15 +27,10 @@ function trackedDebug_fmt(tracked) {
   return `Tracked(${tracked[0]})`;
 }
 
-export function trackedClone() {
-  if ($trackedClone === undefined) {
-    $trackedClone = {
-      clone: trackedClone_clone,
-      cloneFrom: (arg0, arg1) => trackedClone_cloneFrom(arg0.value, arg1),
-    };
-  }
-  return $trackedClone;
-}
+export const trackedClone = {
+  clone: trackedClone_clone,
+  cloneFrom: (arg0, arg1) => trackedClone_cloneFrom(arg0.value, arg1),
+};
 
 function trackedClone_clone(tracked) {
   console.log(`clone ${tracked[0]}`);
@@ -49,12 +42,7 @@ function trackedClone_cloneFrom(tracked, source) {
   tracked[0] = source[0];
 }
 
-export function modeClone() {
-  if ($modeClone === undefined) {
-    $modeClone = { clone: modeClone_clone, cloneFrom: modeClone_cloneFrom };
-  }
-  return $modeClone;
-}
+export const modeClone = { clone: modeClone_clone, cloneFrom: modeClone_cloneFrom };
 
 function modeClone_clone(mode) {
   if (mode === "On") {

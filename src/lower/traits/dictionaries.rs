@@ -682,7 +682,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             let callee = self.fn_ref(impl_id);
             let args = self.evidence_args(impl_id, impl_args, span)?;
-            return Ok(Expr::call(callee, args));
+            // One that takes nothing, its module's `const`, `circleShape` (ADR 0592).
+            return Ok(match self.takes_evidence(impl_id) {
+                true => Expr::call(callee, args),
+                false => callee,
+            });
         }
         // A trait object's: Rust's built-in `impl Trait for dyn Trait`.
         let selected = self.tcx.codegen_select_candidate(self.typing_env.as_query_input(tr));

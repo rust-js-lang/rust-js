@@ -2,8 +2,6 @@
 
 import { $debugStr } from "@rust-js/runtime";
 
-var $unitMakerVec;
-
 export function entry() {
   main();
 }
@@ -12,12 +10,7 @@ function wrapFromVec_from(v) {
   return [v];
 }
 
-function unitMakerVec() {
-  if ($unitMakerVec === undefined) {
-    $unitMakerVec = { MadeFromI: () => ({ from: wrapFromVec_from }) };
-  }
-  return $unitMakerVec;
-}
+const unitMakerVec = { MadeFromI: () => ({ from: wrapFromVec_from }) };
 
 function make(v, TMakerVec) {
   return TMakerVec.MadeFromI().from(v);
@@ -40,7 +33,7 @@ function widened(x, TIntoU64) {
 }
 
 function main() {
-  const w = make([1, 2], unitMakerVec());
+  const w = make([1, 2], unitMakerVec);
   console.log(`[${w[0].join(", ")}]`);
   const w2 = build([3], { from: wrapFromVec_from });
   console.log(`[${w2[0].join(", ")}]`);

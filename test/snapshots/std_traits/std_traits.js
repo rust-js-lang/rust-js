@@ -30,48 +30,19 @@ import {
   $traitImpl,
 } from "@rust-js/runtime";
 
-var $configDefault,
-  $trackedClone,
-  $figureClone,
-  $versionPartialEq,
-  $metersPartialEqF64,
-  $pointDisplay,
-  $routeDisplay,
-  $figureDisplay,
-  $labeledDisplay,
-  $wordPartialOrd,
-  $wordOrd,
-  $posDebug,
-  $hiddenDebug;
-
-export function configDefault() {
-  if ($configDefault === undefined) {
-    $configDefault = { default: configDefault_default };
-  }
-  return $configDefault;
-}
+export const configDefault = { default: configDefault_default };
 
 function configDefault_default() {
   return { retries: 3, name: "main" };
 }
 
-export function trackedClone() {
-  if ($trackedClone === undefined) {
-    $trackedClone = { clone: trackedClone_clone };
-  }
-  return $trackedClone;
-}
+export const trackedClone = { clone: trackedClone_clone };
 
 function trackedClone_clone(tracked) {
   return { generation: (tracked.generation + 1) >>> 0 };
 }
 
-export function figureClone() {
-  if ($figureClone === undefined) {
-    $figureClone = { clone: figureClone_clone };
-  }
-  return $figureClone;
-}
+export const figureClone = { clone: figureClone_clone };
 
 function figureClone_clone(figure) {
   if (figure === "Dot") {
@@ -104,7 +75,7 @@ export function copied(x) {
 /** Derived and hand-written, direct and through a generic. */
 export function defaults() {
   const s = { size: 0, tags: [], mode: "Off" };
-  const c = fresh(configDefault());
+  const c = fresh(configDefault);
   const n = fresh({ default: () => 0 });
   return [s.size, c.retries, s.mode === "Off", n, c.name, s.tags.length];
 }
@@ -137,7 +108,7 @@ export function handWritten() {
   const copy = { ...holder, tracked: trackedClone_clone(holder.tracked) };
   const all = [{ generation: 5 }];
   const cloned = all.map((item) => trackedClone_clone(item));
-  const both = twice(copy.tracked, trackedClone());
+  const both = twice(copy.tracked, trackedClone);
   return [
     copy.tracked.generation,
     cloned.map((t) => t.generation).reduce((a, b) => (a + b) >>> 0, 0),
@@ -190,12 +161,7 @@ export function fallibleConversions(n) {
   return `${direct}, ${result.TAG === "Ok" ? result._0 : result._0}`;
 }
 
-export function versionPartialEq() {
-  if ($versionPartialEq === undefined) {
-    $versionPartialEq = { eq: versionPartialEq_eq };
-  }
-  return $versionPartialEq;
-}
+export const versionPartialEq = { eq: versionPartialEq_eq };
 
 function versionPartialEq_eq(version, other) {
   return version.major === other.major;
@@ -221,7 +187,7 @@ export function equalities() {
   const r3 = { version: version(1, "c"), notes: [] };
   const value = versionPartialEq_eq(r1.version, r2.version) && $eq(r1.notes, r2.notes);
   const value$1 = !(versionPartialEq_eq(r1.version, r3.version) && $eq(r1.notes, r3.notes));
-  const value$2 = same(version(2, "a"), version(3, "a"), versionPartialEq());
+  const value$2 = same(version(2, "a"), version(3, "a"), versionPartialEq);
   const left = { TAG: "Bump", _0: version(4, "a") };
   const right = { TAG: "Bump", _0: version(4, "b") };
   const value$3 =
@@ -247,7 +213,7 @@ export function genericEqualities() {
     [2, "b"],
   ];
   return [
-    countEqual(all, version(1, "z"), versionPartialEq()),
+    countEqual(all, version(1, "z"), versionPartialEq),
     same(
       pairs,
       [
@@ -263,12 +229,7 @@ export function genericEqualities() {
 }
 
 /** A `PartialEq` with another type on the right: `!=` is its `eq` too. */
-export function metersPartialEqF64() {
-  if ($metersPartialEqF64 === undefined) {
-    $metersPartialEqF64 = { eq: metersPartialEqF64_eq };
-  }
-  return $metersPartialEqF64;
-}
+export const metersPartialEqF64 = { eq: metersPartialEqF64_eq };
 
 function metersPartialEqF64_eq(meters, other) {
   return meters[0] === other;
@@ -279,23 +240,13 @@ export function compared() {
   return [metersPartialEqF64_eq(m, 2), !metersPartialEqF64_eq(m, 3), !metersPartialEqF64_eq(m, 2)];
 }
 
-export function pointDisplay() {
-  if ($pointDisplay === undefined) {
-    $pointDisplay = { fmt: pointDisplay_fmt };
-  }
-  return $pointDisplay;
-}
+export const pointDisplay = { fmt: pointDisplay_fmt };
 
 function pointDisplay_fmt(point) {
   return `(${point.x}, ${point.y})`;
 }
 
-export function routeDisplay() {
-  if ($routeDisplay === undefined) {
-    $routeDisplay = { fmt: routeDisplay_fmt };
-  }
-  return $routeDisplay;
-}
+export const routeDisplay = { fmt: routeDisplay_fmt };
 
 function routeDisplay_fmt(route) {
   let f = "";
@@ -319,12 +270,7 @@ function writeLoop(stops) {
   return ` (a loop of ${stops})`;
 }
 
-export function figureDisplay() {
-  if ($figureDisplay === undefined) {
-    $figureDisplay = { fmt: figureDisplay_fmt };
-  }
-  return $figureDisplay;
-}
+export const figureDisplay = { fmt: figureDisplay_fmt };
 
 function figureDisplay_fmt(figure) {
   if (figure === "Dot") {
@@ -333,10 +279,9 @@ function figureDisplay_fmt(figure) {
   return `a polygon of ${figure._0.length}`;
 }
 
+const $labeledDisplay = new WeakMap();
+
 export function labeledDisplay(TDisplay) {
-  if ($labeledDisplay === undefined) {
-    $labeledDisplay = new WeakMap();
-  }
   return $traitImpl($labeledDisplay, [TDisplay], () => ({
     fmt: (arg0) => labeledDisplay_fmt(arg0, TDisplay),
   }));
@@ -365,8 +310,8 @@ export function displays() {
     pointDisplay_fmt(p),
     `${routeDisplay_fmt(route)} / ${routeDisplay_fmt(empty)}`,
     `${figureDisplay_fmt("Dot")} and ${figureDisplay_fmt({ TAG: "Poly", _0: [1, 2] })}`,
-    labeledDisplay_fmt(labeled, pointDisplay()),
-    shown(labeled, labeledDisplay(pointDisplay())),
+    labeledDisplay_fmt(labeled, pointDisplay),
+    shown(labeled, labeledDisplay(pointDisplay)),
     shown({ label: "n", value: 2.5 }, labeledDisplay({ fmt: $displayF64 })),
   ];
 }
@@ -451,23 +396,16 @@ export function genericIterations() {
   ];
 }
 
-export function wordPartialOrd() {
-  if ($wordPartialOrd === undefined) {
-    $wordPartialOrd = { PartialEq: () => ({ eq: $eq }), partialCmp: wordPartialOrd_partialCmp };
-  }
-  return $wordPartialOrd;
-}
+export const wordPartialOrd = {
+  PartialEq: () => ({ eq: $eq }),
+  partialCmp: wordPartialOrd_partialCmp,
+};
 
 function wordPartialOrd_partialCmp(word, other) {
   return wordOrd_cmp(word, other);
 }
 
-export function wordOrd() {
-  if ($wordOrd === undefined) {
-    $wordOrd = { PartialOrd: () => wordPartialOrd(), cmp: wordOrd_cmp };
-  }
-  return $wordOrd;
-}
+export const wordOrd = { PartialOrd: () => wordPartialOrd, cmp: wordOrd_cmp };
 
 function wordOrd_cmp(word, other) {
   const byLength = $cmp(Array.from(word[0]).length, Array.from(other[0]).length);
@@ -552,15 +490,10 @@ export function moreOrderings() {
  * `Debug` (ADR 0060): `{:?}` by the type, as Rust shows it. A derived one is
  * a function like any `fmt`, left out unless something shows the type.
  */
+export const posDebug = { fmt: posDebug_fmt };
+
 function posDebug_fmt(pos) {
   return `Pos { x: ${$debugF64(pos.x)}, y: ${$debugF64(pos.y)} }`;
-}
-
-export function posDebug() {
-  if ($posDebug === undefined) {
-    $posDebug = { fmt: posDebug_fmt };
-  }
-  return $posDebug;
 }
 
 function dimsDebug_fmt(dims) {
@@ -600,12 +533,7 @@ function boxedDebug_fmt(boxed, TDebug) {
   return `Boxed { item: ${TDebug.fmt(boxed.item)} }`;
 }
 
-export function hiddenDebug() {
-  if ($hiddenDebug === undefined) {
-    $hiddenDebug = { fmt: hiddenDebug_fmt };
-  }
-  return $hiddenDebug;
-}
+export const hiddenDebug = { fmt: hiddenDebug_fmt };
 
 function hiddenDebug_fmt(hidden) {
   return "<hidden>";
@@ -626,7 +554,7 @@ export function debugs(n) {
     h: 3,
   })}`;
   const value$3 = sixDebug_fmt({ a: 1, b: 2, c: 3, d: 4, e: 5, f: "x" });
-  const value$4 = `${boxedDebug_fmt({ item: p }, posDebug())} ${boxedDebug_fmt({ item: "s" }, { fmt: (value) => (value == null ? "None" : `Some(${$debugStr(value)})`) })}`;
+  const value$4 = `${boxedDebug_fmt({ item: p }, posDebug)} ${boxedDebug_fmt({ item: "s" }, { fmt: (value) => (value == null ? "None" : `Some(${$debugStr(value)})`) })}`;
   const value$5 = [n, "a", "'"];
   const value$6 = [5];
   const value$7 = `Some(${$debugF64(1)}) None (${value$5[0]}, ${$debugStr(value$5[1])}, ${$debugStr(value$5[2], "'")}) (${value$6[0]},)`;

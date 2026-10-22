@@ -10,8 +10,6 @@ import {
   $traitImpl,
 } from "@rust-js/runtime";
 
-var $skipperSkip;
-
 export function entry() {
   main();
 }
@@ -43,10 +41,9 @@ const Skipper = {
   },
 };
 
+const $skipperSkip = new WeakMap();
+
 function skipperSkip(IIterator, dropI, dropIItem) {
-  if ($skipperSkip === undefined) {
-    $skipperSkip = new WeakMap();
-  }
   return $traitImpl($skipperSkip, [IIterator, dropI, dropIItem], () => ({
     skip: (arg0) => skipperSkip_skip(arg0.value, IIterator, dropI, dropIItem),
     $drop: (skipper) => {

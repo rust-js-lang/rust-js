@@ -2,8 +2,6 @@
 
 import { $cloneFromSlice, $ptr, $traitImpl, $view } from "@rust-js/runtime";
 
-var $countedClone, $_T__N_Array;
-
 export function entry() {
   main();
 }
@@ -12,15 +10,10 @@ function countedDebug_fmt(counted) {
   return `Counted(${counted[0]})`;
 }
 
-export function countedClone() {
-  if ($countedClone === undefined) {
-    $countedClone = {
-      clone: countedClone_clone,
-      cloneFrom: (arg0, arg1) => countedClone_cloneFrom(arg0.value, arg1),
-    };
-  }
-  return $countedClone;
-}
+export const countedClone = {
+  clone: countedClone_clone,
+  cloneFrom: (arg0, arg1) => countedClone_cloneFrom(arg0.value, arg1),
+};
 
 function countedClone_clone(counted) {
   console.log(`clone ${counted[0]}`);
@@ -44,10 +37,9 @@ function refill(into, from, TClone) {
   );
 }
 
+const $_T__N_Array = new Map();
+
 function _T__N_Array(N) {
-  if ($_T__N_Array === undefined) {
-    $_T__N_Array = new Map();
-  }
   return $traitImpl($_T__N_Array, [N], () => ({}));
 }
 
@@ -66,12 +58,12 @@ function refillItems(into, from, AArray, AItemClone) {
 
 function main() {
   const a = [[1], [2]];
-  refill(a, [[3], [4]], countedClone());
+  refill(a, [[3], [4]], countedClone);
   const b = [[1]];
   refill(b, [[5]], { clone: (value) => value });
   const n = [1, 2];
   refill(n, [7, 8], { clone: (value) => value });
-  refillItems($view(a, 0, 1), [[6]], _T__N_Array(1), countedClone());
+  refillItems($view(a, 0, 1), [[6]], _T__N_Array(1), countedClone);
   console.log(
     `[${a.map((item) => countedDebug_fmt(item)).join(", ")}] ${b[0][0]} [${n.join(", ")}]`,
   );

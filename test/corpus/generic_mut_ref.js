@@ -2,8 +2,6 @@
 
 import { $assign } from "@rust-js/runtime";
 
-var $i32Bump, $cBump;
-
 export function entry() {
   main();
 }
@@ -12,20 +10,15 @@ function cDebug_fmt(c) {
   return `C { n: ${c.n} }`;
 }
 
-function i32Bump() {
-  if ($i32Bump === undefined) {
-    $i32Bump = {
-      bump: i32Bump_bump,
-      get: i32Bump_get,
-      bumpedTwice: (self) => {
-        i32Bump_bump(self);
-        i32Bump_bump(self);
-        return i32Bump_get(self.value);
-      },
-    };
-  }
-  return $i32Bump;
-}
+const i32Bump = {
+  bump: i32Bump_bump,
+  get: i32Bump_get,
+  bumpedTwice: (self) => {
+    i32Bump_bump(self);
+    i32Bump_bump(self);
+    return i32Bump_get(self.value);
+  },
+};
 
 function i32Bump_bump(self) {
   self.value = (self.value + 1) | 0;
@@ -35,20 +28,15 @@ function i32Bump_get(self) {
   return self;
 }
 
-function cBump() {
-  if ($cBump === undefined) {
-    $cBump = {
-      bump: (arg0) => cBump_bump(arg0.value),
-      get: cBump_get,
-      bumpedTwice: (self) => {
-        cBump_bump(self.value);
-        cBump_bump(self.value);
-        return cBump_get(self.value);
-      },
-    };
-  }
-  return $cBump;
-}
+const cBump = {
+  bump: (arg0) => cBump_bump(arg0.value),
+  get: cBump_get,
+  bumpedTwice: (self) => {
+    cBump_bump(self.value);
+    cBump_bump(self.value);
+    return cBump_get(self.value);
+  },
+};
 
 function cBump_bump(c) {
   c.n = (c.n + 1) | 0;
@@ -78,10 +66,10 @@ function main() {
   let n = 1;
   const c = { n: 10 };
   const x = { value: n };
-  twice(x, i32Bump());
+  twice(x, i32Bump);
   n = x.value;
   const x$1 = { value: c };
-  twice(x$1, cBump());
+  twice(x$1, cBump);
   $assign(c, x$1.value);
   console.log(`${n} ${c.n}`);
 
@@ -93,13 +81,13 @@ function main() {
   $assign(c, x$3.value);
   console.log(`${n} ${cDebug_fmt(c)}`);
 
-  console.log(`${bumped(1, i32Bump())} ${bumped({ n: 3 }, cBump()).n}`);
+  console.log(`${bumped(1, i32Bump)} ${bumped({ n: 3 }, cBump).n}`);
 
   const self = { value: n };
-  const bumpedTwice = i32Bump().bumpedTwice(self);
+  const bumpedTwice = i32Bump.bumpedTwice(self);
   n = self.value;
   const self$1 = { value: c };
-  const value = cBump().bumpedTwice(self$1);
+  const value = cBump.bumpedTwice(self$1);
   $assign(c, self$1.value);
   console.log(`${bumpedTwice} ${value}`);
   console.log(`${n} ${c.n}`);

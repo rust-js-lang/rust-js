@@ -2,18 +2,11 @@
 
 import { $assign, $debugStr, $someValue } from "@rust-js/runtime";
 
-var $countSource, $wordsSource, $countLabeled, $wordsLabeled;
-
 export function entry() {
   main();
 }
 
-function countSource() {
-  if ($countSource === undefined) {
-    $countSource = { nextItem: (arg0) => countSource_nextItem(arg0.value) };
-  }
-  return $countSource;
-}
+const countSource = { nextItem: (arg0) => countSource_nextItem(arg0.value) };
 
 function countSource_nextItem(count) {
   if (count.n === 0) {
@@ -23,12 +16,7 @@ function countSource_nextItem(count) {
   return count.n;
 }
 
-function wordsSource() {
-  if ($wordsSource === undefined) {
-    $wordsSource = { nextItem: (arg0) => wordsSource_nextItem(arg0.value) };
-  }
-  return $wordsSource;
-}
+const wordsSource = { nextItem: (arg0) => wordsSource_nextItem(arg0.value) };
 
 function wordsSource_nextItem(words) {
   return words.list.pop();
@@ -60,23 +48,13 @@ function shown(s, SSource, SItemDebug) {
     .join(", ")}]`;
 }
 
-function countLabeled() {
-  if ($countLabeled === undefined) {
-    $countLabeled = { LabelDisplay: () => ({ fmt: String }), label: countLabeled_label };
-  }
-  return $countLabeled;
-}
+const countLabeled = { LabelDisplay: () => ({ fmt: String }), label: countLabeled_label };
 
 function countLabeled_label(count) {
   return count.n;
 }
 
-function wordsLabeled() {
-  if ($wordsLabeled === undefined) {
-    $wordsLabeled = { LabelDisplay: () => ({ fmt: (value) => value }), label: wordsLabeled_label };
-  }
-  return $wordsLabeled;
-}
+const wordsLabeled = { LabelDisplay: () => ({ fmt: (value) => value }), label: wordsLabeled_label };
 
 function wordsLabeled_label(words) {
   return words.list.join("+");
@@ -93,26 +71,26 @@ function all(i) {
 function main() {
   const count = { n: 3 };
   const s = { value: count };
-  const value = drain(s, countSource());
+  const value = drain(s, countSource);
   $assign(count, s.value);
   console.log(`[${value.join(", ")}]`);
   const words = { list: ["a", "b"] };
   const s$1 = { value: words };
-  const value$1 = drain(s$1, wordsSource());
+  const value$1 = drain(s$1, wordsSource);
   $assign(words, s$1.value);
   console.log(`[${value$1.map((item) => $debugStr(item)).join(", ")}]`);
   const value$2 = { n: 4 };
   const s$2 = { value: value$2 };
-  const value$3 = total(s$2, countSource());
+  const value$3 = total(s$2, countSource);
   $assign(value$2, s$2.value);
   const value$4 = { list: ["x"] };
   const s$3 = { value: value$4 };
-  const value$5 = shown(s$3, wordsSource(), { fmt: (value) => $debugStr(value) });
+  const value$5 = shown(s$3, wordsSource, { fmt: (value) => $debugStr(value) });
   $assign(value$4, s$3.value);
   console.log(`${value$3} ${value$5}`);
-  console.log(`${tag({ n: 7 }, countLabeled())} ${tag({ list: ["p", "q"] }, wordsLabeled())}`);
+  console.log(`${tag({ n: 7 }, countLabeled)} ${tag({ list: ["p", "q"] }, wordsLabeled)}`);
   console.log(`[${all([1, 2].values().map((n) => Math.imul(n, 10) >>> 0)).join(", ")}]`);
-  const source = { value: { n: 2 }, impl: countSource() };
+  const source = { value: { n: 2 }, impl: countSource };
   const nextItem = source.impl.nextItem(source);
   const value$6 = source.impl.nextItem(source);
   console.log(

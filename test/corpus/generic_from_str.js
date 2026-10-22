@@ -14,8 +14,6 @@ import {
   $trim,
 } from "@rust-js/runtime";
 
-var $unitDebug, $unitFromStr;
-
 export function entry() {
   main();
 }
@@ -44,23 +42,13 @@ function explain(s, TFromStr, TDebug, TErrDebug) {
   return `error ${TErrDebug.fmt(e)}`;
 }
 
+export const unitDebug = { fmt: unitDebug_fmt };
+
 function unitDebug_fmt(unit) {
   return unit === "Kg" ? "Kg" : "Lb";
 }
 
-export function unitDebug() {
-  if ($unitDebug === undefined) {
-    $unitDebug = { fmt: unitDebug_fmt };
-  }
-  return $unitDebug;
-}
-
-export function unitFromStr() {
-  if ($unitFromStr === undefined) {
-    $unitFromStr = { fromStr: unitFromStr_fromStr };
-  }
-  return $unitFromStr;
-}
+export const unitFromStr = { fromStr: unitFromStr_fromStr };
 
 function unitFromStr_fromStr(s) {
   if (s === "kg") {
@@ -76,7 +64,7 @@ function main() {
   const value = read("42", { fromStr: (s) => $parseInt(s, -2147483648, 2147483647) });
   const value$1 = read("x", { fromStr: (s) => $parseF64(s) });
   const value$2 = read("true", { fromStr: (s) => $parseBool(s) });
-  const unit = read("kg", unitFromStr());
+  const unit = read("kg", unitFromStr);
   const value$3 = read("18446744073709551615", {
     fromStr: (s) => $parseBig(s, 0n, 18446744073709551615n),
   });
@@ -84,18 +72,18 @@ function main() {
     `${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${$debugF64(value$1)})`} ${value$2 == null ? "None" : `Some(${value$2})`} ${unit == null ? "None" : `Some(${unit})`} ${value$3 == null ? "None" : `Some(${value$3})`}`,
   );
   console.log(
-    `${readOr("  7 ", 0, { fromStr: (s) => $parseInt(s, 0, 255) })} ${readOr("nope", "Lb", unitFromStr())}`,
+    `${readOr("  7 ", 0, { fromStr: (s) => $parseInt(s, 0, 255) })} ${readOr("nope", "Lb", unitFromStr)}`,
   );
   const value$4 = parseAll(["1", "2"], { fromStr: (s) => $parseInt(s, 0, 65535) });
   console.log(
     `${value$4.TAG === "Ok" ? `Ok([${value$4._0.join(", ")}])` : `Err(${$debugParseError(value$4._0, "ParseIntError")})`} ${parseAll(["1", "300"], { fromStr: (s) => $parseInt(s, -128, 127) }).TAG === "Err"}`,
   );
-  const value$5 = parseAll(["lb", "st"], unitFromStr());
+  const value$5 = parseAll(["lb", "st"], unitFromStr);
   console.log(
     `${value$5.TAG === "Ok" ? `Ok([${value$5._0.join(", ")}])` : `Err(${$debugStr(value$5._0)})`}`,
   );
   console.log(
-    `${explain("ab", { fromStr: (s) => $parseChar(s) }, { fmt: (value) => $debugStr(value, "'") }, { fmt: (value) => $debugParseError(value, "ParseCharError") })} | ${explain("g", unitFromStr(), unitDebug(), { fmt: (value) => $debugStr(value) })} | ${explain(
+    `${explain("ab", { fromStr: (s) => $parseChar(s) }, { fmt: (value) => $debugStr(value, "'") }, { fmt: (value) => $debugParseError(value, "ParseCharError") })} | ${explain("g", unitFromStr, unitDebug, { fmt: (value) => $debugStr(value) })} | ${explain(
       "s",
       { fromStr: (s) => ({ TAG: "Ok", _0: s }) },
       { fmt: (value) => $debugStr(value) },

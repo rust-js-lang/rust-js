@@ -111,9 +111,6 @@ fn visit(module: &mut LoweredModule, visitor: &mut Visitor<'_>) {
             Item::Statements(stmts) => block(stmts, visitor),
         }
     }
-    for cache in &mut module.caches {
-        visitor.name(cache);
-    }
 }
 
 fn function_names(function: &mut Function, visitor: &mut Visitor<'_>) {

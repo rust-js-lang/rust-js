@@ -2,38 +2,27 @@
 
 import { $at, $index, $traitImpl } from "@rust-js/runtime";
 
-var $vecPoolIndex, $_usize__K_PoolIndex;
-
 export function entry() {
   main();
 }
 
-export function vecPoolIndex() {
-  if ($vecPoolIndex === undefined) {
-    $vecPoolIndex = {
-      BorrowMut: () => ({
-        borrowMut: (value) => value,
-        Borrow: () => ({ borrow: (value) => value }),
-      }),
-      len: (self) => ({ borrow: (value) => value }).borrow(self).length,
-      first: (self) => {
-        const value$1 = {
-          borrowMut: (value) => value,
-          Borrow: () => ({ borrow: (value) => value }),
-        }.borrowMut(self).value;
-        const value = (value$1[$at(value$1, 0)] + 1) >>> 0;
-        value$1[0] = value;
-        return $index({ borrow: (value) => value }.borrow(self.value), 0);
-      },
-    };
-  }
-  return $vecPoolIndex;
-}
+export const vecPoolIndex = {
+  BorrowMut: () => ({ borrowMut: (value) => value, Borrow: () => ({ borrow: (value) => value }) }),
+  len: (self) => ({ borrow: (value) => value }).borrow(self).length,
+  first: (self) => {
+    const value$1 = {
+      borrowMut: (value) => value,
+      Borrow: () => ({ borrow: (value) => value }),
+    }.borrowMut(self).value;
+    const value = (value$1[$at(value$1, 0)] + 1) >>> 0;
+    value$1[0] = value;
+    return $index({ borrow: (value) => value }.borrow(self.value), 0);
+  },
+};
+
+const $_usize__K_PoolIndex = new Map();
 
 export function _usize__K_PoolIndex(K) {
-  if ($_usize__K_PoolIndex === undefined) {
-    $_usize__K_PoolIndex = new Map();
-  }
   return $traitImpl($_usize__K_PoolIndex, [K], () => ({
     BorrowMut: () => ({
       borrowMut: (value) => value,
@@ -61,8 +50,8 @@ function total(p, PPoolIndex) {
 
 function main() {
   console.log(`${[1, 2, 3].length}`);
-  console.log(`${vecPoolIndex().len([1, 2])}`);
-  console.log(`${total([5, 6], vecPoolIndex())}`);
+  console.log(`${vecPoolIndex.len([1, 2])}`);
+  console.log(`${total([5, 6], vecPoolIndex)}`);
   console.log(`${total([7, 8, 9], _usize__K_PoolIndex(3))}`);
 }
 //# sourceMappingURL=case.js.map

@@ -11,23 +11,18 @@ import {
   $traitImpl,
 } from "@rust-js/runtime";
 
-var $pointHash, $shapeHash, $labeledHash, $smallHash, $wideHash, $nameHash, $tokenHash;
-
 export function entry() {
   main();
 }
+
+export const pointHash = { hash: pointHash_hash, hashSlice: $hashSlice(pointHash_hash) };
 
 function pointHash_hash(point, state, HHasher) {
   HHasher.writeI16(state, point.x);
   HHasher.writeI16(state, point.y);
 }
 
-export function pointHash() {
-  if ($pointHash === undefined) {
-    $pointHash = { hash: pointHash_hash, hashSlice: $hashSlice(pointHash_hash) };
-  }
-  return $pointHash;
-}
+export const shapeHash = { hash: shapeHash_hash, hashSlice: $hashSlice(shapeHash_hash) };
 
 function shapeHash_hash(shape, state, HHasher) {
   HHasher.writeIsize(state, shape === "Dot" ? 0 : shape.TAG === "Line" ? 1 : 2);
@@ -42,12 +37,7 @@ function shapeHash_hash(shape, state, HHasher) {
   }
 }
 
-export function shapeHash() {
-  if ($shapeHash === undefined) {
-    $shapeHash = { hash: shapeHash_hash, hashSlice: $hashSlice(shapeHash_hash) };
-  }
-  return $shapeHash;
-}
+const $labeledHash = new WeakMap();
 
 function labeledHash_hash(labeled, state, THash, HHasher) {
   THash.hash(labeled[0], state, HHasher);
@@ -56,25 +46,19 @@ function labeledHash_hash(labeled, state, THash, HHasher) {
 }
 
 export function labeledHash(THash) {
-  if ($labeledHash === undefined) {
-    $labeledHash = new WeakMap();
-  }
   return $traitImpl($labeledHash, [THash], () => {
     const hash = (arg0, arg1, HHasher) => labeledHash_hash(arg0, arg1, THash, HHasher);
     return { hash, hashSlice: $hashSlice(hash) };
   });
 }
 
+export const smallHash = { hash: smallHash_hash, hashSlice: $hashSlice(smallHash_hash) };
+
 function smallHash_hash(small, state, HHasher) {
   HHasher.writeU8(state, { A: 3, B: 7 }[small]);
 }
 
-export function smallHash() {
-  if ($smallHash === undefined) {
-    $smallHash = { hash: smallHash_hash, hashSlice: $hashSlice(smallHash_hash) };
-  }
-  return $smallHash;
-}
+export const wideHash = { hash: wideHash_hash, hashSlice: $hashSlice(wideHash_hash) };
 
 function wideHash_hash(wide, state, HHasher) {
   HHasher.writeI64(state, wide === "Low" ? -5n : 1099511627776n);
@@ -83,30 +67,13 @@ function wideHash_hash(wide, state, HHasher) {
   }
 }
 
-export function wideHash() {
-  if ($wideHash === undefined) {
-    $wideHash = { hash: wideHash_hash, hashSlice: $hashSlice(wideHash_hash) };
-  }
-  return $wideHash;
-}
-
-export function nameHash() {
-  if ($nameHash === undefined) {
-    $nameHash = { hash: nameHash_hash, hashSlice: $hashSlice(nameHash_hash) };
-  }
-  return $nameHash;
-}
+export const nameHash = { hash: nameHash_hash, hashSlice: $hashSlice(nameHash_hash) };
 
 function nameHash_hash(name, state, HHasher) {
   HHasher.writeStr(state, name[0].toLowerCase());
 }
 
-export function tokenHash() {
-  if ($tokenHash === undefined) {
-    $tokenHash = { hash: tokenHash_hash, hashSlice: tokenHash_hashSlice };
-  }
-  return $tokenHash;
-}
+export const tokenHash = { hash: tokenHash_hash, hashSlice: tokenHash_hashSlice };
 
 function tokenHash_hash(token, state, HHasher) {
   HHasher.writeU8(state, 1);
@@ -474,10 +441,10 @@ function main() {
   );
 
   const p = { x: -1, y: 2 };
-  console.log(`${digest(p, pointHash())}`);
+  console.log(`${digest(p, pointHash)}`);
   const value = [4, 5];
   for (const shape of ["Dot", { TAG: "Line", _0: 9 }, { TAG: "Poly", sides: value }]) {
-    console.log(`${digest(shape, shapeHash())}`);
+    console.log(`${digest(shape, shapeHash)}`);
   }
   console.log(
     `${digest([p, undefined], {
@@ -486,7 +453,7 @@ function main() {
         for (const item of value) {
           if (item) {
             H.writeIsize(state, 1);
-            pointHash().hash(item, state, H);
+            pointHash.hash(item, state, H);
           } else {
             H.writeIsize(state, 0);
           }
@@ -498,7 +465,7 @@ function main() {
           for (const item$1 of item) {
             if (item$1) {
               H.writeIsize(state, 1);
-              pointHash().hash(item$1, state, H);
+              pointHash.hash(item$1, state, H);
             } else {
               H.writeIsize(state, 0);
             }
@@ -507,7 +474,7 @@ function main() {
       },
     })}`,
   );
-  console.log(`${digest([p, [p, { x: 3, y: 4 }]], labeledHash(pointHash()))}`);
+  console.log(`${digest([p, [p, { x: 3, y: 4 }]], labeledHash(pointHash))}`);
   console.log(
     `${digest(
       ["a", ["b"]],
@@ -523,19 +490,19 @@ function main() {
       }),
     )}`,
   );
-  console.log(`${digest("A", smallHash())} ${digest("B", smallHash())}`);
-  console.log(`${digest("Low", wideHash())} ${digest({ TAG: "High", _0: 2 }, wideHash())}`);
-  console.log(`${digest(["MiXed"], nameHash()) === digest(["mixed"], nameHash())}`);
+  console.log(`${digest("A", smallHash)} ${digest("B", smallHash)}`);
+  console.log(`${digest("Low", wideHash)} ${digest({ TAG: "High", _0: 2 }, wideHash)}`);
+  console.log(`${digest(["MiXed"], nameHash) === digest(["mixed"], nameHash)}`);
   console.log(
     `${digest([undefined, undefined], {
       hash: (value, state, H) => {
         H.writeLengthPrefix(state, value.length);
-        tokenHash().hashSlice(value, state, H);
+        tokenHash.hashSlice(value, state, H);
       },
       hashSlice: (items, state, H) => {
         for (const item of items) {
           H.writeLengthPrefix(state, item.length);
-          tokenHash().hashSlice(item, state, H);
+          tokenHash.hashSlice(item, state, H);
         }
       },
     })} ${digest([[undefined], [undefined]], {
@@ -543,7 +510,7 @@ function main() {
         H.writeLengthPrefix(state, value.length);
         for (const item of value) {
           H.writeLengthPrefix(state, item.length);
-          tokenHash().hashSlice(item, state, H);
+          tokenHash.hashSlice(item, state, H);
         }
       },
       hashSlice: (items, state, H) => {
@@ -551,7 +518,7 @@ function main() {
           H.writeLengthPrefix(state, item.length);
           for (const item$1 of item) {
             H.writeLengthPrefix(state, item$1.length);
-            tokenHash().hashSlice(item$1, state, H);
+            tokenHash.hashSlice(item$1, state, H);
           }
         }
       },
@@ -563,7 +530,7 @@ function main() {
   const value$1 = [1, 2];
   hasher.write(value$1.flatMap((n) => $toBytes(n, 4, true)));
   const value$2 = [{ x: 0, y: 0 }];
-  pointHash().hashSlice(value$2, { value: hasher }, $sipHasher);
+  pointHash.hashSlice(value$2, { value: hasher }, $sipHasher);
   mix(hasher, 4);
   const before = hasher.clone();
   hasher.writeU8(1);

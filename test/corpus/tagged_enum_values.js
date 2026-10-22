@@ -2,18 +2,11 @@
 
 import { $KeyMap, $cmp } from "@rust-js/runtime";
 
-var $oddPartialEq;
-
 export function entry() {
   main();
 }
 
-export function oddPartialEq() {
-  if ($oddPartialEq === undefined) {
-    $oddPartialEq = { eq: oddPartialEq_eq };
-  }
-  return $oddPartialEq;
-}
+export const oddPartialEq = { eq: oddPartialEq_eq };
 
 function oddPartialEq_eq(odd, _other) {
   console.log("asked");

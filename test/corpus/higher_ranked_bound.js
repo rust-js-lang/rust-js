@@ -2,16 +2,13 @@
 
 import { $debugStr, $traitImpl } from "@rust-js/runtime";
 
-var $tNamed, $tShout;
-
 export function entry() {
   main();
 }
 
+const $tNamed = new WeakMap();
+
 function tNamed(TDebug) {
-  if ($tNamed === undefined) {
-    $tNamed = new WeakMap();
-  }
   return $traitImpl($tNamed, [TDebug], () => ({ name: (arg0) => tNamed_name(arg0, TDebug) }));
 }
 
@@ -19,10 +16,9 @@ function tNamed_name(self, TDebug) {
   return TDebug.fmt(self);
 }
 
+const $tShout = new WeakMap();
+
 function tShout(TNamed) {
-  if ($tShout === undefined) {
-    $tShout = new WeakMap();
-  }
   return $traitImpl($tShout, [TNamed], () => ({ shout: (arg0) => tShout_shout(arg0, TNamed) }));
 }
 

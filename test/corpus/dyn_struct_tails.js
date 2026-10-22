@@ -2,18 +2,11 @@
 
 import { $dynCell } from "@rust-js/runtime";
 
-var $bar1ToBar, $isizeToBar;
-
 export function entry() {
   main();
 }
 
-function bar1ToBar() {
-  if ($bar1ToBar === undefined) {
-    $bar1ToBar = { toVal: bar1ToBar_toVal, bump: (arg0) => bar1ToBar_bump(arg0.value) };
-  }
-  return $bar1ToBar;
-}
+const bar1ToBar = { toVal: bar1ToBar_toVal, bump: (arg0) => bar1ToBar_bump(arg0.value) };
 
 function bar1ToBar_toVal(bar1) {
   return bar1.f;
@@ -23,12 +16,7 @@ function bar1ToBar_bump(bar1) {
   bar1.f = (bar1.f + 1) | 0;
 }
 
-function isizeToBar() {
-  if ($isizeToBar === undefined) {
-    $isizeToBar = { toVal: isizeToBar_toVal, bump: isizeToBar_bump };
-  }
-  return $isizeToBar;
-}
+const isizeToBar = { toVal: isizeToBar_toVal, bump: isizeToBar_bump };
 
 function isizeToBar_toVal(self) {
   return self;
@@ -62,16 +50,16 @@ function deep(x) {
 
 function main() {
   const f1 = { f1: 5, ptr: { f: 42 } };
-  console.log(`${foo($dynCell(f1, bar1ToBar()))}`);
-  bump($dynCell(f1, bar1ToBar()));
-  console.log(`${foo($dynCell(f1, bar1ToBar()))} ${f1.ptr.f}`);
+  console.log(`${foo($dynCell(f1, bar1ToBar))}`);
+  bump($dynCell(f1, bar1ToBar));
+  console.log(`${foo($dynCell(f1, bar1ToBar))} ${f1.ptr.f}`);
   const n = { f1: 1, ptr: 2 };
-  bump($dynCell(n, isizeToBar()));
-  console.log(`${foo($dynCell(n, isizeToBar()))} ${n.ptr}`);
+  bump($dynCell(n, isizeToBar));
+  console.log(`${foo($dynCell(n, isizeToBar))} ${n.ptr}`);
   const d = { f1: 0, ptr: { f1: 1, ptr: 7 } };
-  $dynCell(d.ptr, isizeToBar());
+  $dynCell(d.ptr, isizeToBar);
   console.log(`${deep(d)}`);
-  const fat = $dynCell(f1, bar1ToBar());
+  const fat = $dynCell(f1, bar1ToBar);
   const f1$1 = fat.f1;
   const ptr = { value: fat.ptr, impl: fat.impl };
   console.log(`${f1$1} ${ptr.impl.toVal(ptr.value)}`);

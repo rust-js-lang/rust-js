@@ -2,22 +2,15 @@
 
 import { $displayF64 } from "@rust-js/runtime";
 
-var $squareShape, $squareNamed, $upCounter;
-
 export function entry() {
   main();
 }
 
-function squareShape() {
-  if ($squareShape === undefined) {
-    $squareShape = {
-      area: squareShape_area,
-      scale: (arg0, arg1) => squareShape_scale(arg0.value, arg1),
-      name: (self) => "shape",
-    };
-  }
-  return $squareShape;
-}
+const squareShape = {
+  area: squareShape_area,
+  scale: (arg0, arg1) => squareShape_scale(arg0.value, arg1),
+  name: (self) => "shape",
+};
 
 function squareShape_area(square) {
   return square[0] * square[0];
@@ -27,23 +20,13 @@ function squareShape_scale(square, k) {
   square[0] *= k;
 }
 
-function squareNamed() {
-  if ($squareNamed === undefined) {
-    $squareNamed = { Shape: () => squareShape(), label: squareNamed_label };
-  }
-  return $squareNamed;
-}
+const squareNamed = { Shape: () => squareShape, label: squareNamed_label };
 
 function squareNamed_label(square) {
   return `square ${$displayF64(square[0])}`;
 }
 
-function upCounter() {
-  if ($upCounter === undefined) {
-    $upCounter = { nextItem: (arg0) => upCounter_nextItem(arg0.value) };
-  }
-  return $upCounter;
-}
+const upCounter = { nextItem: (arg0) => upCounter_nextItem(arg0.value) };
 
 function upCounter_nextItem(up) {
   up[0] = (up[0] + 1) >>> 0;
@@ -72,7 +55,7 @@ function two(c, CCounter) {
 
 function main() {
   const square = [3];
-  const shape = { value: square, impl: squareShape() };
+  const shape = { value: square, impl: squareShape };
   console.log(
     `${$displayF64(
       areaOf(shape, {
@@ -82,7 +65,7 @@ function main() {
       }),
     )}`,
   );
-  const shape$1 = { value: square, impl: squareShape() };
+  const shape$1 = { value: square, impl: squareShape };
   grow(
     { value: shape$1 },
     {
@@ -93,7 +76,7 @@ function main() {
   );
   console.log(`${$displayF64(square[0])}`);
 
-  const named = { value: square, impl: squareNamed() };
+  const named = { value: square, impl: squareNamed };
   console.log(
     `${describe(named, {
       Shape: () => ({
@@ -118,7 +101,7 @@ function main() {
   console.log(`${shout(shown, { fmt: (value) => value.impl.fmt(value.value) })}`);
 
   const up = [0];
-  const counter = { value: up, impl: upCounter() };
+  const counter = { value: up, impl: upCounter };
   console.log(
     `${two({ value: counter }, { nextItem: (object) => object.value.impl.nextItem(object.value) })}`,
   );

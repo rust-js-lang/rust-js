@@ -13,16 +13,13 @@ import {
   $traitImpl,
 } from "@rust-js/runtime";
 
-var $tCounting, $pHash, $loudHash;
-
 export function entry() {
   main();
 }
 
+const $tCounting = new WeakMap();
+
 function tCounting(TIterator, dropT, dropTItem) {
-  if ($tCounting === undefined) {
-    $tCounting = new WeakMap();
-  }
   return $traitImpl($tCounting, [TIterator, dropT, dropTItem], () => ({
     counts: (self, SelfItemHash, SelfItemPartialEq, SelfItemMap) => {
       let counts;
@@ -55,27 +52,21 @@ function tCounting(TIterator, dropT, dropTItem) {
   }));
 }
 
+export const pHash = { hash: pHash_hash, hashSlice: $hashSlice(pHash_hash) };
+
 function pHash_hash(p, state, HHasher, drop__H) {
   HHasher.writeU8(state, p[0]);
   HHasher.writeU8(state, p[1]);
 }
 
-export function pHash() {
-  if ($pHash === undefined) {
-    $pHash = { hash: pHash_hash, hashSlice: $hashSlice(pHash_hash) };
-  }
-  return $pHash;
-}
+export const loudHash = {
+  hash: loudHash_hash,
+  hashSlice: $hashSlice(loudHash_hash),
+  $drop: loudDrop_drop,
+};
 
 function loudHash_hash(loud, state, HHasher, drop__H) {
   HHasher.writeU8(state, loud[0]);
-}
-
-export function loudHash() {
-  if ($loudHash === undefined) {
-    $loudHash = { hash: loudHash_hash, hashSlice: $hashSlice(loudHash_hash), $drop: loudDrop_drop };
-  }
-  return $loudHash;
 }
 
 function loudDrop_drop(loud) {
@@ -109,7 +100,7 @@ function main() {
       [0, 1],
       [2, 2],
     ]),
-    pHash(),
+    pHash,
     { eq: $eq },
     $KeyMap,
   );
@@ -117,7 +108,7 @@ function main() {
   console.log(`${value$1 == null ? "None" : `Some(${value$1})`} ${points.size}`);
   const louds = tCounting({ next: $next }, $dropEach(loudDrop_drop), loudDrop_drop).counts(
     $iter([[1], [1]]),
-    loudHash(),
+    loudHash,
     { eq: $eq },
     $KeyMap,
   );

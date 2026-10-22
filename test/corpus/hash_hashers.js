@@ -10,22 +10,15 @@ import {
   $toBytes,
 } from "@rust-js/runtime";
 
-var $tallyHasher, $fnvDefault, $fnvHasher, $entryHash;
-
 export function entry() {
   main();
 }
 
-export function tallyHasher() {
-  if ($tallyHasher === undefined) {
-    $tallyHasher = $hasher({
-      finish: tallyHasher_finish,
-      write: (arg0, arg1) => tallyHasher_write(arg0.value, arg1),
-      writeU64: (arg0, arg1) => tallyHasher_writeU64(arg0.value, arg1),
-    });
-  }
-  return $tallyHasher;
-}
+export const tallyHasher = $hasher({
+  finish: tallyHasher_finish,
+  write: (arg0, arg1) => tallyHasher_write(arg0.value, arg1),
+  writeU64: (arg0, arg1) => tallyHasher_writeU64(arg0.value, arg1),
+});
 
 function tallyHasher_finish(tally) {
   return BigInt(tally[0].length);
@@ -39,26 +32,16 @@ function tallyHasher_writeU64(tally, n) {
   tally[0].push(`u64 ${n}`);
 }
 
-export function fnvDefault() {
-  if ($fnvDefault === undefined) {
-    $fnvDefault = { default: fnvDefault_default };
-  }
-  return $fnvDefault;
-}
+export const fnvDefault = { default: fnvDefault_default };
 
 function fnvDefault_default() {
   return [14695981039346656037n];
 }
 
-export function fnvHasher() {
-  if ($fnvHasher === undefined) {
-    $fnvHasher = $hasher({
-      finish: fnvHasher_finish,
-      write: (arg0, arg1) => fnvHasher_write(arg0.value, arg1),
-    });
-  }
-  return $fnvHasher;
-}
+export const fnvHasher = $hasher({
+  finish: fnvHasher_finish,
+  write: (arg0, arg1) => fnvHasher_write(arg0.value, arg1),
+});
 
 function fnvHasher_finish(fnv) {
   return fnv[0];
@@ -71,6 +54,8 @@ function fnvHasher_write(fnv, bytes) {
   }
 }
 
+export const entryHash = { hash: entryHash_hash, hashSlice: $hashSlice(entryHash_hash) };
+
 function entryHash_hash(entry, state, HHasher) {
   HHasher.writeStr(state, entry.key);
   if (entry.rank != null) {
@@ -81,17 +66,10 @@ function entryHash_hash(entry, state, HHasher) {
   }
 }
 
-export function entryHash() {
-  if ($entryHash === undefined) {
-    $entryHash = { hash: entryHash_hash, hashSlice: $hashSlice(entryHash_hash) };
-  }
-  return $entryHash;
-}
-
 function written(value, THash) {
   const tally = [[]];
   const state = { value: tally };
-  THash.hash(value, state, tallyHasher());
+  THash.hash(value, state, tallyHasher);
   $assign(tally, state.value);
   return tally[0];
 }
@@ -99,7 +77,7 @@ function written(value, THash) {
 function fnv(value, THash) {
   const hasher = fnvDefault_default();
   const state = { value: hasher };
-  THash.hash(value, state, fnvHasher());
+  THash.hash(value, state, fnvHasher);
   $assign(hasher, state.value);
   return fnvHasher_finish(hasher);
 }
@@ -226,7 +204,7 @@ function main() {
       .join(", ")}]`,
   );
   console.log(
-    `[${written({ key: "k", rank: 2 }, entryHash())
+    `[${written({ key: "k", rank: 2 }, entryHash)
       .map((item) => $debugStr(item))
       .join(", ")}]`,
   );
@@ -240,15 +218,15 @@ function main() {
           H.writeStr(state, item);
         }
       },
-    })} ${fnv({ key: "k" }, entryHash())}`,
+    })} ${fnv({ key: "k" }, entryHash)}`,
   );
 
   const tally = [[]];
   const hasher$1 = { value: tally };
-  writeTwice(hasher$1, 1, tallyHasher());
+  writeTwice(hasher$1, 1, tallyHasher);
   $assign(tally, hasher$1.value);
-  tallyHasher().writeI64({ value: tally }, -1n);
-  tallyHasher().writeUsize({ value: tally }, 5);
+  tallyHasher.writeI64({ value: tally }, -1n);
+  tallyHasher.writeUsize({ value: tally }, 5);
   console.log(
     `[${tally[0].map((item) => $debugStr(item)).join(", ")}] ${tallyHasher_finish(tally)}`,
   );
@@ -260,7 +238,7 @@ function main() {
   throughDyn({ value: hasher, impl: $sipHasher }, 9);
   console.log(`${hasher.finish()}`);
   const fnv$1 = fnvDefault_default();
-  throughDyn({ value: fnv$1, impl: fnvHasher() }, 9);
+  throughDyn({ value: fnv$1, impl: fnvHasher }, 9);
   console.log(`${fnvHasher_finish(fnv$1)}`);
   const keyed = new $SipHasher(2, 4, 3n, 4n);
   const plain = new $SipHasher(2, 4);

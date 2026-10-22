@@ -11,38 +11,17 @@ import {
   $unwrap,
 } from "@rust-js/runtime";
 
-var $smallInt,
-  $u8NonZero,
-  $i32Source,
-  $i32ProduceU32,
-  $celsiusDisplay,
-  $optionGetterT,
-  $iDigits,
-  $pointPositionedS,
-  $pointMovableS,
-  $bagAdd;
-
 export function entry() {
   main();
 }
 
-function smallInt() {
-  if ($smallInt === undefined) {
-    $smallInt = { value: smallInt_value };
-  }
-  return $smallInt;
-}
+const smallInt = { value: smallInt_value };
 
 function smallInt_value(small) {
   return small[0];
 }
 
-function u8NonZero() {
-  if ($u8NonZero === undefined) {
-    $u8NonZero = { nonZero: u8NonZero_nonZero };
-  }
-  return $u8NonZero;
-}
+const u8NonZero = { nonZero: u8NonZero_nonZero };
 
 function u8NonZero_nonZero(self) {
   return self !== 0;
@@ -52,19 +31,9 @@ function check(i, j, IInt, ITNonZero) {
   return IInt.value(i) > 0 && ITNonZero.nonZero(j);
 }
 
-function i32Source() {
-  if ($i32Source === undefined) {
-    $i32Source = { Produce: () => i32ProduceU32() };
-  }
-  return $i32Source;
-}
+const i32ProduceU32 = { produce: i32ProduceU32_produce };
 
-function i32ProduceU32() {
-  if ($i32ProduceU32 === undefined) {
-    $i32ProduceU32 = { produce: i32ProduceU32_produce };
-  }
-  return $i32ProduceU32;
-}
+const i32Source = { Produce: () => i32ProduceU32 };
 
 function i32ProduceU32_produce(self) {
   return Math.imul(self >>> 0, 2) >>> 0;
@@ -74,12 +43,7 @@ function produced(t, TSource) {
   return TSource.Produce().produce(t);
 }
 
-export function celsiusDisplay() {
-  if ($celsiusDisplay === undefined) {
-    $celsiusDisplay = { fmt: celsiusDisplay_fmt };
-  }
-  return $celsiusDisplay;
-}
+export const celsiusDisplay = { fmt: celsiusDisplay_fmt };
 
 function celsiusDisplay_fmt(celsius) {
   return `${$displayF64(celsius[0])}°C`;
@@ -89,10 +53,9 @@ function shout(x, TToString) {
   return TToString.toString(x).toUpperCase();
 }
 
+const $optionGetterT = new WeakMap();
+
 function optionGetterT(TClone) {
-  if ($optionGetterT === undefined) {
-    $optionGetterT = new WeakMap();
-  }
   return $traitImpl($optionGetterT, [TClone], () => ({
     get: (arg0) => optionGetterT_get(arg0, TClone),
     twice: (self) => {
@@ -106,24 +69,18 @@ function optionGetterT_get(option, TClone) {
   return TClone.clone($someValue($unwrap(option)));
 }
 
-function iDigits() {
-  if ($iDigits === undefined) {
-    $iDigits = {
-      digitIter: iDigits_digitIter,
-      digitSum: (self) => iDigits_digitIter(self).reduce((s, d) => (s + d) >>> 0, 0),
-    };
-  }
-  return $iDigits;
-}
+const iDigits = {
+  digitIter: iDigits_digitIter,
+  digitSum: (self) => iDigits_digitIter(self).reduce((s, d) => (s + d) >>> 0, 0),
+};
 
 function iDigits_digitIter(self) {
   return self;
 }
 
+const $pointPositionedS = new WeakMap();
+
 function pointPositionedS(SClone) {
-  if ($pointPositionedS === undefined) {
-    $pointPositionedS = new WeakMap();
-  }
   return $traitImpl($pointPositionedS, [SClone], () => ({
     setX: (arg0, arg1) => pointPositionedS_setX(arg0.value, arg1, SClone),
     x: (arg0) => pointPositionedS_x(arg0, SClone),
@@ -138,10 +95,9 @@ function pointPositionedS_x(point, SClone) {
   return SClone.clone(point.x);
 }
 
+const $pointMovableS = new WeakMap();
+
 function pointMovableS(SClone, SAdd) {
-  if ($pointMovableS === undefined) {
-    $pointMovableS = new WeakMap();
-  }
   return $traitImpl($pointMovableS, [SClone, SAdd], () => ({
     Positioned: () => pointPositionedS(SClone),
     translate: (self, dx) => {
@@ -157,12 +113,7 @@ function bagDebug_fmt(bag) {
   return `Bag([${bag[0].join(", ")}])`;
 }
 
-export function bagAdd() {
-  if ($bagAdd === undefined) {
-    $bagAdd = { add: bagAdd_add };
-  }
-  return $bagAdd;
-}
+export const bagAdd = { add: bagAdd_add };
 
 function bagAdd_add(bag, other) {
   $extend(bag[0], other[0]);
@@ -170,17 +121,15 @@ function bagAdd_add(bag, other) {
 }
 
 function main() {
-  console.log(
-    `${check([3], 1, smallInt(), u8NonZero())} ${check([3], 0, smallInt(), u8NonZero())}`,
-  );
-  console.log(`${produced(21, i32Source())}`);
+  console.log(`${check([3], 1, smallInt, u8NonZero)} ${check([3], 0, smallInt, u8NonZero)}`);
+  console.log(`${produced(21, i32Source)}`);
   console.log(
     `${shout(12, { toString: String })} ${shout("abc", { toString: (value) => value })} ${shout([21.5], { toString: celsiusDisplay_fmt })}`,
   );
   const twice = optionGetterT({ clone: (value) => value }).twice(4);
   const value = optionGetterT({ clone: (value) => value }).twice("hi");
   console.log(`(${twice[0]}, ${twice[1]}) (${$debugStr(value[0])}, ${$debugStr(value[1])})`);
-  console.log(`${iDigits().digitSum($iter([1, 2, 3]))}`);
+  console.log(`${iDigits.digitSum($iter([1, 2, 3]))}`);
   const p = { x: 1 };
   const self = { value: p };
   const before = pointMovableS(
@@ -191,7 +140,7 @@ function main() {
   console.log(`${before} ${pointPositionedS_x(p, { clone: (value) => value })}`);
   const bag = { x: [[1]] };
   const self$1 = { value: bag };
-  const before$1 = pointMovableS({ clone: (value) => [value[0].slice()] }, bagAdd()).translate(
+  const before$1 = pointMovableS({ clone: (value) => [value[0].slice()] }, bagAdd).translate(
     self$1,
     [[2, 3]],
   );

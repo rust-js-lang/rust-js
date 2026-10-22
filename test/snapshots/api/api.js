@@ -22,8 +22,6 @@ import {
   $unwrapOk,
 } from "@rust-js/runtime";
 
-var $pageDebug, $pairDebug, $userDebug, $oddErrorDisplay, $responseDebug;
-
 function pageSerialize_serialize(page, json, writeT) {
   json.beginObject();
   json.key("items");
@@ -56,14 +54,13 @@ function pageDeserialize_deserialize(json, readT) {
   );
 }
 
+const $pageDebug = new WeakMap();
+
 function pageDebug_fmt(page, TDebug) {
   return `Page { items: [${page.items.map((item) => TDebug.fmt(item)).join(", ")}], next_item: ${page.nextItem == null ? "None" : `Some(${TDebug.fmt($someValue(page.nextItem))})`}, total: ${page.total} }`;
 }
 
 export function pageDebug(TDebug) {
-  if ($pageDebug === undefined) {
-    $pageDebug = new WeakMap();
-  }
   return $traitImpl($pageDebug, [TDebug], () => ({ fmt: (arg0) => pageDebug_fmt(arg0, TDebug) }));
 }
 
@@ -95,6 +92,8 @@ function pairDeserialize_deserialize(json, readA, readB) {
   );
 }
 
+const $pairDebug = new WeakMap();
+
 function pairDebug_fmt(pair, ADebug, BDebug) {
   return `Pair { left: ${ADebug.fmt(pair.left)}, right: ${BDebug.fmt(pair.right)}, by_name: {${Array.from(
     $sortedEntries(pair.byName, $cmp),
@@ -104,9 +103,6 @@ function pairDebug_fmt(pair, ADebug, BDebug) {
 }
 
 export function pairDebug(ADebug, BDebug) {
-  if ($pairDebug === undefined) {
-    $pairDebug = new WeakMap();
-  }
   return $traitImpl($pairDebug, [ADebug, BDebug], () => ({
     fmt: (arg0) => pairDebug_fmt(arg0, ADebug, BDebug),
   }));
@@ -303,15 +299,10 @@ function userDeserialize_deserialize(json) {
   );
 }
 
+export const userDebug = { fmt: userDebug_fmt };
+
 function userDebug_fmt(user) {
   return `User { name: ${$debugStr(user.name)}, age: ${user.age} }`;
-}
-
-export function userDebug() {
-  if ($userDebug === undefined) {
-    $userDebug = { fmt: userDebug_fmt };
-  }
-  return $userDebug;
 }
 
 function outcomeSerialize_serialize(outcome, json) {
@@ -407,12 +398,7 @@ function emailTryFromString_tryFrom(s) {
   return s.includes("@") ? { TAG: "Ok", _0: [s] } : { TAG: "Err", _0: `\`${s}\` is not an email` };
 }
 
-export function oddErrorDisplay() {
-  if ($oddErrorDisplay === undefined) {
-    $oddErrorDisplay = { fmt: oddErrorDisplay_fmt };
-  }
-  return $oddErrorDisplay;
-}
+export const oddErrorDisplay = { fmt: oddErrorDisplay_fmt };
 
 function oddErrorDisplay_fmt(oddError) {
   return `${oddError[0]} is odd`;
@@ -468,14 +454,13 @@ function responseDeserialize_deserialize(json, readT) {
   );
 }
 
+const $responseDebug = new WeakMap();
+
 function responseDebug_fmt(response, TDebug) {
   return `Response { data: ${TDebug.fmt(response.data)}, ok: ${response.ok} }`;
 }
 
 export function responseDebug(TDebug) {
-  if ($responseDebug === undefined) {
-    $responseDebug = new WeakMap();
-  }
   return $traitImpl($responseDebug, [TDebug], () => ({
     fmt: (arg0) => responseDebug_fmt(arg0, TDebug),
   }));
@@ -987,7 +972,7 @@ export function report() {
       undefined,
       $debugJsonError,
     );
-    out += `ok ${pageDebug_fmt(value$3._0, userDebug())} -> ${arg}\n`;
+    out += `ok ${pageDebug_fmt(value$3._0, userDebug)} -> ${arg}\n`;
   } else {
     out += `err ${$displayJsonError(value$3._0)}\n`;
   }
@@ -1007,7 +992,7 @@ export function report() {
       undefined,
       $debugJsonError,
     );
-    out += `ok ${pageDebug_fmt(value$4._0, userDebug())} -> ${arg}\n`;
+    out += `ok ${pageDebug_fmt(value$4._0, userDebug)} -> ${arg}\n`;
   } else {
     out += `err ${$displayJsonError(value$4._0)}\n`;
   }
@@ -1135,7 +1120,7 @@ export function report() {
       undefined,
       $debugJsonError,
     );
-    out += `ok ${replyDebug_fmt(value$9._0, userDebug())} -> ${arg}\n`;
+    out += `ok ${replyDebug_fmt(value$9._0, userDebug)} -> ${arg}\n`;
   } else {
     out += `err ${$displayJsonError(value$9._0)}\n`;
   }
@@ -1155,7 +1140,7 @@ export function report() {
       undefined,
       $debugJsonError,
     );
-    out += `ok ${replyDebug_fmt(value$10._0, userDebug())} -> ${arg}\n`;
+    out += `ok ${replyDebug_fmt(value$10._0, userDebug)} -> ${arg}\n`;
   } else {
     out += `err ${$displayJsonError(value$10._0)}\n`;
   }
@@ -1175,7 +1160,7 @@ export function report() {
       undefined,
       $debugJsonError,
     );
-    out += `ok ${replyDebug_fmt(value$11._0, userDebug())} -> ${arg}\n`;
+    out += `ok ${replyDebug_fmt(value$11._0, userDebug)} -> ${arg}\n`;
   } else {
     out += `err ${$displayJsonError(value$11._0)}\n`;
   }
@@ -1195,7 +1180,7 @@ export function report() {
       undefined,
       $debugJsonError,
     );
-    out += `ok ${replyDebug_fmt(value$12._0, userDebug())} -> ${arg}\n`;
+    out += `ok ${replyDebug_fmt(value$12._0, userDebug)} -> ${arg}\n`;
   } else {
     out += `err ${$displayJsonError(value$12._0)}\n`;
   }
@@ -1296,7 +1281,7 @@ export function report() {
       undefined,
       $debugJsonError,
     );
-    out += `ok ${statusDebug_fmt(value$16._0, userDebug())} -> ${arg}\n`;
+    out += `ok ${statusDebug_fmt(value$16._0, userDebug)} -> ${arg}\n`;
   } else {
     out += `err ${$displayJsonError(value$16._0)}\n`;
   }
@@ -1543,7 +1528,7 @@ export function report() {
     { name: "a", age: 1 },
     userSerialize_serialize,
     userDeserialize_deserialize,
-    userDebug(),
+    userDebug,
   );
   out += "\n";
   out += roundtrip(
@@ -1566,7 +1551,7 @@ export function report() {
       responseSerialize_serialize(value, json, userSerialize_serialize);
     },
     $json.with(responseDeserialize_deserialize, userDeserialize_deserialize),
-    responseDebug(userDebug()),
+    responseDebug(userDebug),
   );
   out += "\n";
   const users = decodeAll(['{"name":"c","age":3}', '{"name":"d"}'], userDeserialize_deserialize);

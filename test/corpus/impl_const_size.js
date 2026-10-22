@@ -2,16 +2,13 @@
 
 import { $traitImpl } from "@rust-js/runtime";
 
-var $wSize;
-
 export function entry() {
   main();
 }
 
+const $wSize = new Map();
+
 function wSize(TSize) {
-  if ($wSize === undefined) {
-    $wSize = new Map();
-  }
   return $traitImpl($wSize, [TSize], () => ({
     get SIZE() {
       return TSize;

@@ -2,18 +2,11 @@
 
 import { $assign, $cmp } from "@rust-js/runtime";
 
-var $hashMapGrow;
-
 export function entry() {
   main();
 }
 
-function hashMapGrow() {
-  if ($hashMapGrow === undefined) {
-    $hashMapGrow = { grow: (arg0) => hashMapGrow_grow(arg0.value) };
-  }
-  return $hashMapGrow;
-}
+const hashMapGrow = { grow: (arg0) => hashMapGrow_grow(arg0.value) };
 
 function hashMapGrow_grow(hashMap) {
   const n = hashMap.size;
@@ -29,7 +22,7 @@ function main() {
   const m = new Map();
   m.set(7, 70);
   const t = { value: m };
-  twice(t, hashMapGrow());
+  twice(t, hashMapGrow);
   $assign(m, t.value);
   const pairs = Array.from(m).map(([k, v]) => [k, v]);
   pairs.sort((a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]));

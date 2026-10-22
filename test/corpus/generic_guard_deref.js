@@ -2,27 +2,19 @@
 
 import { $lock, $traitImpl, $unborrow } from "@rust-js/runtime";
 
-var $counterSequence, $mutexSequence;
-
 export function entry() {
   main();
 }
 
-function counterSequence() {
-  if ($counterSequence === undefined) {
-    $counterSequence = { nextValue: counterSequence_nextValue };
-  }
-  return $counterSequence;
-}
+const counterSequence = { nextValue: counterSequence_nextValue };
 
 function counterSequence_nextValue(counter) {
   return (counter[0] + 1) >>> 0;
 }
 
+const $mutexSequence = new WeakMap();
+
 function mutexSequence(CSequence) {
-  if ($mutexSequence === undefined) {
-    $mutexSequence = new WeakMap();
-  }
   return $traitImpl($mutexSequence, [CSequence], () => ({
     nextValue: (arg0) => mutexSequence_nextValue(arg0, CSequence),
   }));
@@ -44,7 +36,7 @@ function described(text, TToString, TClone) {
 
 function main() {
   const shared = { value: [4] };
-  console.log(`${mutexSequence_nextValue(shared, counterSequence())}`);
+  console.log(`${mutexSequence_nextValue(shared, counterSequence)}`);
   console.log(
     `${described(
       { TAG: "Borrowed", _0: [1, 2] },

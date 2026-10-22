@@ -2,16 +2,13 @@
 
 import { $traitImpl } from "@rust-js/runtime";
 
-var $_T__N_Array;
-
 export function entry() {
   main();
 }
 
+const $_T__N_Array = new Map();
+
 function _T__N_Array(N, TSize, TAlign) {
-  if ($_T__N_Array === undefined) {
-    $_T__N_Array = new Map();
-  }
   return $traitImpl($_T__N_Array, [N, TSize, TAlign], () => ({
     size: () => _T__N_Array_size(N),
     ItemSize: TSize,

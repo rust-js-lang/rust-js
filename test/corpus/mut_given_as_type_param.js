@@ -2,27 +2,19 @@
 
 import { $assign, $index, $mutWriter, $stringWriter, $traitImpl } from "@rust-js/runtime";
 
-var $vecTotal, $refMutTTotal, $refMutTStableDeref, $counterWrite;
-
 export function entry() {
   main();
 }
 
-function vecTotal() {
-  if ($vecTotal === undefined) {
-    $vecTotal = { total: vecTotal_total };
-  }
-  return $vecTotal;
-}
+const vecTotal = { total: vecTotal_total };
 
 function vecTotal_total(vec) {
   return vec.reduce((a, b) => (a + b) >>> 0, 0);
 }
 
+const $refMutTTotal = new WeakMap();
+
 function refMutTTotal(TTotal) {
-  if ($refMutTTotal === undefined) {
-    $refMutTTotal = new WeakMap();
-  }
   return $traitImpl($refMutTTotal, [TTotal], () => ({
     total: (arg0) => refMutTTotal_total(arg0, TTotal),
   }));
@@ -40,24 +32,19 @@ function same(given) {
   return given;
 }
 
-function refMutTStableDeref() {
-  if ($refMutTStableDeref === undefined) {
-    $refMutTStableDeref = { Deref: () => ({ deref: (x) => x.value }) };
-  }
-  return $refMutTStableDeref;
-}
+const refMutTStableDeref = { Deref: () => ({ deref: (x) => x.value }) };
 
 function first(items, DStableDeref) {
   return $index(DStableDeref.Deref().deref(items), 0);
 }
 
-export function counterWrite() {
-  if ($counterWrite === undefined) {
-    const writeStr = (arg0, arg1) => counterWrite_writeStr(arg0.value, arg1);
-    $counterWrite = { writeStr, writeChar: writeStr, writeFmt: writeStr };
-  }
-  return $counterWrite;
-}
+const $counterWrite_writeStr = (arg0, arg1) => counterWrite_writeStr(arg0.value, arg1);
+
+export const counterWrite = {
+  writeStr: $counterWrite_writeStr,
+  writeChar: $counterWrite_writeStr,
+  writeFmt: $counterWrite_writeStr,
+};
 
 function counterWrite_writeStr(counter, s) {
   counter.text += s;
@@ -78,24 +65,24 @@ function twice(out, n, WWrite) {
 function main() {
   const items = [1, 2];
   const items$1 = { value: items };
-  const value = totalled(items$1, refMutTTotal(vecTotal()));
+  const value = totalled(items$1, refMutTTotal(vecTotal));
   $assign(items, items$1.value);
   console.log(`${value}`);
-  console.log(`${refMutTTotal_total({ value: items }, vecTotal())}`);
+  console.log(`${refMutTTotal_total({ value: items }, vecTotal)}`);
   const given = { value: items };
   const value$1 = same(given).value;
   $assign(items, given.value);
   value$1.push(3);
   const items$2 = { value: items };
-  const value$2 = first(items$2, refMutTStableDeref());
+  const value$2 = first(items$2, refMutTStableDeref);
   $assign(items, items$2.value);
   console.log(`[${items.join(", ")}] ${value$2}`);
   const counter = { text: "" };
   const out = { value: counter };
-  render(out, 1, $mutWriter(counterWrite()));
+  render(out, 1, $mutWriter(counterWrite));
   $assign(counter, out.value);
   const out$1 = { value: counter };
-  twice(out$1, 2, counterWrite());
+  twice(out$1, 2, counterWrite);
   $assign(counter, out$1.value);
   let text = "";
   const out$2 = { value: text };

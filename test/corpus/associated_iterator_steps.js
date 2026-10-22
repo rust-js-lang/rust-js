@@ -3,8 +3,6 @@
 import { iterator_fuse } from "@rust-js/std/iter.js";
 import { $iter, $iterator, $next, $rangeNext, $traitImpl } from "@rust-js/runtime";
 
-var $markerFusedI;
-
 export function entry() {
   main();
 }
@@ -17,10 +15,9 @@ function refWrapIntoIterator_intoIter(wrap, IClone) {
   return { ...wrap, inner: IClone.clone(wrap.inner) };
 }
 
+const $markerFusedI = new WeakMap();
+
 export function markerFusedI(IIterator, IClone) {
-  if ($markerFusedI === undefined) {
-    $markerFusedI = new WeakMap();
-  }
   return $traitImpl($markerFusedI, [IIterator, IClone], () => ({
     OutFromI: () => ({ from: (value) => wrapFromI_from(value, IIterator, IClone, false) }),
   }));

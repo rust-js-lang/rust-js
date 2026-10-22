@@ -417,7 +417,7 @@ pub fn import_line(clause: &str, from: &str) -> String {
 }
 
 /// What's above a module's code: its header, directives, imports, one block
-/// as a person orders it (ADR 0295), re-exports and caches. Layout, as
+/// as a person orders it (ADR 0295), and re-exports. Layout, as
 /// `format::spaced`'s blank lines are, of what the module says.
 fn header(module: &Module) -> String {
     let mut code = format!("{}\n", module.header);
@@ -503,9 +503,6 @@ fn header(module: &Module) -> String {
                 reexport.from
             ));
         }
-    }
-    if !module.caches.is_empty() {
-        code.push_str(&format!("\nvar {};\n", module.caches.join(", ")));
     }
     code.push('\n');
     code

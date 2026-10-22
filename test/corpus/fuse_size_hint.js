@@ -3,8 +3,6 @@
 import { iterator_fuse } from "@rust-js/std/iter.js";
 import { $iter, $next, $nextSome, $sizeHint, $traitImpl } from "@rust-js/runtime";
 
-var $tExt;
-
 export function entry() {
   main();
 }
@@ -15,10 +13,9 @@ function hint(it, IFused) {
   return $sizeHint(fused);
 }
 
+const $tExt = new WeakMap();
+
 function tExt(TIterator) {
-  if ($tExt === undefined) {
-    $tExt = new WeakMap();
-  }
   return $traitImpl($tExt, [TIterator], () => ({ hinted: (self) => hint(self, false) }));
 }
 

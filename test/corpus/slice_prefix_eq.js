@@ -9,8 +9,6 @@ import {
   $sliceStripCircumfix,
 } from "@rust-js/runtime";
 
-var $loosePartialEq;
-
 export function entry() {
   main();
 }
@@ -24,12 +22,7 @@ function looseDebug_fmt(loose) {
 }
 
 // Equal when they're within one of each other.
-export function loosePartialEq() {
-  if ($loosePartialEq === undefined) {
-    $loosePartialEq = { eq: loosePartialEq_eq };
-  }
-  return $loosePartialEq;
-}
+export const loosePartialEq = { eq: loosePartialEq_eq };
 
 function loosePartialEq_eq(loose, other) {
   return (Math.abs((loose[0] - other[0]) | 0) | 0) <= 1;
@@ -77,7 +70,7 @@ function main() {
   console.log(
     `${value$4 == null ? "None" : `Some([${value$4.map((item) => looseDebug_fmt(item)).join(", ")}])`}`,
   );
-  console.log(`${framed(path, origin, { eq: $eq })} ${framed(loose, [[1]], loosePartialEq())}`);
+  console.log(`${framed(path, origin, { eq: $eq })} ${framed(loose, [[1]], loosePartialEq)}`);
   const value$5 = $sliceStripCircumfix([1.5, 2], [1.5], [2]);
   console.log(
     `${value$5 == null ? "None" : `Some([${value$5.map((item) => $debugF64(item)).join(", ")}])`}`,

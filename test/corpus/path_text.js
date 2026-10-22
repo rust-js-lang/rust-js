@@ -2,21 +2,14 @@
 
 import { $debugStr } from "@rust-js/runtime";
 
-var $pathAsDisplay;
-
 export function entry() {
   main();
 }
 
-function pathAsDisplay() {
-  if ($pathAsDisplay === undefined) {
-    $pathAsDisplay = {
-      TargetDisplay: () => ({ fmt: (value) => value }),
-      asDisplay: pathAsDisplay_asDisplay,
-    };
-  }
-  return $pathAsDisplay;
-}
+const pathAsDisplay = {
+  TargetDisplay: () => ({ fmt: (value) => value }),
+  asDisplay: pathAsDisplay_asDisplay,
+};
 
 function pathAsDisplay_asDisplay(path) {
   return path;

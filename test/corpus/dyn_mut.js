@@ -2,8 +2,6 @@
 
 import { $index, $mutItems } from "@rust-js/runtime";
 
-var $cCounter, $i32Counter, $i32Sub;
-
 export function entry() {
   main();
 }
@@ -12,19 +10,14 @@ function cDebug_fmt(c) {
   return `C { n: ${c.n} }`;
 }
 
-function cCounter() {
-  if ($cCounter === undefined) {
-    $cCounter = {
-      bump: (arg0) => cCounter_bump(arg0.value),
-      get: cCounter_get,
-      twice: (self) => {
-        cCounter_bump(self.value);
-        cCounter_bump(self.value);
-      },
-    };
-  }
-  return $cCounter;
-}
+const cCounter = {
+  bump: (arg0) => cCounter_bump(arg0.value),
+  get: cCounter_get,
+  twice: (self) => {
+    cCounter_bump(self.value);
+    cCounter_bump(self.value);
+  },
+};
 
 function cCounter_bump(c) {
   c.n = (c.n + 1) | 0;
@@ -34,19 +27,14 @@ function cCounter_get(c) {
   return c.n;
 }
 
-function i32Counter() {
-  if ($i32Counter === undefined) {
-    $i32Counter = {
-      bump: i32Counter_bump,
-      get: i32Counter_get,
-      twice: (self) => {
-        i32Counter_bump(self);
-        i32Counter_bump(self);
-      },
-    };
-  }
-  return $i32Counter;
-}
+const i32Counter = {
+  bump: i32Counter_bump,
+  get: i32Counter_get,
+  twice: (self) => {
+    i32Counter_bump(self);
+    i32Counter_bump(self);
+  },
+};
 
 function i32Counter_bump(self) {
   self.value = (self.value + 10) | 0;
@@ -56,12 +44,7 @@ function i32Counter_get(self) {
   return self;
 }
 
-function i32Sub() {
-  if ($i32Sub === undefined) {
-    $i32Sub = { Counter: () => i32Counter(), name: i32Sub_name };
-  }
-  return $i32Sub;
-}
+const i32Sub = { Counter: () => i32Counter, name: i32Sub_name };
 
 function i32Sub_name(self) {
   return `i${self}`;
@@ -89,8 +72,8 @@ function main() {
   const c = { n: 1 };
   let n = 5;
   console.log(
-    `${useIt({ value: c, impl: cCounter() })} ${useIt({
-      impl: i32Counter(),
+    `${useIt({ value: c, impl: cCounter })} ${useIt({
+      impl: i32Counter,
       get value() {
         return n;
       },
@@ -102,7 +85,7 @@ function main() {
   console.log(`${cDebug_fmt(c)} ${n}`);
 
   const d = {
-    impl: i32Counter(),
+    impl: i32Counter,
     get value() {
       return n;
     },
@@ -114,7 +97,7 @@ function main() {
   const shared = d;
   console.log(`${shared.impl.get(shared.value)} ${n}`);
   const s = {
-    impl: i32Sub(),
+    impl: i32Sub,
     get value() {
       return n;
     },
@@ -126,11 +109,11 @@ function main() {
   receiver.impl.bump(receiver);
   console.log(`${s.impl.name(s.value)} ${n}`);
 
-  const boxed = { value: 7, impl: i32Counter() };
+  const boxed = { value: 7, impl: i32Counter };
   boxed.impl.bump(boxed);
   const list = [
-    { value: { n: 0 }, impl: cCounter() },
-    { value: 1, impl: i32Counter() },
+    { value: { n: 0 }, impl: cCounter },
+    { value: 1, impl: i32Counter },
   ];
   for (const b of $mutItems(list)) {
     b.value.impl.twice(b.value);

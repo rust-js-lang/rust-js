@@ -138,7 +138,6 @@ impl OutputPlan {
                 reexports,
                 helpers: Vec::new(),
                 items: module.items,
-                caches: module.caches,
                 default_export: module.default_export,
             };
 

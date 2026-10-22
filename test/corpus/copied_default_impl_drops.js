@@ -2,8 +2,6 @@
 
 import { $someValue, $traitImpl } from "@rust-js/runtime";
 
-var $holderSkipping, $holderSkip;
-
 export function entry() {
   main();
 }
@@ -49,10 +47,9 @@ function holderIterator_next(holder, IIterator, IDefault, dropI, dropIItem) {
   return next;
 }
 
+const $holderSkipping = new WeakMap();
+
 function holderSkipping(IIterator, IDefault, dropI, dropIItem) {
-  if ($holderSkipping === undefined) {
-    $holderSkipping = new WeakMap();
-  }
   return $traitImpl($holderSkipping, [IIterator, IDefault, dropI, dropIItem], () => ({
     skipOne: (self) => {
       const next = holderIterator_next(self, IIterator, IDefault, dropI, dropIItem);
@@ -92,10 +89,9 @@ function holderSkipping(IIterator, IDefault, dropI, dropIItem) {
   }));
 }
 
+const $holderSkip = new WeakMap();
+
 function holderSkip(IIterator, dropI, dropIItem) {
-  if ($holderSkip === undefined) {
-    $holderSkip = new WeakMap();
-  }
   return $traitImpl($holderSkip, [IIterator, dropI, dropIItem], () => ({
     skip: (arg0) => holderSkip_skip(arg0.value, IIterator, dropI, dropIItem),
     $drop: (holder) => {

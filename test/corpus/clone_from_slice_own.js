@@ -2,21 +2,14 @@
 
 import { $cloneFromSlice } from "@rust-js/runtime";
 
-var $countedClone, $lightClone;
-
 export function entry() {
   main();
 }
 
-export function countedClone() {
-  if ($countedClone === undefined) {
-    $countedClone = {
-      clone: countedClone_clone,
-      cloneFrom: (arg0, arg1) => countedClone_cloneFrom(arg0.value, arg1),
-    };
-  }
-  return $countedClone;
-}
+export const countedClone = {
+  clone: countedClone_clone,
+  cloneFrom: (arg0, arg1) => countedClone_cloneFrom(arg0.value, arg1),
+};
 
 function countedClone_clone(counted) {
   console.log(`clone ${counted[0]}`);
@@ -28,12 +21,7 @@ function countedClone_cloneFrom(counted, source) {
   counted[0] = source[0];
 }
 
-export function lightClone() {
-  if ($lightClone === undefined) {
-    $lightClone = { clone: lightClone_clone, cloneFrom: lightClone_cloneFrom };
-  }
-  return $lightClone;
-}
+export const lightClone = { clone: lightClone_clone, cloneFrom: lightClone_cloneFrom };
 
 function lightClone_clone(light) {
   console.log("clone light");

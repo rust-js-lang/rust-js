@@ -2,8 +2,6 @@
 
 import { $iter, $next, $traitImpl } from "@rust-js/runtime";
 
-var $noisyShape, $quietShape, $wrapShape, $loudDebug;
-
 export function entry() {
   main();
 }
@@ -12,32 +10,21 @@ function noisyDrop_drop(noisy) {
   console.log(`drop ${noisy[0]}`);
 }
 
-function noisyShape() {
-  if ($noisyShape === undefined) {
-    $noisyShape = { name: noisyShape_name, $drop: noisyDrop_drop };
-  }
-  return $noisyShape;
-}
+const noisyShape = { name: noisyShape_name, $drop: noisyDrop_drop };
 
 function noisyShape_name(noisy) {
   return `noisy ${noisy[0]}`;
 }
 
-function quietShape() {
-  if ($quietShape === undefined) {
-    $quietShape = { name: quietShape_name };
-  }
-  return $quietShape;
-}
+const quietShape = { name: quietShape_name };
 
 function quietShape_name(quiet) {
   return `quiet ${quiet[0]}`;
 }
 
+const $wrapShape = new WeakMap();
+
 function wrapShape(TDebug, dropT) {
-  if ($wrapShape === undefined) {
-    $wrapShape = new WeakMap();
-  }
   return $traitImpl($wrapShape, [TDebug, dropT], () => ({
     name: (arg0) => wrapShape_name(arg0, TDebug, dropT),
     $drop: (wrap) => {
@@ -50,15 +37,10 @@ function wrapShape_name(wrap, TDebug, dropT) {
   return `wrap ${TDebug.fmt(wrap[0])}`;
 }
 
+export const loudDebug = { fmt: loudDebug_fmt, $drop: loudDrop_drop };
+
 function loudDebug_fmt(loud) {
   return `Loud(${loud[0]})`;
-}
-
-export function loudDebug() {
-  if ($loudDebug === undefined) {
-    $loudDebug = { fmt: loudDebug_fmt, $drop: loudDrop_drop };
-  }
-  return $loudDebug;
 }
 
 function loudDrop_drop(loud) {
@@ -74,7 +56,7 @@ function consume(shape) {
 }
 
 function main() {
-  const one = { value: ["one"], impl: noisyShape() };
+  const one = { value: ["one"], impl: noisyShape };
   try {
     const tmp = one.impl.name(one.value);
     console.log(`${tmp}`);
@@ -84,10 +66,10 @@ function main() {
   console.log("after one");
 
   const all = [
-    { value: ["a"], impl: noisyShape() },
-    { value: [1], impl: quietShape() },
-    { value: [[2]], impl: wrapShape(loudDebug(), loudDrop_drop) },
-    { value: ["b"], impl: noisyShape() },
+    { value: ["a"], impl: noisyShape },
+    { value: [1], impl: quietShape },
+    { value: [[2]], impl: wrapShape(loudDebug, loudDrop_drop) },
+    { value: ["b"], impl: noisyShape },
   ];
   let all$live = true;
   let iter;
@@ -144,7 +126,7 @@ function main() {
   console.log("after all");
 
   const lent = ["lent"];
-  const borrowed = { value: lent, impl: noisyShape() };
+  const borrowed = { value: lent, impl: noisyShape };
   let tmp$1;
   try {
     tmp$1 = borrowed.impl.name(borrowed.value);
@@ -160,39 +142,18 @@ function main() {
   }
   const loud = [3];
   const shown = loudDebug_fmt(loud);
-
-  try {
-    console.log(`${shown}`);
-  } catch (error) {
-    loudDrop_drop(loud);
-    noisyDrop_drop(lent);
-    throw error;
-  }
-  const holder = { shape: { value: ["held"], impl: noisyShape() } };
-  let tmp;
-  try {
-    tmp = holder.shape.impl.name(holder.shape.value);
-  } catch (error) {
-    holder.shape.impl.$drop?.(holder.shape.value);
-    loudDrop_drop(loud);
-    noisyDrop_drop(lent);
-    throw error;
-  }
-  try {
-    console.log(`${tmp}`);
-  } catch (error) {
-    holder.shape.impl.$drop?.(holder.shape.value);
-    loudDrop_drop(loud);
-    noisyDrop_drop(lent);
-    throw error;
-  }
-  const value = ["given"];
-  const impl = noisyShape();
   try {
     try {
+      console.log(`${shown}`);
+
+      const holder = { shape: { value: ["held"], impl: noisyShape } };
       try {
-        const tmp = consume({ value, impl });
+        const tmp = holder.shape.impl.name(holder.shape.value);
         console.log(`${tmp}`);
+        const value = ["given"];
+        const impl = noisyShape;
+        const tmp$1 = consume({ value, impl });
+        console.log(`${tmp$1}`);
         const kept = ["kept"];
         try {
           const tmp = noisyShape_name(kept);
@@ -201,8 +162,8 @@ function main() {
           noisyDrop_drop(kept);
         }
         let boxed = ["boxed"];
-        const tmp$1 = noisyShape_name(boxed);
-        console.log(`${tmp$1}`);
+        const tmp$2 = noisyShape_name(boxed);
+        console.log(`${tmp$2}`);
         const unboxed = boxed;
         try {
           console.log(`moved ${unboxed[0]}`);

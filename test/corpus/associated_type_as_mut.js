@@ -2,22 +2,15 @@
 
 import { $debugStr, $iter, $iterator, $lazyZip, $mutAt, $mutItems, $some } from "@rust-js/runtime";
 
-var $_A__A_Collect;
-
 export function entry() {
   main();
 }
 
-function _A__A_Collect() {
-  if ($_A__A_Collect === undefined) {
-    $_A__A_Collect = {
-      BufferDefault: () => ({ default: () => [undefined, undefined] }),
-      BufferAsRefOptionSlice: () => ({ asRef: (value) => value }),
-      BufferAsMutOptionSlice: () => ({ asMut: (cell) => cell }),
-    };
-  }
-  return $_A__A_Collect;
-}
+const _A__A_Collect = {
+  BufferDefault: () => ({ default: () => [undefined, undefined] }),
+  BufferAsRefOptionSlice: () => ({ asRef: (value) => value }),
+  BufferAsMutOptionSlice: () => ({ asMut: (cell) => cell }),
+};
 
 const Buffer = {
   new(items, TCollect) {
@@ -69,20 +62,20 @@ function bufferIterator_next(buffer, TCollect) {
 }
 
 function main() {
-  const words = Buffer.new(["a"], _A__A_Collect());
-  console.log(`${Buffer.held(words, _A__A_Collect())}`);
-  const next = bufferIterator_next(words, _A__A_Collect());
+  const words = Buffer.new(["a"], _A__A_Collect);
+  console.log(`${Buffer.held(words, _A__A_Collect)}`);
+  const next = bufferIterator_next(words, _A__A_Collect);
   console.log(
-    `${next == null ? "None" : `Some(${$debugStr(next)})`} ${Buffer.held(words, _A__A_Collect())}`,
+    `${next == null ? "None" : `Some(${$debugStr(next)})`} ${Buffer.held(words, _A__A_Collect)}`,
   );
-  const value = bufferIterator_next(words, _A__A_Collect());
-  const value$1 = bufferIterator_next(words, _A__A_Collect());
+  const value = bufferIterator_next(words, _A__A_Collect);
+  const value$1 = bufferIterator_next(words, _A__A_Collect);
   console.log(
     `${value == null ? "None" : `Some(${$debugStr(value)})`} ${value$1 == null ? "None" : `Some(${$debugStr(value$1)})`}`,
   );
   const numbers = $iterator(
-    Buffer.new([4, 5, 6], _A__A_Collect()),
-    (iterator) => bufferIterator_next(iterator, _A__A_Collect()),
+    Buffer.new([4, 5, 6], _A__A_Collect),
+    (iterator) => bufferIterator_next(iterator, _A__A_Collect),
     true,
   ).toArray();
   console.log(`[${numbers.join(", ")}]`);

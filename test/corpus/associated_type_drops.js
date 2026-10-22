@@ -2,8 +2,6 @@
 
 import { $byteLen, $some, $someValue } from "@rust-js/runtime";
 
-var $loudZone, $quietZone, $loudSource;
-
 export function entry() {
   main();
 }
@@ -12,12 +10,7 @@ function noisyDrop_drop(noisy) {
   console.log(`drop ${noisy[0]}`);
 }
 
-function loudZone() {
-  if ($loudZone === undefined) {
-    $loudZone = { offset: loudZone_offset, show: loudZone_show, $dropOffset: noisyDrop_drop };
-  }
-  return $loudZone;
-}
+const loudZone = { offset: loudZone_offset, show: loudZone_show, $dropOffset: noisyDrop_drop };
 
 function loudZone_offset(loud, name) {
   return [name];
@@ -27,12 +20,7 @@ function loudZone_show(offset) {
   return `loud ${offset[0]}`;
 }
 
-function quietZone() {
-  if ($quietZone === undefined) {
-    $quietZone = { offset: quietZone_offset, show: quietZone_show };
-  }
-  return $quietZone;
-}
+const quietZone = { offset: quietZone_offset, show: quietZone_show };
 
 function quietZone_offset(quiet, name) {
   return $byteLen(name);
@@ -95,12 +83,7 @@ function describe(zone, ZZone) {
   }
 }
 
-function loudSource() {
-  if ($loudSource === undefined) {
-    $loudSource = { make: loudSource_make, $dropItem: noisyDrop_drop };
-  }
-  return $loudSource;
-}
+const loudSource = { make: loudSource_make, $dropItem: noisyDrop_drop };
 
 function loudSource_make(loud) {
   return ["made"];
@@ -116,19 +99,14 @@ function take(source, SSource) {
 }
 
 function main() {
-  describe(undefined, loudZone());
-  describe(undefined, quietZone());
-  const kept = stamp(undefined, 1n, "kept", loudZone());
+  describe(undefined, loudZone);
+  describe(undefined, quietZone);
+  const kept = stamp(undefined, 1n, "kept", loudZone);
   try {
     console.log(`kept ${kept.at}`);
-  } catch (error) {
-    noisyDrop_drop(kept.offset);
-    throw error;
-  }
-  const source = { impl: loudSource() };
-  try {
+    const source = { impl: loudSource };
     take(source, { make: (object) => object.impl.make(object.value), $dropItem: noisyDrop_drop });
-    take(undefined, loudSource());
+    take(undefined, loudSource);
   } finally {
     noisyDrop_drop(kept.offset);
   }

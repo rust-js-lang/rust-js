@@ -2,8 +2,6 @@
 
 import { $traitImpl } from "@rust-js/runtime";
 
-var $wrapFootprint;
-
 export function entry() {
   main();
 }
@@ -12,10 +10,9 @@ function bytes(n, TSize) {
   return Math.imul(TSize, n) >>> 0;
 }
 
+const $wrapFootprint = new Map();
+
 function wrapFootprint(TSize) {
-  if ($wrapFootprint === undefined) {
-    $wrapFootprint = new Map();
-  }
   return $traitImpl($wrapFootprint, [TSize], () => ({
     footprint: (arg0) => wrapFootprint_footprint(arg0, TSize),
   }));

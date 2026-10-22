@@ -2,8 +2,6 @@
 
 import { $debugStr, $traitImpl } from "@rust-js/runtime";
 
-var $tNamed;
-
 export function entry() {
   main();
 }
@@ -24,10 +22,9 @@ function passedOn(UClone, UName) {
   return names(UClone, UName)[1];
 }
 
+const $tNamed = new Map();
+
 function tNamed(TName) {
-  if ($tNamed === undefined) {
-    $tNamed = new Map();
-  }
   return $traitImpl($tNamed, [TName], () => ({ named: (arg0) => tNamed_named(arg0, TName) }));
 }
 

@@ -2,29 +2,17 @@
 
 import { $borrow, $borrowMut, $dynCell, $unborrow } from "@rust-js/runtime";
 
-var $clicksNamed, $clicksCounter;
-
 export function entry() {
   main();
 }
 
-function clicksNamed() {
-  if ($clicksNamed === undefined) {
-    $clicksNamed = { name: clicksNamed_name };
-  }
-  return $clicksNamed;
-}
+const clicksNamed = { name: clicksNamed_name };
 
 function clicksNamed_name(clicks) {
   return `${clicks.label} at ${clicks.n}`;
 }
 
-function clicksCounter() {
-  if ($clicksCounter === undefined) {
-    $clicksCounter = { Named: () => clicksNamed(), bump: (arg0) => clicksCounter_bump(arg0.value) };
-  }
-  return $clicksCounter;
-}
+const clicksCounter = { Named: () => clicksNamed, bump: (arg0) => clicksCounter_bump(arg0.value) };
 
 function clicksCounter_bump(clicks) {
   clicks.n = (clicks.n + 1) >>> 0;
@@ -33,8 +21,8 @@ function clicksCounter_bump(clicks) {
 
 function main() {
   const clicks = { value: { label: "save", n: 0 } };
-  const counter = $dynCell(clicks, clicksCounter());
-  const named = $dynCell(clicks, clicksNamed());
+  const counter = $dynCell(clicks, clicksCounter);
+  const named = $dynCell(clicks, clicksNamed);
   const receiver = $borrowMut(counter, true);
   try {
     receiver.impl.bump(receiver);

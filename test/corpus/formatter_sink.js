@@ -14,8 +14,6 @@ import {
   $writeTry,
 } from "@rust-js/runtime";
 
-var $formatterSinkSink, $encodedDisplay, $stringSinkSink, $checkedDisplay;
-
 export function entry() {
   main();
 }
@@ -30,15 +28,10 @@ function encode(text, sink, SSink) {
   return { TAG: "Ok" };
 }
 
-function formatterSinkSink() {
-  if ($formatterSinkSink === undefined) {
-    $formatterSinkSink = {
-      writeEncoded: (arg0, arg1) =>
-        $writeResult(() => formatterSinkSink_writeEncoded(arg0.value, arg1)),
-    };
-  }
-  return $formatterSinkSink;
-}
+const formatterSinkSink = {
+  writeEncoded: (arg0, arg1) =>
+    $writeResult(() => formatterSinkSink_writeEncoded(arg0.value, arg1)),
+};
 
 function formatterSinkSink_writeEncoded(formatterSink, encoded) {
   if (encoded === "bad") {
@@ -48,12 +41,7 @@ function formatterSinkSink_writeEncoded(formatterSink, encoded) {
   formatterSink.f.value += ".";
 }
 
-export function encodedDisplay() {
-  if ($encodedDisplay === undefined) {
-    $encodedDisplay = { fmt: encodedDisplay_fmt };
-  }
-  return $encodedDisplay;
-}
+export const encodedDisplay = { fmt: encodedDisplay_fmt };
 
 function encodedDisplay_fmt(encoded) {
   let f = "";
@@ -69,7 +57,7 @@ function encodedDisplay_fmt(encoded) {
       },
     };
     const sink$1 = { value: sink };
-    $writeCheck($writeOf(encode(encoded[0], sink$1, formatterSinkSink())));
+    $writeCheck($writeOf(encode(encoded[0], sink$1, formatterSinkSink)));
     $assign(sink, sink$1.value);
   } catch (error) {
     throw $fmtWritten(error, f);
@@ -77,15 +65,9 @@ function encodedDisplay_fmt(encoded) {
   return f;
 }
 
-function stringSinkSink() {
-  if ($stringSinkSink === undefined) {
-    $stringSinkSink = {
-      writeEncoded: (arg0, arg1) =>
-        $writeResult(() => stringSinkSink_writeEncoded(arg0.value, arg1)),
-    };
-  }
-  return $stringSinkSink;
-}
+const stringSinkSink = {
+  writeEncoded: (arg0, arg1) => $writeResult(() => stringSinkSink_writeEncoded(arg0.value, arg1)),
+};
 
 function stringSinkSink_writeEncoded(stringSink, encoded) {
   stringSink.s.value += `<${encoded}>`;
@@ -97,12 +79,7 @@ function check(n) {
   }
 }
 
-export function checkedDisplay() {
-  if ($checkedDisplay === undefined) {
-    $checkedDisplay = { fmt: checkedDisplay_fmt };
-  }
-  return $checkedDisplay;
-}
+export const checkedDisplay = { fmt: checkedDisplay_fmt };
 
 function checkedDisplay_fmt(checked) {
   let f = "";
@@ -149,7 +126,7 @@ function main() {
     },
   };
   const sink = { value: stringSink };
-  const written = $writeOf(encode("x y", sink, stringSinkSink()));
+  const written = $writeOf(encode("x y", sink, stringSinkSink));
   $assign(stringSink, sink.value);
   console.log(`${written === undefined ? "Ok(())" : "Err(Error)"} ${s}`);
 

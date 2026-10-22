@@ -188,7 +188,6 @@ fn mentions(module: &mut js::Module) -> HashSet<String> {
             .iter()
             .flat_map(|i| i.named.iter().map(|(_, l)| l.clone())),
     );
-    names.extend(module.caches.iter().cloned());
     names.extend(module.default_export.iter().cloned());
     names
 }

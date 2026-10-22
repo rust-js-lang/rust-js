@@ -2,18 +2,11 @@
 
 import { $formatted, $lowerExp } from "@rust-js/runtime";
 
-var $rangedLowerExp;
-
 export function entry() {
   main();
 }
 
-export function rangedLowerExp() {
-  if ($rangedLowerExp === undefined) {
-    $rangedLowerExp = { fmt: rangedLowerExp_fmt };
-  }
-  return $rangedLowerExp;
-}
+export const rangedLowerExp = { fmt: rangedLowerExp_fmt };
 
 function rangedLowerExp_fmt(ranged, options) {
   return $formatted($lowerExp(ranged[0], false, options?.precision), options, true);

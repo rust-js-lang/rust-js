@@ -2,18 +2,11 @@
 
 import { $debugStr, $displayF64 } from "@rust-js/runtime";
 
-var $pointDisplay;
-
 export function entry() {
   main();
 }
 
-export function pointDisplay() {
-  if ($pointDisplay === undefined) {
-    $pointDisplay = { fmt: pointDisplay_fmt };
-  }
-  return $pointDisplay;
-}
+export const pointDisplay = { fmt: pointDisplay_fmt };
 
 function pointDisplay_fmt(point) {
   return `(${point[0]}, ${point[1]})`;

@@ -132,10 +132,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // Each drop function it takes: a type's with nothing to drop is none,
         // left out at the end (ADR 0098).
         let mut drops = Vec::new();
-        let given = match self.krate.foreign.item(id) {
-            Some(item) => item.drops.as_slice(),
-            None => self.krate.drop_params.get(&id).map_or(&[][..], Vec::as_slice),
-        };
+        let given = self.drops_taken(id);
         // One that takes only the drops it uses is given each as an argument
         // the pipeline keeps or leaves out (ADR 0300).
         let takes_used = self.krate.drop_uses.borrow().takes_used(id);
@@ -152,6 +149,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// What `id` asks of its type parameters, `TSize` and `KMap`, by their
     /// index: the crate's, or a library's as its manifest says (ADR 0145).
+    /// The type parameters `id` takes a drop function of, by index: a
+    /// library's as its manifest says, the crate's own as found (ADR 0098).
+    pub(in crate::lower) fn drops_taken(&self, id: DefId) -> &'a [u32] {
+        match self.krate.foreign.item(id) {
+            Some(item) => item.drops.as_slice(),
+            None => self.krate.drop_params.get(&id).map_or(&[][..], Vec::as_slice),
+        }
+    }
+
     pub(in crate::lower) fn facts_asked(&self, id: DefId) -> Vec<(u32, TypeFact)> {
         // A std body compiled with this crate asks as the crate's own do
         // (ADR 0561).

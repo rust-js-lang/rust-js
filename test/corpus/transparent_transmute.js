@@ -2,8 +2,6 @@
 
 import { $byteLen, $eq, $ptrTo, $unwrap } from "@rust-js/runtime";
 
-var $hyphenatedDisplay;
-
 export function entry() {
   main();
 }
@@ -26,12 +24,7 @@ const Uuid = {
   },
 };
 
-export function hyphenatedDisplay() {
-  if ($hyphenatedDisplay === undefined) {
-    $hyphenatedDisplay = { fmt: hyphenatedDisplay_fmt };
-  }
-  return $hyphenatedDisplay;
-}
+export const hyphenatedDisplay = { fmt: hyphenatedDisplay_fmt };
 
 function hyphenatedDisplay_fmt(hyphenated) {
   const [a, b, c, d] = hyphenated;

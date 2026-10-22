@@ -2,8 +2,6 @@
 
 import { $rcClone, $rcDrop } from "@rust-js/runtime";
 
-var $noisyNamed;
-
 export function entry() {
   main();
 }
@@ -12,12 +10,7 @@ function noisyDrop_drop(noisy) {
   console.log(`drop ${noisy[0]}`);
 }
 
-function noisyNamed() {
-  if ($noisyNamed === undefined) {
-    $noisyNamed = { name: noisyNamed_name, $drop: noisyDrop_drop };
-  }
-  return $noisyNamed;
-}
+const noisyNamed = { name: noisyNamed_name, $drop: noisyDrop_drop };
 
 function noisyNamed_name(noisy) {
   return noisy[0];
@@ -53,7 +46,7 @@ function main() {
   const one = { value: ["upcast"], impl: { $drop: noisyDrop_drop } };
   one.impl.$drop?.(one.value);
 
-  const named = { value: ["named"], impl: noisyNamed() };
+  const named = { value: ["named"], impl: noisyNamed };
   try {
     console.log(`${named.impl.name(named.value)}`);
   } catch (error) {

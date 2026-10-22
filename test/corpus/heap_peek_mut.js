@@ -12,8 +12,6 @@ import {
   $unwrap,
 } from "@rust-js/runtime";
 
-var $loudOrd, $loudPartialOrd;
-
 export function entry() {
   main();
 }
@@ -23,24 +21,17 @@ function loudDebug_fmt(loud) {
   return `Loud(${loud[0]})`;
 }
 
-export function loudOrd() {
-  if ($loudOrd === undefined) {
-    $loudOrd = { PartialOrd: () => loudPartialOrd(), cmp: loudOrd_cmp };
-  }
-  return $loudOrd;
-}
-
 function loudOrd_cmp(loud, other) {
   console.log(`cmp ${loud[0]} ${other[0]}`);
   return $cmp(loud[0], other[0]);
 }
 
-export function loudPartialOrd() {
-  if ($loudPartialOrd === undefined) {
-    $loudPartialOrd = { PartialEq: () => ({ eq: $eq }), partialCmp: loudPartialOrd_partialCmp };
-  }
-  return $loudPartialOrd;
-}
+export const loudPartialOrd = {
+  PartialEq: () => ({ eq: $eq }),
+  partialCmp: loudPartialOrd_partialCmp,
+};
+
+export const loudOrd = { PartialOrd: () => loudPartialOrd, cmp: loudOrd_cmp };
 
 function loudPartialOrd_partialCmp(loud, other) {
   return loudOrd_cmp(loud, other);

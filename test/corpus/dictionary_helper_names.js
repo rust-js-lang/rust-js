@@ -2,8 +2,6 @@
 
 import { $debugDuration, $durationAdd } from "@rust-js/runtime";
 
-var $durationAdd$1;
-
 export function entry() {
   main();
 }
@@ -12,12 +10,7 @@ function durationDebug_fmt(duration) {
   return `Duration(${duration[0]})`;
 }
 
-export function durationAdd() {
-  if ($durationAdd$1 === undefined) {
-    $durationAdd$1 = { add: durationAdd_add };
-  }
-  return $durationAdd$1;
-}
+export const durationAdd = { add: durationAdd_add };
 
 function durationAdd_add(duration, other) {
   return [(duration[0] + other[0]) >>> 0];
@@ -28,7 +21,7 @@ function total(a, b, TAdd) {
 }
 
 function main() {
-  const d = total([1], [2], durationAdd());
+  const d = total([1], [2], durationAdd);
   const s = $durationAdd(1n * 1000000000n, 500n * 1000000n);
   console.log(`${durationDebug_fmt(d)} ${$debugDuration(s)}`);
 }

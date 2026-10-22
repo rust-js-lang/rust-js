@@ -2,8 +2,6 @@
 
 import { $iter, $next, $parseInt, $some, $someValue, $stripPrefix } from "@rust-js/runtime";
 
-var $dNamed;
-
 export function entry() {
   main();
 }
@@ -54,12 +52,7 @@ function found(value, fallback, dropT) {
   return mapped;
 }
 
-function dNamed() {
-  if ($dNamed === undefined) {
-    $dNamed = { fromName: dNamed_fromName, $drop: dDrop_drop };
-  }
-  return $dNamed;
-}
+const dNamed = { fromName: dNamed_fromName, $drop: dDrop_drop };
 
 function dNamed_fromName(name) {
   const result = $parseInt(name, 0, 4294967295);
@@ -994,7 +987,7 @@ function main() {
   }
   let tmp$22;
   try {
-    tmp$22 = parse("16", dNamed());
+    tmp$22 = parse("16", dNamed);
   } catch (error) {
     if (err.TAG === "Ok") {
       dDrop_drop(err._0);
@@ -1144,7 +1137,7 @@ function main() {
   tmp$0$live$1 = false;
   let tmp$23;
   try {
-    tmp$23 = parse("x", dNamed());
+    tmp$23 = parse("x", dNamed);
   } catch (error) {
     if (err.TAG === "Ok") {
       dDrop_drop(err._0);
@@ -1420,7 +1413,7 @@ function main() {
         const b = tmp[1];
         const both = tmp[2];
         try {
-          tmp$25 = parsePair(a, b, both, dNamed(), dDrop_drop);
+          tmp$25 = parsePair(a, b, both, dNamed, dDrop_drop);
         } catch (error) {
           if (err.TAG === "Ok") {
             dDrop_drop(err._0);
@@ -1667,7 +1660,7 @@ function main() {
     }
     const flag = tmp;
     try {
-      tmp$24 = parseFlag(flag, dNamed());
+      tmp$24 = parseFlag(flag, dNamed);
     } catch (error) {
       if (err.TAG === "Ok") {
         dDrop_drop(err._0);

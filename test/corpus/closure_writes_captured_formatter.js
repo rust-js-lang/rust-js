@@ -2,16 +2,13 @@
 
 import { $formatted, $iter, $iterator, $next, $someValue, $traitImpl } from "@rust-js/runtime";
 
-var $formatWithDisplay, $eachDisplay;
-
 export function entry() {
   main();
 }
 
+const $formatWithDisplay = new WeakMap();
+
 export function formatWithDisplay(IIterator) {
-  if ($formatWithDisplay === undefined) {
-    $formatWithDisplay = new WeakMap();
-  }
   return $traitImpl($formatWithDisplay, [IIterator], () => ({
     fmt: (arg0, arg1) => formatWithDisplay_fmt(arg0, arg1, IIterator),
   }));
@@ -43,12 +40,7 @@ function formatWithDisplay_fmt(formatWith, options, IIterator) {
   return f;
 }
 
-export function eachDisplay() {
-  if ($eachDisplay === undefined) {
-    $eachDisplay = { fmt: eachDisplay_fmt };
-  }
-  return $eachDisplay;
-}
+export const eachDisplay = { fmt: eachDisplay_fmt };
 
 function eachDisplay_fmt(each, options) {
   let f = "";

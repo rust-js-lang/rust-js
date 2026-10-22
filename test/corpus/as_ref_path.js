@@ -2,18 +2,11 @@
 
 import { $debugStr, $pathExtension } from "@rust-js/runtime";
 
-var $nameAsRefPath;
-
 export function entry() {
   main();
 }
 
-export function nameAsRefPath() {
-  if ($nameAsRefPath === undefined) {
-    $nameAsRefPath = { asRef: nameAsRefPath_asRef };
-  }
-  return $nameAsRefPath;
-}
+export const nameAsRefPath = { asRef: nameAsRefPath_asRef };
 
 function nameAsRefPath_asRef(name) {
   return name.text;
@@ -28,7 +21,7 @@ function main() {
   const n = { text: "a/b.rs" };
   const p = nameAsRefPath_asRef(n);
   console.log(`${p}`);
-  const value = ext(n, nameAsRefPath());
+  const value = ext(n, nameAsRefPath);
   console.log(`${value == null ? "None" : `Some(${$debugStr(value)})`}`);
 }
 //# sourceMappingURL=case.js.map

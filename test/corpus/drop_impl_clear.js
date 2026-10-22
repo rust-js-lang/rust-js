@@ -2,16 +2,13 @@
 
 import { $assign, $traitImpl, $truncate } from "@rust-js/runtime";
 
-var $wrapEmpty;
-
 export function entry() {
   main();
 }
 
+const $wrapEmpty = new WeakMap();
+
 function wrapEmpty(dropT) {
-  if ($wrapEmpty === undefined) {
-    $wrapEmpty = new WeakMap();
-  }
   return $traitImpl($wrapEmpty, [dropT], () => ({
     empty: (arg0) => wrapEmpty_empty(arg0.value, dropT),
     $drop: (wrap) => {

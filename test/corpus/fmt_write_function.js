@@ -9,19 +9,17 @@ import {
   $writeTry,
 } from "@rust-js/runtime";
 
-var $bufWrite;
-
 export function entry() {
   main();
 }
 
-export function bufWrite() {
-  if ($bufWrite === undefined) {
-    const writeStr = (arg0, arg1) => bufWrite_writeStr(arg0.value, arg1);
-    $bufWrite = { writeStr, writeChar: writeStr, writeFmt: writeStr };
-  }
-  return $bufWrite;
-}
+const $bufWrite_writeStr = (arg0, arg1) => bufWrite_writeStr(arg0.value, arg1);
+
+export const bufWrite = {
+  writeStr: $bufWrite_writeStr,
+  writeChar: $bufWrite_writeStr,
+  writeFmt: $bufWrite_writeStr,
+};
 
 function bufWrite_writeStr(buf, s) {
   if (($byteLen(buf.text) + $byteLen(s)) >>> 0 > buf.cap) {
@@ -36,10 +34,10 @@ function put(w, n) {
 
 function main() {
   const buf = { text: "", cap: 8 };
-  const receiver = { value: buf, impl: bufWrite() };
+  const receiver = { value: buf, impl: bufWrite };
   const short = $writeTry(() => receiver.impl.writeFmt(receiver, `[${[1, 2].join(", ")}]`));
   console.log(`${short === undefined} ${$debugStr(buf.text)}`);
-  const receiver$1 = { value: buf, impl: bufWrite() };
+  const receiver$1 = { value: buf, impl: bufWrite };
   const long = $writeTry(() => receiver$1.impl.writeFmt(receiver$1, "too long"));
   console.log(`${long === undefined} ${$debugStr(buf.text)}`);
   let s = ">";
@@ -71,7 +69,7 @@ function main() {
   );
   $writeExpect(result$1, "called `Result::unwrap()` on an `Err` value");
   const wide = { text: "", cap: 99 };
-  const result$2 = $writeTry(() => put({ value: wide, impl: bufWrite() }, 8));
+  const result$2 = $writeTry(() => put({ value: wide, impl: bufWrite }, 8));
   $writeExpect(result$2, "called `Result::unwrap()` on an `Err` value");
   console.log(`${s} ${wide.text}`);
 }

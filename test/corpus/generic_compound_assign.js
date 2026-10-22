@@ -2,8 +2,6 @@
 
 import { $debugStr, $displayF64, $iter, $nextSome, $someValue } from "@rust-js/runtime";
 
-var $moneyAddAssign;
-
 export function entry() {
   main();
 }
@@ -12,12 +10,9 @@ function moneyDebug_fmt(money) {
   return `Money(${money[0]})`;
 }
 
-export function moneyAddAssign() {
-  if ($moneyAddAssign === undefined) {
-    $moneyAddAssign = { addAssign: (arg0, arg1) => moneyAddAssign_addAssign(arg0.value, arg1) };
-  }
-  return $moneyAddAssign;
-}
+export const moneyAddAssign = {
+  addAssign: (arg0, arg1) => moneyAddAssign_addAssign(arg0.value, arg1),
+};
 
 function moneyAddAssign_addAssign(money, other) {
   console.log(`add ${other[0]}`);
@@ -84,7 +79,7 @@ function main() {
       },
       { default: () => 0 },
       { copy: (value) => value },
-    )} ${moneyDebug_fmt(total([[5n], [7n]], moneyAddAssign(), { default: () => [0n] }, { copy: (value) => [value[0]] }))}`,
+    )} ${moneyDebug_fmt(total([[5n], [7n]], moneyAddAssign, { default: () => [0n] }, { copy: (value) => [value[0]] }))}`,
   );
   console.log(
     `${scaled(
@@ -140,7 +135,7 @@ function main() {
     },
     { default: () => 0 },
   );
-  ordered(log, moneyAddAssign(), { default: () => [0n] });
+  ordered(log, moneyAddAssign, { default: () => [0n] });
   console.log(`[${log.map((item) => $debugStr(item)).join(", ")}]`);
   // The crate's own, of a field, where its type is known: its impl's.
   const purse = [[1n]];

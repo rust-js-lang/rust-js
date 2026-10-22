@@ -2,8 +2,6 @@
 
 import { $index } from "@rust-js/runtime";
 
-var $refMutI32Bump;
-
 export function entry() {
   main();
 }
@@ -37,12 +35,7 @@ const Counter = {
   },
 };
 
-function refMutI32Bump() {
-  if ($refMutI32Bump === undefined) {
-    $refMutI32Bump = { bump: refMutI32Bump_bump };
-  }
-  return $refMutI32Bump;
-}
+const refMutI32Bump = { bump: refMutI32Bump_bump };
 
 function refMutI32Bump_bump(self) {
   self.value = (self.value + 1) | 0;
@@ -84,7 +77,7 @@ function main() {
 
   let b = 1;
   const t = { value: b };
-  go(t, refMutI32Bump());
+  go(t, refMutI32Bump);
   b = t.value;
   console.log(`${b}`);
 }

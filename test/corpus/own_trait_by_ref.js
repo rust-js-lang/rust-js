@@ -2,8 +2,6 @@
 
 import { $iterator, $lent } from "@rust-js/runtime";
 
-var $counterDoubled;
-
 export function entry() {
   main();
 }
@@ -13,12 +11,7 @@ function counterIterator_next(counter) {
   return counter.n <= 3 ? counter.n : undefined;
 }
 
-function counterDoubled() {
-  if ($counterDoubled === undefined) {
-    $counterDoubled = { byRef: (arg0) => counterDoubled_byRef(arg0.value) };
-  }
-  return $counterDoubled;
-}
+const counterDoubled = { byRef: (arg0) => counterDoubled_byRef(arg0.value) };
 
 function counterDoubled_byRef(counter) {
   return Math.imul(counter.n, 2) >>> 0;

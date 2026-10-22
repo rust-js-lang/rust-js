@@ -2,45 +2,23 @@
 
 import { $assign, $debugF64, $debugStr, $displayF64, $f64ToInt, $pop } from "@rust-js/runtime";
 
-var $metersConvertF64,
-  $metersConvertString,
-  $numsTakeU32,
-  $stackTakeT,
-  $metersLabelU32,
-  $metersLabelString,
-  $metersBoth,
-  $metersPairU32String,
-  $metersWrapF64,
-  $metersGreetStr,
-  $metersGreeter;
-
 export function entry() {
   main();
 }
 
-function metersConvertF64() {
-  if ($metersConvertF64 === undefined) {
-    $metersConvertF64 = {
-      convert: metersConvertF64_convert,
-      twice: (self) => [metersConvertF64_convert(self), metersConvertF64_convert(self)],
-    };
-  }
-  return $metersConvertF64;
-}
+const metersConvertF64 = {
+  convert: metersConvertF64_convert,
+  twice: (self) => [metersConvertF64_convert(self), metersConvertF64_convert(self)],
+};
 
 function metersConvertF64_convert(meters) {
   return meters[0];
 }
 
-function metersConvertString() {
-  if ($metersConvertString === undefined) {
-    $metersConvertString = {
-      convert: metersConvertString_convert,
-      twice: (self) => [metersConvertString_convert(self), metersConvertString_convert(self)],
-    };
-  }
-  return $metersConvertString;
-}
+const metersConvertString = {
+  convert: metersConvertString_convert,
+  twice: (self) => [metersConvertString_convert(self), metersConvertString_convert(self)],
+};
 
 function metersConvertString_convert(meters) {
   return `${$displayF64(meters[0])} m`;
@@ -54,23 +32,13 @@ function both(x, XConvertF64, XConvertString) {
   return [XConvertF64.convert(x), XConvertString.convert(x)];
 }
 
-function numsTakeU32() {
-  if ($numsTakeU32 === undefined) {
-    $numsTakeU32 = { take: (arg0) => numsTakeU32_take(arg0.value) };
-  }
-  return $numsTakeU32;
-}
+const numsTakeU32 = { take: (arg0) => numsTakeU32_take(arg0.value) };
 
 function numsTakeU32_take(nums) {
   return nums.list.pop();
 }
 
-function stackTakeT() {
-  if ($stackTakeT === undefined) {
-    $stackTakeT = { take: (arg0) => stackTakeT_take(arg0.value) };
-  }
-  return $stackTakeT;
-}
+const stackTakeT = { take: (arg0) => stackTakeT_take(arg0.value) };
 
 function stackTakeT_take(stack) {
   return $pop(stack.list);
@@ -88,45 +56,25 @@ function count(x, XTakeT) {
   return n;
 }
 
-function metersLabelU32() {
-  if ($metersLabelU32 === undefined) {
-    $metersLabelU32 = { label: metersLabelU32_label };
-  }
-  return $metersLabelU32;
-}
+const metersLabelU32 = { label: metersLabelU32_label };
 
 function metersLabelU32_label(meters) {
   return $f64ToInt(meters[0], 0, 4294967295);
 }
 
-function metersLabelString() {
-  if ($metersLabelString === undefined) {
-    $metersLabelString = { label: metersLabelString_label };
-  }
-  return $metersLabelString;
-}
+const metersLabelString = { label: metersLabelString_label };
 
 function metersLabelString_label(meters) {
   return "meters";
 }
 
-function metersBoth() {
-  if ($metersBoth === undefined) {
-    $metersBoth = {
-      LabelU32: () => metersLabelU32(),
-      LabelString: () => metersLabelString(),
-      both: (self) => [metersLabelU32_label(self), metersLabelString_label(self)],
-    };
-  }
-  return $metersBoth;
-}
+const metersBoth = {
+  LabelU32: () => metersLabelU32,
+  LabelString: () => metersLabelString,
+  both: (self) => [metersLabelU32_label(self), metersLabelString_label(self)],
+};
 
-function metersPairU32String() {
-  if ($metersPairU32String === undefined) {
-    $metersPairU32String = { LabelA: () => metersLabelU32(), LabelB: () => metersLabelString() };
-  }
-  return $metersPairU32String;
-}
+const metersPairU32String = { LabelA: () => metersLabelU32, LabelB: () => metersLabelString };
 
 function labels(p, PPairAB) {
   return [PPairAB.LabelA().label(p), PPairAB.LabelB().label(p)];
@@ -136,41 +84,26 @@ function number(b, BBoth) {
   return BBoth.LabelU32().label(b);
 }
 
-function metersWrapF64() {
-  if ($metersWrapF64 === undefined) {
-    $metersWrapF64 = {
-      Convert: () => metersConvertF64(),
-      wrapped: (self) => [metersConvertF64_convert(self)],
-    };
-  }
-  return $metersWrapF64;
-}
+const metersWrapF64 = {
+  Convert: () => metersConvertF64,
+  wrapped: (self) => [metersConvertF64_convert(self)],
+};
 
 function unwrapped(x, XWrapT) {
   return XWrapT.Convert().convert(x);
 }
 
-function metersGreetStr() {
-  if ($metersGreetStr === undefined) {
-    $metersGreetStr = { greet: (self) => "hi" };
-  }
-  return $metersGreetStr;
-}
+const metersGreetStr = { greet: (self) => "hi" };
 
-function metersGreeter() {
-  if ($metersGreeter === undefined) {
-    $metersGreeter = { Greet: () => metersGreetStr() };
-  }
-  return $metersGreeter;
-}
+const metersGreeter = { Greet: () => metersGreetStr };
 
 function main() {
   const m = [2.5];
   const a = metersConvertF64_convert(m);
   const b = metersConvertString_convert(m);
-  const pair = metersConvertString().twice(m);
-  const value = show(m, metersConvertString());
-  const arg = both(m, metersConvertF64(), metersConvertString());
+  const pair = metersConvertString.twice(m);
+  const value = show(m, metersConvertString);
+  const arg = both(m, metersConvertF64, metersConvertString);
   console.log(
     `${$displayF64(a)} ${b} ${value} (${$debugF64(arg[0])}, ${$debugStr(arg[1])}) (${$debugStr(pair[0])}, ${$debugStr(pair[1])})`,
   );
@@ -178,11 +111,11 @@ function main() {
   const nums = { list: [1, 2] };
   const stack = { list: [3, 4] };
   const x$1 = { value: nums };
-  const value$1 = first(x$1, numsTakeU32());
+  const value$1 = first(x$1, numsTakeU32);
   $assign(nums, x$1.value);
   const take = numsTakeU32_take(nums);
   const x$2 = { value: stack };
-  const value$2 = first(x$2, stackTakeT());
+  const value$2 = first(x$2, stackTakeT);
   $assign(stack, x$2.value);
   const value$3 = stackTakeT_take(stack);
   console.log(
@@ -191,26 +124,26 @@ function main() {
   // `None`s in a `Stack`: generic code tells a taken `None` from none left.
   const value$4 = { list: [undefined, undefined, 1] };
   const x$3 = { value: value$4 };
-  const value$5 = count(x$3, stackTakeT());
+  const value$5 = count(x$3, stackTakeT);
   $assign(value$4, x$3.value);
   const value$6 = { list: [7, 8] };
   const x$4 = { value: value$6 };
-  const value$7 = count(x$4, numsTakeU32());
+  const value$7 = count(x$4, numsTakeU32);
   $assign(value$6, x$4.value);
   console.log(`${value$5} ${value$7}`);
 
-  const d = { value: m, impl: metersConvertString() };
+  const d = { value: m, impl: metersConvertString };
   console.log(`${d.impl.convert(d.value)}`);
 
-  const x = unwrapped(m, metersWrapF64());
-  const value$8 = metersBoth().both(m);
-  const value$9 = number(m, metersBoth());
-  const wrapped = metersWrapF64().wrapped(m);
-  const value$10 = labels(m, metersPairU32String());
+  const x = unwrapped(m, metersWrapF64);
+  const value$8 = metersBoth.both(m);
+  const value$9 = number(m, metersBoth);
+  const wrapped = metersWrapF64.wrapped(m);
+  const value$10 = labels(m, metersPairU32String);
   console.log(
     `(${value$8[0]}, ${$debugStr(value$8[1])}) ${value$9} [${wrapped.map((item) => $debugF64(item)).join(", ")}] ${$displayF64(x)} (${value$10[0]}, ${$debugStr(value$10[1])})`,
   );
-  const g = { value: m, impl: metersGreeter() };
+  const g = { value: m, impl: metersGreeter };
   console.log(`${g.impl.Greet().greet(g.value)}`);
 }
 //# sourceMappingURL=case.js.map

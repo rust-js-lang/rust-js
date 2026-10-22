@@ -28,18 +28,11 @@ import {
   $windows,
 } from "@rust-js/runtime";
 
-var $rowErrorDisplay;
-
 function rowErrorFromParseIntError_from(e) {
   return { TAG: "Number", _0: e };
 }
 
-export function rowErrorDisplay() {
-  if ($rowErrorDisplay === undefined) {
-    $rowErrorDisplay = { fmt: rowErrorDisplay_fmt };
-  }
-  return $rowErrorDisplay;
-}
+export const rowErrorDisplay = { fmt: rowErrorDisplay_fmt };
 
 function rowErrorDisplay_fmt(rowError) {
   if (rowError.TAG === "Fields") {

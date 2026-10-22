@@ -2,18 +2,11 @@
 
 import { $index } from "@rust-js/runtime";
 
-var $i32Bump, $stringShout;
-
 export function entry() {
   main();
 }
 
-function i32Bump() {
-  if ($i32Bump === undefined) {
-    $i32Bump = { bump: i32Bump_bump, bumpBy: i32Bump_bumpBy };
-  }
-  return $i32Bump;
-}
+const i32Bump = { bump: i32Bump_bump, bumpBy: i32Bump_bumpBy };
 
 function i32Bump_bump(self) {
   self.value = (self.value + 1) | 0;
@@ -25,12 +18,7 @@ function i32Bump_bumpBy(self, by) {
   return self.value;
 }
 
-function stringShout() {
-  if ($stringShout === undefined) {
-    $stringShout = { shout: stringShout_shout };
-  }
-  return $stringShout;
-}
+const stringShout = { shout: stringShout_shout };
 
 function stringShout_shout(string) {
   string.value += "!";

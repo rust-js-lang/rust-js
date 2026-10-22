@@ -2,8 +2,6 @@
 
 import { $debugStr } from "@rust-js/runtime";
 
-var $pointComponent;
-
 export function entry() {
   main();
 }
@@ -12,12 +10,7 @@ function pointDebug_fmt(point) {
   return `Point { x: ${point.x} }`;
 }
 
-function pointComponent() {
-  if ($pointComponent === undefined) {
-    $pointComponent = { Any: () => ({ typeId: () => "lib::Point" }), name: pointComponent_name };
-  }
-  return $pointComponent;
-}
+const pointComponent = { Any: () => ({ typeId: () => "lib::Point" }), name: pointComponent_name };
 
 function pointComponent_name(point) {
   return "point";
@@ -95,7 +88,7 @@ function main() {
   console.log(
     `${"lib::Point".endsWith("::Point")} alloc::vec::Vec<core::option::Option<&str>> f64`,
   );
-  const component = { value: { x: 2 }, impl: pointComponent() };
+  const component = { value: { x: 2 }, impl: pointComponent };
   const any = { value: component.value, impl: component.impl.Any() };
   console.log(
     `${component.impl.name(component.value)} ${((value) => (value == null ? "None" : `Some(${pointDebug_fmt(value)})`))(any.impl.typeId() === "lib::Point" ? any.value : undefined)} Any { .. }`,

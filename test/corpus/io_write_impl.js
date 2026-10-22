@@ -12,16 +12,13 @@ import {
   $unwrapOk,
 } from "@rust-js/runtime";
 
-var $bufWrite;
-
 export function entry() {
   main();
 }
 
+const $bufWrite = new Map();
+
 export function bufWrite(CAP) {
-  if ($bufWrite === undefined) {
-    $bufWrite = new Map();
-  }
   return $traitImpl($bufWrite, [CAP], () => {
     const write = (arg0, arg1) => bufWrite_write(arg0.value, arg1, CAP);
     return {

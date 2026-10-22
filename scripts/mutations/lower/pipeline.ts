@@ -376,4 +376,28 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/lowering.test.ts", "-t", "a Drop dropped once"],
   },
+  {
+    name: "dictionary-load-cycle-allowed",
+    breaks: "a dictionary in an import cycle with a module whose load runs code compiles, and that code may read it before it's made",
+    file: "src/lower/pipeline.rs",
+    find: "reaches(module, other) && reaches(other, module)",
+    replace: "false && reaches(module, other) && reaches(other, module)",
+    tests: ["test/lowering.test.ts", "-t", "a dictionary that takes nothing"],
+  },
+  {
+    name: "load-time-calls-unseen",
+    breaks: "a module whose load calls a function isn't one that runs code, so a dictionary it may reach through a cycle compiles",
+    file: "src/lower/pipeline.rs",
+    find: "consts.iter().any(|c| c.value.has_effects())",
+    replace: "consts.iter().any(|c| c.value.has_effects() && false)",
+    tests: ["test/lowering.test.ts", "-t", "a dictionary that takes nothing"],
+  },
+  {
+    name: "dictionary-cache-unmade",
+    breaks: "a generic dictionary's cache is never made, and reading it throws",
+    file: "src/lower/pipeline.rs",
+    find: "                consts.push(constant(cache_of[&def_id].clone(), cache, false));\n",
+    replace: "                let _ = cache;\n",
+    tests: ["test/lowering.test.ts", "-t", "a dictionary that takes nothing"],
+  },
 ];

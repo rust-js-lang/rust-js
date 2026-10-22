@@ -42,7 +42,6 @@ pub struct LoweredModule {
     pub reexports: Vec<Reexport>,
     /// Its items, where its Rust has them (ADR 0306).
     pub items: Vec<js::Item>,
-    pub caches: Vec<String>,
     /// The function it exports as its default too (ADR 0192).
     pub default_export: Option<String>,
     /// What its `.d.ts` says of what it exports, but the header (ADR 0196):

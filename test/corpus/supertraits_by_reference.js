@@ -2,16 +2,13 @@
 
 import { $displayF64, $traitImpl } from "@rust-js/runtime";
 
-var $tRefAddBase, $metersAdd, $metersAddMeters;
-
 export function entry() {
   main();
 }
 
+const $tRefAddBase = new WeakMap();
+
 function tRefAddBase(TAddBase, TAddBase$1) {
-  if ($tRefAddBase === undefined) {
-    $tRefAddBase = new WeakMap();
-  }
   return $traitImpl($tRefAddBase, [TAddBase, TAddBase$1], () => ({
     AddBase: () => TAddBase,
     AddRefBase: () => TAddBase$1,
@@ -27,23 +24,13 @@ function metersDebug_fmt(meters) {
   return `Meters(${meters[0]})`;
 }
 
-export function metersAdd() {
-  if ($metersAdd === undefined) {
-    $metersAdd = { add: metersAdd_add };
-  }
-  return $metersAdd;
-}
+export const metersAdd = { add: metersAdd_add };
 
 function metersAdd_add(meters, other) {
   return [(meters[0] + other[0]) | 0];
 }
 
-export function metersAddMeters() {
-  if ($metersAddMeters === undefined) {
-    $metersAddMeters = { add: metersAddMeters_add };
-  }
-  return $metersAddMeters;
-}
+export const metersAddMeters = { add: metersAddMeters_add };
 
 function metersAddMeters_add(meters, other) {
   return [(meters[0] + Math.imul(other[0], 10)) | 0];
@@ -54,7 +41,7 @@ function main() {
     `${twiceAndOnce(1, 2, tRefAddBase({ add: (a, b) => (a + b) | 0 }, { add: (a, b) => (a + b) | 0 }), { copy: (value) => value })} ${$displayF64(twiceAndOnce(0.5, 0.25, tRefAddBase({ add: (a, b) => a + b }, { add: (a, b) => a + b }), { copy: (value) => value }))}`,
   );
   console.log(
-    `${metersDebug_fmt(twiceAndOnce([1], [2], tRefAddBase(metersAdd(), metersAddMeters()), { copy: (value) => [value[0]] }))}`,
+    `${metersDebug_fmt(twiceAndOnce([1], [2], tRefAddBase(metersAdd, metersAddMeters), { copy: (value) => [value[0]] }))}`,
   );
 }
 //# sourceMappingURL=case.js.map

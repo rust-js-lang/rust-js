@@ -2,18 +2,11 @@
 
 import { $traitImpl } from "@rust-js/runtime";
 
-var $sevenRepeat, $metersScaled10, $metersScaled100, $anyScaled, $dotsPad;
-
 export function entry() {
   main();
 }
 
-function sevenRepeat() {
-  if ($sevenRepeat === undefined) {
-    $sevenRepeat = { repeat: sevenRepeat_repeat, twice: (self) => sevenRepeat_repeat(self, 2) };
-  }
-  return $sevenRepeat;
-}
+const sevenRepeat = { repeat: sevenRepeat_repeat, twice: (self) => sevenRepeat_repeat(self, 2) };
 
 function sevenRepeat_repeat(seven, N) {
   return new Array(N).fill(7);
@@ -23,32 +16,21 @@ function three(r, RRepeat) {
   return RRepeat.repeat(r, 3);
 }
 
-function metersScaled10() {
-  if ($metersScaled10 === undefined) {
-    $metersScaled10 = { scaled: metersScaled10_scaled, factor: (self) => 10 };
-  }
-  return $metersScaled10;
-}
+const metersScaled10 = { scaled: metersScaled10_scaled, factor: (self) => 10 };
 
 function metersScaled10_scaled(meters) {
   return Math.imul(meters[0], 10) >>> 0;
 }
 
-function metersScaled100() {
-  if ($metersScaled100 === undefined) {
-    $metersScaled100 = { scaled: metersScaled100_scaled, factor: (self) => 100 };
-  }
-  return $metersScaled100;
-}
+const metersScaled100 = { scaled: metersScaled100_scaled, factor: (self) => 100 };
 
 function metersScaled100_scaled(meters) {
   return Math.imul(meters[0], 100) >>> 0;
 }
 
+const $anyScaled = new Map();
+
 function anyScaled(K) {
-  if ($anyScaled === undefined) {
-    $anyScaled = new Map();
-  }
   return $traitImpl($anyScaled, [K], () => ({
     scaled: (arg0) => anyScaled_scaled(arg0, K),
     factor: (self) => K,
@@ -59,12 +41,7 @@ function anyScaled_scaled(any, K) {
   return Math.imul(any[0], K) >>> 0;
 }
 
-function dotsPad() {
-  if ($dotsPad === undefined) {
-    $dotsPad = { pad: dotsPad_pad };
-  }
-  return $dotsPad;
-}
+const dotsPad = { pad: dotsPad_pad };
 
 function dotsPad_pad(dots, value, N, TDisplay) {
   return ".".repeat(N) + TDisplay.fmt(value);
@@ -84,22 +61,22 @@ function by(s, K, SScaled) {
 
 function main() {
   const repeat = sevenRepeat_repeat(undefined, 4);
-  const twice = sevenRepeat().twice(undefined);
+  const twice = sevenRepeat.twice(undefined);
   console.log(
-    `[${repeat.join(", ")}] [${twice.join(", ")}] [${three(undefined, sevenRepeat()).join(", ")}]`,
+    `[${repeat.join(", ")}] [${twice.join(", ")}] [${three(undefined, sevenRepeat).join(", ")}]`,
   );
   const m = [3];
   console.log(
-    `${metersScaled10_scaled(m)} ${metersScaled100_scaled(m)} ${metersScaled100().factor(m)} ${byTen(m, metersScaled10())}`,
+    `${metersScaled10_scaled(m)} ${metersScaled100_scaled(m)} ${metersScaled100.factor(m)} ${byTen(m, metersScaled10)}`,
   );
-  const value = by(m, 100, metersScaled100());
+  const value = by(m, 100, metersScaled100);
   const value$1 = by([2], 5, anyScaled(5));
   const value$2 = by([3], 7, anyScaled(7));
   console.log(
     `(${value[0]}, ${value[1]}) (${value$1[0]}, ${value$1[1]}) (${value$2[0]}, ${value$2[1]})`,
   );
   console.log(
-    `${padded(undefined, dotsPad())} ${dotsPad_pad(undefined, "x", 1, { fmt: (value) => value })}`,
+    `${padded(undefined, dotsPad)} ${dotsPad_pad(undefined, "x", 1, { fmt: (value) => value })}`,
   );
 }
 //# sourceMappingURL=case.js.map

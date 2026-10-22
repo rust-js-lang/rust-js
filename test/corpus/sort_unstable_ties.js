@@ -2,30 +2,21 @@
 
 import { $cmp, $eq, $range, $selectNthUnstable, $slice, $sortUnstable } from "@rust-js/runtime";
 
-var $loosePartialOrd, $looseOrd;
-
 export function entry() {
   main();
 }
 
 // Ordered by the first number alone.
-export function loosePartialOrd() {
-  if ($loosePartialOrd === undefined) {
-    $loosePartialOrd = { PartialEq: () => ({ eq: $eq }), partialCmp: loosePartialOrd_partialCmp };
-  }
-  return $loosePartialOrd;
-}
+export const loosePartialOrd = {
+  PartialEq: () => ({ eq: $eq }),
+  partialCmp: loosePartialOrd_partialCmp,
+};
 
 function loosePartialOrd_partialCmp(loose, other) {
   return looseOrd_cmp(loose, other);
 }
 
-export function looseOrd() {
-  if ($looseOrd === undefined) {
-    $looseOrd = { PartialOrd: () => loosePartialOrd(), cmp: looseOrd_cmp };
-  }
-  return $looseOrd;
-}
+export const looseOrd = { PartialOrd: () => loosePartialOrd, cmp: looseOrd_cmp };
 
 function looseOrd_cmp(loose, other) {
   return $cmp(loose[0], other[0]);

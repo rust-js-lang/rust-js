@@ -2,41 +2,29 @@
 
 import { $assign, $debugStr, $intoIter, $next } from "@rust-js/runtime";
 
-var $noisyDebug, $logStore;
-
 export function entry() {
   main();
 }
 
+export const noisyDebug = { fmt: noisyDebug_fmt, $drop: noisyDrop_drop };
+
 function noisyDebug_fmt(noisy) {
   return `Noisy(${$debugStr(noisy[0])})`;
-}
-
-export function noisyDebug() {
-  if ($noisyDebug === undefined) {
-    $noisyDebug = { fmt: noisyDebug_fmt, $drop: noisyDrop_drop };
-  }
-  return $noisyDebug;
 }
 
 function noisyDrop_drop(noisy) {
   console.log(`drop ${noisy[0]}`);
 }
 
-function logStore() {
-  if ($logStore === undefined) {
-    $logStore = {
-      put: (arg0, arg1, TDebug, dropT) => logStore_put(arg0.value, arg1, TDebug, dropT),
-      putAll: (arg0, arg1, dropI, dropIIntoIter) =>
-        logStore_putAll(arg0.value, arg1, dropI, dropIIntoIter),
-      keep: (self, item, TDebug) => {
-        logStore_put(self.value, `kept ${TDebug.fmt(item)}`, { fmt: (value) => $debugStr(value) });
-        return item;
-      },
-    };
-  }
-  return $logStore;
-}
+const logStore = {
+  put: (arg0, arg1, TDebug, dropT) => logStore_put(arg0.value, arg1, TDebug, dropT),
+  putAll: (arg0, arg1, dropI, dropIIntoIter) =>
+    logStore_putAll(arg0.value, arg1, dropI, dropIIntoIter),
+  keep: (self, item, TDebug) => {
+    logStore_put(self.value, `kept ${TDebug.fmt(item)}`, { fmt: (value) => $debugStr(value) });
+    return item;
+  },
+};
 
 function logStore_put(log, item, TDebug, dropT) {
   try {
@@ -76,9 +64,9 @@ function logStore_putAll(log, items, dropI, dropIIntoIter) {
 
 function fill(store, SStore) {
   SStore.put(store, 1, { fmt: (value) => String(value) });
-  SStore.put(store, ["through a dictionary"], noisyDebug(), noisyDrop_drop);
+  SStore.put(store, ["through a dictionary"], noisyDebug, noisyDrop_drop);
   console.log("after the dictionary's put");
-  const back = SStore.keep(store, ["kept"], noisyDebug(), noisyDrop_drop);
+  const back = SStore.keep(store, ["kept"], noisyDebug, noisyDrop_drop);
   try {
     console.log(`got ${noisyDebug_fmt(back)} back`);
   } finally {
@@ -88,10 +76,10 @@ function fill(store, SStore) {
 
 function main() {
   const log = [[]];
-  logStore_put(log, ["direct"], noisyDebug(), noisyDrop_drop);
+  logStore_put(log, ["direct"], noisyDebug, noisyDrop_drop);
   console.log("after the direct put");
   const store = { value: log };
-  fill(store, logStore());
+  fill(store, logStore);
   $assign(log, store.value);
   logStore_putAll(log, ["a", "b"]);
   console.log(`[${log[0].map((item) => $debugStr(item)).join(", ")}]`);

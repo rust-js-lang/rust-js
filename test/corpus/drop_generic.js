@@ -2,8 +2,6 @@
 
 import { $index } from "@rust-js/runtime";
 
-var $noisyDefault, $noisyDisplay;
-
 export function entry() {
   main();
 }
@@ -45,12 +43,7 @@ function made(TDefault, dropT) {
   }
 }
 
-export function noisyDefault() {
-  if ($noisyDefault === undefined) {
-    $noisyDefault = { default: noisyDefault_default, $drop: noisyDrop_drop };
-  }
-  return $noisyDefault;
-}
+export const noisyDefault = { default: noisyDefault_default, $drop: noisyDrop_drop };
 
 function noisyDefault_default() {
   return ["default"];
@@ -81,12 +74,7 @@ function shown(x, Display, dropDisplay) {
   }
 }
 
-export function noisyDisplay() {
-  if ($noisyDisplay === undefined) {
-    $noisyDisplay = { fmt: noisyDisplay_fmt, $drop: noisyDrop_drop };
-  }
-  return $noisyDisplay;
-}
+export const noisyDisplay = { fmt: noisyDisplay_fmt, $drop: noisyDrop_drop };
 
 function noisyDisplay_fmt(noisy) {
   return noisy[0];
@@ -95,7 +83,7 @@ function noisyDisplay_fmt(noisy) {
 function main() {
   consume(["a"], noisyDrop_drop);
   consume(5);
-  made(noisyDefault(), noisyDrop_drop);
+  made(noisyDefault, noisyDrop_drop);
   made({ default: () => 0 });
   const kept = keep(["b"]);
   const value = [["c"], ["d"]];
@@ -110,7 +98,7 @@ function main() {
       const wrapper = { inner: ["w1"] };
       try {
         Wrapper.replace(wrapper, ["w2"], noisyDrop_drop);
-        const tmp = shown(["s"], noisyDisplay(), noisyDrop_drop);
+        const tmp = shown(["s"], noisyDisplay, noisyDrop_drop);
         const tmp$1 = shown(7, { fmt: String });
         console.log(`${tmp} ${tmp$1}`);
         console.log(`${kept[0]} ${copy[0]} ${wrapper.inner[0]} end`);

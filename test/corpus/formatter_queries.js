@@ -2,29 +2,17 @@
 
 import { $debugStr, $formatted, $pad, $zeroPad } from "@rust-js/runtime";
 
-var $tagDisplay, $probeDisplay, $moneyDisplay;
-
 export function entry() {
   main();
 }
 
-export function tagDisplay() {
-  if ($tagDisplay === undefined) {
-    $tagDisplay = { fmt: tagDisplay_fmt };
-  }
-  return $tagDisplay;
-}
+export const tagDisplay = { fmt: tagDisplay_fmt };
 
 function tagDisplay_fmt(tag, options) {
   return $formatted(tag[0], options);
 }
 
-export function probeDisplay() {
-  if ($probeDisplay === undefined) {
-    $probeDisplay = { fmt: probeDisplay_fmt };
-  }
-  return $probeDisplay;
-}
+export const probeDisplay = { fmt: probeDisplay_fmt };
 
 function probeDisplay_fmt(probe, options) {
   const value = options?.align;
@@ -45,12 +33,7 @@ function probeDisplay_fmt(probe, options) {
   return `w=${width == null ? "None" : `Some(${width})`} p=${precision == null ? "None" : `Some(${precision})`} fill=${$debugStr(options?.fill ?? " ", "'")} align=${align} plus=${options?.plus === true} zero=${options?.zero === true} alt=${options?.alternate === true}`;
 }
 
-export function moneyDisplay() {
-  if ($moneyDisplay === undefined) {
-    $moneyDisplay = { fmt: moneyDisplay_fmt };
-  }
-  return $moneyDisplay;
-}
+export const moneyDisplay = { fmt: moneyDisplay_fmt };
 
 function moneyDisplay_fmt(money, options) {
   const s = `$${money[0] / 100n}.${$zeroPad(String(money[0] % 100n), 2)}`;

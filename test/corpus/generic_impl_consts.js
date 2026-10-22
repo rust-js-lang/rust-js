@@ -2,30 +2,17 @@
 
 import { $traitImpl } from "@rust-js/runtime";
 
-var $u8ConstZero, $i64ConstZero, $wrappingConstZero, $u8Width, $u32Width, $pairWidth;
-
 export function entry() {
   main();
 }
 
-function u8ConstZero() {
-  if ($u8ConstZero === undefined) {
-    $u8ConstZero = { ZERO: 0 };
-  }
-  return $u8ConstZero;
-}
+const u8ConstZero = { ZERO: 0 };
 
-function i64ConstZero() {
-  if ($i64ConstZero === undefined) {
-    $i64ConstZero = { ZERO: 0n };
-  }
-  return $i64ConstZero;
-}
+const i64ConstZero = { ZERO: 0n };
+
+const $wrappingConstZero = new WeakMap();
 
 function wrappingConstZero(TConstZero) {
-  if ($wrappingConstZero === undefined) {
-    $wrappingConstZero = new WeakMap();
-  }
   return $traitImpl($wrappingConstZero, [TConstZero], () => ({
     get ZERO() {
       return [TConstZero.ZERO];
@@ -33,24 +20,13 @@ function wrappingConstZero(TConstZero) {
   }));
 }
 
-function u8Width() {
-  if ($u8Width === undefined) {
-    $u8Width = { BITS: 8 };
-  }
-  return $u8Width;
-}
+const u8Width = { BITS: 8 };
 
-function u32Width() {
-  if ($u32Width === undefined) {
-    $u32Width = { BITS: 32 };
-  }
-  return $u32Width;
-}
+const u32Width = { BITS: 32 };
+
+const $pairWidth = new WeakMap();
 
 function pairWidth(AWidth, BWidth) {
-  if ($pairWidth === undefined) {
-    $pairWidth = new WeakMap();
-  }
   return $traitImpl($pairWidth, [AWidth, BWidth], () => ({
     get BITS() {
       return (AWidth.BITS + BWidth.BITS) >>> 0;
@@ -68,10 +44,10 @@ function bits(TWidth) {
 
 function main() {
   console.log(
-    `${zero(wrappingConstZero(u8ConstZero()))[0]} ${zero(wrappingConstZero(wrappingConstZero(i64ConstZero())))[0][0]}`,
+    `${zero(wrappingConstZero(u8ConstZero))[0]} ${zero(wrappingConstZero(wrappingConstZero(i64ConstZero)))[0][0]}`,
   );
   console.log(
-    `${bits(pairWidth(u8Width(), u32Width()))} ${bits(pairWidth(pairWidth(u8Width(), u8Width()), u32Width()))} ${bits(u8Width())}`,
+    `${bits(pairWidth(u8Width, u32Width))} ${bits(pairWidth(pairWidth(u8Width, u8Width), u32Width))} ${bits(u8Width)}`,
   );
   console.log("64");
 }

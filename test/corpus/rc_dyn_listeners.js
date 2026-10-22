@@ -12,21 +12,14 @@ import {
   $weakDrop,
 } from "@rust-js/runtime";
 
-var $loggerListener;
-
 export function entry() {
   main();
 }
 
-function loggerListener() {
-  if ($loggerListener === undefined) {
-    $loggerListener = {
-      notify: (arg0, arg1) => loggerListener_notify(arg0.value, arg1),
-      count: loggerListener_count,
-    };
-  }
-  return $loggerListener;
-}
+const loggerListener = {
+  notify: (arg0, arg1) => loggerListener_notify(arg0.value, arg1),
+  count: loggerListener_count,
+};
 
 function loggerListener_notify(logger, event) {
   logger.seen.push(event.toUpperCase());
@@ -38,7 +31,7 @@ function loggerListener_count(logger) {
 
 function main() {
   const logger = { value: { seen: [] } };
-  const listeners = [$dynCell(logger, loggerListener())];
+  const listeners = [$dynCell(logger, loggerListener)];
   const receiver = $borrowMut($index(listeners, 0), true);
   try {
     receiver.impl.notify(receiver, "a");

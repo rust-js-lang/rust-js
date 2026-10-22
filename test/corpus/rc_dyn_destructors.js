@@ -2,18 +2,11 @@
 
 import { $index, $rcClone, $rcDrop } from "@rust-js/runtime";
 
-var $squareShape;
-
 export function entry() {
   main();
 }
 
-function squareShape() {
-  if ($squareShape === undefined) {
-    $squareShape = { area: squareShape_area, $drop: squareDrop_drop };
-  }
-  return $squareShape;
-}
+const squareShape = { area: squareShape_area, $drop: squareDrop_drop };
 
 function squareShape_area(square) {
   return Math.imul(square[0], square[0]) >>> 0;
@@ -24,11 +17,11 @@ function squareDrop_drop(square) {
 }
 
 function made(side) {
-  return { value: [side], impl: squareShape(), strong: 1, weak: 0 };
+  return { value: [side], impl: squareShape, strong: 1, weak: 0 };
 }
 
 function main() {
-  const a = { value: [3], impl: squareShape(), strong: 1, weak: 0 };
+  const a = { value: [3], impl: squareShape, strong: 1, weak: 0 };
   let b;
   try {
     b = $rcClone(a);

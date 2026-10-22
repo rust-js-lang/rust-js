@@ -13,7 +13,10 @@ import {
   $traitImpl,
 } from "@rust-js/runtime";
 
-var $peekableClone, $peekableDebug, $fuseClone, $fuseDebug;
+const $peekableClone = new WeakMap();
+const $peekableDebug = new WeakMap();
+const $fuseClone = new WeakMap();
+const $fuseDebug = new WeakMap();
 
 export function peekableIterator_next(peekable, IIterator, dropI, dropIItem) {
   const peeked = peekable.peeked;
@@ -298,36 +301,24 @@ export function andThenOrClear(opt, f, dropT, dropU, dropFnOnce) {
 }
 
 export function peekableClone(IClone, IIterator, IItemClone) {
-  if ($peekableClone === undefined) {
-    $peekableClone = new WeakMap();
-  }
   return $traitImpl($peekableClone, [IClone, IIterator, IItemClone], () => ({
     clone: (arg0) => peekableClone_clone(arg0, IClone, IIterator, IItemClone),
   }));
 }
 
 export function peekableDebug(IDebug, IItemDebug) {
-  if ($peekableDebug === undefined) {
-    $peekableDebug = new WeakMap();
-  }
   return $traitImpl($peekableDebug, [IDebug, IItemDebug], () => ({
     fmt: (arg0, arg1) => peekableDebug_fmt(arg0, arg1, IDebug, IItemDebug),
   }));
 }
 
 export function fuseClone(IClone) {
-  if ($fuseClone === undefined) {
-    $fuseClone = new WeakMap();
-  }
   return $traitImpl($fuseClone, [IClone], () => ({
     clone: (arg0) => fuseClone_clone(arg0, IClone),
   }));
 }
 
 export function fuseDebug(IDebug) {
-  if ($fuseDebug === undefined) {
-    $fuseDebug = new WeakMap();
-  }
   return $traitImpl($fuseDebug, [IDebug], () => ({
     fmt: (arg0, arg1) => fuseDebug_fmt(arg0, arg1, IDebug),
   }));

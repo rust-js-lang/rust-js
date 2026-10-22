@@ -2,8 +2,6 @@
 
 import { $debugAny, $debugStr, $some, $someValue } from "@rust-js/runtime";
 
-var $stringAsStr;
-
 export function entry() {
   main();
 }
@@ -39,12 +37,7 @@ function made() {
   return { value: 1, impl: { typeId: () => "i32" } };
 }
 
-function stringAsStr() {
-  if ($stringAsStr === undefined) {
-    $stringAsStr = { get: stringAsStr_get };
-  }
-  return $stringAsStr;
-}
+const stringAsStr = { get: stringAsStr_get };
 
 function stringAsStr_get(string) {
   return string;
@@ -103,7 +96,7 @@ function main() {
   );
   console.log(`${$debugAny(made())}`);
   const held = {
-    value: { value: "h", impl: stringAsStr() },
+    value: { value: "h", impl: stringAsStr },
     impl: {
       typeId: () => "alloc::boxed::Box<dyn lib::AsStr<'_, '_>>#bb8ce6d98aab4c714f83ee02600e635d",
     },

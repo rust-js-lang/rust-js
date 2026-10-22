@@ -10,16 +10,13 @@ import {
   $traitImpl,
 } from "@rust-js/runtime";
 
-var $iPull, $enumeratedPull;
-
 export function entry() {
   main();
 }
 
+const $iPull = new WeakMap();
+
 function iPull(IIterator) {
-  if ($iPull === undefined) {
-    $iPull = new WeakMap();
-  }
   return $traitImpl($iPull, [IIterator], () => ({
     pull: (arg0) => iPull_pull(arg0.value, IIterator),
     pullTwo: (self) => [iPull_pull(self.value, IIterator), iPull_pull(self.value, IIterator)],
@@ -38,10 +35,9 @@ function countdownIterator_next(countdown) {
   return (countdown[0] + 1) >>> 0;
 }
 
+const $enumeratedPull = new WeakMap();
+
 function enumeratedPull(PPull) {
-  if ($enumeratedPull === undefined) {
-    $enumeratedPull = new WeakMap();
-  }
   return $traitImpl($enumeratedPull, [PPull], () => ({
     pull: (arg0) => enumeratedPull_pull(arg0.value, PPull),
     pullTwo: (self) => [

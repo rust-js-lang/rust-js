@@ -11,8 +11,6 @@ import {
   $traitImpl,
 } from "@rust-js/runtime";
 
-var $tSkipping, $tTotals, $holderPeeled, $holderNamed;
-
 export function entry() {
   main();
 }
@@ -35,10 +33,9 @@ function loudsIterator_next(louds) {
   }
 }
 
+const $tSkipping = new WeakMap();
+
 function tSkipping(TIterator, dropT, dropTItem) {
-  if ($tSkipping === undefined) {
-    $tSkipping = new WeakMap();
-  }
   return $traitImpl($tSkipping, [TIterator, dropT, dropTItem], () => ({
     skipOne: (self) => {
       const next = TIterator.next(self);
@@ -65,10 +62,9 @@ function tSkipping(TIterator, dropT, dropTItem) {
   }));
 }
 
+const $tTotals = new WeakMap();
+
 function tTotals(TIterator, dropT) {
-  if ($tTotals === undefined) {
-    $tTotals = new WeakMap();
-  }
   return $traitImpl($tTotals, [TIterator, dropT], () => ({
     total: (self) => {
       const iter = self;
@@ -111,10 +107,9 @@ function holderIterator_next(holder, IIterator, dropI, dropIItem) {
   return IIterator.next(holder[0]);
 }
 
+const $holderPeeled = new WeakMap();
+
 function holderPeeled(IIterator, dropI, dropIItem) {
-  if ($holderPeeled === undefined) {
-    $holderPeeled = new WeakMap();
-  }
   return $traitImpl($holderPeeled, [IIterator, dropI, dropIItem], () => ({
     dropFirst: (self) => {
       const next = holderIterator_next(self, IIterator, dropI, dropIItem);
@@ -132,10 +127,9 @@ function holderPeeled(IIterator, dropI, dropIItem) {
   }));
 }
 
+const $holderNamed = new WeakMap();
+
 function holderNamed(dropI, dropIItem) {
-  if ($holderNamed === undefined) {
-    $holderNamed = new WeakMap();
-  }
   return $traitImpl($holderNamed, [dropI, dropIItem], () => ({
     name: (self) => "holder",
     $drop: (holder) => {

@@ -2,8 +2,6 @@
 
 import { $borrow, $borrowMut, $debugStr, $unborrow } from "@rust-js/runtime";
 
-var $holderDeref;
-
 export function entry() {
   main();
 }
@@ -40,12 +38,7 @@ function firstOr(items, or, DDeref, dropD) {
   }
 }
 
-export function holderDeref() {
-  if ($holderDeref === undefined) {
-    $holderDeref = { deref: holderDeref_deref, $drop: holderDrop_drop };
-  }
-  return $holderDeref;
-}
+export const holderDeref = { deref: holderDeref_deref, $drop: holderDrop_drop };
 
 function holderDeref_deref(holder) {
   return holder.items;
@@ -76,7 +69,7 @@ function main() {
   console.log(`${firstOr($borrow(cell, true), 0, { deref: (x) => x.value }, $unborrow)}`);
   const log = { value: [] };
   const held = { items: [4, 5, 6], log };
-  const value = length(held, holderDeref(), holderDrop_drop);
+  const value = length(held, holderDeref, holderDrop_drop);
   const borrow = $borrow(log, true);
   try {
     console.log(`${value} [${borrow.value.map((item) => $debugStr(item)).join(", ")}]`);

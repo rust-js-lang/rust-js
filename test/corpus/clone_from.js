@@ -2,8 +2,6 @@
 
 import { $assign, $debugStr, $take } from "@rust-js/runtime";
 
-var $loudClone;
-
 export function entry() {
   main();
 }
@@ -12,12 +10,7 @@ function pointDebug_fmt(point) {
   return `Point { name: ${$debugStr(point.name)}, n: ${point.n} }`;
 }
 
-export function loudClone() {
-  if ($loudClone === undefined) {
-    $loudClone = { clone: loudClone_clone, $drop: loudDrop_drop };
-  }
-  return $loudClone;
-}
+export const loudClone = { clone: loudClone_clone, $drop: loudDrop_drop };
 
 function loudClone_clone(loud) {
   return [(loud[0] + 10) >>> 0];

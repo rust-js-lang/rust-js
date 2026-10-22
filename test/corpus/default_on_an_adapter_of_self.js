@@ -11,16 +11,13 @@ import {
   $traitImpl,
 } from "@rust-js/runtime";
 
-var $tExt;
-
 export function entry() {
   main();
 }
 
+const $tExt = new WeakMap();
+
 function tExt(TIterator) {
-  if ($tExt === undefined) {
-    $tExt = new WeakMap();
-  }
   return $traitImpl($tExt, [TIterator], () => ({
     widest: (self, SelfItemOrd) => {
       let best;

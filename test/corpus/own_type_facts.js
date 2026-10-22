@@ -2,18 +2,11 @@
 
 import { $debugStr } from "@rust-js/runtime";
 
-var $plainNamed;
-
 export function entry() {
   main();
 }
 
-function plainNamed() {
-  if ($plainNamed === undefined) {
-    $plainNamed = { nameOf: plainNamed_nameOf, sizeOf: plainNamed_sizeOf };
-  }
-  return $plainNamed;
-}
+const plainNamed = { nameOf: plainNamed_nameOf, sizeOf: plainNamed_sizeOf };
 
 function plainNamed_nameOf(UName) {
   return UName;
@@ -28,7 +21,7 @@ function through(XNamed) {
 }
 
 function main() {
-  const value = through(plainNamed());
+  const value = through(plainNamed);
   console.log(`(${$debugStr(value[0])}, ${value[1]})`);
   console.log(`${plainNamed_nameOf("alloc::vec::Vec<u16>")}`);
 }

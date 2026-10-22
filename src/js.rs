@@ -67,8 +67,6 @@ pub struct Module {
     /// Its items, where its Rust has them, what's made when it's loaded
     /// after what that reads (ADR 0306).
     pub items: Vec<Item>,
-    /// Lazy trait dictionary caches. `var` without an initializer is cycle-safe.
-    pub caches: Vec<String>,
     /// `export default page;`, after its functions (ADR 0192).
     pub default_export: Option<String>,
 }
@@ -555,7 +553,6 @@ mod tests {
             reexports: Vec::new(),
             helpers: Vec::new(),
             items: vec![Item::Statements(vec![StmtKind::Expr(value).at(Span::NONE)])],
-            caches: Vec::new(),
             default_export: None,
         }
     }

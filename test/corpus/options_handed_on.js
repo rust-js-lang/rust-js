@@ -9,18 +9,11 @@ import {
   $pretty,
 } from "@rust-js/runtime";
 
-var $metersDisplay, $nameDisplay, $pairDebug;
-
 export function entry() {
   main();
 }
 
-export function metersDisplay() {
-  if ($metersDisplay === undefined) {
-    $metersDisplay = { fmt: metersDisplay_fmt };
-  }
-  return $metersDisplay;
-}
+export const metersDisplay = { fmt: metersDisplay_fmt };
 
 function metersDisplay_fmt(meters, options) {
   let f = $formatFloat(meters[0], options, $displayF64);
@@ -28,12 +21,7 @@ function metersDisplay_fmt(meters, options) {
   return f;
 }
 
-export function nameDisplay() {
-  if ($nameDisplay === undefined) {
-    $nameDisplay = { fmt: nameDisplay_fmt };
-  }
-  return $nameDisplay;
-}
+export const nameDisplay = { fmt: nameDisplay_fmt };
 
 function nameDisplay_fmt(name, options) {
   return $formatted(name[0], options);
@@ -47,12 +35,7 @@ function pointDebug_fmt(point, options) {
     : `Point { x: ${shown}, y: ${shown$1} }`;
 }
 
-export function pairDebug() {
-  if ($pairDebug === undefined) {
-    $pairDebug = { fmt: pairDebug_fmt };
-  }
-  return $pairDebug;
-}
+export const pairDebug = { fmt: pairDebug_fmt };
 
 function pairDebug_fmt(pair, options) {
   return options?.alternate
@@ -80,7 +63,7 @@ function main() {
     })}]`,
   );
   console.log(
-    `${show(42, { fmt: (value, options) => $formatted(String(value), options, true) })} ${show("ab", { fmt: $formatted })} ${show([3], metersDisplay())} ${show(["xyz"], nameDisplay())}`,
+    `${show(42, { fmt: (value, options) => $formatted(String(value), options, true) })} ${show("ab", { fmt: $formatted })} ${show([3], metersDisplay)} ${show(["xyz"], nameDisplay)}`,
   );
   const d = {
     value: 7,
@@ -103,9 +86,9 @@ function main() {
   console.log(`${metersDisplay_fmt([0.5])}`);
   const pair = [7, "a"];
   const value = debug(1, { fmt: (value, options) => $formatted(String(value), options, true) });
-  const value$1 = debug([2, "b"], pairDebug());
+  const value$1 = debug([2, "b"], pairDebug);
   console.log(`[${pairDebug_fmt(pair, { width: 4 })}] ${value} ${value$1}`);
-  const b = { value: [-2.5], impl: metersDisplay() };
+  const b = { value: [-2.5], impl: metersDisplay };
   console.log(
     `[${b.impl.fmt(b.value, {
       width: 8,

@@ -169,8 +169,6 @@ pub fn demo() -> u32 {
 ```
 
 ```js
-var $counterDefault;
-
 export const Counter = {
   new(step) {
     return { count: 0, step };
@@ -189,12 +187,7 @@ export const Counter = {
   },
 };
 
-export function counterDefault() {
-  if ($counterDefault === undefined) {
-    $counterDefault = { default: counterDefault_default };
-  }
-  return $counterDefault;
-}
+export const counterDefault = { default: counterDefault_default };
 
 function counterDefault_default() {
   return Counter.new(1);
@@ -303,28 +296,16 @@ pub fn demo() -> String {
 ```js
 import { $displayF64, $index, $toFixed } from "@rust-js/runtime";
 
-var $circleShape, $squareShape, $squareDisplay;
-
-export function circleShape() {
-  if ($circleShape === undefined) {
-    $circleShape = {
-      area: circleShape_area,
-      describe: (self) => `a shape of area ${$toFixed(circleShape_area(self), 1)}`,
-    };
-  }
-  return $circleShape;
-}
+export const circleShape = {
+  area: circleShape_area,
+  describe: (self) => `a shape of area ${$toFixed(circleShape_area(self), 1)}`,
+};
 
 function circleShape_area(circle) {
   return 3.141592653589793 * circle.radius * circle.radius;
 }
 
-export function squareShape() {
-  if ($squareShape === undefined) {
-    $squareShape = { area: squareShape_area, describe: squareShape_describe };
-  }
-  return $squareShape;
-}
+export const squareShape = { area: squareShape_area, describe: squareShape_describe };
 
 function squareShape_area(square) {
   return square.side * square.side;
@@ -334,12 +315,7 @@ function squareShape_describe(square) {
   return `a square of side ${$displayF64(square.side)}`;
 }
 
-export function squareDisplay() {
-  if ($squareDisplay === undefined) {
-    $squareDisplay = { fmt: squareDisplay_fmt };
-  }
-  return $squareDisplay;
-}
+export const squareDisplay = { fmt: squareDisplay_fmt };
 
 function squareDisplay_fmt(square) {
   return `Square(${$displayF64(square.side)})`;
@@ -355,8 +331,8 @@ export function largest(a, b, SShape) {
 
 export function demo() {
   const shapes = [
-    { value: { radius: 1 }, impl: circleShape() },
-    { value: { side: 2 }, impl: squareShape() },
+    { value: { radius: 1 }, impl: circleShape },
+    { value: { side: 2 }, impl: squareShape },
   ];
   const s = { side: 3 };
   const value = totalArea(shapes);
@@ -366,12 +342,12 @@ export function demo() {
 ```
 
 - **An `impl Trait for Type` is a dictionary,** an object of its
-  functions, `circleShape()`, made the first time it's asked for.
+  functions, `circleShape`, its module's `const`.
 - **A `Box<dyn Shape>`** is the value with its dictionary,
   `{ value, impl }`: a `Vec` of different shapes, as an array of
   subclasses would be.
 - **A generic `S: Shape`** takes its dictionary as a last argument,
-  `largest(a, b, circleShape())`. rustc checks every call passes a type
+  `largest(a, b, circleShape)`. rustc checks every call passes a type
   that implements `Shape`.
 - `Display` is the trait `{}` uses: implement it, and `format!("{s}")`
   and `s.to_string()` are your `toString()`.
@@ -440,8 +416,6 @@ pub fn demo() -> String {
 ```js
 import { $someAt } from "@rust-js/runtime";
 
-var $stackDefault;
-
 export const Stack = {
   new() {
     return { items: [] };
@@ -456,12 +430,7 @@ export const Stack = {
   },
 };
 
-export function stackDefault() {
-  if ($stackDefault === undefined) {
-    $stackDefault = { default: stackDefault_default };
-  }
-  return $stackDefault;
-}
+export const stackDefault = { default: stackDefault_default };
 
 function stackDefault_default() {
   return Stack.new();
@@ -578,7 +547,7 @@ import {
   $unwrapOk,
 } from "@rust-js/runtime";
 
-var $configErrorDebug, $configErrorDisplay, $configErrorError;
+export const configErrorDebug = { fmt: configErrorDebug_fmt };
 
 function configErrorDebug_fmt(configError) {
   if (configError.TAG === "Missing") {
@@ -587,19 +556,7 @@ function configErrorDebug_fmt(configError) {
   return `BadNumber(${$debugParseError(configError._0, "ParseIntError")})`;
 }
 
-export function configErrorDebug() {
-  if ($configErrorDebug === undefined) {
-    $configErrorDebug = { fmt: configErrorDebug_fmt };
-  }
-  return $configErrorDebug;
-}
-
-export function configErrorDisplay() {
-  if ($configErrorDisplay === undefined) {
-    $configErrorDisplay = { fmt: configErrorDisplay_fmt };
-  }
-  return $configErrorDisplay;
-}
+export const configErrorDisplay = { fmt: configErrorDisplay_fmt };
 
 function configErrorDisplay_fmt(configError) {
   if (configError.TAG === "Missing") {
@@ -608,19 +565,15 @@ function configErrorDisplay_fmt(configError) {
   return `bad number: ${configError._0}`;
 }
 
-export function configErrorError() {
-  if ($configErrorError === undefined) {
-    const source = () => undefined;
-    $configErrorError = {
-      Debug: () => configErrorDebug(),
-      Display: () => configErrorDisplay(),
-      source,
-      description: () => "description() is deprecated; use Display",
-      cause: source,
-    };
-  }
-  return $configErrorError;
-}
+const $configErrorError_source = () => undefined;
+
+export const configErrorError = {
+  Debug: () => configErrorDebug,
+  Display: () => configErrorDisplay,
+  source: $configErrorError_source,
+  description: () => "description() is deprecated; use Display",
+  cause: $configErrorError_source,
+};
 
 function configErrorFromParseIntError_from(e) {
   return { TAG: "BadNumber", _0: e };

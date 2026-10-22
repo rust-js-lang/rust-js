@@ -16,8 +16,6 @@ import {
   $traitImpl,
 } from "@rust-js/runtime";
 
-var $stackCapacity;
-
 export function entry() {
   main();
 }
@@ -30,10 +28,9 @@ function pointDebug_fmt(point) {
   return `Point { x: ${point.x} }`;
 }
 
+const $stackCapacity = new Map();
+
 function stackCapacity(CAP, dropT) {
-  if ($stackCapacity === undefined) {
-    $stackCapacity = new Map();
-  }
   return $traitImpl($stackCapacity, [CAP, dropT], () => ({
     get CAPACITY() {
       return CAP;
