@@ -10,12 +10,12 @@ export function entry() {
 
 function bar1ToBar() {
   if ($bar1ToBar === undefined) {
-    $bar1ToBar = { to_val: bar1ToBar_to_val, bump: (arg0) => bar1ToBar_bump(arg0.value) };
+    $bar1ToBar = { toVal: bar1ToBar_toVal, bump: (arg0) => bar1ToBar_bump(arg0.value) };
   }
   return $bar1ToBar;
 }
 
-function bar1ToBar_to_val(bar1) {
+function bar1ToBar_toVal(bar1) {
   return bar1.f;
 }
 
@@ -25,12 +25,12 @@ function bar1ToBar_bump(bar1) {
 
 function isizeToBar() {
   if ($isizeToBar === undefined) {
-    $isizeToBar = { to_val: isizeToBar_to_val, bump: isizeToBar_bump };
+    $isizeToBar = { toVal: isizeToBar_toVal, bump: isizeToBar_bump };
   }
   return $isizeToBar;
 }
 
-function isizeToBar_to_val(self) {
+function isizeToBar_toVal(self) {
   return self;
 }
 
@@ -40,7 +40,7 @@ function isizeToBar_bump(self) {
 
 function foo(x) {
   const y = { value: x.ptr, impl: x.impl };
-  return (((x.f1 + x.impl.to_val(x.ptr)) | 0) + y.impl.to_val(y.value)) | 0;
+  return (((x.f1 + x.impl.toVal(x.ptr)) | 0) + y.impl.toVal(y.value)) | 0;
 }
 
 function bump(x) {
@@ -57,7 +57,7 @@ function bump(x) {
 }
 
 function deep(x) {
-  return (x.ptr.impl.to_val(x.ptr.ptr) + foo(x.ptr)) | 0;
+  return (x.ptr.impl.toVal(x.ptr.ptr) + foo(x.ptr)) | 0;
 }
 
 function main() {
@@ -74,6 +74,6 @@ function main() {
   const fat = $dynCell(f1, bar1ToBar());
   const f1$1 = fat.f1;
   const ptr = { value: fat.ptr, impl: fat.impl };
-  console.log(`${f1$1} ${ptr.impl.to_val(ptr.value)}`);
+  console.log(`${f1$1} ${ptr.impl.toVal(ptr.value)}`);
 }
 //# sourceMappingURL=case.js.map

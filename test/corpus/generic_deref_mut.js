@@ -31,18 +31,18 @@ export function wrapperDerefMut() {
   if ($wrapperDerefMut === undefined) {
     $wrapperDerefMut = {
       Deref: () => wrapperDeref(),
-      deref_mut: (arg0) => $cellOf(wrapperDerefMut_deref_mut(arg0.value)),
+      derefMut: (arg0) => $cellOf(wrapperDerefMut_derefMut(arg0.value)),
     };
   }
   return $wrapperDerefMut;
 }
 
-function wrapperDerefMut_deref_mut(wrapper) {
+function wrapperDerefMut_derefMut(wrapper) {
   return wrapper[0];
 }
 
-function push_one(p, PDerefMut) {
-  PDerefMut.deref_mut({
+function pushOne(p, PDerefMut) {
+  PDerefMut.derefMut({
     get value() {
       return p;
     },
@@ -54,7 +54,7 @@ function push_one(p, PDerefMut) {
 }
 
 function grown(p, PDerefMut) {
-  PDerefMut.deref_mut({
+  PDerefMut.derefMut({
     get value() {
       return p;
     },
@@ -66,39 +66,39 @@ function grown(p, PDerefMut) {
 }
 
 function bump(p, PDerefMut) {
-  const value = PDerefMut.deref_mut(p);
+  const value = PDerefMut.derefMut(p);
   value.value = (value.value + 10) >>> 0;
 }
 
 function shout(p, PDerefMut) {
-  const part = PDerefMut.deref_mut(p);
+  const part = PDerefMut.derefMut(p);
   part.value = $asciiCase(part.value, true);
 }
 
 function main() {
-  console.log(`[${push_one([[7]], wrapperDerefMut())[0].join(", ")}]`);
+  console.log(`[${pushOne([[7]], wrapperDerefMut())[0].join(", ")}]`);
   console.log(
-    `[${push_one([8], { Deref: () => ({ deref: (x) => x }), deref_mut: (cell) => cell }).join(
+    `[${pushOne([8], { Deref: () => ({ deref: (x) => x }), derefMut: (cell) => cell }).join(
       ", ",
     )}]`,
   );
   const v = [9];
   const p = { value: v };
-  push_one(p, { Deref: () => ({ deref: (x) => x.value }), deref_mut: (cell) => cell.value }).value;
+  pushOne(p, { Deref: () => ({ deref: (x) => x.value }), derefMut: (cell) => cell.value }).value;
   $assign(v, p.value);
   console.log(`[${v.join(", ")}]`);
-  const value = grown([1, 2], { Deref: () => ({ deref: (x) => x }), deref_mut: (cell) => cell });
+  const value = grown([1, 2], { Deref: () => ({ deref: (x) => x }), derefMut: (cell) => cell });
   const p$1 = { value: v };
   const value$1 = grown(p$1, {
     Deref: () => ({ deref: (x) => x.value }),
-    deref_mut: (cell) => cell.value,
+    derefMut: (cell) => cell.value,
   });
   $assign(v, p$1.value);
   console.log(`${value} ${value$1}`);
 
   let b = 1;
   const p$2 = { value: b };
-  bump(p$2, { Deref: () => ({ deref: (x) => x }), deref_mut: (cell) => cell });
+  bump(p$2, { Deref: () => ({ deref: (x) => x }), derefMut: (cell) => cell });
   b = p$2.value;
   console.log(`${b}`);
   let n = 2;
@@ -111,14 +111,14 @@ function main() {
     },
   };
   const p$3 = { value: r };
-  bump(p$3, { Deref: () => ({ deref: (x) => x.value }), deref_mut: (cell) => cell.value });
+  bump(p$3, { Deref: () => ({ deref: (x) => x.value }), derefMut: (cell) => cell.value });
   r = p$3.value;
   console.log(`${n}`);
   const cell = { value: 3 };
   const borrowMut = $borrowMut(cell, true);
   try {
     const p = { value: borrowMut };
-    bump(p, { Deref: () => ({ deref: (x) => x.value }), deref_mut: (cell) => cell.value });
+    bump(p, { Deref: () => ({ deref: (x) => x.value }), derefMut: (cell) => cell.value });
     $assign(borrowMut, p.value);
   } finally {
     $unborrow(borrowMut);
@@ -132,11 +132,11 @@ function main() {
 
   let s = "hi";
   const p$4 = { value: s };
-  shout(p$4, { Deref: () => ({ deref: (x) => x }), deref_mut: (cell) => cell });
+  shout(p$4, { Deref: () => ({ deref: (x) => x }), derefMut: (cell) => cell });
   s = p$4.value;
   console.log(`${s}`);
 
-  either_sides();
+  eitherSides();
 }
 
 export function eitherDeref(LDeref, RDeref, dropL, dropR) {
@@ -166,7 +166,7 @@ export function eitherDerefMut(LDerefMut, RDerefMut, dropL, dropR) {
   }
   return $traitImpl($eitherDerefMut, [LDerefMut, RDerefMut, dropL, dropR], () => ({
     Deref: () => eitherDeref(LDerefMut.Deref(), RDerefMut.Deref(), dropL, dropR),
-    deref_mut: (arg0) => eitherDerefMut_deref_mut(arg0.value, LDerefMut, RDerefMut, dropL, dropR),
+    derefMut: (arg0) => eitherDerefMut_derefMut(arg0.value, LDerefMut, RDerefMut, dropL, dropR),
     $drop: (either) => {
       if (either.TAG === "Left") {
         dropL?.(either._0);
@@ -178,9 +178,9 @@ export function eitherDerefMut(LDerefMut, RDerefMut, dropL, dropR) {
   }));
 }
 
-function eitherDerefMut_deref_mut(either, LDerefMut, RDerefMut, dropL, dropR) {
+function eitherDerefMut_derefMut(either, LDerefMut, RDerefMut, dropL, dropR) {
   return either.TAG === "Left"
-    ? LDerefMut.deref_mut({
+    ? LDerefMut.derefMut({
         get value() {
           return either._0;
         },
@@ -188,7 +188,7 @@ function eitherDerefMut_deref_mut(either, LDerefMut, RDerefMut, dropL, dropR) {
           either._0 = value;
         },
       })
-    : RDerefMut.deref_mut({
+    : RDerefMut.derefMut({
         get value() {
           return either._0;
         },
@@ -198,25 +198,25 @@ function eitherDerefMut_deref_mut(either, LDerefMut, RDerefMut, dropL, dropR) {
       });
 }
 
-function either_sides() {
+function eitherSides() {
   const left = { TAG: "Left", _0: [1] };
-  eitherDerefMut_deref_mut(
+  eitherDerefMut_derefMut(
     left,
-    { Deref: () => ({ deref: (x) => x }), deref_mut: (cell) => cell },
+    { Deref: () => ({ deref: (x) => x }), derefMut: (cell) => cell },
     wrapperDerefMut(),
   ).value.push(2);
   $assign(
-    eitherDerefMut_deref_mut(
+    eitherDerefMut_derefMut(
       left,
-      { Deref: () => ({ deref: (x) => x }), deref_mut: (cell) => cell },
+      { Deref: () => ({ deref: (x) => x }), derefMut: (cell) => cell },
       wrapperDerefMut(),
     ).value,
     [3, 4],
   );
   const right = { TAG: "Right", _0: [[5]] };
-  eitherDerefMut_deref_mut(
+  eitherDerefMut_derefMut(
     right,
-    { Deref: () => ({ deref: (x) => x }), deref_mut: (cell) => cell },
+    { Deref: () => ({ deref: (x) => x }), derefMut: (cell) => cell },
     wrapperDerefMut(),
   ).value.push(6);
   console.log(
@@ -225,10 +225,10 @@ function either_sides() {
   console.log(
     `${
       eitherDeref_deref(
-        push_one(
+        pushOne(
           right,
           eitherDerefMut(
-            { Deref: () => ({ deref: (x) => x }), deref_mut: (cell) => cell },
+            { Deref: () => ({ deref: (x) => x }), derefMut: (cell) => cell },
             wrapperDerefMut(),
           ),
         ),

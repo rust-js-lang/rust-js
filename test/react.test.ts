@@ -200,10 +200,11 @@ test("React's and React DOM's APIs are hand-written React, and they run", () => 
   expect([p.exitCode, output.match(/(\d+) pass/)?.[1]], output).toEqual([0, "8"]);
 }, 120_000);
 
-// ADR 0435: what's React's is React's names in JS, a component's props, one
-// spread into JSX and a hook; what's Rust's own keeps Rust's, a function and
-// a data struct's field, whatever the crate.
-test("React's names are camelCase in JS, Rust's own are as written", async () => {
+// ADR 0573: every name is camelCase in JS, React's and Rust's own alike: a
+// component's props, one spread into JSX and a hook, as React code names
+// them; a function, across modules, and a data struct's and a variant's
+// fields, whatever the crate. No snake_case name is left.
+test("every name is camelCase in JS", async () => {
   const { fixture, compiler } = await import("./support");
   const { writeFileSync } = await import("node:fs");
   buildReact();
@@ -297,17 +298,21 @@ pub fn full_name(person: &Person) -> String {
   const lib = await Bun.file(join(dir, "lib.jsx")).text();
   const people = await Bun.file(join(dir, "people.js")).text();
   // Rust's own: functions, across modules, and fields, of a struct and a variant.
-  expect(lib).toContain('import { full_name, make_person } from "./people.js";');
-  expect(lib).toContain("export function greet(firstName) {\n  return full_name(make_person(firstName));");
-  expect(people).toContain("first_name: firstName, last_name: \"Doe\"");
-  expect(lib).toContain("export function rect_width(shape) {\n  return (shape.bottom_right - shape.top_left");
+  expect(lib).toContain('import { fullName, makePerson } from "./people.js";');
+  expect(lib).toContain("export function greet(firstName) {\n  return fullName(makePerson(firstName));");
+  expect(people).toContain('return { firstName, lastName: "Doe" };');
+  expect(lib).toContain("export function rectWidth(shape) {\n  return (shape.bottomRight - shape.topLeft");
   // React's: a hook React finds by its name, props as React code names them,
   // and a struct spread into an element, its attributes.
   expect(lib).toContain("export function useClicks() {");
   // One calling another, and a `use_` function calling none, React's
-  // `startTransition` no hook, Rust's own.
+  // `startTransition` no hook: each camelCase by the same rule.
   expect(lib).toContain("export function useTwice() {");
-  expect(lib).toContain("export function use_label(n) {");
+  expect(lib).toContain("export function useLabel(n) {");
+  // No name keeps its Rust spelling.
+  const snake = /\b(full_name|make_person|first_name|last_name|rect_width|wide_rect|top_left|bottom_right|use_clicks|use_twice|use_label|tab_order|label_text|on_press|class_name|tab_index)\b/;
+  expect(lib).not.toMatch(snake);
+  expect(people).not.toMatch(snake);
   expect(lib).toContain("export function FancyButton({ labelText, onPress, ...look }) {");
   expect(lib).toContain("<FancyButton labelText={");
   expect(lib).toContain(" onPress={");
@@ -321,6 +326,6 @@ pub fn full_name(person: &Person) -> String {
   expect([gone.exitCode === 0, gone.stderr.toString().includes("`js::camel_case!` is gone")], gone.stderr.toString()).toEqual([false, true]);
   const module = await import(join(dir, "lib.jsx"));
   expect(module.greet("Ada")).toBe("Ada Doe");
-  expect(module.rect_width(module.wide_rect())).toBe(3);
-  expect((await import(join(dir, "people.js"))).make_person("Ada")).toEqual({ first_name: "Ada", last_name: "Doe" });
+  expect(module.rectWidth(module.wideRect())).toBe(3);
+  expect((await import(join(dir, "people.js"))).makePerson("Ada")).toEqual({ firstName: "Ada", lastName: "Doe" });
 });

@@ -22,7 +22,7 @@ function wrapped(value) {
 
 // Drops `value` where it doesn't keep it: a generic `Option<T>`, whose
 // `Some` of an `Option` is boxed (ADR 0051).
-function keep_if(value, keep, dropT) {
+function keepIf(value, keep, dropT) {
   let value$live = true;
   let result;
   if (keep) {
@@ -46,11 +46,11 @@ function checked(n) {
   return { TAG: "Err", _0: `${n} is too big` };
 }
 
-function wrapped_result(value) {
+function wrappedResult(value) {
   return value.TAG === "Ok" ? { TAG: "Ok", _0: [value._0] } : value;
 }
 
-function discard_result(value, keep, dropT) {
+function discardResult(value, keep, dropT) {
   let value$live = true;
   let result;
   if (keep) {
@@ -175,48 +175,36 @@ function main() {
     }
     throw error;
   }
-  let keepIf;
-  try {
-    keepIf = keep_if(tmp$2, false, dDrop_drop);
-  } catch (error) {
-    if (generic != null) {
-      dDrop_drop(generic[0]);
-    }
-    if (none != null) {
-      dDrop_drop(none[0]);
-    }
-    throw error;
-  }
-  try {
-    console.log(`${!keepIf}`);
-  } catch (error) {
-    if (keepIf != null) {
-      dDrop_drop(keepIf);
-    }
-    if (generic != null) {
-      dDrop_drop(generic[0]);
-    }
-    if (none != null) {
-      dDrop_drop(none[0]);
-    }
-    throw error;
-  }
-  try {
-    if (keepIf != null) {
-      dDrop_drop(keepIf);
-    }
-  } catch (error) {
-    if (generic != null) {
-      dDrop_drop(generic[0]);
-    }
-    if (none != null) {
-      dDrop_drop(none[0]);
-    }
-    throw error;
-  }
   let tmp$3;
   try {
-    tmp$3 = $some(make(5));
+    tmp$3 = keepIf(tmp$2, false, dDrop_drop);
+  } catch (error) {
+    if (generic != null) {
+      dDrop_drop(generic[0]);
+    }
+    if (none != null) {
+      dDrop_drop(none[0]);
+    }
+    throw error;
+  }
+  try {
+    console.log(`${!tmp$3}`);
+  } catch (error) {
+    if (tmp$3 != null) {
+      dDrop_drop(tmp$3);
+    }
+    if (generic != null) {
+      dDrop_drop(generic[0]);
+    }
+    if (none != null) {
+      dDrop_drop(none[0]);
+    }
+    throw error;
+  }
+  try {
+    if (tmp$3 != null) {
+      dDrop_drop(tmp$3);
+    }
   } catch (error) {
     if (generic != null) {
       dDrop_drop(generic[0]);
@@ -228,42 +216,7 @@ function main() {
   }
   let tmp$4;
   try {
-    tmp$4 = keep_if(tmp$3, false, (option) => {
-      if (option != null) {
-        dDrop_drop(option);
-      }
-    });
-  } catch (error) {
-    if (generic != null) {
-      dDrop_drop(generic[0]);
-    }
-    if (none != null) {
-      dDrop_drop(none[0]);
-    }
-    throw error;
-  }
-  try {
-    console.log(`${tmp$4 == null}`);
-  } catch (error) {
-    if (tmp$4 != null) {
-      if ($someValue(tmp$4) != null) {
-        dDrop_drop($someValue(tmp$4));
-      }
-    }
-    if (generic != null) {
-      dDrop_drop(generic[0]);
-    }
-    if (none != null) {
-      dDrop_drop(none[0]);
-    }
-    throw error;
-  }
-  try {
-    if (tmp$4 != null) {
-      if ($someValue(tmp$4) != null) {
-        dDrop_drop($someValue(tmp$4));
-      }
-    }
+    tmp$4 = $some(make(5));
   } catch (error) {
     if (generic != null) {
       dDrop_drop(generic[0]);
@@ -275,19 +228,7 @@ function main() {
   }
   let tmp$5;
   try {
-    tmp$5 = $some(make(0));
-  } catch (error) {
-    if (generic != null) {
-      dDrop_drop(generic[0]);
-    }
-    if (none != null) {
-      dDrop_drop(none[0]);
-    }
-    throw error;
-  }
-  let tmp$6;
-  try {
-    tmp$6 = keep_if(tmp$5, false, (option) => {
+    tmp$5 = keepIf(tmp$4, false, (option) => {
       if (option != null) {
         dDrop_drop(option);
       }
@@ -302,11 +243,11 @@ function main() {
     throw error;
   }
   try {
-    console.log(`${tmp$6 == null}`);
+    console.log(`${tmp$5 == null}`);
   } catch (error) {
-    if (tmp$6 != null) {
-      if ($someValue(tmp$6) != null) {
-        dDrop_drop($someValue(tmp$6));
+    if (tmp$5 != null) {
+      if ($someValue(tmp$5) != null) {
+        dDrop_drop($someValue(tmp$5));
       }
     }
     if (generic != null) {
@@ -318,11 +259,23 @@ function main() {
     throw error;
   }
   try {
-    if (tmp$6 != null) {
-      if ($someValue(tmp$6) != null) {
-        dDrop_drop($someValue(tmp$6));
+    if (tmp$5 != null) {
+      if ($someValue(tmp$5) != null) {
+        dDrop_drop($someValue(tmp$5));
       }
     }
+  } catch (error) {
+    if (generic != null) {
+      dDrop_drop(generic[0]);
+    }
+    if (none != null) {
+      dDrop_drop(none[0]);
+    }
+    throw error;
+  }
+  let tmp$6;
+  try {
+    tmp$6 = $some(make(0));
   } catch (error) {
     if (generic != null) {
       dDrop_drop(generic[0]);
@@ -334,7 +287,54 @@ function main() {
   }
   let tmp$7;
   try {
-    tmp$7 = $some(make(6));
+    tmp$7 = keepIf(tmp$6, false, (option) => {
+      if (option != null) {
+        dDrop_drop(option);
+      }
+    });
+  } catch (error) {
+    if (generic != null) {
+      dDrop_drop(generic[0]);
+    }
+    if (none != null) {
+      dDrop_drop(none[0]);
+    }
+    throw error;
+  }
+  try {
+    console.log(`${tmp$7 == null}`);
+  } catch (error) {
+    if (tmp$7 != null) {
+      if ($someValue(tmp$7) != null) {
+        dDrop_drop($someValue(tmp$7));
+      }
+    }
+    if (generic != null) {
+      dDrop_drop(generic[0]);
+    }
+    if (none != null) {
+      dDrop_drop(none[0]);
+    }
+    throw error;
+  }
+  try {
+    if (tmp$7 != null) {
+      if ($someValue(tmp$7) != null) {
+        dDrop_drop($someValue(tmp$7));
+      }
+    }
+  } catch (error) {
+    if (generic != null) {
+      dDrop_drop(generic[0]);
+    }
+    if (none != null) {
+      dDrop_drop(none[0]);
+    }
+    throw error;
+  }
+  let tmp$8;
+  try {
+    tmp$8 = $some(make(6));
   } catch (error) {
     if (generic != null) {
       dDrop_drop(generic[0]);
@@ -346,7 +346,7 @@ function main() {
   }
   let nested;
   try {
-    nested = keep_if(tmp$7, true, (option) => {
+    nested = keepIf(tmp$8, true, (option) => {
       if (option != null) {
         dDrop_drop(option);
       }
@@ -376,9 +376,9 @@ function main() {
     }
     throw error;
   }
-  let tmp$8;
+  let tmp$9;
   try {
-    tmp$8 = checked(1);
+    tmp$9 = checked(1);
   } catch (error) {
     if (nested != null) {
       if ($someValue(nested) != null) {
@@ -393,7 +393,7 @@ function main() {
     }
     throw error;
   }
-  const ok = tmp$8.TAG === "Ok" ? { TAG: "Ok", _0: [tmp$8._0] } : tmp$8;
+  const ok = tmp$9.TAG === "Ok" ? { TAG: "Ok", _0: [tmp$9._0] } : tmp$9;
   const value$3 = (l) => l[0][0];
   try {
     console.log(`ok ${ok.TAG === "Ok" ? value$3(ok._0) : 0}`);
@@ -414,9 +414,9 @@ function main() {
     }
     throw error;
   }
-  let tmp$9;
+  let tmp$10;
   try {
-    tmp$9 = checked(12);
+    tmp$10 = checked(12);
   } catch (error) {
     if (ok.TAG === "Ok") {
       dDrop_drop(ok._0[0]);
@@ -434,7 +434,7 @@ function main() {
     }
     throw error;
   }
-  const value$4 = tmp$9.TAG === "Ok" ? { TAG: "Ok", _0: [tmp$9._0] } : tmp$9;
+  const value$4 = tmp$10.TAG === "Ok" ? { TAG: "Ok", _0: [tmp$10._0] } : tmp$10;
   let value$0$live = true;
   if (value$4.TAG === "Ok") {
     value$0$live = false;
@@ -512,15 +512,15 @@ function main() {
           }
           value$0$live = false;
           const tmp = checked(2);
-          const generic = wrapped_result(tmp);
+          const generic = wrappedResult(tmp);
           const value = (w) => w[0][0];
           try {
             console.log(`generic ${generic.TAG === "Ok" ? value(generic._0) : 0}`);
             const tmp = checked(3);
-            const discardResult = discard_result(tmp, false, dDrop_drop);
-            const tmp$1 = checked(4);
-            const tmp$2 = discard_result(tmp$1, true, dDrop_drop);
-            console.log(`${discardResult} ${tmp$2}`);
+            const tmp$1 = discardResult(tmp, false, dDrop_drop);
+            const tmp$2 = checked(4);
+            const tmp$3 = discardResult(tmp$2, true, dDrop_drop);
+            console.log(`${tmp$1} ${tmp$3}`);
             console.log("end");
           } finally {
             if (generic.TAG === "Ok") {

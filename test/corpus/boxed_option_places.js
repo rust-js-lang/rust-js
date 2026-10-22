@@ -9,13 +9,13 @@ export function entry() {
 const Product = {
   current(product, IIterator, IItemClone) {
     const a = product.a;
-    product.a_cur ??= $some(IIterator.next(a));
-    const value = $someValue(product.a_cur);
+    product.aCur ??= $some(IIterator.next(a));
+    const value = $someValue(product.aCur);
     return value == null ? value : $some(IItemClone.clone($someValue(value)));
   },
 
   advance(product, IItemClone) {
-    product.a_cur = undefined;
+    product.aCur = undefined;
   },
 };
 
@@ -32,7 +32,7 @@ function main() {
   Product.advance(p, { clone: (value) => value });
   const value$2 = Product.current(p, { next: $next }, { clone: (value) => value });
   console.log(
-    `${value$2 == null ? "None" : `Some(${value$2})`} ${p.a_cur == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(p.a_cur))})`}`,
+    `${value$2 == null ? "None" : `Some(${value$2})`} ${p.aCur == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(p.aCur))})`}`,
   );
   let o = $some(undefined);
   o = 4;

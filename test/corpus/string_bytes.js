@@ -6,7 +6,7 @@ export function entry() {
   main();
 }
 
-function first_word(s) {
+function firstWord(s) {
   const at = $find(s, " ");
   if (at != null) {
     return $strSlice(s, 0, at);
@@ -23,7 +23,7 @@ function main() {
   console.log(
     `[${$strSlice(s, 0, 1)}] [${$strSlice(s, 1, 3)}] [${$strSlice(s, 7)}] [${$strSlice(s, 0, 6)}] [${s}]`,
   );
-  console.log(`${first_word(s)}`);
+  console.log(`${firstWord(s)}`);
   const find = $find(s, "ö");
   const value = $find(s, "wör");
   const value$1 = $find(s, "z");

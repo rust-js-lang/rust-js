@@ -79,7 +79,7 @@ test("a Peekable is made by std's own peekable, imported from @rust-js/std, and 
 // temporary tested once, and a tail written into two branches.
 test("a std body's JS has no test its early return decided, no once-read bool, no tail written twice", () => {
   const std = readFileSync(join(root, "std", "iter.js"), "utf8");
-  const nextBack = std.slice(std.indexOf("export function peekableDoubleEndedIterator_next_back("), std.indexOf("export function peekableDoubleEndedIterator_rfold("));
+  const nextBack = std.slice(std.indexOf("export function peekableDoubleEndedIterator_nextBack("), std.indexOf("export function peekableDoubleEndedIterator_rfold("));
   expect(nextBack.match(/if \(option != null\)/g)).toHaveLength(1);
   expect(nextBack).toContain("return option;\n    }\n    const x = v.value;\n    v.value = undefined;\n    return x;\n");
   expect(std).not.toMatch(/tmp\$?\d* = !tmp/);

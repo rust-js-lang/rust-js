@@ -240,7 +240,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if self.is_unknown(item) {
             let clone = self.clone_arg(item, span)?;
             let dictionary = self.dictionary(ty::TraitRef::new(self.tcx, self.clone_trait(), [item]), span)?;
-            let clone_from = Expr::member(dictionary, "clone_from");
+            let clone_from = Expr::member(
+                dictionary,
+                crate::lower::bindings::trait_method_name(self.tcx, self.clone_trait(), "clone_from"),
+            );
             let place = Expr::call(Expr::helper("$ptr"), vec![Expr::var("items"), Expr::var("i")]);
             let called = Expr::call(clone_from.clone(), vec![place, Expr::var("from")]);
             return Ok((Some(clone), Some(Expr::bin(Op::And, clone_from, written(called)))));
@@ -548,6 +551,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let tr = ty::TraitRef::new(self.tcx, slice_index, [generic_args.type_at(1), slice]);
                 let dictionary = self.dictionary(tr, span)?;
                 let method = if mutable { "index_mut" } else { "index" };
+                let method = crate::lower::bindings::trait_method_name(self.tcx, slice_index, method);
                 let indexed = Expr::call(Expr::member(dictionary, method), vec![index, items]);
                 // `index_mut` gives generic code's `&mut`, a box: where what
                 // it gives is known here, a bound's `IndexMut<J, Output =

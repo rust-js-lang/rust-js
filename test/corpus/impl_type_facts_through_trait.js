@@ -17,7 +17,7 @@ function stackExtendT_extend(stack, iter, TSize) {
   }
 }
 
-function stackFromIteratorT_from_iter(iter, TSize) {
+function stackFromIteratorT_fromIter(iter, TSize) {
   const stack = { items: [], sized: 0 };
   stackExtendT_extend(stack, iter, TSize);
   return stack;
@@ -33,7 +33,7 @@ export function stackClone(TClone, TSize) {
 }
 
 function stackClone_clone(stack, TClone, TSize) {
-  return stackFromIteratorT_from_iter(
+  return stackFromIteratorT_fromIter(
     stack.items.values().map((item) => TClone.clone(item)),
     TSize,
   );
@@ -77,11 +77,11 @@ export function stackFromStr(TSize) {
     $stackFromStr = new Map();
   }
   return $traitImpl($stackFromStr, [TSize], () => ({
-    from_str: (arg0) => stackFromStr_from_str(arg0, TSize),
+    fromStr: (arg0) => stackFromStr_fromStr(arg0, TSize),
   }));
 }
 
-function stackFromStr_from_str(text, TSize) {
+function stackFromStr_fromStr(text, TSize) {
   return { TAG: "Ok", _0: { items: [], sized: Math.imul($byteLen(text), TSize) >>> 0 } };
 }
 
@@ -90,12 +90,12 @@ function copied(items, TClone, TSize) {
 }
 
 function parsed(text, TSize) {
-  return $unwrapOk(stackFromStr_from_str(text, TSize));
+  return $unwrapOk(stackFromStr_fromStr(text, TSize));
 }
 
 function main() {
-  const s = stackFromIteratorT_from_iter($iter([1, 2, 3]), 1);
-  const u = stackFromIteratorT_from_iter($iter([undefined, undefined]), 0);
+  const s = stackFromIteratorT_fromIter($iter([1, 2, 3]), 1);
+  const u = stackFromIteratorT_fromIter($iter([undefined, undefined]), 0);
   console.log(`${s.items.length} ${s.sized} ${u.items.length} ${u.sized}`);
   const s$1 = stackClone_clone(s, { clone: (value) => value }, 1);
   const u$1 = stackClone_clone(u, { clone: (value) => value }, 0);

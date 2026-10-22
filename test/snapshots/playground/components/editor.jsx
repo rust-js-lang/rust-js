@@ -4,7 +4,7 @@
 // CodeMirror's, made when the component mounts and destroyed when it goes.
 
 import { useEffect, useRef } from "react";
-import { open_view, set_theme, show } from "../codemirror.js";
+import { openView, setTheme, show } from "../codemirror.js";
 import { useDarkMode } from "../dark_mode.js";
 import { $unwrap } from "@rust-js/runtime";
 
@@ -13,7 +13,7 @@ export function Editor({ state, view, onSubmit }) {
   const made = useRef(undefined);
   const dark = useDarkMode();
   useEffect(() => {
-    const editor = open_view($unwrap(parent.current, "the editor's element is mounted"), state);
+    const editor = openView($unwrap(parent.current, "the editor's element is mounted"), state);
     made.current = editor;
     if (view) {
       view.current = editor;
@@ -31,7 +31,7 @@ export function Editor({ state, view, onSubmit }) {
     const editor = made.current;
     if (editor) {
       show(editor, state);
-      set_theme(editor, dark);
+      setTheme(editor, dark);
     }
   }, [state, dark]);
   return (

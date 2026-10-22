@@ -36,13 +36,13 @@ function untagged(queue) {
 
 // semver: a 1 rotated into the top bit of a 2-aligned heap pointer, so the
 // representation is never ASCII, and back.
-function ptr_to_repr(original) {
+function ptrToRepr(original) {
   const modified = $rotateBits(($addr(original, 1) | 1) >>> 0, 1, 32, false);
   const diff = (modified - $addr(original, 1)) >>> 0;
   return $ptrAt(original, $addr(original, 1) + diff * 1, 1);
 }
 
-function repr_to_ptr(modified) {
+function reprToPtr(modified) {
   const original = ($addr(modified, 1) << 1) >>> 0;
   const diff = (original - $addr(modified, 1)) >>> 0;
   return $ptrAt(modified, $addr(modified, 1) + diff * 1, 1);
@@ -67,9 +67,9 @@ function main() {
     (value) => $toBytes(value, 2, true),
     (bytes) => $fromBytes(bytes, 2, true, false),
   );
-  const repr = ptr_to_repr(heap);
+  const repr = ptrToRepr(heap);
   const topBit = $addr(repr, 1) >>> 31;
-  const original = repr_to_ptr(repr);
+  const original = reprToPtr(repr);
   console.log(`${topBit} ${$ptrEq(original, heap, 1)} ${$ptrEq(repr, heap, 1)}`);
   console.log(`${$ptrRetyped(original, 2, false).value}`);
   const value = $ptrRetyped(original, 2, false).value;

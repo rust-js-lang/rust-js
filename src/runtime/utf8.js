@@ -34,7 +34,7 @@ function $utf8Decode(bytes) {
 function $fromUtf8(bytes, owned = false) {
   const bad = $utf8Check(bytes);
   if (bad === undefined) return { TAG: "Ok", _0: $utf8Decode(bytes) };
-  const error = { valid_up_to: bad[0], error_len: bad[1] };
+  const error = { validUpTo: bad[0], errorLen: bad[1] };
   return { TAG: "Err", _0: owned ? { bytes, error } : error };
 }
 
@@ -64,16 +64,16 @@ function $utf8Lossy(bytes) {
 
 // A `Utf8Error`'s `Display`.
 function $utf8ErrorMessage(error) {
-  return error.error_len === undefined
-    ? `incomplete utf-8 byte sequence from index ${error.valid_up_to}`
-    : `invalid utf-8 sequence of ${error.error_len} bytes from index ${error.valid_up_to}`;
+  return error.errorLen === undefined
+    ? `incomplete utf-8 byte sequence from index ${error.validUpTo}`
+    : `invalid utf-8 sequence of ${error.errorLen} bytes from index ${error.validUpTo}`;
 }
 
 // A `Utf8Error`'s derived `Debug`, or a `FromUtf8Error`'s (`owned`).
 function $debugUtf8Error(error, owned = false) {
   if (owned) return `FromUtf8Error { bytes: [${error.bytes.join(", ")}], error: ${$debugUtf8Error(error.error)} }`;
-  const length = error.error_len === undefined ? "None" : `Some(${error.error_len})`;
-  return `Utf8Error { valid_up_to: ${error.valid_up_to}, error_len: ${length} }`;
+  const length = error.errorLen === undefined ? "None" : `Some(${error.errorLen})`;
+  return `Utf8Error { valid_up_to: ${error.validUpTo}, error_len: ${length} }`;
 }
 
 // A byte slice's `escape_ascii()` (ADR 0341): each byte as `u8::escape_ascii`

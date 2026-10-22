@@ -79,7 +79,7 @@ function up(s) {
   };
 }
 
-function use_it(c) {
+function useIt(c) {
   c.impl.bump(c);
   c.impl.twice(c);
   return c.impl.get(c.value);
@@ -89,7 +89,7 @@ function main() {
   const c = { n: 1 };
   let n = 5;
   console.log(
-    `${use_it({ value: c, impl: cCounter() })} ${use_it({
+    `${useIt({ value: c, impl: cCounter() })} ${useIt({
       impl: i32Counter(),
       get value() {
         return n;

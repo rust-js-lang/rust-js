@@ -18,7 +18,7 @@ export function mutable(button) {
   });
 }
 
-export function shared_mutable(button) {
+export function sharedMutable(button) {
   let count = 0;
   const callback = () => {
     count = (count + 1) | 0;
@@ -86,7 +86,7 @@ export function capture(button) {
   button.removeEventListener("click", listener);
 }
 
-export function capture_removed(button) {
+export function captureRemoved(button) {
   const listener = (e) => {
     globalThis.record(e.clientX);
   };
@@ -101,7 +101,7 @@ export function named(button) {
   });
 }
 
-export function named_once(button) {
+export function namedOnce(button) {
   button.addEventListener(
     "custom",
     () => {
@@ -111,7 +111,7 @@ export function named_once(button) {
   );
 }
 
-export function named_removed(button) {
+export function namedRemoved(button) {
   const callback = () => {
     globalThis.record(1);
   };
@@ -119,7 +119,7 @@ export function named_removed(button) {
   button.removeEventListener("custom", callback);
 }
 
-export function named_capture_removed(button) {
+export function namedCaptureRemoved(button) {
   const callback = () => {
     globalThis.record(1);
   };

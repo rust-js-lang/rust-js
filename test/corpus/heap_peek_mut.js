@@ -37,12 +37,12 @@ function loudOrd_cmp(loud, other) {
 
 export function loudPartialOrd() {
   if ($loudPartialOrd === undefined) {
-    $loudPartialOrd = { PartialEq: () => ({ eq: $eq }), partial_cmp: loudPartialOrd_partial_cmp };
+    $loudPartialOrd = { PartialEq: () => ({ eq: $eq }), partialCmp: loudPartialOrd_partialCmp };
   }
   return $loudPartialOrd;
 }
 
-function loudPartialOrd_partial_cmp(loud, other) {
+function loudPartialOrd_partialCmp(loud, other) {
   return loudOrd_cmp(loud, other);
 }
 

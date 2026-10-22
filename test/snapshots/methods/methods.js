@@ -9,7 +9,7 @@ export const Counter = {
     return { count: 0, step };
   },
 
-  default_step() {
+  defaultStep() {
     return 1;
   },
 
@@ -41,7 +41,7 @@ export const Light = {
     return "Red";
   },
 
-  is_go(light) {
+  isGo(light) {
     return light === "Green";
   },
 };
@@ -72,10 +72,10 @@ export function lights(n) {
   for (let i = 0; i < n; i++) {
     light = Light.next(light);
   }
-  return Light.is_go(light);
+  return Light.isGo(light);
 }
 
-export function pair_sum(a, b) {
-  return (Pair.sum(Pair.new(a, b)) + (Counter.default_step() | 0)) | 0;
+export function pairSum(a, b) {
+  return (Pair.sum(Pair.new(a, b)) + (Counter.defaultStep() | 0)) | 0;
 }
 //# sourceMappingURL=methods.js.map

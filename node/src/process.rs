@@ -594,14 +594,19 @@ pub struct ProcessRelease {
 
 /// What [`features`] gives: what this Node can do.
 pub struct ProcessFeatures {
+    #[cfg_attr(rust_js, rust_js::name = "cached_builtins")]
     pub cached_builtins: bool,
     pub debug: bool,
     pub inspector: bool,
     pub ipv6: bool,
+    #[cfg_attr(rust_js, rust_js::name = "require_module")]
     pub require_module: bool,
     pub tls: bool,
+    #[cfg_attr(rust_js, rust_js::name = "tls_alpn")]
     pub tls_alpn: bool,
+    #[cfg_attr(rust_js, rust_js::name = "tls_ocsp")]
     pub tls_ocsp: bool,
+    #[cfg_attr(rust_js, rust_js::name = "tls_sni")]
     pub tls_sni: bool,
     /// How it runs TypeScript: by stripping its types, by transforming it, or not.
     pub typescript: ProcessFeaturesTypeScript,
@@ -621,6 +626,7 @@ pub enum ProcessFeaturesTypeScript {
 
 /// What [`config`] gives: how Node was built.
 pub struct ProcessConfig {
+    #[cfg_attr(rust_js, rust_js::name = "target_defaults")]
     pub target_defaults: ProcessConfigTargetDefaults,
     pub variables: ProcessConfigVariables,
 }
@@ -628,8 +634,10 @@ pub struct ProcessConfig {
 /// [`ProcessConfig::target_defaults`].
 pub struct ProcessConfigTargetDefaults {
     pub cflags: Vec<Option<&'static Unknown>>,
+    #[cfg_attr(rust_js, rust_js::name = "default_configuration")]
     pub default_configuration: String,
     pub defines: Vec<String>,
+    #[cfg_attr(rust_js, rust_js::name = "include_dirs")]
     pub include_dirs: Vec<String>,
     pub libraries: Vec<String>,
 }
@@ -637,18 +645,31 @@ pub struct ProcessConfigTargetDefaults {
 /// [`ProcessConfig::variables`].
 pub struct ProcessConfigVariables {
     pub clang: f64,
+    #[cfg_attr(rust_js, rust_js::name = "host_arch")]
     pub host_arch: String,
+    #[cfg_attr(rust_js, rust_js::name = "node_install_npm")]
     pub node_install_npm: bool,
+    #[cfg_attr(rust_js, rust_js::name = "node_install_waf")]
     pub node_install_waf: bool,
+    #[cfg_attr(rust_js, rust_js::name = "node_prefix")]
     pub node_prefix: String,
+    #[cfg_attr(rust_js, rust_js::name = "node_shared_openssl")]
     pub node_shared_openssl: bool,
+    #[cfg_attr(rust_js, rust_js::name = "node_shared_v8")]
     pub node_shared_v8: bool,
+    #[cfg_attr(rust_js, rust_js::name = "node_shared_zlib")]
     pub node_shared_zlib: bool,
+    #[cfg_attr(rust_js, rust_js::name = "node_use_dtrace")]
     pub node_use_dtrace: bool,
+    #[cfg_attr(rust_js, rust_js::name = "node_use_etw")]
     pub node_use_etw: bool,
+    #[cfg_attr(rust_js, rust_js::name = "node_use_openssl")]
     pub node_use_openssl: bool,
+    #[cfg_attr(rust_js, rust_js::name = "target_arch")]
     pub target_arch: String,
+    #[cfg_attr(rust_js, rust_js::name = "v8_no_strict_aliasing")]
     pub v8_no_strict_aliasing: f64,
+    #[cfg_attr(rust_js, rust_js::name = "v8_use_snapshot")]
     pub v8_use_snapshot: bool,
     pub visibility: String,
 }

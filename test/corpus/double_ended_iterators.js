@@ -14,12 +14,12 @@ function spanIterator_next(span) {
   return (span.low - 1) >>> 0;
 }
 
-function spanIterator_size_hint(span) {
+function spanIterator_sizeHint(span) {
   const n = (span.high - span.low) >>> 0;
   return [n, n];
 }
 
-function spanDoubleEndedIterator_next_back(span) {
+function spanDoubleEndedIterator_nextBack(span) {
   if (span.low >= span.high) {
     return;
   }
@@ -31,23 +31,23 @@ function spanDoubleEndedIterator_next_back(span) {
 function main() {
   const s = { low: 0, high: 5 };
   const next = spanIterator_next(s);
-  const nextBack = spanDoubleEndedIterator_next_back(s);
+  const nextBack = spanDoubleEndedIterator_nextBack(s);
   console.log(
-    `${next == null ? "None" : `Some(${next})`} ${nextBack == null ? "None" : `Some(${nextBack})`} ${$exactLen(spanIterator_size_hint(s))}`,
+    `${next == null ? "None" : `Some(${next})`} ${nextBack == null ? "None" : `Some(${nextBack})`} ${$exactLen(spanIterator_sizeHint(s))}`,
   );
-  const backwards = $iterator({ low: 1, high: 4 }, spanDoubleEndedIterator_next_back).toArray();
+  const backwards = $iterator({ low: 1, high: 4 }, spanDoubleEndedIterator_nextBack).toArray();
   console.log(`[${backwards.join(", ")}]`);
   const both = { low: 10, high: 14 };
-  const value = spanDoubleEndedIterator_next_back(both);
+  const value = spanDoubleEndedIterator_nextBack(both);
   const value$1 = spanIterator_next(both);
   console.log(
-    `${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`} ${$exactLen(spanIterator_size_hint(both))}`,
+    `${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`} ${$exactLen(spanIterator_sizeHint(both))}`,
   );
-  for (const x of $iterator({ low: 0, high: 3 }, spanDoubleEndedIterator_next_back)) {
+  for (const x of $iterator({ low: 0, high: 3 }, spanDoubleEndedIterator_nextBack)) {
     console.log(`got ${x}`);
   }
   console.log(
-    `[${$iterator({ low: 0, high: 6 }, spanDoubleEndedIterator_next_back)
+    `[${$iterator({ low: 0, high: 6 }, spanDoubleEndedIterator_nextBack)
       .take(2)
       .toArray()
       .join(", ")}]`,

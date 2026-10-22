@@ -63,7 +63,7 @@ function prec(op) {
   return 2;
 }
 
-export function to_rpn(tokens) {
+export function toRpn(tokens) {
   const out = [];
   const stack = [];
   for (const t of tokens) {
@@ -110,7 +110,7 @@ export function eval$(src) {
   if (result.TAG === "Err") {
     return result;
   }
-  const rpn = to_rpn(result._0);
+  const rpn = toRpn(result._0);
   const st = [];
   for (const t of rpn) {
     if (t.TAG === "Num") {
@@ -152,7 +152,7 @@ export function eval$(src) {
   return option != null ? { TAG: "Ok", _0: option } : { TAG: "Err", _0: "empty" };
 }
 
-export function word_freq(text) {
+export function wordFreq(text) {
   const m = new Map();
   for (const w of $splitBy(text, (c) => !/^[\p{Alphabetic}\p{N}]$/u.test(c))
     .values()
@@ -184,7 +184,7 @@ export function caesar(s, k) {
     .join("");
 }
 
-export function first_dup(s) {
+export function firstDup(s) {
   const seen = new Set();
   for (const [i, c] of Array.from(s).entries()) {
     if (!$add(seen, c)) {
@@ -199,18 +199,18 @@ export function report() {
     const arg = eval$(e);
     out += `${e} = ${arg.TAG === "Ok" ? `Ok(${$debugF64(arg._0)})` : `Err(${$debugStr(arg._0)})`}\n`;
   }
-  out += `[${word_freq("The cat and the hat. THE end, and fin")
+  out += `[${wordFreq("The cat and the hat. THE end, and fin")
     .map((item) => `(${$debugStr(item[0])}, ${item[1]})`)
     .join(", ")}]\n`;
   out += `${caesar("Hello, World!", 3)} ${caesar(caesar("abcxyz", 13), 13)}\n`;
-  const firstDup = first_dup("abcdbe");
-  const value = first_dup("xyz");
-  out += `${firstDup == null ? "None" : `Some((${firstDup[0]}, ${$debugStr(firstDup[1], "'")}))`} ${value == null ? "None" : `Some((${value[0]}, ${$debugStr(value[1], "'")}))`}\n`;
+  const value = firstDup("abcdbe");
+  const value$1 = firstDup("xyz");
+  out += `${value == null ? "None" : `Some((${value[0]}, ${$debugStr(value[1], "'")}))`} ${value$1 == null ? "None" : `Some((${value$1[0]}, ${$debugStr(value$1[1], "'")}))`}\n`;
   const s = "hello world";
   const length = s.split("o").length;
   const collect = $splitBy(s, (c) => c === "l");
-  const value$1 = Array.from(s).toReversed().join("");
-  out += `${length} [${collect.map((item) => $debugStr(item)).join(", ")}] ${value$1} ${Array.from(s).filter((c) => "aeiou".includes(c)).length}\n`;
+  const value$2 = Array.from(s).toReversed().join("");
+  out += `${length} [${collect.map((item) => $debugStr(item)).join(", ")}] ${value$2} ${Array.from(s).filter((c) => "aeiou".includes(c)).length}\n`;
   return out;
 }
 //# sourceMappingURL=calc.js.map

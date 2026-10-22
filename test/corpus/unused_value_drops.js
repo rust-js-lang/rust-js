@@ -33,7 +33,7 @@ function genIterator_next(gen) {
   }
 }
 
-function first_or(it, fallback, dropIItem) {
+function firstOr(it, fallback, dropIItem) {
   let fallback$live = true;
   let next;
   try {
@@ -258,10 +258,10 @@ function main() {
                     };
                     const tmp = k != null ? value(k) : 0;
                     console.log(`k ${tmp}`);
-                    const first = first_or($iterator([0], genIterator_next), [40], loudDrop_drop);
+                    const first = firstOr($iterator([0], genIterator_next), [40], loudDrop_drop);
                     try {
                       console.log(`first ${first[0]}`);
-                      const empty = first_or($iterator([5], genIterator_next), [41], loudDrop_drop);
+                      const empty = firstOr($iterator([5], genIterator_next), [41], loudDrop_drop);
                       try {
                         console.log(`empty ${empty[0]}`);
                       } finally {

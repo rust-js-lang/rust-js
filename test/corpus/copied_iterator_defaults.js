@@ -40,15 +40,15 @@ function tSkipping(TIterator, dropT, dropTItem) {
     $tSkipping = new WeakMap();
   }
   return $traitImpl($tSkipping, [TIterator, dropT, dropTItem], () => ({
-    skip_one: (self) => {
+    skipOne: (self) => {
       const next = TIterator.next(self);
       if (next != null) {
         dropTItem?.($someValue(next));
       }
     },
-    skip_two: (self) => {
-      tSkipping(TIterator, dropT, dropTItem).skip_one(self);
-      tSkipping(TIterator, dropT, dropTItem).skip_one(self);
+    skipTwo: (self) => {
+      tSkipping(TIterator, dropT, dropTItem).skipOne(self);
+      tSkipping(TIterator, dropT, dropTItem).skipOne(self);
     },
     second: (self) => {
       let result;
@@ -104,7 +104,7 @@ function tTotals(TIterator, dropT) {
       }
       return n;
     },
-    first_two: (self) => $lent($iterator(self, TIterator.next)).take(2).toArray(),
+    firstTwo: (self) => $lent($iterator(self, TIterator.next)).take(2).toArray(),
     $drop: dropT,
   }));
 }
@@ -118,15 +118,15 @@ function holderPeeled(IIterator, dropI, dropIItem) {
     $holderPeeled = new WeakMap();
   }
   return $traitImpl($holderPeeled, [IIterator, dropI, dropIItem], () => ({
-    drop_first: (self) => {
+    dropFirst: (self) => {
       const next = holderIterator_next(self, IIterator, dropI, dropIItem);
       if (next != null) {
         dropIItem?.($someValue(next));
       }
     },
-    drop_two: (self) => {
-      holderPeeled(IIterator, dropI, dropIItem).drop_first(self);
-      holderPeeled(IIterator, dropI, dropIItem).drop_first(self);
+    dropTwo: (self) => {
+      holderPeeled(IIterator, dropI, dropIItem).dropFirst(self);
+      holderPeeled(IIterator, dropI, dropIItem).dropFirst(self);
     },
     $drop: (holder) => {
       dropI?.(holder[0]);
@@ -148,20 +148,20 @@ function holderNamed(dropI, dropIItem) {
 
 function main() {
   const g = [0];
-  tSkipping({ next: genIterator_next }).skip_one(g);
+  tSkipping({ next: genIterator_next }).skipOne(g);
   const value = genIterator_next(g);
   console.log(`${value == null ? "None" : `Some(${value})`}`);
   const value$1 = tSkipping({ next: genIterator_next }).second([0]);
   console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
   const r = { start: 0, end: 4 };
-  tSkipping({ next: $rangeNext }).skip_two(r);
+  tSkipping({ next: $rangeNext }).skipTwo(r);
   console.log(`${r.start}..${r.end}`);
   const v = $iter([1, 2, 3]);
-  tSkipping({ next: $next }).skip_one(v);
+  tSkipping({ next: $next }).skipOne(v);
   const value$2 = $next(v);
   console.log(`${value$2 == null ? "None" : `Some(${value$2})`}`);
   const louds = [0];
-  tSkipping({ next: loudsIterator_next }, undefined, loudDrop_drop).skip_two(louds);
+  tSkipping({ next: loudsIterator_next }, undefined, loudDrop_drop).skipTwo(louds);
   console.log("louds skipped");
 
   console.log(`${tTotals({ next: genIterator_next }).total([0])}`);
@@ -169,15 +169,15 @@ function main() {
   console.log(`${tTotals({ next: $rangeNext }).looped({ start: 1, end: 4 })}`);
   const h = [0];
   console.log(
-    `[${tTotals({ next: genIterator_next }).first_two(h).join(", ")}] ${((value) => (value == null ? "None" : `Some(${value})`))(genIterator_next(h))}`,
+    `[${tTotals({ next: genIterator_next }).firstTwo(h).join(", ")}] ${((value) => (value == null ? "None" : `Some(${value})`))(genIterator_next(h))}`,
   );
   const range = { start: 0, end: 5 };
   console.log(
-    `[${tTotals({ next: $rangeNext }).first_two(range).join(", ")}] ${range.start}..${range.end}`,
+    `[${tTotals({ next: $rangeNext }).firstTwo(range).join(", ")}] ${range.start}..${range.end}`,
   );
 
   const held = [[0]];
-  holderPeeled({ next: loudsIterator_next }, undefined, loudDrop_drop).drop_two(held);
+  holderPeeled({ next: loudsIterator_next }, undefined, loudDrop_drop).dropTwo(held);
   const l = holderIterator_next(held, { next: loudsIterator_next }, undefined, loudDrop_drop);
   const map = (l) => {
     const result = l[0];
@@ -187,7 +187,7 @@ function main() {
   const value$3 = l ? map(l) : undefined;
   console.log(`held ${value$3 == null ? "None" : `Some(${value$3})`}`);
   const numbers = [{ start: 1, end: 4 }];
-  holderPeeled({ next: $rangeNext }).drop_first(numbers);
+  holderPeeled({ next: $rangeNext }).dropFirst(numbers);
   console.log(`${numbers[0].start}..${numbers[0].end} ${holderNamed().name(numbers)}`);
 }
 //# sourceMappingURL=case.js.map

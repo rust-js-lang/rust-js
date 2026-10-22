@@ -28,7 +28,7 @@ function keep(n, fail) {
   return result;
 }
 
-function swap_y(p, fail) {
+function swapY(p, fail) {
   let p$x$live = true;
   let noisy;
   try {
@@ -44,7 +44,7 @@ function swap_y(p, fail) {
 }
 
 function main() {
-  const swapped = swap_y({ x: [1], y: [2] }, false);
+  const swapped = swapY({ x: [1], y: [2] }, false);
   try {
     console.log(`swapped ${swapped.x[0]} ${swapped.y[0]}`);
   } catch (error) {
@@ -54,7 +54,7 @@ function main() {
   }
   let failed;
   try {
-    failed = swap_y({ x: [3], y: [4] }, true);
+    failed = swapY({ x: [3], y: [4] }, true);
   } catch (error) {
     noisyDrop_drop(swapped.x);
     noisyDrop_drop(swapped.y);

@@ -10,12 +10,12 @@ export function entry() {
 
 function counterSequence() {
   if ($counterSequence === undefined) {
-    $counterSequence = { next_value: counterSequence_next_value };
+    $counterSequence = { nextValue: counterSequence_nextValue };
   }
   return $counterSequence;
 }
 
-function counterSequence_next_value(counter) {
+function counterSequence_nextValue(counter) {
   return (counter[0] + 1) >>> 0;
 }
 
@@ -24,16 +24,16 @@ function mutexSequence(CSequence) {
     $mutexSequence = new WeakMap();
   }
   return $traitImpl($mutexSequence, [CSequence], () => ({
-    next_value: (arg0) => mutexSequence_next_value(arg0, CSequence),
+    nextValue: (arg0) => mutexSequence_nextValue(arg0, CSequence),
   }));
 }
 
-function mutexSequence_next_value(mutex, CSequence) {
+function mutexSequence_nextValue(mutex, CSequence) {
   const value = $lock(mutex, true);
   const value$1 = value.value;
   let result;
   try {
-    result = CSequence.next_value(value$1);
+    result = CSequence.nextValue(value$1);
   } finally {
     $unborrow(value);
   }
@@ -41,21 +41,21 @@ function mutexSequence_next_value(mutex, CSequence) {
 }
 
 function described(text, TToString, TClone) {
-  return text._0.map((x) => TToString.to_string(x)).join(",");
+  return text._0.map((x) => TToString.toString(x)).join(",");
 }
 
 function main() {
   const shared = { value: [4] };
-  console.log(`${mutexSequence_next_value(shared, counterSequence())}`);
+  console.log(`${mutexSequence_nextValue(shared, counterSequence())}`);
   console.log(
     `${described(
       { TAG: "Borrowed", _0: [1, 2] },
-      { to_string: String },
+      { toString: String },
       { clone: (value) => value },
     )}`,
   );
   console.log(
-    `${described({ TAG: "Owned", _0: [3] }, { to_string: String }, { clone: (value) => value })}`,
+    `${described({ TAG: "Owned", _0: [3] }, { toString: String }, { clone: (value) => value })}`,
   );
 }
 //# sourceMappingURL=case.js.map

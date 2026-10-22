@@ -19,7 +19,7 @@ function nDrop_drop(n) {
   console.log(`drop ${n[0]}`);
 }
 
-function split_first(iter, k, dropI, dropIItem) {
+function splitFirst(iter, k, dropI, dropIItem) {
   let first;
   try {
     first = $lent(Iterator.from(iter)).take(k).toArray();
@@ -854,9 +854,9 @@ function main() {
             }
             throw error;
           }
-          let splitFirst;
+          let tmp$7;
           try {
-            splitFirst = split_first(tmp$6, 1, $dropEach(nDrop_drop), nDrop_drop);
+            tmp$7 = splitFirst(tmp$6, 1, $dropEach(nDrop_drop), nDrop_drop);
           } catch (error) {
             for (const item of kept) {
               nDrop_drop(item);
@@ -877,8 +877,8 @@ function main() {
             }
             throw error;
           }
-          const first = splitFirst[0];
-          const rest = splitFirst[1];
+          const first = tmp$7[0];
+          const rest = tmp$7[1];
           try {
             console.log(`first ${first.length} rest ${rest}`);
           } catch (error) {
@@ -904,9 +904,9 @@ function main() {
             }
             throw error;
           }
-          let tmp$7;
+          let tmp$8;
           try {
-            tmp$7 = $range(90, 94).map((value) => [value]);
+            tmp$8 = $range(90, 94).map((value) => [value]);
           } catch (error) {
             for (const item of first) {
               nDrop_drop(item);
@@ -931,7 +931,7 @@ function main() {
             throw error;
           }
           try {
-            owned = $iter(tmp$7);
+            owned = $iter(tmp$8);
           } catch (error) {
             for (const item of first) {
               nDrop_drop(item);

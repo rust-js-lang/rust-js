@@ -15,7 +15,7 @@ function fill(v, value, n) {
   console.log(`filled ${v.length}`);
 }
 
-function fill_generic(v, value, n, TClone, dropT) {
+function fillGeneric(v, value, n, TClone, dropT) {
   $extend(v, $repeating(value, (value) => TClone.clone(value), dropT).take(n));
 }
 
@@ -257,7 +257,7 @@ function main() {
       throw error;
     }
     try {
-      fill_generic(v, ["f"], 1, { clone: (value) => value }, loudDrop_drop);
+      fillGeneric(v, ["f"], 1, { clone: (value) => value }, loudDrop_drop);
     } catch (error) {
       if (first != null) {
         loudDrop_drop(first);

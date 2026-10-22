@@ -21,7 +21,7 @@ export function forms() {
  * 0443): `encode(Some(text))` is `e.encode(text)`, and a union takes its
  * member as it is (ADR 0229): `decode(Some(&bytes), None)` is `d.decode(bytes)`.
  */
-export function round_trip(text) {
+export function roundTrip(text) {
   const bytes = new TextEncoder().encode(text);
   const back = new TextDecoder("utf-8").decode(bytes);
   return [bytes.length, back];
@@ -51,7 +51,7 @@ export function copied(text, items) {
  * A frame's window, a message's sender, and the page's clock:
  * `frame.contentWindow`, `e.source` and `window.performance.now()`.
  */
-export function from_frame(frame, e) {
+export function fromFrame(frame, e) {
   const sender = e.source;
   const windowOf = frame.contentWindow;
   return [Object.is(sender, windowOf), window.performance.now()];
@@ -61,7 +61,7 @@ export function from_frame(frame, e) {
  * A canvas, which a library like canvas-confetti draws on: its size, set
  * and read, `canvas.width = 320`.
  */
-export function canvas_size() {
+export function canvasSize() {
   const canvas = document.createElement("canvas");
   canvas.width = 320;
   canvas.height = 200;
@@ -180,7 +180,7 @@ export function texts(url, list) {
  * A static attribute, read at each call, and a static method an instance's
  * has the name of, each its class's: `Notification.permission`, `Response.json`.
  */
-export function statics_read() {
+export function staticsRead() {
   return [Notification.permission, Response.json([1, 2])];
 }
 
@@ -189,7 +189,7 @@ export function statics_read() {
  * message, and gives whether it's handled; `onbeforeunload`'s gives the
  * text that asks whether to leave, or none.
  */
-export function on_errors(button) {
+export function onErrors(button) {
   button.onerror = (e) => typeof e === "string";
   window.onbeforeunload = () => undefined;
   return !!button.onerror;
@@ -234,7 +234,7 @@ export function widths(el) {
  * the member JS gives: `reader.result`, text or an `ArrayBuffer`, and a
  * form's field, text or a `File`.
  */
-export function unions_read(reader, data) {
+export function unionsRead(reader, data) {
   const result = reader.result;
   const text = typeof result === "string";
   const name$1 = data.get("name");

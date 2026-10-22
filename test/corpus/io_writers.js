@@ -23,14 +23,14 @@ export function entry() {
 }
 
 function render(out, n, WWrite) {
-  WWrite.write_fmt(out, `n = ${n}\n`);
-  WWrite.write_all(out, [98, 121, 116, 101, 115, 10]);
+  WWrite.writeFmt(out, `n = ${n}\n`);
+  WWrite.writeAll(out, [98, 121, 116, 101, 115, 10]);
   return WWrite.flush(out);
 }
 
 function shout(out, text) {
-  out.impl.write_fmt(out, `${text.toUpperCase()}!`);
-  out.impl.write_all(out, [10]);
+  out.impl.writeFmt(out, `${text.toUpperCase()}!`);
+  out.impl.writeAll(out, [10]);
   $someValue($unwrap($some(undefined), "a write never fails"));
 }
 

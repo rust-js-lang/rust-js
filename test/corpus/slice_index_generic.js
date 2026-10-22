@@ -10,15 +10,15 @@ function smallIndexI_index(small, index, ISliceIndexU32Slice) {
   return ISliceIndexU32Slice.index(index, small.items);
 }
 
-function smallIndexMutI_index_mut(small, index, ISliceIndexU32Slice) {
-  return ISliceIndexU32Slice.index_mut(index, small.items);
+function smallIndexMutI_indexMut(small, index, ISliceIndexU32Slice) {
+  return ISliceIndexU32Slice.indexMut(index, small.items);
 }
 
 function main() {
   const s = { items: [1, 2, 3, 4] };
-  smallIndexMutI_index_mut(s, 1, $sliceIndexes.item).value = 20;
-  smallIndexMutI_index_mut(s, { start: 2 }, $sliceIndexes.from).value.sort((a, b) => $cmp(b, a));
-  const value$1 = smallIndexMutI_index_mut(s, { end: 1 }, $sliceIndexes.toInclusive).value;
+  smallIndexMutI_indexMut(s, 1, $sliceIndexes.item).value = 20;
+  smallIndexMutI_indexMut(s, { start: 2 }, $sliceIndexes.from).value.sort((a, b) => $cmp(b, a));
+  const value$1 = smallIndexMutI_indexMut(s, { end: 1 }, $sliceIndexes.toInclusive).value;
   const value = (value$1[$at(value$1, 0)] + 5) >>> 0;
   value$1[0] = value;
   const value$2 = smallIndexI_index(s, 1, $sliceIndexes.item);

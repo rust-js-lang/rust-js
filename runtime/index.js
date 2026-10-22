@@ -5298,27 +5298,27 @@ export function $printBytes(bytes, error) {
 // nothing (ADR 0132).
 export const $stdoutWriter = {
   write: (_, bytes) => ({ TAG: "Ok", _0: $printBytes(bytes, 0) }),
-  write_all: (_, bytes) => void $printBytes(bytes, 0),
-  write_fmt: (_, text) => $print(text),
+  writeAll: (_, bytes) => void $printBytes(bytes, 0),
+  writeFmt: (_, text) => $print(text),
   flush: () => {},
 };
 export const $stderrWriter = {
   write: (_, bytes) => ({ TAG: "Ok", _0: $printBytes(bytes, 1) }),
-  write_all: (_, bytes) => void $printBytes(bytes, 1),
-  write_fmt: (_, text) => $eprint(text),
+  writeAll: (_, bytes) => void $printBytes(bytes, 1),
+  writeFmt: (_, text) => $eprint(text),
   flush: () => {},
 };
 export const $vecWriter = {
   write: (w, bytes) => (w.value.push(...bytes), { TAG: "Ok", _0: bytes.length }),
-  write_all: (w, bytes) => void w.value.push(...bytes),
-  write_fmt: (w, text) => $writeText(w.value, text),
+  writeAll: (w, bytes) => void w.value.push(...bytes),
+  writeFmt: (w, text) => $writeText(w.value, text),
   flush: () => {},
 };
 // A `Box<dyn Write>`'s, given in a box: the pair it holds, written through.
 export const $dynWriter = {
   write: (w, bytes) => w.value.impl.write(w.value, bytes),
-  write_all: (w, bytes) => w.value.impl.write_all(w.value, bytes),
-  write_fmt: (w, text) => w.value.impl.write_fmt(w.value, text),
+  writeAll: (w, bytes) => w.value.impl.writeAll(w.value, bytes),
+  writeFmt: (w, text) => w.value.impl.writeFmt(w.value, text),
   flush: (w) => w.value.impl.flush(w.value),
 };
 // `io::Write`'s `write_all` of a writer of the crate's, std's: its `write`
@@ -5430,14 +5430,14 @@ export function $vecFromRaw(pointer, length) {
 export function $boundsIndex(start, end) {
   return {
     index: (range, items) => $slice(items, start(range), end(range)),
-    index_mut: (range, items) => ({ value: $view(items, start(range), end(range)) }),
+    indexMut: (range, items) => ({ value: $view(items, start(range), end(range)) }),
   };
 }
 
 export const $sliceIndexes = {
   item: {
     index: (index, items) => $index(items, index),
-    index_mut: (index, items) => $ptr(items, $at(items, index)),
+    indexMut: (index, items) => $ptr(items, $at(items, index)),
   },
   range: $boundsIndex((range) => range.start, (range) => range.end),
   from: $boundsIndex((range) => range.start, () => undefined),
@@ -8420,7 +8420,7 @@ export function $bytesAsciiEq(a, b) {
 // be any bounds that hold. Of a value given as it is, its `Iterator`
 // dictionary's own, `iterator.size_hint`, where its impl has one (ADR 0411).
 export function $sizeHint(it, iterator) {
-  if (iterator?.size_hint !== undefined) return iterator.size_hint(it);
+  if (iterator?.sizeHint !== undefined) return iterator.sizeHint(it);
   // An explicit adapter's, its own, of what it steps (ADR 0542).
   if (it.hint !== undefined) return it.hint();
   // What a `$iterator` steps, a JS iterator's, an array's `$iter` given as
@@ -8466,7 +8466,7 @@ export function $utf8Decode(bytes) {
 export function $fromUtf8(bytes, owned = false) {
   const bad = $utf8Check(bytes);
   if (bad === undefined) return { TAG: "Ok", _0: $utf8Decode(bytes) };
-  const error = { valid_up_to: bad[0], error_len: bad[1] };
+  const error = { validUpTo: bad[0], errorLen: bad[1] };
   return { TAG: "Err", _0: owned ? { bytes, error } : error };
 }
 
@@ -8496,16 +8496,16 @@ export function $utf8Lossy(bytes) {
 
 // A `Utf8Error`'s `Display`.
 export function $utf8ErrorMessage(error) {
-  return error.error_len === undefined
-    ? `incomplete utf-8 byte sequence from index ${error.valid_up_to}`
-    : `invalid utf-8 sequence of ${error.error_len} bytes from index ${error.valid_up_to}`;
+  return error.errorLen === undefined
+    ? `incomplete utf-8 byte sequence from index ${error.validUpTo}`
+    : `invalid utf-8 sequence of ${error.errorLen} bytes from index ${error.validUpTo}`;
 }
 
 // A `Utf8Error`'s derived `Debug`, or a `FromUtf8Error`'s (`owned`).
 export function $debugUtf8Error(error, owned = false) {
   if (owned) return `FromUtf8Error { bytes: [${error.bytes.join(", ")}], error: ${$debugUtf8Error(error.error)} }`;
-  const length = error.error_len === undefined ? "None" : `Some(${error.error_len})`;
-  return `Utf8Error { valid_up_to: ${error.valid_up_to}, error_len: ${length} }`;
+  const length = error.errorLen === undefined ? "None" : `Some(${error.errorLen})`;
+  return `Utf8Error { valid_up_to: ${error.validUpTo}, error_len: ${length} }`;
 }
 
 // A byte slice's `escape_ascii()` (ADR 0341): each byte as `u8::escape_ascii`
@@ -8619,13 +8619,13 @@ export function $nonZeroOk(result, zero) {
 // given, in a box: what it writes is added to the box's `value`, which the
 // caller takes back (ADR 0180). A `char` and a `write!`'s text are strings.
 export const $stringWriter = {
-  write_str(w, s) {
+  writeStr(w, s) {
     w.value += s;
   },
-  write_char(w, c) {
+  writeChar(w, c) {
     w.value += c;
   },
-  write_fmt(w, text) {
+  writeFmt(w, text) {
     w.value += text;
   },
 };
@@ -8636,9 +8636,9 @@ export const $stringWriter = {
 // the box, `$mutWriter($stringWriter)` of a `String` (ADRs 0180, 0454).
 export function $mutWriter(writer) {
   return {
-    write_str: (w, s) => writer.write_str(w.value, s),
-    write_char: (w, c) => writer.write_char(w.value, c),
-    write_fmt: (w, text) => writer.write_fmt(w.value, text),
+    writeStr: (w, s) => writer.writeStr(w.value, s),
+    writeChar: (w, c) => writer.writeChar(w.value, c),
+    writeFmt: (w, text) => writer.writeFmt(w.value, text),
   };
 }
 
@@ -8855,48 +8855,48 @@ export function $ioErrorDyn() {
 // std's are (ADR 0463): an integer's bytes, little-endian as `wasm32`'s, a
 // `usize`'s four; a signed one's as its unsigned one's; text's bytes and 0xff.
 export class $Hasher {
-  write_u8(n) {
+  writeU8(n) {
     this.write([n]);
   }
-  write_u16(n) {
+  writeU16(n) {
     this.write($toBytes(n, 2, true));
   }
-  write_u32(n) {
+  writeU32(n) {
     this.write($toBytes(n, 4, true));
   }
-  write_u64(n) {
+  writeU64(n) {
     this.write($toBytes(n, 8, true));
   }
-  write_u128(n) {
+  writeU128(n) {
     this.write($toBytes(n, 16, true));
   }
-  write_usize(n) {
+  writeUsize(n) {
     this.write($toBytes(n, 4, true));
   }
-  write_i8(n) {
-    this.write_u8(n & 0xff);
+  writeI8(n) {
+    this.writeU8(n & 0xff);
   }
-  write_i16(n) {
-    this.write_u16(n & 0xffff);
+  writeI16(n) {
+    this.writeU16(n & 0xffff);
   }
-  write_i32(n) {
-    this.write_u32(n >>> 0);
+  writeI32(n) {
+    this.writeU32(n >>> 0);
   }
-  write_i64(n) {
-    this.write_u64(BigInt.asUintN(64, n));
+  writeI64(n) {
+    this.writeU64(BigInt.asUintN(64, n));
   }
-  write_i128(n) {
-    this.write_u128(BigInt.asUintN(128, n));
+  writeI128(n) {
+    this.writeU128(BigInt.asUintN(128, n));
   }
-  write_isize(n) {
-    this.write_usize(n >>> 0);
+  writeIsize(n) {
+    this.writeUsize(n >>> 0);
   }
-  write_length_prefix(n) {
-    this.write_usize(n);
+  writeLengthPrefix(n) {
+    this.writeUsize(n);
   }
-  write_str(s) {
+  writeStr(s) {
     this.write(Array.from(new TextEncoder().encode(s)));
-    this.write_u8(0xff);
+    this.writeU8(0xff);
   }
 }
 export const $hasherProvided = Object.getOwnPropertyNames($Hasher.prototype).filter((name) => name !== "constructor");

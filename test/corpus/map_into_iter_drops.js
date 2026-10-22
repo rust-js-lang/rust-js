@@ -22,7 +22,7 @@ function loudDrop_drop(loud) {
   console.log(`drop ${loud[0]}`);
 }
 
-function first_over(map, limit) {
+function firstOver(map, limit) {
   const iter = $iter($sortedEntries(map, $cmp));
   let tmp;
   while (true) {
@@ -119,7 +119,7 @@ function main() {
     }
   }
   map$live = false;
-  const value = first_over(map, 15);
+  const value = firstOver(map, 15);
   console.log(`${value == null ? "None" : `Some(${value})`}`);
   const value$1 = $iter([[1], [2], [3]]);
   const set = $treeFrom(

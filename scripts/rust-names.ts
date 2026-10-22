@@ -53,3 +53,11 @@ export function plain(identifier: string): string {
 export function snake(name: string): string {
   return identifier(snakeWords(name));
 }
+
+/** Whether a binding named `js` in JS and `rust` in Rust says its JS name,
+ * `#[rust_js::name]`: where it isn't the one rust-js gives `rust`, its
+ * camelCase (ADR 0573). A name Rust spells another way does, and one JS
+ * spells with a `_`, `key_ops`, which rust-js would make `keyOps`. */
+export function needsJsName(rust: string, js: string): boolean {
+  return plain(rust) !== js || js.includes("_");
+}

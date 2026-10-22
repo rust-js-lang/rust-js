@@ -57,7 +57,7 @@ function run(s) {
 }
 
 // Only `?` of a value's `Result`: it fails where that does.
-function parsed_only(s) {
+function parsedOnly(s) {
   const result = parse(s);
   if (result.TAG === "Err") {
     return $ioThrow(result._0);
@@ -87,8 +87,8 @@ export function limitedWrite() {
     $limitedWrite = {
       write,
       flush: (arg0) => limitedWrite_flush(arg0.value),
-      write_all: $ioWriteAll(write),
-      write_fmt: $ioWriteFmt(write),
+      writeAll: $ioWriteAll(write),
+      writeFmt: $ioWriteFmt(write),
     };
   }
   return $limitedWrite;
@@ -108,11 +108,11 @@ function limitedWrite_flush(limited) {}
 
 // Only std's `write_all` of the crate's writer, whose `write` may fail.
 function put(w) {
-  limitedWrite().write_all({ value: w }, [120, 121, 122]);
+  limitedWrite().writeAll({ value: w }, [120, 121, 122]);
 }
 
 // `?` of one that gives std's `write_all`'s: its error passed on.
-function put_twice(w) {
+function putTwice(w) {
   put(w);
   put(w);
 }
@@ -125,7 +125,7 @@ function written(r) {
   $writeCheck($writeOf(r.TAG === "Ok" ? { TAG: "Ok", _0: map(r._0) } : r));
 }
 
-function written_twice(n) {
+function writtenTwice(n) {
   written({ TAG: "Ok", _0: n });
   written({ TAG: "Err", _0: new $IoError("Other", { value: "refused", impl: $stringError() }) });
 }
@@ -146,22 +146,22 @@ function main() {
     );
   }
   const w = { room: 5, out: [] };
-  const a = $writeTry(() => limitedWrite().write_all({ value: w }, [97, 98, 99]));
-  const b = $writeTry(() => limitedWrite().write_all({ value: w }, [100, 101, 102, 103]));
+  const a = $writeTry(() => limitedWrite().writeAll({ value: w }, [97, 98, 99]));
+  const b = $writeTry(() => limitedWrite().writeAll({ value: w }, [100, 101, 102, 103]));
   const arg = $utf8Lossy(w.out);
   console.log(`${$ioResultDebug(a)} ${$ioResultDebug(b)} ${$debugStr(arg._0)}`);
-  const result = $writeTry(() => parsed_only("x"));
+  const result = $writeTry(() => parsedOnly("x"));
   const mapErr = result === undefined ? { TAG: "Ok" } : { TAG: "Err", _0: result.kind };
-  const result$1 = $writeTry(() => parsed_only("4"));
+  const result$1 = $writeTry(() => parsedOnly("4"));
   console.log(`${mapErr.TAG === "Ok" ? "Ok(())" : `Err(${mapErr._0})`} ${result$1 === undefined}`);
   const full = { room: 0, out: [] };
   console.log(`${$ioResultDebug($writeTry(() => put(full)))}`);
   const room = { room: 4, out: [] };
   console.log(
-    `${$ioResultDebug($writeTry(() => put_twice(room)))} ${$debugStr($utf8Lossy(room.out)._0)}`,
+    `${$ioResultDebug($writeTry(() => putTwice(room)))} ${$debugStr($utf8Lossy(room.out)._0)}`,
   );
   const value = $writeTry(() => written({ TAG: "Ok", _0: 3 }));
-  const result$2 = $writeTry(() => written_twice(4));
+  const result$2 = $writeTry(() => writtenTwice(4));
   console.log(
     `${$ioResultDebug(value)} ${((result) =>
       result.TAG === "Ok" ? "Ok(())" : `Err(${$debugStr(result._0)})`)(

@@ -15,7 +15,7 @@ function countdownIterator_next(countdown) {
   return countdown[0];
 }
 
-function countdownIterator_size_hint(countdown) {
+function countdownIterator_sizeHint(countdown) {
   return [countdown[0], countdown[0]];
 }
 
@@ -44,10 +44,10 @@ function main() {
       false,
       undefined,
       undefined,
-      countdownIterator_size_hint,
+      countdownIterator_sizeHint,
     ),
   );
-  const value$1 = countdownIterator_size_hint(countdown);
+  const value$1 = countdownIterator_sizeHint(countdown);
   console.log(
     `(${value[0]}, ${value[1] == null ? "None" : `Some(${value[1]})`}) (${value$1[0]}, ${value$1[1] == null ? "None" : `Some(${value$1[1]})`})`,
   );
@@ -59,17 +59,17 @@ function main() {
       false,
       undefined,
       undefined,
-      countdownIterator_size_hint,
+      countdownIterator_sizeHint,
     ),
   );
   console.log(`(${value$2[0]}, ${value$2[1] == null ? "None" : `Some(${value$2[1]})`})`);
   const value$3 = hint($iterator([0], blinkIterator_next));
   console.log(
-    `(${value$3[0]}, ${value$3[1] == null ? "None" : `Some(${value$3[1]})`}) [${collected($iterator([3], countdownIterator_next, false, undefined, undefined, countdownIterator_size_hint)).join(", ")}]`,
+    `(${value$3[0]}, ${value$3[1] == null ? "None" : `Some(${value$3[1]})`}) [${collected($iterator([3], countdownIterator_next, false, undefined, undefined, countdownIterator_sizeHint)).join(", ")}]`,
   );
   const fused = iterator_fuse(
     [3],
-    { next: countdownIterator_next, size_hint: countdownIterator_size_hint },
+    { next: countdownIterator_next, sizeHint: countdownIterator_sizeHint },
     false,
   );
   const sizeHint = $sizeHint(fused);
@@ -79,7 +79,7 @@ function main() {
   );
   const peek = iterator_peekable([2], {
     next: countdownIterator_next,
-    size_hint: countdownIterator_size_hint,
+    sizeHint: countdownIterator_sizeHint,
   });
   const value$5 = $sizeHint(peek);
   const value$6 = hint(peek);

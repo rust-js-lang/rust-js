@@ -10,7 +10,7 @@ function process(x) {
   return Array.from(x).length;
 }
 
-function process_or_insert_default(map, key) {
+function processOrInsertDefault(map, key) {
   const value = $mutGet(map, key);
   if (value != null) {
     return process(value.value);
@@ -22,7 +22,7 @@ function process_or_insert_default(map, key) {
 function main() {
   const map = new Map();
   map.set(22, "Hello, world");
-  console.log(`${process_or_insert_default(map, 22)} ${process_or_insert_default(map, 66)}`);
+  console.log(`${processOrInsertDefault(map, 22)} ${processOrInsertDefault(map, 66)}`);
   const value = map.get(66);
   console.log(`${value == null ? "None" : `Some(${$debugStr(value)})`}`);
 

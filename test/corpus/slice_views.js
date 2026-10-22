@@ -27,7 +27,7 @@ export function entry() {
   main();
 }
 
-function bump_all(part) {
+function bumpAll(part) {
   for (const x of $mutItems(part)) {
     x.value = (x.value + 100) | 0;
   }
@@ -53,7 +53,7 @@ function main() {
   part[$at(part, 0)] = 7;
   $swap(part, 0, 1);
   console.log(`${part.length} [${v.join(", ")}]`);
-  bump_all($view(v, 0, 2));
+  bumpAll($view(v, 0, 2));
   console.log(`[${v.join(", ")}]`);
   const value$1 = tail(v);
   value$1[$at(value$1, 0)] = -1;

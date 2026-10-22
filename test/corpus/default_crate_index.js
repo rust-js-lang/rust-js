@@ -21,10 +21,10 @@ function fixedAutomaton() {
           f(id);
         }
       },
-      replace_all: (self, replaceWith, BAsRefStr) => {
+      replaceAll: (self, replaceWith, BAsRefStr) => {
         let dst = "";
         fixedAutomaton().each(self, (id) => {
-          dst += BAsRefStr.as_ref(tSliceIndexId_index(replaceWith, id));
+          dst += BAsRefStr.asRef(tSliceIndexId_index(replaceWith, id));
         });
         return dst;
       },
@@ -39,7 +39,7 @@ function fixedAutomaton_ids(fixed) {
 
 function main() {
   console.log(
-    `${fixedAutomaton().replace_all(undefined, ["a", "bb", "ccc"], { as_ref: (value) => value })}`,
+    `${fixedAutomaton().replaceAll(undefined, ["a", "bb", "ccc"], { asRef: (value) => value })}`,
   );
 }
 //# sourceMappingURL=case.js.map

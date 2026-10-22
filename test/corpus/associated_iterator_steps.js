@@ -13,7 +13,7 @@ function wrapIterator_next(wrap, IIterator) {
   return IIterator.next(wrap.inner);
 }
 
-function refWrapIntoIterator_into_iter(wrap, IClone) {
+function refWrapIntoIterator_intoIter(wrap, IClone) {
   return { ...wrap, inner: IClone.clone(wrap.inner) };
 }
 
@@ -41,7 +41,7 @@ export function wrap(inner) {
 function main() {
   const w = wrap({ start: 1, end: 4 });
   let total = 0;
-  const iter = refWrapIntoIterator_into_iter(w, {
+  const iter = refWrapIntoIterator_intoIter(w, {
     clone: (value) => ({ start: value.start, end: value.end }),
   });
   while (true) {

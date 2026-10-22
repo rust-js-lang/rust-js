@@ -35,19 +35,19 @@ function doubled(inner) {
   return { inner };
 }
 
-function sum_doubled(j) {
+function sumDoubled(j) {
   return $iterator({ inner: j }, (iterator) =>
     doubledIterator_next(iterator, { next: $next }),
   ).reduce((a, b) => (a + b) | 0, 0);
 }
 
 // Given back, stepped through what holds it, and through itself.
-function skip_one(d, IIterator) {
+function skipOne(d, IIterator) {
   doubledIterator_next(d, IIterator);
   return d;
 }
 
-function take_two(it, IIterator) {
+function takeTwo(it, IIterator) {
   let n = 0;
   for (const x of $lent($iterator(it, IIterator.next)).take(2)) {
     n = (n + x) | 0;
@@ -85,17 +85,17 @@ export function intoIterKeyed() {
   return $intoIterKeyed;
 }
 
-function sum_keyed(f, FKeyed) {
+function sumKeyed(f, FKeyed) {
   return Iterator.from(f).reduce((a, b) => (a + b) | 0, 0);
 }
 
 // Given on to generic code as a JS iterator, stepped by its impl's `next`.
-function sum_all(j) {
+function sumAll(j) {
   return Iterator.from(j).reduce((a, b) => (a + b) | 0, 0);
 }
 
-function total_of(d, spare, IIterator) {
-  return [sum_all($iterator(d, (iterator) => doubledIterator_next(iterator, IIterator))), spare];
+function totalOf(d, spare, IIterator) {
+  return [sumAll($iterator(d, (iterator) => doubledIterator_next(iterator, IIterator))), spare];
 }
 
 function countdownIterator_next(countdown) {
@@ -129,11 +129,11 @@ function main() {
     }),
   ).toArray();
   console.log(`[${nested.join(", ")}]`);
-  console.log(`${sum_doubled($lazyRange(10, 12))}`);
+  console.log(`${sumDoubled($lazyRange(10, 12))}`);
   const back = doubled([2]);
   doubledIterator_next(back, { next: countdownIterator_next });
   console.log(`${back.inner[0]}`);
-  const skipped = skip_one({ inner: { start: 3, end: 6 } }, { next: $rangeNext });
+  const skipped = skipOne({ inner: { start: 3, end: 6 } }, { next: $rangeNext });
   const start = skipped.inner.start;
   console.log(
     `${start} [${$iterator(skipped, (iterator) =>
@@ -142,9 +142,9 @@ function main() {
       .toArray()
       .join(", ")}]`,
   );
-  const [n, rest] = take_two({ start: 10, end: 15 }, { next: $rangeNext });
+  const [n, rest] = takeTwo({ start: 10, end: 15 }, { next: $rangeNext });
   console.log(`${n} ${rest.start} ${rest.end}`);
-  const [m, left] = take_two([4], { next: countdownIterator_next });
+  const [m, left] = takeTwo([4], { next: countdownIterator_next });
   console.log(`${m} ${left[0]}`);
   console.log(
     `[${Pass.all([$iter([1, undefined, 3])], { next: $nextSome })
@@ -166,8 +166,8 @@ function main() {
   console.log(
     `${value$1 == null ? "None" : `Some(${value$1})`} ${value$2 == null ? "None" : `Some(${value$2})`} ${value$3 == null ? "None" : `Some(${value$3})`}`,
   );
-  console.log(`${sum_keyed($iter([11, 10, 1]), intoIterKeyed())}`);
-  const [t, spare] = total_of(
+  console.log(`${sumKeyed($iter([11, 10, 1]), intoIterKeyed())}`);
+  const [t, spare] = totalOf(
     { inner: { start: 1, end: 4 } },
     { start: 7, end: 8 },
     { next: $rangeNext },

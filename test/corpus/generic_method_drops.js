@@ -27,8 +27,8 @@ function logStore() {
   if ($logStore === undefined) {
     $logStore = {
       put: (arg0, arg1, TDebug, dropT) => logStore_put(arg0.value, arg1, TDebug, dropT),
-      put_all: (arg0, arg1, dropI, dropIIntoIter) =>
-        logStore_put_all(arg0.value, arg1, dropI, dropIIntoIter),
+      putAll: (arg0, arg1, dropI, dropIIntoIter) =>
+        logStore_putAll(arg0.value, arg1, dropI, dropIIntoIter),
       keep: (self, item, TDebug) => {
         logStore_put(self.value, `kept ${TDebug.fmt(item)}`, { fmt: (value) => $debugStr(value) });
         return item;
@@ -52,7 +52,7 @@ function logStore_put(log, item, TDebug, dropT) {
   return result;
 }
 
-function logStore_put_all(log, items, dropI, dropIIntoIter) {
+function logStore_putAll(log, items, dropI, dropIIntoIter) {
   const iter = $intoIter(items);
   while (true) {
     let tmp;
@@ -95,7 +95,7 @@ function main() {
   const store = { value: log };
   fill(store, logStore());
   $assign(log, store.value);
-  logStore_put_all(log, ["a", "b"]);
+  logStore_putAll(log, ["a", "b"]);
   console.log(`[${log[0].map((item) => $debugStr(item)).join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

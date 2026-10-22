@@ -169,7 +169,7 @@ export function validate(contact) {
   } else if (Array.from(name).length > MAX_NAME) {
     fail("name", `a name is at most ${MAX_NAME} characters`);
   }
-  if (!is_email(contact.email)) {
+  if (!isEmail(contact.email)) {
     fail("email", `${$debugStr(contact.email)} isn't an email address`);
   }
   if (contact.age < 13 || contact.age > 130) {
@@ -179,7 +179,7 @@ export function validate(contact) {
 }
 
 /** Text, an `@`, and a domain with a dot that neither starts nor ends it. */
-export function is_email(text) {
+export function isEmail(text) {
   const splitOnce = $splitOnce(text, "@");
   if (splitOnce) {
     const user = splitOnce[0];

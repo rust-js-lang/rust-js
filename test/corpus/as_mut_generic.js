@@ -7,7 +7,7 @@ export function entry() {
 }
 
 function shout(t, TAsMutStr) {
-  const part = TAsMutStr.as_mut({
+  const part = TAsMutStr.asMut({
     get value() {
       return t;
     },
@@ -21,7 +21,7 @@ function shout(t, TAsMutStr) {
 
 function double(t, TAsMutU32Slice) {
   for (const x of $mutItems(
-    TAsMutU32Slice.as_mut({
+    TAsMutU32Slice.asMut({
       get value() {
         return t;
       },
@@ -36,17 +36,17 @@ function double(t, TAsMutU32Slice) {
 }
 
 function main() {
-  console.log(`${shout("hi", { as_mut: (cell) => cell })}`);
-  console.log(`[${double([1, 2], { as_mut: (cell) => cell }).join(", ")}]`);
-  console.log(`[${double([3, 4], { as_mut: (cell) => cell }).join(", ")}]`);
+  console.log(`${shout("hi", { asMut: (cell) => cell })}`);
+  console.log(`[${double([1, 2], { asMut: (cell) => cell }).join(", ")}]`);
+  console.log(`[${double([3, 4], { asMut: (cell) => cell }).join(", ")}]`);
   let s = "ab";
   const t = { value: s };
-  shout(t, { as_mut: (cell) => cell.value });
+  shout(t, { asMut: (cell) => cell.value });
   s = t.value;
   console.log(`${s}`);
   const v = [5, 6];
   const t$1 = { value: v };
-  double(t$1, { as_mut: (cell) => cell.value }).value;
+  double(t$1, { asMut: (cell) => cell.value }).value;
   $assign(v, t$1.value);
   console.log(`[${v.join(", ")}]`);
 }

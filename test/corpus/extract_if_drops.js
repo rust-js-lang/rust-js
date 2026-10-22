@@ -47,7 +47,7 @@ function collected() {
   }
 }
 
-function stopped_early() {
+function stoppedEarly() {
   const w = [[10], [11], [12], [13]];
   try {
     const e = Iterator.from($extractIf(w, 1, undefined, () => true));
@@ -84,7 +84,7 @@ function counted() {
   }
 }
 
-function from_maps() {
+function fromMaps() {
   const m = $treeFrom(
     new Map(),
     $iter([
@@ -177,9 +177,9 @@ function from_maps() {
 
 function main() {
   collected();
-  stopped_early();
+  stoppedEarly();
   counted();
-  from_maps();
+  fromMaps();
   console.log("end");
 }
 //# sourceMappingURL=case.js.map

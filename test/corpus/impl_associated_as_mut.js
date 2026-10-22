@@ -11,7 +11,7 @@ export function entry() {
 function _u8__u8__u8_Collect() {
   if ($_u8__u8__u8_Collect === undefined) {
     $_u8__u8__u8_Collect = {
-      BufferAsMutOptionSlice: () => ({ as_mut: (cell) => cell }),
+      BufferAsMutOptionSlice: () => ({ asMut: (cell) => cell }),
       BufferDefault: () => ({ default: () => [undefined, undefined] }),
       BufferDebug: () => ({
         fmt: (value) =>

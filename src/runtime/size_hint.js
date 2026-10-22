@@ -4,7 +4,7 @@
 // be any bounds that hold. Of a value given as it is, its `Iterator`
 // dictionary's own, `iterator.size_hint`, where its impl has one (ADR 0411).
 function $sizeHint(it, iterator) {
-  if (iterator?.size_hint !== undefined) return iterator.size_hint(it);
+  if (iterator?.sizeHint !== undefined) return iterator.sizeHint(it);
   // An explicit adapter's, its own, of what it steps (ADR 0542).
   if (it.hint !== undefined) return it.hint();
   // What a `$iterator` steps, a JS iterator's, an array's `$iter` given as

@@ -45,7 +45,7 @@ function relay(items, dropIIntoIter) {
 }
 
 /** Its first item dropped, and the iterator given back. */
-function skip_one(it, IIterator, dropI, dropIItem) {
+function skipOne(it, IIterator, dropI, dropIItem) {
   let next;
   try {
     next = IIterator.next(it);
@@ -168,7 +168,7 @@ function main() {
       console.log(`relayed ${found$1 != null ? value$2(found$1) : "none"}`);
       const value = [["g"], ["h"]];
       const tmp = $iter(value);
-      const rest = skip_one(tmp, { next: $next }, $dropEach(loudDrop_drop), loudDrop_drop);
+      const rest = skipOne(tmp, { next: $next }, $dropEach(loudDrop_drop), loudDrop_drop);
       try {
         console.log(`${rest.end - rest.at} left`);
       } finally {

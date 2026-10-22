@@ -38,23 +38,23 @@ function flagsShrU32_shr(flags, by) {
   return [flags[0] >>> (by & 7)];
 }
 
-function flagsBitOrAssign_bitor_assign(flags, other) {
+function flagsBitOrAssign_bitorAssign(flags, other) {
   flags[0] = flags[0] | other[0];
 }
 
-function flagsBitAndAssign_bitand_assign(flags, other) {
+function flagsBitAndAssign_bitandAssign(flags, other) {
   flags[0] = flags[0] & other[0];
 }
 
-function flagsBitXorAssign_bitxor_assign(flags, other) {
+function flagsBitXorAssign_bitxorAssign(flags, other) {
   flags[0] = flags[0] ^ other[0];
 }
 
-function flagsShlAssignU8_shl_assign(flags, by) {
+function flagsShlAssignU8_shlAssign(flags, by) {
   flags[0] = (flags[0] << (by & 7)) & 255 & 7;
 }
 
-function flagsShrAssignU32_shr_assign(flags, by) {
+function flagsShrAssignU32_shrAssign(flags, by) {
   flags[0] = flags[0] >>> (by & 7);
 }
 
@@ -81,22 +81,22 @@ function main() {
   console.log(`${flagsDebug_fmt(refFlagsBitOr_bitor(READ, RUN))}`);
 
   const f = [READ[0]];
-  flagsBitOrAssign_bitor_assign(f, [RUN[0]]);
+  flagsBitOrAssign_bitorAssign(f, [RUN[0]]);
   console.log(`${flagsDebug_fmt(f)}`);
-  flagsBitAndAssign_bitand_assign(f, [RUN[0]]);
+  flagsBitAndAssign_bitandAssign(f, [RUN[0]]);
   console.log(`${flagsDebug_fmt(f)}`);
-  flagsBitXorAssign_bitxor_assign(f, [WRITE[0]]);
+  flagsBitXorAssign_bitxorAssign(f, [WRITE[0]]);
   console.log(`${flagsDebug_fmt(f)}`);
-  flagsShrAssignU32_shr_assign(f, 1);
+  flagsShrAssignU32_shrAssign(f, 1);
   console.log(`${flagsDebug_fmt(f)}`);
-  flagsShlAssignU8_shl_assign(f, 2);
+  flagsShlAssignU8_shlAssign(f, 2);
   console.log(`${flagsDebug_fmt(f)}`);
 
   // An element's, and a field's, as a place `|=` writes.
   const all = [[READ[0]], [WRITE[0]]];
-  flagsBitOrAssign_bitor_assign(all[1], [RUN[0]]);
+  flagsBitOrAssign_bitorAssign(all[1], [RUN[0]]);
   const user = [[READ[0]], "ann"];
-  flagsBitOrAssign_bitor_assign(user[0], [WRITE[0]]);
+  flagsBitOrAssign_bitorAssign(user[0], [WRITE[0]]);
   console.log(
     `[${all.map((item) => flagsDebug_fmt(item)).join(", ")}] ${flagsDebug_fmt(user[0])} ${user[1]}`,
   );

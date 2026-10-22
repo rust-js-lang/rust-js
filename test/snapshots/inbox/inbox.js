@@ -32,9 +32,9 @@ function orderDeserialize_deserialize(json) {
       ["tags", $json.vec($json.string)],
       [["ok", "paid"], $json.bool],
     ],
-    ([order_id, item_name, qty, note, price, tags, paid]) => ({
-      order_id,
-      item_name,
+    ([orderId, itemName, qty, note, price, tags, paid]) => ({
+      orderId,
+      itemName,
       qty,
       note,
       price,
@@ -50,8 +50,8 @@ function orderDebug_fmt(order) {
     "Order",
     ["order_id", "item_name", "qty", "note", "price", "tags", "paid", "cache"],
     [
-      String(order.order_id),
-      $debugStr(order.item_name),
+      String(order.orderId),
+      $debugStr(order.itemName),
       String(order.qty),
       order.note == null ? "None" : `Some(${$debugStr(order.note)})`,
       $debugF64(order.price),
@@ -228,14 +228,14 @@ function eventDeserialize_deserialize(json) {
             ["deltaX", $json.i32],
             ["deltaY", $json.i32],
           ],
-          ([delta_x, delta_y]) => ({ TAG: "Moved", delta_x, delta_y }),
+          ([deltaX, deltaY]) => ({ TAG: "Moved", deltaX, deltaY }),
           { deny: true },
         );
       }
       return content.struct(
         "struct variant Event::Renamed",
         [["OLD_NAME", $json.string]],
-        ([old_name]) => ({ TAG: "Renamed", old_name }),
+        ([oldName]) => ({ TAG: "Renamed", oldName }),
         { deny: true },
       );
     },
@@ -247,10 +247,10 @@ function eventDebug_fmt(event) {
     return "Started";
   }
   if (event.TAG === "Moved") {
-    return `Moved { delta_x: ${event.delta_x}, delta_y: ${event.delta_y} }`;
+    return `Moved { delta_x: ${event.deltaX}, delta_y: ${event.deltaY} }`;
   }
   if (event.TAG === "Renamed") {
-    return `Renamed { old_name: ${$debugStr(event.old_name)} }`;
+    return `Renamed { old_name: ${$debugStr(event.oldName)} }`;
   }
   return "Hidden";
 }
@@ -319,13 +319,13 @@ function holderDeserialize_deserialize(json) {
       ["by_int", $json.map($json.key.number($json.i32), $json.f64)],
       ["nested", $json.option($json.vec($json.option(ptDeserialize_deserialize)))],
     ],
-    ([boxed, shared, queue, set, by_char, by_int, nested]) => ({
+    ([boxed, shared, queue, set, byChar, byInt, nested]) => ({
       boxed,
       shared,
       queue,
       set,
-      by_char,
-      by_int,
+      byChar,
+      byInt,
       nested,
     }),
   );
@@ -342,10 +342,10 @@ function holderDebug_fmt(holder) {
       `{${Array.from($sortedKeys(holder.set, $cmp))
         .map((item) => $debugStr(item, "'"))
         .join(", ")}}`,
-      `{${Array.from(holder.by_char)
+      `{${Array.from(holder.byChar)
         .map(([key, value]) => `${$debugStr(key, "'")}: ${value}`)
         .join(", ")}}`,
-      `{${Array.from(holder.by_int)
+      `{${Array.from(holder.byInt)
         .map(([key, value]) => `${key}: ${$debugF64(value)}`)
         .join(", ")}}`,
       holder.nested == null

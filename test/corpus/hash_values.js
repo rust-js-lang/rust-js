@@ -18,23 +18,23 @@ export function entry() {
 }
 
 function pointHash_hash(point, state, HHasher) {
-  HHasher.write_i16(state, point.x);
-  HHasher.write_i16(state, point.y);
+  HHasher.writeI16(state, point.x);
+  HHasher.writeI16(state, point.y);
 }
 
 export function pointHash() {
   if ($pointHash === undefined) {
-    $pointHash = { hash: pointHash_hash, hash_slice: $hashSlice(pointHash_hash) };
+    $pointHash = { hash: pointHash_hash, hashSlice: $hashSlice(pointHash_hash) };
   }
   return $pointHash;
 }
 
 function shapeHash_hash(shape, state, HHasher) {
-  HHasher.write_isize(state, shape === "Dot" ? 0 : shape.TAG === "Line" ? 1 : 2);
+  HHasher.writeIsize(state, shape === "Dot" ? 0 : shape.TAG === "Line" ? 1 : 2);
   if (shape.TAG === "Line") {
-    HHasher.write_u8(state, shape._0);
+    HHasher.writeU8(state, shape._0);
   } else if (shape.TAG === "Poly") {
-    HHasher.write_length_prefix(state, shape.sides.length);
+    HHasher.writeLengthPrefix(state, shape.sides.length);
     HHasher.write(
       state,
       shape.sides.flatMap((n) => $toBytes(n, 2, true)),
@@ -44,15 +44,15 @@ function shapeHash_hash(shape, state, HHasher) {
 
 export function shapeHash() {
   if ($shapeHash === undefined) {
-    $shapeHash = { hash: shapeHash_hash, hash_slice: $hashSlice(shapeHash_hash) };
+    $shapeHash = { hash: shapeHash_hash, hashSlice: $hashSlice(shapeHash_hash) };
   }
   return $shapeHash;
 }
 
 function labeledHash_hash(labeled, state, THash, HHasher) {
   THash.hash(labeled[0], state, HHasher);
-  HHasher.write_length_prefix(state, labeled[1].length);
-  THash.hash_slice(labeled[1], state, HHasher);
+  HHasher.writeLengthPrefix(state, labeled[1].length);
+  THash.hashSlice(labeled[1], state, HHasher);
 }
 
 export function labeledHash(THash) {
@@ -61,65 +61,65 @@ export function labeledHash(THash) {
   }
   return $traitImpl($labeledHash, [THash], () => {
     const hash = (arg0, arg1, HHasher) => labeledHash_hash(arg0, arg1, THash, HHasher);
-    return { hash, hash_slice: $hashSlice(hash) };
+    return { hash, hashSlice: $hashSlice(hash) };
   });
 }
 
 function smallHash_hash(small, state, HHasher) {
-  HHasher.write_u8(state, { A: 3, B: 7 }[small]);
+  HHasher.writeU8(state, { A: 3, B: 7 }[small]);
 }
 
 export function smallHash() {
   if ($smallHash === undefined) {
-    $smallHash = { hash: smallHash_hash, hash_slice: $hashSlice(smallHash_hash) };
+    $smallHash = { hash: smallHash_hash, hashSlice: $hashSlice(smallHash_hash) };
   }
   return $smallHash;
 }
 
 function wideHash_hash(wide, state, HHasher) {
-  HHasher.write_i64(state, wide === "Low" ? -5n : 1099511627776n);
+  HHasher.writeI64(state, wide === "Low" ? -5n : 1099511627776n);
   if (wide.TAG === "High") {
-    HHasher.write_u8(state, wide._0);
+    HHasher.writeU8(state, wide._0);
   }
 }
 
 export function wideHash() {
   if ($wideHash === undefined) {
-    $wideHash = { hash: wideHash_hash, hash_slice: $hashSlice(wideHash_hash) };
+    $wideHash = { hash: wideHash_hash, hashSlice: $hashSlice(wideHash_hash) };
   }
   return $wideHash;
 }
 
 export function nameHash() {
   if ($nameHash === undefined) {
-    $nameHash = { hash: nameHash_hash, hash_slice: $hashSlice(nameHash_hash) };
+    $nameHash = { hash: nameHash_hash, hashSlice: $hashSlice(nameHash_hash) };
   }
   return $nameHash;
 }
 
 function nameHash_hash(name, state, HHasher) {
-  HHasher.write_str(state, name[0].toLowerCase());
+  HHasher.writeStr(state, name[0].toLowerCase());
 }
 
 export function tokenHash() {
   if ($tokenHash === undefined) {
-    $tokenHash = { hash: tokenHash_hash, hash_slice: tokenHash_hash_slice };
+    $tokenHash = { hash: tokenHash_hash, hashSlice: tokenHash_hashSlice };
   }
   return $tokenHash;
 }
 
 function tokenHash_hash(token, state, HHasher) {
-  HHasher.write_u8(state, 1);
+  HHasher.writeU8(state, 1);
 }
 
-function tokenHash_hash_slice(data, state, HHasher) {
-  HHasher.write_usize(state, data.length);
+function tokenHash_hashSlice(data, state, HHasher) {
+  HHasher.writeUsize(state, data.length);
 }
 
 // A std hasher's own writes and a std type's, where both are known.
 function mix(hasher, n) {
-  hasher.write_u8(n);
-  hasher.write_u8(n);
+  hasher.writeU8(n);
+  hasher.writeU8(n);
 }
 
 function digest(value, THash) {
@@ -134,9 +134,9 @@ function main() {
   console.log(
     `${digest(7, {
       hash: (value, state, H) => {
-        H.write_u32(state, value);
+        H.writeU32(state, value);
       },
-      hash_slice: (items, state, H) => {
+      hashSlice: (items, state, H) => {
         H.write(
           state,
           items.flatMap((n) => $toBytes(n, 4, true)),
@@ -144,9 +144,9 @@ function main() {
       },
     })} ${digest(-7n, {
       hash: (value, state, H) => {
-        H.write_i64(state, value);
+        H.writeI64(state, value);
       },
-      hash_slice: (items, state, H) => {
+      hashSlice: (items, state, H) => {
         H.write(
           state,
           items.flatMap((n) => $toBytes(n, 8, true)),
@@ -154,9 +154,9 @@ function main() {
       },
     })} ${digest(4294967295, {
       hash: (value, state, H) => {
-        H.write_usize(state, value);
+        H.writeUsize(state, value);
       },
-      hash_slice: (items, state, H) => {
+      hashSlice: (items, state, H) => {
         H.write(
           state,
           items.flatMap((n) => $toBytes(n, 4, true)),
@@ -167,20 +167,20 @@ function main() {
   console.log(
     `${digest("text", {
       hash: (value, state, H) => {
-        H.write_str(state, value);
+        H.writeStr(state, value);
       },
-      hash_slice: (items, state, H) => {
+      hashSlice: (items, state, H) => {
         for (const item of items) {
-          H.write_str(state, item);
+          H.writeStr(state, item);
         }
       },
     })} ${digest("text", {
       hash: (value, state, H) => {
-        H.write_str(state, value);
+        H.writeStr(state, value);
       },
-      hash_slice: (items, state, H) => {
+      hashSlice: (items, state, H) => {
         for (const item of items) {
-          H.write_str(state, item);
+          H.writeStr(state, item);
         }
       },
     })}`,
@@ -188,15 +188,15 @@ function main() {
   console.log(
     `${digest([3, "é", true, undefined], {
       hash: (value, state, H) => {
-        H.write_u8(state, value[0]);
-        H.write_u32(state, value[1].codePointAt(0));
-        H.write_u8(state, Number(value[2]));
+        H.writeU8(state, value[0]);
+        H.writeU32(state, value[1].codePointAt(0));
+        H.writeU8(state, Number(value[2]));
       },
-      hash_slice: (items, state, H) => {
+      hashSlice: (items, state, H) => {
         for (const item of items) {
-          H.write_u8(state, item[0]);
-          H.write_u32(state, item[1].codePointAt(0));
-          H.write_u8(state, Number(item[2]));
+          H.writeU8(state, item[0]);
+          H.writeU32(state, item[1].codePointAt(0));
+          H.writeU8(state, Number(item[2]));
         }
       },
     })}`,
@@ -205,38 +205,38 @@ function main() {
     `${digest(-4n, {
       hash: (value, state, H) => {
         if (value != null) {
-          H.write_isize(state, 1);
-          H.write_i64(state, value);
+          H.writeIsize(state, 1);
+          H.writeI64(state, value);
         } else {
-          H.write_isize(state, 0);
+          H.writeIsize(state, 0);
         }
       },
-      hash_slice: (items, state, H) => {
+      hashSlice: (items, state, H) => {
         for (const item of items) {
           if (item != null) {
-            H.write_isize(state, 1);
-            H.write_i64(state, item);
+            H.writeIsize(state, 1);
+            H.writeI64(state, item);
           } else {
-            H.write_isize(state, 0);
+            H.writeIsize(state, 0);
           }
         }
       },
     })} ${digest(undefined, {
       hash: (value, state, H) => {
         if (value != null) {
-          H.write_isize(state, 1);
-          H.write_i64(state, value);
+          H.writeIsize(state, 1);
+          H.writeI64(state, value);
         } else {
-          H.write_isize(state, 0);
+          H.writeIsize(state, 0);
         }
       },
-      hash_slice: (items, state, H) => {
+      hashSlice: (items, state, H) => {
         for (const item of items) {
           if (item != null) {
-            H.write_isize(state, 1);
-            H.write_i64(state, item);
+            H.writeIsize(state, 1);
+            H.writeI64(state, item);
           } else {
-            H.write_isize(state, 0);
+            H.writeIsize(state, 0);
           }
         }
       },
@@ -248,31 +248,31 @@ function main() {
       {
         hash: (value, state, H) => {
           if (value != null) {
-            H.write_isize(state, 1);
+            H.writeIsize(state, 1);
             const value$1 = $someValue(value);
             if (value$1 != null) {
-              H.write_isize(state, 1);
+              H.writeIsize(state, 1);
               const value = $someValue(value$1);
             } else {
-              H.write_isize(state, 0);
+              H.writeIsize(state, 0);
             }
           } else {
-            H.write_isize(state, 0);
+            H.writeIsize(state, 0);
           }
         },
-        hash_slice: (items, state, H) => {
+        hashSlice: (items, state, H) => {
           for (const item of items) {
             if (item != null) {
-              H.write_isize(state, 1);
+              H.writeIsize(state, 1);
               const value = $someValue(item);
               if (value != null) {
-                H.write_isize(state, 1);
+                H.writeIsize(state, 1);
                 const value$1 = $someValue(value);
               } else {
-                H.write_isize(state, 0);
+                H.writeIsize(state, 0);
               }
             } else {
-              H.write_isize(state, 0);
+              H.writeIsize(state, 0);
             }
           }
         },
@@ -282,15 +282,15 @@ function main() {
   console.log(
     `${digest([1, 2, 3], {
       hash: (value, state, H) => {
-        H.write_length_prefix(state, value.length);
+        H.writeLengthPrefix(state, value.length);
         H.write(
           state,
           value.flatMap((n) => $toBytes(n, 2, true)),
         );
       },
-      hash_slice: (items, state, H) => {
+      hashSlice: (items, state, H) => {
         for (const item of items) {
-          H.write_length_prefix(state, item.length);
+          H.writeLengthPrefix(state, item.length);
           H.write(
             state,
             item.flatMap((n) => $toBytes(n, 2, true)),
@@ -299,15 +299,15 @@ function main() {
       },
     })} ${digest([1, -1], {
       hash: (value, state, H) => {
-        H.write_length_prefix(state, value.length);
+        H.writeLengthPrefix(state, value.length);
         H.write(
           state,
           value.flatMap((n) => $toBytes(n, 1, true)),
         );
       },
-      hash_slice: (items, state, H) => {
+      hashSlice: (items, state, H) => {
         for (const item of items) {
-          H.write_length_prefix(state, item.length);
+          H.writeLengthPrefix(state, item.length);
           H.write(
             state,
             item.flatMap((n) => $toBytes(n, 1, true)),
@@ -319,31 +319,31 @@ function main() {
   console.log(
     `${digest(["a", "b"], {
       hash: (value, state, H) => {
-        H.write_length_prefix(state, value.length);
+        H.writeLengthPrefix(state, value.length);
         for (const item of value) {
-          H.write_u32(state, item.codePointAt(0));
+          H.writeU32(state, item.codePointAt(0));
         }
       },
-      hash_slice: (items, state, H) => {
+      hashSlice: (items, state, H) => {
         for (const item of items) {
-          H.write_length_prefix(state, item.length);
+          H.writeLengthPrefix(state, item.length);
           for (const item$1 of item) {
-            H.write_u32(state, item$1.codePointAt(0));
+            H.writeU32(state, item$1.codePointAt(0));
           }
         }
       },
     })} ${digest([1, 2], {
       hash: (value, state, H) => {
-        H.write_length_prefix(state, value.length);
+        H.writeLengthPrefix(state, value.length);
         for (const item of value) {
-          H.write_u32(state, item);
+          H.writeU32(state, item);
         }
       },
-      hash_slice: (items, state, H) => {
+      hashSlice: (items, state, H) => {
         for (const item of items) {
-          H.write_length_prefix(state, item.length);
+          H.writeLengthPrefix(state, item.length);
           for (const item$1 of item) {
-            H.write_u32(state, item$1);
+            H.writeU32(state, item$1);
           }
         }
       },
@@ -352,12 +352,12 @@ function main() {
   console.log(
     `${digest(Array.from(new TextEncoder().encode("bytes")), {
       hash: (value, state, H) => {
-        H.write_length_prefix(state, value.length);
+        H.writeLengthPrefix(state, value.length);
         H.write(state, value);
       },
-      hash_slice: (items, state, H) => {
+      hashSlice: (items, state, H) => {
         for (const item of items) {
-          H.write_length_prefix(state, item.length);
+          H.writeLengthPrefix(state, item.length);
           H.write(state, item);
         }
       },
@@ -369,42 +369,42 @@ function main() {
     `${digest(ok, {
       hash: (value, state, H) => {
         if (value.TAG === "Ok") {
-          H.write_isize(state, 0);
-          H.write_u32(state, value._0);
+          H.writeIsize(state, 0);
+          H.writeU32(state, value._0);
         } else {
-          H.write_isize(state, 1);
-          H.write_str(state, value._0);
+          H.writeIsize(state, 1);
+          H.writeStr(state, value._0);
         }
       },
-      hash_slice: (items, state, H) => {
+      hashSlice: (items, state, H) => {
         for (const item of items) {
           if (item.TAG === "Ok") {
-            H.write_isize(state, 0);
-            H.write_u32(state, item._0);
+            H.writeIsize(state, 0);
+            H.writeU32(state, item._0);
           } else {
-            H.write_isize(state, 1);
-            H.write_str(state, item._0);
+            H.writeIsize(state, 1);
+            H.writeStr(state, item._0);
           }
         }
       },
     })} ${digest(err, {
       hash: (value, state, H) => {
         if (value.TAG === "Ok") {
-          H.write_isize(state, 0);
-          H.write_u32(state, value._0);
+          H.writeIsize(state, 0);
+          H.writeU32(state, value._0);
         } else {
-          H.write_isize(state, 1);
-          H.write_str(state, value._0);
+          H.writeIsize(state, 1);
+          H.writeStr(state, value._0);
         }
       },
-      hash_slice: (items, state, H) => {
+      hashSlice: (items, state, H) => {
         for (const item of items) {
           if (item.TAG === "Ok") {
-            H.write_isize(state, 0);
-            H.write_u32(state, item._0);
+            H.writeIsize(state, 0);
+            H.writeU32(state, item._0);
           } else {
-            H.write_isize(state, 1);
-            H.write_str(state, item._0);
+            H.writeIsize(state, 1);
+            H.writeStr(state, item._0);
           }
         }
       },
@@ -427,15 +427,15 @@ function main() {
       ],
       {
         hash: (value, state, H) => {
-          H.write_u32(state, value[0]);
-          H.write_str(state, value[1]);
-          H.write_u32(state, value[2].value);
+          H.writeU32(state, value[0]);
+          H.writeStr(state, value[1]);
+          H.writeU32(state, value[2].value);
         },
-        hash_slice: (items, state, H) => {
+        hashSlice: (items, state, H) => {
           for (const item of items) {
-            H.write_u32(state, item[0]);
-            H.write_str(state, item[1]);
-            H.write_u32(state, item[2].value);
+            H.writeU32(state, item[0]);
+            H.writeStr(state, item[1]);
+            H.writeU32(state, item[2].value);
           }
         },
       },
@@ -445,29 +445,29 @@ function main() {
     `${digest(9, {
       hash: (value, state, H) => {
         if (value) {
-          H.write_isize(state, 1);
-          H.write_u32(state, value);
+          H.writeIsize(state, 1);
+          H.writeU32(state, value);
         } else {
-          H.write_isize(state, 0);
+          H.writeIsize(state, 0);
         }
       },
-      hash_slice: (items, state, H) => {
+      hashSlice: (items, state, H) => {
         for (const item of items) {
           if (item) {
-            H.write_isize(state, 1);
-            H.write_u32(state, item);
+            H.writeIsize(state, 1);
+            H.writeU32(state, item);
           } else {
-            H.write_isize(state, 0);
+            H.writeIsize(state, 0);
           }
         }
       },
     })} ${digest($cmp(3, 4), {
       hash: (value, state, H) => {
-        H.write_i8(state, value);
+        H.writeI8(state, value);
       },
-      hash_slice: (items, state, H) => {
+      hashSlice: (items, state, H) => {
         for (const item of items) {
-          H.write_i8(state, item);
+          H.writeI8(state, item);
         }
       },
     })}`,
@@ -482,25 +482,25 @@ function main() {
   console.log(
     `${digest([p, undefined], {
       hash: (value, state, H) => {
-        H.write_length_prefix(state, value.length);
+        H.writeLengthPrefix(state, value.length);
         for (const item of value) {
           if (item) {
-            H.write_isize(state, 1);
+            H.writeIsize(state, 1);
             pointHash().hash(item, state, H);
           } else {
-            H.write_isize(state, 0);
+            H.writeIsize(state, 0);
           }
         }
       },
-      hash_slice: (items, state, H) => {
+      hashSlice: (items, state, H) => {
         for (const item of items) {
-          H.write_length_prefix(state, item.length);
+          H.writeLengthPrefix(state, item.length);
           for (const item$1 of item) {
             if (item$1) {
-              H.write_isize(state, 1);
+              H.writeIsize(state, 1);
               pointHash().hash(item$1, state, H);
             } else {
-              H.write_isize(state, 0);
+              H.writeIsize(state, 0);
             }
           }
         }
@@ -513,11 +513,11 @@ function main() {
       ["a", ["b"]],
       labeledHash({
         hash: (value, state, H) => {
-          H.write_str(state, value);
+          H.writeStr(state, value);
         },
-        hash_slice: (items, state, H) => {
+        hashSlice: (items, state, H) => {
           for (const item of items) {
-            H.write_str(state, item);
+            H.writeStr(state, item);
           }
         },
       }),
@@ -529,29 +529,29 @@ function main() {
   console.log(
     `${digest([undefined, undefined], {
       hash: (value, state, H) => {
-        H.write_length_prefix(state, value.length);
-        tokenHash().hash_slice(value, state, H);
+        H.writeLengthPrefix(state, value.length);
+        tokenHash().hashSlice(value, state, H);
       },
-      hash_slice: (items, state, H) => {
+      hashSlice: (items, state, H) => {
         for (const item of items) {
-          H.write_length_prefix(state, item.length);
-          tokenHash().hash_slice(item, state, H);
+          H.writeLengthPrefix(state, item.length);
+          tokenHash().hashSlice(item, state, H);
         }
       },
     })} ${digest([[undefined], [undefined]], {
       hash: (value, state, H) => {
-        H.write_length_prefix(state, value.length);
+        H.writeLengthPrefix(state, value.length);
         for (const item of value) {
-          H.write_length_prefix(state, item.length);
-          tokenHash().hash_slice(item, state, H);
+          H.writeLengthPrefix(state, item.length);
+          tokenHash().hashSlice(item, state, H);
         }
       },
-      hash_slice: (items, state, H) => {
+      hashSlice: (items, state, H) => {
         for (const item of items) {
-          H.write_length_prefix(state, item.length);
+          H.writeLengthPrefix(state, item.length);
           for (const item$1 of item) {
-            H.write_length_prefix(state, item$1.length);
-            tokenHash().hash_slice(item$1, state, H);
+            H.writeLengthPrefix(state, item$1.length);
+            tokenHash().hashSlice(item$1, state, H);
           }
         }
       },
@@ -559,16 +559,16 @@ function main() {
   );
 
   const hasher = new $SipHasher(1, 3);
-  hasher.write_u32(7);
+  hasher.writeU32(7);
   const value$1 = [1, 2];
   hasher.write(value$1.flatMap((n) => $toBytes(n, 4, true)));
   const value$2 = [{ x: 0, y: 0 }];
-  pointHash().hash_slice(value$2, { value: hasher }, $sipHasher);
+  pointHash().hashSlice(value$2, { value: hasher }, $sipHasher);
   mix(hasher, 4);
   const before = hasher.clone();
-  hasher.write_u8(1);
+  hasher.writeU8(1);
   const first = hasher.finish();
-  hasher.write_u8(2);
+  hasher.writeU8(2);
   const finish = hasher.finish();
   const arg = before.finish();
   console.log(`${first} ${finish} ${arg}`);

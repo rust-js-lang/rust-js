@@ -53,11 +53,10 @@ Its props, if it has any, are a struct, and a field named `children` holds
 its children. A tuple of children is several of them, a `Vec` is a list
 whose items need keys, and `None` renders nothing.
 
-Rust is written as Rust is, and what's React's has React's names in JS: a
-props field `on_press` is the prop `onPress`, written `onPress={..}` in
-`jsx!` and only so, and a `pub fn use_clicks()` that calls a hook is the
-hook `useClicks`, which React's rules and React Compiler find by that name.
-Everything else keeps its Rust name ([ADR 0435](../docs/decisions/0435-rust-and-react-two-worlds.md)).
+Rust is written as Rust is, and every name is camelCase in JS: a props
+field `on_press` is the prop `onPress`, written `onPress={..}` in `jsx!`
+and only so, and a `pub fn use_clicks()` is the hook `useClicks`, which
+React's rules and React Compiler find by that name ([ADR 0573](../docs/decisions/0573-every-rust-name-is-camel-case-in-js.md)).
 
 **Hooks** are React's, in snake case, with a `_with` variant for an optional
 argument: `use_state`, `use_reducer`, `use_context`, `use_ref`,

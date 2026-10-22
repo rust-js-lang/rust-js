@@ -18,13 +18,13 @@ export function entry() {
   main();
 }
 
-function reversed_twice(it, IIterator, IDoubleEndedIterator, IClone) {
+function reversedTwice(it, IIterator, IDoubleEndedIterator, IClone) {
   const back = $iterator(it, IDoubleEndedIterator.next_back);
   $next(back);
   return [$iteratorWith(back, (value) => IClone.clone(value)).toArray(), back.toArray()];
 }
 
-function back_len(it) {
+function backLen(it) {
   const back = $rev(it);
   $next(back);
   return back.len();
@@ -83,24 +83,22 @@ function main() {
   console.log(
     `${value$2 == null ? "None" : `Some(${value$2})`} [${back.items.slice(back.at, back.end).join(", ")}] ${back.end - back.at}`,
   );
-  const reversedTwice = reversed_twice(
+  const value$3 = reversedTwice(
     $iter([1, 2, 3]),
     { next: $next },
     { next_back: $nextBack },
     { clone: (value) => $iter(value.items.slice(value.at, value.end)) },
   );
   console.log(
-    `([${reversedTwice[0].join(", ")}], [${reversedTwice[1].join(", ")}]) ${back_len(
-      $iter([4, 5, 6]),
-    )}`,
+    `([${value$3[0].join(", ")}], [${value$3[1].join(", ")}]) ${backLen($iter([4, 5, 6]))}`,
   );
 
   const rows = $iter([[1], [2]].toReversed());
   const copied = $iter(rows.items.slice(rows.at, rows.end).map((item) => item.slice()));
   $unwrap($next(copied)).push(9);
-  const value$3 = $next(rows);
+  const value$4 = $next(rows);
   console.log(
-    `${value$3 == null ? "None" : `Some([${value$3.join(", ")}])`} ${((value) => (value == null ? "None" : `Some([${value.join(", ")}])`))($next(copied))}`,
+    `${value$4 == null ? "None" : `Some([${value$4.join(", ")}])`} ${((value) => (value == null ? "None" : `Some([${value.join(", ")}])`))($next(copied))}`,
   );
 }
 //# sourceMappingURL=case.js.map

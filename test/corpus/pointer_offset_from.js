@@ -6,7 +6,7 @@ export function entry() {
   main();
 }
 
-function index_of(items, at) {
+function indexOf(items, at) {
   return $ptrOffsetFrom(at, $ptr(items, 0));
 }
 
@@ -15,6 +15,6 @@ function main() {
   const p = $ptr(xs, 0);
   const q = $ptrAdd(p, 3);
   console.log(`${$ptrOffsetFrom(q, p)} ${$ptrOffsetFrom(p, q)} ${$ptrOffsetFrom(p, p)}`);
-  console.log(`${index_of(xs, $ptrAdd(p, 2))}`);
+  console.log(`${indexOf(xs, $ptrAdd(p, 2))}`);
 }
 //# sourceMappingURL=case.js.map

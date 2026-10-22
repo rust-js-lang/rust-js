@@ -12,8 +12,8 @@ function _A__A_Collect() {
   if ($_A__A_Collect === undefined) {
     $_A__A_Collect = {
       BufferDefault: () => ({ default: () => [undefined, undefined] }),
-      BufferAsRefOptionSlice: () => ({ as_ref: (value) => value }),
-      BufferAsMutOptionSlice: () => ({ as_mut: (cell) => cell }),
+      BufferAsRefOptionSlice: () => ({ asRef: (value) => value }),
+      BufferAsMutOptionSlice: () => ({ asMut: (cell) => cell }),
     };
   }
   return $_A__A_Collect;
@@ -25,7 +25,7 @@ const Buffer = {
     for (const [slot, item] of $lazyZip(
       $iter(
         $mutItems(
-          TCollect.BufferAsMutOptionSlice().as_mut({
+          TCollect.BufferAsMutOptionSlice().asMut({
             get value() {
               return buf;
             },
@@ -45,13 +45,13 @@ const Buffer = {
 
   held(buffer, TCollect) {
     return TCollect.BufferAsRefOptionSlice()
-      .as_ref(buffer.buf)
+      .asRef(buffer.buf)
       .filter((item) => item != null).length;
   },
 };
 
 function bufferIterator_next(buffer, TCollect) {
-  const s = TCollect.BufferAsMutOptionSlice().as_mut({
+  const s = TCollect.BufferAsMutOptionSlice().asMut({
     get value() {
       return buffer.buf;
     },

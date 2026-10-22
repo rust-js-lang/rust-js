@@ -14,13 +14,13 @@ function fullDebug_fmt(full, TDebug) {
 
 export function smallWrite() {
   if ($smallWrite === undefined) {
-    const write_str = (arg0, arg1) => smallWrite_write_str(arg0.value, arg1);
-    $smallWrite = { write_str, write_char: write_str, write_fmt: write_str };
+    const writeStr = (arg0, arg1) => smallWrite_writeStr(arg0.value, arg1);
+    $smallWrite = { writeStr, writeChar: writeStr, writeFmt: writeStr };
   }
   return $smallWrite;
 }
 
-function smallWrite_write_str(small, s) {
+function smallWrite_writeStr(small, s) {
   if (($byteLen(small.text) + $byteLen(s)) >>> 0 > small.cap) {
     return $fmtError();
   }
@@ -29,7 +29,7 @@ function smallWrite_write_str(small, s) {
 
 function make(cap, args) {
   const v = { text: "", cap };
-  const result = $writeTry(() => smallWrite_write_str(v, args));
+  const result = $writeTry(() => smallWrite_writeStr(v, args));
   const result$1 = result === undefined ? { TAG: "Ok" } : { TAG: "Err", _0: [result, cap] };
   if (result$1.TAG === "Err") {
     return result$1;
@@ -39,13 +39,13 @@ function make(cap, args) {
 
 function counted(cap, text) {
   const v = { text: "", cap };
-  const result = $writeTry(() => smallWrite_write_str(v, text));
+  const result = $writeTry(() => smallWrite_writeStr(v, text));
   return result === undefined ? { TAG: "Ok", _0: $byteLen(v.text) } : { TAG: "Err", _0: result };
 }
 
 function nested(cap) {
   const v = { text: "", cap };
-  const result = $writeTry(() => smallWrite_write_str(v, "abc"));
+  const result = $writeTry(() => smallWrite_writeStr(v, "abc"));
   return result === undefined ? { TAG: "Ok", _0: { TAG: "Ok" } } : { TAG: "Err", _0: result };
 }
 

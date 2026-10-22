@@ -5,15 +5,18 @@ import { decode, expected, type Outcome } from "./oracle";
 import { callInNode } from "./programs";
 import { buildCompiler, compiler, fixture, root, run } from "./support";
 
-const cases: [string, boolean | number][] = [
-  ...["entry_default", "entry_trait_assignment", "entry_eager", "entry_overwrite", "entry_lazy", "checked_overwrite"].flatMap(name =>
-    [false, true].map(present => [name, present] as [string, boolean])),
-  ...["generic_clones", "clones", "rebuilt_clones", "clone_evaluation"].flatMap(name =>
-    [0, 1, 3].map(n => [name, n] as [string, number])),
-  ...["nested_struct_literal", "struct_in_base_block", "discarded_nested_box", "operand_prerequisites"].flatMap(name =>
-    [0, 10].map(n => [name, n] as [string, number])),
-  ...["nested_struct_updates", "discarded_nested_insert"].flatMap(name =>
-    [false, true].map(value => [name, value] as [string, boolean])),
+// Each case's Rust name, its JS name (camelCase, ADR 0573) and argument.
+const cases: [string, string, boolean | number][] = [
+  ...([["entry_default", "entryDefault"], ["entry_trait_assignment", "entryTraitAssignment"], ["entry_eager", "entryEager"],
+    ["entry_overwrite", "entryOverwrite"], ["entry_lazy", "entryLazy"], ["checked_overwrite", "checkedOverwrite"]] as const).flatMap(([name, jsName]) =>
+    [false, true].map(present => [name, jsName, present] as [string, string, boolean])),
+  ...([["generic_clones", "genericClones"], ["clones", "clones"], ["rebuilt_clones", "rebuiltClones"], ["clone_evaluation", "cloneEvaluation"]] as const).flatMap(([name, jsName]) =>
+    [0, 1, 3].map(n => [name, jsName, n] as [string, string, number])),
+  ...([["nested_struct_literal", "nestedStructLiteral"], ["struct_in_base_block", "structInBaseBlock"], ["discarded_nested_box", "discardedNestedBox"],
+    ["operand_prerequisites", "operandPrerequisites"]] as const).flatMap(([name, jsName]) =>
+    [0, 10].map(n => [name, jsName, n] as [string, string, number])),
+  ...([["nested_struct_updates", "nestedStructUpdates"], ["discarded_nested_insert", "discardedNestedInsert"]] as const).flatMap(([name, jsName]) =>
+    [false, true].map(value => [name, jsName, value] as [string, string, boolean])),
 ];
 // What each call did, natively and as JS under Node (ADR 0095).
 let js: Outcome[];
@@ -30,7 +33,7 @@ fn message(e: Box<dyn std::any::Any + Send>) -> String {
   e.downcast_ref::<&str>().map(|s| s.to_string()).or_else(|| e.downcast_ref::<String>().cloned())
     .expect("a panic with a message")
 }
-fn main() { ${cases.map(([name, arg]) => `
+fn main() { ${cases.map(([name, , arg]) => `
   match std::panic::catch_unwind(|| cases::${name}(${arg})) {
     Ok(value) => println!("{{\\"value\\":{:?}}}", value),
     Err(e) => println!("{{\\"panic\\":{:?}}}", message(e)),
@@ -38,11 +41,11 @@ fn main() { ${cases.map(([name, arg]) => `
   run(["rustc", "--edition=2024", "-Coverflow-checks=off", "-Awarnings", join(dir, "native.rs"), "-o", join(dir, "native")]);
   native = run([join(dir, "native")]).trim().split("\n").map(line => expected(decode(line)));
   run([compiler, join(dir, "cases.rs"), "-o", join(dir, "cases.js")]);
-  const calls = cases.map(([name, arg]) => ({ module: "cases", fn: name, args: [arg] }));
+  const calls = cases.map(([, jsName, arg]) => ({ module: "cases", fn: jsName, args: [arg] }));
   js = callInNode({ cases: join(dir, "cases.js") }, calls, dir);
 }, 600_000);
 
-for (const [index, [name, arg]] of cases.entries()) {
+for (const [index, [name, , arg]] of cases.entries()) {
   test(`${name}(${arg}) preserves native values, effects and panics`, () => {
     expect(js[index]).toStrictEqual(native[index]);
   });

@@ -56,28 +56,24 @@ function tCounting(TIterator, dropT, dropTItem) {
 }
 
 function pHash_hash(p, state, HHasher, drop__H) {
-  HHasher.write_u8(state, p[0]);
-  HHasher.write_u8(state, p[1]);
+  HHasher.writeU8(state, p[0]);
+  HHasher.writeU8(state, p[1]);
 }
 
 export function pHash() {
   if ($pHash === undefined) {
-    $pHash = { hash: pHash_hash, hash_slice: $hashSlice(pHash_hash) };
+    $pHash = { hash: pHash_hash, hashSlice: $hashSlice(pHash_hash) };
   }
   return $pHash;
 }
 
 function loudHash_hash(loud, state, HHasher, drop__H) {
-  HHasher.write_u8(state, loud[0]);
+  HHasher.writeU8(state, loud[0]);
 }
 
 export function loudHash() {
   if ($loudHash === undefined) {
-    $loudHash = {
-      hash: loudHash_hash,
-      hash_slice: $hashSlice(loudHash_hash),
-      $drop: loudDrop_drop,
-    };
+    $loudHash = { hash: loudHash_hash, hashSlice: $hashSlice(loudHash_hash), $drop: loudDrop_drop };
   }
   return $loudHash;
 }
@@ -91,11 +87,11 @@ function main() {
     $iter(["x", "y", "x"]),
     {
       hash: (value, state, H) => {
-        H.write_str(state, value);
+        H.writeStr(state, value);
       },
-      hash_slice: (items, state, H) => {
+      hashSlice: (items, state, H) => {
         for (const item of items) {
-          H.write_str(state, item);
+          H.writeStr(state, item);
         }
       },
     },

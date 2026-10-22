@@ -23,12 +23,12 @@ function f64Signed() {
   if ($f64Signed === undefined) {
     $f64Signed = {
       Zero: () => f64Zero(),
-      PartialOrd: () => ({ partial_cmp: $partialCmp }),
+      PartialOrd: () => ({ partialCmp: $partialCmp }),
       Copy: () => ({ copy: (value) => value }),
       Sub: () => ({ sub: (a, b) => a - b }),
       Neg: () => ({ neg: (value) => -value }),
       negative: (self) => self < f64Zero_zero(),
-      at_most_zero: (self) => self <= f64Zero_zero(),
+      atMostZero: (self) => self <= f64Zero_zero(),
       distance: (self, other) => {
         if (self < other) {
           return other - self;
@@ -55,12 +55,12 @@ function i32Signed() {
   if ($i32Signed === undefined) {
     $i32Signed = {
       Zero: () => i32Zero(),
-      PartialOrd: () => ({ partial_cmp: $cmp }),
+      PartialOrd: () => ({ partialCmp: $cmp }),
       Copy: () => ({ copy: (value) => value }),
       Sub: () => ({ sub: (a, b) => (a - b) | 0 }),
       Neg: () => ({ neg: (value) => -value | 0 }),
       negative: (self) => self < i32Zero_zero(),
-      at_most_zero: (self) => self <= i32Zero_zero(),
+      atMostZero: (self) => self <= i32Zero_zero(),
       distance: (self, other) => {
         if (self < other) {
           return (other - self) | 0;
@@ -77,7 +77,7 @@ function u8One() {
     $u8One = {
       Mul: () => ({ mul: (a, b) => (a * b) & 255 }),
       one: u8One_one,
-      is_one: (self, SelfPartialEq) => self === u8One_one(),
+      isOne: (self, SelfPartialEq) => self === u8One_one(),
     };
   }
   return $u8One;
@@ -94,7 +94,7 @@ function wrappingOne(TOne, WrappingMul) {
   return $traitImpl($wrappingOne, [TOne, WrappingMul], () => ({
     Mul: () => WrappingMul,
     one: () => wrappingOne_one(TOne, WrappingMul),
-    is_one: (self, SelfPartialEq) => SelfPartialEq.eq(self, wrappingOne_one(TOne, WrappingMul)),
+    isOne: (self, SelfPartialEq) => SelfPartialEq.eq(self, wrappingOne_one(TOne, WrappingMul)),
   }));
 }
 
@@ -104,10 +104,10 @@ function wrappingOne_one(TOne, WrappingMul) {
 
 function main() {
   console.log(
-    `${f64Signed().negative(-1.5)} ${f64Signed().negative(2)} ${f64Signed().negative(NaN)} ${i32Signed().at_most_zero(0)}`,
+    `${f64Signed().negative(-1.5)} ${f64Signed().negative(2)} ${f64Signed().negative(NaN)} ${i32Signed().atMostZero(0)}`,
   );
   console.log(
-    `${wrappingOne(u8One(), { mul: (a, b) => [(a[0] * b[0]) & 255] }).is_one([1], { eq: $eq })} ${wrappingOne(u8One(), { mul: (a, b) => [(a[0] * b[0]) & 255] }).is_one([3], { eq: $eq })} ${u8One().is_one(1, { eq: (a, b) => a === b })}`,
+    `${wrappingOne(u8One(), { mul: (a, b) => [(a[0] * b[0]) & 255] }).isOne([1], { eq: $eq })} ${wrappingOne(u8One(), { mul: (a, b) => [(a[0] * b[0]) & 255] }).isOne([3], { eq: $eq })} ${u8One().isOne(1, { eq: (a, b) => a === b })}`,
   );
   console.log(
     `${$displayF64(f64Signed().distance(2.5, -1))} ${i32Signed().distance(7, 3)} ${i32Signed().distance(-5, 5)}`,

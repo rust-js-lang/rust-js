@@ -19,8 +19,10 @@ pub struct InstantConfig<'a> {
     /// `"warning"` or `"experimental-error"`.
     pub level: Option<&'a str>,
     /// Requests it's checked of.
+    #[cfg_attr(rust_js, rust_js::name = "unstable_samples")]
     pub unstable_samples: Option<&'a [InstantSample<'a>]>,
     /// The routes it's checked from.
+    #[cfg_attr(rust_js, rust_js::name = "unstable_from")]
     pub unstable_from: Option<&'a [&'a str]>,
     #[cfg_attr(rust_js, rust_js::name = "unstable_disableValidation")]
     pub unstable_disable_validation: Option<bool>,

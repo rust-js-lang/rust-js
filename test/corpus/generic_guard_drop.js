@@ -33,7 +33,7 @@ function shown(items, DDeref, dropD) {
   }
 }
 
-function first_or(items, or, DDeref, dropD) {
+function firstOr(items, or, DDeref, dropD) {
   let result;
   try {
     const first = DDeref.deref(items)[0];
@@ -77,7 +77,7 @@ function main() {
   }
   console.log(`${length($borrowMut(cell, true), { deref: (x) => x.value }, $unborrow)}`);
   shown($borrow(cell, true), { deref: (x) => x.value }, $unborrow);
-  console.log(`${first_or($borrow(cell, true), 0, { deref: (x) => x.value }, $unborrow)}`);
+  console.log(`${firstOr($borrow(cell, true), 0, { deref: (x) => x.value }, $unborrow)}`);
   const log = { value: [] };
   const held = { items: [4, 5, 6], log };
   const value = length(held, holderDeref(), holderDrop_drop);

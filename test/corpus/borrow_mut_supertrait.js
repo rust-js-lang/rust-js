@@ -12,15 +12,15 @@ export function vecPoolIndex() {
   if ($vecPoolIndex === undefined) {
     $vecPoolIndex = {
       BorrowMut: () => ({
-        borrow_mut: (value) => value,
+        borrowMut: (value) => value,
         Borrow: () => ({ borrow: (value) => value }),
       }),
       len: (self) => ({ borrow: (value) => value }).borrow(self).length,
       first: (self) => {
         const value$1 = {
-          borrow_mut: (value) => value,
+          borrowMut: (value) => value,
           Borrow: () => ({ borrow: (value) => value }),
-        }.borrow_mut(self).value;
+        }.borrowMut(self).value;
         const value = (value$1[$at(value$1, 0)] + 1) >>> 0;
         value$1[0] = value;
         return $index({ borrow: (value) => value }.borrow(self.value), 0);
@@ -36,15 +36,15 @@ export function _usize__K_PoolIndex(K) {
   }
   return $traitImpl($_usize__K_PoolIndex, [K], () => ({
     BorrowMut: () => ({
-      borrow_mut: (value) => value,
+      borrowMut: (value) => value,
       Borrow: () => ({ borrow: (value) => value }),
     }),
     len: (self) => ({ borrow: (value) => value }).borrow(self).length,
     first: (self) => {
       const value$1 = {
-        borrow_mut: (value) => value,
+        borrowMut: (value) => value,
         Borrow: () => ({ borrow: (value) => value }),
-      }.borrow_mut(self).value;
+      }.borrowMut(self).value;
       const value = (value$1[$at(value$1, 0)] + 1) >>> 0;
       value$1[0] = value;
       return $index({ borrow: (value) => value }.borrow(self.value), 0);

@@ -10,23 +10,23 @@ export function entry() {
 
 export function nameAsRefPath() {
   if ($nameAsRefPath === undefined) {
-    $nameAsRefPath = { as_ref: nameAsRefPath_as_ref };
+    $nameAsRefPath = { asRef: nameAsRefPath_asRef };
   }
   return $nameAsRefPath;
 }
 
-function nameAsRefPath_as_ref(name) {
+function nameAsRefPath_asRef(name) {
   return name.text;
 }
 
 function ext(p, PAsRefPath) {
-  const option = $pathExtension(PAsRefPath.as_ref(p));
+  const option = $pathExtension(PAsRefPath.asRef(p));
   return option != null ? option : undefined;
 }
 
 function main() {
   const n = { text: "a/b.rs" };
-  const p = nameAsRefPath_as_ref(n);
+  const p = nameAsRefPath_asRef(n);
   console.log(`${p}`);
   const value = ext(n, nameAsRefPath());
   console.log(`${value == null ? "None" : `Some(${$debugStr(value)})`}`);

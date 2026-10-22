@@ -4,7 +4,7 @@ import {
   iterator_peekable,
   peekableClone,
   peekableDebug_fmt,
-  peekableDoubleEndedIterator_next_back,
+  peekableDoubleEndedIterator_nextBack,
 } from "@rust-js/std/iter.js";
 import {
   $iter,
@@ -22,7 +22,7 @@ export function entry() {
   main();
 }
 
-function first_two(it) {
+function firstTwo(it) {
   const p = iterator_peekable(it, { next: $next });
   const a = $next(p);
   const b = $nextIf(p, (x) => x % 2 === 0);
@@ -30,11 +30,11 @@ function first_two(it) {
   return [a, b, c];
 }
 
-function from_back(it) {
+function fromBack(it) {
   const p = iterator_peekable(it, { next: $next });
-  const out = [peekableDoubleEndedIterator_next_back(p, { next_back: $nextBack }) ?? 0];
+  const out = [peekableDoubleEndedIterator_nextBack(p, { next_back: $nextBack }) ?? 0];
   out.push($next(p) ?? 0);
-  out.push(peekableDoubleEndedIterator_next_back(p, { next_back: $nextBack }) ?? 0);
+  out.push(peekableDoubleEndedIterator_nextBack(p, { next_back: $nextBack }) ?? 0);
   return out;
 }
 
@@ -49,21 +49,21 @@ function summed(it, IIterator, IClone, PeekableClone) {
 
 function main() {
   const v = [1, 2, 3, 4];
-  const value = first_two($iter(v));
+  const value = firstTwo($iter(v));
   console.log(
     `(${value[0] == null ? "None" : `Some(${value[0]})`}, ${value[1] == null ? "None" : `Some(${value[1]})`}, ${value[2] == null ? "None" : `Some(${value[2]})`})`,
   );
-  const value$1 = first_two($lazyRange(1, 5));
+  const value$1 = firstTwo($lazyRange(1, 5));
   console.log(
     `(${value$1[0] == null ? "None" : `Some(${value$1[0]})`}, ${value$1[1] == null ? "None" : `Some(${value$1[1]})`}, ${value$1[2] == null ? "None" : `Some(${value$1[2]})`})`,
   );
-  const value$2 = first_two($iter([]));
+  const value$2 = firstTwo($iter([]));
   console.log(
     `(${value$2[0] == null ? "None" : `Some(${value$2[0]})`}, ${value$2[1] == null ? "None" : `Some(${value$2[1]})`}, ${value$2[2] == null ? "None" : `Some(${value$2[2]})`})`,
   );
-  console.log(`[${from_back($iter(v)).join(", ")}]`);
+  console.log(`[${fromBack($iter(v)).join(", ")}]`);
   console.log(
-    `[${from_back($iterator({ start: 10, end: 13 }, $rangeNext, false, $rangeNextBack)).join(
+    `[${fromBack($iterator({ start: 10, end: 13 }, $rangeNext, false, $rangeNextBack)).join(
       ", ",
     )}]`,
   );
@@ -104,7 +104,7 @@ function main() {
   );
   const r = iterator_peekable({ start: 5, end: 8 }, { next: $rangeNext });
   const next = $next(r);
-  const value$6 = peekableDoubleEndedIterator_next_back(r, { next_back: $rangeNextBack });
+  const value$6 = peekableDoubleEndedIterator_nextBack(r, { next_back: $rangeNextBack });
   console.log(
     `${next == null ? "None" : `Some(${next})`} ${value$6 == null ? "None" : `Some(${value$6})`} ${peekableDebug_fmt(r, undefined, { fmt: (value) => `${value.start}..${value.end}` }, { fmt: (value) => String(value) })}`,
   );

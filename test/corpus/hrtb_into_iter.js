@@ -8,7 +8,7 @@ export function entry() {
 
 function tSliceCollection() {
   if ($tSliceCollection === undefined) {
-    $tSliceCollection = { my_iter: (self) => self };
+    $tSliceCollection = { myIter: (self) => self };
   }
   return $tSliceCollection;
 }
@@ -16,11 +16,11 @@ function tSliceCollection() {
 function main() {
   const v = [3, 4];
   const total = tSliceCollection()
-    .my_iter(v)
+    .myIter(v)
     .reduce((a, b) => (a + b) >>> 0, 0);
   console.log(
     `${total} ${tSliceCollection()
-      .my_iter(v)
+      .myIter(v)
       .reduce((n) => n + 1, 0)}`,
   );
 }

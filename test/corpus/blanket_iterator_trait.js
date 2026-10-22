@@ -22,7 +22,7 @@ function iPull(IIterator) {
   }
   return $traitImpl($iPull, [IIterator], () => ({
     pull: (arg0) => iPull_pull(arg0.value, IIterator),
-    pull_two: (self) => [iPull_pull(self.value, IIterator), iPull_pull(self.value, IIterator)],
+    pullTwo: (self) => [iPull_pull(self.value, IIterator), iPull_pull(self.value, IIterator)],
   }));
 }
 
@@ -44,7 +44,7 @@ function enumeratedPull(PPull) {
   }
   return $traitImpl($enumeratedPull, [PPull], () => ({
     pull: (arg0) => enumeratedPull_pull(arg0.value, PPull),
-    pull_two: (self) => [
+    pullTwo: (self) => [
       enumeratedPull_pull(self.value, PPull),
       enumeratedPull_pull(self.value, PPull),
     ],
@@ -80,7 +80,7 @@ function main() {
   const range = { start: 0, end: 5 };
   const pull = iPull_pull(range, { next: $rangeNext });
   const self = { value: range };
-  const pullTwo = iPull({ next: $rangeNext }).pull_two(self);
+  const pullTwo = iPull({ next: $rangeNext }).pullTwo(self);
   $assign(range, self.value);
   console.log(
     `${pull == null ? "None" : `Some(${pull})`} (${pullTwo[0] == null ? "None" : `Some(${pullTwo[0]})`}, ${pullTwo[1] == null ? "None" : `Some(${pullTwo[1]})`})`,
@@ -92,7 +92,7 @@ function main() {
   console.log(`[${value.join(", ")}]`);
   const down = [3];
   const self$1 = { value: down };
-  const value$1 = iPull({ next: countdownIterator_next }).pull_two(self$1);
+  const value$1 = iPull({ next: countdownIterator_next }).pullTwo(self$1);
   $assign(down, self$1.value);
   console.log(
     `(${value$1[0] == null ? "None" : `Some(${value$1[0]})`}, ${value$1[1] == null ? "None" : `Some(${value$1[1]})`}) ${down[0]}`,

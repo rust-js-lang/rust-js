@@ -10,13 +10,13 @@ export function entry() {
 
 export function fullWrite() {
   if ($fullWrite === undefined) {
-    const write_str = (arg0, arg1) => fullWrite_write_str(arg0.value, arg1);
-    $fullWrite = { write_str, write_char: write_str, write_fmt: write_str };
+    const writeStr = (arg0, arg1) => fullWrite_writeStr(arg0.value, arg1);
+    $fullWrite = { writeStr, writeChar: writeStr, writeFmt: writeStr };
   }
   return $fullWrite;
 }
 
-function fullWrite_write_str(full, s) {
+function fullWrite_writeStr(full, s) {
   if ($byteLen(s) > full[0]) {
     return $fmtError();
   }
@@ -26,13 +26,13 @@ function fullWrite_write_str(full, s) {
 function main() {
   const f = [5];
   console.log(
-    `${$writeTry(() => fullWrite_write_str(f, "abc")) === undefined ? "Ok(())" : "Err(Error)"} ${f[0]}`,
+    `${$writeTry(() => fullWrite_writeStr(f, "abc")) === undefined ? "Ok(())" : "Err(Error)"} ${f[0]}`,
   );
   console.log(
-    `${$writeTry(() => fullWrite_write_str(f, "abc")) === undefined ? "Ok(())" : "Err(Error)"} ${f[0]}`,
+    `${$writeTry(() => fullWrite_writeStr(f, "abc")) === undefined ? "Ok(())" : "Err(Error)"} ${f[0]}`,
   );
   console.log(
-    `${$writeTry(() => fullWrite_write_str(f, "1")) === undefined ? "Ok(())" : "Err(Error)"} ${f[0]}`,
+    `${$writeTry(() => fullWrite_writeStr(f, "1")) === undefined ? "Ok(())" : "Err(Error)"} ${f[0]}`,
   );
 }
 //# sourceMappingURL=case.js.map

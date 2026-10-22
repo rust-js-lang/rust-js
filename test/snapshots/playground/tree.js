@@ -4,7 +4,7 @@
 
 import { $cmp, $rsplitOnce } from "@rust-js/runtime";
 
-export function build_tree(paths) {
+export function buildTree(paths) {
   const tree = [];
   for (const path of paths) {
     let folder = tree;
@@ -41,7 +41,7 @@ export function build_tree(paths) {
  * then by name, a module's file just before its folder: `geometry.rs`, then
  * `geometry/` ("." sorts before "/").
  */
-export function in_order(tree, first) {
+export function inOrder(tree, first) {
   const key = ([name, entry]) => {
     if (entry.TAG === "Folder") {
       return `${name}/`;

@@ -150,8 +150,8 @@ export const mutations: Mutation[] = [
     name: "any-dictionary-without-drop",
     breaks: "`Any`'s dictionary has no `$drop`, so a `Box<dyn Any>` of a value with a destructor never drops it",
     file: "src/lower/traits/dictionaries.rs",
-    find: "            let mut props = vec![Prop::Field(\"type_id\".into(), type_id)];\n            props.extend(self.dictionary_drop(tr.self_ty(), span)?);\n",
-    replace: "            let props = vec![Prop::Field(\"type_id\".into(), type_id)];\n",
+    find: "                type_id,\n            )];\n            props.extend(self.dictionary_drop(tr.self_ty(), span)?);\n",
+    replace: "                type_id,\n            )];\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_std_destructors.rs$"],
   },
   {
@@ -238,8 +238,8 @@ export const mutations: Mutation[] = [
     name: "deref-mut-without-deref",
     breaks: "std's `DerefMut` dictionary has no `Deref`, which generic code over a `P: DerefMut` reads `p.len()` through",
     file: "src/lower/traits/dictionaries.rs",
-    find: "                let mut props = self.supertrait_entries(tr, span)?;\n                props.push(Prop::Field(\"deref_mut\".into(), f));\n",
-    replace: "                let mut props = Vec::new();\n                props.push(Prop::Field(\"deref_mut\".into(), f));\n",
+    find: "                let mut props = self.supertrait_entries(tr, span)?;\n                props.push(Prop::Field(bindings::fn_name(self.tcx, deref_mut), f));\n",
+    replace: "                let mut props = Vec::new();\n                props.push(Prop::Field(bindings::fn_name(self.tcx, deref_mut), f));\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_deref_mut.rs$"],
   },
   {
@@ -318,8 +318,8 @@ export const mutations: Mutation[] = [
     name: "std-borrow-mut-dictionary-missing",
     breaks: "std's `BorrowMut` of a `Vec` has no `borrow_mut`",
     file: "src/lower/traits/dictionaries.rs",
-    find: "            let mut props = vec![Prop::Field(\"borrow_mut\".into(), same)];\n",
-    replace: "            let mut props: Vec<Prop> = vec![Prop::Field(\"borrowed\".into(), same)];\n",
+    find: "                bindings::trait_method_name(self.tcx, tr.def_id, \"borrow_mut\"),\n",
+    replace: "                \"borrowed\".into(),\n",
     tests: ["test/corpus.test.ts", "-t", "^borrow_mut_supertrait.rs$"],
   },
   {

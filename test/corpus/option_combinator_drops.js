@@ -56,19 +56,19 @@ function found(value, fallback, dropT) {
 
 function dNamed() {
   if ($dNamed === undefined) {
-    $dNamed = { from_name: dNamed_from_name, $drop: dDrop_drop };
+    $dNamed = { fromName: dNamed_fromName, $drop: dDrop_drop };
   }
   return $dNamed;
 }
 
-function dNamed_from_name(name) {
+function dNamed_fromName(name) {
   const result = $parseInt(name, 0, 4294967295);
   const value = result.TAG === "Ok" ? result._0 : undefined;
   return value != null ? [value] : undefined;
 }
 
 function parse(name, BNamed) {
-  const option = BNamed.from_name(name);
+  const option = BNamed.fromName(name);
   const result =
     option != null ? { TAG: "Ok", _0: $someValue(option) } : { TAG: "Err", _0: `unknown ${name}` };
   if (result.TAG === "Err") {
@@ -80,11 +80,11 @@ function parse(name, BNamed) {
 
 // In a branch, as bitflags' parser has it: dropped there, if a panic comes
 // before it's moved.
-function parse_flag(flag, BNamed) {
+function parseFlag(flag, BNamed) {
   const flag$1 = $stripPrefix(flag, "0x");
   let parsed;
   if (flag$1 != null) {
-    const option = BNamed.from_name(flag$1);
+    const option = BNamed.fromName(flag$1);
     const result =
       option != null
         ? { TAG: "Ok", _0: $someValue(option) }
@@ -94,7 +94,7 @@ function parse_flag(flag, BNamed) {
     }
     parsed = result._0;
   } else {
-    const option = BNamed.from_name(flag);
+    const option = BNamed.fromName(flag);
     const result =
       option != null
         ? { TAG: "Ok", _0: $someValue(option) }
@@ -108,11 +108,11 @@ function parse_flag(flag, BNamed) {
 }
 
 // Two in one branch.
-function parse_pair(a, b, both, BNamed, dropB) {
+function parsePair(a, b, both, BNamed, dropB) {
   let pair;
   bb38: {
     if (both) {
-      const option = BNamed.from_name(a);
+      const option = BNamed.fromName(a);
       const result$1 =
         option != null ? { TAG: "Ok", _0: $someValue(option) } : { TAG: "Err", _0: `unknown ${a}` };
       let result;
@@ -121,7 +121,7 @@ function parse_pair(a, b, both, BNamed, dropB) {
         let tmp;
         let tmp$1;
         try {
-          tmp = BNamed.from_name(b);
+          tmp = BNamed.fromName(b);
           tmp$1 = () => `unknown ${b}`;
         } catch (error) {
           dropB?.(_0);
@@ -145,7 +145,7 @@ function parse_pair(a, b, both, BNamed, dropB) {
       }
       return result;
     }
-    const option = BNamed.from_name(a);
+    const option = BNamed.fromName(a);
     const result =
       option != null ? { TAG: "Ok", _0: $someValue(option) } : { TAG: "Err", _0: `unknown ${a}` };
     if (result.TAG === "Err") {
@@ -157,9 +157,9 @@ function parse_pair(a, b, both, BNamed, dropB) {
 }
 
 function main() {
-  let parseFlag$0$live = false;
-  let parsePair$0$0$live = false;
-  let parsePair$0$1$live = false;
+  let tmp$0$live = false;
+  let tmp$0$0$live = false;
+  let tmp$0$1$live = false;
   const option = make(2);
   let kept$1;
   try {
@@ -1020,9 +1020,9 @@ function main() {
     }
     throw error;
   }
-  let tmp$0$live = true;
+  let tmp$0$live$1 = true;
   if (tmp$22.TAG === "Ok") {
-    tmp$0$live = false;
+    tmp$0$live$1 = false;
     try {
       console.log(`parsed ${tmp$22._0[0]}`);
     } catch (error) {
@@ -1112,7 +1112,7 @@ function main() {
   }
   try {
     if (tmp$22.TAG === "Ok") {
-      if (tmp$0$live) {
+      if (tmp$0$live$1) {
         dDrop_drop(tmp$22._0);
       }
     }
@@ -1141,7 +1141,7 @@ function main() {
     }
     throw error;
   }
-  tmp$0$live = false;
+  tmp$0$live$1 = false;
   let tmp$23;
   try {
     tmp$23 = parse("x", dNamed());
@@ -1170,9 +1170,9 @@ function main() {
     }
     throw error;
   }
-  let tmp$0$live$1 = true;
+  let tmp$0$live$2 = true;
   if (tmp$23.TAG === "Ok") {
-    tmp$0$live$1 = false;
+    tmp$0$live$2 = false;
     try {
       console.log(`parsed ${tmp$23._0[0]}`);
     } catch (error) {
@@ -1262,7 +1262,7 @@ function main() {
   }
   try {
     if (tmp$23.TAG === "Ok") {
-      if (tmp$0$live$1) {
+      if (tmp$0$live$2) {
         dDrop_drop(tmp$23._0);
       }
     }
@@ -1291,7 +1291,7 @@ function main() {
     }
     throw error;
   }
-  tmp$0$live$1 = false;
+  tmp$0$live$2 = false;
   let iter;
   try {
     iter = $iter(["0x17", "18", "0xy", "z"]);
@@ -1320,9 +1320,9 @@ function main() {
     }
     throw error;
   }
-  let parseFlag;
+  let tmp$24;
   let iter$1;
-  let parsePair;
+  let tmp$25;
   while (true) {
     let tmp;
     try {
@@ -1420,7 +1420,7 @@ function main() {
         const b = tmp[1];
         const both = tmp[2];
         try {
-          parsePair = parse_pair(a, b, both, dNamed(), dDrop_drop);
+          tmp$25 = parsePair(a, b, both, dNamed(), dDrop_drop);
         } catch (error) {
           if (err.TAG === "Ok") {
             dDrop_drop(err._0);
@@ -1446,13 +1446,13 @@ function main() {
           }
           throw error;
         }
-        parsePair$0$1$live = true;
-        parsePair$0$0$live = true;
-        if (parsePair.TAG === "Ok") {
-          parsePair$0$0$live = false;
-          const d = parsePair._0[0];
-          parsePair$0$1$live = false;
-          const e = parsePair._0[1];
+        tmp$0$1$live = true;
+        tmp$0$0$live = true;
+        if (tmp$25.TAG === "Ok") {
+          tmp$0$0$live = false;
+          const d = tmp$25._0[0];
+          tmp$0$1$live = false;
+          const e = tmp$25._0[1];
           const value = (e) => {
             const result = e[0];
             dDrop_drop(e);
@@ -1544,12 +1544,12 @@ function main() {
           }
         } else {
           try {
-            console.log(`${parsePair._0}`);
+            console.log(`${tmp$25._0}`);
           } catch (error) {
-            if (parsePair.TAG === "Ok") {
-              dDrop_drop(parsePair._0[0]);
-              if (parsePair._0[1] != null) {
-                dDrop_drop(parsePair._0[1]);
+            if (tmp$25.TAG === "Ok") {
+              dDrop_drop(tmp$25._0[0]);
+              if (tmp$25._0[1] != null) {
+                dDrop_drop(tmp$25._0[1]);
               }
             }
             if (err.TAG === "Ok") {
@@ -1578,13 +1578,13 @@ function main() {
           }
         }
         try {
-          if (parsePair.TAG === "Ok") {
-            if (parsePair$0$0$live) {
-              dDrop_drop(parsePair._0[0]);
+          if (tmp$25.TAG === "Ok") {
+            if (tmp$0$0$live) {
+              dDrop_drop(tmp$25._0[0]);
             }
-            if (parsePair$0$1$live) {
-              if (parsePair._0[1] != null) {
-                dDrop_drop(parsePair._0[1]);
+            if (tmp$0$1$live) {
+              if (tmp$25._0[1] != null) {
+                dDrop_drop(tmp$25._0[1]);
               }
             }
           }
@@ -1613,8 +1613,8 @@ function main() {
           }
           throw error;
         }
-        parsePair$0$1$live = false;
-        parsePair$0$0$live = false;
+        tmp$0$1$live = false;
+        tmp$0$0$live = false;
       }
       try {
         try {
@@ -1667,7 +1667,7 @@ function main() {
     }
     const flag = tmp;
     try {
-      parseFlag = parse_flag(flag, dNamed());
+      tmp$24 = parseFlag(flag, dNamed());
     } catch (error) {
       if (err.TAG === "Ok") {
         dDrop_drop(err._0);
@@ -1693,13 +1693,13 @@ function main() {
       }
       throw error;
     }
-    parseFlag$0$live = true;
-    if (parseFlag.TAG === "Ok") {
-      parseFlag$0$live = false;
+    tmp$0$live = true;
+    if (tmp$24.TAG === "Ok") {
+      tmp$0$live = false;
       try {
-        console.log(`flag ${parseFlag._0[0]}`);
+        console.log(`flag ${tmp$24._0[0]}`);
       } catch (error) {
-        dDrop_drop(parseFlag._0);
+        dDrop_drop(tmp$24._0);
         if (err.TAG === "Ok") {
           dDrop_drop(err._0);
         }
@@ -1725,7 +1725,7 @@ function main() {
         throw error;
       }
       try {
-        dDrop_drop(parseFlag._0);
+        dDrop_drop(tmp$24._0);
       } catch (error) {
         if (err.TAG === "Ok") {
           dDrop_drop(err._0);
@@ -1753,10 +1753,10 @@ function main() {
       }
     } else {
       try {
-        console.log(`${parseFlag._0}`);
+        console.log(`${tmp$24._0}`);
       } catch (error) {
-        if (parseFlag.TAG === "Ok") {
-          dDrop_drop(parseFlag._0);
+        if (tmp$24.TAG === "Ok") {
+          dDrop_drop(tmp$24._0);
         }
         if (err.TAG === "Ok") {
           dDrop_drop(err._0);
@@ -1784,9 +1784,9 @@ function main() {
       }
     }
     try {
-      if (parseFlag.TAG === "Ok") {
-        if (parseFlag$0$live) {
-          dDrop_drop(parseFlag._0);
+      if (tmp$24.TAG === "Ok") {
+        if (tmp$0$live) {
+          dDrop_drop(tmp$24._0);
         }
       }
     } catch (error) {
@@ -1814,7 +1814,7 @@ function main() {
       }
       throw error;
     }
-    parseFlag$0$live = false;
+    tmp$0$live = false;
   }
 }
 //# sourceMappingURL=case.js.map

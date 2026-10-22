@@ -101,7 +101,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if any_trait(self.tcx) == Some(tr.def_id) {
             let key = self.type_fact_value(tr.self_ty(), TypeFact::Id, span)?;
             let type_id = Expr::arrow(Vec::new(), vec![StmtKind::Return(Some(key)).at(js::Span::NONE)]);
-            let mut props = vec![Prop::Field("type_id".into(), type_id)];
+            let mut props = vec![Prop::Field(
+                bindings::trait_method_name(self.tcx, tr.def_id, "type_id"),
+                type_id,
+            )];
             props.extend(self.dictionary_drop(tr.self_ty(), span)?);
             return Ok(Expr::object(props));
         }
@@ -135,7 +138,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .zip(values)
                 .map(|(name, value)| {
                     let body = vec![StmtKind::Return(Some(value)).at(js::Span::NONE)];
-                    Prop::Field(name.into(), Expr::arrow(vec!["range".into()], body))
+                    let name = bindings::trait_method_name(self.tcx, tr.def_id, name);
+                    Prop::Field(name, Expr::arrow(vec!["range".into()], body))
                 });
             return Ok(Expr::object(props.collect()));
         }
@@ -148,7 +152,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 vec!["items".into()],
                 vec![StmtKind::Return(Some(made)).at(js::Span::NONE)],
             );
-            return Ok(Expr::object(vec![Prop::Field("from_iter".into(), from_iter)]));
+            return Ok(Expr::object(vec![Prop::Field(
+                bindings::trait_method_name(self.tcx, tr.def_id, "from_iter"),
+                from_iter,
+            )]));
         }
         // std's `Sum` or `Product` of a number, `{ sum(items) }`: what
         // `sum()` of them makes (ADR 0476).
@@ -238,7 +245,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 } else {
                     ("partial_cmp", self.cmp_fn(ty, true, span)?)
                 };
-                return Ok(Expr::object(vec![Prop::Field(name.into(), compare)]));
+                return Ok(Expr::object(vec![Prop::Field(
+                    bindings::trait_method_name(self.tcx, tr.def_id, name),
+                    compare,
+                )]));
             }
             if display {
                 let fmt = self.display_fn(ty, span)?;
@@ -247,7 +257,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // `ToString` is std's of a `Display`: what that shows.
             if to_string {
                 let fmt = self.display_fn(ty, span)?;
-                return Ok(Expr::object(vec![Prop::Field("to_string".into(), fmt)]));
+                return Ok(Expr::object(vec![Prop::Field(
+                    bindings::trait_method_name(self.tcx, tr.def_id, "to_string"),
+                    fmt,
+                )]));
             }
             if eq {
                 let eq = self.eq_fn(ty, span)?;
@@ -323,7 +336,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     vec![StmtKind::Return(Some(target)).at(js::Span::NONE)],
                 );
                 let mut props = self.supertrait_entries(tr, span)?;
-                props.push(Prop::Field("deref_mut".into(), f));
+                props.push(Prop::Field(bindings::fn_name(self.tcx, deref_mut), f));
                 return Ok(Expr::object(props));
             }
         }
@@ -366,7 +379,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             };
             body.push(StmtKind::Return(Some(self.std_iterator(items, output))).at(js::Span::NONE));
             let f = Expr::arrow(vec![name.into()], body);
-            return Ok(Expr::object(vec![Prop::Field("into_iter".into(), f)]));
+            return Ok(Expr::object(vec![Prop::Field(
+                bindings::fn_name(self.tcx, into_iter),
+                f,
+            )]));
         }
         // std's `IntoIterator` of a type known here, given where what it
         // makes is held as it is (ADR 0552): `into_iter` of it as concrete
@@ -399,7 +415,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
             }
             if self.recognition().iterates_as_itself(ty) {
-                let mut props = vec![Prop::Field("into_iter".into(), itself)];
+                let mut props = vec![Prop::Field(
+                    bindings::trait_method_name(self.tcx, tr.def_id, "into_iter"),
+                    itself,
+                )];
                 props.extend(steps);
                 return Ok(Expr::object(props));
             }
@@ -427,7 +446,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let made = self.std_iterator(items, output);
             body.push(StmtKind::Return(Some(made)).at(js::Span::NONE));
             let f = Expr::arrow(vec!["items".into()], body);
-            let mut props = vec![Prop::Field("into_iter".into(), f)];
+            let mut props = vec![Prop::Field(bindings::fn_name(self.tcx, into_iter), f)];
             props.extend(steps);
             return Ok(Expr::object(props));
         }
@@ -456,7 +475,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     vec!["cell".into()],
                     vec![StmtKind::Return(Some(cell)).at(js::Span::NONE)],
                 );
-                return Ok(Expr::object(vec![Prop::Field("as_mut".into(), f)]));
+                return Ok(Expr::object(vec![Prop::Field(
+                    bindings::trait_method_name(self.tcx, tr.def_id, "as_mut"),
+                    f,
+                )]));
             }
         }
         if is_std_def(self.tcx, tr.def_id, StdItem::AsRef)
@@ -467,7 +489,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 vec!["value".into()],
                 vec![StmtKind::Return(Some(Expr::var("value"))).at(js::Span::NONE)],
             );
-            return Ok(Expr::object(vec![Prop::Field("as_ref".into(), same)]));
+            return Ok(Expr::object(vec![Prop::Field(
+                bindings::trait_method_name(self.tcx, tr.def_id, "as_ref"),
+                same,
+            )]));
         }
         // std's `AsRef<[u8]>` of text: its UTF-8 bytes, as `as_bytes()` gives
         // them (ADR 0162).
@@ -481,7 +506,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 vec!["value".into()],
                 vec![StmtKind::Return(Some(bytes)).at(js::Span::NONE)],
             );
-            return Ok(Expr::object(vec![Prop::Field("as_ref".into(), as_ref)]));
+            return Ok(Expr::object(vec![Prop::Field(
+                bindings::trait_method_name(self.tcx, tr.def_id, "as_ref"),
+                as_ref,
+            )]));
         }
         // std's `Borrow` where it's the same JS value: a value as itself, text
         // as a `str`, a `Vec` as a slice (ADR 0167).
@@ -506,7 +534,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 vec!["value".into()],
                 vec![StmtKind::Return(Some(Expr::var("value"))).at(js::Span::NONE)],
             );
-            let mut props = vec![Prop::Field("borrow_mut".into(), same)];
+            let mut props = vec![Prop::Field(
+                bindings::trait_method_name(self.tcx, tr.def_id, "borrow_mut"),
+                same,
+            )];
             props.extend(self.supertrait_entries(tr, span)?);
             return Ok(Expr::object(props));
         }
@@ -521,7 +552,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let parsed = self.parse_as(Expr::var("s"), ty, span, &mut body)?;
             body.push(StmtKind::Return(Some(parsed)).at(js::Span::NONE));
             let from_str = Expr::arrow(vec!["s".into()], body);
-            return Ok(Expr::object(vec![Prop::Field("from_str".into(), from_str)]));
+            return Ok(Expr::object(vec![Prop::Field(
+                bindings::trait_method_name(self.tcx, tr.def_id, "from_str"),
+                from_str,
+            )]));
         }
         // `std::num::Wrapping`'s, its number's in its `[x]` (ADR 0175).
         if let Some(op) = crate::lower::recognition::value_operator(self.tcx, tr.def_id)

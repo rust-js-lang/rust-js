@@ -9,12 +9,12 @@ export function entry() {
 function unitTracked() {
   if ($unitTracked === undefined) {
     $unitTracked = {
-      from_default: (self, location) => location,
+      fromDefault: (self, location) => location,
       inherited: unitTracked_inherited,
-      only_impl: (
+      onlyImpl: (
         arg0,
         location = { file: "test/corpus/track_caller_traits.rs", line: 40, column: 5 },
-      ) => unitTracked_only_impl(arg0, location),
+      ) => unitTracked_onlyImpl(arg0, location),
       boxed: unitTracked_boxed,
       unread: unitTracked_unread,
       tagged: unitTracked_tagged,
@@ -28,7 +28,7 @@ function unitTracked_inherited(unit, location) {
   return location;
 }
 
-function unitTracked_only_impl(unit, location) {
+function unitTracked_onlyImpl(unit, location) {
   return location;
 }
 
@@ -47,9 +47,9 @@ function unitTracked_tagged(unit, tag, location, TDisplay) {
 function flagTracked() {
   if ($flagTracked === undefined) {
     $flagTracked = {
-      from_default: flagTracked_from_default,
+      fromDefault: flagTracked_fromDefault,
       inherited: flagTracked_inherited,
-      only_impl: (arg0, location) => flagTracked_only_impl(arg0),
+      onlyImpl: (arg0, location) => flagTracked_onlyImpl(arg0),
       boxed: flagTracked_boxed,
       unread: flagTracked_unread,
       tagged: (arg0, arg1, location, TDisplay) => flagTracked_tagged(arg0, arg1, TDisplay),
@@ -58,7 +58,7 @@ function flagTracked() {
   return $flagTracked;
 }
 
-function flagTracked_from_default(flag, location) {
+function flagTracked_fromDefault(flag, location) {
   const here = location;
   console.log(`flag ${flag[0]} called at line ${here.line}`);
   return here;
@@ -68,7 +68,7 @@ function flagTracked_inherited(flag, location) {
   return location;
 }
 
-function flagTracked_only_impl(flag) {
+function flagTracked_onlyImpl(flag) {
   return { file: "test/corpus/track_caller_traits.rs", line: 75, column: 9 };
 }
 
@@ -94,17 +94,17 @@ function generic(t, TTracked) {
     )}`,
   );
   return [
-    TTracked.from_default(t, { file: "test/corpus/track_caller_traits.rs", line: 96, column: 8 }),
+    TTracked.fromDefault(t, { file: "test/corpus/track_caller_traits.rs", line: 96, column: 8 }),
     TTracked.inherited(t, { file: "test/corpus/track_caller_traits.rs", line: 96, column: 26 }),
-    TTracked.only_impl(t, { file: "test/corpus/track_caller_traits.rs", line: 96, column: 41 }),
+    TTracked.onlyImpl(t, { file: "test/corpus/track_caller_traits.rs", line: 96, column: 41 }),
   ];
 }
 
-function passed_on(t, location, TTracked) {
+function passedOn(t, location, TTracked) {
   return TTracked.inherited(t, location);
 }
 
-function pointer_inside(location) {
+function pointerInside(location) {
   const f = () => here({ file: "test/corpus/track_caller_traits.rs", line: 111, column: 1 });
   return f();
 }
@@ -115,7 +115,7 @@ function here(location) {
 
 function main() {
   const unit = undefined;
-  const value = unitTracked().from_default(unit, {
+  const value = unitTracked().fromDefault(unit, {
     file: "test/corpus/track_caller_traits.rs",
     line: 117,
     column: 25,
@@ -127,7 +127,7 @@ function main() {
     column: 25,
   });
   console.log(`${value$1.file}:${value$1.line}:${value$1.column}`);
-  const value$2 = unitTracked_only_impl(unit, {
+  const value$2 = unitTracked_onlyImpl(unit, {
     file: "test/corpus/track_caller_traits.rs",
     line: 119,
     column: 25,
@@ -141,7 +141,7 @@ function main() {
   }
   const objects = [{ impl: unitTracked() }, { value: [false], impl: flagTracked() }];
   for (const object of objects) {
-    const fromDefault = object.impl.from_default(object.value, {
+    const fromDefault = object.impl.fromDefault(object.value, {
       file: "test/corpus/track_caller_traits.rs",
       line: 128,
       column: 37,
@@ -151,13 +151,13 @@ function main() {
       line: 128,
       column: 60,
     });
-    const value = object.impl.only_impl(object.value);
+    const value = object.impl.onlyImpl(object.value);
     console.log(
       `${fromDefault.file}:${fromDefault.line}:${fromDefault.column} ${inherited.file}:${inherited.line}:${inherited.column} ${value.file}:${value.line}:${value.column}`,
     );
     console.log(`${object.impl.unread(object.value)}`);
   }
-  const value$3 = passed_on(
+  const value$3 = passedOn(
     unit,
     { file: "test/corpus/track_caller_traits.rs", line: 131, column: 20 },
     unitTracked(),
@@ -176,7 +176,7 @@ function main() {
     column: 41,
   });
   console.log(`${value$5.file}:${value$5.line}:${value$5.column}`);
-  const value$6 = pointer_inside({
+  const value$6 = pointerInside({
     file: "test/corpus/track_caller_traits.rs",
     line: 135,
     column: 20,

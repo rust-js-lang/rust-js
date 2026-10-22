@@ -15,7 +15,7 @@ function counterIterator_next(counter) {
   return counter[0];
 }
 
-function after_first(it) {
+function afterFirst(it) {
   $next(it);
   for (const x of it) {
     console.log(`took ${x}`);
@@ -26,6 +26,6 @@ function after_first(it) {
 }
 
 function main() {
-  after_first($iterator([0], counterIterator_next));
+  afterFirst($iterator([0], counterIterator_next));
 }
 //# sourceMappingURL=case.js.map

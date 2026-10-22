@@ -184,11 +184,7 @@ pub(super) fn name_imports(
                 .is_some_and(|held| !held.iter().any(|id| itself(&id)));
             let base = match (export.as_str(), held_by, holder) {
                 ("default", Some(name), _) => name,
-                ("default", None, Some(module)) if statics => {
-                    let mut chars = camel_case(&module).chars().collect::<Vec<_>>();
-                    chars[0] = chars[0].to_ascii_uppercase();
-                    chars.into_iter().collect()
-                }
+                ("default", None, Some(module)) if statics => crate::lower::upper_first(&camel_case(&module)),
                 ("*", _, Some(module)) => module,
                 ("default" | "*", _, _) => module_binding(from),
                 _ => export.clone(),

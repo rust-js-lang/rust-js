@@ -31,6 +31,6 @@ pub fn comparisons() -> String {
   const expected = run([join(dir, "native")]).trim().split("\n");
   run([compiler, input, "-o", output]);
   const compiled = await import(output);
-  expect([compiled.user_types(), compiled.standard_types(), compiled.comparisons()]).toEqual(expected);
+  expect([compiled.userTypes(), compiled.standardTypes(), compiled.comparisons()]).toEqual(expected);
   expect(readFileSync(output, "utf8")).toContain("$debugParseError");
 }, 120_000);

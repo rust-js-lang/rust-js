@@ -17,11 +17,11 @@ export function entry() {
   main();
 }
 
-function checked_total(items) {
+function checkedTotal(items) {
   return $tryFoldSome($iter(items), 0, (sum, x) => $checked(sum + x, 0, 4294967295));
 }
 
-function parsed_total(texts) {
+function parsedTotal(texts) {
   return $tryFoldOk($iter(texts), 0n, (sum, text) => {
     const result = $parseBig(text, -9223372036854775808n, 9223372036854775807n);
     if (result.TAG === "Err") {
@@ -31,7 +31,7 @@ function parsed_total(texts) {
   });
 }
 
-function total_up_to(it, limit) {
+function totalUpTo(it, limit) {
   return $tryFoldSome(Iterator.from(it), 0, (sum, x) => {
     if ((sum + x) >>> 0 > limit) {
       return;
@@ -46,7 +46,7 @@ function loudDrop_drop(loud) {
 
 // Each item it's given is the closure's, dropped there; what it leaves is
 // the iterator's, dropped with it.
-function sum_below(it, limit, dropI) {
+function sumBelow(it, limit, dropI) {
   const value = (sum, loud) => {
     const result = (sum + loud[0]) >>> 0 <= limit ? (sum + loud[0]) >>> 0 : undefined;
     loudDrop_drop(loud);
@@ -63,26 +63,26 @@ function sum_below(it, limit, dropI) {
 }
 
 function main() {
-  const checkedTotal = checked_total([1, 2, 3]);
-  const value = checked_total([4294967295, 1]);
+  const value = checkedTotal([1, 2, 3]);
+  const value$1 = checkedTotal([4294967295, 1]);
   console.log(
-    `${checkedTotal == null ? "None" : `Some(${checkedTotal})`} ${value == null ? "None" : `Some(${value})`}`,
+    `${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`}`,
   );
-  const parsedTotal = parsed_total(["4", "5"]);
+  const value$2 = parsedTotal(["4", "5"]);
   console.log(
-    `${parsedTotal.TAG === "Ok" ? `Ok(${parsedTotal._0})` : `Err(${$debugParseError(parsedTotal._0, "ParseIntError")})`} ${
-      parsed_total(["4", "x", "5"]).TAG === "Err"
+    `${value$2.TAG === "Ok" ? `Ok(${value$2._0})` : `Err(${$debugParseError(value$2._0, "ParseIntError")})`} ${
+      parsedTotal(["4", "x", "5"]).TAG === "Err"
     }`,
   );
   const it = $iter([1, 2, 3, 4, 5]);
-  const totalUpTo = total_up_to(it, 4);
-  console.log(`${totalUpTo == null ? "None" : `Some(${totalUpTo})`} [${it.toArray().join(", ")}]`);
+  const value$3 = totalUpTo(it, 4);
+  console.log(`${value$3 == null ? "None" : `Some(${value$3})`} [${it.toArray().join(", ")}]`);
   const product = $tryFoldSome($iterator({ start: 1n, end: 5n }, $rangeInclusiveNext), 1n, (p, n) =>
     $bigChecked(p * n, 0n, 18446744073709551615n),
   );
   console.log(`${product == null ? "None" : `Some(${product})`}`);
   const louds = [[1], [2], [10], [3]];
-  const value$1 = sum_below($iter(louds), 5, $dropEach(loudDrop_drop));
-  console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
+  const value$4 = sumBelow($iter(louds), 5, $dropEach(loudDrop_drop));
+  console.log(`${value$4 == null ? "None" : `Some(${value$4})`}`);
 }
 //# sourceMappingURL=case.js.map

@@ -14,7 +14,7 @@ export function entry() {
   main();
 }
 
-function parse_all(v) {
+function parseAll(v) {
   return $collectResults(v.values().map((s) => $parseInt(s, 0, 4294967295)));
 }
 
@@ -29,18 +29,18 @@ function halves(v) {
 }
 
 function main() {
-  const parseAll = parse_all(["1", "22"]);
+  const value = parseAll(["1", "22"]);
   console.log(
-    `${parseAll.TAG === "Ok" ? `Ok([${parseAll._0.join(", ")}])` : `Err(${$debugParseError(parseAll._0, "ParseIntError")})`} ${((
+    `${value.TAG === "Ok" ? `Ok([${value._0.join(", ")}])` : `Err(${$debugParseError(value._0, "ParseIntError")})`} ${((
       result,
     ) =>
       result.TAG === "Ok"
         ? `Ok([${result._0.join(", ")}])`
-        : `Err(${$debugParseError(result._0, "ParseIntError")})`)(parse_all(["1", "x", "3"]))}`,
+        : `Err(${$debugParseError(result._0, "ParseIntError")})`)(parseAll(["1", "x", "3"]))}`,
   );
-  const value = halves([2, 4]);
+  const value$1 = halves([2, 4]);
   console.log(
-    `${value == null ? "None" : `Some([${value.join(", ")}])`} ${((value) =>
+    `${value$1 == null ? "None" : `Some([${value$1.join(", ")}])`} ${((value) =>
       value == null ? "None" : `Some([${value.join(", ")}])`)(halves([2, 3, 4]))}`,
   );
   const seen = [];

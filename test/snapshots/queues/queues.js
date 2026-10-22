@@ -69,7 +69,7 @@ export const Pipeline = {
   },
 };
 
-function first_even_square(v) {
+function firstEvenSquare(v) {
   const e = v.find((x) => x % 2 === 0);
   if (e == null) {
     return;
@@ -111,7 +111,7 @@ export function dijkstra(edges, n, src) {
   return dist;
 }
 
-export function bfs_order(n, edges) {
+export function bfsOrder(n, edges) {
   const seen = new Array(n).fill(false);
   const q = [];
   const order = [];
@@ -146,12 +146,12 @@ function taskOrd_cmp(task, other) {
 
 export function taskPartialOrd() {
   if ($taskPartialOrd === undefined) {
-    $taskPartialOrd = { PartialEq: () => ({ eq: $eq }), partial_cmp: taskPartialOrd_partial_cmp };
+    $taskPartialOrd = { PartialEq: () => ({ eq: $eq }), partialCmp: taskPartialOrd_partialCmp };
   }
   return $taskPartialOrd;
 }
 
-function taskPartialOrd_partial_cmp(task, other) {
+function taskPartialOrd_partialCmp(task, other) {
   return taskOrd_cmp(task, other);
 }
 
@@ -246,9 +246,9 @@ export function report() {
   )}\n`;
   const p = { steps: [(x) => (x + 1) | 0, (x) => Math.imul(x, 10), (x) => (x - 3) | 0] };
   const run = Pipeline.run(p, 4);
-  const firstEvenSquare = first_even_square([3, 5, 6, 8]);
-  const value = first_even_square([1]);
-  out += `${run} ${firstEvenSquare == null ? "None" : `Some(${firstEvenSquare})`} ${value == null ? "None" : `Some(${value})`}\n`;
+  const value = firstEvenSquare([3, 5, 6, 8]);
+  const value$1 = firstEvenSquare([1]);
+  out += `${run} ${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`}\n`;
   out += `[${dijkstra(
     [
       [0, 1, 4],
@@ -261,7 +261,7 @@ export function report() {
   )
     .map((item) => (item == null ? "None" : `Some(${item})`))
     .join(", ")}]\n`;
-  out += `[${bfs_order(5, [
+  out += `[${bfsOrder(5, [
     [0, 1],
     [0, 2],
     [1, 3],
@@ -277,9 +277,9 @@ export function report() {
   const arg = $unwrap(words.get(5), "no entry found for key");
   out += `[${lens.join(", ")}] [${arg.map((item) => $debugStr(item)).join(", ")}]\n`;
   out += heaps();
-  const value$1 = deques();
-  const value$2 = reverses(1, 2);
-  out += `${value$1}\n(${value$2[0]}, ${value$2[1]}, ${value$2[2]}, ${$debugStr(value$2[3])}, [${value$2[4].join(", ")}]) ${((tuple) => `(${tuple[0]}, ${tuple[1]}, ${tuple[2]}, ${$debugStr(tuple[3])}, [${tuple[4].join(", ")}])`)(reverses(5, 3))}\n`;
+  const value$2 = deques();
+  const value$3 = reverses(1, 2);
+  out += `${value$2}\n(${value$3[0]}, ${value$3[1]}, ${value$3[2]}, ${$debugStr(value$3[3])}, [${value$3[4].join(", ")}]) ${((tuple) => `(${tuple[0]}, ${tuple[1]}, ${tuple[2]}, ${$debugStr(tuple[3])}, [${tuple[4].join(", ")}])`)(reverses(5, 3))}\n`;
   return out;
 }
 //# sourceMappingURL=queues.js.map

@@ -99,7 +99,7 @@ export function slices(v) {
   return [$slice(v, 1, 3), $slice(v, 2), $slice(v, 0, 1), v.slice(), tail];
 }
 
-export function slice_panics(start, end) {
+export function slicePanics(start, end) {
   const v = [1, 2, 3];
   return $slice(v, start, end);
 }

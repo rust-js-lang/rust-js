@@ -88293,7 +88293,6 @@ pub struct MediaCapabilitiesDecodingInfo {
 pub struct MediaDecodingConfiguration {
     pub video: Option<VideoConfiguration>,
     pub audio: Option<AudioConfiguration>,
-    #[cfg_attr(rust_js, rust_js::name = "type")]
     pub r#type: String,
     #[cfg_attr(rust_js, rust_js::name = "keySystemConfiguration")]
     pub key_system_configuration: Option<MediaCapabilitiesKeySystemConfiguration>,
@@ -88369,7 +88368,6 @@ pub struct MediaCapabilitiesEncodingInfo {
 pub struct MediaEncodingConfiguration {
     pub video: Option<VideoConfiguration>,
     pub audio: Option<AudioConfiguration>,
-    #[cfg_attr(rust_js, rust_js::name = "type")]
     pub r#type: String,
 }
 
@@ -88591,14 +88589,12 @@ pub struct PublicKeyCredentialUserEntity {
 
 /// The `PublicKeyCredentialParameters` dictionary: a JS object with these fields, a `None` one not there.
 pub struct PublicKeyCredentialParameters {
-    #[cfg_attr(rust_js, rust_js::name = "type")]
     pub r#type: String,
     pub alg: i32,
 }
 
 /// The `PublicKeyCredentialDescriptor` dictionary: a JS object with these fields, a `None` one not there.
 pub struct PublicKeyCredentialDescriptor {
-    #[cfg_attr(rust_js, rust_js::name = "type")]
     pub r#type: String,
     pub transports: Option<Vec<String>>,
 }
@@ -88720,7 +88716,6 @@ pub struct RTCIceCandidateInit {
 
 /// The `RTCSessionDescriptionInit` dictionary: a JS object with these fields, a `None` one not there.
 pub struct RTCSessionDescriptionInit {
-    #[cfg_attr(rust_js, rust_js::name = "type")]
     pub r#type: String,
     pub sdp: Option<String>,
 }
@@ -88862,7 +88857,6 @@ pub struct ReadableStreamReadResult {
 /// The `Report` dictionary: a JS object with these fields, a `None` one not there.
 #[derive(Default)]
 pub struct Report {
-    #[cfg_attr(rust_js, rust_js::name = "type")]
     pub r#type: Option<String>,
     pub url: Option<String>,
     pub body: Option<Option<ReportBody>>,
@@ -88916,8 +88910,8 @@ pub struct CryptoKeyPair {
 #[derive(Default)]
 pub struct JsonWebKey {
     pub kty: Option<String>,
-    #[cfg_attr(rust_js, rust_js::name = "use")]
     pub r#use: Option<String>,
+    #[cfg_attr(rust_js, rust_js::name = "key_ops")]
     pub key_ops: Option<Vec<String>>,
     pub alg: Option<String>,
     pub ext: Option<bool>,
@@ -89233,7 +89227,6 @@ pub struct AudioBufferOptions {
 pub struct AudioBufferSourceOptions<'a> {
     pub buffer: Option<&'a AudioBuffer>,
     pub detune: Option<f32>,
-    #[cfg_attr(rust_js, rust_js::name = "loop")]
     pub r#loop: Option<bool>,
     #[cfg_attr(rust_js, rust_js::name = "loopEnd")]
     pub loop_end: Option<f64>,
@@ -89319,7 +89312,6 @@ pub struct AudioProcessingEventInit<'a> {
 
 /// The [`AudioSinkOptions`](https://developer.mozilla.org/docs/Web/API/AudioSinkOptions) dictionary: a JS object of these fields, a `None` one not given.
 pub struct AudioSinkOptions<'a> {
-    #[cfg_attr(rust_js, rust_js::name = "type")]
     pub r#type: &'a str,
 }
 
@@ -89349,7 +89341,6 @@ pub struct BiquadFilterOptions<'a> {
     pub channel_count_mode: Option<&'a str>,
     #[cfg_attr(rust_js, rust_js::name = "channelInterpretation")]
     pub channel_interpretation: Option<&'a str>,
-    #[cfg_attr(rust_js, rust_js::name = "type")]
     pub r#type: Option<&'a str>,
     #[cfg_attr(rust_js, rust_js::name = "Q")]
     pub q: Option<f32>,
@@ -89370,7 +89361,6 @@ pub struct BlobEventInit<'a> {
 /// The [`BlobPropertyBag`](https://developer.mozilla.org/docs/Web/API/BlobPropertyBag) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct BlobPropertyBag<'a> {
-    #[cfg_attr(rust_js, rust_js::name = "type")]
     pub r#type: Option<&'a str>,
     pub endings: Option<&'a str>,
 }
@@ -89378,7 +89368,6 @@ pub struct BlobPropertyBag<'a> {
 /// The [`BoxQuadOptions`](https://developer.mozilla.org/docs/Web/API/BoxQuadOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct BoxQuadOptions<'a> {
-    #[cfg_attr(rust_js, rust_js::name = "box")]
     pub r#box: Option<&'a str>,
     #[cfg_attr(rust_js, rust_js::name = "relativeTo")]
     pub relative_to: Option<GeometryNode<'a>>,
@@ -89887,7 +89876,6 @@ pub struct ElementDefinitionOptions<'a> {
 
 /// The [`EncodedAudioChunkInit`](https://developer.mozilla.org/docs/Web/API/EncodedAudioChunkInit) dictionary: a JS object of these fields, a `None` one not given.
 pub struct EncodedAudioChunkInit<'a> {
-    #[cfg_attr(rust_js, rust_js::name = "type")]
     pub r#type: &'a str,
     pub timestamp: f64,
     pub duration: Option<f64>,
@@ -89904,7 +89892,6 @@ pub struct EncodedAudioChunkMetadata {
 
 /// The [`EncodedVideoChunkInit`](https://developer.mozilla.org/docs/Web/API/EncodedVideoChunkInit) dictionary: a JS object of these fields, a `None` one not given.
 pub struct EncodedVideoChunkInit<'a> {
-    #[cfg_attr(rust_js, rust_js::name = "type")]
     pub r#type: &'a str,
     pub timestamp: f64,
     pub duration: Option<f64>,
@@ -89958,7 +89945,6 @@ pub struct EventSourceInit {
 /// The [`FilePropertyBag`](https://developer.mozilla.org/docs/Web/API/FilePropertyBag) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct FilePropertyBag<'a> {
-    #[cfg_attr(rust_js, rust_js::name = "type")]
     pub r#type: Option<&'a str>,
     pub endings: Option<&'a str>,
     #[cfg_attr(rust_js, rust_js::name = "lastModified")]
@@ -90195,7 +90181,6 @@ pub struct GPUBufferBinding<'a> {
 /// The [`GPUBufferBindingLayout`](https://developer.mozilla.org/docs/Web/API/GPUBufferBindingLayout) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct GPUBufferBindingLayout<'a> {
-    #[cfg_attr(rust_js, rust_js::name = "type")]
     pub r#type: Option<&'a str>,
     #[cfg_attr(rust_js, rust_js::name = "hasDynamicOffset")]
     pub has_dynamic_offset: Option<bool>,
@@ -90400,7 +90385,6 @@ pub struct GPUProgrammableStage<'a> {
 /// The [`GPUQuerySetDescriptor`](https://developer.mozilla.org/docs/Web/API/GPUQuerySetDescriptor) dictionary: a JS object of these fields, a `None` one not given.
 pub struct GPUQuerySetDescriptor<'a> {
     pub label: Option<&'a str>,
-    #[cfg_attr(rust_js, rust_js::name = "type")]
     pub r#type: &'a str,
     pub count: u32,
 }
@@ -90521,7 +90505,6 @@ pub struct GPURequestAdapterOptions<'a> {
 /// The [`GPUSamplerBindingLayout`](https://developer.mozilla.org/docs/Web/API/GPUSamplerBindingLayout) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct GPUSamplerBindingLayout<'a> {
-    #[cfg_attr(rust_js, rust_js::name = "type")]
     pub r#type: Option<&'a str>,
 }
 
@@ -90802,7 +90785,6 @@ pub struct ImageDecodeOptions {
 
 /// The [`ImageDecoderInit`](https://developer.mozilla.org/docs/Web/API/ImageDecoderInit) dictionary: a JS object of these fields, a `None` one not given.
 pub struct ImageDecoderInit<'a> {
-    #[cfg_attr(rust_js, rust_js::name = "type")]
     pub r#type: &'a str,
     pub data: ImageBufferSource<'a>,
     #[cfg_attr(rust_js, rust_js::name = "colorSpaceConversion")]
@@ -90819,7 +90801,6 @@ pub struct ImageDecoderInit<'a> {
 /// The [`ImageEncodeOptions`](https://developer.mozilla.org/docs/Web/API/ImageEncodeOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct ImageEncodeOptions<'a> {
-    #[cfg_attr(rust_js, rust_js::name = "type")]
     pub r#type: Option<&'a str>,
     pub quality: Option<f64>,
 }
@@ -90986,7 +90967,6 @@ pub struct MediaEncryptedEventInit<'a> {
 pub struct MediaImage<'a> {
     pub src: &'a str,
     pub sizes: Option<&'a str>,
-    #[cfg_attr(rust_js, rust_js::name = "type")]
     pub r#type: Option<&'a str>,
 }
 
@@ -91332,7 +91312,6 @@ pub struct OscillatorOptions<'a> {
     pub channel_count_mode: Option<&'a str>,
     #[cfg_attr(rust_js, rust_js::name = "channelInterpretation")]
     pub channel_interpretation: Option<&'a str>,
-    #[cfg_attr(rust_js, rust_js::name = "type")]
     pub r#type: Option<&'a str>,
     pub frequency: Option<f32>,
     pub detune: Option<f32>,
@@ -91533,7 +91512,6 @@ pub struct PerformanceObserverCallbackOptions {
 pub struct PerformanceObserverInit<'a> {
     #[cfg_attr(rust_js, rust_js::name = "entryTypes")]
     pub entry_types: Option<&'a [&'a str]>,
-    #[cfg_attr(rust_js, rust_js::name = "type")]
     pub r#type: Option<&'a str>,
     pub buffered: Option<bool>,
 }
@@ -91706,7 +91684,6 @@ pub struct PublicKeyCredentialCreationOptionsJSON<'a> {
 
 /// The [`PublicKeyCredentialDescriptorJSON`](https://developer.mozilla.org/docs/Web/API/PublicKeyCredentialDescriptorJSON) dictionary: a JS object of these fields, a `None` one not given.
 pub struct PublicKeyCredentialDescriptorJSON<'a> {
-    #[cfg_attr(rust_js, rust_js::name = "type")]
     pub r#type: &'a str,
     pub id: &'a str,
     pub transports: Option<&'a [&'a str]>,
@@ -91777,7 +91754,6 @@ pub struct ReadableWritablePair<'a> {
 #[derive(Default)]
 pub struct RegistrationOptions<'a> {
     pub scope: Option<&'a str>,
-    #[cfg_attr(rust_js, rust_js::name = "type")]
     pub r#type: Option<&'a str>,
     #[cfg_attr(rust_js, rust_js::name = "updateViaCache")]
     pub update_via_cache: Option<&'a str>,
@@ -91813,7 +91789,6 @@ pub struct RequestInit<'a> {
 /// The [`ResizeObserverOptions`](https://developer.mozilla.org/docs/Web/API/ResizeObserverOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct ResizeObserverOptions<'a> {
-    #[cfg_attr(rust_js, rust_js::name = "box")]
     pub r#box: Option<&'a str>,
 }
 
@@ -91908,7 +91883,6 @@ pub struct RTCLocalIceCandidateInit<'a> {
 /// The [`RTCLocalSessionDescriptionInit`](https://developer.mozilla.org/docs/Web/API/RTCLocalSessionDescriptionInit) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct RTCLocalSessionDescriptionInit<'a> {
-    #[cfg_attr(rust_js, rust_js::name = "type")]
     pub r#type: Option<&'a str>,
     pub sdp: Option<&'a str>,
 }
@@ -92047,7 +92021,6 @@ pub struct SerialOutputSignals {
     pub data_terminal_ready: Option<bool>,
     #[cfg_attr(rust_js, rust_js::name = "requestToSend")]
     pub request_to_send: Option<bool>,
-    #[cfg_attr(rust_js, rust_js::name = "break")]
     pub r#break: Option<bool>,
 }
 
@@ -92110,7 +92083,6 @@ pub struct ShareData<'a> {
 #[derive(Default)]
 pub struct SharedWorkerOptions<'a> {
     pub name: Option<&'a str>,
-    #[cfg_attr(rust_js, rust_js::name = "type")]
     pub r#type: Option<&'a str>,
     pub credentials: Option<&'a str>,
     #[cfg_attr(rust_js, rust_js::name = "extendedLifetime")]
@@ -92701,7 +92673,6 @@ pub struct WindowPostMessageOptions<'a> {
 /// The [`WorkerAndParameters`](https://developer.mozilla.org/docs/Web/API/WorkerAndParameters) dictionary: a JS object of these fields, a `None` one not given.
 pub struct WorkerAndParameters<'a> {
     pub worker: &'a Worker,
-    #[cfg_attr(rust_js, rust_js::name = "type")]
     pub r#type: Option<&'a str>,
 }
 
@@ -92709,7 +92680,6 @@ pub struct WorkerAndParameters<'a> {
 #[derive(Default)]
 pub struct WorkerOptions<'a> {
     pub name: Option<&'a str>,
-    #[cfg_attr(rust_js, rust_js::name = "type")]
     pub r#type: Option<&'a str>,
     pub credentials: Option<&'a str>,
 }
@@ -92722,7 +92692,6 @@ pub struct WorkletOptions<'a> {
 
 /// The [`WriteParams`](https://developer.mozilla.org/docs/Web/API/WriteParams) dictionary: a JS object of these fields, a `None` one not given.
 pub struct WriteParams<'a> {
-    #[cfg_attr(rust_js, rust_js::name = "type")]
     pub r#type: &'a str,
     pub size: Option<f64>,
     pub position: Option<f64>,

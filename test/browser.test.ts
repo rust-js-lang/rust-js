@@ -98,5 +98,5 @@ test("in real browsers, with Vitest's browser mode", () => {
   // Vitest fails the run for that promise, not the test.
   expect(failing.output).toMatch(/Errors\s+1 error/);
   // Vitest follows the source map back into the Rust.
-  expect(failing.output).toContain("fails_an_assert test/asserts.rs:");
+  expect(failing.output).toContain("failsAnAssert test/asserts.rs:");
 }, 120_000);

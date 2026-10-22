@@ -23,7 +23,7 @@ function twoIterator_next(two, LIterator, RIterator) {
   return RIterator.next(r);
 }
 
-function twoDoubleEndedIterator_next_back(two, LDoubleEndedIterator, RDoubleEndedIterator) {
+function twoDoubleEndedIterator_nextBack(two, LDoubleEndedIterator, RDoubleEndedIterator) {
   if (two.TAG === "One") {
     const l = two._0;
     return LDoubleEndedIterator.next_back(l);
@@ -32,7 +32,7 @@ function twoDoubleEndedIterator_next_back(two, LDoubleEndedIterator, RDoubleEnde
   return RDoubleEndedIterator.next_back(r);
 }
 
-function evens_or_tens(evens) {
+function evensOrTens(evens) {
   if (evens) {
     return {
       TAG: "One",
@@ -53,28 +53,20 @@ function evens_or_tens(evens) {
 
 function main() {
   const evens = $iterator(
-    evens_or_tens(true),
+    evensOrTens(true),
     (iterator) =>
-      twoDoubleEndedIterator_next_back(
-        iterator,
-        { next_back: $nextBack },
-        { next_back: $nextBack },
-      ),
+      twoDoubleEndedIterator_nextBack(iterator, { next_back: $nextBack }, { next_back: $nextBack }),
     true,
   ).toArray();
   const tens = $iterator(
-    evens_or_tens(false),
+    evensOrTens(false),
     (iterator) =>
-      twoDoubleEndedIterator_next_back(
-        iterator,
-        { next_back: $nextBack },
-        { next_back: $nextBack },
-      ),
+      twoDoubleEndedIterator_nextBack(iterator, { next_back: $nextBack }, { next_back: $nextBack }),
     true,
   ).toArray();
-  const both = evens_or_tens(true);
+  const both = evensOrTens(true);
   const next = twoIterator_next(both, { next: $next }, { next: $next });
-  const arg = twoDoubleEndedIterator_next_back(
+  const arg = twoDoubleEndedIterator_nextBack(
     both,
     { next_back: $nextBack },
     { next_back: $nextBack },

@@ -20,7 +20,7 @@ function loudDrop_drop(loud) {
   console.log(`drop ${loud[0]}`);
 }
 
-function key_to_cmp(key, KOrd, dropF) {
+function keyToCmp(key, KOrd, dropF) {
   return $dropping(
     (a, b) => {
       const value = key(a);
@@ -75,7 +75,7 @@ function smallest(items, cmp, TClone, dropF) {
   return result;
 }
 
-function by_len() {
+function byLen() {
   const tag = [7];
   return $dropping(
     (s) => $byteLen(s),
@@ -87,7 +87,7 @@ function by_len() {
 
 function main() {
   const weights = [1];
-  const cmp = key_to_cmp(
+  const cmp = keyToCmp(
     (x) => {
       const w = weights;
       const value = BigInt(x);
@@ -100,7 +100,7 @@ function main() {
   );
   const value = smallest([5, 2, 9], cmp, { clone: (value) => value }, $dispose);
   console.log(`${value == null ? "None" : `Some(${value})`}`);
-  const f = by_len();
+  const f = byLen();
   try {
     console.log(`${f("abc")}`);
   } finally {

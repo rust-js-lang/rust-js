@@ -7,7 +7,7 @@ import { expect, test } from "bun:test";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 
-import { Misc, Places, Refs, Signup, Store, Suspended, Upload, mount, page_html, page_stream } from "./apis.jsx";
+import { Misc, Places, Refs, Signup, Store, Suspended, Upload, mount, pageHtml, pageStream } from "./apis.jsx";
 
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -127,8 +127,8 @@ test("keyed fragments, styles, raw HTML, attributes, a lazy component and a Prof
 });
 
 test("rendering to a string and a stream, and a root, with their options", async () => {
-  expect(page_html()).toBe('<p class="page">id <!-- -->_s-R_0_</p>');
-  const stream = await page_stream();
+  expect(pageHtml()).toBe('<p class="page">id <!-- -->_s-R_0_</p>');
+  const stream = await pageStream();
   const html = await new Response(stream).text();
   expect(html).toContain('<p class="page">id <!-- -->_w-R_0_</p>');
   // Its scripts, a src and a descriptor, with the scripts' nonce.

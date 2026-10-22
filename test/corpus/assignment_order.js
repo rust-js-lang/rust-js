@@ -10,7 +10,7 @@ function totalDebug_fmt(total) {
   return `Total(${total[0]})`;
 }
 
-function totalAddAssignI32_add_assign(total, other) {
+function totalAddAssignI32_addAssign(total, other) {
   total[0] = (total[0] + other) | 0;
 }
 
@@ -72,7 +72,7 @@ function main() {
   const p = $index(ps, index("field +=", 0));
   p.x = (p.x + value$10) | 0;
   const totals = [[0]];
-  totalAddAssignI32_add_assign($index(totals, index("AddAssign", 0)), value("AddAssign", 7));
+  totalAddAssignI32_addAssign($index(totals, index("AddAssign", 0)), value("AddAssign", 7));
   set(a);
   const rows = [[0, 0]];
   const value$11 = value("rows", 9);

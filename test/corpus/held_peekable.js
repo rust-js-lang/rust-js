@@ -41,7 +41,7 @@ export function withPositionClone(IClone, IItemClone) {
 
 function withPositionClone_clone(withPosition, IClone, IItemClone) {
   return {
-    handled_first: withPosition.handled_first,
+    handledFirst: withPosition.handledFirst,
     peekable: peekableClone_clone(
       withPosition.peekable,
       fuseClone(IClone),
@@ -51,9 +51,9 @@ function withPositionClone_clone(withPosition, IClone, IItemClone) {
   };
 }
 
-function with_position(iter, IIterator, IFused) {
+function withPosition(iter, IIterator, IFused) {
   return {
-    handled_first: false,
+    handledFirst: false,
     peekable: iterator_peekable(iterator_fuse(iter, IIterator, IFused), { next: $nextSome }),
   };
 }
@@ -64,8 +64,8 @@ function withPositionIterator_next(withPosition) {
     return;
   }
   const item = $someValue(value);
-  const first = !withPosition.handled_first;
-  withPosition.handled_first = true;
+  const first = !withPosition.handledFirst;
+  withPosition.handledFirst = true;
   const last = $peekSome(withPosition.peekable) == null;
   return [first ? (last ? "only" : "first") : last ? "last" : "middle", item];
 }
@@ -84,12 +84,12 @@ function withPositionDebug_fmt(withPosition, options, PeekableDebug) {
     ? $pretty(
         "WithPosition {",
         [
-          `handled_first: ${withPosition.handled_first}`,
+          `handled_first: ${withPosition.handledFirst}`,
           `peekable: ${PeekableDebug.fmt(withPosition.peekable, options)}`,
         ],
         "}",
       )
-    : `WithPosition { handled_first: ${withPosition.handled_first}, peekable: ${PeekableDebug.fmt(withPosition.peekable, options)} }`;
+    : `WithPosition { handled_first: ${withPosition.handledFirst}, peekable: ${PeekableDebug.fmt(withPosition.peekable, options)} }`;
 }
 
 // One of an array's iterator, which shows what it peeked at.
@@ -137,7 +137,7 @@ function lexerDebug_fmt(lexer, options) {
 }
 
 function main() {
-  const words = with_position($iter(["a", "b", "c"]), { next: $next }, true);
+  const words = withPosition($iter(["a", "b", "c"]), { next: $next }, true);
   console.log(
     `${withPositionDebug_fmt(
       words,
@@ -290,7 +290,7 @@ function main() {
   console.log(
     `${lexerDebug_fmt(lexer)} (${arg$1[0]}, ${arg$1[1] == null ? "None" : `Some(${arg$1[1]})`})`,
   );
-  const one = with_position({ start: 1, end: 2 }, { next: $rangeNext }, true);
+  const one = withPosition({ start: 1, end: 2 }, { next: $rangeNext }, true);
   const next = withPositionIterator_next(one);
   const value$1 = withPositionIterator_next(one);
   console.log(

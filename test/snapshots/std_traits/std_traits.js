@@ -110,7 +110,7 @@ export function defaults() {
 }
 
 /** A clone of a `Vec` that's changed is an array of its own. */
-export function vec_clones() {
+export function vecClones() {
   const v = [1, 2];
   const w = v.slice();
   v.push(3);
@@ -118,7 +118,7 @@ export function vec_clones() {
 }
 
 /** A derived clone copies what changes: here `tags`, pushed to. */
-export function struct_clones() {
+export function structClones() {
   const s = { size: 1, tags: ["a"], mode: "On" };
   const t = { ...s, tags: s.tags.slice() };
   t.tags.push("b");
@@ -130,7 +130,7 @@ export function struct_clones() {
  * A hand-written clone runs: called directly, from a derived one, from an
  * iterator's `cloned`, and through a generic.
  */
-export function hand_written() {
+export function handWritten() {
   const a = { generation: 0 };
   const b = trackedClone_clone(a);
   const holder = { tracked: b, label: "h" };
@@ -154,7 +154,7 @@ function points(s) {
 }
 
 /** A derived clone of an enum copies the variant whose `Vec` changes. */
-export function enum_clones() {
+export function enumClones() {
   const a = { TAG: "Poly", _0: [1] };
   const other = a.TAG === "Poly" ? { ...a, _0: a._0.slice() } : a;
   let b;
@@ -178,17 +178,17 @@ export function conversions() {
   return [a[0], b[0], c[0]];
 }
 
-function evenTryFromU32_try_from(n) {
+function evenTryFromU32_tryFrom(n) {
   if (n % 2 === 0) {
     return { TAG: "Ok", _0: [n] };
   }
   return { TAG: "Err", _0: `${n} is odd` };
 }
 
-export function fallible_conversions(n) {
-  const value = evenTryFromU32_try_from(n);
+export function fallibleConversions(n) {
+  const value = evenTryFromU32_tryFrom(n);
   const direct = value.TAG === "Ok" ? `even ${value._0[0]}` : value._0;
-  const inferred = evenTryFromU32_try_from((n + 1) >>> 0);
+  const inferred = evenTryFromU32_tryFrom((n + 1) >>> 0);
   const result = inferred.TAG === "Ok" ? { TAG: "Ok", _0: String(inferred._0[0]) } : inferred;
   return `${direct}, ${result.TAG === "Ok" ? result._0 : result._0}`;
 }
@@ -213,7 +213,7 @@ export function same(a, b, TPartialEq) {
 }
 
 /** A `T: Eq` compares with `T`'s `PartialEq`. */
-export function count_equal(items, x, TPartialEq) {
+export function countEqual(items, x, TPartialEq) {
   return items.filter((item) => TPartialEq.eq(item, x)).length;
 }
 
@@ -243,14 +243,14 @@ export function equalities() {
   ];
 }
 
-export function generic_equalities() {
+export function genericEqualities() {
   const all = [version(1, "a"), version(2, "b"), version(1, "c")];
   const pairs = [
     [1, "a"],
     [2, "b"],
   ];
   return [
-    count_equal(all, version(1, "z"), versionPartialEq()),
+    countEqual(all, version(1, "z"), versionPartialEq()),
     same(
       pairs,
       [
@@ -312,13 +312,13 @@ function routeDisplay_fmt(route) {
     f += pointDisplay_fmt(stop);
   }
   if (route.closed) {
-    f += write_loop(route.stops.length);
+    f += writeLoop(route.stops.length);
   }
   return f;
 }
 
 /** A helper that writes to the same formatter. */
-function write_loop(stops) {
+function writeLoop(stops) {
   return ` (a loop of ${stops})`;
 }
 
@@ -426,7 +426,7 @@ export function iterations() {
   ];
 }
 
-export function generic_iterations() {
+export function genericIterations() {
   return [
     $iterator(
       { times: 3 },
@@ -456,12 +456,12 @@ export function generic_iterations() {
 
 export function wordPartialOrd() {
   if ($wordPartialOrd === undefined) {
-    $wordPartialOrd = { PartialEq: () => ({ eq: $eq }), partial_cmp: wordPartialOrd_partial_cmp };
+    $wordPartialOrd = { PartialEq: () => ({ eq: $eq }), partialCmp: wordPartialOrd_partialCmp };
   }
   return $wordPartialOrd;
 }
 
-function wordPartialOrd_partial_cmp(word, other) {
+function wordPartialOrd_partialCmp(word, other) {
   return wordOrd_cmp(word, other);
 }
 
@@ -484,8 +484,8 @@ export function largest(xs, TOrd, TCopy) {
   return $maxBy(xs, TOrd.cmp, true);
 }
 
-export function in_order(a, b, TPartialOrd) {
-  return TPartialOrd.partial_cmp(a, b) <= 0;
+export function inOrder(a, b, TPartialOrd) {
+  return TPartialOrd.partialCmp(a, b) <= 0;
 }
 
 export function orderings() {
@@ -507,7 +507,7 @@ export function orderings() {
   ];
 }
 
-export function partial_orderings() {
+export function partialOrderings() {
   const p = { x: 1, y: NaN };
   const q = { x: 1, y: 2 };
   const r = { x: 0.5, y: NaN };
@@ -519,7 +519,7 @@ export function partial_orderings() {
   ];
 }
 
-export function more_orderings() {
+export function moreOrderings() {
   const words = [["pear"], ["fig"], ["apple"], ["kiwi"]];
   words.sort(wordOrd_cmp);
   const priorities = ["High", "Low", "Mid"];
@@ -549,7 +549,7 @@ export function more_orderings() {
     $index(priorities, 0) === "Low",
     (3 == null ? (undefined == null ? 0 : -1) : undefined == null ? 1 : $cmp(3)) > 0,
     sizes,
-    in_order("abc", "abd", { partial_cmp: $cmp }),
+    inOrder("abc", "abd", { partialCmp: $cmp }),
     $index(byKey, 0).major,
   ];
 }
@@ -662,7 +662,7 @@ export function debugs(n) {
  * `T: Iterator` is an array or a JS iterator, so generic code takes it with
  * `Iterator.from`, and one of the crate's own is given as a JS iterator.
  */
-export function evens_below(n) {
+export function evensBelow(n) {
   return $lazyRange(0, n).filter((x) => x % 2 === 0);
 }
 
@@ -686,11 +686,11 @@ export function looped(items) {
   return sum;
 }
 
-export function generic_iterators(n) {
+export function genericIterators(n) {
   return [
-    total(evens_below(n)),
+    total(evensBelow(n)),
     middle($iterator(countdown(n), countdownIterator_next), 2),
-    middle(evens_below(Math.imul(n, 2) >>> 0), 3),
+    middle(evensBelow(Math.imul(n, 2) >>> 0), 3),
     looped([n, 2, 3]),
     total($iterator({ n }, countdownIterator_next)),
     $iterator(countdown(n), countdownIterator_next)

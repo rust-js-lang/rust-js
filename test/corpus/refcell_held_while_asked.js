@@ -21,7 +21,7 @@ export function entry() {
 
 const SHARED = { value: [1] };
 
-function asks_shared() {
+function asksShared() {
   return ((s) => {
     const tryBorrowMut = $tryBorrow(s, true);
     const result = tryBorrowMut.TAG === "Err";
@@ -211,7 +211,7 @@ function main() {
     const borrow = $borrow(s, true);
     let result;
     try {
-      result = borrow.value.map(asks_shared);
+      result = borrow.value.map(asksShared);
     } finally {
       $unborrow(borrow);
     }

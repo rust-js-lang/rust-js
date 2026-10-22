@@ -9,7 +9,7 @@ function loud(n) {
   return n;
 }
 
-function in_range(value) {
+function inRange(value) {
   loud(value) <= 9;
   return Math.imul(value, 2) >>> 0;
 }
@@ -20,7 +20,7 @@ function bounded(value, MIN, MAX) {
 }
 
 function main() {
-  console.log(`${in_range(3)} ${in_range(9)}`);
+  console.log(`${inRange(3)} ${inRange(9)}`);
   console.log(`${bounded(4, 1, 5)}`);
 }
 //# sourceMappingURL=case.js.map

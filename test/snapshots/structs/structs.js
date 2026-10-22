@@ -38,7 +38,7 @@ export function grow(w, h, by) {
  * `Point` is `Copy` and changed in place in this crate, so copying one
  * copies the JS object: changing `b` must leave `a` alone.
  */
-export function copies_are_separate(x) {
+export function copiesAreSeparate(x) {
   const a = point(x, 0);
   const b = { ...a };
   b.x = (b.x + 1) | 0;
@@ -51,14 +51,14 @@ function bump(p) {
   return p;
 }
 
-export function caller_keeps_its_point(y) {
+export function callerKeepsItsPoint(y) {
   const a = point(0, y);
   const b = bump({ ...a });
   return [{ ...a }, { ...b }];
 }
 
 /** `Rect` moves, but the `Point` inside it was copied from `a`. */
-export function moves_share_nothing(x) {
+export function movesShareNothing(x) {
   const a = point(x, x);
   const s = { origin: { ...a }, size: [1, 1] };
   s.origin.x = 0;
@@ -69,7 +69,7 @@ export function moves_share_nothing(x) {
  * A variable bound by a pattern keeps its value, even when the struct it
  * came from is then moved and changed.
  */
-export function bound_before_move(x) {
+export function boundBeforeMove(x) {
   const r = rect(x, x, 1, 1);
   const before = r.origin.x;
   const s = r;
@@ -81,13 +81,13 @@ export function bound_before_move(x) {
  * Returned through a reference, a `Copy` field is a copy: the caller's
  * struct still has its own.
  */
-function origin_of(r) {
+function originOf(r) {
   return { ...r.origin };
 }
 
-export function returned_copy_is_separate(x) {
+export function returnedCopyIsSeparate(x) {
   const r = rect(x, x, 1, 1);
-  const p = origin_of(r);
+  const p = originOf(r);
   p.x = (p.x + 1) | 0;
   return [r.origin.x, p.x];
 }
@@ -96,7 +96,7 @@ function marked(m) {
   return m.at == null ? m.at : { ...m.at };
 }
 
-export function option_copy_is_separate(x) {
+export function optionCopyIsSeparate(x) {
   const m = { at: point(x, 0) };
   const option = marked(m);
   const fallback = point(0, 0);
@@ -113,7 +113,7 @@ export function option_copy_is_separate(x) {
 }
 
 /** `*r` of a reference a call returns is a copy too. */
-export function deref_copy_is_separate(x) {
+export function derefCopyIsSeparate(x) {
   const points = [point(x, 0)];
   const p = { ...$unwrap(points[0]) };
   p.x = (p.x + 1) | 0;
@@ -121,7 +121,7 @@ export function deref_copy_is_separate(x) {
 }
 
 /** Struct update syntax: fields not written come from `base`. */
-export function with_x(x, y) {
+export function withX(x, y) {
   const base = point(0, y);
   return { x, y: base.y };
 }
@@ -131,7 +131,7 @@ export function with_x(x, y) {
  * declaration order. Here `y` is written first, so its division by zero
  * panics before `x`'s remainder does.
  */
-export function written_order(a, b) {
+export function writtenOrder(a, b) {
   const value = $div(100, a, -2147483648) | 0;
   return { x: $rem(100, b, -2147483648) | 0, y: value };
 }
@@ -141,7 +141,7 @@ export function divmod(a, b) {
   return [$div(a, b) >>> 0, $rem(a, b) >>> 0];
 }
 
-export function divmod_sum(a, b) {
+export function divmodSum(a, b) {
   const [q, r] = divmod(a, b);
   return (q + r) >>> 0;
 }

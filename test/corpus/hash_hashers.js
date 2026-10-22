@@ -21,7 +21,7 @@ export function tallyHasher() {
     $tallyHasher = $hasher({
       finish: tallyHasher_finish,
       write: (arg0, arg1) => tallyHasher_write(arg0.value, arg1),
-      write_u64: (arg0, arg1) => tallyHasher_write_u64(arg0.value, arg1),
+      writeU64: (arg0, arg1) => tallyHasher_writeU64(arg0.value, arg1),
     });
   }
   return $tallyHasher;
@@ -35,7 +35,7 @@ function tallyHasher_write(tally, bytes) {
   tally[0].push(`[${bytes.join(", ")}]`);
 }
 
-function tallyHasher_write_u64(tally, n) {
+function tallyHasher_writeU64(tally, n) {
   tally[0].push(`u64 ${n}`);
 }
 
@@ -72,18 +72,18 @@ function fnvHasher_write(fnv, bytes) {
 }
 
 function entryHash_hash(entry, state, HHasher) {
-  HHasher.write_str(state, entry.key);
+  HHasher.writeStr(state, entry.key);
   if (entry.rank != null) {
-    HHasher.write_isize(state, 1);
-    HHasher.write_u32(state, entry.rank);
+    HHasher.writeIsize(state, 1);
+    HHasher.writeU32(state, entry.rank);
   } else {
-    HHasher.write_isize(state, 0);
+    HHasher.writeIsize(state, 0);
   }
 }
 
 export function entryHash() {
   if ($entryHash === undefined) {
-    $entryHash = { hash: entryHash_hash, hash_slice: $hashSlice(entryHash_hash) };
+    $entryHash = { hash: entryHash_hash, hashSlice: $hashSlice(entryHash_hash) };
   }
   return $entryHash;
 }
@@ -104,13 +104,13 @@ function fnv(value, THash) {
   return fnvHasher_finish(hasher);
 }
 
-function write_twice(hasher, n, HHasher) {
-  HHasher.write_u32(hasher, n);
-  HHasher.write_u32(hasher, n);
+function writeTwice(hasher, n, HHasher) {
+  HHasher.writeU32(hasher, n);
+  HHasher.writeU32(hasher, n);
 }
 
-function through_dyn(hasher, n) {
-  hasher.impl.write_u16(hasher, n);
+function throughDyn(hasher, n) {
+  hasher.impl.writeU16(hasher, n);
   let tmp = hasher;
   const value = {
     get value() {
@@ -123,37 +123,36 @@ function through_dyn(hasher, n) {
   ({
     finish: (object) => object.impl.finish(object.value),
     write: (object, arg1) => object.value.impl.write(object.value, arg1),
-    write_u8: (object, arg1) => object.value.impl.write_u8(object.value, arg1),
-    write_u16: (object, arg1) => object.value.impl.write_u16(object.value, arg1),
-    write_u32: (object, arg1) => object.value.impl.write_u32(object.value, arg1),
-    write_u64: (object, arg1) => object.value.impl.write_u64(object.value, arg1),
-    write_u128: (object, arg1) => object.value.impl.write_u128(object.value, arg1),
-    write_usize: (object, arg1) => object.value.impl.write_usize(object.value, arg1),
-    write_i8: (object, arg1) => object.value.impl.write_i8(object.value, arg1),
-    write_i16: (object, arg1) => object.value.impl.write_i16(object.value, arg1),
-    write_i32: (object, arg1) => object.value.impl.write_i32(object.value, arg1),
-    write_i64: (object, arg1) => object.value.impl.write_i64(object.value, arg1),
-    write_i128: (object, arg1) => object.value.impl.write_i128(object.value, arg1),
-    write_isize: (object, arg1) => object.value.impl.write_isize(object.value, arg1),
-    write_length_prefix: (object, arg1) =>
-      object.value.impl.write_length_prefix(object.value, arg1),
-    write_str: (object, arg1) => object.value.impl.write_str(object.value, arg1),
-  }).write_u16(value, n);
+    writeU8: (object, arg1) => object.value.impl.writeU8(object.value, arg1),
+    writeU16: (object, arg1) => object.value.impl.writeU16(object.value, arg1),
+    writeU32: (object, arg1) => object.value.impl.writeU32(object.value, arg1),
+    writeU64: (object, arg1) => object.value.impl.writeU64(object.value, arg1),
+    writeU128: (object, arg1) => object.value.impl.writeU128(object.value, arg1),
+    writeUsize: (object, arg1) => object.value.impl.writeUsize(object.value, arg1),
+    writeI8: (object, arg1) => object.value.impl.writeI8(object.value, arg1),
+    writeI16: (object, arg1) => object.value.impl.writeI16(object.value, arg1),
+    writeI32: (object, arg1) => object.value.impl.writeI32(object.value, arg1),
+    writeI64: (object, arg1) => object.value.impl.writeI64(object.value, arg1),
+    writeI128: (object, arg1) => object.value.impl.writeI128(object.value, arg1),
+    writeIsize: (object, arg1) => object.value.impl.writeIsize(object.value, arg1),
+    writeLengthPrefix: (object, arg1) => object.value.impl.writeLengthPrefix(object.value, arg1),
+    writeStr: (object, arg1) => object.value.impl.writeStr(object.value, arg1),
+  }).writeU16(value, n);
 }
 
 function main() {
   console.log(
     `[${written([-3n, 4n, "x"], {
       hash: (value, state, H) => {
-        H.write_i64(state, value[0]);
-        H.write_u64(state, value[1]);
-        H.write_u32(state, value[2].codePointAt(0));
+        H.writeI64(state, value[0]);
+        H.writeU64(state, value[1]);
+        H.writeU32(state, value[2].codePointAt(0));
       },
-      hash_slice: (items, state, H) => {
+      hashSlice: (items, state, H) => {
         for (const item of items) {
-          H.write_i64(state, item[0]);
-          H.write_u64(state, item[1]);
-          H.write_u32(state, item[2].codePointAt(0));
+          H.writeI64(state, item[0]);
+          H.writeU64(state, item[1]);
+          H.writeU32(state, item[2].codePointAt(0));
         }
       },
     })
@@ -163,25 +162,25 @@ function main() {
   console.log(
     `[${written([1, undefined], {
       hash: (value, state, H) => {
-        H.write_length_prefix(state, value.length);
+        H.writeLengthPrefix(state, value.length);
         for (const item of value) {
           if (item != null) {
-            H.write_isize(state, 1);
-            H.write_u8(state, item);
+            H.writeIsize(state, 1);
+            H.writeU8(state, item);
           } else {
-            H.write_isize(state, 0);
+            H.writeIsize(state, 0);
           }
         }
       },
-      hash_slice: (items, state, H) => {
+      hashSlice: (items, state, H) => {
         for (const item of items) {
-          H.write_length_prefix(state, item.length);
+          H.writeLengthPrefix(state, item.length);
           for (const item$1 of item) {
             if (item$1 != null) {
-              H.write_isize(state, 1);
-              H.write_u8(state, item$1);
+              H.writeIsize(state, 1);
+              H.writeU8(state, item$1);
             } else {
-              H.write_isize(state, 0);
+              H.writeIsize(state, 0);
             }
           }
         }
@@ -193,11 +192,11 @@ function main() {
   console.log(
     `[${written("ab", {
       hash: (value, state, H) => {
-        H.write_str(state, value);
+        H.writeStr(state, value);
       },
-      hash_slice: (items, state, H) => {
+      hashSlice: (items, state, H) => {
         for (const item of items) {
-          H.write_str(state, item);
+          H.writeStr(state, item);
         }
       },
     })
@@ -207,15 +206,15 @@ function main() {
   console.log(
     `[${written([1, 2], {
       hash: (value, state, H) => {
-        H.write_length_prefix(state, value.length);
+        H.writeLengthPrefix(state, value.length);
         H.write(
           state,
           value.flatMap((n) => $toBytes(n, 2, true)),
         );
       },
-      hash_slice: (items, state, H) => {
+      hashSlice: (items, state, H) => {
         for (const item of items) {
-          H.write_length_prefix(state, item.length);
+          H.writeLengthPrefix(state, item.length);
           H.write(
             state,
             item.flatMap((n) => $toBytes(n, 2, true)),
@@ -234,11 +233,11 @@ function main() {
   console.log(
     `${fnv("hello", {
       hash: (value, state, H) => {
-        H.write_str(state, value);
+        H.writeStr(state, value);
       },
-      hash_slice: (items, state, H) => {
+      hashSlice: (items, state, H) => {
         for (const item of items) {
-          H.write_str(state, item);
+          H.writeStr(state, item);
         }
       },
     })} ${fnv({ key: "k" }, entryHash())}`,
@@ -246,22 +245,22 @@ function main() {
 
   const tally = [[]];
   const hasher$1 = { value: tally };
-  write_twice(hasher$1, 1, tallyHasher());
+  writeTwice(hasher$1, 1, tallyHasher());
   $assign(tally, hasher$1.value);
-  tallyHasher().write_i64({ value: tally }, -1n);
-  tallyHasher().write_usize({ value: tally }, 5);
+  tallyHasher().writeI64({ value: tally }, -1n);
+  tallyHasher().writeUsize({ value: tally }, 5);
   console.log(
     `[${tally[0].map((item) => $debugStr(item)).join(", ")}] ${tallyHasher_finish(tally)}`,
   );
 
   const hasher = new $SipHasher(1, 3);
   const hasher$2 = { value: hasher };
-  write_twice(hasher$2, 7, $sipHasher);
+  writeTwice(hasher$2, 7, $sipHasher);
   $assign(hasher, hasher$2.value);
-  through_dyn({ value: hasher, impl: $sipHasher }, 9);
+  throughDyn({ value: hasher, impl: $sipHasher }, 9);
   console.log(`${hasher.finish()}`);
   const fnv$1 = fnvDefault_default();
-  through_dyn({ value: fnv$1, impl: fnvHasher() }, 9);
+  throughDyn({ value: fnv$1, impl: fnvHasher() }, 9);
   console.log(`${fnvHasher_finish(fnv$1)}`);
   const keyed = new $SipHasher(2, 4, 3n, 4n);
   const plain = new $SipHasher(2, 4);

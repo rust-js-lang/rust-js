@@ -6,17 +6,17 @@ export function entry() {
   main();
 }
 
-function slice_assume_init_mut(slice) {
+function sliceAssumeInitMut(slice) {
   return slice;
 }
 
 function main() {
   const buf = [1, 2, 3];
-  const all = slice_assume_init_mut(buf);
+  const all = sliceAssumeInitMut(buf);
   all[$at(all, 1)] = 20;
   console.log(`[${all.join(", ")}]`);
   const words = ["a", "b"];
-  const ws = slice_assume_init_mut(words);
+  const ws = sliceAssumeInitMut(words);
   const length = ws.length;
   if (0 >= length) {
     throw new Error(`index out of bounds: the len is ${length} but the index is 0`);

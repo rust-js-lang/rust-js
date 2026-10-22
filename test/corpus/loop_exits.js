@@ -7,7 +7,7 @@ export function entry() {
   main();
 }
 
-function text_in(root, path) {
+function textIn(root, path) {
   let dir = root;
   const parts = iterator_peekable($iter(path.split("/")), { next: $next });
   while (true) {
@@ -34,7 +34,7 @@ function text_in(root, path) {
   }
 }
 
-function first_big(v) {
+function firstBig(v) {
   while (true) {
     const x = v.pop();
     if (x == null) {
@@ -49,7 +49,7 @@ function first_big(v) {
   return 0;
 }
 
-function small_sum(v, flag) {
+function smallSum(v, flag) {
   let total = 0;
   if (flag) {
     while (true) {
@@ -104,7 +104,7 @@ function shadowed(v) {
   return n;
 }
 
-function first_large(v) {
+function firstLarge(v) {
   let n = 0;
   while (true) {
     const t = v.pop();
@@ -133,7 +133,7 @@ function stopped(v) {
   return (n + 100) >>> 0;
 }
 
-function float_sum(v) {
+function floatSum(v) {
   let total = 0;
   while (true) {
     const x = v.pop();
@@ -155,21 +155,21 @@ function main() {
   root.set("a", { TAG: "Dir", _0: inner });
   root.set("c.txt", { TAG: "File", _0: "top" });
   for (const path of ["a/b.txt", "c.txt", "a", "a/x", "c.txt/y", ""]) {
-    const arg = text_in(root, path);
+    const arg = textIn(root, path);
     console.log(`${path}: ${arg == null ? "None" : `Some(${$debugStr(arg)})`}`);
   }
-  console.log(`${first_big([9, 2, 3])} ${first_big([1, 2])}`);
+  console.log(`${firstBig([9, 2, 3])} ${firstBig([1, 2])}`);
   console.log(`${once([9, 9])} ${once([1, 0])} ${once([])}`);
   console.log(`${shadowed([1, 0])} ${shadowed([3, 0])} ${shadowed([])}`);
-  const firstLarge = first_large([9, 1, 2]);
-  const value = first_large([1]);
+  const value = firstLarge([9, 1, 2]);
+  const value$1 = firstLarge([1]);
   console.log(
-    `${firstLarge == null ? "None" : `Some(${firstLarge})`} ${value == null ? "None" : `Some(${value})`}`,
+    `${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`}`,
   );
   console.log(`${stopped([0, 1, 2])} ${stopped([9, 1])} ${stopped([])}`);
   console.log(
-    `${$displayF64(float_sum([1.5, 2.5]))} ${$displayF64(float_sum([NaN, 1]))} ${$displayF64(float_sum([60]))}`,
+    `${$displayF64(floatSum([1.5, 2.5]))} ${$displayF64(floatSum([NaN, 1]))} ${$displayF64(floatSum([60]))}`,
   );
-  console.log(`${small_sum([1, 2], true)} ${small_sum([60, 1], true)} ${small_sum([], false)}`);
+  console.log(`${smallSum([1, 2], true)} ${smallSum([60, 1], true)} ${smallSum([], false)}`);
 }
 //# sourceMappingURL=case.js.map

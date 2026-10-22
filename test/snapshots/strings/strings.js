@@ -39,7 +39,7 @@ export function replaced(s) {
 }
 
 /** `strip_prefix` and `strip_suffix` are options. */
-export function module_name(path) {
+export function moduleName(path) {
   const rest = $stripPrefix(path, "src/");
   const file = rest != null ? rest : path;
   return $stripSuffix(file, ".rs") ?? file;
@@ -84,7 +84,7 @@ export function separator(windows) {
 }
 
 /** `split_once` and `rsplit_once`: an option of the two sides. */
-export function folder_and_file(path) {
+export function folderAndFile(path) {
   const splitOnce = $splitOnce(path, "/");
   let first;
   if (splitOnce) {
@@ -152,7 +152,7 @@ function tick(c) {
  * `format!`'s arguments run in the order they're written, whatever order
  * the template shows them in, and each runs once.
  */
-export function format_order(start) {
+export function formatOrder(start) {
   const c = { value: start };
   const value = tick(c);
   return `${tick(c)} ${value} ${value} ${c.value}`;

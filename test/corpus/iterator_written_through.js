@@ -24,7 +24,7 @@ function countIterator_next(count) {
 }
 
 function productIterator_next(product, IIterator, JClone, JIterator, IItemClone) {
-  const { a, b, b_orig: bOrig } = product;
+  const { a, b, bOrig } = product;
   const next = JIterator.next(b);
   let eltB;
   if (next == null) {
@@ -36,19 +36,19 @@ function productIterator_next(product, IIterator, JClone, JIterator, IItemClone)
     }
     const x = $someValue(value$2);
     const value$1 = IIterator.next(a);
-    product.a_cur = value$1;
+    product.aCur = value$1;
     eltB = x;
   } else {
     const x = $someValue(next);
     eltB = x;
   }
   const a$1 =
-    product.a_cur == null ? product.a_cur : $some(IItemClone.clone($someValue(product.a_cur)));
+    product.aCur == null ? product.aCur : $some(IItemClone.clone($someValue(product.aCur)));
   return a$1 != null ? [$someValue(a$1), eltB] : undefined;
 }
 
 function product(a, b, IIterator, JClone, IItemClone) {
-  return { a, a_cur: IIterator.next(a), b: JClone.clone(b), b_orig: b };
+  return { a, aCur: IIterator.next(a), b: JClone.clone(b), bOrig: b };
 }
 
 function main() {

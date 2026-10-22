@@ -11,7 +11,7 @@ export function paths() {
   return join(join("a", "b"), join$1);
 }
 
-export function file_name() {
+export function fileName() {
   return posix.basename("/tmp/x/y.txt");
 }
 

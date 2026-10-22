@@ -200,7 +200,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "std::str::from_utf8_unchecked_mut" | "std::str::<impl str>::from_utf8_unchecked_mut" => {
                 Some(TextOp::FromUtf8Mut { unchecked: true })
             }
-            "std::str::Utf8Error::valid_up_to" => Some(TextOp::Utf8Part("valid_up_to")),
+            "std::str::Utf8Error::valid_up_to" => Some(TextOp::Utf8Part("validUpTo")),
             // A `Utf8Chunk`'s parts, `{ valid, invalid }` (ADR 0341).
             "std::str::Utf8Chunk::<'a>::valid" => Some(TextOp::Utf8Part("valid")),
             "std::str::Utf8Chunk::<'a>::invalid" => Some(TextOp::Utf8Part("invalid")),
@@ -253,7 +253,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             _ => {}
         }
         let utf8 = match std_path(tcx, def_id).as_str() {
-            "std::str::Utf8Error::error_len" => Some(TextOp::Utf8Part("error_len")),
+            "std::str::Utf8Error::error_len" => Some(TextOp::Utf8Part("errorLen")),
             "std::string::FromUtf8Error::utf8_error" => Some(TextOp::Utf8Part("error")),
             "std::string::FromUtf8Error::into_bytes" | "std::string::FromUtf8Error::as_bytes" => {
                 Some(TextOp::Utf8Part("bytes"))

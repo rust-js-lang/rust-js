@@ -43,7 +43,7 @@ function nothingDebug_fmt(nothing) {
   return "Nothing";
 }
 
-function bits_of(x) {
+function bitsOf(x) {
   return $floatToBits(x, 4);
 }
 
@@ -63,7 +63,7 @@ function main() {
   const value = [7];
   console.log(`${value[0]}`);
   console.log("4294967295");
-  console.log(`${bits_of(1)} ${$displayF32($floatFromBits(1078530011, 4))}`);
+  console.log(`${bitsOf(1)} ${$displayF32($floatFromBits(1078530011, 4))}`);
   console.log(`${$displayF64($floatFromBits(4611686018427387904n, 8))}`);
   const value$1 = { low: 1, high: 2 };
   console.log(`[${[value$1.low, value$1.high].join(", ")}]`);

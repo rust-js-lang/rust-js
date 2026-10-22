@@ -30,7 +30,7 @@ function total(it) {
   return sum;
 }
 
-function first_two(it) {
+function firstTwo(it) {
   return [$next(it), $next(it)];
 }
 
@@ -53,7 +53,7 @@ function main() {
   console.log(`${numbers(false).reduce((a, b) => (a + b) >>> 0, 0)}`);
 
   const it = $iter(v);
-  const value$1 = first_two(it);
+  const value$1 = firstTwo(it);
   console.log(
     `(${value$1[0] == null ? "None" : `Some(${value$1[0]})`}, ${value$1[1] == null ? "None" : `Some(${value$1[1]})`})`,
   );

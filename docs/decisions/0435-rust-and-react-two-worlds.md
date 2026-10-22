@@ -1,6 +1,8 @@
 # 0435. Rust's world and React's: each its own names, JSX the boundary
 
-Status: Accepted. Supersedes [0046](0046-camel-case-crates.md). Extends
+Status: Accepted. Amended by [0573](0573-every-rust-name-is-camel-case-in-js.md):
+every Rust name is camelCase in JS, not React's alone. Supersedes
+[0046](0046-camel-case-crates.md). Extends
 [0038](0038-js-names-and-destructuring.md), [0040](0040-jsx.md) and
 [0213](0213-props-as-written.md).
 

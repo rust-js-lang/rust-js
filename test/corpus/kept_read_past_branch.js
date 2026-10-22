@@ -13,7 +13,7 @@ function id(x) {
 }
 
 // Dropped after the loop only.
-function dropped_after() {
+function droppedAfter() {
   const loud = [5];
   let w = 0;
   while (true) {
@@ -77,7 +77,7 @@ function dropped_after() {
 
 // Dropped at the end of each pass too, where the next one's `len()` is a
 // new value, not one to read before it.
-function dropped_each_pass() {
+function droppedEachPass() {
   let w = 0;
   while (w < id(2)) {
     w = (w + 1) >>> 0;
@@ -124,7 +124,7 @@ function dropped_each_pass() {
 }
 
 function main() {
-  dropped_after();
-  dropped_each_pass();
+  droppedAfter();
+  droppedEachPass();
 }
 //# sourceMappingURL=case.js.map

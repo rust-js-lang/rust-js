@@ -107,7 +107,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             let tr = ty::TraitRef::new_from_args(self.tcx, partial_ord, self.args_of(partial_ord, ty));
             let dictionary = self.evidence_for(tr).ok_or_else(|| self.no_evidence(span, tr))?;
-            return Ok(Expr::call(Expr::member(dictionary, "partial_cmp"), vec![a, b]));
+            let partial_cmp = super::bindings::trait_method_name(self.tcx, partial_ord, "partial_cmp");
+            return Ok(Expr::call(Expr::member(dictionary, partial_cmp), vec![a, b]));
         }
         // A hand-written one: `cmp`, or `partial_cmp` if that's what's asked
         // for, or all there is.

@@ -19,7 +19,7 @@ function longest(it) {
   });
 }
 
-function first_some(items, TClone) {
+function firstSome(items, TClone) {
   return $reduce(
     items.values().map((item) => (item == null ? item : $some(TClone.clone($someValue(item))))),
     (a, b) => a ?? b,
@@ -33,15 +33,15 @@ function main() {
   console.log(`${e == null ? "None" : `Some(${e})`} ${s == null ? "None" : `Some(${s})`}`);
   const value = longest($iter(["ab", "abc", "x"]));
   console.log(`${value == null ? "None" : `Some(${$debugStr(value)})`}`);
-  const value$1 = first_some([undefined, 2, 3], { clone: (value) => value });
+  const value$1 = firstSome([undefined, 2, 3], { clone: (value) => value });
   console.log(
     `${value$1 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$1))})`}`,
   );
-  const value$2 = first_some([undefined], { clone: (value) => value });
+  const value$2 = firstSome([undefined], { clone: (value) => value });
   console.log(
     `${value$2 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$2))})`}`,
   );
-  const value$3 = first_some([], { clone: (value) => value });
+  const value$3 = firstSome([], { clone: (value) => value });
   console.log(
     `${value$3 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$3))})`}`,
   );

@@ -13,7 +13,7 @@ const PRIMES = [2, 3, 5, 7];
 const NOTHING = undefined;
 const LEVEL = "High";
 
-export function size_in_kb() {
+export function sizeInKb() {
   return (SIZE / 1024) >>> 0;
 }
 
@@ -43,7 +43,7 @@ export function pair() {
   return PAIR;
 }
 
-export function prime_sum() {
+export function primeSum() {
   let sum = 0;
   for (const p of PRIMES) {
     sum = (sum + p) >>> 0;

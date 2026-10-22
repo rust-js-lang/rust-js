@@ -16,7 +16,7 @@ export function entry() {
 }
 
 const Restart = {
-  swap_ends(restart, IClone) {
+  swapEnds(restart, IClone) {
     const orig = restart.orig;
     restart.orig = IClone.clone(restart.iter);
     restart.iter = orig;
@@ -55,7 +55,7 @@ function main() {
     { next: $next },
     { clone: (value) => $iter(value.items.slice(value.at, value.end)) },
   );
-  Restart.swap_ends(items, { clone: (value) => $iter(value.items.slice(value.at, value.end)) });
+  Restart.swapEnds(items, { clone: (value) => $iter(value.items.slice(value.at, value.end)) });
   const rest = $lent(
     $iterator(
       items,

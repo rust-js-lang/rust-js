@@ -168,7 +168,7 @@ pub fn rw_read() -> u32 {
   const error = "rust-js does not support locking a lock its thread holds, which deadlocks in Rust\n";
   expect(call("mutex")).toBe(error);
   expect(call("rw")).toBe(error);
-  expect(call("rw_read")).toBe(error);
+  expect(call("rwRead")).toBe(error);
 });
 
 // A path's extension with a separator in it panics, as std's
@@ -267,8 +267,8 @@ pub fn padding_written() -> u32 {
   expect(call("named")).toBe("rust-js does not support reading a union's `name` while it holds `int`, which reads its bytes as another type's\n");
   // A struct field smaller than the union, which can't be held in its place
   // without losing bytes: written into, rust-js's error, not a lost write.
-  expect(call("part_written")).toBe("rust-js does not support reading a union's `small` while it holds `whole`, which reads its bytes as another type's\n");
-  expect(call("padding_written")).toBe("rust-js does not support reading a union's `padded` while it holds `whole`, which reads its bytes as another type's\n");
+  expect(call("partWritten")).toBe("rust-js does not support reading a union's `small` while it holds `whole`, which reads its bytes as another type's\n");
+  expect(call("paddingWritten")).toBe("rust-js does not support reading a union's `padded` while it holds `whole`, which reads its bytes as another type's\n");
 });
 
 // A pointer's address is a number of rust-js's own, shown as Rust shows one,
@@ -323,11 +323,11 @@ pub fn type_id() -> String {
     run([node ?? "node", "--input-type=module", "--eval", `try { console.log((await import(${JSON.stringify(out)})).${name}()); } catch (e) { console.log(e.message); }`]);
   expect(call("debug")).toMatch(/^0x[0-9a-f]+\n$/);
   expect(call("pointer")).toMatch(/^0x[0-9a-f]+ true\n$/);
-  expect(call("no_place")).toBe("rust-js does not support reading through a pointer to no place, at 0x7, which reads memory by where it is\n");
-  expect(call("function_pointer")).toMatch(/^0x[0-9a-f]+\n$/);
+  expect(call("noPlace")).toBe("rust-js does not support reading through a pointer to no place, at 0x7, which reads memory by where it is\n");
+  expect(call("functionPointer")).toMatch(/^0x[0-9a-f]+\n$/);
   expect(call("none")).toBe("0x0 0x0\n");
   expect(call("compared")).toBe("true\n");
-  expect(call("type_id")).toBe("rust-js does not support showing a `TypeId`'s hash, which it doesn't keep\n");
+  expect(call("typeId")).toBe("rust-js does not support showing a `TypeId`'s hash, which it doesn't keep\n");
 });
 
 // A `None` given to JS is `undefined` given, never left out: a JS function

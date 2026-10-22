@@ -85,10 +85,10 @@ function stockErrorDisplay_fmt(stockError, options) {
 function linePriced() {
   if ($linePriced === undefined) {
     $linePriced = {
-      unit_cents: linePriced_unit_cents,
+      unitCents: linePriced_unitCents,
       quantity: linePriced_quantity,
-      total_cents: (self) => {
-        const value = BigInt(linePriced_unit_cents(self));
+      totalCents: (self) => {
+        const value = BigInt(linePriced_unitCents(self));
         return BigInt.asUintN(64, value * BigInt(linePriced_quantity(self)));
       },
     };
@@ -96,8 +96,8 @@ function linePriced() {
   return $linePriced;
 }
 
-function linePriced_unit_cents(line) {
-  return line.unit_cents;
+function linePriced_unitCents(line) {
+  return line.unitCents;
 }
 
 function linePriced_quantity(line) {
@@ -129,7 +129,7 @@ const Inventory = {
     }
     item.stock = (item.stock - wanted) >>> 0;
     inventory.log.push(`reserved ${wanted} of ${sku}`);
-    return { TAG: "Ok", _0: { sku, quantity: wanted, unit_cents: item.price_cents } };
+    return { TAG: "Ok", _0: { sku, quantity: wanted, unitCents: item.priceCents } };
   },
 
   place(inventory, order) {
@@ -156,7 +156,7 @@ const Inventory = {
     return { TAG: "Ok", _0: lines };
   },
 
-  by_category(inventory) {
+  byCategory(inventory) {
     const groups = new Map();
     for (const item of Array.from(inventory.items.values())) {
       $orInsertWith(groups, item.category, () => []).push(item);
@@ -164,12 +164,12 @@ const Inventory = {
     for (const items of $sortedEntries(groups, (a, b) =>
       $cmpIn(["Tools", "Garden", "Kitchen"], a, b),
     ).map((entry) => entry[1])) {
-      items.sort((a, b) => $cmp(b.price_cents, a.price_cents) || $cmp(a.name, b.name));
+      items.sort((a, b) => $cmp(b.priceCents, a.priceCents) || $cmp(a.name, b.name));
     }
     return groups;
   },
 
-  low_stock(inventory, below) {
+  lowStock(inventory, below) {
     const skus = Array.from(inventory.items.values())
       .filter((item) => item.stock < below)
       .map((item) => item.sku);
@@ -177,17 +177,17 @@ const Inventory = {
     return skus;
   },
 
-  value_cents(inventory) {
+  valueCents(inventory) {
     return Array.from(inventory.items.values())
       .map((item) => {
-        const value = BigInt(item.price_cents);
+        const value = BigInt(item.priceCents);
         return BigInt.asUintN(64, value * BigInt(item.stock));
       })
       .reduce((a, b) => BigInt.asUintN(64, a + b), 0n);
   },
 };
 
-function parse_order(text) {
+function parseOrder(text) {
   return $collectResults(
     text
       .split(",")
@@ -220,22 +220,22 @@ function parse_order(text) {
 
 function main() {
   const inventory = Inventory.new([
-    { sku: "HAM-1", name: "Hammer", category: "Tools", price_cents: 1299, stock: 10 },
-    { sku: "SAW-2", name: "Saw", category: "Tools", price_cents: 2450, stock: 3 },
-    { sku: "RAK-1", name: "Rake", category: "Garden", price_cents: 1899, stock: 5 },
-    { sku: "HOS-9", name: "Hose", category: "Garden", price_cents: 1899, stock: 2 },
-    { sku: "PAN-3", name: "Pan", category: "Kitchen", price_cents: 3500, stock: 4 },
-    { sku: "KNF-4", name: "Knife", category: "Kitchen", price_cents: 999, stock: 0 },
+    { sku: "HAM-1", name: "Hammer", category: "Tools", priceCents: 1299, stock: 10 },
+    { sku: "SAW-2", name: "Saw", category: "Tools", priceCents: 2450, stock: 3 },
+    { sku: "RAK-1", name: "Rake", category: "Garden", priceCents: 1899, stock: 5 },
+    { sku: "HOS-9", name: "Hose", category: "Garden", priceCents: 1899, stock: 2 },
+    { sku: "PAN-3", name: "Pan", category: "Kitchen", priceCents: 3500, stock: 4 },
+    { sku: "KNF-4", name: "Knife", category: "Kitchen", priceCents: 999, stock: 0 },
   ]);
-  console.log(`stock value: ${money(Inventory.value_cents(inventory))}`);
+  console.log(`stock value: ${money(Inventory.valueCents(inventory))}`);
 
-  for (const [category, items] of $sortedEntries(Inventory.by_category(inventory), (a, b) =>
+  for (const [category, items] of $sortedEntries(Inventory.byCategory(inventory), (a, b) =>
     $cmpIn(["Tools", "Garden", "Kitchen"], a, b),
   )) {
     console.log(`[${categoryDisplay_fmt(category, { width: 9, align: "Center" })}]`);
     for (const item of items) {
       console.log(
-        `  ${$pad(item.name, 8, "<")}|${$pad(money(BigInt(item.price_cents)), 8, ">")}|${String(item.stock).padStart(4)}`,
+        `  ${$pad(item.name, 8, "<")}|${$pad(money(BigInt(item.priceCents)), 8, ">")}|${String(item.stock).padStart(4)}`,
       );
     }
   }
@@ -254,14 +254,14 @@ function main() {
     if (text == null) {
       break;
     }
-    const parseOrder = parse_order(text);
-    if (parseOrder.TAG === "Ok") {
-      const parsed = parseOrder._0;
+    const value = parseOrder(text);
+    if (value.TAG === "Ok") {
+      const parsed = value._0;
       const order = parsed.map(([sku, n]) => [sku, n]);
       const place = Inventory.place(inventory, order);
       if (place.TAG === "Ok") {
         const total = place._0
-          .map((arg0) => linePriced().total_cents(arg0))
+          .map((arg0) => linePriced().totalCents(arg0))
           .reduce((a, b) => BigInt.asUintN(64, a + b), 0n);
         totals.push(total);
         const skus = place._0.map((line) => line.sku);
@@ -274,11 +274,11 @@ function main() {
         );
       }
     } else {
-      console.log(`bad order: ${parseOrder._0}`);
+      console.log(`bad order: ${value._0}`);
     }
   }
   console.log(
-    `low stock: [${Inventory.low_stock(inventory, 3)
+    `low stock: [${Inventory.lowStock(inventory, 3)
       .map((item) => $debugStr(item))
       .join(", ")}]`,
   );
@@ -301,7 +301,7 @@ function main() {
   $retain(names, (name) => $add(seen, $unwrap(Array.from(name)[0])));
   console.log(`first letters: ${names.join(",")}`);
 
-  const prices = Array.from(inventory.items.values()).map((item) => item.price_cents);
+  const prices = Array.from(inventory.items.values()).map((item) => item.priceCents);
   prices.sort((a, b) => a - b);
   $dedup(prices);
   const binarySearch = $binarySearch(prices, 1899);
@@ -325,7 +325,7 @@ function main() {
     })
     .filter(Boolean);
   restocked.sort((a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]));
-  const arg = money(Inventory.value_cents(inventory));
+  const arg = money(Inventory.valueCents(inventory));
   console.log(
     `restocked: [${restocked.map((item) => `(${$debugStr(item[0])}, ${item[1]})`).join(", ")}], value now ${arg}`,
   );

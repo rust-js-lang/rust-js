@@ -20,24 +20,24 @@ function pointDisplay_fmt(point) {
 }
 
 function describe(x) {
-  return `<${x.impl.to_string(x.value)}>`;
+  return `<${x.impl.toString(x.value)}>`;
 }
 
 function main() {
   const items = [
-    { value: 7, impl: { to_string: String } },
-    { value: "seven", impl: { to_string: (value) => value } },
-    { value: [1, -2], impl: { to_string: pointDisplay_fmt } },
+    { value: 7, impl: { toString: String } },
+    { value: "seven", impl: { toString: (value) => value } },
+    { value: [1, -2], impl: { toString: pointDisplay_fmt } },
   ];
-  const texts = items.map((item) => item.impl.to_string(item.value));
+  const texts = items.map((item) => item.impl.toString(item.value));
   console.log(`[${texts.map((item) => $debugStr(item)).join(", ")}]`);
   console.log(
-    `${describe({ value: 2.5, impl: { to_string: $displayF64 } })} ${describe({
+    `${describe({ value: 2.5, impl: { toString: $displayF64 } })} ${describe({
       value: "two",
-      impl: { to_string: (value) => value },
+      impl: { toString: (value) => value },
     })}`,
   );
-  const shown = (x) => x.impl.to_string(x.value);
-  console.log(`${shown({ value: [3, 4], impl: { to_string: pointDisplay_fmt } })}`);
+  const shown = (x) => x.impl.toString(x.value);
+  console.log(`${shown({ value: [3, 4], impl: { toString: pointDisplay_fmt } })}`);
 }
 //# sourceMappingURL=case.js.map

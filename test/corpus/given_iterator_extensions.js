@@ -27,11 +27,11 @@ function countdownIterator_next(countdown) {
   return countdown[0];
 }
 
-function countdownIterator_size_hint(countdown) {
+function countdownIterator_sizeHint(countdown) {
   return [countdown[0], countdown[0]];
 }
 
-function countdownDoubleEndedIterator_next_back(countdown) {
+function countdownDoubleEndedIterator_nextBack(countdown) {
   return countdownIterator_next(countdown);
 }
 
@@ -59,7 +59,7 @@ function size(k) {
   return k.len();
 }
 
-function passed_on(iter, IIterator, IClone, IDoubleEndedIterator, IExactSizeIterator) {
+function passedOn(iter, IIterator, IClone, IDoubleEndedIterator, IExactSizeIterator) {
   return [
     last($iterator(IClone.clone(iter), IIterator.next, true, IDoubleEndedIterator.next_back)),
     size($iterator(IClone.clone(iter), IIterator.next, true, undefined, IExactSizeIterator.len)),
@@ -71,7 +71,7 @@ function first(k) {
   return $nextSome(k);
 }
 
-function handed_on(iter, IIterator, IClone, IDoubleEndedIterator) {
+function handedOn(iter, IIterator, IClone, IDoubleEndedIterator) {
   return first($iterator(iter, IIterator.next, true, IDoubleEndedIterator.next_back));
 }
 
@@ -93,9 +93,9 @@ function main() {
   console.log(`(${value[0]}, [${value[1].join(", ")}])`);
   const value$1 = twice(
     [2],
-    { next: countdownIterator_next, size_hint: countdownIterator_size_hint },
+    { next: countdownIterator_next, sizeHint: countdownIterator_sizeHint },
     { clone: (value) => [value[0]] },
-    { len: (iterator) => $exactLen(countdownIterator_size_hint(iterator)) },
+    { len: (iterator) => $exactLen(countdownIterator_sizeHint(iterator)) },
   );
   console.log(`(${value$1[0]}, [${value$1[1].join(", ")}])`);
   const value$2 = twice(
@@ -126,9 +126,9 @@ function main() {
   );
   const value$5 = ends(
     [3],
-    { next: countdownIterator_next, size_hint: countdownIterator_size_hint },
+    { next: countdownIterator_next, sizeHint: countdownIterator_sizeHint },
     { clone: (value) => [value[0]] },
-    { next_back: countdownDoubleEndedIterator_next_back },
+    { next_back: countdownDoubleEndedIterator_nextBack },
   );
   console.log(
     `(${value$5[0] == null ? "None" : `Some(${value$5[0]})`}, ${value$5[1] == null ? "None" : `Some(${value$5[1]})`}, ${value$5[2]})`,
@@ -143,7 +143,7 @@ function main() {
     `(${value$6[0] == null ? "None" : `Some(${value$6[0]})`}, ${value$6[1] == null ? "None" : `Some(${value$6[1]})`}, ${value$6[2]})`,
   );
 
-  const value$7 = passed_on(
+  const value$7 = passedOn(
     $iter([1, 2, 3]),
     { next: $next },
     { clone: (value) => $iter(value.items.slice(value.at, value.end)) },
@@ -153,17 +153,17 @@ function main() {
   console.log(
     `(${value$7[0] == null ? "None" : `Some(${value$7[0]})`}, ${value$7[1]}, [${value$7[2].join(", ")}])`,
   );
-  const value$8 = passed_on(
+  const value$8 = passedOn(
     [2],
-    { next: countdownIterator_next, size_hint: countdownIterator_size_hint },
+    { next: countdownIterator_next, sizeHint: countdownIterator_sizeHint },
     { clone: (value) => [value[0]] },
-    { next_back: countdownDoubleEndedIterator_next_back },
-    { len: (iterator) => $exactLen(countdownIterator_size_hint(iterator)) },
+    { next_back: countdownDoubleEndedIterator_nextBack },
+    { len: (iterator) => $exactLen(countdownIterator_sizeHint(iterator)) },
   );
   console.log(
     `(${value$8[0] == null ? "None" : `Some(${value$8[0]})`}, ${value$8[1]}, [${value$8[2].join(", ")}])`,
   );
-  const value$9 = passed_on(
+  const value$9 = passedOn(
     { start: 0, end: 3 },
     { next: $rangeNext },
     { clone: (value) => ({ start: value.start, end: value.end }) },
@@ -174,27 +174,27 @@ function main() {
     `(${value$9[0] == null ? "None" : `Some(${value$9[0]})`}, ${value$9[1]}, [${value$9[2].join(", ")}])`,
   );
 
-  const handedOn = handed_on(
+  const value$10 = handedOn(
     [2],
-    { next: countdownIterator_next, size_hint: countdownIterator_size_hint },
+    { next: countdownIterator_next, sizeHint: countdownIterator_sizeHint },
     { clone: (value) => [value[0]] },
-    { next_back: countdownDoubleEndedIterator_next_back },
+    { next_back: countdownDoubleEndedIterator_nextBack },
   );
-  const value$10 = handed_on(
+  const value$11 = handedOn(
     { start: 5, end: 7 },
     { next: $rangeNext },
     { clone: (value) => ({ start: value.start, end: value.end }) },
     { next_back: $rangeNextBack },
   );
   console.log(
-    `${handedOn == null ? "None" : `Some(${handedOn})`} ${value$10 == null ? "None" : `Some(${value$10})`}`,
+    `${value$10 == null ? "None" : `Some(${value$10})`} ${value$11 == null ? "None" : `Some(${value$11})`}`,
   );
   console.log(
     `[${backwards(
       [2],
-      { next: countdownIterator_next, size_hint: countdownIterator_size_hint },
+      { next: countdownIterator_next, sizeHint: countdownIterator_sizeHint },
       { clone: (value) => [value[0]] },
-      { next_back: countdownDoubleEndedIterator_next_back },
+      { next_back: countdownDoubleEndedIterator_nextBack },
     ).join(", ")}] [${backwards(
       { start: 5, end: 7 },
       { next: $rangeNext },
@@ -205,7 +205,7 @@ function main() {
   console.log(
     `[${after(
       [2],
-      { next: countdownIterator_next, size_hint: countdownIterator_size_hint },
+      { next: countdownIterator_next, sizeHint: countdownIterator_sizeHint },
       { clone: (value) => [value[0]] },
     ).join(", ")}] [${after(
       { start: 5, end: 7 },

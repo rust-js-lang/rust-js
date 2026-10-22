@@ -38,7 +38,7 @@ export const mutations: Mutation[] = [
     name: "size-hint-dictionary-unasked",
     breaks: "`$sizeHint` of a value given as it is doesn't ask its dictionary's own `size_hint`",
     file: "src/runtime/size_hint.js",
-    find: "  if (iterator?.size_hint !== undefined) return iterator.size_hint(it);\n",
+    find: "  if (iterator?.sizeHint !== undefined) return iterator.sizeHint(it);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^adapter_size_hints.rs$"],
   },

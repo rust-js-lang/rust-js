@@ -10,11 +10,11 @@
 
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { compileInWorker } from "../../compiler-client.js";
-import { output_state, source_state } from "../codemirror.js";
-import { load, load_example, mb, ms } from "../compiler.js";
+import { outputState, sourceState } from "../codemirror.js";
+import { load, loadExample, mb, ms } from "../compiler.js";
 import { prepare } from "../programs.js";
-import { Project, js_name } from "../projects.js";
-import { build_tree } from "../tree.js";
+import { Project, jsName } from "../projects.js";
+import { buildTree } from "../tree.js";
 import { Editor } from "./editor.jsx";
 import { FileTree } from "./file_tree.jsx";
 import { Pane } from "./pane.jsx";
@@ -33,7 +33,7 @@ function appended(rows, label, value) {
   return next;
 }
 
-function tests_summary(passed, failed, ignored) {
+function testsSummary(passed, failed, ignored) {
   const total = (passed + failed) >>> 0;
   const ignoredText = ignored > 0 ? `, ${ignored} ignored` : "";
   if (total === 0) {
@@ -74,7 +74,7 @@ export function App() {
       if (first) {
         const [name, root, files] = first;
         if (!cancelled) {
-          const texts = await load_example(name, files);
+          const texts = await loadExample(name, files);
           if (!cancelled) {
             setExample(name);
             setProject(Project.of(root, texts));
@@ -169,7 +169,7 @@ export function App() {
     } else if (outcome === "Ran") {
       setStatus((s) => say(`${s.text} Ran main().`, "Good"));
     } else if (outcome.TAG === "Tested") {
-      setStatus(tests_summary(outcome._0.passed, outcome._0.failed, outcome._0.ignored));
+      setStatus(testsSummary(outcome._0.passed, outcome._0.failed, outcome._0.ignored));
     } else {
       const text =
         "The Result frame didn't run. Is something blocking its script? See the console.";
@@ -184,7 +184,7 @@ export function App() {
       const files = chosen.files.slice();
       setExample(name);
       (async () => {
-        const texts = await load_example(name, files);
+        const texts = await loadExample(name, files);
         setProject(Project.of(root, texts));
         setOutput("Nothing");
         setProgram(undefined);
@@ -239,24 +239,24 @@ export function App() {
 
   // What the editors show. A state is made once for each output, so the
   // editor only changes when it does.
-  const blank = useMemo(() => source_state(""), []);
-  const state = Project.current_state(project);
+  const blank = useMemo(() => sourceState(""), []);
+  const state = Project.currentState(project);
   const current = state || blank;
   const shownState = useMemo(() => {
     if (output === "Nothing") {
-      return output_state("", true);
+      return outputState("", true);
     }
     if (output.TAG === "Files") {
       const find = output.files.find(([path]) => path === output.shown);
       const text = find ? find[1] : "";
-      return output_state(text, true);
+      return outputState(text, true);
     }
-    return output_state(output._0, false);
+    return outputState(output._0, false);
   }, [output]);
-  const sourceTree = useMemo(() => build_tree(Project.paths(project)), [project]);
+  const sourceTree = useMemo(() => buildTree(Project.paths(project)), [project]);
   const [outputPaths, shown] =
     output.TAG === "Files" ? [output.files.map(([path]) => path), output.shown] : [[], ""];
-  const outputTree = useMemo(() => build_tree(outputPaths), [output]);
+  const outputTree = useMemo(() => buildTree(outputPaths), [output]);
   const examples = loaded ? loaded.examples : [];
   const submit = onCompile;
   const children =
@@ -266,7 +266,7 @@ export function App() {
       <FileTree
         tree={outputTree}
         depth={0}
-        first={js_name(project.root)}
+        first={jsName(project.root)}
         selected={shown}
         onOpen={openOutput}
       />

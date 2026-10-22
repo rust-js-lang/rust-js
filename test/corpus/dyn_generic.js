@@ -40,17 +40,17 @@ function squareNamed_label(square) {
 
 function upCounter() {
   if ($upCounter === undefined) {
-    $upCounter = { next_item: (arg0) => upCounter_next_item(arg0.value) };
+    $upCounter = { nextItem: (arg0) => upCounter_nextItem(arg0.value) };
   }
   return $upCounter;
 }
 
-function upCounter_next_item(up) {
+function upCounter_nextItem(up) {
   up[0] = (up[0] + 1) >>> 0;
   return up[0];
 }
 
-function area_of(s, TShape) {
+function areaOf(s, TShape) {
   return TShape.area(s);
 }
 
@@ -67,7 +67,7 @@ function shout(t, TDisplay) {
 }
 
 function two(c, CCounter) {
-  return (CCounter.next_item(c) + CCounter.next_item(c)) >>> 0;
+  return (CCounter.nextItem(c) + CCounter.nextItem(c)) >>> 0;
 }
 
 function main() {
@@ -75,7 +75,7 @@ function main() {
   const shape = { value: square, impl: squareShape() };
   console.log(
     `${$displayF64(
-      area_of(shape, {
+      areaOf(shape, {
         area: (object) => object.impl.area(object.value),
         scale: (object, arg1) => object.value.impl.scale(object.value, arg1),
         name: (object) => object.impl.name(object.value),
@@ -106,7 +106,7 @@ function main() {
   );
   console.log(
     `${$displayF64(
-      area_of(named, {
+      areaOf(named, {
         area: (object) => object.impl.Shape().area(object.value),
         scale: (object, arg1) => object.value.impl.Shape().scale(object.value, arg1),
         name: (object) => object.impl.Shape().name(object.value),
@@ -120,7 +120,7 @@ function main() {
   const up = [0];
   const counter = { value: up, impl: upCounter() };
   console.log(
-    `${two({ value: counter }, { next_item: (object) => object.value.impl.next_item(object.value) })}`,
+    `${two({ value: counter }, { nextItem: (object) => object.value.impl.nextItem(object.value) })}`,
   );
   console.log(`${up[0]}`);
 }

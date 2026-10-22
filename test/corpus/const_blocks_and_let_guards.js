@@ -10,7 +10,7 @@ function square(n) {
   return Math.imul(n, n) >>> 0;
 }
 
-function generic_size() {
+function genericSize() {
   return 4;
 }
 
@@ -40,7 +40,7 @@ function classify(input) {
   return "not a setting";
 }
 
-function first_even(items) {
+function firstEven(items) {
   for (const item of items) {
     if (item != null && ((item % 2) | 0) === 0) {
       return item;
@@ -52,15 +52,15 @@ function main() {
   const x = 50;
   const table = [1, 4, 9];
   const name = "fixed";
-  console.log(`${x} [${table.join(", ")}] ${name} ${generic_size()}`);
+  console.log(`${x} [${table.join(", ")}] ${name} ${genericSize()}`);
 
   for (const input of ["a=1", 'b="hi"', 'e=""', "c=x", "d"]) {
     console.log(`${classify(input)}`);
   }
-  const firstEven = first_even([3, undefined, 8, 10]);
-  const value = first_even([1]);
+  const value = firstEven([3, undefined, 8, 10]);
+  const value$1 = firstEven([1]);
   console.log(
-    `${firstEven == null ? "None" : `Some(${firstEven})`} ${value == null ? "None" : `Some(${value})`}`,
+    `${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`}`,
   );
 }
 //# sourceMappingURL=case.js.map

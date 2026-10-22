@@ -16,7 +16,7 @@ function loudDrop_drop(loud) {
   console.log(`drop ${loud[0]}`);
 }
 
-function or_else(value, f, dropF) {
+function orElse(value, f, dropF) {
   const value$1 = value ?? f();
   if (value != null) {
     dropF?.(f);
@@ -389,7 +389,7 @@ function main() {
   console.log(`or_else ${value$21.TAG === "Ok" ? `Ok(${value$21._0})` : `Err(${value$21._0})`}`);
   const a$22 = [20];
   console.log(
-    `generic ${or_else(
+    `generic ${orElse(
       some,
       () => {
         let result;
@@ -407,7 +407,7 @@ function main() {
   );
   const a$23 = [21];
   console.log(
-    `generic ${or_else(
+    `generic ${orElse(
       none,
       () => {
         let result;

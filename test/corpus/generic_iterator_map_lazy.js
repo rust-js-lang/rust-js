@@ -6,7 +6,7 @@ export function entry() {
   main();
 }
 
-function after_first(it) {
+function afterFirst(it) {
   $next(it);
   for (const x of it) {
     console.log(`took ${x}`);
@@ -17,7 +17,7 @@ function after_first(it) {
 }
 
 function main() {
-  after_first(
+  afterFirst(
     $lazyRange(1, 5).map((n) => {
       console.log(`made ${n}`);
       return n;

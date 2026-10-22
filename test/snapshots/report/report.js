@@ -53,7 +53,7 @@ function rowErrorDisplay_fmt(rowError) {
 
 const HEADERS = ["name", "team", "score", "age"];
 
-function parse_row(line) {
+function parseRow(line) {
   const parts = line.split(",").map((s) => $trim(s));
   if (parts.length !== 4) {
     return { TAG: "Err", _0: { TAG: "Fields", _0: parts.length } };
@@ -104,11 +104,11 @@ export function table(input) {
   let out = "";
   const rows = [];
   for (const [i, line] of $lines(input).entries().drop(1)) {
-    const parseRow = parse_row(line);
-    if (parseRow.TAG === "Ok") {
-      rows.push(parseRow._0);
+    const value = parseRow(line);
+    if (value.TAG === "Ok") {
+      rows.push(value._0);
     } else {
-      out += `line ${(i + 1) >>> 0}: ${rowErrorDisplay_fmt(parseRow._0)}\n`;
+      out += `line ${(i + 1) >>> 0}: ${rowErrorDisplay_fmt(value._0)}\n`;
     }
   }
   rows.sort((a, b) => $cmp(b.score, a.score) || $cmp(a.name, b.name));
@@ -140,7 +140,7 @@ export function table(input) {
   return out;
 }
 
-export function parse_errors() {
+export function parseErrors() {
   const value = $unwrapErr($parseInt("", 0, 255));
   const value$1 = $unwrapErr($parseInt("300", 0, 255));
   const value$2 = $unwrapErr($parseInt("-40000", -32768, 32767));
@@ -152,7 +152,7 @@ export function parse_errors() {
   )}`;
 }
 
-export function function_values(words) {
+export function functionValues(words) {
   const upper = words.map((w) => w.toUpperCase());
   const spaces = Array.from("a b	c").map((c) => /^\p{White_Space}$/u.test(c));
   const roots = [4, 2.25, 9].map((n) => Math.sqrt(n));
@@ -163,6 +163,6 @@ export function function_values(words) {
 export function report() {
   const input =
     "name,team,score,age\nann, red, 91, 34\nbob,blue,78,25\ncy,red,78,45\n,blue,5,5\ndee,blue,x,3\neve,green,64,29\nfay,red\ngus, blue ,88,31\nßen,red,70,20\n";
-  return `${table(input)}${parse_errors()}\n${((tuple) => `([${tuple[0].map((item) => $debugStr(item)).join(", ")}], [${tuple[1].join(", ")}], [${tuple[2].map((item) => $debugF64(item)).join(", ")}], [${tuple[3].map((item) => $debugStr(item)).join(", ")}])`)(function_values(["x", "é"]))}\n`;
+  return `${table(input)}${parseErrors()}\n${((tuple) => `([${tuple[0].map((item) => $debugStr(item)).join(", ")}], [${tuple[1].join(", ")}], [${tuple[2].map((item) => $debugF64(item)).join(", ")}], [${tuple[3].map((item) => $debugStr(item)).join(", ")}])`)(functionValues(["x", "é"]))}\n`;
 }
 //# sourceMappingURL=report.js.map

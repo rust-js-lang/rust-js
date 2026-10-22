@@ -3,7 +3,7 @@
 import { $iter, $next, $settle, $try } from "@rust-js/runtime";
 
 /** The numbers' sum, or what `JSON.parse` threw. */
-export function sum_json(json) {
+export function sumJson(json) {
   const parseNumbers = $try(() => JSON.parse(json));
   if (parseNumbers.TAG === "Ok") {
     const numbers = parseNumbers._0;
@@ -18,7 +18,7 @@ export function sum_json(json) {
 }
 
 /** `?` on a thrown error: it's an `Err` like any other. */
-export function first_twice(json) {
+export function firstTwice(json) {
   const result = $try(() => JSON.parse(json));
   if (result.TAG === "Err") {
     return result;
@@ -65,7 +65,7 @@ export function uri(text) {
  * A promise of the webapi crate's, `fetch`'s say, rejects with what went
  * wrong; `js::settle` makes its `.await` an `Err` of it.
  */
-export async function settle_either(fail) {
+export async function settleEither(fail) {
   const promise = fail ? Promise.reject("no") : Promise.resolve(8);
   const value = await $settle(promise);
   if (value.TAG === "Ok") {

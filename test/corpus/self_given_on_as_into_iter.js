@@ -10,12 +10,12 @@ export function entry() {
 
 function _u32__u32_Collect() {
   if ($_u32__u32_Collect === undefined) {
-    $_u32__u32_Collect = { from_iter_no_buf: _u32__u32_Collect_from_iter_no_buf };
+    $_u32__u32_Collect = { fromIterNoBuf: _u32__u32_Collect_fromIterNoBuf };
   }
   return $_u32__u32_Collect;
 }
 
-function _u32__u32_Collect_from_iter_no_buf(iter) {
+function _u32__u32_Collect_fromIterNoBuf(iter) {
   const it = $intoIter(iter);
   const value = $next(it);
   if (value != null) {
@@ -31,32 +31,32 @@ function iExt(IIterator) {
     $iExt = new WeakMap();
   }
   return $traitImpl($iExt, [IIterator], () => ({
-    next_pair: (self, TCollect) => TCollect.from_iter_no_buf($iterator(self, IIterator.next, true)),
+    nextPair: (self, TCollect) => TCollect.fromIterNoBuf($iterator(self, IIterator.next, true)),
   }));
 }
 
-function pair_of(it) {
-  return _u32__u32_Collect_from_iter_no_buf(it);
+function pairOf(it) {
+  return _u32__u32_Collect_fromIterNoBuf(it);
 }
 
 function main() {
   const r = { start: 0, end: 5 };
-  const p = iExt({ next: $rangeNext }).next_pair(r, _u32__u32_Collect());
+  const p = iExt({ next: $rangeNext }).nextPair(r, _u32__u32_Collect());
   const arg = $rangeNext(r);
   console.log(
     `${p == null ? "None" : `Some((${p[0]}, ${p[1]}))`} ${arg == null ? "None" : `Some(${arg})`}`,
   );
   const v = $iter([7, 8, 9]);
-  const pairOf = pair_of(v);
-  const value = $next(v);
+  const value = pairOf(v);
+  const value$1 = $next(v);
   console.log(
-    `${pairOf == null ? "None" : `Some((${pairOf[0]}, ${pairOf[1]}))`} ${value == null ? "None" : `Some(${value})`}`,
+    `${value == null ? "None" : `Some((${value[0]}, ${value[1]}))`} ${value$1 == null ? "None" : `Some(${value$1})`}`,
   );
   const q = { start: 10, end: 15 };
-  const value$1 = pair_of($iterator(q, $rangeNext));
-  const value$2 = $rangeNext(q);
+  const value$2 = pairOf($iterator(q, $rangeNext));
+  const value$3 = $rangeNext(q);
   console.log(
-    `${value$1 == null ? "None" : `Some((${value$1[0]}, ${value$1[1]}))`} ${value$2 == null ? "None" : `Some(${value$2})`}`,
+    `${value$2 == null ? "None" : `Some((${value$2[0]}, ${value$2[1]}))`} ${value$3 == null ? "None" : `Some(${value$3})`}`,
   );
 }
 //# sourceMappingURL=case.js.map

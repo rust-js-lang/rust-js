@@ -48,7 +48,7 @@ function shadowed(words) {
 }
 
 // A loop after the loop, with a `break` of its own.
-function two_loops(values) {
+function twoLoops(values) {
   const it = $iter(values);
   let first = 0;
   while (true) {
@@ -73,7 +73,7 @@ function two_loops(values) {
 }
 
 // A labeled loop left from inside an inner one, then more.
-function grid_find(grid, want) {
+function gridFind(grid, want) {
   let at;
   bb5: for (const [r, row] of grid.entries()) {
     for (const [c, v] of row.entries()) {
@@ -94,7 +94,7 @@ function grid_find(grid, want) {
 }
 
 // A name declared before the loop, set once in it, read after it.
-function set_in_loop(values) {
+function setInLoop(values) {
   let i = 0;
   while (true) {
     if ($index(values, i) % 7 === 0) {
@@ -122,7 +122,7 @@ function reshadowed(limit) {
 }
 
 // A `return` written in the loop stays where it's written.
-function first_big(values) {
+function firstBig(values) {
   let i = 0;
   while (true) {
     if ($index(values, i) > 10) {
@@ -133,7 +133,7 @@ function first_big(values) {
 }
 
 // So does a `break` that gives the loop its value.
-function first_even(values) {
+function firstEven(values) {
   let i = 0;
   while (true) {
     if ($index(values, i) % 2 === 0) {
@@ -144,7 +144,7 @@ function first_even(values) {
 }
 
 // A name the loop's test shadows, its early `break`s each its own.
-function shadow_in_loop(values) {
+function shadowInLoop(values) {
   const it = $iter(values);
   let total = 0;
   while (true) {
@@ -165,17 +165,17 @@ function main() {
   console.log(`${guarded(3)}`);
   console.log(`${shadowed(["a", "b", "stop", "c"])}`);
   console.log(`${shadowed(["a"])}`);
-  console.log(`${two_loops([-1, 0, 4, 1, 2, -3, 9])}`);
-  console.log(`${two_loops([-1])}`);
+  console.log(`${twoLoops([-1, 0, 4, 1, 2, -3, 9])}`);
+  console.log(`${twoLoops([-1])}`);
   const grid = [
     [1, 2, 3],
     [4, 5, 6],
   ];
-  console.log(`${grid_find(grid, 5)}`);
-  console.log(`${grid_find(grid, 7)}`);
-  console.log(`${set_in_loop([3, 5, 14, 21])}`);
+  console.log(`${gridFind(grid, 5)}`);
+  console.log(`${gridFind(grid, 7)}`);
+  console.log(`${setInLoop([3, 5, 14, 21])}`);
   console.log(`${reshadowed(10)}`);
-  console.log(`${first_big([1, 12, 30])} ${first_even([3, 5, 8])}`);
-  console.log(`${shadow_in_loop([2, 5, 1, 9])} ${shadow_in_loop([])}`);
+  console.log(`${firstBig([1, 12, 30])} ${firstEven([3, 5, 8])}`);
+  console.log(`${shadowInLoop([2, 5, 1, 9])} ${shadowInLoop([])}`);
 }
 //# sourceMappingURL=case.js.map

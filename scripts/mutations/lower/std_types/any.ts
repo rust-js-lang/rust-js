@@ -39,7 +39,7 @@ export const mutations: Mutation[] = [
     name: "type-id-of-supertrait-dyn",
     breaks: "`type_id()` of a `dyn` of a trait under `Any` is an error",
     file: "src/lower/std_types/any.rs",
-    find: "            id if id.is_some() && id == any_trait(self.tcx) => dictionary,",
+    find: "            id if id.is_some() && id == any_id => dictionary,",
     replace: "            id if id.is_some() => dictionary,",
     tests: ["test/corpus.test.ts", "-t", "^dyn_any.rs"],
   },

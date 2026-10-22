@@ -52,11 +52,11 @@ export async function load(stat) {
   const start = performance.now();
   // All downloads start here, together: a JS promise runs as soon as it's made
   // (ADR 0029). Awaiting them one by one below only collects the results.
-  const module = load_compiler(start, stat);
-  const sysroot = load_sysroot(start, stat);
-  const crates = reactLibs.map((name) => [name, load_binding_crate(name, start, stat)]);
-  const packages = load_packages(start, stat);
-  const examples = load_examples();
+  const module = loadCompiler(start, stat);
+  const sysroot = loadSysroot(start, stat);
+  const crates = reactLibs.map((name) => [name, loadBindingCrate(name, start, stat)]);
+  const packages = loadPackages(start, stat);
+  const examples = loadExamples();
   const [modules, styles] = await packages;
   const crateFiles = [];
   for (const [name, file] of crates) {
@@ -74,18 +74,18 @@ export async function load(stat) {
   return loaded;
 }
 
-async function load_compiler(start, stat) {
+async function loadCompiler(start, stat) {
   const module = await WebAssembly.compileStreaming(window.fetch("./rust-js.wasm"));
   stat("download + compile rust-js.wasm", ms(performance.now() - start));
   return module;
 }
 
-async function load_sysroot(start, stat) {
+async function loadSysroot(start, stat) {
   const names = await (await window.fetch("./sysroot.json")).json();
   // Every file's download starts before the first is awaited.
   const downloads = [];
   for (const name of names) {
-    downloads.push(load_sysroot_file(name));
+    downloads.push(loadSysrootFile(name));
   }
   const entries = [];
   let size = 0;
@@ -101,7 +101,7 @@ async function load_sysroot(start, stat) {
   return new Map(entries);
 }
 
-async function load_sysroot_file(name) {
+async function loadSysrootFile(name) {
   const response = await window.fetch(`./sysroot/${name}`);
   const bytes = new Uint8Array(await response.arrayBuffer());
   return [name, new File(bytes, { readonly: true })];
@@ -111,7 +111,7 @@ async function load_sysroot_file(name) {
  * `@rust-js/runtime` and React's modules, and the stylesheets, for a
  * program to import (ADR 0044).
  */
-async function load_packages(start, stat) {
+async function loadPackages(start, stat) {
   const runtime = (await window.fetch("./runtime.js")).text();
   const packages = (await window.fetch("./packages.json")).json();
   const modules = [["@rust-js/runtime", await runtime]];
@@ -121,27 +121,27 @@ async function load_packages(start, stat) {
   return [modules, Object.entries(packages$1.styles)];
 }
 
-async function load_binding_crate(name, start, stat) {
+async function loadBindingCrate(name, start, stat) {
   const bytes = await (await window.fetch(`./crates/lib${name}.rmeta`)).arrayBuffer();
   stat(`download ${name} crate`, `${ms(performance.now() - start)} (${mb(bytes.byteLength)})`);
   return new File(new Uint8Array(bytes), { readonly: true });
 }
 
-async function load_examples() {
+async function loadExamples() {
   return await (await window.fetch("./examples.json")).json();
 }
 
-async function fetch_example_file(name, path) {
+async function fetchExampleFile(name, path) {
   const response = await window.fetch(`./examples/${name}/${path}`);
   return [path, await response.text()];
 }
 
 /** An example's files, `path → text`, in the order it lists them. */
-export async function load_example(name, paths) {
+export async function loadExample(name, paths) {
   // All at once: each download starts as it's made (ADR 0029).
   const downloads = [];
   for (const path of paths) {
-    downloads.push(fetch_example_file(name, path));
+    downloads.push(fetchExampleFile(name, path));
   }
   const texts = [];
   for (const download of downloads) {
@@ -156,7 +156,7 @@ function dir(name, entry) {
 }
 
 /** A WASI directory tree from `path → text`, e.g. `geometry/area.rs`. */
-function directory_of(sources) {
+function directoryOf(sources) {
   const top = new Map();
   for (const [path, text] of sources) {
     let folder = top;
@@ -182,10 +182,10 @@ function directory_of(sources) {
 }
 
 /** Every file under a WASI directory, as `path → text`. */
-function texts_in(folder, prefix, found) {
+function textsIn(folder, prefix, found) {
   for (const [name, entry] of Array.from(folder.contents)) {
     if (entry instanceof Directory) {
-      texts_in(entry, `${prefix}${name}/`, found);
+      textsIn(entry, `${prefix}${name}/`, found);
     } else if (entry instanceof File) {
       const text = new TextDecoder().decode(entry.data);
       found.set(prefix + name, text);
@@ -222,7 +222,7 @@ export async function compile(loaded, sources, rootFile, test) {
         $unborrow(borrowMut);
       }
     }), // stderr
-    new PreopenDirectory("/in", directory_of(sources)),
+    new PreopenDirectory("/in", directoryOf(sources)),
     outDir,
     new PreopenDirectory(
       "/sysroot",
@@ -281,7 +281,7 @@ export async function compile(loaded, sources, rootFile, test) {
   // What it wrote, as its manifest says: each module's JS, and the runner.
   const written = new Map();
   if (ok) {
-    texts_in(outDir.dir, "", written);
+    textsIn(outDir.dir, "", written);
   }
   const path = (file) => $stripPrefix(file, "/out/") ?? file;
   const files = new Map();

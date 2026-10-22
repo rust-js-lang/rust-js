@@ -24,9 +24,9 @@ function deltaSum_sum(iter, dropI) {
   return result;
 }
 
-function first_long(items, BAsRefStr) {
+function firstLong(items, BAsRefStr) {
   for (const item of items) {
-    const text = BAsRefStr.as_ref(item);
+    const text = BAsRefStr.asRef(item);
     if ($byteLen(text) > 2) {
       return $byteLen(text);
     }
@@ -40,17 +40,17 @@ function second(items) {
 
 function main() {
   const words = ["a", "bb", "ccc", "dddd"];
-  const firstLong = first_long($iter(words), { as_ref: (value) => value });
-  const value = first_long($iter(["x"]), { as_ref: (value) => value });
+  const value = firstLong($iter(words), { asRef: (value) => value });
+  const value$1 = firstLong($iter(["x"]), { asRef: (value) => value });
   console.log(
-    `${firstLong == null ? "None" : `Some(${firstLong})`} ${value == null ? "None" : `Some(${value})`}`,
+    `${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`}`,
   );
-  const value$1 = first_long($iter(["abcd"]), { as_ref: (value) => value });
-  console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
-  const value$2 = second($lazyRange(1, 5));
-  const value$3 = second($iter([7]));
+  const value$2 = firstLong($iter(["abcd"]), { asRef: (value) => value });
+  console.log(`${value$2 == null ? "None" : `Some(${value$2})`}`);
+  const value$3 = second($lazyRange(1, 5));
+  const value$4 = second($iter([7]));
   console.log(
-    `${value$2 == null ? "None" : `Some(${value$2})`} ${value$3 == null ? "None" : `Some(${value$3})`}`,
+    `${value$3 == null ? "None" : `Some(${value$3})`} ${value$4 == null ? "None" : `Some(${value$4})`}`,
   );
   const total = deltaSum_sum($iter([[3n], [4n], [-1n]]));
   console.log(`${deltaDebug_fmt(total)}`);

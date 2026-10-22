@@ -53,19 +53,19 @@ function first(items, DStableDeref) {
 
 export function counterWrite() {
   if ($counterWrite === undefined) {
-    const write_str = (arg0, arg1) => counterWrite_write_str(arg0.value, arg1);
-    $counterWrite = { write_str, write_char: write_str, write_fmt: write_str };
+    const writeStr = (arg0, arg1) => counterWrite_writeStr(arg0.value, arg1);
+    $counterWrite = { writeStr, writeChar: writeStr, writeFmt: writeStr };
   }
   return $counterWrite;
 }
 
-function counterWrite_write_str(counter, s) {
+function counterWrite_writeStr(counter, s) {
   counter.text += s;
 }
 
 function render(out, n, WWrite) {
   const self = { value: out };
-  const result = WWrite.write_fmt(self, `<${n}>`);
+  const result = WWrite.writeFmt(self, `<${n}>`);
   out = self.value;
   return result;
 }

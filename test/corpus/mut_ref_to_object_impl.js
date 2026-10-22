@@ -12,26 +12,26 @@ function moneyDebug_fmt(money) {
   return `Money { cents: ${money.cents}, note: [${money.note.join(", ")}] }`;
 }
 
-function moneyAddAssign_add_assign(money, other) {
+function moneyAddAssign_addAssign(money, other) {
   money.cents = BigInt.asIntN(64, money.cents + other.cents);
 }
 
 export function refMutMoneyAddAssignMoney() {
   if ($refMutMoneyAddAssignMoney === undefined) {
     $refMutMoneyAddAssignMoney = {
-      add_assign: (arg0, arg1) => refMutMoneyAddAssignMoney_add_assign(arg0.value, arg1),
+      addAssign: (arg0, arg1) => refMutMoneyAddAssignMoney_addAssign(arg0.value, arg1),
     };
   }
   return $refMutMoneyAddAssignMoney;
 }
 
-function refMutMoneyAddAssignMoney_add_assign(money, other) {
-  moneyAddAssign_add_assign(money.value, { ...other });
+function refMutMoneyAddAssignMoney_addAssign(money, other) {
+  moneyAddAssign_addAssign(money.value, { ...other });
 }
 
 function bump(total, by, TAddAssignMoney) {
   const self = { value: total };
-  TAddAssignMoney.add_assign(self, { ...by });
+  TAddAssignMoney.addAssign(self, { ...by });
   total = self.value;
   return total;
 }
@@ -41,7 +41,7 @@ function main() {
   const five = { cents: 5n, note: [0, 0] };
   let r = m;
   const self = { value: r };
-  refMutMoneyAddAssignMoney_add_assign(self, { ...five });
+  refMutMoneyAddAssignMoney_addAssign(self, { ...five });
   r = self.value;
   const total = { value: r };
   const r$1 = bump(total, { ...five }, refMutMoneyAddAssignMoney()).value;
@@ -49,7 +49,7 @@ function main() {
   r$1.cents = BigInt.asIntN(64, r$1.cents + 1n);
   const other = { cents: 100n, note: [0, 0] };
   const r$2 = other;
-  moneyAddAssign_add_assign(r$2, { ...five });
+  moneyAddAssign_addAssign(r$2, { ...five });
   console.log(`${moneyDebug_fmt(m)} ${moneyDebug_fmt(other)} ${m.note.length}`);
 }
 //# sourceMappingURL=case.js.map

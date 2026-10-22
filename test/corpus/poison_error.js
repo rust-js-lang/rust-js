@@ -14,7 +14,7 @@ function bump(m) {
   return result;
 }
 
-function name_len(m) {
+function nameLen(m) {
   const value = $lock(m, true);
   const result = $byteLen(value.value);
   $unborrow(value);
@@ -39,7 +39,7 @@ function main() {
   const count = { value: 0 };
   bump(count);
   console.log(`${bump(count)}`);
-  console.log(`${name_len({ value: "ada" })}`);
+  console.log(`${nameLen({ value: "ada" })}`);
   console.log(`${held({ value: [1, 2] })}`);
   const result = $tryFromInt(5n, 0, 4294967295);
   const five = result.TAG === "Ok" ? result._0 : 0;

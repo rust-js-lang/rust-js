@@ -12,7 +12,7 @@ function gridIndexUsize_index(grid, i) {
   return $index(grid[0], i);
 }
 
-function gridIndexMutUsize_index_mut(grid, i) {
+function gridIndexMutUsize_indexMut(grid, i) {
   $index(grid[0], i);
   return {
     get value() {
@@ -25,7 +25,7 @@ function gridIndexMutUsize_index_mut(grid, i) {
 }
 
 const Counter = {
-  get_mut(counter) {
+  getMut(counter) {
     return {
       get value() {
         return counter.n;
@@ -54,17 +54,17 @@ function go(t, TBump) {
 
 function main() {
   const g = [[1, 2, 3]];
-  gridIndexMutUsize_index_mut(g, 1).value = 20;
-  const value = gridIndexMutUsize_index_mut(g, 2);
+  gridIndexMutUsize_indexMut(g, 1).value = 20;
+  const value = gridIndexMutUsize_indexMut(g, 2);
   value.value = (value.value + 5) >>> 0;
   console.log(
     `${gridIndexUsize_index(g, 0)} ${gridIndexUsize_index(g, 1)} ${gridIndexUsize_index(g, 2)}`,
   );
 
   const c = { n: 1 };
-  const getMut = Counter.get_mut(c);
+  const getMut = Counter.getMut(c);
   getMut.value = (getMut.value + 41) | 0;
-  const n = Counter.get_mut(c);
+  const n = Counter.getMut(c);
   n.value = Math.imul(n.value, 2);
   console.log(`${c.n}`);
 

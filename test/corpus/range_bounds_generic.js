@@ -5,7 +5,7 @@ export function entry() {
 }
 
 function start(r, RRangeBoundsUsize) {
-  const startBound = RRangeBoundsUsize.start_bound(r);
+  const startBound = RRangeBoundsUsize.startBound(r);
   if (startBound.TAG === "Included") {
     return startBound._0;
   }
@@ -16,7 +16,7 @@ function start(r, RRangeBoundsUsize) {
 }
 
 function end(r, len, RRangeBoundsUsize) {
-  const endBound = RRangeBoundsUsize.end_bound(r);
+  const endBound = RRangeBoundsUsize.endBound(r);
   if (endBound.TAG === "Included") {
     return (endBound._0 + 1) >>> 0;
   }
@@ -41,46 +41,46 @@ function main() {
     `${start(
       { start: 2, end: 5 },
       {
-        start_bound: (range) => ({ TAG: "Included", _0: range.start }),
-        end_bound: (range) => ({ TAG: "Excluded", _0: range.end }),
+        startBound: (range) => ({ TAG: "Included", _0: range.start }),
+        endBound: (range) => ({ TAG: "Excluded", _0: range.end }),
       },
     )} ${start(
       { end: 5 },
       {
-        start_bound: (range) => "Unbounded",
-        end_bound: (range) => ({ TAG: "Excluded", _0: range.end }),
+        startBound: (range) => "Unbounded",
+        endBound: (range) => ({ TAG: "Excluded", _0: range.end }),
       },
     )} ${end({ start: 2, end: 5 }, 9, {
-      start_bound: (range) => ({ TAG: "Included", _0: range.start }),
-      end_bound: (range) => ({ TAG: "Included", _0: range.end }),
+      startBound: (range) => ({ TAG: "Included", _0: range.start }),
+      endBound: (range) => ({ TAG: "Included", _0: range.end }),
     })} ${end({ start: 3 }, 9, {
-      start_bound: (range) => ({ TAG: "Included", _0: range.start }),
-      end_bound: (range) => "Unbounded",
+      startBound: (range) => ({ TAG: "Included", _0: range.start }),
+      endBound: (range) => "Unbounded",
     })}`,
   );
   console.log(
     `${end(undefined, 9, {
-      start_bound: (range) => "Unbounded",
-      end_bound: (range) => "Unbounded",
+      startBound: (range) => "Unbounded",
+      endBound: (range) => "Unbounded",
     })} ${start(
       { start: 1, end: 1 },
       {
-        start_bound: (range) => ({ TAG: "Included", _0: range.start }),
-        end_bound: (range) => ({ TAG: "Included", _0: range.end }),
+        startBound: (range) => ({ TAG: "Included", _0: range.start }),
+        endBound: (range) => ({ TAG: "Included", _0: range.end }),
       },
     )} ${end({ end: 4 }, 9, {
-      start_bound: (range) => "Unbounded",
-      end_bound: (range) => ({ TAG: "Included", _0: range.end }),
+      startBound: (range) => "Unbounded",
+      endBound: (range) => ({ TAG: "Included", _0: range.end }),
     })}`,
   );
   console.log(`${shown({ TAG: "Excluded", _0: 7 })}`);
   console.log(
     `${start([{ TAG: "Excluded", _0: 1 }, "Unbounded"], {
-      start_bound: (range) => range[0],
-      end_bound: (range) => range[1],
+      startBound: (range) => range[0],
+      endBound: (range) => range[1],
     })} ${end(["Unbounded", { TAG: "Included", _0: 3 }], 9, {
-      start_bound: (range) => range[0],
-      end_bound: (range) => range[1],
+      startBound: (range) => range[0],
+      endBound: (range) => range[1],
     })}`,
   );
 }

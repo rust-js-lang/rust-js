@@ -27,14 +27,14 @@ function loudAdd_add(loud, o) {
   return result;
 }
 
-function sum_drop(a, b, TAdd) {
+function sumDrop(a, b, TAdd) {
   const _x = TAdd.add(a, b);
   TAdd.$dropOutput?.(_x);
   return 0;
 }
 
 function main() {
-  console.log(`${sum_drop([1], [2], loudAdd())}`);
-  console.log(`${sum_drop(1, 2, { add: (a, b) => (a + b) | 0 })}`);
+  console.log(`${sumDrop([1], [2], loudAdd())}`);
+  console.log(`${sumDrop(1, 2, { add: (a, b) => (a + b) | 0 })}`);
 }
 //# sourceMappingURL=case.js.map

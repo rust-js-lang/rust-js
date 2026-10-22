@@ -24,7 +24,7 @@ function year(n) {
 }
 
 // `new` of a number known only when it runs, shown as it is.
-function non_zero(n) {
+function nonZero(n) {
   return n === 0 ? undefined : n;
 }
 
@@ -39,10 +39,10 @@ function main() {
   console.log(
     `${value == null ? "None" : `Some(${yearDebug_fmt(value)})`} ${value$1 == null ? "None" : `Some(${yearDebug_fmt(value$1)})`}`,
   );
-  const nonZero = non_zero(0);
-  const value$2 = non_zero(3);
+  const value$2 = nonZero(0);
+  const value$3 = nonZero(3);
   console.log(
-    `${nonZero == null ? "None" : `Some(${nonZero})`} ${value$2 == null ? "None" : `Some(${value$2})`}`,
+    `${value$2 == null ? "None" : `Some(${value$2})`} ${value$3 == null ? "None" : `Some(${value$3})`}`,
   );
   const big = $unwrap(18446744073709551615n);
   console.log(`${big} ${$bigLeadingZeros(big)} 1`);
@@ -53,10 +53,10 @@ function main() {
     `${parse.TAG === "Ok" ? `Ok(${parse._0})` : `Err(${$debugParseError(parse._0, "ParseIntError")})`} ${((result) => (result.TAG === "Ok" ? `Ok(${result._0})` : `Err(${$debugParseError(result._0, "ParseIntError")})`))($nonZeroOk($parseInt("0", 0, 255), "number would be zero for non-zero type"))}`,
   );
   const result = $nonZeroOk($tryFromInt(3, 0, 255), "number would be zero for non-zero type");
-  const value$3 = result.TAG === "Ok" ? result._0 : undefined;
-  const value$4 = $nonZeroOk($tryFromInt(0, 0, 255), "number would be zero for non-zero type");
+  const value$4 = result.TAG === "Ok" ? result._0 : undefined;
+  const value$5 = $nonZeroOk($tryFromInt(0, 0, 255), "number would be zero for non-zero type");
   console.log(
-    `${value$3 == null ? "None" : `Some(${value$3})`} ${value$4.TAG === "Ok" ? `Ok(${value$4._0})` : `Err(${$debugParseError(value$4._0, "TryFromIntError")})`}`,
+    `${value$4 == null ? "None" : `Some(${value$4})`} ${value$5.TAG === "Ok" ? `Ok(${value$5._0})` : `Err(${$debugParseError(value$5._0, "TryFromIntError")})`}`,
   );
   // SAFETY: not zero.
   const d = -5;

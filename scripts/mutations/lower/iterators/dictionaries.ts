@@ -95,8 +95,8 @@ export const mutations: Mutation[] = [
     name: "own-hint-not-in-dictionary",
     breaks: "the crate's iterator's `Iterator` dictionary lacks its own `size_hint`, so a compiled `Fuse` of it says `(0, None)`",
     file: "src/lower/iterators/dictionaries.rs",
-    find: "            props.push(js::Prop::Field(\"size_hint\".into(), hint));\n",
-    replace: "            drop(hint);\n",
+    find: "            props.push(js::Prop::Field(size_hint, hint));\n",
+    replace: "            drop((size_hint, hint));\n",
     tests: ["test/corpus.test.ts", "-t", "^adapter_size_hints.rs$"],
   },
   {

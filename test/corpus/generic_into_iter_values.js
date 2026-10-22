@@ -11,7 +11,7 @@ function mk(i) {
 }
 
 function both(a, b, IIntoIterator, JIntoIterator) {
-  return { a: IIntoIterator.into_iter(a), b: JIntoIterator.into_iter(b) };
+  return { a: IIntoIterator.intoIter(a), b: JIntoIterator.intoIter(b) };
 }
 
 function show(items) {
@@ -32,8 +32,8 @@ function main() {
   const pair = both(
     ["a", "b"],
     [1, 2, 3],
-    { into_iter: (items) => $iter(items), IntoIterIterator: () => ({ next: $next }) },
-    { into_iter: (items) => $iter(items), IntoIterIterator: () => ({ next: $next }) },
+    { intoIter: (items) => $iter(items), IntoIterIterator: () => ({ next: $next }) },
+    { intoIter: (items) => $iter(items), IntoIterIterator: () => ({ next: $next }) },
   );
   console.log(`${pair.a.end - pair.a.at} ${pair.b.end - pair.b.at}`);
   const total = mk([4, 5]).reduce((a, b) => (a + b) >>> 0, 0);

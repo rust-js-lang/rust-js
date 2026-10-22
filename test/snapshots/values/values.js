@@ -29,17 +29,17 @@ export const Value = {
       return value._0[i];
     }
   },
-  as_num(value) {
+  asNum(value) {
     if (value.TAG === "Num") {
       return value._0;
     }
   },
-  as_str(value) {
+  asStr(value) {
     if (value.TAG === "Str") {
       return value._0;
     }
   },
-  is_null(value) {
+  isNull(value) {
     return value === "Null";
   },
   depth(value) {
@@ -160,12 +160,12 @@ function price(v) {
   if (value$1 == null) {
     return;
   }
-  const p = Value.as_num(value$1);
+  const p = Value.asNum(value$1);
   if (p == null) {
     return;
   }
   const option = Value.get(v, "qty");
-  return p * ((option != null ? Value.as_num(option) : undefined) ?? 1);
+  return p * ((option != null ? Value.asNum(option) : undefined) ?? 1);
 }
 
 export function tree() {
@@ -195,12 +195,12 @@ export function tree() {
   p = out$1.value;
   out += `${p}\n`;
   const option = Value.get(v, "name");
-  const s = option != null ? Value.as_str(option) : undefined;
+  const s = option != null ? Value.asStr(option) : undefined;
   const name = s?.toUpperCase();
   const value = price(v);
   const depth = Value.depth(v);
   const option$1 = Value.get(v, "missing");
-  out += `${value == null ? "None" : `Some(${$debugF64(value)})`} ${name == null ? "None" : `Some(${$debugStr(name)})`} ${depth} ${option$1 == null || Value.is_null(option$1)}\n`;
+  out += `${value == null ? "None" : `Some(${$debugF64(value)})`} ${name == null ? "None" : `Some(${$debugStr(name)})`} ${depth} ${option$1 == null || Value.isNull(option$1)}\n`;
   const cloneValue = (value) =>
     value.TAG === "List"
       ? { ...value, _0: value._0.map((item) => cloneValue(item)) }

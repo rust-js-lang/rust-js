@@ -55,7 +55,7 @@ test("event listeners dispatch and remove by identity in Chromium", async () => 
   const js = compileEvents();
   const browser = await chromium.launch({ headless: true });
   try {
-    for (const [name, expected] of Object.entries({ methods: [17, 17, 5], mutable: [1, 2], shared_mutable: [1, 2], removed: [], duplicate: [17, 17], different: [17, 17], once: [17], aborted: [], capture: [17, 17], capture_removed: [], named: [1, 1], named_once: [1], named_removed: [], named_capture_removed: [] })) {
+    for (const [name, expected] of Object.entries({ methods: [17, 17, 5], mutable: [1, 2], sharedMutable: [1, 2], removed: [], duplicate: [17, 17], different: [17, 17], once: [17], aborted: [], capture: [17, 17], captureRemoved: [], named: [1, 1], namedOnce: [1], namedRemoved: [], namedCaptureRemoved: [] })) {
       const page = await browser.newPage();
       await page.setContent('<button id="button">Test</button>');
       const result = await page.evaluate(async ({ js, name }) => {

@@ -21,21 +21,21 @@ export function entry() {
 }
 
 function read(s, TFromStr) {
-  const result = TFromStr.from_str(s);
+  const result = TFromStr.fromStr(s);
   return result.TAG === "Ok" ? $some(result._0) : undefined;
 }
 
-function read_or(s, fallback, TFromStr) {
-  const result = TFromStr.from_str($trim(s));
+function readOr(s, fallback, TFromStr) {
+  const result = TFromStr.fromStr($trim(s));
   return result.TAG === "Ok" ? result._0 : fallback;
 }
 
-function parse_all(parts, TFromStr) {
-  return $collectResults(parts.values().map((p) => TFromStr.from_str(p)));
+function parseAll(parts, TFromStr) {
+  return $collectResults(parts.values().map((p) => TFromStr.fromStr(p)));
 }
 
 function explain(s, TFromStr, TDebug, TErrDebug) {
-  const parse = TFromStr.from_str(s);
+  const parse = TFromStr.fromStr(s);
   if (parse.TAG === "Ok") {
     const v = parse._0;
     return TDebug.fmt(v);
@@ -57,12 +57,12 @@ export function unitDebug() {
 
 export function unitFromStr() {
   if ($unitFromStr === undefined) {
-    $unitFromStr = { from_str: unitFromStr_from_str };
+    $unitFromStr = { fromStr: unitFromStr_fromStr };
   }
   return $unitFromStr;
 }
 
-function unitFromStr_from_str(s) {
+function unitFromStr_fromStr(s) {
   if (s === "kg") {
     return { TAG: "Ok", _0: "Kg" };
   }
@@ -73,34 +73,34 @@ function unitFromStr_from_str(s) {
 }
 
 function main() {
-  const value = read("42", { from_str: (s) => $parseInt(s, -2147483648, 2147483647) });
-  const value$1 = read("x", { from_str: (s) => $parseF64(s) });
-  const value$2 = read("true", { from_str: (s) => $parseBool(s) });
+  const value = read("42", { fromStr: (s) => $parseInt(s, -2147483648, 2147483647) });
+  const value$1 = read("x", { fromStr: (s) => $parseF64(s) });
+  const value$2 = read("true", { fromStr: (s) => $parseBool(s) });
   const unit = read("kg", unitFromStr());
   const value$3 = read("18446744073709551615", {
-    from_str: (s) => $parseBig(s, 0n, 18446744073709551615n),
+    fromStr: (s) => $parseBig(s, 0n, 18446744073709551615n),
   });
   console.log(
     `${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${$debugF64(value$1)})`} ${value$2 == null ? "None" : `Some(${value$2})`} ${unit == null ? "None" : `Some(${unit})`} ${value$3 == null ? "None" : `Some(${value$3})`}`,
   );
   console.log(
-    `${read_or("  7 ", 0, { from_str: (s) => $parseInt(s, 0, 255) })} ${read_or("nope", "Lb", unitFromStr())}`,
+    `${readOr("  7 ", 0, { fromStr: (s) => $parseInt(s, 0, 255) })} ${readOr("nope", "Lb", unitFromStr())}`,
   );
-  const parseAll = parse_all(["1", "2"], { from_str: (s) => $parseInt(s, 0, 65535) });
+  const value$4 = parseAll(["1", "2"], { fromStr: (s) => $parseInt(s, 0, 65535) });
   console.log(
-    `${parseAll.TAG === "Ok" ? `Ok([${parseAll._0.join(", ")}])` : `Err(${$debugParseError(parseAll._0, "ParseIntError")})`} ${parse_all(["1", "300"], { from_str: (s) => $parseInt(s, -128, 127) }).TAG === "Err"}`,
+    `${value$4.TAG === "Ok" ? `Ok([${value$4._0.join(", ")}])` : `Err(${$debugParseError(value$4._0, "ParseIntError")})`} ${parseAll(["1", "300"], { fromStr: (s) => $parseInt(s, -128, 127) }).TAG === "Err"}`,
   );
-  const value$4 = parse_all(["lb", "st"], unitFromStr());
+  const value$5 = parseAll(["lb", "st"], unitFromStr());
   console.log(
-    `${value$4.TAG === "Ok" ? `Ok([${value$4._0.join(", ")}])` : `Err(${$debugStr(value$4._0)})`}`,
+    `${value$5.TAG === "Ok" ? `Ok([${value$5._0.join(", ")}])` : `Err(${$debugStr(value$5._0)})`}`,
   );
   console.log(
-    `${explain("ab", { from_str: (s) => $parseChar(s) }, { fmt: (value) => $debugStr(value, "'") }, { fmt: (value) => $debugParseError(value, "ParseCharError") })} | ${explain("g", unitFromStr(), unitDebug(), { fmt: (value) => $debugStr(value) })} | ${explain(
+    `${explain("ab", { fromStr: (s) => $parseChar(s) }, { fmt: (value) => $debugStr(value, "'") }, { fmt: (value) => $debugParseError(value, "ParseCharError") })} | ${explain("g", unitFromStr(), unitDebug(), { fmt: (value) => $debugStr(value) })} | ${explain(
       "s",
-      { from_str: (s) => ({ TAG: "Ok", _0: s }) },
+      { fromStr: (s) => ({ TAG: "Ok", _0: s }) },
       { fmt: (value) => $debugStr(value) },
       { fmt: (value) => "" },
-    )} | ${explain("-9", { from_str: (s) => $parseBig(s, -9223372036854775808n, 9223372036854775807n) }, { fmt: (value) => String(value) }, { fmt: (value) => $debugParseError(value, "ParseIntError") })}`,
+    )} | ${explain("-9", { fromStr: (s) => $parseBig(s, -9223372036854775808n, 9223372036854775807n) }, { fmt: (value) => String(value) }, { fmt: (value) => $debugParseError(value, "ParseIntError") })}`,
   );
 }
 //# sourceMappingURL=case.js.map

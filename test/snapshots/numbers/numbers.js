@@ -55,7 +55,7 @@ function vec2Neg_neg(vec2) {
   return Vec2.new(-vec2.x, -vec2.y);
 }
 
-function vec2AddAssign_add_assign(vec2, o) {
+function vec2AddAssign_addAssign(vec2, o) {
   vec2.x += o.x;
   vec2.y += o.y;
 }
@@ -67,7 +67,7 @@ export function vectors() {
     vec2Sub_sub(vec2Add_add({ ...a }, vec2MulF64_mul({ ...b }, 2)), vec2Neg_neg({ ...a })),
     { x: 0, y: 0 },
   );
-  vec2AddAssign_add_assign(c, { ...b });
+  vec2AddAssign_addAssign(c, { ...b });
   const len = Vec2.len(a);
   const value = Vec2.len(vec2Sub_sub({ ...a }, { ...b }));
   return `${vec2Debug_fmt(c)} ${$displayF64(len)} ${$debugF64(value)} ${$displayF64(0)}`;

@@ -6,7 +6,7 @@ export function entry() {
   main();
 }
 
-function bump_all(cells) {
+function bumpAll(cells) {
   for (const cell of cells) {
     cell.value = Math.imul(cell.value, 10);
   }
@@ -32,7 +32,7 @@ function main() {
 
   const slice = [1, 2, 3];
   const cells = $mutItems(slice);
-  bump_all(cells);
+  bumpAll(cells);
   console.log(`${cells.length} [${slice.join(", ")}]`);
 
   const array = [1, 2, 3];

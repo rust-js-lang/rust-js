@@ -500,7 +500,7 @@ pub fn all(flags: &[bool]) -> Vec<i8> {
   expect(js).toContain("return flag ? 1n : 0n;");
   expect(js).toContain("return c.codePointAt(0);");
   const lib = await import(join(dir, "lib.js"));
-  expect([lib.counted(true), lib.counted(false), lib.wide(true), lib.half(true), lib.code("é"), lib.big_code("😀"), lib.all([true, false])])
+  expect([lib.counted(true), lib.counted(false), lib.wide(true), lib.half(true), lib.code("é"), lib.bigCode("😀"), lib.all([true, false])])
     .toEqual([1, 0, 1n, 1, 233, 128512n, [1, 0]]);
 });
 
@@ -1569,14 +1569,14 @@ pub fn copied(mut items: Vec<u32>) -> (Vec<u32>, Vec<u32>) {
   expect(js).toMatch(/return xs\s*\.map\(/);
   const lib = await import(join(dir, "mir.js"));
   expect([lib.top([2, 7, 3]), lib.top([])]).toEqual([7, 0]);
-  expect([lib.last_two([1, 2, 3]), lib.last_two([1])]).toEqual([[3, 2], [1]]);
+  expect([lib.lastTwo([1, 2, 3]), lib.lastTwo([1])]).toEqual([[3, 2], [1]]);
   expect([lib.flat([[1, 2], [], [3]]), lib.words(" a  b ")]).toEqual([[10, 20, 30], "A B"]);
   expect([lib.mid([1, 2, 3, 4, 5, 6]), lib.mid([1]), lib.up("ß")]).toEqual([[3, 4, 5], [], "SS"]);
   expect(lib.diffs([1, 4, 9])).toEqual([3, 5]);
   expect(lib.pairs(["x", "y", "z"], [1, 2])).toEqual(["x1", "y2"]);
   expect([lib.logs(["ok", "an error", "fine"]), lib.signs([1, -2])]).toEqual([["<ok>", "<fine>"], ["<+>", "<->"]]);
   const crumbs = [{ title: "a", hide: false }, { title: "b", hide: true }];
-  expect([lib.titles(crumbs), lib.shown(crumbs), lib.total([1, 2]), lib.any_big([3, 10])]).toEqual([["0:a", "1:b"], [crumbs[0]], 3, true]);
+  expect([lib.titles(crumbs), lib.shown(crumbs), lib.total([1, 2]), lib.anyBig([3, 10])]).toEqual([["0:a", "1:b"], [crumbs[0]], 3, true]);
   expect(lib.order([1, 2])).toEqual(["a1", "b1", "a2", "b2"]);
   expect(lib.stops([1, 2, 3])).toEqual(["a1", "a2"]);
   expect(lib.taken([1, 2, 3])).toEqual(["a1"]);
@@ -1796,7 +1796,7 @@ pub fn zero(a: u64, b: u64) -> bool {
   const js = readFileSync(join(dir, "mir.js"), "utf8");
   expect(js).toContain("  const moved = { a: 5, c: 6 };\n");
   const lib = await import(join(dir, "mir.js"));
-  expect([lib.moved(), lib.second("ab"), lib.first_of([4, 5]), lib.zero(5n, 5n), lib.zero(4n, 5n)]).toEqual([12, 98, 4, true, false]);
+  expect([lib.moved(), lib.second("ab"), lib.firstOf([4, 5]), lib.zero(5n, 5n), lib.zero(4n, 5n)]).toEqual([12, 98, 4, true, false]);
 });
 
 // A function that returns nothing, from MIR (ADR 0364), returns where the
@@ -1921,11 +1921,11 @@ pub fn pick(c: bool, n: u32) -> u32 {
   expect(js).toContain("  if (c) {\n    return (n + 1) >>> 0;\n  }\n  return Math.imul(n, 2) >>> 0;\n");
   expect(js).not.toContain("$index");
   const lib = await import(join(dir, "mir.js"));
-  expect([lib.groups("a, b,"), lib.second("x,y"), lib.badge("p,q"), lib.last_two("1,2,3"), lib.heads([[], [7]]), lib.shown("ab"), lib.pick(false, 3)]).toEqual([["a", "b"], "y", "p and 1 more of P,Q", ["3", "2"], [0, 7], "ababab", 6]);
+  expect([lib.groups("a, b,"), lib.second("x,y"), lib.badge("p,q"), lib.lastTwo("1,2,3"), lib.heads([[], [7]]), lib.shown("ab"), lib.pick(false, 3)]).toEqual([["a", "b"], "y", "p and 1 more of P,Q", ["3", "2"], [0, 7], "ababab", 6]);
 });
 
 // ADR 0212: a props field's default, \`#[rust_js::default]\`, is where JS
-// takes the props apart, \`{ class_name: className = "language-js" }\`: a
+// takes the props apart, \`{ className = "language-js" }\`: a
 // field left out reads its default.
 test("a props field's default is read where the props are taken apart", async () => {
   const dir = fixture("mir-prop-defaults");
@@ -1943,9 +1943,9 @@ pub fn describe(props: &CodeProps) -> String {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
   const js = readFileSync(join(dir, "mir.js"), "utf8");
-  expect(js).toContain('  const { class_name: className = "language-js", children: code = "", meta } = props;\n');
+  expect(js).toContain('  const { className = "language-js", children: code = "", meta } = props;\n');
   const lib = await import(join(dir, "mir.js"));
-  expect([lib.describe({}), lib.describe({ class_name: "css", children: "ab", meta: "m" })]).toEqual(["language-js:0:-", "css:2:m"]);
+  expect([lib.describe({}), lib.describe({ className: "css", children: "ab", meta: "m" })]).toEqual(["language-js:0:-", "css:2:m"]);
 });
 
 // What \`if let Some(x) = e\` binds, from MIR (ADR 0364), is named as the
@@ -1980,7 +1980,7 @@ pub fn first_over(items: &[u32], k: u32, out: &mut Vec<u32>) {
   const lib = await import(join(dir, "mir.js"));
   const [a, b]: unknown[][] = [[], []];
   lib.scrolled(true, { current: 3 }, a);
-  lib.first_over([1, 5], 2, b);
+  lib.firstOver([1, 5], 2, b);
   expect([a, b]).toEqual([[3], [5, 6]]);
 });
 
@@ -2043,7 +2043,7 @@ pub fn first_id(items: &[Title]) -> u32 {
   // A \`vec!\` a branch gives back, its box made, then filled: the array.
   expect(js).toContain('  if (titled) {\n    return [{ TAG: "Element", _0: { kind: "h4", id: 3 } }];\n  }\n  return [{ TAG: "Text", _0: "t" }];\n');
   const lib = await import(join(dir, "mir.js"));
-  expect([lib.heading(lib.sample(true), "k", "a#bc"), lib.first_id([{ kind: "p", id: 4 }]), lib.first_id([]), lib.element_id([{ kind: "p", id: 5 }]), lib.element_id(["t"])]).toEqual([8, 8, 0, 10, 0]);
+  expect([lib.heading(lib.sample(true), "k", "a#bc"), lib.firstId([{ kind: "p", id: 4 }]), lib.firstId([]), lib.elementId([{ kind: "p", id: 5 }]), lib.elementId(["t"])]).toEqual([8, 8, 0, 10, 0]);
   expect(() => lib.heading(lib.sample(false), "k", "")).toThrow("k is missing a title");
 });
 
@@ -2075,19 +2075,19 @@ pub fn decorate(lines: &[D], inline: &[D]) -> u32 {
   expect(js).toContain(`export function decorate(lines, inline) {
   const highlighted = new Map();
   for (const decorator of lines) {
-    highlighted.set(decorator.line, decorator.class_name);
+    highlighted.set(decorator.line, decorator.className);
   }
   const starts = new Map();
   for (const decorator of inline) {
     if (starts.has(decorator.line)) {
       throw new Error(\`already at \${decorator.line}\`);
     }
-    starts.set(decorator.line, decorator.class_name);
+    starts.set(decorator.line, decorator.className);
   }
   return (highlighted.size + starts.size) >>> 0;
 }`);
   const lib = await import(join(dir, "mir.js"));
-  expect(lib.decorate([{ line: 1, class_name: "a" }], [{ line: 2, class_name: "b" }])).toBe(2);
+  expect(lib.decorate([{ line: 1, className: "a" }], [{ line: 2, className: "b" }])).toBe(2);
 });
 
 // From MIR (ADR 0364): a \`return\` the program wrote first, as written; a
@@ -2118,7 +2118,7 @@ pub fn joined(args: &[String], mut formatted: String) -> String {
   expect(js).toContain('  if (message === "warn") {\n    return "warning";\n  }\n  return "error";\n');
   expect(js).toContain("    for (let i = 0; i < args.length; i++) {\n      formatted += ` ${args[i]}`;\n");
   const lib = await import(join(dir, "mir.js"));
-  expect([lib.get_type("warn"), lib.get_type("x"), lib.joined(["a", "b"], "f")]).toEqual(["warning", "error", "f a b"]);
+  expect([lib.getType("warn"), lib.getType("x"), lib.joined(["a", "b"], "f")]).toEqual(["warning", "error", "f a b"]);
 });
 
 // ADR 0250: a struct update of a base nothing changes is that base spread,
@@ -2260,7 +2260,7 @@ pub fn logged(groups: Vec<Vec<u32>>) -> (Vec<u32>, Vec<String>) {
   const lib = await import(join(dir, "mir.js"));
   expect([lib.markdown([["a.md", "b"], ["c.md"]]), lib.all([[1], [2, 3]])]).toEqual([["a.md", "c.md"], [1, 2, 3]]);
   expect(lib.logged([[1, 2], [3]])).toEqual([[2, 3], ["m1", "f1", "m2", "f2", "m3", "f3"]]);
-  expect(lib.of_sets([new Set([1, 2]), new Set([3])])).toEqual([1, 2, 3]);
+  expect(lib.ofSets([new Set([1, 2]), new Set([3])])).toEqual([1, 2, 3]);
 });
 
 // A map by what gives its value as it is, an untagged variant's constructor
@@ -2454,7 +2454,7 @@ pub fn by(s: &str, p: &str, t: &str) -> String {
   expect(js).toContain('return s.replace("export default ", "let App = ");');
   expect(js).toContain('return s.replace("a", () => t);');
   const lib = await import(join(dir, "lib.js"));
-  expect([lib.all("xa", "$&$&"), lib.dollar("ba"), lib.plain("aa"), lib.first("export default A; export default B"), lib.first_of("aa", "$1")])
+  expect([lib.all("xa", "$&$&"), lib.dollar("ba"), lib.plain("aa"), lib.first("export default A; export default B"), lib.firstOf("aa", "$1")])
     .toEqual(["x$&$&", "b$&!", "bb", "let App = A; export default B", "$1a"]);
   // A pattern that may be empty is the runtime's (ADR 0063), its replacement as it is too.
   expect([lib.by("xa", "a", "$&"), lib.by("ab", "", "$")]).toEqual(["x$&", "$a$b$"]);
@@ -2767,7 +2767,7 @@ pub fn or_not(o: Option<&js::RegExp>, x: &str) -> bool {
   expect(js).toContain("  o?.test(x);");
   expect(js).toContain("return o ? Node.add(o, x) : undefined;");
   const lib = await import(join(dir, "lib.js"));
-  expect([lib.tested(/a/, "a"), lib.tested(undefined, "a"), lib.ran(undefined, "a"), lib.added({ n: 1 }, 2), lib.added(undefined, 2), lib.or_not(undefined, "a")])
+  expect([lib.tested(/a/, "a"), lib.tested(undefined, "a"), lib.ran(undefined, "a"), lib.added({ n: 1 }, 2), lib.added(undefined, 2), lib.orNot(undefined, "a")])
     .toEqual([true, undefined, undefined, 3, undefined, false]);
 });
 
@@ -3222,8 +3222,8 @@ pub fn first_id(parent: &Element) -> Option<String> {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
   expect(readFileSync(join(dir, "lib.js"), "utf8")).toContain("return parent.firstElementChild?.id;");
-  const { first_id } = await import(join(dir, "lib.js"));
-  expect([first_id({ firstElementChild: { id: "a" } }), first_id({ firstElementChild: null })]).toEqual(["a", undefined]);
+  const { firstId } = await import(join(dir, "lib.js"));
+  expect([firstId({ firstElementChild: { id: "a" } }), firstId({ firstElementChild: null })]).toEqual(["a", undefined]);
 });
 
 // ADR 0280: a field made of a literal `None` is no key, `{ code }`, as
@@ -3400,19 +3400,19 @@ pub fn is_three(n: u32) -> bool {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain('export function is_code(value) {\n  return value.mdxName === "inlineCode";\n}');
-  expect(js).toContain('export function is_text(value) {\n  return value === "inlineCode";\n}');
-  expect(js).toContain('export function kind_is(value) {\n  return value === "inlineCode";\n}');
+  expect(js).toContain('export function isCode(value) {\n  return value.mdxName === "inlineCode";\n}');
+  expect(js).toContain('export function isText(value) {\n  return value === "inlineCode";\n}');
+  expect(js).toContain('export function kindIs(value) {\n  return value === "inlineCode";\n}');
   // An array is never `null`: `Array.isArray` alone says it.
   expect(js).toContain("export function listed(value) {\n  if (Array.isArray(value)) {");
-  expect(js).toContain('export function is_string(value) {\n  const mdxName = value.mdxName;\n  return typeof mdxName === "string";\n}');
+  expect(js).toContain('export function isString(value) {\n  const mdxName = value.mdxName;\n  return typeof mdxName === "string";\n}');
   const lib = await import(join(dir, "lib.js"));
   const values = [{ mdxName: "inlineCode" }, { mdxName: "pre" }, { mdxName: null }, {}, { mdxName: 5 }];
-  expect(values.map(lib.is_code)).toEqual([true, false, false, false, false]);
-  expect(values.map((v) => lib.is_string(v))).toEqual([true, true, false, false, false]);
-  expect(["inlineCode", "pre", 5, null, undefined].map((v) => lib.is_text(v))).toEqual([true, false, false, false, false]);
-  expect(["inlineCode", "pre", 5, {}].map((v) => lib.kind_is(v))).toEqual([true, false, false, false]);
-  expect([lib.is_three(3), lib.is_three(4)]).toEqual([true, false]);
+  expect(values.map(lib.isCode)).toEqual([true, false, false, false, false]);
+  expect(values.map((v) => lib.isString(v))).toEqual([true, true, false, false, false]);
+  expect(["inlineCode", "pre", 5, null, undefined].map((v) => lib.isText(v))).toEqual([true, false, false, false, false]);
+  expect(["inlineCode", "pre", 5, {}].map((v) => lib.kindIs(v))).toEqual([true, false, false, false]);
+  expect([lib.isThree(3), lib.isThree(4)]).toEqual([true, false]);
   expect([[1], undefined, null, "a"].map((v) => lib.listed(v))).toEqual([1, 0, 0, 0]);
 });
 
@@ -3576,7 +3576,7 @@ pub fn key(section: Option<Section>) -> Option<&'static str> {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain("as_str(section) {\n    return section;\n  }");
+  expect(js).toContain("asStr(section) {\n    return section;\n  }");
   expect(js).toContain("return `/images/og-${section}.png`;");
   expect(js).toContain("Section.heading(section)");
   expect(js).toContain("export function key(section) {\n  return section;\n}");
@@ -3893,7 +3893,7 @@ pub fn wide(n: u32) -> u64 {
   expect(js).toContain("  index = -1;\n  return $f64ToInt(index, 0, 4294967295);\n}");
   expect(js).toContain("export function byte(n) {\n  const x = n;\n  return x;\n}");
   const lib = await import(join(dir, "lib.js"));
-  expect([lib.found("abc", "c"), lib.unchecked("abc", "z"), lib.set_again("abc", "a"), lib.byte(7), lib.shifted("abc", "z"), lib.wide(7)]).toEqual([2, 0, 0, 7, 0, 7n]);
+  expect([lib.found("abc", "c"), lib.unchecked("abc", "z"), lib.setAgain("abc", "a"), lib.byte(7), lib.shifted("abc", "z"), lib.wide(7)]).toEqual([2, 0, 0, 7, 0, 7n]);
 });
 
 // One whose arms bind what their subject holds, named where it is, is a
@@ -4115,7 +4115,7 @@ pub fn dropped() -> &'static str {
   expect(js).toContain('const label = xs.length === 0 ? "empty" : "some";');
   expect(js).toContain('const label = !flag ? "off" : "on";');
   const lib = await import(join(dir, "lib.js"));
-  expect([lib.button_class(undefined), lib.button_class("Secondary"), lib.low(4), lib.low(5)]).toEqual(["bg-link", "text-primary", "low", "high"]);
+  expect([lib.buttonClass(undefined), lib.buttonClass("Secondary"), lib.low(4), lib.low(5)]).toEqual(["bg-link", "text-primary", "low", "high"]);
   expect([lib.guarded(0, true), lib.guarded(0, false), lib.guarded(1, true)]).toEqual(["flagged zero", "other", "other"]);
   expect([lib.zero({ value: 0 }), lib.zero({ value: 3 })]).toEqual(["zero", "other"]);
   expect([lib.every(1, true), lib.every(1, false)]).toEqual(["flag", "no flag"]);
@@ -4145,9 +4145,9 @@ pub fn first(items: Option<Vec<u32>>) -> Option<u32> {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).not.toContain("as_deref");
+  expect(js).not.toMatch(/as_?deref/i);
   const lib = await import(join(dir, "lib.js"));
-  expect([lib.path_is("/learn", "/learn"), lib.path_is("/a", "/learn"), lib.path_is(undefined, "/learn")]).toEqual([true, false, false]);
+  expect([lib.pathIs("/learn", "/learn"), lib.pathIs("/a", "/learn"), lib.pathIs(undefined, "/learn")]).toEqual([true, false, false]);
   expect([lib.first([4, 5]), lib.first([]), lib.first(undefined)]).toEqual([4, undefined, undefined]);
 });
 
@@ -4196,7 +4196,7 @@ pub fn all_made(objects: Vec<&'static js::JsObject>) -> Vec<Message> {
   const done = { type: "done", compilatonError: false };
   expect([lib.described({ type: "resize", height: 3 }), lib.described({ type: "start", firstLoad: true }), lib.described(done)])
     .toEqual(["resize 3", "start true", "other"]);
-  expect([lib.other(done), lib.other({ type: "resize", height: 1 }), lib.made(done) === done, lib.all_made([done])[0] === done]).toEqual([true, false, true, true]);
+  expect([lib.other(done), lib.other({ type: "resize", height: 1 }), lib.made(done) === done, lib.allMade([done])[0] === done]).toEqual([true, false, true, true]);
 });
 
 // ADR 0287: a `Cell`, or an `Rc` of one, that only its function and its
@@ -4399,7 +4399,7 @@ pub fn named_alike(a: &'static str, b: &'static str, hits: u32) -> bool {
   expect([lib.taken(lib.made()), lib.matched(matched), matched.count]).toEqual([11, 3, 3]);
   const slot = { TAG: "Held", n: 2 };
   expect([lib.held(slot), slot.n, lib.held(lib.empty())]).toEqual([4, 4, 0]);
-  expect([lib.named_alike("Ann", "ANN", 1), lib.named_alike("Ann", "ANN", 2), lib.named_alike("Ann", "Bob", 1)]).toEqual([true, false, false]);
+  expect([lib.namedAlike("Ann", "ANN", 1), lib.namedAlike("Ann", "ANN", 2), lib.namedAlike("Ann", "Bob", 1)]).toEqual([true, false, false]);
 });
 
 // ADR 0289: a `T: Copy` takes a copy function only where it may be given
@@ -4646,7 +4646,7 @@ pub fn lent(a: &Counter, b: &Counter) -> u32 {
   expect(js.match(/const n = raw;/g)?.length).toBe(2);
   const lib = await import(join(dir, "lib.js"));
   const failure = { message: "noisy" };
-  expect([lib.cleared(failure), lib.cleared({ message: "kept" }), lib.read_after(failure), lib.taken(failure), lib.looped(failure), lib.captured(failure), lib.bumped(1), lib.bumped_else(1), lib.lent({ hits: 0 }, { hits: 0 })])
+  expect([lib.cleared(failure), lib.cleared({ message: "kept" }), lib.readAfter(failure), lib.taken(failure), lib.looped(failure), lib.captured(failure), lib.bumped(1), lib.bumpedElse(1), lib.lent({ hits: 0 }, { hits: 0 })])
     .toEqual([true, false, 6, 6, 11, 6, 3, 3, 50]);
 });
 
@@ -4881,7 +4881,7 @@ pub fn rebound_set(error: &Failure, other: &Failure) -> Option<&'static str> {
   expect([lib.shown({ title: undefined, message: "m" }), lib.shown({ title: "T", message: "m" }), lib.retitled({ title: "old", message: "" }), lib.twice({ title: "ab", message: "" }), lib.looped({ title: "ab", message: "" }), lib.aliased({ title: "T", message: "" }), lib.dropped({ title: "T", message: "" })])
     .toEqual(["Error: m", "T: m", "new", 2, 2, ["T", "set"], "dropped"]);
   const [first, other] = [{ title: "a", message: "" }, { title: "b", message: "" }];
-  expect([lib.rebound({ title: "a", message: "" }, { title: "b", message: "" }), lib.rebound_set(first, other), first.title]).toEqual(["a", "b", "first"]);
+  expect([lib.rebound({ title: "a", message: "" }, { title: "b", message: "" }), lib.reboundSet(first, other), first.title]).toEqual(["a", "b", "first"]);
 });
 
 // ADR 0294: `unwrap_unchecked()` is TypeScript's `x!`: the value, unchecked,
@@ -5058,7 +5058,7 @@ pub fn first_value(f: Option<bool>) -> bool {
   const lib = await import(join(dir, "lib.js"));
   const failure = { message: "x" };
   expect([lib.shown(failure), lib.shown(undefined), lib.hidden(undefined), lib.tested(failure), lib.chained(failure), lib.chained(undefined),
-    lib.mapped(failure), lib.number(0), lib.text(""), lib.first(true), lib.first(undefined), lib.first_value(false)])
+    lib.mapped(failure), lib.number(0), lib.text(""), lib.first(true), lib.first(undefined), lib.firstValue(false)])
     .toEqual([true, false, true, 1, true, false, 1, true, false, 1, 0, false]);
   // A JS value of unknown kind may be `""` or `0`: tested against null still.
   writeFileSync(join(dir, "unknown.rs"), `use js::Unknown;
@@ -5406,7 +5406,7 @@ pub fn guarded() -> u32 {
   expect(js).toContain("\nfunction start() {");
   const lib = await import(join(dir, "lib.js"));
   // Made readable as a module's is: a `let mut` nothing sets again, a `const`.
-  expect(js).toContain("  function list_of(n) {\n    const list = [];\n    list.push(n);");
+  expect(js).toContain("  function listOf(n) {\n    const list = [];\n    list.push(n);");
   // Called before a destructor's `try`, it's written before it.
   expect(js).toContain("  function later() {\n    return (three() + 4) >>> 0;\n  }\n  try {\n    result = (first + later()) >>> 0;\n  } finally {\n    noisyDrop_drop({ value: _noisy });");
   // One in another's body is a declaration there too.
@@ -5492,11 +5492,11 @@ pub fn inner(n: u32) -> u32 {
   const lib = await import(join(dir, "lib.js"));
   const states = [{ n: 1 }, { n: 2 }];
   expect([lib.picked(states, { n: 9 }), lib.picked([], { n: 9 })]).toEqual([2, 18]);
-  expect([lib.shown_text([["a", "A"], ["b", "B"]], "b"), lib.shown_text([], "b")]).toEqual(["BB", ""]);
+  expect([lib.shownText([["a", "A"], ["b", "B"]], "b"), lib.shownText([], "b")]).toEqual(["BB", ""]);
   expect([lib.after("abxd"), lib.after("ab"), lib.mapped("a/b/c"), lib.mapped("c")]).toEqual([9, 0, "c", "c"]);
   // A part that may be `None` itself isn't `?? d`'s: `Some((1, None))` gives `None`.
   expect([lib.inner(0), lib.inner(1), lib.inner(3)]).toEqual([14, 0, 6]);
-  expect([lib.field_of({ n: 3 }), lib.field_of(undefined)]).toEqual([9, 0]);
+  expect([lib.fieldOf({ n: 3 }), lib.fieldOf(undefined)]).toEqual([9, 0]);
 });
 
 // ADR 0311: `.flatten()` of a read of items that may be `None` is the JS read
@@ -6453,7 +6453,7 @@ test("a tail loop's break with a value returns it", async () => {
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
   expect(readFileSync(join(dir, "mir.js"), "utf8")).toContain("    if (i === n) {\n      return a;\n    }");
   const lib = await import(join(dir, "mir.js"));
-  expect([lib.fib_loop(0), lib.fib_loop(10)]).toEqual([0, 55]);
+  expect([lib.fibLoop(0), lib.fibLoop(10)]).toEqual([0, 55]);
 });
 
 // A division by a named constant that isn't zero, nor a signed -1, can't
@@ -6519,7 +6519,7 @@ pub fn mapped(n: u32) -> u32 {
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
   expect(readFileSync(join(dir, "mir.js"), "utf8")).toContain("return Iterator.from(items).drop(1).take(k).toArray();");
   const lib = await import(join(dir, "mir.js"));
-  expect([lib.of_countdown(5), lib.middle([7, 8, 9, 10], 2), lib.mapped(3)]).toEqual([[3, 2], [8, 9], 6]);
+  expect([lib.ofCountdown(5), lib.middle([7, 8, 9, 10], 2), lib.mapped(3)]).toEqual([[3, 2], [8, 9], 6]);
 });
 
 // `rev()` of an array's items skipped and taken from, which no closure
@@ -6897,8 +6897,8 @@ pub fn same_choice(a: Choice, b: Choice) -> bool {
   expect(js).toContain('return f === "blocking";');
   const lib = await import(join(dir, "lib.js"));
   expect([lib.fallback(true), lib.fallback(false), lib.describe(true), lib.describe("blocking"), lib.same("blocking", "blocking"),
-    lib.same(true, "blocking"), lib.same(true, true), lib.shown("blocking"), lib.shown(false), lib.is_blocking("blocking"), lib.is_blocking(false),
-    lib.same_choice("off", "off"), lib.same_choice("off", [3]), lib.same_choice([13], [3]), lib.same_choice([3], "off")])
+    lib.same(true, "blocking"), lib.same(true, true), lib.shown("blocking"), lib.shown(false), lib.isBlocking("blocking"), lib.isBlocking(false),
+    lib.sameChoice("off", "off"), lib.sameChoice("off", [3]), lib.sameChoice([13], [3]), lib.sameChoice([3], "off")])
     .toEqual([true, "blocking", "bool true", "blocking", true, false, true, "Blocking", "Bool(false)", true, false, true, false, true, false]);
   writeFileSync(join(dir, "text.rs"), `#[cfg_attr(rust_js, rust_js::untagged)]
 pub enum Mode<'a> {
@@ -7296,7 +7296,7 @@ pub fn set(xs: &mut [u32], i: usize) {
   const lib = await import(join(dir, "mir.js"));
   expect(() => lib.second([1])).toThrow("index out of bounds: the len is 1 but the index is 1");
   expect(() => lib.set([1], 4)).toThrow("index out of bounds: the len is 1 but the index is 4");
-  expect([lib.second([1, 2]), lib.last_is([{}, { path: "a" }], "a")]).toEqual([3, true]);
+  expect([lib.second([1, 2]), lib.lastIs([{}, { path: "a" }], "a")]).toEqual([3, true]);
 });
 
 test("a `let` pattern of one field from MIR destructures", async () => {
@@ -7314,8 +7314,8 @@ pub fn field(n: u32) -> u32 {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
   const js = readFileSync(join(dir, "mir.js"), "utf8");
-  expect(js).toContain("  const { get_props: getProps } = use_collapse(n);\n");
-  expect(js).toContain("  const getProps = use_collapse(n).get_props;\n");
+  expect(js).toContain("  const { getProps } = useCollapse(n);\n");
+  expect(js).toContain("  const getProps = useCollapse(n).getProps;\n");
 });
 
 test("an `if … else if` given as a value from MIR is a conditional where it's read", async () => {
@@ -7628,7 +7628,7 @@ test("a let of an Option's ? from MIR is named as the program names it", async (
   const js = readFileSync(join(dir, "mir.js"), "utf8");
   expect(js).toContain("  const f = xs.find((x) => x % 2 === 0);\n  if (f == null) {\n    return;\n  }\n  return Math.imul(f, 10);\n");
   const lib = await import(join(dir, "mir.js"));
-  expect([lib.first_even([1, 4]), lib.first_even([1])]).toEqual([40, undefined]);
+  expect([lib.firstEven([1, 4]), lib.firstEven([1])]).toEqual([40, undefined]);
 });
 
 // An unstable sort and a selection from MIR (ADR 0342).
@@ -7648,7 +7648,7 @@ pub fn third(mut v: Vec<u32>) -> u32 {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
   const lib = await import(join(dir, "mir.js"));
-  expect([lib.down([3, 1, 2]), lib.by_len(["ccc", "a", "bb"]), lib.third([5, 1, 4, 2, 3])]).toEqual([[3, 2, 1], ["a", "bb", "ccc"], 3]);
+  expect([lib.down([3, 1, 2]), lib.byLen(["ccc", "a", "bb"]), lib.third([5, 1, 4, 2, 3])]).toEqual([[3, 2, 1], ["a", "bb", "ccc"], 3]);
 });
 
 // A slice's own methods from MIR: split by a test, filled, checked sorted,
@@ -7705,7 +7705,7 @@ pub fn upto(m: &BTreeMap<u32, &'static str>) -> Vec<&'static str> {
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
   const lib = await import(join(dir, "mir.js"));
   const m = new Map([[3, "c"], [1, "a"], [2, "b"]]);
-  expect([lib.from_two(m), lib.upto(m)]).toEqual([[2, 3], ["a", "b"]]);
+  expect([lib.fromTwo(m), lib.upto(m)]).toEqual([[2, 3], ["a", "b"]]);
 });
 
 // A derived order of an enum with fields: by variant, as declared, then
@@ -8066,11 +8066,11 @@ pub fn extractSectionedRoutes(routes: &[RouteItem], baseUrl: &str) -> Vec<Sectio
   expect(js).not.toMatch(/\n      continue;\n    } else if/);
   const lib = await import(join(dir, "mir.js"));
   const routes = [
-    { has_section_header: true, section_header: "A" },
+    { hasSectionHeader: true, sectionHeader: "A" },
     { title: "t", path: "/p" },
     { title: "g", routes: [{ title: "c", path: "/c" }] },
   ];
-  expect(lib.extractSectionedRoutes(routes, "x").map((s: { heading: string; pages: unknown[]; sub_groups: unknown[] }) => [s.heading, s.pages.length, s.sub_groups.length])).toEqual([["A", 1, 1]]);
+  expect(lib.extractSectionedRoutes(routes, "x").map((s: { heading: string; pages: unknown[]; subGroups: unknown[] }) => [s.heading, s.pages.length, s.subGroups.length])).toEqual([["A", 1, 1]]);
 });
 
 // react.dev's llms.txt groups its routes: an `else if` the loop's body ends
@@ -8168,7 +8168,7 @@ pub fn extractGroupedRoutes(routes: &[RouteItem], baseUrl: &str) -> Vec<SubGroup
   expect(js).not.toContain("\n    if (route.title != null && route.path != null) {");
   const lib = await import(join(dir, "mir.js"));
   const routes = [
-    { has_section_header: true, title: "H", path: "/h" },
+    { hasSectionHeader: true, title: "H", path: "/h" },
     { title: "E", path: "https://e" },
     { title: "G", path: "/g", routes: [{ title: "c", path: "/c" }, { title: "x", path: "http://x" }] },
     { title: "T", path: "/t" },
@@ -8219,10 +8219,10 @@ pub fn ends(lines: &[&str], inline_decorators: Vec<InlineDecorator>) -> Vec<(u32
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
   const js = readFileSync(join(dir, "mir.js"), "utf8");
-  expect(js).toContain("    decoratorEnds.set(decoratorEnd, decorator.class_name);\n  }\n");
+  expect(js).toContain("    decoratorEnds.set(decoratorEnd, decorator.className);\n  }\n");
   expect(js).not.toContain("continue;");
   const lib = await import(join(dir, "mir.js"));
-  const decorator = (line: number, start_column: number, end_column: number, class_name: string) => ({ line, start_column, end_column, class_name });
+  const decorator = (line: number, startColumn: number, endColumn: number, className: string) => ({ line, startColumn, endColumn, className });
   expect(lib.ends(["ab", "cde"], [decorator(2, 1, 3, "k"), decorator(1, 0, 1, "s")])).toEqual([[1, "s"], [6, "k"]]);
   expect(() => lib.ends(["ab"], [decorator(1, 0, 1, "a"), decorator(1, 1, 1, "b")])).toThrow("Already closed decorator at 1");
 });
@@ -8587,12 +8587,12 @@ pub fn logs(message: &Message, out: &mut Vec<u32>) {
   expect(js).toContain("  if (props.meta) {\n");
   const lib = await import(join(dir, "mir.js"));
   const pushed: number[] = [];
-  lib.starts({ TAG: "Start", first_load: true }, pushed);
-  lib.starts({ TAG: "Start", first_load: false }, pushed);
+  lib.starts({ TAG: "Start", firstLoad: true }, pushed);
+  lib.starts({ TAG: "Start", firstLoad: false }, pushed);
   lib.starts({ TAG: "Start" }, pushed);
   lib.starts("Refresh", pushed);
   expect([pushed, lib.titled("e"), lib.titled(""), lib.titled(undefined)]).toEqual([[1, 1], "#e", "none", "none"]);
-  lib.logs({ TAG: "Start", first_load: true }, pushed);
+  lib.logs({ TAG: "Start", firstLoad: true }, pushed);
   lib.logs({ TAG: "Start" }, pushed);
   expect([pushed, lib.meta({ meta: "ab" }), lib.meta({ meta: "" }), lib.meta({})]).toEqual([[1, 1, 2], 2, 0, 0]);
 });
@@ -8832,12 +8832,12 @@ pub fn tail(message: &Message, out: &mut Vec<u32>) {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
   const js = readFileSync(join(dir, "mir.js"), "utf8");
-  const test = '  if ((message.TAG === "Start" && message.first_load) || message === "Refresh") {\n    out.push(1);\n  }\n';
+  const test = '  if ((message.TAG === "Start" && message.firstLoad) || message === "Refresh") {\n    out.push(1);\n  }\n';
   expect(js).toContain(`export function starts(message, out) {\n${test}  out.push(2);\n}`);
   expect(js).toContain(`export function tail(message, out) {\n${test}}`);
   const lib = await import(join(dir, "mir.js"));
   const pushed: number[] = [];
-  lib.starts({ TAG: "Start", first_load: true }, pushed);
+  lib.starts({ TAG: "Start", firstLoad: true }, pushed);
   lib.tail("Refresh", pushed);
   lib.tail("Other", pushed);
   expect(pushed).toEqual([1, 2, 1]);
@@ -9037,10 +9037,10 @@ pub fn handle(ev: &Ev, open: bool, out: &mut Vec<u32>) {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
   const js = readFileSync(join(dir, "mir.js"), "utf8");
-  expect(js).toContain('  if (\n    (ev.key_code === 27 && open) ||\n    (ev.key === "k" && (ev.meta || ev.ctrl)) ||\n    (!editing(ev) && ev.key === "/" && !open)\n  ) {\n    out.push(1);\n');
+  expect(js).toContain('  if (\n    (ev.keyCode === 27 && open) ||\n    (ev.key === "k" && (ev.meta || ev.ctrl)) ||\n    (!editing(ev) && ev.key === "/" && !open)\n  ) {\n    out.push(1);\n');
   const lib = await import(join(dir, "mir.js"));
   const pushed: number[] = [];
-  for (const [ev, open] of [[{ key_code: 27, key: "", meta: false, ctrl: false }, true], [{ key_code: 0, key: "k", meta: false, ctrl: true }, false], [{ key_code: 0, key: "k", meta: false, ctrl: false }, false], [{ key_code: 0, key: "/", meta: false, ctrl: false }, false], [{ key_code: 0, key: "/", meta: false, ctrl: false }, true]] as const) lib.handle(ev, open, pushed);
+  for (const [ev, open] of [[{ keyCode: 27, key: "", meta: false, ctrl: false }, true], [{ keyCode: 0, key: "k", meta: false, ctrl: true }, false], [{ keyCode: 0, key: "k", meta: false, ctrl: false }, false], [{ keyCode: 0, key: "/", meta: false, ctrl: false }, false], [{ keyCode: 0, key: "/", meta: false, ctrl: false }, true]] as const) lib.handle(ev, open, pushed);
   expect(pushed).toEqual([1, 2, 1, 1]);
 });
 
@@ -9305,9 +9305,9 @@ pub fn or_none() -> bool {
     expect(js).toContain('  SUPPORTED = !!globalThis.maybeSupports && globalThis.supportsIt("importmap");\n');
     const lib = await import(join(dir, "mir.js"));
     delete globals.maybeSupports;
-    const absent = [lib.update(), lib.negated(), lib.or_none()];
+    const absent = [lib.update(), lib.negated(), lib.orNone()];
     globals.maybeSupports = {};
-    expect([absent, [lib.update(), lib.negated(), lib.or_none()]]).toEqual([[false, false, true], [true, true, true]]);
+    expect([absent, [lib.update(), lib.negated(), lib.orNone()]]).toEqual([[false, false, true], [true, true, true]]);
   } finally {
     delete globals.maybeSupports;
     delete globals.supportsIt;
@@ -9338,7 +9338,7 @@ pub fn button(Props { provided_files }: Props, supported: bool) -> Option<u32> {
   const js = readFileSync(join(dir, "mir.js"), "utf8");
   expect(js).toContain("  if (providedFiles.some((file) => !SUPPORTED.includes(file))) {\n");
   const lib = await import(join(dir, "mir.js"));
-  expect([lib.button({ provided_files: ["/App.js"] }, true), lib.button({ provided_files: ["/x.js"] }, true), lib.button({ provided_files: [] }, false)]).toEqual([1, undefined, undefined]);
+  expect([lib.button({ providedFiles: ["/App.js"] }, true), lib.button({ providedFiles: ["/x.js"] }, true), lib.button({ providedFiles: [] }, false)]).toEqual([1, undefined, undefined]);
 });
 
 // As react.dev's createFileMap reads a code block's meta:
@@ -9366,8 +9366,8 @@ pub fn hidden(tokens: &[String]) -> bool {
   expect(js).toContain('  return tokens.includes("hidden");\n');
   const lib = await import(join(dir, "mir.js"));
   const pushed: number[] = [];
-  lib.not_pre("a", "b", pushed);
-  lib.not_pre("pre", "b", pushed);
+  lib.notPre("a", "b", pushed);
+  lib.notPre("pre", "b", pushed);
   expect([pushed, lib.found(["a", "b.js"]), lib.found(["a"]), lib.hidden(["hidden"]), lib.hidden(["x"])]).toEqual([[1], "b.js", undefined, true, false]);
 });
 
@@ -9521,7 +9521,7 @@ pub fn label(section: Section) -> String {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
   const js = readFileSync(join(dir, "mir.js"), "utf8");
-  expect(js).toContain("  as_str(section) {\n    return section;\n  },\n");
+  expect(js).toContain("  asStr(section) {\n    return section;\n  },\n");
   const lib = await import(join(dir, "mir.js"));
   expect(lib.label("home")).toBe("og-home");
 });
@@ -9658,9 +9658,9 @@ pub fn diags(msgs: Vec<&Msg>) -> Vec<Diag> {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
   const js = readFileSync(join(dir, "mir.js"), "utf8");
-  expect(js).toContain("({ rule_id: m.rule_id, line: m.line })");
+  expect(js).toContain("({ ruleId: m.ruleId, line: m.line })");
   const lib = await import(join(dir, "mir.js"));
-  expect(lib.diags([{ rule_id: null, line: 1 }, { rule_id: "r", line: 2 }])).toEqual([{ rule_id: null, line: 1 }, { rule_id: "r", line: 2 }]);
+  expect(lib.diags([{ ruleId: null, line: 1 }, { ruleId: "r", line: 2 }])).toEqual([{ ruleId: null, line: 1 }, { ruleId: "r", line: 2 }]);
 });
 
 // A trait's default method that's a binding, `get ruleId`, called through
@@ -10016,7 +10016,7 @@ pub fn handle(message: &Message, log: &mut Vec<String>) {
   expect(js).not.toContain("!==");
   const lib = await import(join(dir, "mir.js"));
   const log: string[] = [];
-  for (const m of [{ TAG: "resize", height: 2 }, { TAG: "start", first_load: true }, "done", "refresh"]) lib.handle(m, log);
+  for (const m of [{ TAG: "resize", height: 2 }, { TAG: "start", firstLoad: true }, "done", "refresh"]) lib.handle(m, log);
   expect(log).toEqual(["h2", "first", "start", "done"]);
 });
 
@@ -10185,7 +10185,7 @@ pub fn parsed(v: Vec<&str>) -> Vec<f64> {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
   const js = readFileSync(join(dir, "mir.js"), "utf8");
-  expect(js).toContain(".filter(is_rule)");
+  expect(js).toContain(".filter(isRule)");
   expect(js).toContain("v.map(twice)");
   expect(js).toContain("v.map((text) => parseFloat(text))");
   const lib = await import(join(dir, "mir.js"));
@@ -10279,7 +10279,7 @@ pub fn widths(entries: &[&Unknown], log: impl Fn(f64)) {
   expect(js).toContain("      const contentBoxSize = Array.isArray(size) ? size[0] : size;");
   const lib = await import(join(dir, "mir.js"));
   const widths: number[] = [];
-  lib.widths([{ contentBoxSize: [{ inline_size: 1 }] }, {}, { contentBoxSize: { inline_size: 2 } }], (w: number) => widths.push(w));
+  lib.widths([{ contentBoxSize: [{ inlineSize: 1 }] }, {}, { contentBoxSize: { inlineSize: 2 } }], (w: number) => widths.push(w));
   expect(widths).toEqual([1, 2]);
 });
 
@@ -10707,8 +10707,8 @@ pub fn odd_to_five() -> Vec<u32> {
   const lib = await import(join(dir, "mir.js"));
   expect([lib.squares(4), lib.wide(3n)]).toEqual([[0, 1, 4, 9], [0n, 2n, 4n]]);
   expect([lib.stars(3), lib.stars(0), lib.down(3), lib.upto(3), lib.upto(0)]).toEqual([["***", "**", "*"], [], [2, 1, 0], [1, 2, 3], []]);
-  expect(lib.odd_squares(6)).toEqual([1, 9, 25]);
-  expect([lib.doubled(), lib.odd_to_five()]).toEqual([[2, 4, 6], [1, 3, 5]]);
+  expect(lib.oddSquares(6)).toEqual([1, 9, 25]);
+  expect([lib.doubled(), lib.oddToFive()]).toEqual([[2, 4, 6], [1, 3, 5]]);
   expect(lib.few()).toEqual([0, 2, 4]);
 });
 
@@ -10742,7 +10742,7 @@ pub fn a_names(names: Vec<String>) -> usize {
   const log = console.log;
   console.log = (line: string) => logs.push(line);
   try {
-    expect([lib.run(), lib.a_names(["ab", "b", "ac"])]).toEqual([2, 2]);
+    expect([lib.run(), lib.aNames(["ab", "b", "ac"])]).toEqual([2, 2]);
   } finally {
     console.log = log;
   }
@@ -11293,7 +11293,7 @@ pub fn replaced(mut v: Vec<u32>) -> (Vec<u32>, Vec<u32>) {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
   const lib = await import(join(dir, "mir.js"));
-  expect([lib.doubled([1, 2]), lib.tail_again([1, 2, 3]), lib.replaced([1, 2, 3])]).toEqual([[1, 2, 1, 2], [1, 2, 3, 2, 3], [[9, 8], [1, 2, 3]]]);
+  expect([lib.doubled([1, 2]), lib.tailAgain([1, 2, 3]), lib.replaced([1, 2, 3])]).toEqual([[1, 2, 1, 2], [1, 2, 3, 2, 3], [[9, 8], [1, 2, 3]]]);
 });
 
 // An iterator of the crate's from MIR: what its impl writes itself, its
@@ -11555,8 +11555,8 @@ pub fn read_first(n: i32) -> (i32, Vec<i32>) {
   expect([lib.given(8), lib.given(2), lib.given(3)]).toEqual([[4, 0], [-1, 100], [-1, 100]]);
   // Not of what isn't a constant, nor where the block reads or sets it first.
   expect([lib.bumped(4), lib.bumped(20)]).toEqual([[6, 6], [10, 6]]);
-  expect([lib.set_first(4), lib.set_first(8), lib.set_first(3)]).toEqual([0, 4, 0]);
-  expect([lib.read_first(4), lib.read_first(8)]).toEqual([[0, [3]], [4, [3]]]);
+  expect([lib.setFirst(4), lib.setFirst(8), lib.setFirst(3)]).toEqual([0, 4, 0]);
+  expect([lib.readFirst(4), lib.readFirst(8)]).toEqual([[0, [3]], [4, [3]]]);
 });
 
 // An or-pattern's arm that changes what it binds, `*r *= 10.0`, after the
@@ -11724,7 +11724,7 @@ pub fn owned_reversed(v: Vec<u32>) -> Vec<u32> {
   expect(lib.extended()).toEqual([97, 98, 99, 0xd7fe, 0xd7ff, 0xe000]);
   expect(lib.counted(5)).toBe(10);
   expect(lib.reversed()).toEqual([3, 2]);
-  expect([lib.kept_reversed([1, 2, 3]), lib.owned_reversed([1, 2, 3])]).toEqual([[3, 2, 1], [3, 2]]);
+  expect([lib.keptReversed([1, 2, 3]), lib.ownedReversed([1, 2, 3])]).toEqual([[3, 2, 1], [3, 2]]);
   // A number's range is still JS's counted `for`.
   expect(lib.between(2, 5)).toBe(9);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
@@ -11762,7 +11762,7 @@ pub fn rest_mut(v: Vec<Vec<u32>>) -> usize {
   expect(js).toContain("  for (const row of it) {\n    row.push(0);");
   expect(js).not.toContain("let row;");
   const lib = await import(join(dir, "lib.js"));
-  expect([lib.plain_mut([[1], [2, 3]]), lib.rest_mut([[1], [2, 3], [4]])]).toEqual([5, 5]);
+  expect([lib.plainMut([[1], [2, 3]]), lib.restMut([[1], [2, 3], [4]])]).toEqual([5, 5]);
 });
 
 // ADR 0420: what `Vec::set_len` leaves past a vector's length is read

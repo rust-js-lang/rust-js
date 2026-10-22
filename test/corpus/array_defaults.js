@@ -11,7 +11,7 @@ export function entry() {
 function tIterExt() {
   if ($tIterExt === undefined) {
     $tIterExt = {
-      default_for_size: (self, N, SelfItemArrayDefault) => SelfItemArrayDefault.default(),
+      defaultForSize: (self, N, SelfItemArrayDefault) => SelfItemArrayDefault.default(),
     };
   }
   return $tIterExt;
@@ -26,7 +26,7 @@ function defaults(N, StringArrayDefault) {
 }
 
 function main() {
-  const arr = tIterExt().default_for_size({ start: 0, end: 10 }, 10, {
+  const arr = tIterExt().defaultForSize({ start: 0, end: 10 }, 10, {
     default: () => [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
   });
   console.log(`[${arr.join(", ")}]`);

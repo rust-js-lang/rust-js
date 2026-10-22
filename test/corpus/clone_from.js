@@ -27,7 +27,7 @@ function loudDrop_drop(loud) {
   console.log(`drop ${loud[0]}`);
 }
 
-function copy_into(dest, source, TClone) {
+function copyInto(dest, source, TClone) {
   const old = dest.value;
   dest.value = TClone.clone(source);
 }
@@ -41,11 +41,11 @@ function main() {
   $take(items, [3].slice());
   let text = "x";
   const dest = { value: text };
-  copy_into(dest, "y", { clone: (value) => value });
+  copyInto(dest, "y", { clone: (value) => value });
   text = dest.value;
   const q = { name: "q", n: 0 };
   const dest$1 = { value: q };
-  copy_into(dest$1, b, { clone: (value) => ({ ...value }) });
+  copyInto(dest$1, b, { clone: (value) => ({ ...value }) });
   $assign(q, dest$1.value);
   console.log(
     `${pointDebug_fmt(a)} [${items.join(", ")}] ${text} ${pointDebug_fmt(q)} ${pointDebug_fmt(b)}`,

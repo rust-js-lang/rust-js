@@ -92,7 +92,7 @@ function largest(items, TPartialOrd) {
   if (value != null) {
     let best = $someValue(value);
     for (const x of it) {
-      if (TPartialOrd.partial_cmp(x, best) > 0) {
+      if (TPartialOrd.partialCmp(x, best) > 0) {
         best = x;
       }
     }
@@ -132,9 +132,9 @@ export function tour() {
   out += `${max == null ? "None" : `Some(${versionDebug_fmt(max)})`} ${value}\n`;
   const c = { name: "svc", retries: 3, verbose: false, ratio: 0 };
   out += `${configDebug_fmt(c)}\n`;
-  const value$1 = largest([3, 9, 2], { partial_cmp: $cmp });
-  const value$2 = largest([1.5, -2], { partial_cmp: $partialCmp });
-  const value$3 = largest([], { partial_cmp: $cmp });
+  const value$1 = largest([3, 9, 2], { partialCmp: $cmp });
+  const value$2 = largest([1.5, -2], { partialCmp: $partialCmp });
+  const value$3 = largest([], { partialCmp: $cmp });
   out += `${value$1 == null ? "None" : `Some(${value$1})`} ${value$2 == null ? "None" : `Some(${$debugF64(value$2)})`} ${value$3 == null ? "None" : `Some(${value$3})`}\n`;
   const running = $lazyScan($iter([1, 2, 3, 4]), 0, (acc, x) => {
     acc.value = (acc.value + x) >>> 0;

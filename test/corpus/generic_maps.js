@@ -39,7 +39,7 @@ function tCounting(TIterator) {
     $tCounting = new WeakMap();
   }
   return $traitImpl($tCounting, [TIterator], () => ({
-    counts_by: (self, f, KHash, KPartialEq, KMap) => {
+    countsBy: (self, f, KHash, KPartialEq, KMap) => {
       const counts = new KMap();
       $iterator(self, TIterator.next, true)
         .map((item) => f(item))
@@ -50,8 +50,8 @@ function tCounting(TIterator) {
       return counts;
     },
     counts: (self, SelfItemHash, SelfItemPartialEq, SelfItemMap) =>
-      tCounting(TIterator).counts_by(self, (x) => x, SelfItemHash, SelfItemPartialEq, SelfItemMap),
-    tally_by: (self, f, KHash, KPartialEq, KMap) =>
+      tCounting(TIterator).countsBy(self, (x) => x, SelfItemHash, SelfItemPartialEq, SelfItemMap),
+    tallyBy: (self, f, KHash, KPartialEq, KMap) =>
       tCounting({ next: $nextSome }).counts(
         $iterator(self, TIterator.next, true).map((item) => f(item)),
         KHash,
@@ -62,13 +62,13 @@ function tCounting(TIterator) {
 }
 
 function pHash_hash(p, state, HHasher) {
-  HHasher.write_u8(state, p[0]);
-  HHasher.write_u8(state, p[1]);
+  HHasher.writeU8(state, p[0]);
+  HHasher.writeU8(state, p[1]);
 }
 
 export function pHash() {
   if ($pHash === undefined) {
-    $pHash = { hash: pHash_hash, hash_slice: $hashSlice(pHash_hash) };
+    $pHash = { hash: pHash_hash, hashSlice: $hashSlice(pHash_hash) };
   }
   return $pHash;
 }
@@ -82,11 +82,11 @@ function main() {
     ]),
     {
       hash: (value, state, H) => {
-        H.write_str(state, value);
+        H.writeStr(state, value);
       },
-      hash_slice: (items, state, H) => {
+      hashSlice: (items, state, H) => {
         for (const item of items) {
-          H.write_str(state, item);
+          H.writeStr(state, item);
         }
       },
     },
@@ -125,11 +125,11 @@ function main() {
     $iter(["x", "y", "x"]),
     {
       hash: (value, state, H) => {
-        H.write_str(state, value);
+        H.writeStr(state, value);
       },
-      hash_slice: (items, state, H) => {
+      hashSlice: (items, state, H) => {
         for (const item of items) {
-          H.write_str(state, item);
+          H.writeStr(state, item);
         }
       },
     },
@@ -138,7 +138,7 @@ function main() {
   );
   const value$1 = c.get("x");
   console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
-  const cp = tCounting({ next: $next }).counts_by(
+  const cp = tCounting({ next: $next }).countsBy(
     $iter([
       [0, 1],
       [0, 1],
@@ -146,9 +146,9 @@ function main() {
     (p) => p[0],
     {
       hash: (value, state, H) => {
-        H.write_u8(state, value);
+        H.writeU8(state, value);
       },
-      hash_slice: (items, state, H) => {
+      hashSlice: (items, state, H) => {
         H.write(state, items);
       },
     },
@@ -168,14 +168,14 @@ function main() {
   );
   const value$3 = cs.get([0, 1]);
   console.log(`${value$3 == null ? "None" : `Some(${value$3})`}`);
-  const by = tCounting({ next: $next }).tally_by(
+  const by = tCounting({ next: $next }).tallyBy(
     $iter(["ab", "cd", "a"]),
     (s) => $byteLen(s),
     {
       hash: (value, state, H) => {
-        H.write_usize(state, value);
+        H.writeUsize(state, value);
       },
-      hash_slice: (items, state, H) => {
+      hashSlice: (items, state, H) => {
         H.write(
           state,
           items.flatMap((n) => $toBytes(n, 4, true)),

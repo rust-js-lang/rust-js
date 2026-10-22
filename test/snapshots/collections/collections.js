@@ -29,7 +29,7 @@ import {
 } from "@rust-js/runtime";
 
 /** A range, counted with `for (let i = ..; i < ..; i++)`. */
-export function sum_to(n) {
+export function sumTo(n) {
   let total = 0;
   for (let i = 0; i < n; i++) {
     total = (total + i) >>> 0;
@@ -41,7 +41,7 @@ export function sum_to(n) {
  * Rust works out a range's end once: growing `n` in the loop doesn't
  * make it run longer.
  */
-export function end_once(n) {
+export function endOnce(n) {
   let n$1 = n;
   let times = 0;
   const end = n$1;
@@ -53,7 +53,7 @@ export function end_once(n) {
 }
 
 /** A `mut` loop variable is a copy: changing it doesn't move the loop on. */
-export function mut_counter(n) {
+export function mutCounter(n) {
   let total = 0;
   const iter = { start: 0, end: n };
   while (true) {
@@ -79,7 +79,7 @@ export function evens(n) {
   return v;
 }
 
-export function keep_over(limit) {
+export function keepOver(limit) {
   const v = [5, 1, 8, 3, 9, 2];
   $retain(v, (x) => x > limit);
   return v;
@@ -238,7 +238,7 @@ export function indexed(i) {
 }
 
 /** An element's fields are written in place, and a copy of one is its own. */
-export function element_fields(i) {
+export function elementFields(i) {
   const cells = [{ hits: 0 }, { hits: 0 }];
   const cell2 = $index(cells, i);
   cell2.hits = (cell2.hits + 1) >>> 0;
@@ -261,7 +261,7 @@ export function arrays(i) {
  * JS compares by value. Their order isn't Rust's, which is arbitrary too,
  * so these sort what they take out.
  */
-export function word_counts(text) {
+export function wordCounts(text) {
   const counts = new Map();
   for (const word of text.split(" ")) {
     const current = $orInsert(counts, word, 0);
@@ -272,7 +272,7 @@ export function word_counts(text) {
   return all;
 }
 
-export function map_basics(n) {
+export function mapBasics(n) {
   const m = new Map();
   m.set("a", n);
   const old = $insert(m, "a", (n + 1) >>> 0);
@@ -295,7 +295,7 @@ export function map_basics(n) {
   ];
 }
 
-export function set_basics(n) {
+export function setBasics(n) {
   const s = new Set([3, 1, 2]);
   const new$ = $add(s, n);
   const again = $add(s, n);
@@ -335,7 +335,7 @@ export function grouped(n) {
   return all;
 }
 
-export function sorted_maps(text) {
+export function sortedMaps(text) {
   const counts = new Map();
   for (const word of text.split(" ")) {
     const current = $orInsert(counts, word, 0);

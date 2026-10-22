@@ -38,7 +38,7 @@ function ownDeref_deref(own) {
   return own.value.value;
 }
 
-function ownDerefMut_deref_mut(own) {
+function ownDerefMut_derefMut(own) {
   return {
     get value() {
       return own.value.value;
@@ -60,7 +60,7 @@ function unread(n) {
 }
 
 /** One to a field, whose handle making it would make for nothing. */
-function unread_field(pair) {
+function unreadField(pair) {
   return pair[1];
 }
 
@@ -128,8 +128,8 @@ function main() {
 
   const point = { x: 0, y: 0 };
   const own = { value: $ptrTo(point) };
-  ownDerefMut_deref_mut(own).value.x = 5;
-  const value$2 = ownDerefMut_deref_mut(own).value;
+  ownDerefMut_derefMut(own).value.x = 5;
+  const value$2 = ownDerefMut_derefMut(own).value;
   value$2.y = (value$2.y + 2) | 0;
   const value$3 = ownDeref_deref(own).x;
   console.log(`${ptDebug_fmt(point)} ${value$3}`);
@@ -138,7 +138,7 @@ function main() {
   const b = { ...a };
   console.log(`${same(a, b)} ${same(a, a)} ${$eq(a, b)}`);
 
-  console.log(`${unread(4)} ${guarded(6)} ${unread_field([1, 2])}`);
+  console.log(`${unread(4)} ${guarded(6)} ${unreadField([1, 2])}`);
   const literal = { value: 3 };
   const sameLiteral = literal;
   console.log(`${literal.value} ${$ptrEq(literal, sameLiteral, 4)}`);

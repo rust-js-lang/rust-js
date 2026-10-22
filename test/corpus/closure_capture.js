@@ -6,7 +6,7 @@ export function entry() {
   main();
 }
 
-function make_counter() {
+function makeCounter() {
   const count = 0;
   let count$1 = count;
   return () => {
@@ -31,8 +31,8 @@ function main() {
   );
   console.log(`total ${total}`);
 
-  const a = make_counter();
-  const b = make_counter();
+  const a = makeCounter();
+  const b = makeCounter();
   console.log(`${a()} ${a()} ${b()} ${a()}`);
 
   const names = ["x"];

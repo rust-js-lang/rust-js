@@ -530,8 +530,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 return Err(self.unsupported(span, &format!("showing a `{ty}` made where it's shown")));
             }
             let dictionary = Expr::member(value.clone(), js::DICTIONARY);
+            let to_string = self.to_string_trait().expect("checked above");
             return Ok(Expr::call(
-                Expr::member(dictionary, "to_string"),
+                Expr::member(
+                    dictionary,
+                    crate::lower::bindings::trait_method_name(self.tcx, to_string, "to_string"),
+                ),
                 vec![Expr::held(value)],
             ));
         }

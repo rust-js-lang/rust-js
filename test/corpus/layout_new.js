@@ -6,13 +6,13 @@ export function entry() {
   main();
 }
 
-function layout_of(TSize, TAlign) {
+function layoutOf(TSize, TAlign) {
   return { size: TSize, align: TAlign };
 }
 
 function main() {
   console.log(`${$debugLayout({ size: 8, align: 8 })}`);
-  console.log(`${$debugLayout(layout_of(8, 4))} ${$debugLayout(layout_of(6, 2))}`);
+  console.log(`${$debugLayout(layoutOf(8, 4))} ${$debugLayout(layoutOf(6, 2))}`);
   const l = { size: 24, align: 8 };
   console.log(`${l.size} ${l.align} ${$debugLayout(l)}`);
 }

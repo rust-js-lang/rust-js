@@ -28,9 +28,7 @@ pub(in crate::lower) fn impl_name(tcx: TyCtxt<'_>, id: DefId) -> String {
                 (None, Some(c)) => js_word(&c.to_string()),
                 (None, None) => continue,
             };
-            let mut chars = word.chars();
-            name.extend(chars.next().map(|c| c.to_ascii_uppercase()));
-            name.extend(chars);
+            name.push_str(&crate::lower::upper_first(&word));
         }
         name
     };
@@ -46,14 +44,8 @@ pub(in crate::lower) fn impl_name(tcx: TyCtxt<'_>, id: DefId) -> String {
         true => {
             // A crate root's is its path, the crate's name, or `crate`.
             let parent = tcx.parent(tr.def_id);
-            tcx.opt_item_name(parent)
-                .map_or_else(|| tcx.def_path_str(parent), |name| name.to_string())
-                .split('_')
-                .flat_map(|part| {
-                    let mut chars = part.chars();
-                    chars.next().map(|c| c.to_ascii_uppercase()).into_iter().chain(chars)
-                })
-                .collect()
+            let module = (tcx.opt_item_name(parent)).map_or_else(|| tcx.def_path_str(parent), |name| name.to_string());
+            crate::lower::upper_first(&crate::lower::camel_case(&module))
         }
         false => String::new(),
     };
@@ -122,10 +114,7 @@ fn full_type_word<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> String {
                 {
                     continue;
                 }
-                let word = js_word(&full_type_word(tcx, arg));
-                let mut chars = word.chars();
-                name.extend(chars.next().map(|c| c.to_ascii_uppercase()));
-                name.extend(chars);
+                name.push_str(&crate::lower::upper_first(&js_word(&full_type_word(tcx, arg))));
             }
             name
         }
@@ -184,19 +173,15 @@ fn type_word<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> String {
         ty::Adt(adt, _) => tcx.item_name(adt.did()).to_string(),
         ty::Ref(_, inner, mutability) => {
             let inner = js_word(&type_word(tcx, *inner));
-            let mut chars = inner.chars();
-            let first = chars.next().map(|c| c.to_ascii_uppercase()).unwrap_or_default();
             let kind = if mutability.is_mut() { "RefMut" } else { "Ref" };
-            format!("{kind}{first}{}", chars.as_str())
+            format!("{kind}{}", crate::lower::upper_first(&inner))
         }
         // An associated type's, `BItem` of `<B as Array>::Item`.
         ty::Alias(..) => evidence_word(tcx, ty),
         // A slice's, its item's, `U32Slice` of `[u32]`.
         ty::Slice(item) => {
             let item = js_word(&type_word(tcx, *item));
-            let mut chars = item.chars();
-            let first = chars.next().map(|c| c.to_ascii_uppercase()).unwrap_or_default();
-            format!("{first}{}Slice", chars.as_str())
+            format!("{}Slice", crate::lower::upper_first(&item))
         }
         _ => ty.to_string(),
     }
@@ -231,17 +216,11 @@ pub(super) fn trait_word_with_refs<'tcx>(tcx: TyCtxt<'tcx>, tr: ty::TraitRef<'tc
             pointee = inner;
         }
         let pointee = js_word(&type_word(tcx, pointee));
-        let mut rest = pointee.chars();
         match word.is_empty() {
-            true => word.extend(rest),
-            false => {
-                word.extend(rest.next().map(|c| c.to_ascii_uppercase()));
-                word.extend(rest);
-            }
+            true => word.push_str(&pointee),
+            false => word.push_str(&crate::lower::upper_first(&pointee)),
         }
-        let mut chars = word.chars();
-        name.extend(chars.next().map(|c| c.to_ascii_uppercase()));
-        name.extend(chars);
+        name.push_str(&crate::lower::upper_first(&word));
     }
     name
 }

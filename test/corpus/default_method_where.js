@@ -25,7 +25,7 @@ function namesSource() {
   if ($namesSource === undefined) {
     $namesSource = {
       next: (arg0) => namesSource_next(arg0.value),
-      first_cloned: (self, SelfItemDeref, SelfItemTargetClone) => {
+      firstCloned: (self, SelfItemDeref, SelfItemTargetClone) => {
         const x = namesSource_next(self);
         return x != null ? $some(SelfItemDeref.deref($someValue(x))) : undefined;
       },
@@ -43,17 +43,17 @@ function namesSource_label(names) {
   return `${names.names.length} names`;
 }
 
-function label_of(s, SSource) {
+function labelOf(s, SSource) {
   return SSource.label(s);
 }
 
 function main() {
   const boxed = { value: { value: 22 }, impl: counterSource() };
   console.log(`${$unwrap(boxed.impl.next(boxed)).value} ${boxed.impl.label(boxed.value)}`);
-  console.log(`${label_of({ value: 0 }, counterSource())}`);
+  console.log(`${labelOf({ value: 0 }, counterSource())}`);
   const names = { names: ["a", "b"] };
-  console.log(`${label_of(names, namesSource())}`);
-  const value = namesSource().first_cloned(names, { deref: (x) => x }, { clone: (value) => value });
+  console.log(`${labelOf(names, namesSource())}`);
+  const value = namesSource().firstCloned(names, { deref: (x) => x }, { clone: (value) => value });
   console.log(`${value == null ? "None" : `Some(${$debugStr(value)})`}`);
   const dynNames = { value: { names: [] }, impl: namesSource() };
   const next = dynNames.impl.next(dynNames);

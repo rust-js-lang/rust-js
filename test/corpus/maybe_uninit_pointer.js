@@ -19,7 +19,7 @@ function first(m, AArray, AItemCopy) {
   return AItemCopy.copy($ptrFirst($ptrTo(m)).value);
 }
 
-function set_second(m, v, AArray) {
+function setSecond(m, v, AArray) {
   $ptrAdd($ptrFirst(m), 1).value = v;
 }
 
@@ -37,7 +37,7 @@ function reinterpret(p, taken) {
 function main() {
   let m = [1, 2, 3];
   const m$1 = { value: m };
-  set_second(m$1, 9, _T__N_Array(3));
+  setSecond(m$1, 9, _T__N_Array(3));
   m = m$1.value;
   const arr = m;
   console.log(`${first([4, 5], _T__N_Array(2), { copy: (value) => value })} [${arr.join(", ")}]`);

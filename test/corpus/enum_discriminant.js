@@ -20,7 +20,7 @@ const EMPTY = 2;
 // A static's is its value, which no MIR of its own gives.
 const SQUARE = 1;
 
-function same_kind(a, b) {
+function sameKind(a, b) {
   return (
     (a.TAG === "Circle" ? 0 : a.TAG === "Square" ? 1 : 2) ===
     (b.TAG === "Circle" ? 0 : b.TAG === "Square" ? 1 : 2)
@@ -35,7 +35,7 @@ function main() {
     "Empty",
   ];
   console.log(
-    `${same_kind($index(shapes, 0), $index(shapes, 2))} ${same_kind($index(shapes, 0), $index(shapes, 1))}`,
+    `${sameKind($index(shapes, 0), $index(shapes, 2))} ${sameKind($index(shapes, 0), $index(shapes, 1))}`,
   );
   const counts = new Map();
   for (const shape of shapes) {

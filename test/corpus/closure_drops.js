@@ -10,7 +10,7 @@ function noisyDrop_drop(noisy) {
   console.log(`drop ${noisy[0]}`);
 }
 
-function call_once(f, dropF) {
+function callOnce(f, dropF) {
   try {
     console.log("calling");
   } catch (error) {
@@ -130,7 +130,7 @@ function main() {
   };
   let tmp;
   try {
-    tmp = call_once(value, (value) => {
+    tmp = callOnce(value, (value) => {
       noisyDrop_drop(e);
     });
   } catch (error) {

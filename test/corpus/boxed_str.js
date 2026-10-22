@@ -14,7 +14,7 @@ function itemDebug_fmt(item) {
 }
 
 const Item = {
-  to_owned(item) {
+  toOwned(item) {
     return item.TAG === "Literal"
       ? { TAG: "OwnedLiteral", _0: item._0 }
       : { TAG: "OwnedLiteral", _0: item._0 };
@@ -26,7 +26,7 @@ const Item = {
 };
 
 function main() {
-  const owned = Item.to_owned({ TAG: "Literal", _0: "abc" });
+  const owned = Item.toOwned({ TAG: "Literal", _0: "abc" });
   const text = Item.text(owned);
   const arg = $byteLen(Item.text(owned));
   console.log(`${itemDebug_fmt(owned)} ${text} ${arg}`);

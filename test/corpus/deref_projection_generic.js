@@ -8,13 +8,13 @@ function stackDeref_deref(stack, CAP) {
   return stack.xs;
 }
 
-function stackDerefMut_deref_mut(stack, CAP) {
+function stackDerefMut_derefMut(stack, CAP) {
   return stack.xs;
 }
 
 const Guard = {
   len(guard, CAP) {
-    return stackDerefMut_deref_mut(guard.stack, CAP).length;
+    return stackDerefMut_derefMut(guard.stack, CAP).length;
   },
 };
 

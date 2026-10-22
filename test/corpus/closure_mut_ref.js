@@ -9,7 +9,7 @@ function call(f) {
   f();
 }
 
-function passed_on(f) {
+function passedOn(f) {
   call(f);
 }
 
@@ -31,7 +31,7 @@ function main() {
     count = (count + 1) | 0;
   };
   call(tick);
-  passed_on(tick);
+  passedOn(tick);
   const r = tick;
   r();
   console.log(`${count}`);

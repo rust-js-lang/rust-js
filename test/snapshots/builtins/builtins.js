@@ -42,7 +42,7 @@ export function named(value, key) {
  * Whether `value` has a property of the name a key that's none has,
  * `"undefined"`, as react.dev's errors page asks of a type it may not have.
  */
-export function holds_none(value, key) {
+export function holdsNone(value, key) {
   return key in value;
 }
 
@@ -58,7 +58,7 @@ export function wrapped(children) {
  * Text that may be none, as a JS value of any shape: the option itself,
  * as react.dev's createFileMap shows a code block's children.
  */
-export function as_unknown(text) {
+export function asUnknown(text) {
   return text;
 }
 
@@ -112,7 +112,7 @@ export function parts(text, part) {
  * file's name: an index is a JS number, as TypeScript has it, so one past
  * it is `+ 1`.
  */
-export function file_name(path) {
+export function fileName(path) {
   return path.slice(path.lastIndexOf("/") + 1);
 }
 
@@ -120,7 +120,7 @@ export function file_name(path) {
  * JS's `replace` of a string: the first match only, where Rust's
  * `str::replace` replaces each.
  */
-export function replaced_first(text, from, to) {
+export function replacedFirst(text, from, to) {
   return text.replace(from, to);
 }
 
@@ -128,7 +128,7 @@ export function replaced_first(text, from, to) {
  * JS's `split` of a string, by text and by a pattern of no groups, as
  * react.dev's pages take a path's query and hash off, `/[\?\#]/`.
  */
-export function split_parts(text) {
+export function splitParts(text) {
   return [text.split(","), text.split(/[,;]/)];
 }
 

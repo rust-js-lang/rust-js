@@ -19,7 +19,7 @@ function relay(TId) {
 function find(items, TClone, TId) {
   return items
     .map((item) => {
-      const value = item.impl.type_id() === TId ? $some(item.value) : undefined;
+      const value = item.impl.typeId() === TId ? $some(item.value) : undefined;
       return value == null ? value : $some(TClone.clone($someValue(value)));
     })
     .filter((item) => item != null)
@@ -27,7 +27,7 @@ function find(items, TClone, TId) {
 }
 
 function erased(value, TId) {
-  return { value, impl: { type_id: () => TId } };
+  return { value, impl: { typeId: () => TId } };
 }
 
 function first(text) {
@@ -36,7 +36,7 @@ function first(text) {
 
 function made() {
   console.log("made");
-  return { value: 1, impl: { type_id: () => "i32" } };
+  return { value: 1, impl: { typeId: () => "i32" } };
 }
 
 function stringAsStr() {
@@ -53,9 +53,9 @@ function stringAsStr_get(string) {
 function main() {
   console.log(`${same("i32", "i32")} ${same("i32", "i64")} ${relay("u8")}`);
   const items = [
-    { value: 1, impl: { type_id: () => "u8" } },
-    { value: "a", impl: { type_id: () => "&str" } },
-    { value: 2, impl: { type_id: () => "u8" } },
+    { value: 1, impl: { typeId: () => "u8" } },
+    { value: "a", impl: { typeId: () => "&str" } },
+    { value: 2, impl: { typeId: () => "u8" } },
     erased("e", "alloc::string::String"),
   ];
   const value = find(items, { clone: (value) => value }, "u8");
@@ -69,9 +69,9 @@ function main() {
       .map((item) => $debugStr(item))
       .join(", ")}]`,
   );
-  const shared = { value: [1, 2], impl: { type_id: () => "alloc::vec::Vec<i32>" } };
+  const shared = { value: [1, 2], impl: { typeId: () => "alloc::vec::Vec<i32>" } };
   const downcast =
-    shared.impl.type_id() === "alloc::vec::Vec<i32>"
+    shared.impl.typeId() === "alloc::vec::Vec<i32>"
       ? { TAG: "Ok", _0: shared.value }
       : { TAG: "Err", _0: shared };
   if (downcast.TAG === "Ok") {
@@ -80,36 +80,36 @@ function main() {
   } else {
     console.log("not a list");
   }
-  const sent = { value: 3, impl: { type_id: () => "core::option::Option<u16>" } };
+  const sent = { value: 3, impl: { typeId: () => "core::option::Option<u16>" } };
   const downcastRef =
-    sent.impl.type_id() === "core::option::Option<u16>" ? $some(sent.value) : undefined;
+    sent.impl.typeId() === "core::option::Option<u16>" ? $some(sent.value) : undefined;
   console.log(
-    `${downcastRef == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(downcastRef))})`} ${sent.impl.type_id() === "u16"}`,
+    `${downcastRef == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(downcastRef))})`} ${sent.impl.typeId() === "u16"}`,
   );
-  const none = { impl: { type_id: () => "core::option::Option<u16>" } };
+  const none = { impl: { typeId: () => "core::option::Option<u16>" } };
   const value$2 =
-    none.impl.type_id() === "core::option::Option<u16>" ? $some(none.value) : undefined;
+    none.impl.typeId() === "core::option::Option<u16>" ? $some(none.value) : undefined;
   console.log(
     `${value$2 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$2))})`}`,
   );
   const f = {
     value: first,
     impl: {
-      type_id: () => "fn(&'_ alloc::string::String) -> &'_ str#78a52cb8b84a85e2730aa5ac32643cbe",
+      typeId: () => "fn(&'_ alloc::string::String) -> &'_ str#78a52cb8b84a85e2730aa5ac32643cbe",
     },
   };
   console.log(
-    `${f.impl.type_id() === "fn(&'_ alloc::string::String) -> &'_ str#78a52cb8b84a85e2730aa5ac32643cbe"} ${f.impl.type_id() === "fn(&'_ alloc::string::String) -> &str#1640b6a367c494fbf6715693d04896bb"}`,
+    `${f.impl.typeId() === "fn(&'_ alloc::string::String) -> &'_ str#78a52cb8b84a85e2730aa5ac32643cbe"} ${f.impl.typeId() === "fn(&'_ alloc::string::String) -> &str#1640b6a367c494fbf6715693d04896bb"}`,
   );
   console.log(`${$debugAny(made())}`);
   const held = {
     value: { value: "h", impl: stringAsStr() },
     impl: {
-      type_id: () => "alloc::boxed::Box<dyn lib::AsStr<'_, '_>>#bb8ce6d98aab4c714f83ee02600e635d",
+      typeId: () => "alloc::boxed::Box<dyn lib::AsStr<'_, '_>>#bb8ce6d98aab4c714f83ee02600e635d",
     },
   };
   console.log(
-    `${held.impl.type_id() === "alloc::boxed::Box<dyn lib::AsStr<'_, '_>>#bb8ce6d98aab4c714f83ee02600e635d"} ${held.impl.type_id() === "alloc::boxed::Box<dyn lib::AsStr<'_, '_>>#89c2aaac78c7d3d1d025385a90e83325"}`,
+    `${held.impl.typeId() === "alloc::boxed::Box<dyn lib::AsStr<'_, '_>>#bb8ce6d98aab4c714f83ee02600e635d"} ${held.impl.typeId() === "alloc::boxed::Box<dyn lib::AsStr<'_, '_>>#89c2aaac78c7d3d1d025385a90e83325"}`,
   );
 }
 //# sourceMappingURL=case.js.map

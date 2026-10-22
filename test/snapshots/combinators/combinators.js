@@ -53,7 +53,7 @@ export function options(n) {
   ];
 }
 
-export function more_options(n) {
+export function moreOptions(n) {
   const h = half(n);
   const r = h != null ? { TAG: "Ok", _0: h } : { TAG: "Err", _0: "odd" };
   const s = h != null ? { TAG: "Ok", _0: h } : { TAG: "Err", _0: `odd ${n}` };
@@ -166,21 +166,21 @@ export function shifted(by, items) {
 }
 
 // A field of what's there, or nothing: `named?.name`, as a person writes it.
-export function name_of(named) {
+export function nameOf(named) {
   return named?.name;
 }
 
 // Not of another's, nor where nothing isn't `undefined`.
-export function other_name(flag, named) {
+export function otherName(flag, named) {
   return flag != null ? named.name : undefined;
 }
 
-export function label_of(named) {
+export function labelOf(named) {
   return named?.label ?? "none";
 }
 
 // Not where the fallback is a value: `?.` would give `undefined`.
-export function label_or_else(named) {
+export function labelOrElse(named) {
   return named != null ? named.label : "none";
 }
 
@@ -188,7 +188,7 @@ export function report() {
   let out = "";
   for (const n of [0, 4, 5, 8]) {
     const value = options(n);
-    const value$1 = more_options(n);
+    const value$1 = moreOptions(n);
     out += `(${value[0]}, ${value[1]}, ${value[2]}, ${value[3] == null ? "None" : `Some(${value[3]})`}, ${value[4] == null ? "None" : `Some(${value[4]})`}, ${value[5]}) (${$debugStr(value$1[0])}, ${$debugStr(value$1[1])}, ${value$1[2] == null ? "None" : `Some(${value$1[2]})`}, ${value$1[3]}, ${value$1[4]})\n`;
   }
   for (const c of ["1", "2", "x"]) {
@@ -205,14 +205,14 @@ export function report() {
     const value$3 = shifted(n, [1, n]);
     out += `${value$3 == null ? "None" : `Some([${value$3.join(", ")}])`}\n`;
     const named = { name: n > 0 ? String(n) : undefined, label: `#${n}` };
-    const nameOf = name_of(named);
-    const value$4 = name_of(undefined);
-    out += `${nameOf == null ? "None" : `Some(${$debugStr(nameOf)})`} ${value$4 == null ? "None" : `Some(${$debugStr(value$4)})`}\n`;
-    const otherName = other_name(undefined, named);
-    const value$5 = other_name(n, named);
-    out += `${otherName == null ? "None" : `Some(${$debugStr(otherName)})`} ${value$5 == null ? "None" : `Some(${$debugStr(value$5)})`}\n`;
-    out += `${$debugStr(label_of(named))} ${$debugStr(label_of(undefined))}\n`;
-    out += `${$debugStr(label_or_else(named))} ${$debugStr(label_or_else(undefined))}\n`;
+    const value$4 = nameOf(named);
+    const value$5 = nameOf(undefined);
+    out += `${value$4 == null ? "None" : `Some(${$debugStr(value$4)})`} ${value$5 == null ? "None" : `Some(${$debugStr(value$5)})`}\n`;
+    const value$6 = otherName(undefined, named);
+    const value$7 = otherName(n, named);
+    out += `${value$6 == null ? "None" : `Some(${$debugStr(value$6)})`} ${value$7 == null ? "None" : `Some(${$debugStr(value$7)})`}\n`;
+    out += `${$debugStr(labelOf(named))} ${$debugStr(labelOf(undefined))}\n`;
+    out += `${$debugStr(labelOrElse(named))} ${$debugStr(labelOrElse(undefined))}\n`;
   }
   return out;
 }

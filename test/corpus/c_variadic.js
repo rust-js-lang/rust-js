@@ -16,7 +16,7 @@ function sum(count, ...args) {
   return total;
 }
 
-function first_twice(...args) {
+function firstTwice(...args) {
   const again = args.slice();
   const a = args.shift();
   const b = again.shift();
@@ -46,7 +46,7 @@ function countCounter_get(count) {
 
 function main() {
   console.log(`${sum(3, 1n, 2n, 3n)} ${sum(0)}`);
-  const value = first_twice(7, 8, 9);
+  const value = firstTwice(7, 8, 9);
   console.log(`(${value[0]}, ${value[1]}, ${value[2]})`);
   console.log(`${$displayF64(Scale.apply([2.5], 4))}`);
   const pointer = sum;

@@ -11,7 +11,7 @@ function loudDrop_drop(loud) {
 }
 
 function main() {
-  const shared = { value: 5, impl: { type_id: () => "u8" }, strong: 1, weak: 0 };
+  const shared = { value: 5, impl: { typeId: () => "u8" }, strong: 1, weak: 0 };
   try {
     console.log(`${shared.strong}`);
   } catch (error) {
@@ -21,7 +21,7 @@ function main() {
     throw error;
   }
   const downcast =
-    shared.impl.type_id() === "u8" ? { TAG: "Ok", _0: shared } : { TAG: "Err", _0: shared };
+    shared.impl.typeId() === "u8" ? { TAG: "Ok", _0: shared } : { TAG: "Err", _0: shared };
   const value = downcast.TAG === "Ok";
   try {
     console.log(`${value}`);
@@ -46,7 +46,7 @@ function main() {
   }
   const loud = {
     value: [1],
-    impl: { type_id: () => "lib::Loud", $drop: loudDrop_drop },
+    impl: { typeId: () => "lib::Loud", $drop: loudDrop_drop },
     strong: 1,
     weak: 0,
   };
@@ -62,7 +62,7 @@ function main() {
   let other$live = true;
   let tmp;
   try {
-    tmp = loud.impl.type_id() === "u8" ? { TAG: "Ok", _0: loud } : { TAG: "Err", _0: loud };
+    tmp = loud.impl.typeId() === "u8" ? { TAG: "Ok", _0: loud } : { TAG: "Err", _0: loud };
   } catch (error) {
     $rcDrop(other, (value) => {
       value.impl.$drop?.(value.value);
@@ -91,7 +91,7 @@ function main() {
         throw error;
       }
       const tmp$1 =
-        back.impl.type_id() === "lib::Loud" ? { TAG: "Ok", _0: back } : { TAG: "Err", _0: back };
+        back.impl.typeId() === "lib::Loud" ? { TAG: "Ok", _0: back } : { TAG: "Err", _0: back };
       let value;
       if (tmp$1.TAG === "Ok") {
         value = tmp$1._0;

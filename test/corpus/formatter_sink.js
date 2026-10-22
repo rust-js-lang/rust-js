@@ -22,7 +22,7 @@ export function entry() {
 
 function encode(text, sink, SSink) {
   for (const word of text.split(" ")) {
-    const result = SSink.write_encoded(sink, word);
+    const result = SSink.writeEncoded(sink, word);
     if (result.TAG === "Err") {
       return result;
     }
@@ -33,14 +33,14 @@ function encode(text, sink, SSink) {
 function formatterSinkSink() {
   if ($formatterSinkSink === undefined) {
     $formatterSinkSink = {
-      write_encoded: (arg0, arg1) =>
-        $writeResult(() => formatterSinkSink_write_encoded(arg0.value, arg1)),
+      writeEncoded: (arg0, arg1) =>
+        $writeResult(() => formatterSinkSink_writeEncoded(arg0.value, arg1)),
     };
   }
   return $formatterSinkSink;
 }
 
-function formatterSinkSink_write_encoded(formatterSink, encoded) {
+function formatterSinkSink_writeEncoded(formatterSink, encoded) {
   if (encoded === "bad") {
     return $fmtError();
   }
@@ -80,14 +80,14 @@ function encodedDisplay_fmt(encoded) {
 function stringSinkSink() {
   if ($stringSinkSink === undefined) {
     $stringSinkSink = {
-      write_encoded: (arg0, arg1) =>
-        $writeResult(() => stringSinkSink_write_encoded(arg0.value, arg1)),
+      writeEncoded: (arg0, arg1) =>
+        $writeResult(() => stringSinkSink_writeEncoded(arg0.value, arg1)),
     };
   }
   return $stringSinkSink;
 }
 
-function stringSinkSink_write_encoded(stringSink, encoded) {
+function stringSinkSink_writeEncoded(stringSink, encoded) {
   stringSink.s.value += `<${encoded}>`;
 }
 

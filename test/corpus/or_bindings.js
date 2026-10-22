@@ -49,7 +49,7 @@ function pick(p) {
   return x;
 }
 
-function first_some(o) {
+function firstSome(o) {
   let x;
   if (o[0] == null) {
     if (o[1] == null) {
@@ -83,11 +83,11 @@ function main() {
     console.log(`${$displayF64(size(s))}`);
   }
   console.log(`${pick([0, 7])} ${pick([8, 0])} ${pick([2, 3])}`);
-  const firstSome = first_some([1, 2]);
-  const value = first_some([undefined, 2]);
-  const value$1 = first_some([undefined, undefined]);
+  const value = firstSome([1, 2]);
+  const value$1 = firstSome([undefined, 2]);
+  const value$2 = firstSome([undefined, undefined]);
   console.log(
-    `${firstSome == null ? "None" : `Some(${firstSome})`} ${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`}`,
+    `${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`} ${value$2 == null ? "None" : `Some(${value$2})`}`,
   );
   for (const t of [
     { TAG: "Num", _0: 4n },

@@ -90,7 +90,7 @@ function total(shapes) {
     .reduce((a, b) => a + b, -0);
 }
 
-function grow_all(shapes, by) {
+function growAll(shapes, by) {
   for (const s of shapes) {
     const receiver = $borrowMut(s, true);
     try {
@@ -105,7 +105,7 @@ function main() {
   const circle = { value: { r: 1 } };
   const shapes = [$dynCell(circle, circleShape()), { value: { side: 2 }, impl: squareShape() }];
   console.log(`${$displayF64(total(shapes))}`);
-  grow_all(shapes, 1);
+  growAll(shapes, 1);
   // Through the concrete `Rc`, the same cell.
   const borrowMut = $borrowMut(circle, true);
   borrowMut.value.r = 10;

@@ -1,6 +1,8 @@
 # 0563. What's found once of a crate is keyed by the crate's own files
 
-Status: Accepted.
+Status: Superseded by [0573](0573-every-rust-name-is-camel-case-in-js.md):
+with every name camelCase, nothing finds a crate's hooks or props, and
+the cache this keyed is gone.
 
 Case: N ([0262](0262-when-rust-and-js-disagree.md)): nothing a program
 can observe changes; only how long a compile takes.

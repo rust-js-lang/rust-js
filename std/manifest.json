@@ -8,7 +8,7 @@
   "library": {
     "version": 4,
     "name": "rust_js_std",
-    "crate_hash": "0c85ac2ebd9408ec7d2fa0951b5b9fbc",
+    "crate_hash": "d33287a31bd617d96e03aefedf33034a",
     "items": [
       {
         "key": "608f92abc48d28dae88ef68b00d41a68",
@@ -76,7 +76,7 @@
         "module": [
           "iter"
         ],
-        "export": "fuseDoubleEndedIterator_next_back",
+        "export": "fuseDoubleEndedIterator_nextBack",
         "member": null,
         "drops": [
           0,
@@ -184,7 +184,7 @@
         "module": [
           "iter"
         ],
-        "export": "fuseIterator_size_hint",
+        "export": "fuseIterator_sizeHint",
         "member": null,
         "drops": [
           0,
@@ -253,7 +253,7 @@
         "module": [
           "iter"
         ],
-        "export": "fuseFuseImplIFusedIterator_next_back",
+        "export": "fuseFuseImplIFusedIterator_nextBack",
         "member": null,
         "drops": [
           0,
@@ -276,7 +276,7 @@
         "module": [
           "iter"
         ],
-        "export": "fuseFuseImplI_next_back",
+        "export": "fuseFuseImplI_nextBack",
         "member": null,
         "drops": [
           0,
@@ -369,7 +369,7 @@
         "module": [
           "iter"
         ],
-        "export": "peekableDoubleEndedIterator_next_back",
+        "export": "peekableDoubleEndedIterator_nextBack",
         "member": null,
         "drops": [
           0,
@@ -495,7 +495,7 @@
         "module": [
           "iter"
         ],
-        "export": "and_then_or_clear",
+        "export": "andThenOrClear",
         "member": null,
         "drops": [
           0,
@@ -549,24 +549,24 @@
       "imports": [],
       "exports": [
         "peekableIterator_next",
-        "peekableDoubleEndedIterator_next_back",
+        "peekableDoubleEndedIterator_nextBack",
         "peekableDoubleEndedIterator_rfold",
         "peekableClone_clone",
         "peekableDebug_fmt",
         "fuseIterator_next",
-        "fuseIterator_size_hint",
-        "fuseDoubleEndedIterator_next_back",
+        "fuseIterator_sizeHint",
+        "fuseDoubleEndedIterator_nextBack",
         "fuseDoubleEndedIterator_rfold",
         "fuseExactSizeIterator_len",
         "fuseFuseImplI_next",
         "fuseFuseImplIFusedIterator_next",
-        "fuseFuseImplI_next_back",
-        "fuseFuseImplIFusedIterator_next_back",
+        "fuseFuseImplI_nextBack",
+        "fuseFuseImplIFusedIterator_nextBack",
         "fuseClone_clone",
         "fuseDebug_fmt",
         "iterator_peekable",
         "iterator_fuse",
-        "and_then_or_clear",
+        "andThenOrClear",
         "peekableClone",
         "peekableDebug",
         "fuseClone",
@@ -579,7 +579,7 @@
   "artifacts": [
     {
       "file": "iter.js",
-      "hash": "800734e24dd64cd5"
+      "hash": "0714447bd18b0c5a"
     },
     {
       "file": "iter.js.map",

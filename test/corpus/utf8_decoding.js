@@ -21,7 +21,7 @@ function show(bytes) {
     console.log(`ok ${$debugStr(value._0)} ${$byteLen(value._0)}`);
   } else {
     console.log(
-      `err ${$utf8ErrorMessage(value._0)} | ${$debugUtf8Error(value._0)} | ${value._0.valid_up_to} ${value._0.error_len == null ? "None" : `Some(${value._0.error_len})`}`,
+      `err ${$utf8ErrorMessage(value._0)} | ${$debugUtf8Error(value._0)} | ${value._0.validUpTo} ${value._0.errorLen == null ? "None" : `Some(${value._0.errorLen})`}`,
     );
   }
 }

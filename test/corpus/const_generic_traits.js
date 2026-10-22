@@ -74,7 +74,7 @@ function padded(p, PPad) {
   return PPad.pad(p, 42, 3, { fmt: String });
 }
 
-function by_ten(s, SScaled) {
+function byTen(s, SScaled) {
   return (SScaled.scaled(s) + SScaled.factor(s)) >>> 0;
 }
 
@@ -90,7 +90,7 @@ function main() {
   );
   const m = [3];
   console.log(
-    `${metersScaled10_scaled(m)} ${metersScaled100_scaled(m)} ${metersScaled100().factor(m)} ${by_ten(m, metersScaled10())}`,
+    `${metersScaled10_scaled(m)} ${metersScaled100_scaled(m)} ${metersScaled100().factor(m)} ${byTen(m, metersScaled10())}`,
   );
   const value = by(m, 100, metersScaled100());
   const value$1 = by([2], 5, anyScaled(5));

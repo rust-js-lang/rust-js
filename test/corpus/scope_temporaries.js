@@ -52,7 +52,7 @@ function early(stop) {
   return { a: noisy, b: 1 };
 }
 
-function kept_early(stop) {
+function keptEarly(stop) {
   const _kept = [30];
   let noisy;
   try {
@@ -227,12 +227,12 @@ function main() {
       noisyDrop_drop(value$5.a);
     }
   }
-  const keptEarly = kept_early(true);
+  const value$6 = keptEarly(true);
   try {
-    console.log(`kept ${!keptEarly}`);
+    console.log(`kept ${!value$6}`);
   } finally {
-    if (keptEarly != null) {
-      noisyDrop_drop(keptEarly.a);
+    if (value$6 != null) {
+      noisyDrop_drop(value$6.a);
     }
   }
   console.log("end");

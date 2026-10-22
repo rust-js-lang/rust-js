@@ -147,8 +147,8 @@ function groupsFirstOfNext(IIterator, dropI, dropIItem, dropIItemItem, dropIItem
     $groupsFirstOfNext,
     [IIterator, dropI, dropIItem, dropIItemItem, dropIItemIntoIter],
     () => ({
-      first_of_next: (arg0) =>
-        groupsFirstOfNext_first_of_next(
+      firstOfNext: (arg0) =>
+        groupsFirstOfNext_firstOfNext(
           arg0.value,
           IIterator,
           dropI,
@@ -163,7 +163,7 @@ function groupsFirstOfNext(IIterator, dropI, dropIItem, dropIItemItem, dropIItem
   );
 }
 
-function groupsFirstOfNext_first_of_next(
+function groupsFirstOfNext_firstOfNext(
   groups,
   IIterator,
   dropI,
@@ -286,7 +286,7 @@ function main() {
   };
   try {
     try {
-      console.log(`firsts ${next.impl.first_of_next(next)}`);
+      console.log(`firsts ${next.impl.firstOfNext(next)}`);
       console.log("end");
     } finally {
       for (const item of groups$1[0]) {

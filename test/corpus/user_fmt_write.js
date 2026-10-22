@@ -10,34 +10,34 @@ export function entry() {
 
 export function collectorWrite() {
   if ($collectorWrite === undefined) {
-    const write_str = (arg0, arg1) => collectorWrite_write_str(arg0.value, arg1);
-    $collectorWrite = { write_str, write_char: write_str, write_fmt: write_str };
+    const writeStr = (arg0, arg1) => collectorWrite_writeStr(arg0.value, arg1);
+    $collectorWrite = { writeStr, writeChar: writeStr, writeFmt: writeStr };
   }
   return $collectorWrite;
 }
 
-function collectorWrite_write_str(collector, s) {
+function collectorWrite_writeStr(collector, s) {
   collector.text += s;
   collector.bytes = (collector.bytes + $byteLen(s)) >>> 0;
 }
 
 export function shoutingWrite() {
   if ($shoutingWrite === undefined) {
-    const write_str = (arg0, arg1) => shoutingWrite_write_str(arg0.value, arg1);
+    const writeStr = (arg0, arg1) => shoutingWrite_writeStr(arg0.value, arg1);
     $shoutingWrite = {
-      write_str,
-      write_char: (arg0, arg1) => shoutingWrite_write_char(arg0.value, arg1),
-      write_fmt: write_str,
+      writeStr,
+      writeChar: (arg0, arg1) => shoutingWrite_writeChar(arg0.value, arg1),
+      writeFmt: writeStr,
     };
   }
   return $shoutingWrite;
 }
 
-function shoutingWrite_write_str(shouting, s) {
+function shoutingWrite_writeStr(shouting, s) {
   shouting[0] += s.toUpperCase();
 }
 
-function shoutingWrite_write_char(shouting, c) {
+function shoutingWrite_writeChar(shouting, c) {
   shouting[0] += "<";
   shouting[0] += c;
   shouting[0] += ">";
@@ -55,21 +55,21 @@ function pointDisplay_fmt(point) {
 }
 
 function describe(out, p) {
-  collectorWrite_write_str(out, `at ${pointDisplay_fmt(p)} [${$pad("zoë", 6, ">")}]\n`);
-  collectorWrite_write_str(out, "é");
-  return collectorWrite_write_str(out, "!");
+  collectorWrite_writeStr(out, `at ${pointDisplay_fmt(p)} [${$pad("zoë", 6, ">")}]\n`);
+  collectorWrite_writeStr(out, "é");
+  return collectorWrite_writeStr(out, "!");
 }
 
 function main() {
   const c = { text: "", bytes: 0 };
-  collectorWrite_write_str(c, `1 and ${$debugStr("two")}`);
+  collectorWrite_writeStr(c, `1 and ${$debugStr("two")}`);
   describe(c, { x: 3, y: -4 });
   console.log(`${$debugStr(c.text)} ${c.bytes}`);
 
   const s = [""];
-  shoutingWrite_write_str(s, "hi 5");
-  shoutingWrite_write_char(s, "x");
-  shoutingWrite_write_str(s, "\n");
+  shoutingWrite_writeStr(s, "hi 5");
+  shoutingWrite_writeChar(s, "x");
+  shoutingWrite_writeStr(s, "\n");
   console.log(`${$debugStr(s[0])}`);
 }
 //# sourceMappingURL=case.js.map

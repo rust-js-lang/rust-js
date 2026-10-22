@@ -10,12 +10,12 @@ export function entry() {
 
 function countSource() {
   if ($countSource === undefined) {
-    $countSource = { next_item: (arg0) => countSource_next_item(arg0.value) };
+    $countSource = { nextItem: (arg0) => countSource_nextItem(arg0.value) };
   }
   return $countSource;
 }
 
-function countSource_next_item(count) {
+function countSource_nextItem(count) {
   if (count.n === 0) {
     return;
   }
@@ -25,19 +25,19 @@ function countSource_next_item(count) {
 
 function wordsSource() {
   if ($wordsSource === undefined) {
-    $wordsSource = { next_item: (arg0) => wordsSource_next_item(arg0.value) };
+    $wordsSource = { nextItem: (arg0) => wordsSource_nextItem(arg0.value) };
   }
   return $wordsSource;
 }
 
-function wordsSource_next_item(words) {
+function wordsSource_nextItem(words) {
   return words.list.pop();
 }
 
 function drain(s, SSource) {
   const out = [];
   while (true) {
-    const nextItem = SSource.next_item(s);
+    const nextItem = SSource.nextItem(s);
     if (nextItem == null) {
       break;
     }
@@ -113,8 +113,8 @@ function main() {
   console.log(`${tag({ n: 7 }, countLabeled())} ${tag({ list: ["p", "q"] }, wordsLabeled())}`);
   console.log(`[${all([1, 2].values().map((n) => Math.imul(n, 10) >>> 0)).join(", ")}]`);
   const source = { value: { n: 2 }, impl: countSource() };
-  const nextItem = source.impl.next_item(source);
-  const value$6 = source.impl.next_item(source);
+  const nextItem = source.impl.nextItem(source);
+  const value$6 = source.impl.nextItem(source);
   console.log(
     `${nextItem == null ? "None" : `Some(${nextItem})`} ${value$6 == null ? "None" : `Some(${value$6})`}`,
   );

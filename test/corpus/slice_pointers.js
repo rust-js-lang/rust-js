@@ -58,7 +58,7 @@ function noisyDrop_drop(noisy) {
  * `truncate` drops its tail; the vector forgotten after, its first item
  * taken out first.
  */
-function dropped_tail() {
+function droppedTail() {
   const items = [[1], [2], [3]];
   let tail;
   try {
@@ -106,7 +106,7 @@ function main() {
   console.log(`[${bytes.join(", ")}]`);
   const taken = $iterator({ iter: $iter([4, 5, 6]) }, takenIterator_next, true).toArray();
   console.log(`[${taken.join(", ")}]`);
-  dropped_tail();
+  droppedTail();
   let count = 4;
   const count$1 = { value: count };
   const value = peeked(count$1);

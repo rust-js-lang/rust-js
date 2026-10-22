@@ -32,7 +32,7 @@ function tExt(TIterator) {
       }
       return best;
     },
-    position_max: (self, SelfItemOrd) => {
+    positionMax: (self, SelfItemOrd) => {
       const option = tExt({ next: $nextSome }).widest(
         $iterator(self, TIterator.next, true)
           .map((x, i) => [i, x])
@@ -45,11 +45,11 @@ function tExt(TIterator) {
 }
 
 function main() {
-  const value = tExt({ next: $next }).position_max($iter([3, 9, 4]), { cmp: $cmp });
+  const value = tExt({ next: $next }).positionMax($iter([3, 9, 4]), { cmp: $cmp });
   console.log(`${value == null ? "None" : `Some(${value})`}`);
-  const value$1 = tExt({ next: $next }).position_max($iter(Array.from("bca")), { cmp: $cmp });
+  const value$1 = tExt({ next: $next }).positionMax($iter(Array.from("bca")), { cmp: $cmp });
   console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
-  const value$2 = tExt({ next: $next }).position_max($iter([]), { cmp: $cmp });
+  const value$2 = tExt({ next: $next }).positionMax($iter([]), { cmp: $cmp });
   console.log(`${value$2 == null ? "None" : `Some(${value$2})`}`);
 }
 //# sourceMappingURL=case.js.map

@@ -7,7 +7,7 @@ export function entry() {
 }
 
 /** Of a generic function's `&mut`, which an `Option` boxes: `$someValue(o)`. */
-function call_twice(o) {
+function callTwice(o) {
   if (o.value != null) {
     return ($someValue(o.value)() + $someValue(o.value)()) >>> 0;
   }
@@ -36,7 +36,7 @@ function unit(o) {
 }
 
 /** Used twice: the payload where each is, `$someValue(o.value)`. */
-function unit_twice(o) {
+function unitTwice(o) {
   if (o.value != null) {
     return `${Unit.name(o.value.value)} ${Unit.name(o.value.value)}`;
   }
@@ -83,9 +83,9 @@ function main() {
     },
   };
   const o$2 = { value: tmp };
-  const unitTwice = unit_twice(o$2);
+  const value = unitTwice(o$2);
   tmp = o$2.value;
-  console.log(`${unitTwice}`);
+  console.log(`${value}`);
   let calls = 0;
   const count = () => {
     calls = (calls + 1) >>> 0;
@@ -93,13 +93,13 @@ function main() {
   };
   let tmp$1 = count;
   const o$3 = { value: tmp$1 };
-  const callTwice = call_twice(o$3);
+  const value$1 = callTwice(o$3);
   tmp$1 = o$3.value;
-  console.log(`${callTwice}`);
+  console.log(`${value$1}`);
   let tmp$2;
   const o$4 = { value: tmp$2 };
-  const value = call_twice(o$4);
+  const value$2 = callTwice(o$4);
   tmp$2 = o$4.value;
-  console.log(`${value}`);
+  console.log(`${value$2}`);
 }
 //# sourceMappingURL=case.js.map

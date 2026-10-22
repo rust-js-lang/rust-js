@@ -6,7 +6,7 @@ export function entry() {
   main();
 }
 
-function first_two(it) {
+function firstTwo(it) {
   const a = $next(it);
   const b = $next(it);
   return [a, b, Iterator.from(it).reduce((n) => n + 1, 0)];
@@ -24,7 +24,7 @@ function main() {
   $rangeNext(range);
   const total = $iterator(range, $rangeNext).reduce((a, b) => (a + b) >>> 0, 0);
   console.log(`${total}`);
-  const value = first_two($iter(Array.from("xyz")));
+  const value = firstTwo($iter(Array.from("xyz")));
   console.log(
     `(${value[0] == null ? "None" : `Some(${$debugStr(value[0], "'")})`}, ${value[1] == null ? "None" : `Some(${$debugStr(value[1], "'")})`}, ${value[2]})`,
   );

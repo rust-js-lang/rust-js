@@ -42,7 +42,7 @@ function shapeArea_unit() {
 const Marker = {
   new() {},
 
-  is_marker(marker) {
+  isMarker(marker) {
     return true;
   },
 };
@@ -59,7 +59,7 @@ function find(items, x) {
   return $position(items, (y) => y === x);
 }
 
-function radius_plus_one(s) {
+function radiusPlusOne(s) {
   return 1 + (s.TAG === "Circle" ? s._0 : 0);
 }
 
@@ -95,9 +95,7 @@ function main() {
     `${missing} [${items.join(", ")}] (${pair[0]}, ${pair[1]}) [${sums.join(", ")}] ${first}`,
   );
   console.log(
-    `${$displayF64(
-      radius_plus_one({ TAG: "Circle", _0: 2 }),
-    )} ${$displayF64(radius_plus_one("Dot"))}`,
+    `${$displayF64(radiusPlusOne({ TAG: "Circle", _0: 2 }))} ${$displayF64(radiusPlusOne("Dot"))}`,
   );
 
   const shapes = [
@@ -121,7 +119,7 @@ function main() {
     [2],
   );
   give((value) => {}, [3]);
-  console.log(`${Marker.is_marker(Marker.new())}`);
+  console.log(`${Marker.isMarker(Marker.new())}`);
   const value = sizes(4, 4);
   const value$1 = sizes(4, 2);
   console.log(`(${value[0]}, ${value[1]}) (${value$1[0]}, ${value$1[1]})`);

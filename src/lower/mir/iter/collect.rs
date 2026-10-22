@@ -103,7 +103,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && let Some(item) = item
             && let Some(dictionary) = self.collected_evidence(output, item)
         {
-            return Ok(Expr::call(Expr::member(dictionary, "from_iter"), vec![it]));
+            let from_iter = std_item(self.tcx, StdItem::FromIterator);
+            let from_iter = crate::lower::bindings::trait_method_name(self.tcx, from_iter, "from_iter");
+            return Ok(Expr::call(Expr::member(dictionary, from_iter), vec![it]));
         }
         Ok(if self.is_std_type(output, StdItem::BinaryHeap) {
             self.heap_values(HeapOp::From, vec![items(it)], output, span)?

@@ -15,12 +15,12 @@ export function entry() {
   main();
 }
 
-export function put_back(iterable, IIntoIterator) {
-  return { iter: IIntoIterator.into_iter(iterable) };
+export function putBack(iterable, IIntoIterator) {
+  return { iter: IIntoIterator.intoIter(iterable) };
 }
 
 export const PutBack = {
-  with_value(putBack, value) {
+  withValue(putBack, value) {
     const value$1 = $some(value);
     putBack.top = value$1;
     return putBack;
@@ -40,11 +40,8 @@ export function rest(j) {
   if (next != null) {
     const first = $someValue(next);
     return $iterator(
-      PutBack.with_value(
-        put_back(j$1, {
-          into_iter: (items) => items,
-          IntoIterIterator: () => ({ next: $nextSome }),
-        }),
+      PutBack.withValue(
+        putBack(j$1, { intoIter: (items) => items, IntoIterIterator: () => ({ next: $nextSome }) }),
         first,
       ),
       (iterator) => putBackIterator_next(iterator, { next: $nextSome }),
@@ -55,7 +52,7 @@ export function rest(j) {
 }
 
 function pairFrom_A__B__from([a, b], AIntoIterator, BIntoIterator) {
-  return { t: [AIntoIterator.into_iter(a), BIntoIterator.into_iter(b)] };
+  return { t: [AIntoIterator.intoIter(a), BIntoIterator.intoIter(b)] };
 }
 
 function pairIterator_next(pair, AIterator, BIterator) {
@@ -79,8 +76,8 @@ function main() {
   const pairs = $iterator(
     pairFrom_A__B__from(
       [[1, 2, 3], $iter(Array.from("ab"))],
-      { into_iter: (items) => $iter(items), IntoIterIterator: () => ({ next: $next }) },
-      { into_iter: (items) => items, IntoIterIterator: () => ({ next: $next }) },
+      { intoIter: (items) => $iter(items), IntoIterIterator: () => ({ next: $next }) },
+      { intoIter: (items) => items, IntoIterIterator: () => ({ next: $next }) },
     ),
     (iterator) => pairIterator_next(iterator, { next: $next }, { next: $next }),
   ).toArray();
@@ -95,8 +92,8 @@ function main() {
         from: (value) =>
           pairFrom_A__B__from(
             value,
-            { into_iter: (items) => $iter(items), IntoIterIterator: () => ({ next: $next }) },
-            { into_iter: (items) => $iter(items), IntoIterIterator: () => ({ next: $next }) },
+            { intoIter: (items) => $iter(items), IntoIterIterator: () => ({ next: $next }) },
+            { intoIter: (items) => $iter(items), IntoIterIterator: () => ({ next: $next }) },
           ),
       },
     ),

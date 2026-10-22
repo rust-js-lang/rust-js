@@ -17,7 +17,7 @@ function fnv1a(text) {
 }
 
 // A number at the start of a line, read a byte at a time.
-function leading_number(line) {
+function leadingNumber(line) {
   const bytes = iterator_peekable($iter(Array.from(new TextEncoder().encode(line))), {
     next: $next,
   });
@@ -58,11 +58,11 @@ function main() {
   console.log(
     `${fnv1a("").toString(16).padStart(8, "0")} ${fnv1a("hello").toString(16).padStart(8, "0")}`,
   );
-  const leadingNumber = leading_number("42 apples");
-  const value$3 = leading_number("7");
-  const value$4 = leading_number("none");
+  const value$3 = leadingNumber("42 apples");
+  const value$4 = leadingNumber("7");
+  const value$5 = leadingNumber("none");
   console.log(
-    `${leadingNumber == null ? "None" : `Some(${leadingNumber})`} ${value$3 == null ? "None" : `Some(${value$3})`} ${value$4 == null ? "None" : `Some(${value$4})`}`,
+    `${value$3 == null ? "None" : `Some(${value$3})`} ${value$4 == null ? "None" : `Some(${value$4})`} ${value$5 == null ? "None" : `Some(${value$5})`}`,
   );
   // `len()` is what's left, and doesn't take it.
   const rest = $iter(Array.from(new TextEncoder().encode("abc")));

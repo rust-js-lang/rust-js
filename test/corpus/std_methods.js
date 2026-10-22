@@ -39,7 +39,7 @@ const Stack = {
   },
 };
 
-function swap_in(slot, value) {
+function swapIn(slot, value) {
   const old = slot.value;
   slot.value = $some(value);
   return old;
@@ -131,10 +131,10 @@ function main() {
   b = 5;
   let slot;
   const slot$1 = { value: slot };
-  const first = swap_in(slot$1, "x");
+  const first = swapIn(slot$1, "x");
   slot = slot$1.value;
   const slot$2 = { value: slot };
-  const second = swap_in(slot$2, "y");
+  const second = swapIn(slot$2, "y");
   slot = slot$2.value;
   console.log(
     `${taken == null ? "None" : `Some(${taken})`} ${a == null ? "None" : `Some(${a})`} ${old == null ? "None" : `Some(${old})`} ${b == null ? "None" : `Some(${b})`} ${first == null ? "None" : `Some(${$debugStr(first)})`} ${second == null ? "None" : `Some(${$debugStr(second)})`} ${slot == null ? "None" : `Some(${$debugStr(slot)})`}`,

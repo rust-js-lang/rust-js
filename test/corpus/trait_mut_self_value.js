@@ -10,7 +10,7 @@ export function entry() {
 
 function i32Bump() {
   if ($i32Bump === undefined) {
-    $i32Bump = { bump: i32Bump_bump, bump_by: i32Bump_bump_by };
+    $i32Bump = { bump: i32Bump_bump, bumpBy: i32Bump_bumpBy };
   }
   return $i32Bump;
 }
@@ -19,7 +19,7 @@ function i32Bump_bump(self) {
   self.value = (self.value + 1) | 0;
 }
 
-function i32Bump_bump_by(self, by) {
+function i32Bump_bumpBy(self, by) {
   self.value = (self.value + by.value) | 0;
   by.value = (by.value + 1) | 0;
   return self.value;
@@ -47,7 +47,7 @@ function main() {
   let step = 10;
   const self$2 = { value: n };
   const by = { value: step };
-  const total = i32Bump_bump_by(self$2, by);
+  const total = i32Bump_bumpBy(self$2, by);
   n = self$2.value;
   step = by.value;
   console.log(`${n} ${step} ${total}`);

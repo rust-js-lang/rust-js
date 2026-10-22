@@ -103,13 +103,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return self.type_fact_value(ty, TypeFact::Id, span);
         };
         let dictionary = Expr::member(value, js::DICTIONARY);
+        let any_id = any_trait(self.tcx);
         let any = match traits.principal_def_id() {
-            id if id.is_some() && id == any_trait(self.tcx) => dictionary,
+            id if id.is_some() && id == any_id => dictionary,
             _ => self
                 .any_of_dyn(ty, dictionary)
                 .ok_or_else(|| self.unsupported(span, "the `TypeId` of this `dyn`"))?,
         };
-        Ok(Expr::call(Expr::member(any, "type_id"), Vec::new()))
+        let any_id = any_id.expect("a `dyn`'s `TypeId` is its `Any`'s");
+        let type_id = crate::lower::bindings::trait_method_name(self.tcx, any_id, "type_id");
+        Ok(Expr::call(Expr::member(any, type_id), Vec::new()))
     }
 
     /// `value`, a `ty`, as JS is given it: a `dyn`'s value where its trait is

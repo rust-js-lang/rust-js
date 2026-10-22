@@ -13,7 +13,7 @@ export function vecStoreMutKV(dropK, dropV) {
     $vecStoreMutKV = new WeakMap();
   }
   return $traitImpl($vecStoreMutKV, [dropK, dropV], () => ({
-    lm_get_mut: (arg0, arg1) => vecStoreMutKV_lm_get_mut(arg0.value, arg1, dropK, dropV),
+    lmGetMut: (arg0, arg1) => vecStoreMutKV_lmGetMut(arg0.value, arg1, dropK, dropV),
     $drop: (vec) => {
       for (const item of vec) {
         dropK?.(item[0]);
@@ -23,7 +23,7 @@ export function vecStoreMutKV(dropK, dropV) {
   }));
 }
 
-function vecStoreMutKV_lm_get_mut(vec, i, dropK, dropV) {
+function vecStoreMutKV_lmGetMut(vec, i, dropK, dropV) {
   const value = vec[i];
   return value
     ? [
@@ -41,8 +41,8 @@ function vecStoreMutKV_lm_get_mut(vec, i, dropK, dropV) {
 }
 
 export const LiteMap = {
-  get_mut(liteMap, i, SStoreMutKV) {
-    const value = SStoreMutKV.lm_get_mut(
+  getMut(liteMap, i, SStoreMutKV) {
+    const value = SStoreMutKV.lmGetMut(
       {
         get value() {
           return liteMap.values;
@@ -59,9 +59,9 @@ export const LiteMap = {
     return value[1];
   },
 
-  first_mut(liteMap, SStoreMutKV) {
+  firstMut(liteMap, SStoreMutKV) {
     return $unwrap(
-      SStoreMutKV.lm_get_mut(
+      SStoreMutKV.lmGetMut(
         {
           get value() {
             return liteMap.values;
@@ -75,9 +75,9 @@ export const LiteMap = {
     )[1];
   },
 
-  insert_at(liteMap, i, value, SStoreMutKV) {
+  insertAt(liteMap, i, value, SStoreMutKV) {
     const old = $unwrap(
-      SStoreMutKV.lm_get_mut(
+      SStoreMutKV.lmGetMut(
         {
           get value() {
             return liteMap.values;
@@ -90,7 +90,7 @@ export const LiteMap = {
       ),
     )[1].value;
     $unwrap(
-      SStoreMutKV.lm_get_mut(
+      SStoreMutKV.lmGetMut(
         {
           get value() {
             return liteMap.values;
@@ -109,9 +109,9 @@ export const LiteMap = {
    * litemap's `OccupiedEntry::insert`: through a `&mut V` a method of
    * its own gives.
    */
-  replace_first(liteMap, value, SStoreMutKV) {
-    const old = LiteMap.first_mut(liteMap, SStoreMutKV).value;
-    LiteMap.first_mut(liteMap, SStoreMutKV).value = value;
+  replaceFirst(liteMap, value, SStoreMutKV) {
+    const old = LiteMap.firstMut(liteMap, SStoreMutKV).value;
+    LiteMap.firstMut(liteMap, SStoreMutKV).value = value;
     return old;
   },
 };
@@ -142,22 +142,22 @@ function main() {
       [2, 20],
     ],
   };
-  const v = LiteMap.get_mut(map, 1, vecStoreMutKV());
+  const v = LiteMap.getMut(map, 1, vecStoreMutKV());
   if (v != null) {
     v.value = (v.value + 5) >>> 0;
   }
-  const firstMut = LiteMap.first_mut(map, vecStoreMutKV());
+  const firstMut = LiteMap.firstMut(map, vecStoreMutKV());
   firstMut.value = (firstMut.value + 1) >>> 0;
-  const old = LiteMap.insert_at(map, 0, 99, vecStoreMutKV());
-  const missing = LiteMap.get_mut(map, 7, vecStoreMutKV()) == null;
-  console.log(`${LiteMap.replace_first(map, 7, vecStoreMutKV())}`);
+  const old = LiteMap.insertAt(map, 0, 99, vecStoreMutKV());
+  const missing = LiteMap.getMut(map, 7, vecStoreMutKV()) == null;
+  console.log(`${LiteMap.replaceFirst(map, 7, vecStoreMutKV())}`);
   console.log(
     `[${map.values.map((item) => `(${item[0]}, ${item[1]})`).join(", ")}] ${old} ${missing}`,
   );
   const names = { values: [["a", "x"]] };
-  const value = LiteMap.first_mut(names, vecStoreMutKV());
+  const value = LiteMap.firstMut(names, vecStoreMutKV());
   value.value += "!";
-  const was = LiteMap.insert_at(names, 0, "y", vecStoreMutKV());
+  const was = LiteMap.insertAt(names, 0, "y", vecStoreMutKV());
   console.log(
     `[${names.values.map((item) => `(${$debugStr(item[0])}, ${$debugStr(item[1])})`).join(", ")}] ${was}`,
   );

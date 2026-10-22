@@ -10,26 +10,26 @@ export function entry() {
 
 function plainNamed() {
   if ($plainNamed === undefined) {
-    $plainNamed = { name_of: plainNamed_name_of, size_of: plainNamed_size_of };
+    $plainNamed = { nameOf: plainNamed_nameOf, sizeOf: plainNamed_sizeOf };
   }
   return $plainNamed;
 }
 
-function plainNamed_name_of(UName) {
+function plainNamed_nameOf(UName) {
   return UName;
 }
 
-function plainNamed_size_of(UClone, USize) {
+function plainNamed_sizeOf(UClone, USize) {
   return USize;
 }
 
 function through(XNamed) {
-  return [XNamed.name_of("u8"), XNamed.size_of({ clone: (value) => value }, 8)];
+  return [XNamed.nameOf("u8"), XNamed.sizeOf({ clone: (value) => value }, 8)];
 }
 
 function main() {
   const value = through(plainNamed());
   console.log(`(${$debugStr(value[0])}, ${value[1]})`);
-  console.log(`${plainNamed_name_of("alloc::vec::Vec<u16>")}`);
+  console.log(`${plainNamed_nameOf("alloc::vec::Vec<u16>")}`);
 }
 //# sourceMappingURL=case.js.map

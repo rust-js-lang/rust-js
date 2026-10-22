@@ -5,18 +5,18 @@ export function entry() {
 }
 
 function total(input, TAsRefU8Slice) {
-  const bytes = TAsRefU8Slice.as_ref(input);
+  const bytes = TAsRefU8Slice.asRef(input);
   return [bytes.length, bytes.reduce((a, b) => (a + b) >>> 0, 0)];
 }
 
 function main() {
-  const value = total("héllo", { as_ref: (value) => Array.from(new TextEncoder().encode(value)) });
-  const value$1 = total("abc", { as_ref: (value) => Array.from(new TextEncoder().encode(value)) });
-  const value$2 = total([1, 2, 3], { as_ref: (value) => value });
+  const value = total("héllo", { asRef: (value) => Array.from(new TextEncoder().encode(value)) });
+  const value$1 = total("abc", { asRef: (value) => Array.from(new TextEncoder().encode(value)) });
+  const value$2 = total([1, 2, 3], { asRef: (value) => value });
   console.log(
     `(${value[0]}, ${value[1]}) (${value$1[0]}, ${value$1[1]}) (${value$2[0]}, ${value$2[1]})`,
   );
-  const value$3 = total([114, 97, 119], { as_ref: (value) => value });
+  const value$3 = total([114, 97, 119], { asRef: (value) => value });
   console.log(`(${value$3[0]}, ${value$3[1]})`);
 }
 //# sourceMappingURL=case.js.map

@@ -10,7 +10,7 @@ export function entry() {
  * A vector's items moved out into an array of slots, as smallvec's
  * `from_vec` does with its inline one.
  */
-function take_all(v) {
+function takeAll(v) {
   const moved = Array.from({ length: 3 });
   const len = v.length;
   $setLen(v, 0);
@@ -22,7 +22,7 @@ const EMPTY = undefined;
 
 function main() {
   console.log(
-    `[${take_all(["a", "b"])
+    `[${takeAll(["a", "b"])
       .map((item) => $debugStr(item))
       .join(", ")}]`,
   );

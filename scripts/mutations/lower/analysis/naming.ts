@@ -30,8 +30,8 @@ export const mutations: Mutation[] = [
     name: "default-statics-named-by-file",
     breaks: "a default class used for its statics, in `mod greeter`, is `greeter`, not `Greeter`",
     file: "src/lower/analysis/naming.rs",
-    find: "                (\"default\", None, Some(module)) if statics => {",
-    replace: "                (\"default\", None, Some(module)) if false && statics => {",
+    find: "                (\"default\", None, Some(module)) if statics => crate::lower::upper_first(&camel_case(&module)),",
+    replace: "                (\"default\", None, Some(module)) if false && statics => crate::lower::upper_first(&camel_case(&module)),",
     tests: ["test/modules.test.ts", "-t", "default import of a class"],
   },
   {

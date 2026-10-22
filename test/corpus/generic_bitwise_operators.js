@@ -20,7 +20,7 @@ function shifted(value, by, TShlU32, TShrU32) {
 }
 
 // By a `u64`, a BigInt, of a narrower number: the amount a JS number.
-function shifted_far(value, by, TShlU64) {
+function shiftedFar(value, by, TShlU64) {
   return TShlU64.shl(value, by);
 }
 
@@ -82,7 +82,7 @@ function main() {
     `(${value$4[0]}, ${value$4[1]}) (${value$5[0]}, ${value$5[1]}) (${value$6[0]}, ${value$6[1]})`,
   );
   console.log(
-    `${shifted_far(3, 4n, { shl: (a, b) => (a << Number(b & 63n)) >>> 0 })} ${shifted_far(1, 17n, { shl: (a, b) => (a << (Number(b & 63n) & 15)) & 65535 })}`,
+    `${shiftedFar(3, 4n, { shl: (a, b) => (a << Number(b & 63n)) >>> 0 })} ${shiftedFar(1, 17n, { shl: (a, b) => (a << (Number(b & 63n) & 15)) & 65535 })}`,
   );
 
   // Of references to numbers, as an iterator gives them.

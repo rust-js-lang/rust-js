@@ -25,8 +25,8 @@ function orderDebug_fmt(order) {
     "Order",
     ["order_id", "item_name", "qty", "note", "price", "tags", "paid", "cache"],
     [
-      String(order.order_id),
-      $debugStr(order.item_name),
+      String(order.orderId),
+      $debugStr(order.itemName),
       String(order.qty),
       order.note == null ? "None" : `Some(${$debugStr(order.note)})`,
       $debugF64(order.price),
@@ -40,9 +40,9 @@ function orderDebug_fmt(order) {
 function orderSerialize_serialize(order, json) {
   json.beginObject();
   json.key("orderId");
-  json.int(order.order_id);
+  json.int(order.orderId);
   json.key("itemName");
-  json.string(order.item_name);
+  json.string(order.itemName);
   json.key("qty");
   json.int(order.qty);
   if (order.note != null) {
@@ -75,9 +75,9 @@ function orderDeserialize_deserialize(json) {
       ["tags", $json.vec($json.string)],
       ["ok", $json.bool],
     ],
-    ([order_id, item_name, qty, note, price, tags, paid]) => ({
-      order_id,
-      item_name,
+    ([orderId, itemName, qty, note, price, tags, paid]) => ({
+      orderId,
+      itemName,
       qty,
       note,
       price,
@@ -149,9 +149,9 @@ function eventSerialize_serialize(event, json) {
     json.key("type");
     json.string("placed");
     json.key("orderId");
-    json.int(event._0.order_id);
+    json.int(event._0.orderId);
     json.key("itemName");
-    json.string(event._0.item_name);
+    json.string(event._0.itemName);
     json.key("qty");
     json.int(event._0.qty);
     if (event._0.note != null) {
@@ -358,7 +358,7 @@ function everythingSerialize_serialize(everything, json) {
   json.endObject();
   json.key("by_id");
   json.beginObject();
-  for (const [key, item] of $sortedEntries(everything.by_id, $cmp)) {
+  for (const [key, item] of $sortedEntries(everything.byId, $cmp)) {
     json.key(String(key));
     json.bool(item);
   }
@@ -409,8 +409,8 @@ function everythingSerialize_serialize(everything, json) {
 
 export function sample() {
   const order = {
-    order_id: 7,
-    item_name: 'pen "blue"',
+    orderId: 7,
+    itemName: 'pen "blue"',
     qty: 3,
     price: 2.5,
     tags: ["a", "b\n"],
@@ -437,7 +437,7 @@ export function sample() {
     msgs: ["Ping", { TAG: "Text", _0: "hi" }, { TAG: "Pair", _0: 1, _1: 2 }],
     loose: [{ TAG: "Num", _0: 1e21 }, { TAG: "Word", _0: "w" }, "Nothing"],
     counts,
-    by_id: byId,
+    byId,
     pair: [255, "é", undefined],
     empty: [],
     nested: [[], [1, 2]],
@@ -449,8 +449,8 @@ export function sample() {
 export function report() {
   const e = sample();
   const order = {
-    order_id: 1,
-    item_name: "x",
+    orderId: 1,
+    itemName: "x",
     qty: 1,
     note: "gift",
     price: 0,

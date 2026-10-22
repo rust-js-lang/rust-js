@@ -4,16 +4,16 @@ export function entry() {
   main();
 }
 
-function layout_of(TSize, TAlign) {
+function layoutOf(TSize, TAlign) {
   return [TSize, TAlign];
 }
 
 function main() {
   console.log("1 4 8 8");
   console.log("4 4 8");
-  const layoutOf = layout_of(8, 4);
-  const value = layout_of(16, 8);
-  console.log(`(${layoutOf[0]}, ${layoutOf[1]}) (${value[0]}, ${value[1]})`);
+  const value = layoutOf(8, 4);
+  const value$1 = layoutOf(16, 8);
+  console.log(`(${value[0]}, ${value[1]}) (${value$1[0]}, ${value$1[1]})`);
   console.log("10 1 8");
   console.log("16 2");
   console.log("12 2");

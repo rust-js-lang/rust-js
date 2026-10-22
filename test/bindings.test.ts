@@ -262,12 +262,12 @@ pub fn next_frame(then: &'static dyn Fn(f64)) -> u32 {
   };
   globals.window = { requestAnimationFrame: (callback: (time: number) => void) => (callback(16), 7) };
   try {
-    const { watch, next_frame } = await import(join(dir, "lib.js"));
+    const { watch, nextFrame } = await import(join(dir, "lib.js"));
     const seen: unknown[] = [];
     watch({}, (value: boolean) => seen.push(value));
     expect([seen, given]).toEqual([[false, true], [{ rootMargin: "0px 0px", threshold: 0 }]]);
     const times: number[] = [];
-    expect([next_frame((time: number) => times.push(time)), times]).toEqual([7, [16]]);
+    expect([nextFrame((time: number) => times.push(time)), times]).toEqual([7, [16]]);
   } finally {
     [globals.IntersectionObserver, globals.window] = previous;
   }
@@ -369,7 +369,7 @@ pub fn shown(text: &str) -> String {
   expect(lib.parsed("[1]")).toEqual([1]);
   expect([lib.kept("[1]"), lib.kept("{")]).toEqual([[1], undefined]);
   // One whose `Err` reads the error keeps it, `$try`'s.
-  expect([lib.kept_or_told("[1]"), lib.kept_or_told("{")]).toEqual([[1], undefined]);
+  expect([lib.keptOrTold("[1]"), lib.keptOrTold("{")]).toEqual([[1], undefined]);
   expect([lib.told("1"), lib.told("{").startsWith("SyntaxError")]).toEqual(["", true]);
   expect([lib.valid("[1]"), lib.valid("{")]).toEqual([true, false]);
   expect(() => lib.parsed("{")).toThrow("called `Result::unwrap()` on an `Err` value: SyntaxError");
@@ -668,7 +668,7 @@ pub fn now_is_recent(d: &Date) -> bool {
   expect(lib.moment(0)).toEqual([1970, 0, 45_015_000, "1970-01-01T12:30:15.000Z"]);
   expect(lib.invalid()).toEqual([true, true, null]);
   expect(lib.utc()).toBe(Date.UTC(2026, 9, 8));
-  expect(lib.now_is_recent(new Date())).toBe(true);
+  expect(lib.nowIsRecent(new Date())).toBe(true);
 });
 
 // A struct whose JS is its JSON, `unsafe impl JsonText`, is written by
@@ -768,7 +768,7 @@ pub fn shouted(path: &str) -> String {
   expect([read(join(dir, "note.md")), read(join(dir, "none.md")), here()]).toEqual(["# Note", "missing", process.cwd()]);
   const lib = await import(join(dir, "mir.js"));
   expect([lib.twice(join(dir, "note.md")), lib.twice(join(dir, "none.md"))]).toEqual(["# Note# Note", "missingmissing"]);
-  expect([lib.read_or(join(dir, "note.md"), "x"), lib.read_or(join(dir, "none.md"), "x")]).toEqual(["# Note", "x"]);
+  expect([lib.readOr(join(dir, "note.md"), "x"), lib.readOr(join(dir, "none.md"), "x")]).toEqual(["# Note", "x"]);
   expect([lib.shouted(join(dir, "note.md")), lib.shouted(join(dir, "none.md"))]).toEqual(["# Note!", "missing"]);
 });
 
@@ -1532,7 +1532,7 @@ pub fn nested(parts: Vec<Option<&Unknown>>) -> String {
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js"), ...withWeb]);
   const lib = await import(join(dir, "mir.js"));
   expect([lib.stepped([null, 1, undefined]), lib.first([null]), lib.last([1, null])]).toEqual(["null1undefined", "null", "null"]);
-  expect([lib.none_first([null]), lib.none_first([undefined]), lib.none_first([1]), lib.none_first([])]).toEqual([true, true, false, false]);
+  expect([lib.noneFirst([null]), lib.noneFirst([undefined]), lib.noneFirst([1]), lib.noneFirst([])]).toEqual([true, true, false, false]);
   expect([lib.nested([null]), lib.nested([undefined]), lib.nested([1])]).toEqual(["null", "undefined", "1"]);
 });
 
@@ -1653,7 +1653,7 @@ pub fn counted(key: &str) -> f64 {
     .toEqual(["{a:[1,'x',null,true],b:{}}", "null", "invalid"]);
   expect([lib.lookup('{"a":null,"b":1}', "a"), lib.lookup('{"a":null,"b":1}', "b"), lib.lookup('{"a":null}', "c"), lib.lookup('{"a":null}', "toString"), lib.lookup("[1]", "a")])
     .toEqual(["null", "1", "missing", "missing", "not an object"]);
-  expect(lib.round_trip('{"a": [1, null]}')).toBe('{"a":[1,null]}');
+  expect(lib.roundTrip('{"a": [1, null]}')).toBe('{"a":[1,null]}');
   expect(lib.built()).toEqual(["a", "b"]);
   // A dictionary of what isn't an Option is read as JS reads one (ADR 0225).
   expect(js).toContain("return counts[key] ?? 0;");
@@ -1689,7 +1689,7 @@ pub fn largest_of(values: Vec<f64>) -> f64 {
   expect(js).toContain("return Math.max(a, b, 1);");
   expect(js).toContain("return Math.max(...values);");
   const lib = await import(join(dir, "lib.js"));
-  expect([lib.largest(-3, -2), lib.largest(4, 2), lib.largest_of([2, 9, 4])]).toEqual([1, 4, 9]);
+  expect([lib.largest(-3, -2), lib.largest(4, 2), lib.largestOf([2, 9, 4])]).toEqual([1, 4, 9]);
 });
 
 // A variadic binding's last parameter may be a tuple, as an emitter's
@@ -1832,7 +1832,7 @@ pub fn linked(href: Option<&str>) -> String {
   expect(js).toContain('return cn("a", expanded && "wide", !expanded && shown && "tall");');
   expect(js).toContain('return cn("a", expanded ? "wide" : undefined);');
   expect(js).toContain('return cn("a", (error || ready) && "b");');
-  expect(js).toContain('  const classes = cn(\n    d === "down" && "r0",\n    d === "left" && "r90",\n    d === "up" && "r180",\n    d === "right" && "r-90",\n    d === "start" && "s",\n    d === "end" && "e",\n    props.class_name,\n  );\n');
+  expect(js).toContain('  const classes = cn(\n    d === "down" && "r0",\n    d === "left" && "r90",\n    d === "up" && "r180",\n    d === "right" && "r-90",\n    d === "start" && "s",\n    d === "end" && "e",\n    props.className,\n  );\n');
   expect(js).toContain('return cn(n === 1 && "one", n === 2 && "two", "c");');
   expect(js).toContain('return cn(n === 1 ? "one" : undefined, n === 2 ? "two" : undefined);');
   expect(js).toContain('return cn("a", href && "hover");');
@@ -1873,10 +1873,10 @@ pub fn call<A: 'static>(value: A, given: Option<&'static dyn Fn(A) -> u32>) -> u
   expect(js).toContain("export function count(value) {\n  const n = globalThis.calls;\n  return [n, value];\n}");
   expect(js).toContain("export function first(value, given) {\n  const n = given;\n  return [n, value];\n}");
   expect(js).toContain("export function call(value, given) {\n  const f = given;\n  return f(value);\n}");
-  expect(js).toContain("export function count_unmarked(value, dropT) {");
+  expect(js).toContain("export function countUnmarked(value, dropT) {");
   (globalThis as { calls?: number }).calls = 3;
   const lib = await import(join(dir, "mir.js"));
-  expect([lib.count("a"), lib.count_unmarked("b"), lib.first("c", 4), lib.call(5, (n: number) => n + 1)]).toEqual([[3, "a"], [3, "b"], [4, "c"], 6]);
+  expect([lib.count("a"), lib.countUnmarked("b"), lib.first("c", 4), lib.call(5, (n: number) => n + 1)]).toEqual([[3, "a"], [3, "b"], [4, "c"], 6]);
 });
 
 // ADR 0304: `js::import!(item)` loads the module that has it when it's asked
@@ -2084,15 +2084,15 @@ pub fn tag_of(value: Option<&Unknown>) -> Result<String, &'static JsError> {
   expect(js).toContain("Object.prototype.toString.call(value)");
   const lib = await import(join(dir, "lib.js"));
   expect([lib.formatted("a %s b %%d"), lib.unescaped("100%% sure")]).toEqual(["a <s> b %%d", "100% sure"]);
-  expect([lib.text_of(undefined), lib.text_of(12), lib.text_of({})]).toEqual(["undefined", "12", "[object Object]"]);
+  expect([lib.textOf(undefined), lib.textOf(12), lib.textOf({})]).toEqual(["undefined", "12", "[object Object]"]);
   expect([lib.px(1.5), lib.px(-0), lib.counted(2, "videos"), lib.anchor("intro"), lib.anchor(undefined)]).toEqual(["1.5px", "0px", "2 videos", "#intro", "#undefined"]);
-  expect([lib.int_of("42px"), lib.int_of(undefined), lib.float_of("1e21"), lib.float_of("x")]).toEqual(["42", "NaN", "1e+21", "NaN"]);
+  expect([lib.intOf("42px"), lib.intOf(undefined), lib.floatOf("1e21"), lib.floatOf("x")]).toEqual(["42", "NaN", "1e+21", "NaN"]);
   const cyclic: any = {};
   cyclic.self = cyclic;
-  expect([lib.json_of({ a: 1 }), lib.json_of(() => 1)]).toEqual([{ TAG: "Ok", _0: '{\n  "a": 1\n}' }, { TAG: "Ok", _0: undefined }]);
-  expect(lib.json_of(cyclic).TAG).toBe("Err");
-  expect([lib.kind_of(undefined), lib.kind_of("s"), lib.kind_of(1n)]).toEqual(["undefined", "string", "bigint"]);
-  expect([lib.tag_of([]), lib.tag_of(null)]).toEqual([{ TAG: "Ok", _0: "[object Array]" }, { TAG: "Ok", _0: "[object Null]" }]);
+  expect([lib.jsonOf({ a: 1 }), lib.jsonOf(() => 1)]).toEqual([{ TAG: "Ok", _0: '{\n  "a": 1\n}' }, { TAG: "Ok", _0: undefined }]);
+  expect(lib.jsonOf(cyclic).TAG).toBe("Err");
+  expect([lib.kindOf(undefined), lib.kindOf("s"), lib.kindOf(1n)]).toEqual(["undefined", "string", "bigint"]);
+  expect([lib.tagOf([]), lib.tagOf(null)]).toEqual([{ TAG: "Ok", _0: "[object Array]" }, { TAG: "Ok", _0: "[object Null]" }]);
 });
 
 // `localeCompare`, an `Ordering`, as an Intl collator gives -1, 0 or 1: a

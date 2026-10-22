@@ -64,7 +64,7 @@ function kept(f, v, dropF) {
   return result;
 }
 
-function count_by(it, f, dropF) {
+function countBy(it, f, dropF) {
   const iter = $closing(
     Iterator.from(it).map((item) => f(item)),
     (it) => {
@@ -161,7 +161,7 @@ function main() {
     throw error;
   }
   console.log(
-    `${count_by(
+    `${countBy(
       tmp$2,
       (x) => {
         const l = label;

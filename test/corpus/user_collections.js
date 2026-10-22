@@ -22,7 +22,7 @@ function moneySumMoney_sum(items) {
   return moneySum_sum(Iterator.from(items));
 }
 
-function cartFromIterator_std__string__String__Money__from_iter(items) {
+function cartFromIterator_std__string__String__Money__fromIter(items) {
   return { lines: Iterator.from(items).toArray() };
 }
 
@@ -32,11 +32,11 @@ function cartExtend_std__string__String__Money__extend(cart, items) {
   }
 }
 
-function cartIntoIterator_into_iter(cart) {
+function cartIntoIterator_intoIter(cart) {
   return $iter(cart.lines);
 }
 
-function refCartIntoIterator_into_iter(cart) {
+function refCartIntoIterator_intoIter(cart) {
   return $iter(cart.lines);
 }
 
@@ -46,7 +46,7 @@ function main() {
   const borrowed = moneySumMoney_sum($iter(prices));
   console.log(`${moneyDebug_fmt(owned)} ${moneyDebug_fmt(borrowed)}`);
 
-  const cart = cartFromIterator_std__string__String__Money__from_iter(
+  const cart = cartFromIterator_std__string__String__Money__fromIter(
     [
       ["tea", 250n],
       ["cake", 199n],
@@ -55,13 +55,13 @@ function main() {
       .map(([name, cents]) => [name, { cents }]),
   );
   cartExtend_std__string__String__Money__extend(cart, [["jam", { cents: 300n }]]);
-  for (const [name, price] of refCartIntoIterator_into_iter(cart)) {
+  for (const [name, price] of refCartIntoIterator_intoIter(cart)) {
     console.log(`${name}: ${price.cents}`);
   }
   const total = moneySum_sum(cart.lines.values().map(([, m]) => m));
-  const value = refCartIntoIterator_into_iter(cart).reduce((n) => n + 1, 0);
+  const value = refCartIntoIterator_intoIter(cart).reduce((n) => n + 1, 0);
   console.log(`${moneyDebug_fmt(total)} ${value}`);
-  const names = cartIntoIterator_into_iter(cart)
+  const names = cartIntoIterator_intoIter(cart)
     .map(([name]) => name)
     .toArray();
   console.log(`[${names.map((item) => $debugStr(item)).join(", ")}]`);

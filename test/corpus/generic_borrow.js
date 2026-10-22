@@ -83,11 +83,11 @@ export function labelledPartialOrd(KBorrowStr) {
   }
   return $traitImpl($labelledPartialOrd, [KBorrowStr], () => ({
     PartialEq: () => labelledPartialEq(KBorrowStr),
-    partial_cmp: (arg0, arg1) => labelledPartialOrd_partial_cmp(arg0, arg1, KBorrowStr),
+    partialCmp: (arg0, arg1) => labelledPartialOrd_partialCmp(arg0, arg1, KBorrowStr),
   }));
 }
 
-function labelledPartialOrd_partial_cmp(labelled, other, KBorrowStr) {
+function labelledPartialOrd_partialCmp(labelled, other, KBorrowStr) {
   return labelledOrd_cmp(labelled, other, KBorrowStr);
 }
 

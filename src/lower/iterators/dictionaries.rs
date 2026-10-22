@@ -146,7 +146,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if self.is_user_iterator(ty)
             && let Some(hint) = self.own_size_hint(ty, span)?
         {
-            props.push(js::Prop::Field("size_hint".into(), hint));
+            let iterator = std_item(self.tcx, StdItem::Iterator);
+            let size_hint = crate::lower::bindings::trait_method_name(self.tcx, iterator, "size_hint");
+            props.push(js::Prop::Field(size_hint, hint));
         }
         Ok(Expr::object(props))
     }

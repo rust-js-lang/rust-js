@@ -12,7 +12,7 @@ let READY = false;
 let BIG = 18446744073709551614n;
 let SMALL = 120;
 
-function next_id() {
+function nextId() {
   const previous = NEXT_ID;
   NEXT_ID = (previous + 1) >>> 0;
   return previous;
@@ -24,7 +24,7 @@ function order(seen, name) {
 }
 
 function main() {
-  console.log(`${next_id()} ${next_id()} ${NEXT_ID}`);
+  console.log(`${nextId()} ${nextId()} ${NEXT_ID}`);
   READY = true;
   const value = READY;
   const previous = READY;

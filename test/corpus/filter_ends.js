@@ -19,7 +19,7 @@ export function entry() {
   main();
 }
 
-function last_even(it) {
+function lastEven(it) {
   return $nextBack(
     $filterEnds(it, (x) => {
       console.log(`test ${x}`);
@@ -28,11 +28,11 @@ function last_even(it) {
   );
 }
 
-function evens_back(it) {
+function evensBack(it) {
   return $rev($filterEnds(it, (x) => x % 2 === 0)).toArray();
 }
 
-function sum_back(it) {
+function sumBack(it) {
   return $foldBack(
     $filterEnds(it, (x) => x % 3 !== 0),
     "",
@@ -40,12 +40,12 @@ function sum_back(it) {
   );
 }
 
-function both_ends(it) {
+function bothEnds(it) {
   const kept = $filterEnds(it, (x) => x % 2 === 1);
   return [$nextBack(kept), $next(kept), $nextBack(kept)];
 }
 
-function last_half(it) {
+function lastHalf(it) {
   return $nextBack(
     $filterEnds(
       $mapEnds(Iterator.from(it), (x) => {
@@ -75,21 +75,21 @@ function nested(it) {
 }
 
 function main() {
-  const lastHalf = last_half($iterator({ start: 1, end: 9 }, $rangeNext, false, $rangeNextBack));
+  const value = lastHalf($iterator({ start: 1, end: 9 }, $rangeNext, false, $rangeNextBack));
   console.log(
-    `${lastHalf == null ? "None" : `Some(${lastHalf})`} [${nested(
+    `${value == null ? "None" : `Some(${value})`} [${nested(
       $iterator({ start: 1, end: 6 }, $rangeNext, false, $rangeNextBack),
     )
       .map((item) => (item == null ? "None" : `Some(${item})`))
       .join(", ")}]`,
   );
-  const value = last_even($iterator({ start: 1, end: 8 }, $rangeNext, false, $rangeNextBack));
-  console.log(`${value == null ? "None" : `Some(${value})`}`);
-  console.log(`[${evens_back($iter([1, 2, 3, 4, 5, 6])).join(", ")}]`);
-  console.log(`${sum_back($iterator({ start: 1, end: 10 }, $rangeNext, false, $rangeNextBack))}`);
-  const value$1 = both_ends($iter([1, 2, 3, 4, 5]));
+  const value$1 = lastEven($iterator({ start: 1, end: 8 }, $rangeNext, false, $rangeNextBack));
+  console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
+  console.log(`[${evensBack($iter([1, 2, 3, 4, 5, 6])).join(", ")}]`);
+  console.log(`${sumBack($iterator({ start: 1, end: 10 }, $rangeNext, false, $rangeNextBack))}`);
+  const value$2 = bothEnds($iter([1, 2, 3, 4, 5]));
   console.log(
-    `(${value$1[0] == null ? "None" : `Some(${value$1[0]})`}, ${value$1[1] == null ? "None" : `Some(${value$1[1]})`}, ${value$1[2] == null ? "None" : `Some(${value$1[2]})`})`,
+    `(${value$2[0] == null ? "None" : `Some(${value$2[0]})`}, ${value$2[1] == null ? "None" : `Some(${value$2[1]})`}, ${value$2[2] == null ? "None" : `Some(${value$2[2]})`})`,
   );
   const found = $iterator({ start: 1, end: 10 }, $rangeNextBack)
     .filter((x) => x % 4 === 0)

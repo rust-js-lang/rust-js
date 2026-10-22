@@ -10,7 +10,7 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { open } from "@rust-js/typescript";
-import { snake } from "../scripts/rust-names";
+import { needsJsName, snake } from "../scripts/rust-names";
 import { EVENT_TYPES } from "./names";
 
 type Model = any;
@@ -165,9 +165,8 @@ for (const struct of structs) {
     const field = snake(member.name);
     if (fields.has(field)) throw new Error(`${struct.rust} has two \`${field}\``);
     fields.add(field);
-    const bare = field.replace(/^r#/, "");
     lines.push(`    /// \`${member.name}\``);
-    if (bare !== member.name) lines.push(`    #[cfg_attr(rust_js, rust_js::name = "${member.name}")]`);
+    if (needsJsName(field, member.name)) lines.push(`    #[cfg_attr(rust_js, rust_js::name = "${member.name}")]`);
     lines.push(`    pub ${field}: Option<${type}>,`);
     defaults.push(`            ${field}: None,`);
   }

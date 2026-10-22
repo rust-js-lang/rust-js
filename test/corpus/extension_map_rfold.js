@@ -25,7 +25,7 @@ function tagDebug_fmt(tag, TDebug) {
 }
 
 const Ends = {
-  tagged_back(ends, init, f, IIterator, IDoubleEndedIterator) {
+  taggedBack(ends, init, f, IIterator, IDoubleEndedIterator) {
     return $foldBack(
       $mapEnds(
         $iterator(ends.inner, IIterator.next, true, IDoubleEndedIterator.next_back),
@@ -36,7 +36,7 @@ const Ends = {
     );
   },
 
-  held_back(ends, IIterator, IDoubleEndedIterator) {
+  heldBack(ends, IIterator, IDoubleEndedIterator) {
     const tagged = $mapEnds(
       $iterator(ends.inner, IIterator.next, true, IDoubleEndedIterator.next_back),
       (value) => [value],
@@ -54,7 +54,7 @@ function main() {
     return v;
   };
   try {
-    const tags = Ends.tagged_back(
+    const tags = Ends.taggedBack(
       { inner: { start: 0, end: 3 } },
       value,
       value$1,
@@ -67,7 +67,7 @@ function main() {
     const value$2 = ["x", "y"];
     const inner = $iter(value$2);
     const value$3 = (s, t) => s + t[0];
-    const words = Ends.tagged_back(
+    const words = Ends.taggedBack(
       { inner },
       "",
       value$3,
@@ -75,7 +75,7 @@ function main() {
       { next_back: $nextBack },
     );
     console.log(`${words}`);
-    const value$4 = Ends.held_back(
+    const value$4 = Ends.heldBack(
       { inner: { start: 5, end: 8 } },
       { next: $rangeNext },
       { next_back: $rangeNextBack },

@@ -23,7 +23,7 @@ function knownIterator_next(known) {
   return known[0];
 }
 
-function knownIterator_size_hint(known) {
+function knownIterator_sizeHint(known) {
   return [known[0], known[0]];
 }
 
@@ -36,7 +36,7 @@ function indexedIterator_next(indexed) {
   return [(indexed.at - 1) >>> 0, item];
 }
 
-function indexedIterator_size_hint(indexed) {
+function indexedIterator_sizeHint(indexed) {
   return [0, undefined];
 }
 
@@ -49,10 +49,10 @@ function hint(it) {
 function main() {
   const value = [0, undefined];
   console.log(
-    `(${value[0]}, ${value[1] == null ? "None" : `Some(${value[1]})`}) ${((tuple) => `(${tuple[0]}, ${tuple[1] == null ? "None" : `Some(${tuple[1]})`})`)(knownIterator_size_hint([4]))}`,
+    `(${value[0]}, ${value[1] == null ? "None" : `Some(${value[1]})`}) ${((tuple) => `(${tuple[0]}, ${tuple[1] == null ? "None" : `Some(${tuple[1]})`})`)(knownIterator_sizeHint([4]))}`,
   );
   const indexed = { inner: [2], at: 0 };
-  const sizeHint = indexedIterator_size_hint(indexed);
+  const sizeHint = indexedIterator_sizeHint(indexed);
   const value$1 = indexedIterator_next(indexed);
   console.log(
     `(${sizeHint[0]}, ${sizeHint[1] == null ? "None" : `Some(${sizeHint[1]})`}) ${value$1 == null ? "None" : `Some((${value$1[0]}, ${value$1[1]}))`}`,

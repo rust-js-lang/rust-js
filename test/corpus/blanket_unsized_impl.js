@@ -17,26 +17,26 @@ function tExt(TIterator) {
       TIterator.next(self);
       return TIterator.next(self);
     },
-    skip_one: (self) => TIterator.next(self),
+    skipOne: (self) => TIterator.next(self),
   }));
 }
 
-function first_two(it) {
-  return [tExt({ next: $next }).skip_one(it), $next(it)];
+function firstTwo(it) {
+  return [tExt({ next: $next }).skipOne(it), $next(it)];
 }
 
 function main() {
   const value = tExt({ next: $next }).second($iter([1, 2, 3]));
   console.log(`${value == null ? "None" : `Some(${value})`}`);
   const range = { start: 1, end: 5 };
-  tExt({ next: $rangeNext }).skip_one(range);
+  tExt({ next: $rangeNext }).skipOne(range);
   const value$1 = tExt({ next: $rangeNext }).second(range);
   console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
-  const value$2 = first_two($lazyRange(7, 9));
+  const value$2 = firstTwo($lazyRange(7, 9));
   console.log(
     `(${value$2[0] == null ? "None" : `Some(${value$2[0]})`}, ${value$2[1] == null ? "None" : `Some(${value$2[1]})`})`,
   );
-  const value$3 = first_two($iter([4]));
+  const value$3 = firstTwo($iter([4]));
   console.log(
     `(${value$3[0] == null ? "None" : `Some(${value$3[0]})`}, ${value$3[1] == null ? "None" : `Some(${value$3[1]})`})`,
   );

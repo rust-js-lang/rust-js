@@ -64,13 +64,13 @@ export async function pinned(x) {
   return ((await done) + (await block)) >>> 0;
 }
 
-function doubledIntoFuture_into_future(doubled) {
+function doubledIntoFuture_intoFuture(doubled) {
   return double(doubled[0]);
 }
 
 /** `.await` of an `IntoFuture` of the crate's: its `into_future` awaited. */
 export async function doubled(x) {
-  return ((await doubledIntoFuture_into_future([x])) + 1) >>> 0;
+  return ((await doubledIntoFuture_intoFuture([x])) + 1) >>> 0;
 }
 
 /**
@@ -153,7 +153,7 @@ export async function post(url, body) {
 }
 
 /** A listener that goes when its signal aborts: `addEventListener`'s options. */
-export function listen_until_aborted() {
+export function listenUntilAborted() {
   const count = { value: 0 };
   const target = new EventTarget();
   const controller = new AbortController();
@@ -177,7 +177,7 @@ export function listen_until_aborted() {
 }
 
 /** Binary data: `bytes()`, `arrayBuffer()`, and a view of a buffer. */
-export async function load_bytes(url) {
+export async function loadBytes(url) {
   const response = await window.fetch(url);
   const copy = response.clone();
   const bytes = await response.bytes();
@@ -190,7 +190,7 @@ export async function load_bytes(url) {
  * WebAssembly: compile a module, instantiate it with imports from Rust
  * (a struct, which is a JS object), and call its export, which calls back.
  */
-export async function run_wasm(bytes, a, b) {
+export async function runWasm(bytes, a, b) {
   const module = await WebAssembly.compile(bytes);
   const imports = { env: { double: (x) => Math.imul(x, 2) } };
   const instance = await WebAssembly.instantiate(module, imports);
@@ -198,7 +198,7 @@ export async function run_wasm(bytes, a, b) {
 }
 
 /** The other `instantiate`: from bytes, to a `{ module, instance }` dictionary. */
-export async function instantiate_bytes(bytes) {
+export async function instantiateBytes(bytes) {
   const imports = { env: { double: (x) => x } };
   const source = await WebAssembly.instantiate(bytes.buffer, imports);
   return WebAssembly.validate(bytes) && source.instance.exports.add(1, 2) === 3;

@@ -66,13 +66,18 @@ describe.each([["MIR", {}]] as const)("from %s", (_, env) => {
   }, 600_000);
 
   test("concrete, generic and dyn calls match native Rust", () => {
-    const names = ["demo", "fresh_circle", "fresh_number", "label", "default_label", "super_bound", "two_bounds", "upcast_square", "function_value", "default_function_value", "nested", "copies", "identity_value", "evaluation_order", "primitive_dyn", "enum_dyn", "nan_max", "factory_bounds", "captured_evidence", "lifetime_dyn"];
-    writeFileSync(join(directory, "native.rs"), `#[path="lib.rs"] mod cases; fn main() { ${names.map(name => `println!("{}", cases::${name}());`).join("\n")} }`);
+    // Each function's Rust name and its JS name, camelCase (ADR 0573).
+    const names = [["demo", "demo"], ["fresh_circle", "freshCircle"], ["fresh_number", "freshNumber"], ["label", "label"], ["default_label", "defaultLabel"],
+      ["super_bound", "superBound"], ["two_bounds", "twoBounds"], ["upcast_square", "upcastSquare"], ["function_value", "functionValue"],
+      ["default_function_value", "defaultFunctionValue"], ["nested", "nested"], ["copies", "copies"], ["identity_value", "identityValue"],
+      ["evaluation_order", "evaluationOrder"], ["primitive_dyn", "primitiveDyn"], ["enum_dyn", "enumDyn"], ["nan_max", "nanMax"],
+      ["factory_bounds", "factoryBounds"], ["captured_evidence", "capturedEvidence"], ["lifetime_dyn", "lifetimeDyn"]];
+    writeFileSync(join(directory, "native.rs"), `#[path="lib.rs"] mod cases; fn main() { ${names.map(([name]) => `println!("{}", cases::${name}());`).join("\n")} }`);
     run(["rustc", "--edition=2024", "-Coverflow-checks=off", "-Awarnings", join(directory, "native.rs"), "-o", join(directory, "native")]);
     const expected = run([join(directory, "native")]).trim().split("\n");
-    expect(names.map(name => String(module[name]()))).toEqual(expected);
+    expect(names.map(([, jsName]) => String(module[jsName]()))).toEqual(expected);
     expect(module.demo()).toBe(13.14);
-    expect(module.dyn_argument_name(7)).toBe(9);
+    expect(module.dynArgumentName(7)).toBe(9);
   });
 
   test("dictionaries are explicit, cached and usable from JavaScript", () => {
@@ -114,8 +119,8 @@ describe.each([["MIR", {}]] as const)("from %s", (_, env) => {
     for (const line of run([join(directory, "format")]).trim().split("\n")) {
       const [bits, expected, area] = line.split("\t");
       view.setBigUint64(0, BigInt("0x" + bits));
-      expect(module.float_display(view.getFloat64(0))).toBe(expected);
-      expect(module.float_label(view.getFloat64(0))).toBe("circle of area " + area);
+      expect(module.floatDisplay(view.getFloat64(0))).toBe(expected);
+      expect(module.floatLabel(view.getFloat64(0))).toBe("circle of area " + area);
     }
   });
 

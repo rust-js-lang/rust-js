@@ -28,7 +28,7 @@ function partialDefault_default() {
   return { x: [20], y: [21], n: 0 };
 }
 
-function swap_y(p) {
+function swapY(p) {
   let p$x$live = true;
   let noisy;
   try {
@@ -85,7 +85,7 @@ function main() {
   }
   console.log("after p");
 
-  const swapped = swap_y({ x: [4], y: [5], n: 2 });
+  const swapped = swapY({ x: [4], y: [5], n: 2 });
 
   try {
     console.log(`swapped ${swapped.x[0]} ${swapped.y[0]}`);

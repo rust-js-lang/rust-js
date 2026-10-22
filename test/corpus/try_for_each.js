@@ -25,7 +25,7 @@ function check(items) {
   });
 }
 
-function positive_from(it) {
+function positiveFrom(it) {
   return $tryFoldSome(Iterator.from(it), undefined, (_, x) =>
     x > 0 ? $some(undefined) : undefined,
   );
@@ -50,11 +50,11 @@ function main() {
   );
   const it = $iter([3, 0, 5]);
   console.log(
-    `${positive_from(it) == null ? "None" : "Some(())"} ${((value) => (value == null ? "None" : `Some(${value})`))($next(it))}`,
+    `${positiveFrom(it) == null ? "None" : "Some(())"} ${((value) => (value == null ? "None" : `Some(${value})`))($next(it))}`,
   );
   const all = { start: 1, end: 3 };
   console.log(
-    `${positive_from($iterator(all, $rangeNext)) == null ? "None" : "Some(())"} ${((value) => (value == null ? "None" : `Some(${value})`))($rangeNext(all))}`,
+    `${positiveFrom($iterator(all, $rangeNext)) == null ? "None" : "Some(())"} ${((value) => (value == null ? "None" : `Some(${value})`))($rangeNext(all))}`,
   );
   const value$2 = latest([1, undefined]);
   const value$3 = latest([undefined]);

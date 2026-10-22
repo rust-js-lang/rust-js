@@ -130,7 +130,7 @@ pub(in crate::lower) enum TextOp {
     /// bytes after it, `{ valid, invalid }`.
     Utf8Chunks,
     /// A part of a `Utf8Error`, `FromUtf8Error` or `Cow<str>`, as the runtime
-    /// makes it: `valid_up_to`, `error`, `bytes`, `_0`.
+    /// makes it: `validUpTo`, `error`, `bytes`, `_0`.
     Utf8Part(&'static str),
     /// `e.kind()` of a `ParseIntError`, which is its message: its kind.
     ParseErrorKind,
@@ -814,7 +814,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let to_string = ty::TraitRef::new(self.tcx, to_string_trait, [ty]);
                 match self.is_unknown(ty) && !self.has_evidence(display) {
                     true if let Some(dictionary) = self.evidence_for(to_string) => {
-                        Expr::call(Expr::member(dictionary, "to_string"), vec![value])
+                        let name = crate::lower::bindings::trait_method_name(self.tcx, to_string_trait, "to_string");
+                        Expr::call(Expr::member(dictionary, name), vec![value])
                     }
                     _ => self.display_string(value, ty, span)?,
                 }

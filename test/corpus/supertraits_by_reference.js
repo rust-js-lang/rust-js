@@ -18,7 +18,7 @@ function tRefAddBase(TAddBase, TAddBase$1) {
   }));
 }
 
-function twice_and_once(a, b, TRefAddT, TCopy) {
+function twiceAndOnce(a, b, TRefAddT, TCopy) {
   const byValue = TRefAddT.AddBase().add(TCopy.copy(a), TCopy.copy(b));
   return TRefAddT.AddRefBase().add(TCopy.copy(byValue), b);
 }
@@ -51,10 +51,10 @@ function metersAddMeters_add(meters, other) {
 
 function main() {
   console.log(
-    `${twice_and_once(1, 2, tRefAddBase({ add: (a, b) => (a + b) | 0 }, { add: (a, b) => (a + b) | 0 }), { copy: (value) => value })} ${$displayF64(twice_and_once(0.5, 0.25, tRefAddBase({ add: (a, b) => a + b }, { add: (a, b) => a + b }), { copy: (value) => value }))}`,
+    `${twiceAndOnce(1, 2, tRefAddBase({ add: (a, b) => (a + b) | 0 }, { add: (a, b) => (a + b) | 0 }), { copy: (value) => value })} ${$displayF64(twiceAndOnce(0.5, 0.25, tRefAddBase({ add: (a, b) => a + b }, { add: (a, b) => a + b }), { copy: (value) => value }))}`,
   );
   console.log(
-    `${metersDebug_fmt(twice_and_once([1], [2], tRefAddBase(metersAdd(), metersAddMeters()), { copy: (value) => [value[0]] }))}`,
+    `${metersDebug_fmt(twiceAndOnce([1], [2], tRefAddBase(metersAdd(), metersAddMeters()), { copy: (value) => [value[0]] }))}`,
   );
 }
 //# sourceMappingURL=case.js.map

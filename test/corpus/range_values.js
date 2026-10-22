@@ -36,12 +36,12 @@ function labelledDebug_fmt(labelled) {
   return `Labelled { span: ${labelled.span.start}..${labelled.span.end}, name: ${$debugStr(labelled.name)} }`;
 }
 
-function sum_all(items) {
+function sumAll(items) {
   return Iterator.from(items).reduce((a, b) => (a + b) >>> 0, 0);
 }
 
 // A range given where any `T` goes is the range, not its items.
-function shown_twice(value, TClone, TDebug) {
+function shownTwice(value, TClone, TDebug) {
   return `${TDebug.fmt(TClone.clone(value))} ${TDebug.fmt(value)}`;
 }
 
@@ -55,14 +55,14 @@ function evens(r) {
     .toArray();
 }
 
-function clamp_to(r, x) {
+function clampTo(r, x) {
   if (r.start <= x && x < r.end) {
     return x;
   }
   return r.start;
 }
 
-function first_square_over(limit) {
+function firstSquareOver(limit) {
   const iter = { start: 1 };
   while (true) {
     const n = $rangeFromNext(iter);
@@ -112,13 +112,13 @@ function main() {
     $iter(Array.from("abc")),
   ).toArray();
   console.log(
-    `[${ids.join(", ")}] [${numbered.map((item) => `(${item[0]}, ${$debugStr(item[1], "'")})`).join(", ")}] ${first_square_over(50)}`,
+    `[${ids.join(", ")}] [${numbered.map((item) => `(${item[0]}, ${$debugStr(item[1], "'")})`).join(", ")}] ${firstSquareOver(50)}`,
   );
 
   for (const x of [3, 7, 10]) {
     console.log(`${1 <= x && x < 4} ${1 <= x && x <= 7} ${5 <= x} ${x < 8} ${x <= 7}`);
   }
-  console.log(`${clamp_to({ start: 0, end: 5 }, 9)} ${clamp_to({ start: 0, end: 5 }, 3)}`);
+  console.log(`${clampTo({ start: 0, end: 5 }, 9)} ${clampTo({ start: 0, end: 5 }, 3)}`);
   const unit = { start: 0, end: 1 };
   console.log(
     `${unit.start <= 0.5 && 0.5 < unit.end} ${unit.start <= NaN && NaN < unit.end} ${$debugF64(unit.start)}..${$debugF64(unit.end)}`,
@@ -181,14 +181,14 @@ function main() {
             `${labelledDebug_fmt(labelled)} ${value} [${spans.map((item) => `${item.start}..${item.end}`).join(", ")}] [${lens.join(", ")}]`,
           );
           console.log(
-            `${sum_all($lazyRange(1, 4))} ${sum_all($iterator(r_of(3), $rangeNext))} ${sum_all($iterator({ start: 1 }, $rangeFromNext).take(3))}`,
+            `${sumAll($lazyRange(1, 4))} ${sumAll($iterator(rOf(3), $rangeNext))} ${sumAll($iterator({ start: 1 }, $rangeFromNext).take(3))}`,
           );
           console.log(
-            `${shown_twice(
+            `${shownTwice(
               { start: 1, end: 4 },
               { clone: (value) => ({ start: value.start, end: value.end }) },
               { fmt: (value) => `${value.start}..${value.end}` },
-            )} ${shown_twice({ end: 2 }, { clone: (value) => ({ ...value }) }, { fmt: (value) => `..=${value.end}` })}`,
+            )} ${shownTwice({ end: 2 }, { clone: (value) => ({ ...value }) }, { fmt: (value) => `..=${value.end}` })}`,
           );
 
           const numbers = [1, 2, 3, 4, 5];
@@ -223,7 +223,7 @@ function main() {
   }
 }
 
-function r_of(n) {
+function rOf(n) {
   return { start: 0, end: n };
 }
 //# sourceMappingURL=case.js.map

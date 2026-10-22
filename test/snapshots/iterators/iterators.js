@@ -54,7 +54,7 @@ export function middle(v) {
   return v.slice(1).slice(0, 2).toReversed();
 }
 
-export function non_empty(words) {
+export function nonEmpty(words) {
   return words.reduce((count, w) => {
     if (!w) {
       return count;
@@ -72,7 +72,7 @@ export function backwards(s) {
 }
 
 /** `collect` makes a new `Vec`: sorting it leaves the original as it was. */
-export function sorted_copy(v) {
+export function sortedCopy(v) {
   const copy = v.slice();
   copy.sort((a, b) => a - b);
   return [v, copy];
@@ -91,14 +91,14 @@ export function descending(v) {
 }
 
 /** By the last digit; stable, so ties keep their order, as in Rust. */
-export function by_last_digit(v) {
+export function byLastDigit(v) {
   const w = v.slice();
   const key = (x) => (x % 10) | 0;
   w.sort((a, b) => $cmp(key(a), key(b)));
   return w;
 }
 
-export function sorted_words(words) {
+export function sortedWords(words) {
   const w = words.slice();
   w.sort($cmp);
   w.reverse();
@@ -106,7 +106,7 @@ export function sorted_words(words) {
 }
 
 /** Two keys: `then_with`. */
-export function by_length_then_name(words) {
+export function byLengthThenName(words) {
   const w = words.slice();
   w.sort((a, b) => $cmp(!a, !b) || $cmp(a, b));
   return w;
@@ -161,7 +161,7 @@ export function inclusive(n) {
 }
 
 /** An `Ordering` is -1, 0 or 1 already, so `as` changes nothing. */
-export function order_number(a, b) {
+export function orderNumber(a, b) {
   return [$cmp(a, b), $cmp(a, b) & 255];
 }
 //# sourceMappingURL=iterators.js.map

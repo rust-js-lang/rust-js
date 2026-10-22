@@ -15,18 +15,18 @@ export function entry() {
 }
 
 function gather(n, BFromIteratorU32) {
-  return BFromIteratorU32.from_iter($lazyRange(1, n + 1).map((x) => Math.imul(x, 2) >>> 0));
+  return BFromIteratorU32.fromIter($lazyRange(1, n + 1).map((x) => Math.imul(x, 2) >>> 0));
 }
 
 function made(text, BFromIteratorChar) {
-  return BFromIteratorChar.from_iter($iter(Array.from(text).toReversed()));
+  return BFromIteratorChar.fromIter($iter(Array.from(text).toReversed()));
 }
 
 function bagDebug_fmt(bag) {
   return `Bag([${bag[0].join(", ")}])`;
 }
 
-function bagFromIteratorU32_from_iter(items) {
+function bagFromIteratorU32_fromIter(items) {
   return [
     Iterator.from(items)
       .filter((x) => x % 3 !== 0)
@@ -35,21 +35,21 @@ function bagFromIteratorU32_from_iter(items) {
 }
 
 function parsed(words, BFromIteratorResult) {
-  return BFromIteratorResult.from_iter(words.values().map((w) => $parseInt(w, 0, 4294967295)));
+  return BFromIteratorResult.fromIter(words.values().map((w) => $parseInt(w, 0, 4294967295)));
 }
 
 function main() {
-  const v = gather(3, { from_iter: (items) => Array.from(items) });
-  const s = gather(2, { from_iter: (items) => new Set(Array.from(items)) });
-  const b = gather(4, { from_iter: (items) => bagFromIteratorU32_from_iter(Array.from(items)) });
-  const t = made("abc", { from_iter: (items) => Array.from(items).join("") });
+  const v = gather(3, { fromIter: (items) => Array.from(items) });
+  const s = gather(2, { fromIter: (items) => new Set(Array.from(items)) });
+  const b = gather(4, { fromIter: (items) => bagFromIteratorU32_fromIter(Array.from(items)) });
+  const t = made("abc", { fromIter: (items) => Array.from(items).join("") });
   const pairs = new Map(
-    gather(2, { from_iter: (items) => Array.from(items) })
+    gather(2, { fromIter: (items) => Array.from(items) })
       .values()
       .map((x) => [x, (x + 1) >>> 0]),
   );
-  const ok = parsed(["1", "2"], { from_iter: (items) => $collectResults(Array.from(items)) });
-  const bad = parsed(["1", "x"], { from_iter: (items) => $collectResults(Array.from(items)) });
+  const ok = parsed(["1", "2"], { fromIter: (items) => $collectResults(Array.from(items)) });
+  const bad = parsed(["1", "x"], { fromIter: (items) => $collectResults(Array.from(items)) });
   console.log(
     `[${v.join(", ")}] ${s.size} ${bagDebug_fmt(b)} ${t} {${Array.from($sortedEntries(pairs, $cmp))
       .map(([key, value]) => `${key}: ${value}`)

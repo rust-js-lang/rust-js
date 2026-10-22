@@ -122,13 +122,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             HashOp::NewWithKeys => new_hasher(StdHasher::Sip, values.collect()),
             HashOp::Own => {
                 let hasher = values.next().expect("a hasher");
-                let method = self.tcx.item_name(call.def_id);
-                Expr::call(Expr::member(hasher, method.as_str()), values.collect())
+                let method = crate::lower::bindings::fn_name(self.tcx, call.def_id);
+                Expr::call(Expr::member(hasher, method), values.collect())
             }
             HashOp::Provided => {
                 let state = values.next().expect("a hasher");
                 let hasher = self.hasher(state, call.generic_args.type_at(0), call.span, out)?;
-                hasher.call(self.tcx.item_name(call.def_id).as_str(), values.collect())
+                hasher.call(
+                    &crate::lower::bindings::fn_name(self.tcx, call.def_id),
+                    values.collect(),
+                )
             }
             HashOp::Hash | HashOp::HashSlice => {
                 let value = values.next().expect("what's hashed");
@@ -212,7 +215,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let hash_slice = Expr::arrow(vec![items.into(), state.into(), dictionary.into()], body);
         Ok(Some(Expr::object(vec![
             js::Prop::Field("hash".into(), hash),
-            js::Prop::Field("hash_slice".into(), hash_slice),
+            js::Prop::Field(
+                crate::lower::bindings::trait_method_name(self.tcx, tr.def_id, "hash_slice"),
+                hash_slice,
+            ),
         ])))
     }
 
@@ -225,6 +231,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
+    /// What `Hasher`'s method `name` is called in JS, a std hasher's and a
+    /// dictionary's alike: `writeU32` of `write_u32`.
+    fn hasher_key(&self, name: &str) -> String {
+        let hasher = self.recognition().hasher_trait().expect("std has `Hasher`");
+        crate::lower::bindings::trait_method_name(self.tcx, hasher, name)
+    }
+
     /// The writes of `value.hash(hasher)`, of a `ty`: std's impl's, or a
     /// crate's type's or a type parameter's `hash`, its dictionary's.
     fn hash_writes(&mut self, value: Expr, ty: Ty<'tcx>, hasher: &Hasher, span: Span, out: &mut Vec<Stmt>) -> R<()> {
@@ -232,18 +245,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return self.dictionary_writes("hash", value, ty, hasher, span, out);
         };
         match hashed {
-            Hashed::Number(written) => out.push(hasher.write(&format!("write_{written}"), vec![value])),
-            Hashed::Bool => out.push(hasher.write("write_u8", vec![Expr::call(Expr::var("Number"), vec![value])])),
+            Hashed::Number(written) => {
+                out.push(hasher.write(&self.hasher_key(&format!("write_{written}")), vec![value]))
+            }
+            Hashed::Bool => out.push(hasher.write(
+                &self.hasher_key("write_u8"),
+                vec![Expr::call(Expr::var("Number"), vec![value])],
+            )),
             Hashed::Char => {
                 let code = Expr::call(Expr::member(value, "codePointAt"), vec![Expr::int(0)]);
-                out.push(hasher.write("write_u32", vec![code]));
+                out.push(hasher.write(&self.hasher_key("write_u32"), vec![code]));
             }
-            Hashed::Text => out.push(hasher.write("write_str", vec![value])),
+            Hashed::Text => out.push(hasher.write(&self.hasher_key("write_str"), vec![value])),
             // A raw pointer's address, as `usize` (ADR 0562).
             Hashed::Address(pointee) => {
                 let size = self.pointee_size(pointee, span)?;
                 let addr = Expr::call(Expr::helper("$addr"), vec![value, size]);
-                out.push(hasher.write("write_usize", vec![addr]));
+                out.push(hasher.write(&self.hasher_key("write_usize"), vec![addr]));
             }
             Hashed::Pointer(pointee) => {
                 let (value, _) = self.through_refs(value, ty);
@@ -267,7 +285,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             Hashed::Slice(item) | Hashed::Items(item) => {
                 let value = self.spilled(value, out);
-                out.push(hasher.write("write_length_prefix", vec![Expr::member(value.clone(), "length")]));
+                out.push(hasher.write(
+                    &self.hasher_key("write_length_prefix"),
+                    vec![Expr::member(value.clone(), "length")],
+                ));
                 match matches!(hashed, Hashed::Slice(_)) {
                     true => self.item_writes(value, item, hasher, span, out)?,
                     false => self.each_item_writes(value, item, hasher, span, out)?,
@@ -275,13 +296,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             Hashed::Option(item) => {
                 let value = self.spilled(value, out);
-                let mut some = vec![hasher.write("write_isize", vec![Expr::int(1)])];
+                let mut some = vec![hasher.write(&self.hasher_key("write_isize"), vec![Expr::int(1)])];
                 let held = match self.boxed_payload(item) {
                     true => self.some_value(value.clone()),
                     false => value.clone(),
                 };
                 self.hash_writes(held, item, hasher, span, &mut some)?;
-                let none = vec![hasher.write("write_isize", vec![Expr::int(0)])];
+                let none = vec![hasher.write(&self.hasher_key("write_isize"), vec![Expr::int(0)])];
                 let present = self.present(value, item);
                 out.push(StmtKind::If(present, some, Some(none)).at(js::Span::NONE));
             }
@@ -289,7 +310,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let value = self.spilled(value, out);
                 let mut arms = Vec::new();
                 for (discriminant, held) in [(0, ok), (1, err)] {
-                    let mut arm = vec![hasher.write("write_isize", vec![Expr::int(discriminant)])];
+                    let mut arm = vec![hasher.write(&self.hasher_key("write_isize"), vec![Expr::int(discriminant)])];
                     self.hash_writes(Expr::member(value.clone(), "_0"), held, hasher, span, &mut arm)?;
                     arms.push(arm);
                 }
@@ -316,7 +337,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let tr = ty::TraitRef::new(self.tcx, std_item(self.tcx, StdItem::Hash), [ty]);
         let dictionary = self.dictionary(tr, span)?;
         let call = Expr::call(
-            Expr::member(dictionary, method),
+            Expr::member(
+                dictionary,
+                crate::lower::bindings::trait_method_name(self.tcx, tr.def_id, method),
+            ),
             vec![value, hasher.state.clone(), hasher.dictionary.clone()],
         );
         out.push(StmtKind::Expr(call).at(js::Span::NONE));
@@ -352,7 +376,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Expr::call(Expr::member(items, "flatMap"), vec![each])
             }
         };
-        out.push(hasher.write("write", vec![bytes]));
+        out.push(hasher.write(&self.hasher_key("write"), vec![bytes]));
         Ok(())
     }
 

@@ -43,8 +43,8 @@ function on(target, event, state, view, change) {
 }
 
 function add(s, title) {
-  s.todos.push({ id: s.next_id, title, done: false });
-  s.next_id = (s.next_id + 1) >>> 0;
+  s.todos.push({ id: s.nextId, title, done: false });
+  s.nextId = (s.nextId + 1) >>> 0;
 }
 
 function toggle(s, id) {
@@ -142,7 +142,7 @@ function render(state, view) {
 
 export function main() {
   const app = $unwrap(document.getElementById("app"), "the page has an #app");
-  const state = { value: { todos: [], next_id: 1, filter: "All" } };
+  const state = { value: { todos: [], nextId: 1, filter: "All" } };
   const view = { list: create("ul"), left: create("span") };
 
   // Typing a title and pressing Enter adds it.

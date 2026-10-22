@@ -15,7 +15,7 @@ export function entry() {
   main();
 }
 
-function first_or(cur, it) {
+function firstOr(cur, it) {
   return cur != null ? $someValue(cur) : $nextSome(it);
 }
 
@@ -59,12 +59,12 @@ function unwraps(a, r, TClone) {
 
 function main() {
   const a = $some(undefined);
-  const value = first_or(a, $iter([1]));
+  const value = firstOr(a, $iter([1]));
   console.log(
     `${value == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value))})`}`,
   );
   const b = undefined;
-  const value$1 = first_or(b, $iter([undefined, 2]));
+  const value$1 = firstOr(b, $iter([undefined, 2]));
   console.log(
     `${value$1 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$1))})`}`,
   );

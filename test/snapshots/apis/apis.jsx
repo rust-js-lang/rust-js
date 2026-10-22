@@ -265,11 +265,11 @@ export function Page() {
   return <p className="page">id {useId()}</p>;
 }
 
-export function page_html() {
+export function pageHtml() {
   return renderToString(<Page />, { identifierPrefix: "s-" });
 }
 
-export async function page_stream() {
+export async function pageStream() {
   const stream = await renderToReadableStream(<Page />, {
     identifierPrefix: "w-",
     nonce: { script: "n1" },

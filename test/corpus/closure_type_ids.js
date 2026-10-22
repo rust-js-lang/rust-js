@@ -7,29 +7,29 @@ export function entry() {
 }
 
 function id(_, TAny) {
-  return TAny.type_id();
+  return TAny.typeId();
 }
 
 function main() {
   const a = (x) => (x + 1) >>> 0;
   const b = (x) => (x + 1) >>> 0;
   console.log(
-    `${id(a, { type_id: () => "lib::main::{{closure}}#701799bdd7a7760f15d8ebb846d7c863" }) === id(b, { type_id: () => "lib::main::{{closure}}#dc3a0ffb374b3d1aef838de084cc843f" })}`,
+    `${id(a, { typeId: () => "lib::main::{{closure}}#701799bdd7a7760f15d8ebb846d7c863" }) === id(b, { typeId: () => "lib::main::{{closure}}#dc3a0ffb374b3d1aef838de084cc843f" })}`,
   );
   console.log(
-    `${id(a, { type_id: () => "lib::main::{{closure}}#701799bdd7a7760f15d8ebb846d7c863" }) === id(a, { type_id: () => "lib::main::{{closure}}#701799bdd7a7760f15d8ebb846d7c863" })}`,
+    `${id(a, { typeId: () => "lib::main::{{closure}}#701799bdd7a7760f15d8ebb846d7c863" }) === id(a, { typeId: () => "lib::main::{{closure}}#701799bdd7a7760f15d8ebb846d7c863" })}`,
   );
   const boxed = {
     value: a,
-    impl: { type_id: () => "lib::main::{{closure}}#701799bdd7a7760f15d8ebb846d7c863" },
+    impl: { typeId: () => "lib::main::{{closure}}#701799bdd7a7760f15d8ebb846d7c863" },
   };
-  console.log(`${boxed.impl.type_id() === "u32"}`);
+  console.log(`${boxed.impl.typeId() === "u32"}`);
   console.log(
-    `${boxed.impl.type_id() === id(a, { type_id: () => "lib::main::{{closure}}#701799bdd7a7760f15d8ebb846d7c863" })}`,
+    `${boxed.impl.typeId() === id(a, { typeId: () => "lib::main::{{closure}}#701799bdd7a7760f15d8ebb846d7c863" })}`,
   );
-  const value = id(a, { type_id: () => "lib::main::{{closure}}#701799bdd7a7760f15d8ebb846d7c863" });
+  const value = id(a, { typeId: () => "lib::main::{{closure}}#701799bdd7a7760f15d8ebb846d7c863" });
   const value$1 = id(b, {
-    type_id: () => "lib::main::{{closure}}#dc3a0ffb374b3d1aef838de084cc843f",
+    typeId: () => "lib::main::{{closure}}#dc3a0ffb374b3d1aef838de084cc843f",
   });
   if (value === value$1) {
     $assertFailed("Ne", $typeIdShown(value), $typeIdShown(value$1));

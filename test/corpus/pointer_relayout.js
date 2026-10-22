@@ -7,20 +7,20 @@ export function entry() {
 }
 
 // The vtable read through the struct's pointer cast to its first field's.
-function vtable_of(p) {
+function vtableOf(p) {
   return p.value.vtable;
 }
 
 // The erased pointer as the pointer to the whole it was made from.
-function show_of(p, EDisplay) {
+function showOf(p, EDisplay) {
   const unerased = p;
   const inner = unerased.value;
   return `${EDisplay.fmt(inner.object)} #${inner.count}`;
 }
 
-const NUMBER = { name: "number", show: (arg0) => show_of(arg0, { fmt: String }) };
+const NUMBER = { name: "number", show: (arg0) => showOf(arg0, { fmt: String }) };
 
-const TEXT = { name: "text", show: (arg0) => show_of(arg0, { fmt: (value) => value }) };
+const TEXT = { name: "text", show: (arg0) => showOf(arg0, { fmt: (value) => value }) };
 
 function erased(inner) {
   return $ptrTo(inner);
@@ -31,17 +31,17 @@ function main() {
   const number = erased(boxed);
   const text = erased({ vtable: TEXT, count: 2, object: "seven" });
   for (const p of [number, text]) {
-    const vtable = vtable_of(p);
+    const vtable = vtableOf(p);
     console.log(`${vtable.name} ${vtable.show(p)}`);
   }
 
   // The erased struct's own fields read where it is, and unerased ones.
-  const count = p_count(number);
+  const count = pCount(number);
   const whole = number.value;
   console.log(`${count} ${whole.object} ${whole.vtable.name}`);
 }
 
-function p_count(p) {
+function pCount(p) {
   return p.value.count;
 }
 //# sourceMappingURL=case.js.map

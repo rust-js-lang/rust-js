@@ -26,7 +26,7 @@ function pairDebug_fmt(pair) {
 }
 
 // aho-corasick's byte-at-a-time comparison, four at a time.
-function is_equal_raw(x, y, n) {
+function isEqualRaw(x, y, n) {
   if (n < 4) {
     if (n === 0) {
       return true;
@@ -78,7 +78,7 @@ function main() {
     [[97, 98], [97, 99], 2],
     [[97, 98, 99, 100, 101], [97, 98, 99, 100, 102], 5],
   ]) {
-    $print(`${is_equal_raw($ptr(a, 0), $ptr(b, 0), n)} `);
+    $print(`${isEqualRaw($ptr(a, 0), $ptr(b, 0), n)} `);
   }
   console.log("");
 

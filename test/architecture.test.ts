@@ -875,21 +875,34 @@ test("a copied default's typing environment is impl_typing_env's alone", () => {
   expect(reading).toEqual(["src/lower/traits/given.rs: let impl_env = self.given.self_env?;"]);
 });
 
-// What's found once of a crate, a React name's structs and hooks, is kept
-// by a key of the crate's content, so the playground's crate compiled again
-// is found again (ADR 0563). The key is read on each lookup, so it costs
-// less than what it keeps: of this crate, its own files' hashes, not every
-// file in rustc's source map, which holds each std file a span has touched,
-// some four hundred, and a compile looked them all up a thousand times.
-test("what's found once of a crate is keyed by the crate's own files", () => {
-  const bindings = read("src/lower/bindings.rs");
-  const key = /fn of_crate\([^]*?\n\}\n/.exec(bindings)?.[0];
-  expect(key).toBeDefined();
-  const files = [...key!.matchAll(/source_map\(\)\.files\(\)[^;]*/g)].map((m) => m[0]);
-  expect(files.length).toBeGreaterThan(0);
-  expect(files.filter((use) => !/\.filter\(\|file\| file\.cnum == LOCAL_CRATE\)/.test(use))).toEqual([]);
-  // Hashes compared as they are, not as their text.
-  expect(key).not.toContain("format!");
+// A `snake_case` name is made camelCase in one place, `camel_case`, and
+// a word joined into one by `upper_first` (ADR 0573): a module's import,
+// an impl's dictionary's clash, a default import's class each joined its
+// words their own way. serde's `rename_all` is serde's rule, which a
+// program sees in its JSON, and is its own.
+test("a snake_case name is made camelCase by camel_case alone", () => {
+  const splits = /\.split\('_'\)|\bch == '_'/;
+  const others = files("src").filter((file) => file.endsWith(".rs") && file !== "src/lower.rs" && file !== "src/lower/serde.rs");
+  expect(others.filter((file) => splits.test(read(file)))).toEqual([]);
+  expect(read("src/lower.rs")).toMatch(/fn camel_case\(name: &str\) -> String \{[^]*?\.split\('_'\)/);
+});
+
+// A JS key the compiler or the runtime writes is camelCase, as every Rust
+// name is in JS (ADR 0573): a std trait's method in a dictionary is its
+// `bindings::trait_method_name`, never spelled as Rust spells it. Std's
+// dictionaries were keyed `as_ref` and `into_iter` while the crate's said
+// `asRef`, so a call through a dictionary found none.
+test("a JS key the compiler or the runtime writes is camelCase", () => {
+  const snake = '"[a-z][a-z0-9]*_[a-z0-9_]*"';
+  const keyed = new RegExp(`(?:Prop::Field\\(|Expr::member\\([^;]*?,\\s*)${snake}`);
+  const code = (text: string) => text.split("\n").filter((line) => !/^\s*\/\//.test(line));
+  const lowering = ["src/lower.rs", ...files("src/lower")].filter((file) => file.endsWith(".rs"));
+  expect(lowering.flatMap((file) => code(read(file)).filter((line) => keyed.test(line)).map((line) => `${file}: ${line.trim()}`))).toEqual([]);
+  // A helper's object key or method, `writeU32(n)`, `{ writeStr: .. }`.
+  const runtime = files("src/runtime").filter((file) => file.endsWith(".js"));
+  expect(runtime.length).toBeGreaterThan(100);
+  const defined = /^\s+[a-z][a-z0-9]*_[a-z0-9_]*\s*(?:\(|:)/;
+  expect(runtime.flatMap((file) => code(read(file)).filter((line) => defined.test(line)).map((line) => `${file}: ${line.trim()}`))).toEqual([]);
 });
 
 test("only refusal.rs words a refusal", () => {

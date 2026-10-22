@@ -78,7 +78,7 @@ function bumped(v) {
   return 0;
 }
 
-function guarded_param(v, x) {
+function guardedParam(v, x) {
   const b = v.pop();
   const a = x;
   x = (x + 10) >>> 0;
@@ -93,7 +93,7 @@ function bump(n) {
   return false;
 }
 
-function bumped_by_ref(v, first) {
+function bumpedByRef(v, first) {
   let x = 1;
   let y = 2;
   const b = v.pop();
@@ -134,8 +134,8 @@ function main() {
   console.log(`${counted(w)} ${counted(w)} ${counted(w)}`);
   const k = [3];
   console.log(`${guarded(k)} ${guarded(k)} ${bumped([4])}`);
-  console.log(`${guarded_param([4], 1)} ${guarded_param([], 2)}`);
-  console.log(`${bumped_by_ref([4], true)} ${bumped_by_ref([], false)}`);
+  console.log(`${guardedParam([4], 1)} ${guardedParam([], 2)}`);
+  console.log(`${bumpedByRef([4], true)} ${bumpedByRef([], false)}`);
   const map = new Map();
   map.set("a", { TAG: "Circle", _0: 3 });
   map.set("b", { TAG: "Square", _0: 4 });

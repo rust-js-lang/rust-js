@@ -504,6 +504,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0433 What's written after a loop is after it](decisions/0433-whats-written-after-a-loop-is-after-it.md)
 - [0434 A temporary of a variable is the variable, until it changes](decisions/0434-a-temporary-of-a-variable-is-the-variable.md)
 - [0435 Rust's world and React's: each its own names, JSX the boundary](decisions/0435-rust-and-react-two-worlds.md)
+- [0573 Every Rust name is camelCase in JS](decisions/0573-every-rust-name-is-camel-case-in-js.md)
 - [0436 Every `dyn` that's a pair keeps its value's drop, `dyn Send` too](decisions/0436-every-dyn-keeps-its-drop.md)
 - [0437 A scope's drops on a panic are one `try { .. } finally { .. }`](decisions/0437-a-scopes-drops-are-one-finally.md)
 - [0438 An optional prop is given `Some(..)`, or left out](decisions/0438-an-optional-prop-is-given-some.md)
@@ -631,7 +632,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0560 A copied default resolves a call with its own bounds](decisions/0560-a-copied-default-resolves-with-its-own-bounds.md)
 - [0561 std's bodies are std's own; a recognizer is a proved rewrite to an idiom](decisions/0561-std-bodies.md)
 - [0562 A pointer is a place and an address; bytes are plain data's](decisions/0562-a-pointer-is-a-place-and-an-address.md)
-- [0563 What's found once of a crate is keyed by the crate's own files](decisions/0563-found-once-is-keyed-by-the-crates-own-files.md)
+- [0563 What's found once of a crate is keyed by the crate's own files](decisions/0563-found-once-is-keyed-by-the-crates-own-files.md) *(superseded by 0573)*
 - [0564 A std body's JS is tidied as the app's is: decided tests, once-read temporaries, shared tails](decisions/0564-a-std-body-is-tidied-as-the-apps-are.md)
 - [0565 How the generated JS reads is a gate, as what it computes is](decisions/0565-readability-is-a-gate.md)
 - [0566 `Fuse` is std's; a specialization is picked by its caller's fact](decisions/0566-fuse-is-stds.md)

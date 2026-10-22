@@ -243,7 +243,7 @@ js::on_load! {
 
 // A post's page, its slug rendered on the request where it wasn't
 // generated, as its `unstable_paramMatching` says.
-const post = `#![allow(non_snake_case, non_upper_case_globals)]
+const post = `#![allow(non_snake_case)]
 
 use next::ParamMatchingMode;
 use react::{JSX, jsx};
@@ -269,7 +269,9 @@ pub struct Matching {
     pub slug: Option<ParamMatchingMode>,
 }
 
-pub static unstable_paramMatching: Matching = Matching { slug: Some(ParamMatchingMode::Blocking) };
+// Next.js reads it by this name, which isn't its camelCase one (ADR 0573).
+#[rust_js::name = "unstable_paramMatching"]
+pub static UNSTABLE_PARAM_MATCHING: Matching = Matching { slug: Some(ParamMatchingMode::Blocking) };
 
 js::export_default!(Post);
 `;

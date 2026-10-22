@@ -18,7 +18,7 @@ function make(name, give) {
 }
 
 const Mapped = {
-  and_then(mapped, f, dropU) {
+  andThen(mapped, f, dropU) {
     let value$0$live = false;
     let value$0$0$live = false;
     let tmp$1$0$live = false;
@@ -144,7 +144,7 @@ function first(k) {
 }
 
 function main() {
-  const both = Mapped.and_then(
+  const both = Mapped.andThen(
     { TAG: "Ambiguous", _0: "a", _1: "b" },
     (n) => make(n, true),
     loudDrop_drop,
@@ -164,7 +164,7 @@ function main() {
   const value = (n) => make(n, n === "c");
   let one;
   try {
-    one = Mapped.and_then({ TAG: "Ambiguous", _0: "c", _1: "d" }, value, loudDrop_drop);
+    one = Mapped.andThen({ TAG: "Ambiguous", _0: "c", _1: "d" }, value, loudDrop_drop);
   } catch (error) {
     if (both.TAG === "Single") {
       loudDrop_drop(both._0);
@@ -197,7 +197,7 @@ function main() {
   const value$1 = (n) => make(n, true);
   let single;
   try {
-    single = Mapped.and_then({ TAG: "Single", _0: "e" }, value$1, loudDrop_drop);
+    single = Mapped.andThen({ TAG: "Single", _0: "e" }, value$1, loudDrop_drop);
   } catch (error) {
     if (one.TAG === "Single") {
       loudDrop_drop(one._0);
@@ -244,7 +244,7 @@ function main() {
   const value$2 = (n) => make(n, false);
   let none;
   try {
-    none = Mapped.and_then({ TAG: "Single", _0: "f" }, value$2, loudDrop_drop);
+    none = Mapped.andThen({ TAG: "Single", _0: "f" }, value$2, loudDrop_drop);
   } catch (error) {
     if (single.TAG === "Single") {
       loudDrop_drop(single._0);

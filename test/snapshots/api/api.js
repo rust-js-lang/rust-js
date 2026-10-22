@@ -34,10 +34,10 @@ function pageSerialize_serialize(page, json, writeT) {
   }
   json.endArray();
   json.key("nextItem");
-  if (page.next_item == null) {
+  if (page.nextItem == null) {
     json.null();
   } else {
-    writeT($someValue(page.next_item), json);
+    writeT($someValue(page.nextItem), json);
   }
   json.key("total");
   json.int(page.total);
@@ -52,12 +52,12 @@ function pageDeserialize_deserialize(json, readT) {
       ["nextItem", $json.option($json.some(readT))],
       ["total", $json.u32],
     ],
-    ([items, next_item, total]) => ({ items, next_item, total }),
+    ([items, nextItem, total]) => ({ items, nextItem, total }),
   );
 }
 
 function pageDebug_fmt(page, TDebug) {
-  return `Page { items: [${page.items.map((item) => TDebug.fmt(item)).join(", ")}], next_item: ${page.next_item == null ? "None" : `Some(${TDebug.fmt($someValue(page.next_item))})`}, total: ${page.total} }`;
+  return `Page { items: [${page.items.map((item) => TDebug.fmt(item)).join(", ")}], next_item: ${page.nextItem == null ? "None" : `Some(${TDebug.fmt($someValue(page.nextItem))})`}, total: ${page.total} }`;
 }
 
 export function pageDebug(TDebug) {
@@ -75,7 +75,7 @@ function pairSerialize_serialize(pair, json, writeA, writeB) {
   writeB(pair.right, json);
   json.key("by_name");
   json.beginObject();
-  for (const [key, item] of $sortedEntries(pair.by_name, $cmp)) {
+  for (const [key, item] of $sortedEntries(pair.byName, $cmp)) {
     json.key(key);
     writeB(item, json);
   }
@@ -91,13 +91,13 @@ function pairDeserialize_deserialize(json, readA, readB) {
       ["right", readB],
       ["by_name", $json.map($json.key.string, readB)],
     ],
-    ([left, right, by_name]) => ({ left, right, by_name }),
+    ([left, right, byName]) => ({ left, right, byName }),
   );
 }
 
 function pairDebug_fmt(pair, ADebug, BDebug) {
   return `Pair { left: ${ADebug.fmt(pair.left)}, right: ${BDebug.fmt(pair.right)}, by_name: {${Array.from(
-    $sortedEntries(pair.by_name, $cmp),
+    $sortedEntries(pair.byName, $cmp),
   )
     .map(([key, value]) => `${$debugStr(key)}: ${BDebug.fmt(value)}`)
     .join(", ")}} }`;
@@ -396,14 +396,14 @@ function rawTempFromTemp_from(temp) {
 }
 
 function emailDeserialize_deserialize(json) {
-  return $json.tried(emailTryFromString_try_from($json.string(json)), (error) => error);
+  return $json.tried(emailTryFromString_tryFrom($json.string(json)), (error) => error);
 }
 
 function emailDebug_fmt(email) {
   return `Email(${$debugStr(email[0])})`;
 }
 
-function emailTryFromString_try_from(s) {
+function emailTryFromString_tryFrom(s) {
   if (s.includes("@")) {
     return { TAG: "Ok", _0: [s] };
   }
@@ -422,7 +422,7 @@ function oddErrorDisplay_fmt(oddError) {
 }
 
 function evenDeserialize_deserialize(json) {
-  return $json.tried(evenTryFromU32_try_from($json.u32(json)), (error) =>
+  return $json.tried(evenTryFromU32_tryFrom($json.u32(json)), (error) =>
     oddErrorDisplay_fmt(error),
   );
 }
@@ -431,7 +431,7 @@ function evenDebug_fmt(even) {
   return `Even(${even[0]})`;
 }
 
-function evenTryFromU32_try_from(n) {
+function evenTryFromU32_tryFrom(n) {
   if (n % 2 === 0) {
     return { TAG: "Ok", _0: [n] };
   }
@@ -502,7 +502,7 @@ export function roundtrip(value, writeT, readT, TDebug) {
   return `${text} ${TDebug.fmt(back)}`;
 }
 
-export function decode_all(texts, readT) {
+export function decodeAll(texts, readT) {
   return texts.map((t) => decode(t, readT));
 }
 
@@ -1575,7 +1575,7 @@ export function report() {
     responseDebug(userDebug()),
   );
   out += "\n";
-  const users = decode_all(['{"name":"c","age":3}', '{"name":"d"}'], userDeserialize_deserialize);
+  const users = decodeAll(['{"name":"c","age":3}', '{"name":"d"}'], userDeserialize_deserialize);
   out += `[${users.map((item) => (item.TAG === "Ok" ? `Ok(${userDebug_fmt(item._0)})` : `Err(${$debugStr(item._0)})`)).join(", ")}]\n`;
   const reply = decode(
     '{"data":[1,2],"ok":false}',

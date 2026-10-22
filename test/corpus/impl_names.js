@@ -133,11 +133,11 @@ function errorSerError_custom(msg) {
   return [`ser: ${msg}`];
 }
 
-function fail_de(EError) {
+function failDe(EError) {
   return EError.custom("eof");
 }
 
-function fail_ser(EError) {
+function failSer(EError) {
   return EError.custom("key");
 }
 
@@ -146,6 +146,6 @@ function main() {
   console.log(`${wrapperRefStrDescribe_describe(["x"])} | ${wrapperU8Describe_describe([7])}`);
   console.log(`${__ConvertU8_convert(undefined)} | ${__ConvertRefU8_convert(undefined)}`);
   console.log(`${first()} | ${second()}`);
-  console.log(`${fail_de(errorDeError())[0]} | ${fail_ser(errorSerError())[0]}`);
+  console.log(`${failDe(errorDeError())[0]} | ${failSer(errorSerError())[0]}`);
 }
 //# sourceMappingURL=case.js.map

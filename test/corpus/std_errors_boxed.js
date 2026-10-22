@@ -59,7 +59,7 @@ export function negativeError() {
   return $negativeError;
 }
 
-function parse_positive(s) {
+function parsePositive(s) {
   const result = $parseBig($trim(s), -9223372036854775808n, 9223372036854775807n);
   if (result.TAG === "Err") {
     return { TAG: "Err", _0: { value: result._0, impl: $parseErrorDyn("ParseIntError") } };
@@ -105,10 +105,10 @@ function tAsDyn(TError) {
   if ($tAsDyn === undefined) {
     $tAsDyn = new WeakMap();
   }
-  return $traitImpl($tAsDyn, [TError], () => ({ as_dyn: (arg0) => tAsDyn_as_dyn(arg0, TError) }));
+  return $traitImpl($tAsDyn, [TError], () => ({ asDyn: (arg0) => tAsDyn_asDyn(arg0, TError) }));
 }
 
-function tAsDyn_as_dyn(self, TError) {
+function tAsDyn_asDyn(self, TError) {
   return { value: self, impl: TError };
 }
 
@@ -138,15 +138,15 @@ function reported(report) {
 
 function main() {
   for (const s of ["42", " 7 ", "-3", "x", "99999999999999999999", ""]) {
-    const parsePositive = parse_positive(s);
-    if (parsePositive.TAG === "Ok") {
-      const n = parsePositive._0;
+    const value = parsePositive(s);
+    if (value.TAG === "Ok") {
+      const n = value._0;
       console.log(`ok ${n}`);
     } else {
-      const e = parsePositive._0;
-      const value = !e.impl.source(e.value);
+      const e = value._0;
+      const value$1 = !e.impl.source(e.value);
       console.log(
-        `err ${e.impl.Display().fmt(e.value)} / ${e.impl.Debug().fmt(e.value)} / ${value}`,
+        `err ${e.impl.Display().fmt(e.value)} / ${e.impl.Debug().fmt(e.value)} / ${value$1}`,
       );
     }
   }
@@ -162,8 +162,8 @@ function main() {
   }
   const err = $unwrapErr($parseInt("x", -2147483648, 2147483647));
   console.log(`${describe(err, $parseErrorDyn("ParseIntError"))}`);
-  const value = tAsDyn_as_dyn(err, $parseErrorDyn("ParseIntError"));
-  const receiver = tAsDyn_as_dyn(err, $parseErrorDyn("ParseIntError"));
+  const value = tAsDyn_asDyn(err, $parseErrorDyn("ParseIntError"));
+  const receiver = tAsDyn_asDyn(err, $parseErrorDyn("ParseIntError"));
   const value$1 = !receiver.impl.source(receiver.value);
   console.log(`${value.impl.Display().fmt(value.value)} ${value$1}`);
   console.log(

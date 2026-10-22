@@ -39,17 +39,17 @@ function smallInt_value(small) {
 
 function u8NonZero() {
   if ($u8NonZero === undefined) {
-    $u8NonZero = { non_zero: u8NonZero_non_zero };
+    $u8NonZero = { nonZero: u8NonZero_nonZero };
   }
   return $u8NonZero;
 }
 
-function u8NonZero_non_zero(self) {
+function u8NonZero_nonZero(self) {
   return self !== 0;
 }
 
 function check(i, j, IInt, ITNonZero) {
-  return IInt.value(i) > 0 && ITNonZero.non_zero(j);
+  return IInt.value(i) > 0 && ITNonZero.nonZero(j);
 }
 
 function i32Source() {
@@ -86,7 +86,7 @@ function celsiusDisplay_fmt(celsius) {
 }
 
 function shout(x, TToString) {
-  return TToString.to_string(x).toUpperCase();
+  return TToString.toString(x).toUpperCase();
 }
 
 function optionGetterT(TClone) {
@@ -109,14 +109,14 @@ function optionGetterT_get(option, TClone) {
 function iDigits() {
   if ($iDigits === undefined) {
     $iDigits = {
-      digit_iter: iDigits_digit_iter,
-      digit_sum: (self) => iDigits_digit_iter(self).reduce((s, d) => (s + d) >>> 0, 0),
+      digitIter: iDigits_digitIter,
+      digitSum: (self) => iDigits_digitIter(self).reduce((s, d) => (s + d) >>> 0, 0),
     };
   }
   return $iDigits;
 }
 
-function iDigits_digit_iter(self) {
+function iDigits_digitIter(self) {
   return self;
 }
 
@@ -125,12 +125,12 @@ function pointPositionedS(SClone) {
     $pointPositionedS = new WeakMap();
   }
   return $traitImpl($pointPositionedS, [SClone], () => ({
-    set_x: (arg0, arg1) => pointPositionedS_set_x(arg0.value, arg1, SClone),
+    setX: (arg0, arg1) => pointPositionedS_setX(arg0.value, arg1, SClone),
     x: (arg0) => pointPositionedS_x(arg0, SClone),
   }));
 }
 
-function pointPositionedS_set_x(point, x, SClone) {
+function pointPositionedS_setX(point, x, SClone) {
   point.x = x;
 }
 
@@ -147,7 +147,7 @@ function pointMovableS(SClone, SAdd) {
     translate: (self, dx) => {
       const before = pointPositionedS_x(self.value, SClone);
       const x = SAdd.add(pointPositionedS_x(self.value, SClone), dx);
-      pointPositionedS_set_x(self.value, x, SClone);
+      pointPositionedS_setX(self.value, x, SClone);
       return before;
     },
   }));
@@ -175,12 +175,12 @@ function main() {
   );
   console.log(`${produced(21, i32Source())}`);
   console.log(
-    `${shout(12, { to_string: String })} ${shout("abc", { to_string: (value) => value })} ${shout([21.5], { to_string: celsiusDisplay_fmt })}`,
+    `${shout(12, { toString: String })} ${shout("abc", { toString: (value) => value })} ${shout([21.5], { toString: celsiusDisplay_fmt })}`,
   );
   const twice = optionGetterT({ clone: (value) => value }).twice(4);
   const value = optionGetterT({ clone: (value) => value }).twice("hi");
   console.log(`(${twice[0]}, ${twice[1]}) (${$debugStr(value[0])}, ${$debugStr(value[1])})`);
-  console.log(`${iDigits().digit_sum($iter([1, 2, 3]))}`);
+  console.log(`${iDigits().digitSum($iter([1, 2, 3]))}`);
   const p = { x: 1 };
   const self = { value: p };
   const before = pointMovableS(

@@ -37,7 +37,7 @@ function reversed(range, f) {
   return [last, back.toArray()];
 }
 
-function tripled_back(items, f) {
+function tripledBack(items, f) {
   return $foldBack(
     $mapEnds(items, (item) => f(item)),
     [],
@@ -65,9 +65,9 @@ function main() {
   console.log(
     `(${value$1[0] == null ? "None" : `Some(${value$1[0]})`}, [${value$1[1].join(", ")}])`,
   );
-  console.log(`[${tripled_back($iter([1, 2, 3]), (x) => (x + 1) >>> 0).join(", ")}]`);
+  console.log(`[${tripledBack($iter([1, 2, 3]), (x) => (x + 1) >>> 0).join(", ")}]`);
   console.log(
-    `[${tripled_back(
+    `[${tripledBack(
       $iterator({ start: 5, end: 7 }, $rangeNext, false, $rangeNextBack),
       (x) => Math.imul(x, 2) >>> 0,
     ).join(", ")}]`,

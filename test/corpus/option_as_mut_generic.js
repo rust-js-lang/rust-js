@@ -18,13 +18,13 @@ const Unit = {
   },
 };
 
-function call_and_ref(x, f) {
+function callAndRef(x, f) {
   const value = $some(f());
   x.value = value;
   return $unwrap(x.value == null ? undefined : $someMut(x));
 }
 
-function replace_in(x, with$) {
+function replaceIn(x, with$) {
   const held = x.value == null ? undefined : $someMut(x);
   if (held != null) {
     held.value = with$;
@@ -36,7 +36,7 @@ function replace_in(x, with$) {
 function main() {
   let n;
   S.mutate(
-    call_and_ref(
+    callAndRef(
       {
         get value() {
           return n;
@@ -52,7 +52,7 @@ function main() {
 
   let units;
   const self = {
-    value: call_and_ref(
+    value: callAndRef(
       {
         get value() {
           return units;
@@ -67,7 +67,7 @@ function main() {
   console.log(`${Unit.touch(self)}`);
 
   let count;
-  const callAndRef = call_and_ref(
+  const value = callAndRef(
     {
       get value() {
         return count;
@@ -78,11 +78,11 @@ function main() {
     },
     () => 5,
   );
-  callAndRef.value = (callAndRef.value + 1) >>> 0;
+  value.value = (value.value + 1) >>> 0;
   console.log(`${count == null ? "None" : `Some(${count})`}`);
 
   let words;
-  call_and_ref(
+  callAndRef(
     {
       get value() {
         return words;
@@ -98,7 +98,7 @@ function main() {
   );
 
   let nested;
-  call_and_ref(
+  callAndRef(
     {
       get value() {
         return nested;
@@ -115,10 +115,10 @@ function main() {
 
   let unit;
   const x = { value: unit };
-  const replaceIn = replace_in(x);
+  const value$1 = replaceIn(x);
   unit = x.value;
-  console.log(`${replaceIn} ${unit == null ? "None" : "Some(())"}`);
-  call_and_ref(
+  console.log(`${value$1} ${unit == null ? "None" : "Some(())"}`);
+  callAndRef(
     {
       get value() {
         return unit;
@@ -130,22 +130,22 @@ function main() {
     () => {},
   ).value = undefined;
   const x$1 = { value: unit };
-  const value = replace_in(x$1);
+  const value$2 = replaceIn(x$1);
   unit = x$1.value;
-  console.log(`${value} ${unit == null ? "None" : "Some(())"}`);
+  console.log(`${value$2} ${unit == null ? "None" : "Some(())"}`);
 
   let maybe = $some(undefined);
   const x$2 = { value: maybe };
-  const value$1 = replace_in(x$2, 3);
+  const value$3 = replaceIn(x$2, 3);
   maybe = x$2.value;
   console.log(
-    `${value$1} ${maybe == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(maybe))})`}`,
+    `${value$3} ${maybe == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(maybe))})`}`,
   );
   const x$3 = { value: maybe };
-  const value$2 = replace_in(x$3);
+  const value$4 = replaceIn(x$3);
   maybe = x$3.value;
   console.log(
-    `${value$2} ${maybe == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(maybe))})`}`,
+    `${value$4} ${maybe == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(maybe))})`}`,
   );
 }
 //# sourceMappingURL=case.js.map

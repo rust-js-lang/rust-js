@@ -54,7 +54,7 @@ function holderSkipping(IIterator, IDefault, dropI, dropIItem) {
     $holderSkipping = new WeakMap();
   }
   return $traitImpl($holderSkipping, [IIterator, IDefault, dropI, dropIItem], () => ({
-    skip_one: (self) => {
+    skipOne: (self) => {
       const next = holderIterator_next(self, IIterator, IDefault, dropI, dropIItem);
       if (next != null) {
         dropIItem?.($someValue(next));
@@ -70,21 +70,21 @@ function holderSkipping(IIterator, IDefault, dropI, dropIItem) {
         dropSelf?.(self);
       }
     },
-    eat_after_one: (self) => {
+    eatAfterOne: (self) => {
       const dropSelf = (holder) => {
         dropI?.(holder[0]);
       };
       try {
-        holderSkipping(IIterator, IDefault, dropI, dropIItem).skip_one(self);
+        holderSkipping(IIterator, IDefault, dropI, dropIItem).skipOne(self);
       } catch (error) {
         dropSelf?.(self);
         throw error;
       }
       holderSkipping(IIterator, IDefault, dropI, dropIItem).eat(self);
     },
-    skip_two: (self) => {
-      holderSkipping(IIterator, IDefault, dropI, dropIItem).skip_one(self);
-      holderSkipping(IIterator, IDefault, dropI, dropIItem).skip_one(self);
+    skipTwo: (self) => {
+      holderSkipping(IIterator, IDefault, dropI, dropIItem).skipOne(self);
+      holderSkipping(IIterator, IDefault, dropI, dropIItem).skipOne(self);
     },
     $drop: (holder) => {
       dropI?.(holder[0]);
@@ -121,7 +121,7 @@ function main() {
         tagDrop_drop(gen[1]);
       },
       loudDrop_drop,
-    ).skip_two(g);
+    ).skipTwo(g);
   } catch (error) {
     tagDrop_drop(g[0][1]);
     throw error;
@@ -154,7 +154,7 @@ function main() {
           tagDrop_drop(gen[1]);
         },
         loudDrop_drop,
-      ).eat_after_one([[0, [7]]]);
+      ).eatAfterOne([[0, [7]]]);
       const spent = [[4, [8]]];
       try {
         holderSkipping(
@@ -164,7 +164,7 @@ function main() {
             tagDrop_drop(gen[1]);
           },
           loudDrop_drop,
-        ).skip_one(spent);
+        ).skipOne(spent);
         console.log("spent");
         console.log("end");
       } finally {

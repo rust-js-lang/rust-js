@@ -133,12 +133,12 @@ function go(d) {
 
 function dCheckedDouble() {
   if ($dCheckedDouble === undefined) {
-    $dCheckedDouble = { checked_double: dCheckedDouble_checked_double, $drop: dDrop_drop };
+    $dCheckedDouble = { checkedDouble: dCheckedDouble_checkedDouble, $drop: dDrop_drop };
   }
   return $dCheckedDouble;
 }
 
-function dCheckedDouble_checked_double(d) {
+function dCheckedDouble_checkedDouble(d) {
   if (d[0] < 10) {
     return [Math.imul(d[0], 2) >>> 0];
   }
@@ -147,7 +147,7 @@ function dCheckedDouble_checked_double(d) {
 function twice(base, TCheckedDouble, dropT) {
   let checkedDouble;
   try {
-    checkedDouble = TCheckedDouble.checked_double(base);
+    checkedDouble = TCheckedDouble.checkedDouble(base);
   } catch (error) {
     dropT?.(base);
     throw error;
@@ -164,7 +164,7 @@ function twice(base, TCheckedDouble, dropT) {
     base = value;
     let tmp;
     try {
-      tmp = TCheckedDouble.checked_double(base);
+      tmp = TCheckedDouble.checkedDouble(base);
     } catch (error) {
       dropT?.(base);
       throw error;

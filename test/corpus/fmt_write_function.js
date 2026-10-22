@@ -17,13 +17,13 @@ export function entry() {
 
 export function bufWrite() {
   if ($bufWrite === undefined) {
-    const write_str = (arg0, arg1) => bufWrite_write_str(arg0.value, arg1);
-    $bufWrite = { write_str, write_char: write_str, write_fmt: write_str };
+    const writeStr = (arg0, arg1) => bufWrite_writeStr(arg0.value, arg1);
+    $bufWrite = { writeStr, writeChar: writeStr, writeFmt: writeStr };
   }
   return $bufWrite;
 }
 
-function bufWrite_write_str(buf, s) {
+function bufWrite_writeStr(buf, s) {
   if (($byteLen(buf.text) + $byteLen(s)) >>> 0 > buf.cap) {
     return $fmtError();
   }
@@ -31,16 +31,16 @@ function bufWrite_write_str(buf, s) {
 }
 
 function put(w, n) {
-  w.impl.write_fmt(w, `<${n}>`);
+  w.impl.writeFmt(w, `<${n}>`);
 }
 
 function main() {
   const buf = { text: "", cap: 8 };
   const receiver = { value: buf, impl: bufWrite() };
-  const short = $writeTry(() => receiver.impl.write_fmt(receiver, `[${[1, 2].join(", ")}]`));
+  const short = $writeTry(() => receiver.impl.writeFmt(receiver, `[${[1, 2].join(", ")}]`));
   console.log(`${short === undefined} ${$debugStr(buf.text)}`);
   const receiver$1 = { value: buf, impl: bufWrite() };
-  const long = $writeTry(() => receiver$1.impl.write_fmt(receiver$1, "too long"));
+  const long = $writeTry(() => receiver$1.impl.writeFmt(receiver$1, "too long"));
   console.log(`${long === undefined} ${$debugStr(buf.text)}`);
   let s = ">";
   const receiver$2 = {
@@ -52,7 +52,7 @@ function main() {
       s = value;
     },
   };
-  const result = $writeTry(() => receiver$2.impl.write_fmt(receiver$2, "3-x"));
+  const result = $writeTry(() => receiver$2.impl.writeFmt(receiver$2, "3-x"));
   $writeExpect(result, "called `Result::unwrap()` on an `Err` value");
   console.log(`${s}`);
   const result$1 = $writeTry(() =>

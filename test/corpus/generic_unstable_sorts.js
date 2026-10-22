@@ -19,7 +19,7 @@ export function entry() {
   main();
 }
 
-function by_key(a, b) {
+function byKey(a, b) {
   return $cmp(a[0], b[0]);
 }
 
@@ -38,7 +38,7 @@ function iSorted(IIterator) {
     $iSorted = new WeakMap();
   }
   return $traitImpl($iSorted, [IIterator], () => ({
-    sorted_unstable: (self, SelfItemOrd, SelfItemSort) => {
+    sortedUnstable: (self, SelfItemOrd, SelfItemSort) => {
       const v = $iterator(self, IIterator.next, true).toArray();
       $sortUnstable(v, (a, b) => SelfItemOrd.cmp(a, b) < 0, SelfItemSort);
       return v;
@@ -51,7 +51,7 @@ function main() {
     ((Math.imul(i, 7) % 5) | 0) & 255,
     String.fromCharCode((97 + (((i % 26) | 0) & 255)) & 255),
   ]);
-  const by = sorted(tags.slice(), by_key, "network");
+  const by = sorted(tags.slice(), byKey, "network");
   console.log(`${$debugStr(by.map((t) => t[1]).join(""))}`);
   const wide = $range(0, 30).map((i) => [
     BigInt.asUintN(64, BigInt((Math.imul(i, 3) % 4) | 0)),
@@ -68,7 +68,7 @@ function main() {
   );
   console.log(
     `[${iSorted({ next: $next })
-      .sorted_unstable($iter([5, 3, 9, 1]), { cmp: $cmp }, "network")
+      .sortedUnstable($iter([5, 3, 9, 1]), { cmp: $cmp }, "network")
       .join(", ")}]`,
   );
 }

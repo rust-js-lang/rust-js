@@ -44,14 +44,14 @@ export function entry() {
   main();
 }
 
-function f64_bits(x) {
+function f64Bits(x) {
   if (Number.isNaN(x)) {
     return "NaN";
   }
   return $zeroPad($floatToBits(x, 8).toString(16), 16);
 }
 
-function f32_bits(x) {
+function f32Bits(x) {
   if (Number.isNaN(x)) {
     return "NaN";
   }
@@ -87,8 +87,8 @@ function main() {
     const value$14 = BigInt(a);
     const value$15 = BigInt.asUintN(64, BigInt(a));
     const value$16 = BigInt.asUintN(128, BigInt(a));
-    const value$17 = f32_bits(a);
-    const arg$2 = f64_bits(a);
+    const value$17 = f32Bits(a);
+    const arg$2 = f64Bits(a);
     console.log(
       `i8 ${a}: as ${a} ${a} ${a} ${value$13} ${value$14} ${a & 255} ${a & 65535} ${a >>> 0} ${value$15} ${value$16} f32 ${value$17} f64 ${arg$2}`,
     );
@@ -159,8 +159,8 @@ function main() {
     const value$14 = BigInt(a);
     const value$15 = BigInt.asUintN(64, BigInt(a));
     const value$16 = BigInt.asUintN(128, BigInt(a));
-    const value$17 = f32_bits(a);
-    const arg$2 = f64_bits(a);
+    const value$17 = f32Bits(a);
+    const arg$2 = f64Bits(a);
     console.log(
       `i16 ${a}: as ${(a << 24) >> 24} ${a} ${a} ${value$13} ${value$14} ${a & 255} ${a & 65535} ${a >>> 0} ${value$15} ${value$16} f32 ${value$17} f64 ${arg$2}`,
     );
@@ -231,8 +231,8 @@ function main() {
     const value$14 = BigInt(a);
     const value$15 = BigInt.asUintN(64, BigInt(a));
     const value$16 = BigInt.asUintN(128, BigInt(a));
-    const value$17 = f32_bits(Math.fround(a));
-    const arg$2 = f64_bits(a);
+    const value$17 = f32Bits(Math.fround(a));
+    const arg$2 = f64Bits(a);
     console.log(
       `i32 ${a}: as ${(a << 24) >> 24} ${(a << 16) >> 16} ${a} ${value$13} ${value$14} ${a & 255} ${a & 65535} ${a >>> 0} ${value$15} ${value$16} f32 ${value$17} f64 ${arg$2}`,
     );
@@ -324,8 +324,8 @@ function main() {
     const value$19 = Number(BigInt.asUintN(32, a));
     const value$20 = BigInt.asUintN(64, a);
     const value$21 = BigInt.asUintN(128, a);
-    const value$22 = f32_bits($bigToF32(a));
-    const arg$2 = f64_bits(Number(a));
+    const value$22 = f32Bits($bigToF32(a));
+    const arg$2 = f64Bits(Number(a));
     console.log(
       `i64 ${a}: as ${value$14} ${value$15} ${value$16} ${a} ${a} ${value$17} ${value$18} ${value$19} ${value$20} ${value$21} f32 ${value$22} f64 ${arg$2}`,
     );
@@ -456,8 +456,8 @@ function main() {
     const value$20 = Number(BigInt.asUintN(32, a));
     const value$21 = BigInt.asUintN(64, a);
     const value$22 = BigInt.asUintN(128, a);
-    const value$23 = f32_bits($bigToF32(a));
-    const arg$2 = f64_bits(Number(a));
+    const value$23 = f32Bits($bigToF32(a));
+    const arg$2 = f64Bits(Number(a));
     console.log(
       `i128 ${a}: as ${value$14} ${value$15} ${value$16} ${value$17} ${a} ${value$18} ${value$19} ${value$20} ${value$21} ${value$22} f32 ${value$23} f64 ${arg$2}`,
     );
@@ -582,8 +582,8 @@ function main() {
     const value$14 = BigInt(a);
     const value$15 = BigInt(a);
     const value$16 = BigInt(a);
-    const value$17 = f32_bits(a);
-    const arg$2 = f64_bits(a);
+    const value$17 = f32Bits(a);
+    const arg$2 = f64Bits(a);
     console.log(
       `u8 ${a}: as ${(a << 24) >> 24} ${a} ${a} ${value$13} ${value$14} ${a} ${a} ${a} ${value$15} ${value$16} f32 ${value$17} f64 ${arg$2}`,
     );
@@ -647,8 +647,8 @@ function main() {
     const value$14 = BigInt(a);
     const value$15 = BigInt(a);
     const value$16 = BigInt(a);
-    const value$17 = f32_bits(a);
-    const arg$2 = f64_bits(a);
+    const value$17 = f32Bits(a);
+    const arg$2 = f64Bits(a);
     console.log(
       `u16 ${a}: as ${(a << 24) >> 24} ${(a << 16) >> 16} ${a} ${value$13} ${value$14} ${a & 255} ${a} ${a} ${value$15} ${value$16} f32 ${value$17} f64 ${arg$2}`,
     );
@@ -712,8 +712,8 @@ function main() {
     const value$14 = BigInt(a);
     const value$15 = BigInt(a);
     const value$16 = BigInt(a);
-    const value$17 = f32_bits(Math.fround(a));
-    const arg$2 = f64_bits(a);
+    const value$17 = f32Bits(Math.fround(a));
+    const arg$2 = f64Bits(a);
     console.log(
       `u32 ${a}: as ${(a << 24) >> 24} ${(a << 16) >> 16} ${a | 0} ${value$13} ${value$14} ${a & 255} ${a & 65535} ${a} ${value$15} ${value$16} f32 ${value$17} f64 ${arg$2}`,
     );
@@ -792,8 +792,8 @@ function main() {
     const value$18 = Number(BigInt.asUintN(8, a));
     const value$19 = Number(BigInt.asUintN(16, a));
     const value$20 = Number(BigInt.asUintN(32, a));
-    const value$21 = f32_bits($bigToF32(a));
-    const arg$2 = f64_bits(Number(a));
+    const value$21 = f32Bits($bigToF32(a));
+    const arg$2 = f64Bits(Number(a));
     console.log(
       `u64 ${a}: as ${value$14} ${value$15} ${value$16} ${value$17} ${a} ${value$18} ${value$19} ${value$20} ${a} ${a} f32 ${value$21} f64 ${arg$2}`,
     );
@@ -893,8 +893,8 @@ function main() {
     const value$20 = Number(BigInt.asUintN(16, a));
     const value$21 = Number(BigInt.asUintN(32, a));
     const value$22 = BigInt.asUintN(64, a);
-    const value$23 = f32_bits($bigToF32(a));
-    const arg$2 = f64_bits(Number(a));
+    const value$23 = f32Bits($bigToF32(a));
+    const arg$2 = f64Bits(Number(a));
     console.log(
       `u128 ${a}: as ${value$14} ${value$15} ${value$16} ${value$17} ${value$18} ${value$19} ${value$20} ${value$21} ${value$22} ${a} f32 ${value$23} f64 ${arg$2}`,
     );

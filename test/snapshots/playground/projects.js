@@ -6,7 +6,7 @@
 // `App` renders with it. In JS, the methods are `Project`'s object of them
 // (ADR 0047): `project.opening(path, live)` is `Project.opening(project, path, live)`.
 
-import { source_state, text_of } from "./codemirror.js";
+import { sourceState, textOf } from "./codemirror.js";
 import { $stripSuffix } from "@rust-js/runtime";
 
 function copy(files) {
@@ -14,7 +14,7 @@ function copy(files) {
 }
 
 /** The file that becomes the root module's JS, `lib.rs` → `lib.js`. */
-export function js_name(path) {
+export function jsName(path) {
   const stem = $stripSuffix(path, ".rs");
   if (stem != null) {
     return `${stem}.js`;
@@ -30,7 +30,7 @@ export const Project = {
 
   /** An example's files, with its root open. */
   of(root, texts) {
-    const files = texts.map(([path, text]) => ({ path, state: source_state(text) }));
+    const files = texts.map(([path, text]) => ({ path, state: sourceState(text) }));
     return { root, files, current: root };
   },
 
@@ -43,7 +43,7 @@ export const Project = {
   },
 
   /** The open file's state, as it was stored: its editor has the latest. */
-  current_state(project) {
+  currentState(project) {
     const file = project.files.find((f) => f.path === project.current);
     if (file) {
       return file.state;
@@ -71,7 +71,7 @@ export const Project = {
   /** With a new, empty file at `path`, open. */
   adding(project, path, live) {
     const files = Project.keeping(project, live);
-    files.push({ path, state: source_state("") });
+    files.push({ path, state: sourceState("") });
     return { root: project.root, files, current: path };
   },
 
@@ -87,7 +87,7 @@ export const Project = {
   /** The crate as text, `path → text`, with the open file's `live` edits. */
   sources(project, live) {
     const files = Project.keeping(project, live);
-    return new Map(files.values().map((f) => [f.path, text_of(f.state)]));
+    return new Map(files.values().map((f) => [f.path, textOf(f.state)]));
   },
 };
 //# sourceMappingURL=projects.js.map

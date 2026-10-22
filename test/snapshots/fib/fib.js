@@ -13,18 +13,18 @@ export function fib(n) {
 }
 
 /** Recursive, with `match` on integers. */
-export function fib_match(n) {
+export function fibMatch(n) {
   if (n === 0) {
     return 0;
   }
   if (n === 1) {
     return 1;
   }
-  return (fib_match((n - 1) >>> 0) + fib_match((n - 2) >>> 0)) >>> 0;
+  return (fibMatch((n - 1) >>> 0) + fibMatch((n - 2) >>> 0)) >>> 0;
 }
 
 /** Iterative, with `while` and mutable locals. */
-export function fib_iter(n) {
+export function fibIter(n) {
   let a = 0;
   let b = 1;
   let i = 0;
@@ -38,7 +38,7 @@ export function fib_iter(n) {
 }
 
 /** `loop` with `break value`. */
-export function fib_loop(n) {
+export function fibLoop(n) {
   let a = 0;
   let b = 1;
   let i = 0;
@@ -56,13 +56,13 @@ export function fib_loop(n) {
 /** Simple enum + `match`. */
 export function nth(order, n) {
   if (order === "Ascending") {
-    return fib_iter(n);
+    return fibIter(n);
   }
-  return fib_iter((20 - n) >>> 0);
+  return fibIter((20 - n) >>> 0);
 }
 
 /** Signed wrapping arithmetic. */
-export function wrap_demo(x) {
+export function wrapDemo(x) {
   return (Math.imul(x, 3) - 7) | 0;
 }
 

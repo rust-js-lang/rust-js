@@ -19,7 +19,7 @@ function countdownIterator_next(countdown) {
   return [$index(["c0", "c1", "c2"], countdown[0])];
 }
 
-function first_long(items) {
+function firstLong(items) {
   const iter = $iter(items);
   let noisy;
   while (true) {
@@ -375,7 +375,7 @@ function main() {
                                 }
                                 break;
                               }
-                              const value = first_long([["s"], ["long"], ["rest"]]);
+                              const value = firstLong([["s"], ["long"], ["rest"]]);
                               console.log(
                                 `${value == null ? "None" : `Some(${$debugStr(value)})`}`,
                               );

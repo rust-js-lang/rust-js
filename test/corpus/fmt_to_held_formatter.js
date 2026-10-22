@@ -10,13 +10,13 @@ export function entry() {
 
 export function quotedWrite() {
   if ($quotedWrite === undefined) {
-    const write_str = (arg0, arg1) => quotedWrite_write_str(arg0.value, arg1);
-    $quotedWrite = { write_str, write_char: write_str, write_fmt: write_str };
+    const writeStr = (arg0, arg1) => quotedWrite_writeStr(arg0.value, arg1);
+    $quotedWrite = { writeStr, writeChar: writeStr, writeFmt: writeStr };
   }
   return $quotedWrite;
 }
 
-function quotedWrite_write_str(quoted, s) {
+function quotedWrite_writeStr(quoted, s) {
   quoted[0].value += $escapeDebug(s, true);
 }
 
@@ -29,7 +29,7 @@ export function messageDebug() {
 
 function messageDebug_fmt(message, options) {
   let f = '"';
-  quotedWrite_write_str(
+  quotedWrite_writeStr(
     [
       {
         get value() {

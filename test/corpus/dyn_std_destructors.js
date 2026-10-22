@@ -55,9 +55,9 @@ function fail(n) {
 }
 
 function main() {
-  const a = { value: [1], impl: { type_id: () => "lib::D", $drop: dDrop_drop } };
+  const a = { value: [1], impl: { typeId: () => "lib::D", $drop: dDrop_drop } };
   try {
-    console.log(`${a.impl.type_id() === "lib::D"}`);
+    console.log(`${a.impl.typeId() === "lib::D"}`);
   } finally {
     a.impl.$drop?.(a.value);
   }
@@ -69,8 +69,8 @@ function main() {
     throw error;
   }
   const items = [
-    { value: [3], impl: { type_id: () => "lib::D", $drop: dDrop_drop } },
-    { value: 5, impl: { type_id: () => "u8" } },
+    { value: [3], impl: { typeId: () => "lib::D", $drop: dDrop_drop } },
+    { value: 5, impl: { typeId: () => "u8" } },
   ];
   const length = items.length;
   try {

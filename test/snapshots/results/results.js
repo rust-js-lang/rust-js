@@ -5,7 +5,7 @@
 
 import { $unwrapOk } from "@rust-js/runtime";
 
-export function parse_digit(c) {
+export function parseDigit(c) {
   if (c === "0") {
     return { TAG: "Ok", _0: 0 };
   }
@@ -22,13 +22,13 @@ export function parse_digit(c) {
 }
 
 /** `?` on a `Result`: the first `Err` is the answer. */
-export function sum_digits(a, b) {
-  const result = parse_digit(a);
+export function sumDigits(a, b) {
+  const result = parseDigit(a);
   if (result.TAG === "Err") {
     return result;
   }
   const x = result._0;
-  const result$1 = parse_digit(b);
+  const result$1 = parseDigit(b);
   if (result$1.TAG === "Err") {
     return result$1;
   }
@@ -56,7 +56,7 @@ function half(n) {
 }
 
 export function methods(c) {
-  const r = parse_digit(c);
+  const r = parseDigit(c);
   return [
     r.TAG === "Ok",
     r.TAG === "Err",
@@ -66,11 +66,11 @@ export function methods(c) {
 }
 
 export function unwrapped(c) {
-  return $unwrapOk(parse_digit(c));
+  return $unwrapOk(parseDigit(c));
 }
 
 export function expected(c) {
-  return $unwrapOk(parse_digit(c), "a digit");
+  return $unwrapOk(parseDigit(c), "a digit");
 }
 
 function appErrorFromString_from(message) {
@@ -78,13 +78,13 @@ function appErrorFromString_from(message) {
 }
 
 /** `?` converts the error with `From`: `Err(AppError::from(e))`. */
-function small_sum(a, b) {
-  const result = parse_digit(a);
+function smallSum(a, b) {
+  const result = parseDigit(a);
   if (result.TAG === "Err") {
     return { TAG: "Err", _0: appErrorFromString_from(result._0) };
   }
   const x = result._0;
-  const result$1 = parse_digit(b);
+  const result$1 = parseDigit(b);
   if (result$1.TAG === "Err") {
     return { TAG: "Err", _0: appErrorFromString_from(result$1._0) };
   }
@@ -96,10 +96,10 @@ function small_sum(a, b) {
 }
 
 export function converted(a, b) {
-  const smallSum = small_sum(a, b);
-  if (smallSum.TAG === "Err") {
-    return smallSum._0.TAG === "Parse" ? `parse: ${smallSum._0._0}` : `too big: ${smallSum._0._0}`;
+  const value = smallSum(a, b);
+  if (value.TAG === "Err") {
+    return value._0.TAG === "Parse" ? `parse: ${value._0._0}` : `too big: ${value._0._0}`;
   }
-  return `ok ${smallSum._0}`;
+  return `ok ${value._0}`;
 }
 //# sourceMappingURL=results.js.map

@@ -8,7 +8,7 @@ function noisyDrop_drop(noisy) {
   console.log(`drop ${noisy[0]}`);
 }
 
-function by_value(n) {
+function byValue(n) {
   try {
     console.log(`by value ${n[0]}`);
   } finally {
@@ -16,7 +16,7 @@ function by_value(n) {
   }
 }
 
-function by_ref(_1) {
+function byRef(_1) {
   const n = _1;
   try {
     console.log(`by ref ${n[0]}`);
@@ -51,8 +51,8 @@ function both(_1, _2, b) {
 }
 
 function main() {
-  by_value(["a"]);
-  by_ref(["b"]);
+  byValue(["a"]);
+  byRef(["b"]);
   ignored(["c"]);
   both(["d"], ["e"], ["f"]);
   // A `let` that binds a new value by `ref` owns it too.

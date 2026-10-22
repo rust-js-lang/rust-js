@@ -5,7 +5,7 @@ export function entry() {
 }
 
 const Either = {
-  is_left(either) {
+  isLeft(either) {
     return either.TAG === "Left";
   },
 };
@@ -13,7 +13,7 @@ const Either = {
 function main() {
   const a = { TAG: "Left", _0: 3 };
   const b = { TAG: "Right", _0: "b" };
-  console.log(`${Either.is_left(a)} ${Either.is_left(b)}`);
+  console.log(`${Either.isLeft(a)} ${Either.isLeft(b)}`);
   if (a.TAG === "Left") {
     console.log(`${(a._0 + 1) >>> 0}`);
   }

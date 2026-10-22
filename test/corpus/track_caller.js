@@ -18,7 +18,7 @@ function quiet(x) {
   return (x + 1) >>> 0;
 }
 
-function in_closure() {
+function inClosure() {
   const inner = () => 29;
   return inner();
 }
@@ -38,7 +38,7 @@ function main() {
   console.log(`${at.line} ${at.column} ${arg}`);
   console.log(`${through({ file: "test/corpus/track_caller.rs", line: 51, column: 20 })}`);
   console.log(`${quiet(1)}`);
-  console.log(`${in_closure()}`);
+  console.log(`${inClosure()}`);
   const value = both({ file: "test/corpus/track_caller.rs", line: 54, column: 22 });
   console.log(`(${value[0]}, ${value[1]})`);
   const grid = [[4, 5]];

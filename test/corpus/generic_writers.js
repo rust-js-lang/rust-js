@@ -8,22 +8,22 @@ export function entry() {
   main();
 }
 
-function write_digit(w, v, Write) {
-  return Write.write_char(w, String.fromCharCode((48 + v) & 255));
+function writeDigit(w, v, Write) {
+  return Write.writeChar(w, String.fromCharCode((48 + v) & 255));
 }
 
-function write_two(w, v, Write) {
-  write_digit(w, (v / 10) & 255, Write);
-  return write_digit(w, v % 10, Write);
+function writeTwo(w, v, Write) {
+  writeDigit(w, (v / 10) & 255, Write);
+  return writeDigit(w, v % 10, Write);
 }
 
-function write_time(w, hours, minutes, label, WWrite) {
-  write_two(w, hours, WWrite);
-  WWrite.write_char(w, ":");
-  write_two(w, minutes, WWrite);
+function writeTime(w, hours, minutes, label, WWrite) {
+  writeTwo(w, hours, WWrite);
+  WWrite.writeChar(w, ":");
+  writeTwo(w, minutes, WWrite);
   if (label) {
-    WWrite.write_str(w, " ");
-    WWrite.write_fmt(w, `[${label}:${String((hours + minutes) & 255).padStart(3)}]`);
+    WWrite.writeStr(w, " ");
+    WWrite.writeFmt(w, `[${label}:${String((hours + minutes) & 255).padStart(3)}]`);
   }
 }
 
@@ -37,7 +37,7 @@ export function timeDisplay() {
 function timeDisplay_fmt(time) {
   let f = "at ";
   const w = { value: f };
-  write_time(w, time.hours, time.minutes, "", $stringWriter);
+  writeTime(w, time.hours, time.minutes, "", $stringWriter);
   f = w.value;
   f += ".";
   return f;
@@ -45,13 +45,13 @@ function timeDisplay_fmt(time) {
 
 export function counterWrite() {
   if ($counterWrite === undefined) {
-    const write_str = (arg0, arg1) => counterWrite_write_str(arg0.value, arg1);
-    $counterWrite = { write_str, write_char: write_str, write_fmt: write_str };
+    const writeStr = (arg0, arg1) => counterWrite_writeStr(arg0.value, arg1);
+    $counterWrite = { writeStr, writeChar: writeStr, writeFmt: writeStr };
   }
   return $counterWrite;
 }
 
-function counterWrite_write_str(counter, s) {
+function counterWrite_writeStr(counter, s) {
   const length = Array.from(s).length;
   counter.chars = (counter.chars + length) >>> 0;
   counter.text += s;
@@ -60,15 +60,15 @@ function counterWrite_write_str(counter, s) {
 // A writer taken by value, as bitflags' `to_writer` takes one: a
 // `Formatter` or a `String` given as a `&mut`, which std's
 // `impl Write for &mut W` writes through.
-function to_writer(bits, writer, Write) {
+function toWriter(bits, writer, Write) {
   const self = { value: writer };
-  Write.write_str(self, "bits");
+  Write.writeStr(self, "bits");
   writer = self.value;
   const self$1 = { value: writer };
-  Write.write_char(self$1, "=");
+  Write.writeChar(self$1, "=");
   writer = self$1.value;
   const self$2 = { value: writer };
-  const result = Write.write_fmt(self$2, $zeroPad("0x" + bits.toString(16), 4));
+  const result = Write.writeFmt(self$2, $zeroPad("0x" + bits.toString(16), 4));
   writer = self$2.value;
   return result;
 }
@@ -83,7 +83,7 @@ export function flagsDisplay() {
 function flagsDisplay_fmt(flags) {
   let f = "";
   const writer = { value: f };
-  to_writer(flags[0], writer, $mutWriter($stringWriter));
+  toWriter(flags[0], writer, $mutWriter($stringWriter));
   f = writer.value;
   return f;
 }
@@ -91,7 +91,7 @@ function flagsDisplay_fmt(flags) {
 function main() {
   let s = "> ";
   const w = { value: s };
-  write_time(w, 9, 5, "am", $stringWriter);
+  writeTime(w, 9, 5, "am", $stringWriter);
   s = w.value;
   console.log(`${s}`);
   const time = { hours: 23, minutes: 59 };
@@ -100,26 +100,26 @@ function main() {
   console.log(`${timeDisplay_fmt(time)} [${$pad(value, 12, ">")}] ${arg}`);
   const counter = { text: "", chars: 0 };
   const w$1 = { value: counter };
-  write_time(w$1, 7, 30, "c", counterWrite());
+  writeTime(w$1, 7, 30, "c", counterWrite());
   $assign(counter, w$1.value);
   console.log(`${counter.text} ${counter.chars}`);
   let alone = "";
   const w$2 = { value: alone };
-  write_two(w$2, 42, $stringWriter);
+  writeTwo(w$2, 42, $stringWriter);
   alone = w$2.value;
   const w$3 = { value: alone };
-  write_digit(w$3, 7, $stringWriter);
+  writeDigit(w$3, 7, $stringWriter);
   alone = w$3.value;
   console.log(`${alone}`);
   let bits = "[";
   const writer = { value: bits };
-  to_writer(5, writer, $mutWriter($stringWriter));
+  toWriter(5, writer, $mutWriter($stringWriter));
   bits = writer.value;
   bits += "]";
   const arg$1 = flagsDisplay_fmt([255]);
   console.log(`${bits} ${flagsDisplay_fmt([10])} ${$pad(arg$1, 12, ">")}|`);
   const writer$1 = { value: counter };
-  to_writer(9, writer$1, $mutWriter(counterWrite()));
+  toWriter(9, writer$1, $mutWriter(counterWrite()));
   $assign(counter, writer$1.value);
   console.log(`${counter.text} ${counter.chars}`);
 }

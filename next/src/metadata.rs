@@ -200,6 +200,7 @@ pub struct Robots<'a> {
     pub notranslate: Option<bool>,
     pub indexifembedded: Option<bool>,
     pub nositelinkssearchbox: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "unavailable_after")]
     pub unavailable_after: Option<&'a str>,
     #[cfg_attr(rust_js, rust_js::name = "max-video-preview")]
     pub max_video_preview: Option<StringOrNumber<'a>>,
@@ -232,6 +233,7 @@ pub struct RobotsInfo<'a> {
     pub notranslate: Option<bool>,
     pub indexifembedded: Option<bool>,
     pub nositelinkssearchbox: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "unavailable_after")]
     pub unavailable_after: Option<&'a str>,
     #[cfg_attr(rust_js, rust_js::name = "max-video-preview")]
     pub max_video_preview: Option<StringOrNumber<'a>>,
@@ -644,8 +646,10 @@ pub struct AppLinks<'a> {
     pub iphone: Option<OneOrMany<'a, AppLinksApple<'a>>>,
     pub ipad: Option<OneOrMany<'a, AppLinksApple<'a>>>,
     pub android: Option<OneOrMany<'a, AppLinksAndroid<'a>>>,
+    #[cfg_attr(rust_js, rust_js::name = "windows_phone")]
     pub windows_phone: Option<OneOrMany<'a, AppLinksWindows<'a>>>,
     pub windows: Option<OneOrMany<'a, AppLinksWindows<'a>>>,
+    #[cfg_attr(rust_js, rust_js::name = "windows_universal")]
     pub windows_universal: Option<OneOrMany<'a, AppLinksWindows<'a>>>,
     pub web: Option<OneOrMany<'a, AppLinksWeb<'a>>>,
 }
@@ -653,7 +657,9 @@ pub struct AppLinks<'a> {
 /// An iOS app's link.
 pub struct AppLinksApple<'a> {
     pub url: StringOrUrl<'a>,
+    #[cfg_attr(rust_js, rust_js::name = "app_store_id")]
     pub app_store_id: Option<StringOrNumber<'a>>,
+    #[cfg_attr(rust_js, rust_js::name = "app_name")]
     pub app_name: Option<&'a str>,
 }
 
@@ -662,19 +668,23 @@ pub struct AppLinksAndroid<'a> {
     pub package: &'a str,
     pub url: Option<StringOrUrl<'a>>,
     pub class: Option<&'a str>,
+    #[cfg_attr(rust_js, rust_js::name = "app_name")]
     pub app_name: Option<&'a str>,
 }
 
 /// A Windows app's link.
 pub struct AppLinksWindows<'a> {
     pub url: StringOrUrl<'a>,
+    #[cfg_attr(rust_js, rust_js::name = "app_id")]
     pub app_id: Option<&'a str>,
+    #[cfg_attr(rust_js, rust_js::name = "app_name")]
     pub app_name: Option<&'a str>,
 }
 
 /// The web's link, where there's no app.
 pub struct AppLinksWeb<'a> {
     pub url: StringOrUrl<'a>,
+    #[cfg_attr(rust_js, rust_js::name = "should_fallback")]
     pub should_fallback: Option<bool>,
 }
 
@@ -921,19 +931,27 @@ pub mod MetadataRoute {
     /// A video of a [`SitemapEntry`].
     pub struct Videos<'a> {
         pub title: &'a str,
+        #[cfg_attr(rust_js, rust_js::name = "thumbnail_loc")]
         pub thumbnail_loc: &'a str,
         pub description: &'a str,
+        #[cfg_attr(rust_js, rust_js::name = "content_loc")]
         pub content_loc: Option<&'a str>,
+        #[cfg_attr(rust_js, rust_js::name = "player_loc")]
         pub player_loc: Option<&'a str>,
         pub duration: Option<f64>,
+        #[cfg_attr(rust_js, rust_js::name = "expiration_date")]
         pub expiration_date: Option<LastModified<'a>>,
         pub rating: Option<f64>,
+        #[cfg_attr(rust_js, rust_js::name = "view_count")]
         pub view_count: Option<f64>,
+        #[cfg_attr(rust_js, rust_js::name = "publication_date")]
         pub publication_date: Option<LastModified<'a>>,
         /// `"yes"` or `"no"`.
+        #[cfg_attr(rust_js, rust_js::name = "family_friendly")]
         pub family_friendly: Option<&'a str>,
         pub restriction: Option<Restriction<'a>>,
         pub platform: Option<Restriction<'a>>,
+        #[cfg_attr(rust_js, rust_js::name = "requires_subscription")]
         pub requires_subscription: Option<&'a str>,
         pub uploader: Option<Uploader<'a>>,
         pub live: Option<&'a str>,
@@ -956,6 +974,7 @@ pub mod MetadataRoute {
     /// `app/manifest.rs`'s: the web app manifest.
     #[derive(Default)]
     pub struct Manifest<'a> {
+        #[cfg_attr(rust_js, rust_js::name = "background_color")]
         pub background_color: Option<&'a str>,
         pub categories: Option<&'a [&'a str]>,
         pub description: Option<&'a str>,
@@ -963,23 +982,33 @@ pub mod MetadataRoute {
         pub dir: Option<&'a str>,
         /// `"fullscreen"`, `"standalone"`, `"minimal-ui"` or `"browser"`.
         pub display: Option<&'a str>,
+        #[cfg_attr(rust_js, rust_js::name = "display_override")]
         pub display_override: Option<&'a [&'a str]>,
+        #[cfg_attr(rust_js, rust_js::name = "file_handlers")]
         pub file_handlers: Option<&'a [FileHandler<'a>]>,
         pub icons: Option<&'a [ManifestIcon<'a>]>,
         pub id: Option<&'a str>,
         pub lang: Option<&'a str>,
+        #[cfg_attr(rust_js, rust_js::name = "launch_handler")]
         pub launch_handler: Option<LaunchHandler<'a>>,
         pub name: Option<&'a str>,
         pub orientation: Option<&'a str>,
+        #[cfg_attr(rust_js, rust_js::name = "prefer_related_applications")]
         pub prefer_related_applications: Option<bool>,
+        #[cfg_attr(rust_js, rust_js::name = "protocol_handlers")]
         pub protocol_handlers: Option<&'a [ProtocolHandler<'a>]>,
+        #[cfg_attr(rust_js, rust_js::name = "related_applications")]
         pub related_applications: Option<&'a [RelatedApplication<'a>]>,
         pub scope: Option<&'a str>,
         pub screenshots: Option<&'a [Screenshot<'a>]>,
+        #[cfg_attr(rust_js, rust_js::name = "share_target")]
         pub share_target: Option<ShareTarget<'a>>,
+        #[cfg_attr(rust_js, rust_js::name = "short_name")]
         pub short_name: Option<&'a str>,
         pub shortcuts: Option<&'a [Shortcut<'a>]>,
+        #[cfg_attr(rust_js, rust_js::name = "start_url")]
         pub start_url: Option<&'a str>,
+        #[cfg_attr(rust_js, rust_js::name = "theme_color")]
         pub theme_color: Option<&'a str>,
     }
 
@@ -1002,6 +1031,7 @@ pub mod MetadataRoute {
     /// How the app is launched: `"auto"`, `"focus-existing"`,
     /// `"navigate-existing"` or `"navigate-new"`, or a list of them.
     pub struct LaunchHandler<'a> {
+        #[cfg_attr(rust_js, rust_js::name = "client_mode")]
         pub client_mode: OneOrMany<'a, &'a str>,
     }
 
@@ -1021,6 +1051,7 @@ pub mod MetadataRoute {
     /// A screenshot of the app.
     pub struct Screenshot<'a> {
         /// `"narrow"` or `"wide"`.
+        #[cfg_attr(rust_js, rust_js::name = "form_factor")]
         pub form_factor: Option<&'a str>,
         pub label: Option<&'a str>,
         pub platform: Option<&'a str>,
@@ -1056,6 +1087,7 @@ pub mod MetadataRoute {
     /// A shortcut of the app's.
     pub struct Shortcut<'a> {
         pub name: &'a str,
+        #[cfg_attr(rust_js, rust_js::name = "short_name")]
         pub short_name: Option<&'a str>,
         pub description: Option<&'a str>,
         pub url: &'a str,

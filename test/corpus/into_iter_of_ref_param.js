@@ -18,29 +18,29 @@ export function entry() {
 }
 
 function total(c, CRefIntoIterator) {
-  return CRefIntoIterator.into_iter(c).reduce((a, b) => (a + b) >>> 0, 0);
+  return CRefIntoIterator.intoIter(c).reduce((a, b) => (a + b) >>> 0, 0);
 }
 
-function double_all(c, CRefMutIntoIterator) {
-  for (const x of CRefMutIntoIterator.into_iter(c)) {
+function doubleAll(c, CRefMutIntoIterator) {
+  for (const x of CRefMutIntoIterator.intoIter(c)) {
     x.value = Math.imul(x.value, 2) >>> 0;
   }
 }
 
-function double_then_total(c, CRefIntoIterator, CRefMutIntoIterator) {
-  double_all(c, CRefMutIntoIterator);
-  double_all(c, CRefMutIntoIterator);
+function doubleThenTotal(c, CRefIntoIterator, CRefMutIntoIterator) {
+  doubleAll(c, CRefMutIntoIterator);
+  doubleAll(c, CRefMutIntoIterator);
   return total(c.value, CRefIntoIterator);
 }
 
-function bump_values(m, MRefMutIntoIterator) {
-  for (const [key, value] of MRefMutIntoIterator.into_iter(m)) {
+function bumpValues(m, MRefMutIntoIterator) {
+  for (const [key, value] of MRefMutIntoIterator.intoIter(m)) {
     value.value = (value.value + $byteLen(key)) >>> 0;
   }
 }
 
 // `for x in &mut it` of an `I: Iterator`, which std's impl gives: no bound.
-function sum_past_three(it) {
+function sumPastThree(it) {
   let n = 0;
   for (const x of it) {
     n = (n + x) >>> 0;
@@ -53,65 +53,65 @@ function sum_past_three(it) {
 
 export function refBagIntoIterator() {
   if ($refBagIntoIterator === undefined) {
-    $refBagIntoIterator = { into_iter: refBagIntoIterator_into_iter };
+    $refBagIntoIterator = { intoIter: refBagIntoIterator_intoIter };
   }
   return $refBagIntoIterator;
 }
 
-function refBagIntoIterator_into_iter(bag) {
+function refBagIntoIterator_intoIter(bag) {
   return $iter(bag.items);
 }
 
 export function refMutBagIntoIterator() {
   if ($refMutBagIntoIterator === undefined) {
-    $refMutBagIntoIterator = { into_iter: (arg0) => refMutBagIntoIterator_into_iter(arg0.value) };
+    $refMutBagIntoIterator = { intoIter: (arg0) => refMutBagIntoIterator_intoIter(arg0.value) };
   }
   return $refMutBagIntoIterator;
 }
 
-function refMutBagIntoIterator_into_iter(bag) {
+function refMutBagIntoIterator_intoIter(bag) {
   return $iter($mutItems(bag.items));
 }
 
 function main() {
   const v = [1, 2, 3];
   const c = { value: v };
-  double_all(c, { into_iter: (cell) => $iter($mutItems(cell.value)) });
+  doubleAll(c, { intoIter: (cell) => $iter($mutItems(cell.value)) });
   $assign(v, c.value);
   const a = [4, 5];
   const c$1 = { value: a };
-  double_all(c$1, { into_iter: (cell) => $iter($mutItems(cell.value)) });
+  doubleAll(c$1, { intoIter: (cell) => $iter($mutItems(cell.value)) });
   $assign(a, c$1.value);
-  const value = total(v, { into_iter: (x) => $iter(x) });
-  const arg = total(a, { into_iter: (x) => $iter(x) });
+  const value = total(v, { intoIter: (x) => $iter(x) });
+  const arg = total(a, { intoIter: (x) => $iter(x) });
   console.log(`[${v.join(", ")}] [${a.join(", ")}] ${value} ${arg}`);
 
   let some = 7;
   const c$2 = { value: some };
-  double_all(c$2, { into_iter: (cell) => $iter(cell.value == null ? [] : [cell]) });
+  doubleAll(c$2, { intoIter: (cell) => $iter(cell.value == null ? [] : [cell]) });
   some = c$2.value;
   let none;
   const c$3 = { value: none };
-  double_all(c$3, { into_iter: (cell) => $iter(cell.value == null ? [] : [cell]) });
+  doubleAll(c$3, { intoIter: (cell) => $iter(cell.value == null ? [] : [cell]) });
   none = c$3.value;
-  const arg$1 = total(some, { into_iter: (x) => $iter(x == null ? [] : [x]) });
+  const arg$1 = total(some, { intoIter: (x) => $iter(x == null ? [] : [x]) });
   console.log(
     `${some == null ? "None" : `Some(${some})`} ${none == null ? "None" : `Some(${none})`} ${arg$1}`,
   );
 
   const bag = { items: [1, 10] };
   const c$4 = { value: bag };
-  const doubleThenTotal = double_then_total(c$4, refBagIntoIterator(), refMutBagIntoIterator());
+  const value$1 = doubleThenTotal(c$4, refBagIntoIterator(), refMutBagIntoIterator());
   $assign(bag, c$4.value);
-  console.log(`${doubleThenTotal} [${bag.items.join(", ")}]`);
+  console.log(`${value$1} [${bag.items.join(", ")}]`);
 
   const m = new Map([
     ["ab", 1],
     ["c", 2],
   ]);
   const m$1 = { value: m };
-  bump_values(m$1, {
-    into_iter: (cell) => $iter($mutEntries(cell.value, $sortedEntries(cell.value, $cmp))),
+  bumpValues(m$1, {
+    intoIter: (cell) => $iter($mutEntries(cell.value, $sortedEntries(cell.value, $cmp))),
   });
   $assign(m, m$1.value);
   console.log(
@@ -120,7 +120,7 @@ function main() {
       .join(", ")}}`,
   );
 
-  const value$1 = sum_past_three($iter([1, 2, 3, 4, 5]));
-  console.log(`(${value$1[0]}, ${value$1[1]})`);
+  const value$2 = sumPastThree($iter([1, 2, 3, 4, 5]));
+  console.log(`(${value$2[0]}, ${value$2[1]})`);
 }
 //# sourceMappingURL=case.js.map

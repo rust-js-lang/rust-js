@@ -13,15 +13,15 @@ function uuidDebug_fmt(uuid) {
 }
 
 const Uuid = {
-  from_bytes_ref(bytes) {
+  fromBytesRef(bytes) {
     return [bytes];
   },
 
-  as_bytes(uuid) {
+  asBytes(uuid) {
     return uuid[0];
   },
 
-  as_hyphenated(uuid) {
+  asHyphenated(uuid) {
     return [uuid];
   },
 };
@@ -53,11 +53,11 @@ function longer(text) {
 
 function main() {
   const bytes = [1, 2, 171, 205];
-  const id = Uuid.from_bytes_ref(bytes);
-  const value$1 = Uuid.as_hyphenated(id);
+  const id = Uuid.fromBytesRef(bytes);
+  const value$1 = Uuid.asHyphenated(id);
   console.log(`${uuidDebug_fmt(id)} ${hyphenatedDisplay_fmt(value$1)}`);
-  console.log(`[${Uuid.as_bytes(id).join(", ")}]`);
-  const inner = Uuid.as_hyphenated(id)[0][0];
+  console.log(`[${Uuid.asBytes(id).join(", ")}]`);
+  const inner = Uuid.asHyphenated(id)[0][0];
   console.log(`${inner[3]}`);
   const owned = [[9, 8, 7, 6]];
   const value$2 = $eq(owned, [[9, 8, 7, 6]]);

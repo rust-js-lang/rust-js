@@ -15,18 +15,18 @@ function counterIterator_next(counter) {
 
 function counterDoubled() {
   if ($counterDoubled === undefined) {
-    $counterDoubled = { by_ref: (arg0) => counterDoubled_by_ref(arg0.value) };
+    $counterDoubled = { byRef: (arg0) => counterDoubled_byRef(arg0.value) };
   }
   return $counterDoubled;
 }
 
-function counterDoubled_by_ref(counter) {
+function counterDoubled_byRef(counter) {
   return Math.imul(counter.n, 2) >>> 0;
 }
 
 function main() {
   const counter = { n: 1 };
-  const doubled = counterDoubled_by_ref(counter);
+  const doubled = counterDoubled_byRef(counter);
   const rest = $lent($iterator(counter, counterIterator_next)).toArray();
   console.log(`${doubled} [${rest.join(", ")}]`);
 }

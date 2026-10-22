@@ -18,7 +18,7 @@ function tallyCounter() {
         tallyCounter_set(self.value, next);
         return next;
       },
-      replace_with: (self, other) => {
+      replaceWith: (self, other) => {
         self.value = other;
       },
     };
@@ -44,7 +44,7 @@ function i32Counter() {
         i32Counter_set(self, next);
         return next;
       },
-      replace_with: (self, other) => {
+      replaceWith: (self, other) => {
         self.value = other;
       },
     };
@@ -74,7 +74,7 @@ function main() {
   console.log(`${bump(tally, 2)} ${tally[0]}`);
   const replace = (a, b) => {
     const self = { value: a };
-    const value = tallyCounter().replace_with(self, b);
+    const value = tallyCounter().replaceWith(self, b);
     $assign(a, self.value);
     return value;
   };

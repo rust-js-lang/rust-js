@@ -767,6 +767,13 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### Changed
 
+- **Every Rust name is camelCase in JS** (ADR 0573): a function, a
+  field, a method and a trait's method alike, `first_word` as
+  `firstWord`, `sort_index` as `sortIndex`, not React's hooks and props
+  alone. A JS caller of a crate's `first_word` writes `firstWord`; a name
+  that must be another, as Next.js's `unstable_paramMatching`, says so
+  with `#[rust_js::name]`. Std's dictionaries and the runtime's are keyed
+  the same way, `{ asRef }`, `hasher.writeU32(n)`.
 - **`rev()` of what knows its back is `$rev(it)`**, not `$iterator(it,
   $nextBackSome, true)` (ADR 0516).
 - **No list with holes**: `println!("{:?} {:?}", f(a), g(b))` reads `g(b)`

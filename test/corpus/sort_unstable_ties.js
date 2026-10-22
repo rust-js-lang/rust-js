@@ -11,12 +11,12 @@ export function entry() {
 // Ordered by the first number alone.
 export function loosePartialOrd() {
   if ($loosePartialOrd === undefined) {
-    $loosePartialOrd = { PartialEq: () => ({ eq: $eq }), partial_cmp: loosePartialOrd_partial_cmp };
+    $loosePartialOrd = { PartialEq: () => ({ eq: $eq }), partialCmp: loosePartialOrd_partialCmp };
   }
   return $loosePartialOrd;
 }
 
-function loosePartialOrd_partial_cmp(loose, other) {
+function loosePartialOrd_partialCmp(loose, other) {
   return looseOrd_cmp(loose, other);
 }
 

@@ -52,7 +52,7 @@ function trailing(s) {
   return out;
 }
 
-function split_words(s) {
+function splitWords(s) {
   const words = [];
   for (const word of $splitBy(s, (c) => !/^[\p{Alphabetic}\p{N}]$/u.test(c))) {
     const charIndices = iterator_peekable($iter($charIndices(word)), { next: $next });
@@ -104,7 +104,7 @@ function main() {
   console.log(`${scores(["aB", "Cd", "xyz"])}`);
   console.log(`${trailing("abx cd e")}`);
   console.log(
-    `[${split_words("XMLHttpRequest camelCase snake_case")
+    `[${splitWords("XMLHttpRequest camelCase snake_case")
       .map((item) => $debugStr(item))
       .join(", ")}]`,
   );

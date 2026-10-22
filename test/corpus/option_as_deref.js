@@ -4,7 +4,7 @@ export function entry() {
   main();
 }
 
-function path_is(path, want) {
+function pathIs(path, want) {
   return path === want;
 }
 
@@ -14,7 +14,7 @@ function first(items) {
 
 function main() {
   console.log(
-    `${path_is("/learn", "/learn")} ${path_is("/a", "/learn")} ${path_is(undefined, "/learn")}`,
+    `${pathIs("/learn", "/learn")} ${pathIs("/a", "/learn")} ${pathIs(undefined, "/learn")}`,
   );
   const value = first([4, 5]);
   const value$1 = first([]);

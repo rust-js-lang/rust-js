@@ -266,7 +266,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // std's own `write_char` and `write_fmt`: its `write_str`, given a
             // `char`'s text or a `write!`'s, as std's give it (ADR 0180).
             if is_writer_default(self.tcx, item.def_id) && !self.krate.fns.contains_key(&method) {
-                let write_str = self.shared_entry(&mut props, &mut shared, "write_str", span)?;
+                let write_str = bindings::trait_method_name(self.tcx, tr.def_id, "write_str");
+                let write_str = self.shared_entry(&mut props, &mut shared, &write_str, span)?;
                 props.push(Prop::Field(bindings::fn_name(self.tcx, item.def_id), write_str));
                 continue;
             }

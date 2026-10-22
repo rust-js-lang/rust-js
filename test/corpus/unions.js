@@ -32,7 +32,7 @@ const Value = {
     }
     return `float ${$displayF64($unionField(value.number, "float"))}`;
   },
-  is_zero(value) {
+  isZero(value) {
     if (value.kind === "Int") {
       if (
         $unionField(value.number, "int", [], {
@@ -52,7 +52,7 @@ const Value = {
   },
 };
 
-function set_float(n, x) {
+function setFloat(n, x) {
   $unionSet(n, "float", x);
 }
 
@@ -67,7 +67,7 @@ function holderDrop_drop(holder) {
 function main() {
   const values = [Value.int(7), Value.float(2.5), Value.int(0), Value.float(0)];
   for (const v of values) {
-    console.log(`${Value.show(v)} ${Value.is_zero(v)}`);
+    console.log(`${Value.show(v)} ${Value.isZero(v)}`);
   }
   // A copy is a union of its own: writing one leaves the other.
   const value = $index(values, 0);
@@ -92,7 +92,7 @@ function main() {
   $unionSet($index(values, 1).number, "int", -3);
   console.log(`${Value.show($index(values, 1))}`);
   const n = { int: 1 };
-  set_float(n, 0.5);
+  setFloat(n, 0.5);
   console.log(`${$displayF64($unionField(n, "float"))}`);
 
   // Fields of one type read each other's: the same bytes.

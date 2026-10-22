@@ -15,7 +15,7 @@ const THEME = new Compartment();
 const SOURCE = [
   basicSetup,
   rust(),
-  THEME.of(theme_for(false)),
+  THEME.of(themeFor(false)),
   EditorView.contentAttributes.of({ "aria-label": "Rust source" }),
 ];
 
@@ -29,13 +29,13 @@ function output(language) {
   if (language) {
     extensions.push(language);
   }
-  extensions.push(THEME.of(theme_for(false)));
+  extensions.push(THEME.of(themeFor(false)));
   extensions.push(EditorState.readOnly.of(true));
   extensions.push(EditorView.contentAttributes.of({ "aria-label": "Generated JavaScript" }));
   return extensions;
 }
 
-function theme_for(dark) {
+function themeFor(dark) {
   if (dark) {
     return oneDark;
   }
@@ -46,22 +46,22 @@ function theme_for(dark) {
  * A Rust file's editor state. Each file keeps its own, so its undo history
  * survives switching.
  */
-export function source_state(text) {
+export function sourceState(text) {
   return EditorState.create({ doc: text, extensions: SOURCE });
 }
 
 /** A generated file's, highlighted as JS; or rustc's diagnostics, as text. */
-export function output_state(text, js) {
+export function outputState(text, js) {
   const extensions = js ? JS_OUTPUT : PLAIN_OUTPUT;
   return EditorState.create({ doc: text, extensions });
 }
 
-export function text_of(state) {
+export function textOf(state) {
   return state.doc.toString();
 }
 
 /** A view of `state` in `parent`. */
-export function open_view(parent, state) {
+export function openView(parent, state) {
   return new EditorView({ state, parent });
 }
 
@@ -79,8 +79,8 @@ export function show(view, state) {
  * Follow the system's light or dark setting. A state keeps the theme it was
  * made with, so this runs after `show` too.
  */
-export function set_theme(view, dark) {
+export function setTheme(view, dark) {
   const theme = THEME;
-  view.dispatch({ effects: theme.reconfigure(theme_for(dark)) });
+  view.dispatch({ effects: theme.reconfigure(themeFor(dark)) });
 }
 //# sourceMappingURL=codemirror.js.map

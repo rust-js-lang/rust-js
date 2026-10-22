@@ -8,7 +8,7 @@ function countedDeref_deref(counted) {
   return counted.value;
 }
 
-function countedDerefMut_deref_mut(counted) {
+function countedDerefMut_derefMut(counted) {
   counted.muts = (counted.muts + 1) >>> 0;
   return {
     get value() {
@@ -22,8 +22,8 @@ function countedDerefMut_deref_mut(counted) {
 
 function main() {
   const p = { muts: 0, value: { x: 1, y: 2 } };
-  countedDerefMut_deref_mut(p);
-  const value = countedDerefMut_deref_mut(p).value;
+  countedDerefMut_derefMut(p);
+  const value = countedDerefMut_derefMut(p).value;
   value.x = (value.x + 3) | 0;
   console.log(`${p.muts} ${countedDeref_deref(p).x} ${countedDeref_deref(p).y}`);
 }

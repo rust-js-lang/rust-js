@@ -45,7 +45,7 @@ export function classify(s) {
   return 0;
 }
 
-export function is_round(s) {
+export function isRound(s) {
   return s.TAG === "Circle";
 }
 
@@ -75,21 +75,21 @@ function sum(t) {
   return (sum(t._0) + sum(t._1)) | 0;
 }
 
-export function tree_sum(depth) {
+export function treeSum(depth) {
   return sum(build(depth));
 }
 
 /** `Result` is an enum like any other: `{ TAG: "Ok", _0: v }`, as in ReScript. */
-export function checked_div(a, b) {
+export function checkedDiv(a, b) {
   if (b === 0) {
     return { TAG: "Err", _0: "divide by zero" };
   }
   return { TAG: "Ok", _0: $div(a, b, -2147483648) | 0 };
 }
 
-export function div_or(a, b, fallback) {
-  const checkedDiv = checked_div(a, b);
-  return checkedDiv.TAG === "Ok" ? checkedDiv._0 : fallback;
+export function divOr(a, b, fallback) {
+  const value = checkedDiv(a, b);
+  return value.TAG === "Ok" ? value._0 : fallback;
 }
 
 export function discriminants(i) {
@@ -135,7 +135,7 @@ function points(f) {
   return 0;
 }
 
-export function changed_in_place(r) {
+export function changedInPlace(r) {
   let poly = { TAG: "Poly", _0: [1] };
   const before =
     poly.TAG === "Poly"

@@ -24,7 +24,7 @@ export function peekableIterator_next(peekable, IIterator, dropI, dropIItem) {
   return IIterator.next(peekable.iter);
 }
 
-export function peekableDoubleEndedIterator_next_back(
+export function peekableDoubleEndedIterator_nextBack(
   peekable,
   IDoubleEndedIterator,
   dropI,
@@ -135,7 +135,7 @@ export function fuseIterator_next(fuse, IIterator, IFused, dropI, dropIItem) {
     : fuseFuseImplI_next(fuse, IIterator, dropI, dropIItem);
 }
 
-export function fuseIterator_size_hint(fuse, IIterator, dropI, dropIItem) {
+export function fuseIterator_sizeHint(fuse, IIterator, dropI, dropIItem) {
   if (fuse.iter != null) {
     const iter = $someValue(fuse.iter);
     return $sizeHint(iter, IIterator);
@@ -143,7 +143,7 @@ export function fuseIterator_size_hint(fuse, IIterator, dropI, dropIItem) {
   return [0, 0];
 }
 
-export function fuseDoubleEndedIterator_next_back(
+export function fuseDoubleEndedIterator_nextBack(
   fuse,
   IDoubleEndedIterator,
   IFused,
@@ -151,8 +151,8 @@ export function fuseDoubleEndedIterator_next_back(
   dropIItem,
 ) {
   return IFused
-    ? fuseFuseImplIFusedIterator_next_back(fuse, IDoubleEndedIterator, dropI, dropIItem)
-    : fuseFuseImplI_next_back(fuse, IDoubleEndedIterator, dropI, dropIItem);
+    ? fuseFuseImplIFusedIterator_nextBack(fuse, IDoubleEndedIterator, dropI, dropIItem)
+    : fuseFuseImplI_nextBack(fuse, IDoubleEndedIterator, dropI, dropIItem);
 }
 
 export function fuseDoubleEndedIterator_rfold(
@@ -192,7 +192,7 @@ export function fuseExactSizeIterator_len(fuse, IExactSizeIterator, dropI, dropI
 
 export function fuseFuseImplI_next(fuse, IIterator, dropI, dropIItem) {
   const opt = { value: fuse.iter };
-  const result = and_then_or_clear(opt, (x0) => IIterator.next(x0.value), dropI, dropIItem);
+  const result = andThenOrClear(opt, (x0) => IIterator.next(x0.value), dropI, dropIItem);
   fuse.iter = opt.value;
   return result;
 }
@@ -208,9 +208,9 @@ export function fuseFuseImplIFusedIterator_next(fuse, IIterator, dropI, dropIIte
   option = undefined;
 }
 
-export function fuseFuseImplI_next_back(fuse, IDoubleEndedIterator, dropI, dropIItem) {
+export function fuseFuseImplI_nextBack(fuse, IDoubleEndedIterator, dropI, dropIItem) {
   const opt = { value: fuse.iter };
-  const result = and_then_or_clear(
+  const result = andThenOrClear(
     opt,
     (x0) => IDoubleEndedIterator.next_back(x0.value),
     dropI,
@@ -220,7 +220,7 @@ export function fuseFuseImplI_next_back(fuse, IDoubleEndedIterator, dropI, dropI
   return result;
 }
 
-export function fuseFuseImplIFusedIterator_next_back(fuse, IDoubleEndedIterator, dropI, dropIItem) {
+export function fuseFuseImplIFusedIterator_nextBack(fuse, IDoubleEndedIterator, dropI, dropIItem) {
   let option;
   if (fuse.iter != null) {
     const x = $someValue(fuse.iter);
@@ -270,12 +270,12 @@ export function iterator_fuse(self, SelfIterator, SelfFused, dropSelf, dropSelfI
     {
       next: (iterator) =>
         fuseIterator_next(iterator, SelfIterator, SelfFused, dropSelf, dropSelfItem),
-      hint: (iterator) => fuseIterator_size_hint(iterator, SelfIterator, dropSelf, dropSelfItem),
+      hint: (iterator) => fuseIterator_sizeHint(iterator, SelfIterator, dropSelf, dropSelfItem),
     },
   );
 }
 
-export function and_then_or_clear(opt, f, dropT, dropU, dropFnOnce) {
+export function andThenOrClear(opt, f, dropT, dropU, dropFnOnce) {
   let x;
   let option;
   if (opt.value != null) {

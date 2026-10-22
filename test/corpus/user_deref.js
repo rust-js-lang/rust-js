@@ -26,7 +26,7 @@ function trackedDeref_deref(tracked) {
   return tracked.point;
 }
 
-function trackedDerefMut_deref_mut(tracked) {
+function trackedDerefMut_derefMut(tracked) {
   return tracked.point;
 }
 
@@ -38,7 +38,7 @@ function gridIndex_usize__usize__index(grid, [row, col]) {
   return $index(grid.cells, ((Math.imul(row, grid.width) >>> 0) + col) >>> 0);
 }
 
-function gridIndexMut_usize__usize__index_mut(grid, [row, col]) {
+function gridIndexMut_usize__usize__indexMut(grid, [row, col]) {
   return $index(grid.cells, ((Math.imul(row, grid.width) >>> 0) + col) >>> 0);
 }
 
@@ -47,10 +47,10 @@ function main() {
   console.log(
     `${Point.sum(trackedDeref_deref(t))} ${trackedDeref_deref(t).x} ${pointDebug_fmt(trackedDeref_deref(t))}`,
   );
-  Point.shift(trackedDerefMut_deref_mut(t), 10);
-  trackedDerefMut_deref_mut(t).y = 0;
+  Point.shift(trackedDerefMut_derefMut(t), 10);
+  trackedDerefMut_derefMut(t).y = 0;
   const copied = { ...trackedDeref_deref(t) };
-  trackedDerefMut_deref_mut(t).x = -1;
+  trackedDerefMut_derefMut(t).x = -1;
   console.log(`${pointDebug_fmt(copied)} ${pointDebug_fmt(t.point)} ${t.reads}`);
 
   const outer = [{ point: { x: 4, y: 5 }, reads: 0 }];
@@ -60,8 +60,8 @@ function main() {
 
   const item = { x: 0, y: 0 };
   const grid = { cells: Array.from({ length: 4 }, () => ({ ...item })), width: 2 };
-  gridIndexMut_usize__usize__index_mut(grid, [1, 0]).x = 7;
-  Point.shift(gridIndexMut_usize__usize__index_mut(grid, [0, 1]), 3);
+  gridIndexMut_usize__usize__indexMut(grid, [1, 0]).x = 7;
+  Point.shift(gridIndexMut_usize__usize__indexMut(grid, [0, 1]), 3);
   const point = gridIndex_usize__usize__index(grid, [1, 0]);
   const value = gridIndex_usize__usize__index(grid, [0, 1]);
   console.log(

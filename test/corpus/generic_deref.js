@@ -25,7 +25,7 @@ function shout(p, PDeref) {
 }
 
 function length(p, PDeref, PTargetAsRefStr) {
-  return $byteLen(PTargetAsRefStr.as_ref(PDeref.deref(p)));
+  return $byteLen(PTargetAsRefStr.asRef(PDeref.deref(p)));
 }
 
 const Wrapper = {
@@ -37,8 +37,8 @@ const Wrapper = {
 function main() {
   console.log(`${shout("box", { deref: (x) => x })}`);
   console.log(`${shout("string", { deref: (s) => s })}`);
-  console.log(`${length("rc", { deref: (x) => x }, { as_ref: (value) => value })}`);
-  console.log(`${length({ name: "mine" }, trackedDeref(), { as_ref: (value) => value })}`);
+  console.log(`${length("rc", { deref: (x) => x }, { asRef: (value) => value })}`);
+  console.log(`${length({ name: "mine" }, trackedDeref(), { asRef: (value) => value })}`);
   const n = 21;
   console.log(
     `${Wrapper.doubled([n], { deref: (n) => n })} ${Wrapper.doubled([4], { deref: (x) => x })}`,

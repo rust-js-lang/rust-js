@@ -37,7 +37,7 @@ function loud() {
   ];
 }
 
-function by_name(a, b) {
+function byName(a, b) {
   console.log(`compare ${a[0]}${a[1]} ${b[0]}${b[1]}`);
   return $cmp(a[1], b[1]);
 }
@@ -54,7 +54,7 @@ function greatest(items, IItemOrd, dropIItem, dropIIntoIter) {
   return result;
 }
 
-function final_one(items, dropIItem, dropIIntoIter) {
+function finalOne(items, dropIItem, dropIIntoIter) {
   const iter = $intoIter(items);
   const result = $lastDropping(iter, dropIItem);
   dropIIntoIter?.(iter);
@@ -62,7 +62,7 @@ function final_one(items, dropIItem, dropIIntoIter) {
 }
 
 // An iterator itself, not an `IntoIterator`, consumed: dropped after too.
-function how_many(items, dropI, dropIItem) {
+function howMany(items, dropI, dropIItem) {
   const iter = items;
   const result = Iterator.from(iter).reduce((n, item) => {
     dropIItem?.(item);
@@ -98,7 +98,7 @@ function main() {
       loudDrop_drop(min);
     }
   }
-  const maxBy = $maxBy(loud(), by_name, false, loudDrop_drop);
+  const maxBy = $maxBy(loud(), byName, false, loudDrop_drop);
   try {
     console.log(`${maxBy == null ? "None" : `Some(${loudDebug_fmt(maxBy)})`}`);
   } finally {
@@ -106,7 +106,7 @@ function main() {
       loudDrop_drop(maxBy);
     }
   }
-  const minBy = $minBy(loud(), by_name, false, loudDrop_drop);
+  const minBy = $minBy(loud(), byName, false, loudDrop_drop);
   try {
     console.log(`${minBy == null ? "None" : `Some(${loudDebug_fmt(minBy)})`}`);
   } finally {
@@ -163,21 +163,7 @@ function main() {
   console.log(
     `${value$3 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$3))})`}`,
   );
-  const finalOne = final_one(loud(), loudDrop_drop, $dropEach(loudDrop_drop));
-  try {
-    console.log(`${finalOne == null ? "None" : `Some(${loudDebug_fmt(finalOne)})`}`);
-  } finally {
-    if (finalOne != null) {
-      loudDrop_drop(finalOne);
-    }
-  }
-  const value$4 = final_one(
-    $iterator({ left: 3, _tag: [0, "tag"] }, countdownIterator_next),
-    loudDrop_drop,
-    (it) => {
-      loudDrop_drop(it.of._tag);
-    },
-  );
+  const value$4 = finalOne(loud(), loudDrop_drop, $dropEach(loudDrop_drop));
   try {
     console.log(`${value$4 == null ? "None" : `Some(${loudDebug_fmt(value$4)})`}`);
   } finally {
@@ -185,8 +171,22 @@ function main() {
       loudDrop_drop(value$4);
     }
   }
+  const value$5 = finalOne(
+    $iterator({ left: 3, _tag: [0, "tag"] }, countdownIterator_next),
+    loudDrop_drop,
+    (it) => {
+      loudDrop_drop(it.of._tag);
+    },
+  );
+  try {
+    console.log(`${value$5 == null ? "None" : `Some(${loudDebug_fmt(value$5)})`}`);
+  } finally {
+    if (value$5 != null) {
+      loudDrop_drop(value$5);
+    }
+  }
   console.log(
-    `${how_many(
+    `${howMany(
       $iterator({ left: 2, _tag: [9, "tag"] }, countdownIterator_next),
       (it) => {
         loudDrop_drop(it.of._tag);

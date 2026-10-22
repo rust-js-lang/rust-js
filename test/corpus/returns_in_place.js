@@ -34,7 +34,7 @@ function parse(s) {
 }
 
 // A `?` inside a loop inside a loop, and the inner loop's own `break`.
-function sum_rows(rows) {
+function sumRows(rows) {
   let total = 0;
   for (const [i, row] of rows.entries()) {
     let seen = 0;
@@ -92,7 +92,7 @@ function describe(token, limit) {
 }
 
 // A loop that only ends by returning, its `continue`s written.
-function first_even(values) {
+function firstEven(values) {
   let i = 0;
   while (true) {
     const v = values[i];
@@ -113,7 +113,7 @@ function first_even(values) {
 }
 
 // A labeled loop broken from inside an inner one, a value made after it.
-function find_pair(grid, want) {
+function findPair(grid, want) {
   let found;
   rows: for (const [r, row] of grid.entries()) {
     for (const [c, v] of row.entries()) {
@@ -135,7 +135,7 @@ function find_pair(grid, want) {
 
 // A `?` in a loop that holds a loop of its own, left by its own `break`,
 // as it's given to what a call's arguments are pushed to.
-function call_args(tokens) {
+function callArgs(tokens) {
   const it = iterator_peekable($iter(tokens), { next: $next });
   const t = $next(it);
   if (t != null) {
@@ -180,17 +180,17 @@ function call_args(tokens) {
 
 function main() {
   const rows = [["1", "2", "stop", "x"], ["3"], ["4", "5"]];
-  const value = sum_rows(rows);
+  const value = sumRows(rows);
   console.log(`${value.TAG === "Ok" ? `Ok(${value._0})` : `Err(${errorDebug_fmt(value._0)})`}`);
-  const value$1 = sum_rows([["1", ""]]);
+  const value$1 = sumRows([["1", ""]]);
   console.log(
     `${value$1.TAG === "Ok" ? `Ok(${value$1._0})` : `Err(${errorDebug_fmt(value$1._0)})`}`,
   );
-  const value$2 = sum_rows([["1"], ["200"]]);
+  const value$2 = sumRows([["1"], ["200"]]);
   console.log(
     `${value$2.TAG === "Ok" ? `Ok(${value$2._0})` : `Err(${errorDebug_fmt(value$2._0)})`}`,
   );
-  const value$3 = sum_rows([["-4"]]);
+  const value$3 = sumRows([["-4"]]);
   console.log(
     `${value$3.TAG === "Ok" ? `Ok(${value$3._0})` : `Err(${errorDebug_fmt(value$3._0)})`}`,
   );
@@ -200,15 +200,15 @@ function main() {
       `${t == null ? "None" : `Some(${$debugStr(t)})`} -> ${value.TAG === "Ok" ? `Ok(${$debugStr(value._0)})` : `Err(${errorDebug_fmt(value._0)})`}`,
     );
   }
-  const value$4 = first_even(["3", "5", "8", "9"]);
+  const value$4 = firstEven(["3", "5", "8", "9"]);
   console.log(
     `${value$4.TAG === "Ok" ? `Ok(${value$4._0})` : `Err(${errorDebug_fmt(value$4._0)})`}`,
   );
-  const value$5 = first_even(["3", "x"]);
+  const value$5 = firstEven(["3", "x"]);
   console.log(
     `${value$5.TAG === "Ok" ? `Ok(${value$5._0})` : `Err(${errorDebug_fmt(value$5._0)})`}`,
   );
-  const value$6 = first_even(["3"]);
+  const value$6 = firstEven(["3"]);
   console.log(
     `${value$6.TAG === "Ok" ? `Ok(${value$6._0})` : `Err(${errorDebug_fmt(value$6._0)})`}`,
   );
@@ -217,47 +217,47 @@ function main() {
     [40, 5, 6],
     [7, 8, 9],
   ];
-  const value$7 = find_pair(grid, 6);
+  const value$7 = findPair(grid, 6);
   console.log(
     `${value$7.TAG === "Ok" ? `Ok((${value$7._0[0]}, ${value$7._0[1]}))` : `Err(${errorDebug_fmt(value$7._0)})`}`,
   );
-  const value$8 = find_pair(grid, 3);
+  const value$8 = findPair(grid, 3);
   console.log(
     `${value$8.TAG === "Ok" ? `Ok((${value$8._0[0]}, ${value$8._0[1]}))` : `Err(${errorDebug_fmt(value$8._0)})`}`,
   );
-  const value$9 = find_pair(grid, 100);
+  const value$9 = findPair(grid, 100);
   console.log(
     `${value$9.TAG === "Ok" ? `Ok((${value$9._0[0]}, ${value$9._0[1]}))` : `Err(${errorDebug_fmt(value$9._0)})`}`,
   );
-  const value$10 = find_pair([[1, -2]], 5);
+  const value$10 = findPair([[1, -2]], 5);
   console.log(
     `${value$10.TAG === "Ok" ? `Ok((${value$10._0[0]}, ${value$10._0[1]}))` : `Err(${errorDebug_fmt(value$10._0)})`}`,
   );
-  const value$11 = call_args(["(", "1", ",", "_", "2", ",", "_", "_", "3", ")"]);
+  const value$11 = callArgs(["(", "1", ",", "_", "2", ",", "_", "_", "3", ")"]);
   console.log(
     `${value$11.TAG === "Ok" ? `Ok([${value$11._0.join(", ")}])` : `Err(${errorDebug_fmt(value$11._0)})`}`,
   );
-  const value$12 = call_args(["(", "1", ",", "_", "_", "_", ")"]);
+  const value$12 = callArgs(["(", "1", ",", "_", "_", "_", ")"]);
   console.log(
     `${value$12.TAG === "Ok" ? `Ok([${value$12._0.join(", ")}])` : `Err(${errorDebug_fmt(value$12._0)})`}`,
   );
-  const value$13 = call_args(["(", ")"]);
+  const value$13 = callArgs(["(", ")"]);
   console.log(
     `${value$13.TAG === "Ok" ? `Ok([${value$13._0.join(", ")}])` : `Err(${errorDebug_fmt(value$13._0)})`}`,
   );
-  const value$14 = call_args(["(", "1", "2"]);
+  const value$14 = callArgs(["(", "1", "2"]);
   console.log(
     `${value$14.TAG === "Ok" ? `Ok([${value$14._0.join(", ")}])` : `Err(${errorDebug_fmt(value$14._0)})`}`,
   );
-  const value$15 = call_args(["(", "x"]);
+  const value$15 = callArgs(["(", "x"]);
   console.log(
     `${value$15.TAG === "Ok" ? `Ok([${value$15._0.join(", ")}])` : `Err(${errorDebug_fmt(value$15._0)})`}`,
   );
-  const value$16 = call_args(["add"]);
+  const value$16 = callArgs(["add"]);
   console.log(
     `${value$16.TAG === "Ok" ? `Ok([${value$16._0.join(", ")}])` : `Err(${errorDebug_fmt(value$16._0)})`}`,
   );
-  const value$17 = call_args([]);
+  const value$17 = callArgs([]);
   console.log(
     `${value$17.TAG === "Ok" ? `Ok([${value$17._0.join(", ")}])` : `Err(${errorDebug_fmt(value$17._0)})`}`,
   );

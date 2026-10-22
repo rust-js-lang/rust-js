@@ -14,12 +14,12 @@ function moneyDebug_fmt(money) {
 
 export function moneyAddAssign() {
   if ($moneyAddAssign === undefined) {
-    $moneyAddAssign = { add_assign: (arg0, arg1) => moneyAddAssign_add_assign(arg0.value, arg1) };
+    $moneyAddAssign = { addAssign: (arg0, arg1) => moneyAddAssign_addAssign(arg0.value, arg1) };
   }
   return $moneyAddAssign;
 }
 
-function moneyAddAssign_add_assign(money, other) {
+function moneyAddAssign_addAssign(money, other) {
   console.log(`add ${other[0]}`);
   money[0] = BigInt.asIntN(64, money[0] + other[0]);
 }
@@ -34,7 +34,7 @@ function total(items, TAddAssign, TDefault, TCopy) {
     }
     const item = TCopy.copy($someValue(value));
     const self = { value: sum };
-    TAddAssign.add_assign(self, TCopy.copy(item));
+    TAddAssign.addAssign(self, TCopy.copy(item));
     sum = self.value;
   }
   return TCopy.copy(sum);
@@ -42,24 +42,24 @@ function total(items, TAddAssign, TDefault, TCopy) {
 
 function scaled(x, by, less, TMulAssign, TSubAssign) {
   const self = { value: x };
-  TMulAssign.mul_assign(self, by);
+  TMulAssign.mulAssign(self, by);
   x = self.value;
   const self$1 = { value: x };
-  TSubAssign.sub_assign(self$1, less);
+  TSubAssign.subAssign(self$1, less);
   x = self$1.value;
   return x;
 }
 
 function shifted(x, TShlAssignU32) {
   const self = { value: x };
-  TShlAssignU32.shl_assign(self, 3);
+  TShlAssignU32.shlAssign(self, 3);
   x = self.value;
   return x;
 }
 
 function joined(text, TAddAssignStr) {
   const self = { value: text };
-  TAddAssignStr.add_assign(self, ", world");
+  TAddAssignStr.addAssign(self, ", world");
   text = self.value;
   return text;
 }
@@ -69,7 +69,7 @@ function ordered(log, TAddAssign, TDefault) {
   log.push("left");
   log.push("right");
   const self = { value: held[0] };
-  TAddAssign.add_assign(self, TDefault.default());
+  TAddAssign.addAssign(self, TDefault.default());
   held[0] = self.value;
 }
 
@@ -78,7 +78,7 @@ function main() {
     `${total(
       [1, 2, 250],
       {
-        add_assign: (cell, b) => {
+        addAssign: (cell, b) => {
           cell.value = (cell.value + b) & 255;
         },
       },
@@ -92,12 +92,12 @@ function main() {
       4,
       5,
       {
-        mul_assign: (cell, b) => {
+        mulAssign: (cell, b) => {
           cell.value = Math.imul(cell.value, b);
         },
       },
       {
-        sub_assign: (cell, b) => {
+        subAssign: (cell, b) => {
           cell.value = (cell.value - b) | 0;
         },
       },
@@ -107,12 +107,12 @@ function main() {
         2,
         0.25,
         {
-          mul_assign: (cell, b) => {
+          mulAssign: (cell, b) => {
             cell.value *= b;
           },
         },
         {
-          sub_assign: (cell, b) => {
+          subAssign: (cell, b) => {
             cell.value -= b;
           },
         },
@@ -121,11 +121,11 @@ function main() {
   );
   console.log(
     `${shifted(1n, {
-      shl_assign: (cell, b) => {
+      shlAssign: (cell, b) => {
         cell.value = BigInt.asUintN(64, cell.value << (BigInt(b) & 63n));
       },
     })} ${joined("hello", {
-      add_assign: (cell, b) => {
+      addAssign: (cell, b) => {
         cell.value += b;
       },
     })}`,
@@ -134,7 +134,7 @@ function main() {
   ordered(
     log,
     {
-      add_assign: (cell, b) => {
+      addAssign: (cell, b) => {
         cell.value = (cell.value + b) | 0;
       },
     },
@@ -145,7 +145,7 @@ function main() {
   // The crate's own, of a field, where its type is known: its impl's.
   const purse = [[1n]];
   log.push("purse");
-  moneyAddAssign_add_assign(purse[0], [2n]);
+  moneyAddAssign_addAssign(purse[0], [2n]);
   console.log(`${moneyDebug_fmt(purse[0])} [${log.map((item) => $debugStr(item)).join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

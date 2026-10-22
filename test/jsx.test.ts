@@ -4588,7 +4588,7 @@ pub fn Results(ResultsProps { parameters }: ResultsProps) -> JSX::Element {
 `);
   run(args);
   const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
-  expect(jsx).toContain('export function Results({ parameters = { hits_per_page: 30, highlighted: ["content"] } }) {');
+  expect(jsx).toContain('export function Results({ parameters = { hitsPerPage: 30, highlighted: ["content"] } }) {');
   const { Results } = await import(join(dir, "lib.jsx"));
   expect(renderToStaticMarkup(Results({}))).toBe('<p title="content">30</p>');
 });
@@ -4695,7 +4695,7 @@ pub fn Page() -> JSX::Element {
   expect(jsx).toContain("\nfunction fact(n) {");
   expect(jsx).toContain("\nfunction double(x, TAdd) {");
   const lib = await import(join(dir, "lib.jsx"));
-  expect([renderToStaticMarkup(lib.Page()), lib.Label.type.name, lib.fact_of(3), lib.doubled(4)])
+  expect([renderToStaticMarkup(lib.Page()), lib.Label.type.name, lib.factOf(3), lib.doubled(4)])
     .toEqual(["<main><b>hi</b><i>UP</i><b>2<b>1<b>0</b></b></b></main>", "Label", 6, 8]);
 });
 
@@ -5043,7 +5043,7 @@ pub fn Block() -> JSX::Element {
 `);
   run(args);
   const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
-  expect(jsx).toContain("  const { is_in_block: isInBlock } = useContext(Ctx);\n");
+  expect(jsx).toContain("  const { isInBlock } = useContext(Ctx);\n");
   const lib = await import(join(dir, "lib.jsx"));
   expect(renderToStaticMarkup(createElement(lib.Block))).toBe("<b>x</b>");
 });
@@ -5268,7 +5268,7 @@ pub fn Page(home: bool, blog: bool, title: &'static str, meta: &Meta<'static>, p
   expect(jsx).not.toMatch(/\bconst (_\d|value\b|image\b|className)/);
   expect(jsx).toContain('      <div className={cn([hasColumns ? "grid" : undefined])}>\n');
   const lib = await import(join(dir, "lib.jsx"));
-  expect(renderToStaticMarkup(lib.Page(false, false, "T", { title_for_title_tag: "tt" }, "a/b", 3))).toBe(
+  expect(renderToStaticMarkup(lib.Page(false, false, "T", { titleForTitleTag: "tt" }, "a/b", 3))).toBe(
     '<span title="T">tt/og/a-b.png3</span><nav>t</nav><div class="grid"><article>c</article><div class="self"><hr/><div class="py">f</div></div></div>',
   );
 });
@@ -5721,7 +5721,7 @@ pub fn highlight() -> &'static Highlight {
   expect(js).toContain("return HighlightStyle.define([");
   expect(js).not.toContain("impl");
   const lib = await import(join(dir, "lib.js"));
-  expect(lib.highlight()).toEqual([{ tag: "em", font_style: "italic" }, { tag: "kw", class: "token-keyword" }]);
+  expect(lib.highlight()).toEqual([{ tag: "em", fontStyle: "italic" }, { tag: "kw", class: "token-keyword" }]);
 });
 
 // ADR 0364: props MIR holds ahead of a later child's closure, `const value$3

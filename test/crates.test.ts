@@ -202,11 +202,11 @@ test("a library's generic function takes the drops its body uses", () => {
     "export function relay(value) {",
     "export function discard(value, dropT) {",
     "export function apply(f, a) {",
-    "export function keep_by(value) {",
+    "export function keepBy(value) {",
   ]);
   const items = JSON.parse(readFileSync(join(dir, "lib.manifest.json"), "utf8")).library.items;
   expect(Object.fromEntries(items.map((item: { export: string; drops: number[] }) => [item.export, item.drops]))).toEqual({
-    keep: [], pick: [1], relay: [], discard: [0], apply: [], keep_by: [],
+    keep: [], pick: [1], relay: [], discard: [0], apply: [], keepBy: [],
   });
   // What each call gives: only the drops its callee takes, and a function
   // given as a value is itself.

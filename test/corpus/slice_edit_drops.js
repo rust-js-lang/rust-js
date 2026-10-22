@@ -33,7 +33,7 @@ export function trackedClone() {
   if ($trackedClone === undefined) {
     $trackedClone = {
       clone: trackedClone_clone,
-      clone_from: (arg0, arg1) => trackedClone_clone_from(arg0.value, arg1),
+      cloneFrom: (arg0, arg1) => trackedClone_cloneFrom(arg0.value, arg1),
     };
   }
   return $trackedClone;
@@ -44,14 +44,14 @@ function trackedClone_clone(tracked) {
   return [tracked[0]];
 }
 
-function trackedClone_clone_from(tracked, source) {
+function trackedClone_cloneFrom(tracked, source) {
   console.log(`clone_from ${source[0]} over ${tracked[0]}`);
   tracked[0] = source[0];
 }
 
 export function modeClone() {
   if ($modeClone === undefined) {
-    $modeClone = { clone: modeClone_clone, clone_from: modeClone_clone_from };
+    $modeClone = { clone: modeClone_clone, cloneFrom: modeClone_cloneFrom };
   }
   return $modeClone;
 }
@@ -63,7 +63,7 @@ function modeClone_clone(mode) {
   return "Off";
 }
 
-function modeClone_clone_from(mode, source) {
+function modeClone_cloneFrom(mode, source) {
   console.log(`mode clone_from ${source} over ${mode.value}`);
   const value = modeClone_clone(source);
   mode.value = value;
@@ -88,12 +88,12 @@ function fill() {
       $fill(none, [5], (value) => [value[0]], undefined, loudDrop_drop);
       const t = [[1], [2]];
       $fill(t, [3], undefined, (items, i, from) => {
-        trackedClone_clone_from(items[i], from);
+        trackedClone_cloneFrom(items[i], from);
       });
       console.log(`[${t.map((item) => trackedDebug_fmt(item)).join(", ")}]`);
       const modes = ["Off", "Off", "On"];
       $fill(modes, "On", undefined, (items, i, from) => {
-        modeClone_clone_from(
+        modeClone_cloneFrom(
           {
             get value() {
               return items[i];

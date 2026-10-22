@@ -14,7 +14,7 @@ function sleep(ms) {
   });
 }
 
-async function count_down(output, from) {
+async function countDown(output, from) {
   let n = from;
   while (n > 0) {
     output.textContent = String(n);
@@ -37,7 +37,7 @@ export function main() {
     }
     running = true;
     (async () => {
-      await count_down(output, 3);
+      await countDown(output, 3);
       running = false;
     })();
   });

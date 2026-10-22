@@ -51,22 +51,22 @@ function step(p, n, TSize) {
 }
 
 const Stack = {
-  is_full(stack, CAP) {
+  isFull(stack, CAP) {
     return stack.len === CAP;
   },
 
   /** Of a whole array: its items, read as `MaybeUninit`s. */
-  from_array(array, CAP) {
+  fromArray(array, CAP) {
     const xs = array;
     return { xs, len: CAP };
   },
 
   /** Its items, read as the whole array, when it's full. */
-  into_array(stack, CAP) {
-    if (!Stack.is_full(stack, CAP)) {
+  intoArray(stack, CAP) {
+    if (!Stack.isFull(stack, CAP)) {
       throw new Error("assertion failed: self.is_full()");
     }
-    const array = $ptrWhole(Stack.as_ptr(stack, CAP), CAP).value;
+    const array = $ptrWhole(Stack.asPtr(stack, CAP), CAP).value;
     return array;
   },
 
@@ -74,11 +74,11 @@ const Stack = {
     return { xs: Array.from({ length: CAP }), len: 0 };
   },
 
-  as_ptr(stack, CAP) {
+  asPtr(stack, CAP) {
     return $ptr(stack.xs, 0);
   },
 
-  as_mut_ptr(stack, CAP) {
+  asMutPtr(stack, CAP) {
     return $ptr(stack.xs, 0);
   },
 
@@ -90,7 +90,7 @@ const Stack = {
     }
     let tmp;
     try {
-      tmp = step(Stack.as_mut_ptr(stack, CAP), stack.len, TSize);
+      tmp = step(Stack.asMutPtr(stack, CAP), stack.len, TSize);
       value$live = false;
     } catch (error) {
       if (value$live) {
@@ -106,7 +106,7 @@ const Stack = {
     if (!(index <= stack.len) || !(stack.len < CAP)) {
       throw new Error("assertion failed: index <= self.len && self.len < CAP");
     }
-    const p = $ptrAdd(Stack.as_mut_ptr(stack, CAP), index);
+    const p = $ptrAdd(Stack.asMutPtr(stack, CAP), index);
     $ptrCopy(p, $ptrAdd(p, 1), (stack.len - index) >>> 0);
     p.value = value;
     stack.len = (stack.len + 1) >>> 0;
@@ -116,7 +116,7 @@ const Stack = {
     if (!(index < stack.len)) {
       throw new Error("assertion failed: index < self.len");
     }
-    const p = $ptrAdd(Stack.as_mut_ptr(stack, CAP), index);
+    const p = $ptrAdd(Stack.asMutPtr(stack, CAP), index);
     const taken = p.value;
     $ptrCopy($ptrAdd(p, 1), p, (((stack.len - index) >>> 0) - 1) >>> 0);
     stack.len = (stack.len - 1) >>> 0;
@@ -127,13 +127,13 @@ const Stack = {
    * Copies of `other`'s items after its own, read through the shared
    * slice's pointer.
    */
-  extend_from_slice(stack, other, CAP) {
+  extendFromSlice(stack, other, CAP) {
     if (!((stack.len + other.length) >>> 0 <= CAP)) {
       throw new Error("assertion failed: self.len + other.len() <= CAP");
     }
     $ptrCopy(
       $ptr(other, 0),
-      $ptrAdd(Stack.as_mut_ptr(stack, CAP), stack.len),
+      $ptrAdd(Stack.asMutPtr(stack, CAP), stack.len),
       other.length,
       (item) => item,
     );
@@ -144,17 +144,17 @@ const Stack = {
   truncate(stack, len, CAP, dropT) {
     while (stack.len > len) {
       stack.len = (stack.len - 1) >>> 0;
-      const value = $ptrAdd(Stack.as_mut_ptr(stack, CAP), stack.len).value;
+      const value = $ptrAdd(Stack.asMutPtr(stack, CAP), stack.len).value;
       dropT?.(value);
     }
   },
 
-  as_slice(stack, CAP) {
-    return $ptrSlice(Stack.as_ptr(stack, CAP), stack.len);
+  asSlice(stack, CAP) {
+    return $ptrSlice(Stack.asPtr(stack, CAP), stack.len);
   },
 
-  as_mut_slice(stack, CAP) {
-    return $ptrSliceMut(Stack.as_mut_ptr(stack, CAP), stack.len);
+  asMutSlice(stack, CAP) {
+    return $ptrSliceMut(Stack.asMutPtr(stack, CAP), stack.len);
   },
 };
 
@@ -164,23 +164,23 @@ function main() {
     Stack.push(numbers, n, 8, 4);
   }
   Stack.insert(numbers, 1, 9, 8);
-  console.log(`[${Stack.as_slice(numbers, 8).join(", ")}]`);
+  console.log(`[${Stack.asSlice(numbers, 8).join(", ")}]`);
   console.log(`${Stack.remove(numbers, 0, 8)}`);
-  Stack.as_mut_slice(numbers, 8).sort((a, b) => a - b);
+  Stack.asMutSlice(numbers, 8).sort((a, b) => a - b);
   const more = [20, 30, 40];
-  Stack.extend_from_slice(numbers, $slice(more, 1), 8);
-  console.log(`[${Stack.as_slice(numbers, 8).join(", ")}] ${numbers.len}`);
+  Stack.extendFromSlice(numbers, $slice(more, 1), 8);
+  console.log(`[${Stack.asSlice(numbers, 8).join(", ")}] ${numbers.len}`);
   const words = Stack.new(4);
   Stack.push(words, "b", 4, 12);
   Stack.insert(words, 0, "a", 4);
-  const mutSlice = Stack.as_mut_slice(words, 4);
+  const mutSlice = Stack.asMutSlice(words, 4);
   const length = mutSlice.length;
   if (1 >= length) {
     throw new Error(`index out of bounds: the len is ${length} but the index is 1`);
   }
   mutSlice[1] += "!";
   console.log(
-    `[${Stack.as_slice(words, 4)
+    `[${Stack.asSlice(words, 4)
       .map((item) => $debugStr(item))
       .join(", ")}]`,
   );
@@ -199,8 +199,8 @@ function main() {
   Stack.push(noisy, ["b"], 3, 8, noisyDrop_drop);
   Stack.truncate(noisy, 0, 3, noisyDrop_drop);
   console.log(`${noisy.len}`);
-  const full = Stack.from_array([7, 8, 9], 3);
-  console.log(`${Stack.is_full(full, 3)} [${Stack.into_array(full, 3).join(", ")}]`);
+  const full = Stack.fromArray([7, 8, 9], 3);
+  console.log(`${Stack.isFull(full, 3)} [${Stack.intoArray(full, 3).join(", ")}]`);
   // A `Copy` value JS holds as an object, which a copy changes: each
   // place its own, as Rust's copy is.
   const points = Stack.new(4);
@@ -208,9 +208,9 @@ function main() {
   Stack.push(points, { x: 2 }, 4, 4);
   const item = { x: 0 };
   const moved = Array.from({ length: 2 }, () => ({ ...item }));
-  $ptrCopy(Stack.as_ptr(points, 4), $ptr(moved, 0), 2, (item) => ({ ...item }));
+  $ptrCopy(Stack.asPtr(points, 4), $ptr(moved, 0), 2, (item) => ({ ...item }));
   moved[0].x = 10;
-  const arg = Stack.as_slice(points, 4);
+  const arg = Stack.asSlice(points, 4);
   console.log(
     `[${arg.map((item) => pointDebug_fmt(item)).join(", ")}] [${moved.map((item) => pointDebug_fmt(item)).join(", ")}]`,
   );

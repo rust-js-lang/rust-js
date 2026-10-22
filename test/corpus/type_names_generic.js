@@ -16,11 +16,11 @@ function names(TClone, TName) {
   ];
 }
 
-function unsized_name(TName) {
+function unsizedName(TName) {
   return TName;
 }
 
-function passed_on(UClone, UName) {
+function passedOn(UClone, UName) {
   return names(UClone, UName)[1];
 }
 
@@ -40,8 +40,8 @@ function main() {
   console.log(`(${$debugStr(value[0])}, ${$debugStr(value[1])}, ${$debugStr(value[2])})`);
   const value$1 = names({ clone: (value) => value }, "alloc::string::String");
   console.log(`(${$debugStr(value$1[0])}, ${$debugStr(value$1[1])}, ${$debugStr(value$1[2])})`);
-  console.log(`${unsized_name("str")} ${unsized_name("[u8]")}`);
-  console.log(`${passed_on({ clone: (value) => value }, "bool")}`);
+  console.log(`${unsizedName("str")} ${unsizedName("[u8]")}`);
+  console.log(`${passedOn({ clone: (value) => value }, "bool")}`);
   const shown = { value: 1, impl: tNamed("i32") };
   console.log(`${shown.impl.named(shown.value)} ${tNamed_named(2, "u8")}`);
 }

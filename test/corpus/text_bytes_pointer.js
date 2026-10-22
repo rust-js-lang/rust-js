@@ -11,7 +11,7 @@ const Text = {
     return { xs: Array.from({ length: CAP }), len: 0 };
   },
 
-  push_str(text, s, CAP) {
+  pushStr(text, s, CAP) {
     if ($byteLen(s) > (CAP - text.len) >>> 0) {
       return false;
     }
@@ -22,7 +22,7 @@ const Text = {
     return true;
   },
 
-  as_str(text, CAP) {
+  asStr(text, CAP) {
     const bytes = $ptrSlice($ptr(text.xs, 0), text.len);
     return $utf8Decode(bytes);
   },
@@ -30,9 +30,9 @@ const Text = {
 
 function main() {
   const t = Text.new(8);
-  Text.push_str(t, "hé", 8);
-  Text.push_str(t, "llo", 8);
-  const full = Text.push_str(t, "!!!", 8);
-  console.log(`${Text.as_str(t, 8)} ${t.len} ${full}`);
+  Text.pushStr(t, "hé", 8);
+  Text.pushStr(t, "llo", 8);
+  const full = Text.pushStr(t, "!!!", 8);
+  console.log(`${Text.asStr(t, 8)} ${t.len} ${full}`);
 }
 //# sourceMappingURL=case.js.map

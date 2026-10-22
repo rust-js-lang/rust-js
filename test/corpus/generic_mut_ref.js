@@ -17,7 +17,7 @@ function i32Bump() {
     $i32Bump = {
       bump: i32Bump_bump,
       get: i32Bump_get,
-      bumped_twice: (self) => {
+      bumpedTwice: (self) => {
         i32Bump_bump(self);
         i32Bump_bump(self);
         return i32Bump_get(self.value);
@@ -40,7 +40,7 @@ function cBump() {
     $cBump = {
       bump: (arg0) => cBump_bump(arg0.value),
       get: cBump_get,
-      bumped_twice: (self) => {
+      bumpedTwice: (self) => {
         cBump_bump(self.value);
         cBump_bump(self.value);
         return cBump_get(self.value);
@@ -96,10 +96,10 @@ function main() {
   console.log(`${bumped(1, i32Bump())} ${bumped({ n: 3 }, cBump()).n}`);
 
   const self = { value: n };
-  const bumpedTwice = i32Bump().bumped_twice(self);
+  const bumpedTwice = i32Bump().bumpedTwice(self);
   n = self.value;
   const self$1 = { value: c };
-  const value = cBump().bumped_twice(self$1);
+  const value = cBump().bumpedTwice(self$1);
   $assign(c, self$1.value);
   console.log(`${bumpedTwice} ${value}`);
   console.log(`${n} ${c.n}`);

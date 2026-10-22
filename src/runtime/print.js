@@ -41,27 +41,27 @@ function $printBytes(bytes, error) {
 // nothing (ADR 0132).
 const $stdoutWriter = {
   write: (_, bytes) => ({ TAG: "Ok", _0: $printBytes(bytes, 0) }),
-  write_all: (_, bytes) => void $printBytes(bytes, 0),
-  write_fmt: (_, text) => $print(text),
+  writeAll: (_, bytes) => void $printBytes(bytes, 0),
+  writeFmt: (_, text) => $print(text),
   flush: () => {},
 };
 const $stderrWriter = {
   write: (_, bytes) => ({ TAG: "Ok", _0: $printBytes(bytes, 1) }),
-  write_all: (_, bytes) => void $printBytes(bytes, 1),
-  write_fmt: (_, text) => $eprint(text),
+  writeAll: (_, bytes) => void $printBytes(bytes, 1),
+  writeFmt: (_, text) => $eprint(text),
   flush: () => {},
 };
 const $vecWriter = {
   write: (w, bytes) => (w.value.push(...bytes), { TAG: "Ok", _0: bytes.length }),
-  write_all: (w, bytes) => void w.value.push(...bytes),
-  write_fmt: (w, text) => $writeText(w.value, text),
+  writeAll: (w, bytes) => void w.value.push(...bytes),
+  writeFmt: (w, text) => $writeText(w.value, text),
   flush: () => {},
 };
 // A `Box<dyn Write>`'s, given in a box: the pair it holds, written through.
 const $dynWriter = {
   write: (w, bytes) => w.value.impl.write(w.value, bytes),
-  write_all: (w, bytes) => w.value.impl.write_all(w.value, bytes),
-  write_fmt: (w, text) => w.value.impl.write_fmt(w.value, text),
+  writeAll: (w, bytes) => w.value.impl.writeAll(w.value, bytes),
+  writeFmt: (w, text) => w.value.impl.writeFmt(w.value, text),
   flush: (w) => w.value.impl.flush(w.value),
 };
 // `io::Write`'s `write_all` of a writer of the crate's, std's: its `write`

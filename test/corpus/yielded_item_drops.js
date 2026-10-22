@@ -82,7 +82,7 @@ function third(iter, dropIItem) {
   return $nextSome(iter);
 }
 
-function last_one(iter, dropIItem) {
+function lastOne(iter, dropIItem) {
   let last = $nextSome(iter);
   let tmp;
   while (true) {
@@ -126,12 +126,12 @@ function last_one(iter, dropIItem) {
   return last;
 }
 
-function made_third(made, dropT) {
+function madeThird(made, dropT) {
   return third(made, dropT);
 }
 
 function relayed(iter, dropJItem) {
-  return last_one(iter, dropJItem);
+  return lastOne(iter, dropJItem);
 }
 
 function counted(iter, IIterator, IClone) {
@@ -151,7 +151,7 @@ function main() {
   console.log(`kept ${kept != null ? map(kept) : 0}`);
   const value = second($lazyRange(0, 3));
   console.log(`${value == null ? "None" : `Some(${value})`}`);
-  const made = made_third(
+  const made = madeThird(
     $iterator(
       { make: (value) => [value], n: 0 },
       (iterator) => makeIterator_next(iterator, loudDrop_drop),

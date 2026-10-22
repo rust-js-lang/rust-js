@@ -34,7 +34,7 @@ function pick(n) {
 }
 
 // A parameter taken apart: the function owns what its pattern leaves.
-function some_borrowed(_1) {
+function someBorrowed(_1) {
   const a = _1[0];
   const b = _1[1];
   try {
@@ -48,7 +48,7 @@ function some_borrowed(_1) {
   }
 }
 
-function all_borrowed(_1) {
+function allBorrowed(_1) {
   const a = _1[0];
   const b = _1[1];
   try {
@@ -62,7 +62,7 @@ function all_borrowed(_1) {
   loudDrop_drop(_1[1]);
 }
 
-function all_moved([a, b]) {
+function allMoved([a, b]) {
   try {
     try {
       console.log(`moved ${a[0]} ${b[0]}`);
@@ -412,7 +412,7 @@ function main() {
           loudDrop_drop(tmp);
           throw error;
         }
-        some_borrowed(tmp$1);
+        someBorrowed(tmp$1);
         const tmp$2 = make(52);
         let tmp$3;
         try {
@@ -421,7 +421,7 @@ function main() {
           loudDrop_drop(tmp$2);
           throw error;
         }
-        all_borrowed(tmp$3);
+        allBorrowed(tmp$3);
         const tmp$4 = make(54);
         let tmp$5;
         try {
@@ -430,7 +430,7 @@ function main() {
           loudDrop_drop(tmp$4);
           throw error;
         }
-        all_moved(tmp$5);
+        allMoved(tmp$5);
         const closure = (_2) => {
           const a = _2[0];
           const b = _2[1];

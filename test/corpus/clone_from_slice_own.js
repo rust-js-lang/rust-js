@@ -12,7 +12,7 @@ export function countedClone() {
   if ($countedClone === undefined) {
     $countedClone = {
       clone: countedClone_clone,
-      clone_from: (arg0, arg1) => countedClone_clone_from(arg0.value, arg1),
+      cloneFrom: (arg0, arg1) => countedClone_cloneFrom(arg0.value, arg1),
     };
   }
   return $countedClone;
@@ -23,14 +23,14 @@ function countedClone_clone(counted) {
   return [counted[0]];
 }
 
-function countedClone_clone_from(counted, source) {
+function countedClone_cloneFrom(counted, source) {
   console.log(`clone_from ${source[0]} into ${counted[0]}`);
   counted[0] = source[0];
 }
 
 export function lightClone() {
   if ($lightClone === undefined) {
-    $lightClone = { clone: lightClone_clone, clone_from: lightClone_clone_from };
+    $lightClone = { clone: lightClone_clone, cloneFrom: lightClone_cloneFrom };
   }
   return $lightClone;
 }
@@ -43,7 +43,7 @@ function lightClone_clone(light) {
   return "Off";
 }
 
-function lightClone_clone_from(light, source) {
+function lightClone_cloneFrom(light, source) {
   console.log(`clone_from ${source} into ${light.value}`);
   light.value = source === "On" ? "On" : "Off";
 }
@@ -52,12 +52,12 @@ function main() {
   const source = [[1], [2]];
   const target = [[7], [8]];
   $cloneFromSlice(target, source, undefined, (items, i, from) => {
-    countedClone_clone_from(items[i], from);
+    countedClone_cloneFrom(items[i], from);
   });
   console.log(`${target[0][0]} ${target[1][0]}`);
   const lights = ["Off", "On"];
   $cloneFromSlice(lights, ["On", "Off"], undefined, (items, i, from) => {
-    lightClone_clone_from(
+    lightClone_cloneFrom(
       {
         get value() {
           return items[i];

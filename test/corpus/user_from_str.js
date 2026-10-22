@@ -17,12 +17,12 @@ export function entry() {
 
 export function roleFromStr() {
   if ($roleFromStr === undefined) {
-    $roleFromStr = { from_str: roleFromStr_from_str };
+    $roleFromStr = { fromStr: roleFromStr_fromStr };
   }
   return $roleFromStr;
 }
 
-function roleFromStr_from_str(s) {
+function roleFromStr_fromStr(s) {
   const other = $trim(s).toLowerCase();
   if (other === "admin") {
     return { TAG: "Ok", _0: "Admin" };
@@ -60,12 +60,12 @@ function pointErrorDisplay_fmt(pointError) {
 
 export function pointFromStr() {
   if ($pointFromStr === undefined) {
-    $pointFromStr = { from_str: pointFromStr_from_str };
+    $pointFromStr = { fromStr: pointFromStr_fromStr };
   }
   return $pointFromStr;
 }
 
-function pointFromStr_from_str(s) {
+function pointFromStr_fromStr(s) {
   const option = $splitOnce(s, ",");
   const result = option != null ? { TAG: "Ok", _0: option } : { TAG: "Err", _0: "Shape" };
   if (result.TAG === "Err") {
@@ -92,7 +92,7 @@ function pointFromStr_from_str(s) {
 function total(text) {
   let sum = 0;
   for (const part of text.split(";")) {
-    const result = pointFromStr_from_str(part);
+    const result = pointFromStr_fromStr(part);
     if (result.TAG === "Err") {
       return result;
     }
@@ -103,31 +103,31 @@ function total(text) {
 }
 
 function main() {
-  const parse = roleFromStr_from_str("Admin");
-  const value = roleFromStr_from_str(" member ");
-  const value$1 = roleFromStr_from_str("guest");
+  const parse = roleFromStr_fromStr("Admin");
+  const value = roleFromStr_fromStr(" member ");
+  const value$1 = roleFromStr_fromStr("guest");
   console.log(
     `${parse.TAG === "Ok" ? `Ok(${parse._0})` : `Err(${$debugStr(parse._0)})`} ${value.TAG === "Ok" ? `Ok(${value._0})` : `Err(${$debugStr(value._0)})`} ${value$1.TAG === "Ok" ? `Ok(${value$1._0})` : `Err(${$debugStr(value$1._0)})`}`,
   );
-  const result = roleFromStr_from_str("ADMIN");
+  const result = roleFromStr_fromStr("ADMIN");
   const value$2 = result.TAG === "Ok" ? { TAG: "Ok", _0: result._0 === "Admin" } : result;
   console.log(`${value$2.TAG === "Ok" ? `Ok(${value$2._0})` : `Err(${$debugStr(value$2._0)})`}`);
-  const roles = $collectResults(["admin", "member"].values().map((s) => roleFromStr_from_str(s)));
+  const roles = $collectResults(["admin", "member"].values().map((s) => roleFromStr_fromStr(s)));
   console.log(
     `${roles.TAG === "Ok" ? `Ok([${roles._0.join(", ")}])` : `Err(${$debugStr(roles._0)})`}`,
   );
 
-  const value$3 = pointFromStr_from_str("3, 4");
+  const value$3 = pointFromStr_fromStr("3, 4");
   console.log(
     `${value$3.TAG === "Ok" ? `Ok(${pointDebug_fmt(value$3._0)})` : `Err(${pointErrorDebug_fmt(value$3._0)})`}`,
   );
-  const value$4 = pointFromStr_from_str("3");
+  const value$4 = pointFromStr_fromStr("3");
   if (value$4.TAG === "Ok") {
     console.log(`${pointDebug_fmt(value$4._0)}`);
   } else {
     console.log(`${pointErrorDisplay_fmt(value$4._0)}`);
   }
-  const value$5 = pointFromStr_from_str("3,x");
+  const value$5 = pointFromStr_fromStr("3,x");
   if (value$5.TAG === "Err") {
     console.log(`${pointErrorDisplay_fmt(value$5._0)} ${pointErrorDebug_fmt(value$5._0)}`);
   }

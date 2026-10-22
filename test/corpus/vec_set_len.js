@@ -20,7 +20,7 @@ export function entry() {
  * Moves a vector's items out into another, as smallvec's `from_vec` does:
  * its length `0` first, so the vector drops none of them.
  */
-function take_all(v) {
+function takeAll(v) {
   const out = $withCapacity(v.length);
   const len = v.length;
   $keepCapacity(v);
@@ -34,7 +34,7 @@ function take_all(v) {
 function main() {
   const v = ["a", "b", "c"];
   console.log(
-    `[${take_all(v)
+    `[${takeAll(v)
       .map((item) => $debugStr(item))
       .join(", ")}]`,
   );

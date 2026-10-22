@@ -2,48 +2,48 @@
 // std's are (ADR 0463): an integer's bytes, little-endian as `wasm32`'s, a
 // `usize`'s four; a signed one's as its unsigned one's; text's bytes and 0xff.
 class $Hasher {
-  write_u8(n) {
+  writeU8(n) {
     this.write([n]);
   }
-  write_u16(n) {
+  writeU16(n) {
     this.write($toBytes(n, 2, true));
   }
-  write_u32(n) {
+  writeU32(n) {
     this.write($toBytes(n, 4, true));
   }
-  write_u64(n) {
+  writeU64(n) {
     this.write($toBytes(n, 8, true));
   }
-  write_u128(n) {
+  writeU128(n) {
     this.write($toBytes(n, 16, true));
   }
-  write_usize(n) {
+  writeUsize(n) {
     this.write($toBytes(n, 4, true));
   }
-  write_i8(n) {
-    this.write_u8(n & 0xff);
+  writeI8(n) {
+    this.writeU8(n & 0xff);
   }
-  write_i16(n) {
-    this.write_u16(n & 0xffff);
+  writeI16(n) {
+    this.writeU16(n & 0xffff);
   }
-  write_i32(n) {
-    this.write_u32(n >>> 0);
+  writeI32(n) {
+    this.writeU32(n >>> 0);
   }
-  write_i64(n) {
-    this.write_u64(BigInt.asUintN(64, n));
+  writeI64(n) {
+    this.writeU64(BigInt.asUintN(64, n));
   }
-  write_i128(n) {
-    this.write_u128(BigInt.asUintN(128, n));
+  writeI128(n) {
+    this.writeU128(BigInt.asUintN(128, n));
   }
-  write_isize(n) {
-    this.write_usize(n >>> 0);
+  writeIsize(n) {
+    this.writeUsize(n >>> 0);
   }
-  write_length_prefix(n) {
-    this.write_usize(n);
+  writeLengthPrefix(n) {
+    this.writeUsize(n);
   }
-  write_str(s) {
+  writeStr(s) {
     this.write(Array.from(new TextEncoder().encode(s)));
-    this.write_u8(0xff);
+    this.writeU8(0xff);
   }
 }
 const $hasherProvided = Object.getOwnPropertyNames($Hasher.prototype).filter((name) => name !== "constructor");

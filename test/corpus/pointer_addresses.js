@@ -19,7 +19,7 @@ export function entry() {
 }
 
 // A pointer to a type parameter's value, an object as its caller gives it.
-function address_of(value, TSize) {
+function addressOf(value, TSize) {
   return $addr($ptrTo(value), TSize);
 }
 
@@ -86,12 +86,12 @@ function main() {
   // A boxed value's, aligned as its type is; two allocations' differ.
   const boxed = $ptrTo({ a: 4, b: 5, c: 6 });
   console.log(`${$addr(boxed, 12) % 4} ${boxed.value.b}`);
-  console.log(`${$addr(boxed, 12) !== at} ${address_of(record, 12) === at}`);
+  console.log(`${$addr(boxed, 12) !== at} ${addressOf(record, 12) === at}`);
 
   // Hashed by address: one place hashes the same, two differently.
   const hashed = (pointer) => {
     const hasher = new $SipHasher(1, 3);
-    hasher.write_usize($addr(pointer, 4));
+    hasher.writeUsize($addr(pointer, 4));
     return hasher.finish();
   };
   console.log(`${hashed(p) === hashed(again)} ${hashed(p) === hashed(second)}`);

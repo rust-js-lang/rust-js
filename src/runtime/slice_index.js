@@ -5,14 +5,14 @@
 function $boundsIndex(start, end) {
   return {
     index: (range, items) => $slice(items, start(range), end(range)),
-    index_mut: (range, items) => ({ value: $view(items, start(range), end(range)) }),
+    indexMut: (range, items) => ({ value: $view(items, start(range), end(range)) }),
   };
 }
 
 const $sliceIndexes = {
   item: {
     index: (index, items) => $index(items, index),
-    index_mut: (index, items) => $ptr(items, $at(items, index)),
+    indexMut: (index, items) => $ptr(items, $at(items, index)),
   },
   range: $boundsIndex((range) => range.start, (range) => range.end),
   from: $boundsIndex((range) => range.start, () => undefined),

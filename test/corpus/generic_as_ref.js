@@ -9,54 +9,54 @@ export function entry() {
 }
 
 function shout(s, SAsRefStr) {
-  return SAsRefStr.as_ref(s).toUpperCase();
+  return SAsRefStr.asRef(s).toUpperCase();
 }
 
 function total(values, VAsRefI32Slice) {
-  return VAsRefI32Slice.as_ref(values).reduce((a, b) => (a + b) | 0, 0);
+  return VAsRefI32Slice.asRef(values).reduce((a, b) => (a + b) | 0, 0);
 }
 
 function longest(words, SAsRefStr) {
-  return $max(words.map((w) => $byteLen(SAsRefStr.as_ref(w)))) ?? 0;
+  return $max(words.map((w) => $byteLen(SAsRefStr.asRef(w)))) ?? 0;
 }
 
 export function nameAsRefStr() {
   if ($nameAsRefStr === undefined) {
-    $nameAsRefStr = { as_ref: nameAsRefStr_as_ref };
+    $nameAsRefStr = { asRef: nameAsRefStr_asRef };
   }
   return $nameAsRefStr;
 }
 
-function nameAsRefStr_as_ref(name) {
+function nameAsRefStr_asRef(name) {
   return name.first;
 }
 
 export function scoresAsRefI32Slice() {
   if ($scoresAsRefI32Slice === undefined) {
-    $scoresAsRefI32Slice = { as_ref: scoresAsRefI32Slice_as_ref };
+    $scoresAsRefI32Slice = { asRef: scoresAsRefI32Slice_asRef };
   }
   return $scoresAsRefI32Slice;
 }
 
-function scoresAsRefI32Slice_as_ref(scores) {
+function scoresAsRefI32Slice_asRef(scores) {
   return scores[0];
 }
 
 function main() {
   const owned = "tea";
   console.log(
-    `${shout("hi", { as_ref: (value) => value })} ${shout(owned, { as_ref: (value) => value })} ${shout(owned, { as_ref: (value) => value })} ${shout({ first: "ada" }, nameAsRefStr())}`,
+    `${shout("hi", { asRef: (value) => value })} ${shout(owned, { asRef: (value) => value })} ${shout(owned, { asRef: (value) => value })} ${shout({ first: "ada" }, nameAsRefStr())}`,
   );
   console.log(
     `${total([1, 2, 3], {
-      as_ref: (value) => value,
-    })} ${total([4, 5], { as_ref: (value) => value })} ${total([6], { as_ref: (value) => value })} ${total([[7, 8]], scoresAsRefI32Slice())}`,
+      asRef: (value) => value,
+    })} ${total([4, 5], { asRef: (value) => value })} ${total([6], { asRef: (value) => value })} ${total([[7, 8]], scoresAsRefI32Slice())}`,
   );
   console.log(
-    `${longest(["a", "abc"], { as_ref: (value) => value })} ${longest(["four"], { as_ref: (value) => value })}`,
+    `${longest(["a", "abc"], { asRef: (value) => value })} ${longest(["four"], { asRef: (value) => value })}`,
   );
   const name = { first: "lin" };
-  const direct = nameAsRefStr_as_ref(name);
-  console.log(`${direct} ${scoresAsRefI32Slice_as_ref([[1, 2]]).length}`);
+  const direct = nameAsRefStr_asRef(name);
+  console.log(`${direct} ${scoresAsRefI32Slice_asRef([[1, 2]]).length}`);
 }
 //# sourceMappingURL=case.js.map

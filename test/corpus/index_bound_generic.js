@@ -10,8 +10,8 @@ function bufferIndexJ_index(buffer, index, JSliceIndexTSlice) {
   return JSliceIndexTSlice.index(index, buffer.buffer);
 }
 
-function bufferIndexMutJ_index_mut(buffer, index, JSliceIndexTSlice) {
-  return JSliceIndexTSlice.index_mut(index, buffer.buffer);
+function bufferIndexMutJ_indexMut(buffer, index, JSliceIndexTSlice) {
+  return JSliceIndexTSlice.indexMut(index, buffer.buffer);
 }
 
 function pick(items, at, JSliceIndexU32Slice) {
@@ -19,12 +19,12 @@ function pick(items, at, JSliceIndexU32Slice) {
 }
 
 function shout(items, at, JSliceIndexStringSlice) {
-  const value = JSliceIndexStringSlice.index_mut(at, items);
+  const value = JSliceIndexStringSlice.indexMut(at, items);
   value.value += "!";
 }
 
-function reversed_len(items, part, JClone, JSliceIndexU32Slice) {
-  JSliceIndexU32Slice.index_mut(JClone.clone(part), items).value.reverse();
+function reversedLen(items, part, JClone, JSliceIndexU32Slice) {
+  JSliceIndexU32Slice.indexMut(JClone.clone(part), items).value.reverse();
   return JSliceIndexU32Slice.index(part, items).length;
 }
 
@@ -44,8 +44,8 @@ function main() {
       $sliceIndexes.inclusive,
     ).join(", ")}]`,
   );
-  bufferIndexMutJ_index_mut(b, 0, $sliceIndexes.item).value = 10;
-  bufferIndexMutJ_index_mut(b, { start: 1, end: 3 }, $sliceIndexes.range).value.reverse();
+  bufferIndexMutJ_indexMut(b, 0, $sliceIndexes.item).value = 10;
+  bufferIndexMutJ_indexMut(b, { start: 1, end: 3 }, $sliceIndexes.range).value.reverse();
   console.log(`[${bufferIndexJ_index(b, { end: 2 }, $sliceIndexes.to).join(", ")}]`);
   console.log(
     `${pick([5, 6, 7], 2, $sliceIndexes.item)} [${pick(
@@ -59,7 +59,7 @@ function main() {
   console.log(`[${words.map((item) => $debugStr(item)).join(", ")}]`);
   const v = [1, 2, 3, 4, 5];
   console.log(
-    `${reversed_len(
+    `${reversedLen(
       v,
       { start: 1, end: 4 },
       { clone: (value) => ({ start: value.start, end: value.end }) },
@@ -67,7 +67,7 @@ function main() {
     )} [${v.join(", ")}]`,
   );
   console.log(
-    `${reversed_len(v, undefined, { clone: (value) => value }, $sliceIndexes.full)} [${v.join(", ")}]`,
+    `${reversedLen(v, undefined, { clone: (value) => value }, $sliceIndexes.full)} [${v.join(", ")}]`,
   );
   console.log(`${second(v)}`);
 }

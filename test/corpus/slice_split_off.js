@@ -15,7 +15,7 @@ export function entry() {
   main();
 }
 
-function take_word(input) {
+function takeWord(input) {
   if (input.value.length === 0) {
     return;
   }
@@ -67,7 +67,7 @@ function main() {
   let text = [116, 111, 32, 98, 101, 32, 111, 114];
   while (true) {
     const input = { value: text };
-    const word = take_word(input);
+    const word = takeWord(input);
     text = input.value;
     if (!word) {
       break;

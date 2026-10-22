@@ -6,7 +6,7 @@ export function entry() {
   main();
 }
 
-function split_number(text) {
+function splitNumber(text) {
   const cs = Array.from(text).entries();
   let digits = "";
   for (const [, c] of $lent(cs)) {
@@ -22,7 +22,7 @@ function split_number(text) {
   return [digits, rest];
 }
 
-function split_mut(text) {
+function splitMut(text) {
   const cs = $iter(Array.from(text));
   let head = "";
   for (const c of cs) {
@@ -62,15 +62,15 @@ function equalNamesIterator_next(equalNames) {
 }
 
 function main() {
-  const splitNumber = split_number("12e34");
-  const value = split_number("7");
+  const value = splitNumber("12e34");
+  const value$1 = splitNumber("7");
   console.log(
-    `(${$debugStr(splitNumber[0])}, ${$debugStr(splitNumber[1])}) (${$debugStr(value[0])}, ${$debugStr(value[1])})`,
+    `(${$debugStr(value[0])}, ${$debugStr(value[1])}) (${$debugStr(value$1[0])}, ${$debugStr(value$1[1])})`,
   );
-  const splitMut = split_mut("key:value");
-  const value$1 = split_mut("none");
+  const value$2 = splitMut("key:value");
+  const value$3 = splitMut("none");
   console.log(
-    `(${$debugStr(splitMut[0])}, ${splitMut[1]}) (${$debugStr(value$1[0])}, ${value$1[1]})`,
+    `(${$debugStr(value$2[0])}, ${value$2[1]}) (${$debugStr(value$3[0])}, ${value$3[1]})`,
   );
   const names = $iterator({ inner: { at: 0 }, bits: 3 }, equalNamesIterator_next).toArray();
   console.log(`[${names.map((item) => $debugStr(item)).join(", ")}]`);
@@ -86,9 +86,9 @@ function main() {
       break;
     }
   }
-  const value$2 = namesIterator_next(all);
+  const value$4 = namesIterator_next(all);
   console.log(
-    `${value$2 == null ? "None" : `Some((${$debugStr(value$2[0])}, ${value$2[1]}))`} ${all.at}`,
+    `${value$4 == null ? "None" : `Some((${$debugStr(value$4[0])}, ${value$4[1]}))`} ${all.at}`,
   );
 }
 //# sourceMappingURL=case.js.map

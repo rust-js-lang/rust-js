@@ -16,7 +16,7 @@ async function single() {
   bigDrop_drop(x);
 }
 
-async function single_with_noop() {
+async function singleWithNoop() {
   await fut();
   noop();
   const x = [new Array(64).fill(0)];
@@ -30,7 +30,7 @@ async function single_with_noop() {
 function main() {
   single();
   const a = 2;
-  single_with_noop();
+  singleWithNoop();
   const b = 3;
   console.log(`${a} ${b} true`);
 }

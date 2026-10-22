@@ -29,15 +29,15 @@ const Counter = {
   },
 };
 
-function replace_with(c, n) {
+function replaceWith(c, n) {
   return $take(c, { n, label: "new", items: [n] });
 }
 
-function swap_two(a, b) {
+function swapTwo(a, b) {
   $exchange(a, b);
 }
 
-function take_all(v) {
+function takeAll(v) {
   return $take(v, []);
 }
 
@@ -50,7 +50,7 @@ function origin(p) {
 }
 
 // A `ref mut` binding of an object, replaced whole.
-function through_ref_mut() {
+function throughRefMut() {
   const a = { x: 1, y: 0 };
   const cur = a;
   $assign(cur, { x: 2, y: 3 });
@@ -59,7 +59,7 @@ function through_ref_mut() {
 
 // The same, its `&mut` in a `let mut`: still `a`, replaced whole.
 
-function through_ref_mut_variable() {
+function throughRefMutVariable() {
   const a = { x: 1, y: 0 };
   const cur = a;
   $assign(cur, { x: 4, y: 5 });
@@ -70,7 +70,7 @@ function qDebug_fmt(q) {
   return `Q { x: ${q.x} }`;
 }
 
-function swap_points(a, b) {
+function swapPoints(a, b) {
   $exchange(a, b);
 }
 
@@ -129,10 +129,10 @@ function main() {
   console.log(`${counterDebug_fmt(c)} ${counterDebug_fmt(kept)}`);
   Counter.restart(c, 4);
   console.log(`${counterDebug_fmt(c)}`);
-  const old = replace_with(c, 7);
+  const old = replaceWith(c, 7);
   console.log(`${counterDebug_fmt(old)} ${counterDebug_fmt(c)}`);
   const d = { n: 1, label: "", items: [] };
-  swap_two(c, d);
+  swapTwo(c, d);
   console.log(`${counterDebug_fmt(c)} ${counterDebug_fmt(d)}`);
   const row = [
     { n: 0, label: "", items: [] },
@@ -141,18 +141,18 @@ function main() {
   Counter.restart($index(row, 1), 6);
   console.log(`[${row.map((item) => counterDebug_fmt(item)).join(", ")}]`);
   const items = [4, 5];
-  console.log(`[${take_all(items).join(", ")}] [${items.join(", ")}]`);
+  console.log(`[${takeAll(items).join(", ")}] [${items.join(", ")}]`);
 
   const a = { x: 1, y: 2 };
   const b = { ...a };
   origin(b);
   console.log(`${pDebug_fmt(a)} ${pDebug_fmt(b)}`);
-  console.log(`${through_ref_mut()}`);
-  console.log(`${through_ref_mut_variable()}`);
+  console.log(`${throughRefMut()}`);
+  console.log(`${throughRefMutVariable()}`);
   const first = { x: 3 };
   const second = { ...first };
   const third = { x: 5 };
-  swap_points(second, third);
+  swapPoints(second, third);
   console.log(`${qDebug_fmt(first)} ${qDebug_fmt(second)} ${qDebug_fmt(third)}`);
 
   let l = "Off";

@@ -2,13 +2,13 @@
 // given, in a box: what it writes is added to the box's `value`, which the
 // caller takes back (ADR 0180). A `char` and a `write!`'s text are strings.
 const $stringWriter = {
-  write_str(w, s) {
+  writeStr(w, s) {
     w.value += s;
   },
-  write_char(w, c) {
+  writeChar(w, c) {
     w.value += c;
   },
-  write_fmt(w, text) {
+  writeFmt(w, text) {
     w.value += text;
   },
 };
@@ -19,8 +19,8 @@ const $stringWriter = {
 // the box, `$mutWriter($stringWriter)` of a `String` (ADRs 0180, 0454).
 function $mutWriter(writer) {
   return {
-    write_str: (w, s) => writer.write_str(w.value, s),
-    write_char: (w, c) => writer.write_char(w.value, c),
-    write_fmt: (w, text) => writer.write_fmt(w.value, text),
+    writeStr: (w, s) => writer.writeStr(w.value, s),
+    writeChar: (w, c) => writer.writeChar(w.value, c),
+    writeFmt: (w, text) => writer.writeFmt(w.value, text),
   };
 }

@@ -12,18 +12,18 @@ function pathAsDisplay() {
   if ($pathAsDisplay === undefined) {
     $pathAsDisplay = {
       TargetDisplay: () => ({ fmt: (value) => value }),
-      as_display: pathAsDisplay_as_display,
+      asDisplay: pathAsDisplay_asDisplay,
     };
   }
   return $pathAsDisplay;
 }
 
-function pathAsDisplay_as_display(path) {
+function pathAsDisplay_asDisplay(path) {
   return path;
 }
 
 function describe(e) {
-  return `no file at ${pathAsDisplay_as_display(e.path)}`;
+  return `no file at ${pathAsDisplay_asDisplay(e.path)}`;
 }
 
 function main() {

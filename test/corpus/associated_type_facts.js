@@ -23,7 +23,7 @@ function _T__N_Array_size(N) {
   return N;
 }
 
-function item_align(AArray) {
+function itemAlign(AArray) {
   return Math.imul(AArray.ItemAlign, AArray.size()) >>> 0;
 }
 
@@ -37,7 +37,7 @@ function grown(n, AArray) {
 
 function main() {
   console.log(
-    `${item_align(_T__N_Array(4, 2, 2))} ${grown(3, _T__N_Array(2, 8, 8))} ${grown(2, _T__N_Array(5, 0, 1))}`,
+    `${itemAlign(_T__N_Array(4, 2, 2))} ${grown(3, _T__N_Array(2, 8, 8))} ${grown(2, _T__N_Array(5, 0, 1))}`,
   );
 }
 //# sourceMappingURL=case.js.map

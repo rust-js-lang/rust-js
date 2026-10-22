@@ -54,13 +54,13 @@ function pairIterator_next(pair, dropI, dropIItem) {
   return $nextSome(pair.i);
 }
 
-function pairIterator_size_hint(pair, dropI, dropIItem) {
+function pairIterator_sizeHint(pair, dropI, dropIItem) {
   return $sizeHint(pair.i);
 }
 
 function pair(i, IIntoIterator, IIntoIterFused) {
   return {
-    i: iterator_fuse(IIntoIterator.into_iter(i), IIntoIterator.IntoIterIterator(), IIntoIterFused),
+    i: iterator_fuse(IIntoIterator.intoIter(i), IIntoIterator.IntoIterIterator(), IIntoIterFused),
   };
 }
 
@@ -89,7 +89,7 @@ function main() {
   );
   const flips = pair(
     [0],
-    { into_iter: (items) => items, IntoIterIterator: () => ({ next: flipIterator_next }) },
+    { intoIter: (items) => items, IntoIterIterator: () => ({ next: flipIterator_next }) },
     false,
   );
   console.log(`${pairDebug_fmt(flips, flipDebug())}`);

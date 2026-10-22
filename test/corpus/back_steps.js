@@ -20,19 +20,19 @@ export function entry() {
   main();
 }
 
-function digits_back(it) {
+function digitsBack(it) {
   return $foldBack(it, 0, (a, b) => ((Math.imul(a, 10) >>> 0) + b) >>> 0);
 }
 
-function last_even(it) {
+function lastEven(it) {
   return $findBack(it, (n) => n % 2 === 0);
 }
 
-function second_last(it) {
+function secondLast(it) {
   return $nthBack(it, 1, $some);
 }
 
-function last_some(it) {
+function lastSome(it) {
   return $findBack(it, (item) => item == null || item > 1, $some);
 }
 
@@ -44,7 +44,7 @@ function tagged(it) {
   );
 }
 
-function last_big(it) {
+function lastBig(it) {
   const found = $findBack(
     $mapEnds(it, (n) => Math.imul(n, 2) >>> 0),
     (n) => n > 2,
@@ -52,58 +52,58 @@ function last_big(it) {
   return [found, $next(it)];
 }
 
-function first_some(it, f) {
+function firstSome(it, f) {
   return $lent(Iterator.from(it))
     .map(f)
     .find((item) => item != null);
 }
 
 function main() {
-  console.log(`${digits_back($iter([1, 2, 3]))}`);
-  const lastEven = last_even($iter([2, 4, 5]));
-  const value = last_even($iterator({ start: 1, end: 4 }, $rangeNext, false, $rangeNextBack));
+  console.log(`${digitsBack($iter([1, 2, 3]))}`);
+  const value = lastEven($iter([2, 4, 5]));
+  const value$1 = lastEven($iterator({ start: 1, end: 4 }, $rangeNext, false, $rangeNextBack));
   console.log(
-    `${lastEven == null ? "None" : `Some(${lastEven})`} ${value == null ? "None" : `Some(${value})`}`,
+    `${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`}`,
   );
-  const secondLast = second_last($iter([7, 8, 9]));
-  const value$1 = second_last($iterator({ start: 0, end: 1 }, $rangeNext, false, $rangeNextBack));
+  const value$2 = secondLast($iter([7, 8, 9]));
+  const value$3 = secondLast($iterator({ start: 0, end: 1 }, $rangeNext, false, $rangeNextBack));
   console.log(
-    `${secondLast == null ? "None" : `Some(${secondLast})`} ${value$1 == null ? "None" : `Some(${value$1})`}`,
+    `${value$2 == null ? "None" : `Some(${value$2})`} ${value$3 == null ? "None" : `Some(${value$3})`}`,
   );
-  const value$2 = second_last($iter([1, undefined, 3]));
+  const value$4 = secondLast($iter([1, undefined, 3]));
   console.log(
-    `${value$2 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$2))})`}`,
+    `${value$4 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$4))})`}`,
   );
   const v = [3, 6, 9];
   const rfold = $foldBack($iter(v), 0, (a, b) => (a + b) >>> 0);
   const rfind = $findBack($iter(v), (n) => n < 7);
-  const value$3 = $nthBack($iter(v), 2);
+  const value$5 = $nthBack($iter(v), 2);
   console.log(
-    `${rfold} ${rfind == null ? "None" : `Some(${rfind})`} ${value$3 == null ? "None" : `Some(${value$3})`}`,
+    `${rfold} ${rfind == null ? "None" : `Some(${rfind})`} ${value$5 == null ? "None" : `Some(${value$5})`}`,
   );
   const it = $iter(v);
   const nthBack = $nthBack(it, 0);
-  const value$4 = $nextBack(it);
+  const value$6 = $nextBack(it);
   console.log(
-    `${nthBack == null ? "None" : `Some(${nthBack})`} ${value$4 == null ? "None" : `Some(${value$4})`}`,
+    `${nthBack == null ? "None" : `Some(${nthBack})`} ${value$6 == null ? "None" : `Some(${value$6})`}`,
   );
-  const lastSome = last_some($iter([5, undefined, 1]));
-  const value$5 = last_some($iter([1]));
+  const value$7 = lastSome($iter([5, undefined, 1]));
+  const value$8 = lastSome($iter([1]));
   console.log(
-    `${lastSome == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(lastSome))})`} ${value$5 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$5))})`}`,
+    `${value$7 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$7))})`} ${value$8 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$8))})`}`,
   );
   console.log(
     `${tagged($iter([1, 2]))} ${((tuple) =>
       `(${tuple[0] == null ? "None" : `Some(${tuple[0]})`}, ${tuple[1] == null ? "None" : `Some(${tuple[1]})`})`)(
-      last_big($iter([1, 2, 3])),
+      lastBig($iter([1, 2, 3])),
     )}`,
   );
-  const value$6 = $findBack(
+  const value$9 = $findBack(
     $mapEnds($iter([5, 6, 7]), (n) => Math.imul(n, 10) >>> 0),
     (n) => n < 70,
   );
-  console.log(`${value$6 == null ? "None" : `Some(${value$6})`}`);
-  const found = first_some($iter([1, 2, 3]), (n) =>
+  console.log(`${value$9 == null ? "None" : `Some(${value$9})`}`);
+  const found = firstSome($iter([1, 2, 3]), (n) =>
     n > 1 ? $some(n !== 2 ? n : undefined) : undefined,
   );
   console.log(

@@ -135,19 +135,19 @@ fn main() {
 
     for n in 0..=25 {
         case("fib", &[n], || fib(n as u32));
-        case("fib_match", &[n], || fib_match(n as u32));
+        case("fibMatch", &[n], || fib_match(n as u32));
     }
     // Past n = 47 the result no longer fits in u32 and wraps.
     for n in 0..=60 {
-        case("fib_iter", &[n], || fib_iter(n as u32));
-        case("fib_loop", &[n], || fib_loop(n as u32));
+        case("fibIter", &[n], || fib_iter(n as u32));
+        case("fibLoop", &[n], || fib_loop(n as u32));
     }
     for n in 0..=20 {
         case("nth_asc", &[n], || nth(Order::Ascending, n as u32));
         case("nth_desc", &[n], || nth(Order::Descending, n as u32));
     }
     for x in [0, 1, -1, 715_827_882, 715_827_883, i32::MAX, i32::MIN, 1_000_000_000] {
-        case("wrap_demo", &[x as i64], || wrap_demo(x));
+        case("wrapDemo", &[x as i64], || wrap_demo(x));
     }
     for (a, b) in [(7, 2), (-7, 2), (7, -2), (i32::MIN, 1), (i32::MAX, -1), (5, 0), (i32::MIN, -1)] {
         case("ratio", &[a as i64, b as i64], || ratio(a, b));
@@ -155,7 +155,7 @@ fn main() {
 
     for (a, b) in [(0, 0), (3, 5), (10, 20), (999, 1001), (2000, 3000), (65_535, 7)] {
         case("modules.summary", &[a as i64, b as i64], || modules::summary(a, b));
-        case("modules.doubled_mean", &[a as i64, b as i64], || modules::doubled_mean(a, b));
+        case("modules.doubledMean", &[a as i64, b as i64], || modules::doubled_mean(a, b));
         case("modules.stats.mean", &[a as i64, b as i64], || modules::stats::mean(a, b));
     }
     for x in [0, 1, 7, 999, 1000, 5000, u32::MAX] {
@@ -169,18 +169,18 @@ fn main() {
         for &y in &ints {
             case("structs.point", &[x as i64, y as i64], || structs::point(x, y));
             case("structs.moved", &[x as i64, y as i64, 3], || structs::moved(x, y, 3));
-            case("structs.with_x", &[x as i64, y as i64], || structs::with_x(x, y));
-            case("structs.written_order", &[x as i64, y as i64], || structs::written_order(x, y));
+            case("structs.withX", &[x as i64, y as i64], || structs::with_x(x, y));
+            case("structs.writtenOrder", &[x as i64, y as i64], || structs::written_order(x, y));
             case("structs.quadrant", &[x as i64, y as i64], || structs::quadrant(x, y));
             case_with("structs.classify", &[&(x, y)], || structs::classify((x, y)));
         }
-        case("structs.copies_are_separate", &[x as i64], || structs::copies_are_separate(x));
-        case("structs.caller_keeps_its_point", &[x as i64], || structs::caller_keeps_its_point(x));
-        case("structs.moves_share_nothing", &[x as i64], || structs::moves_share_nothing(x));
-        case("structs.bound_before_move", &[x as i64], || structs::bound_before_move(x));
-        case("structs.returned_copy_is_separate", &[x as i64], || structs::returned_copy_is_separate(x));
-        case("structs.option_copy_is_separate", &[x as i64], || structs::option_copy_is_separate(x));
-        case("structs.deref_copy_is_separate", &[x as i64], || structs::deref_copy_is_separate(x));
+        case("structs.copiesAreSeparate", &[x as i64], || structs::copies_are_separate(x));
+        case("structs.callerKeepsItsPoint", &[x as i64], || structs::caller_keeps_its_point(x));
+        case("structs.movesShareNothing", &[x as i64], || structs::moves_share_nothing(x));
+        case("structs.boundBeforeMove", &[x as i64], || structs::bound_before_move(x));
+        case("structs.returnedCopyIsSeparate", &[x as i64], || structs::returned_copy_is_separate(x));
+        case("structs.optionCopyIsSeparate", &[x as i64], || structs::option_copy_is_separate(x));
+        case("structs.derefCopyIsSeparate", &[x as i64], || structs::deref_copy_is_separate(x));
     }
     for (w, h) in [(0, 0), (3, 4), (65_536, 65_536), (u32::MAX, 2)] {
         case("structs.rect", &[-1, 2, w as i64, h as i64], || structs::rect(-1, 2, w, h));
@@ -189,34 +189,34 @@ fn main() {
         case_with("structs.area", &[&r], || structs::area(structs::rect(0, 0, w, h)));
     }
     for &a in &ints {
-        case("closures.move_copies", &[a as i64], || closures::move_copies(a));
-        case("closures.own_state", &[a as i64], || closures::own_state(a));
-        case("closures.struct_copy", &[a as i64], || closures::struct_copy(a));
+        case("closures.moveCopies", &[a as i64], || closures::move_copies(a));
+        case("closures.ownState", &[a as i64], || closures::own_state(a));
+        case("closures.structCopy", &[a as i64], || closures::struct_copy(a));
         for &b in &[0, 3, -5, i32::MAX] {
-            case("closures.by_reference", &[a as i64, b as i64], || closures::by_reference(a, b));
-            case("closures.add_both", &[a as i64, b as i64], || closures::add_both(a, b));
-            case("closures.pattern_param", &[a as i64, b as i64], || closures::pattern_param(a, b));
+            case("closures.byReference", &[a as i64, b as i64], || closures::by_reference(a, b));
+            case("closures.addBoth", &[a as i64, b as i64], || closures::add_both(a, b));
+            case("closures.patternParam", &[a as i64, b as i64], || closures::pattern_param(a, b));
         }
     }
     for times in 0..5 {
-        case("closures.fresh_copy_each_time", &[times as i64], || closures::fresh_copy_each_time(times));
+        case("closures.freshCopyEachTime", &[times as i64], || closures::fresh_copy_each_time(times));
     }
     for n in [0, 1, 2, 5, 9, 12] {
-        case("collections.sum_to", &[n], || collections::sum_to(n as u32));
-        case("collections.end_once", &[n], || collections::end_once(n as i32));
-        case("collections.mut_counter", &[n], || collections::mut_counter(n as i32));
+        case("collections.sumTo", &[n], || collections::sum_to(n as u32));
+        case("collections.endOnce", &[n], || collections::end_once(n as i32));
+        case("collections.mutCounter", &[n], || collections::mut_counter(n as i32));
         case("collections.evens", &[n], || collections::evens(n as u32));
-        case("collections.keep_over", &[n], || collections::keep_over(n as i32));
+        case("collections.keepOver", &[n], || collections::keep_over(n as i32));
         case("collections.lengths", &[n], || collections::lengths(n as u32));
         case("collections.iterate", &[n], || collections::iterate(n as u32));
         case("collections.labeled", &[n], || collections::labeled(n as u32));
         case("collections.toggled", &[n], || collections::toggled(n as u32));
         // 3 is past the end: a panic in Rust, a throw in JS.
         case("collections.indexed", &[n], || collections::indexed(n as usize));
-        case("collections.element_fields", &[n], || collections::element_fields(n as usize));
+        case("collections.elementFields", &[n], || collections::element_fields(n as usize));
         case("collections.arrays", &[n], || collections::arrays(n as usize));
-        case("collections.map_basics", &[n], || collections::map_basics(n as u32));
-        case("collections.set_basics", &[n], || collections::set_basics(n as u32));
+        case("collections.mapBasics", &[n], || collections::map_basics(n as u32));
+        case("collections.setBasics", &[n], || collections::set_basics(n as u32));
         case("collections.grouped", &[n], || collections::grouped(n as u32));
         case("collections.cell", &[n], || collections::cell(n as i32));
         case("collections.shared", &[n], || collections::shared(n as i32));
@@ -228,9 +228,9 @@ fn main() {
         case("options.half", &[n], || options::half(n as i32));
         case("methods.ticking", &[n.abs()], || methods::ticking(n.unsigned_abs() as u32));
         case("methods.lights", &[n.abs()], || methods::lights(n.unsigned_abs() as u32));
-        case("methods.pair_sum", &[n, 3], || methods::pair_sum(n as i32, 3));
+        case("methods.pairSum", &[n, 3], || methods::pair_sum(n as i32, 3));
         case("methods.counted", &[n.abs(), 2], || methods::counted(n.unsigned_abs() as u32, 2));
-        case("options.half_or_zero", &[n], || options::half_or_zero(n as i32));
+        case("options.halfOrZero", &[n], || options::half_or_zero(n as i32));
         case("options.halvings", &[n], || options::halvings(n as i32));
         case("options.methods", &[n], || options::methods(n as i32));
         case("options.unwrapped", &[n], || options::unwrapped(n as i32));
@@ -239,18 +239,18 @@ fn main() {
         case("options.label", &[n], || options::label(n as i32));
         case("options.mapped", &[n], || options::mapped(n as i32));
         case("options.chained", &[n], || options::chained(n as i32));
-        case("options.chained_twice", &[n], || options::chained_twice(n as i32));
-        case("options.chained_statement", &[n], || options::chained_statement(n as i32));
-        case("options.chained_loop", &[n], || options::chained_loop(n as i32));
-        case("options.mapped_more", &[n], || options::mapped_more(n as i32));
+        case("options.chainedTwice", &[n], || options::chained_twice(n as i32));
+        case("options.chainedStatement", &[n], || options::chained_statement(n as i32));
+        case("options.chainedLoop", &[n], || options::chained_loop(n as i32));
+        case("options.mappedMore", &[n], || options::mapped_more(n as i32));
         let slot = Slot { id: 1, value: Some(5) };
         case_with("options.fill", &[&slot, &(n as i32)], || options::fill(slot, n as i32));
     }
     case("generic_options.units", &[], generic_options::units);
     case("generic_options.nones", &[], generic_options::nones);
-    case("generic_options.inner_values", &[], generic_options::inner_values);
-    case("generic_options.mapped_values", &[], generic_options::mapped_values);
-    case("generic_options.std_values", &[], generic_options::std_values);
+    case("generic_options.innerValues", &[], generic_options::inner_values);
+    case("generic_options.mappedValues", &[], generic_options::mapped_values);
+    case("generic_options.stdValues", &[], generic_options::std_values);
     // Every combinator's results, as `{:?}` shows them on both sides.
     case("combinators.report", &[], combinators::report);
     for i in [0, 1, 5] {
@@ -288,29 +288,29 @@ fn main() {
         case("numbers.panics", &[i as i64], || numbers::panics(i));
     }
     for (start, end) in [(0, 2), (2, 1), (1, 5)] {
-        case("text.slice_panics", &[start as i64, end as i64], || text::slice_panics(start, end));
+        case("text.slicePanics", &[start as i64, end as i64], || text::slice_panics(start, end));
     }
     case("std_traits.defaults", &[], std_traits::defaults);
-    case("std_traits.vec_clones", &[], std_traits::vec_clones);
-    case("std_traits.struct_clones", &[], std_traits::struct_clones);
-    case("std_traits.hand_written", &[], std_traits::hand_written);
-    case("std_traits.enum_clones", &[], std_traits::enum_clones);
+    case("std_traits.vecClones", &[], std_traits::vec_clones);
+    case("std_traits.structClones", &[], std_traits::struct_clones);
+    case("std_traits.handWritten", &[], std_traits::hand_written);
+    case("std_traits.enumClones", &[], std_traits::enum_clones);
     case("std_traits.conversions", &[], std_traits::conversions);
     for n in [4, 7] {
-        case("std_traits.fallible_conversions", &[n as i64], || std_traits::fallible_conversions(n));
+        case("std_traits.fallibleConversions", &[n as i64], || std_traits::fallible_conversions(n));
     }
     case("std_traits.equalities", &[], std_traits::equalities);
-    case("std_traits.generic_equalities", &[], std_traits::generic_equalities);
+    case("std_traits.genericEqualities", &[], std_traits::generic_equalities);
     case("std_traits.compared", &[], std_traits::compared);
     case("std_traits.displays", &[], std_traits::displays);
     case("std_traits.iterations", &[], std_traits::iterations);
-    case("std_traits.generic_iterations", &[], std_traits::generic_iterations);
+    case("std_traits.genericIterations", &[], std_traits::generic_iterations);
     case("std_traits.orderings", &[], std_traits::orderings);
-    case("std_traits.partial_orderings", &[], std_traits::partial_orderings);
-    case("std_traits.more_orderings", &[], std_traits::more_orderings);
+    case("std_traits.partialOrderings", &[], std_traits::partial_orderings);
+    case("std_traits.moreOrderings", &[], std_traits::more_orderings);
     for n in [0, 1, 7] {
         case("std_traits.debugs", &[n], || std_traits::debugs(n as u32));
-        case("std_traits.generic_iterators", &[n], || std_traits::generic_iterators(n as u32));
+        case("std_traits.genericIterators", &[n], || std_traits::generic_iterators(n as u32));
     }
     // Each call sees what the one before left, natively and in JS.
     for _ in 0..3 {
@@ -331,9 +331,9 @@ fn main() {
         case_with("iterators.extremes", &[&arg], || iterators::extremes(v));
         case_with("iterators.middle", &[&arg], || iterators::middle(v));
         case_with("iterators.sorted", &[&arg], || iterators::sorted(v));
-        case_with("iterators.sorted_copy", &[&arg], || iterators::sorted_copy(v.to_vec()));
+        case_with("iterators.sortedCopy", &[&arg], || iterators::sorted_copy(v.to_vec()));
         case_with("iterators.descending", &[&arg], || iterators::descending(v));
-        case_with("iterators.by_last_digit", &[&arg], || iterators::by_last_digit(v));
+        case_with("iterators.byLastDigit", &[&arg], || iterators::by_last_digit(v));
         case_with("iterators.negated", &[&arg], || iterators::negated(v));
     }
     let word_lists: [&[&str]; 3] = [&[], &["pear", "", "fig"], &["b", "a", "", "cc", "b"]];
@@ -341,34 +341,34 @@ fn main() {
         let arg = words.to_vec();
         case_with("iterators.indexed", &[&arg], || iterators::indexed(words));
         case_with("iterators.placed", &[&arg], || iterators::placed(words));
-        case_with("iterators.non_empty", &[&arg], || iterators::non_empty(words));
+        case_with("iterators.nonEmpty", &[&arg], || iterators::non_empty(words));
         case_with("iterators.shouted", &[&arg], || iterators::shouted(words));
-        case_with("iterators.sorted_words", &[&arg], || iterators::sorted_words(words));
-        case_with("iterators.by_length_then_name", &[&arg], || iterators::by_length_then_name(words));
+        case_with("iterators.sortedWords", &[&arg], || iterators::sorted_words(words));
+        case_with("iterators.byLengthThenName", &[&arg], || iterators::by_length_then_name(words));
     }
     for s in ["", "abc", "häh"] {
         case_with("iterators.backwards", &[&s], || iterators::backwards(s));
     }
     for (a, b) in [(1, 2), (2, 2), (3, -1)] {
         case("iterators.compare", &[a, b], || iterators::compare(a as i32, b as i32));
-        case("iterators.order_number", &[a, b], || iterators::order_number(a as i32, b as i32));
+        case("iterators.orderNumber", &[a, b], || iterators::order_number(a as i32, b as i32));
     }
     case("iterators.bigger", &[3, 9], || iterators::bigger(3, 9));
     for n in [0, 1, 4, 10] {
         case("iterators.inclusive", &[n], || iterators::inclusive(n as u32));
         case("enums.discriminants", &[n], || enums::discriminants(n as u32));
-        case("enums.changed_in_place", &[n], || enums::changed_in_place(n as i32));
+        case("enums.changedInPlace", &[n], || enums::changed_in_place(n as i32));
     }
     for text in ["a b a c b a", "one", "x x x"] {
-        case_with("collections.word_counts", &[&text], || collections::word_counts(text));
-        case_with("collections.sorted_maps", &[&text], || collections::sorted_maps(text));
+        case_with("collections.wordCounts", &[&text], || collections::word_counts(text));
+        case_with("collections.sortedMaps", &[&text], || collections::sorted_maps(text));
     }
     for (a, b) in [('1', '2'), ('3', '0'), ('3', '2'), ('x', '1'), ('2', 'y')] {
-        case_with("results.sum_digits", &[&a, &b], || results::sum_digits(a, b));
+        case_with("results.sumDigits", &[&a, &b], || results::sum_digits(a, b));
         case_with("results.converted", &[&a, &b], || results::converted(a, b));
     }
     for c in ['0', '3', 'z'] {
-        case_with("results.parse_digit", &[&c], || results::parse_digit(c));
+        case_with("results.parseDigit", &[&c], || results::parse_digit(c));
         case_with("results.methods", &[&c], || results::methods(c));
         case_with("results.unwrapped", &[&c], || results::unwrapped(c));
         case_with("results.expected", &[&c], || results::expected(c));
@@ -379,7 +379,7 @@ fn main() {
     for n in [0, 1, 3] {
         case_with("strings.labeled", &[&"box", &n], || strings::labeled("box", n));
         case("strings.built", &[n as i64], || strings::built(n));
-        case("strings.format_order", &[n as i64], || strings::format_order(n));
+        case("strings.formatOrder", &[n as i64], || strings::format_order(n));
         for name in ["ab", "héllo", "日本語テキスト"] {
             for m in [n as i32, -(n as i32) - 7, 300] {
                 case_with("strings.padded", &[&m, &name], || strings::padded(m, name));
@@ -395,10 +395,10 @@ fn main() {
         case_with("strings.cases", &[&s], || strings::cases(s));
         case_with("strings.trimmed", &[&s], || strings::trimmed(s));
         case_with("strings.replaced", &[&s], || strings::replaced(s));
-        case_with("strings.module_name", &[&s], || strings::module_name(s));
+        case_with("strings.moduleName", &[&s], || strings::module_name(s));
         case_with("strings.parts", &[&s], || strings::parts(s));
         case_with("strings.rejoined", &[&s], || strings::rejoined(s));
-        case_with("strings.folder_and_file", &[&s], || strings::folder_and_file(s));
+        case_with("strings.folderAndFile", &[&s], || strings::folder_and_file(s));
         case_with("strings.kind", &[&s], || strings::kind(s));
         case_with("strings.tagged", &[&s], || strings::tagged(s));
     }
@@ -409,7 +409,7 @@ fn main() {
     for s in shapes {
         case_with("enums.area", &[&s], || enums::area(s));
         case_with("enums.classify", &[&s], || enums::classify(s));
-        case_with("enums.is_round", &[&s], || enums::is_round(s));
+        case_with("enums.isRound", &[&s], || enums::is_round(s));
         case_with("enums.width", &[&s], || enums::width(s));
         for t in shapes {
             case_with("enums.same", &[&s, &t], || enums::same(s, t));
@@ -419,17 +419,17 @@ fn main() {
     case("enums.rect", &[2, 3], || enums::rect(2, 3));
     case("enums.empty", &[], enums::empty);
     for depth in 0..5 {
-        case("enums.tree_sum", &[depth], || enums::tree_sum(depth as u32));
+        case("enums.treeSum", &[depth], || enums::tree_sum(depth as u32));
     }
     for (a, b) in [(7, 2), (1, 0), (-9, 3)] {
-        case("enums.checked_div", &[a, b], || enums::checked_div(a as i32, b as i32));
-        case("enums.div_or", &[a, b, -1], || enums::div_or(a as i32, b as i32, -1));
+        case("enums.checkedDiv", &[a, b], || enums::checked_div(a as i32, b as i32));
+        case("enums.divOr", &[a, b, -1], || enums::div_or(a as i32, b as i32, -1));
     }
-    case("consts.size_in_kb", &[], consts::size_in_kb);
+    case("consts.sizeInKb", &[], consts::size_in_kb);
     case("consts.greeting", &[], consts::greeting);
     case("consts.on", &[], consts::on);
     case("consts.pair", &[], consts::pair);
-    case("consts.prime_sum", &[], consts::prime_sum);
+    case("consts.primeSum", &[], consts::prime_sum);
     case("consts.nothing", &[], consts::nothing);
     case("consts.high", &[], consts::high);
     case("consts.limits", &[], consts::limits);
@@ -446,12 +446,12 @@ fn main() {
         for p in some_none {
             case_with("options.same", &[&o, &p], || options::same(o, p));
             let (a, b) = (Slot { id: 1, value: o }, Slot { id: 1, value: p });
-            case_with("options.same_slots", &[&a, &b], || options::same_slots(a, b));
+            case_with("options.sameSlots", &[&a, &b], || options::same_slots(a, b));
         }
     }
     for (a, b) in [(7, 2), (0, 5), (u32::MAX, 10), (5, 0)] {
         case("structs.divmod", &[a as i64, b as i64], || structs::divmod(a, b));
-        case("structs.divmod_sum", &[a as i64, b as i64], || structs::divmod_sum(a, b));
+        case("structs.divmodSum", &[a as i64, b as i64], || structs::divmod_sum(a, b));
     }
     // The harness's own values, which the JS test answers as JS holds them:
     // text JSON must escape, what JSON has no number for, and a panic's

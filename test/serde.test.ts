@@ -990,5 +990,5 @@ pub fn report() -> String {
   const expected = JSON.parse(run([native(dir)]));
   expect((await compiled(dir)).report()).toBe(expected);
   // A `null`'s `visit_none` is given nothing.
-  expect(readFileSync(join(dir, "cases.js"), "utf8")).toContain("none: () => maybeVisitorVisitor_visit_none(");
+  expect(readFileSync(join(dir, "cases.js"), "utf8")).toContain("none: () => maybeVisitorVisitor_visitNone(");
 });

@@ -54,7 +54,7 @@ function take2(it) {
   return $lent(Iterator.from(it)).take(2).toArray();
 }
 
-function until_zero(it) {
+function untilZero(it) {
   let sum = 0;
   for (const x of it) {
     if (x === 0) {
@@ -99,8 +99,8 @@ function main() {
     `[${a$1.join(", ")}] ${((value) => (value == null ? "None" : `Some(${value})`))($next(lazy))}`,
   );
   const v = $iter([1, 2, 0, 3, 4, 0, 5]);
-  const s1 = until_zero(v);
-  const s2 = until_zero(v);
+  const s1 = untilZero(v);
+  const s2 = untilZero(v);
   const value$3 = $next(v);
   console.log(`${s1} ${s2} ${value$3 == null ? "None" : `Some(${value$3})`}`);
 }

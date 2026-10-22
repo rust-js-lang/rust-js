@@ -44,7 +44,7 @@ const PadUsing = {
 };
 
 const Counted = {
-  doubled_len(counted, IIterator, IExactSizeIterator, IClone) {
+  doubledLen(counted, IIterator, IExactSizeIterator, IClone) {
     return $mapEnds(
       $iterator(
         IClone.clone(counted.inner),
@@ -60,7 +60,7 @@ const Counted = {
 
 function noisyDrop_drop(noisy) {}
 
-function last_square(n) {
+function lastSquare(n) {
   const squares = $mapEnds(
     $iterator({ start: 1, end: n }, $rangeNext, false, $rangeNextBack),
     (x) => Math.imul(x, x) >>> 0,
@@ -92,21 +92,21 @@ function main() {
       { len: (iterator) => iterator.len() },
     );
     console.log(`[${tmp$1.join(", ")}]`);
-    const lastSquare = last_square(5);
-    const value$3 = last_square(1);
+    const tmp$2 = lastSquare(5);
+    const value$3 = lastSquare(1);
     console.log(
-      `${lastSquare == null ? "None" : `Some(${lastSquare})`} ${value$3 == null ? "None" : `Some(${value$3})`}`,
+      `${tmp$2 == null ? "None" : `Some(${tmp$2})`} ${value$3 == null ? "None" : `Some(${value$3})`}`,
     );
     const value$4 = [1, 2, 3];
     const inner = $iter(value$4);
-    const doubledLen = Counted.doubled_len(
+    const doubledLen = Counted.doubledLen(
       { inner },
       { next: $next },
       { len: (iterator) => iterator.len() },
       { clone: (value) => $iter(value.items.slice(value.at, value.end)) },
     );
     console.log(
-      `${doubledLen} ${Counted.doubled_len(
+      `${doubledLen} ${Counted.doubledLen(
         { inner: { start: 2, end: 7 } },
         { next: $rangeNext },
         { len: $rangeLen },

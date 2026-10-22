@@ -27,11 +27,11 @@ function countdownIterator_next(countdown) {
   return countdown[0];
 }
 
-function countdownIterator_size_hint(countdown) {
+function countdownIterator_sizeHint(countdown) {
   return [countdown[0], countdown[0]];
 }
 
-function countdownDoubleEndedIterator_next_back(countdown) {
+function countdownDoubleEndedIterator_nextBack(countdown) {
   return countdownIterator_next(countdown);
 }
 
@@ -55,7 +55,7 @@ function outer(iter, IIterator, IDoubleEndedIterator, IClone) {
   return [IIterator.next(iter), IDoubleEndedIterator.next_back(iter), count];
 }
 
-function second_last(iter, IIterator, IDoubleEndedIterator, IClone) {
+function secondLast(iter, IIterator, IDoubleEndedIterator, IClone) {
   return $nthBack(
     $iterator(IClone.clone(iter), IIterator.next, true, IDoubleEndedIterator.next_back),
     1,
@@ -82,12 +82,12 @@ function main() {
   const own = { inner: [3] };
   const value$5 = Ends.shift(own, {
     next: countdownIterator_next,
-    size_hint: countdownIterator_size_hint,
+    sizeHint: countdownIterator_sizeHint,
   });
   const value$6 = Ends.pop(
     own,
-    { next_back: countdownDoubleEndedIterator_next_back },
-    { len: (iterator) => $exactLen(countdownIterator_size_hint(iterator)) },
+    { next_back: countdownDoubleEndedIterator_nextBack },
+    { len: (iterator) => $exactLen(countdownIterator_sizeHint(iterator)) },
   );
   console.log(
     `${value$5 == null ? "None" : `Some(${value$5})`} ${value$6 == null ? "None" : `Some((${value$6[0]}, ${value$6[1]}))`}`,
@@ -113,35 +113,35 @@ function main() {
   );
   const value$9 = outer(
     [2],
-    { next: countdownIterator_next, size_hint: countdownIterator_size_hint },
-    { next_back: countdownDoubleEndedIterator_next_back },
+    { next: countdownIterator_next, sizeHint: countdownIterator_sizeHint },
+    { next_back: countdownDoubleEndedIterator_nextBack },
     { clone: (value) => [value[0]] },
   );
   console.log(
     `(${value$9[0] == null ? "None" : `Some(${value$9[0]})`}, ${value$9[1] == null ? "None" : `Some(${value$9[1]})`}, ${value$9[2]})`,
   );
 
-  const secondLast = second_last(
+  const value$10 = secondLast(
     { start: 5, end: 9 },
     { next: $rangeNext },
     { next_back: $rangeNextBack },
     { clone: (value) => ({ start: value.start, end: value.end }) },
   );
-  const value$10 = second_last(
+  const value$11 = secondLast(
     $iter(["p", "q"]),
     { next: $next },
     { next_back: $nextBack },
     { clone: (value) => $iter(value.items.slice(value.at, value.end)) },
   );
   console.log(
-    `${secondLast == null ? "None" : `Some(${secondLast})`} ${value$10 == null ? "None" : `Some(${$debugStr(value$10, "'")})`}`,
+    `${value$10 == null ? "None" : `Some(${value$10})`} ${value$11 == null ? "None" : `Some(${$debugStr(value$11, "'")})`}`,
   );
-  const value$11 = second_last(
+  const value$12 = secondLast(
     [1],
-    { next: countdownIterator_next, size_hint: countdownIterator_size_hint },
-    { next_back: countdownDoubleEndedIterator_next_back },
+    { next: countdownIterator_next, sizeHint: countdownIterator_sizeHint },
+    { next_back: countdownDoubleEndedIterator_nextBack },
     { clone: (value) => [value[0]] },
   );
-  console.log(`${value$11 == null ? "None" : `Some(${value$11})`}`);
+  console.log(`${value$12 == null ? "None" : `Some(${value$12})`}`);
 }
 //# sourceMappingURL=case.js.map

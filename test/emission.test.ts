@@ -66,7 +66,7 @@ test("source map points from fib.js back into fib.rs", async () => {
     ["(Math.imul(x, 3) - 7) | 0", "x * 3 - 7"],
     ["$div(a, b, -2147483648) | 0", "a / b"],
     ['order === "Ascending"', "Order::Ascending"],
-    ["fib_iter((20 - n) >>> 0)", "fib_iter(20 - n)"],
+    ["fibIter((20 - n) >>> 0)", "fib_iter(20 - n)"],
     // A `return` where its value is written, not where the body ends.
     ["return a;", "a"],
   ];

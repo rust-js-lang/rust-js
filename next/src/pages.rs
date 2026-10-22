@@ -250,6 +250,7 @@ pub struct ClearPreviewDataOptions<'a> {
 #[derive(Default)]
 pub struct RevalidateOptions {
     /// Only where it's been rendered before.
+    #[cfg_attr(rust_js, rust_js::name = "unstable_only_generated")]
     pub unstable_only_generated: Option<bool>,
 }
 

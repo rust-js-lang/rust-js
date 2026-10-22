@@ -16,7 +16,7 @@ export function countedClone() {
   if ($countedClone === undefined) {
     $countedClone = {
       clone: countedClone_clone,
-      clone_from: (arg0, arg1) => countedClone_clone_from(arg0.value, arg1),
+      cloneFrom: (arg0, arg1) => countedClone_cloneFrom(arg0.value, arg1),
     };
   }
   return $countedClone;
@@ -27,7 +27,7 @@ function countedClone_clone(counted) {
   return [counted[0]];
 }
 
-function countedClone_clone_from(counted, source) {
+function countedClone_cloneFrom(counted, source) {
   console.log(`clone_from ${counted[0]} <- ${source[0]}`);
   counted[0] = source[0];
 }
@@ -37,9 +37,9 @@ function refill(into, from, TClone) {
     into,
     from,
     (value) => TClone.clone(value),
-    TClone.clone_from &&
+    TClone.cloneFrom &&
       ((items, i, from) => {
-        TClone.clone_from($ptr(items, i), from);
+        TClone.cloneFrom($ptr(items, i), from);
       }),
   );
 }
@@ -52,14 +52,14 @@ function _T__N_Array(N) {
 }
 
 /** Of an associated type's items, smallvec's `A::Item`: the same. */
-function refill_items(into, from, AArray, AItemClone) {
+function refillItems(into, from, AArray, AItemClone) {
   $cloneFromSlice(
     into,
     from,
     (value) => AItemClone.clone(value),
-    AItemClone.clone_from &&
+    AItemClone.cloneFrom &&
       ((items, i, from) => {
-        AItemClone.clone_from($ptr(items, i), from);
+        AItemClone.cloneFrom($ptr(items, i), from);
       }),
   );
 }
@@ -71,7 +71,7 @@ function main() {
   refill(b, [[5]], { clone: (value) => value });
   const n = [1, 2];
   refill(n, [7, 8], { clone: (value) => value });
-  refill_items($view(a, 0, 1), [[6]], _T__N_Array(1), countedClone());
+  refillItems($view(a, 0, 1), [[6]], _T__N_Array(1), countedClone());
   console.log(
     `[${a.map((item) => countedDebug_fmt(item)).join(", ")}] ${b[0][0]} [${n.join(", ")}]`,
   );

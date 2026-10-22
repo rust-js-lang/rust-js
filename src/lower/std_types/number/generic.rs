@@ -252,7 +252,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 && let Some(any) = any_trait(self.tcx)
                 && let Some(dictionary) = self.evidence_for(ty::TraitRef::new(self.tcx, any, [of]))
             {
-                return Ok(Expr::call(Expr::member(dictionary, "type_id"), Vec::new()));
+                let type_id = crate::lower::bindings::trait_method_name(self.tcx, any, "type_id");
+                return Ok(Expr::call(Expr::member(dictionary, type_id), Vec::new()));
             }
             return self
                 .given_type_fact(param.index, fact)

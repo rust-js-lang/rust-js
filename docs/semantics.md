@@ -386,12 +386,12 @@ version ([0103](decisions/0103-runtime-package.md)).
 
 What JS sees of a crate:
 
-- **A `pub fn` is an `export function` of its Rust name**; parameters and
-  locals are camelCase, and a name JS reserves gets a `$`,
-  `delete$`. What's React's has React's names: a hook, a `use_x` that calls
-  one, is `useX`, and a component's props are camelCase
+- **A `pub fn` is an `export function` of its name in camelCase**, as
+  every Rust name is in JS: `first_word` is `firstWord`, a hook
+  `use_clicks` `useClicks`, a field `sort_index` `sortIndex`, and a name
+  JS reserves gets a `$`, `delete$`
   ([0038](decisions/0038-js-names-and-destructuring.md),
-  [0435](decisions/0435-rust-and-react-two-worlds.md)).
+  [0573](decisions/0573-every-rust-name-is-camel-case-in-js.md)).
 - **A type's methods are its exported object's,** the receiver first:
   `Point.shift(p, by)` ([0047](decisions/0047-methods.md)).
 - **`LowerHex`, `Pointer` and the other formatting traits are

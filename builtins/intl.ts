@@ -9,7 +9,7 @@
 //   bun builtins/intl.ts [out]   writes src/intl.rs, or `out`
 
 const page = (path: string) => `https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Intl/${path}`;
-import { plain, snake } from "../scripts/rust-names";
+import { needsJsName, plain, snake } from "../scripts/rust-names";
 /** A JS value's Rust variant: `"best fit"` `BestFit`, `"2-digit"` `TwoDigit`. */
 const variant = (js: string) =>
   js.replace(/^2-/, "two-").split(/[^A-Za-z0-9]+/).map((w) => w[0].toUpperCase() + w.slice(1)).join("");
@@ -37,7 +37,7 @@ const union = (name: string, doc: string, values: string[]) => {
 type Field = [js: string, ty: string];
 const field = ([js, ty]: Field) => {
   const name = snake(js);
-  if (plain(name) !== js) line(`    #[cfg_attr(rust_js, rust_js::name = ${JSON.stringify(js)})]`);
+  if (needsJsName(name, js)) line(`    #[cfg_attr(rust_js, rust_js::name = ${JSON.stringify(js)})]`);
   line(`    pub ${name}: ${ty},`);
 };
 /** What's given: each field an `Option`, `None` not given, as JS reads

@@ -22,13 +22,13 @@ export function entry() {
   main();
 }
 
-function layout_array(n, TSize, TAlign) {
+function layoutArray(n, TSize, TAlign) {
   return $unwrapOk($layout(Math.imul(TSize, n) >>> 0, TAlign), undefined, (e) => "LayoutError");
 }
 
 const Buf = {
-  with_capacity(cap, TSize, TAlign) {
-    const layout = layout_array(cap, TSize, TAlign);
+  withCapacity(cap, TSize, TAlign) {
+    const layout = layoutArray(cap, TSize, TAlign);
     const fallback = () => {
       $allocError(layout);
     };
@@ -38,8 +38,8 @@ const Buf = {
 
   push(buf, value, TSize, TAlign) {
     if (buf.len === buf.cap) {
-      const old = layout_array(buf.cap, TSize, TAlign);
-      const new$ = layout_array(Math.imul(buf.cap, 2) >>> 0, TSize, TAlign);
+      const old = layoutArray(buf.cap, TSize, TAlign);
+      const new$ = layoutArray(Math.imul(buf.cap, 2) >>> 0, TSize, TAlign);
       const grown = $realloc($ptrBytes(buf.ptr), old, new$.size);
       const value = $ptrTyped($unwrap(grown));
       buf.ptr = value;
@@ -57,7 +57,7 @@ const Buf = {
     return $some($ptrAdd(buf.ptr, buf.len).value);
   },
 
-  into_vec(buf) {
+  intoVec(buf) {
     const me = buf;
     return $vecFromRaw(me.ptr, me.len, me.cap);
   },
@@ -70,11 +70,11 @@ function bufDrop_drop(buf, TSize, TAlign, dropT) {
     dropT?.(value);
   }
   $ptrBytes(buf.ptr);
-  layout_array(buf.cap, TSize, TAlign);
+  layoutArray(buf.cap, TSize, TAlign);
 }
 
 function main() {
-  const b = Buf.with_capacity(1, 12, 4);
+  const b = Buf.withCapacity(1, 12, 4);
   let b$live = true;
   let iter;
   try {
@@ -135,15 +135,15 @@ function main() {
     throw error;
   }
   b$live = false;
-  const v = Buf.into_vec(b);
+  const v = Buf.intoVec(b);
   console.log(`[${v.map((item) => $debugStr(item)).join(", ")}]`);
-  const n = Buf.with_capacity(2, 4, 4);
+  const n = Buf.withCapacity(2, 4, 4);
   try {
     Buf.push(n, 7, 4, 4);
   } finally {
     bufDrop_drop(n, 4, 4);
   }
-  const l = layout_array(3, 8, 8);
+  const l = layoutArray(3, 8, 8);
   const value = $layout(8, 3);
   console.log(`${$debugLayout(l)} ${l.size} ${value.TAG === "Err"}`);
 }

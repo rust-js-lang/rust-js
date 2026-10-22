@@ -11,7 +11,7 @@ import { readFileSync } from "node:fs";
 
 import idl from "@webref/idl";
 import { typescript } from "./coverage";
-import { identifier, plain, snake, snakeWords } from "../scripts/rust-names";
+import { identifier, needsJsName, plain, snake, snakeWords } from "../scripts/rust-names";
 
 /** A record of each spec's, by its name, in order: what @webref lists in
  * the order its directory reads, which differs by filesystem, so the crate
@@ -1378,7 +1378,7 @@ for (const [name, fields] of usedDictionaries) {
   if (fields.every((f) => f.optional)) line(`#[derive(Default)]`);
   line(`pub struct ${typeName(name)} {`);
   for (const f of fields) {
-    if (f.rust !== f.js) line(`    #[cfg_attr(rust_js, rust_js::name = ${JSON.stringify(f.js)})]`);
+    if (needsJsName(f.rust, f.js)) line(`    #[cfg_attr(rust_js, rust_js::name = ${JSON.stringify(f.js)})]`);
     line(`    pub ${f.rust}: ${f.optional ? `Option<${f.type}>` : f.type},`);
   }
   line(`}`);
@@ -1391,7 +1391,7 @@ for (const [name, { fields, borrows }] of [...paramDictionaries].sort(([a], [b])
   if (fields.every((f) => f.optional)) line(`#[derive(Default)]`);
   line(`pub struct ${typeName(name)}${borrows ? "<'a>" : ""} {`);
   for (const f of fields) {
-    if (f.rust !== f.js) line(`    #[cfg_attr(rust_js, rust_js::name = ${JSON.stringify(f.js)})]`);
+    if (needsJsName(f.rust, f.js)) line(`    #[cfg_attr(rust_js, rust_js::name = ${JSON.stringify(f.js)})]`);
     line(`    pub ${f.rust}: ${f.optional ? `Option<${f.type}>` : f.type},`);
   }
   line(`}`);

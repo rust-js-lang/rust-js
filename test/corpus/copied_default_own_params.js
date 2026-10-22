@@ -22,9 +22,9 @@ function iCollectSlice(IIterator) {
     $iCollectSlice = new WeakMap();
   }
   return $traitImpl($iCollectSlice, [IIterator], () => ({
-    inner_array: (arg0, N) => iCollectSlice_inner_array(arg0, N, IIterator),
-    collect_array: (self, N) => {
-      const result = iCollectSlice(IIterator).inner_array(self, N);
+    innerArray: (arg0, N) => iCollectSlice_innerArray(arg0, N, IIterator),
+    collectArray: (self, N) => {
+      const result = iCollectSlice(IIterator).innerArray(self, N);
       if (IIterator.next(self) != null) {
         throw new Error("assertion failed: self.next().is_none()");
       }
@@ -33,7 +33,7 @@ function iCollectSlice(IIterator) {
   }));
 }
 
-function iCollectSlice_inner_array(self, N, IIterator) {
+function iCollectSlice_innerArray(self, N, IIterator) {
   const result = Array.from({ length: N });
 
   let count = 0;
@@ -56,7 +56,7 @@ function iCollectSlice_inner_array(self, N, IIterator) {
 
 function main() {
   const foos = $iter([0n, 1n, 2n]);
-  const bar = iCollectSlice({ next: $next }).collect_array(foos, 3);
+  const bar = iCollectSlice({ next: $next }).collectArray(foos, 3);
   console.log(`[${bar.join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

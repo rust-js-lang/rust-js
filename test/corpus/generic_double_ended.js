@@ -27,7 +27,7 @@ function spanIterator_next(span) {
   return (span.low - 1) >>> 0;
 }
 
-function spanDoubleEndedIterator_next_back(span) {
+function spanDoubleEndedIterator_nextBack(span) {
   if (span.low >= span.high) {
     return;
   }
@@ -35,7 +35,7 @@ function spanDoubleEndedIterator_next_back(span) {
   return span.high;
 }
 
-function pairwise_sub(t) {
+function pairwiseSub(t) {
   let result = 0;
   while (true) {
     const front = $next(t);
@@ -48,7 +48,7 @@ function pairwise_sub(t) {
   return result;
 }
 
-function last_then_rest(t) {
+function lastThenRest(t) {
   const last = $nextBack(t);
   return [last, Iterator.from(t).toArray()];
 }
@@ -57,8 +57,8 @@ function reversed(t) {
   return $rev(t).toArray();
 }
 
-function passed_on(t) {
-  return pairwise_sub(t);
+function passedOn(t) {
+  return pairwiseSub(t);
 }
 
 function ends(t) {
@@ -87,19 +87,19 @@ function maybe(t) {
 
 function main() {
   const v = [1, 2, 3, 4, 5, 6];
-  console.log(`${pairwise_sub($iter(v))}`);
+  console.log(`${pairwiseSub($iter(v))}`);
   console.log(
-    `${pairwise_sub($iterator({ start: 0, end: 10 }, $rangeNext, false, $rangeNextBack))}`,
+    `${pairwiseSub($iterator({ start: 0, end: 10 }, $rangeNext, false, $rangeNextBack))}`,
   );
   console.log(
-    `${pairwise_sub(
-      $iterator({ low: 3, high: 9 }, spanIterator_next, false, spanDoubleEndedIterator_next_back),
+    `${pairwiseSub(
+      $iterator({ low: 3, high: 9 }, spanIterator_next, false, spanDoubleEndedIterator_nextBack),
     )}`,
   );
-  console.log(`${passed_on($iter([5, 1, 9]))}`);
-  const value = last_then_rest($iter([7, 8, 9]));
+  console.log(`${passedOn($iter([5, 1, 9]))}`);
+  const value = lastThenRest($iter([7, 8, 9]));
   console.log(`(${value[0] == null ? "None" : `Some(${value[0]})`}, [${value[1].join(", ")}])`);
-  const value$1 = last_then_rest(
+  const value$1 = lastThenRest(
     $iterator({ start: 1, end: 4 }, $rangeInclusiveNext, false, $rangeInclusiveNextBack),
   );
   console.log(
@@ -107,7 +107,7 @@ function main() {
   );
   console.log(
     `[${reversed(
-      $iterator({ low: 0, high: 4 }, spanIterator_next, false, spanDoubleEndedIterator_next_back),
+      $iterator({ low: 0, high: 4 }, spanIterator_next, false, spanDoubleEndedIterator_nextBack),
     ).join(", ")}]`,
   );
   console.log(`[${reversed($iter([1, 2, 3])).join(", ")}]`);
@@ -118,7 +118,7 @@ function main() {
   );
   console.log(`${range.start}..${range.end}`);
   const value$3 = ends(
-    $iterator({ low: 1, high: 2 }, spanIterator_next, false, spanDoubleEndedIterator_next_back),
+    $iterator({ low: 1, high: 2 }, spanIterator_next, false, spanDoubleEndedIterator_nextBack),
   );
   console.log(
     `(${value$3[0] == null ? "None" : `Some(${value$3[0]})`}, ${value$3[1] == null ? "None" : `Some(${value$3[1]})`})`,
@@ -129,7 +129,7 @@ function main() {
   );
   console.log(
     `[${boxed(
-      $iterator({ low: 4, high: 7 }, spanIterator_next, false, spanDoubleEndedIterator_next_back),
+      $iterator({ low: 4, high: 7 }, spanIterator_next, false, spanDoubleEndedIterator_nextBack),
     ).join(", ")}]`,
   );
   const value$4 = maybe($iter([undefined, 1]));

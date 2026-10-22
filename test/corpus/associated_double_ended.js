@@ -18,15 +18,15 @@ function backwards(it) {
   return $rev(it).toArray();
 }
 
-function last_even(it) {
+function lastEven(it) {
   return $findBack(it, (x) => x % 2 === 0);
 }
 
-function last_of(it) {
+function lastOf(it) {
   return $nextBackSome(it);
 }
 
-function rev_all(iterable) {
+function revAll(iterable) {
   return $rev($intoIter(iterable));
 }
 
@@ -40,7 +40,7 @@ function sliceIterator_next(slice) {
   return first;
 }
 
-function sliceDoubleEndedIterator_next_back(slice) {
+function sliceDoubleEndedIterator_nextBack(slice) {
   const value =
     slice[0].length === 0 ? undefined : [slice[0][slice[0].length - 1], slice[0].slice(0, -1)];
   if (!value) {
@@ -53,14 +53,14 @@ function sliceDoubleEndedIterator_next_back(slice) {
 
 function main() {
   console.log(`[${backwards($iter([1, 2, 3])).join(", ")}]`);
-  const value = last_even($iter([1, 2, 3, 4, 5]));
+  const value = lastEven($iter([1, 2, 3, 4, 5]));
   console.log(`${value == null ? "None" : `Some(${value})`}`);
-  const value$1 = last_even(
-    $iterator([[2, 4, 5, 7]], sliceIterator_next, false, sliceDoubleEndedIterator_next_back),
+  const value$1 = lastEven(
+    $iterator([[2, 4, 5, 7]], sliceIterator_next, false, sliceDoubleEndedIterator_nextBack),
   );
   console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
-  console.log(`${$debugStr(rev_all(["a", "b"]).toArray().join(""))}`);
-  const value$2 = last_of($iter([7, 8]));
+  console.log(`${$debugStr(revAll(["a", "b"]).toArray().join(""))}`);
+  const value$2 = lastOf($iter([7, 8]));
   console.log(`${value$2 == null ? "None" : `Some(${value$2})`}`);
 }
 //# sourceMappingURL=case.js.map

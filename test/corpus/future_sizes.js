@@ -6,14 +6,14 @@ export function entry() {
 
 async function test(_arg) {}
 
-async function use_future(fut) {
+async function useFuture(fut) {
   await fut;
 }
 
 function main() {
   test(new Array(16).fill(0));
   const simple = 17;
-  use_future(use_future(test(new Array(16).fill(0))));
+  useFuture(useFuture(test(new Array(16).fill(0))));
   const nested = 71;
   console.log(`${simple >= 16} ${nested > simple}`);
 }

@@ -209,7 +209,7 @@ test("a crate split across files becomes one JS file per module", async () => {
 
   // Exported: \`pub\` functions, plus private ones another file calls
   // (\`clamp\`, called from child modules). Private and local: not exported.
-  expect(Object.keys(modules.lib).sort()).toEqual(["HALVES", "clamp", "doubled_mean", "mixed", "shadowed", "summary"]);
+  expect(Object.keys(modules.lib).sort()).toEqual(["HALVES", "clamp", "doubledMean", "mixed", "shadowed", "summary"]);
   expect(Object.keys(modules.stats)).toEqual(["mean"]);
 
   const area = await Bun.file(join(out, "geometry/area.js")).text();
@@ -240,7 +240,7 @@ test("a crate split across files becomes one JS file per module", async () => {
 test("extern items from JS modules become import statements", async () => {
   // They run: Node's modules, and a hand-written file.
   expect(imports.lib.paths()).toBe("a/b/c.txt");
-  expect(imports.lib.file_name()).toBe("y.txt");
+  expect(imports.lib.fileName()).toBe("y.txt");
   expect(imports.lib.urls()).toEqual(["https://example.com/a", "https://example.com/b"]);
   expect(imports.lib.greetings()).toEqual(["Hello, world!", "Good day, world.", "!?"]);
   expect(imports.leaf.hello()).toBe("Hello, leaf!");
@@ -280,7 +280,7 @@ async function asyncsRun(asyncs: Record<string, (...args: any[]) => any>) {
   expect(await asyncs.pinned(3)).toBe(9);
   expect(await asyncs.doubled(4)).toBe(9);
   // The listener heard the first ping, and was gone for the second.
-  expect(asyncs.listen_until_aborted()).toBe(1);
+  expect(asyncs.listenUntilAborted()).toBe(1);
   // A spawned task runs up to its first `.await` at once, the rest later.
   const log = asyncs.spawned();
   expect(log.value).toEqual([1, 2]);
@@ -301,7 +301,7 @@ async function asyncsRun(asyncs: Record<string, (...args: any[]) => any>) {
   try {
     expect(await asyncs.load(server.url.href)).toEqual([201, true, "hello"]);
     // Binary data: `bytes()` and `arrayBuffer()`, five bytes of "hello".
-    expect(await asyncs.load_bytes(server.url.href)).toEqual([5, 5, 5]);
+    expect(await asyncs.loadBytes(server.url.href)).toEqual([5, 5, 5]);
     expect(await asyncs.post(server.url.href, "saved")).toBe("POST saved");
   } finally {
     delete (globalThis as any).window;
@@ -319,8 +319,8 @@ async function asyncsRun(asyncs: Record<string, (...args: any[]) => any>) {
     0x07, 0x07, 0x01, 0x03, 0x61, 0x64, 0x64, 0x00, 0x01,                    // export "add"
     0x0a, 0x0b, 0x01, 0x09, 0x00, 0x20, 0x00, 0x20, 0x01, 0x6a, 0x10, 0x00, 0x0b, // a + b, then call double
   ]);
-  expect(await asyncs.run_wasm(wasm, 2, 3)).toBe(10);
-  expect(await asyncs.instantiate_bytes(wasm)).toBe(true);
+  expect(await asyncs.runWasm(wasm, 2, 3)).toBe(10);
+  expect(await asyncs.instantiateBytes(wasm)).toBe(true);
 }
 
 // ADR 0029: `async fn` is an `async function`, `.await` is `await`, and a
@@ -359,7 +359,7 @@ test("async code becomes async functions and await", async () => {
   expect(fetchJs).toContain('const URL = "data:text/plain,Hello from a fetch!";');
   expect(fetchJs).toContain("    load(URL, output);\n");
   // `spawn(Box::new(async move { .. }))` is the promise, unawaited.
-  expect(countdown).toContain("    (async () => {\n      await count_down(output, 3);\n      running = false;\n    })();");
+  expect(countdown).toContain("    (async () => {\n      await countDown(output, 3);\n      running = false;\n    })();");
 });
 
 // ADRs 0032 and 0044: the playground is Rust, React components one per file,
@@ -405,11 +405,11 @@ test("the playground is Rust components, compiled to the JS main.ts starts", asy
 
   const compiler = await read("compiler.js");
   expect(compiler).toContain("import {\n  ConsoleStdout,\n  Directory,\n  File,\n  OpenFile,\n  PreopenDirectory,\n  WASI,\n} from \"@bjorn3/browser_wasi_shim\";");
-  for (const name of ["load", "load_example", "ms", "mb", "compile"]) {
+  for (const name of ["load", "loadExample", "ms", "mb", "compile"]) {
     expect(compiler).toMatch(new RegExp(`^export (async )?function ${name}\\(`, "m"));
   }
   // The downloads all start before any is awaited.
-  expect(compiler).toContain("  const module = load_compiler(start, stat);\n  const sysroot = load_sysroot(start, stat);");
+  expect(compiler).toContain("  const module = loadCompiler(start, stat);\n  const sysroot = loadSysroot(start, stat);");
   expect(compiler).toContain('  const module = await WebAssembly.compileStreaming(window.fetch("./rust-js.wasm"));');
   // A `format!` value shown once, in order, is written in place.
   expect(compiler).toContain("  return `${t.toFixed(0)} ms`;");
@@ -443,7 +443,7 @@ test("thread-locals are module variables", async () => {
   expect(js).toContain("  return START;");
   expect(js).toContain("  return LOG.length;");
   // Nothing of std's storage.
-  expect(js).not.toContain("__rust_std_internal");
+  expect(js).not.toMatch(/__rust_?std_?internal/i);
 });
 
 // ADR 0036: an iterator is a JS array, and `Ordering` a comparator's number.
@@ -492,11 +492,11 @@ test("the builtins crate's string functions are JS's string methods", () => {
   expect(at).toEqual([text.indexOf("ab"), text.indexOf("ab", 2), text.lastIndexOf("ab")]);
   expect(length).toBe(text.length);
   // An index is a JS number, as TypeScript has it: one past it is `+ 1`.
-  expect(builtins.file_name("a/b/c.txt")).toBe("c.txt");
+  expect(builtins.fileName("a/b/c.txt")).toBe("c.txt");
   expect(readFileSync(join(target, "builtins.js"), "utf8")).toContain('return path.slice(path.lastIndexOf("/") + 1);');
   expect(builtins.units("a😀")).toEqual(["a", "\ud83d", "\ude00"]);
-  expect(builtins.replaced_first("a-b-c", "-", "+")).toBe("a+b-c");
-  expect(builtins.split_parts("a,b;c,")).toEqual([["a", "b;c", ""], ["a", "b", "c", ""]]);
+  expect(builtins.replacedFirst("a-b-c", "-", "+")).toBe("a+b-c");
+  expect(builtins.splitParts("a,b;c,")).toEqual([["a", "b;c", ""], ["a", "b", "c", ""]]);
   expect(builtins.revived('{"a":1,"secret":2,"b":{"secret":3}}')).toEqual({ a: 1, b: {} });
   const js = readFileSync(join(target, "builtins.js"), "utf8");
   expect(js).toContain('return [text.split(","), text.split(/[,;]/)];');
@@ -504,13 +504,13 @@ test("the builtins crate's string functions are JS's string methods", () => {
   expect(js).toContain("  if (key in value) {\n    return value[key];\n  }");
   expect([builtins.named({ a: 1 }, "a"), builtins.named({ a: 1 }, "b")]).toEqual([1, undefined]);
   expect(() => builtins.revived("{")).toThrow();
-  expect([builtins.holds_none({ undefined: 1 }, undefined), builtins.holds_none({}, undefined), builtins.holds_none({ a: 1 }, "a")]).toEqual([true, false, true]);
-  expect(js).toContain("export function holds_none(value, key) {\n  return key in value;\n}");
+  expect([builtins.holdsNone({ undefined: 1 }, undefined), builtins.holdsNone({}, undefined), builtins.holdsNone({ a: 1 }, "a")]).toEqual([true, false, true]);
+  expect(js).toContain("export function holdsNone(value, key) {\n  return key in value;\n}");
   expect(js).toContain("return { children };");
   expect(builtins.wrapped("text")).toEqual({ children: "text" });
   expect(js).toContain('  const files = {};\n  files["/App.js"] = 1;');
   expect(builtins.filled()).toEqual({ "/App.js": 1 });
-  expect(js).toContain("export function as_unknown(text) {\n  return text;\n}");
+  expect(js).toContain("export function asUnknown(text) {\n  return text;\n}");
   expect(js).toContain("return key in value;");
   expect([builtins.holds({ a: 1 }, "a"), builtins.holds({}, "toString"), builtins.holds({}, "b")]).toEqual([true, true, false]);
   for (const call of ["text.slice(1, -1)", "text.slice(-2)", "text.substring(1, 3)", "text.substring(1)", "text.trim()", "text.trimStart()", "text.trimEnd()", 'text.indexOf(part)', "text.indexOf(part, 2)", "text.lastIndexOf(part)", "text.length", "text.charAt(i)", "text.replace(from, to)"]) {
@@ -595,19 +595,19 @@ test("the builtins crate's math is JS's Math where Rust's methods differ", async
 });
 
 test("a throwing JS call is a Result, and ? returns early", async () => {
-  expect(throws.sum_json("[1, 2, 3]")).toEqual({ TAG: "Ok", _0: 6 });
-  const bad = throws.sum_json("[1, 2,");
+  expect(throws.sumJson("[1, 2, 3]")).toEqual({ TAG: "Ok", _0: 6 });
+  const bad = throws.sumJson("[1, 2,");
   expect(bad.TAG).toBe("Err");
   expect(bad._0).toStartWith("SyntaxError");
   // `?` hands the caught error on as it is.
-  expect(throws.first_twice("[4, 5]")).toEqual({ TAG: "Ok", _0: 8 });
-  expect(throws.first_twice("{")._0).toBeInstanceOf(SyntaxError);
+  expect(throws.firstTwice("[4, 5]")).toEqual({ TAG: "Ok", _0: 8 });
+  expect(throws.firstTwice("{")._0).toBeInstanceOf(SyntaxError);
   // A rejected promise is an `Err` at its `.await`.
   expect(await throws.settled(false)).toBe("7");
   expect(await throws.settled(true)).toBe("rejected: no");
   // Any promise, settled: its rejection an `Err`, not a throw.
-  expect(await throws.settle_either(false)).toBe("8");
-  expect(await throws.settle_either(true)).toBe("rejected: no");
+  expect(await throws.settleEither(false)).toBe("8");
+  expect(await throws.settleEither(true)).toBe("rejected: no");
   const [encoded, decoded] = throws.uri("a b&ü");
   expect(encoded).toStartWith("a%20b%26%C3%BC URIError");
   expect(decoded).toEqual({ TAG: "Ok", _0: "a b&ü" });
@@ -647,7 +647,7 @@ test("an untagged enum is its payload, told apart by its runtime kind", async ()
   expect(untagged.numbers([1, 2])).toEqual([1, 2]);
   expect(untagged.shown(2.5)).toBe("2.5");
   expect([untagged.label("Recap"), untagged.label(["a", {}])]).toEqual(["Link for Recap", "Link for this heading"]);
-  expect([untagged.is_other(["x"]), untagged.is_other(3), untagged.is_other("s")]).toEqual([true, true, false]);
+  expect([untagged.isOther(["x"]), untagged.isOther(3), untagged.isOther("s")]).toEqual([true, true, false]);
 
   const js = await Bun.file(join(target, "untagged.js")).text();
   expect(js).toContain("src instanceof Error && !(src instanceof TypeError)");
@@ -668,7 +668,7 @@ test("concat of parts written out is an array of them, spread", async () => {
 // What's there's field, or nothing, is an optional chain.
 test("a field of an Option's value is an optional chain", async () => {
   const js = await Bun.file(join(target, "combinators.js")).text();
-  expect(js).toContain("export function name_of(named) {\n  return named?.name;\n}");
+  expect(js).toContain("export function nameOf(named) {\n  return named?.name;\n}");
 });
 
 // A closure called in place is its value, closures in it too.
@@ -711,7 +711,7 @@ test("enums with fields are tagged objects, as in ReScript", async () => {
   // Through a reference, with no copy: the reference is the value.
   expect(js).toContain("  if (t.TAG === \"Leaf\") {\n    return t._0;\n  }\n  return (sum(t._0) + sum(t._1)) | 0;");
   // `Result` is ReScript's `result`.
-  expect(js).toContain("  return checkedDiv.TAG === \"Ok\" ? checkedDiv._0 : fallback;");
+  expect(js).toContain("  return value.TAG === \"Ok\" ? value._0 : fallback;");
 });
 
 // ADR 0031: a `const` is the value rustc computed, under its own name.
@@ -756,7 +756,7 @@ test("options are the value or undefined", async () => {
   expect(js).toContain("  const h = half(n);\n  let v = 0;\n  if (h != null && h !== 0) {\n    const q = counted(h);\n    if (q != null && q > 1) {\n      v = q;\n    }\n  }");
   // a longer one after both, in a block the `then` leaves.
   expect(js).toContain("  const h = half(n);\n  if (h != null) {\n    const q = counted(h);\n    if (q != null && q > 1) {\n      return q;\n    }\n  }\n  calls = (calls + 10) | 0;\n  return -calls | 0;");
-  expect([options.chained_long_else(8), options.chained_long_else(4), options.chained_long_else(3)]).toEqual([2, -11, -10]);
+  expect([options.chainedLongElse(8), options.chainedLongElse(4), options.chainedLongElse(3)]).toEqual([2, -11, -10]);
   // A closure of statements is called, by a name.
   expect(js).toContain("  const counted = h != null ? map(h) : undefined;");
   expect(options.same(null, undefined)).toBe(true);
@@ -858,13 +858,13 @@ test("the webapi crate's bindings become plain JS", async () => {
   expect(js).toContain("document.adoptedStyleSheets = [sheet];\n  return document.adoptedStyleSheets.length;");
   // A function JS gives, an object.
   expect(js).toContain('return !!registry.get("x-card");');
-  const { round_trip, iterated, samples, texts, on_errors, listed, selected, widths, unions_read, defined } = await import(join(target, "web_forms.js"));
+  const { roundTrip, iterated, samples, texts, onErrors, listed, selected, widths, unionsRead, defined } = await import(join(target, "web_forms.js"));
   expect([defined({ get: () => class {} }), defined({ get: () => undefined })]).toEqual([true, false]);
   // A union a function gives, read as the member JS gives.
   const form = new FormData();
   form.set("name", "Ada");
-  expect(unions_read({ result: "text" }, form)).toEqual([true, "Ada"]);
-  expect(unions_read({ result: new ArrayBuffer(1) }, new FormData())).toEqual([false, undefined]);
+  expect(unionsRead({ result: "text" }, form)).toEqual([true, "Ada"]);
+  expect(unionsRead({ result: new ArrayBuffer(1) }, new FormData())).toEqual([false, undefined]);
   expect(listed([1, 2, 3], new Headers({ a: "1", b: "2" }))).toEqual([3, ["a", "b"]]);
   const p = (width: number) => ({ getBoundingClientRect: () => ({ width }) });
   const labels = [{ htmlFor: "name" }];
@@ -872,7 +872,7 @@ test("the webapi crate's bindings become plain JS", async () => {
   expect(widths({ querySelectorAll: () => [p(3), p(4)] })).toEqual([3, 4]);
   (globalThis as any).window = {};
   const button: any = {};
-  expect(on_errors(button)).toBe(true);
+  expect(onErrors(button)).toBe(true);
   expect([button.onerror("Script error."), button.onerror(new Event("error"))]).toEqual([true, false]);
   delete (globalThis as any).window;
   expect(texts(new URL("https://example.com/a"), { toString: () => "a b" })).toEqual(["https://example.com/a", "a b"]);
@@ -881,7 +881,7 @@ test("the webapi crate's bindings become plain JS", async () => {
   delete (globalThis as any).FontFace;
   expect(iterated(new Headers({ a: "1", b: "2" }), { values: () => ["abcd", "x", "hello"].values() })).toEqual([["a=1", "b=2"], 2, "a"]);
   // "é" is two bytes in UTF-8.
-  expect(round_trip("héllo")).toEqual([6, "héllo"]);
+  expect(roundTrip("héllo")).toEqual([6, "héllo"]);
 });
 
 
@@ -957,7 +957,7 @@ test("== calls a hand-written eq wherever it's inside, and generics take a dicti
   // A fieldless variant is a string: only itself is equal to it.
   expect(js).toContain("} === \"Nothing\"");
   // A `T: Eq` is given `T`'s `PartialEq`, and one that compares field by field is `$eq`.
-  expect(js).toContain("count_equal(all, version(1, \"z\"), versionPartialEq())");
+  expect(js).toContain("countEqual(all, version(1, \"z\"), versionPartialEq())");
   expect(js).toContain("{ eq: $eq }");
   // `!=` of a hand-written `PartialEq<f64>` negates its `eq`.
   expect(js).toContain("return [metersPartialEqF64_eq(m, 2), !metersPartialEqF64_eq(m, 3");
@@ -971,8 +971,8 @@ test("a Display impl's fmt returns the string it writes", async () => {
   expect(js).toContain("  if (figure === \"Dot\") {\n    return \"a dot\";\n  }\n  return `a polygon of ${figure._0.length}`;");
   // More: a string built up, with nested `fmt`s and a helper that writes.
   expect(js).toContain('    f += pointDisplay_fmt(stop);');
-  expect(js).toContain('    f += write_loop(route.stops.length);');
-  expect(js).toContain("function write_loop(stops) {\n  return ` (a loop of ${stops})`;");
+  expect(js).toContain('    f += writeLoop(route.stops.length);');
+  expect(js).toContain("function writeLoop(stops) {\n  return ` (a loop of ${stops})`;");
   // `{}` of one, and generics given a dictionary.
   expect(js).toContain("return `${labeled.label}: ${TDisplay.fmt(labeled.value)}`;");
   expect(js).toContain("export function shown(x, TDisplay) {\n  return `<${TDisplay.fmt(x)}>`;");
@@ -1011,8 +1011,8 @@ test("PartialOrd and Ord compare with $cmp, a hand-written cmp, or the parts in 
   expect(js).toContain("all.sort((a, b) => $cmp(a.major, b.major) || $cmp(a.minor, b.minor));");
   expect(js).toContain("words.sort(wordOrd_cmp);");
   expect(js).toContain("lists.sort((a, b) => $cmpItems(a, b, $cmp));");
-  // Generic: dictionaries, `{ cmp }` and `{ partial_cmp }`.
-  expect(js).toContain("export function in_order(a, b, TPartialOrd) {\n  return TPartialOrd.partial_cmp(a, b) <= 0;");
+  // Generic: dictionaries, `{ cmp }` and `{ partialCmp }`.
+  expect(js).toContain("export function inOrder(a, b, TPartialOrd) {\n  return TPartialOrd.partialCmp(a, b) <= 0;");
   // `NaN` isn't ordered: `$thenCmp` stops at an `undefined`, which `||` wouldn't.
   expect(js).toContain("$thenCmp($partialCmp(p.x, q.x), $partialCmp(p.y, q.y)) < 0");
 });
@@ -1068,7 +1068,7 @@ test("chars, parse and slices are plain JS with Rust's answers", async () => {
 test("the calculator's JS is what a person would write", async () => {
   const js = await Bun.file(join(target, "calc.js")).text();
   expect(js).toContain("for (const [i, c] of Array.from(s).entries()) {");
-  expect(js).toContain("const firstDup = first_dup(\"abcdbe\");");
+  expect(js).toContain("const value = firstDup(\"abcdbe\");");
   expect(js).toContain("`Some((${value[0]}, ${$debugStr(value[1], \"'\")}))`");
   expect(js).toContain('$splitBy(text, (c) => !/^[\\p{Alphabetic}\\p{N}]$/u.test(c))');
   // `?` from a `&str` error to a `String` one: the same string, returned as it is.
@@ -1184,7 +1184,7 @@ test("versions' JS: struct update in Rust's order, scan, drain and total_cmp", a
 // whatever JS iterable it's given.
 test("generic iterators take arrays and JS iterators alike", async () => {
   const js = await Bun.file(join(target, "std_traits.js")).text();
-  expect(js).toContain("export function evens_below(n) {\n  return $lazyRange(0, n).filter((x) => x % 2 === 0);");
+  expect(js).toContain("export function evensBelow(n) {\n  return $lazyRange(0, n).filter((x) => x % 2 === 0);");
   expect(js).toContain("export function middle(items, k) {\n  return Iterator.from(items).drop(1).take(k).toArray();");
   expect(js).toContain("for (const x of items) {");
   // One of the crate's own, given where a generic one goes.

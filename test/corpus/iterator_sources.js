@@ -36,7 +36,7 @@ function repeated(first, n, TClone) {
     .toArray();
 }
 
-function powers_of_two(limit) {
+function powersOfTwo(limit) {
   return $lazyTakeWhile(
     $successors(1, (n) => $checked(n * 2, 0, 4294967295)),
     (n) => n <= limit,
@@ -56,13 +56,13 @@ function countdown(from) {
   ).toArray();
 }
 
-function with_header(header, lines) {
+function withHeader(header, lines) {
   return $lazyChain($iter([header]), $iter(lines))
     .map((line) => line.toUpperCase())
     .toArray();
 }
 
-function maybe_items(item) {
+function maybeItems(item) {
   return [
     ...$iter(item == null ? [] : [item]),
     ...(item == null ? [] : [item]).values().map((n) => Math.imul(n, 10)),
@@ -72,10 +72,10 @@ function maybe_items(item) {
 // A `for` over an `Option` is one Rust warns of, but takes.
 
 function main() {
-  console.log(`[${powers_of_two(100).join(", ")}]`);
+  console.log(`[${powersOfTwo(100).join(", ")}]`);
   console.log(`[${countdown(4).join(", ")}] [${countdown(0).join(", ")}]`);
   console.log(
-    `[${with_header("title", ["a", "b"])
+    `[${withHeader("title", ["a", "b"])
       .map((item) => $debugStr(item))
       .join(", ")}]`,
   );
@@ -88,7 +88,7 @@ function main() {
     .take(5)
     .toArray();
   console.log(`[${padded.join(", ")}]`);
-  console.log(`[${maybe_items(4).join(", ")}] [${maybe_items(undefined).join(", ")}]`);
+  console.log(`[${maybeItems(4).join(", ")}] [${maybeItems(undefined).join(", ")}]`);
   const total =
     ((3 == null ? [] : [3]).reduce((a, b) => (a + b) | 0, 0) +
       (undefined == null ? [] : [undefined]).reduce((a, b) => (a + b) | 0, 0)) |

@@ -28,7 +28,7 @@ export function clamp(x) {
   return x;
 }
 
-export function doubled_mean(a, b) {
+export function doubledMean(a, b) {
   return double(mean(a, b));
 }
 

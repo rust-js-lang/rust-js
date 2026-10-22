@@ -26,7 +26,7 @@ export function describe(o) {
 }
 
 /** `if let`, and its `else`. */
-export function half_or_zero(n) {
+export function halfOrZero(n) {
   const h = half(n);
   if (h != null) {
     return h;
@@ -82,7 +82,7 @@ export function same(a, b) {
   return a == b;
 }
 
-export function same_slots(a, b) {
+export function sameSlots(a, b) {
   return $eq(a, b);
 }
 
@@ -118,7 +118,7 @@ export function mapped(n) {
 }
 
 /** `map` with a closure of statements, and with a pattern for its parameter. */
-export function mapped_more(n) {
+export function mappedMore(n) {
   let calls = 0;
   const h = half(n);
   const map = (h) => {
@@ -146,7 +146,7 @@ export function chained(n) {
 }
 
 /** A `let` after another is only computed if everything before it held. */
-export function chained_twice(n) {
+export function chainedTwice(n) {
   let calls = 0;
   const counted = (m) => {
     calls = (calls + 1) >>> 0;
@@ -164,7 +164,7 @@ export function chained_twice(n) {
 }
 
 /** An `else` of more than one statement, reached from each level by a label. */
-export function chained_long_else(n) {
+export function chainedLongElse(n) {
   let calls = 0;
   const counted = (m) => {
     calls = (calls + 1) | 0;
@@ -182,7 +182,7 @@ export function chained_long_else(n) {
 }
 
 /** Without an `else`, and binding a tuple. */
-export function chained_statement(n) {
+export function chainedStatement(n) {
   let total = 0;
   const h = half(n);
   if (h != null) {
@@ -197,7 +197,7 @@ export function chained_statement(n) {
 }
 
 /** `while let` with a chain. */
-export function chained_loop(n) {
+export function chainedLoop(n) {
   let count = 0;
   while (true) {
     const h = half(n);

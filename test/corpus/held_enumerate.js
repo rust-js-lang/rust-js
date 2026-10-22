@@ -38,11 +38,11 @@ function positionsIterator_next(positions) {
     .find((item) => item != null);
 }
 
-function positionsIterator_size_hint(positions) {
+function positionsIterator_sizeHint(positions) {
   return [0, $sizeHint(positions.iter)[1]];
 }
 
-function positionsDoubleEndedIterator_next_back(
+function positionsDoubleEndedIterator_nextBack(
   positions,
   IDoubleEndedIterator,
   IExactSizeIterator,
@@ -99,7 +99,7 @@ function positionsDebug_fmt(positions, options, IDebug) {
 // A map of a `&mut` to generic code's iterator, stepped from its back, as
 // either's `Either` iterates: its impl's `&mut R: DoubleEndedIterator` asks
 // `R`'s.
-function last_doubled(items) {
+function lastDoubled(items) {
   return $foldBack(
     $mapEnds(items, (x) => Math.imul(x, 2) >>> 0),
     undefined,
@@ -108,7 +108,7 @@ function last_doubled(items) {
 }
 
 const Wrap = {
-  last_tripled(wrap, RIterator, RDoubleEndedIterator) {
+  lastTripled(wrap, RIterator, RDoubleEndedIterator) {
     return $foldBack(
       $mapEnds(
         $iterator(wrap.inner, RIterator.next, false, RDoubleEndedIterator.next_back),
@@ -122,10 +122,10 @@ const Wrap = {
 
 function main() {
   const even = positions($iter([1, 2, 4, 5, 6]), (x) => x % 2 === 0, { next: $next });
-  const value = positionsIterator_size_hint(even);
+  const value = positionsIterator_sizeHint(even);
   console.log(`(${value[0]}, ${value[1] == null ? "None" : `Some(${value[1]})`})`);
   const next = positionsIterator_next(even);
-  const value$1 = positionsDoubleEndedIterator_next_back(
+  const value$1 = positionsDoubleEndedIterator_nextBack(
     even,
     { next_back: $nextBack },
     { len: (iterator) => iterator.len() },
@@ -225,36 +225,36 @@ function main() {
   }
   console.log("");
   const rest = $iter([1, 2, 3]);
-  const lastDoubled = last_doubled($iter(rest));
-  const value$2 = $next(rest);
+  const value$2 = lastDoubled($iter(rest));
+  const value$3 = $next(rest);
   console.log(
-    `${lastDoubled == null ? "None" : `Some(${lastDoubled})`} ${value$2 == null ? "None" : `Some(${value$2})`}`,
+    `${value$2 == null ? "None" : `Some(${value$2})`} ${value$3 == null ? "None" : `Some(${value$3})`}`,
   );
   const numbered = {
     iter: $enumerate($iterator({ start: 5, end: 8 }, $rangeNext, false, $rangeNextBack, $rangeLen)),
   };
   const nextBack = $nextBack(numbered.iter);
-  const value$3 = $next(numbered.iter);
+  const value$4 = $next(numbered.iter);
   console.log(
-    `${nextBack == null ? "None" : `Some((${nextBack[0]}, ${nextBack[1]}))`} ${value$3 == null ? "None" : `Some((${value$3[0]}, ${value$3[1]}))`}`,
+    `${nextBack == null ? "None" : `Some((${nextBack[0]}, ${nextBack[1]}))`} ${value$4 == null ? "None" : `Some((${value$4[0]}, ${value$4[1]}))`}`,
   );
   const wrap = { inner: $iter([4, 5]) };
-  const lastTripled = Wrap.last_tripled(wrap, { next: $next }, { next_back: $nextBack });
-  const value$4 = $next(wrap.inner);
+  const lastTripled = Wrap.lastTripled(wrap, { next: $next }, { next_back: $nextBack });
+  const value$5 = $next(wrap.inner);
   console.log(
-    `${lastTripled == null ? "None" : `Some(${lastTripled})`} ${value$4 == null ? "None" : `Some(${value$4})`}`,
+    `${lastTripled == null ? "None" : `Some(${lastTripled})`} ${value$5 == null ? "None" : `Some(${value$5})`}`,
   );
   // A range given as it is, stepped from its back by its dictionaries.
   const big = positions({ start: 1, end: 20 }, (x) => x > 16, { next: $rangeNext });
-  const value$5 = positionsIterator_next(big);
-  const value$6 = positionsDoubleEndedIterator_next_back(
+  const value$6 = positionsIterator_next(big);
+  const value$7 = positionsDoubleEndedIterator_nextBack(
     big,
     { next_back: $rangeNextBack },
     { len: $rangeLen },
   );
-  const value$7 = positionsIterator_next(big);
+  const value$8 = positionsIterator_next(big);
   console.log(
-    `${value$5 == null ? "None" : `Some(${value$5})`} ${value$6 == null ? "None" : `Some(${value$6})`} ${value$7 == null ? "None" : `Some(${value$7})`}`,
+    `${value$6 == null ? "None" : `Some(${value$6})`} ${value$7 == null ? "None" : `Some(${value$7})`} ${value$8 == null ? "None" : `Some(${value$8})`}`,
   );
 }
 //# sourceMappingURL=case.js.map

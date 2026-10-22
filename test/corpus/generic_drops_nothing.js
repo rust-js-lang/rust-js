@@ -31,7 +31,7 @@ function shuffle(v, extra, TClone) {
 }
 
 /** The last item moved out, as `pop` does. */
-function take_last(v) {
+function takeLast(v) {
   const len = v.length;
   if (len === 0) {
     return;
@@ -44,8 +44,8 @@ function wrapIndexI_index(wrap, index, ISliceIndexTSlice, dropT, dropI) {
   return ISliceIndexTSlice.index(index, wrap[0]);
 }
 
-function wrapIndexMutI_index_mut(wrap, index, ISliceIndexTSlice, dropT, dropI) {
-  return ISliceIndexTSlice.index_mut(index, wrap[0]);
+function wrapIndexMutI_indexMut(wrap, index, ISliceIndexTSlice, dropT, dropI) {
+  return ISliceIndexTSlice.indexMut(index, wrap[0]);
 }
 
 function main() {
@@ -84,7 +84,7 @@ function main() {
   }
   let last;
   try {
-    last = take_last(v);
+    last = takeLast(v);
   } catch (error) {
     for (const item of v) {
       loudDrop_drop(item);
@@ -106,7 +106,7 @@ function main() {
   const w = [v];
   try {
     try {
-      wrapIndexMutI_index_mut(w, 0, $sliceIndexes.item, loudDrop_drop).value[0] = "z";
+      wrapIndexMutI_indexMut(w, 0, $sliceIndexes.item, loudDrop_drop).value[0] = "z";
       const tmp = wrapIndexI_index(w, { start: 0, end: 2 }, $sliceIndexes.range, loudDrop_drop)
         .map((l) => l[0])
         .join("");

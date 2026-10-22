@@ -897,9 +897,10 @@ fn unhyphenated(name: &str) -> String {
     out
 }
 
-/// A Rust variable's name as JS code writes it (ADR 0038): `set_count` is
+/// A Rust name as JS code writes it (ADRs 0038, 0573): `set_count` is
 /// `setCount`. Leading and trailing underscores stay (`_unused`, `type_`),
-/// and so does a name with no lowercase letter, like a constant's.
+/// and so does a name with no lowercase letter, like a constant's. The one
+/// place a `snake_case` name is made camelCase.
 fn camel_case(name: &str) -> String {
     let core = name.trim_matches('_');
     if !core.contains('_') || !core.contains(|c: char| c.is_ascii_lowercase()) {
@@ -909,16 +910,23 @@ fn camel_case(name: &str) -> String {
     let trail = &name[name.trim_end_matches('_').len()..];
     let mut out = lead.to_string();
     for (i, word) in core.split('_').filter(|w| !w.is_empty()).enumerate() {
-        let mut chars = word.chars();
-        if i > 0
-            && let Some(first) = chars.next()
-        {
-            out.push(first.to_ascii_uppercase());
+        match i {
+            0 => out.push_str(word),
+            _ => out.push_str(&upper_first(word)),
         }
-        out.extend(chars);
     }
     out.push_str(trail);
     out
+}
+
+/// `counter` → `Counter`: a word joined into a camelCase name, after the
+/// first, `RefFlags` of `Ref` and `flags`.
+pub(super) fn upper_first(word: &str) -> String {
+    let mut chars = word.chars();
+    chars
+        .next()
+        .map(|c| std::iter::once(c.to_ascii_uppercase()).chain(chars).collect())
+        .unwrap_or_default()
 }
 
 /// `Counter` → `counter`: a value of the type, named after it.

@@ -24,7 +24,7 @@ function spanIterator_next(span) {
   }
 }
 
-function spanDoubleEndedIterator_next_back(span) {
+function spanDoubleEndedIterator_nextBack(span) {
   if (span[0] < span[1]) {
     span[1] = (span[1] - 1) >>> 0;
     return span[1];
@@ -34,7 +34,7 @@ function spanDoubleEndedIterator_next_back(span) {
 function main() {
   const down = $range(1, 4).toReversed();
   const top = $range(250, 256).toReversed();
-  const own = $iterator([0, 3], spanDoubleEndedIterator_next_back).toArray();
+  const own = $iterator([0, 3], spanDoubleEndedIterator_nextBack).toArray();
   console.log(`[${down.join(", ")}] [${top.join(", ")}] [${own.join(", ")}]`);
 
   const v = [10, 20, 30, 40];

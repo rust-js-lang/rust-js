@@ -34,7 +34,7 @@ function peeked(p, PPeek) {
   return PPeek.peek(p);
 }
 
-function helper_taking(_u, dropU) {
+function helperTaking(_u, dropU) {
   dropU?.(_u);
 }
 
@@ -47,7 +47,7 @@ function wrapPass(dropT) {
       const dropSelf = (wrap) => {
         dropT?.(wrap[0]);
       };
-      helper_taking(self, dropSelf);
+      helperTaking(self, dropSelf);
     },
     $drop: (wrap) => {
       dropT?.(wrap[0]);
