@@ -75,7 +75,6 @@ function sizes(TSize, TAlign) {
 }
 
 // An `if let` that always matches is one Rust warns of, but takes.
-
 function main() {
   const maybe = 3;
   console.log(`${twice(maybe != null ? maybe : 0)}`);

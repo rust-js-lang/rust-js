@@ -5184,6 +5184,65 @@ pub fn log_twice() -> usize {
   expect(() => lib.logTwice()).toThrow("already");
 });
 
+// ADR 0581: a plain thread-local's `with_borrow_mut(|queue| ..)` is its
+// variable given to the closure, `((queue) => { .. })(queue)`, called as a
+// statement: its body is in its place, reading the variable, as React's
+// scheduler's `advanceTimers` reads `timerQueue`. A `return;` that leaves
+// it is the function's where it ends the function, and its loop's `break`
+// where its body ends with that loop; the comment before it is before its
+// body.
+test("a plain thread-local's closure called as a statement is its body", async () => {
+  const dir = fixture("applied-blocks");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::RefCell;
+
+thread_local! {
+    static TIMER_QUEUE: RefCell<Vec<u32>> = const { RefCell::new(Vec::new()) };
+}
+
+pub fn schedule(n: u32) {
+    TIMER_QUEUE.with_borrow_mut(|timer_queue| timer_queue.push(n));
+}
+
+pub fn drained(limit: u32) -> u32 {
+    let mut seen = 0;
+    // Count each timer.
+    TIMER_QUEUE.with_borrow_mut(|timers| {
+        while let Some(t) = timers.pop() {
+            if t > limit {
+                return;
+            }
+            seen += t;
+        }
+    });
+    seen
+}
+
+pub fn last() {
+    // Drop the rest.
+    TIMER_QUEUE.with_borrow_mut(|timer_queue| {
+        while let Some(t) = timer_queue.pop() {
+            if t == 0 {
+                return;
+            }
+        }
+    });
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("export function schedule(n) {\n  timerQueue.push(n);\n}");
+  expect(js).toContain("  let seen = 0;\n  // Count each timer.\n  while (true) {\n    const t = timerQueue.pop();\n");
+  expect(js).toContain("    if (t > limit) {\n      break;\n    }\n");
+  expect(js).toContain("export function last() {\n  // Drop the rest.\n  while (true) {\n");
+  expect(js).toContain("    if (t === 0) {\n      return;\n    }\n");
+  expect(js).not.toContain("=> {");
+  const lib = await import(join(dir, "lib.js"));
+  for (const n of [1, 9, 2, 3]) lib.schedule(n);
+  expect(lib.drained(5)).toBe(5);
+  lib.last();
+  expect(lib.drained(5)).toBe(0);
+});
+
 // ADR 0293: a `Cell` a `let` takes apart, read by `get()` before anything
 // else runs, is its value in JS's destructuring: react.dev's ErrorMessage
 // has `const {message, title} = error;`. Set before it's read, it's read

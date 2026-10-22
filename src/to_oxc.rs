@@ -175,7 +175,8 @@ pub fn emit(
 /// The comments of the files `module`'s code is of, past the ones each
 /// starts with, a header's (ADR 0383), each before the statement or item it's
 /// before: where only the start of that is between them, no `;`, `{` or
-/// `}`, so not one of what has no JS, a struct's (ADR 0444). Each is as
+/// `}`, so not one of what has no JS, a struct's (ADR 0444); or a
+/// closure's opening, `|queue| {`, whose body is in its place (ADR 0581). Each is as
 /// written; a doc comment, `///` lines or `/** */`, a JSDoc one, `/** .. */`,
 /// whose text is added after the arena's, where its span points. The text
 /// the program's source is, and the comments.
@@ -248,7 +249,11 @@ fn comments_of(
                     .all(|other| {
                         let between = &sources.text[code as usize..other.lo as usize];
                         code = other.hi;
-                        !between.contains([';', '{', '}'])
+                        // A closure's opening, `with_borrow_mut(|queue| {`,
+                        // whose body is in its place (ADR 0581), is a start.
+                        let opens_closures =
+                            (between.match_indices('{')).all(|(i, _)| between[..i].trim_end().ends_with('|'));
+                        !between.contains([';', '}']) && opens_closures
                     });
                 only_starts.then_some((*c, at))
             })
@@ -304,7 +309,11 @@ fn comments_of(
             let line_start = sources.text[..at as usize].rfind('\n').map_or(0, |i| i + 1) as u32;
             let first_on_line = !starts.iter().any(|&s| s >= line_start && s < at);
             if (own.is_empty() && first_on_line && blank_before(at))
-                || (!own.is_empty() && sources.text[last as usize..at as usize].matches('\n').count() >= 2)
+                || (!own.is_empty() && {
+                    // A line of nothing between: not a closure's opening's.
+                    let gap: Vec<&str> = sources.text[last as usize..at as usize].split('\n').collect();
+                    gap.len() > 2 && gap[1..gap.len() - 1].iter().any(|line| line.trim().is_empty())
+                })
             {
                 pieces.push(blank(&text));
             }

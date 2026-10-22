@@ -111,7 +111,6 @@ const FRAME_STYLE = `<style>
  * (`main`), or with `test`, the crate's tests by their runner (`tests`),
  * as the compiler's manifest says, and reports as run number `run`.
  */
-
 export function prepare(files, modules, styles, rootFile, main, tests, test, run) {
   // The program's modules, its JSX as JS (Sucrase's), and what they import
   // of the page's: the runtime, and React's.

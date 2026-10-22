@@ -70,7 +70,6 @@ function maybeItems(item) {
 }
 
 // A `for` over an `Option` is one Rust warns of, but takes.
-
 function main() {
   console.log(`[${powersOfTwo(100).join(", ")}]`);
   console.log(`[${countdown(4).join(", ")}] [${countdown(0).join(", ")}]`);

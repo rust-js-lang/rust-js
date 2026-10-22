@@ -8,11 +8,12 @@
 //! Every node carries a `Span`: byte offsets into the Rust source file. That
 //! is what lets the source map point from JS back to Rust.
 
+mod applied;
 mod expr_walk;
 mod make;
 mod stmt_walk;
 
-pub use self::{expr_walk::*, stmt_walk::*};
+pub use self::{applied::applied_blocks, expr_walk::*, stmt_walk::*};
 
 use std::collections::{BTreeSet, HashMap, HashSet};
 

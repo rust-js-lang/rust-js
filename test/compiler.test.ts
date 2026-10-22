@@ -438,7 +438,7 @@ test("thread-locals are module variables", async () => {
   // (ADR 0270); one whose cell `with` hands out keeps its `{ value }`.
   expect(js).toContain("let count = 0;\nconst log = [];\nconst START = 10 * 4 + 2;");
   expect(js).toContain("  count = (count + 1) >>> 0;\n  return count;");
-  expect(js).toContain("  })(log);");
+  expect(js).toContain("  log.push(line);\n  return log.length;");
   // A closure that only returns is its body, on the key or its value, in place.
   expect(js).toContain("  return START;");
   expect(js).toContain("  return log.length;");

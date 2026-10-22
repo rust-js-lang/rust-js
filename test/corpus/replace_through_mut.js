@@ -58,7 +58,6 @@ function throughRefMut() {
 }
 
 // The same, its `&mut` in a `let mut`: still `a`, replaced whole.
-
 function throughRefMutVariable() {
   const a = { x: 1, y: 0 };
   const cur = a;

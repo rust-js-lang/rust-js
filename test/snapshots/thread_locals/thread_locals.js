@@ -15,9 +15,7 @@ export function bump() {
 }
 
 export function record(line) {
-  ((log) => {
-    log.push(line);
-  })(log);
+  log.push(line);
   return log.length;
 }
 

@@ -156,4 +156,12 @@ export const mutations: Mutation[] = [
     replace: "                    let _ = old;\n                    return Ok(Some(Expr::undefined()));\n",
     tests: ["test/corpus.test.ts", "-t", "^cell_drops.rs$"],
   },
+  {
+    name: "applied-block-kept",
+    breaks: "a plain thread-local's closure called as a statement stays `((timerQueue) => { .. })(timerQueue)`",
+    file: "src/lower/std_types/cell.rs",
+    find: "            js::applied_blocks(&mut function.body);\n",
+    replace: "",
+    tests: ["test/lowering.test.ts", "-t", "closure called as a statement is its body"],
+  },
 ];

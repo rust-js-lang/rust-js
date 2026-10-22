@@ -767,6 +767,10 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### Changed
 
+- **A closure called as a statement where it's made is its body** (ADR
+  0581): a plain thread-local's `with_borrow_mut(|queue| ..)` reads the
+  variable in place, `push(taskQueue, timer)`, its loop's `return;` the
+  loop's `break;`, and the comment before it kept.
 - **A call asks of a cell only what it may borrow** (ADR 0580): a
   thread-local whose `with_borrow` closures call the crate's functions
   that borrow nothing of it, or borrow another, is its module's variable,

@@ -9,17 +9,15 @@ export function entry() {
 const log = { value: [] };
 
 function asksDrop_drop(asks) {
-  ((log) => {
-    const tryBorrowMut = $tryBorrow(log, true);
-    const value = tryBorrowMut.TAG === "Ok";
-    try {
-      console.log(`free as it unwinds: ${value}`);
-    } finally {
-      if (tryBorrowMut.TAG === "Ok") {
-        $unborrow(tryBorrowMut._0);
-      }
+  const tryBorrowMut = $tryBorrow(log, true);
+  const value = tryBorrowMut.TAG === "Ok";
+  try {
+    console.log(`free as it unwinds: ${value}`);
+  } finally {
+    if (tryBorrowMut.TAG === "Ok") {
+      $unborrow(tryBorrowMut._0);
     }
-  })(log);
+  }
 }
 
 function main() {

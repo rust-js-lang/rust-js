@@ -512,6 +512,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0578 A nullable result is `null` where it's written; an item's place known in bounds is unchecked](decisions/0578-a-nullable-result-where-its-written.md)
 - [0579 A thread-local is named as its module's variable](decisions/0579-a-thread-local-is-named-as-a-variable.md)
 - [0580 A call asks of a cell only what it may borrow](decisions/0580-a-call-asks-of-a-cell-only-what-it-may-borrow.md)
+- [0581 A closure called as a statement where it's made is its body](decisions/0581-a-closure-called-as-a-statement-is-its-body.md)
 - [0436 Every `dyn` that's a pair keeps its value's drop, `dyn Send` too](decisions/0436-every-dyn-keeps-its-drop.md)
 - [0437 A scope's drops on a panic are one `try { .. } finally { .. }`](decisions/0437-a-scopes-drops-are-one-finally.md)
 - [0438 An optional prop is given `Some(..)`, or left out](decisions/0438-an-optional-prop-is-given-some.md)

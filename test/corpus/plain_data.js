@@ -30,7 +30,6 @@ function alignedDebug_fmt(aligned) {
 }
 
 // `halves` is at 4, after `Padded`'s padding.
-
 function splitDebug_fmt(split) {
   return `Split { tag: ${split.tag}, halves: ${alignedDebug_fmt(split.halves)} }`;
 }

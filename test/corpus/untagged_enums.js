@@ -44,7 +44,6 @@ function posDebug_fmt(pos) {
 }
 
 // A `Copy` one: a copy of its struct is the struct's own.
-
 function spotDebug_fmt(spot) {
   if (typeof spot === "object") {
     return `At(${posDebug_fmt(spot)})`;

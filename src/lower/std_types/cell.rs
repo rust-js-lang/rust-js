@@ -275,6 +275,12 @@ pub(in crate::lower) fn plain_statics(items: &mut [js::Item], quiet: &std::colle
             };
         }
     });
+    // A closure of a block, called as a statement: its body (ADR 0581).
+    for item in items.iter_mut() {
+        for function in item.functions_mut() {
+            js::applied_blocks(&mut function.body);
+        }
+    }
     let cells: Vec<String> = (items.iter())
         .filter_map(|item| match item {
             js::Item::Const(c)

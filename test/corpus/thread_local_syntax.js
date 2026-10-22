@@ -22,14 +22,12 @@ function main() {
   for (let i = 0; i < limit; i++) {
     bump();
   }
-  ((n) => {
-    const borrowMut = $borrowMut(n, true);
-    try {
-      borrowMut.value.push("a");
-    } finally {
-      $unborrow(borrowMut);
-    }
-  })(names);
+  const borrowMut = $borrowMut(names, true);
+  try {
+    borrowMut.value.push("a");
+  } finally {
+    $unborrow(borrowMut);
+  }
   console.log(
     `${count.value} [${((n) => {
       const borrow = $borrow(n, true);
