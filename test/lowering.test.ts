@@ -5907,6 +5907,47 @@ pub fn make(immediate: bool) -> Box<dyn Fn()> {
   expect(js).toMatch(/ const port = channel\.port2;\n +channel\.port1\.onmessage = \(\) => \{\n/);
 });
 
+// ADR 0601: a binding taken as a `fn` is its JS function, read where it's
+// taken, as a Rust `fn` is fixed once taken: React's scheduler keeps
+// `const localSetImmediate = setImmediate`, which a polyfill set later
+// doesn't change. Handed to JS's `map` itself, it's still an arrow of its
+// own parameters, which JS gives no index.
+test("a binding taken as a fn is its JS function, read where it's taken", async () => {
+  const dir = fixture("binding-fn-pointers");
+  writeFileSync(join(dir, "lib.rs"), `#[cfg_attr(rust_js, rust_js::link_name = "rustJsHook")]
+fn hook(n: f64) -> f64 {
+    unreachable!()
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "parseInt")]
+fn parse_int(text: &str) -> f64 {
+    unreachable!()
+}
+
+thread_local! {
+    // Captured, in case a polyfill overrides it.
+    static LOCAL_HOOK: fn(f64) -> f64 = hook;
+}
+
+pub fn called(n: f64) -> f64 {
+    LOCAL_HOOK.with(|hook| hook(n))
+}
+
+pub fn parsed() -> Vec<f64> {
+    let parse: fn(&str) -> f64 = parse_int;
+    vec!["10", "10"].into_iter().map(parse).collect()
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("const localHook = rustJsHook;");
+  const globals = globalThis as Record<string, unknown>;
+  globals.rustJsHook = (n: number) => n + 1;
+  const lib = await import(join(dir, "lib.js"));
+  globals.rustJsHook = () => -1;
+  expect([lib.called(1), lib.parsed()]).toEqual([2, [10, 10]]);
+});
+
 // ADR 0597: whether the host has a binding's global is `js::is_defined`'s,
 // `typeof X !== "undefined"`, of the binding its type names, through a
 // temporary too: React's scheduler asks for `setImmediate`, then

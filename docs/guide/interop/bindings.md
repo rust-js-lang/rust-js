@@ -53,6 +53,47 @@ rust-js: a JS function is bound as an ordinary function, `#[cfg_attr(rust_js, ru
 An `extern` block holds a global value, a `static`: see
 [Access to the JavaScript global scope](global-scope.md).
 
+### A binding as a value
+
+A binding taken as a `fn` is the JS function itself, read where it's taken,
+as a Rust `fn` is fixed once taken. Handed to a JS callback itself,
+`.map(encode)`, it's an arrow of its own parameters, so JS gives it no
+more than Rust does, no index
+([ADR 0601](../../decisions/0601-a-binding-taken-as-a-fn-is-its-function.md)):
+
+```rust
+#[cfg_attr(rust_js, rust_js::link_name = "encodeURIComponent")]
+pub fn encode(text: &str) -> String {
+    unreachable!()
+}
+
+thread_local! {
+    // Captured, in case a polyfill overrides it.
+    static LOCAL_ENCODE: fn(&str) -> String = encode;
+}
+
+pub fn encoded(texts: Vec<&str>) -> Vec<String> {
+    texts.into_iter().map(encode).collect()
+}
+
+pub fn first(text: &str) -> String {
+    LOCAL_ENCODE.with(|encode| encode(text))
+}
+```
+
+```js
+// Captured, in case a polyfill overrides it.
+const localEncode = encodeURIComponent;
+
+export function encoded(texts) {
+  return texts.map((text) => encodeURIComponent(text));
+}
+
+export function first(text) {
+  return localEncode(text);
+}
+```
+
 ## Where it comes from
 
 What's before a `#` is the module, written into the `import` as it is.

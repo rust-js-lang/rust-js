@@ -533,6 +533,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0598 A temporary is no part of a named variable's pattern](decisions/0598-a-temporary-is-no-part-of-a-names-pattern.md)
 - [0599 A result its branches make before it's coerced is returned where made](decisions/0599-a-coerced-result-is-returned-where-made.md)
 - [0600 A module's variable an `if` makes is a `let` each branch assigns](decisions/0600-a-module-variable-an-if-makes-is-a-let.md)
+- [0601 A binding taken as a `fn` is its JS function, read where it's taken](decisions/0601-a-binding-taken-as-a-fn-is-its-function.md)
 - [0436 Every `dyn` that's a pair keeps its value's drop, `dyn Send` too](decisions/0436-every-dyn-keeps-its-drop.md)
 - [0437 A scope's drops on a panic are one `try { .. } finally { .. }`](decisions/0437-a-scopes-drops-are-one-finally.md)
 - [0438 An optional prop is given `Some(..)`, or left out](decisions/0438-an-optional-prop-is-given-some.md)

@@ -10,7 +10,7 @@ use super::std_types::number::NumOp;
 use super::std_types::text::TextOp;
 use super::{FnCx, R, camel_case, global};
 use crate::js;
-use crate::js::{Expr, Op, StmtKind};
+use crate::js::{Expr, ExprKind, Op, Pattern, StmtKind};
 
 use rustc_middle::ty::{self, Ty};
 use rustc_span::Span;
@@ -134,6 +134,36 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             params.into_iter().map(Into::into).collect(),
             vec![StmtKind::Return(Some(body)).at(self.js_span(span))],
         ))
+    }
+
+    /// A binding as a `fn` (ADR 0601): the JS function itself, read where
+    /// it's taken, as a Rust `fn` is fixed once taken, `const
+    /// localSetImmediate = setImmediate`, where its arrow (`binding_value`)
+    /// only passes its parameters on; else that arrow. What hands a `fn` to
+    /// JS gives it no more than Rust does, `.map((item) => f(item))`.
+    pub(super) fn binding_fn_pointer(&mut self, def_id: DefId, args: ty::GenericArgsRef<'tcx>, span: Span) -> R<Expr> {
+        let arrow = self.binding_value(def_id, args, span)?;
+        let ExprKind::Arrow(params, body) = &arrow.kind else {
+            return Ok(arrow);
+        };
+        let names: Option<Vec<&str>> = (params.iter())
+            .map(|p| match p {
+                Pattern::Name(name) => Some(name.as_str()),
+                _ => None,
+            })
+            .collect();
+        if let (Some(names), [stmt]) = (names, body.as_slice())
+            && let StmtKind::Return(Some(call)) = &stmt.kind
+            && let ExprKind::Call(callee, given) = &call.kind
+            && given.len() == names.len()
+            && given
+                .iter()
+                .zip(&names)
+                .all(|(g, n)| matches!(&g.kind, ExprKind::Var(v) if v == n))
+        {
+            return Ok((**callee).clone());
+        }
+        Ok(arrow)
     }
 
     /// The JS component binding `def_id` names, if it names one.

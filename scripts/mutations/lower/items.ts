@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "binding-fn-pointer-arrow",
+    breaks: "`const localHook = (n) => rustJsHook(n);` reads the global at each call, so a polyfill set later is called",
+    file: "src/lower/items.rs",
+    find: "            return Ok((**callee).clone());\n",
+    replace: "            return Ok(arrow.clone());\n",
+    tests: ["test/lowering.test.ts", "-t", "a binding taken as a fn"],
+  },
+  {
     name: "static-getter-value-unsupported",
     breaks: "a `get X.y` binding without a receiver, as a value, is rejected",
     file: "src/lower/items.rs",

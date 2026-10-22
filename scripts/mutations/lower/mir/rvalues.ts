@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "binding-reified-as-arrow",
+    breaks: "a binding taken as a `fn` is its arrow, which reads the global at each call",
+    file: "src/lower/mir/rvalues.rs",
+    find: "                            && bindings::is_binding(tcx, def_id)\n                        {\n",
+    replace: "                            && false\n                        {\n",
+    tests: ["test/lowering.test.ts", "-t", "a binding taken as a fn"],
+  },
+  {
     name: "mir-shared-temporary-a-place",
     breaks: "a shared reference to a temporary's read of a static is read where it's used, after what changes the static",
     file: "src/lower/mir/rvalues.rs",
