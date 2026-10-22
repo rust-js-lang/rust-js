@@ -767,6 +767,10 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### Changed
 
+- **A call asks of a cell only what it may borrow** (ADR 0580): a
+  thread-local whose `with_borrow` closures call the crate's functions
+  that borrow nothing of it, or borrow another, is its module's variable,
+  `const taskQueue = [];`, not a counted `{ value }` cell.
 - **A thread-local is named as its module's variable** (ADR 0579):
   `TASK_QUEUE` is `taskQueue`, and one holding a component capitalized,
   `THEME_CONTEXT` as `ThemeContext`; one named after another item of its

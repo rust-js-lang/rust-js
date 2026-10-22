@@ -21,6 +21,7 @@ use super::super::recognition::Std;
 use super::super::{fn_def, strip};
 use rustc_middle::middle::region;
 
+use super::super::analysis::{Borrow, CellBorrows, borrowed};
 use super::types::{DropQuery, Drops, describe};
 
 /// What a body does with its values that have destructors: what's
@@ -49,9 +50,15 @@ enum Taken {
 }
 
 /// Find what's refused of a body, and its momentary borrows, before it's lowered.
-pub(super) fn find_facts<'tcx>(cx: &DropQuery<'_, 'tcx>, thir: &Thir<'tcx>, body_owner: DefId) -> Facts {
+pub(super) fn find_facts<'tcx>(
+    cx: &DropQuery<'_, 'tcx>,
+    borrows: &CellBorrows<'tcx>,
+    thir: &Thir<'tcx>,
+    body_owner: DefId,
+) -> Facts {
     let mut finder = Finder {
         cx,
+        borrows,
         thir,
         body_owner,
         ids: thir
@@ -80,6 +87,8 @@ pub(super) fn find_facts<'tcx>(cx: &DropQuery<'_, 'tcx>, thir: &Thir<'tcx>, body
 
 struct Finder<'c, 'q, 'a, 'tcx> {
     cx: &'c DropQuery<'q, 'tcx>,
+    /// What each body may borrow (ADR 0580).
+    borrows: &'c CellBorrows<'tcx>,
     thir: &'a Thir<'tcx>,
     /// The function or closure whose body this is.
     body_owner: DefId,
@@ -390,12 +399,16 @@ impl<'c, 'q, 'a, 'tcx> Finder<'c, 'q, 'a, 'tcx> {
         }
         // The borrow: `c.borrow()`, or `m.lock()` of `m.lock().unwrap()`.
         let mut made = e;
-        let fun = loop {
-            let ExprKind::Call { fun, ref args, .. } = self.thir[strip(self.thir, made)].kind else {
+        let (fun, cell) = loop {
+            let call = strip(self.thir, made);
+            let ExprKind::Call { fun, ref args, .. } = self.thir[call].kind else {
                 return;
             };
             match fn_def(self.thir[fun].ty).and_then(|(id, args)| recognition.classify(id, args)) {
-                Some(Std::Borrow { .. }) => break fun,
+                Some(Std::Borrow { .. }) => match borrowed(recognition, self.thir, call) {
+                    Some(cell) => break (fun, cell),
+                    None => return,
+                },
                 Some(Std::UnwrapOk) => made = args[0],
                 _ => return,
             }
@@ -422,8 +435,10 @@ impl<'c, 'q, 'a, 'tcx> Finder<'c, 'q, 'a, 'tcx> {
         };
         let mut quiet = Quiet {
             cx: self.cx,
+            borrows: self.borrows,
             thir: self.thir,
             own: fun,
+            cell,
             quiet: true,
         };
         quiet.visit_expr(&self.thir[extent]);
@@ -433,16 +448,18 @@ impl<'c, 'q, 'a, 'tcx> Finder<'c, 'q, 'a, 'tcx> {
     }
 }
 
-/// Whether evaluating an expression can't ask whether a cell is borrowed,
-/// but by `own`, a borrow's call (ADR 0328): it calls nothing that may run
-/// code of the crate's, or a cell's that borrows it, and drops nothing but
-/// guards, of what it makes or gives a call by value or `&mut`. A shared
-/// borrow beside `own`, a shared one too, asks only whether it's mutably
-/// borrowed, which `own` doesn't change.
+/// Whether evaluating an expression can't ask whether `cell` is borrowed,
+/// but by `own`, a borrow's call of it (ADR 0328): it calls nothing that may
+/// borrow it (ADR 0580), and drops nothing but guards, of what it makes or
+/// gives a call by value or `&mut`. A shared borrow beside `own`, a shared
+/// one too, asks only whether it's mutably borrowed, which `own` doesn't
+/// change.
 struct Quiet<'c, 'q, 'a, 'tcx> {
     cx: &'c DropQuery<'q, 'tcx>,
+    borrows: &'c CellBorrows<'tcx>,
     thir: &'a Thir<'tcx>,
     own: ExprId,
+    cell: Borrow<'tcx>,
     quiet: bool,
 }
 
@@ -464,7 +481,11 @@ impl<'c, 'q, 'a, 'tcx> Visitor<'a, 'tcx> for Quiet<'c, 'q, 'a, 'tcx> {
         let asks = match expr.kind {
             ExprKind::Call { fun, ref args, .. } if fun != self.own => match fn_def(self.thir[fun].ty) {
                 Some((id, generic_args)) => {
-                    self.cx.recognition.may_ask_borrows(id, generic_args)
+                    let receiver = args.first().map(|&receiver| (self.thir, receiver));
+                    self.borrows
+                        .call_asks(&self.cx.recognition, (id, generic_args), receiver, self.cell, &|ty| {
+                            self.drops(ty)
+                        })
                         || args.iter().any(|&a| match *self.thir[a].ty.kind() {
                             ty::Ref(_, inner, ty::Mutability::Mut) => self.drops(inner),
                             ty::Ref(..) => false,

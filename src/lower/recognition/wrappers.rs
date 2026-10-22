@@ -315,59 +315,9 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         .any(|item| self.is_std_type(ty, item))
     }
 
-    /// Whether calling `def_id`, of `args`, may run code of the crate's, or
-    /// ask whether a `RefCell` or a lock is borrowed, which only a borrow
-    /// that's held answers (ADR 0328): a function of the crate's, a
-    /// closure, a `dyn`'s method, a guard's own, or a thread-local cell's.
-    pub(in crate::lower) fn may_ask_borrows(&self, def_id: DefId, args: ty::GenericArgsRef<'tcx>) -> bool {
-        let Ok(Some(instance)) = crate::lower::items::resolve_instance_in(self.tcx, self.typing_env, def_id, args)
-        else {
-            return true;
-        };
-        let ty::InstanceKind::Item(id) = instance.def else {
-            return true;
-        };
-        // What makes a JSX element or an object, or casts a value, runs no
-        // code: a component given is called when React renders it.
-        if crate::lower::bindings::is_binding(self.tcx, id)
-            && matches!(
-                crate::lower::bindings::js_form(self.tcx, id),
-                crate::lower::bindings::JsForm::Jsx(_)
-                    | crate::lower::bindings::JsForm::Prop(_)
-                    | crate::lower::bindings::JsForm::Object(_)
-                    | crate::lower::bindings::JsForm::This
-            )
-        {
-            return false;
-        }
-        !self.is_std(id) || self.asks_borrows(id)
-    }
-
-    /// Whether running a body, a closure's, can't ask whether a cell is
-    /// borrowed (ADR 0328): each call is std's, that may not, and it drops
-    /// nothing of the crate's.
-    pub(in crate::lower) fn asks_no_borrows(&self, thir: &Thir<'tcx>) -> bool {
-        thir.exprs.iter().all(|e| {
-            let call = match e.kind {
-                ExprKind::Call { fun, .. } => {
-                    fn_def(thir[fun].ty).is_some_and(|(id, args)| !self.may_ask_borrows(id, args))
-                }
-                ExprKind::InlineAsm(_)
-                | ExprKind::Yield { .. }
-                | ExprKind::Become { .. } => false,
-                _ => true,
-            };
-            call && e.ty.walk().all(|part| {
-                part.as_type().is_none_or(|t| {
-                    !matches!(t.kind(), ty::Adt(adt, _) if !self.is_std(adt.did()) && t.needs_drop(self.tcx, self.typing_env))
-                })
-            })
-        })
-    }
-
     /// A thread-local `RefCell`'s function, or a guard's own, `Ref::map`
     /// say (ADR 0328).
-    fn asks_borrows(&self, id: DefId) -> bool {
+    pub(in crate::lower) fn asks_borrows(&self, id: DefId) -> bool {
         let Some(imp) = self.tcx.impl_of_assoc(id) else {
             return false;
         };

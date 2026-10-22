@@ -60,40 +60,12 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
-    name: "may-ask-crate-quiet",
-    breaks: "a function of the crate's is taken as asking nothing of borrows",
-    file: "src/lower/recognition/wrappers.rs",
-    find: "        !self.is_std(id) || self.asks_borrows(id)\n",
-    replace: "        self.asks_borrows(id)\n",
-    tests: ["test/corpus.test.ts", "-t", "thread_local_borrow_inside"],
-  },
-  {
-    name: "asks-no-borrows-always",
-    breaks: "a thread-local's `with_borrow_mut` closure that borrows it again keeps it plain, unchecked",
-    file: "src/lower/recognition/wrappers.rs",
-    find: "            call && e.ty.walk().all(|part| {",
-    replace: "            true || e.ty.walk().all(|part| {",
-    tests: ["test/corpus.test.ts", "-t", "thread_local_borrow_inside"],
-  },
-  {
     name: "local-borrow-plain",
     breaks: "a thread-local's `with_borrow` is taken as only reading it",
     file: "src/lower/recognition/wrappers.rs",
     find: "    local_key_access(tcx, id) == Some(false) && tcx.item_name(id).as_str() != \"get\"",
     replace: "    false",
     tests: ["test/corpus.test.ts", "-t", "thread_local_borrow_inside"],
-  },
-  {
-    "name": "jsx-builders-ask",
-    "breaks": "making an element counts as code that may ask, so a field's `RefCell` lent to a prop is a counted cell",
-    "file": "src/lower/recognition/wrappers.rs",
-    "find": "                crate::lower::bindings::JsForm::Jsx(_)\n                    | crate::lower::bindings::JsForm::Prop(_)",
-    "replace": "                crate::lower::bindings::JsForm::Text\n                    | crate::lower::bindings::JsForm::Prop(_)",
-    "tests": [
-      "test/jsx.test.ts",
-      "-t",
-      "borrowed for a prop is its value"
-    ]
   },
   {
     name: "non-zero-fields-read",

@@ -1,6 +1,9 @@
 //! Collect crate facts before emission; no function lowering or linking.
 
 mod back_stepped;
+mod cell_borrows;
+
+pub(super) use cell_borrows::{Borrow, Cell, CellBorrows, borrowed};
 mod clones;
 mod closures;
 mod debug;
@@ -449,6 +452,8 @@ pub(super) struct AnalyzedCrate<'a, 'tcx> {
     pub mutated: HashSet<Ty<'tcx>>,
     /// The `Rc`s counted, whose counts the crate reads (ADR 0320).
     pub counted: Counted<'tcx>,
+    /// What each body may borrow, of its cells (ADR 0580).
+    pub cell_borrows: CellBorrows<'tcx>,
     /// Whether a function holding a value with a destructor is made a `dyn
     /// Fn`, which then drops it: a library's may be (ADR 0521).
     pub closure_facts: ClosureFacts,
@@ -644,22 +649,6 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         .filter_map(|d| Some((d, init_of(tcx, d)?)))
         .collect();
 
-    // A closure `with_borrow` runs while its thread-local is borrowed, that
-    // can't ask whether it is (ADR 0328).
-    let quiet = |closure: LocalDefId| {
-        closures.get(&closure.to_def_id()).is_some_and(|body| {
-            let recognition = Recognition {
-                tcx,
-                typing_env: ty::TypingEnv::post_analysis(tcx, closure),
-                trait_impls: &trait_impls,
-                foreign: &foreign,
-            };
-            recognition.asks_no_borrows(&body.thir)
-        })
-    };
-    // A thread-local is a cell, its module's own made plain after
-    // (`plain_statics`), its quiet borrows given what's in it (ADR 0364).
-    let quiet_locals = plain_locals::plain_thread_locals(tcx, all_bodies, thread_local_inits.values().copied(), &quiet);
     // Each `Rc` whose counts are read, or whose pointee's drop runs a
     // destructor (ADR 0320); every one, in a library or a crate using one,
     // which share their `Rc`s (ADR 0523).
@@ -715,6 +704,32 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         })
     });
     closure_facts.cloned_apart = cloned_apart;
+
+    // What each body may borrow, of the crate's cells (ADR 0580).
+    let cell_borrows = CellBorrows::of_crate(
+        tcx,
+        &Recognition {
+            tcx,
+            typing_env: ty::TypingEnv::fully_monomorphized(),
+            trait_impls: &trait_impls,
+            foreign: &foreign,
+        },
+        all_bodies,
+        &|ty| super::drops::drop_runs(recognition, (library, &closure_facts), &counted, ty),
+    );
+    // A closure `with_borrow` runs while its thread-local is borrowed, that
+    // can't ask whether it is (ADR 0328): borrows nothing that may be it.
+    // Its closure is held as a `with_borrow_mut`'s, which nothing may ask of.
+    let quiet = |closure: LocalDefId, key: LocalDefId| {
+        let held = Borrow {
+            cell: Cell::Key(key.to_def_id()),
+            mutable: true,
+        };
+        closures.contains_key(&closure.to_def_id()) && !cell_borrows.body_asks(tcx, closure.to_def_id(), held)
+    };
+    // A thread-local is a cell, its module's own made plain after
+    // (`plain_statics`), its quiet borrows given what's in it (ADR 0364).
+    let quiet_locals = plain_locals::plain_thread_locals(tcx, all_bodies, thread_local_inits.values().copied(), &quiet);
 
     // A derived `Serialize`'s `serialize` and `Deserialize`'s `deserialize`,
     // which rust-js writes (ADRs 0077 and 0078).
@@ -839,6 +854,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         paths,
         mutated,
         counted,
+        cell_borrows,
         closure_facts,
         cloned,
         explicit_adapters,

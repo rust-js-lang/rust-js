@@ -5124,6 +5124,66 @@ pub fn next_id() -> u32 {
   expect([lib.nextId(), lib.nextId()]).toEqual([4, 5]);
 });
 
+// ADR 0580: a call asks whether a cell is borrowed only of a cell it may
+// borrow, by what each of the crate's functions borrows: React's scheduler
+// moves a timer from one heap to the other in `TIMER_QUEUE.with_borrow_mut`,
+// calling the heap's own `pop` and `push`, which borrow no cell. Each queue
+// is its module's array. One whose closure calls what borrows it stays a
+// cell, its borrows counted, so the second throws as Rust's panics.
+test("a thread-local whose closures call only what can't borrow it is its variable", async () => {
+  const dir = fixture("cell-borrows");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::RefCell;
+
+thread_local! {
+    static TIMER_QUEUE: RefCell<Vec<u32>> = const { RefCell::new(Vec::new()) };
+    static TASK_QUEUE: RefCell<Vec<u32>> = const { RefCell::new(Vec::new()) };
+    static LOG: RefCell<Vec<u32>> = const { RefCell::new(Vec::new()) };
+}
+
+fn pop(heap: &mut Vec<u32>) -> Option<u32> {
+    heap.pop()
+}
+
+fn push(heap: &mut Vec<u32>, n: u32) {
+    heap.push(n);
+}
+
+pub fn schedule(n: u32) {
+    TIMER_QUEUE.with_borrow_mut(|timers| push(timers, n));
+}
+
+pub fn advance() -> usize {
+    TIMER_QUEUE.with_borrow_mut(|timers| {
+        while let Some(timer) = pop(timers) {
+            TASK_QUEUE.with_borrow_mut(|tasks| push(tasks, timer));
+        }
+    });
+    TASK_QUEUE.with_borrow(|tasks| tasks.len())
+}
+
+fn logged() -> usize {
+    LOG.with_borrow(|log| log.len())
+}
+
+pub fn log_twice() -> usize {
+    LOG.with_borrow_mut(|log| {
+        log.push(1);
+        logged()
+    })
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("const timerQueue = [];\nconst taskQueue = [];");
+  expect(js).not.toMatch(/\$withBorrow(Mut)?\((timerQueue|taskQueue)/);
+  expect(js).toContain("const log = { value: [] };");
+  const lib = await import(join(dir, "lib.js"));
+  lib.schedule(1);
+  lib.schedule(2);
+  expect(lib.advance()).toBe(2);
+  expect(() => lib.logTwice()).toThrow("already");
+});
+
 // ADR 0293: a `Cell` a `let` takes apart, read by `get()` before anything
 // else runs, is its value in JS's destructuring: react.dev's ErrorMessage
 // has `const {message, title} = error;`. Set before it's read, it's read

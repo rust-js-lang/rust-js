@@ -13,13 +13,13 @@ use std::collections::HashSet;
 /// The thread-locals only read and set, by `get`, `set`, `with_borrow` and
 /// `with_borrow_mut`, and not public: nothing shares their cell, so each
 /// is its module's variable, without a `{ value }`. A `with_borrow`'s
-/// closure must be `quiet`, asking nothing of borrows, as nothing counts
-/// them (ADR 0328).
+/// closure must be `quiet` of its key, borrowing nothing that may be its
+/// cell, as nothing counts its borrows (ADRs 0328, 0580).
 pub(super) fn plain_thread_locals<'tcx>(
     tcx: TyCtxt<'tcx>,
     bodies: &[&Body<'tcx>],
     keys: impl Iterator<Item = LocalDefId>,
-    quiet: &dyn Fn(LocalDefId) -> bool,
+    quiet: &dyn Fn(LocalDefId, LocalDefId) -> bool,
 ) -> HashSet<LocalDefId> {
     let mut plain: HashSet<LocalDefId> = keys.filter(|&key| !tcx.visibility(key).is_public()).collect();
     for body in bodies {
@@ -33,7 +33,9 @@ pub(super) fn plain_thread_locals<'tcx>(
                 && let Some(&first) = args.first()
                 && let ExprKind::Borrow { arg, .. } = thir[strip(thir, first)].kind
                 && (!is_local_borrow(tcx, id)
-                    || matches!(thir[strip(thir, args[1])].kind, ExprKind::Closure(ref c) if quiet(c.closure_id)))
+                    || matches!((&thir[strip(thir, args[1])].kind, &thir[strip(thir, arg)].kind),
+                        (ExprKind::Closure(c), ExprKind::NamedConst { def_id: key, .. })
+                            if key.as_local().is_some_and(|key| quiet(c.closure_id, key))))
             {
                 accessed.insert(strip(thir, arg));
             }

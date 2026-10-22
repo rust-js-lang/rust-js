@@ -1,6 +1,7 @@
 # 0328. A `RefCell` counts its borrows, as std's does
 
-Status: Accepted. Amends [0025](0025-vec-loops-refcell-mut.md),
+Status: Accepted; extended by [0580](0580-a-call-asks-of-a-cell-only-what-it-may-borrow.md),
+which asks of a cell only what a call may borrow. Amends [0025](0025-vec-loops-refcell-mut.md),
 [0144](0144-locks.md), [0270](0270-module-variables.md) and
 [0327](0327-cell-deque-char-methods.md); extends
 [0098](0098-destructors.md); counted by

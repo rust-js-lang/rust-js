@@ -18,7 +18,7 @@ pub(super) use self::{
 };
 
 use super::combinators::{Comb, IterComb, IterSource, StepOp};
-use super::fn_def;
+
 use super::format_spec::Radix;
 use super::pointers::PointerOp;
 use super::representation::Num;
@@ -46,7 +46,7 @@ use rustc_hir::attrs::lang_items::LangItem;
 use rustc_hir::def::DefKind;
 use rustc_hir::{self as hir, intravisit};
 use rustc_middle::mir::{BinOp, TerminatorKind, UnOp};
-use rustc_middle::thir::{ExprKind, Thir};
+
 use rustc_middle::traits::ImplSource;
 use rustc_middle::ty::{self, Ty, TyCtxt};
 use rustc_span::def_id::{CRATE_MOD_ID, DefId, LocalDefId, LocalModId};

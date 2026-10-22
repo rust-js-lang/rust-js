@@ -283,6 +283,8 @@ struct CrateFacts<'a, 'tcx> {
     mutated: &'a HashSet<Ty<'tcx>>,
     /// The `Rc`s counted (ADR 0320).
     counted: &'a analysis::Counted<'tcx>,
+    /// What each body may borrow, of its cells (ADR 0580).
+    cell_borrows: &'a analysis::CellBorrows<'tcx>,
     /// Whether a function holding a value with a destructor is made a `dyn
     /// Fn` (ADR 0521).
     closure_facts: &'a analysis::ClosureFacts,

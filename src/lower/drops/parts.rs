@@ -353,7 +353,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 &state,
             );
             let thir = &body.thir;
-            let facts = find_facts(&query, thir, body.def_id);
+            let facts = find_facts(&query, self.krate.cell_borrows, thir, body.def_id);
             // `x.f` lent to a borrow held for a moment: `x.f.borrow_mut().push(..)`.
             let mut for_a_moment = HashSet::new();
             for expr in thir.exprs.iter() {
@@ -441,7 +441,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Some(facts) = self.drop_state.facts.get(&key) {
             return Ok(facts.clone());
         }
-        let facts = Rc::new(find_facts(&self.drop_query(), self.thir, self.body_owner));
+        let facts = Rc::new(find_facts(
+            &self.drop_query(),
+            self.krate.cell_borrows,
+            self.thir,
+            self.body_owner,
+        ));
         self.drop_state.facts.insert(key, facts.clone());
         let mut failed = None;
         for (span, what, _) in &facts.problems {
@@ -457,7 +462,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// that hold a value with a destructor: one made where JS can't see what
     /// it took, given away uncalled, or assigned.
     pub(in crate::lower) fn check_closure_drops(&self) -> R<()> {
-        let facts = find_facts(&self.drop_query(), self.thir, self.body_owner);
+        let facts = find_facts(&self.drop_query(), self.krate.cell_borrows, self.thir, self.body_owner);
         let mut failed = None;
         for (span, what, _) in facts.problems.iter().filter(|(.., closure)| *closure) {
             failed = Some(self.unsupported(*span, what));
