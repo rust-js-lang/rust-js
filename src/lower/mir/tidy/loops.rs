@@ -164,8 +164,15 @@ pub(super) fn for_of(
             _ => return None,
         }
     }
-    let (pattern, mutable, taken) = binding(&inner, item)?;
-    let body = inner[taken..].to_vec();
+    let (pattern, mutable, taken, aliases) = binding(&inner, item)?;
+    let mut body = inner[taken..].to_vec();
+    for (alias, of) in &aliases {
+        js::each_expr_mut(&mut body, &mut |e| {
+            if matches!(&e.kind, ExprKind::Var(v) if v == alias) {
+                e.kind = ExprKind::Var(of.clone());
+            }
+        });
+    }
     if js::mentions_in(&body, item) > 0 || js::mentions_in(&exit, item) > 0 {
         return None;
     }

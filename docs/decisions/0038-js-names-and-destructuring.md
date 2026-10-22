@@ -95,3 +95,13 @@ scope never mentions the name: ADR 0352.
 A local may share a name with another of its function where JS's scopes
 keep every read its own: a block's `const n` beside the function's `n`
 (ADR 0357).
+
+## Amendment: a `for`'s element read twice
+
+MIR reads a `&mut` element once for each binding of a pattern into it,
+`for (i, (a, b)) in v.iter_mut().enumerate()`'s `const item = value[1];
+const item$1 = value[1];`, and the loop's head took both into its one
+place, the second's name over the first's, so the body read `item`,
+which nothing declared (#147). A part read again by a `const` is an alias
+of the first's name, which the body reads for both: `for (const [i,
+item] of v.entries())`. Held by `test/corpus/enumerate_mut_patterns.rs`.

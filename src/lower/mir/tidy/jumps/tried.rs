@@ -6,8 +6,11 @@ use super::*;
 /// What a `for` binds of `item`, read by the first statements of `body`:
 /// `const x = item;`, or `const a = item[0]; const b = item[1];`, its
 /// pattern, whether it's a `let`, and how many statements; `_` where nothing
-/// reads it.
-pub(in crate::lower::mir::tidy) fn binding(body: &[Stmt], item: &str) -> Option<(js::Pattern, bool, usize)> {
+/// reads it. And each part read again by a `const`, `const c = item[1];`
+/// after `b`'s, MIR's of a pattern's two bindings of one element: an alias,
+/// `c` of `b`, which the body reads by the name the pattern gives it.
+pub(in crate::lower::mir::tidy) type Binding = (js::Pattern, bool, usize, Vec<(String, String)>);
+pub(in crate::lower::mir::tidy) fn binding(body: &[Stmt], item: &str) -> Option<Binding> {
     let reads = |value: &Expr| -> Option<Result<Option<usize>, String>> {
         match &value.kind {
             ExprKind::Var(v) if v == item => Some(Ok(None)),
@@ -23,7 +26,9 @@ pub(in crate::lower::mir::tidy) fn binding(body: &[Stmt], item: &str) -> Option<
             _ => None,
         }
     };
-    let mut parts = Vec::new();
+    let mut parts: Vec<(Result<Option<usize>, String>, String, bool)> = Vec::new();
+    let mut aliases = Vec::new();
+    let mut taken = 0;
     for stmt in body {
         let (bound, value, mutable) = match &stmt.kind {
             StmtKind::Const(bound, value) => (bound, value, false),
@@ -38,31 +43,35 @@ pub(in crate::lower::mir::tidy) fn binding(body: &[Stmt], item: &str) -> Option<
             }
             _ => break,
         };
-        match reads(value) {
-            Some(part) => parts.push((part, bound.clone(), mutable)),
-            None => break,
+        let Some(part) = reads(value) else { break };
+        match parts.iter().find(|(p, ..)| *p == part) {
+            None => parts.push((part, bound.clone(), mutable)),
+            Some((_, first, false)) if !mutable => aliases.push((bound.clone(), first.clone())),
+            Some(_) => break,
         }
+        taken += 1;
     }
     let mutable = parts.iter().any(|&(_, _, m)| m);
-    match parts.as_slice() {
-        [] if js::mentions_in(body, item) == 0 => Some((js::Pattern::Name("_".to_string()), false, 0)),
-        [(Ok(None), bound, mutable)] => Some((js::Pattern::Name(bound.clone()), *mutable, 1)),
+    let pattern = match parts.as_slice() {
+        [] if js::mentions_in(body, item) == 0 => js::Pattern::Name("_".to_string()),
+        [(Ok(None), bound, _)] => js::Pattern::Name(bound.clone()),
         _ if !parts.is_empty() && parts.iter().all(|(p, ..)| matches!(p, Ok(Some(_)))) => {
             let last = parts.iter().filter_map(|(p, ..)| p.clone().ok().flatten()).max()?;
             let mut items = vec![None; last + 1];
             for (part, bound, _) in &parts {
                 items[part.clone().ok().flatten()?] = Some(bound.clone());
             }
-            Some((js::Pattern::names_array(items), mutable, parts.len()))
+            js::Pattern::names_array(items)
         }
         _ if !parts.is_empty() && parts.iter().all(|(p, ..)| p.is_err()) => {
             let fields = (parts.iter())
                 .map(|(p, bound, _)| (p.clone().expect_err("keyed"), js::Pattern::Name(bound.clone()), None))
                 .collect();
-            Some((js::Pattern::Object(fields, None), mutable, parts.len()))
+            js::Pattern::Object(fields, None)
         }
-        _ => None,
-    }
+        _ => return None,
+    };
+    Some((pattern, mutable, taken, aliases))
 }
 
 /// `if (c) { s } else { e }` of an `e` that always leaves, written before
