@@ -4,8 +4,8 @@ import {
   $checked,
   $iter,
   $iterator,
+  $lazyMapWhile,
   $lazyRange,
-  $lazyTakeWhile,
   $lent,
   $parseInt,
 } from "@rust-js/runtime";
@@ -24,27 +24,31 @@ function countdownIterator_next(countdown) {
 
 function main() {
   const words = ["3", "14", "x", "15"];
-  const numbers = $lazyTakeWhile(
-    words.values().map((w) => {
+  const numbers = $lazyMapWhile(
+    $iter(words),
+    (w) => {
       const result = $parseInt(w, 0, 4294967295);
       return result.TAG === "Ok" ? result._0 : undefined;
-    }),
+    },
     (item) => item != null,
   ).toArray();
   console.log(`[${numbers.join(", ")}]`);
-  const halves = $lazyTakeWhile(
-    $lazyRange(0, 10).map((n) => (n < 4 ? (n / 2) >>> 0 : undefined)),
+  const halves = $lazyMapWhile(
+    $lazyRange(0, 10),
+    (n) => (n < 4 ? (n / 2) >>> 0 : undefined),
     (item) => item != null,
   ).toArray();
   console.log(`[${halves.join(", ")}]`);
-  const total = $lazyTakeWhile(
-    $iterator([6], countdownIterator_next).map((n) => $checked(n - 2, 0, 4294967295)),
+  const total = $lazyMapWhile(
+    $iterator([6], countdownIterator_next),
+    (n) => $checked(n - 2, 0, 4294967295),
     (item) => item != null,
   ).reduce((a, b) => (a + b) >>> 0, 0);
   console.log(`${total}`);
   const it = $iter([1, 2, 0, 4, 5]);
-  const before = $lazyTakeWhile(
-    $lent(it).map((n) => (n !== 0 ? (n * 10) | 0 : undefined)),
+  const before = $lazyMapWhile(
+    $lent(it),
+    (n) => (n !== 0 ? (n * 10) | 0 : undefined),
     (item) => item != null,
   ).toArray();
   const after = it.toArray();

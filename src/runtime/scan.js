@@ -1,13 +1,23 @@
 // `it.scan(init, f)` of a JS iterator, lazy as Rust's: each `Some` `f`
-// gives, given its state and an item, till its first `None`, which ends
-// it, closing what it steps, as `take_while`'s end does (ADR 0517). The
-// state's `&mut` is a box of it where it's a `handle`, a number's, else
-// the state itself, an object `f` changes in place.
-function* $lazyScan(items, init, f, handle = true) {
+// gives, given its state and an item; a `None` ends what's stepped now,
+// closing what it steps, which drops what's left of one with a destructor
+// (`$closing`), as Rust's drop of it does, and a step after steps on, as
+// Rust's `Scan`, which isn't fused, does, of an array's (ADR 0517). The state's `&mut` is a box of it where it's a `handle`, a
+// number's, else the state itself, an object `f` changes in place.
+function $lazyScan(items, init, f, handle = true) {
   const state = handle ? { value: init } : init;
-  for (const item of items) {
-    const next = f(state, item);
-    if (next === undefined) return;
-    yield next;
-  }
+  const source = items[Symbol.iterator]();
+  const it = Object.create(Iterator.prototype);
+  it.next = () => {
+    const step = source.next();
+    const next = step.done ? undefined : f(state, step.value);
+    if (next !== undefined) return { done: false, value: next };
+    source.return?.();
+    return { done: true, value: undefined };
+  };
+  it.return = () => {
+    source.return?.();
+    return { done: true, value: undefined };
+  };
+  return it;
 }

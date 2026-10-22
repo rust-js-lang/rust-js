@@ -317,13 +317,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Expr::call(Expr::helper("$lazyZip"), args)
             }
             IterComb::Chain => Expr::call(Expr::helper("$lazyChain"), vec![items, next()]),
-            IterComb::MapWhile => {
-                let mapped = method(items, "map", vec![next()]);
-                unboxed(
-                    Expr::call(Expr::helper("$lazyTakeWhile"), vec![mapped, present()]),
-                    kept,
-                )
-            }
+            // Not fused, as Rust's `MapWhile` isn't: `$lazyMapWhile`.
+            IterComb::MapWhile => unboxed(
+                Expr::call(Expr::helper("$lazyMapWhile"), vec![items, next(), present()]),
+                kept,
+            ),
             IterComb::TakeWhile => Expr::call(Expr::helper("$lazyTakeWhile"), vec![items, next()]),
             IterComb::SkipWhile => Expr::call(Expr::helper("$lazySkipWhile"), vec![items, next()]),
             // Lazy of a JS iterator, as Rust's is (ADR 0517).

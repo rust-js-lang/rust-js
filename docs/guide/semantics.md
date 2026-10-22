@@ -655,3 +655,6 @@ React and JSX are [their own pages](README.md#react).
     wouldn't.
 16. Recursion deeper than about 10,000 calls throws a `RangeError`, the JS
     engine's stack's limit.
+17. A std adapter, `map` or `filter`, of an iterator that isn't fused, the
+    crate's iterator that gives `None` then `Some`, ends at its first
+    `None`, as a JS iterator helper does.

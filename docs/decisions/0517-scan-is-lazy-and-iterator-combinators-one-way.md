@@ -55,3 +55,17 @@ whatever it is, but a closure taking `&mut` of a struct, a tuple or a
 object itself of the rest, which `$lazyScan` is told, `false` after the
 closure. Held by `test/corpus/scan_object_state.rs` and the mutations
 `scan-object-state-boxed` and `scan-handle-always`.
+
+## Amendment: `scan` and `map_while` aren't fused
+
+`$lazyScan` was a generator, which a `None` ended for good, and
+`map_while` a map then a `take_while`, which stays ended; Rust's `Scan`
+and `MapWhile` aren't fused, so stepping on after a `None`, `by_ref()`
+then `collect()` again, steps the source on (#161). Each is an iterator
+whose `next` steps its source each time, `$lazyScan` and
+`$lazyMapWhile`; a `None` closes the source, as the generator's end did,
+dropping what's left of one with a destructor (`$closing`), and an
+array's, which has nothing to close, steps on. A std adapter over a
+source that isn't fused, the crate's iterator that gives `None` then
+`Some`, is fused, a JS iterator helper's: the guide lists it. Held by
+`test/corpus/scan_map_while_unfused.rs`.
