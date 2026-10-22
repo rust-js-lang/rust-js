@@ -145,3 +145,10 @@ or given as it is, and the JS forms of one; its parts are `stepping.rs`,
 `eager.rs` and `in_place.rs`, the largest 526 lines. `Iterator.from`,
 `$iterator`, `$iter` and `$lent` are written by the parts that write them,
 listed as their owners beside `iterators.rs`.
+
+## Amendment: display, `{:?}` and what's written apart (2026-10-22)
+
+`display.rs`, 1,996 lines, keeps `Writing`, `Pretty` and a `fmt::Result`'s
+answers; `display/written.rs` is what a `Display` or a `Debug` builder
+writes, and `display/debug.rs` `{:?}` of a value. Both read
+`self.writing`, and are listed as its owners beside `display.rs`.

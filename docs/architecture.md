@@ -271,7 +271,7 @@ and answer. Each is checked to stay that way.
 | `iterators.rs`, `iterators/`, `combinators.rs` | Iterator chains and what ends them, and whether a value is a JS iterator or an array; `Option`'s and `Result`'s combinators, and more adapters |
 | `items.rs` | References to items: what a function or a binding is in JS, whether it's the crate's, which impl a call runs |
 | `traits.rs`, `traits/`, `std_impls.rs`, `ordering.rs` | Traits: bounds and evidence (`traits.rs`), where a dictionary is (`routes.rs`), a dictionary built (`dictionaries.rs`) and an impl's lowered (`impls.rs`), `dyn` (`dyns.rs`), calls of an impl's method (`calls.rs`), what's given (`given.rs`, `drop_params.rs`) and the words of their names (`words.rs`); `Clone`, `Default`, `PartialEq`, `Ord` |
-| `display.rs`, `format_args.rs`, `format_spec.rs` | `Display` and `Debug`, `format_args!`, placeholders' options |
+| `display.rs`, `display/`, `format_args.rs`, `format_spec.rs` | `Display` and `Debug`, a `Display`'s string written (`written.rs`) and `{:?}` (`debug.rs`), `format_args!`, placeholders' options |
 | `serde.rs`, `serde/` | serde's derives and serde_json |
 | `shipped.rs` | The API of a crate rustc builds that rust-js writes the JS of, as it writes std's: memchr's searches, over the byte arrays slices are (ADR 0529); which crates are such, and at which versions, is Cargo's catalog's, `cargo::READ_AS_RUSTC_BUILDS_THEM` |
 | `jsx.rs`, `jsx_api.rs`, `bindings.rs`, `binding_calls.rs`, `untagged.rs`, `liveness.rs` | JSX, bindings to JavaScript and a binding's call, and untagged enums, told apart by their payload's kind (ADR 0214); and what JS reads, the fields of a struct given a binding, which rustc's dead-code lint can't see (ADR 0440) |

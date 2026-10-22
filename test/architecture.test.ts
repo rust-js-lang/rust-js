@@ -367,7 +367,7 @@ const owners: Record<string, string[]> = {
     "src/lower/mir/structure.rs",
     "src/lower/mir/temporaries.rs",
   ],
-  "self.writing": ["src/lower/display.rs"],
+  "self.writing": ["src/lower/display.rs", "src/lower/display/debug.rs", "src/lower/display/written.rs"],
   "self.cloning": ["src/lower/std_impls.rs"],
   "self.given": ["src/lower/traits/given.rs", "src/lower/traits/calls.rs", "src/lower/traits/impls.rs", "src/lower/traits/routes.rs"],
   "self.walks.representable": ["src/lower/support.rs"],
@@ -937,7 +937,6 @@ test("tests find what they build through target", () => {
 // shorter. Split a listed file by concept, never to meet the number.
 const overTheCap: Record<string, number> = {
   "src/runtime/from_json.js": 2009,
-  "src/lower/display.rs": 1996,
   "src/lower/mir/tidy/jumps.rs": 1724,
   "src/lower/mir/iter.rs": 1687,
   "src/to_oxc.rs": 1657,
