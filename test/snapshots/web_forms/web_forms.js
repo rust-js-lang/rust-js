@@ -235,8 +235,7 @@ export function widths(el) {
  * form's field, text or a `File`.
  */
 export function unionsRead(reader, data) {
-  const result = reader.result;
-  const text = typeof result === "string";
+  const text = typeof reader.result === "string";
   const name$1 = data.get("name");
   const name = typeof name$1 === "string" ? name$1 : undefined;
   return [text, name];

@@ -43,7 +43,7 @@ pub(super) fn and_tests(stmts: &mut [Stmt], conditions: &[(js::Span, js::Span)])
             unreachable!("matched")
         };
         let first = std::mem::replace(test, Expr::undefined());
-        *test = Expr::bin(Op::And, first, second);
+        *test = unimplied(Expr::bin(Op::And, first, second));
         then.extend(body);
         for at in (0..bound).rev() {
             if let StmtKind::Const(name, _) = &then[at].kind
@@ -53,6 +53,30 @@ pub(super) fn and_tests(stmts: &mut [Stmt], conditions: &[(js::Span, js::Span)])
             }
         }
     }
+}
+
+/// An `&&` chain without each part a later one implies: `typeof x ===
+/// "number"` of `x != null && typeof x === "number"`, as `implies` tells,
+/// where the part does nothing but test (ADR 0614).
+fn unimplied(test: Expr) -> Expr {
+    fn parts(e: Expr, out: &mut Vec<Expr>) {
+        match e.kind {
+            ExprKind::Binary(Op::And, a, b) => {
+                parts(*a, out);
+                parts(*b, out);
+            }
+            _ => out.push(e),
+        }
+    }
+    let mut all = Vec::new();
+    parts(test, &mut all);
+    let kept: Vec<Expr> = (0..all.len())
+        .filter(|&k| all[k].has_effects() || !all[k + 1..].iter().any(|by| implies(by, &all[k])))
+        .map(|k| all[k].clone())
+        .collect();
+    (kept.into_iter())
+        .reduce(|a, b| Expr::bin(Op::And, a, b))
+        .expect("the last part is kept")
 }
 
 /// A `match` reading a table by its key (ADR 0233), as MIR tests each
@@ -911,6 +935,14 @@ pub(super) fn conditional(test: Expr, yes: Expr, no: Expr, booleans: &HashSet<St
 pub(super) fn implies(by: &Expr, test: &Expr) -> bool {
     match (&test.kind, &by.kind) {
         (_, ExprKind::Binary(Op::Or, a, b)) => implies(a, test) && implies(b, test),
+        // `x != null` where `typeof x === "number"`: of any kind but
+        // `object`, `null`'s, and `undefined`.
+        (ExprKind::Binary(Op::LooseNe, x, null), ExprKind::Binary(Op::Eq, kind, name))
+            if matches!(null.kind, ExprKind::Null | ExprKind::Undefined)
+                && let ExprKind::Unary(UnaryOp::Typeof, y) = &kind.kind =>
+        {
+            js::same_path(x, y) && matches!(&name.kind, ExprKind::Str(t) if t != "object" && t != "undefined")
+        }
         (ExprKind::Binary(Op::LooseNe, x, null), ExprKind::Binary(Op::Eq, y, literal))
             if matches!(null.kind, ExprKind::Null | ExprKind::Undefined) =>
         {

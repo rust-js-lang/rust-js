@@ -24,8 +24,10 @@ condition the program wrote, an `if`'s or a guard's.
 **A `match`'s tests, from `match` to its scrutinee's end, where MIR tests
 it, are one condition** (`hints::written`): nested `if`s of them, each with
 nothing else and no `else`, are one `&&`, `if (l.TAG === "Num" && r.TAG ===
-"Num")`, as an arm's pattern is one. A test a later part implies drops out
-as before, `typeof name === "string"` of `name != null && ..`. A drop
+"Num")`, as an arm's pattern is one. A part a later part implies drops
+out (`branches::unimplied`): `x != null` where `typeof x === "number"`, of
+any kind but `"object"`, which `null` is, and `"undefined"`, as React's
+`Object.is` polyfill has `typeof x === 'number' && typeof y === 'number'`. A drop
 flag's test joined with a value's, `if (d && d$0$live)`, is still the
 flag's, named for what it guards (`flags::tests_flag`).
 
@@ -34,4 +36,5 @@ flag's, named for what it guards (`flags::tests_flag`).
 - `test/lowering.test.ts`, "a match arm's pattern of parts is one test of
   each"; eight corpus cases, `interpreter`'s operators among them, and the
   `enums` snapshot.
-- Mutations: the tests nested, a joined flag left unnamed.
+- Mutations: the tests nested, a joined flag left unnamed, an implied
+  part kept, `"object"` taken to imply a value.

@@ -3561,7 +3561,7 @@ pub fn is_three(n: u32) -> bool {
   expect(js).toContain('export function kindIs(value) {\n  return value === "inlineCode";\n}');
   // An array is never `null`: `Array.isArray` alone says it.
   expect(js).toContain("export function listed(value) {\n  return Array.isArray(value) ? 1 : 0;\n}");
-  expect(js).toContain('export function isString(value) {\n  const mdxName = value.mdxName;\n  return typeof mdxName === "string";\n}');
+  expect(js).toContain('export function isString(value) {\n  return typeof value.mdxName === "string";\n}');
   const lib = await import(join(dir, "lib.js"));
   const values = [{ mdxName: "inlineCode" }, { mdxName: "pre" }, { mdxName: null }, {}, { mdxName: 5 }];
   expect(values.map(lib.isCode)).toEqual([true, false, false, false, false]);
@@ -6191,12 +6191,31 @@ test("a match arm's pattern of parts is one test of each", async () => {
         _ => other,
     }
 }
+
+pub fn numbers(x: Option<&js::Unknown>, y: Option<&js::Unknown>) -> f64 {
+    match (x.map(js::classify), y.map(js::classify)) {
+        (Some(js::Kind::Number(x)), Some(js::Kind::Number(y))) => x + y,
+        _ => 0.0,
+    }
+}
+
+// \`typeof null\` is "object": its \`!= null\` stays.
+pub fn object(x: Option<&js::Unknown>) -> bool {
+    match x {
+        Some(v) if js::type_of(Some(v)) == "object" => true,
+        _ => false,
+    }
+}
 `);
-  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("  if (p != null && q != null) {\n");
+  // A test a later one implies, \`x != null\` of \`typeof x === "number"\`'s, is gone.
+  expect(js).toContain('  if (typeof x === "number" && typeof y === "number") {\n');
   const lib = await import(join(dir, "lib.js"));
   expect([lib.both(1, 2, 0), lib.both(1, undefined, 9), lib.both(undefined, 2, 9)]).toEqual([3, 9, 9]);
+  expect([lib.numbers(1, 2), lib.numbers(1, "2"), lib.numbers(null, 2)]).toEqual([3, 0, 0]);
+  expect([lib.object(null), lib.object({}), lib.object(1)]).toEqual([false, true, false]);
 });
 
 // ADR 0613: \`&&\` and \`||\` mixed, as the program wrote them, are one value

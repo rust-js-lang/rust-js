@@ -3,6 +3,22 @@ import type { Mutation } from "../../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "implied-part-kept",
+    breaks: "`x != null && typeof x === \"number\"` keeps the test the later one implies",
+    file: "src/lower/mir/tidy/branches.rs",
+    find: "        *test = unimplied(Expr::bin(Op::And, first, second));\n",
+    replace: "        *test = Expr::bin(Op::And, first, second);\n",
+    tests: ["test/lowering.test.ts", "-t", "a match arm's pattern of parts"],
+  },
+  {
+    name: "typeof-implies-object-too",
+    breaks: "`typeof x === \"object\"` is taken to imply `x != null`, which `null` isn't",
+    file: "src/lower/mir/tidy/branches.rs",
+    find: "            js::same_path(x, y) && matches!(&name.kind, ExprKind::Str(t) if t != \"object\" && t != \"undefined\")\n",
+    replace: "            js::same_path(x, y) && matches!(&name.kind, ExprKind::Str(_))\n",
+    tests: ["test/lowering.test.ts", "-t", "a match arm's pattern of parts"],
+  },
+  {
     name: "coerced-branches-kept",
     breaks: "`let tmp; if (now) { tmp = () => 1; } else { .. } return tmp;`, where each branch returns",
     file: "src/lower/mir/tidy/branches.rs",
