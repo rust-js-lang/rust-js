@@ -40,7 +40,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "            true => awaits::awaits(tcx, &mut body),\n",
     replace: "            true => Default::default(),\n",
-    tests: ["test/lowering.test.ts", "-t", "an awaited reference given to a generic function is awaited|an async fn"],
+    tests: ["test/lowering-functions.test.ts", "test/lowering-matches.test.ts", "-t", "an awaited reference given to a generic function is awaited|an async fn"],
   },
   {
     name: "mir-async-fn-arrow-called",
@@ -56,7 +56,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "                        stmt.kind = StmtKind::Break(Some(label.clone()));\n",
     replace: "",
-    tests: ["test/lowering.test.ts","-t","on_load body's loop"],
+    tests: ["test/lowering-bindings.test.ts", "-t", "on_load body's loop"],
   },
   {
     name: "mir-local-functions-undeclared",
@@ -64,7 +64,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "        self.place_written(written, &mut out);\n",
     replace: "",
-    tests: ["test/lowering.test.ts","-t","a function written in a body is declared"],
+    tests: ["test/lowering-functions.test.ts", "-t", "a function written in a body is declared"],
   },
   {
     "name": "async-params-whole",
@@ -72,11 +72,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir.rs",
     "find": "            tidy::destructured_params(&mut params, &mut out);\n",
     "replace": "",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "an async fn's parameter pattern from MIR"
-    ]
+    "tests": ["test/lowering-matches.test.ts", "-t", "an async fn's parameter pattern from MIR"]
   },
   {
     "name": "mir-imports-not-plain",
@@ -94,11 +90,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir.rs",
     "find": "                self.locals.mir.plain.insert(format!(\"...{name}\"));\n",
     "replace": "",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "arrays joined are one array of their items"
-    ]
+    "tests": ["test/lowering-collections.test.ts", "-t", "arrays joined are one array of their items"]
   },
   {
     "name": "mir-props-default-taken-whole",
@@ -196,7 +188,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "let options = (formatter.is_some() && self.writers_take_options())",
     replace: "let options = (formatter.is_some() && false)",
-    tests: ["test/lowering.test.ts","-t","a writer from its MIR takes its Formatter's options"],
+    tests: ["test/lowering-strings.test.ts", "-t", "a writer from its MIR takes its Formatter's options"],
   },
   {
     name: "mir-initializer-asked-visibility",

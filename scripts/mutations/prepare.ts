@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     file: "src/prepare.rs",
     find: "        if js::mentions_in(&loaded, &name) > 0 || module.default_export.as_ref() == Some(&name) {\n",
     replace: "        if module.default_export.as_ref() == Some(&name) {\n",
-    tests: ["test/lowering.test.ts", "-t", "a function that only calls a module variable"],
+    tests: ["test/lowering-functions.test.ts", "-t", "a function that only calls a module variable"],
   },
   {
     name: "forwarding-function-kept",
@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     file: "src/prepare.rs",
     find: "    forwarding_functions(module);\n",
     replace: "",
-    tests: ["test/lowering.test.ts", "-t", "a function that only calls a module variable"],
+    tests: ["test/lowering-functions.test.ts", "-t", "a function that only calls a module variable"],
   },
   {
     name: "forwarding-function-of-a-js-function",
@@ -24,7 +24,7 @@ export const mutations: Mutation[] = [
     file: "src/prepare.rs",
     find: "        if given.is_empty() || !given.iter().all(arrows) {\n",
     replace: "        if given.is_empty() {\n",
-    tests: ["test/lowering.test.ts", "-t", "a binding taken as a fn is its JS"],
+    tests: ["test/lowering-functions.test.ts", "-t", "a binding taken as a fn is its JS"],
   },
   {
     name: "forwarding-function-unexported",
@@ -32,7 +32,7 @@ export const mutations: Mutation[] = [
     file: "src/prepare.rs",
     find: "                if export {\n                    module.aliases.push((name.clone(), name.clone()));\n",
     replace: "                if false {\n                    module.aliases.push((name.clone(), name.clone()));\n",
-    tests: ["test/lowering.test.ts", "-t", "a function that only calls a module variable"],
+    tests: ["test/lowering-functions.test.ts", "-t", "a function that only calls a module variable"],
   },
   {
     name: "assigned-in-place-off",
@@ -40,7 +40,7 @@ export const mutations: Mutation[] = [
     file: "src/prepare.rs",
     find: "    assigned_in_place(&mut module.items);\n",
     replace: "",
-    tests: ["test/lowering.test.ts", "-t", "a thread-local an if makes"],
+    tests: ["test/lowering-cells.test.ts", "-t", "a thread-local an if makes"],
   },
   {
     name: "assigned-declares-at-top",
@@ -48,7 +48,7 @@ export const mutations: Mutation[] = [
     file: "src/prepare.rs",
     find: "        if assigned.iter().any(declares) {\n",
     replace: "        if false && assigned.iter().any(declares) {\n",
-    tests: ["test/lowering.test.ts", "-t", "a thread-local an if makes"],
+    tests: ["test/lowering-cells.test.ts", "-t", "a thread-local an if makes"],
   },
   {
     name: "unread-property-dropped",
@@ -56,7 +56,7 @@ export const mutations: Mutation[] = [
     file: "src/prepare.rs",
     find: "                if !read.contains(name) && value.reads_only_vars())\n",
     replace: "                if !read.contains(name))\n",
-    tests: ["test/lowering.test.ts", "-t", "an unread getter of a binding"],
+    tests: ["test/lowering-bindings.test.ts", "-t", "an unread getter of a binding"],
   },
   {
     name: "unread-read-dropped",
@@ -64,7 +64,7 @@ export const mutations: Mutation[] = [
     file: "src/prepare.rs",
     find: "                if !read.contains(name) && value.reads_only_vars())\n",
     replace: "                if value.reads_only_vars())\n",
-    tests: ["test/lowering.test.ts", "-t", "a binding only a guard reads"],
+    tests: ["test/lowering-names.test.ts", "-t", "a binding only a guard reads"],
   },
   {
     name: "entries-kept",
@@ -72,7 +72,7 @@ export const mutations: Mutation[] = [
     file: "src/prepare.rs",
     find: "    if object != \"Object\" || name != \"fromEntries\" {",
     replace: "    if true || object != \"Object\" || name != \"fromEntries\" {",
-    tests: ["test/lowering.test.ts", "-t", "a dictionary of entries written out"],
+    tests: ["test/lowering-strings.test.ts", "-t", "a dictionary of entries written out"],
   },
   {
     name: "entries-proto-literal",
@@ -80,7 +80,7 @@ export const mutations: Mutation[] = [
     file: "src/prepare.rs",
     find: "        if given || key == \"__proto__\" || matches!(value.kind, ExprKind::Undefined) {",
     replace: "        if given || matches!(value.kind, ExprKind::Undefined) {",
-    tests: ["test/lowering.test.ts", "-t", "a dictionary of entries written out"],
+    tests: ["test/lowering-strings.test.ts", "-t", "a dictionary of entries written out"],
   },
   {
     name: "entries-twice-literal",
@@ -88,7 +88,7 @@ export const mutations: Mutation[] = [
     file: "src/prepare.rs",
     find: "        if given || key == \"__proto__\" || matches!(value.kind, ExprKind::Undefined) {",
     replace: "        if key == \"__proto__\" || matches!(value.kind, ExprKind::Undefined) {",
-    tests: ["test/lowering.test.ts", "-t", "a dictionary of entries written out"],
+    tests: ["test/lowering-strings.test.ts", "-t", "a dictionary of entries written out"],
   },
   {
     name: "entries-undefined-literal",
@@ -96,7 +96,7 @@ export const mutations: Mutation[] = [
     file: "src/prepare.rs",
     find: "        if given || key == \"__proto__\" || matches!(value.kind, ExprKind::Undefined) {",
     replace: "        if given || key == \"__proto__\" {",
-    tests: ["test/lowering.test.ts", "-t", "a dictionary of entries written out"],
+    tests: ["test/lowering-strings.test.ts", "-t", "a dictionary of entries written out"],
   },
   {
     name: "handler-of-one-call-blocked",
@@ -144,7 +144,7 @@ export const mutations: Mutation[] = [
     file: "src/prepare.rs",
     find: "    shadows(&mut function.body, None);\n",
     replace: "",
-    tests: ["test/lowering.test.ts", "-t", "shadowed by its own value"],
+    tests: ["test/lowering-names.test.ts", "-t", "shadowed by its own value"],
   },
   {
     name: "alias-of-another-name",
@@ -152,7 +152,7 @@ export const mutations: Mutation[] = [
     file: "src/prepare.rs",
     find: "                        && crate::names::apart(alias).is_some_and(|(base, _)| base == of)",
     replace: "                        && !alias.is_empty()",
-    tests: ["test/lowering.test.ts", "-t", "shadowed by its own value"],
+    tests: ["test/lowering-names.test.ts", "-t", "shadowed by its own value"],
   },
   {
     name: "shadow-in-loop-aliased",
@@ -160,7 +160,7 @@ export const mutations: Mutation[] = [
     file: "src/prepare.rs",
     find: "(sets.is_empty() || !looped && sets.iter().all(|&set| set < at))",
     replace: "(sets.is_empty() || sets.iter().all(|&set| set < at))",
-    tests: ["test/lowering.test.ts", "-t", "shadowed by its own value"],
+    tests: ["test/lowering-names.test.ts", "-t", "shadowed by its own value"],
   },
   {
     name: "empty-else-kept",
@@ -168,7 +168,7 @@ export const mutations: Mutation[] = [
     file: "src/prepare.rs",
     find: "            && els.as_ref().is_some_and(Vec::is_empty)\n",
     replace: "            && els.as_ref().is_some_and(|_| false)\n",
-    tests: ["test/lowering.test.ts", "-t", "of `matches!` from MIR is one test, at a function's end"],
+    tests: ["test/lowering-branches.test.ts", "-t", "of `matches!` from MIR is one test, at a function's end"],
   },
   {
     name: "undefined-fields-kept",
@@ -176,7 +176,7 @@ export const mutations: Mutation[] = [
     file: "src/prepare.rs",
     find: "            if !props.iter().any(|p| matches!(p, Prop::Spread(_))) {\n",
     replace: "            if false {\n",
-    tests: ["test/lowering.test.ts", "-t", "literal None is left out"],
+    tests: ["test/lowering-options.test.ts", "-t", "literal None is left out"],
   },
   {
     name: "undefined-after-spread-dropped",
@@ -184,7 +184,7 @@ export const mutations: Mutation[] = [
     file: "src/prepare.rs",
     find: "            if !props.iter().any(|p| matches!(p, Prop::Spread(_))) {\n",
     replace: "            if true {\n",
-    tests: ["test/lowering.test.ts", "-t", "literal None is left out"],
+    tests: ["test/lowering-options.test.ts", "-t", "literal None is left out"],
   },
   {
     name: "closure-shadow-kept",
@@ -192,7 +192,7 @@ export const mutations: Mutation[] = [
     file: "src/prepare.rs",
     find: "            shadows(body, Some(&own));\n",
     replace: "",
-    tests: ["test/lowering.test.ts", "-t", "shadowed by its own value"],
+    tests: ["test/lowering-names.test.ts", "-t", "shadowed by its own value"],
   },
   {
     name: "template-values-unprepared",
@@ -200,7 +200,7 @@ export const mutations: Mutation[] = [
     file: "src/prepare.rs",
     find: "        ExprKind::Template(_, values, _) => values.iter_mut().for_each(expr),\n",
     replace: "        ExprKind::Template(..) => {}\n",
-    tests: ["test/lowering.test.ts", "-t", "undefined field is no key in"],
+    tests: ["test/lowering-options.test.ts", "-t", "undefined field is no key in"],
   },
   {
     name: "component-callback-returns",
@@ -208,7 +208,7 @@ export const mutations: Mutation[] = [
     file: "src/prepare.rs",
     find: "                        if element && js::is_handler_name(name) {\n",
     replace: "                        if js::is_handler_name(name) {\n",
-    tests: ["test/lowering.test.ts", "-t", "only a DOM element"],
+    tests: ["test/lowering-bindings.test.ts", "-t", "only a DOM element"],
   },
   {
     name: "let-undefined-kept",
@@ -216,7 +216,7 @@ export const mutations: Mutation[] = [
     file: "src/prepare.rs",
     find: "            && value.as_ref().is_some_and(|v| matches!(v.kind, ExprKind::Undefined))\n",
     replace: "            && false\n",
-    tests: ["test/lowering.test.ts", "-t", "cell only its function"],
+    tests: ["test/lowering-cells.test.ts", "-t", "cell only its function"],
   },
   {
     name: "tested-const-unmarked",
@@ -224,7 +224,7 @@ export const mutations: Mutation[] = [
     file: "src/prepare.rs",
     find: "        ExprKind::Var(var) if var == name => *var = String::from(\"$tested\"),\n",
     replace: "",
-    tests: ["test/lowering.test.ts", "-t", "a const only tests read"],
+    tests: ["test/lowering-options.test.ts", "-t", "a const only tests read"],
   },
   {
     name: "tested-const-any-read",
@@ -232,7 +232,7 @@ export const mutations: Mutation[] = [
     file: "src/prepare.rs",
     find: "        if js::mentions_in(&marked, &name) != 0 {",
     replace: "        if false {",
-    tests: ["test/lowering.test.ts", "-t", "a const only tests read"],
+    tests: ["test/lowering-options.test.ts", "-t", "a const only tests read"],
   },
   {
     name: "tested-const-cond-unmarked",
@@ -240,7 +240,7 @@ export const mutations: Mutation[] = [
     file: "src/prepare.rs",
     find: "            if let ExprKind::Cond(test, ..) = &mut e.kind {\n                mark_tested(test, &name);\n            }",
     replace: "",
-    tests: ["test/lowering.test.ts", "-t", "a const only tests read"],
+    tests: ["test/lowering-options.test.ts", "-t", "a const only tests read"],
   },
   {
     name: "tested-const-not-unmarked",
@@ -248,7 +248,7 @@ export const mutations: Mutation[] = [
     file: "src/prepare.rs",
     find: "        ExprKind::Unary(js::UnaryOp::Not, a) => mark_tested(a, name),\n",
     replace: "",
-    tests: ["test/lowering.test.ts", "-t", "a const only tests read"],
+    tests: ["test/lowering-options.test.ts", "-t", "a const only tests read"],
   },
   {
     name: "dynamic-import-then",
@@ -264,7 +264,7 @@ export const mutations: Mutation[] = [
     file: "src/prepare.rs",
     find: "        && matches!(&tested.kind, ExprKind::Var(name) if name == param)\n",
     replace: "        && matches!(&tested.kind, ExprKind::Var(name) if name == param && false)\n",
-    tests: ["test/lowering.test.ts", "-t", "a truth test as a callback is Boolean"],
+    tests: ["test/lowering-options.test.ts", "-t", "a truth test as a callback is Boolean"],
   },
   {
     name: "async-block-closure-called",
@@ -280,7 +280,7 @@ export const mutations: Mutation[] = [
     file: "src/prepare.rs",
     find: "            while args.len() > 1 && args.last()",
     replace: "            while false && args.len() > 1 && args.last()",
-    tests: ["test/lowering.test.ts","-t","Console's loops"],
+    tests: ["test/lowering-loops.test.ts", "-t", "Console's loops"],
   },
   {
     name: "trailing-undefined-alone",
@@ -297,7 +297,7 @@ export const mutations: Mutation[] = [
     file: "src/prepare.rs",
     find: "        && js::same_path(x, y)\n",
     replace: "        && false\n",
-    tests: ["test/lowering.test.ts","-t","Console's loops"],
+    tests: ["test/lowering-loops.test.ts", "-t", "Console's loops"],
   },
   {
     "name": "ignored-try-kept",
@@ -305,11 +305,7 @@ export const mutations: Mutation[] = [
     "file": "src/prepare.rs",
     "find": "            && let Some(call) = tried(e)\n",
     "replace": "            && let Some(call) = tried(e).filter(|_| false)\n",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "ignored result of a call"
-    ]
+    "tests": ["test/lowering-bindings.test.ts", "-t", "ignored result of a call"]
   },
   {
     name: "try-past-declared-blocked",
@@ -390,7 +386,7 @@ export const mutations: Mutation[] = [
     "file": "src/prepare.rs",
     "find": "            && then.last().is_some_and(js::ends)\n        {\n            let els = els.take()",
     "replace": "            && true\n        {\n            let els = els.take()",
-    "tests": ["test/lowering.test.ts", "-t", "branches from MIR read as a person writes them"]
+    "tests": ["test/lowering-branches.test.ts", "-t", "branches from MIR read as a person writes them"]
   },
   {
     "name": "same-test-and-value-conditional",
@@ -398,7 +394,7 @@ export const mutations: Mutation[] = [
     "file": "src/prepare.rs",
     "find": "            if js::same_path(a, b) && !matches!(c.kind, ExprKind::Undefined) {\n",
     "replace": "            if false && js::same_path(a, b) && !matches!(c.kind, ExprKind::Undefined) {\n",
-    "tests": ["test/lowering.test.ts", "-t", "nullable field's None is null"]
+    "tests": ["test/lowering-options.test.ts", "-t", "nullable field's None is null"]
   },
   {
     "name": "return-undefined-written",
@@ -406,7 +402,7 @@ export const mutations: Mutation[] = [
     "file": "src/prepare.rs",
     "find": "        if let StmtKind::Let(_, value) | StmtKind::Return(value) = &mut stmt.kind\n",
     "replace": "        if let StmtKind::Let(_, value) = &mut stmt.kind\n",
-    "tests": ["test/lowering.test.ts", "-t", "a return of undefined is a bare return"]
+    "tests": ["test/lowering-branches.test.ts", "-t", "a return of undefined is a bare return"]
   },
   {
     "name": "test-double-negation-kept",
@@ -447,7 +443,7 @@ export const mutations: Mutation[] = [
     file: "src/prepare.rs",
     find: "        .is_some_and(|stmt| matches!(stmt.kind, StmtKind::Return(None)))\n",
     replace: "        .is_some_and(|_| false)\n",
-    tests: ["test/lowering.test.ts", "-t", "a return of undefined is a bare return"],
+    tests: ["test/lowering-branches.test.ts", "-t", "a return of undefined is a bare return"],
   },
   {
     name: "closure-trailing-return-written",
@@ -455,7 +451,7 @@ export const mutations: Mutation[] = [
     file: "src/prepare.rs",
     find: "                false => function_body(params, body),\n",
     replace: "                false => block(body),\n",
-    tests: ["test/lowering.test.ts", "-t", "a return of undefined is a bare return"],
+    tests: ["test/lowering-branches.test.ts", "-t", "a return of undefined is a bare return"],
   },
   {
     name: "left-out-named-field",

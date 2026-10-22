@@ -24,7 +24,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/combinators/adapters.rs",
     find: "                Some(kept) => self.present(Expr::var(\"item\"), kept),\n",
     replace: "                Some(_) => Expr::bin(Op::LooseNe, Expr::var(\"item\"), Expr::null()),\n",
-    tests: ["test/lowering.test.ts", "-t", "a truth test as a callback is Boolean"],
+    tests: ["test/lowering-options.test.ts", "-t", "a truth test as a callback is Boolean"],
   },
   {
     name: "items-never-cells",
@@ -48,11 +48,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/combinators/adapters.rs",
     "find": "                    item.is_array() || item.is_slice() || self.is_vec_like(item)\n",
     "replace": "                    false\n",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "arrays of arrays flattened"
-    ]
+    "tests": ["test/lowering-collections.test.ts", "-t", "arrays of arrays flattened"]
   },
   {
     "name": "insert-front-helper",
@@ -60,11 +56,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/combinators/adapters.rs",
     "find": "        Some(0) => Expr::call(Expr::member(subject, \"unshift\"), vec![value]),\n",
     "replace": "",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "an insert at the front is unshift"
-    ]
+    "tests": ["test/lowering-collections.test.ts", "-t", "an insert at the front is unshift"]
   },
   {
     name: "max-by-drops-none",

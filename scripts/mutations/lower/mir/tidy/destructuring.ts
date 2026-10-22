@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/destructuring.rs",
     find: "        if !made && let Some(k) = parts.iter().position(|(_, bound, ..)| is_temporary(bound)) {\n",
     replace: "        if false && let Some(k) = parts.iter().position(|(_, bound, ..)| is_temporary(bound)) {\n",
-    tests: ["test/lowering.test.ts", "-t", "a temporary is no part"],
+    tests: ["test/lowering-names.test.ts", "-t", "a temporary is no part"],
   },
   {
     name: "mir-tidy-destructured-kept",
@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/destructuring.rs",
     find: "        let enough = !temporaries && count >= if made || bound { 1 } else { 2 };\n",
     replace: "        let enough = !made && false;\n",
-    tests: ["test/lowering.test.ts","-t","bindings from MIR are destructured"],
+    tests: ["test/lowering-matches.test.ts", "-t", "bindings from MIR are destructured"],
   },
   {
     name: "mir-tidy-destructured-variable-kept",
@@ -24,7 +24,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/destructuring.rs",
     find: "                (v.to_string(), i)\n",
     replace: "                (v.to_string(), i + stmts.len())\n",
-    tests: ["test/lowering.test.ts","-t","bindings from MIR are destructured"],
+    tests: ["test/lowering-matches.test.ts", "-t", "bindings from MIR are destructured"],
   },
   {
     name: "mir-tidy-array-parts-kept",
@@ -40,7 +40,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/destructuring.rs",
     find: "        body.drain(start..start + count);\n        *param = pattern;\n",
     replace: "        let _ = pattern;\n",
-    tests: ["test/lowering.test.ts","-t","iterator chains from MIR|a lazy chain from MIR spread once"],
+    tests: ["test/lowering-iterators.test.ts", "-t", "iterator chains from MIR|a lazy chain from MIR spread once"],
   },
   {
     name: "mir-tidy-default-part-unstarted",
@@ -48,7 +48,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/destructuring.rs",
     find: "        ExprKind::Cond(_, _, read) => read,\n",
     replace: "        ExprKind::Cond(_, _, read) if false => read,\n",
-    tests: ["test/lowering.test.ts","-t","props field's default is read"],
+    tests: ["test/lowering-bindings.test.ts", "-t", "props field's default is read"],
   },
   {
     name: "mir-tidy-deref-param-kept",
@@ -56,7 +56,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/destructuring.rs",
     find: "            *param = js::Pattern::Name(name.clone());\n            body.remove(0);\n",
     replace: "            break;\n",
-    tests: ["test/lowering.test.ts","-t","names its .&x. parameter"],
+    tests: ["test/lowering-functions.test.ts", "-t", "names its .&x. parameter"],
   },
   {
     "name": "async-arg-named",
@@ -64,11 +64,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/tidy/destructuring.rs",
     "find": "        is_temporary(name) || arg.is_some_and(",
     "replace": "        is_temporary(name) || false && arg.is_some_and(",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "an async fn's parameter pattern from MIR"
-    ]
+    "tests": ["test/lowering-matches.test.ts", "-t", "an async fn's parameter pattern from MIR"]
   },
   {
     "name": "one-field-pattern-kept-apart",
@@ -76,11 +72,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/tidy/destructuring.rs",
     "find": "let enough = !temporaries && count >= if made || bound { 1 } else { 2 };",
     "replace": "let enough = !temporaries && count >= if made { 1 } else { 2 };",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "a let pattern of a named variable takes it apart"
-    ]
+    "tests": ["test/lowering-matches.test.ts", "-t", "a let pattern of a named variable takes it apart"]
   },
   {
     "name": "destructured-param-kept",
@@ -88,11 +80,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/tidy/destructuring.rs",
     "find": "            *param = pattern.clone();\n            body.remove(0);\n            continue;\n",
     "replace": "            let _ = pattern;\n",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "an async fn's parameter pattern from MIR"
-    ]
+    "tests": ["test/lowering-matches.test.ts", "-t", "an async fn's parameter pattern from MIR"]
   },
   {
     "name": "mir-tidy-tuple-set-through",
@@ -112,11 +100,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/tidy/destructuring.rs",
     "find": "        _ if group.iter().all(|(rest, ..)| !rest.is_empty()) => Some((nested_pattern(group)?, None)),",
     "replace": "        _ if false => Some((nested_pattern(group)?, None)),",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "a closure's nested patterns are nested JS patterns"
-    ]
+    "tests": ["test/lowering-matches.test.ts", "-t", "a closure's nested patterns are nested JS patterns"]
   },
   {
     name: "mir-tidy-part-named-twice",
@@ -124,7 +108,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/destructuring.rs",
     find: "        if parts.iter().any(|(p, ..)| *p == part) {\n            break;\n        }\n",
     replace: "",
-    tests: ["test/lowering.test.ts","-t","two names of one field"],
+    tests: ["test/lowering-names.test.ts", "-t", "two names of one field"],
   },
   {
     name: "mir-tidy-async-param-copied",

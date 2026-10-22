@@ -25,11 +25,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/iter/backs.rs",
     "find": "                it if crate::lower::iterators::is_stepped_items(&it) => crate::lower::iterators::iterated(it),\n",
     "replace": "                it if false => crate::lower::iterators::iterated(it),\n",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "iterator chains from MIR are array methods"
-    ]
+    "tests": ["test/lowering-iterators.test.ts", "-t", "iterator chains from MIR are array methods"]
   },
   {
     name: "mir-rev-of-counted-refused",
@@ -37,7 +33,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/iter/backs.rs",
     find: "            None if counted_chain(&receiver) => sliced(&receiver),\n",
     replace: "",
-    tests: ["test/lowering.test.ts","-t","rev of skipped and taken"],
+    tests: ["test/lowering-iterators.test.ts", "-t", "rev of skipped and taken"],
   },
   {
     name: "mir-rev-of-kept-iterator-wrapped",
@@ -45,11 +41,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/iter/backs.rs",
     find: "            Some(_) if matches!(receiver.kind, js::ExprKind::Var(_) | js::ExprKind::Member(..)) => {\n                Expr::call_helper(\"$rest\", vec![receiver])\n",
     replace: "            Some(_) if false => {\n                Expr::call_helper(\"$rest\", vec![receiver])\n",
-    tests: [
-      "test/lowering.test.ts",
-      "-t",
-      "char ranges step by code point"
-    ]
+    tests: ["test/lowering-iterators.test.ts", "-t", "char ranges step by code point"]
   },
   {
     name: "double-ended-next-back-refused",

@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/loops.rs",
     find: "            stmts.splice(i..i + 2, made);\n",
     replace: "            let _ = made;\n",
-    tests: ["test/lowering.test.ts","-t","loops from MIR read"],
+    tests: ["test/lowering-loops.test.ts", "-t", "loops from MIR read"],
   },
   {
     name: "mir-tidy-for-range-kept",
@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/loops.rs",
     find: "            if start_key != \"start\" || end_key != \"end\" || mutable || !counted {\n",
     replace: "            if true {\n",
-    tests: ["test/lowering.test.ts","-t","loops from MIR read"],
+    tests: ["test/lowering-loops.test.ts", "-t", "loops from MIR read"],
   },
   {
     name: "mir-tidy-for-of-assigned-kept",
@@ -24,7 +24,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/loops.rs",
     find: "                && mentions.get(iter) == Some(&2) =>\n",
     replace: "                && mentions.get(iter) == Some(&99) =>\n",
-    tests: ["test/lowering.test.ts","-t","if-let chains and loops from MIR"],
+    tests: ["test/lowering-loops.test.ts", "-t", "if-let chains and loops from MIR"],
   },
   {
     name: "mir-tidy-range-end-length-kept",
@@ -32,7 +32,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/loops.rs",
     find: "                    if length == \"length\" && matches!(&of.kind, ExprKind::Var(v) if only_read(&body, v)));\n",
     replace: "                    if false && length == \"length\" && matches!(&of.kind, ExprKind::Var(v) if only_read(&body, v)));\n",
-    tests: ["test/lowering.test.ts","-t","early returns and index loops from MIR"],
+    tests: ["test/lowering-loops.test.ts", "-t", "early returns and index loops from MIR"],
   },
   {
     name: "mir-tidy-range-end-unheld",
@@ -40,7 +40,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/loops.rs",
     find: "            let held = (!same).then(|| {\n",
     replace: "            if !same {\n                return None;\n            }\n            let held = (!same).then(|| {\n",
-    tests: ["test/lowering.test.ts","-t","whose end is a call holds it first"],
+    tests: ["test/lowering-loops.test.ts", "-t", "whose end is a call holds it first"],
   },
   {
     name: "mir-tidy-chars-arrayed",
@@ -48,7 +48,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/loops.rs",
     find: "            iterable: unarrayed(iterated(source.clone())),\n",
     replace: "            iterable: iterated(source.clone()),\n",
-    tests: ["test/lowering.test.ts","-t","arguments read out of order"],
+    tests: ["test/lowering-strings.test.ts", "-t", "arguments read out of order"],
   },
   {
     name: "mir-tidy-loop-as-while",
@@ -56,7 +56,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/loops.rs",
     find: "        if !written_while(stmts[i].span) {\n",
     replace: "        if false && !written_while(stmts[i].span) {\n",
-    tests: ["test/lowering.test.ts","-t","while. loop from MIR tests"],
+    tests: ["test/lowering-loops.test.ts", "-t", "while. loop from MIR tests"],
   },
   {
     "name": "mir-for-of-span-lost",
@@ -64,11 +64,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/tidy/loops.rs",
     "find": "    let mut out = vec![looped.at(span)];\n",
     "replace": "    let mut out = vec![looped.at(js::Span::NONE)];\n",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "nested loops from MIR read as written"
-    ]
+    "tests": ["test/lowering-loops.test.ts", "-t", "nested loops from MIR read as written"]
   },
   {
     "name": "mir-labeled-break-loop-kept",
@@ -76,11 +72,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/tidy/loops.rs",
     "find": "        StmtKind::Labeled(l, within) if let [only] = within.as_slice() => (only, Some(l.clone())),\n",
     "replace": "        StmtKind::Labeled(_, within) if let [_] = within.as_slice() => (second, None::<String>),\n",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "nested loops from MIR read as written"
-    ]
+    "tests": ["test/lowering-loops.test.ts", "-t", "nested loops from MIR read as written"]
   },
   {
     "name": "mir-for-of-break-after-leaving",
@@ -88,11 +80,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/tidy/loops.rs",
     "find": "    if falls_out && !inner.last().is_some_and(ends) {\n",
     "replace": "    if falls_out {\n",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "nested loops from MIR read as written"
-    ]
+    "tests": ["test/lowering-loops.test.ts", "-t", "nested loops from MIR read as written"]
   },
   {
     name: "mir-tidy-next-some-loop-kept",
@@ -108,7 +96,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/loops.rs",
     find: "                \"_\" => std::iter::once(\"i\".to_string())\n",
     replace: "                \"$never\" => std::iter::once(\"i\".to_string())\n",
-    tests: ["test/lowering.test.ts","-t","an unread count of a range"],
+    tests: ["test/lowering-loops.test.ts", "-t", "an unread count of a range"],
   },
   {
     name: "mir-tidy-loop-names-retaken",
@@ -116,7 +104,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/loops.rs",
     find: "                    *mentions.entry(name.clone()).or_default() += 1;\n",
     replace: "",
-    tests: ["test/lowering.test.ts", "-t", "two loops each hold their range's end"],
+    tests: ["test/lowering-names.test.ts", "-t", "two loops each hold their range's end"],
   },
   {
     name: "mir-tidy-char-range-counted",
@@ -124,11 +112,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/loops.rs",
     find: "            if start_key != \"start\" || end_key != \"end\" || mutable || !counted {\n",
     replace: "            if start_key != \"start\" || end_key != \"end\" || mutable {\n",
-    tests: [
-      "test/lowering.test.ts",
-      "-t",
-      "char ranges step by code point"
-    ]
+    tests: ["test/lowering-iterators.test.ts", "-t", "char ranges step by code point"]
   },
   {
     name: "mir-tidy-number-variable-range-uncounted",
@@ -136,11 +120,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/loops.rs",
     find: "                || matches!(&start.kind, ExprKind::Var(v) if numbers.contains(v))\n",
     replace: "",
-    tests: [
-      "test/lowering.test.ts",
-      "-t",
-      "char ranges step by code point"
-    ]
+    tests: ["test/lowering-iterators.test.ts", "-t", "char ranges step by code point"]
   },
   {
     name: "mir-tidy-for-mut-binding-let-kept",
@@ -148,11 +128,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/loops.rs",
     find: "                stmts.remove(at);\n                i -= 1;\n",
     replace: "",
-    tests: [
-      "test/lowering.test.ts",
-      "-t",
-      "a for loop of a mut binding"
-    ]
+    tests: ["test/lowering-loops.test.ts", "-t", "a for loop of a mut binding"]
   },
   {
     name: "dictionary-loop-kept",

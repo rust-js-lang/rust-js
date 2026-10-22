@@ -24,11 +24,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/iter/collect.rs",
     "find": "match self.mapped_range(&it, iter_ty) {",
     "replace": "match None::<Expr> {",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "a range mapped and collected is its array mapped"
-    ]
+    "tests": ["test/lowering-iterators.test.ts", "-t", "a range mapped and collected is its array mapped"]
   },
   {
     "name": "mir-float-sum-from-zero",
@@ -36,11 +32,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/iter/collect.rs",
     "find": "(true, true) => Expr::num(-0.0),",
     "replace": "(true, true) => Expr::num(0.0),",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "a float's sum from MIR keeps the sign"
-    ]
+    "tests": ["test/lowering-numbers.test.ts", "-t", "a float's sum from MIR keeps the sign"]
   },
   {
     "name": "mir-collect-heap-unheaped",
@@ -60,7 +52,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/iter/collect.rs",
     find: "        let own = arg_tys.last().is_some_and(|ty| self.is_crate_fn_item(*ty));\n        let callback = self.binary_callback(f, own);\n        let Some(init) = init else {\n",
     replace: "        let own = arg_tys.get(1).is_some_and(|ty| self.is_crate_fn_item(*ty));\n        let callback = self.binary_callback(f, own);\n        let Some(init) = init else {\n",
-    tests: ["test/lowering.test.ts","-t","a fold given a function of the crate's"],
+    tests: ["test/lowering-iterators.test.ts", "-t", "a fold given a function of the crate's"],
   },
   {
     "name": "mir-iterable-collected-lazy",

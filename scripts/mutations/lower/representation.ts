@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/representation.rs",
     find: "                    super::bindings::tag_key(tcx, adt.did()),",
     replace: "                    \"TAG\".to_string(),",
-    tests: ["test/lowering.test.ts","-t","discriminated union"],
+    tests: ["test/lowering-structs-enums.test.ts", "-t", "discriminated union"],
   },
   {
     name: "named-unit-const-undefined",
@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/representation.rs",
     find: "                Some(CtorKind::Const) => Some(unit_name(tcx, adt.did()).map_or_else(Expr::undefined, Expr::str)),",
     replace: "                Some(CtorKind::Const) => Some(Expr::undefined()),",
-    tests: ["test/lowering.test.ts", "-t", "named unit struct"],
+    tests: ["test/lowering-structs-enums.test.ts", "-t", "named unit struct"],
   },
   {
     name: "i32-wrap",
@@ -225,7 +225,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/representation.rs",
     find: "            true => Expr::handle(field),\n",
     replace: "            true => field,\n",
-    tests: ["test/lowering.test.ts", "-t", "cell in a field is the property"],
+    tests: ["test/lowering-cells.test.ts", "-t", "cell in a field is the property"],
   },
   {
     name: "cell-field-boxed",
@@ -233,7 +233,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/representation.rs",
     find: "            true => Expr::held(value),\n",
     replace: "            true => value,\n",
-    tests: ["test/lowering.test.ts", "-t", "cell in a field is the property"],
+    tests: ["test/lowering-cells.test.ts", "-t", "cell in a field is the property"],
   },
   {
     name: "const-cell-field-boxed",
@@ -313,7 +313,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/representation.rs",
     find: "                Expr::member(subject, bindings::tag_key(self.tcx, adt.did())),\n",
     replace: "                Expr::member(subject, \"TAG\"),\n",
-    tests: ["test/lowering.test.ts","-t","discriminated union"],
+    tests: ["test/lowering-structs-enums.test.ts", "-t", "discriminated union"],
   },
   {
     name: "mir-untagged-variant-tagged",
@@ -329,7 +329,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/representation.rs",
     find: "            let key = bindings::tag_key(self.tcx, adt.did());\n            let tests = (adt.variants().iter())\n                .filter(|other| other.def_id != def.def_id)\n",
     replace: "            let key = bindings::tag_key(self.tcx, adt.did());\n            let tests = (adt.variants().iter())\n                .filter(|other| other.def_id == def.def_id)\n",
-    tests: ["test/lowering.test.ts","-t","otherwise variant is any other"],
+    tests: ["test/lowering-structs-enums.test.ts", "-t", "otherwise variant is any other"],
   },
   {
     name: "tagged-enum-cast-refused",
@@ -451,7 +451,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/representation.rs",
     find: "            || self.recognition().is_path_like(ty)\n            || Num::of(ty).is_some()\n",
     replace: "            || self.recognition().is_path_like(ty)\n",
-    tests: ["test/lowering.test.ts", "-t", "stepped by hand"],
+    tests: ["test/lowering-loops.test.ts", "-t", "stepped by hand"],
   },
   {
     name: "mut-ref-to-object-uncelled",

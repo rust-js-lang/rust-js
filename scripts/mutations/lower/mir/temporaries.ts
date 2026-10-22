@@ -72,7 +72,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/temporaries.rs",
     find: "                matches!(&root.kind, js::ExprKind::Var(name) if self.locals.mir.plain.contains(name))\n",
     replace: "                false\n",
-    tests: ["test/lowering.test.ts","-t","a match guard.s binding from MIR is what it binds"],
+    tests: ["test/lowering-matches.test.ts", "-t", "a match guard.s binding from MIR is what it binds"],
   },
   {
     name: "mir-bounds-never-deferred",
@@ -80,7 +80,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/temporaries.rs",
     find: "        deferred_check(body, msg, *target).map(|(index, write)| Check::Deferred(index, write))\n",
     replace: "        let _ = (target, deferred_check);\n        None\n",
-    tests: ["test/lowering.test.ts","-t","nothing proves in bounds"],
+    tests: ["test/lowering-numbers.test.ts", "-t", "nothing proves in bounds"],
   },
   {
     name: "mir-checked-despite-drops",

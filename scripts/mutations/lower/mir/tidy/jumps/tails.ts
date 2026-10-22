@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/jumps/tails.rs",
     find: "            ending(body, label);\n",
     replace: "            let _ = (label, body);\n",
-    tests: ["test/lowering.test.ts","-t","strings from MIR is the"],
+    tests: ["test/lowering-matches.test.ts", "-t", "strings from MIR is the"],
   },
   {
     name: "mir-tidy-inner-block-kept",
@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/jumps/tails.rs",
     find: "        stmts.pop();\n        stmts.extend(body);\n",
     replace: "        let _ = body;\n        return;\n",
-    tests: ["test/lowering.test.ts","-t","strings from MIR is the"],
+    tests: ["test/lowering-matches.test.ts", "-t", "strings from MIR is the"],
   },
   {
     name: "mir-tidy-or-pattern-negated",
@@ -24,7 +24,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/jumps/tails.rs",
     find: "        (false, true) => StmtKind::If(test.negated_test(), rest, Some(then)).at(span),\n",
     replace: "        (false, true) => StmtKind::If(test, then, Some(rest)).at(span),\n",
-    tests: ["test/lowering.test.ts","-t","strings from MIR is the"],
+    tests: ["test/lowering-matches.test.ts", "-t", "strings from MIR is the"],
   },
   {
     name: "mir-tidy-let-else-branch-ends",
@@ -32,7 +32,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/jumps/tails.rs",
     find: "        .filter(|_| !exits)\n",
     replace: "",
-    tests: ["test/lowering.test.ts","-t","let-else from MIR"],
+    tests: ["test/lowering-matches.test.ts", "-t", "let-else from MIR"],
   },
   {
     name: "mir-tidy-jump-ends-not-made",
@@ -40,7 +40,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/jumps/tails.rs",
     find: "            matches!(cond.kind, ExprKind::Bool(true)) && !breaks(body, label.as_deref())\n        }\n        Some(StmtKind::If(",
     replace: "            matches!(cond.kind, ExprKind::Bool(true)) && !breaks(body, label.as_deref()) && false\n        }\n        Some(StmtKind::If(",
-    tests: ["test/lowering.test.ts","-t","returns in a loop are where"],
+    tests: ["test/lowering-loops.test.ts", "-t", "returns in a loop are where"],
   },
   {
     name: "returned-in-place-end-kept",
@@ -110,7 +110,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/jumps/tails.rs",
     find: "                (false, true) if of(then, rest) => Some(true),\n",
     replace: "",
-    tests: ["test/lowering.test.ts", "-t", "an if written with an else keeps it"],
+    tests: ["test/lowering-branches.test.ts", "-t", "an if written with an else keeps it"],
   },
   {
     name: "tail-if-returns-each",
@@ -118,7 +118,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/jumps/tails.rs",
     find: "        && elses.iter().any(|(cond, ..)| within(cond, if_stmt.span))\n",
     replace: "        && false\n",
-    tests: ["test/lowering.test.ts", "-t", "an if written with an else keeps it"],
+    tests: ["test/lowering-branches.test.ts", "-t", "an if written with an else keeps it"],
   },
   {
     name: "match-made-conditional",
@@ -126,7 +126,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/jumps/tails.rs",
     find: "        && elses.iter().any(|(cond, ..)| within(cond, if_stmt.span))\n",
     replace: "        && (true || elses.iter().any(|(cond, ..)| within(cond, if_stmt.span)))\n",
-    tests: ["test/lowering.test.ts", "-t", "a function's match returns each arm"],
+    tests: ["test/lowering-branches.test.ts", "-t", "a function's match returns each arm"],
   },
   {
     name: "lone-jumps-given-an-else",
@@ -142,6 +142,6 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/jumps/tails.rs",
     find: "if small(value) && !written(returns, *span) =>",
     replace: "if small(value) =>",
-    tests: ["test/lowering.test.ts", "-t", "a string's parts from MIR are an array"],
+    tests: ["test/lowering-iterators.test.ts", "-t", "a string's parts from MIR are an array"],
   },
 ];

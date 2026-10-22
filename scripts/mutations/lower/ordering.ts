@@ -56,11 +56,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/ordering.rs",
     "find": "                if adt.is_enum() && adt.did().is_local() && !bindings::is_untagged(self.tcx, adt.did()) =>",
     "replace": "                if false =>",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "a derived order of an enum with fields"
-    ]
+    "tests": ["test/lowering-structs-enums.test.ts", "-t", "a derived order of an enum with fields"]
   },
   {
     "name": "enum-order-variants-only",
@@ -68,11 +64,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/ordering.rs",
     "find": "                Ok(Expr::bin(Op::Or, order, same))",
     "replace": "                let _ = same;\n                Ok(order)",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "a derived order of an enum with fields"
-    ]
+    "tests": ["test/lowering-structs-enums.test.ts", "-t", "a derived order of an enum with fields"]
   },
   {
     name: "cow-cmp-refused",

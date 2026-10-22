@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/body_queries/ranges.rs",
     find: "                if !holds\n                    && let Some(slice) = self.slice(items)",
     replace: "                if false\n                    && let Some(slice) = self.slice(items)",
-    tests: ["test/lowering.test.ts", "-t", "an index a condition shows"],
+    tests: ["test/lowering-numbers.test.ts", "-t", "an index a condition shows"],
   },
   {
     name: "ranges-not-unflipped",
@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/body_queries/ranges.rs",
     find: "ExprKind::Unary { op: UnOp::Not, arg } => self.refine(arg, !holds, known),",
     replace: "ExprKind::Unary { op: UnOp::Not, arg } => self.refine(arg, holds, known),",
-    tests: ["test/lowering.test.ts", "-t", "integer ranges show"],
+    tests: ["test/lowering-numbers.test.ts", "-t", "integer ranges show"],
   },
   {
     name: "ranges-or-as-and",
@@ -24,7 +24,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/body_queries/ranges.rs",
     find: "ExprKind::LogicalOp { op, lhs, rhs } if matches!(op, LogicalOp::And) == holds => {\n                self.refine",
     replace: "ExprKind::LogicalOp { op, lhs, rhs } if true => {\n                self.refine",
-    tests: ["test/lowering.test.ts", "-t", "an index a condition shows"],
+    tests: ["test/lowering-numbers.test.ts", "-t", "an index a condition shows"],
   },
   {
     name: "ranges-lt-false-gt",
@@ -32,7 +32,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/body_queries/ranges.rs",
     find: "                    (BinOp::Lt, false) => BinOp::Ge,",
     replace: "                    (BinOp::Lt, false) => BinOp::Gt,",
-    tests: ["test/lowering.test.ts", "-t", "an index a condition shows"],
+    tests: ["test/lowering-numbers.test.ts", "-t", "an index a condition shows"],
   },
   {
     name: "ranges-gt-off-by-one",
@@ -40,7 +40,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/body_queries/ranges.rs",
     find: "                            BinOp::Gt => other.lo + 1,",
     replace: "                            BinOp::Gt => other.lo + 2,",
-    tests: ["test/lowering.test.ts", "-t", "an index a condition shows"],
+    tests: ["test/lowering-numbers.test.ts", "-t", "an index a condition shows"],
   },
   {
     name: "ranges-ne-any",
@@ -48,7 +48,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/body_queries/ranges.rs",
     find: "                            BinOp::Ne if other.constant() == Some(0) => 1,",
     replace: "                            BinOp::Ne => 1,",
-    tests: ["test/lowering.test.ts", "-t", "an index a condition shows"],
+    tests: ["test/lowering-numbers.test.ts", "-t", "an index a condition shows"],
   },
   {
     name: "ranges-lt-at-most",
@@ -56,7 +56,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/body_queries/ranges.rs",
     find: "                below: below(-1),",
     replace: "                below: below(0),",
-    tests: ["test/lowering.test.ts", "-t", "an index a condition shows"],
+    tests: ["test/lowering-numbers.test.ts", "-t", "an index a condition shows"],
   },
   {
     name: "ranges-for-unknown",
@@ -64,7 +64,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/body_queries/ranges.rs",
     find: "                    below: (end.below).and_then(|(slice, b)| Some((unchanged(slice)?, b.offset(-1)))),",
     replace: "                    below: None,",
-    tests: ["test/lowering.test.ts", "-t", "an index a condition shows"],
+    tests: ["test/lowering-numbers.test.ts", "-t", "an index a condition shows"],
   },
   {
     name: "ranges-for-changed-kept",
@@ -72,7 +72,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/body_queries/ranges.rs",
     find: "                    (!changed).then_some((path, var))",
     replace: "                    Some((path, var))",
-    tests: ["test/lowering.test.ts", "-t", "integer ranges show"],
+    tests: ["test/lowering-numbers.test.ts", "-t", "integer ranges show"],
   },
   {
     name: "ranges-return-goes-on",
@@ -80,7 +80,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/body_queries/ranges.rs",
     find: "                    self.expr(value, known);\n                }\n                *known = None;\n                None\n            }\n            ExprKind::Become",
     replace: "                    self.expr(value, known);\n                }\n                None\n            }\n            ExprKind::Become",
-    tests: ["test/lowering.test.ts", "-t", "an index a condition shows"],
+    tests: ["test/lowering-numbers.test.ts", "-t", "an index a condition shows"],
   },
   {
     name: "ranges-if-else-only",
@@ -88,7 +88,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/body_queries/ranges.rs",
     find: "                *known = either(yes, no);",
     replace: "                *known = no;",
-    tests: ["test/lowering.test.ts", "-t", "an index a condition shows"],
+    tests: ["test/lowering-numbers.test.ts", "-t", "an index a condition shows"],
   },
   {
     name: "ranges-resize-kept",
@@ -96,7 +96,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/body_queries/ranges.rs",
     find: "                    false => k.changed(var),",
     replace: "                    false => _ = k.vars.remove(&var),",
-    tests: ["test/lowering.test.ts", "-t", "an index a condition shows"],
+    tests: ["test/lowering-numbers.test.ts", "-t", "an index a condition shows"],
   },
   {
     name: "ranges-vec-index-unknown",
@@ -104,7 +104,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/body_queries/ranges.rs",
     find: "            Some((SliceLength::Index | SliceLength::Swap | SliceLength::SwapRemove, items)) => {",
     replace: "            Some((SliceLength::Swap | SliceLength::SwapRemove, items)) => {",
-    tests: ["test/lowering.test.ts", "-t", "an index a condition shows"],
+    tests: ["test/lowering-numbers.test.ts", "-t", "an index a condition shows"],
   },
   {
     name: "ranges-loop-entry-only",
@@ -112,7 +112,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/body_queries/ranges.rs",
     find: "            let mut next = either(entry.clone(), either(here, continued));",
     replace: "            let mut next = {\n                let _ = (here, continued);\n                entry.clone()\n            };",
-    tests: ["test/lowering.test.ts", "-t", "integer ranges show"],
+    tests: ["test/lowering-numbers.test.ts", "-t", "integer ranges show"],
   },
   {
     name: "ranges-continue-dropped",
@@ -120,7 +120,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/body_queries/ranges.rs",
     find: "            let continued = scope.and_then(|at| self.targets[at].continues.take());",
     replace: "            let continued = scope.and_then(|at| self.targets[at].continues.take()).and(None);",
-    tests: ["test/lowering.test.ts", "-t", "integer ranges show"],
+    tests: ["test/lowering-numbers.test.ts", "-t", "integer ranges show"],
   },
   {
     name: "ranges-break-dropped",
@@ -128,7 +128,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/body_queries/ranges.rs",
     find: "                        *known = either(known.take(), Some(broken));",
     replace: "                        *known = {\n                            let _ = broken;\n                            known.take()\n                        };",
-    tests: ["test/lowering.test.ts", "-t", "while. loop from MIR tests"],
+    tests: ["test/lowering-loops.test.ts", "-t", "while. loop from MIR tests"],
   },
   {
     name: "ranges-wrap-unbounded",
@@ -136,7 +136,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/body_queries/ranges.rs",
     find: "        let within = made.filter(|m| m.lo >= lo && m.hi <= hi);",
     replace: "        let within = made.filter(|m| m.lo >= lo);",
-    tests: ["test/lowering.test.ts", "-t", "integer ranges show"],
+    tests: ["test/lowering-numbers.test.ts", "-t", "integer ranges show"],
   },
   {
     name: "ranges-shift-unscaled",
@@ -144,7 +144,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/body_queries/ranges.rs",
     find: "                    below: bound(l, &|x| Below { s: x.s + k as u32, ..x }.lowest()).filter(|(_, x)| x.s <= 64),",
     replace: "                    below: bound(l, &|x| Below { s: x.s, ..x }.lowest()).filter(|(_, x)| x.s <= 64),",
-    tests: ["test/lowering.test.ts", "-t", "integer ranges show"],
+    tests: ["test/lowering-numbers.test.ts", "-t", "integer ranges show"],
   },
   {
     name: "ranges-within-loose",
@@ -152,7 +152,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/body_queries/ranges.rs",
     find: "        self.c <= 1 << self.s && self.b <= -(1 << self.s)",
     replace: "        self.c <= 1 << self.s && self.b <= 0",
-    tests: ["test/lowering.test.ts", "-t", "integer ranges show"],
+    tests: ["test/lowering-numbers.test.ts", "-t", "integer ranges show"],
   },
   {
     name: "ranges-swap-unjudged",
@@ -160,7 +160,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/body_queries/ranges.rs",
     find: "                for index in ranges.into_iter().skip(1) {",
     replace: "                for index in ranges.into_iter().skip(1).filter(|_| false) {",
-    tests: ["test/lowering.test.ts", "-t", "integer ranges show"],
+    tests: ["test/lowering-numbers.test.ts", "-t", "integer ranges show"],
   },
   {
     name: "callee-untold",
@@ -168,7 +168,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/body_queries/ranges.rs",
     find: "        let Some(params) = self.callees.get(&callee) else {",
     replace: "        let Some(params) = self.callees.get(&callee).filter(|_| false) else {",
-    tests: ["test/lowering.test.ts", "-t", "only calls reach"],
+    tests: ["test/lowering-functions.test.ts", "-t", "only calls reach"],
   },
   {
     name: "callee-bound-unmapped",
@@ -176,7 +176,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/body_queries/ranges.rs",
     find: "Some((theirs(slice)?, *bound))",
     replace: "Some((theirs(slice).filter(|_| false)?, *bound))",
-    tests: ["test/lowering.test.ts", "-t", "only calls reach"],
+    tests: ["test/lowering-functions.test.ts", "-t", "only calls reach"],
   },
   {
     name: "pop-as-push",
@@ -184,7 +184,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/body_queries/ranges.rs",
     find: "                bound.b -= bound.c * by;",
     replace: "                bound.b -= bound.c * by.abs();",
-    tests: ["test/lowering.test.ts", "-t", "only calls reach"],
+    tests: ["test/lowering-functions.test.ts", "-t", "only calls reach"],
   },
   {
     name: "bound-never-lowest",
@@ -192,7 +192,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/body_queries/ranges.rs",
     find: "        while self.s > 0 && self.c % 2 == 0 && self.b % 2 == 0 {",
     replace: "        while false && self.s > 0 && self.c % 2 == 0 && self.b % 2 == 0 {",
-    tests: ["test/lowering.test.ts", "-t", "only calls reach"],
+    tests: ["test/lowering-functions.test.ts", "-t", "only calls reach"],
   },
   {
     name: "product-negative-zero-exact",

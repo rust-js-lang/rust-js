@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_impls.rs",
     find: "        let primitive = any\n",
     replace: "        let primitive = false\n",
-    tests: ["test/lowering.test.ts", "-t", "js::Unknown's == is ==="],
+    tests: ["test/lowering-bindings.test.ts", "-t", "js::Unknown's == is ==="],
   },
   {
     name: "unknown-option-eq-loose",
@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_impls.rs",
     find: "                return Ok(Expr::bin(if any { Op::Eq } else { Op::LooseEq }, a, b));\n",
     replace: "                return Ok(Expr::bin(if any && false { Op::Eq } else { Op::LooseEq }, a, b));\n",
-    tests: ["test/lowering.test.ts", "-t", "js::Unknown's == is ==="],
+    tests: ["test/lowering-bindings.test.ts", "-t", "js::Unknown's == is ==="],
   },
   {
     name: "untagged-unit-eq-any",
@@ -24,7 +24,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_impls.rs",
     find: "                        let both = self.untagged_variant_test(ty, variant, &b);",
     replace: "                        let both = Expr::bool(true);",
-    tests: ["test/lowering.test.ts", "-t", "variant without fields is its name"],
+    tests: ["test/lowering-structs-enums.test.ts", "-t", "variant without fields is its name"],
   },
   {
     name: "library-recursive-clone-inline",
@@ -176,7 +176,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_impls.rs",
     find: "                            Ok(Prop::Field(name, self.holding(value, t)))\n",
     replace: "                            Ok(Prop::Field(name, value))\n",
-    tests: ["test/lowering.test.ts", "-t", "cell in a field is the property"],
+    tests: ["test/lowering-cells.test.ts", "-t", "cell in a field is the property"],
   },
   {
     name: "clone-cell-field-respread",
@@ -184,7 +184,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_impls.rs",
     find: "                ty::Adt(_, args) if self.is_std_type(t, StdItem::Cell) => Some(args.type_at(0)),\n",
     replace: "                ty::Adt(_, args) if false && self.is_std_type(t, StdItem::Cell) => Some(args.type_at(0)),\n",
-    tests: ["test/lowering.test.ts", "-t", "cell in a field is the property"],
+    tests: ["test/lowering-cells.test.ts", "-t", "cell in a field is the property"],
   },
   {
     name: "eq-cell-field-unhandled",
@@ -192,7 +192,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_impls.rs",
     find: "                            let x = self.held(Expr::member(a.clone(), name.clone()), t);\n",
     replace: "                            let x = Expr::member(a.clone(), name.clone());\n",
-    tests: ["test/lowering.test.ts", "-t", "cell in a field is the property"],
+    tests: ["test/lowering-cells.test.ts", "-t", "cell in a field is the property"],
   },
   {
     name: "some-true-compared",
@@ -200,7 +200,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_impls.rs",
     find: "        if self.option_of(ty).is_some_and(|inner| inner.is_bool()) {",
     replace: "        if false {",
-    tests: ["test/lowering.test.ts", "-t", "an Option of an object is tested by its truth"],
+    tests: ["test/lowering-options.test.ts", "-t", "an Option of an object is tested by its truth"],
   },
   {
     name: "flattened-default-nested",

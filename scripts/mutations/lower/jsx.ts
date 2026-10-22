@@ -232,7 +232,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/jsx.rs",
     find: "            _ if super::bindings::is_binding(self.tcx, def_id) => super::bindings::returns_undefined(self.tcx, def_id),\n",
     replace: "",
-    tests: ["test/lowering.test.ts", "-t", "callback returns a call that gives undefined"],
+    tests: ["test/lowering-bindings.test.ts", "-t", "callback returns a call that gives undefined"],
   },
   {
     name: "rust-callback-kept",
@@ -240,7 +240,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/jsx.rs",
     find: "            _ => def_id.is_local(),\n",
     replace: "            _ => false,\n",
-    tests: ["test/lowering.test.ts", "-t", "callback returns a call that gives undefined"],
+    tests: ["test/lowering-bindings.test.ts", "-t", "callback returns a call that gives undefined"],
   },
   {
     name: "closure-callback-kept",
@@ -248,7 +248,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/jsx.rs",
     find: "                matches!(thir[args[0]].ty.peel_refs().kind(), ty::Closure(..))\n",
     replace: "                false\n",
-    tests: ["test/lowering.test.ts", "-t", "callback returns a call that gives undefined"],
+    tests: ["test/lowering-bindings.test.ts", "-t", "callback returns a call that gives undefined"],
   },
   {
     name: "jsx-shown-if-ternary",

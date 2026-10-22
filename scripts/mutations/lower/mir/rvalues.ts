@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/rvalues.rs",
     find: "                            && bindings::is_binding(tcx, def_id)\n                        {\n",
     replace: "                            && false\n                        {\n",
-    tests: ["test/lowering.test.ts", "-t", "a binding taken as a fn"],
+    tests: ["test/lowering-functions.test.ts", "-t", "a binding taken as a fn"],
   },
   {
     name: "mir-shared-temporary-a-place",
@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/rvalues.rs",
     find: "                            if e.reads_same() && movable(state, &Value::Expr(e.clone())) =>\n",
     replace: "                            if e.reads_same() =>\n",
-    tests: ["test/lowering.test.ts","-t","a nested pattern of a captured item from MIR"],
+    tests: ["test/lowering-matches.test.ts", "-t", "a nested pattern of a captured item from MIR"],
   },
   {
     name: "mir-unsize-unchecked",
@@ -56,11 +56,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/rvalues.rs",
     "find": "                    bindings::is_nullable(self.tcx, &variant.fields[*field])\n",
     "replace": "                    false\n",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "a nullable field's None is null"
-    ]
+    "tests": ["test/lowering-options.test.ts", "-t", "a nullable field's None is null"]
   },
   {
     "name": "mir-nullable-moved-through-unseen",
@@ -68,11 +64,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/rvalues.rs",
     "find": "            Some(Rvalue::Use(operand, _)) => self.nulled(state, operand),\n",
     "replace": "            Some(Rvalue::Use(..)) => false,\n",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "a nullable field's None is null"
-    ]
+    "tests": ["test/lowering-options.test.ts", "-t", "a nullable field's None is null"]
   },
   {
     "name": "mir-nullable-some-coalesced",
@@ -80,11 +72,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/rvalues.rs",
     "find": "                fields.len() == 1\n",
     "replace": "                fields.len() == 0\n",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "a nullable field's None is null"
-    ]
+    "tests": ["test/lowering-options.test.ts", "-t", "a nullable field's None is null"]
   },
   {
     "name": "mir-null-none-coalesced",
@@ -92,11 +80,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/rvalues.rs",
     "find": "        if state.options.null_nones.contains(&place.local) {\n",
     "replace": "        if false {\n",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "a nullable field of Some or None by a branch"
-    ]
+    "tests": ["test/lowering-options.test.ts", "-t", "a nullable field of Some or None by a branch"]
   },
   {
     "name": "mir-nullable-clone-renulled",
@@ -104,11 +88,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/rvalues.rs",
     "find": "        if itself\n",
     "replace": "        if false\n",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "nullable field's clone"
-    ]
+    "tests": ["test/lowering-options.test.ts", "-t", "nullable field's clone"]
   },
   {
     "name": "mir-unread-base-dropped",
@@ -116,11 +96,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/rvalues.rs",
     "find": "            && let Some(spread) = self.written_base(state, ty, operands, span)\n",
     "replace": "            && let Some(spread) = None::<Place<'tcx>>\n",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "giving every field spreads its base"
-    ]
+    "tests": ["test/lowering-structs-enums.test.ts", "-t", "giving every field spreads its base"]
   },
   {
     "name": "mir-whole-cast-wrapped",
@@ -128,11 +104,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/rvalues.rs",
     "find": "                } else if self.whole_cast_at(span) {",
     "replace": "                } else if false {",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "a whole float's cast is the float from MIR too"
-    ]
+    "tests": ["test/lowering-numbers.test.ts", "-t", "a whole float's cast is the float from MIR too"]
   },
   {
     "name": "mir-range-bound-first",
@@ -140,11 +112,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/rvalues.rs",
     "find": "&& state.ranges.iter().any(|range| range.contains(span))",
     "replace": "&& false",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "a range pattern's tests from MIR"
-    ]
+    "tests": ["test/lowering-matches.test.ts", "-t", "a range pattern's tests from MIR"]
   },
   {
     "name": "mir-range-unsigned-floor-tested",
@@ -152,11 +120,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/rvalues.rs",
     "find": ".is_some_and(|n| n.is_null())",
     "replace": ".is_some_and(|n| n.is_null() && false)",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "a range pattern's tests from MIR"
-    ]
+    "tests": ["test/lowering-matches.test.ts", "-t", "a range pattern's tests from MIR"]
   },
   {
     "name": "mir-enum-cast-refused",
@@ -164,11 +128,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/rvalues.rs",
     "find": "                    Value::Discriminant(value, enum_ty) => {\n                        return Ok(Value::Expr(self.cast(value, enum_ty, *to, span)?));\n                    }\n",
     "replace": "",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "an enum cast to a number from MIR"
-    ]
+    "tests": ["test/lowering-numbers.test.ts", "-t", "an enum cast to a number from MIR"]
   },
   {
     name: "mir-reborrow-cell-folded",
@@ -208,7 +168,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/rvalues.rs",
     find: "                    _ => self.binary(*op, l, r, known, ty, span)?,\n",
     replace: "                    _ => self.binary(*op, l, r, None.or(known.filter(|_| false)), ty, span)?,\n",
-    tests: ["test/lowering.test.ts","-t","a division by a named constant"],
+    tests: ["test/lowering-numbers.test.ts", "-t", "a division by a named constant"],
   },
   {
     name: "mir-raw-ptr-object-refused",
@@ -216,7 +176,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/rvalues.rs",
     find: "            Rvalue::RawPtr(_, place) if self.is_js_object(place.ty(decls, tcx).ty) => {\n",
     replace: "            Rvalue::RawPtr(_, place) if false && self.is_js_object(place.ty(decls, tcx).ty) => {\n",
-    tests: ["test/lowering.test.ts","-t","ptr::eq of JS objects"],
+    tests: ["test/lowering-bindings.test.ts", "-t", "ptr::eq of JS objects"],
   },
   {
     name: "mir-cell-handle-root-followed",
@@ -224,7 +184,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/rvalues.rs",
     find: "                    && (self.is_std_type(pointee, StdItem::Cell) || self.plain_ref_cell(pointee))\n",
     replace: "                    && false\n",
-    tests: ["test/lowering.test.ts","-t","a Cell a let takes apart"],
+    tests: ["test/lowering-cells.test.ts", "-t", "a Cell a let takes apart"],
   },
   {
     name: "mir-writer-fields-plain",
@@ -232,7 +192,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/rvalues.rs",
     find: "                            if state.writer.is_some() {\n",
     replace: "                            if false {\n",
-    tests: ["test/lowering.test.ts","-t","a writer from its MIR takes its Formatter's options"],
+    tests: ["test/lowering-strings.test.ts", "-t", "a writer from its MIR takes its Formatter's options"],
   },
   {
     name: "raw-pointer-through-mut-unrefused",

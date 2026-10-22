@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/binding_calls.rs",
     find: "            (JsForm::Get(name), None) if args.is_empty() => self.js_ref(&name).or_at(fun_span),",
     replace: "            (JsForm::Get(name), None) if false => self.js_ref(&name).or_at(fun_span),",
-    tests: ["test/lowering.test.ts","-t","a binding reads a static property"],
+    tests: ["test/lowering-bindings.test.ts", "-t", "a binding reads a static property"],
   },
   {
     name: "named-key-indexed",
@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/binding_calls.rs",
     find: "            Expr::member(this, name.clone())",
     replace: "            Expr::index(this, key.clone())",
-    tests: ["test/lowering.test.ts","-t","unknown JS value"],
+    tests: ["test/lowering-bindings.test.ts", "-t", "unknown JS value"],
   },
   {
     name: "variadic-array-not-spread-out",
@@ -128,7 +128,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/binding_calls.rs",
     find: "                if args.len() == 1 && name.rsplit('#').next().is_some_and(|member| member.contains('.')) =>",
     replace: "                if false =>",
-    tests: ["test/lowering.test.ts","-t","sets a static property"],
+    tests: ["test/lowering-bindings.test.ts", "-t", "sets a static property"],
   },
   {
     name: "variadic-tuple-refused",

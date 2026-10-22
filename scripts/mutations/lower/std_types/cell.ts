@@ -32,7 +32,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_types/cell.rs",
     find: "                crate::lower::calls::apply_in(f, vec![key], out)\n",
     replace: "                crate::lower::calls::apply(f, vec![key])\n",
-    tests: ["test/lowering.test.ts", "-t", "with of a one-statement closure"],
+    tests: ["test/lowering-cells.test.ts", "-t", "with of a one-statement closure"],
   },
   {
     name: "with-statement-called",
@@ -40,7 +40,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_types/cell.rs",
     find: "                crate::lower::calls::apply_in(f, vec![key], out)\n",
     replace: "                apply(f, vec![key])\n",
-    tests: ["test/lowering.test.ts", "-t", "with of a one-statement closure"],
+    tests: ["test/lowering-cells.test.ts", "-t", "with of a one-statement closure"],
   },
   {
     name: "cell-get-mut-copy",
@@ -80,7 +80,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_types/cell.rs",
     find: "                js::each_block_mut(&mut function.body, &mut |stmts| {\n                    for stmt in stmts.iter() {\n                        if let StmtKind::Assign(target, _) = &stmt.kind\n",
     replace: "                js::statement_lists(&mut function.body, &mut |stmts| {\n                    for stmt in stmts.iter() {\n                        if let StmtKind::Assign(target, _) = &stmt.kind\n",
-    tests: ["test/lowering.test.ts","-t","thread-local only its module"],
+    tests: ["test/lowering-cells.test.ts", "-t", "thread-local only its module"],
   },
   {
     name: "mir-quiet-local-borrowed",
@@ -112,7 +112,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_types/cell.rs",
     find: "                && let [rethrow] = handler.as_slice()\n",
     replace: "                && let [rethrow] = handler.as_slice().get(..0).unwrap_or_default()\n",
-    tests: ["test/lowering.test.ts", "-t", "field only ever borrowed for a moment"],
+    tests: ["test/lowering-cells.test.ts", "-t", "field only ever borrowed for a moment"],
   },
   {
     name: "dyn-cell-guard-value",
@@ -162,7 +162,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_types/cell.rs",
     find: "            js::applied_blocks(&mut function.body);\n",
     replace: "",
-    tests: ["test/lowering.test.ts", "-t", "closure called as a statement is its body"],
+    tests: ["test/lowering-cells.test.ts", "-t", "closure called as a statement is its body"],
   },
   {
     name: "plain-replace-borrowed",
@@ -170,7 +170,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_types/cell.rs",
     find: "                if self.is_std_type(held, StdItem::RefCell) && !self.plain_ref_cell(held) {\n",
     replace: "                if self.is_std_type(held, StdItem::RefCell) {\n",
-    tests: ["test/lowering.test.ts", "-t", "written by replace and take"],
+    tests: ["test/lowering-cells.test.ts", "-t", "written by replace and take"],
   },
   {
     name: "guard-of-type-parameter-held",

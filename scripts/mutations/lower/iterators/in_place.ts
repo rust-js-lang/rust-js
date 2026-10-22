@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/iterators/in_place.rs",
     find: "js::ExprKind::Call(lent, of) if lent.helper_name() == Some(\"$lent\") && of.len() == 1 => &of[0],",
     replace: "js::ExprKind::Call(lent, of) if lent.helper_name() == Some(\"$lent\") && of.len() == 1 => e,",
-    tests: ["test/lowering.test.ts","-t","let-else from MIR is a guard"],
+    tests: ["test/lowering-matches.test.ts", "-t", "let-else from MIR is a guard"],
   },
   {
     "name": "reads-by-name-alone",
@@ -16,11 +16,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/iterators/in_place.rs",
     "find": "js::ExprKind::Member(_, name) => part.reads && READS.contains(&name.as_str()),",
     "replace": "js::ExprKind::Member(_, name) => READS.contains(&name.as_str()),",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "named as a slice's reader"
-    ]
+    "tests": ["test/lowering-iterators.test.ts", "-t", "named as a slice's reader"]
   },
   {
     name: "does-f64-max-given-acts",

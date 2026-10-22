@@ -48,7 +48,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/drops/facts.rs",
     find: "        if quiet.quiet {\n            self.facts.momentary.insert(fun);\n        }\n",
     replace: "        self.facts.momentary.insert(fun);\n",
-    tests: ["test/lowering.test.ts", "-t", "a field's RefCell only borrowed for a moment is its value"],
+    tests: ["test/lowering-cells.test.ts", "-t", "a field's RefCell only borrowed for a moment is its value"],
   },
   {
     name: "momentary-never",
@@ -64,7 +64,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/drops/facts.rs",
     find: "                    self.borrows\n                        .call_asks(&self.cx.recognition, (id, generic_args), receiver, self.cell, &|ty| {\n                            self.drops(ty)\n                        })\n",
     replace: "                    false\n",
-    tests: ["test/lowering.test.ts", "-t", "a field's RefCell only borrowed for a moment is its value"],
+    tests: ["test/lowering-cells.test.ts", "-t", "a field's RefCell only borrowed for a moment is its value"],
   },
   {
     name: "quiet-ignores-drops",
@@ -72,7 +72,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/drops/facts.rs",
     find: "        if asks || (!is_place(&expr.kind) && self.drops(expr.ty)) {",
     replace: "        if asks {",
-    tests: ["test/lowering.test.ts", "-t", "a field's RefCell only borrowed for a moment is its value"],
+    tests: ["test/lowering-cells.test.ts", "-t", "a field's RefCell only borrowed for a moment is its value"],
   },
   {
     name: "quiet-statements-unseen",
@@ -80,7 +80,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/drops/facts.rs",
     find: "                    .find(|(s, _)| *s == scope)\n",
     replace: "                    .find(|(s, _)| *s == scope && false)\n",
-    tests: ["test/lowering.test.ts", "-t", "a field's RefCell only borrowed for a moment is its value"],
+    tests: ["test/lowering-cells.test.ts", "-t", "a field's RefCell only borrowed for a moment is its value"],
   },
   {
     name: "std-given-closure-refused",

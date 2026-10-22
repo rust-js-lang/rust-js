@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/recognition/calls.rs",
     find: '        if diagnostic("ptr_eq") {',
     replace: "        if false {",
-    tests: ["test/lowering.test.ts", "-t", "ptr::eq of JS objects is whether they're one"],
+    tests: ["test/lowering-bindings.test.ts", "-t", "ptr::eq of JS objects is whether they're one"],
   },
   {
     name: "iter-source-unknown",
@@ -209,7 +209,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/recognition/calls.rs",
     find: "            if (from_ty.is_bool() || from_ty.is_char()) && Num::of(to_ty).is_some() {",
     replace: "            if false && (from_ty.is_bool() || from_ty.is_char()) && Num::of(to_ty).is_some() {",
-    tests: ["test/lowering.test.ts", "-t", "from a bool or a char"],
+    tests: ["test/lowering-numbers.test.ts", "-t", "from a bool or a char"],
   },
   {
     name: "number-into-as-from",
@@ -217,7 +217,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/recognition/calls.rs",
     find: "                return Some(Std::Cast { into });\n",
     replace: "                return Some(Std::Cast { into: false });\n",
-    tests: ["test/lowering.test.ts", "-t", "from a bool or a char"],
+    tests: ["test/lowering-numbers.test.ts", "-t", "from a bool or a char"],
   },
   {
     name: "conversion-to-itself-unknown",

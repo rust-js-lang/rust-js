@@ -106,7 +106,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis.rs",
     find: "                }) || (tcx.trait_of_assoc(def_id.to_def_id()).is_some()\n                    && tcx.hir_maybe_body_owned_by(def_id).is_some())",
     replace: "                })",
-    tests: ["test/lowering.test.ts", "-t", "default constant of Self"],
+    tests: ["test/lowering-structs-enums.test.ts", "-t", "default constant of Self"],
   },
   {
     "name": "trait-default-reads-generic",
@@ -114,11 +114,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/analysis.rs",
     "find": "            !(matches!(tcx.def_kind(body.def_id), DefKind::AssocConst { .. })",
     "replace": "            true || !(matches!(tcx.def_kind(body.def_id), DefKind::AssocConst { .. })",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "defaulting to each other"
-    ]
+    "tests": ["test/lowering-structs-enums.test.ts", "-t", "defaulting to each other"]
   },
   {
     name: "mir-quiet-locals-none",
@@ -264,6 +260,6 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis.rs",
     find: "            plain_locals::Given::Fn(f, args) => !cell_borrows.call_asks(\n",
     replace: "            plain_locals::Given::Fn(f, args) => true || !cell_borrows.call_asks(\n",
-    tests: ["test/lowering.test.ts", "-t", "given a function to run"],
+    tests: ["test/lowering-cells.test.ts", "-t", "given a function to run"],
   },
 ];

@@ -20,7 +20,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/jumps/tried.rs",
     find: "            && !own_jumps(rest, label.as_deref())\n",
     replace: "",
-    tests: ["test/lowering.test.ts","-t","returns in a loop are where"],
+    tests: ["test/lowering-loops.test.ts", "-t", "returns in a loop are where"],
   },
   {
     name: "mir-tidy-for-mut-binding-unread",
@@ -28,11 +28,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/jumps/tried.rs",
     find: "                    && parts.is_empty() =>\n",
     replace: "                    && false =>\n",
-    tests: [
-      "test/lowering.test.ts",
-      "-t",
-      "a for loop of a mut binding"
-    ]
+    tests: ["test/lowering-loops.test.ts", "-t", "a for loop of a mut binding"]
   },
   {
     name: "lone-exit-written-order",

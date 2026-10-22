@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/jumps/labels.rs",
     find: "        | StmtKind::For { label, body, .. } = &mut stmts[i].kind\n",
     replace: "        | StmtKind::For { label, body, .. } = &mut stmts[i].kind\n            && false\n",
-    tests: ["test/lowering.test.ts","-t","loops from MIR read"],
+    tests: ["test/lowering-loops.test.ts", "-t", "loops from MIR read"],
   },
   {
     "name": "mir-loop-exit-written-return",
@@ -29,7 +29,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/jumps/labels.rs",
     find: "                returned_unwritten(then, name);\n",
     replace: "",
-    tests: ["test/lowering.test.ts","-t","a writer from its MIR returns the string it writes"],
+    tests: ["test/lowering-strings.test.ts", "-t", "a writer from its MIR returns the string it writes"],
   },
   {
     name: "mir-tidy-writer-branches-unreturned",
@@ -37,7 +37,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/jumps/labels.rs",
     find: "StmtKind::If(_, then, Some(els)) if returned && let Some(back) = next => {",
     replace: "StmtKind::If(_, then, Some(els)) if false && let Some(back) = next => {",
-    tests: ["test/lowering.test.ts","-t","a writer's Debug builder from its MIR is the string its chain writes"],
+    tests: ["test/lowering-strings.test.ts", "-t", "a writer's Debug builder from its MIR is the string its chain writes"],
   },
   {
     name: "exits-after-reads-loop-names",

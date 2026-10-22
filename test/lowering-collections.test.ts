@@ -1,0 +1,408 @@
+// What the compiler writes of `Vec`, slices, maps, sets and deques: an insert
+// at the front, `flat()`, a sort, a B-tree's range, an entry's `or_insert` and
+// slices of a whole slice. Each test is a program of its own, compiled and
+// run.
+
+import { beforeAll, expect, test } from "bun:test";
+import { readFileSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
+import { buildReact, compiler, fixture, root, run, target } from "./support";
+
+beforeAll(buildReact, 600_000);
+
+// ADR 0345: an entry's `and_modify(f)` is a statement, and `or_insert`
+// after it is of the map and the key, as of an entry alone; a `&mut` it
+// gives that nothing reads isn't made.
+test("an entry's and_modify then or_insert reads its map and key", () => {
+  const dir = fixture("entry-and-modify");
+  writeFileSync(join(dir, "lib.rs"), readFileSync(join(root, "test/corpus/entry_and_modify.rs"), "utf8").replace("fn main()", "pub fn main()"));
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('$andModify($entry(inventory, "apple"), (e) => {');
+  expect(js).toContain('$orInsert(inventory, "apple", [0, 0]);');
+  expect(js).not.toContain("entry._0");
+  expect(js).not.toContain("$mutGet(counts, c);");
+});
+
+// An insert at the front, which no length refuses, is `unshift`, as
+// react.dev's prepareMDX puts its Overview first.
+test("an insert at the front is unshift", async () => {
+  const dir = fixture("insert-front");
+  writeFileSync(join(dir, "lib.rs"), `pub fn first(mut anchors: Vec<String>) -> Vec<String> {
+    if !anchors.is_empty() {
+        anchors.insert(0, "Overview".to_string());
+    }
+    anchors
+}
+pub fn at(mut v: Vec<u32>, i: usize) -> Vec<u32> {
+    v.insert(i, 9);
+    v
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain('anchors.unshift("Overview");');
+  expect(js).toContain("$insertAt(v, i, 9);");
+  const lib = await import(join(dir, "mir.js"));
+  expect([lib.first(["a"]), lib.first([]), lib.at([1, 2], 1)]).toEqual([["Overview", "a"], [], [1, 9, 2]]);
+  expect(() => lib.at([1], 3)).toThrow();
+});
+
+// Arrays of arrays flattened are `flat()`, as react.dev's page route gathers
+// each directory's Markdown, `files.flat().filter(..)`; of sets, whose items
+// `flat()` wouldn't take apart, or in Rust's order, each item stepped.
+test("arrays of arrays flattened are flat()", async () => {
+  const dir = fixture("flatten-arrays");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::RefCell;
+use std::collections::BTreeSet;
+pub fn markdown(groups: Vec<Vec<String>>) -> Vec<String> {
+    groups.into_iter().flatten().filter(|s| s.ends_with(".md")).collect()
+}
+pub fn all(groups: Vec<Vec<u32>>) -> Vec<u32> {
+    groups.into_iter().flatten().collect()
+}
+pub fn of_sets(groups: Vec<BTreeSet<u32>>) -> Vec<u32> {
+    groups.into_iter().flatten().collect()
+}
+pub fn logged(groups: Vec<Vec<u32>>) -> (Vec<u32>, Vec<String>) {
+    let log = RefCell::new(Vec::new());
+    let kept = groups
+        .into_iter()
+        .flatten()
+        .map(|n| {
+            log.borrow_mut().push(format!("m{n}"));
+            n
+        })
+        .filter(|n| {
+            log.borrow_mut().push(format!("f{n}"));
+            *n > 1
+        })
+        .collect();
+    (kept, log.into_inner())
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain('return groups.flat().filter((s) => s.endsWith(".md"));');
+  expect(js).toContain("return groups.flat();");
+  expect(js).not.toContain("$iter");
+  const lib = await import(join(dir, "mir.js"));
+  expect([lib.markdown([["a.md", "b"], ["c.md"]]), lib.all([[1], [2, 3]])]).toEqual([["a.md", "c.md"], [1, 2, 3]]);
+  expect(lib.logged([[1, 2], [3]])).toEqual([[2, 3], ["m1", "f1", "m2", "f2", "m3", "f3"]]);
+  expect(lib.ofSets([new Set([1, 2]), new Set([3])])).toEqual([1, 2, 3]);
+});
+
+// `VecDeque::remove` is `$removeOpt`; of items that may look like `None`,
+// refused, as its `Some` isn't boxed.
+test("a deque's remove gives what was there", async () => {
+  const dir = fixture("deque-remove");
+  writeFileSync(join(dir, "lib.rs"), `use std::collections::VecDeque;
+
+pub fn removed(items: Vec<u32>, at: usize) -> (Option<u32>, Vec<u32>) {
+    let mut d: VecDeque<u32> = items.into_iter().collect();
+    let removed = d.remove(at);
+    (removed, d.into_iter().collect())
+}
+`);
+  writeFileSync(join(dir, "options.rs"), `use std::collections::VecDeque;
+
+pub fn removed(mut d: VecDeque<Option<u32>>) -> Option<Option<u32>> {
+    d.remove(0)
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const lib = await import(join(dir, "mir.js"));
+  expect([lib.removed([1, 2, 3], 1), lib.removed([1], 5)]).toEqual([[2, [1, 3]], [undefined, [1]]]);
+  const refused = Bun.spawnSync([compiler, join(dir, "options.rs"), "-o", join(dir, "options.js")], { stderr: "pipe" });
+  expect(refused.exitCode).not.toBe(0);
+});
+
+// `&v[..]`, all of a slice, is the slice itself, as `&s[..]` of a string
+// is and `&mut v[..]` is (ADR 0335): nothing changes it while it's
+// borrowed, so the copy a part is made as isn't needed.
+test("a shared slice of all of a slice is the slice", async () => {
+  const dir = fixture("whole-slice");
+  writeFileSync(join(dir, "lib.rs"), `pub fn take(v: &[&str]) -> usize {
+    v.len()
+}
+
+pub fn whole(v: &Vec<u32>) -> &[u32] {
+    &v[..]
+}
+
+pub fn literal() -> usize {
+    take(&["a", "b"][..])
+}
+
+pub fn part(v: &Vec<u32>) -> Vec<u32> {
+    v[1..].to_vec()
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("export function whole(v) {\n  return v;\n}");
+  expect(js).toContain('return take(["a", "b"]);');
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.whole([1, 2]), lib.literal(), lib.part([1, 2, 3])]).toEqual([[1, 2], 2, [2, 3]]);
+});
+
+// `<[T; N]>::try_from(&v[..])` is an array of its own, as Rust's is, which
+// a write to `v` after doesn't change; `<&[T; N]>`'s is `v`'s, a borrow.
+test("an array made of a whole slice is a copy", async () => {
+  const dir = fixture("array-of-slice");
+  writeFileSync(join(dir, "lib.rs"), `pub fn owned() -> (u8, u8) {
+    let mut bytes = vec![1u8, 2];
+    let arr: [u8; 2] = bytes[..].try_into().unwrap();
+    bytes[0] = 9;
+    (arr[0], bytes[0])
+}
+
+pub fn part() -> (u8, u8) {
+    let mut bytes = vec![1u8, 2, 3];
+    let arr = <[u8; 2]>::try_from(&bytes[1..]).unwrap();
+    bytes[1] = 9;
+    (arr[0], bytes[1])
+}
+
+pub fn borrowed() -> u8 {
+    let bytes = vec![1u8, 2];
+    let arr = <&[u8; 2]>::try_from(&bytes[..]).unwrap();
+    arr[1]
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.owned(), lib.part(), lib.borrowed()]).toEqual([[1, 9], [2, 9], 2]);
+});
+
+// An unstable sort and a selection from MIR (ADR 0342).
+test("an unstable sort from MIR sorts as Rust's", async () => {
+  const dir = fixture("mir-unstable-sort");
+  writeFileSync(join(dir, "lib.rs"), `pub fn down(mut v: Vec<i32>) -> Vec<i32> {
+    v.sort_unstable_by(|a, b| b.cmp(a));
+    v
+}
+pub fn by_len(mut v: Vec<&'static str>) -> Vec<&'static str> {
+    v.sort_unstable_by_key(|s| s.len());
+    v
+}
+pub fn third(mut v: Vec<u32>) -> u32 {
+    *v.select_nth_unstable(2).1
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const lib = await import(join(dir, "mir.js"));
+  expect([lib.down([3, 1, 2]), lib.byLen(["ccc", "a", "bb"]), lib.third([5, 1, 4, 2, 3])]).toEqual([[3, 2, 1], ["a", "bb", "ccc"], 3]);
+});
+
+// A slice's own methods from MIR: split by a test, filled, checked sorted,
+// searched, cut in chunks.
+test("a slice's own methods from MIR run as Rust's", async () => {
+  const dir = fixture("mir-slice-methods");
+  writeFileSync(join(dir, "lib.rs"), `pub fn parts(v: &[i32]) -> Vec<usize> {
+    v.split(|&x| x < 0).map(|p| p.len()).collect()
+}
+pub fn zeroed(mut v: Vec<i32>) -> Vec<i32> {
+    v.fill(0);
+    v
+}
+pub fn facts(v: &[i32]) -> (bool, usize, usize) {
+    (v.is_sorted(), v.partition_point(|&x| x < 3), v.chunks_exact(2).count())
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const lib = await import(join(dir, "mir.js"));
+  expect([lib.parts([3, -1, 4, 5, -2, 6]), lib.zeroed([1, 2]), lib.facts([1, 2, 3, 4, 5])]).toEqual([[1, 2, 1], [0, 0], [true, 2, 2]]);
+});
+
+// A B-tree's range of its keys from MIR (ADR 0325).
+test("a B-tree's range from MIR gives the entries in it", async () => {
+  const dir = fixture("mir-tree-range");
+  writeFileSync(join(dir, "lib.rs"), `use std::collections::BTreeMap;
+pub fn from_two(m: &BTreeMap<u32, &'static str>) -> Vec<u32> {
+    m.range(2..).map(|(k, _)| *k).collect()
+}
+pub fn upto(m: &BTreeMap<u32, &'static str>) -> Vec<&'static str> {
+    m.range(..=2).map(|(_, v)| *v).collect()
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const lib = await import(join(dir, "mir.js"));
+  const m = new Map([[3, "c"], [1, "a"], [2, "b"]]);
+  expect([lib.fromTwo(m), lib.upto(m)]).toEqual([[2, 3], ["a", "b"]]);
+});
+
+// Sets and maps from MIR made of arrays and read as arrays:
+// \`new Set([1, 2, 3])\`, a set's algebra and a sorted map's entries mapped.
+test("sets and maps from MIR are made of arrays and read as them", async () => {
+  const dir = fixture("mir-sets-maps");
+  writeFileSync(join(dir, "lib.rs"), `use std::collections::{BTreeMap, HashSet};
+pub fn both() -> Vec<u32> {
+    let a: HashSet<u32> = [1, 2, 3].into_iter().collect();
+    let b: HashSet<u32> = [2, 3, 4].into_iter().collect();
+    let mut both: Vec<u32> = a.intersection(&b).copied().collect();
+    both.sort();
+    both
+}
+pub fn keys(m: &BTreeMap<String, u32>) -> Vec<String> {
+    m.iter().map(|(k, v)| format!("{k}{v}")).collect()
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain("  const a = new Set([1, 2, 3]);\n");
+  expect(js).toContain('  const both = $setAlgebra(a, b, "intersection");\n');
+  expect(js).toContain("  return $sortedEntries(m, $cmp).map(");
+  const lib = await import(join(dir, "mir.js"));
+  expect([lib.both(), lib.keys(new Map([["b", 1], ["a", 2]]))]).toEqual([[2, 3], ["a2", "b1"]]);
+});
+
+// A count kept in a map, `*m.entry(k).or_insert(0) += 1`, from MIR is the
+// value there or put in, then set: no handle on the key's value.
+test("a count kept in a map from MIR is its value, then set", async () => {
+  const dir = fixture("mir-map-count");
+  writeFileSync(join(dir, "lib.rs"), `use std::collections::HashMap;
+pub fn counts(words: &str) -> Vec<(String, u32)> {
+    let mut counts: HashMap<&str, u32> = HashMap::new();
+    for w in words.split(' ') {
+        *counts.entry(w).or_insert(0) += 1;
+    }
+    let mut all: Vec<(String, u32)> = counts.into_iter().map(|(k, v)| (k.to_string(), v)).collect();
+    all.sort();
+    all
+}
+pub fn bumped(mut m: HashMap<&'static str, u32>) -> u32 {
+    *m.entry("a").or_insert(0) += 5;
+    m["a"]
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain("    const current = $orInsert(counts, w, 0);\n    counts.set(w, (current + 1) >>> 0);\n");
+  expect(js).toContain('  const current = $orInsert(m, "a", 0);\n  m.set("a", (current + 5) >>> 0);\n');
+  const lib = await import(join(dir, "mir.js"));
+  expect(lib.counts("a b a")).toEqual([["a", 2], ["b", 1]]);
+  expect([lib.bumped(new Map()), lib.bumped(new Map([["a", 1]]))]).toEqual([5, 6]);
+});
+
+// A `VecDeque`'s iterator from MIR, of the array it is, copied where it's
+// collected, `prev.slice()`, as react.dev's Console keeps its latest
+// messages.
+test("a VecDeque's items collected from MIR are the array's copy", async () => {
+  const dir = fixture("deque-collect");
+  writeFileSync(join(dir, "lib.rs"), `use std::collections::VecDeque;
+pub fn update(f: &dyn Fn(&dyn Fn(&VecDeque<u32>) -> VecDeque<u32>)) {
+    f(&|prev| {
+        let mut messages: VecDeque<u32> = prev.iter().cloned().collect();
+        while messages.len() > 3 {
+            messages.pop_front();
+        }
+        messages
+    });
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain("    const messages = prev.slice();\n");
+  const lib = await import(join(dir, "mir.js"));
+  const prev = [1, 2, 3, 4, 5];
+  let got: number[] = [];
+  lib.update((f: (p: number[]) => number[]) => {
+    got = f(prev);
+  });
+  expect([got, prev]).toEqual([[3, 4, 5], [1, 2, 3, 4, 5]]);
+});
+
+// Arrays joined, `[first, vec![..]].concat()`, are one array of the first's
+// items and the made ones, `[...first, made("a"), ..]`: a call can't change
+// the items of an array only a `&mut` changes, as react.dev's
+// SandpackWithHTMLOutput adds its files to its children.
+test("arrays joined are one array of their items", async () => {
+  const dir = fixture("concat-spread");
+  writeFileSync(join(dir, "lib.rs"), `use js::Unknown;
+#[cfg_attr(rust_js, rust_js::link_name = "globalThis.made")]
+#[allow(unused_variables)]
+fn made(name: &str) -> &'static Unknown {
+    unreachable!()
+}
+pub fn all(first: Vec<&'static Unknown>) -> Vec<&'static Unknown> {
+    let children = [first, vec![made("a"), made("b")]].concat();
+    children
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain('const children = [...first, globalThis.made("a"), globalThis.made("b")];');
+  const lib = await import(join(dir, "mir.js"));
+  (globalThis as any).made = (name: string) => ({ name });
+  expect(lib.all([{ name: "x" }])).toEqual([{ name: "x" }, { name: "a" }, { name: "b" }]);
+});
+
+// `String::from_iter(items)` from MIR: an array's joined, `["h",
+// "i"].join("")`, or what an iterator steps through, joined.
+test("a string from items from MIR is them joined", async () => {
+  const dir = fixture("string-from-iter");
+  writeFileSync(join(dir, "lib.rs"), `pub fn letters() -> String {
+    String::from_iter(['h', 'é', '!'])
+}
+pub fn backwards(s: &str) -> String {
+    String::from_iter(s.chars().rev().filter(|c| *c != 'x'))
+}
+fn of<I: Iterator<Item = char>>(items: I) -> String {
+    String::from_iter(items)
+}
+pub fn counted(n: u32) -> String {
+    of((0..n).map(|i| char::from_digit(i, 10).unwrap()))
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain('return ["h", "é", "!"].join("");');
+  // A JS iterator has no \`join\` but Bun's: its items, an array's.
+  expect(js).toContain('return Iterator.from(items).toArray().join("");');
+  const lib = await import(join(dir, "mir.js"));
+  expect([lib.letters(), lib.backwards("axbc"), lib.counted(4)]).toEqual(["hé!", "cba", "0123"]);
+});
+
+// A chunks' `remainder()` from MIR: of one made there, its array's,
+// `$chunksExact(v, 2).remainder`; of one stepped, which MIR keeps as a
+// `$iter`, its items' still.
+test("a chunks' remainder from MIR, made there or stepped", async () => {
+  const dir = fixture("chunks-remainder");
+  writeFileSync(join(dir, "lib.rs"), `pub fn rest(v: &[u32]) -> Vec<u32> {
+    v.chunks_exact(2).remainder().to_vec()
+}
+pub fn stepped(v: &[u32]) -> (Vec<u32>, Vec<u32>) {
+    let mut c = v.chunks_exact(2);
+    let first = c.next().map(|s| s.to_vec()).unwrap_or_default();
+    (first, c.remainder().to_vec())
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  expect(readFileSync(join(dir, "mir.js"), "utf8")).toContain("$chunksExact(v, 2).remainder");
+  const lib = await import(join(dir, "mir.js"));
+  expect([lib.rest([1, 2, 3]), lib.stepped([1, 2, 3, 4, 5])]).toEqual([[3], [[1, 2], [5]]]);
+});
+
+// A `Vec`'s range pushed again, `extend_from_within`, or replaced,
+// `splice`, all of it too: `..` reads the `Vec` itself, no range helper's
+// call.
+test("a vec's range pushed again or replaced, all of it too", async () => {
+  const dir = fixture("vec-range-edits");
+  writeFileSync(join(dir, "lib.rs"), `pub fn doubled(mut v: Vec<u32>) -> Vec<u32> {
+    v.extend_from_within(..);
+    v
+}
+pub fn tail_again(mut v: Vec<u32>) -> Vec<u32> {
+    v.extend_from_within(1..);
+    v
+}
+pub fn replaced(mut v: Vec<u32>) -> (Vec<u32>, Vec<u32>) {
+    let old: Vec<u32> = v.splice(.., [9, 8]).collect();
+    (v, old)
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const lib = await import(join(dir, "mir.js"));
+  expect([lib.doubled([1, 2]), lib.tailAgain([1, 2, 3]), lib.replaced([1, 2, 3])]).toEqual([[1, 2, 1, 2], [1, 2, 3, 2, 3], [[9, 8], [1, 2, 3]]]);
+});

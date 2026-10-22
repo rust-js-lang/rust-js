@@ -8,6 +8,6 @@ export const mutations: Mutation[] = [
     file: "src/runtime/empty_pattern.js",
     find: '  if (pattern !== "") return s.replaceAll(pattern, () => replacement);',
     replace: '  if (pattern !== "") return s.replaceAll(pattern, replacement);',
-    tests: ["test/lowering.test.ts", "-t", "a replacement is the text it is"],
+    tests: ["test/lowering-strings.test.ts", "-t", "a replacement is the text it is"],
   },
 ];

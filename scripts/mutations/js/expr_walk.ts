@@ -48,7 +48,7 @@ export const mutations: Mutation[] = [
     file: "src/js/expr_walk.rs",
     find: "        changed.then_some(tested)\n",
     replace: "        None\n",
-    tests: ["test/lowering.test.ts", "-t", "a const only tests read is read by its truth"],
+    tests: ["test/lowering-options.test.ts", "-t", "a const only tests read is read by its truth"],
   },
   {
     name: "test-parts-kept",
@@ -56,7 +56,7 @@ export const mutations: Mutation[] = [
     file: "src/js/expr_walk.rs",
     find: "                        _ => out.push(e.as_test(changed)),\n",
     replace: "                        _ => out.push(e.clone()),\n",
-    tests: ["test/lowering.test.ts", "-t", "if-let chains and loops from MIR read as written"],
+    tests: ["test/lowering-loops.test.ts", "-t", "if-let chains and loops from MIR read as written"],
   },
   {
     name: "reads-same-index-variable",
@@ -64,7 +64,7 @@ export const mutations: Mutation[] = [
     file: "src/js/expr_walk.rs",
     find: " && (index.is_constant() || index.reads_same()),",
     replace: " && index.is_constant(),",
-    tests: ["test/lowering.test.ts","-t","property read of what may be None"],
+    tests: ["test/lowering-options.test.ts", "-t", "property read of what may be None"],
   },
   {
     "name": "tested-null-check-kept",
@@ -72,11 +72,7 @@ export const mutations: Mutation[] = [
     "file": "src/js/expr_walk.rs",
     "find": "same_path(next, x))",
     "replace": "same_path(next, x) && false)",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "a guarded binding of an Option|a test from MIR that .x. is set and true"
-    ]
+    "tests": ["test/lowering-branches.test.ts", "-t", "a guarded binding of an Option|a test from MIR that .x. is set and true"]
   },
   {
     "name": "wrap-call-an-effect",
@@ -84,11 +80,7 @@ export const mutations: Mutation[] = [
     "file": "src/js/expr_walk.rs",
     "find": "                        \"BigInt\" => matches!(name.as_str(), \"asIntN\" | \"asUintN\"),\n",
     "replace": "                        \"BigInt\" => false,\n",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "a wide field updated from MIR"
-    ]
+    "tests": ["test/lowering-numbers.test.ts", "-t", "a wide field updated from MIR"]
   },
   {
     "name": "math-call-does",
@@ -96,11 +88,7 @@ export const mutations: Mutation[] = [
     "file": "src/js/expr_walk.rs",
     "find": "                        \"Math\" => name != \"random\",\n",
     "replace": "                        \"Math\" => false,\n",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "a lazy chain from MIR spread once|a slice to a computed end"
-    ]
+    "tests": ["test/lowering-iterators.test.ts", "test/lowering-numbers.test.ts", "-t", "a lazy chain from MIR spread once|a slice to a computed end"]
   },
   {
     "name": "math-random-pure",
@@ -108,11 +96,7 @@ export const mutations: Mutation[] = [
     "file": "src/js/expr_walk.rs",
     "find": "                        \"Math\" => name != \"random\",\n",
     "replace": "                        \"Math\" => true,\n",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "a lazy chain from MIR spread once"
-    ]
+    "tests": ["test/lowering-iterators.test.ts", "-t", "a lazy chain from MIR spread once"]
   },
   {
     name: "js-map-not-only-reading",

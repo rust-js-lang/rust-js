@@ -32,7 +32,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/bindings.rs",
     find: "                            && js::mentions_in(&stmts[j..], a) == 1\n",
     replace: "                            && false\n",
-    tests: ["test/lowering.test.ts","-t","stepped by hand"],
+    tests: ["test/lowering-loops.test.ts", "-t", "stepped by hand"],
   },
   {
     name: "mir-tidy-alias-variables-kept",
@@ -48,7 +48,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/bindings.rs",
     find: "    stmts.retain(|s| {\n        !matches!(&s.kind, StmtKind::Const(n, value)\n            if n == b && matches!(&value.kind, ExprKind::Var(v) if v == a))\n    });\n",
     replace: "",
-    tests: ["test/lowering.test.ts","-t","if-let's binding from MIR keeps"],
+    tests: ["test/lowering-names.test.ts", "-t", "if-let's binding from MIR keeps"],
   },
   {
     name: "mir-tidy-captured-kept",
@@ -64,7 +64,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/bindings.rs",
     find: "            if let Some(branch) = branch {\n",
     replace: "            if let Some(branch) = branch.filter(|_| false) {\n",
-    tests: ["test/lowering.test.ts","-t","declared where it.s first named"],
+    tests: ["test/lowering-names.test.ts", "-t", "declared where it.s first named"],
   },
   {
     name: "mir-tidy-element-read-held",
@@ -96,7 +96,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/bindings.rs",
     find: "            && !looped_reads(&stmts[first], &name)\n",
     replace: "            && false\n",
-    tests: ["test/lowering.test.ts","-t","loop.s body makes, from MIR"],
+    tests: ["test/lowering-names.test.ts", "-t", "loop.s body makes, from MIR"],
   },
   {
     name: "mir-tidy-let-outside-label",
@@ -151,11 +151,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/tidy/bindings.rs",
     "find": "                && (alone && assigned(then) && otherwise.as_deref().is_none_or(assigned)",
     "replace": "                && (false",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "a let a loop's branch makes is declared in the loop"
-    ]
+    "tests": ["test/lowering-names.test.ts", "-t", "a let a loop's branch makes is declared in the loop"]
   },
   {
     "name": "let-else-copy-kept",
@@ -163,11 +159,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/tidy/bindings.rs",
     "find": "            && then.last().is_some_and(ends)\n            && let StmtKind::Const(b, value) = &stmts[i + 1].kind",
     "replace": "            && then.last().is_some_and(ends)\n            && false\n            && let StmtKind::Const(b, value) = &stmts[i + 1].kind",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "a let-else's binding of a variable is the variable"
-    ]
+    "tests": ["test/lowering-names.test.ts", "-t", "a let-else's binding of a variable is the variable"]
   },
   {
     "name": "alias-takes-prop-name",
@@ -185,11 +177,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/tidy/bindings.rs",
     "find": "            && last_assigns(&stmts[i + 1..=i + 1], t)\n",
     "replace": "            && false\n",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "a value a try makes in each branch is the variable's there"
-    ]
+    "tests": ["test/lowering-functions.test.ts", "-t", "a value a try makes in each branch is the variable's there"]
   },
   {
     "name": "inlined-pure-not-past-statements",
@@ -227,11 +215,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/tidy/bindings.rs",
     "find": "                        true => \"arg\",\n",
     "replace": "                        true => \"value\",\n",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "format!"
-    ]
+    "tests": ["test/lowering-strings.test.ts", "-t", "format!"]
   },
   {
     "name": "alias-takes-temporary-name",
@@ -249,11 +233,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/tidy/bindings.rs",
     "find": "                    || assigned_on(then, name) && otherwise.as_deref().is_some_and(|o| assigned_on(o, name)))",
     "replace": "                    || false)",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "a let each turn assigns"
-    ]
+    "tests": ["test/lowering-names.test.ts", "-t", "a let each turn assigns"]
   },
   {
     "name": "mir-tidy-turn-continue-goes-on",
@@ -261,11 +241,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/tidy/bindings.rs",
     "find": "            StmtKind::Continue(_) | StmtKind::Return(_) | StmtKind::Throw(_) | StmtKind::Break(None)",
     "replace": "            StmtKind::Return(_) | StmtKind::Throw(_) | StmtKind::Break(None)",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "a let each turn assigns"
-    ]
+    "tests": ["test/lowering-names.test.ts", "-t", "a let each turn assigns"]
   },
   {
     name: "mir-tidy-receiver-named-value",
@@ -281,7 +257,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/bindings.rs",
     find: "            && matches!(value.kind, ExprKind::Call(..))\n",
     replace: "            && false\n",
-    tests: ["test/lowering.test.ts","-t","a block's const reuses a name where each read keeps its own"],
+    tests: ["test/lowering-names.test.ts", "-t", "a block's const reuses a name where each read keeps its own"],
   },
   {
     name: "arms-binding-one-name-apart",
@@ -386,6 +362,6 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/bindings.rs",
     find: "                Some(StmtKind::Assign(target, _)) if target.kind == value.kind)\n",
     replace: "                Some(StmtKind::Assign(target, _)) if false && target.kind == value.kind)\n",
-    tests: ["test/lowering.test.ts", "-t", "written by replace and take"],
+    tests: ["test/lowering-cells.test.ts", "-t", "written by replace and take"],
   },
 ];

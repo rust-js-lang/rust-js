@@ -25,7 +25,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/iterators/eager.rs",
     find: "        true => doing + usize::from(taker.is_some_and(does)) <= 1,\n",
     replace: "        true => true,\n",
-    tests: ["test/lowering.test.ts","-t","iterator chains from MIR"],
+    tests: ["test/lowering-iterators.test.ts", "-t", "iterator chains from MIR"],
   },
   {
     name: "iter-eager-stopping-doing",
@@ -33,7 +33,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/iterators/eager.rs",
     find: "        false => doing == 0,\n",
     replace: "        false => true,\n",
-    tests: ["test/lowering.test.ts","-t","iterator chains from MIR"],
+    tests: ["test/lowering-iterators.test.ts", "-t", "iterator chains from MIR"],
   },
   {
     name: "iter-eager-collect-uncopied",
@@ -41,7 +41,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/iterators/eager.rs",
     find: "                Some((items, 0)) if !fresh(&items) => Some(Expr::call(Expr::member(items, \"slice\"), vec![])),\n",
     replace: "                Some((items, 0)) if !fresh(&items) => Some(items),\n",
-    tests: ["test/lowering.test.ts","-t","iterator chains from MIR"],
+    tests: ["test/lowering-iterators.test.ts", "-t", "iterator chains from MIR"],
   },
   {
     name: "iter-eager-fresh-copied",
@@ -49,7 +49,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/iterators/eager.rs",
     find: "                Some((items, 0)) if !fresh(&items) =>",
     replace: "                Some((items, 0)) if true =>",
-    tests: ["test/lowering.test.ts","-t","string's parts from MIR"],
+    tests: ["test/lowering-iterators.test.ts", "-t", "string's parts from MIR"],
   },
   {
     name: "iter-eager-take-after-doing",
@@ -57,7 +57,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/iterators/eager.rs",
     find: "        && stages[last + 1..].iter().any(|(name, f)| !counted(name) && does(f))\n",
     replace: "        && false\n",
-    tests: ["test/lowering.test.ts","-t","iterator chains from MIR"],
+    tests: ["test/lowering-iterators.test.ts", "-t", "iterator chains from MIR"],
   },
   {
     name: "iter-eager-take-kept",
@@ -65,7 +65,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/iterators/eager.rs",
     find: "        \"take\" => Expr::call(Expr::member(items, \"slice\"), vec![Expr::int(0), f.clone()]),\n",
     replace: "        \"take\" => Expr::call(Expr::member(items, \"take\"), vec![f.clone()]),\n",
-    tests: ["test/lowering.test.ts","-t","string's parts from MIR"],
+    tests: ["test/lowering-iterators.test.ts", "-t", "string's parts from MIR"],
   },
   {
     name: "iter-eager-nth-kept",
@@ -73,7 +73,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/iterators/eager.rs",
     find: "            && zero.as_int() == Some(0)\n",
     replace: "            && zero.as_int() == Some(0)\n            && false\n",
-    tests: ["test/lowering.test.ts","-t","let-else from MIR is a guard"],
+    tests: ["test/lowering-matches.test.ts", "-t", "let-else from MIR is a guard"],
   },
   {
     name: "iter-chain-collected-lazily",
@@ -81,7 +81,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/iterators/eager.rs",
     find: "            (\"toArray\", []) if let Some(parts) = chained(chain) => {\n",
     replace: "            (\"toArray\", []) if let Some(parts) = chained(chain).filter(|_| false) => {\n",
-    tests: ["test/lowering.test.ts","-t","chain collected from MIR"],
+    tests: ["test/lowering-iterators.test.ts", "-t", "chain collected from MIR"],
   },
   {
     "name": "position-of-lent-array-iterator",
@@ -89,11 +89,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/iterators/eager.rs",
     "find": "        if callee.helper_name() == Some(\"$position\")\n",
     "replace": "        if false && callee.helper_name() == Some(\"$position\")\n",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "a position of an array's own iterator"
-    ]
+    "tests": ["test/lowering-iterators.test.ts", "-t", "a position of an array's own iterator"]
   },
   {
     "name": "spread-chain-lazy",
@@ -101,11 +97,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/iterators/eager.rs",
     "find": "            *value = items;\n",
     "replace": "",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "a lazy chain from MIR spread once"
-    ]
+    "tests": ["test/lowering-iterators.test.ts", "-t", "a lazy chain from MIR spread once"]
   },
   {
     "name": "some-of-literal-not-includes",
@@ -113,11 +105,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/iterators/eager.rs",
     "find": "                    matches!(&v.kind, js::ExprKind::Str(_) | js::ExprKind::Bool(_)) || v.as_int().is_some()\n",
     "replace": "                    false\n",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "negated matches, string methods"
-    ]
+    "tests": ["test/lowering-iterators.test.ts", "-t", "negated matches, string methods"]
   },
   {
     "name": "count-reduced",
@@ -125,11 +113,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/iterators/eager.rs",
     "find": "init.as_int() == Some(0) && counts(f) =>",
     "replace": "init.as_int() == Some(0) && false =>",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "a count of an array's items from MIR"
-    ]
+    "tests": ["test/lowering-iterators.test.ts", "-t", "a count of an array's items from MIR"]
   },
   {
     "name": "mir-next-stepped",
@@ -137,11 +121,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/iterators/eager.rs",
     "find": "        if callee.helper_name() == Some(\"$next\")\n",
     "replace": "        if false && callee.helper_name() == Some(\"$next\")\n",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "next of a fresh iterator of an array"
-    ]
+    "tests": ["test/lowering-iterators.test.ts", "-t", "next of a fresh iterator of an array"]
   },
   {
     "name": "extreme-of-copy",
@@ -149,11 +129,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/iterators/eager.rs",
     "find": "[\"$max\", \"$min\", \"$maxBy\", \"$minBy\", \"$maxByKey\", \"$minByKey\"].contains(&v.as_str())",
     "replace": "[\"$none\"].contains(&v.as_str())",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "iterator chains from MIR are array methods"
-    ]
+    "tests": ["test/lowering-iterators.test.ts", "-t", "iterator chains from MIR are array methods"]
   },
   {
     "name": "eager-flat-map-lazy",
@@ -161,11 +137,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/iterators/eager.rs",
     "find": "\"map\" | \"filter\" | \"take\" | \"drop\" | \"flatMap\")\n        && let [f] = &args[..]",
     "replace": "\"map\" | \"filter\" | \"take\" | \"drop\")\n        && let [f] = &args[..]",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "iterator chains from MIR are array methods"
-    ]
+    "tests": ["test/lowering-iterators.test.ts", "-t", "iterator chains from MIR are array methods"]
   },
   {
     "name": "eager-count-of-count-lazy",
@@ -173,11 +145,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/iterators/eager.rs",
     "find": "iter().any(|(name, f)| !counted(name) && does(f))",
     "replace": "iter().any(|(_, f)| does(f))",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "iterator chains from MIR are array methods"
-    ]
+    "tests": ["test/lowering-iterators.test.ts", "-t", "iterator chains from MIR are array methods"]
   },
   {
     "name": "eager-zip-lazy",
@@ -185,11 +153,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/iterators/eager.rs",
     "find": "zip.helper_name() == Some(\"$lazyZip\")",
     "replace": "false",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "iterator chains from MIR are array methods"
-    ]
+    "tests": ["test/lowering-iterators.test.ts", "-t", "iterator chains from MIR are array methods"]
   },
   {
     "name": "fresh-set-algebra-copied",
@@ -197,11 +161,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/iterators/eager.rs",
     "find": "                \"$setAlgebra\",\n",
     "replace": "",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "sets and maps from MIR"
-    ]
+    "tests": ["test/lowering-collections.test.ts", "-t", "sets and maps from MIR"]
   },
   {
     "name": "chunks-exact-not-fresh",
@@ -209,11 +169,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/iterators/eager.rs",
     "find": "                \"$chunksExact\",\n",
     "replace": "",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "a chunks' remainder from MIR"
-    ]
+    "tests": ["test/lowering-collections.test.ts", "-t", "a chunks' remainder from MIR"]
   },
   {
     "name": "chunks-exact-mut-not-fresh",
@@ -246,11 +202,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/iterators/eager.rs",
     "find": "            f if f.is_identity() => Expr::call(Expr::member(items, \"flat\"), Vec::new()),\n",
     "replace": "",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "arrays of arrays flattened"
-    ]
+    "tests": ["test/lowering-collections.test.ts", "-t", "arrays of arrays flattened"]
   },
   {
     name: "args-copied",
@@ -320,7 +272,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/iterators/eager.rs",
     find: "            if zip.helper_name() == Some(\"$lazyZip\")\n",
     replace: "            if zip.helper_name() == Some(\"$lazyZipped\")\n",
-    tests: ["test/lowering.test.ts", "-t", "MIR"],
+    tests: ["test/lowering-branches.test.ts", "test/lowering-cells.test.ts", "test/lowering-collections.test.ts", "test/lowering-functions.test.ts", "test/lowering-iterators.test.ts", "test/lowering-loops.test.ts", "test/lowering-matches.test.ts", "test/lowering-names.test.ts", "test/lowering-numbers.test.ts", "test/lowering-options.test.ts", "test/lowering-strings.test.ts", "test/lowering-structs-enums.test.ts", "test/lowering.test.ts", "-t", "MIR"],
   },
   {
     name: "generic-into-iter-js",

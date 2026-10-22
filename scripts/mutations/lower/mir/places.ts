@@ -72,7 +72,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/places.rs",
     find: "            Some(default) => Expr::cond(Expr::bin(js::Op::Eq, read.clone(), Expr::undefined()), default, read),\n",
     replace: "            Some(_) => read,\n",
-    tests: ["test/lowering.test.ts","-t","props field's default is read"],
+    tests: ["test/lowering-bindings.test.ts", "-t", "props field's default is read"],
   },
   {
     name: "mir-bounds-write-read",
@@ -80,7 +80,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/places.rs",
     find: "                value = match write && at + 1 == last {\n",
     replace: "                value = match false {\n",
-    tests: ["test/lowering.test.ts","-t","nothing proves in bounds"],
+    tests: ["test/lowering-numbers.test.ts", "-t", "nothing proves in bounds"],
   },
   {
     "name": "mir-default-base-fields-held",
@@ -88,11 +88,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/places.rs",
     "find": "        if let Some(defaults) = state.defaults.get(&place.local)\n",
     "replace": "        if let Some(defaults) = state.defaults.get(&place.local).filter(|_| false)\n",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "an update's default base is the defaults it reads"
-    ]
+    "tests": ["test/lowering-structs-enums.test.ts", "-t", "an update's default base is the defaults it reads"]
   },
   {
     "name": "mir-rest-field-read",
@@ -110,7 +106,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/places.rs",
     find: "                Ok(self.held(read, self.field_ty(&variant.fields[field], args)))\n",
     replace: "                Ok(read)\n",
-    tests: ["test/lowering.test.ts","-t","a cell in a field is the property it holds"],
+    tests: ["test/lowering-cells.test.ts", "-t", "a cell in a field is the property it holds"],
   },
   {
     name: "mir-made-array-unsliced",

@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/bindings.rs",
     find: "        DefKind::Const { .. } if thread_local_value(tcx, def_id).is_some_and(|held| primitive(tcx, held)) => {\n",
     replace: "        DefKind::Const { .. } if thread_local_value(tcx, def_id).is_some_and(|held| primitive(tcx, held) && false) => {\n",
-    tests: ["test/lowering.test.ts", "-t", "a thread-local of a primitive is named"],
+    tests: ["test/lowering-names.test.ts", "-t", "a thread-local of a primitive is named"],
   },
   {
     name: "symbol-not-primitive",
@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/bindings.rs",
     find: "                || super::declarations::written_types(tcx, adt.did()).as_deref() == Some(\"symbol\"))\n",
     replace: "                || false)\n",
-    tests: ["test/lowering.test.ts", "-t", "a thread-local of a primitive is named"],
+    tests: ["test/lowering-names.test.ts", "-t", "a thread-local of a primitive is named"],
   },
   {
     name: "default-never-declared",
@@ -48,7 +48,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/bindings.rs",
     find: "        Some(key) => js::Expr::object(vec![js::Prop::Field(key, name)]),",
     replace: "        Some(_) => name,",
-    tests: ["test/lowering.test.ts","-t","discriminated union"],
+    tests: ["test/lowering-structs-enums.test.ts", "-t", "discriminated union"],
   },
   {
     name: "tagged-tuple-variant-accepted",
@@ -88,7 +88,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/bindings.rs",
     find: "        \"get []\" => return JsForm::GetIndex,\n",
     replace: "",
-    tests: ["test/lowering.test.ts", "-t", "unknown JS value"],
+    tests: ["test/lowering-bindings.test.ts", "-t", "unknown JS value"],
   },
   {
     name: "assoc-this-not-method",
@@ -144,7 +144,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/bindings.rs",
     find: "        ty::TyKind::Adt(adt, args) if tcx.is_lang_item(adt.did(), LangItem::Option) => args.type_at(0),\n",
     replace: "",
-    tests: ["test/lowering.test.ts", "-t", "optional element"],
+    tests: ["test/lowering-bindings.test.ts", "-t", "optional element"],
   },
   {
     name: "object-binding-unread",
@@ -240,11 +240,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/bindings.rs",
     "find": "        Some(b) => js::Expr::bool(b),",
     "replace": "        Some(b) => js::Expr::str(b.to_string()),",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "tag may be a boolean"
-    ]
+    "tests": ["test/lowering-structs-enums.test.ts", "-t", "tag may be a boolean"]
   },
   {
     "name": "bool-name-of-untagged-accepted",
@@ -300,7 +296,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/bindings.rs",
     find: "        DefKind::Const { .. } if thread_local_value(tcx, def_id).is_some() => {\n",
     replace: "        DefKind::Const { .. } if false && thread_local_value(tcx, def_id).is_some() => {\n",
-    tests: ["test/lowering.test.ts", "-t", "thread-local's SCREAMING_SNAKE"],
+    tests: ["test/lowering-names.test.ts", "-t", "thread-local's SCREAMING_SNAKE"],
   },
   {
     name: "thread-local-component-lowercase",
@@ -316,7 +312,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/bindings.rs",
     find: "                true => name.to_string(),\n                false => variable,\n",
     replace: "                true => variable.clone(),\n                false => variable,\n",
-    tests: ["test/lowering.test.ts", "-t", "an insert in a thread-local's closure"],
+    tests: ["test/lowering-cells.test.ts", "-t", "an insert in a thread-local's closure"],
   },
   {
     name: "nullable-field-unchecked",
@@ -340,7 +336,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/bindings.rs",
     find: "            Some(made) => made.export |= export,\n            None => bound.push(BoundGlobal {\n                name,\n                global,\n                export,\n",
     replace: "            Some(made) => made.export |= export,\n            None => bound.push(BoundGlobal {\n                name,\n                global,\n                export: false,\n",
-    tests: ["test/lowering.test.ts", "-t", "a global binding a module names"],
+    tests: ["test/lowering-bindings.test.ts", "-t", "a global binding a module names"],
   },
   {
     name: "bound-global-renamed-lost",
@@ -348,7 +344,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/bindings.rs",
     find: "                false => alias_name(tcx, item.owner_id.to_def_id(), ident.name),\n            };\n            if export || (default == Some(function)",
     replace: "                false => fn_name(tcx, function),\n            };\n            if export || (default == Some(function)",
-    tests: ["test/lowering.test.ts", "-t", "a global binding a module names"],
+    tests: ["test/lowering-bindings.test.ts", "-t", "a global binding a module names"],
   },
   {
     name: "bound-global-of-a-method",
@@ -356,6 +352,6 @@ export const mutations: Mutation[] = [
     file: "src/lower/bindings.rs",
     find: "                && !is_method(tcx, def_id)\n                && js_import(&name).is_none() =>\n",
     replace: "                && js_import(&name).is_none() =>\n",
-    tests: ["test/lowering.test.ts", "-t", "a global binding a module names"],
+    tests: ["test/lowering-bindings.test.ts", "-t", "a global binding a module names"],
   },
 ];

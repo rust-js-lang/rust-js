@@ -40,7 +40,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_types/range.rs",
     find: "                    Prop::Field(field, value) if field == name && (value.reads_same() || !value.has_effects()) => {\n",
     replace: "                    Prop::Field(field, value) if field == name && value.reads_same() => {\n",
-    tests: ["test/lowering.test.ts","-t","whose end is a call holds it first"],
+    tests: ["test/lowering-loops.test.ts", "-t", "whose end is a call holds it first"],
   },
   {
     name: "mir-tidy-range-items-eager",
@@ -48,7 +48,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_types/range.rs",
     find: "    Some(Expr::call_helper(LAZY_RANGE, vec![range.start.clone(), end]))\n",
     replace: "    Some(Expr::call_helper(\"$iter\", vec![Expr::call_helper(\"$range\", vec![range.start.clone(), end])]))\n",
-    tests: ["test/lowering.test.ts", "-t", "a range made where it's stepped"],
+    tests: ["test/lowering-iterators.test.ts", "-t", "a range made where it's stepped"],
   },
   {
     name: "mir-tidy-range-items-chars",
@@ -56,7 +56,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_types/range.rs",
     find: "    if range.back || !matches!(range.start.kind, js::ExprKind::Num(_)) {\n",
     replace: "    if range.back {\n",
-    tests: ["test/lowering.test.ts", "-t", "a range made where it's stepped"],
+    tests: ["test/lowering-iterators.test.ts", "-t", "a range made where it's stepped"],
   },
   {
     name: "mir-tidy-range-items-lent",
@@ -64,7 +64,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_types/range.rs",
     find: "    if let Some(made) = lazy_range(crate::lower::iterators::unlent(e)) {\n",
     replace: "    if let Some(made) = lazy_range(e) {\n",
-    tests: ["test/lowering.test.ts", "-t", "a range made where it's stepped"],
+    tests: ["test/lowering-iterators.test.ts", "-t", "a range made where it's stepped"],
   },
   {
     name: "mir-tidy-lazy-range-end-unfolded",
@@ -72,7 +72,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_types/range.rs",
     find: "            Some(n) => Expr::int(n + 1),\n            None => Expr::bin(Op::Add, range.end.clone(), Expr::int(1)),\n",
     replace: "            Some(_) | None => Expr::bin(Op::Add, range.end.clone(), Expr::int(1)),\n",
-    tests: ["test/lowering.test.ts", "-t", "a range mapped and collected"],
+    tests: ["test/lowering-iterators.test.ts", "-t", "a range mapped and collected"],
   },
   {
     name: "range-steps-back-forward",

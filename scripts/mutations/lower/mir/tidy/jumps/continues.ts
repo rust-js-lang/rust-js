@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/jumps/continues.rs",
     find: "                    if written(guards, body.last().expect(\"matched\").span) || (negated(test) && then.len() > 1) =>\n",
     replace: "                    if false =>\n",
-    tests: ["test/lowering.test.ts","-t","if-let chains and loops from MIR"],
+    tests: ["test/lowering-loops.test.ts", "-t", "if-let chains and loops from MIR"],
   },
   {
     name: "mir-tidy-continued-block-kept",
@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/jumps/continues.rs",
     find: "                    if clashes || continues(&mut inner, &block, looped.as_deref(), false).is_none() {\n",
     replace: "                    if true {\n",
-    tests: ["test/lowering.test.ts","-t","if-let chains and loops from MIR"],
+    tests: ["test/lowering-loops.test.ts", "-t", "if-let chains and loops from MIR"],
   },
   {
     name: "mir-tidy-written-continue-nested",
@@ -24,7 +24,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/jumps/continues.rs",
     find: "                    if written(guards, body.last().expect(\"matched\").span) || (negated(test) && then.len() > 1) =>\n",
     replace: "                    if negated(test) && then.len() > 1 =>\n",
-    tests: ["test/lowering.test.ts","-t","continue.s from MIR are where"],
+    tests: ["test/lowering-loops.test.ts", "-t", "continue.s from MIR are where"],
   },
   {
     "name": "ending-continue-as-else",
@@ -32,11 +32,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/tidy/jumps/continues.rs",
     "find": "                    if written(guards, body.last().expect(\"matched\").span)\n",
     "replace": "                    if false\n",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "continues a loop's ifs end with are kept"
-    ]
+    "tests": ["test/lowering-loops.test.ts", "-t", "continues a loop's ifs end with are kept"]
   },
   {
     "name": "mir-tidy-continue-written-negated-only",
@@ -44,11 +40,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/tidy/jumps/continues.rs",
     "find": "                    if written(guards, body.last().expect(\"matched\").span) || (negated(test) && then.len() > 1) =>\n",
     "replace": "                    if negated(test) && (then.len() > 1 || written(guards, body.last().expect(\"matched\").span)) =>\n",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "division by a constant from MIR"
-    ]
+    "tests": ["test/lowering-numbers.test.ts", "-t", "division by a constant from MIR"]
   },
   {
     "name": "mir-loop-end-block-continues",
@@ -56,11 +48,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/tidy/jumps/continues.rs",
     "find": "                    ending(&mut inner, &block);\n",
     "replace": "",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "react.dev's llms.txt groups its routes"
-    ]
+    "tests": ["test/lowering-loops.test.ts", "-t", "react.dev's llms.txt groups its routes"]
   },
   {
     name: "tail-continues-written-dropped",

@@ -16,6 +16,6 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/plain_locals.rs",
     find: "                        _ => fn_def(thir[args[1]].ty).map(|(f, f_args)| Given::Fn(f, f_args)),\n",
     replace: "                        _ => None,\n",
-    tests: ["test/lowering.test.ts", "-t", "given a function to run"],
+    tests: ["test/lowering-cells.test.ts", "-t", "given a function to run"],
   },
 ];

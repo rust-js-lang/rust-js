@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     file: "src/format.rs",
     find: "|| !declared_only && (first < last || next < next_last);",
     replace: "|| (first < last || next < next_last);",
-    tests: ["test/lowering.test.ts", "-t", "a thread-local an if makes"],
+    tests: ["test/lowering-cells.test.ts", "-t", "a thread-local an if makes"],
   },
   {
     name: "transform-map-unmoved",
@@ -103,7 +103,7 @@ export const mutations: Mutation[] = [
     file: "src/format.rs",
     find: "            let next = top(next);\n",
     replace: "            let next = next.max(top(next));\n",
-    tests: ["test/lowering.test.ts", "-t", "a comment is in the JS where"],
+    tests: ["test/lowering-names.test.ts", "-t", "a comment is in the JS where"],
   },
   {
     name: "moved-tokens-unsorted",

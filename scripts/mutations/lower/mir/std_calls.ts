@@ -168,11 +168,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/std_calls.rs",
     "find": "let lines = bytes.contains(&b'\\n') && self.format_string_across_lines(span);",
     "replace": "let lines = false;",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "a format string written across lines keeps its lines"
-    ]
+    "tests": ["test/lowering-strings.test.ts", "-t", "a format string written across lines keeps its lines"]
   },
   {
     "name": "mir-chars-as-str-refused",
@@ -180,11 +176,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/std_calls.rs",
     "find": "                if op == StepOp::AsStr\n",
     "replace": "                if false\n",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "the rest of a string's chars from MIR"
-    ]
+    "tests": ["test/lowering-strings.test.ts", "-t", "the rest of a string's chars from MIR"]
   },
   {
     "name": "mir-tree-range-refused",
@@ -192,11 +184,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/std_calls.rs",
     "find": "            Std::Map(MapOp::TreeRange { mutable }) => {",
     "replace": "            Std::Map(MapOp::TreeRange { mutable }) if mutable => {",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "a B-tree's range from MIR"
-    ]
+    "tests": ["test/lowering-collections.test.ts", "-t", "a B-tree's range from MIR"]
   },
   {
     "name": "mir-copy-within-refused",
@@ -240,11 +228,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/std_calls.rs",
     "find": "                if let Some(items) = made {\n                    exprs[0] = items;\n                }\n",
     "replace": "",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "a chunks' remainder from MIR"
-    ]
+    "tests": ["test/lowering-collections.test.ts", "-t", "a chunks' remainder from MIR"]
   },
   {
     "name": "mir-remainder-stepped-plain",
@@ -252,11 +236,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/std_calls.rs",
     "find": "                let stepping = made.is_none();\n",
     "replace": "                let stepping = false;\n",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "a chunks' remainder from MIR"
-    ]
+    "tests": ["test/lowering-collections.test.ts", "-t", "a chunks' remainder from MIR"]
   },
   {
     "name": "mir-slice-views-refused",
@@ -336,11 +316,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/std_calls.rs",
     "find": "            Std::Text(op @ (TextOp::Splice | TextOp::ExtendFromWithin)) => {\n",
     "replace": "            Std::Text(op @ (TextOp::Splice | TextOp::ExtendFromWithin)) if false => {\n",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "a vec's range pushed again or replaced"
-    ]
+    "tests": ["test/lowering-collections.test.ts", "-t", "a vec's range pushed again or replaced"]
   },
   {
     "name": "mir-option-place-refused",
@@ -460,7 +436,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/std_calls.rs",
     find: "                            && let Some((whole, mut bounds)) = str_part_of(place) =>\n",
     replace: "                            && let Some((whole, mut bounds)) = str_part_of(place).filter(|_| false) =>\n",
-    tests: ["test/lowering.test.ts", "-t", "part changed in place"],
+    tests: ["test/lowering-strings.test.ts", "-t", "part changed in place"],
   },
   {
     name: "mir-str-edit-part-refused",
@@ -516,7 +492,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/std_calls.rs",
     find: "                Expr::call_helper(\"$removeOpt\", exprs)\n",
     replace: "                return Err(self.unsupported(span, &format!(\"`remove` of {}, from its MIR\", exprs.len())));\n",
-    tests: ["test/lowering.test.ts","-t","a deque's remove"],
+    tests: ["test/lowering-collections.test.ts", "-t", "a deque's remove"],
   },
   {
     name: "mir-push-str-lost",
@@ -540,7 +516,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/std_calls.rs",
     find: "                Expr::bin(Op::Eq, a, b)\n            }\n            Std::Number(op) => {\n",
     replace: "                return Err(self.unsupported(span, if a.reads_same() && b.reads_same() { \"ptr::eq\" } else { \"ptr::eq of these\" }));\n            }\n            Std::Number(op) => {\n",
-    tests: ["test/lowering.test.ts","-t","ptr::eq of JS objects"],
+    tests: ["test/lowering-bindings.test.ts", "-t", "ptr::eq of JS objects"],
   },
   {
     name: "format-arguments-in-place",

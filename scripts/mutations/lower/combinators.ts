@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/combinators.rs",
     find: "        if comb == Comb::UnwrapOrDefault && !boxed {",
     replace: "        if false && comb == Comb::UnwrapOrDefault && !boxed {",
-    tests: ["test/lowering.test.ts", "-t", "unwrap_or_default of a call"],
+    tests: ["test/lowering-options.test.ts", "-t", "unwrap_or_default of a call"],
   },
   {
     name: "unwrap-or-default-boxed-coalesced",
@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/combinators.rs",
     find: "        if comb == Comb::UnwrapOrDefault && !boxed {",
     replace: "        if comb == Comb::UnwrapOrDefault {",
-    tests: ["test/lowering.test.ts", "-t", "unwrap_or_default of a call"],
+    tests: ["test/lowering-options.test.ts", "-t", "unwrap_or_default of a call"],
   },
   {
     name: "boxed-subject-unopened",
@@ -104,7 +104,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/combinators.rs",
     find: "                match option.filter(|_| !boxed).and_then(|(name, option, spilled)| {\n",
     replace: "                match option.filter(|_| false).and_then(|(name, option, spilled)| {\n",
-    tests: ["test/lowering.test.ts","-t","only gives a value"],
+    tests: ["test/lowering-branches.test.ts", "-t", "only gives a value"],
   },
   {
     name: "option-and-ignores-none",
@@ -216,11 +216,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/combinators.rs",
     "find": "        if comb == Comb::UnwrapOrElse && !boxed {",
     "replace": "        if comb == Comb::UnwrapOrElse && !boxed && false {",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "unwrap_or_else of a call"
-    ]
+    "tests": ["test/lowering-options.test.ts", "-t", "unwrap_or_else of a call"]
   },
   {
     name: "binary-search-own-order",
@@ -463,7 +459,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/combinators.rs",
     find: "        if comb == Comb::IsSomeAnd && !boxed && self.option_of(subject_ty).is_some() {\n",
     replace: "        if comb == Comb::IsSomeAnd && false && self.option_of(subject_ty).is_some() {\n",
-    tests: ["test/lowering.test.ts", "-t", "is_some_and of an equality"],
+    tests: ["test/lowering-options.test.ts", "-t", "is_some_and of an equality"],
   },
   {
     name: "is-some-and-unread-dropped",
@@ -471,6 +467,6 @@ export const mutations: Mutation[] = [
     file: "src/lower/combinators.rs",
     find: "    ((held(a) || held(b)) && mentions == 1).then_some(applied)\n",
     replace: "    (mentions <= 1).then_some(applied)\n",
-    tests: ["test/lowering.test.ts", "-t", "is_some_and of an equality"],
+    tests: ["test/lowering-options.test.ts", "-t", "is_some_and of an equality"],
   },
 ];

@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_types/result.rs",
     find: "            Some(inner) => self.absent(subject, inner),\n",
     replace: "            Some(_) => Expr::bin(Op::LooseEq, subject, Expr::null()),\n",
-    tests: ["test/lowering.test.ts", "-t", "of an Option never falsy tests its truth"],
+    tests: ["test/lowering-options.test.ts", "-t", "of an Option never falsy tests its truth"],
   },
   {
     name: "result-test-negation-unseen",

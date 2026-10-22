@@ -24,7 +24,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/aggregates.rs",
     find: "        let value = if self.untagged(ty).is_some() || bindings::is_tagged_otherwise(self.tcx, adt_def.did(), variant) {\n",
     replace: "        let value = if bindings::is_tagged_otherwise(self.tcx, adt_def.did(), variant) {\n",
-    tests: ["test/compiler.test.ts", "test/lowering.test.ts", "-t", "untagged enum"],
+    tests: ["test/compiler.test.ts", "test/lowering-options.test.ts", "test/lowering-structs-enums.test.ts", "-t", "untagged enum"],
   },
   {
     name: "otherwise-constructor-tagged",
@@ -32,7 +32,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/aggregates.rs",
     find: "        let value = if self.untagged(ty).is_some() || bindings::is_tagged_otherwise(self.tcx, adt_def.did(), variant) {\n",
     replace: "        let value = if self.untagged(ty).is_some() {\n",
-    tests: ["test/lowering.test.ts", "-t", "otherwise variant is any other"],
+    tests: ["test/lowering-structs-enums.test.ts", "-t", "otherwise variant is any other"],
   },
   {
     name: "flattened-made-spread-literal",
@@ -40,7 +40,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/aggregates.rs",
     find: "                    js::ExprKind::Object(inner) => flat.extend(inner),\n",
     replace: "",
-    tests: ["test/lowering.test.ts","-t","flattened field made outside JSX"],
+    tests: ["test/lowering-structs-enums.test.ts", "-t", "flattened field made outside JSX"],
   },
   {
     name: "adt-value-ordering-tag",
@@ -64,11 +64,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/aggregates.rs",
     "find": " || nulled.get(i) == Some(&true) => made,\n",
     "replace": " => made,\n",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "a nullable field's None is null"
-    ]
+    "tests": ["test/lowering-options.test.ts", "-t", "a nullable field's None is null"]
   },
   {
     name: "io-unit-err-not-thrown",

@@ -193,7 +193,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/recognition/wrappers.rs",
     find: "    if object && tcx.item_name(id).as_str() == \"ptr_eq\" {\n",
     replace: "    if false && object && tcx.item_name(id).as_str() == \"ptr_eq\" {\n",
-    tests: ["test/lowering.test.ts", "-t", "ptr_eq of an Rc of a struct"],
+    tests: ["test/lowering-cells.test.ts", "-t", "ptr_eq of an Rc of a struct"],
   },
   {
     name: "ptr-eq-number-uncounted",
@@ -201,7 +201,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/recognition/wrappers.rs",
     find: "    if object && tcx.item_name(id).as_str() == \"ptr_eq\" {\n",
     replace: "    if tcx.item_name(id).as_str() == \"ptr_eq\" {\n",
-    tests: ["test/lowering.test.ts", "-t", "ptr_eq of an Rc of a struct"],
+    tests: ["test/lowering-cells.test.ts", "-t", "ptr_eq of an Rc of a struct"],
   },
   {
     name: "transparent-struct-an-array",

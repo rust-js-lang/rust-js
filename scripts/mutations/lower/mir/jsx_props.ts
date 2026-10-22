@@ -16,11 +16,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/jsx_props.rs",
     "find": "            if !field || self.contains_mutated(t) && self.is_copy(t) {\n",
     "replace": "            if true {\n",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "reading one field of its base"
-    ]
+    "tests": ["test/lowering-structs-enums.test.ts", "-t", "reading one field of its base"]
   },
   {
     "name": "struct-update-index-fields",

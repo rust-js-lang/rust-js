@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/items.rs",
     find: "            .map(|(i, (name, &ty))| self.binding_arg(def_id, i, Expr::var(name), ty))\n",
     replace: "            .map(|(_, (name, _))| Expr::var(name))\n",
-    tests: ["test/lowering.test.ts", "-t", "a binding taken as a fn"],
+    tests: ["test/lowering-functions.test.ts", "-t", "a binding taken as a fn"],
   },
   {
     name: "binding-fn-pointer-arrow",
@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/items.rs",
     find: "            return Ok((**callee).clone());\n",
     replace: "            return Ok(arrow.clone());\n",
-    tests: ["test/lowering.test.ts", "-t", "a binding taken as a fn"],
+    tests: ["test/lowering-functions.test.ts", "-t", "a binding taken as a fn"],
   },
   {
     name: "binding-value-bare",
@@ -24,7 +24,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/items.rs",
     find: "        // One that's a statement, a setter's, is no value.\n",
     replace: "        if let ExprKind::Call(callee, _) = &body.kind {\n            return Ok((**callee).clone());\n        }\n",
-    tests: ["test/lowering.test.ts", "-t", "a crate function given as a callback is passed as itself"],
+    tests: ["test/lowering-functions.test.ts", "-t", "a crate function given as a callback is passed as itself"],
   },
   {
     name: "callee-unresolved",

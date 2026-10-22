@@ -81,7 +81,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/traits/given.rs",
     find: "            || !bounds(self.tcx, self.krate.foreign, self.krate.given, id).is_empty()\n",
     replace: "",
-    tests: ["test/lowering.test.ts", "-t", "a dictionary that takes nothing"],
+    tests: ["test/lowering-structs-enums.test.ts", "-t", "a dictionary that takes nothing"],
   },
   {
     name: "const-param-evidence-unseen",
@@ -97,7 +97,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/traits/given.rs",
     find: "            || !self.facts_asked(id).is_empty()\n",
     replace: "",
-    tests: ["test/lowering.test.ts", "-t", "a dictionary that takes nothing"],
+    tests: ["test/lowering-structs-enums.test.ts", "-t", "a dictionary that takes nothing"],
   },
 
 ];

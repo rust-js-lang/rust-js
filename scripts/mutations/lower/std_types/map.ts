@@ -112,11 +112,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/std_types/map.rs",
     "find": "                            (\"$add\", 2) => Some(\"add\"),\n",
     "replace": "",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "its answer unused"
-    ]
+    "tests": ["test/lowering-cells.test.ts", "-t", "its answer unused"]
   },
   {
     "name": "local-insert-discarded-helper",
@@ -124,11 +120,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/std_types/map.rs",
     "find": "                            (\"$insert\", 3) => Some(\"set\"),\n",
     "replace": "",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "its answer unused"
-    ]
+    "tests": ["test/lowering-cells.test.ts", "-t", "its answer unused"]
   },
   {
     name: "discarded-remove-helper",
@@ -145,7 +137,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_types/map.rs",
     find: "js::ExprKind::Str(a), js::ExprKind::Str(b)) if a == b))",
     replace: "js::ExprKind::Str(a), js::ExprKind::Str(b)) if a == b && false))",
-    tests: ["test/lowering.test.ts", "-t", "a count kept in a map from MIR"],
+    tests: ["test/lowering-collections.test.ts", "-t", "a count kept in a map from MIR"],
   },
   {
     name: "path-key-plain-map",
@@ -337,11 +329,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/std_types/map.rs",
     "find": "            js::ExprKind::Call(callee, parts) if callee.helper_name() == Some(\"$andModify\") => parts.first(),\n",
     "replace": "            js::ExprKind::Call(callee, parts) if callee.helper_name() == Some(\"$none\") => parts.first(),\n",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "and_modify then or_insert"
-    ]
+    "tests": ["test/lowering-collections.test.ts", "-t", "and_modify then or_insert"]
   },
   {
     name: "generic-map-class-plain",

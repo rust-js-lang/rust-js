@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/sources.rs",
     find: "            } => Some(doc_style),\n",
     replace: "            } => None,\n",
-    tests: ["test/lowering.test.ts", "-t", "a comment is in the JS where"],
+    tests: ["test/lowering-names.test.ts", "-t", "a comment is in the JS where"],
   },
   {
     name: "comment-js-reads-otherwise",
@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/sources.rs",
     find: "            && crate::comments::is_one_in_js(written)\n",
     replace: "            && !written.is_empty()\n",
-    tests: ["test/lowering.test.ts", "-t", "a comment is in the JS where"],
+    tests: ["test/lowering-names.test.ts", "-t", "a comment is in the JS where"],
   },
   {
     name: "item-span-macro-call",
@@ -24,7 +24,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/sources.rs",
     find: "            Some(name) if span.from_expansion() && !name.from_expansion() => self.span(name),\n",
     replace: "            Some(_) if false => self.span(span),\n",
-    tests: ["test/lowering.test.ts", "-t", "a comment is in the JS where"],
+    tests: ["test/lowering-names.test.ts", "-t", "a comment is in the JS where"],
   },
   {
     name: "inline-module-code-its-files",
@@ -32,6 +32,6 @@ export const mutations: Mutation[] = [
     file: "src/lower/sources.rs",
     find: "            true => self.span(item.with_hi(item.hi() - rustc_span::BytePos(1))),\n",
     replace: "            true => self.span(Span::with_root_ctxt(file.start_pos, file.end_position())),\n",
-    tests: ["test/lowering.test.ts", "-t", "a comment before a macro's opening"],
+    tests: ["test/lowering-names.test.ts", "-t", "a comment before a macro's opening"],
   },
 ];

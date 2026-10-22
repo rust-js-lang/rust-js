@@ -10,7 +10,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/decisions.rs",
     find: "    if shared.len() > SHARED || !shared.iter().all(|s| ends(s) && size(s) == 1) {\n",
     replace: "    if shared.len() > SHARED {\n",
-    tests: ["test/lowering.test.ts", "-t", "an or-pattern's arm that changes what it binds"],
+    tests: ["test/lowering-matches.test.ts", "-t", "an or-pattern's arm that changes what it binds"],
   },
   {
     name: "decisions-longer-tests-kept",
@@ -58,7 +58,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/decisions.rs",
     find: "                    if !loop_breaks(body, label) {\n",
     replace: "                    if true {\n",
-    tests: ["test/lowering.test.ts", "-t", "arm that ends in a loop"],
+    tests: ["test/lowering-loops.test.ts", "-t", "arm that ends in a loop"],
   },
   {
     name: "default-value-of-a-call",
@@ -66,7 +66,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/decisions.rs",
     find: "            && value.is_constant()\n",
     replace: "",
-    tests: ["test/lowering.test.ts", "-t", "no arm sets it"],
+    tests: ["test/lowering-matches.test.ts", "-t", "no arm sets it"],
   },
   {
     name: "default-value-read-before",
@@ -74,7 +74,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/decisions.rs",
     find: "            && js::mentions_in(rest, x) == given\n",
     replace: "",
-    tests: ["test/lowering.test.ts", "-t", "no arm sets it"],
+    tests: ["test/lowering-matches.test.ts", "-t", "no arm sets it"],
   },
   {
     name: "default-value-set-not-left",
@@ -82,7 +82,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/decisions.rs",
     find: "                if !breaks || js::mentions_in(",
     replace: "                if false && !breaks || js::mentions_in(",
-    tests: ["test/lowering.test.ts", "-t", "no arm sets it"],
+    tests: ["test/lowering-matches.test.ts", "-t", "no arm sets it"],
   },
   {
     name: "decisions-returned-block-taken",

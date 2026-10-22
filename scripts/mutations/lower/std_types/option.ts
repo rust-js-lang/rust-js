@@ -78,7 +78,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_types/option.rs",
     find: "                    && self.gives_own_name(function)\n",
     replace: "                    && false && self.gives_own_name(function)\n",
-    tests: ["test/lowering.test.ts", "-t", "enum's own names"],
+    tests: ["test/lowering-structs-enums.test.ts", "-t", "enum's own names"],
   },
   {
     name: "filtered-of-truthy-unseen",
@@ -94,7 +94,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_types/option.rs",
     find: "                            && let Some(chain) = optional_chain(&option, b, p)\n",
     replace: "                            && let Some(chain) = optional_chain(&option, b, p).filter(|_| false)\n",
-    tests: ["test/lowering.test.ts", "-t", "mapped to a property is an optional chain"],
+    tests: ["test/lowering-options.test.ts", "-t", "mapped to a property is an optional chain"],
   },
   {
     name: "unwrap-unchecked-unboxed",
@@ -102,7 +102,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_types/option.rs",
     find: "                let value = arg();\n                if self.boxed_payload(generic_args.type_at(0)) {\n                    self.some_value(value)",
     replace: "                let value = arg();\n                if false {\n                    self.some_value(value)",
-    tests: ["test/lowering.test.ts", "-t", "unwrap_unchecked is the value"],
+    tests: ["test/lowering-options.test.ts", "-t", "unwrap_unchecked is the value"],
   },
   {
     name: "truthy-everything",
@@ -110,7 +110,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_types/option.rs",
     find: "            || self.option_of(ty).is_none()\n                && !any\n",
     replace: "            || true || self.option_of(ty).is_none()\n                && !any\n",
-    tests: ["test/lowering.test.ts", "-t", "an Option of an object is tested by its truth"],
+    tests: ["test/lowering-options.test.ts", "-t", "an Option of an object is tested by its truth"],
   },
   {
     name: "truthy-nothing",
@@ -118,7 +118,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_types/option.rs",
     find: "            || self.option_of(ty).is_none()\n                && !any\n",
     replace: "            || false && self.option_of(ty).is_none()\n                && !any\n",
-    tests: ["test/lowering.test.ts", "-t", "an Option of an object is tested by its truth"],
+    tests: ["test/lowering-options.test.ts", "-t", "an Option of an object is tested by its truth"],
   },
   {
     name: "truthy-unknown",
@@ -126,7 +126,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_types/option.rs",
     find: "            && !any\n",
     replace: "",
-    tests: ["test/lowering.test.ts", "-t", "an Option of an object is tested by its truth"],
+    tests: ["test/lowering-options.test.ts", "-t", "an Option of an object is tested by its truth"],
   },
   {
     name: "truthy-map-explicit",
@@ -134,7 +134,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_types/option.rs",
     find: "                        let present = self.present(option.clone(), generic_args.type_at(0));",
     replace: "                        let present = Expr::bin(Op::LooseNe, option.clone(), Expr::null());",
-    tests: ["test/lowering.test.ts", "-t", "an Option of an object is tested by its truth"],
+    tests: ["test/lowering-options.test.ts", "-t", "an Option of an object is tested by its truth"],
   },
   {
     name: "nullish-part-kept",
@@ -142,7 +142,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_types/option.rs",
     find: "        _ if part_never_nullish => optional_part(yes, m, option)?,\n",
     replace: "",
-    tests: ["test/lowering.test.ts","-t","only gives a value"],
+    tests: ["test/lowering-branches.test.ts", "-t", "only gives a value"],
   },
   {
     name: "get-or-insert-overwrites",
@@ -198,11 +198,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/std_types/option.rs",
     "find": "                let tested = js::presence_of(&present).map(|o| Expr::bin(Op::LooseNe, o.clone(), Expr::null()));\n",
     "replace": "                let tested: Option<Expr> = None;\n",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "an option's method call ends where it's None"
-    ]
+    "tests": ["test/lowering-options.test.ts", "-t", "an option's method call ends where it's None"]
   },
   {
     "name": "never-falsy-untagged",
@@ -210,11 +206,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/std_types/option.rs",
     "find": "                matches!(&variant.fields.raw[..], [field] if self.never_falsy_within(self.field_ty(field, args), within))\n",
     "replace": "                !variant.fields.is_empty()\n",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "an option of an untagged enum never falsy|untagged"
-    ]
+    "tests": ["test/lowering-options.test.ts", "test/lowering-structs-enums.test.ts", "-t", "an option of an untagged enum never falsy|untagged"]
   },
   {
     "name": "never-falsy-untagged-objects-tested",
@@ -222,11 +214,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/std_types/option.rs",
     "find": "            return each;\n",
     "replace": "            return false && each;\n",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "an option of an untagged enum never falsy"
-    ]
+    "tests": ["test/lowering-options.test.ts", "-t", "an option of an untagged enum never falsy"]
   },
   {
     "name": "option-identity-map",
@@ -234,11 +222,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/std_types/option.rs",
     "find": "                if f.is_identity() {\n                    return Ok(Some(option));\n                }\n",
     "replace": "",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "gives the value itself is none"
-    ]
+    "tests": ["test/lowering-iterators.test.ts", "-t", "gives the value itself is none"]
   },
   {
     name: "option-insert-drops-none",

@@ -40,7 +40,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/recognition/types.rs",
     find: " || is_std_def(tcx, adt.did(), StdItem::VecDeque))\n",
     replace: ")\n",
-    tests: ["test/lowering.test.ts","-t","Console's loops"],
+    tests: ["test/lowering-loops.test.ts", "-t", "Console's loops"],
   },
   {
     name: "linked-list-not-array",
@@ -80,7 +80,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/recognition/types.rs",
     find: "        .filter_by_name_unhygienic(sym::Target)\n",
     replace: "        .filter_by_name_unhygienic(sym::value)\n",
-    tests: ["test/compiler.test.ts", "test/lowering.test.ts", "-t", "untagged enum"],
+    tests: ["test/compiler.test.ts", "test/lowering-options.test.ts", "test/lowering-structs-enums.test.ts", "-t", "untagged enum"],
   },
   {
     name: "boxed-slice-iter-unknown",
@@ -177,7 +177,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/recognition/types.rs",
     find: "        \"swap\" => Some(SliceLength::Swap),\n",
     replace: "",
-    tests: ["test/lowering.test.ts", "-t", "integer ranges show"],
+    tests: ["test/lowering-numbers.test.ts", "-t", "integer ranges show"],
   },
   {
     name: "vec-deref-unseen",
@@ -185,7 +185,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/recognition/types.rs",
     find: "            Some(VecView::Slice)\n",
     replace: "            None\n",
-    tests: ["test/lowering.test.ts", "-t", "integer ranges show"],
+    tests: ["test/lowering-numbers.test.ts", "-t", "integer ranges show"],
   },
   {
     name: "index-mut-unasked",
@@ -193,6 +193,6 @@ export const mutations: Mutation[] = [
     file: "src/lower/recognition/types.rs",
     find: "(tcx.is_lang_item(trait_, LangItem::Index) || tcx.is_lang_item(trait_, LangItem::IndexMut))",
     replace: "(tcx.is_lang_item(trait_, LangItem::Index) || false && tcx.is_lang_item(trait_, LangItem::IndexMut))",
-    tests: ["test/lowering.test.ts", "-t", "nullable result is written"],
+    tests: ["test/lowering-options.test.ts", "-t", "nullable result is written"],
   },
 ];

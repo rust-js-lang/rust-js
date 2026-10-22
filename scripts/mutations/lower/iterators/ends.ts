@@ -40,7 +40,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/iterators/ends.rs",
     find: "                    ty::Closure(..) | ty::Param(_) => true,\n",
     replace: "                    ty::Closure(..) => true,\n",
-    tests: ["test/lowering.test.ts", "-t", "only passes its arguments"],
+    tests: ["test/lowering-functions.test.ts", "-t", "only passes its arguments"],
   },
   {
     name: "boxed-dyn-fn-not-rust",
@@ -96,7 +96,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/iterators/ends.rs",
     find: "            _ => def_id.is_local() && !crate::lower::bindings::is_binding(self.tcx, def_id),\n",
     replace: "            _ => def_id.is_local(),\n",
-    tests: ["test/lowering.test.ts", "-t", "only passes its arguments"],
+    tests: ["test/lowering-functions.test.ts", "-t", "only passes its arguments"],
   },
   {
     name: "nullable-sort-by-js",

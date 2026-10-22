@@ -998,7 +998,6 @@ test("a test file is at most the cap, or shrinks", () => {
     fileSizes: (paths: string[]) => [string, number][];
   };
   const over: Record<string, number> = {
-    "test/lowering.test.ts": 13712,
     "test/jsx.test.ts": 6954,
   };
   const sizes = fileSizes(TESTS);

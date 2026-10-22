@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     file: "src/to_oxc/expressions.rs",
     find: "ExprKind::Member(object, _) | ExprKind::Index(object, _) | ExprKind::Call(object, _) => in_chain(object),",
     replace: "ExprKind::Member(object, _) | ExprKind::Index(object, _) | ExprKind::Call(object, _) => false,",
-    tests: ["test/lowering.test.ts", "-t", "an option's property chain ends"],
+    tests: ["test/lowering-options.test.ts", "-t", "an option's property chain ends"],
   },
   {
     name: "template-lines-escaped",
@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     file: "src/to_oxc/expressions.rs",
     find: "                        raw: self.name(&template_raw(text, *lines)).into(),",
     replace: "                        raw: self.name(&template_raw(text, false)).into(),",
-    tests: ["test/lowering.test.ts", "-t", "a format string written across lines"],
+    tests: ["test/lowering-strings.test.ts", "-t", "a format string written across lines"],
   },
   {
     name: "import-specifier-unlinked",
@@ -40,7 +40,7 @@ export const mutations: Mutation[] = [
     file: "src/to_oxc/expressions.rs",
     find: "a subtraction.\n            ExprKind::Member(object, property) if !member_name(property) => {",
     replace: "a subtraction.\n            ExprKind::Member(object, property) if false && !member_name(property) => {",
-    tests: ["test/lowering.test.ts", "-t", "isn't a name is read by its key"],
+    tests: ["test/lowering-names.test.ts", "-t", "isn't a name is read by its key"],
   },
   {
     name: "lines-escaped",
@@ -48,7 +48,7 @@ export const mutations: Mutation[] = [
     file: "src/to_oxc/expressions.rs",
     find: "            '\\n' if lines => raw.push('\\n'),",
     replace: "            '\\n' if lines => raw.push_str(\"\\\\n\"),",
-    tests: ["test/lowering.test.ts", "-t", "a string written across lines"],
+    tests: ["test/lowering-strings.test.ts", "-t", "a string written across lines"],
   },
   {
     name: "adjacent-text-joined",
@@ -64,7 +64,7 @@ export const mutations: Mutation[] = [
     file: "src/to_oxc/expressions.rs",
     find: "    if !matches!(&callee.kind, ExprKind::Var(name) if name == \"RegExp\") {",
     replace: "    if true {",
-    tests: ["test/lowering.test.ts","-t","RegExp of a pattern"],
+    tests: ["test/lowering-strings.test.ts", "-t", "RegExp of a pattern"],
   },
   {
     name: "regex-slash-unescaped",
@@ -72,7 +72,7 @@ export const mutations: Mutation[] = [
     file: "src/to_oxc/expressions.rs",
     find: "            '/' if !escaped && !class => body.push('\\\\'),",
     replace: "            '/' if false => body.push('\\\\'),",
-    tests: ["test/lowering.test.ts","-t","RegExp of a pattern"],
+    tests: ["test/lowering-strings.test.ts", "-t", "RegExp of a pattern"],
   },
   {
     name: "regex-class-unread",
@@ -80,7 +80,7 @@ export const mutations: Mutation[] = [
     file: "src/to_oxc/expressions.rs",
     find: "            '[' if !escaped => class = true,",
     replace: "            '[' if false => class = true,",
-    tests: ["test/lowering.test.ts","-t","RegExp of a pattern"],
+    tests: ["test/lowering-strings.test.ts", "-t", "RegExp of a pattern"],
   },
   {
     name: "regex-empty-comment",
@@ -88,7 +88,7 @@ export const mutations: Mutation[] = [
     file: "src/to_oxc/expressions.rs",
     find: "    if body.is_empty() {\n        body.push_str(\"(?:)\");",
     replace: "    if false {\n        body.push_str(\"(?:)\");",
-    tests: ["test/lowering.test.ts","-t","RegExp of a pattern"],
+    tests: ["test/lowering-strings.test.ts", "-t", "RegExp of a pattern"],
   },
   {
     name: "regex-unparsed-literal",
@@ -96,7 +96,7 @@ export const mutations: Mutation[] = [
     file: "src/to_oxc/expressions.rs",
     find: "        .parse()\n        .ok()?;\n    Some(format!(",
     replace: "        .parse()\n        .ok();\n    Some(format!(",
-    tests: ["test/lowering.test.ts","-t","RegExp of a pattern"],
+    tests: ["test/lowering-strings.test.ts", "-t", "RegExp of a pattern"],
   },
   {
     name: "regex-line-break-literal",
@@ -104,7 +104,7 @@ export const mutations: Mutation[] = [
     file: "src/to_oxc/expressions.rs",
     find: "    if pattern.contains(['\\n', '\\r', '\\u{2028}', '\\u{2029}']) {",
     replace: "    if pattern.contains(['\\u{2028}', '\\u{2029}']) {",
-    tests: ["test/lowering.test.ts","-t","RegExp of a pattern"],
+    tests: ["test/lowering-strings.test.ts", "-t", "RegExp of a pattern"],
   },
   {
     name: "object-key-unquoted",
@@ -152,6 +152,6 @@ export const mutations: Mutation[] = [
     file: "src/to_oxc/expressions.rs",
     find: "                    ] if span.is_none() || !self.commented.contains(&span.lo) =>",
     replace: "                    ] =>",
-    tests: ["test/lowering.test.ts", "-t", "a comment is in the JS where"],
+    tests: ["test/lowering-names.test.ts", "-t", "a comment is in the JS where"],
   },
 ];

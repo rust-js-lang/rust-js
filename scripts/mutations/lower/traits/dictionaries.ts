@@ -352,6 +352,6 @@ export const mutations: Mutation[] = [
     file: "src/lower/traits/dictionaries.rs",
     find: "                false => callee,\n",
     replace: "                false => Expr::call(callee, Vec::new()),\n",
-    tests: ["test/lowering.test.ts", "-t", "a dictionary that takes nothing"],
+    tests: ["test/lowering-structs-enums.test.ts", "-t", "a dictionary that takes nothing"],
   },
 ];

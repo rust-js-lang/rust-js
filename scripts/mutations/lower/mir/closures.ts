@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/closures.rs",
     find: "        let outer = std::mem::replace(&mut self.thir, &body.thir);\n",
     replace: "        let outer = self.thir;\n",
-    tests: ["test/lowering.test.ts","-t","if-let chains and loops from MIR"],
+    tests: ["test/lowering-loops.test.ts", "-t", "if-let chains and loops from MIR"],
   },
   {
     name: "mir-closure-parent-facts",
@@ -24,7 +24,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/closures.rs",
     find: "        let outer_facts = std::mem::replace(&mut self.body_facts, &body.facts);\n",
     replace: "        let outer_facts = self.body_facts;\n",
-    tests: ["test/lowering.test.ts","-t","string's parts from MIR"],
+    tests: ["test/lowering-iterators.test.ts", "-t", "string's parts from MIR"],
   },
   {
     name: "mir-spawning-closure-arrow",
@@ -32,7 +32,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/closures.rs",
     find: "            && let js::ExprKind::AsyncArrow(inner, spawned) = &callee.kind\n            && inner.is_empty()\n        {\n            return Ok(Expr::async_arrow(params, spawned.clone()));\n",
     replace: "            && let js::ExprKind::AsyncArrow(inner, spawned) = &callee.kind\n            && inner.is_empty()\n            && false\n        {\n            return Ok(Expr::async_arrow(params, spawned.clone()));\n",
-    tests: ["test/lowering.test.ts","-t","only spawns an async block"],
+    tests: ["test/lowering-functions.test.ts", "-t", "only spawns an async block"],
   },
   {
     name: "mir-capture-copied-always",
@@ -40,7 +40,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/closures.rs",
     find: "                            && written_from(state.body, state.at, l)));\n",
     replace: "                            ));\n",
-    tests: ["test/lowering.test.ts","-t","captures a variable itself where nothing"],
+    tests: ["test/lowering-functions.test.ts", "-t", "captures a variable itself where nothing"],
   },
   {
     "name": "mir-closure-forwarding-unmarked",
@@ -48,11 +48,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/closures.rs",
     "find": "        let forwarding = self.closure_calls_rust(body, false);\n",
     "replace": "        let forwarding = false;\n",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "only passes its arguments on"
-    ]
+    "tests": ["test/lowering-functions.test.ts", "-t", "only passes its arguments on"]
   },
   {
     "name": "mir-closure-concise-unmarked",
@@ -68,11 +64,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/closures.rs",
     "find": "            .filter(|&&id| self.tcx.parent(id) == def_id)",
     "replace": "            .filter(|_| false)",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "a function written in a closure is declared where it's written"
-    ]
+    "tests": ["test/lowering-functions.test.ts", "-t", "a function written in a closure is declared where it's written"]
   },
   {
     "name": "mir-written-fn-before-all",
@@ -80,11 +72,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/closures.rs",
     "find": ".position(|s| !s.span.is_none() && s.span.lo > at)",
     "replace": ".position(|_| true)",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "a function written in a closure is declared where it's written"
-    ]
+    "tests": ["test/lowering-functions.test.ts", "-t", "a function written in a closure is declared where it's written"]
   },
   {
     "name": "mir-async-closure-wild-param-kept",
@@ -92,11 +80,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/closures.rs",
     "find": "            && (name == \"_\" || name.starts_with(\"_$\"))\n",
     "replace": "            && name == \"never\"\n",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "an async closure's ignored argument is no parameter"
-    ]
+    "tests": ["test/lowering-functions.test.ts", "-t", "an async closure's ignored argument is no parameter"]
   },
   {
     "name": "mir-mut-capture-copied",
@@ -104,11 +88,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/closures.rs",
     "find": "                        upvars.get(i).map(|t| t.kind()),\n",
     "replace": "                        upvars.get(i).map(|t| t.kind()).filter(|_| false),\n",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "taking a variable assigns the variable"
-    ]
+    "tests": ["test/lowering-functions.test.ts", "-t", "taking a variable assigns the variable"]
   },
   {
     name: "mir-closure-unmade",

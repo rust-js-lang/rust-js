@@ -96,7 +96,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/drops/types.rs",
     find: "            ty::Adt(..) if self.recognition.is_guard(ty) && walk.guards_none => Drops::Nothing,\n",
     replace: "",
-    tests: ["test/lowering.test.ts", "-t", "RefCell only borrowed for a moment is its value"],
+    tests: ["test/lowering-cells.test.ts", "-t", "RefCell only borrowed for a moment is its value"],
     snapshots: true,
   },
   {
@@ -169,11 +169,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/drops/types.rs",
     "find": "            if implementor.has_non_region_param() || !matches!(self.drops_in(implementor, walk), Drops::Nothing) {\n",
     "replace": "            if true {\n",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "an Rc of a dyn none of whose implementors drops"
-    ]
+    "tests": ["test/lowering.test.ts", "-t", "an Rc of a dyn none of whose implementors drops"]
   },
   {
     name: "held-function-unsupported",

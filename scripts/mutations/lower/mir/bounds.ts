@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/bounds.rs",
     find: "        matches!(msg, mir::AssertKind::BoundsCheck { .. })\n",
     replace: "        false && matches!(msg, mir::AssertKind::BoundsCheck { .. })\n",
-    tests: ["test/lowering.test.ts", "-t", "early returns and index loops from MIR"],
+    tests: ["test/lowering-loops.test.ts", "-t", "early returns and index loops from MIR"],
   },
   {
     name: "mir-in-bounds-checked",
@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/bounds.rs",
     find: "(self.thir_call(def_id, span)).is_some_and(|(fun, _)| self.body_facts.in_bounds.contains(&fun))",
     replace: "(self.thir_call(def_id, span)).is_some_and(|_| false)",
-    tests: ["test/lowering.test.ts", "-t", "integer ranges show"],
+    tests: ["test/lowering-numbers.test.ts", "-t", "integer ranges show"],
   },
   {
     name: "swap-remove-shifted",
@@ -24,7 +24,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/bounds.rs",
     find: "            _ => Expr::call(Expr::member(items, \"pop\"), Vec::new()),",
     replace: "            _ => Expr::call(Expr::member(items, \"shift\"), Vec::new()),",
-    tests: ["test/lowering.test.ts", "-t", "integer ranges show"],
+    tests: ["test/lowering-numbers.test.ts", "-t", "integer ranges show"],
   },
   {
     name: "swap-remove-last-unswapped",
@@ -32,7 +32,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/bounds.rs",
     find: "                let last = Expr::bin(Op::Sub, Expr::member(items.clone(), \"length\"), Expr::int(1));\n                (exprs.remove(0), last)",
     replace: "                let _ = Expr::bin(Op::Sub, Expr::member(items.clone(), \"length\"), Expr::int(1));\n                let i = exprs.remove(0);\n                (i.clone(), i)",
-    tests: ["test/lowering.test.ts", "-t", "integer ranges show"],
+    tests: ["test/lowering-numbers.test.ts", "-t", "integer ranges show"],
   },
   {
     name: "mir-index-mut-a-value",
@@ -48,11 +48,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/bounds.rs",
     "find": "                || matches!(&index.kind, js::ExprKind::Var(v) if self.locals.mir.alike.contains(v))\n",
     "replace": "",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "checked element set is one statement"
-    ]
+    "tests": ["test/lowering-numbers.test.ts", "-t", "checked element set is one statement"]
   },
   {
     name: "index-mut-known-checked",
@@ -60,6 +56,6 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/bounds.rs",
     find: "            if checked {\n",
     replace: "            if true || checked {\n",
-    tests: ["test/lowering.test.ts", "-t", "nullable result is written"],
+    tests: ["test/lowering-options.test.ts", "-t", "nullable result is written"],
   },
 ];

@@ -88,7 +88,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/operands.rs",
     find: "        if !in_order && !acting.is_empty() && !state.taken.contains(&place.local) {\n",
     replace: "        if false && !in_order && !acting.is_empty() && !state.taken.contains(&place.local) {\n",
-    tests: ["test/lowering.test.ts","-t","arguments read out of order"],
+    tests: ["test/lowering-strings.test.ts", "-t", "arguments read out of order"],
   },
   {
     name: "mir-promoted-functions-refused",
@@ -112,6 +112,6 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/operands.rs",
     find: "text.contains('\\n') && crate::lower::literal_across_lines(tcx, c.span)",
     replace: "text.contains('\\n') && false",
-    tests: ["test/lowering.test.ts", "-t", "a string written across lines keeps its lines"],
+    tests: ["test/lowering-strings.test.ts", "-t", "a string written across lines keeps its lines"],
   },
 ];

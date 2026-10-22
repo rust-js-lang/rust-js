@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/patterns.rs",
     find: "                    if !p.span.is_desugaring(rustc_span::DesugaringKind::ForLoop) =>\n",
     replace: "                    if true =>\n",
-    tests: ["test/lowering.test.ts","-t","loops from MIR read as a person writes them"],
+    tests: ["test/lowering-loops.test.ts", "-t", "loops from MIR read as a person writes them"],
   },
   {
     "name": "mir-null-none-past-other-writes",
@@ -16,11 +16,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/patterns.rs",
     "find": "none && writes == locals.writes[local] && ",
     "replace": "none && ",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "a nullable field of Some or None by a branch"
-    ]
+    "tests": ["test/lowering-options.test.ts", "-t", "a nullable field of Some or None by a branch"]
   },
   {
     "name": "let-pattern-deref-unpeeled",
@@ -68,11 +64,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/patterns.rs",
     "find": "            thir::PatKind::Binding { .. } => Some(arm.pattern.span),\n",
     "replace": "            thir::PatKind::Binding { .. } => None::<rustc_span::Span>,\n",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "a string's or-pattern from MIR"
-    ]
+    "tests": ["test/lowering-matches.test.ts", "-t", "a string's or-pattern from MIR"]
   },
   {
     name: "nullable-result-some-coalesced",

@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_types/text.rs",
     find: "        if name == \"$slice\" && start.as_int() == Some(0) && end.is_none() {",
     replace: "        if false && name == \"$slice\" && start.as_int() == Some(0) && end.is_none() {",
-    tests: ["test/lowering.test.ts", "-t", "shared slice of all"],
+    tests: ["test/lowering-collections.test.ts", "-t", "shared slice of all"],
   },
   {
     name: "replacen-any-count",
@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_types/text.rs",
     find: "                    if !matches!(rest[2].kind, js::ExprKind::Num(n) if n == 1.0) {",
     replace: "                    if false {",
-    tests: ["test/lowering.test.ts", "-t", "replacen replaces as many"],
+    tests: ["test/lowering-strings.test.ts", "-t", "replacen replaces as many"],
   },
   {
     name: "replacen-count-given",
@@ -24,7 +24,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_types/text.rs",
     find: "                    rest.truncate(2);\n",
     replace: "",
-    tests: ["test/lowering.test.ts", "-t", "a replacement is the text it is"],
+    tests: ["test/lowering-strings.test.ts", "-t", "a replacement is the text it is"],
   },
   {
     name: "replacement-read-as-pattern",
@@ -32,7 +32,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_types/text.rs",
     find: '                if matches!(name, "replaceAll" | "replace") {\n                    rest[1] = replacement(rest[1].clone());',
     replace: '                if false {\n                    rest[1] = replacement(rest[1].clone());',
-    tests: ["test/lowering.test.ts", "-t", "a replacement is the text it is"],
+    tests: ["test/lowering-strings.test.ts", "-t", "a replacement is the text it is"],
   },
   {
     name: "replacement-literal-as-function",
@@ -40,7 +40,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_types/text.rs",
     find: "        js::ExprKind::Str(text) => Expr::str(text.replace('$', \"$$\")),\n",
     replace: "",
-    tests: ["test/lowering.test.ts", "-t", "a replacement is the text it is"],
+    tests: ["test/lowering-strings.test.ts", "-t", "a replacement is the text it is"],
   },
   {
     name: "as-bytes-utf16",
@@ -209,11 +209,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/std_types/text.rs",
     "find": "return Ok(Some(Expr::call(Expr::helper(\"$replacen\"), [vec![this], rest].concat())));",
     "replace": "return Ok(Some(Expr::call(Expr::member(this, \"replace\"), rest[..2].to_vec())));",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "replacen replaces as many"
-    ]
+    "tests": ["test/lowering-strings.test.ts", "-t", "replacen replaces as many"]
   },
   {
     "name": "str-method-unmarked-read",
@@ -221,11 +217,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/std_types/text.rs",
     "find": "                Expr::read(this, name, rest)",
     "replace": "                Expr::call(Expr::member(this, name), rest)",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "named as a slice's reader"
-    ]
+    "tests": ["test/lowering-iterators.test.ts", "-t", "named as a slice's reader"]
   },
   {
     "name": "range-edit-of-all-crashes",
@@ -233,11 +225,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/std_types/text.rs",
     "find": "            js::ExprKind::Call(_, list) => list,\n            kind => vec![\n",
     "replace": "            js::ExprKind::Call(_, list) => list,\n            _ => unreachable!(\"a range's read is a helper's call\"),\n            #[allow(unreachable_patterns)]\n            kind => vec![\n",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "a vec's range pushed again or replaced"
-    ]
+    "tests": ["test/lowering-collections.test.ts", "-t", "a vec's range pushed again or replaced"]
   },
   {
     name: "joined-text-of-iterable-unarrayed",

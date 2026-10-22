@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/dispatch.rs",
     find: "        if let Some(defined) = self.mir_defined(state.body, def_id, args, span)? {\n",
     replace: "        if let Some(defined) = None::<Expr> {\n",
-    tests: ["test/lowering.test.ts", "-t", "js::is_defined"],
+    tests: ["test/lowering-bindings.test.ts", "test/lowering.test.ts", "-t", "js::is_defined"],
   },
   {
     name: "mir-fmt-result-unwrapped",
@@ -64,7 +64,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/dispatch.rs",
     find: "                if (self.implements_iterator(output) || std_iterator)\n",
     replace: "                if false && (self.implements_iterator(output) || std_iterator)\n",
-    tests: ["test/lowering.test.ts","-t","stepped by hand"],
+    tests: ["test/lowering-loops.test.ts", "-t", "stepped by hand"],
   },
   {
     name: "mir-print-failing-unwrapped",
@@ -112,7 +112,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/dispatch.rs",
     find: "            && self.flattened_by(state, destination)\n",
     replace: "            && false\n",
-    tests: ["test/lowering.test.ts","-t","flatten of a read of items"],
+    tests: ["test/lowering-iterators.test.ts", "-t", "flatten of a read of items"],
   },
   {
     name: "mir-flattened-copy-reread",
@@ -120,7 +120,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/dispatch.rs",
     find: "                    Some(Std::OptionCloned) => item_itself() && self.flattened_by(state, *made),\n",
     replace: "                    Some(Std::OptionCloned) => false,\n",
-    tests: ["test/lowering.test.ts","-t","flatten of a read of items"],
+    tests: ["test/lowering-iterators.test.ts", "-t", "flatten of a read of items"],
   },
   {
     name: "mir-await-unawaited",
@@ -136,7 +136,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/dispatch.rs",
     find: "                || tcx.async_fn_trait_kind_from_def_id(fn_trait).is_some())\n",
     replace: "                || false)\n",
-    tests: ["test/lowering.test.ts", "-t", "an async closure"],
+    tests: ["test/lowering-functions.test.ts", "-t", "an async closure"],
   },
   {
     name: "mir-imported-binding-called-static",
@@ -152,11 +152,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/dispatch.rs",
     "find": "        if values.len() == 1 && self.gives_own_name(def_id) {\n",
     "replace": "        if values.len() == 1 && false {\n",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "a call giving each variant its own name"
-    ]
+    "tests": ["test/lowering-structs-enums.test.ts", "-t", "a call giving each variant its own name"]
   },
   {
     "name": "mir-binding-trait-dispatched",
@@ -164,11 +160,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/dispatch.rs",
     "find": "            && !bindings::is_binding(tcx, def_id)\n            && let Some(trait_id) = tcx.trait_of_assoc(def_id)\n",
     "replace": "            && let Some(trait_id) = tcx.trait_of_assoc(def_id)\n",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "binding trait method called through a generic"
-    ]
+    "tests": ["test/lowering-structs-enums.test.ts", "-t", "binding trait method called through a generic"]
   },
   {
     "name": "mir-default-base-called",
@@ -186,11 +178,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/dispatch.rs",
     "find": "self.fresh(self.parameter_name(inputs[0].peel_refs()))",
     "replace": "self.fresh(\"value\")",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "iterator chains from MIR are array methods"
-    ]
+    "tests": ["test/lowering-iterators.test.ts", "-t", "iterator chains from MIR are array methods"]
   },
   {
     "name": "mir-item-handles-a-js-iterator",
@@ -198,11 +186,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/dispatch.rs",
     "find": "                    true => self.std_iterator(handles, output),\n",
     "replace": "                    true => self.js_iterator(handles),\n",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "iter_mut chains from MIR"
-    ]
+    "tests": ["test/lowering-iterators.test.ts", "-t", "iter_mut chains from MIR"]
   },
   {
     "name": "mir-std-param-output-an-iterator",
@@ -322,7 +306,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/dispatch.rs",
     find: "        if values.len() == 1 && self.recognition().converts_to_untagged(def_id, generic_args) {\n",
     replace: "        if values.len() == 1 && self.recognition().converts_to_untagged(def_id, generic_args) && values.is_empty() {\n",
-    tests: ["test/lowering.test.ts","-t","into an untagged enum is the value"],
+    tests: ["test/lowering-structs-enums.test.ts", "-t", "into an untagged enum is the value"],
   },
   {
     name: "capacity-not-kept",
@@ -362,7 +346,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/dispatch.rs",
     find: "            Value::Expr(e) if strict => Ok(Value::Expr(js::strict_equality(e))),\n",
     replace: "            Value::Expr(e) if false && strict => Ok(Value::Expr(js::strict_equality(e))),\n",
-    tests: ["test/lowering.test.ts", "-t", "compared with a Some"],
+    tests: ["test/lowering-options.test.ts", "-t", "compared with a Some"],
   },
   {
     name: "some-equality-of-any",
@@ -370,7 +354,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/dispatch.rs",
     find: "                .is_some_and(|place| place.projection.is_empty() && state.options.made_some.contains(&place.local))\n",
     replace: "                .is_some_and(|place| place.projection.is_empty() || state.options.made_some.contains(&place.local))\n",
-    tests: ["test/lowering.test.ts", "-t", "compared with a Some"],
+    tests: ["test/lowering-options.test.ts", "-t", "compared with a Some"],
   },
   {
     name: "clone-from-through-dictionary",

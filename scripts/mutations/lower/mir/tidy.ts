@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy.rs",
     find: "        bottom_up(body, &mut |stmts| branch_values(stmts, returns, booleans, made));\n",
     replace: "",
-    tests: ["test/lowering.test.ts","-t","strings from MIR is the"],
+    tests: ["test/lowering-matches.test.ts", "-t", "strings from MIR is the"],
   },
   {
     name: "mir-tidy-inlined-past-changed-reads",
@@ -40,7 +40,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy.rs",
     find: "    bottom_up(body, &mut |stmts| and_tests(stmts, conditions));\n",
     replace: "",
-    tests: ["test/lowering.test.ts","-t","if-let chains and loops from MIR|a let chain from MIR is one test"],
+    tests: ["test/lowering-branches.test.ts", "test/lowering-loops.test.ts", "-t", "if-let chains and loops from MIR|a let chain from MIR is one test"],
   },
   {
     name: "mir-tidy-unused-let-kept",
@@ -48,7 +48,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy.rs",
     find: "        stmts.retain(|stmt| !matches!(&stmt.kind, StmtKind::Let(name, None) if !mentions.contains_key(name)));\n",
     replace: "",
-    tests: ["test/lowering.test.ts","-t","if-let chains and loops from MIR"],
+    tests: ["test/lowering-loops.test.ts", "-t", "if-let chains and loops from MIR"],
   },
   {
     name: "mir-tidy-innermost-jumps-labeled",
@@ -74,7 +74,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy.rs",
     find: "    js::statement_lists(body, &mut guarded);\n",
     replace: "",
-    tests: ["test/lowering.test.ts","-t","let-else from MIR is a guard"],
+    tests: ["test/lowering-matches.test.ts", "-t", "let-else from MIR is a guard"],
   },
   {
     name: "mir-tidy-tested-kept",
@@ -90,7 +90,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy.rs",
     find: "            && truthy_or_undefined(kept)\n",
     replace: "            && false\n",
-    tests: ["test/lowering.test.ts","-t","De Morgan"],
+    tests: ["test/lowering-branches.test.ts", "-t", "De Morgan"],
   },
   {
     name: "mir-tidy-lets-first",
@@ -98,7 +98,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy.rs",
     find: "    js::statement_lists(body, &mut sunk_lets);\n",
     replace: "",
-    tests: ["test/lowering.test.ts","-t","declared where it.s first named"],
+    tests: ["test/lowering-names.test.ts", "-t", "declared where it.s first named"],
   },
   {
     name: "mir-tidy-late-consts-kept",
@@ -106,7 +106,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy.rs",
     find: "    js::statement_lists(body, &mut |stmts| guarded_lets(stmts, captured));\n    js::statement_lists(body, &mut |stmts| {\n        inlined(stmts, &changed, &set, plain, captured, &paired)\n    });\n",
     replace: "    js::statement_lists(body, &mut |stmts| guarded_lets(stmts, captured));\n",
-    tests: ["test/lowering.test.ts","-t","else if. given as a value"],
+    tests: ["test/lowering-branches.test.ts", "-t", "else if. given as a value"],
   },
   {
     name: "mir-tidy-plain-cells-boxed",
@@ -114,7 +114,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy.rs",
     find: "    plain_cells(body);\n",
     replace: "",
-    tests: ["test/lowering.test.ts","-t","only its function reads and sets"],
+    tests: ["test/lowering-cells.test.ts", "-t", "only its function reads and sets"],
   },
   {
     name: "mir-tidy-callback-unnamed",
@@ -130,7 +130,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy.rs",
     find: "read_past_calls(result, set, &plain)\n        }\n        _ => e.is_made_of_constants(),\n",
     replace: "read_past_calls(result, set, &plain)\n        }\n        _ => e.is_constant(),\n",
-    tests: ["test/lowering.test.ts","-t","past an object of constants"],
+    tests: ["test/lowering-functions.test.ts", "-t", "past an object of constants"],
   },
   {
     name: "mir-tidy-late-tail-returns",
@@ -138,7 +138,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy.rs",
     find: "    // What those leave at the end, a `return;` the program didn't write.\n    tail_returns(body, returns);\n",
     replace: "",
-    tests: ["test/lowering.test.ts","-t","of .matches!. from MIR"],
+    tests: ["test/lowering-branches.test.ts", "-t", "of .matches!. from MIR"],
   },
   {
     "name": "late-while-tests-off",
@@ -146,11 +146,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/tidy.rs",
     "find": "    // > n)) { .. } }`'s of `const _7 = m.length;`.\n    js::statement_lists(body, &mut |stmts| while_tests(stmts, written));\n",
     "replace": "    // > n)) { .. } }`'s of `const _7 = m.length;`.\n",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "a while in a closure from MIR keeps its test"
-    ]
+    "tests": ["test/lowering-loops.test.ts", "-t", "a while in a closure from MIR keeps its test"]
   },
   {
     "name": "builtin-callee-blocks-inline",
@@ -158,11 +154,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/tidy.rs",
     "find": "\"Object\" | \"Math\"",
     "replace": "\"Object!\" | \"Math\"",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "read in place by a builtin's function"
-    ]
+    "tests": ["test/lowering-functions.test.ts", "-t", "read in place by a builtin's function"]
   },
   {
     "name": "shown-child-conditional",
@@ -180,11 +172,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/tidy.rs",
     "find": "                ..Expr::unary(*op, (**arg).clone())\n",
     "replace": "                kind: ExprKind::Unary(*op, arg.clone()),\n                reads: false,\n",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "negated matches, string methods"
-    ]
+    "tests": ["test/lowering-iterators.test.ts", "-t", "negated matches, string methods"]
   },
   {
     "name": "read-handles-off",
@@ -192,11 +180,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/tidy.rs",
     "find": "    read_handles(body);\n",
     "replace": "",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "a cell field a let pattern binds"
-    ]
+    "tests": ["test/lowering-cells.test.ts", "-t", "a cell field a let pattern binds"]
   },
   {
     "name": "plain-field-blocks-inline",
@@ -234,11 +218,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/tidy.rs",
     "find": "    js::statement_lists(body, &mut checked_sets);\n",
     "replace": "",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "checked element set is one statement"
-    ]
+    "tests": ["test/lowering-numbers.test.ts", "-t", "checked element set is one statement"]
   },
   {
     "name": "mir-tidy-written-first-unswapped",
@@ -246,11 +226,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/tidy.rs",
     "find": "        js::statement_lists(body, &mut |stmts| written_first(stmts));\n",
     "replace": "",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "if-let chain ending in a panic"
-    ]
+    "tests": ["test/lowering-branches.test.ts", "-t", "if-let chain ending in a panic"]
   },
   {
     "name": "mir-tidy-tail-elses-kept",
@@ -258,11 +234,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/tidy.rs",
     "find": "    js::statement_lists(body, &mut |stmts| tail_elses(stmts));\n",
     "replace": "",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "if-let chain ending in a panic"
-    ]
+    "tests": ["test/lowering-branches.test.ts", "-t", "if-let chain ending in a panic"]
   },
   {
     "name": "mir-tidy-typeof-null-kept",
@@ -270,11 +242,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/tidy.rs",
     "find": "    js::each_expr_mut(body, &mut typeof_tests);\n",
     "replace": "",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "typeof test after a null check"
-    ]
+    "tests": ["test/lowering-options.test.ts", "-t", "typeof test after a null check"]
   },
   {
     "name": "mir-tidy-chained-checks-kept",
@@ -282,11 +250,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/tidy.rs",
     "find": "    js::statement_lists(body, &mut |stmts| chained_checks(stmts));\n",
     "replace": "",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "arm before a panic stays an else if"
-    ]
+    "tests": ["test/lowering-branches.test.ts", "-t", "arm before a panic stays an else if"]
   },
   {
     "name": "mir-tidy-sibling-element-blocks",
@@ -304,11 +268,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/tidy.rs",
     "find": "    js::statement_lists(body, &mut |stmts| written_chains(stmts));\n",
     "replace": "",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "arms as statements chain in written order|an else-if at a loop's end from MIR stays one past a written continue"
-    ]
+    "tests": ["test/lowering-loops.test.ts", "test/lowering-matches.test.ts", "-t", "arms as statements chain in written order|an else-if at a loop's end from MIR stays one past a written continue"]
   },
   {
     "name": "mir-tidy-guarded-lets-kept",
@@ -336,11 +296,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/tidy.rs",
     "find": "    js::statement_lists(body, &mut |stmts| copied_bindings(stmts));\n",
     "replace": "",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "copy binding of a variable is the variable"
-    ]
+    "tests": ["test/lowering-names.test.ts", "-t", "copy binding of a variable is the variable"]
   },
   {
     "name": "mir-tidy-tuple-reads-kept",
@@ -392,7 +348,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/tidy.rs",
     "find": "    js::statement_lists(body, &mut |stmts| returned_consts(stmts, result));\n",
     "replace": "",
-    "tests": ["test/lowering.test.ts", "-t", "or chain of a getter's bool"]
+    "tests": ["test/lowering-branches.test.ts", "-t", "or chain of a getter's bool"]
   },
   {
     "name": "mir-tidy-concise-handlers-kept",
@@ -418,11 +374,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/tidy.rs",
     "find": " || plain.contains(&format!(\"...{v}\"))",
     "replace": "",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "arrays joined are one array of their items"
-    ]
+    "tests": ["test/lowering-collections.test.ts", "-t", "arrays joined are one array of their items"]
   },
   {
     "name": "jsx-child-truth-test-kept",
@@ -470,11 +422,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/tidy.rs",
     "find": "    js::statement_lists(body, &mut |stmts| named_labels(stmts, written));\n",
     "replace": "",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "nested loops from MIR read as written"
-    ]
+    "tests": ["test/lowering-loops.test.ts", "-t", "nested loops from MIR read as written"]
   },
   {
     "name": "mir-closure-values-first",
@@ -482,11 +430,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/tidy.rs",
     "find": "    if !closure {\n",
     "replace": "    if true {\n",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "iterator chains from MIR are array methods"
-    ]
+    "tests": ["test/lowering-iterators.test.ts", "-t", "iterator chains from MIR are array methods"]
   },
   {
     "name": "mir-loop-exit-returned-inside",
@@ -494,11 +438,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/tidy.rs",
     "find": "    js::statement_lists(body, &mut exits_after);\n",
     "replace": "",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "a loop's break from MIR is a break"
-    ]
+    "tests": ["test/lowering-loops.test.ts", "-t", "a loop's break from MIR is a break"]
   },
   {
     "name": "mir-or-tests-nested",
@@ -506,11 +446,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/tidy.rs",
     "find": "    bottom_up(body, &mut or_tests);\n",
     "replace": "",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "a string's or-pattern from MIR"
-    ]
+    "tests": ["test/lowering-matches.test.ts", "-t", "a string's or-pattern from MIR"]
   },
   {
     "name": "mir-tidy-handle-in-place-kept",
@@ -518,7 +454,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/tidy.rs",
     "find": "    handles_in_place(body);\n",
     "replace": "",
-    tests: ["test/lowering.test.ts", "-t", "a handle used in place from MIR is its place"],
+    tests: ["test/lowering-cells.test.ts", "-t", "a handle used in place from MIR is its place"],
   },
   {
     name: "mir-tidy-unread-map-kept",
@@ -526,7 +462,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy.rs",
     find: "    js::statement_lists(body, &mut forwarded_values);\n    unread_maps(body);\n",
     replace: "    js::statement_lists(body, &mut forwarded_values);\n",
-    tests: ["test/lowering.test.ts", "-t", "next_back of a map"],
+    tests: ["test/lowering-iterators.test.ts", "-t", "next_back of a map"],
   },
   {
     name: "mir-tidy-return-span-none",
@@ -550,7 +486,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy.rs",
     find: "    js::statement_lists(body, &mut |stmts| returned_in_branches(stmts, result));\n",
     replace: "",
-    tests: ["test/lowering.test.ts","-t","returns in a loop are where"],
+    tests: ["test/lowering-loops.test.ts", "-t", "returns in a loop are where"],
   },
   {
     name: "mir-tidy-while-heads-kept",
@@ -558,7 +494,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy.rs",
     find: "    js::statement_lists(body, &mut while_heads);\n",
     replace: "",
-    tests: ["test/lowering.test.ts","-t","returns in a loop are where"],
+    tests: ["test/lowering-loops.test.ts", "-t", "returns in a loop are where"],
   },
   {
     name: "mir-tidy-headed-labels-kept",
@@ -584,7 +520,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy.rs",
     find: "    js::statement_lists(body, &mut |stmts| written_order_steps(stmts));\n",
     replace: "",
-    tests: ["test/lowering.test.ts","-t","returns in a loop are where"],
+    tests: ["test/lowering-loops.test.ts", "-t", "returns in a loop are where"],
   },
   {
     name: "mir-tidy-tried-last",
@@ -600,7 +536,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy.rs",
     find: "    js::statement_lists(body, &mut |stmts| unread_made(stmts, &mentions));\n",
     replace: "",
-    tests: ["test/lowering.test.ts","-t","a value made only to be dropped is what making it does"],
+    tests: ["test/lowering.test.ts", "-t", "a value made only to be dropped is what making it does"],
   },
   {
     name: "mir-tidy-decisions-off",
@@ -608,7 +544,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy.rs",
     find: "    bottom_up(body, &mut decisions::decisions);\n",
     replace: "",
-    tests: ["test/lowering.test.ts", "-t", "arms of more than one pattern"],
+    tests: ["test/lowering-matches.test.ts", "-t", "arms of more than one pattern"],
   },
   {
     name: "mir-tidy-default-values-off",
@@ -616,7 +552,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy.rs",
     find: "    js::statement_lists(body, &mut |stmts| decisions::default_values(stmts));\n",
     replace: "",
-    tests: ["test/lowering.test.ts", "-t", "no arm sets it"],
+    tests: ["test/lowering-matches.test.ts", "-t", "no arm sets it"],
   },
   {
     name: "loop-exits-taken-once",
@@ -651,7 +587,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy.rs",
     find: "    js::each_expr_mut(body, &mut crate::lower::std_types::range::range_items);\n    eager_chains(body);\n    js::statement_lists(body, &mut |stmts| eager_spreads(stmts));\n",
     replace: "    js::each_expr_mut(body, &mut crate::lower::std_types::range::range_items);\n    js::statement_lists(body, &mut |stmts| eager_spreads(stmts));\n",
-    tests: ["test/lowering.test.ts", "-t", "iterator chains from MIR|a lazy chain from MIR spread once"],
+    tests: ["test/lowering-iterators.test.ts", "-t", "iterator chains from MIR|a lazy chain from MIR spread once"],
   },
   {
     name: "mir-tidy-guards-kept",
@@ -659,7 +595,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy.rs",
     find: "    // A guard of a handle made for it alone: the place it's a handle on.\n    crate::lower::std_types::cell::unguarded(body);\n",
     replace: "",
-    tests: ["test/lowering.test.ts", "-t", "field only ever borrowed for a moment"],
+    tests: ["test/lowering-cells.test.ts", "-t", "field only ever borrowed for a moment"],
   },
   {
     name: "late-eager-chains-off",
@@ -667,7 +603,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy.rs",
     find: "    iterators::consumed_into_iters(body, fuse);\n    js::each_expr_mut(body, &mut crate::lower::std_types::range::range_items);\n    eager_chains(body);\n    // Of each, a callback",
     replace: "    iterators::consumed_into_iters(body, fuse);\n    js::each_expr_mut(body, &mut crate::lower::std_types::range::range_items);\n    // Of each, a callback",
-    tests: ["test/lowering.test.ts", "-t", "an array's iterator read in place late"],
+    tests: ["test/lowering-iterators.test.ts", "-t", "an array's iterator read in place late"],
   },
   {
     name: "mir-map-count-handle",
@@ -675,7 +611,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy.rs",
     find: "    js::statement_lists(body, &mut crate::lower::std_types::map::counted_entries);\n",
     replace: "",
-    tests: ["test/lowering.test.ts", "-t", "a count kept in a map from MIR"],
+    tests: ["test/lowering-collections.test.ts", "-t", "a count kept in a map from MIR"],
   },
   {
     name: "mir-tidy-applied-values-kept",
@@ -773,11 +709,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/tidy.rs",
     "find": "    bindings::readable_temporaries(params, body, suggested);\n",
     "replace": "",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "held temporary is named"
-    ]
+    "tests": ["test/lowering-names.test.ts", "-t", "held temporary is named"]
   },
   {
     name: "member-of-any-object-read-in-place",
@@ -811,7 +743,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy.rs",
     find: "    holed_lists(body);\n",
     replace: "",
-    tests: ["test/lowering.test.ts", "-t", "a list of one item left is the item"],
+    tests: ["test/lowering-iterators.test.ts", "-t", "a list of one item left is the item"],
   },
   {
     name: "unread-flag-kept-after-decided-tests",

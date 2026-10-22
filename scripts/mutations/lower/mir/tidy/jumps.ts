@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/jumps.rs",
     find: "        if tests.is_empty() || !leaves {\n",
     replace: "        if true {\n",
-    tests: ["test/lowering.test.ts","-t","loops from MIR read"],
+    tests: ["test/lowering-loops.test.ts", "-t", "loops from MIR read"],
   },
   {
     name: "mir-tidy-tail-guard-kept",
@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/jumps.rs",
     find: "StmtKind::If(_, then, None) if then.last().is_some_and(unwritten)))",
     replace: "StmtKind::If(_, then, None) if false && then.last().is_some_and(unwritten)))",
-    tests: ["test/lowering.test.ts","-t","strings from MIR is the"],
+    tests: ["test/lowering-matches.test.ts", "-t", "strings from MIR is the"],
   },
   {
     name: "mir-tidy-tail-return-branch-kept",
@@ -24,7 +24,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/jumps.rs",
     find: "        .position(|s| matches!(&s.kind, StmtKind::If(_, then, None) if then.last().is_some_and(unwritten)))\n",
     replace: "        .position(|s| matches!(&s.kind, StmtKind::If(_, then, None) if matches!(then.as_slice(), [r] if unwritten(r))))\n",
-    tests: ["test/lowering.test.ts","-t","strings from MIR is the"],
+    tests: ["test/lowering-matches.test.ts", "-t", "strings from MIR is the"],
   },
   {
     name: "mir-tidy-tail-return-else-lost",
@@ -32,7 +32,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/jumps.rs",
     find: "            (false, false) => stmts.push(StmtKind::If(test, then, Some(rest)).at(span)),\n",
     replace: "            (false, false) => stmts.push(StmtKind::If(test, then, None).at(span)),\n",
-    tests: ["test/lowering.test.ts","-t","strings from MIR is the"],
+    tests: ["test/lowering-matches.test.ts", "-t", "strings from MIR is the"],
   },
   {
     name: "mir-tidy-inner-let-else-kept",
@@ -40,7 +40,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/jumps.rs",
     find: "        && !then.last().is_some_and(ends)\n    {\n        let Some(Stmt {\n            kind: StmtKind::If(test, then, Some(otherwise)),\n",
     replace: "        && false\n    {\n        let Some(Stmt {\n            kind: StmtKind::If(test, then, Some(otherwise)),\n",
-    tests: ["test/lowering.test.ts","-t","inside a branch, its .else. a .return."],
+    tests: ["test/lowering-matches.test.ts", "-t", "inside a branch, its .else. a .return."],
   },
   {
     name: "mir-tidy-let-else-binding-after",
@@ -48,7 +48,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/jumps.rs",
     find: "                Some(b.clone())\n            }\n            _ => None,\n        };\n        let test = match &bound {",
     replace: "                let _ = b;\n                None::<String>\n            }\n            _ => None,\n        };\n        let test = match &bound {",
-    tests: ["test/lowering.test.ts","-t","inside a branch, its .else. a .return."],
+    tests: ["test/lowering-matches.test.ts", "-t", "inside a branch, its .else. a .return."],
   },
   {
     "name": "break-test-nested-unread",
@@ -56,11 +56,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/tidy/jumps.rs",
     "find": "        None => Some(Expr::bin(Op::And, test.clone(), inner(then)?)),\n",
     "replace": "        None => None,\n",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "an or of ands from MIR is one test"
-    ]
+    "tests": ["test/lowering-branches.test.ts", "-t", "an or of ands from MIR is one test"]
   },
   {
     "name": "break-test-else-unnegated",
@@ -68,11 +64,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/tidy/jumps.rs",
     "find": "Some(Expr::bin(Op::Or, test.clone().negated_test(), inner(then)?)),\n",
     "replace": "Some(Expr::bin(Op::Or, test.clone(), inner(then)?)),\n",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "an or of ands from MIR is one test"
-    ]
+    "tests": ["test/lowering-branches.test.ts", "-t", "an or of ands from MIR is one test"]
   },
   {
     name: "loop-exit-before-what-goes-on",
@@ -105,6 +97,6 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/jumps.rs",
     find: "            true => leaves_early(then),\n",
     replace: "            true => then.last().is_some_and(ends),\n",
-    tests: ["test/lowering.test.ts", "-t", "a .while. loop from MIR tests where"],
+    tests: ["test/lowering-loops.test.ts", "-t", "a .while. loop from MIR tests where"],
   },
 ];

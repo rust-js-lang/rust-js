@@ -8,11 +8,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/iter/closing.rs",
     "find": "        if method == Some(IterMethod::ByRef) && self.is_user_iterator(iter_ty) {\n",
     "replace": "        if false && method == Some(IterMethod::ByRef) && self.is_user_iterator(iter_ty) {\n",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "stepped through by_ref from MIR"
-    ]
+    "tests": ["test/lowering-iterators.test.ts", "-t", "stepped through by_ref from MIR"]
   },
   {
     name: "given-iterator-next-as-js",

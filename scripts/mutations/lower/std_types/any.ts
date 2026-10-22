@@ -57,7 +57,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_types/any.rs",
     find: "            ty::Adt(_, args) if self.is_vec_like(pointee) => args.types().next(),\n",
     replace: "",
-    tests: ["test/lowering.test.ts","-t","dyn Any"],
+    tests: ["test/lowering-bindings.test.ts", "-t", "dyn Any"],
   },
   {
     name: "marker-dyn-given-as-pair",

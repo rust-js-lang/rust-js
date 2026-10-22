@@ -496,7 +496,7 @@ instead of inferring compiler output.
 | Build adapter and native hosts | `tooling/build.js`, `tooling/manifest.js`, `tooling/cargo.js`, `tooling/cli.js` |
 | Browser host | `wasm/web/compile-rust.ts`, `tooling/publish.js`, `wasm/web/compiler-client.js`, `wasm/web/compiler-worker.js`, `wasm/web/rust/compiler.rs` |
 | Bindings: JS's builtins, the web's APIs, React, Node, Next.js, serde | `builtins/`, `webapi/`, `react/`, `node/`, `next/`, `serde/`; the crates shipped, each once, `tooling/crates.js`, which hosts and packaging read |
-| Tests: what each kind checks | `test/corpus/` and `test/corpus.test.ts` (each program run natively and as JS, its JS a snapshot); `test/snapshots/` (examples' JS); `test/lowering.test.ts`, `test/jsx.test.ts` (a construct's JS); `test/compiler.test.ts` (native Rust beside the JS); `test/architecture.test.ts` (these boundaries); `test/sourcemap.ts` (a source map decoder) |
+| Tests: what each kind checks | `test/corpus/` and `test/corpus.test.ts` (each program run natively and as JS, its JS a snapshot); `test/snapshots/` (examples' JS); `test/lowering*.test.ts`, `test/jsx*.test.ts` (a construct's JS, a file for each concept); `test/compiler.test.ts` (native Rust beside the JS); `test/architecture.test.ts` (these boundaries); `test/sourcemap.ts` (a source map decoder) |
 
 ## Where a change goes
 

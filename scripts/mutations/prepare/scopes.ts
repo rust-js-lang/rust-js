@@ -11,7 +11,7 @@ export const mutations: Mutation[] = [
     file: "src/prepare/scopes.rs",
     find: "        if declaring.iter().any(|&s| self.declares(s, to)) {",
     replace: "        if false {",
-    tests: ["test/lowering.test.ts", "-t", "reuses a name"],
+    tests: ["test/lowering-names.test.ts", "-t", "reuses a name"],
   },
   {
     name: "scopes-not-hoisted",
@@ -19,7 +19,7 @@ export const mutations: Mutation[] = [
     file: "src/prepare/scopes.rs",
     find: "                StmtKind::Const(name, _) | StmtKind::Let(name, _) => self.declare(name),",
     replace: "                StmtKind::Const(..) | StmtKind::Let(..) => {}",
-    tests: ["test/lowering.test.ts", "-t", "reuses a name"],
+    tests: ["test/lowering-names.test.ts", "-t", "reuses a name"],
   },
   {
     name: "scopes-closure-params-undeclared",
@@ -36,6 +36,6 @@ export const mutations: Mutation[] = [
     file: "src/prepare/scopes.rs",
     find: "        of_from.iter().all(|r| r.of.is_some() && !passes(r, to)) && of_to.iter().all(|r| !passes(r, from))",
     replace: "        of_from.iter().all(|r| r.of.is_some() && !passes(r, to))",
-    tests: ["test/lowering.test.ts", "-t", "reuses a name"],
+    tests: ["test/lowering-names.test.ts", "-t", "reuses a name"],
   },
 ];

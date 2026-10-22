@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_types/number/generic.rs",
     find: "                let value = match target.is_ref() || fresh || owned {",
     replace: "                let value = match true {",
-    tests: ["test/lowering.test.ts", "-t", "array made of a whole slice"],
+    tests: ["test/lowering-collections.test.ts", "-t", "array made of a whole slice"],
   },
   {
     name: "array-of-part-copied-twice",

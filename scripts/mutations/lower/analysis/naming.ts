@@ -154,7 +154,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/naming.rs",
     find: "                        hir::Node::Stmt(_)\n",
     replace: "                        hir::Node::Stmt(_) if false\n",
-    tests: ["test/lowering.test.ts","-t","local function there"],
+    tests: ["test/lowering-functions.test.ts", "-t", "local function there"],
   },
   {
     name: "local-function-static-user",
@@ -162,7 +162,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/naming.rs",
     find: "                    .any(|&user| user != def_id && user != parent(def_id) && !local.contains(&user))\n",
     replace: "                    .any(|&user| false && user != def_id && user != parent(def_id) && !local.contains(&user))\n",
-    tests: ["test/lowering.test.ts","-t","local function there"],
+    tests: ["test/lowering-functions.test.ts", "-t", "local function there"],
   },
   {
     name: "anon-const-unnamed",

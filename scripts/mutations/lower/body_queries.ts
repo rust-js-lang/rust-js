@@ -24,7 +24,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/body_queries.rs",
     find: "            ExprKind::Borrow {\n                borrow_kind: BorrowKind::Mut { .. },\n                arg,\n            }\n            | ExprKind::RawBorrow {",
     replace: "            ExprKind::RawBorrow {",
-    tests: ["test/lowering.test.ts", "-t", "a binding names a variable set again|an index a condition shows"],
+    tests: ["test/lowering-names.test.ts", "test/lowering-numbers.test.ts", "-t", "a binding names a variable set again|an index a condition shows"],
   },
   {
     name: "whole-bits-unbounded",
@@ -32,7 +32,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/body_queries.rs",
     find: "        if bits > 32 {\n",
     replace: "        if bits > 128 {\n",
-    tests: ["test/lowering.test.ts", "-t", "whole number in range"],
+    tests: ["test/lowering-numbers.test.ts", "-t", "whole number in range"],
   },
   {
     name: "whole-int-unknown",
@@ -40,7 +40,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/body_queries.rs",
     find: "        ExprKind::Cast { source } => int_range(thir[source].ty),\n",
     replace: "        ExprKind::Cast { source } => None,\n",
-    tests: ["test/lowering.test.ts", "-t", "whole number in range"],
+    tests: ["test/lowering-numbers.test.ts", "-t", "whole number in range"],
   },
   {
     name: "whole-position-unknown",
@@ -48,7 +48,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/body_queries.rs",
     find: "            .filter(|&(def_id, _)| super::bindings::position(tcx, def_id))\n",
     replace: "            .filter(|_| false)\n",
-    tests: ["test/lowering.test.ts", "-t", "whole number in range"],
+    tests: ["test/lowering-numbers.test.ts", "-t", "whole number in range"],
   },
   {
     name: "whole-other-changes",
@@ -56,7 +56,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/body_queries.rs",
     find: "        let only_set = bound.contains(&var) && changes == sets.get(&var).copied().unwrap_or(0);\n",
     replace: "        let only_set = bound.contains(&var);\n",
-    tests: ["test/lowering.test.ts", "-t", "whole number in range"],
+    tests: ["test/lowering-numbers.test.ts", "-t", "whole number in range"],
   },
   {
     name: "whole-set-after-test",
@@ -64,7 +64,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/body_queries.rs",
     find: "&& region.contains(here) && !after(*from))\n",
     replace: "&& region.contains(here))\n",
-    tests: ["test/lowering.test.ts", "-t", "whole number in range"],
+    tests: ["test/lowering-numbers.test.ts", "-t", "whole number in range"],
   },
   {
     name: "whole-not-equal-unnarrowed",
@@ -72,7 +72,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/body_queries.rs",
     find: "                if c.with == lo {\n",
     replace: "                if false && c.with == lo {\n",
-    tests: ["test/lowering.test.ts", "-t", "whole number in range"],
+    tests: ["test/lowering-numbers.test.ts", "-t", "whole number in range"],
   },
   {
     name: "constant-written-two-ways-named",
@@ -80,6 +80,6 @@ export const mutations: Mutation[] = [
     file: "src/lower/body_queries.rs",
     find: "                    .and_modify(|seen| *seen = seen.filter(|&d| Some(d) == named))\n",
     replace: "                    .and_modify(|seen| *seen = seen.or(named))\n",
-    tests: ["test/lowering.test.ts", "-t", "a match of constants tests each"],
+    tests: ["test/lowering-matches.test.ts", "-t", "a match of constants tests each"],
   },
 ];

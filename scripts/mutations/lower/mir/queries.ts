@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/queries.rs",
     find: "            let mut out = vec![StmtKind::If(test.negated_test(), otherwise, None).at(span)];\n",
     replace: "            let mut out = vec![StmtKind::If(test, otherwise, None).at(span)];\n",
-    tests: ["test/lowering.test.ts","-t","branches from MIR read"],
+    tests: ["test/lowering-branches.test.ts", "-t", "branches from MIR read"],
   },
   {
     name: "mir-static-read-movable",
@@ -49,7 +49,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/queries.rs",
     find: "        Some(otherwise) if panics == [false, true] => {\n",
     replace: "        Some(otherwise) if panics == [false, true] && false => {\n",
-    tests: ["test/lowering.test.ts","-t","what reads the same anywhere"],
+    tests: ["test/lowering-functions.test.ts", "-t", "what reads the same anywhere"],
   },
   {
     name: "mir-panics-through-calls-not",
@@ -57,7 +57,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/queries.rs",
     find: "            TerminatorKind::Goto { target }\n            | TerminatorKind::Call {\n                target: Some(target), ..\n            }\n",
     replace: "            TerminatorKind::Goto { target }\n",
-    tests: ["test/lowering.test.ts","-t","what reads the same anywhere"],
+    tests: ["test/lowering-functions.test.ts", "-t", "what reads the same anywhere"],
   },
   {
     name: "mir-early-exit-both-returning-flipped",
@@ -65,7 +65,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/queries.rs",
     find: "        Some(otherwise) if panics == [true, false] || exits(&then) => {\n",
     replace: "        Some(otherwise) if panics == [true, false] || exits(&then) && !exits(&otherwise) => {\n",
-    tests: ["test/lowering.test.ts","-t","let-else from MIR"],
+    tests: ["test/lowering-matches.test.ts", "-t", "let-else from MIR"],
   },
   {
     name: "mir-bounds-check-inline",
@@ -73,7 +73,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/queries.rs",
     find: "        _ if written.projection.last() == Some(&PlaceElem::Index(local)) => Some((local, true)),\n        _ => None,\n",
     replace: "        _ => None,\n",
-    tests: ["test/lowering.test.ts","-t","nothing proves in bounds"],
+    tests: ["test/lowering-numbers.test.ts", "-t", "nothing proves in bounds"],
   },
   {
     name: "mir-bounds-ref-unchecked-here",
@@ -81,7 +81,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/queries.rs",
     find: "        | Rvalue::Ref(_, BorrowKind::Shared, read)\n",
     replace: "",
-    tests: ["test/lowering.test.ts","-t","nothing proves in bounds"],
+    tests: ["test/lowering-numbers.test.ts", "-t", "nothing proves in bounds"],
   },
   {
     name: "mir-capture-copied-never",
@@ -89,7 +89,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/queries.rs",
     find: "        next.extend(data.terminator().successors());\n",
     replace: "",
-    tests: ["test/lowering.test.ts","-t","captures a variable itself where nothing"],
+    tests: ["test/lowering-functions.test.ts", "-t", "captures a variable itself where nothing"],
   },
   {
     "name": "mir-division-checked-twice",
@@ -97,11 +97,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/queries.rs",
     "find": "            AssertKind::DivisionByZero(_)\n                | AssertKind::RemainderByZero(_)\n                | AssertKind::Overflow(BinOp::Div | BinOp::Rem, ..)\n",
     "replace": "            AssertKind::Overflow(BinOp::Shl, ..)\n",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "division by a constant from MIR"
-    ]
+    "tests": ["test/lowering-numbers.test.ts", "-t", "division by a constant from MIR"]
   },
   {
     "name": "mir-frozen-borrow-a-variable",
@@ -109,11 +105,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/queries.rs",
     "find": "&& !place.is_indirect() && !frozen {",
     "replace": "&& !place.is_indirect() {",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "a match guard's binding from MIR"
-    ]
+    "tests": ["test/lowering-matches.test.ts", "-t", "a match guard's binding from MIR"]
   },
   {
     "name": "mir-arm-written-at-test",
@@ -121,11 +113,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/queries.rs",
     "find": "    written_within(body, block, 4)\n",
     "replace": "    written_within(body, block, 0)\n",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "a match's arms from MIR are in written order"
-    ]
+    "tests": ["test/lowering-matches.test.ts", "-t", "a match's arms from MIR are in written order"]
   },
   {
     name: "mir-async-captured-refused",
@@ -221,10 +209,6 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/queries.rs",
     "find": "        && !(state.locals.user[local] && !is_parameter(state, local) && once_each_way(state.body, local))\n",
     "replace": "        && !(!is_parameter(state, local) && once_each_way(state.body, local))\n",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "a vec.s specs from MIR stay in place"
-    ]
+    "tests": ["test/lowering-functions.test.ts", "-t", "a vec.s specs from MIR stay in place"]
   },
 ];

@@ -40,7 +40,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/locals.rs",
     find: "            && !state.patterned.contains(&local)\n",
     replace: "",
-    tests: ["test/lowering.test.ts","-t","pattern of one field"],
+    tests: ["test/lowering-matches.test.ts", "-t", "pattern of one field"],
   },
   {
     "name": "mir-self-named-self",
@@ -48,11 +48,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/locals.rs",
     "find": "ty::Adt(adt, _) if info.name.as_str() == \"self\" =>",
     "replace": "ty::Adt(adt, _) if false =>",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "a method's self from MIR is named after its type"
-    ]
+    "tests": ["test/lowering-names.test.ts", "-t", "a method's self from MIR is named after its type"]
   },
   {
     name: "mir-derived-params-unnamed",
@@ -60,7 +56,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/locals.rs",
     find: "                && (!info.source_info.span.in_external_macro(sm) || body.local_kind(place.local) == LocalKind::Arg)\n",
     replace: "                && !info.source_info.span.in_external_macro(sm)\n",
-    tests: ["test/lowering.test.ts","-t","a writer from its MIR returns the string it writes"],
+    tests: ["test/lowering-strings.test.ts", "-t", "a writer from its MIR returns the string it writes"],
   },
   {
     name: "pin-macro-unnamed",

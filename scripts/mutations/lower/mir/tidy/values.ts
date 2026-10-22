@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/values.rs",
     find: "    let plain: HashSet<&String> = (cells.iter()).filter(|c| reads.get(*c) == kept.get(*c)).collect();\n",
     replace: "    let plain: HashSet<&String> = cells.iter().collect();\n",
-    tests: ["test/lowering.test.ts","-t","only its function reads and sets"],
+    tests: ["test/lowering-cells.test.ts", "-t", "only its function reads and sets"],
   },
   {
     "name": "mir-tidy-passed-on-unread",
@@ -16,11 +16,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/tidy/values.rs",
     "find": "        && forwarding.contains(&f.span)\n",
     "replace": "        && true\n",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "only passes its arguments on"
-    ]
+    "tests": ["test/lowering-functions.test.ts", "-t", "only passes its arguments on"]
   },
   {
     "name": "array-spread-of-array-kept",
@@ -28,11 +24,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/tidy/values.rs",
     "find": "    if let ExprKind::Array(items) = &mut e.kind {",
     "replace": "    if let ExprKind::Array(items) = &mut e.kind && false {",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "arrays joined are one array of their items"
-    ]
+    "tests": ["test/lowering-collections.test.ts", "-t", "arrays joined are one array of their items"]
   },
   {
     "name": "array-values-kept-stepped",
@@ -40,11 +32,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/tidy/values.rs",
     "find": "        && crate::lower::iterators::is_stepped_items(it)\n        && let ExprKind::Call(_, args) = &mut it.kind\n",
     "replace": "        && false\n        && let ExprKind::Call(_, args) = &mut it.kind\n",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "an array's iterator for an adapter alone is its values"
-    ]
+    "tests": ["test/lowering-iterators.test.ts", "-t", "an array's iterator for an adapter alone is its values"]
   },
   {
     "name": "named-callback-reads-base",
@@ -62,11 +50,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/tidy/values.rs",
     "find": "        && pairs_index(pair)\n",
     "replace": "        && false\n",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "nested loops from MIR read as written"
-    ]
+    "tests": ["test/lowering-loops.test.ts", "-t", "nested loops from MIR read as written"]
   },
   {
     "name": "mir-rest-str-of-fresh",
@@ -74,11 +58,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/tidy/values.rs",
     "find": "        && callee.helper_name() == Some(\"$restStr\")\n",
     "replace": "        && false\n",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "the rest of a string's chars from MIR"
-    ]
+    "tests": ["test/lowering-strings.test.ts", "-t", "the rest of a string's chars from MIR"]
   },
   {
     "name": "mir-capital-chars-joined",
@@ -86,11 +66,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/tidy/values.rs",
     "find": "if m == \"toUpperCase\" || m == \"toLowerCase\"))",
     "replace": "if m == \"none\"))",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "iterator chains from MIR are array methods"
-    ]
+    "tests": ["test/lowering-iterators.test.ts", "-t", "iterator chains from MIR are array methods"]
   },
   {
     "name": "mir-set-of-iter",
@@ -98,11 +74,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/tidy/values.rs",
     "find": "if c == \"Set\" || c == \"Map\")",
     "replace": "if c == \"None\")",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "sets and maps from MIR"
-    ]
+    "tests": ["test/lowering-collections.test.ts", "-t", "sets and maps from MIR"]
   },
   {
     name: "mir-tidy-plain-cell-shadowed",
@@ -110,7 +82,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/values.rs",
     find: "    cells.retain(|c| bound.get(c).copied().unwrap_or(0) <= 1);\n",
     replace: "",
-    tests: ["test/lowering.test.ts", "-t", "callback's parameter shadows"],
+    tests: ["test/lowering-cells.test.ts", "-t", "callback's parameter shadows"],
   },
   {
     name: "mir-tidy-plain-cells-not-in-closures",
@@ -118,7 +90,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/values.rs",
     find: "    let mut clones: HashMap<String, String> = HashMap::new();\n    js::each_block_mut(&mut body.clone(), &mut |stmts| {\n",
     replace: "    let mut clones: HashMap<String, String> = HashMap::new();\n    js::statement_lists(&mut body.clone(), &mut |stmts| {\n",
-    tests: ["test/lowering.test.ts","-t","a cell cloned in a closure"],
+    tests: ["test/lowering-cells.test.ts", "-t", "a cell cloned in a closure"],
   },
   {
     name: "mir-tidy-handle-read-early",
@@ -126,7 +98,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/values.rs",
     find: "                handles.push((name.clone(), (**place).clone(), read_at_once(stmts, k, name)));\n",
     replace: "                handles.push((name.clone(), (**place).clone(), true));\n",
-    tests: ["test/lowering.test.ts","-t","a Cell a let takes apart"],
+    tests: ["test/lowering-cells.test.ts", "-t", "a Cell a let takes apart"],
   },
   {
     "name": "lazy-flatmap-stepped",
@@ -134,11 +106,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/tidy/values.rs",
     "find": "        *each = Expr::var(param);\n",
     "replace": "",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "arrays of arrays flattened"
-    ]
+    "tests": ["test/lowering-collections.test.ts", "-t", "arrays of arrays flattened"]
   },
   {
     name: "applied-template-nested",

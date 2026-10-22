@@ -192,7 +192,7 @@ export const mutations: Mutation[] = [
     file: "src/jsx_syntax/parser.rs",
     find: "        (\"Option\", Some(ast::GenericArgs::AngleBracketed(args))) if optional => matches!(",
     replace: "        (\"Option\", Some(ast::GenericArgs::AngleBracketed(args))) if false => matches!(",
-    tests: ["test/lowering.test.ts", "-t", "optional element"],
+    tests: ["test/lowering-bindings.test.ts", "-t", "optional element"],
   },
   {
     name: "element-span-of-call",

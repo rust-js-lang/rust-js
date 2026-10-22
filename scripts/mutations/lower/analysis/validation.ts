@@ -32,7 +32,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/validation.rs",
     find: "            let object = match ty.peel_refs().kind() {",
     replace: "            let object = match ty.kind() {",
-    tests: ["test/lowering.test.ts","-t","flattened field made outside JSX"],
+    tests: ["test/lowering-structs-enums.test.ts", "-t", "flattened field made outside JSX"],
   },
   {
     name: "flattened-read-through-deref",
@@ -40,7 +40,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/validation.rs",
     find: "                    while let ExprKind::Deref { arg } = thir[lhs].kind {\n",
     replace: "                    while let ExprKind::Deref { arg } = thir[lhs].kind && false {\n",
-    tests: ["test/lowering.test.ts","-t","flattened field made outside JSX"],
+    tests: ["test/lowering-structs-enums.test.ts", "-t", "flattened field made outside JSX"],
   },
   {
     name: "mixed-read-through",

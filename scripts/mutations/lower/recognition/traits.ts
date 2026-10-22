@@ -473,7 +473,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/recognition/traits.rs",
     find: "        if given(declared)\n",
     replace: "        if false\n",
-    tests: ["test/lowering.test.ts", "-t", "generic binding given a Result"],
+    tests: ["test/lowering-bindings.test.ts", "-t", "generic binding given a Result"],
   },
   {
     name: "generic-promise-result-settled",
@@ -481,6 +481,6 @@ export const mutations: Mutation[] = [
     file: "src/lower/recognition/traits.rs",
     find: "                && inner.types().next().is_some_and(given))\n",
     replace: "                && inner.types().next().is_some_and(|_| false))\n",
-    tests: ["test/lowering.test.ts", "-t", "generic binding given a Result"],
+    tests: ["test/lowering-bindings.test.ts", "-t", "generic binding given a Result"],
   },
 ];

@@ -218,7 +218,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/traits/impls.rs",
     find: "                    (true, None) => None,\n",
     replace: "",
-    tests: ["test/lowering.test.ts", "-t", "default constant of Self"],
+    tests: ["test/lowering-structs-enums.test.ts", "-t", "default constant of Self"],
   },
   {
     name: "default-const-of-self-refused",
@@ -226,7 +226,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/traits/impls.rs",
     find: "                        None => self.default_method(item.def_id, tr.args)?,",
     replace: "                        None => return Err(self.unsupported(span, \"a generic impl's default constant of its parameters\")),",
-    tests: ["test/lowering.test.ts", "-t", "default constant of Self"],
+    tests: ["test/lowering-structs-enums.test.ts", "-t", "default constant of Self"],
   },
   {
     name: "default-const-literal-getter",
@@ -234,7 +234,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/traits/impls.rs",
     find: "                            ] if value.is_constant() => Some(value.clone()),",
     replace: "                            ] if false => Some(value.clone()),",
-    tests: ["test/lowering.test.ts", "-t", "default constant of Self"],
+    tests: ["test/lowering-structs-enums.test.ts", "-t", "default constant of Self"],
   },
   {
     name: "dictionary-iterator-unmade",
@@ -467,6 +467,6 @@ export const mutations: Mutation[] = [
     file: "src/lower/traits/impls.rs",
     find: "        if !self.takes_evidence(id) {\n",
     replace: "        if false {\n",
-    tests: ["test/lowering.test.ts", "-t", "a dictionary that takes nothing"],
+    tests: ["test/lowering-structs-enums.test.ts", "-t", "a dictionary that takes nothing"],
   },
 ];

@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     file: "src/js/applied.rs",
     find: "                stmt.kind = StmtKind::Break(None);\n                true\n",
     replace: "                false\n",
-    tests: ["test/lowering.test.ts", "-t", "closure called as a statement is its body"],
+    tests: ["test/lowering-cells.test.ts", "-t", "closure called as a statement is its body"],
   },
   {
     name: "applied-tail-returns-refused",
@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     file: "src/js/applied.rs",
     find: "    if valued || any && !tail && !returns_broken(&mut body) {\n",
     replace: "    if valued || any && !returns_broken(&mut body) {\n",
-    tests: ["test/lowering.test.ts", "-t", "closure called as a statement is its body"],
+    tests: ["test/lowering-cells.test.ts", "-t", "closure called as a statement is its body"],
   },
   {
     name: "applied-param-unread",
@@ -24,7 +24,7 @@ export const mutations: Mutation[] = [
     file: "src/js/applied.rs",
     find: "        let whole_body = substituted(&mut body, &|v| (v == param).then(|| arg.clone()));\n",
     replace: "        let whole_body = true;\n",
-    tests: ["test/lowering.test.ts", "-t", "closure called as a statement is its body"],
+    tests: ["test/lowering-cells.test.ts", "-t", "closure called as a statement is its body"],
   },
   {
     name: "named-call-never-applied",

@@ -48,7 +48,7 @@ export const mutations: Mutation[] = [
     file: "src/main.rs",
     find: "        let _ = rustc_interface::util::STACK_SIZE.set(256 * 1024 * 1024);\n",
     replace: "",
-    tests: ["test/lowering.test.ts","-t","a long function"],
+    tests: ["test/lowering-functions.test.ts", "-t", "a long function"],
   },
   {
     name: "stage-kept",

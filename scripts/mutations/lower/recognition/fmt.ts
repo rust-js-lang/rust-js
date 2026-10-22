@@ -32,7 +32,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/recognition/fmt.rs",
     find: "        \"DebugStruct\" => DebugBuilder::Struct,\n",
     replace: "",
-    tests: ["test/lowering.test.ts", "-t", "a writer's Debug builder from its MIR"],
+    tests: ["test/lowering-strings.test.ts", "-t", "a writer's Debug builder from its MIR"],
   },
   {
     name: "builder-entries-unknown",

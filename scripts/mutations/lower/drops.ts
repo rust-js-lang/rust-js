@@ -48,11 +48,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/drops.rs",
     "find": "                    self.found.insert(field.pattern.ty);\n",
     "replace": "",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "only borrowed for a moment"
-    ]
+    "tests": ["test/lowering-cells.test.ts", "-t", "only borrowed for a moment"]
   },
   {
     name: "consumed-closed-required",

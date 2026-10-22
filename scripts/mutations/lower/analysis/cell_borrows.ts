@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/cell_borrows.rs",
     find: "        (Cell::Key(x), Cell::Key(y)) => x == y,\n",
     replace: "        (Cell::Key(_), Cell::Key(_)) => false,\n",
-    tests: ["test/lowering.test.ts", "-t", "closures call only what can't borrow"],
+    tests: ["test/lowering-cells.test.ts", "-t", "closures call only what can't borrow"],
   },
   {
     name: "crate-call-borrows-nothing",
@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/cell_borrows.rs",
     find: "    match id.is_local() && !is_binding(tcx, id) {\n        true => Called::Body(id, instance.args),\n",
     replace: "    match id.is_local() && !is_binding(tcx, id) {\n        true => Called::Nothing,\n",
-    tests: ["test/lowering.test.ts", "-t", "closures call only what can't borrow"],
+    tests: ["test/lowering-cells.test.ts", "-t", "closures call only what can't borrow"],
   },
   {
     name: "crate-call-borrows-nothing-inside",
@@ -32,7 +32,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/cell_borrows.rs",
     find: "                    Called::Body(body, args) => found.runs.push((body, Some(args))),\n",
     replace: "                    Called::Body(..) => found.any = true,\n",
-    tests: ["test/lowering.test.ts", "-t", "closures call only what can't borrow"],
+    tests: ["test/lowering-cells.test.ts", "-t", "closures call only what can't borrow"],
   },
   {
     name: "body-asks-of-nothing",
@@ -60,7 +60,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/cell_borrows.rs",
     find: "        Some(Std::CellReplace | Std::CellTake | Std::CellSwap | Std::CellReplaceWith) if refcell => Some(true),\n",
     replace: "",
-    tests: ["test/lowering.test.ts", "-t", "written by replace and take"],
+    tests: ["test/lowering-cells.test.ts", "-t", "written by replace and take"],
   },
 
 ];

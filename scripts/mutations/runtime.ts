@@ -34,11 +34,7 @@ export const mutations: Mutation[] = [
     "file": "src/runtime.rs",
     "find": "    \"$mutGet\",\n",
     "replace": "",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "and_modify then or_insert"
-    ]
+    "tests": ["test/lowering-collections.test.ts", "-t", "and_modify then or_insert"]
   },
   {
     name: "some-mut-impure",

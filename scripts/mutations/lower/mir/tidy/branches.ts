@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/branches.rs",
     find: "            js::same_path(x, y) && matches!(&name.kind, ExprKind::Str(t) if t != \"object\" && t != \"undefined\")\n",
     replace: "            js::same_path(x, y) && matches!(&name.kind, ExprKind::Str(_))\n",
-    tests: ["test/lowering.test.ts", "-t", "a match arm's pattern of parts"],
+    tests: ["test/lowering-matches.test.ts", "-t", "a match arm's pattern of parts"],
   },
   {
     name: "coerced-branches-kept",
@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/branches.rs",
     find: "    if returned != result && !is_temporary(returned) {\n",
     replace: "    if returned != result {\n",
-    tests: ["test/lowering.test.ts", "-t", "coerced to the result are returned"],
+    tests: ["test/lowering-branches.test.ts", "-t", "coerced to the result are returned"],
   },
   {
     name: "mir-tidy-empty-then-kept",
@@ -24,7 +24,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/branches.rs",
     find: "        (true, Some(otherwise)) if !otherwise.is_empty() => Some(StmtKind::If(test.negated_test(), otherwise, None)),\n",
     replace: "        (true, Some(otherwise)) if !otherwise.is_empty() => Some(StmtKind::If(test, Vec::new(), Some(otherwise))),\n",
-    tests: ["test/lowering.test.ts","-t","branches from MIR read"],
+    tests: ["test/lowering-branches.test.ts", "-t", "branches from MIR read"],
   },
   {
     name: "mir-tidy-returned-chain-kept",
@@ -32,7 +32,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/branches.rs",
     find: "        stmts.push(StmtKind::Return(Some(value)).at(span));\n",
     replace: "        let _ = value;\n        return;\n",
-    tests: ["test/lowering.test.ts","-t","branches from MIR read"],
+    tests: ["test/lowering-branches.test.ts", "-t", "branches from MIR read"],
   },
   {
     name: "mir-tidy-or-chain-kept",
@@ -40,7 +40,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/branches.rs",
     find: "            StmtKind::Labeled(label, body) if let Some((tests, otherwise, then)) = or_chain(&body, &label) => {\n",
     replace: "            StmtKind::Labeled(label, body) if let Some((tests, otherwise, then)) = or_chain(&body, &label).filter(|_| false) => {\n",
-    tests: ["test/lowering.test.ts","-t","react.dev's Console clears its logs"],
+    tests: ["test/lowering-matches.test.ts", "-t", "react.dev's Console clears its logs"],
   },
   {
     name: "mir-tidy-cond-false-kept",
@@ -48,7 +48,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/branches.rs",
     find: "        (_, ExprKind::Bool(false)) => Expr::bin(Op::And, truth(test), yes),\n",
     replace: "",
-    tests: ["test/lowering.test.ts","-t","branches from MIR read"],
+    tests: ["test/lowering-branches.test.ts", "-t", "branches from MIR read"],
   },
   {
     name: "mir-tidy-temporary-ternary-kept",
@@ -64,7 +64,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/branches.rs",
     find: "        && !written(returns, last.span)\n        && !writes_return(std::slice::from_ref(last_if), returns)\n",
     replace: "",
-    tests: ["test/lowering.test.ts","-t", "match returns each arm, and its if of two values is one conditional"],
+    tests: ["test/lowering-branches.test.ts", "-t", "match returns each arm, and its if of two values is one conditional"],
   },
   {
     name: "mir-tidy-let-else-return-nested",
@@ -72,7 +72,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/branches.rs",
     find: "        && let Some((tests, body)) = returning_chain(std::slice::from_ref(last_if))\n",
     replace: "        && let Some((tests, body)) = returning_chain(std::slice::from_ref(last_if)).filter(|_| false)\n",
-    tests: ["test/lowering.test.ts","-t","let-else from MIR is a guard"],
+    tests: ["test/lowering-matches.test.ts", "-t", "let-else from MIR is a guard"],
   },
   {
     name: "mir-tidy-boolean-variable-unknown",
@@ -80,7 +80,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/branches.rs",
     find: "        ExprKind::Var(name) => booleans.contains(name),\n",
     replace: "",
-    tests: ["test/lowering.test.ts","-t", "match returns each arm, and its if of two values is one conditional"],
+    tests: ["test/lowering-branches.test.ts", "-t", "match returns each arm, and its if of two values is one conditional"],
   },
   {
     name: "mir-tidy-truth-uncoerced",
@@ -88,7 +88,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/branches.rs",
     find: "        false => Expr::unary(UnaryOp::Not, Expr::unary(UnaryOp::Not, test)),\n",
     replace: "        false => test,\n",
-    tests: ["test/lowering.test.ts","-t", "match returns each arm, and its if of two values is one conditional"],
+    tests: ["test/lowering-branches.test.ts", "-t", "match returns each arm, and its if of two values is one conditional"],
   },
   {
     name: "mir-tidy-implied-guard-kept",
@@ -96,7 +96,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/branches.rs",
     find: "            StmtKind::If(test, then, None) if !then.is_empty() && then.iter().all(|s| guarded_chain(s, test)) => {\n",
     replace: "            StmtKind::If(test, then, None) if false && !then.is_empty() && then.iter().all(|s| guarded_chain(s, test)) => {\n",
-    tests: ["test/lowering.test.ts","-t","strings from MIR is the"],
+    tests: ["test/lowering-matches.test.ts", "-t", "strings from MIR is the"],
   },
   {
     name: "mir-tidy-implied-by-or-unread",
@@ -104,7 +104,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/branches.rs",
     find: "        (_, ExprKind::Binary(Op::Or, a, b)) => implies(a, test) && implies(b, test),\n",
     replace: "",
-    tests: ["test/lowering.test.ts","-t","strings from MIR is the"],
+    tests: ["test/lowering-matches.test.ts", "-t", "strings from MIR is the"],
   },
   {
     name: "mir-tidy-guarded-chain-else",
@@ -112,7 +112,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/branches.rs",
     find: "                && (otherwise.as_deref()).is_none_or(|rest| matches!(rest, [next] if guarded_chain(next, guard)))\n        }\n        _ => false,\n",
     replace: "                && (otherwise.as_deref()).is_none_or(|rest| matches!(rest, [next] if guarded_chain(next, guard)))\n        }\n        _ => true,\n",
-    tests: ["test/lowering.test.ts","-t","strings from MIR is the"],
+    tests: ["test/lowering-matches.test.ts", "-t", "strings from MIR is the"],
   },
   {
     name: "mir-tidy-filtered-guard-kept",
@@ -120,7 +120,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/branches.rs",
     find: "            Op::LooseEq => otherwise.is_none() && then.last().is_some_and(ends),\n",
     replace: "            Op::LooseEq => false,\n",
-    tests: ["test/lowering.test.ts","-t","what .filter. keeps"],
+    tests: ["test/lowering-matches.test.ts", "-t", "what .filter. keeps"],
   },
   {
     name: "mir-tidy-filter-or-chain",
@@ -128,7 +128,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/branches.rs",
     find: "        ExprKind::Binary(Op::Coalesce, a, b) => truthy_or_undefined(a) && truthy_or_undefined(b),\n",
     replace: "",
-    tests: ["test/lowering.test.ts","-t","De Morgan"],
+    tests: ["test/lowering-branches.test.ts", "-t", "De Morgan"],
   },
   {
     name: "mir-tidy-filtered-some-kept",
@@ -153,7 +153,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/branches.rs",
     find: "        && !body.last().is_some_and(|s| matches!(s.kind, StmtKind::Return(_)) && written(returns, s.span))\n",
     replace: "",
-    tests: ["test/lowering.test.ts","-t","string's parts from MIR"],
+    tests: ["test/lowering-iterators.test.ts", "-t", "string's parts from MIR"],
   },
   {
     "name": "table-reads-off",
@@ -161,11 +161,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/tidy/branches.rs",
     "find": "    let within = |s: js::Span| table_of(s).is_some();",
     "replace": "    let within = |s: js::Span| false && table_of(s).is_some();",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "a match reading a table from MIR"
-    ]
+    "tests": ["test/lowering.test.ts", "-t", "a match reading a table from MIR"]
   },
   {
     "name": "table-reads-returns-kept",
@@ -173,11 +169,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/tidy/branches.rs",
     "find": "                stmts.splice(i..=i + returned, [StmtKind::Return(Some(read)).at(span)]);\n",
     "replace": "                let _ = (read, span);\n",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "a match reading a table from MIR"
-    ]
+    "tests": ["test/lowering.test.ts", "-t", "a match reading a table from MIR"]
   },
   {
     "name": "table-read-own-names-off",
@@ -185,11 +177,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/tidy/branches.rs",
     "find": "        None if names == arms.len() => Some((**key).clone()),\n",
     "replace": "",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "a match reading a table from MIR"
-    ]
+    "tests": ["test/lowering.test.ts", "-t", "a match reading a table from MIR"]
   },
   {
     "name": "table-read-mixed-arms",
@@ -197,11 +185,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/tidy/branches.rs",
     "find": "        Some(table) if fields.len() == arms.len() =>",
     "replace": "        Some(table) =>",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "a match reading a table from MIR"
-    ]
+    "tests": ["test/lowering.test.ts", "-t", "a match reading a table from MIR"]
   },
   {
     "name": "negated-and-untruthed",
@@ -209,11 +193,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/tidy/branches.rs",
     "find": "        (ExprKind::Bool(false), _) => Expr::bin(Op::And, truth(negate(test)), no),\n",
     "replace": "        (ExprKind::Bool(false), _) => Expr::bin(Op::And, negate(test), no),\n",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "a truthy option's is_some given as a value"
-    ]
+    "tests": ["test/lowering-options.test.ts", "-t", "a truthy option's is_some given as a value"]
   },
   {
     "name": "negated-value-untruthed",
@@ -221,11 +201,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/tidy/branches.rs",
     "find": "        (ExprKind::Bool(false), ExprKind::Bool(true)) => truth(negate(test)),\n",
     "replace": "        (ExprKind::Bool(false), ExprKind::Bool(true)) => negate(test),\n",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "a truthy option's is_some given as a value"
-    ]
+    "tests": ["test/lowering-options.test.ts", "-t", "a truthy option's is_some given as a value"]
   },
   {
     "name": "negated-or-untruthed",
@@ -233,11 +209,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/tidy/branches.rs",
     "find": "        (_, ExprKind::Bool(true)) => Expr::bin(Op::Or, truth(negate(test)), yes),\n",
     "replace": "        (_, ExprKind::Bool(true)) => Expr::bin(Op::Or, negate(test), yes),\n",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "a truthy option's is_some given as a value"
-    ]
+    "tests": ["test/lowering-options.test.ts", "-t", "a truthy option's is_some given as a value"]
   },
   {
     "name": "block-returns-kept",
@@ -245,11 +217,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/tidy/branches.rs",
     "find": "    returned_from_block(stmts, result);\n",
     "replace": "",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "written returns MIR jumps out of a block"
-    ]
+    "tests": ["test/lowering-branches.test.ts", "-t", "written returns MIR jumps out of a block"]
   },
   {
     "name": "or-branches-reversed",
@@ -257,11 +225,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/tidy/branches.rs",
     "find": "                    true => conditional(test.clone().negated_test(), no, yes, booleans),\n",
     "replace": "                    true => conditional(test.clone(), yes.clone(), no.clone(), booleans),\n",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "an if of an or from MIR keeps its branches"
-    ]
+    "tests": ["test/lowering-branches.test.ts", "-t", "an if of an or from MIR keeps its branches"]
   },
   {
     "name": "mir-tidy-or-chain-negated",
@@ -269,11 +233,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/tidy/branches.rs",
     "find": "        ExprKind::Binary(Op::And | Op::Or, ..) => negated_bools(test, booleans),\n",
     "replace": "",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "an or chain"
-    ]
+    "tests": ["test/lowering-branches.test.ts", "-t", "an or chain"]
   },
   {
     "name": "mir-tidy-bool-field-unknown",
@@ -281,11 +241,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/tidy/branches.rs",
     "find": "        ExprKind::Member(..) => field_path(e).is_some_and(|path| booleans.contains(&path)),\n",
     "replace": "",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "or chain from MIR is written as one"
-    ]
+    "tests": ["test/lowering-branches.test.ts", "-t", "or chain from MIR is written as one"]
   },
   {
     "name": "mir-tidy-chain-first",
@@ -293,11 +249,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/tidy/branches.rs",
     "find": "                    (false, true) => false,\n",
     "replace": "                    (false, true) => true,\n",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "arms as values chain in written order"
-    ]
+    "tests": ["test/lowering-matches.test.ts", "-t", "arms as values chain in written order"]
   },
   {
     "name": "mir-tidy-or-pattern-blocks",
@@ -305,11 +257,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/tidy/branches.rs",
     "find": "                StmtKind::If(or_all(a, b), then, None)\n",
     "replace": "                StmtKind::If(a, then, None)\n",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "or-pattern's matches is an or"
-    ]
+    "tests": ["test/lowering-matches.test.ts", "-t", "or-pattern's matches is an or"]
   },
   {
     "name": "mir-tidy-same-test-truth",
@@ -327,7 +275,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/tidy/branches.rs",
     "find": "        ExprKind::Call(..) if call_path(e).is_some_and(|path| booleans.contains(&path)) => true,\n",
     "replace": "",
-    "tests": ["test/lowering.test.ts", "-t", "call giving a bool is one in a test"]
+    "tests": ["test/lowering-branches.test.ts", "-t", "call giving a bool is one in a test"]
   },
   {
     "name": "element-branch-not-small",
@@ -345,11 +293,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/tidy/branches.rs",
     "find": "                    && let Some((y, folded)) = assigned_only(otherwise)\n",
     "replace": "                    && let Some((y, folded)) = assigned_only(otherwise).filter(|_| false)\n",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "a variable's value of three arms from MIR"
-    ]
+    "tests": ["test/lowering-branches.test.ts", "-t", "a variable's value of three arms from MIR"]
   },
   {
     "name": "mir-temp-chain-half-folded",
@@ -357,11 +301,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/tidy/branches.rs",
     "find": " || is_temporary(x) && then.len() > 1)",
     "replace": ")",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "a variable's value of three arms from MIR"
-    ]
+    "tests": ["test/lowering-branches.test.ts", "-t", "a variable's value of three arms from MIR"]
   },
   {
     "name": "mir-tidy-truth-read-negated",
@@ -369,11 +309,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/tidy/branches.rs",
     "find": "        ExprKind::Unary(UnaryOp::Not, c) => !matches!(c.kind, ExprKind::Unary(UnaryOp::Not, _)),\n",
     "replace": "        ExprKind::Unary(UnaryOp::Not, _c) => true,\n",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "a let a loop's branch makes is declared in the loop"
-    ]
+    "tests": ["test/lowering-names.test.ts", "-t", "a let a loop's branch makes is declared in the loop"]
   },
   {
     "name": "mir-tidy-table-taken-apart-unread",
@@ -381,11 +317,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/tidy/branches.rs",
     "find": "            | StmtKind::Return(Some(e))\n            | StmtKind::Destructure { value: e, .. } => {\n",
     "replace": "            | StmtKind::Return(Some(e)) => {\n",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "a match reading a table from MIR"
-    ]
+    "tests": ["test/lowering.test.ts", "-t", "a match reading a table from MIR"]
   },
   {
     name: "mir-tidy-updates-folded",
@@ -393,7 +325,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/branches.rs",
     find: "                    && !(updates(x, yes) && updates(x, no))\n",
     replace: "                    && !(updates(x, yes) && updates(x, no) && false)\n",
-    tests: ["test/lowering.test.ts","-t","branches that each add"],
+    tests: ["test/lowering-branches.test.ts", "-t", "branches that each add"],
   },
   {
     name: "mir-tidy-table-last-arm-unchecked",
@@ -401,7 +333,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/branches.rs",
     find: "            None => Some(left.as_str()),\n",
     replace: "            None => None,\n",
-    tests: ["test/lowering.test.ts","-t","an enum's own names are the enum"],
+    tests: ["test/lowering-structs-enums.test.ts", "-t", "an enum's own names are the enum"],
   },
   {
     name: "turned-of-floats",
@@ -434,7 +366,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/branches.rs",
     find: "                    && !commented(span, &[then.as_slice(), otherwise.as_slice()].concat(), comments) =>",
     replace: "                    =>",
-    tests: ["test/lowering.test.ts", "-t", "a comment is in the JS where"],
+    tests: ["test/lowering-names.test.ts", "-t", "a comment is in the JS where"],
   },
   {
     name: "decided-tests-kept",
@@ -467,7 +399,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/branches.rs",
     find: "                    || tail.last().is_some_and(ends)\n",
     replace: "",
-    tests: ["test/lowering.test.ts", "-t", "a let-else from MIR inside a branch|written returns MIR jumps out"],
+    tests: ["test/lowering-branches.test.ts", "test/lowering-matches.test.ts", "-t", "a let-else from MIR inside a branch|written returns MIR jumps out"],
   },
   {
     name: "emptied-if-kept-as-test",
@@ -484,7 +416,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/branches.rs",
     find: "    [yes, no].iter().all(|value| !matches!(value.kind, ExprKind::Undefined))\n",
     replace: "    true\n",
-    tests: ["test/lowering.test.ts", "-t", "an if written with an else keeps it"],
+    tests: ["test/lowering-branches.test.ts", "-t", "an if written with an else keeps it"],
   },
   {
     name: "conditional-branch-unmapped",
@@ -500,7 +432,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/branches.rs",
     find: "                    present_in(&mut stmts[j], test, holds);\n",
     replace: "",
-    tests: ["test/lowering.test.ts", "-t", "a test says is there"],
+    tests: ["test/lowering-options.test.ts", "-t", "a test says is there"],
   },
   {
     name: "present-coalesce-failed-test-unread",
@@ -508,6 +440,6 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/branches.rs",
     find: "        false => test.clone().negated_test(),\n",
     replace: "        false => test.clone(),\n",
-    tests: ["test/lowering.test.ts", "-t", "a test says is there"],
+    tests: ["test/lowering-options.test.ts", "-t", "a test says is there"],
   },
 ];

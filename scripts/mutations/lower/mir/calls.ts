@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/calls.rs",
     find: "                    self.member_of_global(f)\n",
     replace: "                    None\n",
-    tests: ["test/lowering.test.ts", "-t", "js::is_defined"],
+    tests: ["test/lowering-bindings.test.ts", "test/lowering.test.ts", "-t", "js::is_defined"],
   },
   {
     name: "defined-path-last-only",
@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/calls.rs",
     find: "        Ok(asked.into_iter().reduce(|a, b| Expr::bin(Op::And, a, b)))\n",
     replace: "        Ok(asked.pop())\n",
-    tests: ["test/lowering.test.ts", "-t", "js::is_defined"],
+    tests: ["test/lowering-bindings.test.ts", "test/lowering.test.ts", "-t", "js::is_defined"],
   },
   {
     name: "defined-member-of-either",
@@ -24,7 +24,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/calls.rs",
     find: "        let [global] = statics.as_slice() else { return None };\n",
     replace: "        let [global, ..] = statics.as_slice() else { return None };\n",
-    tests: ["test/lowering.test.ts", "-t", "js::is_defined"],
+    tests: ["test/lowering-bindings.test.ts", "test/lowering.test.ts", "-t", "js::is_defined"],
   },
   {
     name: "defined-of-own-function",
@@ -32,7 +32,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/calls.rs",
     find: "                ty::FnDef(f, _) if bindings::is_binding(tcx, f) => bindings::js_path(tcx, f),\n",
     replace: "                ty::FnDef(f, _) => bindings::js_path(tcx, f),\n",
-    tests: ["test/lowering.test.ts", "-t", "js::is_defined"],
+    tests: ["test/lowering-bindings.test.ts", "test/lowering.test.ts", "-t", "js::is_defined"],
   },
   {
     name: "defined-of-any-name",
@@ -40,7 +40,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/calls.rs",
     find: "        if parts.is_empty() || !parts.iter().all(|part| crate::names::is_identifier(part)) {\n",
     replace: "        if parts.is_empty() {\n",
-    tests: ["test/lowering.test.ts", "-t", "js::is_defined"],
+    tests: ["test/lowering-bindings.test.ts", "test/lowering.test.ts", "-t", "js::is_defined"],
   },
   {
     name: "defined-static-unfollowed",
@@ -48,7 +48,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/calls.rs",
     find: "                if matches!(place.projection.as_slice(), [PlaceElem::Deref]) =>\n",
     replace: "                if false && matches!(place.projection.as_slice(), [PlaceElem::Deref]) =>\n",
-    tests: ["test/lowering.test.ts", "-t", "js::is_defined"],
+    tests: ["test/lowering-bindings.test.ts", "test/lowering.test.ts", "-t", "js::is_defined"],
   },
   {
     name: "defined-of-own-static",
@@ -56,7 +56,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/calls.rs",
     find: "                    .filter(|&s| tcx.is_foreign_item(s))\n",
     replace: "",
-    tests: ["test/lowering.test.ts", "-t", "js::is_defined"],
+    tests: ["test/lowering-bindings.test.ts", "test/lowering.test.ts", "-t", "js::is_defined"],
   },
   {
     name: "mir-assign-op-handle-refused",

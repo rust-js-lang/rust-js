@@ -25,11 +25,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/iter/sources.rs",
     "find": " || self.recognition().is_deque_iter(ty)",
     "replace": "",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "a VecDeque's items collected from MIR"
-    ]
+    "tests": ["test/lowering-collections.test.ts", "-t", "a VecDeque's items collected from MIR"]
   },
   {
     "name": "mir-crate-fn-item-callback-wrapped",
@@ -37,11 +33,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/iter/sources.rs",
     "find": "            js::ExprKind::Arrow(params, _) if params.len() <= 1 => f,\n            js::ExprKind::Var(_) if own => f,\n",
     "replace": "            js::ExprKind::Arrow(params, _) if params.len() <= 1 => f,\n",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "a crate function given as a callback is passed as itself"
-    ]
+    "tests": ["test/lowering-functions.test.ts", "-t", "a crate function given as a callback is passed as itself"]
   },
   {
     "name": "mir-range-back-forward",
@@ -49,11 +41,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/iter/sources.rs",
     "find": "        if range.back {\n",
     "replace": "        if !range.back {\n",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "a range mapped and collected"
-    ]
+    "tests": ["test/lowering-iterators.test.ts", "-t", "a range mapped and collected"]
   },
   {
     "name": "mir-range-unmapped-lazy",
@@ -61,11 +49,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/iter/sources.rs",
     "find": "        if !numbers || maps",
     "replace": "        if maps.is_empty() || !numbers || maps",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "a range mapped and collected"
-    ]
+    "tests": ["test/lowering-iterators.test.ts", "-t", "a range mapped and collected"]
   },
   {
     "name": "mir-chars-next-back-refused",
@@ -73,11 +57,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/iter/sources.rs",
     "find": "            || self.recognition().is_str_chars(ty)\n",
     "replace": "",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "the rest of a string's chars from MIR"
-    ]
+    "tests": ["test/lowering-strings.test.ts", "-t", "the rest of a string's chars from MIR"]
   },
   {
     "name": "mir-iter-mut-a-js-iterator",
@@ -85,11 +65,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/iter/sources.rs",
     "find": "            || self.recognition().is_slice_iter_mut(ty)\n",
     "replace": "",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "iter_mut chains from MIR"
-    ]
+    "tests": ["test/lowering-iterators.test.ts", "-t", "iter_mut chains from MIR"]
   },
   {
     "name": "mir-mapped-range-filtered",
@@ -97,11 +73,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/iter/sources.rs",
     "find": "            && name == \"map\"\n",
     "replace": "            && (name == \"map\" || name == \"filter\")\n",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "a range made where it's stepped"
-    ]
+    "tests": ["test/lowering-iterators.test.ts", "-t", "a range made where it's stepped"]
   },
   {
     "name": "mir-mapped-range-end-unfolded",
@@ -109,11 +81,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/iter/sources.rs",
     "find": "                Some(n) => Expr::int(n + 1),\n                None => Expr::bin(js::Op::Add, range.end.clone(), Expr::int(1)),\n",
     "replace": "                Some(_) | None => Expr::bin(js::Op::Add, range.end.clone(), Expr::int(1)),\n",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "a range mapped and collected"
-    ]
+    "tests": ["test/lowering-iterators.test.ts", "-t", "a range mapped and collected"]
   },
   {
     name: "mir-next-back-tree",
@@ -145,7 +113,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/iter/sources.rs",
     find: "            None if matches!(ty.kind(), ty::Param(_)) && !is_js_iterator(&value) => Ok(self.js_iterator(value)),\n",
     replace: "",
-    tests: ["test/lowering.test.ts","-t","takes the crate's own from behind"],
+    tests: ["test/lowering-iterators.test.ts", "-t", "takes the crate's own from behind"],
   },
   {
     name: "mir-opaque-iterator-unrevealed",
@@ -153,7 +121,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/iter/sources.rs",
     find: "        let ty = self.reveal(ty);\n        match self.range_kind(ty) {\n",
     replace: "        match self.range_kind(ty) {\n",
-    tests: ["test/lowering.test.ts","-t","takes the crate's own from behind"],
+    tests: ["test/lowering-iterators.test.ts", "-t", "takes the crate's own from behind"],
   },
   {
     "name": "mir-iterable-collected-generic",
@@ -161,11 +129,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/iter/sources.rs",
     "find": "        if crate::lower::recognition::known_by_bounds(source) {\n            return None;\n        }\n        collected(",
     "replace": "        collected(",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "only a next"
-    ]
+    "tests": ["test/lowering-iterators.test.ts", "-t", "only a next"]
   },
   {
     name: "fresh-iter-len-stepped",

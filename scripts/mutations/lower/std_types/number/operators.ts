@@ -65,7 +65,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_types/number/operators.rs",
     find: "        if from.is_bool() {\n            let num = self.num(to, span)?;",
     replace: "        if false && from.is_bool() {\n            let num = self.num(to, span)?;",
-    tests: ["test/lowering.test.ts", "-t", "from a bool or a char"],
+    tests: ["test/lowering-numbers.test.ts", "-t", "from a bool or a char"],
   },
   {
     name: "non-zero-new-keeps-zero",
@@ -81,7 +81,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_types/number/operators.rs",
     find: "            && self.body_facts.exact.contains(&span)\n",
     replace: "            && false\n",
-    tests: ["test/lowering.test.ts", "-t", "integer ranges show"],
+    tests: ["test/lowering-numbers.test.ts", "-t", "integer ranges show"],
   },
   {
     name: "mul-by-constant-imul",

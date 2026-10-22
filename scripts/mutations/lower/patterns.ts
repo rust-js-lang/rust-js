@@ -92,7 +92,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/patterns.rs",
     find: "if text.as_str() == super::bindings::variant_name(self.tcx, adt.variant(variant_index)))))",
     replace: "if true || text.as_str() == super::bindings::variant_name(self.tcx, adt.variant(variant_index)))))",
-    tests: ["test/lowering.test.ts", "-t", "enum's own names"],
+    tests: ["test/lowering-structs-enums.test.ts", "-t", "enum's own names"],
   },
   {
     name: "cell-field-destructured",
@@ -100,6 +100,6 @@ export const mutations: Mutation[] = [
     file: "src/lower/patterns.rs",
     find: "                _ if matches!(self.shape(pat.ty), Shape::Object(_)) && self.is_std_type(field.ty, StdItem::Cell) => {\n                    None\n",
     replace: "                _ if false => {\n                    None\n",
-    tests: ["test/lowering.test.ts", "-t", "struct taken apart through a reference"],
+    tests: ["test/lowering-matches.test.ts", "-t", "struct taken apart through a reference"],
   },
 ];

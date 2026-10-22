@@ -122,7 +122,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/copies.rs",
     find: "(Some(arg), Some(general)) => self.instance_of(arg, general),",
     replace: "(Some(_), Some(_)) => true,",
-    tests: ["test/lowering.test.ts", "-t", "copies are made for the mutated instantiations of a generic type only"],
+    tests: ["test/lowering-functions.test.ts", "-t", "copies are made for the mutated instantiations of a generic type only"],
   },
   {
     name: "maybe-uninit-unshareable",

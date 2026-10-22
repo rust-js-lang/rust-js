@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     file: "src/js/stmt_walk.rs",
     find: "        (ExprKind::OptionalMember(x, f), ExprKind::OptionalMember(y, g)) => f == g && same_path(x, y),\n",
     replace: "",
-    tests: ["test/lowering.test.ts", "-t", "text kept where it isn't empty"],
+    tests: ["test/lowering-options.test.ts", "-t", "text kept where it isn't empty"],
   },
   {
     name: "returned-call-blocked",
@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     file: "src/js/stmt_walk.rs",
     find: "        *body = vec![StmtKind::Return(Some(e.clone())).at(*span)];\n",
     replace: "",
-    tests: ["test/lowering.test.ts", "-t", "callback returns a call that gives undefined"],
+    tests: ["test/lowering-bindings.test.ts", "-t", "callback returns a call that gives undefined"],
   },
   {
     name: "presence-truthy-unread",
@@ -24,7 +24,7 @@ export const mutations: Mutation[] = [
     file: "src/js/stmt_walk.rs",
     find: "        ExprKind::Unary(UnaryOp::Not, not) => match &not.kind {\n            ExprKind::Unary(UnaryOp::Not, x) => Some(x),\n            _ => None,\n        },\n",
     replace: "",
-    tests: ["test/lowering.test.ts", "-t", "an option's method call ends where it's None"],
+    tests: ["test/lowering-options.test.ts", "-t", "an option's method call ends where it's None"],
   },
   {
     name: "items-by-kind",
@@ -74,7 +74,7 @@ export const mutations: Mutation[] = [
     file: "src/js/stmt_walk.rs",
     find: "            || matches!((&i.kind, &j.kind), (ExprKind::Str(i), ExprKind::Str(j)) if i == j)\n",
     replace: "",
-    tests: ["test/lowering.test.ts", "-t", "property read of what may be None"],
+    tests: ["test/lowering-options.test.ts", "-t", "property read of what may be None"],
   },
   {
     name: "same-path-index-unseen",
@@ -82,7 +82,7 @@ export const mutations: Mutation[] = [
     file: "src/js/stmt_walk.rs",
     find: "        (ExprKind::Index(x, i), ExprKind::Index(y, j)) => same_path(x, y) && same_key(i, j),\n",
     replace: "        (ExprKind::Index(x, i), ExprKind::Index(y, j)) if false => same_path(x, y) && same_key(i, j),\n",
-    tests: ["test/lowering.test.ts", "-t", "property read of what may be None"],
+    tests: ["test/lowering-options.test.ts", "-t", "property read of what may be None"],
   },
   {
     name: "same-path-index-variable",
@@ -90,7 +90,7 @@ export const mutations: Mutation[] = [
     file: "src/js/stmt_walk.rs",
     find: "        same_path(i, j)\n            || matches!((&i.kind, &j.kind), (ExprKind::Str(i)",
     replace: "        false\n            || matches!((&i.kind, &j.kind), (ExprKind::Str(i)",
-    tests: ["test/lowering.test.ts", "-t", "property read of what may be None"],
+    tests: ["test/lowering-options.test.ts", "-t", "property read of what may be None"],
   },
   {
     name: "mir-tidy-optional-member-not-same",
@@ -98,7 +98,7 @@ export const mutations: Mutation[] = [
     file: "src/js/stmt_walk.rs",
     find: "        (ExprKind::OptionalMember(x, f), ExprKind::OptionalMember(y, g)) => f == g && same_path(x, y),\n",
     replace: "",
-    tests: ["test/lowering.test.ts", "-t", "De Morgan"],
+    tests: ["test/lowering-branches.test.ts", "-t", "De Morgan"],
   },
   {
     name: "same-path-item-number-unseen",
@@ -115,7 +115,7 @@ export const mutations: Mutation[] = [
     file: "src/js/stmt_walk.rs",
     find: "                set.extend(var_of(target));\n",
     replace: "",
-    tests: ["test/lowering.test.ts", "-t", "nothing sets again is a const"],
+    tests: ["test/lowering-names.test.ts", "-t", "nothing sets again is a const"],
   },
   {
     name: "inner-if-leaving-unseen",
@@ -132,7 +132,7 @@ export const mutations: Mutation[] = [
     file: "src/js/stmt_walk.rs",
     find: "        StmtKind::While { label, cond, body } => {\n            matches!(cond.kind, ExprKind::Bool(true)) && !breaks(body, label.as_deref())\n",
     replace: "        StmtKind::While { label, cond, body } => {\n            false && !breaks(body, label.as_deref())\n",
-    tests: ["test/lowering.test.ts", "-t", "returns in a loop are where they"],
+    tests: ["test/lowering-loops.test.ts", "-t", "returns in a loop are where they"],
   },
   {
     name: "stmts-alike-by-name",
@@ -158,6 +158,6 @@ export const mutations: Mutation[] = [
     file: "src/js/stmt_walk.rs",
     find: "        ExprKind::Binary(Op::LooseNe, a, b) => Expr::bin(Op::Ne, *a, *b),\n",
     replace: "",
-    tests: ["test/lowering.test.ts", "-t", "compared with a Some"],
+    tests: ["test/lowering-options.test.ts", "-t", "compared with a Some"],
   },
 ];

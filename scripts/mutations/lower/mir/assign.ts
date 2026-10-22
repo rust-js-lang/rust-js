@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/assign.rs",
     find: "        if !place.projection.is_empty() && value.has_effects() && !fixed {\n",
     replace: "        if !place.projection.is_empty() && value.has_effects() {\n",
-    tests: ["test/lowering.test.ts", "-t", "a field is given a call"],
+    tests: ["test/lowering-functions.test.ts", "-t", "a field is given a call"],
   },
   {
     name: "mir-borrowed-result-given-value",
@@ -72,7 +72,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/assign.rs",
     find: "            if bindings::has_flatten(self.tcx, ty) {\n",
     replace: "            if false && bindings::has_flatten(self.tcx, ty) {\n",
-    tests: ["test/lowering.test.ts","-t","a struct of flattened fields made outside JSX"],
+    tests: ["test/lowering-structs-enums.test.ts", "-t", "a struct of flattened fields made outside JSX"],
   },
   {
     name: "mir-jsx-props-flattened",
@@ -96,7 +96,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/assign.rs",
     find: "        let one = place.projection.is_empty()\n",
     replace: "        let one = false && place.projection.is_empty()\n",
-    tests: ["test/lowering.test.ts","-t","if-let chains and loops from MIR"],
+    tests: ["test/lowering-loops.test.ts", "-t", "if-let chains and loops from MIR"],
   },
   {
     name: "mir-payload-of-temporary-in-place",
@@ -104,7 +104,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/assign.rs",
     find: "            && (!state.locals.user[local] || (state.payloads.contains(&local) && !of_temporary))\n            && state.locals.writes[local] == 1\n            && !state.locals.borrowed[local]\n            && !state.named",
     replace: "            && (!state.locals.user[local] || state.payloads.contains(&local))\n            && state.locals.writes[local] == 1\n            && !state.locals.borrowed[local]\n            && !state.named",
-    tests: ["test/lowering.test.ts","-t","if-let's binding from MIR keeps"],
+    tests: ["test/lowering-names.test.ts", "-t", "if-let's binding from MIR keeps"],
   },
   {
     name: "mir-payload-place-of-temporary",
@@ -121,11 +121,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/assign.rs",
     "find": "            && variant.as_u32() == 0\n",
     "replace": "            && variant.as_u32() == 9\n",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "a nullable field of Some or None by a branch"
-    ]
+    "tests": ["test/lowering-options.test.ts", "-t", "a nullable field of Some or None by a branch"]
   },
   {
     "name": "mir-stored-paths-unknown",
@@ -133,7 +129,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/assign.rs",
     "find": "            let bool = state.body.local_decls[local].ty.is_bool();\n            *self.locals.mir.paths.entry(path).or_insert(bool) &= bool;\n        }\n        let unread",
     "replace": "        }\n        let unread",
-    "tests": ["test/lowering.test.ts", "-t", "or chain of a getter's bool"]
+    "tests": ["test/lowering-branches.test.ts", "-t", "or chain of a getter's bool"]
   },
   {
     "name": "mir-call-paths-unrecorded",
@@ -141,7 +137,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/assign.rs",
     "find": ".or_else(|| tidy::call_path(e))",
     "replace": "",
-    "tests": ["test/lowering.test.ts", "-t", "call giving a bool is one in a test"]
+    "tests": ["test/lowering-branches.test.ts", "-t", "call giving a bool is one in a test"]
   },
   {
     "name": "mir-let-rest-whole",
@@ -169,11 +165,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/assign.rs",
     "find": "                && let Some((bound, from)) = continued_binding(state, local)\n",
     "replace": "                && let Some((bound, from)) = continued_binding(state, local).filter(|_| false)\n",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "a let of an Option's . from MIR"
-    ]
+    "tests": ["test/lowering-names.test.ts", "-t", "a let of an Option's . from MIR"]
   },
   {
     name: "mir-str-box-not-copied-back",
@@ -255,7 +247,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/assign.rs",
     find: "            state.maps.insert(local, expr.clone());\n",
     replace: "",
-    tests: ["test/lowering.test.ts", "-t", "next_back of a map"],
+    tests: ["test/lowering-iterators.test.ts", "-t", "next_back of a map"],
   },
   {
     name: "mir-whole-assign-through-mut",
@@ -287,7 +279,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/assign.rs",
     find: "                if *place == Place::from(mir::RETURN_PLACE)\n",
     replace: "                if false\n",
-    tests: ["test/lowering.test.ts","-t","a variable a function gives is handed over uncopied"],
+    tests: ["test/lowering-functions.test.ts", "-t", "a variable a function gives is handed over uncopied"],
   },
   {
     name: "mir-writer-error-ignored",
@@ -460,6 +452,6 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/assign.rs",
     find: "            _ => self.nullable_written(state, *place, value?, span)?,\n",
     replace: "            _ => value?,\n",
-    tests: ["test/lowering.test.ts", "-t", "nullable result is written"],
+    tests: ["test/lowering-options.test.ts", "-t", "nullable result is written"],
   },
 ];

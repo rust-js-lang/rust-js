@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/untagged.rs",
     find: "            Kind::Literal(name) => Expr::bin(Op::Eq, value.clone(), Expr::str(name)),",
     replace: "            Kind::Literal(_) => Expr::bool(true),",
-    tests: ["test/lowering.test.ts", "-t", "variant without fields is its name"],
+    tests: ["test/lowering-structs-enums.test.ts", "-t", "variant without fields is its name"],
   },
   {
     name: "untagged-literal-beside-string",
@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/untagged.rs",
     find: "            (Kind::Literal(_), Kind::String) | (Kind::String, Kind::Literal(_)) => true,",
     replace: "            (Kind::Literal(_), Kind::String) | (Kind::String, Kind::Literal(_)) => false,",
-    tests: ["test/lowering.test.ts", "-t", "variant without fields is its name"],
+    tests: ["test/lowering-structs-enums.test.ts", "-t", "variant without fields is its name"],
   },
   {
     name: "untagged-unit-refused",
@@ -24,7 +24,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/untagged.rs",
     find: "                if variant.fields.is_empty() && variant.ctor_kind() == Some(CtorKind::Const) {\n                    let kind",
     replace: "                if false && variant.fields.is_empty() && variant.ctor_kind() == Some(CtorKind::Const) {\n                    let kind",
-    tests: ["test/lowering.test.ts", "-t", "variant without fields is its name"],
+    tests: ["test/lowering-structs-enums.test.ts", "-t", "variant without fields is its name"],
   },
   {
     name: "untagged-bigint-number",
@@ -32,7 +32,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/untagged.rs",
     find: "            return Some(if num.big() { Kind::BigInt } else { Kind::Number });\n",
     replace: "            return Some(Kind::Number);\n",
-    tests: ["test/compiler.test.ts", "test/lowering.test.ts", "-t", "untagged enum"],
+    tests: ["test/compiler.test.ts", "test/lowering-options.test.ts", "test/lowering-structs-enums.test.ts", "-t", "untagged enum"],
   },
   {
     name: "untagged-object-takes-arrays",
@@ -40,7 +40,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/untagged.rs",
     find: "                (Kind::Object, Kind::Array | Kind::Class(..) | Kind::Test(_)) => true,\n",
     replace: "",
-    tests: ["test/compiler.test.ts", "test/lowering.test.ts", "-t", "untagged enum"],
+    tests: ["test/compiler.test.ts", "test/lowering-options.test.ts", "test/lowering-structs-enums.test.ts", "-t", "untagged enum"],
   },
   {
     name: "untagged-class-takes-subclass",
@@ -48,7 +48,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/untagged.rs",
     find: "                (Kind::Class(_, Some(base)), Kind::Class(_, Some(sub))) => self.superclasses(*sub).contains(base),\n",
     replace: "",
-    tests: ["test/compiler.test.ts", "test/lowering.test.ts", "-t", "untagged enum"],
+    tests: ["test/compiler.test.ts", "test/lowering-options.test.ts", "test/lowering-structs-enums.test.ts", "-t", "untagged enum"],
   },
   {
     name: "untagged-subclass-left-out-twice",
@@ -56,7 +56,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/untagged.rs",
     find: "            .filter(|kind| !narrower.iter().any(|base| extends(kind, base)))\n",
     replace: "",
-    tests: ["test/compiler.test.ts", "test/lowering.test.ts", "-t", "untagged enum"],
+    tests: ["test/compiler.test.ts", "test/lowering-options.test.ts", "test/lowering-structs-enums.test.ts", "-t", "untagged enum"],
   },
   {
     name: "untagged-kinds-alike",
@@ -120,7 +120,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/untagged.rs",
     find: "k.overlaps(&kind))\n                    && tested_by_impls(tcx, def_id.to_def_id(), &recognition)\n",
     replace: "k.overlaps(&kind))\n",
-    tests: ["test/lowering.test.ts", "-t", "untagged enum only made"],
+    tests: ["test/lowering-structs-enums.test.ts", "-t", "untagged enum only made"],
   },
   {
     name: "cloned-untagged-alike-allowed",
@@ -152,7 +152,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/untagged.rs",
     find: "                if is_string_enum(self.tcx, *adt) && !adt.variants().is_empty() && !self.is_std(adt.did()) =>",
     replace: "                if false && is_string_enum(self.tcx, *adt) && !adt.variants().is_empty() && !self.is_std(adt.did()) =>",
-    tests: ["test/lowering.test.ts", "-t", "may hold a fieldless enum"],
+    tests: ["test/lowering-structs-enums.test.ts", "-t", "may hold a fieldless enum"],
   },
   {
     "name": "untagged-dict-a-class",
@@ -160,10 +160,6 @@ export const mutations: Mutation[] = [
     "file": "src/lower/untagged.rs",
     "find": ".is_some_and(|t| t.trim_start().starts_with('{'))",
     "replace": ".is_some_and(|_| false)",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "dictionary is told apart"
-    ]
+    "tests": ["test/lowering-structs-enums.test.ts", "-t", "dictionary is told apart"]
   },
 ];

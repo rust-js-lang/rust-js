@@ -48,7 +48,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/traits/calls.rs",
     find: "            && (!tr.args.has_non_region_param() || (conversion && self.evidence_for(tr).is_none()))\n",
     replace: "            && false\n",
-    tests: ["test/lowering.test.ts", "-t", "a range made where it's stepped from MIR is its numbers"],
+    tests: ["test/lowering-iterators.test.ts", "-t", "a range made where it's stepped from MIR is its numbers"],
   },
   {
     name: "dyn-error-other-methods",

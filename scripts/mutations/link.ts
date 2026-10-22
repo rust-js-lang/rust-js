@@ -32,7 +32,7 @@ export const mutations: Mutation[] = [
     file: "src/link.rs",
     find: "            StmtKind::Function(function) => function_names(function, visitor),\n",
     replace: "            StmtKind::Function(_) => {}\n",
-    tests: ["test/lowering.test.ts","-t","local function there"],
+    tests: ["test/lowering-functions.test.ts", "-t", "local function there"],
   },
   {
     name: "written-helper-unasked",
@@ -40,6 +40,6 @@ export const mutations: Mutation[] = [
     file: "src/link.rs",
     find: "                    written.extend(crate::runtime::helper_of(name));\n",
     replace: "                    let _ = name;\n",
-    tests: ["test/lowering.test.ts", "-t", "a range made where it's stepped"],
+    tests: ["test/lowering-iterators.test.ts", "-t", "a range made where it's stepped"],
   },
 ];

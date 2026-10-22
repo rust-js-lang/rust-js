@@ -32,7 +32,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/mutation.rs",
     find: "        ty::Adt(adt, args) if tcx.is_lang_item(adt.did(), LangItem::Option) => copies_itself(tcx, args.type_at(0)),\n        _ => false,",
     replace: "        ty::Adt(adt, args) if tcx.is_lang_item(adt.did(), LangItem::Option) => copies_itself(tcx, args.type_at(0)),\n        _ => true,",
-    tests: ["test/lowering.test.ts", "-t", "a Copy bound takes a copy only"],
+    tests: ["test/lowering-functions.test.ts", "-t", "a Copy bound takes a copy only"],
   },
   {
     name: "option-copies-not-itself",
@@ -40,7 +40,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/mutation.rs",
     find: "LangItem::Option) => copies_itself(tcx, args.type_at(0)),",
     replace: "LangItem::Option) => false,",
-    tests: ["test/lowering.test.ts", "-t", "a Copy bound takes a copy only"],
+    tests: ["test/lowering-functions.test.ts", "-t", "a Copy bound takes a copy only"],
   },
   {
     name: "changing-closure-copies-itself",
@@ -56,7 +56,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/mutation.rs",
     find: "            if given.contains(&from) && given.insert(to) {",
     replace: "            if false && given.insert(to) {",
-    tests: ["test/lowering.test.ts", "-t", "a Copy bound takes a copy only"],
+    tests: ["test/lowering-functions.test.ts", "-t", "a Copy bound takes a copy only"],
   },
   {
     name: "library-public-copy-lost",
@@ -64,7 +64,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/mutation.rs",
     find: " || (library && crate::lower::library::reachable(tcx, id))",
     replace: "",
-    tests: ["test/lowering.test.ts", "-t", "a Copy bound takes a copy only"],
+    tests: ["test/lowering-functions.test.ts", "-t", "a Copy bound takes a copy only"],
   },
   {
     name: "trait-method-copies-by-callers",
@@ -72,7 +72,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/mutation.rs",
     find: "        && tcx.trait_of_assoc(id).is_none()\n",
     replace: "",
-    tests: ["test/lowering.test.ts", "-t", "a Copy bound takes a copy only"],
+    tests: ["test/lowering-functions.test.ts", "-t", "a Copy bound takes a copy only"],
   },
   {
     name: "trait-impl-copies-by-callers",
@@ -80,7 +80,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/mutation.rs",
     find: "        && !matches!(tcx.def_kind(id), DefKind::Impl { of_trait: true })\n",
     replace: "",
-    tests: ["test/lowering.test.ts", "-t", "a Copy bound takes a copy only"],
+    tests: ["test/lowering-functions.test.ts", "-t", "a Copy bound takes a copy only"],
   },
   {
     name: "pointee-copies-shared",

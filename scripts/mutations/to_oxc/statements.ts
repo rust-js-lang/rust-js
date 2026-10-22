@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     file: "src/to_oxc/statements.rs",
     find: "        if !in_chain(object) {",
     replace: "        if true {",
-    tests: ["test/lowering.test.ts", "-t", "an option's property chain ends"],
+    tests: ["test/lowering-options.test.ts", "-t", "an option's property chain ends"],
   },
   {
     name: "keyed-field-assigned-dotted",
@@ -24,7 +24,7 @@ export const mutations: Mutation[] = [
     file: "src/to_oxc/statements.rs",
     find: "by its key.\n            ExprKind::Member(object, property) if !member_name(property) => {",
     replace: "by its key.\n            ExprKind::Member(object, property) if false && !member_name(property) => {",
-    tests: ["test/lowering.test.ts", "-t", "isn't a name is read by its key"],
+    tests: ["test/lowering-names.test.ts", "-t", "isn't a name is read by its key"],
   },
   {
     name: "keyed-field-chained-dotted",
@@ -32,7 +32,7 @@ export const mutations: Mutation[] = [
     file: "src/to_oxc/statements.rs",
     find: "                if member_name(property) {\n                    let name = IdentifierName::new(SPAN, self.name(property), b);",
     replace: "                if true {\n                    let name = IdentifierName::new(SPAN, self.name(property), b);",
-    tests: ["test/lowering.test.ts", "-t", "isn't a name is read by its key"],
+    tests: ["test/lowering-names.test.ts", "-t", "isn't a name is read by its key"],
   },
   {
     name: "optional-member-plain",
@@ -80,7 +80,7 @@ export const mutations: Mutation[] = [
     file: "src/to_oxc/statements.rs",
     find: "                    matches!(e.kind, ExprKind::OptionalIndex(..)),\n",
     replace: "                    false,\n",
-    tests: ["test/lowering.test.ts","-t","only gives a value"],
+    tests: ["test/lowering-branches.test.ts", "-t", "only gives a value"],
   },
   {
     name: "namespace-constants-unprinted",

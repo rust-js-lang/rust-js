@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     file: "src/to_oxc.rs",
     find: "                && (last.trim_start().starts_with(\"#[\") || macro_opening(last))\n",
     replace: "                && macro_opening(last)\n",
-    tests: ["test/lowering.test.ts", "-t", "a blank line before an item's attributes"],
+    tests: ["test/lowering-names.test.ts", "-t", "a blank line before an item's attributes"],
   },
   {
     name: "removed-let-comment-dropped",
@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     file: "src/to_oxc.rs",
     find: "(!between.contains([';', '}']) && opens) || unprinted_lets",
     replace: "!between.contains([';', '}']) && opens",
-    tests: ["test/lowering.test.ts", "-t", "a comment before a let that has no JS"],
+    tests: ["test/lowering-names.test.ts", "-t", "a comment before a let that has no JS"],
   },
   {
     name: "aliases-unprinted",
@@ -88,7 +88,7 @@ export const mutations: Mutation[] = [
     file: "src/to_oxc.rs",
     find: "        ArenaVec::from_iter_in(comments, b),\n",
     replace: "        ArenaVec::from_iter_in(comments.into_iter().take(0), b),\n",
-    tests: ["test/lowering.test.ts", "-t", "a comment is in the JS where"],
+    tests: ["test/lowering-names.test.ts", "-t", "a comment is in the JS where"],
   },
   {
     name: "doc-comment-not-jsdoc",
@@ -96,7 +96,7 @@ export const mutations: Mutation[] = [
     file: "src/to_oxc.rs",
     find: "                match crate::comments::jsdoc(&lines).filter(|_| run > 0) {",
     replace: "                match crate::comments::jsdoc(&lines).filter(|_| false) {",
-    tests: ["test/lowering.test.ts", "-t", "a comment is in the JS where"],
+    tests: ["test/lowering-names.test.ts", "-t", "a comment is in the JS where"],
   },
   {
     name: "doc-lines-apart",
@@ -104,7 +104,7 @@ export const mutations: Mutation[] = [
     file: "src/to_oxc.rs",
     find: "                let run = own[i..].iter().take_while(|c| is_doc_line(c)).count();",
     replace: "                let run = own[i..].iter().take_while(|c| is_doc_line(c)).count().min(1);",
-    tests: ["test/lowering.test.ts", "-t", "a comment is in the JS where"],
+    tests: ["test/lowering-names.test.ts", "-t", "a comment is in the JS where"],
   },
   {
     name: "trailing-comment-dropped",
@@ -112,7 +112,7 @@ export const mutations: Mutation[] = [
     file: "src/to_oxc.rs",
     find: "                after.entry(last).or_default().push(comment);",
     replace: "                let _ = (last, comment);",
-    tests: ["test/lowering.test.ts", "-t", "a comment is in the JS where"],
+    tests: ["test/lowering-names.test.ts", "-t", "a comment is in the JS where"],
   },
   {
     name: "trailing-comment-leading",
@@ -120,7 +120,7 @@ export const mutations: Mutation[] = [
     file: "src/to_oxc.rs",
     find: "            .filter(|c| c.lo >= past && !after_code(c))",
     replace: "            .filter(|c| c.lo >= past)",
-    tests: ["test/lowering.test.ts", "-t", "a comment is in the JS where"],
+    tests: ["test/lowering-names.test.ts", "-t", "a comment is in the JS where"],
   },
   {
     name: "blank-line-lost",
@@ -128,7 +128,7 @@ export const mutations: Mutation[] = [
     file: "src/to_oxc.rs",
     find: "            gap.matches('\\n').count() >= 2",
     replace: "            gap.matches('\\n').count() >= 3",
-    tests: ["test/lowering.test.ts", "-t", "a comment is in the JS where"],
+    tests: ["test/lowering-names.test.ts", "-t", "a comment is in the JS where"],
   },
   {
     name: "header-comment-twice",
@@ -136,7 +136,7 @@ export const mutations: Mutation[] = [
     file: "src/to_oxc.rs",
     find: "        let past = (start + crate::comments::leading_comments(&file.text).len()) as u32;",
     replace: "        let past = start as u32;",
-    tests: ["test/lowering.test.ts", "-t", "a comment is in the JS where"],
+    tests: ["test/lowering-names.test.ts", "-t", "a comment is in the JS where"],
   },
   {
     name: "comment-across-code",
@@ -144,7 +144,7 @@ export const mutations: Mutation[] = [
     file: "src/to_oxc.rs",
     find: "(!between.contains([';', '}']) && opens) || unprinted_lets",
     replace: "true",
-    tests: ["test/lowering.test.ts", "-t", "a comment is in the JS where"],
+    tests: ["test/lowering-names.test.ts", "-t", "a comment is in the JS where"],
   },
   {
     name: "comment-first-printed-own",
@@ -161,7 +161,7 @@ export const mutations: Mutation[] = [
     file: "src/to_oxc.rs",
     find: "            let mut before = &before[..before.rfind('\\n').map_or(0, |i| i + 1)];\n",
     replace: "            let mut before = before;\n",
-    tests: ["test/lowering.test.ts", "-t", "a comment is in the JS where"],
+    tests: ["test/lowering-names.test.ts", "-t", "a comment is in the JS where"],
   },
   {
     name: "comment-across-closure-lost",
@@ -169,7 +169,7 @@ export const mutations: Mutation[] = [
     file: "src/to_oxc.rs",
     find: ".all(|(i, _)| between[..i].trim_end().ends_with('|') || macro_opening(&between[..=i]));",
     replace: ".all(|(i, _)| macro_opening(&between[..=i]));",
-    tests: ["test/lowering.test.ts", "-t", "closure called as a statement is its body"],
+    tests: ["test/lowering-cells.test.ts", "-t", "closure called as a statement is its body"],
   },
   {
     name: "closure-opening-a-blank",
@@ -177,7 +177,7 @@ export const mutations: Mutation[] = [
     file: "src/to_oxc.rs",
     find: "                    gap.len() > 2 && gap[1..gap.len() - 1].iter().any(|line| line.trim().is_empty())\n",
     replace: "                    gap.len() > 2\n",
-    tests: ["test/lowering.test.ts", "-t", "closure called as a statement is its body"],
+    tests: ["test/lowering-cells.test.ts", "-t", "closure called as a statement is its body"],
   },
   {
     name: "arm-comment-on-its-test",
@@ -185,7 +185,7 @@ export const mutations: Mutation[] = [
     file: "src/to_oxc.rs",
     find: "                    && pattern.trim_end().ends_with(\"=>\")\n",
     replace: "                    && pattern.trim_end().ends_with(\"=>\") && false\n",
-    tests: ["test/lowering.test.ts", "-t", "a match of constants tests each"],
+    tests: ["test/lowering-matches.test.ts", "-t", "a match of constants tests each"],
   },
   {
     name: "item-macro-comment-lost",
@@ -193,7 +193,7 @@ export const mutations: Mutation[] = [
     file: "src/to_oxc.rs",
     find: ".all(|(i, _)| between[..i].trim_end().ends_with('|') || macro_opening(&between[..=i]));",
     replace: ".all(|(i, _)| between[..i].trim_end().ends_with('|'));",
-    tests: ["test/lowering.test.ts", "-t", "a comment before a macro's opening"],
+    tests: ["test/lowering-names.test.ts", "-t", "a comment before a macro's opening"],
   },
   {
     name: "item-macro-blank-lost",
@@ -201,7 +201,7 @@ export const mutations: Mutation[] = [
     file: "src/to_oxc.rs",
     find: "                && (last.trim_start().starts_with(\"#[\") || macro_opening(last))\n",
     replace: "                && last.trim_start().starts_with(\"#[\")\n",
-    tests: ["test/lowering.test.ts", "-t", "a comment before a macro's opening"],
+    tests: ["test/lowering-names.test.ts", "-t", "a comment before a macro's opening"],
   },
   {
     name: "end-comment-lost",
@@ -209,7 +209,7 @@ export const mutations: Mutation[] = [
     file: "src/to_oxc.rs",
     find: "            starts_and_end.push((sources.text.len() as u32, ends));\n",
     replace: "",
-    tests: ["test/lowering.test.ts", "-t", "a comment before a macro's opening"],
+    tests: ["test/lowering-names.test.ts", "-t", "a comment before a macro's opening"],
   },
   {
     name: "end-comment-past-code",
@@ -217,6 +217,6 @@ export const mutations: Mutation[] = [
     file: "src/to_oxc.rs",
     find: "                sources.text[past..code.hi as usize].trim().is_empty()\n",
     replace: "                matches!(sources.text[past..code.hi as usize].trim(), \"\" | \"}\")\n",
-    tests: ["test/lowering.test.ts", "-t", "a comment before a macro's opening"],
+    tests: ["test/lowering-names.test.ts", "-t", "a comment before a macro's opening"],
   },
 ];

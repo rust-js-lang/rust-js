@@ -8,11 +8,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/iterators.rs",
     "find": "        js::ExprKind::Call(callee, _) if matches!(callee.kind, js::ExprKind::Var(_)) => fresh(e),\n",
     "replace": "",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "iterator chains from MIR are array methods"
-    ]
+    "tests": ["test/lowering-iterators.test.ts", "-t", "iterator chains from MIR are array methods"]
   },
   {
     name: "mir-object-keys-iterated",
@@ -20,7 +16,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/iterators.rs",
     find: "            js::ExprKind::Var(v) if v == \"Object\" => false,\n",
     replace: "",
-    tests: ["test/lowering.test.ts","-t","a for over Object.keys"],
+    tests: ["test/lowering-loops.test.ts", "-t", "a for over Object.keys"],
   },
   {
     "name": "mir-adapter-not-js-iterator",
@@ -28,11 +24,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/iterators.rs",
     "find": "            _ if matches!(name.as_str(), \"map\" | \"filter\" | \"flatMap\" | \"take\" | \"drop\") => is_js_iterator(object),\n",
     "replace": "",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "an adapter of a JS iterator is not made one again"
-    ]
+    "tests": ["test/lowering-iterators.test.ts", "-t", "an adapter of a JS iterator is not made one again"]
   },
   {
     "name": "mir-range-inclusive-lazy",
@@ -40,11 +32,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/iterators.rs",
     "find": "    let (inclusive, back) = [(false, false), (false, true), (true, false), (true, true)]\n",
     "replace": "    let (inclusive, back) = [(false, false), (false, true), (true, true)]\n",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "a range mapped and collected"
-    ]
+    "tests": ["test/lowering-iterators.test.ts", "-t", "a range mapped and collected"]
   },
   {
     name: "given-as-it-is-not-held",

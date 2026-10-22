@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     file: "src/lower.rs",
     find: "            let tag = tag.map(|(key, name)| Prop::Field(key, name));",
     replace: "            let tag = tag.map(|(_, name)| Prop::Field(\"TAG\".into(), name));",
-    tests: ["test/lowering.test.ts","-t","discriminated union"],
+    tests: ["test/lowering-structs-enums.test.ts", "-t", "discriminated union"],
   },
   {
     name: "raw-lines-escaped",
@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     file: "src/lower.rs",
     find: "            StrStyle::Raw(_) => true,",
     replace: "            StrStyle::Raw(_) => false,",
-    tests: ["test/lowering.test.ts", "-t", "a string written across lines"],
+    tests: ["test/lowering-strings.test.ts", "-t", "a string written across lines"],
   },
   {
     name: "continued-line-kept",
@@ -24,7 +24,7 @@ export const mutations: Mutation[] = [
     file: "src/lower.rs",
     find: ".is_ok_and(|code| code.match_indices('\\n').any(|(i, _)| !code[..i].ends_with('\\\\'))),",
     replace: ".is_ok_and(|code| code.contains('\\n')),",
-    tests: ["test/lowering.test.ts", "-t", "a string written across lines"],
+    tests: ["test/lowering-strings.test.ts", "-t", "a string written across lines"],
   },
   {
     name: "walks-unkeyed",
@@ -156,7 +156,7 @@ export const mutations: Mutation[] = [
     file: "src/lower.rs",
     find: "                && written_across_lines(tcx, style, lit.span) =>",
     replace: "                && false =>",
-    tests: ["test/lowering.test.ts", "-t", "const of a string written across lines"],
+    tests: ["test/lowering-strings.test.ts", "-t", "const of a string written across lines"],
   },
   {
     name: "const-lines-any",
@@ -164,7 +164,7 @@ export const mutations: Mutation[] = [
     file: "src/lower.rs",
     find: "                && written_across_lines(tcx, style, lit.span) =>",
     replace: "                =>",
-    tests: ["test/lowering.test.ts", "-t", "const of a string written across lines"],
+    tests: ["test/lowering-strings.test.ts", "-t", "const of a string written across lines"],
   },
   {
     name: "spill-hyphenated-name",
@@ -180,11 +180,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower.rs",
     "find": "        Some('r') => StrStyle::Raw(0),\n",
     "replace": "        Some('r') => return false,\n",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "a string written across lines keeps its lines"
-    ]
+    "tests": ["test/lowering-strings.test.ts", "-t", "a string written across lines keeps its lines"]
   },
   {
     "name": "literal-lines-cooked-unread",
@@ -192,11 +188,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower.rs",
     "find": "        Some('\"') => StrStyle::Cooked,\n",
     "replace": "        Some('\"') => return false,\n",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "a string written across lines keeps its lines"
-    ]
+    "tests": ["test/lowering-strings.test.ts", "-t", "a string written across lines keeps its lines"]
   },
   {
     name: "repeat-one-refused",
@@ -312,6 +304,6 @@ export const mutations: Mutation[] = [
     file: "src/lower.rs",
     find: "    words_joined(name, |word| word.to_ascii_lowercase())\n",
     replace: "    words_joined(name, |word| word.to_string())\n",
-    tests: ["test/lowering.test.ts", "-t", "thread-local's SCREAMING_SNAKE"],
+    tests: ["test/lowering-names.test.ts", "-t", "thread-local's SCREAMING_SNAKE"],
   },
 ];

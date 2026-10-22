@@ -35,7 +35,7 @@ export const mutations: Mutation[] = [
     file: "src/prepare/reclaim.rs",
     find: "        item.functions_mut().for_each(shadowed_params);\n",
     replace: "",
-    tests: ["test/lowering.test.ts", "-t", "a let that shadows a parameter"],
+    tests: ["test/lowering-names.test.ts", "-t", "a let that shadows a parameter"],
   },
   {
     name: "shadowed-param-captured-assigned",
@@ -43,7 +43,7 @@ export const mutations: Mutation[] = [
     file: "src/prepare/reclaim.rs",
     find: "        if captured || js::mentions_in(&function.body[i + 1..], &base) > 0 {\n",
     replace: "        if js::mentions_in(&function.body[i + 1..], &base) > 0 {\n",
-    tests: ["test/lowering.test.ts", "-t", "a let that shadows a parameter"],
+    tests: ["test/lowering-names.test.ts", "-t", "a let that shadows a parameter"],
   },
   {
     name: "reclaim-shadowing-read",
@@ -67,7 +67,7 @@ export const mutations: Mutation[] = [
     file: "src/prepare/reclaim.rs",
     find: "        ExprKind::Stringed(_) if reads => f(&mut \"String\".to_string()),",
     replace: "        ExprKind::Stringed(_) if false => f(&mut \"String\".to_string()),",
-    tests: ["test/lowering.test.ts", "-t", "an import named as a global"],
+    tests: ["test/lowering-names.test.ts", "-t", "an import named as a global"],
   },
   {
     name: "reclaim-no-imports",
@@ -100,11 +100,7 @@ export const mutations: Mutation[] = [
     "file": "src/prepare/reclaim.rs",
     "find": "    imports(module);\n    own_items(module);",
     "replace": "    imports(module);",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "own function named as a global"
-    ]
+    "tests": ["test/lowering-names.test.ts", "-t", "own function named as a global"]
   },
   {
     "name": "own-item-exported-reclaimed",
@@ -112,10 +108,6 @@ export const mutations: Mutation[] = [
     "file": "src/prepare/reclaim.rs",
     "find": "            js::Item::Function(function) if !function.export => Some(function.name.clone()),",
     "replace": "            js::Item::Function(function) => Some(function.name.clone()),",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "own function named as a global"
-    ]
+    "tests": ["test/lowering-names.test.ts", "-t", "own function named as a global"]
   },
 ];

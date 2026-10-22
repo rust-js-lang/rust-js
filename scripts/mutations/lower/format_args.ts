@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/format_args.rs",
     find: "                    return text.match_indices('\\n').any(|(i, _)| !text[..i].ends_with('\\\\'));",
     replace: "                    return text.contains('\\n');",
-    tests: ["test/lowering.test.ts", "-t", "a format string written across lines"],
+    tests: ["test/lowering-strings.test.ts", "-t", "a format string written across lines"],
   },
   {
     name: "format-lines-raw-unseen",
@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/format_args.rs",
     find: "                    return text.contains('\\n');\n",
     replace: "                    return false;\n",
-    tests: ["test/lowering.test.ts", "-t", "a format string written across lines"],
+    tests: ["test/lowering-strings.test.ts", "-t", "a format string written across lines"],
   },
   {
     name: "format-lines-println-dropped",
@@ -24,7 +24,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/format_args.rs",
     find: "            Ok(Expr::template(texts, values.clone()).with_lines(*lines))",
     replace: "            Ok(Expr::template(texts, values.clone()).with_lines(false))",
-    tests: ["test/lowering.test.ts", "-t", "a format string written across lines"],
+    tests: ["test/lowering-strings.test.ts", "-t", "a format string written across lines"],
   },
   {
     name: "begin-panic-payload",

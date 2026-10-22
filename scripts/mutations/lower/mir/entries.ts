@@ -32,11 +32,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/entries.rs",
     "find": "Value::Expr(e) | Value::Place(e) if i < borrowed && variables && own(&e) => Value::Ref(e),",
     "replace": "Value::Expr(e) | Value::Place(e) if false && i < borrowed && variables && own(&e) => Value::Ref(e),",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "taking a variable assigns the variable"
-    ]
+    "tests": ["test/lowering-functions.test.ts", "-t", "taking a variable assigns the variable"]
   },
   {
     name: "mir-failing-result-methods-refused",

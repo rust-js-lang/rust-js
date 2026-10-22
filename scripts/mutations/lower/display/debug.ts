@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/display/debug.rs",
     find: "            return Ok(self.variant_debug(*adt, value));",
     replace: "            return Ok(value);",
-    tests: ["test/lowering.test.ts", "-t", "a renamed variant is shown by its Rust name"],
+    tests: ["test/lowering-names.test.ts", "-t", "a renamed variant is shown by its Rust name"],
   },
   {
     name: "renamed-variant-debug-foreign",
@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/display/debug.rs",
     find: "                Ok(self.variant_debug(*adt, value))",
     replace: "                Ok(value)",
-    tests: ["test/lowering.test.ts", "-t", "a renamed variant is shown by its Rust name"],
+    tests: ["test/lowering-names.test.ts", "-t", "a renamed variant is shown by its Rust name"],
   },
   {
     name: "renamed-variant-debug-tag-unread",
@@ -24,7 +24,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/display/debug.rs",
     find: "            Some(key) => Expr::member(value, key),",
     replace: "            Some(_) => value,",
-    tests: ["test/lowering.test.ts", "-t", "a renamed variant is shown by its Rust name"],
+    tests: ["test/lowering-names.test.ts", "-t", "a renamed variant is shown by its Rust name"],
   },
   {
     name: "renamed-variant-debug-no-table",
@@ -32,7 +32,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/display/debug.rs",
     find: "        if names.iter().all(|(js, rust)| js == rust) {",
     replace: "        if true {",
-    tests: ["test/lowering.test.ts", "-t", "a renamed variant is shown by its Rust name"],
+    tests: ["test/lowering-names.test.ts", "-t", "a renamed variant is shown by its Rust name"],
   },
   {
     name: "phantom-debug-unnamed",
@@ -264,7 +264,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/display/debug.rs",
     find: "        let mapped = match each_its_own {\n",
     replace: "        let mapped = match false {\n",
-    tests: ["test/lowering.test.ts", "-t", "no item is mapped to itself"],
+    tests: ["test/lowering-iterators.test.ts", "-t", "no item is mapped to itself"],
   },
   {
     name: "debug-numbers-mapped",
@@ -272,7 +272,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/display/debug.rs",
     find: "        let each_its_own = is_var(&shown, \"item\")\n            || (pretty.known() == Some(false)\n",
     replace: "        let each_its_own = is_var(&shown, \"item\")\n            || (false\n",
-    tests: ["test/lowering.test.ts", "-t", "no item is mapped to itself"],
+    tests: ["test/lowering-iterators.test.ts", "-t", "no item is mapped to itself"],
   },
   {
     name: "debug-numbers-pretty-unmapped",

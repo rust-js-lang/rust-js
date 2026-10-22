@@ -48,7 +48,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_types/values.rs",
     find: "                    | Std::UnwrapErr\n                    | Std::UnwrapUnchecked\n",
     replace: "                    | Std::UnwrapErr\n",
-    tests: ["test/lowering.test.ts","-t","unwrap_unchecked is the value"],
+    tests: ["test/lowering-options.test.ts", "-t", "unwrap_unchecked is the value"],
   },
   {
     name: "once-boxed-get-refused",

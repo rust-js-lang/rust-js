@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     file: "src/js/make.rs",
     find: "            && matches!(els.kind, ExprKind::Undefined)\n            && let ExprKind::Call(callee, args) = &then.kind\n",
     replace: "            && let ExprKind::Call(callee, args) = &then.kind\n",
-    tests: ["test/lowering.test.ts", "-t", "an option's method call ends"],
+    tests: ["test/lowering-options.test.ts", "-t", "an option's method call ends"],
   },
   {
     name: "optional-call-ternary",
@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     file: "src/js/make.rs",
     find: "            && let ExprKind::Call(callee, args) = &then.kind\n",
     replace: "            && false\n            && let ExprKind::Call(callee, args) = &then.kind\n",
-    tests: ["test/lowering.test.ts", "-t", "an option's method call ends"],
+    tests: ["test/lowering-options.test.ts", "-t", "an option's method call ends"],
   },
   {
     name: "optional-call-of-any-object",
@@ -24,7 +24,7 @@ export const mutations: Mutation[] = [
     file: "src/js/make.rs",
     find: "            && let ExprKind::Member(object, property) = &callee.kind\n            && same_path(tested, object)\n",
     replace: "            && let ExprKind::Member(object, property) = &callee.kind\n",
-    tests: ["test/lowering.test.ts", "-t", "an option's method call ends"],
+    tests: ["test/lowering-options.test.ts", "-t", "an option's method call ends"],
   },
   {
     name: "index-of-one-item-array-kept",
@@ -41,7 +41,7 @@ export const mutations: Mutation[] = [
     file: "src/js/make.rs",
     find: "            && let ExprKind::Member(object, property) = &then.kind\n            && same_path(tested, object)\n",
     replace: "            && let ExprKind::Member(object, property) = &then.kind\n            && same_path(tested, object)\n            && false\n",
-    tests: ["test/compiler.test.ts", "test/lowering.test.ts", "-t", "optional chain"],
+    tests: ["test/compiler.test.ts", "test/lowering-branches.test.ts", "test/lowering-options.test.ts", "-t", "optional chain"],
   },
   {
     name: "optional-chain-of-another",
@@ -73,7 +73,7 @@ export const mutations: Mutation[] = [
     file: "src/js/make.rs",
     find: "            && is_array == \"isArray\"\n",
     replace: "            && is_array == \"isArrayNot\"\n",
-    tests: ["test/lowering.test.ts", "-t", "matches! of a kind's literal"],
+    tests: ["test/lowering-matches.test.ts", "-t", "matches! of a kind's literal"],
   },
   {
     name: "truthy-tested-for-null",
@@ -98,7 +98,7 @@ export const mutations: Mutation[] = [
     file: "src/js/make.rs",
     find: "                && name == HELD\n",
     replace: "                && name == \"never\"\n",
-    tests: ["test/lowering.test.ts", "-t", "cell in a field is the property"],
+    tests: ["test/lowering-cells.test.ts", "-t", "cell in a field is the property"],
   },
   {
     "name": "text-truth-chained",
@@ -106,11 +106,7 @@ export const mutations: Mutation[] = [
     "file": "src/js/make.rs",
     "find": "        if let Some(tested) = null_test(&test, true)\n            && matches!(els.kind, ExprKind::Undefined)\n            && let ExprKind::Call(callee, args) = &then.kind\n",
     "replace": "        if let Some(tested) = presence_of(&test)\n            && matches!(els.kind, ExprKind::Undefined)\n            && let ExprKind::Call(callee, args) = &then.kind\n",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "a test of text's truth is no optional chain"
-    ]
+    "tests": ["test/lowering-branches.test.ts", "-t", "a test of text's truth is no optional chain"]
   },
   {
     "name": "is-array-chain-first-unread",
@@ -118,11 +114,7 @@ export const mutations: Mutation[] = [
     "file": "src/js/make.rs",
     "find": "        while let ExprKind::Binary(Op::And, a, _) = &first.kind {\n            first = a;\n        }\n",
     "replace": "",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "a let chain from MIR is one test"
-    ]
+    "tests": ["test/lowering-branches.test.ts", "-t", "a let chain from MIR is one test"]
   },
   {
     name: "text-joined-twice",
@@ -138,11 +130,7 @@ export const mutations: Mutation[] = [
     "file": "src/js/make.rs",
     "find": "        // `a != null && a === \"index\"` is `a === \"index\"`: no literal is\n        // `null` or `undefined`.\n        if op == Op::And\n",
     "replace": "        // `a != null && a === \"index\"` is `a === \"index\"`: no literal is\n        // `null` or `undefined`.\n        if false\n",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "compared to a literal needs no test"
-    ]
+    "tests": ["test/lowering-options.test.ts", "-t", "compared to a literal needs no test"]
   },
   {
     name: "mir-tidy-not-de-morgan",
@@ -150,7 +138,7 @@ export const mutations: Mutation[] = [
     file: "src/js/make.rs",
     find: "                Expr::bin(flipped, a.negated_test(), b.negated_test())\n",
     replace: "                Expr::unary(UnaryOp::Not, Expr::bin(op, *a, *b))\n",
-    tests: ["test/lowering.test.ts","-t","branches from MIR read"],
+    tests: ["test/lowering-branches.test.ts", "-t", "branches from MIR read"],
   },
   {
     "name": "text-joined-to-text",

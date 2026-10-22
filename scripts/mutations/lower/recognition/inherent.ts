@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/recognition/inherent.rs",
     find: '            "replacen" if owner.is_str() => Std::Method("replace"),\n',
     replace: "",
-    tests: ["test/lowering.test.ts", "-t", "a replacement is the text it is"],
+    tests: ["test/lowering-strings.test.ts", "-t", "a replacement is the text it is"],
   },
   {
     name: "array-map-unknown",
@@ -104,7 +104,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/recognition/inherent.rs",
     find: "            \"leak\" if string || owner.is_box() => Std::Leak,",
     replace: "            \"leak\" if owner.is_box() => Std::Leak,",
-    tests: ["test/lowering.test.ts", "-t", "leaked String"],
+    tests: ["test/lowering-strings.test.ts", "-t", "leaked String"],
   },
   {
     name: "as-deref-of-vec-unknown",
@@ -112,7 +112,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/recognition/inherent.rs",
     find: "                            || self.is_std_type(t, StdItem::Vec)\n",
     replace: "",
-    tests: ["test/lowering.test.ts", "-t", "Option::as_deref of a String or a Vec is the option itself"],
+    tests: ["test/lowering-options.test.ts", "-t", "Option::as_deref of a String or a Vec is the option itself"],
   },
   {
     name: "get-unchecked-unknown",
@@ -120,7 +120,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/recognition/inherent.rs",
     find: "            \"get_unchecked\" | \"get_unchecked_mut\"\n                if owner.is_slice() && args.types().nth(1).is_some_and(|i| i.is_usize()) =>\n",
     replace: "            \"get_unchecked_mut\"\n                if owner.is_slice() && args.types().nth(1).is_some_and(|i| i.is_usize()) =>\n",
-    tests: ["test/lowering.test.ts", "-t", "get_unchecked is the item"],
+    tests: ["test/lowering-numbers.test.ts", "-t", "get_unchecked is the item"],
   },
   {
     name: "linked-list-not-deque",
@@ -352,6 +352,6 @@ export const mutations: Mutation[] = [
     file: "src/lower/recognition/inherent.rs",
     find: "            \"take\" if local_cell => Std::CellTake,\n",
     replace: "",
-    tests: ["test/lowering.test.ts", "-t", "a thread-local Cell's take and replace"],
+    tests: ["test/lowering-cells.test.ts", "-t", "a thread-local Cell's take and replace"],
   },
 ];

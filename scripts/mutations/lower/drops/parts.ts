@@ -40,11 +40,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/drops/parts.rs",
     "find": "        self.is_std_type(ty, StdItem::RefCell)\n            && is_plain_ref_cell(\n",
     "replace": "        self.is_std_type(ty, StdItem::RefCell)\n            && false\n            && is_plain_ref_cell(\n",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "only borrowed for a moment"
-    ]
+    "tests": ["test/lowering-cells.test.ts", "-t", "only borrowed for a moment"]
   },
   {
     "name": "plain-refcell-any-borrow",
@@ -52,11 +48,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/drops/parts.rs",
     "find": "                    && (facts.momentary.contains(&fun) || writes_for_a_moment(fun))\n",
     "replace": "                    && (true || writes_for_a_moment(fun))\n",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "only borrowed for a moment"
-    ]
+    "tests": ["test/lowering-cells.test.ts", "-t", "only borrowed for a moment"]
   },
   {
     "name": "plain-refcell-lent-kept",
@@ -64,11 +56,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/drops/parts.rs",
     "find": "                        false => cells.insert(expr.ty),",
     "replace": "                        false => plain.insert(expr.ty),",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "only borrowed for a moment"
-    ]
+    "tests": ["test/lowering-cells.test.ts", "-t", "only borrowed for a moment"]
   },
   {
     name: "mir-ref-cells-all-cells",
@@ -76,7 +64,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/drops/parts.rs",
     find: "        if self.krate.library {\n            return HashSet::new();\n        }\n",
     replace: "        if true {\n            return HashSet::new();\n        }\n",
-    tests: ["test/lowering.test.ts","-t","field only ever borrowed for a moment"],
+    tests: ["test/lowering-cells.test.ts", "-t", "field only ever borrowed for a moment"],
   },
   {
     name: "owned-iter-left-undropped",
@@ -196,7 +184,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/drops/parts.rs",
     find: "                && crate::lower::recognition::known_derive(tcx, imp.to_def_id())\n",
     replace: "                && false\n",
-    tests: ["test/lowering.test.ts", "-t", "only borrowed for a moment"],
+    tests: ["test/lowering-cells.test.ts", "-t", "only borrowed for a moment"],
   },
   {
     name: "fn-dyn-dropped-as-pair",
@@ -212,7 +200,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/drops/parts.rs",
     find: "                    Some(crate::lower::Std::CellReplace) => true,\n",
     replace: "                    Some(crate::lower::Std::CellReplace) => false,\n",
-    tests: ["test/lowering.test.ts", "-t", "written by replace and take"],
+    tests: ["test/lowering-cells.test.ts", "-t", "written by replace and take"],
   },
   {
     name: "take-default-trusted",
@@ -220,7 +208,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/drops/parts.rs",
     find: "                        args.types().next().is_some_and(|held| recognition.std_default(held))\n",
     replace: "                        true\n",
-    tests: ["test/lowering.test.ts", "-t", "written by replace and take"],
+    tests: ["test/lowering-cells.test.ts", "-t", "written by replace and take"],
   },
   {
     name: "plain-ref-cell-regions-kept",
@@ -228,6 +216,6 @@ export const mutations: Mutation[] = [
     file: "src/lower/drops/parts.rs",
     find: "    plain.contains(&tcx.erase_and_anonymize_regions(ty))\n",
     replace: "    plain.contains(&ty)\n",
-    tests: ["test/lowering.test.ts", "-t", "written by replace and take"],
+    tests: ["test/lowering-cells.test.ts", "-t", "written by replace and take"],
   },
 ];

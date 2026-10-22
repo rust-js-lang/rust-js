@@ -40,6 +40,6 @@ export const mutations: Mutation[] = [
     file: "src/comments.rs",
     find: "    if lines.iter().any(|line| line.contains(\"*/\")) {\n",
     replace: "    if false {\n",
-    tests: ["test/lowering.test.ts", "-t", "a comment is in the JS where"],
+    tests: ["test/lowering-names.test.ts", "-t", "a comment is in the JS where"],
   },
 ];

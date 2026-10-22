@@ -24,7 +24,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/pipeline.rs",
     find: "        if super::bindings::is_on_load(tcx, def_id) {",
     replace: "        if false {",
-    tests: ["test/lowering.test.ts", "-t", "on_load bodies that bind one name"],
+    tests: ["test/lowering-bindings.test.ts", "-t", "on_load bodies that bind one name"],
   },
   {
     name: "on-load-names-of-any-module",
@@ -32,7 +32,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/pipeline.rs",
     find: ".filter(|(id, _)| super::bindings::is_on_load(tcx, *id) && fns[id].module == module);",
     replace: ".filter(|(id, _)| super::bindings::is_on_load(tcx, *id));",
-    tests: ["test/lowering.test.ts", "-t", "on_load bodies that bind one name"],
+    tests: ["test/lowering-bindings.test.ts", "-t", "on_load bodies that bind one name"],
   },
   {
     name: "on-load-destructured-names-unreserved",
@@ -40,7 +40,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/pipeline.rs",
     find: "        StmtKind::Destructure { pattern, .. } => pattern.names().into_iter().map(str::to_owned).collect(),\n",
     replace: "",
-    tests: ["test/lowering.test.ts", "-t", "on_load bodies that bind one name"],
+    tests: ["test/lowering-bindings.test.ts", "-t", "on_load bodies that bind one name"],
   },
   {
     name: "library-codec-unused",
@@ -284,7 +284,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/pipeline.rs",
     find: "            super::std_types::cell::plain_statics(&mut lowered.items, &quiet);\n",
     replace: "",
-    tests: ["test/lowering.test.ts","-t","thread-local only its module"],
+    tests: ["test/lowering-cells.test.ts", "-t", "thread-local only its module"],
   },
   {
     name: "static-mut-initializer-refused",
@@ -390,7 +390,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/pipeline.rs",
     find: "reaches(module, other) && reaches(other, module)",
     replace: "false && reaches(module, other) && reaches(other, module)",
-    tests: ["test/lowering.test.ts", "-t", "a dictionary that takes nothing"],
+    tests: ["test/lowering-structs-enums.test.ts", "-t", "a dictionary that takes nothing"],
   },
   {
     name: "load-time-calls-unseen",
@@ -398,7 +398,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/pipeline.rs",
     find: "!pass.dictionary_names.contains(&c.name) && c.value.has_effects())",
     replace: "!pass.dictionary_names.contains(&c.name) && c.value.has_effects() && false)",
-    tests: ["test/lowering.test.ts", "-t", "a dictionary that takes nothing"],
+    tests: ["test/lowering-structs-enums.test.ts", "-t", "a dictionary that takes nothing"],
   },
   {
     name: "dictionary-cache-unmade",
@@ -406,7 +406,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/pipeline.rs",
     find: "                consts.push(constant(cache_of[&def_id].clone(), cache, false));\n",
     replace: "                let _ = cache;\n",
-    tests: ["test/lowering.test.ts", "-t", "a dictionary that takes nothing"],
+    tests: ["test/lowering-structs-enums.test.ts", "-t", "a dictionary that takes nothing"],
   },
   {
     name: "dictionary-cache-runs-code",
@@ -414,7 +414,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/pipeline.rs",
     find: "(consts.iter()).any(|c| !pass.dictionary_names.contains(&c.name) && c.value.has_effects())",
     replace: "(consts.iter()).any(|c| c.value.has_effects())",
-    tests: ["test/lowering.test.ts", "-t", "a dictionary that takes nothing"],
+    tests: ["test/lowering-structs-enums.test.ts", "-t", "a dictionary that takes nothing"],
   },
   {
     name: "bound-global-default-refused",
@@ -422,6 +422,6 @@ export const mutations: Mutation[] = [
     file: "src/lower/pipeline.rs",
     find: "                    Some(function) if unset && super::bindings::global_function(tcx, function).is_some() => {\n",
     replace: "                    Some(function) if false && unset && super::bindings::global_function(tcx, function).is_some() => {\n",
-    tests: ["test/lowering.test.ts", "-t", "a global binding a module names"],
+    tests: ["test/lowering-bindings.test.ts", "-t", "a global binding a module names"],
   },
 ];

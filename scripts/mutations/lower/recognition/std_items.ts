@@ -89,7 +89,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/recognition/std_items.rs",
     find: "        path = ty::print::with_no_visible_paths!(tcx.def_path_str(id));\n",
     replace: "",
-    tests: ["test/lowering.test.ts", "-t", "crate's own name for alloc"],
+    tests: ["test/lowering-structs-enums.test.ts", "-t", "crate's own name for alloc"],
   },
   {
     name: "hashbrown-maps-unknown",

@@ -32,7 +32,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/iter.rs",
     find: "            if self.recognition().is_given_iterable(receiver_ty) {\n                return Ok(Some(crate::lower::iterators::given_into_iter(value)));\n",
     replace: "            if self.recognition().is_given_iterable(receiver_ty) {\n                return Ok(Some(value));\n",
-    tests: ["test/lowering.test.ts","-t","stepped by hand"],
+    tests: ["test/lowering-loops.test.ts", "-t", "stepped by hand"],
   },
   {
     name: "mir-rev-own-next-back-unused",
@@ -64,11 +64,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/iter.rs",
     "find": "            Some(method @ (IterMethod::Eq | IterMethod::Ne)) => {",
     "replace": "            Some(method @ (IterMethod::Eq | IterMethod::Ne)) if false => {",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "iterators compared equal from MIR"
-    ]
+    "tests": ["test/lowering-iterators.test.ts", "-t", "iterators compared equal from MIR"]
   },
   {
     "name": "mir-user-len-refused",
@@ -76,11 +72,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/iter.rs",
     "find": "            if (self.is_user_iterator(iter_ty)\n                || crate::lower::recognition::is_compiled_std_iterator(self.tcx, iter_ty))\n                && std_method == Some(IterMethod::Len)\n",
     "replace": "            if false\n                && std_method == Some(IterMethod::Len)\n",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "an iterator's len from MIR"
-    ]
+    "tests": ["test/lowering-iterators.test.ts", "-t", "an iterator's len from MIR"]
   },
   {
     "name": "mir-counted-chain-len-refused",
@@ -100,11 +92,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/iter.rs",
     "find": "            && through.is_ref()\n",
     "replace": "            && through.is_ref() && false\n",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "stepped through by_ref from MIR"
-    ]
+    "tests": ["test/lowering-iterators.test.ts", "-t", "stepped through by_ref from MIR"]
   },
   {
     name: "mir-find-boxed-unboxed",
@@ -120,7 +108,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/iter.rs",
     find: "                        && crate::lower::iterators::is_items_map(&it)\n",
     replace: "                        && false\n",
-    tests: ["test/lowering.test.ts", "-t", "next_back of a map"],
+    tests: ["test/lowering-iterators.test.ts", "-t", "next_back of a map"],
   },
   {
     name: "mir-filter-discarded-undropped",
@@ -144,11 +132,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/iter.rs",
     "find": "                f if f.is_identity() => it,\n",
     "replace": "",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "gives the value itself is none"
-    ]
+    "tests": ["test/lowering-iterators.test.ts", "-t", "gives the value itself is none"]
   },
   {
     name: "consumed-iterator-undropped",
@@ -261,7 +245,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/iter.rs",
     find: "                .is_some_and(|item| !self.needs_clone(item.peel_refs()))\n",
     replace: "                .is_some_and(|item| self.is_copy(item.peel_refs()))\n",
-    tests: ["test/lowering.test.ts", "-t", "no item is mapped to itself"],
+    tests: ["test/lowering-iterators.test.ts", "-t", "no item is mapped to itself"],
   },
   {
     "name": "mir-iterator-method-ungated",

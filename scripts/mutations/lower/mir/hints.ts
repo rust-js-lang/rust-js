@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/hints.rs",
     find: "                    std::iter::once((tested, tested)).chain(guards).collect()\n",
     replace: "                    guards.collect()\n",
-    tests: ["test/lowering.test.ts", "-t", "a match arm's pattern of parts"],
+    tests: ["test/lowering-matches.test.ts", "-t", "a match arm's pattern of parts"],
   },
   {
     name: "mir-booleans-unhinted",
@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/hints.rs",
     find: "        booleans.retain(|name| !others.contains(name));\n",
     replace: "        booleans.clear();\n",
-    tests: ["test/lowering.test.ts", "-t", "match returns each arm, and its if of two values is one conditional"],
+    tests: ["test/lowering-branches.test.ts", "-t", "match returns each arm, and its if of two values is one conditional"],
   },
   {
     name: "mir-captured-booleans-unknown",
@@ -24,7 +24,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/hints.rs",
     find: "                    match ty.peel_refs().is_bool() {\n",
     replace: "                    match false {\n",
-    tests: ["test/lowering.test.ts", "-t", "names its .&x. parameter"],
+    tests: ["test/lowering-functions.test.ts", "-t", "names its .&x. parameter"],
   },
   {
     name: "mir-guard-conditions-unknown",
@@ -32,7 +32,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/hints.rs",
     find: "                        let guard = self.thir[arm].guard?;\n",
     replace: "                        let guard = self.thir[arm].guard.filter(|_| false)?;\n",
-    tests: ["test/lowering.test.ts", "-t", "a match arm's guard from MIR is one test"],
+    tests: ["test/lowering-matches.test.ts", "-t", "a match arm's guard from MIR is one test"],
   },
   {
     name: "while-hint-span-whole",
@@ -40,7 +40,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/hints.rs",
     find: "                            && w.span.source_callsite().source_equal(written)\n",
     replace: "                            && w.span.source_callsite() == written\n",
-    tests: ["test/lowering.test.ts", "-t", "a while in a closure from MIR keeps its test|while"],
+    tests: ["test/lowering-loops.test.ts", "-t", "a while in a closure from MIR keeps its test|while"],
   },
   {
     name: "mir-bool-ref-unknown",
@@ -56,7 +56,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/hints.rs",
     find: "let only = match (block.stmts.last(), block.expr) {",
     replace: "let only = match (block.stmts.last().filter(|_| block.stmts.len() == 1), block.expr) {",
-    tests: ["test/lowering.test.ts", "-t", "continues a loop's ifs end with are kept"],
+    tests: ["test/lowering-loops.test.ts", "-t", "continues a loop's ifs end with are kept"],
   },
   {
     name: "mir-let-else-continue-unwritten",
@@ -64,7 +64,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/hints.rs",
     find: "            .chain(self.let_else_continues())\n",
     replace: "",
-    tests: ["test/lowering.test.ts", "-t", "a let-else's written continue"],
+    tests: ["test/lowering-loops.test.ts", "-t", "a let-else's written continue"],
   },
   {
     name: "mir-label-of-scope",
@@ -72,7 +72,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/hints.rs",
     find: "                        self.strip(value),\n",
     replace: "                        value,\n",
-    tests: ["test/lowering.test.ts", "-t", "returns in a loop are where"],
+    tests: ["test/lowering-loops.test.ts", "-t", "returns in a loop are where"],
   },
   {
     name: "temporary-named-by-unwritten-call",

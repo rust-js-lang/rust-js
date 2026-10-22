@@ -88,7 +88,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/traits.rs",
     find: "        && !given.copied.contains(&(tcx.typeck_root_def_id(id), param.index))\n",
     replace: "",
-    tests: ["test/lowering.test.ts", "-t", "a Copy bound takes a copy only"],
+    tests: ["test/lowering-functions.test.ts", "-t", "a Copy bound takes a copy only"],
   },
   {
     name: "copy-bound-always-kept",
@@ -96,7 +96,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/traits.rs",
     find: "    if tcx.is_lang_item(tr.def_id, LangItem::Copy)\n        && super::analysis::copies_by_callers(tcx, id)",
     replace: "    if false\n        && super::analysis::copies_by_callers(tcx, id)",
-    tests: ["test/lowering.test.ts", "-t", "a Copy bound takes a copy only"],
+    tests: ["test/lowering-functions.test.ts", "-t", "a Copy bound takes a copy only"],
   },
   {
     name: "binding-trait-dictionary",

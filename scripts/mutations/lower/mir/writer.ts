@@ -24,7 +24,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/writer.rs",
     find: "                    if whole && at == 0 && crate::lower::recognition::formatter_query(self.tcx, def_id).is_some() {\n",
     replace: "                    if false {\n",
-    tests: ["test/lowering.test.ts","-t","a writer from its MIR answers what its Formatter is asked"],
+    tests: ["test/lowering-strings.test.ts", "-t", "a writer from its MIR answers what its Formatter is asked"],
   },
   {
     name: "mir-writer-builder-entries-stepped",
@@ -32,7 +32,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/writer.rs",
     find: "true => crate::lower::iterators::iterated(value),",
     replace: "true => value,",
-    tests: ["test/lowering.test.ts","-t","a writer's Debug builder from its MIR is the string its chain writes"],
+    tests: ["test/lowering-strings.test.ts", "-t", "a writer's Debug builder from its MIR is the string its chain writes"],
   },
   {
     name: "mir-writer-written-lost",
@@ -48,7 +48,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/writer.rs",
     find: "            false => tidy::writer_body(out, name),\n",
     replace: "            false => {}\n",
-    tests: ["test/lowering.test.ts", "-t", "a writer from its MIR returns the string it writes"],
+    tests: ["test/lowering-strings.test.ts", "-t", "a writer from its MIR returns the string it writes"],
   },
   {
     name: "mir-library-writer-formatter-refused",

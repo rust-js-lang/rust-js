@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/logicals.rs",
     find: "        *test = unimplied(Expr::bin(Op::And, first, second));\n",
     replace: "        *test = Expr::bin(Op::And, first, second);\n",
-    tests: ["test/lowering.test.ts", "-t", "a match arm's pattern of parts"],
+    tests: ["test/lowering-matches.test.ts", "-t", "a match arm's pattern of parts"],
   },
   {
     name: "mir-tidy-and-tests-any-condition",
@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/logicals.rs",
     find: "        let one = (conditions.iter()).any(|(first, then)| within(first, span) && within(then, inner.span));\n",
     replace: "        let one = true;\n",
-    tests: ["test/lowering.test.ts","-t","if-let chains and loops from MIR"],
+    tests: ["test/lowering-loops.test.ts", "-t", "if-let chains and loops from MIR"],
   },
   {
     "name": "and-test-bound-kept",
@@ -36,7 +36,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/logicals.rs",
     find: "    let Some(made) = value(body, after, (label, after), returns, booleans) else {\n",
     replace: "    let Some(made) = None::<Expr> else {\n",
-    tests: ["test/lowering.test.ts", "-t", "a value of && and"],
+    tests: ["test/lowering-branches.test.ts", "-t", "a value of && and"],
   },
   {
     name: "logical-block-unfactored",
@@ -44,7 +44,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/logicals.rs",
     find: "    if let Some(p) = without(&yes, &no) {\n",
     replace: "    if let Some(p) = without(&yes, &no).filter(|_| false) {\n",
-    tests: ["test/lowering.test.ts", "-t", "a value of && and"],
+    tests: ["test/lowering-branches.test.ts", "-t", "a value of && and"],
   },
   {
     "name": "logical-returns-kept",
@@ -52,10 +52,6 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/tidy/logicals.rs",
     "find": "        && within(last_if.span)\n",
     "replace": "        && false\n",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "a value written with && is returned as one"
-    ]
+    "tests": ["test/lowering-branches.test.ts", "-t", "a value written with && is returned as one"]
   },
 ];

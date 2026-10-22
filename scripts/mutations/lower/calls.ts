@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/calls.rs",
     find: "                js::Pattern::Array(items) => (items.iter().enumerate())",
     replace: "                js::Pattern::Array(items) if false => (items.iter().enumerate())",
-    tests: ["test/lowering.test.ts", "-t", "taken apart through a reference"],
+    tests: ["test/lowering-matches.test.ts", "-t", "taken apart through a reference"],
   },
   {
     name: "promise-result-unsettled",

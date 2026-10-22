@@ -40,7 +40,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/structure.rs",
     find: "                stmt.span = written;\n",
     replace: "                let _ = (stmt, written);\n",
-    tests: ["test/lowering.test.ts","-t","returning nothing returns where"],
+    tests: ["test/lowering-branches.test.ts", "-t", "returning nothing returns where"],
   },
   {
     name: "mir-bool-switch-negated-first",
@@ -48,7 +48,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/structure.rs",
     find: "                    && targets.iter().all(|(value, _)| value == 0)\n",
     replace: "                    && false\n",
-    tests: ["test/lowering.test.ts","-t", "match returns each arm, and its if of two values is one conditional"],
+    tests: ["test/lowering-branches.test.ts", "-t", "match returns each arm, and its if of two values is one conditional"],
   },
   {
     name: "mir-switch-variant-order",
@@ -56,7 +56,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/structure.rs",
     find: "                    ordered.sort_by_key(|&(at, _)| at);\n",
     replace: "",
-    tests: ["test/lowering.test.ts","-t", "match returns each arm, and its if of two values is one conditional"],
+    tests: ["test/lowering-branches.test.ts", "-t", "match returns each arm, and its if of two values is one conditional"],
   },
   {
     name: "mir-negated-if-flipped",
@@ -64,7 +64,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/structure.rs",
     find: "                    && !matches!((written_at(state.body, *target), written_at(state.body, yes)), (Some(no), Some(yes)) if no < yes)\n",
     replace: "",
-    tests: ["test/lowering.test.ts","-t","keeps its branch first"],
+    tests: ["test/lowering-branches.test.ts", "-t", "keeps its branch first"],
   },
   {
     name: "mir-written-return-past-drops",
@@ -98,11 +98,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/structure.rs",
     "find": "                        .filter(|s| !matches!(s.kind, StatementKind::StorageLive(_) | StatementKind::StorageDead(_)))\n",
     "replace": "",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "a function's .s from MIR are guards"
-    ]
+    "tests": ["test/lowering-matches.test.ts", "-t", "a function's .s from MIR are guards"]
   },
   {
     "name": "mir-switch-cases-ungrouped",
@@ -110,11 +106,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/structure.rs",
     "find": "                    match grouped.iter_mut().find(|(_, t)| *t == target) {\n",
     "replace": "                    match None::<&mut (Expr, BasicBlock)> {\n",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "an or-pattern's values from MIR"
-    ]
+    "tests": ["test/lowering-matches.test.ts", "-t", "an or-pattern's values from MIR"]
   },
   {
     name: "mir-untagged-alike-matched",
@@ -187,6 +179,6 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/structure.rs",
     find: "                    .get(&(ty, value))\n",
     replace: "                    .get(&(ty, value + 1000))\n",
-    tests: ["test/lowering.test.ts", "-t", "a match of constants tests each"],
+    tests: ["test/lowering-matches.test.ts", "-t", "a match of constants tests each"],
   },
 ];
