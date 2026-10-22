@@ -123,6 +123,7 @@ function main() {
   console.log(
     `${shown(undefined, gridShow(2, 3))} ${shown(undefined, gridShow(2, 4))} ${shown(undefined, gridShow(2, 3))}`,
   );
+  // A function as a value, given its `N`.
   console.log(`${count(4)}`);
 }
 //# sourceMappingURL=case.js.map

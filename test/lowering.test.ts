@@ -84,6 +84,27 @@ test("an entry's and_modify then or_insert reads its map and key", () => {
   expect(js).not.toContain("$mutGet(counts, c);");
 });
 
+// ADR 0603: a comment before a `let` with no JS of its own, a variable
+// read in place, is the next statement's: React's scheduler has
+// `// Timer fired. Transfer to the task queue.` before `pop(timerQueue);`.
+test("a comment before a let that has no JS is the next statement's", () => {
+  const dir = fixture("comment-of-a-removed-let");
+  writeFileSync(join(dir, "lib.rs"), `use std::rc::Rc;
+
+pub fn moved(items: &mut Vec<Rc<String>>, into: &mut Vec<Rc<String>>) {
+    if let Some(first) = items.first() {
+        // Taken, then moved.
+        let first = Rc::clone(first);
+        items.remove(0);
+        into.push(first);
+    }
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("    // Taken, then moved.\n    $removeAt(items, 0);\n");
+});
+
 // ADR 0444: a comment is its JS's where its code is, before the statement
 // or item it's before, as written; a doc comment, `///`, is a JSDoc one; one
 // before what has no JS, a struct's, is nobody's.

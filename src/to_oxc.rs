@@ -182,7 +182,8 @@ pub fn emit(
 /// The comments of the files `module`'s code is of, past the ones each
 /// starts with, a header's (ADR 0383), each before the statement or item it's
 /// before: where only the start of that is between them, no `;`, `{` or
-/// `}`, so not one of what has no JS, a struct's (ADR 0444); or a
+/// `}`, so not one of what has no JS, a struct's (ADR 0444); `let`s that
+/// have none, read in place (ADR 0603); or a
 /// closure's opening, `|queue| {`, whose body is in its place (ADR 0581). Each is as
 /// written; a doc comment, `///` lines or `/** */`, a JSDoc one, `/** .. */`,
 /// whose text is added after the arena's, where its span points. The text
@@ -273,7 +274,14 @@ fn comments_of(
                         // whose body is in its place (ADR 0581), is a start.
                         let opens_closures =
                             (between.match_indices('{')).all(|(i, _)| between[..i].trim_end().ends_with('|'));
-                        !between.contains([';', '}']) && opens_closures
+                        // `let`s with no JS of their own, a variable read in
+                        // place, `let timer = Rc::clone(timer);` (ADR 0603).
+                        let unprinted_lets = between.trim_end().ends_with(';')
+                            && !between.contains(['{', '}'])
+                            && (between.split(';').map(str::trim))
+                                .filter(|s| !s.is_empty())
+                                .all(|s| s.starts_with("let "));
+                        (!between.contains([';', '}']) && opens_closures) || unprinted_lets
                     });
                 only_starts.then_some((*c, at))
             })

@@ -3,6 +3,14 @@ import type { Mutation } from "../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "removed-let-comment-dropped",
+    breaks: "a comment before `let first = Rc::clone(first);`, which has no JS, is lost",
+    file: "src/to_oxc.rs",
+    find: "(!between.contains([';', '}']) && opens_closures) || unprinted_lets",
+    replace: "!between.contains([';', '}']) && opens_closures",
+    tests: ["test/lowering.test.ts", "-t", "a comment before a let that has no JS"],
+  },
+  {
     name: "aliases-unprinted",
     breaks: "`export { currentTime as unstable_now };` isn't written",
     file: "src/to_oxc.rs",
@@ -126,8 +134,8 @@ export const mutations: Mutation[] = [
     name: "comment-across-code",
     breaks: "a comment before code with no JS, a type's, is written before the next function",
     file: "src/to_oxc.rs",
-    find: "                        !between.contains([';', '}']) && opens_closures",
-    replace: "                        true",
+    find: "(!between.contains([';', '}']) && opens_closures) || unprinted_lets",
+    replace: "true",
     tests: ["test/lowering.test.ts", "-t", "a comment is in the JS where"],
   },
   {

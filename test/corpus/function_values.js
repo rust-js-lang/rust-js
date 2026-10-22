@@ -42,6 +42,8 @@ function main() {
     .map(([n, s]) => [n, s])
     .toArray();
   console.log(`[${pairs.map((item) => pairDebug_fmt(item)).join(", ")}]`);
+
+  // In a variable, and of two fields.
   console.log(`${shapeDebug_fmt({ TAG: "Rect", _0: 2, _1: 3 })}`);
   const value = $eq([4], [4]);
   console.log(`${metersDebug_fmt([4])} ${value}`);

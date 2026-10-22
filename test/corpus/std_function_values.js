@@ -88,6 +88,8 @@ function main() {
   console.log(
     `${highest} ${lowest} ${$displayF64(widest)} [${sorted.join(", ")}] [${distances.join(", ")}]`,
   );
+
+  // In a variable, called later.
   console.log(`${$byteLen("日本")} [${[].join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map
