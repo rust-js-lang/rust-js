@@ -369,7 +369,7 @@ const owners: Record<string, string[]> = {
   ],
   "self.writing": ["src/lower/display.rs"],
   "self.cloning": ["src/lower/std_impls.rs"],
-  "self.given": ["src/lower/traits.rs"],
+  "self.given": ["src/lower/traits/given.rs", "src/lower/traits/calls.rs", "src/lower/traits/impls.rs", "src/lower/traits/routes.rs"],
   "self.walks.representable": ["src/lower/support.rs"],
   "self.walks.assumed": ["src/lower/support.rs"],
   "self.walks.mutated": ["src/lower/copies.rs"],
@@ -630,7 +630,7 @@ test("library identity checks and method tables stay in recognition", () => {
     // The scalar linkage adapter owns canonical crate names, not library intrinsics.
     expect(read(file), file).not.toMatch(/\.crate_name\s*\(|fn classify(?:_\w+)?\s*\(/);
   }
-  for (const file of ["src/lower/calls.rs", "src/lower/ordering.rs", "src/lower/traits.rs"]) {
+  for (const file of ["src/lower/calls.rs", "src/lower/ordering.rs", "src/lower/traits.rs", ...files("src/lower/traits")]) {
     expect(read(file), file).not.toMatch(/match\s+(?:self\.tcx\.item_name\(\w+\)|name)\.as_str\(\)/);
   }
 });
@@ -866,7 +866,7 @@ test("a type known by its bounds is one by known_by_bounds alone", () => {
 test("a copied default's typing environment is impl_typing_env's alone", () => {
   const reading = files("src/lower").filter((file) => file.endsWith(".rs"))
     .flatMap((file) => read(file).split("\n").filter((line) => /self\.given\.self_env\b(?!\s*=)/.test(line) && !/self_env:/.test(line)).map((line) => `${file}: ${line.trim()}`));
-  expect(reading).toEqual(["src/lower/traits.rs: let impl_env = self.given.self_env?;"]);
+  expect(reading).toEqual(["src/lower/traits/given.rs: let impl_env = self.given.self_env?;"]);
 });
 
 // What's found once of a crate, a React name's structs and hooks, is kept
@@ -936,7 +936,6 @@ test("tests find what they build through target", () => {
 // fails, and one brought under the cap leaves the list, so it only gets
 // shorter. Split a listed file by concept, never to meet the number.
 const overTheCap: Record<string, number> = {
-  "src/lower/traits.rs": 4128,
   "src/js.rs": 2443,
   "src/lower/iterators.rs": 2300,
   "src/runtime/from_json.js": 2009,

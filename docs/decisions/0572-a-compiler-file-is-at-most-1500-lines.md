@@ -119,3 +119,13 @@ largest 933 lines. The architecture test lists each part's fields of
 `State`, as it lists `drops.rs`'s, and the parts that read `locals.mir`.
 `mir_call` is held at 107 lines, two more than it was: a path the move
 spelled from the crate, `crate::lower::`, is wrapped by rustfmt.
+
+## Amendment: traits, split by what it builds (2026-10-22)
+
+`traits.rs`, 4,128 lines, keeps bounds and evidence, `Given`, and the
+validation of what the crate implements; its parts are `routes.rs`
+(where a dictionary is), `dictionaries.rs`, `impls.rs` (an impl's
+dictionary lowered, and a copied default), `dyns.rs`, `calls.rs`,
+`given.rs`, `drop_params.rs` and `words.rs`, the largest 840 lines. The
+parts that read `self.given` are its owners, and the rule that keeps
+method-name matches out of `traits.rs` holds over its parts too.
