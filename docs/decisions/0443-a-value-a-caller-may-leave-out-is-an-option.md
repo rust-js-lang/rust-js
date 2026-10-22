@@ -1,6 +1,8 @@
 # 0443. A value a caller may leave out is an `Option`, in each direction
 
-Status: Accepted. Amends [0024](0024-web-crate.md),
+Status: Accepted; amended by [0593](0593-a-lazy-argument-is-its-value.md),
+whose `use_state` is one function, and [0594](0594-an-overload-an-options-dictionary-holds-is-it.md),
+whose overload an options dictionary holds is that one. Amends [0024](0024-web-crate.md),
 [0102](0102-js-and-webapi.md) and [0272](0272-node.md), whose `_with_` forms
 of an optional argument are gone, and [0020](0020-structs-and-tuples.md):
 a `()` as a `dyn` JS is given the value of is an array too. Extends

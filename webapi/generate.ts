@@ -500,8 +500,10 @@ function paramDictionary(d: Def): string | { skip: string } {
     const fields: Field[] = [];
     for (const m of dictionaryMembers(d)) {
       const chosen = FIELD_TYPES[`${d.name}.${m.name}`] ?? paramType(m.idlType!);
-      // A field typed `any` is left out, as a struct field can't be generic.
-      if (!chosen || chosen.includes("dyn core::any::Any") || chosen.includes(ANY)) continue;
+      // A field typed `any` is left out, as a struct field can't be generic;
+      // not a list of objects, `transfer`'s, a slice of them.
+      const anyValue = chosen?.includes("dyn core::any::Any") && !chosen.startsWith("&[");
+      if (!chosen || anyValue || chosen.includes(ANY)) continue;
       // A borrow in a field lives as long as the struct's: `&'a str`.
       const type = chosen.replace(/&(?!')/g, "&'a ").replace(/<'_>/g, "<'a>");
       fields.push({ rust: snake(m.name!), js: m.name!, type, optional: !m.required });
@@ -788,8 +790,35 @@ function foldedOverloads(i: Interface): Interface {
   return { ...i, members };
 }
 
+/** `i`'s members, an overload whose arguments past another's are each a
+ * member of that one's options dictionary dropped, the dictionary's alone
+ * kept: `postMessage(message, transfer)` beside `postMessage(message,
+ * options?)`, whose `StructuredSerializeOptions` has `transfer`, is the
+ * second, as one function has one form (ADRs 0443, 0594). */
+function subsumedOverloads(i: Interface): Interface {
+  const members = i.members.filter(({ member: older }) => {
+    if (older.type !== "operation" || !older.name) return true;
+    return !i.members.some(({ member: newer }) => {
+      if (newer === older || newer.type !== "operation" || newer.name !== older.name || newer.special !== older.special) return false;
+      const args = newer.arguments ?? [];
+      const last = args.at(-1);
+      const options = last?.optional && typeof last.idlType.idlType === "string" ? dictionaries.get(last.idlType.idlType) : undefined;
+      if (!options) return false;
+      const shared = args.slice(0, -1);
+      const theirs = older.arguments ?? [];
+      const names = new Set(dictionaryMembers(options).map((m) => m.name));
+      return (
+        theirs.length > shared.length &&
+        shared.every((arg, k) => theirs[k]?.name === arg.name) &&
+        theirs.slice(shared.length).every((arg) => names.has(arg.name))
+      );
+    });
+  });
+  return { ...i, members };
+}
+
 function functionsOf(declared: Interface): Fn[] {
-  const i = foldedOverloads(declared);
+  const i = foldedOverloads(subsumedOverloads(declared));
   const fns: Fn[] = [];
   // A namespace's functions are called on it: `WebAssembly.compile(bytes)`.
   const self = i.isNamespace ? [] : [`this: &${typeName(i.name)}`];

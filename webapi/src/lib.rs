@@ -18662,7 +18662,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "postMessage")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn post_message<M: StructuredClone>(&self, message: M, target_origin: &str, transfer: Option<&[&dyn core::any::Any]>) {
+    pub fn post_message<M: StructuredClone>(&self, message: M, options: Option<WindowPostMessageOptions<'_>>) {
         unreachable!()
     }
 
@@ -20962,7 +20962,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "structuredClone")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn structured_clone<V: StructuredClone>(&self, value: V) -> Option<&'static Unknown> {
+    pub fn structured_clone<V: StructuredClone>(&self, value: V, options: Option<StructuredSerializeOptions<'_>>) -> Option<&'static Unknown> {
         unreachable!()
     }
 
@@ -48737,7 +48737,7 @@ impl CanvasRenderingContext2D {
     #[cfg_attr(rust_js, rust_js::link_name = "setTransform")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_transform(&self, a: f64, b: f64, c: f64, d: f64, e: f64, f: f64) {
+    pub fn set_transform(&self, transform: Option<DOMMatrix2DInit>) {
         unreachable!()
     }
 
@@ -50080,7 +50080,7 @@ impl CookieStore {
     #[cfg_attr(rust_js, rust_js::link_name = "get")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn get(&self, name: &str) -> Promise<CookieListItem> {
+    pub fn get(&self, options: Option<CookieStoreGetOptions>) -> Promise<CookieListItem> {
         unreachable!()
     }
 
@@ -50088,7 +50088,7 @@ impl CookieStore {
     #[cfg_attr(rust_js, rust_js::link_name = "getAll")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn get_all(&self, name: &str) -> Promise<Vec<CookieListItem>> {
+    pub fn get_all(&self, options: Option<CookieStoreGetOptions>) -> Promise<Vec<CookieListItem>> {
         unreachable!()
     }
 
@@ -64870,7 +64870,7 @@ impl MessagePort {
     #[cfg_attr(rust_js, rust_js::link_name = "postMessage")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn post_message<M: StructuredClone>(&self, message: M, transfer: &[&dyn core::any::Any]) {
+    pub fn post_message<M: StructuredClone>(&self, message: M, options: Option<StructuredSerializeOptions<'_>>) {
         unreachable!()
     }
 
@@ -66548,7 +66548,7 @@ impl OffscreenCanvasRenderingContext2D {
     #[cfg_attr(rust_js, rust_js::link_name = "setTransform")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_transform(&self, a: f64, b: f64, c: f64, d: f64, e: f64, f: f64) {
+    pub fn set_transform(&self, transform: Option<DOMMatrix2DInit>) {
         unreachable!()
     }
 
@@ -75079,7 +75079,7 @@ impl ServiceWorker {
     #[cfg_attr(rust_js, rust_js::link_name = "postMessage")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn post_message<M: StructuredClone>(&self, message: M, transfer: &[&dyn core::any::Any]) {
+    pub fn post_message<M: StructuredClone>(&self, message: M, options: Option<StructuredSerializeOptions<'_>>) {
         unreachable!()
     }
 
@@ -86441,7 +86441,7 @@ impl Worker {
     #[cfg_attr(rust_js, rust_js::link_name = "postMessage")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn post_message<M: StructuredClone>(&self, message: M, transfer: &[&dyn core::any::Any]) {
+    pub fn post_message<M: StructuredClone>(&self, message: M, options: Option<StructuredSerializeOptions<'_>>) {
         unreachable!()
     }
 
@@ -87652,7 +87652,7 @@ pub mod global {
     #[cfg_attr(rust_js, rust_js::link_name = "structuredClone")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn structured_clone<V: StructuredClone>(value: V) -> Option<&'static Unknown> {
+    pub fn structured_clone<V: StructuredClone>(value: V, options: Option<StructuredSerializeOptions<'_>>) -> Option<&'static Unknown> {
         unreachable!()
     }
 }
@@ -87834,7 +87834,7 @@ pub mod window_global {
     #[cfg_attr(rust_js, rust_js::link_name = "postMessage")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn post_message<M: StructuredClone>(message: M, target_origin: &str, transfer: Option<&[&dyn core::any::Any]>) {
+    pub fn post_message<M: StructuredClone>(message: M, options: Option<WindowPostMessageOptions<'_>>) {
         unreachable!()
     }
 
@@ -91469,6 +91469,12 @@ pub struct StreamPipeOptions<'a> {
     pub signal: Option<&'a AbortSignal>,
 }
 
+/// The [`StructuredSerializeOptions`](https://developer.mozilla.org/docs/Web/API/StructuredSerializeOptions) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Default)]
+pub struct StructuredSerializeOptions<'a> {
+    pub transfer: Option<&'a [&'a dyn core::any::Any]>,
+}
+
 /// The [`SubmitEventInit`](https://developer.mozilla.org/docs/Web/API/SubmitEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct SubmitEventInit<'a> {
@@ -91826,6 +91832,7 @@ pub struct WheelEventInit<'a> {
 /// The [`WindowPostMessageOptions`](https://developer.mozilla.org/docs/Web/API/WindowPostMessageOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct WindowPostMessageOptions<'a> {
+    pub transfer: Option<&'a [&'a dyn core::any::Any]>,
     pub target_origin: Option<&'a str>,
 }
 

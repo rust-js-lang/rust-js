@@ -1591,13 +1591,17 @@ pub fn save(page: u32) {
     window.history().push_state(Saved { page }, "", None);
 }
 pub fn copy(text: &str) -> Option<&'static js::Unknown> {
-    window.structured_clone(text)
+    window.structured_clone(text, None)
 }
 pub fn copies(blob: &webapi::Blob) -> Option<&'static js::Unknown> {
-    window.structured_clone((vec![Some(1.5), None], "a", blob))
+    window.structured_clone((vec![Some(1.5), None], "a", blob), None)
 }
 pub fn send(text: String) {
-    window.post_message(Some(text), "*", None);
+    let options = webapi::WindowPostMessageOptions { target_origin: Some("*"), ..Default::default() };
+    window.post_message(Some(text), Some(options));
+}
+pub fn ping(port: &webapi::MessagePort) {
+    port.post_message(1, None);
 }
 pub fn report(error: &js::JsError) {
     window.report_error(error);
@@ -1610,14 +1614,16 @@ pub fn report(error: &js::JsError) {
   expect(js).toContain('window.history.pushState({ page }, "");');
   expect(js).toContain("return window.structuredClone(text);");
   expect(js).toContain('return window.structuredClone([[1.5, undefined], "a", blob]);');
-  expect(js).toContain('window.postMessage(text, "*");');
+  // One function, its options' (ADR 0594).
+  expect(js).toContain('const options = { targetOrigin: "*" };\n  window.postMessage(text, options);');
+  expect(js).toContain("port.postMessage(1);");
   expect(js).toContain("window.reportError(error);");
   for (const [written, error] of [
-    ["window.structured_clone(|| ())", "the trait `js::StructuredClone` is not implemented for closure"],
-    ["window.structured_clone(Some(None::<i32>))", "the trait `js::Defined` is not implemented for `std::option::Option<i32>`"],
-    ["window.structured_clone(window)", "the trait `js::StructuredClone` is not implemented for `webapi::Window`"],
+    ["window.structured_clone(|| (), None)", "the trait `js::StructuredClone` is not implemented for closure"],
+    ["window.structured_clone(Some(None::<i32>), None)", "the trait `js::Defined` is not implemented for `std::option::Option<i32>`"],
+    ["window.structured_clone(window, None)", "the trait `js::StructuredClone` is not implemented for `webapi::Window`"],
   ]) {
-    writeFileSync(join(dir, "lib.rs"), source.replace("window.structured_clone(text)", written));
+    writeFileSync(join(dir, "lib.rs"), source.replace("window.structured_clone(text, None)", written));
     const result = Bun.spawnSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "wrong.js"), ...withWeb], { cwd: dir });
     expect(result.exitCode).not.toBe(0);
     expect(result.stderr.toString()).toContain(error);
