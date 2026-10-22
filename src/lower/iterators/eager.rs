@@ -150,6 +150,8 @@ pub(super) fn fresh(items: &Expr) -> bool {
                 "$chunks",
                 "$chunksExact",
                 "$chunksExactMut",
+                "$rchunks",
+                "$rchunksMut",
                 "$splitBy",
                 "$lines",
                 "$slice",

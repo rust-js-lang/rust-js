@@ -88,11 +88,9 @@ function main() {
   );
   console.log(`[${$chunksExact(items, 3).remainder.join(", ")}]`);
   console.log(
-    `[${Iterator.from($rchunks(items, 3, false))
-      .toArray()
+    `[${$rchunks(items, 3, false)
       .map((item) => `[${item.join(", ")}]`)
-      .join(", ")}] [${Iterator.from($rchunks(items, 2, true))
-      .toArray()
+      .join(", ")}] [${$rchunks(items, 2, true)
       .map((item) => `[${item.join(", ")}]`)
       .join(", ")}]`,
   );
