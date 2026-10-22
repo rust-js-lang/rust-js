@@ -7,6 +7,7 @@ export function entry() {
   main();
 }
 
+// FNV-1a, as a hash of a string is often written.
 function fnv1a(text) {
   let hash = 2166136261;
   for (const b of Array.from(new TextEncoder().encode(text))) {

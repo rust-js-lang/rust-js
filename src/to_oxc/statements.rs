@@ -197,6 +197,13 @@ impl<'a> Cx<'a> {
         }
     }
 
+    /// `export default "19.3.0";`, a constant declared as the default,
+    /// which JS has no declaration of (ADR 0625).
+    pub(super) fn default_value(&self, c: &js::Const) -> Statement<'a> {
+        let value = oxc_ast::ast::ExportDefaultDeclarationKind::from(self.expr(&c.value));
+        Statement::new_export_default_declaration(span(c.span), value, &self.b)
+    }
+
     pub(super) fn stmts(&self, stmts: &[js::Stmt]) -> ArenaVec<'a, Statement<'a>> {
         let mut out = ArenaVec::new_in(&self.b);
         self.push_stmts(stmts, &mut out);

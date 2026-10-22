@@ -219,4 +219,12 @@ export const mutations: Mutation[] = [
     replace: "                matches!(sources.text[past..code.hi as usize].trim(), \"\" | \"}\")\n",
     tests: ["test/lowering-names.test.ts", "-t", "a comment before a macro's opening"],
   },
+  {
+    name: "default-constant-declared",
+    breaks: "a constant declared as the default is `const V = ..;` and no `export default`",
+    file: "src/to_oxc.rs",
+    find: "            js::Item::Const(c) if defaulted(module) == Some(c.name.as_str()) => body.push(cx.default_value(c)),\n",
+    replace: "",
+    tests: ["test/modules.test.ts", "-t", "the constant's value where the macro holds it"],
+  },
 ];

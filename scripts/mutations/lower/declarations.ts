@@ -584,4 +584,12 @@ export const mutations: Mutation[] = [
     replace: "    for bound in super::bindings::bound_globals(tcx, module, default_export).into_iter().take(0) {\n",
     tests: ["test/declarations.test.ts", "-t", "a global binding a module names"],
   },
+  {
+    name: "default-constant-declared-as-default",
+    breaks: "a default constant's `.d.ts` is `export default const`, which TypeScript can't read",
+    file: "src/lower/declarations.rs",
+    find: "        let default_declared = default_declared && tcx.def_kind(def_id) == DefKind::Fn;\n",
+    replace: "",
+    tests: ["test/modules.test.ts", "-t", "the constant's value where the macro holds it"],
+  },
 ];

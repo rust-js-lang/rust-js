@@ -184,5 +184,11 @@ test("a file's leading comments are its JS's", async () => {
   const documented = readFileSync(join(dir, "documented.js"), "utf8");
   expect(documented).toContain("\n// Kept too.\n");
   expect(documented).toContain("\n// Kept too.\n\n/** The item's docs. */\nexport function two() {");
+  // A run right above the code, no blank line between, is the code's, a
+  // blank line parting it from the license (ADR 0383, amended).
+  writeFileSync(join(dir, "after.rs"), "// The license.\n\n// The function's, right above it.\npub fn four() -> i32 {\n    4\n}\n");
+  writeFileSync(join(dir, "lib.rs"), readFileSync(join(dir, "lib.rs"), "utf8") + "mod after;\n");
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  expect(readFileSync(join(dir, "after.js"), "utf8")).toContain("Do not edit.\n\n// The license.\n\n// The function's, right above it.\nexport function four() {");
   expect((await import(join(dir, "lib.js"))).answer()).toBe(42);
 });

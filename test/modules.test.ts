@@ -661,6 +661,23 @@ test("a default export is the function's declaration where the macro holds it", 
   expect(lib.both()).toBe(1);
 });
 
+// ADR 0625: of a `const` itself, its value is the default, `export
+// default "19.3.0";`, as React's ReactVersion, JS having no declaration of
+// a constant as a default; another module reads it as its default.
+test("a default export is the constant's value where the macro holds it", async () => {
+  const dir = fixture("default-constant");
+  writeFileSync(join(dir, "lib.rs"), "mod version;\n\npub fn shown() -> String {\n    format!(\"v{}\", version::REACT_VERSION)\n}\n");
+  writeFileSync(join(dir, "version.rs"), "js::export_default! {\n    pub(crate) const REACT_VERSION: &str = \"19.3.0\";\n}\n");
+  run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  // TypeScript has no default `const`: it's declared, then exported.
+  expect(readFileSync(join(dir, "version.d.ts"), "utf8")).toContain("declare const REACT_VERSION: string;\n\nexport default REACT_VERSION;\n");
+  const version = readFileSync(join(dir, "version.js"), "utf8");
+  expect(version).toContain('\nexport default "19.3.0";\n');
+  expect(version).not.toContain("REACT_VERSION");
+  expect((await import(join(dir, "version.js"))).default).toBe("19.3.0");
+  expect((await import(join(dir, "lib.js"))).shown()).toBe("v19.3.0");
+});
+
 // A module's default that's another module's function is re-exported as
 // it, `export { page as default } from "./page.js"`, as react.dev's
 // errors/index makes the errors page its own (ADR 0240); a module of only

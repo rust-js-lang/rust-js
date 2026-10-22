@@ -124,13 +124,19 @@ macro_rules! directive {
 /// `const _`'s `use`, so a plain rustc checks it's there, a generic one's
 /// too. Of the function itself, `js::export_default! { fn noop() {} }`,
 /// it's declared as the default, `export default function noop() {}`,
-/// which rustc sees exported (ADR 0611).
+/// which rustc sees exported (ADR 0611); of a `const` itself, its value,
+/// `export default "19.3.0";` (ADR 0625).
 #[macro_export]
 macro_rules! export_default {
     ($(#[$meta:meta])* $vis:vis fn $($function:tt)*) => {
         #[cfg_attr(rust_js, rust_js::export_default)]
         #[allow(dead_code)]
         $(#[$meta])* $vis fn $($function)*
+    };
+    ($(#[$meta:meta])* $vis:vis const $($constant:tt)*) => {
+        #[cfg_attr(rust_js, rust_js::export_default)]
+        #[allow(dead_code)]
+        $(#[$meta])* $vis const $($constant)*
     };
     ($function:path) => {
         #[cfg_attr(rust_js, rust_js::export_default)]

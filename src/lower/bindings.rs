@@ -8,7 +8,7 @@ use rustc_hir::{CoroutineKind, CoroutineSource};
 use rustc_hir::{ExprKind, ItemKind, Stmt, StmtKind};
 use rustc_middle::ty::{self, FieldDef, Ty, TyCtxt, VariantDef};
 use rustc_span::def_id::{DefId, LocalDefId, LocalModId};
-use rustc_span::{Span, Symbol, sym};
+use rustc_span::{Span, Symbol, kw, sym};
 
 /// Validate tool bindings even if no function calls them. A malformed binding
 /// must not silently become an ordinary Rust function with an unreachable body.
@@ -624,8 +624,11 @@ pub(super) fn is_on_load(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
 
 /// Is `def_id` a `js::import!`'s, `js::directive!`'s, `js::export_default!`'s
 /// or `js::on_load!`'s `const _`, which is rust-js's to read, and has nothing
-/// to write?
+/// to write? Not a constant the default is itself (ADR 0625).
 pub(super) fn is_mark(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
+    if held_by_default(tcx, def_id) {
+        return false;
+    }
     ["import", "directive", "export_default", "on_load"].iter().any(|name| {
         tcx.get_attrs_by_path(def_id, &[Symbol::intern("rust_js"), Symbol::intern(name)])
             .next()
@@ -829,7 +832,19 @@ pub(super) fn is_jsx_node(tcx: TyCtxt<'_>, id: DefId) -> bool {
 /// 0611).
 pub(super) fn default_declared(tcx: TyCtxt<'_>, function: DefId) -> bool {
     let path = [Symbol::intern("rust_js"), Symbol::intern("export_default")];
-    tcx.def_kind(function) == DefKind::Fn && tcx.get_attrs_by_path(function, &path).next().is_some()
+    held_by_default(tcx, function) && tcx.get_attrs_by_path(function, &path).next().is_some()
+}
+
+/// Whether `def`, marked `#[rust_js::export_default]`, is the default
+/// itself, as `js::export_default! { .. }` writes it: a function, or a
+/// `const` whose value is the default (ADR 0625), not the `const _` the
+/// naming form makes.
+fn held_by_default(tcx: TyCtxt<'_>, def: DefId) -> bool {
+    match tcx.def_kind(def) {
+        DefKind::Fn => true,
+        DefKind::Const { .. } => tcx.item_name(def) != kw::Underscore,
+        _ => false,
+    }
 }
 
 pub(super) fn default_exports(tcx: TyCtxt<'_>, module: LocalModId) -> Vec<(Option<DefId>, Span)> {
@@ -838,8 +853,8 @@ pub(super) fn default_exports(tcx: TyCtxt<'_>, module: LocalModId) -> Vec<(Optio
         .filter(|item| tcx.get_attrs_by_path(item.owner_id.to_def_id(), &path).next().is_some())
         .map(|item| {
             let def = item.owner_id.def_id;
-            // Of the function itself (ADR 0611).
-            if tcx.def_kind(def) == DefKind::Fn {
+            // Of the function itself (ADR 0611), or the constant (ADR 0625).
+            if held_by_default(tcx, def.to_def_id()) {
                 return (Some(def.to_def_id()), tcx.def_span(def));
             }
             // `use page as _;`: a generic function's too, which Rust can't

@@ -17,6 +17,7 @@ export function entry() {
   main();
 }
 
+// once_cell: the state in the two low bits of a 4-aligned pointer.
 const STATE_MASK = 3;
 const RUNNING = 1;
 const COMPLETE_PTR = $ptrFrom(2, 8);

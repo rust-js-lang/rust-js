@@ -85,6 +85,9 @@ pub(super) fn module<'tcx>(
         // by no name of its own, as `function Recap() {..}` is in JS.
         // One declared as it is `export default function noop(): void;`, as
         // its JS is (ADR 0611).
+        // A constant's is declared, then exported, `declare const v: string;
+        // export default v;`, as TypeScript has no default `const` (ADR 0625).
+        let default_declared = default_declared && tcx.def_kind(def_id) == DefKind::Fn;
         if !tcx.visibility(def_id).is_public() {
             out.erased = out.erased(def_id);
             let mut declared = match tcx.def_kind(def_id) {

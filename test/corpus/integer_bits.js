@@ -14,6 +14,7 @@ export function entry() {
   main();
 }
 
+// FNV-1a, as small hashes are written: a `wrapping_mul` and a `^`.
 function fnv1a(text) {
   let hash = 2166136261;
   for (const byte of Array.from(new TextEncoder().encode(text))) {

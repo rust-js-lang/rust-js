@@ -284,6 +284,20 @@ js::export_default! {
 export default function noop() {}
 ```
 
+Of a `const` itself, its value is the default, JS having no declaration
+of a constant as one, and another module reads it as its default
+([ADR 0625](../../decisions/0625-a-default-constant-is-its-value.md)):
+
+```rust
+js::export_default! {
+    const REACT_VERSION: &str = "19.3.0";
+}
+```
+
+```js
+export default "19.3.0";
+```
+
 Another module's function as the default is re-exported:
 `js::export_default!(super::page::page);` is
 `export { page as default } from "./page.js";`. A global's binding the

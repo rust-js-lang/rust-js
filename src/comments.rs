@@ -40,6 +40,16 @@ pub fn leading_comments(text: &str) -> &str {
         end = at + length;
         rest = &text[end..];
     }
+    // A run right above the code, no blank line between, is that code's
+    // (ADR 0444), where a blank line parts it from the rest (ADR 0383,
+    // amended): a license, then what the first item's comments say.
+    if text[end..].starts_with('\n')
+        && !text[end..].starts_with("\n\n")
+        && !text[end..].starts_with("\n\r\n")
+        && let Some(blank) = text[..end].rfind("\n\n")
+    {
+        return &text[..blank];
+    }
     &text[..end]
 }
 

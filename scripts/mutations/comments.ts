@@ -42,4 +42,12 @@ export const mutations: Mutation[] = [
     replace: "    if false {\n",
     tests: ["test/lowering-names.test.ts", "-t", "a comment is in the JS where"],
   },
+  {
+    name: "leading-run-above-code-kept",
+    breaks: "a comment run right above the first code, a blank line after the license, stays in the header, a blank line between it and its code",
+    file: "src/comments.rs",
+    find: "        && let Some(blank) = text[..end].rfind(\"\\n\\n\")\n",
+    replace: "        && let Some(blank) = text[..end].rfind(\"\\n\\n\").filter(|_| false)\n",
+    tests: ["test/emission.test.ts", "-t", "a file's leading comments are its JS's"],
+  },
 ];

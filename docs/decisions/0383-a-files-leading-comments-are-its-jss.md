@@ -47,3 +47,9 @@ written.**
 - A module's `.d.ts` has them too, after the same line.
 - A `/** .. */` license, a TypeScript file's, is `/* .. */` in Rust, where
   `/**` documents the item after it: its JS is `/* .. */`.
+
+## Amendment: a run right above the first code is its (ADR 0625)
+
+A run of comments right above the first code, no blank line between, is
+that code's, where a blank line parts it from what the file starts with:
+the license stays the header.
