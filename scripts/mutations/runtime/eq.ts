@@ -34,4 +34,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^map_eq.rs$"],
   },
+  {
+    name: "eq-of-itself",
+    breaks: "a value equals itself, the same JS object, without comparing its fields, so `p == p` of one that holds a NaN is true",
+    file: "src/runtime/eq.js",
+    find: "  if ((a === b && typeof a !== \"object\") || (a == null && b == null)) {\n",
+    replace: "  if (a === b || (a == null && b == null)) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^nan_self_eq.rs$"],
+  },
 ];

@@ -299,6 +299,7 @@ helpers! {
     Splice,
     Windows,
     Chunks,
+    Step,
     Zip,
     LazyChain,
     LazyZip,
@@ -770,6 +771,7 @@ impl Helper {
             // `v.windows(n)`: each run of `n` in a row. It panics for 0, as Rust's does.
             Helper::Windows => include_str!("runtime/windows.js"),
             Helper::Chunks => include_str!("runtime/chunks.js"),
+            Helper::Step => include_str!("runtime/step.js"),
             // `a.zip(b)`: pairs, as many as the shorter has.
             Helper::Zip => include_str!("runtime/zip.js"),
             // A JS iterator's adapters (ADR 0128), which take from it only as

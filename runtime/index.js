@@ -327,7 +327,8 @@ export function $debug(v) {
 }
 
 export function $eq(a, b) {
-  if (a === b || (a == null && b == null)) {
+  // Not an object's `===` of itself: one of a NaN isn't equal to itself.
+  if ((a === b && typeof a !== "object") || (a == null && b == null)) {
     return true;
   }
   if (typeof a !== "object" || typeof b !== "object" || a === null || b === null) {
@@ -9240,6 +9241,12 @@ export function $chunks(v, size, cut = (items, start, end) => items.slice(start,
     throw new Error("chunk size must be non-zero");
   }
   return Array.from({ length: Math.ceil(v.length / size) }, (_, i) => cut(v, i * size, Math.min(i * size + size, v.length)));
+}
+
+// `step_by(step)`'s step, which std asserts isn't 0 as it's given.
+export function $step(step) {
+  if (step === 0) throw new Error("assertion failed: step != 0");
+  return step;
 }
 
 export function $zip(a, b) {

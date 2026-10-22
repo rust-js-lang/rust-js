@@ -1,6 +1,7 @@
 
 function $eq(a, b) {
-  if (a === b || (a == null && b == null)) {
+  // Not an object's `===` of itself: one of a NaN isn't equal to itself.
+  if ((a === b && typeof a !== "object") || (a == null && b == null)) {
     return true;
   }
   if (typeof a !== "object" || typeof b !== "object" || a === null || b === null) {

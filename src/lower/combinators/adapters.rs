@@ -267,8 +267,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // Of items with a destructor, each it steps over dropped as it's
             // passed, as std's `nth` drops it (ADR 0465).
             IterComb::StepBy => {
+                // Not 0, as std asserts as it's given: `$step` checks one that may be.
                 let n = next();
-                let n = if n.reads_same() { n } else { self.spill("step", n, out) };
+                let n = match n.as_int() {
+                    Some(step) if step != 0 => n,
+                    _ => self.spill("step", Expr::call(Expr::helper("$step"), vec![n]), out),
+                };
                 let keep = Expr::bin(Op::Eq, Expr::bin(Op::Rem, Expr::var("i"), n), Expr::int(0));
                 let body = match self.item_drop_of(receiver_ty, span)? {
                     Some(drop) => vec![
