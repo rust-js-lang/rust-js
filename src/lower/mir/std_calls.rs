@@ -1085,13 +1085,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             // Whether two JS objects are one, `a === b` (ADR 0285); of a Rust
             // value, refused before (`mir_function`).
+            // Of two pointers to Rust's values, handles on places, by place, as
+            // `==` of them is (ADR 0562).
             Std::PtrEq => {
                 let mut exprs = values
                     .map(|v| self.value_expr(v, span))
                     .collect::<R<Vec<_>>>()?
                     .into_iter();
                 let (a, b) = (exprs.next().expect("a"), exprs.next().expect("b"));
-                Expr::bin(Op::Eq, a, b)
+                match crate::lower::pointers::raw_pointee(self.tcx, arg_tys[0]) {
+                    Some((pointee, _)) if self.compared_by_address(arg_tys[0]) => {
+                        self.pointers_equal(a, b, pointee, span)?
+                    }
+                    _ => Expr::bin(Op::Eq, a, b),
+                }
             }
             Std::Number(op) => {
                 // `i32::from_str_radix(s, 16)`'s is what its `Result` holds.

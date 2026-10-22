@@ -514,8 +514,8 @@ export const mutations: Mutation[] = [
     name: "mir-ptr-eq-refused",
     breaks: "MIR's `ptr::eq` of JS objects is refused",
     file: "src/lower/mir/std_calls.rs",
-    find: "                Expr::bin(Op::Eq, a, b)\n            }\n            Std::Number(op) => {\n",
-    replace: "                return Err(self.unsupported(span, if a.reads_same() && b.reads_same() { \"ptr::eq\" } else { \"ptr::eq of these\" }));\n            }\n            Std::Number(op) => {\n",
+    find: "                    _ => Expr::bin(Op::Eq, a, b),\n",
+    replace: "                    _ => return Err(self.unsupported(span, if a.reads_same() && b.reads_same() { \"ptr::eq\" } else { \"ptr::eq of these\" })),\n",
     tests: ["test/lowering-bindings.test.ts", "-t", "ptr::eq of JS objects"],
   },
   {
@@ -678,5 +678,13 @@ export const mutations: Mutation[] = [
     replace: "                    _ => (value, ty),\n",
     tests: ["test/corpus.test.ts", "-t", "mut_ref_local"],
     snapshots: true,
+  },
+  {
+    name: "ptr-eq-of-handles-identity",
+    breaks: "`ptr::eq` of two pointers to Rust's values compares their handles by `===`, so the same item reached through another array's reference isn't equal",
+    file: "src/lower/mir/std_calls.rs",
+    find: "                    Some((pointee, _)) if self.compared_by_address(arg_tys[0]) => {",
+    replace: "                    Some((pointee, _)) if false && self.compared_by_address(arg_tys[0]) => {",
+    tests: ["test/corpus.test.ts", "-t", "^ptr_eq_through_refs.rs$"],
   },
 ];

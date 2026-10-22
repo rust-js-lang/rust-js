@@ -725,6 +725,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// an empty array's address is of; of two `dyn`'s pairs, the same value,
     /// `$dynPtrEq`, as `ptr::addr_eq` asks too. The one place it's written.
     pub(super) fn pointers_equal(&mut self, a: Expr, b: Expr, pointee: Ty<'tcx>, span: Span) -> R<Expr> {
+        // Of two objects, one handle each: the same object, `a === b`.
+        let object_of = |e: &Expr| match &e.kind {
+            js::ExprKind::Call(callee, args) if callee.helper_name() == Some("$ptrTo") && args.len() == 1 => {
+                Some(args[0].clone())
+            }
+            _ => None,
+        };
+        if let (Some(x), Some(y)) = (object_of(&a), object_of(&b)) {
+            return Ok(Expr::bin(Op::Eq, x, y));
+        }
         if self.is_pair_dyn_pointee(pointee) {
             return Ok(Expr::call(Expr::helper("$dynPtrEq"), vec![a, b]));
         }

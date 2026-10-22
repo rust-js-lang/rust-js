@@ -575,4 +575,13 @@ export const mutations: Mutation[] = [
     replace: "            || false\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_pointers.rs$"],
   },
+  {
+    name: "pointers-of-objects-by-handle",
+    breaks: "`==` of two pointers to objects is `$ptrEq($ptrTo(a), $ptrTo(b), size)`, not `a === b`, which says the same",
+    file: "src/lower/pointers.rs",
+    find: "        if let (Some(x), Some(y)) = (object_of(&a), object_of(&b)) {",
+    replace: "        if let (Some(x), Some(y)) = (object_of(&a).filter(|_| false), object_of(&b)) {",
+    tests: ["test/corpus.test.ts", "-t", "^raw_pointers.rs$"],
+    snapshots: true,
+  },
 ];

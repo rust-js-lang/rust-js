@@ -459,3 +459,17 @@ itself, a number's, compares the numbers: two `dyn`s of two equal numbers
 are equal, where Rust's addresses differ (case B, as a number reached
 through a `&` has no place, above). `dyn_pointers` holds `==` and
 `addr_eq`, against native Rust.
+
+## Amendment: `ptr::eq` of references compares places
+
+`ptr::eq` was `===` of its two pointers, which is right of JS objects
+(ADR 0285) but not of handles on places: a reference read out of a slot,
+`refs[0]` of a `Vec<&Point>`, made a pointer to that slot, `$ptr(refs,
+0)`, so `ptr::eq(refs[0], &points[0])` was false (#124). A pointer to
+what a reference read from a slot or a field refers to, an object, is
+`$ptrTo` of it; and `ptr::eq` of pointers to Rust's values compares as
+their `==` does, `pointers_equal`: `$ptrEq`, by place, or of two objects'
+`$ptrTo`s, `a === b`, which `==` of them reads as too. Held by
+`test/corpus/ptr_eq_through_refs.rs` and the mutations
+`ptr-eq-of-handles-identity`, `pointer-of-slot-reference-slot` and
+`pointers-of-objects-by-handle`.

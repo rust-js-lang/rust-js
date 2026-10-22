@@ -379,4 +379,12 @@ export const mutations: Mutation[] = [
     replace: "                if false\n                    && let Some((pointee, _)) = crate::lower::pointers::raw_pointee(tcx, ty)\n                {\n                    let same",
     tests: ["test/corpus.test.ts", "-t", "^pointer_addresses.rs$"],
   },
+  {
+    name: "pointer-of-slot-reference-slot",
+    breaks: "a pointer to what a reference read from a slot refers to is a handle on that slot, `$ptr(refs, 0)`, not on the object, so `ptr::eq` of it and the object's own slot is false",
+    file: "src/lower/mir/rvalues.rs",
+    find: "                    && !base.projection.is_empty()\n",
+    replace: "                    && false\n",
+    tests: ["test/corpus.test.ts", "-t", "^ptr_eq_through_refs.rs$"],
+  },
 ];

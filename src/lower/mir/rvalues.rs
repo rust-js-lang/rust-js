@@ -499,6 +499,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         ));
                     }
                 }
+                // Of an object a reference read from a slot or a field refers
+                // to, `&*refs[0]`: the object's, not a handle on that slot,
+                // which its JS, the object, reads as (ADR 0562).
+                if let Some((base, PlaceElem::Deref)) = place.as_ref().last_projection()
+                    && !base.projection.is_empty()
+                    && matches!(
+                        Place::ty_from(base.local, base.projection, decls, tcx).ty.kind(),
+                        ty::Ref(..)
+                    )
+                    && self.is_object(pointee)
+                    && !self.is_cell_pointee(pointee)
+                {
+                    return Ok(Value::Expr(Expr::call(Expr::helper("$ptrTo"), vec![target])));
+                }
                 // Its byte offset in its struct, where the struct's layout is
                 // known here (ADR 0562).
                 let offset = self.field_offset(*place, decls);

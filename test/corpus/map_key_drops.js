@@ -11,7 +11,6 @@ import {
   $mutGet,
   $orInsert,
   $orInsertWith,
-  $ptrTo,
   $remove,
   $removeEntry,
   $removeItem,
@@ -167,7 +166,7 @@ function main() {
     ids.set([1], "x");
     const tmp = $unwrap($removeEntry(ids, asked), "there");
     const key = tmp[0];
-    console.log(`removed is asked ${$ptrTo(key) === $ptrTo(asked)}`);
+    console.log(`removed is asked ${key === asked}`);
     console.log("end");
   } finally {
     for (const [key, ,] of $sortedEntries(t, (a, b) => $cmp(a[0], b[0]))) {

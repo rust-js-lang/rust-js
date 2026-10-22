@@ -50,7 +50,7 @@ function ownDerefMut_derefMut(own) {
 }
 
 function same(a, b) {
-  return $ptrTo(a) === $ptrTo(b);
+  return a === b;
 }
 
 // A pointer nothing reads, of what a shared reference holds, which has no
@@ -150,7 +150,7 @@ function main() {
 
   const tag = { id: 1 };
   const other = { ...tag };
-  console.log(`${$ptrTo(tag) === $ptrTo(other)} ${tag.id === other.id}`);
+  console.log(`${tag === other} ${tag.id === other.id}`);
   // What holds a pointer compares it by its place, not what it points to.
   const twin = { value: 5 };
   const elsewhere = $ptr(twin, "value", 0);
