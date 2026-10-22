@@ -20,12 +20,12 @@ function holderShow_show(holder, TCopy, TDisplay) {
 }
 
 function main() {
-  const _loud = ["a"];
+  const loud = "a";
   try {
     const tmp = holderShow_show([3], { copy: (value) => value }, { fmt: String });
     console.log(`${tmp}`);
   } finally {
-    console.log(`drop ${_loud[0]}`);
+    console.log(`drop ${loud}`);
   }
 }
 //# sourceMappingURL=case.js.map

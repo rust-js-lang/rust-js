@@ -6,10 +6,6 @@ export function entry() {
   main();
 }
 
-function guardDrop_drop(guard) {
-  console.log(`drop guard ${guard[0]}`);
-}
-
 const Guard = {
   id(guard) {
     return guard[0];
@@ -47,7 +43,7 @@ function main() {
     const value = () => (Guard.id(guard) * 10) >>> 0;
     try {
       Registry.add(registry, value, (value) => {
-        guardDrop_drop(guard);
+        console.log(`drop guard ${guard[0]}`);
       });
     } catch (error) {
       for (const item of registry.callbacks) {

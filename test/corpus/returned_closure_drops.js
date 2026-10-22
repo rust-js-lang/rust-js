@@ -16,10 +16,6 @@ export function entry() {
   main();
 }
 
-function loudDrop_drop(loud) {
-  console.log(`drop ${loud[0]}`);
-}
-
 function keyToCmp(key, KOrd, dropF) {
   return $dropping(
     (a, b) => {
@@ -74,11 +70,11 @@ function smallest(items, cmp, TClone, dropF) {
 }
 
 function byLen() {
-  const tag = [7];
+  const tag = 7;
   return $dropping(
     (s) => $byteLen(s),
     () => {
-      loudDrop_drop(tag);
+      console.log(`drop ${tag}`);
     },
   );
 }
@@ -93,7 +89,7 @@ function main() {
     },
     { cmp: $cmp },
     (value) => {
-      loudDrop_drop(weights);
+      console.log(`drop ${weights[0]}`);
     },
   );
   const value = smallest([5, 2, 9], cmp, { clone: (value) => value }, $dispose);

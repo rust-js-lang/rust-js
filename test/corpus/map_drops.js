@@ -15,10 +15,6 @@ export function entry() {
   main();
 }
 
-function noisyDrop_drop(noisy) {
-  console.log(`drop ${noisy[0]}`);
-}
-
 function main() {
   const sorted = new Map();
   let insert;
@@ -26,17 +22,17 @@ function main() {
     insert = $insert(sorted, 3, ["c"]);
   } catch (error) {
     for (const [, value] of $sortedEntries(sorted, $cmp)) {
-      noisyDrop_drop(value);
+      console.log(`drop ${value[0]}`);
     }
     throw error;
   }
   try {
     if (insert != null) {
-      noisyDrop_drop(insert);
+      console.log(`drop ${insert[0]}`);
     }
   } catch (error) {
     for (const [, value] of $sortedEntries(sorted, $cmp)) {
-      noisyDrop_drop(value);
+      console.log(`drop ${value[0]}`);
     }
     throw error;
   }
@@ -45,17 +41,17 @@ function main() {
     noisy = $insert(sorted, 1, ["a"]);
   } catch (error) {
     for (const [, value] of $sortedEntries(sorted, $cmp)) {
-      noisyDrop_drop(value);
+      console.log(`drop ${value[0]}`);
     }
     throw error;
   }
   try {
     if (noisy != null) {
-      noisyDrop_drop(noisy);
+      console.log(`drop ${noisy[0]}`);
     }
   } catch (error) {
     for (const [, value] of $sortedEntries(sorted, $cmp)) {
-      noisyDrop_drop(value);
+      console.log(`drop ${value[0]}`);
     }
     throw error;
   }
@@ -64,17 +60,17 @@ function main() {
     tmp = $insert(sorted, 2, ["b"]);
   } catch (error) {
     for (const [, value] of $sortedEntries(sorted, $cmp)) {
-      noisyDrop_drop(value);
+      console.log(`drop ${value[0]}`);
     }
     throw error;
   }
   try {
     if (tmp != null) {
-      noisyDrop_drop(tmp);
+      console.log(`drop ${tmp[0]}`);
     }
   } catch (error) {
     for (const [, value] of $sortedEntries(sorted, $cmp)) {
-      noisyDrop_drop(value);
+      console.log(`drop ${value[0]}`);
     }
     throw error;
   }
@@ -83,13 +79,13 @@ function main() {
     old = $insert(sorted, 2, ["b2"]);
   } catch (error) {
     for (const [, value] of $sortedEntries(sorted, $cmp)) {
-      noisyDrop_drop(value);
+      console.log(`drop ${value[0]}`);
     }
     throw error;
   }
   const value = (n) => {
     const result = n[0];
-    noisyDrop_drop(n);
+    console.log(`drop ${n[0]}`);
     return result;
   };
   let map;
@@ -97,7 +93,7 @@ function main() {
     map = old ? value(old) : undefined;
   } catch (error) {
     for (const [, value] of $sortedEntries(sorted, $cmp)) {
-      noisyDrop_drop(value);
+      console.log(`drop ${value[0]}`);
     }
     throw error;
   }
@@ -105,7 +101,7 @@ function main() {
     console.log(`replaced ${map ?? "none"}`);
   } catch (error) {
     for (const [, value] of $sortedEntries(sorted, $cmp)) {
-      noisyDrop_drop(value);
+      console.log(`drop ${value[0]}`);
     }
     throw error;
   }
@@ -114,7 +110,7 @@ function main() {
     taken = $remove(sorted, 1);
   } catch (error) {
     for (const [, value] of $sortedEntries(sorted, $cmp)) {
-      noisyDrop_drop(value);
+      console.log(`drop ${value[0]}`);
     }
     throw error;
   }
@@ -123,20 +119,20 @@ function main() {
     console.log(`took ${value$1} ${sorted.size}`);
   } catch (error) {
     if (taken != null) {
-      noisyDrop_drop(taken);
+      console.log(`drop ${taken[0]}`);
     }
     for (const [, value] of $sortedEntries(sorted, $cmp)) {
-      noisyDrop_drop(value);
+      console.log(`drop ${value[0]}`);
     }
     throw error;
   }
   try {
     if (taken != null) {
-      noisyDrop_drop(taken);
+      console.log(`drop ${taken[0]}`);
     }
   } catch (error) {
     for (const [, value] of $sortedEntries(sorted, $cmp)) {
-      noisyDrop_drop(value);
+      console.log(`drop ${value[0]}`);
     }
     throw error;
   }
@@ -145,7 +141,7 @@ function main() {
     get = sorted.get(3);
   } catch (error) {
     for (const [, value] of $sortedEntries(sorted, $cmp)) {
-      noisyDrop_drop(value);
+      console.log(`drop ${value[0]}`);
     }
     throw error;
   }
@@ -155,13 +151,13 @@ function main() {
       console.log(`has ${n[0]}`);
     } catch (error) {
       for (const [, value] of $sortedEntries(sorted, $cmp)) {
-        noisyDrop_drop(value);
+        console.log(`drop ${value[0]}`);
       }
       throw error;
     }
   }
   for (const [, value] of $sortedEntries(sorted, $cmp)) {
-    noisyDrop_drop(value);
+    console.log(`drop ${value[0]}`);
   }
   console.log("sorted dropped");
 
@@ -169,7 +165,7 @@ function main() {
   try {
     const tmp = $insert(byName, "x", ["x"]);
     if (tmp != null) {
-      noisyDrop_drop(tmp);
+      console.log(`drop ${tmp[0]}`);
     }
     const entry = $entry(byName, "y");
     const tmp$1 = () => ["y"];
@@ -213,12 +209,12 @@ function main() {
       }
     } finally {
       if (x != null) {
-        noisyDrop_drop(x);
+        console.log(`drop ${x[0]}`);
       }
     }
   } finally {
     for (const item of byName.values()) {
-      noisyDrop_drop(item);
+      console.log(`drop ${item[0]}`);
     }
   }
 }

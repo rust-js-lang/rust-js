@@ -42,9 +42,9 @@ const Ends = {
 };
 
 function main() {
-  const loud = ["fold"];
+  const loud = "fold";
   const value = [];
-  const captured = loud[0];
+  const captured = loud;
   const value$1 = (v, t) => {
     v.push([t, captured]);
     return v;
@@ -80,7 +80,7 @@ function main() {
       `${value$4 == null ? "None" : `Some(${tagDebug_fmt(value$4, { fmt: (value) => String(value) })})`}`,
     );
   } finally {
-    console.log(`drop ${loud[0]}`);
+    console.log(`drop ${loud}`);
   }
 }
 //# sourceMappingURL=case.js.map

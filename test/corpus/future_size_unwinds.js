@@ -4,26 +4,22 @@ export function entry() {
   main();
 }
 
-function bigDrop_drop(big) {}
-
 function noop() {}
 
 async function fut() {}
 
 async function single() {
   await fut();
-  const x = [new Array(64).fill(0)];
-  bigDrop_drop(x);
+  const x = new Array(64).fill(0);
 }
 
 async function singleWithNoop() {
   await fut();
   noop();
-  const x = [new Array(64).fill(0)];
+  const x = new Array(64).fill(0);
   try {
     noop();
   } finally {
-    bigDrop_drop(x);
   }
 }
 

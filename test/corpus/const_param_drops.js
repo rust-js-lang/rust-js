@@ -35,14 +35,14 @@ function bufferDescribed_size(buffer, SIZE) {
 }
 
 function main() {
-  const loud = [1];
+  const loud = 1;
   try {
     const tmp = made(4);
     const tmp$1 = bufferDescribed(8).described(Buffer.new(8));
     console.log(`${tmp} ${tmp$1}`);
-    console.log(`${loud[0]}`);
+    console.log(`${loud}`);
   } finally {
-    console.log(`drop ${loud[0]}`);
+    console.log(`drop ${loud}`);
   }
 }
 //# sourceMappingURL=case.js.map

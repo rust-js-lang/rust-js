@@ -4,15 +4,11 @@ export function entry() {
   main();
 }
 
-function noisyDrop_drop(noisy) {
-  console.log(`drop ${noisy[0]}`);
-}
-
 function pair(a, b) {
   try {
     console.log(`pair ${a[0]} ${b}`);
   } finally {
-    noisyDrop_drop(a);
+    console.log(`drop ${a[0]}`);
   }
   return b;
 }
@@ -30,7 +26,7 @@ function main() {
   try {
     tmp = second(false);
   } catch (error) {
-    noisyDrop_drop(first);
+    console.log(`drop ${first[0]}`);
     throw error;
   }
   console.log(`${pair(first, tmp)}`);
@@ -39,7 +35,7 @@ function main() {
   try {
     tmp$1 = second(true);
   } catch (error) {
-    noisyDrop_drop(again);
+    console.log(`drop ${again[0]}`);
     throw error;
   }
   console.log(`${pair(again, tmp$1)}`);

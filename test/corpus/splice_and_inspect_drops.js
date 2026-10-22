@@ -6,10 +6,6 @@ export function entry() {
   main();
 }
 
-function loudDrop_drop(loud) {
-  console.log(`drop ${loud[0]}`);
-}
-
 function main() {
   const v = [[1], [2], [3]];
   const value = [[4]];
@@ -18,17 +14,17 @@ function main() {
     splice = $iter($splice(v, 0, 2, value));
   } catch (error) {
     for (const item of v) {
-      loudDrop_drop(item);
+      console.log(`drop ${item[0]}`);
     }
     throw error;
   }
   try {
     for (const item of splice) {
-      loudDrop_drop(item);
+      console.log(`drop ${item[0]}`);
     }
   } catch (error) {
     for (const item of v) {
-      loudDrop_drop(item);
+      console.log(`drop ${item[0]}`);
     }
     throw error;
   }
@@ -37,7 +33,7 @@ function main() {
     tmp = v.map((l) => l[0]);
   } catch (error) {
     for (const item of v) {
-      loudDrop_drop(item);
+      console.log(`drop ${item[0]}`);
     }
     throw error;
   }
@@ -45,7 +41,7 @@ function main() {
     console.log(`[${tmp.join(", ")}]`);
   } catch (error) {
     for (const item of v) {
-      loudDrop_drop(item);
+      console.log(`drop ${item[0]}`);
     }
     throw error;
   }
@@ -55,7 +51,7 @@ function main() {
     tmp$1 = $iter($splice(v, 1, v.length, value$1));
   } catch (error) {
     for (const item of v) {
-      loudDrop_drop(item);
+      console.log(`drop ${item[0]}`);
     }
     throw error;
   }
@@ -64,7 +60,7 @@ function main() {
     removed = tmp$1.toArray();
   } catch (error) {
     for (const item of v) {
-      loudDrop_drop(item);
+      console.log(`drop ${item[0]}`);
     }
     throw error;
   }
@@ -74,7 +70,7 @@ function main() {
       console.log(`${removed.length} [${arg.join(", ")}]`);
     } finally {
       for (const item of removed) {
-        loudDrop_drop(item);
+        console.log(`drop ${item[0]}`);
       }
     }
     const it = $iter($splice(v, 0, 1, []));
@@ -82,14 +78,14 @@ function main() {
       const next = $next(it);
       const tmp = (l) => {
         const result = l[0];
-        loudDrop_drop(l);
+        console.log(`drop ${l[0]}`);
         return result;
       };
       const tmp$1 = next ? tmp(next) : undefined;
       console.log(`${tmp$1 == null ? "None" : `Some(${tmp$1})`}`);
     } finally {
       for (const item of it) {
-        loudDrop_drop(item);
+        console.log(`drop ${item[0]}`);
       }
     }
     const tmp = v.map((l) => l[0]);
@@ -104,7 +100,7 @@ function main() {
     const o = loud;
     const value$1 = (l) => {
       const result = l[0];
-      loudDrop_drop(l);
+      console.log(`drop ${l[0]}`);
       return result;
     };
     const tmp$1 = o ? value$1(o) : undefined;
@@ -127,12 +123,12 @@ function main() {
       console.log(`${value$4}`);
     } finally {
       if (r.TAG === "Ok") {
-        loudDrop_drop(r._0);
+        console.log(`drop ${r._0[0]}`);
       }
     }
   } finally {
     for (const item of v) {
-      loudDrop_drop(item);
+      console.log(`drop ${item[0]}`);
     }
   }
 }

@@ -6,15 +6,11 @@ export function entry() {
   main();
 }
 
-function noisyDrop_drop(noisy) {
-  console.log(`drop ${noisy[0]}`);
-}
-
 function pair(a, b) {
   try {
     console.log(`pair ${a[0]} ${b}`);
   } finally {
-    noisyDrop_drop(a);
+    console.log(`drop ${a[0]}`);
   }
   return b;
 }
@@ -31,14 +27,14 @@ function halves(n) {
   try {
     value = half(n);
   } catch (error) {
-    noisyDrop_drop(noisy);
+    console.log(`drop ${noisy[0]}`);
     throw error;
   }
   if (value != null) {
     return pair(noisy, value);
   }
   const result = undefined;
-  noisyDrop_drop(noisy);
+  console.log(`drop ${noisy[0]}`);
   return result;
 }
 
@@ -53,14 +49,14 @@ function divided(n, by) {
   try {
     tmp = checked(n);
   } catch (error) {
-    noisyDrop_drop(noisy);
+    console.log(`drop ${noisy[0]}`);
     throw error;
   }
   const checked$1 = pair(noisy, tmp);
   const halved = pair(["by two"], (n / 2) >>> 0);
   const value = ["by a variable"];
   if (by === 0) {
-    noisyDrop_drop(value);
+    console.log(`drop ${value[0]}`);
     throw new Error("attempt to divide by zero");
   }
   return (((pair(value, $div(n, by) >>> 0) + halved) >>> 0) + checked$1) >>> 0;
@@ -70,7 +66,7 @@ function signed(a, b) {
   try {
     console.log(`signed ${a[0]} ${b}`);
   } finally {
-    noisyDrop_drop(a);
+    console.log(`drop ${a[0]}`);
   }
   return b;
 }

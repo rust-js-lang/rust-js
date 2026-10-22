@@ -4,10 +4,6 @@ export function entry() {
   main();
 }
 
-function noisyDrop_drop(noisy) {
-  console.log(`drop ${noisy[0]}`);
-}
-
 const Noisy = {
   name(noisy) {
     return noisy[0];
@@ -26,10 +22,10 @@ function two(a, b) {
       console.log(`two ${a[0]} ${b[0]}`);
       result = b[0];
     } finally {
-      noisyDrop_drop(b);
+      console.log(`drop ${b[0]}`);
     }
   } finally {
-    noisyDrop_drop(a);
+    console.log(`drop ${a[0]}`);
   }
   return result;
 }
@@ -39,7 +35,7 @@ function all(items) {
     console.log(`all ${items[0][0]}`);
   } finally {
     for (const item of items) {
-      noisyDrop_drop(item);
+      console.log(`drop ${item[0]}`);
     }
   }
   return items.length;
@@ -50,18 +46,18 @@ function main() {
   try {
     console.log(`${Noisy.name(noisy)}`);
   } finally {
-    noisyDrop_drop(noisy);
+    console.log(`drop ${noisy[0]}`);
   }
   const value = make("b");
   const first = value[0];
-  noisyDrop_drop(value);
+  console.log(`drop ${value[0]}`);
   const value$1 = make("c");
   let empty;
   try {
     const tmp = Noisy.name(value$1);
     empty = !tmp;
   } finally {
-    noisyDrop_drop(value$1);
+    console.log(`drop ${value$1[0]}`);
   }
   console.log(`${first} ${empty}`);
   const kept = make("d");
@@ -72,17 +68,17 @@ function main() {
     try {
       console.log(`field ${field}`);
     } finally {
-      noisyDrop_drop(tmp);
+      console.log(`drop ${tmp[0]}`);
     }
   } finally {
-    noisyDrop_drop(kept);
+    console.log(`drop ${kept[0]}`);
   }
   const value$2 = make("f");
   let tmp;
   try {
     tmp = make("g");
   } catch (error) {
-    noisyDrop_drop(value$2);
+    console.log(`drop ${value$2[0]}`);
     throw error;
   }
   const last = two(value$2, tmp);
@@ -91,7 +87,7 @@ function main() {
   try {
     tmp$1 = [value$3, make("i")];
   } catch (error) {
-    noisyDrop_drop(value$3);
+    console.log(`drop ${value$3[0]}`);
     throw error;
   }
   console.log(`${last} ${all(tmp$1)}`);

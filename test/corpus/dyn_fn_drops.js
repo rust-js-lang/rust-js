@@ -12,10 +12,6 @@ const Noisy = {
   },
 };
 
-function noisyDrop_drop(noisy) {
-  console.log(`drop ${noisy[0]}`);
-}
-
 function adder(name, by) {
   const noisy = [name];
   return $dropping(
@@ -24,7 +20,7 @@ function adder(name, by) {
       return (x + by) >>> 0;
     },
     () => {
-      noisyDrop_drop(noisy);
+      console.log(`drop ${noisy[0]}`);
     },
   );
 }

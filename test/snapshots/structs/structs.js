@@ -29,8 +29,7 @@ export function grow(w, h, by) {
   const r = rect(0, 0, w, h);
   r.size[0] = (r.size[0] + by) >>> 0;
   r.size[1] = (r.size[1] * 2) >>> 0;
-  const value = point(-1, -1);
-  r.origin = value;
+  r.origin = point(-1, -1);
   return r;
 }
 

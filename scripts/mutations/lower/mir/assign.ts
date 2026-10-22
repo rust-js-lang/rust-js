@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "field-value-always-spilled",
+    breaks: "`more.has = work();` is `const value = work(); more.has = value;`",
+    file: "src/lower/mir/assign.rs",
+    find: "        if !place.projection.is_empty() && value.has_effects() && !fixed {\n",
+    replace: "        if !place.projection.is_empty() && value.has_effects() {\n",
+    tests: ["test/lowering.test.ts", "-t", "a field is given a call"],
+  },
+  {
     name: "mir-borrowed-result-given-value",
     breaks: "a `&mut` whose borrow a call's result holds is given the number, not a handle on its place",
     file: "src/lower/mir/assign.rs",

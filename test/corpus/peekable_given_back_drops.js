@@ -22,10 +22,6 @@ function counterIterator_next(counter) {
   }
 }
 
-function counterDrop_drop(counter) {
-  console.log(`counter dropped at ${counter[0]}`);
-}
-
 function consumed(it, dropI) {
   const iter = iterator_peekable(it, { next: $next }, dropI);
   const result = iter.reduce((a, b) => (a + b) >>> 0, 0);
@@ -50,7 +46,7 @@ function main() {
   console.log(`${result}`);
   console.log(
     `${consumed($iterator([0], counterIterator_next), (it) => {
-      counterDrop_drop(it.of);
+      console.log(`counter dropped at ${it.of[0]}`);
     })}`,
   );
   const p = peeked($iter([[3], [4], [5]]), { next: $next }, $dropEach(dDrop_drop));

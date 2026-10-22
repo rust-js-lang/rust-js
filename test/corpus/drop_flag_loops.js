@@ -4,15 +4,11 @@ export function entry() {
   main();
 }
 
-function noisyDrop_drop(noisy) {
-  console.log(`drop ${noisy[0]}`);
-}
-
 function consume(n) {
   try {
     console.log(`consume ${n[0]}`);
   } finally {
-    noisyDrop_drop(n);
+    console.log(`drop ${n[0]}`);
   }
 }
 
@@ -23,12 +19,12 @@ function main() {
     const noisy = [i];
     try {
       if (x$live) {
-        noisyDrop_drop(x);
+        console.log(`drop ${x[0]}`);
       }
     } catch (error) {
       x$live = true;
       x = noisy;
-      noisyDrop_drop(x);
+      console.log(`drop ${x[0]}`);
       throw error;
     }
     x$live = true;
@@ -41,7 +37,7 @@ function main() {
       console.log(`round ${i}`);
     } catch (error) {
       if (x$live) {
-        noisyDrop_drop(x);
+        console.log(`drop ${x[0]}`);
       }
       throw error;
     }
@@ -50,7 +46,7 @@ function main() {
     console.log("done");
   } finally {
     if (x$live) {
-      noisyDrop_drop(x);
+      console.log(`drop ${x[0]}`);
     }
   }
 }

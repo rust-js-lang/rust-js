@@ -6,10 +6,6 @@ export function entry() {
   main();
 }
 
-function loudDrop_drop(loud) {
-  console.log(`drop ${loud[0]}`);
-}
-
 function main() {
   const c = { value: [1] };
   try {
@@ -17,7 +13,7 @@ function main() {
     const old$1 = cell.value;
     cell.value = [2];
     if (old$1 != null) {
-      loudDrop_drop(old$1);
+      console.log(`drop ${old$1[0]}`);
     }
     const old = c.value;
     c.value = undefined;
@@ -33,7 +29,7 @@ function main() {
         const old = cell.value;
         cell.value = [3];
         if (old != null) {
-          loudDrop_drop(old);
+          console.log(`drop ${old[0]}`);
         }
         const o = {};
         const value$1 = o.value;
@@ -41,13 +37,13 @@ function main() {
           console.log(`${!value$1}`);
           const set = $onceSet(o, [4]);
           if (set.TAG === "Err") {
-            loudDrop_drop(set._0);
+            console.log(`drop ${set._0[0]}`);
           }
           const again = $onceSet(o, [5]);
           const loud = again.TAG === "Err" ? again._0 : undefined;
           const value = (l) => {
             const result = l[0];
-            loudDrop_drop(l);
+            console.log(`drop ${l[0]}`);
             return result;
           };
           const tmp = loud ? value(loud) : undefined;
@@ -62,12 +58,12 @@ function main() {
             try {
               const tmp = $onceSet(t, [7]);
               if (tmp.TAG === "Err") {
-                loudDrop_drop(tmp._0);
+                console.log(`drop ${tmp._0[0]}`);
               }
               const take = $cellReplace(t);
               const tmp$1 = (l) => {
                 const result = l[0];
-                loudDrop_drop(l);
+                console.log(`drop ${l[0]}`);
                 return result;
               };
               const tmp$2 = take ? tmp$1(take) : undefined;
@@ -75,32 +71,32 @@ function main() {
               console.log("end");
             } finally {
               if (t.value != null) {
-                loudDrop_drop(t.value);
+                console.log(`drop ${t.value[0]}`);
               }
             }
           } finally {
             if (lazy.value != null) {
-              loudDrop_drop(lazy.value);
+              console.log(`drop ${lazy.value[0]}`);
             }
           }
         } finally {
           if (o.value != null) {
-            loudDrop_drop(o.value);
+            console.log(`drop ${o.value[0]}`);
           }
         }
       } finally {
         if (taken != null) {
-          loudDrop_drop(taken);
+          console.log(`drop ${taken[0]}`);
         }
       }
     } finally {
       if (old != null) {
-        loudDrop_drop(old);
+        console.log(`drop ${old[0]}`);
       }
     }
   } finally {
     if (c.value != null) {
-      loudDrop_drop(c.value);
+      console.log(`drop ${c.value[0]}`);
     }
   }
 }

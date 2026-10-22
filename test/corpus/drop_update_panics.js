@@ -4,27 +4,23 @@ export function entry() {
   main();
 }
 
-function noisyDrop_drop(noisy) {
-  console.log(`drop ${noisy[0]}`);
-}
-
 function keep(n, fail) {
   try {
     console.log(`keep ${n[0]}`);
   } catch (error) {
-    noisyDrop_drop(n);
+    console.log(`drop ${n[0]}`);
     throw error;
   }
   if (fail) {
     try {
       throw new Error("kept too often");
     } catch (error) {
-      noisyDrop_drop(n);
+      console.log(`drop ${n[0]}`);
       throw error;
     }
   }
   const result = [(n[0] + 10) & 255];
-  noisyDrop_drop(n);
+  console.log(`drop ${n[0]}`);
   return result;
 }
 
@@ -36,7 +32,7 @@ function swapY(p, fail) {
     p$x$live = false;
   } catch (error) {
     if (p$x$live) {
-      noisyDrop_drop(p.x);
+      console.log(`drop ${p.x[0]}`);
     }
     throw error;
   }
@@ -48,36 +44,36 @@ function main() {
   try {
     console.log(`swapped ${swapped.x[0]} ${swapped.y[0]}`);
   } catch (error) {
-    noisyDrop_drop(swapped.x);
-    noisyDrop_drop(swapped.y);
+    console.log(`drop ${swapped.x[0]}`);
+    console.log(`drop ${swapped.y[0]}`);
     throw error;
   }
   let failed;
   try {
     failed = swapY({ x: [3], y: [4] }, true);
   } catch (error) {
-    noisyDrop_drop(swapped.x);
-    noisyDrop_drop(swapped.y);
+    console.log(`drop ${swapped.x[0]}`);
+    console.log(`drop ${swapped.y[0]}`);
     throw error;
   }
   try {
     console.log(`never ${failed.x[0]}`);
   } catch (error) {
-    noisyDrop_drop(failed.x);
-    noisyDrop_drop(failed.y);
-    noisyDrop_drop(swapped.x);
-    noisyDrop_drop(swapped.y);
+    console.log(`drop ${failed.x[0]}`);
+    console.log(`drop ${failed.y[0]}`);
+    console.log(`drop ${swapped.x[0]}`);
+    console.log(`drop ${swapped.y[0]}`);
     throw error;
   }
   try {
-    noisyDrop_drop(failed.x);
-    noisyDrop_drop(failed.y);
+    console.log(`drop ${failed.x[0]}`);
+    console.log(`drop ${failed.y[0]}`);
   } catch (error) {
-    noisyDrop_drop(swapped.x);
-    noisyDrop_drop(swapped.y);
+    console.log(`drop ${swapped.x[0]}`);
+    console.log(`drop ${swapped.y[0]}`);
     throw error;
   }
-  noisyDrop_drop(swapped.x);
-  noisyDrop_drop(swapped.y);
+  console.log(`drop ${swapped.x[0]}`);
+  console.log(`drop ${swapped.y[0]}`);
 }
 //# sourceMappingURL=case.js.map

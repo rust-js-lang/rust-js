@@ -4,24 +4,20 @@ export function entry() {
   main();
 }
 
-function loudDrop_drop(loud) {
-  console.log(`drop ${loud[0]}`);
-}
-
 function id(x) {
   return x;
 }
 
 // Dropped after the loop only.
 function droppedAfter() {
-  const loud = [5];
+  const loud = 5;
   let w = 0;
   while (true) {
     let tmp;
     try {
       tmp = w < id(2);
     } catch (error) {
-      loudDrop_drop(loud);
+      console.log(`drop ${loud}`);
       throw error;
     }
     if (!tmp) {
@@ -32,14 +28,14 @@ function droppedAfter() {
     try {
       tmp$1 = new Map();
     } catch (error) {
-      loudDrop_drop(loud);
+      console.log(`drop ${loud}`);
       throw error;
     }
     let tmp$2;
     try {
       tmp$2 = [tmp$1.size, id(1)];
     } catch (error) {
-      loudDrop_drop(loud);
+      console.log(`drop ${loud}`);
       throw error;
     }
     let size;
@@ -51,7 +47,7 @@ function droppedAfter() {
       try {
         tmp = id(false);
       } catch (error) {
-        loudDrop_drop(loud);
+        console.log(`drop ${loud}`);
         throw error;
       }
       if (tmp) {
@@ -64,14 +60,14 @@ function droppedAfter() {
     try {
       console.log(`${size}`);
     } catch (error) {
-      loudDrop_drop(loud);
+      console.log(`drop ${loud}`);
       throw error;
     }
   }
   try {
-    console.log(`${loud[0]}`);
+    console.log(`${loud}`);
   } finally {
-    loudDrop_drop(loud);
+    console.log(`drop ${loud}`);
   }
 }
 
@@ -81,19 +77,19 @@ function droppedEachPass() {
   let w = 0;
   while (w < id(2)) {
     w = (w + 1) >>> 0;
-    const _each = [(w + 10) >>> 0];
+    const each = (w + 10) >>> 0;
     let tmp;
     try {
       tmp = new Map();
     } catch (error) {
-      loudDrop_drop(_each);
+      console.log(`drop ${each}`);
       throw error;
     }
     let tmp$1;
     try {
       tmp$1 = [tmp.size, id(1)];
     } catch (error) {
-      loudDrop_drop(_each);
+      console.log(`drop ${each}`);
       throw error;
     }
     let size;
@@ -105,7 +101,7 @@ function droppedEachPass() {
       try {
         tmp = id(false);
       } catch (error) {
-        loudDrop_drop(_each);
+        console.log(`drop ${each}`);
         throw error;
       }
       if (tmp) {
@@ -118,7 +114,7 @@ function droppedEachPass() {
     try {
       console.log(`${size}`);
     } finally {
-      loudDrop_drop(_each);
+      console.log(`drop ${each}`);
     }
   }
 }

@@ -6,10 +6,6 @@ export function entry() {
   main();
 }
 
-function loudDrop_drop(loud) {
-  console.log(`drop ${loud[0]}`);
-}
-
 function scaled(v) {
   let factor$live = true;
   const factor = [3];
@@ -19,7 +15,7 @@ function scaled(v) {
     factor$live = false;
   } catch (error) {
     if (factor$live) {
-      loudDrop_drop(factor);
+      console.log(`drop ${factor[0]}`);
     }
     throw error;
   }
@@ -31,7 +27,7 @@ function scaled(v) {
     tmp.map((item) => value(item)),
     (it) => {
       it.return();
-      loudDrop_drop(factor);
+      console.log(`drop ${factor[0]}`);
     },
   );
   const result = iter.toArray();
@@ -88,7 +84,7 @@ function main() {
     shared$live = false;
   } catch (error) {
     if (shared$live) {
-      loudDrop_drop(shared);
+      console.log(`drop ${shared[0]}`);
     }
     throw error;
   }
@@ -100,7 +96,7 @@ function main() {
     tmp.map((item) => value(item)),
     (it) => {
       it.return();
-      loudDrop_drop(shared);
+      console.log(`drop ${shared[0]}`);
     },
   );
   const total = iter.reduce((a, b) => (a + b) >>> 0, 0);
@@ -115,7 +111,7 @@ function main() {
       },
       [1, 2],
       (value) => {
-        loudDrop_drop(base);
+        console.log(`drop ${base[0]}`);
       },
     ).join(", ")}]`,
   );
@@ -127,7 +123,7 @@ function main() {
     tag$live = false;
   } catch (error) {
     if (tag$live) {
-      loudDrop_drop(tag);
+      console.log(`drop ${tag[0]}`);
     }
     throw error;
   }
@@ -139,7 +135,7 @@ function main() {
     tmp$1.filter((item) => value$1(item)),
     (it) => {
       it.return();
-      loudDrop_drop(tag);
+      console.log(`drop ${tag[0]}`);
     },
   );
   try {
@@ -156,7 +152,7 @@ function main() {
     label$live = false;
   } catch (error) {
     if (label$live) {
-      loudDrop_drop(label);
+      console.log(`drop ${label[0]}`);
     }
     throw error;
   }
@@ -168,7 +164,7 @@ function main() {
         return (x + l[0]) >>> 0;
       },
       (value) => {
-        loudDrop_drop(label);
+        console.log(`drop ${label[0]}`);
       },
     )}`,
   );

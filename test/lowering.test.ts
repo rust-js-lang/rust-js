@@ -84,6 +84,43 @@ test("an entry's and_modify then or_insert reads its map and key", () => {
   expect(js).not.toContain("$mutGet(counts, c);");
 });
 
+// ADR 0607: a variable's field is given what a call gives in place,
+// \`more.has = work();\`, as React's scheduler has \`hasMoreWork =
+// flushWork(currentTime);\`: what makes the value can't make the variable
+// another, a closure's \`more = ..\` assigning the object in place.
+test("a field is given a call's value in place", async () => {
+  const dir = fixture("field-given-in-place");
+  writeFileSync(join(dir, "lib.rs"), `pub struct More {
+    pub has: bool,
+}
+
+fn work() -> bool {
+    false
+}
+
+pub fn plain() -> bool {
+    let mut more = More { has: true };
+    more.has = work();
+    more.has
+}
+
+pub fn rebound() -> bool {
+    let mut more = More { has: false };
+    let mut replace = || {
+        more = More { has: true };
+        false
+    };
+    more.has = replace();
+    more.has
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("  more.has = work();\n");
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.plain(), lib.rebound()]).toEqual([false, false]);
+});
+
 // ADR 0606: a blank line before an item's attributes is before the item,
 // as React's SchedulerFeatureFlags groups its flags.
 test("a blank line before an item's attributes is kept", () => {
@@ -5473,10 +5510,11 @@ pub fn checked(n: u32) -> Result<u32, String> {
   expect(lib.checked(2)).toEqual({ TAG: "Ok", _0: 4 });
 });
 
-// ADR 0589: a \`Drop\` impl dropped in one place is its body there, as React's
-// scheduler's \`flushWork\` restores its state in a \`finally\`; the guard made
-// only to be dropped, read only by its fields, is its fields. One dropped in
-// two places stays a function each calls; a guard read whole stays one.
+// ADR 0589: a \`Drop\` impl's drop is its body where it's dropped, as React's
+// scheduler's \`flushWork\` restores its state in a \`finally\`, at each drop,
+// a closure's too; the guard made only to be dropped, read only by its
+// fields, is its fields, \`let\`s where they're written; a one-field tuple's,
+// its field. A guard read whole stays one.
 test("a Drop dropped once is its body where it's dropped", async () => {
   const dir = fixture("drop-dropped-once");
   writeFileSync(join(dir, "lib.rs"), `use std::cell::Cell;
@@ -5570,16 +5608,72 @@ pub mod lock {
 pub fn there() {
     let _held = lock::Held { name: "there" };
 }
+
+struct Level(u32);
+
+impl Drop for Level {
+    fn drop(&mut self) {
+        DEPTH.set(self.0);
+    }
+}
+
+pub fn wrapped(n: u32) -> impl Fn() -> u32 {
+    move || {
+        let _level = Level(DEPTH.get());
+        DEPTH.set(n);
+        work(n)
+    }
+}
+
+struct More {
+    more: bool,
+}
+
+impl Drop for More {
+    fn drop(&mut self) {
+        println!("more {}", self.more);
+    }
+}
+
+pub fn flushed(n: u32) {
+    let mut guard = More { more: true };
+    guard.more = work(n) > 3;
+}
+
+struct Twice(u32);
+
+impl Drop for Twice {
+    fn drop(&mut self) {
+        let doubled = self.0 * 2;
+        println!("doubled {doubled}");
+    }
+}
+
+pub fn doubles(doubled: u32) {
+    let _twice = Twice(doubled);
+}
+
+pub fn doubles_too() {
+    let _twice = Twice(4);
+}
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("export function run(n) {\n  const previous = depth;\n  depth = n;\n  try {\n    note(n);\n    return work(n);\n  } finally {\n    depth = previous;\n  }\n}");
   expect(js).not.toContain("restoreDrop_drop");
-  expect(js).toContain("loudDrop_drop(_b)");
+  expect(js).not.toContain("loudDrop_drop");
+  // Where one drop can't be its body, its \`doubled\` the caller's, each
+  // calls the function.
+  expect(js).toContain("twiceDrop_drop(_twice)");
+  expect(js).toContain("  return () => {\n    const level = depth;\n    depth = n;\n    try {\n      return work(n);\n    } finally {\n      depth = level;\n    }\n  };");
+  expect(js).toContain("  let more = true;\n  try {\n    more = work(n) > 3;\n  } finally {\n    console.log(`more ${more}`);\n  }");
+  expect(js).toContain('const name = "b";\n  try {\n    console.log(`drop ${name}`);\n  } finally {\n    console.log(`drop ${_a.name}`);\n  }');
   expect(js).not.toContain("seenDrop_drop");
   expect(js).toContain("const seen = { number: id };");
   const lib = await import(join(dir, "lib.js"));
   expect([lib.run(2), lib.current()]).toEqual([4, 0]);
+  lib.doubles(3);
+  lib.doublesToo();
   expect(() => lib.run(10)).toThrow("too deep");
   expect(lib.current()).toBe(0);
   expect(lib.shown(3)).toBe(3);

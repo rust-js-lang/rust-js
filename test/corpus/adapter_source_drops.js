@@ -14,31 +14,27 @@ function counterIterator_next(counter) {
   return counter.n > 0 ? value() : undefined;
 }
 
-function counterDrop_drop(counter) {
-  console.log(`drop ${counter.name}`);
-}
-
 function main() {
   const total = $closing($iterator({ n: 3, name: "sum" }, counterIterator_next), (it) => {
-    counterDrop_drop(it.of);
+    console.log(`drop ${it.of.name}`);
   })
     .map((x) => (x * 2) >>> 0)
     .reduce((a, b) => (a + b) >>> 0, 0);
   console.log(`total ${total}`);
   const all = $closing($iterator({ n: 2, name: "collect" }, counterIterator_next), (it) => {
-    counterDrop_drop(it.of);
+    console.log(`drop ${it.of.name}`);
   })
     .filter((x) => x % 2 === 0)
     .toArray();
   console.log(`all [${all.join(", ")}]`);
   const count = $closing($iterator({ n: 4, name: "count" }, counterIterator_next), (it) => {
-    counterDrop_drop(it.of);
+    console.log(`drop ${it.of.name}`);
   })
     .map((x) => (x + 1) >>> 0)
     .reduce((n) => n + 1, 0);
   console.log(`count ${count}`);
   const iter = $closing($iterator({ n: 2, name: "for" }, counterIterator_next), (it) => {
-    counterDrop_drop(it.of);
+    console.log(`drop ${it.of.name}`);
   }).map((x) => (x * 10) >>> 0);
   while (true) {
     let tmp;

@@ -4,10 +4,6 @@ export function entry() {
   main();
 }
 
-function noisyDrop_drop(noisy) {
-  console.log(`drop ${noisy[0]}`);
-}
-
 function check(n, what) {
   if (n > 2) {
     throw new Error(`gave up with ${what}`);
@@ -17,29 +13,29 @@ function check(n, what) {
 }
 
 function main() {
-  const first = ["first"];
+  const first = "first";
   try {
     check(1, "first live");
   } catch (error) {
-    noisyDrop_drop(first);
+    console.log(`drop ${first}`);
     throw error;
   }
-  const second = ["second"];
+  const second = "second";
   try {
     check(2, "both live");
   } catch (error) {
-    noisyDrop_drop(second);
-    noisyDrop_drop(first);
+    console.log(`drop ${second}`);
+    console.log(`drop ${first}`);
     throw error;
   }
   try {
-    noisyDrop_drop(first);
+    console.log(`drop ${first}`);
     check(1, "second live");
-    const third = ["third"];
-    noisyDrop_drop(third);
+    const third = "third";
+    console.log(`drop ${third}`);
     check(3, "second live");
   } finally {
-    noisyDrop_drop(second);
+    console.log(`drop ${second}`);
   }
 }
 //# sourceMappingURL=case.js.map

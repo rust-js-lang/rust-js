@@ -546,9 +546,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if place.projection.is_empty() && !state.locals.user[local] && crate::lower::iterators::is_items_map(&expr) {
             state.maps.insert(local, expr.clone());
         }
-        // The value is made before the place is reached, as Rust makes them.
+        // The value is made before the place is reached, as Rust makes them:
+        // but of a variable's fields, the object JS reaches first is the
+        // one, which what makes the value can't make another, a closure's
+        // `more = ..` assigning it in place: `more.has = work();` (ADR 0607).
         let mut value = expr;
-        if !place.projection.is_empty() && value.has_effects() {
+        let fixed = (place.projection.iter()).all(|elem| matches!(elem, PlaceElem::Field(..)));
+        if !place.projection.is_empty() && value.has_effects() && !fixed {
             value = self.spill("value", value, out);
         }
         let target = self.mir_place(state, place, span, out)?;

@@ -4,21 +4,17 @@ export function entry() {
   main();
 }
 
-function noisyDrop_drop(noisy) {
-  console.log(`drop ${noisy[0]}`);
-}
-
 function nth(items, at) {
-  const _held = ["held"];
+  const held = "held";
   if (at >= items.length) {
-    noisyDrop_drop(_held);
+    console.log(`drop ${held}`);
     throw new Error(`index out of bounds: the len is ${items.length} but the index is ${at}`);
   }
   const read = items[at];
   try {
     console.log(`read ${read}`);
   } finally {
-    noisyDrop_drop(_held);
+    console.log(`drop ${held}`);
   }
   return read;
 }

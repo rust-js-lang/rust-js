@@ -113,10 +113,6 @@ export const LiteMap = {
   },
 };
 
-function noisyDrop_drop(noisy) {
-  console.log(`drop ${noisy[0]}`);
-}
-
 function odd(items) {
   return items
     .map((n) => {
@@ -126,7 +122,7 @@ function odd(items) {
       } else {
         result = undefined;
       }
-      noisyDrop_drop(n);
+      console.log(`drop ${n[0]}`);
       return result;
     })
     .filter((item) => item != null);

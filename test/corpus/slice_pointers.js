@@ -49,10 +49,6 @@ function peeked(count) {
   return p.value;
 }
 
-function noisyDrop_drop(noisy) {
-  console.log(`drop ${noisy[0]}`);
-}
-
 /**
  * Each item of a slice dropped in place through its pointer, as arrayvec's
  * `truncate` drops its tail; the vector forgotten after, its first item
@@ -65,17 +61,17 @@ function droppedTail() {
     tail = $ptrSliceMut($ptrAdd($ptr(items, 0), 1), 2);
   } catch (error) {
     for (const item of items) {
-      noisyDrop_drop(item);
+      console.log(`drop ${item[0]}`);
     }
     throw error;
   }
   try {
     for (const item of tail) {
-      noisyDrop_drop(item);
+      console.log(`drop ${item[0]}`);
     }
   } catch (error) {
     for (const item of items) {
-      noisyDrop_drop(item);
+      console.log(`drop ${item[0]}`);
     }
     throw error;
   }
@@ -83,7 +79,7 @@ function droppedTail() {
   try {
     console.log(`${first[0]}`);
   } finally {
-    noisyDrop_drop(first);
+    console.log(`drop ${first[0]}`);
   }
 }
 

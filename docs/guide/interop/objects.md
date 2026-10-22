@@ -492,26 +492,22 @@ pub fn work(fail: bool) -> u32 {
 ```
 
 ```js
-function guardDrop_drop(guard) {
-  console.log(`closing ${guard.name}`);
-}
-
 export function work(fail) {
   const _outer = { name: "outer" };
-  const _inner = { name: "inner" };
+  const name = "inner";
   if (fail) {
     try {
       throw new Error("failed");
     } catch (error) {
-      guardDrop_drop(_inner);
-      guardDrop_drop(_outer);
+      console.log(`closing ${name}`);
+      console.log(`closing ${_outer.name}`);
       throw error;
     }
   }
   try {
-    guardDrop_drop(_inner);
+    console.log(`closing ${name}`);
   } finally {
-    guardDrop_drop(_outer);
+    console.log(`closing ${_outer.name}`);
   }
   return 1;
 }
@@ -555,13 +551,14 @@ export function close(connection) {
 }
 ```
 
-- **A `Drop` dropped in one place is its body there**, as a `finally`
-  written by hand is; one dropped in several, `Guard`'s above, is a
-  function each drop calls
+- **A `Drop` is its body where it's dropped**, at each drop, as a
+  `finally` written by hand is
   ([ADR 0589](../../decisions/0589-a-drop-dropped-once-is-its-body-there.md)).
   A guard made only to be dropped, read only by its fields, is its fields:
   `let _restore = Restore { previous: DEPTH.get() };` is `const previous =
-  depth;`, restored in the `finally`.
+  depth;`, restored in the `finally`, a `let` where a field is written. A
+  one-field tuple's is its field by the guard's name, `restore`. A field
+  whose name another guard's took, `_outer.name` above, stays the guard's.
 
 - **A value JS holds is JS's.** `open(1)` gives JS a `Connection` that
   nothing drops until JS gives it to `close`.

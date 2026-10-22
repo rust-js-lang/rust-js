@@ -4,16 +4,12 @@ export function entry() {
   main();
 }
 
-function loudDrop_drop(loud) {
-  console.log(`drop ${loud[0]}`);
-}
-
 function main() {
   const d = [[1], [2]].slice();
   try {
     const popFront = d.shift();
     if (popFront != null) {
-      loudDrop_drop(popFront);
+      console.log(`drop ${popFront[0]}`);
     }
     const length = d.length;
     console.log(`${length}`);
@@ -27,17 +23,17 @@ function main() {
         console.log(`[${s.join(", ")}]`);
       } finally {
         for (const item of l) {
-          loudDrop_drop(item);
+          console.log(`drop ${item[0]}`);
         }
       }
     } finally {
       for (const item of v) {
-        loudDrop_drop(item);
+        console.log(`drop ${item[0]}`);
       }
     }
   } finally {
     for (const item of d) {
-      loudDrop_drop(item);
+      console.log(`drop ${item[0]}`);
     }
   }
 }

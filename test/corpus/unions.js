@@ -60,10 +60,6 @@ function noisyDrop_drop(noisy) {
   console.log(`drop ${noisy[0]}`);
 }
 
-function holderDrop_drop(holder) {
-  console.log("drop holder");
-}
-
 function main() {
   const values = [Value.int(7), Value.float(2.5), Value.int(0), Value.float(0)];
   for (const v of values) {
@@ -121,7 +117,7 @@ function main() {
   try {
     console.log(`${value$1}`);
   } finally {
-    holderDrop_drop(held);
+    console.log("drop holder");
   }
   const counted = { count: 1 };
   $unionSet(counted, "count", ($unionField(counted, "count") + 1) & 255);
@@ -129,7 +125,7 @@ function main() {
   try {
     console.log(`${value$2}`);
   } finally {
-    holderDrop_drop(counted);
+    console.log("drop holder");
   }
 }
 //# sourceMappingURL=case.js.map

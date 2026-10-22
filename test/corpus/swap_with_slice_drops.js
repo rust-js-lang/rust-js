@@ -6,10 +6,6 @@ export function entry() {
   main();
 }
 
-function loudDrop_drop(loud) {
-  console.log(`drop ${loud[0]}`);
-}
-
 function main() {
   const a = [[1], [2]];
   const b = [[3], [4]];
@@ -17,10 +13,10 @@ function main() {
     $swapWithSlice(a, b);
   } catch (error) {
     for (const item of b) {
-      loudDrop_drop(item);
+      console.log(`drop ${item[0]}`);
     }
     for (const item of a) {
-      loudDrop_drop(item);
+      console.log(`drop ${item[0]}`);
     }
     throw error;
   }
@@ -29,10 +25,10 @@ function main() {
     tmp = $index(a, 0)[0];
   } catch (error) {
     for (const item of b) {
-      loudDrop_drop(item);
+      console.log(`drop ${item[0]}`);
     }
     for (const item of a) {
-      loudDrop_drop(item);
+      console.log(`drop ${item[0]}`);
     }
     throw error;
   }
@@ -40,21 +36,21 @@ function main() {
     console.log(`${tmp} ${$index(b, 1)[0]}`);
   } catch (error) {
     for (const item of b) {
-      loudDrop_drop(item);
+      console.log(`drop ${item[0]}`);
     }
     for (const item of a) {
-      loudDrop_drop(item);
+      console.log(`drop ${item[0]}`);
     }
     throw error;
   }
   try {
     for (const item of a) {
-      loudDrop_drop(item);
+      console.log(`drop ${item[0]}`);
     }
     console.log("between");
   } finally {
     for (const item of b) {
-      loudDrop_drop(item);
+      console.log(`drop ${item[0]}`);
     }
   }
 }

@@ -10,24 +10,20 @@ function loudIterator_next(loud) {
   return $next(loud[1]);
 }
 
-function loudDrop_drop(loud) {
-  console.log(`drop ${loud[0]}`);
-}
-
 function main() {
   const v = [1, 2, 3];
   const all = $closing($iterator(["copied", $iter(v)], loudIterator_next), (it) => {
-    loudDrop_drop(it.of);
+    console.log(`drop ${it.of[0]}`);
   }).toArray();
   console.log(`[${all.join(", ")}]`);
   const first = $closing($iterator(["cloned", $iter(v)], loudIterator_next), (it) => {
-    loudDrop_drop(it.of);
+    console.log(`drop ${it.of[0]}`);
   })
     .take(1)
     .toArray();
   console.log(`[${first.join(", ")}]`);
   const total = $closing($iterator(["summed", $iter(v)], loudIterator_next), (it) => {
-    loudDrop_drop(it.of);
+    console.log(`drop ${it.of[0]}`);
   }).reduce((a, b) => (a + b) >>> 0, 0);
   console.log(`${total}`);
 }

@@ -244,26 +244,22 @@ pub fn work(fail: bool) -> u32 {
 ```
 
 ```js
-function guardDrop_drop(guard) {
-  console.log(`closing ${guard.name}`);
-}
-
 export function work(fail) {
   const _outer = { name: "outer" };
-  const _inner = { name: "inner" };
+  const name = "inner";
   if (fail) {
     try {
       throw new Error("failed");
     } catch (error) {
-      guardDrop_drop(_inner);
-      guardDrop_drop(_outer);
+      console.log(`closing ${name}`);
+      console.log(`closing ${_outer.name}`);
       throw error;
     }
   }
   try {
-    guardDrop_drop(_inner);
+    console.log(`closing ${name}`);
   } finally {
-    guardDrop_drop(_outer);
+    console.log(`closing ${_outer.name}`);
   }
   return 1;
 }

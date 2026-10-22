@@ -12,21 +12,18 @@ function drainingIterator_next(draining) {
   return item;
 }
 
-function drainingDrop_drop(draining) {
-  console.log(`dropped after ${draining.at}`);
-  draining.items.length = 0;
-}
-
 function main() {
   const v = [1, 2, 3];
   const iter = { items: v, at: 0 };
   const taken = $iterator(iter, drainingIterator_next).toArray();
-  drainingDrop_drop(iter);
+  console.log(`dropped after ${iter.at}`);
+  iter.items.length = 0;
   console.log(`[${taken.join(", ")}] [${v.join(", ")}]`);
   const w = [4, 5];
   const iter$1 = { items: w, at: 0 };
   const n = $iterator(iter$1, drainingIterator_next).reduce((n) => n + 1, 0);
-  drainingDrop_drop(iter$1);
+  console.log(`dropped after ${iter$1.at}`);
+  iter$1.items.length = 0;
   console.log(`${n} [${w.join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

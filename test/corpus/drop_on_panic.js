@@ -6,51 +6,47 @@ export function entry() {
   main();
 }
 
-function noisyDrop_drop(noisy) {
-  console.log(`drop ${noisy[0]}`);
-}
-
 function keep(n) {
   return n;
 }
 
 function count(to) {
-  const _outer = [100];
+  const outer = 100;
   const iter = { start: 1, end: to };
   while (true) {
     let tmp;
     try {
       tmp = $rangeInclusiveNext(iter);
     } catch (error) {
-      noisyDrop_drop(_outer);
+      console.log(`drop ${outer}`);
       throw error;
     }
     if (tmp == null) {
       break;
     }
     const i = tmp;
-    const _step = [i];
+    const step = i;
     if (i === 3) {
       try {
         throw new Error(`gave up at ${i}`);
       } catch (error) {
-        noisyDrop_drop(_step);
-        noisyDrop_drop(_outer);
+        console.log(`drop ${step}`);
+        console.log(`drop ${outer}`);
         throw error;
       }
     }
     try {
-      noisyDrop_drop(_step);
+      console.log(`drop ${step}`);
     } catch (error) {
-      noisyDrop_drop(_outer);
+      console.log(`drop ${outer}`);
       throw error;
     }
   }
-  const _never = [200];
+  const never = 200;
   try {
-    noisyDrop_drop(_never);
+    console.log(`drop ${never}`);
   } finally {
-    noisyDrop_drop(_outer);
+    console.log(`drop ${outer}`);
   }
 }
 
@@ -60,7 +56,7 @@ function main() {
   try {
     count(5);
   } finally {
-    noisyDrop_drop(_kept);
+    console.log(`drop ${_kept[0]}`);
   }
 }
 //# sourceMappingURL=case.js.map

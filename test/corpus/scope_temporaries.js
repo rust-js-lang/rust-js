@@ -10,10 +10,6 @@ function noisyDebug_fmt(noisy) {
   return `Noisy(${noisy[0]})`;
 }
 
-function noisyDrop_drop(noisy) {
-  console.log(`drop ${noisy[0]}`);
-}
-
 const Noisy = {
   big(noisy) {
     console.log(`big ${noisy[0]}`);
@@ -27,17 +23,17 @@ function make(n) {
 }
 
 function tail(n) {
-  const _kept = [100 + n];
+  const kept = 100 + n;
   let result;
   try {
     const noisy = make(n);
     try {
       result = Noisy.big(noisy);
     } finally {
-      noisyDrop_drop(noisy);
+      console.log(`drop ${noisy[0]}`);
     }
   } finally {
-    noisyDrop_drop(_kept);
+    console.log(`drop ${kept}`);
   }
   return result;
 }
@@ -46,32 +42,32 @@ function early(stop) {
   const noisy = make(9);
   if (stop) {
     const result = undefined;
-    noisyDrop_drop(noisy);
+    console.log(`drop ${noisy[0]}`);
     return result;
   }
   return { a: noisy, b: 1 };
 }
 
 function keptEarly(stop) {
-  const _kept = [30];
+  const kept = 30;
   let noisy;
   try {
     noisy = make(31);
   } catch (error) {
-    noisyDrop_drop(_kept);
+    console.log(`drop ${kept}`);
     throw error;
   }
   let result;
   if (!stop) {
     result = { a: noisy, b: 3 };
-    noisyDrop_drop(_kept);
+    console.log(`drop ${kept}`);
     return result;
   }
   result = undefined;
   try {
-    noisyDrop_drop(noisy);
+    console.log(`drop ${noisy[0]}`);
   } finally {
-    noisyDrop_drop(_kept);
+    console.log(`drop ${kept}`);
   }
   return result;
 }
@@ -82,14 +78,14 @@ function main() {
   try {
     big = Noisy.big(value);
   } catch (error) {
-    noisyDrop_drop(value);
+    console.log(`drop ${value[0]}`);
     throw error;
   }
   if (big) {
-    noisyDrop_drop(value);
+    console.log(`drop ${value[0]}`);
     console.log("then");
   } else {
-    noisyDrop_drop(value);
+    console.log(`drop ${value[0]}`);
     console.log("else");
   }
 
@@ -100,29 +96,29 @@ function main() {
     try {
       tmp = Noisy.big(value) === false;
     } catch (error) {
-      noisyDrop_drop(value);
+      console.log(`drop ${value[0]}`);
       throw error;
     }
     if (!tmp) {
-      noisyDrop_drop(value);
+      console.log(`drop ${value[0]}`);
 
       break;
     }
-    noisyDrop_drop(value);
+    console.log(`drop ${value[0]}`);
     console.log(`round ${n}`);
     n = (n + 1) & 255;
   }
-  const _inner = [50];
+  const inner = 50;
   let found;
   try {
     const tmp = make(5);
     try {
       found = Noisy.big(tmp);
     } finally {
-      noisyDrop_drop(tmp);
+      console.log(`drop ${tmp[0]}`);
     }
   } finally {
-    noisyDrop_drop(_inner);
+    console.log(`drop ${inner}`);
   }
   console.log(`found ${found}`);
 
@@ -134,43 +130,43 @@ function main() {
   try {
     tmp = $eq(value$1, value$2);
   } catch (error) {
-    noisyDrop_drop(value$2);
-    noisyDrop_drop(value$1);
+    console.log(`drop ${value$2[0]}`);
+    console.log(`drop ${value$1[0]}`);
     throw error;
   }
   if (!tmp) {
     try {
       $assertFailed("Eq", noisyDebug_fmt(value$1), noisyDebug_fmt(value$2));
     } catch (error) {
-      noisyDrop_drop(value$2);
-      noisyDrop_drop(value$1);
+      console.log(`drop ${value$2[0]}`);
+      console.log(`drop ${value$1[0]}`);
       throw error;
     }
   }
   try {
-    noisyDrop_drop(value$2);
+    console.log(`drop ${value$2[0]}`);
   } finally {
-    noisyDrop_drop(value$1);
+    console.log(`drop ${value$1[0]}`);
   }
   const value$3 = make(8);
   let tmp$1;
   try {
     tmp$1 = Noisy.big(value$3);
   } catch (error) {
-    noisyDrop_drop(value$3);
+    console.log(`drop ${value$3[0]}`);
     throw error;
   }
   if (!tmp$1) {
-    noisyDrop_drop(value$3);
+    console.log(`drop ${value$3[0]}`);
     throw new Error("assertion failed: make(8).big()");
   }
-  noisyDrop_drop(value$3);
+  console.log(`drop ${value$3[0]}`);
   const value$4 = early(true);
   try {
     console.log(`early ${!value$4}`);
   } finally {
     if (value$4 != null) {
-      noisyDrop_drop(value$4.a);
+      console.log(`drop ${value$4.a[0]}`);
     }
   }
   const pair = early(false);
@@ -180,21 +176,21 @@ function main() {
     try {
       console.log(`late ${pair.b}`);
     } finally {
-      noisyDrop_drop(pair.a);
+      console.log(`drop ${pair.a[0]}`);
     }
   } else {
     try {
       console.log("late none");
     } catch (error) {
       if (pair) {
-        noisyDrop_drop(pair.a);
+        console.log(`drop ${pair.a[0]}`);
       }
       throw error;
     }
   }
   if (pair) {
     if (pair$0$live) {
-      noisyDrop_drop(pair.a);
+      console.log(`drop ${pair.a[0]}`);
     }
   }
 
@@ -204,7 +200,7 @@ function main() {
     try {
       return Noisy.big(noisy);
     } finally {
-      noisyDrop_drop(noisy);
+      console.log(`drop ${noisy[0]}`);
     }
   };
   console.log(`check ${check(10)}`);
@@ -212,7 +208,7 @@ function main() {
     const noisy = make(11);
     if (stop) {
       const result = undefined;
-      noisyDrop_drop(noisy);
+      console.log(`drop ${noisy[0]}`);
       return result;
     }
     return { a: noisy, b: 2 };
@@ -222,7 +218,7 @@ function main() {
     console.log(`pair ${!value$5}`);
   } finally {
     if (value$5 != null) {
-      noisyDrop_drop(value$5.a);
+      console.log(`drop ${value$5.a[0]}`);
     }
   }
   const value$6 = keptEarly(true);
@@ -230,7 +226,7 @@ function main() {
     console.log(`kept ${!value$6}`);
   } finally {
     if (value$6 != null) {
-      noisyDrop_drop(value$6.a);
+      console.log(`drop ${value$6.a[0]}`);
     }
   }
   console.log("end");

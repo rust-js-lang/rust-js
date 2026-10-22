@@ -21,8 +21,7 @@ export function putBack(iterable, IIntoIterator) {
 
 export const PutBack = {
   withValue(putBack, value) {
-    const value$1 = $some(value);
-    putBack.top = value$1;
+    putBack.top = $some(value);
     return putBack;
   },
 };

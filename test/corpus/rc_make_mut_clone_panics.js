@@ -12,23 +12,19 @@ function failsClone_clone(fails) {
   throw new Error("clone failed");
 }
 
-function watchDrop_drop(watch) {
-  console.log(`owners as it unwinds: ${watch[0].strong}`);
-}
-
 function main() {
   let first = { strong: 1, weak: 0 };
   try {
-    const _watch = [$rcClone(first)];
+    const watch = $rcClone(first);
     try {
       first = $makeMut(first, (value) => failsClone_clone(value));
     } catch (error) {
-      watchDrop_drop(_watch);
-      $rcDrop(_watch[0]);
+      console.log(`owners as it unwinds: ${watch.strong}`);
+      $rcDrop(watch);
       throw error;
     }
-    watchDrop_drop(_watch);
-    $rcDrop(_watch[0]);
+    console.log(`owners as it unwinds: ${watch.strong}`);
+    $rcDrop(watch);
   } finally {
     $rcDrop(first);
   }

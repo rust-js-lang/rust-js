@@ -10,10 +10,6 @@ function noisyDrop_drop(noisy) {
   console.log(`drop ${noisy[0]}`);
 }
 
-function pairDrop_drop(pair) {
-  console.log(`drop pair of ${pair.first[0]} and ${pair.second[0]}`);
-}
-
 function unitDrop_drop(unit) {
   console.log("drop unit");
 }
@@ -246,7 +242,8 @@ function main() {
     }
     break;
   }
-  const _pair = { first: ["first"], second: ["second"] };
+  const first = ["first"];
+  const second = ["second"];
   const _holder = { label: "h", inner: ["held"], count: 2 };
   const _list = [["v0"], ["v1"]];
   const _some = ["some"];
@@ -280,9 +277,9 @@ function main() {
         noisyDrop_drop(item);
       }
       noisyDrop_drop(_holder.inner);
-      pairDrop_drop(_pair);
-      noisyDrop_drop(_pair.first);
-      noisyDrop_drop(_pair.second);
+      console.log(`drop pair of ${first[0]} and ${second[0]}`);
+      noisyDrop_drop(first);
+      noisyDrop_drop(second);
       noisyDrop_drop(slot);
       if (kept$live) {
         noisyDrop_drop(kept);
@@ -313,9 +310,9 @@ function main() {
         noisyDrop_drop(item);
       }
       noisyDrop_drop(_holder.inner);
-      pairDrop_drop(_pair);
-      noisyDrop_drop(_pair.first);
-      noisyDrop_drop(_pair.second);
+      console.log(`drop pair of ${first[0]} and ${second[0]}`);
+      noisyDrop_drop(first);
+      noisyDrop_drop(second);
       noisyDrop_drop(slot);
       if (kept$live) {
         noisyDrop_drop(kept);
@@ -337,9 +334,9 @@ function main() {
         noisyDrop_drop(item);
       }
       noisyDrop_drop(_holder.inner);
-      pairDrop_drop(_pair);
-      noisyDrop_drop(_pair.first);
-      noisyDrop_drop(_pair.second);
+      console.log(`drop pair of ${first[0]} and ${second[0]}`);
+      noisyDrop_drop(first);
+      noisyDrop_drop(second);
       noisyDrop_drop(slot);
       if (kept$live) {
         noisyDrop_drop(kept);
@@ -359,9 +356,9 @@ function main() {
         noisyDrop_drop(item);
       }
       noisyDrop_drop(_holder.inner);
-      pairDrop_drop(_pair);
-      noisyDrop_drop(_pair.first);
-      noisyDrop_drop(_pair.second);
+      console.log(`drop pair of ${first[0]} and ${second[0]}`);
+      noisyDrop_drop(first);
+      noisyDrop_drop(second);
       noisyDrop_drop(slot);
       if (kept$live) {
         noisyDrop_drop(kept);
@@ -380,9 +377,9 @@ function main() {
         noisyDrop_drop(item);
       }
       noisyDrop_drop(_holder.inner);
-      pairDrop_drop(_pair);
-      noisyDrop_drop(_pair.first);
-      noisyDrop_drop(_pair.second);
+      console.log(`drop pair of ${first[0]} and ${second[0]}`);
+      noisyDrop_drop(first);
+      noisyDrop_drop(second);
       noisyDrop_drop(slot);
       if (kept$live) {
         noisyDrop_drop(kept);
@@ -398,9 +395,9 @@ function main() {
         noisyDrop_drop(item);
       }
       noisyDrop_drop(_holder.inner);
-      pairDrop_drop(_pair);
-      noisyDrop_drop(_pair.first);
-      noisyDrop_drop(_pair.second);
+      console.log(`drop pair of ${first[0]} and ${second[0]}`);
+      noisyDrop_drop(first);
+      noisyDrop_drop(second);
       noisyDrop_drop(slot);
       if (kept$live) {
         noisyDrop_drop(kept);
@@ -413,9 +410,9 @@ function main() {
       }
     } catch (error) {
       noisyDrop_drop(_holder.inner);
-      pairDrop_drop(_pair);
-      noisyDrop_drop(_pair.first);
-      noisyDrop_drop(_pair.second);
+      console.log(`drop pair of ${first[0]} and ${second[0]}`);
+      noisyDrop_drop(first);
+      noisyDrop_drop(second);
       noisyDrop_drop(slot);
       if (kept$live) {
         noisyDrop_drop(kept);
@@ -425,9 +422,9 @@ function main() {
     try {
       noisyDrop_drop(_holder.inner);
     } catch (error) {
-      pairDrop_drop(_pair);
-      noisyDrop_drop(_pair.first);
-      noisyDrop_drop(_pair.second);
+      console.log(`drop pair of ${first[0]} and ${second[0]}`);
+      noisyDrop_drop(first);
+      noisyDrop_drop(second);
       noisyDrop_drop(slot);
       if (kept$live) {
         noisyDrop_drop(kept);
@@ -435,9 +432,9 @@ function main() {
       throw error;
     }
     try {
-      pairDrop_drop(_pair);
-      noisyDrop_drop(_pair.first);
-      noisyDrop_drop(_pair.second);
+      console.log(`drop pair of ${first[0]} and ${second[0]}`);
+      noisyDrop_drop(first);
+      noisyDrop_drop(second);
     } catch (error) {
       noisyDrop_drop(slot);
       if (kept$live) {

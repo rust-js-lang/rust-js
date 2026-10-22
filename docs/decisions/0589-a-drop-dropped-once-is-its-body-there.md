@@ -1,6 +1,8 @@
 # 0589. A `Drop` dropped in one place is its body there
 
-Status: Accepted. Extends [0098](0098-destructors.md)'s destructors and
+Status: Accepted. Amended by [0608](0608-a-drop-is-its-body-at-each-drop.md):
+a `Drop` is its body at each drop, a written guard's fields `let`s, a
+one-field tuple's its field. Extends [0098](0098-destructors.md)'s destructors and
 [0581](0581-a-closure-called-as-a-statement-is-its-body.md)'s bodies in
 place.
 

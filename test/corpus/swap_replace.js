@@ -6,10 +6,6 @@ export function entry() {
   main();
 }
 
-function loudDrop_drop(loud) {
-  console.log(`drop ${loud[0]}`);
-}
-
 function settle(done) {
   const old = done.value;
   done.value = true;
@@ -71,13 +67,13 @@ function main() {
 
         console.log("42");
       } finally {
-        loudDrop_drop(third);
+        console.log(`drop ${third[0]}`);
       }
     } finally {
-      loudDrop_drop(first);
+      console.log(`drop ${first[0]}`);
     }
   } finally {
-    loudDrop_drop(loud);
+    console.log(`drop ${loud[0]}`);
   }
 }
 //# sourceMappingURL=case.js.map

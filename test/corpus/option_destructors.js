@@ -4,10 +4,6 @@ export function entry() {
   main();
 }
 
-function noisyDrop_drop(noisy) {
-  console.log(`drop ${noisy[0]}`);
-}
-
 const Slot = {
   flush(slot) {
     const old = slot.pending;
@@ -18,13 +14,13 @@ const Slot = {
       old$0$live = false;
       const n = old;
       result = n[0];
-      noisyDrop_drop(n);
+      console.log(`drop ${n[0]}`);
     } else {
       result = 0;
     }
     if (old) {
       if (old$0$live) {
-        noisyDrop_drop(old);
+        console.log(`drop ${old[0]}`);
       }
     }
     return result;
@@ -53,7 +49,7 @@ function main() {
         console.log(`older ${value$1 == null ? "None" : `Some(${value$1})`}`);
       } finally {
         if (older != null) {
-          noisyDrop_drop(older);
+          console.log(`drop ${older[0]}`);
         }
       }
       const value$1 = (n) => n[0] > 5;
@@ -80,14 +76,14 @@ function main() {
           const value = [4];
           try {
             if (slot.pending != null) {
-              noisyDrop_drop(slot.pending);
+              console.log(`drop ${slot.pending[0]}`);
             }
           } finally {
             slot.pending = value;
           }
           const tmp = made(5);
           if (slot.pending != null) {
-            noisyDrop_drop(slot.pending);
+            console.log(`drop ${slot.pending[0]}`);
           }
           slot.pending = tmp;
           const held = slot.pending;
@@ -96,13 +92,13 @@ function main() {
           if (slot.pending == null) {
             slot.pending = tmp$1;
           } else {
-            noisyDrop_drop(tmp$1);
+            console.log(`drop ${tmp$1[0]}`);
           }
           const same = slot.pending;
           console.log(`same ${same[0]}`);
           try {
             if (slot.pending != null) {
-              noisyDrop_drop(slot.pending);
+              console.log(`drop ${slot.pending[0]}`);
             }
           } finally {
             slot.pending = undefined;
@@ -111,7 +107,7 @@ function main() {
           if (slot.pending == null) {
             slot.pending = tmp$2;
           } else {
-            noisyDrop_drop(tmp$2);
+            console.log(`drop ${tmp$2[0]}`);
           }
           const fresh = slot.pending;
           console.log(`fresh ${fresh[0]}`);
@@ -122,22 +118,22 @@ function main() {
           console.log("end");
         } finally {
           if (taken != null) {
-            noisyDrop_drop(taken);
+            console.log(`drop ${taken[0]}`);
           }
         }
       } finally {
         if (kept != null) {
-          noisyDrop_drop(kept);
+          console.log(`drop ${kept[0]}`);
         }
       }
     } finally {
       if (old != null) {
-        noisyDrop_drop(old);
+        console.log(`drop ${old[0]}`);
       }
     }
   } finally {
     if (slot.pending != null) {
-      noisyDrop_drop(slot.pending);
+      console.log(`drop ${slot.pending[0]}`);
     }
   }
 }

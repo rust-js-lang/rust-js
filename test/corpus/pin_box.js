@@ -55,11 +55,11 @@ function main() {
   const changed = a.slice();
   changed.push(9);
   console.log(`[${a.join(", ")}] [${changed.join(", ")}]`);
-  const _noisy = [1];
+  const noisy = 1;
   try {
     console.log("pinned");
   } finally {
-    console.log(`drop ${_noisy[0]}`);
+    console.log(`drop ${noisy}`);
   }
   console.log(`${anyPartialEq_eq(undefined)} ${anyPartialEq_eq(undefined)}`);
   console.log("end");

@@ -6,25 +6,21 @@ export function entry() {
   main();
 }
 
-function guardDrop_drop(guard) {
-  console.log(`drop ${guard[0]}`);
-}
-
 // A value the loop declares, dropped where its `break` leaves.
 function guarded(limit) {
   let n = 0;
   while (true) {
-    const _g = ["round"];
+    const g = "round";
     n += 1;
     if (n < limit) {
       try {
         console.log(`round ${n}`);
       } finally {
-        guardDrop_drop(_g);
+        console.log(`drop ${g}`);
       }
       continue;
     }
-    guardDrop_drop(_g);
+    console.log(`drop ${g}`);
     break;
   }
   const after = n * 10;

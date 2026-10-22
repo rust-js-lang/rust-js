@@ -4,10 +4,6 @@ export function entry() {
   main();
 }
 
-function dDrop_drop(d) {
-  console.log(`drop ${d[0]}`);
-}
-
 export const D = {
   n(d) {
     console.log(`n ${d[0]}`);
@@ -21,17 +17,17 @@ export function f(b) {
   try {
     tmp = D.n(d) === 1;
   } catch (error) {
-    dDrop_drop(d);
+    console.log(`drop ${d[0]}`);
     throw error;
   }
   if (tmp) {
-    dDrop_drop(d);
+    console.log(`drop ${d[0]}`);
     if (b) {
       console.log("then");
       return 1;
     }
   } else {
-    dDrop_drop(d);
+    console.log(`drop ${d[0]}`);
   }
   console.log("else");
   return 0;

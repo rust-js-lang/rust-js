@@ -12,12 +12,12 @@ function boom(n) {
 }
 
 function main() {
-  const _a = ["a"];
+  const a = "a";
   try {
     const x = (boom(1) + boom(2)) >>> 0;
     console.log(`${x}`);
   } finally {
-    console.log(`drop ${_a[0]}`);
+    console.log(`drop ${a}`);
   }
 }
 //# sourceMappingURL=case.js.map

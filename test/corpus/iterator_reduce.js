@@ -6,10 +6,6 @@ export function entry() {
   main();
 }
 
-function loudDrop_drop(loud) {
-  console.log(`drop ${loud[0]}`);
-}
-
 function longest(it) {
   return $reduce(Iterator.from(it), (a, b) => ($byteLen(b) > $byteLen(a) ? b : a));
 }
@@ -53,11 +49,11 @@ function main() {
     }
     try {
       if (b$2$live) {
-        loudDrop_drop(b);
+        console.log(`drop ${b[0]}`);
       }
     } finally {
       if (a$2$live) {
-        loudDrop_drop(a);
+        console.log(`drop ${a[0]}`);
       }
     }
     return result;
@@ -68,7 +64,7 @@ function main() {
     console.log("end");
   } finally {
     if (loudest != null) {
-      loudDrop_drop(loudest);
+      console.log(`drop ${loudest[0]}`);
     }
   }
 }

@@ -12,10 +12,6 @@ const Loud = {
   },
 };
 
-function loudDrop_drop(loud) {
-  console.log(`drop ${loud[0]}`);
-}
-
 function orElse(value, f, dropF) {
   const value$1 = value ?? f();
   if (value != null) {
@@ -32,12 +28,12 @@ function main() {
     try {
       return (x + Loud.get(a)) >>> 0;
     } finally {
-      loudDrop_drop(a);
+      console.log(`drop ${a[0]}`);
     }
   };
   const value = none != null ? f(none) : undefined;
   if (none == null) {
-    loudDrop_drop(a);
+    console.log(`drop ${a[0]}`);
   }
   console.log(`map ${value == null ? "None" : `Some(${value})`}`);
   const a$1 = [2];
@@ -45,12 +41,12 @@ function main() {
     try {
       return (x + Loud.get(a$1)) >>> 0;
     } finally {
-      loudDrop_drop(a$1);
+      console.log(`drop ${a$1[0]}`);
     }
   };
   const value$1 = some != null ? f$1(some) : undefined;
   if (some == null) {
-    loudDrop_drop(a$1);
+    console.log(`drop ${a$1[0]}`);
   }
   console.log(`map ${value$1 == null ? "None" : `Some(${value$1})`}`);
   const a$2 = [3];
@@ -58,12 +54,12 @@ function main() {
     try {
       return (x + Loud.get(a$2)) >>> 0;
     } finally {
-      loudDrop_drop(a$2);
+      console.log(`drop ${a$2[0]}`);
     }
   };
   const value$2 = none != null ? f$2(none) : undefined;
   if (none == null) {
-    loudDrop_drop(a$2);
+    console.log(`drop ${a$2[0]}`);
   }
   console.log(`and_then ${value$2 == null ? "None" : `Some(${value$2})`}`);
   const a$3 = [4];
@@ -71,12 +67,12 @@ function main() {
     try {
       return x > Loud.get(a$3);
     } finally {
-      loudDrop_drop(a$3);
+      console.log(`drop ${a$3[0]}`);
     }
   };
   const value$3 = none != null && f$3(none) ? none : undefined;
   if (none == null) {
-    loudDrop_drop(a$3);
+    console.log(`drop ${a$3[0]}`);
   }
   console.log(`filter ${value$3 == null ? "None" : `Some(${value$3})`}`);
   const a$4 = [5];
@@ -84,12 +80,12 @@ function main() {
     try {
       return x > Loud.get(a$4);
     } finally {
-      loudDrop_drop(a$4);
+      console.log(`drop ${a$4[0]}`);
     }
   };
   const value$4 = none != null && f$4(none);
   if (none == null) {
-    loudDrop_drop(a$4);
+    console.log(`drop ${a$4[0]}`);
   }
   console.log(`is_some_and ${value$4}`);
   const a$5 = [6];
@@ -97,12 +93,12 @@ function main() {
     try {
       return x > Loud.get(a$5);
     } finally {
-      loudDrop_drop(a$5);
+      console.log(`drop ${a$5[0]}`);
     }
   };
   const value$5 = none == null || f$5(none);
   if (none == null) {
-    loudDrop_drop(a$5);
+    console.log(`drop ${a$5[0]}`);
   }
   console.log(`is_none_or ${value$5}`);
   const a$6 = [7];
@@ -110,12 +106,12 @@ function main() {
     try {
       return (x + Loud.get(a$6)) >>> 0;
     } finally {
-      loudDrop_drop(a$6);
+      console.log(`drop ${a$6[0]}`);
     }
   };
   const value$6 = none != null ? f$6(none) : 0;
   if (none == null) {
-    loudDrop_drop(a$6);
+    console.log(`drop ${a$6[0]}`);
   }
   console.log(`map_or ${value$6}`);
   const a$7 = [8];
@@ -126,21 +122,21 @@ function main() {
           try {
             return (x + Loud.get(b)) >>> 0;
           } finally {
-            loudDrop_drop(b);
+            console.log(`drop ${b[0]}`);
           }
         })(some)
       : (() => {
           try {
             return Loud.get(a$7);
           } finally {
-            loudDrop_drop(a$7);
+            console.log(`drop ${a$7[0]}`);
           }
         })();
   if (some != null) {
-    loudDrop_drop(a$7);
+    console.log(`drop ${a$7[0]}`);
   }
   if (some == null) {
-    loudDrop_drop(b);
+    console.log(`drop ${b[0]}`);
   }
   console.log(`map_or_else ${value$7}`);
   const a$8 = [10];
@@ -150,11 +146,11 @@ function main() {
       try {
         return Loud.get(a$8);
       } finally {
-        loudDrop_drop(a$8);
+        console.log(`drop ${a$8[0]}`);
       }
     })();
   if (some != null) {
-    loudDrop_drop(a$8);
+    console.log(`drop ${a$8[0]}`);
   }
   console.log(`unwrap_or_else ${value$8}`);
   const a$9 = [24];
@@ -167,12 +163,12 @@ function main() {
             try {
               return Loud.get(a$9);
             } finally {
-              loudDrop_drop(a$9);
+              console.log(`drop ${a$9[0]}`);
             }
           })(),
         };
   if (some != null) {
-    loudDrop_drop(a$9);
+    console.log(`drop ${a$9[0]}`);
   }
   console.log(`ok_or_else ${value$9.TAG === "Ok" ? `Ok(${value$9._0})` : `Err(${value$9._0})`}`);
   const a$10 = [25];
@@ -182,11 +178,11 @@ function main() {
       try {
         return Loud.get(a$10);
       } finally {
-        loudDrop_drop(a$10);
+        console.log(`drop ${a$10[0]}`);
       }
     })();
   if (some != null) {
-    loudDrop_drop(a$10);
+    console.log(`drop ${a$10[0]}`);
   }
   console.log(`or_else ${value$10 == null ? "None" : `Some(${value$10})`}`);
   const a$11 = [26];
@@ -196,12 +192,12 @@ function main() {
         try {
           return Loud.get(a$11);
         } finally {
-          loudDrop_drop(a$11);
+          console.log(`drop ${a$11[0]}`);
         }
       })()
     : undefined;
   if (!condition) {
-    loudDrop_drop(a$11);
+    console.log(`drop ${a$11[0]}`);
   }
   console.log(`then ${value$11 == null ? "None" : `Some(${value$11})`}`);
   const a$12 = [27];
@@ -211,12 +207,12 @@ function main() {
         try {
           return Loud.get(a$12);
         } finally {
-          loudDrop_drop(a$12);
+          console.log(`drop ${a$12[0]}`);
         }
       })()
     : undefined;
   if (!condition$1) {
-    loudDrop_drop(a$12);
+    console.log(`drop ${a$12[0]}`);
   }
   console.log(`then ${value$12 == null ? "None" : `Some(${value$12})`}`);
   const ok = { TAG: "Ok", _0: 1 };
@@ -230,13 +226,13 @@ function main() {
             try {
               return (x + Loud.get(a$13)) >>> 0;
             } finally {
-              loudDrop_drop(a$13);
+              console.log(`drop ${a$13[0]}`);
             }
           })(err._0),
         }
       : err;
   if (err.TAG === "Err") {
-    loudDrop_drop(a$13);
+    console.log(`drop ${a$13[0]}`);
   }
   console.log(`map ${value$13.TAG === "Ok" ? `Ok(${value$13._0})` : `Err(${value$13._0})`}`);
   const a$14 = [12];
@@ -248,13 +244,13 @@ function main() {
             try {
               return (e + Loud.get(a$14)) >>> 0;
             } finally {
-              loudDrop_drop(a$14);
+              console.log(`drop ${a$14[0]}`);
             }
           })(ok._0),
         }
       : ok;
   if (ok.TAG === "Ok") {
-    loudDrop_drop(a$14);
+    console.log(`drop ${a$14[0]}`);
   }
   console.log(`map_err ${value$14.TAG === "Ok" ? `Ok(${value$14._0})` : `Err(${value$14._0})`}`);
   const a$15 = [13];
@@ -263,13 +259,13 @@ function main() {
     try {
       tmp = (x + Loud.get(a$15)) >>> 0;
     } finally {
-      loudDrop_drop(a$15);
+      console.log(`drop ${a$15[0]}`);
     }
     return { TAG: "Ok", _0: tmp };
   };
   const value$15 = err.TAG === "Ok" ? value$22(err._0) : err;
   if (err.TAG === "Err") {
-    loudDrop_drop(a$15);
+    console.log(`drop ${a$15[0]}`);
   }
   console.log(`and_then ${value$15.TAG === "Ok" ? `Ok(${value$15._0})` : `Err(${value$15._0})`}`);
   const a$16 = [14];
@@ -280,11 +276,11 @@ function main() {
           try {
             return (e + Loud.get(a$16)) >>> 0;
           } finally {
-            loudDrop_drop(a$16);
+            console.log(`drop ${a$16[0]}`);
           }
         })(ok._0);
   if (ok.TAG === "Ok") {
-    loudDrop_drop(a$16);
+    console.log(`drop ${a$16[0]}`);
   }
   console.log(`unwrap_or_else ${value$16}`);
   const a$17 = [15];
@@ -294,12 +290,12 @@ function main() {
           try {
             return (x + Loud.get(a$17)) >>> 0;
           } finally {
-            loudDrop_drop(a$17);
+            console.log(`drop ${a$17[0]}`);
           }
         })(err._0)
       : 0;
   if (err.TAG === "Err") {
-    loudDrop_drop(a$17);
+    console.log(`drop ${a$17[0]}`);
   }
   console.log(`map_or ${value$17}`);
   const a$18 = [16];
@@ -310,21 +306,21 @@ function main() {
           try {
             return (x + Loud.get(b$1)) >>> 0;
           } finally {
-            loudDrop_drop(b$1);
+            console.log(`drop ${b$1[0]}`);
           }
         })(ok._0)
       : ((e) => {
           try {
             return (e + Loud.get(a$18)) >>> 0;
           } finally {
-            loudDrop_drop(a$18);
+            console.log(`drop ${a$18[0]}`);
           }
         })(ok._0);
   if (ok.TAG === "Ok") {
-    loudDrop_drop(a$18);
+    console.log(`drop ${a$18[0]}`);
   }
   if (ok.TAG === "Err") {
-    loudDrop_drop(b$1);
+    console.log(`drop ${b$1[0]}`);
   }
   console.log(`map_or_else ${value$18}`);
   const a$19 = [18];
@@ -334,11 +330,11 @@ function main() {
       try {
         return x > Loud.get(a$19);
       } finally {
-        loudDrop_drop(a$19);
+        console.log(`drop ${a$19[0]}`);
       }
     })(err._0);
   if (err.TAG === "Err") {
-    loudDrop_drop(a$19);
+    console.log(`drop ${a$19[0]}`);
   }
   console.log(`is_ok_and ${value$19}`);
   const a$20 = [19];
@@ -348,11 +344,11 @@ function main() {
       try {
         return e > Loud.get(a$20);
       } finally {
-        loudDrop_drop(a$20);
+        console.log(`drop ${a$20[0]}`);
       }
     })(ok._0);
   if (ok.TAG === "Ok") {
-    loudDrop_drop(a$20);
+    console.log(`drop ${a$20[0]}`);
   }
   console.log(`is_err_and ${value$20}`);
   const a$21 = [28];
@@ -361,13 +357,13 @@ function main() {
     try {
       tmp = (e + Loud.get(a$21)) >>> 0;
     } finally {
-      loudDrop_drop(a$21);
+      console.log(`drop ${a$21[0]}`);
     }
     return { TAG: "Err", _0: tmp };
   };
   const value$21 = ok.TAG === "Ok" ? ok : value$23(ok._0);
   if (ok.TAG === "Ok") {
-    loudDrop_drop(a$21);
+    console.log(`drop ${a$21[0]}`);
   }
   console.log(`or_else ${value$21.TAG === "Ok" ? `Ok(${value$21._0})` : `Err(${value$21._0})`}`);
   const a$22 = [20];
@@ -378,11 +374,11 @@ function main() {
         try {
           return Loud.get(a$22);
         } finally {
-          loudDrop_drop(a$22);
+          console.log(`drop ${a$22[0]}`);
         }
       },
       (value) => {
-        loudDrop_drop(a$22);
+        console.log(`drop ${a$22[0]}`);
       },
     )}`,
   );
@@ -394,11 +390,11 @@ function main() {
         try {
           return Loud.get(a$23);
         } finally {
-          loudDrop_drop(a$23);
+          console.log(`drop ${a$23[0]}`);
         }
       },
       (value) => {
-        loudDrop_drop(a$23);
+        console.log(`drop ${a$23[0]}`);
       },
     )}`,
   );
@@ -412,7 +408,7 @@ function main() {
     a$24$live = false;
   } catch (error) {
     if (a$24$live) {
-      loudDrop_drop(a$24);
+      console.log(`drop ${a$24[0]}`);
     }
     throw error;
   }
@@ -423,12 +419,12 @@ function main() {
       try {
         return Loud.get(a$24);
       } finally {
-        loudDrop_drop(a$24);
+        console.log(`drop ${a$24[0]}`);
       }
     },
     undefined,
     (value) => {
-      loudDrop_drop(a$24);
+      console.log(`drop ${a$24[0]}`);
     },
   );
   const orInsertWith = $mutGet(entry._0[0], entry._0[1]);
@@ -439,13 +435,13 @@ function main() {
     try {
       return Loud.get(a$25);
     } finally {
-      loudDrop_drop(a$25);
+      console.log(`drop ${a$25[0]}`);
     }
   };
   if (slot == null) {
     slot = value$24();
   } else {
-    loudDrop_drop(a$25);
+    console.log(`drop ${a$25[0]}`);
   }
   console.log(`get_or_insert_with ${slot}`);
   console.log(`end ${$unwrap(counts.get("x"), "no entry found for key")}`);

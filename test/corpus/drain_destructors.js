@@ -6,10 +6,6 @@ export function entry() {
   main();
 }
 
-function nDrop_drop(n) {
-  console.log(`drop ${n[0]}`);
-}
-
 function ids(v) {
   return v.map((n) => n[0]);
 }
@@ -21,17 +17,17 @@ function main() {
     drain = $iter($drain(v, 6));
   } catch (error) {
     for (const item of v) {
-      nDrop_drop(item);
+      console.log(`drop ${item[0]}`);
     }
     throw error;
   }
   try {
     for (const item of drain) {
-      nDrop_drop(item);
+      console.log(`drop ${item[0]}`);
     }
   } catch (error) {
     for (const item of v) {
-      nDrop_drop(item);
+      console.log(`drop ${item[0]}`);
     }
     throw error;
   }
@@ -40,7 +36,7 @@ function main() {
     tmp = ids(v);
   } catch (error) {
     for (const item of v) {
-      nDrop_drop(item);
+      console.log(`drop ${item[0]}`);
     }
     throw error;
   }
@@ -48,7 +44,7 @@ function main() {
     console.log(`after statement [${tmp.join(", ")}]`);
   } catch (error) {
     for (const item of v) {
-      nDrop_drop(item);
+      console.log(`drop ${item[0]}`);
     }
     throw error;
   }
@@ -57,7 +53,7 @@ function main() {
     tmp$1 = $iter($drain(v, 0, 2));
   } catch (error) {
     for (const item of v) {
-      nDrop_drop(item);
+      console.log(`drop ${item[0]}`);
     }
     throw error;
   }
@@ -66,7 +62,7 @@ function main() {
     taken = tmp$1.toArray();
   } catch (error) {
     for (const item of v) {
-      nDrop_drop(item);
+      console.log(`drop ${item[0]}`);
     }
     throw error;
   }
@@ -77,10 +73,10 @@ function main() {
     tmp$3 = v;
   } catch (error) {
     for (const item of taken) {
-      nDrop_drop(item);
+      console.log(`drop ${item[0]}`);
     }
     for (const item of v) {
-      nDrop_drop(item);
+      console.log(`drop ${item[0]}`);
     }
     throw error;
   }
@@ -89,10 +85,10 @@ function main() {
     tmp$4 = ids(tmp$3);
   } catch (error) {
     for (const item of taken) {
-      nDrop_drop(item);
+      console.log(`drop ${item[0]}`);
     }
     for (const item of v) {
-      nDrop_drop(item);
+      console.log(`drop ${item[0]}`);
     }
     throw error;
   }
@@ -100,10 +96,10 @@ function main() {
     console.log(`taken [${tmp$2.join(", ")}] left [${tmp$4.join(", ")}]`);
   } catch (error) {
     for (const item of taken) {
-      nDrop_drop(item);
+      console.log(`drop ${item[0]}`);
     }
     for (const item of v) {
-      nDrop_drop(item);
+      console.log(`drop ${item[0]}`);
     }
     throw error;
   }
@@ -112,10 +108,10 @@ function main() {
     tmp$5 = $iter($drain(v, 1));
   } catch (error) {
     for (const item of taken) {
-      nDrop_drop(item);
+      console.log(`drop ${item[0]}`);
     }
     for (const item of v) {
-      nDrop_drop(item);
+      console.log(`drop ${item[0]}`);
     }
     throw error;
   }
@@ -126,13 +122,13 @@ function main() {
       tmp$6 = $next(iter);
     } catch (error) {
       for (const item of iter) {
-        nDrop_drop(item);
+        console.log(`drop ${item[0]}`);
       }
       for (const item of taken) {
-        nDrop_drop(item);
+        console.log(`drop ${item[0]}`);
       }
       for (const item of v) {
-        nDrop_drop(item);
+        console.log(`drop ${item[0]}`);
       }
       throw error;
     }
@@ -141,45 +137,45 @@ function main() {
       try {
         console.log(`got ${n[0]}`);
       } catch (error) {
-        nDrop_drop(n);
+        console.log(`drop ${n[0]}`);
         for (const item of iter) {
-          nDrop_drop(item);
+          console.log(`drop ${item[0]}`);
         }
         for (const item of taken) {
-          nDrop_drop(item);
+          console.log(`drop ${item[0]}`);
         }
         for (const item of v) {
-          nDrop_drop(item);
+          console.log(`drop ${item[0]}`);
         }
         throw error;
       }
       if (n[0] === 4) {
         try {
-          nDrop_drop(n);
+          console.log(`drop ${n[0]}`);
         } catch (error) {
           for (const item of iter) {
-            nDrop_drop(item);
+            console.log(`drop ${item[0]}`);
           }
           for (const item of taken) {
-            nDrop_drop(item);
+            console.log(`drop ${item[0]}`);
           }
           for (const item of v) {
-            nDrop_drop(item);
+            console.log(`drop ${item[0]}`);
           }
           throw error;
         }
       } else {
         try {
-          nDrop_drop(n);
+          console.log(`drop ${n[0]}`);
         } catch (error) {
           for (const item of iter) {
-            nDrop_drop(item);
+            console.log(`drop ${item[0]}`);
           }
           for (const item of taken) {
-            nDrop_drop(item);
+            console.log(`drop ${item[0]}`);
           }
           for (const item of v) {
-            nDrop_drop(item);
+            console.log(`drop ${item[0]}`);
           }
           throw error;
         }
@@ -188,14 +184,14 @@ function main() {
     }
     try {
       for (const item of iter) {
-        nDrop_drop(item);
+        console.log(`drop ${item[0]}`);
       }
     } catch (error) {
       for (const item of taken) {
-        nDrop_drop(item);
+        console.log(`drop ${item[0]}`);
       }
       for (const item of v) {
-        nDrop_drop(item);
+        console.log(`drop ${item[0]}`);
       }
       throw error;
     }
@@ -213,7 +209,7 @@ function main() {
           first = $next(d);
         } catch (error) {
           for (const item of d) {
-            nDrop_drop(item);
+            console.log(`drop ${item[0]}`);
           }
           throw error;
         }
@@ -223,38 +219,38 @@ function main() {
           console.log(`first ${value$1 == null ? "None" : `Some(${value$1})`}`);
         } catch (error) {
           if (first != null) {
-            nDrop_drop(first);
+            console.log(`drop ${first[0]}`);
           }
           for (const item of d) {
-            nDrop_drop(item);
+            console.log(`drop ${item[0]}`);
           }
           throw error;
         }
         try {
           for (const item of d) {
-            nDrop_drop(item);
+            console.log(`drop ${item[0]}`);
           }
           const length = w.length;
           console.log(`after drain ${length}`);
         } finally {
           if (first != null) {
-            nDrop_drop(first);
+            console.log(`drop ${first[0]}`);
           }
         }
         console.log("end");
       } finally {
         for (const item of w) {
-          nDrop_drop(item);
+          console.log(`drop ${item[0]}`);
         }
       }
     } finally {
       for (const item of taken) {
-        nDrop_drop(item);
+        console.log(`drop ${item[0]}`);
       }
     }
   } finally {
     for (const item of v) {
-      nDrop_drop(item);
+      console.log(`drop ${item[0]}`);
     }
   }
 }

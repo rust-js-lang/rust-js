@@ -50,11 +50,11 @@ function main() {
   );
   const total = deltaSum_sum($iter([[3n], [4n], [-1n]]));
   console.log(`${deltaDebug_fmt(total)}`);
-  const loud = [9];
+  const loud = 9;
   try {
-    console.log(`${loud[0]}`);
+    console.log(`${loud}`);
   } finally {
-    console.log(`drop ${loud[0]}`);
+    console.log(`drop ${loud}`);
   }
 }
 //# sourceMappingURL=case.js.map

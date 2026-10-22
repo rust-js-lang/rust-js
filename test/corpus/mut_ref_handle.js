@@ -25,17 +25,15 @@ function first(v) {
 function main() {
   let drops = 0;
   for (let i = 0; i < 2; i++) {
-    const _c = [
-      {
-        get value() {
-          return drops;
-        },
-        set value(value) {
-          drops = value;
-        },
+    const c = {
+      get value() {
+        return drops;
       },
-    ];
-    _c[0].value = (_c[0].value + 1) | 0;
+      set value(value) {
+        drops = value;
+      },
+    };
+    c.value = (c.value + 1) | 0;
   }
   console.log(`${drops}`);
 

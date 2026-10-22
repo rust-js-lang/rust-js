@@ -4,15 +4,11 @@ export function entry() {
   main();
 }
 
-function noisyDrop_drop(noisy) {
-  console.log(`drop ${noisy[0]}`);
-}
-
 function byValue(n) {
   try {
     console.log(`by value ${n[0]}`);
   } finally {
-    noisyDrop_drop(n);
+    console.log(`drop ${n[0]}`);
   }
 }
 
@@ -21,7 +17,7 @@ function byRef(_1) {
   try {
     console.log(`by ref ${n[0]}`);
   } finally {
-    noisyDrop_drop(_1);
+    console.log(`drop ${_1[0]}`);
   }
 }
 
@@ -29,7 +25,7 @@ function ignored(_1) {
   try {
     console.log("ignored");
   } finally {
-    noisyDrop_drop(_1);
+    console.log(`drop ${_1[0]}`);
   }
 }
 
@@ -40,13 +36,13 @@ function both(_1, _2, b) {
       try {
         console.log(`both ${a[0]} ${b[0]}`);
       } finally {
-        noisyDrop_drop(b);
+        console.log(`drop ${b[0]}`);
       }
     } finally {
-      noisyDrop_drop(_2);
+      console.log(`drop ${_2[0]}`);
     }
   } finally {
-    noisyDrop_drop(_1);
+    console.log(`drop ${_1[0]}`);
   }
 }
 
@@ -56,24 +52,24 @@ function main() {
   ignored(["c"]);
   both(["d"], ["e"], ["f"]);
   // A `let` that binds a new value by `ref` owns it too.
-  const kept = ["g"];
+  const kept = "g";
   const same = ["h"];
   const borrowed = same;
   // `let _ = x` doesn't move `x`, so its scope drops it.
-  const keptToo = ["i"];
+  const keptToo = "i";
   try {
     try {
       try {
-        console.log(`${kept[0]} ${borrowed[0]}`);
+        console.log(`${kept} ${borrowed[0]}`);
         console.log("end");
       } finally {
-        noisyDrop_drop(keptToo);
+        console.log(`drop ${keptToo}`);
       }
     } finally {
-      noisyDrop_drop(same);
+      console.log(`drop ${same[0]}`);
     }
   } finally {
-    noisyDrop_drop(kept);
+    console.log(`drop ${kept}`);
   }
 }
 //# sourceMappingURL=case.js.map

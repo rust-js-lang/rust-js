@@ -4,10 +4,6 @@ export function entry() {
   main();
 }
 
-function noisyDrop_drop(noisy) {
-  console.log(`drop ${noisy[0]}`);
-}
-
 function make(name) {
   console.log(`make ${name}`);
   return [name];
@@ -25,10 +21,10 @@ function three(a, b, n) {
     try {
       console.log(`three ${a[0]} ${b[0]}`);
     } finally {
-      noisyDrop_drop(b);
+      console.log(`drop ${b[0]}`);
     }
   } finally {
-    noisyDrop_drop(a);
+    console.log(`drop ${a[0]}`);
   }
   return n;
 }
@@ -39,15 +35,15 @@ function main() {
   try {
     tmp = make("b");
   } catch (error) {
-    noisyDrop_drop(noisy);
+    console.log(`drop ${noisy[0]}`);
     throw error;
   }
   let tmp$1;
   try {
     tmp$1 = third(false);
   } catch (error) {
-    noisyDrop_drop(tmp);
-    noisyDrop_drop(noisy);
+    console.log(`drop ${tmp[0]}`);
+    console.log(`drop ${noisy[0]}`);
     throw error;
   }
   console.log(`${three(noisy, tmp, tmp$1)}`);
@@ -56,15 +52,15 @@ function main() {
   try {
     tmp$2 = make("d");
   } catch (error) {
-    noisyDrop_drop(value);
+    console.log(`drop ${value[0]}`);
     throw error;
   }
   let tmp$3;
   try {
     tmp$3 = third(true);
   } catch (error) {
-    noisyDrop_drop(tmp$2);
-    noisyDrop_drop(value);
+    console.log(`drop ${tmp$2[0]}`);
+    console.log(`drop ${value[0]}`);
     throw error;
   }
   console.log(`${three(value, tmp$2, tmp$3)}`);

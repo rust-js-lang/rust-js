@@ -12,10 +12,6 @@ const Loud = {
   },
 };
 
-function loudDrop_drop(loud) {
-  console.log(`drop ${loud[0]}`);
-}
-
 function twice(f, dropF) {
   try {
     return (f(1) + f(2)) >>> 0;
@@ -43,7 +39,7 @@ function main() {
     `twice ${twice(
       (x) => (x + Loud.get(a)) >>> 0,
       (value) => {
-        loudDrop_drop(a);
+        console.log(`drop ${a[0]}`);
       },
     )}`,
   );
@@ -52,19 +48,19 @@ function main() {
   try {
     tmp = $iter([1, 2, 3]);
   } catch (error) {
-    loudDrop_drop(a$1);
+    console.log(`drop ${a$1[0]}`);
     throw error;
   }
   const value = (x) => x < Loud.get(a$1);
   const all = $lent(tmp).every((item) => value(item));
-  loudDrop_drop(a$1);
+  console.log(`drop ${a$1[0]}`);
   console.log(`all ${all}`);
   const a$2 = [3];
   console.log(
     `every ${every(
       (x) => x < Loud.get(a$2),
       (value) => {
-        loudDrop_drop(a$2);
+        console.log(`drop ${a$2[0]}`);
       },
     )}`,
   );
@@ -76,32 +72,32 @@ function main() {
     a$3$live = false;
   } catch (error) {
     if (a$3$live) {
-      loudDrop_drop(a$3);
+      console.log(`drop ${a$3[0]}`);
     }
     throw error;
   }
   const value$1 = (sum, x) => (((sum + x) >>> 0) + Loud.get(a$3)) >>> 0;
   const total = tmp$1.reduce((a, b) => value$1(a, b), 0);
-  loudDrop_drop(a$3);
+  console.log(`drop ${a$3[0]}`);
   console.log(`fold ${total}`);
   const a$4 = [5];
   const v = [3, 1, 2];
   v.sort((x, y) => $cmp($rem(x, Loud.get(a$4)) >>> 0, $rem(y, Loud.get(a$4)) >>> 0));
-  loudDrop_drop(a$4);
+  console.log(`drop ${a$4[0]}`);
   console.log(`sorted [${v.join(", ")}]`);
   const a$5 = [6];
   const read = () => Loud.get(a$5);
   try {
     console.log(`read ${read()}`);
   } catch (error) {
-    loudDrop_drop(a$5);
+    console.log(`drop ${a$5[0]}`);
     throw error;
   }
   console.log(
     `twice ${twice(
       (x) => (x + read()) >>> 0,
       (value) => {
-        loudDrop_drop(a$5);
+        console.log(`drop ${a$5[0]}`);
       },
     )}`,
   );

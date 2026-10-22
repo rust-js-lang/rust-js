@@ -539,6 +539,8 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0604 A binding as a value gives its arguments as its call does](decisions/0604-a-bindings-value-gives-what-its-call-gives.md)
 - [0605 Whether an arrow only passes on what it's given has one owner](decisions/0605-an-arrow-that-passes-on-has-one-owner.md)
 - [0606 A blank line before an item's attributes is before the item](decisions/0606-a-blank-line-before-attributes.md)
+- [0607 A variable's field is given a call's value in place](decisions/0607-a-field-is-given-a-call-in-place.md)
+- [0608 A `Drop` is its body at each drop](decisions/0608-a-drop-is-its-body-at-each-drop.md)
 - [0436 Every `dyn` that's a pair keeps its value's drop, `dyn Send` too](decisions/0436-every-dyn-keeps-its-drop.md)
 - [0437 A scope's drops on a panic are one `try { .. } finally { .. }`](decisions/0437-a-scopes-drops-are-one-finally.md)
 - [0438 An optional prop is given `Some(..)`, or left out](decisions/0438-an-optional-prop-is-given-some.md)

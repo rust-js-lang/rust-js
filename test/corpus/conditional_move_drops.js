@@ -4,15 +4,11 @@ export function entry() {
   main();
 }
 
-function noisyDrop_drop(noisy) {
-  console.log(`drop ${noisy[0]}`);
-}
-
 function take(n) {
   try {
     console.log(`took ${n[0]}`);
   } finally {
-    noisyDrop_drop(n);
+    console.log(`drop ${n[0]}`);
   }
 }
 
@@ -30,7 +26,7 @@ function main() {
       console.log(`end of ${give}`);
     } finally {
       if (n$live) {
-        noisyDrop_drop(n);
+        console.log(`drop ${n[0]}`);
       }
     }
     n$live = false;

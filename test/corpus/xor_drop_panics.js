@@ -4,22 +4,21 @@ export function entry() {
   main();
 }
 
-function loudDrop_drop(loud) {
-  console.log(`drop ${loud[0]}`);
-  if (loud[1]) {
-    throw new Error(`boom ${loud[0]}`);
-  }
-}
-
 function main() {
   const option = [5, false];
   const other = [6, false];
   const calm = option != null ? (other == null ? option : undefined) : other;
   if (option != null && other != null) {
     try {
-      loudDrop_drop(option);
+      console.log(`drop ${option[0]}`);
+      if (option[1]) {
+        throw new Error(`boom ${option[0]}`);
+      }
     } finally {
-      loudDrop_drop(other);
+      console.log(`drop ${other[0]}`);
+      if (other[1]) {
+        throw new Error(`boom ${other[0]}`);
+      }
     }
   }
   try {
@@ -29,9 +28,15 @@ function main() {
     const value = option != null ? (other == null ? option : undefined) : other;
     if (option != null && other != null) {
       try {
-        loudDrop_drop(option);
+        console.log(`drop ${option[0]}`);
+        if (option[1]) {
+          throw new Error(`boom ${option[0]}`);
+        }
       } finally {
-        loudDrop_drop(other);
+        console.log(`drop ${other[0]}`);
+        if (other[1]) {
+          throw new Error(`boom ${other[0]}`);
+        }
       }
     }
     const x = value;
@@ -39,12 +44,18 @@ function main() {
       console.log(`unreached ${!x}`);
     } finally {
       if (x != null) {
-        loudDrop_drop(x);
+        console.log(`drop ${x[0]}`);
+        if (x[1]) {
+          throw new Error(`boom ${x[0]}`);
+        }
       }
     }
   } finally {
     if (calm != null) {
-      loudDrop_drop(calm);
+      console.log(`drop ${calm[0]}`);
+      if (calm[1]) {
+        throw new Error(`boom ${calm[0]}`);
+      }
     }
   }
 }

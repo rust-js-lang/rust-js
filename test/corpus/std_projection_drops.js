@@ -22,10 +22,6 @@ function drainIterator_next(drain) {
   return $next(drain.rest);
 }
 
-function drainDrop_drop(drain) {
-  console.log(`drain dropped, ${drain.rest.end - drain.rest.at} left`);
-}
-
 /** Its first, and the iterator dropped, with what it hasn't given. */
 function first(items, dropIIntoIter) {
   const it = $intoIter(items);
@@ -156,7 +152,7 @@ function main() {
     const value$1 = [["d"], ["e"], ["f"]];
     const rest = $iter(value$1);
     const found$1 = relay($iterator({ rest }, drainIterator_next), (it) => {
-      drainDrop_drop(it.of);
+      console.log(`drain dropped, ${it.of.rest.end - it.of.rest.at} left`);
       for (const item of it.of.rest) {
         loudDrop_drop(item);
       }
@@ -182,13 +178,13 @@ function main() {
           bag,
           $iterator({ rest }, drainIterator_next),
           (it) => {
-            drainDrop_drop(it.of);
+            console.log(`drain dropped, ${it.of.rest.end - it.of.rest.at} left`);
             for (const item of it.of.rest) {
               loudDrop_drop(item);
             }
           },
           (it) => {
-            drainDrop_drop(it.of);
+            console.log(`drain dropped, ${it.of.rest.end - it.of.rest.at} left`);
             for (const item of it.of.rest) {
               loudDrop_drop(item);
             }

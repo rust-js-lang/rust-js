@@ -1,12 +1,12 @@
-//! A `Drop` impl's body where its one drop is (ADR 0588).
+//! A `Drop` impl's body where it's dropped (ADRs 0589, 0608).
 
 use crate::js::{self, Expr, ExprKind, Item, Pattern, Prop, Stmt, StmtKind};
 use std::collections::HashSet;
 
 /// Of `items`, a module's, each function `drops` names, a `Drop` impl's
-/// `drop`, which isn't exported, that no other module calls and that's
-/// called once here, as a
-/// statement: its body there, as a closure called where it's made is
+/// `drop`, which isn't exported and that no other module calls: where each
+/// of its calls is a statement whose place its body fits, a closure's too,
+/// its body there, as a closure called where it's made is
 /// (`js::applied_call`), and the function gone. The guard it's given, made
 /// there of its fields and only read by them, is its fields:
 ///
@@ -35,35 +35,68 @@ pub(in crate::lower) fn inlined_drops(items: &mut Vec<Item>, drops: &HashSet<Str
                 false => mentions_in_item(item, name),
             })
             .sum();
-        if mentions != 1 {
-            continue;
-        }
-        let mut inlined = false;
+        // Each drop its body, where each is a call as a statement (ADR
+        // 0589): each function's body made so, then, where every mention is
+        // one, set.
+        let mut bodies = Vec::new();
+        let mut inlined = 0;
+        let mut each = true;
         for (i, item) in items.iter_mut().enumerate() {
-            if i == at || inlined {
+            if i == at {
                 continue;
             }
             each_function(item, &mut |function| {
-                if inlined || js::mentions_in(&function.body, name) == 0 {
+                if js::mentions_in(&function.body, name) == 0 {
                     return;
                 }
-                let whole = function.body.clone();
-                let mut given = None;
-                js::statement_lists(&mut function.body, &mut |stmts| {
-                    let Some(k) = stmts.iter().position(|s| calls(s, name)) else {
-                        return;
-                    };
-                    if let Some(block) = js::applied_call(&stmts[k], &whole, &params, &body) {
-                        given = argument(&stmts[k]);
-                        stmts.splice(k..=k, block);
-                        inlined = true;
+                let mut made = function.body.clone();
+                let mut given = Vec::new();
+                loop {
+                    let whole = made.clone();
+                    let mut done = false;
+                    js::each_block_mut(&mut made, &mut |stmts| {
+                        if done {
+                            return;
+                        }
+                        let Some(k) = stmts.iter().position(|s| calls(s, name)) else {
+                            return;
+                        };
+                        match js::applied_call(&stmts[k], &whole, &params, &body) {
+                            Some(block) => {
+                                given.extend(argument(&stmts[k]));
+                                stmts.splice(k..=k, block);
+                                inlined += 1;
+                            }
+                            None => each = false,
+                        }
+                        done = true;
+                    });
+                    if !done || !each {
+                        break;
                     }
-                });
-                if let Some(guard) = given {
-                    fields_of(&mut function.body, &function.params, &guard);
+                }
+                for guard in given {
+                    fields_of(&mut made, &function.params, &guard);
+                    one_field_of(&mut made, &guard);
+                }
+                bodies.push(made);
+            });
+        }
+        if !each || inlined == 0 || inlined != mentions {
+            continue;
+        }
+        let mut bodies = bodies.into_iter();
+        for (i, item) in items.iter_mut().enumerate() {
+            if i == at {
+                continue;
+            }
+            each_function(item, &mut |function| {
+                if js::mentions_in(&function.body, name) > 0 {
+                    function.body = bodies.next().expect("one made of each");
                 }
             });
         }
+        let inlined = true;
         if inlined {
             items.remove(at);
         }
@@ -113,11 +146,12 @@ fn argument(stmt: &Stmt) -> Option<String> {
 }
 
 /// `const guard = { a: x, b: y };` of `body`, each of whose reads is of a
-/// field, `guard.a`, none written: `const a = x; const b = y;`, read as
-/// `a`, where no other name of the function is a field's.
+/// field, `guard.a`: `const a = x; const b = y;`, read as `a`, a `let` of
+/// one written, `let hasMoreWork = true;`, where no other name of the
+/// function is a field's.
 fn fields_of(body: &mut Vec<Stmt>, params: &[Pattern], guard: &str) {
     let mut made = None;
-    js::statement_lists(body, &mut |stmts| {
+    js::each_block_mut(body, &mut |stmts| {
         if made.is_none()
             && let Some(k) = stmts
                 .iter()
@@ -147,14 +181,19 @@ fn fields_of(body: &mut Vec<Stmt>, params: &[Pattern], guard: &str) {
             reads += 1;
         }
     });
-    let mut written = false;
+    // Each field written through it, a `let` of its own.
+    let mut written = HashSet::new();
     js::each_block_mut(&mut stmts, &mut |list| {
-        written |= list.iter().any(|s| {
-            matches!(&s.kind, StmtKind::Assign(t, _) | StmtKind::Compound(_, t, _)
-                if matches!(&t.kind, ExprKind::Member(of, _) if matches!(&of.kind, ExprKind::Var(v) if v == guard)))
-        });
+        for s in list.iter() {
+            if let StmtKind::Assign(t, _) | StmtKind::Compound(_, t, _) = &s.kind
+                && let ExprKind::Member(of, key) = &t.kind
+                && matches!(&of.kind, ExprKind::Var(v) if v == guard)
+            {
+                written.insert(key.clone());
+            }
+        }
     });
-    if written || reads != js::mentions_in(body, guard) {
+    if reads != js::mentions_in(body, guard) {
         return;
     }
     let mut names = HashSet::new();
@@ -173,14 +212,74 @@ fn fields_of(body: &mut Vec<Stmt>, params: &[Pattern], guard: &str) {
             *e = Expr::var(key).or_at(e.span);
         }
     });
-    js::statement_lists(body, &mut |stmts| {
+    js::each_block_mut(body, &mut |stmts| {
         if let Some(k) = stmts
             .iter()
             .position(|s| matches!(&s.kind, StmtKind::Const(n, _) if n == guard))
         {
             let span = stmts[k].span;
-            let consts = (fields.iter()).map(|(key, value)| StmtKind::Const(key.clone(), value.clone()).at(span));
+            let consts = (fields.iter()).map(|(key, value)| match written.contains(key) {
+                true => StmtKind::Let(key.clone(), Some(value.clone())).at(span),
+                false => StmtKind::Const(key.clone(), value.clone()).at(span),
+            });
             stmts.splice(k..=k, consts.collect::<Vec<_>>());
+        }
+    });
+}
+
+/// `const guard = [x];`, a one-field tuple struct's guard, each of whose
+/// reads is `guard[0]`, none written: `const guard = x;`, read as `guard`,
+/// the field it's of (ADR 0608).
+fn one_field_of(body: &mut Vec<Stmt>, guard: &str) {
+    let mut made = false;
+    js::each_block_mut(body, &mut |stmts| {
+        made |= stmts.iter().any(|s| {
+            matches!(&s.kind, StmtKind::Const(n, value)
+                if n == guard && matches!(&value.kind, ExprKind::Array(items) if items.len() == 1))
+        });
+    });
+    if !made {
+        return;
+    }
+    let field = |e: &Expr| {
+        matches!(&e.kind, ExprKind::Index(of, at)
+            if matches!(&of.kind, ExprKind::Var(v) if v == guard) && at.as_int() == Some(0))
+    };
+    let mut reads = 0;
+    let mut written = false;
+    let mut stmts = body.clone();
+    js::each_expr_mut(&mut stmts, &mut |e| reads += usize::from(field(e)));
+    js::each_block_mut(&mut stmts, &mut |list| {
+        written |= list
+            .iter()
+            .any(|s| matches!(&s.kind, StmtKind::Assign(t, _) | StmtKind::Compound(_, t, _) if field(t)));
+    });
+    if written || reads != js::mentions_in(body, guard) {
+        return;
+    }
+    // Read now, so not by Rust's name for what's only dropped, `_restore`,
+    // where `restore` is free.
+    let mut names = HashSet::new();
+    js::names_in(body, &mut names);
+    let read = match guard.trim_start_matches('_') {
+        free if !free.is_empty() && !names.contains(free) => free.to_string(),
+        _ => guard.to_string(),
+    };
+    js::each_expr_mut(body, &mut |e| {
+        if field(e) {
+            *e = Expr::var(&read).or_at(e.span);
+        }
+    });
+    js::each_block_mut(body, &mut |stmts| {
+        for s in stmts.iter_mut() {
+            if let StmtKind::Const(n, value) = &mut s.kind
+                && n == guard
+                && let ExprKind::Array(items) = &mut value.kind
+                && items.len() == 1
+            {
+                *n = read.clone();
+                *value = items.remove(0);
+            }
         }
     });
 }

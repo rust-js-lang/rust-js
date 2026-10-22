@@ -6,10 +6,6 @@ export function entry() {
   main();
 }
 
-function noisyDrop_drop(noisy) {
-  console.log(`drop ${noisy[0]}`);
-}
-
 function callOnce(f, dropF) {
   try {
     console.log("calling");
@@ -34,19 +30,19 @@ function run(f) {
 
 function main() {
   let maybe$live = false;
-  const a = ["a"];
+  const a = "a";
   const tick = () => {
     try {
-      console.log(`tick ${a[0]}`);
+      console.log(`tick ${a}`);
     } finally {
-      noisyDrop_drop(a);
+      console.log(`drop ${a}`);
     }
     return 1;
   };
   try {
     console.log("before");
   } catch (error) {
-    noisyDrop_drop(a);
+    console.log(`drop ${a}`);
     throw error;
   }
   let tick$live = false;
@@ -62,25 +58,25 @@ function main() {
       try {
         console.log(`once ${kept[0]} ${held[0]}`);
       } finally {
-        noisyDrop_drop(kept);
+        console.log(`drop ${kept[0]}`);
       }
     } finally {
-      noisyDrop_drop(c);
+      console.log(`drop ${c[0]}`);
     }
     return 2;
   };
   console.log(`${once()}`);
-  const d = ["d"];
+  const d = "d";
   const d2 = ["d2"];
   try {
     console.log("made");
   } catch (error) {
-    noisyDrop_drop(d);
-    noisyDrop_drop(d2);
+    console.log(`drop ${d}`);
+    console.log(`drop ${d2[0]}`);
     throw error;
   }
-  noisyDrop_drop(d);
-  noisyDrop_drop(d2);
+  console.log(`drop ${d}`);
+  console.log(`drop ${d2[0]}`);
 
   const p = ["p"];
   const q = ["q"];
@@ -90,19 +86,19 @@ function main() {
     try {
       console.log(`both ${x[0]} ${y[0]}`);
     } catch (error) {
-      noisyDrop_drop(p);
-      noisyDrop_drop(q);
+      console.log(`drop ${p[0]}`);
+      console.log(`drop ${q[0]}`);
       throw error;
     }
-    noisyDrop_drop(p);
-    noisyDrop_drop(q);
+    console.log(`drop ${p[0]}`);
+    console.log(`drop ${q[0]}`);
   });
 
   let r = ["r1"];
   const captured = r;
   const take = () => {
     try {
-      noisyDrop_drop(captured);
+      console.log(`drop ${captured[0]}`);
     } catch (error) {
       throw error;
     }
@@ -112,41 +108,41 @@ function main() {
   try {
     take();
   } catch (error) {
-    noisyDrop_drop(r);
+    console.log(`drop ${r[0]}`);
     throw error;
   }
   try {
     console.log(`${r[0]}`);
   } catch (error) {
-    noisyDrop_drop(r);
+    console.log(`drop ${r[0]}`);
     throw error;
   }
   const e = ["e"];
   const value = () => {
     const x = e;
     const result = $byteLen(x[0]);
-    noisyDrop_drop(x);
+    console.log(`drop ${x[0]}`);
     return result;
   };
   let tmp;
   try {
     tmp = callOnce(value, (value) => {
-      noisyDrop_drop(e);
+      console.log(`drop ${e[0]}`);
     });
   } catch (error) {
-    noisyDrop_drop(r);
+    console.log(`drop ${r[0]}`);
     throw error;
   }
   try {
     console.log(`${tmp}`);
   } catch (error) {
-    noisyDrop_drop(r);
+    console.log(`drop ${r[0]}`);
     throw error;
   }
-  const f = ["f"];
+  const f = "f";
   const value$1 = () => {
     try {
-      noisyDrop_drop(f);
+      console.log(`drop ${f}`);
     } catch (error) {
       throw error;
     }
@@ -154,10 +150,10 @@ function main() {
   };
   try {
     keep(value$1, (value) => {
-      noisyDrop_drop(f);
+      console.log(`drop ${f}`);
     });
   } catch (error) {
-    noisyDrop_drop(r);
+    console.log(`drop ${r[0]}`);
     throw error;
   }
   const g = ["g"];
@@ -169,30 +165,30 @@ function main() {
   try {
     tmp$1 = read();
   } catch (error) {
-    noisyDrop_drop(g);
-    noisyDrop_drop(r);
+    console.log(`drop ${g[0]}`);
+    console.log(`drop ${r[0]}`);
     throw error;
   }
   try {
     console.log(`${tmp$1} ${read()}`);
   } catch (error) {
-    noisyDrop_drop(g);
-    noisyDrop_drop(r);
+    console.log(`drop ${g[0]}`);
+    console.log(`drop ${r[0]}`);
     throw error;
   }
   try {
-    noisyDrop_drop(g);
+    console.log(`drop ${g[0]}`);
   } catch (error) {
-    noisyDrop_drop(r);
+    console.log(`drop ${r[0]}`);
     throw error;
   }
 
   for (let i = 0; i < 2; i++) {
-    const h = [i === 0 ? "h0" : "h1"];
+    const h = i === 0 ? "h0" : "h1";
     maybe$live = true;
     const maybe = () => {
       try {
-        noisyDrop_drop(h);
+        console.log(`drop ${h}`);
       } catch (error) {
         throw error;
       }
@@ -202,9 +198,9 @@ function main() {
       try {
         maybe();
       } catch (error) {
-        noisyDrop_drop(r);
+        console.log(`drop ${r[0]}`);
         if (tick$live) {
-          noisyDrop_drop(a);
+          console.log(`drop ${a}`);
         }
         throw error;
       }
@@ -213,22 +209,22 @@ function main() {
       console.log(`loop ${i}`);
     } catch (error) {
       if (maybe$live) {
-        noisyDrop_drop(h);
+        console.log(`drop ${h}`);
       }
-      noisyDrop_drop(r);
+      console.log(`drop ${r[0]}`);
       if (tick$live) {
-        noisyDrop_drop(a);
+        console.log(`drop ${a}`);
       }
       throw error;
     }
     try {
       if (maybe$live) {
-        noisyDrop_drop(h);
+        console.log(`drop ${h}`);
       }
     } catch (error) {
-      noisyDrop_drop(r);
+      console.log(`drop ${r[0]}`);
       if (tick$live) {
-        noisyDrop_drop(a);
+        console.log(`drop ${a}`);
       }
       throw error;
     }
@@ -237,17 +233,17 @@ function main() {
   try {
     console.log("end");
   } catch (error) {
-    noisyDrop_drop(r);
+    console.log(`drop ${r[0]}`);
     if (tick$live) {
-      noisyDrop_drop(a);
+      console.log(`drop ${a}`);
     }
     throw error;
   }
   try {
-    noisyDrop_drop(r);
+    console.log(`drop ${r[0]}`);
   } catch (error) {
     if (tick$live) {
-      noisyDrop_drop(a);
+      console.log(`drop ${a}`);
     }
     throw error;
   }
