@@ -774,6 +774,9 @@ released any more: `rust-js build` is the one way to build an app.
   that must be another, as Next.js's `unstable_paramMatching`, says so
   with `#[rust_js::name]`. Std's dictionaries and the runtime's are keyed
   the same way, `{ asRef }`, `hasher.writeU32(n)`.
+- **A `#[rust_js::name]` that repeats its item's own JS name is an error**
+  (ADR 0573 amended): `#[rust_js::name = "sortIndex"]` of `sort_index`
+  says nothing rust-js doesn't, and the crates' 1,700 such are gone.
 - **`rev()` of what knows its back is `$rev(it)`**, not `$iterator(it,
   $nextBackSome, true)` (ADR 0516).
 - **No list with holes**: `println!("{:?} {:?}", f(a), g(b))` reads `g(b)`

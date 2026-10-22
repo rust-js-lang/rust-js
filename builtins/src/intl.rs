@@ -73,7 +73,6 @@ pub enum RangeSource {
 /// A JS object of these fields, a `None` one not given: `..Default::default()` the rest.
 #[derive(Default)]
 pub struct SupportedLocalesOptions {
-    #[cfg_attr(rust_js, rust_js::name = "localeMatcher")]
     pub locale_matcher: Option<LocaleMatcher>,
 }
 
@@ -133,14 +132,11 @@ pub enum Sensitivity {
 #[derive(Default)]
 pub struct CollatorOptions<'a> {
     pub usage: Option<CollatorUsage>,
-    #[cfg_attr(rust_js, rust_js::name = "localeMatcher")]
     pub locale_matcher: Option<LocaleMatcher>,
     pub numeric: Option<bool>,
-    #[cfg_attr(rust_js, rust_js::name = "caseFirst")]
     pub case_first: Option<CaseFirst>,
     pub sensitivity: Option<Sensitivity>,
     pub collation: Option<&'a str>,
-    #[cfg_attr(rust_js, rust_js::name = "ignorePunctuation")]
     pub ignore_punctuation: Option<bool>,
 }
 
@@ -150,10 +146,8 @@ pub struct ResolvedCollatorOptions {
     pub locale: String,
     pub usage: CollatorUsage,
     pub sensitivity: Sensitivity,
-    #[cfg_attr(rust_js, rust_js::name = "ignorePunctuation")]
     pub ignore_punctuation: bool,
     pub collation: String,
-    #[cfg_attr(rust_js, rust_js::name = "caseFirst")]
     pub case_first: CaseFirst,
     pub numeric: bool,
 }
@@ -372,43 +366,26 @@ pub enum NumberFormatPartType {
 /// A JS object of these fields, a `None` one not given: `..Default::default()` the rest.
 #[derive(Default)]
 pub struct NumberFormatOptions<'a> {
-    #[cfg_attr(rust_js, rust_js::name = "localeMatcher")]
     pub locale_matcher: Option<LocaleMatcher>,
     pub style: Option<NumberStyle>,
     pub currency: Option<&'a str>,
-    #[cfg_attr(rust_js, rust_js::name = "currencyDisplay")]
     pub currency_display: Option<CurrencyDisplay>,
-    #[cfg_attr(rust_js, rust_js::name = "useGrouping")]
     pub use_grouping: Option<UseGrouping>,
-    #[cfg_attr(rust_js, rust_js::name = "minimumIntegerDigits")]
     pub minimum_integer_digits: Option<u32>,
-    #[cfg_attr(rust_js, rust_js::name = "minimumFractionDigits")]
     pub minimum_fraction_digits: Option<u32>,
-    #[cfg_attr(rust_js, rust_js::name = "maximumFractionDigits")]
     pub maximum_fraction_digits: Option<u32>,
-    #[cfg_attr(rust_js, rust_js::name = "minimumSignificantDigits")]
     pub minimum_significant_digits: Option<u32>,
-    #[cfg_attr(rust_js, rust_js::name = "maximumSignificantDigits")]
     pub maximum_significant_digits: Option<u32>,
-    #[cfg_attr(rust_js, rust_js::name = "numberingSystem")]
     pub numbering_system: Option<&'a str>,
-    #[cfg_attr(rust_js, rust_js::name = "compactDisplay")]
     pub compact_display: Option<CompactDisplay>,
     pub notation: Option<Notation>,
-    #[cfg_attr(rust_js, rust_js::name = "signDisplay")]
     pub sign_display: Option<SignDisplay>,
     pub unit: Option<&'a str>,
-    #[cfg_attr(rust_js, rust_js::name = "unitDisplay")]
     pub unit_display: Option<Style>,
-    #[cfg_attr(rust_js, rust_js::name = "currencySign")]
     pub currency_sign: Option<CurrencySign>,
-    #[cfg_attr(rust_js, rust_js::name = "roundingPriority")]
     pub rounding_priority: Option<RoundingPriority>,
-    #[cfg_attr(rust_js, rust_js::name = "roundingIncrement")]
     pub rounding_increment: Option<u32>,
-    #[cfg_attr(rust_js, rust_js::name = "roundingMode")]
     pub rounding_mode: Option<RoundingMode>,
-    #[cfg_attr(rust_js, rust_js::name = "trailingZeroDisplay")]
     pub trailing_zero_display: Option<TrailingZeroDisplay>,
 }
 
@@ -416,41 +393,25 @@ pub struct NumberFormatOptions<'a> {
 #[derive(Clone, Debug, PartialEq)]
 pub struct ResolvedNumberFormatOptions {
     pub locale: String,
-    #[cfg_attr(rust_js, rust_js::name = "numberingSystem")]
     pub numbering_system: String,
     pub style: NumberStyle,
     pub currency: Option<String>,
-    #[cfg_attr(rust_js, rust_js::name = "currencyDisplay")]
     pub currency_display: Option<CurrencyDisplay>,
-    #[cfg_attr(rust_js, rust_js::name = "minimumIntegerDigits")]
     pub minimum_integer_digits: u32,
-    #[cfg_attr(rust_js, rust_js::name = "minimumFractionDigits")]
     pub minimum_fraction_digits: Option<u32>,
-    #[cfg_attr(rust_js, rust_js::name = "maximumFractionDigits")]
     pub maximum_fraction_digits: Option<u32>,
-    #[cfg_attr(rust_js, rust_js::name = "minimumSignificantDigits")]
     pub minimum_significant_digits: Option<u32>,
-    #[cfg_attr(rust_js, rust_js::name = "maximumSignificantDigits")]
     pub maximum_significant_digits: Option<u32>,
-    #[cfg_attr(rust_js, rust_js::name = "useGrouping")]
     pub use_grouping: UseGrouping,
-    #[cfg_attr(rust_js, rust_js::name = "compactDisplay")]
     pub compact_display: Option<CompactDisplay>,
     pub notation: Notation,
-    #[cfg_attr(rust_js, rust_js::name = "signDisplay")]
     pub sign_display: SignDisplay,
     pub unit: Option<String>,
-    #[cfg_attr(rust_js, rust_js::name = "unitDisplay")]
     pub unit_display: Option<Style>,
-    #[cfg_attr(rust_js, rust_js::name = "currencySign")]
     pub currency_sign: Option<CurrencySign>,
-    #[cfg_attr(rust_js, rust_js::name = "roundingPriority")]
     pub rounding_priority: RoundingPriority,
-    #[cfg_attr(rust_js, rust_js::name = "roundingMode")]
     pub rounding_mode: RoundingMode,
-    #[cfg_attr(rust_js, rust_js::name = "roundingIncrement")]
     pub rounding_increment: u32,
-    #[cfg_attr(rust_js, rust_js::name = "trailingZeroDisplay")]
     pub trailing_zero_display: TrailingZeroDisplay,
 }
 
@@ -629,7 +590,6 @@ pub enum DateTimeFormatPartType {
 /// A JS object of these fields, a `None` one not given: `..Default::default()` the rest.
 #[derive(Default)]
 pub struct DateTimeFormatOptions<'a> {
-    #[cfg_attr(rust_js, rust_js::name = "localeMatcher")]
     pub locale_matcher: Option<LocaleMatcher>,
     pub weekday: Option<Style>,
     pub era: Option<Style>,
@@ -639,25 +599,16 @@ pub struct DateTimeFormatOptions<'a> {
     pub hour: Option<NumericStyle>,
     pub minute: Option<NumericStyle>,
     pub second: Option<NumericStyle>,
-    #[cfg_attr(rust_js, rust_js::name = "timeZoneName")]
     pub time_zone_name: Option<TimeZoneNameStyle>,
-    #[cfg_attr(rust_js, rust_js::name = "formatMatcher")]
     pub format_matcher: Option<FormatMatcher>,
     pub hour12: Option<bool>,
-    #[cfg_attr(rust_js, rust_js::name = "timeZone")]
     pub time_zone: Option<&'a str>,
     pub calendar: Option<&'a str>,
-    #[cfg_attr(rust_js, rust_js::name = "dayPeriod")]
     pub day_period: Option<Style>,
-    #[cfg_attr(rust_js, rust_js::name = "numberingSystem")]
     pub numbering_system: Option<&'a str>,
-    #[cfg_attr(rust_js, rust_js::name = "dateStyle")]
     pub date_style: Option<DateTimeStyle>,
-    #[cfg_attr(rust_js, rust_js::name = "timeStyle")]
     pub time_style: Option<DateTimeStyle>,
-    #[cfg_attr(rust_js, rust_js::name = "hourCycle")]
     pub hour_cycle: Option<HourCycle>,
-    #[cfg_attr(rust_js, rust_js::name = "fractionalSecondDigits")]
     pub fractional_second_digits: Option<u32>,
 }
 
@@ -666,9 +617,7 @@ pub struct DateTimeFormatOptions<'a> {
 pub struct ResolvedDateTimeFormatOptions {
     pub locale: String,
     pub calendar: String,
-    #[cfg_attr(rust_js, rust_js::name = "numberingSystem")]
     pub numbering_system: String,
-    #[cfg_attr(rust_js, rust_js::name = "timeZone")]
     pub time_zone: String,
     pub hour12: Option<bool>,
     pub weekday: Option<Style>,
@@ -679,19 +628,12 @@ pub struct ResolvedDateTimeFormatOptions {
     pub hour: Option<NumericStyle>,
     pub minute: Option<NumericStyle>,
     pub second: Option<NumericStyle>,
-    #[cfg_attr(rust_js, rust_js::name = "timeZoneName")]
     pub time_zone_name: Option<TimeZoneNameStyle>,
-    #[cfg_attr(rust_js, rust_js::name = "formatMatcher")]
     pub format_matcher: Option<FormatMatcher>,
-    #[cfg_attr(rust_js, rust_js::name = "dateStyle")]
     pub date_style: Option<DateTimeStyle>,
-    #[cfg_attr(rust_js, rust_js::name = "timeStyle")]
     pub time_style: Option<DateTimeStyle>,
-    #[cfg_attr(rust_js, rust_js::name = "hourCycle")]
     pub hour_cycle: Option<HourCycle>,
-    #[cfg_attr(rust_js, rust_js::name = "dayPeriod")]
     pub day_period: Option<Style>,
-    #[cfg_attr(rust_js, rust_js::name = "fractionalSecondDigits")]
     pub fractional_second_digits: Option<u32>,
 }
 
@@ -792,18 +734,12 @@ pub enum PluralRuleType {
 /// A JS object of these fields, a `None` one not given: `..Default::default()` the rest.
 #[derive(Default)]
 pub struct PluralRulesOptions {
-    #[cfg_attr(rust_js, rust_js::name = "localeMatcher")]
     pub locale_matcher: Option<LocaleMatcher>,
     pub r#type: Option<PluralRuleType>,
-    #[cfg_attr(rust_js, rust_js::name = "minimumIntegerDigits")]
     pub minimum_integer_digits: Option<u32>,
-    #[cfg_attr(rust_js, rust_js::name = "minimumFractionDigits")]
     pub minimum_fraction_digits: Option<u32>,
-    #[cfg_attr(rust_js, rust_js::name = "maximumFractionDigits")]
     pub maximum_fraction_digits: Option<u32>,
-    #[cfg_attr(rust_js, rust_js::name = "minimumSignificantDigits")]
     pub minimum_significant_digits: Option<u32>,
-    #[cfg_attr(rust_js, rust_js::name = "maximumSignificantDigits")]
     pub maximum_significant_digits: Option<u32>,
 }
 
@@ -811,18 +747,12 @@ pub struct PluralRulesOptions {
 #[derive(Clone, Debug, PartialEq)]
 pub struct ResolvedPluralRulesOptions {
     pub locale: String,
-    #[cfg_attr(rust_js, rust_js::name = "pluralCategories")]
     pub plural_categories: Vec<PluralCategory>,
     pub r#type: PluralRuleType,
-    #[cfg_attr(rust_js, rust_js::name = "minimumIntegerDigits")]
     pub minimum_integer_digits: u32,
-    #[cfg_attr(rust_js, rust_js::name = "minimumFractionDigits")]
     pub minimum_fraction_digits: u32,
-    #[cfg_attr(rust_js, rust_js::name = "maximumFractionDigits")]
     pub maximum_fraction_digits: u32,
-    #[cfg_attr(rust_js, rust_js::name = "minimumSignificantDigits")]
     pub minimum_significant_digits: Option<u32>,
-    #[cfg_attr(rust_js, rust_js::name = "maximumSignificantDigits")]
     pub maximum_significant_digits: Option<u32>,
 }
 
@@ -894,7 +824,6 @@ pub enum RelativeTimeNumeric {
 /// A JS object of these fields, a `None` one not given: `..Default::default()` the rest.
 #[derive(Default)]
 pub struct RelativeTimeFormatOptions {
-    #[cfg_attr(rust_js, rust_js::name = "localeMatcher")]
     pub locale_matcher: Option<LocaleMatcher>,
     pub numeric: Option<RelativeTimeNumeric>,
     pub style: Option<Style>,
@@ -906,7 +835,6 @@ pub struct ResolvedRelativeTimeFormatOptions {
     pub locale: String,
     pub style: Style,
     pub numeric: RelativeTimeNumeric,
-    #[cfg_attr(rust_js, rust_js::name = "numberingSystem")]
     pub numbering_system: String,
 }
 
@@ -982,7 +910,6 @@ pub enum ListFormatPartType {
 /// A JS object of these fields, a `None` one not given: `..Default::default()` the rest.
 #[derive(Default)]
 pub struct ListFormatOptions {
-    #[cfg_attr(rust_js, rust_js::name = "localeMatcher")]
     pub locale_matcher: Option<LocaleMatcher>,
     pub r#type: Option<ListFormatType>,
     pub style: Option<Style>,
@@ -1081,11 +1008,9 @@ pub enum LanguageDisplay {
 /// What [`display_names::new`] is given; its `type` is required, as JS's is.
 /// A JS object of these fields, a `None` one not given.
 pub struct DisplayNamesOptions {
-    #[cfg_attr(rust_js, rust_js::name = "localeMatcher")]
     pub locale_matcher: Option<LocaleMatcher>,
     pub style: Option<Style>,
     pub r#type: DisplayNamesType,
-    #[cfg_attr(rust_js, rust_js::name = "languageDisplay")]
     pub language_display: Option<LanguageDisplay>,
     pub fallback: Option<DisplayNamesFallback>,
 }
@@ -1097,7 +1022,6 @@ pub struct ResolvedDisplayNamesOptions {
     pub style: Style,
     pub r#type: DisplayNamesType,
     pub fallback: DisplayNamesFallback,
-    #[cfg_attr(rust_js, rust_js::name = "languageDisplay")]
     pub language_display: Option<LanguageDisplay>,
 }
 
@@ -1140,13 +1064,10 @@ pub mod display_names {
 #[derive(Default)]
 pub struct LocaleOptions<'a> {
     pub calendar: Option<&'a str>,
-    #[cfg_attr(rust_js, rust_js::name = "caseFirst")]
     pub case_first: Option<CaseFirst>,
     pub collation: Option<&'a str>,
-    #[cfg_attr(rust_js, rust_js::name = "hourCycle")]
     pub hour_cycle: Option<HourCycle>,
     pub language: Option<&'a str>,
-    #[cfg_attr(rust_js, rust_js::name = "numberingSystem")]
     pub numbering_system: Option<&'a str>,
     pub numeric: Option<bool>,
     pub region: Option<&'a str>,
@@ -1262,7 +1183,6 @@ pub enum Granularity {
 /// A JS object of these fields, a `None` one not given: `..Default::default()` the rest.
 #[derive(Default)]
 pub struct SegmenterOptions {
-    #[cfg_attr(rust_js, rust_js::name = "localeMatcher")]
     pub locale_matcher: Option<LocaleMatcher>,
     pub granularity: Option<Granularity>,
 }
@@ -1280,7 +1200,6 @@ pub struct SegmentData {
     pub segment: String,
     pub index: u32,
     pub input: String,
-    #[cfg_attr(rust_js, rust_js::name = "isWordLike")]
     pub is_word_like: Option<bool>,
 }
 

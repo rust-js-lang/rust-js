@@ -131,13 +131,10 @@ pub struct ResponseCookie<'a> {
     pub path: Option<&'a str>,
     pub secure: Option<bool>,
     /// `"lax"`, `"strict"` or `"none"`, or `true`, which is `"strict"`.
-    #[cfg_attr(rust_js, rust_js::name = "sameSite")]
     pub same_site: Option<SameSite>,
     pub partitioned: Option<bool>,
-    #[cfg_attr(rust_js, rust_js::name = "httpOnly")]
     pub http_only: Option<bool>,
     /// How long it lasts, in seconds.
-    #[cfg_attr(rust_js, rust_js::name = "maxAge")]
     pub max_age: Option<f64>,
     /// `"low"`, `"medium"` or `"high"`.
     pub priority: Option<&'a str>,
@@ -151,12 +148,9 @@ pub struct CookieOptions<'a> {
     pub domain: Option<&'a str>,
     pub path: Option<&'a str>,
     pub secure: Option<bool>,
-    #[cfg_attr(rust_js, rust_js::name = "sameSite")]
     pub same_site: Option<SameSite>,
     pub partitioned: Option<bool>,
-    #[cfg_attr(rust_js, rust_js::name = "httpOnly")]
     pub http_only: Option<bool>,
-    #[cfg_attr(rust_js, rust_js::name = "maxAge")]
     pub max_age: Option<f64>,
     pub priority: Option<&'a str>,
 }
@@ -168,12 +162,9 @@ pub struct DeletedCookie<'a> {
     pub domain: Option<&'a str>,
     pub path: Option<&'a str>,
     pub secure: Option<bool>,
-    #[cfg_attr(rust_js, rust_js::name = "sameSite")]
     pub same_site: Option<SameSite>,
     pub partitioned: Option<bool>,
-    #[cfg_attr(rust_js, rust_js::name = "httpOnly")]
     pub http_only: Option<bool>,
-    #[cfg_attr(rust_js, rust_js::name = "maxAge")]
     pub max_age: Option<f64>,
     pub priority: Option<&'a str>,
 }

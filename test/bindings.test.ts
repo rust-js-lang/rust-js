@@ -2248,3 +2248,35 @@ pub fn counted() -> f64 {
   expect(js).toContain('return toDataURL("a", q?.value);');
   expect(js).toContain("return Math.max(1, undefined);");
 });
+
+// A binding generator's camelCase, scripts/rust-names.ts's, is rust-js's,
+// src/lower.rs's `camel_case` (ADR 0573): each name compiled is the JS one
+// the generators write `#[rust_js::name]` where it differs from. And one
+// that repeats it is rust-js's error, a second way to write the name.
+test("a generator's camelCase is the compiler's, and a name that repeats it is an error", async () => {
+  const { camelCase } = await import("../scripts/rust-names.ts");
+  const names = ["count", "set_count", "_unused", "type_", "self_", "FOO_BAR", "write_u32", "html_iframe_element",
+    "a__b", "x2_y", "__proto", "on_click_", "sort_index", "is_3d", "max_ttl_ms"];
+  const dir = fixture("generator-camel-case");
+  const fields = names.map((name, i) => `    pub ${name}: u32,`).join("\n");
+  const values = names.map((name, i) => `${name}: ${i}`).join(", ");
+  writeFileSync(join(dir, "lib.rs"), `#![allow(non_snake_case)]
+pub struct Names {
+${fields}
+}
+pub fn names() -> Names {
+    Names { ${values} }
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const { names: made } = await import(join(dir, "lib.js"));
+  expect(Object.keys(made())).toEqual(names.map(camelCase));
+  writeFileSync(join(dir, "lib.rs"), `pub struct Point {
+    #[rust_js::name = "sortIndex"]
+    pub sort_index: u32,
+}
+`);
+  const refused = runSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")], root, 60_000);
+  expect(refused.code).not.toBe(0);
+  expect(refused.stderr).toContain('rust-js: `sort_index` is `sortIndex` in JS without `#[rust_js::name = "sortIndex"]`: remove it');
+});

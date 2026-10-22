@@ -76,7 +76,9 @@ const enumOf = (name: string, doc: string, all: Set<string>, prefix = "") => {
     const v = variant(value, prefix);
     if (seen.has(v)) throw new Error(`${name}: ${value} is named ${v} twice`);
     seen.add(v);
-    return `    #[cfg_attr(rust_js, rust_js::name = "${value}")]\n    ${v},`;
+    // A variant is its own name in JS, and says another (ADR 0573).
+    const named = value === v ? "" : `    #[cfg_attr(rust_js, rust_js::name = "${value}")]\n`;
+    return `${named}    ${v},`;
   });
   return `/// ${doc}\n#[derive(Clone, Copy, PartialEq, Eq, Debug)]\npub enum ${name} {\n${lines.join("\n")}\n}\n`;
 };
@@ -121,7 +123,6 @@ pub struct StaticFont<'a> {
     pub variable: Option<&'a str>,
     pub preload: Option<bool>,
     pub fallback: Option<&'a [&'a str]>,
-    #[cfg_attr(rust_js, rust_js::name = "adjustFontFallback")]
     pub adjust_font_fallback: Option<bool>,
     pub subsets: Option<&'a [Subset]>,
 }
@@ -136,7 +137,6 @@ pub struct VariableFont<'a> {
     pub variable: Option<&'a str>,
     pub preload: Option<bool>,
     pub fallback: Option<&'a [&'a str]>,
-    #[cfg_attr(rust_js, rust_js::name = "adjustFontFallback")]
     pub adjust_font_fallback: Option<bool>,
     pub subsets: Option<&'a [Subset]>,
     /// Its axes besides its weight, \`[Axis::Opsz]\`.
@@ -152,7 +152,6 @@ pub struct VariableFontWithoutAxes<'a> {
     pub variable: Option<&'a str>,
     pub preload: Option<bool>,
     pub fallback: Option<&'a [&'a str]>,
-    #[cfg_attr(rust_js, rust_js::name = "adjustFontFallback")]
     pub adjust_font_fallback: Option<bool>,
     pub subsets: Option<&'a [Subset]>,
 }

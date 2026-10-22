@@ -22,12 +22,10 @@ use crate::OneOrMany;
 #[derive(Default)]
 pub struct Metadata<'a> {
     /// The URL its relative URLs are of, `https://example.com`.
-    #[cfg_attr(rust_js, rust_js::name = "metadataBase")]
     pub metadata_base: Option<StringOrUrl<'a>>,
     /// Its `<title>`, or a template its pages' titles fill.
     pub title: Option<Title<'a>>,
     pub description: Option<&'a str>,
-    #[cfg_attr(rust_js, rust_js::name = "applicationName")]
     pub application_name: Option<&'a str>,
     pub authors: Option<OneOrMany<'a, Author<'a>>>,
     pub generator: Option<&'a str>,
@@ -35,10 +33,8 @@ pub struct Metadata<'a> {
     /// `"no-referrer"`, `"origin"`, `"strict-origin-when-cross-origin"`..
     pub referrer: Option<&'a str>,
     /// Deprecated: [`Viewport`]'s.
-    #[cfg_attr(rust_js, rust_js::name = "themeColor")]
     pub theme_color: Option<ThemeColor<'a>>,
     /// Deprecated: [`Viewport`]'s.
-    #[cfg_attr(rust_js, rust_js::name = "colorScheme")]
     pub color_scheme: Option<&'a str>,
     /// Deprecated: [`Viewport`]'s.
     pub viewport: Option<MetadataViewport<'a>>,
@@ -51,7 +47,6 @@ pub struct Metadata<'a> {
     pub icons: Option<MetadataIcons<'a>>,
     /// Its web app manifest's URL.
     pub manifest: Option<StringOrUrl<'a>>,
-    #[cfg_attr(rust_js, rust_js::name = "openGraph")]
     pub open_graph: Option<OpenGraph<'a>>,
     pub twitter: Option<Twitter<'a>>,
     pub facebook: Option<Facebook<'a>>,
@@ -59,16 +54,13 @@ pub struct Metadata<'a> {
     /// The search engines' site verification codes.
     pub verification: Option<Verification<'a>>,
     /// How iOS shows it, added to the home screen.
-    #[cfg_attr(rust_js, rust_js::name = "appleWebApp")]
     pub apple_web_app: Option<MetadataAppleWebApp<'a>>,
     /// Which of its text Safari links, telephone numbers and the like.
-    #[cfg_attr(rust_js, rust_js::name = "formatDetection")]
     pub format_detection: Option<FormatDetection>,
     /// Its iOS app's Smart App Banner.
     pub itunes: Option<ItunesApp<'a>>,
     pub r#abstract: Option<&'a str>,
     /// Its apps' App Links.
-    #[cfg_attr(rust_js, rust_js::name = "appLinks")]
     pub app_links: Option<AppLinks<'a>>,
     pub archives: Option<OneOrMany<'a, &'a str>>,
     pub assets: Option<OneOrMany<'a, &'a str>>,
@@ -210,7 +202,6 @@ pub struct Robots<'a> {
     #[cfg_attr(rust_js, rust_js::name = "max-snippet")]
     pub max_snippet: Option<f64>,
     /// Googlebot's, `<meta name="googlebot">`.
-    #[cfg_attr(rust_js, rust_js::name = "googleBot")]
     pub google_bot: Option<GoogleBot<'a>>,
 }
 
@@ -306,7 +297,6 @@ pub struct IconDescriptor<'a> {
     pub rel: Option<&'a str>,
     pub media: Option<&'a str>,
     /// `"high"`, `"low"` or `"auto"`.
-    #[cfg_attr(rust_js, rust_js::name = "fetchPriority")]
     pub fetch_priority: Option<&'a str>,
 }
 
@@ -332,28 +322,20 @@ pub struct OpenGraph<'a> {
     pub title: Option<Title<'a>>,
     pub description: Option<&'a str>,
     pub emails: Option<OneOrMany<'a, &'a str>>,
-    #[cfg_attr(rust_js, rust_js::name = "phoneNumbers")]
     pub phone_numbers: Option<OneOrMany<'a, &'a str>>,
-    #[cfg_attr(rust_js, rust_js::name = "faxNumbers")]
     pub fax_numbers: Option<OneOrMany<'a, &'a str>>,
-    #[cfg_attr(rust_js, rust_js::name = "siteName")]
     pub site_name: Option<&'a str>,
     pub locale: Option<&'a str>,
-    #[cfg_attr(rust_js, rust_js::name = "alternateLocale")]
     pub alternate_locale: Option<OneOrMany<'a, &'a str>>,
     pub images: Option<OneOrMany<'a, OgImage<'a>>>,
     pub audio: Option<OneOrMany<'a, OgAudio<'a>>>,
     pub videos: Option<OneOrMany<'a, OgVideo<'a>>>,
     pub url: Option<StringOrUrl<'a>>,
-    #[cfg_attr(rust_js, rust_js::name = "countryName")]
     pub country_name: Option<&'a str>,
     pub ttl: Option<f64>,
     /// An article's.
-    #[cfg_attr(rust_js, rust_js::name = "publishedTime")]
     pub published_time: Option<&'a str>,
-    #[cfg_attr(rust_js, rust_js::name = "modifiedTime")]
     pub modified_time: Option<&'a str>,
-    #[cfg_attr(rust_js, rust_js::name = "expirationTime")]
     pub expiration_time: Option<&'a str>,
     /// An article's or a book's.
     pub authors: Option<OneOrMany<'a, StringOrUrl<'a>>>,
@@ -361,12 +343,9 @@ pub struct OpenGraph<'a> {
     pub tags: Option<OneOrMany<'a, &'a str>>,
     /// A book's.
     pub isbn: Option<&'a str>,
-    #[cfg_attr(rust_js, rust_js::name = "releaseDate")]
     pub release_date: Option<&'a str>,
     /// A profile's.
-    #[cfg_attr(rust_js, rust_js::name = "firstName")]
     pub first_name: Option<&'a str>,
-    #[cfg_attr(rust_js, rust_js::name = "lastName")]
     pub last_name: Option<&'a str>,
     pub username: Option<&'a str>,
     pub gender: Option<&'a str>,
@@ -397,7 +376,6 @@ pub enum OgImage<'a> {
 /// An Open Graph image's URL, and its size and text.
 pub struct OgImageDescriptor<'a> {
     pub url: StringOrUrl<'a>,
-    #[cfg_attr(rust_js, rust_js::name = "secureUrl")]
     pub secure_url: Option<StringOrUrl<'a>>,
     pub alt: Option<&'a str>,
     pub r#type: Option<&'a str>,
@@ -416,7 +394,6 @@ pub enum OgAudio<'a> {
 /// An Open Graph audio's URL, and its type.
 pub struct OgAudioDescriptor<'a> {
     pub url: StringOrUrl<'a>,
-    #[cfg_attr(rust_js, rust_js::name = "secureUrl")]
     pub secure_url: Option<StringOrUrl<'a>>,
     pub r#type: Option<&'a str>,
 }
@@ -432,7 +409,6 @@ pub enum OgVideo<'a> {
 /// An Open Graph video's URL, and its type and size.
 pub struct OgVideoDescriptor<'a> {
     pub url: StringOrUrl<'a>,
-    #[cfg_attr(rust_js, rust_js::name = "secureUrl")]
     pub secure_url: Option<StringOrUrl<'a>>,
     pub r#type: Option<&'a str>,
     pub width: Option<StringOrNumber<'a>>,
@@ -490,10 +466,8 @@ pub struct OgActor<'a> {
 pub struct Twitter<'a> {
     pub card: Option<&'a str>,
     pub site: Option<&'a str>,
-    #[cfg_attr(rust_js, rust_js::name = "siteId")]
     pub site_id: Option<&'a str>,
     pub creator: Option<&'a str>,
-    #[cfg_attr(rust_js, rust_js::name = "creatorId")]
     pub creator_id: Option<&'a str>,
     pub description: Option<&'a str>,
     pub title: Option<Title<'a>>,
@@ -516,7 +490,6 @@ pub enum TwitterImage<'a> {
 pub struct TwitterImageDescriptor<'a> {
     pub url: StringOrUrl<'a>,
     pub alt: Option<&'a str>,
-    #[cfg_attr(rust_js, rust_js::name = "secureUrl")]
     pub secure_url: Option<StringOrUrl<'a>>,
     pub r#type: Option<&'a str>,
     pub width: Option<StringOrNumber<'a>>,
@@ -525,9 +498,7 @@ pub struct TwitterImageDescriptor<'a> {
 
 /// A player card's player.
 pub struct TwitterPlayerDescriptor<'a> {
-    #[cfg_attr(rust_js, rust_js::name = "playerUrl")]
     pub player_url: StringOrUrl<'a>,
-    #[cfg_attr(rust_js, rust_js::name = "streamUrl")]
     pub stream_url: StringOrUrl<'a>,
     pub width: f64,
     pub height: f64,
@@ -560,14 +531,12 @@ pub struct TwitterAppUrls<'a> {
 /// the two.
 #[derive(Default)]
 pub struct Facebook<'a> {
-    #[cfg_attr(rust_js, rust_js::name = "appId")]
     pub app_id: Option<&'a str>,
     pub admins: Option<OneOrMany<'a, &'a str>>,
 }
 
 /// A page's Pinterest Rich Pin.
 pub struct Pinterest {
-    #[cfg_attr(rust_js, rust_js::name = "richPin")]
     pub rich_pin: RichPin,
 }
 
@@ -601,10 +570,8 @@ pub enum MetadataAppleWebApp<'a> {
 pub struct AppleWebApp<'a> {
     pub capable: Option<bool>,
     pub title: Option<&'a str>,
-    #[cfg_attr(rust_js, rust_js::name = "startupImage")]
     pub startup_image: Option<OneOrMany<'a, AppleImage<'a>>>,
     /// `"default"`, `"black"` or `"black-translucent"`.
-    #[cfg_attr(rust_js, rust_js::name = "statusBarStyle")]
     pub status_bar_style: Option<&'a str>,
 }
 
@@ -633,9 +600,7 @@ pub struct FormatDetection {
 
 /// An iOS app's Smart App Banner.
 pub struct ItunesApp<'a> {
-    #[cfg_attr(rust_js, rust_js::name = "appId")]
     pub app_id: &'a str,
-    #[cfg_attr(rust_js, rust_js::name = "appArgument")]
     pub app_argument: Option<&'a str>,
 }
 
@@ -701,25 +666,17 @@ pub struct Pagination<'a> {
 pub struct Viewport<'a> {
     pub width: Option<StringOrNumber<'a>>,
     pub height: Option<StringOrNumber<'a>>,
-    #[cfg_attr(rust_js, rust_js::name = "initialScale")]
     pub initial_scale: Option<f64>,
-    #[cfg_attr(rust_js, rust_js::name = "minimumScale")]
     pub minimum_scale: Option<f64>,
-    #[cfg_attr(rust_js, rust_js::name = "maximumScale")]
     pub maximum_scale: Option<f64>,
-    #[cfg_attr(rust_js, rust_js::name = "userScalable")]
     pub user_scalable: Option<bool>,
     /// `"auto"`, `"cover"` or `"contain"`.
-    #[cfg_attr(rust_js, rust_js::name = "viewportFit")]
     pub viewport_fit: Option<&'a str>,
     /// `"resizes-visual"`, `"resizes-content"` or `"overlays-content"`.
-    #[cfg_attr(rust_js, rust_js::name = "interactiveWidget")]
     pub interactive_widget: Option<&'a str>,
-    #[cfg_attr(rust_js, rust_js::name = "themeColor")]
     pub theme_color: Option<ThemeColor<'a>>,
     /// `"normal"`, `"light"`, `"dark"`, `"light dark"`, `"dark light"` or
     /// `"only light"`.
-    #[cfg_attr(rust_js, rust_js::name = "colorScheme")]
     pub color_scheme: Option<&'a str>,
 }
 
@@ -729,17 +686,11 @@ pub struct Viewport<'a> {
 pub struct ViewportLayout<'a> {
     pub width: Option<StringOrNumber<'a>>,
     pub height: Option<StringOrNumber<'a>>,
-    #[cfg_attr(rust_js, rust_js::name = "initialScale")]
     pub initial_scale: Option<f64>,
-    #[cfg_attr(rust_js, rust_js::name = "minimumScale")]
     pub minimum_scale: Option<f64>,
-    #[cfg_attr(rust_js, rust_js::name = "maximumScale")]
     pub maximum_scale: Option<f64>,
-    #[cfg_attr(rust_js, rust_js::name = "userScalable")]
     pub user_scalable: Option<bool>,
-    #[cfg_attr(rust_js, rust_js::name = "viewportFit")]
     pub viewport_fit: Option<&'a str>,
-    #[cfg_attr(rust_js, rust_js::name = "interactiveWidget")]
     pub interactive_widget: Option<&'a str>,
 }
 
@@ -887,11 +838,9 @@ pub mod MetadataRoute {
     #[derive(Default)]
     pub struct RobotsRule<'a> {
         /// Needed of each of a list.
-        #[cfg_attr(rust_js, rust_js::name = "userAgent")]
         pub user_agent: Option<OneOrMany<'a, &'a str>>,
         pub allow: Option<OneOrMany<'a, &'a str>>,
         pub disallow: Option<OneOrMany<'a, &'a str>>,
-        #[cfg_attr(rust_js, rust_js::name = "crawlDelay")]
         pub crawl_delay: Option<f64>,
         pub other: Option<&'a Dict<OtherValue<'static>>>,
     }
@@ -903,11 +852,9 @@ pub mod MetadataRoute {
     #[derive(Default)]
     pub struct SitemapEntry<'a> {
         pub url: &'a str,
-        #[cfg_attr(rust_js, rust_js::name = "lastModified")]
         pub last_modified: Option<LastModified<'a>>,
         /// `"always"`, `"hourly"`, `"daily"`, `"weekly"`, `"monthly"`,
         /// `"yearly"` or `"never"`.
-        #[cfg_attr(rust_js, rust_js::name = "changeFrequency")]
         pub change_frequency: Option<&'a str>,
         pub priority: Option<f64>,
         pub alternates: Option<SitemapAlternates<'a>>,

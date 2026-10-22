@@ -121,3 +121,30 @@ node.sortIndex
   camel_case alone": no other module splits a name on `_`.
 - The corpus's cases of std traits' dictionaries, `generic_as_ref.rs`,
   `hash_values.rs`, `generic_writers.rs` and the rest, run in Node.
+
+## Amendment: a name that repeats its own is an error (2026-10-22)
+
+With every name camelCase, some 1,700 `#[rust_js::name]`s said what their
+items were called anyway, `#[rust_js::name = "addEventListener"]` of
+`add_event_listener`: a second way to write each name. They're gone, and
+one is rust-js's error, of a program and of a crate `--rustc` compiles
+for its metadata, webapi's, react's, next's alike:
+
+```text
+error: rust-js: `sort_index` is `sortIndex` in JS without `#[rust_js::name = "sortIndex"]`: remove it
+```
+
+- **What an item is called where it says nothing** is one function's,
+  `bindings::default_name`: a function's, a `const`'s, a `static`'s or a
+  field's camelCase; a variant's and a JS class's, its name. The readers
+  and the check ask it alike. A unit struct's name is the string it is,
+  which it has no other way to say, and is never a repeat.
+- **The generators write a name only where it differs**:
+  `scripts/rust-names.ts`'s `needsJsName`, of its `camelCase`, for
+  webapi's, react's attributes', the builtins' Intl and Next.js's fonts.
+  `camelCase` is the compiler's `camel_case` across the boundary,
+  held equal to it by a test that compiles each of a set of names, and
+  next's coverage reads a field's JS name by it.
+
+What holds it: `test/bindings.test.ts`, "a generator's camelCase is the
+compiler's, and a name that repeats it is an error".

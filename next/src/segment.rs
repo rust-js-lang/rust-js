@@ -39,7 +39,6 @@ pub struct InstantSample<'a> {
     pub cookies: Option<&'a [SampleCookie<'a>]>,
     pub headers: Option<&'a [(&'a str, Option<&'a str>)]>,
     pub params: Option<&'a Dict<QueryValue>>,
-    #[cfg_attr(rust_js, rust_js::name = "searchParams")]
     pub search_params: Option<&'a Dict<Option<QueryValue>>>,
 }
 

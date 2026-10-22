@@ -151,7 +151,6 @@ mod sealed {
 #[derive(Default)]
 pub struct MiddlewareResponseInit<'a> {
     pub status: Option<u16>,
-    #[cfg_attr(rust_js, rust_js::name = "statusText")]
     pub status_text: Option<&'a str>,
     pub headers: Option<&'a [&'a [&'a str]]>,
     pub request: Option<ModifiedRequest<'a>>,
@@ -571,7 +570,6 @@ pub fn user_agent_from_string(input: Option<&str>) -> UserAgent {
 
 /// What [`user_agent`] gives.
 pub struct UserAgent {
-    #[cfg_attr(rust_js, rust_js::name = "isBot")]
     pub is_bot: bool,
     /// The `User-Agent` itself.
     pub ua: String,

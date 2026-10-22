@@ -234,7 +234,6 @@ pub struct DraftModeOptions {
 #[derive(Default)]
 pub struct PreviewDataOptions<'a> {
     /// How long it lasts, in seconds.
-    #[cfg_attr(rust_js, rust_js::name = "maxAge")]
     pub max_age: Option<f64>,
     /// The path it's of.
     pub path: Option<&'a str>,
@@ -270,7 +269,6 @@ pub struct PageConfig<'a> {
     /// The environment variables it reads.
     pub env: Option<&'a [&'a str]>,
     /// How long it may run, in seconds.
-    #[cfg_attr(rust_js, rust_js::name = "maxDuration")]
     pub max_duration: Option<f64>,
     /// Its [`ServerRuntime`].
     pub runtime: Option<ServerRuntime<'a>>,
@@ -285,13 +283,10 @@ pub struct PageConfig<'a> {
 #[derive(Default)]
 pub struct ApiConfig<'a> {
     /// The most it responds, or `false`, any.
-    #[cfg_attr(rust_js, rust_js::name = "responseLimit")]
     pub response_limit: Option<ResponseLimit<'a>>,
     /// How its body is parsed, or `false`, not.
-    #[cfg_attr(rust_js, rust_js::name = "bodyParser")]
     pub body_parser: Option<BodyParser<'a>>,
     /// `Some(true)`: it's answered elsewhere, as by Express.
-    #[cfg_attr(rust_js, rust_js::name = "externalResolver")]
     pub external_resolver: Option<bool>,
 }
 
@@ -306,7 +301,6 @@ pub enum BodyParser<'a> {
 /// The most of a body that's parsed.
 #[derive(Default)]
 pub struct BodyParserLimit<'a> {
-    #[cfg_attr(rust_js, rust_js::name = "sizeLimit")]
     pub size_limit: Option<SizeLimit<'a>>,
 }
 

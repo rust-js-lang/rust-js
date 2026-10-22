@@ -541,7 +541,6 @@ pub struct LinkProps<'a, C> {
     pub children: C,
     #[rust_js::flatten]
     pub anchor: AnchorHTMLAttributes<'a>,
-    #[rust_js::name = "className"]
     pub class_name: Option<&'a str>,
 }
 pub fn crumbs(crumbs: &[Crumb]) -> Vec<JSX::Element> {
@@ -599,7 +598,6 @@ pub struct LinkProps<'a, C> {
     pub children: C,
     #[rust_js::flatten]
     pub anchor: AnchorHTMLAttributes<'a>,
-    #[rust_js::name = "className"]
     pub class_name: Option<&'a str>,
 }
 pub fn Pick(href: &str) -> JSX::Element {
@@ -795,7 +793,6 @@ test("a local of a component's function type is a tag given its props", async ()
 use react::{JSX, ReactNode, jsx};
 pub struct HProps<'a, C: ReactNode> {
     pub id: Option<&'a str>,
-    #[rust_js::name = "className"]
     pub class_name: Option<&'a str>,
     pub children: C,
 }
@@ -2163,7 +2160,6 @@ use react::{JSX, ReactNode, jsx};
 #[derive(Default)]
 pub struct Html {
     pub id: Option<&'static str>,
-    #[cfg_attr(rust_js, rust_js::name = "className")]
     pub class_name: Option<&'static str>,
 }
 #[derive(Default)]
@@ -2590,7 +2586,6 @@ use react::{JSX, ReactNode, jsx};
 pub struct Html {
     pub id: Option<&'static str>,
     pub title: Option<&'static str>,
-    #[cfg_attr(rust_js, rust_js::name = "className")]
     pub class_name: Option<&'static str>,
 }
 #[derive(Default)]
@@ -2603,7 +2598,6 @@ pub struct Anchor {
 #[derive(Default)]
 pub struct ButtonLinkProps<C> {
     pub href: &'static str,
-    #[cfg_attr(rust_js, rust_js::name = "className")]
     pub class_name: Option<&'static str>,
     pub children: C,
     #[cfg_attr(rust_js, rust_js::flatten)]
@@ -4826,7 +4820,6 @@ use react::{JSX, ReactNode, jsx};
 #[derive(Default)]
 pub struct Html {
     pub id: Option<&'static str>,
-    #[cfg_attr(rust_js, rust_js::name = "className")]
     pub class_name: Option<&'static str>,
 }
 #[derive(Default)]
@@ -5801,10 +5794,8 @@ pub struct LinkProps<'a, C> {
     pub anchor: AnchorHTMLAttributes<'a>,
     pub replace: Option<bool>,
     pub scroll: Option<bool>,
-    #[cfg_attr(rust_js, rust_js::name = "passHref")]
     pub pass_href: Option<bool>,
     pub r#ref: Option<RefObject<Option<&'static HTMLAnchorElement>>>,
-    #[cfg_attr(rust_js, rust_js::name = "className")]
     pub class_name: Option<&'a str>,
     pub target: Option<&'a str>,
     pub rel: Option<&'a str>,
@@ -6421,7 +6412,6 @@ fn cn(parts: &[Option<&str>]) -> String {
 }
 pub struct ButtonProps<'a, C: ReactNode> {
     pub children: C,
-    #[cfg_attr(rust_js, rust_js::name = "onClick")]
     pub on_click: Option<Box<dyn Fn(&MouseEvent)>>,
     pub class_name: Option<&'a str>,
 }

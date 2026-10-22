@@ -105,7 +105,6 @@ pub struct StringifyOptions {
 #[derive(Default)]
 pub struct ParseOptions {
     /// The most keys to read, 1000 where `None`, all where 0.
-    #[cfg_attr(rust_js, rust_js::name = "maxKeys")]
     pub max_keys: Option<f64>,
     /// How a key or a value is decoded, `querystring.unescape` where `None`.
     #[cfg_attr(rust_js, rust_js::name = "decodeURIComponent")]

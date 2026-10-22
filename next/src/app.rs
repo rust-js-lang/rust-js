@@ -15,7 +15,6 @@ use crate::router::NextRouter;
 pub struct AppProps<P = &'static Unknown> {
     #[cfg_attr(rust_js, rust_js::name = "Component")]
     pub component: ElementType,
-    #[cfg_attr(rust_js, rust_js::name = "pageProps")]
     pub page_props: P,
     pub router: &'static NextRouter,
 }
@@ -51,7 +50,6 @@ impl AppContext {
 /// What the app's `getInitialProps` gives, as `AppInitialProps` types it:
 /// the page's props.
 pub struct AppInitialProps<P = &'static Unknown> {
-    #[cfg_attr(rust_js, rust_js::name = "pageProps")]
     pub page_props: P,
 }
 

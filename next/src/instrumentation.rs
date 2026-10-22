@@ -41,9 +41,7 @@ pub struct RouterTransitionStartEvent {
     pub id: String,
     pub timestamp: f64,
     /// The routes it leaves.
-    #[cfg_attr(rust_js, rust_js::name = "fromRoutes")]
     pub from_routes: Vec<String>,
-    #[cfg_attr(rust_js, rust_js::name = "prefetchIntent")]
     pub prefetch_intent: Option<RouterTransitionPrefetchIntent>,
 }
 
@@ -57,20 +55,15 @@ pub struct ErrorRequest {
 /// Where a request's error was, what `onRequestError` is given last.
 pub struct RequestErrorContext {
     /// `"Pages Router"` or `"App Router"`.
-    #[cfg_attr(rust_js, rust_js::name = "routerKind")]
     pub router_kind: String,
     /// The route's path, `/blog/[slug]`.
-    #[cfg_attr(rust_js, rust_js::name = "routePath")]
     pub route_path: String,
     /// `"render"`, `"route"`, `"action"` or `"proxy"`.
-    #[cfg_attr(rust_js, rust_js::name = "routeType")]
     pub route_type: String,
     /// What rendered it: `"react-server-components"`,
     /// `"react-server-components-payload"` or `"server-rendering"`.
-    #[cfg_attr(rust_js, rust_js::name = "renderSource")]
     pub render_source: Option<String>,
     /// `"on-demand"` or `"stale"`, where it was rendered again.
-    #[cfg_attr(rust_js, rust_js::name = "revalidateReason")]
     pub revalidate_reason: Option<String>,
 }
 

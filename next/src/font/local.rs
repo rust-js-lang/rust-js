@@ -18,7 +18,6 @@ pub struct LocalFont<'a> {
     pub weight: Option<&'a str>,
     pub style: Option<&'a str>,
     /// The font its fallback's metrics are adjusted to, or `false`, none.
-    #[cfg_attr(rust_js, rust_js::name = "adjustFontFallback")]
     pub adjust_font_fallback: Option<AdjustFontFallback>,
     pub fallback: Option<&'a [&'a str]>,
     pub preload: Option<bool>,
@@ -47,7 +46,6 @@ pub struct LocalFontFile<'a> {
 #[cfg_attr(rust_js, rust_js::untagged)]
 pub enum AdjustFontFallback {
     Bool(bool),
-    #[cfg_attr(rust_js, rust_js::name = "Arial")]
     Arial,
     #[cfg_attr(rust_js, rust_js::name = "Times New Roman")]
     TimesNewRoman,

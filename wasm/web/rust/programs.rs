@@ -33,7 +33,6 @@ fn matches_of(matches: &JsObject) -> Vec<(String, String)> {
 /// Sucrase's options: JSX as `react/jsx-runtime`'s calls, as a bundler writes it.
 pub struct TransformOptions {
     pub transforms: Vec<&'static str>,
-    #[cfg_attr(rust_js, rust_js::name = "jsxRuntime")]
     pub jsx_runtime: &'static str,
     pub production: bool,
 }

@@ -59,25 +59,18 @@ pub struct ImageProps<'a, S = &'a str> {
     /// Shown as it is, not optimized.
     pub unoptimized: Option<bool>,
     /// The `src` its `<img>` has, where it's another than `src`'s.
-    #[cfg_attr(rust_js, rust_js::name = "overrideSrc")]
     pub override_src: Option<&'a str>,
     /// Called with the `<img>` once it's loaded: deprecated, `onLoad` is.
-    #[cfg_attr(rust_js, rust_js::name = "onLoadingComplete")]
     pub on_loading_complete: Option<OnLoadingComplete>,
     /// `next/legacy/image`'s, which Next.js maps to `style`: deprecated.
     pub layout: Option<&'a str>,
-    #[cfg_attr(rust_js, rust_js::name = "objectFit")]
     pub object_fit: Option<&'a str>,
-    #[cfg_attr(rust_js, rust_js::name = "objectPosition")]
     pub object_position: Option<&'a str>,
-    #[cfg_attr(rust_js, rust_js::name = "lazyBoundary")]
     pub lazy_boundary: Option<&'a str>,
-    #[cfg_attr(rust_js, rust_js::name = "lazyRoot")]
     pub lazy_root: Option<&'a str>,
     /// The widths it's shown at, as `sizes` media queries, for a `fill` one.
     pub sizes: Option<&'a str>,
     /// The `<img>`'s classes.
-    #[cfg_attr(rust_js, rust_js::name = "className")]
     pub class_name: Option<&'a str>,
     /// The `<img>`'s `id`.
     pub id: Option<&'a str>,
@@ -98,9 +91,7 @@ pub struct StaticImageData {
     pub width: f64,
     #[cfg_attr(rust_js, rust_js::name = "blurDataURL")]
     pub blur_data_url: Option<&'static str>,
-    #[cfg_attr(rust_js, rust_js::name = "blurWidth")]
     pub blur_width: Option<f64>,
-    #[cfg_attr(rust_js, rust_js::name = "blurHeight")]
     pub blur_height: Option<f64>,
 }
 

@@ -518,7 +518,6 @@ pub struct StaticFont<'a> {
     pub variable: Option<&'a str>,
     pub preload: Option<bool>,
     pub fallback: Option<&'a [&'a str]>,
-    #[cfg_attr(rust_js, rust_js::name = "adjustFontFallback")]
     pub adjust_font_fallback: Option<bool>,
     pub subsets: Option<&'a [Subset]>,
 }
@@ -533,7 +532,6 @@ pub struct VariableFont<'a> {
     pub variable: Option<&'a str>,
     pub preload: Option<bool>,
     pub fallback: Option<&'a [&'a str]>,
-    #[cfg_attr(rust_js, rust_js::name = "adjustFontFallback")]
     pub adjust_font_fallback: Option<bool>,
     pub subsets: Option<&'a [Subset]>,
     /// Its axes besides its weight, `[Axis::Opsz]`.
@@ -549,7 +547,6 @@ pub struct VariableFontWithoutAxes<'a> {
     pub variable: Option<&'a str>,
     pub preload: Option<bool>,
     pub fallback: Option<&'a [&'a str]>,
-    #[cfg_attr(rust_js, rust_js::name = "adjustFontFallback")]
     pub adjust_font_fallback: Option<bool>,
     pub subsets: Option<&'a [Subset]>,
 }

@@ -170,545 +170,366 @@ pub struct HTMLAttributes<'a, T = webapi::HTMLElement> {
     #[cfg_attr(rust_js, rust_js::name = "aria-valuetext")]
     pub aria_valuetext: Option<&'a str>,
     /// `onCopy`
-    #[cfg_attr(rust_js, rust_js::name = "onCopy")]
     pub on_copy: Option<event::ClipboardEventHandler<T>>,
     /// `onCopyCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onCopyCapture")]
     pub on_copy_capture: Option<event::ClipboardEventHandler<T>>,
     /// `onCut`
-    #[cfg_attr(rust_js, rust_js::name = "onCut")]
     pub on_cut: Option<event::ClipboardEventHandler<T>>,
     /// `onCutCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onCutCapture")]
     pub on_cut_capture: Option<event::ClipboardEventHandler<T>>,
     /// `onPaste`
-    #[cfg_attr(rust_js, rust_js::name = "onPaste")]
     pub on_paste: Option<event::ClipboardEventHandler<T>>,
     /// `onPasteCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onPasteCapture")]
     pub on_paste_capture: Option<event::ClipboardEventHandler<T>>,
     /// `onCompositionEnd`
-    #[cfg_attr(rust_js, rust_js::name = "onCompositionEnd")]
     pub on_composition_end: Option<event::CompositionEventHandler<T>>,
     /// `onCompositionEndCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onCompositionEndCapture")]
     pub on_composition_end_capture: Option<event::CompositionEventHandler<T>>,
     /// `onCompositionStart`
-    #[cfg_attr(rust_js, rust_js::name = "onCompositionStart")]
     pub on_composition_start: Option<event::CompositionEventHandler<T>>,
     /// `onCompositionStartCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onCompositionStartCapture")]
     pub on_composition_start_capture: Option<event::CompositionEventHandler<T>>,
     /// `onCompositionUpdate`
-    #[cfg_attr(rust_js, rust_js::name = "onCompositionUpdate")]
     pub on_composition_update: Option<event::CompositionEventHandler<T>>,
     /// `onCompositionUpdateCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onCompositionUpdateCapture")]
     pub on_composition_update_capture: Option<event::CompositionEventHandler<T>>,
     /// `onFocus`
-    #[cfg_attr(rust_js, rust_js::name = "onFocus")]
     pub on_focus: Option<event::FocusEventHandler<T>>,
     /// `onFocusCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onFocusCapture")]
     pub on_focus_capture: Option<event::FocusEventHandler<T>>,
     /// `onBlur`
-    #[cfg_attr(rust_js, rust_js::name = "onBlur")]
     pub on_blur: Option<event::FocusEventHandler<T>>,
     /// `onBlurCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onBlurCapture")]
     pub on_blur_capture: Option<event::FocusEventHandler<T>>,
     /// `onChange`
-    #[cfg_attr(rust_js, rust_js::name = "onChange")]
     pub on_change: Option<event::ChangeEventHandler<T>>,
     /// `onChangeCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onChangeCapture")]
     pub on_change_capture: Option<event::ChangeEventHandler<T>>,
     /// `onBeforeInput`
-    #[cfg_attr(rust_js, rust_js::name = "onBeforeInput")]
     pub on_before_input: Option<event::InputEventHandler<T>>,
     /// `onBeforeInputCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onBeforeInputCapture")]
     pub on_before_input_capture: Option<event::InputEventHandler<T>>,
     /// `onInput`
-    #[cfg_attr(rust_js, rust_js::name = "onInput")]
     pub on_input: Option<event::InputEventHandler<T>>,
     /// `onInputCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onInputCapture")]
     pub on_input_capture: Option<event::InputEventHandler<T>>,
     /// `onReset`
-    #[cfg_attr(rust_js, rust_js::name = "onReset")]
     pub on_reset: Option<event::ReactEventHandler<T>>,
     /// `onResetCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onResetCapture")]
     pub on_reset_capture: Option<event::ReactEventHandler<T>>,
     /// `onSubmit`
-    #[cfg_attr(rust_js, rust_js::name = "onSubmit")]
     pub on_submit: Option<event::SubmitEventHandler<T>>,
     /// `onSubmitCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onSubmitCapture")]
     pub on_submit_capture: Option<event::SubmitEventHandler<T>>,
     /// `onInvalid`
-    #[cfg_attr(rust_js, rust_js::name = "onInvalid")]
     pub on_invalid: Option<event::ReactEventHandler<T>>,
     /// `onInvalidCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onInvalidCapture")]
     pub on_invalid_capture: Option<event::ReactEventHandler<T>>,
     /// `onLoad`
-    #[cfg_attr(rust_js, rust_js::name = "onLoad")]
     pub on_load: Option<event::ReactEventHandler<T>>,
     /// `onLoadCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onLoadCapture")]
     pub on_load_capture: Option<event::ReactEventHandler<T>>,
     /// `onError`
-    #[cfg_attr(rust_js, rust_js::name = "onError")]
     pub on_error: Option<event::ReactEventHandler<T>>,
     /// `onErrorCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onErrorCapture")]
     pub on_error_capture: Option<event::ReactEventHandler<T>>,
     /// `onKeyDown`
-    #[cfg_attr(rust_js, rust_js::name = "onKeyDown")]
     pub on_key_down: Option<event::KeyboardEventHandler<T>>,
     /// `onKeyDownCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onKeyDownCapture")]
     pub on_key_down_capture: Option<event::KeyboardEventHandler<T>>,
     /// `onKeyPress`
-    #[cfg_attr(rust_js, rust_js::name = "onKeyPress")]
     pub on_key_press: Option<event::KeyboardEventHandler<T>>,
     /// `onKeyPressCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onKeyPressCapture")]
     pub on_key_press_capture: Option<event::KeyboardEventHandler<T>>,
     /// `onKeyUp`
-    #[cfg_attr(rust_js, rust_js::name = "onKeyUp")]
     pub on_key_up: Option<event::KeyboardEventHandler<T>>,
     /// `onKeyUpCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onKeyUpCapture")]
     pub on_key_up_capture: Option<event::KeyboardEventHandler<T>>,
     /// `onAbort`
-    #[cfg_attr(rust_js, rust_js::name = "onAbort")]
     pub on_abort: Option<event::ReactEventHandler<T>>,
     /// `onAbortCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onAbortCapture")]
     pub on_abort_capture: Option<event::ReactEventHandler<T>>,
     /// `onCanPlay`
-    #[cfg_attr(rust_js, rust_js::name = "onCanPlay")]
     pub on_can_play: Option<event::ReactEventHandler<T>>,
     /// `onCanPlayCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onCanPlayCapture")]
     pub on_can_play_capture: Option<event::ReactEventHandler<T>>,
     /// `onCanPlayThrough`
-    #[cfg_attr(rust_js, rust_js::name = "onCanPlayThrough")]
     pub on_can_play_through: Option<event::ReactEventHandler<T>>,
     /// `onCanPlayThroughCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onCanPlayThroughCapture")]
     pub on_can_play_through_capture: Option<event::ReactEventHandler<T>>,
     /// `onDurationChange`
-    #[cfg_attr(rust_js, rust_js::name = "onDurationChange")]
     pub on_duration_change: Option<event::ReactEventHandler<T>>,
     /// `onDurationChangeCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onDurationChangeCapture")]
     pub on_duration_change_capture: Option<event::ReactEventHandler<T>>,
     /// `onEmptied`
-    #[cfg_attr(rust_js, rust_js::name = "onEmptied")]
     pub on_emptied: Option<event::ReactEventHandler<T>>,
     /// `onEmptiedCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onEmptiedCapture")]
     pub on_emptied_capture: Option<event::ReactEventHandler<T>>,
     /// `onEncrypted`
-    #[cfg_attr(rust_js, rust_js::name = "onEncrypted")]
     pub on_encrypted: Option<event::ReactEventHandler<T>>,
     /// `onEncryptedCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onEncryptedCapture")]
     pub on_encrypted_capture: Option<event::ReactEventHandler<T>>,
     /// `onEnded`
-    #[cfg_attr(rust_js, rust_js::name = "onEnded")]
     pub on_ended: Option<event::ReactEventHandler<T>>,
     /// `onEndedCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onEndedCapture")]
     pub on_ended_capture: Option<event::ReactEventHandler<T>>,
     /// `onLoadedData`
-    #[cfg_attr(rust_js, rust_js::name = "onLoadedData")]
     pub on_loaded_data: Option<event::ReactEventHandler<T>>,
     /// `onLoadedDataCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onLoadedDataCapture")]
     pub on_loaded_data_capture: Option<event::ReactEventHandler<T>>,
     /// `onLoadedMetadata`
-    #[cfg_attr(rust_js, rust_js::name = "onLoadedMetadata")]
     pub on_loaded_metadata: Option<event::ReactEventHandler<T>>,
     /// `onLoadedMetadataCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onLoadedMetadataCapture")]
     pub on_loaded_metadata_capture: Option<event::ReactEventHandler<T>>,
     /// `onLoadStart`
-    #[cfg_attr(rust_js, rust_js::name = "onLoadStart")]
     pub on_load_start: Option<event::ReactEventHandler<T>>,
     /// `onLoadStartCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onLoadStartCapture")]
     pub on_load_start_capture: Option<event::ReactEventHandler<T>>,
     /// `onPause`
-    #[cfg_attr(rust_js, rust_js::name = "onPause")]
     pub on_pause: Option<event::ReactEventHandler<T>>,
     /// `onPauseCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onPauseCapture")]
     pub on_pause_capture: Option<event::ReactEventHandler<T>>,
     /// `onPlay`
-    #[cfg_attr(rust_js, rust_js::name = "onPlay")]
     pub on_play: Option<event::ReactEventHandler<T>>,
     /// `onPlayCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onPlayCapture")]
     pub on_play_capture: Option<event::ReactEventHandler<T>>,
     /// `onPlaying`
-    #[cfg_attr(rust_js, rust_js::name = "onPlaying")]
     pub on_playing: Option<event::ReactEventHandler<T>>,
     /// `onPlayingCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onPlayingCapture")]
     pub on_playing_capture: Option<event::ReactEventHandler<T>>,
     /// `onProgress`
-    #[cfg_attr(rust_js, rust_js::name = "onProgress")]
     pub on_progress: Option<event::ReactEventHandler<T>>,
     /// `onProgressCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onProgressCapture")]
     pub on_progress_capture: Option<event::ReactEventHandler<T>>,
     /// `onRateChange`
-    #[cfg_attr(rust_js, rust_js::name = "onRateChange")]
     pub on_rate_change: Option<event::ReactEventHandler<T>>,
     /// `onRateChangeCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onRateChangeCapture")]
     pub on_rate_change_capture: Option<event::ReactEventHandler<T>>,
     /// `onSeeked`
-    #[cfg_attr(rust_js, rust_js::name = "onSeeked")]
     pub on_seeked: Option<event::ReactEventHandler<T>>,
     /// `onSeekedCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onSeekedCapture")]
     pub on_seeked_capture: Option<event::ReactEventHandler<T>>,
     /// `onSeeking`
-    #[cfg_attr(rust_js, rust_js::name = "onSeeking")]
     pub on_seeking: Option<event::ReactEventHandler<T>>,
     /// `onSeekingCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onSeekingCapture")]
     pub on_seeking_capture: Option<event::ReactEventHandler<T>>,
     /// `onStalled`
-    #[cfg_attr(rust_js, rust_js::name = "onStalled")]
     pub on_stalled: Option<event::ReactEventHandler<T>>,
     /// `onStalledCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onStalledCapture")]
     pub on_stalled_capture: Option<event::ReactEventHandler<T>>,
     /// `onSuspend`
-    #[cfg_attr(rust_js, rust_js::name = "onSuspend")]
     pub on_suspend: Option<event::ReactEventHandler<T>>,
     /// `onSuspendCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onSuspendCapture")]
     pub on_suspend_capture: Option<event::ReactEventHandler<T>>,
     /// `onTimeUpdate`
-    #[cfg_attr(rust_js, rust_js::name = "onTimeUpdate")]
     pub on_time_update: Option<event::ReactEventHandler<T>>,
     /// `onTimeUpdateCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onTimeUpdateCapture")]
     pub on_time_update_capture: Option<event::ReactEventHandler<T>>,
     /// `onVolumeChange`
-    #[cfg_attr(rust_js, rust_js::name = "onVolumeChange")]
     pub on_volume_change: Option<event::ReactEventHandler<T>>,
     /// `onVolumeChangeCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onVolumeChangeCapture")]
     pub on_volume_change_capture: Option<event::ReactEventHandler<T>>,
     /// `onWaiting`
-    #[cfg_attr(rust_js, rust_js::name = "onWaiting")]
     pub on_waiting: Option<event::ReactEventHandler<T>>,
     /// `onWaitingCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onWaitingCapture")]
     pub on_waiting_capture: Option<event::ReactEventHandler<T>>,
     /// `onAuxClick`
-    #[cfg_attr(rust_js, rust_js::name = "onAuxClick")]
     pub on_aux_click: Option<event::MouseEventHandler<T>>,
     /// `onAuxClickCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onAuxClickCapture")]
     pub on_aux_click_capture: Option<event::MouseEventHandler<T>>,
     /// `onClick`
-    #[cfg_attr(rust_js, rust_js::name = "onClick")]
     pub on_click: Option<event::MouseEventHandler<T>>,
     /// `onClickCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onClickCapture")]
     pub on_click_capture: Option<event::MouseEventHandler<T>>,
     /// `onContextMenu`
-    #[cfg_attr(rust_js, rust_js::name = "onContextMenu")]
     pub on_context_menu: Option<event::MouseEventHandler<T>>,
     /// `onContextMenuCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onContextMenuCapture")]
     pub on_context_menu_capture: Option<event::MouseEventHandler<T>>,
     /// `onDoubleClick`
-    #[cfg_attr(rust_js, rust_js::name = "onDoubleClick")]
     pub on_double_click: Option<event::MouseEventHandler<T>>,
     /// `onDoubleClickCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onDoubleClickCapture")]
     pub on_double_click_capture: Option<event::MouseEventHandler<T>>,
     /// `onDrag`
-    #[cfg_attr(rust_js, rust_js::name = "onDrag")]
     pub on_drag: Option<event::DragEventHandler<T>>,
     /// `onDragCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onDragCapture")]
     pub on_drag_capture: Option<event::DragEventHandler<T>>,
     /// `onDragEnd`
-    #[cfg_attr(rust_js, rust_js::name = "onDragEnd")]
     pub on_drag_end: Option<event::DragEventHandler<T>>,
     /// `onDragEndCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onDragEndCapture")]
     pub on_drag_end_capture: Option<event::DragEventHandler<T>>,
     /// `onDragEnter`
-    #[cfg_attr(rust_js, rust_js::name = "onDragEnter")]
     pub on_drag_enter: Option<event::DragEventHandler<T>>,
     /// `onDragEnterCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onDragEnterCapture")]
     pub on_drag_enter_capture: Option<event::DragEventHandler<T>>,
     /// `onDragExit`
-    #[cfg_attr(rust_js, rust_js::name = "onDragExit")]
     pub on_drag_exit: Option<event::DragEventHandler<T>>,
     /// `onDragExitCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onDragExitCapture")]
     pub on_drag_exit_capture: Option<event::DragEventHandler<T>>,
     /// `onDragLeave`
-    #[cfg_attr(rust_js, rust_js::name = "onDragLeave")]
     pub on_drag_leave: Option<event::DragEventHandler<T>>,
     /// `onDragLeaveCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onDragLeaveCapture")]
     pub on_drag_leave_capture: Option<event::DragEventHandler<T>>,
     /// `onDragOver`
-    #[cfg_attr(rust_js, rust_js::name = "onDragOver")]
     pub on_drag_over: Option<event::DragEventHandler<T>>,
     /// `onDragOverCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onDragOverCapture")]
     pub on_drag_over_capture: Option<event::DragEventHandler<T>>,
     /// `onDragStart`
-    #[cfg_attr(rust_js, rust_js::name = "onDragStart")]
     pub on_drag_start: Option<event::DragEventHandler<T>>,
     /// `onDragStartCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onDragStartCapture")]
     pub on_drag_start_capture: Option<event::DragEventHandler<T>>,
     /// `onDrop`
-    #[cfg_attr(rust_js, rust_js::name = "onDrop")]
     pub on_drop: Option<event::DragEventHandler<T>>,
     /// `onDropCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onDropCapture")]
     pub on_drop_capture: Option<event::DragEventHandler<T>>,
     /// `onMouseDown`
-    #[cfg_attr(rust_js, rust_js::name = "onMouseDown")]
     pub on_mouse_down: Option<event::MouseEventHandler<T>>,
     /// `onMouseDownCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onMouseDownCapture")]
     pub on_mouse_down_capture: Option<event::MouseEventHandler<T>>,
     /// `onMouseEnter`
-    #[cfg_attr(rust_js, rust_js::name = "onMouseEnter")]
     pub on_mouse_enter: Option<event::MouseEventHandler<T>>,
     /// `onMouseLeave`
-    #[cfg_attr(rust_js, rust_js::name = "onMouseLeave")]
     pub on_mouse_leave: Option<event::MouseEventHandler<T>>,
     /// `onMouseMove`
-    #[cfg_attr(rust_js, rust_js::name = "onMouseMove")]
     pub on_mouse_move: Option<event::MouseEventHandler<T>>,
     /// `onMouseMoveCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onMouseMoveCapture")]
     pub on_mouse_move_capture: Option<event::MouseEventHandler<T>>,
     /// `onMouseOut`
-    #[cfg_attr(rust_js, rust_js::name = "onMouseOut")]
     pub on_mouse_out: Option<event::MouseEventHandler<T>>,
     /// `onMouseOutCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onMouseOutCapture")]
     pub on_mouse_out_capture: Option<event::MouseEventHandler<T>>,
     /// `onMouseOver`
-    #[cfg_attr(rust_js, rust_js::name = "onMouseOver")]
     pub on_mouse_over: Option<event::MouseEventHandler<T>>,
     /// `onMouseOverCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onMouseOverCapture")]
     pub on_mouse_over_capture: Option<event::MouseEventHandler<T>>,
     /// `onMouseUp`
-    #[cfg_attr(rust_js, rust_js::name = "onMouseUp")]
     pub on_mouse_up: Option<event::MouseEventHandler<T>>,
     /// `onMouseUpCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onMouseUpCapture")]
     pub on_mouse_up_capture: Option<event::MouseEventHandler<T>>,
     /// `onSelect`
-    #[cfg_attr(rust_js, rust_js::name = "onSelect")]
     pub on_select: Option<event::ReactEventHandler<T>>,
     /// `onSelectCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onSelectCapture")]
     pub on_select_capture: Option<event::ReactEventHandler<T>>,
     /// `onTouchCancel`
-    #[cfg_attr(rust_js, rust_js::name = "onTouchCancel")]
     pub on_touch_cancel: Option<event::TouchEventHandler<T>>,
     /// `onTouchCancelCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onTouchCancelCapture")]
     pub on_touch_cancel_capture: Option<event::TouchEventHandler<T>>,
     /// `onTouchEnd`
-    #[cfg_attr(rust_js, rust_js::name = "onTouchEnd")]
     pub on_touch_end: Option<event::TouchEventHandler<T>>,
     /// `onTouchEndCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onTouchEndCapture")]
     pub on_touch_end_capture: Option<event::TouchEventHandler<T>>,
     /// `onTouchMove`
-    #[cfg_attr(rust_js, rust_js::name = "onTouchMove")]
     pub on_touch_move: Option<event::TouchEventHandler<T>>,
     /// `onTouchMoveCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onTouchMoveCapture")]
     pub on_touch_move_capture: Option<event::TouchEventHandler<T>>,
     /// `onTouchStart`
-    #[cfg_attr(rust_js, rust_js::name = "onTouchStart")]
     pub on_touch_start: Option<event::TouchEventHandler<T>>,
     /// `onTouchStartCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onTouchStartCapture")]
     pub on_touch_start_capture: Option<event::TouchEventHandler<T>>,
     /// `onPointerDown`
-    #[cfg_attr(rust_js, rust_js::name = "onPointerDown")]
     pub on_pointer_down: Option<event::PointerEventHandler<T>>,
     /// `onPointerDownCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onPointerDownCapture")]
     pub on_pointer_down_capture: Option<event::PointerEventHandler<T>>,
     /// `onPointerMove`
-    #[cfg_attr(rust_js, rust_js::name = "onPointerMove")]
     pub on_pointer_move: Option<event::PointerEventHandler<T>>,
     /// `onPointerMoveCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onPointerMoveCapture")]
     pub on_pointer_move_capture: Option<event::PointerEventHandler<T>>,
     /// `onPointerUp`
-    #[cfg_attr(rust_js, rust_js::name = "onPointerUp")]
     pub on_pointer_up: Option<event::PointerEventHandler<T>>,
     /// `onPointerUpCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onPointerUpCapture")]
     pub on_pointer_up_capture: Option<event::PointerEventHandler<T>>,
     /// `onPointerCancel`
-    #[cfg_attr(rust_js, rust_js::name = "onPointerCancel")]
     pub on_pointer_cancel: Option<event::PointerEventHandler<T>>,
     /// `onPointerCancelCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onPointerCancelCapture")]
     pub on_pointer_cancel_capture: Option<event::PointerEventHandler<T>>,
     /// `onPointerEnter`
-    #[cfg_attr(rust_js, rust_js::name = "onPointerEnter")]
     pub on_pointer_enter: Option<event::PointerEventHandler<T>>,
     /// `onPointerLeave`
-    #[cfg_attr(rust_js, rust_js::name = "onPointerLeave")]
     pub on_pointer_leave: Option<event::PointerEventHandler<T>>,
     /// `onPointerOver`
-    #[cfg_attr(rust_js, rust_js::name = "onPointerOver")]
     pub on_pointer_over: Option<event::PointerEventHandler<T>>,
     /// `onPointerOverCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onPointerOverCapture")]
     pub on_pointer_over_capture: Option<event::PointerEventHandler<T>>,
     /// `onPointerOut`
-    #[cfg_attr(rust_js, rust_js::name = "onPointerOut")]
     pub on_pointer_out: Option<event::PointerEventHandler<T>>,
     /// `onPointerOutCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onPointerOutCapture")]
     pub on_pointer_out_capture: Option<event::PointerEventHandler<T>>,
     /// `onGotPointerCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onGotPointerCapture")]
     pub on_got_pointer_capture: Option<event::ReactEventHandler<T>>,
     /// `onGotPointerCaptureCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onGotPointerCaptureCapture")]
     pub on_got_pointer_capture_capture: Option<event::PointerEventHandler<T>>,
     /// `onLostPointerCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onLostPointerCapture")]
     pub on_lost_pointer_capture: Option<event::ReactEventHandler<T>>,
     /// `onLostPointerCaptureCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onLostPointerCaptureCapture")]
     pub on_lost_pointer_capture_capture: Option<event::PointerEventHandler<T>>,
     /// `onScroll`
-    #[cfg_attr(rust_js, rust_js::name = "onScroll")]
     pub on_scroll: Option<event::UIEventHandler<T>>,
     /// `onScrollCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onScrollCapture")]
     pub on_scroll_capture: Option<event::UIEventHandler<T>>,
     /// `onScrollEnd`
-    #[cfg_attr(rust_js, rust_js::name = "onScrollEnd")]
     pub on_scroll_end: Option<event::UIEventHandler<T>>,
     /// `onScrollEndCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onScrollEndCapture")]
     pub on_scroll_end_capture: Option<event::UIEventHandler<T>>,
     /// `onWheel`
-    #[cfg_attr(rust_js, rust_js::name = "onWheel")]
     pub on_wheel: Option<event::WheelEventHandler<T>>,
     /// `onWheelCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onWheelCapture")]
     pub on_wheel_capture: Option<event::WheelEventHandler<T>>,
     /// `onAnimationStart`
-    #[cfg_attr(rust_js, rust_js::name = "onAnimationStart")]
     pub on_animation_start: Option<event::AnimationEventHandler<T>>,
     /// `onAnimationStartCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onAnimationStartCapture")]
     pub on_animation_start_capture: Option<event::AnimationEventHandler<T>>,
     /// `onAnimationEnd`
-    #[cfg_attr(rust_js, rust_js::name = "onAnimationEnd")]
     pub on_animation_end: Option<event::AnimationEventHandler<T>>,
     /// `onAnimationEndCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onAnimationEndCapture")]
     pub on_animation_end_capture: Option<event::AnimationEventHandler<T>>,
     /// `onAnimationIteration`
-    #[cfg_attr(rust_js, rust_js::name = "onAnimationIteration")]
     pub on_animation_iteration: Option<event::AnimationEventHandler<T>>,
     /// `onAnimationIterationCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onAnimationIterationCapture")]
     pub on_animation_iteration_capture: Option<event::AnimationEventHandler<T>>,
     /// `onToggle`
-    #[cfg_attr(rust_js, rust_js::name = "onToggle")]
     pub on_toggle: Option<event::ToggleEventHandler<T>>,
     /// `onBeforeToggle`
-    #[cfg_attr(rust_js, rust_js::name = "onBeforeToggle")]
     pub on_before_toggle: Option<event::ToggleEventHandler<T>>,
     /// `onTransitionCancel`
-    #[cfg_attr(rust_js, rust_js::name = "onTransitionCancel")]
     pub on_transition_cancel: Option<event::TransitionEventHandler<T>>,
     /// `onTransitionCancelCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onTransitionCancelCapture")]
     pub on_transition_cancel_capture: Option<event::TransitionEventHandler<T>>,
     /// `onTransitionEnd`
-    #[cfg_attr(rust_js, rust_js::name = "onTransitionEnd")]
     pub on_transition_end: Option<event::TransitionEventHandler<T>>,
     /// `onTransitionEndCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onTransitionEndCapture")]
     pub on_transition_end_capture: Option<event::TransitionEventHandler<T>>,
     /// `onTransitionRun`
-    #[cfg_attr(rust_js, rust_js::name = "onTransitionRun")]
     pub on_transition_run: Option<event::TransitionEventHandler<T>>,
     /// `onTransitionRunCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onTransitionRunCapture")]
     pub on_transition_run_capture: Option<event::TransitionEventHandler<T>>,
     /// `onTransitionStart`
-    #[cfg_attr(rust_js, rust_js::name = "onTransitionStart")]
     pub on_transition_start: Option<event::TransitionEventHandler<T>>,
     /// `onTransitionStartCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onTransitionStartCapture")]
     pub on_transition_start_capture: Option<event::TransitionEventHandler<T>>,
     /// `defaultChecked`
-    #[cfg_attr(rust_js, rust_js::name = "defaultChecked")]
     pub default_checked: Option<bool>,
     /// `defaultValue`
-    #[cfg_attr(rust_js, rust_js::name = "defaultValue")]
     pub default_value: Option<NumberOrString<'a>>,
     /// `suppressContentEditableWarning`
-    #[cfg_attr(rust_js, rust_js::name = "suppressContentEditableWarning")]
     pub suppress_content_editable_warning: Option<bool>,
     /// `suppressHydrationWarning`
-    #[cfg_attr(rust_js, rust_js::name = "suppressHydrationWarning")]
     pub suppress_hydration_warning: Option<bool>,
     /// `accessKey`
-    #[cfg_attr(rust_js, rust_js::name = "accessKey")]
     pub access_key: Option<&'a str>,
     /// `autoCapitalize`
-    #[cfg_attr(rust_js, rust_js::name = "autoCapitalize")]
     pub auto_capitalize: Option<&'a str>,
     /// `autoFocus`
-    #[cfg_attr(rust_js, rust_js::name = "autoFocus")]
     pub auto_focus: Option<bool>,
     /// `className`
-    #[cfg_attr(rust_js, rust_js::name = "className")]
     pub class_name: Option<&'a str>,
     /// `contentEditable`
-    #[cfg_attr(rust_js, rust_js::name = "contentEditable")]
     pub content_editable: Option<Booleanish<'a>>,
     /// `contextMenu`
-    #[cfg_attr(rust_js, rust_js::name = "contextMenu")]
     pub context_menu: Option<&'a str>,
     /// `dir`
     pub dir: Option<&'a str>,
     /// `draggable`
     pub draggable: Option<Booleanish<'a>>,
     /// `enterKeyHint`
-    #[cfg_attr(rust_js, rust_js::name = "enterKeyHint")]
     pub enter_key_hint: Option<&'a str>,
     /// `hidden`
     pub hidden: Option<bool>,
@@ -721,19 +542,16 @@ pub struct HTMLAttributes<'a, T = webapi::HTMLElement> {
     /// `slot`
     pub slot: Option<&'a str>,
     /// `spellCheck`
-    #[cfg_attr(rust_js, rust_js::name = "spellCheck")]
     pub spell_check: Option<Booleanish<'a>>,
     /// `style`
     pub style: Option<CSSProperties>,
     /// `tabIndex`
-    #[cfg_attr(rust_js, rust_js::name = "tabIndex")]
     pub tab_index: Option<f64>,
     /// `title`
     pub title: Option<&'a str>,
     /// `translate`
     pub translate: Option<&'a str>,
     /// `radioGroup`
-    #[cfg_attr(rust_js, rust_js::name = "radioGroup")]
     pub radio_group: Option<&'a str>,
     /// `role`
     pub role: Option<&'a str>,
@@ -760,27 +578,21 @@ pub struct HTMLAttributes<'a, T = webapi::HTMLElement> {
     /// `vocab`
     pub vocab: Option<&'a str>,
     /// `autoCorrect`
-    #[cfg_attr(rust_js, rust_js::name = "autoCorrect")]
     pub auto_correct: Option<&'a str>,
     /// `autoSave`
-    #[cfg_attr(rust_js, rust_js::name = "autoSave")]
     pub auto_save: Option<&'a str>,
     /// `color`
     pub color: Option<&'a str>,
     /// `itemProp`
-    #[cfg_attr(rust_js, rust_js::name = "itemProp")]
     pub item_prop: Option<&'a str>,
     /// `itemScope`
-    #[cfg_attr(rust_js, rust_js::name = "itemScope")]
     pub item_scope: Option<bool>,
     /// `itemType`
-    #[cfg_attr(rust_js, rust_js::name = "itemType")]
     pub item_type: Option<&'a str>,
     /// `itemID`
     #[cfg_attr(rust_js, rust_js::name = "itemID")]
     pub item_id: Option<&'a str>,
     /// `itemRef`
-    #[cfg_attr(rust_js, rust_js::name = "itemRef")]
     pub item_ref: Option<&'a str>,
     /// `results`
     pub results: Option<f64>,
@@ -791,15 +603,12 @@ pub struct HTMLAttributes<'a, T = webapi::HTMLElement> {
     /// `popover`
     pub popover: Option<&'a str>,
     /// `popoverTargetAction`
-    #[cfg_attr(rust_js, rust_js::name = "popoverTargetAction")]
     pub popover_target_action: Option<&'a str>,
     /// `popoverTarget`
-    #[cfg_attr(rust_js, rust_js::name = "popoverTarget")]
     pub popover_target: Option<&'a str>,
     /// `inert`
     pub inert: Option<bool>,
     /// `inputMode`
-    #[cfg_attr(rust_js, rust_js::name = "inputMode")]
     pub input_mode: Option<&'a str>,
     /// `is`
     pub is: Option<&'a str>,
@@ -1255,514 +1064,344 @@ pub struct SVGAttributes<'a, T = webapi::SVGElement> {
     #[cfg_attr(rust_js, rust_js::name = "aria-valuetext")]
     pub aria_valuetext: Option<&'a str>,
     /// `onCopy`
-    #[cfg_attr(rust_js, rust_js::name = "onCopy")]
     pub on_copy: Option<event::ClipboardEventHandler<T>>,
     /// `onCopyCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onCopyCapture")]
     pub on_copy_capture: Option<event::ClipboardEventHandler<T>>,
     /// `onCut`
-    #[cfg_attr(rust_js, rust_js::name = "onCut")]
     pub on_cut: Option<event::ClipboardEventHandler<T>>,
     /// `onCutCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onCutCapture")]
     pub on_cut_capture: Option<event::ClipboardEventHandler<T>>,
     /// `onPaste`
-    #[cfg_attr(rust_js, rust_js::name = "onPaste")]
     pub on_paste: Option<event::ClipboardEventHandler<T>>,
     /// `onPasteCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onPasteCapture")]
     pub on_paste_capture: Option<event::ClipboardEventHandler<T>>,
     /// `onCompositionEnd`
-    #[cfg_attr(rust_js, rust_js::name = "onCompositionEnd")]
     pub on_composition_end: Option<event::CompositionEventHandler<T>>,
     /// `onCompositionEndCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onCompositionEndCapture")]
     pub on_composition_end_capture: Option<event::CompositionEventHandler<T>>,
     /// `onCompositionStart`
-    #[cfg_attr(rust_js, rust_js::name = "onCompositionStart")]
     pub on_composition_start: Option<event::CompositionEventHandler<T>>,
     /// `onCompositionStartCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onCompositionStartCapture")]
     pub on_composition_start_capture: Option<event::CompositionEventHandler<T>>,
     /// `onCompositionUpdate`
-    #[cfg_attr(rust_js, rust_js::name = "onCompositionUpdate")]
     pub on_composition_update: Option<event::CompositionEventHandler<T>>,
     /// `onCompositionUpdateCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onCompositionUpdateCapture")]
     pub on_composition_update_capture: Option<event::CompositionEventHandler<T>>,
     /// `onFocus`
-    #[cfg_attr(rust_js, rust_js::name = "onFocus")]
     pub on_focus: Option<event::FocusEventHandler<T>>,
     /// `onFocusCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onFocusCapture")]
     pub on_focus_capture: Option<event::FocusEventHandler<T>>,
     /// `onBlur`
-    #[cfg_attr(rust_js, rust_js::name = "onBlur")]
     pub on_blur: Option<event::FocusEventHandler<T>>,
     /// `onBlurCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onBlurCapture")]
     pub on_blur_capture: Option<event::FocusEventHandler<T>>,
     /// `onChange`
-    #[cfg_attr(rust_js, rust_js::name = "onChange")]
     pub on_change: Option<event::ChangeEventHandler<T>>,
     /// `onChangeCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onChangeCapture")]
     pub on_change_capture: Option<event::ChangeEventHandler<T>>,
     /// `onBeforeInput`
-    #[cfg_attr(rust_js, rust_js::name = "onBeforeInput")]
     pub on_before_input: Option<event::InputEventHandler<T>>,
     /// `onBeforeInputCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onBeforeInputCapture")]
     pub on_before_input_capture: Option<event::InputEventHandler<T>>,
     /// `onInput`
-    #[cfg_attr(rust_js, rust_js::name = "onInput")]
     pub on_input: Option<event::InputEventHandler<T>>,
     /// `onInputCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onInputCapture")]
     pub on_input_capture: Option<event::InputEventHandler<T>>,
     /// `onReset`
-    #[cfg_attr(rust_js, rust_js::name = "onReset")]
     pub on_reset: Option<event::ReactEventHandler<T>>,
     /// `onResetCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onResetCapture")]
     pub on_reset_capture: Option<event::ReactEventHandler<T>>,
     /// `onSubmit`
-    #[cfg_attr(rust_js, rust_js::name = "onSubmit")]
     pub on_submit: Option<event::SubmitEventHandler<T>>,
     /// `onSubmitCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onSubmitCapture")]
     pub on_submit_capture: Option<event::SubmitEventHandler<T>>,
     /// `onInvalid`
-    #[cfg_attr(rust_js, rust_js::name = "onInvalid")]
     pub on_invalid: Option<event::ReactEventHandler<T>>,
     /// `onInvalidCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onInvalidCapture")]
     pub on_invalid_capture: Option<event::ReactEventHandler<T>>,
     /// `onLoad`
-    #[cfg_attr(rust_js, rust_js::name = "onLoad")]
     pub on_load: Option<event::ReactEventHandler<T>>,
     /// `onLoadCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onLoadCapture")]
     pub on_load_capture: Option<event::ReactEventHandler<T>>,
     /// `onError`
-    #[cfg_attr(rust_js, rust_js::name = "onError")]
     pub on_error: Option<event::ReactEventHandler<T>>,
     /// `onErrorCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onErrorCapture")]
     pub on_error_capture: Option<event::ReactEventHandler<T>>,
     /// `onKeyDown`
-    #[cfg_attr(rust_js, rust_js::name = "onKeyDown")]
     pub on_key_down: Option<event::KeyboardEventHandler<T>>,
     /// `onKeyDownCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onKeyDownCapture")]
     pub on_key_down_capture: Option<event::KeyboardEventHandler<T>>,
     /// `onKeyPress`
-    #[cfg_attr(rust_js, rust_js::name = "onKeyPress")]
     pub on_key_press: Option<event::KeyboardEventHandler<T>>,
     /// `onKeyPressCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onKeyPressCapture")]
     pub on_key_press_capture: Option<event::KeyboardEventHandler<T>>,
     /// `onKeyUp`
-    #[cfg_attr(rust_js, rust_js::name = "onKeyUp")]
     pub on_key_up: Option<event::KeyboardEventHandler<T>>,
     /// `onKeyUpCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onKeyUpCapture")]
     pub on_key_up_capture: Option<event::KeyboardEventHandler<T>>,
     /// `onAbort`
-    #[cfg_attr(rust_js, rust_js::name = "onAbort")]
     pub on_abort: Option<event::ReactEventHandler<T>>,
     /// `onAbortCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onAbortCapture")]
     pub on_abort_capture: Option<event::ReactEventHandler<T>>,
     /// `onCanPlay`
-    #[cfg_attr(rust_js, rust_js::name = "onCanPlay")]
     pub on_can_play: Option<event::ReactEventHandler<T>>,
     /// `onCanPlayCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onCanPlayCapture")]
     pub on_can_play_capture: Option<event::ReactEventHandler<T>>,
     /// `onCanPlayThrough`
-    #[cfg_attr(rust_js, rust_js::name = "onCanPlayThrough")]
     pub on_can_play_through: Option<event::ReactEventHandler<T>>,
     /// `onCanPlayThroughCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onCanPlayThroughCapture")]
     pub on_can_play_through_capture: Option<event::ReactEventHandler<T>>,
     /// `onDurationChange`
-    #[cfg_attr(rust_js, rust_js::name = "onDurationChange")]
     pub on_duration_change: Option<event::ReactEventHandler<T>>,
     /// `onDurationChangeCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onDurationChangeCapture")]
     pub on_duration_change_capture: Option<event::ReactEventHandler<T>>,
     /// `onEmptied`
-    #[cfg_attr(rust_js, rust_js::name = "onEmptied")]
     pub on_emptied: Option<event::ReactEventHandler<T>>,
     /// `onEmptiedCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onEmptiedCapture")]
     pub on_emptied_capture: Option<event::ReactEventHandler<T>>,
     /// `onEncrypted`
-    #[cfg_attr(rust_js, rust_js::name = "onEncrypted")]
     pub on_encrypted: Option<event::ReactEventHandler<T>>,
     /// `onEncryptedCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onEncryptedCapture")]
     pub on_encrypted_capture: Option<event::ReactEventHandler<T>>,
     /// `onEnded`
-    #[cfg_attr(rust_js, rust_js::name = "onEnded")]
     pub on_ended: Option<event::ReactEventHandler<T>>,
     /// `onEndedCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onEndedCapture")]
     pub on_ended_capture: Option<event::ReactEventHandler<T>>,
     /// `onLoadedData`
-    #[cfg_attr(rust_js, rust_js::name = "onLoadedData")]
     pub on_loaded_data: Option<event::ReactEventHandler<T>>,
     /// `onLoadedDataCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onLoadedDataCapture")]
     pub on_loaded_data_capture: Option<event::ReactEventHandler<T>>,
     /// `onLoadedMetadata`
-    #[cfg_attr(rust_js, rust_js::name = "onLoadedMetadata")]
     pub on_loaded_metadata: Option<event::ReactEventHandler<T>>,
     /// `onLoadedMetadataCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onLoadedMetadataCapture")]
     pub on_loaded_metadata_capture: Option<event::ReactEventHandler<T>>,
     /// `onLoadStart`
-    #[cfg_attr(rust_js, rust_js::name = "onLoadStart")]
     pub on_load_start: Option<event::ReactEventHandler<T>>,
     /// `onLoadStartCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onLoadStartCapture")]
     pub on_load_start_capture: Option<event::ReactEventHandler<T>>,
     /// `onPause`
-    #[cfg_attr(rust_js, rust_js::name = "onPause")]
     pub on_pause: Option<event::ReactEventHandler<T>>,
     /// `onPauseCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onPauseCapture")]
     pub on_pause_capture: Option<event::ReactEventHandler<T>>,
     /// `onPlay`
-    #[cfg_attr(rust_js, rust_js::name = "onPlay")]
     pub on_play: Option<event::ReactEventHandler<T>>,
     /// `onPlayCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onPlayCapture")]
     pub on_play_capture: Option<event::ReactEventHandler<T>>,
     /// `onPlaying`
-    #[cfg_attr(rust_js, rust_js::name = "onPlaying")]
     pub on_playing: Option<event::ReactEventHandler<T>>,
     /// `onPlayingCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onPlayingCapture")]
     pub on_playing_capture: Option<event::ReactEventHandler<T>>,
     /// `onProgress`
-    #[cfg_attr(rust_js, rust_js::name = "onProgress")]
     pub on_progress: Option<event::ReactEventHandler<T>>,
     /// `onProgressCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onProgressCapture")]
     pub on_progress_capture: Option<event::ReactEventHandler<T>>,
     /// `onRateChange`
-    #[cfg_attr(rust_js, rust_js::name = "onRateChange")]
     pub on_rate_change: Option<event::ReactEventHandler<T>>,
     /// `onRateChangeCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onRateChangeCapture")]
     pub on_rate_change_capture: Option<event::ReactEventHandler<T>>,
     /// `onSeeked`
-    #[cfg_attr(rust_js, rust_js::name = "onSeeked")]
     pub on_seeked: Option<event::ReactEventHandler<T>>,
     /// `onSeekedCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onSeekedCapture")]
     pub on_seeked_capture: Option<event::ReactEventHandler<T>>,
     /// `onSeeking`
-    #[cfg_attr(rust_js, rust_js::name = "onSeeking")]
     pub on_seeking: Option<event::ReactEventHandler<T>>,
     /// `onSeekingCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onSeekingCapture")]
     pub on_seeking_capture: Option<event::ReactEventHandler<T>>,
     /// `onStalled`
-    #[cfg_attr(rust_js, rust_js::name = "onStalled")]
     pub on_stalled: Option<event::ReactEventHandler<T>>,
     /// `onStalledCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onStalledCapture")]
     pub on_stalled_capture: Option<event::ReactEventHandler<T>>,
     /// `onSuspend`
-    #[cfg_attr(rust_js, rust_js::name = "onSuspend")]
     pub on_suspend: Option<event::ReactEventHandler<T>>,
     /// `onSuspendCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onSuspendCapture")]
     pub on_suspend_capture: Option<event::ReactEventHandler<T>>,
     /// `onTimeUpdate`
-    #[cfg_attr(rust_js, rust_js::name = "onTimeUpdate")]
     pub on_time_update: Option<event::ReactEventHandler<T>>,
     /// `onTimeUpdateCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onTimeUpdateCapture")]
     pub on_time_update_capture: Option<event::ReactEventHandler<T>>,
     /// `onVolumeChange`
-    #[cfg_attr(rust_js, rust_js::name = "onVolumeChange")]
     pub on_volume_change: Option<event::ReactEventHandler<T>>,
     /// `onVolumeChangeCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onVolumeChangeCapture")]
     pub on_volume_change_capture: Option<event::ReactEventHandler<T>>,
     /// `onWaiting`
-    #[cfg_attr(rust_js, rust_js::name = "onWaiting")]
     pub on_waiting: Option<event::ReactEventHandler<T>>,
     /// `onWaitingCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onWaitingCapture")]
     pub on_waiting_capture: Option<event::ReactEventHandler<T>>,
     /// `onAuxClick`
-    #[cfg_attr(rust_js, rust_js::name = "onAuxClick")]
     pub on_aux_click: Option<event::MouseEventHandler<T>>,
     /// `onAuxClickCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onAuxClickCapture")]
     pub on_aux_click_capture: Option<event::MouseEventHandler<T>>,
     /// `onClick`
-    #[cfg_attr(rust_js, rust_js::name = "onClick")]
     pub on_click: Option<event::MouseEventHandler<T>>,
     /// `onClickCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onClickCapture")]
     pub on_click_capture: Option<event::MouseEventHandler<T>>,
     /// `onContextMenu`
-    #[cfg_attr(rust_js, rust_js::name = "onContextMenu")]
     pub on_context_menu: Option<event::MouseEventHandler<T>>,
     /// `onContextMenuCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onContextMenuCapture")]
     pub on_context_menu_capture: Option<event::MouseEventHandler<T>>,
     /// `onDoubleClick`
-    #[cfg_attr(rust_js, rust_js::name = "onDoubleClick")]
     pub on_double_click: Option<event::MouseEventHandler<T>>,
     /// `onDoubleClickCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onDoubleClickCapture")]
     pub on_double_click_capture: Option<event::MouseEventHandler<T>>,
     /// `onDrag`
-    #[cfg_attr(rust_js, rust_js::name = "onDrag")]
     pub on_drag: Option<event::DragEventHandler<T>>,
     /// `onDragCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onDragCapture")]
     pub on_drag_capture: Option<event::DragEventHandler<T>>,
     /// `onDragEnd`
-    #[cfg_attr(rust_js, rust_js::name = "onDragEnd")]
     pub on_drag_end: Option<event::DragEventHandler<T>>,
     /// `onDragEndCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onDragEndCapture")]
     pub on_drag_end_capture: Option<event::DragEventHandler<T>>,
     /// `onDragEnter`
-    #[cfg_attr(rust_js, rust_js::name = "onDragEnter")]
     pub on_drag_enter: Option<event::DragEventHandler<T>>,
     /// `onDragEnterCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onDragEnterCapture")]
     pub on_drag_enter_capture: Option<event::DragEventHandler<T>>,
     /// `onDragExit`
-    #[cfg_attr(rust_js, rust_js::name = "onDragExit")]
     pub on_drag_exit: Option<event::DragEventHandler<T>>,
     /// `onDragExitCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onDragExitCapture")]
     pub on_drag_exit_capture: Option<event::DragEventHandler<T>>,
     /// `onDragLeave`
-    #[cfg_attr(rust_js, rust_js::name = "onDragLeave")]
     pub on_drag_leave: Option<event::DragEventHandler<T>>,
     /// `onDragLeaveCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onDragLeaveCapture")]
     pub on_drag_leave_capture: Option<event::DragEventHandler<T>>,
     /// `onDragOver`
-    #[cfg_attr(rust_js, rust_js::name = "onDragOver")]
     pub on_drag_over: Option<event::DragEventHandler<T>>,
     /// `onDragOverCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onDragOverCapture")]
     pub on_drag_over_capture: Option<event::DragEventHandler<T>>,
     /// `onDragStart`
-    #[cfg_attr(rust_js, rust_js::name = "onDragStart")]
     pub on_drag_start: Option<event::DragEventHandler<T>>,
     /// `onDragStartCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onDragStartCapture")]
     pub on_drag_start_capture: Option<event::DragEventHandler<T>>,
     /// `onDrop`
-    #[cfg_attr(rust_js, rust_js::name = "onDrop")]
     pub on_drop: Option<event::DragEventHandler<T>>,
     /// `onDropCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onDropCapture")]
     pub on_drop_capture: Option<event::DragEventHandler<T>>,
     /// `onMouseDown`
-    #[cfg_attr(rust_js, rust_js::name = "onMouseDown")]
     pub on_mouse_down: Option<event::MouseEventHandler<T>>,
     /// `onMouseDownCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onMouseDownCapture")]
     pub on_mouse_down_capture: Option<event::MouseEventHandler<T>>,
     /// `onMouseEnter`
-    #[cfg_attr(rust_js, rust_js::name = "onMouseEnter")]
     pub on_mouse_enter: Option<event::MouseEventHandler<T>>,
     /// `onMouseLeave`
-    #[cfg_attr(rust_js, rust_js::name = "onMouseLeave")]
     pub on_mouse_leave: Option<event::MouseEventHandler<T>>,
     /// `onMouseMove`
-    #[cfg_attr(rust_js, rust_js::name = "onMouseMove")]
     pub on_mouse_move: Option<event::MouseEventHandler<T>>,
     /// `onMouseMoveCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onMouseMoveCapture")]
     pub on_mouse_move_capture: Option<event::MouseEventHandler<T>>,
     /// `onMouseOut`
-    #[cfg_attr(rust_js, rust_js::name = "onMouseOut")]
     pub on_mouse_out: Option<event::MouseEventHandler<T>>,
     /// `onMouseOutCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onMouseOutCapture")]
     pub on_mouse_out_capture: Option<event::MouseEventHandler<T>>,
     /// `onMouseOver`
-    #[cfg_attr(rust_js, rust_js::name = "onMouseOver")]
     pub on_mouse_over: Option<event::MouseEventHandler<T>>,
     /// `onMouseOverCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onMouseOverCapture")]
     pub on_mouse_over_capture: Option<event::MouseEventHandler<T>>,
     /// `onMouseUp`
-    #[cfg_attr(rust_js, rust_js::name = "onMouseUp")]
     pub on_mouse_up: Option<event::MouseEventHandler<T>>,
     /// `onMouseUpCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onMouseUpCapture")]
     pub on_mouse_up_capture: Option<event::MouseEventHandler<T>>,
     /// `onSelect`
-    #[cfg_attr(rust_js, rust_js::name = "onSelect")]
     pub on_select: Option<event::ReactEventHandler<T>>,
     /// `onSelectCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onSelectCapture")]
     pub on_select_capture: Option<event::ReactEventHandler<T>>,
     /// `onTouchCancel`
-    #[cfg_attr(rust_js, rust_js::name = "onTouchCancel")]
     pub on_touch_cancel: Option<event::TouchEventHandler<T>>,
     /// `onTouchCancelCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onTouchCancelCapture")]
     pub on_touch_cancel_capture: Option<event::TouchEventHandler<T>>,
     /// `onTouchEnd`
-    #[cfg_attr(rust_js, rust_js::name = "onTouchEnd")]
     pub on_touch_end: Option<event::TouchEventHandler<T>>,
     /// `onTouchEndCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onTouchEndCapture")]
     pub on_touch_end_capture: Option<event::TouchEventHandler<T>>,
     /// `onTouchMove`
-    #[cfg_attr(rust_js, rust_js::name = "onTouchMove")]
     pub on_touch_move: Option<event::TouchEventHandler<T>>,
     /// `onTouchMoveCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onTouchMoveCapture")]
     pub on_touch_move_capture: Option<event::TouchEventHandler<T>>,
     /// `onTouchStart`
-    #[cfg_attr(rust_js, rust_js::name = "onTouchStart")]
     pub on_touch_start: Option<event::TouchEventHandler<T>>,
     /// `onTouchStartCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onTouchStartCapture")]
     pub on_touch_start_capture: Option<event::TouchEventHandler<T>>,
     /// `onPointerDown`
-    #[cfg_attr(rust_js, rust_js::name = "onPointerDown")]
     pub on_pointer_down: Option<event::PointerEventHandler<T>>,
     /// `onPointerDownCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onPointerDownCapture")]
     pub on_pointer_down_capture: Option<event::PointerEventHandler<T>>,
     /// `onPointerMove`
-    #[cfg_attr(rust_js, rust_js::name = "onPointerMove")]
     pub on_pointer_move: Option<event::PointerEventHandler<T>>,
     /// `onPointerMoveCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onPointerMoveCapture")]
     pub on_pointer_move_capture: Option<event::PointerEventHandler<T>>,
     /// `onPointerUp`
-    #[cfg_attr(rust_js, rust_js::name = "onPointerUp")]
     pub on_pointer_up: Option<event::PointerEventHandler<T>>,
     /// `onPointerUpCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onPointerUpCapture")]
     pub on_pointer_up_capture: Option<event::PointerEventHandler<T>>,
     /// `onPointerCancel`
-    #[cfg_attr(rust_js, rust_js::name = "onPointerCancel")]
     pub on_pointer_cancel: Option<event::PointerEventHandler<T>>,
     /// `onPointerCancelCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onPointerCancelCapture")]
     pub on_pointer_cancel_capture: Option<event::PointerEventHandler<T>>,
     /// `onPointerEnter`
-    #[cfg_attr(rust_js, rust_js::name = "onPointerEnter")]
     pub on_pointer_enter: Option<event::PointerEventHandler<T>>,
     /// `onPointerLeave`
-    #[cfg_attr(rust_js, rust_js::name = "onPointerLeave")]
     pub on_pointer_leave: Option<event::PointerEventHandler<T>>,
     /// `onPointerOver`
-    #[cfg_attr(rust_js, rust_js::name = "onPointerOver")]
     pub on_pointer_over: Option<event::PointerEventHandler<T>>,
     /// `onPointerOverCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onPointerOverCapture")]
     pub on_pointer_over_capture: Option<event::PointerEventHandler<T>>,
     /// `onPointerOut`
-    #[cfg_attr(rust_js, rust_js::name = "onPointerOut")]
     pub on_pointer_out: Option<event::PointerEventHandler<T>>,
     /// `onPointerOutCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onPointerOutCapture")]
     pub on_pointer_out_capture: Option<event::PointerEventHandler<T>>,
     /// `onGotPointerCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onGotPointerCapture")]
     pub on_got_pointer_capture: Option<event::ReactEventHandler<T>>,
     /// `onGotPointerCaptureCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onGotPointerCaptureCapture")]
     pub on_got_pointer_capture_capture: Option<event::PointerEventHandler<T>>,
     /// `onLostPointerCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onLostPointerCapture")]
     pub on_lost_pointer_capture: Option<event::ReactEventHandler<T>>,
     /// `onLostPointerCaptureCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onLostPointerCaptureCapture")]
     pub on_lost_pointer_capture_capture: Option<event::PointerEventHandler<T>>,
     /// `onScroll`
-    #[cfg_attr(rust_js, rust_js::name = "onScroll")]
     pub on_scroll: Option<event::UIEventHandler<T>>,
     /// `onScrollCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onScrollCapture")]
     pub on_scroll_capture: Option<event::UIEventHandler<T>>,
     /// `onScrollEnd`
-    #[cfg_attr(rust_js, rust_js::name = "onScrollEnd")]
     pub on_scroll_end: Option<event::UIEventHandler<T>>,
     /// `onScrollEndCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onScrollEndCapture")]
     pub on_scroll_end_capture: Option<event::UIEventHandler<T>>,
     /// `onWheel`
-    #[cfg_attr(rust_js, rust_js::name = "onWheel")]
     pub on_wheel: Option<event::WheelEventHandler<T>>,
     /// `onWheelCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onWheelCapture")]
     pub on_wheel_capture: Option<event::WheelEventHandler<T>>,
     /// `onAnimationStart`
-    #[cfg_attr(rust_js, rust_js::name = "onAnimationStart")]
     pub on_animation_start: Option<event::AnimationEventHandler<T>>,
     /// `onAnimationStartCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onAnimationStartCapture")]
     pub on_animation_start_capture: Option<event::AnimationEventHandler<T>>,
     /// `onAnimationEnd`
-    #[cfg_attr(rust_js, rust_js::name = "onAnimationEnd")]
     pub on_animation_end: Option<event::AnimationEventHandler<T>>,
     /// `onAnimationEndCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onAnimationEndCapture")]
     pub on_animation_end_capture: Option<event::AnimationEventHandler<T>>,
     /// `onAnimationIteration`
-    #[cfg_attr(rust_js, rust_js::name = "onAnimationIteration")]
     pub on_animation_iteration: Option<event::AnimationEventHandler<T>>,
     /// `onAnimationIterationCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onAnimationIterationCapture")]
     pub on_animation_iteration_capture: Option<event::AnimationEventHandler<T>>,
     /// `onToggle`
-    #[cfg_attr(rust_js, rust_js::name = "onToggle")]
     pub on_toggle: Option<event::ToggleEventHandler<T>>,
     /// `onBeforeToggle`
-    #[cfg_attr(rust_js, rust_js::name = "onBeforeToggle")]
     pub on_before_toggle: Option<event::ToggleEventHandler<T>>,
     /// `onTransitionCancel`
-    #[cfg_attr(rust_js, rust_js::name = "onTransitionCancel")]
     pub on_transition_cancel: Option<event::TransitionEventHandler<T>>,
     /// `onTransitionCancelCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onTransitionCancelCapture")]
     pub on_transition_cancel_capture: Option<event::TransitionEventHandler<T>>,
     /// `onTransitionEnd`
-    #[cfg_attr(rust_js, rust_js::name = "onTransitionEnd")]
     pub on_transition_end: Option<event::TransitionEventHandler<T>>,
     /// `onTransitionEndCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onTransitionEndCapture")]
     pub on_transition_end_capture: Option<event::TransitionEventHandler<T>>,
     /// `onTransitionRun`
-    #[cfg_attr(rust_js, rust_js::name = "onTransitionRun")]
     pub on_transition_run: Option<event::TransitionEventHandler<T>>,
     /// `onTransitionRunCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onTransitionRunCapture")]
     pub on_transition_run_capture: Option<event::TransitionEventHandler<T>>,
     /// `onTransitionStart`
-    #[cfg_attr(rust_js, rust_js::name = "onTransitionStart")]
     pub on_transition_start: Option<event::TransitionEventHandler<T>>,
     /// `onTransitionStartCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onTransitionStartCapture")]
     pub on_transition_start_capture: Option<event::TransitionEventHandler<T>>,
     /// `suppressHydrationWarning`
-    #[cfg_attr(rust_js, rust_js::name = "suppressHydrationWarning")]
     pub suppress_hydration_warning: Option<bool>,
     /// `className`
-    #[cfg_attr(rust_js, rust_js::name = "className")]
     pub class_name: Option<&'a str>,
     /// `color`
     pub color: Option<&'a str>,
@@ -1799,52 +1438,40 @@ pub struct SVGAttributes<'a, T = webapi::SVGElement> {
     /// `role`
     pub role: Option<&'a str>,
     /// `tabIndex`
-    #[cfg_attr(rust_js, rust_js::name = "tabIndex")]
     pub tab_index: Option<f64>,
     /// `crossOrigin`
-    #[cfg_attr(rust_js, rust_js::name = "crossOrigin")]
     pub cross_origin: Option<&'a str>,
     /// `accentHeight`
-    #[cfg_attr(rust_js, rust_js::name = "accentHeight")]
     pub accent_height: Option<NumberOrString<'a>>,
     /// `accumulate`
     pub accumulate: Option<&'a str>,
     /// `additive`
     pub additive: Option<&'a str>,
     /// `alignmentBaseline`
-    #[cfg_attr(rust_js, rust_js::name = "alignmentBaseline")]
     pub alignment_baseline: Option<&'a str>,
     /// `allowReorder`
-    #[cfg_attr(rust_js, rust_js::name = "allowReorder")]
     pub allow_reorder: Option<&'a str>,
     /// `alphabetic`
     pub alphabetic: Option<NumberOrString<'a>>,
     /// `amplitude`
     pub amplitude: Option<NumberOrString<'a>>,
     /// `arabicForm`
-    #[cfg_attr(rust_js, rust_js::name = "arabicForm")]
     pub arabic_form: Option<&'a str>,
     /// `ascent`
     pub ascent: Option<NumberOrString<'a>>,
     /// `attributeName`
-    #[cfg_attr(rust_js, rust_js::name = "attributeName")]
     pub attribute_name: Option<&'a str>,
     /// `attributeType`
-    #[cfg_attr(rust_js, rust_js::name = "attributeType")]
     pub attribute_type: Option<&'a str>,
     /// `autoReverse`
-    #[cfg_attr(rust_js, rust_js::name = "autoReverse")]
     pub auto_reverse: Option<Booleanish<'a>>,
     /// `azimuth`
     pub azimuth: Option<NumberOrString<'a>>,
     /// `baseFrequency`
-    #[cfg_attr(rust_js, rust_js::name = "baseFrequency")]
     pub base_frequency: Option<NumberOrString<'a>>,
     /// `baselineShift`
-    #[cfg_attr(rust_js, rust_js::name = "baselineShift")]
     pub baseline_shift: Option<NumberOrString<'a>>,
     /// `baseProfile`
-    #[cfg_attr(rust_js, rust_js::name = "baseProfile")]
     pub base_profile: Option<NumberOrString<'a>>,
     /// `bbox`
     pub bbox: Option<NumberOrString<'a>>,
@@ -1855,39 +1482,28 @@ pub struct SVGAttributes<'a, T = webapi::SVGElement> {
     /// `by`
     pub by: Option<NumberOrString<'a>>,
     /// `calcMode`
-    #[cfg_attr(rust_js, rust_js::name = "calcMode")]
     pub calc_mode: Option<NumberOrString<'a>>,
     /// `capHeight`
-    #[cfg_attr(rust_js, rust_js::name = "capHeight")]
     pub cap_height: Option<NumberOrString<'a>>,
     /// `clip`
     pub clip: Option<NumberOrString<'a>>,
     /// `clipPath`
-    #[cfg_attr(rust_js, rust_js::name = "clipPath")]
     pub clip_path: Option<&'a str>,
     /// `clipPathUnits`
-    #[cfg_attr(rust_js, rust_js::name = "clipPathUnits")]
     pub clip_path_units: Option<NumberOrString<'a>>,
     /// `clipRule`
-    #[cfg_attr(rust_js, rust_js::name = "clipRule")]
     pub clip_rule: Option<NumberOrString<'a>>,
     /// `colorInterpolation`
-    #[cfg_attr(rust_js, rust_js::name = "colorInterpolation")]
     pub color_interpolation: Option<NumberOrString<'a>>,
     /// `colorInterpolationFilters`
-    #[cfg_attr(rust_js, rust_js::name = "colorInterpolationFilters")]
     pub color_interpolation_filters: Option<&'a str>,
     /// `colorProfile`
-    #[cfg_attr(rust_js, rust_js::name = "colorProfile")]
     pub color_profile: Option<NumberOrString<'a>>,
     /// `colorRendering`
-    #[cfg_attr(rust_js, rust_js::name = "colorRendering")]
     pub color_rendering: Option<NumberOrString<'a>>,
     /// `contentScriptType`
-    #[cfg_attr(rust_js, rust_js::name = "contentScriptType")]
     pub content_script_type: Option<NumberOrString<'a>>,
     /// `contentStyleType`
-    #[cfg_attr(rust_js, rust_js::name = "contentStyleType")]
     pub content_style_type: Option<NumberOrString<'a>>,
     /// `cursor`
     pub cursor: Option<NumberOrString<'a>>,
@@ -1902,7 +1518,6 @@ pub struct SVGAttributes<'a, T = webapi::SVGElement> {
     /// `descent`
     pub descent: Option<NumberOrString<'a>>,
     /// `diffuseConstant`
-    #[cfg_attr(rust_js, rust_js::name = "diffuseConstant")]
     pub diffuse_constant: Option<NumberOrString<'a>>,
     /// `direction`
     pub direction: Option<NumberOrString<'a>>,
@@ -1911,7 +1526,6 @@ pub struct SVGAttributes<'a, T = webapi::SVGElement> {
     /// `divisor`
     pub divisor: Option<NumberOrString<'a>>,
     /// `dominantBaseline`
-    #[cfg_attr(rust_js, rust_js::name = "dominantBaseline")]
     pub dominant_baseline: Option<&'a str>,
     /// `dur`
     pub dur: Option<NumberOrString<'a>>,
@@ -1920,64 +1534,48 @@ pub struct SVGAttributes<'a, T = webapi::SVGElement> {
     /// `dy`
     pub dy: Option<NumberOrString<'a>>,
     /// `edgeMode`
-    #[cfg_attr(rust_js, rust_js::name = "edgeMode")]
     pub edge_mode: Option<NumberOrString<'a>>,
     /// `elevation`
     pub elevation: Option<NumberOrString<'a>>,
     /// `enableBackground`
-    #[cfg_attr(rust_js, rust_js::name = "enableBackground")]
     pub enable_background: Option<NumberOrString<'a>>,
     /// `end`
     pub end: Option<NumberOrString<'a>>,
     /// `exponent`
     pub exponent: Option<NumberOrString<'a>>,
     /// `externalResourcesRequired`
-    #[cfg_attr(rust_js, rust_js::name = "externalResourcesRequired")]
     pub external_resources_required: Option<Booleanish<'a>>,
     /// `fill`
     pub fill: Option<&'a str>,
     /// `fillOpacity`
-    #[cfg_attr(rust_js, rust_js::name = "fillOpacity")]
     pub fill_opacity: Option<NumberOrString<'a>>,
     /// `fillRule`
-    #[cfg_attr(rust_js, rust_js::name = "fillRule")]
     pub fill_rule: Option<&'a str>,
     /// `filter`
     pub filter: Option<&'a str>,
     /// `filterRes`
-    #[cfg_attr(rust_js, rust_js::name = "filterRes")]
     pub filter_res: Option<NumberOrString<'a>>,
     /// `filterUnits`
-    #[cfg_attr(rust_js, rust_js::name = "filterUnits")]
     pub filter_units: Option<NumberOrString<'a>>,
     /// `floodColor`
-    #[cfg_attr(rust_js, rust_js::name = "floodColor")]
     pub flood_color: Option<NumberOrString<'a>>,
     /// `floodOpacity`
-    #[cfg_attr(rust_js, rust_js::name = "floodOpacity")]
     pub flood_opacity: Option<NumberOrString<'a>>,
     /// `focusable`
     pub focusable: Option<Booleanish<'a>>,
     /// `fontFamily`
-    #[cfg_attr(rust_js, rust_js::name = "fontFamily")]
     pub font_family: Option<&'a str>,
     /// `fontSize`
-    #[cfg_attr(rust_js, rust_js::name = "fontSize")]
     pub font_size: Option<NumberOrString<'a>>,
     /// `fontSizeAdjust`
-    #[cfg_attr(rust_js, rust_js::name = "fontSizeAdjust")]
     pub font_size_adjust: Option<NumberOrString<'a>>,
     /// `fontStretch`
-    #[cfg_attr(rust_js, rust_js::name = "fontStretch")]
     pub font_stretch: Option<NumberOrString<'a>>,
     /// `fontStyle`
-    #[cfg_attr(rust_js, rust_js::name = "fontStyle")]
     pub font_style: Option<NumberOrString<'a>>,
     /// `fontVariant`
-    #[cfg_attr(rust_js, rust_js::name = "fontVariant")]
     pub font_variant: Option<NumberOrString<'a>>,
     /// `fontWeight`
-    #[cfg_attr(rust_js, rust_js::name = "fontWeight")]
     pub font_weight: Option<NumberOrString<'a>>,
     /// `format`
     pub format: Option<NumberOrString<'a>>,
@@ -1994,37 +1592,28 @@ pub struct SVGAttributes<'a, T = webapi::SVGElement> {
     /// `g2`
     pub g2: Option<NumberOrString<'a>>,
     /// `glyphName`
-    #[cfg_attr(rust_js, rust_js::name = "glyphName")]
     pub glyph_name: Option<NumberOrString<'a>>,
     /// `glyphOrientationHorizontal`
-    #[cfg_attr(rust_js, rust_js::name = "glyphOrientationHorizontal")]
     pub glyph_orientation_horizontal: Option<NumberOrString<'a>>,
     /// `glyphOrientationVertical`
-    #[cfg_attr(rust_js, rust_js::name = "glyphOrientationVertical")]
     pub glyph_orientation_vertical: Option<NumberOrString<'a>>,
     /// `glyphRef`
-    #[cfg_attr(rust_js, rust_js::name = "glyphRef")]
     pub glyph_ref: Option<NumberOrString<'a>>,
     /// `gradientTransform`
-    #[cfg_attr(rust_js, rust_js::name = "gradientTransform")]
     pub gradient_transform: Option<&'a str>,
     /// `gradientUnits`
-    #[cfg_attr(rust_js, rust_js::name = "gradientUnits")]
     pub gradient_units: Option<&'a str>,
     /// `hanging`
     pub hanging: Option<NumberOrString<'a>>,
     /// `horizAdvX`
-    #[cfg_attr(rust_js, rust_js::name = "horizAdvX")]
     pub horiz_adv_x: Option<NumberOrString<'a>>,
     /// `horizOriginX`
-    #[cfg_attr(rust_js, rust_js::name = "horizOriginX")]
     pub horiz_origin_x: Option<NumberOrString<'a>>,
     /// `href`
     pub href: Option<&'a str>,
     /// `ideographic`
     pub ideographic: Option<NumberOrString<'a>>,
     /// `imageRendering`
-    #[cfg_attr(rust_js, rust_js::name = "imageRendering")]
     pub image_rendering: Option<NumberOrString<'a>>,
     /// `in2`
     pub in2: Option<NumberOrString<'a>>,
@@ -2043,68 +1632,50 @@ pub struct SVGAttributes<'a, T = webapi::SVGElement> {
     /// `k`
     pub k: Option<NumberOrString<'a>>,
     /// `kernelMatrix`
-    #[cfg_attr(rust_js, rust_js::name = "kernelMatrix")]
     pub kernel_matrix: Option<NumberOrString<'a>>,
     /// `kernelUnitLength`
-    #[cfg_attr(rust_js, rust_js::name = "kernelUnitLength")]
     pub kernel_unit_length: Option<NumberOrString<'a>>,
     /// `kerning`
     pub kerning: Option<NumberOrString<'a>>,
     /// `keyPoints`
-    #[cfg_attr(rust_js, rust_js::name = "keyPoints")]
     pub key_points: Option<NumberOrString<'a>>,
     /// `keySplines`
-    #[cfg_attr(rust_js, rust_js::name = "keySplines")]
     pub key_splines: Option<NumberOrString<'a>>,
     /// `keyTimes`
-    #[cfg_attr(rust_js, rust_js::name = "keyTimes")]
     pub key_times: Option<NumberOrString<'a>>,
     /// `lengthAdjust`
-    #[cfg_attr(rust_js, rust_js::name = "lengthAdjust")]
     pub length_adjust: Option<NumberOrString<'a>>,
     /// `letterSpacing`
-    #[cfg_attr(rust_js, rust_js::name = "letterSpacing")]
     pub letter_spacing: Option<NumberOrString<'a>>,
     /// `lightingColor`
-    #[cfg_attr(rust_js, rust_js::name = "lightingColor")]
     pub lighting_color: Option<NumberOrString<'a>>,
     /// `limitingConeAngle`
-    #[cfg_attr(rust_js, rust_js::name = "limitingConeAngle")]
     pub limiting_cone_angle: Option<NumberOrString<'a>>,
     /// `local`
     pub local: Option<NumberOrString<'a>>,
     /// `markerEnd`
-    #[cfg_attr(rust_js, rust_js::name = "markerEnd")]
     pub marker_end: Option<&'a str>,
     /// `markerHeight`
-    #[cfg_attr(rust_js, rust_js::name = "markerHeight")]
     pub marker_height: Option<NumberOrString<'a>>,
     /// `markerMid`
-    #[cfg_attr(rust_js, rust_js::name = "markerMid")]
     pub marker_mid: Option<&'a str>,
     /// `markerStart`
-    #[cfg_attr(rust_js, rust_js::name = "markerStart")]
     pub marker_start: Option<&'a str>,
     /// `markerUnits`
-    #[cfg_attr(rust_js, rust_js::name = "markerUnits")]
     pub marker_units: Option<NumberOrString<'a>>,
     /// `markerWidth`
-    #[cfg_attr(rust_js, rust_js::name = "markerWidth")]
     pub marker_width: Option<NumberOrString<'a>>,
     /// `mask`
     pub mask: Option<&'a str>,
     /// `maskContentUnits`
-    #[cfg_attr(rust_js, rust_js::name = "maskContentUnits")]
     pub mask_content_units: Option<NumberOrString<'a>>,
     /// `maskUnits`
-    #[cfg_attr(rust_js, rust_js::name = "maskUnits")]
     pub mask_units: Option<NumberOrString<'a>>,
     /// `mathematical`
     pub mathematical: Option<NumberOrString<'a>>,
     /// `mode`
     pub mode: Option<NumberOrString<'a>>,
     /// `numOctaves`
-    #[cfg_attr(rust_js, rust_js::name = "numOctaves")]
     pub num_octaves: Option<NumberOrString<'a>>,
     /// `offset`
     pub offset: Option<NumberOrString<'a>>,
@@ -2123,77 +1694,56 @@ pub struct SVGAttributes<'a, T = webapi::SVGElement> {
     /// `overflow`
     pub overflow: Option<NumberOrString<'a>>,
     /// `overlinePosition`
-    #[cfg_attr(rust_js, rust_js::name = "overlinePosition")]
     pub overline_position: Option<NumberOrString<'a>>,
     /// `overlineThickness`
-    #[cfg_attr(rust_js, rust_js::name = "overlineThickness")]
     pub overline_thickness: Option<NumberOrString<'a>>,
     /// `paintOrder`
-    #[cfg_attr(rust_js, rust_js::name = "paintOrder")]
     pub paint_order: Option<NumberOrString<'a>>,
     /// `panose1`
     pub panose1: Option<NumberOrString<'a>>,
     /// `path`
     pub path: Option<&'a str>,
     /// `pathLength`
-    #[cfg_attr(rust_js, rust_js::name = "pathLength")]
     pub path_length: Option<NumberOrString<'a>>,
     /// `patternContentUnits`
-    #[cfg_attr(rust_js, rust_js::name = "patternContentUnits")]
     pub pattern_content_units: Option<&'a str>,
     /// `patternTransform`
-    #[cfg_attr(rust_js, rust_js::name = "patternTransform")]
     pub pattern_transform: Option<NumberOrString<'a>>,
     /// `patternUnits`
-    #[cfg_attr(rust_js, rust_js::name = "patternUnits")]
     pub pattern_units: Option<&'a str>,
     /// `pointerEvents`
-    #[cfg_attr(rust_js, rust_js::name = "pointerEvents")]
     pub pointer_events: Option<NumberOrString<'a>>,
     /// `points`
     pub points: Option<&'a str>,
     /// `pointsAtX`
-    #[cfg_attr(rust_js, rust_js::name = "pointsAtX")]
     pub points_at_x: Option<NumberOrString<'a>>,
     /// `pointsAtY`
-    #[cfg_attr(rust_js, rust_js::name = "pointsAtY")]
     pub points_at_y: Option<NumberOrString<'a>>,
     /// `pointsAtZ`
-    #[cfg_attr(rust_js, rust_js::name = "pointsAtZ")]
     pub points_at_z: Option<NumberOrString<'a>>,
     /// `preserveAlpha`
-    #[cfg_attr(rust_js, rust_js::name = "preserveAlpha")]
     pub preserve_alpha: Option<Booleanish<'a>>,
     /// `preserveAspectRatio`
-    #[cfg_attr(rust_js, rust_js::name = "preserveAspectRatio")]
     pub preserve_aspect_ratio: Option<&'a str>,
     /// `primitiveUnits`
-    #[cfg_attr(rust_js, rust_js::name = "primitiveUnits")]
     pub primitive_units: Option<NumberOrString<'a>>,
     /// `r`
     pub r: Option<NumberOrString<'a>>,
     /// `radius`
     pub radius: Option<NumberOrString<'a>>,
     /// `refX`
-    #[cfg_attr(rust_js, rust_js::name = "refX")]
     pub ref_x: Option<NumberOrString<'a>>,
     /// `refY`
-    #[cfg_attr(rust_js, rust_js::name = "refY")]
     pub ref_y: Option<NumberOrString<'a>>,
     /// `renderingIntent`
-    #[cfg_attr(rust_js, rust_js::name = "renderingIntent")]
     pub rendering_intent: Option<NumberOrString<'a>>,
     /// `repeatCount`
-    #[cfg_attr(rust_js, rust_js::name = "repeatCount")]
     pub repeat_count: Option<NumberOrString<'a>>,
     /// `repeatDur`
-    #[cfg_attr(rust_js, rust_js::name = "repeatDur")]
     pub repeat_dur: Option<NumberOrString<'a>>,
     /// `requiredExtensions`
-    #[cfg_attr(rust_js, rust_js::name = "requiredExtensions")]
     pub required_extensions: Option<NumberOrString<'a>>,
     /// `requiredFeatures`
-    #[cfg_attr(rust_js, rust_js::name = "requiredFeatures")]
     pub required_features: Option<NumberOrString<'a>>,
     /// `restart`
     pub restart: Option<NumberOrString<'a>>,
@@ -2210,99 +1760,72 @@ pub struct SVGAttributes<'a, T = webapi::SVGElement> {
     /// `seed`
     pub seed: Option<NumberOrString<'a>>,
     /// `shapeRendering`
-    #[cfg_attr(rust_js, rust_js::name = "shapeRendering")]
     pub shape_rendering: Option<NumberOrString<'a>>,
     /// `slope`
     pub slope: Option<NumberOrString<'a>>,
     /// `spacing`
     pub spacing: Option<NumberOrString<'a>>,
     /// `specularConstant`
-    #[cfg_attr(rust_js, rust_js::name = "specularConstant")]
     pub specular_constant: Option<NumberOrString<'a>>,
     /// `specularExponent`
-    #[cfg_attr(rust_js, rust_js::name = "specularExponent")]
     pub specular_exponent: Option<NumberOrString<'a>>,
     /// `speed`
     pub speed: Option<NumberOrString<'a>>,
     /// `spreadMethod`
-    #[cfg_attr(rust_js, rust_js::name = "spreadMethod")]
     pub spread_method: Option<&'a str>,
     /// `startOffset`
-    #[cfg_attr(rust_js, rust_js::name = "startOffset")]
     pub start_offset: Option<NumberOrString<'a>>,
     /// `stdDeviation`
-    #[cfg_attr(rust_js, rust_js::name = "stdDeviation")]
     pub std_deviation: Option<NumberOrString<'a>>,
     /// `stemh`
     pub stemh: Option<NumberOrString<'a>>,
     /// `stemv`
     pub stemv: Option<NumberOrString<'a>>,
     /// `stitchTiles`
-    #[cfg_attr(rust_js, rust_js::name = "stitchTiles")]
     pub stitch_tiles: Option<NumberOrString<'a>>,
     /// `stopColor`
-    #[cfg_attr(rust_js, rust_js::name = "stopColor")]
     pub stop_color: Option<&'a str>,
     /// `stopOpacity`
-    #[cfg_attr(rust_js, rust_js::name = "stopOpacity")]
     pub stop_opacity: Option<NumberOrString<'a>>,
     /// `strikethroughPosition`
-    #[cfg_attr(rust_js, rust_js::name = "strikethroughPosition")]
     pub strikethrough_position: Option<NumberOrString<'a>>,
     /// `strikethroughThickness`
-    #[cfg_attr(rust_js, rust_js::name = "strikethroughThickness")]
     pub strikethrough_thickness: Option<NumberOrString<'a>>,
     /// `string`
     pub string: Option<NumberOrString<'a>>,
     /// `stroke`
     pub stroke: Option<&'a str>,
     /// `strokeDasharray`
-    #[cfg_attr(rust_js, rust_js::name = "strokeDasharray")]
     pub stroke_dasharray: Option<NumberOrString<'a>>,
     /// `strokeDashoffset`
-    #[cfg_attr(rust_js, rust_js::name = "strokeDashoffset")]
     pub stroke_dashoffset: Option<NumberOrString<'a>>,
     /// `strokeLinecap`
-    #[cfg_attr(rust_js, rust_js::name = "strokeLinecap")]
     pub stroke_linecap: Option<&'a str>,
     /// `strokeLinejoin`
-    #[cfg_attr(rust_js, rust_js::name = "strokeLinejoin")]
     pub stroke_linejoin: Option<&'a str>,
     /// `strokeMiterlimit`
-    #[cfg_attr(rust_js, rust_js::name = "strokeMiterlimit")]
     pub stroke_miterlimit: Option<NumberOrString<'a>>,
     /// `strokeOpacity`
-    #[cfg_attr(rust_js, rust_js::name = "strokeOpacity")]
     pub stroke_opacity: Option<NumberOrString<'a>>,
     /// `strokeWidth`
-    #[cfg_attr(rust_js, rust_js::name = "strokeWidth")]
     pub stroke_width: Option<NumberOrString<'a>>,
     /// `surfaceScale`
-    #[cfg_attr(rust_js, rust_js::name = "surfaceScale")]
     pub surface_scale: Option<NumberOrString<'a>>,
     /// `systemLanguage`
-    #[cfg_attr(rust_js, rust_js::name = "systemLanguage")]
     pub system_language: Option<NumberOrString<'a>>,
     /// `tableValues`
-    #[cfg_attr(rust_js, rust_js::name = "tableValues")]
     pub table_values: Option<NumberOrString<'a>>,
     /// `targetX`
-    #[cfg_attr(rust_js, rust_js::name = "targetX")]
     pub target_x: Option<NumberOrString<'a>>,
     /// `targetY`
-    #[cfg_attr(rust_js, rust_js::name = "targetY")]
     pub target_y: Option<NumberOrString<'a>>,
     /// `textAnchor`
-    #[cfg_attr(rust_js, rust_js::name = "textAnchor")]
     pub text_anchor: Option<&'a str>,
     /// `textDecoration`
-    #[cfg_attr(rust_js, rust_js::name = "textDecoration")]
     pub text_decoration: Option<NumberOrString<'a>>,
     /// `textLength`
-    #[cfg_attr(rust_js, rust_js::name = "textLength")]
     pub text_length: Option<NumberOrString<'a>>,
     /// `textRendering`
-    #[cfg_attr(rust_js, rust_js::name = "textRendering")]
     pub text_rendering: Option<NumberOrString<'a>>,
     /// `to`
     pub to: Option<NumberOrString<'a>>,
@@ -2313,65 +1836,48 @@ pub struct SVGAttributes<'a, T = webapi::SVGElement> {
     /// `u2`
     pub u2: Option<NumberOrString<'a>>,
     /// `underlinePosition`
-    #[cfg_attr(rust_js, rust_js::name = "underlinePosition")]
     pub underline_position: Option<NumberOrString<'a>>,
     /// `underlineThickness`
-    #[cfg_attr(rust_js, rust_js::name = "underlineThickness")]
     pub underline_thickness: Option<NumberOrString<'a>>,
     /// `unicode`
     pub unicode: Option<NumberOrString<'a>>,
     /// `unicodeBidi`
-    #[cfg_attr(rust_js, rust_js::name = "unicodeBidi")]
     pub unicode_bidi: Option<NumberOrString<'a>>,
     /// `unicodeRange`
-    #[cfg_attr(rust_js, rust_js::name = "unicodeRange")]
     pub unicode_range: Option<NumberOrString<'a>>,
     /// `unitsPerEm`
-    #[cfg_attr(rust_js, rust_js::name = "unitsPerEm")]
     pub units_per_em: Option<NumberOrString<'a>>,
     /// `vAlphabetic`
-    #[cfg_attr(rust_js, rust_js::name = "vAlphabetic")]
     pub v_alphabetic: Option<NumberOrString<'a>>,
     /// `values`
     pub values: Option<&'a str>,
     /// `vectorEffect`
-    #[cfg_attr(rust_js, rust_js::name = "vectorEffect")]
     pub vector_effect: Option<NumberOrString<'a>>,
     /// `version`
     pub version: Option<&'a str>,
     /// `vertAdvY`
-    #[cfg_attr(rust_js, rust_js::name = "vertAdvY")]
     pub vert_adv_y: Option<NumberOrString<'a>>,
     /// `vertOriginX`
-    #[cfg_attr(rust_js, rust_js::name = "vertOriginX")]
     pub vert_origin_x: Option<NumberOrString<'a>>,
     /// `vertOriginY`
-    #[cfg_attr(rust_js, rust_js::name = "vertOriginY")]
     pub vert_origin_y: Option<NumberOrString<'a>>,
     /// `vHanging`
-    #[cfg_attr(rust_js, rust_js::name = "vHanging")]
     pub v_hanging: Option<NumberOrString<'a>>,
     /// `vIdeographic`
-    #[cfg_attr(rust_js, rust_js::name = "vIdeographic")]
     pub v_ideographic: Option<NumberOrString<'a>>,
     /// `viewBox`
-    #[cfg_attr(rust_js, rust_js::name = "viewBox")]
     pub view_box: Option<&'a str>,
     /// `viewTarget`
-    #[cfg_attr(rust_js, rust_js::name = "viewTarget")]
     pub view_target: Option<NumberOrString<'a>>,
     /// `visibility`
     pub visibility: Option<NumberOrString<'a>>,
     /// `vMathematical`
-    #[cfg_attr(rust_js, rust_js::name = "vMathematical")]
     pub v_mathematical: Option<NumberOrString<'a>>,
     /// `widths`
     pub widths: Option<NumberOrString<'a>>,
     /// `wordSpacing`
-    #[cfg_attr(rust_js, rust_js::name = "wordSpacing")]
     pub word_spacing: Option<NumberOrString<'a>>,
     /// `writingMode`
-    #[cfg_attr(rust_js, rust_js::name = "writingMode")]
     pub writing_mode: Option<NumberOrString<'a>>,
     /// `x1`
     pub x1: Option<NumberOrString<'a>>,
@@ -2380,45 +1886,32 @@ pub struct SVGAttributes<'a, T = webapi::SVGElement> {
     /// `x`
     pub x: Option<NumberOrString<'a>>,
     /// `xChannelSelector`
-    #[cfg_attr(rust_js, rust_js::name = "xChannelSelector")]
     pub x_channel_selector: Option<&'a str>,
     /// `xHeight`
-    #[cfg_attr(rust_js, rust_js::name = "xHeight")]
     pub x_height: Option<NumberOrString<'a>>,
     /// `xlinkActuate`
-    #[cfg_attr(rust_js, rust_js::name = "xlinkActuate")]
     pub xlink_actuate: Option<&'a str>,
     /// `xlinkArcrole`
-    #[cfg_attr(rust_js, rust_js::name = "xlinkArcrole")]
     pub xlink_arcrole: Option<&'a str>,
     /// `xlinkHref`
-    #[cfg_attr(rust_js, rust_js::name = "xlinkHref")]
     pub xlink_href: Option<&'a str>,
     /// `xlinkRole`
-    #[cfg_attr(rust_js, rust_js::name = "xlinkRole")]
     pub xlink_role: Option<&'a str>,
     /// `xlinkShow`
-    #[cfg_attr(rust_js, rust_js::name = "xlinkShow")]
     pub xlink_show: Option<&'a str>,
     /// `xlinkTitle`
-    #[cfg_attr(rust_js, rust_js::name = "xlinkTitle")]
     pub xlink_title: Option<&'a str>,
     /// `xlinkType`
-    #[cfg_attr(rust_js, rust_js::name = "xlinkType")]
     pub xlink_type: Option<&'a str>,
     /// `xmlBase`
-    #[cfg_attr(rust_js, rust_js::name = "xmlBase")]
     pub xml_base: Option<&'a str>,
     /// `xmlLang`
-    #[cfg_attr(rust_js, rust_js::name = "xmlLang")]
     pub xml_lang: Option<&'a str>,
     /// `xmlns`
     pub xmlns: Option<&'a str>,
     /// `xmlnsXlink`
-    #[cfg_attr(rust_js, rust_js::name = "xmlnsXlink")]
     pub xmlns_xlink: Option<&'a str>,
     /// `xmlSpace`
-    #[cfg_attr(rust_js, rust_js::name = "xmlSpace")]
     pub xml_space: Option<&'a str>,
     /// `y1`
     pub y1: Option<NumberOrString<'a>>,
@@ -2427,12 +1920,10 @@ pub struct SVGAttributes<'a, T = webapi::SVGElement> {
     /// `y`
     pub y: Option<NumberOrString<'a>>,
     /// `yChannelSelector`
-    #[cfg_attr(rust_js, rust_js::name = "yChannelSelector")]
     pub y_channel_selector: Option<&'a str>,
     /// `z`
     pub z: Option<NumberOrString<'a>>,
     /// `zoomAndPan`
-    #[cfg_attr(rust_js, rust_js::name = "zoomAndPan")]
     pub zoom_and_pan: Option<&'a str>,
 }
 
@@ -2935,7 +2426,6 @@ pub struct AnchorHTMLAttributes<'a, T = webapi::HTMLAnchorElement> {
     /// `href`
     pub href: Option<&'a str>,
     /// `hrefLang`
-    #[cfg_attr(rust_js, rust_js::name = "hrefLang")]
     pub href_lang: Option<&'a str>,
     /// `media`
     pub media: Option<&'a str>,
@@ -2946,7 +2436,6 @@ pub struct AnchorHTMLAttributes<'a, T = webapi::HTMLAnchorElement> {
     /// `type`
     pub r#type: Option<&'a str>,
     /// `referrerPolicy`
-    #[cfg_attr(rust_js, rust_js::name = "referrerPolicy")]
     pub referrer_policy: Option<&'a str>,
     /// What `AnchorHTMLAttributes` extends.
     #[cfg_attr(rust_js, rust_js::flatten)]
@@ -2997,12 +2486,10 @@ pub struct AreaHTMLAttributes<'a, T = webapi::HTMLAreaElement> {
     /// `href`
     pub href: Option<&'a str>,
     /// `hrefLang`
-    #[cfg_attr(rust_js, rust_js::name = "hrefLang")]
     pub href_lang: Option<&'a str>,
     /// `media`
     pub media: Option<&'a str>,
     /// `referrerPolicy`
-    #[cfg_attr(rust_js, rust_js::name = "referrerPolicy")]
     pub referrer_policy: Option<&'a str>,
     /// `shape`
     pub shape: Option<&'a str>,
@@ -3079,16 +2566,12 @@ pub struct ButtonHTMLAttributes<'a, T = webapi::HTMLButtonElement> {
     /// `form`
     pub form: Option<&'a str>,
     /// `formEncType`
-    #[cfg_attr(rust_js, rust_js::name = "formEncType")]
     pub form_enc_type: Option<&'a str>,
     /// `formMethod`
-    #[cfg_attr(rust_js, rust_js::name = "formMethod")]
     pub form_method: Option<&'a str>,
     /// `formNoValidate`
-    #[cfg_attr(rust_js, rust_js::name = "formNoValidate")]
     pub form_no_validate: Option<bool>,
     /// `formTarget`
-    #[cfg_attr(rust_js, rust_js::name = "formTarget")]
     pub form_target: Option<&'a str>,
     /// `name`
     pub name: Option<&'a str>,
@@ -3228,7 +2711,6 @@ pub struct DelHTMLAttributes<'a, T = webapi::HTMLModElement> {
     /// `cite`
     pub cite: Option<&'a str>,
     /// `dateTime`
-    #[cfg_attr(rust_js, rust_js::name = "dateTime")]
     pub date_time: Option<&'a str>,
     /// What `DelHTMLAttributes` extends.
     #[cfg_attr(rust_js, rust_js::flatten)]
@@ -3251,10 +2733,8 @@ pub struct DialogHTMLAttributes<'a, T = webapi::HTMLDialogElement> {
     /// `closedby`
     pub closedby: Option<&'a str>,
     /// `onCancel`
-    #[cfg_attr(rust_js, rust_js::name = "onCancel")]
     pub on_cancel: Option<event::ReactEventHandler<T>>,
     /// `onClose`
-    #[cfg_attr(rust_js, rust_js::name = "onClose")]
     pub on_close: Option<event::ReactEventHandler<T>>,
     /// `open`
     pub open: Option<bool>,
@@ -3332,20 +2812,16 @@ impl<T> Default for FieldsetHTMLAttributes<'_, T> {
 #[cfg_attr(rust_js, rust_js::types = "react#FormHTMLAttributes<T>")]
 pub struct FormHTMLAttributes<'a, T = webapi::HTMLFormElement> {
     /// `acceptCharset`
-    #[cfg_attr(rust_js, rust_js::name = "acceptCharset")]
     pub accept_charset: Option<&'a str>,
     /// `autoComplete`
-    #[cfg_attr(rust_js, rust_js::name = "autoComplete")]
     pub auto_complete: Option<&'a str>,
     /// `encType`
-    #[cfg_attr(rust_js, rust_js::name = "encType")]
     pub enc_type: Option<&'a str>,
     /// `method`
     pub method: Option<&'a str>,
     /// `name`
     pub name: Option<&'a str>,
     /// `noValidate`
-    #[cfg_attr(rust_js, rust_js::name = "noValidate")]
     pub no_validate: Option<bool>,
     /// `target`
     pub target: Option<&'a str>,
@@ -3394,28 +2870,22 @@ pub struct IframeHTMLAttributes<'a, T = webapi::HTMLIFrameElement> {
     /// `allow`
     pub allow: Option<&'a str>,
     /// `allowFullScreen`
-    #[cfg_attr(rust_js, rust_js::name = "allowFullScreen")]
     pub allow_full_screen: Option<bool>,
     /// `allowTransparency`
-    #[cfg_attr(rust_js, rust_js::name = "allowTransparency")]
     pub allow_transparency: Option<bool>,
     /// `frameBorder`
-    #[cfg_attr(rust_js, rust_js::name = "frameBorder")]
     pub frame_border: Option<NumberOrString<'a>>,
     /// `height`
     pub height: Option<NumberOrString<'a>>,
     /// `loading`
     pub loading: Option<&'a str>,
     /// `marginHeight`
-    #[cfg_attr(rust_js, rust_js::name = "marginHeight")]
     pub margin_height: Option<f64>,
     /// `marginWidth`
-    #[cfg_attr(rust_js, rust_js::name = "marginWidth")]
     pub margin_width: Option<f64>,
     /// `name`
     pub name: Option<&'a str>,
     /// `referrerPolicy`
-    #[cfg_attr(rust_js, rust_js::name = "referrerPolicy")]
     pub referrer_policy: Option<&'a str>,
     /// `sandbox`
     pub sandbox: Option<&'a str>,
@@ -3426,7 +2896,6 @@ pub struct IframeHTMLAttributes<'a, T = webapi::HTMLIFrameElement> {
     /// `src`
     pub src: Option<&'a str>,
     /// `srcDoc`
-    #[cfg_attr(rust_js, rust_js::name = "srcDoc")]
     pub src_doc: Option<&'a str>,
     /// `width`
     pub width: Option<NumberOrString<'a>>,
@@ -3465,29 +2934,24 @@ pub struct ImgHTMLAttributes<'a, T = webapi::HTMLImageElement> {
     /// `alt`
     pub alt: Option<&'a str>,
     /// `crossOrigin`
-    #[cfg_attr(rust_js, rust_js::name = "crossOrigin")]
     pub cross_origin: Option<&'a str>,
     /// `decoding`
     pub decoding: Option<&'a str>,
     /// `fetchPriority`
-    #[cfg_attr(rust_js, rust_js::name = "fetchPriority")]
     pub fetch_priority: Option<&'a str>,
     /// `height`
     pub height: Option<NumberOrString<'a>>,
     /// `loading`
     pub loading: Option<&'a str>,
     /// `referrerPolicy`
-    #[cfg_attr(rust_js, rust_js::name = "referrerPolicy")]
     pub referrer_policy: Option<&'a str>,
     /// `sizes`
     pub sizes: Option<&'a str>,
     /// `src`
     pub src: Option<&'a str>,
     /// `srcSet`
-    #[cfg_attr(rust_js, rust_js::name = "srcSet")]
     pub src_set: Option<&'a str>,
     /// `useMap`
-    #[cfg_attr(rust_js, rust_js::name = "useMap")]
     pub use_map: Option<&'a str>,
     /// `width`
     pub width: Option<NumberOrString<'a>>,
@@ -3522,7 +2986,6 @@ pub struct InsHTMLAttributes<'a, T = webapi::HTMLModElement> {
     /// `cite`
     pub cite: Option<&'a str>,
     /// `dateTime`
-    #[cfg_attr(rust_js, rust_js::name = "dateTime")]
     pub date_time: Option<&'a str>,
     /// What `InsHTMLAttributes` extends.
     #[cfg_attr(rust_js, rust_js::flatten)]
@@ -3547,7 +3010,6 @@ pub struct InputHTMLAttributes<'a, T = webapi::HTMLInputElement> {
     /// `alt`
     pub alt: Option<&'a str>,
     /// `autoComplete`
-    #[cfg_attr(rust_js, rust_js::name = "autoComplete")]
     pub auto_complete: Option<&'a str>,
     /// `capture`
     pub capture: Option<Booleanish<'a>>,
@@ -3558,16 +3020,12 @@ pub struct InputHTMLAttributes<'a, T = webapi::HTMLInputElement> {
     /// `form`
     pub form: Option<&'a str>,
     /// `formEncType`
-    #[cfg_attr(rust_js, rust_js::name = "formEncType")]
     pub form_enc_type: Option<&'a str>,
     /// `formMethod`
-    #[cfg_attr(rust_js, rust_js::name = "formMethod")]
     pub form_method: Option<&'a str>,
     /// `formNoValidate`
-    #[cfg_attr(rust_js, rust_js::name = "formNoValidate")]
     pub form_no_validate: Option<bool>,
     /// `formTarget`
-    #[cfg_attr(rust_js, rust_js::name = "formTarget")]
     pub form_target: Option<&'a str>,
     /// `height`
     pub height: Option<NumberOrString<'a>>,
@@ -3576,12 +3034,10 @@ pub struct InputHTMLAttributes<'a, T = webapi::HTMLInputElement> {
     /// `max`
     pub max: Option<NumberOrString<'a>>,
     /// `maxLength`
-    #[cfg_attr(rust_js, rust_js::name = "maxLength")]
     pub max_length: Option<f64>,
     /// `min`
     pub min: Option<NumberOrString<'a>>,
     /// `minLength`
-    #[cfg_attr(rust_js, rust_js::name = "minLength")]
     pub min_length: Option<f64>,
     /// `multiple`
     pub multiple: Option<bool>,
@@ -3592,7 +3048,6 @@ pub struct InputHTMLAttributes<'a, T = webapi::HTMLInputElement> {
     /// `placeholder`
     pub placeholder: Option<&'a str>,
     /// `readOnly`
-    #[cfg_attr(rust_js, rust_js::name = "readOnly")]
     pub read_only: Option<bool>,
     /// `required`
     pub required: Option<bool>,
@@ -3609,7 +3064,6 @@ pub struct InputHTMLAttributes<'a, T = webapi::HTMLInputElement> {
     /// `width`
     pub width: Option<NumberOrString<'a>>,
     /// `onChange`
-    #[cfg_attr(rust_js, rust_js::name = "onChange")]
     pub on_change: Option<event::ChangeEventHandler<T>>,
     /// What `InputHTMLAttributes` extends.
     #[cfg_attr(rust_js, rust_js::flatten)]
@@ -3664,10 +3118,8 @@ pub struct KeygenHTMLAttributes<'a, T = webapi::HTMLElement> {
     /// `form`
     pub form: Option<&'a str>,
     /// `keyType`
-    #[cfg_attr(rust_js, rust_js::name = "keyType")]
     pub key_type: Option<&'a str>,
     /// `keyParams`
-    #[cfg_attr(rust_js, rust_js::name = "keyParams")]
     pub key_params: Option<&'a str>,
     /// `name`
     pub name: Option<&'a str>,
@@ -3696,7 +3148,6 @@ pub struct LabelHTMLAttributes<'a, T = webapi::HTMLLabelElement> {
     /// `form`
     pub form: Option<&'a str>,
     /// `htmlFor`
-    #[cfg_attr(rust_js, rust_js::name = "htmlFor")]
     pub html_for: Option<&'a str>,
     /// What `LabelHTMLAttributes` extends.
     #[cfg_attr(rust_js, rust_js::flatten)]
@@ -3740,35 +3191,28 @@ pub struct LinkHTMLAttributes<'a, T = webapi::HTMLLinkElement> {
     /// `blocking`
     pub blocking: Option<&'a str>,
     /// `crossOrigin`
-    #[cfg_attr(rust_js, rust_js::name = "crossOrigin")]
     pub cross_origin: Option<&'a str>,
     /// `fetchPriority`
-    #[cfg_attr(rust_js, rust_js::name = "fetchPriority")]
     pub fetch_priority: Option<&'a str>,
     /// `href`
     pub href: Option<&'a str>,
     /// `hrefLang`
-    #[cfg_attr(rust_js, rust_js::name = "hrefLang")]
     pub href_lang: Option<&'a str>,
     /// `integrity`
     pub integrity: Option<&'a str>,
     /// `media`
     pub media: Option<&'a str>,
     /// `imageSrcSet`
-    #[cfg_attr(rust_js, rust_js::name = "imageSrcSet")]
     pub image_src_set: Option<&'a str>,
     /// `imageSizes`
-    #[cfg_attr(rust_js, rust_js::name = "imageSizes")]
     pub image_sizes: Option<&'a str>,
     /// `referrerPolicy`
-    #[cfg_attr(rust_js, rust_js::name = "referrerPolicy")]
     pub referrer_policy: Option<&'a str>,
     /// `sizes`
     pub sizes: Option<&'a str>,
     /// `type`
     pub r#type: Option<&'a str>,
     /// `charSet`
-    #[cfg_attr(rust_js, rust_js::name = "charSet")]
     pub char_set: Option<&'a str>,
     /// `precedence`
     pub precedence: Option<&'a str>,
@@ -3842,25 +3286,20 @@ impl<T> Default for MenuHTMLAttributes<'_, T> {
 #[cfg_attr(rust_js, rust_js::types = "react#MediaHTMLAttributes<T>")]
 pub struct MediaHTMLAttributes<'a, T = webapi::HTMLElement> {
     /// `autoPlay`
-    #[cfg_attr(rust_js, rust_js::name = "autoPlay")]
     pub auto_play: Option<bool>,
     /// `controls`
     pub controls: Option<bool>,
     /// `controlsList`
-    #[cfg_attr(rust_js, rust_js::name = "controlsList")]
     pub controls_list: Option<&'a str>,
     /// `crossOrigin`
-    #[cfg_attr(rust_js, rust_js::name = "crossOrigin")]
     pub cross_origin: Option<&'a str>,
     /// `loop`
     pub r#loop: Option<bool>,
     /// `mediaGroup`
-    #[cfg_attr(rust_js, rust_js::name = "mediaGroup")]
     pub media_group: Option<&'a str>,
     /// `muted`
     pub muted: Option<bool>,
     /// `playsInline`
-    #[cfg_attr(rust_js, rust_js::name = "playsInline")]
     pub plays_inline: Option<bool>,
     /// `preload`
     pub preload: Option<&'a str>,
@@ -3893,12 +3332,10 @@ impl<T> Default for MediaHTMLAttributes<'_, T> {
 #[cfg_attr(rust_js, rust_js::types = "react#MetaHTMLAttributes<T>")]
 pub struct MetaHTMLAttributes<'a, T = webapi::HTMLMetaElement> {
     /// `charSet`
-    #[cfg_attr(rust_js, rust_js::name = "charSet")]
     pub char_set: Option<&'a str>,
     /// `content`
     pub content: Option<&'a str>,
     /// `httpEquiv`
-    #[cfg_attr(rust_js, rust_js::name = "httpEquiv")]
     pub http_equiv: Option<&'a str>,
     /// `media`
     pub media: Option<&'a str>,
@@ -3995,7 +3432,6 @@ pub struct ObjectHTMLAttributes<'a, T = webapi::HTMLObjectElement> {
     /// `type`
     pub r#type: Option<&'a str>,
     /// `useMap`
-    #[cfg_attr(rust_js, rust_js::name = "useMap")]
     pub use_map: Option<&'a str>,
     /// `width`
     pub width: Option<NumberOrString<'a>>,
@@ -4104,7 +3540,6 @@ pub struct OutputHTMLAttributes<'a, T = webapi::HTMLOutputElement> {
     /// `form`
     pub form: Option<&'a str>,
     /// `htmlFor`
-    #[cfg_attr(rust_js, rust_js::name = "htmlFor")]
     pub html_for: Option<&'a str>,
     /// `name`
     pub name: Option<&'a str>,
@@ -4195,23 +3630,18 @@ pub struct ScriptHTMLAttributes<'a, T = webapi::HTMLScriptElement> {
     /// `blocking`
     pub blocking: Option<&'a str>,
     /// `charSet`
-    #[cfg_attr(rust_js, rust_js::name = "charSet")]
     pub char_set: Option<&'a str>,
     /// `crossOrigin`
-    #[cfg_attr(rust_js, rust_js::name = "crossOrigin")]
     pub cross_origin: Option<&'a str>,
     /// `defer`
     pub defer: Option<bool>,
     /// `fetchPriority`
-    #[cfg_attr(rust_js, rust_js::name = "fetchPriority")]
     pub fetch_priority: Option<&'a str>,
     /// `integrity`
     pub integrity: Option<&'a str>,
     /// `noModule`
-    #[cfg_attr(rust_js, rust_js::name = "noModule")]
     pub no_module: Option<bool>,
     /// `referrerPolicy`
-    #[cfg_attr(rust_js, rust_js::name = "referrerPolicy")]
     pub referrer_policy: Option<&'a str>,
     /// `src`
     pub src: Option<&'a str>,
@@ -4245,7 +3675,6 @@ impl<T> Default for ScriptHTMLAttributes<'_, T> {
 #[cfg_attr(rust_js, rust_js::types = "react#SelectHTMLAttributes<T>")]
 pub struct SelectHTMLAttributes<'a, T = webapi::HTMLSelectElement> {
     /// `autoComplete`
-    #[cfg_attr(rust_js, rust_js::name = "autoComplete")]
     pub auto_complete: Option<&'a str>,
     /// `disabled`
     pub disabled: Option<bool>,
@@ -4262,7 +3691,6 @@ pub struct SelectHTMLAttributes<'a, T = webapi::HTMLSelectElement> {
     /// `value`
     pub value: Option<NumberOrString<'a>>,
     /// `onChange`
-    #[cfg_attr(rust_js, rust_js::name = "onChange")]
     pub on_change: Option<event::ChangeEventHandler<T>>,
     /// What `SelectHTMLAttributes` extends.
     #[cfg_attr(rust_js, rust_js::flatten)]
@@ -4298,7 +3726,6 @@ pub struct SourceHTMLAttributes<'a, T = webapi::HTMLSourceElement> {
     /// `src`
     pub src: Option<&'a str>,
     /// `srcSet`
-    #[cfg_attr(rust_js, rust_js::name = "srcSet")]
     pub src_set: Option<&'a str>,
     /// `type`
     pub r#type: Option<&'a str>,
@@ -4368,10 +3795,8 @@ pub struct TableHTMLAttributes<'a, T = webapi::HTMLTableElement> {
     /// `border`
     pub border: Option<f64>,
     /// `cellPadding`
-    #[cfg_attr(rust_js, rust_js::name = "cellPadding")]
     pub cell_padding: Option<NumberOrString<'a>>,
     /// `cellSpacing`
-    #[cfg_attr(rust_js, rust_js::name = "cellSpacing")]
     pub cell_spacing: Option<NumberOrString<'a>>,
     /// `frame`
     pub frame: Option<bool>,
@@ -4407,29 +3832,24 @@ impl<T> Default for TableHTMLAttributes<'_, T> {
 #[cfg_attr(rust_js, rust_js::types = "react#TextareaHTMLAttributes<T>")]
 pub struct TextareaHTMLAttributes<'a, T = webapi::HTMLTextAreaElement> {
     /// `autoComplete`
-    #[cfg_attr(rust_js, rust_js::name = "autoComplete")]
     pub auto_complete: Option<&'a str>,
     /// `cols`
     pub cols: Option<f64>,
     /// `dirName`
-    #[cfg_attr(rust_js, rust_js::name = "dirName")]
     pub dir_name: Option<&'a str>,
     /// `disabled`
     pub disabled: Option<bool>,
     /// `form`
     pub form: Option<&'a str>,
     /// `maxLength`
-    #[cfg_attr(rust_js, rust_js::name = "maxLength")]
     pub max_length: Option<f64>,
     /// `minLength`
-    #[cfg_attr(rust_js, rust_js::name = "minLength")]
     pub min_length: Option<f64>,
     /// `name`
     pub name: Option<&'a str>,
     /// `placeholder`
     pub placeholder: Option<&'a str>,
     /// `readOnly`
-    #[cfg_attr(rust_js, rust_js::name = "readOnly")]
     pub read_only: Option<bool>,
     /// `required`
     pub required: Option<bool>,
@@ -4440,7 +3860,6 @@ pub struct TextareaHTMLAttributes<'a, T = webapi::HTMLTextAreaElement> {
     /// `wrap`
     pub wrap: Option<&'a str>,
     /// `onChange`
-    #[cfg_attr(rust_js, rust_js::name = "onChange")]
     pub on_change: Option<event::ChangeEventHandler<T>>,
     /// What `TextareaHTMLAttributes` extends.
     #[cfg_attr(rust_js, rust_js::flatten)]
@@ -4476,12 +3895,10 @@ pub struct TdHTMLAttributes<'a, T = webapi::HTMLTableCellElement> {
     /// `align`
     pub align: Option<&'a str>,
     /// `colSpan`
-    #[cfg_attr(rust_js, rust_js::name = "colSpan")]
     pub col_span: Option<f64>,
     /// `headers`
     pub headers: Option<&'a str>,
     /// `rowSpan`
-    #[cfg_attr(rust_js, rust_js::name = "rowSpan")]
     pub row_span: Option<f64>,
     /// `scope`
     pub scope: Option<&'a str>,
@@ -4521,12 +3938,10 @@ pub struct ThHTMLAttributes<'a, T = webapi::HTMLTableCellElement> {
     /// `align`
     pub align: Option<&'a str>,
     /// `colSpan`
-    #[cfg_attr(rust_js, rust_js::name = "colSpan")]
     pub col_span: Option<f64>,
     /// `headers`
     pub headers: Option<&'a str>,
     /// `rowSpan`
-    #[cfg_attr(rust_js, rust_js::name = "rowSpan")]
     pub row_span: Option<f64>,
     /// `scope`
     pub scope: Option<&'a str>,
@@ -4555,7 +3970,6 @@ impl<T> Default for ThHTMLAttributes<'_, T> {
 #[cfg_attr(rust_js, rust_js::types = "react#TimeHTMLAttributes<T>")]
 pub struct TimeHTMLAttributes<'a, T = webapi::HTMLTimeElement> {
     /// `dateTime`
-    #[cfg_attr(rust_js, rust_js::name = "dateTime")]
     pub date_time: Option<&'a str>,
     /// What `TimeHTMLAttributes` extends.
     #[cfg_attr(rust_js, rust_js::flatten)]
@@ -4583,7 +3997,6 @@ pub struct TrackHTMLAttributes<'a, T = webapi::HTMLTrackElement> {
     /// `src`
     pub src: Option<&'a str>,
     /// `srcLang`
-    #[cfg_attr(rust_js, rust_js::name = "srcLang")]
     pub src_lang: Option<&'a str>,
     /// What `TrackHTMLAttributes` extends.
     #[cfg_attr(rust_js, rust_js::flatten)]
@@ -4609,23 +4022,18 @@ pub struct VideoHTMLAttributes<'a, T = webapi::HTMLVideoElement> {
     /// `height`
     pub height: Option<NumberOrString<'a>>,
     /// `playsInline`
-    #[cfg_attr(rust_js, rust_js::name = "playsInline")]
     pub plays_inline: Option<bool>,
     /// `poster`
     pub poster: Option<&'a str>,
     /// `width`
     pub width: Option<NumberOrString<'a>>,
     /// `disablePictureInPicture`
-    #[cfg_attr(rust_js, rust_js::name = "disablePictureInPicture")]
     pub disable_picture_in_picture: Option<bool>,
     /// `disableRemotePlayback`
-    #[cfg_attr(rust_js, rust_js::name = "disableRemotePlayback")]
     pub disable_remote_playback: Option<bool>,
     /// `onResize`
-    #[cfg_attr(rust_js, rust_js::name = "onResize")]
     pub on_resize: Option<event::ReactEventHandler<T>>,
     /// `onResizeCapture`
-    #[cfg_attr(rust_js, rust_js::name = "onResizeCapture")]
     pub on_resize_capture: Option<event::ReactEventHandler<T>>,
     /// What `VideoHTMLAttributes` extends.
     #[cfg_attr(rust_js, rust_js::flatten)]

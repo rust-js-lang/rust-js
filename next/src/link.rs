@@ -36,7 +36,6 @@ pub struct LinkProps<'a, C> {
     pub prefetch: Option<Prefetch>,
     /// The path the browser shows, where it isn't `href`'s: the Pages
     /// Router's, deprecated.
-    #[cfg_attr(rust_js, rust_js::name = "as")]
     pub r#as: Option<&'a str>,
     /// Go there without its `getStaticProps` or `getServerSideProps` run
     /// again: the Pages Router's.
@@ -45,25 +44,20 @@ pub struct LinkProps<'a, C> {
     /// Router's i18n.
     pub locale: Option<LinkLocale<'a>>,
     /// Its child is the `<a>`, as before Next.js 13: deprecated.
-    #[cfg_attr(rust_js, rust_js::name = "legacyBehavior")]
     pub legacy_behavior: Option<bool>,
     /// Called as it goes, on the client: `event.prevent_default()` stays.
-    #[cfg_attr(rust_js, rust_js::name = "onNavigate")]
     pub on_navigate: Option<Box<dyn Fn(&NavigateEvent)>>,
     /// The transition types React's `<ViewTransition>`s animate it by.
-    #[cfg_attr(rust_js, rust_js::name = "transitionTypes")]
     pub transition_types: Option<&'a [&'a str]>,
     /// Load the route ahead as it's hovered, all of it.
     #[cfg_attr(rust_js, rust_js::name = "unstable_dynamicOnHover")]
     pub unstable_dynamic_on_hover: Option<bool>,
     /// Send `href` to its child, as a child that isn't an `<a>` needs: `false`.
-    #[cfg_attr(rust_js, rust_js::name = "passHref")]
     pub pass_href: Option<bool>,
     /// Its `<a>`, as React's `RefAttributes<HTMLAnchorElement>` holds it: a
     /// [`RefObject`](react::RefObject) or a callback, `Some(anchor.into())`.
     pub r#ref: Option<Ref<&'static HTMLAnchorElement>>,
     /// The `<a>`'s classes.
-    #[cfg_attr(rust_js, rust_js::name = "className")]
     pub class_name: Option<&'a str>,
     /// The `<a>`'s `target`, `"_blank"`.
     pub target: Option<&'a str>,

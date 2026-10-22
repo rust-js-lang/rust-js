@@ -54,10 +54,28 @@ export function snake(name: string): string {
   return identifier(snakeWords(name));
 }
 
+/** A Rust name as rust-js writes it in JS (ADR 0573): `set_count` is
+ * `setCount`; leading and trailing `_`s stay, `_unused`, `self_`, and so
+ * does a name with no lowercase letter, `FOO_BAR`. src/lower.rs's
+ * `camel_case` is the rule; `test/bindings.test.ts` holds this equal to it,
+ * compiling each name. */
+export function camelCase(name: string): string {
+  const core = name.replace(/^_+|_+$/g, "");
+  if (!core.includes("_") || !/[a-z]/.test(core)) return name;
+  const lead = name.slice(0, name.length - name.replace(/^_+/, "").length);
+  const trail = name.slice(name.replace(/_+$/, "").length);
+  const joined = core
+    .split("_")
+    .filter(Boolean)
+    .map((word, i) => (i === 0 ? word : word[0].toUpperCase() + word.slice(1)))
+    .join("");
+  return lead + joined + trail;
+}
+
 /** Whether a binding named `js` in JS and `rust` in Rust says its JS name,
- * `#[rust_js::name]`: where it isn't the one rust-js gives `rust`, its
- * camelCase (ADR 0573). A name Rust spells another way does, and one JS
- * spells with a `_`, `key_ops`, which rust-js would make `keyOps`. */
+ * `#[rust_js::name]`: only where it isn't the one rust-js gives `rust`, its
+ * `camelCase` (ADR 0573), as rust-js refuses one that repeats it. A raw
+ * identifier is its keyword, `r#type` `type`. */
 export function needsJsName(rust: string, js: string): boolean {
-  return plain(rust) !== js || js.includes("_");
+  return camelCase(rust.replace(/^r#/, "")) !== js;
 }

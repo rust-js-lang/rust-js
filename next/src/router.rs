@@ -245,7 +245,6 @@ impl NextHistoryState {
 
 /// A domain's locales, of i18n routing.
 pub struct DomainLocale {
-    #[cfg_attr(rust_js, rust_js::name = "defaultLocale")]
     pub default_locale: String,
     pub domain: String,
     pub http: Option<bool>,

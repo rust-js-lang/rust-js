@@ -13,7 +13,7 @@ use rustc_span::{Span, Symbol, sym};
 /// Validate tool bindings even if no function calls them. A malformed binding
 /// must not silently become an ordinary Rust function with an unreachable body.
 pub(super) fn validate(tcx: TyCtxt<'_>) -> bool {
-    let mut valid = true;
+    let mut valid = given_names_differ(tcx);
     for def in tcx.hir_crate_items(()).definitions() {
         // A derive of a discriminated union with an `otherwise` would take
         // the object it holds for a variant of its own (ADR 0284).
@@ -325,7 +325,7 @@ pub(super) fn unit_name(tcx: TyCtxt<'_>, def_id: DefId) -> Option<String> {
 pub(super) fn variant_name(tcx: TyCtxt<'_>, variant: &VariantDef) -> String {
     (given_name(tcx, variant.def_id))
         .or_else(|| given_bool(tcx, variant.def_id).map(|b| b.to_string()))
-        .unwrap_or_else(|| variant.name.to_string())
+        .unwrap_or_else(|| default_name(tcx, variant.def_id))
 }
 
 /// A variant's tag: its name, or a discriminated union's `true` or
@@ -453,7 +453,7 @@ pub(super) fn test_of(tcx: TyCtxt<'_>, def_id: DefId) -> Option<String> {
 /// A JS object type's class, as `instanceof` names it: its
 /// `#[rust_js::name = ".."]`, `WebAssembly.Module` of `WebAssemblyModule`, or its name.
 pub(super) fn class_name(tcx: TyCtxt<'_>, def_id: DefId) -> String {
-    given_name(tcx, def_id).unwrap_or_else(|| tcx.item_name(def_id).to_string())
+    given_name(tcx, def_id).unwrap_or_else(|| default_name(tcx, def_id))
 }
 
 /// A module's `js::import!`: each a `const _` with
@@ -725,16 +725,76 @@ pub(super) fn default_exports(tcx: TyCtxt<'_>, module: LocalModId) -> Vec<(Optio
         .collect()
 }
 
-/// What an item is called in JS: its `#[rust_js::name]`, else its Rust
-/// name as JS writes one, camelCase (ADR 0573): `sort_index` is
-/// `sortIndex`, `use_clicks` `useClicks`, as a variable's is (ADR 0038).
-fn name_in_js(tcx: TyCtxt<'_>, def_id: DefId, name: &str) -> String {
-    given_name(tcx, def_id).unwrap_or_else(|| super::camel_case(name))
+/// What an item is called in JS: its `#[rust_js::name]`, else its
+/// `default_name`.
+fn name_in_js(tcx: TyCtxt<'_>, def_id: DefId) -> String {
+    given_name(tcx, def_id).unwrap_or_else(|| default_name(tcx, def_id))
+}
+
+/// What an item is called in JS where it says nothing (ADR 0573): a
+/// function's, a `const`'s or a field's Rust name as JS writes one,
+/// camelCase, `sort_index` as `sortIndex`, `use_clicks` as `useClicks`, as a
+/// variable's is (ADR 0038); a variant's and a JS class's, its name.
+fn default_name(tcx: TyCtxt<'_>, def_id: DefId) -> String {
+    let name = tcx.item_name(def_id);
+    match tcx.def_kind(def_id) {
+        DefKind::Variant | DefKind::Struct | DefKind::Enum | DefKind::Union => name.to_string(),
+        _ => super::camel_case(name.as_str()),
+    }
+}
+
+/// Whether each `#[rust_js::name]` of the crate gives a name its item
+/// hasn't anyway: one that repeats its `default_name` is a second way to
+/// write it, and rust-js's error (ADR 0573). A unit struct's says the string
+/// it is, which it has no other way to; what isn't a function, a `const`, a
+/// `static`, a field, a variant or a class is named otherwise.
+pub fn given_names_differ(tcx: TyCtxt<'_>) -> bool {
+    let mut differ = true;
+    // Each item, and each variant and field of a struct's or an enum's, once.
+    let mut defs = Vec::new();
+    for def in tcx.hir_crate_items(()).definitions() {
+        let def = def.to_def_id();
+        defs.push(def);
+        if matches!(tcx.def_kind(def), DefKind::Struct | DefKind::Enum | DefKind::Union) {
+            for variant in tcx.adt_def(def).variants() {
+                defs.push(variant.def_id);
+                defs.extend(variant.fields.iter().map(|field| field.did));
+            }
+        }
+    }
+    let mut seen = std::collections::HashSet::new();
+    for def in defs.into_iter().filter(|&def| seen.insert(def)) {
+        let named = match tcx.def_kind(def) {
+            DefKind::Struct => tcx.adt_def(def).non_enum_variant().ctor_kind() != Some(rustc_hir::def::CtorKind::Const),
+            kind => matches!(
+                kind,
+                DefKind::Fn
+                    | DefKind::AssocFn
+                    | DefKind::Const { .. }
+                    | DefKind::AssocConst { .. }
+                    | DefKind::Static { .. }
+                    | DefKind::Field
+                    | DefKind::Variant
+            ),
+        };
+        if named
+            && let Some(given) = given_name(tcx, def)
+            && given == default_name(tcx, def)
+        {
+            let message = format!(
+                "rust-js: `{}` is `{given}` in JS without `#[rust_js::name = \"{given}\"]`: remove it",
+                tcx.item_name(def)
+            );
+            tcx.dcx().span_err(tcx.def_span(def), message);
+            differ = false;
+        }
+    }
+    differ
 }
 
 /// A function's or `const`'s JS name.
 pub(super) fn fn_name(tcx: TyCtxt<'_>, def_id: DefId) -> String {
-    name_in_js(tcx, def_id, tcx.item_name(def_id).as_str())
+    name_in_js(tcx, def_id)
 }
 
 /// What trait `trait_id`'s method `name` is called in JS, its key in a
@@ -746,7 +806,7 @@ pub(super) fn trait_method_name(tcx: TyCtxt<'_>, trait_id: DefId, name: &str) ->
 
 /// A struct's or a variant's field, as a JS property.
 pub(super) fn field_key(tcx: TyCtxt<'_>, field: &FieldDef) -> String {
-    name_in_js(tcx, field.did, field.name.as_str())
+    name_in_js(tcx, field.did)
 }
 
 /// What a JS module exports under a name, `("node:path", "join")`, or

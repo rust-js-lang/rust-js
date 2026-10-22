@@ -156,6 +156,14 @@ impl Callbacks for Syntax {
         jsx_syntax::check_crate_id(tcx.stable_crate_id(LOCAL_CRATE));
         Compilation::Continue
     }
+
+    /// A binding crate's names are held as a program's are (ADR 0573).
+    fn after_analysis<'tcx>(&mut self, _compiler: &Compiler, tcx: TyCtxt<'tcx>) -> Compilation {
+        match lower::given_names_differ(tcx) {
+            true => Compilation::Continue,
+            false => Compilation::Stop,
+        }
+    }
 }
 
 impl Callbacks for RustJs {

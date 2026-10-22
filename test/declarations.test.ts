@@ -99,7 +99,6 @@ pub fn Button(ButtonProps { size, anchor }: ButtonProps) -> JSX::Element {
 #[derive(Default)]
 pub struct Html {
     pub title: Option<&'static str>,
-    #[rust_js::name = "className"]
     pub class_name: Option<&'static str>,
 }
 
@@ -112,7 +111,6 @@ pub struct Linked {
 
 pub struct LinkButtonProps {
     pub href: &'static str,
-    #[rust_js::name = "className"]
     pub class_name: Option<&'static str>,
     #[rust_js::flatten]
     pub linked: Linked,
@@ -582,7 +580,6 @@ test("declarations type a function by what it takes and gives", () => {
 use react::{JSX, event, jsx};
 
 pub struct ButtonProps {
-    #[rust_js::name = "onClick"]
     pub on_click: Option<Box<dyn Fn(&event::MouseEvent)>>,
     pub format: fn(u32, u32) -> String,
 }
@@ -1003,7 +1000,6 @@ use react::{JSX, ReactNode, jsx};
 
 pub struct ButtonLinkProps<'a, C: ReactNode> {
     pub href: &'a str,
-    #[rust_js::name = "className"]
     pub class_name: Option<&'a str>,
     pub children: C,
     #[rust_js::flatten]

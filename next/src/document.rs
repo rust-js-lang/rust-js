@@ -39,7 +39,6 @@ pub fn Head<C: ReactNode>(props: HeadProps<'_, C>) -> JSX::Element {
 pub struct HeadProps<'a, C> {
     pub nonce: Option<&'a str>,
     /// `"anonymous"`, `"use-credentials"` or `""`.
-    #[cfg_attr(rust_js, rust_js::name = "crossOrigin")]
     pub cross_origin: Option<&'a str>,
     /// The `<head>`'s other attributes, as React's `HTMLAttributes`.
     #[cfg_attr(rust_js, rust_js::flatten)]
@@ -54,7 +53,6 @@ pub struct HeadProps<'a, C> {
 pub struct OriginProps<'a, C> {
     pub nonce: Option<&'a str>,
     /// `"anonymous"`, `"use-credentials"` or `""`.
-    #[cfg_attr(rust_js, rust_js::name = "crossOrigin")]
     pub cross_origin: Option<&'a str>,
     pub children: C,
 }
@@ -128,9 +126,7 @@ pub struct NonceOptions<'a> {
 /// the page, as `ComponentsEnhancer` types it.
 #[derive(Default)]
 pub struct ComponentsEnhancer {
-    #[cfg_attr(rust_js, rust_js::name = "enhanceApp")]
     pub enhance_app: Option<Box<dyn Fn(&'static ComponentValue<Unknown>) -> &'static ComponentValue<Unknown>>>,
-    #[cfg_attr(rust_js, rust_js::name = "enhanceComponent")]
     pub enhance_component: Option<Box<dyn Fn(&'static ComponentValue<Unknown>) -> &'static ComponentValue<Unknown>>>,
 }
 

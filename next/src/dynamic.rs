@@ -52,14 +52,11 @@ pub struct LoadableGeneratedOptions {
 pub struct DynamicOptionsLoadingProps {
     /// What loading it threw.
     pub error: Option<&'static Unknown>,
-    #[cfg_attr(rust_js, rust_js::name = "isLoading")]
     pub is_loading: Option<bool>,
     /// Whether it's loaded longer than its delay.
-    #[cfg_attr(rust_js, rust_js::name = "pastDelay")]
     pub past_delay: Option<bool>,
     /// Load it again.
     pub retry: Option<Box<dyn Fn()>>,
-    #[cfg_attr(rust_js, rust_js::name = "timedOut")]
     pub timed_out: Option<bool>,
 }
 
@@ -69,7 +66,6 @@ pub struct DynamicOptions<P> {
     pub loading: Option<Box<dyn Fn(DynamicOptionsLoadingProps) -> JSX::Element>>,
     /// What loads it, of [`dynamic_of_options`].
     pub loader: Option<Loader<P>>,
-    #[cfg_attr(rust_js, rust_js::name = "loadableGenerated")]
     pub loadable_generated: Option<LoadableGeneratedOptions>,
     /// Rendered on the server too: `true`. Only a client component's may be
     /// `Some(false)`.

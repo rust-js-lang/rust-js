@@ -18,15 +18,11 @@ pub struct GetStaticPropsContext<Params> {
     /// The dynamic route's parameters; `None` for a page that isn't one.
     pub params: Option<Params>,
     pub preview: Option<bool>,
-    #[cfg_attr(rust_js, rust_js::name = "previewData")]
     pub preview_data: Option<&'static Unknown>,
-    #[cfg_attr(rust_js, rust_js::name = "draftMode")]
     pub draft_mode: Option<bool>,
     pub locale: Option<String>,
     pub locales: Option<Vec<String>>,
-    #[cfg_attr(rust_js, rust_js::name = "defaultLocale")]
     pub default_locale: Option<String>,
-    #[cfg_attr(rust_js, rust_js::name = "revalidateReason")]
     pub revalidate_reason: Option<RevalidateReason>,
 }
 
@@ -65,7 +61,6 @@ pub struct StaticRedirect {
 /// `{ notFound: true, revalidate }`: the page's 404.
 pub struct StaticNotFound {
     /// Always `true`.
-    #[cfg_attr(rust_js, rust_js::name = "notFound")]
     pub not_found: bool,
     pub revalidate: Option<Revalidate>,
 }
@@ -88,11 +83,9 @@ pub enum Redirect<'a> {
 
 /// A redirect of its status: `301`, `302`, `303`, `307` or `308`.
 pub struct StatusRedirect<'a> {
-    #[cfg_attr(rust_js, rust_js::name = "statusCode")]
     pub status_code: u16,
     pub destination: &'a str,
     /// `Some(false)`: the destination without the app's base path.
-    #[cfg_attr(rust_js, rust_js::name = "basePath")]
     pub base_path: Option<bool>,
 }
 
@@ -100,7 +93,6 @@ pub struct StatusRedirect<'a> {
 pub struct PermanentRedirect<'a> {
     pub permanent: bool,
     pub destination: &'a str,
-    #[cfg_attr(rust_js, rust_js::name = "basePath")]
     pub base_path: Option<bool>,
 }
 
@@ -108,7 +100,6 @@ pub struct PermanentRedirect<'a> {
 /// what `getStaticPaths` is given.
 pub struct GetStaticPathsContext {
     pub locales: Option<Vec<String>>,
-    #[cfg_attr(rust_js, rust_js::name = "defaultLocale")]
     pub default_locale: Option<String>,
 }
 
@@ -159,16 +150,12 @@ pub struct GetServerSidePropsContext<Params> {
     /// The URL's query, each parameter's value or values.
     pub query: &'static Dict<Unknown>,
     pub preview: Option<bool>,
-    #[cfg_attr(rust_js, rust_js::name = "previewData")]
     pub preview_data: Option<&'static Unknown>,
-    #[cfg_attr(rust_js, rust_js::name = "draftMode")]
     pub draft_mode: Option<bool>,
     /// The URL the page is rendered for, without the locale's prefix.
-    #[cfg_attr(rust_js, rust_js::name = "resolvedUrl")]
     pub resolved_url: String,
     pub locale: Option<String>,
     pub locales: Option<Vec<String>>,
-    #[cfg_attr(rust_js, rust_js::name = "defaultLocale")]
     pub default_locale: Option<String>,
 }
 
@@ -194,7 +181,6 @@ pub struct ServerRedirect {
 /// `{ notFound: true }`: the page's 404.
 pub struct ServerNotFound {
     /// Always `true`.
-    #[cfg_attr(rust_js, rust_js::name = "notFound")]
     pub not_found: bool,
 }
 

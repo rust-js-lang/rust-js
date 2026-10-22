@@ -182,7 +182,6 @@ pub struct NavigateOptions<'a> {
     /// Scroll to the top of the new page, or keep where it is: `true`.
     pub scroll: Option<bool>,
     /// The transition types React's `<ViewTransition>`s animate it by.
-    #[cfg_attr(rust_js, rust_js::name = "transitionTypes")]
     pub transition_types: Option<Vec<&'a str>>,
 }
 
@@ -190,7 +189,6 @@ pub struct NavigateOptions<'a> {
 pub struct PrefetchOptions {
     pub kind: PrefetchKind,
     /// Called when what it loaded is stale.
-    #[cfg_attr(rust_js, rust_js::name = "onInvalidate")]
     pub on_invalidate: Option<Box<dyn Fn()>>,
 }
 

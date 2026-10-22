@@ -9,7 +9,7 @@
 //   bun builtins/intl.ts [out]   writes src/intl.rs, or `out`
 
 const page = (path: string) => `https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Intl/${path}`;
-import { needsJsName, plain, snake } from "../scripts/rust-names";
+import { needsJsName, snake } from "../scripts/rust-names";
 /** A JS value's Rust variant: `"best fit"` `BestFit`, `"2-digit"` `TwoDigit`. */
 const variant = (js: string) =>
   js.replace(/^2-/, "two-").split(/[^A-Za-z0-9]+/).map((w) => w[0].toUpperCase() + w.slice(1)).join("");

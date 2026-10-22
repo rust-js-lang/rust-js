@@ -30,10 +30,8 @@ pub struct ImageProps<'a> {
     /// its parent, which is positioned.
     pub layout: Option<&'a str>,
     /// How a `"fill"` one fits its parent, CSS's `object-fit`: `"cover"`.
-    #[cfg_attr(rust_js, rust_js::name = "objectFit")]
     pub object_fit: Option<&'a str>,
     /// Where it's placed in its parent, CSS's `object-position`.
-    #[cfg_attr(rust_js, rust_js::name = "objectPosition")]
     pub object_position: Option<&'a str>,
     /// The widths it's shown at, as `sizes` media queries.
     pub sizes: Option<&'a str>,
@@ -44,7 +42,6 @@ pub struct ImageProps<'a> {
     /// `"lazy"`, its default, or `"eager"`.
     pub loading: Option<&'a str>,
     /// How far from the viewport it starts loading, a CSS margin: `"200px"`.
-    #[cfg_attr(rust_js, rust_js::name = "lazyBoundary")]
     pub lazy_boundary: Option<&'a str>,
     /// `"empty"`, its default, or `"blur"`.
     pub placeholder: Option<&'a str>,
@@ -54,7 +51,6 @@ pub struct ImageProps<'a> {
     /// Shown as it is, not optimized.
     pub unoptimized: Option<bool>,
     /// The `<img>`'s classes.
-    #[cfg_attr(rust_js, rust_js::name = "className")]
     pub class_name: Option<&'a str>,
     /// The `<img>`'s `id`.
     pub id: Option<&'a str>,

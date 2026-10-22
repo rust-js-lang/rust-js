@@ -2836,7 +2836,6 @@ test("an import jsx! captures is read in place", () => {
 
 pub struct OptionProps {
     pub value: String,
-    #[cfg_attr(rust_js, rust_js::name = "as")]
     pub r#as: Option<ElementType>,
 }
 
@@ -2909,7 +2908,6 @@ fn parse_int(s: &str) -> f64 {
 }
 
 pub struct CustomProps {
-    #[cfg_attr(rust_js, rust_js::name = "onCheck")]
     pub on_check: Box<dyn Fn()>,
 }
 
@@ -2964,15 +2962,10 @@ fn noted(n: i32) {
 }
 
 pub struct CardProps {
-    #[cfg_attr(rust_js, rust_js::name = "onSubmit")]
     pub on_submit: Box<dyn Fn()>,
-    #[cfg_attr(rust_js, rust_js::name = "onNext")]
     pub on_next: Rc<dyn Fn()>,
-    #[cfg_attr(rust_js, rust_js::name = "onNote")]
     pub on_note: Option<Box<dyn Fn()>>,
-    #[cfg_attr(rust_js, rust_js::name = "onParse")]
     pub on_parse: Box<dyn Fn()>,
-    #[cfg_attr(rust_js, rust_js::name = "onRecord")]
     pub on_record: Box<dyn Fn()>,
 }
 
@@ -3293,7 +3286,6 @@ test("an untagged enum only made may hold objects in two variants", async () => 
 }
 
 pub struct Missing {
-    #[cfg_attr(rust_js, rust_js::name = "notFound")]
     pub not_found: bool,
 }
 
@@ -4163,7 +4155,6 @@ pub enum Message {
     Resize { height: f64 },
     #[cfg_attr(rust_js, rust_js::name = "start")]
     Start {
-        #[cfg_attr(rust_js, rust_js::name = "firstLoad")]
         first_load: Option<bool>,
     },
     #[cfg_attr(rust_js, rust_js::otherwise)]
@@ -8237,7 +8228,6 @@ test("react.dev's Console clears its logs on an or of two matches", async () => 
 pub enum SandpackMessage {
     #[cfg_attr(rust_js, rust_js::name = "start")]
     Start {
-        #[cfg_attr(rust_js, rust_js::name = "firstLoad")]
         first_load: Option<bool>,
     },
     #[cfg_attr(rust_js, rust_js::name = "refresh")]
@@ -11009,13 +10999,11 @@ struct TextDecoratorStyle {
 
 struct FontStyleStyle {
     tag: Tags,
-    #[cfg_attr(rust_js, rust_js::name = "fontStyle")]
     font_style: &'static str,
 }
 
 struct FontWeightStyle {
     tag: Tags,
-    #[cfg_attr(rust_js, rust_js::name = "fontWeight")]
     font_weight: &'static str,
 }
 

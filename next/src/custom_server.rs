@@ -27,13 +27,9 @@ pub struct NextServerOptions<'a> {
     pub hostname: Option<&'a str>,
     pub port: Option<f64>,
     /// Made by a custom server, as it is: `true`.
-    #[cfg_attr(rust_js, rust_js::name = "customServer")]
     pub custom_server: Option<bool>,
-    #[cfg_attr(rust_js, rust_js::name = "minimalMode")]
     pub minimal_mode: Option<bool>,
-    #[cfg_attr(rust_js, rust_js::name = "experimentalTestProxy")]
     pub experimental_test_proxy: Option<bool>,
-    #[cfg_attr(rust_js, rust_js::name = "experimentalHttpsServer")]
     pub experimental_https_server: Option<bool>,
     /// Its config, in place of `next.config.js`'s.
     pub conf: Option<&'a Unknown>,

@@ -8,6 +8,7 @@ import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 
 import { open } from "@rust-js/typescript";
+import { camelCase } from "../scripts/rust-names";
 
 const next = join(import.meta.dir, "../examples/next/node_modules/next");
 const crate = join(import.meta.dir, "src");
@@ -340,7 +341,7 @@ function rustMembers(): Map<string, Set<string>> {
         const field = line.match(/^\s*pub (?:r#)?(\w+):\s*(?:&(?:'\w+ )?)?(?:[\w:]+::)?(\w*)/);
         if (field) {
           if (flatten) flattened.push([owner, `react::${field[2]}`]);
-          else add(owner, name ?? field[1]);
+          else add(owner, name ?? camelCase(field[1]));
           name = undefined;
           flatten = false;
         }

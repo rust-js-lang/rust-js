@@ -9,7 +9,6 @@ pub mod local;
 /// A font loaded, as `NextFont` and `NextFontWithVariable` type it.
 pub struct NextFont {
     /// The class that sets the font, `className={inter.className}`.
-    #[cfg_attr(rust_js, rust_js::name = "className")]
     pub class_name: String,
     pub style: NextFontStyle,
     /// The class that sets its CSS variable, of a font given one.
@@ -18,11 +17,8 @@ pub struct NextFont {
 
 /// A font's style, as an element's `style` sets it.
 pub struct NextFontStyle {
-    #[cfg_attr(rust_js, rust_js::name = "fontFamily")]
     pub font_family: String,
-    #[cfg_attr(rust_js, rust_js::name = "fontWeight")]
     pub font_weight: Option<f64>,
-    #[cfg_attr(rust_js, rust_js::name = "fontStyle")]
     pub font_style: Option<String>,
 }
 

@@ -286,7 +286,6 @@ pub fn set_default_max_listeners(value: f64) {
 #[derive(Default)]
 pub struct EventEmitterOptions {
     /// Whether a listener's rejected promise is its `"error"`.
-    #[cfg_attr(rust_js, rust_js::name = "captureRejections")]
     pub capture_rejections: Option<bool>,
 }
 

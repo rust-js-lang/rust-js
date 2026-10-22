@@ -26,13 +26,10 @@ pub struct ScriptProps<'a, C> {
     /// Its `id`, which an inline script needs, to be loaded once.
     pub id: Option<&'a str>,
     /// Called as it's loaded, given the `load` event.
-    #[cfg_attr(rust_js, rust_js::name = "onLoad")]
     pub on_load: Option<Box<dyn Fn(&Unknown)>>,
     /// Called as it's loaded, and each time its component mounts again.
-    #[cfg_attr(rust_js, rust_js::name = "onReady")]
     pub on_ready: Option<Box<dyn Fn()>>,
     /// Called where it fails to load, given the `error` event.
-    #[cfg_attr(rust_js, rust_js::name = "onError")]
     pub on_error: Option<Box<dyn Fn(&Unknown)>>,
     /// Stylesheets it needs, loaded with it.
     pub stylesheets: Option<&'a [&'a str]>,

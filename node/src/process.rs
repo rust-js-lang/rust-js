@@ -532,48 +532,32 @@ pub struct CpuUsage {
 /// What [`memory_usage`] gives: bytes.
 pub struct MemoryUsage {
     pub rss: f64,
-    #[cfg_attr(rust_js, rust_js::name = "heapTotal")]
     pub heap_total: f64,
-    #[cfg_attr(rust_js, rust_js::name = "heapUsed")]
     pub heap_used: f64,
     pub external: f64,
-    #[cfg_attr(rust_js, rust_js::name = "arrayBuffers")]
     pub array_buffers: f64,
 }
 
 /// What [`resource_usage`] gives, as `getrusage(2)` has it.
 pub struct ResourceUsage {
-    #[cfg_attr(rust_js, rust_js::name = "fsRead")]
     pub fs_read: f64,
-    #[cfg_attr(rust_js, rust_js::name = "fsWrite")]
     pub fs_write: f64,
-    #[cfg_attr(rust_js, rust_js::name = "involuntaryContextSwitches")]
     pub involuntary_context_switches: f64,
-    #[cfg_attr(rust_js, rust_js::name = "ipcReceived")]
     pub ipc_received: f64,
-    #[cfg_attr(rust_js, rust_js::name = "ipcSent")]
     pub ipc_sent: f64,
-    #[cfg_attr(rust_js, rust_js::name = "majorPageFault")]
     pub major_page_fault: f64,
     #[cfg_attr(rust_js, rust_js::name = "maxRSS")]
     pub max_rss: f64,
-    #[cfg_attr(rust_js, rust_js::name = "minorPageFault")]
     pub minor_page_fault: f64,
-    #[cfg_attr(rust_js, rust_js::name = "sharedMemorySize")]
     pub shared_memory_size: f64,
-    #[cfg_attr(rust_js, rust_js::name = "signalsCount")]
     pub signals_count: f64,
-    #[cfg_attr(rust_js, rust_js::name = "swappedOut")]
     pub swapped_out: f64,
     #[cfg_attr(rust_js, rust_js::name = "systemCPUTime")]
     pub system_cpu_time: f64,
-    #[cfg_attr(rust_js, rust_js::name = "unsharedDataSize")]
     pub unshared_data_size: f64,
-    #[cfg_attr(rust_js, rust_js::name = "unsharedStackSize")]
     pub unshared_stack_size: f64,
     #[cfg_attr(rust_js, rust_js::name = "userCPUTime")]
     pub user_cpu_time: f64,
-    #[cfg_attr(rust_js, rust_js::name = "voluntaryContextSwitches")]
     pub voluntary_context_switches: f64,
 }
 
@@ -582,11 +566,8 @@ pub struct ResourceUsage {
 pub struct ProcessRelease {
     /// `"node"`.
     pub name: String,
-    #[cfg_attr(rust_js, rust_js::name = "sourceUrl")]
     pub source_url: Option<String>,
-    #[cfg_attr(rust_js, rust_js::name = "headersUrl")]
     pub headers_url: Option<String>,
-    #[cfg_attr(rust_js, rust_js::name = "libUrl")]
     pub lib_url: Option<String>,
     /// Its LTS line's name, `"Krypton"`, of an LTS release.
     pub lts: Option<String>,

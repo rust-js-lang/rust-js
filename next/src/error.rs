@@ -16,13 +16,11 @@ pub fn Error(props: ErrorProps<'_>) -> JSX::Element {
 #[derive(Default)]
 pub struct ErrorProps<'a> {
     /// The HTTP status it shows, `404`.
-    #[cfg_attr(rust_js, rust_js::name = "statusCode")]
     pub status_code: u16,
     pub hostname: Option<&'a str>,
     /// Its message, in place of the status's own.
     pub title: Option<&'a str>,
     /// Shown dark where the system is.
-    #[cfg_attr(rust_js, rust_js::name = "withDarkMode")]
     pub with_dark_mode: Option<bool>,
 }
 

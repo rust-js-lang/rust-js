@@ -24,12 +24,9 @@ pub struct FormProps<'a, C, A> {
     pub replace: Option<bool>,
     /// Scroll to the top of the new page, or keep where it is: `true`.
     pub scroll: Option<bool>,
-    #[cfg_attr(rust_js, rust_js::name = "acceptCharset")]
     pub accept_charset: Option<&'a str>,
-    #[cfg_attr(rust_js, rust_js::name = "autoComplete")]
     pub auto_complete: Option<&'a str>,
     pub name: Option<&'a str>,
-    #[cfg_attr(rust_js, rust_js::name = "noValidate")]
     pub no_validate: Option<bool>,
     /// Its `<form>`, as React's `RefAttributes<HTMLFormElement>` holds it.
     pub r#ref: Option<RefObject<Option<&'static HTMLFormElement>>>,

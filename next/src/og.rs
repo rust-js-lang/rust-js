@@ -55,7 +55,6 @@ pub struct ImageResponseOptions<'a> {
     /// `"openmoji"`, `"fluent"` or `"fluentFlat"`.
     pub emoji: Option<&'a str>,
     pub status: Option<u16>,
-    #[cfg_attr(rust_js, rust_js::name = "statusText")]
     pub status_text: Option<&'a str>,
     pub headers: Option<&'a [&'a [&'a str]]>,
 }

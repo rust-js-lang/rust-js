@@ -177,13 +177,10 @@ pub struct CacheHandler {
     /// Keep the entry of `cache_key` once it's made.
     pub set: Box<dyn Fn(String, Promise<&'static CacheEntry>) -> Promise<()>>,
     /// Read the tags' expirations again, as other servers changed them.
-    #[cfg_attr(rust_js, rust_js::name = "refreshTags")]
     pub refresh_tags: Box<dyn Fn() -> Promise<()>>,
     /// When the latest of these tags expired, in milliseconds since 1970.
-    #[cfg_attr(rust_js, rust_js::name = "getExpiration")]
     pub get_expiration: Box<dyn Fn(Vec<String>) -> Promise<f64>>,
     /// Expire these tags, now or after `durations`' `expire`.
-    #[cfg_attr(rust_js, rust_js::name = "updateTags")]
     pub update_tags: Box<dyn Fn(Vec<String>, Option<&'static TagDurations>) -> Promise<()>>,
 }
 
