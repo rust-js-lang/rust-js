@@ -18,4 +18,12 @@ export const mutations: Mutation[] = [
     replace: "        def_id.as_local().is_some_and(|_| visibilities.is_exported(def_id.expect_local()) || true)",
     tests: ["test/lowering.test.ts", "-t", "only calls reach"],
   },
+  {
+    name: "only-called-walks-type-system-consts",
+    breaks: "the analysis of what calls reach a function typechecks a const argument in a signature, which rustc can't before it lowers it, and crashes",
+    file: "src/lower/analysis/only_called.rs",
+    find: "        .filter(|&owner| !super::is_type_system_const(tcx, owner))\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^const_argument_in_a_signature.rs$"],
+  },
 ];

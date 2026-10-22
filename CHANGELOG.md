@@ -889,6 +889,9 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### Fixed
 
+- **rustc crashed** on a const argument in a signature of a trait nothing
+  implements, `FixedOutput<'_, 10>`, which the analysis of what calls
+  reach a function typechecked too early (ADR 0577 amended).
 - **`size_hint()` of a `Fuse` or a `Peekable` of the crate's iterator**
   with a `size_hint` of its own was `(0, None)`, where Rust gives the
   source's (ADR 0561 amended, issue #92): the crate's `Iterator`
