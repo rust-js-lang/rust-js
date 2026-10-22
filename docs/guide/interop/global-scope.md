@@ -302,3 +302,45 @@ export function last() {
   borrow is asked of its body
   ([ADR 0580](../../decisions/0580-a-call-asks-of-a-cell-only-what-it-may-borrow.md),
   [ADR 0587](../../decisions/0587-a-function-given-to-with-borrow-is-asked-as-a-closure.md)).
+
+### One chosen when the module loads
+
+A thread-local an `if` makes is a `let` each branch assigns, as JS picks
+what it uses where it loads; and a function that only calls a thread-local
+of a closure is that variable, by the function's name
+([ADR 0601](../../decisions/0601-a-module-variable-an-if-makes-is-a-let.md),
+[ADR 0610](../../decisions/0610-a-forwarding-function-is-its-variable.md)):
+
+```rust
+thread_local! {
+    static GET_TIME: Box<dyn Fn() -> f64> = if js::is_defined(webapi::Performance::now) {
+        let local_performance = webapi::performance;
+        Box::new(move || local_performance.now())
+    } else {
+        let start = js::date::now();
+        Box::new(move || js::date::now() - start)
+    };
+}
+
+pub fn get_time() -> f64 {
+    GET_TIME.with(|get_time| get_time())
+}
+```
+
+```js
+let getTime;
+if (typeof performance !== "undefined" && typeof performance.now !== "undefined") {
+  const localPerformance = performance;
+  getTime = () => localPerformance.now();
+} else {
+  const start = Date.now();
+  getTime = () => Date.now() - start;
+}
+
+export { getTime };
+```
+
+- **Not where the module's load calls the function**: a function
+  declaration is hoisted, so it stays one.
+- **Only of Rust's closures**, which take no more than their parameters.
+  A thread-local holding a JS function stays called by its function.

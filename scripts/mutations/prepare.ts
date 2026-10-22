@@ -3,6 +3,38 @@ import type { Mutation } from "../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "forwarding-function-loaded",
+    breaks: "a function the module's load calls is a variable set after, read before it's set",
+    file: "src/prepare.rs",
+    find: "        if js::mentions_in(&loaded, &name) > 0 || module.default_export.as_ref() == Some(&name) {\n",
+    replace: "        if module.default_export.as_ref() == Some(&name) {\n",
+    tests: ["test/lowering.test.ts", "-t", "a function that only calls a module variable"],
+  },
+  {
+    name: "forwarding-function-kept",
+    breaks: "`function getTime(n) { return GET_TIME(n); }` stays, where it's the variable `getTime`",
+    file: "src/prepare.rs",
+    find: "    forwarding_functions(module);\n",
+    replace: "",
+    tests: ["test/lowering.test.ts", "-t", "a function that only calls a module variable"],
+  },
+  {
+    name: "forwarding-function-of-a-js-function",
+    breaks: "`export const called = rustJsHook;` gives what a JS caller gives past `n` to a JS function",
+    file: "src/prepare.rs",
+    find: "        if given.is_empty() || !given.iter().all(arrows) {\n",
+    replace: "        if given.is_empty() {\n",
+    tests: ["test/lowering.test.ts", "-t", "a binding taken as a fn is its JS"],
+  },
+  {
+    name: "forwarding-function-unexported",
+    breaks: "the variable a `pub fn` became isn't exported, `export { getTime }`",
+    file: "src/prepare.rs",
+    find: "                if export {\n                    module.aliases.push((name.clone(), name.clone()));\n",
+    replace: "                if false {\n                    module.aliases.push((name.clone(), name.clone()));\n",
+    tests: ["test/lowering.test.ts", "-t", "a function that only calls a module variable"],
+  },
+  {
     name: "assigned-in-place-off",
     breaks: "a thread-local an `if` makes is `(() => { if (..) return ..; .. })()`, not `let x; if (..) { x = ..; }`",
     file: "src/prepare.rs",

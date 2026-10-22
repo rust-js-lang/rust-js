@@ -17,6 +17,7 @@ mod scopes;
 
 pub fn module(module: &mut js::Module) {
     assigned_in_place(&mut module.items);
+    forwarding_functions(module);
     for function in module.items.iter_mut().flat_map(js::Item::functions_mut) {
         prepared(function);
     }
@@ -80,6 +81,137 @@ fn assigned_in_place(items: &mut [js::Item]) {
         let mut stmts = vec![StmtKind::Let(constant.name.clone(), None).at(span)];
         stmts.extend(assigned);
         *item = js::Item::Statements(stmts);
+    }
+}
+
+/// `function getTime(n) { return GET_TIME(n); }`, a function that only
+/// calls a module variable's function with its parameters, a thread-local's
+/// of a closure: that variable, by the function's name, `let getTime; if
+/// (..) { getTime = (n) => .. }`, exported where the function was (ADR
+/// 0610). Not where the module's load calls the function, which a
+/// declaration's hoisting lets run before the variable is set.
+fn forwarding_functions(module: &mut js::Module) {
+    let mut i = 0;
+    while i < module.items.len() {
+        let js::Item::Function(function) = &module.items[i] else {
+            i += 1;
+            continue;
+        };
+        let names: Option<Vec<&str>> = (function.params.iter())
+            .map(|p| match p {
+                js::Pattern::Name(name) => Some(name.as_str()),
+                _ => None,
+            })
+            .collect();
+        let variable = match (names, function.body.as_slice()) {
+            (
+                Some(names),
+                [
+                    Stmt {
+                        kind: StmtKind::Return(Some(call)),
+                        ..
+                    },
+                ],
+            ) => match &call.kind {
+                ExprKind::Call(callee, args)
+                    if args.len() == names.len()
+                        && (args.iter().zip(&names)).all(|(a, n)| matches!(&a.kind, ExprKind::Var(v) if v == n)) =>
+                {
+                    match &callee.kind {
+                        ExprKind::Var(v) if *v != function.name && !names.contains(&v.as_str()) => Some(v.clone()),
+                        _ => None,
+                    }
+                }
+                _ => None,
+            },
+            _ => None,
+        };
+        let (name, export) = (function.name.clone(), function.export);
+        // Its variable's declaration: a `const`, or a `let` set in place.
+        let declared = variable.as_ref().and_then(|v| {
+            module.items.iter().position(|item| match item {
+                js::Item::Const(constant) => constant.name == *v && !constant.export,
+                js::Item::Statements(stmts) => {
+                    matches!(stmts.first().map(|s| &s.kind), Some(StmtKind::Let(n, None)) if n == v)
+                }
+                _ => false,
+            })
+        });
+        // Called where the module loads, by a constant's value or its code.
+        let mut loaded = Vec::new();
+        for item in &module.items {
+            match item {
+                js::Item::Const(constant) => loaded.push(StmtKind::Expr(constant.value.clone()).at(constant.span)),
+                js::Item::Statements(stmts) => loaded.extend(stmts.iter().cloned()),
+                _ => {}
+            }
+        }
+        let (Some(variable), Some(at)) = (variable, declared) else {
+            i += 1;
+            continue;
+        };
+        // Each value it's given an arrow of Rust's, which takes no more than
+        // its parameters, as the function did: not a JS function, which a
+        // caller would give what it's given past them.
+        fn arrows(e: &Expr) -> bool {
+            match &e.kind {
+                ExprKind::Arrow(..) | ExprKind::AsyncArrow(..) => true,
+                ExprKind::Cond(_, a, b) => arrows(a) && arrows(b),
+                _ => false,
+            }
+        }
+        let mut given = Vec::new();
+        match &module.items[at] {
+            js::Item::Const(constant) => given.push(constant.value.clone()),
+            js::Item::Statements(stmts) => {
+                let mut stmts = stmts.clone();
+                js::each_block_mut(&mut stmts, &mut |list| {
+                    for s in list.iter() {
+                        if let StmtKind::Assign(target, value) = &s.kind
+                            && matches!(&target.kind, ExprKind::Var(v) if *v == variable)
+                        {
+                            given.push(value.clone());
+                        }
+                    }
+                });
+            }
+            _ => {}
+        }
+        if given.is_empty() || !given.iter().all(arrows) {
+            i += 1;
+            continue;
+        }
+        if js::mentions_in(&loaded, &name) > 0 || module.default_export.as_ref() == Some(&name) {
+            i += 1;
+            continue;
+        }
+        module.items.remove(i);
+        let at = if at > i { at - 1 } else { at };
+        let rename = |n: &mut String| {
+            if *n == variable {
+                n.clone_from(&name);
+            }
+        };
+        js::each_item_expr_mut(&mut module.items, &mut |e| {
+            if let ExprKind::Var(v) = &mut e.kind {
+                rename(v);
+            }
+        });
+        match &mut module.items[at] {
+            js::Item::Const(constant) => {
+                rename(&mut constant.name);
+                constant.export = export;
+            }
+            js::Item::Statements(stmts) => {
+                if let Some(StmtKind::Let(n, None)) = stmts.first_mut().map(|s| &mut s.kind) {
+                    rename(n);
+                }
+                if export {
+                    module.aliases.push((name.clone(), name.clone()));
+                }
+            }
+            _ => unreachable!("found"),
+        }
     }
 }
 

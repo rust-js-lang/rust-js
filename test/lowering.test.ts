@@ -84,6 +84,68 @@ test("an entry's and_modify then or_insert reads its map and key", () => {
   expect(js).not.toContain("$mutGet(counts, c);");
 });
 
+// ADR 0610: a function that only calls a module variable's function with
+// its parameters is that variable, by the function's name, as React's
+// scheduler has \`let getCurrentTime; if (..) { getCurrentTime = () => .. }\`.
+// Not where the module's load calls it before the variable is set.
+test("a function that only calls a module variable's function is the variable", async () => {
+  const dir = fixture("forwarding-functions");
+  writeFileSync(join(dir, "lib.rs"), `thread_local! {
+    static GET_TIME: Box<dyn Fn(f64) -> f64> = if js::math::random() < 2.0 {
+        Box::new(|n| n + 1.0)
+    } else {
+        let k = js::math::random();
+        Box::new(move |n| n * k)
+    };
+    static SCALE: Box<dyn Fn(f64) -> f64> = if js::math::random() < 2.0 {
+        Box::new(|n| n * 2.0)
+    } else {
+        Box::new(|n| n)
+    };
+}
+
+pub fn scale(n: f64) -> f64 {
+    SCALE.with(|scale| scale(n))
+}
+
+thread_local! {
+    static EARLY: Box<dyn Fn(f64) -> f64> = if js::math::random() < 2.0 {
+        Box::new(|n| n + 3.0)
+    } else {
+        let k = js::math::random();
+        Box::new(move |n| n * k)
+    };
+    static FIRST: f64 = early(1.0);
+}
+
+// Called where the module loads: a function, which its hoisting lets run.
+pub fn early(n: f64) -> f64 {
+    EARLY.with(|early| early(n))
+}
+
+pub fn first() -> f64 {
+    FIRST.with(|first| *first)
+}
+
+pub fn get_time(n: f64) -> f64 {
+    GET_TIME.with(|get_time| get_time(n))
+}
+
+pub fn later() -> f64 {
+    get_time(1.0)
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("let getTime;\nif (Math.random() < 2) {\n  getTime = (n) => n + 1;\n");
+  expect(js).not.toContain("function getTime");
+  expect(js).toContain("export { getTime };");
+  expect(js).toContain("export const scale = Math.random() < 2 ? (n) => n * 2 : (n) => n;");
+  const lib = await import(join(dir, "lib.js"));
+  expect(js).toContain("export function early(n) {");
+  expect([lib.getTime(1), lib.later(), lib.scale(2), lib.first()]).toEqual([2, 2, 4, 4]);
+});
+
 // ADR 0609: a \`let\` that shadows a parameter, the parameter read no more
 // after it nor by a closure, is the parameter assigned, as React's
 // scheduler has \`priorityLevel = NormalPriority\`, not \`priorityLevel$1\`.
@@ -6109,7 +6171,7 @@ pub fn parsed() -> Vec<f64> {
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("const localHook = rustJsHook;");
-  expect(js).toContain("const localReset = (to) => rustJsReset(to ?? null);");
+  expect(js).toContain("export const resetTo = (to) => rustJsReset(to ?? null);");
   const globals = globalThis as Record<string, unknown>;
   globals.rustJsHook = (n: number) => n + 1;
   globals.rustJsReset = (to: number | null) => (to === null ? -1 : to);

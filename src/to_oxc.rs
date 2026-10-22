@@ -156,7 +156,10 @@ pub fn emit(
     // Its own items by other names, `pub use`'s (ADR 0596).
     if !module.aliases.is_empty() {
         let named: Vec<String> = (module.aliases.iter())
-            .map(|(local, exported)| format!("{local} as {exported}"))
+            .map(|(local, exported)| match local == exported {
+                true => local.clone(),
+                false => format!("{local} as {exported}"),
+            })
             .collect();
         code.push_str(&format!("\nexport {{ {} }};\n", named.join(", ")));
     }
