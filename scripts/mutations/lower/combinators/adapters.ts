@@ -242,4 +242,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^boxed_option_results.rs$"],
   },
+  {
+    name: "flatten-btree-unordered",
+    breaks: "`flatten` of `BTreeSet`s steps each in its JS set's insertion order",
+    file: "src/lower/combinators/adapters.rs",
+    find: "        if self.is_sorted(inner) {\n            return self.in_order_of(value, inner, span).map(Some);\n        }\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^btree_given_in_order.rs$"],
+  },
 ];

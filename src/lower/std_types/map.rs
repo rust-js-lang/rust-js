@@ -59,6 +59,8 @@ pub(in crate::lower) enum MapOp {
     SetReplace,
     /// `union`, `intersection`, `difference` or `symmetric_difference`.
     Algebra(&'static str),
+    /// `&a | &b`, `&`, `-` and `^` of sets: a set of the algebra's items.
+    SetOperator(&'static str),
     Subset {
         superset: bool,
     },
@@ -427,7 +429,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 &format!("the key a `{receiver}` holds, which what it's found by may not be"),
             ));
         }
-        let ordered = matches!(op, MapOp::Algebra(_) | MapOp::TreeEnd { .. } | MapOp::TreeSplitOff);
+        let ordered = matches!(
+            op,
+            MapOp::Algebra(_) | MapOp::SetOperator(_) | MapOp::TreeEnd { .. } | MapOp::TreeSplitOff
+        );
         let cmp = match (ordered && self.is_sorted(receiver), types.first()) {
             (true, Some(&key)) => Some(self.cmp_fn(key, false, span)?),
             _ => None,
@@ -497,10 +502,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Expr::cond(test, x, Expr::undefined())
             }
             MapOp::SetReplace => map_ops("$setReplace", vec![arg(), arg()]),
-            MapOp::Algebra(name) => {
+            MapOp::Algebra(name) | MapOp::SetOperator(name) => {
                 let mut list = vec![arg(), arg(), Expr::str(name)];
                 list.extend(cmp);
-                map_ops("$setAlgebra", list)
+                let items = map_ops("$setAlgebra", list);
+                match op {
+                    MapOp::SetOperator(_) => Expr::new_(Expr::var("Set"), vec![items]),
+                    _ => items,
+                }
             }
             MapOp::Subset { superset } => map_ops("$isSubset", vec![arg(), arg(), Expr::bool(superset)]),
             MapOp::Disjoint => map_ops("$isDisjoint", vec![arg(), arg()]),

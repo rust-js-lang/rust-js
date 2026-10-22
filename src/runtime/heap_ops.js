@@ -74,3 +74,11 @@ function $peekMutDrop(guard) {
 function $peekMutPop(guard) {
   return $heapPop(guard.heap, guard.cmp);
 }
+
+// `heap.extend(items)`: each pushed at the end, then the heap rebuilt from
+// the first of them, as std's `RebuildOnDrop` does.
+function $heapExtend(heap, items, cmp) {
+  const start = heap.length;
+  for (const item of items) heap.push(item);
+  $heapRebuildTail(heap, start, cmp);
+}

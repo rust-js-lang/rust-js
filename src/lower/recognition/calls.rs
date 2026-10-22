@@ -63,6 +63,17 @@ fn array_collection_method(path: &str) -> Option<&str> {
     ARRAY_COLLECTIONS.iter().find_map(|prefix| path.strip_prefix(prefix))
 }
 
+/// The algebra a set's operator `op` is: `&a - &b`'s `difference`.
+fn set_operator(op: BinOp) -> Option<&'static str> {
+    Some(match op {
+        BinOp::BitOr => "union",
+        BinOp::BitAnd => "intersection",
+        BinOp::Sub => "difference",
+        BinOp::BitXor => "symmetric",
+        _ => return None,
+    })
+}
+
 impl<'a, 'tcx> Recognition<'a, 'tcx> {
     pub(in crate::lower) fn classify(&self, def_id: DefId, args: ty::GenericArgsRef<'tcx>) -> Option<Std> {
         if let Some(decided) = self.classify_fn(def_id, args) {
@@ -594,36 +605,18 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                 return None;
             }
         }
+        // `&a - &b` of sets, `|`, `&` and `^`: a set of their algebra's items.
+        if let Some(Ok(op)) = value_operator(tcx, trait_)
+            && self.is_set(ty.peel_refs())
+        {
+            return set_operator(op).map(|name| Std::Map(MapOp::SetOperator(name)));
+        }
         if Num::of(ty.peel_refs()).is_some() {
-            let operators = [
-                (LangItem::Add, BinOp::Add),
-                (LangItem::Sub, BinOp::Sub),
-                (LangItem::Mul, BinOp::Mul),
-                (LangItem::Div, BinOp::Div),
-                (LangItem::Rem, BinOp::Rem),
-                (LangItem::BitAnd, BinOp::BitAnd),
-                (LangItem::BitOr, BinOp::BitOr),
-                (LangItem::BitXor, BinOp::BitXor),
-                (LangItem::Shl, BinOp::Shl),
-                (LangItem::Shr, BinOp::Shr),
-            ];
-            if let Some(&(_, op)) = operators.iter().find(|(item, _)| tcx.is_lang_item(trait_, *item)) {
+            if let Some(Ok(op)) = value_operator(tcx, trait_) {
                 return Some(Std::Operator(op));
             }
             // `total += x` with a `&u32` `x`: the same assignment as with a `u32`.
-            let assigning = [
-                (LangItem::AddAssign, BinOp::Add),
-                (LangItem::SubAssign, BinOp::Sub),
-                (LangItem::MulAssign, BinOp::Mul),
-                (LangItem::DivAssign, BinOp::Div),
-                (LangItem::RemAssign, BinOp::Rem),
-                (LangItem::BitAndAssign, BinOp::BitAnd),
-                (LangItem::BitOrAssign, BinOp::BitOr),
-                (LangItem::BitXorAssign, BinOp::BitXor),
-                (LangItem::ShlAssign, BinOp::Shl),
-                (LangItem::ShrAssign, BinOp::Shr),
-            ];
-            if let Some(&(_, op)) = assigning.iter().find(|(item, _)| tcx.is_lang_item(trait_, *item)) {
+            if let Some(op) = assign_operator(tcx, trait_) {
                 return Some(Std::AssignOperator(op));
             }
             if tcx.is_lang_item(trait_, LangItem::PartialOrd) {

@@ -546,7 +546,7 @@ export const mutations: Mutation[] = [
     name: "string-extend-unjoined",
     breaks: "`s.extend(chars)` adds their array, `s += [\"y\", \"z\"]`, not their text",
     file: "src/lower/mir/std_calls.rs",
-    find: "                    true => self.joined_text(value, Some(arg_tys[1]), span)?,\n",
+    find: "                    true => self.joined_text(value, Some(arg_tys[1]), span, out)?,\n",
     replace: "                    true => value,\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_extend.rs$"],
   },

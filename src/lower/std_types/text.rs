@@ -216,15 +216,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// and keeps U+FEFF, where JS's `trim()` does the other (ADR 0183).
     /// The text a string is extended by, `s.extend(items)`'s: its items',
     /// each a `char` or a string, joined, `items.join("")` of an array,
-    /// `Array.from(items).join("")` of another iterable, a range's stepped.
-    /// `ty` is the items', or none where they're any iterable already, a
-    /// generic `Extend`'s dictionary's (ADR 0445).
-    pub(in crate::lower) fn joined_text(&mut self, items: Expr, ty: Option<Ty<'tcx>>, span: Span) -> R<Expr> {
-        let ty = ty.map(|ty| ty.peel_refs());
+    /// `Array.from(items).join("")` of another iterable, as `iterable_items`
+    /// steps it, a range's or a B-tree's in order. `ty` is the items', or
+    /// none where they're any iterable already, a generic `Extend`'s
+    /// dictionary's (ADR 0445).
+    pub(in crate::lower) fn joined_text(
+        &mut self,
+        items: Expr,
+        ty: Option<Ty<'tcx>>,
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Expr> {
         let items = match ty {
-            Some(ty) if self.range_kind(ty).is_some() => self.as_js_iterator(items, ty, span)?,
-            _ => items,
+            Some(ty) => self.iterable_items(items, ty, span, out)?,
+            None => items,
         };
+        let ty = ty.map(|ty| ty.peel_refs());
         let array = ty.is_some_and(|ty| ty.is_array() || ty.is_slice() || self.is_vec_like(ty));
         let items = match array {
             true => items,

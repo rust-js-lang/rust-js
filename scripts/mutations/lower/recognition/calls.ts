@@ -635,4 +635,20 @@ export const mutations: Mutation[] = [
     replace: "            if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^string_from_own.rs$"],
   },
+  {
+    name: "set-operator-unknown",
+    breaks: "`&a - &b` of sets is refused as a call of `Sub::sub`",
+    file: "src/lower/recognition/calls.rs",
+    find: "            return set_operator(op).map(|name| Std::Map(MapOp::SetOperator(name)));\n",
+    replace: "            return None;\n",
+    tests: ["test/corpus.test.ts", "-t", "^set_operators.rs$"],
+  },
+  {
+    name: "set-operator-swapped",
+    breaks: "`&a | &b` of sets is their intersection",
+    file: "src/lower/recognition/calls.rs",
+    find: "        BinOp::BitOr => \"union\",\n",
+    replace: "        BinOp::BitOr => \"intersection\",\n",
+    tests: ["test/corpus.test.ts", "-t", "^set_operators.rs$"],
+  },
 ];

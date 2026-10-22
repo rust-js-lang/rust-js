@@ -43,14 +43,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^(user_hash|unlowered_impls).rs$"],
   },
   {
-    name: "generic-impl-const-bodies-uncollected",
-    breaks: "a generic impl's constant of its parameters, `Wrapping(T::ZERO)`, is an error",
-    file: "src/lower/analysis.rs",
-    find: "                tcx.trait_impl_of_assoc(def_id.to_def_id()).is_some_and(|imp| {",
-    replace: "                tcx.trait_impl_of_assoc(def_id.to_def_id()).is_some_and(|imp| false && {",
-    tests: ["test/corpus.test.ts", "-t", "generic_impl_consts"],
-  },
-  {
     name: "js-object-deref-lowered",
     breaks: "a JS class's `Deref` to the class it extends is lowered, a function making a pointer to nothing",
     file: "src/lower/analysis.rs",
@@ -104,8 +96,8 @@ export const mutations: Mutation[] = [
     name: "trait-default-const-unread",
     breaks: "a trait's default constant's initializer isn't read, so a library's dictionary can't copy it in",
     file: "src/lower/analysis.rs",
-    find: "                }) || (tcx.trait_of_assoc(def_id.to_def_id()).is_some()\n                    && tcx.hir_maybe_body_owned_by(def_id).is_some())",
-    replace: "                })",
+    find: "\n                    || (tcx.trait_of_assoc(def_id.to_def_id()).is_some()\n                        && tcx.hir_maybe_body_owned_by(def_id).is_some())",
+    replace: "",
     tests: ["test/lowering-structs-enums.test.ts", "-t", "default constant of Self"],
   },
   {
@@ -261,5 +253,21 @@ export const mutations: Mutation[] = [
     find: "            plain_locals::Given::Fn(f, args) => !cell_borrows.call_asks(\n",
     replace: "            plain_locals::Given::Fn(f, args) => true || !cell_borrows.call_asks(\n",
     tests: ["test/lowering-cells.test.ts", "-t", "given a function to run"],
+  },
+  {
+    name: "impl-const-body-dropped",
+    breaks: "a trait impl's constant keeps no initializer, so a generic impl's, `Wrapping(T::ZERO)`, or one rustc can't say, `String::new()`, is refused",
+    file: "src/lower/analysis.rs",
+    find: "                tcx.trait_impl_of_assoc(def_id.to_def_id()).is_some()\n                    || (tcx.trait_of_assoc",
+    replace: "                false\n                    || (tcx.trait_of_assoc",
+    tests: ["test/corpus.test.ts", "-t", "^(impl_const_string|generic_impl_consts)\\.rs$"],
+  },
+  {
+    name: "changed-vecs-without-lists",
+    breaks: "a clone of a `LinkedList` changed after is the same array, as only a `Vec`'s change is seen",
+    file: "src/lower/analysis.rs",
+    find: "                && matches!(ty.kind(), ty::Adt(adt, _) if super::recognition::is_vec_like_def(tcx, adt.did()))",
+    replace: "                && matches!(ty.kind(), ty::Adt(adt, _) if is_std_def(tcx, adt.did(), StdItem::Vec))",
+    tests: ["test/corpus.test.ts", "-t", "^linked_list_clone.rs$"],
   },
 ];

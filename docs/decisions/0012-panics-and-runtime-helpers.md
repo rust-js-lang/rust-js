@@ -79,3 +79,13 @@ Held by `test/corpus/deque_index_out_of_bounds.rs` and
 `deque_write_out_of_bounds.rs`, and the mutations `deque-index-as-slice`,
 `index-failure-unread`, `at-failure-unread` and
 `checked-set-failure-dropped`.
+
+## Amendment: `swap` out of bounds
+
+A `VecDeque`'s `swap` asserts each index, `assertion failed: j <
+self.len()`, where a slice's panics as an index out of bounds; and a
+slice's names the first index it checks, `a`'s where both are out, where
+`$swap` named the greater (#160). `$swap` takes `deque`, which a
+`VecDeque`'s call passes, and names `a` first. Held by
+`test/corpus/deque_swap_out_of_bounds.rs` and
+`test/corpus/slice_swap_first_index.rs`.

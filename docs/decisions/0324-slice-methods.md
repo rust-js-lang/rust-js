@@ -62,3 +62,11 @@ i), from))`, `test/corpus/clone_from_slice_generic.rs`.)
   `rchunks` from the start, drop a split's empty end, call a cached key
   again, keep checking past disorder, and say a NaN is sorted.
 - `docs/std-coverage.txt`: slices 67 of 133.
+
+## Amendment: `rchunks_exact`'s remainder
+
+`rchunks_exact(n)`, `$rchunks`, wasn't among the helpers whose array is
+made here, as `chunks_exact`'s is, so it was stepped as a JS iterator of
+it, `Iterator.from(..)`, which has no `items`, and its `remainder()`
+threw (#164). It's an array made here, stepped as a `$iter`, and so is
+`rchunks_exact_mut`'s. Held by `test/corpus/rchunks_remainder.rs`.

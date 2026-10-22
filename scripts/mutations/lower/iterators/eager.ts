@@ -308,4 +308,12 @@ export const mutations: Mutation[] = [
     replace: "                if false && is_lent(chain_source(&list)) {\n",
     tests: ["test/corpus.test.ts", "-t", "^by_ref_steps.rs$"],
   },
+  {
+    name: "rchunks-not-fresh",
+    breaks: "`rchunks_exact(n)` is a JS iterator of its chunks, not their array, so its `remainder()` reads a property nothing has",
+    file: "src/lower/iterators/eager.rs",
+    find: "                \"$rchunks\",\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^rchunks_remainder.rs$"],
+  },
 ];

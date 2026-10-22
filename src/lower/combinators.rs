@@ -810,11 +810,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     Expr::call(Expr::member(subject, "some"), vec![f])
                 }
             }
-            // Each pushed as it's stepped (`extended_items`).
-            Comb::Extend => {
-                let items = self.extended_items(next(), (tys[1], subject_ty), span, out)?;
-                helper("$extend", vec![subject, items])
-            }
+            Comb::Extend => self.extended(subject, next(), (tys[1], subject_ty), span, out)?,
             // Each item a clone, as `to_vec()` makes them.
             Comb::ExtendFromSlice => {
                 let items = next();
@@ -850,7 +846,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             Comb::Insert => inserted(subject, next(), next()),
             Comb::Remove => helper("$removeAt", vec![subject, next()]),
-            Comb::Swap => helper("$swap", vec![subject, next(), next()]),
+            Comb::Swap => helper("$swap", self.deque_marked(vec![subject, next(), next()], subject_ty)),
             Comb::Truncate => helper("$truncate", self.dropping(vec![subject, next()], subject_ty, span)?),
             Comb::Dedup => self.dedup_call(subject, subject_ty, span)?,
             // Its closure takes `&mut` items: an object itself, or a cell of a
@@ -969,6 +965,38 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `parts.flat()`, of arrays, `concat_copies`.
     fn concatenated(&mut self, parts: Expr, parts_ty: Ty<'tcx>, span: Span) -> R<Expr> {
         self.concat_copies(Expr::call(Expr::member(parts, "flat"), Vec::new()), parts_ty, span)
+    }
+
+    /// `args`, a `VecDeque`'s, `subject_ty`, marked `true`, whose panic is
+    /// its own assertion where a slice's is an index's.
+    fn deque_marked(&self, mut args: Vec<Expr>, subject_ty: Ty<'tcx>) -> Vec<Expr> {
+        if self.is_std_type(subject_ty.peel_refs(), crate::lower::recognition::StdItem::VecDeque) {
+            args.push(Expr::bool(true));
+        }
+        args
+    }
+
+    /// `extend` of `items`, of type `iterable`, onto `collection`, a
+    /// collection of type `into`: each pushed as it's stepped
+    /// (`extended_items`); onto a heap, its order rebuilt after, as std's
+    /// is (ADR 0333).
+    fn extended(
+        &mut self,
+        collection: Expr,
+        items: Expr,
+        (iterable, into): (Ty<'tcx>, Ty<'tcx>),
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Expr> {
+        let items = self.extended_items(items, (iterable, into), span, out)?;
+        if self.is_std_type(into, crate::lower::recognition::StdItem::BinaryHeap) {
+            let item = self
+                .slice_item(into)
+                .ok_or_else(|| self.unsupported(span, "this heap"))?;
+            let cmp = self.cmp_fn(item, false, span)?;
+            return Ok(Expr::call_helper("$heapExtend", vec![collection, items, cmp]));
+        }
+        Ok(Expr::call_helper("$extend", vec![collection, items]))
     }
 
     /// What `extend` of `items`, of type `iterable`, pushes onto a

@@ -117,11 +117,9 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         ty.boxed_ty().is_some_and(|inner| inner.is_array() || inner.is_slice())
     }
 
+    /// A `Vec`, a `VecDeque`, a `BinaryHeap` or a `LinkedList`: a JS array.
     pub(in crate::lower) fn is_vec_like(&self, ty: Ty<'tcx>) -> bool {
-        self.is_std_type(ty, StdItem::Vec)
-            || [StdItem::VecDeque, StdItem::BinaryHeap, StdItem::LinkedList]
-                .into_iter()
-                .any(|item| self.is_std_type(ty, item))
+        matches!(ty.kind(), ty::Adt(adt, _) if is_vec_like_def(self.tcx, adt.did()))
     }
 
     /// `std::str::Chars`, what a string's `chars()` gives.
@@ -848,3 +846,17 @@ pub(crate) fn range_bounds(tcx: TyCtxt<'_>, ty: Ty<'_>) -> Option<(RangeBound, R
         _ => return None,
     })
 }
+
+/// Whether `def_id` is a std collection a JS array is, `VEC_LIKE`'s: the
+/// one list, of what's an array and what a change makes one apart.
+pub(in crate::lower) fn is_vec_like_def(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
+    VEC_LIKE.iter().any(|&item| is_std_def(tcx, def_id, item))
+}
+
+/// The std collections a JS array is.
+const VEC_LIKE: &[StdItem] = &[
+    StdItem::Vec,
+    StdItem::VecDeque,
+    StdItem::BinaryHeap,
+    StdItem::LinkedList,
+];

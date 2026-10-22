@@ -18,7 +18,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let none = ty::List::empty();
         let value = match self.recognition().std_extend(ty) {
             Some(Std::PushStr) => {
-                let text = self.joined_text(items.clone(), None, span)?;
+                let text = self.joined_text(items.clone(), None, span, &mut body)?;
                 let added = Expr::bin(Op::Add, collection.clone(), text);
                 body.push(StmtKind::Assign(collection.clone(), added).at(js::Span::NONE));
                 None

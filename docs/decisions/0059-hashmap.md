@@ -116,3 +116,12 @@ keys, which it has none of.
 struct keys, of values with their own `==` and of NaN, and structs that
 hold them, against native Rust.
 
+
+## Amendment: a B-tree given as an `IntoIterator`
+
+A B-tree's JS map steps in insertion order, and where one was given as
+an `IntoIterator`, to `extend`, `chain`, `zip`, `flatten` or a `String`'s
+`extend`, it was given as it is (#166). `iterable_items`, the one answer
+of what such a value steps, steps a B-tree in its keys' order,
+`in_order_of`'s, and a `String`'s `extend` and `flatten`'s inner values
+ask it too. Held by `test/corpus/btree_given_in_order.rs`.

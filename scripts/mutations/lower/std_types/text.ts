@@ -243,4 +243,12 @@ export const mutations: Mutation[] = [
     replace: "        let at = 1;\n",
     tests: ["test/corpus.test.ts", "-t", "^splitn_by.rs$"],
   },
+  {
+    name: "joined-text-own-items",
+    breaks: "a `String` extended by a `BTreeSet` of `char`s takes them in insertion order, not as `iterable_items` steps them",
+    file: "src/lower/std_types/text.rs",
+    find: "            Some(ty) => self.iterable_items(items, ty, span, out)?,\n",
+    replace: "            Some(_) => items,\n",
+    tests: ["test/corpus.test.ts", "-t", "^btree_given_in_order.rs$"],
+  },
 ];

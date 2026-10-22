@@ -61,3 +61,12 @@ names: its `Self::B` is read only where it's lowered, a library's
 dictionary, which has every constant. Counted as one, a program computed
 `()`'s defaults of each other, `A = Self::B` and `B = Self::A`, which
 rustc errs on only where one is read (its `defaults-cyclic-pass`).
+
+## Amendment: a constant whose value rustc can't say
+
+A trait impl's constant was its value, as rustc computed it, unless its
+impl was generic; but rustc's value tree can't say a `String`'s or a
+`Vec`'s, `const EMPTY: String = String::new()`, and with no initializer
+kept the dictionary was refused (#156). Every trait impl's constant keeps
+its initializer, which the dictionary lowers where the value can't be
+read: `{ EMPTY: "" }`. Held by `test/corpus/impl_const_string.rs`.
