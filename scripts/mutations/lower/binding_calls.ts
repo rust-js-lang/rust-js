@@ -24,7 +24,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/binding_calls.rs",
     find: "                }) => args.extend(items),\n",
     replace: "                }) => args.push(Expr::array(items)),\n",
-    tests: ["test/bindings.test.ts","-t","variadic binding"],
+    tests: ["test/bindings.test.ts", "-t", "variadic binding"],
   },
   {
     name: "variadic-slice-given-whole",
@@ -32,7 +32,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/binding_calls.rs",
     find: "                Some(last) => args.push(Expr::spread(last)),\n",
     replace: "                Some(last) => args.push(last),\n",
-    tests: ["test/bindings.test.ts","-t","variadic binding"],
+    tests: ["test/bindings.test.ts", "-t", "variadic binding"],
   },
   {
     name: "variadic-of-no-slice",
@@ -56,7 +56,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/binding_calls.rs",
     find: "Expr::unary(UnaryOp::Not, Expr::unary(UnaryOp::Not, this))",
     replace: "Expr::unary(UnaryOp::Not, this)",
-    tests: ["test/bindings.test.ts","-t","tested as JS tests it"],
+    tests: ["test/bindings.test.ts", "-t", "tested as JS tests it"],
   },
   {
     name: "global-call-on-window",
@@ -64,7 +64,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/binding_calls.rs",
     find: "            (JsForm::Call(name), None) => Expr::call(self.js_ref(&name).or_at(fun_span), args),",
     replace: "            (JsForm::Call(name), None) => Expr::call(self.js_ref(&format!(\"window.{name}\")).or_at(fun_span), args),",
-    tests: ["test/bindings.test.ts","-t","the global scope's functions are called bare"],
+    tests: ["test/webapi-bindings.test.ts", "-t", "the global scope's functions are called bare"],
   },
   {
     name: "new-binding-called",
@@ -72,7 +72,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/binding_calls.rs",
     find: "            (JsForm::New(name), None) => Expr::new_(self.js_ref(&name).or_at(fun_span), args),",
     replace: "            (JsForm::New(name), None) => Expr::call(self.js_ref(&name).or_at(fun_span), args),",
-    tests: ["test/bindings.test.ts","-t","RegExp, Error, Symbol, weak collections and globals are JS's"],
+    tests: ["test/js-builtins.test.ts", "-t", "RegExp, Error, Symbol, weak collections and globals are JS's"],
   },
   {
     name: "set-index-swapped",
@@ -80,7 +80,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/binding_calls.rs",
     find: "                let (key, value) = (args.remove(0), args.remove(0));",
     replace: "                let (value, key) = (args.remove(0), args.remove(0));",
-    tests: ["test/bindings.test.ts","-t","typed arrays and their buffers are JS's"],
+    tests: ["test/js-builtins.test.ts", "-t", "typed arrays and their buffers are JS's"],
   },
   {
     name: "setter-binding-called",
@@ -88,7 +88,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/binding_calls.rs",
     find: "            (JsForm::Set(name), Some(this)) if args.len() == 1 && !name.contains('#') => {\n                let value = args.remove(0);\n                out.push(StmtKind::Assign(Expr::member(this, name), value).at(self.js_span(span)));\n                Expr::undefined()\n            }",
     replace: "            (JsForm::Set(name), Some(this)) if args.len() == 1 && !name.contains('#') => {\n                Expr::call(Expr::member(this, name), args)\n            }",
-    tests: ["test/bindings.test.ts","-t","the history global is the page's history"],
+    tests: ["test/webapi-bindings.test.ts", "-t", "the history global is the page's history"],
   },
   {
     name: "dict-get-of-options-plain",
@@ -96,7 +96,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/binding_calls.rs",
     find: "                        .is_some_and(|value| self.boxed_payload(value)) =>",
     replace: "                        .is_some_and(|value| self.boxed_payload(value) && false) =>",
-    tests: ["test/bindings.test.ts","-t","JSON is a typed value"],
+    tests: ["test/js-builtins.test.ts", "-t", "JSON is a typed value"],
   },
   {
     name: "skips-falsy-ternary",
@@ -104,7 +104,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/binding_calls.rs",
     find: "        if super::bindings::skips_falsy(self.tcx, def_id) {",
     replace: "        if false {",
-    tests: ["test/bindings.test.ts","-t","skips what's falsy"],
+    tests: ["test/bindings.test.ts", "-t", "skips what's falsy"],
   },
   {
     name: "skips-falsy-test-kept",
@@ -112,7 +112,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/binding_calls.rs",
     find: "                    *arg = Expr::bin(Op::And, test.tested(), (**value).clone());\n",
     replace: "                    *arg = Expr::bin(Op::And, (**test).clone(), (**value).clone());\n",
-    tests: ["test/bindings.test.ts","-t","skips what's falsy"],
+    tests: ["test/bindings.test.ts", "-t", "skips what's falsy"],
   },
   {
     name: "binding-undefined-left-out",
@@ -136,7 +136,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/binding_calls.rs",
     find: "            if !last.is_some_and(|ty| ty.peel_refs().is_slice()) && !tuple {",
     replace: "            if !last.is_some_and(|ty| ty.peel_refs().is_slice()) {",
-    tests: ["test/bindings.test.ts","-t","takes a tuple as its rest"],
+    tests: ["test/bindings.test.ts", "-t", "takes a tuple as its rest"],
   },
   {
     name: "static-setter-of-import-refused",
@@ -144,7 +144,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/binding_calls.rs",
     find: "                if args.len() == 1 && name.rsplit('#').next().is_some_and(|member| member.contains('.')) =>",
     replace: "                if args.len() == 1 && !name.contains('#') && name.contains('.') =>",
-    tests: ["test/bindings.test.ts","-t","typed by their emitters"],
+    tests: ["test/node-bindings.test.ts", "-t", "typed by their emitters"],
   },
   {
     name: "dynamic-import-default-named",
@@ -160,7 +160,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/binding_calls.rs",
     find: "                    self.note_falsy(name);\n",
     replace: "",
-    tests: ["test/bindings.test.ts","-t","skips what's falsy"],
+    tests: ["test/bindings.test.ts", "-t", "skips what's falsy"],
   },
   {
     name: "extern-fn-called-accepted",

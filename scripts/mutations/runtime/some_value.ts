@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     file: "src/runtime/some_value.js",
     find: "x.$someNone === 0 ? x.$value :",
     replace: "x.$someNone === 0 ? undefined :",
-    tests: ["test/bindings.test.ts","-t","keeps the null"],
+    tests: ["test/bindings.test.ts", "-t", "keeps the null"],
   },
   {
     name: "some-value-box-null-forgotten",
@@ -16,6 +16,6 @@ export const mutations: Mutation[] = [
     file: "src/runtime/some_value.js",
     find: "{ ...x, $someNone: x.$someNone - 1 }",
     replace: "{ $someNone: x.$someNone - 1 }",
-    tests: ["test/bindings.test.ts","-t","keeps the null"],
+    tests: ["test/bindings.test.ts", "-t", "keeps the null"],
   },
 ];

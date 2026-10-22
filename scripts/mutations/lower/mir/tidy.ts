@@ -32,7 +32,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy.rs",
     find: "                *value = Expr::bin(Op::And, test.tested(), (**then).clone());\n",
     replace: "",
-    tests: ["test/bindings.test.ts","-t","skips what's falsy"],
+    tests: ["test/bindings.test.ts", "-t", "skips what's falsy"],
   },
   {
     name: "mir-tidy-and-tests-off",
@@ -82,7 +82,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy.rs",
     find: "                *value = value.tested();\n",
     replace: "",
-    tests: ["test/bindings.test.ts","-t","skips what's falsy"],
+    tests: ["test/bindings.test.ts", "-t", "skips what's falsy"],
   },
   {
     name: "mir-tidy-filter-or-kept",

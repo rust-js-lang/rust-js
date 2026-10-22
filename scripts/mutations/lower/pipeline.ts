@@ -216,7 +216,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/pipeline.rs",
     find: "            super::recognition::known_derive(tcx, id)\n                || super::traits::is_marker(tcx, &foreign, trait_id)\n",
     replace: "            super::recognition::known_derive(tcx, id)\n",
-    tests: ["test/bindings.test.ts","-t","binding method is read of the value"],
+    tests: ["test/bindings.test.ts", "-t", "binding method is read of the value"],
   },
   {
     name: "once-static-refused",

@@ -112,7 +112,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/format_spec.rs",
     find: "        if kind == Std::FmtDisplay && self.displays_itself(ty) {\n",
     replace: "        if false && kind == Std::FmtDisplay && self.displays_itself(ty) {\n",
-    tests: ["test/bindings.test.ts","-t","js::shown"],
+    tests: ["test/bindings.test.ts", "-t", "js::shown"],
   },
   {
     name: "pointer-p-refused",

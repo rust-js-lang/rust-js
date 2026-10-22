@@ -130,7 +130,7 @@ export const mutations: Mutation[] = [
     file: "src/js/make.rs",
     find: "            && matches!(rhs.kind, ExprKind::Str(_) | ExprKind::Template(..))\n",
     replace: "            && false\n",
-    tests: ["test/bindings.test.ts","-t","as react.dev's Console does"],
+    tests: ["test/bindings.test.ts", "-t", "as react.dev's Console does"],
   },
   {
     "name": "option-literal-tested",

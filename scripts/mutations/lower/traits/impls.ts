@@ -210,7 +210,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/traits/impls.rs",
     find: "            if self.tcx.def_kind(item.def_id) != DefKind::AssocFn || bindings::is_binding(self.tcx, item.def_id) {\n",
     replace: "            if self.tcx.def_kind(item.def_id) != DefKind::AssocFn {\n",
-    tests: ["test/bindings.test.ts","-t","binding method is read of the value"],
+    tests: ["test/bindings.test.ts", "-t", "binding method is read of the value"],
   },
   {
     name: "library-default-const-computed",

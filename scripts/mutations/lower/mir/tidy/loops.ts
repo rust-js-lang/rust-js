@@ -100,7 +100,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/loops.rs",
     find: "    if !matches!(step, \"$next\" | \"$nextSome\" | \"$rangeNext\" | DICTIONARY)\n",
     replace: "    if !matches!(step, \"$next\" | \"$rangeNext\" | DICTIONARY)\n",
-    tests: ["test/bindings.test.ts","-t","a defined value is an unknown"],
+    tests: ["test/bindings.test.ts", "-t", "a defined value is an unknown"],
   },
   {
     name: "mir-tidy-unread-count-underscore",

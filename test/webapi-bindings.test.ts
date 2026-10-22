@@ -1,0 +1,232 @@
+// The webapi crate: a page's globals, elements and events, typed as the
+// DOM's are. Each test is a program of its own, compiled and run.
+
+import { beforeAll, expect, test } from "bun:test";
+import { readFileSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
+
+import { buildReact, compiler, fixture, root, run, target } from "./support";
+
+beforeAll(buildReact, 600_000);
+
+// ADR 0223: an event's name gives its listener the event its target takes,
+// and a tag's name the element it makes, from `@webref/events` and
+// `@webref/elements`, as TypeScript's `HTMLElementEventMap` and
+// `HTMLElementTagNameMap` do. Each name is a type whose value is its string.
+test("webapi's event and tag maps type a listener and an element", () => {
+  const withWeb = ["--", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const dir = fixture("webapi-maps");
+  const source = `use webapi::events::{Click, Keydown};
+use webapi::tags::Button;
+use webapi::{EventTargetExt, document};
+pub fn wire() -> &'static webapi::HTMLButtonElement {
+    let button = document.create_element(Button);
+    button.set_disabled(false);
+    button.add_event_listener(Click, |e| {
+        let _ = e.client_x();
+    }, None);
+    document.add_event_listener(Keydown, |e| {
+        let _ = e.key();
+    }, None);
+    button
+}
+`;
+  writeFileSync(join(dir, "lib.rs"), source);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('const button = document.createElement("button");');
+  expect(js).toContain("button.disabled = false;");
+  expect(js).toContain('button.addEventListener("click", (e) => {');
+  expect(js).toContain('document.addEventListener("keydown", (e) => {');
+  // A key's event isn't a mouse's, and a button takes no window's message.
+  for (const [wrong, error, message] of [
+    ["document.add_event_listener(Keydown, |e| {\n        let _ = e.key();", "document.add_event_listener(Keydown, |e| {\n        let _ = e.client_x();", "no method named `client_x`"],
+    ["use webapi::events::{Click, Keydown};", "use webapi::events::{Click, Keydown, Message};\nfn message(b: &webapi::HTMLButtonElement) { b.add_event_listener(Message, |_| (), None); }", "the trait `webapi::Listen<webapi::events::Message>` is not implemented for `webapi::HTMLButtonElement`"],
+  ]) {
+    writeFileSync(join(dir, "lib.rs"), source.replace(wrong, error));
+    const result = Bun.spawnSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "wrong.js"), ...withWeb], { cwd: dir });
+    expect(result.exitCode).not.toBe(0);
+    expect(result.stderr.toString()).toContain(message);
+  }
+});
+
+// SVG's elements are bound, and each SVG tag is a type of its own, as
+// TypeScript's `SVGElementTagNameMap` has them: `createElementNS` of SVG's
+// namespace and a tag makes its element, `svg_tags::Circle` an
+// `SVGCircleElement`, which is an `SVGGeometryElement`, an
+// `SVGGraphicsElement`, an `SVGElement` and an `Element`.
+test("webapi's SVG elements are made by their tags", () => {
+  const withWeb = ["--", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const dir = fixture("webapi-svg");
+  writeFileSync(join(dir, "lib.rs"), `use webapi::namespaces::Svg;
+use webapi::svg_tags::{Circle, Svg as SvgTag};
+use webapi::{SVGCircleElement, SVGSVGElement, document};
+pub fn draw() -> (&'static SVGSVGElement, &'static SVGCircleElement, bool) {
+    let svg = document.create_element_ns(Svg, SvgTag);
+    let circle = document.create_element_ns(Svg, Circle);
+    circle.set_attribute("r", "4");
+    svg.append(circle);
+    (svg, circle, circle.is_point_in_fill(None))
+}
+pub fn named() -> &'static webapi::Element {
+    document.create_element_ns_named("http://www.w3.org/2000/svg", "g", None)
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");');
+  expect(js).toContain('const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");');
+  expect(js).toContain("return [svg, circle, circle.isPointInFill()];");
+  expect(js).toContain('return document.createElementNS("http://www.w3.org/2000/svg", "g");');
+});
+
+// ADR 0269: what every JS global scope has, a window's, a worker's or Node's,
+// `fetch` and `queueMicrotask`, is called bare, as react.dev's errors page
+// fetches in Next.js's `getStaticProps`, where there's no `window`.
+test("the global scope's functions are called bare", async () => {
+  const withWeb = ["--", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const dir = fixture("global-scope");
+  writeFileSync(join(dir, "lib.rs"), `use js::Promise;
+use webapi::{Response, global};
+
+pub fn codes(url: &str) -> Promise<&'static Response> {
+    global::fetch(url, None)
+}
+
+pub fn later(then: &'static dyn Fn()) {
+    global::queue_microtask(Box::new(move || then()));
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("return fetch(url);");
+  expect(js).toContain("queueMicrotask(");
+  expect(js).not.toContain("window");
+  const fetched: string[] = [];
+  const previous = globalThis.fetch;
+  globalThis.fetch = ((url: string) => (fetched.push(url), Promise.resolve(new Response("{}")))) as typeof fetch;
+  try {
+    const { codes, later } = await import(join(dir, "lib.js"));
+    await codes("https://example.com/codes.json");
+    const ran: number[] = [];
+    later(() => ran.push(1));
+    await Promise.resolve();
+    expect([fetched, ran]).toEqual([["https://example.com/codes.json"], [1]]);
+  } finally {
+    globalThis.fetch = previous;
+  }
+});
+
+// The `history` global, a window's, as `document` is, as react.dev's _app
+// sets `history.scrollRestoration` where the browser is Safari.
+test("the history global is the page's history", async () => {
+  const withWeb = ["--", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const dir = fixture("history-global");
+  writeFileSync(join(dir, "lib.rs"), `use webapi::history;
+
+pub fn restore() {
+    history.set_scroll_restoration("auto");
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
+  expect(readFileSync(join(dir, "lib.js"), "utf8")).toContain('history.scrollRestoration = "auto";');
+  const previous = (globalThis as any).history;
+  (globalThis as any).history = { scrollRestoration: "manual" };
+  try {
+    (await import(join(dir, "lib.js"))).restore();
+    expect((globalThis as any).history.scrollRestoration).toBe("auto");
+  } finally {
+    (globalThis as any).history = previous;
+  }
+});
+
+// ADR 0225: a WebIDL parameter typed `any` takes a value as JS has it, and
+// one the browser copies, `postMessage`'s, `pushState`'s and
+// `structuredClone`'s, only a value it copies as it is: `js::StructuredClone`.
+// A closure, which it can't copy, and `Some(None)`, which would arrive as
+// rust-js's box, are rustc's errors; `reportError` takes anything still.
+test("webapi's any parameters take any value as JS has it, and a clone only one it copies", async () => {
+  const withWeb = ["--", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const dir = fixture("any-params");
+  const source = `use js::StructuredClone;
+use webapi::window;
+pub struct Saved {
+    pub page: u32,
+}
+// Its fields are numbers, which the browser copies.
+unsafe impl StructuredClone for Saved {}
+pub fn save(page: u32) {
+    window.history().push_state(Saved { page }, "", None);
+}
+pub fn copy(text: &str) -> Option<&'static js::Unknown> {
+    window.structured_clone(text, None)
+}
+pub fn copies(blob: &webapi::Blob) -> Option<&'static js::Unknown> {
+    window.structured_clone((vec![Some(1.5), None], "a", blob), None)
+}
+pub fn send(text: String) {
+    let options = webapi::WindowPostMessageOptions { target_origin: Some("*"), ..Default::default() };
+    window.post_message(Some(text), Some(options));
+}
+pub fn ping(port: &webapi::MessagePort) {
+    port.post_message(1, None);
+}
+pub fn report(error: &js::JsError) {
+    window.report_error(error);
+    window.report_error(|| ());
+}
+`;
+  writeFileSync(join(dir, "lib.rs"), source);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('window.history.pushState({ page }, "");');
+  expect(js).toContain("return window.structuredClone(text);");
+  expect(js).toContain('return window.structuredClone([[1.5, undefined], "a", blob]);');
+  // One function, its options' (ADR 0594).
+  expect(js).toContain('const options = { targetOrigin: "*" };\n  window.postMessage(text, options);');
+  expect(js).toContain("port.postMessage(1);");
+  expect(js).toContain("window.reportError(error);");
+  for (const [written, error] of [
+    ["window.structured_clone(|| (), None)", "the trait `js::StructuredClone` is not implemented for closure"],
+    ["window.structured_clone(Some(None::<i32>), None)", "the trait `js::Defined` is not implemented for `std::option::Option<i32>`"],
+    ["window.structured_clone(window, None)", "the trait `js::StructuredClone` is not implemented for `webapi::Window`"],
+  ]) {
+    writeFileSync(join(dir, "lib.rs"), source.replace("window.structured_clone(text, None)", written));
+    const result = Bun.spawnSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "wrong.js"), ...withWeb], { cwd: dir });
+    expect(result.exitCode).not.toBe(0);
+    expect(result.stderr.toString()).toContain(error);
+  }
+});
+
+// An element's constructor is WebIDL's `[HTMLConstructor]`, which only a
+// custom element's class can call: `new HTMLDivElement()` in a page throws
+// "Illegal constructor". So webapi binds none, and an element is made with
+// `document.create_element(..)`. Other constructors, `new Event`, it binds.
+test("the webapi crate binds no element constructor, which a page can't call", () => {
+  const lib = readFileSync(join(root, "webapi", "src", "lib.rs"), "utf8");
+  expect(lib.match(/rust_js::link_name = "new HTML\w*"/g) ?? []).toEqual([]);
+  expect(lib).toContain('#[cfg_attr(rust_js, rust_js::link_name = "new Event")]');
+  expect(lib).toContain('#[cfg_attr(rust_js, rust_js::link_name = "new TextEncoder")]');
+});
+
+// ADR 0269: a window's own functions are called bare too, as TypeScript's DOM
+// declares them globals and react.dev's NavigationBar asks `confirm('Clear
+// all your edits?')`. `window.confirm(..)` is still the method's.
+test("a window's own functions are called bare", async () => {
+  const withWeb = ["--", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const dir = fixture("window-global");
+  writeFileSync(join(dir, "lib.rs"), `use webapi::{window, window_global};
+
+pub fn cleared() -> bool {
+    window_global::confirm(Some("Clear all your edits?"))
+}
+
+pub fn asked() -> bool {
+    window.confirm(Some("Sure?"))
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('return confirm("Clear all your edits?");');
+  expect(js).toContain('return window.confirm("Sure?");');
+});

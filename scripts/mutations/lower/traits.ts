@@ -104,7 +104,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/traits.rs",
     find: "        && (tcx.associated_items(id).in_definition_order()).all(|item| bindings::is_binding(tcx, item.def_id))\n",
     replace: "        && tcx.associated_items(id).in_definition_order().next().is_none()\n",
-    tests: ["test/bindings.test.ts","-t","binding method is read of the value"],
+    tests: ["test/bindings.test.ts", "-t", "binding method is read of the value"],
   },
   {
     name: "iterator-bound-not-evidence",

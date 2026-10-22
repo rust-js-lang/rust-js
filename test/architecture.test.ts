@@ -1000,7 +1000,6 @@ test("a test file is at most the cap, or shrinks", () => {
   const over: Record<string, number> = {
     "test/lowering.test.ts": 13712,
     "test/jsx.test.ts": 6954,
-    "test/bindings.test.ts": 2378,
   };
   const sizes = fileSizes(TESTS);
   expect(sizes.length).toBeGreaterThan(80);

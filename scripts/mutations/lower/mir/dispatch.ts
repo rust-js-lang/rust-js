@@ -144,7 +144,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/dispatch.rs",
     find: "        if let Operand::Copy(_) | Operand::Move(_) = func\n",
     replace: "        if false && let Operand::Copy(_) | Operand::Move(_) = func\n",
-    tests: ["test/bindings.test.ts","-t","js::import! loads a module"],
+    tests: ["test/bindings.test.ts", "-t", "js::import! loads a module"],
   },
   {
     "name": "mir-own-name-called",

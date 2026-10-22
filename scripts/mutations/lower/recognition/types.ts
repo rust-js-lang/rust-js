@@ -24,7 +24,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/recognition/types.rs",
     find: "self.tcx.crate_name(adt.did().krate).as_str() == \"js\"",
     replace: "self.tcx.crate_name(adt.did().krate).as_str() == \"jsx\"",
-    tests: ["test/bindings.test.ts", "-t", "a JS error is shown as JS shows it"],
+    tests: ["test/js-builtins.test.ts", "-t", "a JS error is shown as JS shows it"],
   },
   {
     name: "parse-error-by-name",

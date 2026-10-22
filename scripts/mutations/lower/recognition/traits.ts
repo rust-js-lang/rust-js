@@ -177,7 +177,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/recognition/traits.rs",
     find: "        if self.is_std_type(output, StdItem::Result) {\n            Catching::Result",
     replace: "        if false && self.is_std_type(output, StdItem::Result) {\n            Catching::Result",
-    tests: ["test/bindings.test.ts", "-t", "a Date is JS's, its members methods"],
+    tests: ["test/js-builtins.test.ts", "-t", "a Date is JS's, its members methods"],
   },
   {
     name: "catching-generic-signature",
@@ -185,7 +185,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/recognition/traits.rs",
     find: "        let output = sig\n            .instantiate(self.tcx, args)\n",
     replace: "        let output = sig\n            .instantiate_identity()\n",
-    tests: ["test/bindings.test.ts","-t","react.dev's Console"],
+    tests: ["test/bindings.test.ts", "-t", "react.dev's Console"],
   },
   {
     name: "own-clone-from-of-std",

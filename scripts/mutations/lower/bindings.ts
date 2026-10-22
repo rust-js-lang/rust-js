@@ -160,7 +160,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/bindings.rs",
     find: "        let keys = keys.split(',').map(str::trim).filter(|k| !k.is_empty());",
     replace: "        let keys = keys.split(',').map(str::trim);",
-    tests: ["test/bindings.test.ts", "-t", "Reflect and Proxy are JS's"],
+    tests: ["test/js-builtins.test.ts", "-t", "Reflect and Proxy are JS's"],
   },
   {
     name: "given-variant-name-ignored",
@@ -168,7 +168,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/bindings.rs",
     find: "    (given_name(tcx, variant.def_id))\n        .or_else(|| given_bool(tcx, variant.def_id).map(|b| b.to_string()))\n        .unwrap_or_else(|| default_name(tcx, variant.def_id))",
     replace: "    default_name(tcx, variant.def_id)",
-    tests: ["test/bindings.test.ts", "-t", "Atomics are JS's, of a view of a shared buffer"],
+    tests: ["test/js-builtins.test.ts", "-t", "Atomics are JS's, of a view of a shared buffer"],
   },
   {
     name: "given-field-name-ignored",
@@ -176,7 +176,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/bindings.rs",
     find: "    name_in_js(tcx, field.did)\n",
     replace: "    default_name(tcx, field.did)\n",
-    tests: ["test/bindings.test.ts", "-t", "a struct whose JS is its JSON is stringified as it is"],
+    tests: ["test/js-builtins.test.ts", "-t", "a struct whose JS is its JSON is stringified as it is"],
   },
   {
     name: "tagged-otherwise-not-last",
@@ -224,7 +224,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/bindings.rs",
     find: "        \"typeof\" => return JsForm::TypeOf,\n",
     replace: "",
-    tests: ["test/bindings.test.ts","-t","react.dev's Console"],
+    tests: ["test/bindings.test.ts", "-t", "react.dev's Console"],
   },
   {
     name: "text-form-called",
@@ -232,7 +232,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/bindings.rs",
     find: "        \"+ \\\"\\\"\" => return JsForm::Text,\n",
     replace: "",
-    tests: ["test/bindings.test.ts","-t","react.dev's Console"],
+    tests: ["test/bindings.test.ts", "-t", "react.dev's Console"],
   },
   {
     "name": "bool-tag-string",

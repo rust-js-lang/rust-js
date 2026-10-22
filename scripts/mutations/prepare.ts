@@ -112,7 +112,7 @@ export const mutations: Mutation[] = [
     file: "src/prepare.rs",
     find: "    try_catches(body);\n",
     replace: "",
-    tests: ["test/bindings.test.ts", "-t", "a JS error is shown"],
+    tests: ["test/js-builtins.test.ts", "-t", "a JS error is shown"],
   },
   {
     name: "try-with-error-read",
@@ -120,7 +120,7 @@ export const mutations: Mutation[] = [
     file: "src/prepare.rs",
     find: "        || js::mentions_in(failed, result) > 0\n",
     replace: "",
-    tests: ["test/bindings.test.ts", "-t", "a JS error is shown"],
+    tests: ["test/js-builtins.test.ts", "-t", "a JS error is shown"],
   },
   {
     name: "coalescing-if",
@@ -317,7 +317,7 @@ export const mutations: Mutation[] = [
     file: "src/prepare.rs",
     find: "            .take_while(|s| matches!(s.kind, StmtKind::Let(_, None)))\n",
     replace: "            .take_while(|_| false)\n",
-    tests: ["test/bindings.test.ts","-t","node's modules are imported"],
+    tests: ["test/node-bindings.test.ts", "-t", "node's modules are imported"],
   },
   {
     name: "try-of-trailing-return-blocked",
@@ -325,7 +325,7 @@ export const mutations: Mutation[] = [
     file: "src/prepare.rs",
     find: "        ) => (std::slice::from_ref(last), &[][..], 3),\n",
     replace: "        ) if false => (std::slice::from_ref(last), &[][..], 3),\n",
-    tests: ["test/bindings.test.ts","-t","node's modules are imported"],
+    tests: ["test/node-bindings.test.ts", "-t", "node's modules are imported"],
   },
   {
     name: "try-assign-past-unended-if",
@@ -333,7 +333,7 @@ export const mutations: Mutation[] = [
     file: "src/prepare.rs",
     find: " && taken == 2 => {\n",
     replace: " => {\n",
-    tests: ["test/bindings.test.ts","-t","node's modules are imported"],
+    tests: ["test/node-bindings.test.ts", "-t", "node's modules are imported"],
   },
   {
     name: "try-binding-read-otherwise",
@@ -341,7 +341,7 @@ export const mutations: Mutation[] = [
     file: "src/prepare.rs",
     find: "                StmtKind::Return(Some(e)) if read(e) => StmtKind::Return(Some(value.clone())),\n",
     replace: "                StmtKind::Return(Some(_)) => StmtKind::Return(Some(value.clone())),\n",
-    tests: ["test/bindings.test.ts","-t","node's modules are imported"],
+    tests: ["test/node-bindings.test.ts", "-t", "node's modules are imported"],
   },
   {
     name: "coalesce-assign-spelled-out",

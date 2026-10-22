@@ -56,7 +56,7 @@ export const mutations: Mutation[] = [
     file: "src/to_oxc.rs",
     find: "        if !clause.is_empty() {",
     replace: "        if !clause.is_empty() && package.default.is_some() {",
-    tests: ["test/bindings.test.ts", "-t", "node's modules are imported, and its globals called"],
+    tests: ["test/node-bindings.test.ts", "-t", "node's modules are imported, and its globals called"],
   },
   {
     name: "imports-unsorted",
