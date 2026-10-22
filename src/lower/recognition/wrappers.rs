@@ -466,6 +466,13 @@ pub(in crate::lower) fn local_key_access(tcx: TyCtxt<'_>, id: DefId) -> Option<b
     }
 }
 
+/// Whether `key`, a `LocalKey`, holds a `Cell`: one whose `take` and
+/// `replace` are its cell's, a read and a write, not a borrow (ADR 0595).
+pub(in crate::lower) fn local_key_of_cell(tcx: TyCtxt<'_>, key: Ty<'_>) -> bool {
+    matches!(key.kind(), ty::Adt(_, args)
+        if args.types().next().is_some_and(|held| matches!(held.kind(), ty::Adt(cell, _) if is_std_def(tcx, cell.did(), StdItem::Cell))))
+}
+
 /// Of a `#[repr(transparent)]` struct of the crate's or a dependency's, the
 /// index of the field it is in JS (ADR 0584): Rust lays it out as that
 /// field, its others of no size, a `PhantomData` or a `()`.

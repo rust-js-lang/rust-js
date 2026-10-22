@@ -5788,6 +5788,33 @@ pub fn shown(n: u32) -> String {
   expect(refused.stderr.toString()).toContain("this impl's dictionary, made where `shapes` loads, in an import cycle with `counts`, which runs code where it loads");
 });
 
+// ADR 0595: a thread-local \`Cell\`'s \`take\` and \`replace\` are its cell's, a
+// read and a write, so it's its module's variable still: React's scheduler
+// takes its timeout's id to clear it.
+test("a thread-local Cell's take and replace are its variable's read and write", async () => {
+  const dir = fixture("local-cell-take");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::Cell;
+
+thread_local! {
+    static TIMEOUT: Cell<Option<u32>> = const { Cell::new(None) };
+}
+
+pub fn arm(id: u32) -> Option<u32> {
+    TIMEOUT.replace(Some(id))
+}
+
+pub fn cancel() -> Option<u32> {
+    TIMEOUT.take()
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("let timeout;");
+  expect(js).toContain("export function cancel() {\n  const old = timeout;\n  timeout = undefined;\n  return old;\n}");
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.arm(1), lib.arm(2), lib.cancel(), lib.cancel()]).toEqual([undefined, 1, 2, undefined]);
+});
+
 // ADR 0583: a global some hosts lack is an `Option` binding, read where
 // it may not be: React's scheduler asks for `setImmediate`, then
 // `MessageChannel`, then `setTimeout`.

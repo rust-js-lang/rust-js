@@ -18,6 +18,8 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         let result = self.is_std_type(owner, StdItem::Result);
         let ordering = self.is_lang_adt(owner, LangItem::OrderingEnum);
         let local_key = adt(StdItem::LocalKey);
+        // A thread-local of a `Cell`, whose own `take` and `replace` it has.
+        let local_cell = local_key && local_key_of_cell(tcx, owner);
         let once = self.is_std_type(owner, StdItem::OnceCell);
         let rc = rc_pointee(tcx, owner).is_some();
         let weak = weak_pointee(tcx, owner).is_some();
@@ -560,6 +562,8 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "with" if local_key => Std::LocalWith,
             "get" if local_key => Std::CellGet,
             "set" if local_key => Std::CellSet,
+            "take" if local_cell => Std::CellTake,
+            "replace" if local_cell => Std::CellReplace,
             "with_borrow" | "with_borrow_mut" if local_key => Std::LocalBorrow {
                 mutable: name.as_str() == "with_borrow_mut",
             },

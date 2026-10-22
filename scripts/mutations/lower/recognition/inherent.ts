@@ -346,4 +346,12 @@ export const mutations: Mutation[] = [
     replace: "                    \"splitn\" => TextOp::SplitN,\n",
     tests: ["test/corpus.test.ts", "-t", "^splitn_by.rs$"],
   },
+  {
+    name: "local-cell-take-unknown",
+    breaks: "a thread-local `Cell`'s `take` is refused",
+    file: "src/lower/recognition/inherent.rs",
+    find: "            \"take\" if local_cell => Std::CellTake,\n",
+    replace: "",
+    tests: ["test/lowering.test.ts", "-t", "a thread-local Cell's take and replace"],
+  },
 ];

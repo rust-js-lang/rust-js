@@ -227,4 +227,5 @@ export const mutations: Mutation[] = [
     replace: "    if !adt.is_struct() || !adt.repr().transparent() {\n",
     tests: ["test/corpus.test.ts", "-t", "^cell_(const|drops).rs$"],
   },
+
 ];
