@@ -93,6 +93,59 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Rust drops what's left of it with the adapter (ADR 0510); `f`'s own
     /// parameter where it's an arrow of one value. `None` of one with
     /// nothing to drop.
+    /// What `flat_map` and `flatten` step of an inner `value` of type
+    /// `inner`, as a JS iterable: a range's numbers and the crate's
+    /// iterator's items, `as_js_iterator`'s, as `chain` steps them; a
+    /// `Result`'s `Ok` value or none; else the value, an array's or a JS
+    /// iterator's own. `None` where it's the value.
+    fn inner_iterable(&mut self, value: Expr, inner: Ty<'tcx>, span: Span) -> R<Option<Expr>> {
+        let inner = self.reveal(inner);
+        if self.range_kind(inner).is_some() || self.is_user_iterator(inner) {
+            return self.as_js_iterator(value, inner, span).map(Some);
+        }
+        if self.is_std_type(inner, crate::lower::recognition::StdItem::Result) {
+            let ok = Expr::bin(Op::Eq, Expr::member(value.clone(), "TAG"), Expr::str("Ok"));
+            let items = Expr::array(vec![Expr::member(value, "_0")]);
+            return Ok(Some(Expr::cond(ok, items, Expr::array(Vec::new()))));
+        }
+        Ok(None)
+    }
+
+    /// `(item) => <inner_iterable of f(item)>`, of `f`'s returned value,
+    /// where it needs making one; `None` where it's the value.
+    fn iterable_of_each(&mut self, f: Option<Expr>, inner: Ty<'tcx>, span: Span) -> R<Option<Expr>> {
+        let (param, value) = match f {
+            Some(f) => match &f.kind {
+                js::ExprKind::Arrow(params, body)
+                    if let [js::Pattern::Name(name)] = params.as_slice()
+                        && let [
+                            Stmt {
+                                kind: StmtKind::Return(Some(value)),
+                                ..
+                            },
+                        ] = body.as_slice() =>
+                {
+                    (name.clone(), value.clone())
+                }
+                _ => ("item".to_string(), Expr::call(f, vec![Expr::var("item")])),
+            },
+            None => ("item".to_string(), Expr::var("item")),
+        };
+        // A `Result`'s is read twice, its tag and its value: a variable.
+        let twice = self.is_std_type(self.reveal(inner), crate::lower::recognition::StdItem::Result);
+        let held = (twice && !matches!(value.kind, js::ExprKind::Var(_))).then(|| value.clone());
+        let read = if held.is_some() { Expr::var("inner") } else { value };
+        let Some(iterable) = self.inner_iterable(read, inner, span)? else {
+            return Ok(None);
+        };
+        let mut body = Vec::new();
+        if let Some(held) = held {
+            body.push(StmtKind::Const("inner".into(), held).at(js::Span::NONE));
+        }
+        body.push(StmtKind::Return(Some(iterable)).at(js::Span::NONE));
+        Ok(Some(Expr::arrow(vec![param.into()], body)))
+    }
+
     fn closed_inner(&mut self, f: Option<Expr>, inner: Ty<'tcx>, span: Span) -> R<Option<Expr>> {
         let Some(drop) = self.closing_drop(inner, span)? else {
             return Ok(None);
@@ -204,7 +257,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     let f = next();
                     match self.closed_inner(Some(f.clone()), returned, span)? {
                         Some(each) => self.flat_mapped(items, each, receiver_ty, span)?,
-                        None => method(items, "flatMap", vec![f]),
+                        None => match self.iterable_of_each(Some(f.clone()), returned, span)? {
+                            Some(each) => method(items, "flatMap", vec![each]),
+                            None => method(items, "flatMap", vec![f]),
+                        },
                     }
                 }
             }
@@ -229,6 +285,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         vec!["item".into()],
                         vec![StmtKind::Return(Some(stepped)).at(js::Span::NONE)],
                     );
+                    method(items, "flatMap", vec![each])
+                }
+                Some(item) if let Some(each) = self.iterable_of_each(None, item, span)? => {
                     method(items, "flatMap", vec![each])
                 }
                 _ => {

@@ -113,3 +113,16 @@ isn't a constant other than 0 is named before the chain, checked by
 `const step = $step(n);`, or `step = $step(step);` of a parameter. ADR
 0262's case: results would change, so Rust's. Held by
 `test/corpus/step_by_zero.rs` and the mutation `step-by-zero-unchecked`.
+
+## Amendment: what `flat_map` and `flatten` step of each
+
+`flat_map` and `flatten` gave `.flatMap` each inner value as it is, which
+is right of a `Vec`, an `Option`'s items and a JS iterator, but not of a
+range, `{ start, end }`, which isn't iterable, nor of the crate's
+iterator, whose fields `.flatMap` stepped, nor of a `Result`, `{ TAG, _0
+}` (#132). `inner_iterable` makes each a JS iterable by what it is: a
+range's and the crate's iterator's by `as_js_iterator`, as `chain` steps
+them, `$iterator(item, $rangeNext)`; a `Result` its `Ok` value or none,
+`item.TAG === "Ok" ? [item._0] : []`. Held by
+`test/corpus/flat_map_inner_iterables.rs` and the mutations
+`flat-map-iterator-as-iterable` and `flatten-result-as-iterable`.

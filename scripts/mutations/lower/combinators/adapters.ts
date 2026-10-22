@@ -194,4 +194,20 @@ export const mutations: Mutation[] = [
     replace: "                    Some(_) => items,",
     tests: ["test/corpus.test.ts", "-t", "^copied_structs_apart.rs$"],
   },
+  {
+    name: "flat-map-iterator-as-iterable",
+    breaks: "`flat_map` of a range or the crate's iterator gives `.flatMap` the value, whose fields it steps, or which isn't iterable, where its items are what's stepped",
+    file: "src/lower/combinators/adapters.rs",
+    find: "        if self.range_kind(inner).is_some() || self.is_user_iterator(inner) {\n            return self.as_js_iterator(value, inner, span).map(Some);",
+    replace: "        if false {\n            return self.as_js_iterator(value, inner, span).map(Some);",
+    tests: ["test/corpus.test.ts", "-t", "^flat_map_inner_iterables.rs$"],
+  },
+  {
+    name: "flatten-result-as-iterable",
+    breaks: "`flatten` of `Result`s gives `.flatMap` each `{ TAG, _0 }`, which isn't iterable, where its `Ok` value is its one item",
+    file: "src/lower/combinators/adapters.rs",
+    find: "        if self.is_std_type(inner, crate::lower::recognition::StdItem::Result) {\n",
+    replace: "        if false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^flat_map_inner_iterables.rs$"],
+  },
 ];
