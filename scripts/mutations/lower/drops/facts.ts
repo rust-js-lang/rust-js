@@ -56,7 +56,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/drops/facts.rs",
     find: "        if used_in_place {\n            self.momentary(e);\n        }\n",
     replace: "",
-    tests: ["test/jsx.test.ts", "-t", "react.dev's InlineToc nests its headings in a field's array"],
+    tests: ["test/jsx-react-dev.test.ts", "-t", "react.dev's InlineToc nests its headings in a field's array"],
   },
   {
     name: "quiet-ignores-calls",

@@ -48,11 +48,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/analysis/cell_borrows.rs",
     "find": "            JsForm::Jsx(_)\n                | JsForm::Prop(_)",
     "replace": "            JsForm::Text\n                | JsForm::Prop(_)",
-    "tests": [
-      "test/jsx.test.ts",
-      "-t",
-      "borrowed for a prop is its value"
-    ]
+    "tests": ["test/jsx-evaluation-order.test.ts", "-t", "borrowed for a prop is its value"]
   },
   {
     name: "refcell-write-borrows-nothing",

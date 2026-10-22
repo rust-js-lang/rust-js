@@ -193,7 +193,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/representation.rs",
     find: "            (Shape::Object(_), _) if super::bindings::is_flatten_field(self.tcx, ty, i) => base,",
     replace: "            (Shape::Object(_), _) if false && super::bindings::is_flatten_field(self.tcx, ty, i) => base,",
-    tests: ["test/jsx.test.ts", "-t", "chain of flattened"],
+    tests: ["test/jsx-props.test.ts", "-t", "chain of flattened"],
   },
   {
     name: "untagged-const-tagged",
@@ -209,7 +209,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/representation.rs",
     find: "        ty::Adt(adt, args) if marks_js_object(tcx, *adt, args) => None,\n",
     replace: "",
-    tests: ["test/jsx.test.ts", "-t", "ElementType, rendered as a tag"],
+    tests: ["test/jsx-types.test.ts", "-t", "ElementType, rendered as a tag"],
   },
   {
     name: "struct-variant-fields-numbered",

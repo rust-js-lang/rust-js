@@ -72,7 +72,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/calls.rs",
     find: "                        ty::FnDef(id, _) => cx.binding_component_of(id),\n",
     replace: "                        ty::FnDef(..) => None,\n",
-    tests: ["test/jsx.test.ts"],
+    tests: ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"],
   },
   {
     name: "mir-generic-result-boxed",

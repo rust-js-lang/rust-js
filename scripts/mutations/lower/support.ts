@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/support.rs",
     find: "                    .is_some_and(|t| super::bindings::is_jsx_node(self.tcx, t)) =>",
     replace: "                    .is_some_and(|t| false && super::bindings::is_jsx_node(self.tcx, t)) =>",
-    tests: ["test/jsx.test.ts", "-t", "dyn ReactNode is the node"],
+    tests: ["test/jsx-types.test.ts", "-t", "dyn ReactNode is the node"],
   },
   {
     name: "never-unsupported",

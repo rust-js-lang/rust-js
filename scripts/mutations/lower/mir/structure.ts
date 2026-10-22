@@ -32,7 +32,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/structure.rs",
     find: "        if let Some(last) = state.pending.iter().rposition(|(local, _)| !read.contains(local)) {\n",
     replace: "        if false && let Some(last) = state.pending.iter().rposition(|(local, _)| !read.contains(local)) {\n",
-    tests: ["test/jsx.test.ts", "-t", "react.dev's Diagram writes its images' srcs and caption test in place"],
+    tests: ["test/jsx-react-dev.test.ts", "-t", "react.dev's Diagram writes its images' srcs and caption test in place"],
   },
   {
     name: "mir-return-unwritten",
@@ -72,7 +72,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/structure.rs",
     find: "                && let [only] = preds[block].as_slice()\n",
     replace: "                && let [only] = preds[block].as_slice().get(..0).unwrap_or_default()\n",
-    tests: ["test/jsx.test.ts"],
+    tests: ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"],
   },
   {
     "name": "mir-variant-test-not-bool",
@@ -80,7 +80,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/structure.rs",
     "find": "                    self.locals.mir.paths.entry(path).or_insert(true);\n",
     "replace": "",
-    "tests": ["test/jsx.test.ts"]
+    "tests": ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"]
   },
   {
     "name": "mir-call-write-before-pending",
@@ -88,9 +88,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/structure.rs",
     "find": "if called.iter().any(|s| matches!(s.kind, StmtKind::Assign(..))) && !state.pending.is_empty() {",
     "replace": "if false && called.iter().any(|s| matches!(s.kind, StmtKind::Assign(..))) && !state.pending.is_empty() {",
-    "tests": [
-      "test/jsx.test.ts"
-    ]
+    "tests": ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"]
   },
   {
     "name": "mir-return-written-by-storage",

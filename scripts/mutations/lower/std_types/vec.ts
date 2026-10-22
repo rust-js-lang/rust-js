@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_types/vec.rs",
     find: "            Std::IsEmpty if self.is_string_like(tys[0].peel_refs()) => ",
     replace: "            Std::IsEmpty if false && self.is_string_like(tys[0].peel_refs()) => ",
-    tests: ["test/jsx.test.ts", "-t", "filtered child, in place"],
+    tests: ["test/jsx-children.test.ts", "-t", "filtered child, in place"],
   },
   {
     name: "capacity-args-dropped",

@@ -235,7 +235,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/traits/dyns.rs",
     find: "        let value = match self.pointee(source).is_unit()\n",
     replace: "        let value = match self.pointee(source).is_unit() && false\n",
-    tests: ["test/jsx.test.ts", "-t", "JSX hooks take"],
+    tests: ["test/jsx-types.test.ts", "-t", "JSX hooks take"],
   },
   {
     "name": "counted-dyn-cell-refused",

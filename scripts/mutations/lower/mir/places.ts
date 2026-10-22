@@ -96,9 +96,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/places.rs",
     "find": "            PlaceElem::Field(_, field_ty) if bindings::is_rest(self.tcx, field_ty) => {",
     "replace": "            PlaceElem::Field(_, field_ty) if false && bindings::is_rest(self.tcx, field_ty) => {",
-    "tests": [
-      "test/jsx.test.ts"
-    ]
+    "tests": ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"]
   },
   {
     name: "mir-variant-cell-field-read",

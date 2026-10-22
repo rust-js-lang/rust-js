@@ -48,11 +48,7 @@ export const mutations: Mutation[] = [
     "file": "src/format.rs",
     "find": "    let pairs = pair(&layout_free(before, code), &layout_free(after, text));",
     "replace": "    let pairs = pair(before, after);",
-    "tests": [
-      "test/jsx.test.ts",
-      "-t",
-      "keeps its mappings in order"
-    ]
+    "tests": ["test/jsx-evaluation-order.test.ts", "-t", "keeps its mappings in order"]
   },
   {
     name: "transform-meaning-unchecked",

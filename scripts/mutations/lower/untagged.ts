@@ -104,7 +104,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/untagged.rs",
     find: "            Kind::Test(test) => Expr::call(class(test), vec![value.clone()]),\n",
     replace: "            Kind::Test(_) => Expr::bool(true),\n",
-    tests: ["test/jsx.test.ts", "-t", "look inside their children"],
+    tests: ["test/jsx-types.test.ts", "-t", "look inside their children"],
   },
   {
     name: "tested-type-a-class",
@@ -112,7 +112,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/untagged.rs",
     find: "            && let Some(test) = bindings::test_of(self.tcx, adt.did())\n",
     replace: "            && let Some(test) = None::<String>\n",
-    tests: ["test/jsx.test.ts", "-t", "look inside their children"],
+    tests: ["test/jsx-types.test.ts", "-t", "look inside their children"],
   },
   {
     name: "made-untagged-alike-refused",
@@ -136,7 +136,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/untagged.rs",
     find: "        if self.is_string_like(ty) || ty.is_char() {",
     replace: "        if ty.is_char() {",
-    tests: ["test/jsx.test.ts", "-t", "JSX tells text children from any other node"],
+    tests: ["test/jsx-types.test.ts", "-t", "JSX tells text children from any other node"],
   },
   {
     name: "untagged-slice-kindless",
@@ -144,7 +144,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/untagged.rs",
     find: "            || ty.is_slice()\n",
     replace: "",
-    tests: ["test/jsx.test.ts", "-t", "JSX components take apart a list of children"],
+    tests: ["test/jsx-types.test.ts", "-t", "JSX components take apart a list of children"],
   },
   {
     name: "untagged-fieldless-unknown",

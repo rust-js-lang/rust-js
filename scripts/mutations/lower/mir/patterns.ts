@@ -24,9 +24,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/patterns.rs",
     "find": "            while let thir::PatKind::Deref { subpattern, .. } = &pattern.kind {\n                pattern = subpattern;\n            }\n",
     "replace": "",
-    "tests": [
-      "test/jsx.test.ts"
-    ]
+    "tests": ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"]
   },
   {
     "name": "let-pattern-ref-binding-unseen",
@@ -34,9 +32,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/patterns.rs",
     "find": "                    | Rvalue::Ref(_, BorrowKind::Shared, from),\n",
     "replace": ",\n",
-    "tests": [
-      "test/jsx.test.ts"
-    ]
+    "tests": ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"]
   },
   {
     "name": "let-pattern-through-deref-unseen",
@@ -44,9 +40,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/patterns.rs",
     "find": "                && derefs.iter().all(|p| matches!(p, PlaceElem::Deref))\n",
     "replace": "                && derefs.is_empty()\n",
-    "tests": [
-      "test/jsx.test.ts"
-    ]
+    "tests": ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"]
   },
   {
     "name": "mir-props-with-drops-whole",
@@ -54,9 +48,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/patterns.rs",
     "find": "            if self.has_drops(pat.ty) && !self.binds_dropped_fields(pat) {",
     "replace": "            if self.has_drops(pat.ty) {",
-    "tests": [
-      "test/jsx.test.ts"
-    ]
+    "tests": ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"]
   },
   {
     "name": "mir-arm-binding-held",

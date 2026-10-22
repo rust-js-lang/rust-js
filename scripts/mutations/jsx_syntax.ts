@@ -18,7 +18,7 @@ export const mutations: Mutation[] = [
     file: "src/jsx_syntax.rs",
     find: "            mac.args.tokens = arm(rust, span);\n",
     replace: "",
-    tests: ["test/jsx.test.ts","-t","JSX supports components across modules"],
+    tests: ["test/jsx.test.ts", "-t", "JSX supports components across modules"],
   },
   {
     name: "tag-local-unseen",
@@ -26,7 +26,7 @@ export const mutations: Mutation[] = [
     file: "src/jsx_syntax.rs",
     find: "                self.0.insert(ident.to_string(), props.clone().filter(|_| typed));\n",
     replace: "                let _ = (ident, typed);\n",
-    tests: ["test/jsx.test.ts", "-t", "tag that.s a value"],
+    tests: ["test/jsx-types.test.ts", "-t", "tag that.s a value"],
   },
   {
     name: "export-default-dead",
@@ -42,7 +42,7 @@ export const mutations: Mutation[] = [
     file: "src/jsx_syntax.rs",
     find: "if let ExprKind::Closure(_) = &expr.kind {",
     replace: "if let ExprKind::Closure(_) = &expr.kind\n                && false\n            {",
-    tests: ["test/jsx.test.ts", "-t", "ElementType, rendered as a tag"],
+    tests: ["test/jsx-types.test.ts", "-t", "ElementType, rendered as a tag"],
   },
   {
     name: "local-component-type-unread",
@@ -50,7 +50,7 @@ export const mutations: Mutation[] = [
     file: "src/jsx_syntax.rs",
     find: "[only] => parser::props_path(&only.ty).filter(|path| !path.is_empty()),",
     replace: "[_] => None,",
-    tests: ["test/jsx.test.ts", "-t", "function type is a tag"],
+    tests: ["test/jsx-types.test.ts", "-t", "function type is a tag"],
   },
   {
     name: "thread-local-jsx-unexpanded",
@@ -58,7 +58,7 @@ export const mutations: Mutation[] = [
     file: "src/jsx_syntax.rs",
     find: "            mac.args.tokens = self.jsx_calls(&mac.args.tokens);\n            return;\n",
     replace: "            return;\n",
-    tests: ["test/jsx.test.ts", "-t", "constant element is rendered"],
+    tests: ["test/jsx-evaluation-order.test.ts", "-t", "constant element is rendered"],
   },
   {
     name: "thread-local-nested-jsx-unexpanded",
@@ -66,7 +66,7 @@ export const mutations: Mutation[] = [
     file: "src/jsx_syntax.rs",
     find: "TokenTree::Delimited(*dspan, *spacing, *delim, self.jsx_calls(inner))",
     replace: "TokenTree::Delimited(*dspan, *spacing, *delim, inner.clone())",
-    tests: ["test/jsx.test.ts", "-t", "constant element is rendered"],
+    tests: ["test/jsx-evaluation-order.test.ts", "-t", "constant element is rendered"],
   },
   {
     name: "props-lifetimes-unsaid",
@@ -74,7 +74,7 @@ export const mutations: Mutation[] = [
     file: "src/jsx_syntax.rs",
     find: "if item.kind.ident().is_some_and(|ident| props.contains(ident.as_str())) {",
     replace: "if false && item.kind.ident().is_some_and(|ident| props.contains(ident.as_str())) {",
-    tests: ["test/jsx.test.ts", "-t", "thread_local component takes props"],
+    tests: ["test/jsx-evaluation-order.test.ts", "-t", "thread_local component takes props"],
   },
   {
     name: "braced-jsx-statement-unended",
@@ -122,7 +122,7 @@ export const mutations: Mutation[] = [
     file: "src/jsx_syntax.rs",
     find: "            && mac.path.segments.last().is_some_and(|s| s.ident.as_str() == \"vec\")",
     replace: "            && false",
-    tests: ["test/jsx.test.ts", "-t", "vec!'s items"],
+    tests: ["test/jsx-types.test.ts", "-t", "vec!'s items"],
   },
   {
     name: "format-foreign-jsx-parsed",

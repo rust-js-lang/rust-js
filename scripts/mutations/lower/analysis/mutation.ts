@@ -96,7 +96,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/mutation.rs",
     find: "                && !expr.span.in_external_macro(tcx.sess.source_map())\n",
     replace: "",
-    tests: ["test/jsx.test.ts", "-t", "constant element is rendered where"],
+    tests: ["test/jsx-evaluation-order.test.ts", "-t", "constant element is rendered where"],
   },
   {
     name: "part-borrow-unchanged",

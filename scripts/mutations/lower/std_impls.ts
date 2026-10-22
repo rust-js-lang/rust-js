@@ -120,7 +120,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_impls.rs",
     find: "            return Ok(Expr::undefined());\n        }\n        // react's `Rest`: no props,",
     replace: "            return Ok(Expr::null());\n        }\n        // react's `Rest`: no props,",
-    tests: ["test/jsx.test.ts", "-t", "named props and the rest from a base"],
+    tests: ["test/jsx-props.test.ts", "-t", "named props and the rest from a base"],
   },
   {
     name: "rest-default-object",
@@ -128,7 +128,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_impls.rs",
     find: "        if super::bindings::is_rest(self.tcx, ty) {\n            return Ok(Expr::undefined());",
     replace: "        if super::bindings::is_rest(self.tcx, ty) {\n            return Ok(Expr::object(Vec::new()));",
-    tests: ["test/jsx.test.ts", "-t", "doesn't name as ...rest"],
+    tests: ["test/jsx-props.test.ts", "-t", "doesn't name as ...rest"],
   },
   {
     name: "untagged-clone-shared",
@@ -208,7 +208,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_impls.rs",
     find: "                    self.flattened_object(made, ty)\n",
     replace: "                    made\n",
-    tests: ["test/jsx.test.ts","-t","JSX gives a flattened struct's fields as a component's own props"],
+    tests: ["test/jsx-props.test.ts", "-t", "JSX gives a flattened struct's fields as a component's own props"],
   },
   {
     name: "lazy-default-made",

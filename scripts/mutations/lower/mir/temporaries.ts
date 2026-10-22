@@ -24,7 +24,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/temporaries.rs",
     find: "            if !named && (self.capture_jsx(&mut expr, &mut made) || self.capture_object(&mut expr, &mut made)) {\n",
     replace: "            if !named && self.capture_object(&mut expr, &mut made) {\n",
-    tests: ["test/jsx.test.ts"],
+    tests: ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"],
   },
   {
     name: "mir-element-unread",
@@ -32,7 +32,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/temporaries.rs",
     find: "        if let Some(value) = state.in_place.get(&local) {\n",
     replace: "        if let Some(value) = state.in_place.get(&local).filter(|_| false) {\n",
-    tests: ["test/jsx.test.ts"],
+    tests: ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"],
   },
   {
     name: "mir-constant-made-as-const",
@@ -40,7 +40,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/temporaries.rs",
     find: "            _ => e.is_constant(),\n",
     replace: "            _ => false,\n",
-    tests: ["test/jsx.test.ts"],
+    tests: ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"],
   },
   {
     name: "mir-module-name-made-as-const",
@@ -48,7 +48,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/temporaries.rs",
     find: "            js::ExprKind::Var(name) => self.module_names.contains(name) || self.locals.mir.alike.contains(name),\n",
     replace: "            js::ExprKind::Var(name) => self.locals.mir.alike.contains(name),\n",
-    tests: ["test/jsx.test.ts"],
+    tests: ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"],
   },
   {
     name: "mir-alike-variable-made-as-const",
@@ -56,7 +56,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/temporaries.rs",
     find: "            js::ExprKind::Var(name) => self.module_names.contains(name) || self.locals.mir.alike.contains(name),\n",
     replace: "            js::ExprKind::Var(name) => self.module_names.contains(name),\n",
-    tests: ["test/jsx.test.ts"],
+    tests: ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"],
   },
   {
     name: "mir-object-made-as-const",
@@ -64,7 +64,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/temporaries.rs",
     find: "            if !named && (self.capture_jsx(&mut expr, &mut made) || self.capture_object(&mut expr, &mut made)) {\n",
     replace: "            if !named && self.capture_jsx(&mut expr, &mut made) {\n",
-    tests: ["test/jsx.test.ts"],
+    tests: ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"],
   },
   {
     name: "mir-plain-field-as-const",
@@ -96,9 +96,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/temporaries.rs",
     "find": "            js::ExprKind::Member(..) if context_member => true,\n",
     "replace": "",
-    "tests": [
-      "test/jsx.test.ts"
-    ]
+    "tests": ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"]
   },
   {
     "name": "mir-branch-capture-unrecorded",
@@ -106,9 +104,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/temporaries.rs",
     "find": "                        StmtKind::Let(name, None) => {\n",
     "replace": "                        StmtKind::Let(name, None) if false => {\n",
-    "tests": [
-      "test/jsx.test.ts"
-    ]
+    "tests": ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"]
   },
   {
     name: "mir-call-cell-refused",
@@ -190,7 +186,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/temporaries.rs",
     find: "            if matches!(e.kind, js::ExprKind::Jsx(_) | js::ExprKind::Object(_)) {\n",
     replace: "            if false {\n",
-    tests: ["test/jsx.test.ts", "-t", "InlineToc"],
+    tests: ["test/jsx-react-dev.test.ts", "-t", "InlineToc"],
   },
   {
     name: "call-part-cell-refused",

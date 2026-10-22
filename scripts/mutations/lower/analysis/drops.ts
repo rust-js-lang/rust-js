@@ -57,7 +57,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/drops.rs",
     find: "            if crate::lower::bindings::is_component(tcx, id)\n",
     replace: "            if false\n",
-    tests: ["test/jsx.test.ts", "-t", "take no drop of their type parameters"],
+    tests: ["test/jsx-types.test.ts", "-t", "take no drop of their type parameters"],
   },
   {
     name: "component-destructor-not-refused",
@@ -65,7 +65,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/drops.rs",
     find: "            if crate::lower::bindings::is_component(tcx, callee) {",
     replace: "            if false && crate::lower::bindings::is_component(tcx, callee) {",
-    tests: ["test/jsx.test.ts", "-t", "take no drop of their type parameters"],
+    tests: ["test/jsx-types.test.ts", "-t", "take no drop of their type parameters"],
   },
   {
     name: "item-drops-not-given",

@@ -54,10 +54,15 @@ const jobs: [string, string[], Record<string, string>][] = [
   ["architecture, mutation lists", ["bun", "test", "test/architecture.test.ts", "test/mutations.test.ts"], {}],
   ...inParts("corpus", "test/corpus.test.ts"),
   // What checks the JS bodies are lowered to.
-  ...["lowering", "compiler", "bindings"].map(
-    (name): [string, string[], Record<string, string>] => [name, ["bun", "test", `test/${name}.test.ts`], {}],
-  ),
-  ...(jsx ? [["JSX", ["bun", "test", "test/jsx.test.ts"], {}] as [string, string[], Record<string, string>]] : []),
+  // Each a file of a concept's (ADR 0572), `test/lowering` all of lowering's.
+  ...(
+    [
+      ["lowering", ["test/lowering"]],
+      ["compiler", ["test/compiler.test.ts"]],
+      ["bindings", ["test/bindings.test.ts", "test/js-builtins.test.ts", "test/node-bindings.test.ts", "test/webapi-bindings.test.ts"]],
+    ] as const
+  ).map(([name, files]): [string, string[], Record<string, string>] => [name, ["bun", "test", ...files], {}]),
+  ...(jsx ? [["JSX", ["bun", "test", "test/jsx"], {}] as [string, string[], Record<string, string>]] : []),
   // What pins the JS written, the names it gives and what it refuses.
   ...(shared
     ? ["snapshots", "diagnostics"].map(

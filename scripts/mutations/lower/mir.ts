@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "                || written_apart(&state, local)\n",
     replace: "",
-    tests: ["test/jsx.test.ts"],
+    tests: ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"],
   },
   {
     name: "mir-props-taken-whole",
@@ -24,7 +24,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "            params[i] = pattern;\n",
     replace: "",
-    tests: ["test/jsx.test.ts"],
+    tests: ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"],
   },
   {
     name: "mir-plain-of-bound-vars",
@@ -80,9 +80,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir.rs",
     "find": "                .flat_map(|imports| imports.values().cloned()),\n",
     "replace": "                .flat_map(|imports| imports.values().cloned())\n                .filter(|_| false),\n",
-    "tests": [
-      "test/jsx.test.ts"
-    ]
+    "tests": ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"]
   },
   {
     "name": "mir-array-items-not-plain",
@@ -98,9 +96,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir.rs",
     "find": "            self.check_props_taken_apart(param.ty, param.pat.as_deref(), param.ty_span.unwrap_or(span))?;\n",
     "replace": "",
-    "tests": [
-      "test/jsx.test.ts"
-    ]
+    "tests": ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"]
   },
   {
     "name": "mir-unread-param-named-temporary",
@@ -108,9 +104,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir.rs",
     "find": "if !state.locals.user[local] && state.locals.reads[local] == 0 && !state.locals.borrowed[local] {",
     "replace": "if false && !state.locals.user[local] && state.locals.reads[local] == 0 && !state.locals.borrowed[local] {",
-    "tests": [
-      "test/jsx.test.ts"
-    ]
+    "tests": ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"]
   },
   {
     "name": "mir-plain-fields-unknown",
@@ -118,9 +112,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir.rs",
     "find": "            self.locals.mir.plain.extend(fields);\n",
     "replace": "            drop(fields);\n",
-    "tests": [
-      "test/jsx.test.ts"
-    ]
+    "tests": ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"]
   },
   {
     "name": "mir-plain-through-mut",
@@ -128,9 +120,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir.rs",
     "find": "            let through_mut = matches!(\n",
     "replace": "            let through_mut = false && matches!(\n",
-    "tests": [
-      "test/jsx.test.ts"
-    ]
+    "tests": ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"]
   },
   {
     "name": "mir-props-drop-reads-counted",
@@ -138,9 +128,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir.rs",
     "find": "            let drops = 2 * dropped.iter().filter(|&&local| local == arg).count();",
     "replace": "            let drops = 0 * dropped.iter().filter(|&&local| local == arg).count();",
-    "tests": [
-      "test/jsx.test.ts"
-    ]
+    "tests": ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"]
   },
   {
     name: "mir-param-type-unchecked",

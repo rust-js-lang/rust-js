@@ -96,7 +96,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/dispatch.rs",
     find: "        if bindings::is_omitted(tcx, def_id) {\n",
     replace: "        if false && bindings::is_omitted(tcx, def_id) {\n",
-    tests: ["test/jsx.test.ts"],
+    tests: ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"],
   },
   {
     name: "mir-untagged-into-called",
@@ -104,7 +104,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/dispatch.rs",
     find: "        if values.len() == 1 && self.recognition().converts_to_untagged(def_id, generic_args) {\n",
     replace: "        if false && values.len() == 1 && self.recognition().converts_to_untagged(def_id, generic_args) {\n",
-    tests: ["test/jsx.test.ts"],
+    tests: ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"],
   },
   {
     name: "mir-flattened-read-boxed",
@@ -168,9 +168,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/dispatch.rs",
     "find": "            && let Some(fields) = self.default_base_at(span)?\n",
     "replace": "            && false\n            && let Some(fields) = self.default_base_at(span)?\n",
-    "tests": [
-      "test/jsx.test.ts"
-    ]
+    "tests": ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"]
   },
   {
     "name": "mir-fn-value-param-value",

@@ -98,7 +98,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/copies.rs",
     find: "                tcx.type_is_copy_modulo_regions(ty::TypingEnv::fully_monomorphized(), ty)\n",
     replace: "                false\n",
-    tests: ["test/jsx.test.ts", "-t", "ElementType, rendered as a tag"],
+    tests: ["test/jsx-types.test.ts", "-t", "ElementType, rendered as a tag"],
   },
   {
     name: "fn-param-copied",
@@ -106,7 +106,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/copies.rs",
     find: "        if self.is_unknown(ty) && self.is_callable(ty) {\n            return self.krate.closure_facts.functions_clone_apart();",
     replace: "        if false {\n            return self.krate.closure_facts.functions_clone_apart();",
-    tests: ["test/jsx.test.ts", "-t", "Fn type parameter"],
+    tests: ["test/jsx-props.test.ts", "-t", "Fn type parameter"],
   },
   {
     name: "unchanging-closure-uncopied",
@@ -146,11 +146,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/copies.rs",
     "find": "            ty::Adt(adt, _) if super::recognition::is_std_def(tcx, adt.did(), StdItem::LocalKey) => true,",
     "replace": "            ty::Adt(adt, _) if super::recognition::is_std_def(tcx, adt.did(), StdItem::LocalKey) => false,",
-    "tests": [
-      "test/jsx.test.ts",
-      "-t",
-      "thread-local by reference as its variable"
-    ]
+    "tests": ["test/jsx-evaluation-order.test.ts", "-t", "thread-local by reference as its variable"]
   },
   {
     name: "vec-const-use-shared",

@@ -81,7 +81,7 @@ export const mutations: Mutation[] = [
     file: "src/js/make.rs",
     find: "            && let ExprKind::Unary(UnaryOp::Not, of) = &inner.kind\n            && same_path(tested, of)\n",
     replace: "            && let ExprKind::Unary(UnaryOp::Not, of) = &inner.kind\n            && same_path(tested, of)\n            && false\n",
-    tests: ["test/jsx.test.ts", "-t", "filtered child, in place"],
+    tests: ["test/jsx-children.test.ts", "-t", "filtered child, in place"],
   },
   {
     name: "handle-value-kept",

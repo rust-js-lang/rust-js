@@ -90,7 +90,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/naming.rs",
     find: "        for arm in body.thir.arms.iter() {\n            tested(&arm.pattern);\n        }\n",
     replace: "",
-    tests: ["test/jsx.test.ts", "-t", "look inside their children"],
+    tests: ["test/jsx-types.test.ts", "-t", "look inside their children"],
   },
   {
     name: "namespace-named-by-file",
@@ -106,7 +106,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/naming.rs",
     find: "            None if named_expressions.contains(&def_id) => (js_name, None),\n",
     replace: "",
-    tests: ["test/jsx.test.ts", "-t", "a function a block makes and gives"],
+    tests: ["test/jsx-children.test.ts", "-t", "a function a block makes and gives"],
   },
   {
     name: "named-expression-any-nested",
@@ -114,7 +114,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/naming.rs",
     find: "    matches!(block.expr, Some(hir::Expr { kind: hir::ExprKind::Path(hir::QPath::Resolved(None, path)), .. })\n        if path.res == Res::Def(DefKind::Fn, def_id.to_def_id()))",
     replace: "    true",
-    tests: ["test/jsx.test.ts", "-t", "a function a block makes and gives"],
+    tests: ["test/jsx-children.test.ts", "-t", "a function a block makes and gives"],
   },
   {
     name: "named-expression-recursive",
@@ -122,7 +122,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/naming.rs",
     find: "uses == 1 && given_by_its_block",
     replace: "uses >= 1 && given_by_its_block",
-    tests: ["test/jsx.test.ts", "-t", "a function a block makes and gives"],
+    tests: ["test/jsx-children.test.ts", "-t", "a function a block makes and gives"],
   },
   {
     name: "named-expression-generic",
@@ -130,7 +130,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/naming.rs",
     find: " || tcx.generics_of(def_id).count() != 0",
     replace: "",
-    tests: ["test/jsx.test.ts", "-t", "a function a block makes and gives"],
+    tests: ["test/jsx-children.test.ts", "-t", "a function a block makes and gives"],
   },
   {
     name: "dynamic-import-static-too",

@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     file: "src/jsx_syntax/parser.rs",
     find: "            if intrinsic {\n                expr = call(\n",
     replace: "            if false && intrinsic {\n                expr = call(\n",
-    tests: ["test/jsx.test.ts", "-t", "tag's element"],
+    tests: ["test/jsx-events.test.ts", "-t", "tag's element"],
   },
   {
     name: "props-macro-not-allowed",
@@ -24,7 +24,7 @@ export const mutations: Mutation[] = [
     file: "src/jsx_syntax/parser.rs",
     find: "                struct_update = matches!(tokens.get(0), Some(TokenTree::Token(t, _)) if t.kind == TokenKind::DotDot);",
     replace: "                struct_update = false;",
-    tests: ["test/jsx.test.ts", "-t", "named props and the rest from a base"],
+    tests: ["test/jsx-props.test.ts", "-t", "named props and the rest from a base"],
   },
   {
     name: "struct-update-captured",
@@ -32,7 +32,7 @@ export const mutations: Mutation[] = [
     file: "src/jsx_syntax/parser.rs",
     find: "            || (spread.is_some() && has_children && !struct_update)",
     replace: "            || (spread.is_some() && has_children)",
-    tests: ["test/jsx.test.ts", "-t", "named props and the rest from a base"],
+    tests: ["test/jsx-props.test.ts", "-t", "named props and the rest from a base"],
   },
   {
     name: "hyphenated-prop-field",
@@ -48,7 +48,7 @@ export const mutations: Mutation[] = [
     file: "src/jsx_syntax/parser.rs",
     find: "    let companion = props.rsplit(\"::\").next().is_some_and(|name| built.contains(name))\n",
     replace: "    let companion = props.rsplit(\"::\").next().is_some_and(|_| false)\n",
-    tests: ["test/jsx.test.ts", "-t", "flattened props where they"],
+    tests: ["test/jsx-props.test.ts", "-t", "flattened props where they"],
   },
   {
     name: "flattened-names-refused",
@@ -56,7 +56,7 @@ export const mutations: Mutation[] = [
     file: "src/jsx_syntax/parser.rs",
     find: "            Some(_) => \"NAME!(@slots [$($s)*] $flat [$($rest)* $name: $v,] $($tail)*)\",",
     replace: "            Some(_) => \"NAME { $name: $v, ..::core::panic!() }\",",
-    tests: ["test/jsx.test.ts", "-t", "flattened props where they"],
+    tests: ["test/jsx-props.test.ts", "-t", "flattened props where they"],
   },
   {
     name: "required-prop-defaulted",
@@ -64,7 +64,7 @@ export const mutations: Mutation[] = [
     file: "src/jsx_syntax/parser.rs",
     find: "            \"(@slot required $name:literal []) => { ::core::compile_error!(concat!(\\\"missing prop `\\\", $name, \\\"` of `NAME`\\\")) }\"",
     replace: "            \"(@slot required $name:literal []) => { ::core::default::Default::default() }\"",
-    tests: ["test/jsx.test.ts", "-t", "flattened props where they"],
+    tests: ["test/jsx-props.test.ts", "-t", "flattened props where they"],
   },
   {
     name: "omitted-prop-defaulted",
@@ -72,7 +72,7 @@ export const mutations: Mutation[] = [
     file: "src/jsx_syntax/parser.rs",
     find: "        arms.push(\"(@slot omitted $name:literal []) => { ::react::__omitted() }\".to_string());",
     replace: "        arms.push(\"(@slot omitted $name:literal []) => { ::core::default::Default::default() }\".to_string());",
-    tests: ["test/jsx.test.ts", "-t", "flattened props where they"],
+    tests: ["test/jsx-props.test.ts", "-t", "flattened props where they"],
   },
   {
     name: "flattened-field-given-whole-refused",
@@ -80,7 +80,7 @@ export const mutations: Mutation[] = [
     file: "src/jsx_syntax/parser.rs",
     find: "                \"(@slots [$($s:tt)*] [] [$($rest:tt)*] r#{field}: $v:expr, $($tail:tt)*) => {{ NAME!(@slots [$($s)*] [$v] [$($rest)*] $($tail)*) }}\"",
     replace: "                \"(@slots [$($s:tt)*] [] [$($rest:tt)*] r#{field}__never: $v:expr, $($tail:tt)*) => {{ NAME!(@slots [$($s)*] [$v] [$($rest)*] $($tail)*) }}\"",
-    tests: ["test/jsx.test.ts", "-t", "flattened props where they"],
+    tests: ["test/jsx-props.test.ts", "-t", "flattened props where they"],
   },
   {
     name: "flattened-field-and-props-both",
@@ -88,7 +88,7 @@ export const mutations: Mutation[] = [
     file: "src/jsx_syntax/parser.rs",
     find: "                    \"(@slots [$($s:tt)*] [$whole:expr] [$($rest:tt)+]) => {{ ::core::compile_error!(\\\"give `{field}` or the props of it, not both\\\") }}\"",
     replace: "                    \"(@slots [$($s:tt)*] [$whole:expr] [$($rest:tt)+] @never) => {{ ::core::compile_error!(\\\"give `{field}` or the props of it, not both\\\") }}\"",
-    tests: ["test/jsx.test.ts", "-t", "flattened props where they"],
+    tests: ["test/jsx-props.test.ts", "-t", "flattened props where they"],
   },
   {
     name: "tag-spread-moved-last",
@@ -96,7 +96,7 @@ export const mutations: Mutation[] = [
     file: "src/jsx_syntax/parser.rs",
     find: "                if i == spread_at\n",
     replace: "                if i == spread_at && false\n",
-    tests: ["test/jsx.test.ts", "-t", "tag that.s a value"],
+    tests: ["test/jsx-types.test.ts", "-t", "tag that.s a value"],
   },
   {
     name: "component-attrs-after-spread",
@@ -112,7 +112,7 @@ export const mutations: Mutation[] = [
     file: "src/jsx_syntax/parser.rs",
     find: "                consumer = member && segment == \"Consumer\";\n",
     replace: "",
-    tests: ["test/jsx.test.ts", "-t", "by its Consumer, and a portal"],
+    tests: ["test/jsx-types.test.ts", "-t", "by its Consumer, and a portal"],
   },
   {
     name: "consumer-arm-missing",
@@ -120,7 +120,7 @@ export const mutations: Mutation[] = [
     file: "src/jsx_syntax/parser.rs",
     find: "        arms.push(arm(\n            \"@consumer\",\n            &call(&format!(\"::react::consumer({target})\"), consumed),\n        ));\n",
     replace: "",
-    tests: ["test/jsx.test.ts", "-t", "by its Consumer, and a portal"],
+    tests: ["test/jsx-types.test.ts", "-t", "by its Consumer, and a portal"],
   },
   {
     name: "literal-unchecked",
@@ -128,7 +128,7 @@ export const mutations: Mutation[] = [
     file: "src/jsx_syntax/parser.rs",
     find: "                && !allowed.contains(&literal.symbol.as_str())\n",
     replace: "                && false\n",
-    tests: ["test/jsx.test.ts", "-t", "literal of an attribute of a few strings"],
+    tests: ["test/jsx-types.test.ts", "-t", "literal of an attribute of a few strings"],
   },
   {
     name: "literal-of-any-tag",
@@ -136,7 +136,7 @@ export const mutations: Mutation[] = [
     file: "src/jsx_syntax/parser.rs",
     find: "                && let Some(allowed) = literals::one_of(&name, &attr)\n",
     replace: "                && let Some(allowed) = literals::one_of(\"\", &attr)\n",
-    tests: ["test/jsx.test.ts", "-t", "literal of an attribute of a few strings"],
+    tests: ["test/jsx-types.test.ts", "-t", "literal of an attribute of a few strings"],
   },
   {
     name: "companion-flattened-last",
@@ -144,7 +144,7 @@ export const mutations: Mutation[] = [
     file: "src/jsx_syntax/parser.rs",
     find: "let (before, after) = (values[..*at].concat(), values[*at..].concat());",
     replace: "let (before, after) = (values.concat(), String::new());",
-    tests: ["test/jsx.test.ts", "-t", "react.dev's SandboxShell shows its expand button"],
+    tests: ["test/jsx-react-dev.test.ts", "-t", "react.dev's SandboxShell shows its expand button"],
   },
   {
     name: "local-component-as-tag",
@@ -152,7 +152,7 @@ export const mutations: Mutation[] = [
     file: "src/jsx_syntax/parser.rs",
     find: "let tag = local && local_props.is_none() &&",
     replace: "let tag = local &&",
-    tests: ["test/jsx.test.ts", "-t", "function type is a tag"],
+    tests: ["test/jsx-types.test.ts", "-t", "function type is a tag"],
   },
   {
     name: "captured-base-copied",
@@ -160,7 +160,7 @@ export const mutations: Mutation[] = [
     file: "src/jsx_syntax/parser.rs",
     find: "if star.kind == TokenKind::Star && !rest.is_empty() =>",
     replace: "if false && star.kind == TokenKind::Star && !rest.is_empty() =>",
-    tests: ["test/jsx.test.ts", "-t", "updated from a reference are spread"],
+    tests: ["test/jsx-props.test.ts", "-t", "updated from a reference are spread"],
   },
   {
     name: "component-value-no-companion",
@@ -176,7 +176,7 @@ export const mutations: Mutation[] = [
     file: "src/jsx_syntax/parser.rs",
     find: "    let held = matches!(item.kind, ItemKind::Static(_)) && companion",
     replace: "    let held = false && matches!(item.kind, ItemKind::Static(_)) && companion",
-    tests: ["test/jsx.test.ts", "-t", "thread_local component takes props"],
+    tests: ["test/jsx-evaluation-order.test.ts", "-t", "thread_local component takes props"],
   },
   {
     name: "props-lifetimes-kept",
@@ -184,7 +184,7 @@ export const mutations: Mutation[] = [
     file: "src/jsx_syntax/parser.rs",
     find: "                statics.push(\"'static\".to_string());",
     replace: "                statics.push(name.clone());",
-    tests: ["test/jsx.test.ts", "-t", "thread_local component takes props"],
+    tests: ["test/jsx-evaluation-order.test.ts", "-t", "thread_local component takes props"],
   },
   {
     name: "optional-component-not-taken",
@@ -280,7 +280,7 @@ export const mutations: Mutation[] = [
     file: "src/jsx_syntax/parser.rs",
     find: "    let derives_default = derives_default || written_default.contains(&name);\n",
     replace: "",
-    tests: ["test/jsx.test.ts", "-t", "JSX attributes take the values @types/react types them as"],
+    tests: ["test/jsx-types.test.ts", "-t", "JSX attributes take the values @types/react types them as"],
   },
   {
     name: "children-param-defaulted",
@@ -288,7 +288,7 @@ export const mutations: Mutation[] = [
     file: "src/jsx_syntax/parser.rs",
     find: "        } else if field_name == \"children\" && last.as_ref().is_some_and(|last| params.contains(last)) {",
     replace: "        } else if false && last.as_ref().is_some_and(|last| params.contains(last)) {",
-    tests: ["test/jsx.test.ts", "-t", "children of a type parameter"],
+    tests: ["test/jsx-types.test.ts", "-t", "children of a type parameter"],
   },
   {
     "name": "const-component-unnamed",
@@ -296,11 +296,7 @@ export const mutations: Mutation[] = [
     "file": "src/jsx_syntax/parser.rs",
     "find": "        ItemKind::Const(c) => {\n            let TyKind::FnPtr(f) = &c.ty.kind else { return None };",
     "replace": "        ItemKind::Const(c) if false => {\n            let TyKind::FnPtr(f) = &c.ty.kind else { return None };",
-    "tests": [
-      "test/jsx.test.ts",
-      "-t",
-      "children declared any node"
-    ]
+    "tests": ["test/jsx-types.test.ts", "-t", "children declared any node"]
   },
   {
     "name": "const-component-props-literal",
@@ -308,11 +304,7 @@ export const mutations: Mutation[] = [
     "file": "src/jsx_syntax/parser.rs",
     "find": "        || (matches!(item.kind, ItemKind::Const(_)) && !props.is_empty())\n",
     "replace": "",
-    "tests": [
-      "test/jsx.test.ts",
-      "-t",
-      "children declared any node"
-    ]
+    "tests": ["test/jsx-types.test.ts", "-t", "children declared any node"]
   },
   {
     "name": "any-node-children-moved",
@@ -320,11 +312,7 @@ export const mutations: Mutation[] = [
     "file": "src/jsx_syntax/parser.rs",
     "find": "        let empty = if field_name == \"children\" && any_node(&field.ty) {",
     "replace": "        let empty = if false && field_name == \"children\" && any_node(&field.ty) {",
-    "tests": [
-      "test/jsx.test.ts",
-      "-t",
-      "children declared any node"
-    ]
+    "tests": ["test/jsx-types.test.ts", "-t", "children declared any node"]
   },
   {
     "name": "optional-any-node-children-moved",
@@ -332,11 +320,7 @@ export const mutations: Mutation[] = [
     "file": "src/jsx_syntax/parser.rs",
     "find": "        } else if field_name == \"children\" && optional_any_node {",
     "replace": "        } else if false && optional_any_node {",
-    "tests": [
-      "test/jsx.test.ts",
-      "-t",
-      "children declared any node"
-    ]
+    "tests": ["test/jsx-types.test.ts", "-t", "children declared any node"]
   },
   {
     "name": "lone-struct-update-whole",
@@ -344,11 +328,7 @@ export const mutations: Mutation[] = [
     "file": "src/jsx_syntax/parser.rs",
     "find": "            && !struct_update\n            && let Some(props) = spread.clone()",
     "replace": "            && let Some(props) = spread.clone()",
-    "tests": [
-      "test/jsx.test.ts",
-      "-t",
-      "props updated from a reference are spread"
-    ]
+    "tests": ["test/jsx-props.test.ts", "-t", "props updated from a reference are spread"]
   },
   {
     "name": "static-component-props-literal",
@@ -356,11 +336,7 @@ export const mutations: Mutation[] = [
     "file": "src/jsx_syntax/parser.rs",
     "find": "        || (matches!(item.kind, ItemKind::Static(_)) && !props.is_empty() && !props.starts_with(\"::react::\"));",
     "replace": ";",
-    "tests": [
-      "test/jsx.test.ts",
-      "-t",
-      "another module's props leaves out"
-    ]
+    "tests": ["test/jsx-evaluation-order.test.ts", "-t", "another module's props leaves out"]
   },
   {
     name: "aria-attribute-unnamed",

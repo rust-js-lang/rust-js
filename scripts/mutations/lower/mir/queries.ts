@@ -24,7 +24,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/queries.rs",
     find: "                stable &= !state.borrowed_names.contains(name) && state.own_names.contains(name);\n",
     replace: "                stable &= !state.borrowed_names.contains(name);\n",
-    tests: ["test/jsx.test.ts"],
+    tests: ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"],
   },
   {
     name: "from-end-place-not-fixed",
@@ -199,9 +199,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/queries.rs",
     "find": "        && !(state.locals.user[local] && !is_parameter(state, local) && once_each_way(state.body, local))\n",
     "replace": "        && true\n",
-    "tests": [
-      "test/jsx.test.ts"
-    ]
+    "tests": ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"]
   },
   {
     "name": "mir-alike-machine-once",

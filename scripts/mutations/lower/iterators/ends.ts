@@ -48,7 +48,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/iterators/ends.rs",
     find: "                    ty::Adt(adt, args) if adt.is_box() => dyn_fn && matches!(args.type_at(0).kind(), ty::Dynamic(..)),\n",
     replace: "",
-    tests: ["test/jsx.test.ts", "-t", "calls a function with nothing"],
+    tests: ["test/jsx-events.test.ts", "-t", "calls a function with nothing"],
   },
   {
     name: "last-is-first",

@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/patterns.rs",
     find: "                    match super::bindings::is_rest_field(self.tcx, pat.ty, i) {",
     replace: "                    match false && super::bindings::is_rest_field(self.tcx, pat.ty, i) {",
-    tests: ["test/jsx.test.ts", "-t", "doesn't name as ...rest"],
+    tests: ["test/jsx-props.test.ts", "-t", "doesn't name as ...rest"],
   },
   {
     name: "unbound-field-in-rest",
@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/patterns.rs",
     find: "or the rest would hold it (ADR 0205).\n                if rest.is_some() {",
     replace: "or the rest would hold it (ADR 0205).\n                if false && rest.is_some() {",
-    tests: ["test/jsx.test.ts", "-t", "chain of flattened"],
+    tests: ["test/jsx-props.test.ts", "-t", "chain of flattened"],
   },
   {
     name: "prop-default-not-written",
@@ -24,7 +24,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/patterns.rs",
     find: "                            let default = self.prop_default(pat.ty, i, pat.span);",
     replace: "                            let default = None;",
-    tests: ["test/jsx.test.ts", "-t", "a props field"],
+    tests: ["test/jsx-props.test.ts", "-t", "a props field"],
   },
   {
     name: "prop-default-string-ignored",
@@ -32,7 +32,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/patterns.rs",
     find: "                self.literal(&lit, false, field_ty, span).ok()?\n",
     replace: "                self.default_value(field_ty, span).ok()?\n",
-    tests: ["test/jsx.test.ts", "-t", "a props field"],
+    tests: ["test/jsx-props.test.ts", "-t", "a props field"],
   },
   {
     name: "prop-default-made",
@@ -40,7 +40,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/patterns.rs",
     find: "        if !is_literal(&default) {",
     replace: "        if false {",
-    tests: ["test/jsx.test.ts", "-t", "a props field"],
+    tests: ["test/jsx-props.test.ts", "-t", "a props field"],
   },
   {
     name: "default-of-another-type",
@@ -48,7 +48,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/patterns.rs",
     find: "                if !of_type {\n",
     replace: "                if false {\n",
-    tests: ["test/jsx.test.ts", "-t", "literal default it says"],
+    tests: ["test/jsx-props.test.ts", "-t", "literal default it says"],
   },
   {
     name: "default-bool-refused",
@@ -56,7 +56,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/patterns.rs",
     find: "                    LitKind::Bool(_) => field_ty.is_bool(),\n",
     replace: "                    LitKind::Bool(_) => false,\n",
-    tests: ["test/jsx.test.ts", "-t", "literal default it says"],
+    tests: ["test/jsx-props.test.ts", "-t", "literal default it says"],
   },
   {
     name: "default-number-refused",
@@ -64,7 +64,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/patterns.rs",
     find: "                    LitKind::Int(..) => Num::of(field_ty).is_some(),\n",
     replace: "                    LitKind::Int(..) => false,\n",
-    tests: ["test/jsx.test.ts", "-t", "literal default it says"],
+    tests: ["test/jsx-props.test.ts", "-t", "literal default it says"],
   },
   {
     name: "rest-keys-unknown",
@@ -72,11 +72,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/patterns.rs",
     find: "                    self.locals.rests.insert(rest.clone(), taken);\n",
     replace: "                    self.locals.rests.insert(String::new(), taken);\n",
-    tests: [
-      "test/jsx.test.ts",
-      "-t",
-      "flattened props with a field of them set"
-    ]
+    tests: ["test/jsx-props.test.ts", "-t", "flattened props with a field of them set"]
   },
   {
     name: "default-const-unread",
@@ -84,7 +80,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/patterns.rs",
     find: "        if let Some(name) = bindings::field_default_const(self.tcx, field) {",
     replace: "        if let Some(name) = bindings::field_default_const(self.tcx, field).filter(|_| false) {",
-    tests: ["test/jsx.test.ts", "-t", "default may be a const"],
+    tests: ["test/jsx-props.test.ts", "-t", "default may be a const"],
   },
   {
     name: "other-name-call-dropped",

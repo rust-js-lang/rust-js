@@ -64,7 +64,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/assign.rs",
     find: "        if let Some(&arg) = state.parts.get(&place.local)\n",
     replace: "        if let Some(&arg) = state.parts.get(&place.local).filter(|_| false)\n",
-    tests: ["test/jsx.test.ts"],
+    tests: ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"],
   },
   {
     name: "mir-flattened-struct-nested",
@@ -80,7 +80,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/assign.rs",
     find: "            && !state.jsx_props.contains(&place.local)\n",
     replace: "",
-    tests: ["test/jsx.test.ts"],
+    tests: ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"],
   },
   {
     name: "mir-payload-as-const",
@@ -88,7 +88,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/assign.rs",
     find: "            && (!state.locals.user[local] || (state.payloads.contains(&local) && !of_temporary))\n            && state.locals.writes[local] == 1\n            && !state.locals.borrowed[local]\n            && !state.named",
     replace: "            && !state.locals.user[local]\n            && state.locals.writes[local] == 1\n            && !state.locals.borrowed[local]\n            && !state.named",
-    tests: ["test/jsx.test.ts"],
+    tests: ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"],
   },
   {
     name: "mir-shared-ref-as-const",
@@ -145,9 +145,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/assign.rs",
     "find": "            .filter(|&(i, _)| !bindings::is_rest_field(tcx, ty, i))\n",
     "replace": "            .filter(|&(i, _)| false && !bindings::is_rest_field(tcx, ty, i))\n",
-    "tests": [
-      "test/jsx.test.ts"
-    ]
+    "tests": ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"]
   },
   {
     "name": "mir-match-flattened-kept",
@@ -155,9 +153,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/assign.rs",
     "find": "        if state.binding_var\n            && let Rvalue::Use(Operand::Move(read) | Operand::Copy(read), _) = rvalue\n",
     "replace": "        if false\n            && let Rvalue::Use(Operand::Move(read) | Operand::Copy(read), _) = rvalue\n",
-    "tests": [
-      "test/jsx.test.ts"
-    ]
+    "tests": ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"]
   },
   {
     "name": "mir-tried-named-value",

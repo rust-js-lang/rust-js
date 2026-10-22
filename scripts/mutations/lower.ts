@@ -124,7 +124,7 @@ export const mutations: Mutation[] = [
     file: "src/lower.rs",
     find: "        if bindings::is_component(self.tcx, self.item) {\n            let what",
     replace: "        if false {\n            let what",
-    tests: ["test/jsx.test.ts","-t","and the component no dictionary"],
+    tests: ["test/jsx-props.test.ts", "-t", "and the component no dictionary"],
   },
   {
     name: "const-use-shared",
@@ -172,7 +172,7 @@ export const mutations: Mutation[] = [
     file: "src/lower.rs",
     find: "        let name = self.fresh(&unhyphenated(base));\n",
     replace: "        let name = self.fresh(base);\n",
-    tests: ["test/jsx.test.ts"],
+    tests: ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"],
   },
   {
     "name": "literal-lines-raw-unread",

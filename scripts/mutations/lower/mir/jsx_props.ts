@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/jsx_props.rs",
     find: "        calls.next().is_none().then_some(call)\n",
     replace: "        calls.next().is_none().then_some(call).filter(|_| false)\n",
-    tests: ["test/jsx.test.ts"],
+    tests: ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"],
   },
   {
     "name": "mir-written-base-unread-only",
@@ -24,11 +24,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/jsx_props.rs",
     "find": "            thir::ExprKind::Index { .. } if !bindings::has_flatten(self.tcx, ty) => (None, false),\n",
     "replace": "",
-    "tests": [
-      "test/jsx.test.ts",
-      "-t",
-      "props updated from a reference are spread"
-    ]
+    "tests": ["test/jsx-props.test.ts", "-t", "props updated from a reference are spread"]
   },
   {
     "name": "struct-update-deref-fields",
@@ -36,11 +32,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/jsx_props.rs",
     "find": "            {\n                (None, false)\n            }\n            thir::ExprKind::Index",
     "replace": "            {\n                return None;\n            }\n            thir::ExprKind::Index",
-    "tests": [
-      "test/jsx.test.ts",
-      "-t",
-      "props updated from a reference are spread"
-    ]
+    "tests": ["test/jsx-props.test.ts", "-t", "props updated from a reference are spread"]
   },
   {
     name: "replaced-field-not-a-place",

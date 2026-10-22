@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/body_queries.rs",
     find: "            .is_some_and(|local| tcx.parent_module_from_def_id(local) == module)\n",
     replace: "            .is_some_and(|_| true)\n",
-    tests: ["test/jsx.test.ts", "-t", "ElementType, rendered as a tag"],
+    tests: ["test/jsx-types.test.ts", "-t", "ElementType, rendered as a tag"],
   },
   {
     name: "own-thread-local-unread",
@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/body_queries.rs",
     find: "        ExprKind::NamedConst { def_id, .. } => {\n            own(def_id)\n",
     replace: "        ExprKind::NamedConst { def_id, .. } => {\n            false && own(def_id)\n",
-    tests: ["test/jsx.test.ts", "-t", "ElementType, rendered as a tag"],
+    tests: ["test/jsx-types.test.ts", "-t", "ElementType, rendered as a tag"],
   },
   {
     name: "steady-ignores-mut-borrows",

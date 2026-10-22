@@ -40,9 +40,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/tidy/values.rs",
     "find": "            !reads\n",
     "replace": "            true\n",
-    "tests": [
-      "test/jsx.test.ts"
-    ]
+    "tests": ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"]
   },
   {
     "name": "mir-enumerate-mapped",

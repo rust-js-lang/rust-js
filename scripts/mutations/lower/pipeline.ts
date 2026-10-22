@@ -208,7 +208,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/pipeline.rs",
     find: "                        function.name = super::fresh_in(&mut read, &function.name);\n",
     replace: "",
-    tests: ["test/jsx.test.ts", "-t", "a function a block makes and gives"],
+    tests: ["test/jsx-children.test.ts", "-t", "a function a block makes and gives"],
   },
   {
     name: "marker-dictionary-written",

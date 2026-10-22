@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/aggregates.rs",
     find: "            let value = if replaced && self.is_node_param(field_ty) {",
     replace: "            let value = if false && replaced && self.is_node_param(field_ty) {",
-    tests: ["test/jsx.test.ts","-t","and the component no dictionary"],
+    tests: ["test/jsx-props.test.ts", "-t", "and the component no dictionary"],
   },
   {
     name: "replaced-default-kept",
@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/aggregates.rs",
     find: "                if replaced && !value.has_effects() {",
     replace: "                if false && replaced && !value.has_effects() {",
-    tests: ["test/jsx.test.ts","-t","and the component no dictionary"],
+    tests: ["test/jsx-props.test.ts", "-t", "and the component no dictionary"],
   },
   {
     name: "untagged-constructor-tagged",

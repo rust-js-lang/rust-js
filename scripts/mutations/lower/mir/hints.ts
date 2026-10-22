@@ -48,7 +48,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/hints.rs",
     find: "                ty::Ref(_, inner, ty::Mutability::Not) => inner.is_bool(),\n",
     replace: "",
-    tests: ["test/jsx.test.ts"],
+    tests: ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"],
   },
   {
     name: "mir-continue-alone-only",

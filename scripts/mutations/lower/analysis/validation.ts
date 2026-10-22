@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/validation.rs",
     find: "                        && !bases.contains(&e) =>",
     replace: "                        && true =>",
-    tests: ["test/jsx.test.ts", "-t", "flattened props with a field of them set"],
+    tests: ["test/jsx-props.test.ts", "-t", "flattened props with a field of them set"],
   },
   {
     name: "init-of-nested-function",
@@ -24,7 +24,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/validation.rs",
     find: "        if matches!(tcx.def_kind(p), DefKind::Fn | DefKind::AssocFn | DefKind::Closure) {\n            return None;\n        }\n",
     replace: "",
-    tests: ["test/jsx.test.ts", "-t", "a function a block makes and gives"],
+    tests: ["test/jsx-children.test.ts", "-t", "a function a block makes and gives"],
   },
   {
     name: "flattened-reference-refused",
@@ -48,7 +48,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/validation.rs",
     find: "                    if is_mixed(thir[lhs].ty) && bindings::is_flatten_field(tcx, thir[lhs].ty, name.as_usize()) =>",
     replace: "                    if false && bindings::is_flatten_field(tcx, thir[lhs].ty, name.as_usize()) =>",
-    tests: ["test/jsx.test.ts","-t","two flattened fields"],
+    tests: ["test/jsx-props.test.ts", "-t", "two flattened fields"],
   },
   {
     name: "mixed-taken-apart",
@@ -56,7 +56,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/validation.rs",
     find: "                && is_mixed(pat.ty)",
     replace: "                && false",
-    tests: ["test/jsx.test.ts","-t","two flattened fields"],
+    tests: ["test/jsx-props.test.ts", "-t", "two flattened fields"],
   },
   {
     name: "mixed-one-rest",
@@ -64,7 +64,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/validation.rs",
     find: "            > 1\n        {\n            mixed.insert",
     replace: "            > 0\n        {\n            mixed.insert",
-    tests: ["test/jsx.test.ts","-t","flattened"],
+    tests: ["test/jsx-props.test.ts", "-t", "flattened"],
   },
   {
     name: "flatten-js-object-refused",
@@ -72,7 +72,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/validation.rs",
     find: "                    adt.is_struct() && adt.non_enum_variant().ctor.is_none() || marks_js_object(tcx, *adt, args)",
     replace: "                    adt.is_struct() && adt.non_enum_variant().ctor.is_none()",
-    tests: ["test/jsx.test.ts", "-t", "two flattened fields"],
+    tests: ["test/jsx-props.test.ts", "-t", "two flattened fields"],
   },
   {
     name: "extern-fn-declared-accepted",

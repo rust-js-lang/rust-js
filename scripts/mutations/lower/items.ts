@@ -80,7 +80,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/items.rs",
     find: "        if self.krate.named_expressions.contains(&def_id) {",
     replace: "        if false {",
-    tests: ["test/jsx.test.ts", "-t", "a function a block makes and gives"],
+    tests: ["test/jsx-children.test.ts", "-t", "a function a block makes and gives"],
   },
   {
     name: "required-imported",

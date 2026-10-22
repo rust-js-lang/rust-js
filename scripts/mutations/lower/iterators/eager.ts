@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/iterators/eager.rs",
     find: "        ] if unread => call,\n",
     replace: "        ] if false => call,\n",
-    tests: ["test/jsx.test.ts", "-t", "calls a function with nothing"],
+    tests: ["test/jsx-events.test.ts", "-t", "calls a function with nothing"],
   },
   {
     name: "collected-literal-copied",

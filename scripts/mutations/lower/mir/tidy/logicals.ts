@@ -24,11 +24,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/tidy/logicals.rs",
     "find": "                && js::mentions_in(&then[at + 1..], name) == 0\n",
     "replace": "                && false\n",
-    "tests": [
-      "test/jsx.test.ts",
-      "-t",
-      "capture of an inlined closure"
-    ]
+    "tests": ["test/jsx-children.test.ts", "-t", "capture of an inlined closure"]
   },
   {
     name: "logical-block-kept",

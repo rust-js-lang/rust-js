@@ -40,7 +40,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/bindings.rs",
     find: "                if !kept {\n",
     replace: "                if false {\n",
-    tests: ["test/jsx.test.ts"],
+    tests: ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"],
   },
   {
     name: "mir-tidy-named-temporary-kept-binding",
@@ -56,7 +56,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/bindings.rs",
     find: "        let temporary = is_temporary(name) || captured.contains(name);\n",
     replace: "        let temporary = is_temporary(name);\n",
-    tests: ["test/jsx.test.ts"],
+    tests: ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"],
   },
   {
     name: "mir-tidy-let-not-into-branch",
@@ -72,7 +72,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/bindings.rs",
     find: "            true if element => {\n",
     replace: "            true if false && element => {\n",
-    tests: ["test/jsx.test.ts"],
+    tests: ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"],
   },
   {
     name: "mir-tidy-inlined-no-backtrack",
@@ -80,7 +80,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/bindings.rs",
     find: "        i = i.saturating_sub(1);\n",
     replace: "",
-    tests: ["test/jsx.test.ts"],
+    tests: ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"],
   },
   {
     name: "mir-tidy-inlined-not-past",
@@ -88,7 +88,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/bindings.rs",
     find: "        let past = |at: usize| {\n",
     replace: "        let past = |at: usize| at == 0 && {\n",
-    tests: ["test/jsx.test.ts"],
+    tests: ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"],
   },
   {
     name: "mir-tidy-loop-let-outside",
@@ -113,9 +113,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/tidy/bindings.rs",
     "find": "                    (true, true) => Some(target),\n",
     "replace": "                    (true, true) => None,\n",
-    "tests": [
-      "test/jsx.test.ts"
-    ]
+    "tests": ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"]
   },
   {
     "name": "mir-tidy-past-borrow-blocks",
@@ -123,7 +121,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/tidy/bindings.rs",
     "find": "        let past = |at: usize| {\n",
     "replace": "        let past = |at: usize| (!acts || at == 0) && {\n",
-    "tests": ["test/jsx.test.ts"]
+    "tests": ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"]
   },
   {
     "name": "mir-tidy-guarded-read-blocked",
@@ -131,9 +129,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/tidy/bindings.rs",
     "find": "            if guard.is_some_and(|g| same_test(a, g))",
     "replace": "            if false && guard.is_some_and(|g| same_test(a, g))",
-    "tests": [
-      "test/jsx.test.ts"
-    ]
+    "tests": ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"]
   },
   {
     "name": "mir-pure-value-held-past-calls",
@@ -141,9 +137,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/tidy/bindings.rs",
     "find": "unchanged_by_calls || !e.has_effects()",
     "replace": "!e.has_effects()",
-    "tests": [
-      "test/jsx.test.ts"
-    ]
+    "tests": ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"]
   },
   {
     "name": "loop-let-branch-assigned-not-sunk",
@@ -167,9 +161,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/tidy/bindings.rs",
     "find": "                if !is_temporary(a) && (captured.contains(&b) || is_temporary(&b)) {",
     "replace": "                if false {",
-    "tests": [
-      "test/jsx.test.ts"
-    ]
+    "tests": ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"]
   },
   {
     "name": "forwarded-value-kept",
@@ -185,9 +177,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/tidy/bindings.rs",
     "find": "                || (unchanged_by_calls && reads.iter().all(|v| !assigns(&rest[..at], v)))\n",
     "replace": "",
-    "tests": [
-      "test/jsx.test.ts"
-    ]
+    "tests": ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"]
   },
   {
     "name": "held-prop-named-value",
@@ -195,9 +185,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/tidy/bindings.rs",
     "find": "                        (Some(prop), _) => vec![prop.clone()],\n",
     "replace": "                        (Some(_), _) => Vec::new(),\n",
-    "tests": [
-      "test/jsx.test.ts"
-    ]
+    "tests": ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"]
   },
   {
     "name": "jsx-key-read-in-written-order",
@@ -205,9 +193,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/tidy/bindings.rs",
     "find": "                && let Some(found) = leads(key, name, guard, passes)\n",
     "replace": "                && false\n                && let Some(found) = leads(key, name, guard, passes)\n",
-    "tests": [
-      "test/jsx.test.ts"
-    ]
+    "tests": ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"]
   },
   {
     "name": "held-arg-named-value",
@@ -223,9 +209,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/tidy/bindings.rs",
     "find": "if !is_temporary(a) && (captured.contains(&b) || is_temporary(&b)) {",
     "replace": "if !is_temporary(a) && captured.contains(&b) {",
-    "tests": [
-      "test/jsx.test.ts"
-    ]
+    "tests": ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"]
   },
   {
     "name": "mir-tidy-turn-let-branches-unseen",

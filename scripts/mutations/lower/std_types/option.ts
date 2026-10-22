@@ -50,7 +50,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_types/option.rs",
     find: "                    false => filtered(&option),\n",
     replace: "                    false => None,\n",
-    tests: ["test/jsx.test.ts", "-t", "filtered child, in place"],
+    tests: ["test/jsx-children.test.ts", "-t", "filtered child, in place"],
   },
   {
     name: "filter-unwrap-or-unfused",
@@ -58,7 +58,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_types/option.rs",
     find: "                } else if let Some((kept, value)) = filtered(&option) {\n",
     replace: "                } else if let Some((kept, value)) = None::<(Expr, Expr)> {\n",
-    tests: ["test/jsx.test.ts", "-t", "filtered child, in place"],
+    tests: ["test/jsx-children.test.ts", "-t", "filtered child, in place"],
   },
   {
     name: "map-field-spilled",
@@ -66,11 +66,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_types/option.rs",
     find: "                            js::ExprKind::Member(object, _) if matches!(&object.kind, js::ExprKind::Var(name) if self.plain_value(name)) => {",
     replace: "                            js::ExprKind::Member(object, _) if false && matches!(&object.kind, js::ExprKind::Var(name) if self.plain_value(name)) => {",
-    tests: [
-      "test/jsx.test.ts",
-      "-t",
-      "field of what never changes in place"
-    ]
+    tests: ["test/jsx-evaluation-order.test.ts", "-t", "field of what never changes in place"]
   },
   {
     name: "own-name-map-called",
@@ -86,7 +82,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_types/option.rs",
     find: "        _ => truthy_of(present)?,\n",
     replace: "        _ => None?,\n",
-    tests: ["test/jsx.test.ts", "-t", "filtered child, in place"],
+    tests: ["test/jsx-children.test.ts", "-t", "filtered child, in place"],
   },
   {
     name: "getter-option-chain-spilled",

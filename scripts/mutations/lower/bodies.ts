@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/bodies.rs",
     find: "            && !pat.is_some_and(|p| matches!(p.kind, PatKind::Leaf { .. }))",
     replace: "            && false",
-    tests: ["test/jsx.test.ts", "-t", "a props field"],
+    tests: ["test/jsx-props.test.ts", "-t", "a props field"],
   },
   {
     name: "props-whole-refused",
@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/bodies.rs",
     find: "            && !pat.is_some_and(|p| self.passed_on_whole(p, *adt))\n",
     replace: "",
-    tests: ["test/jsx.test.ts","-t","literal default it says"],
+    tests: ["test/jsx-props.test.ts", "-t", "literal default it says"],
   },
   {
     name: "props-whole-default-read",
@@ -24,6 +24,6 @@ export const mutations: Mutation[] = [
     file: "src/lower/bodies.rs",
     find: "                && super::bindings::field_default(self.tcx, &adt.non_enum_variant().fields[name]).is_none()",
     replace: "",
-    tests: ["test/jsx.test.ts","-t","literal default it says"],
+    tests: ["test/jsx-props.test.ts", "-t", "literal default it says"],
   },
 ];

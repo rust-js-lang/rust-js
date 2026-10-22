@@ -56,7 +56,7 @@ export const mutations: Mutation[] = [
     file: "src/to_oxc/statements.rs",
     find: "                    let key = if crate::names::is_identifier(field) {",
     replace: "                    let key = if true || crate::names::is_identifier(field) {",
-    tests: ["test/jsx.test.ts", "-t", "hyphenated name is quoted"],
+    tests: ["test/jsx-props.test.ts", "-t", "hyphenated name is quoted"],
   },
   {
     name: "let-undefined-written",

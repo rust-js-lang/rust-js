@@ -161,7 +161,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/recognition/traits.rs",
     find: "(tcx.associated_item_def_ids(id).iter()).all(|&item| matches!(tcx.def_kind(item), DefKind::AssocTy))",
     replace: "tcx.associated_item_def_ids(id).is_empty()",
-    tests: ["test/jsx.test.ts", "-t", "thread_local component takes props"],
+    tests: ["test/jsx-evaluation-order.test.ts", "-t", "thread_local component takes props"],
   },
   {
     name: "throwing-call-uncaught",

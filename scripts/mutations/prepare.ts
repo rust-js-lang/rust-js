@@ -104,7 +104,7 @@ export const mutations: Mutation[] = [
     file: "src/prepare.rs",
     find: "                            js::returning_its_call(value);\n",
     replace: "",
-    tests: ["test/jsx.test.ts"],
+    tests: ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"],
   },
   {
     name: "try-kept-as-helper",
@@ -353,11 +353,7 @@ export const mutations: Mutation[] = [
     "file": "src/prepare.rs",
     "find": "        module.items.push(match fields.len() {\n            1 => js::Item::Const(first),\n",
     "replace": "        module.items.push(match fields.len() * 0 + 1 {\n            1 => js::Item::Const(first),\n",
-    "tests": [
-      "test/jsx.test.ts",
-      "-t",
-      "children declared any node"
-    ]
+    "tests": ["test/jsx-types.test.ts", "-t", "children declared any node"]
   },
   {
     "name": "constants-of-two-objects-destructured",
@@ -365,11 +361,7 @@ export const mutations: Mutation[] = [
     "file": "src/prepare.rs",
     "find": "            && same_var(&object, of)\n",
     "replace": "            && (true || same_var(&object, of))\n",
-    "tests": [
-      "test/jsx.test.ts",
-      "-t",
-      "children declared any node"
-    ]
+    "tests": ["test/jsx-types.test.ts", "-t", "children declared any node"]
   },
   {
     "name": "else-after-return-kept",
@@ -418,7 +410,7 @@ export const mutations: Mutation[] = [
     "file": "src/prepare.rs",
     "find": "            jsx.props.retain(|p| {\n",
     "replace": "            jsx.props.retain(|p| true || {\n",
-    "tests": ["test/jsx.test.ts"]
+    "tests": ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"]
   },
   {
     "name": "pair-without-impl",
@@ -459,7 +451,7 @@ export const mutations: Mutation[] = [
     file: "src/prepare.rs",
     find: "            fields[k].1 = js::Pattern::Name(\"_\".to_string());\n        }\n    }\n}\n\n/// A function's parameters",
     replace: "            let _ = (fields, k);\n        }\n    }\n}\n\n/// A function's parameters",
-    tests: ["test/jsx.test.ts", "-t", "flattened field is the rest"],
+    tests: ["test/jsx-props.test.ts", "-t", "flattened field is the rest"],
   },
   {
     name: "left-out-param-named-field",
@@ -467,7 +459,7 @@ export const mutations: Mutation[] = [
     file: "src/prepare.rs",
     find: "    block(body);\n    left_out_params(params, body);\n",
     replace: "    block(body);\n",
-    tests: ["test/jsx.test.ts", "-t", "flattened field is the rest"],
+    tests: ["test/jsx-props.test.ts", "-t", "flattened field is the rest"],
   },
   {
     name: "left-out-of-many",
@@ -475,6 +467,6 @@ export const mutations: Mutation[] = [
     file: "src/prepare.rs",
     find: "        [k] => Some(k),\n",
     replace: "        [k, ..] => Some(k),\n",
-    tests: ["test/jsx.test.ts", "-t", "a chain of flattened structs as props"],
+    tests: ["test/jsx-props.test.ts", "-t", "a chain of flattened structs as props"],
   },
 ];

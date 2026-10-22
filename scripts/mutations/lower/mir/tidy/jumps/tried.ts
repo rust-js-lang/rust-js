@@ -8,11 +8,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/tidy/jumps/tried.rs",
     "find": "                && fits_in_place(stmts, i, then));\n",
     "replace": "                && false);\n",
-    "tests": [
-      "test/jsx.test.ts",
-      "-t",
-      "let-else binds is read"
-    ]
+    "tests": ["test/jsx-react-dev.test.ts", "-t", "let-else binds is read"]
   },
   {
     name: "mir-tidy-while-head-rest-jumps",

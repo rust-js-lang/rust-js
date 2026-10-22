@@ -64,7 +64,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/traits.rs",
     find: "    if bindings::is_component(tcx, id) {\n        return result;\n    }",
     replace: "",
-    tests: ["test/jsx.test.ts","-t","and the component no dictionary"],
+    tests: ["test/jsx-props.test.ts", "-t", "and the component no dictionary"],
   },
   {
     name: "marker-bound-takes-dictionary",

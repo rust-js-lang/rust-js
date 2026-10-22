@@ -102,7 +102,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/jumps/tails.rs",
     find: "            first_written(then).max(test)\n",
     replace: "            first_written(then).or(test)\n",
-    tests: ["test/jsx.test.ts", "-t", "an element a let-else binds"],
+    tests: ["test/jsx-react-dev.test.ts", "-t", "an element a let-else binds"],
   },
   {
     name: "written-else-left-a-guard",

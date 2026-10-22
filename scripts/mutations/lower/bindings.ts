@@ -96,7 +96,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/bindings.rs",
     find: "        DefKind::AssocFn => tcx.associated_item(def_id).is_method() || named_this(),",
     replace: "        DefKind::AssocFn => tcx.associated_item(def_id).is_method(),",
-    tests: ["test/jsx.test.ts", "-t", "tag's element"],
+    tests: ["test/jsx-events.test.ts", "-t", "tag's element"],
   },
   {
     name: "route-marks-written",
@@ -112,7 +112,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/bindings.rs",
     find: "        .is_some_and(|field| is_flatten(tcx, field) || is_rest(tcx, field.ty(tcx, args).skip_normalization()))",
     replace: "        .is_some_and(|field| is_rest(tcx, field.ty(tcx, args).skip_normalization()))",
-    tests: ["test/jsx.test.ts", "-t", "flattened struct"],
+    tests: ["test/jsx-props.test.ts", "-t", "flattened struct"],
   },
   {
     name: "default-export-function-only",
@@ -200,7 +200,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/bindings.rs",
     find: "    let path = [Symbol::intern(\"rust_js\"), Symbol::intern(\"named_callback\")];\n    tcx.get_attrs_by_path(def_id, &path).next().is_some()",
     replace: "    let path = [Symbol::intern(\"rust_js\"), Symbol::intern(\"named_callback\")];\n    tcx.get_attrs_by_path(def_id, &path).next().is_some() && false",
-    tests: ["test/jsx.test.ts", "-t", "a closure a let names for a hook"],
+    tests: ["test/jsx-children.test.ts", "-t", "a closure a let names for a hook"],
   },
   {
     name: "skips-falsy-unread",
@@ -304,7 +304,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/bindings.rs",
     find: "        true => super::upper_first(&variable),\n",
     replace: "        true => variable,\n",
-    tests: ["test/jsx.test.ts", "-t", "JSX context providers take any node"],
+    tests: ["test/jsx-types.test.ts", "-t", "JSX context providers take any node"],
   },
   {
     name: "thread-local-name-taken",

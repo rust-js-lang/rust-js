@@ -56,7 +56,7 @@ export const mutations: Mutation[] = [
     file: "src/to_oxc/expressions.rs",
     find: "            text[i] = writable && !text.get(i + 1).is_some_and(|&next| next);",
     replace: "            text[i] = writable;",
-    tests: ["test/jsx.test.ts", "-t", "adjacent text children"],
+    tests: ["test/jsx-children.test.ts", "-t", "adjacent text children"],
   },
   {
     name: "regex-literal-unwritten",
@@ -112,7 +112,7 @@ export const mutations: Mutation[] = [
     file: "src/to_oxc/expressions.rs",
     find: "                let key = if computed || !crate::names::is_identifier(name) {",
     replace: "                let key = if computed {",
-    tests: ["test/jsx.test.ts", "test/react.test.ts", "-t", "JSX components clone some of their children|React's and React DOM's APIs are hand-written React, and they run"],
+    tests: ["test/react.test.ts", "test/jsx-types.test.ts", "-t", "JSX components clone some of their children|React's and React DOM's APIs are hand-written React, and they run"],
   },
   {
     name: "map-other-files-dropped",
@@ -128,11 +128,7 @@ export const mutations: Mutation[] = [
     "file": "src/to_oxc/expressions.rs",
     "find": "                && spaced(later)",
     "replace": "                && spaced(later)\n                && false",
-    "tests": [
-      "test/jsx.test.ts",
-      "-t",
-      "adjacent text children stay apart"
-    ]
+    "tests": ["test/jsx-children.test.ts", "-t", "adjacent text children stay apart"]
   },
   {
     "name": "adjacent-text-blank-braced",
@@ -140,11 +136,7 @@ export const mutations: Mutation[] = [
     "file": "src/to_oxc/expressions.rs",
     "find": "        let spaced = |s: &str| !s.trim().is_empty() && s.trim() != s;",
     "replace": "        let spaced = |s: &str| s.trim() != s;",
-    "tests": [
-      "test/jsx.test.ts",
-      "-t",
-      "adjacent text children stay apart"
-    ]
+    "tests": ["test/jsx-children.test.ts", "-t", "adjacent text children stay apart"]
   },
   {
     name: "commented-arrow-expression",

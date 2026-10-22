@@ -217,5 +217,14 @@ three over it, `lowering.test.ts`, `jsx.test.ts` at 6,954 and
 `bindings.test.ts` at 2,378, are listed with their lines, may only
 shrink, and leave the list once split under the cap, each split by
 concept, a move of its tests and the mutations that name them, in a
-commit of its own. `test/architecture.test.ts`, "a test file is at most
-the cap, or shrinks", holds it.
+commit of its own.
+
+Each was split the same day, its tests moved by concept with the
+mutations that name them: `bindings.test.ts` into what it binds, node's,
+the js crate's builtins and webapi's beside the binding language's own;
+`lowering.test.ts` into thirteen `lowering-<concept>.test.ts`, names,
+branches, matches, loops, iterators and the rest, drops and MIR's
+refusals left; and `jsx.test.ts` into six `jsx-<concept>.test.ts`, its
+snapshots' tests left. With them the list and its ratchet went:
+`test/architecture.test.ts`, "a test file is at most the cap", holds
+every test file at 1,500 lines.

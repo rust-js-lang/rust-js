@@ -56,7 +56,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/branches.rs",
     find: "                    && ((small(yes) && small(no)) || is_temporary(x))\n",
     replace: "                    && small(yes) && small(no)\n",
-    tests: ["test/jsx.test.ts"],
+    tests: ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"],
   },
   {
     name: "mir-tidy-written-return-ternary",
@@ -136,7 +136,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/branches.rs",
     find: "                otherwise.as_deref().is_none_or(|o| js::mentions_in(o, h) == 0)\n                    && js::mentions_in(&stmts[i + 1..], h) == 0\n",
     replace: "                false\n",
-    tests: ["test/jsx.test.ts"],
+    tests: ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"],
   },
   {
     name: "mir-tidy-else-after-return-kept",
@@ -265,9 +265,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/tidy/branches.rs",
     "find": "    let (a, b) = (truth(a), truth(b));\n",
     "replace": "",
-    "tests": [
-      "test/jsx.test.ts"
-    ]
+    "tests": ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"]
   },
   {
     "name": "mir-tidy-bool-call-unknown",
@@ -283,9 +281,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/tidy/branches.rs",
     "find": "        ExprKind::Jsx(_) => levels(e) <= 2,\n",
     "replace": "        ExprKind::Jsx(_) => false,\n",
-    "tests": [
-      "test/jsx.test.ts"
-    ]
+    "tests": ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"]
   },
   {
     "name": "mir-chain-tail-folded",
