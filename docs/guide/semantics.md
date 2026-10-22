@@ -356,6 +356,12 @@ What's refused is in [the limitations](limitations.md).
   lazy JS iterator, run one item at a time in Rust's order
   ([0036](../decisions/0036-iterators-and-sorting.md),
   [0139](../decisions/0139-lazy-chains.md)).
+- **`zip` takes its first side's next item, then its second's,** as std's
+  `Zip::next` does, so where the second ends first, one more of the first
+  is made, its closure run. std's `collect` and `fold` of two iterators it
+  can index, a slice's or a range's, skip that one, which std's docs leave
+  unspecified: a closure that prints shows it
+  ([0139](../decisions/0139-lazy-chains.md)).
 - **A shared slice is a copy,** `&v[a..b]`, `split_at` and `get(a..b)`:
   nothing changes `v` while it's borrowed
   ([0153](../decisions/0153-collection-and-cell-methods.md)). **A `&mut`
@@ -638,3 +644,6 @@ React and JSX are [their own pages](README.md#react).
 12. A value with a destructor that JS holds is never dropped.
 13. A writer of the crate's is given each `write!`'s text in one `write_str`.
 14. A generic iterator's `size_hint()` is its array's length, or `(0, None)`.
+15. `zip` makes one more of its first side's items where its second ends
+    first, as `Zip::next` does, also where std's `collect` of two slices
+    wouldn't.

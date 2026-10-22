@@ -1076,3 +1076,24 @@ pub fn owned_reversed(v: Vec<u32>) -> Vec<u32> {
   expect(js).toContain("for (let i = 0; i < n; i++) {");
   expect(js).toContain("for (let i = k; i < n; i++) {");
 });
+
+// ADR 0139 amended: `zip` is `$lazyZip`, its first side's item taken
+// before its second's, as `Zip::next` does: one more of `a`'s where `b`
+// ends first, which std's `collect` of two slices skips (semantics, 15).
+test("zip takes its first side's item before its second's", () => {
+  const dir = fixture("zip-first-side");
+  writeFileSync(
+    join(dir, "lib.rs"),
+    `pub fn main() {
+    let v = [1, 2, 3];
+    let z: Vec<_> = v.iter().map(|x| { println!("a{x}"); x }).zip([10, 20]).collect();
+    println!("{z:?}");
+}
+`,
+  );
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("$lazyZip(");
+  const zip = readFileSync(join(root, "src/runtime/lazy_zip.js"), "utf8");
+  expect(zip).toContain("for (const item of a) {\n      const other = right.next();");
+});

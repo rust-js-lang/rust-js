@@ -116,3 +116,16 @@ const kept = v
 ## Amended by
 
 - [0372](0372-a-check-that-drops.md): A check whose panic drops is written where it's made
+
+## Amendment: `zip`'s first side, one item more
+
+`$lazyZip(a, b)` takes `a`'s next item, then `b`'s, and drops `a`'s where
+`b` has ended, as std's `Zip::next` does. std's `collect` and `fold` of
+two iterators it can index, `TrustedRandomAccess`'s, a slice's or a
+range's and a `map` of one, read only as many as the shorter has, so a
+closure of the first side that prints runs once less natively (#115);
+std's own `next` of the same, where the first side may have effects,
+runs it, and std's docs leave how many unspecified. ADR 0262's case:
+rare and harmless, so JavaScript's: listed in the semantics as
+difference 15, and held by `test/lowering-iterators.test.ts`, "zip takes
+its first side's item before its second's".
