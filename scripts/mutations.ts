@@ -21,7 +21,7 @@ import { basename, dirname, join } from "node:path";
 
 import { run, runSync, stopped, type Exit } from "../test/child";
 import { shard, shardArg } from "./shard";
-import { elapsed, timed } from "./timing";
+import { elapsed, shown, timed } from "./timing";
 import { passed, summary } from "./test-summary";
 
 const root = join(import.meta.dir, "..");
@@ -432,17 +432,22 @@ async function main() {
     }
   }
   // Each mutation by one of `--jobs` workers, each building in a crate of its
-  // own: one for each three cores, up to four, as a build uses several,
-  // and one on a CI machine's four, where each would build cold. One whose compiler
+  // own: one for each two cores, up to four, as a build uses about two, two
+  // on a CI machine's four, the second's first build cold, a minute or two
+  // of the hours its shard takes. One whose compiler
   // writes another runtime, which the checkout's `runtime/index.js` holds
   // while its tests run, waits for the others and runs alone.
   const said = Number(args.find((arg) => arg.startsWith("--jobs="))?.slice("--jobs=".length));
-  const jobs = said >= 1 ? said : Math.min(4, Math.max(1, Math.floor(availableParallelism() / 3)));
+  const jobs = said >= 1 ? said : Math.min(4, Math.max(1, Math.floor(availableParallelism() / 2)));
   const results = new Map<Mutation, string>();
+  // What each took, its build and its tests, in seconds.
+  const took = new Map<Mutation, { build: number; tests: number }>();
   const alone: Mutation[] = [];
   const original = readFileSync(join(root, "runtime", "index.js"), "utf8");
   const one = async (mutation: Mutation, slot: number, shared: boolean) => {
+    const began = performance.now();
     const compiler = await build(mutation, slot);
+    const built = performance.now();
     if (typeof compiler !== "string") {
       results.set(mutation, compiler.problem);
       return;
@@ -453,6 +458,7 @@ async function main() {
       return;
     }
     const { ran, output, exit } = await test(mutation.tests, compiler, mutation.snapshots);
+    took.set(mutation, { build: (built - began) / 1000, tests: (performance.now() - built) / 1000 });
     // A mutant's compiler is its tests' alone: a debug build, hundreds of
     // megabytes, which kept for each of hundreds would fill a disk.
     rmSync(compiler, { force: true });
@@ -479,10 +485,18 @@ async function main() {
   const summary = process.env.GITHUB_STEP_SUMMARY;
   if (summary) {
     const cell = (s: string) => s.replaceAll("|", "\\|");
-    const lines = ["## Mutations", "", "| Mutation | Breaks | Result |", "|---|---|---|"];
-    for (const [mutation, result] of rows) lines.push(`| ${mutation.name} | ${cell(mutation.breaks)} | ${cell(result)} |`);
+    const lines = ["## Mutations", "", "| Mutation | Breaks | Result | Build | Tests |", "|---|---|---|---|---|"];
+    for (const [mutation, result] of rows) {
+      const time = took.get(mutation);
+      lines.push(`| ${mutation.name} | ${cell(mutation.breaks)} | ${cell(result)} | ${time ? shown(time.build) : ""} | ${time ? shown(time.tests) : ""} |`);
+    }
     writeFileSync(summary, lines.join("\n") + "\n", { flag: "a" });
   }
+  // The slowest, where a run's time goes; and each one's, for the shards
+  // to be balanced by.
+  const slowest = [...took].sort(([, a], [, b]) => b.build + b.tests - (a.build + a.tests)).slice(0, 10);
+  for (const [mutation, time] of slowest) console.log(`slow\t${mutation.name}\tbuild ${shown(time.build)}, tests ${shown(time.tests)}`);
+  writeFileSync(join(work, "timings.json"), JSON.stringify(Object.fromEntries([...took].map(([mutation, time]) => [mutation.name, time])), null, 2) + "\n");
   const missed = rows.filter(([, result]) => result !== "caught");
   console.log(`${rows.length - missed.length} of ${rows.length} mutations caught`);
   // Here, each one's time, its build and its tests, as many as run; CI's

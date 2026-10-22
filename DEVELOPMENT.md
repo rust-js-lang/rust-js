@@ -199,9 +199,12 @@ What keeps them there:
   builds its manifest in; `test/std-package.test.ts` holds it (ADR 0561).
 - **Mutations keep their crate** in `target/mutants/crate`, writing only
   the files that differ, and the compiler built without a mutation while
-  the sources are what it was built from. They run four at a time, one
-  worker for each three cores, each with a crate and a target of its own
-  (`--jobs=N` says how many). A runtime helper's mutation, whose tests the
+  the sources are what it was built from. They run up to four at a time,
+  one worker for each two cores (on this Mac 1 took 70 s for sixteen, 2
+  took 43 s and 4 took 31 s; CI's four cores run two), each with a crate
+  and a target of its own (`--jobs=N` says how many). Each one's build and
+  tests are timed: CI's summary shows them, and each shard uploads
+  `mutation-timings-<shard>`. A runtime helper's mutation, whose tests the
   checkout's `runtime/index.js` serves, runs alone after the others.
 
 ## Working on `main`
