@@ -5,6 +5,22 @@ const tests = ["test/lowering.test.ts", "-t", "nothing it shadows"];
 
 export const mutations: Mutation[] = [
   {
+    name: "aliased-import-kept",
+    breaks: "`import SAME ..; const same = SAME;`, not `import same ..`",
+    file: "src/prepare/reclaim.rs",
+    find: "    aliased_imports(module);\n",
+    replace: "",
+    tests: ["test/modules.test.ts", "-t", "an import read only by a const"],
+  },
+  {
+    name: "aliased-import-read-twice",
+    breaks: "an import read twice is renamed for one `const`, and the other read names nothing",
+    file: "src/prepare/reclaim.rs",
+    find: "        if reads != 1 {\n            continue;\n        }\n        // The `const` that reads it",
+    replace: "        if reads == 0 {\n            continue;\n        }\n        // The `const` that reads it",
+    tests: ["test/modules.test.ts", "-t", "an import read only by a const"],
+  },
+  {
     name: "shadowed-param-of-itself-assigned",
     breaks: "`let mut n = n;` is `n = n;`",
     file: "src/prepare/reclaim.rs",

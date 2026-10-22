@@ -624,6 +624,25 @@ test("a module of only pub uses is a file of re-exports", async () => {
   expect(index.helper()).toBe(1);
 });
 
+// ADR 0616: an import its module reads once, a \`const\` at a function's top
+// that copies it, is the import by that name, as React's shallowEqual has
+// \`import is from './objectIs'\`, not \`import IS ..; const is = IS;\`.
+test("an import read only by a const is the import by its name", async () => {
+  const dir = fixture("aliased-imports");
+  writeFileSync(join(dir, "lib.rs"), "mod is;\nmod twice;\n\nuse is::IS as SAME;\n\npub fn equal(a: f64, b: f64) -> bool {\n    let same = SAME.with(|same| *same);\n    same(a, b)\n}\n");
+  writeFileSync(join(dir, "is.rs"), "fn exact(a: f64, b: f64) -> bool {\n    a == b\n}\n\nthread_local! {\n    pub(crate) static IS: fn(f64, f64) -> bool = exact;\n}\n\njs::export_default!(IS);\n");
+  // Read twice: the import keeps its name.
+  writeFileSync(join(dir, "twice.rs"), "use crate::is::IS;\n\npub fn both(a: f64, b: f64) -> bool {\n    let first = IS.with(|is| *is);\n    first(a, b) && IS.with(|is| is(b, a))\n}\n");
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('import same from "./is.js";');
+  const twice = await import(join(dir, "twice.js"));
+  expect([twice.both(1, 1), twice.both(1, 2)]).toEqual([true, false]);
+  expect(js).toContain("  return same(a, b);");
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.equal(1, 1), lib.equal(1, 2)]).toEqual([true, false]);
+});
+
 // ADR 0611: the JS's \`export default\` is where the Rust's
 // \`js::export_default!\` is: right after its function, a private one, it's
 // the function's declaration, \`export default function noop() {}\`, as

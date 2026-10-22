@@ -11,6 +11,7 @@ use super::scopes;
 use crate::js::{self, Expr, ExprKind, Stmt, StmtKind};
 
 pub(super) fn module(module: &mut js::Module) {
+    aliased_imports(module);
     imports(module);
     own_items(module);
     for item in &mut module.items {
@@ -71,6 +72,89 @@ fn shadowed_params(function: &mut js::Function) {
         match itself {
             true => _ = function.body.remove(i),
             false => i += 1,
+        }
+    }
+}
+
+/// `import IS from "./objectIs.js"; .. const is = IS;`, an import its module
+/// reads once, a `const` at a function's top: the import by that name,
+/// `import is from "./objectIs.js";`, where the module declares the name
+/// nowhere else (ADR 0616).
+fn aliased_imports(module: &mut js::Module) {
+    let locals: Vec<String> = (module.packages.iter())
+        .flat_map(|p| p.default.iter().chain(p.named.iter().map(|(_, local)| local)))
+        .chain(
+            module
+                .imports
+                .iter()
+                .flat_map(|i| i.named.iter().map(|(_, local)| local)),
+        )
+        .cloned()
+        .collect();
+    for local in locals {
+        // How often the module reads it.
+        let mut reads = 0;
+        js::each_item_expr_mut(&mut module.items, &mut |e| {
+            reads += usize::from(matches!(&e.kind, ExprKind::Var(v) if *v == local));
+        });
+        if reads != 1 {
+            continue;
+        }
+        // The `const` that reads it, at a function's top.
+        let mut alias = None;
+        for item in &mut module.items {
+            for function in item.functions_mut() {
+                if let Some(k) = function.body.iter().position(|s| {
+                    matches!(&s.kind, StmtKind::Const(_, value) if matches!(&value.kind, ExprKind::Var(v) if *v == local))
+                }) && let StmtKind::Const(name, _) = &function.body[k].kind
+                {
+                    alias = Some(name.clone());
+                }
+            }
+        }
+        let Some(alias) = alias else { continue };
+        // Declared nowhere else in the module, nor its name otherwise.
+        let mut declared = 0;
+        for item in &mut module.items {
+            names_mut(item, false, &mut |name| declared += usize::from(*name == alias));
+            if item.declared() == Some(alias.as_str()) {
+                declared += 1;
+            }
+        }
+        let imported = (module.packages.iter())
+            .flat_map(|p| {
+                p.default
+                    .iter()
+                    .chain(p.named.iter().map(|(_, l)| l))
+                    .chain(&p.namespace)
+            })
+            .chain(module.imports.iter().flat_map(|i| i.named.iter().map(|(_, l)| l)))
+            .any(|l| *l == alias);
+        if declared != 1 || imported {
+            continue;
+        }
+        for item in &mut module.items {
+            for function in item.functions_mut() {
+                function.body.retain(|s| {
+                    !matches!(&s.kind, StmtKind::Const(name, value)
+                        if *name == alias && matches!(&value.kind, ExprKind::Var(v) if *v == local))
+                });
+            }
+        }
+        let rename = |name: &mut String| {
+            if *name == local {
+                name.clone_from(&alias);
+            }
+        };
+        for package in &mut module.packages {
+            package
+                .default
+                .iter_mut()
+                .chain(package.named.iter_mut().map(|(_, l)| l))
+                .for_each(rename);
+        }
+        for import in &mut module.imports {
+            import.named.iter_mut().map(|(_, l)| l).for_each(rename);
         }
     }
 }

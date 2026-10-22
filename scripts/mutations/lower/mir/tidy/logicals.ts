@@ -3,6 +3,34 @@ import type { Mutation } from "../../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "implied-part-kept",
+    breaks: "`x != null && typeof x === \"number\"` keeps the test the later one implies",
+    file: "src/lower/mir/tidy/logicals.rs",
+    find: "        *test = unimplied(Expr::bin(Op::And, first, second));\n",
+    replace: "        *test = Expr::bin(Op::And, first, second);\n",
+    tests: ["test/lowering.test.ts", "-t", "a match arm's pattern of parts"],
+  },
+  {
+    name: "mir-tidy-and-tests-any-condition",
+    breaks: "`if`s the program nests are merged into one `&&`",
+    file: "src/lower/mir/tidy/logicals.rs",
+    find: "        let one = (conditions.iter()).any(|(first, then)| within(first, span) && within(then, inner.span));\n",
+    replace: "        let one = true;\n",
+    tests: ["test/lowering.test.ts","-t","if-let chains and loops from MIR"],
+  },
+  {
+    "name": "and-test-bound-kept",
+    "breaks": "a test merged into `a && b` leaves its bound read, `const captured = child.type`, read again and unread",
+    "file": "src/lower/mir/tidy/logicals.rs",
+    "find": "                && js::mentions_in(&then[at + 1..], name) == 0\n",
+    "replace": "                && false\n",
+    "tests": [
+      "test/jsx.test.ts",
+      "-t",
+      "capture of an inlined closure"
+    ]
+  },
+  {
     name: "logical-block-kept",
     breaks: "`(x == y && (x != 0.0 || ..)) || ..` is a labelled block of its tests",
     file: "src/lower/mir/tidy/logicals.rs",

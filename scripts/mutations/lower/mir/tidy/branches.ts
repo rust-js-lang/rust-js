@@ -3,14 +3,6 @@ import type { Mutation } from "../../../../mutations";
 
 export const mutations: Mutation[] = [
   {
-    name: "implied-part-kept",
-    breaks: "`x != null && typeof x === \"number\"` keeps the test the later one implies",
-    file: "src/lower/mir/tidy/branches.rs",
-    find: "        *test = unimplied(Expr::bin(Op::And, first, second));\n",
-    replace: "        *test = Expr::bin(Op::And, first, second);\n",
-    tests: ["test/lowering.test.ts", "-t", "a match arm's pattern of parts"],
-  },
-  {
     name: "typeof-implies-object-too",
     breaks: "`typeof x === \"object\"` is taken to imply `x != null`, which `null` isn't",
     file: "src/lower/mir/tidy/branches.rs",
@@ -57,14 +49,6 @@ export const mutations: Mutation[] = [
     find: "        (_, ExprKind::Bool(false)) => Expr::bin(Op::And, truth(test), yes),\n",
     replace: "",
     tests: ["test/lowering.test.ts","-t","branches from MIR read"],
-  },
-  {
-    name: "mir-tidy-and-tests-any-condition",
-    breaks: "`if`s the program nests are merged into one `&&`",
-    file: "src/lower/mir/tidy/branches.rs",
-    find: "        let one = (conditions.iter()).any(|(first, then)| within(first, span) && within(then, inner.span));\n",
-    replace: "        let one = true;\n",
-    tests: ["test/lowering.test.ts","-t","if-let chains and loops from MIR"],
   },
   {
     name: "mir-tidy-temporary-ternary-kept",
@@ -434,18 +418,6 @@ export const mutations: Mutation[] = [
     find: "    let text = |x: &Expr| matches!(x.kind, ExprKind::Str(_));\n",
     replace: "    let text = |_: &Expr| false;\n",
     tests: ["test/snapshots.test.ts", "-t", "lexer"],
-  },
-  {
-    "name": "and-test-bound-kept",
-    "breaks": "a test merged into `a && b` leaves its bound read, `const captured = child.type`, read again and unread",
-    "file": "src/lower/mir/tidy/branches.rs",
-    "find": "                && js::mentions_in(&then[at + 1..], name) == 0\n",
-    "replace": "                && false\n",
-    "tests": [
-      "test/jsx.test.ts",
-      "-t",
-      "capture of an inlined closure"
-    ]
   },
   {
     name: "boolean-methods-unknown",
