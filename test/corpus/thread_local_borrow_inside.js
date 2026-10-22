@@ -6,14 +6,14 @@ export function entry() {
   main();
 }
 
-const LOG = { value: [] };
+const log = { value: [] };
 
 function len() {
-  return $withBorrow(LOG, (log) => log.length);
+  return $withBorrow(log, (log) => log.length);
 }
 
 function main() {
-  $withBorrowMut(LOG, (log) => {
+  $withBorrowMut(log, (log) => {
     log.push(String(len()));
   });
   console.log(`${len()}`);

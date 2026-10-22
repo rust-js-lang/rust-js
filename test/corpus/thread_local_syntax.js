@@ -7,19 +7,19 @@ export function entry() {
 }
 
 /** A counter. */
-const COUNT = { value: 0 };
-const NAMES = { value: [] };
-const LIMIT = 3;
+const count = { value: 0 };
+const names = { value: [] };
+const limit = 3;
 
 function bump() {
   return ((c) => {
     c.value = (c.value + 1) >>> 0;
     return c.value;
-  })(COUNT);
+  })(count);
 }
 
 function main() {
-  for (let i = 0; i < LIMIT; i++) {
+  for (let i = 0; i < limit; i++) {
     bump();
   }
   ((n) => {
@@ -29,9 +29,9 @@ function main() {
     } finally {
       $unborrow(borrowMut);
     }
-  })(NAMES);
+  })(names);
   console.log(
-    `${COUNT.value} [${((n) => {
+    `${count.value} [${((n) => {
       const borrow = $borrow(n, true);
       let result;
       try {
@@ -40,7 +40,7 @@ function main() {
         $unborrow(borrow);
       }
       return result;
-    })(NAMES)
+    })(names)
       .map((item) => $debugStr(item))
       .join(", ")}]`,
   );

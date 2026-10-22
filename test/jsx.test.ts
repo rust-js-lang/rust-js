@@ -1602,8 +1602,8 @@ thread_local! {
   expect(code).toContain('<Cached label="memo" />');
   expect(code).toContain('<Theme value="dark">');
   expect(code).toContain('<Theme.Provider value="legacy">');
-  expect(code).toContain('<FORWARD label="forward" />');
-  expect(code).toContain('<LAZY />');
+  expect(code).toContain('<Forward label="forward" />');
+  expect(code).toContain('<Lazy />');
   expect(code).not.toContain('component(');
   const source = readFileSync(join(dir, "lib.rs"), "utf8");
   const map = JSON.parse(readFileSync(join(dir, "lib.jsx.map"), "utf8"));
@@ -1637,13 +1637,13 @@ pub fn Away(container: &'static HTMLElement) -> JSX::Element {
 `);
   run(args);
   const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
-  expect(jsx).toContain("<THEME.Consumer>{(theme) => <b>{theme}</b>}</THEME.Consumer>");
+  expect(jsx).toContain("<Theme.Consumer>{(theme) => <b>{theme}</b>}</Theme.Consumer>");
   expect(jsx).toContain('const portal = createPortal(<i>away</i>, container);\n  return portal;');
-  const { Label, THEME } = await import(join(dir, "lib.jsx"));
+  const { Label, Theme } = await import(join(dir, "lib.jsx"));
   const { createElement } = await import("react");
   expect([
     renderToStaticMarkup(createElement(Label)),
-    renderToStaticMarkup(createElement(THEME, { value: "dark" }, createElement(Label))),
+    renderToStaticMarkup(createElement(Theme, { value: "dark" }, createElement(Label))),
   ]).toEqual(["<b>light</b>", "<b>dark</b>"]);
 });
 
@@ -1676,7 +1676,7 @@ pub fn App() -> JSX::Element {
 `);
   run(args);
   const code = readFileSync(join(dir, "lib.jsx"), "utf8");
-  expect(code).toContain('<THEME.Provider value="text">plain</THEME.Provider>');
+  expect(code).toContain('<Theme.Provider value="text">plain</Theme.Provider>');
   const result = await import(join(dir, "lib.jsx"));
   expect(renderToStaticMarkup(createElement(result.App))).toBe("<i>a</i><i>b</i><b>dark</b><b>legacy</b>plain");
 });
@@ -1831,7 +1831,7 @@ pub fn App() -> JSX::Element {
   run(versionArgs);
   snapshot(dir, "react18");
   const code = readFileSync(join(dir, "lib.jsx"), "utf8");
-  expect(code).toContain('<THEME.Provider value="dark">');
+  expect(code).toContain('<Theme.Provider value="dark">');
   expect(code).toContain('<Suspense key="body" fallback="loading">');
   for (const unsupported of [
     source.replaceAll("THEME.Provider", "THEME"),
@@ -1852,12 +1852,12 @@ pub struct Props { pub label: i32 }
 pub fn Input(p: Props, reference: ForwardedRef<&'static webapi::Element>) -> JSX::Element {
     jsx! { <input ref={reference} tabIndex={p.label} /> }
 }
-thread_local! { static INPUT: ForwardRefExoticComponent<Props, &'static webapi::Element> = forward_ref(Input); }
+thread_local! { static FORWARDED_INPUT: ForwardRefExoticComponent<Props, &'static webapi::Element> = forward_ref(Input); }
 pub fn Plain(reference: RefObject<Option<&'static webapi::Element>>) -> JSX::Element {
-    jsx! { <INPUT ref={reference} label={1} /> }
+    jsx! { <FORWARDED_INPUT ref={reference} label={1} /> }
 }
 pub fn App(reference: RefObject<Option<&'static webapi::Element>>) -> JSX::Element {
-    jsx! { <INPUT ref={record(1); reference} label={record(2)} /> }
+    jsx! { <FORWARDED_INPUT ref={record(1); reference} label={record(2)} /> }
 }
 pub struct NormalProps { pub r#ref: RefObject<Option<&'static webapi::Element>>, pub title: i32 }
 pub fn Normal(p: NormalProps) -> JSX::Element { jsx! { <input ref={p.r#ref} tabIndex={p.title} /> } }
@@ -1870,7 +1870,7 @@ pub fn Ordinary(reference: RefObject<Option<&'static webapi::Element>>) -> JSX::
   const output = readFileSync(join(dir, "lib.jsx"), "utf8");
   expect(output).not.toContain('checked_ref');
   expect(output).not.toContain('component(');
-  expect(output).toContain('export function Plain(reference) {\n  return <INPUT label={1} ref={reference} />;\n}');
+  expect(output).toContain('export function Plain(reference) {\n  return <ForwardedInput label={1} ref={reference} />;\n}');
   const result = await import(join(dir, "lib.jsx"));
   const previous = globalThis.record;
   const calls: number[] = [];
@@ -5476,7 +5476,7 @@ pub fn App(names: Vec<&'static str>) -> JSX::Element {
 `);
   run(args);
   const code = readFileSync(join(dir, "lib.jsx"), "utf8");
-  expect(code).toContain("<THEME.Provider value=\"dark\">");
+  expect(code).toContain("<Theme.Provider value=\"dark\">");
   const result = await import(join(dir, "lib.jsx"));
   expect(renderToStaticMarkup(createElement(() => result.App(["a"])))).toBe("<nav><h2>On this page</h2><i>a</i><b>dark</b></nav>");
 });

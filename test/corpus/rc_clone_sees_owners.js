@@ -17,7 +17,7 @@ export function entry() {
   main();
 }
 
-const KEPT = {};
+const kept = {};
 
 export function loneClone() {
   if ($loneClone === undefined) {
@@ -28,7 +28,7 @@ export function loneClone() {
 
 function loneClone_clone(lone) {
   $withBorrowMut(
-    KEPT,
+    kept,
     (kept) => {
       try {
         if (kept.value != null) {
@@ -99,7 +99,7 @@ function main() {
           }
         };
         try {
-          $withBorrowMut(KEPT, value, true);
+          $withBorrowMut(kept, value, true);
           lone = $makeMut(lone, (value) => loneClone_clone(value), loneDrop_drop);
           console.log(`made ${lone.value[0]}`);
           const shared = { value: [5], strong: 1, weak: 0 };
@@ -114,7 +114,7 @@ function main() {
             }
           };
           try {
-            $withBorrowMut(KEPT, value$1, true);
+            $withBorrowMut(kept, value$1, true);
           } catch (error) {
             $rcDrop(shared, loneDrop_drop);
             throw error;

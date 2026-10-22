@@ -10,26 +10,26 @@ import { Compartment, EditorState } from "@codemirror/state";
 import { oneDark } from "@codemirror/theme-one-dark";
 import { EditorView, basicSetup } from "codemirror";
 
-const THEME = new Compartment();
+const theme = new Compartment();
 
-const SOURCE = [
+const source = [
   basicSetup,
   rust(),
-  THEME.of(themeFor(false)),
+  theme.of(themeFor(false)),
   EditorView.contentAttributes.of({ "aria-label": "Rust source" }),
 ];
 
 // Read-only, but still selectable and copyable. Highlighted as JS for a
 // generated file, plain text when it shows rustc's diagnostics.
-const JS_OUTPUT = output(javascript());
-const PLAIN_OUTPUT = output(undefined);
+const jsOutput = output(javascript());
+const plainOutput = output(undefined);
 
 function output(language) {
   const extensions = [basicSetup];
   if (language) {
     extensions.push(language);
   }
-  extensions.push(THEME.of(themeFor(false)));
+  extensions.push(theme.of(themeFor(false)));
   extensions.push(EditorState.readOnly.of(true));
   extensions.push(EditorView.contentAttributes.of({ "aria-label": "Generated JavaScript" }));
   return extensions;
@@ -44,12 +44,12 @@ function themeFor(dark) {
  * survives switching.
  */
 export function sourceState(text) {
-  return EditorState.create({ doc: text, extensions: SOURCE });
+  return EditorState.create({ doc: text, extensions: source });
 }
 
 /** A generated file's, highlighted as JS; or rustc's diagnostics, as text. */
 export function outputState(text, js) {
-  const extensions = js ? JS_OUTPUT : PLAIN_OUTPUT;
+  const extensions = js ? jsOutput : plainOutput;
   return EditorState.create({ doc: text, extensions });
 }
 
@@ -77,7 +77,6 @@ export function show(view, state) {
  * made with, so this runs after `show` too.
  */
 export function setTheme(view, dark) {
-  const theme = THEME;
   view.dispatch({ effects: theme.reconfigure(themeFor(dark)) });
 }
 //# sourceMappingURL=codemirror.js.map

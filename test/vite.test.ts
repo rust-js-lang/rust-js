@@ -302,8 +302,8 @@ thread_local! {
     const page = await browser.newPage();
     await page.goto(server.resolvedUrls.local[0]);
     const theme = readFileSync(join(dir, "src/theme.js"), "utf8");
-    expect(theme).toContain('export const THEME = createContext("light");');
-    expect(readFileSync(join(dir, "src/App.jsx"), "utf8")).toContain('<THEME value="dark">');
+    expect(theme).toContain('export const Theme = createContext("light");');
+    expect(readFileSync(join(dir, "src/App.jsx"), "utf8")).toContain('<Theme value="dark">');
     const button = page.getByRole("button");
     await button.filter({ hasText: "Count 0" }).waitFor();
     await button.click();

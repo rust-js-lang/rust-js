@@ -37,9 +37,9 @@ test("React components are hand-written JSX, and React runs them", () => {
   expect(js).toContain("<Todos />\n      <Clock />\n      <Themed />");
   // A context and memoized components, made once, as `const`s of the module
   // (from `thread_local!`); a provider is the context as a tag, as in React 19.
-  expect(js).toContain('const THEME = createContext("light");\nconst BADGE = memo(Badge);\n/** Any two labels that aren\'t empty count as the same props. */\nconst LOOSE_BADGE = memo(Badge, (a, b) => ');
-  expect(js).toContain("const theme = useContext(THEME);");
-  expect(js).toContain("<BADGE label=\"outside\" />\n      <THEME value={dark ? \"dark\" : \"light\"}>");
+  expect(js).toContain('const Theme = createContext("light");\nconst BADGE = memo(Badge);\n/** Any two labels that aren\'t empty count as the same props. */\nconst LooseBadge = memo(Badge, (a, b) => ');
+  expect(js).toContain("const theme = useContext(Theme);");
+  expect(js).toContain("<BADGE label=\"outside\" />\n      <Theme value={dark ? \"dark\" : \"light\"}>");
   // `!` of a `&bool`, which rustc writes as `Not::not`.
   expect(js).toContain("setDark((d) => !d)");
   copyFileSync(join(root, "test", "react_app.jsx"), join(out, "react_app.test.jsx"));
@@ -192,7 +192,7 @@ test("React's and React DOM's APIs are hand-written React, and they run", () => 
   expect(js).toContain('dangerouslySetInnerHTML={{ __html: "<i>raw</i>" }}');
   expect(js).toContain('return renderToString(<Page />, { identifierPrefix: "s-" });');
   expect(js).toContain('const root = createRoot(container, { identifierPrefix: "c-" });');
-  expect(js).toContain('const LAZY_CARD = lazy(() => import("./lazy-card.jsx"));');
+  expect(js).toContain('const LazyCard = lazy(() => import("./lazy-card.jsx"));');
   Bun.write(join(out, "lazy-card.jsx"), 'export default function LazyCard() {\n  return <em className="lazy">lazy card</em>;\n}\n');
   copyFileSync(join(root, "test", "apis.jsx"), join(out, "apis.test.jsx"));
   const p = Bun.spawnSync(["bun", "test", "--preload", "./test/happydom.ts", join(out, "apis.test.jsx")], { cwd: root, stderr: "pipe" });

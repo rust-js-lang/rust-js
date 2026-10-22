@@ -428,7 +428,7 @@ test("the playground is Rust components, compiled to the JS main.ts starts", asy
   // CodeMirror, through imports (ADR 0028), its extensions made once (ADR 0037).
   const codemirror = await read("codemirror.js");
   expect(codemirror).toContain('import { EditorView, basicSetup } from "codemirror";');
-  expect(codemirror).toContain("const THEME = new Compartment();");
+  expect(codemirror).toContain("const theme = new Compartment();");
 });
 
 // ADR 0037: `thread_local!` is a variable of its module.
@@ -436,12 +436,12 @@ test("thread-locals are module variables", async () => {
   const js = await Bun.file(join(target, "thread_locals.js")).text();
   // Each only read and set is the module's variable, a `let` if it's set
   // (ADR 0270); one whose cell `with` hands out keeps its `{ value }`.
-  expect(js).toContain("let COUNT = 0;\nconst LOG = [];\nconst START = 10 * 4 + 2;");
-  expect(js).toContain("  COUNT = (COUNT + 1) >>> 0;\n  return COUNT;");
-  expect(js).toContain("  })(LOG);");
+  expect(js).toContain("let count = 0;\nconst log = [];\nconst START = 10 * 4 + 2;");
+  expect(js).toContain("  count = (count + 1) >>> 0;\n  return count;");
+  expect(js).toContain("  })(log);");
   // A closure that only returns is its body, on the key or its value, in place.
   expect(js).toContain("  return START;");
-  expect(js).toContain("  return LOG.length;");
+  expect(js).toContain("  return log.length;");
   // Nothing of std's storage.
   expect(js).not.toMatch(/__rust_?std_?internal/i);
 });

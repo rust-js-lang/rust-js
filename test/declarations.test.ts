@@ -760,7 +760,7 @@ pub fn first(toc: &Toc) -> Option<&str> {
   expect(declarations).toContain("export function pairs(pair: Pair<Toc>): Toc[];");
   expect(declarations).toContain("toc: Toc;");
   expect(declarations).toContain("sections?: Toc[] | undefined;");
-  expect(declarations).toContain("export const TOC: Context<Toc>;");
+  expect(declarations).toContain("export const Toc: Context<Toc>;");
   // A private one, which isn't declared, is what it stands for.
   expect(declarations).toContain("export function depth(item: TocItem): number;");
   const pages = readFileSync(join(dir, "pages.d.ts"), "utf8");

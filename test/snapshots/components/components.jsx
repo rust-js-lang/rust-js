@@ -103,14 +103,14 @@ export function Clock() {
 }
 
 /** A context and memoized components: each a `const` of the module. */
-const THEME = createContext("light");
+const Theme = createContext("light");
 const BADGE = memo(Badge);
 /** Any two labels that aren't empty count as the same props. */
-const LOOSE_BADGE = memo(Badge, (a, b) => !a.label === !b.label);
+const LooseBadge = memo(Badge, (a, b) => !a.label === !b.label);
 
 export function Badge({ label }) {
   globalThis.rendered(label);
-  const theme = useContext(THEME);
+  const theme = useContext(Theme);
   return <span className={`badge ${theme}`}>{label}</span>;
 }
 
@@ -121,12 +121,12 @@ export function Themed() {
   return (
     <>
       <BADGE label="outside" />
-      <THEME value={dark ? "dark" : "light"}>
+      <Theme value={dark ? "dark" : "light"}>
         <>
           <BADGE label="inside" />
-          <LOOSE_BADGE label={clicks % 2 === 0 ? "even" : "odd!"} />
+          <LooseBadge label={clicks % 2 === 0 ? "even" : "odd!"} />
         </>
-      </THEME>
+      </Theme>
       <button className="theme" onClick={() => setDark((d) => !d)}>
         theme
       </button>

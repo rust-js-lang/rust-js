@@ -6,15 +6,15 @@ export function entry() {
   main();
 }
 
-let SELF;
+let self;
 
 function init() {
-  return SELF != null ? ($force(SELF) + 1) >>> 0 : 0;
+  return self != null ? ($force(self) + 1) >>> 0 : 0;
 }
 
 function main() {
   const lazy = { init };
-  SELF = lazy;
+  self = lazy;
   console.log(`${$force(lazy)}`);
 }
 //# sourceMappingURL=case.js.map

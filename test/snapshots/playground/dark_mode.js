@@ -6,14 +6,14 @@
 import { useSyncExternalStore } from "react";
 import { listen } from "./listen.js";
 
-const DARK = window.matchMedia("(prefers-color-scheme: dark)");
+const dark = window.matchMedia("(prefers-color-scheme: dark)");
 
 export function useDarkMode() {
   return useSyncExternalStore(
     (notify) => {
       const controller = new AbortController();
       listen(
-        DARK,
+        dark,
         "change",
         () => {
           notify();
@@ -24,7 +24,7 @@ export function useDarkMode() {
         controller.abort();
       };
     },
-    () => DARK.matches,
+    () => dark.matches,
   );
 }
 //# sourceMappingURL=dark_mode.js.map

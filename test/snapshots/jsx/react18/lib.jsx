@@ -2,17 +2,17 @@
 
 import { Suspense, createContext } from "react";
 
-const THEME = createContext("light");
+const Theme = createContext("light");
 
 export function App() {
   return (
-    <THEME.Provider value="dark">
+    <Theme.Provider value="dark">
       <Suspense key="body" fallback="loading">
         <form action="/save">
           <input ref={() => {}} />
         </form>
       </Suspense>
-    </THEME.Provider>
+    </Theme.Provider>
   );
 }
 //# sourceMappingURL=lib.jsx.map

@@ -19,7 +19,7 @@ export function entry() {
   main();
 }
 
-const SHARED = { value: [1] };
+const shared = { value: [1] };
 
 function asksShared() {
   return ((s) => {
@@ -29,7 +29,7 @@ function asksShared() {
       $unborrow(tryBorrowMut._0);
     }
     return result;
-  })(SHARED);
+  })(shared);
 }
 
 function probeDrop_drop(probe) {
@@ -216,7 +216,7 @@ function main() {
       $unborrow(borrow);
     }
     return result;
-  })(SHARED);
+  })(shared);
   console.log(`[${seen.join(", ")}]`);
 
   const node = $newCyclic((me) => ({ value: { me: $weakClone(me) } }));

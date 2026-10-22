@@ -262,4 +262,28 @@ export const mutations: Mutation[] = [
     replace: "            if false && nullable_result(tcx, def.to_def_id())\n",
     tests: ["test/bindings.test.ts", "-t", "a nullable function's None is null"],
   },
+  {
+    name: "thread-local-screaming",
+    breaks: "a thread-local keeps its `SCREAMING_SNAKE` name, `let TASK_ID_COUNTER`, where JS names a variable camelCase",
+    file: "src/lower/bindings.rs",
+    find: "        DefKind::Const { .. } if thread_local_value(tcx, def_id).is_some() => {\n",
+    replace: "        DefKind::Const { .. } if false && thread_local_value(tcx, def_id).is_some() => {\n",
+    tests: ["test/lowering.test.ts", "-t", "thread-local's SCREAMING_SNAKE"],
+  },
+  {
+    name: "thread-local-component-lowercase",
+    breaks: "a context's thread-local is `theme`, which JSX can't take as a component's name",
+    file: "src/lower/bindings.rs",
+    find: "        true => super::upper_first(&variable),\n",
+    replace: "        true => variable,\n",
+    tests: ["test/jsx.test.ts", "-t", "JSX context providers take any node"],
+  },
+  {
+    name: "thread-local-name-taken",
+    breaks: "a thread-local named as another item of its module is renamed, `cache$1`, not kept as written",
+    file: "src/lower/bindings.rs",
+    find: "                true => name.to_string(),\n                false => variable,\n",
+    replace: "                true => variable.clone(),\n                false => variable,\n",
+    tests: ["test/lowering.test.ts", "-t", "an insert in a thread-local's closure"],
+  },
 ];

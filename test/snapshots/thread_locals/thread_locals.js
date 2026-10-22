@@ -4,21 +4,21 @@
 // wasm-bindgen programs keep JS values. JS runs a module on one thread, so a
 // thread-local is one of the module's variables: `const COUNT = { value: 0 };`.
 
-let COUNT = 0;
-const LOG = [];
+let count = 0;
+const log = [];
 const START = 10 * 4 + 2;
 
 /** Each call sees what the last one left. */
 export function bump() {
-  COUNT = (COUNT + 1) >>> 0;
-  return COUNT;
+  count = (count + 1) >>> 0;
+  return count;
 }
 
 export function record(line) {
   ((log) => {
     log.push(line);
-  })(LOG);
-  return LOG.length;
+  })(log);
+  return log.length;
 }
 
 export function start() {

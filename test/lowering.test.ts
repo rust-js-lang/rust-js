@@ -2335,7 +2335,7 @@ pub fn cache(key: &str, n: u32) -> Option<u32> {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
   const js = readFileSync(join(dir, "mir.js"), "utf8");
-  expect(js).toContain("  LIKED.add(id);\n");
+  expect(js).toContain("  liked.add(id);\n");
   expect(js).toContain("  CACHE.set(key, n);\n");
   expect(js).not.toContain("@rust-js/runtime");
   const lib = await import(join(dir, "mir.js"));
@@ -5088,6 +5088,42 @@ pub fn replaced_any(items: &mut Vec<u32>, i: usize, x: u32) -> u32 {
   expect(() => lib.replacedAny([1], 2, 0)).toThrow("index out of bounds");
 });
 
+// ADR 0573, amended: a `thread_local!` is its module's variable (ADR 0270),
+// named as JS names one, camelCase of its `SCREAMING_SNAKE` words: React's
+// scheduler's `taskQueue`. A `const` is a constant, named as written; one
+// that must be another says so, `#[rust_js::name]`.
+test("a thread-local's SCREAMING_SNAKE name is camelCase, a constant's as written", async () => {
+  const dir = fixture("screaming-names");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::{Cell, RefCell};
+
+pub const MAX_SIGNED_31_BIT_INT: u32 = 1073741823;
+
+#[rust_js::name = "NormalPriority"]
+pub const NORMAL_PRIORITY: u8 = 3;
+
+thread_local! {
+    static TASK_ID_COUNTER: Cell<u32> = const { Cell::new(1) };
+    static SEEN_IDS: RefCell<Vec<u32>> = const { RefCell::new(Vec::new()) };
+}
+
+pub fn next_id() -> u32 {
+    let id = TASK_ID_COUNTER.get();
+    TASK_ID_COUNTER.set(id + 1);
+    SEEN_IDS.with_borrow_mut(|seen| seen.push(id));
+    id.min(MAX_SIGNED_31_BIT_INT) + u32::from(NORMAL_PRIORITY)
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("export const MAX_SIGNED_31_BIT_INT = 1073741823;");
+  expect(js).toContain("export const NormalPriority = 3;");
+  expect(js).toContain("let taskIdCounter = 1;");
+  expect(js).toContain("const seenIds = [];");
+  expect(js).not.toMatch(/TASK_ID|SEEN_IDS/);
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.nextId(), lib.nextId()]).toEqual([4, 5]);
+});
+
 // ADR 0293: a `Cell` a `let` takes apart, read by `get()` before anything
 // else runs, is its value in JS's destructuring: react.dev's ErrorMessage
 // has `const {message, title} = error;`. Set before it's read, it's read
@@ -5622,7 +5658,7 @@ pub fn logged() {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain("export function logged() {\n  globalThis.seen.push(LOGGER.prefix);\n}");
+  expect(js).toContain("export function logged() {\n  globalThis.seen.push(logger.prefix);\n}");
   (globalThis as { seen?: string[] }).seen = [];
   const lib = await import(join(dir, "lib.js"));
   lib.logged();
@@ -9004,9 +9040,9 @@ pub fn remember(f: &dyn Fn(&dyn Fn(u32))) -> u32 {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
   const js = readFileSync(join(dir, "mir.js"), "utf8");
-  expect(js).toContain("let COUNT = 0;\nconst SEEN = false;\n");
-  expect(js).toContain("let LAST = 0;\n");
-  expect(js).toContain("  COUNT = (COUNT + 1) >>> 0;\n  return COUNT;\n");
+  expect(js).toContain("let count = 0;\nconst SEEN = false;\n");
+  expect(js).toContain("let last = 0;\n");
+  expect(js).toContain("  count = (count + 1) >>> 0;\n  return count;\n");
   const lib = await import(join(dir, "mir.js"));
   expect([lib.bump(), lib.bump(), lib.seen(), lib.remember((g: (n: number) => void) => g(7))]).toEqual([1, 2, false, 7]);
 });
@@ -9599,7 +9635,7 @@ pub fn or_none() -> bool {
   try {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
     const js = readFileSync(join(dir, "mir.js"), "utf8");
-    expect(js).toContain('  SUPPORTED = !!globalThis.maybeSupports && globalThis.supportsIt("importmap");\n');
+    expect(js).toContain('  supported = !!globalThis.maybeSupports && globalThis.supportsIt("importmap");\n');
     const lib = await import(join(dir, "mir.js"));
     delete globals.maybeSupports;
     const absent = [lib.update(), lib.negated(), lib.orNone()];

@@ -14,8 +14,8 @@ export function Input(p, _) {
   return <b>{p.label}</b>;
 }
 
-export const MEMO = memo(Card);
-export const LAZY = lazy(() => import("./lazy.jsx"));
-export const FORWARD = forwardRef(Input);
-export const THEME = createContext("light");
+export const Memo = memo(Card);
+export const Lazy = lazy(() => import("./lazy.jsx"));
+export const Forward = forwardRef(Input);
+export const Theme = createContext("light");
 //# sourceMappingURL=wrapped.jsx.map

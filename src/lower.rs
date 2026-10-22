@@ -902,20 +902,39 @@ fn unhyphenated(name: &str) -> String {
 
 /// A Rust name as JS code writes it (ADRs 0038, 0573): `set_count` is
 /// `setCount`. Leading and trailing underscores stay (`_unused`, `type_`),
-/// and so does a name with no lowercase letter, like a constant's. The one
-/// place a `snake_case` name is made camelCase.
+/// and so does a name with no lowercase letter, a component's `H2` say.
+/// The one place a `snake_case` name is made camelCase; a thread-local's
+/// `SCREAMING_SNAKE` one is `variable_case`'s.
 fn camel_case(name: &str) -> String {
     let core = name.trim_matches('_');
     if !core.contains('_') || !core.contains(|c: char| c.is_ascii_lowercase()) {
         return name.to_string();
     }
+    words_joined(name, |word| word.to_string())
+}
+
+/// A thread-local's name as JS writes its module's variable (ADR 0573):
+/// its `SCREAMING_SNAKE` words lowercase, then camelCase, `TASK_QUEUE` as
+/// `taskQueue`; another, as `camel_case` writes it.
+fn variable_case(name: &str) -> String {
+    let core = name.trim_matches('_');
+    if core.contains(|c: char| c.is_ascii_lowercase()) || !core.contains(|c: char| c.is_ascii_uppercase()) {
+        return camel_case(name);
+    }
+    words_joined(name, |word| word.to_ascii_lowercase())
+}
+
+/// `name`'s words, each `cased`, joined as camelCase, between its leading
+/// and trailing underscores.
+fn words_joined(name: &str, cased: impl Fn(&str) -> String) -> String {
+    let core = name.trim_matches('_');
     let lead = &name[..name.len() - name.trim_start_matches('_').len()];
     let trail = &name[name.trim_end_matches('_').len()..];
     let mut out = lead.to_string();
     for (i, word) in core.split('_').filter(|w| !w.is_empty()).enumerate() {
         match i {
-            0 => out.push_str(word),
-            _ => out.push_str(&upper_first(word)),
+            0 => out.push_str(&cased(word)),
+            _ => out.push_str(&upper_first(&cased(word))),
         }
     }
     out.push_str(trail);

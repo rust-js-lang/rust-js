@@ -211,7 +211,7 @@ export function Places() {
   );
 }
 
-const LAZY_CARD = lazy(() => import("./lazy-card.jsx"));
+const LazyCard = lazy(() => import("./lazy-card.jsx"));
 
 export function Misc() {
   const id = useId();
@@ -252,7 +252,7 @@ export function Misc() {
         {total}
       </span>
       <Suspense fallback="loading card" name="card">
-        <LAZY_CARD />
+        <LazyCard />
       </Suspense>
     </Profiler>
   );

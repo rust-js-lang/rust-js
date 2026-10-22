@@ -72,15 +72,15 @@ pub fn tick() {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(join(dir, "mir"), "lib.js")]);
-  expect(readFileSync(join(join(dir, "mir"), "counter.js"), "utf8")).toContain("export const TICKS = { value: 0 };");
+  expect(readFileSync(join(join(dir, "mir"), "counter.js"), "utf8")).toContain("export const ticks = { value: 0 };");
   const js = readFileSync(join(join(dir, "mir"), "lib.js"), "utf8");
-  expect(js).toContain("let COUNT = 0;");
-  expect(js).toContain("const LOG = [];");
+  expect(js).toContain("let count = 0;");
+  expect(js).toContain("const log = [];");
   expect(js).toContain("export const SHARED = { value: 0 };");
-  expect(js).toContain("COUNT = (COUNT + 1) >>> 0;");
-  expect(js).not.toContain("COUNT.value");
-  expect(js).not.toContain("LOG.value");
-  expect(js).toContain("  return LOG.length;\n");
+  expect(js).toContain("count = (count + 1) >>> 0;");
+  expect(js).not.toContain("count.value");
+  expect(js).not.toContain("log.value");
+  expect(js).toContain("  return log.length;\n");
   // One made by a `const { .. }` is too, by its own name.
   expect(js).not.toContain("__RUST_STD_INTERNAL_INIT");
   expect(js).toContain("let SEEN;\n");
@@ -110,7 +110,7 @@ pub fn bump() -> u32 {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")], 600_000);
-  expect(readFileSync(join(dir, "mir.js"), "utf8")).toContain("const N = { value: 0 };");
+  expect(readFileSync(join(dir, "mir.js"), "utf8")).toContain("const n = { value: 0 };");
   const { bump } = await import(join(dir, "mir.js"));
   expect([bump(), bump()]).toEqual([1, 2]);
 });
@@ -238,7 +238,7 @@ pub fn tally_of_four() -> u32 {
   run([compiler, join(dir, "lib.rs"), "-o", join(join(dir, "mir"), "lib.js")]);
   const lib = await Bun.file(join(join(dir, "mir"), "lib.js")).text();
   const shapes = await Bun.file(join(join(dir, "mir"), "shapes.js")).text();
-  expect(lib).toContain("const SIDE = Square.sideLength(Square.new(3));");
+  expect(lib).toContain("const side = Square.sideLength(Square.new(3));");
   expect(lib).toContain("  return Square.area(Square.new(side));");
   expect(shapes).toContain("export const Square = {\n  new(side) {");
   expect(shapes).toContain("  area(square) {\n    return Math.imul(Square.sideLength(square), Square.sideLength(square)) >>> 0;");
@@ -289,7 +289,7 @@ thread_local! {
   writeFileSync(join(dir, "editor.rs"), "pub fn open() -> u32 {\n    1\n}\n");
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const lib = await Bun.file(join(dir, "lib.js")).text();
-  expect(lib).toContain('import { COUNT, SIZE } from "./util.js";');
+  expect(lib).toContain('import { SIZE, count } from "./util.js";');
   expect(lib).not.toContain("editor.js");
   expect(lib).toContain("export function doubled(editor) {");
   const module = await import(join(dir, "lib.js"));
@@ -690,13 +690,13 @@ pub fn values() -> [u32; 4] {
     return index;
   };
   // Where the Rust has them.
-  expect(at("function twice(")).toBeLessThan(at("const FIRST ="));
-  expect(at("const FIRST =")).toBeLessThan(at("const SEEN ="));
-  expect(at("const LATER =")).toBeLessThan(at("function readLater("));
+  expect(at("function twice(")).toBeLessThan(at("const first ="));
+  expect(at("const first =")).toBeLessThan(at("const seen ="));
+  expect(at("const later =")).toBeLessThan(at("function readLater("));
   // After what they read: LATER, directly or through readLater; SEEN.
-  expect(at("const LATER =")).toBeLessThan(at("const AFTER ="));
-  expect(at("const LATER =")).toBeLessThan(at("const CALLED ="));
-  expect(at("const SEEN =")).toBeLessThan(at(/seen\.value =/i));
+  expect(at("const later =")).toBeLessThan(at("const after ="));
+  expect(at("const later =")).toBeLessThan(at("const called ="));
+  expect(at("const seen =")).toBeLessThan(at(/seen(\$1)?\.value =/));
   const { values } = await import(join(dir, "lib.js"));
   expect(values()).toEqual([2, 11, 11, 1]);
 });

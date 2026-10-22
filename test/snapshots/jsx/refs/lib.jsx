@@ -6,15 +6,15 @@ export function Input(p, reference) {
   return <input ref={reference} tabIndex={p.label} />;
 }
 
-const INPUT = forwardRef(Input);
+const ForwardedInput = forwardRef(Input);
 
 export function Plain(reference) {
-  return <INPUT label={1} ref={reference} />;
+  return <ForwardedInput label={1} ref={reference} />;
 }
 
 export function App(reference) {
   globalThis.record(1);
-  return <INPUT label={globalThis.record(2)} ref={reference} />;
+  return <ForwardedInput label={globalThis.record(2)} ref={reference} />;
 }
 
 export function Normal(p) {

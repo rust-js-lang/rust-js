@@ -767,6 +767,11 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### Changed
 
+- **A thread-local is named as its module's variable** (ADR 0579):
+  `TASK_QUEUE` is `taskQueue`, and one holding a component capitalized,
+  `THEME_CONTEXT` as `ThemeContext`; one named after another item of its
+  module, `CACHE` of `cache()`, keeps its Rust name. A `const` is named as
+  written, as JS names a constant.
 - **A nullable result is `null` where it's written** (ADR 0578): each
   `return` of a `#[rust_js::nullable]` function gives what its branch
   made, `return last;`, not a variable set in each and `return result ??

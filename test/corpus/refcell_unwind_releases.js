@@ -6,7 +6,7 @@ export function entry() {
   main();
 }
 
-const LOG = { value: [] };
+const log = { value: [] };
 
 function asksDrop_drop(asks) {
   ((log) => {
@@ -19,7 +19,7 @@ function asksDrop_drop(asks) {
         $unborrow(tryBorrowMut._0);
       }
     }
-  })(LOG);
+  })(log);
 }
 
 function main() {
@@ -31,7 +31,7 @@ function main() {
     }
   };
   try {
-    $withBorrowMut(LOG, value);
+    $withBorrowMut(log, value);
   } finally {
     asksDrop_drop({ value: _asks });
   }

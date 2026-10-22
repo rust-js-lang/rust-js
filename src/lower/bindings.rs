@@ -748,15 +748,82 @@ fn name_in_js(tcx: TyCtxt<'_>, def_id: DefId) -> String {
 }
 
 /// What an item is called in JS where it says nothing (ADR 0573): a
-/// function's, a `const`'s or a field's Rust name as JS writes one,
-/// camelCase, `sort_index` as `sortIndex`, `use_clicks` as `useClicks`, as a
-/// variable's is (ADR 0038); a variant's and a JS class's, its name.
+/// function's or a field's Rust name as JS writes one, camelCase,
+/// `sort_index` as `sortIndex`, `use_clicks` as `useClicks`, as a
+/// variable's is (ADR 0038); a `thread_local!`'s, its module's variable
+/// (ADR 0270), too, `TASK_QUEUE` as `taskQueue` (`variable_case`), and
+/// capitalized where it holds a component; a `const`'s, as JS writes a
+/// constant, `MAX_SIZE`; a variant's and a JS class's, its name.
 fn default_name(tcx: TyCtxt<'_>, def_id: DefId) -> String {
     let name = tcx.item_name(def_id);
     match tcx.def_kind(def_id) {
         DefKind::Variant | DefKind::Struct | DefKind::Enum | DefKind::Union => name.to_string(),
+        DefKind::Const { .. } if thread_local_value(tcx, def_id).is_some() => {
+            let variable = variable_name(tcx, def_id);
+            match another_named(tcx, def_id, &variable) {
+                true => name.to_string(),
+                false => variable,
+            }
+        }
         _ => super::camel_case(name.as_str()),
     }
+}
+
+/// A thread-local's name as its module's variable: camelCase,
+/// capitalized where it holds a component.
+fn variable_name(tcx: TyCtxt<'_>, def_id: DefId) -> String {
+    let variable = super::variable_case(tcx.item_name(def_id).as_str());
+    match holds_component(tcx, def_id) {
+        true => super::upper_first(&variable),
+        false => variable,
+    }
+}
+
+/// Whether another item of `def_id`'s module, a function's, a constant's
+/// or a thread-local's, is `name` in JS: a thread-local named after the
+/// function that reads it, `CACHE` of `cache()`, keeps its Rust name, as
+/// JS keeps two names apart.
+fn another_named(tcx: TyCtxt<'_>, def_id: DefId, name: &str) -> bool {
+    let Some(module) = tcx
+        .parent(def_id)
+        .as_local()
+        .filter(|&m| tcx.def_kind(m) == DefKind::Mod)
+    else {
+        return false;
+    };
+    (tcx.hir_module_items(LocalModId::new_unchecked(module)).definitions()).any(|other| {
+        let other = other.to_def_id();
+        other != def_id
+            && tcx.parent(other) == tcx.parent(def_id)
+            && matches!(
+                tcx.def_kind(other),
+                DefKind::Fn | DefKind::Const { .. } | DefKind::Static { .. }
+            )
+            && given_name(tcx, other).unwrap_or_else(|| match thread_local_value(tcx, other) {
+                Some(_) => variable_name(tcx, other),
+                None => super::camel_case(tcx.item_name(other).as_str()),
+            }) == name
+    })
+}
+
+/// What a `thread_local!`, the `const` of a `LocalKey<T>`, holds: `T`.
+fn thread_local_value<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId) -> Option<Ty<'tcx>> {
+    let ty = tcx.type_of(def_id).instantiate_identity().skip_normalization();
+    match ty.kind() {
+        ty::Adt(key, args) if super::recognition::is_std_def(tcx, key.did(), super::recognition::StdItem::LocalKey) => {
+            args.types().next()
+        }
+        _ => None,
+    }
+}
+
+/// Whether a `thread_local!` holds a component, of a type React marks
+/// `#[rust_js::component]`, a context, `memo`'s, `lazy`'s, `forward_ref`'s:
+/// JSX takes a name as a component's only capitalized, `ThemeContext` of
+/// `THEME_CONTEXT`.
+fn holds_component(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
+    matches!(thread_local_value(tcx, def_id).map(|held| *held.kind()), Some(ty::Adt(held, _))
+        if tcx.get_attrs_by_path(held.did(), &[Symbol::intern("rust_js"), Symbol::intern("component")]).next().is_some())
 }
 
 /// Whether each `#[rust_js::name]` of the crate gives a name its item

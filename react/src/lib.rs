@@ -1587,6 +1587,9 @@ impl ViewTransitionInstance {
 /// a component's descendants read with [`use_context`], from the nearest
 /// provider above them, or `default` without one.
 #[cfg_attr(rust_js, rust_js::types = "react#Context")]
+// A `thread_local!` of one is capitalized in JS, `ThemeContext` of
+// `THEME_CONTEXT`, as JSX takes a component's name (ADR 0573).
+#[cfg_attr(rust_js, rust_js::component)]
 pub struct Context<T>(PhantomData<JsObject>, PhantomData<T>);
 
 /// [`createContext`](https://react.dev/reference/react/createContext), in a `thread_local!`.
@@ -1645,6 +1648,9 @@ impl<T: 'static, R: ReactNode, F: Fn(&'static T) -> R + 'static> ComponentType<C
 /// A component that [`memo`] made: React skips rendering it again while its
 /// props are the same as last time.
 #[cfg_attr(rust_js, rust_js::types = "react#NamedExoticComponent")]
+// A `thread_local!` of one is capitalized in JS, `ThemeContext` of
+// `THEME_CONTEXT`, as JSX takes a component's name (ADR 0573).
+#[cfg_attr(rust_js, rust_js::component)]
 pub struct MemoExoticComponent<P>(PhantomData<JsObject>, PhantomData<P>);
 
 /// [`memo`](https://react.dev/reference/react/memo), in a `thread_local!`.
@@ -1660,6 +1666,9 @@ pub struct Memoized;
 impl<P> ComponentType<P, Memoized> for &'static LocalKey<MemoExoticComponent<P>> {}
 
 /// A component [`lazy`] loads the first time it renders.
+// A `thread_local!` of one is capitalized in JS, `ThemeContext` of
+// `THEME_CONTEXT`, as JSX takes a component's name (ADR 0573).
+#[cfg_attr(rust_js, rust_js::component)]
 pub struct LazyExoticComponent<P>(PhantomData<JsObject>, PhantomData<P>);
 
 /// A JS module whose default export is a component taking `P`, as
@@ -1697,6 +1706,9 @@ pub struct Loaded;
 impl<P> ComponentType<P, Loaded> for &'static LocalKey<LazyExoticComponent<P>> {}
 
 /// A component that [`forward_ref`] made: its parent's `ref` reaches it.
+// A `thread_local!` of one is capitalized in JS, `ThemeContext` of
+// `THEME_CONTEXT`, as JSX takes a component's name (ADR 0573).
+#[cfg_attr(rust_js, rust_js::component)]
 pub struct ForwardRefExoticComponent<P, H>(PhantomData<JsObject>, PhantomData<(P, H)>);
 
 /// [`forwardRef`](https://react.dev/reference/react/forwardRef), in a
@@ -1731,6 +1743,9 @@ impl<P, H> ComponentType<P, Forwarded> for &'static LocalKey<ForwardRefExoticCom
 /// library's function made, as next/router's `withRouter` does: in a
 /// `thread_local!`, rendered as its tag.
 #[cfg_attr(rust_js, rust_js::types = "react#ComponentType")]
+// A `thread_local!` of one is capitalized in JS, `ThemeContext` of
+// `THEME_CONTEXT`, as JSX takes a component's name (ADR 0573).
+#[cfg_attr(rust_js, rust_js::component)]
 pub struct ComponentValue<P>(PhantomData<JsObject>, PhantomData<P>);
 
 pub struct Made;

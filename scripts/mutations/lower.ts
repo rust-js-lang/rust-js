@@ -306,4 +306,12 @@ export const mutations: Mutation[] = [
     replace: "            _ if def_id.is_local() && self.tcx.generics_of(def_id).count() > 0 => self.crate_const_as_code(def_id, args),\n",
     tests: ["test/corpus.test.ts", "-t", "^pointer_constants.rs$"],
   },
+  {
+    name: "variable-case-unlowered",
+    breaks: "a thread-local's words stay uppercase, `TASKQueue`",
+    file: "src/lower.rs",
+    find: "    words_joined(name, |word| word.to_ascii_lowercase())\n",
+    replace: "    words_joined(name, |word| word.to_string())\n",
+    tests: ["test/lowering.test.ts", "-t", "thread-local's SCREAMING_SNAKE"],
+  },
 ];
