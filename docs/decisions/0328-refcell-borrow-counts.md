@@ -132,3 +132,16 @@ try {
 it, else that it's locked, a `Mutex`'s as std's quotes it, `"<locked>"`,
 an `RwLock`'s bare, `<locked>`; never poisoned, as rust-js's never are
 (`$showLocked`, `lock_debug`).
+
+## Amendment: a guard of a type parameter derefs to its cell
+
+`guard_value` gave a `RefMut`'s cell only where what it guards is
+boxable, its `value` otherwise. Of a type parameter's, `RefMut<A>`, it
+gave `guard.value`, which the `&mut A` a `&mut self` method is given is
+read through again, as a box: `{ value: guard.value.value }`, `undefined`
+of an object (#104). A type parameter's `&mut` is read through its
+`value`, as a box's is, so its guard derefs to the cell too, and the
+method is given `{ value: guard.value }`, written back after. ADR 0262's
+case: it threw, so Rust's. Held by
+`test/corpus/refcell_generic_mut_method.rs` and the mutation
+`guard-of-type-parameter-held`.

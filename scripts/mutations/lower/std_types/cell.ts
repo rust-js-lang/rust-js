@@ -54,7 +54,7 @@ export const mutations: Mutation[] = [
     name: "guard-value-unboxed",
     breaks: "`*m.lock().unwrap() += 2` of a number writes a copy",
     file: "src/lower/std_types/cell.rs",
-    find: "        match self.cell_dyn_trait(guarded).is_some() || (mutable && self.is_boxable(guarded)) {",
+    find: "        match self.cell_dyn_trait(guarded).is_some()\n            || (mutable && (self.is_boxable(guarded) || self.is_unknown(guarded)))\n        {",
     replace: "        match self.cell_dyn_trait(guarded).is_some() {",
     tests: ["test/corpus.test.ts", "-t", "^locks"],
   },
@@ -118,8 +118,8 @@ export const mutations: Mutation[] = [
     name: "dyn-cell-guard-value",
     breaks: "a `RefCell<dyn T>`'s guard derefs to its `value`, not the pair it is",
     file: "src/lower/std_types/cell.rs",
-    find: "        match self.cell_dyn_trait(guarded).is_some() || (mutable && self.is_boxable(guarded)) {\n",
-    replace: "        match mutable && self.is_boxable(guarded) {\n",
+    find: "        match self.cell_dyn_trait(guarded).is_some()\n            || (mutable",
+    replace: "        match false\n            || (mutable",
     tests: ["test/corpus.test.ts", "-t", "^dyn_ref_cells.rs$"],
   },
   {
@@ -171,5 +171,13 @@ export const mutations: Mutation[] = [
     find: "                if self.is_std_type(held, StdItem::RefCell) && !self.plain_ref_cell(held) {\n",
     replace: "                if self.is_std_type(held, StdItem::RefCell) {\n",
     tests: ["test/lowering.test.ts", "-t", "written by replace and take"],
+  },
+  {
+    name: "guard-of-type-parameter-held",
+    breaks: "a `RefMut` of a type parameter derefs to its cell's `value`, which a `&mut` of the type parameter is read through again, `guard.value.value`",
+    file: "src/lower/std_types/cell.rs",
+    find: "(mutable && (self.is_boxable(guarded) || self.is_unknown(guarded)))",
+    replace: "(mutable && self.is_boxable(guarded))",
+    tests: ["test/corpus.test.ts", "-t", "^refcell_generic_mut_method.rs$"],
   },
 ];
