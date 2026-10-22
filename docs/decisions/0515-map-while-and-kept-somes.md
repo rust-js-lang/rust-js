@@ -35,3 +35,11 @@ its `Some` is one.
 - `dyn_any_generic`'s `filter_map` of a type parameter takes its items out
   of their boxes.
 - Mutations refuse `map_while`, hold no source, and keep the boxes.
+
+## Amendment: `flatten` of `Option`s takes each `Some` out of its box
+
+`flatten` of `Option<Option<T>>` items, or of `Option<()>`'s, dropped the
+`None`s but kept each `Some(None)` boxed, `$some(undefined)`, which showed
+as `Some([object Object])` and wasn't `None` (#145). It takes each out of
+its box as `filter_map` does, `.map($someValue)`, through a reference too.
+Held by `test/corpus/flatten_boxed_options.rs`.

@@ -268,9 +268,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
             }
             // Of `Option`s, through a reference too, `iter()`'s `&Some(x)`,
-            // which is `x`: the `Some`s.
+            // which is `x`: the `Some`s, each taken out of its box where it
+            // looks like `None` (ADR 0515).
             IterComb::Flatten => match item_ty() {
-                Some(item) if self.option_of(item.peel_refs()).is_some() => method(items, "filter", vec![present()]),
+                Some(item) if let Some(payload) = self.option_of(item.peel_refs()) => {
+                    unboxed(method(items, "filter", vec![present()]), Some(payload))
+                }
                 // Of what owns items with a destructor, each closed (ADR 0510).
                 Some(item) if let Some(each) = self.closed_inner(None, item, span)? => {
                     self.flat_mapped(items, each, receiver_ty, span)?

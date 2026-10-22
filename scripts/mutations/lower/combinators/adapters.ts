@@ -14,8 +14,8 @@ export const mutations: Mutation[] = [
     name: "flatten-of-option-refs-flat",
     breaks: "`parts.iter().flatten()` of `&[Option<&str>]` is `parts.flat()`, which keeps the `None`s: `\"a  b \"`",
     file: "src/lower/combinators/adapters.rs",
-    find: "Some(item) if self.option_of(item.peel_refs()).is_some() =>",
-    replace: "Some(item) if self.option_of(item).is_some() =>",
+    find: "Some(item) if let Some(payload) = self.option_of(item.peel_refs()) =>",
+    replace: "Some(item) if let Some(payload) = self.option_of(item) =>",
     tests: ["test/corpus.test.ts", "-t", "iter_flatten"],
   },
   {
@@ -225,5 +225,13 @@ export const mutations: Mutation[] = [
     find: "            || crate::lower::recognition::is_text_escape(self.tcx, inner)\n",
     replace: "            || false\n",
     tests: ["test/corpus.test.ts", "-t", "^escape_iterators.rs$"],
+  },
+  {
+    name: "flatten-some-boxed",
+    breaks: "`flatten` of `Option<Option<T>>` items keeps each `Some(None)` boxed, `Some([object Object])`",
+    file: "src/lower/combinators/adapters.rs",
+    find: "                    unboxed(method(items, \"filter\", vec![present()]), Some(payload))\n",
+    replace: "                    unboxed(method(items, \"filter\", vec![present()]), None.filter(|_: &Ty<'tcx>| payload == payload))\n",
+    tests: ["test/corpus.test.ts", "-t", "^flatten_boxed_options.rs$"],
   },
 ];
