@@ -150,4 +150,12 @@ export const mutations: Mutation[] = [
     replace: "        if js::mentions_in(body, &name) == usize::from(assigned) {\n",
     tests: ["test/corpus.test.ts", "-t", "^(drop_functions|std_odds|associated_type_drops|and_value_drops).rs$"],
   },
+  {
+    name: "checked-set-failure-dropped",
+    breaks: "a check and a set merged, `xs[$at(xs, i)] = v`, lose the `VecDeque`'s message the check had",
+    file: "src/lower/mir/tidy/values.rs",
+    find: "            let at = [vec![items.clone(), index.clone()], failure.to_vec()].concat();",
+    replace: "            let at = vec![items.clone(), index.clone()];",
+    tests: ["test/corpus.test.ts", "-t", "^deque_write_out_of_bounds.rs$"],
+  },
 ];

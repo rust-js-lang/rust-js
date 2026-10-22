@@ -184,7 +184,8 @@ pub(super) fn passed_on(e: &mut Expr, forwarding: &[js::Span]) {
 }
 
 /// `$index(xs, i); xs[i] = v;`, an element's place MIR checks, then sets:
-/// `xs[$at(xs, i)] = v;`, the place `$at` checks. `v` is made before
+/// `xs[$at(xs, i)] = v;`, the place `$at` checks, with the message `$index`
+/// was given. `v` is made before
 /// either, as Rust makes it.
 pub(super) fn checked_sets(stmts: &mut Vec<Stmt>) {
     let mut i = 0;
@@ -192,16 +193,15 @@ pub(super) fn checked_sets(stmts: &mut Vec<Stmt>) {
         if let StmtKind::Expr(check) = &stmts[i].kind
             && let ExprKind::Call(f, args) = &check.kind
             && f.helper_name() == Some("$index")
-            && let [items, index] = &args[..]
+            && let [items, index, failure @ ..] = &args[..]
             && let StmtKind::Assign(target, _) = &stmts[i + 1].kind
             && let ExprKind::Index(of, at) = &target.kind
             && js::same_path(of, items)
             && (js::same_path(at, index) || at.as_int().is_some() && at.as_int() == index.as_int())
         {
-            let checked = Expr::index(
-                items.clone(),
-                Expr::call_helper("$at", vec![items.clone(), index.clone()]),
-            );
+            // A `VecDeque`'s message, `failure`, with it.
+            let at = [vec![items.clone(), index.clone()], failure.to_vec()].concat();
+            let checked = Expr::index(items.clone(), Expr::call_helper("$at", at));
             if let StmtKind::Assign(target, _) = &mut stmts[i + 1].kind {
                 *target = Expr {
                     span: target.span,

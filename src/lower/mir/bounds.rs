@@ -59,7 +59,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         &mut self,
         state: &mut State<'_, 'tcx>,
         known: Std,
-        (def_id, output): (rustc_span::def_id::DefId, ty::Ty<'tcx>),
+        (def_id, output, items_ty): (rustc_span::def_id::DefId, ty::Ty<'tcx>, ty::Ty<'tcx>),
         values: Vec<Value<'tcx>>,
         span: Span,
         out: &mut Vec<Stmt>,
@@ -87,7 +87,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 self.spill("index", index, out)
             };
             if checked {
-                let check = Expr::call(Expr::helper("$index"), vec![items.clone(), index.clone()]);
+                let check = self.index_checked(items.clone(), index.clone(), items_ty);
                 out.push(StmtKind::Expr(check).at(self.js_span(span)));
             }
             return Ok(Value::Ref(Expr::index(items, index)));

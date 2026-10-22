@@ -153,7 +153,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Expr::member(items, "length")
             }
             Std::Len => Expr::member(arg(), "length"),
-            Std::Index => Expr::call(Expr::helper("$index"), vec![arg(), arg()]),
+            Std::Index => {
+                let (items, index) = (arg(), arg());
+                self.index_checked(items, index, tys[0])
+            }
             // Of items with a destructor, each dropped once it's out, as
             // `truncate` drops them (ADR 0098).
             Std::Clear => match self.items_drop(tys[0], span)? {
@@ -169,5 +172,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             _ => return Ok(None),
         }))
+    }
+}
+
+impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// `items[index]` of a `Vec`, a slice or a `VecDeque` of type `items_ty`,
+    /// checked: `$index(items, index)`, which panics as a slice's index does,
+    /// and of a `VecDeque`, with its own message, `out of bounds access`.
+    pub(in crate::lower) fn index_checked(&self, items: Expr, index: Expr, items_ty: ty::Ty<'tcx>) -> Expr {
+        let mut args = vec![items, index];
+        if self.is_std_type(items_ty.peel_refs(), crate::lower::recognition::StdItem::VecDeque) {
+            args.push(Expr::str("out of bounds access"));
+        }
+        Expr::call(Expr::helper("$index"), args)
     }
 }

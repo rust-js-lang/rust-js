@@ -64,3 +64,18 @@ we read. We have to add them back ourselves.
   `panic!()` "explicit panic", as Rust's hook shows them. Another payload,
   `panic!(5)`, has no message in Rust, and is rejected. rustc's own tests
   panic so in 72 of them (`begin_panic_*.rs`).
+
+## Amendment: a `VecDeque`'s index past its end
+
+A `VecDeque`'s index is std's `self.get(index).expect("out of bounds
+access")`, but it was `$index(d, i)`, a slice's, which panics `index out
+of bounds: the len is .. but the index is ..` (#114). `index_checked` is
+the one place a checked index is written: of a `VecDeque`, `$index(d, i,
+"out of bounds access")`, the message `$index` and `$at` throw where
+they're given one; `checked_sets` keeps it when it merges a check and a
+set into `d[$at(d, i, ..)] = v`. `$index` stays the one helper of an
+index place. ADR 0262's case: a panic's message is what a program sees.
+Held by `test/corpus/deque_index_out_of_bounds.rs` and
+`deque_write_out_of_bounds.rs`, and the mutations `deque-index-as-slice`,
+`index-failure-unread`, `at-failure-unread` and
+`checked-set-failure-dropped`.

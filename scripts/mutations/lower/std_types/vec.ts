@@ -75,4 +75,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^generic_rc_drops.rs$"],
   },
+  {
+    name: "deque-index-as-slice",
+    breaks: "a `VecDeque`'s index past its end panics with a slice's message, `index out of bounds: the len is ..`, not `out of bounds access`",
+    file: "src/lower/std_types/vec.rs",
+    find: "        if self.is_std_type(items_ty.peel_refs(), crate::lower::recognition::StdItem::VecDeque) {",
+    replace: "        if false {",
+    tests: ["test/corpus.test.ts", "-t", "^deque_index_out_of_bounds.rs$"],
+  },
 ];

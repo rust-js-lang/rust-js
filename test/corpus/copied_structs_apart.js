@@ -41,7 +41,7 @@ function main() {
   );
   $index(small, 0).x = 6;
   const queue = points.map((item) => ({ ...item }));
-  $index(queue, 0).x = 7;
+  $index(queue, 0, "out of bounds access").x = 7;
   console.log(`[${points.map((item) => pointDebug_fmt(item)).join(", ")}]`);
 
   const extended = [];

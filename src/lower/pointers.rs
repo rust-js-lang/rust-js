@@ -670,7 +670,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // the object is equal to it, where the object is the item.
         match place.kind {
             js::ExprKind::Index(object, index) => return Ok(handle(*object, *index, None)),
-            js::ExprKind::Call(ref callee, ref args) if callee.helper_name() == Some("$index") && args.len() == 2 => {
+            js::ExprKind::Call(ref callee, ref args) if callee.helper_name() == Some("$index") && args.len() >= 2 => {
                 let (items, index) = (args[0].clone(), args[1].clone());
                 return Ok(handle(items, index, None));
             }
