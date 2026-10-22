@@ -687,4 +687,12 @@ export const mutations: Mutation[] = [
     replace: "                    Some((pointee, _)) if false && self.compared_by_address(arg_tys[0]) => {",
     tests: ["test/corpus.test.ts", "-t", "^ptr_eq_through_refs.rs$"],
   },
+  {
+    name: "next-if-some-unboxed",
+    breaks: "`next_if` of items that may look like `None` gives a `None` item as `None` itself, where it's `Some(None)`",
+    file: "src/lower/mir/std_calls.rs",
+    find: "if boxed { \"$nextIfSome\" } else { \"$nextIf\" }",
+    replace: "\"$nextIf\"",
+    tests: ["test/corpus.test.ts", "-t", "^boxed_option_results.rs$"],
+  },
 ];

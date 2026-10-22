@@ -714,7 +714,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// `value`, an `item`, as an `Option` of it holds it: boxed where it may
     /// look like `None`, `$some(value)` (ADRs 0051, 0486).
-    fn held_in_option(&mut self, value: Expr, item: Ty<'tcx>) -> Expr {
+    pub(in crate::lower) fn held_in_option(&mut self, value: Expr, item: Ty<'tcx>) -> Expr {
         match self.boxed_payload(item) {
             true => self.some(value),
             false => value,

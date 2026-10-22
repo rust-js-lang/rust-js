@@ -165,3 +165,15 @@ compares by which object each is: never `true`, where Rust's is. An
 `Some` is its payload, by `==`, as before. A corpus case,
 `option_boxed_eq`, holds it against native Rust. Case C: results would
 change.
+
+## Amendment: more of what gives an `Option` of what looks like `None`
+
+Each call that gives an `Option` boxes a `Some` that could look like
+`None`, or is refused (`refuses_boxed_option`). More box it now (#146):
+`Result::err()`, as `ok()` does; `nth`, `.map($some)` of the one item it
+takes; a `Peekable`'s `next_if`, `$nextIfSome`, its test given the item
+unboxed; and a `BTreeSet`'s `first`, `last`, `pop_first` and `pop_last`,
+`$treeEnd`'s `boxed`. And more give the value as it's given, boxed
+already: `xor`, `map_or` and `map_or_else`, and `mem::take` and
+`mem::replace`, a place's old value. Held by
+`test/corpus/boxed_option_results.rs`.

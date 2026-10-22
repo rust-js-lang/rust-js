@@ -340,21 +340,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             | Std::Comb(Comb::Then | Comb::ThenSome)
             // An `Option` of the same type, or the closure's own, `find_map`'s
             // too, one of what its function gives.
-            | Std::Comb(Comb::Filter | Comb::Or | Comb::OrElse | Comb::AndThen | Comb::And)
-            | Std::IterComb(crate::lower::combinators::IterComb::FindMap)
+            | Std::Comb(Comb::Filter | Comb::Or | Comb::OrElse | Comb::AndThen | Comb::And | Comb::Xor)
+            // The fallback's, or the function's, as each is given.
+            | Std::Comb(Comb::MapOr | Comb::MapOrElse)
+            | Std::IterComb(crate::lower::combinators::IterComb::FindMap | crate::lower::combinators::IterComb::Nth)
             | Std::Last
             // What a pointer points to, boxed as it's given (ADR 0407).
             | Std::Pointer(PointerOp::AsRef | PointerOp::AsMut)
             // A map's value it had, or has, boxed by `$insert`, `$remove`, `$someGet`.
             | Std::Map(MapOp::Get | MapOp::Insert | MapOp::Remove)
+            // A set's end, boxed by `$treeEnd`, or a map's, a pair.
+            | Std::Map(MapOp::TreeEnd { .. })
             // `as_ref()`: the same value, box and all.
             | Std::Pointee
             | Std::ResultOk
+            | Std::Comb(Comb::Err)
             // A downcast's `Some`, boxed as it's made (ADR 0331).
             | Std::Any(AnyOp::DowncastRef | AnyOp::DowncastMut)
             | Std::ArrayMethod("find")
             | Std::Extreme(_)
-            | Std::Step(StepOp::Next | StepOp::Peek)
+            | Std::Step(StepOp::Next | StepOp::Peek | StepOp::NextIf)
             // The old value, as it's kept: boxed already, a cell's too (ADR 0537).
             | Std::CellTake
             | Std::CellReplace
@@ -365,6 +370,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             | Std::Once(OnceOp::Get | OnceOp::Take)
             | Std::Lazy(LazyOp::Get)
             | Std::OptionReplace
+            // A place's old value, as it's kept, `mem::take`'s and `mem::replace`'s.
+            | Std::MemTake
+            | Std::Replace
             // The inner `Option`, box and all.
             | Std::OptionFlatten
             // What a `Some` or an `Ok` holds, an `Option` itself, as it's

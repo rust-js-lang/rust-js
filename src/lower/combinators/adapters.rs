@@ -410,9 +410,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 );
                 method(items, "reduce", vec![f, num.literal(1)])
             }
+            // Its `Some` boxed where the item looks like `None` (ADR 0051).
             IterComb::Nth => {
                 let n = next();
-                let first = method(method(items, "drop", vec![n]), "take", vec![Expr::int(1)]);
+                let mut first = method(method(items, "drop", vec![n]), "take", vec![Expr::int(1)]);
+                if item_ty().is_some_and(|item| self.boxed_payload(item)) {
+                    first = method(first, "map", vec![Expr::helper("$some")]);
+                }
                 Expr::index(method(first, "toArray", Vec::new()), Expr::int(0))
             }
             IterComb::Inspect => {

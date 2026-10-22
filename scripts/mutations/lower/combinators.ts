@@ -469,4 +469,12 @@ export const mutations: Mutation[] = [
     replace: "    (mentions <= 1).then_some(applied)\n",
     tests: ["test/lowering-options.test.ts", "-t", "is_some_and of an equality"],
   },
+  {
+    name: "err-some-unboxed",
+    breaks: "`err()` of a `Result<_, ()>` is the error itself, `undefined`, so `Some(())` is `None`",
+    file: "src/lower/combinators.rs",
+    find: "                let error = self.held_in_option(inside(), generic_args.type_at(1));\n                Expr::cond(",
+    replace: "                let error = inside();\n                Expr::cond(",
+    tests: ["test/corpus.test.ts", "-t", "^boxed_option_results.rs$"],
+  },
 ];

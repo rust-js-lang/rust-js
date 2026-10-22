@@ -22,8 +22,8 @@ export const mutations: Mutation[] = [
     name: "boxed-filter-refused",
     breaks: "`filter` of an `Option` of an `Option` is an error, where it keeps its own box",
     file: "src/lower/std_types/values.rs",
-    find: "            | Std::Comb(Comb::Filter | Comb::Or | Comb::OrElse | Comb::AndThen | Comb::And)\n",
-    replace: "            | Std::Comb(Comb::Or | Comb::OrElse | Comb::AndThen | Comb::And)\n",
+    find: "            | Std::Comb(Comb::Filter | Comb::Or | Comb::OrElse | Comb::AndThen | Comb::And | Comb::Xor)\n",
+    replace: "            | Std::Comb(Comb::Or | Comb::OrElse | Comb::AndThen | Comb::And | Comb::Xor)\n",
     tests: ["test/corpus.test.ts","-t","nested_options"],
   },
   {
@@ -366,8 +366,8 @@ export const mutations: Mutation[] = [
     name: "find-map-boxed-refused",
     breaks: "`find_map` of a function giving an `Option` of what could look like `None` is refused",
     file: "src/lower/std_types/values.rs",
-    find: "            | Std::IterComb(crate::lower::combinators::IterComb::FindMap)\n",
-    replace: "",
+    find: "            | Std::IterComb(crate::lower::combinators::IterComb::FindMap | crate::lower::combinators::IterComb::Nth)\n",
+    replace: "            | Std::IterComb(crate::lower::combinators::IterComb::Nth)\n",
     tests: ["test/corpus.test.ts", "-t", "^back_steps.rs$"],
   },
   {
@@ -422,8 +422,8 @@ export const mutations: Mutation[] = [
     name: "boxed-and-refused",
     breaks: "`and` of a type parameter's `Option` is refused, its box taken for none",
     file: "src/lower/std_types/values.rs",
-    find: "            | Std::Comb(Comb::Filter | Comb::Or | Comb::OrElse | Comb::AndThen | Comb::And)\n",
-    replace: "            | Std::Comb(Comb::Filter | Comb::Or | Comb::OrElse | Comb::AndThen)\n",
+    find: "            | Std::Comb(Comb::Filter | Comb::Or | Comb::OrElse | Comb::AndThen | Comb::And | Comb::Xor)\n",
+    replace: "            | Std::Comb(Comb::Filter | Comb::Or | Comb::OrElse | Comb::AndThen | Comb::Xor)\n",
     tests: ["test/corpus.test.ts", "-t", "^and_value_drops.rs$"],
   },
   {
@@ -641,5 +641,13 @@ export const mutations: Mutation[] = [
     find: "                    | Std::Slice(SliceOp::SwapWithSlice)\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^swap_with_slice_drops.rs$"],
+  },
+  {
+    name: "mem-take-boxed-option-refused",
+    breaks: "`mem::take` and `mem::replace` of an `Option<Option<i32>>` are refused, though each gives the old value as it's kept, boxed already",
+    file: "src/lower/std_types/values.rs",
+    find: "            | Std::MemTake\n            | Std::Replace\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^boxed_option_results.rs$"],
   },
 ];

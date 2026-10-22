@@ -404,9 +404,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             _ => Vec::new(),
         };
         // An item a set gives back, or `None`: refused where it could look
-        // like `None` (ADR 0051).
-        let gives_item = matches!(op, MapOp::SetGet | MapOp::SetTake | MapOp::SetReplace)
-            || matches!(op, MapOp::TreeEnd { .. }) && set;
+        // like `None` (ADR 0051), but a B-tree's end, which `$treeEnd` boxes.
+        let gives_item = matches!(op, MapOp::SetGet | MapOp::SetTake | MapOp::SetReplace);
         if gives_item && types.first().is_some_and(|&item| self.boxed_payload(item)) {
             return Err(self.unsupported(span, &format!("an item of a `{receiver}` that could look like `None`")));
         }
@@ -507,10 +506,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             MapOp::Disjoint => map_ops("$isDisjoint", vec![arg(), arg()]),
             MapOp::TreeEnd { last, pop } => {
                 let cmp = cmp.expect("a B-tree's order");
-                map_ops(
-                    "$treeEnd",
-                    vec![arg(), cmp, Expr::bool(last), Expr::bool(set), Expr::bool(pop)],
-                )
+                let mut list = vec![arg(), cmp, Expr::bool(last), Expr::bool(set), Expr::bool(pop)];
+                // A set's item that may look like `None`, boxed (ADR 0051).
+                if set && types.first().is_some_and(|&item| self.boxed_payload(item)) {
+                    list.push(Expr::bool(true));
+                }
+                map_ops("$treeEnd", list)
             }
             MapOp::TreeSplitOff => {
                 let (m, key) = (arg(), arg());

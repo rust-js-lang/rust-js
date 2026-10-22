@@ -6,3 +6,11 @@ function $nextIf(peekable, f) {
   peekable.peeked = $some(item);
   return undefined;
 }
+// Of items that may look like `None`, `Option`s: each boxed (ADR 0051),
+// `f` given it unboxed.
+function $nextIfSome(peekable, f) {
+  const item = $nextSome(peekable);
+  if (item !== undefined && f($someValue(item))) return item;
+  peekable.peeked = $some(item);
+  return undefined;
+}

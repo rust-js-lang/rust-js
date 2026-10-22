@@ -3562,7 +3562,8 @@ export function $setReplace(s, x) {
 
 // A B-tree's first or last entry, `[key, value]`, or a set's item, by its
 // keys' order `cmp`; `undefined` where it's empty. `pop`: taken out too.
-export function $treeEnd(m, cmp, last, set, pop) {
+// `boxed`: a set's item that may look like `None`, boxed (ADR 0051).
+export function $treeEnd(m, cmp, last, set, pop, boxed = false) {
   let found;
   let seen = false;
   for (const entry of m) {
@@ -3574,7 +3575,7 @@ export function $treeEnd(m, cmp, last, set, pop) {
     }
   }
   if (pop && seen) m.delete(set ? found : found[0]);
-  return found;
+  return seen && boxed ? $some(found) : found;
 }
 
 // `m.range(..)` of a B-tree: its entries, or items, whose keys are in the
@@ -8086,6 +8087,14 @@ export function $peekableHint(peekable, iterator) {
 export function $nextIf(peekable, f) {
   const item = $next(peekable);
   if (item !== undefined && f(item)) return item;
+  peekable.peeked = $some(item);
+  return undefined;
+}
+// Of items that may look like `None`, `Option`s: each boxed (ADR 0051),
+// `f` given it unboxed.
+export function $nextIfSome(peekable, f) {
+  const item = $nextSome(peekable);
+  if (item !== undefined && f($someValue(item))) return item;
   peekable.peeked = $some(item);
   return undefined;
 }

@@ -355,4 +355,12 @@ export const mutations: Mutation[] = [
     replace: "                Some(_) => None,\n",
     tests: ["test/corpus.test.ts", "-t", "^map_collect_drops.rs$"],
   },
+  {
+    name: "tree-end-item-unboxed",
+    breaks: "`first()` of a `BTreeSet<Option<i32>>` whose first is `None` gives `None`, where it's `Some(None)`",
+    file: "src/lower/std_types/map.rs",
+    find: "                if set && types.first().is_some_and(|&item| self.boxed_payload(item)) {\n",
+    replace: "                if false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^boxed_option_results.rs$"],
+  },
 ];

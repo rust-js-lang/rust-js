@@ -583,14 +583,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let given_up = (inside(), generic_args.type_at(1));
                 self.kept_or(tag(true), inside(), given_up, fallback, span, out)?
             }
-            // An `Ok` with a destructor is dropped (ADR 0179).
+            // An `Ok` with a destructor is dropped (ADR 0179). Its `Some` is
+            // boxed where the error looks like `None`, `()` say, as `ok()`'s
+            // is (ADR 0051).
             Comb::Err if self.drops(generic_args.type_at(0)) != Drops::Nothing => {
                 let name = self.fresh("error");
-                let then = vec![StmtKind::Assign(Expr::var(&name), inside()).at(js::Span::NONE)];
+                let error = self.held_in_option(inside(), generic_args.type_at(1));
+                let then = vec![StmtKind::Assign(Expr::var(&name), error).at(js::Span::NONE)];
                 let value = (inside(), generic_args.type_at(0));
                 self.or_dropped(tag(false), name, then, value, Expr::undefined(), span, out)?
             }
-            Comb::Err => Expr::cond(tag(false), inside(), Expr::undefined()),
+            Comb::Err => {
+                let error = self.held_in_option(inside(), generic_args.type_at(1));
+                Expr::cond(tag(false), error, Expr::undefined())
+            }
             // Rust works out `b` either way: in a `const` first if it has effects.
             // A `Some`'s value `and` gives up is dropped (ADR 0496).
             Comb::And => {
@@ -613,10 +619,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let mut halves = Vec::new();
                 for (i, part) in parts.into_iter().enumerate() {
                     let half = Expr::index(value.clone(), Expr::int(i as i128));
-                    halves.push(match self.boxed_payload(part) {
-                        true => self.some(half),
-                        false => half,
-                    });
+                    halves.push(self.held_in_option(half, part));
                 }
                 Expr::cond(
                     some,
@@ -631,10 +634,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     _ => return Err(self.unsupported(span, "`transpose` of this")),
                 };
                 let ok_value = result::held(value.clone());
-                let ok_value = match self.boxed_payload(ok_ty) {
-                    true => self.some(ok_value),
-                    false => ok_value,
-                };
+                let ok_value = self.held_in_option(ok_value, ok_ty);
                 let is_ok = result::is(value, true);
                 let absent = none();
                 let inner = Expr::cond(is_ok, result::ok(ok_value), subject);

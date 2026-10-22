@@ -814,14 +814,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         Some(item) if self.is_boxable(item) => Expr::call_helper("$peekCell", vec![it]),
                         _ => Expr::call_helper("$peek", vec![it]),
                     },
-                    // Of items that may look like `None`, which the test would
-                    // be given unboxed: refused.
-                    _ if boxed => {
-                        return Err(self.unsupported(span, "`next_if` of items that may be `None`"));
-                    }
+                    // Of items that may look like `None`, each boxed, the
+                    // test given it unboxed.
                     StepOp::NextIf => {
                         let f = exprs.next().expect("a test");
-                        Expr::call_helper("$nextIf", vec![it, f])
+                        Expr::call_helper(if boxed { "$nextIfSome" } else { "$nextIf" }, vec![it, f])
+                    }
+                    _ if boxed => {
+                        return Err(self.unsupported(span, "`next_if_eq` of items that may be `None`"));
                     }
                     _ => {
                         let item = arg_tys[1];

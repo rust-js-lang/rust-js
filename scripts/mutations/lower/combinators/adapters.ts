@@ -234,4 +234,12 @@ export const mutations: Mutation[] = [
     replace: "                    unboxed(method(items, \"filter\", vec![present()]), None.filter(|_: &Ty<'tcx>| payload == payload))\n",
     tests: ["test/corpus.test.ts", "-t", "^flatten_boxed_options.rs$"],
   },
+  {
+    name: "nth-some-unboxed",
+    breaks: "`nth` of items that may look like `None` gives a `None` item as `None` itself, where it's `Some(None)`",
+    file: "src/lower/combinators/adapters.rs",
+    find: "                    first = method(first, \"map\", vec![Expr::helper(\"$some\")]);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^boxed_option_results.rs$"],
+  },
 ];

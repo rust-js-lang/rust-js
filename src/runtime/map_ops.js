@@ -70,7 +70,8 @@ function $setReplace(s, x) {
 
 // A B-tree's first or last entry, `[key, value]`, or a set's item, by its
 // keys' order `cmp`; `undefined` where it's empty. `pop`: taken out too.
-function $treeEnd(m, cmp, last, set, pop) {
+// `boxed`: a set's item that may look like `None`, boxed (ADR 0051).
+function $treeEnd(m, cmp, last, set, pop, boxed = false) {
   let found;
   let seen = false;
   for (const entry of m) {
@@ -82,7 +83,7 @@ function $treeEnd(m, cmp, last, set, pop) {
     }
   }
   if (pop && seen) m.delete(set ? found : found[0]);
-  return found;
+  return seen && boxed ? $some(found) : found;
 }
 
 // `m.range(..)` of a B-tree: its entries, or items, whose keys are in the
