@@ -129,9 +129,9 @@ loop: for (const c of s) {
 
 - Twelve corpus programs, ten snapshots and two of the guide's pages
   write their `match`es of constants as `switch`es. In
-  `docs/readability.txt` the JS is 56 lines longer, 87,095 to 87,151, a
-  `case` a line where a test was one; names given a `$1` shrink, 7,456 to
-  7,452, a temporary of what's matched read in place, `switch (note(2,
+  `docs/readability.txt` the JS is 56 lines longer, 87,390 to 87,446, a
+  `case` a line where a test was one; names given a `$1` shrink, 7,461 to
+  7,457, a temporary of what's matched read in place, `switch (note(2,
   x))`; no shape's share grows.
 - Every statement walker knows a `switch`: its cases are lists of
   statements, as an `if`'s branches are, and a `break` of no label in one
