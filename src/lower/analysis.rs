@@ -360,10 +360,18 @@ pub(super) fn impl_const(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
                 .any(|p| matches!(p.kind, ty::GenericParamDefKind::Type { .. })))
 }
 
+/// Whether `d`, a body's owner, is a constant only rustc evaluates: one in
+/// a type, `FixedOutput<'_, 10>`'s `10` or a const generic's default,
+/// which JS never runs, and which rustc can't typecheck as a body before it
+/// lowers it.
+pub(super) fn is_type_system_const(tcx: TyCtxt<'_>, d: LocalDefId) -> bool {
+    tcx.def_kind(d) == DefKind::AnonConst && tcx.anon_const_kind(d) != ty::AnonConstKind::NonTypeSystemInline
+}
+
 fn inline_consts(tcx: TyCtxt<'_>) -> impl Iterator<Item = LocalDefId> {
     tcx.hir_body_owners().filter(move |&d| {
         tcx.def_kind(d) == DefKind::AnonConst
-            && tcx.anon_const_kind(d) == ty::AnonConstKind::NonTypeSystemInline
+            && !is_type_system_const(tcx, d)
             && !tcx
                 .generics_of(tcx.typeck_root_def_id_local(d))
                 .requires_monomorphization(tcx)

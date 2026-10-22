@@ -56,7 +56,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/branches.rs",
     find: "        && !written(returns, last.span)\n        && !writes_return(std::slice::from_ref(last_if), returns)\n",
     replace: "",
-    tests: ["test/lowering.test.ts","-t","value of two branches is returned"],
+    tests: ["test/lowering.test.ts","-t", "match returns each arm, and its if of two values is one conditional"],
   },
   {
     name: "mir-tidy-let-else-return-nested",
@@ -72,7 +72,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/branches.rs",
     find: "        ExprKind::Var(name) => booleans.contains(name),\n",
     replace: "",
-    tests: ["test/lowering.test.ts","-t","value of two branches is returned"],
+    tests: ["test/lowering.test.ts","-t", "match returns each arm, and its if of two values is one conditional"],
   },
   {
     name: "mir-tidy-truth-uncoerced",
@@ -80,7 +80,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/branches.rs",
     find: "        false => Expr::unary(UnaryOp::Not, Expr::unary(UnaryOp::Not, test)),\n",
     replace: "        false => test,\n",
-    tests: ["test/lowering.test.ts","-t","value of two branches is returned"],
+    tests: ["test/lowering.test.ts","-t", "match returns each arm, and its if of two values is one conditional"],
   },
   {
     name: "mir-tidy-implied-guard-kept",

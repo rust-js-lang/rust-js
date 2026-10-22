@@ -54,7 +54,11 @@ pub(in crate::lower) fn only_called(tcx: TyCtxt<'_>) -> HashMap<DefId, usize> {
     }
     let mut calls: HashMap<DefId, usize> = HashMap::new();
     let mut values: HashSet<DefId> = HashSet::new();
-    for owner in tcx.hir_body_owners() {
+    // Not a constant only rustc evaluates, whose calls JS never makes.
+    for owner in tcx
+        .hir_body_owners()
+        .filter(|&owner| !super::is_type_system_const(tcx, owner))
+    {
         let mut mentions = Mentions {
             typeck: tcx.typeck(owner),
             calls: HashMap::new(),

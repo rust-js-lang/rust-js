@@ -92,3 +92,15 @@ function siftUp(heap, i) {
 - Mutations: a value's name not counted, an exported function trusted, a
   call that tells nothing, a bound not mapped to its parameter, a `pop`
   taken as a `push`, a bound never lowest.
+
+## Amendment: no constant only rustc evaluates
+
+The analysis typechecked every body's owner, a const argument in a
+signature among them, `FixedOutput<'_, 10>`'s `10` in a trait nothing
+implements, which rustc can't typecheck as a body before it lowers it:
+four of rustc's const-generics tests crashed, `type_of` called on an anon
+const too early. It walks no constant only rustc evaluates
+(`analysis::is_type_system_const`, which `inline_consts` asks too): JS
+never runs one, so no call in it reaches a function.
+`test/corpus/const_argument_in_a_signature.rs` holds it; mutation
+`only-called-walks-type-system-consts`.

@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/hints.rs",
     find: "        booleans.retain(|name| !others.contains(name));\n",
     replace: "        booleans.clear();\n",
-    tests: ["test/lowering.test.ts", "-t", "value of two branches is returned"],
+    tests: ["test/lowering.test.ts", "-t", "match returns each arm, and its if of two values is one conditional"],
   },
   {
     name: "mir-captured-booleans-unknown",
