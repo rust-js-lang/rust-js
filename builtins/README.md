@@ -37,7 +37,8 @@ spawn(Box::new(async move {                            // runs, unawaited
   a `Kind` to `match`, by `typeof`; `get(value, key)` and `set(value, key, to)`
   are `value[key]`; `object::keys(value)` is `Object.keys`, and
   `object::has_own_property.call(value, key)` is
-  `Object.prototype.hasOwnProperty.call(value, key)`.
+  `Object.prototype.hasOwnProperty.call(value, key)`; `object::get_prototype_of(value)` is
+  `Object.getPrototypeOf`, and `array::is_array(value)` `Array.isArray`.
 - `Json` is a JSON value, ReScript's `JSON.t`: `Json::parse(text)`, then
   `match`, a `null` the `None` of the `Option` holding it; its objects are
   `Dict<Option<Json>>`. A `Dict<T>` is a plain object of `T`s by name:

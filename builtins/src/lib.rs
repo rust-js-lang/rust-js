@@ -195,6 +195,19 @@ pub enum Kind<'a> {
     Object(&'a Unknown),
 }
 
+/// JS's [`Array`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Array)
+/// functions, for a value an API takes or gives.
+pub mod array {
+    use super::*;
+
+    /// [`Array.isArray(value)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Array/isArray):
+    /// whether `value` is an array, as [`classify`]'s `Kind::Array` tells.
+    #[cfg_attr(rust_js, rust_js::link_name = "Array.isArray")]
+    pub fn is_array(value: Option<&Unknown>) -> bool {
+        unreachable!()
+    }
+}
+
 /// What `value` is: `match classify(value) { Kind::String(s) => .., .. }`,
 /// a `typeof` of it in JS. The value itself.
 #[cfg_attr(rust_js, rust_js::link_name = "this")]
@@ -1234,6 +1247,14 @@ pub mod object {
     #[cfg_attr(rust_js, rust_js::link_name = "Object.fromEntries")]
     #[allow(unused_variables)]
     pub fn from_entries<T>(entries: Vec<(String, T)>) -> &'static JsObject {
+        unreachable!()
+    }
+
+    /// [`Object.getPrototypeOf(value)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object/getPrototypeOf):
+    /// the object `value` inherits from, or `None`, `null`, of one that
+    /// inherits from none, `Object.create(null)`'s.
+    #[cfg_attr(rust_js, rust_js::link_name = "Object.getPrototypeOf")]
+    pub fn get_prototype_of(value: &Unknown) -> Option<&'static Unknown> {
         unreachable!()
     }
 

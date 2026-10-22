@@ -6180,6 +6180,34 @@ pub fn parsed() -> Vec<f64> {
   expect([lib.called(1), lib.parsed(), lib.resetTo(undefined), lib.resetTo(4)]).toEqual([2, [10, 10], -1, 4]);
 });
 
+// ADR 0617: \`Array.isArray\` and \`Object.getPrototypeOf\` are the js crate's,
+// which a module holds as React's shared does, \`const isArrayImpl =
+// Array.isArray\`.
+test("Array.isArray and Object.getPrototypeOf are held as JS holds them", async () => {
+  const dir = fixture("array-object-functions");
+  writeFileSync(join(dir, "lib.rs"), `use js::Unknown;
+
+thread_local! {
+    static IS_ARRAY_IMPL: fn(Option<&Unknown>) -> bool = js::array::is_array;
+    static GET_PROTOTYPE_OF: fn(&Unknown) -> Option<&'static Unknown> = js::object::get_prototype_of;
+}
+
+pub fn listed(a: Option<&Unknown>) -> bool {
+    IS_ARRAY_IMPL.with(|is_array_impl| is_array_impl(a))
+}
+
+pub fn orphan(value: &Unknown) -> bool {
+    GET_PROTOTYPE_OF.with(|get_prototype_of| get_prototype_of(value)).is_none()
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("const isArrayImpl = Array.isArray;");
+  expect(js).toContain("const getPrototypeOf = Object.getPrototypeOf;");
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.listed([1]), lib.listed({}), lib.listed(undefined), lib.orphan(Object.create(null)), lib.orphan({})]).toEqual([true, false, false, true, false]);
+});
+
 // ADR 0615: \`Object.prototype.hasOwnProperty\`, a JS function of its own,
 // called with the object it asks of, \`.call(object, key)\`, as React's
 // shared hasOwnProperty keeps it, \`const hasOwnProperty =

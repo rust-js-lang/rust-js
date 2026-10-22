@@ -549,6 +549,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0614 A match arm's pattern of parts is one test of each](decisions/0614-a-patterns-parts-are-one-test.md)
 - [0615 `Object.prototype.hasOwnProperty` is a function to call with its object](decisions/0615-has-own-property-the-function.md)
 - [0616 An import read only by a `const` is the import by that name](decisions/0616-an-import-read-by-a-const-is-it.md)
+- [0617 `Array.isArray` and `Object.getPrototypeOf` are the js crate's](decisions/0617-array-is-array-and-get-prototype-of.md)
 - [0436 Every `dyn` that's a pair keeps its value's drop, `dyn Send` too](decisions/0436-every-dyn-keeps-its-drop.md)
 - [0437 A scope's drops on a panic are one `try { .. } finally { .. }`](decisions/0437-a-scopes-drops-are-one-finally.md)
 - [0438 An optional prop is given `Some(..)`, or left out](decisions/0438-an-optional-prop-is-given-some.md)
