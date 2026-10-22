@@ -6151,19 +6151,52 @@ unsafe extern "Rust" {
 pub fn valued() -> bool {
     js::is_defined(&ABSENT_VALUE)
 }
+
+#[cfg_attr(rust_js, rust_js::link_name = "rustJsTools.hook")]
+pub fn tool_hook(n: f64) -> f64 {
+    unreachable!()
+}
+
+pub struct Clock(std::marker::PhantomData<js::JsObject>);
+
+impl Clock {
+    #[cfg_attr(rust_js, rust_js::link_name = "now")]
+    pub fn now(&self) -> f64 {
+        unreachable!()
+    }
+}
+
+unsafe extern "Rust" {
+    #[link_name = "rustJsClock"]
+    pub safe static CLOCK: &'static Clock;
+}
+
+pub fn tooled() -> bool {
+    js::is_defined(tool_hook)
+}
+
+pub fn timed() -> bool {
+    js::is_defined(Clock::now)
+}
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain('typeof rustJsPresentHook !== "undefined"');
   expect(js).toContain('typeof RustJsAbsentClass !== "undefined"');
   expect(js).toContain('return typeof rustJsAbsentValue !== "undefined";');
+  // Each part of a path, and a method of a global's type of that global.
+  expect(js).toContain('return typeof rustJsTools !== "undefined" && typeof rustJsTools.hook !== "undefined";');
+  expect(js).toContain('return typeof rustJsClock !== "undefined" && typeof rustJsClock.now !== "undefined";');
   (globalThis as Record<string, unknown>).rustJsPresentHook = (n: number) => n + 1;
   const lib = await import(join(dir, "lib.js"));
-  expect([lib.called(1), lib.made(), lib.valued()]).toEqual([2, false, false]);
+  expect([lib.called(1), lib.made(), lib.valued(), lib.tooled(), lib.timed()]).toEqual([2, false, false, false, false]);
+  (globalThis as Record<string, unknown>).rustJsTools = {};
+  (globalThis as Record<string, unknown>).rustJsClock = { now: () => 1 };
+  expect([lib.tooled(), lib.timed()]).toEqual([false, true]);
 });
 
-// What isn't a global's binding, a closure, or a path from one, has no
-// global to ask of.
+// What isn't a global's binding, a closure or an import, has no global to
+// ask of.
 test("js::is_defined of what isn't a global's binding is refused", () => {
   const dir = fixture("defined-refused");
   const refused = (code: string) => {
@@ -6178,14 +6211,35 @@ test("js::is_defined of what isn't a global's binding is refused", () => {
   // A variable's, or the crate's own static's, which are there.
   expect(refused("pub fn ask() -> bool {\n    let n = 1;\n    js::is_defined(&n)\n}\n")).toEqual([false, message]);
   expect(refused("static LIMIT: u32 = 3;\n\npub fn ask() -> bool {\n    js::is_defined(&LIMIT)\n}\n")).toEqual([false, message]);
-  // A path from a global, which may be what the host lacks.
-  expect(refused(`#[cfg_attr(rust_js, rust_js::link_name = "console.log")]
-pub fn log(text: &str) {
+  // A method of a type two globals hold, which says neither.
+  expect(refused(`pub struct Twin(std::marker::PhantomData<js::JsObject>);
+
+impl Twin {
+    #[cfg_attr(rust_js, rust_js::link_name = "tick")]
+    pub fn tick(&self) {
+        unreachable!()
+    }
+}
+
+unsafe extern "Rust" {
+    #[link_name = "rustJsLeft"]
+    pub safe static LEFT: &'static Twin;
+    #[link_name = "rustJsRight"]
+    pub safe static RIGHT: &'static Twin;
+}
+
+pub fn ask() -> bool {
+    js::is_defined(Twin::tick)
+}
+`)).toEqual([false, message]);
+  // An import, which is there or its module doesn't load.
+  expect(refused(`#[cfg_attr(rust_js, rust_js::link_name = "node:path#join")]
+pub fn join(a: &str, b: &str) -> String {
     unreachable!()
 }
 
 pub fn ask() -> bool {
-    js::is_defined(log)
+    js::is_defined(join)
 }
 `)).toEqual([false, message]);
 });

@@ -3,6 +3,30 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "defined-member-refused",
+    breaks: "`js::is_defined(Clock::now)` of a method of a global's type is refused",
+    file: "src/lower/mir/calls.rs",
+    find: "                    self.member_of_global(f)\n",
+    replace: "                    None\n",
+    tests: ["test/lowering.test.ts", "-t", "js::is_defined"],
+  },
+  {
+    name: "defined-path-last-only",
+    breaks: "`js::is_defined(tool_hook)` is `typeof rustJsTools.hook`, which throws where the host lacks `rustJsTools`",
+    file: "src/lower/mir/calls.rs",
+    find: "        Ok(asked.into_iter().reduce(|a, b| Expr::bin(Op::And, a, b)))\n",
+    replace: "        Ok(asked.pop())\n",
+    tests: ["test/lowering.test.ts", "-t", "js::is_defined"],
+  },
+  {
+    name: "defined-member-of-either",
+    breaks: "a method of a type two globals hold asks of the first",
+    file: "src/lower/mir/calls.rs",
+    find: "        let [global] = statics.as_slice() else { return None };\n",
+    replace: "        let [global, ..] = statics.as_slice() else { return None };\n",
+    tests: ["test/lowering.test.ts", "-t", "js::is_defined"],
+  },
+  {
     name: "defined-of-own-function",
     breaks: "`js::is_defined(helper)` of the crate's own function is a `typeof` of it, which is always there",
     file: "src/lower/mir/calls.rs",
@@ -14,8 +38,8 @@ export const mutations: Mutation[] = [
     name: "defined-of-any-name",
     breaks: "`js::is_defined(|| 1)` is a `typeof` of no global, not refused",
     file: "src/lower/mir/calls.rs",
-    find: "            Some(name) if crate::names::is_identifier(&name) => Ok(Some(Expr::bin(\n",
-    replace: "            Some(name) => Ok(Some(Expr::bin(\n",
+    find: "        if parts.is_empty() || !parts.iter().all(|part| crate::names::is_identifier(part)) {\n",
+    replace: "        if parts.is_empty() {\n",
     tests: ["test/lowering.test.ts", "-t", "js::is_defined"],
   },
   {

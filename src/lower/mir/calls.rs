@@ -287,22 +287,80 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let global = args
             .first()
             .and_then(|arg| match *arg.node.ty(&body.local_decls, tcx).kind() {
+                ty::FnDef(f, _) if bindings::is_binding(tcx, f) && bindings::is_method(tcx, f) => {
+                    self.member_of_global(f)
+                }
                 ty::FnDef(f, _) if bindings::is_binding(tcx, f) => bindings::js_path(tcx, f),
                 _ => (self.static_given(body, &arg.node))
                     .filter(|&s| tcx.is_foreign_item(s))
                     .and_then(|s| bindings::js_path(tcx, s)),
             });
-        match global {
-            Some(name) if crate::names::is_identifier(&name) => Ok(Some(Expr::bin(
-                Op::Ne,
-                Expr::unary(js::UnaryOp::Typeof, self.js_ref(&name)),
-                Expr::str("undefined"),
-            ))),
-            _ => Err(self.unsupported(
+        // Each part of its path, `typeof console !== "undefined" && typeof
+        // console.log !== "undefined"`: a host may lack any of them.
+        let parts: Vec<&str> = global
+            .as_deref()
+            .map(|path| path.split('.').collect())
+            .unwrap_or_default();
+        if parts.is_empty() || !parts.iter().all(|part| crate::names::is_identifier(part)) {
+            return Err(self.unsupported(
                 span,
                 "`js::is_defined` of what isn't a JS global's binding, `webapi::message_channel::new`,",
-            )),
+            ));
         }
+        let mut read = self.js_ref(parts[0]);
+        let mut asked = Vec::new();
+        for (k, part) in parts.iter().enumerate() {
+            if k > 0 {
+                read = Expr::member(read, part.to_string());
+            }
+            asked.push(Expr::bin(
+                Op::Ne,
+                Expr::unary(js::UnaryOp::Typeof, read.clone()),
+                Expr::str("undefined"),
+            ));
+        }
+        Ok(asked.into_iter().reduce(|a, b| Expr::bin(Op::And, a, b)))
+    }
+
+    /// `performance.now` of `Performance::now`, a method binding of a type
+    /// one global holds, the one static of its crate of that type (ADR
+    /// 0597): its path, the global's and the method's JS name.
+    fn member_of_global(&self, method: rustc_span::def_id::DefId) -> Option<String> {
+        let tcx = self.tcx;
+        let name = match bindings::js_form(tcx, method) {
+            bindings::JsForm::Call(name) | bindings::JsForm::Get(name) => name,
+            _ => return None,
+        };
+        let sig = tcx
+            .fn_sig(method)
+            .instantiate_identity()
+            .skip_normalization()
+            .skip_binder();
+        let ty::Adt(of, _) = *sig.inputs().first()?.peel_refs().kind() else {
+            return None;
+        };
+        let holds = |id: rustc_span::def_id::DefId| {
+            tcx.def_kind(id)
+                == DefKind::Static {
+                    safety: rustc_hir::Safety::Safe,
+                    mutability: rustc_hir::Mutability::Not,
+                    nested: false,
+                }
+                && matches!(*tcx.type_of(id).instantiate_identity().skip_normalization().peel_refs().kind(),
+                    ty::Adt(held, _) if held.did() == of.did())
+        };
+        let statics: Vec<rustc_span::def_id::DefId> = match of.did().as_local() {
+            Some(_) => (tcx.hir_crate_items(()).foreign_items())
+                .map(|item| item.owner_id.to_def_id())
+                .filter(|&id| holds(id))
+                .collect(),
+            None => (tcx.module_children(of.did().krate.as_def_id()).iter())
+                .filter_map(|child| child.res.opt_def_id())
+                .filter(|&id| holds(id))
+                .collect(),
+        };
+        let [global] = statics.as_slice() else { return None };
+        Some(format!("{}.{name}", bindings::js_path(tcx, *global)?))
     }
 
     /// The static `operand` refers to: `&STATIC`, of a constant, or of the
