@@ -2280,3 +2280,57 @@ pub fn names() -> Names {
   expect(refused.code).not.toBe(0);
   expect(refused.stderr).toContain('rust-js: `sort_index` is `sortIndex` in JS without `#[rust_js::name = "sortIndex"]`: remove it');
 });
+
+// A function's `#[rust_js::nullable]`, alone, is of its result: its `None`
+// is `null`, as a JS caller tests `!== null`, React's scheduler's
+// `peek(taskQueue)`; one made `None` is `null`, `Some(x)` its value, and
+// another `Option` `value ?? null` (ADR 0574). And a type parameter a
+// binding of its bound reads, `T: Node`'s `get sortIndex`, is never
+// nullish: `Some` of one is the value itself, no `$some` (ADR 0574).
+test("a nullable function's None is null, and a binding bound's Some is the value", async () => {
+  const dir = fixture("nullable-result");
+  writeFileSync(join(dir, "lib.rs"), `pub trait Node {
+    #[cfg_attr(rust_js, rust_js::link_name = "get sortIndex")]
+    fn sort_index(&self) -> f64 {
+        unreachable!()
+    }
+}
+
+#[cfg_attr(rust_js, rust_js::nullable)]
+pub fn peek<T: Node>(heap: &[T]) -> Option<&T> {
+    heap.first()
+}
+
+#[cfg_attr(rust_js, rust_js::nullable)]
+pub fn pop<T: Node>(heap: &mut Vec<T>) -> Option<T> {
+    if heap.is_empty() {
+        return None;
+    }
+    let first = heap.remove(0);
+    Some(first)
+}
+
+pub fn smallest<T: Node>(heap: &[T]) -> Option<&T> {
+    heap.iter().min_by(|a, b| a.sort_index().total_cmp(&b.sort_index()))
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("return heap[0] ?? null;");
+  expect(js).toContain("return null;");
+  expect(js).toContain("return first;");
+  expect(js).not.toContain("$some");
+  const lib = await import(join(dir, "lib.js"));
+  const node = { sortIndex: 2, id: 1 };
+  expect([lib.peek([]), lib.peek([node]), lib.pop([]), lib.pop([node])]).toEqual([null, node, null, node]);
+  // Not nullable, its `None` is `undefined`, as every `None` is (ADR 0030).
+  expect(lib.smallest([])).toBeUndefined();
+  writeFileSync(join(dir, "lib.rs"), `#[rust_js::nullable]
+pub fn count() -> u32 {
+    1
+}
+`);
+  const refused = runSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")], root, 60_000);
+  expect(refused.code).not.toBe(0);
+  expect(refused.stderr).toContain("rust-js: `#[rust_js::nullable]` of a function is of its result, which isn't an `Option`");
+});

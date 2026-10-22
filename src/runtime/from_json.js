@@ -1,7 +1,13 @@
 
 // A string's text, a U+FEFF at its start too, which `TextDecoder` would drop
-// as a byte order mark, where serde_json keeps every character.
-const $JSON_UTF8 = new TextDecoder("utf-8", { ignoreBOM: true });
+// as a byte order mark, where serde_json keeps every character. Made when
+// it's first read, not as the package loads: a host without `TextDecoder`,
+// Jest's jsdom, can import any helper (ADR 0574).
+let $jsonUtf8Decoder;
+function $jsonUtf8(bytes) {
+  if ($jsonUtf8Decoder === undefined) $jsonUtf8Decoder = new TextDecoder("utf-8", { ignoreBOM: true });
+  return $jsonUtf8Decoder.decode(bytes);
+}
 const $JSON_POW10 = Array.from({ length: 309 }, (_, i) => Number(`1e${i}`));
 
 // `significand * 10 + digit`, a BigInt once it's past 2^53.

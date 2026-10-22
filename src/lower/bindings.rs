@@ -52,8 +52,16 @@ pub(super) fn validate(tcx: TyCtxt<'_>) -> bool {
             }
         }
         // What `#[rust_js::nullable(..)]` names is a parameter of its own,
-        // an `Option`, whose `None` can be `null`.
+        // an `Option`, whose `None` can be `null`; and alone, its result.
         if matches!(tcx.def_kind(def), DefKind::Fn | DefKind::AssocFn) {
+            let output = tcx.fn_sig(def).skip_binder().skip_binder().output();
+            if nullable_result(tcx, def.to_def_id())
+                && !matches!(output.kind(), ty::Adt(adt, _) if tcx.is_lang_item(adt.did(), LangItem::Option))
+            {
+                let message = "rust-js: `#[rust_js::nullable]` of a function is of its result, which isn't an `Option`";
+                tcx.dcx().span_err(tcx.def_span(def), message);
+                valid = false;
+            }
             let idents = tcx.fn_arg_idents(def.to_def_id());
             let inputs = tcx.fn_sig(def).skip_binder().skip_binder().inputs();
             for name in nullable_params(tcx, def.to_def_id()) {
@@ -589,6 +597,14 @@ pub(super) fn nullable_params(tcx: TyCtxt<'_>, def_id: DefId) -> Vec<Symbol> {
         .flatten()
         .filter_map(|item| item.ident().map(|ident| ident.name))
         .collect()
+}
+
+/// Whether a function says its result's `None` is `null`,
+/// `#[rust_js::nullable]` alone on it, TypeScript's `T | null`, as a JS
+/// caller of it tests `!== null`: React's scheduler's `peek(queue)`.
+pub(super) fn nullable_result(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
+    let path = [Symbol::intern("rust_js"), Symbol::intern("nullable")];
+    tcx.get_attrs_by_path(def_id, &path).any(|attr| attr.is_word())
 }
 
 /// Whether a binding's `index`th parameter, `this` too, is optional,

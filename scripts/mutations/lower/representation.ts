@@ -95,8 +95,8 @@ export const mutations: Mutation[] = [
     name: "concrete-nullish-unboxed",
     breaks: "`Some(None)` of a concrete `Option<Option<i32>>` is `undefined`, and reads as `None`",
     file: "src/lower/representation.rs",
-    find: "        self.is_unknown(self.payload(ty)) || self.can_be_nullish(ty)",
-    replace: "        self.is_unknown(self.payload(ty))",
+    find: "        (self.is_unknown(payload) && !self.read_by_its_bounds(payload)) || self.can_be_nullish(ty)\n",
+    replace: "        (self.is_unknown(payload) && !self.read_by_its_bounds(payload))\n",
     tests: ["test/corpus.test.ts", "-t", "nested_options"],
   },
   {
@@ -516,5 +516,13 @@ export const mutations: Mutation[] = [
     find: "            .filter(|_| self.recognition().uninit_of(ty).is_none())\n",
     replace: "\n",
     tests: ["test/corpus.test.ts", "-t", "box_uninit"],
+  },
+  {
+    name: "binding-bound-some-boxed",
+    breaks: "`Some` of a type parameter a binding of its bound reads is `$some(x)`, though it's never `undefined`",
+    file: "src/lower/representation.rs",
+    find: "        (self.is_unknown(payload) && !self.read_by_its_bounds(payload)) || self.can_be_nullish(ty)\n",
+    replace: "        self.is_unknown(payload) || self.can_be_nullish(ty)\n",
+    tests: ["test/bindings.test.ts", "-t", "a nullable function's None is null"],
   },
 ];

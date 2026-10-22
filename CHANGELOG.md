@@ -767,6 +767,11 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### Changed
 
+- **A function's `#[rust_js::nullable]` is of its result** (ADR 0574): its
+  `None` is `null`, as a JS caller testing `!== null` expects, React's
+  scheduler's `peek(queue)`. `Some` of a type parameter a binding of its
+  bound reads is the value itself, no `$some`; and `@rust-js/runtime`
+  loads in a host without `TextDecoder`, Jest's jsdom.
 - **Every Rust name is camelCase in JS** (ADR 0573): a function, a
   field, a method and a trait's method alike, `first_word` as
   `firstWord`, `sort_index` as `sortIndex`, not React's hooks and props

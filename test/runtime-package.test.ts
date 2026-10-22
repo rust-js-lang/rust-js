@@ -68,6 +68,19 @@ test("the compiler's iterator helpers are $iterator, $intoIter, $cycleOf, $repea
 
 // Each helper is a file of its own, `src/runtime/<name>.js`, that the
 // compiler reads in: JS that parses as JS, and none left behind unread.
+// The package loads in a host with JavaScript's own built-ins and none of
+// the web's: a module that imports `$swap` runs where `TextDecoder`
+// isn't, as React's scheduler's tests run under Jest's jsdom (ADR 0574).
+// What a helper needs of the host it makes when it's first asked.
+test("@rust-js/runtime loads in a host with none of the web's APIs", () => {
+  const web = ["TextDecoder", "TextEncoder", "URL", "URLSearchParams", "fetch", "crypto", "performance", "navigator",
+    "structuredClone", "queueMicrotask", "setTimeout", "setInterval", "atob", "btoa", "Intl", "WebAssembly", "process"];
+  const removed = web.map((name) => `delete globalThis.${name};`).join(" ");
+  const script = `${removed} const runtime = await import(${JSON.stringify(join(root, "runtime/index.js"))}); console.log(Object.keys(runtime).length);`;
+  const count = Number(run([node ?? "node", "--input-type=module", "--eval", script]).trim());
+  expect(count).toBeGreaterThan(300);
+});
+
 test("each helper's file parses as JavaScript, and the compiler reads each", () => {
   const dir = join(root, "src", "runtime");
   const files = readdirSync(dir).filter((file) => file.endsWith(".js"));

@@ -6243,7 +6243,7 @@ export class $JsonReader extends $JsonDecoder {
       if (this.index === bytes.length) throw this.error("EOF while parsing a string");
       const c = bytes[this.index];
       if (c === 34) {
-        text += $JSON_UTF8.decode(bytes.subarray(start, this.index));
+        text += $jsonUtf8(bytes.subarray(start, this.index));
         this.index++;
         return text;
       }
@@ -6251,7 +6251,7 @@ export class $JsonReader extends $JsonDecoder {
         this.index++;
         throw this.error("control character (\\u0000-\\u001F) found while parsing a string");
       }
-      text += $JSON_UTF8.decode(bytes.subarray(start, this.index));
+      text += $jsonUtf8(bytes.subarray(start, this.index));
       this.index++;
       text += this.parseEscape();
       this.escaped = true;
@@ -7525,8 +7525,14 @@ for (const method of [
 }
 
 // A string's text, a U+FEFF at its start too, which `TextDecoder` would drop
-// as a byte order mark, where serde_json keeps every character.
-export const $JSON_UTF8 = new TextDecoder("utf-8", { ignoreBOM: true });
+// as a byte order mark, where serde_json keeps every character. Made when
+// it's first read, not as the package loads: a host without `TextDecoder`,
+// Jest's jsdom, can import any helper (ADR 0574).
+export let $jsonUtf8Decoder;
+export function $jsonUtf8(bytes) {
+  if ($jsonUtf8Decoder === undefined) $jsonUtf8Decoder = new TextDecoder("utf-8", { ignoreBOM: true });
+  return $jsonUtf8Decoder.decode(bytes);
+}
 export const $JSON_POW10 = Array.from({ length: 309 }, (_, i) => Number(`1e${i}`));
 
 // `significand * 10 + digit`, a BigInt once it's past 2^53.

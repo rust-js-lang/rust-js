@@ -181,4 +181,12 @@ export const mutations: Mutation[] = [
     replace: "                    .and_then(|call| self.recognition().own_into_future_given(call))\n                    .filter(|_| false)\n",
     tests: ["test/diagnostics.test.ts", "-t", "an IntoFuture of the crate's given to generic code"],
   },
+  {
+    name: "nullable-result-undefined",
+    breaks: "a `#[rust_js::nullable]` function's `None` it didn't make is `undefined`, which a JS caller's `!== null` takes for a value",
+    file: "src/lower/mir/structure.rs",
+    find: "                        if bindings::nullable_result(self.tcx, state.body.source.def_id())\n",
+    replace: "                        if false && bindings::nullable_result(self.tcx, state.body.source.def_id())\n",
+    tests: ["test/bindings.test.ts", "-t", "a nullable function's None is null"],
+  },
 ];

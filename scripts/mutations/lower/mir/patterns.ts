@@ -74,4 +74,12 @@ export const mutations: Mutation[] = [
       "a string's or-pattern from MIR"
     ]
   },
+  {
+    name: "nullable-result-some-coalesced",
+    breaks: "a `#[rust_js::nullable]` function's `Some(x)` is `x ?? null`, where it's made a value and is one",
+    file: "src/lower/mir/patterns.rs",
+    find: "                    true => true,\n",
+    replace: "                    true => false,\n",
+    tests: ["test/bindings.test.ts", "-t", "a nullable function's None is null"],
+  },
 ];

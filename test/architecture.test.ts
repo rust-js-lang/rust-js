@@ -445,7 +445,7 @@ const mirState: Record<string, string[]> = {
   "src/lower/mir/places.rs": ["binding_var", "body", "branches", "captures", "defaults", "deferred", "in_place", "locals", "named", "pointed"],
   "src/lower/mir/queries.rs": ["body", "borrowed_names", "locals", "own_names"],
   "src/lower/mir/rvalues.rs": ["body", "branches", "locals", "options", "pending", "pointed", "ranges", "writer"],
-  "src/lower/mir/structure.rs": ["at", "awaits", "body", "copy_backs", "deferred", "drops", "graph", "labels", "locals", "pending", "returns", "unwind", "writer", "writes_captured"],
+  "src/lower/mir/structure.rs": ["at", "awaits", "body", "copy_backs", "deferred", "drops", "graph", "labels", "locals", "options", "pending", "returns", "unwind", "writer", "writes_captured"],
   "src/lower/mir/temporaries.rs": ["body", "in_place", "locals", "named", "own_names", "pending", "places", "pointed", "refs", "settled", "unwind"],
 };
 test("each module of mir/ reads only the fields of mir.rs's state it's listed for", () => {

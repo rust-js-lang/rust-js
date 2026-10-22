@@ -266,7 +266,7 @@ class $JsonReader extends $JsonDecoder {
       if (this.index === bytes.length) throw this.error("EOF while parsing a string");
       const c = bytes[this.index];
       if (c === 34) {
-        text += $JSON_UTF8.decode(bytes.subarray(start, this.index));
+        text += $jsonUtf8(bytes.subarray(start, this.index));
         this.index++;
         return text;
       }
@@ -274,7 +274,7 @@ class $JsonReader extends $JsonDecoder {
         this.index++;
         throw this.error("control character (\\u0000-\\u001F) found while parsing a string");
       }
-      text += $JSON_UTF8.decode(bytes.subarray(start, this.index));
+      text += $jsonUtf8(bytes.subarray(start, this.index));
       this.index++;
       text += this.parseEscape();
       this.escaped = true;

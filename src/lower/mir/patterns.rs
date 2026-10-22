@@ -57,7 +57,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// The locals `OptionWrites::null_nones` says: each write a `Some(..)` or a
-    /// `None`, one at least, and each read a nullable field's.
+    /// `None`, one at least, and each read a nullable field's, or a
+    /// `#[rust_js::nullable]` function's result, by its return.
     fn mir_null_nones(&self, body: &mir::Body<'tcx>, locals: &Locals) -> std::collections::HashSet<Local> {
         let mut made: std::collections::HashMap<Local, (usize, bool)> = Default::default();
         let mut given: std::collections::HashMap<Local, usize> = Default::default();
@@ -86,9 +87,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
             }
         }
+        // A `#[rust_js::nullable]` function's result is read by its return.
+        let result = bindings::nullable_result(self.tcx, body.source.def_id());
         (made.into_iter())
             .filter(|&(local, (writes, none))| {
-                none && writes == locals.writes[local] && given.get(&local) == Some(&locals.reads[local])
+                let read = match local == mir::RETURN_PLACE && result {
+                    true => true,
+                    false => given.get(&local) == Some(&locals.reads[local]),
+                };
+                none && writes == locals.writes[local] && read
             })
             .map(|(local, _)| local)
             .collect()

@@ -190,7 +190,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// a `()` or an `Option` itself. `Some` of it is boxed when it does
     /// (ADR 0051).
     pub(super) fn boxed_payload(&self, ty: Ty<'tcx>) -> bool {
-        self.is_unknown(self.payload(ty)) || self.can_be_nullish(ty)
+        let payload = self.payload(ty);
+        (self.is_unknown(payload) && !self.read_by_its_bounds(payload)) || self.can_be_nullish(ty)
+    }
+
+    /// Is `ty` a type parameter a binding of its bound reads, `node.sortIndex`
+    /// of `T: Node` (ADR 0307)? Then a value of it has what's read of it,
+    /// as the binding takes on trust, and is never `undefined` or `null`:
+    /// `Some` of one is the value itself, React's `heap[0]`.
+    pub(super) fn read_by_its_bounds(&self, ty: Ty<'tcx>) -> bool {
+        matches!(ty.kind(), ty::Param(_))
+            && self.typing_env.param_env.caller_bounds().iter().any(|clause| {
+                clause.as_trait_clause().is_some_and(|bound| {
+                    bound.self_ty().skip_binder() == ty
+                        && (self.tcx.associated_items(bound.def_id()).in_definition_order())
+                            .any(|item| item.is_method() && bindings::is_binding(self.tcx, item.def_id))
+                })
+            })
     }
 
     /// Can a `T` be `undefined` or `null` in JS? Then `Option<T>` can't be
@@ -198,7 +214,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(super) fn can_be_nullish(&self, ty: Ty<'tcx>) -> bool {
         let ty = self.payload(ty);
         ty.is_unit()
-            || super::recognition::known_by_bounds(ty)
+            || (super::recognition::known_by_bounds(ty) && !self.read_by_its_bounds(ty))
             || self.option_of(ty).is_some()
             // `undefined` before it's written (ADR 0332).
             || self.recognition().uninit_of(ty).is_some()

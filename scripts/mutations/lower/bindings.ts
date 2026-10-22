@@ -254,4 +254,12 @@ export const mutations: Mutation[] = [
     replace: "            && given == default_name(tcx, def)\n            && false\n",
     tests: ["test/bindings.test.ts", "-t", "a generator's camelCase is the compiler's"],
   },
+  {
+    name: "nullable-result-not-an-option",
+    breaks: "`#[rust_js::nullable]` on a function whose result isn't an `Option` is let through, saying nothing",
+    file: "src/lower/bindings.rs",
+    find: "            if nullable_result(tcx, def.to_def_id())\n",
+    replace: "            if false && nullable_result(tcx, def.to_def_id())\n",
+    tests: ["test/bindings.test.ts", "-t", "a nullable function's None is null"],
+  },
 ];
