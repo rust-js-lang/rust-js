@@ -1,6 +1,7 @@
 /* The rust-js guide's site (ADR 0600): one stylesheet, light and dark. */
 
 :root {
+  color-scheme: light;
   --font: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, "Liberation Mono", monospace;
   --header: 60px;
@@ -19,6 +20,7 @@
   --accent-soft: #fdebdf;
   --link: #b33c0b;
   --shadow: 0 10px 40px rgba(31, 28, 24, 0.14);
+  --scrollbar: #d6cfc3;
 
   --k: #a626a4;
   --s: #2f7a3e;
@@ -34,6 +36,7 @@
 }
 
 :root[data-theme="dark"] {
+  color-scheme: dark;
   --bg: #15130f;
   --bg-soft: #1d1a15;
   --bg-code: #1b1915;
@@ -44,6 +47,7 @@
   --accent-soft: #3a2316;
   --link: #f5a06b;
   --shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+  --scrollbar: #3d382f;
 
   --k: #d68cf2;
   --s: #8fd18d;
@@ -60,6 +64,27 @@
 
 * {
   box-sizing: border-box;
+}
+
+/* Every scrolling pane, the sidebar, contents, code and search, scrolls with
+   one thin bar in the theme's colours. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar) transparent;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--scrollbar);
+  border-radius: 8px;
 }
 
 html {
