@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "binding-value-args-raw",
+    breaks: "a nullable binding as a value is given `undefined`, `(to) => rustJsReset(to)`, where its call gives `null`",
+    file: "src/lower/items.rs",
+    find: "            .map(|(i, (name, &ty))| self.binding_arg(def_id, i, Expr::var(name), ty))\n",
+    replace: "            .map(|(_, (name, _))| Expr::var(name))\n",
+    tests: ["test/lowering.test.ts", "-t", "a binding taken as a fn"],
+  },
+  {
     name: "binding-fn-pointer-arrow",
     breaks: "`const localHook = (n) => rustJsHook(n);` reads the global at each call, so a polyfill set later is called",
     file: "src/lower/items.rs",
@@ -11,19 +19,11 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering.test.ts", "-t", "a binding taken as a fn"],
   },
   {
-    name: "static-getter-value-unsupported",
-    breaks: "a `get X.y` binding without a receiver, as a value, is rejected",
-    file: "src/lower/items.rs",
-    find: "            (JsForm::Get(name), None) if values.is_empty() => self.js_ref(&name),",
-    replace: "            (JsForm::Get(name), None) if false => self.js_ref(&name),",
-    tests: ["test/lowering.test.ts", "-t", "a binding reads a static property"],
-  },
-  {
     name: "binding-value-bare",
     breaks: "a binding as a value is the JS function itself, which `.map` gives each index too: `parseInt(text, i)`",
     file: "src/lower/items.rs",
-    find: "            (JsForm::Call(name), None) => Expr::call(self.js_ref(&name), values),\n            (JsForm::New(name), None) => Expr::new_(self.js_ref(&name), values),\n            (JsForm::Get(name), Some(this)) if values.is_empty() && !name.contains('#') => Expr::member(this, name),",
-    replace: "            (JsForm::Call(name), None) => return Ok(self.js_ref(&name)),\n            (JsForm::New(name), None) => Expr::new_(self.js_ref(&name), values),\n            (JsForm::Get(name), Some(this)) if values.is_empty() && !name.contains('#') => Expr::member(this, name),",
+    find: "        // One that's a statement, a setter's, is no value.\n",
+    replace: "        if let ExprKind::Call(callee, _) = &body.kind {\n            return Ok((**callee).clone());\n        }\n",
     tests: ["test/lowering.test.ts", "-t", "a crate function given as a callback is passed as itself"],
   },
   {

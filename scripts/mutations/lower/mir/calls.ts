@@ -70,8 +70,8 @@ export const mutations: Mutation[] = [
     name: "mir-nullable-made-coalesced",
     breaks: "MIR's `Some` of a function given a nullable parameter is `(e) => .. ?? null`",
     file: "src/lower/mir/calls.rs",
-    find: "                        _ if value.is_constant() || value.is_made_here() => value,\n",
-    replace: "                        _ if value.is_constant() => value,\n",
+    find: "                _ if value.is_constant() || value.is_made_here() => value,\n",
+    replace: "                _ if value.is_constant() => value,\n",
     tests: ["test/compiler.test.ts","-t","the webapi crate's bindings become plain JS"],
   },
   {
@@ -127,8 +127,8 @@ export const mutations: Mutation[] = [
     name: "lazy-never-its-value",
     breaks: "`use_state(|| 0)` is `useState(() => 0)`, the closure, where it's `useState(0)`",
     file: "src/lower/mir/calls.rs",
-    find: "                    self.lazy_value(value, ty)\n",
-    replace: "                    value\n",
+    find: "            () if named(bindings::lazy_params(tcx, def_id)) => self.lazy_value(value, ty),\n",
+    replace: "            () if named(bindings::lazy_params(tcx, def_id)) => value,\n",
     tests: ["test/react.test.ts", "-t", "use_state's first state"],
   },
   {

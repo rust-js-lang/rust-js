@@ -114,22 +114,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 self.fresh(&name)
             })
             .collect();
-        let mut values: Vec<Expr> = params.iter().map(|name| Expr::var(name)).collect();
-        let this = is_method(self.tcx, def_id).then(|| values.remove(0));
-        let value = match (js_form(self.tcx, def_id), this) {
-            (JsForm::Call(name), Some(this)) if !name.contains('#') => Expr::call(Expr::member(this, name), values),
-            (JsForm::Call(name), None) => Expr::call(self.js_ref(&name), values),
-            (JsForm::New(name), None) => Expr::new_(self.js_ref(&name), values),
-            (JsForm::Get(name), Some(this)) if values.is_empty() && !name.contains('#') => Expr::member(this, name),
-            (JsForm::Get(name), None) if values.is_empty() => self.js_ref(&name),
-            (JsForm::This, Some(this)) if values.is_empty() => this,
-            (JsForm::CallThis, Some(this)) => Expr::call(this, values),
-            _ => {
-                let what = format!("`{}` as a value", self.tcx.def_path_str(def_id));
-                return Err(self.unsupported(span, &what));
-            }
-        };
-        let body = self.catching(def_id, args, value);
+        // Each given as its call gives it (ADR 0604): a nullable one's
+        // `None`, `null`.
+        let values: Vec<Expr> = (params.iter().zip(&inputs).enumerate())
+            .map(|(i, (name, &ty))| self.binding_arg(def_id, i, Expr::var(name), ty))
+            .collect();
+        let mut made = Vec::new();
+        let body = self.binding_values((def_id, args), values, self.js_span(span), span, &mut made)?;
+        // One that's a statement, a setter's, is no value.
+        if !made.is_empty() {
+            let what = format!("`{}` as a value", self.tcx.def_path_str(def_id));
+            return Err(self.unsupported(span, &what));
+        }
         Ok(Expr::arrow(
             params.into_iter().map(Into::into).collect(),
             vec![StmtKind::Return(Some(body)).at(self.js_span(span))],

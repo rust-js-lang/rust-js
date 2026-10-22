@@ -5945,9 +5945,21 @@ fn parse_int(text: &str) -> f64 {
     unreachable!()
 }
 
+#[cfg_attr(rust_js, rust_js::link_name = "rustJsReset")]
+#[cfg_attr(rust_js, rust_js::nullable(to))]
+fn reset(to: Option<f64>) -> f64 {
+    unreachable!()
+}
+
 thread_local! {
     // Captured, in case a polyfill overrides it.
     static LOCAL_HOOK: fn(f64) -> f64 = hook;
+    // Its \`None\` given as \`null\`, as its call gives it: an arrow.
+    static LOCAL_RESET: fn(Option<f64>) -> f64 = reset;
+}
+
+pub fn reset_to(to: Option<f64>) -> f64 {
+    LOCAL_RESET.with(|reset| reset(to))
 }
 
 pub fn called(n: f64) -> f64 {
@@ -5962,11 +5974,13 @@ pub fn parsed() -> Vec<f64> {
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("const localHook = rustJsHook;");
+  expect(js).toContain("const localReset = (to) => rustJsReset(to ?? null);");
   const globals = globalThis as Record<string, unknown>;
   globals.rustJsHook = (n: number) => n + 1;
+  globals.rustJsReset = (to: number | null) => (to === null ? -1 : to);
   const lib = await import(join(dir, "lib.js"));
   globals.rustJsHook = () => -1;
-  expect([lib.called(1), lib.parsed()]).toEqual([2, [10, 10]]);
+  expect([lib.called(1), lib.parsed(), lib.resetTo(undefined), lib.resetTo(4)]).toEqual([2, [10, 10], -1, 4]);
 });
 
 // ADR 0597: whether the host has a binding's global is `js::is_defined`'s,

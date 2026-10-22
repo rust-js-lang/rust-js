@@ -36,8 +36,9 @@ no more than Rust does, as it did: `.map((item) => parse(item))`.
 
 ## Consequences
 
-- A binding's arrow doesn't make its arguments as its call does, a
-  `#[rust_js::nullable]` parameter's `null`: found here, left as it was.
+- A binding's arrow didn't make its arguments as its call does, a
+  `#[rust_js::nullable]` parameter's `null`: found here, fixed by
+  [0604](0604-a-bindings-value-gives-what-its-call-gives.md).
 
 ## What holds it
 

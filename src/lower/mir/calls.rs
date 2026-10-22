@@ -200,43 +200,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             _ => {}
         }
-        let nullable = bindings::nullable_params(tcx, def_id);
-        let lazy = bindings::lazy_params(tcx, def_id);
-        let idents = tcx.fn_arg_idents(def_id);
         let mut exprs = Vec::new();
         for (i, (value, &ty)) in values.into_iter().zip(arg_tys).enumerate() {
             let value = self.value_expr(value, span)?;
-            exprs.push(match () {
-                // `()` given to JS is what a tuple is, an array (ADR 0020).
-                () if ty.is_unit() => Expr::array(Vec::new()),
-                // A parameter it names `#[rust_js::nullable(..)]`: its
-                // `None` is `null` (ADR 0275).
-                () if idents
-                    .get(i)
-                    .copied()
-                    .flatten()
-                    .is_some_and(|ident| nullable.contains(&ident.name)) =>
-                {
-                    match value.kind {
-                        js::ExprKind::Undefined => Expr::null(),
-                        _ if value.is_constant() || value.is_made_here() => value,
-                        _ => Expr::bin(Op::Coalesce, value, Expr::null()),
-                    }
-                }
-                // A parameter it names `#[rust_js::lazy(..)]`, a function JS
-                // calls once for the value: a closure whose body does nothing
-                // and gives no function is its value, `useState(0)` (ADR 0593).
-                () if idents
-                    .get(i)
-                    .copied()
-                    .flatten()
-                    .is_some_and(|ident| lazy.contains(&ident.name)) =>
-                {
-                    self.lazy_value(value, ty)
-                }
-                // A `&dyn Any` given to JS is its value (ADR 0331).
-                () => self.any_given_to_js(value, ty),
-            });
+            exprs.push(self.binding_arg(def_id, i, value, ty));
         }
         let js_span = self.js_span(span);
         Ok(Value::Expr(self.binding_values(
@@ -265,6 +232,39 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // A generic `&mut T`'s box, of an object `T` here: what's in it.
         let called = self.generic_result_values((def_id, generic_args), called, span)?;
         Ok(Value::Expr(self.fmt_result_value(def_id, generic_args, called)))
+    }
+
+    /// What binding `def_id` is given as its `i`th argument, `value` of
+    /// `ty`, as JS takes it: of its call and of its arrow as a value alike
+    /// (ADR 0604).
+    pub(in crate::lower) fn binding_arg(
+        &self,
+        def_id: rustc_span::def_id::DefId,
+        i: usize,
+        value: Expr,
+        ty: Ty<'tcx>,
+    ) -> Expr {
+        let tcx = self.tcx;
+        let named = |names: Vec<rustc_span::Symbol>| {
+            (tcx.fn_arg_idents(def_id).get(i).copied().flatten()).is_some_and(|ident| names.contains(&ident.name))
+        };
+        match () {
+            // `()` given to JS is what a tuple is, an array (ADR 0020).
+            () if ty.is_unit() => Expr::array(Vec::new()),
+            // A parameter it names `#[rust_js::nullable(..)]`: its
+            // `None` is `null` (ADR 0275).
+            () if named(bindings::nullable_params(tcx, def_id)) => match value.kind {
+                js::ExprKind::Undefined => Expr::null(),
+                _ if value.is_constant() || value.is_made_here() => value,
+                _ => Expr::bin(Op::Coalesce, value, Expr::null()),
+            },
+            // A parameter it names `#[rust_js::lazy(..)]`, a function JS
+            // calls once for the value: a closure whose body does nothing
+            // and gives no function is its value, `useState(0)` (ADR 0593).
+            () if named(bindings::lazy_params(tcx, def_id)) => self.lazy_value(value, ty),
+            // A `&dyn Any` given to JS is its value (ADR 0331).
+            () => self.any_given_to_js(value, ty),
+        }
     }
 
     /// `js::is_defined(binding)`: `typeof MessageChannel !== "undefined"`,
