@@ -811,6 +811,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             {
                 return Ok(Expr::call(Expr::member(dictionary, "eq"), vec![x, y]));
             }
+            // The crate's own `PartialEq<Other>`, `Cm == Mm`'s: its `eq`.
+            if self.is_user_impl(tr) {
+                let eq = self.tcx.associated_item_def_ids(self.partial_eq_trait())[0];
+                return self.impl_call(eq, tr.args, vec![x, y], span);
+            }
         }
         self.eq_value(a, b, ty, span, out)
     }
@@ -1149,15 +1154,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(Expr::bin(Op::And, lengths, every))
     }
 
-    /// `(a, b) => <a == b>` for a dictionary's `eq`, or `$eq` itself.
-    pub(super) fn eq_fn(&mut self, ty: Ty<'tcx>, span: Span) -> R<Expr> {
+    /// `(a, b) => <a == b>` for a dictionary's `eq`, of a `ty` and a `rhs`,
+    /// `PartialEq<Rhs>`'s, or `$eq` itself.
+    pub(super) fn eq_fn(&mut self, (ty, rhs): (Ty<'tcx>, Ty<'tcx>), span: Span) -> R<Expr> {
         let mut body = Vec::new();
-        let same = self.eq_value(Expr::var("a"), Expr::var("b"), ty, span, &mut body)?;
+        let same = self.eq_values(Expr::var("a"), Expr::var("b"), (ty, rhs), span, &mut body)?;
+        // A function of both, as they're given, `$eq` or an impl's `eq`: it.
         if body.is_empty()
-            && let js::ExprKind::Call(callee, _) = &same.kind
-            && callee.helper_name() == Some("$eq")
+            && let js::ExprKind::Call(callee, args) = &same.kind
+            && matches!(callee.kind, js::ExprKind::Var(_))
+            && matches!(args.as_slice(), [x, y] if matches!((&x.kind, &y.kind), (js::ExprKind::Var(x), js::ExprKind::Var(y)) if x == "a" && y == "b"))
         {
-            return Ok(Expr::helper("$eq"));
+            return Ok((**callee).clone());
         }
         body.push(StmtKind::Return(Some(same)).at(js::Span::NONE));
         Ok(Expr::arrow(vec!["a".into(), "b".into()], body))

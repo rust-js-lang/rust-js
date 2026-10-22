@@ -29,7 +29,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(match self.items_drop(ty, span)? {
             None if self.eq_is_identity(item) => Expr::call(Expr::helper("$dedup"), vec![items]),
             drop => {
-                let same = self.eq_fn(item, span)?;
+                let same = self.eq_fn((item, item), span)?;
                 Expr::call(
                     Expr::helper("$dedupBy"),
                     Expr::optional_args(vec![items, same], vec![drop]),

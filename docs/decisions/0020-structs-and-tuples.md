@@ -187,3 +187,15 @@ value itself, `v == v.clone()`. `===` decides only of what isn't an
 object now; an object is compared by its fields, itself or not. ADR
 0262's case: results would change, so Rust's. Held by
 `test/corpus/nan_self_eq.rs` and the mutation `eq-of-itself`.
+
+## Amendment: a type compared with another
+
+A crate's `PartialEq<Other>` was asked by `a == b` alone: through
+references, `&a == &b`, of `Vec`s or arrays of the two, and in generic
+code given `A: PartialEq<B>`'s dictionary, the type was compared with
+itself field by field, `$eq(a, b)` and `{ eq: $eq }`, false (#129).
+`eq_values` asks the crate's impl of `PartialEq<Rhs>` where `Rhs` isn't
+`Self`, and a dictionary's `eq`, `eq_fn`, is of both sides. ADR 0262's
+case: results would change, so Rust's. Held by
+`test/corpus/partial_eq_other_type.rs` and the mutations
+`eq-of-other-type-derived` and `eq-dictionary-of-self`.

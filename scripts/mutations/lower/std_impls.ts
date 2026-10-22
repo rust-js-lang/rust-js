@@ -576,4 +576,20 @@ export const mutations: Mutation[] = [
     replace: "    pub(super) fn copies_of(&mut self, items: Expr, ty: Ty<'tcx>, span: Span) -> R<Expr> {\n        if true || !self.needs_clone(ty) {",
     tests: ["test/corpus.test.ts", "-t", "^copied_structs_apart.rs$"],
   },
+  {
+    name: "eq-of-other-type-derived",
+    breaks: "`==` of a type with another through references or items, its own `PartialEq<Other>`, compares the type with itself field by field, `$eq(a, b)`, so it's false",
+    file: "src/lower/std_impls.rs",
+    find: "            if self.is_user_impl(tr) {\n                let eq = self.tcx.associated_item_def_ids(self.partial_eq_trait())[0];",
+    replace: "            if false && self.is_user_impl(tr) {\n                let eq = self.tcx.associated_item_def_ids(self.partial_eq_trait())[0];",
+    tests: ["test/corpus.test.ts", "-t", "^partial_eq_other_type.rs$"],
+  },
+  {
+    name: "eq-dictionary-of-self",
+    breaks: "a dictionary of `PartialEq<Other>` given to generic code compares the type with itself, `{ eq: $eq }`",
+    file: "src/lower/std_impls.rs",
+    find: "        let same = self.eq_values(Expr::var(\"a\"), Expr::var(\"b\"), (ty, rhs), span, &mut body)?;",
+    replace: "        let same = self.eq_values(Expr::var(\"a\"), Expr::var(\"b\"), (ty, ty), span, &mut body)?;",
+    tests: ["test/corpus.test.ts", "-t", "^partial_eq_other_type.rs$"],
+  },
 ];

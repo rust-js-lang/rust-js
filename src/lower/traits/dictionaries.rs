@@ -263,7 +263,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 )]));
             }
             if eq {
-                let eq = self.eq_fn(ty, span)?;
+                let rhs = tr.args.types().nth(1).unwrap_or(ty);
+                let eq = self.eq_fn((ty, rhs), span)?;
                 return Ok(Expr::object(vec![Prop::Field("eq".into(), eq)]));
             }
             if default {
