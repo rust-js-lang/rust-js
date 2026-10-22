@@ -158,3 +158,9 @@ writes, and `display/debug.rs` `{:?}` of a value. Both read
 `mir/tidy/jumps.rs`, 1,724 lines, keeps early `break`s and `return`s;
 `continues.rs`, `tried.rs`, `tails.rs` and `labels.rs` are the rest,
 under `mir/tidy/jumps/`, the largest 442 lines.
+
+## Amendment: MIR's iterators, by what's done to a chain (2026-10-22)
+
+`mir/iter.rs`, 1,687 lines, keeps `mir_iter_call` and `mir_iter_method`,
+the dispatchers the architecture test holds; `collect.rs`, `backs.rs`,
+`closing.rs` and `sources.rs`, under `mir/iter/`, are the rest.

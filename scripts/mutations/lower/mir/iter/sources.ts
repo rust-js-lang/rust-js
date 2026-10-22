@@ -1,0 +1,220 @@
+// Mutations of src/lower/mir/iter/sources.rs (ADR 0093).
+import type { Mutation } from "../../../../mutations";
+
+export const mutations: Mutation[] = [
+  {
+    name: "mir-len-whole",
+    breaks: "`it.len()` of a stepped `$iter` counts what it's given already",
+    file: "src/lower/mir/iter/sources.rs",
+    find: "        Expr::bin(Op::Sub, Expr::member(it.clone(), \"end\"), Expr::member(it, \"at\"))\n",
+    replace: "        Expr::member(Expr::member(it, \"items\"), \"length\")\n",
+    tests: ["test/corpus.test.ts","-t","iterator_back_ends"],
+  },
+  {
+    name: "mir-made-array-iterator-from",
+    breaks: "a `split`'s array MIR steps is `Iterator.from(…)`, so its chain stays a JS iterator's",
+    file: "src/lower/mir/iter/sources.rs",
+    find: "        } else if made_array(&value) || self.steps_an_array(ty) {\n",
+    replace: "        } else if self.steps_an_array(ty) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^boxed_array_iter.rs$"],
+    snapshots: true,
+  },
+  {
+    "name": "deque-iter-generic",
+    "breaks": "a `VecDeque`'s iterator from MIR is `Iterator.from(prev)`, collected `.toArray()`, not `prev.slice()`, and its `next_back()` refused",
+    "file": "src/lower/mir/iter/sources.rs",
+    "find": " || self.recognition().is_deque_iter(ty)",
+    "replace": "",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "a VecDeque's items collected from MIR"
+    ]
+  },
+  {
+    "name": "mir-crate-fn-item-callback-wrapped",
+    "breaks": "a crate function given as a callback from MIR is `(item) => is_rule(item)`, not `is_rule`",
+    "file": "src/lower/mir/iter/sources.rs",
+    "find": "            js::ExprKind::Arrow(params, _) if params.len() <= 1 => f,\n            js::ExprKind::Var(_) if own => f,\n",
+    "replace": "            js::ExprKind::Arrow(params, _) if params.len() <= 1 => f,\n",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "a crate function given as a callback is passed as itself"
+    ]
+  },
+  {
+    "name": "mir-range-back-forward",
+    "breaks": "`(0..n).rev().collect()` from MIR is `$range(0, n)`, forwards",
+    "file": "src/lower/mir/iter/sources.rs",
+    "find": "        if range.back {\n",
+    "replace": "        if !range.back {\n",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "a range mapped and collected"
+    ]
+  },
+  {
+    "name": "mir-range-unmapped-lazy",
+    "breaks": "a range collected unmapped from MIR stays a lazy `$iterator(\u2026).toArray()`",
+    "file": "src/lower/mir/iter/sources.rs",
+    "find": "        if !numbers || maps",
+    "replace": "        if maps.is_empty() || !numbers || maps",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "a range mapped and collected"
+    ]
+  },
+  {
+    "name": "mir-chars-next-back-refused",
+    "breaks": "`next_back()` of a string's `chars()` from MIR is refused as a lazy iterator's",
+    "file": "src/lower/mir/iter/sources.rs",
+    "find": "            || self.recognition().is_str_chars(ty)\n",
+    "replace": "",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "the rest of a string's chars from MIR"
+    ]
+  },
+  {
+    "name": "mir-iter-mut-a-js-iterator",
+    "breaks": "a slice's `iter_mut()` from MIR is `Iterator.from(v)`, its chain lazy, `$lent(Iterator.from(v)).find(f)`, not `v.find(f)`",
+    "file": "src/lower/mir/iter/sources.rs",
+    "find": "            || self.recognition().is_slice_iter_mut(ty)\n",
+    "replace": "",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "iter_mut chains from MIR"
+    ]
+  },
+  {
+    "name": "mir-mapped-range-filtered",
+    "breaks": "`(0..n).filter(f).collect()` from MIR is `$range(0, n).filter(f)`, an array of all n numbers made to keep few",
+    "file": "src/lower/mir/iter/sources.rs",
+    "find": "            && name == \"map\"\n",
+    "replace": "            && (name == \"map\" || name == \"filter\")\n",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "a range made where it's stepped"
+    ]
+  },
+  {
+    "name": "mir-mapped-range-end-unfolded",
+    "breaks": "`(1..=3).map(f).collect()` from MIR is `$range(1, 3 + 1).map(f)`, not `$range(1, 4)`",
+    "file": "src/lower/mir/iter/sources.rs",
+    "find": "                Some(n) => Expr::int(n + 1),\n                None => Expr::bin(js::Op::Add, range.end.clone(), Expr::int(1)),\n",
+    "replace": "                Some(_) | None => Expr::bin(js::Op::Add, range.end.clone(), Expr::int(1)),\n",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "a range mapped and collected"
+    ]
+  },
+  {
+    name: "mir-next-back-tree",
+    breaks: "MIR's `next_back()` of a B-tree's `iter()` is refused",
+    file: "src/lower/mir/iter/sources.rs",
+    find: "            || self.recognition().is_tree_iter(ty)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "iter_next_back"],
+  },
+  {
+    name: "mir-next-back-split",
+    breaks: "MIR's `next_back()` of a `str::split` is refused",
+    file: "src/lower/mir/iter/sources.rs",
+    find: "            || self.is_str_split(ty)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "iter_next_back"],
+  },
+  {
+    name: "mir-f64-max-wrapped",
+    breaks: "MIR's `fold(0.0, f64::max)` gives `reduce` an arrow calling `$f64Max`",
+    file: "src/lower/mir/iter/sources.rs",
+    find: "            _ if matches!(f.helper_name(), Some(\"$f64Max\" | \"$f64Min\")) => f,\n",
+    replace: "",
+    tests: ["test/traits.test.ts","-t","MIR dictionaries are explicit"],
+  },
+  {
+    name: "mir-generic-iterator-unwrapped",
+    breaks: "MIR's generic iterator is stepped as given, an array's `drop` missing",
+    file: "src/lower/mir/iter/sources.rs",
+    find: "            None if matches!(ty.kind(), ty::Param(_)) && !is_js_iterator(&value) => Ok(self.js_iterator(value)),\n",
+    replace: "",
+    tests: ["test/lowering.test.ts","-t","takes the crate's own from behind"],
+  },
+  {
+    name: "mir-opaque-iterator-unrevealed",
+    breaks: "MIR's iterator of the crate's behind `impl Iterator` is given as the struct, not a JS iterator",
+    file: "src/lower/mir/iter/sources.rs",
+    find: "        let ty = self.reveal(ty);\n        match self.range_kind(ty) {\n",
+    replace: "        match self.range_kind(ty) {\n",
+    tests: ["test/lowering.test.ts","-t","takes the crate's own from behind"],
+  },
+  {
+    "name": "mir-iterable-collected-generic",
+    "breaks": "a generic iterator collected is `Array.from(items)`, empty of an iterator with only a `next`",
+    "file": "src/lower/mir/iter/sources.rs",
+    "find": "        if crate::lower::recognition::known_by_bounds(source) {\n            return None;\n        }\n        collected(",
+    "replace": "        collected(",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "only a next"
+    ]
+  },
+  {
+    name: "fresh-iter-len-stepped",
+    breaks: "`v.iter().len()` is what's left of a `$iter` made for it, `$iter(v).end - $iter(v).at`, not `v.length`",
+    file: "src/lower/mir/iter/sources.rs",
+    find: "        if crate::lower::iterators::is_stepped_items(&it)\n",
+    replace: "        if false\n",
+    tests: ["test/corpus.test.ts", "-t", "^env_args.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "args-not-stepped",
+    breaks: "`env::args()` held is stepped as a JS iterator, which knows no length, not a `$iter` of its array",
+    file: "src/lower/mir/iter/sources.rs",
+    find: "            || self.recognition().is_process_items(ty)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^env_args.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "given-iterator-adapted-as-js",
+    breaks: "an adapter's `I` summed is `Iterator.from` of it, not stepped by its dictionary",
+    file: "src/lower/mir/iter/sources.rs",
+    find: "            None if let Some(it) = self.given_js_iterator(value.clone(), ty, false, false) => Ok(it),\n",
+    replace: "            None if let Some(it) = self.given_js_iterator(value.clone(), ty, false, false).filter(|_| false) => Ok(it),\n",
+    tests: ["test/corpus.test.ts", "-t", "^iterator_adapters.rs$"],
+  },
+  {
+    name: "projection-item-not-an-iterator",
+    breaks: "an iterator whose `Item` is another's associated type, `A::Item`, isn't taken as one, and `for _ in &mut it` is refused",
+    file: "src/lower/mir/iter/sources.rs",
+    find: "                .is_some_and(|tr| !iterator_traits.contains(&tr)),\n",
+    replace: "                .is_some_and(|_| false),\n",
+    tests: ["test/corpus.test.ts", "-t", "^iterator_of_projection.rs$"],
+  },
+  {
+    name: "rev-of-array-not-array",
+    breaks: "a `rev()` of an array's iterator isn't seen to be its array reversed, and `next_back` of it is refused",
+    file: "src/lower/mir/iter/sources.rs",
+    find: "            || crate::lower::recognition::reversed_source(self.tcx, ty).is_some_and(|source| self.steps_an_array(source))\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^std_iterator_clones.rs$"],
+  },
+  {
+    name: "try-for-each-callback-unshifted",
+    breaks: "`try_for_each`'s function is given what's made where its item goes",
+    file: "src/lower/mir/iter/sources.rs",
+    find: "                params.insert(0, made.into());\n",
+    replace: "                params.push(made.into());\n",
+    tests: ["test/corpus.test.ts", "-t", "^try_for_each.rs$"],
+  },
+];
