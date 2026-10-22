@@ -258,7 +258,7 @@ and answer. Each is checked to stay that way.
 | `loops.rs`, `places.rs` | A `for` over the crate's own `IntoIterator`; a place that's leaked |
 | `calls.rs` | What calls share: `Call`, a call made; `apply`, calling a function value; `catching`, a JS call that may throw made a `Result` (ADR 0035); `given_to_js` |
 | `mut_refs.rs` | A `&mut` to a value JS can't change in place, given to a call or given back by one: a box, the place, or a std call's items |
-| `drops.rs`, `mir/drops.rs` | Destructors: what each drop runs and the drop functions it's written in (`drops.rs`); where and when a body drops, by rustc's drop elaboration of its MIR, and its flags (`mir/drops.rs`, ADR 0364); a std function lowered in place drops its own in a `try`'s `finally` |
+| `drops.rs`, `drops/`, `mir/drops.rs` | Destructors: what each drop runs and the drop functions it's written in (`drops.rs`, and its parts: a value's parts' drops, `parts.rs`; a body's drops and the slots a call's given, `scopes.rs`; a drop as a function, `functions.rs`; what a body's drops use, `uses.rs`); where and when a body drops, by rustc's drop elaboration of its MIR, and its flags (`mir/drops.rs`, ADR 0364); a std function lowered in place drops its own in a `try`'s `finally` |
 | `representation.rs` | How each Rust value is represented: its shape, an `Option`'s payload, a cell, a number |
 | `copies.rs` | When a value is copied: where it's read, if something changes one of its kind in place |
 | `support.rs` | What rust-js can represent, and the error where a value it can't is made or bound |

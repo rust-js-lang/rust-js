@@ -353,7 +353,13 @@ test("tidying asks neither rustc nor the function being lowered", () => {
 // and through a getter, `self.walks().mutated`, which five of them were
 // read by, unseen (the third architecture audit).
 const owners: Record<string, string[]> = {
-  "self.drop_state": ["src/lower/drops.rs"],
+  "self.drop_state": [
+    "src/lower/drops.rs",
+    "src/lower/drops/functions.rs",
+    "src/lower/drops/parts.rs",
+    "src/lower/drops/scopes.rs",
+    "src/lower/drops/uses.rs",
+  ],
   // What lowering from MIR found of a body's variables, nine sets once
   // fields of `Locals` that mir.rs wrote and jsx.rs and binding_calls.rs
   // read (the third architecture audit).
@@ -479,7 +485,7 @@ const idioms: [string, RegExp, string[]][] = [
   // pass of tidy's over them is the type's module's (the second review).
   ["a map's entry", /"\$orInsert"|"\$mutGet"/, ["src/lower/std_types/map.rs", "src/lower/mir/entries.rs", "src/lower/mut_refs.rs"]],
   ["a range made as stepped", /"\$lazyRange"/, ["src/lower/std_types/range.rs"]],
-  ["a cell's borrow", /"\$borrow(Mut)?"|"\$unborrow"/, ["src/lower/std_types/cell.rs", "src/lower/std_impls.rs", "src/lower/drops.rs"]],
+  ["a cell's borrow", /"\$borrow(Mut)?"|"\$unborrow"/, ["src/lower/std_types/cell.rs", "src/lower/std_impls.rs", "src/lower/drops/parts.rs"]],
 ];
 test("a JS form of a concept is written by the concept's owner", () => {
   const strays: string[] = [];
@@ -937,7 +943,6 @@ test("tests find what they build through target", () => {
 // shorter. Split a listed file by concept, never to meet the number.
 const overTheCap: Record<string, number> = {
   "src/runtime/from_json.js": 2009,
-  "src/lower/drops.rs": 1564,
 };
 test("a compiler file is at most the cap, one listed over it only shrinking", () => {
   const { COMPILER, LARGE, fileSizes } = require("../scripts/file-sizes.ts") as {

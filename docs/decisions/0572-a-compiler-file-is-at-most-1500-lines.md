@@ -182,3 +182,11 @@ the dispatcher the architecture test holds; `combinators/values.rs`,
 `std_types/number.rs`, 1,608 lines, keeps `NumOp` and a number's methods;
 `std_types/number/operators.rs` and `generic.rs` are its operators and
 its calls of a generic number's type.
+
+## Amendment: drops, by what's dropped (2026-10-22)
+
+`drops.rs`, 1,564 lines, keeps `DropState`, a body's drop queries and the
+checks of what it's given; `drops/parts.rs`, `scopes.rs`, `functions.rs`
+and `uses.rs` are the rest, beside `types.rs` and `facts.rs`, each listed
+as an owner of `self.drop_state`. A `DropUses` is written beside its
+fields, in `uses.rs`, with the two calls that write them.
