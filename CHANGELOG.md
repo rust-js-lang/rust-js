@@ -767,6 +767,13 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### Changed
 
+- **What a body's integers can be shows an index in bounds and an
+  operator that can't wrap** (ADR 0576): `heap[leftIndex]` and `(index +
+  1) * 2 - 1` where a loop's condition bounds `index`, `n += 1` of a
+  counter that can't pass its type's largest, `fib(n - 1)` of `n >= 2`.
+  A `swap` in bounds is `[v[i], v[j]] = [v[j], v[i]]`, and a
+  `swap_remove` the last swapped in, then popped. What could wrap, or an
+  index nothing bounds, is checked as before.
 - **An `if` keeps the `else` it's written with, and a tail `if` of two
   small values is a conditional** (ADR 0575): `if (c) { .. } else {
   return; }` and `else if` in a loop, as written, not a guard and a

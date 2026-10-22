@@ -507,6 +507,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0573 Every Rust name is camelCase in JS](decisions/0573-every-rust-name-is-camel-case-in-js.md)
 - [0574 What React's scheduler heap asks: a nullable result, an object's `Some`, a runtime that loads anywhere](decisions/0574-what-reacts-scheduler-heap-asks.md)
 - [0575 An `if` keeps the `else` it's written with, and a tail `if` of two values is a conditional](decisions/0575-an-if-keeps-its-else-and-a-tail-if-is-a-conditional.md)
+- [0576 What a body's integers can be: an index in bounds, an operator that can't wrap, a swap JS's own](decisions/0576-what-a-bodys-integers-can-be.md)
 - [0436 Every `dyn` that's a pair keeps its value's drop, `dyn Send` too](decisions/0436-every-dyn-keeps-its-drop.md)
 - [0437 A scope's drops on a panic are one `try { .. } finally { .. }`](decisions/0437-a-scopes-drops-are-one-finally.md)
 - [0438 An optional prop is given `Some(..)`, or left out](decisions/0438-an-optional-prop-is-given-some.md)

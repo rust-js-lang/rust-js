@@ -229,7 +229,7 @@ pub fn handled() -> u32 {
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("  const list = [];\n  list.push(1);");
-  expect(js).toContain("  let n = 0;\n  n = (n + 1) >>> 0;");
+  expect(js).toContain("  let n = 0;\n  n += 1;");
   expect(js).toContain("  const n = flag ? 1 : 2;");
   expect(js).toContain("  let n = 0;\n  const n$1 = { value: n };");
   const lib = await import(join(dir, "lib.js"));
@@ -2623,7 +2623,7 @@ pub fn again(mut items: Vec<u32>) -> usize {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--library", "--manifest", join(dir, "manifest.json")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain("  if (a) {\n    const n = 1;\n    return (n + 1) >>> 0;\n  }\n  const n = 2;\n  return Math.imul(n, 3) >>> 0;");
+  expect(js).toContain("  if (a) {\n    const n = 1;\n    return n + 1;\n  }\n  const n = 2;\n  return n * 3;");
   expect(js).toContain("    const m = n;\n    const n$1 = 1;");
   expect(js).toContain("  items.pop();\n  const n = items.length;");
   expect(js).toContain("    return n;\n  }\n  const n$1 = 2;");
@@ -3194,7 +3194,7 @@ pub fn looped() -> u32 {
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("export function captured(text) {\n  return () => text;\n}");
   expect(js).toContain("  const kept = text;\n");
-  expect(js).toContain("  return (n + 1) >>> 0;\n");
+  expect(js).toContain("  return n + 1;\n");
   expect(js).toContain("    const n$1 = n;\n    fs.push(() => n$1);");
   // In a closure too, of its own parameter, as react.dev's createFileMap
   // casts each snippet it's given.
@@ -3736,7 +3736,7 @@ pub fn counted(n: i32) -> i32 {
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain('  if (n < 0) {\n    console.log("neg");\n    return "neg";\n  }\n  if (n === 0) {\n    console.log("zero");\n    return "zero";\n  }\n  console.log("pos");\n  return "pos";\n}');
-  expect(js).toContain("total = n > 0 ? (total + n) | 0 : (total - n) | 0;");
+  expect(js).toContain("total = n > 0 ? total + n : (total - n) | 0;");
   expect(js).toContain('    console.log("a");\n    return 2;\n  }\n  console.log("none");\n  return 3;\n}');
   const lib = await import(join(dir, "lib.js"));
   const log = console.log;
@@ -4775,6 +4775,159 @@ pub fn other(items: &[u32]) -> u32 {
   for (const unknown of [() => lib.either([1]), () => lib.third([1, 2]), () => lib.after([]), () => lib.wrong([]), () => lib.other([])]) {
     expect(unknown).toThrow();
   }
+});
+
+// ADR 0576: what a body's integers can be, walked as it runs, shows an index
+// in bounds and an operator that can't wrap: React's scheduler heap reads
+// `heap[leftIndex]`, `(index + 1) * 2 - 1` and a swap of two items, as
+// upstream's does. What could leave its range, or an index the walk can't
+// see stays below its slice's length, keeps its wrap or its check.
+test("a body's integer ranges show indexes in bounds and operators that can't wrap", async () => {
+  const dir = fixture("integer-ranges");
+  writeFileSync(join(dir, "lib.rs"), `pub fn sift_down(heap: &mut Vec<u32>, i: usize) {
+    let mut index = i;
+    let length = heap.len();
+    let half_length = length >> 1;
+    while index < half_length {
+        let left_index = (index + 1) * 2 - 1;
+        let right_index = left_index + 1;
+        if heap[left_index] < heap[index] {
+            if right_index < length && heap[right_index] < heap[left_index] {
+                heap.swap(index, right_index);
+                index = right_index;
+            } else {
+                heap.swap(index, left_index);
+                index = left_index;
+            }
+        } else if right_index < length && heap[right_index] < heap[index] {
+            heap.swap(index, right_index);
+            index = right_index;
+        } else {
+            return;
+        }
+    }
+}
+
+pub fn pop(heap: &mut Vec<u32>) -> Option<u32> {
+    if heap.is_empty() {
+        return None;
+    }
+    let first = heap.swap_remove(0);
+    if !heap.is_empty() {
+        sift_down(heap, 0);
+    }
+    Some(first)
+}
+
+pub fn last(items: &[u32]) -> u32 {
+    if items.is_empty() { 0 } else { items[items.len() - 1] }
+}
+
+pub fn head(items: &[u32]) -> u32 {
+    if !items.is_empty() { items[0] } else { 0 }
+}
+
+pub fn wrapped(n: u32, k: i32, m: u8) -> (u32, i32, u8) {
+    (n + 1, k * 2, m + 1)
+}
+
+pub fn small(n: u32, k: i32, m: u8) -> (u32, i32, u8) {
+    let a = if n < 10 { n * 3 + 1 } else { 0 };
+    let b = if k > 0 { 0 - k } else { 1 };
+    let c = if m < 255 { m + 1 } else { 0 };
+    (a, b, c)
+}
+
+pub fn counted(n: u32) -> u32 {
+    let mut i = 0;
+    while i < n {
+        i += 1;
+    }
+    i
+}
+
+pub fn stepped(n: u32) -> u32 {
+    let mut steps = 0;
+    loop {
+        steps += 1;
+        if steps == n {
+            return steps;
+        }
+    }
+}
+
+pub fn skipped(n: u32) -> u32 {
+    let mut i = 0;
+    let mut k = 0;
+    while i < 10 {
+        i += 1;
+        if i == 5 {
+            k = n;
+            continue;
+        }
+        k = 0;
+    }
+    k + 1
+}
+
+pub fn at_end(items: &[u32], i: usize) -> u32 {
+    if i <= items.len() { items[i] } else { 0 }
+}
+
+pub fn popped(items: &mut Vec<u32>) -> u32 {
+    let mut sum = 0;
+    for i in 0..items.len() {
+        sum ^= items[i];
+        items.pop();
+    }
+    sum
+}
+
+pub fn swapped(items: &mut [u32], i: usize) {
+    items.swap(0, i);
+}
+
+pub fn later(items: &mut Vec<u32>) -> u32 {
+    if items.is_empty() {
+        return 0;
+    }
+    items.clear();
+    items[0]
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("    const leftIndex = (index + 1) * 2 - 1;\n    const rightIndex = leftIndex + 1;\n    if (heap[leftIndex] < heap[index]) {\n      if (rightIndex < length && heap[rightIndex] < heap[leftIndex]) {\n        [heap[index], heap[rightIndex]] = [heap[rightIndex], heap[index]];\n");
+  expect(js).toContain("  const halfLength = length >>> 1;\n");
+  expect(js).toContain("  [heap[0], heap[heap.length - 1]] = [heap[heap.length - 1], heap[0]];\n  const first = heap.pop();\n");
+  expect(js).toContain("items[items.length - 1]");
+  expect(js).toContain("items.length !== 0 ? items[0] : 0");
+  // What could leave its range wraps; what can't is JS's own.
+  expect(js).toContain("[(n + 1) >>> 0, Math.imul(k, 2), (m + 1) & 255]");
+  expect(js).toContain("n < 10 ? n * 3 + 1 : 0");
+  expect(js).toContain("k > 0 ? 0 - k : 1");
+  expect(js).toContain("m < 255 ? m + 1 : 0");
+  expect(js).toContain("  while (i < n) {\n    i += 1;\n  }\n");
+  expect(js).toContain("steps = (steps + 1) >>> 0;");
+  expect(js).toContain("return (k + 1) >>> 0;");
+  expect(js).toContain("i <= items.length ? $index(items, i) : 0");
+  // A slice changed in a loop, an index nothing bounds, a length changed.
+  expect(js).toContain("$index(items, i)");
+  expect(js).toContain("$swap(items, 0, i);");
+  expect(js).toContain("$index(items, 0)");
+  const lib = await import(join(dir, "lib.js"));
+  const heap = [1, 3, 2, 7, 4, 6, 5];
+  const out = [];
+  for (let next = lib.pop(heap); next !== undefined; next = lib.pop(heap)) out.push(next);
+  expect(out).toEqual([1, 2, 3, 4, 5, 6, 7]);
+  expect([lib.last([]), lib.last([1, 7])]).toEqual([0, 7]);
+  expect(lib.wrapped(4294967295, 1 << 30, 255)).toEqual([0, -2147483648, 0]);
+  expect([lib.small(9, 5, 254), lib.counted(3), lib.stepped(3), lib.popped([5])]).toEqual([[28, -5, 255], 3, 3, 5]);
+  expect(() => lib.popped([1, 2, 4])).toThrow("index out of bounds");
+  expect(() => lib.swapped([1], 3)).toThrow("index out of bounds");
+  expect(() => lib.atEnd([1], 1)).toThrow("index out of bounds");
+  expect(lib.skipped(4294967295)).toBe(1);
+  expect(() => lib.later([1])).toThrow("index out of bounds");
 });
 
 // ADR 0293: a `Cell` a `let` takes apart, read by `get()` before anything
@@ -6335,7 +6488,7 @@ pub fn scan(v: &[u32]) -> u32 {
   // In the program's order, its `?` a guard.
   expect(numbers).toContain('if (/^[0-9]$/.test(c)) {\n      const start = i;');
   expect(numbers).toContain('      if (result$1.TAG === "Err") {\n        return result$1;\n      }\n      out.push(result$1._0);\n');
-  expect(js).toContain("while (i < chars.length && /^[0-9]$/.test($index(chars, i))) {");
+  expect(js).toContain("while (i < chars.length && /^[0-9]$/.test(chars[i])) {");
   const lib = await import(join(dir, "mir.js"));
   expect([lib.numbers("12 3"), lib.numbers("1x")]).toEqual([{ TAG: "Ok", _0: [12, 3] }, { TAG: "Err", _0: "unexpected x" }]);
   expect([lib.tokens("12+3"), lib.tokens("1-")]).toEqual([{ TAG: "Ok", _0: [12, 0, 3] }, { TAG: "Err", _0: "unexpected -" }]);
@@ -7277,7 +7430,7 @@ pub fn set(xs: &mut [u32], i: usize) {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
   const js = readFileSync(join(dir, "mir.js"), "utf8");
-  expect(js).toContain("  return crumbs.length > 1 && $index(crumbs, (crumbs.length - 1) >>> 0).path == path;\n");
+  expect(js).toContain("  return crumbs.length > 1 && crumbs[crumbs.length - 1].path == path;\n");
   expect(js).toContain("  return ($index(xs, 1) + 1) >>> 0;\n");
   expect(js).toContain("  xs[$at(xs, i)] = 3;\n");
   const lib = await import(join(dir, "mir.js"));
@@ -7395,7 +7548,7 @@ pub fn sliced(code: &str) -> u32 {
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
   const js = readFileSync(join(dir, "mir.js"), "utf8");
   expect(js).toContain("  const end = $byteLen(code);\n  for (let i = 0; i < end; i++) {\n");
-  expect(js).toContain('    if ($strSlice(code, i, (i + 1) >>> 0) === "a") {\n');
+  expect(js).toContain('    if ($strSlice(code, i, i + 1) === "a") {\n');
   const lib = await import(join(dir, "mir.js"));
   expect([lib.plain("abcdef"), lib.sliced("aba")]).toEqual([3, 2]);
 });
@@ -7540,7 +7693,7 @@ pub fn spun(mut n: u32) -> u32 {
   // A `loop` the program wrote stays one.
   expect(js).toContain("export function looped(n) {\n  while (true) {\n    if (n <= 1) {\n      return 1;\n    }\n");
   expect(js).toContain("export function spun(n) {\n  while (true) {\n    if (n <= 1) {\n      return n;\n    }\n");
-  expect(js).toContain("  while (n > 1) {\n    if (n === 7) {\n      return 70;\n    }\n    if (n === 9) {\n      break;\n    }\n    n = (n / 2) >>> 0;\n  }\n  return (n + 100) >>> 0;\n");
+  expect(js).toContain("  while (n > 1) {\n    if (n === 7) {\n      return 70;\n    }\n    if (n === 9) {\n      break;\n    }\n    n = (n / 2) >>> 0;\n  }\n  return n + 100;\n");
   const lib = await import(join(dir, "mir.js"));
   const pushed: number[] = [];
   lib.halved(30, pushed);

@@ -235,7 +235,7 @@ function both(items, first) {
       noisyDrop_drop(items[1]);
       throw error;
     }
-    dropped = (dropped + 1) | 0;
+    dropped += 1;
   } else {
     c$live = false;
     try {
@@ -245,7 +245,7 @@ function both(items, first) {
       noisyDrop_drop(items[1]);
       throw error;
     }
-    dropped = (dropped + 2) | 0;
+    dropped += 2;
   }
   try {
     try {

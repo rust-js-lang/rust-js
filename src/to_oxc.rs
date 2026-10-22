@@ -28,15 +28,15 @@ use std::path::PathBuf;
 
 use oxc_allocator::{Allocator, ArenaBox, ArenaVec};
 use oxc_ast::ast::{
-    Argument, ArrayExpressionElement, ArrowFunctionBody, AssignmentTarget, BindingIdentifier, BindingPattern,
-    BindingProperty, BindingRestElement, BlockStatement, CallExpression, CatchClause, CatchParameter, ChainElement,
-    ComputedMemberExpression, Declaration, Directive, ExportFromDeclaration, Expression, ForStatementInit,
-    ForStatementLeft, FormalParameter, FormalParameterKind, FormalParameterRest, FormalParameters, FunctionBody,
-    FunctionType, IdentifierName, ImportDeclaration, JSXAttributeItem, JSXAttributeName, JSXAttributeValue, JSXChild,
-    JSXClosingElement, JSXClosingFragment, JSXElementName, JSXExpression, JSXIdentifier, JSXMemberExpressionObject,
-    JSXOpeningElement, JSXOpeningFragment, LabelIdentifier, ObjectPropertyKind, Program, PropertyKey, PropertyKind,
-    SimpleAssignmentTarget, Statement, StaticMemberExpression, StringLiteral, TemplateElement, TemplateElementValue,
-    VariableDeclarationKind, VariableDeclarator,
+    Argument, ArrayExpressionElement, ArrowFunctionBody, AssignmentTarget, AssignmentTargetMaybeDefault,
+    BindingIdentifier, BindingPattern, BindingProperty, BindingRestElement, BlockStatement, CallExpression,
+    CatchClause, CatchParameter, ChainElement, ComputedMemberExpression, Declaration, Directive, ExportFromDeclaration,
+    Expression, ForStatementInit, ForStatementLeft, FormalParameter, FormalParameterKind, FormalParameterRest,
+    FormalParameters, FunctionBody, FunctionType, IdentifierName, ImportDeclaration, JSXAttributeItem,
+    JSXAttributeName, JSXAttributeValue, JSXChild, JSXClosingElement, JSXClosingFragment, JSXElementName,
+    JSXExpression, JSXIdentifier, JSXMemberExpressionObject, JSXOpeningElement, JSXOpeningFragment, LabelIdentifier,
+    ObjectPropertyKind, Program, PropertyKey, PropertyKind, SimpleAssignmentTarget, Statement, StaticMemberExpression,
+    StringLiteral, TemplateElement, TemplateElementValue, VariableDeclarationKind, VariableDeclarator,
 };
 use oxc_ast::builder::AstBuilder;
 use oxc_ast_visit::Visit;

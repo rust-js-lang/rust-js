@@ -77,6 +77,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return self.big_binary(op, l, r, known, num, span);
         }
 
+        // What the body's ranges show stays in range is JS's own (ADR 0576).
+        if let BinOp::Add | BinOp::Sub | BinOp::Mul = op
+            && self.body_facts.exact.contains(&span)
+        {
+            let js_op = match op {
+                BinOp::Add => Op::Add,
+                BinOp::Sub => Op::Sub,
+                _ => Op::Mul,
+            };
+            return Ok(Expr::bin(js_op, l, r));
+        }
         // Integers: compute exactly in JS, then wrap back into range.
         Ok(match op {
             BinOp::Add => num.wrap(Expr::bin(Op::Add, l, r)),

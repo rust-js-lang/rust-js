@@ -197,7 +197,7 @@ fn lowered_bodies(tcx: TyCtxt<'_>) -> Vec<Body<'_>> {
         .filter_map(|def_id| {
             let (thir, expr) = tcx.thir_body(def_id).ok()?;
             let thir = (*thir.borrow()).clone();
-            let facts = super::body_queries::BodyFacts::collect(tcx, &thir);
+            let facts = super::body_queries::BodyFacts::collect(tcx, &thir, expr);
             Some(Body {
                 def_id: def_id.to_def_id(),
                 thir,
@@ -394,7 +394,7 @@ pub fn collect_initializers(tcx: TyCtxt<'_>) -> Vec<Body<'_>> {
         .filter_map(|def_id| {
             let (thir, expr) = tcx.thir_body(def_id).ok()?;
             let thir = (*thir.borrow()).clone();
-            let facts = super::body_queries::BodyFacts::collect(tcx, &thir);
+            let facts = super::body_queries::BodyFacts::collect(tcx, &thir, expr);
             Some(Body {
                 def_id: def_id.to_def_id(),
                 thir,

@@ -8,7 +8,7 @@ let HITS = 1;
 
 function main() {
   let x = 1;
-  const value = (x + 0) >>> 0;
+  const value = x + 0;
   const old = x;
   x = 5;
   console.log(`${value} ${old}`);

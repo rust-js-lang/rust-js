@@ -75,4 +75,12 @@ export const mutations: Mutation[] = [
     replace: "        Ok(Expr::cond(zero, n.clone(), n))\n",
     tests: ["test/corpus.test.ts","-t","nonzero"],
   },
+  {
+    name: "exact-wrapped",
+    breaks: "an operator the body's ranges show in range keeps its wrap, `(index + 1) * 2 - 1` as `(Math.imul((index + 1) >>> 0, 2) - 1) >>> 0`",
+    file: "src/lower/std_types/number/operators.rs",
+    find: "            && self.body_facts.exact.contains(&span)\n",
+    replace: "            && false\n",
+    tests: ["test/lowering.test.ts", "-t", "integer ranges show"],
+  },
 ];

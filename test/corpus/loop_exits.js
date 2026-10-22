@@ -77,11 +77,11 @@ function once(v) {
       continue;
     }
     if (x > 5) {
-      n = (n + 1) >>> 0;
+      n += 1;
     }
     return n;
   }
-  return (n + 100) >>> 0;
+  return n + 100;
 }
 
 function shadowed(v) {
@@ -97,9 +97,9 @@ function shadowed(v) {
     }
     if (y > 2) {
       const y = 5;
-      return (n + y) >>> 0;
+      return n + y;
     }
-    return (n + y) >>> 0;
+    return n + y;
   }
   return n;
 }

@@ -120,7 +120,7 @@ function main() {
   const slots = [{ value: 1 }, { value: 2 }];
   let i = 0;
   const first = $lock($index(slots, i), true);
-  i = (i + 1) >>> 0;
+  i += 1;
   first.value = (first.value + 10) | 0;
   try {
     console.log(`${first.value} ${i}`);

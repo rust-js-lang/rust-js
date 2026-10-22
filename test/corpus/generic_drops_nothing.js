@@ -36,8 +36,8 @@ function takeLast(v) {
   if (len === 0) {
     return;
   }
-  $setLen(v, (len - 1) >>> 0);
-  return $some($ptrAdd($ptr(v, 0), (len - 1) >>> 0).value);
+  $setLen(v, len - 1);
+  return $some($ptrAdd($ptr(v, 0), len - 1).value);
 }
 
 function wrapIndexI_index(wrap, index, ISliceIndexTSlice, dropT, dropI) {

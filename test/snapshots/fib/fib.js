@@ -6,7 +6,7 @@ import { $div } from "@rust-js/runtime";
 
 /** Recursive, with `if` as an expression. */
 export function fib(n) {
-  return n < 2 ? n : (fib((n - 1) >>> 0) + fib((n - 2) >>> 0)) >>> 0;
+  return n < 2 ? n : (fib(n - 1) + fib(n - 2)) >>> 0;
 }
 
 /** Recursive, with `match` on integers. */
@@ -29,7 +29,7 @@ export function fibIter(n) {
     const next = (a + b) >>> 0;
     a = b;
     b = next;
-    i = (i + 1) >>> 0;
+    i += 1;
   }
   return a;
 }

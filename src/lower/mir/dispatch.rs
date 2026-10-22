@@ -782,21 +782,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // is `mir_iter_call`'s, so none here does.
         self.check_takes_drops(known, def_id, arg_tys, span)?;
         self.keep_capacity(state, def_id, &mut values, span, out)?;
-        // `v[i]` THIR knows is in bounds, `v[0]` after `v.is_empty()`'s test
-        // fails: unchecked.
-        if known == Std::Index
-            && let Some((fun, args)) = self.thir_call(def_id, span)
-            && let [_, _] = args[..]
-            && let [Value::Expr(_) | Value::Place(_), Value::Expr(_)] = &values[..]
-            && self.body_facts.in_bounds.contains(&fun)
-        {
-            let mut exprs = values
-                .into_iter()
-                .map(|v| self.value_expr(v, span))
-                .collect::<R<Vec<_>>>()?;
-            let index = exprs.pop().expect("an index");
-            let items = exprs.pop().expect("the items");
-            return Ok(Value::Expr(Expr::index(items, index)));
+        // What indexes the body's ranges show in bounds: unchecked.
+        if self.call_in_bounds(known, def_id, &values, span) {
+            return self.unchecked_call(known, values, span, out);
         }
         // `v[i]` through `index_mut`, of a value JS can't change in place: the
         // element's place, checked as `$index` checks it (ADR 0099).

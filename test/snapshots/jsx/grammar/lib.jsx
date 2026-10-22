@@ -30,7 +30,7 @@ export function Expressions(show) {
       {list}
       {show && <b>yes</b>}
       {show ? "on" : "off"}
-      {(n + 1) | 0}
+      {n + 1}
     </section>
   );
 }

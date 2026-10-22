@@ -743,13 +743,16 @@ pub(crate) fn is_err_variant(tcx: TyCtxt<'_>, variant: DefId) -> bool {
 }
 
 /// What a function asks of a `Vec`'s or a slice's length: its `len()`,
-/// its `is_empty()`, or an item by its index, `v[i]` of a `Vec`. What
-/// knows an index in bounds reads these (ADR 0292).
+/// its `is_empty()`, or that each index it's given is below it, `v[i]` of
+/// a `Vec`, `swap(i, j)`, `swap_remove(i)`. What knows an index in bounds
+/// reads these (ADR 0292, 0576).
 #[derive(Clone, Copy, PartialEq)]
 pub(in crate::lower) enum SliceLength {
     Len,
     IsEmpty,
     Index,
+    Swap,
+    SwapRemove,
 }
 
 pub(in crate::lower) fn slice_length<'tcx>(
@@ -779,6 +782,36 @@ pub(in crate::lower) fn slice_length<'tcx>(
     match tcx.item_name(def_id).as_str() {
         "len" => Some(SliceLength::Len),
         "is_empty" => Some(SliceLength::IsEmpty),
+        "swap" => Some(SliceLength::Swap),
+        "swap_remove" => Some(SliceLength::SwapRemove),
+        _ => None,
+    }
+}
+
+/// What a `Vec`'s `Deref`, `DerefMut` or `IndexMut` makes of it, as long
+/// as it is: its slice, `deref` and `deref_mut`, or an item, `index_mut`
+/// (ADR 0576).
+#[derive(Clone, Copy, PartialEq)]
+pub(in crate::lower) enum VecView {
+    Slice,
+    Item,
+}
+
+pub(in crate::lower) fn vec_view<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    def_id: DefId,
+    args: ty::GenericArgsRef<'tcx>,
+) -> Option<VecView> {
+    let trait_ = tcx.trait_of_assoc(def_id)?;
+    let of_vec = args.types().next().is_some_and(
+        |ty| matches!(ty.peel_refs().kind(), ty::Adt(adt, _) if tcx.is_diagnostic_item(sym::Vec, adt.did())),
+    );
+    match () {
+        _ if !of_vec => None,
+        _ if tcx.is_lang_item(trait_, LangItem::Deref) || tcx.is_lang_item(trait_, LangItem::DerefMut) => {
+            Some(VecView::Slice)
+        }
+        _ if tcx.is_lang_item(trait_, LangItem::IndexMut) => Some(VecView::Item),
         _ => None,
     }
 }

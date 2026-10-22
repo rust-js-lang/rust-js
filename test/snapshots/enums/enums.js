@@ -61,7 +61,7 @@ export function same(a, b) {
 function build(depth) {
   return depth === 0
     ? { TAG: "Leaf", _0: 1 }
-    : { TAG: "Node", _0: build((depth - 1) >>> 0), _1: { TAG: "Leaf", _0: depth | 0 } };
+    : { TAG: "Node", _0: build(depth - 1), _1: { TAG: "Leaf", _0: depth | 0 } };
 }
 
 function sum(t) {

@@ -6,7 +6,7 @@
 
 let COUNT = 0;
 const LOG = [];
-const START = (Math.imul(10, 4) + 2) | 0;
+const START = 10 * 4 + 2;
 
 /** Each call sees what the last one left. */
 export function bump() {

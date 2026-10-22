@@ -15,16 +15,16 @@ function pick(x) {
 function main() {
   let n = 0;
   while (true) {
-    n = (n + 1) | 0;
+    n += 1;
     if (n === 3) {
-      const doubled = Math.imul(n, 2);
+      const doubled = n * 2;
       while (true) {
         for (let i = 0; i < 100; i++) {
-          if (Math.imul(i, i) > 20) {
+          if (i * i > 20) {
             const found = i;
             let m = 0;
             while (true) {
-              m = (m + 1) & 255;
+              m += 1;
               if (m > 2) {
                 const given = pick(m);
                 console.log(`${doubled} ${found} ${given}`);

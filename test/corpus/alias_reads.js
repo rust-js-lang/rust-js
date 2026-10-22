@@ -32,7 +32,7 @@ function main() {
   // Read, then changed in a later argument: the value it had.
   let n = 5;
   const value = n;
-  n = (n + 1) | 0;
+  n += 1;
   console.log(`${pair(value, n)}`);
   let s = "a";
   const value$1 = s;
@@ -49,7 +49,7 @@ function main() {
   let count = 10;
   const at = count;
   const shown = () => Math.imul(at, 2);
-  count = (count + 1) | 0;
+  count += 1;
   console.log(`${shown()} ${count}`);
 }
 //# sourceMappingURL=case.js.map

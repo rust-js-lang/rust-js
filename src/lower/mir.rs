@@ -14,6 +14,7 @@
 
 mod assign;
 mod awaits;
+mod bounds;
 mod calls;
 mod cfg;
 mod closures;

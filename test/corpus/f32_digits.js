@@ -30,12 +30,12 @@ function main() {
     let x = significand;
     const scale = next() % 270;
     if (scale < 150) {
-      const end = (scale + 23) >>> 0;
+      const end = scale + 23;
       for (let i = 0; i < end; i++) {
         x = Math.fround(x * 0.5);
       }
     } else {
-      const end = (scale - 150) >>> 0;
+      const end = scale - 150;
       for (let i = 0; i < end; i++) {
         x = Math.fround(x * 2);
       }

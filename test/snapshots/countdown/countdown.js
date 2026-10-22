@@ -19,7 +19,7 @@ async function countDown(output, from) {
   while (n > 0) {
     output.textContent = String(n);
     await sleep(500);
-    n = (n - 1) >>> 0;
+    n -= 1;
   }
   output.textContent = "Go!";
 }

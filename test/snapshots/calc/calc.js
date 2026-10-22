@@ -10,7 +10,6 @@ import {
   $cmp,
   $debugF64,
   $debugStr,
-  $index,
   $orInsert,
   $parseF64,
   $slice,
@@ -23,15 +22,15 @@ export function tokenize(src) {
   const out = [];
   let i = 0;
   while (i < chars.length) {
-    const c = $index(chars, i);
+    const c = chars[i];
     if (/^\p{White_Space}$/u.test(c)) {
-      i = (i + 1) >>> 0;
+      i += 1;
       continue;
     }
     if (/^[0-9]$/.test(c) || c === ".") {
       const start = i;
-      while (i < chars.length && (/^[0-9]$/.test($index(chars, i)) || $index(chars, i) === ".")) {
-        i = (i + 1) >>> 0;
+      while (i < chars.length && (/^[0-9]$/.test(chars[i]) || chars[i] === ".")) {
+        i += 1;
       }
       const text = $slice(chars, start, i).join("");
       const result = $parseF64(text);
@@ -51,7 +50,7 @@ export function tokenize(src) {
     } else {
       return { TAG: "Err", _0: `unexpected ${$debugStr(c, "'")} at ${i}` };
     }
-    i = (i + 1) >>> 0;
+    i += 1;
   }
   return { TAG: "Ok", _0: out };
 }

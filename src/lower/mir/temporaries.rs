@@ -348,17 +348,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         deferred_check(body, msg, *target).map(|(index, write)| Check::Deferred(index, write))
     }
 
-    /// Whether an `Assert` at `span` checks an index THIR's facts know is in
-    /// bounds: the index there, `a[i]`, is among them.
-    fn known_in_bounds(&self, msg: &mir::AssertMessage<'tcx>, span: Span) -> bool {
-        matches!(msg, mir::AssertKind::BoundsCheck { .. })
-            && (self.thir.exprs.iter_enumerated()).any(|(id, e)| {
-                matches!(e.kind, thir::ExprKind::Index { .. })
-                    && e.span == span
-                    && self.body_facts.in_bounds.contains(&id)
-            })
-    }
-
     pub(super) fn read_local(&mut self, state: &mut State<'_, 'tcx>, local: Local, out: &mut Vec<Stmt>) -> R<Expr> {
         let value = self.read_local_value(state, local, out)?;
         self.value_expr(value, state.body.local_decls[local].source_info.span)

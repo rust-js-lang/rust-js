@@ -10,7 +10,7 @@ function main() {
   const w = 6;
   const p = 2;
   console.log(
-    `[${$pad("ab", w, ">")}] [${$toFixed(1.23456, p)}] [${"7".padEnd(p)}] [${$pad($toFixed(3.14159, p), (w + 1) >>> 0, "^")}]`,
+    `[${$pad("ab", w, ">")}] [${$toFixed(1.23456, p)}] [${"7".padEnd(p)}] [${$pad($toFixed(3.14159, p), w + 1, "^")}]`,
   );
 }
 //# sourceMappingURL=case.js.map

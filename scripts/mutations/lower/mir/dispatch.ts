@@ -147,14 +147,6 @@ export const mutations: Mutation[] = [
     tests: ["test/bindings.test.ts","-t","js::import! loads a module"],
   },
   {
-    name: "mir-in-bounds-checked",
-    breaks: "`v[0]` THIR knows is in bounds is `$index(v, 0)`",
-    file: "src/lower/mir/dispatch.rs",
-    find: "            && self.body_facts.in_bounds.contains(&fun)\n",
-    replace: "            && false\n",
-    tests: ["test/lowering.test.ts","-t","string's parts from MIR"],
-  },
-  {
     "name": "mir-own-name-called",
     "breaks": "`section.as_str()` from MIR is `Section.as_str(section)`, not `section`",
     "file": "src/lower/mir/dispatch.rs",

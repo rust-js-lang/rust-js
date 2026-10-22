@@ -75,14 +75,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering.test.ts","-t","a match guard.s binding from MIR is what it binds"],
   },
   {
-    name: "mir-known-bounds-checked",
-    breaks: "`args[i]` of `0..args.len()` THIR's facts know is in bounds is checked, `if (!(i < args.length)) throw`",
-    file: "src/lower/mir/temporaries.rs",
-    find: "        matches!(msg, mir::AssertKind::BoundsCheck { .. })\n",
-    replace: "        false && matches!(msg, mir::AssertKind::BoundsCheck { .. })\n",
-    tests: ["test/lowering.test.ts","-t","early returns and index loops from MIR"],
-  },
-  {
     name: "mir-bounds-never-deferred",
     breaks: "a bounds check is an `if` that throws before the read, where the read's own helper checks it",
     file: "src/lower/mir/temporaries.rs",

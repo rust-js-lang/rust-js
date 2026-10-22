@@ -429,7 +429,14 @@ impl<'a> Cx<'a> {
             ExprKind::Index(object, index) => {
                 AssignmentTarget::new_computed_member_expression(sp, self.expr(object), self.expr(index), false, b)
             }
-            _ => unreachable!("lowering only assigns to variables and fields"),
+            // Each at once, a swap's, `[a[i], a[j]] = [a[j], a[i]]`.
+            ExprKind::Array(items) => {
+                let items = items
+                    .iter()
+                    .map(|item| Some(AssignmentTargetMaybeDefault::from(self.assignment_target(item))));
+                AssignmentTarget::new_array_assignment_target(sp, ArenaVec::from_iter_in(items, b), None, b)
+            }
+            _ => unreachable!("lowering only assigns to variables, fields and arrays of them"),
         }
     }
 

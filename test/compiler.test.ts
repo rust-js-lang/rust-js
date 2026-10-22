@@ -436,7 +436,7 @@ test("thread-locals are module variables", async () => {
   const js = await Bun.file(join(target, "thread_locals.js")).text();
   // Each only read and set is the module's variable, a `let` if it's set
   // (ADR 0270); one whose cell `with` hands out keeps its `{ value }`.
-  expect(js).toContain("let COUNT = 0;\nconst LOG = [];\nconst START = (Math.imul(10, 4) + 2) | 0;");
+  expect(js).toContain("let COUNT = 0;\nconst LOG = [];\nconst START = 10 * 4 + 2;");
   expect(js).toContain("  COUNT = (COUNT + 1) >>> 0;\n  return COUNT;");
   expect(js).toContain("  })(LOG);");
   // A closure that only returns is its body, on the key or its value, in place.

@@ -9,7 +9,7 @@ export function entry() {
 function main() {
   const n = 7;
   console.log("hello");
-  console.log(`n = ${n}, twice = ${Math.imul(n, 2)}`);
+  console.log(`n = ${n}, twice = ${n * 2}`);
   console.log("");
   $print("a");
   $print(`b ${n}`);

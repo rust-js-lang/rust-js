@@ -50,7 +50,7 @@ export function freshCopyEachTime(times) {
       return n$1;
     };
     total = (total + ((Math.imul(bump(), 10) + bump()) | 0)) | 0;
-    i = (i + 1) | 0;
+    i += 1;
   }
   return total;
 }

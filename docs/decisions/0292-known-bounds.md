@@ -1,6 +1,8 @@
 # 0292. An index a condition shows in bounds is read as it is
 
-Status: Accepted. Narrows where `$index` checks an index.
+Status: Accepted. Narrows where `$index` checks an index. Its regions are
+replaced by [0576](0576-what-a-bodys-integers-can-be.md)'s ranges, which
+know each of its cases and more.
 
 Case: A ([0262](0262-when-rust-and-js-disagree.md)).
 

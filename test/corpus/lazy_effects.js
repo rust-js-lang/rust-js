@@ -72,7 +72,7 @@ function main() {
             break bb49;
           }
         }
-        n = (n + 1) | 0;
+        n += 1;
         continue;
       }
     }

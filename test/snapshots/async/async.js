@@ -22,7 +22,7 @@ export async function twice(n) {
 export async function countdown(n) {
   let steps = 0;
   while (n > 0) {
-    n = await setTimeout(0, (n - 1) >>> 0);
+    n = await setTimeout(0, n - 1);
     steps = (steps + 1) >>> 0;
   }
   return steps;
