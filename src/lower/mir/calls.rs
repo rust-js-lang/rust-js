@@ -284,6 +284,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if !bindings::is_binding(tcx, def_id) || !matches!(bindings::js_form(tcx, def_id), bindings::JsForm::Defined) {
             return Ok(None);
         }
+        // A path of bindings, each read from the one before (ADR 0624).
+        if let Some(arg) = args.first()
+            && let ty::Tuple(steps) = *arg.node.ty(&body.local_decls, tcx).kind()
+            && !steps.is_empty()
+        {
+            let path = self.defined_path(steps, span)?;
+            return self.mir_defined_parts(Some(path), span);
+        }
         let global = args
             .first()
             .and_then(|arg| match *arg.node.ty(&body.local_decls, tcx).kind() {
@@ -295,6 +303,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     .filter(|&s| tcx.is_foreign_item(s))
                     .and_then(|s| bindings::js_path(tcx, s)),
             });
+        self.mir_defined_parts(global, span)
+    }
+
+    /// `typeof` of each part of `global`'s path, joined by `&&`.
+    fn mir_defined_parts(&self, global: Option<String>, span: Span) -> R<Option<Expr>> {
         // Each part of its path, `typeof console !== "undefined" && typeof
         // console.log !== "undefined"`: a host may lack any of them.
         let parts: Vec<&str> = global
@@ -320,6 +333,48 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ));
         }
         Ok(asked.into_iter().reduce(|a, b| Expr::bin(Op::And, a, b)))
+    }
+
+    /// The path a tuple of bindings is, each step a method of what the one
+    /// before gives, its first a global's binding (ADR 0624):
+    /// `(Window::document, Document::create_element::<Div>)` is
+    /// `window.document.createElement`.
+    fn defined_path(&self, steps: &[ty::Ty<'tcx>], span: Span) -> R<String> {
+        let tcx = self.tcx;
+        let refused = || {
+            self.unsupported(
+                span,
+                "`js::is_defined` of a path of bindings where a step isn't a method of what the one before gives",
+            )
+        };
+        let mut path = String::new();
+        let mut gives: Option<ty::Ty<'tcx>> = None;
+        for step in steps {
+            let Some((f, args)) = crate::lower::fn_def(*step) else {
+                return Err(refused());
+            };
+            if !bindings::is_binding(tcx, f) {
+                return Err(refused());
+            }
+            let sig = tcx.fn_sig(f).instantiate(tcx, args).skip_normalization().skip_binder();
+            path = match gives {
+                None if bindings::is_method(tcx, f) => self.member_of_global(f).ok_or_else(refused)?,
+                None => bindings::js_path(tcx, f).ok_or_else(refused)?,
+                Some(before) => {
+                    let of = sig.inputs().first().map(|this| this.peel_refs());
+                    let name = match bindings::js_form(tcx, f) {
+                        bindings::JsForm::Call(name) | bindings::JsForm::Get(name) => name,
+                        _ => return Err(refused()),
+                    };
+                    if !bindings::is_method(tcx, f) || of != Some(before.peel_refs()) {
+                        return Err(refused());
+                    }
+                    format!("{path}.{name}")
+                }
+            };
+            gives = Some(sig.output());
+        }
+        Ok(path)
     }
 
     /// `performance.now` of `Performance::now`, a method binding of a type

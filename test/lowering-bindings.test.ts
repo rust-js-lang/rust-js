@@ -6,7 +6,8 @@
 import { beforeAll, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { buildReact, compiler, fixture, run, target } from "./support";
+import { runSync } from "./child";
+import { buildReact, compiler, fixture, root, run, target } from "./support";
 
 beforeAll(buildReact, 600_000);
 
@@ -748,6 +749,60 @@ pub fn same_maybe(a: Option<&Unknown>, b: Option<&Unknown>) -> bool {
   const lib = await import(join(dir, "lib.js"));
   const o = {};
   expect([lib.same(o, o), lib.same(o, {}), lib.same(NaN, NaN), lib.sameMaybe(null, undefined), lib.sameMaybe(undefined, undefined)]).toEqual([true, false, false, false, true]);
+});
+
+// ADR 0624: `js::is_defined` of a path of bindings, each read from the
+// one before, asks each part of it: React's canUseDOM, `typeof window !==
+// "undefined" && typeof window.document !== "undefined" && typeof
+// window.document.createElement !== "undefined"`. A step that isn't the
+// one before's method is refused.
+test("js::is_defined of a path of bindings asks each part", async () => {
+  const dir = fixture("defined-paths");
+  const source = (path: string) => `pub struct Page(std::marker::PhantomData<js::JsObject>);
+pub struct Doc(std::marker::PhantomData<js::JsObject>);
+
+impl Page {
+    #[cfg_attr(rust_js, rust_js::link_name = "get doc")]
+    pub fn doc(&self) -> &'static Doc {
+        unreachable!()
+    }
+}
+
+impl Doc {
+    #[cfg_attr(rust_js, rust_js::link_name = "make")]
+    pub fn make<T: Copy>(&self, tag: T) -> &'static js::JsObject {
+        let _ = tag;
+        unreachable!()
+    }
+}
+
+unsafe extern "Rust" {
+    #[link_name = "rustJsPage"]
+    pub safe static PAGE: &'static Page;
+}
+
+pub fn can_make() -> bool {
+    js::is_defined(${path})
+}
+`;
+  writeFileSync(join(dir, "lib.rs"), source("(Page::doc, Doc::make::<u8>)"));
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('return (\n    typeof rustJsPage !== "undefined" &&\n    typeof rustJsPage.doc !== "undefined" &&\n    typeof rustJsPage.doc.make !== "undefined"\n  );');
+  const lib = await import(join(dir, "lib.js"));
+  const page = globalThis as Record<string, unknown>;
+  const asked = [lib.canMake()];
+  page.rustJsPage = {};
+  asked.push(lib.canMake());
+  page.rustJsPage = { doc: {} };
+  asked.push(lib.canMake());
+  page.rustJsPage = { doc: { make: () => ({}) } };
+  asked.push(lib.canMake());
+  expect(asked).toEqual([false, false, false, true]);
+  // A step that isn't a method of what the one before gives.
+  writeFileSync(join(dir, "lib.rs"), source("(Page::doc, Page::doc)"));
+  const p = runSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target], root, 60_000);
+  expect([p.code === 0, p.stderr]).toEqual([false, expect.stringContaining("a step isn't a method of what the one before gives")]);
 });
 
 // ADR 0597: whether the host has a binding's global is `js::is_defined`'s,

@@ -187,6 +187,15 @@ export function later(task) {
 - **Each part of a path is asked**, `js::is_defined(webapi::Performance::now)`
   of the one global that type is, `typeof performance !== "undefined" &&
   typeof performance.now !== "undefined"`: a host may lack any of them.
+- **A path through what a global's members give** is a tuple of
+  bindings, each a method of what the one before gives, the first a
+  global's: `js::is_defined((webapi::Window::document,
+  webapi::Document::create_element::<webapi::tags::Div>))` is `typeof
+  window !== "undefined" && typeof window.document !== "undefined" &&
+  typeof window.document.createElement !== "undefined"`, as React's
+  `canUseDOM` asks
+  ([ADR 0624](../../decisions/0624-is-defined-of-a-path-of-bindings.md)).
+  A step that isn't one is refused.
 - **It's a global's**: a closure, a variable, the crate's own function or
   static, or an import is refused.
 - **Rust is told nothing**: the binding is still there to call, and throws

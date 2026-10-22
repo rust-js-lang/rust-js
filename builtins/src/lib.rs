@@ -327,8 +327,9 @@ pub fn type_of(this: Option<&Unknown>) -> String {
 /// [`typeof X !== "undefined"`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Operators/typeof#interaction_with_undeclared_and_uninitialized_variables):
 /// whether the host has `binding`'s global, a JS function's binding,
 /// `is_defined(webapi::message_channel::new)`, where reading one it lacks
-/// would throw (ADR 0597). Rust is told nothing: the binding is still there
-/// to call, which throws where the host hasn't it.
+/// would throw (ADR 0597); of a path of them, each a method of what the
+/// one before gives, each part (ADR 0624). Rust is told nothing: the
+/// binding is still there to call, which throws where the host hasn't it.
 #[cfg_attr(rust_js, rust_js::link_name = "typeof !== \"undefined\"")]
 #[allow(unused_variables)]
 pub fn is_defined<B: Copy>(binding: B) -> bool {

@@ -171,4 +171,20 @@ export const mutations: Mutation[] = [
     replace: "                if params.is_empty() && !self.is_unknown(gives) =>\n",
     tests: ["test/react.test.ts", "-t", "use_state's first state"],
   },
+  {
+    name: "defined-path-unread",
+    breaks: "`js::is_defined((Page::doc, Doc::make))`, a path of bindings, is refused as no global's binding",
+    file: "src/lower/mir/calls.rs",
+    find: "            && let ty::Tuple(steps) = *arg.node.ty(&body.local_decls, tcx).kind()\n            && !steps.is_empty()\n",
+    replace: "            && let ty::Tuple(steps) = *arg.node.ty(&body.local_decls, tcx).kind()\n            && steps.is_empty()\n",
+    tests: ["test/lowering-bindings.test.ts", "-t", "js::is_defined of a path of bindings"],
+  },
+  {
+    name: "defined-path-step-unchecked",
+    breaks: "a path whose step is no method of what the one before gives, `(Doc::make, Page::doc)`, is asked as if it were",
+    file: "src/lower/mir/calls.rs",
+    find: "                    if !bindings::is_method(tcx, f) || of != Some(before.peel_refs()) {\n",
+    replace: "                    if !bindings::is_method(tcx, f) {\n",
+    tests: ["test/lowering-bindings.test.ts", "-t", "js::is_defined of a path of bindings"],
+  },
 ];
