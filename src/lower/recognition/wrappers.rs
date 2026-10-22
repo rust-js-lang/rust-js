@@ -391,9 +391,17 @@ pub(crate) fn weak_pointee<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Ty<'
     }
 }
 
-/// Is `id` a function that reads an `Rc`'s or `Arc`'s counts, or makes
-/// or reads a `Weak` (ADR 0320): what only a counted one can answer.
-pub(crate) fn reads_rc_count(tcx: TyCtxt<'_>, id: DefId) -> bool {
+/// Is `id`, of an `Rc` of `pointee`, a function that reads an `Rc`'s or
+/// `Arc`'s counts, or makes or reads a `Weak` (ADR 0320): what only a
+/// counted one can answer. `ptr_eq` of a struct with fields, a JS object
+/// whose `===` is its identity, needs none (ADR 0582).
+pub(crate) fn reads_rc_count<'tcx>(tcx: TyCtxt<'tcx>, id: DefId, pointee: Option<Ty<'tcx>>) -> bool {
+    let object = matches!(pointee.map(|pointee| *pointee.kind()), Some(ty::Adt(adt, _))
+        if adt.is_struct() && adt.did().is_local()
+            && !adt.non_enum_variant().fields.is_empty());
+    if object && tcx.item_name(id).as_str() == "ptr_eq" {
+        return false;
+    }
     let Some(imp) = tcx.inherent_impl_of_assoc(id) else {
         return false;
     };

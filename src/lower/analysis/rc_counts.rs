@@ -87,7 +87,7 @@ pub(super) fn counted_rcs<'tcx>(
             }
             if let ExprKind::Call { fun, .. } = expr.kind
                 && let Some((def_id, args)) = fn_def(body.thir[fun].ty)
-                && reads_rc_count(tcx, def_id)
+                && reads_rc_count(tcx, def_id, args.types().next())
             {
                 types.insert(tcx.erase_and_anonymize_regions(args.type_at(0)));
             }

@@ -90,6 +90,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 helper("$newCyclic", vec![f])
             }
             RcOp::MakeMut => return Err(self.unsupported(span, "`Rc::make_mut`, of its value alone")),
+            // The same box, a counted one's, or an uncounted one's JS object,
+            // whose `===` is its identity (ADR 0582).
+            RcOp::PtrEq => {
+                let (rc, other) = (values.next().expect("an `Rc`"), values.next().expect("another"));
+                Expr::bin(Op::Eq, rc, other)
+            }
             _ => {
                 let rc = values.next().expect("an `Rc`");
                 // A `&mut` to one is its place's box (ADR 0523).
@@ -99,13 +105,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 };
                 let item = pointee.expect("a counted `Rc` or a `Weak`");
                 match op {
+                    RcOp::PtrEq => unreachable!("an arm of its own"),
                     RcOp::StrongCount | RcOp::WeakStrongCount => Expr::member(rc, "strong"),
                     RcOp::WeakCount => Expr::member(rc, "weak"),
                     RcOp::WeakWeakCount => helper("$weakCount", vec![rc]),
-                    RcOp::PtrEq => {
-                        let other = values.next().expect("another");
-                        Expr::bin(Op::Eq, rc, other)
-                    }
                     RcOp::Downgrade => helper("$downgrade", vec![rc]),
                     RcOp::Upgrade => helper("$upgrade", vec![rc]),
                     RcOp::TryUnwrap => helper("$tryUnwrap", vec![rc]),

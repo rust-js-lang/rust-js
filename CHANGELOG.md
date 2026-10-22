@@ -767,6 +767,8 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### Changed
 
+- **`Rc::ptr_eq` of an object is its identity** (ADR 0582): of an `Rc` of
+  a struct with fields, `a === b`, counting nothing.
 - **A closure called as a statement where it's made is its body** (ADR
   0581): a plain thread-local's `with_borrow_mut(|queue| ..)` reads the
   variable in place, `push(taskQueue, timer)`, its loop's `return;` the

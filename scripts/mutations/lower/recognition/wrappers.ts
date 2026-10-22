@@ -187,4 +187,20 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/snapshots.test.ts", "-t", "async"],
   },
+  {
+    name: "ptr-eq-object-counted",
+    breaks: "`ptr_eq` of an `Rc` of a struct counts it, `{ value, strong, weak }`",
+    file: "src/lower/recognition/wrappers.rs",
+    find: "    if object && tcx.item_name(id).as_str() == \"ptr_eq\" {\n",
+    replace: "    if false && object && tcx.item_name(id).as_str() == \"ptr_eq\" {\n",
+    tests: ["test/lowering.test.ts", "-t", "ptr_eq of an Rc of a struct"],
+  },
+  {
+    name: "ptr-eq-number-uncounted",
+    breaks: "`ptr_eq` of an `Rc` of a number isn't counted, so two `Rc::new(1)` are one",
+    file: "src/lower/recognition/wrappers.rs",
+    find: "    if object && tcx.item_name(id).as_str() == \"ptr_eq\" {\n",
+    replace: "    if tcx.item_name(id).as_str() == \"ptr_eq\" {\n",
+    tests: ["test/lowering.test.ts", "-t", "ptr_eq of an Rc of a struct"],
+  },
 ];

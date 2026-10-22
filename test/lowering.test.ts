@@ -5243,6 +5243,43 @@ pub fn last() {
   expect(lib.drained(5)).toBe(0);
 });
 
+// ADR 0582: `Rc::ptr_eq` of an `Rc` of a struct with fields, a JS object,
+// is `===` of the objects, whose identity it is: React's scheduler asks
+// whether the task it ran is still the first, `peek(taskQueue) ===
+// currentTask`, of tasks that aren't counted. One of a number, which JS
+// compares by value, is counted as before.
+test("ptr_eq of an Rc of a struct is === of its object, uncounted", async () => {
+  const dir = fixture("ptr-eq-objects");
+  writeFileSync(join(dir, "lib.rs"), `use std::rc::Rc;
+
+pub struct Task {
+    pub id: u32,
+}
+
+pub fn same(a: &Rc<Task>, b: &Rc<Task>) -> bool {
+    Rc::ptr_eq(a, b)
+}
+
+pub fn task(id: u32) -> Rc<Task> {
+    Rc::new(Task { id })
+}
+
+pub fn numbers() -> bool {
+    let a = Rc::new(1);
+    let b = Rc::new(1);
+    Rc::ptr_eq(&a, &b)
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("export function same(a, b) {\n  return a === b;\n}");
+  expect(js).toContain("export function task(id) {\n  return { id };\n}");
+  expect(js).toContain("strong: 1");
+  const lib = await import(join(dir, "lib.js"));
+  const t = lib.task(1);
+  expect([lib.same(t, t), lib.same(t, lib.task(1)), lib.numbers()]).toEqual([true, false, false]);
+});
+
 // ADR 0293: a `Cell` a `let` takes apart, read by `get()` before anything
 // else runs, is its value in JS's destructuring: react.dev's ErrorMessage
 // has `const {message, title} = error;`. Set before it's read, it's read
