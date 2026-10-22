@@ -170,4 +170,20 @@ export const mutations: Mutation[] = [
     replace: "        let _ = radix;\n",
     tests: ["test/corpus.test.ts", "-t", "^debug_hex_composite.rs$"],
   },
+  {
+    name: "format-of-box-not-what-it-holds",
+    breaks: "a placeholder's options of a `Box` or an `Rc` of a string or a number are dropped, `{:>6}` of `Box::new(String::from(\"ada\"))` unpadded",
+    file: "src/lower/format_spec.rs",
+    find: "        let ty = self.shown_type(ty);\n        let (value, ty) = match kind {\n",
+    replace: "        let (value, ty) = match kind {\n",
+    tests: ["test/corpus.test.ts", "-t", "^display_options_handed_on.rs$"],
+  },
+  {
+    name: "display-handed-on-nothing",
+    breaks: "a placeholder's options of a `Wrapping`, a `Cow<str>`, a path's `display()` or a parse error are dropped, as std's `Display` hands them to what it shows",
+    file: "src/lower/format_spec.rs",
+    find: "            Std::FmtDisplay => self.display_handed_on(value, ty),\n",
+    replace: "            Std::FmtDisplay => (value, ty),\n",
+    tests: ["test/corpus.test.ts", "-t", "^display_options_handed_on.rs$"],
+  },
 ];

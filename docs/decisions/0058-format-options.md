@@ -99,3 +99,20 @@ the placeholder runs, `{:.*e}`, or through a writer, a type's own
 `test/corpus/exp_precision.rs` shows ties, carries, integers, `f32`s,
 padding and a type's own against native Rust.
 
+
+## Amendment: options reach what std's `Display` hands them to
+
+A placeholder's options were applied by the type given, so `{:>4}` of
+a `Box<String>`, an `Rc<i32>` or an `Arc<char>`, and `{:.1}` or `{:+}` of
+a `Box<f64>`, were dropped, though each is what it holds in JS and its
+`fmt` hands the `Formatter` on to it (#109). And std's `Display` of a
+`Wrapping`, a `Cow<str>`, a path's `display()` and a parse error writes
+its number or text with that text's own `fmt`, so it pads too, where
+they were shown unpadded (#109, #110). `format_value` takes the type a
+`Box` or an `Rc` shows, and `display_handed_on` what those hand theirs
+to; a parse error held as a `dyn Error` applies them by `$formatted`. A
+`Utf8Error` writes its message as it is, as std's does. ADR 0262's
+case: results would change, so Rust's. Held by
+`test/corpus/display_options_handed_on.rs` and the mutations
+`format-of-box-not-what-it-holds`, `display-handed-on-nothing` and
+`dyn-parse-error-unpadded`.

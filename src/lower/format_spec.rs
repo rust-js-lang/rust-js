@@ -116,6 +116,25 @@ impl Radix {
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// What std's `Display` of `value` hands its options to, and its type:
+    /// a `Wrapping`'s number, a `Cow<str>`'s or a path's text, a parse
+    /// error's message, each of which `fmt`s it as its own; else `value`.
+    fn display_handed_on(&self, value: Expr, ty: Ty<'tcx>) -> (Expr, Ty<'tcx>) {
+        let text = self.tcx.types.str_;
+        if let Some(inner) = self.recognition().wrapping_of(ty) {
+            return (Expr::index(value, Expr::int(0)), inner);
+        }
+        if let Some((borrowed, _)) = self.recognition().cow_parts(ty)
+            && borrowed.is_str()
+        {
+            return (Expr::member(value, "_0"), text);
+        }
+        if self.recognition().is_path_like(ty) || self.is_parse_error(ty) {
+            return (value, text);
+        }
+        (value, ty)
+    }
+
     /// One placeholder's string: `value` shown as `kind` says, with `spec`'s
     /// options, and its `width` and `precision`: numbers, or other arguments.
     /// Whether `ty`'s `Display::fmt` is a binding of the value itself,
@@ -143,6 +162,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if kind == Std::FmtDisplay && self.displays_itself(ty) {
             return Ok(value);
         }
+        // A `Box` or an `Rc` is what it holds in JS, and its `fmt` hands the
+        // placeholder's options to what it holds: `{:>4}` of `Box::new("s")`
+        // pads the string.
+        let ty = self.shown_type(ty);
+        let (value, ty) = match kind {
+            Std::FmtDisplay => self.display_handed_on(value, ty),
+            _ => (value, ty),
+        };
         let num = Num::of(ty);
         // `{:x?}` of an integer: its hex, as `{:x}` shows it (ADR 0559). Of
         // another leaf, a string, a float or a `bool`, nothing: std's `fmt`
