@@ -454,11 +454,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             NumOp::WrappingNeg => num.wrap(Expr::unary(UnaryOp::Neg, arg())),
             NumOp::SaturatingNeg { abs } => {
+                let operand = arg();
+                // Of 0, `-0` is JS's `-0`, which `| 0` makes the integer 0, as
+                // `saturating_mul`'s does; of a constant that isn't, it's needless.
+                let zero = !abs && operand.as_int().is_none_or(|n| n == 0);
                 let exact = match abs {
-                    true => math("abs", vec![arg()]),
-                    false => Expr::unary(UnaryOp::Neg, arg()),
+                    true => math("abs", vec![operand]),
+                    false => Expr::unary(UnaryOp::Neg, operand),
                 };
-                math("min", vec![exact, Expr::int(hi)])
+                let saturated = math("min", vec![exact, Expr::int(hi)]);
+                if zero {
+                    Expr::bin(Op::BitOr, saturated, Expr::int(0))
+                } else {
+                    saturated
+                }
             }
             NumOp::WrappingDiv => helper("$wrappingDiv", vec![arg(), arg(), Expr::int(lo)]),
             NumOp::WrappingRem => helper("$wrappingRem", vec![arg(), arg(), Expr::int(lo)]),

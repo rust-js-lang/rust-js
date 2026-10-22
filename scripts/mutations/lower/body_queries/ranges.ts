@@ -194,4 +194,12 @@ export const mutations: Mutation[] = [
     replace: "        while false && self.s > 0 && self.c % 2 == 0 && self.b % 2 == 0 {",
     tests: ["test/lowering.test.ts", "-t", "only calls reach"],
   },
+  {
+    name: "product-negative-zero-exact",
+    breaks: "a product the ranges show in range is JS's own `*` though it can be `-4 * 0`, JS's `-0`, which an `f64` made of it shows",
+    file: "src/lower/body_queries/ranges.rs",
+    find: "        zero(self) && other.lo < 0 || zero(other) && self.lo < 0\n",
+    replace: "        false\n",
+    tests: ["test/corpus.test.ts", "-t", "^product_sign.rs$"],
+  },
 ];

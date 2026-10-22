@@ -69,8 +69,9 @@ table](../../ROADMAP.md) lists the larger missing pieces.
   a leading space refused, `ParseIntError { kind: PosOverflow }`, found
   where Rust finds it, `"999x"` overflowing a `u8` before its `x`
   ([0063](../decisions/0063-text.md), [0154](../decisions/0154-number-methods.md)).
-- **An integer is never JS's `-0`:** `-2 % 2` is `0`
-  ([0064](../decisions/0064-numbers.md), [`remainder_sign`](../../test/corpus/remainder_sign.rs)).
+- **An integer is never JS's `-0`:** `-2 % 2` is `0`, and so is `-4 * 0`
+  ([0064](../decisions/0064-numbers.md), [`remainder_sign`](../../test/corpus/remainder_sign.rs),
+  [`product_sign`](../../test/corpus/product_sign.rs)).
 - **Arithmetic is exact; library functions are JS's.** `+ - * /` and `sqrt`
   give Rust's answers, an `f32`'s included. `sin`, `exp`, `powf` and the
   others are JS's `Math`, which may differ from Rust's in the last bit;

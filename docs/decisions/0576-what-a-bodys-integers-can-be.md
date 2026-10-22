@@ -108,3 +108,18 @@ it found is trusted.
   kept where it changed, a wrap's bound unchecked, a shift unscaled, an
   index at most the length taken below it, a swap unjudged or unswapped,
   the in-bounds call checked, an exact operator wrapped.
+
+## Amendment: a product that can be `-0` isn't exact
+
+A product in range was JS's own `*`, but in range isn't enough: `-4 * 0`
+is JS's `-0`, which an integer never is ([0064](0064-numbers.md)), and an
+`f64` made of it, `{:e}` of it and `1.0` over it showed it (#108). A
+product is exact only where its ranges show it can't be one of them 0 and
+the other below 0 (`Range::may_make_negative_zero`); one that can is
+wrapped, `n * 0 | 0`, and `Math.imul` of variables, whose result is
+never `-0`. ADR 0262's case: results would change, so Rust's, paid for in
+output. `saturating_neg` of 0 had the same `-0`, `Math.min(-0, MAX)`, and
+is `| 0` as `saturating_mul` is.
+
+Held by `test/corpus/product_sign.rs` and the mutations
+`product-negative-zero-exact` and `saturating-neg-negative-zero`.
