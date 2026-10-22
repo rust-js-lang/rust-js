@@ -196,4 +196,13 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^pointer_constants.rs$"],
   },
+  {
+    name: "fresh-array-copied",
+    breaks: "an array made here, a literal or a `.slice(..)`, is copied as it's bound, `[1, 2].slice()`, where nothing else holds it",
+    file: "src/lower/copies.rs",
+    find: "        if fresh && items_plain {",
+    replace: "        if false && fresh && items_plain {",
+    tests: ["test/corpus.test.ts", "-t", "^(slice_patterns|str_mut).rs$"],
+    snapshots: true,
+  },
 ];

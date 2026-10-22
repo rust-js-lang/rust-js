@@ -30,6 +30,15 @@ pub(super) fn mutated_types<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&Body<'tcx>])
                 } if enum_ty(body.thir[arg].ty) => {
                     mutated.insert(body.thir[arg].ty.peel_refs());
                 }
+                // An array something takes `&mut` of may have its items changed
+                // through it, as a `&mut [T]` std's slice methods, `iter_mut()`
+                // or a function of a slice changes them by.
+                ExprKind::Borrow {
+                    borrow_kind: BorrowKind::Mut { .. },
+                    arg,
+                } if matches!(body.thir[arg].ty.kind(), ty::Array(..)) => {
+                    mutated.insert(body.thir[arg].ty);
+                }
                 ExprKind::Match {
                     scrutinee, ref arms, ..
                 } if enum_ty(body.thir[scrutinee].ty)

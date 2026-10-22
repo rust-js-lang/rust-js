@@ -170,6 +170,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// changed in place, which needs a type in `mutated`. So only those
     /// types are copied, and everything else stays shared.
     pub(super) fn copy_if_needed(&self, place: Expr, ty: Ty<'tcx>) -> Expr {
+        // An array made here, which nothing else holds, `[1, 2]` or a
+        // `.slice(..)`, of items that need no copy of their own: itself.
+        let fresh = super::iterators::made_array(&place)
+            || matches!(&place.kind, js::ExprKind::Call(callee, _)
+                if matches!(&callee.kind, js::ExprKind::Member(_, name) if name == "slice"));
+        let items_plain = match ty.kind() {
+            ty::Array(item, _) => !self.contains_mutated(*item),
+            _ => false,
+        };
+        if fresh && items_plain {
+            return place;
+        }
         if self.contains_mutated(ty) && self.is_copy(ty) {
             self.copy(place, ty)
         } else {

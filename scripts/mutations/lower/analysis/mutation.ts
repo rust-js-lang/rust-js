@@ -115,4 +115,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^default_method_clones.rs$"],
     snapshots: true,
   },
+  {
+    name: "array-borrowed-mut-unchanged",
+    breaks: "an array something takes `&mut` of, to sort it or change it through a slice, isn't seen to change, so a copy made before shares it, and a grid's rows are one array",
+    file: "src/lower/analysis/mutation.rs",
+    find: "                } if matches!(body.thir[arg].ty.kind(), ty::Array(..)) => {\n",
+    replace: "                } if false && matches!(body.thir[arg].ty.kind(), ty::Array(..)) => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^arrays_changed_through_slices.rs$"],
+  },
 ];

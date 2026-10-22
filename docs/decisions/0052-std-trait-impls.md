@@ -126,3 +126,25 @@ number's `&mut` is its place, so `copy[0].0.push('?')` writes the part,
 copy, not the original shared, which the clone changed with it: a wrong
 answer, `[Token("a?")]` for `[Token("a")]`. A `&mut` of a part that's an
 object, a `Vec`'s, changes that object, not its holder.
+
+## Amendment: an array changed through a slice
+
+An array's type was changed only where its item was assigned, `a[i] =
+v`, or it was replaced whole through a `&mut`; std's slice methods take
+an `&mut` of it unsized to `&mut [T]` and change it there, as `iter_mut()`
+and a function of `&mut [T]` do, which recorded nothing. So `let b = a;
+a.sort();` shared one array, `fn sorted(mut a: [i32; 3])` sorted its
+caller's, and a grid's rows, `[[0; 2]; 3]`, `new Array(3).fill([0, 0])`,
+were one row changed through `grid[0].iter_mut()` (#125, #135). An array
+something takes `&mut` of is changed now. A copy of an array made where
+it's copied, a literal or a `.slice(..)`, of items that need none, is the
+array itself, as nothing else holds it.
+
+Consequence: an array of arrays a `for` takes the items of by value,
+`for p in [[0, 0], [0, 1]]`, copies each where some `[i32; 2]` is changed
+in the crate, `const p = value.slice()` in a `while (true)`, where it was
+a `for (const p of ..)`: the items of a temporary array are its own, which
+the loop's lowering doesn't yet know (`slice_patterns`).
+
+Held by `test/corpus/arrays_changed_through_slices.rs` and the mutations
+`array-borrowed-mut-unchanged` and `fresh-array-copied`.
