@@ -97,3 +97,13 @@ pairwise_sub($iterator({ start: 0, end: 10 }, $rangeNext, false, $rangeNextBack)
 - `$nextBack(it)` calls `it.back()` where it read `it.items` and `it.end`
   itself; a `$iter` steps from its end as it did.
 - `rev()` of a reversed one, `t.rev().next_back()`, is still an error.
+
+## Amendment: `rev()` of a `dyn`, held by a case
+
+`test/corpus/rev_of_dyn_double_ended.rs` holds `rev()` of a `Box<dyn
+DoubleEndedIterator>`, given away and held, after a `next_back()`, as
+`rev_items` makes it, `$rev(it)`: the nightly found the other place that
+made it, in `reversed`, never decided it. The readability measure's
+`$iter` share grows, 62.4 to 62.5 in ten thousand lines, from the vectors
+it and `held_enumerate`'s widened case give as iterators, `$iter([1, 2,
+3])`.

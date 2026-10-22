@@ -319,10 +319,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return (zip.helper_name() == Some("$lazyZip") && sides.len() == 2 && leaves_none(a) && leaves_none(b))
                 .then(|| Expr::call_helper("$zipBack", sides.clone()));
         }
-        // A JS iterator that knows its back, stepped from it, `$rev(it)`.
-        if self.knows_its_back(iter_ty) {
-            return Some(Expr::call_helper("$rev", vec![it.clone()]));
-        }
         let boxed = self.iterator_item(iter_ty).is_none_or(|item| self.boxed_payload(item));
         let double_ended = self.recognition().double_ended_iterator()?;
         let next_back = crate::lower::recognition::extension_entry(self.tcx, double_ended);
@@ -362,16 +358,6 @@ fn reversed_inward(e: &Expr) -> Option<Expr> {
         };
         let back = Expr::helper(kind.step(true)?);
         return Some(Expr::call((**callee).clone(), vec![args[0].clone(), back]));
-    }
-    // `Iterator.from(x)` of what JS steps, a string's `$charIndices(s)`: its
-    // items, listed and reversed, as `Array.from(x)` lists a whole chain's,
-    // stepped as an array's are, `$iter(Array.from(x).toReversed())`.
-    if let Ok(source) = crate::lower::iterators::from_iterator(e.clone()) {
-        let items = Expr::call(Expr::member(Expr::var("Array"), "from"), vec![source]);
-        return Some(crate::lower::iterators::array_stepped(Expr::call(
-            Expr::member(items, "toReversed"),
-            Vec::new(),
-        )));
     }
     let js::ExprKind::Member(base, method) = &callee.kind else {
         return None;

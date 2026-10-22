@@ -51,14 +51,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts","-t","statics"],
   },
   {
-    name: "mir-zero-sized-const-refused",
-    breaks: "`Self` of a unit struct, a constant of nothing, is refused",
-    file: "src/lower/mir/operands.rs",
-    find: "                if let mir::ConstValue::ZeroSized = value {\n",
-    replace: "                if false && let mir::ConstValue::ZeroSized = value {\n",
-    tests: ["test/corpus.test.ts","-t","expression_values"],
-  },
-  {
     name: "mir-take-field-reordered",
     breaks: "a tuple's call taken before its later calls lets a flush run them first",
     file: "src/lower/mir/operands.rs",

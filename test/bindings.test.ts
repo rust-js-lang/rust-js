@@ -35,6 +35,42 @@ pub fn wire() {
   expect(result.stderr.toString()).toContain("given away without being called once");
 });
 
+// A JS class's `Deref` to the class it extends, which webapi declares for
+// each, is the object itself where it's used, and its body, a pointer cast
+// that never runs, is no JS: lowered, it would be a function that makes a
+// pointer to nothing.
+test("a JS class's Deref to the class it extends is no JS", () => {
+  const withJs = ["--", "--crate-type", "lib", "--edition", "2024", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const dir = fixture("js-class-deref");
+  writeFileSync(join(dir, "lib.rs"), `use std::marker::PhantomData;
+use std::ops::Deref;
+use js::JsObject;
+
+pub struct Base(PhantomData<JsObject>);
+pub struct Derived(PhantomData<JsObject>);
+
+impl Deref for Derived {
+    type Target = Base;
+    fn deref(&self) -> &Base {
+        unsafe { &*(self as *const Self as *const Base) }
+    }
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "name")]
+fn base_name(_b: &Base) -> String {
+    unreachable!()
+}
+
+pub fn named(d: &Derived) -> String {
+    base_name(d)
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("return name(d);");
+  expect(js).not.toContain("Deref_deref");
+});
+
 // ADR 0223: an event's name gives its listener the event its target takes,
 // and a tag's name the element it makes, from `@webref/events` and
 // `@webref/elements`, as TypeScript's `HTMLElementEventMap` and

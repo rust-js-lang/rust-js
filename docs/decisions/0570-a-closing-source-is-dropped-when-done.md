@@ -60,3 +60,13 @@ both ways it's closed.
   `filter(..).collect()`, `map(..).count()` and a `for` over a `map`, each
   of a source with a printing `Drop`, against native Rust.
 - Mutation `closing-not-dropped-when-done`.
+
+## Amendment: no second close after a consumer
+
+`v.into_iter().copied().collect()` of a source closed to drop what it
+holds was also closed again after its consumer, `iter.return()`, a
+second way to do what this ADR's `$closing` does as it's done: the
+nightly's mutation `consumed-copied-undropped` survived, as nothing
+changed but the JS. A `copied()` of such a source, consumed by value, is
+closed only as it's done: `$closing(..).toArray()`.
+`test/corpus/consumed_adapter_drops.rs` holds it against native Rust.

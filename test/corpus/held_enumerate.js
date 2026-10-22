@@ -244,17 +244,24 @@ function main() {
   console.log(
     `${lastTripled == null ? "None" : `Some(${lastTripled})`} ${value$5 == null ? "None" : `Some(${value$5})`}`,
   );
+  // Of a range, stepped as it is by its dictionaries.
+  const counted = { inner: { start: 1, end: 4 } };
+  const value$6 = Wrap.lastTripled(counted, { next: $rangeNext }, { next_back: $rangeNextBack });
+  const value$7 = $rangeNext(counted.inner);
+  console.log(
+    `${value$6 == null ? "None" : `Some(${value$6})`} ${value$7 == null ? "None" : `Some(${value$7})`}`,
+  );
   // A range given as it is, stepped from its back by its dictionaries.
   const big = positions({ start: 1, end: 20 }, (x) => x > 16, { next: $rangeNext });
-  const value$6 = positionsIterator_next(big);
-  const value$7 = positionsDoubleEndedIterator_nextBack(
+  const value$8 = positionsIterator_next(big);
+  const value$9 = positionsDoubleEndedIterator_nextBack(
     big,
     { next_back: $rangeNextBack },
     { len: $rangeLen },
   );
-  const value$8 = positionsIterator_next(big);
+  const value$10 = positionsIterator_next(big);
   console.log(
-    `${value$6 == null ? "None" : `Some(${value$6})`} ${value$7 == null ? "None" : `Some(${value$7})`} ${value$8 == null ? "None" : `Some(${value$8})`}`,
+    `${value$8 == null ? "None" : `Some(${value$8})`} ${value$9 == null ? "None" : `Some(${value$9})`} ${value$10 == null ? "None" : `Some(${value$10})`}`,
   );
 }
 //# sourceMappingURL=case.js.map

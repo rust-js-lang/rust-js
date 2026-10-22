@@ -433,13 +433,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         valtree: ty::ValTree::from_raw_bytes(self.tcx, bytes),
                     });
                 }
-                // What has no fields, `Marker`'s, a tree of none.
-                if let mir::ConstValue::ZeroSized = value {
-                    return Some(ty::Value {
-                        ty,
-                        valtree: ty::ValTree::zst(self.tcx),
-                    });
-                }
                 if !matches!(value, mir::ConstValue::Slice { .. }) {
                     return None;
                 }

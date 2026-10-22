@@ -32,9 +32,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // And a map or a filter the crate steps from its back, made knowing
         // it (ADR 0545).
         if let Some(source) = crate::lower::recognition::back_stepped_source(self.tcx, ty) {
-            return self.knows_its_back(source)
-                || self.made_knowing(source, self.recognition().double_ended_iterator())
-                || self.stepped_from_its_back(ty);
+            return self.knows_its_back(source) || self.stepped_from_its_back(ty);
         }
         // An enumeration of one that knows its length too, `$enumerate`,
         // whose index from the back is where it is (ADR 0528).

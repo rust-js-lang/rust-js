@@ -292,14 +292,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^held_enumerate.rs$"],
   },
   {
-    name: "consumed-copied-undropped",
-    breaks: "a `copied()` of an iterator with a destructor, consumed to its end, never drops it",
-    file: "src/lower/mir/iter.rs",
-    find: "                    || (self.is_its_source(receiver) && self.recognition().closed_on_drop(receiver).is_some())\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^consumed_adapter_drops.rs$"],
-  },
-  {
     name: "cloned-mapped-anyway",
     breaks: "a `cloned()` of what needs no clone is mapped as one that does",
     file: "src/lower/mir/iter.rs",
@@ -336,8 +328,8 @@ export const mutations: Mutation[] = [
     name: "compiled-iterator-of-destructors-not-dropped-after",
     breaks: "a `Peekable` of a type with a destructor, consumed, isn't dropped after its method",
     file: "src/lower/mir/iter.rs",
-    find: "                    || compiled\n",
-    replace: "",
+    find: "            false => self.is_user_iterator(receiver) || compiled || holds_function,\n",
+    replace: "            false => self.is_user_iterator(receiver) || holds_function,\n",
     tests: ["test/crates.test.ts", "-t", "its peekable drops what it holds"],
   },
   {

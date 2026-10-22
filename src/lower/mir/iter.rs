@@ -202,14 +202,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     || holds_function
                     || closed
             }
-            // And a `copied()` of one closed to drop what it holds, which is
-            // it, consumed to its end, which closes nothing (ADR 0547).
-            false => {
-                self.is_user_iterator(receiver)
-                    || compiled
-                    || holds_function
-                    || (self.is_its_source(receiver) && self.recognition().closed_on_drop(receiver).is_some())
-            }
+            // Not a `copied()` of one closed to drop what it holds, which is
+            // it (ADR 0547): consumed to its end, it's closed as it's done
+            // (ADR 0570).
+            false => self.is_user_iterator(receiver) || compiled || holds_function,
         };
         let holds = output.walk().any(|part| part.as_type() == Some(receiver));
         if dropped && given && !holds {

@@ -16,11 +16,9 @@ function loudDrop_drop(loud) {
 
 function main() {
   const v = [1, 2, 3];
-  const iter = $closing($iterator(["copied", $iter(v)], loudIterator_next), (it) => {
+  const all = $closing($iterator(["copied", $iter(v)], loudIterator_next), (it) => {
     loudDrop_drop(it.of);
-  });
-  const all = iter.toArray();
-  iter.return();
+  }).toArray();
   console.log(`[${all.join(", ")}]`);
   const first = $closing($iterator(["cloned", $iter(v)], loudIterator_next), (it) => {
     loudDrop_drop(it.of);
@@ -28,11 +26,9 @@ function main() {
     .take(1)
     .toArray();
   console.log(`[${first.join(", ")}]`);
-  const iter$1 = $closing($iterator(["summed", $iter(v)], loudIterator_next), (it) => {
+  const total = $closing($iterator(["summed", $iter(v)], loudIterator_next), (it) => {
     loudDrop_drop(it.of);
-  });
-  const total = iter$1.reduce((a, b) => (a + b) >>> 0, 0);
-  iter$1.return();
+  }).reduce((a, b) => (a + b) >>> 0, 0);
   console.log(`${total}`);
 }
 //# sourceMappingURL=case.js.map

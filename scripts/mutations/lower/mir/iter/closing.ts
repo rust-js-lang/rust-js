@@ -108,7 +108,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/iter/closing.rs",
     find: "        if method.is_some_and(IterMethod::holds_its_source) {\n",
     replace: "        if dropping.is_some() && method.is_some_and(IterMethod::holds_its_source) {\n",
-    tests: ["test/corpus.test.ts", "-t", "^fused_iterators.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^adapter_source_drops.rs$"],
   },
   {
     name: "reduce-of-drops-refused",

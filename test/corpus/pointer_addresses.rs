@@ -58,6 +58,9 @@ fn main() {
         through == &raw const two[1],
         through as usize == &raw const two[1] as usize
     );
+    // A pointer made of the item alone, where generic code has it, is at the
+    // item's place in its array.
+    println!("{}", address_of(&two[1]) == &raw const two[1] as usize);
 
     // Round trips: an address made a pointer again is the pointer.
     let again = base as *const u32;
