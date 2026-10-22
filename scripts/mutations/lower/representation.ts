@@ -549,4 +549,12 @@ export const mutations: Mutation[] = [
     replace: "        ty::Adt(adt, _) if let Some(at) = super::recognition::transparent_field(tcx, *adt).filter(|_| false) => {\n",
     tests: ["test/corpus.test.ts", "-t", "^transparent_transmute.rs$"],
   },
+  {
+    name: "boxable-opaque-unrevealed",
+    breaks: "a `&mut` of a closure returned as `impl FnMut` is a box of it, `{ value: f }`, which what's lent it calls as the function",
+    file: "src/lower/representation.rs",
+    find: "        let ty = self.reveal(ty);\n        // A `Pin` is its pointer",
+    replace: "        // A `Pin` is its pointer",
+    tests: ["test/corpus.test.ts", "-t", "^impl_fn_mut_lent.rs$"],
+  },
 ];

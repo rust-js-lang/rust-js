@@ -389,3 +389,14 @@ pinned `&mut` so; `function_given_for_a_mut_param` gives a reborrow twice.
 Mutations `fmt-arg-through-refs`, `format-without-cells`,
 `held-shared-ref-handle` and `held-mut-ref-handle`; `rc_counts` shows a
 counted `Rc`'s `to_string()`, which `rc-debug-box` mutates.
+
+## Amendment: a returned `impl FnMut` is its function too
+
+`is_boxable` read a closure's type as it's written, and one returned as
+`impl FnMut` is an opaque type, not the closure: its `&mut`, lent to
+generic code or to a `&mut dyn FnMut`, was a box of it, `{ value: f }`,
+which was called as the function, "f is not a function" (#105). The type
+is revealed first, so a returned closure's `&mut` is the function, as a
+closure made here is. ADR 0262's case: it threw, so Rust's. Held by
+`test/corpus/impl_fn_mut_lent.rs` and the mutation
+`boxable-opaque-unrevealed`.

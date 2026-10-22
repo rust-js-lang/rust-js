@@ -233,6 +233,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A value that a `&mut` to must be a box to change (ADR 0072): one that
     /// isn't a JS object, as a `String`, a number or a fieldless enum is.
     pub(super) fn is_boxable(&self, ty: Ty<'tcx>) -> bool {
+        // What an `impl Trait` is, a returned closure's the closure.
+        let ty = self.reveal(ty);
         // A `Pin` is its pointer (ADR 0329), and a `&mut` to a pinned
         // reference the pin, which only what it points at is changed through.
         if let Some(pointer) = self.recognition().pinned(ty) {
