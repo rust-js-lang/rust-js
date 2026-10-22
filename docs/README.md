@@ -652,6 +652,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0073 Named imports for generated modules](decisions/0073-named-module-imports.md)
 - [0084 Owned compiler phases and explicit host boundaries](decisions/0084-owned-phases-and-host-boundaries.md)
 - [0085 Experimental scalar library linkage](decisions/0085-scalar-library-linkage.md) *(replaced by 0100)*
+- [0572 A compiler file is at most 1,500 lines](decisions/0572-a-compiler-file-is-at-most-1500-lines.md)
 
 ## Research
 

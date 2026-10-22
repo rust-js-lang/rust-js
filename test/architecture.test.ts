@@ -908,3 +908,37 @@ test("tests find what they build through target", () => {
     .filter((file) => read(`test/${file}`).split("\n").some((line) => !/^\s*\/\//.test(line) && /["'`]target\//.test(line)));
   expect(spelled).toEqual([]);
 });
+
+// A compiler file is at most scripts/file-sizes.ts's LARGE lines, so each
+// can be read and changed on its own (ADR 0572). The files over it when the
+// cap came are listed with their lines then, and may only shrink: one grown
+// fails, and one brought under the cap leaves the list, so it only gets
+// shorter. Split a listed file by concept, never to meet the number.
+const overTheCap: Record<string, number> = {
+  "src/lower/recognition.rs": 7535,
+  "src/lower/mir.rs": 7362,
+  "src/lower/traits.rs": 4128,
+  "src/js.rs": 2443,
+  "src/lower/iterators.rs": 2300,
+  "src/runtime/from_json.js": 2009,
+  "src/lower/display.rs": 1996,
+  "src/lower/mir/tidy/jumps.rs": 1724,
+  "src/lower/mir/iter.rs": 1687,
+  "src/to_oxc.rs": 1657,
+  "src/lower/combinators.rs": 1631,
+  "src/lower/std_types/number.rs": 1608,
+  "src/lower/drops.rs": 1564,
+};
+test("a compiler file is at most the cap, one listed over it only shrinking", () => {
+  const { COMPILER, LARGE, fileSizes } = require("../scripts/file-sizes.ts") as {
+    COMPILER: string[];
+    LARGE: number;
+    fileSizes: (paths: string[]) => [string, number][];
+  };
+  const sizes = new Map(fileSizes(COMPILER));
+  expect(sizes.size).toBeGreaterThan(400);
+  expect([...sizes].filter(([file, lines]) => lines > LARGE && !(file in overTheCap))).toEqual([]);
+  expect(Object.entries(overTheCap).filter(([file, lines]) => (sizes.get(file) ?? 0) > lines)).toEqual([]);
+  // Under the cap, split away or moved: off the list.
+  expect(Object.keys(overTheCap).filter(file => (sizes.get(file) ?? 0) <= LARGE)).toEqual([]);
+});

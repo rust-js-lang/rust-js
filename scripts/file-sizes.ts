@@ -1,16 +1,20 @@
 // Every compiler source file and its line count, largest first, then each
 // folder's total: where the code is growing, to read before a file gets too
-// big to hold in your head. Files are git's, so nothing built or ignored.
+// big to hold in your head. Files are git's, tracked or new, so nothing
+// built or ignored.
 //
 //   bun run file-sizes             the compiler: src/ and build.rs
 //   bun run file-sizes src/lower   any files or folders instead
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 
 const root = join(import.meta.dir, "..");
 const SOURCE = /\.(rs|ts|tsx|js|mjs)$/;
-// A file past this many lines is listed as one to split.
-export const LARGE = 2000;
+// The cap on a compiler file's lines, which test/architecture.test.ts holds
+// (ADR 0572): a file past it is one to split by concept.
+export const LARGE = 1500;
+// What the cap is held over, the compiler.
+export const COMPILER = ["src", "build.rs"];
 
 // The lines in a file, as `wc -l` counts them plus an unterminated last one.
 export const lineCount = (text: string) => text.split("\n").length - (text.endsWith("\n") || text === "" ? 1 : 0);
@@ -18,19 +22,18 @@ export const lineCount = (text: string) => text.split("\n").length - (text.endsW
 // The tracked source files under `paths`, relative to the repository, with
 // their line counts, largest first.
 export const fileSizes = (paths: string[]): [string, number][] => {
-  const listed = Bun.spawnSync(["git", "ls-files", "-z", "--", ...paths], { cwd: root });
+  const listed = Bun.spawnSync(["git", "ls-files", "-z", "--cached", "--others", "--exclude-standard", "--", ...paths], { cwd: root });
   if (listed.exitCode !== 0) throw new Error(listed.stderr.toString());
-  return listed.stdout
-    .toString()
-    .split("\0")
-    .filter(file => SOURCE.test(file))
+  return [...new Set(listed.stdout.toString().split("\0"))]
+    // A file deleted but not yet staged is listed and gone.
+    .filter(file => SOURCE.test(file) && existsSync(join(root, file)))
     .map(file => [file, lineCount(readFileSync(join(root, file), "utf8"))] as [string, number])
     .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
 };
 
 if (import.meta.main) {
   const paths = process.argv.slice(2);
-  const sizes = fileSizes(paths.length ? paths : ["src", "build.rs"]);
+  const sizes = fileSizes(paths.length ? paths : COMPILER);
   if (!sizes.length) throw new Error(`no source files under ${paths.join(" ")}`);
   const row = (lines: number, name: string) => `${String(lines).padStart(7)}  ${name}`;
 
