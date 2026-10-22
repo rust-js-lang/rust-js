@@ -8,10 +8,7 @@ export function entry() {
 
 /** Of a generic function's `&mut`, which an `Option` boxes: `$someValue(o)`. */
 function callTwice(o) {
-  if (o.value != null) {
-    return ($someValue(o.value)() + $someValue(o.value)()) >>> 0;
-  }
-  return 0;
+  return o.value != null ? ($someValue(o.value)() + $someValue(o.value)()) >>> 0 : 0;
 }
 
 const Unit = {

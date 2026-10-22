@@ -36,10 +36,7 @@ function output(language) {
 }
 
 function themeFor(dark) {
-  if (dark) {
-    return oneDark;
-  }
-  return [];
+  return dark ? oneDark : [];
 }
 
 /**

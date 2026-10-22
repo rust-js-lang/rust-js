@@ -28,10 +28,7 @@ export function describe(o) {
 /** `if let`, and its `else`. */
 export function halfOrZero(n) {
   const h = half(n);
-  if (h != null) {
-    return h;
-  }
-  return 0;
+  return h != null ? h : 0;
 }
 
 /** `while let`. */
@@ -139,10 +136,7 @@ export function mappedMore(n) {
  */
 export function chained(n) {
   const h = half(n);
-  if (h != null && h > 2) {
-    return h;
-  }
-  return -1;
+  return h != null && h > 2 ? h : -1;
 }
 
 /** A `let` after another is only computed if everything before it held. */

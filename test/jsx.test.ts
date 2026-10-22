@@ -1257,7 +1257,7 @@ pub fn positive(n: Option<i32>) -> i32 {
   // react.dev's errors page titles itself (ADR 0266).
   expect(jsx).toContain("const shown = code ? `Error #${code}` : \"Errors\";");
   expect(jsx).toContain("export function empty(text) {\n  return !text;\n}");
-  expect(jsx).toContain("  if (a && text) {");
+  expect(jsx).toContain("  return a && text ? 1 : 0;");
   // Of `as_deref()`, the option itself, matched where it is (ADR 0211).
   expect(jsx).toContain("const named = code ? `Error #${code}` : \"Errors\";");
   // A filter of another test, or a default, is that test.

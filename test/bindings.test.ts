@@ -1445,8 +1445,8 @@ pub fn text(value: Option<&'static Unknown>) -> Option<String> {
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("export function missing(value) {\n  return !value;\n}");
   expect(js).toContain("export function present(value) {\n  return !!value;\n}");
-  expect(js).toContain('export function shown(value) {\n  if (value) {\n    return "yes";\n  }');
-  expect(js).toContain('export function named(name) {\n  if (!name) {\n    return "none";\n  }');
+  expect(js).toContain('export function shown(value) {\n  return value ? "yes" : "no";\n}');
+  expect(js).toContain('export function named(name) {\n  return !name ? "none" : "some";\n}');
   expect(js).toContain("export function text(value) {\n  return value;\n}");
   const lib = await import(join(dir, "lib.js"));
   const values = [undefined, null, 0, "", false, NaN, "a", 1, {}, [], -1];
@@ -1480,7 +1480,7 @@ pub fn counted(n: u32) -> String {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js"), ...withWeb]);
   const js = readFileSync(join(dir, "mir.js"), "utf8");
-  expect(js).toContain("return text;");
+  expect(js).toContain("return useText ? text : other;");
   expect(js).toContain("for (const part of parts) {\n    result += String(part);");
   expect(js).toContain("return String(n);");
   const lib = await import(join(dir, "mir.js"));
@@ -2070,7 +2070,7 @@ pub fn tag_of(value: Option<&Unknown>) -> Result<String, &'static JsError> {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain("text.replace(pattern, (matched, escaped, _ptn, flag) => {");
+  expect(js).toContain('text.replace(pattern, (matched, escaped, _ptn, flag) =>\n    escaped ? matched : `<${flag ?? ""}>`,\n  );');
   expect(js).toContain('return text.replace(/%{2,2}/g, "%");');
   expect(js).toContain('return value + "";');
   // Text joined to it already makes it text, as react.dev writes `right - left + 'px'`.

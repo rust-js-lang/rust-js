@@ -11,12 +11,7 @@ function loudDrop_drop(loud) {
 }
 
 function longest(it) {
-  return $reduce(Iterator.from(it), (a, b) => {
-    if ($byteLen(b) > $byteLen(a)) {
-      return b;
-    }
-    return a;
-  });
+  return $reduce(Iterator.from(it), (a, b) => ($byteLen(b) > $byteLen(a) ? b : a));
 }
 
 function firstSome(items, TClone) {

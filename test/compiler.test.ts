@@ -738,7 +738,7 @@ test("options are the value or undefined", async () => {
   // `Some(0)` needs no `!= null`; `Some(n)` does.
   expect(js).toContain("  if (o != null) {\n    if (o === 0) {\n      return 100;\n    }\n    if (o < 0) {");
   // `if let Some(h) = ..` keeps the value in a `const h`.
-  expect(js).toContain("  const h = half(n);\n  if (h != null) {\n    return h;");
+  expect(js).toContain("  const h = half(n);\n  return h != null ? h : 0;\n");
   expect(js).toContain("h != null, h == null, h ?? -1");
   // `unwrap_or`'s argument runs even when it isn't needed, as in Rust.
   expect(js).toContain("  const option = half(n);\n  const fallback = bump();\n  const v = option ?? fallback;");
@@ -750,7 +750,7 @@ test("options are the value or undefined", async () => {
   expect(js).toContain("h != null ? h > 2 : undefined");
   expect(js).toContain("option ? Math.imul(option[0], option[1]) : undefined");
   // Let chains (ADR 0048): one test when the parts need nothing else,
-  expect(js).toContain("  const h = half(n);\n  if (h != null && h > 2) {\n    return h;\n  }\n  return -1;");
+  expect(js).toContain("  const h = half(n);\n  return h != null && h > 2 ? h : -1;\n");
   // an `if` inside for a `let` of a call, only made once the rest held, and
   // the `else`'s value given first, as a person writes a default;
   expect(js).toContain("  const h = half(n);\n  let v = 0;\n  if (h != null && h !== 0) {\n    const q = counted(h);\n    if (q != null && q > 1) {\n      v = q;\n    }\n  }");

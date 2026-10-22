@@ -767,6 +767,12 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### Changed
 
+- **An `if` keeps the `else` it's written with, and a tail `if` of two
+  small values is a conditional** (ADR 0575): `if (c) { .. } else {
+  return; }` and `else if` in a loop, as written, not a guard and a
+  `continue`; `return diff !== 0 ? diff : a.id - b.id;`, not a `return` of
+  each branch. A guard, a `return` the program wrote, a `match` and a
+  branch that gives nothing stay as they were.
 - **A function's `#[rust_js::nullable]` is of its result** (ADR 0574): its
   `None` is `null`, as a JS caller testing `!== null` expects, React's
   scheduler's `peek(queue)`. `Some` of a type parameter a binding of its

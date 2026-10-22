@@ -22,10 +22,7 @@ export const HALVES = 2;
 
 /** Private in Rust, but child modules call it, so its JS file must export it. */
 export function clamp(x) {
-  if (x > 1000) {
-    return 1000;
-  }
-  return x;
+  return x > 1000 ? 1000 : x;
 }
 
 export function doubledMean(a, b) {

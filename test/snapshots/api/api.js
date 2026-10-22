@@ -404,10 +404,7 @@ function emailDebug_fmt(email) {
 }
 
 function emailTryFromString_tryFrom(s) {
-  if (s.includes("@")) {
-    return { TAG: "Ok", _0: [s] };
-  }
-  return { TAG: "Err", _0: `\`${s}\` is not an email` };
+  return s.includes("@") ? { TAG: "Ok", _0: [s] } : { TAG: "Err", _0: `\`${s}\` is not an email` };
 }
 
 export function oddErrorDisplay() {
@@ -432,10 +429,7 @@ function evenDebug_fmt(even) {
 }
 
 function evenTryFromU32_tryFrom(n) {
-  if (n % 2 === 0) {
-    return { TAG: "Ok", _0: [n] };
-  }
-  return { TAG: "Err", _0: [n] };
+  return n % 2 === 0 ? { TAG: "Ok", _0: [n] } : { TAG: "Err", _0: [n] };
 }
 
 function contactDeserialize_deserialize(json) {

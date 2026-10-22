@@ -440,3 +440,93 @@ pub(in crate::lower::mir::tidy) fn exits_after(stmts: &mut Vec<Stmt>) {
         i += 1;
     }
 }
+
+/// `if (t) { exit } rest`, of an `if` the program wrote with an `else`
+/// (`Written::elses`), as it wrote it: `if (t) { exit } else { rest }` where
+/// `exit` is its `then`, and `if (!t) { rest } else { exit }` where it's its
+/// `else`. MIR's structure makes a guard of it where `exit` never goes on,
+/// a `return`, a `continue` or a `break`; `rest`, the statements after it,
+/// each of the `if`'s other branch, end the list, as the `if` did.
+pub(in crate::lower::mir::tidy) fn written_elses(stmts: &mut Vec<Stmt>, elses: &[(js::Span, js::Span, js::Span)]) {
+    let within = |c: &js::Span, s: js::Span| !s.is_none() && c.lo <= s.lo && s.hi <= c.hi;
+    // Each statement written in `branch`, one at least.
+    let of = |branch: &js::Span, stmts: &[Stmt]| {
+        stmts.iter().any(|s| !s.span.is_none()) && stmts.iter().all(|s| s.span.is_none() || within(branch, s.span))
+    };
+    let mut at = 0;
+    while at < stmts.len() {
+        if let StmtKind::If(_, exit, None) = &stmts[at].kind
+            && exit.last().is_some_and(ends)
+            && let Some((_, then, otherwise)) = elses.iter().find(|(cond, ..)| within(cond, stmts[at].span))
+        {
+            let rest = &stmts[at + 1..];
+            // A jump alone each way, `if (t) { return a; } return;`, reads as
+            // it is.
+            let jump = |s: &Stmt| matches!(s.kind, StmtKind::Return(_) | StmtKind::Break(_) | StmtKind::Continue(_));
+            let turned = match (of(then, exit), of(otherwise, exit)) {
+                _ if matches!(rest, [s] if jump(s)) && matches!(exit.as_slice(), [s] if jump(s)) => None,
+                (true, false) if of(otherwise, rest) => Some(false),
+                (false, true) if of(then, rest) => Some(true),
+                _ => None,
+            };
+            if let Some(turned) = turned {
+                let rest = stmts.split_off(at + 1);
+                let StmtKind::If(test, exit, None) =
+                    std::mem::replace(&mut stmts[at].kind, StmtKind::Expr(Expr::undefined()))
+                else {
+                    unreachable!("matched")
+                };
+                stmts[at].kind = match turned {
+                    false => StmtKind::If(test, exit, Some(rest)),
+                    true => StmtKind::If(test.negated_test(), rest, Some(exit)),
+                };
+            }
+        }
+        at += 1;
+    }
+}
+
+/// The value an `if` the program wrote with an `else` gives, returned:
+/// `if (t) { return a; } return b;`, as each path returns, is `return t ? a
+/// : b;`, as a person writes the function's value of two small ones, and as
+/// `x = t ? a : b` is of a variable's (`branch_values`). Not of a guard the
+/// program wrote, an `if` with no `else`, nor of a `return` it wrote in
+/// each branch, a statement; nor of a branch with a comment, nor where
+/// `folds_into_return` says it's a branch of its own.
+pub(in crate::lower::mir::tidy) fn returned_values(
+    stmts: &mut Vec<Stmt>,
+    elses: &[(js::Span, js::Span, js::Span)],
+    returns: &[js::Span],
+    booleans: &HashSet<String>,
+    comments: &[js::Span],
+) {
+    let within = |c: &js::Span, s: js::Span| !s.is_none() && c.lo <= s.lo && s.hi <= c.hi;
+    // A branch's value, where its statement was, of a `return` the program
+    // didn't write.
+    let returned = |stmts: &[Stmt]| match stmts {
+        [
+            Stmt {
+                kind: StmtKind::Return(Some(value)),
+                span,
+            },
+        ] if small(value) && !written(returns, *span) => Some(spanned(value, *span)),
+        _ => None,
+    };
+    let Some(at) = stmts.len().checked_sub(2) else {
+        return;
+    };
+    let (if_stmt, last) = (&stmts[at], &stmts[at + 1..]);
+    let StmtKind::If(test, then, None) = &if_stmt.kind else {
+        return;
+    };
+    if let (Some(yes), Some(no)) = (returned(then), returned(last))
+        && folds_into_return(&yes, &no)
+        && elses.iter().any(|(cond, ..)| within(cond, if_stmt.span))
+        && !commented(if_stmt.span, &[then.as_slice(), last].concat(), comments)
+    {
+        let folded = conditional(test.clone(), yes, no, booleans);
+        let span = if_stmt.span;
+        stmts.truncate(at);
+        stmts.push(StmtKind::Return(Some(folded)).at(span));
+    }
+}

@@ -12,6 +12,9 @@ pub(super) struct Written {
     pub tables: Vec<(js::Span, Vec<String>)>,
     /// Each `if`'s condition, and a `match` and the guard of an arm of it.
     pub conditions: Vec<(js::Span, js::Span)>,
+    /// Each `if` written with an `else`: its condition, its `then` and its
+    /// `else`, which MIR's structure may make a guard of (`written_elses`).
+    pub elses: Vec<(js::Span, js::Span, js::Span)>,
     /// Each `&&` or `||` the program wrote.
     pub logicals: Vec<js::Span>,
     /// Each `if` of a `continue`, alone or ending what it does.
@@ -71,6 +74,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     })
                     .collect(),
                 _ => Vec::new(),
+            })
+            .collect();
+        // Where each `if` with an `else` is written, its condition and each
+        // branch.
+        let elses: Vec<(js::Span, js::Span, js::Span)> = (self.thir.exprs.iter())
+            .filter_map(|e| match e.kind {
+                thir::ExprKind::If {
+                    cond,
+                    then,
+                    else_opt: Some(otherwise),
+                    ..
+                } => Some((
+                    self.js_span(self.thir[cond].span),
+                    self.js_span(self.thir[then].span),
+                    self.js_span(self.thir[otherwise].span),
+                )),
+                _ => None,
             })
             .collect();
         // Where each `&&` or `||` the program wrote is.
@@ -158,6 +178,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Written {
             tables,
             conditions,
+            elses,
             logicals,
             continues,
             loops,

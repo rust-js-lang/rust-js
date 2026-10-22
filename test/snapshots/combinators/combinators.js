@@ -35,10 +35,7 @@ function parse(c) {
   if (c === "1") {
     return { TAG: "Ok", _0: 1 };
   }
-  if (c === "2") {
-    return { TAG: "Ok", _0: 2 };
-  }
-  return { TAG: "Err", _0: `bad ${c}` };
+  return c === "2" ? { TAG: "Ok", _0: 2 } : { TAG: "Err", _0: `bad ${c}` };
 }
 
 export function options(n) {
@@ -69,20 +66,15 @@ export function moreOptions(n) {
 export function results(c) {
   const r = parse(c);
   const value = r.TAG === "Ok" ? { TAG: "Ok", _0: Math.imul(r._0, 10) >>> 0 } : r;
-  const value$1 = value.TAG === "Ok" ? `Ok(${value._0})` : `Err(${$debugStr(value._0)})`;
-  const value$2 = r.TAG === "Err" ? { TAG: "Err", _0: Array.from(r._0).length } : r;
-  const value$3 = value$2.TAG === "Ok" ? `Ok(${value$2._0})` : `Err(${value$2._0})`;
-  const then = (x) => {
-    if (x > 1) {
-      return { TAG: "Ok", _0: x };
-    }
-    return { TAG: "Err", _0: "small" };
-  };
-  const result = r.TAG === "Ok" ? then(r._0) : r;
   return [
-    value$1,
-    value$3,
-    result.TAG === "Ok" ? result._0 : 0,
+    value.TAG === "Ok" ? `Ok(${value._0})` : `Err(${$debugStr(value._0)})`,
+    ((result) => (result.TAG === "Ok" ? `Ok(${result._0})` : `Err(${result._0})`))(
+      r.TAG === "Err" ? { TAG: "Err", _0: Array.from(r._0).length } : r,
+    ),
+    (r.TAG === "Ok" ? (r._0 > 1 ? { TAG: "Ok", _0: r._0 } : { TAG: "Err", _0: "small" }) : r)
+      .TAG === "Ok"
+      ? (r.TAG === "Ok" ? (r._0 > 1 ? { TAG: "Ok", _0: r._0 } : { TAG: "Err", _0: "small" }) : r)._0
+      : 0,
     r.TAG === "Ok" ? r._0 : Array.from(r._0).length,
     r.TAG === "Err" ? r._0 : undefined,
     r.TAG === "Ok" && r._0 === 2,

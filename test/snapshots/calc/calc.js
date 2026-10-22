@@ -57,10 +57,7 @@ export function tokenize(src) {
 }
 
 function prec(op) {
-  if (op === "+" || op === "-") {
-    return 1;
-  }
-  return 2;
+  return op === "+" || op === "-" ? 1 : 2;
 }
 
 export function toRpn(tokens) {
@@ -174,12 +171,11 @@ export function caesar(s, k) {
           (((((((c.codePointAt(0) & 255) - 97) & 255) + k) & 255) % 26) + 97) & 255,
         );
       }
-      if (/^[A-Z]$/.test(c)) {
-        return String.fromCharCode(
-          (((((((c.codePointAt(0) & 255) - 65) & 255) + k) & 255) % 26) + 65) & 255,
-        );
-      }
-      return c;
+      return /^[A-Z]$/.test(c)
+        ? String.fromCharCode(
+            (((((((c.codePointAt(0) & 255) - 65) & 255) + k) & 255) % 26) + 65) & 255,
+          )
+        : c;
     })
     .join("");
 }

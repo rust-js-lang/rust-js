@@ -155,12 +155,9 @@ export function prepare(files, modules, styles, rootFile, main, tests, test, run
       }
     }
     const known = styles.map(([name]) => name);
-    const value = value$1[1].replace(cssImports, (whole, specifier) => {
-      if (known.includes(specifier)) {
-        return "";
-      }
-      return whole;
-    });
+    const value = value$1[1].replace(cssImports, (whole, specifier) =>
+      known.includes(specifier) ? "" : whole,
+    );
     value$1[1] = value;
   }
   const look = css.length === 0 ? FRAME_STYLE : `<style>\n${css.join("")}</style>`;

@@ -50,10 +50,7 @@ export function isRound(s) {
 }
 
 export function width(s) {
-  if (s.TAG === "Rect") {
-    return s.w;
-  }
-  return -1;
+  return s.TAG === "Rect" ? s.w : -1;
 }
 
 /** `==` compares variant and fields. */
@@ -62,10 +59,9 @@ export function same(a, b) {
 }
 
 function build(depth) {
-  if (depth === 0) {
-    return { TAG: "Leaf", _0: 1 };
-  }
-  return { TAG: "Node", _0: build((depth - 1) >>> 0), _1: { TAG: "Leaf", _0: depth | 0 } };
+  return depth === 0
+    ? { TAG: "Leaf", _0: 1 }
+    : { TAG: "Node", _0: build((depth - 1) >>> 0), _1: { TAG: "Leaf", _0: depth | 0 } };
 }
 
 function sum(t) {
@@ -81,10 +77,9 @@ export function treeSum(depth) {
 
 /** `Result` is an enum like any other: `{ TAG: "Ok", _0: v }`, as in ReScript. */
 export function checkedDiv(a, b) {
-  if (b === 0) {
-    return { TAG: "Err", _0: "divide by zero" };
-  }
-  return { TAG: "Ok", _0: $div(a, b, -2147483648) | 0 };
+  return b === 0
+    ? { TAG: "Err", _0: "divide by zero" }
+    : { TAG: "Ok", _0: $div(a, b, -2147483648) | 0 };
 }
 
 export function divOr(a, b, fallback) {

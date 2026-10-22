@@ -56,10 +56,7 @@ function evens(r) {
 }
 
 function clampTo(r, x) {
-  if (r.start <= x && x < r.end) {
-    return x;
-  }
-  return r.start;
+  return r.start <= x && x < r.end ? x : r.start;
 }
 
 function firstSquareOver(limit) {

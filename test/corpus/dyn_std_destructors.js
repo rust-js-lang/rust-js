@@ -48,10 +48,7 @@ export function dError() {
 }
 
 function fail(n) {
-  if (n > 1) {
-    return { TAG: "Err", _0: { value: [n], impl: dError() } };
-  }
-  return { TAG: "Ok", _0: n };
+  return n > 1 ? { TAG: "Err", _0: { value: [n], impl: dError() } } : { TAG: "Ok", _0: n };
 }
 
 function main() {

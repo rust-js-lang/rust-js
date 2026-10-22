@@ -32,11 +32,9 @@ function describe(value) {
   if (s != null) {
     return `string ${s}`;
   }
-  if (value.impl.typeId() === "lib::Point") {
-    const value$1 = value.impl.typeId() === "lib::Point" ? value.value : undefined;
-    return `point ${value$1 == null ? "None" : `Some(${pointDebug_fmt(value$1)})`}`;
-  }
-  return "other";
+  return value.impl.typeId() === "lib::Point"
+    ? `point ${((value) => (value == null ? "None" : `Some(${pointDebug_fmt(value)})`))(value.impl.typeId() === "lib::Point" ? value.value : undefined)}`
+    : "other";
 }
 
 function key(_, TAny) {

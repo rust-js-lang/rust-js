@@ -50,10 +50,7 @@ const Ring = {
 
 // Of other types: a `bool` and a `char`.
 function flag(ON, C) {
-  if (ON) {
-    return C;
-  }
-  return "-";
+  return ON ? C : "-";
 }
 
 // A closure sees its function's.

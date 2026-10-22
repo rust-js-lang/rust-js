@@ -55,12 +55,7 @@ export function middle(v) {
 }
 
 export function nonEmpty(words) {
-  return words.reduce((count, w) => {
-    if (!w) {
-      return count;
-    }
-    return (count + 1) >>> 0;
-  }, 0);
+  return words.reduce((count, w) => (!w ? count : (count + 1) >>> 0), 0);
 }
 
 export function shouted(words) {

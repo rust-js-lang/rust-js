@@ -37,10 +37,7 @@ export function lightClone() {
 
 function lightClone_clone(light) {
   console.log("clone light");
-  if (light === "On") {
-    return "On";
-  }
-  return "Off";
+  return light === "On" ? "On" : "Off";
 }
 
 function lightClone_cloneFrom(light, source) {

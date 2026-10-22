@@ -17,10 +17,7 @@ function choose(c, first) {
   if (c <= 3 && !id(false)) {
     return -1;
   }
-  if (id(first)) {
-    return 1;
-  }
-  return 2;
+  return id(first) ? 1 : 2;
 }
 
 function counted(limit, stop) {
@@ -30,10 +27,7 @@ function counted(limit, stop) {
     if (!(c > id(limit)) && !note(c, stop)) {
       continue;
     }
-    if (c % 2 === 0) {
-      return 10;
-    }
-    return 20;
+    return c % 2 === 0 ? 10 : 20;
   }
 }
 

@@ -7,10 +7,7 @@ export function entry() {
 }
 
 function shout(text) {
-  if (text.endsWith("!")) {
-    return { TAG: "Borrowed", _0: text };
-  }
-  return { TAG: "Owned", _0: `${text}!` };
+  return text.endsWith("!") ? { TAG: "Borrowed", _0: text } : { TAG: "Owned", _0: `${text}!` };
 }
 
 function main() {

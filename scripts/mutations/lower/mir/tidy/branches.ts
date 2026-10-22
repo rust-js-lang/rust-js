@@ -247,7 +247,7 @@ export const mutations: Mutation[] = [
     "name": "or-branches-reversed",
     "breaks": "`if a || b { x } else { y }` from MIR is `!a && !b ? y : x`",
     "file": "src/lower/mir/tidy/branches.rs",
-    "find": "                    true => conditional(test.clone().negated_test(), no.clone(), yes.clone(), booleans),\n",
+    "find": "                    true => conditional(test.clone().negated_test(), no, yes, booleans),\n",
     "replace": "                    true => conditional(test.clone(), yes.clone(), no.clone(), booleans),\n",
     "tests": [
       "test/lowering.test.ts",
@@ -400,22 +400,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering.test.ts","-t","branches that each add"],
   },
   {
-    name: "mir-tidy-if-condition-logical-folded",
-    breaks: "MIR's `if` of an `||` as the function's value is `return a || b ? x : y`",
-    file: "src/lower/mir/tidy/branches.rs",
-    find: "    let condition = |l: &js::Span| conditions.iter().any(|(c, g)| c == g && c.lo <= l.lo && l.hi <= c.hi);\n",
-    replace: "    let condition = |l: &js::Span| l.lo > l.hi;\n",
-    tests: ["test/lowering.test.ts","-t","an if of a logical returns"],
-  },
-  {
-    name: "mir-tidy-result-folded",
-    breaks: "MIR's tail `if` making the function's value is one conditional, not returned in each",
-    file: "src/lower/mir/tidy/branches.rs",
-    find: "                    && !(x == result && written_if(span))\n",
-    replace: "\n",
-    tests: ["test/lowering.test.ts","-t","a tail if returns each branch"],
-  },
-  {
     name: "mir-tidy-table-last-arm-unchecked",
     breaks: "MIR's last arm of a match on an enum's names is taken as its own name, whatever it gives",
     file: "src/lower/mir/tidy/branches.rs",
@@ -509,5 +493,21 @@ export const mutations: Mutation[] = [
     replace: "        (true, _) if false && !test.has_effects() => None,\n",
     tests: ["test/corpus.test.ts", "-t", "^adapter_drops.rs$"],
     snapshots: true,
+  },
+  {
+    name: "undefined-branch-made-conditional",
+    breaks: "a tail `if` whose branch gives nothing is `return c ? x : undefined`, not its guard",
+    file: "src/lower/mir/tidy/branches.rs",
+    find: "    [yes, no].iter().all(|value| !matches!(value.kind, ExprKind::Undefined))\n",
+    replace: "    true\n",
+    tests: ["test/lowering.test.ts", "-t", "an if written with an else keeps it"],
+  },
+  {
+    name: "conditional-branch-unmapped",
+    breaks: "a conditional's branch of no place of its own, `(fib(a) + fib(b)) >>> 0`, maps to its neighbor's Rust",
+    file: "src/lower/mir/tidy/branches.rs",
+    find: "    if first.span.is_none() {\n        first.span = placed;\n    }\n",
+    replace: "",
+    tests: ["test/emission.test.ts", "-t", "source map points from fib.js back into fib.rs"],
   },
 ];

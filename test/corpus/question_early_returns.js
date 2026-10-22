@@ -9,10 +9,7 @@ function oddDebug_fmt(odd) {
 }
 
 function half(n) {
-  if (n % 2 === 0) {
-    return { TAG: "Ok", _0: (n / 2) >>> 0 };
-  }
-  return { TAG: "Err", _0: [n] };
+  return n % 2 === 0 ? { TAG: "Ok", _0: (n / 2) >>> 0 } : { TAG: "Err", _0: [n] };
 }
 
 function quarter(n) {

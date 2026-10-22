@@ -40,10 +40,7 @@ function keepIf(value, keep, dropT) {
 }
 
 function checked(n) {
-  if (n < 9) {
-    return { TAG: "Ok", _0: [(n + 20) >>> 0] };
-  }
-  return { TAG: "Err", _0: `${n} is too big` };
+  return n < 9 ? { TAG: "Ok", _0: [(n + 20) >>> 0] } : { TAG: "Err", _0: `${n} is too big` };
 }
 
 function wrappedResult(value) {

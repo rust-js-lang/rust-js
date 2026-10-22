@@ -17,12 +17,9 @@ export function entry() {
 }
 
 function check(items) {
-  return $tryFoldOk($iter(items), undefined, (_, x) => {
-    if (x < 0) {
-      return { TAG: "Err", _0: `${x} is negative` };
-    }
-    return { TAG: "Ok" };
-  });
+  return $tryFoldOk($iter(items), undefined, (_, x) =>
+    x < 0 ? { TAG: "Err", _0: `${x} is negative` } : { TAG: "Ok" },
+  );
 }
 
 function positiveFrom(it) {

@@ -167,13 +167,8 @@ function main() {
   console.log(
     `${or.TAG === "Ok" ? `Ok(${or._0})` : `Err(${or._0})`} ${value$12.TAG === "Ok" ? `Ok(${value$12._0})` : `Err(${value$12._0})`}`,
   );
-  const fallback = (e) => {
-    if (e === "no") {
-      return { TAG: "Ok", _0: 0 };
-    }
-    return { TAG: "Err", _0: 1 };
-  };
-  const value$13 = bad.TAG === "Ok" ? bad : fallback(bad._0);
+  const value$13 =
+    bad.TAG === "Ok" ? bad : bad._0 === "no" ? { TAG: "Ok", _0: 0 } : { TAG: "Err", _0: 1 };
   console.log(`${value$13.TAG === "Ok" ? `Ok(${value$13._0})` : `Err(${value$13._0})`}`);
   const nested = { TAG: "Ok", _0: { TAG: "Err", _0: "inner" } };
   const result = { TAG: "Ok", _0: { TAG: "Ok", _0: 3 } };

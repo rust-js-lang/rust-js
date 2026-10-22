@@ -104,12 +104,9 @@ function main() {
     }`,
   );
   const words = $collectResults(
-    ["ab", "cd"].values().map((w) => {
-      if ($byteLen(w) === 2) {
-        return { TAG: "Ok", _0: w.toUpperCase() };
-      }
-      return { TAG: "Err", _0: w };
-    }),
+    ["ab", "cd"]
+      .values()
+      .map((w) => ($byteLen(w) === 2 ? { TAG: "Ok", _0: w.toUpperCase() } : { TAG: "Err", _0: w })),
     (values) => values.join(""),
   );
   const set = $collectOptions(

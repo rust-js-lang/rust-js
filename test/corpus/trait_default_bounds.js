@@ -29,12 +29,7 @@ function f64Signed() {
       Neg: () => ({ neg: (value) => -value }),
       negative: (self) => self < f64Zero_zero(),
       atMostZero: (self) => self <= f64Zero_zero(),
-      distance: (self, other) => {
-        if (self < other) {
-          return other - self;
-        }
-        return -(other - self);
-      },
+      distance: (self, other) => (self < other ? other - self : -(other - self)),
     };
   }
   return $f64Signed;
@@ -61,12 +56,7 @@ function i32Signed() {
       Neg: () => ({ neg: (value) => -value | 0 }),
       negative: (self) => self < i32Zero_zero(),
       atMostZero: (self) => self <= i32Zero_zero(),
-      distance: (self, other) => {
-        if (self < other) {
-          return (other - self) | 0;
-        }
-        return -((other - self) | 0) | 0;
-      },
+      distance: (self, other) => (self < other ? (other - self) | 0 : -((other - self) | 0) | 0),
     };
   }
   return $i32Signed;

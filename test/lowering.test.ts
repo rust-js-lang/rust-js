@@ -1872,7 +1872,9 @@ export function one(n, v) {
 
 // A string's parts from MIR (ADR 0364) are an array: its adapters, \`take\`
 // and \`rev\` an array's; a guard returns first, the smaller branch; an
-// element THIR's facts know is there is read unchecked, in a closure too.
+// \`if\`/\`else\` of a \`return\` in each branch is one conditional, as its
+// value is; an element THIR's facts know is there is read unchecked, in a
+// closure too.
 test("a string's parts from MIR are an array", async () => {
   const dir = fixture("mir-split");
   writeFileSync(join(dir, "lib.rs"), `pub fn groups(group: &str) -> Vec<&str> {
@@ -3396,7 +3398,7 @@ pub fn is_three(n: u32) -> bool {
   expect(js).toContain('export function isText(value) {\n  return value === "inlineCode";\n}');
   expect(js).toContain('export function kindIs(value) {\n  return value === "inlineCode";\n}');
   // An array is never `null`: `Array.isArray` alone says it.
-  expect(js).toContain("export function listed(value) {\n  if (Array.isArray(value)) {");
+  expect(js).toContain("export function listed(value) {\n  return Array.isArray(value) ? 1 : 0;\n}");
   expect(js).toContain('export function isString(value) {\n  const mdxName = value.mdxName;\n  return typeof mdxName === "string";\n}');
   const lib = await import(join(dir, "lib.js"));
   const values = [{ mdxName: "inlineCode" }, { mdxName: "pre" }, { mdxName: null }, {}, { mdxName: 5 }];
@@ -3796,7 +3798,7 @@ pub fn later(mut href: Option<&str>) -> String {
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain('export function link(href) {\n  if (!href) {\n    return "none";\n  }\n  return href.toUpperCase();\n}');
-  expect(js).toContain('if (name) {\n    return name.toUpperCase();');
+  expect(js).toContain('return name ? name.toUpperCase() : "anon";');
   expect(js).toContain("const items$1 = items != null && items.length !== 0 ? items : undefined;\n  if (!items$1) {\n    return 0;\n  }\n  return $index(items$1, 0);");
   const lib = await import(join(dir, "lib.js"));
   expect([lib.link("/a"), lib.link(""), lib.link(undefined)]).toEqual(["/A", "none", "none"]);
@@ -5042,8 +5044,8 @@ pub fn first_value(f: Option<bool>) -> bool {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  for (const written of ["return !!error;", "return !error;", "if (error) {", "if (error && error.message === \"x\") {",
-    "return error ? $byteLen(error.message) : undefined;", "return n != null;", "return s == null;", "if (f) {", "return !!f;"]) {
+  for (const written of ["return !!error;", "return !error;", "return error ? 1 : 0;", "if (error && error.message === \"x\") {",
+    "return error ? $byteLen(error.message) : undefined;", "return n != null;", "return s == null;", "return f ? 1 : 0;", "return !!f;"]) {
     expect(js).toContain(written);
   }
   const lib = await import(join(dir, "lib.js"));
@@ -5919,9 +5921,9 @@ pub fn sum(v: Vec<i32>) -> i32 {
   expect([lib.sum([1, 2, 3]), lib.sum([])]).toEqual([6, 0]);
 });
 
-// A function's `if` of an `||` as its value: each branch returned; an `&&`
-// written as the value, one value returned.
-test("an if of a logical returns each branch", async () => {
+// A function's `if` of an `||` as its value: one conditional, the `||` its
+// one test; an `&&` written as the value, one value returned.
+test("an if of a logical is one conditional", async () => {
   const dir = fixture("if-logical-returns");
   writeFileSync(join(dir, "lib.rs"), `pub fn prec(op: char) -> u8 {
     if op == '+' || op == '-' { 1 } else { 2 }
@@ -5933,7 +5935,7 @@ pub fn both(a: u8, b: u8) -> bool {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
   const js = readFileSync(join(dir, "mir.js"), "utf8");
-  expect(js).toContain('  if (op === "+" || op === "-") {\n    return 1;\n  }\n  return 2;');
+  expect(js).toContain('  return op === "+" || op === "-" ? 1 : 2;\n');
   expect(js).toContain("return a > 1 && b > 1;");
   const lib = await import(join(dir, "mir.js"));
   expect([lib.prec("+"), lib.prec("*"), lib.both(2, 2), lib.both(2, 0)]).toEqual([1, 2, true, false]);
@@ -6207,9 +6209,10 @@ pub fn twice(p: &mut P) -> P {
   expect([lib.moved(1, 2), d.x, e.x]).toEqual([{ x: 3 }, 111, 10]);
 });
 
-// A function's tail `if` of a call's test: each branch returned (rust-js's
-// form, accepted of react.dev), not one conditional.
-test("a tail if returns each branch", async () => {
+// A function's tail `if` of two small values is one conditional, as a
+// variable's is, React's scheduler's `return diff !== 0 ? diff : a.id - b.id`
+// (ADR 0575); it was each branch returned, rust-js's form of react.dev's.
+test("a tail if of two small values is one conditional", async () => {
   const dir = fixture("tail-if-returns");
   writeFileSync(join(dir, "lib.rs"), `pub struct Email(pub String);
 
@@ -6218,7 +6221,7 @@ pub fn email(s: String) -> Result<Email, String> {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
-  expect(readFileSync(join(dir, "mir.js"), "utf8")).toContain('  if (s.includes("@")) {\n    return { TAG: "Ok", _0: [s] };\n  }\n  return');
+  expect(readFileSync(join(dir, "mir.js"), "utf8")).toContain('  return s.includes("@") ? { TAG: "Ok", _0: [s] } : { TAG: "Err", _0: `${s} is not an email` };');
   const lib = await import(join(dir, "mir.js"));
   expect([lib.email("a@b"), lib.email("x")]).toEqual([{ TAG: "Ok", _0: ["a@b"] }, { TAG: "Err", _0: "x is not an email" }]);
 });
@@ -6965,7 +6968,9 @@ test("a value returned after a loop, the function returning early before it, is 
 }`);
 });
 
-test("a function's value of two branches is returned from each", async () => {
+// A function's value of a \`match\`'s arms is returned from each arm; its
+// \`if\`/\`else\` of two values is one conditional, as a variable's is.
+test("a function's match returns each arm, and its if of two values is one conditional", async () => {
   const dir = fixture("mir-returned-branches");
   writeFileSync(join(dir, "lib.rs"), `pub fn two(s: &str) -> u32 {
     match s {
@@ -7024,10 +7029,7 @@ pub fn colors(message: &str) -> &'static str {
   return 2;
 }`);
   expect(js).toContain(`export function cond(s) {
-  if (s === "a") {
-    return 1;
-  }
-  return 2;
+  return s === "a" ? 1 : 2;
 }`);
   expect(js).toContain(`export function bools(b) {
   if (b) {
@@ -7086,10 +7088,7 @@ pub fn either(active: bool) -> u32 {
   v.push(2);
 }`);
   expect(js).toContain(`export function either(active) {
-  if (!active) {
-    return 1;
-  }
-  return 2;
+  return !active ? 1 : 2;
 }`);
 });
 
@@ -7177,10 +7176,7 @@ test("a let-else of what `filter` keeps from MIR tests the value", async () => {
   if (!href) {
     return "none";
   }
-  if (href.startsWith("x")) {
-    return "a";
-  }
-  return href;
+  return href.startsWith("x") ? "a" : href;
 }`);
   const lib = await import(join(dir, "mir.js"));
   expect([lib.filtered(undefined), lib.filtered(""), lib.filtered("xy"), lib.filtered("q")]).toEqual(["none", "none", "a", "q"]);
@@ -9908,7 +9904,7 @@ test("a typeof test after a null check is the typeof test from MIR", async () =>
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target], 600_000);
   const js = readFileSync(join(dir, "mir.js"), "utf8");
-  expect(js).toContain('if (ok && typeof given === "string") {');
+  expect(js).toContain('return ok && typeof given === "string" ? given : "none";');
   const lib = await import(join(dir, "mir.js"));
   expect([lib.text(true, "a"), lib.text(true, undefined), lib.text(true, 3), lib.text(false, "a")]).toEqual(["a", "none", "none", "none"]);
 });
@@ -10414,7 +10410,7 @@ pub fn named(challenges: &[(u32, Challenge)]) -> Vec<String> {
 // A value the program wrote with `&&`, `s != "en" && (if t { .. } else {
 // .. })`, is one value returned, `s !== "en" && (t ? .. : ..)`, not a
 // `return` of each branch MIR makes of it, as react.dev's MDXComponents
-// filters its LanguageList; a tail `if` stays statements.
+// filters its LanguageList; a tail `if` of two values is one conditional.
 test("a value written with && is returned as one", async () => {
   const dir = fixture("logical-values");
   writeFileSync(join(dir, "lib.rs"), `pub fn a(t: bool, x: u32) -> u32 {
@@ -10433,7 +10429,7 @@ pub fn kept(all: &[String], complete: bool, done: &[&str]) -> usize {
   const js = readFileSync(join(dir, "mir.js"), "utf8");
   expect(js).toContain('return s !== "en" && (t ? !s : u);');
   expect(js).toContain('(code) => code !== "en" && (complete ? done.includes(code) : !done.includes(code))');
-  expect(js).toContain("  if (t) {\n    return (x + 1) >>> 0;\n  }");
+  expect(js).toContain("  return t ? (x + 1) >>> 0 : Math.imul(x, 2) >>> 0;\n");
   const lib = await import(join(dir, "mir.js"));
   expect([lib.c(true, false, ""), lib.c(false, true, "en"), lib.kept(["en", "fr", "de"], true, ["fr"])]).toEqual([true, false, 1]);
 });
@@ -11804,4 +11800,78 @@ pub fn sized(n: usize) -> usize {
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--crate-type", "lib", "--crate-name", "aliased"]);
   const lib = await import(join(dir, "lib.js"));
   expect([lib.made(4), lib.sized(16)]).toEqual([4, 16]);
+});
+
+// An `if` the program wrote with an `else` keeps it, in a loop too, where
+// MIR's structure makes a guard of an `else` that returns, `if (!c) {
+// return; } …`, and a `continue` of a branch the loop's body ends with;
+// its `else if` too, React's scheduler's `siftDown` (ADR 0575). A guard
+// the program wrote, an `if` with no `else`, stays one.
+test("an if written with an else keeps it, in a loop and of an else-if", async () => {
+  const dir = fixture("written-elses");
+  writeFileSync(join(dir, "lib.rs"), `pub fn sift_down(heap: &mut Vec<f64>, i: usize) -> usize {
+    let mut index = i;
+    let length = heap.len();
+    while index < length / 2 {
+        let left = index * 2 + 1;
+        let right = left + 1;
+        if heap[left] < heap[index] {
+            if right < length && heap[right] < heap[left] {
+                heap.swap(index, right);
+                index = right;
+            } else {
+                heap.swap(index, left);
+                index = left;
+            }
+        } else if right < length && heap[right] < heap[index] {
+            heap.swap(index, right);
+            index = right;
+        } else {
+            // Neither child is smaller.
+            return index;
+        }
+    }
+    index
+}
+
+pub fn compare(a: f64, b: f64, c: f64, d: f64) -> f64 {
+    let diff = a - b;
+    if diff != 0.0 { diff } else { c - d }
+}
+
+pub fn clamped(n: u32) -> u32 {
+    if n > 10 {
+        return 10;
+    }
+    n
+}
+
+pub fn named(give: bool, name: String) -> Option<String> {
+    if give { Some(name) } else { None }
+}
+
+pub fn first_big(items: &[u32]) -> u32 {
+    for &item in items {
+        if item > 10 {
+            return item;
+        }
+    }
+    0
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("      } else {\n        $swap(heap, index, left);");
+  expect(js).toContain("    } else if (right < length && ");
+  expect(js).toContain("    } else {\n      // Neither child is smaller.\n      return index;\n    }\n  }");
+  expect(js).not.toContain("continue;");
+  expect(js).toContain("    if (item > 10) {\n      return item;\n    }");
+  // A tail `if` of two small values, each path's return: one conditional.
+  expect(js).toContain("  return diff !== 0 ? diff : c - d;");
+  // A guard at the function's end, and a branch that gives nothing: as written.
+  expect(js).toContain("  if (n > 10) {\n    return 10;\n  }\n  return n;");
+  expect(js).toContain("  if (give) {\n    return name;\n  }");
+  const lib = await import(join(dir, "lib.js"));
+  const heap = [5, 1, 2, 3];
+  expect([lib.siftDown(heap, 0), heap, lib.firstBig([1, 20, 30]), lib.firstBig([1])]).toEqual([3, [1, 3, 2, 5], 20, 0]);
 });

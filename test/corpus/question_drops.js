@@ -93,10 +93,9 @@ function discarded(d) {
 }
 
 function fallible(d) {
-  if (d[0] % 2 === 0) {
-    return { TAG: "Ok", _0: [(d[0] + 100) >>> 0] };
-  }
-  return { TAG: "Err", _0: [(d[0] + 200) >>> 0] };
+  return d[0] % 2 === 0
+    ? { TAG: "Ok", _0: [(d[0] + 100) >>> 0] }
+    : { TAG: "Err", _0: [(d[0] + 200) >>> 0] };
 }
 
 function go(d) {

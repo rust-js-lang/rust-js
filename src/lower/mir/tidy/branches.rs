@@ -247,18 +247,15 @@ pub(super) fn table_read(arms: &[(Option<Expr>, Expr)], names: &[String]) -> Opt
 /// `if (t) { return a; } return b;`, MIR's of a value the program wrote
 /// with `&&` or `||` where `t` is tested: one value returned, `t ? a : b`,
 /// as the program wrote it, each test before it folded in, `s !== "en" &&
-/// (t ? a : b)`; not where it wrote a `return`, nor of an `if`'s condition,
-/// whose branches it returns.
+/// (t ? a : b)`; not where it wrote a `return`. An `if`'s condition is one
+/// too, as `returned_values` makes of one with an `else`.
 pub(super) fn logical_returns(
     stmts: &mut Vec<Stmt>,
     logicals: &[js::Span],
-    conditions: &[(js::Span, js::Span)],
     returns: &[js::Span],
     booleans: &HashSet<String>,
 ) {
-    // A logical that's no `if`'s condition, which the `if` is written of.
-    let condition = |l: &js::Span| conditions.iter().any(|(c, g)| c == g && c.lo <= l.lo && l.hi <= c.hi);
-    let within = |s: js::Span| !s.is_none() && logicals.iter().any(|l| l.lo <= s.lo && s.hi <= l.hi && !condition(l));
+    let within = |s: js::Span| !s.is_none() && logicals.iter().any(|l| l.lo <= s.lo && s.hi <= l.hi);
     while let [.., last_if, last] = stmts.as_slice()
         && let StmtKind::Return(Some(no)) = &last.kind
         && let StmtKind::If(test, then, None) = &last_if.kind
@@ -286,11 +283,8 @@ pub(super) fn branch_values(
     stmts: &mut Vec<Stmt>,
     returns: &[js::Span],
     booleans: &HashSet<String>,
-    (result, conditions, comments): (&str, &[(js::Span, js::Span)], &[js::Span]),
+    (result, comments): (&str, &[js::Span]),
 ) {
-    // An `if` the program wrote, where its condition is.
-    let written_if =
-        |s: js::Span| !s.is_none() && conditions.iter().any(|(c, g)| c == g && c.lo <= s.lo && s.hi <= c.hi);
     stmts.retain_mut(|stmt| {
         let span = stmt.span;
         let kind = std::mem::replace(&mut stmt.kind, StmtKind::Break(None));
@@ -354,11 +348,10 @@ pub(super) fn branch_values(
                     // Not one of more branches, which reads best as they are.
                     // A temporary's, an `if` the program wrote as a value, is one.
                     && ((small(yes) && small(no)) || is_temporary(x))
+                    // The function's, as `returned_values` gives it.
+                    && (x != result || folds_into_return(yes, no))
                     // Nor each adding to it, `out += a`, as written.
                     && !(updates(x, yes) && updates(x, no))
-                    // Nor the function's value an `if` makes, which each returns; a
-                    // `match`'s is one value.
-                    && !(x == result && written_if(span))
                     // Nor one whose branch has a comment, which an expression
                     // has no line for (ADR 0444).
                     && !commented(span, &[then.as_slice(), otherwise.as_slice()].concat(), comments) =>
@@ -375,9 +368,10 @@ pub(super) fn branch_values(
                     (false, true) => false,
                     _ => matches!((first_written(then), first_written(otherwise)), (Some(t), Some(o)) if o < t),
                 };
+                let (yes, no) = (spanned(yes, then[0].span), spanned(no, otherwise[0].span));
                 let value = match no_first {
-                    true => conditional(test.clone().negated_test(), no.clone(), yes.clone(), booleans),
-                    false => conditional(test.clone(), yes.clone(), no.clone(), booleans),
+                    true => conditional(test.clone().negated_test(), no, yes, booleans),
+                    false => conditional(test.clone(), yes, no, booleans),
                 };
                 StmtKind::Assign(Expr::var(x), value)
             }
@@ -535,6 +529,39 @@ pub(super) fn returned_chain(stmts: &[Stmt]) -> Option<(Vec<Expr>, Expr)> {
         }
         _ => None,
     }
+}
+
+/// `value`, which a branch of a conditional is, where its statement was,
+/// `at`, of one with no place of its own, `(f(a) + f(b)) >>> 0`: the source
+/// map points each branch at what it's of, not its neighbor's, as it
+/// pointed the statement.
+pub(super) fn spanned(value: &Expr, at: js::Span) -> Expr {
+    let mut value = value.clone();
+    // The printer maps a name or a literal where it starts, not a binary, a
+    // call or a member: its first token, however deep, starts it, mapped
+    // to the nearest of what it's in that's placed, `fib(n - 1)` of `fib`.
+    let mut placed = at;
+    let mut first = &mut value;
+    loop {
+        if !first.span.is_none() {
+            placed = first.span;
+        }
+        first = match &mut first.kind {
+            ExprKind::Binary(_, left, _) | ExprKind::Call(left, _) | ExprKind::Member(left, _) => left,
+            _ => break,
+        };
+    }
+    if first.span.is_none() {
+        first.span = placed;
+    }
+    value
+}
+
+/// Whether the function's value of two branches, `yes` and `no`, is one
+/// `return t ? yes : no`: not where one gives nothing, `undefined`, whose
+/// guard, `if (t) { return yes; }`, reads as one.
+pub(super) fn folds_into_return(yes: &Expr, no: &Expr) -> bool {
+    [yes, no].iter().all(|value| !matches!(value.kind, ExprKind::Undefined))
 }
 
 /// Whether `e` reads well as a branch of `c ? a : b`: not a conditional

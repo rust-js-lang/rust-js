@@ -106,21 +106,23 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     let super::hints::Written {
         tables,
         conditions,
+        elses,
         logicals,
         continues,
         loops: written,
         comments,
     } = written;
-    let (tables, conditions, logicals, continues, written, comments) = (
+    let (tables, conditions, elses, logicals, continues, written, comments) = (
         &tables[..],
         &conditions[..],
+        &elses[..],
         &logicals[..],
         &continues[..],
         &written[..],
         &comments[..],
     );
-    // What branches make a value of: the function's, and where an `if` is written.
-    let made = (result, conditions, comments);
+    // What branches make a value of: the function's too.
+    let made = (result, comments);
     // A guard of a handle made for it alone: the place it's a handle on.
     crate::lower::std_types::cell::unguarded(body);
     // Where a drop's flag is known, no test of it, nor a `try` for it.
@@ -191,9 +193,7 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     // A chain of tests a loop ended, its body now ending where the chain's does.
     bottom_up(body, &mut |stmts| branch_values(stmts, returns, booleans, made));
     js::statement_lists(body, &mut unlabeled);
-    js::statement_lists(body, &mut |stmts| {
-        logical_returns(stmts, logicals, conditions, returns, booleans)
-    });
+    js::statement_lists(body, &mut |stmts| logical_returns(stmts, logicals, returns, booleans));
     // What's given where `false` is skipped as `undefined` is, `test &&
     // value`: one read there alone, which nothing else tells from
     // `undefined`.
@@ -235,7 +235,6 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     // in them, `?`'s.
     js::statement_lists(body, &mut |stmts| returned_in_branches(stmts, result));
     js::statement_lists(body, &mut shared_tails);
-    js::statement_lists(body, &mut |stmts| tail_continues(stmts, continues));
     // Each `let` where it's first named, a `const` where it's written once.
     js::statement_lists(body, &mut sunk_lets);
     declarations(body);
@@ -298,6 +297,11 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     // A chain's tests, where each is read in place now: `if (a) { if (f(a))
     // { .. } }`, `if (a && f(a))`.
     bottom_up(body, &mut |stmts| and_tests(stmts, conditions));
+    // An `if` the program wrote with an `else`, as it wrote it, its tests
+    // one now; and the `continue`s its branches end with, which it didn't
+    // write, gone where the loop's body ends anyway.
+    js::statement_lists(body, &mut |stmts| written_elses(stmts, elses));
+    js::statement_lists(body, &mut |stmts| tail_continues(stmts, continues));
     // What a block ends after, its tests read in place now: its `else`.
     js::statement_lists(body, &mut |stmts| tail_elses(stmts));
     // A check MIR wrote first in a chain's last `else`: the chain's arm.
@@ -327,6 +331,11 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     js::statement_lists(body, &mut |stmts| written_chains(stmts));
     // `const result = e; return result;` of what the function gives: `return e;`.
     js::statement_lists(body, &mut |stmts| returned_consts(stmts, result));
+    // An `if`'s value of two small ones, `return t ? a : b`, its temporaries
+    // declared where they're read by now.
+    js::statement_lists(body, &mut |stmts| {
+        returned_values(stmts, elses, returns, booleans, comments)
+    });
     // And their arms that do nothing.
     // A cell a pointer's taken to, made where its value's first set.
     js::statement_lists(body, &mut first_cell_values);

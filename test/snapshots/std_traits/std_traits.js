@@ -179,10 +179,7 @@ export function conversions() {
 }
 
 function evenTryFromU32_tryFrom(n) {
-  if (n % 2 === 0) {
-    return { TAG: "Ok", _0: [n] };
-  }
-  return { TAG: "Err", _0: `${n} is odd` };
+  return n % 2 === 0 ? { TAG: "Ok", _0: [n] } : { TAG: "Err", _0: `${n} is odd` };
 }
 
 export function fallibleConversions(n) {
@@ -474,10 +471,7 @@ export function wordOrd() {
 
 function wordOrd_cmp(word, other) {
   const byLength = $cmp(Array.from(word[0]).length, Array.from(other[0]).length);
-  if (byLength !== 0) {
-    return byLength;
-  }
-  return $cmp(word[0], other[0]);
+  return byLength !== 0 ? byLength : $cmp(word[0], other[0]);
 }
 
 export function largest(xs, TOrd, TCopy) {
