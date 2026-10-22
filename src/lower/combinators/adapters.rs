@@ -316,12 +316,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             IterComb::TakeWhile => Expr::call(Expr::helper("$lazyTakeWhile"), vec![items, next()]),
             IterComb::SkipWhile => Expr::call(Expr::helper("$lazySkipWhile"), vec![items, next()]),
             // Lazy of a JS iterator, as Rust's is (ADR 0517).
+            // Its state's `&mut` as `handles_mut` says, the object itself of
+            // a struct or a tuple.
             IterComb::Scan => {
                 let (init, f) = (next(), next());
-                unboxed(
-                    Expr::call(Expr::helper("$lazyScan"), vec![items, init, f]),
-                    generic_args.types().nth(2),
-                )
+                let mut args = vec![items, init, f];
+                if generic_args
+                    .types()
+                    .nth(1)
+                    .is_some_and(|state| !self.handles_mut(state))
+                {
+                    args.push(Expr::bool(false));
+                }
+                unboxed(Expr::call(Expr::helper("$lazyScan"), args), generic_args.types().nth(2))
             }
             // Of items with a destructor, each it steps over dropped as it's
             // passed, as std's `nth` drops it (ADR 0465).

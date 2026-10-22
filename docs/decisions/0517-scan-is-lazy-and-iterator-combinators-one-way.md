@@ -45,3 +45,13 @@ them.
   snapshot.
 - Mutations list the chain first, go on past `None`, keep the boxes, and
   refuse a scan of items with a destructor.
+
+## Amendment: an object state is given as itself
+
+`$lazyScan` gave its closure a box of its state, `{ value: init }`,
+whatever it is, but a closure taking `&mut` of a struct, a tuple or a
+`Vec` reads it as the object, `acc.sum` of the box (#134). The state's
+`&mut` is as `handles_mut` says one is: a box of a number or text, the
+object itself of the rest, which `$lazyScan` is told, `false` after the
+closure. Held by `test/corpus/scan_object_state.rs` and the mutations
+`scan-object-state-boxed` and `scan-handle-always`.
