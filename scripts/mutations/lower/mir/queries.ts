@@ -197,4 +197,34 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "ref_mut_of_mut_payload"],
     snapshots: true,
   },
+  {
+    name: "reassigned-param-alike",
+    breaks: "a `mut` parameter assigned once is read as what never changes, its argument not counted as its first value, so what's moved out of it reads its new value",
+    file: "src/lower/mir/queries.rs",
+    find: "    written_again(state, local)\n        && !(state.locals.user[local]",
+    replace: "    (state.locals.writes[local] > 1)\n        && !(state.locals.user[local]",
+    tests: ["test/corpus.test.ts", "-t", "^mut_param_moved_out.rs$"],
+  },
+  {
+    "name": "mir-alike-once-each-way-unseen",
+    "breaks": "a variable each of a `match`'s arms assigns, `let variant = match ..`, isn't alike, so JSX holds `const Icon = variant.Icon` first, not `variant.Icon && <variant.Icon />`",
+    "file": "src/lower/mir/queries.rs",
+    "find": "        && !(state.locals.user[local] && !is_parameter(state, local) && once_each_way(state.body, local))\n",
+    "replace": "        && true\n",
+    "tests": [
+      "test/jsx.test.ts"
+    ]
+  },
+  {
+    "name": "mir-alike-machine-once",
+    "breaks": "a local MIR assigns twice on separate ways, a `vec!`'s box, reads alike, and what's around it is held in `const`s first",
+    "file": "src/lower/mir/queries.rs",
+    "find": "        && !(state.locals.user[local] && !is_parameter(state, local) && once_each_way(state.body, local))\n",
+    "replace": "        && !(!is_parameter(state, local) && once_each_way(state.body, local))\n",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "a vec.s specs from MIR stay in place"
+    ]
+  },
 ];

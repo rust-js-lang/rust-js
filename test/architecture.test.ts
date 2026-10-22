@@ -604,7 +604,7 @@ const dispatchers: [string, string, number][] = [
   ["src/lower/mir/dispatch.rs", "    pub(super) fn mir_call(", 110],
   ["src/lower/mir/dispatch.rs", "    fn mir_call_values_of(", 247],
   ["src/lower/mir/dispatch.rs", "    fn mir_std_call(", 147],
-  ["src/lower/mir.rs", "    fn mir_function(", 375],
+  ["src/lower/mir.rs", "    fn mir_function(", 372],
   ["src/lower/recognition/inherent.rs", "    pub(super) fn classify_inherent(", 761],
   ["src/lower/recognition/calls.rs", "    fn classify_trait_method(", 294],
   ["src/lower/combinators.rs", "    pub(in crate::lower) fn comb_values(", 640],
@@ -873,6 +873,17 @@ test("a copied default's typing environment is impl_typing_env's alone", () => {
   const reading = files("src/lower").filter((file) => file.endsWith(".rs"))
     .flatMap((file) => read(file).split("\n").filter((line) => /self\.given\.self_env\b(?!\s*=)/.test(line) && !/self_env:/.test(line)).map((line) => `${file}: ${line.trim()}`));
   expect(reading).toEqual(["src/lower/traits/given.rs: let impl_env = self.given.self_env?;"]);
+});
+
+// Whether a local is written again after its first value is
+// `written_again`'s, which counts a parameter's argument as its first: a
+// variable read as never changing (`alike`) and a `move` closure's capture
+// each counted MIR's writes alone, so a `mut` parameter assigned once read
+// as never changing, and what was moved out of it read its new value (#99).
+test("a local written again is written_again's alone", () => {
+  const counting = files("src/lower").filter((file) => file.endsWith(".rs"))
+    .flatMap((file) => read(file).split("\n").filter((line) => /writes\[[^\]]+\]\s*(>|>=)\s*[12]\b/.test(line)).map((line) => `${file}: ${line.trim()}`));
+  expect(counting).toEqual([]);
 });
 
 // Whether an arrow is only the function it passes its arguments on to,

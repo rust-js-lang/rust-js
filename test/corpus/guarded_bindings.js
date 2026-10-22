@@ -17,17 +17,30 @@ function shapeDebug_fmt(shape) {
 function describe(shape) {
   let text;
   if (shape.TAG === "Line") {
-    if (shape._0 > 10) {
-      text = `long ${shape._0}`;
-    } else if (shape._0 < 0) {
-      let n = shape._0;
-      n = -n | 0;
-      text = `backwards ${n}`;
+    const n = shape._0;
+    if (n > 10) {
+      const n = shape._0;
+      text = `long ${n}`;
     } else {
-      text = `line ${shape._0}`;
+      const n = shape._0;
+      if (n < 0) {
+        let n = shape._0;
+        n = -n | 0;
+        text = `backwards ${n}`;
+      } else {
+        const n = shape._0;
+        text = `line ${n}`;
+      }
     }
   } else if (shape.TAG === "Rect") {
-    text = shape.w === shape.h ? `square ${shape.w}` : `rect ${shape.w}x${shape.h}`;
+    const { w, h } = shape;
+    if (w === h) {
+      const { w, h } = shape;
+      text = `square ${w}`;
+    } else {
+      const { w, h } = shape;
+      text = `rect ${w}x${h}`;
+    }
   } else {
     text = "dot";
   }

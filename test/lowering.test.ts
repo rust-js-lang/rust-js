@@ -6180,7 +6180,7 @@ pub fn parsed() -> Vec<f64> {
   expect([lib.called(1), lib.parsed(), lib.resetTo(undefined), lib.resetTo(4)]).toEqual([2, [10, 10], -1, 4]);
 });
 
-// ADR 0617: \`Array.isArray\` and \`Object.getPrototypeOf\` are the js crate's,
+// ADR 0618: \`Array.isArray\` and \`Object.getPrototypeOf\` are the js crate's,
 // which a module holds as React's shared does, \`const isArrayImpl =
 // Array.isArray\`.
 test("Array.isArray and Object.getPrototypeOf are held as JS holds them", async () => {

@@ -119,7 +119,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     // Written again where it's made, or after: a copy, as it was.
                     let changes = matches!(&e.kind, js::ExprKind::Var(name)
                         if state.locals.names.iter_enumerated().any(|(l, n)| n == name
-                            && state.locals.writes[l] > 1
+                            && super::queries::written_again(state, l)
                             && written_from(state.body, state.at, l)));
                     let e = if e.is_constant() || (matches!(e.kind, js::ExprKind::Var(_)) && !changes) {
                         e

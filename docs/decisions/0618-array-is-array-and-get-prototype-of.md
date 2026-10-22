@@ -1,4 +1,4 @@
-# 0617. `Array.isArray` and `Object.getPrototypeOf` are the js crate's
+# 0618. `Array.isArray` and `Object.getPrototypeOf` are the js crate's
 
 Status: Accepted. Extends [0102](0102-js-and-webapi.md)'s js crate.
 

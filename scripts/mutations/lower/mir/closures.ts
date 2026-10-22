@@ -166,4 +166,12 @@ export const mutations: Mutation[] = [
     replace: "            clones.push(Expr::var(name));\n",
     tests: ["test/corpus.test.ts", "-t", "^closure_clone_cell.rs$"],
   },
+  {
+    name: "move-capture-of-reassigned-param-shared",
+    breaks: "a `move` closure of a `mut` parameter assigned again after it's made reads the parameter, not its own copy, its argument not counted as a write",
+    file: "src/lower/mir/closures.rs",
+    find: "                            && super::queries::written_again(state, l)\n",
+    replace: "                            && state.locals.writes[l] > 1\n",
+    tests: ["test/corpus.test.ts", "-t", "^mut_param_moved_out.rs$"],
+  },
 ];
