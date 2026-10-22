@@ -79,3 +79,13 @@ react.dev's TopNav passes the same closure instead.
   decides no disagreement, tooling, bindings' shape or the output's
   layout. An unobservable difference says why the program can't tell; a
   rare one lists where it can, under Consequences.
+
+## Amendment: the stack's depth
+
+A recursion deeper than the JS engine's stack, about 10,000 calls in
+Node and browsers against Rust's 8 MB main thread, throws `RangeError`
+where Rust's returns (#155). Results change and Rust's can't be kept:
+no translation of a direct call gives JS a deeper stack, and how deep a
+call goes is its input's, so no compile error can say where. It's the
+fourth case's, as near as it gets: listed among the guide's differences
+(`semantics.md`, 16), with what to write instead, an explicit stack.

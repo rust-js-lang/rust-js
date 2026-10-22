@@ -451,6 +451,12 @@ Differences:
   `main` that returns `Err` returns it to its caller.
 - **JS can catch a panic,** an ordinary `Error`; Rust code can't
   (`catch_unwind` is refused).
+- **Recursion is as deep as the JS engine's stack allows,** about 10,000
+  calls in Node and in browsers, where Rust's main thread has 8 MB:
+  deeper, JS throws `RangeError: Maximum call stack size exceeded`, which
+  isn't a panic Rust would have. A recursion as deep as its input, a DFS
+  or a flood fill of a large grid, is written with an explicit stack, a
+  `Vec` of what's left to visit ([0262](../decisions/0262-when-rust-and-js-disagree.md)).
 
 What's refused of panics and processes is in
 [the limitations](limitations.md#panics-processes-and-io).
@@ -647,3 +653,5 @@ React and JSX are [their own pages](README.md#react).
 15. `zip` makes one more of its first side's items where its second ends
     first, as `Zip::next` does, also where std's `collect` of two slices
     wouldn't.
+16. Recursion deeper than about 10,000 calls throws a `RangeError`, the JS
+    engine's stack's limit.
