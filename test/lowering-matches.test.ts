@@ -1416,9 +1416,18 @@ pub fn slices(n: u32) -> usize {
     };
     slice.len()
 }
+
+pub fn specifier(code: u8, log: &mut Vec<u8>) {
+    match code {
+        b'O' | b'c' | b'd' => log.push(code),
+        _ => {}
+    }
+}
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
+  // Of one arm of three constants and a `_`, a case of each.
+  expect(js).toContain("  switch (code) {\n    case 79:\n    case 99:\n    case 100:\n      log.push(code);\n");
   expect(js).toContain(
     '  switch (n) {\n    case 0:\n      return "zero";\n    case 1:\n    case 2:\n    case 3:\n      return "small";\n    default:\n      return "big";\n  }',
   );
@@ -1459,4 +1468,7 @@ pub fn slices(n: u32) -> usize {
   expect(lib.skips([1, 2, 5, 2])).toEqual(5);
   expect(["", "ab", "abc"].map(lib.sized)).toEqual([1, 2, 3]);
   expect([0, 1, 2].map(lib.slices)).toEqual([1, 2, 0]);
+  const pushed: number[] = [];
+  [79, 1, 100].forEach((code) => lib.specifier(code, pushed));
+  expect(pushed).toEqual([79, 100]);
 });

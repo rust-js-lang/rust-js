@@ -23,8 +23,9 @@ constants is a `switch`.
 
 ## Decision
 
-**A `match` the program wrote of three arms or more, each a constant or
-an or-pattern of them, with no guard and no binding, and at most a last
+**A `match` the program wrote of three cases or more, each constant of
+its patterns a case and a last `_` one, each arm a constant or an
+or-pattern of them, with no guard and no binding, and at most a last
 `_`, is a `switch`; the `_` is its `default`.** A constant is a literal, of
 a number, a `char` or a string; a `const`, by its name (ADR 0590); or an
 enum's variant of no field that JS tests as a value it's equal to,
@@ -86,8 +87,10 @@ loop: for (const c of s) {
 
 **Not a `switch`:**
 
-- **A `match` of two arms**: `if (n === 0) { .. } else { .. }`, or its
-  `?:`, as JS writes two ways, and as SonarJS's `no-small-switch` asks. A
+- **A `match` of two cases**: `if (n === 0) { .. } else { .. }`, or its
+  `?:`, as JS writes two ways, and as SonarJS's `no-small-switch` asks.
+  Cases, not arms, decided with the user: React's `normalizeConsoleFormat`
+  has one arm of seven constants and a `_`, a `switch` of seven cases. A
   `match` of a `bool`, which has two values, is one; its arms aren't
   constants a `switch` compares, as JS tests a `bool` by itself, `if (b)`.
 - **One whose value is read in place**, an argument, an operand, a
@@ -105,14 +108,14 @@ loop: for (const c of s) {
 - **It's what a person writes**, React above all: one `case` per
   constant, the value read once, a label where a `break` leaves a loop.
 - **One rule a Rust developer can guess**: a `match` of constants is a
-  `switch`, but of two arms, the `if` a person writes of two ways, and of
+  `switch`, but of two cases, the `if` a person writes of two ways, and of
   a value read in place, which JS's `switch` can't give.
 - **`===` is what each arm tested**: a float pattern is never `NaN`, and
   `0.0` matches `-0` either way.
 
 ## Alternatives
 
-- **Every `match` of constants a `switch`, of two arms too**: `switch (b)
+- **Every `match` of constants a `switch`, of two cases too**: `switch (b)
   { case true: .. case false: .. }` of a `bool`'s, `switch (n) { case 0:
   return "zero"; default: return "other"; }`, which no JS developer
   writes; and a `let x;` and a `break` in each case for what was `const x

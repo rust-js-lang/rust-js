@@ -29,10 +29,11 @@ pub(super) struct Written {
     pub switches: Vec<Vec<SwitchArm>>,
 }
 
-/// The fewest arms a `match` of constants is a `switch` of (ADR 0629): of
-/// two, `if (n === 0) { .. } else { .. }`, as JS writes two ways, and as
-/// SonarJS's `no-small-switch` asks.
-const SWITCH_ARMS: usize = 3;
+/// The fewest cases a `match` of constants is a `switch` of, each constant
+/// of a pattern one and a last `_` one (ADR 0629): of two, `if (n === 0) {
+/// .. } else { .. }`, as JS writes two ways, and as SonarJS's
+/// `no-small-switch` asks; of one arm of seven constants, a switch.
+const SWITCH_CASES: usize = 3;
 
 /// An arm of a `match` of constants (`Written::switches`): where it and
 /// its pattern are written, and each constant its pattern names, `1 | 2`'s
@@ -269,9 +270,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         })
                     })
                     .collect::<Option<_>>()?;
-                // Of three arms or more: two are the `if` and `else`, or the
-                // `?:`, a person writes of two ways.
-                (arms.len() >= SWITCH_ARMS).then_some(arms)
+                // Of three cases or more, each constant one and a `_` one: two
+                // are the `if` and `else`, or the `?:`, a person writes of two
+                // ways. Decided with the user.
+                let cases: usize = arms.iter().map(|arm| arm.constants.len().max(1)).sum();
+                (cases >= SWITCH_CASES).then_some(arms)
             })
             .collect()
     }

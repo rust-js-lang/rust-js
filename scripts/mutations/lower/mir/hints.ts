@@ -128,10 +128,10 @@ export const mutations: Mutation[] = [
   },
   {
     name: "switch-of-two-arms",
-    breaks: "a `match` of two arms is a `switch`, `switch (s) { case \"a\": .. default: .. }`, not the `if` of two ways",
+    breaks: "a `match` of two cases is a `switch`, `switch (s) { case \"a\": .. default: .. }`, not the `if` of two ways",
     file: "src/lower/mir/hints.rs",
-    find: "const SWITCH_ARMS: usize = 3;\n",
-    replace: "const SWITCH_ARMS: usize = 2;\n",
+    find: "const SWITCH_CASES: usize = 3;\n",
+    replace: "const SWITCH_CASES: usize = 2;\n",
     tests: ["test/lowering-branches.test.ts", "-t", "a function's match returns each arm"],
   },
   {
@@ -148,6 +148,14 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/hints.rs",
     find: "                    || self.read_in_place(hir_id)\n",
     replace: "",
+    tests: ["test/lowering-matches.test.ts", "-t", "a match of constants is a switch"],
+  },
+  {
+    name: "switch-cases-counted-as-arms",
+    breaks: "a `match` of one arm of several constants and a `_` is two arms, so no `switch`, though it's a case of each",
+    file: "src/lower/mir/hints.rs",
+    find: "                let cases: usize = arms.iter().map(|arm| arm.constants.len().max(1)).sum();\n",
+    replace: "                let cases: usize = arms.len();\n",
     tests: ["test/lowering-matches.test.ts", "-t", "a match of constants is a switch"],
   },
 ];

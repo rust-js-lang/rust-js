@@ -658,12 +658,13 @@ export function httpStatus(code) {
 ```
 
 `|` is several cases in one arm, `1..=5` a range, and `if` after a pattern
-a guard. A `match` of three arms or more, each a constant or a `|` of them
+a guard. A `match` of three cases or more, each constant of its patterns
+one and a last `_` one, each arm a constant or a `|` of them
 (a literal, a `const`, an enum's variant of no field) with no guard, and
 at most a last `_`, is a `switch`: `|`'s constants are stacked `case`s, `_`
 is the `default`, left out where it does nothing, and each case ends in
 `break;` where it'd go on, in a block `{ .. }` where it declares a name.
-Any other `match`, of a range, a guard, a binding, or of two arms, is an
+Any other `match`, of a range, a guard, a binding, or of two cases, is an
 `if` chain ([ADR 0014](../../decisions/0014-match-lowering.md), [ADR
 0629](../../decisions/0629-a-match-of-constants-is-a-switch.md)); and one
 whose value is read in place, `f(match n { .. })`, is a `?:`, as JS has

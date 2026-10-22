@@ -102,10 +102,10 @@ The rules:
 ## Amendment: a `match` of constants is a `switch`
 
 [ADR 0629](0629-a-match-of-constants-is-a-switch.md) (2026-10-23): a
-`match` the program wrote of three arms or more, each a constant or an
+`match` the program wrote of three cases or more, each a constant or an
 or-pattern of them, with no guard or binding, and at most a last `_`, is a
 `switch`, as React writes one; `fib_match` above is `switch (n) { case 0:
 return 0; case 1: return 1; default: return .. }`. The `break` this ADR
 gave up `switch` for names its loop, `break loop;`, as React's `break
-outer;` does. Every other `match`, of two arms, a guard, a range or a
+outer;` does. Every other `match`, of two cases, a guard, a range or a
 binding, or one whose value is read in place, is the `if` chain above.
