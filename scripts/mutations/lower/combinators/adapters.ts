@@ -186,4 +186,12 @@ export const mutations: Mutation[] = [
     replace: "                    true => some,\n",
     tests: ["test/corpus.test.ts", "-t", "^filter_ends.rs$"],
   },
+  {
+    name: "step-by-zero-unchecked",
+    breaks: "`step_by(0)` of a step known only at run time doesn't panic, as std asserts it doesn't, and reads no item, `i % 0` being NaN",
+    file: "src/lower/combinators/adapters.rs",
+    find: "                    _ => self.spill(\"step\", Expr::call(Expr::helper(\"$step\"), vec![n]), out),\n",
+    replace: "                    _ => self.spill(\"step\", n, out),\n",
+    tests: ["test/corpus.test.ts", "-t", "^step_by_zero.rs$"],
+  },
 ];

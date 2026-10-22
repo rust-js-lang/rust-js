@@ -102,3 +102,14 @@ value written in place,** as `Option::map` already was:
   such updates; the lowering test reads an entry by a variable's key and
   sets one where it's none; mutations spill it, test another path, and
   print the update whole.
+
+## Amendment: `step_by(0)` panics as it's given
+
+`step_by(n)` was `.filter((_, i) => i % n === 0)`, and of a step of 0,
+`i % 0` is NaN: no item, where std panics, `assertion failed: step !=
+0`, as `step_by` is called, before an item is read (#112). A step that
+isn't a constant other than 0 is named before the chain, checked by
+`$step`, which throws std's message or gives the step back:
+`const step = $step(n);`, or `step = $step(step);` of a parameter. ADR
+0262's case: results would change, so Rust's. Held by
+`test/corpus/step_by_zero.rs` and the mutation `step-by-zero-unchecked`.

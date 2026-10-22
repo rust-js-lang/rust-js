@@ -9242,6 +9242,12 @@ export function $chunks(v, size, cut = (items, start, end) => items.slice(start,
   return Array.from({ length: Math.ceil(v.length / size) }, (_, i) => cut(v, i * size, Math.min(i * size + size, v.length)));
 }
 
+// `step_by(step)`'s step, which std asserts isn't 0 as it's given.
+export function $step(step) {
+  if (step === 0) throw new Error("assertion failed: step != 0");
+  return step;
+}
+
 export function $zip(a, b) {
   return Array.from({ length: Math.min(a.length, b.length) }, (_, i) => [a[i], b[i]]);
 }
