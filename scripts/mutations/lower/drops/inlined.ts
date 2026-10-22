@@ -56,6 +56,14 @@ export const mutations: Mutation[] = [
     file: "src/lower/drops/inlined.rs",
     find: "    if written || reads != js::mentions_in(body, guard) {\n",
     replace: "    if written {\n",
-    tests: ["test/lowering.test.ts", "-t", "a Drop dropped once"],
+    tests: ["test/corpus.test.ts", "-t", "^drop_guard_given_whole.rs$"],
+  },
+  {
+    name: "drop-guard-kept-word",
+    breaks: "a value kept to be dropped, `_in`, is read as `in`, a word JS keeps, which the module can't be parsed with",
+    file: "src/lower/drops/inlined.rs",
+    find: " && !crate::names::kept_word(free) =>",
+    replace: " =>",
+    tests: ["test/corpus.test.ts", "-t", "^drop_guard_kept_words.rs$"],
   },
 ];

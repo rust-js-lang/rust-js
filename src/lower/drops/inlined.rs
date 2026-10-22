@@ -261,8 +261,9 @@ fn one_field_of(body: &mut Vec<Stmt>, guard: &str) {
     // where `restore` is free.
     let mut names = HashSet::new();
     js::names_in(body, &mut names);
+    // Not a word JS keeps, `_in`'s `in`.
     let read = match guard.trim_start_matches('_') {
-        free if !free.is_empty() && !names.contains(free) => free.to_string(),
+        free if !free.is_empty() && !names.contains(free) && !crate::names::kept_word(free) => free.to_string(),
         _ => guard.to_string(),
     };
     js::each_expr_mut(body, &mut |e| {

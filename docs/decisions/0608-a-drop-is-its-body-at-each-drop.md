@@ -64,3 +64,14 @@ as before.
   tuple's, and one whose body can't fit, which stays the function.
 - Mutations: the drops kept as calls, inlined where one can't be, a
   closure's skipped, the guards kept whole.
+
+## Amendment: not a word JS keeps
+
+The value kept to be dropped is read by its name without the `_` where
+that's free, `_restore` as `restore`, but `_in` became `in`, `_new`
+`new`, and `_eval`, `_arguments`, `_undefined` names strict mode refuses:
+the module couldn't be parsed, or failed as it loaded (#127). The `_` is
+taken off only where what's left isn't a word JS keeps,
+`names::kept_word`, the one list of them. Held by
+`test/corpus/drop_guard_kept_words.rs` and the mutation
+`drop-guard-kept-word`.
