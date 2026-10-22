@@ -198,6 +198,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             bindings::JsForm::Import { .. } => {
                 return Err(self.unsupported(span, "a dynamic import, from its MIR"));
             }
+            bindings::JsForm::Defined => return Ok(Value::Expr(self.defined(arg_tys, span)?)),
             _ => {}
         }
         let nullable = bindings::nullable_params(tcx, def_id);
@@ -265,6 +266,29 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // A generic `&mut T`'s box, of an object `T` here: what's in it.
         let called = self.generic_result_values((def_id, generic_args), called, span)?;
         Ok(Value::Expr(self.fmt_result_value(def_id, generic_args, called)))
+    }
+
+    /// `js::is_defined(binding)`: `typeof MessageChannel !== "undefined"`,
+    /// of the global the binding given names, which its type says, so no
+    /// temporary between hides it (ADR 0597). A global's own name, its
+    /// `js_path`: not a method's, an import's or a path's, which aren't the
+    /// host's to lack.
+    fn defined(&self, arg_tys: &[Ty<'tcx>], span: Span) -> R<Expr> {
+        let global = match arg_tys.first().map(|ty| *ty.kind()) {
+            Some(ty::FnDef(def_id, _)) if bindings::is_binding(self.tcx, def_id) => bindings::js_path(self.tcx, def_id),
+            _ => None,
+        };
+        match global {
+            Some(name) if crate::names::is_identifier(&name) => Ok(Expr::bin(
+                Op::Ne,
+                Expr::unary(js::UnaryOp::Typeof, self.js_ref(&name)),
+                Expr::str("undefined"),
+            )),
+            _ => Err(self.unsupported(
+                span,
+                "`js::is_defined` of what isn't a JS global's binding, `webapi::message_channel::new`,",
+            )),
+        }
     }
 
     /// A lazy parameter's argument (`bindings::lazy_params`): `() => 0` is

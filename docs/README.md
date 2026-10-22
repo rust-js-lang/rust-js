@@ -515,7 +515,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0580 A call asks of a cell only what it may borrow](decisions/0580-a-call-asks-of-a-cell-only-what-it-may-borrow.md)
 - [0581 A closure called as a statement where it's made is its body](decisions/0581-a-closure-called-as-a-statement-is-its-body.md)
 - [0582 `Rc::ptr_eq` of an object is its identity, uncounted](decisions/0582-ptr-eq-of-an-object-is-its-identity.md)
-- [0583 A global some hosts lack is an `Option`](decisions/0583-a-global-some-hosts-lack-is-an-option.md)
+- [0583 A global some hosts lack is an `Option`](decisions/0583-a-global-some-hosts-lack-is-an-option.md) *(superseded by 0597)*
 - [0584 A `#[repr(transparent)]` struct is its field](decisions/0584-a-transparent-struct-is-its-field.md)
 - [0585 A `RefCell`'s `replace` and `take` hold it for a moment](decisions/0585-a-refcells-replace-holds-it-for-a-moment.md)
 - [0586 `#[rust_js::nullable]` is of a field that's an `Option`](decisions/0586-a-nullable-field-is-an-option.md)
@@ -529,6 +529,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0594 An overload whose arguments an options dictionary holds is that one](decisions/0594-an-overload-an-options-dictionary-holds-is-it.md)
 - [0595 A thread-local `Cell`'s `take` and `replace` are its cell's](decisions/0595-a-thread-local-cells-take-is-its-cells.md)
 - [0596 A `pub use` of a module's own item exports it by that name](decisions/0596-a-pub-use-of-a-modules-own-item-exports-it.md)
+- [0597 Whether the host has a global is `js::is_defined`'s](decisions/0597-whether-the-host-has-a-global-is-is-defined.md)
 - [0436 Every `dyn` that's a pair keeps its value's drop, `dyn Send` too](decisions/0436-every-dyn-keeps-its-drop.md)
 - [0437 A scope's drops on a panic are one `try { .. } finally { .. }`](decisions/0437-a-scopes-drops-are-one-finally.md)
 - [0438 An optional prop is given `Some(..)`, or left out](decisions/0438-an-optional-prop-is-given-some.md)

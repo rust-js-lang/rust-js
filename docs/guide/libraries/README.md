@@ -104,6 +104,9 @@ What it has:
   `value[key]` and `key in value`; `object::keys` is `Object.keys`
   ([ADR 0225](../../decisions/0225-unknown-values.md)). A `Json` is a JSON
   value to `match`, and a `Dict<T>` a plain object of `T`s by name.
+- **Whether the host has a global is `is_defined(binding)`,** `typeof X
+  !== "undefined"`: `is_defined(set_immediate)`, which a browser hasn't
+  ([Access to the global scope](../interop/global-scope.md#a-global-some-hosts-lack)).
 - **A promise is a `Promise<T>`, to `.await`;** `settle(p).await` is a
   `Result` of what it fulfils or rejects with, `spawn` starts a future no
   one awaits, and `promise(future)` is a future's `Promise` for JS

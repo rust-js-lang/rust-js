@@ -1,6 +1,8 @@
 # 0583. A global some hosts lack is an `Option`
 
-Status: Accepted. Extends [0021](0021-js-interop.md)'s globals and
+Status: Superseded by [0597](0597-whether-the-host-has-a-global-is-is-defined.md):
+a global is its own type, and whether the host has it is
+`js::is_defined`'s. Extended [0021](0021-js-interop.md)'s globals and
 [0030](0030-option.md)'s `None`.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): A. A global that's

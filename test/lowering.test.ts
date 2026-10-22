@@ -5815,41 +5815,63 @@ pub fn cancel() -> Option<u32> {
   expect([lib.arm(1), lib.arm(2), lib.cancel(), lib.cancel()]).toEqual([undefined, 1, 2, undefined]);
 });
 
-// ADR 0583: a global some hosts lack is an `Option` binding, read where
-// it may not be: React's scheduler asks for `setImmediate`, then
+// ADR 0597: whether the host has a binding's global is `js::is_defined`'s,
+// `typeof X !== "undefined"`, of the binding its type names, through a
+// temporary too: React's scheduler asks for `setImmediate`, then
 // `MessageChannel`, then `setTimeout`.
-test("an Option global binding is undefined where the host lacks it", async () => {
-  const dir = fixture("optional-globals");
-  writeFileSync(join(dir, "lib.rs"), `pub struct Hook(std::marker::PhantomData<()>);
-
-impl Hook {
-    #[rust_js::link_name = "this()"]
-    pub fn call(&self, _n: f64) -> f64 {
-        unreachable!()
-    }
+test("js::is_defined is whether the host has a binding's global", async () => {
+  const dir = fixture("defined-globals");
+  writeFileSync(join(dir, "lib.rs"), `#[cfg_attr(rust_js, rust_js::link_name = "rustJsPresentHook")]
+pub fn present(n: f64) -> f64 {
+    unreachable!()
 }
 
-unsafe extern "Rust" {
-    #[link_name = "rustJsPresentHook"]
-    pub safe static PRESENT: Option<&'static Hook>;
-    #[link_name = "rustJsAbsentHook"]
-    pub safe static ABSENT: Option<&'static Hook>;
+#[cfg_attr(rust_js, rust_js::link_name = "new RustJsAbsentClass")]
+pub fn absent() -> &'static js::JsObject {
+    unreachable!()
 }
 
-pub fn present(n: f64) -> Option<f64> {
-    PRESENT.map(|hook| hook.call(n))
+pub fn called(n: f64) -> Option<f64> {
+    js::is_defined(present).then(|| present(n))
 }
 
-pub fn absent(n: f64) -> Option<f64> {
-    ABSENT.map(|hook| hook.call(n))
+pub fn made() -> bool {
+    let make = absent;
+    js::is_defined(make)
 }
 `);
-  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain('typeof rustJsAbsentHook !== "undefined" ? rustJsAbsentHook : undefined');
+  expect(js).toContain('typeof rustJsPresentHook !== "undefined"');
+  expect(js).toContain('typeof RustJsAbsentClass !== "undefined"');
   (globalThis as Record<string, unknown>).rustJsPresentHook = (n: number) => n + 1;
   const lib = await import(join(dir, "lib.js"));
-  expect([lib.present(1), lib.absent(1)]).toEqual([2, undefined]);
+  expect([lib.called(1), lib.made()]).toEqual([2, false]);
+});
+
+// What isn't a global's binding, a closure, or a path from one, has no
+// global to ask of.
+test("js::is_defined of what isn't a global's binding is refused", () => {
+  const dir = fixture("defined-refused");
+  const refused = (code: string) => {
+    writeFileSync(join(dir, "lib.rs"), code);
+    const failed = Bun.spawnSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target], { stderr: "pipe" });
+    return [failed.exitCode === 0, failed.stderr.toString()];
+  };
+  const message = expect.stringContaining("`js::is_defined` of what isn't a JS global's binding");
+  expect(refused("pub fn ask() -> bool {\n    js::is_defined(|| 1)\n}\n")).toEqual([false, message]);
+  // The crate's own function, which is there.
+  expect(refused("fn helper() {}\n\npub fn ask() -> bool {\n    helper();\n    js::is_defined(helper)\n}\n")).toEqual([false, message]);
+  // A path from a global, which may be what the host lacks.
+  expect(refused(`#[cfg_attr(rust_js, rust_js::link_name = "console.log")]
+pub fn log(text: &str) {
+    unreachable!()
+}
+
+pub fn ask() -> bool {
+    js::is_defined(log)
+}
+`)).toEqual([false, message]);
 });
 
 // ADR 0293: a `Cell` a `let` takes apart, read by `get()` before anything

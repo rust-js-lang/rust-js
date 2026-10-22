@@ -295,6 +295,17 @@ pub fn type_of(this: Option<&Unknown>) -> String {
     unreachable!()
 }
 
+/// [`typeof X !== "undefined"`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Operators/typeof#interaction_with_undeclared_and_uninitialized_variables):
+/// whether the host has `binding`'s global, a JS function's binding,
+/// `is_defined(webapi::message_channel::new)`, where reading one it lacks
+/// would throw (ADR 0597). Rust is told nothing: the binding is still there
+/// to call, which throws where the host hasn't it.
+#[cfg_attr(rust_js, rust_js::link_name = "typeof !== \"undefined\"")]
+#[allow(unused_variables)]
+pub fn is_defined<B: Copy>(binding: B) -> bool {
+    unreachable!()
+}
+
 /// [`String(value)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String/String):
 /// any value as text, as JS makes it, `result += value` say: `"undefined"`
 /// of `None`, `"[object Object]"` of an object.
@@ -666,12 +677,12 @@ pub fn clear_interval(id: Option<&IntervalId>) {
 /// What `set_immediate` gives, an object of Node's.
 pub struct Immediate(PhantomData<JsObject>);
 
-unsafe extern "Rust" {
-    /// [`setImmediate(callback)`](https://nodejs.org/api/timers.html#setimmediatecallback-args):
-    /// `callback` once, after what's queued now; Node's, Bun's and Deno's,
-    /// which a browser lacks, so `None` there (ADR 0583).
-    #[link_name = "setImmediate"]
-    pub safe static set_immediate: Option<fn(Box<dyn FnOnce()>) -> &'static Immediate>;
+/// [`setImmediate(callback)`](https://nodejs.org/api/timers.html#setimmediatecallback-args):
+/// `callback` once, after what's queued now; Node's, Bun's and Deno's, which
+/// a browser lacks: `is_defined(set_immediate)` asks (ADR 0597).
+#[cfg_attr(rust_js, rust_js::link_name = "setImmediate")]
+pub fn set_immediate(callback: Box<dyn FnOnce()>) -> &'static Immediate {
+    unreachable!()
 }
 
 /// A JS [`RegExp`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/RegExp),

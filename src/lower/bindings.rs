@@ -262,6 +262,9 @@ pub(super) enum JsForm {
     Truthy,
     /// `typeof`: `typeof this`, what it is, as text (ADR 0310).
     TypeOf,
+    /// `typeof !== "undefined"`: whether the host has the global of the
+    /// binding given, `typeof MessageChannel !== "undefined"` (ADR 0597).
+    Defined,
     /// `+ ""`: `this + ""`, any value as JS's `+` makes it text (ADR 0310).
     Text,
     /// `set []`: `this[key] = value`.
@@ -281,6 +284,7 @@ pub(super) fn js_form(tcx: TyCtxt<'_>, def_id: DefId) -> JsForm {
         "in []" => return JsForm::In,
         "!!" => return JsForm::Truthy,
         "typeof" => return JsForm::TypeOf,
+        "typeof !== \"undefined\"" => return JsForm::Defined,
         "+ \"\"" => return JsForm::Text,
         "set []" => return JsForm::SetIndex,
         "import()" => return JsForm::Import { module: false },

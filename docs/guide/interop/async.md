@@ -259,8 +259,8 @@ export async function countdown() {
 ```
 
 `resolve(())` is `resolve()`: a `()` argument is no argument.
-`js::set_immediate` is an `Option`, `None` in a browser, which has no
-`setImmediate` ([ADR 0583](../../decisions/0583-a-global-some-hosts-lack-is-an-option.md)).
+A browser has no `setImmediate`: `js::is_defined(js::set_immediate)` asks
+([ADR 0597](../../decisions/0597-whether-the-host-has-a-global-is-is-defined.md)).
 
 ## Many promises at once
 

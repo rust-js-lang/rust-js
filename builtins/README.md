@@ -40,6 +40,9 @@ spawn(Box::new(async move {                            // runs, unawaited
   `match`, a `null` the `None` of the `Option` holding it; its objects are
   `Dict<Option<Json>>`. A `Dict<T>` is a plain object of `T`s by name:
   `dict::get(d, key)`, `dict::entries(d)`, `dict::set(d, key, value)`.
+- `is_defined(binding)` is whether the host has a global, `typeof X !==
+  "undefined"`: `is_defined(set_immediate)`, which a browser hasn't
+  ([ADR 0597](../docs/decisions/0597-whether-the-host-has-a-global-is-is-defined.md)).
 - `StructuredClone` is what the browser's structured clone copies as it is:
   what `postMessage`, `pushState` and `structuredClone` take. A struct is one
   by `unsafe impl StructuredClone for Saved {}`, which vouches its fields are.

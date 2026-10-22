@@ -137,61 +137,42 @@ The crates bind the standard ones, called bare:
 
 ## A global some hosts lack
 
-A global that only some hosts have is an `Option`. Where the host lacks it,
-it's `None`; reading it doesn't throw a `ReferenceError`
-([ADR 0583](../../decisions/0583-a-global-some-hosts-lack-is-an-option.md)).
+A global is declared as TypeScript declares it, and called as JS calls it.
+Whether the host has it is `js::is_defined(binding)`, `typeof X !==
+"undefined"`, the one JS that asks of a missing global without throwing
+([ADR 0597](../../decisions/0597-whether-the-host-has-a-global-is-is-defined.md)):
 
 ```rust
-use std::marker::PhantomData;
-
-use js::JsObject;
-
-pub struct Analytics(PhantomData<JsObject>);
-
-impl Analytics {
-    #[cfg_attr(rust_js, rust_js::link_name = "track")]
-    pub fn track(&self, event: &str) {
-        unreachable!()
-    }
-}
-
-unsafe extern "Rust" {
-    /// The analytics script's global, where the page loaded it.
-    #[link_name = "analytics"]
-    pub safe static ANALYTICS: Option<&'static Analytics>;
+/// The analytics script's function, where the page loaded it.
+#[cfg_attr(rust_js, rust_js::link_name = "gtag")]
+pub fn gtag(command: &str, event: &str) {
+    unreachable!()
 }
 
 pub fn report(event: &str) {
-    if let Some(analytics) = ANALYTICS {
-        analytics.track(event);
+    if js::is_defined(gtag) {
+        gtag("event", event);
     }
 }
 
 pub fn later(task: Box<dyn FnOnce()>) {
-    match js::set_immediate {
-        Some(set_immediate) => {
-            set_immediate(task);
-        }
-        None => {
-            js::set_timeout(task, 0.0);
-        }
+    if js::is_defined(js::set_immediate) {
+        js::set_immediate(task);
+    } else {
+        js::set_timeout(task, 0.0);
     }
 }
 ```
 
 ```js
 export function report(event) {
-  const tmp = typeof analytics !== "undefined" ? analytics : undefined;
-  if (tmp) {
-    const analytics = tmp;
-    analytics.track(event);
+  if (typeof gtag !== "undefined") {
+    gtag("event", event);
   }
 }
 
 export function later(task) {
-  const tmp = typeof setImmediate !== "undefined" ? setImmediate : undefined;
-  if (tmp) {
-    const setImmediate = tmp;
+  if (typeof setImmediate !== "undefined") {
     setImmediate(task);
   } else {
     setTimeout(task, 0);
@@ -199,11 +180,14 @@ export function later(task) {
 }
 ```
 
-- **It's `typeof x !== "undefined"`**, the one JS that reads a missing
-  global without throwing.
-- **Each global has one declaration**: an `Option` if some host the binding
-  is for lacks it, its own type if all have it. `js::set_immediate` is an
-  `Option`, as browsers lack it; `webapi::performance` isn't.
+- **It's asked of a binding**, a JS function's or a class's,
+  `js::is_defined(webapi::message_channel::new)`: its type names the
+  global, so a variable between asks of the same one.
+- **It's a global's own name**: a closure, the crate's own function, a
+  method, an import or a path, `console.log`, is refused.
+- **Rust is told nothing**: the binding is still there to call, and throws
+  a `ReferenceError` where the host hasn't it, as JS does. Ask where the
+  program may run without it.
 
 ## What a value is: `typeof`
 

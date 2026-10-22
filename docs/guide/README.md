@@ -79,7 +79,7 @@ For people and for AI coding agents alike, each page:
 - **Is current.** Where a decision record and this guide disagree, the
   guide is right, or it's a bug in the guide: decisions record why, as
   they were made, and a later one may change an earlier one.
-- **Links the decision** that explains a rule, `([ADR 0583](../decisions/0583-a-global-some-hosts-lack-is-an-option.md))`, for why, never
+- **Links the decision** that explains a rule, `([ADR 0597](../decisions/0597-whether-the-host-has-a-global-is-is-defined.md))`, for why, never
   for what.
 - **Is kept true with the code.** A change to rust-js that changes what a
   program writes, or what it becomes, changes the page that says so in the

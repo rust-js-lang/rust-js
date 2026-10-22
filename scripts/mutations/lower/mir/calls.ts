@@ -3,6 +3,30 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "defined-of-own-function",
+    breaks: "`js::is_defined(helper)` of the crate's own function is a `typeof` of it, which is always there",
+    file: "src/lower/mir/calls.rs",
+    find: "Some(ty::FnDef(def_id, _)) if bindings::is_binding(self.tcx, def_id) => bindings::js_path(self.tcx, def_id),",
+    replace: "Some(ty::FnDef(def_id, _)) => bindings::js_path(self.tcx, def_id),",
+    tests: ["test/lowering.test.ts", "-t", "js::is_defined"],
+  },
+  {
+    name: "defined-of-any-name",
+    breaks: "`js::is_defined(|| 1)` is a `typeof` of no global, not refused",
+    file: "src/lower/mir/calls.rs",
+    find: "            Some(name) if crate::names::is_identifier(&name) => Ok(Expr::bin(\n",
+    replace: "            Some(name) => Ok(Expr::bin(\n",
+    tests: ["test/lowering.test.ts", "-t", "js::is_defined"],
+  },
+  {
+    name: "defined-unread",
+    breaks: "`js::is_defined(set_immediate)` is `true`, where a browser hasn't it",
+    file: "src/lower/mir/calls.rs",
+    find: "            bindings::JsForm::Defined => return Ok(Value::Expr(self.defined(arg_tys, span)?)),\n",
+    replace: "            bindings::JsForm::Defined => return Ok(Value::Expr(Expr::bool(true))),\n",
+    tests: ["test/lowering.test.ts", "-t", "js::is_defined"],
+  },
+  {
     name: "mir-assign-op-handle-refused",
     breaks: "MIR's `*m.entry(k).or_insert(10) += &v`, through a handle a call gave, is refused",
     file: "src/lower/mir/calls.rs",

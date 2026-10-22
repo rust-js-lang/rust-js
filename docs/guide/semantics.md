@@ -564,30 +564,23 @@ Calling JavaScript:
   import with no body to write is a `static` in an `unsafe extern "Rust"`
   block, `#[link_name = ".."]`. `js::import!("./app.css")` imports a file
   for its effects ([0110](../decisions/0110-stable-syntax.md)).
-- **A global some hosts lack is an `Option`,** read with `typeof`, so a
-  host without it gives `None` where JS would throw a `ReferenceError`
-  ([0583](../decisions/0583-a-global-some-hosts-lack-is-an-option.md)):
+- **A global is its own type, as TypeScript declares it**, read as its
+  name. Whether the host has it is `js::is_defined(binding)`, `typeof X
+  !== "undefined"`; a binding called where the host lacks it throws a
+  `ReferenceError`, as JS does
+  ([0597](../decisions/0597-whether-the-host-has-a-global-is-is-defined.md)):
 
 ```rust
-pub struct SetImmediate(js::JsObject);
-
-unsafe extern "Rust" {
-    #[link_name = "setImmediate"]
-    pub safe static SET_IMMEDIATE: Option<&'static SetImmediate>;
-}
-
 pub fn has_set_immediate() -> bool {
-    SET_IMMEDIATE.is_some()
+    js::is_defined(js::set_immediate)
 }
 ```
 
 ```js
 export function hasSetImmediate() {
-  return !!(typeof setImmediate !== "undefined" ? setImmediate : undefined);
+  return typeof setImmediate !== "undefined";
 }
 ```
-
-A global every host it's for has is its type, read as its name.
 
 - **The `js` crate binds JS's own globals, the `webapi` crate the
   browser's,** generated from its WebIDL; options objects are structs of
