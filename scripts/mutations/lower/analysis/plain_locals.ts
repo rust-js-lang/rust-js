@@ -10,4 +10,12 @@ export const mutations: Mutation[] = [
     replace: "keys.filter(|_| false)",
     tests: ["test/modules.test.ts", "-t", "only read and set is the module's"],
   },
+  {
+    name: "fn-given-never-quiet",
+    breaks: "a function given to `with_borrow` keeps its thread-local a cell, React's scheduler's `CURRENT_TASK.with_borrow(Clone::clone)` a `$withBorrow`",
+    file: "src/lower/analysis/plain_locals.rs",
+    find: "                        _ => fn_def(thir[args[1]].ty).map(|(f, f_args)| Given::Fn(f, f_args)),\n",
+    replace: "                        _ => None,\n",
+    tests: ["test/lowering.test.ts", "-t", "given a function to run"],
+  },
 ];

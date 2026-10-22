@@ -725,15 +725,32 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         all_bodies,
         &|ty| super::drops::drop_runs(recognition, (library, &closure_facts), &counted, ty),
     );
-    // A closure `with_borrow` runs while its thread-local is borrowed, that
-    // can't ask whether it is (ADR 0328): borrows nothing that may be it.
-    // Its closure is held as a `with_borrow_mut`'s, which nothing may ask of.
-    let quiet = |closure: LocalDefId, key: LocalDefId| {
+    // What `with_borrow` runs while its thread-local is borrowed, that can't
+    // ask whether it is (ADRs 0328, 0587): borrows nothing that may be it.
+    // It's held as a `with_borrow_mut`'s, which nothing may ask of.
+    let quiet = |given: plain_locals::Given<'tcx>, key: LocalDefId| {
         let held = Borrow {
             cell: Cell::Key(key.to_def_id()),
             mutable: true,
         };
-        closures.contains_key(&closure.to_def_id()) && !cell_borrows.body_asks(tcx, closure.to_def_id(), held)
+        match given {
+            plain_locals::Given::Closure(closure) => {
+                closures.contains_key(&closure.to_def_id()) && !cell_borrows.body_asks(tcx, closure.to_def_id(), held)
+            }
+            // A function given, as a call of it asks.
+            plain_locals::Given::Fn(f, args) => !cell_borrows.call_asks(
+                &Recognition {
+                    tcx,
+                    typing_env: ty::TypingEnv::fully_monomorphized(),
+                    trait_impls: &trait_impls,
+                    foreign: &foreign,
+                },
+                (f, args),
+                None,
+                held,
+                &|ty| super::drops::drop_runs(recognition, (library, &closure_facts), &counted, ty),
+            ),
+        }
     };
     // A thread-local is a cell, its module's own made plain after
     // (`plain_statics`), its quiet borrows given what's in it (ADR 0364).

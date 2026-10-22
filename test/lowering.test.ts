@@ -5357,6 +5357,49 @@ pub fn emptied(bag: &Bag) -> u32 {
   expect(() => lib.clash()).toThrow("already borrowed");
 });
 
+// ADR 0587: a function given to a thread-local's \`with_borrow\` is asked
+// what it may borrow as a closure is: React's scheduler's
+// \`CURRENT_TASK.with_borrow(Clone::clone)\` borrows nothing, so its task is
+// its module's variable. One that borrows its own key keeps it a cell.
+test("a thread-local given a function to run is its variable where it borrows nothing", async () => {
+  const dir = fixture("thread-local-fn-given");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::RefCell;
+use std::rc::Rc;
+
+thread_local! {
+    static CURRENT: RefCell<Option<Rc<String>>> = const { RefCell::new(None) };
+    static LOG: RefCell<Vec<u32>> = const { RefCell::new(Vec::new()) };
+}
+
+pub fn start(name: &str) {
+    CURRENT.set(Some(Rc::new(name.to_string())));
+}
+
+pub fn active() -> Option<Rc<String>> {
+    CURRENT.with_borrow(Clone::clone)
+}
+
+fn grow(log: &Vec<u32>) -> usize {
+    LOG.with_borrow_mut(|log| log.push(1));
+    log.len()
+}
+
+pub fn clash() -> usize {
+    LOG.with_borrow(grow)
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("let current;");
+  expect(js).toContain("export function active() {\n  return current;\n}");
+  expect(js).toContain("$withBorrow(log, grow)");
+  const lib = await import(join(dir, "lib.js"));
+  expect(lib.active()).toBeUndefined();
+  lib.start("a");
+  expect(lib.active()).toBe("a");
+  expect(() => lib.clash()).toThrow("already borrowed");
+});
+
 // ADR 0583: a global some hosts lack is an \`Option\` binding, read where
 // it may not be: React's scheduler asks for \`setImmediate\`, then
 // \`MessageChannel\`, then \`setTimeout\`.

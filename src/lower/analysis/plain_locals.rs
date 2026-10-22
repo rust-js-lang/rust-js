@@ -6,20 +6,28 @@ use super::super::body_queries::strip;
 use super::super::fn_def;
 use super::super::recognition::{is_local_borrow, local_key_access};
 use rustc_middle::thir::ExprKind;
-use rustc_middle::ty::TyCtxt;
-use rustc_span::def_id::LocalDefId;
+use rustc_middle::ty::{GenericArgsRef, TyCtxt};
+use rustc_span::def_id::{DefId, LocalDefId};
 use std::collections::HashSet;
+
+/// What a `with_borrow` is given to run: a closure made there, or a
+/// function, `CURRENT_TASK.with_borrow(Clone::clone)`.
+#[derive(Clone, Copy)]
+pub(super) enum Given<'tcx> {
+    Closure(LocalDefId),
+    Fn(DefId, GenericArgsRef<'tcx>),
+}
 
 /// The thread-locals only read and set, by `get`, `set`, `with_borrow` and
 /// `with_borrow_mut`, and not public: nothing shares their cell, so each
-/// is its module's variable, without a `{ value }`. A `with_borrow`'s
-/// closure must be `quiet` of its key, borrowing nothing that may be its
-/// cell, as nothing counts its borrows (ADRs 0328, 0580).
+/// is its module's variable, without a `{ value }`. What a `with_borrow`
+/// runs must be `quiet` of its key, borrowing nothing that may be its
+/// cell, as nothing counts its borrows (ADRs 0328, 0580, 0587).
 pub(super) fn plain_thread_locals<'tcx>(
     tcx: TyCtxt<'tcx>,
     bodies: &[&Body<'tcx>],
     keys: impl Iterator<Item = LocalDefId>,
-    quiet: &dyn Fn(LocalDefId, LocalDefId) -> bool,
+    quiet: &dyn Fn(Given<'tcx>, LocalDefId) -> bool,
 ) -> HashSet<LocalDefId> {
     let mut plain: HashSet<LocalDefId> = keys.filter(|&key| !tcx.visibility(key).is_public()).collect();
     for body in bodies {
@@ -32,10 +40,15 @@ pub(super) fn plain_thread_locals<'tcx>(
                 && local_key_access(tcx, id).is_some()
                 && let Some(&first) = args.first()
                 && let ExprKind::Borrow { arg, .. } = thir[strip(thir, first)].kind
-                && (!is_local_borrow(tcx, id)
-                    || matches!((&thir[strip(thir, args[1])].kind, &thir[strip(thir, arg)].kind),
-                        (ExprKind::Closure(c), ExprKind::NamedConst { def_id: key, .. })
-                            if key.as_local().is_some_and(|key| quiet(c.closure_id, key))))
+                && (!is_local_borrow(tcx, id) || {
+                    let given = match thir[strip(thir, args[1])].kind {
+                        ExprKind::Closure(ref c) => Some(Given::Closure(c.closure_id)),
+                        _ => fn_def(thir[args[1]].ty).map(|(f, f_args)| Given::Fn(f, f_args)),
+                    };
+                    matches!((given, &thir[strip(thir, arg)].kind),
+                        (Some(given), ExprKind::NamedConst { def_id: key, .. })
+                            if key.as_local().is_some_and(|key| quiet(given, key)))
+                })
             {
                 accessed.insert(strip(thir, arg));
             }
