@@ -749,30 +749,11 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                 _ => {}
             }
         }
-        // An `Option`'s, or a `&Option`'s: a `&mut` one's items are places.
         if tcx.is_diagnostic_item(sym::IntoIterator, trait_)
             && tcx.item_name(def_id).as_str() == "into_iter"
-            && !matches!(ty.kind(), ty::Ref(_, _, Mutability::Mut))
-            && self.is_lang_adt(ty.peel_refs(), LangItem::Option)
+            && let Some(op) = self.variants_stepped(ty)
         {
-            return Some(Std::OptionIter);
-        }
-        if tcx.is_diagnostic_item(sym::IntoIterator, trait_)
-            && tcx.item_name(def_id).as_str() == "into_iter"
-            && self.is_lang_adt(ty.peel_refs(), LangItem::Option)
-        {
-            return Some(Std::OptionIterMut);
-        }
-        // A `Result`'s, or a `&Result`'s, its `iter()`; a `&mut` one's, its
-        // `iter_mut()`.
-        if tcx.is_diagnostic_item(sym::IntoIterator, trait_)
-            && tcx.item_name(def_id).as_str() == "into_iter"
-            && self.is_std_type(ty.peel_refs(), StdItem::Result)
-        {
-            return Some(Std::Comb(match ty.kind() {
-                ty::Ref(_, _, Mutability::Mut) => Comb::ResultIterMut,
-                _ => Comb::ResultIter,
-            }));
+            return Some(op);
         }
         // `cmp`, `max` and `min` of what JS's `<` orders the same way.
         if tcx.is_diagnostic_item(sym::Ord, trait_) {
@@ -845,6 +826,20 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         (from_str || to_owned && ty.is_str())
             .then_some(Std::Same)
             .or((to_owned && ty.is_slice()).then_some(Std::ToVec))
+    }
+
+    /// `into_iter` of an `Option` or a `Result`, or of a reference to one:
+    /// its `iter()`, an array of its value or none, or, of a `&mut` one,
+    /// its `iter_mut()`, whose items are places.
+    fn variants_stepped(&self, ty: Ty<'tcx>) -> Option<Std> {
+        let by_mut = matches!(ty.kind(), ty::Ref(_, _, Mutability::Mut));
+        if self.is_lang_adt(ty.peel_refs(), LangItem::Option) {
+            return Some(if by_mut { Std::OptionIterMut } else { Std::OptionIter });
+        }
+        if self.is_std_type(ty.peel_refs(), StdItem::Result) {
+            return Some(Std::Comb(if by_mut { Comb::ResultIterMut } else { Comb::ResultIter }));
+        }
+        None
     }
 
     /// Whether `from` converts into `to` as an array of its length: a slice,
