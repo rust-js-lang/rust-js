@@ -18,11 +18,10 @@ export function byReference(a, b) {
  * change what the closure sees.
  */
 export function moveCopies(n) {
-  let n$1 = n;
-  const captured = n$1;
+  const captured = n;
   const get = () => captured;
-  n$1 = (n$1 + 100) | 0;
-  return (((get() * 1000) | 0) + n$1) | 0;
+  n = (n + 100) | 0;
+  return (((get() * 1000) | 0) + n) | 0;
 }
 
 /** A `move` closure owns its copy and can change it between calls. */

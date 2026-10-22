@@ -27,9 +27,9 @@ export function entry() {
 }
 
 function sorted(items, TOrd, TClone) {
-  const items$1 = Iterator.from(items).toArray();
-  items$1.sort(TOrd.cmp);
-  return items$1;
+  items = Iterator.from(items).toArray();
+  items.sort(TOrd.cmp);
+  return items;
 }
 
 function main() {

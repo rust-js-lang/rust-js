@@ -1103,7 +1103,7 @@ test("64-bit integers are BigInts, wrapped as release Rust wraps them", async ()
   expect(js).toContain("hash = BigInt.asUintN(64, hash * 1099511628211n);");
   // What a mask keeps in range is a number without another wrap.
   expect(js).toContain("return Number(id[0] & 4095n);");
-  expect(js).toContain("const worker$1 = BigInt(worker & 1023);");
+  expect(js).toContain("worker = BigInt(worker & 1023);");
   // A division by what may be zero, or `-1` of `i64::MIN`, panics as Rust's.
   expect(js).toContain("$bigDiv(7n, zero, -9223372036854775808n)");
   const id = (wide.Id as any).new(1700000000123n, 5, 42);

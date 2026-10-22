@@ -53,12 +53,12 @@ function idDeserialize_deserialize(json) {
 
 export const Id = {
   new(millis, worker, sequence) {
-    const worker$1 = BigInt(worker & 1023);
-    const sequence$1 = BigInt(sequence & 4095);
+    worker = BigInt(worker & 1023);
+    sequence = BigInt(sequence & 4095);
     return [
       BigInt.asUintN(64, (millis - 1288834974657n) << 22n) |
-        BigInt.asUintN(64, worker$1 << 12n) |
-        sequence$1,
+        BigInt.asUintN(64, worker << 12n) |
+        sequence,
     ];
   },
   millis(id) {
@@ -121,8 +121,8 @@ export function balances(entries) {
 
 export function dollars(cents) {
   const sign = cents < 0n ? "-" : "";
-  const cents$1 = $bigAbs(cents);
-  return `${sign}$${cents$1 / 100n}.${$zeroPad(String(cents$1 % 100n), 2)}`;
+  cents = $bigAbs(cents);
+  return `${sign}$${cents / 100n}.${$zeroPad(String(cents % 100n), 2)}`;
 }
 
 export function report() {

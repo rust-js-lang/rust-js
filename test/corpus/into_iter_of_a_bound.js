@@ -34,13 +34,13 @@ function putBackIterator_next(putBack, IIterator) {
 }
 
 export function rest(j) {
-  const j$1 = $intoIter(j);
-  const next = $nextSome(j$1);
+  j = $intoIter(j);
+  const next = $nextSome(j);
   if (next != null) {
     const first = $someValue(next);
     return $iterator(
       PutBack.withValue(
-        putBack(j$1, { intoIter: (items) => items, IntoIterIterator: () => ({ next: $nextSome }) }),
+        putBack(j, { intoIter: (items) => items, IntoIterIterator: () => ({ next: $nextSome }) }),
         first,
       ),
       (iterator) => putBackIterator_next(iterator, { next: $nextSome }),

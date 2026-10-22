@@ -348,8 +348,8 @@ pub fn repeat(text: &str, times: Option<usize>) -> String {
 
 ```js
 export function greeting(name) {
-  const name$1 = name ?? "stranger";
-  return `Hello, ${name$1}`;
+  name ??= "stranger";
+  return `Hello, ${name}`;
 }
 
 export function repeat(text, times) {

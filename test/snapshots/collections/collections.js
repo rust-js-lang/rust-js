@@ -42,14 +42,13 @@ export function sumTo(n) {
  * make it run longer.
  */
 export function endOnce(n) {
-  let n$1 = n;
   let times = 0;
-  const end = n$1;
+  const end = n;
   for (let i = 0; i < end; i++) {
-    n$1 = (n$1 + 1) | 0;
+    n = (n + 1) | 0;
     times = (times + 1) | 0;
   }
-  return (((times * 1000) | 0) + n$1) | 0;
+  return (((times * 1000) | 0) + n) | 0;
 }
 
 /** A `mut` loop variable is a copy: changing it doesn't move the loop on. */

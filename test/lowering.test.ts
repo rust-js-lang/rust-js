@@ -84,6 +84,31 @@ test("an entry's and_modify then or_insert reads its map and key", () => {
   expect(js).not.toContain("$mutGet(counts, c);");
 });
 
+// ADR 0609: a \`let\` that shadows a parameter, the parameter read no more
+// after it nor by a closure, is the parameter assigned, as React's
+// scheduler has \`priorityLevel = NormalPriority\`, not \`priorityLevel$1\`.
+test("a let that shadows a parameter read no more is the parameter assigned", async () => {
+  const dir = fixture("shadowed-parameters");
+  writeFileSync(join(dir, "lib.rs"), `pub fn clamped(level: u32) -> u32 {
+    let level = if level > 5 { 3 } else { level };
+    level * 2
+}
+
+pub fn kept(level: u32) -> Box<dyn Fn() -> u32> {
+    let first = move || level;
+    let level = level + 1;
+    Box::new(move || first() + level)
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("export function clamped(level) {\n  level = level > 5 ? 3 : level;\n");
+  // Read by a closure made before: a name of its own.
+  expect(js).toContain("level$1");
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.clamped(9), lib.clamped(2), lib.kept(1)()]).toEqual([6, 4, 3]);
+});
+
 // ADR 0607: a variable's field is given what a call gives in place,
 // \`more.has = work();\`, as React's scheduler has \`hasMoreWork =
 // flushWork(currentTime);\`: what makes the value can't make the variable
@@ -3874,7 +3899,7 @@ pub fn later(mut href: Option<&str>) -> String {
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain('export function link(href) {\n  if (!href) {\n    return "none";\n  }\n  return href.toUpperCase();\n}');
   expect(js).toContain('return name ? name.toUpperCase() : "anon";');
-  expect(js).toContain("const items$1 = items != null && items.length !== 0 ? items : undefined;\n  if (!items$1) {\n    return 0;\n  }\n  return $index(items$1, 0);");
+  expect(js).toContain("items = items != null && items.length !== 0 ? items : undefined;\n  if (!items) {\n    return 0;\n  }\n  return $index(items, 0);");
   const lib = await import(join(dir, "lib.js"));
   expect([lib.link("/a"), lib.link(""), lib.link(undefined)]).toEqual(["/A", "none", "none"]);
   expect([lib.named("ann"), lib.named(""), lib.named(undefined)]).toEqual(["ANN", "anon", "anon"]);

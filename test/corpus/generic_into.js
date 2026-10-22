@@ -16,8 +16,8 @@ function fahrenheitFromCelsius_from(c) {
 
 // The idiom: a function that takes anything that makes a `String`.
 function greet(name, IntoString) {
-  const name$1 = IntoString.into(name);
-  return `hello, ${name$1}`;
+  name = IntoString.into(name);
+  return `hello, ${name}`;
 }
 
 function named(n, NIntoName) {
