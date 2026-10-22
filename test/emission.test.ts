@@ -97,6 +97,20 @@ test("root and child output collisions leave no partial artifacts", async () => 
   }
 });
 
+// `shapes.js` and `Shapes.js` are one file on macOS and Windows: refused,
+// naming both, where Rust lets two inline modules differ by case alone.
+test("modules whose files differ only by case are refused", async () => {
+  const { fixture, compiler } = await import("./support");
+  const { existsSync, writeFileSync } = await import("node:fs");
+  const dir = fixture("case-collision");
+  const input = join(dir, "lib.rs"), output = join(dir, "lib.js");
+  writeFileSync(input, "pub mod shapes { pub fn f() -> i32 { 1 } }\n#[allow(non_snake_case)]\npub mod Shapes { pub fn g() -> i32 { 7 } }");
+  const p = Bun.spawnSync([compiler, input, "-o", output]);
+  expect(p.exitCode).not.toBe(0);
+  expect(p.stderr.toString()).toContain(`output collision at \`${join(dir, "shapes.js")}\` and \`${join(dir, "Shapes.js")}\`, which differ only by case`);
+  expect(existsSync(output)).toBe(false);
+});
+
 test("manifest owns artifacts and records even modules that emit no code", async () => {
   const { fixture, compiler } = await import("./support");
   const { existsSync, writeFileSync } = await import("node:fs");

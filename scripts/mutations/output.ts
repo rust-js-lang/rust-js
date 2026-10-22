@@ -234,4 +234,12 @@ export const mutations: Mutation[] = [
     replace: "                js::ImportFrom::Specifier(specifier) => specifier.clone(),\n",
     tests: ["test/modules.test.ts", "-t", "JS module's binding is re-exported"],
   },
+  {
+    name: "output-case-collision-allowed",
+    breaks: "two modules whose files differ only by case, `shapes.js` and `Shapes.js`, are written, one file on macOS and Windows",
+    file: "src/output.rs",
+    find: "folded.insert(path.to_string_lossy().to_lowercase(), path)",
+    replace: "folded.insert(path.to_string_lossy().to_string(), path)",
+    tests: ["test/emission.test.ts", "-t", "differ only by case"],
+  },
 ];

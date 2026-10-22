@@ -257,9 +257,14 @@ export function writeInSource(manifests, ledger, routes = [], { check = false, p
     for (const { file, module } of [...modules].sort((a, b) => a.module.length - b.module.length)) {
       const to = moved.get(file);
       const here = { crate: library?.name ?? crate, module };
-      const other = byDestination.get(to);
-      if (other) throw new Error(`rust-js can't write the JS in source: ${named(other, here)} and ${named(here, other)} would both be ${to}; rename the module`);
-      byDestination.set(to, here);
+      // By its case-folded path, as rust-js's own output: `helper.js` and
+      // `Helper.js` are one file on macOS and Windows.
+      const other = byDestination.get(to.toLowerCase());
+      if (other) {
+        const where = other.to === to ? to : `${other.to} and ${to}, which differ only by case, one file on macOS and Windows`;
+        throw new Error(`rust-js can't write the JS in source: ${named(other, here)} and ${named(here, other)} would both be ${where}; rename the module`);
+      }
+      byDestination.set(to.toLowerCase(), { ...here, to });
     }
   }
   // Every file's bytes, each crate's, before any is written: a read or a

@@ -101,3 +101,14 @@ mod helpers { .. }  ──► out/helpers.js       inline modules too
 - The playground shows only the root file for now.
 - Multiple *crates* (Cargo dependencies) remain future work. Each would become
   its own folder of modules.
+
+## Amendment: files that differ only by case
+
+Two inline modules may differ only by case, `mod shapes` and
+`mod Shapes`, which wrote `shapes.js` and `Shapes.js`: one file on
+macOS's and Windows's file systems, so the second overwrote the first
+and an import of the first failed (#143). Each output path is compared
+by its case-folded form too, and two that differ only by case are
+refused on every platform, naming both, as a Cargo build's JS in source
+is for two crates' modules. Held by `test/emission.test.ts` and
+`test/cargo-in-source.test.ts`.

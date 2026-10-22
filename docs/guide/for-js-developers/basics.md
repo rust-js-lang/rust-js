@@ -932,7 +932,7 @@ pub fn same_ref(a: &Point, b: &Point) -> bool {
 ```
 
 ```js
-import { $eq, $ptrTo } from "@rust-js/runtime";
+import { $eq } from "@rust-js/runtime";
 
 export function sameName(a, b) {
   return a === b;
@@ -947,7 +947,7 @@ export function sameList(a, b) {
 }
 
 export function sameRef(a, b) {
-  return $ptrTo(a) === $ptrTo(b);
+  return a === b;
 }
 ```
 

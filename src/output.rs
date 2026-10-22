@@ -549,11 +549,22 @@ impl OutputPlan {
         let input = absolute(&self.input)?;
         let output = absolute(&self.output)?;
         let manifest_path = self.manifest.as_deref().map(absolute).transpose()?;
+        // Each path by its case-folded form: macOS's and Windows's file
+        // systems make `shapes.js` and `Shapes.js` one file.
         let mut paths = HashSet::new();
+        let mut folded: HashMap<String, &PathBuf> = HashMap::new();
         for path in planned.iter().chain(manifest_path.iter()) {
             if sources.contains(path) || path == &input || !paths.insert(path.clone()) {
                 return Err(format!(
                     "output collision at `{}`; pick another output name",
+                    path.display()
+                ));
+            }
+            if let Some(other) = folded.insert(path.to_string_lossy().to_lowercase(), path) {
+                return Err(format!(
+                    "output collision at `{}` and `{}`, which differ only by case, one file on macOS and \
+                         Windows; rename one of the modules",
+                    other.display(),
                     path.display()
                 ));
             }

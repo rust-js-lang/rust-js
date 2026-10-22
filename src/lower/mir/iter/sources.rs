@@ -16,9 +16,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             },
             // A `char`'s or a `str`'s escape, its text, of its `char`s, which
             // JS's string steps by code point as Rust's are.
-            None if crate::lower::recognition::is_text_escape(self.tcx, ty) => {
-                Ok(self.js_iterator(value))
-            }
+            None if crate::lower::recognition::is_text_escape(self.tcx, ty) => Ok(self.js_iterator(value)),
             None if self.is_user_iterator(ty) => {
                 let trait_id = std_item(self.tcx, StdItem::Iterator);
                 self.user_iterator(value, ty, trait_id, "next", span)

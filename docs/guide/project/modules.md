@@ -46,6 +46,10 @@ src/
   rust-js can't write the JS in source: the crate root and module `root` would both be /path/to/app/src/root.js; rename the module
   ```
 
+  Nor can two whose files differ only by case, `mod shapes { .. }` and
+  `mod Shapes { .. }`: `shapes.js` and `Shapes.js` are one file on macOS
+  and Windows, so both are refused, naming the two files.
+
 ## Imports between modules
 
 A module imports what it uses from the others, by a relative path, as you'd

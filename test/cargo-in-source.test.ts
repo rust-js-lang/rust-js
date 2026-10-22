@@ -61,19 +61,24 @@ test("a Cargo build's JS in source refuses two modules for one file", async () =
 }, 600_000);
 
 // Two crates' modules can be where one file would be too: an inline
-// `mod helper` of `sources/alpha.rs`'s and of `sources/beta.rs`'s.
-test("a Cargo build's JS in source refuses two crates' modules for one file", async () => {
-  const dir = fixture("cargo-in-source-crates-collision");
+// `mod helper` of `sources/alpha.rs`'s and of `sources/beta.rs`'s, or
+// `mod Helper` of beta's, one file on macOS and Windows.
+test.each([["helper", /crate `(alpha|beta)`'s module `helper` and crate `(alpha|beta)`'s module `helper` would both be .*sources\/helper\.js/],
+  ["Helper", /crate `beta`'s module `Helper` and crate `alpha`'s module `helper` would both be .*sources\/Helper\.js and .*sources\/helper\.js, which differ only by case/]] as const)(
+  "a Cargo build's JS in source refuses two crates' modules for one file, beta's `mod %s`", async (betas, refused) => {
+  const dir = fixture(`cargo-in-source-crates-collision-${betas}`);
   mkdirSync(join(dir, "sources"), { recursive: true });
   writeFileSync(join(dir, "Cargo.toml"), '[workspace]\nmembers = ["alpha", "beta"]\nresolver = "2"\n');
   for (const [name, dependency] of [["alpha", 'beta = { path = "../beta" }\n'], ["beta", ""]]) {
     mkdirSync(join(dir, name));
     writeFileSync(join(dir, name, "Cargo.toml"), `[package]\nname = "${name}"\nversion = "0.1.0"\nedition = "2024"\n\n[lib]\npath = "../sources/${name}.rs"\n\n[dependencies]\n${dependency}`);
-    const answer = name === "alpha" ? "helper::n() + beta::answer()" : "helper::n()";
-    writeFileSync(join(dir, "sources", `${name}.rs`), `mod helper {\n    pub fn n() -> u32 {\n        1\n    }\n}\n\npub fn answer() -> u32 {\n    ${answer}\n}\n`);
+    const module = name === "alpha" ? "helper" : betas;
+    const answer = name === "alpha" ? "helper::n() + beta::answer()" : `${module}::n()`;
+    const allow = module === "helper" ? "" : "#[allow(non_snake_case)]\n";
+    writeFileSync(join(dir, "sources", `${name}.rs`), `${allow}mod ${module} {\n    pub fn n() -> u32 {\n        1\n    }\n}\n\npub fn answer() -> u32 {\n    ${answer}\n}\n`);
   }
   const inSource = () => checkCargo({ manifestPath: join(dir, "Cargo.toml"), toolchain: channel, compiler, offline: true, packageName: "alpha", inSource: true });
-  await expect(inSource()).rejects.toThrow(/crate `(alpha|beta)`'s module `helper` and crate `(alpha|beta)`'s module `helper` would both be .*sources\/helper\.js/);
+  await expect(inSource()).rejects.toThrow(refused);
   expect(readdirSync(join(dir, "sources")).sort()).toEqual(["alpha.rs", "beta.rs"]);
 }, 600_000);
 
