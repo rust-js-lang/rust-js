@@ -17,9 +17,9 @@ The goal is simple:
 Rust.js, as it is today, from a first Vite app to bindings, React and the
 semantics.
 
-[Try the playground](https://rust-js-lang.github.io/rust-js/) — compilation runs
-entirely in your browser. The playground itself is written in Rust and
-compiled by Rust.js.
+[Read the guide](https://rust-js-lang.github.io/rust-js/): how to write a
+JavaScript app in rust-js, each example's Rust beside the JavaScript it
+becomes.
 
 ## Why Rust to JavaScript?
 

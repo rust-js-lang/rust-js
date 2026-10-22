@@ -86,27 +86,8 @@ Tailwind. `cd web && bun compile-rust.ts` compiles `web/rust/`, with
 as `rust-js build` is an app's: a run of it is a Fast Refresh of each
 component it changed. The playground's `build` runs it first.
 
-It's also deployed to **https://rust-js-lang.github.io/rust-js/** by the
-*Deploy playground* workflow (`.github/workflows/deploy-playground.yml`),
-which you run by hand from the Actions tab, or with `bun run deploy`.
-
-Compiling rustc's front end takes many minutes on CI, so build locally and
-publish the result first. `bun run ship` runs `./build.sh`, then
-`./prebuilt.sh publish`, which uploads `rust-js.wasm` as release `wasm-<hash>`,
-then starts the workflow:
-
-```bash
-bun run ship    # after committing and pushing your changes
-```
-
-The hash covers the committed inputs (`src/`, `wasm/Cargo.*`, `.cargo/`,
-`patches/`, `build.sh`). The workflow computes the same hash and downloads
-the matching binary in seconds. If there isn't one, for example after
-changing `src/` without publishing, it builds from source, so a stale binary
-is never deployed. `publish` refuses a binary that wasn't built from exactly
-the committed, pushed inputs. Once the new one is uploaded, it deletes the
-previous `wasm-*` releases (and their tags), so only the newest is kept; an
-older commit simply builds from source if deployed. `bun run site` writes the same
+It isn't deployed: GitHub Pages serves the guide instead
+([ADR 0600](../docs/decisions/0600-the-guide-is-the-site.md)). `bun run site` writes the playground as a
 static site to `web/dist`, and `bun run preview` serves it under `/rust-js/`,
 as Pages does. Each click
 gets a fresh instance of the already-compiled module, because rustc keeps

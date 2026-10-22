@@ -307,7 +307,8 @@ cost nothing. Started by hand too: `gh workflow run nightly.yml`.
 
 ### Kept as they are
 
-`qualify.yml`, `publish-npm-crates.yml` and `deploy-playground.yml`.
+`qualify.yml`, `publish-npm-crates.yml` and `deploy-guide.yml`, which
+builds the guide's site and deploys it to GitHub Pages (`bun run deploy`).
 
 ## What it's made of
 
