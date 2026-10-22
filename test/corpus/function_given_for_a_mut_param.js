@@ -32,7 +32,7 @@ function main() {
   let n = 5;
   const t$2 = { value: n };
   apply(t$2, (x) => {
-    x.value = Math.imul(x.value, 2);
+    x.value = (x.value * 2) | 0;
   });
   n = t$2.value;
   console.log(`${n}`);

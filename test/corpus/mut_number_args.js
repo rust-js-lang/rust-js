@@ -6,7 +6,7 @@ export function entry() {
 
 function bump(n, by) {
   n.value = (n.value + by) >>> 0;
-  return Math.imul(n.value, 2) >>> 0;
+  return (n.value * 2) >>> 0;
 }
 
 function twice(count) {

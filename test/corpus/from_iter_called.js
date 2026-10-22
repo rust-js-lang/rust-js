@@ -14,7 +14,7 @@ function sorted(it) {
 
 function main() {
   console.log(`[${sorted($iter([3, 1, 2])).join(", ")}]`);
-  const v = [5, 4].map((x) => Math.imul(x, 2));
+  const v = [5, 4].map((x) => (x * 2) | 0);
   const s = ["a", "b"].join("");
   const backwards = Array.from("abc").toReversed().join("");
   const set = new Set([3, 1, 3]);

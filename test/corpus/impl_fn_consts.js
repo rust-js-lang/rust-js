@@ -24,7 +24,7 @@ export const S = {
 
 const Ops = {
   TABLE: [
-    ["double", (x) => Math.imul(x, 2)],
+    ["double", (x) => (x * 2) | 0],
     ["neg", (x) => -x | 0],
   ],
 };

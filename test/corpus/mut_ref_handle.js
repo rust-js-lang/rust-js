@@ -85,7 +85,7 @@ function main() {
             b = value;
           },
         };
-    r.value = Math.imul(r.value, 10);
+    r.value = (r.value * 10) | 0;
   }
   console.log(`${a} ${b}`);
 
@@ -147,7 +147,7 @@ function main() {
     },
   ];
   for (const r of refs) {
-    r.value = Math.imul(r.value, 7);
+    r.value = (r.value * 7) | 0;
   }
   console.log(`${i} ${j}`);
 

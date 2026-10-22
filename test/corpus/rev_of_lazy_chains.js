@@ -8,7 +8,7 @@ export function entry() {
 
 function shout(x) {
   console.log(`map ${x}`);
-  return Math.imul(x, 2);
+  return (x * 2) | 0;
 }
 
 function main() {
@@ -34,7 +34,7 @@ function main() {
   const it = v
     .toReversed()
     .values()
-    .map((x) => Math.imul(x, 10));
+    .map((x) => (x * 10) | 0);
   const first = $next(it);
   const rest = it.toArray();
   console.log(

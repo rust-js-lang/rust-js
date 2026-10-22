@@ -46,7 +46,7 @@ function evensOrTens(evens) {
     TAG: "Other",
     _0: $mapEnds(
       $iterator({ start: 1, end: 4 }, $rangeNext, false, $rangeNextBack),
-      (n) => Math.imul(n, 10) >>> 0,
+      (n) => (n * 10) >>> 0,
     ),
   };
 }

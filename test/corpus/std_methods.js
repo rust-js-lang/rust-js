@@ -151,7 +151,7 @@ function main() {
       inspect(item);
       return item;
     })
-    .map((x) => Math.imul(x, 2));
+    .map((x) => (x * 2) | 0);
   console.log(`[${doubled.join(", ")}]`);
   const r = { TAG: "Ok", _0: "abc" };
   const value$4 = r.TAG === "Ok" ? { TAG: "Ok", _0: r._0.toUpperCase() } : r;

@@ -45,7 +45,7 @@ function main() {
     const tmp$2 = noisy([7, 8]);
     const tmp$3 = $iter(tmp$2);
     const tmp$4 = (sum, n) => {
-      const result = ((Math.imul(sum, 10) >>> 0) + n[0]) >>> 0;
+      const result = (((sum * 10) >>> 0) + n[0]) >>> 0;
       noisyDrop_drop(n);
       return result;
     };

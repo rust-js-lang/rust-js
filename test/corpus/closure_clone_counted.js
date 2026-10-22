@@ -158,7 +158,7 @@ function main() {
   const make$2 = (shared) =>
     $dropping(
       $cloning(
-        () => Math.imul(shared.value[0], 2) >>> 0,
+        () => (shared.value[0] * 2) >>> 0,
         () => make$2($rcClone(shared)),
       ),
       () => {

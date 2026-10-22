@@ -57,7 +57,7 @@ function main() {
   const item = { ...a };
   const points = Array.from({ length: 3 }, () => ({ ...item }));
   for (const p of points) {
-    p.y = Math.imul(p.y, 3);
+    p.y = (p.y * 3) | 0;
   }
   const first = { ...$index(points, 0) };
   $index(points, 0).x = 42;

@@ -201,7 +201,7 @@ export function tallies(words) {
     $mutGet(counts, w).value = ($mutGet(counts, w).value + one) >>> 0;
     const n = $mutGet(counts, "b");
     if (n != null) {
-      n.value = Math.imul(n.value, 2) >>> 0;
+      n.value = (n.value * 2) >>> 0;
     }
   }
   const all = Array.from(counts);

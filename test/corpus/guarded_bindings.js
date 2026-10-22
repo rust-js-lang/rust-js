@@ -54,7 +54,7 @@ function main() {
       const n = current;
       if (n > 5) {
         const n = current;
-        tmp = Math.imul(n, 10);
+        tmp = (n * 10) | 0;
       } else {
         const n = current;
         if (n < 0) {

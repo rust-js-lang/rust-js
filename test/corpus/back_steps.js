@@ -21,7 +21,7 @@ export function entry() {
 }
 
 function digitsBack(it) {
-  return $foldBack(it, 0, (a, b) => ((Math.imul(a, 10) >>> 0) + b) >>> 0);
+  return $foldBack(it, 0, (a, b) => (((a * 10) >>> 0) + b) >>> 0);
 }
 
 function lastEven(it) {
@@ -40,13 +40,13 @@ function tagged(it) {
   return $foldBack(
     $mapEnds(it, (n) => (n + 100) >>> 0),
     0,
-    (a, b) => ((Math.imul(a, 1000) >>> 0) + b) >>> 0,
+    (a, b) => (((a * 1000) >>> 0) + b) >>> 0,
   );
 }
 
 function lastBig(it) {
   const found = $findBack(
-    $mapEnds(it, (n) => Math.imul(n, 2) >>> 0),
+    $mapEnds(it, (n) => (n * 2) >>> 0),
     (n) => n > 2,
   );
   return [found, $next(it)];
@@ -99,7 +99,7 @@ function main() {
     )}`,
   );
   const value$9 = $findBack(
-    $mapEnds($iter([5, 6, 7]), (n) => Math.imul(n, 10) >>> 0),
+    $mapEnds($iter([5, 6, 7]), (n) => (n * 10) >>> 0),
     (n) => n < 70,
   );
   console.log(`${value$9 == null ? "None" : `Some(${value$9})`}`);

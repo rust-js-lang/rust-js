@@ -86,7 +86,7 @@ function main() {
       `${value$1 == null ? "None" : `Some((${value$1[0]}, ${$debugStr(value$1[1])}))`} ${value$2 == null ? "None" : `Some((${value$2[0]}, ${$debugStr(value$2[1])}))`}`,
     );
     const last = $nextBack($iter(v));
-    const value$3 = last === undefined ? undefined : Math.imul(last, 10);
+    const value$3 = last === undefined ? undefined : (last * 10) | 0;
     console.log(`${value$3 == null ? "None" : `Some(${value$3})`}`);
     const value$4 = $nextBack($iter(Array.from("héllo")));
     const value$5 = $nextBack($iter("a,b,c".split(",")));

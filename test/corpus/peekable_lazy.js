@@ -52,7 +52,7 @@ function main() {
   const it = iterator_peekable(
     $lazyRange(1, 6).map((x) => {
       seen.push(x);
-      return Math.imul(x, 10);
+      return (x * 10) | 0;
     }),
     { next: $next },
   );

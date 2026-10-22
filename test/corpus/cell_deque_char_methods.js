@@ -34,7 +34,7 @@ function main() {
   count.value = (count.value + 1) | 0;
   const other = { value: 10 };
   $cellSwap(count, other);
-  count.value = Math.imul(count.value, 2);
+  count.value = (count.value * 2) | 0;
   console.log(`${count.value} ${other.value}`);
   const list = { value: [1] };
   list.value.push(2);
@@ -65,7 +65,7 @@ function main() {
   const value = $unwrap($mutAt(deque, 0));
   value.value = (value.value + 1) | 0;
   const value$1 = $unwrap($mutAt(deque, -1));
-  value$1.value = Math.imul(value$1.value, 10);
+  value$1.value = (value$1.value * 10) | 0;
   const arg = $slice(deque, 1, 3);
   console.log(`[${deque.join(", ")}] [${arg.join(", ")}]`);
   const swapRemoveBack = $dequeSwapRemove(deque, 1, false);
@@ -112,7 +112,7 @@ function main() {
 
   const pair = [1, 2];
   const refs = pair;
-  console.log(`[${refs.map((x) => Math.imul(x, 2)).join(", ")}]`);
+  console.log(`[${refs.map((x) => (x * 2) | 0).join(", ")}]`);
   for (const x of $mutItems(pair)) {
     x.value = (x.value + 1) | 0;
   }

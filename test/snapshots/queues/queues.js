@@ -234,7 +234,7 @@ export function report() {
     { label: "n", value: 7 },
     { fmt: String },
   )}\n`;
-  const p = { steps: [(x) => (x + 1) | 0, (x) => Math.imul(x, 10), (x) => (x - 3) | 0] };
+  const p = { steps: [(x) => (x + 1) | 0, (x) => (x * 10) | 0, (x) => (x - 3) | 0] };
   const run = Pipeline.run(p, 4);
   const value = firstEvenSquare([3, 5, 6, 8]);
   const value$1 = firstEvenSquare([1]);

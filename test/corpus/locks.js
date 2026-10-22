@@ -56,7 +56,7 @@ function main() {
   $unborrow(value$2);
   const seen = count;
   const value$3 = $lock(seen, true);
-  value$3.value = Math.imul(value$3.value, 3) >>> 0;
+  value$3.value = (value$3.value * 3) >>> 0;
   $unborrow(value$3);
   const value$4 = $lock(count, true);
   const now = value$4.value;
@@ -89,7 +89,7 @@ function main() {
   const counter = { value: 0 };
   const num = $lock(counter, true);
   num.value = (num.value + 1) | 0;
-  num.value = Math.imul(num.value, 10);
+  num.value = (num.value * 10) | 0;
   try {
     console.log(`inside ${num.value}`);
   } finally {

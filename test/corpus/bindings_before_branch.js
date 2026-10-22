@@ -6,8 +6,8 @@ export function entry() {
 
 function pick(a) {
   const x = (a + 1) >>> 0;
-  const z = Math.imul(x, 3) >>> 0;
-  const y = x > 3 ? Math.imul(x, 2) >>> 0 : (x + 1) >>> 0;
+  const z = (x * 3) >>> 0;
+  const y = x > 3 ? (x * 2) >>> 0 : (x + 1) >>> 0;
   return (((y + z) >>> 0) + x) >>> 0;
 }
 

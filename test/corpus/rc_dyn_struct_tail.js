@@ -9,7 +9,7 @@ export function entry() {
 const i32Weight = { weight: i32Weight_weight };
 
 function i32Weight_weight(self) {
-  return Math.imul(self, 10);
+  return (self * 10) | 0;
 }
 
 function line(entry) {

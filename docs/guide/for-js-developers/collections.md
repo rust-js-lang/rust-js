@@ -432,7 +432,7 @@ export function loggedFirst(xs) {
   return $lent(
     xs.values().map((x) => {
       console.log(`checking ${x}`);
-      return Math.imul(x, 10);
+      return (x * 10) | 0;
     }),
   ).find((x) => x > 20);
 }

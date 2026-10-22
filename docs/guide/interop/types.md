@@ -79,7 +79,7 @@ export function add(a, b) {
 }
 
 export function scale(a) {
-  return Math.imul(a, -3);
+  return (a * -3) | 0;
 }
 
 export function nextByte(a) {
@@ -644,7 +644,7 @@ export function hit(counter, line) {
 
 export function doubled() {
   let total = 1;
-  total = Math.imul(total, 2) >>> 0;
+  total = (total * 2) >>> 0;
   return total;
 }
 

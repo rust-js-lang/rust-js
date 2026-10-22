@@ -36,7 +36,7 @@ const i32ProduceU32 = { produce: i32ProduceU32_produce };
 const i32Source = { Produce: () => i32ProduceU32 };
 
 function i32ProduceU32_produce(self) {
-  return Math.imul(self >>> 0, 2) >>> 0;
+  return ((self >>> 0) * 2) >>> 0;
 }
 
 function produced(t, TSource) {

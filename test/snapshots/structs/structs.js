@@ -28,7 +28,7 @@ export function moved(x, y, dx) {
 export function grow(w, h, by) {
   const r = rect(0, 0, w, h);
   r.size[0] = (r.size[0] + by) >>> 0;
-  r.size[1] = Math.imul(r.size[1], 2) >>> 0;
+  r.size[1] = (r.size[1] * 2) >>> 0;
   const value = point(-1, -1);
   r.origin = value;
   return r;
@@ -187,7 +187,7 @@ export function quadrant(x, y) {
         return (2 + (y < 0 ? 1 : 0)) | 0;
       }
       const y$2 = value.y;
-      return Math.imul(y$2, 4);
+      return (y$2 * 4) | 0;
     }
   }
   return 0;

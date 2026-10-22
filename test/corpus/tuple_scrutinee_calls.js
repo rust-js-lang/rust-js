@@ -22,7 +22,7 @@ function counted(v) {
   const n = v.length;
   const x = v.pop();
   if (x != null) {
-    return ((Math.imul(n, 10) >>> 0) + x) >>> 0;
+    return (((n * 10) >>> 0) + x) >>> 0;
   }
   return n;
 }
@@ -39,7 +39,7 @@ function peeked(map, names) {
   const value = $peek(names) != null;
   if (value$1.TAG === "Circle") {
     if (value) {
-      return Math.imul(value$1._0, 2) >>> 0;
+      return (value$1._0 * 2) >>> 0;
     }
   } else if (value$1.TAG === "Square") {
     if (!value) {
@@ -55,7 +55,7 @@ function guarded(v) {
   const a = x;
   x += 10;
   if (b != null) {
-    return ((((Math.imul(a, 100) >>> 0) + b) >>> 0) + x) >>> 0;
+    return (((((a * 100) >>> 0) + b) >>> 0) + x) >>> 0;
   }
   return (a + x) >>> 0;
 }
@@ -71,7 +71,7 @@ function bumped(v) {
     })()
   ) {
     if (b != null) {
-      return ((((Math.imul(a, 100) >>> 0) + b) >>> 0) + x) >>> 0;
+      return (((((a * 100) >>> 0) + b) >>> 0) + x) >>> 0;
     }
     return (a + x) >>> 0;
   }
@@ -83,7 +83,7 @@ function guardedParam(v, x) {
   const a = x;
   x += 10;
   if (b != null) {
-    return ((((Math.imul(a, 100) >>> 0) + b) >>> 0) + x) >>> 0;
+    return (((((a * 100) >>> 0) + b) >>> 0) + x) >>> 0;
   }
   return (a + x) >>> 0;
 }
@@ -120,7 +120,7 @@ function bumpedByRef(v, first) {
   value.value = n.value;
   if (!value$1) {
     if (b != null) {
-      return ((((((Math.imul(a, 100) >>> 0) + b) >>> 0) + x) >>> 0) + y) >>> 0;
+      return (((((((a * 100) >>> 0) + b) >>> 0) + x) >>> 0) + y) >>> 0;
     }
     return (((a + x) >>> 0) + y) >>> 0;
   }

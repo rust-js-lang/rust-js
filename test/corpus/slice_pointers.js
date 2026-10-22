@@ -29,7 +29,7 @@ function doubled(items) {
   const len = whole.length;
   for (let i = 0; i < len; i++) {
     const add = $ptrAdd(first, i);
-    add.value = Math.imul(add.value, 2);
+    add.value = (add.value * 2) | 0;
   }
 }
 

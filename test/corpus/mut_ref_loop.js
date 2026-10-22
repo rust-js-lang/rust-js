@@ -50,7 +50,7 @@ function main() {
     if (n.value % 2 === 0) {
       continue;
     }
-    n.value = Math.imul(n.value, 10);
+    n.value = (n.value * 10) | 0;
     if (!(n.value > 20)) {
       continue;
     }

@@ -10,7 +10,7 @@ function main() {
   const d = $range(1, 7);
   d.unshift(0);
   for (const x of $mutItems($view(d, 2, 5))) {
-    x.value = Math.imul(x.value, 10);
+    x.value = (x.value * 10) | 0;
   }
   console.log(`[${d.join(", ")}]`);
   const words = ["a", "b", "c"].map((s) => s);

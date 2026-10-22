@@ -205,7 +205,7 @@ function main() {
       },
     },
   );
-  r.value = Math.imul(r.value, 2);
+  r.value = (r.value * 2) | 0;
   console.log(`${a} ${b}`);
 
   const s = ["x", "y"];
@@ -272,7 +272,7 @@ function main() {
       },
     },
   ).value;
-  e.n = Math.imul(e.n, 10);
+  e.n = (e.n * 10) | 0;
   console.log(`${cDebug_fmt(c)} ${cDebug_fmt(d)}`);
 
   const v = [{ n: 3 }];

@@ -49,7 +49,7 @@ function main() {
     console.log(`${old} ${arg}`);
   }
   const value = $entryGet($unwrap($endEntry(counts, $cmp, true)), true);
-  value.value = Math.imul(value.value, 7);
+  value.value = (value.value * 7) | 0;
   console.log(
     `{${Array.from($sortedEntries(counts, $cmp))
       .map(([key, value]) => `${$debugStr(key)}: ${value}`)

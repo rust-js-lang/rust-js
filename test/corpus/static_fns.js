@@ -11,11 +11,11 @@ function enGreet_hi(en) {
 }
 
 function double(x) {
-  return Math.imul(x, 2);
+  return (x * 2) | 0;
 }
 
 function triple(x) {
-  return Math.imul(x, 3);
+  return (x * 3) | 0;
 }
 
 const F = double;

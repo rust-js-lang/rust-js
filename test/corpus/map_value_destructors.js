@@ -25,7 +25,7 @@ function noisyDrop_drop(noisy) {
 function main() {
   const tree = $treeFrom(
     new Map(),
-    $lazyRange(1, 7).map((k) => [k, [Math.imul(k, 10) >>> 0]]),
+    $lazyRange(1, 7).map((k) => [k, [(k * 10) >>> 0]]),
     false,
     $cmp,
     noisyDrop_drop,

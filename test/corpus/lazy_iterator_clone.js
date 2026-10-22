@@ -58,7 +58,7 @@ function main() {
     );
   const evens = makeMap$1(
     makeFilter($iter([1, 2, 3, 4, 5, 6]), (x) => x % 2 === 0),
-    (x) => Math.imul(x, 3),
+    (x) => (x * 3) | 0,
   );
   const a = $clone(evens);
   $next(a);

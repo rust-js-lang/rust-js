@@ -23,7 +23,7 @@ function main() {
   let c = 3;
   let e = value;
   c = (c + 1) | 0;
-  e = Math.imul(e, 2);
+  e = (e * 2) | 0;
   const { x, y } = { x: 7, y: 8 };
   console.log(`${a} ${b} ${c} ${d} ${e} ${x} ${y}`);
 

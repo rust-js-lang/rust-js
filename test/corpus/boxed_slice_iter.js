@@ -13,7 +13,7 @@ function bumped(items) {
 
 function main() {
   const numbers = [1, 2, 3];
-  const doubled = numbers.map((n) => Math.imul(n, 2));
+  const doubled = numbers.map((n) => (n * 2) | 0);
   const total = numbers.reduce((a, b) => (a + b) | 0, 0);
   console.log(`[${doubled.join(", ")}] ${total}`);
   const items = [{ name: "a", count: 1 }];

@@ -50,13 +50,13 @@ function main() {
   // Overflowing arithmetic: what wrapping gives, and whether it wrapped.
   const overflowingAdd = $overflowing(4, 250 + 10, 0, 255);
   const overflowingSub = $overflowing(4294967295, 5 - 6, 0, 4294967295);
-  const value = $overflowing(Math.imul(2147483647, 2), 2147483647 * 2, -2147483648, 2147483647);
+  const value = $overflowing(-2, 2147483647 * 2, -2147483648, 2147483647);
   console.log(
     `(${overflowingAdd[0]}, ${overflowingAdd[1]}) (${overflowingSub[0]}, ${overflowingSub[1]}) (${value[0]}, ${value[1]})`,
   );
   const value$2 = $overflowing(7, 3 + 4, -2147483648, 2147483647);
   const value$3 = $overflowing(127, -128 - 1, -128, 127);
-  const value$4 = $overflowing(Math.imul(100000, 100000), 100000 * 100000, -2147483648, 2147483647);
+  const value$4 = $overflowing(1410065408, 100000 * 100000, -2147483648, 2147483647);
   console.log(
     `(${value$2[0]}, ${value$2[1]}) (${value$3[0]}, ${value$3[1]}) (${value$4[0]}, ${value$4[1]})`,
   );

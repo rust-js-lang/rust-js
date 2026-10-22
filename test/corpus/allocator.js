@@ -39,11 +39,11 @@ const Buf = {
   push(buf, value, TSize, TAlign) {
     if (buf.len === buf.cap) {
       const old = layoutArray(buf.cap, TSize, TAlign);
-      const new$ = layoutArray(Math.imul(buf.cap, 2) >>> 0, TSize, TAlign);
+      const new$ = layoutArray((buf.cap * 2) >>> 0, TSize, TAlign);
       const grown = $realloc($ptrBytes(buf.ptr), old, new$.size);
       const value = $ptrTyped($unwrap(grown));
       buf.ptr = value;
-      buf.cap = Math.imul(buf.cap, 2) >>> 0;
+      buf.cap = (buf.cap * 2) >>> 0;
     }
     $ptrAdd(buf.ptr, buf.len).value = value;
     buf.len = (buf.len + 1) >>> 0;

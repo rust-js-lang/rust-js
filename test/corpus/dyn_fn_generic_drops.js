@@ -44,7 +44,7 @@ function main() {
     }
     const i = tmp;
     const guard = [i];
-    const value = () => Math.imul(Guard.id(guard), 10) >>> 0;
+    const value = () => (Guard.id(guard) * 10) >>> 0;
     try {
       Registry.add(registry, value, (value) => {
         guardDrop_drop(guard);

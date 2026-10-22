@@ -68,6 +68,6 @@ export function limits() {
 const STEP = 3;
 
 export function local() {
-  return Math.imul(STEP, 2) >>> 0;
+  return (STEP * 2) >>> 0;
 }
 //# sourceMappingURL=consts.js.map

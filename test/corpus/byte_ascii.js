@@ -20,7 +20,7 @@ function digits(text) {
     if (b < 48 || b > 57) {
       break;
     }
-    n = ((Math.imul(n, 10) >>> 0) + ((b - 48) & 255)) >>> 0;
+    n = (((n * 10) >>> 0) + ((b - 48) & 255)) >>> 0;
   }
   return n;
 }

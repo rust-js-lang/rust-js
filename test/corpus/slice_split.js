@@ -8,7 +8,7 @@ export function entry() {
 
 function halves(bytes) {
   const [high, low] = $sliceSplitAt(bytes, (bytes.length / 2) >>> 0);
-  const fold = (part) => part.reduce((acc, b) => ((Math.imul(acc, 256) >>> 0) + b) >>> 0, 0);
+  const fold = (part) => part.reduce((acc, b) => (((acc * 256) >>> 0) + b) >>> 0, 0);
   return [fold(high), fold(low)];
 }
 

@@ -330,7 +330,7 @@ test("async code becomes async functions and await", async () => {
 
   const js = await Bun.file(join(target, "async.js")).text();
   // A namespace's functions, an overload, and a Rust struct as the import object.
-  expect(js).toContain("  const module = await WebAssembly.compile(bytes);\n  const imports = { env: { double: (x) => Math.imul(x, 2) } };\n  const instance = await WebAssembly.instantiate(module, imports);\n  return instance.exports.add(a, b);");
+  expect(js).toContain("  const module = await WebAssembly.compile(bytes);\n  const imports = { env: { double: (x) => (x * 2) | 0 } };\n  const instance = await WebAssembly.instantiate(module, imports);\n  return instance.exports.add(a, b);");
   // A dictionary result is a struct: its fields are read as they are.
   expect(js).toContain("source.instance.exports.add(1, 2) === 3");
   expect(js).toContain("export async function sum(a, b) {\n  return ((await double(a)) + (await double(b))) >>> 0;\n}");

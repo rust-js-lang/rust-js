@@ -28,7 +28,7 @@ function main() {
   console.log("--");
 
   const value = (l) => {
-    const result = [Math.imul(l[0], 10) >>> 0];
+    const result = [(l[0] * 10) >>> 0];
     loudDrop_drop(l);
     return result;
   };

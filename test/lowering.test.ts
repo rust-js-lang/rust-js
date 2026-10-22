@@ -1557,7 +1557,7 @@ pub fn copied(mut items: Vec<u32>) -> (Vec<u32>, Vec<u32>) {
   expect(js).toContain("  return items.some((x) => x > 9);\n");
   expect(js).toContain("  return $max(items) ?? 0;\n");
   expect(js).toContain("  return items.toReversed().slice(0, 2);\n");
-  expect(js).toContain("  return groups.flatMap((g) => g.map((x) => Math.imul(x, 10) >>> 0));\n");
+  expect(js).toContain("  return groups.flatMap((g) => g.map((x) => (x * 10) >>> 0));\n");
   expect(js).toContain(".filter((word) => word !== \"\")\n    .map((w) => w.toUpperCase())\n    .join(\" \");");
   expect(js).toContain("  return v.slice(2).slice(0, 3);\n");
   expect(js).toContain("  return c.toUpperCase();\n");
@@ -1920,7 +1920,7 @@ pub fn pick(c: bool, n: u32) -> u32 {
   expect(js).toContain("v[0]");
   // A \`return\` the program wrote stays one, the smaller branch first.
   expect(js).toContain("  if (!group) {\n    return;\n  }\n  return $trim(");
-  expect(js).toContain("  if (c) {\n    return (n + 1) >>> 0;\n  }\n  return Math.imul(n, 2) >>> 0;\n");
+  expect(js).toContain("  if (c) {\n    return (n + 1) >>> 0;\n  }\n  return (n * 2) >>> 0;\n");
   expect(js).not.toContain("$index");
   const lib = await import(join(dir, "mir.js"));
   expect([lib.groups("a, b,"), lib.second("x,y"), lib.badge("p,q"), lib.lastTwo("1,2,3"), lib.heads([[], [7]]), lib.shown("ab"), lib.pick(false, 3)]).toEqual([["a", "b"], "y", "p and 1 more of P,Q", ["3", "2"], [0, 7], "ababab", 6]);
@@ -4905,7 +4905,7 @@ pub fn later(items: &mut Vec<u32>) -> u32 {
   expect(js).toContain("items[items.length - 1]");
   expect(js).toContain("items.length !== 0 ? items[0] : 0");
   // What could leave its range wraps; what can't is JS's own.
-  expect(js).toContain("[(n + 1) >>> 0, Math.imul(k, 2), (m + 1) & 255]");
+  expect(js).toContain("[(n + 1) >>> 0, (k * 2) | 0, (m + 1) & 255]");
   expect(js).toContain("n < 10 ? n * 3 + 1 : 0");
   expect(js).toContain("k > 0 ? 0 - k : 1");
   expect(js).toContain("m < 255 ? m + 1 : 0");
@@ -5019,7 +5019,7 @@ pub fn popped(v: &mut Vec<u32>) -> u32 {
   expect(js).toContain("function item(items, i) {\n  return items[i];\n}");
   // Called where nothing bounds it too, named as a value, or a JS caller's.
   expect(js).toContain("function other(items, i) {\n  return $index(items, i);\n}");
-  expect(js).toContain("function double(n) {\n  return Math.imul(n, 2) >>> 0;\n}");
+  expect(js).toContain("function double(n) {\n  return (n * 2) >>> 0;\n}");
   expect(js).toContain("export function half(n) {\n  return (n - 1) >>> 0;\n}");
   // Its own calls' too, until what it's given holds.
   expect(js).toContain("count(n - 1, (total + 1) >>> 0)");
@@ -8070,7 +8070,7 @@ pub fn dropped(n: u32) -> u32 {
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
   const js = readFileSync(join(dir, "mir.js"), "utf8");
   expect(js).toContain(`const f = () => (n + 1) >>> 0;`);
-  expect(js).toContain(`const g = (a) => Math.imul(a, 2) >>> 0;`);
+  expect(js).toContain(`const g = (a) => (a * 2) >>> 0;`);
   // What it's given and drops, it's given.
   expect(js).toMatch(/const h = \(_\d*\) =>/);
 });
@@ -8755,7 +8755,7 @@ test("a let of an Option's ? from MIR is named as the program names it", async (
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
   const js = readFileSync(join(dir, "mir.js"), "utf8");
-  expect(js).toContain("  const f = xs.find((x) => x % 2 === 0);\n  if (f == null) {\n    return;\n  }\n  return Math.imul(f, 10);\n");
+  expect(js).toContain("  const f = xs.find((x) => x % 2 === 0);\n  if (f == null) {\n    return;\n  }\n  return (f * 10) | 0;\n");
   const lib = await import(join(dir, "mir.js"));
   expect([lib.firstEven([1, 4]), lib.firstEven([1])]).toEqual([40, undefined]);
 });
@@ -10219,7 +10219,7 @@ pub fn rolled(prev: &[f64], more: &[f64]) -> usize {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
   const js = readFileSync(join(dir, "mir.js"), "utf8");
-  expect(js).toContain("  const newLogs = more.filter((x) => x > 1).map((x) => Math.imul(x, 2) >>> 0);\n");
+  expect(js).toContain("  const newLogs = more.filter((x) => x > 1).map((x) => (x * 2) >>> 0);\n");
   // Not of `Math.random()`, which does something: lazy, the array's own
   // iterator.
   expect(js).toContain("  const rolled = more.values().map((x) => x + Math.random());\n");
@@ -11572,7 +11572,7 @@ pub fn kept(all: &[String], complete: bool, done: &[&str]) -> usize {
   const js = readFileSync(join(dir, "mir.js"), "utf8");
   expect(js).toContain('return s !== "en" && (t ? !s : u);');
   expect(js).toContain('(code) => code !== "en" && (complete ? done.includes(code) : !done.includes(code))');
-  expect(js).toContain("  return t ? (x + 1) >>> 0 : Math.imul(x, 2) >>> 0;\n");
+  expect(js).toContain("  return t ? (x + 1) >>> 0 : (x * 2) >>> 0;\n");
   const lib = await import(join(dir, "mir.js"));
   expect([lib.c(true, false, ""), lib.c(false, true, "en"), lib.kept(["en", "fr", "de"], true, ["fr"])]).toEqual([true, false, 1]);
 });

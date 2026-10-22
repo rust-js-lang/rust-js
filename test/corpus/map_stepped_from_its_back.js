@@ -53,7 +53,7 @@ const Counted = {
         undefined,
         IExactSizeIterator.len,
       ),
-      (x) => Math.imul(x, 2) >>> 0,
+      (x) => (x * 2) >>> 0,
     ).len();
   },
 };
@@ -76,7 +76,7 @@ function main() {
     const pad = {
       iter: iterator_fuse(tmp, { next: $next }, true),
       min: 4,
-      filler: (i) => Math.imul(i, 10) >>> 0,
+      filler: (i) => (i * 10) >>> 0,
     };
     const value$1 = [];
     const value$2 = (all, x) => {

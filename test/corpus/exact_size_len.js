@@ -26,7 +26,7 @@ function both(it) {
 }
 
 function mapped(it) {
-  return $mapEnds(it, (n) => Math.imul(n, 2) >>> 0).len();
+  return $mapEnds(it, (n) => (n * 2) >>> 0).len();
 }
 
 function last(it) {

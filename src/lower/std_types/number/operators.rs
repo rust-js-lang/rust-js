@@ -3,6 +3,11 @@
 
 use super::*;
 
+/// The largest constant a 32-bit integer is multiplied by exactly in a
+/// double: any 32-bit value, under 2^32, times one of at most 2^21 is under
+/// 2^53, where every integer a double holds is exact.
+const EXACT_FACTOR: u128 = 1 << 21;
+
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     // ── Operators ───────────────────────────────────────────────────────
 
@@ -93,9 +98,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             BinOp::Add => num.wrap(Expr::bin(Op::Add, l, r)),
             BinOp::Sub => num.wrap(Expr::bin(Op::Sub, l, r)),
             // A 32-bit product can exceed 2^53 and lose bits; `Math.imul` can't.
+            // Of a constant of at most 2^21 either side, `n * 2`, it can't
+            // either, so it's JS's own `*`, wrapped as `+`'s is (ADR 0011).
             BinOp::Mul if num.bits() == 32 => {
-                let product = Expr::call(Expr::member(Expr::var("Math"), "imul"), vec![l, r]);
-                if num.signed() { product } else { num.wrap(product) }
+                let small = |c: Option<i128>| c.is_some_and(|c| c.unsigned_abs() <= EXACT_FACTOR);
+                if small(known.or_else(|| r.as_int())) || small(l.as_int()) {
+                    num.wrap(Expr::bin(Op::Mul, l, r))
+                } else {
+                    let product = Expr::call(Expr::member(Expr::var("Math"), "imul"), vec![l, r]);
+                    if num.signed() { product } else { num.wrap(product) }
+                }
             }
             BinOp::Mul => num.wrap(Expr::bin(Op::Mul, l, r)),
             BinOp::Div | BinOp::Rem => {

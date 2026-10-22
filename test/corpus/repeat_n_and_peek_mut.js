@@ -69,11 +69,11 @@ function peeked() {
   const it = iterator_peekable($iter([1, 2, 3]), { next: $next });
   const x = $peekCell(it);
   if (x != null) {
-    x.value = Math.imul(x.value, 10);
+    x.value = (x.value * 10) | 0;
   }
   console.log(`[${it.toArray().join(", ")}]`);
   const lazy = iterator_peekable(
-    $lazyRange(1, 4).map((x) => Math.imul(x, 2)),
+    $lazyRange(1, 4).map((x) => (x * 2) | 0),
     { next: $next },
   );
   const x$1 = $peekCell(lazy);

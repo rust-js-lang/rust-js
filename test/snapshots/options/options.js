@@ -20,7 +20,7 @@ export function describe(o) {
     if (o < 0) {
       return -1;
     }
-    return Math.imul(o, 2);
+    return (o * 2) | 0;
   }
   return 0;
 }
@@ -90,7 +90,7 @@ export function label(n) {
 }
 
 function double(n) {
-  return Math.imul(n, 2);
+  return (n * 2) | 0;
 }
 
 function pair(n) {
@@ -110,7 +110,7 @@ export function mapped(n) {
     h$1 != null ? (h$1 + 1) | 0 : undefined,
     map,
     h != null ? h > 2 : undefined,
-    x != null ? Math.imul(x, 3) : undefined,
+    x != null ? (x * 3) | 0 : undefined,
   ];
 }
 

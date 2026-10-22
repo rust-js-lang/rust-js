@@ -89,7 +89,7 @@ function main() {
   $assign(value$4, s$3.value);
   console.log(`${value$3} ${value$5}`);
   console.log(`${tag({ n: 7 }, countLabeled)} ${tag({ list: ["p", "q"] }, wordsLabeled)}`);
-  console.log(`[${all([1, 2].values().map((n) => Math.imul(n, 10) >>> 0)).join(", ")}]`);
+  console.log(`[${all([1, 2].values().map((n) => (n * 10) >>> 0)).join(", ")}]`);
   const source = { value: { n: 2 }, impl: countSource };
   const nextItem = source.impl.nextItem(source);
   const value$6 = source.impl.nextItem(source);

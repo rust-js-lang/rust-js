@@ -13,7 +13,7 @@ function main() {
   console.log(`[${small.join(", ")}] ${big.length}`);
   const long = $heapFrom(
     $lazyRange(0, 40)
-      .map((i) => (Math.imul(i, 7) % 23) | 0)
+      .map((i) => (((i * 7) | 0) % 23) | 0)
       .toArray(),
     $cmp,
   );
@@ -22,13 +22,13 @@ function main() {
   console.log(`[${long.join(", ")}]`);
   const left = $heapFrom(
     $lazyRange(0, 32)
-      .map((i) => (Math.imul(i, 5) % 17) | 0)
+      .map((i) => (((i * 5) | 0) % 17) | 0)
       .toArray(),
     $cmp,
   );
   const right = $heapFrom(
     $lazyRange(0, 31)
-      .map((i) => (Math.imul(i, 3) % 19) | 0)
+      .map((i) => (((i * 3) | 0) % 19) | 0)
       .toArray(),
     $cmp,
   );

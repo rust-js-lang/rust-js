@@ -47,7 +47,7 @@ function main() {
   const r = $collectResults(
     [1, -2, 3].values().map((n) => {
       seen.push(n);
-      return n < 0 ? { TAG: "Err", _0: `negative ${n}` } : { TAG: "Ok", _0: Math.imul(n, 10) };
+      return n < 0 ? { TAG: "Err", _0: `negative ${n}` } : { TAG: "Ok", _0: (n * 10) | 0 };
     }),
   );
   console.log(

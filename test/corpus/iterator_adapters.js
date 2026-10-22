@@ -17,7 +17,7 @@ export function entry() {
 
 function doubledIterator_next(doubled, IIterator) {
   const x = IIterator.next(doubled.inner);
-  return x != null ? Math.imul(x, 2) : undefined;
+  return x != null ? (x * 2) | 0 : undefined;
 }
 
 const Doubled = {

@@ -42,13 +42,13 @@ function main() {
   let m = 1;
   for (let i = 0; i < 3; i++) {
     const before = m;
-    m = (Math.imul(m, 2) + before) | 0;
+    m = (((m * 2) | 0) + before) | 0;
     console.log(`${before} ${m}`);
   }
   // A closure made before it changes, called after.
   let count = 10;
   const at = count;
-  const shown = () => Math.imul(at, 2);
+  const shown = () => (at * 2) | 0;
   count += 1;
   console.log(`${shown()} ${count}`);
 }

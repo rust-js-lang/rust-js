@@ -218,7 +218,7 @@ export function at(at, done) {
 }
 
 async function doubled(n) {
-  return Math.imul(n, 2) >>> 0;
+  return (n * 2) >>> 0;
 }
 
 /**

@@ -27,7 +27,7 @@ function keep(kept, x) {
 
 /** One whose lifetime names no other parameter's: a box, copied back. */
 function doubled(x) {
-  x.value = Math.imul(x.value, 2) >>> 0;
+  x.value = (x.value * 2) >>> 0;
 }
 
 function main() {

@@ -26,7 +26,7 @@ function main() {
   const counts = [1, 2, 3];
   for (const [w, c] of $zipBack($iter($mutItems(words)), $iter($mutItems(counts)))) {
     w.value += "!";
-    c.value = Math.imul(c.value, 2);
+    c.value = (c.value * 2) | 0;
     if (c.value === 4) {
       break;
     }

@@ -42,7 +42,7 @@ function tripledBack(items, f) {
     $mapEnds(items, (item) => f(item)),
     [],
     (all, x) => {
-      all.push(Math.imul(x, 3) >>> 0);
+      all.push((x * 3) >>> 0);
       return all;
     },
   );
@@ -59,7 +59,7 @@ function main() {
       .map((item) => $debugStr(item))
       .join(", ")}]`,
   );
-  const value = reversed({ start: 1, end: 5 }, (x) => Math.imul(x, 10) >>> 0);
+  const value = reversed({ start: 1, end: 5 }, (x) => (x * 10) >>> 0);
   console.log(`(${value[0] == null ? "None" : `Some(${value[0]})`}, [${value[1].join(", ")}])`);
   const value$1 = reversed({ start: 3, end: 3 }, (x) => (x + 1) >>> 0);
   console.log(
@@ -69,7 +69,7 @@ function main() {
   console.log(
     `[${tripledBack(
       $iterator({ start: 5, end: 7 }, $rangeNext, false, $rangeNextBack),
-      (x) => Math.imul(x, 2) >>> 0,
+      (x) => (x * 2) >>> 0,
     ).join(", ")}]`,
   );
 }

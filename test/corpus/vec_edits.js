@@ -40,7 +40,7 @@ function main() {
   let n = 0;
   $resizeWith(v, 5, () => {
     n = (n + 1) >>> 0;
-    return Math.imul(n, 10) >>> 0;
+    return (n * 10) >>> 0;
   });
   console.log(`[${v.join(", ")}]`);
   const tens = [1, 2, 12, 13, 3, 30];

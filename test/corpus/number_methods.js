@@ -30,7 +30,7 @@ function main() {
     `${$clamp(17, 0, 10)} ${$clamp(-3n, -2n, 2n)} ${$clamp(200, 1, 100)} ${$displayF64($clampFloat(1.5, 0, 1, $debugF64))} ${$displayF64($clampFloat(NaN, 0, 1, $debugF64))}`,
   );
   const level = 7;
-  console.log(`${Math.imul($clamp(level, 1, 5), 2) >>> 0}`);
+  console.log(`${($clamp(level, 1, 5) * 2) >>> 0}`);
 
   // Parsed in a radix, and errors where Rust finds them.
   const value = $parseInt("-ff", -2147483648, 2147483647, 16);

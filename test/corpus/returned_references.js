@@ -39,7 +39,7 @@ function main() {
   const stock = new Map();
   stock.set("pen", { name: "pen", count: 3 });
   const value$4 = $unwrap(stock.get("pen"));
-  value$4.count = Math.imul(value$4.count, 4) >>> 0;
+  value$4.count = (value$4.count * 4) >>> 0;
   console.log(`${$unwrap(stock.get("pen"), "no entry found for key").count}`);
 }
 //# sourceMappingURL=case.js.map

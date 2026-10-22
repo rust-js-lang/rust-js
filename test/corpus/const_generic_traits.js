@@ -19,13 +19,13 @@ function three(r, RRepeat) {
 const metersScaled10 = { scaled: metersScaled10_scaled, factor: (self) => 10 };
 
 function metersScaled10_scaled(meters) {
-  return Math.imul(meters[0], 10) >>> 0;
+  return (meters[0] * 10) >>> 0;
 }
 
 const metersScaled100 = { scaled: metersScaled100_scaled, factor: (self) => 100 };
 
 function metersScaled100_scaled(meters) {
-  return Math.imul(meters[0], 100) >>> 0;
+  return (meters[0] * 100) >>> 0;
 }
 
 const $anyScaled = new Map();

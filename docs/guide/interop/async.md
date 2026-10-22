@@ -35,7 +35,7 @@ async fn half_later(n: u32) -> u32 {
 ```js
 export async function doubleLater(n) {
   const half = await halfLater(n);
-  return Math.imul(half, 4) >>> 0;
+  return (half * 4) >>> 0;
 }
 
 async function halfLater(n) {
@@ -274,7 +274,7 @@ pub async fn total(ids: Vec<u32>) -> u32 {
 
 ```js
 export async function total(ids) {
-  const load = async (id) => Math.imul(id, 10) >>> 0;
+  const load = async (id) => (id * 10) >>> 0;
   const all = await Promise.all(ids.map((id) => load(id)));
   return all.reduce((a, b) => (a + b) >>> 0, 0);
 }

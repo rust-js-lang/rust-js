@@ -19,7 +19,7 @@ function pick(take) {
   } else {
     picked = 7;
   }
-  return (Math.imul(x, 10) + picked) | 0;
+  return (((x * 10) | 0) + picked) | 0;
 }
 
 function both(take) {
@@ -35,7 +35,7 @@ function both(take) {
     picked = bump(x$1);
     y = x$1.value;
   }
-  return (((Math.imul(x, 1000) + Math.imul(y, 100)) | 0) + picked) | 0;
+  return (((((x * 1000) | 0) + ((y * 100) | 0)) | 0) + picked) | 0;
 }
 
 function guard(value) {
@@ -49,7 +49,7 @@ function guard(value) {
       matched = true;
     }
   }
-  return (Math.imul(calls, 10) + (matched ? 1 : 0)) | 0;
+  return (((calls * 10) | 0) + (matched ? 1 : 0)) | 0;
 }
 
 function nested(take, inner) {
@@ -66,7 +66,7 @@ function nested(take, inner) {
   } else {
     picked = 7;
   }
-  return (Math.imul(x, 10) + picked) | 0;
+  return (((x * 10) | 0) + picked) | 0;
 }
 
 function main() {

@@ -11,7 +11,7 @@ function ids(N) {
 }
 
 function double(i) {
-  return Math.imul(i, 2) >>> 0;
+  return (i * 2) >>> 0;
 }
 
 function main() {

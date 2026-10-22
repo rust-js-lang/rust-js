@@ -22,7 +22,7 @@ function main() {
   const seed = 20261001;
   let seed$1 = seed;
   const next = () => {
-    seed$1 = ((Math.imul(seed$1, 1664525) >>> 0) + 1013904223) >>> 0;
+    seed$1 = (((seed$1 * 1664525) >>> 0) + 1013904223) >>> 0;
     return seed$1;
   };
   for (let i = 0; i < 3000; i++) {

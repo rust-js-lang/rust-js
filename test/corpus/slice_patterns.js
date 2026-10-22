@@ -112,7 +112,7 @@ function main() {
   // Through a `&mut`: what's bound names the item, and writes it.
   const grid = [1, 2, 3];
   grid[0] = (grid[0] + 10) | 0;
-  grid[2] = Math.imul(grid[2], 2);
+  grid[2] = (grid[2] * 2) | 0;
   console.log(`[${grid.join(", ")}]`);
   const names = ["x", "y"];
   if (names.length >= 1) {

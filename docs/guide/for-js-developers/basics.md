@@ -149,7 +149,7 @@ export function nextId(id) {
 }
 
 export function score(hits, bonus) {
-  return (Math.imul(hits, 10) + bonus) | 0;
+  return (((hits * 10) | 0) + bonus) | 0;
 }
 
 export function half(n) {
@@ -311,7 +311,7 @@ export function add(a, b) {
 }
 
 export function applyTwice(x) {
-  const double = (n) => Math.imul(n, 2);
+  const double = (n) => (n * 2) | 0;
   return double(double(x));
 }
 ```

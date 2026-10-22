@@ -33,7 +33,7 @@ function metersAdd_add(meters, other) {
 export const metersAddMeters = { add: metersAddMeters_add };
 
 function metersAddMeters_add(meters, other) {
-  return [(meters[0] + Math.imul(other[0], 10)) | 0];
+  return [(meters[0] + ((other[0] * 10) | 0)) | 0];
 }
 
 function main() {

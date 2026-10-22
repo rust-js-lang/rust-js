@@ -36,7 +36,7 @@ function firstTwo(it) {
 
 function doubled(it) {
   return $lent(it)
-    .map((n) => Math.imul(n, 2) >>> 0)
+    .map((n) => (n * 2) >>> 0)
     .toArray();
 }
 
@@ -45,7 +45,7 @@ function main() {
   console.log(`[${evens(v).toArray().join(", ")}]`);
   const value = $max(
     evens(v)
-      .map((n) => Math.imul(n, 10) >>> 0)
+      .map((n) => (n * 10) >>> 0)
       .toArray(),
   );
   console.log(`${value == null ? "None" : `Some(${value})`}`);

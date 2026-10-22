@@ -21,7 +21,7 @@ function parsed(text) {
     return result$1;
   }
   const n = result$1._0;
-  return { TAG: "Ok", _0: Math.imul(n, 2) };
+  return { TAG: "Ok", _0: (n * 2) | 0 };
 }
 
 function distance() {

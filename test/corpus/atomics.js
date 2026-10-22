@@ -85,7 +85,7 @@ function main() {
   const seen = [];
   let local = 5;
   order(seen, "load");
-  const operand = Math.imul(local, 2) >>> 0;
+  const operand = (local * 2) >>> 0;
   order(seen, "store");
   local = operand;
   console.log(`${local} [${seen.map((item) => $debugStr(item)).join(", ")}] 0`);

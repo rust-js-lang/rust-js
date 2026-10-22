@@ -61,7 +61,7 @@ function main() {
       },
     },
   };
-  h.count.value = Math.imul(h.count.value, 2) >>> 0;
+  h.count.value = (h.count.value * 2) >>> 0;
   const r =
     a > 5
       ? {

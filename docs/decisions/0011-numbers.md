@@ -94,3 +94,27 @@ A future `--overflow-checks` flag could emit checked helpers.
   (ADR 0025).
 - `i64` and `u64` were added later as BigInts, and `f64` → int casts as
   Rust's saturating ones (ADR 0086).
+
+## Amendment: a multiply by a small constant is JS's own `*`
+
+Case: A ([0262](0262-when-rust-and-js-disagree.md)): the answer is Rust's
+either way; only the JS reads better.
+
+**A 32-bit `*` with a constant of at most 2^21 on either side is JS's own
+`*`, wrapped as `+`'s is**: `n * 2` is `(n * 2) | 0`, and of a `u32`,
+`(n * 2) >>> 0`. Any 32-bit value is under 2^32, so its product with such a
+constant is under 2^53, where a double holds every integer exactly, and the
+wrap gives Rust's answer as it does for `+`. `Math.imul` stays for a product
+of two variables, and for a constant past 2^21, whose product a double
+would round: `4294967295 * 4194305` rounds to `…992` where Rust's wrapped
+answer is `…991`. The constant is a literal or a named `const` given to the
+operator, which rustc knows (`known`, ADR 0031); a method's,
+`n.wrapping_mul(SCALE)`, shows only the name, and stays `Math.imul`, as
+`wrapping_div` of one stays a call.
+
+Made so, a product is a plain expression: the constant folder folds
+`2147483647 * 2` to `-2`, and one made in place isn't held in a temporary
+as a call is. `test/corpus/multiply_by_a_constant.rs` multiplies at each
+type's edges, by `2^21` and just past it, a constant on the left, and a
+named one, against native Rust; mutations `mul-by-constant-imul`,
+`mul-exact-factor-too-large` and `mul-constant-on-the-left-unseen`.

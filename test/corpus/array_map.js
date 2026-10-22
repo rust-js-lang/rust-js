@@ -11,7 +11,7 @@ function pDebug_fmt(p) {
 }
 
 function double(n) {
-  return Math.imul(n, 2);
+  return (n * 2) | 0;
 }
 
 function main() {

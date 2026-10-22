@@ -28,7 +28,7 @@ function order(items) {
 
 function main() {
   for (const n of [10, 18, 21, 33, 64, 100, 300]) {
-    const base = $range(0, n).map((i) => [(Math.imul(i, 7919) >>> 0) % 5, i]);
+    const base = $range(0, n).map((i) => [((i * 7919) >>> 0) % 5, i]);
     const byKey = base.slice();
     const key = (p) => p[0];
     $sortUnstable(byKey, (a, b) => key(a) < key(b), "network");
@@ -92,7 +92,7 @@ function main() {
     $selectNthUnstable(picked$1, 1, (a, b) => $cmp(b[0], a[0]) < 0, "network");
     const arg$8 = order(picked$1);
     console.log(`${n}: ${arg$8}`);
-    const numbers = base.map((p) => (Math.imul(p[1], 31) >>> 0) % 17);
+    const numbers = base.map((p) => ((p[1] * 31) >>> 0) % 17);
     const selectNthUnstable = $selectNthUnstable(numbers, middle, (a, b) => a < b, "network", true);
     selectNthUnstable[1].value = (selectNthUnstable[1].value + 100) >>> 0;
     const ends = numbers.slice();

@@ -65,7 +65,7 @@ function withHeader(header, lines) {
 function maybeItems(item) {
   return [
     ...$iter(item == null ? [] : [item]),
-    ...(item == null ? [] : [item]).values().map((n) => Math.imul(n, 10)),
+    ...(item == null ? [] : [item]).values().map((n) => (n * 10) | 0),
   ];
 }
 

@@ -20,7 +20,7 @@ function main() {
   const lens = new Map();
   $orInsertWith(lens, "abc", () => 3);
   const orInsertWith = $mutGet(lens, "abc");
-  orInsertWith.value = Math.imul(orInsertWith.value, 2) >>> 0;
+  orInsertWith.value = (orInsertWith.value * 2) >>> 0;
   $orInsertWith(lens, "abc", () => 7);
   const value = $mutGet(lens, "abc");
   value.value = (value.value + 1) >>> 0;

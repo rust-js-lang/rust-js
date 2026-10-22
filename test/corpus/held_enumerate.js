@@ -98,7 +98,7 @@ function positionsDebug_fmt(positions, options, IDebug) {
 // `R`'s.
 function lastDoubled(items) {
   return $foldBack(
-    $mapEnds(items, (x) => Math.imul(x, 2) >>> 0),
+    $mapEnds(items, (x) => (x * 2) >>> 0),
     undefined,
     (last, x) => last ?? x,
   );
@@ -109,7 +109,7 @@ const Wrap = {
     return $foldBack(
       $mapEnds(
         $iterator(wrap.inner, RIterator.next, false, RDoubleEndedIterator.next_back),
-        (x) => Math.imul(x, 3) >>> 0,
+        (x) => (x * 3) >>> 0,
       ),
       undefined,
       (last, x) => last ?? x,

@@ -69,7 +69,7 @@ function twoLoops(values) {
     }
     sum = (sum + v) | 0;
   }
-  return (Math.imul(first, 100) + sum) | 0;
+  return (((first * 100) | 0) + sum) | 0;
 }
 
 // A labeled loop left from inside an inner one, then more.
@@ -126,7 +126,7 @@ function firstBig(values) {
   let i = 0;
   while (true) {
     if ($index(values, i) > 10) {
-      return Math.imul($index(values, i), 2);
+      return ($index(values, i) * 2) | 0;
     }
     i = (i + 1) >>> 0;
   }
@@ -152,7 +152,7 @@ function shadowInLoop(values) {
     if (v == null) {
       break;
     }
-    const v$1 = Math.imul(v, 2);
+    const v$1 = (v * 2) | 0;
     if (v$1 <= 3) {
       break;
     }

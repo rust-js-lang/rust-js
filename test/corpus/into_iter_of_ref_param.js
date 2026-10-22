@@ -21,7 +21,7 @@ function total(c, CRefIntoIterator) {
 
 function doubleAll(c, CRefMutIntoIterator) {
   for (const x of CRefMutIntoIterator.intoIter(c)) {
-    x.value = Math.imul(x.value, 2) >>> 0;
+    x.value = (x.value * 2) >>> 0;
   }
 }
 

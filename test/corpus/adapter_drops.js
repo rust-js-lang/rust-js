@@ -192,7 +192,7 @@ function main() {
   }
 
   const value$2 = (l) => {
-    const result = Math.imul(l[0], 2) >>> 0;
+    const result = (l[0] * 2) >>> 0;
     loudDrop_drop(l);
     return result;
   };
