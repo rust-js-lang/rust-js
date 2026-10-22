@@ -3,6 +3,14 @@ import type { Mutation } from "../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "bare-let-apart",
+    breaks: "`let PICK;` and the `if` that sets it are a blank line apart",
+    file: "src/format.rs",
+    find: "|| !declared_only && (first < last || next < next_last);",
+    replace: "|| (first < last || next < next_last);",
+    tests: ["test/lowering.test.ts", "-t", "a thread-local an if makes"],
+  },
+  {
     name: "transform-map-unmoved",
     breaks: "a transform's text is written with the map of the text it was given, which points at other lines",
     file: "src/format.rs",
@@ -76,7 +84,7 @@ export const mutations: Mutation[] = [
     name: "blank-lines-one-line",
     breaks: "two one-line statements are set apart, `const a = 1;` from `const b = 2;`",
     file: "src/format.rs",
-    find: "|| first < last || next < next_last;\n",
+    find: "|| !declared_only && (first < last || next < next_last);\n",
     replace: "|| true;\n",
     tests: ["test/corpus.test.ts", "-t", "statics"],
     snapshots: true,

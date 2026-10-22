@@ -123,7 +123,7 @@ fn block_of(stmt: &Stmt, whole: &[Stmt], tail: bool) -> Option<Vec<Stmt>> {
 
 /// Whether `stmts` return, but in a closure of their own, and whether a
 /// `return` gives a value.
-fn returns(stmts: &[Stmt]) -> (bool, bool) {
+pub fn returns(stmts: &[Stmt]) -> (bool, bool) {
     let mut found = (false, false);
     for s in stmts {
         let (any, valued) = match &s.kind {

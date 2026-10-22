@@ -354,7 +354,8 @@ pub(crate) fn laid_out(code: String, map: String, js_file_name: &str) -> (String
 }
 
 /// `code`, laid out, with a blank line between two top-level statements
-/// where either is a function or spans lines, as a person separates them,
+/// where either is a function or spans lines, but after a `let x;` of no
+/// value, as a person separates them,
 /// and `map` moved to match. Its imports stay one block (ADR 0295). Read
 /// from its parse, so a line of a template literal is never taken for one.
 fn spaced(code: String, map: String, js_file_name: &str) -> (String, String) {
@@ -422,7 +423,12 @@ fn blank_lines_before(code: &str) -> std::collections::HashSet<usize> {
             let ((first, last), (next, next_last)) = (lines(&pair[0]), lines(&pair[1]));
             let imports = matches!(pair[0], Statement::ImportDeclaration(_))
                 || matches!(pair[1], Statement::ImportDeclaration(_));
-            let apart = function(&pair[0]) || function(&pair[1]) || first < last || next < next_last;
+            // `let x;` and what sets it, `if (..) { x = .. }`, are one
+            // thing, as a person writes them (ADR 0600).
+            let declared_only = matches!(&pair[0], Statement::VariableDeclaration(d)
+                if d.declarations.iter().all(|d| d.init.is_none()));
+            let apart =
+                function(&pair[0]) || function(&pair[1]) || !declared_only && (first < last || next < next_last);
             let next = top(next);
             (apart && !imports && last + 1 == next).then_some(next)
         })

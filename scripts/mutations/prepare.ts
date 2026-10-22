@@ -3,6 +3,22 @@ import type { Mutation } from "../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "assigned-in-place-off",
+    breaks: "a thread-local an `if` makes is `(() => { if (..) return ..; .. })()`, not `let x; if (..) { x = ..; }`",
+    file: "src/prepare.rs",
+    find: "    assigned_in_place(&mut module.items);\n",
+    replace: "",
+    tests: ["test/lowering.test.ts", "-t", "a thread-local an if makes"],
+  },
+  {
+    name: "assigned-declares-at-top",
+    breaks: "`const at` of a thread-local's closure is the module's own",
+    file: "src/prepare.rs",
+    find: "        if assigned.iter().any(declares) {\n",
+    replace: "        if false && assigned.iter().any(declares) {\n",
+    tests: ["test/lowering.test.ts", "-t", "a thread-local an if makes"],
+  },
+  {
     name: "unread-property-dropped",
     breaks: "`const _width = el.offsetWidth;`, a binding's getter that lays the page out, is dropped",
     file: "src/prepare.rs",

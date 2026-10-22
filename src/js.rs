@@ -14,7 +14,7 @@ mod make;
 mod stmt_walk;
 
 pub use self::{
-    applied::{applied_blocks, applied_call},
+    applied::{applied_blocks, applied_call, returns},
     expr_walk::*,
     stmt_walk::*,
 };

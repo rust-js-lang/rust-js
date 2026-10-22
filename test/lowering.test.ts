@@ -5815,6 +5815,53 @@ pub fn cancel() -> Option<u32> {
   expect([lib.arm(1), lib.arm(2), lib.cancel(), lib.cancel()]).toEqual([undefined, 1, 2, undefined]);
 });
 
+// ADR 0600: a module's variable an `if` makes, a thread-local's, is a
+// `let` each branch assigns, as React's scheduler has
+// `let schedulePerformWorkUntilDeadline; if (..) { .. = ..; } else if ..`,
+// not a closure called where it's made.
+test("a thread-local an if makes is a let each branch assigns", async () => {
+  const dir = fixture("assigned-thread-local");
+  writeFileSync(join(dir, "lib.rs"), `#[cfg_attr(rust_js, rust_js::link_name = "rustJsFast")]
+fn fast() -> u32 {
+    unreachable!()
+}
+
+thread_local! {
+    static PICK: Box<dyn Fn() -> u32> = if js::is_defined(fast) {
+        Box::new(fast)
+    } else if js::math::random() < 2.0 {
+        let n = 2;
+        Box::new(move || n)
+    } else {
+        Box::new(|| 3)
+    };
+    static SEEN: u32 = {
+        let at = js::math::random();
+        if at < 2.0 { 1 } else { 2 }
+    };
+    static FOUND: u32 = loop {
+        if js::math::random() < 2.0 {
+            break 1;
+        }
+    };
+}
+
+pub fn pick() -> u32 {
+    PICK.with(|pick| pick()) + SEEN.with(|s| *s) + FOUND.with(|f| *f)
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('let PICK;\nif (typeof rustJsFast !== "undefined") {\n  PICK = () => rustJsFast();\n} else if');
+  expect(js).toContain("} else if (Math.random() < 2) {\n  const n = 2;\n");
+  // What it declares at its top would be the module's, and a loop's
+  // `return` no branch's: each stays a closure called where it's made.
+  expect(js).toContain("const seen = (() => {\n  const at = Math.random();\n");
+  expect(js).toContain("const found = (() => {\n  while (true) {\n");
+  const lib = await import(join(dir, "lib.js"));
+  expect(lib.pick()).toBe(4);
+});
+
 // ADR 0599: a function's value its branches make before it's coerced, a
 // `Box<dyn Fn()>`'s, is returned where each is made, as any other is.
 test("branches' values coerced to the result are returned where made", async () => {
