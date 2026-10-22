@@ -1,0 +1,99 @@
+// Mutations of src/lower/mir/tidy/jumps/tried.rs (ADR 0093).
+import type { Mutation } from "../../../../../mutations";
+
+export const mutations: Mutation[] = [
+  {
+    "name": "let-else-return-not-guard",
+    "breaks": "a `let .. else`'s `else` stays the `else` of an `if`, not a guard first, a second one's too, after a first",
+    "file": "src/lower/mir/tidy/jumps/tried.rs",
+    "find": "                && fits_in_place(stmts, i, then));\n",
+    "replace": "                && false);\n",
+    "tests": [
+      "test/jsx.test.ts",
+      "-t",
+      "let-else binds is read"
+    ]
+  },
+  {
+    name: "mir-tidy-while-head-rest-jumps",
+    breaks: "MIR's loop's rest, moved out, keeps a jump of the loop, which then goes to another",
+    file: "src/lower/mir/tidy/jumps/tried.rs",
+    find: "            && !own_jumps(rest, label.as_deref())\n",
+    replace: "",
+    tests: ["test/lowering.test.ts","-t","returns in a loop are where"],
+  },
+  {
+    name: "mir-tidy-for-mut-binding-unread",
+    breaks: "a `for` of a `mut` binding, `row = value` each turn, stays a `while (true)` of `$next`",
+    file: "src/lower/mir/tidy/jumps/tried.rs",
+    find: "                    && parts.is_empty() =>\n",
+    replace: "                    && false =>\n",
+    tests: [
+      "test/lowering.test.ts",
+      "-t",
+      "a for loop of a mut binding"
+    ]
+  },
+  {
+    name: "lone-exit-written-order",
+    breaks: "a `?`'s `if (!value) { return; }` in a loop is put after the rest, as where the block it shares was written",
+    file: "src/lower/mir/tidy/jumps/tried.rs",
+    find: "            !lone\n",
+    replace: "            true\n",
+    tests: ["test/corpus.test.ts", "-t", "loop_exits"],
+    snapshots: true,
+  },
+  {
+    name: "tried-first-not-after",
+    breaks: "`if (r.TAG !== \"Err\") { s; break l; } return r;` keeps its `?` last",
+    file: "src/lower/mir/tidy/jumps/tried.rs",
+    find: "            None => then.last().is_some_and(ends) && returns(stmts.get(i + 1), test),\n",
+    replace: "            None => false,\n",
+    tests: ["test/corpus.test.ts", "-t", "^calculator.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "tried-first-skips-what-it-held",
+    breaks: "a `?` inside the statements another's guard put in place is skipped, its `else { return r; }` kept",
+    file: "src/lower/mir/tidy/jumps/tried.rs",
+    find: "            std::iter::once(StmtKind::If(test.negated_test(), exit, None).at(span)).chain(then),\n        );\n",
+    replace: "            std::iter::once(StmtKind::If(test.negated_test(), exit, None).at(span)).chain(then.clone()),\n        );\n        i += then.len();\n",
+    tests: ["test/snapshots.test.ts", "-t", "calc"],
+    snapshots: true,
+  },
+  {
+    name: "written-order-goes-round-kept",
+    breaks: "a loop body's `if (!t) { rest } a` stays where `a`, written first, goes round at the body's end",
+    file: "src/lower/mir/tidy/jumps/tried.rs",
+    find: "            let goes_round = !rest.last().is_some_and(ends);\n",
+    replace: "            let goes_round = true;\n",
+    tests: ["test/corpus.test.ts", "-t", "^(interpreter|loop_exits|calculator|returns_in_place|loop_exit_moves|app_errors|stock_orders|lexer|sales_report|subscriptions|loop_drops).rs$"],
+    snapshots: true,
+  },
+  {
+    name: "written-order-guard-turned",
+    breaks: "a `?`'s guard in a loop, `if (r.TAG === \"Err\") { return r; } a`, is turned to `if (ok) { a; continue; } return r;`",
+    file: "src/lower/mir/tidy/jumps/tried.rs",
+    find: "                && !(goes_round && then.len() == 1)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^app_errors.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "made-ok-tried-kept",
+    breaks: "`?` of an `Ok` made where it's tried keeps its test, `const r = { TAG: \"Ok\", _0: 3 }; if (r.TAG === \"Err\") ..`",
+    file: "src/lower/mir/tidy/jumps/tried.rs",
+    find: "            Some(_) => taken_in_place(stmts, at, &name),\n",
+    replace: "            Some(_) => false,\n",
+    tests: ["test/corpus.test.ts", "-t", "^ok_made_tried.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "made-ok-wrong-branch",
+    breaks: "`?` of an `Ok` made where it's tried takes the `Err` branch, and gives it back",
+    file: "src/lower/mir/tidy/jumps/tried.rs",
+    find: "    let taken = match ok == equal {\n",
+    replace: "    let taken = match ok != equal {\n",
+    tests: ["test/corpus.test.ts", "-t", "^ok_made_tried.rs$"],
+  },
+];

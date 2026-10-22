@@ -152,3 +152,9 @@ listed as their owners beside `iterators.rs`.
 answers; `display/written.rs` is what a `Display` or a `Debug` builder
 writes, and `display/debug.rs` `{:?}` of a value. Both read
 `self.writing`, and are listed as its owners beside `display.rs`.
+
+## Amendment: tidy's jumps, by the jump (2026-10-22)
+
+`mir/tidy/jumps.rs`, 1,724 lines, keeps early `break`s and `return`s;
+`continues.rs`, `tried.rs`, `tails.rs` and `labels.rs` are the rest,
+under `mir/tidy/jumps/`, the largest 442 lines.
