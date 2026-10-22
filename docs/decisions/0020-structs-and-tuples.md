@@ -175,3 +175,15 @@ return { x, y };
 ## Amended by
 
 - [0246](0246-function-parameters-need-no-copy.md): A type parameter of a function needs no copy of its own
+
+## Amendment: a value is compared with itself field by field
+
+`$eq` returned `true` of one JS object compared with itself, `a === b`,
+before looking at its fields, so `p == p` of a struct, a `Vec`, a tuple,
+an array or an enum that holds a NaN was true, where Rust's derived
+`PartialEq` compares each field and NaN isn't equal to NaN (#107). The
+same object was compared this way where a clone nothing changes is the
+value itself, `v == v.clone()`. `===` decides only of what isn't an
+object now; an object is compared by its fields, itself or not. ADR
+0262's case: results would change, so Rust's. Held by
+`test/corpus/nan_self_eq.rs` and the mutation `eq-of-itself`.
