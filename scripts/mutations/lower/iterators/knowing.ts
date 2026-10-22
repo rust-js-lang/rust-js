@@ -186,4 +186,20 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^associated_double_ended.rs$"],
   },
+  {
+    name: "held-hint-of-lazy-adapter",
+    breaks: "`len()` of a `Peekable` of a `map` made here asks the JS iterator's hint, `(0, None)`, and its exact length panics",
+    file: "src/lower/iterators/knowing.rs",
+    find: "                .all(|held| self.held_hint_known(held))\n",
+    replace: "                .all(|_| true)\n",
+    tests: ["test/corpus.test.ts", "-t", "^held_hint_refused.rs$"],
+  },
+  {
+    name: "held-hint-of-range-unknown",
+    breaks: "`len()` of a `Peekable` of a range is refused, though the range knows how many it has left",
+    file: "src/lower/iterators/knowing.rs",
+    find: "            || self.range_kind(ty).is_some()\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^peekable_range_len.rs$"],
+  },
 ];

@@ -567,6 +567,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.array_source(iter_ty).is_some()
             || self.is_unknown(iter_ty)
             || self.explicit_adapter(iter_ty)
-            || crate::lower::recognition::is_compiled_std_iterator(self.tcx, iter_ty)
+            || self.struct_hint_known(iter_ty)
     }
 }

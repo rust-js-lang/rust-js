@@ -18,6 +18,37 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         matches!(ty.peel_refs().kind(), ty::Adt(adapter, _) if self.krate.explicit_adapters.contains(&adapter.did()))
     }
 
+    /// Whether `$sizeHint` finds the size of an iterator of type `ty` held
+    /// by a struct, a compiled std iterator's, `Fuse`'s or `Peekable`'s,
+    /// whose own hint is of it: a `$iter`'s, a range's, the crate's own
+    /// iterator's or a generic one's, by its dictionary, an explicit
+    /// adapter's, or another such struct's (ADRs 0170, 0542, 0561). Not a
+    /// std adapter's made here, `map`'s or `filter`'s, a JS iterator's,
+    /// which knows nothing of its length. The one answer, of `size_hint()`
+    /// and `len()`.
+    pub(in crate::lower) fn held_hint_known(&self, ty: ty::Ty<'tcx>) -> bool {
+        let ty = ty.peel_refs();
+        self.array_source(ty).is_some()
+            || self.is_unknown(ty)
+            || self.explicit_adapter(ty)
+            || self.range_kind(ty).is_some()
+            || self.is_user_iterator(ty)
+            || self.struct_hint_known(ty)
+    }
+
+    /// Whether a compiled std iterator of type `ty` knows its hint, its
+    /// struct's own, of what it holds: where each iterator it holds is one
+    /// whose size `held_hint_known` finds.
+    pub(in crate::lower) fn struct_hint_known(&self, ty: ty::Ty<'tcx>) -> bool {
+        let ty::Adt(_, args) = ty.peel_refs().kind() else {
+            return false;
+        };
+        crate::lower::recognition::is_compiled_std_iterator(self.tcx, ty)
+            && (args.types())
+                .filter(|&held| self.implements_iterator(held))
+                .all(|held| self.held_hint_known(held))
+    }
+
     /// Whether `ty`'s JS iterator knows its back, which `$nextBack` steps
     /// (ADR 0429): a `dyn DoubleEndedIterator`'s, or a type parameter's
     /// bound by one, given a JS iterator (ADR 0061), not as it is (ADR 0411).
@@ -249,8 +280,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         out: &mut Vec<Stmt>,
     ) -> R<Expr> {
         // A compiled std iterator's, `Peekable`'s, whose `len` isn't: its
-        // struct's hint, which it knows as it knows its `next` (ADR 0561).
+        // struct's hint, which it knows as it knows its `next` (ADR 0561),
+        // of what it holds; else refused.
         if crate::lower::recognition::is_compiled_std_iterator(self.tcx, ty) {
+            if !self.struct_hint_known(ty) {
+                return Err(self.unsupported(span, &format!("`len()` of a `{ty}` of a lazy adapter")));
+            }
             return Ok(Expr::call(
                 Expr::helper("$exactLen"),
                 vec![Expr::call_helper("$sizeHint", vec![value])],

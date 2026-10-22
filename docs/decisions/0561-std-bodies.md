@@ -315,3 +315,14 @@ share grows, 825.2 to 825.5 in ten thousand lines; mutations
 `own-hint-not-in-dictionary`, `size-hint-undictionaried`,
 `peekable-hint-undictionaried`, `size-hint-dictionary-unasked` and
 `peekable-hint-dictionary-dropped`.
+
+## Amendment: a struct's hint is of what it holds
+
+A compiled std iterator, `Fuse` or `Peekable`, was taken to know its
+hint, its struct's own; but that's its source's, and a `map` or a
+`filter` made here is a JS iterator, which knows nothing of its length:
+`size_hint()` was `(0, None)` and `len()` panicked (#154). Whether it
+knows is `held_hint_known`'s answer, of `size_hint()` and `len()` both:
+of a `$iter`, a range, the crate's own iterator, a generic one's
+dictionary, an explicit adapter, or another such struct; a struct of a
+lazy std adapter is refused. Held by `test/corpus/held_hint_refused.rs`.
