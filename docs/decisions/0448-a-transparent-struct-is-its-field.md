@@ -1,6 +1,8 @@
 # 0448. A `transmute` to or from a `#[repr(transparent)]` struct is it made or read
 
-Status: Accepted. Extends [0408](0408-plain-data-is-its-bytes.md) and
+Status: Accepted; amended by [0584](0584-a-transparent-struct-is-its-field.md),
+whose struct is its field, so a `transmute` is the value itself, a `&mut`'s
+too. Extends [0408](0408-plain-data-is-its-bytes.md) and
 [0390](0390-addressable-memory-is-refused-as-such.md).
 
 Case: N ([0262](0262-when-rust-and-js-disagree.md)) by value and through

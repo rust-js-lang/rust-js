@@ -11,7 +11,6 @@ use rustc_middle::ty::layout::TyAndLayout;
 use rustc_middle::ty::{self, Ty, TypeVisitableExt};
 use rustc_span::Span;
 
-use super::Shape;
 use super::calls::Call;
 use super::recognition::Std;
 use super::refusal::{Refused, refuse};
@@ -184,13 +183,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// `value`, a `from`, as a `to`, where one is a `#[repr(transparent)]`
-    /// struct of the other, through as many as wrap it (ADR 0448): the
-    /// struct made of it, `[bytes]`, or its field read, `uuid[0]`. By value,
-    /// or through a `&`, which nothing writes through; not a `&mut`, whose
-    /// whole a write replaces, nor a pointer.
+    /// struct of the other, through as many as wrap it: the value itself,
+    /// which each struct is (ADR 0584). By value, or through a reference of
+    /// either kind; not a pointer.
     fn transparent_transmute(&self, value: Expr, (from, to): (Ty<'tcx>, Ty<'tcx>)) -> Option<Expr> {
         let (from, to) = match (from.kind(), to.kind()) {
-            (ty::Ref(_, from, ty::Mutability::Not), ty::Ref(_, to, ty::Mutability::Not)) => (*from, *to),
+            (ty::Ref(_, from, a), ty::Ref(_, to, b)) if a == b => (*from, *to),
             (ty::Ref(..), _) | (_, ty::Ref(..)) => return None,
             _ if [from, to]
                 .iter()
@@ -200,50 +198,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             _ => (from, to),
         };
-        if let Some(layers) = self.transparent_layers(to, from) {
-            return layers
-                .iter()
-                .rev()
-                .try_fold(value, |value, &layer| match self.shape(layer) {
-                    Shape::Array(_) => Some(super::assembled(self.shape(layer), None, vec![value])),
-                    Shape::Object(fields) => {
-                        let held = self.holding(value, fields[0].1);
-                        Some(super::assembled(Shape::Object(fields), None, vec![held]))
-                    }
-                    Shape::Other => None,
-                });
-        }
-        let layers = self.transparent_layers(from, to)?;
-        Some(
-            layers
-                .into_iter()
-                .fold(value, |value, layer| self.project(value, layer, 0)),
-        )
-    }
-
-    /// The `#[repr(transparent)]` structs `outer` is of `inner`, outermost
-    /// first: none where they're one type, and `None` where it isn't one.
-    /// Each a struct of one field, which JS has as an array or an object.
-    fn transparent_layers(&self, outer: Ty<'tcx>, inner: Ty<'tcx>) -> Option<Vec<Ty<'tcx>>> {
-        let erased = |ty| self.tcx.erase_and_anonymize_regions(ty);
-        let mut layers = Vec::new();
-        let mut ty = outer;
-        while erased(ty) != erased(inner) {
-            let ty::Adt(adt, args) = ty.kind() else { return None };
-            if !adt.is_struct() || !adt.repr().transparent() {
-                return None;
+        let held = |mut ty: Ty<'tcx>| {
+            while let ty::Adt(adt, _) = ty.kind()
+                && adt.is_struct()
+                && adt.repr().transparent()
+                && let Some(field) = self.transparent(ty)
+            {
+                ty = field;
             }
-            let fields = &adt.non_enum_variant().fields;
-            if fields.len() != 1 {
-                return None;
-            }
-            if !matches!(self.shape(ty), Shape::Array(_) | Shape::Object(_)) {
-                return None;
-            }
-            layers.push(ty);
-            ty = self.field_ty(&fields.raw[0], args);
-        }
-        Some(layers)
+            self.tcx.erase_and_anonymize_regions(ty)
+        };
+        (held(from) == held(to)).then_some(value)
     }
 
     /// `ty`'s parts, if it's plain data: a number, a `bool`, a `char`, or a

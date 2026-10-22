@@ -66,11 +66,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 _ => Expr::call_helper("$ioThrow", fields),
             });
         }
-        // A `ManuallyDrop`, or what `pin!` pins, is the value it holds.
-        if self.transparent(ty).is_some()
-            && let Ok([value]) = <[Expr; 1]>::try_from(fields.clone())
-        {
-            return Ok(value);
+        // A `ManuallyDrop`, or what `pin!` pins, is the value it holds; a
+        // `#[repr(transparent)]` struct its field, beside a marker's (ADR 0584).
+        if self.transparent(ty).is_some() {
+            let at = super::recognition::transparent_field(self.tcx, adt_def).unwrap_or(0);
+            if let Some(value) = fields.get(at) {
+                return Ok(value.clone());
+            }
         }
         if let Some(inner) = self.option_of(ty) {
             return Ok(match fields.into_iter().next() {

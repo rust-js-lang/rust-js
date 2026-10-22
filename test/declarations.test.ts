@@ -1194,3 +1194,39 @@ test("declarations type an impl Fn parameter as its function", () => {
   const declarations = readFileSync(join(dir, "lib.d.ts"), "utf8");
   expect(declarations).toContain("export function listed<Item>(array: Item[], render: (item: Item, value: number) => number, done: () => void): number[];");
 });
+
+// ADR 0584: a `#[repr(transparent)]` struct is its field, so its type is
+// its field's, a marker beside it nothing.
+test("a transparent struct is declared as its field's type", () => {
+  const dir = fixture("declarations-transparent");
+  writeFileSync(join(dir, "Cargo.toml"), '[package]\nname = "app"\nversion = "0.0.0"\nedition = "2024"\n');
+  writeFileSync(join(dir, "lib.rs"), `use std::marker::PhantomData;
+
+#[repr(transparent)]
+pub struct Meters(pub f64);
+
+#[repr(transparent)]
+pub struct Tagged<T> {
+    _kind: PhantomData<T>,
+    pub name: String,
+}
+
+pub fn double(m: Meters) -> Meters {
+    Meters(m.0 * 2.0)
+}
+
+pub fn tagged(m: &Meters) -> Tagged<Meters> {
+    Tagged { _kind: PhantomData, name: m.0.to_string() }
+}
+`);
+  run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const declarations = readFileSync(join(dir, "lib.d.ts"), "utf8");
+  expect(declarations).toContain("export type Meters = number;");
+  expect(declarations).toContain("export type Tagged<T> = string;");
+  expect(declarations).toContain("export function tagged(m: Meters): Tagged<Meters>;");
+  writeFileSync(join(dir, "use.ts"), `import { double, tagged } from "./lib.js";
+export const twice: number = double(2);
+export const named: string = tagged(twice);
+`);
+  expect(typeChecked(dir, "use.ts")).toEqual([]);
+});

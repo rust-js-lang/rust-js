@@ -203,4 +203,28 @@ export const mutations: Mutation[] = [
     replace: "    if tcx.item_name(id).as_str() == \"ptr_eq\" {\n",
     tests: ["test/lowering.test.ts", "-t", "ptr_eq of an Rc of a struct"],
   },
+  {
+    name: "transparent-struct-an-array",
+    breaks: "a `#[repr(transparent)]` struct is `[field]`, React's scheduler's `Callback` called `callback[0](didTimeout)`",
+    file: "src/lower/recognition/wrappers.rs",
+    find: "        if let Some(at) = transparent_field(self.tcx, adt) {\n",
+    replace: "        if let Some(at) = transparent_field(self.tcx, adt).filter(|_| false) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^transparent_transmute.rs$"],
+  },
+  {
+    name: "transparent-marker-its-field",
+    breaks: "a `#[repr(transparent)]` struct whose `PhantomData` comes first is the marker",
+    file: "src/lower/recognition/wrappers.rs",
+    find: "        !ty.is_unit() && !matches!(ty.kind(), ty::Adt(held, _) if tcx.is_lang_item(held.did(), LangItem::PhantomData))\n",
+    replace: "        !ty.is_unit()\n",
+    tests: ["test/corpus.test.ts", "-t", "^transparent_transmute.rs$"],
+  },
+  {
+    name: "transparent-std-struct-its-field",
+    breaks: "std's `#[repr(transparent)]` `Cell` is its value, not the `{ value }` set in place",
+    file: "src/lower/recognition/wrappers.rs",
+    find: "    if !adt.is_struct() || !adt.repr().transparent() || super::std_items::is_std_item(tcx, adt.did()) {\n",
+    replace: "    if !adt.is_struct() || !adt.repr().transparent() {\n",
+    tests: ["test/corpus.test.ts", "-t", "^cell_(const|drops).rs$"],
+  },
 ];

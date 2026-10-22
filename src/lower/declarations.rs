@@ -578,6 +578,23 @@ impl<'tcx> Declarations<'_, 'tcx> {
     fn structure(&mut self, def_id: DefId) -> Option<Value> {
         let adt = self.tcx.adt_def(def_id);
         let variant = adt.non_enum_variant();
+        // A `#[repr(transparent)]` struct is its field (ADR 0584): a type of
+        // that field's, `type Meters = number`.
+        if let Some(at) = super::recognition::transparent_field(self.tcx, adt) {
+            let field = self
+                .tcx
+                .type_of(variant.fields.raw[at].did)
+                .instantiate_identity()
+                .skip_normalization();
+            return Some(json!({
+                "kind": "type",
+                "name": self.tcx.item_name(def_id).as_str(),
+                "exported": true,
+                "declare": false,
+                "typeParameters": self.generics(def_id),
+                "type": self.ts(field),
+            }));
+        }
         if variant.ctor.is_some() {
             return None;
         }
@@ -966,7 +983,10 @@ impl<'tcx> Declarations<'_, 'tcx> {
                     return keyword("any");
                 };
                 let declared = match tcx.def_kind(did) {
-                    DefKind::Struct => adt.non_enum_variant().ctor.is_none(),
+                    DefKind::Struct => {
+                        adt.non_enum_variant().ctor.is_none()
+                            || super::recognition::transparent_field(tcx, *adt).is_some()
+                    }
                     DefKind::Enum | DefKind::Union => true,
                     _ => false,
                 };

@@ -14,7 +14,7 @@ function examples(): { item: string; example: string }[] {
 }
 
 test("the limitations page has examples to check", () => {
-  expect(examples().length).toBeGreaterThan(30);
+  expect(examples().length).toBeGreaterThan(20);
 });
 
 for (const { item, example } of examples()) {

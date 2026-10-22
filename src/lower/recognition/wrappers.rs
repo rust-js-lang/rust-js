@@ -48,13 +48,19 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         (rc_pointee(tcx, owner).is_some() && tcx.item_name(def_id).as_str() == "new").then(|| (true, args.type_at(0)))
     }
 
-    /// A type that.s the value it holds in JS, whose field is it: a
-    /// `MaybeUninit` (ADR 0332), and what std makes one of, `ManuallyDrop`
-    /// and `MaybeDangling`. The type of that field, what it is in JS.
+    /// A type that's the value it holds in JS, whose field is it: a
+    /// `#[repr(transparent)]` struct of the crate's or a dependency's (ADR
+    /// 0584), a `MaybeUninit` (ADR 0332), and what std makes one of,
+    /// `ManuallyDrop` and `MaybeDangling`. The type of that field, what it
+    /// is in JS.
     pub(in crate::lower) fn transparent(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
         let ty::Adt(adt, args) = *ty.kind() else {
             return None;
         };
+        // A `#[repr(transparent)]` struct is its field (ADR 0584).
+        if let Some(at) = transparent_field(self.tcx, adt) {
+            return Some(self.field_ty(&adt.non_enum_variant().fields.raw[at], args));
+        }
         let wraps = self.uninit_of(ty).is_some()
             || self.is_lang_adt(ty, LangItem::ManuallyDrop)
             || self.is_lang_adt(ty, LangItem::MaybeDangling)
@@ -443,4 +449,17 @@ pub(in crate::lower) fn local_key_access(tcx: TyCtxt<'_>, id: DefId) -> Option<b
         "get" | "with_borrow" | "with_borrow_mut" => Some(false),
         _ => None,
     }
+}
+
+/// Of a `#[repr(transparent)]` struct of the crate's or a dependency's, the
+/// index of the field it is in JS (ADR 0584): Rust lays it out as that
+/// field, its others of no size, a `PhantomData` or a `()`.
+pub(in crate::lower) fn transparent_field(tcx: TyCtxt<'_>, adt: ty::AdtDef<'_>) -> Option<usize> {
+    if !adt.is_struct() || !adt.repr().transparent() || super::std_items::is_std_item(tcx, adt.did()) {
+        return None;
+    }
+    adt.non_enum_variant().fields.iter().position(|field| {
+        let ty = tcx.type_of(field.did).instantiate_identity().skip_normalization();
+        !ty.is_unit() && !matches!(ty.kind(), ty::Adt(held, _) if tcx.is_lang_item(held.did(), LangItem::PhantomData))
+    })
 }

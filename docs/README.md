@@ -515,6 +515,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0581 A closure called as a statement where it's made is its body](decisions/0581-a-closure-called-as-a-statement-is-its-body.md)
 - [0582 `Rc::ptr_eq` of an object is its identity, uncounted](decisions/0582-ptr-eq-of-an-object-is-its-identity.md)
 - [0583 A global some hosts lack is an `Option`](decisions/0583-a-global-some-hosts-lack-is-an-option.md)
+- [0584 A `#[repr(transparent)]` struct is its field](decisions/0584-a-transparent-struct-is-its-field.md)
 - [0436 Every `dyn` that's a pair keeps its value's drop, `dyn Send` too](decisions/0436-every-dyn-keeps-its-drop.md)
 - [0437 A scope's drops on a panic are one `try { .. } finally { .. }`](decisions/0437-a-scopes-drops-are-one-finally.md)
 - [0438 An optional prop is given `Some(..)`, or left out](decisions/0438-an-optional-prop-is-given-some.md)

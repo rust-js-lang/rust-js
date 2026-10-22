@@ -552,4 +552,20 @@ export const mutations: Mutation[] = [
     replace: "        fn_name(self.tcx, def_id)\n",
     tests: ["test/declarations.test.ts", "-t", "as its JS does"],
   },
+  {
+    name: "transparent-declared-as-struct",
+    breaks: "a `#[repr(transparent)]` struct is declared an interface of its fields, where its JS is its field",
+    file: "src/lower/declarations.rs",
+    find: "        if let Some(at) = super::recognition::transparent_field(self.tcx, adt) {\n",
+    replace: "        if let Some(at) = super::recognition::transparent_field(self.tcx, adt).filter(|_| false) {\n",
+    tests: ["test/declarations.test.ts", "-t", "transparent struct is declared"],
+  },
+  {
+    name: "transparent-tuple-struct-any",
+    breaks: "a `#[repr(transparent)]` tuple struct a function takes is `any`",
+    file: "src/lower/declarations.rs",
+    find: "                            || super::recognition::transparent_field(tcx, *adt).is_some()\n",
+    replace: "",
+    tests: ["test/declarations.test.ts", "-t", "transparent struct is declared"],
+  },
 ];

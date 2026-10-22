@@ -82,8 +82,16 @@ export const mutations: Mutation[] = [
     name: "pin-macro-helper-built",
     breaks: "what `pin!` pins, built, is a struct of std's rust-js refuses, not the value",
     file: "src/lower/aggregates.rs",
-    find: "        if self.transparent(ty).is_some()\n            && let Ok([value]) = <[Expr; 1]>::try_from(fields.clone())\n",
-    replace: "        if false\n            && let Ok([value]) = <[Expr; 1]>::try_from(fields.clone())\n",
+    find: "        if self.transparent(ty).is_some() {\n            let at",
+    replace: "        if false {\n            let at",
     tests: ["test/snapshots.test.ts", "-t", "async"],
+  },
+  {
+    name: "transparent-struct-built-of-marker",
+    breaks: "a `#[repr(transparent)]` struct built of a marker and its field is the marker, `undefined`",
+    file: "src/lower/aggregates.rs",
+    find: "            let at = super::recognition::transparent_field(self.tcx, adt_def).unwrap_or(0);\n",
+    replace: "            let at = 0;\n",
+    tests: ["test/corpus.test.ts", "-t", "^transparent_transmute.rs$"],
   },
 ];

@@ -32,12 +32,11 @@ meaning Rust's have where it can model them: a raw pointer to a local or
 into an array, its `add` and `offset_from`, a `transmute` between types of
 numbers alone (`u16` to `[u8; 2]`, a struct of two `u32`s to a `u64`),
 or between a `#[repr(transparent)]` struct and its field, by value or
-through a `&`, `slice::from_raw_parts` of an array's pointer. What reads memory by where
+through a reference, `slice::from_raw_parts` of an array's pointer. What reads memory by where
 it is, it refuses:
 
 - A raw address of a `static`, or a `&mut` to a `static mut`: `static mut N: u32 = 0; let r = unsafe { &mut *std::ptr::addr_of_mut!(N) }; *r += 1;`
 - A `transmute` of an enum, whose bytes a niche or a tag lays out: `#[repr(u8)] enum Size { One = 1 } let n: u8 = unsafe { std::mem::transmute::<Option<Size>, u8>(None) }; let _ = (n, Size::One);`
-- A `transmute` of a `&mut` to a `#[repr(transparent)]` struct's field as one to the struct, whose whole a write through it replaces: `#[repr(transparent)] struct W(String); let mut s = String::new(); let w = unsafe { std::mem::transmute::<&mut String, &mut W>(&mut s) }; *w = W(String::from("x"));`
 
 And refused when it runs, as a panic that says so, since which it is
 depends on what the program does:

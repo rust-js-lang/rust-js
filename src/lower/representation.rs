@@ -372,6 +372,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // An `impl Trait` a function returns is the value it stands for: a
         // `&mut` to an `impl Iterator`'s array is the array.
         let ty = self.reveal(ty);
+        // What's the value it holds is an object as that value is: a
+        // `&mut` to a transparent struct of an array is the array (ADR 0584).
+        if let Some(held) = self.always_holds(ty) {
+            return self.is_object(held);
+        }
         matches!(self.shape(ty), Shape::Object(_) | Shape::Array(_))
             || self.is_js_object(ty)
             // A slice or an array is a JS array: `&mut` to one, as `sort` takes, is it.
@@ -469,6 +474,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// Field `i` of a `ty` value: `base.x`, or `base[0]` for tuples.
     pub(super) fn project(&self, base: Expr, ty: Ty<'tcx>, i: usize) -> Expr {
+        // What's the value it holds: that field is it, a marker beside it
+        // nothing (ADR 0584).
+        if self.always_holds(ty).is_some() {
+            let held = match ty.kind() {
+                ty::Adt(adt, _) => super::recognition::transparent_field(self.tcx, *adt).unwrap_or(0),
+                _ => 0,
+            };
+            return if i == held { base } else { Expr::undefined() };
+        }
         match (self.shape(ty), &base.kind) {
             // A part of `[a, b]` (a `match (a, b)` subject) is just `a`.
             (Shape::Array(_), js::ExprKind::Array(items)) if !base.has_effects() => items[i].clone(),
@@ -1098,6 +1112,10 @@ pub(super) fn const_js<'tcx>(tcx: TyCtxt<'tcx>, value: ty::Value<'tcx>) -> Optio
                 .chain(props)
                 .collect(),
             ))
+        }
+        // A `#[repr(transparent)]` struct's is its field's (ADR 0584).
+        ty::Adt(adt, _) if let Some(at) = super::recognition::transparent_field(tcx, *adt) => {
+            const_js(tcx, *children()?.get(at)?)
         }
         // A std struct's fields are its own, not the JS value rust-js makes
         // of it: `iter::empty()` is no `[undefined]`. Only a `PhantomData`, and
