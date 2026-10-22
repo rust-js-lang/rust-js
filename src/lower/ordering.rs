@@ -127,7 +127,41 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Some(field) = self.transparent(ty) {
             return self.cmp_value(a, b, field, partial, span, out);
         }
-        // Derived. Each is read more than once below.
+        // A type inside itself, `C(Box<V>)`'s: its order is a function, which
+        // calls itself for the ones inside, as its clone is.
+        if self.is_recursive(ty) {
+            if let Some((.., name)) = self.ordering.iter().find(|&&(t, p, _)| t == ty && p == partial) {
+                return Ok(Expr::call(Expr::var(name), vec![a, b]));
+            }
+            let ty::Adt(adt, _) = ty.kind() else {
+                unreachable!("a recursive type is an ADT");
+            };
+            let name = self.fresh(&format!("cmp{}", self.tcx.item_name(adt.did())));
+            let (x, y) = (self.fresh("a"), self.fresh("b"));
+            self.ordering.push((ty, partial, name.clone()));
+            let mut body = Vec::new();
+            let order = self.cmp_derived(Expr::var(&x), Expr::var(&y), ty, partial, span, &mut body);
+            self.ordering.pop();
+            body.push(StmtKind::Return(Some(order?)).at(js::Span::NONE));
+            let f = Expr::arrow(vec![x.into(), y.into()], body);
+            out.push(StmtKind::Const(name.clone(), f).at(js::Span::NONE));
+            return Ok(Expr::call(Expr::var(&name), vec![a, b]));
+        }
+        self.cmp_derived(a, b, ty, partial, span, out)
+    }
+
+    /// `cmp_value`'s of a derived order, of what it's made of in turn.
+    fn cmp_derived(
+        &mut self,
+        a: Expr,
+        b: Expr,
+        ty: Ty<'tcx>,
+        partial: bool,
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Expr> {
+        let (ord, partial_ord) = (self.ord_trait(), self.partial_ord_trait());
+        // Each is read more than once below.
         let a = if a.reads_same() { a } else { self.spill("left", a, out) };
         let b = if b.reads_same() { b } else { self.spill("right", b, out) };
         match ty.kind() {

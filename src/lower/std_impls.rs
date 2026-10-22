@@ -228,7 +228,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Is `ty`, one of the crate's own or a library's (ADR 0100), inside
     /// itself, through its fields or what a std type holds? A std type that
     /// holds one is cloned in place.
-    fn is_recursive(&self, ty: Ty<'tcx>) -> bool {
+    pub(super) fn is_recursive(&self, ty: Ty<'tcx>) -> bool {
         let mut seen = Vec::new();
         matches!(ty.kind(), ty::Adt(adt, _) if self.is_rust_adt(adt.did())) && self.holds(ty, ty, &mut seen)
     }

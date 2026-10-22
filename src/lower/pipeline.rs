@@ -317,6 +317,7 @@ pub fn lower_crate<'tcx>(
             jsx: false,
             writing: Default::default(),
             cloning: Vec::new(),
+            ordering: Vec::new(),
             item: def_id,
             walks: Default::default(),
             drop_state: Default::default(),

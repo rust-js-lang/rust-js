@@ -375,6 +375,7 @@ const owners: Record<string, string[]> = {
   ],
   "self.writing": ["src/lower/display.rs", "src/lower/display/debug.rs", "src/lower/display/written.rs"],
   "self.cloning": ["src/lower/std_impls.rs"],
+  "self.ordering": ["src/lower/ordering.rs"],
   "self.given": ["src/lower/traits/given.rs", "src/lower/traits/calls.rs", "src/lower/traits/impls.rs", "src/lower/traits/routes.rs"],
   "self.walks.representable": ["src/lower/support.rs"],
   "self.walks.assumed": ["src/lower/support.rs"],

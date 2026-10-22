@@ -396,6 +396,10 @@ struct FnCx<'a, 'tcx> {
     /// The recursive types being cloned, and the function each one's clone
     /// is (`clone_value`), which a clone inside it calls.
     cloning: Vec<(Ty<'tcx>, String)>,
+    /// The recursive types being ordered, partially or not, and the
+    /// function each one's order is (`cmp_value`), which an order inside it
+    /// calls.
+    ordering: Vec<(Ty<'tcx>, bool, String)>,
     /// The item being lowered: what `fn_ref` records as using its target.
     item: DefId,
     /// What walks of types found, each walked once, under each typing

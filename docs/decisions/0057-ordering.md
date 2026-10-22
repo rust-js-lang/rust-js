@@ -113,3 +113,13 @@ and `>=` are std's defaults, its `partial_cmp` against 0, which `None`'s
 results would change, so Rust's. Held by
 `test/corpus/partial_ord_other_type.rs` and the mutation
 `ordering-of-other-type-as-self`.
+
+## Amendment: the derived order of a type inside itself
+
+A derived order is its parts' orders inlined, so of a type inside itself,
+`enum V { A, C(Box<V>) }` or `struct L { next: Option<Box<L>> }`, it was
+inlined without end and the compiler overflowed its stack (#148). Its
+order is a function, `const cmpTree = (a, b) => ..`, which calls itself
+for the ones inside, as a recursive type's clone is (`clone_value`); each
+place that orders one makes its own, as each clone does. Held by
+`test/corpus/recursive_order.rs`.

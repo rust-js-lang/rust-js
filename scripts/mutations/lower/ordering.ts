@@ -138,4 +138,12 @@ export const mutations: Mutation[] = [
     replace: "                        || false) =>",
     tests: ["test/corpus.test.ts", "-t", "^result_iter_and_order.rs$"],
   },
+  {
+    name: "recursive-order-inlined",
+    breaks: "a derived order of a type inside itself is inlined into its own fields' without end, and the compiler overflows its stack",
+    file: "src/lower/ordering.rs",
+    find: "            if let Some((.., name)) = self.ordering.iter().find(|&&(t, p, _)| t == ty && p == partial) {\n",
+    replace: "            if let Some((.., name)) = self.ordering.iter().find(|_| false) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^recursive_order.rs$"],
+  },
 ];
