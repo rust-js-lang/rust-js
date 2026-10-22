@@ -75,7 +75,7 @@ pub fn Suspended() -> JSX::Element {
 pub fn Store() -> JSX::Element {
     let value = use_sync_external_store(|notify| store_subscribe(notify), || store_get(), None);
     let (pending, start) = use_transition();
-    let (filter, set_filter) = use_state(0);
+    let (filter, set_filter) = use_state(|| 0);
     let deferred = use_deferred_value(*filter, None);
     jsx! {
         <div>
@@ -152,7 +152,7 @@ pub fn FancyInput(FancyInputProps { handle }: FancyInputProps) -> JSX::Element {
 pub fn Refs() -> JSX::Element {
     let handle: RefObject<Option<&'static str>> = use_ref(None);
     let element: RefObject<Option<&'static webapi::Element>> = use_ref(None);
-    let (shown, set_shown) = use_state(true);
+    let (shown, set_shown) = use_state(|| true);
     use_layout_effect(move || log("layout"), Some(&()));
     use_effect(
         move || {
@@ -191,7 +191,7 @@ pub fn Refs() -> JSX::Element {
 
 /// Activity keeps hidden state; a portal renders elsewhere; flushSync applies now.
 pub fn Counter() -> JSX::Element {
-    let (n, set_n) = use_state(0);
+    let (n, set_n) = use_state(|| 0);
     // An effect that cleans up only once it's counted: its cleanup an `Option`.
     use_effect(
         move || {
@@ -208,8 +208,8 @@ pub fn Counter() -> JSX::Element {
 }
 
 pub fn Places() -> JSX::Element {
-    let (hidden, set_hidden) = use_state(false);
-    let (flushed, set_flushed) = use_state(0);
+    let (hidden, set_hidden) = use_state(|| false);
+    let (flushed, set_flushed) = use_state(|| 0);
     jsx! {
         <>
             <Activity mode={if *hidden { ActivityMode::Hidden } else { ActivityMode::Visible }}>

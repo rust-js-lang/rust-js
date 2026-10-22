@@ -70,13 +70,13 @@ fn tests_summary(passed: u32, failed: u32, ignored: u32) -> Status {
 }
 
 pub fn App() -> JSX::Element {
-    let (loaded, set_loaded) = use_state(None::<Loaded>);
-    let (stats, set_stats) = use_state(Vec::<(String, String)>::new());
-    let (status, set_status) = use_state(say("Loading…".to_string(), Tone::Plain));
-    let (example, set_example) = use_state(String::new());
-    let (project, set_project) = use_state(Project::empty());
-    let (output, set_output) = use_state(Output::Nothing);
-    let (program, set_program) = use_state(None::<Program>);
+    let (loaded, set_loaded) = use_state(|| None::<Loaded>);
+    let (stats, set_stats) = use_state(|| Vec::<(String, String)>::new());
+    let (status, set_status) = use_state(|| say("Loading…".to_string(), Tone::Plain));
+    let (example, set_example) = use_state(|| String::new());
+    let (project, set_project) = use_state(|| Project::empty());
+    let (output, set_output) = use_state(|| Output::Nothing);
+    let (program, set_program) = use_state(|| None::<Program>);
     let (compiling, start_transition) = use_transition();
     // The source editor's view, whose state has the open file's latest edits.
     let source = use_ref(None::<&'static EditorView>);

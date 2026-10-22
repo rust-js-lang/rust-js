@@ -7,7 +7,7 @@ use react::{JSX, jsx, use_state};
 use webapi::document;
 
 pub fn Counter() -> JSX::Element {
-    let (count, set_count) = use_state(0);
+    let (count, set_count) = use_state(|| 0);
     jsx! {
         <div className="counter">
             <button onClick={move |_| set_count.update(|n| n - 1)}>{"−"}</button>

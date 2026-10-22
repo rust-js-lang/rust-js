@@ -11,9 +11,12 @@ its DevTools and its rules see ordinary React.
   handler can `move` it in, and `*count` reads it.
 - **What a hook gives to call**, a setter, a dispatch, a ref, is `Copy`
   too, and the function itself in JS.
-- **A hook whose argument is optional** takes an `Option`, or has a `_with`
-  form for React's other overload: `use_state_with(init)` is
-  `useState(init)` of a function.
+- **A hook whose argument is optional** takes an `Option`.
+- **`use_state` takes what makes the first state**, a closure or a
+  function, called on the first render only: `use_state(|| 0)` is
+  `useState(0)`, and `use_state(load_notes)` is `useState(loadNotes)`. A
+  closure whose body does nothing is its value in JS
+  ([ADR 0593](../../decisions/0593-a-lazy-argument-is-its-value.md)).
 - **Call hooks at the top level** of a component or a custom hook, as
   React's rules say. rust-js doesn't check this; React does, in
   development.
@@ -24,7 +27,7 @@ its DevTools and its rules see ordinary React.
 use react::{JSX, jsx, use_state};
 
 pub fn Counter() -> JSX::Element {
-    let (count, set_count) = use_state(0);
+    let (count, set_count) = use_state(|| 0);
     jsx! {
         <>
             <p>{"Clicked "}{count}{" times"}</p>
@@ -55,8 +58,10 @@ export function Counter() {
   state from the latest one, which the closure only reads.
 - The setter where a prop wants a function, `&dyn Fn(T)`, is `&**set_count`,
   `setCount` itself.
-- `use_state_with(load_notes)` is `useState(loadNotes)`: the first state,
-  computed on the first render only.
+- `use_state(load_notes)` is `useState(loadNotes)`: the first state,
+  computed on the first render only. State that is a function is made by
+  a closure that gives it, `use_state(|| on_tick)`, which stays one in JS,
+  as React would otherwise call it for the state.
 
 Ownership is how React's rule looks in Rust: a handler can't mutate the
 state it was given, which in JS would change React's copy and not render.
@@ -79,7 +84,7 @@ use react::webapi::window;
 use react::{JSX, jsx, use_effect, use_state};
 
 pub fn Title() -> JSX::Element {
-    let (count, set_count) = use_state(0);
+    let (count, set_count) = use_state(|| 0);
     use_effect(
         move || window.document().set_title(&format!("{count} clicks")),
         Some(&(count,)),
@@ -88,7 +93,7 @@ pub fn Title() -> JSX::Element {
 }
 
 pub fn Ticker() -> JSX::Element {
-    let (ticks, set_ticks) = use_state(0);
+    let (ticks, set_ticks) = use_state(|| 0);
     use_effect(
         move || {
             let id = js::set_interval(Box::new(move || set_ticks.update(|n| n + 1)), 1000.0);
@@ -226,7 +231,7 @@ pub struct TodoListProps {
 
 pub fn TodoList(TodoListProps { todos, tab }: TodoListProps) -> JSX::Element {
     let visible = use_memo(move || filter_todos(todos, tab), (todos, tab));
-    let (picked, set_picked) = use_state(0);
+    let (picked, set_picked) = use_state(|| 0);
     let pick = use_callback(move |n: usize| set_picked.set(n), ());
     jsx! {
         <p onClick={move |_| pick(visible.len())}>{visible.len()}{" shown, "}{picked}{" picked"}</p>
@@ -337,7 +342,7 @@ in JS, `useToggle`, the name React's rules and React Compiler look for
 use react::{JSX, jsx, use_state};
 
 pub fn use_toggle(initial: bool) -> (bool, Box<dyn Fn()>) {
-    let (on, set_on) = use_state(initial);
+    let (on, set_on) = use_state(move || initial);
     (*on, Box::new(move || set_on.update(|on| !on)))
 }
 

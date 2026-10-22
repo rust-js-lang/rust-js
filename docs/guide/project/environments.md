@@ -190,7 +190,7 @@ js::directive!("use client");
 use react::{JSX, jsx, use_state};
 
 pub fn About() -> JSX::Element {
-    let (likes, set_likes) = use_state(0);
+    let (likes, set_likes) = use_state(|| 0);
     jsx! {
         <button onClick={move |_| set_likes.update(|likes| likes + 1)}>
             {"Likes: "}{likes}

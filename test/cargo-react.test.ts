@@ -24,7 +24,7 @@ const counter = `#![allow(non_snake_case)]
 use react::{JSX, jsx, use_state};
 
 pub fn Counter() -> JSX::Element {
-    let (count, set_count) = use_state(0);
+    let (count, set_count) = use_state(|| 0);
     jsx! {
         <button onClick={move |_| set_count.update(|count| count + 1)}>{count}</button>
     }
@@ -35,7 +35,7 @@ const usesUseEffectEvent = `#![allow(non_snake_case)]
 use react::{JSX, jsx, use_effect_event, use_state};
 
 pub fn App() -> JSX::Element {
-    let (count, set_count) = use_state(0);
+    let (count, set_count) = use_state(|| 0);
     let log = use_effect_event(move || set_count.set(*count));
     jsx! {
         <button onClick={move |_| log()}>{count}</button>

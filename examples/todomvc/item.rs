@@ -11,8 +11,8 @@ pub struct TodoItemProps {
 }
 
 pub fn TodoItem(TodoItemProps { todo, dispatch }: TodoItemProps) -> JSX::Element {
-    let (editing, set_editing) = use_state(false);
-    let (draft, set_draft) = use_state(todo.title.clone());
+    let (editing, set_editing) = use_state(|| false);
+    let (draft, set_draft) = use_state(|| todo.title.clone());
     // An edit that's ended, saved or cancelled: the blur of the field that
     // goes with it isn't another.
     let ended = use_ref(false);

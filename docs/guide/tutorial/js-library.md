@@ -67,7 +67,7 @@ use react::{JSX, jsx, use_state};
 use sonner::{ExternalToast, Position, Toaster, dismiss, success, toast};
 
 pub fn App() -> JSX::Element {
-    let (last, set_last) = use_state(None);
+    let (last, set_last) = use_state(|| None);
 
     let save = move |_: &MouseEvent<_>| {
         let details = ExternalToast {

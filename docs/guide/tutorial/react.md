@@ -61,7 +61,7 @@ pub struct CounterProps {
 
 /// A count of `label`, that goes up by `step`.
 pub fn Counter(CounterProps { label, step }: CounterProps) -> JSX::Element {
-    let (count, set_count) = use_state(0);
+    let (count, set_count) = use_state(|| 0);
 
     jsx! {
         <p>
@@ -262,7 +262,7 @@ fn TodoItem(TodoItemProps { todo, dispatch }: TodoItemProps) -> JSX::Element {
 
 pub fn TodoList() -> JSX::Element {
     let (todos, dispatch) = use_reducer(reduce, Todos::default());
-    let (draft, set_draft) = use_state(String::new());
+    let (draft, set_draft) = use_state(|| String::new());
     let left = todos.items.iter().filter(|todo| !todo.done).count();
 
     use_effect(

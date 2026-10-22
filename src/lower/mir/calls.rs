@@ -201,6 +201,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             _ => {}
         }
         let nullable = bindings::nullable_params(tcx, def_id);
+        let lazy = bindings::lazy_params(tcx, def_id);
         let idents = tcx.fn_arg_idents(def_id);
         let mut exprs = Vec::new();
         for (i, (value, &ty)) in values.into_iter().zip(arg_tys).enumerate() {
@@ -221,6 +222,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         _ if value.is_constant() || value.is_made_here() => value,
                         _ => Expr::bin(Op::Coalesce, value, Expr::null()),
                     }
+                }
+                // A parameter it names `#[rust_js::lazy(..)]`, a function JS
+                // calls once for the value: a closure whose body does nothing
+                // and gives no function is its value, `useState(0)` (ADR 0593).
+                () if idents
+                    .get(i)
+                    .copied()
+                    .flatten()
+                    .is_some_and(|ident| lazy.contains(&ident.name)) =>
+                {
+                    self.lazy_value(value, ty)
                 }
                 // A `&dyn Any` given to JS is its value (ADR 0331).
                 () => self.any_given_to_js(value, ty),
@@ -253,5 +265,31 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // A generic `&mut T`'s box, of an object `T` here: what's in it.
         let called = self.generic_result_values((def_id, generic_args), called, span)?;
         Ok(Value::Expr(self.fmt_result_value(def_id, generic_args, called)))
+    }
+
+    /// A lazy parameter's argument (`bindings::lazy_params`): `() => 0` is
+    /// `0`, its body's value, where its body does nothing and what it gives
+    /// isn't a function, which JS would call for the value in its place.
+    fn lazy_value(&self, value: Expr, ty: Ty<'tcx>) -> Expr {
+        let gives = match ty.kind() {
+            ty::Closure(_, args) => args.as_closure().sig().output().skip_binder(),
+            _ => return value,
+        };
+        match &value.kind {
+            js::ExprKind::Arrow(params, body)
+                if params.is_empty() && !self.is_callable(gives) && !self.is_unknown(gives) =>
+            {
+                match body.as_slice() {
+                    [
+                        js::Stmt {
+                            kind: StmtKind::Return(Some(given)),
+                            ..
+                        },
+                    ] if !given.has_effects() => given.clone(),
+                    _ => value,
+                }
+            }
+            _ => value,
+        }
     }
 }

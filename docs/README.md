@@ -525,6 +525,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0590 A `match` of constants tests each by its name, its comments in its arms](decisions/0590-a-match-of-constants-names-them.md)
 - [0591 `is_some_and` of an equality with its `Some` is the equality](decisions/0591-is-some-and-of-an-equality-is-the-equality.md)
 - [0592 An impl's dictionary is its module's `const`](decisions/0592-a-dictionary-is-its-modules-const.md)
+- [0593 `use_state` takes what makes its first state; a lazy argument that does nothing is its value](decisions/0593-a-lazy-argument-is-its-value.md)
 - [0436 Every `dyn` that's a pair keeps its value's drop, `dyn Send` too](decisions/0436-every-dyn-keeps-its-drop.md)
 - [0437 A scope's drops on a panic are one `try { .. } finally { .. }`](decisions/0437-a-scopes-drops-are-one-finally.md)
 - [0438 An optional prop is given `Some(..)`, or left out](decisions/0438-an-optional-prop-is-given-some.md)

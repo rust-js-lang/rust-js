@@ -46,9 +46,9 @@ function testsSummary(passed, failed, ignored) {
 export function App() {
   const [loaded, setLoaded] = useState(undefined);
   const [stats, setStats] = useState([]);
-  const [status, setStatus] = useState(say("Loading…", "Plain"));
+  const [status, setStatus] = useState(() => say("Loading…", "Plain"));
   const [example, setExample] = useState("");
-  const [project, setProject] = useState(Project.empty());
+  const [project, setProject] = useState(() => Project.empty());
   const [output, setOutput] = useState("Nothing");
   const [program, setProgram] = useState(undefined);
   const [compiling, startTransition] = useTransition();

@@ -68,7 +68,7 @@ fn reduce(todos: &Vec<Todo>, action: Action) -> Vec<Todo> {
 /// A list with keys, a reducer, an input, and a conditional child.
 pub fn Todos() -> JSX::Element {
     let (todos, dispatch) = use_reducer(reduce, Vec::new());
-    let (draft, set_draft) = use_state(String::new());
+    let (draft, set_draft) = use_state(|| String::new());
     let id = use_id();
     let left = use_memo(move || todos.iter().filter(|t| !t.done).count(), (todos,));
     let add = move || {
@@ -122,7 +122,7 @@ pub fn Todos() -> JSX::Element {
 
 /// State, an effect that runs once and cleans up, and a ref.
 pub fn Clock() -> JSX::Element {
-    let (ticks, set_ticks) = use_state(0);
+    let (ticks, set_ticks) = use_state(|| 0);
     let renders = use_ref(0);
     renders.set_current(renders.current() + 1);
     use_effect(
@@ -168,8 +168,8 @@ pub fn Badge(BadgeProps { label }: BadgeProps) -> JSX::Element {
 
 /// Context from a provider, or its default outside one; `memo` skipping renders.
 pub fn Themed() -> JSX::Element {
-    let (dark, set_dark) = use_state(false);
-    let (clicks, set_clicks) = use_state(0);
+    let (dark, set_dark) = use_state(|| false);
+    let (clicks, set_clicks) = use_state(|| 0);
     jsx! {
         <>
             <BADGE label="outside" />

@@ -64,6 +64,13 @@ pub(super) fn validate(tcx: TyCtxt<'_>) -> bool {
             }
             let idents = tcx.fn_arg_idents(def.to_def_id());
             let inputs = tcx.fn_sig(def).skip_binder().skip_binder().inputs();
+            for name in lazy_params(tcx, def.to_def_id()) {
+                if !idents.iter().any(|ident| ident.is_some_and(|ident| ident.name == name)) {
+                    let message = format!("rust-js: `#[rust_js::lazy({name})]` names no parameter of this function");
+                    tcx.dcx().span_err(tcx.def_span(def), message);
+                    valid = false;
+                }
+            }
             for name in nullable_params(tcx, def.to_def_id()) {
                 let at = idents
                     .iter()
@@ -598,6 +605,18 @@ pub(super) fn is_omitted(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
 pub(super) fn is_nullable(tcx: TyCtxt<'_>, field: &FieldDef) -> bool {
     let path = [Symbol::intern("rust_js"), Symbol::intern("nullable")];
     tcx.get_attrs_by_path(field.did, &path).next().is_some()
+}
+
+/// The parameters a binding names `#[rust_js::lazy(..)]`, each a function
+/// JS calls once for the value, React's `useState(init)`: given a closure
+/// whose body does nothing and gives no function, its value (ADR 0593).
+pub(super) fn lazy_params(tcx: TyCtxt<'_>, def_id: DefId) -> Vec<Symbol> {
+    let path = [Symbol::intern("rust_js"), Symbol::intern("lazy")];
+    tcx.get_attrs_by_path(def_id, &path)
+        .filter_map(|attr| attr.meta_item_list())
+        .flatten()
+        .filter_map(|item| item.ident().map(|ident| ident.name))
+        .collect()
 }
 
 /// The parameters a binding names `#[rust_js::nullable(..)]`, each

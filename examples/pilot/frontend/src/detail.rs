@@ -18,7 +18,7 @@ pub struct ContactPageProps {
 }
 
 pub fn ContactPage(ContactPageProps { id }: ContactPageProps) -> JSX::Element {
-    let (loaded, set_loaded) = use_state(Loaded::Loading);
+    let (loaded, set_loaded) = use_state(|| Loaded::Loading);
     use_effect(
         move || {
             let controller = abort_controller::new();

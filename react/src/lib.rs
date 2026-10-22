@@ -742,16 +742,14 @@ macro_rules! handle {
 // ── State ───────────────────────────────────────────────────────────────
 
 /// [`useState`](https://react.dev/reference/react/useState): the state, and
-/// what sets it. `let (count, set_count) = use_state(0);` is
-/// `const [count, setCount] = useState(0);`.
+/// what sets it, its first value what `initial` gives, on the first render
+/// only. `let (count, set_count) = use_state(|| 0);` is `const [count,
+/// setCount] = useState(0);`, and `use_state(load_notes)` is
+/// `useState(loadNotes)` (ADR 0593): as rescript-react's, one function, of
+/// any state, a function's too.
 #[cfg_attr(rust_js, rust_js::link_name = "react#useState")]
-pub fn use_state<T>(initial: T) -> (&'static T, &'static Dispatch<SetStateAction<T>>) {
-    unreachable!()
-}
-
-/// `useState(() => initial())`: the first value, computed on the first render only.
-#[cfg_attr(rust_js, rust_js::link_name = "react#useState")]
-pub fn use_state_with<T>(initial: impl Fn() -> T + 'static) -> (&'static T, &'static Dispatch<SetStateAction<T>>) {
+#[cfg_attr(rust_js, rust_js::lazy(initial))]
+pub fn use_state<T>(initial: impl FnOnce() -> T + 'static) -> (&'static T, &'static Dispatch<SetStateAction<T>>) {
     unreachable!()
 }
 

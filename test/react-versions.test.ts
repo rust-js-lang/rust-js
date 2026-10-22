@@ -120,7 +120,7 @@ test("literals.rs is what react/literals.ts makes of @types/react", () => {
 const usesUseEffectEvent = `#![allow(non_snake_case)]
 use react::{JSX, jsx, use_effect_event, use_state};
 pub fn App() -> JSX::Element {
-    let (count, set_count) = use_state(0);
+    let (count, set_count) = use_state(|| 0);
     let log = use_effect_event(move || set_count.set(*count));
     jsx! {
         <button onClick={move |_| log()}>{count}</button>

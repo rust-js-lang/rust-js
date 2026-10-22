@@ -98,7 +98,7 @@ use greeting::greet;
 use react::{JSX, jsx, use_state};
 
 pub fn App() -> JSX::Element {
-    let (count, set_count) = use_state(0);
+    let (count, set_count) = use_state(|| 0);
 
     jsx! {
         <main>

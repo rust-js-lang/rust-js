@@ -338,7 +338,7 @@ pub struct PeopleProps<'a> {
 }
 
 pub fn People(PeopleProps { people }: PeopleProps) -> JSX::Element {
-    let (selected, set_selected) = use_state(None);
+    let (selected, set_selected) = use_state(|| None);
     let items: Vec<JSX::Element> = people
         .iter()
         .map(|person| {
@@ -537,8 +537,8 @@ pub fn SizePicker(SizePickerProps { on_pick }: SizePickerProps) -> JSX::Element 
 }
 
 pub fn Panel() -> JSX::Element {
-    let (clicks, set_clicks) = use_state(0);
-    let (size, set_size) = use_state(String::from("s"));
+    let (clicks, set_clicks) = use_state(|| 0);
+    let (size, set_size) = use_state(|| String::from("s"));
     jsx! {
         <div onKeyDown={move |e: &KeyboardEvent<_>| if e.key() == "Escape" { set_clicks.set(0) }}>
             <Button label="Like" onClick={Box::new(move |_| set_clicks.update(|n| n + 1))} />

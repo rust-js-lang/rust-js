@@ -266,7 +266,7 @@ public module of Next.js: `next/link`, `next/navigation`, `next/image`,
 use react::{JSX, jsx, use_state};
 
 pub fn Counter() -> JSX::Element {
-    let (count, set_count) = use_state(0);
+    let (count, set_count) = use_state(|| 0);
     jsx! {
         <button onClick={move |_| set_count.update(|count| count + 1)}>
             {"Count is "}{count}

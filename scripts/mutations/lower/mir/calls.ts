@@ -91,4 +91,28 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^writer_callables.rs$"],
   },
+  {
+    name: "lazy-never-its-value",
+    breaks: "`use_state(|| 0)` is `useState(() => 0)`, the closure, where it's `useState(0)`",
+    file: "src/lower/mir/calls.rs",
+    find: "                    self.lazy_value(value, ty)\n",
+    replace: "                    value\n",
+    tests: ["test/react.test.ts", "-t", "use_state's first state"],
+  },
+  {
+    name: "lazy-call-its-value",
+    breaks: "`use_state(|| load().len())` is `useState(load().length)`, which calls `load` every render",
+    file: "src/lower/mir/calls.rs",
+    find: "                    ] if !given.has_effects() => given.clone(),\n",
+    replace: "                    ] => given.clone(),\n",
+    tests: ["test/react.test.ts", "-t", "use_state's first state"],
+  },
+  {
+    name: "lazy-function-its-value",
+    breaks: "state that's a function, `use_state(|| |n| n + 1)`, is `useState((n) => ..)`, which React calls for the state",
+    file: "src/lower/mir/calls.rs",
+    find: "                if params.is_empty() && !self.is_callable(gives) && !self.is_unknown(gives) =>\n",
+    replace: "                if params.is_empty() && !self.is_unknown(gives) =>\n",
+    tests: ["test/react.test.ts", "-t", "use_state's first state"],
+  },
 ];

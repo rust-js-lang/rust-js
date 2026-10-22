@@ -9,7 +9,7 @@ the `react` crate's types.
 use react::{JSX, jsx, use_state};
 
 pub fn Counter() -> JSX::Element {
-    let (count, set_count) = use_state(0);
+    let (count, set_count) = use_state(|| 0);
     jsx! {
         <button className="counter" onClick={move |_| set_count.update(|n| n + 1)}>
             {"Count is "}{count}

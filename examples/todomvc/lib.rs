@@ -21,7 +21,7 @@ use webapi::{AddEventListenerOptions, EventTargetExt, abort_controller};
 /// The route's filter, and a render each time the hash changes.
 fn use_filter() -> Filter {
     let hash = || window.location().hash();
-    let (current, set_current) = use_state(hash());
+    let (current, set_current) = use_state(|| hash());
     use_effect(
         move || {
             let controller = abort_controller::new();
@@ -40,7 +40,7 @@ fn use_filter() -> Filter {
 pub fn App() -> JSX::Element {
     let (todos, dispatch) = use_reducer_with(reduce, (), |_| load());
     let filter = use_filter();
-    let (draft, set_draft) = use_state(String::new());
+    let (draft, set_draft) = use_state(|| String::new());
     use_effect(move || save(todos), Some(&(todos,)));
     let active = todos.iter().filter(|todo| !todo.completed).count();
     let completed = todos.len() - active;

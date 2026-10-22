@@ -16,7 +16,7 @@ unsafe extern "Rust" {
 }
 
 pub fn App() -> JSX::Element {
-    let (count, set_count) = use_state(0);
+    let (count, set_count) = use_state(|| 0);
 
     jsx! {
         <>

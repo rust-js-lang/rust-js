@@ -35,7 +35,7 @@ pub fn go(to: &str) {
 
 /// The route, and a render each time it changes.
 pub fn use_route() -> Route {
-    let (current, set_current) = use_state(hash());
+    let (current, set_current) = use_state(|| hash());
     use_effect(
         move || {
             let controller = abort_controller::new();

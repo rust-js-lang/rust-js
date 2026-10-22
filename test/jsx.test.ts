@@ -513,7 +513,7 @@ test("a hook's closure a let names is a named function where it's given", async 
   const source = `#![allow(non_snake_case)]
 use react::{JSX, jsx, use_effect, use_state};
 pub fn Counter() -> JSX::Element {
-    let (count, set_count) = use_state::<i32>(0);
+    let (count, set_count) = use_state::<i32>(|| 0);
     let tick = move || {
         set_count.set(count + 1);
     };
@@ -976,7 +976,7 @@ test("a callback of several statements stays in its JSX", () => {
 use react::{JSX, jsx, use_state};
 pub struct Crumb { pub title: String }
 pub fn list(crumbs: &[Crumb]) -> JSX::Element {
-    let (count, set_count) = use_state(0);
+    let (count, set_count) = use_state(|| 0);
     jsx! {
         <div onClick={move |_| { set_count.set(count + 1); set_count.set(count + 2); }}>
             {crumbs.iter().map(|crumb| {
@@ -1207,7 +1207,7 @@ pub fn Button<C: ReactNode>(ButtonProps { children, class_name, on_click }: Butt
     jsx! { <button className={class_name}>{children}</button> }
 }
 pub fn Example(excerpt: Option<&str>) -> JSX::Element {
-    let (expanded, set_expanded) = use_state(false);
+    let (expanded, set_expanded) = use_state(|| false);
     jsx! {
         <div>
             <h5 className={cn("title")}>{"Example"}</h5>
@@ -3558,7 +3558,7 @@ pub fn Button(ButtonProps { on_click }: ButtonProps) -> JSX::Element {
     jsx! { <button onClick={on_click}>{"Copy"}</button> }
 }
 pub fn Copy() -> JSX::Element {
-    let (copied, set_copied) = use_state(false);
+    let (copied, set_copied) = use_state(|| false);
     let handle_copy = event::MouseEvent::spawn(async move |_| {
         resolved().await;
         set_copied.set(true);
@@ -3566,7 +3566,7 @@ pub fn Copy() -> JSX::Element {
     jsx! { <div><Button onClick={handle_copy} />{if *copied { "Copied" } else { "Copy" }}</div> }
 }
 pub fn Parsed(text: String) -> JSX::Element {
-    let (copied, set_copied) = use_state(false);
+    let (copied, set_copied) = use_state(|| false);
     let handle_copy = event::MouseEvent::spawn(async move |_| {
         let Ok(n) = text.parse::<u32>() else {
             return;
@@ -3833,7 +3833,7 @@ pub fn Input(InputProps { value, on_change, on_clear }: InputProps) -> JSX::Elem
     jsx! { <b>{value}</b> }
 }
 pub fn Search() -> JSX::Element {
-    let (text, set_text) = use_state(String::from("a"));
+    let (text, set_text) = use_state(|| String::from("a"));
     jsx! { <Input value={text.as_str()} onChange={&**set_text} onClear={Some(&**set_text)} /> }
 }
 `);
@@ -4701,7 +4701,7 @@ test("a closure a let names for a hook is the hook's named function", async () =
   const { dir, args } = compile(`#![allow(non_snake_case)]
 use react::{JSX, jsx, use_callback, use_effect, use_memo, use_state};
 pub fn Ticker() -> JSX::Element {
-    let (n, set_n) = use_state(0u32);
+    let (n, set_n) = use_state(|| 0u32);
     let startTicking = move || {
         set_n.set(1);
     };
@@ -5300,7 +5300,7 @@ pub struct TopNavProps<'a> {
     pub section: Option<Section>,
 }
 pub fn TopNav(TopNavProps { mut items, crumbs, section }: TopNavProps) -> JSX::Element {
-    let (&open, set_open) = use_state(true);
+    let (&open, set_open) = use_state(|| true);
     if items.len() > 2 {
         items = &items[1..];
     }
@@ -5622,7 +5622,7 @@ pub struct HintProps<'a> {
     pub hint: Option<&'a dyn ReactNode>,
 }
 pub fn Hint(HintProps { hint }: HintProps) -> JSX::Element {
-    let (show_hint, _set_show_hint) = use_state(true);
+    let (show_hint, _set_show_hint) = use_state(|| true);
     jsx! { <div>{if *show_hint { hint } else { None }}</div> }
 }
 `);
@@ -5995,9 +5995,9 @@ pub fn LoadingOverlay(LoadingOverlayProps { dependencies_loading }: LoadingOverl
     dependencies_loading.then(|| jsx! { <p /> })
 }
 pub fn Preview(is_expanded: bool, rawError: Option<&'static ErrorType>) -> JSX::Element {
-    let (bundlerIsReady, _) = use_state(false);
-    let (iframeComputedHeight, _) = use_state::<Option<f64>>(None);
-    let (error, _) = use_state(rawError);
+    let (bundlerIsReady, _) = use_state(|| false);
+    let (iframeComputedHeight, _) = use_state::<Option<f64>>(|| None);
+    let (error, _) = use_state(move || rawError);
     let error = *error;
     jsx! {
         <div>
@@ -6094,7 +6094,7 @@ pub fn Playground(PlaygroundProps { content }: PlaygroundProps) -> JSX::Element 
     jsx! { <pre>{content}</pre> }
 }
 pub fn NavigationBar(activeFile: &'static str, visibleFiles: &'static [String], files: &'static HashMap<&'static str, String>) -> JSX::Element {
-    let (showDropdown, _) = use_state(true);
+    let (showDropdown, _) = use_state(|| true);
     let isMultiFile = visibleFiles.len() > 1;
     jsx! {
         <div>
@@ -6260,7 +6260,7 @@ pub struct SandboxShellProps {
     pub is_expandable: bool,
 }
 pub fn SandboxShell(SandboxShellProps { is_expandable }: SandboxShellProps) -> JSX::Element {
-    let (isExpanded, setIsExpanded) = use_state(false);
+    let (isExpanded, setIsExpanded) = use_state(|| false);
     jsx! {
         <SandpackLayout
             className={Some(&cn(&[
@@ -6420,7 +6420,7 @@ pub fn Button<C: ReactNode>(ButtonProps { children, on_click, class_name }: Butt
     jsx! { <button className={class_name.unwrap_or_default()}>{children}</button> }
 }
 pub fn Example(deep: bool) -> JSX::Element {
-    let (expanded, set_expanded) = use_state(false);
+    let (expanded, set_expanded) = use_state(|| false);
     jsx! {
         <Button
             className={Some(cn(&[deep.then_some("deep"), (!deep).then_some("plain")]).as_str())}
@@ -6634,7 +6634,7 @@ pub fn IconHamburger() -> JSX::Element {
     jsx! { <i /> }
 }
 pub fn Nav() -> JSX::Element {
-    let (&open, set_open) = use_state(false);
+    let (&open, set_open) = use_state(|| false);
     jsx! {
         <div className={cn(&[Some(if open { "wide" } else { "narrow" })])}>
             <button onClick={move |_| set_open.set(!open)} className={cn(&[Some("menu"), open.then_some("open")])}>
@@ -6792,7 +6792,7 @@ pub fn Button<C: ReactNode>(ButtonProps { children, class_name, .. }: ButtonProp
     jsx! { <button className={class_name}>{children}</button> }
 }
 pub fn App(deep: bool) -> JSX::Element {
-    let (is_expanded, set_is_expanded) = use_state(false);
+    let (is_expanded, set_is_expanded) = use_state(|| false);
     jsx! {
         <details open={*is_expanded} className={cn(&[Some("my-12"), deep.then_some("purple")])}>
             <Button

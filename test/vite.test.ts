@@ -56,7 +56,7 @@ test("Vite builds and refreshes an app's Rust as rust-js build writes it, throug
 use react::{JSX, jsx, use_state};
 mod text;
 pub fn App() -> JSX::Element {
-    let (count, set_count) = use_state(0);
+    let (count, set_count) = use_state(|| 0);
     jsx! { <button onClick={move |_| set_count.update(|n| n + 1)}>{text::label()}{count}</button> }
 }
 `;
@@ -122,7 +122,7 @@ test("Tailwind and React Compiler keep Fast Refresh's state", async () => {
   const app = (classes: string) => `#![allow(non_snake_case)]
 use react::{JSX, jsx, use_state};
 pub fn App() -> JSX::Element {
-    let (count, set_count) = use_state(0);
+    let (count, set_count) = use_state(|| 0);
     jsx! {
         <button className="${classes}" onClick={move |_| set_count.update(|n| n + 1)}>
             {"Count "}
@@ -270,7 +270,7 @@ pub struct LabelProps {
 }
 pub fn Label(LabelProps { text }: LabelProps) -> JSX::Element {
     let theme = use_context(&THEME);
-    let (n, set_n) = use_state(0);
+    let (n, set_n) = use_state(|| 0);
     jsx! {
         <button className={*theme} onClick={move |_| set_n.update(|n| n + 1)}>
             {text}
@@ -349,7 +349,7 @@ fn greeting() -> &'static str {
 }
 
 pub fn App() -> JSX::Element {
-    let (count, set_count) = use_state(0);
+    let (count, set_count) = use_state(|| 0);
     jsx! { <button title={greeting()} onClick={move |_| set_count.update(|n| n + 1)}>{models::label()}{count}</button> }
 }
 `;

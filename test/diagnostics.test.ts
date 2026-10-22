@@ -35,6 +35,7 @@ for (const [name, source, message, crate] of [
   // A binding's nullable parameter is one of its own, an `Option` (ADR 0275).
   ["a nullable parameter that isn't an Option", '#[rust_js::link_name = "f"]\n#[rust_js::nullable(n)]\n#[allow(unused_variables)]\npub fn f(n: u32) {}', "names no parameter of this function that's an `Option`"],
   ["a nullable field that isn't an Option", "pub struct Task {\n    #[rust_js::nullable]\n    pub callback: std::cell::RefCell<Option<u32>>,\n}", "is of a field that's an `Option`"],
+  ["a lazy parameter that isn't there", '#[rust_js::link_name = "f"]\n#[rust_js::lazy(init)]\n#[allow(unused_variables)]\npub fn f(initial: impl FnOnce() -> u32) {}', "`#[rust_js::lazy(init)]` names no parameter of this function"],
   ["a nullable parameter that isn't there", '#[rust_js::link_name = "f"]\n#[rust_js::nullable(m)]\n#[allow(unused_variables)]\npub fn f(n: Option<u32>) {}', "`#[rust_js::nullable(m)]` names no parameter"],
   // A discriminated union's variants are named fields beside its tag (ADR 0284).
   ["a tagged enum's tuple variant", '#[rust_js::tag = "kind"]\npub enum E { A(u32) }\npub fn f() -> E { E::A(1) }', "has a tuple variant, whose fields have no names"],

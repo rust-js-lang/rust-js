@@ -236,7 +236,7 @@ pub fn wide_rect() -> Shape {
 }
 
 pub fn use_clicks() -> u32 {
-    let (clicks, _) = use_state(0u32);
+    let (clicks, _) = use_state(|| 0u32);
     *clicks
 }
 
@@ -328,4 +328,37 @@ pub fn full_name(person: &Person) -> String {
   expect(module.greet("Ada")).toBe("Ada Doe");
   expect(module.rectWidth(module.wideRect())).toBe(3);
   expect((await import(join(dir, "people.js"))).makePerson("Ada")).toEqual({ firstName: "Ada", lastName: "Doe" });
+});
+
+// ADR 0593: `use_state` takes what makes the first state, as rescript-react's
+// does, so state of any type, a function's too, is React's. A closure whose
+// body does nothing and gives no function is its value: `useState(0)`; a
+// function given is itself; one that computes stays the closure, made on
+// the first render only; and one that gives a function stays one, as React
+// would otherwise call that function for the state.
+test("use_state's first state is what its closure gives", async () => {
+  const { fixture, compiler, run } = await import("./support");
+  const { writeFileSync, readFileSync } = await import("node:fs");
+  buildReact();
+  const dir = fixture("lazy-state");
+  writeFileSync(join(dir, "lib.rs"), `use react::{JSX, jsx, use_state};
+
+fn load() -> Vec<String> {
+    vec![String::from("a")]
+}
+
+pub fn Counter() -> JSX::Element {
+    let (count, set_count) = use_state(|| 0);
+    let (notes, _) = use_state(load);
+    let (size, _) = use_state(|| load().len());
+    let (bump, _) = use_state(|| |n: u32| n + 1);
+    jsx! { <p onClick={move |_| set_count.set(count + bump(*size as u32))}>{notes.len()}</p> }
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `react=${join(target, "libreact.rmeta")}`, "-L", target]);
+  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(jsx).toContain("const [count, setCount] = useState(0);");
+  expect(jsx).toContain("const [notes] = useState(load);");
+  expect(jsx).toContain("useState(() => load().length);");
+  expect(jsx).toContain("useState(() => (n) => (n + 1) >>> 0);");
 });

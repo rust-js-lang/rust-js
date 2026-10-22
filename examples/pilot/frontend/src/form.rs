@@ -18,11 +18,11 @@ fn message(errors: &[FieldError], field: &str) -> Option<String> {
 }
 
 pub fn NewContactForm() -> JSX::Element {
-    let (name, set_name) = use_state(String::new());
-    let (email, set_email) = use_state(String::new());
-    let (age, set_age) = use_state(String::new());
-    let (errors, set_errors) = use_state(Vec::<FieldError>::new());
-    let (sending, set_sending) = use_state(false);
+    let (name, set_name) = use_state(|| String::new());
+    let (email, set_email) = use_state(|| String::new());
+    let (age, set_age) = use_state(|| String::new());
+    let (errors, set_errors) = use_state(|| Vec::<FieldError>::new());
+    let (sending, set_sending) = use_state(|| false);
     let submit = move |e: &SubmitEvent<_>| {
         e.prevent_default();
         // Every field's error at once: an age that isn't a number is one.

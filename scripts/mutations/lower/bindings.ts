@@ -294,4 +294,12 @@ export const mutations: Mutation[] = [
     replace: "                if false\n                    && !matches!(ty.kind(), ty::Adt(adt, _) if tcx.is_lang_item(adt.did(), LangItem::Option))\n",
     tests: ["test/diagnostics.test.ts", "-t", "nullable field"],
   },
+  {
+    name: "lazy-param-unchecked",
+    breaks: "`#[rust_js::lazy(..)]` naming no parameter compiles, and makes nothing lazy",
+    file: "src/lower/bindings.rs",
+    find: "                if !idents.iter().any(|ident| ident.is_some_and(|ident| ident.name == name)) {\n",
+    replace: "                if false {\n",
+    tests: ["test/diagnostics.test.ts", "-t", "lazy parameter"],
+  },
 ];

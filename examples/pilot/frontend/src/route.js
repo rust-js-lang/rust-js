@@ -34,7 +34,7 @@ export function go(to) {
 
 /** The route, and a render each time it changes. */
 export function useRoute() {
-  const [current, setCurrent] = useState(hash());
+  const [current, setCurrent] = useState(() => hash());
   useEffect(() => {
     const controller = new AbortController();
     // It's removed when the effect is cleaned up: its signal aborts.

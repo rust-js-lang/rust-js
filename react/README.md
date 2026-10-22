@@ -10,7 +10,7 @@ whichever React from 18.0 on your project has installed
 use react::{JSX, jsx, use_state};
 
 pub fn App() -> JSX::Element {
-    let (count, set_count) = use_state(0);
+    let (count, set_count) = use_state(|| 0);
     jsx! {
         <button className="counter" onClick={move |_| set_count.update(|count| count + 1)}>
             {"Count is "}{count}
@@ -58,8 +58,8 @@ field `on_press` is the prop `onPress`, written `onPress={..}` in `jsx!`
 and only so, and a `pub fn use_clicks()` is the hook `useClicks`, which
 React's rules and React Compiler find by that name ([ADR 0573](../docs/decisions/0573-every-rust-name-is-camel-case-in-js.md)).
 
-**Hooks** are React's, in snake case, with a `_with` variant for an optional
-argument: `use_state`, `use_reducer`, `use_context`, `use_ref`,
+**Hooks** are React's, in snake case, an optional argument an `Option`
+(the guide's [hooks](../docs/guide/react/hooks.md)): `use_state`, `use_reducer`, `use_context`, `use_ref`,
 `use_imperative_handle`, `use_effect`, `use_layout_effect`,
 `use_insertion_effect`, `use_effect_event`, `use_memo`, `use_callback`,
 `use_transition`, `use_deferred_value`, `use_id`, `use_sync_external_store`,

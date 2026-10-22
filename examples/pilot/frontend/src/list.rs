@@ -16,9 +16,9 @@ enum Loaded {
 }
 
 pub fn ContactList() -> JSX::Element {
-    let (query, set_query) = use_state(String::new());
-    let (loaded, set_loaded) = use_state(Loaded::Loading);
-    let (attempt, set_attempt) = use_state(0);
+    let (query, set_query) = use_state(|| String::new());
+    let (loaded, set_loaded) = use_state(|| Loaded::Loading);
+    let (attempt, set_attempt) = use_state(|| 0);
     use_effect(
         move || {
             let controller = abort_controller::new();
