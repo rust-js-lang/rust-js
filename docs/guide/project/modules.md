@@ -232,7 +232,22 @@ export { greetAll as unstable_greet };
 ```
 
 A module of only `pub use`s is a file of them, as an `index.js` is. A
-`pub use` of a binding re-exports from the JS module it binds.
+`pub use` of a binding re-exports from the JS module it binds; of a
+global's, `Object.keys`, it's the module's `const`, the JS function as
+it is, declared as the global's own type
+([ADR 0622](../../decisions/0622-a-global-binding-a-module-names-is-its-const.md)):
+
+```rust
+pub use js::object::keys;
+```
+
+```js
+export const keys = Object.keys;
+```
+
+```ts
+export const keys: typeof Object.keys;
+```
 
 ## The default export
 
@@ -271,7 +286,21 @@ export default function noop() {}
 
 Another module's function as the default is re-exported:
 `js::export_default!(super::page::page);` is
-`export { page as default } from "./page.js";`.
+`export { page as default } from "./page.js";`. A global's binding the
+module `use`s is its `const`, as a `pub use` of one is
+([ADR 0622](../../decisions/0622-a-global-binding-a-module-names-is-its-const.md)):
+
+```rust
+use js::object::assign;
+
+js::export_default!(assign);
+```
+
+```js
+const assign = Object.assign;
+
+export default assign;
+```
 
 ## Import a module for its effect
 

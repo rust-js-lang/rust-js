@@ -727,6 +727,10 @@ pub fn lower_crate<'tcx>(
                     Some(function) if unset && fns.get(&function).is_some_and(|info| info.owner.is_none()) => {
                         default_from = Some(function);
                     }
+                    // A global binding, its `const` (ADR 0622).
+                    Some(function) if unset && super::bindings::global_function(tcx, function).is_some() => {
+                        default_export = Some(function);
+                    }
                     _ => {
                         tcx.dcx().span_err(
                             span,
@@ -736,6 +740,18 @@ pub fn lower_crate<'tcx>(
                 }
             }
             let (reexports, aliases) = reexports(tcx, module, &fns, &paths, default_from);
+            // A global binding it names as a value, its `const` (ADR 0622).
+            let globals = super::bindings::bound_globals(tcx, module, default_export);
+            const_items
+                .entry(module)
+                .or_default()
+                .extend(globals.into_iter().map(|bound| js::Const {
+                    name: bound.name,
+                    value: super::global(&bound.global),
+                    export: bound.export,
+                    mutable: false,
+                    span: bound.span.map_or(js::Span::NONE, |span| sources.span(span)),
+                }));
             let no_plain = HashSet::new();
             let plain_ref_cells = plain_ref_cells.get().unwrap_or(&no_plain);
             let declarations = super::declarations::module(

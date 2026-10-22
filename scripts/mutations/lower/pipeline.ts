@@ -102,8 +102,8 @@ export const mutations: Mutation[] = [
     name: "default-export-unwritten",
     breaks: "a Rust route's module has no default export, which Next.js takes as its page",
     file: "src/lower/pipeline.rs",
-    find: "                        default_export = Some(function);",
-    replace: "                        let _ = function;",
+    find: "                        default_export = Some(function);\n                        default_declared",
+    replace: "                        let _ = function;\n                        default_declared",
     tests: ["test/modules.test.ts", "-t", "make a module a Next.js route"],
   },
   {
@@ -415,5 +415,13 @@ export const mutations: Mutation[] = [
     find: "(consts.iter()).any(|c| !pass.dictionary_names.contains(&c.name) && c.value.has_effects())",
     replace: "(consts.iter()).any(|c| c.value.has_effects())",
     tests: ["test/lowering.test.ts", "-t", "a dictionary that takes nothing"],
+  },
+  {
+    name: "bound-global-default-refused",
+    breaks: "`js::export_default!(assign)` of a global binding is refused as no function of its module's",
+    file: "src/lower/pipeline.rs",
+    find: "                    Some(function) if unset && super::bindings::global_function(tcx, function).is_some() => {\n",
+    replace: "                    Some(function) if false && unset && super::bindings::global_function(tcx, function).is_some() => {\n",
+    tests: ["test/lowering.test.ts", "-t", "a global binding a module names"],
   },
 ];

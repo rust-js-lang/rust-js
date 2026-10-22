@@ -576,4 +576,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/declarations.test.ts", "-t", "transparent struct is declared"],
   },
+  {
+    name: "bound-global-undeclared",
+    breaks: "a module's `const assign = Object.assign` isn't declared, so its `.d.ts`'s `export default assign` names nothing",
+    file: "src/lower/declarations.rs",
+    find: "    for bound in super::bindings::bound_globals(tcx, module, default_export) {\n",
+    replace: "    for bound in super::bindings::bound_globals(tcx, module, default_export).into_iter().take(0) {\n",
+    tests: ["test/declarations.test.ts", "-t", "a global binding a module names"],
+  },
 ];

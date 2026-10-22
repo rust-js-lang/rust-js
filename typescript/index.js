@@ -42,6 +42,7 @@ import * as f from "typescript/ast/factory";
  *   | { kind: "tuple", elements: Type[] }
  *   | { kind: "function", typeParameters: TypeParameter[], params: Param[], returns: Type }
  *   | { kind: "object", members: Member[] }
+ *   | { kind: "typeof", name: string }
  *   | { kind: "other", text: string }} Type
  */
 
@@ -397,6 +398,9 @@ function readType(node, text) {
       };
     case SyntaxKind.TypeLiteral:
       return { kind: "object", members: node.members.map((m) => readMember(m, text)) };
+    case SyntaxKind.TypeQuery:
+      if (node.typeArguments) return { kind: "other", text: sourceOf(node, text) };
+      return { kind: "typeof", name: sourceOf(node.exprName, text) };
     default:
       return { kind: "other", text: sourceOf(node, text) };
   }
@@ -617,6 +621,9 @@ function typeNode(t) {
       return f.createFunctionTypeNode(typeParameterNodes(t.typeParameters), t.params.map(param), typeNode(t.returns));
     case "object":
       return f.createTypeLiteralNode(t.members.map(member));
+    case "typeof":
+      // A global's type, `typeof Object.assign`, its overloads too (ADR 0622).
+      return f.createTypeQueryNode(entity(t.name));
     case "other":
       // What the model doesn't take apart, as it was written.
       return f.createTypeReferenceNode(id(t.text), undefined);

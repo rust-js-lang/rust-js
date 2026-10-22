@@ -317,6 +317,77 @@ pub(super) fn js_form(tcx: TyCtxt<'_>, def_id: DefId) -> JsForm {
     JsForm::Call(name)
 }
 
+/// A global binding a module names as a value of its own (ADR 0622).
+pub(super) struct BoundGlobal {
+    /// Its name in the module, the `use`'s.
+    pub(super) name: String,
+    /// The global it is, `Object.assign`.
+    pub(super) global: String,
+    /// Whether a `pub use` names it, so the module exports it.
+    pub(super) export: bool,
+    /// The `use` that names it.
+    pub(super) span: Option<Span>,
+}
+
+/// Each global binding `module` names as a value of its own, its default
+/// or a `pub use`: its `const`, the JS function as it is, `const assign =
+/// Object.assign;`, which a JS caller calls with JS's arguments, exported
+/// where it's a `pub use`'s (ADR 0622). Its JS and its `.d.ts` ask this.
+pub(super) fn bound_globals(tcx: TyCtxt<'_>, module: LocalModId, default: Option<DefId>) -> Vec<BoundGlobal> {
+    let mut bound: Vec<BoundGlobal> = Vec::new();
+    let mut add = |function: DefId, name: String, export: bool, span: Option<Span>| {
+        let Some(global) = global_function(tcx, function) else {
+            return;
+        };
+        match bound.iter_mut().find(|b| b.name == name) {
+            Some(made) => made.export |= export,
+            None => bound.push(BoundGlobal {
+                name,
+                global,
+                export,
+                span,
+            }),
+        }
+    };
+    // Where its `use` is, that names it; the default by its own name.
+    for id in tcx.hir_module_items(module).free_items() {
+        let item = tcx.hir_item(id);
+        if let ItemKind::Use(path, rustc_hir::UseKind::Single(ident)) = item.kind
+            && let Some(Res::Def(_, function)) = path.res.value_ns
+        {
+            let export = super::analysis::is_reexport(tcx, item);
+            let name = match ident.name == tcx.item_name(function) {
+                true => fn_name(tcx, function),
+                false => alias_name(tcx, item.owner_id.to_def_id(), ident.name),
+            };
+            if export || (default == Some(function) && name == fn_name(tcx, function)) {
+                add(function, name, export, Some(item.span));
+            }
+        }
+    }
+    if let Some(function) = default {
+        add(function, fn_name(tcx, function), false, None);
+    }
+    bound
+}
+
+/// The global a binding is, a function that's no JS module's import and
+/// no method, `Object.assign`: what a module that names it as a value of
+/// its own, its default or a `pub use`, holds as its `const` (ADR 0622).
+pub(super) fn global_function(tcx: TyCtxt<'_>, def_id: DefId) -> Option<String> {
+    match js_form(tcx, def_id) {
+        JsForm::Call(name)
+            if tcx.def_kind(def_id) == DefKind::Fn
+                && is_binding(tcx, def_id)
+                && !is_method(tcx, def_id)
+                && js_import(&name).is_none() =>
+        {
+            Some(name)
+        }
+        _ => None,
+    }
+}
+
 /// The path a JS item is reached by, if it isn't a method or a property:
 /// `document`, `console.log`, `Event` for `new Event`, or an import like
 /// `node:path#join`.

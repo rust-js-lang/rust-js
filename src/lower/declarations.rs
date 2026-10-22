@@ -69,6 +69,17 @@ pub(super) fn module<'tcx>(
         };
         items.extend(declaration.map(|declaration| documented(declaration, tcx, def_id)));
     }
+    // A global binding it names as a value, `typeof Object.assign`, as
+    // TypeScript has it (ADR 0622).
+    for bound in super::bindings::bound_globals(tcx, module, default_export) {
+        items.push(json!({
+            "kind": "const",
+            "name": bound.name,
+            "type": { "kind": "typeof", "name": bound.global },
+            "exported": bound.export,
+            "declare": !bound.export,
+        }));
+    }
     if let Some(def_id) = default_export {
         // One only `js::export_default!` exports is declared, but exported
         // by no name of its own, as `function Recap() {..}` is in JS.

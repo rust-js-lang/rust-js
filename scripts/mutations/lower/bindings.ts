@@ -334,4 +334,28 @@ export const mutations: Mutation[] = [
     replace: "                if false {\n",
     tests: ["test/diagnostics.test.ts", "-t", "lazy parameter"],
   },
+  {
+    name: "bound-global-unexported",
+    breaks: "a `pub use` of a global binding is its module's `const`, but not exported",
+    file: "src/lower/bindings.rs",
+    find: "            Some(made) => made.export |= export,\n            None => bound.push(BoundGlobal {\n                name,\n                global,\n                export,\n",
+    replace: "            Some(made) => made.export |= export,\n            None => bound.push(BoundGlobal {\n                name,\n                global,\n                export: false,\n",
+    tests: ["test/lowering.test.ts", "-t", "a global binding a module names"],
+  },
+  {
+    name: "bound-global-renamed-lost",
+    breaks: "`pub use js::object::keys as names` is `keys`, not `names`",
+    file: "src/lower/bindings.rs",
+    find: "                false => alias_name(tcx, item.owner_id.to_def_id(), ident.name),\n            };\n            if export || (default == Some(function)",
+    replace: "                false => fn_name(tcx, function),\n            };\n            if export || (default == Some(function)",
+    tests: ["test/lowering.test.ts", "-t", "a global binding a module names"],
+  },
+  {
+    name: "bound-global-of-a-method",
+    breaks: "a method binding, `this.name(..)`, is taken for a global function a module can hold",
+    file: "src/lower/bindings.rs",
+    find: "                && !is_method(tcx, def_id)\n                && js_import(&name).is_none() =>\n",
+    replace: "                && js_import(&name).is_none() =>\n",
+    tests: ["test/lowering.test.ts", "-t", "a global binding a module names"],
+  },
 ];

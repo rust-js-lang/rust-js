@@ -1250,6 +1250,15 @@ pub mod object {
         unreachable!()
     }
 
+    /// [`Object.assign(target, ...sources)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object/assign):
+    /// each source's own enumerable properties set on `target`, in order,
+    /// a `None` source, `null` or `undefined`, skipped; `target`.
+    #[cfg_attr(rust_js, rust_js::link_name = "Object.assign")]
+    #[cfg_attr(rust_js, rust_js::variadic)]
+    pub fn assign<'a>(target: &'a Unknown, sources: &[Option<&Unknown>]) -> &'a Unknown {
+        unreachable!()
+    }
+
     /// [`Object.getPrototypeOf(value)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object/getPrototypeOf):
     /// the object `value` inherits from, or `None`, `null`, of one that
     /// inherits from none, `Object.create(null)`'s.

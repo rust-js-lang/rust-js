@@ -620,6 +620,29 @@ test("declarations give an impl Trait parameter of no TypeScript type unknown", 
   expect(declarations).toContain("export function size(value: unknown): number;");
 });
 
+// A global binding a module names, as its default or by `pub use`, is
+// declared as the global's own type, `typeof Object.assign`, its overloads
+// too, which a TypeScript caller is checked against (ADR 0622).
+test("declarations give a global binding a module names its global's type", () => {
+  buildReact();
+  const dir = fixture("declarations-bound-globals");
+  writeFileSync(join(dir, "Cargo.toml"), '[package]\nname = "app"\nversion = "0.0.0"\nedition = "2024"\n');
+  writeFileSync(join(dir, "lib.rs"), "pub mod assign;\npub mod keys;\n");
+  writeFileSync(join(dir, "assign.rs"), "use js::object::assign;\n\njs::export_default!(assign);\n");
+  writeFileSync(join(dir, "keys.rs"), "pub use js::object::keys;\n");
+  run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  expect(readFileSync(join(dir, "assign.d.ts"), "utf8")).toContain("declare const assign: typeof Object.assign;\n\nexport default assign;\n");
+  expect(readFileSync(join(dir, "keys.d.ts"), "utf8")).toContain("export const keys: typeof Object.keys;\n");
+  writeFileSync(join(dir, "use.ts"), `import assign from "./assign.js";
+import { keys } from "./keys.js";
+export const merged: { a: number } & { b: string } = assign({ a: 1 }, { b: "b" });
+export const names: string[] = keys({ x: 1 });
+export const wrong: string = assign({ a: 1 }, { b: 2 });
+`);
+  const errors = typeChecked(dir, "use.ts");
+  expect(errors.map((error) => error.slice(0, error.indexOf(":")))).toEqual(["use.ts(5,14)"]);
+});
+
 // A parameter named as a word JS keeps, `new`, is declared as the JS names
 // it, `new$`: TypeScript reads no parameter `new`. Found by the pilot's
 // `create(new: &NewContact)` once every build wrote declarations.

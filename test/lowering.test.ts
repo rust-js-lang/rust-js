@@ -5296,6 +5296,43 @@ pub fn replaced_any(items: &mut Vec<u32>, i: usize, x: u32) -> u32 {
   expect(() => lib.replacedAny([1], 2, 0)).toThrow("index out of bounds");
 });
 
+// ADR 0622: a global binding a module names, as its default or by `pub
+// use`, is the module's `const`, the JS function as it is, which JS calls
+// with its own arguments: React's `const assign = Object.assign; export
+// default assign;`.
+test("a global binding a module names as its default or by pub use is its const", async () => {
+  const dir = fixture("bound-globals");
+  writeFileSync(join(dir, "lib.rs"), `pub mod assign;
+pub mod keys;
+
+mod bound {
+    #[cfg_attr(rust_js, rust_js::link_name = "toUpperCase")]
+    pub fn to_upper(this: &str) -> String {
+        let _ = this;
+        unreachable!()
+    }
+}
+`);
+  writeFileSync(join(dir, "assign.rs"), `use js::object::assign;
+
+js::export_default!(assign);
+`);
+  writeFileSync(join(dir, "keys.rs"), `pub use crate::bound::to_upper;
+pub use js::object::keys;
+pub use js::object::keys as names;
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const assign = readFileSync(join(dir, "assign.js"), "utf8");
+  expect(assign).toContain("\nconst assign = Object.assign;\n\nexport default assign;\n");
+  const keys = readFileSync(join(dir, "keys.js"), "utf8");
+  expect(keys).toContain("\nexport const keys = Object.keys;\nexport const names = Object.keys;\n");
+  // A method's binding is no global to hold.
+  expect(keys).not.toContain("toUpper");
+  const merged = (await import(join(dir, "assign.js"))).default({}, { a: 1 }, null, { b: 2 });
+  expect(merged).toEqual({ a: 1, b: 2 });
+  expect((await import(join(dir, "keys.js"))).names({ x: 1 })).toEqual(["x"]);
+});
+
 // ADR 0620: a nullable result of an `Option` a test it's under says is
 // there, `typeof x === "function"`, is written as it is, with no `?? null`:
 // React's `getIteratorFn`. Where the test fails, `x == null`'s, so after it.

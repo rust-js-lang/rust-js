@@ -28,6 +28,8 @@ export const Icon: [
     }
 ];
 
+export const assign: typeof Object.assign;
+
 declare namespace React {
     type Handler = (event: string) => void;
 }
@@ -42,7 +44,7 @@ test("read gives a file's declarations, by TypeScript's own parser", async () =>
   const ts = await open([file]);
   try {
     const { declarations: read } = await ts.read(file);
-    expect(read.map((d) => d.kind)).toEqual(["import", "interface", "type", "function", "const", "namespace", "export-default"]);
+    expect(read.map((d) => d.kind)).toEqual(["import", "interface", "type", "function", "const", "const", "namespace", "export-default"]);
     expect(read[0]).toEqual({ kind: "import", from: "react", names: ["ReactNode"], typeOnly: true });
     expect(read[1]).toEqual({
       kind: "interface",
@@ -77,6 +79,8 @@ test("read gives a file's declarations, by TypeScript's own parser", async () =>
         },
       ],
     });
+    // A global's type, its overloads too (ADR 0622).
+    expect(read[5]).toMatchObject({ name: "assign", type: { kind: "typeof", name: "Object.assign" } });
     expect(read[3]).toMatchObject({ typeParameters: [{ name: "C", constraint: { kind: "reference", name: "ReactNode", args: [] } }] });
     expect(read[2]).toMatchObject({
       type: {
