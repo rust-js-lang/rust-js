@@ -72,3 +72,14 @@ cloned".
   with its closures.
 - Mutations stop seeing clones, share what can tell, keep what the clone
   takes, drop by the maker's variables, and drop `drop(f)`'s twice.
+
+## Amendment: what's returned as `impl Trait + Clone` is cloned as what it is
+
+`clone_value` read the type as it's written, and a value returned as
+`impl Trait + Clone` is an opaque type, which its walks know nothing of:
+a clone of it was the value itself, `const b = a`, a struct's and a
+closure's alike, so changing one changed both (#100). The type is
+revealed first, and the clone is the struct's or the closure's,
+`$clone(tick)` of a closure cloned apart. ADR 0262's case: results would
+change, so Rust's. Held by `test/corpus/impl_trait_clone.rs` and the
+mutation `clone-value-opaque-unrevealed`.
