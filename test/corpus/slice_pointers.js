@@ -42,6 +42,14 @@ function takenIterator_next(taken, dropT) {
   return $nextSome(taken.iter);
 }
 
+/**
+ * The same of a value JS holds as itself, a number: a cell of it, which
+ * reads the same, where its place has no name in JS.
+ */
+function readAll(items) {
+  return items.slice();
+}
+
 /** A `&mut`'s, only read through: where it is matters to nothing. */
 function peeked(count) {
   count.value = (count.value + 1) >>> 0;
@@ -102,6 +110,7 @@ function main() {
   console.log(`[${bytes.join(", ")}]`);
   const taken = $iterator({ iter: $iter([4, 5, 6]) }, takenIterator_next, true).toArray();
   console.log(`[${taken.join(", ")}]`);
+  console.log(`[${readAll([7, 8]).join(", ")}]`);
   droppedTail();
   let count = 4;
   const count$1 = { value: count };
