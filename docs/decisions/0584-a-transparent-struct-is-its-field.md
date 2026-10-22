@@ -81,3 +81,15 @@ A struct of std's that's `#[repr(transparent)]`, a `Cell` or a
 - Mutations: a transparent struct an array again, its marker taken as its
   field, a `&mut` to it a cell, a constant's an array, a `transmute`
   refused.
+
+## Amendment: its constructor as a function
+
+`adt_value` made a transparent struct its field, but its constructor
+passed as a function, `.map(Self)`, went through `constructor_value`,
+which built an object of the struct's shape, its field's: smallvec's
+`NonNull::new(ptr).map(Self)` was `p ? { pointer: p } : undefined`, which
+`as_ptr`, reading the struct as its field, gave `$ptrSlice` as a
+pointer, and smallvec's probe threw (#122, bisected to this ADR's
+commit). `constructor_value` makes it its field too: `.map(Meters)` gives
+what it's given. Held by `test/corpus/transparent_constructor_value.rs`
+and the mutation `transparent-constructor-value-shaped`.

@@ -221,7 +221,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             count => (0..count).map(|i| format!("_{i}")).collect(),
         };
         let items: Vec<Expr> = params.iter().map(|name| Expr::var(name)).collect();
-        let value = if self.untagged(ty).is_some() || bindings::is_tagged_otherwise(self.tcx, adt_def.did(), variant) {
+        // A `#[repr(transparent)]` struct is its field, as `adt_value` makes
+        // one (ADR 0584): `.map(Wrap)` gives what it's given.
+        let transparent = self
+            .transparent(ty)
+            .is_some()
+            .then(|| super::recognition::transparent_field(self.tcx, adt_def).unwrap_or(0));
+        let value = if let Some(at) = transparent
+            && at < items.len()
+        {
+            items[at].clone()
+        } else if self.untagged(ty).is_some() || bindings::is_tagged_otherwise(self.tcx, adt_def.did(), variant) {
             // An untagged enum's variant is its payload (ADR 0214), and a
             // discriminated union's `otherwise` the object it holds (ADR 0284).
             let [item] = <[Expr; 1]>::try_from(items).map_err(|_| self.unsupported(span, "this constructor"))?;
