@@ -170,4 +170,12 @@ export const mutations: Mutation[] = [
     replace: "                Expr::bin(Op::Div, Expr::bin(Op::Add, arg(), arg()), Expr::int(2))\n",
     tests: ["test/corpus.test.ts", "-t", "^float_methods_more.rs$"],
   },
+  {
+    name: "saturating-neg-negative-zero",
+    breaks: "`saturating_neg` of 0 is JS's `-0`, `Math.min(-0, MAX)`, which an `f64` made of it shows",
+    file: "src/lower/std_types/number.rs",
+    find: "                if zero { Expr::bin(Op::BitOr, saturated, Expr::int(0)) } else { saturated }\n",
+    replace: "                saturated\n",
+    tests: ["test/corpus.test.ts", "-t", "^product_sign.rs$"],
+  },
 ];

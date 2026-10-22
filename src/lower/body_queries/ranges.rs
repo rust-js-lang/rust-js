@@ -113,6 +113,13 @@ impl Range {
         (self.lo == self.hi).then_some(self.lo)
     }
 
+    /// Whether a product of this and `other` can be JS's `-0`: one of them
+    /// 0, the other below it, `-4 * 0`, which an integer never is.
+    fn may_make_negative_zero(&self, other: &Range) -> bool {
+        let zero = |r: &Range| r.lo <= 0 && 0 <= r.hi;
+        zero(self) && other.lo < 0 || zero(other) && self.lo < 0
+    }
+
     fn join(&self, other: &Range) -> Range {
         Range {
             lo: self.lo.min(other.lo),
@@ -1199,7 +1206,8 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
         };
         let within = made.filter(|m| m.lo >= lo && m.hi <= hi);
         if matches!(op, BinOp::Add | BinOp::Sub | BinOp::Mul) {
-            *self.ops.entry(site).or_insert(true) &= within.is_some();
+            *self.ops.entry(site).or_insert(true) &=
+                within.is_some() && !(op == BinOp::Mul && l.may_make_negative_zero(r));
         }
         // What wraps is anything in its type.
         within.unwrap_or(Range::of(lo, hi))
