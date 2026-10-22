@@ -624,6 +624,15 @@ test("the dispatchers of what's called don't grow", () => {
   }
 });
 
+// Which std collections a JS array is, `VEC_LIKE`, is one list's: the
+// analysis of what a change makes apart kept one of its own, without
+// `LinkedList`, so its clone was the same array.
+test("the std collections a JS array is are one list's", () => {
+  const listed = /StdItem::VecDeque,\s*StdItem::BinaryHeap/;
+  const writers = ["src/lower.rs", ...files("src/lower")].filter(file => listed.test(read(file)));
+  expect(writers).toEqual(["src/lower/recognition/types.rs"]);
+});
+
 // Which operator a std trait is, `Add`'s `+`, is one list's, `value_operator`'s
 // and `assign_operator`'s, which the rest ask: recognition wrote both
 // lists again, the second answer to the same question.

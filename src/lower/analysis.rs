@@ -980,7 +980,7 @@ fn changed_vecs<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&Body<'tcx>]) -> HashSet<
                 arg,
             } = expr.kind
                 && let ty = body.thir[arg].ty
-                && matches!(ty.kind(), ty::Adt(adt, _) if [StdItem::Vec, StdItem::VecDeque, StdItem::BinaryHeap].into_iter().any(|item| is_std_def(tcx, adt.did(), item)))
+                && matches!(ty.kind(), ty::Adt(adt, _) if super::recognition::is_vec_like_def(tcx, adt.did()))
             {
                 changed.insert(ty);
             }

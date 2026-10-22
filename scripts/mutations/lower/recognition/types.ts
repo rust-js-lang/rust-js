@@ -46,8 +46,8 @@ export const mutations: Mutation[] = [
     name: "linked-list-not-array",
     breaks: "a `LinkedList` is its nodes' raw pointers, refused, not an array",
     file: "src/lower/recognition/types.rs",
-    find: "            || [StdItem::VecDeque, StdItem::BinaryHeap, StdItem::LinkedList]\n",
-    replace: "            || [StdItem::VecDeque, StdItem::BinaryHeap]\n",
+    find: "    StdItem::LinkedList,\n];\n",
+    replace: "];\n",
     tests: ["test/corpus.test.ts","-t","linked_lists"],
   },
   {

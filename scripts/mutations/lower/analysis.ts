@@ -262,4 +262,12 @@ export const mutations: Mutation[] = [
     replace: "                false\n                    || (tcx.trait_of_assoc",
     tests: ["test/corpus.test.ts", "-t", "^(impl_const_string|generic_impl_consts)\\.rs$"],
   },
+  {
+    name: "changed-vecs-without-lists",
+    breaks: "a clone of a `LinkedList` changed after is the same array, as only a `Vec`'s change is seen",
+    file: "src/lower/analysis.rs",
+    find: "                && matches!(ty.kind(), ty::Adt(adt, _) if super::recognition::is_vec_like_def(tcx, adt.did()))",
+    replace: "                && matches!(ty.kind(), ty::Adt(adt, _) if is_std_def(tcx, adt.did(), StdItem::Vec))",
+    tests: ["test/corpus.test.ts", "-t", "^linked_list_clone.rs$"],
+  },
 ];

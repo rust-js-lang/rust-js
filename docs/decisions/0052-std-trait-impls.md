@@ -161,3 +161,12 @@ depth, an enum's variant's too, of every pattern, a `let` statement's
 included: one walk, where the enum's were two arms of their own. Held by
 `test/corpus/ref_mut_bindings_copied.rs` and the mutation
 `ref-mut-holders-unseen`.
+
+## Amendment: a `LinkedList`'s clone
+
+Which std collections are a JS array was two lists: `is_vec_like`'s, of
+`Vec`, `VecDeque`, `BinaryHeap` and `LinkedList`, and the analysis of
+which are changed, of all but `LinkedList`, so a clone of one changed
+after was the same array (#157). `VEC_LIKE` is the one list, which both
+ask, and the architecture test holds it. Held by
+`test/corpus/linked_list_clone.rs`.
