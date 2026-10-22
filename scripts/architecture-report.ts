@@ -5,6 +5,7 @@
 //   bun scripts/architecture-report.ts
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
+import { fileSizes } from "./file-sizes.ts";
 
 const root = join(import.meta.dir, "..");
 const files: string[] = [];
@@ -24,11 +25,9 @@ const section = (title: string, lines: string[]) => console.log(`\n## ${title}\n
 
 section(
   "Largest modules, in lines",
-  names
-    .map(name => [name, sources.get(name)!.split("\n").length] as const)
-    .sort((a, b) => b[1] - a[1])
+  fileSizes(["src/lower", "src/lower.rs"])
     .slice(0, 15)
-    .map(([name, lines]) => `${String(lines).padStart(5)}  ${name}`),
+    .map(([file, lines]) => `${String(lines).padStart(5)}  ${file.replace("src/lower/", "")}`),
 );
 
 // Each function's state is grouped by concern, and each group has an owner.

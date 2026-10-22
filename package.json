@@ -57,6 +57,7 @@
     "port": "bun scripts/port.ts",
     "timings": "bun scripts/timing.ts",
     "architecture": "bun scripts/architecture-report.ts",
+    "file-sizes": "bun scripts/file-sizes.ts",
     "matrix": "bun scripts/matrix.ts",
     "runtime": "cargo build && ./target/debug/rust-js --runtime-module > runtime/index.js",
     "std": "cargo build && ./target/debug/rust-js std/lib.rs -o std/index.js --library --manifest std/manifest.json --std-bodies -- --crate-name rust_js_std"
