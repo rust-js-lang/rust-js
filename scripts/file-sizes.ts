@@ -4,6 +4,7 @@
 // built or ignored.
 //
 //   bun run file-sizes             the compiler: src/ and build.rs
+//   bun run file-sizes 'test/*.ts' the tests' own code
 //   bun run file-sizes src/lower   any files or folders instead
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -13,8 +14,10 @@ const SOURCE = /\.(rs|ts|tsx|js|mjs)$/;
 // The cap on a compiler file's lines, which test/architecture.test.ts holds
 // (ADR 0572): a file past it is one to split by concept.
 export const LARGE = 1500;
-// What the cap is held over, the compiler.
+// What the cap is held over, the compiler, and the tests' own code: what's
+// written by hand to read and change, not a snapshot the compiler wrote.
 export const COMPILER = ["src", "build.rs"];
+export const TESTS = ["test/*.ts"];
 
 // The lines in a file, as `wc -l` counts them plus an unterminated last one.
 export const lineCount = (text: string) => text.split("\n").length - (text.endsWith("\n") || text === "" ? 1 : 0);

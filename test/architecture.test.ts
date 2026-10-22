@@ -986,3 +986,27 @@ test("a compiler file is at most the cap", () => {
   expect(sizes.length).toBeGreaterThan(400);
   expect(sizes.filter(([, lines]) => lines > LARGE)).toEqual([]);
 });
+
+// A test file is at most the cap too, so a test is found, read and moved
+// as one of a concept's (ADR 0572, amended). Three were over it when the
+// cap came, listed here with their lines: one may only shrink, and one
+// split under the cap leaves the list, as each is split by concept.
+test("a test file is at most the cap, or shrinks", () => {
+  const { TESTS, LARGE, fileSizes } = require("../scripts/file-sizes.ts") as {
+    TESTS: string[];
+    LARGE: number;
+    fileSizes: (paths: string[]) => [string, number][];
+  };
+  const over: Record<string, number> = {
+    "test/lowering.test.ts": 13712,
+    "test/jsx.test.ts": 6954,
+    "test/bindings.test.ts": 2378,
+  };
+  const sizes = fileSizes(TESTS);
+  expect(sizes.length).toBeGreaterThan(80);
+  const grown = sizes.filter(([file, lines]) => lines > (over[file] ?? LARGE));
+  expect(grown).toEqual([]);
+  // One brought under the cap leaves the list.
+  const under = Object.keys(over).filter((file) => !sizes.some(([f, lines]) => f === file && lines > LARGE));
+  expect(under).toEqual([]);
+});

@@ -203,3 +203,19 @@ is the same module, byte for byte.
 With it no compiler file is over the cap, and the list of those that were
 is gone, and its ratchet with it: the test holds every file at 1,500
 lines, and one that would grow past them is split first.
+
+## Amendment: a test file too (2026-10-22)
+
+A test file had no cap, and `test/lowering.test.ts` grew to 13,712 lines,
+343 tests of every concept the compiler has, in the order they came:
+where a test of one is, and whether one is there already, is found only
+by searching it all, and a mutation's tests name a file of everything.
+Decided with the user: **a test file is at most the cap too**, the tests'
+own code, `TESTS`, `test/*.ts`, not a snapshot or a corpus case the
+compiler wrote or reads. The same ratchet as the compiler's first: the
+three over it, `lowering.test.ts`, `jsx.test.ts` at 6,954 and
+`bindings.test.ts` at 2,378, are listed with their lines, may only
+shrink, and leave the list once split under the cap, each split by
+concept, a move of its tests and the mutations that name them, in a
+commit of its own. `test/architecture.test.ts`, "a test file is at most
+the cap, or shrinks", holds it.
