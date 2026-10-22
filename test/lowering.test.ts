@@ -6180,6 +6180,33 @@ pub fn parsed() -> Vec<f64> {
   expect([lib.called(1), lib.parsed(), lib.resetTo(undefined), lib.resetTo(4)]).toEqual([2, [10, 10], -1, 4]);
 });
 
+// ADR 0615: \`Object.prototype.hasOwnProperty\`, a JS function of its own,
+// called with the object it asks of, \`.call(object, key)\`, as React's
+// shared hasOwnProperty keeps it, \`const hasOwnProperty =
+// Object.prototype.hasOwnProperty\`.
+test("Object.prototype.hasOwnProperty is called with its object", async () => {
+  const dir = fixture("has-own-property");
+  writeFileSync(join(dir, "lib.rs"), `use js::object::HasOwnProperty;
+
+thread_local! {
+    static HAS_OWN_PROPERTY: &'static HasOwnProperty = js::object::has_own_property;
+}
+
+pub fn owns(object: &js::Unknown, key: &str) -> bool {
+    HAS_OWN_PROPERTY.with(|has_own_property| has_own_property.call(object, key))
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("const hasOwnProperty = Object.prototype.hasOwnProperty;");
+  expect(js).toContain("  return hasOwnProperty.call(object, key);");
+  const lib = await import(join(dir, "lib.js"));
+  const own = Object.create({ inherited: 1 });
+  own.mine = 2;
+  own.hasOwnProperty = () => true;
+  expect([lib.owns(own, "mine"), lib.owns(own, "inherited"), lib.owns(Object.create(null), "x")]).toEqual([true, false, false]);
+});
+
 // ADR 0614: a match arm's pattern of several parts, \`(Some(x), Some(y))\`,
 // is one test of each, \`if (p != null && q != null)\`, as its arm is one
 // pattern; a drop flag's test joined with it keeps the flag's name.

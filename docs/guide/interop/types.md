@@ -853,7 +853,10 @@ export function describe(value) {
 ```
 
 - `js::get(value, key)` is `value[key]`, `js::set(value, key, to)` is
-  `value[key] = to`, and `js::has(value, key)` is `key in value`.
+  `value[key] = to`, and `js::has(value, key)` is `key in value`;
+  `js::object::has_own_property.call(value, key)` is
+  `Object.prototype.hasOwnProperty.call(value, key)`, a property of its own
+  ([ADR 0615](../../decisions/0615-has-own-property-the-function.md)).
 - **`==` of two is JS's `===`**, of two `Option<&Unknown>` too, where a
   `null` isn't an `undefined`, unlike std's `Option`
   ([ADR 0612](../../decisions/0612-unknown-equality-is-strict.md)):

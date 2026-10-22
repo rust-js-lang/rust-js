@@ -547,6 +547,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0612 Two values of any shape are equal by JS's `===`](decisions/0612-unknown-equality-is-strict.md)
 - [0613 `&&` and `||` mixed are one value, as written](decisions/0613-and-or-mixed-are-returned-as-written.md)
 - [0614 A match arm's pattern of parts is one test of each](decisions/0614-a-patterns-parts-are-one-test.md)
+- [0615 `Object.prototype.hasOwnProperty` is a function to call with its object](decisions/0615-has-own-property-the-function.md)
 - [0436 Every `dyn` that's a pair keeps its value's drop, `dyn Send` too](decisions/0436-every-dyn-keeps-its-drop.md)
 - [0437 A scope's drops on a panic are one `try { .. } finally { .. }`](decisions/0437-a-scopes-drops-are-one-finally.md)
 - [0438 An optional prop is given `Some(..)`, or left out](decisions/0438-an-optional-prop-is-given-some.md)

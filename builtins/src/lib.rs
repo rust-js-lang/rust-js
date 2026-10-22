@@ -1230,6 +1230,27 @@ pub mod object {
         unreachable!()
     }
 
+    /// [`Object.prototype.hasOwnProperty`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object/hasOwnProperty),
+    /// the function: [`has_own_property`]`.call(object, key)`, whether
+    /// `object` has a property of that name of its own, which no
+    /// `hasOwnProperty` of its own, nor none, changes (ADR 0615).
+    pub struct HasOwnProperty(PhantomData<JsObject>);
+
+    impl HasOwnProperty {
+        /// `hasOwnProperty.call(object, key)`.
+        #[cfg_attr(rust_js, rust_js::link_name = "call")]
+        pub fn call<K: PropertyKey + ?Sized>(&self, object: &Unknown, key: &K) -> bool {
+            unreachable!()
+        }
+    }
+
+    unsafe extern "Rust" {
+        /// `Object.prototype.hasOwnProperty`, a JS function of its own, to
+        /// [`HasOwnProperty::call`] with an object.
+        #[link_name = "Object.prototype.hasOwnProperty"]
+        pub safe static has_own_property: &'static HasOwnProperty;
+    }
+
     /// [`Object.is(a, b)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object/is):
     /// the same object, or the same value, where `NaN` is itself and `0`
     /// isn't `-0`. Of two JS objects of one type, `std::ptr::eq` says as

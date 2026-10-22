@@ -35,7 +35,9 @@ spawn(Box::new(async move {                            // runs, unawaited
   ([ADR 0225](../docs/decisions/0225-unknown-values.md)): what `json::parse(text)`
   gives, or `webapi`'s `r.json()`. `classify(value)` tells what it is,
   a `Kind` to `match`, by `typeof`; `get(value, key)` and `set(value, key, to)`
-  are `value[key]`; `object::keys(value)` is `Object.keys`.
+  are `value[key]`; `object::keys(value)` is `Object.keys`, and
+  `object::has_own_property.call(value, key)` is
+  `Object.prototype.hasOwnProperty.call(value, key)`.
 - `Json` is a JSON value, ReScript's `JSON.t`: `Json::parse(text)`, then
   `match`, a `null` the `None` of the `Option` holding it; its objects are
   `Dict<Option<Json>>`. A `Dict<T>` is a plain object of `T`s by name:
