@@ -810,11 +810,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     Expr::call(Expr::member(subject, "some"), vec![f])
                 }
             }
-            // Each pushed as it's stepped (`extended_items`).
-            Comb::Extend => {
-                let items = self.extended_items(next(), (tys[1], subject_ty), span, out)?;
-                helper("$extend", vec![subject, items])
-            }
+            Comb::Extend => self.extended(subject, next(), (tys[1], subject_ty), span, out)?,
             // Each item a clone, as `to_vec()` makes them.
             Comb::ExtendFromSlice => {
                 let items = next();
@@ -969,6 +965,29 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `parts.flat()`, of arrays, `concat_copies`.
     fn concatenated(&mut self, parts: Expr, parts_ty: Ty<'tcx>, span: Span) -> R<Expr> {
         self.concat_copies(Expr::call(Expr::member(parts, "flat"), Vec::new()), parts_ty, span)
+    }
+
+    /// `extend` of `items`, of type `iterable`, onto `collection`, a
+    /// collection of type `into`: each pushed as it's stepped
+    /// (`extended_items`); onto a heap, its order rebuilt after, as std's
+    /// is (ADR 0333).
+    fn extended(
+        &mut self,
+        collection: Expr,
+        items: Expr,
+        (iterable, into): (Ty<'tcx>, Ty<'tcx>),
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Expr> {
+        let items = self.extended_items(items, (iterable, into), span, out)?;
+        if self.is_std_type(into, crate::lower::recognition::StdItem::BinaryHeap) {
+            let item = self
+                .slice_item(into)
+                .ok_or_else(|| self.unsupported(span, "this heap"))?;
+            let cmp = self.cmp_fn(item, false, span)?;
+            return Ok(Expr::call_helper("$heapExtend", vec![collection, items, cmp]));
+        }
+        Ok(Expr::call_helper("$extend", vec![collection, items]))
     }
 
     /// What `extend` of `items`, of type `iterable`, pushes onto a

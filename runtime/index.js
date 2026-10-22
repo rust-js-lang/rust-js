@@ -8336,6 +8336,14 @@ export function $peekMutPop(guard) {
   return $heapPop(guard.heap, guard.cmp);
 }
 
+// `heap.extend(items)`: each pushed at the end, then the heap rebuilt from
+// the first of them, as std's `RebuildOnDrop` does.
+export function $heapExtend(heap, items, cmp) {
+  const start = heap.length;
+  for (const item of items) heap.push(item);
+  $heapRebuildTail(heap, start, cmp);
+}
+
 // `s.parse()` of an integer, or `from_str_radix(s, radix)`, as std reads it:
 // a sign, then each digit in turn, stopping at the first that isn't one or
 // overflows, so `"999x"` overflows a `u8` before its `x` is read. Each digit

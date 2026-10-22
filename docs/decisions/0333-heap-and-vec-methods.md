@@ -59,3 +59,11 @@ so `{:?}`, `into_vec()` and `as_slice()` show what Rust's do. Its `append`,
   with its own `index out of bounds`, where it said `Vec`'s message. The
   corpus's `deque_push_mut` and `deque_insert_past_len` run against native
   Rust.
+
+## Amendment: `extend`
+
+`extend` of a `BinaryHeap` was an array's, `$extend`, which appends out
+of heap order, so `pop` and `peek` weren't the greatest (#158). It's
+std's steps, `$heapExtend`: each pushed at the end, then the heap rebuilt
+from the first, as `append` is, by any `Extend`, generic code's too.
+Held by `test/corpus/heap_extend.rs`.

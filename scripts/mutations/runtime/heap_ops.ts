@@ -66,4 +66,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^heap_destructors.rs$"],
   },
+  {
+    name: "heap-extend-unrebuilt",
+    breaks: "`extend` of a `BinaryHeap` pushes its items and never rebuilds its order",
+    file: "src/runtime/heap_ops.js",
+    find: "  for (const item of items) heap.push(item);\n  $heapRebuildTail(heap, start, cmp);\n",
+    replace: "  for (const item of items) heap.push(item);\n",
+    tests: ["test/corpus.test.ts", "-t", "^heap_extend.rs$"],
+  },
 ];
