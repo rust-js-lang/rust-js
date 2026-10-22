@@ -5,6 +5,14 @@ const tests = ["test/declarations.test.ts"];
 
 export const mutations: Mutation[] = [
   {
+    name: "alias-undeclared",
+    breaks: "a `.d.ts` has no `export { currentTime as unstable_now };`, so TypeScript finds no `unstable_now`",
+    file: "src/lower/declarations.rs",
+    find: "    if !aliases.is_empty() {\n",
+    replace: "    if false && !aliases.is_empty() {\n",
+    tests: ["test/modules.test.ts", "-t", "another name of the module's own"],
+  },
+  {
     name: "untagged-unit-undeclared",
     breaks: "a variant without fields isn't its literal in the union, `boolean | undefined`",
     file: "src/lower/declarations.rs",

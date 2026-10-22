@@ -3,6 +3,14 @@ import type { Mutation } from "../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "alias-not-exported",
+    breaks: "an alias isn't among the module's exports, which what imports it checks",
+    file: "src/output.rs",
+    find: "own.chain(reexported).chain(default).chain(aliased)",
+    replace: "own.chain(reexported).chain(default)",
+    tests: ["test/manifest.test.ts", "-t", "a manifest says what each module exports"],
+  },
+  {
     name: "package-specifier-linked",
     breaks: "a package's specifier, `@rust-js/runtime`, is a link to a file beside the module that isn't there",
     file: "src/output.rs",

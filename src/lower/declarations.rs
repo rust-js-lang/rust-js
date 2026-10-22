@@ -26,12 +26,14 @@ use super::representation::Num;
 
 /// What a module's `.d.ts` declares, but its header: `None` where it
 /// exports nothing.
+#[allow(clippy::too_many_arguments)]
 pub(super) fn module<'tcx>(
     tcx: TyCtxt<'tcx>,
     module: LocalModId,
     default_export: Option<DefId>,
     files: &HashMap<LocalModId, Vec<String>>,
     reexports: &[Reexport],
+    aliases: &[(String, String)],
     plain_ref_cells: &HashSet<Ty<'tcx>>,
     fns: &HashMap<DefId, super::FnInfo>,
 ) -> Option<Value> {
@@ -121,7 +123,7 @@ pub(super) fn module<'tcx>(
             crate::js::ImportFrom::Module(path) => json!({ "module": path }),
             crate::js::ImportFrom::Specifier(specifier) => json!({ "specifier": specifier }),
         };
-        let mut declaration = json!({ "kind": "export-from", "names": reexport.named });
+        let mut declaration = json!({ "kind": "export", "names": reexport.named });
         declaration
             .as_object_mut()
             .expect("an object")
@@ -129,6 +131,11 @@ pub(super) fn module<'tcx>(
         declarations.push(declaration);
     }
     declarations.extend(items);
+    // `export { greetAll as unstable_greet };`, its `pub use` of its own
+    // function by another name, after it, as its JS has it (ADR 0596).
+    if !aliases.is_empty() {
+        declarations.push(json!({ "kind": "export", "names": aliases }));
+    }
     Some(json!({ "declarations": declarations }))
 }
 

@@ -1009,7 +1009,8 @@ pub(super) fn is_reexport(tcx: TyCtxt<'_>, item: &rustc_hir::Item<'_>) -> bool {
     };
     tcx.visibility(item.owner_id).is_public()
         && match path.res.value_ns {
-            Some(rustc_hir::def::Res::Def(DefKind::Fn, _)) => true,
+            // A function's, and a constant's, its module's `const` (ADR 0596).
+            Some(rustc_hir::def::Res::Def(DefKind::Fn | DefKind::Const { .. }, _)) => true,
             Some(rustc_hir::def::Res::Def(DefKind::Static { .. }, id)) => is_binding(tcx, id),
             _ => false,
         }

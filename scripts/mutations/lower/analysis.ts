@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "const-reexport-dropped",
+    breaks: "`pub use priorities::IDLE` re-exports nothing, so `IDLE` isn't the module's",
+    file: "src/lower/analysis.rs",
+    find: "DefKind::Fn | DefKind::Const { .. }, _)) => true,",
+    replace: "DefKind::Fn, _)) => true,",
+    tests: ["test/modules.test.ts", "-t", "another name of the module's own"],
+  },
+  {
     name: "thread-local-storage-static",
     breaks: "std's storage for a `thread_local!` is taken as a static of the crate's, and rejected",
     file: "src/lower/analysis.rs",

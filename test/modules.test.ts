@@ -513,6 +513,37 @@ test("a pub use of another module's function is re-exported from it", async () =
   expect([lib.helper(), lib.renamed(), lib.own()]).toEqual([1, 2, 3]);
 });
 
+// A `pub use` of the module's own function, or another module's constant,
+// by another name exports it by that, its `#[rust_js::name]` or its name
+// camelCase, as React's scheduler exports `getCurrentTime` as `unstable_now`
+// and `ImmediatePriority` as `unstable_ImmediatePriority` (ADR 0596).
+test("a pub use by another name of the module's own function exports it by that", async () => {
+  const dir = fixture("aliases");
+  writeFileSync(join(dir, "lib.rs"), `mod priorities;
+
+#[cfg_attr(rust_js, rust_js::name = "unstable_ImmediatePriority")]
+pub use priorities::IMMEDIATE as UNSTABLE_IMMEDIATE;
+pub use priorities::IDLE;
+#[cfg_attr(rust_js, rust_js::name = "unstable_now")]
+pub use self::current_time as unstable_now;
+pub use self::current_time as time_now;
+
+pub fn current_time() -> u32 {
+    priorities::IMMEDIATE + priorities::IDLE
+}
+`);
+  writeFileSync(join(dir, "priorities.rs"), "pub const IMMEDIATE: u32 = 1;\npub const IDLE: u32 = 5;\n");
+  run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  expect(readFileSync(join(dir, "lib.d.ts"), "utf8")).toContain("export { currentTime as unstable_now, currentTime as timeNow };");
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('export { IMMEDIATE as unstable_ImmediatePriority, IDLE } from "./priorities.js";');
+  expect(js).toContain("export { currentTime as unstable_now, currentTime as timeNow };");
+  // The module reads them by their own names, not the names it exports them by.
+  expect(js).toContain('import { IDLE, IMMEDIATE } from "./priorities.js";');
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.unstable_now(), lib.timeNow(), lib.unstable_ImmediatePriority, lib.IDLE]).toEqual([6, 6, 1, 5]);
+});
+
 // A `pub use` of a binding of a JS module's export is a re-export from that
 // module, `export {Challenges} from './Challenges'`, as react.dev's
 // Challenges/index re-exports its still-TypeScript Challenges (ADR 0240),

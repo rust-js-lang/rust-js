@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "reexport-renames-own",
+    breaks: "`pub use self::current_time as time_now` renames the function itself, which then has no `currentTime`",
+    file: "src/lower/analysis/naming.rs",
+    find: "UseKind::Single(ident)) if !super::is_reexport(tcx, item) =>",
+    replace: "UseKind::Single(ident)) =>",
+    tests: ["test/modules.test.ts", "-t", "another name of the module's own"],
+  },
+  {
     name: "import-named-over-export",
     breaks: "an import takes the name of the crate's own function, which is renamed, so JS calling it by its Rust name finds none",
     file: "src/lower/analysis/naming.rs",
@@ -72,8 +80,8 @@ export const mutations: Mutation[] = [
     name: "renamed-static-not-camel-case",
     breaks: "`use …::hero_img as banner_img` is `import banner_img from \"./hero.png\"`, not an asset's camel case",
     file: "src/lower/analysis/naming.rs",
-    find: "                            camel_case(&name)\n",
-    replace: "                            name.clone()\n",
+    find: "Some((def_id, camel_case(ident.name.as_str())))",
+    replace: "Some((def_id, ident.name.to_string()))",
     tests: ["test/jsx.test.ts", "-t", "use renames it"],
   },
   {

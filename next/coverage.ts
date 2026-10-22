@@ -239,7 +239,9 @@ async function exportsOf(path: string, seen: Set<string> = new Set()): Promise<M
         functions.push([d.name, names]);
       }
     }
-    if (d.kind === "export-from") await reexport(d.from, d.names, false);
+    if (d.kind === "export" && d.from !== undefined) await reexport(d.from, d.names, false);
+    // Its own, by another name: `export { greetAll as unstable_greet };`.
+    if (d.kind === "export" && d.from === undefined) for (const [name, alias] of d.names) exported.set(alias, local.get(name)!);
     if (d.kind === "export-default") exported.set("default", (await own(d.name)) ?? { kind: "value" });
     if (d.kind === "other") {
       // The model leaves a class as text, after its doc comment.

@@ -221,28 +221,26 @@ pub(super) fn name_imports(
         .collect()
 }
 
-/// What a module's `use`s rename, by their new names: `use …::Link as
-/// NextLink` is next/link's `Link` by `NextLink`, and a `static`'s is camel
-/// case, as its own name is.
+/// What a module's `use`s rename, by their new names, camel case as any
+/// name is (ADR 0573): `use …::Link as NextLink` is next/link's `Link` by
+/// `NextLink`. Not a `pub use` that re-exports it, whose name is what it's
+/// exported by (`bindings::alias_name`, ADR 0596), not the module's own.
 pub(in crate::lower) fn renamed_in(tcx: TyCtxt<'_>, module: LocalModId) -> HashMap<DefId, String> {
     tcx.hir_module_items(module)
         .free_items()
-        .filter_map(|id| match tcx.hir_item(id).kind {
-            ItemKind::Use(path, UseKind::Single(ident)) => match path.res.value_ns {
-                Some(Res::Def(kind, def_id)) if ident.name != tcx.item_name(def_id) => {
-                    let name = ident.name.to_string();
-                    Some((
-                        def_id,
-                        if matches!(kind, DefKind::Static { .. }) {
-                            camel_case(&name)
-                        } else {
-                            name
-                        },
-                    ))
+        .filter_map(|id| {
+            let item = tcx.hir_item(id);
+            match item.kind {
+                ItemKind::Use(path, UseKind::Single(ident)) if !super::is_reexport(tcx, item) => {
+                    match path.res.value_ns {
+                        Some(Res::Def(_, def_id)) if ident.name != tcx.item_name(def_id) => {
+                            Some((def_id, camel_case(ident.name.as_str())))
+                        }
+                        _ => None,
+                    }
                 }
                 _ => None,
-            },
-            _ => None,
+            }
         })
         .collect()
 }

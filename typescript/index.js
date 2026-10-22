@@ -20,7 +20,7 @@ import * as f from "typescript/ast/factory";
  *   | { kind: "function", name: string, exported: boolean, declare: boolean, typeParameters: TypeParameter[], params: Param[], returns: Type, docs?: string }
  *   | { kind: "const", name: string, exported: boolean, declare: boolean, type: Type, docs?: string }
  *   | { kind: "export-default", name: string }
- *   | { kind: "export-from", from: string, names: [string, string][] }
+ *   | { kind: "export", from?: string, names: [string, string][] }
  *   | { kind: "namespace", name: string, exported: boolean, declare: boolean, declarations: Declaration[] }
  *   | { kind: "other", text: string }} Declaration
  *
@@ -210,13 +210,13 @@ function readStatements(statements, text) {
       }
       case SyntaxKind.ExportDeclaration: {
         const named = node.exportClause;
-        if (!node.moduleSpecifier || named?.kind !== SyntaxKind.NamedExports || node.isTypeOnly) {
+        if (named?.kind !== SyntaxKind.NamedExports || node.isTypeOnly) {
           out.push({ kind: "other", text: sourceOf(node, text) });
           break;
         }
         out.push({
-          kind: "export-from",
-          from: node.moduleSpecifier.text,
+          kind: "export",
+          ...(node.moduleSpecifier && { from: node.moduleSpecifier.text }),
           names: named.elements.map((e) => [(e.propertyName ?? e.name).text, e.name.text]),
         });
         break;
@@ -486,7 +486,7 @@ function statement(declaration) {
       );
     case "export-default":
       return f.createExportAssignment(undefined, false, undefined, id(declaration.name));
-    case "export-from":
+    case "export":
       return f.createExportDeclaration(
         undefined,
         false,
@@ -495,7 +495,7 @@ function statement(declaration) {
             f.createExportSpecifier(false, name === alias ? undefined : id(name), id(alias)),
           ),
         ),
-        string(declaration.from),
+        declaration.from === undefined ? undefined : string(declaration.from),
       );
     case "namespace":
       // What it prints is erasable syntax only, TypeScript's

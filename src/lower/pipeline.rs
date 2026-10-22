@@ -733,11 +733,19 @@ pub fn lower_crate<'tcx>(
                     }
                 }
             }
-            let reexports = reexports(tcx, module, &fns, &paths, default_from);
+            let (reexports, aliases) = reexports(tcx, module, &fns, &paths, default_from);
             let no_plain = HashSet::new();
             let plain_ref_cells = plain_ref_cells.get().unwrap_or(&no_plain);
-            let declarations =
-                super::declarations::module(tcx, module, default_export, &paths, &reexports, plain_ref_cells, &fns);
+            let declarations = super::declarations::module(
+                tcx,
+                module,
+                default_export,
+                &paths,
+                &reexports,
+                &aliases,
+                plain_ref_cells,
+                &fns,
+            );
             let mut lowered = LoweredModule {
                 path: paths[&module].clone(),
                 file: module_file(tcx, module).name.clone().into_local_path(),
@@ -745,6 +753,7 @@ pub fn lower_crate<'tcx>(
                 packages,
                 imports: Vec::new(),
                 reexports,
+                aliases,
                 items: js::in_load_order(
                     (pass
                         .namespaces
@@ -871,9 +880,10 @@ fn reexports(
     fns: &HashMap<DefId, FnInfo>,
     paths: &HashMap<LocalModId, Vec<String>>,
     default_from: Option<DefId>,
-) -> Vec<Reexport> {
+) -> (Vec<Reexport>, Vec<(String, String)>) {
     let mut grouped: BTreeMap<Vec<String>, Vec<(String, String)>> = BTreeMap::new();
     let mut specified: BTreeMap<String, Vec<(String, String)>> = BTreeMap::new();
+    let mut aliases = Vec::new();
     if let Some(info) = default_from.and_then(|function| fns.get(&function))
         && let Some(from) = paths.get(&info.module)
     {
@@ -908,14 +918,21 @@ fn reexports(
             continue;
         }
         let Some(info) = fns.get(&def_id) else { continue };
-        if info.module == module || info.owner.is_some() {
+        if info.owner.is_some() {
+            continue;
+        }
+        let alias = match ident.name == tcx.item_name(def_id) {
+            true => info.name.clone(),
+            false => super::bindings::alias_name(tcx, item.owner_id.to_def_id(), ident.name),
+        };
+        // Its own item by another name: `export { getCurrentTime as unstable_now };`.
+        if info.module == module {
+            if alias != info.name {
+                aliases.push((info.name.clone(), alias));
+            }
             continue;
         }
         let Some(from) = paths.get(&info.module) else { continue };
-        let alias = match ident.name == tcx.item_name(def_id) {
-            true => info.name.clone(),
-            false => ident.to_string(),
-        };
         grouped
             .entry(from.clone())
             .or_default()
@@ -929,7 +946,7 @@ fn reexports(
         from: js::ImportFrom::Specifier(from),
         named,
     });
-    modules.chain(specifiers).collect()
+    (modules.chain(specifiers).collect(), aliases)
 }
 
 /// Each hole in `stmts` filled with its function, and each in that (ADR 0296).

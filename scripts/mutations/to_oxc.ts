@@ -3,6 +3,14 @@ import type { Mutation } from "../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "aliases-unprinted",
+    breaks: "`export { currentTime as unstable_now };` isn't written",
+    file: "src/to_oxc.rs",
+    find: "    if !module.aliases.is_empty() {\n",
+    replace: "    if false && !module.aliases.is_empty() {\n",
+    tests: ["test/modules.test.ts", "-t", "another name of the module's own"],
+  },
+  {
     name: "reexport-unprinted",
     breaks: "a module's `pub use` writes no `export { .. } from`, and what imports it finds nothing",
     file: "src/to_oxc.rs",

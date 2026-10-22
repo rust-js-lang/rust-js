@@ -35,6 +35,7 @@ test("a manifest says what each module exports, and where its tests' runner is",
     pub fn helper() -> u32 { 1 }
 }
 pub use util::helper;
+pub use self::main as start;
 pub const LIMIT: u32 = 3;
 // A field, whose JS name a test build, which rustc hashes nothing of, asks.
 pub struct Total { pub first_part: u32 }
@@ -48,7 +49,7 @@ fn adds() { assert_eq!(Total { first_part: util::helper() + 1 }.first_part, 2); 
   const read = parseManifest(readFileSync(join(out, "manifest.json"), "utf8"));
   const root = read.modules.find((module: { module: string[] }) => module.module.length === 0);
   // And, built to run them, its `#[test]` functions, which the runner imports.
-  expect([...root.exports].sort()).toEqual(["LIMIT", "adds", "helper", "main"]);
+  expect([...root.exports].sort()).toEqual(["LIMIT", "adds", "helper", "main", "start"]);
   expect(read.tests).toBe(join(realpathSync(out), "lib.test.js"));
   expect(existsSync(read.tests)).toBe(true);
 });

@@ -169,16 +169,25 @@ export function welcome(name: string): string;
 
 ## Re-exports
 
-A `pub use` of another module's function is `export { .. } from` it, in
-the JS and the `.d.ts`; `pub use .. as` renames it.
+A `pub use` of another module's function or constant is `export { .. }
+from` it, in the JS and the `.d.ts`. `pub use .. as` renames it, camelCase
+as any name is, or by its `#[rust_js::name]`; one of the module's own
+functions by another name is `export { .. as .. }`, and the module still
+reads it by its own name ([ADR 0596](../../decisions/0596-a-pub-use-of-a-modules-own-item-exports-it.md)).
 
 ```rust
 // src/lib.rs
 # mod format;
 # mod greet;
 #
+pub use format::units::{px as pixels, BASE};
 pub use greet::hello;
-pub use format::units::px as pixels;
+#[cfg_attr(rust_js, rust_js::name = "unstable_greet")]
+pub use self::greet_all as unstable_greet;
+
+pub fn greet_all(names: &[&str]) -> Vec<String> {
+    names.iter().map(|name| hello(name)).collect()
+}
 ```
 
 ```rust
@@ -191,6 +200,8 @@ pub fn hello(name: &str) -> String {
 ```rust
 // src/format.rs
 pub mod units {
+    pub const BASE: u32 = 16;
+
     pub fn px(n: u32) -> String {
         format!("{n}px")
     }
@@ -198,8 +209,26 @@ pub mod units {
 ```
 
 ```js
-export { px as pixels } from "./format/units.js";
+import { hello } from "./greet.js";
+
+export { px as pixels, BASE } from "./format/units.js";
 export { hello } from "./greet.js";
+
+export function greetAll(names) {
+  return names.map((name) => hello(name));
+}
+
+export { greetAll as unstable_greet };
+```
+
+```ts
+export { px as pixels, BASE } from "./format/units.js";
+
+export { hello } from "./greet.js";
+
+export function greetAll(names: string[]): string[];
+
+export { greetAll as unstable_greet };
 ```
 
 A module of only `pub use`s is a file of them, as an `index.js` is. A

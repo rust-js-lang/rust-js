@@ -153,6 +153,13 @@ pub fn emit(
     if let Some(function) = &module.default_export {
         code.push_str(&format!("\nexport default {function};\n"));
     }
+    // Its own items by other names, `pub use`'s (ADR 0596).
+    if !module.aliases.is_empty() {
+        let named: Vec<String> = (module.aliases.iter())
+            .map(|(local, exported)| format!("{local} as {exported}"))
+            .collect();
+        code.push_str(&format!("\nexport {{ {} }};\n", named.join(", ")));
+    }
     let map = generated.map.expect("a source map, since source_map_path is set");
     // The sources the map points into, and only those, named from here.
     let source_of = |line: u32| sources.file_at(line);

@@ -69,6 +69,10 @@ pub struct Module {
     pub items: Vec<Item>,
     /// `export default page;`, after its functions (ADR 0192).
     pub default_export: Option<String>,
+    /// `export { getCurrentTime as unstable_now };`, a `pub use` of its own
+    /// item by another name, as `(local, exported)`, after its functions
+    /// (ADR 0596).
+    pub aliases: Vec<(String, String)>,
 }
 
 /// A module's item.
@@ -554,6 +558,7 @@ mod tests {
             helpers: Vec::new(),
             items: vec![Item::Statements(vec![StmtKind::Expr(value).at(Span::NONE)])],
             default_export: None,
+            aliases: Vec::new(),
         }
     }
 

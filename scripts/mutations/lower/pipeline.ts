@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "own-alias-dropped",
+    breaks: "`pub use self::current_time as unstable_now` exports nothing by `unstable_now`",
+    file: "src/lower/pipeline.rs",
+    find: "            if alias != info.name {\n",
+    replace: "            if false && alias != info.name {\n",
+    tests: ["test/modules.test.ts", "-t", "another name of the module's own"],
+  },
+  {
     name: "block-directive-allowed",
     breaks: "an `async` block's `js::directive!` is written nowhere, without an error",
     file: "src/lower/pipeline.rs",
@@ -102,7 +110,7 @@ export const mutations: Mutation[] = [
     name: "reexport-alias-unread",
     breaks: "`pub use inner::other as renamed;` re-exports `other`, not `renamed`",
     file: "src/lower/pipeline.rs",
-    find: "            false => ident.to_string(),",
+    find: "            false => super::bindings::alias_name(tcx, item.owner_id.to_def_id(), ident.name),",
     replace: "            false => info.name.clone(),",
     tests: ["test/modules.test.ts", "-t", "re-exported from it"],
   },

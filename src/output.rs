@@ -139,6 +139,7 @@ impl OutputPlan {
                 helpers: Vec::new(),
                 items: module.items,
                 default_export: module.default_export,
+                aliases: module.aliases,
             };
 
             // What it imports when it's asked for, from where its file is, a
@@ -673,7 +674,8 @@ fn exports(module: &program::LoweredModule) -> Vec<String> {
     let reexported =
         (module.reexports.iter()).flat_map(|reexport| reexport.named.iter().map(|(_, alias)| alias.clone()));
     let default = module.default_export.as_ref().map(|_| "default".to_string());
-    own.chain(reexported).chain(default).collect()
+    let aliased = module.aliases.iter().map(|(_, exported)| exported.clone());
+    own.chain(reexported).chain(default).chain(aliased).collect()
 }
 
 /// What a build writes and what it leaves stale, constructed by `plan` alone,

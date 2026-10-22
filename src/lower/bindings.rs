@@ -333,6 +333,13 @@ pub(super) fn js_path(tcx: TyCtxt<'_>, def_id: DefId) -> Option<String> {
     }
 }
 
+/// What a `pub use` names its item by in JS, `use_item` the `use`'s own:
+/// its `#[rust_js::name]`, `unstable_shouldYield`, or its name camelCase, as
+/// any other (ADRs 0573, 0596).
+pub(super) fn alias_name(tcx: TyCtxt<'_>, use_item: DefId, alias: Symbol) -> String {
+    given_name(tcx, use_item).unwrap_or_else(|| super::camel_case(alias.as_str()))
+}
+
 /// `#[rust_js::name = ".."]`: what an item is in JS, as written.
 fn given_name(tcx: TyCtxt<'_>, def_id: DefId) -> Option<String> {
     let attr = tcx
