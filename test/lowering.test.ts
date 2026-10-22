@@ -5815,6 +5815,51 @@ pub fn cancel() -> Option<u32> {
   expect([lib.arm(1), lib.arm(2), lib.cancel(), lib.cancel()]).toEqual([undefined, 1, 2, undefined]);
 });
 
+// ADR 0599: a function's value its branches make before it's coerced, a
+// `Box<dyn Fn()>`'s, is returned where each is made, as any other is.
+test("branches' values coerced to the result are returned where made", async () => {
+  const dir = fixture("coerced-branches");
+  writeFileSync(join(dir, "lib.rs"), `pub fn pick(now: bool) -> Box<dyn Fn() -> u32> {
+    if now {
+        Box::new(|| 1)
+    } else {
+        let n = 2;
+        Box::new(move || n)
+    }
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("export function pick(now) {\n  if (now) {\n    return () => 1;\n  }\n");
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.pick(true)(), lib.pick(false)()]).toEqual([1, 2]);
+});
+
+// ADR 0598: of a variable the program names, its parts read in a row are
+// one pattern only of the names the program gives them, not a temporary
+// read once: React's scheduler has `const port = channel.port2;
+// channel.port1.onmessage = ..`, not `const { port2: port, port1: _12 } =
+// channel;`.
+test("a temporary is no part of a named variable's pattern", () => {
+  const dir = fixture("parts-of-a-name");
+  writeFileSync(join(dir, "lib.rs"), `fn work() {}
+
+pub fn make(immediate: bool) -> Box<dyn Fn()> {
+    if immediate {
+        Box::new(work)
+    } else {
+        let channel = webapi::message_channel::new();
+        let port = channel.port2();
+        channel.port1().set_onmessage(Some(Box::new(|_| work())));
+        Box::new(move || port.post_message(None::<u8>, None))
+    }
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toMatch(/ const port = channel\.port2;\n +channel\.port1\.onmessage = \(\) => \{\n/);
+});
+
 // ADR 0597: whether the host has a binding's global is `js::is_defined`'s,
 // `typeof X !== "undefined"`, of the binding its type names, through a
 // temporary too: React's scheduler asks for `setImmediate`, then

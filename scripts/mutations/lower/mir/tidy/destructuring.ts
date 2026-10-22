@@ -3,6 +3,14 @@ import type { Mutation } from "../../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "temporary-part-of-a-name",
+    breaks: "`const port = channel.port2; channel.port1.onmessage = ..` is `const { port2: port, port1: _12 } = channel;`",
+    file: "src/lower/mir/tidy/destructuring.rs",
+    find: "        if !made && let Some(k) = parts.iter().position(|(_, bound, ..)| is_temporary(bound)) {\n",
+    replace: "        if false && let Some(k) = parts.iter().position(|(_, bound, ..)| is_temporary(bound)) {\n",
+    tests: ["test/lowering.test.ts", "-t", "a temporary is no part"],
+  },
+  {
     name: "mir-tidy-destructured-kept",
     breaks: "`const _5 = e; const a = _5[0]; const b = _5[1];` stays, not `const [a, b] = e;`",
     file: "src/lower/mir/tidy/destructuring.rs",

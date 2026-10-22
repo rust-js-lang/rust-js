@@ -31,7 +31,13 @@ pub(super) fn destructured(stmts: &mut Vec<Stmt>, patterns: &HashSet<String>) {
         i += moved;
         let first = first + moved;
         let made = first > i;
-        let parts = parts(&stmts[first..], &name);
+        let mut parts = parts(&stmts[first..], &name);
+        // Of a variable the program names, the names it gives: a temporary,
+        // read once where it's used, `channel.port1.onmessage = ..`, ends
+        // them (ADR 0598).
+        if !made && let Some(k) = parts.iter().position(|(_, bound, ..)| is_temporary(bound)) {
+            parts.truncate(k);
+        }
         let count = parts.len();
         let indexed = parts.iter().all(|(p, ..)| p.is_ok());
         let bound = parts.iter().all(|(_, name, ..)| patterns.contains(name));

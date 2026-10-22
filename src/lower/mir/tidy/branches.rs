@@ -1066,18 +1066,26 @@ pub(super) fn turned(e: &mut Expr, numbers: &HashSet<String>) {
 
 /// `if (c) { s; result = a; } else { result = b; } return result;`, the
 /// function's value its branches make: returned where each is made, `if (c)
-/// { s; return a; } return b;`, at the `return`s the program wrote.
+/// { s; return a; } return b;`, at the `return`s the program wrote. Of a
+/// temporary it's made in before it's the result, too, a `Box<dyn Fn()>`'s
+/// before it's coerced, `_5 = work; .. return _5;` (ADR 0599).
 pub(super) fn returned_in_branches(stmts: &mut Vec<Stmt>, result: &str) {
     returned_from_block(stmts, result);
     let [.., last_if, last] = stmts.as_slice() else {
         return;
     };
-    let returns_result =
-        matches!(&last.kind, StmtKind::Return(Some(v)) if matches!(&v.kind, ExprKind::Var(r) if r == result));
-    if !returns_result
-        || !matches!(last_if.kind, StmtKind::If(_, _, Some(_)))
-        || !made_at_ends(std::slice::from_ref(last_if), result)
-    {
+    let StmtKind::Return(Some(returned)) = &last.kind else {
+        return;
+    };
+    let ExprKind::Var(returned) = &returned.kind else {
+        return;
+    };
+    // Not a variable the program names, `let item;`, which it returns.
+    if returned != result && !is_temporary(returned) {
+        return;
+    }
+    let result = returned.as_str();
+    if !matches!(last_if.kind, StmtKind::If(_, _, Some(_))) || !made_at_ends(std::slice::from_ref(last_if), result) {
         return;
     }
     let mut made = stmts[stmts.len() - 2].clone();

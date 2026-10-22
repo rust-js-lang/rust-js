@@ -3,6 +3,14 @@ import type { Mutation } from "../../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "coerced-branches-kept",
+    breaks: "`let tmp; if (now) { tmp = () => 1; } else { .. } return tmp;`, where each branch returns",
+    file: "src/lower/mir/tidy/branches.rs",
+    find: "    if returned != result && !is_temporary(returned) {\n",
+    replace: "    if returned != result {\n",
+    tests: ["test/lowering.test.ts", "-t", "coerced to the result are returned"],
+  },
+  {
     name: "mir-tidy-empty-then-kept",
     breaks: "`if (c) {} else { s }` stays, not `if (!c) { s }`",
     file: "src/lower/mir/tidy/branches.rs",
