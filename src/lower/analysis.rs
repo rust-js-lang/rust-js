@@ -10,6 +10,7 @@ mod held_adapters;
 mod iterator_steps;
 mod mutation;
 mod naming;
+mod only_called;
 mod plain_locals;
 mod rc_counts;
 
@@ -69,6 +70,23 @@ pub fn collect_bodies(tcx: TyCtxt<'_>) -> Vec<Body<'_>> {
     let unreached = reached_only_unlowered(tcx, &bodies);
     bodies.retain(|body| !unreached.contains(&tcx.typeck_root_def_id(body.def_id)));
     bodies
+}
+
+/// What the integers of the crate's bodies and initializers can be, of
+/// each together: a function only calls reach is what its calls give it
+/// (ADRs 0576, 0577). Before MIR building steals THIR, as `collect_bodies`.
+pub fn collect_ranges<'tcx>(tcx: TyCtxt<'tcx>, bodies: &mut [Body<'tcx>], initializers: &mut [Body<'tcx>]) {
+    let only_called = only_called::only_called(tcx);
+    let all: Vec<&mut Body<'tcx>> = (bodies.iter_mut().chain(initializers.iter_mut()))
+        .filter(|body| body.root().is_some())
+        .collect();
+    let walked: Vec<_> = (all.iter()).map(|body| (body.def_id, &body.thir, body.expr)).collect();
+    let found = super::body_queries::ranges(tcx, &walked, &only_called);
+    drop(walked);
+    for (body, ranges) in all.into_iter().zip(found) {
+        body.facts.in_bounds = ranges.in_bounds;
+        body.facts.exact = ranges.exact;
+    }
 }
 
 /// std's bodies compiled into `@rust-js/std` (ADR 0561):
@@ -197,7 +215,7 @@ fn lowered_bodies(tcx: TyCtxt<'_>) -> Vec<Body<'_>> {
         .filter_map(|def_id| {
             let (thir, expr) = tcx.thir_body(def_id).ok()?;
             let thir = (*thir.borrow()).clone();
-            let facts = super::body_queries::BodyFacts::collect(tcx, &thir, expr);
+            let facts = super::body_queries::BodyFacts::collect(tcx, &thir);
             Some(Body {
                 def_id: def_id.to_def_id(),
                 thir,
@@ -394,7 +412,7 @@ pub fn collect_initializers(tcx: TyCtxt<'_>) -> Vec<Body<'_>> {
         .filter_map(|def_id| {
             let (thir, expr) = tcx.thir_body(def_id).ok()?;
             let thir = (*thir.borrow()).clone();
-            let facts = super::body_queries::BodyFacts::collect(tcx, &thir, expr);
+            let facts = super::body_queries::BodyFacts::collect(tcx, &thir);
             Some(Body {
                 def_id: def_id.to_def_id(),
                 thir,

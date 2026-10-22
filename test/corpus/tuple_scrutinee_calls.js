@@ -81,7 +81,7 @@ function bumped(v) {
 function guardedParam(v, x) {
   const b = v.pop();
   const a = x;
-  x = (x + 10) >>> 0;
+  x += 10;
   if (b != null) {
     return ((((Math.imul(a, 100) >>> 0) + b) >>> 0) + x) >>> 0;
   }

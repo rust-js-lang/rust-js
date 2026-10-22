@@ -19,7 +19,7 @@ function reasonDisplay_fmt(reason) {
 
 function check(n) {
   if (n <= 5) {
-    return Math.imul(n, 2) >>> 0;
+    return n * 2;
   }
   if (n !== 6) {
     throw new Error(`internal error: entered unreachable code: ${reasonDisplay_fmt([n])}`);

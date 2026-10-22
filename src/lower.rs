@@ -77,7 +77,7 @@ mod untagged;
 
 use crate::names::{fresh_in, js_ident};
 use crate::program::TestFn;
-pub use analysis::{collect_bodies, collect_initializers, collect_mir, collect_std_bodies};
+pub use analysis::{collect_bodies, collect_initializers, collect_mir, collect_ranges, collect_std_bodies};
 /// Whether each `#[rust_js::name]` gives a name its item hasn't anyway, of
 /// a crate `--rustc` compiles for its metadata too (ADR 0573).
 pub use bindings::given_names_differ;

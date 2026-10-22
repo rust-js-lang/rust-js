@@ -767,6 +767,11 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### Changed
 
+- **A function only calls reach is what its calls give it** (ADR 0577):
+  one no JS caller sees and nothing names as a value is walked from what
+  each of its calls tells it of its parameters, so React's heap's
+  `siftUp` reads `heap[index]` of the index `push` gave it. A `push` makes
+  a `Vec`'s length one more and a `pop` one fewer, where both forgot it.
 - **What a body's integers can be shows an index in bounds and an
   operator that can't wrap** (ADR 0576): `heap[leftIndex]` and `(index +
   1) * 2 - 1` where a loop's condition bounds `index`, `n += 1` of a

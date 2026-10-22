@@ -15,7 +15,7 @@ function through(location) {
 }
 
 function quiet(x) {
-  return (x + 1) >>> 0;
+  return x + 1;
 }
 
 function inClosure() {

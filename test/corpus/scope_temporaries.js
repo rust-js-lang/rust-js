@@ -27,7 +27,7 @@ function make(n) {
 }
 
 function tail(n) {
-  const _kept = [(100 + n) & 255];
+  const _kept = [100 + n];
   let result;
   try {
     const noisy = make(n);

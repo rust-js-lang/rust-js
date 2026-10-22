@@ -26,6 +26,20 @@ impl Below {
     /// The length itself.
     const LENGTH: Below = Below { c: 1, b: 0, s: 0 };
 
+    /// The same bound over its least denominator: `⌊(4·L - 4) / 4⌋` is
+    /// `L - 1`. Each bound is made so, or a loop that halves an index, as
+    /// `siftUp`'s does, never settles on one.
+    fn lowest(mut self) -> Below {
+        while self.s > 0 && self.c % 2 == 0 && self.b % 2 == 0 {
+            self = Below {
+                c: self.c / 2,
+                b: self.b / 2,
+                s: self.s - 1,
+            };
+        }
+        self
+    }
+
     /// This bound and `other` over one denominator.
     fn aligned(self, other: Below) -> (Below, Below) {
         let s = self.s.max(other.s);
@@ -44,6 +58,7 @@ impl Below {
             b: x.b + y.b,
             s: x.s,
         }
+        .lowest()
     }
 
     fn offset(self, k: i128) -> Below {
@@ -51,6 +66,7 @@ impl Below {
             b: self.b + (k << self.s),
             ..self
         }
+        .lowest()
     }
 
     fn times(self, k: i128) -> Below {
@@ -59,6 +75,7 @@ impl Below {
             b: self.b * k,
             ..self
         }
+        .lowest()
     }
 
     /// Whether it's below the length, `≤ L - 1`, whatever `L` is.
@@ -74,6 +91,7 @@ impl Below {
             b: x.b.max(y.b),
             s: x.s,
         }
+        .lowest()
     }
 }
 
@@ -126,6 +144,24 @@ impl Known {
         Known { vars, lengths }
     }
 
+    /// What's known after `slice` grows `by` items, one more of a `push`,
+    /// one fewer of a `pop`: a bound `⌊(c·L + b) / 2^s⌋` by its length is
+    /// `⌊(c·L' + b - c·by) / 2^s⌋` by the new one, and of a `pop` of none,
+    /// which leaves it, larger still.
+    fn grown(&mut self, slice: &Slice, by: i128) {
+        if let Some(least) = self.lengths.get_mut(slice) {
+            *least = (*least + by).max(0);
+        }
+        for range in self.vars.values_mut() {
+            if let Some((at, bound)) = &mut range.below
+                && at == slice
+            {
+                bound.b -= bound.c * by;
+                *bound = bound.lowest();
+            }
+        }
+    }
+
     /// What's known after `var` may have changed, as an integer or as what
     /// holds a slice: nothing of it.
     fn changed(&mut self, var: LocalVarId) {
@@ -164,6 +200,14 @@ pub(in crate::lower) struct Ranges {
     pub(in crate::lower) exact: HashSet<Span>,
 }
 
+/// A parameter of a function only calls reach, a variable its pattern
+/// binds as it is, and whether it's an integer of a range rust-js knows.
+#[derive(Clone, Copy)]
+struct Param {
+    var: LocalVarId,
+    integer: bool,
+}
+
 struct Walk<'a, 'tcx> {
     tcx: TyCtxt<'tcx>,
     thir: &'a Thir<'tcx>,
@@ -177,39 +221,165 @@ struct Walk<'a, 'tcx> {
     targets: Vec<Target>,
     /// A jump the walk can't follow: nothing it found holds.
     lost: bool,
+    /// The functions only calls reach, by their parameters, and what each
+    /// is told of them where this body calls it.
+    callees: &'a HashMap<DefId, Vec<Option<Param>>>,
+    told: HashMap<DefId, Option<Known>>,
 }
 
-/// The ranges of a body's integers, and what they show (ADR 0576).
-pub(in crate::lower) fn ranges<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>, root: ExprId) -> Ranges {
-    let mut walk = Walk {
-        tcx,
-        thir,
-        indexes: HashMap::new(),
-        ops: HashMap::new(),
-        volatile: volatile(thir),
-        changes: changes(thir),
-        targets: Vec::new(),
-        lost: false,
-    };
-    walk.expr(root, &mut Some(Known::default()));
-    if walk.lost {
-        return Ranges::default();
+/// A body to walk: what it is, its THIR and its root.
+pub(in crate::lower) type Walked<'a, 'tcx> = (DefId, &'a Thir<'tcx>, ExprId);
+
+/// The ranges of each body's integers, and what they show (ADR 0576): of
+/// a function only calls reach (`only_called`), its parameters as each
+/// call gives them (ADR 0577), joined, walked again until what each is
+/// told holds.
+pub(in crate::lower) fn ranges<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    bodies: &[Walked<'_, 'tcx>],
+    only_called: &HashMap<DefId, usize>,
+) -> Vec<Ranges> {
+    // A function only calls reach, each of whose calls is in a body here.
+    let mut counted: HashMap<DefId, usize> = HashMap::new();
+    for &(_, thir, _) in bodies {
+        for callee in calls(thir) {
+            *counted.entry(callee).or_default() += 1;
+        }
     }
-    // One span may be of more than one operator, a macro's: exact where each is.
-    let mut exact: HashMap<Span, bool> = HashMap::new();
-    for (id, ok) in walk.ops {
-        let span = thir[id].span;
-        *exact.entry(span).or_insert(true) &= ok && !span.from_expansion();
+    let callees: HashMap<DefId, Vec<Option<Param>>> = (bodies.iter())
+        .filter(|(def_id, ..)| only_called.get(def_id).is_some_and(|n| counted.get(def_id) == Some(n)))
+        .map(|&(def_id, thir, _)| {
+            let params = (thir.params.iter())
+                .map(|param| match param.pat.as_deref()?.kind {
+                    PatKind::Binding {
+                        var,
+                        mode: BindingMode(ByRef::No, _),
+                        subpattern: None,
+                        ..
+                    } => Some(Param {
+                        var,
+                        integer: type_range(param.ty).is_some(),
+                    }),
+                    _ => None,
+                })
+                .collect();
+            (def_id, params)
+        })
+        .collect();
+    // What each is told, `None` while no call of it is reached; each body's
+    // last walk, and what it told.
+    let mut entries: HashMap<DefId, Option<Known>> = callees.keys().map(|&f| (f, None)).collect();
+    let mut changed: HashMap<DefId, usize> = HashMap::new();
+    let mut found: Vec<Ranges> = bodies.iter().map(|_| Ranges::default()).collect();
+    let mut told: Vec<HashMap<DefId, Option<Known>>> = bodies.iter().map(|_| HashMap::new()).collect();
+    let index: HashMap<DefId, usize> = (bodies.iter().enumerate())
+        .map(|(i, (def_id, ..))| (*def_id, i))
+        .collect();
+    let mut work: Vec<usize> = (0..bodies.len()).rev().collect();
+    let mut queued: Vec<bool> = vec![true; bodies.len()];
+    while let Some(i) = work.pop() {
+        queued[i] = false;
+        let (def_id, thir, root) = bodies[i];
+        let entry = match entries.get(&def_id) {
+            Some(entry) => entry.clone(),
+            None => Some(Known::default()),
+        };
+        let mut walk = Walk {
+            tcx,
+            thir,
+            indexes: HashMap::new(),
+            ops: HashMap::new(),
+            volatile: volatile(thir),
+            changes: changes(thir),
+            targets: Vec::new(),
+            lost: false,
+            callees: &callees,
+            told: HashMap::new(),
+        };
+        let mut known = entry.map(|mut k| {
+            k.vars.retain(|var, _| !walk.volatile.contains(var));
+            k
+        });
+        if known.is_some() {
+            walk.expr(root, &mut known);
+        }
+        // A jump not followed may hide a call: each it makes is told nothing.
+        let now = match walk.lost {
+            true => (calls(thir).filter(|f| callees.contains_key(f)))
+                .map(|f| (f, Some(Known::default())))
+                .collect(),
+            false => std::mem::take(&mut walk.told),
+        };
+        found[i] = walk.found();
+        let before = std::mem::replace(&mut told[i], now);
+        // Each function told otherwise than it was: what all its calls tell
+        // it, and walked again.
+        let affected: HashSet<DefId> = before.keys().chain(told[i].keys()).copied().collect();
+        for callee in affected {
+            let joined = (told.iter()).fold(None, |all, by| match by.get(&callee) {
+                Some(this) => either(all, this.clone()),
+                None => all,
+            });
+            let times = changed.entry(callee).or_default();
+            let entry = entries.get_mut(&callee).expect("a callee");
+            // Told otherwise again and again, what still changes is
+            // forgotten, and past that, all of it.
+            let joined = match (*times, joined, &*entry) {
+                (64.., _, _) => Some(Known::default()),
+                (4.., Some(mut next), Some(was)) => {
+                    next.vars.retain(|v, r| was.vars.get(v) == Some(r));
+                    next.lengths.retain(|s, l| was.lengths.get(s) == Some(l));
+                    Some(next)
+                }
+                (_, joined, _) => joined,
+            };
+            if joined != *entry {
+                *entry = joined;
+                *times += 1;
+                if let Some(&at) = index.get(&callee)
+                    && !queued[at]
+                {
+                    queued[at] = true;
+                    work.push(at);
+                }
+            }
+        }
     }
-    Ranges {
-        in_bounds: (walk.indexes.into_iter())
-            .filter(|&(_, ok)| ok)
-            .map(|(id, _)| id)
-            .collect(),
-        exact: (exact.into_iter())
-            .filter(|&(_, ok)| ok)
-            .map(|(span, _)| span)
-            .collect(),
+    found
+}
+
+/// The function each call of a body calls.
+fn calls<'a>(thir: &'a Thir<'_>) -> impl Iterator<Item = DefId> + 'a {
+    (thir.exprs.iter()).filter_map(move |e| match e.kind {
+        ExprKind::Call { fun, .. } => fn_def(thir[strip(thir, fun)].ty).map(|(callee, _)| callee),
+        _ => None,
+    })
+}
+
+impl Walk<'_, '_> {
+    /// What the walk judged: each site in bounds or exact every time it was
+    /// reached; nothing of a walk that lost its way.
+    fn found(&self) -> Ranges {
+        if self.lost {
+            return Ranges::default();
+        }
+        // One span may be of more than one operator, a macro's: exact where
+        // each is.
+        let mut exact: HashMap<Span, bool> = HashMap::new();
+        for (&id, &ok) in &self.ops {
+            let span = self.thir[id].span;
+            *exact.entry(span).or_insert(true) &= ok && !span.from_expansion();
+        }
+        Ranges {
+            in_bounds: (self.indexes.iter())
+                .filter(|&(_, &ok)| ok)
+                .map(|(&id, _)| id)
+                .collect(),
+            exact: (exact.into_iter())
+                .filter(|&(_, ok)| ok)
+                .map(|(span, _)| span)
+                .collect(),
+        }
     }
 }
 
@@ -575,7 +745,8 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
 
     /// A call: its arguments in order, then what it changes. A `&mut` it's
     /// given may change what it's of; a `Vec`'s length too, unless the call
-    /// keeps it.
+    /// keeps it, or a `push` or a `pop` says by how much. A call of a
+    /// function only calls reach tells it what its parameters are.
     fn call(&mut self, e: ExprId, fun: ExprId, args: &[ExprId], known: &mut Option<Known>) -> Option<Range> {
         let thir = self.thir;
         let lent = |arg: ExprId| match thir[strip(thir, arg)].kind {
@@ -597,7 +768,14 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
             });
         }
         let before = known.clone();
-        let keeps = self.vec_view(fun).is_some();
+        self.tell_callee(fun, args, &ranges, &before);
+        let asked = self.asks(e);
+        let grows = match asked {
+            Some((SliceLength::Push, items)) => self.slice(items).map(|slice| (slice, 1)),
+            Some((SliceLength::Pop, items)) => self.slice(items).map(|slice| (slice, -1)),
+            _ => None,
+        };
+        let keeps = self.vec_view(fun).is_some() || grows.is_some();
         for &arg in args {
             if let Some(place) = lent(arg)
                 && let (Some(var), Some(k)) = (root_var(thir, place), known.as_mut())
@@ -610,7 +788,10 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
                 }
             }
         }
-        match self.asks(e) {
+        if let (Some((slice, by)), Some(k)) = (grows, known.as_mut()) {
+            k.grown(&slice, by);
+        }
+        match asked {
             // Its indexes where it's called, the length as it was.
             Some((SliceLength::Index | SliceLength::Swap | SliceLength::SwapRemove, items)) => {
                 for index in ranges.into_iter().skip(1) {
@@ -630,6 +811,42 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
             }),
             _ => None,
         }
+    }
+
+    /// A call of a function only calls reach, `before` it runs: what it's
+    /// told of its parameters, each integer's range and its bound by the
+    /// slice another is given, and each slice's least length, joined into
+    /// what its other calls here told it.
+    fn tell_callee(&mut self, fun: ExprId, args: &[ExprId], ranges: &[Option<Range>], before: &Option<Known>) {
+        let Some(k) = before else { return };
+        let Some((callee, _)) = fn_def(self.thir[strip(self.thir, fun)].ty) else {
+            return;
+        };
+        let Some(params) = self.callees.get(&callee) else {
+            return;
+        };
+        let slices: Vec<Option<Slice>> = (args.iter().zip(params))
+            .map(|(&arg, param)| param.filter(|p| !p.integer).and_then(|_| self.slice(arg)))
+            .collect();
+        // The parameter a slice of this body is given as.
+        let theirs = |slice: &Slice| {
+            (slices.iter().zip(params))
+                .find_map(|(given, param)| param.filter(|_| given.as_ref() == Some(slice)))
+                .map(|param| (Vec::new(), param.var))
+        };
+        let mut told = Known::default();
+        for ((param, range), slice) in params.iter().zip(ranges).zip(&slices) {
+            let Some(param) = param else { continue };
+            if let (true, Some(range)) = (param.integer, range) {
+                let below = (range.below.as_ref()).and_then(|(slice, bound)| Some((theirs(slice)?, *bound)));
+                told.vars.insert(param.var, Range { below, ..range.clone() });
+            }
+            if let Some(least) = slice.as_ref().and_then(|slice| k.lengths.get(slice)) {
+                told.lengths.insert((Vec::new(), param.var), *least);
+            }
+        }
+        let entry = self.told.entry(callee).or_insert(None);
+        *entry = either(entry.take(), Some(told));
     }
 
     /// A `break` or a `continue` to `label`: what's known here goes there.
@@ -971,7 +1188,7 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
                 Some(k @ 0..32) => Range {
                     lo: l.lo >> k,
                     hi: l.hi >> k,
-                    below: bound(l, &|x| Below { s: x.s + k as u32, ..x }).filter(|(_, x)| x.s <= 64),
+                    below: bound(l, &|x| Below { s: x.s + k as u32, ..x }.lowest()).filter(|(_, x)| x.s <= 64),
                 },
                 _ => Range::of(0, l.hi),
             }),

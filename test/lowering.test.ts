@@ -4930,6 +4930,110 @@ pub fn later(items: &mut Vec<u32>) -> u32 {
   expect(() => lib.later([1])).toThrow("index out of bounds");
 });
 
+// ADR 0577: a function no JS caller sees, called and never named as a value,
+// is given what its calls give it: React's heap's `siftUp` reads
+// `heap[index]` of the index `push` gave it, the heap's length before its
+// `push`. A `push` makes a length one more, a `pop` one fewer.
+test("a function only calls reach is what its calls give it", async () => {
+  const dir = fixture("only-called");
+  writeFileSync(join(dir, "lib.rs"), `pub fn push(heap: &mut Vec<u32>, n: u32) {
+    let index = heap.len();
+    heap.push(n);
+    sift_up(heap, index);
+}
+
+fn sift_up(heap: &mut [u32], i: usize) {
+    let mut index = i;
+    while index > 0 {
+        let parent = (index - 1) >> 1;
+        if heap[parent] > heap[index] {
+            heap.swap(parent, index);
+            index = parent;
+        } else {
+            return;
+        }
+    }
+}
+
+pub fn guarded(items: &[u32], i: usize) -> u32 {
+    if i < items.len() { item(items, i) } else { 0 }
+}
+
+fn item(items: &[u32], i: usize) -> u32 {
+    items[i]
+}
+
+pub fn mixed(items: &[u32], i: usize) -> u32 {
+    let first = if i < items.len() { other(items, i) } else { 0 };
+    first ^ other(items, i)
+}
+
+fn other(items: &[u32], i: usize) -> u32 {
+    items[i]
+}
+
+pub fn doubled(items: &[u32]) -> (u32, Vec<u32>) {
+    (double(3), items.iter().copied().map(double).collect())
+}
+
+fn double(n: u32) -> u32 {
+    n * 2
+}
+
+pub fn half(n: u32) -> u32 {
+    n - 1
+}
+
+pub fn halved() -> u32 {
+    half(5)
+}
+
+pub fn counted() -> u32 {
+    count(10, 0)
+}
+
+fn count(n: u32, total: u32) -> u32 {
+    if n == 0 { total } else { count(n - 1, total + 1) }
+}
+
+pub fn pushed(v: &mut Vec<u32>) -> u32 {
+    let n = v.len();
+    v.push(7);
+    v[n]
+}
+
+pub fn popped(v: &mut Vec<u32>) -> u32 {
+    let n = v.len();
+    if n == 0 {
+        return 0;
+    }
+    v.pop();
+    v[n - 1]
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("    const parent = (index - 1) >>> 1;\n    if (heap[parent] > heap[index]) {\n      [heap[parent], heap[index]] = [heap[index], heap[parent]];\n");
+  expect(js).toContain("function item(items, i) {\n  return items[i];\n}");
+  // Called where nothing bounds it too, named as a value, or a JS caller's.
+  expect(js).toContain("function other(items, i) {\n  return $index(items, i);\n}");
+  expect(js).toContain("function double(n) {\n  return Math.imul(n, 2) >>> 0;\n}");
+  expect(js).toContain("export function half(n) {\n  return (n - 1) >>> 0;\n}");
+  // Its own calls' too, until what it's given holds.
+  expect(js).toContain("count(n - 1, (total + 1) >>> 0)");
+  expect(js).toContain("  v.push(7);\n  return v[n];\n");
+  expect(js).toContain("return $index(v, n - 1);");
+  const lib = await import(join(dir, "lib.js"));
+  const heap: number[] = [];
+  for (const n of [5, 3, 8, 1]) lib.push(heap, n);
+  expect(heap[0]).toBe(1);
+  expect([lib.guarded([4, 5], 1), lib.guarded([4], 3), lib.counted(), lib.halved(), lib.pushed([1, 2])]).toEqual([5, 0, 10, 4, 7]);
+  expect(lib.doubled([1, 2])).toEqual([6, [2, 4]]);
+  expect(lib.half(0)).toBe(4294967295);
+  expect(() => lib.mixed([1], 4)).toThrow("index out of bounds");
+  expect(() => lib.popped([1])).toThrow("index out of bounds");
+});
+
 // ADR 0293: a `Cell` a `let` takes apart, read by `get()` before anything
 // else runs, is its value in JS's destructuring: react.dev's ErrorMessage
 // has `const {message, title} = error;`. Set before it's read, it's read

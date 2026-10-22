@@ -17,7 +17,7 @@ function table(rows) {
     if (row == null) {
       break;
     }
-    $print(`${Math.imul(row, row) >>> 0} `);
+    $print(`${row * row} `);
   }
   console.log("");
 }

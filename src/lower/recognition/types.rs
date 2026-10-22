@@ -744,8 +744,9 @@ pub(crate) fn is_err_variant(tcx: TyCtxt<'_>, variant: DefId) -> bool {
 
 /// What a function asks of a `Vec`'s or a slice's length: its `len()`,
 /// its `is_empty()`, or that each index it's given is below it, `v[i]` of
-/// a `Vec`, `swap(i, j)`, `swap_remove(i)`. What knows an index in bounds
-/// reads these (ADR 0292, 0576).
+/// a `Vec`, `swap(i, j)`, `swap_remove(i)`; or what it does to it, a
+/// `Vec`'s `push` one more, its `pop` one fewer where it has one. What
+/// knows an index in bounds reads these (ADRs 0292, 0576).
 #[derive(Clone, Copy, PartialEq)]
 pub(in crate::lower) enum SliceLength {
     Len,
@@ -753,6 +754,8 @@ pub(in crate::lower) enum SliceLength {
     Index,
     Swap,
     SwapRemove,
+    Push,
+    Pop,
 }
 
 pub(in crate::lower) fn slice_length<'tcx>(
@@ -784,6 +787,8 @@ pub(in crate::lower) fn slice_length<'tcx>(
         "is_empty" => Some(SliceLength::IsEmpty),
         "swap" => Some(SliceLength::Swap),
         "swap_remove" => Some(SliceLength::SwapRemove),
+        "push" if vec(owner) => Some(SliceLength::Push),
+        "pop" if vec(owner) => Some(SliceLength::Pop),
         _ => None,
     }
 }

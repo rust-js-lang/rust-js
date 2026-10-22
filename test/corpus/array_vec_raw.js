@@ -118,7 +118,7 @@ const Stack = {
     }
     const p = $ptrAdd(Stack.asMutPtr(stack, CAP), index);
     const taken = p.value;
-    $ptrCopy($ptrAdd(p, 1), p, (((stack.len - index) >>> 0) - 1) >>> 0);
+    $ptrCopy($ptrAdd(p, 1), p, (stack.len - index - 1) >>> 0);
     stack.len = (stack.len - 1) >>> 0;
     return taken;
   },

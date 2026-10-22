@@ -72,7 +72,7 @@ function render(out, n, WWrite) {
 
 function twice(out, n, WWrite) {
   render(out, n, $mutWriter(WWrite));
-  return render(out, (n + 1) >>> 0, $mutWriter(WWrite));
+  return render(out, n + 1, $mutWriter(WWrite));
 }
 
 function main() {

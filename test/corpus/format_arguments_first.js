@@ -20,7 +20,7 @@ function loudDebug_fmt(loud) {
 
 function make(n) {
   console.log(`make ${n}`);
-  return [n, (n + 1) & 255];
+  return [n, n + 1];
 }
 
 function named(s) {

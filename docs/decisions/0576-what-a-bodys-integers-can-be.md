@@ -1,6 +1,7 @@
 # 0576. What a body's integers can be: an index in bounds, an operator that can't wrap, a swap JS's own
 
-Status: Accepted. Replaces [0292](0292-known-bounds.md)'s
+Status: Accepted; extended by [0577](0577-a-function-only-calls-reach.md),
+whose functions are given what their calls give them. Replaces [0292](0292-known-bounds.md)'s
 regions, whose cases it keeps, and narrows where [0011](0011-numbers.md)'s
 wraps are written.
 
@@ -88,9 +89,10 @@ it found is trusted.
   parameter; the readability baseline is six lines shorter.
 - Tests that held a wrap or a check now known to be needless hold the
   form without it.
-- What's known stops at the body: a function's parameter is any value,
-  so the heap's `siftUp`, whose index is its caller's, keeps `$index` and
-  `$swap`.
+- What's known stopped at the body, so the heap's `siftUp`, whose index
+  is its caller's, kept `$index` and `$swap`, until a function only calls
+  reach was given what they give it
+  ([0577](0577-a-function-only-calls-reach.md)).
 
 ## What holds it
 

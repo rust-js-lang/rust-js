@@ -11,7 +11,7 @@ function loud(n) {
 
 function inRange(value) {
   loud(value) <= 9;
-  return Math.imul(value, 2) >>> 0;
+  return value * 2;
 }
 
 // As deranged writes it, of what does nothing as it's made.

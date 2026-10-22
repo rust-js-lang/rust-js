@@ -204,6 +204,8 @@ impl Callbacks for RustJs {
             bodies.extend(lower::collect_std_bodies(tcx));
         }
         let mut initializers = lower::collect_initializers(tcx);
+        // What their integers can be, of all of them at once (ADR 0577).
+        lower::collect_ranges(tcx, &mut bodies, &mut initializers);
         // Then, read from their MIR, what runs (ADR 0364): the initializers
         // lowered as code too.
         lower::collect_mir(tcx, &mut bodies);

@@ -16,6 +16,8 @@ use std::collections::{HashMap, HashSet};
 
 mod ranges;
 
+pub(super) use ranges::ranges;
+
 /// The parts of a `for pat in head { body }` (ADR 0025).
 pub(super) struct ForLoop<'a, 'tcx> {
     pub(super) head: ExprId,
@@ -121,11 +123,9 @@ pub(super) struct BodyFacts {
 }
 
 impl BodyFacts {
-    pub(super) fn collect<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>, root: ExprId) -> Self {
-        let ranges::Ranges { in_bounds, exact } = ranges::ranges(tcx, thir, root);
+    /// Its facts but its ranges, which are the crate's (`ranges`).
+    pub(super) fn collect<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> Self {
         let mut facts = Self {
-            in_bounds,
-            exact,
             whole_casts: whole_casts(tcx, thir),
             ..Self::default()
         };

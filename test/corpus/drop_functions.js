@@ -13,21 +13,21 @@ function noisyDrop_drop(noisy) {
 function many(base) {
   return {
     a: [base],
-    b: [(base + 1) >>> 0],
-    c: [(base + 2) >>> 0],
-    d: [(base + 3) >>> 0],
-    e: [(base + 4) >>> 0],
-    f: [(base + 5) >>> 0],
-    g: [(base + 6) >>> 0],
-    h: [(base + 7) >>> 0],
-    i: [(base + 8) >>> 0],
+    b: [base + 1],
+    c: [base + 2],
+    d: [base + 3],
+    e: [base + 4],
+    f: [base + 5],
+    g: [base + 6],
+    h: [base + 7],
+    i: [base + 8],
   };
 }
 
 function list(n) {
   let at = "Nil";
   for (let i = 0; i < n; i++) {
-    at = { TAG: "Cons", _0: [(100 + i) >>> 0], _1: at };
+    at = { TAG: "Cons", _0: [100 + i], _1: at };
   }
   return at;
 }

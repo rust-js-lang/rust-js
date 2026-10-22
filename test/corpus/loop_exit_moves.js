@@ -15,7 +15,7 @@ function guarded(limit) {
   let n = 0;
   while (true) {
     const _g = ["round"];
-    n = (n + 1) >>> 0;
+    n += 1;
     if (n < limit) {
       try {
         console.log(`round ${n}`);
@@ -27,7 +27,7 @@ function guarded(limit) {
     guardDrop_drop(_g);
     break;
   }
-  const after = Math.imul(n, 10) >>> 0;
+  const after = n * 10;
   console.log(`after ${after}`);
   return after;
 }
@@ -108,7 +108,7 @@ function setInLoop(values) {
 
 // A name shadowed after the loop by one that doesn't read it.
 function reshadowed(limit) {
-  const label = Math.imul(limit, 2) >>> 0;
+  const label = limit * 2;
   console.log(`label ${label}`);
   let n = 0;
   while (true) {
