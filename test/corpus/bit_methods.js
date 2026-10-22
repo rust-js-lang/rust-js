@@ -19,15 +19,15 @@ export function entry() {
 
 function main() {
   console.log(
-    `${$edgeOnes(227, 8)} ${$edgeOnes(227, 8, true)} ${$edgeOnes(-1, 16)} ${$edgeOnes(0n, 64, true)}`,
+    `${$edgeOnes(0b11100011, 8)} ${$edgeOnes(0b11100011, 8, true)} ${$edgeOnes(-1, 16)} ${$edgeOnes(0n, 64, true)}`,
   );
   console.log(
-    `${$swapBytes(4660, 16, false)} ${$swapBytes(-2, 32, true)} ${$swapBytes(72623859790382856n, 64, false)}`,
+    `${$swapBytes(0x1234, 16, false)} ${$swapBytes(-2, 32, true)} ${$swapBytes(72623859790382856n, 64, false)}`,
   );
   console.log(
     `${$reverseBits(1, 8, false)} ${$reverseBits(-128, 8, true)} ${$reverseBits(6n, 128, false)}`,
   );
-  console.log(`${$swapBytes(4660, 16, false)} ${$swapBytes(1, 32, false)} ${7n} -5`);
+  console.log(`${$swapBytes(0x1234, 16, false)} ${$swapBytes(1, 32, false)} ${7n} -5`);
   const checkedDivEuclid = $checkedEuclid(7, -2, -2147483648, false);
   const checkedRemEuclid = $checkedEuclid(-7, 2, -2147483648, true);
   const value = $checkedEuclid(-128, -1, -128, false);
@@ -47,7 +47,7 @@ function main() {
   );
   console.log(
     `${$displayF32(
-      $floatFromBits($fromBytes([64, 73, 15, 219], 4, false, false), 4),
+      $floatFromBits($fromBytes([0x40, 0x49, 0x0f, 0xdb], 4, false, false), 4),
     )} ${$displayF64($floatFromBits($fromBytes($toBytes($floatToBits(0.1, 8), 8, true), 8, true, false), 8))}`,
   );
 }

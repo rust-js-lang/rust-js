@@ -27,11 +27,11 @@ function flagsBitXor_bitxor(flags, other) {
 }
 
 function flagsNot_not(flags) {
-  return [~flags[0] & 255 & 7];
+  return [~flags[0] & 255 & 0b111];
 }
 
 function flagsShlU8_shl(flags, by) {
-  return [(flags[0] << (by & 7)) & 255 & 7];
+  return [(flags[0] << (by & 7)) & 255 & 0b111];
 }
 
 function flagsShrU32_shr(flags, by) {
@@ -51,7 +51,7 @@ function flagsBitXorAssign_bitxorAssign(flags, other) {
 }
 
 function flagsShlAssignU8_shlAssign(flags, by) {
-  flags[0] = (flags[0] << (by & 7)) & 255 & 7;
+  flags[0] = (flags[0] << (by & 7)) & 255 & 0b111;
 }
 
 function flagsShrAssignU32_shrAssign(flags, by) {

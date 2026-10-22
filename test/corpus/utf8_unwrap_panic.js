@@ -7,7 +7,7 @@ export function entry() {
 }
 
 function main() {
-  const bytes = [97, 255];
+  const bytes = [97, 0xff];
   const text = $unwrapOk($fromUtf8(bytes), undefined, $debugUtf8Error);
   console.log(`${text}`);
 }

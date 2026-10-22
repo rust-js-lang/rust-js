@@ -172,6 +172,13 @@ pub fn lower_crate<'tcx>(
             failed = true;
             continue;
         };
+        // A number is where its literal is, which it's written as (ADR 0627).
+        let value = match value.kind {
+            js::ExprKind::Num(_) if let Some(body) = tcx.hir_maybe_body_owned_by(def_id) => {
+                value.or_at(sources.span(body.value.span))
+            }
+            _ => value,
+        };
         // A `const { .. }` thread-local's value, the `const` in its block, is
         // its variable, by its name.
         let key = thread_local_inits.get(&def_id).copied();

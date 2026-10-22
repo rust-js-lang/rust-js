@@ -442,7 +442,7 @@ export function sample() {
     empty: [],
     nested: [[], [1, 2]],
     text: "tab	ü😀",
-    floats: [0.1, -0, 1e-7, 123456789, NaN, 10000000000000000],
+    floats: [0.1, -0, 1e-7, 123456789, NaN, 1e16],
   };
 }
 

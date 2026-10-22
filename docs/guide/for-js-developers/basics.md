@@ -214,6 +214,26 @@ export function parseAge(s) {
   is an `Err`, so trim first.
 - **Dividing an integer by zero panics,** with Rust's message. An `f64`
   divided by zero is `Infinity`, as in JS.
+- **A literal keeps its base and its exponent**, `0xff`, `0b1010`, `1e4`,
+  without Rust's type suffix and separators; any other is JS's digits,
+  `5000` of `5000.0`
+  ([ADR 0627](../../decisions/0627-a-number-literal-keeps-its-base-and-exponent.md)):
+
+```rust
+pub const OWNER_STACK_LIMIT: f64 = 1e4;
+
+pub fn low_byte(n: u32) -> u32 {
+    n & 0xffu32
+}
+```
+
+```js
+export const OWNER_STACK_LIMIT = 1e4;
+
+export function lowByte(n) {
+  return (n & 0xff) >>> 0;
+}
+```
 
 The whole story, with each difference from native Rust, is in
 [Semantics](../semantics.md) ([ADR 0011](../../decisions/0011-numbers.md), [ADR 0086](../../decisions/0086-64-bit-integers.md)).

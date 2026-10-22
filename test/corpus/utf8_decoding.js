@@ -45,7 +45,7 @@ function main() {
     show(bytes);
   }
 
-  const value = $fromUtf8([104, 105, 255, 33], true);
+  const value = $fromUtf8([104, 105, 0xff, 33], true);
   if (value.TAG === "Ok") {
     console.log(`${value._0}`);
   } else {

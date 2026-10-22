@@ -87,6 +87,7 @@ pub fn emit(
     let cx = Cx {
         b: AstBuilder::new(&allocator),
         allocator: &allocator,
+        source: rust_source,
         // A blank line's piece is no comment (`comments_of`).
         commented: (comments.iter())
             .filter(|c| !c.span.is_empty())
@@ -582,6 +583,8 @@ fn header(module: &Module) -> String {
 struct Cx<'a> {
     b: AstBuilder<'a>,
     allocator: &'a Allocator,
+    /// The program's text, where a number is written as it was (ADR 0627).
+    source: &'a str,
     /// Where a statement a comment is printed before starts.
     commented: std::collections::HashSet<u32>,
 }

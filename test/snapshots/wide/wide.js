@@ -53,8 +53,8 @@ function idDeserialize_deserialize(json) {
 
 export const Id = {
   new(millis, worker, sequence) {
-    worker = BigInt(worker & 1023);
-    sequence = BigInt(sequence & 4095);
+    worker = BigInt(worker & 0x3ff);
+    sequence = BigInt(sequence & 0xfff);
     return [
       BigInt.asUintN(64, (millis - 1288834974657n) << 22n) |
         BigInt.asUintN(64, worker << 12n) |

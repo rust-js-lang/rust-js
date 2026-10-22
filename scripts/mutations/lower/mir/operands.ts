@@ -114,4 +114,12 @@ export const mutations: Mutation[] = [
     replace: "text.contains('\\n') && false",
     tests: ["test/lowering-strings.test.ts", "-t", "a string written across lines keeps its lines"],
   },
+  {
+    name: "constant-number-unplaced",
+    breaks: "a number operand isn't where its literal is, so `n & 0xff` is `n & 255`",
+    file: "src/lower/mir/operands.rs",
+    find: "            js::ExprKind::Num(_) => value.or_at(self.js_span(c.span)),\n",
+    replace: "",
+    tests: ["test/lowering-numbers.test.ts", "-t", "a number literal keeps its base and its exponent"],
+  },
 ];

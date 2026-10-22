@@ -424,4 +424,12 @@ export const mutations: Mutation[] = [
     replace: "                    Some(function) if false && unset && super::bindings::global_function(tcx, function).is_some() => {\n",
     tests: ["test/lowering-bindings.test.ts", "-t", "a global binding a module names"],
   },
+  {
+    name: "const-number-unplaced",
+    breaks: "a `const` of `1e4` isn't where its literal is, so it's `10000`",
+    file: "src/lower/pipeline.rs",
+    find: "                value.or_at(sources.span(body.value.span))\n",
+    replace: "                value\n",
+    tests: ["test/lowering-numbers.test.ts", "-t", "a number literal keeps its base and its exponent"],
+  },
 ];

@@ -42,7 +42,7 @@ function longer(text) {
 }
 
 function main() {
-  const bytes = [1, 2, 171, 205];
+  const bytes = [1, 2, 0xab, 0xcd];
   const id = Uuid.fromBytesRef(bytes);
   const value$1 = Uuid.asHyphenated(id);
   console.log(`${uuidDebug_fmt(id)} ${hyphenatedDisplay_fmt(value$1)}`);

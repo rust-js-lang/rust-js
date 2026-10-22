@@ -83,15 +83,15 @@ function main() {
   // Written through as a wider integer, then read as bytes again.
   const buffer = new Array(8).fill(0);
   const b = $ptr(buffer, 0);
-  $ptrRetyped($ptrAdd(b, 1), 4, false).value = 3735928559;
-  $ptrRetyped($ptrAdd(b, 6), 2, false).value = 16706;
+  $ptrRetyped($ptrAdd(b, 1), 4, false).value = 0xdeadbeef;
+  $ptrRetyped($ptrAdd(b, 6), 2, false).value = 0x4142;
   $ptrAdd(b, 5).value = 7;
   const negative = $ptrRetyped($ptrAdd(b, 1), 1, true).value;
   const text = $utf8Decode([98, 121, 116, 101, 115]);
   console.log(`[${buffer.join(", ")}] ${negative} ${text}`);
 
   // A wider array's bytes.
-  const wide = [67305985, 134678021];
+  const wide = [0x04030201, 0x08070605];
   const w = $ptrBytes(
     $ptr(wide, 0),
     4,
@@ -100,14 +100,14 @@ function main() {
   );
   const tail = $ptrRetyped($ptrAdd(w, 3), 4, false).value;
   const copied = $ptrSlice($ptrAdd(w, 2), 5).slice();
-  $ptrAdd(w, 1).value = 255;
+  $ptrAdd(w, 1).value = 0xff;
   $ptrCopy($ptr(bytes, 0), $ptrAdd(w, 4), 3);
   console.log(
     `0x${tail.toString(16)} [${copied.join(", ")}] 0x${wide[0].toString(16)} 0x${wide[1].toString(16)}`,
   );
 
   // Plain data's bytes, read and written through a pointer to them.
-  const pair = { low: 4386, high: 13124, tag: 9 };
+  const pair = { low: 0x1122, high: 0x3344, tag: 9 };
   const q = $ptrBytes(
     $ptrTo(pair),
     6,
@@ -122,7 +122,7 @@ function main() {
   const high = $ptrRetyped($ptrAdd(q, 2), 2, false).value;
   const all = $ptrSlice(q, 5).slice();
   $ptrAdd(q, 4).value = 10;
-  $ptrRetyped($ptrAdd(q, 1), 2, false).value = 43707;
+  $ptrRetyped($ptrAdd(q, 1), 2, false).value = 0xaabb;
   console.log(
     `0x${first.toString(16)} 0x${high.toString(16)} [${all.join(", ")}] ${pairDebug_fmt(pair)}`,
   );
@@ -136,7 +136,7 @@ function main() {
     (bytes) => $fromBytes(bytes, 4, true, false),
   );
   for (let i = 0; i < 4; i++) {
-    $ptrAdd(s, i).value = (16 * (((i & 255) + 1) & 255)) & 255;
+    $ptrAdd(s, i).value = (0x10 * (((i & 255) + 1) & 255)) & 255;
   }
   console.log(`0x${slot.value.toString(16)}`);
   const raw = Array.from({ length: 4 });
@@ -160,7 +160,7 @@ function main() {
         ),
         4,
         false,
-      ).value === $fromBytes([187, 170, 68, 51], 4, true, false)
+      ).value === $fromBytes([0xbb, 0xaa, 0x44, 0x33], 4, true, false)
     }`,
   );
 }

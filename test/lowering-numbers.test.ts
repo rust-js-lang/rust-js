@@ -10,6 +10,48 @@ import { buildReact, compiler, fixture, run, target } from "./support";
 
 beforeAll(buildReact, 600_000);
 
+// ADR 0627: a number literal written with a base or an exponent is
+// written as the program wrote it, `1e4`, `0xff`, where JS reads it as the
+// same value: its type's suffix and its separators aren't JS's. Any other
+// is JS's own digits, `5000` of `5000.0`.
+test("a number literal keeps its base and its exponent", async () => {
+  const dir = fixture("literals-as-written");
+  writeFileSync(join(dir, "lib.rs"), `pub const OWNER_STACK_LIMIT: f64 = 1e4;
+pub const SEED: u32 = 0x811c_9dc5;
+
+pub fn masked(n: u32) -> u32 {
+    n & 0xffu32
+}
+
+pub fn small() -> f64 {
+    2.5e-3
+}
+
+pub fn whole() -> f64 {
+    5000.0
+}
+
+pub fn below() -> f64 {
+    -1e4
+}
+
+pub fn flags(n: u8) -> u8 {
+    n | 0b1010
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("export const OWNER_STACK_LIMIT = 1e4;");
+  expect(js).toContain("export const SEED = 0x811c9dc5;");
+  expect(js).toContain("return (n & 0xff) >>> 0;");
+  expect(js).toContain("return 2.5e-3;");
+  expect(js).toContain("return 5000;");
+  expect(js).toContain("return -1e4;");
+  expect(js).toContain("return n | 0b1010;");
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.OWNER_STACK_LIMIT, lib.SEED, lib.masked(0x1234), lib.small(), lib.whole(), lib.below(), lib.flags(1)]).toEqual([10000, 0x811c9dc5, 0x34, 0.0025, 5000, -10000, 11]);
+});
+
 // std's `From<bool>` of each number and `From<char>` of `u32`, `u64` and
 // `u128` are what `as` makes of them: `flag ? 1 : 0`, `c.codePointAt(0)`,
 // a BigInt of 64 bits and more (ADR 0086), as a function too.

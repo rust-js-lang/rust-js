@@ -329,11 +329,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             None => return Err(self.unsupported(c.span, "this constant, from its MIR")),
         };
-        // One written across lines keeps them, a template literal.
+        // One written across lines keeps them, a template literal; a number
+        // is where its literal is, which it's written as (ADR 0627).
         Ok(match &value.kind {
             js::ExprKind::Str(text) if text.contains('\n') && crate::lower::literal_across_lines(tcx, c.span) => {
                 Expr::lines(text.as_str())
             }
+            js::ExprKind::Num(_) => value.or_at(self.js_span(c.span)),
             _ => value,
         })
     }

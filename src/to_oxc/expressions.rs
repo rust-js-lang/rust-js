@@ -388,8 +388,11 @@ impl<'a> Cx<'a> {
             return Expression::new_numeric_literal(sp, n, None, NumberBase::Decimal, &self.b);
         }
         // oxc would print the shortest text, `.25`: the digits are JS's own,
-        // `0.25`, as `String(n)` writes them.
-        let digits = Expression::new_identifier(sp, self.name(&js_number(n.abs())), &self.b);
+        // `0.25`, as `String(n)` writes them; or the program's, its base or
+        // its exponent (ADR 0627).
+        let written = (self.source.get(sp.start as usize..sp.end as usize)).and_then(|text| as_written(text, n.abs()));
+        let digits = written.unwrap_or_else(|| js_number(n.abs()));
+        let digits = Expression::new_identifier(sp, self.name(&digits), &self.b);
         if n < 0.0 {
             Expression::new_unary_expression(sp, UnaryOperator::UnaryNegation, digits, &self.b)
         } else {
@@ -499,6 +502,44 @@ fn binary_op(op: Op) -> Result<BinaryOperator, LogicalOperator> {
 
 /// A positive finite number as JS's `Number.prototype.toString` writes it:
 /// its shortest digits, with an exponent only past 1e21 or below 1e-6.
+/// A Rust number literal, `text`, of a base or an exponent, `0xffu32` or
+/// `1e4`, as JS writes it, `0xff`, `1e4`: its type's suffix and its
+/// separators aren't JS's. Only where JS reads it as `n`, and it's written
+/// so: a literal of neither is JS's own digits (ADR 0627).
+fn as_written(text: &str, n: f64) -> Option<String> {
+    let text = text.trim().trim_start_matches('-').replace('_', "");
+    let suffixes = [
+        "u8", "u16", "u32", "u64", "u128", "usize", "i8", "i16", "i32", "i64", "i128", "isize", "f32", "f64",
+    ];
+    let based = ["0x", "0o", "0b"].iter().find(|prefix| text.starts_with(*prefix));
+    let (body, value) = match based {
+        Some(prefix) => {
+            let digits = &text[2..];
+            // `0x1f32` is hex digits: only a base's own digits and a suffix.
+            let digits = suffixes.iter().find_map(|s| digits.strip_suffix(s)).unwrap_or(digits);
+            let radix = match *prefix {
+                "0x" => 16,
+                "0o" => 8,
+                _ => 2,
+            };
+            let value = u128::from_str_radix(digits, radix).ok()? as f64;
+            (format!("{prefix}{}", digits.to_ascii_lowercase()), value)
+        }
+        None => {
+            let body = suffixes.iter().find_map(|s| text.strip_suffix(s)).unwrap_or(&text);
+            if !body.contains(['e', 'E']) {
+                return None;
+            }
+            (body.to_ascii_lowercase(), body.parse::<f64>().ok()?)
+        }
+    };
+    (value == n
+        && body
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || matches!(c, '.' | '-' | '+')))
+    .then_some(body)
+}
+
 fn js_number(n: f64) -> String {
     // `{:e}` has the shortest digits that read back as `n`: `2.5e-1`.
     let text = format!("{n:e}");
@@ -642,5 +683,27 @@ pub(super) fn in_chain(e: &js::Expr) -> bool {
         ExprKind::OptionalMember(..) | ExprKind::OptionalIndex(..) | ExprKind::OptionalCall(..) => true,
         ExprKind::Member(object, _) | ExprKind::Index(object, _) | ExprKind::Call(object, _) => in_chain(object),
         _ => false,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::as_written;
+
+    // A literal's base or exponent is written as JS has it, its suffix and
+    // separators gone, only of the value it is (ADR 0627).
+    #[test]
+    fn a_literal_is_written_as_js_reads_it() {
+        assert_eq!(
+            as_written("0x811c_9dc5u32", 2166136261.0).as_deref(),
+            Some("0x811c9dc5")
+        );
+        assert_eq!(as_written("1E4f64", 1e4).as_deref(), Some("1e4"));
+        assert_eq!(as_written("-0b1010", 10.0).as_deref(), Some("0b1010"));
+        assert_eq!(as_written("5000.0", 5000.0), None);
+        // Of a value it isn't, JS's digits.
+        assert_eq!(as_written("0xff", 256.0), None);
+        assert_eq!(as_written("1e-1", f64::from(0.1f32)), None);
+        assert_eq!(as_written("0xffu8.wrapping_add(1)", 0.0), None);
     }
 }

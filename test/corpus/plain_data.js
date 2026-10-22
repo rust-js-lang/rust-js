@@ -62,25 +62,25 @@ function main() {
   const value = [7];
   console.log(`${value[0]}`);
   console.log("4294967295");
-  console.log(`${bitsOf(1)} ${$displayF32($floatFromBits(1078530011, 4))}`);
+  console.log(`${bitsOf(1)} ${$displayF32($floatFromBits(0x40490fdb, 4))}`);
   console.log(`${$displayF64($floatFromBits(4611686018427387904n, 8))}`);
   const value$1 = { low: 1, high: 2 };
   console.log(`[${[value$1.low, value$1.high].join(", ")}]`);
   console.log("true");
-  console.log(`${$debugStr(String.fromCodePoint(65), "'")}`);
+  console.log(`${$debugStr(String.fromCodePoint(0x41), "'")}`);
   console.log(`${nothingDebug_fmt(undefined)}`);
 
   // Read from the bytes of the whole.
-  const value$2 = [120, 86, 52, 18];
+  const value$2 = [0x78, 0x56, 0x34, 0x12];
   console.log(`0x${$fromBytes(value$2, 4, true, false).toString(16)}`);
-  console.log(`[${$toBytes(305419896, 4, true).join(", ")}]`);
+  console.log(`[${$toBytes(0x12345678, 4, true).join(", ")}]`);
   const value$3 = [1, 1];
   const bytes = [value$3[0], value$3[1]];
   console.log(`${$fromBytes(bytes, 2, true, false)}`);
-  const value$4 = { low: 48879, high: 57005 };
+  const value$4 = { low: 0xbeef, high: 0xdead };
   const bytes$1 = [...$toBytes(value$4.low, 2, true), ...$toBytes(value$4.high, 2, true)];
   console.log(`0x${$fromBytes(bytes$1, 4, true, false).toString(16)}`);
-  const bytes$2 = $toBytes(3735928559, 4, true);
+  const bytes$2 = $toBytes(0xdeadbeef, 4, true);
   console.log(
     `${halvesDebug_fmt({
       low: $fromBytes(bytes$2.slice(0, 2), 2, true, false),
@@ -102,7 +102,7 @@ function main() {
       value: $fromBytes(value$6.slice(4, 8), 4, true, false),
     })}`,
   );
-  const value$7 = { tag: 9, value: 16909060 };
+  const value$7 = { tag: 9, value: 0x01020304 };
   const bytes$5 = [value$7.tag, 0, 0, 0, ...$toBytes(value$7.value, 4, true)];
   console.log(
     `${splitDebug_fmt({
@@ -113,7 +113,7 @@ function main() {
       },
     })}`,
   );
-  const split = { tag: 9, halves: { low: 772, high: 258 } };
+  const split = { tag: 9, halves: { low: 0x0304, high: 0x0102 } };
   const bytes$6 = [
     split.tag,
     0,
@@ -137,14 +137,14 @@ function main() {
       $fromBytes(bytes$7.slice(6, 8), 2, true, false),
     ].join(", ")}]`,
   );
-  const value$8 = [0, 0, 128, 63];
+  const value$8 = [0, 0, 0x80, 0x3f];
   console.log(`${$displayF32($floatFromBits($fromBytes(value$8, 4, true, false), 4))}`);
   const value$9 = BigInt.asUintN(128, 1n << 64n) | 3n;
   const bytes$8 = $toBytes(value$9, 16, true);
   console.log(
     `[${[$fromBytes(bytes$8.slice(0, 8), 8, true, false), $fromBytes(bytes$8.slice(8, 16), 8, true, false)].join(", ")}]`,
   );
-  const x = 16909060;
+  const x = 0x01020304;
   const bytes$9 = $toBytes(x, 4, true);
   const value$10 = [
     $fromBytes(bytes$9.slice(0, 2), 2, true, false),

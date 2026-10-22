@@ -43,7 +43,7 @@ function debugByteDebug_fmt(debugByte) {
 }
 
 function main() {
-  for (const b of [97, 32, 10, 39, 127, 254, 92]) {
+  for (const b of [97, 32, 10, 39, 0x7f, 0xfe, 92]) {
     const escaped = $escapeByte(b).slice();
     const debugByte = [b];
     const escapeAscii = $iter($escapeByte(b));

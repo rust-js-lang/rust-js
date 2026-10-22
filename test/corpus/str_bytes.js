@@ -9,10 +9,10 @@ export function entry() {
 
 // FNV-1a, as a hash of a string is often written.
 function fnv1a(text) {
-  let hash = 2166136261;
+  let hash = 0x811c9dc5;
   for (const b of Array.from(new TextEncoder().encode(text))) {
     hash = (hash ^ b) >>> 0;
-    hash = Math.imul(hash, 16777619) >>> 0;
+    hash = Math.imul(hash, 0x01000193) >>> 0;
   }
   return hash;
 }

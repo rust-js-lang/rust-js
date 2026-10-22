@@ -253,9 +253,9 @@ function main() {
     console.log(`${text.value}`);
   }
   console.log(`[${bytes.join(", ")}]`);
-  const bad = [255, 97];
+  const bad = [0xff, 97];
   console.log(`${$fromUtf8Mut(bad).TAG === "Err"}`);
-  const raw = [97, 195, 169, 98];
+  const raw = [97, 0xc3, 0xa9, 98];
   const part$1 = $fromUtf8Mut(raw, true);
   part$1.value = $asciiCase(part$1.value, true);
   console.log(`[${raw.join(", ")}]`);

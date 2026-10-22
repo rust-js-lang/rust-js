@@ -18,9 +18,9 @@ export function entry() {
 }
 
 // once_cell: the state in the two low bits of a 4-aligned pointer.
-const STATE_MASK = 3;
-const RUNNING = 1;
-const COMPLETE_PTR = $ptrFrom(2, 8);
+const STATE_MASK = 0x3;
+const RUNNING = 0x1;
+const COMPLETE_PTR = $ptrFrom(0x2, 8);
 
 function tagged(waiter, state) {
   const value = $addr(waiter, 8);
@@ -63,7 +63,7 @@ function main() {
   console.log(`${COMPLETE_PTR === null} ${$addr(COMPLETE_PTR, 8)}`);
 
   const heap = $ptrBytes(
-    { value: 16706 },
+    { value: 0x4142 },
     2,
     (value) => $toBytes(value, 2, true),
     (bytes) => $fromBytes(bytes, 2, true, false),

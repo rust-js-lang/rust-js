@@ -15,7 +15,7 @@ export function entry() {
 }
 
 function main() {
-  const bits = { int: 1065353216 };
+  const bits = { int: 0x3f800000 };
   const asFloat = $unionField(bits, "float", [], {
     int: (value) => $floatFromBits(value, 4),
     bytes: (value) => $floatFromBits($fromBytes(value, 4, true, false), 4),
@@ -134,13 +134,13 @@ function main() {
 
   // A field of a field written while the union holds another, as rustc's
   // union-overwrite.rs does: the union's bytes change.
-  const over = { word: 57054 };
+  const over = { word: 0xdede };
   $unionField(over, "pair", [], {
     word: (value) => {
       const bytes = $toBytes(value, 2, true);
       return [bytes[0], bytes[1]];
     },
-  })[0] = 190;
+  })[0] = 0xbe;
   console.log(
     `0x${$unionField(over, "word", [], {
       pair: (value) => {
@@ -157,7 +157,7 @@ function main() {
         $fromBytes(bytes.slice(4, 8), 4, true, false),
       ];
     },
-  })[1] = 170;
+  })[1] = 0xaa;
   console.log(
     `0x${$unionField(wide, "whole", [], {
       parts: (value) => {

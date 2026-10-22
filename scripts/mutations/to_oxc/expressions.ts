@@ -146,4 +146,12 @@ export const mutations: Mutation[] = [
     replace: "                    ] =>",
     tests: ["test/lowering-names.test.ts", "-t", "a comment is in the JS where"],
   },
+  {
+    name: "number-as-written-unread",
+    breaks: "`1e4` and `0xff` are written as JS's own digits, `10000` and `255`",
+    file: "src/to_oxc/expressions.rs",
+    find: "        let digits = written.unwrap_or_else(|| js_number(n.abs()));\n",
+    replace: "        let digits = written.filter(|_| false).unwrap_or_else(|| js_number(n.abs()));\n",
+    tests: ["test/lowering-numbers.test.ts", "-t", "a number literal keeps its base and its exponent"],
+  },
 ];

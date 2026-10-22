@@ -34,11 +34,11 @@ function flagsBitOr_bitor(flags, other) {
 
 function main() {
   console.log(
-    `${either(5, 3, { bitor: (a, b) => a | b })} ${either(false, true, { bitor: (a, b) => !!(a | b) })} ${flagsDebug_fmt(either([1], [4], flagsBitOr))}`,
+    `${either(0b0101, 0b0011, { bitor: (a, b) => a | b })} ${either(false, true, { bitor: (a, b) => !!(a | b) })} ${flagsDebug_fmt(either([1], [4], flagsBitOr))}`,
   );
   const value = masked(
-    61680,
-    65280,
+    0xf0f0,
+    0xff00,
     { bitand: (a, b) => (a & b) >>> 0 },
     { bitxor: (a, b) => (a ^ b) >>> 0 },
   );
@@ -59,7 +59,7 @@ function main() {
   console.log(`(${value$2[0]}, ${value$2[1]}) (${value$3[0]}, ${value$3[1]})`);
   // A `u8` wraps, an `i32`'s `>>` keeps its sign, and a `u64`'s is a BigInt's.
   const value$4 = shifted(
-    193,
+    0b11000001,
     2,
     { shl: (a, b) => (a << (b & 7)) & 255 },
     { shr: (a, b) => a >>> (b & 7) },
@@ -79,12 +79,12 @@ function main() {
   );
 
   // Of references to numbers, as an iterator gives them.
-  const a = 12;
-  const b = 10;
+  const a = 0b1100;
+  const b = 0b1010;
   console.log(`${(a & b) >>> 0} ${(a | b) >>> 0} ${(a ^ b) >>> 0} ${(a << 2) >>> 0}`);
-  let c = 255;
+  let c = 0xff;
   c = (c & b) >>> 0;
-  c = (c | 256) >>> 0;
+  c = (c | 0x100) >>> 0;
   c = (c ^ 1) >>> 0;
   c = c >>> 1;
   c = (c << 3) >>> 0;

@@ -68,7 +68,7 @@ function main() {
     `(${value[0].toString(16)}, ${(value[1] & 255).toString(16)}, ${$debugStr(value[2])})`,
   );
   console.log(`Some(${255n.toString(16)}) None`);
-  const header = { id: 3054, flags: 240, delta: -2, name: "h" };
+  const header = { id: 3054, flags: 0xf0, delta: -2, name: "h" };
   console.log(`${headerDebug_fmt(header, { debugHex: "x" })}`);
   console.log(`${packetDebug_fmt({ TAG: "Data", len: 32, body: [1, 254] }, { debugHex: "x" })}`);
   console.log(

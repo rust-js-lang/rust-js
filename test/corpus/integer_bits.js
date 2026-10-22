@@ -16,10 +16,10 @@ export function entry() {
 
 // FNV-1a, as small hashes are written: a `wrapping_mul` and a `^`.
 function fnv1a(text) {
-  let hash = 2166136261;
+  let hash = 0x811c9dc5;
   for (const byte of Array.from(new TextEncoder().encode(text))) {
     hash = (hash ^ byte) >>> 0;
-    hash = Math.imul(hash, 16777619) >>> 0;
+    hash = Math.imul(hash, 0x01000193) >>> 0;
   }
   return hash;
 }
@@ -35,7 +35,7 @@ function xorshift(x) {
 function main() {
   // Rotated, by less and more than the width, signed and unsigned.
   console.log(
-    `${$rotateBits(1, 31, 32, true)} ${$rotateBits(2147483649, 1, 32, false)} ${$rotateBits(1, 9, 8, true)} ${$rotateBits(129, 4, 8, false)}`,
+    `${$rotateBits(1, 31, 32, true)} ${$rotateBits(0x80000001, 1, 32, false)} ${$rotateBits(1, 9, 8, true)} ${$rotateBits(0x81, 4, 8, false)}`,
   );
   console.log(
     `${$rotateBits(-2 >>> 0, 1, 32, true) | 0} ${($rotateBits(-128 & 255, 7, 8, false) << 24) >> 24} ${($rotateBits(-1 & 65535, 3, 16, true) << 16) >> 16}`,
@@ -46,10 +46,10 @@ function main() {
   console.log(`${BigInt.asIntN(64, $rotateBits(BigInt.asUintN(64, -2n), 1, 64, true))}`);
 
   // Bytes, in each order, and back.
-  const beBytes = $toBytes(16909060, 4, false);
-  const leBytes = $toBytes(16909060, 4, true);
+  const beBytes = $toBytes(0x01020304, 4, false);
+  const leBytes = $toBytes(0x01020304, 4, true);
   console.log(
-    `[${beBytes.join(", ")}] [${leBytes.join(", ")}] [${$toBytes(258, 2, true).join(", ")}]`,
+    `[${beBytes.join(", ")}] [${leBytes.join(", ")}] [${$toBytes(0x0102, 2, true).join(", ")}]`,
   );
   const value = $toBytes(-2, 4, false);
   const value$1 = $toBytes(-1, 1, true);
@@ -63,7 +63,7 @@ function main() {
       4,
       false,
       false,
-    )} ${$fromBytes([254, 255], 2, true, true)} ${$fromBytes(
+    )} ${$fromBytes([0xfe, 0xff], 2, true, true)} ${$fromBytes(
       [0, 0, 0, 0, 0, 0, 1, 2],
       8,
       false,
@@ -74,7 +74,7 @@ function main() {
   // A float's bits, and back.
   console.log(`${$floatToBits(1.5, 8)} ${$floatToBits(-0, 8)} ${$floatToBits(Infinity, 8)}`);
   console.log(
-    `${$floatToBits(1.5, 4)} ${$displayF32($floatFromBits(1078530011, 4))} ${$displayF64($floatFromBits(4614256656552045848n, 8))}`,
+    `${$floatToBits(1.5, 4)} ${$displayF32($floatFromBits(0x40490fdb, 4))} ${$displayF64($floatFromBits(4614256656552045848n, 8))}`,
   );
   console.log(
     `${$displayF64($floatFromBits($floatToBits(1.25, 8), 8))} ${$floatToBits(Math.fround(1.1754944e-38), 4)}`,
