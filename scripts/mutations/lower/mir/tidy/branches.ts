@@ -494,4 +494,20 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/emission.test.ts", "-t", "source map points from fib.js back into fib.rs"],
   },
+  {
+    name: "present-coalesce-kept",
+    breaks: "`return x ?? null` stays where a test it's under says `x` is there, `typeof x === \"function\"`",
+    file: "src/lower/mir/tidy/branches.rs",
+    find: "                    present_in(&mut stmts[j], test, holds);\n",
+    replace: "",
+    tests: ["test/lowering.test.ts", "-t", "a test says is there"],
+  },
+  {
+    name: "present-coalesce-failed-test-unread",
+    breaks: "after `if (x == null) { return null; }`, `x ?? null` stays",
+    file: "src/lower/mir/tidy/branches.rs",
+    find: "        false => test.clone().negated_test(),\n",
+    replace: "        false => test.clone(),\n",
+    tests: ["test/lowering.test.ts", "-t", "a test says is there"],
+  },
 ];

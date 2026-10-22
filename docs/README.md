@@ -552,6 +552,8 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0617 A parameter is written by its argument](decisions/0617-a-parameter-is-written-by-its-argument.md)
 - [0618 `Array.isArray` and `Object.getPrototypeOf` are the js crate's](decisions/0618-array-is-array-and-get-prototype-of.md)
 - [0619 A thread-local of a primitive is named as a constant](decisions/0619-a-primitive-thread-local-is-a-constant.md)
+- [0620 An `Option` a test says is there is written as it is](decisions/0620-an-option-a-test-says-is-there.md)
+- [0621 A comment before a macro's opening is its code's; one after a module's last code ends its JS](decisions/0621-comments-around-macros-and-at-a-modules-end.md)
 - [0436 Every `dyn` that's a pair keeps its value's drop, `dyn Send` too](decisions/0436-every-dyn-keeps-its-drop.md)
 - [0437 A scope's drops on a panic are one `try { .. } finally { .. }`](decisions/0437-a-scopes-drops-are-one-finally.md)
 - [0438 An optional prop is given `Some(..)`, or left out](decisions/0438-an-optional-prop-is-given-some.md)

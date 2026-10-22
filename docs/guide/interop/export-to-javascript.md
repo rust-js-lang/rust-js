@@ -350,6 +350,7 @@ pub fn click() -> u32 {
 export const MAX_CLICKS = 100;
 
 export const GREETING = "hello";
+
 export const clickCount = { value: 0 };
 
 export function click() {

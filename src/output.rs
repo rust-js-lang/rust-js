@@ -141,6 +141,7 @@ impl OutputPlan {
                 default_export: module.default_export,
                 default_declared: module.default_declared,
                 aliases: module.aliases,
+                code: module.code,
             };
 
             // What it imports when it's asked for, from where its file is, a

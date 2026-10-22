@@ -525,18 +525,35 @@ What JS sees of a crate:
   where it's written, as a JS caller testing `!== null` expects
   ([0275](../decisions/0275-nullable-writes-null.md),
   [0574](../decisions/0574-what-reacts-scheduler-heap-asks.md),
-  [0578](../decisions/0578-a-nullable-result-where-its-written.md)):
+  [0578](../decisions/0578-a-nullable-result-where-its-written.md)),
+  and an `Option` a test it's under says is there is written as it is
+  ([0620](../decisions/0620-an-option-a-test-says-is-there.md)):
 
 ```rust
 #[cfg_attr(rust_js, rust_js::nullable)]
 pub fn first(v: &[u32]) -> Option<u32> {
     v.first().copied()
 }
+
+#[cfg_attr(rust_js, rust_js::nullable)]
+pub fn callable(value: Option<&'static js::Unknown>) -> Option<&'static js::Unknown> {
+    if js::type_of(value) == "function" {
+        return value;
+    }
+    None
+}
 ```
 
 ```js
 export function first(v) {
   return v[0] ?? null;
+}
+
+export function callable(value) {
+  if (typeof value === "function") {
+    return value;
+  }
+  return null;
 }
 ```
 

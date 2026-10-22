@@ -751,6 +751,7 @@ pub fn lower_crate<'tcx>(
             let mut lowered = LoweredModule {
                 path: paths[&module].clone(),
                 file: module_file(tcx, module).name.clone().into_local_path(),
+                code: sources.module_code(tcx, module),
                 directives,
                 packages,
                 imports: Vec::new(),

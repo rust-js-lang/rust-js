@@ -282,9 +282,11 @@ fn comments_of(
                         let between = &sources.text[code as usize..other.lo as usize];
                         code = other.hi;
                         // A closure's opening, `with_borrow_mut(|queue| {`,
-                        // whose body is in its place (ADR 0581), is a start.
-                        let opens_closures =
-                            (between.match_indices('{')).all(|(i, _)| between[..i].trim_end().ends_with('|'));
+                        // whose body is in its place (ADR 0581), is a start;
+                        // and a macro's on its own line, `thread_local! {`,
+                        // whose code is (ADR 0621).
+                        let opens = (between.match_indices('{'))
+                            .all(|(i, _)| between[..i].trim_end().ends_with('|') || macro_opening(&between[..=i]));
                         // `let`s with no JS of their own, a variable read in
                         // place, `let timer = Rc::clone(timer);` (ADR 0603).
                         let unprinted_lets = between.trim_end().ends_with(';')
@@ -292,7 +294,7 @@ fn comments_of(
                             && (between.split(';').map(str::trim))
                                 .filter(|s| !s.is_empty())
                                 .all(|s| s.starts_with("let "));
-                        (!between.contains([';', '}']) && opens_closures) || unprinted_lets
+                        (!between.contains([';', '}']) && opens) || unprinted_lets
                     });
                 only_starts.then_some((*c, at))
             })
@@ -305,10 +307,11 @@ fn comments_of(
             let before = &sources.text[file_start..lo as usize];
             let mut before = &before[..before.rfind('\n').map_or(0, |i| i + 1)];
             // Its attributes' lines, `#[cfg_attr(..)]`, are its own: what's
-            // before them (ADR 0606).
+            // before them (ADR 0606); and a macro's opening, `thread_local! {`,
+            // its code's (ADR 0621).
             while let Some(body) = before.strip_suffix('\n')
                 && let last = &body[body.rfind('\n').map_or(0, |i| i + 1)..]
-                && last.trim_start().starts_with("#[")
+                && (last.trim_start().starts_with("#[") || macro_opening(last))
             {
                 before = &body[..body.len() - last.len()];
             }
@@ -320,10 +323,32 @@ fn comments_of(
             let at = text.len() as u32;
             (at, at)
         };
-        for &at in starts.iter().filter(|&&at| in_file(at)) {
+        // After the module's last code, to where its code ends, its file's
+        // end or an inline `mod`'s `}`, only comments: its JS's end (ADR 0621).
+        let code = module.code;
+        let ends: Vec<crate::program::Comment> = (file.comments.iter())
+            .filter(|c| c.lo >= past && !after_code(c) && !code.is_none() && code.lo <= c.lo && c.hi <= code.hi)
+            .filter(|c| {
+                let mut past = c.hi as usize;
+                for other in file.comments.iter().filter(|o| o.lo >= c.hi && o.hi <= code.hi) {
+                    if !sources.text[past..other.lo as usize].trim().is_empty() {
+                        return false;
+                    }
+                    past = other.hi as usize;
+                }
+                sources.text[past..code.hi as usize].trim().is_empty()
+            })
+            .copied()
+            .collect();
+        let mut starts_and_end: Vec<(u32, Vec<crate::program::Comment>)> = (starts.iter())
+            .filter(|&&at| in_file(at))
+            .map(|&at| (at, attached.iter().filter(|(_, a)| *a == at).map(|(c, _)| *c).collect()))
+            .collect();
+        if !ends.is_empty() {
+            starts_and_end.push((sources.text.len() as u32, ends));
+        }
+        for (at, own) in starts_and_end {
             let mut pieces: Vec<(u32, u32)> = Vec::new();
-            let own: Vec<crate::program::Comment> =
-                attached.iter().filter(|(_, a)| *a == at).map(|(c, _)| *c).collect();
             let mut i = 0;
             while i < own.len() {
                 let comment = own[i];
@@ -381,6 +406,16 @@ fn comments_of(
         }
     }
     (text, found, trailing)
+}
+
+/// Whether `line`, to its end, opens a macro's body on a line of its own,
+/// `thread_local! {`, `jsx! {`: a path, `!` and `{`, whose code is the
+/// program's text (ADR 0621).
+fn macro_opening(line: &str) -> bool {
+    let line = line[line.rfind('\n').map_or(0, |i| i + 1)..].trim();
+    line.strip_suffix('{')
+        .and_then(|head| head.trim_end().strip_suffix('!'))
+        .is_some_and(|path| !path.is_empty() && path.chars().all(|c| c.is_alphanumeric() || c == '_' || c == ':'))
 }
 
 /// The span of each of `list`'s statements that has one: a temporary

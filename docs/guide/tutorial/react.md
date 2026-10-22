@@ -98,6 +98,7 @@ import { useState } from "react";
 /** A count of `label`, that goes up by `step`. */
 export function Counter({ label, step }) {
   const [count, setCount] = useState(0);
+
   return (
     <p>
       {label}: {count}{" "}
@@ -360,6 +361,7 @@ export function TodoList() {
       setDraft("");
     }
   };
+
   return (
     <section>
       <form onSubmit={add}>

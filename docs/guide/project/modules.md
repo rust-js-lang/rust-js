@@ -406,6 +406,57 @@ export async function cached(n) {
 
 One in an `async` block, which is no function, is an error ([ADR 0349](../../decisions/0349-body-directives.md)).
 
+## Comments and blank lines
+
+Every comment you write is in the JS where its code is, and so is each
+blank line between statements: one on its own lines is before the
+statement after it, one after code on its line is after that code's JS,
+and a `///` doc comment is a JSDoc an editor shows a JS caller. A file's
+leading comments, a license's, are its JS's first
+([ADR 0383](../../decisions/0383-a-files-leading-comments-are-its-jss.md),
+[ADR 0444](../../decisions/0444-a-comment-is-where-its-code-is.md)).
+
+A comment before a macro's opening, `thread_local! {`, is its code's,
+its first item's, and one after a module's last code, at its file's end
+or before an inline module's `}`, ends its JS
+([ADR 0621](../../decisions/0621-comments-around-macros-and-at-a-modules-end.md)):
+
+```rust
+use std::cell::Cell;
+
+// The counts.
+
+thread_local! {
+    /// How many there are.
+    static COUNT: Cell<u32> = const { Cell::new(0) };
+}
+
+pub fn next_count() -> u32 {
+    let n = COUNT.get() + 1; // One more.
+
+    COUNT.set(n);
+    n
+}
+
+// Keep this file's counts in step with the server's.
+```
+
+```js
+// The counts.
+
+/** How many there are. */
+let count = 0;
+
+export function nextCount() {
+  const n = (count + 1) >>> 0; // One more.
+
+  count = n;
+  return n;
+}
+
+// Keep this file's counts in step with the server's.
+```
+
 ## Libraries
 
 A library is a crate others depend on, a workspace's `models` or a package

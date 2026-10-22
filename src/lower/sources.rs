@@ -47,6 +47,19 @@ impl CapturedSources {
         }
     }
 
+    /// Where a module's code is, what a comment after its last code ends
+    /// (ADR 0621): an inline `mod`'s item, up to its `}`; else its file, whole.
+    pub fn module_code(&self, tcx: TyCtxt<'_>, module: rustc_span::def_id::LocalModId) -> js::Span {
+        let file = super::module_file(tcx, module);
+        let item = tcx.source_span(module.to_local_def_id());
+        let inline = !module.to_local_def_id().is_top_level_module()
+            && tcx.sess.source_map().lookup_source_file(item.lo()).start_pos == file.start_pos;
+        match inline {
+            true => self.span(item.with_hi(item.hi() - rustc_span::BytePos(1))),
+            false => self.span(Span::with_root_ctxt(file.start_pos, file.end_position())),
+        }
+    }
+
     pub fn span(&self, span: Span) -> js::Span {
         let span = span.source_callsite();
         let index = self.offsets.partition_point(|&(start, _, _)| start <= span.lo().0);

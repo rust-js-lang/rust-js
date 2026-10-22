@@ -26,4 +26,12 @@ export const mutations: Mutation[] = [
     replace: "            Some(_) if false => self.span(span),\n",
     tests: ["test/lowering.test.ts", "-t", "a comment is in the JS where"],
   },
+  {
+    name: "inline-module-code-its-files",
+    breaks: "an inline module's code is its whole file, so its file's end comment ends its JS too",
+    file: "src/lower/sources.rs",
+    find: "            true => self.span(item.with_hi(item.hi() - rustc_span::BytePos(1))),\n",
+    replace: "            true => self.span(Span::with_root_ctxt(file.start_pos, file.end_position())),\n",
+    tests: ["test/lowering.test.ts", "-t", "a comment before a macro's opening"],
+  },
 ];

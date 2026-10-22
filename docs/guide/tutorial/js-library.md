@@ -171,6 +171,7 @@ export function App() {
     const details = { description: "Your changes are on the server." };
     setLast(toast.success("Saved", details));
   };
+
   return (
     <main>
       <Toaster position="bottom-right" richColors />

@@ -859,6 +859,14 @@ pub(super) fn conditional(test: Expr, yes: Expr, no: Expr, booleans: &HashSet<St
 pub(super) fn implies(by: &Expr, test: &Expr) -> bool {
     match (&test.kind, &by.kind) {
         (_, ExprKind::Binary(Op::Or, a, b)) => implies(a, test) && implies(b, test),
+        // `x != null` where `x != null`.
+        (ExprKind::Binary(Op::LooseNe, x, null), ExprKind::Binary(Op::LooseNe, y, also))
+            if [null, also]
+                .iter()
+                .all(|n| matches!(n.kind, ExprKind::Null | ExprKind::Undefined)) =>
+        {
+            js::same_path(x, y)
+        }
         // `x != null` where `typeof x === "number"`: of any kind but
         // `object`, `null`'s, and `undefined`.
         (ExprKind::Binary(Op::LooseNe, x, null), ExprKind::Binary(Op::Eq, kind, name))
@@ -1259,10 +1267,31 @@ fn decided_in(stmts: &mut Vec<Stmt>, from: usize, test: &Expr, holds: bool) {
             }
             _ => match disturbs_any(std::slice::from_ref(&stmts[j]), test) {
                 true => return,
-                false => j += 1,
+                false => {
+                    present_in(&mut stmts[j], test, holds);
+                    j += 1;
+                }
             },
         }
     }
+}
+
+/// Of `stmt`, where `test` is known to hold, or to fail, each `x ?? d` of
+/// a variable it says is there, `typeof x === "function"` holding or `x ==
+/// null` failing: `x`, which `d` never replaces (ADR 0620).
+fn present_in(stmt: &mut Stmt, test: &Expr, holds: bool) {
+    let known = match holds {
+        true => test.clone(),
+        false => test.clone().negated_test(),
+    };
+    js::each_expr_mut(std::slice::from_mut(stmt), &mut |e| {
+        if let ExprKind::Binary(Op::Coalesce, x, _) = &e.kind
+            && matches!(x.kind, ExprKind::Var(_))
+            && implies(&known, &Expr::bin(Op::LooseNe, (**x).clone(), Expr::null()))
+        {
+            *e = (**x).clone().or_at(e.span);
+        }
+    });
 }
 
 /// Whether `t` is `test`, `Some(true)`, or its negation, `Some(false)`.

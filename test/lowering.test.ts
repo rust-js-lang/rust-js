@@ -245,6 +245,51 @@ pub fn moved(items: &mut Vec<Rc<String>>, into: &mut Vec<Rc<String>>) {
   expect(js).toContain("    // Taken, then moved.\n    $removeAt(items, 0);\n");
 });
 
+// ADR 0621: a comment before a macro's opening, `thread_local! {`, is its
+// code's, its first item's, a blank line between them kept; one after a module's
+// last code, before its file's end or an inline module's `}`, ends its JS.
+test("a comment before a macro's opening is its code's, one at the end ends its module", () => {
+  const dir = fixture("comments-around");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::Cell;
+
+pub mod outer;
+
+// The counts.
+
+thread_local! {
+    // The first.
+    static COUNT: Cell<u32> = const { Cell::new(1) };
+}
+
+pub fn count() -> u32 {
+    COUNT.get()
+}
+
+pub mod inner {
+    pub fn two() -> u32 {
+        2
+    }
+
+    // Inner's end.
+}
+`);
+  writeFileSync(join(dir, "outer.rs"), `pub fn three() -> u32 {
+    3
+}
+
+// The file's end,
+// in two lines.
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("// The counts.\n\n// The first.\nconst COUNT = 1;\n");
+  expect(js).not.toContain("Inner's end");
+  const inner = readFileSync(join(dir, "inner.js"), "utf8");
+  expect(inner).toMatch(/\n}\n\n\/\/ Inner's end\.\n\/\/# sourceMappingURL/);
+  const outer = readFileSync(join(dir, "outer.js"), "utf8");
+  expect(outer).toMatch(/\n}\n\n\/\/ The file's end,\n\/\/ in two lines\.\n\/\/# sourceMappingURL/);
+});
+
 // ADR 0444: a comment is its JS's where its code is, before the statement
 // or item it's before, as written; a doc comment, `///`, is a JSDoc one; one
 // before what has no JS, a struct's, is nobody's.
@@ -5240,7 +5285,7 @@ pub fn replaced_any(items: &mut Vec<u32>, i: usize, x: u32) -> u32 {
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("export function pop(heap) {\n  const last = heap.pop();\n  if (last == null) {\n    return null;\n  }\n  if (heap.length === 0) {\n    return last;\n  }\n  const first = heap[0];\n  heap[0] = last;\n  return first;\n}");
   expect(js).toContain("  return items[0] ?? null;\n");
-  expect(js).toContain("    return first ?? null;\n");
+  expect(js).toContain("    return first;\n");
   expect(js).toContain("export function replaced(items, i, x) {\n  if (i < items.length) {\n    const old = items[i];\n    items[i] = x;\n");
   expect(js).toContain("export function replacedAny(items, i, x) {\n  $index(items, i);\n");
   const lib = await import(join(dir, "lib.js"));
@@ -5249,6 +5294,52 @@ pub fn replaced_any(items: &mut Vec<u32>, i: usize, x: u32) -> u32 {
   const items = [1, 2];
   expect([lib.replaced(items, 1, 7), lib.replaced(items, 5, 8), items]).toEqual([2, 8, [1, 7]]);
   expect(() => lib.replacedAny([1], 2, 0)).toThrow("index out of bounds");
+});
+
+// ADR 0620: a nullable result of an `Option` a test it's under says is
+// there, `typeof x === "function"`, is written as it is, with no `?? null`:
+// React's `getIteratorFn`. Where the test fails, `x == null`'s, so after it.
+test("an Option a test says is there is written as it is", async () => {
+  const dir = fixture("present-coalesce");
+  writeFileSync(join(dir, "lib.rs"), `use js::Unknown;
+
+#[cfg_attr(rust_js, rust_js::nullable)]
+pub fn callable(value: Option<&'static Unknown>) -> Option<&'static Unknown> {
+    if js::type_of(value) == "function" {
+        return value;
+    }
+    None
+}
+
+#[cfg_attr(rust_js, rust_js::nullable)]
+pub fn logged<'a>(items: &'a [u32], log: &mut Vec<u32>) -> Option<&'a u32> {
+    let first = items.first();
+    if first.is_none() {
+        log.push(0);
+        return None;
+    }
+    log.push(1);
+    first
+}
+
+pub fn shadowed(value: Option<u32>, values: &[Option<u32>]) -> Vec<u32> {
+    if value.is_some() {
+        let or_seven = |value: Option<u32>| value.unwrap_or(7);
+        return values.iter().copied().map(or_seven).collect();
+    }
+    Vec::new()
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("if (typeof value === \"function\") {\n    return value;\n  }\n  return null;");
+  expect(js).toContain("  log.push(1);\n  return first;\n");
+  expect(js).toContain("(value) => value ?? 7;");
+  const lib = await import(join(dir, "lib.js"));
+  expect(lib.shadowed(1, [2, undefined])).toEqual([2, 7]);
+  const f = () => 1;
+  const log: number[] = [];
+  expect([lib.callable(f), lib.callable(undefined), lib.callable(3), lib.logged([], log), lib.logged([4], log), log]).toEqual([f, null, null, null, 4, [0, 1]]);
 });
 
 // ADR 0573, amended: a `thread_local!` is its module's variable (ADR 0270),

@@ -76,6 +76,9 @@ pub struct Module {
     /// item by another name, as `(local, exported)`, after its functions
     /// (ADR 0596).
     pub aliases: Vec<(String, String)>,
+    /// Where its code is in the Rust, what a comment after its last code
+    /// ends (ADR 0621).
+    pub code: Span,
 }
 
 /// A module's item.
@@ -563,6 +566,7 @@ mod tests {
             default_export: None,
             default_declared: false,
             aliases: Vec::new(),
+            code: Span::NONE,
         }
     }
 

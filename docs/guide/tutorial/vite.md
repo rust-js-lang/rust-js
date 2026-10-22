@@ -126,6 +126,7 @@ import { greet } from "./greeting.js";
 
 export function App() {
   const [count, setCount] = useState(0);
+
   return (
     <main>
       <h1>{greet("Vite")}</h1>
