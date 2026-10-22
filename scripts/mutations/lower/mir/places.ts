@@ -1,0 +1,147 @@
+// Mutations of src/lower/mir/places.rs (ADR 0093).
+import type { Mutation } from "../../../mutations";
+
+export const mutations: Mutation[] = [
+  {
+    name: "mir-residual-err-lost",
+    breaks: "`?` of an `Err` returns nothing, not the `Err`",
+    file: "src/lower/mir/places.rs",
+    find: "                    Some(_) => Expr::undefined(),\n                    None => tried,\n",
+    replace: "                    Some(_) => Expr::undefined(),\n                    None => Expr::undefined(),\n",
+    tests: ["test/corpus.test.ts","-t","question_early_returns"],
+  },
+  {
+    name: "mir-handle-deref-unread",
+    breaks: "`*h.count` of a handle a struct holds is the handle, not the number it's to",
+    file: "src/lower/mir/places.rs",
+    find: "                if !std::mem::take(&mut placed) {\n                    value = Expr::held(value);\n                }\n",
+    replace: "                let _ = std::mem::take(&mut placed);\n",
+    tests: ["test/corpus.test.ts","-t","mut_number_handles"],
+  },
+  {
+    name: "mir-cell-deref-skipped",
+    breaks: "a reborrow through a handle on a `Box<dyn Trait>` is the handle, not the pair it holds",
+    file: "src/lower/mir/places.rs",
+    find: "                            && !matches!(ty.ty.kind(), ty::Ref(_, inner, ty::Mutability::Mut) if self.is_cell_pointee(*inner)))\n",
+    replace: "                            && true)\n",
+    tests: ["test/corpus.test.ts","-t","dyn_mut"],
+  },
+  {
+    name: "mir-union-field-read",
+    breaks: "a union's field read is its object's member, `undefined` where it holds another",
+    file: "src/lower/mir/places.rs",
+    find: "            (ty::Adt(adt, _), _) if adt.is_union() => self.union_read(base, ty.ty, field, span),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts","-t","union_const"],
+  },
+  {
+    name: "mir-index-from-end-front",
+    breaks: "`[.., last]` of a slice reads its item counted from the front",
+    file: "src/lower/mir/places.rs",
+    find: "                    None => Expr::bin(Op::Sub, Expr::member(base.clone(), \"length\"), Expr::int(offset.into())),\n",
+    replace: "                    None => Expr::int(offset.into()),\n",
+    tests: ["test/corpus.test.ts","-t","slice_patterns"],
+  },
+  {
+    name: "mir-subslice-whole",
+    breaks: "`[first, rest @ ..]`'s rest is the whole slice",
+    file: "src/lower/mir/places.rs",
+    find: "                Expr::call(Expr::member(base, \"slice\"), range)\n",
+    replace: "                { let _ = range; base }\n",
+    tests: ["test/corpus.test.ts","-t","slice_patterns"],
+  },
+  {
+    name: "mir-mut-subslice-refused",
+    breaks: "a `&mut` to a slice pattern's rest is refused, not a view",
+    file: "src/lower/mir/places.rs",
+    find: "        Ok(Some(self.view_call(\"$view\", list)))\n",
+    replace: "        Ok(None)\n",
+    tests: ["test/corpus.test.ts","-t","^slice_pattern_mut_rest.rs$"],
+  },
+  {
+    name: "mir-named-local-in-place",
+    breaks: "a temporary a branch's subject read by its name is written where it's read, so its name is never declared",
+    file: "src/lower/mir/places.rs",
+    find: "                    state.named.insert(place.local);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts","-t","nested_type_chain"],
+  },
+  {
+    name: "mir-prop-default-unread",
+    breaks: "a props field with a default, left out, reads `undefined` from MIR",
+    file: "src/lower/mir/places.rs",
+    find: "            Some(default) => Expr::cond(Expr::bin(js::Op::Eq, read.clone(), Expr::undefined()), default, read),\n",
+    replace: "            Some(_) => read,\n",
+    tests: ["test/lowering.test.ts","-t","props field's default is read"],
+  },
+  {
+    name: "mir-bounds-write-read",
+    breaks: "an element written, `xs[i] = v`, is checked as one read, `$index(xs, i) = v`",
+    file: "src/lower/mir/places.rs",
+    find: "                value = match write && at + 1 == last {\n",
+    replace: "                value = match false {\n",
+    tests: ["test/lowering.test.ts","-t","nothing proves in bounds"],
+  },
+  {
+    "name": "mir-default-base-fields-held",
+    "breaks": "a field of an update's default base is read of an object held for it, `{ name: value.name, .. }`, not its default",
+    "file": "src/lower/mir/places.rs",
+    "find": "        if let Some(defaults) = state.defaults.get(&place.local)\n",
+    "replace": "        if let Some(defaults) = state.defaults.get(&place.local).filter(|_| false)\n",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "an update's default base is the defaults it reads"
+    ]
+  },
+  {
+    "name": "mir-rest-field-read",
+    "breaks": "a `Rest` of props read as a field of its own, `p.rest`, is `undefined`, not refused",
+    "file": "src/lower/mir/places.rs",
+    "find": "            PlaceElem::Field(_, field_ty) if bindings::is_rest(self.tcx, field_ty) => {",
+    "replace": "            PlaceElem::Field(_, field_ty) if false && bindings::is_rest(self.tcx, field_ty) => {",
+    "tests": [
+      "test/jsx.test.ts"
+    ]
+  },
+  {
+    name: "mir-variant-cell-field-read",
+    breaks: "MIR's `Cell` a variant's field holds is read as a cell, `slot.n.value`",
+    file: "src/lower/mir/places.rs",
+    find: "                Ok(self.held(read, self.field_ty(&variant.fields[field], args)))\n",
+    replace: "                Ok(read)\n",
+    tests: ["test/lowering.test.ts","-t","a cell in a field is the property it holds"],
+  },
+  {
+    name: "mir-made-array-unsliced",
+    breaks: "MIR refuses a slice pattern's rest of an array made where it's taken apart",
+    file: "src/lower/mir/places.rs",
+    find: "            PlaceElem::ConstantIndex { from_end: true, .. } | PlaceElem::Subslice { .. } => {\n",
+    replace: "            PlaceElem::ConstantIndex { from_end: true, .. } | PlaceElem::Subslice { .. } if false => {\n",
+    tests: ["test/corpus.test.ts", "-t", "slice_pattern_of_made_array"],
+  },
+  {
+    name: "pointed-local-read-whole",
+    breaks: "a local a pointer's taken to reads as its cell, not its value",
+    file: "src/lower/mir/places.rs",
+    find: "                        true => Expr::held(Expr::var(name)),\n",
+    replace: "                        true => Expr::var(name),\n",
+    tests: ["test/corpus.test.ts", "-t", "^raw_pointers.rs$"],
+  },
+  {
+    name: "pointer-deref-unread",
+    breaks: "`*p` of a pointer is the handle, not its place",
+    file: "src/lower/mir/places.rs",
+    find: "            PlaceElem::Deref if self.is_handle_pointer(ty.ty) => self.pointee_place(base),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^raw_pointers.rs$"],
+  },
+  {
+    name: "write-result-field-of-err",
+    breaks: "an `io::Result<()>`'s `Err`'s error is read as `e._0`, not the error",
+    file: "src/lower/mir/places.rs",
+    find: "                        0 => Expr::undefined(),\n                        _ => base,\n",
+    replace: "                        0 => Expr::undefined(),\n                        _ => Expr::member(base, \"_0\"),\n",
+    tests: ["test/corpus.test.ts", "-t", "^io_unit_result.rs$"],
+  },
+];

@@ -105,3 +105,17 @@ another is `pub(super)`, and one the rest of `lower` asks is
 `pub(in crate::lower)`, as it was `pub(super)` before. Each part's
 mutations are its own list. The largest part is 1,196 lines, and
 `recognition.rs` leaves the cap's list.
+
+## Amendment: mir, split by what it lowers (2026-10-22)
+
+`mir.rs`, 7,362 lines, one `impl FnCx` of 6,000 in it, is split the same
+way, a move of its methods and nothing else. Its root keeps the body's
+state, `State`, `Found` and `Locals`, the signature and `mir_function`;
+the parts are `structure.rs` (blocks, terminators, a switch's tests),
+`temporaries.rs`, `locals.rs`, `patterns.rs`, `closures.rs`, `assign.rs`,
+`places.rs`, `operands.rs`, `rvalues.rs`, `dispatch.rs` (`mir_call` and
+`mir_std_call`), `jsx_props.rs`, `entries.rs` and `queries.rs`, the
+largest 933 lines. The architecture test lists each part's fields of
+`State`, as it lists `drops.rs`'s, and the parts that read `locals.mir`.
+`mir_call` is held at 107 lines, two more than it was: a path the move
+spelled from the crate, `crate::lower::`, is wrapped by rustfmt.

@@ -1,0 +1,184 @@
+// Mutations of src/lower/mir/structure.rs (ADR 0093).
+import type { Mutation } from "../../../mutations";
+
+export const mutations: Mutation[] = [
+  {
+    name: "mir-assert-inverted",
+    breaks: "a MIR `Assert` throws when its condition holds, not when it fails",
+    file: "src/lower/mir/structure.rs",
+    find: "                    true => Expr::unary(js::UnaryOp::Not, cond),\n",
+    replace: "                    true => cond,\n",
+    tests: ["test/corpus.test.ts", "-t", "drop_index_panic|drop_operand_leaves"],
+  },
+  {
+    name: "mir-folded-call-uncaught",
+    breaks: "a call written where it's used, which may panic as something's there to drop, isn't in a `try`",
+    file: "src/lower/mir/structure.rs",
+    find: "            self.unwinding_to(state, unwind.filter(|_| ran), made, &mut out)?;\n",
+    replace: "            self.unwinding_to(state, None, made, &mut out)?;\n",
+    tests: ["test/corpus.test.ts","-t","drop|refcell_"],
+  },
+  {
+    name: "mir-branch-continue-is-break",
+    breaks: "`?` goes on with an `Err` or a `None`, and returns early with what's inside",
+    file: "src/lower/mir/structure.rs",
+    find: "                    0 => failed.negated_test(),\n                    _ => failed,\n",
+    replace: "                    0 => failed,\n                    _ => failed.negated_test(),\n",
+    tests: ["test/corpus.test.ts","-t","question_early_returns"],
+  },
+  {
+    name: "mir-made-before-block-scoped",
+    breaks: "what's made before a labeled block and read after it is declared inside it",
+    file: "src/lower/mir/structure.rs",
+    find: "        if let Some(last) = state.pending.iter().rposition(|(local, _)| !read.contains(local)) {\n",
+    replace: "        if false && let Some(last) = state.pending.iter().rposition(|(local, _)| !read.contains(local)) {\n",
+    tests: ["test/jsx.test.ts", "-t", "react.dev's Diagram writes its images' srcs and caption test in place"],
+  },
+  {
+    name: "mir-return-unwritten",
+    breaks: "a `return` the program wrote is taken for the end the function falls off, and goes",
+    file: "src/lower/mir/structure.rs",
+    find: "                stmt.span = written;\n",
+    replace: "                let _ = (stmt, written);\n",
+    tests: ["test/lowering.test.ts","-t","returning nothing returns where"],
+  },
+  {
+    name: "mir-bool-switch-negated-first",
+    breaks: "`if c { a } else { b }` is `if (!c) { b } else { a }`, MIR's test of `false` first",
+    file: "src/lower/mir/structure.rs",
+    find: "                    && targets.iter().all(|(value, _)| value == 0)\n",
+    replace: "                    && false\n",
+    tests: ["test/lowering.test.ts","-t","value of two branches is returned"],
+  },
+  {
+    name: "mir-switch-variant-order",
+    breaks: "an enum's `match` tests its variants in their order, not its arms', `if (o == null)` first",
+    file: "src/lower/mir/structure.rs",
+    find: "                    ordered.sort_by_key(|&(at, _)| at);\n",
+    replace: "",
+    tests: ["test/lowering.test.ts","-t","value of two branches is returned"],
+  },
+  {
+    name: "mir-negated-if-flipped",
+    breaks: "`if !c { a } else { b }`, which MIR tests as `c`, is `if (c) { b }`, its second branch first",
+    file: "src/lower/mir/structure.rs",
+    find: "                    && !matches!((written_at(state.body, *target), written_at(state.body, yes)), (Some(no), Some(yes)) if no < yes)\n",
+    replace: "",
+    tests: ["test/lowering.test.ts","-t","keeps its branch first"],
+  },
+  {
+    name: "mir-written-return-past-drops",
+    breaks: "a `return` the program wrote, reached through drops, isn't known as written",
+    file: "src/lower/mir/structure.rs",
+    find: "                && let [only] = preds[block].as_slice()\n",
+    replace: "                && let [only] = preds[block].as_slice().get(..0).unwrap_or_default()\n",
+    tests: ["test/jsx.test.ts"],
+  },
+  {
+    "name": "mir-variant-test-not-bool",
+    "breaks": "a variant's test function isn't known to give a `bool`, `!!(isValidElement(child) && ..)`",
+    "file": "src/lower/mir/structure.rs",
+    "find": "                    self.locals.mir.paths.entry(path).or_insert(true);\n",
+    "replace": "",
+    "tests": ["test/jsx.test.ts"]
+  },
+  {
+    "name": "mir-call-write-before-pending",
+    "breaks": "what a call writes, a setter's `n.textContent = \"x\"`, runs before a value made ahead of it that reads it, `<p>{n.textContent}</p>` reads the new one",
+    "file": "src/lower/mir/structure.rs",
+    "find": "if called.iter().any(|s| matches!(s.kind, StmtKind::Assign(..))) && !state.pending.is_empty() {",
+    "replace": "if false && called.iter().any(|s| matches!(s.kind, StmtKind::Assign(..))) && !state.pending.is_empty() {",
+    "tests": [
+      "test/jsx.test.ts"
+    ]
+  },
+  {
+    "name": "mir-return-written-by-storage",
+    "breaks": "the value a `?` goes on to is returned at the `?`'s span, a `return` the program wrote, so its `?` stays nested, not a guard",
+    "file": "src/lower/mir/structure.rs",
+    "find": "                        .filter(|s| !matches!(s.kind, StatementKind::StorageLive(_) | StatementKind::StorageDead(_)))\n",
+    "replace": "",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "a function's .s from MIR are guards"
+    ]
+  },
+  {
+    "name": "mir-switch-cases-ungrouped",
+    "breaks": "an or-pattern's values that go to one block are a test each from MIR, the block copied into each, one copy's `const right` an assignment of nothing declared",
+    "file": "src/lower/mir/structure.rs",
+    "find": "                    match grouped.iter_mut().find(|(_, t)| *t == target) {\n",
+    "replace": "                    match None::<&mut (Expr, BasicBlock)> {\n",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "an or-pattern's values from MIR"
+    ]
+  },
+  {
+    name: "mir-untagged-alike-matched",
+    breaks: "MIR's match of an untagged enum's variants of one kind takes the first for both",
+    file: "src/lower/mir/structure.rs",
+    find: "                if bindings::is_untagged(self.tcx, adt.did())\n                    && let Some(other) = self.untagged_alike(*enum_ty, adt.variant(variant))\n",
+    replace: "                if false\n                    && let Some(other) = self.untagged_alike(*enum_ty, adt.variant(variant))\n",
+    tests: ["test/lowering.test.ts", "-t", "MIR refuses an untagged enum's variants"],
+  },
+  {
+    name: "mir-if-span-of-condition",
+    breaks: "MIR's `if` maps to its condition, not `if c`",
+    file: "src/lower/mir/structure.rs",
+    find: "                        span: self.js_span(arm.unwrap_or_else(|| self.if_span(span))),\n",
+    replace: "                        span: self.js_span(arm.unwrap_or(span)),\n",
+    tests: ["test/emission.test.ts","-t","source map points from fib.js"],
+  },
+  {
+    name: "mir-match-test-span-of-match",
+    breaks: "MIR's test of a `match` arm maps to its `match`, not the arm's pattern",
+    file: "src/lower/mir/structure.rs",
+    find: "                    let arm = written_at(state.body, target).and_then(|at| self.arm_span(span, at));\n",
+    replace: "                    let arm: Option<Span> = None;\n",
+    tests: ["test/emission.test.ts","-t","source map points from fib.js"],
+  },
+  {
+    name: "mir-switch-subject-made-each-test",
+    breaks: "a `match` of a call's value calls it once per arm it tests, `match note(1, x) { 1 => .., 2 => .., _ => .. }`",
+    file: "src/lower/mir/structure.rs",
+    find: "                    && made.has_effects()\n                {",
+    replace: "                    && made.has_effects()\n                    && false\n                {",
+    tests: ["test/corpus.test.ts", "-t", "^match_call_once.rs$"],
+  },
+  {
+    name: "crate-future-awaited",
+    breaks: "a call that asks a `Future` of a future of the crate's, `.await` of it, is made: `await [1]`",
+    file: "src/lower/mir/structure.rs",
+    find: "                    return Err(self.unlowered_future_awaited(future, *fn_span));\n",
+    replace: "                    let _ = future;\n",
+    tests: ["test/diagnostics.test.ts", "-t", "an await of a crate's future"],
+  },
+  {
+    name: "read-after-drop",
+    breaks: "`d.len()` of a `D: Deref` returned is read after `d` is dropped, its destructor's change seen",
+    file: "src/lower/mir/structure.rs",
+    find: "                    self.settle_reads(state, block, &mut out);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^generic_guard_drop.rs$"],
+  },
+  {
+    name: "captured-writer-gives-string",
+    breaks: "a closure that writes its maker's `Formatter` gives back its maker's string",
+    file: "src/lower/mir/structure.rs",
+    find: "                    (Some(_), _) if state.writes_captured => None,\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^closure_writes_captured_formatter.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "own-into-future-given-unrefused",
+    breaks: "an `IntoFuture` of the crate's given to generic code is awaited there as a promise",
+    file: "src/lower/mir/structure.rs",
+    find: "                    .and_then(|call| self.recognition().own_into_future_given(call))\n",
+    replace: "                    .and_then(|call| self.recognition().own_into_future_given(call))\n                    .filter(|_| false)\n",
+    tests: ["test/diagnostics.test.ts", "-t", "an IntoFuture of the crate's given to generic code"],
+  },
+];

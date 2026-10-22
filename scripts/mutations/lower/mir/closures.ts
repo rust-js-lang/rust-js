@@ -1,0 +1,169 @@
+// Mutations of src/lower/mir/closures.rs (ADR 0093).
+import type { Mutation } from "../../../mutations";
+
+export const mutations: Mutation[] = [
+  {
+    name: "mir-async-closure-called-body",
+    breaks: "an `async` closure is an arrow that calls an async arrow, not the async arrow",
+    file: "src/lower/mir/closures.rs",
+    find: "            && let Some(mut body) = called_async_body(&mut stmts)\n",
+    replace: "            && let Some(mut body) = called_async_body(&mut stmts).filter(|_| false)\n",
+    tests: ["test/compiler.test.ts","-t","async code becomes"],
+  },
+  {
+    name: "mir-closure-parent-thir",
+    breaks: "a closure's body is lowered with its parent's THIR, so its `if let` chain's tests stay nested",
+    file: "src/lower/mir/closures.rs",
+    find: "        let outer = std::mem::replace(&mut self.thir, &body.thir);\n",
+    replace: "        let outer = self.thir;\n",
+    tests: ["test/lowering.test.ts","-t","if-let chains and loops from MIR"],
+  },
+  {
+    name: "mir-closure-parent-facts",
+    breaks: "a closure's body reads its parent's facts, by another body's ids",
+    file: "src/lower/mir/closures.rs",
+    find: "        let outer_facts = std::mem::replace(&mut self.body_facts, &body.facts);\n",
+    replace: "        let outer_facts = self.body_facts;\n",
+    tests: ["test/lowering.test.ts","-t","string's parts from MIR"],
+  },
+  {
+    name: "mir-spawning-closure-arrow",
+    breaks: "a closure that only spawns an async block is `() => { (async () => …)(); }`, not `async () => …`",
+    file: "src/lower/mir/closures.rs",
+    find: "            && let js::ExprKind::AsyncArrow(inner, spawned) = &callee.kind\n            && inner.is_empty()\n        {\n            return Ok(Expr::async_arrow(params, spawned.clone()));\n",
+    replace: "            && let js::ExprKind::AsyncArrow(inner, spawned) = &callee.kind\n            && inner.is_empty()\n            && false\n        {\n            return Ok(Expr::async_arrow(params, spawned.clone()));\n",
+    tests: ["test/lowering.test.ts","-t","only spawns an async block"],
+  },
+  {
+    name: "mir-capture-copied-always",
+    breaks: "a closure copies a variable written only before it, `const captured = index`",
+    file: "src/lower/mir/closures.rs",
+    find: "                            && written_from(state.body, state.at, l)));\n",
+    replace: "                            ));\n",
+    tests: ["test/lowering.test.ts","-t","captures a variable itself where nothing"],
+  },
+  {
+    "name": "mir-closure-forwarding-unmarked",
+    "breaks": "a closure from MIR that passes on what it's given to Rust's function stays `(x) => double(x)`, not `double`",
+    "file": "src/lower/mir/closures.rs",
+    "find": "        let forwarding = self.closure_calls_rust(body, false);\n",
+    "replace": "        let forwarding = false;\n",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "only passes its arguments on"
+    ]
+  },
+  {
+    "name": "mir-closure-concise-unmarked",
+    "breaks": "a closure of one call that gives nothing isn't marked, so a held handler keeps its block",
+    "file": "src/lower/mir/closures.rs",
+    "find": "        let concise = self.closure_calls_for_nothing(body);\n",
+    "replace": "        let concise = false;\n",
+    "tests": ["test/jsx.test.ts"]
+  },
+  {
+    "name": "mir-written-fn-in-closure-at-top",
+    "breaks": "a function written in a closure is declared at its function's top from MIR, not in the closure",
+    "file": "src/lower/mir/closures.rs",
+    "find": "            .filter(|&&id| self.tcx.parent(id) == def_id)",
+    "replace": "            .filter(|_| false)",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "a function written in a closure is declared where it's written"
+    ]
+  },
+  {
+    "name": "mir-written-fn-before-all",
+    "breaks": "a function written in a body is declared before all of it from MIR, not before what's written after it",
+    "file": "src/lower/mir/closures.rs",
+    "find": ".position(|s| !s.span.is_none() && s.span.lo > at)",
+    "replace": ".position(|_| true)",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "a function written in a closure is declared where it's written"
+    ]
+  },
+  {
+    "name": "mir-async-closure-wild-param-kept",
+    "breaks": "an `async` closure's `|_|` from MIR is `async (_) => ..`, not `async () => ..`",
+    "file": "src/lower/mir/closures.rs",
+    "find": "            && (name == \"_\" || name.starts_with(\"_$\"))\n",
+    "replace": "            && name == \"never\"\n",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "an async closure's ignored argument is no parameter"
+    ]
+  },
+  {
+    "name": "mir-mut-capture-copied",
+    "breaks": "a closure's `&mut` capture of its maker's variable is a copy, `let current$1 = current`, so taking it only rebinds the copy",
+    "file": "src/lower/mir/closures.rs",
+    "find": "                        upvars.get(i).map(|t| t.kind()),\n",
+    "replace": "                        upvars.get(i).map(|t| t.kind()).filter(|_| false),\n",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "taking a variable assigns the variable"
+    ]
+  },
+  {
+    name: "mir-closure-unmade",
+    breaks: "MIR's closure holding a value with a destructor can't be dropped: where it's made isn't known",
+    file: "src/lower/mir/closures.rs",
+    find: "        self.closure_made(def_id, held);\n",
+    replace: "        self.closure_made(def_id, Vec::new());\n",
+    tests: ["test/corpus.test.ts", "-t", "closure_drops"],
+  },
+  {
+    name: "mir-async-closure-directive-lost",
+    breaks: "MIR's async closure loses its `js::directive!`",
+    file: "src/lower/mir/closures.rs",
+    find: "            body.splice(0..0, directives);\n",
+    replace: "",
+    tests: ["test/modules.test.ts","-t","js::directive! in a body"],
+  },
+  {
+    name: "mir-closure-directive-lost",
+    breaks: "MIR's closure loses its `js::directive!`",
+    file: "src/lower/mir/closures.rs",
+    find: "        stmts.splice(0..0, directives);\n",
+    replace: "",
+    tests: ["test/modules.test.ts","-t","js::directive! in a body"],
+  },
+  {
+    name: "mir-spawning-closure-directive-lost",
+    breaks: "MIR's closure that only spawns loses its `js::directive!`",
+    file: "src/lower/mir/closures.rs",
+    find: "            && directives.is_empty()\n",
+    replace: "",
+    tests: ["test/modules.test.ts","-t","js::directive! in a body"],
+  },
+  {
+    name: "closure-owned-by-parent",
+    breaks: "a closure's body is its parent's, so `Location::caller()` in it is the parent's caller's",
+    file: "src/lower/mir/closures.rs",
+    find: "        let outer_owner = std::mem::replace(&mut self.body_owner, def_id);\n",
+    replace: "        let outer_owner = self.body_owner;\n",
+    tests: ["test/corpus.test.ts", "-t", "^track_caller.rs$"],
+  },
+  {
+    name: "returned-closure-unwrapped",
+    breaks: "a closure its maker gives back carries no drop, which its caller's `$dispose` reads",
+    file: "src/lower/mir/closures.rs",
+    find: "        Ok(Expr::call_helper(\n            \"$dropping\",\n            vec![closure, Expr::arrow(Vec::new(), dropped)],\n        ))\n",
+    replace: "        let _ = dropped;\n        Ok(closure)\n",
+    tests: ["test/corpus.test.ts", "-t", "^returned_closure_drops.rs$"],
+  },
+  {
+    name: "cloned-apart-captures-shared",
+    breaks: "a closure cloned apart is made again of what it took, not a clone of it",
+    file: "src/lower/mir/closures.rs",
+    find: "            clones.push(self.clone_value(Expr::var(name), *ty, span, &mut cloned)?);\n",
+    replace: "            clones.push(Expr::var(name));\n",
+    tests: ["test/corpus.test.ts", "-t", "^closure_clone_cell.rs$"],
+  },
+];

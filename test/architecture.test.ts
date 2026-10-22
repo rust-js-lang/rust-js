@@ -257,7 +257,7 @@ test("each `$` name the compiler writes is the runtime's", () => {
   const others = new Map([
     ["$someNone", "src/lower/std_types/option.rs"], // a `Some` of `None`'s box's field (ADR 0051)
     ["$drop", "src/js.rs"], // a `dyn`'s dictionary's destructor
-    ["$steps", "src/lower/mir.rs"], // a compiled std iterator's `next` and `size_hint`, `$stdIterator`'s, its clone's too (ADR 0561)
+    ["$steps", "src/lower/mir/rvalues.rs"], // a compiled std iterator's `next` and `size_hint`, `$stdIterator`'s, its clone's too (ADR 0561)
     ["$tested", "src/prepare.rs"], // a variable marked as a test reads it, never printed
     ["$circleShape", "src/names.rs"], // a dictionary's cache, in a unit test
   ]);
@@ -357,7 +357,16 @@ const owners: Record<string, string[]> = {
   // What lowering from MIR found of a body's variables, nine sets once
   // fields of `Locals` that mir.rs wrote and jsx.rs and binding_calls.rs
   // read (the third architecture audit).
-  "self.locals.mir": ["src/lower/mir.rs"],
+  "self.locals.mir": [
+    "src/lower/mir.rs",
+    "src/lower/mir/assign.rs",
+    "src/lower/mir/closures.rs",
+    "src/lower/mir/dispatch.rs",
+    "src/lower/mir/places.rs",
+    "src/lower/mir/rvalues.rs",
+    "src/lower/mir/structure.rs",
+    "src/lower/mir/temporaries.rs",
+  ],
   "self.writing": ["src/lower/display.rs"],
   "self.cloning": ["src/lower/std_impls.rs"],
   "self.given": ["src/lower/traits.rs"],
@@ -420,6 +429,18 @@ const mirState: Record<string, string[]> = {
   "src/lower/mir/writer.rs": ["body", "writer", "writes_captured", "builders", "built", "thrown_writes"],
   "src/lower/mir/hints.rs": ["locals", "captures"],
   "src/lower/mir/std_calls.rs": ["body", "locals"],
+  "src/lower/mir/assign.rs": ["binding_var", "body", "boxes", "branches", "builders", "copy_backs", "in_place", "jsx_props", "let_spans", "locals", "maps", "named", "options", "parts", "payloads", "pending", "places", "pointed", "refs", "rests", "writer"],
+  "src/lower/mir/closures.rs": ["at", "body", "locals"],
+  "src/lower/mir/dispatch.rs": ["body", "copy_backs", "defaults", "flattened", "locals", "maps", "options", "pending", "unwind"],
+  "src/lower/mir/entries.rs": ["body", "captures", "locals", "thrown_writes"],
+  "src/lower/mir/jsx_props.rs": ["body"],
+  "src/lower/mir/locals.rs": ["body", "locals", "patterned"],
+  "src/lower/mir/operands.rs": ["body", "locals", "pending", "promoted", "taken"],
+  "src/lower/mir/places.rs": ["binding_var", "body", "branches", "captures", "defaults", "deferred", "in_place", "locals", "named", "pointed"],
+  "src/lower/mir/queries.rs": ["body", "borrowed_names", "locals", "own_names"],
+  "src/lower/mir/rvalues.rs": ["body", "branches", "locals", "options", "pending", "pointed", "ranges", "writer"],
+  "src/lower/mir/structure.rs": ["at", "awaits", "body", "copy_backs", "deferred", "drops", "graph", "labels", "locals", "pending", "returns", "unwind", "writer", "writes_captured"],
+  "src/lower/mir/temporaries.rs": ["body", "in_place", "locals", "named", "own_names", "pending", "places", "pointed", "refs", "settled", "unwind"],
 };
 test("each module of mir/ reads only the fields of mir.rs's state it's listed for", () => {
   const mir = read("src/lower/mir.rs");
@@ -456,7 +477,7 @@ const idioms: [string, RegExp, string[]][] = [
   ["the dictionary's `impl` field", /"impl"/, ["src/js.rs"]],
   // A std type's helpers, read and written where the type is lowered: a
   // pass of tidy's over them is the type's module's (the second review).
-  ["a map's entry", /"\$orInsert"|"\$mutGet"/, ["src/lower/std_types/map.rs", "src/lower/mir.rs", "src/lower/mut_refs.rs"]],
+  ["a map's entry", /"\$orInsert"|"\$mutGet"/, ["src/lower/std_types/map.rs", "src/lower/mir/entries.rs", "src/lower/mut_refs.rs"]],
   ["a range made as stepped", /"\$lazyRange"/, ["src/lower/std_types/range.rs"]],
   ["a cell's borrow", /"\$borrow(Mut)?"|"\$unborrow"/, ["src/lower/std_types/cell.rs", "src/lower/std_impls.rs", "src/lower/drops.rs"]],
 ];
@@ -574,9 +595,9 @@ test("shortcuts to recognition are in shortcuts.rs, and only shorten", () => {
 // which the test holds exactly, so a split says so here.
 const dispatchers: [string, string, number][] = [
   ["src/lower/recognition/calls.rs", "    pub(in crate::lower) fn classify(", 8],
-  ["src/lower/mir.rs", "    fn mir_call(", 105],
-  ["src/lower/mir.rs", "    fn mir_call_values_of(", 247],
-  ["src/lower/mir.rs", "    fn mir_std_call(", 191],
+  ["src/lower/mir/dispatch.rs", "    pub(super) fn mir_call(", 107],
+  ["src/lower/mir/dispatch.rs", "    fn mir_call_values_of(", 247],
+  ["src/lower/mir/dispatch.rs", "    fn mir_std_call(", 191],
   ["src/lower/mir.rs", "    fn mir_function(", 375],
   ["src/lower/recognition/inherent.rs", "    pub(super) fn classify_inherent(", 757],
   ["src/lower/recognition/calls.rs", "    fn classify_trait_method(", 294],
@@ -915,7 +936,6 @@ test("tests find what they build through target", () => {
 // fails, and one brought under the cap leaves the list, so it only gets
 // shorter. Split a listed file by concept, never to meet the number.
 const overTheCap: Record<string, number> = {
-  "src/lower/mir.rs": 7362,
   "src/lower/traits.rs": 4128,
   "src/js.rs": 2443,
   "src/lower/iterators.rs": 2300,

@@ -1,0 +1,77 @@
+// Mutations of src/lower/mir/patterns.rs (ADR 0093).
+import type { Mutation } from "../../../mutations";
+
+export const mutations: Mutation[] = [
+  {
+    name: "mir-payload-of-for-loop",
+    breaks: "a `for` loop's item, its desugaring's `Some(x)`, is read in place, so the loop is MIR's `while (true)`",
+    file: "src/lower/mir/patterns.rs",
+    find: "                    if !p.span.is_desugaring(rustc_span::DesugaringKind::ForLoop) =>\n",
+    replace: "                    if true =>\n",
+    tests: ["test/lowering.test.ts","-t","loops from MIR read as a person writes them"],
+  },
+  {
+    "name": "mir-null-none-past-other-writes",
+    "breaks": "an `Option` a call sets too, `and_then`'s `undefined`, is given to a nullable field as it is",
+    "file": "src/lower/mir/patterns.rs",
+    "find": "none && writes == locals.writes[local] && ",
+    "replace": "none && ",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "a nullable field of Some or None by a branch"
+    ]
+  },
+  {
+    "name": "let-pattern-deref-unpeeled",
+    "breaks": "a `let` pattern through a reference isn't taken apart where it's made",
+    "file": "src/lower/mir/patterns.rs",
+    "find": "            while let thir::PatKind::Deref { subpattern, .. } = &pattern.kind {\n                pattern = subpattern;\n            }\n",
+    "replace": "",
+    "tests": [
+      "test/jsx.test.ts"
+    ]
+  },
+  {
+    "name": "let-pattern-ref-binding-unseen",
+    "breaks": "a `let` pattern's binding by reference, `&(*_2).0`, isn't one it takes apart",
+    "file": "src/lower/mir/patterns.rs",
+    "find": "                    | Rvalue::Ref(_, BorrowKind::Shared, from),\n",
+    "replace": ",\n",
+    "tests": [
+      "test/jsx.test.ts"
+    ]
+  },
+  {
+    "name": "let-pattern-through-deref-unseen",
+    "breaks": "a `let` pattern's field read through a reference, `(*_2).0`, isn't one it takes apart",
+    "file": "src/lower/mir/patterns.rs",
+    "find": "                && derefs.iter().all(|p| matches!(p, PlaceElem::Deref))\n",
+    "replace": "                && derefs.is_empty()\n",
+    "tests": [
+      "test/jsx.test.ts"
+    ]
+  },
+  {
+    "name": "mir-props-with-drops-whole",
+    "breaks": "props with a destructor are taken whole, `{ label, rest }`, their `Rest` a field of its own, not `...rest`",
+    "file": "src/lower/mir/patterns.rs",
+    "find": "            if self.has_drops(pat.ty) && !self.binds_dropped_fields(pat) {",
+    "replace": "            if self.has_drops(pat.ty) {",
+    "tests": [
+      "test/jsx.test.ts"
+    ]
+  },
+  {
+    "name": "mir-arm-binding-held",
+    "breaks": "an arm binding the value whole, `x if x.len() > 1`, from MIR holds `const x = s;`",
+    "file": "src/lower/mir/patterns.rs",
+    "find": "            thir::PatKind::Binding { .. } => Some(arm.pattern.span),\n",
+    "replace": "            thir::PatKind::Binding { .. } => None::<rustc_span::Span>,\n",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "a string's or-pattern from MIR"
+    ]
+  },
+];

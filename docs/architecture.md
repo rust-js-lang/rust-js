@@ -242,7 +242,10 @@ and answer. Each is checked to stay that way.
 
 | Module | Lowers |
 |---|---|
-| `mir.rs` | A body from its MIR: its statements and terminators, places, calls (`mir_call`), aggregates, and the `&mut`s given to a call; temporaries folded where they're read |
+| `mir.rs` | A body from its MIR: its signature and its function, and the state its parts share (`State`, `Found`, `Locals`) |
+| `mir/structure.rs`, `mir/temporaries.rs`, `mir/locals.rs`, `mir/patterns.rs`, `mir/closures.rs` | Its blocks and terminators, structured; temporaries folded where they're read; each local's name and use; the locals a pattern binds; a closure's arrow |
+| `mir/assign.rs`, `mir/places.rs`, `mir/operands.rs`, `mir/rvalues.rs` | An assignment and the `&mut`s given to a call; a place; an operand and a constant; an rvalue and an aggregate |
+| `mir/dispatch.rs`, `mir/jsx_props.rs`, `mir/entries.rs`, `mir/queries.rs` | A call, handed on by what's called (`mir_call`); a JSX binding's props; std calls that change a place; what a body's MIR says of a local, a place or a block |
 | `mir/cfg.rs`, `mir/drops.rs`, `mir/awaits.rs`, `mir/iter.rs` | A MIR body's control flow, made labeled blocks and loops; what each `Drop` drops, by rustc's drop elaboration, and its flags; `.await`; iterators, lazy as Rust's adapters are |
 | `mir/hints.rs` | What tidy is told of a body that its THIR says (`written`): where each `if`'s condition, `&&`, `if` of a `continue`, loop and table `match` is written; the names of `bool`s and of integers (`typed_names`); and what each temporary is suggested to be named, rust-analyzer's suggestion of the call that made it or the type it holds (`temporaries_names`, ADR 0569). A question: it emits nothing |
 | `mir/writer.rs` | A writer's `Formatter` from MIR, and its body's end (`writer_epilogue`): which locals are it, its `Debug` builders, what's refused of it, and a call that writes to it, whose JS `display.rs` writes |
@@ -316,7 +319,7 @@ outside its owner, and how much each module knows of the rest.
 what's called:
 
 ```text
- mir_call(f, args)                                   mir.rs
+ mir_call(f, args)                                   mir/dispatch.rs
    ├─ a write to a `Formatter`, a `Debug` builder's step   mir/writer.rs
    ├─ a function value, `js::import!`, a struct update's `..Default::default()`
    └─ mir_call_values(f, its arguments' values)
