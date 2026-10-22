@@ -55,4 +55,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^rc_of_borrowed_param.rs$"],
     snapshots: true,
   },
+  {
+    name: "rc-count-fn-value-unread",
+    breaks: "a count read by a function given as a value, `.map(Rc::strong_count)`, doesn't count its `Rc`s, and the compiler panics",
+    file: "src/lower/analysis/rc_counts.rs",
+    find: "            if let Some((def_id, args)) = fn_def(expr.ty)\n",
+    replace: "            if let Some((def_id, args)) = fn_def(expr.ty).filter(|_| matches!(expr.kind, ExprKind::Call { .. }))\n",
+    tests: ["test/corpus.test.ts", "-t", "^rc_count_fn_value.rs$"],
+  },
 ];

@@ -151,3 +151,12 @@ of another `Rc` was refused. Three rules now:
 `rc_dyn_listeners`, `rc_dyn_sinks` and `rc_refcell_dyn_shared` run each
 against native Rust. An `Rc<dyn T>` of a counted `Rc` made elsewhere,
 with no `RefCell`, is still refused: its pair is a value of its own.
+
+## Amendment: a count read by a function value
+
+The types whose counts are read were the ones a call to `strong_count`,
+`downgrade` and the rest names, so `names.iter().map(Rc::strong_count)`,
+the function given as a value, left `Rc<String>` uncounted and the
+compiler panicked lowering it (#139). Every expression of the function's
+type is asked, the callee of a call or a value given, held by
+`test/corpus/rc_count_fn_value.rs`.

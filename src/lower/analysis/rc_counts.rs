@@ -85,8 +85,9 @@ pub(super) fn counted_rcs<'tcx>(
                     tcx.erase_and_anonymize_regions(to),
                 ));
             }
-            if let ExprKind::Call { fun, .. } = expr.kind
-                && let Some((def_id, args)) = fn_def(body.thir[fun].ty)
+            // A count read by a call, or by the function given as a value,
+            // `.map(Rc::strong_count)`: either is an expression of its type.
+            if let Some((def_id, args)) = fn_def(expr.ty)
                 && reads_rc_count(tcx, def_id, args.types().next())
             {
                 types.insert(tcx.erase_and_anonymize_regions(args.type_at(0)));
