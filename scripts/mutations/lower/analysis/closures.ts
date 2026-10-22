@@ -75,4 +75,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^lazy_iterator_clone.rs$"],
     snapshots: true,
   },
+  {
+    name: "fn-once-clone-shares",
+    breaks: "a clone of a closure that moves what it took out is the closure itself, so both give, and change, the one value",
+    file: "src/lower/analysis/closures.rs",
+    find: "    } || closure.kind() == ty::ClosureKind::FnOnce;\n",
+    replace: "    };\n",
+    tests: ["test/corpus.test.ts", "-t", "^closure_once_cloned.rs$"],
+  },
 ];

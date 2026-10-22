@@ -94,7 +94,8 @@ impl ClosureFacts {
 
 /// Whether a clone of the closure of type `closure` can be the closure
 /// itself, the one JS function: one nothing could tell from it, that never
-/// writes what it took, holds no `Cell`, and holds nothing a clone of which
+/// writes what it took, nor moves it out, an `FnOnce`'s, for what it's
+/// given to to change, holds no `Cell`, and holds nothing a clone of which
 /// counts or drops, as `drops` says (ADRs 0522, 0525).
 pub(in crate::lower) fn clone_shares<'tcx>(
     tcx: TyCtxt<'tcx>,
@@ -117,7 +118,7 @@ pub(in crate::lower) fn clone_shares<'tcx>(
                 ty::UpvarCapture::ByValue | ty::UpvarCapture::ByUse => captured.mutability == ty::Mutability::Mut,
             }),
         None => closure.kind() != ty::ClosureKind::Fn,
-    };
+    } || closure.kind() == ty::ClosureKind::FnOnce;
     !writes && (closure.upvar_tys().iter()).all(|t| t.is_freeze(tcx, typing_env) && !drops(t))
 }
 

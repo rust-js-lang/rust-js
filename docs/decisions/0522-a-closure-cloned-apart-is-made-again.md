@@ -83,3 +83,12 @@ revealed first, and the clone is the struct's or the closure's,
 `$clone(tick)` of a closure cloned apart. ADR 0262's case: results would
 change, so Rust's. Held by `test/corpus/impl_trait_clone.rs` and the
 mutation `clone-value-opaque-unrevealed`.
+
+## Amendment: a closure that moves what it took out
+
+A clone of a closure was the closure itself where it never wrote what it
+took, but one that moves it out, an `FnOnce`'s `move || { let mut v = v;
+v[0] *= 5; v }` or `move || consume(v)`, hands the one value to what may
+change it, so the clone gave the value changed (#149). A closure the
+compiler infers is `FnOnce` is cloned apart too. Held by
+`test/corpus/closure_once_cloned.rs`.
