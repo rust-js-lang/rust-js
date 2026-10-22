@@ -1,0 +1,78 @@
+// Mutations of src/lower/std_types/number/operators.rs (ADR 0093).
+import type { Mutation } from "../../../../mutations";
+
+export const mutations: Mutation[] = [
+  {
+    name: "f32-arithmetic-unrounded",
+    breaks: "an `f32`'s `+` is a double's, which may be no `f32` at all: ten tenths are 1.0000000149011612",
+    file: "src/lower/std_types/number/operators.rs",
+    find: "            return Ok(if num == Num::F32 && op != BinOp::Rem {\n                num.wrap(e)\n",
+    replace: "            return Ok(if false {\n                num.wrap(e)\n",
+    tests: ["test/corpus.test.ts", "-t", "f32\\.rs"],
+  },
+  {
+    name: "big-to-f32-through-f64",
+    breaks: "`n as f32` of a `u64` is rounded to an `f64` first, and then can't be told from a tie",
+    file: "src/lower/std_types/number/operators.rs",
+    find: "Expr::call(Expr::helper(\"$bigToF32\"), vec![v]",
+    replace: "target.wrap(Expr::call(Expr::var(\"Number\"), vec![v])",
+    tests: ["test/corpus.test.ts", "-t", "f32\\.rs"],
+  },
+  {
+    name: "signed-remainder-negative-zero",
+    breaks: "`-2 % 2` of an `i32` is JS's `-0`, which an `f64` of it shows as `-0.0`",
+    file: "src/lower/std_types/number/operators.rs",
+    find: "                if op == BinOp::Rem && safe && num.signed() {",
+    replace: "                if op == BinOp::Rem && safe && num.signed() && false {",
+    tests: ["test/corpus.test.ts", "-t", "remainder_sign"],
+  },
+  {
+    name: "compared-remainder-zero-sign",
+    breaks: "a signed remainder compared keeps its `| 0`, `((x % 2) | 0) === 0`, where `x % 2 === 0` is the same",
+    file: "src/lower/std_types/number/operators.rs",
+    find: "            return Ok(Expr::bin(js_op, without_zero_sign(l), without_zero_sign(r)));",
+    replace: "            return Ok(Expr::bin(js_op, l, r));",
+    tests: ["test/compiler.test.ts", "-t", "iterators are array methods"],
+    snapshots: true,
+  },
+  {
+    name: "big-shift-masked-to-63",
+    breaks: "a 128-bit shift's amount is masked to 63, `1u128 << 100` being `1 << 36`",
+    file: "src/lower/std_types/number/operators.rs",
+    find: "    let mask = i128::from(num.bits()) - 1;",
+    replace: "    let mask = 63;",
+    tests: ["test/corpus.test.ts", "-t", "integers_128"],
+  },
+  {
+    name: "char-operator-by-units",
+    breaks: "`c > '！'` of a `char` past U+FFFF is false, by UTF-16 units",
+    file: "src/lower/std_types/number/operators.rs",
+    find: "            && ty.is_char()\n",
+    replace: "            && false\n",
+    tests: ["test/corpus.test.ts", "-t", "code_point_order"],
+  },
+  {
+    name: "big-div-unknown-unchecked",
+    breaks: "an `i64` division by what may be zero is `7n / zero`, which throws JS's `RangeError`, not Rust's panic",
+    file: "src/lower/std_types/number/operators.rs",
+    find: "                    .or_else(|| r.as_bigint())\n                    .is_some_and(|d| d != 0 && !(num.signed() && d == -1));",
+    replace: "                    .or_else(|| r.as_bigint())\n                    .is_none_or(|d| d != 0 && !(num.signed() && d == -1));",
+    tests: ["test/compiler.test.ts", "-t", "64-bit integers are BigInts, wrapped as release Rust wraps them"],
+  },
+  {
+    name: "number-from-bool-as-cast",
+    breaks: "`f64::from(flag)` goes the way of `as`, which has no `bool` as a float",
+    file: "src/lower/std_types/number/operators.rs",
+    find: "        if from.is_bool() {\n            let num = self.num(to, span)?;",
+    replace: "        if false && from.is_bool() {\n            let num = self.num(to, span)?;",
+    tests: ["test/lowering.test.ts", "-t", "from a bool or a char"],
+  },
+  {
+    name: "non-zero-new-keeps-zero",
+    breaks: "`NonZero::new(n)` of `0` is `Some(0)`",
+    file: "src/lower/std_types/number/operators.rs",
+    find: "        Ok(Expr::cond(zero, Expr::undefined(), n))\n",
+    replace: "        Ok(Expr::cond(zero, n.clone(), n))\n",
+    tests: ["test/corpus.test.ts","-t","nonzero"],
+  },
+];

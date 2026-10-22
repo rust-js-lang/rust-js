@@ -176,3 +176,9 @@ the dispatchers the architecture test holds; `collect.rs`, `backs.rs`,
 `combinators.rs`, 1,631 lines, keeps `Comb`, `IterComb` and `comb_values`,
 the dispatcher the architecture test holds; `combinators/values.rs`,
 `adapters.rs` and `callbacks.rs` are the rest.
+
+## Amendment: a number's operators and generic calls apart (2026-10-22)
+
+`std_types/number.rs`, 1,608 lines, keeps `NumOp` and a number's methods;
+`std_types/number/operators.rs` and `generic.rs` are its operators and
+its calls of a generic number's type.
