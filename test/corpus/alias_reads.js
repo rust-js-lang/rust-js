@@ -13,13 +13,14 @@ function joined(a, b) {
 }
 
 function kind(word) {
-  if (word === "let") {
-    return 1;
+  switch (word) {
+    case "let":
+      return 1;
+    case "fn":
+      return 2;
+    default:
+      return 0;
   }
-  if (word === "fn") {
-    return 2;
-  }
-  return 0;
 }
 
 function main() {

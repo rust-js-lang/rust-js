@@ -1,6 +1,7 @@
 # 0014. `match` becomes an `if` / `else if` chain
 
-Status: Accepted
+Status: Accepted. Amended by [ADR 0629](0629-a-match-of-constants-is-a-switch.md):
+a `match` of constants is a `switch`.
 
 Case: N, C, D ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -97,3 +98,14 @@ The rules:
   and it was taken for `None`, so `if let Some(..) = x` ran when `x` was
   `None`. Which variant a pattern names is what's tested. Found by rustc's
   `nonzero-enum.rs` (`option_rest_pattern.rs`).
+
+## Amendment: a `match` of constants is a `switch`
+
+[ADR 0629](0629-a-match-of-constants-is-a-switch.md) (2026-10-23): a
+`match` the program wrote of three arms or more, each a constant or an
+or-pattern of them, with no guard or binding, and at most a last `_`, is a
+`switch`, as React writes one; `fib_match` above is `switch (n) { case 0:
+return 0; case 1: return 1; default: return .. }`. The `break` this ADR
+gave up `switch` for names its loop, `break loop;`, as React's `break
+outer;` does. Every other `match`, of two arms, a guard, a range or a
+binding, or one whose value is read in place, is the `if` chain above.

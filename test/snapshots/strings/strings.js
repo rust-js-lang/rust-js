@@ -110,19 +110,19 @@ export function repeated(s, n) {
 
 /** `match` on string literals, with `|`. */
 export function kind(s) {
-  if (s === "") {
-    return 0;
+  switch (s) {
+    case "":
+      return 0;
+    case "abc":
+    case "stats.rs":
+      return 1;
+    case "äbc/Ö":
+      return 2;
+    case "ab/c":
+      return 3;
+    default:
+      return 4;
   }
-  if (s === "abc" || s === "stats.rs") {
-    return 1;
-  }
-  if (s === "äbc/Ö") {
-    return 2;
-  }
-  if (s === "ab/c") {
-    return 3;
-  }
-  return 4;
 }
 
 /** String literals inside other patterns: an option, a tuple. */

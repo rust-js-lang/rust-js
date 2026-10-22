@@ -137,6 +137,8 @@ pub fn returns(stmts: &[Stmt]) -> (bool, bool) {
             | StmtKind::ForOf { body, .. }
             | StmtKind::For { body, .. }
             | StmtKind::Labeled(_, body) => returns(body),
+            StmtKind::Switch { cases, default, .. } => (case_lists(cases, default).map(|body| returns(body)))
+                .fold((false, false), |(x, y), (z, w)| (x || z, y || w)),
             StmtKind::Try(a, b) | StmtKind::TryCatch(a, _, b) => {
                 let (x, y) = returns(a);
                 let (z, w) = returns(b);
@@ -175,6 +177,17 @@ fn substituted(stmts: &mut [Stmt], with: &dyn Fn(&str) -> Option<Expr>) -> bool 
         StmtKind::ForOf { iterable, body, .. } => one(iterable) && substituted(body, with),
         StmtKind::For { start, test, body, .. } => one(start) && one(test) && substituted(body, with),
         StmtKind::Labeled(_, body) => substituted(body, with),
+        StmtKind::Switch {
+            discriminant,
+            cases,
+            default,
+        } => {
+            one(discriminant)
+                && cases
+                    .iter_mut()
+                    .all(|(values, body)| values.iter_mut().all(one) && substituted(body, with))
+                && default.as_deref_mut().is_none_or(|default| substituted(default, with))
+        }
         StmtKind::Try(a, b) | StmtKind::TryCatch(a, _, b) => substituted(a, with) && substituted(b, with),
         StmtKind::Let(_, None)
         | StmtKind::Break(_)
@@ -226,6 +239,8 @@ fn returns_broken(body: &mut [Stmt]) -> bool {
             StmtKind::While { body, .. } | StmtKind::ForOf { body, .. } | StmtKind::For { body, .. } => {
                 !returns(body).0
             }
+            // Whose `break` would leave it.
+            StmtKind::Switch { cases, default, .. } => !case_lists(cases, default).any(|body| returns(body).0),
             _ => true,
         })
     }

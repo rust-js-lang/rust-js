@@ -75,14 +75,14 @@ function main() {
   const byKey = $binarySearchBy(people, (item) => $cmp(item[1], 57));
   const result = [9, 7, 5];
   const reversed = $binarySearchBy(result, (p) => {
-    const cmp = $cmp(p, 7);
-    if (cmp === -1) {
-      return 1;
+    switch ($cmp(p, 7)) {
+      case -1:
+        return 1;
+      case 1:
+        return -1;
+      case 0:
+        return 0;
     }
-    if (cmp === 1) {
-      return -1;
-    }
-    return 0;
   });
   const weights = [0.5, 1, 2.5];
   const heavy = $binarySearchBy(weights, (w) => $totalCmp(w, 2));

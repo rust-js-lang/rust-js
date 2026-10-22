@@ -272,6 +272,21 @@ impl Walk {
                 self.leave();
             }
             StmtKind::Labeled(_, body) => self.block(body),
+            // Each case a block of its own, as it's printed where it declares.
+            StmtKind::Switch {
+                discriminant,
+                cases,
+                default,
+            } => {
+                self.expr(discriminant);
+                for (values, body) in cases {
+                    values.iter().for_each(|value| self.expr(value));
+                    self.block(body);
+                }
+                if let Some(default) = default {
+                    self.block(default);
+                }
+            }
             StmtKind::Try(body, finally) => {
                 self.block(body);
                 self.block(finally);

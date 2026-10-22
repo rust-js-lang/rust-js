@@ -14,18 +14,23 @@ function pick([a, b, c, d], i) {
   let c$live = true;
   let d$live = true;
   let result;
-  if (i === 0) {
-    a$live = false;
-    result = a;
-  } else if (i === 1) {
-    b$live = false;
-    result = b;
-  } else if (i === 2) {
-    c$live = false;
-    result = c;
-  } else {
-    d$live = false;
-    result = d;
+  switch (i) {
+    case 0:
+      a$live = false;
+      result = a;
+      break;
+    case 1:
+      b$live = false;
+      result = b;
+      break;
+    case 2:
+      c$live = false;
+      result = c;
+      break;
+    default:
+      d$live = false;
+      result = d;
+      break;
   }
   try {
     try {

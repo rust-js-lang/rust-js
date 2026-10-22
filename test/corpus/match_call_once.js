@@ -33,17 +33,16 @@ function pick(x) {
 }
 
 function label(x) {
-  const value = note(2, x);
-  if (value === 97) {
-    return "a";
+  switch (note(2, x)) {
+    case 97:
+      return "a";
+    case 98:
+      return "b";
+    case 99:
+      return "c";
+    default:
+      return "other";
   }
-  if (value === 98) {
-    return "b";
-  }
-  if (value === 99) {
-    return "c";
-  }
-  return "other";
 }
 
 function main() {
@@ -52,19 +51,23 @@ function main() {
   }
   const value = note(3, id(5));
   console.log(`${String(value === 1 ? 10 : value === 2 ? 20 : 30).padEnd(4)}|`);
-  const value$1 = note(4, id(2n));
   let v;
-  if (value$1 === 0n) {
-    v = "zero";
-  } else if (value$1 === 1n) {
-    v = "one";
-  } else if (value$1 === 2n) {
-    v = "two";
-  } else {
-    v = "many";
+  switch (note(4, id(2n))) {
+    case 0n:
+      v = "zero";
+      break;
+    case 1n:
+      v = "one";
+      break;
+    case 2n:
+      v = "two";
+      break;
+    default:
+      v = "many";
+      break;
   }
-  const value$2 = label(98);
+  const value$1 = label(98);
   const arg = label(122);
-  console.log(`${v} ${value$2} ${arg}`);
+  console.log(`${v} ${value$1} ${arg}`);
 }
 //# sourceMappingURL=case.js.map

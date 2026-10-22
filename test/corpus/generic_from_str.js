@@ -51,13 +51,14 @@ function unitDebug_fmt(unit) {
 export const unitFromStr = { fromStr: unitFromStr_fromStr };
 
 function unitFromStr_fromStr(s) {
-  if (s === "kg") {
-    return { TAG: "Ok", _0: "Kg" };
+  switch (s) {
+    case "kg":
+      return { TAG: "Ok", _0: "Kg" };
+    case "lb":
+      return { TAG: "Ok", _0: "Lb" };
+    default:
+      return { TAG: "Err", _0: `unit ${s}` };
   }
-  if (s === "lb") {
-    return { TAG: "Ok", _0: "Lb" };
-  }
-  return { TAG: "Err", _0: `unit ${s}` };
 }
 
 function main() {

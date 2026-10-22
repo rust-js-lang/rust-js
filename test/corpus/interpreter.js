@@ -256,13 +256,15 @@ const Parser = {
   },
 
   precedence(op) {
-    if (op === "<") {
-      return 1;
+    switch (op) {
+      case "<":
+        return 1;
+      case "+":
+      case "-":
+        return 2;
+      default:
+        return 3;
     }
-    if (op === "+" || op === "-") {
-      return 2;
-    }
-    return 3;
   },
 
   expr(parser) {

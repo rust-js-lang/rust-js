@@ -11,13 +11,14 @@ export function fib(n) {
 
 /** Recursive, with `match` on integers. */
 export function fibMatch(n) {
-  if (n === 0) {
-    return 0;
+  switch (n) {
+    case 0:
+      return 0;
+    case 1:
+      return 1;
+    default:
+      return (fibMatch((n - 1) >>> 0) + fibMatch((n - 2) >>> 0)) >>> 0;
   }
-  if (n === 1) {
-    return 1;
-  }
-  return (fibMatch((n - 1) >>> 0) + fibMatch((n - 2) >>> 0)) >>> 0;
 }
 
 /** Iterative, with `while` and mutable locals. */

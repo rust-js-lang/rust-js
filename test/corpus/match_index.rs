@@ -60,7 +60,7 @@ fn picked(i: usize) -> &'static Variant {
     }
 }
 
-// An arm of another field is a conditional, as before.
+// An arm of another field is a `switch`, of a `match` of constants (ADR 0629).
 fn crossed(kind: Kind) -> &'static Variant {
     match kind {
         Kind::Note => &VARIANTS.pitfall,
@@ -75,7 +75,7 @@ static OTHER: Variants = Variants {
     rsc: Variant { title: "Other RSC", depth: 6 },
 };
 
-// Arms of two tables are a conditional too.
+// Arms of two tables are a `switch` too.
 fn mixed(kind: Kind) -> &'static Variant {
     match kind {
         Kind::Note => &VARIANTS.note,

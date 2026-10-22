@@ -168,6 +168,9 @@ pub fn statement_lists(stmts: &mut Vec<Stmt>, f: &mut dyn FnMut(&mut Vec<Stmt>))
             | StmtKind::ForOf { body, .. }
             | StmtKind::For { body, .. }
             | StmtKind::Labeled(_, body) => statement_lists(body, f),
+            StmtKind::Switch { cases, default, .. } => {
+                case_lists_mut(cases, default).for_each(|body| statement_lists(body, f));
+            }
             StmtKind::Try(a, b) | StmtKind::TryCatch(a, _, b) => {
                 statement_lists(a, f);
                 statement_lists(b, f);
@@ -225,6 +228,20 @@ pub fn each_expr_mut(stmts: &mut [Stmt], f: &mut dyn FnMut(&mut Expr)) {
                 each_expr_mut(body, f);
             }
             StmtKind::Labeled(_, body) => each_expr_mut(body, f),
+            StmtKind::Switch {
+                discriminant,
+                cases,
+                default,
+            } => {
+                discriminant.each_mut(f);
+                for (values, body) in cases.iter_mut() {
+                    values.iter_mut().for_each(|value| value.each_mut(f));
+                    each_expr_mut(body, f);
+                }
+                if let Some(default) = default {
+                    each_expr_mut(default, f);
+                }
+            }
             StmtKind::Try(a, b) | StmtKind::TryCatch(a, _, b) => {
                 each_expr_mut(a, f);
                 each_expr_mut(b, f);
@@ -334,6 +351,20 @@ pub fn visit_stmts<'a>(stmts: &'a [Stmt], read: &mut dyn FnMut(&'a str)) {
                 visit_stmts(body, read);
             }
             StmtKind::Labeled(_, body) => visit_stmts(body, read),
+            StmtKind::Switch {
+                discriminant,
+                cases,
+                default,
+            } => {
+                discriminant.visit_vars(read);
+                for (values, body) in cases {
+                    values.iter().for_each(|value| value.visit_vars(read));
+                    visit_stmts(body, read);
+                }
+                if let Some(default) = default {
+                    visit_stmts(default, read);
+                }
+            }
             StmtKind::Try(body, finally) | StmtKind::TryCatch(body, _, finally) => {
                 visit_stmts(body, read);
                 visit_stmts(finally, read);
@@ -434,6 +465,9 @@ fn rename_binders(stmts: &mut [Stmt], rename: &mut dyn FnMut(&mut String)) {
                 }
             }
             StmtKind::While { body, .. } | StmtKind::Labeled(_, body) => rename_binders(body, rename),
+            StmtKind::Switch { cases, default, .. } => {
+                case_lists_mut(cases, default).for_each(|body| rename_binders(body, rename));
+            }
             StmtKind::ForOf { pattern, body, .. } => {
                 pattern.each_name_mut(&mut |n| rename(n));
                 rename_binders(body, rename);
@@ -481,6 +515,7 @@ fn unspan(stmts: &mut [Stmt]) {
             | StmtKind::ForOf { body, .. }
             | StmtKind::For { body, .. }
             | StmtKind::Labeled(_, body) => unspan(body),
+            StmtKind::Switch { cases, default, .. } => case_lists_mut(cases, default).for_each(|body| unspan(body)),
             StmtKind::Try(a, b) | StmtKind::TryCatch(a, _, b) => {
                 unspan(a);
                 unspan(b);
@@ -499,9 +534,13 @@ pub fn breaks(stmts: &[Stmt], label: Option<&str>) -> bool {
         StmtKind::Break(Some(l)) => Some(l.as_str()) == label,
         StmtKind::If(_, a, b) => breaks(a, label) || b.as_deref().is_some_and(|b| breaks(b, label)),
         StmtKind::Labeled(_, body) => breaks(body, label),
-        // In a loop of its own, one that names it.
+        // In a loop of its own, one that names it; in a `switch`, which a
+        // `break` of no label would leave, too (ADR 0629).
         StmtKind::While { body, .. } | StmtKind::ForOf { body, .. } | StmtKind::For { body, .. } => {
             label.is_some_and(|l| names_break(body, l))
+        }
+        StmtKind::Switch { cases, default, .. } => {
+            label.is_some_and(|l| case_lists(cases, default).any(|body| names_break(body, l)))
         }
         StmtKind::Try(a, b) | StmtKind::TryCatch(a, _, b) => breaks(a, label) || breaks(b, label),
         _ => false,
@@ -517,6 +556,7 @@ pub fn names_break(stmts: &[Stmt], label: &str) -> bool {
         | StmtKind::ForOf { body, .. }
         | StmtKind::For { body, .. }
         | StmtKind::Labeled(_, body) => names_break(body, label),
+        StmtKind::Switch { cases, default, .. } => case_lists(cases, default).any(|body| names_break(body, label)),
         StmtKind::Try(a, b) | StmtKind::TryCatch(a, _, b) => names_break(a, label) || names_break(b, label),
         _ => false,
     })
@@ -629,4 +669,21 @@ pub fn each_item_block_mut(items: &mut [Item], f: &mut dyn FnMut(&mut Vec<Stmt>)
                 .for_each(|function| each_block_mut(&mut function.body, f)),
         }
     }
+}
+
+/// A `switch`'s lists of statements: each case's, then its default's.
+pub fn case_lists<'s>(
+    cases: &'s [(Vec<Expr>, Vec<Stmt>)],
+    default: &'s Option<Vec<Stmt>>,
+) -> impl Iterator<Item = &'s Vec<Stmt>> {
+    cases.iter().map(|(_, body)| body).chain(default)
+}
+
+/// A `switch`'s lists of statements, to change: each case's, then its
+/// default's.
+pub fn case_lists_mut<'s>(
+    cases: &'s mut [(Vec<Expr>, Vec<Stmt>)],
+    default: &'s mut Option<Vec<Stmt>>,
+) -> impl Iterator<Item = &'s mut Vec<Stmt>> {
+    cases.iter_mut().map(|(_, body)| body).chain(default.as_mut())
 }

@@ -36,7 +36,7 @@ use oxc_ast::ast::{
     JSXAttributeName, JSXAttributeValue, JSXChild, JSXClosingElement, JSXClosingFragment, JSXElementName,
     JSXExpression, JSXIdentifier, JSXMemberExpressionObject, JSXOpeningElement, JSXOpeningFragment, LabelIdentifier,
     ObjectPropertyKind, Program, PropertyKey, PropertyKind, SimpleAssignmentTarget, Statement, StaticMemberExpression,
-    StringLiteral, TemplateElement, TemplateElementValue, VariableDeclarationKind, VariableDeclarator,
+    StringLiteral, SwitchCase, TemplateElement, TemplateElementValue, VariableDeclarationKind, VariableDeclarator,
 };
 use oxc_ast::builder::AstBuilder;
 use oxc_ast_visit::Visit;

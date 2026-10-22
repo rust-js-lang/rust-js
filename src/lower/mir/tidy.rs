@@ -17,13 +17,17 @@ mod flags;
 mod jumps;
 mod logicals;
 mod loops;
+mod switches;
 mod unwinds;
 mod values;
 
 pub(super) use self::bindings::{HELD_ARG, is_temporary, temporary, unsuffixed_params, user_name};
 pub(super) use self::destructuring::{copied_params, destructured_params};
 pub(super) use self::values::{call_path, field_path, writer_body};
-use self::{bindings::*, branches::*, destructuring::*, jumps::*, logicals::*, loops::*, values::*};
+use self::{
+    bindings::*, branches::*, destructuring::*, jumps::*, logicals::*, loops::*, switches::switched, values::*,
+};
+use super::hints::SwitchArm;
 
 /// A body tidied, once its parameters are taken apart: its temporaries
 /// named, its drop flags too, and then, its temporaries named alike, each
@@ -113,6 +117,7 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
         continues,
         loops: written,
         comments,
+        switches,
     } = written;
     let (tables, conditions, elses, logicals, continues, written, comments) = (
         &tables[..],
@@ -123,8 +128,10 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
         &written[..],
         &comments[..],
     );
-    // What branches make a value of: the function's too.
-    let made = (result, comments);
+    // What branches make a value of: the function's too; and the arms of a
+    // `match` of constants, a `switch` (ADR 0629), which make none of what
+    // the program names.
+    let made = (result, comments, switches.as_slice());
     // A guard of a handle made for it alone: the place it's a handle on.
     crate::lower::std_types::cell::unguarded(body);
     // Where a drop's flag is known, no test of it, nor a `try` for it.
@@ -461,6 +468,8 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     // in place: its `else`, if any.
     js::statement_lists(body, &mut never_taken);
     holed_lists(body);
+    // A `match` of constants, its chain settled: a `switch` (ADR 0629).
+    switches::switches(body, switches, written);
     // For the source map: a `return` given the value it returns, at MIR's
     // end of the body, which the map has nothing of, where that value was
     // written; an `if`, where its test says, `if c` or its arm's pattern.
@@ -490,6 +499,9 @@ fn bottom_up(stmts: &mut Vec<Stmt>, f: &mut dyn FnMut(&mut Vec<Stmt>)) {
             | StmtKind::ForOf { body, .. }
             | StmtKind::For { body, .. }
             | StmtKind::Labeled(_, body) => bottom_up(body, f),
+            StmtKind::Switch { cases, default, .. } => {
+                js::case_lists_mut(cases, default).for_each(|body| bottom_up(body, f))
+            }
             StmtKind::Try(a, b) | StmtKind::TryCatch(a, _, b) => {
                 bottom_up(a, f);
                 bottom_up(b, f);

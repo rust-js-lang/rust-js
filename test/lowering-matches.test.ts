@@ -240,8 +240,9 @@ pub fn found(people: Vec<(String, u32)>) -> Option<usize> {
 
 // A `match` of a fieldless enum whose arms each give one table's field named
 // as their variant is the table read by the value, as react.dev's
-// ExpandableCallout reads `variantMap[type]`; an arm of another field keeps
-// the conditional. The corpus's `match_index` runs it beside native Rust.
+// ExpandableCallout reads `variantMap[type]`; an arm of another field is
+// the `switch` of a `match` of constants (ADR 0629). The corpus's
+// `match_index` runs it beside native Rust.
 test("a match giving a table's field named as each variant reads the table by it", () => {
   const dir = fixture("match-index");
   writeFileSync(join(dir, "lib.rs"), readFileSync(join(root, "test/corpus/match_index.rs"), "utf8").replace("fn main()", "pub fn main()"));
@@ -250,8 +251,8 @@ test("a match giving a table's field named as each variant reads the table by it
   expect(js).toContain("function variant(kind) {\n  return VARIANTS[kind];\n}");
   expect(js).toContain("function picked(i) {\n  return VARIANTS[pick(i)];\n}");
   expect(js).toContain("const chosen = VARIANTS[kind];\n  return chosen.title;");
-  expect(js).toContain('return kind === "note" ? VARIANTS.pitfall : kind === "pitfall" ? VARIANTS.note : VARIANTS.rsc;');
-  expect(js).toContain('kind === "pitfall" ? OTHER.pitfall : VARIANTS.rsc');
+  expect(js).toContain('  switch (kind) {\n    case "note":\n      return VARIANTS.pitfall;\n');
+  expect(js).toContain('    case "pitfall":\n      return OTHER.pitfall;\n');
 });
 
 // `let Some(href) = href.filter(|href| !href.is_empty()) else { .. }` tests
@@ -351,7 +352,7 @@ pub fn ignored(values: (u32, u32)) -> u32 {
 // its name, as React's scheduler's \`switch (priorityLevel)\` does, its own
 // module's or another's, imported; a value written another way too is its
 // number. A comment before an arm is before its body.
-test("a match of constants tests each by its name, its comments in its arms", async () => {
+test("a match of constants cases each by its name, its comments in its arms", async () => {
   const dir = fixture("const-patterns");
   writeFileSync(join(dir, "lib.rs"), `pub mod levels {
     pub const IMMEDIATE: u8 = 1;
@@ -382,9 +383,10 @@ pub fn both(a: u8, b: u8) -> bool {
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain('import { IDLE, IMMEDIATE } from "./levels.js";');
-  expect(js).toContain("if (level === IMMEDIATE) {\n    // Times out immediately\n    return -1;\n  }");
-  expect(js).toContain("if (level === NORMAL) {\n    // Normal\n    return 5000;\n  }");
-  expect(js).toContain("if (level === IDLE) {\n    // Never times out\n");
+  // A switch of them (ADR 0629), each arm's comment before its statements.
+  expect(js).toContain("  switch (level) {\n    case IMMEDIATE:\n      // Times out immediately\n      return -1;\n");
+  expect(js).toContain("    case NORMAL:\n      // Normal\n      return 5000;\n");
+  expect(js).toContain("    case IDLE:\n      // Never times out\n");
   expect(js).toContain("a === 3");
   const lib = await import(join(dir, "lib.js"));
   expect([1, 3, 5, 9].map(lib.timeout)).toEqual([-1, 5000, 1073741823, 10000]);
@@ -1283,4 +1285,178 @@ pub fn sums() -> Vec<f64> {
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).not.toMatch(/\bbb\d+:/);
   expect((await import(join(dir, "lib.js"))).sums()).toEqual([3, 7, 7]);
+});
+
+// ADR 0629: a `match` the program wrote whose every arm tests constants is
+// a `switch`, as React writes one: an or-pattern's constants stacked cases,
+// a last `_` the `default`, left out where it does nothing; each case ends
+// in `break;` where it'd go on, in a block where it declares; a `break` of
+// the loop around it names the loop. Not one of two arms, an `if`'s two
+// ways, nor one with a guard, nor one whose value is read in place, which
+// JS has no `switch` expression for.
+test("a match of constants is a switch", async () => {
+  const dir = fixture("switches");
+  writeFileSync(join(dir, "lib.rs"), `pub const UPPER: u8 = b'O';
+const LOWER: u8 = b'c';
+#[derive(Clone, Copy)]
+pub enum Tag {
+    Function,
+    Class,
+    Host,
+}
+pub fn kind(n: u32) -> &'static str {
+    match n {
+        0 => "zero",
+        1 | 2 | 3 => "small",
+        _ => "big",
+    }
+}
+pub fn named(format: &str, i: usize) -> u32 {
+    match format.as_bytes()[i] {
+        UPPER | LOWER => 1,
+        b'd' => 2,
+        _ => 0,
+    }
+}
+pub fn tag(t: Tag) -> u32 {
+    match t {
+        Tag::Function => 1,
+        Tag::Class => 2,
+        Tag::Host => 3,
+    }
+}
+pub fn count(s: &str) -> u32 {
+    let mut n = 0;
+    for c in s.chars() {
+        match c {
+            'a' | 'e' => n += 1,
+            'x' => break,
+            'y' => continue,
+            _ => {}
+        }
+        n += 10;
+    }
+    n
+}
+pub fn rows(grid: &[&str]) -> u32 {
+    let mut n = 0;
+    'rows: for row in grid {
+        for c in row.chars() {
+            match c {
+                '#' => break 'rows,
+                '.' => break,
+                _ => n += 1,
+            }
+        }
+    }
+    n
+}
+pub fn declares(n: u32, log: &mut Vec<String>) {
+    match n {
+        1 => {
+            let s = format!("one{n}");
+            log.push(s);
+        }
+        2 => log.push("two".to_string()),
+        _ => {}
+    }
+}
+pub fn guarded(n: u32) -> u32 {
+    match n {
+        1 if n > 0 => 1,
+        2 => 2,
+        _ => 3,
+    }
+}
+pub fn length(s: &str) -> u32 {
+    let len = s.len();
+    let label = match len {
+        0 => 10,
+        1 => 20,
+        _ => 30,
+    };
+    label + match s.len() {
+        0 => 1,
+        1 => 2,
+        _ => 3,
+    }
+}
+pub fn spoken(n: u32) -> String {
+    format!("{}!", match n { 1 => "one", 2 => "two", _ => "many" })
+}
+pub fn two(n: u32) -> &'static str {
+    match n {
+        0 => "zero",
+        _ => "other",
+    }
+}
+pub fn skips(xs: &[u32]) -> u32 {
+    let mut n = 0;
+    for x in xs {
+        match x {
+            1 => n += 1,
+            2 => n += 2,
+            _ => continue,
+        }
+    }
+    n
+}
+pub fn sized(s: &str) -> u32 {
+    match s.len() {
+        0 => 1,
+        1 | 2 => 2,
+        _ => 3,
+    }
+}
+pub fn slices(n: u32) -> usize {
+    let slice: &[u8] = match n {
+        0 => &[1],
+        1 => &[2, 3],
+        _ => &[],
+    };
+    slice.len()
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain(
+    '  switch (n) {\n    case 0:\n      return "zero";\n    case 1:\n    case 2:\n    case 3:\n      return "small";\n    default:\n      return "big";\n  }',
+  );
+  // What's matched read in place, its temporary's value; a `const` by its name.
+  expect(js).toContain("  switch (bytes[i]) {\n    case UPPER:\n    case LOWER:\n      return 1;\n    case 100:");
+  // Each variant a case, the last too: Rust tested every one.
+  expect(js).toContain('    case "Class":\n      return 2;\n    case "Host":\n      return 3;\n  }');
+  expect(js).toContain(
+    '  loop: for (const c of s) {\n    switch (c) {\n      case "a":\n      case "e":\n        n = (n + 1) >>> 0;\n        break;\n      case "x":\n        break loop;\n      case "y":\n        continue;\n    }\n',
+  );
+  // The program's label, and one of its own for the inner loop.
+  expect(js).toContain('        case "#":\n          break rows;\n        case ".":\n          break loop;\n        default:\n          n = (n + 1) >>> 0;\n          break;\n');
+  expect(js).toContain("    loop: for (const c of row) {\n");
+  expect(js).toContain("    case 1: {\n      const s = `one${n}`;\n      log.push(s);\n      break;\n    }\n");
+  expect(js).not.toMatch(/default:\n *break;/);
+  expect(js).toContain("  if (n === 1) {\n    if (n > 0) {");
+  // A variable the program named, by its name; a value read in place, its `?:`.
+  expect(js).toContain("  switch (len) {\n");
+  expect(js).toContain("  switch ($byteLen(s)) {\n");
+  expect(js).toContain("  let slice;\n  switch (n) {\n    case 0:\n      slice = [1];\n");
+  expect(js).toContain("$byteLen(s) === 0 ? 1 : $byteLen(s) === 1 ? 2 : 3");
+  expect(js).toContain('n === 1 ? "one" : n === 2 ? "two" : "many"');
+  // Of two arms, the \`if\` of two ways.
+  expect(js).toContain('  if (n === 0) {\n    return "zero";\n  }\n  return "other";\n');
+  const lib = await import(join(dir, "lib.js"));
+  expect([0, 2, 9].map(lib.kind)).toEqual(["zero", "small", "big"]);
+  expect([0, 1, 2, 3].map((i) => lib.named("Ocdz", i))).toEqual([1, 1, 2, 0]);
+  expect(["Function", "Class", "Host"].map(lib.tag)).toEqual([1, 2, 3]);
+  expect([lib.count("abeyz"), lib.count("aaxa")]).toEqual([42, 22]);
+  expect(lib.rows(["ab.c", "d#e", "fg"])).toEqual(3);
+  const log: string[] = [];
+  [1, 2, 3].forEach((n) => lib.declares(n, log));
+  expect(log).toEqual(["one1", "two"]);
+  expect([1, 2, 5].map(lib.guarded)).toEqual([1, 2, 3]);
+  expect(["", "a", "abc"].map(lib.length)).toEqual([11, 22, 33]);
+  expect([1, 2, 3].map(lib.spoken)).toEqual(["one!", "two!", "many!"]);
+  expect([0, 1].map(lib.two)).toEqual(["zero", "other"]);
+  expect(lib.skips([1, 2, 5, 2])).toEqual(5);
+  expect(["", "ab", "abc"].map(lib.sized)).toEqual([1, 2, 3]);
+  expect([0, 1, 2].map(lib.slices)).toEqual([1, 2, 0]);
 });

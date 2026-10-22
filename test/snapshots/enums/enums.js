@@ -87,20 +87,28 @@ export function divOr(a, b, fallback) {
 
 export function discriminants(i) {
   let level;
-  if (i % 3 === 0) {
-    level = "Low";
-  } else if (i % 3 === 1) {
-    level = "Mid";
-  } else {
-    level = "High";
+  switch (i % 3) {
+    case 0:
+      level = "Low";
+      break;
+    case 1:
+      level = "Mid";
+      break;
+    default:
+      level = "High";
+      break;
   }
   let status;
-  if (i % 3 === 0) {
-    status = "Ok";
-  } else if (i % 3 === 1) {
-    status = "NotFound";
-  } else {
-    status = "Teapot";
+  switch (i % 3) {
+    case 0:
+      status = "Ok";
+      break;
+    case 1:
+      status = "NotFound";
+      break;
+    default:
+      status = "Teapot";
+      break;
   }
   return [
     ["Low", "Mid", "High"].indexOf(level),

@@ -24,6 +24,32 @@ pub(super) struct Written {
     /// Each comment in the body (ADR 0444), which a branch it's in keeps
     /// as a statement (`tidy::commented`).
     pub comments: Vec<js::Span>,
+    /// Each `match` the program wrote whose every arm tests constants, a
+    /// `switch` (ADR 0629): its arms.
+    pub switches: Vec<Vec<SwitchArm>>,
+}
+
+/// The fewest arms a `match` of constants is a `switch` of (ADR 0629): of
+/// two, `if (n === 0) { .. } else { .. }`, as JS writes two ways, and as
+/// SonarJS's `no-small-switch` asks.
+const SWITCH_ARMS: usize = 3;
+
+/// An arm of a `match` of constants (`Written::switches`): where it and
+/// its pattern are written, and each constant its pattern names, `1 | 2`'s
+/// two, none of a last `_`, the `switch`'s `default`.
+pub(super) struct SwitchArm {
+    pub span: js::Span,
+    pub pattern: js::Span,
+    pub constants: Vec<Constant>,
+}
+
+/// A constant an arm of a `match` of constants names: a variant, by the
+/// value JS has of it, `"Function"`, which a last arm, untested, is a case
+/// of; or a literal or a `const`, `n === 1`.
+#[derive(Clone)]
+pub(super) enum Constant {
+    Variant(js::Expr),
+    Value,
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
@@ -179,6 +205,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .filter(|c| lo.is_some_and(|lo| lo <= c.lo) && hi.is_some_and(|hi| c.hi <= hi))
             .map(|c| js::Span { lo: c.lo, hi: c.hi })
             .collect();
+        let switches = self.written_switches();
         Written {
             tables,
             conditions,
@@ -187,6 +214,130 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             continues,
             loops,
             comments,
+            switches,
+        }
+    }
+
+    /// Each `match` the program wrote, not a macro, `matches!`, of three
+    /// arms or more, whose every arm tests constants, with no guard or
+    /// binding, but for a last `_`, and whose value isn't read in place,
+    /// which JS has no `switch` expression for (ADR 0629): its arms. The
+    /// one answer to which `match` is a `switch`.
+    fn written_switches(&self) -> Vec<Vec<SwitchArm>> {
+        // Each once, of the scopes THIR has of it.
+        let mut seen = std::collections::HashSet::new();
+        (self.thir.exprs.iter())
+            .filter_map(|e| {
+                let thir::ExprKind::Scope { mut value, hir_id, .. } = e.kind else {
+                    return None;
+                };
+                // Through what Rust's adjustments made of it, `&*match ..`.
+                while let thir::ExprKind::Deref { arg: inner }
+                | thir::ExprKind::Borrow { arg: inner, .. }
+                | thir::ExprKind::NeverToAny { source: inner }
+                | thir::ExprKind::PointerCoercion { source: inner, .. }
+                | thir::ExprKind::Use { source: inner } = self.thir[value].kind
+                {
+                    value = inner;
+                }
+                let e = &self.thir[value];
+                let thir::ExprKind::Match {
+                    ref arms, match_source, ..
+                } = e.kind
+                else {
+                    return None;
+                };
+                if match_source != rustc_hir::MatchSource::Normal
+                    || e.span.from_expansion()
+                    || self.read_in_place(hir_id)
+                    || !seen.insert(value)
+                {
+                    return None;
+                }
+                let last = arms.len().checked_sub(1)?;
+                let arms: Vec<SwitchArm> = (arms.iter().enumerate())
+                    .map(|(i, &arm)| {
+                        let arm = &self.thir[arm];
+                        let constants = match &arm.pattern.kind {
+                            thir::PatKind::Wild if i == last => Some(Vec::new()),
+                            _ => self.constants_of(&arm.pattern).filter(|_| arm.guard.is_none()),
+                        }?;
+                        Some(SwitchArm {
+                            span: self.js_span(arm.span),
+                            pattern: self.js_span(arm.pattern.span),
+                            constants,
+                        })
+                    })
+                    .collect::<Option<_>>()?;
+                // Of three arms or more: two are the `if` and `else`, or the
+                // `?:`, a person writes of two ways.
+                (arms.len() >= SWITCH_ARMS).then_some(arms)
+            })
+            .collect()
+    }
+
+    /// Whether the value of the expression `hir_id` is read in place: an
+    /// operand's, an argument's, a test's; not a statement's, a `let`'s, an
+    /// assignment's, what's returned, nor a block's, an arm's, a branch's
+    /// that's one of those.
+    fn read_in_place(&self, hir_id: rustc_hir::HirId) -> bool {
+        use rustc_hir::{ExprKind, Node};
+        let mut child = hir_id;
+        for (id, node) in self.tcx.hir_parent_iter(hir_id) {
+            match node {
+                Node::Stmt(_) | Node::Item(_) | Node::ImplItem(_) | Node::TraitItem(_) => return false,
+                // A `let` of a name; one of a pattern reads it in place, `let
+                // (a, b) = ..`.
+                Node::LetStmt(local) => return !matches!(local.pat.kind, rustc_hir::PatKind::Binding(..)),
+                Node::Block(_) | Node::Arm(_) => {}
+                Node::Expr(e) => match e.kind {
+                    // What's returned, a closure's too, or assigned.
+                    ExprKind::Ret(_) | ExprKind::Closure(_) | ExprKind::Assign(..) => return false,
+                    ExprKind::Block(..) | ExprKind::Loop(..) | ExprKind::DropTemps(_) => {}
+                    // An arm, or a branch, not what's matched or tested.
+                    ExprKind::Match(scrutinee, ..) | ExprKind::If(scrutinee, ..) if scrutinee.hir_id != child => {}
+                    _ => return true,
+                },
+                _ => return true,
+            }
+            child = id;
+        }
+        true
+    }
+
+    /// Each constant `pattern` names, if it names constants alone: a literal,
+    /// a `const` (ADR 0590), a variant of no field that JS tests as a value
+    /// it's equal to, `k === "Function"` (ADR 0013), each of an or-pattern.
+    fn constants_of(&self, pattern: &thir::Pat<'tcx>) -> Option<Vec<Constant>> {
+        match &pattern.kind {
+            thir::PatKind::Deref { subpattern, .. } => self.constants_of(subpattern),
+            // Of a number, a `char` or a string, which `===` compares by its
+            // value; not a `bool`, which has two, its `if`'s.
+            thir::PatKind::Constant { .. } => {
+                let ty = pattern.ty.peel_refs();
+                let scalar = ty.is_integral() || ty.is_floating_point() || ty.is_char() || ty.is_str();
+                scalar.then(|| vec![Constant::Value])
+            }
+            thir::PatKind::Variant {
+                adt_def,
+                variant_index,
+                subpatterns,
+                ..
+            } if subpatterns.is_empty() && adt_def.variant(*variant_index).fields.is_empty() => {
+                let subject = js::Expr::var("subject");
+                let test = self.variant_test(subject.clone(), pattern.ty, *adt_def, *variant_index);
+                match test.kind {
+                    js::ExprKind::Binary(js::Op::Eq, s, value) if *s == subject => {
+                        Some(vec![Constant::Variant(*value)])
+                    }
+                    _ => None,
+                }
+            }
+            thir::PatKind::Or { pats } => {
+                let each: Option<Vec<Vec<Constant>>> = pats.iter().map(|p| self.constants_of(p)).collect();
+                Some(each?.concat())
+            }
+            _ => None,
         }
     }
 

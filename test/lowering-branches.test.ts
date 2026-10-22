@@ -693,14 +693,16 @@ pub fn colors(message: &str) -> &'static str {
   }
   return 0;
 }`);
+  // Of three arms, a \`switch\` (ADR 0629).
   expect(js).toContain(`export function colors(message) {
-  if (message === "warn") {
-    return "yellow";
+  switch (message) {
+    case "warn":
+      return "yellow";
+    case "error":
+      return "red";
+    default:
+      return "gray";
   }
-  if (message === "error") {
-    return "red";
-  }
-  return "gray";
 }`);
   expect(js).toContain("  return a || b;\n");
   // A `return` the program wrote stays where it wrote it.

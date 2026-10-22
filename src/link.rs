@@ -182,6 +182,20 @@ fn block(body: &mut [Stmt], visitor: &mut Visitor<'_>) {
                 block(body, visitor);
             }
             StmtKind::Labeled(_, body) => block(body, visitor),
+            StmtKind::Switch {
+                discriminant,
+                cases,
+                default,
+            } => {
+                expr(discriminant, visitor);
+                for (values, body) in cases.iter_mut() {
+                    values.iter_mut().for_each(|value| expr(value, visitor));
+                    block(body, visitor);
+                }
+                if let Some(default) = default {
+                    block(default, visitor);
+                }
+            }
             StmtKind::Function(function) => function_names(function, visitor),
             StmtKind::Try(body, finally) => {
                 block(body, visitor);

@@ -156,6 +156,8 @@ fn leaves(stmts: &[Stmt], depth: usize) -> bool {
             leaves(body, depth + 1)
         }
         StmtKind::Labeled(_, body) => leaves(body, depth),
+        // Whose `break` of no label, none, would leave it alone (ADR 0629).
+        StmtKind::Switch { cases, default, .. } => js::case_lists(cases, default).any(|body| leaves(body, depth)),
         StmtKind::Try(a, b) | StmtKind::TryCatch(a, _, b) => leaves(a, depth) || leaves(b, depth),
         _ => false,
     })

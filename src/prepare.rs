@@ -540,6 +540,20 @@ fn block(body: &mut Vec<Stmt>) {
                 block(body);
             }
             StmtKind::Labeled(_, body) => block(body),
+            StmtKind::Switch {
+                discriminant,
+                cases,
+                default,
+            } => {
+                expr(discriminant);
+                for (values, body) in cases.iter_mut() {
+                    values.iter_mut().for_each(expr);
+                    block(body);
+                }
+                if let Some(default) = default {
+                    block(default);
+                }
+            }
             StmtKind::Try(body, finally) | StmtKind::TryCatch(body, _, finally) => {
                 block(body);
                 block(finally);
@@ -896,6 +910,9 @@ impl Walk {
                     self.stmts(body, true);
                 }
                 StmtKind::Labeled(_, body) => self.stmts(body, looped),
+                StmtKind::Switch { cases, default, .. } => {
+                    js::case_lists(cases, default).for_each(|body| self.stmts(body, looped));
+                }
                 StmtKind::Try(a, b) | StmtKind::TryCatch(a, _, b) => {
                     self.stmts(a, looped);
                     self.stmts(b, looped);

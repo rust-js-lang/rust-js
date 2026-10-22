@@ -6,19 +6,18 @@
 import { $unwrapOk } from "@rust-js/runtime";
 
 export function parseDigit(c) {
-  if (c === "0") {
-    return { TAG: "Ok", _0: 0 };
+  switch (c) {
+    case "0":
+      return { TAG: "Ok", _0: 0 };
+    case "1":
+      return { TAG: "Ok", _0: 1 };
+    case "2":
+      return { TAG: "Ok", _0: 2 };
+    case "3":
+      return { TAG: "Ok", _0: 3 };
+    default:
+      return { TAG: "Err", _0: c + " isn't a digit I know" };
   }
-  if (c === "1") {
-    return { TAG: "Ok", _0: 1 };
-  }
-  if (c === "2") {
-    return { TAG: "Ok", _0: 2 };
-  }
-  if (c === "3") {
-    return { TAG: "Ok", _0: 3 };
-  }
-  return { TAG: "Err", _0: c + " isn't a digit I know" };
 }
 
 /** `?` on a `Result`: the first `Err` is the answer. */

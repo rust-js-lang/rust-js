@@ -226,6 +226,27 @@ impl<'a> Cx<'a> {
         }
     }
 
+    /// A `switch` case's statements: `break;` after them where they'd go
+    /// on, as a case falls through to the next where nothing ends it, and in
+    /// a block of their own, `case 1: { const s = ..; }`, where they
+    /// declare, which the cases' one scope would share (ADR 0629).
+    fn case_body(&self, body: &[js::Stmt]) -> ArenaVec<'a, Statement<'a>> {
+        let mut stmts = self.stmts(body);
+        if !body.last().is_some_and(js::ends) {
+            stmts.push(Statement::new_break_statement(SPAN, None, &self.b));
+        }
+        let declares = body.iter().any(|s| {
+            matches!(
+                s.kind,
+                StmtKind::Const(..) | StmtKind::Let(..) | StmtKind::Destructure { .. } | StmtKind::Function(_)
+            )
+        });
+        match declares {
+            true => ArenaVec::from_iter_in([Statement::new_block_statement(SPAN, stmts, &self.b)], &self.b),
+            false => stmts,
+        }
+    }
+
     fn block(&self, stmts: &[js::Stmt]) -> Statement<'a> {
         Statement::new_block_statement(SPAN, self.stmts(stmts), &self.b)
     }
@@ -297,6 +318,29 @@ impl<'a> Cx<'a> {
             StmtKind::Labeled(label, body) => {
                 let block = Statement::new_block_statement(sp, self.stmts(body), b);
                 self.labeled(sp, Some(label), block)
+            }
+            // Each case's values stacked, `case 1: case 2:`, the last its
+            // statements (ADR 0629).
+            StmtKind::Switch {
+                discriminant,
+                cases,
+                default,
+            } => {
+                let mut clauses = ArenaVec::new_in(b);
+                for (values, body) in cases {
+                    let Some((last, stacked)) = values.split_last() else {
+                        continue;
+                    };
+                    for value in stacked {
+                        clauses.push(SwitchCase::new(SPAN, Some(self.expr(value)), ArenaVec::new_in(b), b));
+                    }
+                    clauses.push(SwitchCase::new(SPAN, Some(self.expr(last)), self.case_body(body), b));
+                }
+                // A `default` that does nothing, `_ => {}`'s, left out.
+                if let Some(default) = default.as_ref().filter(|default| !default.is_empty()) {
+                    clauses.push(SwitchCase::new(SPAN, None, self.case_body(default), b));
+                }
+                Statement::new_switch_statement(sp, self.expr(discriminant), clauses, b)
             }
             StmtKind::Try(body, finally) => Statement::new_try_statement(
                 sp,

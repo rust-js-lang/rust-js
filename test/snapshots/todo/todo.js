@@ -56,13 +56,14 @@ function toggle(s, id) {
 }
 
 function shown(filter, todo) {
-  if (filter === "All") {
-    return true;
+  switch (filter) {
+    case "All":
+      return true;
+    case "Active":
+      return !todo.done;
+    case "Completed":
+      return todo.done;
   }
-  if (filter === "Active") {
-    return !todo.done;
-  }
-  return todo.done;
 }
 
 /** One `<li>`: a checkbox, the title, and a button to delete it. */

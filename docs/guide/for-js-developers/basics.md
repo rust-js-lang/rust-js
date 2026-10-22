@@ -592,8 +592,16 @@ pub fn day_name(day: u8) -> &'static str {
     match day {
         0 => "Sunday",
         6 => "Saturday",
-        1..=5 => "weekday",
+        1 | 2 | 3 | 4 | 5 => "weekday",
         _ => "unknown",
+    }
+}
+
+pub fn weekend(day: u8) -> bool {
+    match day {
+        0 | 6 => true,
+        1..=5 => false,
+        _ => panic!("no day {day}"),
     }
 }
 
@@ -609,18 +617,30 @@ pub fn http_status(code: u16) -> String {
 
 ```js
 export function dayName(day) {
-  if (day === 0) {
-    return "Sunday";
-  }
-  if (day === 6) {
-    return "Saturday";
-  }
-  if (day >= 1) {
-    if (day <= 5) {
+  switch (day) {
+    case 0:
+      return "Sunday";
+    case 6:
+      return "Saturday";
+    case 1:
+    case 2:
+    case 3:
+    case 4:
+    case 5:
       return "weekday";
-    }
+    default:
+      return "unknown";
   }
-  return "unknown";
+}
+
+export function weekend(day) {
+  if (day === 0 || day === 6) {
+    return true;
+  }
+  if (day < 1 || day > 5) {
+    throw new Error(`no day ${day}`);
+  }
+  return false;
 }
 
 export function httpStatus(code) {
@@ -638,10 +658,17 @@ export function httpStatus(code) {
 ```
 
 `|` is several cases in one arm, `1..=5` a range, and `if` after a pattern
-a guard. A `match` is an `if` chain, never a `switch`
-([ADR 0014](../../decisions/0014-match-lowering.md)). An arm that names a
-`const` tests it by its name, and a comment before an arm is before its
-body:
+a guard. A `match` of three arms or more, each a constant or a `|` of them
+(a literal, a `const`, an enum's variant of no field) with no guard, and
+at most a last `_`, is a `switch`: `|`'s constants are stacked `case`s, `_`
+is the `default`, left out where it does nothing, and each case ends in
+`break;` where it'd go on, in a block `{ .. }` where it declares a name.
+Any other `match`, of a range, a guard, a binding, or of two arms, is an
+`if` chain ([ADR 0014](../../decisions/0014-match-lowering.md), [ADR
+0629](../../decisions/0629-a-match-of-constants-is-a-switch.md)); and one
+whose value is read in place, `f(match n { .. })`, is a `?:`, as JS has
+no `switch` expression. An arm that names a `const` tests it by its name,
+and a comment before an arm is before its body:
 
 ```rust
 pub const IMMEDIATE: u8 = 1;
@@ -663,15 +690,55 @@ export const IMMEDIATE = 1;
 export const IDLE = 5;
 
 export function timeout(level) {
-  if (level === IMMEDIATE) {
-    // Times out immediately
-    return -1;
+  switch (level) {
+    case IMMEDIATE:
+      // Times out immediately
+      return -1;
+    case IDLE:
+      // Never times out
+      return 1073741823;
+    default:
+      return 5000;
   }
-  if (level === IDLE) {
-    // Never times out
-    return 1073741823;
+}
+```
+
+A `break` in an arm leaves the loop, as in Rust: in a `switch` it would
+leave the `switch`, so it names the loop, the program's label or `loop`:
+
+```rust
+pub fn count(s: &str) -> u32 {
+    let mut n = 0;
+    for c in s.chars() {
+        match c {
+            'a' | 'e' => n += 1,
+            '.' => break,
+            '#' => continue,
+            _ => {}
+        }
+        n += 10;
+    }
+    n
+}
+```
+
+```js
+export function count(s) {
+  let n = 0;
+  loop: for (const c of s) {
+    switch (c) {
+      case "a":
+      case "e":
+        n = (n + 1) >>> 0;
+        break;
+      case ".":
+        break loop;
+      case "#":
+        continue;
+    }
+    n = (n + 10) >>> 0;
   }
-  return 5000;
+  return n;
 }
 ```
 
@@ -728,13 +795,14 @@ pub fn unit() -> Shape {
 
 ```js
 export function next(light) {
-  if (light === "Red") {
-    return "Green";
+  switch (light) {
+    case "Red":
+      return "Green";
+    case "Yellow":
+      return "Red";
+    case "Green":
+      return "Yellow";
   }
-  if (light === "Yellow") {
-    return "Red";
-  }
-  return "Yellow";
 }
 
 export function area(shape) {

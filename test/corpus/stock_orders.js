@@ -32,12 +32,16 @@ export const categoryDisplay = { fmt: categoryDisplay_fmt };
 
 function categoryDisplay_fmt(category, options) {
   let name;
-  if (category === "Tools") {
-    name = "tools";
-  } else if (category === "Garden") {
-    name = "garden";
-  } else {
-    name = "kitchen";
+  switch (category) {
+    case "Tools":
+      name = "tools";
+      break;
+    case "Garden":
+      name = "garden";
+      break;
+    case "Kitchen":
+      name = "kitchen";
+      break;
   }
   return $formatted(name, options);
 }

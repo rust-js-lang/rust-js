@@ -360,8 +360,8 @@ export const mutations: Mutation[] = [
     name: "commented-else-folded",
     breaks: "an `if` whose branch has a comment is folded into `c ? a : b`, and the comment is lost",
     file: "src/lower/mir/tidy/branches.rs",
-    find: "                    && !commented(span, &[then.as_slice(), otherwise.as_slice()].concat(), comments) =>",
-    replace: "                    =>",
+    find: "                    && !commented(span, &[then.as_slice(), otherwise.as_slice()].concat(), comments)\n",
+    replace: "",
     tests: ["test/lowering-names.test.ts", "-t", "a comment is in the JS where"],
   },
   {
@@ -437,5 +437,13 @@ export const mutations: Mutation[] = [
     find: "        false => test.clone().negated_test(),\n",
     replace: "        false => test.clone(),\n",
     tests: ["test/lowering-options.test.ts", "-t", "a test says is there"],
+  },
+  {
+    name: "switch-arms-folded",
+    breaks: "a `match` of constants' arms of a value are folded into a `?:`, `const label = len === 0 ? 10 : ..`, not a `switch`",
+    file: "src/lower/mir/tidy/branches.rs",
+    find: "                    && !switched(&test, span, switches) =>\n",
+    replace: "                    =>\n",
+    tests: ["test/lowering-matches.test.ts", "-t", "a match of constants is a switch"],
   },
 ];

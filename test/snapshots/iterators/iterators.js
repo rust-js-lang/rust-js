@@ -108,14 +108,14 @@ export function byLengthThenName(words) {
 }
 
 export function compare(a, b) {
-  const cmp = $cmp(a, b);
-  if (cmp === -1) {
-    return -1;
+  switch ($cmp(a, b)) {
+    case -1:
+      return -1;
+    case 0:
+      return 0;
+    case 1:
+      return 1;
   }
-  if (cmp === 0) {
-    return 0;
-  }
-  return 1;
 }
 
 export function bigger(a, b) {

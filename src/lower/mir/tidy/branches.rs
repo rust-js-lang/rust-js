@@ -25,11 +25,31 @@ pub(super) fn table_reads(stmts: &mut Vec<Stmt>, tables: &[(js::Span, Vec<String
                         if matches!(then.as_slice(), [Stmt { kind: StmtKind::Return(Some(_)), .. }]))
             })
             .count();
-        if returned > 0
-            && let Some(Stmt {
-                kind: StmtKind::Return(Some(last)),
-                ..
-            }) = stmts.get(i + returned)
+        // The last a `return`, or one more test's, `if (k === "b") { return
+        // M.b; } else { return M.c; }`, as a `switch`'s arms leave (ADR 0629).
+        let (tested, last) = match stmts.get(i + returned).map(|s| &s.kind) {
+            Some(StmtKind::Return(Some(last))) => (None, Some(last)),
+            Some(StmtKind::If(test, then, Some(otherwise))) => match (then.as_slice(), otherwise.as_slice()) {
+                (
+                    [
+                        Stmt {
+                            kind: StmtKind::Return(Some(value)),
+                            ..
+                        },
+                    ],
+                    [
+                        Stmt {
+                            kind: StmtKind::Return(Some(last)),
+                            ..
+                        },
+                    ],
+                ) => (Some((Some(test.clone()), value.clone())), Some(last)),
+                _ => (None, None),
+            },
+            _ => (None, None),
+        };
+        if (returned > 0 || tested.is_some())
+            && let Some(last) = last
         {
             let mut arms: Vec<(Option<Expr>, Expr)> = (stmts[i..i + returned].iter())
                 .map(|s| match &s.kind {
@@ -45,6 +65,7 @@ pub(super) fn table_reads(stmts: &mut Vec<Stmt>, tables: &[(js::Span, Vec<String
                     _ => unreachable!("taken"),
                 })
                 .collect();
+            arms.extend(tested);
             value_arms(last, &mut arms);
             if let Some(read) = table_of(stmts[i].span).and_then(|names| table_read(&arms, names)) {
                 let span = stmts[i].span;
@@ -200,7 +221,7 @@ pub(super) fn branch_values(
     stmts: &mut Vec<Stmt>,
     returns: &[js::Span],
     booleans: &HashSet<String>,
-    (result, comments): (&str, &[js::Span]),
+    (result, comments, switches): (&str, &[js::Span], &[Vec<SwitchArm>]),
 ) {
     stmts.retain_mut(|stmt| {
         let span = stmt.span;
@@ -249,6 +270,7 @@ pub(super) fn branch_values(
                     && (!is_temporary(x) && then.len() == 1 || is_temporary(x) && then.len() > 1)
                     && let Some((y, folded)) = assigned_only(otherwise)
                     && x == y
+                    && !switched(test, span, switches)
                     && let ExprKind::Cond(t, q, r) = &folded.kind
                     && small(q)
                     && small(r) =>
@@ -271,7 +293,9 @@ pub(super) fn branch_values(
                     && !(updates(x, yes) && updates(x, no))
                     // Nor one whose branch has a comment, which an expression
                     // has no line for (ADR 0444).
-                    && !commented(span, &[then.as_slice(), otherwise.as_slice()].concat(), comments) =>
+                    && !commented(span, &[then.as_slice(), otherwise.as_slice()].concat(), comments)
+                    // Nor a `switch`'s arms (ADR 0629).
+                    && !switched(&test, span, switches) =>
             {
                 // The value the program wrote first, first: `a || b ? x : y` of
                 // `if a || b { x } else { y }` MIR tests `!a && !b` of.

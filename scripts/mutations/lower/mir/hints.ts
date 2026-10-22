@@ -126,4 +126,28 @@ export const mutations: Mutation[] = [
     replace: "                ty::Adt(_, args) if ty.is_box() || self.is_std_type(ty, StdItem::Rc) || self.is_std_type(ty, StdItem::Result) => args.type_at(0).peel_refs(),\n",
     tests: ["test/snapshots.test.ts", "-t", "inbox"],
   },
+  {
+    name: "switch-of-two-arms",
+    breaks: "a `match` of two arms is a `switch`, `switch (s) { case \"a\": .. default: .. }`, not the `if` of two ways",
+    file: "src/lower/mir/hints.rs",
+    find: "const SWITCH_ARMS: usize = 3;\n",
+    replace: "const SWITCH_ARMS: usize = 2;\n",
+    tests: ["test/lowering-branches.test.ts", "-t", "a function's match returns each arm"],
+  },
+  {
+    name: "switch-of-a-guard",
+    breaks: "a guarded arm is a case, which a failed guard leaves for after the `switch`, not the arms after it",
+    file: "src/lower/mir/hints.rs",
+    find: "                            _ => self.constants_of(&arm.pattern).filter(|_| arm.guard.is_none()),\n",
+    replace: "                            _ => self.constants_of(&arm.pattern),\n",
+    tests: ["test/lowering-matches.test.ts", "-t", "a match of constants is a switch"],
+  },
+  {
+    name: "switch-of-a-value-in-place",
+    breaks: "a `match` whose value is read in place is a `switch` of a temporary, `let tmp; switch (n) { .. } f(tmp)`, not its `?:`",
+    file: "src/lower/mir/hints.rs",
+    find: "                    || self.read_in_place(hir_id)\n",
+    replace: "",
+    tests: ["test/lowering-matches.test.ts", "-t", "a match of constants is a switch"],
+  },
 ];

@@ -32,9 +32,16 @@ function picked(i) {
   return VARIANTS[pick(i)];
 }
 
-// An arm of another field is a conditional, as before.
+// An arm of another field is a `switch`, of a `match` of constants (ADR 0629).
 function crossed(kind) {
-  return kind === "note" ? VARIANTS.pitfall : kind === "pitfall" ? VARIANTS.note : VARIANTS.rsc;
+  switch (kind) {
+    case "note":
+      return VARIANTS.pitfall;
+    case "pitfall":
+      return VARIANTS.note;
+    case "rsc":
+      return VARIANTS.rsc;
+  }
 }
 
 const OTHER = {
@@ -43,9 +50,16 @@ const OTHER = {
   rsc: { title: "Other RSC", depth: 6 },
 };
 
-// Arms of two tables are a conditional too.
+// Arms of two tables are a `switch` too.
 function mixed(kind) {
-  return kind === "note" ? VARIANTS.note : kind === "pitfall" ? OTHER.pitfall : VARIANTS.rsc;
+  switch (kind) {
+    case "note":
+      return VARIANTS.note;
+    case "pitfall":
+      return OTHER.pitfall;
+    case "rsc":
+      return VARIANTS.rsc;
+  }
 }
 
 function main() {

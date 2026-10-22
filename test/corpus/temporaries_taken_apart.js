@@ -14,23 +14,25 @@ function make(n) {
 }
 
 function pick(n) {
-  if (n === 0) {
-    return "Zero";
+  switch (n) {
+    case 0:
+      return "Zero";
+    case 1:
+      return { TAG: "One", _0: make(10) };
+    default: {
+      const loud = make(20);
+      let tmp;
+      try {
+        tmp = [loud, make(21)];
+      } catch (error) {
+        loudDrop_drop(loud);
+        throw error;
+      }
+      const a = tmp[0];
+      const b = tmp[1];
+      return { TAG: "Both", _0: a, _1: b };
+    }
   }
-  if (n === 1) {
-    return { TAG: "One", _0: make(10) };
-  }
-  const loud = make(20);
-  let tmp;
-  try {
-    tmp = [loud, make(21)];
-  } catch (error) {
-    loudDrop_drop(loud);
-    throw error;
-  }
-  const a = tmp[0];
-  const b = tmp[1];
-  return { TAG: "Both", _0: a, _1: b };
 }
 
 // A parameter taken apart: the function owns what its pattern leaves.

@@ -361,6 +361,9 @@ pub(super) fn taking(stmts: &[Stmt], a: &str, found: &mut Vec<(String, usize)>) 
             | StmtKind::ForOf { body, .. }
             | StmtKind::For { body, .. }
             | StmtKind::Labeled(_, body) => taking(body, a, found),
+            StmtKind::Switch { cases, default, .. } => {
+                js::case_lists(cases, default).for_each(|body| taking(body, a, found));
+            }
             StmtKind::Try(x, y) | StmtKind::TryCatch(x, _, y) => {
                 taking(x, a, found);
                 taking(y, a, found);
@@ -383,6 +386,7 @@ pub(super) fn dropping(stmts: &mut Vec<Stmt>, a: &str, b: &str) {
             | StmtKind::ForOf { body, .. }
             | StmtKind::For { body, .. }
             | StmtKind::Labeled(_, body) => vec![body],
+            StmtKind::Switch { cases, default, .. } => js::case_lists_mut(cases, default).collect(),
             StmtKind::Try(x, y) | StmtKind::TryCatch(x, _, y) => vec![x, y],
             _ => Vec::new(),
         };

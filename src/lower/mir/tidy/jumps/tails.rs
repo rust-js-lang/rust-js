@@ -11,6 +11,8 @@ pub(in crate::lower::mir::tidy) fn own_jumps(stmts: &[Stmt], label: Option<&str>
         StmtKind::Break(Some(l)) | StmtKind::Continue(Some(l)) => Some(l.as_str()) == label,
         StmtKind::If(_, a, b) => own_jumps(a, label) || b.as_deref().is_some_and(|b| own_jumps(b, label)),
         StmtKind::Labeled(_, body) => own_jumps(body, label),
+        // Whose `break` of a loop names it (ADR 0629), its `continue` the loop's.
+        StmtKind::Switch { cases, default, .. } => js::case_lists(cases, default).any(|body| own_jumps(body, label)),
         StmtKind::Try(a, b) | StmtKind::TryCatch(a, _, b) => own_jumps(a, label) || own_jumps(b, label),
         // In a loop of its own, one that names it.
         StmtKind::While { body, .. } | StmtKind::ForOf { body, .. } | StmtKind::For { body, .. } => {
@@ -29,6 +31,7 @@ pub(in crate::lower::mir::tidy) fn names_jump(stmts: &[Stmt], label: &str) -> bo
         | StmtKind::ForOf { body, .. }
         | StmtKind::For { body, .. }
         | StmtKind::Labeled(_, body) => names_jump(body, label),
+        StmtKind::Switch { cases, default, .. } => js::case_lists(cases, default).any(|body| names_jump(body, label)),
         StmtKind::Try(a, b) | StmtKind::TryCatch(a, _, b) => names_jump(a, label) || names_jump(b, label),
         _ => false,
     })
@@ -220,6 +223,10 @@ fn broken_to(stmts: &mut [Stmt], own: bool, looped: Option<&str>, to: &str) {
                 broken_to(a, own, looped, to);
                 broken_to(b, own, looped, to);
             }
+            // Whose `break` of no label is its own (ADR 0629).
+            StmtKind::Switch { cases, default, .. } => {
+                js::case_lists_mut(cases, default).for_each(|body| broken_to(body, false, looped, to));
+            }
             StmtKind::While { body, .. } | StmtKind::ForOf { body, .. } | StmtKind::For { body, .. } => {
                 broken_to(body, false, looped, to);
             }
@@ -245,6 +252,7 @@ pub(in crate::lower::mir::tidy) fn first_written(stmts: &[Stmt]) -> Option<u32> 
         | StmtKind::Labeled(_, body)
         | StmtKind::Try(body, _)
         | StmtKind::TryCatch(body, ..) => first_written(body),
+        StmtKind::Switch { cases, default, .. } => js::case_lists(cases, default).find_map(|body| first_written(body)),
         _ => None,
     })
 }

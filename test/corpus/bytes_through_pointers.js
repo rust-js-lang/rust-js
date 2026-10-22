@@ -28,19 +28,18 @@ function pairDebug_fmt(pair) {
 // aho-corasick's byte-at-a-time comparison, four at a time.
 function isEqualRaw(x, y, n) {
   if (n < 4) {
-    if (n === 0) {
-      return true;
+    switch (n) {
+      case 0:
+        return true;
+      case 1:
+        return x.value === y.value;
+      case 2:
+        return $ptrRetyped(x, 2, false).value === $ptrRetyped(y, 2, false).value;
+      case 3:
+        return $eq($ptrRetyped(x, 3, "bytes").value, $ptrRetyped(y, 3, "bytes").value);
+      default:
+        throw new Error("internal error: entered unreachable code");
     }
-    if (n === 1) {
-      return x.value === y.value;
-    }
-    if (n === 2) {
-      return $ptrRetyped(x, 2, false).value === $ptrRetyped(y, 2, false).value;
-    }
-    if (n === 3) {
-      return $eq($ptrRetyped(x, 3, "bytes").value, $ptrRetyped(y, 3, "bytes").value);
-    }
-    throw new Error("internal error: entered unreachable code");
   }
   const xend = $ptrAdd(x, (n - 4) >>> 0);
   const yend = $ptrAdd(y, (n - 4) >>> 0);

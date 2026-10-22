@@ -236,6 +236,7 @@ pub(in crate::lower::mir::tidy) fn targets(stmts: &[Stmt], label: &str) -> bool 
         | StmtKind::ForOf { body, .. }
         | StmtKind::For { body, .. }
         | StmtKind::Labeled(_, body) => targets(body, label),
+        StmtKind::Switch { cases, default, .. } => js::case_lists(cases, default).any(|body| targets(body, label)),
         StmtKind::Try(a, b) | StmtKind::TryCatch(a, _, b) => targets(a, label) || targets(b, label),
         _ => false,
     })

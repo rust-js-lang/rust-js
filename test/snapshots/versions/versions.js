@@ -178,13 +178,14 @@ export function edges() {
 
 export function panics(i) {
   const v = [1, 2, 3];
-  if (i === 0) {
-    return $splitOff(v, 4);
+  switch (i) {
+    case 0:
+      return $splitOff(v, 4);
+    case 1:
+      return $drain(v, 2, 1);
+    default:
+      return $drain(v, 1, 5);
   }
-  if (i === 1) {
-    return $drain(v, 2, 1);
-  }
-  return $drain(v, 1, 5);
 }
 
 export function report() {

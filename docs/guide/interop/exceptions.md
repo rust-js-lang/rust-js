@@ -364,16 +364,16 @@ pub fn check(items: &[u32], expected: u32) {
 import { $assertFailed } from "@rust-js/runtime";
 
 export function pick(n) {
-  if (n % 3 === 0) {
-    return "fizz";
+  switch (n % 3) {
+    case 0:
+      return "fizz";
+    case 1:
+      return "buzz";
+    case 2:
+      return "none";
+    default:
+      throw new Error("internal error: entered unreachable code: a remainder of 3 is under 3");
   }
-  if (n % 3 === 1) {
-    return "buzz";
-  }
-  if (n % 3 !== 2) {
-    throw new Error("internal error: entered unreachable code: a remainder of 3 is under 3");
-  }
-  return "none";
 }
 
 export function check(items, expected) {

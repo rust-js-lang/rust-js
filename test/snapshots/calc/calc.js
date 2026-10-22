@@ -41,14 +41,21 @@ export function tokenize(src) {
       out.push({ TAG: "Num", _0: result$1._0 });
       continue;
     }
-    if (c === "+" || c === "-" || c === "*" || c === "/") {
-      out.push({ TAG: "Op", _0: c });
-    } else if (c === "(") {
-      out.push("LParen");
-    } else if (c === ")") {
-      out.push("RParen");
-    } else {
-      return { TAG: "Err", _0: `unexpected ${$debugStr(c, "'")} at ${i}` };
+    switch (c) {
+      case "+":
+      case "-":
+      case "*":
+      case "/":
+        out.push({ TAG: "Op", _0: c });
+        break;
+      case "(":
+        out.push("LParen");
+        break;
+      case ")":
+        out.push("RParen");
+        break;
+      default:
+        return { TAG: "Err", _0: `unexpected ${$debugStr(c, "'")} at ${i}` };
     }
     i += 1;
   }

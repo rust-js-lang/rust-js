@@ -21,13 +21,14 @@ const SUM = 3;
 const PX = 7;
 
 function classify(n) {
-  if (n === SUM) {
-    return "sum";
+  switch (n) {
+    case SUM:
+      return "sum";
+    case PX:
+      return "px";
+    default:
+      return "other";
   }
-  if (n === PX) {
-    return "px";
-  }
-  return "other";
 }
 
 function main() {

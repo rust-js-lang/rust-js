@@ -347,6 +347,17 @@ pub enum StmtKind {
     },
     /// `label: { .. }`, which a `break label` leaves: a let chain's (ADR 0048).
     Labeled(String, Vec<Stmt>),
+    /// `switch (discriminant) { case 1: case 2: .. default: .. }`: a `match`
+    /// of constants the program wrote (ADR 0629). Each case is its values,
+    /// stacked, and its statements, which end it as an `if`'s branch's do:
+    /// the printer writes `break;` where they'd go on, and a block where
+    /// they declare, and leaves out a `default` of none. A `break` of a
+    /// loop around it names the loop.
+    Switch {
+        discriminant: Expr,
+        cases: Vec<(Vec<Expr>, Vec<Stmt>)>,
+        default: Option<Vec<Stmt>>,
+    },
     /// `try { .. } finally { .. }`: a scope, and the drops that end it,
     /// however it's left (ADR 0098).
     Try(Vec<Stmt>, Vec<Stmt>),

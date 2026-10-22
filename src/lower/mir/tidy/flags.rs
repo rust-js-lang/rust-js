@@ -305,6 +305,12 @@ fn settle(stmts: &mut Vec<Stmt>, known: &mut Known, flags: &HashSet<String>) {
                 settle(body, &mut known.clone(), flags);
                 forget(known, &stmts[i..=i], flags);
             }
+            StmtKind::Switch { cases, default, .. } => {
+                for body in js::case_lists_mut(cases, default) {
+                    settle(body, &mut known.clone(), flags);
+                }
+                forget(known, &stmts[i..=i], flags);
+            }
             StmtKind::While { body, .. } | StmtKind::ForOf { body, .. } | StmtKind::For { body, .. } => {
                 // Each time round, what an earlier time set may be there.
                 let mut entry = known.clone();
