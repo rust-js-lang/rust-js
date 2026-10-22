@@ -510,45 +510,35 @@ const Interp = {
               break bb195;
             }
           } else if (e._0 === "-") {
-            if (l.TAG === "Num") {
-              if (r.TAG === "Num") {
-                const a = l._0;
-                const b = r._0;
-                value = { TAG: "Num", _0: a - b };
-                break bb195;
-              }
+            if (l.TAG === "Num" && r.TAG === "Num") {
+              const a = l._0;
+              const b = r._0;
+              value = { TAG: "Num", _0: a - b };
+              break bb195;
             }
           } else if (e._0 === "*") {
-            if (l.TAG === "Num") {
-              if (r.TAG === "Num") {
-                const a = l._0;
-                const b = r._0;
-                value = { TAG: "Num", _0: a * b };
-                break bb195;
-              }
+            if (l.TAG === "Num" && r.TAG === "Num") {
+              const a = l._0;
+              const b = r._0;
+              value = { TAG: "Num", _0: a * b };
+              break bb195;
             }
           } else if (e._0 === "/") {
-            if (l.TAG === "Num") {
-              if (r.TAG === "Num") {
-                if (r._0 === 0) {
-                  const b = r._0;
-                  return { TAG: "Err", _0: "division by zero" };
-                }
-                const a = l._0;
+            if (l.TAG === "Num" && r.TAG === "Num") {
+              if (r._0 === 0) {
                 const b = r._0;
-                value = { TAG: "Num", _0: a / b };
-                break bb195;
+                return { TAG: "Err", _0: "division by zero" };
               }
+              const a = l._0;
+              const b = r._0;
+              value = { TAG: "Num", _0: a / b };
+              break bb195;
             }
-          } else if (e._0 === "<") {
-            if (l.TAG === "Num") {
-              if (r.TAG === "Num") {
-                const a = l._0;
-                const b = r._0;
-                value = { TAG: "Bool", _0: a < b };
-                break bb195;
-              }
-            }
+          } else if (e._0 === "<" && l.TAG === "Num" && r.TAG === "Num") {
+            const a = l._0;
+            const b = r._0;
+            value = { TAG: "Bool", _0: a < b };
+            break bb195;
           }
           const op = e._0;
           const a = l;

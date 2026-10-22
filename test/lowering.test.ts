@@ -1342,7 +1342,7 @@ pub fn body(response: &webapi::Response) -> Promise<Option<&'static Unknown>> {
   expect(js).toContain('if (typeof value === "function") {');
   expect(js).toContain("Object.keys(value)");
   expect(js).toContain("show(value[key])");
-  expect(js).toContain('      value.name = "new";\n      return show(value);');
+  expect(js).toContain('  if (value$1.TAG === "Ok" && value$1._0 != null) {\n    const value = value$1._0;\n    value.name = "new";\n    return show(value);');
   expect(js).toContain("const value$1 = $try(() => JSON.parse(text));");
   expect(js).toContain("return response.json();");
   const lib = await import(join(dir, "lib.js"));
@@ -6178,6 +6178,25 @@ pub fn parsed() -> Vec<f64> {
   const lib = await import(join(dir, "lib.js"));
   globals.rustJsHook = () => -1;
   expect([lib.called(1), lib.parsed(), lib.resetTo(undefined), lib.resetTo(4)]).toEqual([2, [10, 10], -1, 4]);
+});
+
+// ADR 0614: a match arm's pattern of several parts, \`(Some(x), Some(y))\`,
+// is one test of each, \`if (p != null && q != null)\`, as its arm is one
+// pattern; a drop flag's test joined with it keeps the flag's name.
+test("a match arm's pattern of parts is one test of each", async () => {
+  const dir = fixture("pattern-tests");
+  writeFileSync(join(dir, "lib.rs"), `pub fn both(p: Option<f64>, q: Option<f64>, other: f64) -> f64 {
+    match (p, q) {
+        (Some(x), Some(y)) => x + y,
+        _ => other,
+    }
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("  if (p != null && q != null) {\n");
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.both(1, 2, 0), lib.both(1, undefined, 9), lib.both(undefined, 2, 9)]).toEqual([3, 9, 9]);
 });
 
 // ADR 0613: \`&&\` and \`||\` mixed, as the program wrote them, are one value

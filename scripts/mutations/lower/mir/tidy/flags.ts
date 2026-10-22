@@ -5,6 +5,15 @@ const leaving = ["test/corpus.test.ts", "-t", "drop_operand_leaves|drop_operand_
 
 export const mutations: Mutation[] = [
   {
+    name: "joined-flag-unnamed",
+    breaks: "a drop flag tested with its pattern's test, `if (d && flag)`, keeps its temporary's name, `_13$0$live`",
+    file: "src/lower/mir/tidy/flags.rs",
+    find: "        ExprKind::Binary(js::Op::And, a, b) => tests_flag(a, flag) || tests_flag(b, flag),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^question_drops.rs$"],
+    snapshots: true,
+  },
+  {
     name: "flags-known-test-kept",
     breaks: "a drop's flag known `false`, as the value was just moved, is still tested, in a `try` of its own",
     file: "src/lower/mir/tidy/flags.rs",

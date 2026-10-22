@@ -1575,10 +1575,8 @@ function main() {
             if (tmp$0$0$live) {
               dDrop_drop(tmp$25._0[0]);
             }
-            if (tmp$0$1$live) {
-              if (tmp$25._0[1] != null) {
-                dDrop_drop(tmp$25._0[1]);
-              }
+            if (tmp$0$1$live && tmp$25._0[1] != null) {
+              dDrop_drop(tmp$25._0[1]);
             }
           }
         } catch (error) {
@@ -1777,10 +1775,8 @@ function main() {
       }
     }
     try {
-      if (tmp$24.TAG === "Ok") {
-        if (tmp$0$live) {
-          dDrop_drop(tmp$24._0);
-        }
+      if (tmp$24.TAG === "Ok" && tmp$0$live) {
+        dDrop_drop(tmp$24._0);
       }
     } catch (error) {
       if (err.TAG === "Ok") {

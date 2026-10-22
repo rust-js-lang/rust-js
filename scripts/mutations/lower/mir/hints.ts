@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "pattern-tests-nested",
+    breaks: "`(Some(x), Some(y))`'s tests are `if (p != null) { if (q != null) {` nested",
+    file: "src/lower/mir/hints.rs",
+    find: "                    std::iter::once((tested, tested)).chain(guards).collect()\n",
+    replace: "                    guards.collect()\n",
+    tests: ["test/lowering.test.ts", "-t", "a match arm's pattern of parts"],
+  },
+  {
     name: "mir-booleans-unhinted",
     breaks: "a `bool` variable isn't known as one, `!!a || b`, not `a || b`",
     file: "src/lower/mir/hints.rs",

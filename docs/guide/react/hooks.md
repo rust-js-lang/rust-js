@@ -416,10 +416,8 @@ import { useActionState, useOptimistic } from "react";
 
 function addName(names, data) {
   const name = data.get("name");
-  if (name != null) {
-    if (typeof name === "string") {
-      return `${names}${name} `;
-    }
+  if (typeof name === "string") {
+    return `${names}${name} `;
   }
   return names;
 }

@@ -31,10 +31,8 @@ export function area(s) {
 /** Patterns inside variants, guards, `|`, and `..`. */
 export function classify(s) {
   if (s.TAG !== "Circle") {
-    if (s !== "Empty") {
-      if (s.w !== 0) {
-        return 1;
-      }
+    if (s !== "Empty" && s.w !== 0) {
+      return 1;
     }
   } else {
     if (s._0 > 10) {

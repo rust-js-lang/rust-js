@@ -202,10 +202,8 @@ function main() {
         throw error;
       }
     }
-    if (d) {
-      if (d$0$live) {
-        dDrop_drop(d);
-      }
+    if (d && d$0$live) {
+      dDrop_drop(d);
     }
     d$0$live = false;
   }
@@ -252,10 +250,8 @@ function main() {
         throw error;
       }
     }
-    if (d) {
-      if (d$0$live$1) {
-        dDrop_drop(d);
-      }
+    if (d && d$0$live$1) {
+      dDrop_drop(d);
     }
     d$0$live$1 = false;
   }

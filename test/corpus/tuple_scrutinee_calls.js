@@ -41,10 +41,8 @@ function peeked(map, names) {
     if (value) {
       return (value$1._0 * 2) >>> 0;
     }
-  } else if (value$1.TAG === "Square") {
-    if (!value) {
-      return value$1._0;
-    }
+  } else if (value$1.TAG === "Square" && !value) {
+    return value$1._0;
   }
   return;
 }

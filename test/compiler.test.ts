@@ -707,7 +707,7 @@ test("enums with fields are tagged objects, as in ReScript", async () => {
   expect(js).toContain("  return { TAG: \"Rect\", w, h };");
   // Matching tests the name, or the `TAG`, then the fields, in place.
   expect(js).toContain('  if (s === "Empty") {\n    return 0;\n  }\n  if (s.TAG === "Circle") {');
-  expect(js).toContain("  if (s.TAG !== \"Circle\") {\n    if (s !== \"Empty\") {\n      if (s.w !== 0) {");
+  expect(js).toContain("  if (s.TAG !== \"Circle\") {\n    if (s !== \"Empty\" && s.w !== 0) {");
   // Through a reference, with no copy: the reference is the value.
   expect(js).toContain("  if (t.TAG === \"Leaf\") {\n    return t._0;\n  }\n  return (sum(t._0) + sum(t._1)) | 0;");
   // `Result` is ReScript's `result`.

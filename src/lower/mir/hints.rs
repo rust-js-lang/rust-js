@@ -60,19 +60,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     let cond = self.js_span(self.thir[cond].span);
                     vec![(cond, cond)]
                 }
-                // From `match` to its scrutinee's end, where MIR tests it.
+                // From `match` to its scrutinee's end, where MIR tests it:
+                // an arm's pattern, one test of each of its parts, `(Some(x),
+                // Some(y))`'s `a != null && b != null` (ADR 0614), and its
+                // guard.
                 thir::ExprKind::Match {
                     scrutinee, ref arms, ..
-                } => (arms.iter())
-                    .filter_map(|&arm| {
+                } => {
+                    let tested = js::Span {
+                        lo: self.js_span(e.span).lo,
+                        hi: self.js_span(self.thir[scrutinee].span).hi,
+                    };
+                    let guards = (arms.iter()).filter_map(|&arm| {
                         let guard = self.thir[arm].guard?;
-                        let tested = js::Span {
-                            lo: self.js_span(e.span).lo,
-                            hi: self.js_span(self.thir[scrutinee].span).hi,
-                        };
                         Some((tested, self.js_span(self.thir[guard].span)))
-                    })
-                    .collect(),
+                    });
+                    std::iter::once((tested, tested)).chain(guards).collect()
+                }
                 _ => Vec::new(),
             })
             .collect();

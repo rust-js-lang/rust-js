@@ -19,12 +19,10 @@ function describe(xs) {
     return `two: ${first} ${second}`;
   }
   if (xs.length >= 3) {
-    if (xs[0] === 1) {
-      if (xs[2] === 3) {
-        const n = xs[1];
-        const rest = xs.slice(3);
-        return `one, ${n}, three, then [${rest.join(", ")}]`;
-      }
+    if (xs[0] === 1 && xs[2] === 3) {
+      const n = xs[1];
+      const rest = xs.slice(3);
+      return `one, ${n}, three, then [${rest.join(", ")}]`;
     }
   }
   const first = xs[0];

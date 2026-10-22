@@ -18,12 +18,10 @@ export function buildTree(paths) {
           folder.push([part, { TAG: "Folder", _0: [] }]);
         }
         const find = folder.find(([n]) => n === part);
-        if (find) {
-          if (find[1].TAG === "Folder") {
-            const children = find[1]._0;
-            folder = children;
-            continue;
-          }
+        if (find && find[1].TAG === "Folder") {
+          const children = find[1]._0;
+          folder = children;
+          continue;
         }
         throw new Error("internal error: entered unreachable code: a folder, found or just made");
       }

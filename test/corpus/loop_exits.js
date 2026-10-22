@@ -25,10 +25,8 @@ function textIn(root, path) {
         dir = value._0;
         continue;
       }
-    } else if (value.TAG === "File") {
-      if (!value$1) {
-        return value._0;
-      }
+    } else if (value.TAG === "File" && !value$1) {
+      return value._0;
     }
     return;
   }

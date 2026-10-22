@@ -90,7 +90,7 @@ fn guarded(body: &mut [Stmt], flag: &str) -> Option<String> {
         for stmt in list.iter() {
             if found.is_none()
                 && let StmtKind::If(test, then, _) = &stmt.kind
-                && matches!(&test.kind, ExprKind::Var(v) if v == flag)
+                && tests_flag(test, flag)
             {
                 js::visit_stmts(then, &mut |name| {
                     if !name.starts_with('$') {
@@ -101,6 +101,16 @@ fn guarded(body: &mut [Stmt], flag: &str) -> Option<String> {
         }
     });
     found
+}
+
+/// Whether `test` is `flag`, or a part of an `&&` of it, `d && _13$0$live`,
+/// a pattern's test joined with it (ADR 0614).
+fn tests_flag(test: &Expr, flag: &str) -> bool {
+    match &test.kind {
+        ExprKind::Var(v) => v == flag,
+        ExprKind::Binary(js::Op::And, a, b) => tests_flag(a, flag) || tests_flag(b, flag),
+        _ => false,
+    }
 }
 
 fn flag_of<'e>(e: &'e Expr, flags: &HashSet<String>) -> Option<&'e str> {

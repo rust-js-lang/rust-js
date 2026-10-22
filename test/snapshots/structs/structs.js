@@ -169,25 +169,23 @@ export function classify([a, b]) {
 /** `match` on struct fields, with bindings. */
 export function quadrant(x, y) {
   const value = point(x, y);
-  if (value.x !== 0) {
-    if (value.y !== 0) {
-      const x = value.x;
-      const y$1 = value.y;
-      if (x > 0) {
-        if (y$1 > 0) {
-          const x = value.x;
-          const y$1 = value.y;
-          return 1;
-        }
-      }
-      const x$1 = value.x;
-      if (x$1 < 0) {
+  if (value.x !== 0 && value.y !== 0) {
+    const x = value.x;
+    const y$1 = value.y;
+    if (x > 0) {
+      if (y$1 > 0) {
         const x = value.x;
-        return (2 + (y < 0 ? 1 : 0)) | 0;
+        const y$1 = value.y;
+        return 1;
       }
-      const y$2 = value.y;
-      return (y$2 * 4) | 0;
     }
+    const x$1 = value.x;
+    if (x$1 < 0) {
+      const x = value.x;
+      return (2 + (y < 0 ? 1 : 0)) | 0;
+    }
+    const y$2 = value.y;
+    return (y$2 * 4) | 0;
   }
   return 0;
 }

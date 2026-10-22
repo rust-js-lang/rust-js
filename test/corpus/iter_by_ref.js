@@ -78,11 +78,7 @@ function main() {
   const iter = all;
   while (true) {
     const value = namesIterator_next(iter);
-    if (!value) {
-      break;
-    }
-    const n = value[0];
-    if (n === "B") {
+    if (!value || value[0] === "B") {
       break;
     }
   }
