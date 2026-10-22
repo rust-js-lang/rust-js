@@ -110,8 +110,8 @@ export const mutations: Mutation[] = [
     name: "trailing-comment-dropped",
     breaks: "a comment after code on its line, `let n = 1; // why`, is lost",
     file: "src/to_oxc.rs",
-    find: "                after.entry(last).or_default().push(comment);",
-    replace: "                let _ = (last, comment);",
+    find: "                        after.entry(last).or_default().push(&comment.text);",
+    replace: "                        let _ = (last, comment);",
     tests: ["test/lowering-names.test.ts", "-t", "a comment is in the JS where"],
   },
   {
@@ -226,5 +226,13 @@ export const mutations: Mutation[] = [
     find: "            js::Item::Const(c) if defaulted(module) == Some(c.name.as_str()) => body.push(cx.default_value(c)),\n",
     replace: "",
     tests: ["test/modules.test.ts", "-t", "the constant's value where the macro holds it"],
+  },
+  {
+    name: "inside-comment-at-line-end",
+    breaks: "`code != 37 /* \"%\" */` has its comment at its line's end, or inside the block after it",
+    file: "src/to_oxc.rs",
+    find: "                let column = inside.then(|| (c.lo as usize - line_start) as u32);\n",
+    replace: "                let column = inside.then(|| (c.lo as usize - line_start) as u32).filter(|_| false);\n",
+    tests: ["test/lowering-names.test.ts", "-t", "a comment inside an expression is after the code before it"],
   },
 ];

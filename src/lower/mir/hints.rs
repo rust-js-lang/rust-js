@@ -46,11 +46,12 @@ pub(super) struct SwitchArm {
 
 /// A constant an arm of a `match` of constants names: a variant, by the
 /// value JS has of it, `"Function"`, which a last arm, untested, is a case
-/// of; or a literal or a `const`, `n === 1`.
+/// of; or a literal or a `const`, `n === 1`, where it's written, which its
+/// `case` is, its comment after it (ADR 0630).
 #[derive(Clone)]
 pub(super) enum Constant {
     Variant(js::Expr),
-    Value,
+    Value(js::Span),
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
@@ -319,7 +320,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             thir::PatKind::Constant { .. } => {
                 let ty = pattern.ty.peel_refs();
                 let scalar = ty.is_integral() || ty.is_floating_point() || ty.is_char() || ty.is_str();
-                scalar.then(|| vec![Constant::Value])
+                scalar.then(|| vec![Constant::Value(self.js_span(pattern.span))])
             }
             thir::PatKind::Variant {
                 adt_def,

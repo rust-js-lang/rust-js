@@ -138,19 +138,37 @@ pub fn emit(
     // A comment after code is after the last JS of its line (ADR 0444); of
     // a line no JS is of, a `}`'s, it's nobody's.
     let mut after: std::collections::HashMap<u32, Vec<&str>> = std::collections::HashMap::new();
+    // One inside an expression, after the JS of the code right before it,
+    // its line's and column's (ADR 0630).
+    let mut inside: std::collections::HashMap<u32, Vec<(u32, &str)>> = std::collections::HashMap::new();
     if let Some(map) = &generated.map {
-        for (line, comment) in &trailing {
-            let last = (map.get_tokens())
-                .filter(|t| t.get_src_line() == *line)
-                .map(|t| t.get_dst_line())
-                .max();
-            if let Some(last) = last {
-                after.entry(last).or_default().push(comment);
+        for comment in &trailing {
+            let before = comment.column.and_then(|column| {
+                (map.get_tokens())
+                    .filter(|t| t.get_src_line() == comment.line && t.get_src_col() < column)
+                    .max_by_key(|t| t.get_src_col())
+                    .map(|t| (t.get_dst_line(), t.get_dst_col()))
+            });
+            match before {
+                Some((line, column)) => inside.entry(line).or_default().push((column, &comment.text)),
+                None => {
+                    let last = (map.get_tokens())
+                        .filter(|t| t.get_src_line() == comment.line)
+                        .map(|t| t.get_dst_line())
+                        .max();
+                    if let Some(last) = last {
+                        after.entry(last).or_default().push(&comment.text);
+                    }
+                }
             }
         }
     }
     for (i, (out_line, line)) in (header_lines..).zip(generated.code.lines()).enumerate() {
-        code.push_str(line);
+        let line = match inside.get(&(i as u32)) {
+            Some(comments) => with_inside_comments(line, comments),
+            None => line.to_string(),
+        };
+        code.push_str(&line);
         for comment in after.get(&(i as u32)).into_iter().flatten() {
             code.push(' ');
             code.push_str(comment);
@@ -193,6 +211,39 @@ pub fn emit(
     Output { code, map }
 }
 
+/// A comment after code on its line (ADR 0444): its line, its column where
+/// code follows it there, inside an expression (ADR 0630), and its text.
+struct Trailing {
+    line: u32,
+    column: Option<u32>,
+    text: String,
+}
+
+/// `line` of the JS with each comment after the code that starts at its
+/// column: a name, a number or a string, `case 79 /* "O" */:` (ADR 0630).
+fn with_inside_comments(line: &str, comments: &[(u32, &str)]) -> String {
+    let mut out = line.to_string();
+    let mut at: Vec<(usize, &str)> = (comments.iter())
+        .filter_map(|&(column, text)| {
+            let start = column as usize;
+            let rest = line.get(start..)?;
+            let end = match rest.chars().next()? {
+                quote @ ('"' | '\'' | '`') => rest[1..].find(quote).map(|i| i + 2)?,
+                _ => rest
+                    .find(|c: char| !(c.is_alphanumeric() || c == '_' || c == '$' || c == '.'))
+                    .unwrap_or(rest.len()),
+            };
+            (end > 0).then_some((start + end, text))
+        })
+        .collect();
+    // From the last, so each column is still where it was.
+    at.sort_by_key(|&(end, _)| std::cmp::Reverse(end));
+    for (end, text) in at {
+        out.insert_str(end, &format!(" {text}"));
+    }
+    out
+}
+
 /// The comments of the files `module`'s code is of, past the ones each
 /// starts with, a header's (ADR 0383), each before the statement or item it's
 /// before: where only the start of that is between them, no `;`, `{` or
@@ -202,10 +253,7 @@ pub fn emit(
 /// written; a doc comment, `///` lines or `/** */`, a JSDoc one, `/** .. */`,
 /// whose text is added after the arena's, where its span points. The text
 /// the program's source is, and the comments.
-fn comments_of(
-    module: &Module,
-    sources: &crate::program::Sources,
-) -> (String, Vec<oxc_ast::Comment>, Vec<(u32, String)>) {
+fn comments_of(module: &Module, sources: &crate::program::Sources) -> (String, Vec<oxc_ast::Comment>, Vec<Trailing>) {
     use oxc_ast::{CommentKind, CommentPosition};
     let mut text = sources.text.clone();
     let mut found = Vec::new();
@@ -250,7 +298,19 @@ fn comments_of(
             let written = &sources.text[c.lo as usize..c.hi as usize];
             if !written.contains('\n') {
                 let line = sources.text[..c.lo as usize].matches('\n').count() as u32;
-                trailing.push((line, written.to_string()));
+                let line_start = sources.text[..c.lo as usize].rfind('\n').map_or(0, |i| i + 1);
+                let line_end = sources.text[c.hi as usize..]
+                    .find('\n')
+                    .map_or(sources.text.len(), |i| c.hi as usize + i);
+                // A block comment with code after it on its line is inside
+                // an expression: after the code right before it (ADR 0630).
+                let inside = written.starts_with("/*") && !sources.text[c.hi as usize..line_end].trim().is_empty();
+                let column = inside.then(|| (c.lo as usize - line_start) as u32);
+                trailing.push(Trailing {
+                    line,
+                    column,
+                    text: written.to_string(),
+                });
             }
         }
         let attached: Vec<(crate::program::Comment, u32)> = (file.comments.iter())

@@ -117,6 +117,27 @@ pub mod inner {
   expect(outer).toMatch(/\n}\n\n\/\/ The file's end,\n\/\/ in two lines\.\n\/\/# sourceMappingURL/);
 });
 
+// ADR 0630: a block comment with code after it on its line, inside an
+// expression, is after the JS of the code right before it, as React's
+// normalizeConsoleFormat has its `case 79 /* "O" */:`.
+test("a comment inside an expression is after the code before it", () => {
+  const dir = fixture("comments-inline");
+  writeFileSync(join(dir, "lib.rs"), `pub fn kind(code: u32) -> u32 {
+    if code != 37 /* "%" */ {
+        return 0;
+    }
+    match code {
+        79 /* "O" */ | 99 /* "c" */ | 100 /* "d" */ => 1,
+        _ => 2,
+    }
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('if (code !== 37 /* "%" */) {');
+  expect(js).toContain('case 79 /* "O" */:\n    case 99 /* "c" */:\n    case 100 /* "d" */:\n');
+});
+
 // ADR 0444: a comment is its JS's where its code is, before the statement
 // or item it's before, as written; a doc comment, `///`, is a JSDoc one; one
 // before what has no JS, a struct's, is nobody's.

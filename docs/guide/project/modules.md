@@ -458,6 +458,8 @@ One in an `async` block, which is no function, is an error ([ADR 0349](../../dec
 Every comment you write is in the JS where its code is, and so is each
 blank line between statements: one on its own lines is before the
 statement after it, one after code on its line is after that code's JS,
+one inside an expression after the code right before it, `37 /* "%" */`
+([ADR 0630](../../decisions/0630-a-comment-inside-an-expression.md)),
 and a `///` doc comment is a JSDoc an editor shows a JS caller. A file's
 leading comments, a license's, are its JS's first
 ([ADR 0383](../../decisions/0383-a-files-leading-comments-are-its-jss.md),

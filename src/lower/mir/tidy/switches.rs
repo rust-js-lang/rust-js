@@ -388,14 +388,14 @@ fn values_of(test: &Expr, constants: &[Constant], negated: bool, discriminant: &
             None if literal(a) && !literal(b) => (b, a),
             None => (a, b),
         };
-        let fits = match constant {
-            Constant::Variant(variant) => alike(variant, value),
-            Constant::Value => true,
+        let (fits, written) = match constant {
+            Constant::Variant(variant) => (alike(variant, value), js::Span::NONE),
+            Constant::Value(span) => (true, *span),
         };
         if !fits || !compared(discriminant, tested) {
             return None;
         }
-        values.push((**value).clone());
+        values.push((**value).clone().or_at(written));
     }
     Some(values)
 }

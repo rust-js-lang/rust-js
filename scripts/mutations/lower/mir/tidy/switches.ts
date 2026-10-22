@@ -52,4 +52,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: switches,
   },
+  {
+    name: "case-constant-unplaced",
+    breaks: "a `case`'s constant isn't where its pattern's is, so `79 /* \"O\" */` has its comment after the case's statement",
+    file: "src/lower/mir/tidy/switches.rs",
+    find: "        values.push((**value).clone().or_at(written));\n",
+    replace: "        let _ = written;\n        values.push((**value).clone());\n",
+    tests: ["test/lowering-names.test.ts", "-t", "a comment inside an expression is after the code before it"],
+  },
 ];
