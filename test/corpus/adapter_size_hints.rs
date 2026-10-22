@@ -1,6 +1,7 @@
 // The crate's iterator with a `size_hint` of its own gives it in generic
 // code too, made a JS iterator there, as Rust's does, and one without
-// std's `(0, None)`.
+// std's `(0, None)`; and through std's `Fuse` and `Peekable`, compiled,
+// which ask it of the dictionary they're given.
 struct Countdown(u32);
 
 impl Iterator for Countdown {
@@ -46,4 +47,10 @@ fn main() {
     countdown.next();
     println!("{:?}", hint(&countdown));
     println!("{:?} {:?}", hint(&Blink(0)), collected(Countdown(3)));
+    let fused = Countdown(3).fuse();
+    println!("{:?} {:?}", fused.size_hint(), hint(&fused));
+    let mut peek = Countdown(2).peekable();
+    println!("{:?} {:?}", peek.size_hint(), hint(&peek));
+    peek.peek();
+    println!("{:?} {:?}", peek.size_hint(), hint(&Blink(0).fuse()));
 }

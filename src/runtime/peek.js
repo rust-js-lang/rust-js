@@ -11,10 +11,11 @@ function $peekSome(peekable) {
   if (peekable.peeked === undefined) peekable.peeked = $some($nextSome(peekable));
   return $someValue(peekable.peeked);
 }
-// Its size hint, Rust's: what it steps', and what it peeked at, an end none.
-function $peekableHint(peekable) {
+// Its size hint, Rust's: what it steps', by its `Iterator` dictionary where
+// it's given one, and what it peeked at, an end none.
+function $peekableHint(peekable, iterator) {
   if (peekable.peeked !== undefined && $someValue(peekable.peeked) === undefined) return [0, 0];
   const more = peekable.peeked === undefined ? 0 : 1;
-  const [low, high] = $sizeHint(peekable.iter);
+  const [low, high] = $sizeHint(peekable.iter, iterator);
   return [low + more, high === undefined ? undefined : high + more];
 }

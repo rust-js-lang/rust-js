@@ -289,3 +289,29 @@ compiled impl's call.
   `$peek`'s, `$nextIf`'s and `$peekableHint`'s own. What `$peekable` and
   the refusal of a generic `peekable` given a destructor held, their
   mutations held too, and go with them.
+
+## Amendment: a source's own size hint
+
+Case: C ([0262](0262-when-rust-and-js-disagree.md)): the answer was
+`(0, None)` where Rust gives the source's hint; it's Rust's now.
+
+`Countdown(3).fuse().size_hint()`, of an iterator of the crate's with a
+`size_hint` of its own, was `(0, None)`, and so was a `Peekable`'s: the
+use site gave the compiled body `{ next }` alone, and its `I::size_hint`
+was `$sizeHint(iter)` of what it holds, which can't know. Issue #92.
+
+- **The crate's iterator's `Iterator` dictionary carries its own
+  `size_hint`**, where its impl has one (`own_size_hint`, ADR 0170's
+  amendment): `{ next: countdownIterator_next, size_hint:
+  countdownIterator_size_hint }`.
+- **A std body's `I::size_hint(x)` of an `I` given as it is is `$sizeHint(x,
+  IIterator)`**, which asks the dictionary's own before what it can find
+  of `x`; a `Peekable`'s hint, `$peekableHint(peekable, SelfIterator)`.
+
+`test/corpus/adapter_size_hints.rs` asks each, directly, in generic code
+and after a `peek`, against native Rust, whose hints, each shown twice,
+are held as `value$4` and the like: the readability measure's renamed
+share grows, 825.2 to 825.5 in ten thousand lines; mutations
+`own-hint-not-in-dictionary`, `size-hint-undictionaried`,
+`peekable-hint-undictionaried`, `size-hint-dictionary-unasked` and
+`peekable-hint-dictionary-dropped`.

@@ -70,7 +70,12 @@ function main() {
     true,
   ).toArray();
   console.log(`[${back.join(", ")}]`);
-  const it = pad([0, 5], 1, { next: countdownIterator_next }, false);
+  const it = pad(
+    [0, 5],
+    1,
+    { next: countdownIterator_next, size_hint: countdownIterator_size_hint },
+    false,
+  );
   const next = padIterator_next(it);
   const nextBack = padDoubleEndedIterator_next_back(
     it,

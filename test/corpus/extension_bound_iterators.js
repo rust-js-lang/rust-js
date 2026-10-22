@@ -80,7 +80,10 @@ function main() {
     `${value$1 == null ? "None" : `Some(${$debugStr(value$1)})`} ${value$2 == null ? "None" : `Some((${$debugStr(value$2[0])}, ${value$2[1]}))`} ${value$3 == null ? "None" : `Some((${$debugStr(value$3[0])}, ${value$3[1]}))`} ${value$4 == null ? "None" : `Some(${$debugStr(value$4)})`}`,
   );
   const own = { inner: [3] };
-  const value$5 = Ends.shift(own, { next: countdownIterator_next });
+  const value$5 = Ends.shift(own, {
+    next: countdownIterator_next,
+    size_hint: countdownIterator_size_hint,
+  });
   const value$6 = Ends.pop(
     own,
     { next_back: countdownDoubleEndedIterator_next_back },
@@ -110,7 +113,7 @@ function main() {
   );
   const value$9 = outer(
     [2],
-    { next: countdownIterator_next },
+    { next: countdownIterator_next, size_hint: countdownIterator_size_hint },
     { next_back: countdownDoubleEndedIterator_next_back },
     { clone: (value) => [value[0]] },
   );
@@ -135,7 +138,7 @@ function main() {
   );
   const value$11 = second_last(
     [1],
-    { next: countdownIterator_next },
+    { next: countdownIterator_next, size_hint: countdownIterator_size_hint },
     { next_back: countdownDoubleEndedIterator_next_back },
     { clone: (value) => [value[0]] },
   );

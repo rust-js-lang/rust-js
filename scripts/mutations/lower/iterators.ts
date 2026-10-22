@@ -1131,4 +1131,20 @@ export const mutations: Mutation[] = [
     replace: "    match impl_of.filter(|_| false) {\n        Some(imp) =>",
     tests: ["test/corpus.test.ts", "-t", "^into_iter_of_a_bound.rs$"],
   },
+  {
+    name: "own-hint-not-in-dictionary",
+    breaks: "the crate's iterator's `Iterator` dictionary lacks its own `size_hint`, so a compiled `Fuse` of it says `(0, None)`",
+    file: "src/lower/iterators.rs",
+    find: "            props.push(js::Prop::Field(\"size_hint\".into(), hint));\n",
+    replace: "            drop(hint);\n",
+    tests: ["test/corpus.test.ts", "-t", "^adapter_size_hints.rs$"],
+  },
+  {
+    name: "peekable-hint-undictionaried",
+    breaks: "a compiled `Peekable`'s hint isn't given its source's dictionary, so it says `(0, None)` of the crate's iterator",
+    file: "src/lower/iterators.rs",
+    find: "                Some(match self.iterator_evidence(source, iterator) {\n",
+    replace: "                Some(match None::<Expr> {\n",
+    tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std"],
+  },
 ];

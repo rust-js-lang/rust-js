@@ -26,4 +26,12 @@ export const mutations: Mutation[] = [
     replace: "  const more = 0;\n",
     tests: ["test/corpus.test.ts", "-t", "^(peekable_len|held_peekable).rs$"],
   },
+  {
+    name: "peekable-hint-dictionary-dropped",
+    breaks: "`$peekableHint` doesn't pass on the dictionary it's given",
+    file: "src/runtime/peek.js",
+    find: "  const [low, high] = $sizeHint(peekable.iter, iterator);\n",
+    replace: "  const [low, high] = $sizeHint(peekable.iter);\n",
+    tests: ["test/corpus.test.ts", "-t", "^adapter_size_hints.rs$"],
+  },
 ];

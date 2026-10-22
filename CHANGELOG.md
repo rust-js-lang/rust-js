@@ -836,6 +836,10 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### Fixed
 
+- **`size_hint()` of a `Fuse` or a `Peekable` of the crate's iterator**
+  with a `size_hint` of its own was `(0, None)`, where Rust gives the
+  source's (ADR 0561 amended, issue #92): the crate's `Iterator`
+  dictionary carries its own `size_hint`, which std's compiled bodies ask.
 - **itertools compiles again** (ADR 0552 amended): an iterator only bounds
   know, given where an `IntoIterator` is held as it is, has std's
   `IntoIterator` for it; an impl's bound is held as its methods hold it.

@@ -138,7 +138,7 @@ export function fuseIterator_next(fuse, IIterator, IFused, dropI, dropIItem) {
 export function fuseIterator_size_hint(fuse, IIterator, dropI, dropIItem) {
   if (fuse.iter != null) {
     const iter = $someValue(fuse.iter);
-    return $sizeHint(iter);
+    return $sizeHint(iter, IIterator);
   }
   return [0, 0];
 }
@@ -259,7 +259,7 @@ export function iterator_peekable(self, SelfIterator, dropSelf, dropSelfItem) {
     { iter: self },
     {
       next: (iterator) => peekableIterator_next(iterator, SelfIterator, dropSelf, dropSelfItem),
-      hint: $peekableHint,
+      hint: (peekable) => $peekableHint(peekable, SelfIterator),
     },
   );
 }

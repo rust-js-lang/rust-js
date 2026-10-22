@@ -78,8 +78,8 @@ export const mutations: Mutation[] = [
     name: "mir-size-hint-map-unseen",
     breaks: "`v.iter().map(f).size_hint()` is refused, though a `map`'s is its source's",
     file: "src/lower/mir/iter.rs",
-    find: "                && method == \"map\"\n",
-    replace: "                && method == \"map\" && false\n",
+    find: "            && method == \"map\"\n            && args.iter().all(|f| !f.has_effects())\n",
+    replace: "            && method == \"map\" && false\n            && args.iter().all(|f| !f.has_effects())\n",
     tests: ["test/corpus.test.ts","-t","size_hint"],
   },
   {
@@ -1177,5 +1177,13 @@ export const mutations: Mutation[] = [
     find: "                let it = self.closing(it, iter_ty, span)?;\n                let own = arg_tys.get(1)",
     replace: "                let own = arg_tys.get(1)",
     tests: ["test/corpus.test.ts", "-t", "^rev_lazy_drops.rs$"],
+  },
+  {
+    name: "size-hint-undictionaried",
+    breaks: "`I::size_hint` in a compiled std body isn't given `I`'s dictionary, so a `Fuse` of the crate's iterator says `(0, None)`",
+    file: "src/lower/mir/iter.rs",
+    find: "            args.extend(self.iterator_evidence(iter_ty.peel_refs(), iterator));\n",
+    replace: "            let _ = iterator;\n",
+    tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std"],
   },
 ];

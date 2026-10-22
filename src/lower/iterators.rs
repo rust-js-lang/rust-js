@@ -844,7 +844,28 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let mut props = vec![crate::js::Prop::Field("next".into(), next)];
         let hint = match self.compiled_step(ty, iterator, "size_hint") {
             true => Some(self.user_next(ty, iterator, "size_hint", span)?.0),
-            false => self.is_peekable(ty).then(|| Expr::helper("$peekableHint")),
+            // A peekable's, of what it steps by its dictionary where it's
+            // given one, which has that impl's own `size_hint`.
+            false if self.is_peekable(ty) => {
+                let source = match ty.peel_refs().kind() {
+                    ty::Adt(_, args) => args.type_at(0),
+                    _ => unreachable!("a `Peekable`"),
+                };
+                Some(match self.iterator_evidence(source, iterator) {
+                    Some(dictionary) => Expr::arrow(
+                        vec!["peekable".into()],
+                        vec![
+                            StmtKind::Return(Some(Expr::call_helper(
+                                "$peekableHint",
+                                vec![Expr::var("peekable"), dictionary],
+                            )))
+                            .at(js::Span::NONE),
+                        ],
+                    ),
+                    None => Expr::helper("$peekableHint"),
+                })
+            }
+            false => None,
         };
         props.extend(hint.map(|hint| crate::js::Prop::Field("hint".into(), hint)));
         Ok(Expr::object(props))
@@ -1120,7 +1141,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 _ => Expr::helper("$nextSome"),
             },
         };
-        Ok(Expr::object(vec![js::Prop::Field("next".into(), next)]))
+        let mut props = vec![js::Prop::Field("next".into(), next)];
+        // The crate's own `size_hint`, where its impl has one (ADR 0170),
+        // which `$sizeHint` asks of what it's given.
+        if self.is_user_iterator(ty)
+            && let Some(hint) = self.own_size_hint(ty, span)?
+        {
+            props.push(js::Prop::Field("size_hint".into(), hint));
+        }
+        Ok(Expr::object(props))
     }
 
     /// What an `IntoIterator` of type `ty` gives, its `Item`.

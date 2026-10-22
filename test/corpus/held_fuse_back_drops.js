@@ -87,7 +87,13 @@ function main() {
     true,
   ).toArray();
   console.log(`[${back.join(", ")}]`);
-  const it = pad([0, 5], 1, { next: countdownIterator_next }, false, countdownDrop_drop);
+  const it = pad(
+    [0, 5],
+    1,
+    { next: countdownIterator_next, size_hint: countdownIterator_size_hint },
+    false,
+    countdownDrop_drop,
+  );
   try {
     const next = padIterator_next(it, countdownDrop_drop);
     const nextBack = padDoubleEndedIterator_next_back(

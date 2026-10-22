@@ -131,13 +131,18 @@ function fused_of(i, IIntoIterator, IIntoIterFused) {
 }
 
 function main() {
-  const held = { f: iterator_fuse([3], { next: steadyIterator_next }, true) };
+  const held = {
+    f: iterator_fuse([3], { next: steadyIterator_next, size_hint: steadyIterator_size_hint }, true),
+  };
   console.log(
     `${Held.drained_back(held, { next_back: steadyDoubleEndedIterator_next_back }, steadyDebug(), true)}`,
   );
   const fusedOf = fused_of(
     [3],
-    { into_iter: (items) => items, IntoIterIterator: () => ({ next: steadyIterator_next }) },
+    {
+      into_iter: (items) => items,
+      IntoIterIterator: () => ({ next: steadyIterator_next, size_hint: steadyIterator_size_hint }),
+    },
     true,
   );
   console.log(
@@ -145,7 +150,10 @@ function main() {
   );
   const value = fused_of(
     [3],
-    { into_iter: (items) => items, IntoIterIterator: () => ({ next: steadyIterator_next }) },
+    {
+      into_iter: (items) => items,
+      IntoIterIterator: () => ({ next: steadyIterator_next, size_hint: steadyIterator_size_hint }),
+    },
     true,
   );
   console.log(`${Held.drained_front(value, steadyDebug())}`);
@@ -157,7 +165,12 @@ function main() {
   console.log(
     `${Held.drained_back(value$1, { next_back: flipDoubleEndedIterator_next_back }, flipDebug(), false)}`,
   );
-  const value$2 = drained([4], { next: steadyIterator_next }, steadyDebug(), true);
+  const value$2 = drained(
+    [4],
+    { next: steadyIterator_next, size_hint: steadyIterator_size_hint },
+    steadyDebug(),
+    true,
+  );
   console.log(`(${value$2[0]}, ${$debugStr(value$2[1])})`);
   const value$3 = drained([0], { next: flipIterator_next }, flipDebug(), false);
   console.log(`(${value$3[0]}, ${$debugStr(value$3[1])})`);
@@ -170,7 +183,7 @@ function main() {
   console.log(`(${value$4[0]}, ${$debugStr(value$4[1])})`);
   const value$5 = ends(
     [4],
-    { next: steadyIterator_next },
+    { next: steadyIterator_next, size_hint: steadyIterator_size_hint },
     { next_back: steadyDoubleEndedIterator_next_back },
     { len: (iterator) => $exactLen(steadyIterator_size_hint(iterator)) },
     { clone: (value) => [value[0]] },

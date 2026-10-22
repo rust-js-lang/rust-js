@@ -52,6 +52,40 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.cloned_apart_call(def_id, (trait_id, arg_tys), values, output, span, made)
     }
 
+    /// `size_hint()` of `receiver`, an iterator of type `iter_ty` neither the
+    /// crate's own nor a range: of a `$iter`, exact, or of a generic one, as
+    /// `$sizeHint` finds it (ADR 0170), by its dictionary where it's given
+    /// one, which has its impl's own (ADR 0561).
+    fn size_hint_of(&mut self, receiver: Expr, iter_ty: Ty<'tcx>, span: Span) -> R<Expr> {
+        let mut it = receiver;
+        // A `map`'s is its source's, as Rust's `Map` passes it on; its
+        // closure, unrun, is made for nothing.
+        let mut mapped = false;
+        while let js::ExprKind::Call(callee, args) = &it.kind
+            && let js::ExprKind::Member(source, method) = &callee.kind
+            && method == "map"
+            && args.iter().all(|f| !f.has_effects())
+        {
+            it = (**source).clone();
+            mapped = true;
+        }
+        let known = match mapped {
+            true => crate::lower::iterators::is_stepped_items(&it),
+            false => self.hints_its_size(iter_ty),
+        };
+        if !known {
+            return Err(self.unsupported(span, &format!("`size_hint()` of a `{iter_ty}`, from its MIR")));
+        }
+        // Of one given as it is, by its dictionary, which has its impl's
+        // own where there's one (ADR 0411).
+        let mut args = vec![it];
+        if !mapped {
+            let iterator = std_item(self.tcx, StdItem::Iterator);
+            args.extend(self.iterator_evidence(iter_ty.peel_refs(), iterator));
+        }
+        Ok(Expr::call_helper("$sizeHint", args))
+    }
+
     /// `mir_iter_call`'s, of a `map` or a `filter` cloned apart (ADR 0525):
     /// made by a function of its source and its function, which its clone
     /// calls again, of a source generic code is given too.
@@ -353,26 +387,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && !self.is_user_iterator(iter_ty)
             && self.range_kind(iter_ty.peel_refs()).is_none()
         {
-            let mut it = values.into_iter().next().expect("the receiver");
-            // A `map`'s is its source's, as Rust's `Map` passes it on; its
-            // closure, unrun, is made for nothing.
-            let mut mapped = false;
-            while let js::ExprKind::Call(callee, args) = &it.kind
-                && let js::ExprKind::Member(source, method) = &callee.kind
-                && method == "map"
-                && args.iter().all(|f| !f.has_effects())
-            {
-                it = (**source).clone();
-                mapped = true;
-            }
-            let known = match mapped {
-                true => crate::lower::iterators::is_stepped_items(&it),
-                false => self.hints_its_size(iter_ty),
-            };
-            if !known {
-                return Err(self.unsupported(span, &format!("`size_hint()` of a `{iter_ty}`, from its MIR")));
-            }
-            return Ok(Some(Expr::call_helper("$sizeHint", vec![it])));
+            let receiver = values.into_iter().next().expect("the receiver");
+            return self.size_hint_of(receiver, iter_ty, span).map(Some);
         }
         // `next` of a `&mut` to the crate's iterator, `by_ref()`'s: std's of a
         // `&mut I`, which is `I`'s own, of what the `&mut` is to.

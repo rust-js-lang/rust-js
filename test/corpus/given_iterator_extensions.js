@@ -93,7 +93,7 @@ function main() {
   console.log(`(${value[0]}, [${value[1].join(", ")}])`);
   const value$1 = twice(
     [2],
-    { next: countdownIterator_next },
+    { next: countdownIterator_next, size_hint: countdownIterator_size_hint },
     { clone: (value) => [value[0]] },
     { len: (iterator) => $exactLen(countdownIterator_size_hint(iterator)) },
   );
@@ -126,7 +126,7 @@ function main() {
   );
   const value$5 = ends(
     [3],
-    { next: countdownIterator_next },
+    { next: countdownIterator_next, size_hint: countdownIterator_size_hint },
     { clone: (value) => [value[0]] },
     { next_back: countdownDoubleEndedIterator_next_back },
   );
@@ -155,7 +155,7 @@ function main() {
   );
   const value$8 = passed_on(
     [2],
-    { next: countdownIterator_next },
+    { next: countdownIterator_next, size_hint: countdownIterator_size_hint },
     { clone: (value) => [value[0]] },
     { next_back: countdownDoubleEndedIterator_next_back },
     { len: (iterator) => $exactLen(countdownIterator_size_hint(iterator)) },
@@ -176,7 +176,7 @@ function main() {
 
   const handedOn = handed_on(
     [2],
-    { next: countdownIterator_next },
+    { next: countdownIterator_next, size_hint: countdownIterator_size_hint },
     { clone: (value) => [value[0]] },
     { next_back: countdownDoubleEndedIterator_next_back },
   );
@@ -190,7 +190,12 @@ function main() {
     `${handedOn == null ? "None" : `Some(${handedOn})`} ${value$10 == null ? "None" : `Some(${value$10})`}`,
   );
   console.log(
-    `[${backwards([2], { next: countdownIterator_next }, { clone: (value) => [value[0]] }, { next_back: countdownDoubleEndedIterator_next_back }).join(", ")}] [${backwards(
+    `[${backwards(
+      [2],
+      { next: countdownIterator_next, size_hint: countdownIterator_size_hint },
+      { clone: (value) => [value[0]] },
+      { next_back: countdownDoubleEndedIterator_next_back },
+    ).join(", ")}] [${backwards(
       { start: 5, end: 7 },
       { next: $rangeNext },
       { clone: (value) => ({ start: value.start, end: value.end }) },
@@ -198,7 +203,11 @@ function main() {
     ).join(", ")}]`,
   );
   console.log(
-    `[${after([2], { next: countdownIterator_next }, { clone: (value) => [value[0]] }).join(", ")}] [${after(
+    `[${after(
+      [2],
+      { next: countdownIterator_next, size_hint: countdownIterator_size_hint },
+      { clone: (value) => [value[0]] },
+    ).join(", ")}] [${after(
       { start: 5, end: 7 },
       { next: $rangeNext },
       { clone: (value) => ({ start: value.start, end: value.end }) },
