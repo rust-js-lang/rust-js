@@ -187,4 +187,12 @@ export const mutations: Mutation[] = [
     replace: "                    if !bindings::is_method(tcx, f) {\n",
     tests: ["test/lowering-bindings.test.ts", "-t", "js::is_defined of a path of bindings"],
   },
+  {
+    name: "assign-impl-on-number-skipped",
+    breaks: "the crate's `impl AddAssign<Cents> for i32` is skipped, `t += Cents(5)` the number's `+` of the newtype's array",
+    file: "src/lower/mir/calls.rs",
+    find: "            && !self.resolves_to_crate(def_id, generic_args)?\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^assign_impl_on_number.rs$"],
+  },
 ];

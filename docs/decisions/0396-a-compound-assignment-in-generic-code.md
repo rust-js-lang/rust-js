@@ -51,3 +51,12 @@ total([1, 2, 3], { add_assign: (cell, b) => { cell.value = (cell.value + b) | 0;
   `generic_compound_assign.rs` sums numbers and the crate's money, scales,
   shifts and appends text in generic code, and checks each side's order,
   with native Rust; the rustc test passes.
+
+## Amendment: the crate's own `*Assign` of a number
+
+`a += b` of a number or a `String` was the place assigned by the type's
+own operator wherever `a` was one, so the crate's `impl AddAssign<Cents>
+for i32` was skipped: `t += Cents(5)` was `t + [5]` (#153). Whether it's
+std's is `resolves_to_crate`'s answer, as of every other call: the
+crate's impl is called, of the place's box. Held by
+`test/corpus/assign_impl_on_number.rs`.

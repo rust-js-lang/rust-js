@@ -67,15 +67,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(super) fn mir_assign_call(
         &mut self,
         state: &mut State<'_, 'tcx>,
-        def_id: rustc_span::def_id::DefId,
+        (def_id, generic_args): (rustc_span::def_id::DefId, ty::GenericArgsRef<'tcx>),
         (values, arg_tys): (&[Value<'tcx>], &[Ty<'tcx>]),
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<Option<Value<'tcx>>> {
         let tcx = self.tcx;
         // Of a number or a string: another's is its impl's, or its dictionary's
-        // (ADR 0396).
+        // (ADR 0396); and so is the crate's own, `impl AddAssign<Cents> for i32`.
         if let Some(trait_id) = tcx.trait_of_assoc(def_id)
+            && !self.resolves_to_crate(def_id, generic_args)?
             && let Some(op) = crate::lower::recognition::assign_operator(tcx, trait_id)
             && let [place, rhs] = values
             && let ty = arg_tys[0].peel_refs()

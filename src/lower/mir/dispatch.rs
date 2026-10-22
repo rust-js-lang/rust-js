@@ -504,7 +504,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // `a += b` of a number or a string, through its `&mut`: the place
         // assigned, as the operator's is.
-        if let Some(value) = self.mir_assign_call(state, def_id, (&values, &arg_tys), span, out)? {
+        if let Some(value) = self.mir_assign_call(state, (def_id, generic_args), (&values, &arg_tys), span, out)? {
             return Ok(value);
         }
         // A std iterator's method: a JS iterator's, lazy as Rust's. A `&mut`
