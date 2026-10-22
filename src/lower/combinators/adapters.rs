@@ -360,8 +360,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 );
                 method(items, "map", vec![each])
             }
+            // Of `&T`s, each a copy where it needs one (`copied_into`), into
+            // `partition::<B, F>`'s `B`, after `Self`.
             IterComb::Partition => {
                 let items = method(items, "toArray", Vec::new());
+                let into = generic_args.types().nth(1).and_then(|into| self.slice_item(into));
+                let items = match self.iterator_item(receiver_ty.peel_refs()) {
+                    Some(from) => self.copied_into(items, from, into, span)?,
+                    None => items,
+                };
                 Expr::call(Expr::helper("$partition"), vec![items, next()])
             }
             IterComb::Unzip => {

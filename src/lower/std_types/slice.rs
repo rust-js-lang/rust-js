@@ -600,7 +600,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let drop = self.std_drop_function(item(), span)?;
                 helper("$fillWith", Expr::optional_args(vec![items, f], vec![drop]))
             }
-            SliceOp::CopyFromSlice => helper("$copyFromSlice", vec![arg(), arg()]),
+            // Each a copy where something changes one in place.
+            SliceOp::CopyFromSlice => {
+                let (items, source) = (arg(), arg());
+                let copy = match self.needs_clone(item()) {
+                    true => Some(self.clone_fn("item", item(), span)?),
+                    false => None,
+                };
+                helper("$copyFromSlice", Expr::optional_args(vec![items, source], vec![copy]))
+            }
             // Each by its type's `clone_from` where it may have one, as std's
             // calls it, else a clone of each; of items with a destructor,
             // each it replaces dropped (ADR 0507).
@@ -832,7 +840,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 list.extend(self.item_eq((item(), item()), span)?);
                 helper(name, list)
             }
-            SliceOp::Repeat => helper("$repeatItems", vec![arg(), arg()]),
+            SliceOp::Repeat => {
+                let (items, n) = (arg(), arg());
+                let copy = match self.needs_clone(item()) {
+                    true => Some(self.clone_fn("item", item(), span)?),
+                    false => None,
+                };
+                helper("$repeatItems", Expr::optional_args(vec![items, n], vec![copy]))
+            }
             SliceOp::FromFn => {
                 // `from_fn::<T, N, F>`: its length, the second.
                 let n = generic_args.const_at(1);

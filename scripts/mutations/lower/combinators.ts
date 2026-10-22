@@ -448,7 +448,7 @@ export const mutations: Mutation[] = [
     name: "extend-of-array-iterator-kept",
     breaks: "`extend` of an array's iterator made here keeps `$iter(xs)`, not the array",
     file: "src/lower/combinators.rs",
-    find: "                let items = super::iterators::fresh_iter_source(&items).cloned().unwrap_or(items);\n",
+    find: "        let items = super::iterators::fresh_iter_source(&items).cloned().unwrap_or(items);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^generic_extend.rs$"],
     snapshots: true,

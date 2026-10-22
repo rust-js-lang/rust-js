@@ -371,4 +371,20 @@ export const mutations: Mutation[] = [
     replace: "                    Some(_) if mutable => Expr::held(indexed),",
     tests: ["test/corpus.test.ts", "-t", "^index_bound_generic.rs$"],
   },
+  {
+    name: "copy-from-slice-shared",
+    breaks: "`copy_from_slice` of `Copy` structs puts the source's objects in place, so changing one changes the source",
+    file: "src/lower/std_types/slice.rs",
+    find: "                helper(\"$copyFromSlice\", Expr::optional_args(vec![items, source], vec![copy]))",
+    replace: "                helper(\"$copyFromSlice\", Expr::optional_args(vec![items, source], vec![copy.filter(|_| false)]))",
+    tests: ["test/corpus.test.ts", "-t", "^copied_structs_apart.rs$"],
+  },
+  {
+    name: "repeat-items-shared",
+    breaks: "`repeat` of `Copy` structs holds the same objects each time, so changing one changes them all",
+    file: "src/lower/std_types/slice.rs",
+    find: "                helper(\"$repeatItems\", Expr::optional_args(vec![items, n], vec![copy]))",
+    replace: "                helper(\"$repeatItems\", Expr::optional_args(vec![items, n], vec![copy.filter(|_| false)]))",
+    tests: ["test/corpus.test.ts", "-t", "^copied_structs_apart.rs$"],
+  },
 ];

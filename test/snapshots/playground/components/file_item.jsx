@@ -23,6 +23,7 @@ export function FileItem({ name, path, depth, open, root, onOpen, onDelete }) {
   } else {
     end = undefined;
   }
+  // `group`: its delete button shows while the row is hovered.
   return (
     <li className="group flex items-center">
       <button

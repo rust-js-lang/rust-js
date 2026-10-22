@@ -69,7 +69,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 } else {
                     generic_args.type_at(0)
                 };
-                let ty::Array(_, len) = target.peel_refs().kind() else {
+                let ty::Array(item, len) = *target.peel_refs().kind() else {
                     unreachable!("recognized as an array")
                 };
                 let len = len
@@ -89,9 +89,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 };
                 let fits = Expr::bin(Op::Eq, Expr::member(slice.clone(), "length"), Expr::int(len as i128));
                 // A `Vec`'s, moved, is itself, and given back as it's refused.
-                let value = match target.is_ref() || fresh || owned {
+                // Its items copies too, where something changes one in place.
+                let value = match target.is_ref() || owned || (fresh && !self.needs_clone(item)) {
                     true => slice.clone(),
-                    false => Expr::call(Expr::member(slice.clone(), "slice"), vec![]),
+                    false => self.clone_items(slice.clone(), item, span)?,
                 };
                 let refused = match owned {
                     true => slice.clone(),

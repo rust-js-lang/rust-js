@@ -523,6 +523,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(Expr::call(Expr::member(items, "map"), vec![clone]))
     }
 
+    /// `items`, each a copy where it needs one, a `Copy` struct something
+    /// changes in place: `items.map((item) => ..)`; else `items` itself.
+    pub(super) fn copies_of(&mut self, items: Expr, ty: Ty<'tcx>, span: Span) -> R<Expr> {
+        if !self.needs_clone(ty) {
+            return Ok(items);
+        }
+        let clone = self.clone_fn("item", ty, span)?;
+        Ok(Expr::call(Expr::member(items, "map"), vec![clone]))
+    }
+
+    /// `items` of `from`s put in a collection of `into`s, as `Extend<&T>`
+    /// puts a `&T`: each a copy of what it refers to where that's the
+    /// collection's own `T`, `copies_of`; else `items` itself.
+    pub(super) fn copied_into(&mut self, items: Expr, from: Ty<'tcx>, into: Option<Ty<'tcx>>, span: Span) -> R<Expr> {
+        match *from.kind() {
+            ty::Ref(_, item, _) if into == Some(item) => self.copies_of(items, item, span),
+            _ => Ok(items),
+        }
+    }
+
     /// A clone function of `ty`, for a helper that clones, or `undefined`
     /// where a clone is the value itself.
     pub(super) fn clone_arg(&mut self, ty: Ty<'tcx>, span: Span) -> R<Expr> {

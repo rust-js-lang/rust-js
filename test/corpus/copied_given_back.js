@@ -13,7 +13,11 @@ function class$(lower) {
         [48, 57],
         [65, 90],
       ];
-  return $iter(slice);
+  return slice.values().map((item) => [item[0], item[1]]);
+}
+
+function bytes() {
+  return $iter([97, 98]);
 }
 
 function main() {
@@ -27,5 +31,6 @@ function main() {
   console.log(
     `[${all.map((item) => `(${item[0]}, ${item[1]})`).join(", ")}] [${widths.join(", ")}] (${first[0]}, ${first[1]}) ${arg == null ? "None" : `Some((${arg[0]}, ${arg[1]}))`}`,
   );
+  console.log(`[${bytes().toArray().join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map
