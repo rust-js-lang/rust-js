@@ -201,7 +201,9 @@ export function $bigToF32(n) {
     if (rest > half || (rest === half && (size & 1n) === 1n)) size++;
     size <<= shift;
   }
-  const x = Number(size);
+  // Rounded up to 2^128, past `f32::MAX`: infinity, as `fround` makes it;
+  // any other is an `f32` already.
+  const x = Math.fround(Number(size));
   return negative ? -x : x;
 }
 

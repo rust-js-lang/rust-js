@@ -43,3 +43,15 @@ same, with its width where it counts:
   counts, casts to and from narrower integers and floats, `try_from`,
   bytes, parsing, a range `match` and sorting with native Rust.
 - **It's the JS a person writes:** a BigInt, as ADR 0086's is.
+
+## Amendment: past `f32::MAX` is infinity
+
+`$bigToF32` rounds a 128-bit integer to an `f32`'s 24 bits and gave the
+double it made, which for one that rounds up to 2^128, `u128::MAX`, is a
+finite double past `f32::MAX`: `is_infinite()` was false, and `{}`
+printed `340282370000000000000000000000000000000`, where Rust's cast is
+infinity (#113). The rounded value is `fround`ed now, infinity past
+`f32::MAX` and the same value below it. The boundary matrix didn't see
+it: it prints an `f32` by its bits, which `to_bits` takes of the
+`fround`ed value. Held by `test/corpus/big_to_f32_overflow.rs` and the
+mutation `big-to-f32-past-max-finite`.
