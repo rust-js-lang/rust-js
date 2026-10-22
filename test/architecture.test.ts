@@ -937,7 +937,6 @@ test("tests find what they build through target", () => {
 // shorter. Split a listed file by concept, never to meet the number.
 const overTheCap: Record<string, number> = {
   "src/runtime/from_json.js": 2009,
-  "src/lower/combinators.rs": 1631,
   "src/lower/std_types/number.rs": 1608,
   "src/lower/drops.rs": 1564,
 };

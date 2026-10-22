@@ -170,3 +170,9 @@ the dispatchers the architecture test holds; `collect.rs`, `backs.rs`,
 `to_oxc.rs`, 1,657 lines, keeps `emit`, the header and the comments;
 `to_oxc/statements.rs` and `to_oxc/expressions.rs` convert the rest.
 `to_oxc/` is printing's, so oxc stays behind the same adapters.
+
+## Amendment: combinators, the dispatcher apart (2026-10-22)
+
+`combinators.rs`, 1,631 lines, keeps `Comb`, `IterComb` and `comb_values`,
+the dispatcher the architecture test holds; `combinators/values.rs`,
+`adapters.rs` and `callbacks.rs` are the rest.
