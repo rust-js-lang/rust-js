@@ -1,6 +1,8 @@
 # 0279. A callback that passes on what it's given is the function
 
-Status: Accepted. Extends [0217](0217-enumerate-index.md).
+Status: Accepted. Extends [0217](0217-enumerate-index.md). Amended by
+[0605](0605-an-arrow-that-passes-on-has-one-owner.md): an event's handler
+asks `passed_on` too.
 
 Case: B ([0262](0262-when-rust-and-js-disagree.md)).
 

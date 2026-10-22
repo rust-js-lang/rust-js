@@ -537,6 +537,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0602 A binding taken as a `fn` is its JS function, read where it's taken](decisions/0602-a-binding-taken-as-a-fn-is-its-function.md)
 - [0603 A comment before a `let` with no JS is the next statement's](decisions/0603-a-comment-before-an-unprinted-let.md)
 - [0604 A binding as a value gives its arguments as its call does](decisions/0604-a-bindings-value-gives-what-its-call-gives.md)
+- [0605 Whether an arrow only passes on what it's given has one owner](decisions/0605-an-arrow-that-passes-on-has-one-owner.md)
 - [0436 Every `dyn` that's a pair keeps its value's drop, `dyn Send` too](decisions/0436-every-dyn-keeps-its-drop.md)
 - [0437 A scope's drops on a panic are one `try { .. } finally { .. }`](decisions/0437-a-scopes-drops-are-one-finally.md)
 - [0438 An optional prop is given `Some(..)`, or left out](decisions/0438-an-optional-prop-is-given-some.md)

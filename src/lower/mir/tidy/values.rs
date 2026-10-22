@@ -177,7 +177,7 @@ pub(super) fn passed_on(e: &mut Expr, forwarding: &[js::Span]) {
     let [f] = &mut args[..] else { return };
     if ["map", "filter", "some", "every", "find", "forEach"].contains(&name.as_str())
         && forwarding.contains(&f.span)
-        && let Some(g) = iterators::passed_on(f)
+        && let Some(g) = iterators::passed_on(f, false)
     {
         *f = g;
     }

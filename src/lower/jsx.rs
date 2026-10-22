@@ -841,24 +841,12 @@ fn jsx_tree(value: &Expr) -> bool {
 /// f()`, one that calls another with nothing, which React gives the event
 /// a Rust function has no parameter for.
 fn passed_handler(value: &Expr, calls_rust: bool) -> Option<Expr> {
+    if calls_rust && let Some(f) = super::iterators::passed_on(value, true) {
+        return Some(f);
+    }
     let js::ExprKind::Arrow(params, body) = &value.kind else {
         return None;
     };
-    if calls_rust
-        && let [
-            Stmt {
-                kind: StmtKind::Expr(call) | StmtKind::Return(Some(call)),
-                ..
-            },
-        ] = body.as_slice()
-        && let js::ExprKind::Call(callee, args) = &call.kind
-        && args.is_empty()
-        && let js::ExprKind::Var(f) = &callee.kind
-        && params.len() <= 1
-        && !params.iter().any(|p| p.names().contains(&f.as_str()))
-    {
-        return Some((**callee).clone());
-    }
     let [js::Pattern::Name(param)] = params.as_slice() else {
         return None;
     };

@@ -875,6 +875,18 @@ test("a copied default's typing environment is impl_typing_env's alone", () => {
   expect(reading).toEqual(["src/lower/traits/given.rs: let impl_env = self.given.self_env?;"]);
 });
 
+// Whether an arrow is only the function it passes its arguments on to,
+// `(x) => f(x)`, `() => { f(); }`, is `iterators::passed_on`'s, which an
+// array method's callback (ADR 0279) and an event's handler (ADR 0198) both
+// ask: each had its own (ADR 0605).
+test("an arrow that passes on what it's given is passed_on's alone", () => {
+  const asking = files("src/lower").filter((file) => file.endsWith(".rs"))
+    .flatMap((file) => read(file).split("\n").filter((line) => /\bpassed_on\(/.test(line) && !/fn passed_on\(/.test(line)).map(() => file));
+  expect([...new Set(asking)].sort()).toEqual(["src/lower/jsx.rs", "src/lower/mir/tidy.rs", "src/lower/mir/tidy/values.rs"]);
+  const own = files("src/lower").filter((file) => file.endsWith(".rs") && /fn passed_on\(f: &Expr/.test(read(file)));
+  expect(own).toEqual(["src/lower/iterators/eager.rs"]);
+});
+
 // A `snake_case` name is made camelCase in one place, `camel_case`, and
 // a word joined into one by `upper_first` (ADR 0573): a module's import,
 // an impl's dictionary's clash, a default import's class each joined its

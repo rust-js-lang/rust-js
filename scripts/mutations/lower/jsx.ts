@@ -214,16 +214,8 @@ export const mutations: Mutation[] = [
     name: "handler-of-binding-passed",
     breaks: "`onClick={() => alert()}` is `onClick={alert}`, which shows the event",
     file: "src/lower/jsx.rs",
-    find: "    if calls_rust\n",
-    replace: "    if true\n",
-    tests: ["test/jsx.test.ts", "-t", "calls a function with nothing"],
-  },
-  {
-    name: "handler-calling-nothing-kept",
-    breaks: "`onClick={() => onClear()}`, not `onClick={onClear}`",
-    file: "src/lower/jsx.rs",
-    find: "        && args.is_empty()\n",
-    replace: "        && args.is_empty()\n        && false\n",
+    find: "    if calls_rust && let Some(f) = super::iterators::passed_on(value, true) {\n",
+    replace: "    if let Some(f) = super::iterators::passed_on(value, true) {\n",
     tests: ["test/jsx.test.ts", "-t", "calls a function with nothing"],
   },
   {

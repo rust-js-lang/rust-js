@@ -47,19 +47,28 @@ pub(super) fn indexed_callback(items: &Expr, name: &str, f: Expr) -> Result<(Exp
 }
 
 /// `g` of `(x, i) => g(x, i)`, an arrow that passes on what it's given, in
-/// order, to a function it doesn't name a parameter.
-pub(in crate::lower) fn passed_on(f: &Expr) -> Option<Expr> {
+/// order, to a function it doesn't name a parameter: an array method's
+/// callback (ADR 0279) and an event's handler (ADR 0198) alike; and,
+/// `unread`, where what it gives is read by nothing, a handler's, of `() =>
+/// { g(); }`.
+pub(in crate::lower) fn passed_on(f: &Expr, unread: bool) -> Option<Expr> {
     let js::ExprKind::Arrow(params, body) = &f.kind else {
         return None;
     };
-    let [
-        Stmt {
-            kind: StmtKind::Return(Some(call)),
-            ..
-        },
-    ] = &body[..]
-    else {
-        return None;
+    let call = match &body[..] {
+        [
+            Stmt {
+                kind: StmtKind::Return(Some(call)),
+                ..
+            },
+        ] => call,
+        [
+            Stmt {
+                kind: StmtKind::Expr(call),
+                ..
+            },
+        ] if unread => call,
+        _ => return None,
     };
     let js::ExprKind::Call(callee, args) = &call.kind else {
         return None;
