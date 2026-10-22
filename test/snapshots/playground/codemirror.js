@@ -10,6 +10,8 @@ import { Compartment, EditorState } from "@codemirror/state";
 import { oneDark } from "@codemirror/theme-one-dark";
 import { EditorView, basicSetup } from "codemirror";
 
+// Made once, as the module loads (ADR 0037). One theme compartment serves
+// both editors: it only names the slot a view reconfigures.
 const theme = new Compartment();
 
 const source = [

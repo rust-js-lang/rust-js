@@ -271,6 +271,7 @@ export function App() {
         onOpen={openOutput}
       />
     );
+
   return (
     <>
       <h1 className="mb-1 text-lg font-bold">rust-js playground</h1>

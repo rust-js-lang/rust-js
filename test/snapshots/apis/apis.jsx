@@ -211,6 +211,8 @@ export function Places() {
   );
 }
 
+// Keyed fragments, styles, raw HTML, any attribute, a lazy and
+// a reducer with an initializer, under a Profiler.
 const LazyCard = lazy(() => import("./lazy-card.jsx"));
 
 export function Misc() {

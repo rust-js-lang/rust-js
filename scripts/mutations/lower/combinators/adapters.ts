@@ -194,4 +194,12 @@ export const mutations: Mutation[] = [
     replace: "                    _ => self.spill(\"step\", n, out),\n",
     tests: ["test/corpus.test.ts", "-t", "^step_by_zero.rs$"],
   },
+  {
+    name: "partition-copies-shared",
+    breaks: "`partition` of `&T`s into collections of `T` holds the same `Copy` structs, so changing one changes the original",
+    file: "src/lower/combinators/adapters.rs",
+    find: "                    Some(from) => self.copied_into(items, from, into, span)?,",
+    replace: "                    Some(_) => items,",
+    tests: ["test/corpus.test.ts", "-t", "^copied_structs_apart.rs$"],
+  },
 ];

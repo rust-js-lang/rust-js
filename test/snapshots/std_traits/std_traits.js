@@ -413,7 +413,11 @@ function wordOrd_cmp(word, other) {
 }
 
 export function largest(xs, TOrd, TCopy) {
-  return $maxBy(xs, TOrd.cmp, true);
+  return $maxBy(
+    xs.map((item) => TCopy.copy(item)),
+    TOrd.cmp,
+    true,
+  );
 }
 
 export function inOrder(a, b, TPartialOrd) {

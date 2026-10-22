@@ -233,8 +233,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             self.iterator_item(ty)
                 .is_some_and(|item| !self.needs_clone(item.peel_refs()))
         };
-        crate::lower::recognition::copied_source(self.tcx, ty).is_some()
-            || (crate::lower::recognition::cloned_source(self.tcx, ty).is_some() && item())
+        // A copy of a `Copy` item is a clone of it too, a struct's an object
+        // of its own where something changes one in place.
+        (crate::lower::recognition::copied_source(self.tcx, ty).is_some()
+            || crate::lower::recognition::cloned_source(self.tcx, ty).is_some())
+            && item()
     }
 
     /// `mir_iter_call`'s, once what it drops is seen to.
@@ -530,7 +533,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 self.accumulated((it, def_id), (output, item), sum, span)?
             }
             Some(IterMethod::Copied | IterMethod::Cloned) if self.is_its_source(output) => it,
-            Some(IterMethod::Cloned) => match item {
+            Some(IterMethod::Copied | IterMethod::Cloned) => match item {
                 Some(item) => {
                     let x = self.fresh("item");
                     let mut body = Vec::new();

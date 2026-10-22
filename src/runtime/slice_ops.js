@@ -33,11 +33,13 @@ function $fillWith(v, f, drop) {
   }
 }
 
-function $copyFromSlice(v, src) {
+// Of items `copy` copies, a `Copy` struct something changes in place,
+// each a copy.
+function $copyFromSlice(v, src, copy) {
   if (v.length !== src.length) {
     throw new Error(`copy_from_slice: source slice length (${src.length}) does not match destination slice length (${v.length})`);
   }
-  for (let i = 0; i < v.length; i++) v[i] = src[i];
+  for (let i = 0; i < v.length; i++) v[i] = copy === undefined ? src[i] : copy(src[i]);
 }
 
 // `clone_from_slice(src)`: each item a clone, or `cloneFrom(v, i, item)`'s,
@@ -263,9 +265,9 @@ function $sliceStripCircumfix(v, prefix, suffix, eq) {
 }
 
 // `v.repeat(n)`: its items `n` times over, of `Copy` items.
-function $repeatItems(v, n) {
+function $repeatItems(v, n, copy) {
   const out = [];
-  for (let i = 0; i < n; i++) out.push(...v);
+  for (let i = 0; i < n; i++) out.push(...(copy === undefined ? v : v.map(copy)));
   return out;
 }
 

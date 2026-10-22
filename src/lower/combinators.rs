@@ -323,7 +323,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .is_some_and(|item| self.is_string_like(item))
         {
             let items = parts.iter().map(|part| Expr::spread(part.clone())).collect();
-            return Ok(Expr::array(items));
+            return self.concat_copies(Expr::array(items), subject_ty, span);
         }
         // A `Some` not boxed is read once by `??`, and the default made only
         // where it's `None`, as Rust makes it: `get(n) ?? ""`.
@@ -810,10 +810,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     Expr::call(Expr::member(subject, "some"), vec![f])
                 }
             }
-            // Each pushed as it's stepped; of an array's iterator made here, the array.
+            // Each pushed as it's stepped (`extended_items`).
             Comb::Extend => {
-                let items = self.iterable_items(next(), tys[1], span, out)?;
-                let items = super::iterators::fresh_iter_source(&items).cloned().unwrap_or(items);
+                let items = self.extended_items(next(), (tys[1], subject_ty), span, out)?;
                 helper("$extend", vec![subject, items])
             }
             // Each item a clone, as `to_vec()` makes them.
@@ -909,7 +908,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             {
                 Expr::call(Expr::member(subject, "join"), vec![Expr::str("")])
             }
-            Comb::Concat => Expr::call(Expr::member(subject, "flat"), Vec::new()),
+            Comb::Concat => self.concatenated(subject, subject_ty, span)?,
         })
     }
 }
@@ -956,3 +955,35 @@ fn compared_with(p: &Expr) -> Option<Expr> {
 /// The argument `compared_with` gives a predicate: a name no Rust variable
 /// has.
 const HELD_SOME: &str = "$some";
+
+impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// What `concat` of `parts`, of type `parts_ty`, joins, `joined`: each
+    /// item a copy where it needs one (`copies_of`).
+    fn concat_copies(&mut self, joined: Expr, parts_ty: Ty<'tcx>, span: Span) -> R<Expr> {
+        match self.slice_item(parts_ty).and_then(|part| self.slice_item(part)) {
+            Some(item) => self.copies_of(joined, item, span),
+            None => Ok(joined),
+        }
+    }
+
+    /// `parts.flat()`, of arrays, `concat_copies`.
+    fn concatenated(&mut self, parts: Expr, parts_ty: Ty<'tcx>, span: Span) -> R<Expr> {
+        self.concat_copies(Expr::call(Expr::member(parts, "flat"), Vec::new()), parts_ty, span)
+    }
+
+    /// What `extend` of `items`, of type `iterable`, pushes onto a
+    /// collection of type `into`: each as it's stepped; of an array's
+    /// iterator made here, the array; of `&T`s, a copy where it needs one
+    /// (`copied_into`).
+    fn extended_items(
+        &mut self,
+        items: Expr,
+        (iterable, into): (Ty<'tcx>, Ty<'tcx>),
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Expr> {
+        let items = self.iterable_items(items, iterable, span, out)?;
+        let items = super::iterators::fresh_iter_source(&items).cloned().unwrap_or(items);
+        self.copied_into(items, self.iterable_item(iterable), self.slice_item(into), span)
+    }
+}

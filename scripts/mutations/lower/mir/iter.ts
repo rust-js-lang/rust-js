@@ -295,8 +295,8 @@ export const mutations: Mutation[] = [
     name: "cloned-mapped-anyway",
     breaks: "a `cloned()` of what needs no clone is mapped as one that does",
     file: "src/lower/mir/iter.rs",
-    find: "            || (crate::lower::recognition::cloned_source(self.tcx, ty).is_some() && item())\n",
-    replace: "",
+    find: "            || crate::lower::recognition::cloned_source(self.tcx, ty).is_some())\n",
+    replace: "            )\n",
     tests: ["test/corpus.test.ts", "-t", "^consumed_adapter_drops.rs$"],
     snapshots: true,
   },
@@ -315,6 +315,7 @@ export const mutations: Mutation[] = [
     find: "        // Behind the `impl Iterator` it's given back as too.\n        let ty = self.reveal(ty);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^copied_given_back.rs$"],
+    snapshots: true,
   },
   {
     name: "compiled-iterator-not-dropped-after",
@@ -339,5 +340,13 @@ export const mutations: Mutation[] = [
     find: "            args.extend(self.iterator_evidence(iter_ty.peel_refs(), iterator));\n",
     replace: "            let _ = iterator;\n",
     tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std"],
+  },
+  {
+    name: "copied-items-shared",
+    breaks: "`copied()` is the iterator it copies, its `Copy` structs the same objects, so changing a copy changes the slice's",
+    file: "src/lower/mir/iter.rs",
+    find: "            || crate::lower::recognition::cloned_source(self.tcx, ty).is_some())\n            && item()",
+    replace: "            || crate::lower::recognition::cloned_source(self.tcx, ty).is_some())\n            && (crate::lower::recognition::copied_source(self.tcx, ty).is_some() || item())",
+    tests: ["test/corpus.test.ts", "-t", "^copied_structs_apart.rs$"],
   },
 ];

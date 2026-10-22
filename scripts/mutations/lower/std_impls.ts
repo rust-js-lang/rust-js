@@ -568,4 +568,12 @@ export const mutations: Mutation[] = [
     replace: "        // A closure is its JS function",
     tests: ["test/corpus.test.ts", "-t", "^impl_trait_clone.rs$"],
   },
+  {
+    name: "copies-of-shared",
+    breaks: "what std copies of `Copy` structs, `extend` of references, `concat`, `partition`, is the same objects, so changing a copy changes the original",
+    file: "src/lower/std_impls.rs",
+    find: "    pub(super) fn copies_of(&mut self, items: Expr, ty: Ty<'tcx>, span: Span) -> R<Expr> {\n        if !self.needs_clone(ty) {",
+    replace: "    pub(super) fn copies_of(&mut self, items: Expr, ty: Ty<'tcx>, span: Span) -> R<Expr> {\n        if true || !self.needs_clone(ty) {",
+    tests: ["test/corpus.test.ts", "-t", "^copied_structs_apart.rs$"],
+  },
 ];
