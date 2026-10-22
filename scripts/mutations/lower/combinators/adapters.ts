@@ -198,8 +198,8 @@ export const mutations: Mutation[] = [
     name: "flat-map-iterator-as-iterable",
     breaks: "`flat_map` of a range or the crate's iterator gives `.flatMap` the value, whose fields it steps, or which isn't iterable, where its items are what's stepped",
     file: "src/lower/combinators/adapters.rs",
-    find: "        if self.range_kind(inner).is_some() || self.is_user_iterator(inner) {\n            return self.as_js_iterator(value, inner, span).map(Some);",
-    replace: "        if false {\n            return self.as_js_iterator(value, inner, span).map(Some);",
+    find: "        if self.range_kind(inner).is_some()\n            || self.is_user_iterator(inner)\n",
+    replace: "        if false\n",
     tests: ["test/corpus.test.ts", "-t", "^flat_map_inner_iterables.rs$"],
   },
   {
@@ -217,5 +217,13 @@ export const mutations: Mutation[] = [
     find: "                    .is_some_and(|state| !self.handles_mut(state))\n",
     replace: "                    .is_some_and(|state| false && !self.handles_mut(state))\n",
     tests: ["test/corpus.test.ts", "-t", "^scan_object_state.rs$"],
+  },
+  {
+    name: "flat-map-escape-as-text",
+    breaks: "`flat_map(char::escape_unicode)` gives `.flatMap` each escape's text, a string, which JS's `flatMap` refuses",
+    file: "src/lower/combinators/adapters.rs",
+    find: "            || crate::lower::recognition::is_text_escape(self.tcx, inner)\n",
+    replace: "            || false\n",
+    tests: ["test/corpus.test.ts", "-t", "^escape_iterators.rs$"],
   },
 ];

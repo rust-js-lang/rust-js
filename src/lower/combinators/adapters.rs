@@ -94,13 +94,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// parameter where it's an arrow of one value. `None` of one with
     /// nothing to drop.
     /// What `flat_map` and `flatten` step of an inner `value` of type
-    /// `inner`, as a JS iterable: a range's numbers and the crate's
-    /// iterator's items, `as_js_iterator`'s, as `chain` steps them; a
-    /// `Result`'s `Ok` value or none; else the value, an array's or a JS
-    /// iterator's own. `None` where it's the value.
+    /// `inner`, as a JS iterable: a range's numbers, the crate's iterator's
+    /// items and an escape's `char`s, `as_js_iterator`'s, as `chain` steps
+    /// them; a `Result`'s `Ok` value or none; else the value, an array's or
+    /// a JS iterator's own. `None` where it's the value.
     fn inner_iterable(&mut self, value: Expr, inner: Ty<'tcx>, span: Span) -> R<Option<Expr>> {
         let inner = self.reveal(inner);
-        if self.range_kind(inner).is_some() || self.is_user_iterator(inner) {
+        if self.range_kind(inner).is_some()
+            || self.is_user_iterator(inner)
+            || crate::lower::recognition::is_text_escape(self.tcx, inner)
+        {
             return self.as_js_iterator(value, inner, span).map(Some);
         }
         if self.is_std_type(inner, crate::lower::recognition::StdItem::Result) {

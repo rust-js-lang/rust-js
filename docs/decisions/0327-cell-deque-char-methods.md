@@ -67,3 +67,15 @@ ADR 0314's count had `Cell` at 6 of its 13 methods, `RefCell` 7 of 13,
   tuples, a kept one stepped, and a range of one; `deque_range_mut_panic`
   one past the end. Mutations give numbers for handles, and refuse it.
   `docs/std-coverage.txt`: `VecDeque` 49 of 55.
+
+## Amendment: an escape stepped as an iterator
+
+An escape is its text in JS, which shows it, but an iterator method of
+one, `'é'.escape_default().collect::<String>()`, `.count()`, was called
+of the string, `.toArray()` and `.reduce(..)`, which it hasn't, and
+`flat_map(char::escape_unicode)` gave `.flatMap` a string, which it
+refuses (#137). `as_js_iterator` steps an escape as its `char`s,
+`Iterator.from(text)`, as JS's string steps by code point, and
+`flat_map`'s `inner_iterable` asks it. Held by
+`test/corpus/escape_iterators.rs` and the mutations
+`escape-stepped-as-text` and `flat-map-escape-as-text`.

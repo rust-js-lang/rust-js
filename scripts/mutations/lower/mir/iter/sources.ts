@@ -181,4 +181,12 @@ export const mutations: Mutation[] = [
     replace: "                params.push(made.into());\n",
     tests: ["test/corpus.test.ts", "-t", "^try_for_each.rs$"],
   },
+  {
+    name: "escape-stepped-as-text",
+    breaks: "an escape an iterator method is called of is its text, a string, `.toArray()` of which throws",
+    file: "src/lower/mir/iter/sources.rs",
+    find: "            None if crate::lower::recognition::is_text_escape(self.tcx, ty) => {",
+    replace: "            None if false && crate::lower::recognition::is_text_escape(self.tcx, ty) => {",
+    tests: ["test/corpus.test.ts", "-t", "^escape_iterators.rs$"],
+  },
 ];
