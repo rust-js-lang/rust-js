@@ -15,7 +15,7 @@ const files = (directory: string): string[] => readdirSync(join(root, directory)
 const layers = {
   driver: ["src/main.rs", "src/command.rs", "src/cargo.rs", "src/panic_runtime.rs"],
   front: ["src/lower.rs", "src/lower/", "src/jsx_syntax.rs", "src/jsx_syntax/"],
-  owned: ["src/library.rs", "src/reachability.rs", "src/link.rs", "src/names.rs", "src/program.rs", "src/comments.rs", "src/js.rs",
+  owned: ["src/library.rs", "src/reachability.rs", "src/link.rs", "src/names.rs", "src/program.rs", "src/comments.rs", "src/js.rs", "src/js/",
     "src/prepare.rs", "src/prepare/", "src/output.rs", "src/publish.rs", "src/manifest.rs", "src/runtime.rs", "src/settings.rs", "src/hooks.rs",
     "src/paths.rs"],
   printing: ["src/to_oxc.rs", "src/format.rs", "src/typescript.rs", "src/prettier.rs"],
@@ -936,7 +936,6 @@ test("tests find what they build through target", () => {
 // fails, and one brought under the cap leaves the list, so it only gets
 // shorter. Split a listed file by concept, never to meet the number.
 const overTheCap: Record<string, number> = {
-  "src/js.rs": 2443,
   "src/lower/iterators.rs": 2300,
   "src/runtime/from_json.js": 2009,
   "src/lower/display.rs": 1996,

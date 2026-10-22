@@ -129,3 +129,10 @@ dictionary lowered, and a copied default), `dyns.rs`, `calls.rs`,
 `given.rs`, `drop_params.rs` and `words.rs`, the largest 840 lines. The
 parts that read `self.given` are its owners, and the rule that keeps
 method-name matches out of `traits.rs` holds over its parts too.
+
+## Amendment: the JS tree, its walks apart (2026-10-22)
+
+`js.rs`, 2,443 lines, keeps the tree's types and its tests; what makes an
+expression is `js/make.rs`, and what walks one, `js/expr_walk.rs`, and a
+statement or a block, `js/stmt_walk.rs`, each re-exported, so `js::` is
+asked as it was. `js/` is owned output's, as `js.rs` is.
