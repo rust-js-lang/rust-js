@@ -543,7 +543,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0608 A `Drop` is its body at each drop](decisions/0608-a-drop-is-its-body-at-each-drop.md)
 - [0609 A `let` that shadows a parameter read no more is the parameter assigned](decisions/0609-a-shadowed-parameter-is-assigned.md)
 - [0610 A function that only calls a module variable's function is that variable](decisions/0610-a-forwarding-function-is-its-variable.md)
-- [0611 A default export is where its macro is](decisions/0611-a-default-export-is-where-its-macro-is.md)
+- [0611 A default export the macro holds is the function's declaration](decisions/0611-a-default-export-is-where-its-macro-is.md)
 - [0612 Two values of any shape are equal by JS's `===`](decisions/0612-unknown-equality-is-strict.md)
 - [0613 `&&` and `||` mixed are one value, as written](decisions/0613-and-or-mixed-are-returned-as-written.md)
 - [0614 A match arm's pattern of parts is one test of each](decisions/0614-a-patterns-parts-are-one-test.md)

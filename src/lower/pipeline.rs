@@ -722,7 +722,7 @@ pub fn lower_crate<'tcx>(
                                 .is_some_and(|local| tcx.parent_module_from_def_id(local) == module) =>
                     {
                         default_export = Some(function);
-                        default_declared = super::bindings::default_declared(tcx, function, span);
+                        default_declared = super::bindings::default_declared(tcx, function);
                     }
                     Some(function) if unset && fns.get(&function).is_some_and(|info| info.owner.is_none()) => {
                         default_from = Some(function);

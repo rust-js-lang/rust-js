@@ -362,12 +362,13 @@ impl Expand<'_> {
         // A `thread_local!`'s static may be JSX, a module's constant element,
         // which rustc would expand as a plain rustc's placeholder: its tokens
         // are the macro's, never visited as expressions (ADR 0259).
+        // So may a `js::export_default!`'s function, which it holds (ADR 0611).
         if let ItemKind::MacCall(mac) = &mut item.kind
             && mac
                 .path
                 .segments
                 .last()
-                .is_some_and(|s| s.ident.as_str() == "thread_local")
+                .is_some_and(|s| matches!(s.ident.as_str(), "thread_local" | "export_default"))
         {
             mac.args.tokens = self.jsx_calls(&mac.args.tokens);
             return;

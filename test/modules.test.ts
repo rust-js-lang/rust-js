@@ -643,16 +643,15 @@ test("an import read only by a const is the import by its name", async () => {
   expect([lib.equal(1, 1), lib.equal(1, 2)]).toEqual([true, false]);
 });
 
-// ADR 0611: the JS's \`export default\` is where the Rust's
-// \`js::export_default!\` is: right after its function, a private one, it's
-// the function's declaration, \`export default function noop() {}\`, as
-// React's noop.js; after anything else, \`export default recap;\` there, as
-// react.dev's components.
-test("a default export is where its macro is", async () => {
+// ADR 0611: \`js::export_default!\` of the function itself is its
+// declaration as the default, \`export default function noop() {}\`, as
+// React's noop.js, which rustc sees used; naming one, \`export default
+// recap;\`, as react.dev's components.
+test("a default export is the function's declaration where the macro holds it", async () => {
   const dir = fixture("default-where-written");
   writeFileSync(join(dir, "lib.rs"), "mod noop;\nmod recap;\n\npub fn both() -> u32 {\n    noop::noop();\n    recap::recap()\n}\n");
-  writeFileSync(join(dir, "noop.rs"), "pub(crate) fn noop() {}\n\n// Its default.\njs::export_default!(noop);\n");
-  writeFileSync(join(dir, "recap.rs"), "pub(crate) fn recap() -> u32 {\n    1\n}\n\npub fn other() -> u32 {\n    2\n}\n\njs::export_default!(recap);\n");
+  writeFileSync(join(dir, "noop.rs"), "js::export_default! {\n    pub(crate) fn noop() {}\n}\n");
+  writeFileSync(join(dir, "recap.rs"), "pub(crate) fn recap() -> u32 {\n    1\n}\n\njs::export_default!(recap);\n");
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
   expect(readFileSync(join(dir, "noop.js"), "utf8")).toContain("export default function noop() {}");
   const recap = readFileSync(join(dir, "recap.js"), "utf8");

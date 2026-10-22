@@ -752,27 +752,13 @@ pub(super) fn is_jsx_node(tcx: TyCtxt<'_>, id: DefId) -> bool {
 
 /// A module's `js::export_default!(page)`: the function its `const _`
 /// names, `let _ = page;`, and where it's written (ADR 0192).
-/// Whether `function`, its module's default export by `js::export_default!`
-/// written at `written`, is declared as it, `export default function noop()
-/// {}`: a function of no name of its own, `pub` none, with the macro right
-/// after it, nothing but comments between, as the JS's `export default` is
-/// where the Rust's is; else `export default noop;` there (ADR 0611).
-pub(super) fn default_declared(tcx: TyCtxt<'_>, function: DefId, written: Span) -> bool {
-    let Some(local) = function.as_local() else { return false };
-    if tcx.def_kind(function) != DefKind::Fn || tcx.visibility(function).is_public() {
-        return false;
-    }
-    let (declared, written) = (tcx.source_span(local), written.source_callsite());
-    if declared.hi() > written.lo() {
-        return false;
-    }
-    let Ok(between) = tcx.sess.source_map().span_to_snippet(declared.between(written)) else {
-        return false;
-    };
-    between
-        .lines()
-        .map(str::trim)
-        .all(|line| line.is_empty() || line.starts_with("//"))
+/// Whether `function`, its module's default export, is declared as it,
+/// `export default function noop() {}`: of `js::export_default! { fn noop()
+/// {} }`, which marks the function itself, not a `const _` naming it (ADR
+/// 0611).
+pub(super) fn default_declared(tcx: TyCtxt<'_>, function: DefId) -> bool {
+    let path = [Symbol::intern("rust_js"), Symbol::intern("export_default")];
+    tcx.def_kind(function) == DefKind::Fn && tcx.get_attrs_by_path(function, &path).next().is_some()
 }
 
 pub(super) fn default_exports(tcx: TyCtxt<'_>, module: LocalModId) -> Vec<(Option<DefId>, Span)> {
@@ -781,6 +767,10 @@ pub(super) fn default_exports(tcx: TyCtxt<'_>, module: LocalModId) -> Vec<(Optio
         .filter(|item| tcx.get_attrs_by_path(item.owner_id.to_def_id(), &path).next().is_some())
         .map(|item| {
             let def = item.owner_id.def_id;
+            // Of the function itself (ADR 0611).
+            if tcx.def_kind(def) == DefKind::Fn {
+                return (Some(def.to_def_id()), tcx.def_span(def));
+            }
             // `use page as _;`: a generic function's too, which Rust can't
             // name as a value unless it's given its types.
             let named = match tcx.hir_body_owned_by(def).value.kind {

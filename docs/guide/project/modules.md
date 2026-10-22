@@ -255,15 +255,14 @@ export function page() {
 export default page;
 ```
 
-The `export default` is where the macro is
-([ADR 0611](../../decisions/0611-a-default-export-is-where-its-macro-is.md)).
-Right after a function of no other export, not `pub`, it's that function's
-declaration; after anything else, `export default recap;` there:
+Of the function itself, `js::export_default! { .. }`, it's the function's
+declaration as the default, which nothing else exports by name
+([ADR 0611](../../decisions/0611-a-default-export-is-where-its-macro-is.md)):
 
 ```rust
-fn noop() {}
-
-js::export_default!(noop);
+js::export_default! {
+    fn noop() {}
+}
 ```
 
 ```js

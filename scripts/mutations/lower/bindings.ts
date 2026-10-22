@@ -3,28 +3,20 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
-    name: "default-declared-of-pub",
-    breaks: "a `pub fn page` its macro follows loses its name's export, `export default function page`",
-    file: "src/lower/bindings.rs",
-    find: "    if tcx.def_kind(function) != DefKind::Fn || tcx.visibility(function).is_public() {\n",
-    replace: "    if tcx.def_kind(function) != DefKind::Fn {\n",
-    tests: ["test/modules.test.ts", "-t", "a module's default of another module's function|js::directive! and js::export_default!"],
-  },
-  {
     name: "default-never-declared",
-    breaks: "`fn noop() {} js::export_default!(noop);` is `function noop() {} export default noop;`",
+    breaks: "`js::export_default! { fn noop() {} }` is `function noop() {} export default noop;`",
     file: "src/lower/bindings.rs",
-    find: "        .all(|line| line.is_empty() || line.starts_with(\"//\"))\n",
-    replace: "        .all(|line| line.is_empty() || line.starts_with(\"//\")) && false\n",
-    tests: ["test/modules.test.ts", "-t", "a default export is where its macro is"],
+    find: "    tcx.def_kind(function) == DefKind::Fn && tcx.get_attrs_by_path(function, &path).next().is_some()\n",
+    replace: "    false && tcx.get_attrs_by_path(function, &path).next().is_some()\n",
+    tests: ["test/modules.test.ts", "-t", "a default export is the function's declaration"],
   },
   {
-    name: "default-declared-after-anything",
-    breaks: "a default whose macro follows another function is declared where its function is",
+    name: "default-of-the-function-unseen",
+    breaks: "`js::export_default! { fn noop() {} }` exports nothing",
     file: "src/lower/bindings.rs",
-    find: "        .all(|line| line.is_empty() || line.starts_with(\"//\"))\n",
-    replace: "        .all(|line| line.is_empty() || line.starts_with(\"//\")) || true\n",
-    tests: ["test/modules.test.ts", "-t", "a default export is where its macro is"],
+    find: "            if tcx.def_kind(def) == DefKind::Fn {\n                return (Some(def.to_def_id()), tcx.def_span(def));\n",
+    replace: "            if false {\n                return (Some(def.to_def_id()), tcx.def_span(def));\n",
+    tests: ["test/modules.test.ts", "-t", "a default export is the function's declaration"],
   },
   {
     name: "directive-owner-stops-at-coroutine",

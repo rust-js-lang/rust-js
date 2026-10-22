@@ -122,9 +122,16 @@ macro_rules! directive {
 /// name too: `js::export_default!(page);` is `export default page;`, what a
 /// Next.js route's `page.jsx` has (ADR 0192). The function is named in a
 /// `const _`'s `use`, so a plain rustc checks it's there, a generic one's
-/// too.
+/// too. Of the function itself, `js::export_default! { fn noop() {} }`,
+/// it's declared as the default, `export default function noop() {}`,
+/// which rustc sees exported (ADR 0611).
 #[macro_export]
 macro_rules! export_default {
+    ($(#[$meta:meta])* $vis:vis fn $($function:tt)*) => {
+        #[cfg_attr(rust_js, rust_js::export_default)]
+        #[allow(dead_code)]
+        $(#[$meta])* $vis fn $($function)*
+    };
     ($function:path) => {
         #[cfg_attr(rust_js, rust_js::export_default)]
         const _: () = {

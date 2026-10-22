@@ -678,8 +678,8 @@ pub fn lists(elements: &NodeList<HTMLElement>, nodes: &NodeList) -> u32 {
 });
 
 // A component only `js::export_default!` exports is declared, not exported
-// by its name: as it, \`export default function Callout\`, where the macro is
-// right after it (ADR 0611).
+// by its name: as it, \`export default function Callout\`, where the macro
+// holds it (ADR 0611).
 test("declarations declare a private default export", () => {
   buildReact();
   const dir = fixture("declarations-default");
@@ -691,11 +691,11 @@ pub struct CalloutProps<'a> {
     pub title: &'a str,
 }
 
-fn Callout(CalloutProps { title }: CalloutProps) -> JSX::Element {
-    jsx! { <b>{title}</b> }
+js::export_default! {
+    fn Callout(CalloutProps { title }: CalloutProps) -> JSX::Element {
+        jsx! { <b>{title}</b> }
+    }
 }
-
-js::export_default!(Callout);
 `);
   run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.jsx"), "--", "--extern", `react=${join(target, "libreact.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
   const declarations = readFileSync(join(dir, "lib.d.ts"), "utf8");
