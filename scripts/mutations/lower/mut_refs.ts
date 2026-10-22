@@ -171,4 +171,12 @@ export const mutations: Mutation[] = [
     replace: "        others\n",
     tests: ["test/corpus.test.ts", "-t", "^transparent_transmute.rs$"],
   },
+  {
+    name: "moved-out-of-box-unseen",
+    breaks: "a generic `&mut T` of an object is boxed as the object itself, so what the callee moves out of it, `mem::replace`'s old value, is changed by the write-back after",
+    file: "src/lower/mut_refs.rs",
+    find: "    holds(sig.output()) || others.into_iter().any(holds)",
+    replace: "    false && (holds(sig.output()) || others.into_iter().any(holds))",
+    tests: ["test/corpus.test.ts", "-t", "^generic_mut_moved_out.rs$"],
+  },
 ];

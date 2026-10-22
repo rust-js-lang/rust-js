@@ -13,6 +13,40 @@ use rustc_span::Span;
 use rustc_span::def_id::DefId;
 use std::collections::HashSet;
 
+/// Whether `fn_id` may move the value its `&mut` parameter `i` refers to out
+/// and keep it, `mem::replace`'s old value: where the parameter is a `&mut
+/// T`, not a type parameter given the `&mut` itself, and a `T` is in what it
+/// gives back or in another parameter, which it could be put in. Not in a
+/// projection of it, `Self::Item`, which isn't the `T`.
+pub(super) fn may_move_out<'tcx>(tcx: ty::TyCtxt<'tcx>, fn_id: DefId, i: usize) -> bool {
+    let sig = tcx
+        .fn_sig(fn_id)
+        .instantiate_identity()
+        .skip_normalization()
+        .skip_binder();
+    let Some(&ty::Ref(_, pointee, Mutability::Mut)) = sig.inputs().get(i).map(|input| input.kind()) else {
+        return false;
+    };
+    let holds = |ty: Ty<'tcx>| {
+        let mut walk = ty.walk();
+        while let Some(part) = walk.next() {
+            match part.as_type() {
+                Some(part) if part == pointee => return true,
+                Some(part) if matches!(part.kind(), ty::Alias(..)) => walk.skip_current_subtree(),
+                _ => {}
+            }
+        }
+        false
+    };
+    let others = sig
+        .inputs()
+        .iter()
+        .enumerate()
+        .filter(|&(j, _)| j != i)
+        .map(|(_, &input)| input);
+    holds(sig.output()) || others.into_iter().any(holds)
+}
+
 /// A box of `place`, `{ value: place }`: a `&mut` to a value JS can't change
 /// in place, given to a call, which reads and writes its `value` (ADR 0074).
 pub(super) fn boxed(place: Expr) -> Expr {

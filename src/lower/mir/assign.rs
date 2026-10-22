@@ -772,7 +772,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .flatten()
                 .map_or("value".to_string(), |i| i.name.to_string());
             let name = self.fresh(&crate::lower::camel_case(&base));
-            let boxed = crate::lower::mut_refs::boxed(place.clone());
+            // An object's box holds a copy of it: what the call moves out of
+            // the box, `mem::replace`'s old value, is that copy, where the
+            // object, written back after in place, is the new value.
+            // Where the callee may move it out (`may_move_out`).
+            let held = match object && crate::lower::mut_refs::may_move_out(self.tcx, def_id, i) {
+                true => Expr::call_helper("$apart", vec![place.clone()]),
+                false => place.clone(),
+            };
+            let boxed = crate::lower::mut_refs::boxed(held);
             out.push(StmtKind::Const(name.clone(), boxed).at(self.js_span(span)));
             if fixed_place(&place) {
                 state.copy_backs.push((place, name.clone(), object));

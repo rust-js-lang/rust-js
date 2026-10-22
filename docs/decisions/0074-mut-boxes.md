@@ -78,3 +78,18 @@ const cloneValue = (value) =>
   function can take several, and return a value of its own too.
 - **Every string and number a box:** uniform, but every read would be
   `.value`, for a case that only calls with `&mut` need.
+
+## Amendment: a box of what may be moved out holds a copy
+
+An object given to generic code as a `&mut T` was boxed as itself, `{
+value: s }`, and written back in place after, `$assign(s, box.value)`:
+what the callee moved out of the box, `mem::replace`'s old value,
+`swap`'s other side, `take`'s, was `s`'s object, which the write-back
+then made the new value too (#128). Where the callee may move it out and
+keep it, `may_move_out` of its signature, a `&mut T` parameter whose `T`
+is in what it gives back or another parameter, not a projection of it,
+the box holds a copy of its top level, `{ value: $apart(s) }`: a new
+array, `Map`, `Set` or object of the same items, an instance's prototype
+kept, which what's moved out is. Other boxes are as they were. Held by
+`test/corpus/generic_mut_moved_out.rs` and the mutations
+`moved-out-of-box-unseen` and `apart-shares`.

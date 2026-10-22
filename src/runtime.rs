@@ -316,6 +316,7 @@ helpers! {
     Unzip,
     Partition,
     Sort,
+    Apart,
     SortedKeys,
     StripPrefix,
     StripSuffix,
@@ -964,6 +965,7 @@ impl Helper {
             Helper::SortedEntries => include_str!("runtime/sorted_entries.js"),
             // A `BTreeSet`'s items, in order.
             Helper::Sort => include_str!("runtime/sort.js"),
+            Helper::Apart => include_str!("runtime/apart.js"),
             Helper::SortedKeys => include_str!("runtime/sorted_keys.js"),
             // `vec![item; count]`: clone all but the last slot, which takes item.
             Helper::Repeat => include_str!("runtime/repeat.js"),
