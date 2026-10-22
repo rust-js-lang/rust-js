@@ -1314,8 +1314,6 @@ function main() {
     throw error;
   }
   let tmp$24;
-  let iter$1;
-  let tmp$25;
   while (true) {
     let tmp;
     try {
@@ -1346,315 +1344,7 @@ function main() {
       throw error;
     }
     if (tmp == null) {
-      try {
-        iter$1 = $iter([
-          ["19", "20", true],
-          ["21", "x", true],
-          ["22", "", false],
-        ]);
-      } catch (error) {
-        if (err.TAG === "Ok") {
-          dDrop_drop(err._0);
-        }
-        if (ok.TAG === "Ok") {
-          dDrop_drop(ok._0);
-        }
-        dDrop_drop(read);
-        if (nothing.TAG === "One") {
-          dDrop_drop(nothing._0);
-        }
-        if (one.TAG === "One") {
-          dDrop_drop(one._0);
-        }
-        if (closure != null) {
-          dDrop_drop(closure);
-        }
-        if (dropped != null) {
-          dDrop_drop(dropped);
-        }
-        if (kept != null) {
-          dDrop_drop(kept);
-        }
-        throw error;
-      }
-      while (true) {
-        let tmp;
-        try {
-          tmp = $next(iter$1);
-        } catch (error) {
-          if (err.TAG === "Ok") {
-            dDrop_drop(err._0);
-          }
-          if (ok.TAG === "Ok") {
-            dDrop_drop(ok._0);
-          }
-          dDrop_drop(read);
-          if (nothing.TAG === "One") {
-            dDrop_drop(nothing._0);
-          }
-          if (one.TAG === "One") {
-            dDrop_drop(one._0);
-          }
-          if (closure != null) {
-            dDrop_drop(closure);
-          }
-          if (dropped != null) {
-            dDrop_drop(dropped);
-          }
-          if (kept != null) {
-            dDrop_drop(kept);
-          }
-          throw error;
-        }
-        if (!tmp) {
-          break;
-        }
-        const a = tmp[0];
-        const b = tmp[1];
-        const both = tmp[2];
-        try {
-          tmp$25 = parsePair(a, b, both, dNamed, dDrop_drop);
-        } catch (error) {
-          if (err.TAG === "Ok") {
-            dDrop_drop(err._0);
-          }
-          if (ok.TAG === "Ok") {
-            dDrop_drop(ok._0);
-          }
-          dDrop_drop(read);
-          if (nothing.TAG === "One") {
-            dDrop_drop(nothing._0);
-          }
-          if (one.TAG === "One") {
-            dDrop_drop(one._0);
-          }
-          if (closure != null) {
-            dDrop_drop(closure);
-          }
-          if (dropped != null) {
-            dDrop_drop(dropped);
-          }
-          if (kept != null) {
-            dDrop_drop(kept);
-          }
-          throw error;
-        }
-        tmp$0$1$live = true;
-        tmp$0$0$live = true;
-        if (tmp$25.TAG === "Ok") {
-          tmp$0$0$live = false;
-          const d = tmp$25._0[0];
-          tmp$0$1$live = false;
-          const e = tmp$25._0[1];
-          const value = (e) => {
-            const result = e[0];
-            dDrop_drop(e);
-            return result;
-          };
-          let tmp;
-          try {
-            tmp = e != null ? value(e) : 0;
-          } catch (error) {
-            dDrop_drop(d);
-            if (err.TAG === "Ok") {
-              dDrop_drop(err._0);
-            }
-            if (ok.TAG === "Ok") {
-              dDrop_drop(ok._0);
-            }
-            dDrop_drop(read);
-            if (nothing.TAG === "One") {
-              dDrop_drop(nothing._0);
-            }
-            if (one.TAG === "One") {
-              dDrop_drop(one._0);
-            }
-            if (closure != null) {
-              dDrop_drop(closure);
-            }
-            if (dropped != null) {
-              dDrop_drop(dropped);
-            }
-            if (kept != null) {
-              dDrop_drop(kept);
-            }
-            throw error;
-          }
-          try {
-            console.log(`pair ${d[0]} ${tmp}`);
-          } catch (error) {
-            dDrop_drop(d);
-            if (err.TAG === "Ok") {
-              dDrop_drop(err._0);
-            }
-            if (ok.TAG === "Ok") {
-              dDrop_drop(ok._0);
-            }
-            dDrop_drop(read);
-            if (nothing.TAG === "One") {
-              dDrop_drop(nothing._0);
-            }
-            if (one.TAG === "One") {
-              dDrop_drop(one._0);
-            }
-            if (closure != null) {
-              dDrop_drop(closure);
-            }
-            if (dropped != null) {
-              dDrop_drop(dropped);
-            }
-            if (kept != null) {
-              dDrop_drop(kept);
-            }
-            throw error;
-          }
-          try {
-            dDrop_drop(d);
-          } catch (error) {
-            if (err.TAG === "Ok") {
-              dDrop_drop(err._0);
-            }
-            if (ok.TAG === "Ok") {
-              dDrop_drop(ok._0);
-            }
-            dDrop_drop(read);
-            if (nothing.TAG === "One") {
-              dDrop_drop(nothing._0);
-            }
-            if (one.TAG === "One") {
-              dDrop_drop(one._0);
-            }
-            if (closure != null) {
-              dDrop_drop(closure);
-            }
-            if (dropped != null) {
-              dDrop_drop(dropped);
-            }
-            if (kept != null) {
-              dDrop_drop(kept);
-            }
-            throw error;
-          }
-        } else {
-          try {
-            console.log(`${tmp$25._0}`);
-          } catch (error) {
-            if (tmp$25.TAG === "Ok") {
-              dDrop_drop(tmp$25._0[0]);
-              if (tmp$25._0[1] != null) {
-                dDrop_drop(tmp$25._0[1]);
-              }
-            }
-            if (err.TAG === "Ok") {
-              dDrop_drop(err._0);
-            }
-            if (ok.TAG === "Ok") {
-              dDrop_drop(ok._0);
-            }
-            dDrop_drop(read);
-            if (nothing.TAG === "One") {
-              dDrop_drop(nothing._0);
-            }
-            if (one.TAG === "One") {
-              dDrop_drop(one._0);
-            }
-            if (closure != null) {
-              dDrop_drop(closure);
-            }
-            if (dropped != null) {
-              dDrop_drop(dropped);
-            }
-            if (kept != null) {
-              dDrop_drop(kept);
-            }
-            throw error;
-          }
-        }
-        try {
-          if (tmp$25.TAG === "Ok") {
-            if (tmp$0$0$live) {
-              dDrop_drop(tmp$25._0[0]);
-            }
-            if (tmp$0$1$live && tmp$25._0[1] != null) {
-              dDrop_drop(tmp$25._0[1]);
-            }
-          }
-        } catch (error) {
-          if (err.TAG === "Ok") {
-            dDrop_drop(err._0);
-          }
-          if (ok.TAG === "Ok") {
-            dDrop_drop(ok._0);
-          }
-          dDrop_drop(read);
-          if (nothing.TAG === "One") {
-            dDrop_drop(nothing._0);
-          }
-          if (one.TAG === "One") {
-            dDrop_drop(one._0);
-          }
-          if (closure != null) {
-            dDrop_drop(closure);
-          }
-          if (dropped != null) {
-            dDrop_drop(dropped);
-          }
-          if (kept != null) {
-            dDrop_drop(kept);
-          }
-          throw error;
-        }
-        tmp$0$1$live = false;
-        tmp$0$0$live = false;
-      }
-      try {
-        try {
-          try {
-            try {
-              try {
-                try {
-                  try {
-                    try {
-                      console.log("end");
-                    } finally {
-                      if (err.TAG === "Ok") {
-                        dDrop_drop(err._0);
-                      }
-                    }
-                  } finally {
-                    if (ok.TAG === "Ok") {
-                      dDrop_drop(ok._0);
-                    }
-                  }
-                } finally {
-                  dDrop_drop(read);
-                }
-              } finally {
-                if (nothing.TAG === "One") {
-                  dDrop_drop(nothing._0);
-                }
-              }
-            } finally {
-              if (one.TAG === "One") {
-                dDrop_drop(one._0);
-              }
-            }
-          } finally {
-            if (closure != null) {
-              dDrop_drop(closure);
-            }
-          }
-        } finally {
-          if (dropped != null) {
-            dDrop_drop(dropped);
-          }
-        }
-      } finally {
-        if (kept != null) {
-          dDrop_drop(kept);
-        }
-      }
-      return;
+      break;
     }
     const flag = tmp;
     try {
@@ -1804,6 +1494,316 @@ function main() {
       throw error;
     }
     tmp$0$live = false;
+  }
+  let iter$1;
+  try {
+    iter$1 = $iter([
+      ["19", "20", true],
+      ["21", "x", true],
+      ["22", "", false],
+    ]);
+  } catch (error) {
+    if (err.TAG === "Ok") {
+      dDrop_drop(err._0);
+    }
+    if (ok.TAG === "Ok") {
+      dDrop_drop(ok._0);
+    }
+    dDrop_drop(read);
+    if (nothing.TAG === "One") {
+      dDrop_drop(nothing._0);
+    }
+    if (one.TAG === "One") {
+      dDrop_drop(one._0);
+    }
+    if (closure != null) {
+      dDrop_drop(closure);
+    }
+    if (dropped != null) {
+      dDrop_drop(dropped);
+    }
+    if (kept != null) {
+      dDrop_drop(kept);
+    }
+    throw error;
+  }
+  let tmp$25;
+  while (true) {
+    let tmp;
+    try {
+      tmp = $next(iter$1);
+    } catch (error) {
+      if (err.TAG === "Ok") {
+        dDrop_drop(err._0);
+      }
+      if (ok.TAG === "Ok") {
+        dDrop_drop(ok._0);
+      }
+      dDrop_drop(read);
+      if (nothing.TAG === "One") {
+        dDrop_drop(nothing._0);
+      }
+      if (one.TAG === "One") {
+        dDrop_drop(one._0);
+      }
+      if (closure != null) {
+        dDrop_drop(closure);
+      }
+      if (dropped != null) {
+        dDrop_drop(dropped);
+      }
+      if (kept != null) {
+        dDrop_drop(kept);
+      }
+      throw error;
+    }
+    if (!tmp) {
+      break;
+    }
+    const a = tmp[0];
+    const b = tmp[1];
+    const both = tmp[2];
+    try {
+      tmp$25 = parsePair(a, b, both, dNamed, dDrop_drop);
+    } catch (error) {
+      if (err.TAG === "Ok") {
+        dDrop_drop(err._0);
+      }
+      if (ok.TAG === "Ok") {
+        dDrop_drop(ok._0);
+      }
+      dDrop_drop(read);
+      if (nothing.TAG === "One") {
+        dDrop_drop(nothing._0);
+      }
+      if (one.TAG === "One") {
+        dDrop_drop(one._0);
+      }
+      if (closure != null) {
+        dDrop_drop(closure);
+      }
+      if (dropped != null) {
+        dDrop_drop(dropped);
+      }
+      if (kept != null) {
+        dDrop_drop(kept);
+      }
+      throw error;
+    }
+    tmp$0$1$live = true;
+    tmp$0$0$live = true;
+    if (tmp$25.TAG === "Ok") {
+      tmp$0$0$live = false;
+      const d = tmp$25._0[0];
+      tmp$0$1$live = false;
+      const e = tmp$25._0[1];
+      const value = (e) => {
+        const result = e[0];
+        dDrop_drop(e);
+        return result;
+      };
+      let tmp;
+      try {
+        tmp = e != null ? value(e) : 0;
+      } catch (error) {
+        dDrop_drop(d);
+        if (err.TAG === "Ok") {
+          dDrop_drop(err._0);
+        }
+        if (ok.TAG === "Ok") {
+          dDrop_drop(ok._0);
+        }
+        dDrop_drop(read);
+        if (nothing.TAG === "One") {
+          dDrop_drop(nothing._0);
+        }
+        if (one.TAG === "One") {
+          dDrop_drop(one._0);
+        }
+        if (closure != null) {
+          dDrop_drop(closure);
+        }
+        if (dropped != null) {
+          dDrop_drop(dropped);
+        }
+        if (kept != null) {
+          dDrop_drop(kept);
+        }
+        throw error;
+      }
+      try {
+        console.log(`pair ${d[0]} ${tmp}`);
+      } catch (error) {
+        dDrop_drop(d);
+        if (err.TAG === "Ok") {
+          dDrop_drop(err._0);
+        }
+        if (ok.TAG === "Ok") {
+          dDrop_drop(ok._0);
+        }
+        dDrop_drop(read);
+        if (nothing.TAG === "One") {
+          dDrop_drop(nothing._0);
+        }
+        if (one.TAG === "One") {
+          dDrop_drop(one._0);
+        }
+        if (closure != null) {
+          dDrop_drop(closure);
+        }
+        if (dropped != null) {
+          dDrop_drop(dropped);
+        }
+        if (kept != null) {
+          dDrop_drop(kept);
+        }
+        throw error;
+      }
+      try {
+        dDrop_drop(d);
+      } catch (error) {
+        if (err.TAG === "Ok") {
+          dDrop_drop(err._0);
+        }
+        if (ok.TAG === "Ok") {
+          dDrop_drop(ok._0);
+        }
+        dDrop_drop(read);
+        if (nothing.TAG === "One") {
+          dDrop_drop(nothing._0);
+        }
+        if (one.TAG === "One") {
+          dDrop_drop(one._0);
+        }
+        if (closure != null) {
+          dDrop_drop(closure);
+        }
+        if (dropped != null) {
+          dDrop_drop(dropped);
+        }
+        if (kept != null) {
+          dDrop_drop(kept);
+        }
+        throw error;
+      }
+    } else {
+      try {
+        console.log(`${tmp$25._0}`);
+      } catch (error) {
+        if (tmp$25.TAG === "Ok") {
+          dDrop_drop(tmp$25._0[0]);
+          if (tmp$25._0[1] != null) {
+            dDrop_drop(tmp$25._0[1]);
+          }
+        }
+        if (err.TAG === "Ok") {
+          dDrop_drop(err._0);
+        }
+        if (ok.TAG === "Ok") {
+          dDrop_drop(ok._0);
+        }
+        dDrop_drop(read);
+        if (nothing.TAG === "One") {
+          dDrop_drop(nothing._0);
+        }
+        if (one.TAG === "One") {
+          dDrop_drop(one._0);
+        }
+        if (closure != null) {
+          dDrop_drop(closure);
+        }
+        if (dropped != null) {
+          dDrop_drop(dropped);
+        }
+        if (kept != null) {
+          dDrop_drop(kept);
+        }
+        throw error;
+      }
+    }
+    try {
+      if (tmp$25.TAG === "Ok") {
+        if (tmp$0$0$live) {
+          dDrop_drop(tmp$25._0[0]);
+        }
+        if (tmp$0$1$live && tmp$25._0[1] != null) {
+          dDrop_drop(tmp$25._0[1]);
+        }
+      }
+    } catch (error) {
+      if (err.TAG === "Ok") {
+        dDrop_drop(err._0);
+      }
+      if (ok.TAG === "Ok") {
+        dDrop_drop(ok._0);
+      }
+      dDrop_drop(read);
+      if (nothing.TAG === "One") {
+        dDrop_drop(nothing._0);
+      }
+      if (one.TAG === "One") {
+        dDrop_drop(one._0);
+      }
+      if (closure != null) {
+        dDrop_drop(closure);
+      }
+      if (dropped != null) {
+        dDrop_drop(dropped);
+      }
+      if (kept != null) {
+        dDrop_drop(kept);
+      }
+      throw error;
+    }
+    tmp$0$1$live = false;
+    tmp$0$0$live = false;
+  }
+  try {
+    try {
+      try {
+        try {
+          try {
+            try {
+              try {
+                try {
+                  console.log("end");
+                } finally {
+                  if (err.TAG === "Ok") {
+                    dDrop_drop(err._0);
+                  }
+                }
+              } finally {
+                if (ok.TAG === "Ok") {
+                  dDrop_drop(ok._0);
+                }
+              }
+            } finally {
+              dDrop_drop(read);
+            }
+          } finally {
+            if (nothing.TAG === "One") {
+              dDrop_drop(nothing._0);
+            }
+          }
+        } finally {
+          if (one.TAG === "One") {
+            dDrop_drop(one._0);
+          }
+        }
+      } finally {
+        if (closure != null) {
+          dDrop_drop(closure);
+        }
+      }
+    } finally {
+      if (dropped != null) {
+        dDrop_drop(dropped);
+      }
+    }
+  } finally {
+    if (kept != null) {
+      dDrop_drop(kept);
+    }
   }
 }
 //# sourceMappingURL=case.js.map

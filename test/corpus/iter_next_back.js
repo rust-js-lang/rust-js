@@ -66,73 +66,72 @@ function main() {
   while (true) {
     const a = $next(both);
     const b = $nextBack(both);
-    if (a != null && b != null) {
-      $print(`(${a}, ${b}) `);
-      continue;
+    if (a == null || b == null) {
+      break;
     }
-    const value = $next(both);
-    console.log(`${value == null ? "None" : `Some(${value})`}`);
-
-    const tree = new Map([
-      [1, "a"],
-      [2, "b"],
-      [3, "c"],
-    ]);
-    const value$1 = $nextBack(
-      $iter($treeRange(tree, $cmp, false, "BTreeMap", "Unbounded", { TAG: "Excluded", _0: 3 })),
-    );
-    const value$2 = $nextBack($iter($sortedEntries(tree, $cmp)));
-    console.log(
-      `${value$1 == null ? "None" : `Some((${value$1[0]}, ${$debugStr(value$1[1])}))`} ${value$2 == null ? "None" : `Some((${value$2[0]}, ${$debugStr(value$2[1])}))`}`,
-    );
-    const last = $nextBack($iter(v));
-    const value$3 = last === undefined ? undefined : (last * 10) | 0;
-    console.log(`${value$3 == null ? "None" : `Some(${value$3})`}`);
-    const value$4 = $nextBack($iter(Array.from("héllo")));
-    const value$5 = $nextBack($iter("a,b,c".split(",")));
-    console.log(
-      `${value$4 == null ? "None" : `Some(${$debugStr(value$4, "'")})`} ${value$5 == null ? "None" : `Some(${$debugStr(value$5)})`}`,
-    );
-
-    const maybe = [1, undefined];
-    const options = $iter(maybe);
-    const value$6 = $nextBackSome(options);
-    const value$7 = $nextBackSome(options);
-    const value$8 = $nextBackSome(options);
-    console.log(
-      `${value$6 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$6))})`} ${value$7 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$7))})`} ${value$8 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$8))})`}`,
-    );
-    const value$9 = $nextBackSome($iter(maybe));
-    const value$10 = $nextBackSome($iter($slice(maybe, 0, 1)));
-    console.log(
-      `${value$9 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$9))})`} ${value$10 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$10))})`}`,
-    );
-    const peeked = iterator_peekable($iter(maybe), { next: $nextSome });
-    peekableDoubleEndedIterator_nextBack(peeked, { next_back: $nextBackSome });
-    peekableDoubleEndedIterator_nextBack(peeked, { next_back: $nextBackSome });
-    const peek = $peekSome(peeked);
-    const value$11 = $rangeInclusiveNextBack({ start: 0, end: 3 });
-    console.log(
-      `${peek == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(peek))})`} ${value$11 == null ? "None" : `Some(${value$11})`}`,
-    );
-
-    const peeking = iterator_peekable($iter(v), { next: $next });
-    const first = $peek(peeking);
-    const arg = peekableDoubleEndedIterator_nextBack(peeking, { next_back: $nextBack });
-    console.log(
-      `${first == null ? "None" : `Some(${first})`} ${arg == null ? "None" : `Some(${arg})`}`,
-    );
-    while (peekableDoubleEndedIterator_nextBack(peeking, { next_back: $nextBack }) != null) {}
-    const left = $peek(peeking);
-    const arg$1 = $nextIf(peeking, () => true);
-    console.log(
-      `${left == null ? "None" : `Some(${left})`} ${arg$1 == null ? "None" : `Some(${arg$1})`}`,
-    );
-
-    const chars = $iter(Array.from("xyz"));
-    $nextBack(chars);
-    console.log(`${$debugStr($restStr(chars))}`);
-    return;
+    $print(`(${a}, ${b}) `);
   }
+  const value$4 = $next(both);
+  console.log(`${value$4 == null ? "None" : `Some(${value$4})`}`);
+
+  const tree = new Map([
+    [1, "a"],
+    [2, "b"],
+    [3, "c"],
+  ]);
+  const value$5 = $nextBack(
+    $iter($treeRange(tree, $cmp, false, "BTreeMap", "Unbounded", { TAG: "Excluded", _0: 3 })),
+  );
+  const value$6 = $nextBack($iter($sortedEntries(tree, $cmp)));
+  console.log(
+    `${value$5 == null ? "None" : `Some((${value$5[0]}, ${$debugStr(value$5[1])}))`} ${value$6 == null ? "None" : `Some((${value$6[0]}, ${$debugStr(value$6[1])}))`}`,
+  );
+  const last = $nextBack($iter(v));
+  const value$7 = last === undefined ? undefined : (last * 10) | 0;
+  console.log(`${value$7 == null ? "None" : `Some(${value$7})`}`);
+  const value$8 = $nextBack($iter(Array.from("héllo")));
+  const value$9 = $nextBack($iter("a,b,c".split(",")));
+  console.log(
+    `${value$8 == null ? "None" : `Some(${$debugStr(value$8, "'")})`} ${value$9 == null ? "None" : `Some(${$debugStr(value$9)})`}`,
+  );
+
+  const maybe = [1, undefined];
+  const options = $iter(maybe);
+  const value$10 = $nextBackSome(options);
+  const value$11 = $nextBackSome(options);
+  const value$12 = $nextBackSome(options);
+  console.log(
+    `${value$10 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$10))})`} ${value$11 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$11))})`} ${value$12 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$12))})`}`,
+  );
+  const value$13 = $nextBackSome($iter(maybe));
+  const value$14 = $nextBackSome($iter($slice(maybe, 0, 1)));
+  console.log(
+    `${value$13 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$13))})`} ${value$14 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$14))})`}`,
+  );
+  const peeked = iterator_peekable($iter(maybe), { next: $nextSome });
+  peekableDoubleEndedIterator_nextBack(peeked, { next_back: $nextBackSome });
+  peekableDoubleEndedIterator_nextBack(peeked, { next_back: $nextBackSome });
+  const peek = $peekSome(peeked);
+  const value$15 = $rangeInclusiveNextBack({ start: 0, end: 3 });
+  console.log(
+    `${peek == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(peek))})`} ${value$15 == null ? "None" : `Some(${value$15})`}`,
+  );
+
+  const peeking = iterator_peekable($iter(v), { next: $next });
+  const first = $peek(peeking);
+  const arg = peekableDoubleEndedIterator_nextBack(peeking, { next_back: $nextBack });
+  console.log(
+    `${first == null ? "None" : `Some(${first})`} ${arg == null ? "None" : `Some(${arg})`}`,
+  );
+  while (peekableDoubleEndedIterator_nextBack(peeking, { next_back: $nextBack }) != null) {}
+  const left = $peek(peeking);
+  const arg$1 = $nextIf(peeking, () => true);
+  console.log(
+    `${left == null ? "None" : `Some(${left})`} ${arg$1 == null ? "None" : `Some(${arg$1})`}`,
+  );
+
+  const chars = $iter(Array.from("xyz"));
+  $nextBack(chars);
+  console.log(`${$debugStr($restStr(chars))}`);
 }
 //# sourceMappingURL=case.js.map

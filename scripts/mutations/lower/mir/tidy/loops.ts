@@ -147,4 +147,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^iterator_adapters.rs$"],
   },
+  {
+    name: "loop-test-of-else-unread",
+    breaks: "`while (true) { if (t) { break; } else { rest } }` stays `while (true)`, not `while (!t) { rest }`",
+    file: "src/lower/mir/tidy/loops.rs",
+    find: "            let rest = otherwise.take().unwrap_or_default();\n            body.extend(rest);\n",
+    replace: "",
+    tests: ["test/lowering-loops.test.ts", "-t", "a loop after a loop is after it"],
+  },
 ];

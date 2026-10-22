@@ -936,6 +936,13 @@ pub mod string {
         unreachable!()
     }
 
+    /// [`text.charCodeAt(index)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String/charCodeAt):
+    /// its UTF-16 code unit at `index`, a number, `NaN` past its end.
+    #[cfg_attr(rust_js, rust_js::link_name = "charCodeAt")]
+    pub fn char_code_at(this: &str, index: u32) -> f64 {
+        unreachable!()
+    }
+
     /// [`text.slice(start, end)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String/slice):
     /// from `start` to before `end`, each counted from the end if negative;
     /// to the end where there's no `end`.

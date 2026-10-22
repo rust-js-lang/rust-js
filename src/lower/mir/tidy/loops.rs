@@ -293,6 +293,24 @@ pub(super) fn while_tests(stmts: &mut Vec<Stmt>, loops: &[(js::Span, bool, Optio
             i += 1;
             continue;
         }
+        // `if (t) { exit } else { rest }` alone, its `else` not yet taken
+        // apart (ADR 0237): `if (t) { exit } rest`.
+        if let StmtKind::While { cond, body, .. } = &mut stmts[i].kind
+            && matches!(cond.kind, ExprKind::Bool(true))
+            && let [
+                Stmt {
+                    kind: StmtKind::If(_, exit, Some(_)),
+                    ..
+                },
+            ] = body.as_slice()
+            && exit
+                .last()
+                .is_some_and(|last| matches!(last.kind, StmtKind::Break(_) | StmtKind::Return(_) | StmtKind::Throw(_)))
+            && let StmtKind::If(_, _, otherwise) = &mut body[0].kind
+        {
+            let rest = otherwise.take().unwrap_or_default();
+            body.extend(rest);
+        }
         if let StmtKind::While { label, cond, body } = &stmts[i].kind
             && matches!(cond.kind, ExprKind::Bool(true))
             && let [first, rest @ ..] = body.as_slice()

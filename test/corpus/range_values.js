@@ -132,92 +132,88 @@ function main() {
   while (true) {
     const row = $rangeNext(iter);
     if (row == null) {
-      const span = { start: 10, end: 12 };
-      const iter = span;
-      while (true) {
-        const n = $rangeInclusiveNext(iter);
-        if (n == null) {
-          console.log("");
-
-          console.log(`4.. ..4 ..=4 .. ${-2n}..=${2n}`);
-          console.log(
-            `${FROM.start}.. ..${TO.end} ..=${THROUGH.end} ${FROM.start <= 9} ${8 <= THROUGH.end}`,
-          );
-          console.log(`${AFTER.start}.. ..${BEFORE.end} ..=${UPTO.end} ${AFTER.start <= 2}`);
-          console.log("true true true");
-          const big = $iterator({ start: 1n, end: 4n }, $rangeNext).reduce(
-            (a, b) => BigInt.asUintN(64, a + b),
-            0n,
-          );
-          console.log(`${big}`);
-
-          // A clone of a range stepped through is its own.
-          const a = { start: 0, end: 3 };
-          $rangeNext(a);
-          const b = { start: a.start, end: a.end };
-          $rangeNext(a);
-          const ids = { start: 100 };
-          const firstId = $rangeFromNext(ids);
-          const secondId = $rangeFromNext(ids);
-          console.log(
-            `${a.start}..${a.end} ${b.start}..${b.end} ${firstId == null ? "None" : `Some(${firstId})`} ${secondId == null ? "None" : `Some(${secondId})`} ${ids.start}.. ${$lazyRange(0, 5).reduce((n) => n + 1, 0)}`,
-          );
-
-          const labelled = { span: { start: 2, end: 5 }, name: "x" };
-          const copy = {
-            ...labelled,
-            span: { start: labelled.span.start, end: labelled.span.end },
-          };
-          const spans = [
-            { start: 0, end: 2 },
-            { start: 3, end: 5 },
-          ];
-          const lens = spans.map((s) => Math.max(s.end - s.start, 0));
-          const value = $eq(labelled, copy);
-          console.log(
-            `${labelledDebug_fmt(labelled)} ${value} [${spans.map((item) => `${item.start}..${item.end}`).join(", ")}] [${lens.join(", ")}]`,
-          );
-          console.log(
-            `${sumAll($lazyRange(1, 4))} ${sumAll($iterator(rOf(3), $rangeNext))} ${sumAll($iterator({ start: 1 }, $rangeFromNext).take(3))}`,
-          );
-          console.log(
-            `${shownTwice(
-              { start: 1, end: 4 },
-              { clone: (value) => ({ start: value.start, end: value.end }) },
-              { fmt: (value) => `${value.start}..${value.end}` },
-            )} ${shownTwice({ end: 2 }, { clone: (value) => ({ ...value }) }, { fmt: (value) => `..=${value.end}` })}`,
-          );
-
-          const numbers = [1, 2, 3, 4, 5];
-          const cut = { start: 1, end: 3 };
-          const gone = $drain(numbers, cut.start, cut.end);
-          console.log(
-            `[${gone.join(", ")}] [${numbers.join(", ")}] [${$slice(numbers, 0, 2).join(", ")}]`,
-          );
-
-          // `char`s step past the surrogates, which no `char` is.
-          const letters = $iterator({ start: "a", end: "e" }, $rangeNext).toArray().join("");
-          const around = $iterator({ start: "퟾", end: "" }, $rangeInclusiveNext).toArray();
-          const kept = new Set();
-          $extendMap(kept, $charRange("퟾", "", true), true);
-          const iter = { start: "x", end: "z" };
-          while (true) {
-            const c = $rangeInclusiveNext(iter);
-            if (c == null) {
-              break;
-            }
-            $print(c);
-          }
-          console.log(
-            ` ${letters} [${around.map((item) => $debugStr(item, "'")).join(", ")}] ${kept.size} ${"a" <= "hat" && "hat" < "m"}`,
-          );
-          return;
-        }
-        $print(`${n} `);
-      }
+      break;
     }
     $print(`${row} `);
   }
+  const span = { start: 10, end: 12 };
+  const iter$1 = span;
+  while (true) {
+    const n = $rangeInclusiveNext(iter$1);
+    if (n == null) {
+      break;
+    }
+    $print(`${n} `);
+  }
+  console.log("");
+
+  console.log(`4.. ..4 ..=4 .. ${-2n}..=${2n}`);
+  console.log(
+    `${FROM.start}.. ..${TO.end} ..=${THROUGH.end} ${FROM.start <= 9} ${8 <= THROUGH.end}`,
+  );
+  console.log(`${AFTER.start}.. ..${BEFORE.end} ..=${UPTO.end} ${AFTER.start <= 2}`);
+  console.log("true true true");
+  const big = $iterator({ start: 1n, end: 4n }, $rangeNext).reduce(
+    (a, b) => BigInt.asUintN(64, a + b),
+    0n,
+  );
+  console.log(`${big}`);
+
+  // A clone of a range stepped through is its own.
+  const a = { start: 0, end: 3 };
+  $rangeNext(a);
+  const b = { start: a.start, end: a.end };
+  $rangeNext(a);
+  const ids$1 = { start: 100 };
+  const firstId = $rangeFromNext(ids$1);
+  const secondId = $rangeFromNext(ids$1);
+  console.log(
+    `${a.start}..${a.end} ${b.start}..${b.end} ${firstId == null ? "None" : `Some(${firstId})`} ${secondId == null ? "None" : `Some(${secondId})`} ${ids$1.start}.. ${$lazyRange(0, 5).reduce((n) => n + 1, 0)}`,
+  );
+
+  const labelled = { span: { start: 2, end: 5 }, name: "x" };
+  const copy = { ...labelled, span: { start: labelled.span.start, end: labelled.span.end } };
+  const spans = [
+    { start: 0, end: 2 },
+    { start: 3, end: 5 },
+  ];
+  const lens = spans.map((s) => Math.max(s.end - s.start, 0));
+  const value = $eq(labelled, copy);
+  console.log(
+    `${labelledDebug_fmt(labelled)} ${value} [${spans.map((item) => `${item.start}..${item.end}`).join(", ")}] [${lens.join(", ")}]`,
+  );
+  console.log(
+    `${sumAll($lazyRange(1, 4))} ${sumAll($iterator(rOf(3), $rangeNext))} ${sumAll($iterator({ start: 1 }, $rangeFromNext).take(3))}`,
+  );
+  console.log(
+    `${shownTwice(
+      { start: 1, end: 4 },
+      { clone: (value) => ({ start: value.start, end: value.end }) },
+      { fmt: (value) => `${value.start}..${value.end}` },
+    )} ${shownTwice({ end: 2 }, { clone: (value) => ({ ...value }) }, { fmt: (value) => `..=${value.end}` })}`,
+  );
+
+  const numbers = [1, 2, 3, 4, 5];
+  const cut = { start: 1, end: 3 };
+  const gone = $drain(numbers, cut.start, cut.end);
+  console.log(`[${gone.join(", ")}] [${numbers.join(", ")}] [${$slice(numbers, 0, 2).join(", ")}]`);
+
+  // `char`s step past the surrogates, which no `char` is.
+  const letters$1 = $iterator({ start: "a", end: "e" }, $rangeNext).toArray().join("");
+  const around = $iterator({ start: "퟾", end: "" }, $rangeInclusiveNext).toArray();
+  const kept = new Set();
+  $extendMap(kept, $charRange("퟾", "", true), true);
+  const iter$2 = { start: "x", end: "z" };
+  while (true) {
+    const c = $rangeInclusiveNext(iter$2);
+    if (c == null) {
+      break;
+    }
+    $print(c);
+  }
+  console.log(
+    ` ${letters$1} [${around.map((item) => $debugStr(item, "'")).join(", ")}] ${kept.size} ${"a" <= "hat" && "hat" < "m"}`,
+  );
 }
 
 function rOf(n) {

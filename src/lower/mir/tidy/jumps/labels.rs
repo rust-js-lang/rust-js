@@ -32,9 +32,14 @@ pub(super) fn exit_after(stmts: &mut [Stmt], i: usize) -> Option<Vec<Stmt>> {
         }
     });
     let end = span.hi;
+    // A loop nothing `break`s, the program's next one, never goes on
+    // either: it leaves as its `return` does.
     let leaves = |s: &Stmt| match &s.kind {
         StmtKind::Return(_) | StmtKind::Throw(_) => true,
         StmtKind::Break(Some(l)) | StmtKind::Continue(Some(l)) => !inner.contains(l),
+        StmtKind::While { label, cond, body } => {
+            matches!(cond.kind, ExprKind::Bool(true)) && !breaks(body, label.as_deref())
+        }
         _ => false,
     };
     let after = |s: &Stmt| s.span.is_none() || s.span.lo >= end;

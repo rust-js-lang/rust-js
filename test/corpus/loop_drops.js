@@ -73,14 +73,6 @@ function main() {
   const v = [["a"], ["b"], ["c"], ["d"]];
   const iter = $iter(v);
   let noisy;
-  let tmp;
-  let tmp$1;
-  let tmp$2;
-  let tmp$3;
-  let tmp$4;
-  let tmp$5;
-  let iter$8;
-  let tmp$6;
   while (true) {
     try {
       noisy = $next(iter);
@@ -136,401 +128,248 @@ function main() {
     for (const item of iter) {
       noisyDrop_drop(item);
     }
-    console.log("after vec");
+    break;
+  }
+  console.log("after vec");
 
-    const iter$1 = $iter([["x"], ["y"]]);
-    while (true) {
+  const iter$1 = $iter([["x"], ["y"]]);
+  let tmp;
+  while (true) {
+    try {
+      tmp = $next(iter$1);
+    } catch (error) {
+      for (const item of iter$1) {
+        noisyDrop_drop(item);
+      }
+      throw error;
+    }
+    if (!tmp) {
+      for (const item of iter$1) {
+        noisyDrop_drop(item);
+      }
+      break;
+    }
+    const n = tmp;
+    try {
+      console.log(`array ${n[0]}`);
+    } catch (error) {
+      noisyDrop_drop(n);
+      for (const item of iter$1) {
+        noisyDrop_drop(item);
+      }
+      throw error;
+    }
+    try {
+      noisyDrop_drop(n);
+    } catch (error) {
+      for (const item of iter$1) {
+        noisyDrop_drop(item);
+      }
+      throw error;
+    }
+  }
+  const option = ["some"];
+  const iter$2 = $iter(option == null ? [] : [option]);
+  let tmp$1;
+  while (true) {
+    try {
+      tmp$1 = $next(iter$2);
+    } catch (error) {
+      for (const item of iter$2) {
+        noisyDrop_drop(item);
+      }
+      throw error;
+    }
+    if (!tmp$1) {
+      for (const item of iter$2) {
+        noisyDrop_drop(item);
+      }
+      break;
+    }
+    const n = tmp$1;
+    try {
+      console.log(`option ${n[0]}`);
+    } catch (error) {
+      noisyDrop_drop(n);
+      for (const item of iter$2) {
+        noisyDrop_drop(item);
+      }
+      throw error;
+    }
+    try {
+      noisyDrop_drop(n);
+    } catch (error) {
+      for (const item of iter$2) {
+        noisyDrop_drop(item);
+      }
+      throw error;
+    }
+  }
+  const none = undefined;
+  const iter$3 = $iter(none == null ? [] : [none]);
+  let tmp$2;
+  while (true) {
+    try {
+      tmp$2 = $next(iter$3);
+    } catch (error) {
+      for (const item of iter$3) {
+        noisyDrop_drop(item);
+      }
+      throw error;
+    }
+    if (!tmp$2) {
+      for (const item of iter$3) {
+        noisyDrop_drop(item);
+      }
+      break;
+    }
+    const n = tmp$2;
+    try {
+      console.log(`never ${n[0]}`);
+    } catch (error) {
+      noisyDrop_drop(n);
+      for (const item of iter$3) {
+        noisyDrop_drop(item);
+      }
+      throw error;
+    }
+    try {
+      noisyDrop_drop(n);
+    } catch (error) {
+      for (const item of iter$3) {
+        noisyDrop_drop(item);
+      }
+      throw error;
+    }
+  }
+  const iter$4 = $iter([["unnamed"]]);
+  while (true) {
+    let tmp;
+    try {
+      tmp = $next(iter$4);
+    } catch (error) {
+      for (const item of iter$4) {
+        noisyDrop_drop(item);
+      }
+      throw error;
+    }
+    if (!tmp) {
       try {
-        tmp = $next(iter$1);
+        if (tmp != null) {
+          noisyDrop_drop(tmp);
+        }
+      } finally {
+        for (const item of iter$4) {
+          noisyDrop_drop(item);
+        }
+      }
+      break;
+    }
+    try {
+      console.log("body before the drop");
+    } catch (error) {
+      if (tmp != null) {
+        noisyDrop_drop(tmp);
+      }
+      for (const item of iter$4) {
+        noisyDrop_drop(item);
+      }
+      throw error;
+    }
+    try {
+      if (tmp != null) {
+        noisyDrop_drop(tmp);
+      }
+    } catch (error) {
+      for (const item of iter$4) {
+        noisyDrop_drop(item);
+      }
+      throw error;
+    }
+  }
+  const iter$5 = $iter([
+    [1, ["t1"]],
+    [2, ["t2"]],
+  ]);
+  let tmp$3;
+  while (true) {
+    try {
+      tmp$3 = $next(iter$5);
+    } catch (error) {
+      for (const item of iter$5) {
+        noisyDrop_drop(item[1]);
+      }
+      throw error;
+    }
+    if (!tmp$3) {
+      for (const item of iter$5) {
+        noisyDrop_drop(item[1]);
+      }
+      break;
+    }
+    const i = tmp$3[0];
+    const n = tmp$3[1];
+    try {
+      console.log(`pair ${i} ${n[0]}`);
+    } catch (error) {
+      noisyDrop_drop(n);
+      for (const item of iter$5) {
+        noisyDrop_drop(item[1]);
+      }
+      throw error;
+    }
+    try {
+      noisyDrop_drop(n);
+    } catch (error) {
+      for (const item of iter$5) {
+        noisyDrop_drop(item[1]);
+      }
+      throw error;
+    }
+    try {
+    } catch (error) {
+      for (const item of iter$5) {
+        noisyDrop_drop(item[1]);
+      }
+      throw error;
+    }
+  }
+  const iter$6 = $iter([["m1"], ["m2"]]);
+  let tmp$4;
+  while (true) {
+    try {
+      tmp$4 = $next(iter$6);
+    } catch (error) {
+      for (const item of iter$6) {
+        noisyDrop_drop(item);
+      }
+      throw error;
+    }
+    if (!tmp$4) {
+      for (const item of iter$6) {
+        noisyDrop_drop(item);
+      }
+      break;
+    }
+    let n = tmp$4;
+    if (n[0] === "m1") {
+      const value = ["m1b"];
+      try {
+        noisyDrop_drop(n);
       } catch (error) {
-        for (const item of iter$1) {
+        n = value;
+        noisyDrop_drop(n);
+        for (const item of iter$6) {
           noisyDrop_drop(item);
         }
         throw error;
       }
-      if (!tmp) {
-        for (const item of iter$1) {
-          noisyDrop_drop(item);
-        }
-        const option = ["some"];
-        const iter = $iter(option == null ? [] : [option]);
-        while (true) {
-          try {
-            tmp$1 = $next(iter);
-          } catch (error) {
-            for (const item of iter) {
-              noisyDrop_drop(item);
-            }
-            throw error;
-          }
-          if (!tmp$1) {
-            for (const item of iter) {
-              noisyDrop_drop(item);
-            }
-            const none = undefined;
-            const iter$1 = $iter(none == null ? [] : [none]);
-            while (true) {
-              try {
-                tmp$2 = $next(iter$1);
-              } catch (error) {
-                for (const item of iter$1) {
-                  noisyDrop_drop(item);
-                }
-                throw error;
-              }
-              if (!tmp$2) {
-                for (const item of iter$1) {
-                  noisyDrop_drop(item);
-                }
-                const iter = $iter([["unnamed"]]);
-                while (true) {
-                  let tmp;
-                  try {
-                    tmp = $next(iter);
-                  } catch (error) {
-                    for (const item of iter) {
-                      noisyDrop_drop(item);
-                    }
-                    throw error;
-                  }
-                  if (!tmp) {
-                    try {
-                      if (tmp != null) {
-                        noisyDrop_drop(tmp);
-                      }
-                    } finally {
-                      for (const item of iter) {
-                        noisyDrop_drop(item);
-                      }
-                    }
-                    const iter$1 = $iter([
-                      [1, ["t1"]],
-                      [2, ["t2"]],
-                    ]);
-                    while (true) {
-                      try {
-                        tmp$3 = $next(iter$1);
-                      } catch (error) {
-                        for (const item of iter$1) {
-                          noisyDrop_drop(item[1]);
-                        }
-                        throw error;
-                      }
-                      if (!tmp$3) {
-                        for (const item of iter$1) {
-                          noisyDrop_drop(item[1]);
-                        }
-                        const iter = $iter([["m1"], ["m2"]]);
-                        while (true) {
-                          try {
-                            tmp$4 = $next(iter);
-                          } catch (error) {
-                            for (const item of iter) {
-                              noisyDrop_drop(item);
-                            }
-                            throw error;
-                          }
-                          if (!tmp$4) {
-                            for (const item of iter) {
-                              noisyDrop_drop(item);
-                            }
-
-                            const iter$1 = $iter([["r1"], ["r2"]]);
-                            outer: while (true) {
-                              try {
-                                tmp$5 = $next(iter$1);
-                              } catch (error) {
-                                for (const item of iter$1) {
-                                  noisyDrop_drop(item);
-                                }
-                                throw error;
-                              }
-                              if (tmp$5) {
-                                const row = tmp$5;
-                                const value = [["x1"], ["x2"]];
-                                try {
-                                  iter$8 = $iter(value);
-                                } catch (error) {
-                                  noisyDrop_drop(row);
-                                  for (const item of iter$1) {
-                                    noisyDrop_drop(item);
-                                  }
-                                  throw error;
-                                }
-                                while (true) {
-                                  try {
-                                    tmp$6 = $next(iter$8);
-                                  } catch (error) {
-                                    for (const item of iter$8) {
-                                      noisyDrop_drop(item);
-                                    }
-                                    noisyDrop_drop(row);
-                                    for (const item of iter$1) {
-                                      noisyDrop_drop(item);
-                                    }
-                                    throw error;
-                                  }
-                                  if (!tmp$6) {
-                                    try {
-                                      for (const item of iter$8) {
-                                        noisyDrop_drop(item);
-                                      }
-                                    } catch (error) {
-                                      noisyDrop_drop(row);
-                                      for (const item of iter$1) {
-                                        noisyDrop_drop(item);
-                                      }
-                                      throw error;
-                                    }
-                                    try {
-                                      noisyDrop_drop(row);
-                                    } catch (error) {
-                                      for (const item of iter$1) {
-                                        noisyDrop_drop(item);
-                                      }
-                                      throw error;
-                                    }
-                                    continue outer;
-                                  }
-                                  const cell = tmp$6;
-                                  if (cell[0] === "x2" && row[0] === "r1") {
-                                    try {
-                                      noisyDrop_drop(cell);
-                                    } catch (error) {
-                                      for (const item of iter$8) {
-                                        noisyDrop_drop(item);
-                                      }
-                                      noisyDrop_drop(row);
-                                      for (const item of iter$1) {
-                                        noisyDrop_drop(item);
-                                      }
-                                      throw error;
-                                    }
-                                    try {
-                                      for (const item of iter$8) {
-                                        noisyDrop_drop(item);
-                                      }
-                                    } catch (error) {
-                                      noisyDrop_drop(row);
-                                      for (const item of iter$1) {
-                                        noisyDrop_drop(item);
-                                      }
-                                      throw error;
-                                    }
-                                    try {
-                                      noisyDrop_drop(row);
-                                    } catch (error) {
-                                      for (const item of iter$1) {
-                                        noisyDrop_drop(item);
-                                      }
-                                      throw error;
-                                    }
-                                    break;
-                                  }
-                                  try {
-                                    console.log(`cell ${row[0]} ${cell[0]}`);
-                                  } catch (error) {
-                                    noisyDrop_drop(cell);
-                                    for (const item of iter$8) {
-                                      noisyDrop_drop(item);
-                                    }
-                                    noisyDrop_drop(row);
-                                    for (const item of iter$1) {
-                                      noisyDrop_drop(item);
-                                    }
-                                    throw error;
-                                  }
-                                  try {
-                                    noisyDrop_drop(cell);
-                                  } catch (error) {
-                                    for (const item of iter$8) {
-                                      noisyDrop_drop(item);
-                                    }
-                                    noisyDrop_drop(row);
-                                    for (const item of iter$1) {
-                                      noisyDrop_drop(item);
-                                    }
-                                    throw error;
-                                  }
-                                }
-                              }
-                              for (const item of iter$1) {
-                                noisyDrop_drop(item);
-                              }
-
-                              const iter = [3];
-                              while (true) {
-                                const n = countdownIterator_next(iter);
-                                if (n) {
-                                  if (n[0] === "c1") {
-                                    noisyDrop_drop(n);
-                                  } else {
-                                    try {
-                                      console.log(`count ${n[0]}`);
-                                    } finally {
-                                      noisyDrop_drop(n);
-                                    }
-                                    continue;
-                                  }
-                                }
-                                break;
-                              }
-                              const value = firstLong([["s"], ["long"], ["rest"]]);
-                              console.log(
-                                `${value == null ? "None" : `Some(${$debugStr(value)})`}`,
-                              );
-                              console.log("end");
-                              return;
-                            }
-                          }
-                          let n = tmp$4;
-                          if (n[0] === "m1") {
-                            const value = ["m1b"];
-                            try {
-                              noisyDrop_drop(n);
-                            } catch (error) {
-                              n = value;
-                              noisyDrop_drop(n);
-                              for (const item of iter) {
-                                noisyDrop_drop(item);
-                              }
-                              throw error;
-                            }
-                            n = value;
-                            try {
-                              console.log(`kept ${n[0]}`);
-                            } catch (error) {
-                              noisyDrop_drop(n);
-                              for (const item of iter) {
-                                noisyDrop_drop(item);
-                              }
-                              throw error;
-                            }
-                            try {
-                              noisyDrop_drop(n);
-                            } catch (error) {
-                              for (const item of iter) {
-                                noisyDrop_drop(item);
-                              }
-                              throw error;
-                            }
-                          } else {
-                            try {
-                              noisyDrop_drop(n);
-                            } catch (error) {
-                              for (const item of iter) {
-                                noisyDrop_drop(item);
-                              }
-                              throw error;
-                            }
-                            try {
-                              console.log("moved");
-                            } catch (error) {
-                              for (const item of iter) {
-                                noisyDrop_drop(item);
-                              }
-                              throw error;
-                            }
-                          }
-                        }
-                      }
-                      const i = tmp$3[0];
-                      const n = tmp$3[1];
-                      try {
-                        console.log(`pair ${i} ${n[0]}`);
-                      } catch (error) {
-                        noisyDrop_drop(n);
-                        for (const item of iter$1) {
-                          noisyDrop_drop(item[1]);
-                        }
-                        throw error;
-                      }
-                      try {
-                        noisyDrop_drop(n);
-                      } catch (error) {
-                        for (const item of iter$1) {
-                          noisyDrop_drop(item[1]);
-                        }
-                        throw error;
-                      }
-                      try {
-                      } catch (error) {
-                        for (const item of iter$1) {
-                          noisyDrop_drop(item[1]);
-                        }
-                        throw error;
-                      }
-                    }
-                  }
-                  try {
-                    console.log("body before the drop");
-                  } catch (error) {
-                    if (tmp != null) {
-                      noisyDrop_drop(tmp);
-                    }
-                    for (const item of iter) {
-                      noisyDrop_drop(item);
-                    }
-                    throw error;
-                  }
-                  try {
-                    if (tmp != null) {
-                      noisyDrop_drop(tmp);
-                    }
-                  } catch (error) {
-                    for (const item of iter) {
-                      noisyDrop_drop(item);
-                    }
-                    throw error;
-                  }
-                }
-              }
-              const n = tmp$2;
-              try {
-                console.log(`never ${n[0]}`);
-              } catch (error) {
-                noisyDrop_drop(n);
-                for (const item of iter$1) {
-                  noisyDrop_drop(item);
-                }
-                throw error;
-              }
-              try {
-                noisyDrop_drop(n);
-              } catch (error) {
-                for (const item of iter$1) {
-                  noisyDrop_drop(item);
-                }
-                throw error;
-              }
-            }
-          }
-          const n = tmp$1;
-          try {
-            console.log(`option ${n[0]}`);
-          } catch (error) {
-            noisyDrop_drop(n);
-            for (const item of iter) {
-              noisyDrop_drop(item);
-            }
-            throw error;
-          }
-          try {
-            noisyDrop_drop(n);
-          } catch (error) {
-            for (const item of iter) {
-              noisyDrop_drop(item);
-            }
-            throw error;
-          }
-        }
-      }
-      const n = tmp;
+      n = value;
       try {
-        console.log(`array ${n[0]}`);
+        console.log(`kept ${n[0]}`);
       } catch (error) {
         noisyDrop_drop(n);
-        for (const item of iter$1) {
+        for (const item of iter$6) {
           noisyDrop_drop(item);
         }
         throw error;
@@ -538,12 +377,178 @@ function main() {
       try {
         noisyDrop_drop(n);
       } catch (error) {
-        for (const item of iter$1) {
+        for (const item of iter$6) {
+          noisyDrop_drop(item);
+        }
+        throw error;
+      }
+    } else {
+      try {
+        noisyDrop_drop(n);
+      } catch (error) {
+        for (const item of iter$6) {
+          noisyDrop_drop(item);
+        }
+        throw error;
+      }
+      try {
+        console.log("moved");
+      } catch (error) {
+        for (const item of iter$6) {
           noisyDrop_drop(item);
         }
         throw error;
       }
     }
   }
+
+  const iter$7 = $iter([["r1"], ["r2"]]);
+  let tmp$5;
+  let iter$8;
+  let tmp$6;
+  outer: while (true) {
+    try {
+      tmp$5 = $next(iter$7);
+    } catch (error) {
+      for (const item of iter$7) {
+        noisyDrop_drop(item);
+      }
+      throw error;
+    }
+    if (tmp$5) {
+      const row = tmp$5;
+      const value = [["x1"], ["x2"]];
+      try {
+        iter$8 = $iter(value);
+      } catch (error) {
+        noisyDrop_drop(row);
+        for (const item of iter$7) {
+          noisyDrop_drop(item);
+        }
+        throw error;
+      }
+      while (true) {
+        try {
+          tmp$6 = $next(iter$8);
+        } catch (error) {
+          for (const item of iter$8) {
+            noisyDrop_drop(item);
+          }
+          noisyDrop_drop(row);
+          for (const item of iter$7) {
+            noisyDrop_drop(item);
+          }
+          throw error;
+        }
+        if (!tmp$6) {
+          try {
+            for (const item of iter$8) {
+              noisyDrop_drop(item);
+            }
+          } catch (error) {
+            noisyDrop_drop(row);
+            for (const item of iter$7) {
+              noisyDrop_drop(item);
+            }
+            throw error;
+          }
+          try {
+            noisyDrop_drop(row);
+          } catch (error) {
+            for (const item of iter$7) {
+              noisyDrop_drop(item);
+            }
+            throw error;
+          }
+          continue outer;
+        }
+        const cell = tmp$6;
+        if (cell[0] === "x2" && row[0] === "r1") {
+          try {
+            noisyDrop_drop(cell);
+          } catch (error) {
+            for (const item of iter$8) {
+              noisyDrop_drop(item);
+            }
+            noisyDrop_drop(row);
+            for (const item of iter$7) {
+              noisyDrop_drop(item);
+            }
+            throw error;
+          }
+          try {
+            for (const item of iter$8) {
+              noisyDrop_drop(item);
+            }
+          } catch (error) {
+            noisyDrop_drop(row);
+            for (const item of iter$7) {
+              noisyDrop_drop(item);
+            }
+            throw error;
+          }
+          try {
+            noisyDrop_drop(row);
+          } catch (error) {
+            for (const item of iter$7) {
+              noisyDrop_drop(item);
+            }
+            throw error;
+          }
+          break;
+        }
+        try {
+          console.log(`cell ${row[0]} ${cell[0]}`);
+        } catch (error) {
+          noisyDrop_drop(cell);
+          for (const item of iter$8) {
+            noisyDrop_drop(item);
+          }
+          noisyDrop_drop(row);
+          for (const item of iter$7) {
+            noisyDrop_drop(item);
+          }
+          throw error;
+        }
+        try {
+          noisyDrop_drop(cell);
+        } catch (error) {
+          for (const item of iter$8) {
+            noisyDrop_drop(item);
+          }
+          noisyDrop_drop(row);
+          for (const item of iter$7) {
+            noisyDrop_drop(item);
+          }
+          throw error;
+        }
+      }
+    }
+    for (const item of iter$7) {
+      noisyDrop_drop(item);
+    }
+
+    break;
+  }
+  const iter$9 = [3];
+  while (true) {
+    const n = countdownIterator_next(iter$9);
+    if (n) {
+      if (n[0] === "c1") {
+        noisyDrop_drop(n);
+      } else {
+        try {
+          console.log(`count ${n[0]}`);
+        } finally {
+          noisyDrop_drop(n);
+        }
+        continue;
+      }
+    }
+    break;
+  }
+  const value = firstLong([["s"], ["long"], ["rest"]]);
+  console.log(`${value == null ? "None" : `Some(${$debugStr(value)})`}`);
+  console.log("end");
 }
 //# sourceMappingURL=case.js.map

@@ -10,6 +10,34 @@ import { buildReact, compiler, fixture, root, run, target } from "./support";
 
 beforeAll(buildReact, 600_000);
 
+// ADR 0628: a loop the program wrote after another is after it, as written,
+// not in the first one's way out, where MIR puts it: React's
+// normalizeConsoleFormat walks its format, then pads it.
+test("a loop after a loop is after it", async () => {
+  const dir = fixture("loop-after-loop");
+  writeFileSync(join(dir, "lib.rs"), `pub fn padded(text: &str, n: usize) -> String {
+    let mut out = String::new();
+    let mut i = 0;
+    while i < text.len() {
+        out += "a";
+        i += 1;
+    }
+    let mut j = 0;
+    while j < n {
+        out += "b";
+        j += 1;
+    }
+    out
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("  while (i < $byteLen(text)) {\n");
+  expect(js).toContain("  }\n  let j = 0;\n  while (j < n) {\n");
+  expect(js).not.toContain("while (true)");
+  expect((await import(join(dir, "lib.js"))).padded("xy", 3)).toBe("aabbb");
+});
+
 // A `for` loop from MIR (ADR 0364) is the `for…of` or counted `for` a
 // person writes, not the `while (true)` stepping an iterator MIR has.
 test("loops from MIR read as a person writes them", async () => {

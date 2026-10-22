@@ -84,4 +84,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^(lazy_effects|labeled_blocks|loop_exit_moves|iter_mut_kept|interpreter).rs$"],
     snapshots: true,
   },
+  {
+    name: "unbroken-loop-goes-on",
+    breaks: "a loop's way out that ends in the program's next loop, which nothing `break`s, is taken to go on, and that loop stays inside the first",
+    file: "src/lower/mir/tidy/jumps/labels.rs",
+    find: "            matches!(cond.kind, ExprKind::Bool(true)) && !breaks(body, label.as_deref())\n",
+    replace: "            false && !breaks(body, label.as_deref())\n",
+    tests: ["test/lowering-loops.test.ts", "-t", "a loop after a loop is after it"],
+  },
 ];
