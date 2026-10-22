@@ -69,6 +69,9 @@ pub struct Module {
     pub items: Vec<Item>,
     /// `export default page;`, after its functions (ADR 0192).
     pub default_export: Option<String>,
+    /// Whether that's its function's declaration, `export default function
+    /// noop() {}`, not `export default noop;` after it (ADR 0611).
+    pub default_declared: bool,
     /// `export { getCurrentTime as unstable_now };`, a `pub use` of its own
     /// item by another name, as `(local, exported)`, after its functions
     /// (ADR 0596).
@@ -558,6 +561,7 @@ mod tests {
             helpers: Vec::new(),
             items: vec![Item::Statements(vec![StmtKind::Expr(value).at(Span::NONE)])],
             default_export: None,
+            default_declared: false,
             aliases: Vec::new(),
         }
     }

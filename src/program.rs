@@ -44,6 +44,8 @@ pub struct LoweredModule {
     pub items: Vec<js::Item>,
     /// The function it exports as its default too (ADR 0192).
     pub default_export: Option<String>,
+    /// Whether that's its function's declaration (ADR 0611).
+    pub default_declared: bool,
     /// Its own items it exports by another name too (ADR 0596).
     pub aliases: Vec<(String, String)>,
     /// What its `.d.ts` says of what it exports, but the header (ADR 0196):

@@ -30,7 +30,7 @@ use super::representation::Num;
 pub(super) fn module<'tcx>(
     tcx: TyCtxt<'tcx>,
     module: LocalModId,
-    default_export: Option<DefId>,
+    (default_export, default_declared): (Option<DefId>, bool),
     files: &HashMap<LocalModId, Vec<String>>,
     reexports: &[Reexport],
     aliases: &[(String, String)],
@@ -72,17 +72,24 @@ pub(super) fn module<'tcx>(
     if let Some(def_id) = default_export {
         // One only `js::export_default!` exports is declared, but exported
         // by no name of its own, as `function Recap() {..}` is in JS.
+        // One declared as it is `export default function noop(): void;`, as
+        // its JS is (ADR 0611).
         if !tcx.visibility(def_id).is_public() {
             out.erased = out.erased(def_id);
             let mut declared = match tcx.def_kind(def_id) {
                 DefKind::Fn => out.function(def_id),
                 _ => out.constant(def_id),
             };
-            declared["exported"] = json!(false);
-            declared["declare"] = json!(true);
+            declared["exported"] = json!(default_declared);
+            declared["declare"] = json!(!default_declared);
+            if default_declared {
+                declared["default"] = json!(true);
+            }
             items.push(declared);
         }
-        items.push(json!({ "kind": "export-default", "name": fn_name(tcx, def_id) }));
+        if !default_declared {
+            items.push(json!({ "kind": "export-default", "name": fn_name(tcx, def_id) }));
+        }
     }
     // What it names that it doesn't export, each declared here, not
     // exported, before what names it, as TypeScript has it: another crate's

@@ -139,6 +139,7 @@ impl OutputPlan {
                 helpers: Vec::new(),
                 items: module.items,
                 default_export: module.default_export,
+                default_declared: module.default_declared,
                 aliases: module.aliases,
             };
 

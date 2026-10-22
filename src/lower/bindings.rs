@@ -752,6 +752,29 @@ pub(super) fn is_jsx_node(tcx: TyCtxt<'_>, id: DefId) -> bool {
 
 /// A module's `js::export_default!(page)`: the function its `const _`
 /// names, `let _ = page;`, and where it's written (ADR 0192).
+/// Whether `function`, its module's default export by `js::export_default!`
+/// written at `written`, is declared as it, `export default function noop()
+/// {}`: a function of no name of its own, `pub` none, with the macro right
+/// after it, nothing but comments between, as the JS's `export default` is
+/// where the Rust's is; else `export default noop;` there (ADR 0611).
+pub(super) fn default_declared(tcx: TyCtxt<'_>, function: DefId, written: Span) -> bool {
+    let Some(local) = function.as_local() else { return false };
+    if tcx.def_kind(function) != DefKind::Fn || tcx.visibility(function).is_public() {
+        return false;
+    }
+    let (declared, written) = (tcx.source_span(local), written.source_callsite());
+    if declared.hi() > written.lo() {
+        return false;
+    }
+    let Ok(between) = tcx.sess.source_map().span_to_snippet(declared.between(written)) else {
+        return false;
+    };
+    between
+        .lines()
+        .map(str::trim)
+        .all(|line| line.is_empty() || line.starts_with("//"))
+}
+
 pub(super) fn default_exports(tcx: TyCtxt<'_>, module: LocalModId) -> Vec<(Option<DefId>, Span)> {
     let path = [Symbol::intern("rust_js"), Symbol::intern("export_default")];
     tcx.hir_module_free_items(module)

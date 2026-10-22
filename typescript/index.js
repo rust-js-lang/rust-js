@@ -17,7 +17,7 @@ import * as f from "typescript/ast/factory";
  * @typedef {{ kind: "import", from: string, names: string[], typeOnly: boolean }
  *   | { kind: "interface", name: string, exported: boolean, declare: boolean, typeParameters: TypeParameter[], extends: Type[], members: Member[], docs?: string }
  *   | { kind: "type", name: string, exported: boolean, declare: boolean, typeParameters: TypeParameter[], type: Type, docs?: string }
- *   | { kind: "function", name: string, exported: boolean, declare: boolean, typeParameters: TypeParameter[], params: Param[], returns: Type, docs?: string }
+ *   | { kind: "function", name: string, exported: boolean, default?: boolean, declare: boolean, typeParameters: TypeParameter[], params: Param[], returns: Type, docs?: string }
  *   | { kind: "const", name: string, exported: boolean, declare: boolean, type: Type, docs?: string }
  *   | { kind: "export-default", name: string }
  *   | { kind: "export", from?: string, names: [string, string][] }
@@ -247,6 +247,7 @@ function readStatements(statements, text) {
           kind: "function",
           name: node.name?.text ?? "default",
           exported: exported(node),
+          ...(node.modifiers?.some((m) => m.kind === SyntaxKind.DefaultKeyword) && { default: true }),
           declare: declared(node),
           typeParameters: typeParameters(node, text),
           params: node.parameters.map((p) => readParam(p, text)),
@@ -410,6 +411,8 @@ const IDENTIFIER = /^[A-Za-z_$][A-Za-z0-9_$]*$/;
 function modifiers(declaration) {
   const tokens = [];
   if (declaration.exported) tokens.push(f.createToken(SyntaxKind.ExportKeyword));
+  // `export default function noop(): void;`, a module's default alone (ADR 0611).
+  if (declaration.default) tokens.push(f.createToken(SyntaxKind.DefaultKeyword));
   if (declaration.declare) tokens.push(f.createToken(SyntaxKind.DeclareKeyword));
   return tokens.length ? tokens : undefined;
 }

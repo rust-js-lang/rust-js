@@ -255,6 +255,21 @@ export function page() {
 export default page;
 ```
 
+The `export default` is where the macro is
+([ADR 0611](../../decisions/0611-a-default-export-is-where-its-macro-is.md)).
+Right after a function of no other export, not `pub`, it's that function's
+declaration; after anything else, `export default recap;` there:
+
+```rust
+fn noop() {}
+
+js::export_default!(noop);
+```
+
+```js
+export default function noop() {}
+```
+
 Another module's function as the default is re-exported:
 `js::export_default!(super::page::page);` is
 `export { page as default } from "./page.js";`.

@@ -3,6 +3,30 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "default-declared-of-pub",
+    breaks: "a `pub fn page` its macro follows loses its name's export, `export default function page`",
+    file: "src/lower/bindings.rs",
+    find: "    if tcx.def_kind(function) != DefKind::Fn || tcx.visibility(function).is_public() {\n",
+    replace: "    if tcx.def_kind(function) != DefKind::Fn {\n",
+    tests: ["test/modules.test.ts", "-t", "a module's default of another module's function|js::directive! and js::export_default!"],
+  },
+  {
+    name: "default-never-declared",
+    breaks: "`fn noop() {} js::export_default!(noop);` is `function noop() {} export default noop;`",
+    file: "src/lower/bindings.rs",
+    find: "        .all(|line| line.is_empty() || line.starts_with(\"//\"))\n",
+    replace: "        .all(|line| line.is_empty() || line.starts_with(\"//\")) && false\n",
+    tests: ["test/modules.test.ts", "-t", "a default export is where its macro is"],
+  },
+  {
+    name: "default-declared-after-anything",
+    breaks: "a default whose macro follows another function is declared where its function is",
+    file: "src/lower/bindings.rs",
+    find: "        .all(|line| line.is_empty() || line.starts_with(\"//\"))\n",
+    replace: "        .all(|line| line.is_empty() || line.starts_with(\"//\")) || true\n",
+    tests: ["test/modules.test.ts", "-t", "a default export is where its macro is"],
+  },
+  {
     name: "directive-owner-stops-at-coroutine",
     breaks: "an `async fn`'s directive is its body's coroutine's, which no function writes",
     file: "src/lower/bindings.rs",

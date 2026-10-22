@@ -230,7 +230,7 @@ async function exportsOf(path: string, seen: Set<string> = new Set()): Promise<M
   for (const d of declarations) {
     if ("name" in d && typeof d.name === "string" && ["interface", "type", "const", "function", "class", "enum"].includes(d.kind)) {
       declare(d.name, kindOf(d));
-      if ("exported" in d && d.exported) exported.set(d.name, local.get(d.name)!);
+      if ("exported" in d && d.exported) exported.set("default" in d && d.default ? "default" : d.name, local.get(d.name)!);
       if (d.kind === "function" && "exported" in d && d.exported) {
         const names = new Set<string>();
         for (const p of d.params ?? []) typeNames(p.type, names);

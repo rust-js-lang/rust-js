@@ -56,6 +56,12 @@ pub struct Output {
     pub map: String,
 }
 
+/// The function of `module` declared as its default, `export default
+/// function noop() {}` (ADR 0611): `default_declared`'s.
+fn defaulted(module: &Module) -> Option<&str> {
+    module.default_export.as_deref().filter(|_| module.default_declared)
+}
+
 /// Print `module` as JS, with a source map pointing into `rust_source`,
 /// laid out as the formatter lays it out (`format::laid_out`). What the
 /// crate's transforms make of it, and the `sourceMappingURL`, are the
@@ -96,7 +102,7 @@ pub fn emit(
             js::Item::Namespace(n) => body.push(cx.namespace(n)),
             js::Item::Const(c) => body.push(cx.constant(c)),
             js::Item::Statements(stmts) => body.extend(cx.stmts(stmts)),
-            js::Item::Function(f) => body.push(cx.function(f)),
+            js::Item::Function(f) => body.push(cx.function(f, defaulted(module) == Some(f.name.as_str()))),
         }
         items = rest;
     }
@@ -150,7 +156,9 @@ pub fn emit(
         lines.push(out_line);
     }
     // After everything it maps, so the map's lines stay where they are.
-    if let Some(function) = &module.default_export {
+    if let Some(function) = &module.default_export
+        && defaulted(module).is_none()
+    {
         code.push_str(&format!("\nexport default {function};\n"));
     }
     // Its own items by other names, `pub use`'s (ADR 0596).

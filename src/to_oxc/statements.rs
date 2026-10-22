@@ -73,7 +73,9 @@ impl<'a> Cx<'a> {
         FunctionBody::new(SPAN, directives, self.stmts(&stmts), b)
     }
 
-    pub(super) fn function(&self, f: &js::Function) -> Statement<'a> {
+    /// `function f() {}`, `export` of one exported, or `export default` of
+    /// one exported as its module's default alone, `default`.
+    pub(super) fn function(&self, f: &js::Function, default: bool) -> Statement<'a> {
         let b = &self.b;
         let params = self.params(FormalParameterKind::FormalParameter, &f.params);
         let body = self.function_body(&f.body);
@@ -91,10 +93,14 @@ impl<'a> Cx<'a> {
             Some(ArenaBox::new_in(body, b)),
             b,
         );
-        if f.export {
-            Statement::new_export_declaration(span(f.span), decl, b)
-        } else {
-            decl.into()
+        match (default, decl) {
+            (true, Declaration::FunctionDeclaration(function)) => Statement::new_export_default_declaration(
+                span(f.span),
+                oxc_ast::ast::ExportDefaultDeclarationKind::FunctionDeclaration(function),
+                b,
+            ),
+            (_, decl) if f.export => Statement::new_export_declaration(span(f.span), decl, b),
+            (_, decl) => decl.into(),
         }
     }
 
@@ -222,7 +228,7 @@ impl<'a> Cx<'a> {
         let sp = span(s.span);
         match &s.kind {
             StmtKind::Const(name, init) => self.declare(sp, VariableDeclarationKind::Const, name, Some(init)),
-            StmtKind::Function(function) => self.function(function),
+            StmtKind::Function(function) => self.function(function, false),
             StmtKind::Directive(_) => unreachable!("a directive is its function's body's, taken first"),
             StmtKind::Let(name, init) => self.declare(sp, VariableDeclarationKind::Let, name, init.as_ref()),
             StmtKind::Destructure {

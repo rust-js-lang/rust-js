@@ -709,6 +709,7 @@ pub fn lower_crate<'tcx>(
                 }
             }
             let mut default_export = None;
+            let mut default_declared = false;
             // Another module's function, re-exported as the default (ADR 0240).
             let mut default_from = None;
             for (function, span) in super::bindings::default_exports(tcx, module) {
@@ -721,6 +722,7 @@ pub fn lower_crate<'tcx>(
                                 .is_some_and(|local| tcx.parent_module_from_def_id(local) == module) =>
                     {
                         default_export = Some(function);
+                        default_declared = super::bindings::default_declared(tcx, function, span);
                     }
                     Some(function) if unset && fns.get(&function).is_some_and(|info| info.owner.is_none()) => {
                         default_from = Some(function);
@@ -739,7 +741,7 @@ pub fn lower_crate<'tcx>(
             let declarations = super::declarations::module(
                 tcx,
                 module,
-                default_export,
+                (default_export, default_declared),
                 &paths,
                 &reexports,
                 &aliases,
@@ -779,6 +781,7 @@ pub fn lower_crate<'tcx>(
                     .collect(),
                 ),
                 default_export: default_export.map(|function| super::bindings::fn_name(tcx, function)),
+                default_declared,
                 declarations,
                 runtime: Vec::new(),
                 jsx: pass.jsx.contains(&module),

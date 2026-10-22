@@ -198,10 +198,10 @@ export const mutations: Mutation[] = [
   },
   {
     name: "private-default-exported",
-    breaks: "a component only `js::export_default!` exports is declared `export function Callout`, which its JS doesn't export by that name",
+    breaks: "a component only `js::export_default!` exports, its macro after it, is declared `export function Callout`, which its JS doesn't export by that name",
     file: "src/lower/declarations.rs",
-    find: "            declared[\"exported\"] = json!(false);\n            declared[\"declare\"] = json!(true);\n",
-    replace: "",
+    find: "            if default_declared {\n",
+    replace: "            if false {\n",
     tests: ["test/declarations.test.ts", "-t", "private default"],
   },
   {
