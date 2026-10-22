@@ -820,10 +820,9 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         {
             return Some(Std::SliceToArray { into, owned });
         }
-        let from_str = tcx.is_diagnostic_item(sym::From, trait_) && self.is_lang_adt(ty, LangItem::String);
         let to_owned = tcx.is_diagnostic_item(Symbol::intern("ToOwned"), trait_);
         // A slice's `to_owned()` is its `to_vec()`.
-        (from_str || to_owned && ty.is_str())
+        (to_owned && ty.is_str())
             .then_some(Std::Same)
             .or((to_owned && ty.is_slice()).then_some(Std::ToVec))
     }
@@ -952,6 +951,16 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                 if erased(*to) == erased(borrowed) || erased(*to) == erased(owned));
             if of_owned || lent {
                 return Some(Std::Cow(CowOp::From { owned: of_owned }));
+            }
+        }
+        // A `String` of a `Box<str>`, its text, or of a `Cow<str>`, what it
+        // owns or borrows, owned (ADR 0063).
+        if self.is_lang_adt(to_ty, LangItem::String) {
+            if from_ty.is_box() && from_ty.boxed_ty().is_some_and(|text| text.is_str()) {
+                return Some(Std::Same);
+            }
+            if self.cow_parts(from_ty).is_some_and(|(borrowed, _)| borrowed.is_str()) {
+                return Some(Std::Cow(CowOp::IntoOwned));
             }
         }
         // An `Rc` or an `Arc` of the value, which `rc_same` says it makes, as

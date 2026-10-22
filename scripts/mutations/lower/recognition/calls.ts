@@ -611,4 +611,28 @@ export const mutations: Mutation[] = [
     replace: "Comb::ResultIter",
     tests: ["test/corpus.test.ts", "-t", "^result_iter_and_order.rs$"],
   },
+  {
+    name: "string-from-anything-same",
+    breaks: "a `String` from the crate's own type, by its `From<W> for String`, is the value itself, `[object Object]`",
+    file: "src/lower/recognition/calls.rs",
+    find: "            if (self.is_lang_adt(to_ty, LangItem::String) || self.is_path_like(to_ty) || boxed_str)\n                && self.is_string_like(from_ty)\n",
+    replace: "            if (self.is_lang_adt(to_ty, LangItem::String) || self.is_path_like(to_ty) || boxed_str)\n",
+    tests: ["test/corpus.test.ts", "-t", "^string_from_own.rs$"],
+  },
+  {
+    name: "string-from-boxed-str-refused",
+    breaks: "`String::from` of a `Box<str>` is refused",
+    file: "src/lower/recognition/calls.rs",
+    find: "            if from_ty.is_box() && from_ty.boxed_ty().is_some_and(|text| text.is_str()) {\n",
+    replace: "            if false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^string_from_own.rs$"],
+  },
+  {
+    name: "string-from-cow-refused",
+    breaks: "`String::from` of a `Cow<str>` is refused",
+    file: "src/lower/recognition/calls.rs",
+    find: "            if self.cow_parts(from_ty).is_some_and(|(borrowed, _)| borrowed.is_str()) {\n",
+    replace: "            if false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^string_from_own.rs$"],
+  },
 ];
