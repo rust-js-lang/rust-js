@@ -292,7 +292,15 @@ fn comments_of(
         // Rust's, `if` before its test, a `let .. else` before its pattern.
         let blank_before = |lo: u32| {
             let before = &sources.text[file_start..lo as usize];
-            let before = &before[..before.rfind('\n').map_or(0, |i| i + 1)];
+            let mut before = &before[..before.rfind('\n').map_or(0, |i| i + 1)];
+            // Its attributes' lines, `#[cfg_attr(..)]`, are its own: what's
+            // before them (ADR 0606).
+            while let Some(body) = before.strip_suffix('\n')
+                && let last = &body[body.rfind('\n').map_or(0, |i| i + 1)..]
+                && last.trim_start().starts_with("#[")
+            {
+                before = &body[..body.len() - last.len()];
+            }
             let gap = &before[before.trim_end_matches(char::is_whitespace).len()..];
             gap.matches('\n').count() >= 2
         };

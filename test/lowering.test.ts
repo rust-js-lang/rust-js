@@ -84,6 +84,22 @@ test("an entry's and_modify then or_insert reads its map and key", () => {
   expect(js).not.toContain("$mutGet(counts, c);");
 });
 
+// ADR 0606: a blank line before an item's attributes is before the item,
+// as React's SchedulerFeatureFlags groups its flags.
+test("a blank line before an item's attributes is kept", () => {
+  const dir = fixture("blank-before-attributes");
+  writeFileSync(join(dir, "lib.rs"), `pub const A: u32 = 1;
+
+#[cfg_attr(rust_js, rust_js::name = "dee")]
+pub const D: u32 = 4;
+#[cfg_attr(rust_js, rust_js::name = "eee")]
+pub const E: u32 = 5;
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("export const A = 1;\n\nexport const dee = 4;\nexport const eee = 5;\n");
+});
+
 // ADR 0603: a comment before a `let` with no JS of its own, a variable
 // read in place, is the next statement's: React's scheduler has
 // `// Timer fired. Transfer to the task queue.` before `pop(timerQueue);`.

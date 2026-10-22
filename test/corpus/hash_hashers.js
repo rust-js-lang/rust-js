@@ -240,6 +240,7 @@ function main() {
   const fnv$1 = fnvDefault_default();
   throughDyn({ value: fnv$1, impl: fnvHasher }, 9);
   console.log(`${fnvHasher_finish(fnv$1)}`);
+
   const keyed = new $SipHasher(2, 4, 3n, 4n);
   const plain = new $SipHasher(2, 4);
   const state = { value: keyed };

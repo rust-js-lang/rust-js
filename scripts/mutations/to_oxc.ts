@@ -3,6 +3,14 @@ import type { Mutation } from "../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "blank-before-attributes-lost",
+    breaks: "a blank line before `#[cfg_attr(..)] pub const D` is lost",
+    file: "src/to_oxc.rs",
+    find: "                && last.trim_start().starts_with(\"#[\")\n",
+    replace: "                && false\n",
+    tests: ["test/lowering.test.ts", "-t", "a blank line before an item's attributes"],
+  },
+  {
     name: "removed-let-comment-dropped",
     breaks: "a comment before `let first = Rc::clone(first);`, which has no JS, is lost",
     file: "src/to_oxc.rs",
@@ -151,8 +159,8 @@ export const mutations: Mutation[] = [
     name: "blank-line-before-span",
     breaks: "a blank line before a statement whose span starts inside its line, an `if`'s at its test, is lost",
     file: "src/to_oxc.rs",
-    find: "            let before = &before[..before.rfind('\\n').map_or(0, |i| i + 1)];\n",
-    replace: "",
+    find: "            let mut before = &before[..before.rfind('\\n').map_or(0, |i| i + 1)];\n",
+    replace: "            let mut before = before;\n",
     tests: ["test/lowering.test.ts", "-t", "a comment is in the JS where"],
   },
   {
