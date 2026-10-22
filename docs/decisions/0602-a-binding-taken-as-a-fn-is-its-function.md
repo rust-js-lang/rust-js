@@ -1,4 +1,4 @@
-# 0601. A binding taken as a `fn` is its JS function, read where it's taken
+# 0602. A binding taken as a `fn` is its JS function, read where it's taken
 
 Status: Accepted. Amends [0039](0039-generic-bindings.md)'s binding as a
 value.

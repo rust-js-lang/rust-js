@@ -424,7 +424,7 @@ fn blank_lines_before(code: &str) -> std::collections::HashSet<usize> {
             let imports = matches!(pair[0], Statement::ImportDeclaration(_))
                 || matches!(pair[1], Statement::ImportDeclaration(_));
             // `let x;` and what sets it, `if (..) { x = .. }`, are one
-            // thing, as a person writes them (ADR 0600).
+            // thing, as a person writes them (ADR 0601).
             let declared_only = matches!(&pair[0], Statement::VariableDeclaration(d)
                 if d.declarations.iter().all(|d| d.init.is_none()));
             let apart =

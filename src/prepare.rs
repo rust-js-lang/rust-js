@@ -36,7 +36,7 @@ pub fn module(module: &mut js::Module) {
 /// A module's `const` a closure called where it's made makes, a
 /// thread-local's an `if` gives, not exported: `let name;` and the
 /// closure's body, each `return v` at its ends `name = v`, an early one's
-/// `if` the rest's `else`, as JS writes it (ADR 0600):
+/// `if` the rest's `else`, as JS writes it (ADR 0601):
 ///
 /// ```js
 /// let schedule;

@@ -5815,7 +5815,7 @@ pub fn cancel() -> Option<u32> {
   expect([lib.arm(1), lib.arm(2), lib.cancel(), lib.cancel()]).toEqual([undefined, 1, 2, undefined]);
 });
 
-// ADR 0600: a module's variable an `if` makes, a thread-local's, is a
+// ADR 0601: a module's variable an `if` makes, a thread-local's, is a
 // `let` each branch assigns, as React's scheduler has
 // `let schedulePerformWorkUntilDeadline; if (..) { .. = ..; } else if ..`,
 // not a closure called where it's made.
@@ -5907,7 +5907,7 @@ pub fn make(immediate: bool) -> Box<dyn Fn()> {
   expect(js).toMatch(/ const port = channel\.port2;\n +channel\.port1\.onmessage = \(\) => \{\n/);
 });
 
-// ADR 0601: a binding taken as a `fn` is its JS function, read where it's
+// ADR 0602: a binding taken as a `fn` is its JS function, read where it's
 // taken, as a Rust `fn` is fixed once taken: React's scheduler keeps
 // `const localSetImmediate = setImmediate`, which a polyfill set later
 // doesn't change. Handed to JS's `map` itself, it's still an arrow of its

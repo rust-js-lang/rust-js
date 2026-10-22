@@ -374,7 +374,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     PointerCoercion::ReifyFnPointer(_)
                     | PointerCoercion::UnsafeFnPointer
                     | PointerCoercion::ClosureFnPointer(_) => {
-                        // A binding's, its JS function itself (ADR 0601).
+                        // A binding's, its JS function itself (ADR 0602).
                         if let Some((def_id, args)) = crate::lower::fn_def(operand.ty(decls, tcx))
                             && bindings::is_binding(tcx, def_id)
                         {

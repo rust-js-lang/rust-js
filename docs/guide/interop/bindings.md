@@ -59,7 +59,7 @@ A binding taken as a `fn` is the JS function itself, read where it's taken,
 as a Rust `fn` is fixed once taken. Handed to a JS callback itself,
 `.map(encode)`, it's an arrow of its own parameters, so JS gives it no
 more than Rust does, no index
-([ADR 0601](../../decisions/0601-a-binding-taken-as-a-fn-is-its-function.md)):
+([ADR 0602](../../decisions/0602-a-binding-taken-as-a-fn-is-its-function.md)):
 
 ```rust
 #[cfg_attr(rust_js, rust_js::link_name = "encodeURIComponent")]

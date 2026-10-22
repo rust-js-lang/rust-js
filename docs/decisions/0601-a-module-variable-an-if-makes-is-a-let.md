@@ -1,4 +1,4 @@
-# 0600. A module's variable an `if` makes is a `let` each branch assigns
+# 0601. A module's variable an `if` makes is a `let` each branch assigns
 
 Status: Accepted. Extends [0270](0270-module-variables.md)'s
 thread-locals.

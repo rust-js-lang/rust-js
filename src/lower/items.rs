@@ -136,7 +136,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         ))
     }
 
-    /// A binding as a `fn` (ADR 0601): the JS function itself, read where
+    /// A binding as a `fn` (ADR 0602): the JS function itself, read where
     /// it's taken, as a Rust `fn` is fixed once taken, `const
     /// localSetImmediate = setImmediate`, where its arrow (`binding_value`)
     /// only passes its parameters on; else that arrow. What hands a `fn` to

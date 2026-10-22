@@ -1,7 +1,7 @@
 # 0039. Generic bindings: `#[rust_js::link_name]` on an ordinary function
 
 Status: Accepted. Revisits the tool attribute that ADRs 0021 and 0028
-rejected. Amended by [0601](0601-a-binding-taken-as-a-fn-is-its-function.md):
+rejected. Amended by [0602](0602-a-binding-taken-as-a-fn-is-its-function.md):
 a binding taken as a `fn` is its JS function, read where it's taken. Amended by [0110](0110-stable-syntax.md): `rust_js` is a tool rustc
 knows, with no `register_tool`, and an import is `js::import!("./App.css");`.
 Amended by [0113](0113-plain-rustc.md): the attribute is
