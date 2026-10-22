@@ -235,7 +235,7 @@ and answer. Each is checked to stay that way.
 | `drops/types.rs` | What dropping a type runs, and what a pattern moves, asked through a `DropQuery`: types, the crate's facts, which type parameters have drops, and the bounds of the dictionaries given, never `FnCx` |
 | `drops/facts.rs` | What's refused of a body's values with destructors, and its momentary borrows, found before it's lowered, from a `DropQuery` and the body's THIR |
 | `analysis.rs`, `analysis/` | What the whole crate is, before any function is lowered: what it refuses, the names its items have in JS, the types it changes in place, its drops' and `Debug`'s needs |
-| `shortcuts.rs` | Nothing of its own: `self.is_map(ty)` for `self.recognition().is_map(ty)`, each question answered in `recognition.rs` |
+| `shortcuts.rs` | Nothing of its own: `self.is_map(ty)` for `self.recognition().is_map(ty)`, each question answered in `recognition/` |
 | `std_coverage.rs` | How much of std rust-js knows: each stable method of what `recognition/registry.rs` measures, its data structures, the iterator traits' provided methods and the adapters' impls, `+` where `classify` knows it or its body is compiled, for the ratchet in `docs/std-coverage.txt` (ADR 0314); and what each method's body in std is made of, through the MIR the toolchain ships, `safe`, `spec`, `opaque`, `memory` or `none` (ADR 0561) |
 
 **Lowering of Rust's constructs.**
@@ -298,12 +298,12 @@ outside its owner, and how much each module knows of the rest.
 | When a value is copied | `copies.rs` | `copy_if_needed`, `contains_mutated` |
 | A map's or a set's JS: a `Map` or a `Set`, and a call whose answer nothing reads, JS's own method (ADR 0059) | `std_types/map.rs` | `map_values`, `discarded_calls` |
 | A cell, a thread-local's among them, and a module's own one made a plain `let` (ADRs 0025, 0270) | `std_types/cell.rs` | `cell_call`, `plain_statics` |
-| Which std function a call is | `recognition.rs` | `classify`, and its answers through `shortcuts.rs` |
-| Std's names and layout: which std item a type, trait or function is | `recognition.rs` | `StdItem`, `is_std_type`, `is_std_def`, `std_item`, `trait_method`, `cell_value_field`, `deref_target`, `debug_builder`, `builder_step`, `iterator_method` |
+| Which std function a call is | `recognition/calls.rs` | `classify`, and its answers through `shortcuts.rs` |
+| Std's names and layout: which std item a type, trait or function is | `recognition/std_items.rs`, `recognition/types.rs` | `StdItem`, `is_std_type`, `is_std_def`, `std_item`, `trait_method`, `cell_value_field`, `deref_target`, `debug_builder`, `builder_step`, `iterator_method` |
 | What's measured of std, each by its name and where std defines it: its data structures, the iterator traits and the adapters (ADRs 0314, 0561) | `recognition/registry.rs` | `measured` |
-| Which std bodies are compiled into `@rust-js/std`, which std type is its struct and which struct is a JS iterator, and which of the crate's modules a std body goes into (ADR 0561) | `recognition.rs` | `compiled_std`, `is_compiled_std`, `is_compiled_std_type`, `is_compiled_std_iterator`, `std_home_module`, `memory_intrinsic`, `addresses_memory` |
+| Which std bodies are compiled into `@rust-js/std`, which std type is its struct and which struct is a JS iterator, and which of the crate's modules a std body goes into (ADR 0561) | `recognition/std_items.rs` | `compiled_std`, `is_compiled_std`, `is_compiled_std_type`, `is_compiled_std_iterator`, `std_home_module`, `memory_intrinsic`, `addresses_memory` |
 | What addresses memory in MIR, a raw pointer made, read or written through, or a cast to one (ADRs 0407, 0561) | `pointers.rs` | `raw_pointee`, `mir_addresses_memory` |
-| A std-private trait's call whose impl rustc leaves to the caller's type: the impls' methods, and the type whose being a `FusedIterator` picks (ADR 0566) | `recognition.rs` | `fused_specialization`, `std_private` |
+| A std-private trait's call whose impl rustc leaves to the caller's type: the impls' methods, and the type whose being a `FusedIterator` picks (ADR 0566) | `recognition/iterators.rs`, `recognition/std_items.rs` | `fused_specialization`, `std_private` |
 | What steps a compiled std iterator's struct where it's made, its `next` and its `size_hint`, and whether a use site can step it by a compiled extension's method (ADR 0566) | `iterators.rs` | `std_iterator_steps`, `compiled_step` |
 | What a type parameter makes as an `IntoIterator` held as it is, and a value of it (ADRs 0552, 0566) | `iterators.rs` | `into_iter_held_as_it_is`, `into_iter_as_it_is` |
 | Which of a function value's parameters generic code gives a box of what its caller has as an object (ADRs 0454, 0566) | `mut_refs.rs` | `unboxed_by_function` |
@@ -497,8 +497,10 @@ instead of inferring compiler output.
 
 A std function or method rust-js doesn't know yet:
 
-1. **Recognize it**: a `Std` variant, and where `classify` finds it, in
-   `recognition.rs` or `recognition/methods.rs`.
+1. **Recognize it**: a `Std` variant, in `recognition.rs`, and where `classify`
+   finds it: in `recognition/calls.rs` for a function's or a trait method's,
+   `recognition/inherent.rs` for a type's own, or `recognition/methods.rs`'s
+   tables.
 2. **Lower it** in its domain's function: `std_types/vec.rs` for a `Vec`'s, `std_types/text.rs`
    for a string's, and so on. If it needs a runtime helper, add
    `src/runtime/<name>.js` and name it in `runtime.rs`.

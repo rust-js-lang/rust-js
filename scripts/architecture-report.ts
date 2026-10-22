@@ -71,10 +71,10 @@ const identity: [string, RegExp][] = [
   ["def_path_str comparisons", /def_path_str\([^)]*\)(\.as_str\(\))?\s*(==|\.starts_with|\.contains)/g],
 ];
 section(
-  "Std identity checked outside recognition.rs and shortcuts.rs",
+  "Std identity checked outside recognition and shortcuts.rs",
   identity.map(([check, pattern]) => {
     const where = names
-      .filter(name => !/recognition\.rs|shortcuts\.rs/.test(name) && count(sources.get(name)!, pattern) > 0)
+      .filter(name => !/^recognition[./]|shortcuts\.rs/.test(name) && count(sources.get(name)!, pattern) > 0)
       .map(name => [name, count(sources.get(name)!, pattern)] as const)
       .sort((a, b) => b[1] - a[1]);
     const total = where.reduce((sum, [, n]) => sum + n, 0);

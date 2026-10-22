@@ -79,3 +79,29 @@ tracked or new, the runtime's helpers with the Rust.
 - `test/architecture.test.ts`, "a compiler file is at most the cap, one
   listed over it only shrinking".
 - `scripts/file-sizes.ts`, the one place that counts.
+
+## Amendment: recognition, split by concept (2026-10-22)
+
+`recognition.rs`, 7,535 lines, is the first split, a move of its items and
+nothing else: the corpus, the snapshots and the moved mutations hold what
+it does. It's one owner still, a folder whose root keeps `Recognition` and
+`Std`, the question and the answer, and re-exports its parts, so every
+caller asks it as it did:
+
+| Part | What it answers |
+|---|---|
+| `calls.rs` | Which `Std` a call is: `classify`, of a function, a trait method, an index or a conversion |
+| `inherent.rs` | Which `Std` a std type's own method is |
+| `types.rs` | What a std type is, its facts, and what it holds |
+| `iterators.rs` | An iterator's source, its adapters, and its traits' methods |
+| `traits.rs` | Whose impl a call reaches, what a bound says, a trait's operators and conversions |
+| `std_items.rs` | Where std defines each item, which rust-js compiles |
+| `fmt.rs` | `fmt`'s traits, a `Formatter` and its builders, and the writers |
+| `wrappers.rs` | `Rc`, cells and guards, pins and futures, and a borrow of one |
+| `serde.rs`, `json.rs` | serde's traits and derives; rust-js's JSON types |
+
+Each part is `use super::*`, as `mir/`'s are; an item one part asks of
+another is `pub(super)`, and one the rest of `lower` asks is
+`pub(in crate::lower)`, as it was `pub(super)` before. Each part's
+mutations are its own list. The largest part is 1,196 lines, and
+`recognition.rs` leaves the cap's list.

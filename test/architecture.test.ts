@@ -573,13 +573,13 @@ test("shortcuts to recognition are in shortcuts.rs, and only shorten", () => {
 // too long to read at once (the second review): its cap is its length now,
 // which the test holds exactly, so a split says so here.
 const dispatchers: [string, string, number][] = [
-  ["src/lower/recognition.rs", "    pub(super) fn classify(", 8],
+  ["src/lower/recognition/calls.rs", "    pub(in crate::lower) fn classify(", 8],
   ["src/lower/mir.rs", "    fn mir_call(", 105],
   ["src/lower/mir.rs", "    fn mir_call_values_of(", 247],
   ["src/lower/mir.rs", "    fn mir_std_call(", 191],
   ["src/lower/mir.rs", "    fn mir_function(", 375],
-  ["src/lower/recognition.rs", "    fn classify_inherent(", 757],
-  ["src/lower/recognition.rs", "    fn classify_trait_method(", 294],
+  ["src/lower/recognition/inherent.rs", "    pub(super) fn classify_inherent(", 757],
+  ["src/lower/recognition/calls.rs", "    fn classify_trait_method(", 294],
   ["src/lower/combinators.rs", "    pub(in crate::lower) fn comb_values(", 642],
   ["src/lower/mir/iter.rs", "    pub(in crate::lower) fn mir_iter_call(", 28],
   ["src/lower/mir/iter.rs", "    fn mir_iter_method(", 316],
@@ -614,7 +614,7 @@ test("library identity checks and method tables stay in recognition", () => {
   }
 });
 
-// Only recognition.rs spells std's names: the rest ask it, `is_std_type(ty,
+// Only recognition spells std's names: the rest ask it, `is_std_type(ty,
 // StdItem::Result)`, `std_item(tcx, StdItem::Ord)`. Fourteen modules had 58
 // checks of their own, by diagnostic item, path or method name (the second
 // architecture audit).
@@ -835,7 +835,7 @@ test("lowering returns symbolic output and leaves linking to the driver", () => 
 test("a type known by its bounds is one by known_by_bounds alone", () => {
   const asking = files("src/lower").filter((file) => file.endsWith(".rs"))
     .flatMap((file) => read(file).split("\n").filter((line) => /matches!\(.*ty::Param\(_\) \| ty::Alias\(\.\.\)/.test(line)).map((line) => `${file}: ${line.trim()}`));
-  expect(asking).toEqual(["src/lower/recognition.rs: matches!(ty.kind(), ty::Param(_) | ty::Alias(..))"]);
+  expect(asking).toEqual(["src/lower/recognition/traits.rs: matches!(ty.kind(), ty::Param(_) | ty::Alias(..))"]);
 });
 
 // Where a copied default's types are known, the impl's environment with the
@@ -915,7 +915,6 @@ test("tests find what they build through target", () => {
 // fails, and one brought under the cap leaves the list, so it only gets
 // shorter. Split a listed file by concept, never to meet the number.
 const overTheCap: Record<string, number> = {
-  "src/lower/recognition.rs": 7535,
   "src/lower/mir.rs": 7362,
   "src/lower/traits.rs": 4128,
   "src/js.rs": 2443,

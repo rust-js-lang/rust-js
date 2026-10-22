@@ -15,7 +15,7 @@ const read = (path: string) => readFileSync(join(root, path), "utf8");
 // The one list, the helper each is, and the runtime's helpers, held equal:
 // a function of Node's is added to all three, or the test says which lacks it.
 test("each of std's functions that work in Node only is a helper of process.js, gated by $process", () => {
-  const catalog = [...read("src/lower/recognition.rs").matchAll(/\("([\w:]+)", ProcessOp::(\w+)\)/g)].map(([, path, op]) => ({ path, op }));
+  const catalog = [...read("src/lower/recognition/std_items.rs").matchAll(/\("([\w:]+)", ProcessOp::(\w+)\)/g)].map(([, path, op]) => ({ path, op }));
   const helpers = new Map([...read("src/lower/std_types/process.rs").matchAll(/ProcessOp::(\w+) => "(\$\w+)"/g)].map(([, op, helper]) => [op, helper]));
   const runtime = read("src/runtime/process.js");
   const functions = [...runtime.matchAll(/^function (\$\w+)\(/gm)].map(([, name]) => name);
