@@ -120,7 +120,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             },
             Std::SortBy => {
                 let (v, compare) = (arg(), arg());
-                Expr::call(Expr::member(v, "sort"), vec![compare])
+                match tys[0].peel_refs().kind() {
+                    ty::Slice(elem) | ty::Array(elem, _) => self.sort_by_compare(v, compare, *elem),
+                    _ => Expr::call(Expr::member(v, "sort"), vec![compare]),
+                }
             }
             // Text is falsy only where it's empty, `!text` (ADR 0266): an empty
             // array is truthy.

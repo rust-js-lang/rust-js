@@ -14,6 +14,7 @@ import {
   $retainSet,
   $setAlgebra,
   $setReplace,
+  $sort,
   $sortedEntries,
   $sortedKeys,
   $treeAppend,
@@ -28,7 +29,7 @@ export function entry() {
 
 function sorted(items, TOrd, TClone) {
   items = Iterator.from(items).toArray();
-  items.sort(TOrd.cmp);
+  $sort(items, TOrd.cmp);
   return items;
 }
 

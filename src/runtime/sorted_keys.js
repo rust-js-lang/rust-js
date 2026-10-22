@@ -1,4 +1,3 @@
-
 function $sortedKeys(set, cmp) {
-  return Array.from(set).sort(cmp);
+  return $sort(Array.from(set), cmp);
 }

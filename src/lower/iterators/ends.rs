@@ -126,7 +126,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     method(items, "sort", vec![])
                 } else {
                     // By its `cmp`: JS's `sort` is stable too (ADR 0057).
-                    method(items, "sort", vec![self.cmp_fn(elem, false, span)?])
+                    let compare = self.cmp_fn(elem, false, span)?;
+                    self.sort_by_compare(items, compare, elem)
                 }
             }
             Some(key) => {
@@ -150,9 +151,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // A key read more than once, like a tuple's, is a `const` first.
                 body.push(StmtKind::Return(Some(compare)).at(js_span));
                 let f = Expr::arrow(vec!["a".into(), "b".into()], body);
-                method(items, "sort", vec![f])
+                match receiver_ty.peel_refs().kind() {
+                    ty::Slice(elem) | ty::Array(elem, _) => self.sort_by_compare(items, f, *elem),
+                    _ => method(items, "sort", vec![f]),
+                }
             }
         })
+    }
+
+    /// `items` sorted in place by `compare`, stably: JS's `sort`, or
+    /// `$sort` of items that can be `undefined`, a `None`, which JS's
+    /// `sort` puts last without asking `compare`.
+    pub(in crate::lower) fn sort_by_compare(&self, items: Expr, compare: Expr, elem: ty::Ty<'tcx>) -> Expr {
+        match self.can_be_nullish(elem) {
+            true => Expr::call(Expr::helper("$sort"), vec![items, compare]),
+            false => Expr::call(Expr::member(items, "sort"), vec![compare]),
+        }
     }
     /// One of std's iterator sources (ADR 0128): `None` if `known` is another.
     pub(in crate::lower) fn iter_source_call(

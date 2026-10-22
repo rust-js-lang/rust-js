@@ -98,4 +98,12 @@ export const mutations: Mutation[] = [
     replace: "            _ => def_id.is_local(),\n",
     tests: ["test/lowering.test.ts", "-t", "only passes its arguments"],
   },
+  {
+    name: "nullable-sort-by-js",
+    breaks: "a sort of items that can be `None` is JS's own `sort`, which puts each `undefined` last without asking the comparator, where `None` is first",
+    file: "src/lower/iterators/ends.rs",
+    find: "            true => Expr::call(Expr::helper(\"$sort\"), vec![items, compare]),\n",
+    replace: "            true => Expr::call(Expr::member(items, \"sort\"), vec![compare]),\n",
+    tests: ["test/corpus.test.ts", "-t", "^option_sort.rs$"],
+  },
 ];

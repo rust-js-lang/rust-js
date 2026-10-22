@@ -86,3 +86,17 @@ parts, and stopped rustc's `zero-sized-btreemap-insert`, a `BTreeMap` keyed
 by one, and `obligation-error-propagation`. The `unit_struct_order` corpus
 case orders one as a map's and a set's key, compared, and as a field, with
 native Rust.
+
+## Amendment: a sort of what can be `None`
+
+JS's `sort` moves each `undefined` to the end without asking the
+comparator, so a sort of `Option`s, whose `None` is `undefined`, put
+`None` last, where `Option`'s `Ord` puts it first (#101): `sort`,
+`sort_by`, `sort_by_key`, and a `BTreeSet<Option<_>>` listed. Items that
+can be `undefined`, those `can_be_nullish` names, are sorted by `$sort`,
+which sorts their indexes, never `undefined`, by the same comparator and
+puts the items in that order: `$sort(scores, (a, b) => …)`. Every other
+sort is JS's own `items.sort(…)`, as before; `sort_by_compare` is the one
+place that picks. ADR 0262's case: results would change, so Rust's. Held
+by `test/corpus/option_sort.rs` and the mutations `nullable-sort-by-js`
+and `sorted-keys-by-js`.

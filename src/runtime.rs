@@ -315,6 +315,7 @@ helpers! {
     FromFn,
     Unzip,
     Partition,
+    Sort,
     SortedKeys,
     StripPrefix,
     StripSuffix,
@@ -962,6 +963,7 @@ impl Helper {
             // A `BTreeMap`'s entries, in its keys' order.
             Helper::SortedEntries => include_str!("runtime/sorted_entries.js"),
             // A `BTreeSet`'s items, in order.
+            Helper::Sort => include_str!("runtime/sort.js"),
             Helper::SortedKeys => include_str!("runtime/sorted_keys.js"),
             // `vec![item; count]`: clone all but the last slot, which takes item.
             Helper::Repeat => include_str!("runtime/repeat.js"),
