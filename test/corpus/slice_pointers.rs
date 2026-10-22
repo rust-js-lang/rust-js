@@ -41,6 +41,15 @@ impl<T> Iterator for Taken<'_, T> {
     }
 }
 
+/// The same of a value JS holds as itself, a number: a cell of it, which
+/// reads the same, where its place has no name in JS.
+fn read_all(items: &[u32]) -> Vec<u32> {
+    items
+        .iter()
+        .map(|elt| unsafe { ptr::read(elt as *const u32) })
+        .collect()
+}
+
 /// A `&mut`'s, only read through: where it is matters to nothing.
 fn peeked(count: &mut u32) -> u32 {
     *count += 1;
@@ -88,6 +97,7 @@ fn main() {
     println!("{bytes:?}");
     let taken: Vec<i32> = Taken { iter: [4, 5, 6].iter() }.collect();
     println!("{taken:?}");
+    println!("{:?}", read_all(&[7, 8]));
     dropped_tail();
     let mut count = 4;
     println!("{} {count}", peeked(&mut count));

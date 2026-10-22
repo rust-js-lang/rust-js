@@ -275,7 +275,7 @@ export const mutations: Mutation[] = [
     breaks: "a `*const` of a shared reference to a value with no place JS names, arrayvec's `elt as *const _`, is refused, though a cell of it reads the same",
     file: "src/lower/pointers.rs",
     find: "            false => Ok(Expr::object(vec![js::Prop::Field(js::HELD.into(), place)])),\n",
-    replace: "            false => self.pointer_to(place, pointee, span),\n",
+    replace: "            false => self.pointer_to(place, pointee, None, span),\n",
     tests: ["test/corpus.test.ts", "-t", "^slice_pointers.rs$"],
   },
   {
