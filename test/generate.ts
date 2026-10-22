@@ -259,6 +259,10 @@ function expr(r: Random, ty: Ty, scope: Scope, depth: number): Expr {
   }
   const vars = scope.filter((v) => v.ty === ty);
   const sub = (t: Ty) => expr(r, t, scope, depth - 1);
+  // A comparison of what isn't a primitive, an `S`, text or an `E`, borrows
+  // its left side through `PartialEq`, so its right side writes nothing:
+  // `v != { v = w; v }` is a borrow conflict where it's a struct.
+  const compared = (t: Ty) => ({ kind: "cmp" as const, a: sub(t), b: expr(r, t, scope.map((v) => ({ ...v, mutable: false })), depth - 1) });
   const holding = (outer: "Vec" | "Option", elem: IntTy) => scope.filter((v) => v.ty === `${outer}<${elem}>`);
   if (depth <= 0 || r.chance(0.2)) {
     if (vars.length > 0 && r.chance(0.6)) return { kind: "var", ty, name: r.pick(vars).name };
@@ -367,7 +371,7 @@ function expr(r: Random, ty: Ty, scope: Scope, depth: number): Expr {
         : { kind: "use", ty, form: r.pick(["is_empty"]), a: sub(`Vec<${elem}>`) };
     }
     if (choice === 4) return { kind: "use", ty, form: r.pick(["is_some", "is_none"]), a: sub(`Option<${r.pick(intTypes)}>`) };
-    if (choice === 5 && r.chance(0.5)) return { kind: "cmp", ty, op: r.pick(["==", "!="]), a: sub("S"), b: sub("S") };
+    if (choice === 5 && r.chance(0.5)) return { ty, op: r.pick(["==", "!="]), ...compared("S") };
     // What text, a `char`, an `E` and a map can say.
     if (r.chance(0.5)) {
       switch (r.int(6)) {
@@ -379,7 +383,8 @@ function expr(r: Random, ty: Ty, scope: Scope, depth: number): Expr {
           return { kind: "use", ty, form: r.pick(["is_alphabetic", "is_numeric", "is_uppercase", "is_ascii_digit", "is_whitespace"]), a: sub("char") };
         case 3: {
           const t = r.pick(["String", "char", "E"]);
-          return { kind: "cmp", ty, op: t === "E" ? r.pick(["==", "!="]) : r.pick(["==", "!=", "<", ">="]), a: sub(t), b: sub(t) };
+          const op = t === "E" ? r.pick(["==", "!="]) : r.pick(["==", "!=", "<", ">="]);
+          return t === "char" ? { kind: "cmp", ty, op, a: sub(t), b: sub(t) } : { ty, op, ...compared(t) };
         }
         case 4:
           return { kind: "use", ty, form: "matches-b", a: sub("E") };
