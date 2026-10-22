@@ -174,8 +174,8 @@ export const mutations: Mutation[] = [
     name: "mut-writer-unboxed",
     breaks: "a `&mut` to a writer taken by value is given its writer's dictionary, which reads the box as the writer, and what it writes is lost",
     file: "src/lower/traits/dictionaries.rs",
-    find: "                return Ok(Expr::call_helper(\"$mutWriter\", vec![writer]));\n",
-    replace: "                return Ok(writer);\n",
+    find: "            return Ok(Expr::call_helper(\"$mutWriter\", vec![writer]));\n",
+    replace: "            return Ok(writer);\n",
     tests: ["test/corpus.test.ts", "-t", "^(generic_writers|mut_given_as_type_param).rs$"],
   },
   {
@@ -353,5 +353,13 @@ export const mutations: Mutation[] = [
     find: "                false => callee,\n",
     replace: "                false => Expr::call(callee, Vec::new()),\n",
     tests: ["test/lowering-structs-enums.test.ts", "-t", "a dictionary that takes nothing"],
+  },
+  {
+    name: "io-writer-mut-as-its-writer",
+    breaks: "an `io::Write` given by `&mut`, `W = &mut Vec<u8>`, gets the `Vec`'s dictionary, which reads the box it's in as the `Vec`, and throws",
+    file: "src/lower/traits/dictionaries.rs",
+    find: "        if (is_std_def(self.tcx, tr.def_id, StdItem::FmtWrite) || is_std_def(self.tcx, tr.def_id, StdItem::IoWrite))",
+    replace: "        if is_std_def(self.tcx, tr.def_id, StdItem::FmtWrite)",
+    tests: ["test/corpus.test.ts", "-t", "^io_write_mut_generic.rs$"],
   },
 ];

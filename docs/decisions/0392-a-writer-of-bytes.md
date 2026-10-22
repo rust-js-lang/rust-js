@@ -90,3 +90,14 @@ shout({ value: buf, impl: $vecWriter }, "héllo");
   and one given to a generic writer is boxed and copied back, which does
   nothing: a stream holds nothing, as `()` doesn't, but isn't left out as
   `()` is yet.
+
+## Amendment: an `io::Write` given by `&mut`
+
+`W = &mut Vec<u8>` of an `io::Write` got the `Vec`'s own dictionary,
+`$vecWriter`, as `io_writer` takes a `&mut` off, and generic code, which
+boxes its `&mut self` again, wrote to the box: "w.value.push is not a
+function" (#130); and `&mut W` of a generic `W` was refused. A `&mut`
+writer's dictionary is `$mutWriter` of its writer's, of an `io::Write`
+as of a `fmt::Write` (ADR 0454), one rule of both, and `$mutWriter`
+writes bytes too. Held by `test/corpus/io_write_mut_generic.rs` and the
+mutations `io-writer-mut-as-its-writer` and `mut-writer-writes-no-bytes`.

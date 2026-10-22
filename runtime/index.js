@@ -8657,12 +8657,16 @@ export const $stringWriter = {
 // A writer's dictionary through the box generic code is given a `&mut`
 // to it in, `W = &mut s` taken by value, `writer: impl Write`, which std's
 // `impl Write for &mut W` writes through: the writer's own, of what's in
-// the box, `$mutWriter($stringWriter)` of a `String` (ADRs 0180, 0454).
+// the box, `$mutWriter($stringWriter)` of a `String`, and `$mutWriter($vecWriter)`
+// of an `io::Write`'s `Vec<u8>` (ADRs 0180, 0392, 0454).
 export function $mutWriter(writer) {
   return {
     writeStr: (w, s) => writer.writeStr(w.value, s),
     writeChar: (w, c) => writer.writeChar(w.value, c),
     writeFmt: (w, text) => writer.writeFmt(w.value, text),
+    write: (w, bytes) => writer.write(w.value, bytes),
+    writeAll: (w, bytes) => writer.writeAll(w.value, bytes),
+    flush: (w) => writer.flush(w.value),
   };
 }
 

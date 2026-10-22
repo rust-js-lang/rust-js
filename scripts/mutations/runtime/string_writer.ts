@@ -10,4 +10,12 @@ export const mutations: Mutation[] = [
     replace: "    writeFmt: (w, text) => writer.writeFmt(w, text),\n",
     tests: ["test/corpus.test.ts", "-t", "^(generic_writers|mut_given_as_type_param).rs$"],
   },
+  {
+    name: "mut-writer-writes-no-bytes",
+    breaks: "`$mutWriter` of an `io::Write` has no `writeAll`, so generic code given `&mut Vec<u8>` can't write to it",
+    file: "src/runtime/string_writer.js",
+    find: "    writeAll: (w, bytes) => writer.writeAll(w.value, bytes),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^io_write_mut_generic.rs$"],
+  },
 ];
