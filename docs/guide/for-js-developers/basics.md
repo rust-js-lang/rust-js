@@ -618,7 +618,42 @@ export function httpStatus(code) {
 ```
 
 `|` is several cases in one arm, `1..=5` a range, and `if` after a pattern
-a guard.
+a guard. A `match` is an `if` chain, never a `switch`
+([ADR 0014](../../decisions/0014-match-lowering.md)). An arm that names a
+`const` tests it by its name, and a comment before an arm is before its
+body:
+
+```rust
+pub const IMMEDIATE: u8 = 1;
+pub const IDLE: u8 = 5;
+
+pub fn timeout(level: u8) -> f64 {
+    match level {
+        // Times out immediately
+        IMMEDIATE => -1.0,
+        // Never times out
+        IDLE => 1073741823.0,
+        _ => 5000.0,
+    }
+}
+```
+
+```js
+export const IMMEDIATE = 1;
+export const IDLE = 5;
+
+export function timeout(level) {
+  if (level === IMMEDIATE) {
+    // Times out immediately
+    return -1;
+  }
+  if (level === IDLE) {
+    // Never times out
+    return 1073741823;
+  }
+  return 5000;
+}
+```
 
 Where JS uses string constants or a `kind` field to tell cases apart, Rust
 uses an `enum`. An enum without fields is its variant's name as a string;

@@ -545,3 +545,36 @@ pub(crate) fn jsx_given_props<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> (Ha
     }
     (props, bases)
 }
+
+/// Each value a body's patterns test of a number or a `char`, by its type
+/// and bits, and the `const` they name it by: `Some(IMMEDIATE_PRIORITY)`
+/// where every pattern of it is that constant, `None` where one is written
+/// another way, a literal or another constant (ADR 0590).
+pub(super) fn constant_patterns<'tcx>(thir: &Thir<'tcx>) -> HashMap<(ty::Ty<'tcx>, u128), Option<DefId>> {
+    let mut found: HashMap<(ty::Ty<'tcx>, u128), Option<DefId>> = HashMap::new();
+    let mut of = |pattern: &Pat<'tcx>| {
+        pattern.walk_always(|pat| {
+            if let PatKind::Constant { value } = &pat.kind
+                && (pat.ty.is_integral() || pat.ty.is_char())
+                && let Some(leaf) = value.valtree.try_to_leaf()
+            {
+                let named = pat.extra.as_ref().and_then(|extra| extra.expanded_const);
+                (found.entry((pat.ty, leaf.to_bits_unchecked())))
+                    .and_modify(|seen| *seen = seen.filter(|&d| Some(d) == named))
+                    .or_insert(named);
+            }
+        });
+    };
+    thir.arms.iter().for_each(|arm| of(&arm.pattern));
+    for expr in thir.exprs.iter() {
+        if let ExprKind::Let { ref pat, .. } = expr.kind {
+            of(pat);
+        }
+    }
+    for stmt in thir.stmts.iter() {
+        if let thir::StmtKind::Let { ref pattern, .. } = stmt.kind {
+            of(pattern);
+        }
+    }
+    found
+}

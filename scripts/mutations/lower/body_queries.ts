@@ -74,4 +74,12 @@ export const mutations: Mutation[] = [
     replace: "                if false && c.with == lo {\n",
     tests: ["test/lowering.test.ts", "-t", "whole number in range"],
   },
+  {
+    name: "constant-written-two-ways-named",
+    breaks: "a value one pattern names by a `const` and another writes as a literal is tested by the `const`'s name in both",
+    file: "src/lower/body_queries.rs",
+    find: "                    .and_modify(|seen| *seen = seen.filter(|&d| Some(d) == named))\n",
+    replace: "                    .and_modify(|seen| *seen = seen.or(named))\n",
+    tests: ["test/lowering.test.ts", "-t", "a match of constants tests each"],
+  },
 ];

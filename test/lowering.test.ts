@@ -197,7 +197,7 @@ pub fn start() -> u32 {
   expect(js).toContain("  const m = (n + 1) >>> 0;\n\n  if (o == null) {");
   // A branch's comment keeps its branch a statement, as an expression has
   // no line for it, an \`if\`'s and a \`match\`'s.
-  expect(js).toContain("  let n;\n  if (flag) {\n    // Yes.\n    n = 1;\n  } else {\n    n = 2;\n  }\n  let k;\n  if (flag) {\n    k = 3;\n  } else {\n    // Four.\n    k = 4;\n  }\n  // One.\n  let m;\n  if (n === 1) {\n    m = 10;\n  } else {\n    m = 20;\n  }\n");
+  expect(js).toContain("  let n;\n  if (flag) {\n    // Yes.\n    n = 1;\n  } else {\n    n = 2;\n  }\n  let k;\n  if (flag) {\n    k = 3;\n  } else {\n    // Four.\n    k = 4;\n  }\n  let m;\n  if (n === 1) {\n    // One.\n    m = 10;\n  } else {\n    m = 20;\n  }\n");
 });
 
 test("a variable nothing sets again is a const", async () => {
@@ -5549,6 +5549,50 @@ pub fn there() {
   expect(readFileSync(join(dir, "lock.js"), "utf8")).toContain("export function heldDrop_drop(held)");
   lib.there();
   (await import(join(dir, "lock.js"))).here();
+});
+
+// ADR 0590: a \`match\` of a number by the crate's constants tests each by
+// its name, as React's scheduler's \`switch (priorityLevel)\` does, its own
+// module's or another's, imported; a value written another way too is its
+// number. A comment before an arm is before its body.
+test("a match of constants tests each by its name, its comments in its arms", async () => {
+  const dir = fixture("const-patterns");
+  writeFileSync(join(dir, "lib.rs"), `pub mod levels {
+    pub const IMMEDIATE: u8 = 1;
+    pub const IDLE: u8 = 5;
+}
+
+use levels::{IDLE, IMMEDIATE};
+
+const NORMAL: u8 = 3;
+
+pub fn timeout(level: u8) -> f64 {
+    match level {
+        // Times out immediately
+        IMMEDIATE => -1.0,
+        // Normal
+        NORMAL => 5000.0,
+        // Never times out
+        IDLE => 1073741823.0,
+        // Eventually times out
+        _ => 10000.0,
+    }
+}
+
+pub fn both(a: u8, b: u8) -> bool {
+    matches!(a, NORMAL) && matches!(b, 3 | 4)
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('import { IDLE, IMMEDIATE } from "./levels.js";');
+  expect(js).toContain("if (level === IMMEDIATE) {\n    // Times out immediately\n    return -1;\n  }");
+  expect(js).toContain("if (level === NORMAL) {\n    // Normal\n    return 5000;\n  }");
+  expect(js).toContain("if (level === IDLE) {\n    // Never times out\n");
+  expect(js).toContain("a === 3");
+  const lib = await import(join(dir, "lib.js"));
+  expect([1, 3, 5, 9].map(lib.timeout)).toEqual([-1, 5000, 1073741823, 10000]);
+  expect([lib.both(3, 4), lib.both(3, 5), lib.both(1, 3)]).toEqual([true, false, false]);
 });
 
 // ADR 0583: a global some hosts lack is an \`Option\` binding, read where

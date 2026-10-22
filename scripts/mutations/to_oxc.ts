@@ -155,4 +155,12 @@ export const mutations: Mutation[] = [
     replace: "                    gap.len() > 2\n",
     tests: ["test/lowering.test.ts", "-t", "closure called as a statement is its body"],
   },
+  {
+    name: "arm-comment-on-its-test",
+    breaks: "a comment before a match arm is before the `if` its test is, or lost on an `else if`",
+    file: "src/to_oxc.rs",
+    find: "                    && pattern.trim_end().ends_with(\"=>\")\n",
+    replace: "                    && pattern.trim_end().ends_with(\"=>\") && false\n",
+    tests: ["test/lowering.test.ts", "-t", "a match of constants tests each"],
+  },
 ];

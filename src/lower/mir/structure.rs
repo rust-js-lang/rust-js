@@ -485,6 +485,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         _ => subject,
                     });
                 }
+                // A value the program's patterns name by a `const`, as that
+                // reads (ADR 0590): `priorityLevel === ImmediatePriority`.
+                if let Some(Some(named)) = crate::lower::body_queries::constant_patterns(self.thir)
+                    .get(&(ty, value))
+                    .copied()
+                {
+                    let named = self.named_const(named, ty::List::empty(), ty, span)?;
+                    return Ok(Expr::bin(Op::Eq, subject, named));
+                }
                 if ty.is_char() {
                     let c = char::from_u32(value as u32).ok_or_else(|| self.unsupported(span, "this `char`"))?;
                     return Ok(Expr::bin(Op::Eq, subject, Expr::str(c.to_string())));

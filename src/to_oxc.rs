@@ -234,9 +234,22 @@ fn comments_of(
         let attached: Vec<(crate::program::Comment, u32)> = (file.comments.iter())
             .filter(|c| c.lo >= past && !after_code(c))
             .filter_map(|c| {
-                let at = *starts
-                    .get(starts.partition_point(|&s| s < c.hi))
-                    .filter(|&&at| in_file(at))?;
+                // Before a match arm, `IMMEDIATE_PRIORITY => -1.0`, its body's: a start whose text to the next is only a pattern and
+                // its `=>` is the arm's test, which an `else if` isn't a
+                // statement of (ADR 0590).
+                let mut next = starts.partition_point(|&s| s < c.hi);
+                while let [at, after, ..] = starts[next.min(starts.len())..]
+                    && sources
+                        .text
+                        .get(c.hi as usize..at as usize)
+                        .is_some_and(|gap| gap.trim().is_empty())
+                    && let Some(pattern) = sources.text.get(at as usize..after as usize)
+                    && pattern.trim_end().ends_with("=>")
+                    && !pattern.contains([';', '{', '}', '\n'])
+                {
+                    next += 1;
+                }
+                let at = *starts.get(next).filter(|&&at| in_file(at))?;
                 // What's between, but other comments, whose text is no code.
                 let mut code = c.hi;
                 let only_starts = (file.comments.iter())

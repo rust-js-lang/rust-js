@@ -21,10 +21,10 @@ const SUM = 3;
 const PX = 7;
 
 function classify(n) {
-  if (n === 3) {
+  if (n === SUM) {
     return "sum";
   }
-  if (n === 7) {
+  if (n === PX) {
     return "px";
   }
   return "other";

@@ -181,4 +181,12 @@ export const mutations: Mutation[] = [
     replace: "                    .and_then(|call| self.recognition().own_into_future_given(call))\n                    .filter(|_| false)\n",
     tests: ["test/diagnostics.test.ts", "-t", "an IntoFuture of the crate's given to generic code"],
   },
+  {
+    name: "constant-patterns-numbered",
+    breaks: "a `match` of the crate's constants tests their numbers, `priorityLevel === 1`",
+    file: "src/lower/mir/structure.rs",
+    find: "                    .get(&(ty, value))\n",
+    replace: "                    .get(&(ty, value + 1000))\n",
+    tests: ["test/lowering.test.ts", "-t", "a match of constants tests each"],
+  },
 ];
