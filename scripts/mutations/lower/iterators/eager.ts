@@ -231,8 +231,8 @@ export const mutations: Mutation[] = [
     "name": "collected-runtime-arrayed",
     "breaks": "a chain collected is `Array.from($lazyChain(a, b))`, not `[...a, ...b]`",
     "file": "src/lower/iterators/eager.rs",
-    "find": "                {\n                    return None;\n                }\n                let items = Expr::call(Expr::member(Expr::var(\"Array\"), \"from\"), vec![list]);\n",
-    "replace": "                {}\n                let items = Expr::call(Expr::member(Expr::var(\"Array\"), \"from\"), vec![list]);\n",
+    "find": "                {\n                    return None;\n                }\n                // Nor one lent,",
+    "replace": "                {}\n                // Nor one lent,",
     "tests": [
       "test/corpus.test.ts",
       "-t",

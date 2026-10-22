@@ -161,6 +161,15 @@ pub struct JsObject(PhantomData<*mut ()>);
 #[cfg_attr(rust_js, rust_js::types = "unknown")]
 pub struct Unknown(PhantomData<JsObject>);
 
+/// `a === b`: the same object, or the same value, JS's strict equality, as
+/// TypeScript compares two of `unknown`; `NaN` isn't itself, as an `f64`
+/// isn't, so it's `PartialEq` alone (ADR 0612).
+impl PartialEq for Unknown {
+    fn eq(&self, other: &Self) -> bool {
+        std::ptr::eq(self, other)
+    }
+}
+
 /// What an [`Unknown`] is, as JS's `typeof` and `Array.isArray` tell it:
 /// each variant's value is the value itself (ADR 0214). An array's items
 /// may be `undefined` or `null`; a function is a `Function`; anything else,

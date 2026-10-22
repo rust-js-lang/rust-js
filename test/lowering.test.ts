@@ -6180,6 +6180,30 @@ pub fn parsed() -> Vec<f64> {
   expect([lib.called(1), lib.parsed(), lib.resetTo(undefined), lib.resetTo(4)]).toEqual([2, [10, 10], -1, 4]);
 });
 
+// ADR 0612: two values of any shape are equal as JS's \`===\` has them, an
+// \`Option\` of them too, where \`null\` isn't \`undefined\`: React's
+// \`Object.is\` polyfill compares \`mixed\` values so.
+test("js::Unknown's == is ===, of an Option too", async () => {
+  const dir = fixture("unknown-equality");
+  writeFileSync(join(dir, "lib.rs"), `use js::Unknown;
+
+pub fn same(a: &Unknown, b: &Unknown) -> bool {
+    a == b
+}
+
+pub fn same_maybe(a: Option<&Unknown>, b: Option<&Unknown>) -> bool {
+    a == b
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("export function same(a, b) {\n  return a === b;\n}");
+  expect(js).toContain("export function sameMaybe(a, b) {\n  return a === b;\n}");
+  const lib = await import(join(dir, "lib.js"));
+  const o = {};
+  expect([lib.same(o, o), lib.same(o, {}), lib.same(NaN, NaN), lib.sameMaybe(null, undefined), lib.sameMaybe(undefined, undefined)]).toEqual([true, false, false, false, true]);
+});
+
 // ADR 0597: whether the host has a binding's global is `js::is_defined`'s,
 // `typeof X !== "undefined"`, of the binding its type names, through a
 // temporary too: React's scheduler asks for `setImmediate`, then

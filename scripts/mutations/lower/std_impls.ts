@@ -3,6 +3,22 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "unknown-eq-refused",
+    breaks: "`a == b` of two `js::Unknown`s is refused",
+    file: "src/lower/std_impls.rs",
+    find: "        let primitive = any\n",
+    replace: "        let primitive = false\n",
+    tests: ["test/lowering.test.ts", "-t", "js::Unknown's == is ==="],
+  },
+  {
+    name: "unknown-option-eq-loose",
+    breaks: "`Option<&Unknown>`'s `==` is `==`, where `null` is `undefined`",
+    file: "src/lower/std_impls.rs",
+    find: "                return Ok(Expr::bin(if any { Op::Eq } else { Op::LooseEq }, a, b));\n",
+    replace: "                return Ok(Expr::bin(if any && false { Op::Eq } else { Op::LooseEq }, a, b));\n",
+    tests: ["test/lowering.test.ts", "-t", "js::Unknown's == is ==="],
+  },
+  {
     name: "untagged-unit-eq-any",
     breaks: "a variant without fields equals any value of the enum",
     file: "src/lower/std_impls.rs",
@@ -305,8 +321,8 @@ export const mutations: Mutation[] = [
     name: "float-same-value",
     breaks: "a float is found by `includes`, `[NaN].includes(NaN)`, where Rust's `contains` doesn't find `NaN`",
     file: "src/lower/std_impls.rs",
-    find: "        primitive.then(|| match Num::of(ty).is_some_and(Num::float) {\n",
-    replace: "        primitive.then(|| match false {\n",
+    find: "        primitive.then(|| match Num::of(ty).is_some_and(Num::float) || any {\n",
+    replace: "        primitive.then(|| match any {\n",
     tests: ["test/corpus.test.ts", "-t", "^nan_contains.rs$"],
   },
   {

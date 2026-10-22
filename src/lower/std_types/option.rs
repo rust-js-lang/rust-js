@@ -577,8 +577,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// itself, through a reference, may be.
     fn never_falsy_within(&self, ty: Ty<'tcx>, within: &mut Vec<DefId>) -> bool {
         let ty = ty.peel_refs();
-        let any = matches!(ty.kind(), ty::Adt(adt, _)
-            if matches!(crate::lower::declarations::written_types(self.tcx, adt.did()).as_deref(), Some("unknown" | "any")));
+        let any = matches!(ty.kind(), ty::Adt(adt, _) if crate::lower::declarations::any_shape(self.tcx, adt.did()));
         // An untagged enum is its payload (ADR 0214): never falsy where each
         // variant's is, an array's or a JS object's; not where one may be
         // text, `""`.

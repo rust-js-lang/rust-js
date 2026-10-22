@@ -854,6 +854,21 @@ export function describe(value) {
 
 - `js::get(value, key)` is `value[key]`, `js::set(value, key, to)` is
   `value[key] = to`, and `js::has(value, key)` is `key in value`.
+- **`==` of two is JS's `===`**, of two `Option<&Unknown>` too, where a
+  `null` isn't an `undefined`, unlike std's `Option`
+  ([ADR 0612](../../decisions/0612-unknown-equality-is-strict.md)):
+
+```rust
+pub fn same(a: Option<&js::Unknown>, b: Option<&js::Unknown>) -> bool {
+    a == b
+}
+```
+
+```js
+export function same(a, b) {
+  return a === b;
+}
+```
 - `js::Json` is a JSON value, and `js::Dict<T>` a plain object of `T`s by
   name, TypeScript's `Record<string, T>`.
 

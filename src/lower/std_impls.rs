@@ -694,7 +694,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let ty = ty.peel_refs();
         // A parse error is its message, which tells its kind, as its derived
         // `==` compares (ADR 0063); a `TypeId` its type's key (ADR 0331).
-        let primitive = self.is_string_like(ty)
+        // A value of any shape, `js::Unknown`, by JS's `===` (ADR 0612).
+        let any = matches!(ty.kind(), ty::Adt(adt, _) if super::declarations::any_shape(self.tcx, adt.did()));
+        let primitive = any
+            || self.is_string_like(ty)
             || self.is_parse_error(ty)
             || self.recognition().is_type_id(ty)
             || self.recognition().is_discriminant(ty)
@@ -705,7 +708,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             || ty.is_unit()
             || matches!(ty.kind(), ty::Adt(adt, _) if super::representation::is_string_enum(self.tcx, *adt)
                 && !self.has_user_impl(self.partial_eq_trait(), ty));
-        primitive.then(|| match Num::of(ty).is_some_and(Num::float) {
+        primitive.then(|| match Num::of(ty).is_some_and(Num::float) || any {
             true => JsEq::Strict,
             false => JsEq::SameValue,
         })
@@ -895,7 +898,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // `Some` that's its payload, not one boxed, an object of its own
             // (ADR 0051), which compares by what's in it.
             if self.js_eq(inner).is_some() && !self.boxed_payload(inner) {
-                return Ok(Expr::bin(Op::LooseEq, a, b));
+                // Of a value of any shape, JS's own `===`: `null` isn't
+                // `undefined`, as React's `Object.is` polyfill tells (ADR 0612).
+                let any = matches!(inner.peel_refs().kind(), ty::Adt(adt, _)
+                    if super::declarations::any_shape(self.tcx, adt.did()));
+                return Ok(Expr::bin(if any { Op::Eq } else { Op::LooseEq }, a, b));
             }
         }
         // Its bounds' (ADR 0129): `a.start === b.start && a.end === b.end`.

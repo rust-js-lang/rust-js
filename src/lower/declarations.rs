@@ -185,6 +185,13 @@ pub(super) fn written_types(tcx: TyCtxt<'_>, did: DefId) -> Option<String> {
     Some(declared.to_string())
 }
 
+/// Whether `did` is a JS value of any shape, TypeScript's `unknown` or
+/// `any`, `js::Unknown`: what may be `0` or `""`, compared by `===` (ADR
+/// 0612).
+pub(super) fn any_shape(tcx: TyCtxt<'_>, did: DefId) -> bool {
+    matches!(written_types(tcx, did).as_deref(), Some("unknown" | "any"))
+}
+
 /// What a type's name imports: the name, or a namespace's, `JSX` of
 /// `JSX.Element` (ADR 0236).
 fn imported(name: &str) -> String {
