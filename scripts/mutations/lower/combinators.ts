@@ -485,4 +485,12 @@ export const mutations: Mutation[] = [
     replace: "        if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^heap_extend.rs$"],
   },
+  {
+    name: "deque-swap-unmarked",
+    breaks: "a `VecDeque`'s `swap` out of bounds panics with a slice's index message, not its own assertion",
+    file: "src/lower/combinators.rs",
+    find: "            args.push(Expr::bool(true));\n        }\n        args\n",
+    replace: "        }\n        args\n",
+    tests: ["test/corpus.test.ts", "-t", "^deque_swap_out_of_bounds.rs$"],
+  },
 ];
