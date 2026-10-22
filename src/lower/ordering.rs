@@ -317,6 +317,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         out: &mut Vec<Stmt>,
     ) -> R<Option<Expr>> {
         let ty = tr.self_ty();
+        // Of a type and another, the crate's own `PartialOrd<u32>`: not an
+        // order of the type with itself.
+        let other = tr
+            .args
+            .types()
+            .nth(1)
+            .is_some_and(|rhs| rhs.peel_refs() != ty.peel_refs());
         let Some((call, partial)) = self.recognition().ordering_call(id, tr) else {
             return Ok(None);
         };
@@ -330,6 +337,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let [a, b]: [Expr; 2] = values
             .try_into()
             .map_err(|_| self.unsupported(span, "this comparison"))?;
+        // Its `<` is std's default, its impl's `partial_cmp` against 0, which
+        // `None`'s `undefined` makes false; its `partial_cmp`, its impl's.
+        if other {
+            let Some(op) = operator.filter(|_| self.is_user_impl(tr)) else {
+                return Ok(None);
+            };
+            let partial_cmp = trait_method(self.tcx, tr.def_id, "partial_cmp");
+            let order = self.impl_call(partial_cmp, tr.args, vec![a, b], span)?;
+            return Ok(Some(Expr::bin(op, order, Expr::int(0))));
+        }
         // JS's own `<` orders numbers and `bool`s as Rust does, and strings
         // where one is a literal below U+D800 (ADR 0183).
         if let Some(op) = operator

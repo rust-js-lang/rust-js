@@ -114,4 +114,12 @@ export const mutations: Mutation[] = [
     replace: "derives(ord, ty)",
     tests: ["test/crates.test.ts", "-t", "derived_order"],
   },
+  {
+    name: "ordering-of-other-type-as-self",
+    breaks: "`<` of a type with another, its own `PartialOrd<u32>`, orders the type with itself, `$cmp(m[0], 4[0])`, so it's false",
+    file: "src/lower/ordering.rs",
+    find: "        if other {\n",
+    replace: "        if false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^partial_ord_other_type.rs$"],
+  },
 ];

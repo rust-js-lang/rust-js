@@ -100,3 +100,16 @@ sort is JS's own `items.sort(…)`, as before; `sort_by_compare` is the one
 place that picks. ADR 0262's case: results would change, so Rust's. Held
 by `test/corpus/option_sort.rs` and the mutations `nullable-sort-by-js`
 and `sorted-keys-by-js`.
+
+## Amendment: a type compared with another
+
+`ordering_call` ordered the type with itself, as `PartialOrd<Self>` is,
+whatever the trait's `Rhs`: `m < 4` of a struct with its own
+`PartialOrd<u32>` was `$cmp(m[0], 4[0]) < 0`, field 0 of a number, false
+(#106). Of a crate's own impl whose `Rhs` isn't `Self`, `<`, `<=`, `>`
+and `>=` are std's defaults, its `partial_cmp` against 0, which `None`'s
+`undefined` makes false: `metersPartialOrdU32_partialCmp(m, 4) < 0`; its
+`partial_cmp` is called as its impl's, as before. ADR 0262's case:
+results would change, so Rust's. Held by
+`test/corpus/partial_ord_other_type.rs` and the mutation
+`ordering-of-other-type-as-self`.
