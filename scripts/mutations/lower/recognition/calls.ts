@@ -595,4 +595,20 @@ export const mutations: Mutation[] = [
     replace: "        if false {\n",
     tests: ["test/snapshots.test.ts", "-t", "async"],
   },
+  {
+    name: "result-into-iter-unrecognized",
+    breaks: "`Result::into_iter`, and `for x in &result`, are refused as a call of `IntoIterator::into_iter`",
+    file: "src/lower/recognition/calls.rs",
+    find: "            && self.is_std_type(ty.peel_refs(), StdItem::Result)\n",
+    replace: "            && false\n",
+    tests: ["test/corpus.test.ts", "-t", "^result_iter_and_order.rs$"],
+  },
+  {
+    name: "result-into-iter-mut-of-values",
+    breaks: "`for x in &mut result` steps a copy of its number, so `*x += 1` changes nothing",
+    file: "src/lower/recognition/calls.rs",
+    find: "                ty::Ref(_, _, Mutability::Mut) => Comb::ResultIterMut,\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^result_iter_and_order.rs$"],
+  },
 ];

@@ -179,10 +179,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let names = variants.into_iter().map(|(name, _)| Expr::str(name)).collect();
                 Ok(Expr::call(Expr::helper("$cmpIn"), vec![Expr::array(names), a, b]))
             }
-            // One with fields, the crate's, tagged: by its variant, as the
-            // derive orders them, then, of the same, its fields in turn.
+            // One with fields, the crate's, tagged, or std's `Result`: by its
+            // variant, as the derive orders them, `Ok` before `Err`, then, of
+            // the same, its fields in turn.
             ty::Adt(adt, args)
-                if adt.is_enum() && adt.did().is_local() && !bindings::is_untagged(self.tcx, adt.did()) =>
+                if adt.is_enum()
+                    && (adt.did().is_local() && !bindings::is_untagged(self.tcx, adt.did())
+                        || self.is_std_type(ty, StdItem::Result)) =>
             {
                 let mut variants: Vec<(VariantIdx, u128)> =
                     adt.discriminants(self.tcx).map(|(v, d)| (v, d.val)).collect();

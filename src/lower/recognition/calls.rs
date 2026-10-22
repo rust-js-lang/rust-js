@@ -763,6 +763,17 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         {
             return Some(Std::OptionIterMut);
         }
+        // A `Result`'s, or a `&Result`'s, its `iter()`; a `&mut` one's, its
+        // `iter_mut()`.
+        if tcx.is_diagnostic_item(sym::IntoIterator, trait_)
+            && tcx.item_name(def_id).as_str() == "into_iter"
+            && self.is_std_type(ty.peel_refs(), StdItem::Result)
+        {
+            return Some(Std::Comb(match ty.kind() {
+                ty::Ref(_, _, Mutability::Mut) => Comb::ResultIterMut,
+                _ => Comb::ResultIter,
+            }));
+        }
         // `cmp`, `max` and `min` of what JS's `<` orders the same way.
         if tcx.is_diagnostic_item(sym::Ord, trait_) {
             let peeled = ty.peel_refs();

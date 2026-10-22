@@ -87,3 +87,13 @@ where it fills or takes from the `Option`.**
 ## Amended by
 
 - [0348](0348-unwrap-or-default-once.md): `unwrap_or_default()` of a call is its `??`
+
+## Amendment: a `Result`'s `into_iter`, and its order
+
+`Result::into_iter`, and `for x in &result` or `&mut result`, were refused
+as a call of `IntoIterator::into_iter`, and comparing or sorting
+`Result`s was refused (#146). `into_iter` is `iter()`'s, an array of the
+`Ok` value or none, and a `&mut` one's is `iter_mut()`'s, of places. A
+`Result` orders as the derive has it, the crate's tagged enums' way: by
+variant, `Ok` before `Err`, then by the value. Held by
+`test/corpus/result_iter_and_order.rs`.

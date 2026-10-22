@@ -54,8 +54,8 @@ export const mutations: Mutation[] = [
     "name": "enum-order-refused",
     "breaks": "a derived order of an enum with fields is refused",
     "file": "src/lower/ordering.rs",
-    "find": "                if adt.is_enum() && adt.did().is_local() && !bindings::is_untagged(self.tcx, adt.did()) =>",
-    "replace": "                if false =>",
+    "find": "                    && (adt.did().is_local() && !bindings::is_untagged(self.tcx, adt.did())\n",
+    "replace": "                    && (false\n",
     "tests": ["test/lowering-structs-enums.test.ts", "-t", "a derived order of an enum with fields"]
   },
   {
@@ -129,5 +129,13 @@ export const mutations: Mutation[] = [
     find: "        if let Some(field) = self.transparent(ty) {\n            return self.cmp_value(a, b, field, partial, span, out);\n",
     replace: "        if let Some(field) = self.transparent(ty).filter(|_| false) {\n            return self.cmp_value(a, b, field, partial, span, out);\n",
     tests: ["test/corpus.test.ts", "-t", "^transparent_ord.rs$"],
+  },
+  {
+    name: "result-order-refused",
+    breaks: "sorting or comparing `Result`s is refused, where the derive orders `Ok` before `Err`",
+    file: "src/lower/ordering.rs",
+    find: "                        || self.is_std_type(ty, StdItem::Result)) =>",
+    replace: "                        || false) =>",
+    tests: ["test/corpus.test.ts", "-t", "^result_iter_and_order.rs$"],
   },
 ];
