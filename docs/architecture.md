@@ -149,7 +149,7 @@ module's `crate::` and `super::` paths and checks them against this table:
 | Driver | `main.rs`, `command.rs`, `cargo.rs`, `panic_runtime.rs` | every layer | |
 | Front end | `lower.rs`, `lower/`, `jsx_syntax.rs`, `jsx_syntax/` | the front end, owned output | publish files; link |
 | Owned output | `js.rs`, `js/`, `program.rs`, `comments.rs`, `link.rs`, `reachability.rs`, `names.rs`, `prepare.rs`, `prepare/`, `output.rs`, `publish.rs`, `manifest.rs`, `library.rs`, `runtime.rs`, `settings.rs`, `hooks.rs`, `paths.rs` | owned output | use rustc |
-| Printing | `to_oxc.rs`, `format.rs`, `typescript.rs`, `prettier.rs` | printing, owned output | be bypassed: only they print a module's JS and declarations, by oxc or TypeScript, and lay them out, by oxfmt or the app's Prettier; a manifest's JSON and the `#[test]` runner's imports and calls are the artifact planner's |
+| Printing | `to_oxc.rs`, `to_oxc/`, `format.rs`, `typescript.rs`, `prettier.rs` | printing, owned output | be bypassed: only they print a module's JS and declarations, by oxc or TypeScript, and lay them out, by oxfmt or the app's Prettier; a manifest's JSON and the `#[test]` runner's imports and calls are the artifact planner's |
 
 Two owned modules start printing, and are named as its exceptions:
 `output.rs` prints each module it plans, its JS by oxc (`to_oxc.rs`) and
@@ -488,7 +488,7 @@ instead of inferring compiler output.
 | Analysis and lowering | `src/lower/analysis.rs`, `src/lower/pipeline.rs`, `src/lower.rs`, `src/lower/` |
 | Linking and runtime | `src/link.rs`, `src/reachability.rs`, `src/names.rs`, `src/runtime.rs`, `src/runtime/` |
 | std's bodies as a package | `std/lib.rs`, the crate `bun run std` compiles with `--std-bodies`; `std/*.js` and `std/manifest.json`, what it writes, committed and built in (ADR 0561) |
-| JS tree and presentation | `src/js.rs`, `src/js/`, `src/prepare.rs`, `src/prepare/`, `src/to_oxc.rs`, `src/format.rs`, `src/typescript.rs` |
+| JS tree and presentation | `src/js.rs`, `src/js/`, `src/prepare.rs`, `src/prepare/`, `src/to_oxc.rs`, `src/to_oxc/`, `src/format.rs`, `src/typescript.rs` |
 | Owned modules and source origins | `src/program.rs`, `src/lower/sources.rs` |
 | Libraries, settings and hooks | `src/library.rs`, `src/settings.rs`, `src/hooks.rs`, `src/paths.rs` |
 | Artifact planning, manifest and publication | `src/output.rs`, `src/manifest.rs`, `src/publish.rs` |

@@ -164,3 +164,9 @@ under `mir/tidy/jumps/`, the largest 442 lines.
 `mir/iter.rs`, 1,687 lines, keeps `mir_iter_call` and `mir_iter_method`,
 the dispatchers the architecture test holds; `collect.rs`, `backs.rs`,
 `closing.rs` and `sources.rs`, under `mir/iter/`, are the rest.
+
+## Amendment: oxc's tree, statements and expressions apart (2026-10-22)
+
+`to_oxc.rs`, 1,657 lines, keeps `emit`, the header and the comments;
+`to_oxc/statements.rs` and `to_oxc/expressions.rs` convert the rest.
+`to_oxc/` is printing's, so oxc stays behind the same adapters.

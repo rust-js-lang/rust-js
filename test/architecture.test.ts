@@ -18,7 +18,7 @@ const layers = {
   owned: ["src/library.rs", "src/reachability.rs", "src/link.rs", "src/names.rs", "src/program.rs", "src/comments.rs", "src/js.rs", "src/js/",
     "src/prepare.rs", "src/prepare/", "src/output.rs", "src/publish.rs", "src/manifest.rs", "src/runtime.rs", "src/settings.rs", "src/hooks.rs",
     "src/paths.rs"],
-  printing: ["src/to_oxc.rs", "src/format.rs", "src/typescript.rs", "src/prettier.rs"],
+  printing: ["src/to_oxc.rs", "src/to_oxc/", "src/format.rs", "src/typescript.rs", "src/prettier.rs"],
 };
 const layerOf = (file: string) =>
   Object.entries(layers).find(([, paths]) => paths.some(p => p.endsWith("/") ? file.startsWith(p) : file === p))?.[0];
@@ -937,7 +937,6 @@ test("tests find what they build through target", () => {
 // shorter. Split a listed file by concept, never to meet the number.
 const overTheCap: Record<string, number> = {
   "src/runtime/from_json.js": 2009,
-  "src/to_oxc.rs": 1657,
   "src/lower/combinators.rs": 1631,
   "src/lower/std_types/number.rs": 1608,
   "src/lower/drops.rs": 1564,
