@@ -230,6 +230,10 @@ A trailing `Option` parameter is one a caller may leave out ([ADR 0443](../../de
 pub fn greet(name: &str, greeting: Option<&str>) -> String {
     format!("{}, {}!", greeting.unwrap_or("Hello"), shout(name))
 }
+#
+# fn shout(name: &str) -> String {
+#     name.to_uppercase()
+# }
 ```
 
 ```ts
@@ -378,12 +382,12 @@ pub use text::first_word;
 ```
 
 ```js
-// lib.js
+// src/lib.js
 export { firstWord } from "./text.js";
 ```
 
 ```js
-// text.js
+// src/text.js
 export function firstWord(text) {
   return text.split(" ")[0] ?? "";
 }

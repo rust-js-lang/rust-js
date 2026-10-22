@@ -46,6 +46,10 @@ A `static` can be an import too, by a `#` in its `link_name`, as
 [a binding's](bindings.md#where-it-comes-from) is:
 
 ```rust
+# pub struct Config {
+#     pub title: &'static str,
+# }
+#
 unsafe extern "Rust" {
     #[link_name = "./hero.png#default"]
     pub safe static HERO: &'static str;
@@ -53,11 +57,27 @@ unsafe extern "Rust" {
     #[link_name = "./site.config.js#config"]
     pub safe static CONFIG: &'static Config;
 }
+
+pub fn hero() -> &'static str {
+    HERO
+}
+
+pub fn title() -> &'static str {
+    CONFIG.title
+}
 ```
 
 ```js
 import HERO from "./hero.png";
 import { config } from "./site.config.js";
+
+export function hero() {
+  return HERO;
+}
+
+export function title() {
+  return config.title;
+}
 ```
 
 The crates declare the globals every host has: `webapi::window`,
@@ -71,6 +91,14 @@ with `#[rust_js::link_name]`. An `extern` block holds `static`s only
 ([ADR 0373](../../decisions/0373-one-binding-form.md)).
 
 ```rust
+# unsafe extern "Rust" {
+#     #[link_name = "navigator.language"]
+#     pub safe static LANGUAGE: &'static str;
+#
+#     #[link_name = "__APP_VERSION__"]
+#     pub safe static APP_VERSION: &'static str;
+# }
+#
 /// `structuredClone(value)`, a global function.
 #[cfg_attr(rust_js, rust_js::link_name = "structuredClone")]
 pub fn structured_clone(value: &str) -> String {

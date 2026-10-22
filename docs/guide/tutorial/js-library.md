@@ -1,7 +1,7 @@
 # Use a JavaScript library from Rust
 
-You'll install an npm package, bind what your app uses of it, and call it
-from Rust. The package is [Sonner](https://sonner.emilkowal.ski), a React
+You'll install an npm package, call it from Rust, and bind what your app
+uses of it. The package is [Sonner](https://sonner.emilkowal.ski), a React
 component and functions that show toasts. A binding is a declaration: it
 writes no JS of its own, and its call is the call you'd write in JS.
 
@@ -53,9 +53,51 @@ export { Toaster, toast };
 
 Each binding says, in Rust, what one of these is.
 
+## Call it
+
+Write the app first, using the package as if it were a Rust module,
+`sonner`:
+
+```rust
+// src/App.rs
+mod sonner;
+
+use react::event::MouseEvent;
+use react::{JSX, jsx, use_state};
+use sonner::{ExternalToast, Position, Toaster, dismiss, success, toast};
+
+pub fn App() -> JSX::Element {
+    let (last, set_last) = use_state(None);
+
+    let save = move |_: &MouseEvent<_>| {
+        let details = ExternalToast {
+            description: Some("Your changes are on the server."),
+            ..Default::default()
+        };
+        set_last.set(Some(success("Saved", Some(&details))));
+    };
+
+    jsx! {
+        <main>
+            <Toaster position={Some(Position::BottomRight)} richColors={Some(true)} />
+            <button type="button" onClick={save}>{"Save"}</button>
+            <button type="button" onClick={move |_| set_last.set(Some(toast("Hello from Rust", None)))}>
+                {"Say hello"}
+            </button>
+            <button type="button" onClick={move |_| {
+                dismiss(last.clone());
+            }}>
+                {"Dismiss"}
+            </button>
+        </main>
+    }
+}
+```
+
 ## Write the bindings
 
-Put them in a module of their own, named for the package:
+`mod sonner;` is the module of bindings, named for the package. Put in
+it what the app uses, and `bunx rust-js build` writes `src/App.jsx`:
 
 ```rust
 // src/sonner.rs
@@ -117,98 +159,8 @@ pub fn dismiss(id: Option<ToastId>) -> ToastId {
 }
 ```
 
-How a binding is written:
-
-- **A JS function is an ordinary Rust function** with
-  `#[cfg_attr(rust_js, rust_js::link_name = "...")]` and the body
-  `unreachable!()`. rust-js writes a call to the JS function where you call
-  it; the body never runs ([ADR 0373](../../decisions/0373-one-binding-form.md)).
-- **`link_name` says where the function is**: `"sonner#toast"` is the
-  export `toast` of the module `sonner`, `import { toast } from "sonner"`.
-  `"sonner#toast.success"` is a path inside an export, `toast.success`.
-- **`cfg_attr(rust_js, ..)` is how rust-js's attributes are written.** rust-js
-  compiles with `--cfg rust_js`. A plain `cargo check`, your editor's,
-  leaves the attribute out, and still type-checks the function ([ADR 0113](../../decisions/0113-plain-rustc.md)).
-  The template's `Cargo.toml` lists `cfg(rust_js)` so Cargo knows it.
-- **A component is a binding that returns `JSX::Element`**, with a
-  capitalized name, and its props are a struct, as your own components'
-  are. `jsx!` checks its props as it checks yours.
-- **One Rust function for each JS function**, named as the JS one is, with
-  TypeScript's parameters in TypeScript's order ([ADR 0443](../../decisions/0443-a-value-a-caller-may-leave-out-is-an-option.md)).
-- **Bind what you use.** A binding is a claim about another project's API,
-  and rustc can't check it against the library: read the `.d.ts`, and its
-  documentation where the types don't say. Here `message` is bound as the
-  `&str` the app gives, of TypeScript's `React.ReactNode`.
-
-## Type its values
-
-Each TypeScript type is the Rust type that says the same thing:
-
-| TypeScript | Rust |
-| --- | --- |
-| `string`, given | `&str` |
-| `string`, returned | `String` |
-| `number` | `f64`, or an integer type where it's one |
-| `boolean` | `bool` |
-| `x?: T`, an optional parameter or field | `Option<T>`: `None` is left out |
-| `{ description?: string; .. }` | a struct, its fields `Option`s |
-| `'top-right' \| 'bottom-right'` | an enum of variants without fields, each `rust_js::name`d |
-| `string \| number` | an enum of one-value variants, `#[cfg_attr(rust_js, rust_js::untagged)]` |
-| a component, `React.FC<Props>` | a capitalized function that returns `JSX::Element` |
-
-- **A variant without fields is a string**, its name, or the
-  `rust_js::name` you give it: `Position::BottomRight` is `"bottom-right"`.
-- **An untagged enum is its payload** ([ADR 0214](../../decisions/0214-untagged-enums.md)): a `ToastId` is the
-  string or the number, as JS has it. A `match` on one tests
-  `typeof id === "string"`.
-- **A field's JS name is its camelCase**: `rich_colors` is `richColors`
-  ([ADR 0573](../../decisions/0573-every-rust-name-is-camel-case-in-js.md)).
-
-[JavaScript types](../interop/types.md) has every Rust type's JS.
-
-## Call it
-
-Use the bindings as you use any Rust function:
-
-```rust
-// src/App.rs
-mod sonner;
-
-use react::event::MouseEvent;
-use react::{JSX, jsx, use_state};
-use sonner::{ExternalToast, Position, Toaster, dismiss, success, toast};
-
-pub fn App() -> JSX::Element {
-    let (last, set_last) = use_state(None);
-
-    let save = move |_: &MouseEvent<_>| {
-        let details = ExternalToast {
-            description: Some("Your changes are on the server."),
-            ..Default::default()
-        };
-        set_last.set(Some(success("Saved", Some(&details))));
-    };
-
-    jsx! {
-        <main>
-            <Toaster position={Some(Position::BottomRight)} richColors={Some(true)} />
-            <button type="button" onClick={save}>{"Save"}</button>
-            <button type="button" onClick={move |_| set_last.set(Some(toast("Hello from Rust", None)))}>
-                {"Say hello"}
-            </button>
-            <button type="button" onClick={move |_| {
-                dismiss(last.clone());
-            }}>
-                {"Dismiss"}
-            </button>
-        </main>
-    }
-}
-```
-
-`bunx rust-js build` writes `src/App.jsx`:
-
 ```jsx
+// src/App.jsx
 import { useState } from "react";
 import { Toaster, toast } from "sonner";
 
@@ -236,6 +188,31 @@ export function App() {
 }
 ```
 
+How a binding is written:
+
+- **A JS function is an ordinary Rust function** with
+  `#[cfg_attr(rust_js, rust_js::link_name = "...")]` and the body
+  `unreachable!()`. rust-js writes a call to the JS function where you call
+  it; the body never runs ([ADR 0373](../../decisions/0373-one-binding-form.md)).
+- **`link_name` says where the function is**: `"sonner#toast"` is the
+  export `toast` of the module `sonner`, `import { toast } from "sonner"`.
+  `"sonner#toast.success"` is a path inside an export, `toast.success`.
+- **`cfg_attr(rust_js, ..)` is how rust-js's attributes are written.** rust-js
+  compiles with `--cfg rust_js`. A plain `cargo check`, your editor's,
+  leaves the attribute out, and still type-checks the function ([ADR 0113](../../decisions/0113-plain-rustc.md)).
+  The template's `Cargo.toml` lists `cfg(rust_js)` so Cargo knows it.
+- **A component is a binding that returns `JSX::Element`**, with a
+  capitalized name, and its props are a struct, as your own components'
+  are. `jsx!` checks its props as it checks yours.
+- **One Rust function for each JS function**, named as the JS one is, with
+  TypeScript's parameters in TypeScript's order ([ADR 0443](../../decisions/0443-a-value-a-caller-may-leave-out-is-an-option.md)).
+- **Bind what you use.** A binding is a claim about another project's API,
+  and rustc can't check it against the library: read the `.d.ts`, and its
+  documentation where the types don't say. Here `message` is bound as the
+  `&str` the app gives, of TypeScript's `React.ReactNode`.
+
+What the call became:
+
 - **Each binding is its import.** `toast` and `toast.success` are one
   import, `toast`, and `Toaster` another.
 - **A module of bindings alone writes no file.** There's no `sonner.js`:
@@ -246,6 +223,32 @@ export function App() {
 - **A struct is an object**, written where it's made. `..Default::default()`
   fills in the fields you leave out, as Rust does; they're `None`, so
   they're not written.
+
+## Type its values
+
+Each TypeScript type is the Rust type that says the same thing:
+
+| TypeScript | Rust |
+| --- | --- |
+| `string`, given | `&str` |
+| `string`, returned | `String` |
+| `number` | `f64`, or an integer type where it's one |
+| `boolean` | `bool` |
+| `x?: T`, an optional parameter or field | `Option<T>`: `None` is left out |
+| `{ description?: string; .. }` | a struct, its fields `Option`s |
+| `'top-right' \| 'bottom-right'` | an enum of variants without fields, each `rust_js::name`d |
+| `string \| number` | an enum of one-value variants, `#[cfg_attr(rust_js, rust_js::untagged)]` |
+| a component, `React.FC<Props>` | a capitalized function that returns `JSX::Element` |
+
+- **A variant without fields is a string**, its name, or the
+  `rust_js::name` you give it: `Position::BottomRight` is `"bottom-right"`.
+- **An untagged enum is its payload** ([ADR 0214](../../decisions/0214-untagged-enums.md)): a `ToastId` is the
+  string or the number, as JS has it. A `match` on one tests
+  `typeof id === "string"`.
+- **A field's JS name is its camelCase**: `rich_colors` is `richColors`
+  ([ADR 0573](../../decisions/0573-every-rust-name-is-camel-case-in-js.md)).
+
+[JavaScript types](../interop/types.md) has every Rust type's JS.
 
 ## Other forms
 

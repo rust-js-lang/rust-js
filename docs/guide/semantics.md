@@ -245,36 +245,38 @@ What's refused of formatting is in [the limitations](limitations.md#formatting).
   [0580](../decisions/0580-a-call-asks-of-a-cell-only-what-it-may-borrow.md),
   [0585](../decisions/0585-a-refcells-replace-holds-it-for-a-moment.md)):
 
-  ```rust
-  pub struct Task {
-      pub id: u32,
-      pub callback: RefCell<Option<Box<dyn FnMut(bool) -> u32>>>,
-  }
+```rust
+# use std::cell::RefCell;
+#
+pub struct Task {
+    pub id: u32,
+    pub callback: RefCell<Option<Box<dyn FnMut(bool) -> u32>>>,
+}
 
-  pub fn run(task: &Task) -> u32 {
-      match task.callback.take() {
-          Some(mut f) => {
-              let n = f(false);
-              task.callback.replace(Some(f));
-              n
-          }
-          None => 0,
-      }
-  }
-  ```
-
-  ```js
-  export function run(task) {
-    const old = task.callback;
-    task.callback = undefined;
-    if (old != null) {
-      const n = old(false);
-      task.callback = old;
-      return n;
+pub fn run(task: &Task) -> u32 {
+    match task.callback.take() {
+        Some(mut f) => {
+            let n = f(false);
+            task.callback.replace(Some(f));
+            n
+        }
+        None => 0,
     }
-    return 0;
+}
+```
+
+```js
+export function run(task) {
+  const old = task.callback;
+  task.callback = undefined;
+  if (old != null) {
+    const n = old(false);
+    task.callback = old;
+    return n;
   }
-  ```
+  return 0;
+}
+```
 
 - **A `Mutex` and an `RwLock` are counted as a `RefCell` is.** A lock
   locked again while its thread holds it, which deadlocks in Rust, throws
@@ -287,40 +289,42 @@ What's refused of formatting is in [the limitations](limitations.md#formatting).
   `with_borrow_mut(|queue| ..)` is its closure's body, reading the variable
   in place ([0581](../decisions/0581-a-closure-called-as-a-statement-is-its-body.md)):
 
-  ```rust
-  thread_local! {
-      static TASK_QUEUE: RefCell<Vec<u32>> = const { RefCell::new(Vec::new()) };
-  }
+```rust
+# use std::cell::RefCell;
+#
+thread_local! {
+    static TASK_QUEUE: RefCell<Vec<u32>> = const { RefCell::new(Vec::new()) };
+}
 
-  pub fn push_task(id: u32) {
-      TASK_QUEUE.with_borrow_mut(|queue| queue.push(id));
-  }
+pub fn push_task(id: u32) {
+    TASK_QUEUE.with_borrow_mut(|queue| queue.push(id));
+}
 
-  pub fn queued() -> usize {
-      TASK_QUEUE.with_borrow(Vec::len)
-  }
-  ```
+pub fn queued() -> usize {
+    TASK_QUEUE.with_borrow(Vec::len)
+}
+```
 
-  ```js
-  const taskQueue = [];
+```js
+const taskQueue = [];
 
-  export function pushTask(id) {
-    taskQueue.push(id);
-  }
+export function pushTask(id) {
+  taskQueue.push(id);
+}
 
-  export function queued() {
-    return taskQueue.length;
-  }
-  ```
+export function queued() {
+  return taskQueue.length;
+}
+```
 
-  Where what `with_borrow` runs, a closure or a function such as
-  `Vec::len`, may borrow the same thread-local again, through a function
-  of the crate's that does, the thread-local is its cell, `{ value: [] }`,
-  borrowed while it runs, `$withBorrowMut(log, (log) => ..)`, and a second
-  borrow throws as Rust's panics
-  ([0580](../decisions/0580-a-call-asks-of-a-cell-only-what-it-may-borrow.md),
-  [0587](../decisions/0587-a-function-given-to-with-borrow-is-asked-as-a-closure.md)).
-  So is one handed out by `with(|cell| ..)`, or read by another module.
+Where what `with_borrow` runs, a closure or a function such as
+`Vec::len`, may borrow the same thread-local again, through a function
+of the crate's that does, the thread-local is its cell, `{ value: [] }`,
+borrowed while it runs, `$withBorrowMut(log, (log) => ..)`, and a second
+borrow throws as Rust's panics
+([0580](../decisions/0580-a-call-asks-of-a-cell-only-what-it-may-borrow.md),
+[0587](../decisions/0587-a-function-given-to-with-borrow-is-asked-as-a-closure.md)).
+So is one handed out by `with(|cell| ..)`, or read by another module.
 
 Differences:
 
@@ -511,7 +515,7 @@ What JS sees of a crate:
   ([0161](../decisions/0161-generic-from-str.md),
   [0162](../decisions/0162-generic-as-ref.md), [0167](../decisions/0167-borrow.md)).
 - **A generic function takes its trait dictionaries after its arguments,**
-  `show(t, pointDisplay())`; a `dyn Trait` is `{ value, impl }`
+  `show(t, pointDisplay)`; a `dyn Trait` is `{ value, impl }`
   ([0049](../decisions/0049-traits-and-generics.md)).
 - **Values are the shapes above:** a struct an object literal, a `u64` a
   BigInt, `None` `undefined` or `null`, a `&mut` to a number `{ value }`, a
@@ -522,23 +526,24 @@ What JS sees of a crate:
   [0574](../decisions/0574-what-reacts-scheduler-heap-asks.md),
   [0578](../decisions/0578-a-nullable-result-where-its-written.md)):
 
-  ```rust
-  #[cfg_attr(rust_js, rust_js::nullable)]
-  pub fn first(v: &[u32]) -> Option<u32> {
-      v.first().copied()
-  }
-  ```
+```rust
+#[cfg_attr(rust_js, rust_js::nullable)]
+pub fn first(v: &[u32]) -> Option<u32> {
+    v.first().copied()
+}
+```
 
-  ```js
-  export function first(v) {
-    return v[0] ?? null;
-  }
-  ```
+```js
+export function first(v) {
+  return v[0] ?? null;
+}
+```
 
-  On a field or a function whose type isn't an `Option`, it's a compile
-  error that says so, `` `#[rust_js::nullable]` of a function is of its
-  result, which isn't an `Option` ``
-  ([0586](../decisions/0586-a-nullable-field-is-an-option.md)).
+On a field or a function whose type isn't an `Option`, it's a compile
+error that says so, `` `#[rust_js::nullable]` of a function is of its
+result, which isn't an `Option` ``
+([0586](../decisions/0586-a-nullable-field-is-an-option.md)).
+
 - **A `pub use` of another module's item re-exports it,** `pub use
   shapes::area` being `export { area } from "./shapes.js";`
   ([0240](../decisions/0240-reexports.md)).
@@ -563,26 +568,27 @@ Calling JavaScript:
   host without it gives `None` where JS would throw a `ReferenceError`
   ([0583](../decisions/0583-a-global-some-hosts-lack-is-an-option.md)):
 
-  ```rust
-  pub struct SetImmediate(js::JsObject);
+```rust
+pub struct SetImmediate(js::JsObject);
 
-  unsafe extern "Rust" {
-      #[link_name = "setImmediate"]
-      pub safe static SET_IMMEDIATE: Option<&'static SetImmediate>;
-  }
+unsafe extern "Rust" {
+    #[link_name = "setImmediate"]
+    pub safe static SET_IMMEDIATE: Option<&'static SetImmediate>;
+}
 
-  pub fn has_set_immediate() -> bool {
-      SET_IMMEDIATE.is_some()
-  }
-  ```
+pub fn has_set_immediate() -> bool {
+    SET_IMMEDIATE.is_some()
+}
+```
 
-  ```js
-  export function hasSetImmediate() {
-    return !!(typeof setImmediate !== "undefined" ? setImmediate : undefined);
-  }
-  ```
+```js
+export function hasSetImmediate() {
+  return !!(typeof setImmediate !== "undefined" ? setImmediate : undefined);
+}
+```
 
-  A global every host it's for has is its type, read as its name.
+A global every host it's for has is its type, read as its name.
+
 - **The `js` crate binds JS's own globals, the `webapi` crate the
   browser's,** generated from its WebIDL; options objects are structs of
   `Option`s ([0102](../decisions/0102-js-and-webapi.md)). What each crate

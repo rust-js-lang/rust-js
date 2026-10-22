@@ -41,35 +41,17 @@ is a module of it, declared where Next.js finds its file:
 mod about {
     pub mod page;
 }
-mod actions;
-mod api {
-    pub mod hello {
-        pub mod route;
-    }
-}
-mod counter;
-mod layout;
-mod nav;
 
 use next::image::Image;
 use next::link::Link;
 use react::{JSX, jsx};
 
-use counter::Counter;
-use nav::Nav;
-
 pub fn Home() -> JSX::Element {
     jsx! {
         <main>
-            <Nav />
             <h1>{"Hello, Next.js"}</h1>
             <Image src="/next.svg" alt="Next.js logo" width={Some(100)} height={Some(20)} priority={Some(true)} />
-            <Counter />
             <Link href="/about">{"About"}</Link>
-            <form action={actions::save_name}>
-                <input name="name" />
-                <button type="submit">{"Save"}</button>
-            </form>
         </main>
     }
 }
@@ -77,26 +59,28 @@ pub fn Home() -> JSX::Element {
 js::export_default!(Home);
 ```
 
+```rust
+// app/about/page.rs
+use react::{JSX, jsx};
+
+pub async fn About() -> JSX::Element {
+    jsx! { <h1>{"About"}</h1> }
+}
+
+js::export_default!(About);
+```
+
 ```jsx
 // app/page.jsx
 import Image from "next/image";
 import Link from "next/link";
-import { saveName } from "./actions.js";
-import { Counter } from "./counter.jsx";
-import { Nav } from "./nav.jsx";
 
 export function Home() {
   return (
     <main>
-      <Nav />
       <h1>Hello, Next.js</h1>
       <Image src="/next.svg" alt="Next.js logo" width={100} height={20} priority />
-      <Counter />
       <Link href="/about">About</Link>
-      <form action={saveName}>
-        <input name="name" />
-        <button type="submit">Save</button>
-      </form>
     </main>
   );
 }
@@ -104,11 +88,25 @@ export function Home() {
 export default Home;
 ```
 
+```jsx
+// app/about/page.jsx
+export async function About() {
+  return <h1>About</h1>;
+}
+
+export default About;
+```
+
 - **A route's page is its default export**: `js::export_default!(Home);`
   is `export default Home;`, the function keeping its name.
 - **`app/about/page.rs`** is `mod about { pub mod page; }`, and becomes
   `app/about/page.jsx`. A file whose name isn't a Rust module's,
   `pages/posts/[slug].rs`, is a module by `#[path = "../pages/posts/[slug].rs"]`.
+- **Every other file is declared the same way**: `app/counter.rs`, below,
+  is `mod counter;`, and `app/api/hello/route.rs` is `mod api { pub mod
+  hello { pub mod route; } }`. What one exports is used by its path,
+  or by a `use`, `use counter::Counter;`, which the JS imports from
+  `./counter.jsx`.
 - **A file with JSX is `.jsx`**, one without is `.js`: `actions.js`,
   `api/hello/route.js`.
 
@@ -141,15 +139,16 @@ export function Counter() {
 }
 ```
 
-A Server Component may be `async`, as Next.js's are:
-`pub async fn About() -> JSX::Element` is `export async function About()`.
-It can `await` `next::headers`' `headers()`, `cookies()` and
+A Server Component may be `async`, as Next.js's are, and as
+`app/about/page.rs` above is: `pub async fn About() -> JSX::Element` is
+`export async function About()`. It can `await` `next::headers`' `headers()`, `cookies()` and
 `draft_mode()`, and a page's `params`, a `js::Promise` of its struct.
 
 ## Server Actions and caching
 
 A module of Server Actions says `js::directive!("use server");`. Each
-`pub async fn` is an action a form's `action` takes:
+`pub async fn` is an action a form's `action` takes, by its path,
+`<form action={actions::save_name}>`:
 
 ```rust
 // app/actions.rs

@@ -56,7 +56,9 @@ them (`in_load_order`).
 
 **A dictionary is refused where its module and another that runs code
 when it loads, a `js::on_load!` or a value made by a call, import each
-other**: that module may load first and reach the dictionary before it's
+other** (a dictionary, its cache and what its entries share run nothing
+of the program's, so a cycle of them alone, either's `lib` and
+`iterator`, compiles): that module may load first and reach the dictionary before it's
 made, where JS would throw a `ReferenceError` that Rust has no cause for.
 The error names both modules: move the impl or the load-time code out of
 the cycle.
@@ -90,4 +92,4 @@ the cycle.
   a generic one's cache, one of a type's fact, and the cycle refused.
 - Mutations: a dictionary a function again, one read called, each kind of
   evidence unseen, the cycle allowed, a load-time call unseen, the cache
-  never made.
+  never made, a cache taken for load-time code.

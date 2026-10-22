@@ -29,7 +29,26 @@ what it writes, without its header comment and source-map line.
 
 ## A component with props
 
-Props are a struct. Destructure it in the parameter, as you would in JS:
+Props are a struct. Destructure it in the parameter, as you would in JS.
+Write the counter in its own module, `src/counter.rs`, and use it from
+`App` with its props as attributes:
+
+```rust
+// src/App.rs
+mod counter;
+
+use counter::Counter;
+use react::{JSX, jsx};
+
+pub fn App() -> JSX::Element {
+    jsx! {
+        <main>
+            <Counter label="Apples" step={1} />
+            <Counter label="Boxes of apples" step={12} />
+        </main>
+    }
+}
+```
 
 ```rust
 // src/counter.rs
@@ -59,6 +78,20 @@ pub fn Counter(CounterProps { label, step }: CounterProps) -> JSX::Element {
 ```
 
 ```jsx
+// src/App.jsx
+import { Counter } from "./counter.jsx";
+
+export function App() {
+  return (
+    <main>
+      <Counter label="Apples" step={1} />
+      <Counter label="Boxes of apples" step={12} />
+    </main>
+  );
+}
+```
+
+```jsx
 // src/counter.jsx
 import { useState } from "react";
 
@@ -75,44 +108,6 @@ export function Counter({ label, step }) {
         Reset
       </button>
     </p>
-  );
-}
-```
-
-Use it from another component, with its props as attributes:
-
-```rust
-// src/App.rs
-mod counter;
-mod todos;
-
-use counter::Counter;
-use react::{JSX, jsx};
-use todos::TodoList;
-
-pub fn App() -> JSX::Element {
-    jsx! {
-        <main>
-            <Counter label="Apples" step={1} />
-            <Counter label="Boxes of apples" step={12} />
-            <TodoList />
-        </main>
-    }
-}
-```
-
-```jsx
-// src/App.jsx
-import { Counter } from "./counter.jsx";
-import { TodoList } from "./todos.jsx";
-
-export function App() {
-  return (
-    <main>
-      <Counter label="Apples" step={1} />
-      <Counter label="Boxes of apples" step={12} />
-      <TodoList />
-    </main>
   );
 }
 ```
@@ -418,6 +413,30 @@ What each part became:
   where it's used: `$retain` is `Vec::retain`, and `$trim` is `str::trim`,
   which trims what Rust calls whitespace. See
   [Semantics](../semantics.md).
+
+Then show the list in `App`, after the counters:
+
+```rust excerpt
+// src/App.rs
+mod counter;
+mod todos;
+
+use counter::Counter;
+use react::{JSX, jsx};
+use todos::TodoList;
+
+pub fn App() -> JSX::Element {
+    jsx! {
+        <main>
+            <Counter label="Apples" step={1} />
+            <Counter label="Boxes of apples" step={12} />
+            <TodoList />
+        </main>
+    }
+}
+```
+
+`App.jsx` imports it as it does `Counter`, from `./todos.jsx`.
 
 ## Mount it
 

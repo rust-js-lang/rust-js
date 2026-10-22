@@ -18,7 +18,7 @@ marks those types as components ([ADR 0579](../../decisions/0579-a-thread-local-
 ## Context
 
 ```rust
-// theme.rs
+// src/theme.rs
 use react::{Context, create_context};
 
 thread_local! {
@@ -27,7 +27,7 @@ thread_local! {
 ```
 
 ```rust
-// lib.rs
+// src/lib.rs
 mod theme;
 
 use react::{JSX, jsx, use_context};
@@ -49,14 +49,14 @@ pub fn App() -> JSX::Element {
 ```
 
 ```jsx
-// theme.js
+// src/theme.js
 import { createContext } from "react";
 
 export const Theme = createContext("light");
 ```
 
 ```jsx
-// lib.jsx
+// src/lib.jsx
 import { useContext } from "react";
 import { Theme } from "./theme.js";
 
@@ -118,6 +118,8 @@ pub fn Rows() -> JSX::Element {
 ```
 
 ```jsx
+import { memo } from "react";
+
 export function Row({ id, label }) {
   return <li data-id={id}>{label}</li>;
 }
@@ -212,6 +214,8 @@ pub fn Screen() -> JSX::Element {
 ```
 
 ```jsx
+import { useImperativeHandle, useRef } from "react";
+
 export function Field({ label, ref }) {
   return (
     <label>
@@ -290,6 +294,8 @@ pub fn Header() -> JSX::Element {
 ```
 
 ```jsx
+import { forwardRef, useRef } from "react";
+
 const SearchInput = forwardRef(({ placeholder }, input) => (
   <input placeholder={placeholder} ref={input} />
 ));
@@ -323,6 +329,8 @@ pub fn Dashboard() -> JSX::Element {
 ```
 
 ```jsx
+import { Suspense, lazy } from "react";
+
 const Chart = lazy(() => import("./chart.jsx"));
 
 export function Dashboard() {
@@ -372,6 +380,9 @@ pub fn App() -> JSX::Element {
 ```
 
 ```jsx
+import { Profiler } from "react";
+import { $displayF64 } from "@rust-js/runtime";
+
 export function App() {
   return (
     <Profiler
@@ -401,6 +412,16 @@ use react::dom::create_portal;
 use react::dom::server::render_to_string;
 use react::webapi::{Element, window};
 use react::{JSX, ReactNode, jsx};
+#
+# mod app {
+#     use react::{JSX, jsx};
+#
+#     pub fn App() -> JSX::Element {
+#         jsx! { <h1>{"Hello"}</h1> }
+#     }
+# }
+#
+# use app::App;
 
 pub struct ModalProps<'a> {
     pub children: &'a dyn ReactNode,
@@ -427,6 +448,12 @@ pub fn html() -> String {
 ```
 
 ```jsx
+import { StrictMode } from "react";
+import { createPortal } from "react-dom";
+import { createRoot } from "react-dom/client";
+import { renderToString } from "react-dom/server";
+import { App } from "./app.jsx";
+
 export function Modal({ children }) {
   if (!window.document.body) {
     return;

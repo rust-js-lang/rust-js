@@ -191,6 +191,42 @@ A function of a `T: Trait` takes the impl's dictionary after its
 arguments, named after the parameter and the trait:
 
 ```rust
+# mod shape {
+#     pub trait Shape {
+#         fn area(&self) -> f64;
+#
+#         fn describe(&self) -> String {
+#             format!("a shape of area {}", self.area())
+#         }
+#     }
+#
+#     pub struct Circle {
+#         pub radius: f64,
+#     }
+#
+#     pub struct Rect {
+#         pub width: f64,
+#         pub height: f64,
+#     }
+#
+#     impl Shape for Circle {
+#         fn area(&self) -> f64 {
+#             std::f64::consts::PI * self.radius * self.radius
+#         }
+#     }
+#
+#     impl Shape for Rect {
+#         fn area(&self) -> f64 {
+#             self.width * self.height
+#         }
+#
+#         fn describe(&self) -> String {
+#             format!("a {}x{} rectangle", self.width, self.height)
+#         }
+#     }
+# }
+# use shape::{Circle, Shape};
+#
 pub fn total_area<S: Shape>(shapes: &[S]) -> f64 {
     shapes.iter().map(|s| s.area()).sum()
 }
@@ -201,6 +237,8 @@ pub fn circles() -> f64 {
 ```
 
 ```js
+import { circleShape } from "./shape.js";
+
 export function totalArea(shapes, SShape) {
   return shapes.map((s) => SShape.area(s)).reduce((a, b) => a + b, -0);
 }
@@ -219,6 +257,42 @@ A `Box<dyn Shape>`, a `&dyn Shape`, is `{ value, impl }`: the value, and
 its impl's dictionary ([ADR 0049](../../decisions/0049-traits-and-generics.md)).
 
 ```rust
+# mod shape {
+#     pub trait Shape {
+#         fn area(&self) -> f64;
+#
+#         fn describe(&self) -> String {
+#             format!("a shape of area {}", self.area())
+#         }
+#     }
+#
+#     pub struct Circle {
+#         pub radius: f64,
+#     }
+#
+#     pub struct Rect {
+#         pub width: f64,
+#         pub height: f64,
+#     }
+#
+#     impl Shape for Circle {
+#         fn area(&self) -> f64 {
+#             std::f64::consts::PI * self.radius * self.radius
+#         }
+#     }
+#
+#     impl Shape for Rect {
+#         fn area(&self) -> f64 {
+#             self.width * self.height
+#         }
+#
+#         fn describe(&self) -> String {
+#             format!("a {}x{} rectangle", self.width, self.height)
+#         }
+#     }
+# }
+# use shape::{Circle, Rect, Shape};
+#
 pub fn largest(shapes: &[Box<dyn Shape>]) -> String {
     let mut best = &shapes[0];
     for shape in shapes {
@@ -242,6 +316,7 @@ pub fn mixed() -> String {
 ```
 
 ```js
+import { circleShape, rectShape } from "./shape.js";
 import { $index } from "@rust-js/runtime";
 
 export function largest(shapes) {
@@ -257,7 +332,7 @@ export function largest(shapes) {
 export function mixed() {
   const shapes = [
     { value: { radius: 1 }, impl: circleShape },
-    { value: { width: 2, height: 3 }, impl: rectShape() },
+    { value: { width: 2, height: 3 }, impl: rectShape },
   ];
   return largest(shapes);
 }
@@ -386,7 +461,7 @@ export function show(p) {
 - **`Display` is a function that gives the text**, and `{p}` is its
   call. A struct has no `toString()`: JS's `String(p)` is
   `"[object Object]"`. JS that wants Rust's text calls
-  `pointDisplay().fmt(p)`.
+  `pointDisplay.fmt(p)`.
 - **An operator of your own is its method's call**: `q + other` is
   `pointAdd_add(q, other)`. An operator of numbers stays JS's, `+`.
 

@@ -26,7 +26,9 @@ mod tests {
 }
 ```
 
-```
+`cargo test` says:
+
+```text
 $ cargo test
 running 1 test
 test shapes::tests::a_unit_circle_has_area_pi ... ok

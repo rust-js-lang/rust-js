@@ -198,7 +198,7 @@ pub fn Card(CardProps { title, children }: CardProps) -> JSX::Element {
 pub fn Profile() -> JSX::Element {
     jsx! {
         <Card title="Profile">
-            <Avatar name="Ada Lovelace" imageUrl="/ada.jpg" />
+            <img src="/ada.jpg" alt="Ada Lovelace" />
             {"A pioneer"}
         </Card>
     }
@@ -218,7 +218,7 @@ export function Card({ title, children }) {
 export function Profile() {
   return (
     <Card title="Profile">
-      <Avatar name="Ada Lovelace" imageUrl="/ada.jpg" />A pioneer
+      <img src="/ada.jpg" alt="Ada Lovelace" />A pioneer
     </Card>
   );
 }
@@ -365,6 +365,8 @@ pub fn People(PeopleProps { people }: PeopleProps) -> JSX::Element {
 ```
 
 ```jsx
+import { useState } from "react";
+
 export function People({ people }) {
   const [selected, setSelected] = useState(undefined);
   const items = people.map((person) => {
@@ -388,22 +390,40 @@ export function People({ people }) {
 The map can be written in place too:
 
 ```rust
-jsx! {
-    <ul>
-        {people
-            .iter()
-            .map(|person| jsx! { <li key={person.id}>{&person.name}</li> })
-            .collect::<Vec<_>>()}
-    </ul>
+# use react::{JSX, jsx};
+#
+# pub struct Person {
+#     pub id: u32,
+#     pub name: String,
+#     pub admin: bool,
+# }
+#
+# pub struct PeopleProps<'a> {
+#     pub people: &'a [Person],
+# }
+#
+pub fn Names(PeopleProps { people }: PeopleProps) -> JSX::Element {
+    jsx! {
+        <ul>
+            {people
+                .iter()
+                .map(|person| jsx! { <li key={person.id}>{&person.name}</li> })
+                .collect::<Vec<_>>()}
+        </ul>
+    }
 }
 ```
 
 ```jsx
-<ul>
-  {people.map((person) => (
-    <li key={person.id}>{person.name}</li>
-  ))}
-</ul>
+export function Names({ people }) {
+  return (
+    <ul>
+      {people.map((person) => (
+        <li key={person.id}>{person.name}</li>
+      ))}
+    </ul>
+  );
+}
 ```
 
 A `key` is a number, a string, or an `Option` of one. It's never a prop:
@@ -530,6 +550,8 @@ pub fn Panel() -> JSX::Element {
 ```
 
 ```jsx
+import { useState } from "react";
+
 export function Button({ label, onClick }) {
   return <button onClick={onClick}>{label}</button>;
 }

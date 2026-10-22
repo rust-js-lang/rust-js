@@ -65,6 +65,19 @@ An event handler can't `await`. `js::spawn` starts a future that no one
 awaits:
 
 ```rust
+# mod later {
+#     pub async fn double_later(n: u32) -> u32 {
+#         let half = half_later(n).await;
+#         half * 4
+#     }
+#
+#     async fn half_later(n: u32) -> u32 {
+#         n / 2
+#     }
+# }
+#
+# use later::double_later;
+#
 pub fn start() {
     js::spawn(Box::new(async {
         let n = double_later(10).await;
@@ -74,6 +87,8 @@ pub fn start() {
 ```
 
 ```js
+import { doubleLater } from "./later.js";
+
 export function start() {
   (async () => {
     const n = await doubleLater(10);

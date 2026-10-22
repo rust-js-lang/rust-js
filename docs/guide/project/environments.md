@@ -183,22 +183,6 @@ pub fn Home() -> JSX::Element {
 js::export_default!(Home);
 ```
 
-```jsx
-// app/page.jsx
-import Link from "next/link";
-
-export function Home() {
-  return (
-    <main>
-      <h1>Hello, Next.js</h1>
-      <Link href="/about">About</Link>
-    </main>
-  );
-}
-
-export default Home;
-```
-
 ```rust
 // app/about/page.rs
 js::directive!("use client");
@@ -215,6 +199,22 @@ pub fn About() -> JSX::Element {
 }
 
 js::export_default!(About);
+```
+
+```jsx
+// app/page.jsx
+import Link from "next/link";
+
+export function Home() {
+  return (
+    <main>
+      <h1>Hello, Next.js</h1>
+      <Link href="/about">About</Link>
+    </main>
+  );
+}
+
+export default Home;
 ```
 
 ```jsx

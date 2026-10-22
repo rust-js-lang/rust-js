@@ -863,6 +863,11 @@ Every Rust name is camelCase in JS: a function, a field, a method, a
 variant's field ([ADR 0573](../../decisions/0573-every-rust-name-is-camel-case-in-js.md)).
 
 ```rust
+# pub struct Task {
+#     pub sort_index: u32,
+#     pub label: String,
+# }
+#
 pub fn first_word(text: &str) -> &str {
     text.split(' ').next().unwrap_or("")
 }

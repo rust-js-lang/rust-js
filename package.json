@@ -30,6 +30,7 @@
     "test:rustc:bless": "cargo build --release && bun scripts/rustc-suite.ts --bless",
     "fmt": "bun scripts/format.ts",
     "fmt:check": "bun scripts/format.ts --check",
+    "docs": "bun scripts/docs.ts",
     "generate": "bun webapi/generate.ts",
     "generate:react": "bun react/generate.ts",
     "generate:attributes": "bun react/attributes.ts",

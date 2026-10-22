@@ -202,6 +202,12 @@ pub fn Editor() -> JSX::Element {
 ```
 
 ```jsx
+function save(data) {
+  if (data.has("title")) {
+    console.log("saved");
+  }
+}
+
 export function Editor() {
   return (
     <form action={save}>
@@ -236,6 +242,9 @@ their JS names. It goes anywhere among the attributes, and what's written
 after it wins, as in JSX:
 
 ```rust
+# use react::attributes::HTMLAttributes;
+# use react::{JSX, jsx};
+#
 pub struct SpreadProps<'a> {
     pub attrs: HTMLAttributes<'a>,
 }
@@ -275,6 +284,7 @@ A capitalized tag is a component: a function of the module, an imported
 one, or a path to one.
 
 ```rust
+// src/lib.rs
 mod ui;
 
 use react::{JSX, jsx};
@@ -289,7 +299,36 @@ pub fn Paths() -> JSX::Element {
 }
 ```
 
+```rust
+// src/ui.rs
+use react::{JSX, ReactNode, jsx};
+
+pub struct CardProps<'a> {
+    pub title: &'a str,
+    pub children: &'a dyn ReactNode,
+}
+
+pub fn Card(CardProps { title, children }: CardProps) -> JSX::Element {
+    jsx! {
+        <section>
+            <h2>{title}</h2>
+            {children}
+        </section>
+    }
+}
+
+pub struct PairProps<T> {
+    pub left: T,
+    pub right: T,
+}
+
+pub fn Pair<T: ReactNode>(PairProps { left, right }: PairProps<T>) -> JSX::Element {
+    jsx! { <span>{left}{" / "}{right}</span> }
+}
+```
+
 ```jsx
+// src/lib.jsx
 import { Card, Pair } from "./ui.jsx";
 
 export function Paths() {
@@ -367,6 +406,17 @@ props, as @types/react's `ElementType` does ([ADR 0234](../../decisions/0234-ele
 elements is a keyed `<Fragment>`:
 
 ```rust
+# use react::{JSX, jsx};
+#
+# pub struct Item {
+#     pub id: u32,
+#     pub name: String,
+# }
+#
+# pub struct ListProps<'a> {
+#     pub items: &'a [Item],
+# }
+#
 pub fn Keyed(ListProps { items }: ListProps) -> JSX::Element {
     jsx! {
         <dl>

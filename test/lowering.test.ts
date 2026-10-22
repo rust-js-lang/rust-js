@@ -5753,6 +5753,36 @@ pub mod counts {
     }
 }
 `);
+  // Dictionaries and their caches alone run nothing where they're made: a
+  // cycle of them compiles, as either's \`lib\` and \`iterator\` do.
+  const quiet = fixture("dictionaries-in-a-cycle");
+  writeFileSync(join(quiet, "lib.rs"), `use std::fmt;
+
+pub mod wrapped {
+    pub struct Wrapped<T>(pub T);
+
+    impl<T: std::fmt::Display> std::fmt::Display for Wrapped<T> {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            write!(f, "({})", super::Boxed(&self.0))
+        }
+    }
+}
+
+pub struct Boxed<T>(pub T);
+
+impl<T: fmt::Display> fmt::Display for Boxed<T> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "[{}]", self.0)
+    }
+}
+
+pub fn shown(n: u32) -> String {
+    wrapped::Wrapped(n).to_string()
+}
+`);
+  run([compiler, join(quiet, "lib.rs"), "-o", join(quiet, "lib.js")]);
+  expect((await import(join(quiet, "lib.js"))).shown(4)).toBe("([4])");
+
   const refused = Bun.spawnSync([compiler, join(cycle, "lib.rs"), "-o", join(cycle, "lib.js")]);
   expect(refused.exitCode).not.toBe(0);
   expect(refused.stderr.toString()).toContain("this impl's dictionary, made where `shapes` loads, in an import cycle with `counts`, which runs code where it loads");

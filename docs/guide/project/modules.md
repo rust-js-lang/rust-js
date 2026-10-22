@@ -55,7 +55,6 @@ write it:
 // src/lib.rs
 pub mod format;
 mod greet;
-mod lint;
 #[path = "routes/[slug].rs"]
 pub mod slug;
 
@@ -63,6 +62,27 @@ pub use greet::hello;
 
 pub fn welcome(name: &str) -> String {
     format::shout(&hello(name))
+}
+```
+
+```rust
+// src/format.rs
+pub fn shout(text: &str) -> String {
+    text.to_uppercase() + "!"
+}
+```
+
+```rust
+// src/greet.rs
+pub fn hello(name: &str) -> String {
+    format!("Hello, {name}")
+}
+```
+
+```rust
+// src/routes/[slug].rs
+pub fn page() -> String {
+    crate::welcome("slug")
 }
 ```
 
@@ -75,13 +95,6 @@ export { hello } from "./greet.js";
 
 export function welcome(name) {
   return shout(hello(name));
-}
-```
-
-```rust
-// src/routes/[slug].rs
-pub fn page() -> String {
-    crate::welcome("slug")
 }
 ```
 
@@ -160,13 +173,33 @@ A `pub use` of another module's function is `export { .. } from` it, in
 the JS and the `.d.ts`; `pub use .. as` renames it.
 
 ```rust
+// src/lib.rs
+# mod format;
+# mod greet;
+#
 pub use greet::hello;
 pub use format::units::px as pixels;
 ```
 
+```rust
+// src/greet.rs
+pub fn hello(name: &str) -> String {
+    format!("Hello, {name}")
+}
+```
+
+```rust
+// src/format.rs
+pub mod units {
+    pub fn px(n: u32) -> String {
+        format!("{n}px")
+    }
+}
+```
+
 ```js
-export { hello } from "./greet.js";
 export { px as pixels } from "./format/units.js";
+export { hello } from "./greet.js";
 ```
 
 A module of only `pub use`s is a file of them, as an `index.js` is. A
@@ -179,7 +212,7 @@ its own, which keeps its name too:
 
 ```rust
 pub fn page() -> String {
-    crate::welcome("slug")
+    String::from("Hello, slug")
 }
 
 js::export_default!(page);
@@ -187,7 +220,7 @@ js::export_default!(page);
 
 ```js
 export function page() {
-  return welcome("slug");
+  return "Hello, slug";
 }
 
 export default page;
@@ -203,6 +236,13 @@ Another module's function as the default is re-exported:
 loaded, a stylesheet say. Write it at the top of the module that needs it.
 
 ```rust
+// src/lib.rs
+#[path = "routes/[slug].rs"]
+pub mod slug;
+```
+
+```rust
+// src/routes/[slug].rs
 js::import!("./routes/slug.css");
 ```
 
@@ -222,9 +262,19 @@ a promise of it. Nothing imports that module statically, so a bundler
 splits it into a chunk of its own ([ADR 0304](../../decisions/0304-dynamic-import.md)).
 
 ```rust
+// src/lib.rs
+# mod lint;
+#
 pub async fn long_lines(text: String) -> usize {
     let count = js::import!(lint::long_lines).await;
     count(&text)
+}
+```
+
+```rust
+// src/lint.rs
+pub fn long_lines(text: &str) -> usize {
+    text.lines().filter(|line| line.len() > 80).count()
 }
 ```
 
@@ -280,10 +330,18 @@ its JS, as a Next.js Client Component needs:
 
 ```rust
 js::directive!("use client");
+
+pub fn label(likes: u32) -> String {
+    format!("Likes: {likes}")
+}
 ```
 
 ```js
 "use client";
+
+export function label(likes) {
+  return `Likes: ${likes}`;
+}
 ```
 
 In a function's or a closure's body, it's that body's directive, as

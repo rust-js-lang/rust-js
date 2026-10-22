@@ -388,8 +388,8 @@ export const mutations: Mutation[] = [
     name: "load-time-calls-unseen",
     breaks: "a module whose load calls a function isn't one that runs code, so a dictionary it may reach through a cycle compiles",
     file: "src/lower/pipeline.rs",
-    find: "consts.iter().any(|c| c.value.has_effects())",
-    replace: "consts.iter().any(|c| c.value.has_effects() && false)",
+    find: "!pass.dictionary_names.contains(&c.name) && c.value.has_effects())",
+    replace: "!pass.dictionary_names.contains(&c.name) && c.value.has_effects() && false)",
     tests: ["test/lowering.test.ts", "-t", "a dictionary that takes nothing"],
   },
   {
@@ -398,6 +398,14 @@ export const mutations: Mutation[] = [
     file: "src/lower/pipeline.rs",
     find: "                consts.push(constant(cache_of[&def_id].clone(), cache, false));\n",
     replace: "                let _ = cache;\n",
+    tests: ["test/lowering.test.ts", "-t", "a dictionary that takes nothing"],
+  },
+  {
+    name: "dictionary-cache-runs-code",
+    breaks: "a generic dictionary's cache, `new WeakMap()`, is code its module's load runs, so a cycle of dictionaries alone, either's, is refused",
+    file: "src/lower/pipeline.rs",
+    find: "(consts.iter()).any(|c| !pass.dictionary_names.contains(&c.name) && c.value.has_effects())",
+    replace: "(consts.iter()).any(|c| c.value.has_effects())",
     tests: ["test/lowering.test.ts", "-t", "a dictionary that takes nothing"],
   },
 ];

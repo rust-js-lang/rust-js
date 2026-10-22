@@ -213,8 +213,9 @@ and a later one may have changed an earlier one.
   it, never work around it.
 - **Keep it true in the same commit.** A change that adds, amends or
   supersedes a decision, or changes what a program writes or becomes,
-  updates the guide's page that says so. A guide that disagrees with the
-  code is a bug, as a failing test is.
+  updates the guide's page that says so. Its JavaScript is never written
+  by hand: `bun run docs` compiles each example and writes it, and
+  `test/docs.test.ts` fails where a page isn't what the compiler makes.
 
 ## Making changes
 

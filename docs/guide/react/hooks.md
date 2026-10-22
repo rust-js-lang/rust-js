@@ -106,6 +106,8 @@ pub fn Logger() -> JSX::Element {
 ```
 
 ```jsx
+import { useEffect, useState } from "react";
+
 export function Title() {
   const [count, setCount] = useState(0);
   useEffect(() => {
@@ -169,6 +171,8 @@ pub fn Search() -> JSX::Element {
 ```
 
 ```jsx
+import { useRef } from "react";
+
 export function Search() {
   const input = useRef(undefined);
   const focus = () => {
@@ -231,6 +235,8 @@ pub fn TodoList(TodoListProps { todos, tab }: TodoListProps) -> JSX::Element {
 ```
 
 ```jsx
+import { useCallback, useMemo, useState } from "react";
+
 function filterTodos(todos, tab) {
   return todos.filter((todo) => tab === "All" || !todo.done);
 }
@@ -292,6 +298,8 @@ pub fn Stepper() -> JSX::Element {
 ```
 
 ```jsx
+import { useReducer } from "react";
+
 function reduce(state, action) {
   if (action === "Increment") {
     return (state + 1) | 0;
@@ -340,6 +348,8 @@ pub fn Lamp() -> JSX::Element {
 ```
 
 ```jsx
+import { useState } from "react";
+
 export function useToggle(initial) {
   const [on, setOn] = useState(initial);
   return [
@@ -373,9 +383,15 @@ export function Lamp() {
 React 19's form hooks:
 
 ```rust
+use react::webapi::{FormData, FormDataEntryValue};
 use react::{JSX, jsx, use_action_state, use_optimistic};
 
-// add_name: fn(&String, &'static FormData) -> String
+fn add_name(names: &String, data: &'static FormData) -> String {
+    match data.get("name") {
+        Some(FormDataEntryValue::Str(name)) => format!("{names}{name} "),
+        _ => names.clone(),
+    }
+}
 
 pub fn Signup() -> JSX::Element {
     let (names, action, pending) = use_action_state(add_name, String::new());
@@ -391,6 +407,18 @@ pub fn Signup() -> JSX::Element {
 ```
 
 ```jsx
+import { useActionState, useOptimistic } from "react";
+
+function addName(names, data) {
+  const name = data.get("name");
+  if (name != null) {
+    if (typeof name === "string") {
+      return `${names}${name} `;
+    }
+  }
+  return names;
+}
+
 export function Signup() {
   const [names, action, pending] = useActionState(addName, "");
   const [shown, _setShown] = useOptimistic(names);

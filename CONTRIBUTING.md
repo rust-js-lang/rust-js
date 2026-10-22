@@ -126,8 +126,10 @@ library behavior from local source.
    is used today, the one place that says what a program writes and what it
    becomes. A change that adds, amends or supersedes a decision, or changes
    what a construct compiles to, a binding's shape, a diagnostic or a
-   build step, updates the page that says so, its examples recompiled, in
-   the same commit. A decision says why; the guide says what's current.
+   build step, updates the page that says so, in the same commit: `bun
+   run docs` writes each example's JavaScript, and `test/docs.test.ts`
+   fails where a page isn't what the compiler makes. A decision says why;
+   the guide says what's current.
 7. **Track progress.** Update [roadmap](ROADMAP.md) items when their
    acceptance criteria are met, with evidence;
    [the crate corpus](docs/crate-corpus.md) when a change moves it; and

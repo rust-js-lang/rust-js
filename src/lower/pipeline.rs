@@ -27,8 +27,9 @@ struct Pass {
     /// `thread_local!`s' values, made from their lowered `init`s.
     local_consts: HashMap<LocalModId, Vec<js::Const>>,
     /// Each dictionary that's its module's `const`, or whose cache is, by
-    /// its impl (ADR 0592).
+    /// its impl (ADR 0592), and the names of the `const`s each makes.
     dictionary_consts: Vec<(LocalModId, DefId)>,
+    dictionary_names: HashSet<String>,
     /// The functions a block makes and gives, by their items' indices, for
     /// their holes (ADR 0296).
     holes: HashMap<u32, js::Function>,
@@ -428,6 +429,7 @@ pub fn lower_crate<'tcx>(
             };
             pass.dictionary_consts.push((module, def_id));
             let consts = pass.local_consts.entry(module).or_default();
+            let made = consts.len();
             if let Some(cache) = cache_values.remove(&def_id) {
                 consts.push(constant(cache_of[&def_id].clone(), cache, false));
             } else if lowered.function.params.is_empty() {
@@ -446,11 +448,15 @@ pub fn lower_crate<'tcx>(
                     }
                 }
                 consts.push(constant(fns[&def_id].name.clone(), object, export));
+                pass.dictionary_names
+                    .extend(consts[made..].iter().map(|c| c.name.clone()));
                 if lowered.jsx {
                     pass.jsx.insert(module);
                 }
                 continue;
             }
+            pass.dictionary_names
+                .extend(consts[made..].iter().map(|c| c.name.clone()));
         }
         match lowered {
             lowered
@@ -997,11 +1003,13 @@ fn refuse_dictionaries_in_load_cycles(
     const_items: &HashMap<LocalModId, Vec<js::Const>>,
     targets: &HashMap<LocalModId, HashSet<(LocalModId, String, bool, String)>>,
 ) {
+    // A dictionary, its cache and what its entries share run nothing of the
+    // program's where they're made: not code a cycle's load runs.
     let runs_code = |module: &LocalModId| {
         pass.statements.get(module).is_some_and(|stmts| !stmts.is_empty())
-            || const_items
-                .get(module)
-                .is_some_and(|consts| consts.iter().any(|c| c.value.has_effects()))
+            || const_items.get(module).is_some_and(|consts| {
+                (consts.iter()).any(|c| !pass.dictionary_names.contains(&c.name) && c.value.has_effects())
+            })
     };
     let reaches = |from: LocalModId, to: LocalModId| {
         let mut seen = HashSet::from([from]);

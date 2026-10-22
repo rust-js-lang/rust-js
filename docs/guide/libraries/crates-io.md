@@ -7,7 +7,7 @@ the app, where it can, and the app's JS imports it
 
 ```toml
 [dependencies]
-either = "1.15"
+either = "=1.15.0"
 ```
 
 ```rust
@@ -26,7 +26,7 @@ pub fn describe(text: &str) -> String {
 ```
 
 ```js
-import { Either } from "../rust-js/crates/either-1.18.0/src/lib.js";
+import { Either } from "../rust-js/crates/either-1.15.0/src/lib.js";
 import { $parseInt } from "@rust-js/runtime";
 
 export function parse(text) {
@@ -72,23 +72,32 @@ does, with rust-js as its `RUSTC_WRAPPER`
 
 A crate rust-js can't compile is still checked by rustc, its types alone:
 the app can name its types, and a call into it is refused, saying why the
-crate couldn't be compiled. Here `workers` calls `std::thread::spawn`
-([the limitations](../limitations.md#async-threads-and-time)):
+crate couldn't be compiled. Here `crossbeam-utils` can't be, and its
+note says what in it stopped it
+([the limitations](../limitations.md)):
+
+```toml
+[dependencies]
+crossbeam-utils = "=0.8.21"
+```
 
 ```rust
 pub fn doubled(n: u32) -> u32 {
-    workers::in_background(n)
+    crossbeam_utils::thread::scope(|s| s.spawn(|_| n * 2).join().unwrap()).unwrap()
 }
 ```
 
 ```
-error: rust-js does not support calling `workers::in_background` yet
- --> src/lib.rs:2:5
+cargo check failed:
+error: rust-js does not support calling `crossbeam_utils::thread::Scope::<'env>::spawn` yet
+ --> src/lib.rs:2:42
   |
-2 |     workers::in_background(n)
-  |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+2 |     crossbeam_utils::thread::scope(|s| s.spawn(|_| n * 2).join().unwrap()).unwrap()
+  |                                          ^^^^^^^^^^^^^^^^
   |
-  = note: its crate is its types alone: rust-js couldn't compile it (ADR 0415): rust-js does not support calling `std::thread::spawn` yet
+  = note: its crate is its types alone: rust-js couldn't compile it (ADR 0415): rust-js does not support statics of type `[cache_padded::CachePadded<atomic::seq_lock::SeqLock>; LEN]` yet
+
+error: could not compile `app` (lib) due to 1 previous error
 ```
 
 What stops a crate is what [the limitations](../limitations.md) list,
@@ -109,6 +118,12 @@ and rust-js writes their API as JS's own
 | `hashbrown` (with `foldhash`, `allocator-api2`) | its `HashMap` and `HashSet` are std's: a `Map` and a `Set` |
 | `indexmap` | its `IndexMap` and `IndexSet` are a `Map` and a `Set`, its methods by place, `get_index`, `swap_remove`, the runtime's |
 | `memchr` 2.8.3, crates.io's | its searches are the runtime's, over the byte arrays slices are, `memchr` being `indexOf` |
+
+```toml
+[dependencies]
+indexmap = "=2.14.2"
+memchr = "=2.8.3"
+```
 
 ```rust
 pub fn first_comma(text: &[u8]) -> Option<usize> {

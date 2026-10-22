@@ -81,14 +81,21 @@ pub fn confetti() {
 pub fn polite(name: &str) -> String {
     unreachable!()
 }
+
+pub fn celebrate() {
+    confetti();
+    println!("{}", polite("Ada"));
+}
 ```
 
 ```js
 import confetti from "canvas-confetti";
 import * as greet from "./greet.js";
 
-confetti();
-console.log(`${greet.polite("Ada")}`);
+export function celebrate() {
+  confetti();
+  console.log(`${greet.polite("Ada")}`);
+}
 ```
 
 - **`js::import!(f)` loads a binding's module when it's asked for**:
@@ -208,10 +215,16 @@ use webapi::Element;
 pub fn scroll_into_view_if_needed(this: &Element, center: Option<bool>) {
     unreachable!()
 }
+
+pub fn reveal(el: &Element) {
+    scroll_into_view_if_needed(el, None);
+}
 ```
 
 ```js
-el.scrollIntoViewIfNeeded();
+export function reveal(el) {
+  el.scrollIntoViewIfNeeded();
+}
 ```
 
 ### Inheritance is `Deref`
@@ -290,12 +303,14 @@ pub fn draw(meta: &Unknown) -> bool {
 ```
 
 ```js
-if ("scale" in meta) {
-  meta.drawn = true;
+export function draw(meta) {
+  if ("scale" in meta) {
+    meta.drawn = true;
+  }
+  const scale = meta.scale;
+  console.log(`${scale + ""}`);
+  return !!scale;
 }
-const scale = meta.scale;
-console.log(`${scale + ""}`);
-return !!scale;
 ```
 
 ## Parameters and results
@@ -466,11 +481,20 @@ use js::{IntoUnknown, Promise};
 pub fn put(key: &str, value: Option<&dyn IntoUnknown>) -> Promise<()> {
     unreachable!()
 }
+
+pub async fn fill() {
+    put("count", Some(&3)).await;
+    put("empty", None).await;
+}
 ```
 
 ```js
-await put("count", 3);      // put("count", Some(&3)).await
-await put("empty");         // put("empty", None).await
+import { put } from "my-store";
+
+export async function fill() {
+  await put("count", 3);
+  await put("empty");
+}
 ```
 
 ### Unions and `any`
@@ -480,6 +504,12 @@ trait each member implements. The value is passed as it is
 ([ADR 0229](../../decisions/0229-union-parameters.md)):
 
 ```rust
+# use std::marker::PhantomData;
+#
+# use js::JsObject;
+#
+# pub struct Shape(PhantomData<JsObject>);
+#
 /// What `string | number` takes.
 #[cfg_attr(rust_js, rust_js::types = "string | number")]
 pub trait IntoLabel {}

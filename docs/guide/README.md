@@ -84,3 +84,21 @@ For people and for AI coding agents alike, each page:
 - **Is kept true with the code.** A change to rust-js that changes what a
   program writes, or what it becomes, changes the page that says so in the
   same commit (CONTRIBUTING.md).
+
+## Examples
+
+No JavaScript on these pages is written by hand. `bun run docs` compiles
+each example and writes the fences after it; `bun run docs --check`, which
+the tests run, fails where a page isn't what the compiler makes.
+
+- **A ```` ```rust ```` fence is an example**, compiled as `src/lib.rs` with
+  the crates rust-js ships. The fences right after it are written from it:
+  `js` or `jsx`, its JavaScript; `ts`, its declarations; a fence with no
+  language, what the compiler says of it, which then must fail.
+- **A line `# ..` is compiled but isn't the example's**, as rustdoc's: the
+  `use` or the type an example needs, which an earlier one showed.
+- **Several files are a run of fences**, each headed by its path, `//
+  src/lib.rs`, `// src/greeting.rs`; each output fence after them is headed
+  by the module it's of, `// src/greeting.js`.
+- **```` ```rust excerpt ```` isn't compiled**, and no output fence follows
+  it: a part of an example shown whole elsewhere.

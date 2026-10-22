@@ -29,8 +29,9 @@ error[E0308]: mismatched types
 2 |     "3"
   |     ^^^ expected `i32`, found `&str`
 
+error: aborting due to 1 previous error
+
 For more information about this error, try `rustc --explain E0308`.
-error: could not compile `app` (lib) due to 1 previous error
 ```
 
 They're the same errors `cargo check` gives, and your editor shows them
@@ -54,6 +55,8 @@ error: rust-js does not support calling `std::thread::spawn` yet
   |
 2 |     std::thread::spawn(|| {});
   |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error: aborting due to 1 previous error
 ```
 
 The words after "support" say what's refused:
@@ -84,6 +87,8 @@ error: rust-js does not support addressable memory yet: a raw pointer to this pl
   |     ^^^^^
   |
   = note: JavaScript has no memory to address: a raw pointer, `transmute` and `std::ptr` read or write bytes by where they are (ADR 0390)
+
+error: aborting due to 1 previous error
 ```
 
 ### A crate rust-js couldn't compile
@@ -129,12 +134,18 @@ A binding written another way than the one form:
 ```rust
 unsafe extern "Rust" {
     #[link_name = "Math.max"]
-    safe fn max(a: f64, b: f64) -> f64;
+    pub safe fn max(a: f64, b: f64) -> f64;
 }
 ```
 
 ```
 error: rust-js: a JS function is bound as an ordinary function, `#[cfg_attr(rust_js, rust_js::link_name = "Math.max")] fn max(..) { unreachable!() }`, not in an `extern` block (ADR 0373)
+ --> src/lib.rs:3:5
+  |
+3 |     pub safe fn max(a: f64, b: f64) -> f64;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error: aborting due to 1 previous error
 ```
 
 And from `rust-js build` itself:
