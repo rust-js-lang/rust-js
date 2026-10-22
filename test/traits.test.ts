@@ -106,7 +106,7 @@ describe.each([["MIR", {}]] as const)("from %s", (_, env) => {
     // trait is the pair itself, and a receiver with effects is one `const`.
     expect(output).toContain("  const s = { value: x.value, impl: x.impl.Shape() };");
     expect(output).toContain("function make(c) {\n  return { value: bump(c), impl: i32Compute };");
-    expect(output).toContain("  const receiver = make(c);\n  return (receiver.impl.add(receiver.value, (bump(c) + shape) | 0) + Math.imul(c.value, 100)) | 0;");
+    expect(output).toContain("  const receiver = make(c);\n  return (receiver.impl.add(receiver.value, (bump(c) + shape) | 0) + ((c.value * 100) | 0)) | 0;");
     // A copied default knows its Self: Circle's `name` and `area` are called directly.
     expect(output).toContain("label: (self) => `${circleShape_name(self)} of area ${$displayF64(circleShape_area(self))}`");
     expect(() => module.first([], { copy: (x: unknown) => x })).toThrow("index out of bounds");

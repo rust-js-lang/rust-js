@@ -15,7 +15,7 @@ function lazy() {
   const r = $lazyScan(
     v.values().map((x) => {
       console.log(`map ${x}`);
-      return Math.imul(x, 2);
+      return (x * 2) | 0;
     }),
     0,
     (acc, x) => {

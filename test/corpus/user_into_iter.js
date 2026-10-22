@@ -16,7 +16,7 @@ function countIterator_next(count) {
 const Count = {
   doubled(count) {
     return $iterator(count, countIterator_next)
-      .map((n) => Math.imul(n, 2) >>> 0)
+      .map((n) => (n * 2) >>> 0)
       .toArray();
   },
 };

@@ -132,7 +132,7 @@ const dCheckedDouble = { checkedDouble: dCheckedDouble_checkedDouble, $drop: dDr
 
 function dCheckedDouble_checkedDouble(d) {
   if (d[0] < 10) {
-    return [Math.imul(d[0], 2) >>> 0];
+    return [(d[0] * 2) >>> 0];
   }
 }
 

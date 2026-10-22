@@ -43,7 +43,7 @@ export function options(n) {
   return [
     h ?? 99,
     h ?? 0,
-    h != null ? Math.imul(h, 3) >>> 0 : 7,
+    h != null ? (h * 3) >>> 0 : 7,
     h != null ? half(h) : undefined,
     h != null && h > 2 ? h : undefined,
     h != null && h < 5,
@@ -65,7 +65,7 @@ export function moreOptions(n) {
 
 export function results(c) {
   const r = parse(c);
-  const value = r.TAG === "Ok" ? { TAG: "Ok", _0: Math.imul(r._0, 10) >>> 0 } : r;
+  const value = r.TAG === "Ok" ? { TAG: "Ok", _0: (r._0 * 10) >>> 0 } : r;
   return [
     value.TAG === "Ok" ? `Ok(${value._0})` : `Err(${$debugStr(value._0)})`,
     ((result) => (result.TAG === "Ok" ? `Ok(${result._0})` : `Err(${result._0})`))(
@@ -112,7 +112,7 @@ export function consumers(n) {
     v
       .map((x) => {
         if (x > 2) {
-          return Math.imul(x, 100) >>> 0;
+          return (x * 100) >>> 0;
         }
       })
       .find((item) => item != null),

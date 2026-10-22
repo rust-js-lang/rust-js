@@ -19,7 +19,7 @@ function main() {
   console.log(`${tmp}`);
 
   let tmp$1 = 42;
-  tmp$1 = Math.imul(tmp$1, 2);
+  tmp$1 = (tmp$1 * 2) | 0;
   console.log(`${tmp$1}`);
 
   let tmp$2 = 5;

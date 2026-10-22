@@ -30,7 +30,7 @@ function main() {
       .reduce((n) => n + 1, 0)}`,
   );
   const all = iterator_fuse([4], { next: countdownIterator_next }, true)
-    .map((n) => Math.imul(n, 10) >>> 0)
+    .map((n) => (n * 10) >>> 0)
     .toArray();
   console.log(`[${all.join(", ")}]`);
   for (const n of iterator_fuse([0], { next: blinkerIterator_next }, false)) {

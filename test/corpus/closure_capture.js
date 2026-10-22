@@ -49,7 +49,7 @@ function main() {
 
   let value = 5;
   const double = () => {
-    value = Math.imul(value, 2);
+    value = (value * 2) | 0;
   };
   double();
   double();

@@ -50,7 +50,7 @@ function main() {
 
   // A closure that captures nothing, as a `fn`.
   const addOne = (x) => (x + 1) | 0;
-  console.log(`${addOne(1)} ${apply(addOne, 10)} ${apply((x) => Math.imul(x, 3), 7)}`);
+  console.log(`${addOne(1)} ${apply(addOne, 10)} ${apply((x) => (x * 3) | 0, 7)}`);
   console.log(`${twice(addOne, 0)}`);
 
   // A number's method.

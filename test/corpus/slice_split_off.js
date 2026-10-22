@@ -88,7 +88,7 @@ function main() {
   rest = split$8[0];
   const first = split$8[1];
   if (first != null) {
-    first.value = Math.imul(first.value, 100);
+    first.value = (first.value * 100) | 0;
   }
   const split$9 = $sliceSplitOffEndMut(rest, true, true);
   rest = split$9[0];

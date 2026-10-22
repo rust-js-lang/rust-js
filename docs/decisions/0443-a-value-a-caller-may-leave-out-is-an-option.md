@@ -5,7 +5,8 @@ Status: Accepted. Amends [0024](0024-web-crate.md),
 of an optional argument are gone, and [0020](0020-structs-and-tuples.md):
 a `()` as a `dyn` JS is given the value of is an array too. Extends
 [0196](0196-typescript-declarations.md), [0313](0313-console-forms.md) and
-[0330](0330-undefined-given-to-js.md).
+[0330](0330-undefined-given-to-js.md). Amended by
+[0593](0593-a-lazy-argument-is-its-value.md).
 
 Case: A ([0262](0262-when-rust-and-js-disagree.md)): whether a value left
 out is written out or not changes nothing a program does; and least

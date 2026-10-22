@@ -8,7 +8,7 @@ export function entry() {
 
 function main() {
   const total = { value: 0 };
-  const add = { value: (x) => Math.imul(x, 2) };
+  const add = { value: (x) => (x * 2) | 0 };
   let borrowMut;
   for (const x of [1, 2, 3]) {
     const value = $borrowMut(add, true);

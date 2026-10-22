@@ -30,7 +30,7 @@ function main() {
       console.log(`${length}`);
       const n = [1, 2, 3];
       const value = (x) => {
-        x.value = Math.imul(x.value, 3);
+        x.value = (x.value * 3) | 0;
         return x.value > 3;
       };
       $retainMut(n, value, true);

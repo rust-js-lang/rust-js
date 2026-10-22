@@ -102,7 +102,7 @@ export function innerValues() {
 
 export function mappedValues() {
   const noneInside = $unwrap(mapped(undefined, (o) => o == null));
-  const doubled = $unwrap(mapped(4, (n) => Math.imul(n, 2)));
+  const doubled = $unwrap(mapped(4, (n) => (n * 2) | 0));
   return [noneInside, triedSome(undefined, true), doubled];
 }
 

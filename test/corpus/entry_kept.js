@@ -10,7 +10,7 @@ function main() {
   const lens = new Map();
   $orInsertWith(lens, "abc", () => 3);
   const len = $mutGet(lens, "abc");
-  len.value = Math.imul(len.value, 2) >>> 0;
+  len.value = (len.value * 2) >>> 0;
   const entry = $entry(lens, "de");
   const current = $orInsert(entry._0[0], entry._0[1], 1);
   entry._0[0].set(entry._0[1], (current + 10) >>> 0);

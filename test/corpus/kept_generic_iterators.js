@@ -35,7 +35,7 @@ function afterFirst(it) {
   const first = $next(it);
   const rest = [];
   for (const x of it) {
-    rest.push(Math.imul(x, 10) >>> 0);
+    rest.push((x * 10) >>> 0);
   }
   return [first, rest];
 }

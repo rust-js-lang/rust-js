@@ -142,7 +142,7 @@ export function tour() {
 }
 
 function tick(c, tag) {
-  c.value = ((Math.imul(c.value, 10) >>> 0) + tag) >>> 0;
+  c.value = (((c.value * 10) >>> 0) + tag) >>> 0;
   return tag;
 }
 

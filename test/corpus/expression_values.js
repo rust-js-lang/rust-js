@@ -45,7 +45,7 @@ function loudDrop_drop(loud) {
 }
 
 function twice(n) {
-  return Math.imul(n, 2);
+  return (n * 2) | 0;
 }
 
 function find(items, x) {

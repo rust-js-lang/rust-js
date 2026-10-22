@@ -98,7 +98,7 @@ function main() {
   const joined = $foldBack(
     $filterEnds($iter([3, 6, 9, 12]), (x) => x > 4),
     0,
-    (acc, x) => (Math.imul(acc, 100) + x) | 0,
+    (acc, x) => (((acc * 100) | 0) + x) | 0,
   );
   console.log(`${joined}`);
 }

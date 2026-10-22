@@ -100,7 +100,7 @@ function main() {
 
   console.log(
     `${total({ start: 1, end: 5 })} ${$lazyRange(0, 5)
-      .map((x) => Math.imul(x, 2))
+      .map((x) => (x * 2) | 0)
       .reduce((a, b) => (a + b) | 0, 0)}`,
   );
   const ids = $iterator({ start: 1 }, $rangeFromNext).take(3).toArray();

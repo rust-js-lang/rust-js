@@ -73,7 +73,7 @@ function main() {
   const inner = lookup(table, 0);
   const doubled =
     inner != null
-      ? $some($someValue(inner) != null ? Math.imul($someValue(inner), 2) : undefined)
+      ? $some($someValue(inner) != null ? ($someValue(inner) * 2) | 0 : undefined)
       : undefined;
   const value$4 = $someValue(lookup(table, 1) ?? 9);
   console.log(

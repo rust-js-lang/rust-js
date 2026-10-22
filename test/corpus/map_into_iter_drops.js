@@ -92,15 +92,13 @@ function main() {
       break;
     }
     const n = tmp;
-    const value = n & 255;
-    const value$1 = [Math.imul(n, 10) >>> 0];
     let tmp$1;
     try {
-      tmp$1 = $insert(map, value, value$1);
+      tmp$1 = $insert(map, n & 255, [(n * 10) >>> 0]);
     } catch (error) {
       if (map$live) {
-        for (const [, value$1] of $sortedEntries(map, $cmp)) {
-          loudDrop_drop(value$1);
+        for (const [, value] of $sortedEntries(map, $cmp)) {
+          loudDrop_drop(value);
         }
       }
       throw error;

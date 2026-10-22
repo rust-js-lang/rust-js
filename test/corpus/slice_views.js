@@ -103,7 +103,7 @@ function main() {
   console.log(`[${v.join(", ")}]`);
 
   for (const chunk of $chunksMut(v, 4)) {
-    const value$1 = Math.imul(chunk[$at(chunk, 0)], 2);
+    const value$1 = (chunk[$at(chunk, 0)] * 2) | 0;
     chunk[0] = value$1;
   }
   console.log(`[${v.join(", ")}]`);

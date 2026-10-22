@@ -19,7 +19,7 @@ export function entry() {
 }
 
 function main() {
-  const scores = new Map($lazyRange(1, 7).map((k) => [k, Math.imul(k | 0, 10)]));
+  const scores = new Map($lazyRange(1, 7).map((k) => [k, ((k | 0) * 10) | 0]));
   for (const [k, v] of $mutEntries(
     scores,
     $treeRange(
@@ -43,7 +43,7 @@ function main() {
     $treeRange(scores, $cmp, false, "BTreeMap", "Unbounded", { TAG: "Included", _0: 3 }),
   )
     .map(([, v]) => {
-      v.value = Math.imul(v.value, 2);
+      v.value = (v.value * 2) | 0;
       return v.value;
     })
     .reduce((a, b) => (a + b) | 0, 0);

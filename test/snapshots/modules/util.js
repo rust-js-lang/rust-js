@@ -9,6 +9,6 @@
 //   mod util { .. }   ──► util.js   (inline modules get a file too)
 
 export function double(x) {
-  return Math.imul(x, 2) >>> 0;
+  return (x * 2) >>> 0;
 }
 //# sourceMappingURL=util.js.map

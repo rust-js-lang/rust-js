@@ -9,7 +9,7 @@ export function entry() {
 function main() {
   const queue = [2, 3];
   const pushFrontMut = $pushFrontMut(queue, 1, true);
-  pushFrontMut.value = Math.imul(pushFrontMut.value, 10);
+  pushFrontMut.value = (pushFrontMut.value * 10) | 0;
   const pushBackMut = $pushMut(queue, 4, true);
   pushBackMut.value = (pushBackMut.value + 1) | 0;
   const insertMut = $dequeInsert(queue, 2, 7, true);
@@ -28,7 +28,7 @@ function main() {
   const value$3 = $pushMut(list, 5, true);
   value$3.value = (value$3.value + 1) | 0;
   const value$4 = $pushFrontMut(list, 4, true);
-  value$4.value = Math.imul(value$4.value, 2);
+  value$4.value = (value$4.value * 2) | 0;
   console.log(`[${list.join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

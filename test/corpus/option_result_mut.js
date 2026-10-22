@@ -38,7 +38,7 @@ function main() {
           },
         },
       ]) {
-    c.value = Math.imul(c.value, 10);
+    c.value = (c.value * 10) | 0;
   }
   let none;
   for (const c of none == null
@@ -112,7 +112,7 @@ function main() {
   };
   if (value.TAG === "Ok") {
     const x = value._0;
-    x.value = Math.imul(x.value, 5);
+    x.value = (x.value * 5) | 0;
   }
   for (const x of ok.TAG === "Ok"
     ? [

@@ -24,7 +24,7 @@ function noisy(tag, x) {
 
 // A chain kept in a variable that's returned: who ends it isn't known here.
 function doubled(v) {
-  const it = v.values().map((x) => noisy("returned", Math.imul(x, 2)));
+  const it = v.values().map((x) => noisy("returned", (x * 2) | 0));
   return it;
 }
 
@@ -33,7 +33,7 @@ function main() {
 
   const kept = v
     .values()
-    .map((x) => noisy("map", Math.imul(x, 2)))
+    .map((x) => noisy("map", (x * 2) | 0))
     .filter((x) => noisy("filter", x) > 2)
     .toArray();
   console.log(`[${kept.join(", ")}]`);
@@ -61,7 +61,7 @@ function main() {
   const value$2 = $lent($iter(v))
     .map((x) => {
       if (noisy("find_map", x) > 1) {
-        return Math.imul(x, 10);
+        return (x * 10) | 0;
       }
     })
     .find((item) => item != null);
@@ -150,7 +150,7 @@ function main() {
 
   // Closures that do nothing that can be seen keep arrays.
   const doubled$1 = v
-    .map((x) => Math.imul(x, 2))
+    .map((x) => (x * 2) | 0)
     .filter((x) => x % 4 === 0)
     .slice(0, 1);
   console.log(`[${doubled$1.join(", ")}]`);

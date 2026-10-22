@@ -21,6 +21,10 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **A multiply by a small constant is JS's own `*`** (ADR 0011 amended):
+  `n * 2` of an `i32` is `(n * 2) | 0`, where it was `Math.imul(n, 2)`. A
+  product of two variables, or by a constant past 2^21, is still
+  `Math.imul`, which a double can't round.
 - **An `enumerate`, a `take` and a `skip` cloned** (ADR 0542): each one the
   crate clones keeps its count explicit, `$enumerate`, `$taking` and
   `$skipping`, and its clone is one of a clone of what it steps, at its

@@ -59,7 +59,7 @@ function each(held, all) {
     r.value.value = (r.value.value + 100) >>> 0;
   }
   for (const r of $mutItems(all)) {
-    r.value.value = Math.imul(r.value.value, 3) >>> 0;
+    r.value.value = (r.value.value * 3) >>> 0;
   }
 }
 

@@ -7,7 +7,7 @@ export function entry() {
 }
 
 function double(x) {
-  return Math.imul(x, 2);
+  return (x * 2) | 0;
 }
 
 function square(x) {

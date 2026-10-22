@@ -44,7 +44,7 @@ export const Lexer = {
       if (d == null) {
         break;
       }
-      n = ((Math.imul(n, 10) >>> 0) + d) >>> 0;
+      n = (((n * 10) >>> 0) + d) >>> 0;
       $next(lexer.chars);
     }
     return n;

@@ -4,7 +4,7 @@ import { setTimeout } from "node:timers/promises";
 import { $borrow, $borrowMut, $unborrow } from "@rust-js/runtime";
 
 async function double(x) {
-  return Math.imul(await setTimeout(1, x), 2) >>> 0;
+  return ((await setTimeout(1, x)) * 2) >>> 0;
 }
 
 /** `.await` in the middle of an expression, in Rust's order. */
@@ -192,7 +192,7 @@ export async function loadBytes(url) {
  */
 export async function runWasm(bytes, a, b) {
   const module = await WebAssembly.compile(bytes);
-  const imports = { env: { double: (x) => Math.imul(x, 2) } };
+  const imports = { env: { double: (x) => (x * 2) | 0 } };
   const instance = await WebAssembly.instantiate(module, imports);
   return instance.exports.add(a, b);
 }

@@ -22,7 +22,7 @@ function main() {
   const total = $closing($iterator({ n: 3, name: "sum" }, counterIterator_next), (it) => {
     counterDrop_drop(it.of);
   })
-    .map((x) => Math.imul(x, 2) >>> 0)
+    .map((x) => (x * 2) >>> 0)
     .reduce((a, b) => (a + b) >>> 0, 0);
   console.log(`total ${total}`);
   const all = $closing($iterator({ n: 2, name: "collect" }, counterIterator_next), (it) => {
@@ -39,7 +39,7 @@ function main() {
   console.log(`count ${count}`);
   const iter = $closing($iterator({ n: 2, name: "for" }, counterIterator_next), (it) => {
     counterDrop_drop(it.of);
-  }).map((x) => Math.imul(x, 10) >>> 0);
+  }).map((x) => (x * 10) >>> 0);
   while (true) {
     let tmp;
     try {

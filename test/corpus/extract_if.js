@@ -29,7 +29,7 @@ function main() {
     2,
     8,
     (x) => {
-      x.value = Math.imul(x.value, 10);
+      x.value = (x.value * 10) | 0;
       return x.value > 40;
     },
     true,

@@ -5,7 +5,7 @@ export function entry() {
 }
 
 function double(n) {
-  return Math.imul(n, 2) >>> 0;
+  return (n * 2) >>> 0;
 }
 
 function apply(f, n) {

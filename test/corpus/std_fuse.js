@@ -92,7 +92,7 @@ function ends(it, IIterator, IDoubleEndedIterator, IExactSizeIterator, IClone, I
   const total = fuseDoubleEndedIterator_rfold(
     f,
     0,
-    (acc, x) => ((Math.imul(acc, 10) >>> 0) + x) >>> 0,
+    (acc, x) => (((acc * 10) >>> 0) + x) >>> 0,
     IIterator,
     IDoubleEndedIterator,
   );

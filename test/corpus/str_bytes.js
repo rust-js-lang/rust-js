@@ -27,7 +27,7 @@ function leadingNumber(line) {
     if (b == null || 48 > b || b > 57) {
       break;
     }
-    value = ((Math.imul(value ?? 0, 10) >>> 0) + ((b - 48) & 255)) >>> 0;
+    value = ((((value ?? 0) * 10) >>> 0) + ((b - 48) & 255)) >>> 0;
     $next(bytes);
   }
   return value;

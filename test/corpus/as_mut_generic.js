@@ -30,7 +30,7 @@ function double(t, TAsMutU32Slice) {
       },
     }).value,
   )) {
-    x.value = Math.imul(x.value, 2) >>> 0;
+    x.value = (x.value * 2) >>> 0;
   }
   return t;
 }

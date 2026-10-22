@@ -39,7 +39,7 @@ function main() {
   console.log(`${text} ${$byteLen(text)}`);
   let number = 7;
   number = (number + 1) | 0;
-  number = Math.imul(number, 2);
+  number = (number * 2) | 0;
   console.log(`${number}`);
   const pair = { count: 1, name: "pair" };
   const name = pair.name;

@@ -11,7 +11,7 @@ function loudDrop_drop(loud) {
 }
 
 function tripled(l) {
-  return l[0] < 20 ? [Math.imul(l[0], 3) >>> 0] : undefined;
+  return l[0] < 20 ? [(l[0] * 3) >>> 0] : undefined;
 }
 
 function main() {

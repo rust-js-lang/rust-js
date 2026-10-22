@@ -30,7 +30,7 @@ function main() {
   }
   const last = $nextBack(it);
   if (last != null) {
-    last.value = Math.imul(last.value, 10);
+    last.value = (last.value * 10) | 0;
   }
   console.log(`${it.end - it.at}`);
   for (const x of $lent(it).take(2)) {

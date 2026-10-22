@@ -218,7 +218,7 @@ export function Misc() {
   const [total, _dispatch] = useReducer(
     (s, a) => (s + a) | 0,
     20,
-    (start) => (Math.imul(start, 2) + 2) | 0,
+    (start) => (((start * 2) | 0) + 2) | 0,
   );
   return (
     <Profiler

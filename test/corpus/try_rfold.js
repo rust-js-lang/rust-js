@@ -20,7 +20,7 @@ function summedBack(it) {
     if (x < 0) {
       return { TAG: "Err", _0: `bad ${x} after ${acc}` };
     }
-    return { TAG: "Ok", _0: (Math.imul(acc, 10) + x) | 0 };
+    return { TAG: "Ok", _0: (((acc * 10) | 0) + x) | 0 };
   });
 }
 

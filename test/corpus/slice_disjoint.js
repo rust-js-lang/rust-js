@@ -27,7 +27,7 @@ function main() {
     const t = a.value;
     a.value = b.value;
     b.value = t;
-    a.value = Math.imul(a.value, 10);
+    a.value = (a.value * 10) | 0;
   }
   console.log(`[${v.join(", ")}]`);
   const value = $getDisjointMut(v, [1, 9], true);

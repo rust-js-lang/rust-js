@@ -84,7 +84,7 @@ function describe(token, limit) {
         return result;
       }
       const n = result._0;
-      const n$1 = Math.imul(n, 2);
+      const n$1 = (n * 2) | 0;
       text = String(n$1);
     }
   }

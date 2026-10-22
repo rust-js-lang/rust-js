@@ -21,7 +21,7 @@ function describe(values, N, TDebug) {
 }
 
 function count(N) {
-  return Math.imul(N, 2) >>> 0;
+  return (N * 2) >>> 0;
 }
 
 // `[x; N]` of a caller's `N`.

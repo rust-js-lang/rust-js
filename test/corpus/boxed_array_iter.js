@@ -17,7 +17,7 @@ function main() {
 
   const counts = [1, 2, 3];
   for (const n of $mutItems(counts)) {
-    n.value = Math.imul(n.value, 10);
+    n.value = (n.value * 10) | 0;
   }
   const total = counts.reduce((a, b) => (a + b) | 0, 0);
   console.log(`[${counts.join(", ")}] ${total}`);
@@ -27,7 +27,7 @@ function main() {
     p.x = (p.x + 1) | 0;
   }
   for (const p of points.toReversed()) {
-    p.x = Math.imul(p.x, 2);
+    p.x = (p.x * 2) | 0;
   }
   console.log(`[${points.map((item) => pointDebug_fmt(item)).join(", ")}]`);
 

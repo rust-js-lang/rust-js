@@ -29,7 +29,7 @@ function main() {
   // Given to closures.
   const scores = [1, 2, 3];
   $mutItems(scores).forEach((s) => {
-    s.value = Math.imul(s.value, 10);
+    s.value = (s.value * 10) | 0;
   });
   $mutItems(scores)
     .filter((s) => s.value > 10)
@@ -56,7 +56,7 @@ function main() {
   }
   for (const [name, n] of $mutEntries(stock)) {
     if (name.startsWith("a")) {
-      n.value = Math.imul(n.value, 2);
+      n.value = (n.value * 2) | 0;
     }
   }
   const sorted = Array.from(stock).map(([k, v]) => [k, v]);

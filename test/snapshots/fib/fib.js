@@ -60,7 +60,7 @@ export function nth(order, n) {
 
 /** Signed wrapping arithmetic. */
 export function wrapDemo(x) {
-  return (Math.imul(x, 3) - 7) | 0;
+  return (((x * 3) | 0) - 7) | 0;
 }
 
 /** Integer division panics on zero (and on `i32::MIN / -1`), just like Rust. */

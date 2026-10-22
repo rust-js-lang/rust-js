@@ -28,7 +28,7 @@ export function firstTwice(json) {
   const iter = $iter(numbers);
   const n = $next(iter);
   if (n != null) {
-    first = Math.imul(n, 2) >>> 0;
+    first = (n * 2) >>> 0;
   }
   return { TAG: "Ok", _0: first };
 }

@@ -13,7 +13,7 @@ function note(log, name, value) {
 }
 
 function three(a, b, c) {
-  return (((Math.imul(a, 100) + Math.imul(b, 10)) | 0) + c) | 0;
+  return (((((a * 100) | 0) + ((b * 10) | 0)) | 0) + c) | 0;
 }
 
 function main() {

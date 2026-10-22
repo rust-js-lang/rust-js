@@ -15,7 +15,7 @@ export function entry() {
 function main() {
   const v = $range(1, 4)
     .toReversed()
-    .map((x) => Math.imul(x, 2));
+    .map((x) => (x * 2) | 0);
   const w = $iterator({ start: 1, end: 6 }, $rangeInclusiveNextBack)
     .filter((x) => x % 2 === 0)
     .map((x) => (x + 1) | 0)

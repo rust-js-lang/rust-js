@@ -58,7 +58,7 @@ function main() {
   const getMut = Counter.getMut(c);
   getMut.value = (getMut.value + 41) | 0;
   const n = Counter.getMut(c);
-  n.value = Math.imul(n.value, 2);
+  n.value = (n.value * 2) | 0;
   console.log(`${c.n}`);
 
   let a = 1;

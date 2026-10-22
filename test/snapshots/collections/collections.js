@@ -49,7 +49,7 @@ export function endOnce(n) {
     n$1 = (n$1 + 1) | 0;
     times = (times + 1) | 0;
   }
-  return (Math.imul(times, 1000) + n$1) | 0;
+  return (((times * 1000) | 0) + n$1) | 0;
 }
 
 /** A `mut` loop variable is a copy: changing it doesn't move the loop on. */
@@ -62,7 +62,7 @@ export function mutCounter(n) {
       break;
     }
     let i = value;
-    i = Math.imul(i, 10);
+    i = (i * 10) | 0;
     total = (total + i) | 0;
   }
   return total;
@@ -100,7 +100,7 @@ export function iterate(n) {
     total = (total + x) >>> 0;
   }
   for (const x of v) {
-    total = (total + (Math.imul(x, 100) >>> 0)) >>> 0;
+    total = (total + ((x * 100) >>> 0)) >>> 0;
   }
   for (const [k, w] of [
     [1, 2],
@@ -232,7 +232,7 @@ export function indexed(i) {
   v[$at(v, i)] = (read + 1) >>> 0;
   v[$at(v, 0)] = (v[0] + 5) >>> 0;
   const slice = v;
-  const value = Math.imul(slice[$at(slice, 2)], 2) >>> 0;
+  const value = (slice[$at(slice, 2)] * 2) >>> 0;
   slice[2] = value;
   return [read, $index(v, i), v];
 }

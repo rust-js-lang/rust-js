@@ -18,7 +18,7 @@ function apply(f, x) {
 }
 
 function dynamic(f) {
-  return (Math.imul(f(), 10) + f()) | 0;
+  return (((f() * 10) | 0) + f()) | 0;
 }
 
 function square(x) {

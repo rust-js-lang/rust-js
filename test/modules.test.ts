@@ -242,13 +242,13 @@ pub fn tally_of_four() -> u32 {
   expect(lib).toContain("  return Square.area(Square.new(side));");
   expect(shapes).toContain("export const Square = {\n  new(side) {");
   expect(shapes).toContain("  area(square) {\n    return Math.imul(Square.sideLength(square), Square.sideLength(square)) >>> 0;");
-  expect(shapes).toContain("\nconst Tally = {\n  doubled(tally) {\n    return Math.imul(tally[0], 2) >>> 0;\n  },\n};\n\nexport function tallyOfFour() {");
+  expect(shapes).toContain("\nconst Tally = {\n  doubled(tally) {\n    return (tally[0] * 2) >>> 0;\n  },\n};\n\nexport function tallyOfFour() {");
   // Laid out on lines of its own, a lone method still maps back to its Rust.
   const { decodeMappings, lookup } = await import("./sourcemap.ts");
   const segments = decodeMappings((await Bun.file(join(join(dir, "mir"), "shapes.js.map")).json()).mappings);
   const jsLines = shapes.split("\n");
   const rsLines = (await Bun.file(join(dir, "shapes.rs")).text()).split("\n");
-  for (const [jsText, rustText] of [["return Math.imul(tally[0], 2)", "self.0 * 2"], ["Math.imul(tally[0], 2)", "self.0 * 2"], ["doubled(tally) {", "doubled(&self)"]]) {
+  for (const [jsText, rustText] of [["return (tally[0] * 2)", "self.0 * 2"], ["(tally[0] * 2)", "self.0 * 2"], ["doubled(tally) {", "doubled(&self)"]]) {
     const line = jsLines.findIndex((l) => l.includes(jsText));
     const hit = lookup(segments, line, jsLines[line].indexOf(jsText));
     expect([jsText, hit && rsLines[hit.srcLine].slice(hit.srcCol).startsWith(rustText)]).toEqual([jsText, true]);

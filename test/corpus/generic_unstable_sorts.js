@@ -45,13 +45,13 @@ function iSorted(IIterator) {
 
 function main() {
   const tags = $range(0, 40).map((i) => [
-    ((Math.imul(i, 7) % 5) | 0) & 255,
+    ((((i * 7) | 0) % 5) | 0) & 255,
     String.fromCharCode((97 + (((i % 26) | 0) & 255)) & 255),
   ]);
   const by = sorted(tags.slice(), byKey, "network");
   console.log(`${$debugStr(by.map((t) => t[1]).join(""))}`);
   const wide = $range(0, 30).map((i) => [
-    BigInt.asUintN(64, BigInt((Math.imul(i, 3) % 4) | 0)),
+    BigInt.asUintN(64, BigInt((((i * 3) | 0) % 4) | 0)),
     0n,
     0n,
     String.fromCharCode((97 + (i & 255)) & 255),

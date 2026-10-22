@@ -31,7 +31,7 @@ function firstDoubled(v) {
     return;
   }
   const x = v[0];
-  return Math.imul(x, 2) >>> 0;
+  return (x * 2) >>> 0;
 }
 
 function main() {

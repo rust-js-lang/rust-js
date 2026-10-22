@@ -33,7 +33,7 @@ export function sumDigits(a, b) {
     return result$1;
   }
   const y = result$1._0;
-  return { TAG: "Ok", _0: ((Math.imul(x, 10) >>> 0) + y) >>> 0 };
+  return { TAG: "Ok", _0: (((x * 10) >>> 0) + y) >>> 0 };
 }
 
 /** `?` on an `Option`. */

@@ -206,7 +206,7 @@ function main() {
   let tmp;
   try {
     fuse = iterator_fuse(["summed", 4], { next: loudIterator_next }, false, loudDrop_drop);
-    tmp = (n) => Math.imul(n, 10) >>> 0;
+    tmp = (n) => (n * 10) >>> 0;
   } catch (error) {
     if (steady$live) {
       if (steady.iter != null) {

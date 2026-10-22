@@ -59,7 +59,7 @@ function main() {
     inspected(none);
   }
   console.log(
-    `${kept == null ? "None" : `Some(${kept})`} [${seen.join(", ")}] ${some != null ? Math.imul(some, 10) : 0} ${none != null ? Math.imul(none, 10) : 0}`,
+    `${kept == null ? "None" : `Some(${kept})`} [${seen.join(", ")}] ${some != null ? (some * 10) | 0 : 0} ${none != null ? (none * 10) | 0 : 0}`,
   );
   console.log(
     `[${(some != null ? [some] : []).join(", ")}] [${(none != null ? [none] : []).join(", ")}]`,
@@ -100,7 +100,7 @@ function main() {
       total = value;
     },
   };
-  getOrInsertWith.value = Math.imul(getOrInsertWith.value, 2);
+  getOrInsertWith.value = (getOrInsertWith.value * 2) | 0;
   let point;
   point ??= { x: 0 };
   point.x = (point.x + 3) | 0;

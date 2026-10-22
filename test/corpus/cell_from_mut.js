@@ -8,7 +8,7 @@ export function entry() {
 
 function bumpAll(cells) {
   for (const cell of cells) {
-    cell.value = Math.imul(cell.value, 10);
+    cell.value = (cell.value * 10) | 0;
   }
 }
 

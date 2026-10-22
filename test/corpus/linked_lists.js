@@ -26,7 +26,7 @@ function main() {
     `${popFront == null ? "None" : `Some(${popFront})`} ${value == null ? "None" : `Some(${value})`}`,
   );
   console.log(`${list.includes(2)} ${list.reduce((a, b) => (a + b) >>> 0, 0)}`);
-  const doubled = tail.map((x) => Math.imul(x, 2) >>> 0);
+  const doubled = tail.map((x) => (x * 2) >>> 0);
   for (const x of doubled) {
     $print(`${x} `);
   }

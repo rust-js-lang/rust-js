@@ -40,7 +40,7 @@ function firstBig(v) {
     if (x == null) {
       break;
     }
-    const y = Math.imul(x, 2) >>> 0;
+    const y = (x * 2) >>> 0;
     if (y < 10) {
       continue;
     }

@@ -17,7 +17,7 @@ function main() {
   const n = { value: count };
   bump(n);
   count = n.value;
-  count = Math.imul(count, 3) >>> 0;
+  count = (count * 3) >>> 0;
   console.log(`${count}`);
 
   const counter = { hits: 1 };

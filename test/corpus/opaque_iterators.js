@@ -7,7 +7,7 @@ export function entry() {
 }
 
 function tens(v) {
-  return v.values().map((x) => Math.imul(x, 10));
+  return v.values().map((x) => (x * 10) | 0);
 }
 
 function evens(n) {

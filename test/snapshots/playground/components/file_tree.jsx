@@ -15,7 +15,7 @@ export function FileTree({ tree, depth, first, selected, onOpen, onDelete }) {
           <div className="w-full">
             <span
               className={`block ${ROW} text-muted`}
-              style={{ paddingLeft: (8 + (Math.imul(depth, 12) >>> 0)) >>> 0 }}
+              style={{ paddingLeft: (8 + ((depth * 12) >>> 0)) >>> 0 }}
             >{`${name}/`}</span>
             <ul>
               <FileTree

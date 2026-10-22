@@ -73,7 +73,7 @@ function doubled(s) {
     }
     const n = result._0;
     check(n);
-    return { TAG: "Ok", _0: Math.imul(n, 2) >>> 0 };
+    return { TAG: "Ok", _0: (n * 2) >>> 0 };
   } catch (error) {
     return { TAG: "Err", _0: $writeCaught(error) };
   }

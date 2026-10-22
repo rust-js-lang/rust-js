@@ -33,7 +33,7 @@ function number(it) {
     if (c == null) {
       break;
     }
-    n = ((Math.imul(n, 10) >>> 0) + $unwrap($toDigit(c, 10))) >>> 0;
+    n = (((n * 10) >>> 0) + $unwrap($toDigit(c, 10))) >>> 0;
   }
   return n;
 }
@@ -93,7 +93,7 @@ function main() {
   const x = word(words);
   const y = word(words);
   console.log(`${x} ${y} ${word(words)}`);
-  const lazy = $successors(1, (n) => Math.imul(n, 2) >>> 0).map((n) => (n + 1) >>> 0);
+  const lazy = $successors(1, (n) => (n * 2) >>> 0).map((n) => (n + 1) >>> 0);
   const a$1 = take2(lazy);
   console.log(
     `[${a$1.join(", ")}] ${((value) => (value == null ? "None" : `Some(${value})`))($next(lazy))}`,

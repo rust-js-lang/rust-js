@@ -23,7 +23,7 @@ export function area(s) {
     return 0;
   }
   if (s.TAG === "Circle") {
-    return Math.imul(Math.imul(3, s._0), s._0);
+    return Math.imul((3 * s._0) | 0, s._0);
   }
   return Math.imul(s.w, s.h);
 }

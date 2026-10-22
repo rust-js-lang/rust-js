@@ -44,7 +44,7 @@ function main() {
   console.log(`${total}`);
   const it = $iter([1, 2, 0, 4, 5]);
   const before = $lazyTakeWhile(
-    $lent(it).map((n) => (n !== 0 ? Math.imul(n, 10) : undefined)),
+    $lent(it).map((n) => (n !== 0 ? (n * 10) | 0 : undefined)),
     (item) => item != null,
   ).toArray();
   const after = it.toArray();

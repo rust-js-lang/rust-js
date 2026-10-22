@@ -14,7 +14,7 @@ function main() {
   $sortUnstable(words, (a, b) => key(a) < key(b), "network");
   console.log(`${words.join(",")}`);
 
-  const pairs = $range(0, 40).map((i) => [(Math.imul(i, 7) >>> 0) % 4, i]);
+  const pairs = $range(0, 40).map((i) => [((i * 7) >>> 0) % 4, i]);
   const key$1 = (p) => p[0];
   $sortUnstable(pairs, (a, b) => key$1(a) < key$1(b), "network");
   console.log(`[${pairs.map((p) => p[1]).join(", ")}]`);

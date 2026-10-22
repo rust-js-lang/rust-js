@@ -23,7 +23,7 @@ function length(p, PDeref, PTargetAsRefStr) {
 
 const Wrapper = {
   doubled(wrapper, PDeref) {
-    return Math.imul(PDeref.deref(wrapper[0]), 2);
+    return (PDeref.deref(wrapper[0]) * 2) | 0;
   },
 };
 

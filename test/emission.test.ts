@@ -63,7 +63,7 @@ test("source map points from fib.js back into fib.rs", async () => {
     ["fib(n - 1)", "fib(n - 1)"],
     ["while (i < n)", "while i < n"],
     ["if (i === n)", "if i == n"],
-    ["(Math.imul(x, 3) - 7) | 0", "x * 3 - 7"],
+    ["(((x * 3) | 0) - 7) | 0", "x * 3 - 7"],
     ["$div(a, b, -2147483648) | 0", "a / b"],
     ['order === "Ascending"', "Order::Ascending"],
     ["fibIter((20 - n) >>> 0)", "fib_iter(20 - n)"],

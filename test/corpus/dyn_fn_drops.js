@@ -46,7 +46,7 @@ function main() {
     throw error;
   }
   const handlers = [value, tmp];
-  const plain = (x) => Math.imul(x, 2) >>> 0;
+  const plain = (x) => (x * 2) >>> 0;
   try {
     handlers.push(plain);
     const total = handlers.reduce((acc, f) => f(acc), 1);

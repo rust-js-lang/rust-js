@@ -52,7 +52,7 @@ function main() {
   console.log(`${o == null ? "None" : `Some(${o})`}`);
 
   const pt = { x: 1, y: 2 };
-  pt.x = Math.imul(pt.x, 10);
+  pt.x = (pt.x * 10) | 0;
   console.log(`${pt.x} ${pt.y}`);
 
   // Through a reference that's assigned again: the object of that moment.
@@ -112,7 +112,7 @@ function main() {
   let j = 1;
   const item$3 = $index(nodes, j);
   j = 0;
-  item$3.count = Math.imul(item$3.count, 7);
+  item$3.count = (item$3.count * 7) | 0;
   console.log(`${$index(nodes, 0).count} ${$index(nodes, 1).count} ${j}`);
   const grid = [
     [1, 2],

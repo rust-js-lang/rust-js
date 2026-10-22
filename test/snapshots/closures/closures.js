@@ -22,7 +22,7 @@ export function moveCopies(n) {
   const captured = n$1;
   const get = () => captured;
   n$1 = (n$1 + 100) | 0;
-  return (Math.imul(get(), 1000) + n$1) | 0;
+  return (((get() * 1000) | 0) + n$1) | 0;
 }
 
 /** A `move` closure owns its copy and can change it between calls. */
@@ -49,7 +49,7 @@ export function freshCopyEachTime(times) {
       n$1 = (n$1 + 1) | 0;
       return n$1;
     };
-    total = (total + ((Math.imul(bump(), 10) + bump()) | 0)) | 0;
+    total = (total + ((((bump() * 10) | 0) + bump()) | 0)) | 0;
     i += 1;
   }
   return total;

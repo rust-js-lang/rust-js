@@ -15,7 +15,7 @@ export function entry() {
 }
 
 function gather(n, BFromIteratorU32) {
-  return BFromIteratorU32.fromIter($lazyRange(1, n + 1).map((x) => Math.imul(x, 2) >>> 0));
+  return BFromIteratorU32.fromIter($lazyRange(1, n + 1).map((x) => (x * 2) >>> 0));
 }
 
 function made(text, BFromIteratorChar) {
