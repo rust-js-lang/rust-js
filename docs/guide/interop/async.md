@@ -154,6 +154,11 @@ To handle a rejection, ask for a `Result`:
 - **`js::settle(promise)`** does the same for a promise whose binding says
   `Promise<T>`, as webapi's `fetch` does.
 
+It's the binding's declared result that says so, not a type parameter a
+caller fills: `js::promise(parse(text))` of an `async fn parse() ->
+Result<u32, String>` is that promise, fulfilled with the `Result` the
+future gives, never settled ([ADR 0588](../../decisions/0588-a-binding-throws-by-its-declared-result.md)).
+
 A rejection's reason is a `&JsError`, whose `message()` and `name()` are
 the `Error`'s ([Errors, panics and exceptions](exceptions.md)).
 

@@ -213,10 +213,21 @@ pub(in crate::lower) enum OrderingCall {
 }
 
 impl<'a, 'tcx> Recognition<'a, 'tcx> {
+    /// How a binding says it may throw: by the result it's declared with, a
+    /// `Result` or a `Promise<Result<..>>`, or what its trait says one is,
+    /// `T::Stringified`; not by a type parameter a caller gives one:
+    /// `js::promise::<Result<..>>` of an `async fn` is its promise (ADR 0588).
     pub(in crate::lower) fn catching(&self, id: DefId, args: ty::GenericArgsRef<'tcx>) -> Catching {
-        let output = self
-            .tcx
-            .fn_sig(id)
+        let sig = self.tcx.fn_sig(id);
+        let declared = sig.instantiate_identity().skip_normalization().skip_binder().output();
+        let given = |ty: Ty<'tcx>| matches!(ty.kind(), ty::Param(_));
+        if given(declared)
+            || matches!(declared.kind(), ty::Adt(_, inner) if self.is_js_object(declared)
+                && inner.types().next().is_some_and(given))
+        {
+            return Catching::Direct;
+        }
+        let output = sig
             .instantiate(self.tcx, args)
             .skip_normalization()
             .skip_binder()

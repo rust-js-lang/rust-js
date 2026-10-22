@@ -5400,6 +5400,40 @@ pub fn clash() -> usize {
   expect(() => lib.clash()).toThrow("already borrowed");
 });
 
+// ADR 0588: a binding says it may throw by the result it's declared with,
+// \`Promise<Result<..>>\`, not by what its generics are given: \`js::promise\`
+// of a future that gives a \`Result\` is that promise, its \`Result\` the
+// future's own, not a rejection settled.
+test("a generic binding given a Result is not one that may throw", async () => {
+  const dir = fixture("generic-binding-result");
+  writeFileSync(join(dir, "lib.rs"), `pub async fn parse(text: String) -> Result<u32, String> {
+    text.parse().map_err(|_| format!("not a number: {text}"))
+}
+
+pub async fn sum(a: String, b: String) -> Result<u32, String> {
+    let (a, b) = js::promise::all2((js::promise(parse(a)), js::promise(parse(b)))).await;
+    Ok(a? + b?)
+}
+
+#[rust_js::link_name = "this"]
+fn same<T>(this: T) -> T {
+    this
+}
+
+pub fn checked(n: u32) -> Result<u32, String> {
+    same(n.checked_mul(2).ok_or_else(|| String::from("too big")))
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).not.toContain("$settle");
+  const lib = await import(join(dir, "lib.js"));
+  expect(await lib.sum("1", "2")).toEqual(await lib.parse("3"));
+  expect(await lib.sum("1", "x")).toEqual(await lib.parse("x"));
+  expect(js).not.toContain("$try");
+  expect(lib.checked(2)).toEqual({ TAG: "Ok", _0: 4 });
+});
+
 // ADR 0583: a global some hosts lack is an \`Option\` binding, read where
 // it may not be: React's scheduler asks for \`setImmediate\`, then
 // \`MessageChannel\`, then \`setTimeout\`.

@@ -183,8 +183,8 @@ export const mutations: Mutation[] = [
     name: "catching-generic-signature",
     breaks: "whether a binding may throw is its generic signature's: `stringify_with` of an `Unknown` isn't in a `try`",
     file: "src/lower/recognition/traits.rs",
-    find: "            .instantiate(self.tcx, args)\n            .skip_normalization()\n            .skip_binder()\n            .output();\n        let output = self\n",
-    replace: "            .instantiate_identity()\n            .skip_normalization()\n            .skip_binder()\n            .output();\n        let _ = args;\n        let output = self\n",
+    find: "        let output = sig\n            .instantiate(self.tcx, args)\n",
+    replace: "        let output = sig\n            .instantiate_identity()\n",
     tests: ["test/bindings.test.ts","-t","react.dev's Console"],
   },
   {
@@ -466,5 +466,21 @@ export const mutations: Mutation[] = [
     find: "        || tcx.is_diagnostic_item(Symbol::intern(\"IntoFuture\"), id)\n        // Never lowered",
     replace: "        // Never lowered",
     tests: ["test/snapshots.test.ts", "-t", "async"],
+  },
+  {
+    name: "generic-result-taken-to-throw",
+    breaks: "a binding declared to give a `T`, given a `Result`, runs in a `$try`, its `Result` wrapped in another `Ok`",
+    file: "src/lower/recognition/traits.rs",
+    find: "        if given(declared)\n",
+    replace: "        if false\n",
+    tests: ["test/lowering.test.ts", "-t", "generic binding given a Result"],
+  },
+  {
+    name: "generic-promise-result-settled",
+    breaks: "`js::promise` of an `async fn` that gives a `Result` is settled, its `Result` wrapped in another `Ok`",
+    file: "src/lower/recognition/traits.rs",
+    find: "                && inner.types().next().is_some_and(given))\n",
+    replace: "                && inner.types().next().is_some_and(|_| false))\n",
+    tests: ["test/lowering.test.ts", "-t", "generic binding given a Result"],
   },
 ];

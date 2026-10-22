@@ -1,7 +1,9 @@
 # 0035. JS that throws is a `Result`; `?` returns early
 
-Status: Accepted. Builds on [0033](0033-enums-with-fields.md), where a
-`Result` is ReScript's `{ TAG: "Ok", _0: v }`.
+Status: Accepted; amended by [0588](0588-a-binding-throws-by-its-declared-result.md),
+whose binding declared to give a type parameter never says it may throw.
+Builds on [0033](0033-enums-with-fields.md), where a `Result` is
+ReScript's `{ TAG: "Ok", _0: v }`.
 
 Case: N, A, C, D ([0262](0262-when-rust-and-js-disagree.md)).
 
