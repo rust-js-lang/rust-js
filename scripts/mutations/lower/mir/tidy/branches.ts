@@ -330,18 +330,6 @@ export const mutations: Mutation[] = [
     "tests": ["test/lowering.test.ts", "-t", "call giving a bool is one in a test"]
   },
   {
-    "name": "logical-returns-kept",
-    "breaks": "a value written with `&&`, `s != \"en\" && (if t {..} else {..})`, stays MIR's `return` of each branch",
-    "file": "src/lower/mir/tidy/branches.rs",
-    "find": "        && within(last_if.span)\n",
-    "replace": "        && false\n",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "a value written with && is returned as one"
-    ]
-  },
-  {
     "name": "element-branch-not-small",
     "breaks": "a small element chosen, `busy ? <span>\u2026</span> : <b>Save</b>`, stays `let label; if (busy) ..`",
     "file": "src/lower/mir/tidy/branches.rs",

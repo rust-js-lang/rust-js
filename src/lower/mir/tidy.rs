@@ -15,6 +15,7 @@ mod decisions;
 mod destructuring;
 mod flags;
 mod jumps;
+mod logicals;
 mod loops;
 mod unwinds;
 mod values;
@@ -22,7 +23,7 @@ mod values;
 pub(super) use self::bindings::{HELD_ARG, is_temporary, temporary, unsuffixed_params, user_name};
 pub(super) use self::destructuring::{copied_params, destructured_params};
 pub(super) use self::values::{call_path, field_path, writer_body};
-use self::{bindings::*, branches::*, destructuring::*, jumps::*, loops::*, values::*};
+use self::{bindings::*, branches::*, destructuring::*, jumps::*, logicals::*, loops::*, values::*};
 
 /// A body tidied, once its parameters are taken apart: its temporaries
 /// named, its drop flags too, and then, its temporaries named alike, each
@@ -194,6 +195,7 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     // A chain of tests a loop ended, its body now ending where the chain's does.
     bottom_up(body, &mut |stmts| branch_values(stmts, returns, booleans, made));
     js::statement_lists(body, &mut unlabeled);
+    js::statement_lists(body, &mut |stmts| logical_blocks(stmts, logicals, returns, booleans));
     js::statement_lists(body, &mut |stmts| logical_returns(stmts, logicals, returns, booleans));
     // What's given where `false` is skipped as `undefined` is, `test &&
     // value`: one read there alone, which nothing else tells from

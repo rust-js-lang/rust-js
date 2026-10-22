@@ -6180,6 +6180,31 @@ pub fn parsed() -> Vec<f64> {
   expect([lib.called(1), lib.parsed(), lib.resetTo(undefined), lib.resetTo(4)]).toEqual([2, [10, 10], -1, 4]);
 });
 
+// ADR 0613: \`&&\` and \`||\` mixed, as the program wrote them, are one value
+// returned, \`(x === y && (x !== 0 || 1 / x === 1 / y)) || ..\`, React's
+// \`Object.is\` polyfill's, not MIR's labelled block of its tests.
+test("a value of && and || mixed is returned as written", async () => {
+  const dir = fixture("mixed-logicals");
+  writeFileSync(join(dir, "lib.rs"), `pub fn same(x: f64, y: f64) -> bool {
+    (x == y && (x != 0.0 || 1.0 / x == 1.0 / y)) || (x.is_nan() && y.is_nan())
+}
+
+pub fn either(a: bool, b: bool, c: bool, d: bool) -> bool {
+    (a || b) && (c || d)
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("  return (x === y && (x !== 0 || 1 / x === 1 / y)) || (Number.isNaN(x) && Number.isNaN(y));\n");
+  expect(js).not.toContain("break");
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.same(0, -0), lib.same(NaN, NaN), lib.same(1, 1), lib.same(1, 2)]).toEqual([false, true, true, false]);
+  const all = [false, true];
+  for (const a of all) for (const b of all) for (const c of all) for (const d of all) {
+    expect(lib.either(a, b, c, d)).toBe((a || b) && (c || d));
+  }
+});
+
 // ADR 0612: two values of any shape are equal as JS's \`===\` has them, an
 // \`Option\` of them too, where \`null\` isn't \`undefined\`: React's
 // \`Object.is\` polyfill compares \`mixed\` values so.

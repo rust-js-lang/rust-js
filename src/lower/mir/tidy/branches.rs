@@ -244,37 +244,6 @@ pub(super) fn table_read(arms: &[(Option<Expr>, Expr)], names: &[String]) -> Opt
     }
 }
 
-/// `if (t) { return a; } return b;`, MIR's of a value the program wrote
-/// with `&&` or `||` where `t` is tested: one value returned, `t ? a : b`,
-/// as the program wrote it, each test before it folded in, `s !== "en" &&
-/// (t ? a : b)`; not where it wrote a `return`. An `if`'s condition is one
-/// too, as `returned_values` makes of one with an `else`.
-pub(super) fn logical_returns(
-    stmts: &mut Vec<Stmt>,
-    logicals: &[js::Span],
-    returns: &[js::Span],
-    booleans: &HashSet<String>,
-) {
-    let within = |s: js::Span| !s.is_none() && logicals.iter().any(|l| l.lo <= s.lo && s.hi <= l.hi);
-    while let [.., last_if, last] = stmts.as_slice()
-        && let StmtKind::Return(Some(no)) = &last.kind
-        && let StmtKind::If(test, then, None) = &last_if.kind
-        && let [
-            Stmt {
-                kind: StmtKind::Return(Some(yes)),
-                span: yes_span,
-            },
-        ] = then.as_slice()
-        && within(last_if.span)
-        && !written(returns, last.span)
-        && !written(returns, *yes_span)
-    {
-        let returned = StmtKind::Return(Some(conditional(test.clone(), yes.clone(), no.clone(), booleans)));
-        let span = last_if.span;
-        stmts.splice(stmts.len() - 2.., [returned.at(span)]);
-    }
-}
-
 /// What a branch makes a value of, as a person writes it: `if (c) {} else
 /// { s }` is `if (!c) { s }`; `if (c) { x = a; } else { x = b; }` is `x =
 /// c ? a : b;`, of two branches; and `l: { if (a) { if (b) { x = t; break l; } } x = f; }`,
