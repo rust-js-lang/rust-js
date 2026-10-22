@@ -164,4 +164,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^self_given_on_as_into_iter.rs$"],
   },
+  {
+    name: "btree-given-unordered",
+    breaks: "a `BTreeSet` given to `extend` or `chain` is stepped in its JS set's insertion order, not its keys'",
+    file: "src/lower/iterators/stepping.rs",
+    find: "        if self.is_sorted(ty) {\n            return self.in_order_of(value, ty, span);\n        }\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^btree_given_in_order.rs$"],
+  },
 ];

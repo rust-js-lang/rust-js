@@ -96,8 +96,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// What `flat_map` and `flatten` step of an inner `value` of type
     /// `inner`, as a JS iterable: a range's numbers, the crate's iterator's
     /// items and an escape's `char`s, `as_js_iterator`'s, as `chain` steps
-    /// them; a `Result`'s `Ok` value or none; else the value, an array's or
-    /// a JS iterator's own. `None` where it's the value.
+    /// them; a `Result`'s `Ok` value or none; a B-tree's, in order; else
+    /// the value, an array's or a JS iterator's own. `None` where it's the
+    /// value.
     fn inner_iterable(&mut self, value: Expr, inner: Ty<'tcx>, span: Span) -> R<Option<Expr>> {
         let inner = self.reveal(inner);
         if self.range_kind(inner).is_some()
@@ -110,6 +111,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let ok = Expr::bin(Op::Eq, Expr::member(value.clone(), "TAG"), Expr::str("Ok"));
             let items = Expr::array(vec![Expr::member(value, "_0")]);
             return Ok(Some(Expr::cond(ok, items, Expr::array(Vec::new()))));
+        }
+        // A B-tree's, in its keys' order, which its JS map isn't (ADR 0059).
+        if self.is_sorted(inner) {
+            return self.in_order_of(value, inner, span).map(Some);
         }
         Ok(None)
     }

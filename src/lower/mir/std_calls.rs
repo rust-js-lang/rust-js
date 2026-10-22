@@ -303,7 +303,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let extended = (self.tcx.trait_of_assoc(def_id))
                     .is_some_and(|t| crate::lower::recognition::is_extend(self.tcx, t));
                 let value = match extended {
-                    true => self.joined_text(value, Some(arg_tys[1]), span)?,
+                    true => self.joined_text(value, Some(arg_tys[1]), span, out)?,
                     false => value,
                 };
                 self.flush(state, out)?;

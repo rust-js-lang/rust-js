@@ -204,8 +204,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// as it is, `extend(xs)`'s, `chain(xs)`'s or a `Debug` builder's
     /// `entries(xs)`'s, as JS steps them: an
     /// `Option`'s, `[]` or `[x]` (ADR 0128); a range's, the crate's own
-    /// iterator's or a type parameter's given as it is, its JS iterator; an
-    /// array's or a JS iterator's, itself. The one answer (ADR 0528).
+    /// iterator's or a type parameter's given as it is, its JS iterator; a
+    /// B-tree's, in order; an array's or a JS iterator's, itself. The one
+    /// answer (ADR 0528).
     pub(in crate::lower) fn iterable_items(
         &mut self,
         value: Expr,
@@ -226,6 +227,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         if self.range_kind(ty).is_some() || self.is_user_iterator(ty) || self.iterator_given_as_it_is(ty) {
             return self.as_js_iterator(value, ty, span);
+        }
+        // A B-tree's, in its keys' order, which its JS map isn't (ADR 0059).
+        if self.is_sorted(ty) {
+            return self.in_order_of(value, ty, span);
         }
         Ok(value)
     }
