@@ -48,3 +48,15 @@ of a generic iterator, and an error elsewhere:**
   passing another's on, and std's partly stepped, mapped and owned, with
   native Rust; a diagnostics test the refusal of `chars()`'s.
 - **It's the JS a person writes:** a length, twice.
+
+## Amendment: a range given as an `Iterator` knows its hint
+
+A range given as an `Iterator` to generic or std code, std's `Peekable`
+(ADR 0561), is the range object with `{ next: $rangeNext }`, and
+`$sizeHint` found no hint of it: `(0, None)`, and `len()` panicked on
+its `debug_assert` (#111). `$sizeHint` of what's given with `$rangeNext`
+as its `next`, a range of numbers, is exact now, as `$rangeLen` counts
+it; the dictionary stays `{ next: $rangeNext }`, as nothing else asks
+it. ADR 0262's case: `len()` panicked, so Rust's. Held by
+`test/corpus/peekable_range_len.rs` and the mutation
+`size-hint-of-range-unknown`.

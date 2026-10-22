@@ -42,4 +42,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^adapter_size_hints.rs$"],
   },
+  {
+    name: "size-hint-of-range-unknown",
+    breaks: "a range given as an `Iterator`, `{ next: $rangeNext }`, hints `(0, None)`, so std's `Peekable` of one does, and its `len()` panics",
+    file: "src/runtime/size_hint.js",
+    find: "  if (iterator?.next === $rangeNext && typeof it.start === \"number\") {\n",
+    replace: "  if (false) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^peekable_range_len.rs$"],
+  },
 ];
