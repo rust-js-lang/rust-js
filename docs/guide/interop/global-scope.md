@@ -181,10 +181,12 @@ export function later(task) {
 ```
 
 - **It's asked of a binding**, a JS function's or a class's,
-  `js::is_defined(webapi::message_channel::new)`: its type names the
-  global, so a variable between asks of the same one.
-- **It's a global's own name**: a closure, the crate's own function, a
-  method, an import or a path, `console.log`, is refused.
+  `js::is_defined(webapi::message_channel::new)`, whose type names the
+  global, or a global value's, `js::is_defined(&webapi::performance)`, of
+  the static it refers to: a variable between asks of the same one.
+- **It's a global's own name**: a closure, a variable, the crate's own
+  function or static, a method, an import or a path, `console.log`, is
+  refused.
 - **Rust is told nothing**: the binding is still there to call, and throws
   a `ReferenceError` where the host hasn't it, as JS does. Ask where the
   program may run without it.

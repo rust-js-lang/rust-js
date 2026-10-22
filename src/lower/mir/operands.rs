@@ -347,7 +347,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// The static a constant points to the start of: `&LOG`, a promoted
     /// `&STATIC`, `&raw mut COUNT`.
-    fn const_static(&self, c: &ConstOperand<'tcx>) -> Option<rustc_span::def_id::DefId> {
+    pub(super) fn const_static(&self, c: &ConstOperand<'tcx>) -> Option<rustc_span::def_id::DefId> {
         let value = match c.const_ {
             Const::Val(value, _) => value,
             Const::Unevaluated(uv, _) if uv.promoted.is_some() => {

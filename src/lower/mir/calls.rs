@@ -198,7 +198,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             bindings::JsForm::Import { .. } => {
                 return Err(self.unsupported(span, "a dynamic import, from its MIR"));
             }
-            bindings::JsForm::Defined => return Ok(Value::Expr(self.defined(arg_tys, span)?)),
             _ => {}
         }
         let nullable = bindings::nullable_params(tcx, def_id);
@@ -269,25 +268,66 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// `js::is_defined(binding)`: `typeof MessageChannel !== "undefined"`,
-    /// of the global the binding given names, which its type says, so no
-    /// temporary between hides it (ADR 0597). A global's own name, its
-    /// `js_path`: not a method's, an import's or a path's, which aren't the
-    /// host's to lack.
-    fn defined(&self, arg_tys: &[Ty<'tcx>], span: Span) -> R<Expr> {
-        let global = match arg_tys.first().map(|ty| *ty.kind()) {
-            Some(ty::FnDef(def_id, _)) if bindings::is_binding(self.tcx, def_id) => bindings::js_path(self.tcx, def_id),
-            _ => None,
-        };
+    /// of the global its argument names (ADR 0597): a binding function's,
+    /// by its type, or a static's, `&webapi::performance`, by the static
+    /// it refers to, so no temporary between hides it. A global's own name,
+    /// its `js_path`: not a method's, an import's or a path's, which aren't
+    /// the host's to lack. `None` of another call.
+    pub(super) fn mir_defined(
+        &self,
+        body: &mir::Body<'tcx>,
+        def_id: rustc_span::def_id::DefId,
+        args: &[rustc_span::Spanned<Operand<'tcx>>],
+        span: Span,
+    ) -> R<Option<Expr>> {
+        let tcx = self.tcx;
+        if !bindings::is_binding(tcx, def_id) || !matches!(bindings::js_form(tcx, def_id), bindings::JsForm::Defined) {
+            return Ok(None);
+        }
+        let global = args
+            .first()
+            .and_then(|arg| match *arg.node.ty(&body.local_decls, tcx).kind() {
+                ty::FnDef(f, _) if bindings::is_binding(tcx, f) => bindings::js_path(tcx, f),
+                _ => (self.static_given(body, &arg.node))
+                    .filter(|&s| tcx.is_foreign_item(s))
+                    .and_then(|s| bindings::js_path(tcx, s)),
+            });
         match global {
-            Some(name) if crate::names::is_identifier(&name) => Ok(Expr::bin(
+            Some(name) if crate::names::is_identifier(&name) => Ok(Some(Expr::bin(
                 Op::Ne,
                 Expr::unary(js::UnaryOp::Typeof, self.js_ref(&name)),
                 Expr::str("undefined"),
-            )),
+            ))),
             _ => Err(self.unsupported(
                 span,
                 "`js::is_defined` of what isn't a JS global's binding, `webapi::message_channel::new`,",
             )),
+        }
+    }
+
+    /// The static `operand` refers to: `&STATIC`, of a constant, or of the
+    /// one temporary MIR makes it in, `_1 = &(*_2); _2 = const {STATIC}`.
+    fn static_given(&self, body: &mir::Body<'tcx>, operand: &Operand<'tcx>) -> Option<rustc_span::def_id::DefId> {
+        let local = match operand {
+            Operand::Constant(c) => return self.const_static(c),
+            Operand::Copy(place) | Operand::Move(place) => place.as_local()?,
+            _ => return None,
+        };
+        let assigned: Vec<&Rvalue<'tcx>> = (body.basic_blocks.iter())
+            .flat_map(|block| &block.statements)
+            .filter_map(|s| match &s.kind {
+                StatementKind::Assign(assign) if assign.0.as_local() == Some(local) => Some(&assign.1),
+                _ => None,
+            })
+            .collect();
+        match assigned.as_slice() {
+            [Rvalue::Use(operand, _) | Rvalue::Cast(_, operand, _)] => self.static_given(body, operand),
+            [Rvalue::Ref(_, _, place) | Rvalue::RawPtr(_, place)]
+                if matches!(place.projection.as_slice(), [PlaceElem::Deref]) =>
+            {
+                self.static_given(body, &Operand::Copy(Place::from(place.local)))
+            }
+            _ => None,
         }
     }
 

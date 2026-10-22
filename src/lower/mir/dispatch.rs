@@ -47,6 +47,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return self.mir_fn_pointer_call(state, func, args, span, out);
         };
         let (def_id, generic_args) = self.recognition().call_it_is(def_id, generic_args);
+        if let Some(defined) = self.mir_defined(state.body, def_id, args, span)? {
+            return Ok(Value::Expr(defined));
+        }
         self.check_text_pointer(state.body, (def_id, generic_args), destination, span)?;
         // `..Default::default()` of a struct whose `Default` is derived, an
         // update's base: each default the update reads, none it replaces that

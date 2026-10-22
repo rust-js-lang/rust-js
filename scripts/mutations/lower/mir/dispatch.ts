@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "defined-unread",
+    breaks: "`js::is_defined(set_immediate)` is a call of `setImmediate`'s binding, not a `typeof`",
+    file: "src/lower/mir/dispatch.rs",
+    find: "        if let Some(defined) = self.mir_defined(state.body, def_id, args, span)? {\n",
+    replace: "        if let Some(defined) = None::<Expr> {\n",
+    tests: ["test/lowering.test.ts", "-t", "js::is_defined"],
+  },
+  {
     name: "mir-fmt-result-unwrapped",
     breaks: "`write!(s, ..).unwrap()` unwraps the nothing an `Ok` `fmt::Result` is in JS, as if it were a `Result`",
     file: "src/lower/mir/dispatch.rs",

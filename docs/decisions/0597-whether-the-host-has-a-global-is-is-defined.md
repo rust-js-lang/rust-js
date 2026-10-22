@@ -94,9 +94,10 @@ An `Option` static is now what its type says of the value, `undefined` or
 - What Rust checks is the call, not the host: a program that calls a
   binding the host lacks throws a `ReferenceError` there, as the JS does.
   `js::is_defined` is how a program that runs where it may be missing asks.
-- A global's value, a static, isn't asked of yet: its `&STATIC` is read
-  as the static before the call, so it's refused, and lifted when a port
-  needs one (`typeof window !== "undefined"`).
+- A global's value is asked of by its static, `js::is_defined(&webapi::performance)`:
+  the static the argument refers to, followed through MIR's temporaries,
+  `typeof performance !== "undefined"`. A variable's, or the crate's own
+  static's, is refused.
 
 ## What holds it
 

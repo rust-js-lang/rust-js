@@ -5931,14 +5931,24 @@ pub fn made() -> bool {
     let make = absent;
     js::is_defined(make)
 }
+
+unsafe extern "Rust" {
+    #[link_name = "rustJsAbsentValue"]
+    pub safe static ABSENT_VALUE: &'static js::JsObject;
+}
+
+pub fn valued() -> bool {
+    js::is_defined(&ABSENT_VALUE)
+}
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain('typeof rustJsPresentHook !== "undefined"');
   expect(js).toContain('typeof RustJsAbsentClass !== "undefined"');
+  expect(js).toContain('return typeof rustJsAbsentValue !== "undefined";');
   (globalThis as Record<string, unknown>).rustJsPresentHook = (n: number) => n + 1;
   const lib = await import(join(dir, "lib.js"));
-  expect([lib.called(1), lib.made()]).toEqual([2, false]);
+  expect([lib.called(1), lib.made(), lib.valued()]).toEqual([2, false, false]);
 });
 
 // What isn't a global's binding, a closure, or a path from one, has no
@@ -5954,6 +5964,9 @@ test("js::is_defined of what isn't a global's binding is refused", () => {
   expect(refused("pub fn ask() -> bool {\n    js::is_defined(|| 1)\n}\n")).toEqual([false, message]);
   // The crate's own function, which is there.
   expect(refused("fn helper() {}\n\npub fn ask() -> bool {\n    helper();\n    js::is_defined(helper)\n}\n")).toEqual([false, message]);
+  // A variable's, or the crate's own static's, which are there.
+  expect(refused("pub fn ask() -> bool {\n    let n = 1;\n    js::is_defined(&n)\n}\n")).toEqual([false, message]);
+  expect(refused("static LIMIT: u32 = 3;\n\npub fn ask() -> bool {\n    js::is_defined(&LIMIT)\n}\n")).toEqual([false, message]);
   // A path from a global, which may be what the host lacks.
   expect(refused(`#[cfg_attr(rust_js, rust_js::link_name = "console.log")]
 pub fn log(text: &str) {
