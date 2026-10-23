@@ -156,7 +156,7 @@ function main() {
     const asked = [1];
     const ids = new $KeyMap();
     ids.set([1], "x");
-    const key = $unwrap($removeEntry(ids, asked), "there")[0];
+    const [key] = $unwrap($removeEntry(ids, asked), "there");
     console.log(`removed is asked ${key === asked}`);
     console.log("end");
   } finally {

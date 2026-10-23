@@ -73,16 +73,12 @@ function main() {
     const value = $tryRecv(rx);
     console.log(`${value.TAG === "Err" && value._0 === "Disconnected"}`);
 
-    const value$1 = $channel();
-    const tx$1 = value$1[0];
-    const rx$1 = value$1[1];
+    const [tx$1, rx$1] = $channel();
     try {
       $dropReceiver(rx$1);
       console.log(`${$send(tx$1, 5).TAG === "Err"}`);
 
-      const value = $channel();
-      const tx = value[0];
-      const rx = value[1];
+      const [tx, rx] = $channel();
       const notify = () => {
         $unwrapOk($send(tx, "done"), undefined, (e) => "SendError { .. }");
       };

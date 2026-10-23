@@ -108,11 +108,20 @@ try {
 
 ## Consequences
 
-- 95 corpus programs read shorter: `const tmp = ..; if (tmp)` read in
-  place, a `$catchUnwind(() => ..)`'s closure where it's given, and a
-  closure a `map` of an `Option` is given where it's called, `x ? ((l) =>
-  { .. })(x) : undefined`, as in a body without drops. A temporary a `let`
-  set, `tmp`, is a `const` now, named `value`.
+- Corpus programs read shorter: `const tmp = ..; if (tmp)` read in
+  place, a tuple `let` a destructuring, `const [a, b] = f();`, a `&&` one
+  test, `if (fn.displayName && frame.includes(..))`, and a
+  `$catchUnwind(() => ..)`'s closure where it's given. A temporary a `let`
+  set, `tmp`, is a `const` now, named `value`, as in a body without drops.
+- **An arrow is never moved into a call of it that `calls::apply` can't
+  make a value of** (`values::applied_in_place`, the one answer `applied
+  arrows` asks too): a closure of statements stays held by its name,
+  `const value = (l) => { .. }; x ? value(x) : undefined`, not `x ? ((l)
+  => { .. })(x) : undefined`, here and where nothing's guarded, which
+  four corpus programs wrote before.
+- **A body's temporaries are named in the order they're first read**, not
+  outer statement lists first: one made in a `try` takes `next` before a
+  `let` declared at the top and set later.
 - A guard whose field's variable is set later, `previous += 1;`, stays an
   object, `_restore.previous`.
 
@@ -123,7 +132,11 @@ try {
   loop's test read in place, a variable set later and one shadowed by the
   `Drop` kept apart.
 - Every corpus case against native Rust.
-- Mutations `scoped-drops-unread-in-place` (`mir/tidy/unwinds.rs`),
+- `test/lowering.test.ts`, "a tuple let in a guard's try is a
+  destructuring" and "a && in a guard's try is one test".
+- Mutations `closure-of-statements-called-in-place` (`mir/tidy/moves.rs`),
+  `temporaries-named-by-nesting` (`mir/tidy/bindings.rs`),
+  `scoped-drops-unread-in-place` (`mir/tidy/unwinds.rs`),
   `unwound-stages-none` (`mir/tidy/stages.rs`), `guard-field-variable-kept`,
   `guard-field-variable-set-later`, `guard-field-copy-declares`,
   `guard-field-self-copy-kept`, `guard-field-shadowed` (`drops/inlined.rs`).

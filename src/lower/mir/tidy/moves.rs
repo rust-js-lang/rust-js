@@ -172,8 +172,21 @@ fn moved(stmt: &Stmt, rest: &[Stmt], facts: &MoveFacts) -> Option<(Moved, Why)> 
     }
     let read = read_of(&rest[at], name, value)?;
     let expr = read.of(&rest[at]);
-    if called_closure_of_statements(value, expr, name) {
-        return None;
+    // Not an arrow into a call of it it'd be left called where it's made
+    // in, `((l) => { .. })(take)`: it's held, `const map = (l) => ..;`, as
+    // where no guard's `try` is (ADR 0705).
+    if let ExprKind::Arrow(..) = value.kind {
+        let mut left_called = false;
+        expr.each(&mut |e| {
+            if let ExprKind::Call(callee, args) = &e.kind
+                && matches!(&callee.kind, ExprKind::Var(v) if v == name)
+            {
+                left_called |= applied_in_place(value, args).is_none();
+            }
+        });
+        if left_called {
+            return None;
+        }
     }
     let mut stable = !value.has_effects();
     value.visit_vars(&mut |v| stable &= !facts.changing.contains(v));
@@ -190,29 +203,6 @@ fn moved(stmt: &Stmt, rest: &[Stmt], facts: &MoveFacts) -> Option<(Moved, Why)> 
     };
     let replaced = expr.substitute(&|v| (v == name).then(|| value.clone()))?;
     Some((Moved { at, read, replaced }, why))
-}
-
-/// Whether `value` is a closure of statements, `(l) => { ..; return r; }`,
-/// that `expr` calls by `name`: moved there, it'd be called where it's
-/// made, `x ? ((l) => { .. })(x) : undefined`, which reads worse than its
-/// name's call. One of an expression is moved, and `applied arrows` reads
-/// its value of what it's given in place (ADR 0705).
-fn called_closure_of_statements(value: &Expr, expr: &Expr, name: &str) -> bool {
-    let of_statements = match &value.kind {
-        ExprKind::Arrow(_, body) | ExprKind::AsyncArrow(_, body) => !matches!(
-            body.as_slice(),
-            [Stmt {
-                kind: StmtKind::Return(Some(_)),
-                ..
-            }]
-        ),
-        _ => false,
-    };
-    let mut called = false;
-    js::each_expr(&[StmtKind::Expr(expr.clone()).at(expr.span)], &mut |e| {
-        called |= matches!(&e.kind, ExprKind::Call(callee, _) if matches!(&callee.kind, ExprKind::Var(v) if v == name));
-    });
-    of_statements && called
 }
 
 /// Which of `stmt`'s expressions reads `name`, a temporary of `value`, where

@@ -116,9 +116,7 @@ function main() {
       console.log(
         `${next == null ? "None" : `Some(${next})`} ${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`}`,
       );
-      const value$2 = tee($iter([[1], [2]]), $dropEach(loudDrop_drop), loudDrop_drop);
-      const c = value$2[0];
-      const d = value$2[1];
+      const [c, d] = tee($iter([[1], [2]]), $dropEach(loudDrop_drop), loudDrop_drop);
       try {
         try {
           const loud = teeIterator_next(
@@ -170,9 +168,7 @@ function main() {
           }
         });
       }
-      const value$3 = tee($iter([undefined, 1]));
-      const e = value$3[0];
-      const f = value$3[1];
+      const [e, f] = tee($iter([undefined, 1]));
       try {
         try {
           const value = teeIterator_next(e, { next: $nextSome }, { clone: (value) => value });

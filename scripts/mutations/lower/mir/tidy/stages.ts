@@ -512,4 +512,12 @@ export const mutations: Mutation[] = [
     replace: "pub(super) const UNWOUND: &[&str] = &[\"names\", \"in place\"];\n",
     tests: ["test/lowering-unwinds.test.ts", "-t", "a guard's fields are its variables"],
   },
+  {
+    name: "destructured-declared-off",
+    breaks: "a tuple `let` in a guard's `try` stays its tuple read `[0]`, `[1]`, not `const [a, b] = f();`",
+    file: "src/lower/mir/tidy/stages.rs",
+    find: "                js::statement_lists(b, &mut |s| destructured(s, &HashSet::new()))\n",
+    replace: "                let _ = b;\n",
+    tests: ["test/lowering.test.ts", "-t", "a tuple let in a guard's try"],
+  },
 ];

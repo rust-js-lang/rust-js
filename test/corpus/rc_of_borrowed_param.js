@@ -12,12 +12,10 @@ function shared(value) {
 function main() {
   const loud = [1];
   try {
-    const value = shared(loud);
-    const a = value[0];
-    const b = value[1];
+    const [a, b] = shared(loud);
     console.log(`${a[0]} ${b[0]}`);
     const n = 5;
-    const c = shared(n)[0];
+    const [c] = shared(n);
     console.log(`${c}`);
   } finally {
     console.log(`drop ${loud[0]}`);

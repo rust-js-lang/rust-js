@@ -70,9 +70,7 @@ function main() {
           const g = named($iter([["h"], ["i"]]), "i", $dropEach(noisyDrop_drop));
           try {
             console.log(`found ${g?.[0] ?? "none"}`);
-            const partition = $partition([["j"], ["kk"], ["l"]], (n) => $byteLen(n[0]) === 1);
-            const kept = partition[0];
-            const rest = partition[1];
+            const [kept, rest] = $partition([["j"], ["kk"], ["l"]], (n) => $byteLen(n[0]) === 1);
             try {
               try {
                 console.log(`${kept.length} ${rest.length}`);

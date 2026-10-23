@@ -46,29 +46,27 @@ function main() {
       }
     }
 
-    const channel = $channel();
-    const outerTx = channel[0];
-    const outerRx = channel[1];
+    const [outerTx, outerRx] = $channel();
     try {
-      let tmp;
+      let channel;
       try {
-        tmp = $channel();
+        channel = $channel();
       } catch (error) {
         $dropReceiver(outerRx, $dropSender);
         throw error;
       }
-      const innerTx = tmp[0];
-      const innerRx = tmp[1];
-      let tmp$1;
+      const innerTx = channel[0];
+      const innerRx = channel[1];
+      let tmp;
       try {
-        tmp$1 = $send(outerTx, innerTx);
+        tmp = $send(outerTx, innerTx);
       } catch (error) {
         $dropReceiver(innerRx);
         $dropReceiver(outerRx, $dropSender);
         throw error;
       }
       try {
-        $unwrapOk(tmp$1, undefined, (e) => "SendError { .. }");
+        $unwrapOk(tmp, undefined, (e) => "SendError { .. }");
       } catch (error) {
         $dropReceiver(innerRx);
         $dropReceiver(outerRx, $dropSender);

@@ -171,6 +171,13 @@ pub(super) const STAGES: &[Stage] = &[
             // written once.
             pass("sunk lets", |b, _| js::statement_lists(b, &mut sunk_lets)),
             pass("declarations", |b, _| declarations(b)),
+            // What a `let` declared first holds now taken apart, a guard's
+            // `try` too: a temporary's parts, `const [a, b] = f();`. Not a
+            // pattern's one part of what the program names, `const front =
+            // d[0];`, which the first pass left as it is (ADR 0705).
+            pass("destructured declared", |b, _| {
+                js::statement_lists(b, &mut |s| destructured(s, &HashSet::new()))
+            }),
             // A pattern's copy of a variable, `const error = raw;`: the variable.
             pass("copied bindings", |b, _| {
                 js::statement_lists(b, &mut |s| copied_bindings(s))
