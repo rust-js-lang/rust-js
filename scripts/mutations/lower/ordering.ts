@@ -179,4 +179,12 @@ export const mutations: Mutation[] = [
     replace: "            Some(_) => Expr::unary(crate::js::UnaryOp::Not, Expr::bin(Op::Gt, a, b)),\n",
     tests: ["test/corpus.test.ts", "-t", "slice_methods"],
   },
+  {
+    name: "char-clamp-unshown",
+    breaks: "a `char`'s `clamp` of bounds the wrong way round panics as `Ord`'s default does, not showing them",
+    file: "src/lower/ordering.rs",
+    find: "            if ty.peel_refs().is_char() {\n",
+    replace: "            if false && ty.peel_refs().is_char() {\n",
+    tests: ["test/corpus.test.ts", "-t", "^(clamp_ord|clamp_char_bounds)\\.rs$"],
+  },
 ];

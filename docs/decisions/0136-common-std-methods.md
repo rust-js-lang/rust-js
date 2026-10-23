@@ -63,3 +63,13 @@ Some std methods that ordinary Rust calls all the time were errors:
 - These compile.
 - `by_ref()`, which shares an iterator's place with a later use, is still an
   error.
+
+## Amendment: `clamp` of what JS's `<` doesn't order
+
+`clamp` of text, a `char`, or a type of the crate's or std's whose `Ord`
+isn't a number's was refused (#118); `max` and `min` of them were
+`OrderingCall`s already. `clamp` is one too: `$clampBy(x, min, max, cmp)`
+by its `Ord`'s `cmp`. Bounds the wrong way round panic as `Ord`'s default
+does, `assertion failed: min <= max`, and of a `char`, as its own `clamp`
+does, showing them: `min > max. min = 'k', max = 'a'`. Held by
+`test/corpus/clamp_ord.rs` and `test/corpus/clamp_char_bounds.rs`.

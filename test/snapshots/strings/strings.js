@@ -9,7 +9,6 @@ import {
   $plus,
   $rsplitOnce,
   $splitOnce,
-  $stripPrefix,
   $stripSuffix,
   $toFixed,
   $trimEnd,
@@ -40,8 +39,7 @@ export function replaced(s) {
 
 /** `strip_prefix` and `strip_suffix` are options. */
 export function moduleName(path) {
-  const rest = $stripPrefix(path, "src/");
-  const file = rest != null ? rest : path;
+  const file = path.startsWith("src/") ? path.slice(4) : path;
   return $stripSuffix(file, ".rs") ?? file;
 }
 

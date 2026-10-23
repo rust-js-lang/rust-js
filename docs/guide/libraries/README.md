@@ -121,7 +121,9 @@ What it has:
   `test`, `exec` and `reg_exp::replace`.
 - **Timers:** `set_timeout`, `set_interval`, their `clear_*`.
 - **Where JS's answer isn't Rust's, JS's by name:** `js::string`'s
-  methods count UTF-16 as JS's do, `string::slice`, `string::index_of`;
+  methods count UTF-16 as JS's do, `string::slice`, `string::index_of`,
+  for an index a JS API gives or takes; a place found in a Rust string is
+  std's `find` and slicing, which are JS's own there (ADR 0642);
   `js::number::to_fixed` rounds a tie away from zero; `js::math`'s
   `round`, `sign`, `max`, `min` and `random` are `Math`'s
   ([ADR 0247](../../decisions/0247-js-string-methods.md),

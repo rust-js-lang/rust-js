@@ -7,7 +7,6 @@
 // (ADR 0047): `project.opening(path, live)` is `Project.opening(project, path, live)`.
 
 import { sourceState, textOf } from "./codemirror.js";
-import { $stripSuffix } from "@rust-js/runtime";
 
 function copy(files) {
   return files.map((f) => ({ path: f.path, state: f.state }));
@@ -15,9 +14,8 @@ function copy(files) {
 
 /** The file that becomes the root module's JS, `lib.rs` → `lib.js`. */
 export function jsName(path) {
-  const stem = $stripSuffix(path, ".rs");
-  if (stem != null) {
-    return `${stem}.js`;
+  if (path.endsWith(".rs")) {
+    return `${path.slice(0, -3)}.js`;
   }
   return path;
 }

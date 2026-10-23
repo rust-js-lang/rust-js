@@ -207,7 +207,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0135 A trait's const parameter is its impl's, and a trait method's is given](decisions/0135-const-generic-traits.md)
 - [0136 Common std methods: `take`, `cmp::max`, ASCII case, and `Debug`'s builders](decisions/0136-common-std-methods.md)
 - [0137 `{:#?}` is pretty Debug, and a writer is told whether](decisions/0137-pretty-debug.md) *(its `alternate` superseded by 0143)*
-- [0138 A string's length, slices and offsets count its UTF-8 bytes](decisions/0138-string-byte-counts.md)
+- [0138 A string's length, slices and offsets count its UTF-8 bytes](decisions/0138-string-byte-counts.md) *(amended by 0642: a place found in a string is JS's, `indexOf` and `slice`)*
 - [0139 A chain whose stages do what can be seen runs in Rust's order](decisions/0139-lazy-chains.md)
 - [0140 An iterator trait object is a JS iterator](decisions/0140-iterator-trait-objects.md)
 - [0141 A `dyn Display` or `dyn Error` is a value and its dictionary](decisions/0141-std-trait-objects.md)
@@ -316,7 +316,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0244 A value taken apart through a shared reference is destructured](decisions/0244-destructuring-through-references.md)
 - [0245 next/legacy/image, and a module's imports named by its own](decisions/0245-legacy-image-and-module-import-names.md)
 - [0246 A type parameter of a function needs no copy of its own](decisions/0246-function-parameters-need-no-copy.md)
-- [0247 JS's string methods are the builtins crate's `string`](decisions/0247-js-string-methods.md)
+- [0247 JS's string methods are the builtins crate's `string`](decisions/0247-js-string-methods.md) *(amended by 0642: for JS's own indexes, std's methods for a place found)*
 - [0248 A `thread_local!` is a module's default export too](decisions/0248-thread-local-default-export.md)
 - [0249 An element's key may be none](decisions/0249-optional-keys.md)
 - [0250 Props updated from a reference are a spread](decisions/0250-reference-base-spread.md)
@@ -573,6 +573,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0639 `concat_text` of any value is what may throw; whether a call threw is `try`](decisions/0639-concat-text-of-any-value-may-throw.md)
 - [0640 A TypeScript rest parameter is a variadic binding of a tuple](decisions/0640-a-rest-parameter-is-a-tuple.md)
 - [0641 A `concat!` of literals is its pieces joined by `+`](decisions/0641-concat-is-its-pieces-joined-by-plus.md)
+- [0642 A place found in a string is JS's: `indexOf`, `slice`, `startsWith`](decisions/0642-a-place-found-in-a-string-is-js-units.md)
 - [0643 `unwrap()` of a throwing JS call is the call](decisions/0643-unwrap-of-a-throwing-call-is-the-call.md)
 - [0644 A function whose result is a throwing call's `Result` is a throwing function](decisions/0644-a-function-of-a-throwing-calls-result-throws.md)
 - [0645 `js::is_defined` of a static is given the static itself](decisions/0645-is-defined-of-a-static-is-of-the-static.md) *(amended by 0647: the static isn't read)*

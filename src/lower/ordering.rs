@@ -420,6 +420,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             OrderingCall::Ge => Some(Op::Ge),
             _ => None,
         };
+        // `clamp`, by its `Ord`, which panics of bounds the wrong way round
+        // as `Ord`'s default does, a `char`'s showing them.
+        if matches!(call, OrderingCall::Clamp) {
+            let compare = self.cmp_fn(ty, false, span)?;
+            let mut args = values;
+            args.push(compare);
+            if ty.peel_refs().is_char() {
+                let c = Expr::var("c");
+                let shown = Expr::call_helper("$debugStr", vec![c, Expr::str("'")]);
+                args.push(Expr::arrow(
+                    vec!["c".into()],
+                    vec![StmtKind::Return(Some(shown)).at(js::Span::NONE)],
+                ));
+            }
+            return Ok(Some(Expr::call_helper("$clampBy", args)));
+        }
         let [a, b]: [Expr; 2] = values
             .try_into()
             .map_err(|_| self.unsupported(span, "this comparison"))?;

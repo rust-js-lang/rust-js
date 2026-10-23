@@ -10,4 +10,12 @@ export const mutations: Mutation[] = [
     replace: "  const kind = name === \"TryFromIntError\" ? message : $parseErrorKind(message);\n",
     tests: ["test/corpus.test.ts", "-t", "std_errors_boxed"],
   },
+  {
+    name: "char-try-from-error-debug-kind",
+    breaks: "`{:?}` of a `CharTryFromError` shows a kind it hasn't, not `CharTryFromError(())`",
+    file: "src/runtime/debug_parse_error.js",
+    find: "  if (name === \"CharTryFromError\" || name === \"TryFromCharError\") return",
+    replace: "  if (false) return",
+    tests: ["test/corpus.test.ts", "-t", "^char_try_from.rs$"],
+  },
 ];

@@ -61,7 +61,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// `f(args)`, with a closure that only returns written in place. One of
     /// statements gets a name first: `const f = (x) => { .. }; f(o)`.
-    pub(super) fn call_with(&mut self, f: Expr, args: Vec<Expr>, name: &str, out: &mut Vec<Stmt>) -> Expr {
+    pub(in crate::lower) fn call_with(&mut self, f: Expr, args: Vec<Expr>, name: &str, out: &mut Vec<Stmt>) -> Expr {
         let args: Vec<Expr> = args
             .into_iter()
             .map(|a| if a.reads_same() { a } else { self.spill("value", a, out) })

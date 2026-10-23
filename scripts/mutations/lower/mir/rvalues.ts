@@ -123,14 +123,6 @@ export const mutations: Mutation[] = [
     "tests": ["test/lowering-matches.test.ts", "-t", "a range pattern's tests from MIR"]
   },
   {
-    "name": "mir-range-unsigned-floor-tested",
-    "breaks": "`0..=4` of a `u8` from MIR tests `k >= 0`, which always holds",
-    "file": "src/lower/mir/rvalues.rs",
-    "find": ".is_some_and(|n| n.is_null())",
-    "replace": ".is_some_and(|n| n.is_null() && false)",
-    "tests": ["test/lowering-matches.test.ts", "-t", "a range pattern's tests from MIR"]
-  },
-  {
     "name": "mir-enum-cast-refused",
     "breaks": "`ordering as i32` from MIR is refused, its discriminant read as a value",
     "file": "src/lower/mir/rvalues.rs",
@@ -402,5 +394,13 @@ export const mutations: Mutation[] = [
     find: "                if place.projection.is_empty() && state.options.registered.contains(&place.local) =>\n",
     replace: "                if place.projection.is_empty() && state.options.registered.contains(&place.local) && false =>\n",
     tests: ["test/lowering-symbols.test.ts", "-t", "a match of the registry's symbols"],
+  },
+  {
+    name: "place-stepped-in-bytes",
+    breaks: "a place in units stepped past a literal by its length in bytes, `at + 2` past an `é`, one unit",
+    file: "src/lower/mir/rvalues.rs",
+    find: "                            (Operand::Constant(_), Some(units)) => Expr::int(units as i128),",
+    replace: "                            (Operand::Constant(_), Some(_)) => self.value_expr(part, span)?,",
+    tests: ["test/lowering-string-places.test.ts", "-t", "stepped past"],
   },
 ];

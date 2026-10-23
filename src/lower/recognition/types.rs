@@ -225,7 +225,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
 
     pub(in crate::lower) fn is_parse_error(&self, ty: Ty<'tcx>) -> bool {
         matches!(ty.kind(), ty::Adt(adt, _) if self.tcx.crate_name(adt.did().krate) == rustc_span::sym::core
-            && ["ParseIntError", "ParseFloatError", "ParseBoolError", "ParseCharError", "TryFromIntError", "BorrowError", "BorrowMutError"]
+            && ["ParseIntError", "ParseFloatError", "ParseBoolError", "ParseCharError", "TryFromIntError", "CharTryFromError", "TryFromCharError", "BorrowError", "BorrowMutError"]
                 .contains(&self.tcx.item_name(adt.did()).as_str()))
     }
 

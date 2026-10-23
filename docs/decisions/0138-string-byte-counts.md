@@ -1,6 +1,9 @@
 # 0138. A string's length, slices and offsets count its UTF-8 bytes
 
-Status: Accepted. Supersedes [0034](0034-strings-and-chars.md)'s byte counts being an error.
+Status: Accepted. Supersedes [0034](0034-strings-and-chars.md)'s byte counts being an error;
+amended by [0642](0642-a-place-found-in-a-string-is-js-units.md): an offset only a
+place in the string it was found in is JS's, `indexOf`, `slice` and
+`startsWith`.
 
 Case: C, A, D ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -63,3 +66,13 @@ take a string apart.
   offset walks it each time.
 - `match_indices`, and `find` with a closure as its pattern, are still
   errors.
+
+## Amendment: a place found in a string is JS's
+
+Where the program can't see an offset as a number, only a place in the
+string it was found in, `find`, `rfind`, a slice at it, `len()` and
+`strip_prefix` are JS's own: `indexOf`, `lastIndexOf`, `slice`, `length`
+and `startsWith`, the same text in UTF-16 units
+([0642](0642-a-place-found-in-a-string-is-js-units.md)). This decision's
+helpers, exact in bytes, are what's left: an offset printed, returned,
+stored, compared with a number or used on another string.

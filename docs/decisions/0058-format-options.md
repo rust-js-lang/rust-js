@@ -127,3 +127,10 @@ rest's and a `Utf8Error`'s, are their derived `Debug`'s, on lines of
 their own and their numbers padded; and an alignment, a fill or `0`
 without a width is an option too, which a `fmt` asks of its `Formatter`,
 `f.align()`. Held by `test/corpus/format_options_reached.rs`.
+
+## Amendment: `{:.1?}` of text
+
+`{:.1?}` of a `str`, a `String` or a `char` was refused (#118). std's
+`Debug` of text writes it whole, taking no precision, as it takes no
+width: its `Debug`, as without one. Held by
+`test/corpus/debug_text_precision.rs`.

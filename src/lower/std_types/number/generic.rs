@@ -131,6 +131,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     false => tried,
                 }
             }
+            Std::TryFromChar { to_char } => {
+                let name = if to_char { "$charTryFrom" } else { "$u8TryFromChar" };
+                Expr::call(Expr::helper(name), vec![arg()])
+            }
             Std::FromDigit => Expr::call(Expr::helper("$fromDigit"), vec![arg(), arg()]),
             Std::FromU32 => Expr::call(Expr::helper("$fromU32"), vec![arg()]),
             Std::Cmp => Expr::call(Expr::helper("$cmp"), vec![arg(), arg()]),

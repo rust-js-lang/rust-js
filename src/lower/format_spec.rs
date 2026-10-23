@@ -287,7 +287,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 );
                 Expr::call(Expr::member(kept, "join"), vec![Expr::str("")])
             }
-            _ if precision.is_some() && num.is_none() => {
+            // `{:.1?}` of text, a `str`'s or a `char`'s, which std's `Debug`
+            // writes whole, as it writes it of no width either: its `Debug`.
+            _ if precision.is_some() && num.is_none() && !(kind == Std::FmtDebug && self.is_string_like(ty)) => {
                 return Err(self.unsupported(span, &format!("a precision for a `{ty}`")));
             }
             // `{:#}` of a `Value`: its pretty JSON (ADR 0083).

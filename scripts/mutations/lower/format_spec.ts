@@ -202,4 +202,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^format_options_reached.rs$"],
   },
+  {
+    name: "debug-text-precision-refused",
+    breaks: "`{:.1?}` of a `str` is refused, where std's `Debug` of it takes no precision",
+    file: "src/lower/format_spec.rs",
+    find: " && !(kind == Std::FmtDebug && self.is_string_like(ty)) => {\n",
+    replace: " => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^debug_text_precision.rs$"],
+  },
 ];

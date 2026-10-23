@@ -97,7 +97,7 @@ pub(super) fn called_async_body(stmts: &mut Vec<Stmt>) -> Option<Vec<Stmt>> {
 pub(super) fn movable(state: &State<'_, '_>, value: &Value<'_>) -> bool {
     match value {
         Value::Fmt(_, _, e) if e.reads_same() => true,
-        Value::Expr(e) | Value::Fmt(_, _, e) | Value::Discriminant(e, _) | Value::Branch(e, _) => {
+        Value::Expr(e) | Value::Fmt(_, _, e) | Value::Discriminant(e, _) | Value::Branch(e, _) | Value::Tested(e) => {
             let mut stable = true;
             e.visit_vars(&mut |name| {
                 stable &= !state.borrowed_names.contains(name) && state.own_names.contains(name);
@@ -105,6 +105,9 @@ pub(super) fn movable(state: &State<'_, '_>, value: &Value<'_>) -> bool {
             e.reads_only_vars() && stable
         }
         Value::List(items) => items.iter().all(|item| movable(state, item)),
+        Value::Cut(test, cut) => {
+            movable(state, &Value::Expr(test.clone())) && movable(state, &Value::Expr(cut.clone()))
+        }
         // A place shared, or shown, is read where it's used, as Rust reads
         // it; nothing changes it meanwhile.
         Value::Place(_) => true,

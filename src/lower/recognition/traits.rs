@@ -210,6 +210,8 @@ pub(in crate::lower) enum OrderingCall {
     Ge,
     Max,
     Min,
+    /// `x.clamp(min, max)`, of `Ord`.
+    Clamp,
 }
 
 impl<'a, 'tcx> Recognition<'a, 'tcx> {
@@ -269,6 +271,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "cmp" | "partial_cmp" => OrderingCall::Compare,
             "max" => OrderingCall::Max,
             "min" => OrderingCall::Min,
+            "clamp" if !partial => OrderingCall::Clamp,
             _ => return None,
         };
         Some((call, partial))

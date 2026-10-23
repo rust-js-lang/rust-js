@@ -25,6 +25,7 @@ mod hints;
 mod iter;
 mod jsx_props;
 mod locals;
+mod offsets;
 mod operands;
 mod patterns;
 mod places;
@@ -187,6 +188,12 @@ enum Value<'tcx> {
     /// What `?`'s `Try::branch` makes of an `Option` or a `Result`: the
     /// value tried, and its type, whose `None` or `Err` is its `Break`.
     Branch(Expr, Ty<'tcx>),
+    /// An `Option`'s variant, read to choose a branch, where the test that
+    /// it's `Some` is known: a place found, `at !== -1`, or a strip's, `s.startsWith(p)` (ADR 0642).
+    Tested(Expr),
+    /// What a strip whose `Option` is only tested and taken apart makes: its
+    /// test and what it gives where it holds (ADR 0642).
+    Cut(Expr, Expr),
 }
 
 /// A parameter taken apart: its index, THIR's pattern, and the local MIR
@@ -380,8 +387,10 @@ struct State<'m, 'tcx> {
     /// `$index(xs, i)`, or written, `true`, `xs[$at(xs, i)]`
     /// (`deferred_check`).
     deferred: std::collections::HashMap<Local, bool>,
-    /// The block whose statements are being lowered.
+    /// The block whose statements are being lowered, and the statement of
+    /// it, its terminator's past the last.
     at: BasicBlock,
+    statement: usize,
     /// Each variable a pattern binds in an enum's variant, `Some(title)`: what
     /// it's bound to, where that reads the same anywhere, is it.
     payloads: std::collections::HashSet<Local>,
@@ -390,6 +399,12 @@ struct State<'m, 'tcx> {
     patterned: std::collections::HashSet<Local>,
     /// What its writes say of its `Option`s.
     options: OptionWrites,
+    /// Which of its string offsets are only places in the string they were
+    /// found in, JS's units (ADR 0642).
+    offsets: offsets::Offsets,
+    /// Each strip whose `Option` is read as a test and a cut (ADR 0642):
+    /// its test, `s.startsWith(p)`, and what it gives, `s.slice(1)`.
+    cuts: HashMap<Local, (Expr, Expr)>,
     /// Each struct JSX gives a component as its props, and those of their
     /// flattened fields: JSX takes them apart (ADR 0213).
     jsx_props: std::collections::HashSet<Local>,
@@ -495,7 +510,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> R<(Vec<js::Pattern>, bool)> {
         let def_id = body.def_id;
         let span = self.tcx.def_span(def_id);
-        let (mut params, mut out) = self.mir_function(mir, None)?;
+        let (mut params, mut out) = self.mir_function(mir, None, None)?;
         // An `async fn`'s body is its coroutine's, an async arrow called
         // at once: the async function's own (ADR 0029).
         // An `on_load!` body is its module's top, where JS has no `return`:
@@ -585,6 +600,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         &mut self,
         mir: &Mir<'tcx>,
         captures: Option<Vec<(Expr, bool)>>,
+        seed: Option<offsets::Seed>,
     ) -> R<(Vec<js::Pattern>, Vec<Stmt>)> {
         let mir_body = &mir.body;
         // What THIR's drop facts refuse of its closures holding what has a
@@ -639,6 +655,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             places: Default::default(),
             deferred: Default::default(),
             at: BasicBlock::from_usize(0),
+            statement: 0,
             ranges: self.range_patterns(),
             returns: (self.thir.exprs.iter())
                 .filter(|e| matches!(e.kind, thir::ExprKind::Return { .. }))
@@ -648,27 +665,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             patterned: self.mir_patterned(mir_body),
             jsx_props: self.mir_jsx_props(mir_body),
             options: Default::default(),
+            offsets: self.mir_offsets(mir_body, seed.as_ref()),
+            cuts: Default::default(),
             writer: None,
             writes_captured: false,
             thrown_writes: None,
             builders: Default::default(),
             built: Default::default(),
-            let_spans: Default::default(),
+            let_spans: self.mir_let_spans(mir_body),
         };
-        let lets: Vec<(Span, Span)> = (self.thir.stmts.iter())
-            .filter_map(|s| match &s.kind {
-                thir::StmtKind::Let { pattern, span, .. } => Some((pattern.span, *span)),
-                _ => None,
-            })
-            .collect();
-        for info in &mir_body.var_debug_info {
-            if let mir::VarDebugInfoContents::Place(place) = info.value
-                && place.projection.is_empty()
-                && let Some((_, at)) = lets.iter().find(|(pattern, _)| pattern.contains(info.source_info.span))
-            {
-                state.let_spans.insert(place.local, self.js_span(*at));
-            }
-        }
         state.options = self.mir_option_writes(mir_body, &state.locals);
         // A writer's `Formatter`: no parameter, but the string it writes to,
         // `let f = ""`, which it gives back, its `fmt::Result` nothing. A

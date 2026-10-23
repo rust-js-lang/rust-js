@@ -182,14 +182,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     && let Operand::Constant(c) = r
                     && let Some(variant) = c.const_.try_eval_scalar_int(tcx, self.typing_env)
                     && let Operand::Copy(place) | Operand::Move(place) = l
-                    && (state.pending.iter())
-                        .any(|(local, value)| *local == place.local && matches!(value, Value::Discriminant(..)))
+                    && (state.pending.iter()).any(|(local, value)| {
+                        *local == place.local && matches!(value, Value::Discriminant(..) | Value::Tested(_))
+                    })
                 {
                     let discriminant = self.take_operands(state, &[l], out)?.remove(0);
-                    let Value::Discriminant(_, enum_ty) = &discriminant else {
-                        unreachable!("a discriminant")
+                    let enum_ty = match &discriminant {
+                        Value::Discriminant(_, enum_ty) => *enum_ty,
+                        _ => ty,
                     };
-                    let enum_ty = *enum_ty;
                     let test = self.switch_test(&discriminant, enum_ty, variant.to_bits_unchecked(), span)?;
                     return Ok(Value::Expr(match op {
                         BinOp::Eq => test,
@@ -197,24 +198,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     }));
                 }
                 // A range pattern's test, `2 <= k`: the value first, `k >= 2`;
-                // of a bound the type has anyway, `0 <= k` of a `u8`, none.
+                // of a bound the type has anyway, `0 <= k` of a `u8`, none,
+                // as `binary` answers of every comparison (`at_bound`).
                 let flipped = match op {
                     BinOp::Le => Some(BinOp::Ge),
                     BinOp::Lt => Some(BinOp::Gt),
                     _ => None,
                 };
                 if let Some(flipped) = flipped
-                    && let Operand::Constant(bound) = l
+                    && let Operand::Constant(_) = l
                     && !matches!(r, Operand::Constant(_))
                     && state.ranges.iter().any(|range| range.contains(span))
                 {
-                    if *op == BinOp::Le
-                        && ty.is_integral()
-                        && !ty.is_signed()
-                        && bound.const_.try_to_scalar_int().is_some_and(|n| n.is_null())
-                    {
-                        return Ok(Value::Expr(Expr::bool(true)));
-                    }
                     let [r, l]: [Value<'tcx>; 2] =
                         self.take_operands(state, &[r, l], out)?.try_into().ok().expect("two");
                     let (r, l) = (self.value_expr(r, span)?, self.value_expr(l, span)?);
@@ -231,6 +226,31 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     }
                     _ => None,
                 };
+                // A place stepped past what was found there, in units: by the
+                // literal's length in units, `at + 1`, or by a string's,
+                // `at + p.length`, which can't pass the string's `length`
+                // (ADR 0642).
+                let in_units = |o: &Operand<'tcx>| {
+                    o.place()
+                        .is_some_and(|p| p.projection.is_empty() && state.offsets.in_units(p.local))
+                };
+                if *op == BinOp::Add && (in_units(l) || in_units(r)) {
+                    let at = mir::Location {
+                        block: state.at,
+                        statement_index: state.statement,
+                    };
+                    let step = state.offsets.step(at);
+                    let parts = self.take_operands(state, &[l, r], out)?;
+                    let mut sum = Vec::new();
+                    for (operand, part) in [l, r].into_iter().zip(parts) {
+                        sum.push(match (operand, step) {
+                            (Operand::Constant(_), Some(units)) => Expr::int(units as i128),
+                            _ => self.value_expr(part, span)?,
+                        });
+                    }
+                    let [a, b]: [Expr; 2] = sum.try_into().ok().expect("two");
+                    return Ok(Value::Expr(Expr::bin(Op::Add, a, b)));
+                }
                 let [l, r]: [Value<'tcx>; 2] = self.take_operands(state, &[l, r], out)?.try_into().ok().expect("two");
                 let l = self.value_expr(l, span)?;
                 // A shift's amount of another type: a number, `Number(n & 63n)`.
@@ -427,6 +447,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     && let Some((tried, ty)) = state.branches.get(&place.local) =>
             {
                 return Ok(Value::Branch(tried.clone(), *ty));
+            }
+            // A place found, in units, whose `None` is `-1`; a strip's
+            // `Option` read as its test (ADR 0642).
+            Rvalue::Discriminant(place) if place.projection.is_empty() && state.offsets.in_units(place.local) => {
+                let found = self.mir_place(state, *place, span, out)?;
+                return Ok(Value::Tested(crate::lower::std_types::text::found(found)));
+            }
+            Rvalue::Discriminant(place)
+                if place.projection.is_empty()
+                    && let Some((test, _)) = state.cuts.get(&place.local) =>
+            {
+                return Ok(Value::Tested(test.clone()));
             }
             // A value read as the registry's symbol, only tested against
             // the registry's: a `Some`, its value compared by `===` to each
