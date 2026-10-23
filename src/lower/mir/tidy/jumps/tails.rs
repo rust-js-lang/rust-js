@@ -499,14 +499,14 @@ pub(in crate::lower::mir::tidy) fn written_elses(stmts: &mut Vec<Stmt>, elses: &
 /// : b;`, as a person writes the function's value of two small ones, and as
 /// `x = t ? a : b` is of a variable's (`branch_values`). Not of a guard the
 /// program wrote, an `if` with no `else`, nor of a `return` it wrote in
-/// each branch, a statement; nor of a branch with a comment, nor where
-/// `folds_into_return` says it's a branch of its own.
+/// each branch, a statement; nor where `folds_into_return` says it's a
+/// branch of its own. A comment before a branch's value is before it in the
+/// conditional (ADR 0658).
 pub(in crate::lower::mir::tidy) fn returned_values(
     stmts: &mut Vec<Stmt>,
     elses: &[(js::Span, js::Span, js::Span)],
     returns: &[js::Span],
     booleans: &HashSet<String>,
-    comments: &[js::Span],
 ) {
     let within = |c: &js::Span, s: js::Span| !s.is_none() && c.lo <= s.lo && s.hi <= c.hi;
     // A branch's value, where its statement was, of a `return` the program
@@ -530,7 +530,6 @@ pub(in crate::lower::mir::tidy) fn returned_values(
     if let (Some(yes), Some(no)) = (returned(then), returned(last))
         && folds_into_return(&yes, &no)
         && elses.iter().any(|(cond, ..)| within(cond, if_stmt.span))
-        && !commented(if_stmt.span, &[then.as_slice(), last].concat(), comments)
     {
         let folded = conditional(test.clone(), yes, no, booleans);
         let span = if_stmt.span;

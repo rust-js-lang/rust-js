@@ -3,7 +3,9 @@
 Status: Accepted. Amends [0601](0601-a-module-variable-an-if-makes-is-a-let.md),
 whose module variable an `if` makes was a `let` each branch set where a
 branch was a function, and the tidy rule of a conditional of two values,
-which took no function as a branch.
+which took no function as a branch. Amended by
+[0658](0658-a-comment-before-a-branchs-value-is-before-it-in-the-conditional.md):
+a branch with a comment is a conditional too, its comment before its value.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N: the same value,
 written as a person writes it.

@@ -243,4 +243,20 @@ export const mutations: Mutation[] = [
     replace: "                if false {\n",
     tests: ["test/emission.test.ts", "-t", "inline\\(never\\)"],
   },
+  {
+    name: "arm-comment-unplaced",
+    breaks: "a comment before a conditional's branch is given to oxc, which writes none there, so `? // Yes.` is lost",
+    file: "src/to_oxc.rs",
+    find: "            if let Some(&hi) = arms.get(&at)\n",
+    replace: "            if let Some(&hi) = arms.get(&at).filter(|_| false)\n",
+    tests: ["test/lowering-names.test.ts", "-t", "a comment is in the JS where it.s in the Rust"],
+  },
+  {
+    name: "arm-comment-after-question-only",
+    breaks: "a comment before a conditional's second branch is split at its `?`, before the first",
+    file: "src/to_oxc.rs",
+    find: "                before.rfind(['?', ':']).map(|operator| (at, written, operator + 1))\n",
+    replace: "                before.rfind('?').map(|operator| (at, written, operator + 1))\n",
+    tests: ["test/lowering-names.test.ts", "-t", "a comment is in the JS where it.s in the Rust"],
+  },
 ];

@@ -597,6 +597,32 @@ export function nextCount() {
 // Keep this file's counts in step with the server's.
 ```
 
+A comment before a branch's value is before it in the conditional the
+`if` is, as Prettier lays one out
+([ADR 0658](../../decisions/0658-a-comment-before-a-branchs-value-is-before-it-in-the-conditional.md)):
+
+```rust
+pub fn limit(fast: bool) -> u32 {
+    if fast {
+        // What a fast host can take.
+        64
+    } else {
+        // Room for a slow one.
+        8
+    }
+}
+```
+
+```js
+export function limit(fast) {
+  return fast
+    ? // What a fast host can take.
+      64
+    : // Room for a slow one.
+      8;
+}
+```
+
 A function marked `#[inline(never)]` is Closure Compiler's `@noinline`, its
 JSDoc's last line where it has one, and rust-js keeps it a function of its
 own, as React keeps `testStringCoercion` out of line for its stack trace.

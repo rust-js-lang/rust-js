@@ -21,9 +21,6 @@ pub(super) struct Written {
     pub continues: Vec<js::Span>,
     /// Each loop, whether as a `while`, and its label.
     pub loops: Vec<(js::Span, bool, Option<String>)>,
-    /// Each comment in the body (ADR 0444), which a branch it's in keeps
-    /// as a statement (`tidy::commented`).
-    pub comments: Vec<js::Span>,
     /// Each `match` the program wrote whose every arm tests constants, a
     /// `switch` (ADR 0629): its arms.
     pub switches: Vec<Switch>,
@@ -213,17 +210,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 _ => None,
             })
             .collect();
-        // The body's own, between where its code starts and ends.
-        let spans: Vec<js::Span> = (self.thir.exprs.iter())
-            .map(|e| self.js_span(e.span))
-            .filter(|s| !s.is_none())
-            .collect();
-        let (lo, hi) = (spans.iter().map(|s| s.lo).min(), spans.iter().map(|s| s.hi).max());
-        let comments = (self.krate.sources.output.files.iter())
-            .flat_map(|file| &file.comments)
-            .filter(|c| lo.is_some_and(|lo| lo <= c.lo) && hi.is_some_and(|hi| c.hi <= hi))
-            .map(|c| js::Span { lo: c.lo, hi: c.hi })
-            .collect();
         let switches = self.written_switches();
         Written {
             tables,
@@ -232,7 +218,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             logicals,
             continues,
             loops,
-            comments,
             switches,
         }
     }

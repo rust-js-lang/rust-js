@@ -357,14 +357,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^sales_report.rs$"],
   },
   {
-    name: "commented-else-folded",
-    breaks: "an `if` whose branch has a comment is folded into `c ? a : b`, and the comment is lost",
-    file: "src/lower/mir/tidy/branches.rs",
-    find: "                    && !commented(span, &[then.as_slice(), otherwise.as_slice()].concat(), comments)\n",
-    replace: "",
-    tests: ["test/lowering-names.test.ts", "-t", "a comment is in the JS where"],
-  },
-  {
     name: "decided-tests-kept",
     breaks: "a test an earlier one decided stays, `if (option != null) { return option; } .. if (option != null) { drop }` (ADR 0564)",
     file: "src/lower/mir/tidy/branches.rs",

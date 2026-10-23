@@ -2,7 +2,9 @@
 
 Status: Accepted. Extends [0383](0383-a-files-leading-comments-are-its-jss.md),
 whose rules for what JS can hold are now every comment's, and
-[0018](0018-print-with-oxc.md).
+[0018](0018-print-with-oxc.md). Its amendment, a branch's comment keeps it a statement, is
+superseded by [0658](0658-a-comment-before-a-branchs-value-is-before-it-in-the-conditional.md):
+the comment is before the branch's value in the conditional.
 
 Case: N ([0262](0262-when-rust-and-js-disagree.md)): comments and blank
 lines, which nothing runs.

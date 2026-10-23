@@ -860,3 +860,86 @@ console.log(JSON.stringify({
     trimmed: true,
   });
 });
+
+// ADRs 0657 and 0658: React's reportGlobalError as its port writes it, the
+// host's reportError or a polyfill: a const of a conditional, each branch's
+// comment before its value, as upstream's; run in Node, whose reportError
+// is taken out to run the polyfill.
+test("React's reportGlobalError is a conditional with its comments", () => {
+  const dir = fixture("report-global-error");
+  const node = buildNode();
+  writeFileSync(join(dir, "lib.rs"), `// Copyright (c) Meta Platforms, Inc. and affiliates.
+//
+// This source code is licensed under the MIT license found in the
+// LICENSE file in the root directory of this source tree.
+
+use js::{Kind, Unknown};
+use webapi::{ErrorEventInit, console, error_event, window};
+
+thread_local! {
+    static REPORT_GLOBAL_ERROR: fn(Option<&'static Unknown>) = if js::is_defined(webapi::global::report_error::<Option<&Unknown>>) {
+        // In modern browsers, reportError will dispatch an error event,
+        // emulating an uncaught JavaScript error.
+        webapi::global::report_error
+    } else {
+        |error| {
+            if js::is_defined(window) && js::is_defined(error_event::new) {
+                // Browser Polyfill
+                let message = match error.and_then(|error| js::get(error, "message")).map(js::classify) {
+                    Some(Kind::String(message)) => message.to_string(),
+                    _ => js::string(error),
+                };
+                let event = error_event::new(
+                    "error",
+                    Some(ErrorEventInit {
+                        bubbles: Some(true),
+                        cancelable: Some(true),
+                        message: Some(&message),
+                        error: error.map(|error| error as &dyn js::IntoUnknown),
+                        ..Default::default()
+                    }),
+                );
+                let should_log = window.dispatch_event(event);
+                if !should_log {
+                    return;
+                }
+            } else if js::is_defined(node::process::emit::<node::event::UncaughtException>) {
+                // Node Polyfill
+                node::process::emit(node::event::UncaughtException, (unsafe { js::cast(error) },));
+                return;
+            }
+            console::error((error,));
+        }
+    };
+}
+
+js::export_default!(REPORT_GLOBAL_ERROR);
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `node=${join(node, "libnode.rmeta")}`, "--extern", `js=${join(node, "libjs.rmeta")}`, "--extern", `webapi=${join(node, "libwebapi.rmeta")}`, "-L", node]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain(`const reportGlobalError =
+  typeof reportError !== "undefined"
+    ? // In modern browsers, reportError will dispatch an error event,
+      // emulating an uncaught JavaScript error.
+      reportError
+    : (error) => {
+`);
+  expect(js).toContain("// Browser Polyfill\n");
+  expect(js).toContain('// Node Polyfill\n          process.emit("uncaughtException", error);\n');
+  writeFileSync(join(dir, "package.json"), '{ "type": "module" }');
+  writeFileSync(join(dir, "run.js"), `const seen = [];
+const host = globalThis.reportError;
+globalThis.reportError = undefined;
+process.on("uncaughtException", (error) => seen.push("node " + error.message));
+const { default: viaNode } = await import("./lib.js");
+viaNode(new Error("boom"));
+globalThis.reportError = (error) => seen.push("host " + error.message);
+const { default: viaHost } = await import("./lib.js?again");
+viaHost(new Error("bang"));
+globalThis.reportError = host;
+console.log(JSON.stringify(seen));
+`);
+  const p = Bun.spawnSync(["node", "run.js"], { cwd: dir, stderr: "pipe" });
+  expect([p.exitCode, p.stderr.toString()]).toEqual([0, ""]);
+  expect(JSON.parse(p.stdout.toString())).toEqual(["node boom", "host bang"]);
+});

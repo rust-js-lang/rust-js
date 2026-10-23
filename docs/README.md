@@ -585,7 +585,8 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0654 A dictionary's member of any value is a `dyn IntoUnknown`](decisions/0654-a-dictionary-member-of-any-value-is-a-dyn-into-unknown.md)
 - [0655 A binding of `any` as a value is a `fn` of `Option<&'static Unknown>`](decisions/0655-an-any-binding-as-a-value-is-a-fn-of-a-static-unknown.md)
 - [0656 An event's `emit` arguments are what TypeScript's `emit` takes](decisions/0656-an-events-emit-arguments-are-typescripts-emits.md)
-- [0657 An `if` of one value each, a function's too, is a conditional](decisions/0657-an-if-of-one-value-each-is-a-conditional.md)
+- [0657 An `if` of one value each, a function's too, is a conditional](decisions/0657-an-if-of-one-value-each-is-a-conditional.md) *(amended by 0658: a branch with a comment too)*
+- [0658 A comment before a branch's value is before it in the conditional](decisions/0658-a-comment-before-a-branchs-value-is-before-it-in-the-conditional.md)
 - [0623 A copy std makes of a `Copy` value is a copy](decisions/0623-a-copy-std-makes-is-a-copy.md)
 - [0436 Every `dyn` that's a pair keeps its value's drop, `dyn Send` too](decisions/0436-every-dyn-keeps-its-drop.md)
 - [0437 A scope's drops on a panic are one `try { .. } finally { .. }`](decisions/0437-a-scopes-drops-are-one-finally.md)
@@ -595,7 +596,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0441 A `()` given a function value is no argument](decisions/0441-a-unit-is-no-argument.md)
 - [0442 A web API that throws for what a program can't prevent is a `Result`](decisions/0442-a-web-api-that-may-throw-is-a-result.md)
 - [0443 A value a caller may leave out is an `Option`, in each direction](decisions/0443-a-value-a-caller-may-leave-out-is-an-option.md) *(amended by 0640: a `None` before a rest of none is no argument; 0648: a setter's `None` is written)*
-- [0444 A comment is in the JS where its code is, and so is a blank line](decisions/0444-a-comment-is-where-its-code-is.md)
+- [0444 A comment is in the JS where its code is, and so is a blank line](decisions/0444-a-comment-is-where-its-code-is.md) *(amended by 0658: a branch's comment is before its value)*
 - [0445 Generic code extends and collects into what it's given](decisions/0445-extend-and-collect-in-generic-code.md)
 - [0446 A `dyn fmt::Write` is a pair, and `fmt::write` is `write_fmt`](decisions/0446-a-dyn-fmt-write.md)
 - [0447 The clock: a `SystemTime` and an `Instant` are their nanoseconds](decisions/0447-the-clock.md)

@@ -284,9 +284,10 @@ pub fn start() -> u32 {
   // A blank line before a statement whose span starts inside its line, a
   // \`let .. else\`'s at its pattern.
   expect(js).toContain("  const m = (n + 1) >>> 0;\n\n  if (o == null) {");
-  // A branch's comment keeps its branch a statement, as an expression has
-  // no line for it, an \`if\`'s and a \`match\`'s.
-  expect(js).toContain("  let n;\n  if (flag) {\n    // Yes.\n    n = 1;\n  } else {\n    n = 2;\n  }\n  let k;\n  if (flag) {\n    k = 3;\n  } else {\n    // Four.\n    k = 4;\n  }\n  let m;\n  if (n === 1) {\n    // One.\n    m = 10;\n  } else {\n    m = 20;\n  }\n");
+  // A branch's comment is before its value in the conditional, on lines
+  // of its own, as Prettier lays one out, an \`if\`'s and a \`match\`'s
+  // (ADR 0658).
+  expect(js).toContain("  const n = flag\n    ? // Yes.\n      1\n    : 2;\n  const k = flag\n    ? 3\n    : // Four.\n      4;\n  const m =\n    n === 1\n      ? // One.\n        10\n      : 20;\n");
 });
 
 test("a variable nothing sets again is a const", async () => {

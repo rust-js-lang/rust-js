@@ -83,7 +83,7 @@ pub fn emit(
     let allocator = Allocator::default();
     // The module's comments, each where its code is (ADR 0444), whose text
     // the program's source has, a doc comment's JSDoc after the Rust.
-    let (text, comments, trailing) = comments_of(module, sources);
+    let (text, comments, trailing, arms) = comments_of(module, sources);
     let cx = Cx {
         b: AstBuilder::new(&allocator),
         allocator: &allocator,
@@ -142,6 +142,44 @@ pub fn emit(
     // its line's and column's (ADR 0630).
     let mut inside: std::collections::HashMap<u32, Vec<(u32, &str)>> = std::collections::HashMap::new();
     let generated_lines: Vec<&str> = generated.code.lines().collect();
+    // A conditional's branch's comments, before its value on lines of their
+    // own, `? // In modern browsers ..`, as oxc writes none before the
+    // first (ADR 0658): its line split where its value's JS starts.
+    let mut splits: std::collections::HashMap<u32, Vec<(u32, &[String])>> = std::collections::HashMap::new();
+    if let Some(map) = &generated.map {
+        // Where each line of the Rust starts, to read a token's place in it.
+        let line_starts: Vec<u32> = std::iter::once(0)
+            .chain(text.match_indices('\n').map(|(i, _)| i as u32 + 1))
+            .collect();
+        let offset = |line: u32, column: u32| line_starts.get(line as usize).map(|start| start + column);
+        for (lo, hi, texts) in &arms {
+            // The branch's first JS the map places, and back from it, on its
+            // line, to the `?` or `:` it's after: an arrow's `(` isn't placed.
+            let first = (map.get_tokens())
+                .filter(|t| offset(t.get_src_line(), t.get_src_col()).is_some_and(|at| *lo <= at && at < *hi))
+                .map(|t| (t.get_dst_line(), t.get_dst_col()))
+                .min();
+            let Some((line, column)) = first else { continue };
+            // On its line, or one before it, an arrow's body's first JS
+            // being the first placed.
+            let operator = (0..=line).rev().take(3).find_map(|at| {
+                let written = generated_lines.get(at as usize)?;
+                let before = if at == line {
+                    written.get(..column as usize)?
+                } else {
+                    written
+                };
+                before.rfind(['?', ':']).map(|operator| (at, written, operator + 1))
+            });
+            if let Some((line, written, after)) = operator {
+                let start = after + written[after..].len() - written[after..].trim_start().len();
+                splits.entry(line).or_default().push((start as u32, texts.as_slice()));
+            }
+        }
+    }
+    for list in splits.values_mut() {
+        list.sort_by_key(|&(column, _)| column);
+    }
     if let Some(map) = &generated.map {
         for comment in &trailing {
             // The nearest before it whose JS is a name, a number or a string.
@@ -171,18 +209,45 @@ pub fn emit(
             }
         }
     }
-    for (i, (out_line, line)) in (header_lines..).zip(generated.code.lines()).enumerate() {
-        let line = match inside.get(&(i as u32)) {
-            Some(comments) => with_inside_comments(line, comments),
-            None => line.to_string(),
+    // Where each split line's pieces are: each from its column, on its line.
+    let mut pieces: std::collections::HashMap<u32, Vec<(u32, u32)>> = std::collections::HashMap::new();
+    let mut added = 0;
+    for (i, line) in generated.code.lines().enumerate() {
+        let i = i as u32;
+        let out_line = header_lines + i + added;
+        let mut at = 0;
+        let mut placed = vec![(0, out_line)];
+        let inside_of = |from: u32, to: u32| {
+            let comments: Vec<(u32, &str)> = (inside.get(&i).into_iter().flatten())
+                .filter(|&&(column, _)| column >= from && column < to)
+                .map(|&(column, text)| (column - from, text))
+                .collect();
+            comments
         };
-        code.push_str(&line);
-        for comment in after.get(&(i as u32)).into_iter().flatten() {
+        for &(column, texts) in splits.get(&i).into_iter().flatten() {
+            let Some(head) = line.get(at as usize..column as usize).filter(|_| column > at) else {
+                continue;
+            };
+            code.push_str(&with_inside_comments(head.trim_end(), &inside_of(at, column)));
+            for text in texts {
+                code.push('\n');
+                code.push_str(text);
+            }
+            code.push('\n');
+            added += 1 + texts.len() as u32;
+            at = column;
+            placed.push((column, header_lines + i + added));
+        }
+        code.push_str(&with_inside_comments(&line[at as usize..], &inside_of(at, u32::MAX)));
+        for comment in after.get(&i).into_iter().flatten() {
             code.push(' ');
             code.push_str(comment);
         }
         code.push('\n');
         lines.push(out_line);
+        if placed.len() > 1 {
+            pieces.insert(i, placed);
+        }
     }
     // After everything it maps, so the map's lines stay where they are.
     if let Some(function) = &module.default_export
@@ -213,7 +278,19 @@ pub fn emit(
         .collect();
     let paths: std::collections::HashMap<usize, String> = used.into_iter().map(|i| (i, path_of(i))).collect();
     let map = restore_sources(&map, sources, &paths, primary);
-    let map = crate::format::moved_lines(&map, &lines, js_file_name);
+    let last_shift = lines.last().map_or(0, |&last| last + 1 - lines.len() as u32);
+    let to = |line: u32, column: u32| match pieces.get(&line) {
+        Some(placed) => {
+            let &(from, to) = placed
+                .iter()
+                .rev()
+                .find(|&&(from, _)| column >= from)
+                .expect("the first is at 0");
+            (to, column - from)
+        }
+        None => (lines.get(line as usize).copied().unwrap_or(line + last_shift), column),
+    };
+    let map = crate::format::moved_positions(&map, to, js_file_name);
     // Laid out as oxfmt lays it out, rust-js's own layout.
     let (code, map) = crate::format::laid_out(code, map, js_file_name);
     Output { code, map }
@@ -263,14 +340,23 @@ fn with_inside_comments(line: &str, comments: &[(u32, &str)]) -> String {
 /// written; a doc comment, `///` lines or `/** */`, a JSDoc one, `/** .. */`,
 /// whose text is added after the arena's, where its span points. The text
 /// the program's source is, and the comments.
-fn comments_of(module: &Module, sources: &crate::program::Sources) -> (String, Vec<oxc_ast::Comment>, Vec<Trailing>) {
+type ArmComments = Vec<(u32, u32, Vec<String>)>;
+
+fn comments_of(
+    module: &Module,
+    sources: &crate::program::Sources,
+) -> (String, Vec<oxc_ast::Comment>, Vec<Trailing>, ArmComments) {
     use oxc_ast::{CommentKind, CommentPosition};
     let mut text = sources.text.clone();
     let mut found = Vec::new();
     let mut trailing = Vec::new();
+    let mut arm_comments = Vec::new();
     let spans = statement_spans(module);
     let noinline = noinline_starts(module);
-    let mut starts: Vec<u32> = spans.iter().map(|&(lo, _)| lo).collect();
+    // A conditional's branch is a start too, its value's, that a comment
+    // before it in Rust is before (ADR 0658).
+    let arms = arm_starts(module);
+    let mut starts: Vec<u32> = spans.iter().map(|&(lo, _)| lo).chain(arms.keys().copied()).collect();
     starts.sort_unstable();
     starts.dedup();
     // What's before the Rust statement at `start` is before the first JS
@@ -422,6 +508,18 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> (String, V
             starts_and_end.push((sources.text.len() as u32, ends));
         }
         for (at, own) in starts_and_end {
+            // A branch's, its text as written, each a line of its own.
+            if let Some(&hi) = arms.get(&at)
+                && !spans.iter().any(|&(lo, _)| lo == at)
+            {
+                if !own.is_empty() {
+                    let texts = own
+                        .iter()
+                        .map(|c| sources.text[c.lo as usize..c.hi as usize].to_string());
+                    arm_comments.push((at, hi, texts.collect()));
+                }
+                continue;
+            }
             let mut pieces: Vec<(u32, u32)> = Vec::new();
             // A function kept out of line, `#[inline(never)]`, says so in its
             // JSDoc, the last line of its own, or one of its own (ADR 0649).
@@ -492,7 +590,34 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> (String, V
             }
         }
     }
-    (text, found, trailing)
+    (text, found, trailing, arm_comments)
+}
+
+/// Where each conditional's branch is, `c ? a : b`'s `a` and `b`, of those
+/// that say, by where it starts: what a comment before one is before (ADR 0658).
+fn arm_starts(module: &Module) -> std::collections::HashMap<u32, u32> {
+    let mut starts = std::collections::HashMap::new();
+    let mut of = |mut stmts: Vec<js::Stmt>| {
+        js::each_expr_mut(&mut stmts, &mut |e| {
+            if let ExprKind::Cond(_, yes, no) = &e.kind {
+                starts.extend(
+                    [yes.span, no.span]
+                        .into_iter()
+                        .filter(|s| !s.is_none())
+                        .map(|s| (s.lo, s.hi)),
+                );
+            }
+        });
+    };
+    for item in &module.items {
+        match item {
+            js::Item::Const(c) => of(vec![StmtKind::Expr(c.value.clone()).at(js::Span::NONE)]),
+            js::Item::Statements(stmts) => of(stmts.clone()),
+            js::Item::Function(f) => of(f.body.clone()),
+            js::Item::Namespace(n) => n.methods.iter().for_each(|method| of(method.body.clone())),
+        }
+    }
+    starts
 }
 
 /// Whether `line`, to its end, opens a macro's body on a line of its own,

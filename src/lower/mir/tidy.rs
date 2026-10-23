@@ -116,22 +116,20 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
         logicals,
         continues,
         loops: written,
-        comments,
         switches,
     } = written;
-    let (tables, conditions, elses, logicals, continues, written, comments) = (
+    let (tables, conditions, elses, logicals, continues, written) = (
         &tables[..],
         &conditions[..],
         &elses[..],
         &logicals[..],
         &continues[..],
         &written[..],
-        &comments[..],
     );
     // What branches make a value of: the function's too; and the arms of a
     // `match` of constants, a `switch` (ADR 0629), which make none of what
     // the program names.
-    let made = (result, comments, switches.as_slice());
+    let made = (result, switches.as_slice());
     // A guard of a handle made for it alone: the place it's a handle on.
     crate::lower::std_types::cell::unguarded(body);
     // Where a drop's flag is known, no test of it, nor a `try` for it.
@@ -345,9 +343,7 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     js::statement_lists(body, &mut |stmts| returned_consts(stmts, result));
     // An `if`'s value of two small ones, `return t ? a : b`, its temporaries
     // declared where they're read by now.
-    js::statement_lists(body, &mut |stmts| {
-        returned_values(stmts, elses, returns, booleans, comments)
-    });
+    js::statement_lists(body, &mut |stmts| returned_values(stmts, elses, returns, booleans));
     // And their arms that do nothing.
     // A cell a pointer's taken to, made where its value's first set.
     js::statement_lists(body, &mut first_cell_values);

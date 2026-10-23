@@ -438,6 +438,17 @@ fn blank_lines_before(code: &str) -> std::collections::HashSet<usize> {
 /// `map` of code each of whose lines `lines` moves, line `i` to `lines[i]`;
 /// past the last, each moved as the last is.
 pub(crate) fn moved_lines(map: &SourceMap<'_>, lines: &[u32], js_file_name: &str) -> String {
+    let last_shift = lines.last().map_or(0, |&last| last + 1 - lines.len() as u32);
+    moved_positions(
+        map,
+        |line, column| (lines.get(line as usize).copied().unwrap_or(line + last_shift), column),
+        js_file_name,
+    )
+}
+
+/// `map` of code each of whose places `to` moves, a line and a column to
+/// another: a line split in two, its rest a line of its own (ADR 0658).
+pub(crate) fn moved_positions(map: &SourceMap<'_>, to: impl Fn(u32, u32) -> (u32, u32), js_file_name: &str) -> String {
     let mut out = SourceMapBuilder::default();
     out.set_file(js_file_name);
     for (source, content) in map.get_sources().zip(map.get_source_contents()) {
@@ -445,13 +456,11 @@ pub(crate) fn moved_lines(map: &SourceMap<'_>, lines: &[u32], js_file_name: &str
     }
     // `add_name` deduplicates, so ids can change: translate them.
     let name_ids: Vec<u32> = map.get_names().map(|name| out.add_name(name)).collect();
-    let last_shift = lines.last().map_or(0, |&last| last + 1 - lines.len() as u32);
     for t in map.get_tokens() {
-        let line = t.get_dst_line();
-        let line = lines.get(line as usize).copied().unwrap_or(line + last_shift);
+        let (line, column) = to(t.get_dst_line(), t.get_dst_col());
         out.add_token(
             line,
-            t.get_dst_col(),
+            column,
             t.get_src_line(),
             t.get_src_col(),
             t.get_source_id(),
