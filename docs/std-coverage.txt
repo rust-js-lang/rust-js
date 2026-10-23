@@ -47,10 +47,10 @@
 - Vec::try_reserve	memory
 - Vec::try_reserve_exact	memory
 + Vec::with_capacity	memory
-# VecDeque 50 of 55; bodies: 2 safe, 0 spec, 0 opaque, 53 memory, 0 none
+# VecDeque 52 of 55; bodies: 2 safe, 0 spec, 0 opaque, 53 memory, 0 none
 + VecDeque::append	memory
-- VecDeque::as_mut_slices	memory
-- VecDeque::as_slices	memory
++ VecDeque::as_mut_slices	memory
++ VecDeque::as_slices	memory
 + VecDeque::back	memory
 + VecDeque::back_mut	memory
 + VecDeque::binary_search	memory
