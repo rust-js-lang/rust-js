@@ -1073,6 +1073,45 @@ pub fn pair() -> String {
   expect((await import(join(dir, "mir.js"))).pair()).toBe("11 22");
 });
 
+// ADR 0700: a thread-local an `if` makes `None` of where it doesn't, as
+// React's componentFrameCache is `let componentFrameCache; if (__DEV__) {
+// componentFrameCache = new WeakMap(); }`, is assigned only where it's
+// something: `let` leaves it `undefined` already, and an `else` of nothing
+// is gone. A branch left with nothing to do is the other's test.
+test("a thread-local an if makes None of is assigned only where it's something", async () => {
+  const dir = fixture("assigned-none");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::RefCell;
+
+thread_local! {
+    static CACHE: Option<&'static RefCell<Vec<u32>>> = if js::math::random() < 2.0 {
+        Some(Box::leak(Box::new(RefCell::new(Vec::new()))))
+    } else {
+        None
+    };
+    static NONE_FIRST: Option<u32> = if js::math::random() > 2.0 { None } else { Some(1) };
+}
+
+pub fn remember(n: u32) -> usize {
+    if let Some(cache) = CACHE.with(|cache| *cache) {
+        cache.borrow_mut().push(n);
+        return cache.borrow().len();
+    }
+    0
+}
+
+pub fn first() -> Option<u32> {
+    NONE_FIRST.with(|n| *n)
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("let cache;\nif (Math.random() < 2) {\n  cache = { value: [] };\n}\n");
+  expect(js).toContain("let noneFirst;\nif (!(Math.random() > 2)) {\n  noneFirst = 1;\n}\n");
+  expect(js).not.toContain("= undefined;");
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.remember(4), lib.remember(5), lib.first()]).toEqual([1, 2, 1]);
+});
+
 // ADR 0699: a thread-local's `.with(|c| *c)` is its variable (ADR 0270)
 // where something's there to drop as a panic unwinds too, React's
 // `COMPONENT_FRAME_CACHE.with(|cache| *cache)` under its `finally`'s guard:

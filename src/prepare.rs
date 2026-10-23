@@ -38,7 +38,8 @@ pub fn module(module: &mut js::Module) {
 /// A module's `const` a closure called where it's made makes, a
 /// thread-local's an `if` gives, not exported: `let name;` and the
 /// closure's body, each `return v` at its ends `name = v`, an early one's
-/// `if` the rest's `else`, as JS writes it (ADR 0601):
+/// `if` the rest's `else`, as JS writes it (ADR 0601); a `return
+/// undefined` nothing, as `let name;` is that already (ADR 0700):
 ///
 /// ```js
 /// let schedule;
@@ -229,7 +230,9 @@ fn assigned(stmts: &[Stmt], name: &str) -> Option<Vec<Stmt>> {
         let last = i + 1 == stmts.len();
         match &stmt.kind {
             StmtKind::Return(Some(value)) if last => {
-                out.push(StmtKind::Assign(Expr::var(name), value.clone()).at(stmt.span));
+                if !matches!(value.kind, ExprKind::Undefined) {
+                    out.push(StmtKind::Assign(Expr::var(name), value.clone()).at(stmt.span));
+                }
             }
             StmtKind::If(test, then, otherwise) if js::returns(std::slice::from_ref(stmt)).0 => {
                 let then = assigned(then, name)?;
@@ -239,7 +242,15 @@ fn assigned(stmts: &[Stmt], name: &str) -> Option<Vec<Stmt>> {
                     None if !last => assigned(&stmts[i + 1..], name)?,
                     _ => return None,
                 };
-                out.push(StmtKind::If(test.clone(), then, Some(otherwise)).at(stmt.span));
+                // Of a branch left with nothing to do, the other's test.
+                out.push(
+                    match (then.is_empty(), otherwise.is_empty()) {
+                        (_, true) => StmtKind::If(test.clone(), then, None),
+                        (true, false) => StmtKind::If(test.clone().negated_test(), otherwise, None),
+                        (false, false) => StmtKind::If(test.clone(), then, Some(otherwise)),
+                    }
+                    .at(stmt.span),
+                );
                 return Some(out);
             }
             // A `return` a loop's or a `try`'s, or no `return` at the end.
