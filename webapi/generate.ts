@@ -235,6 +235,10 @@ const typedefs = new Map(everywhere.filter((d) => d.type === "typedef").map((d) 
 const dictionaries = new Map(everywhere.filter((d) => d.type === "dictionary" && !d.partial).map((d) => [d.name, d]));
 const callbacks = new Map(everywhere.filter((d) => d.type === "callback").map((d) => [d.name, d]));
 const callbackInterfaces = new Set(everywhere.filter((d) => d.type === "callback interface").map((d) => d.name));
+// The callbacks that are a class, which `new` calls, as TypeScript's
+// construct signature has it, `new (...params: any[]): HTMLElement`: WebIDL
+// writes one as a function.
+const constructors = new Set(["CustomElementConstructor"]);
 // The names a class is known by too, `[LegacyWindowAlias=SVGPoint] interface
 // DOMPoint`, which SVG's IDL still uses: `create_svg_point()` gives a `DOMPoint`.
 const windowAliases = new Map(
@@ -431,9 +435,20 @@ function rustType(t: IdlType, at: Position): string | { skip: string } {
     if (args.some((a) => !a || a === ANY) || typeof result !== "string") return { skip: "callback" };
     return `Box<dyn FnMut(${args.join(", ")})${result === "()" ? "" : ` -> ${result}`}>`;
   }
-  // A function JS gives, `walker.filter`, `customElements.get(name)`, is an
-  // object, as an event handler property's is: what it takes isn't said.
-  if (at === "result" && (name === "Function" || callbacks.has(name) || callbackInterfaces.has(name))) return "&'static JsObject";
+  // A function JS gives is a `dyn Fn` of its signature, `Function`'s, which
+  // says none, `dyn Fn()`, as `js::Kind::Function` is (ADR 0653). What's
+  // no function isn't one: a callback interface, `walker.filter`, a
+  // function or an object of `acceptNode`; and a constructor,
+  // `customElements.get(name)`'s, which `new` calls.
+  if (at === "result" && name === "Function") return "&'static dyn Fn()";
+  if (at === "result" && callbacks.has(name) && !constructors.has(name)) {
+    // An `any` it's given is a value of any shape, as JS has it.
+    const args = (callbacks.get(name)!.arguments ?? []).map((a) => (a.idlType.idlType === "any" ? "Option<&Unknown>" : paramType(a.idlType)));
+    const result = rustType(callbacks.get(name)!.idlType!, "result");
+    if (args.some((a) => !a || a === ANY) || typeof result !== "string") return { skip: "callback" };
+    return `&'static dyn Fn(${args.join(", ")})${result === "()" ? "" : ` -> ${result}`}`;
+  }
+  if (at === "result" && (callbacks.has(name) || callbackInterfaces.has(name))) return "&'static JsObject";
   // A value of any shape a function gives is the js crate's `Unknown`, or
   // `None` of `undefined` and `null` (ADR 0225): `response.json()`.
   // One it takes is of any type, as JS has it: a generic `M`, `message: M`.
@@ -724,11 +739,19 @@ const NAMED: Record<string, string> = {
  * event: `onclick`'s takes it; `onbeforeunload`'s gives the text that
  * asks whether to leave, or none; `onerror`'s is given an error's event,
  * or on a window its message, where it was, and what was thrown, and gives
- * whether it's handled, `true` not reported, as TypeScript's are. */
-const HANDLERS: Record<string, (event: string) => string> = {
-  EventHandler: (event) => `FnMut(&${event})`,
-  OnBeforeUnloadEventHandler: (event) => `FnMut(&${event}) -> Option<String>`,
-  OnErrorEventHandler: () => "FnMut(EventOrStr<'_>, Option<String>, Option<u32>, Option<u32>, Option<&Unknown>) -> bool",
+ * whether it's handled, `true` not reported, as TypeScript's are. `set`'s
+ * is the closure Rust gives; `get`'s, the JS function it holds, a `dyn Fn`
+ * of TypeScript's signature, its `any` result an `Unknown` (ADR 0653). */
+const HANDLERS: Record<string, { set: (event: string) => string; get: (event: string) => string }> = {
+  EventHandler: { set: (event) => `FnMut(&${event})`, get: (event) => `Fn(&${event}) -> Option<&'static Unknown>` },
+  OnBeforeUnloadEventHandler: {
+    set: (event) => `FnMut(&${event}) -> Option<String>`,
+    get: (event) => `Fn(&${event}) -> Option<String>`,
+  },
+  OnErrorEventHandler: {
+    set: () => "FnMut(EventOrStr<'_>, Option<String>, Option<u32>, Option<u32>, Option<&Unknown>) -> bool",
+    get: () => "Fn(EventOrStr<'_>, Option<&str>, Option<u32>, Option<u32>, Option<&Unknown>) -> Option<&'static Unknown>",
+  },
 };
 /** `onerror`'s first argument, TypeScript's `Event | string`. */
 const ERROR_ARG: Union = {
@@ -994,11 +1017,11 @@ function functionsOf(declared: Interface): Fn[] {
         const event = listens.get(i.name)?.get(m.name!.slice(2)) ?? "Event";
         const name = snake(m.name!);
         if (handler === HANDLERS.OnErrorEventHandler) unions.set(ERROR_ARG.name, ERROR_ARG);
-        fns.push({ name, jsName: `get ${m.name}`, params: self, result: "Option<&'static JsObject>", doc });
+        fns.push({ name, jsName: `get ${m.name}`, params: self, result: `Option<&'static dyn ${handler.get(typeName(event))}>`, doc });
         fns.push({
           name: `set_${name}`,
           jsName: `set ${m.name}`,
-          params: [...self, `value: Option<Box<dyn ${handler(typeName(event))}>>`],
+          params: [...self, `value: Option<Box<dyn ${handler.set(typeName(event))}>>`],
           result: "()",
           doc,
           nullable: ["value"],

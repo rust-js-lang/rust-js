@@ -645,7 +645,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             || self.recognition().is_json_value(ty)
             || self.option_of(ty).is_none()
                 && !any
-                && (self.is_object(ty) || matches!(ty.kind(), ty::Closure(..) | ty::FnDef(..) | ty::FnPtr(..)))
+                && (self.is_object(ty)
+                    || matches!(ty.kind(), ty::Closure(..) | ty::FnDef(..) | ty::FnPtr(..))
+                    // A `dyn Fn`, the JS function it is (ADR 0653).
+                    || matches!(ty.kind(), ty::Dynamic(..)) && self.is_callable(ty))
     }
 
     /// Whether an `Option<ty>` is `Some`: `o != null`, or `!!o` of a value

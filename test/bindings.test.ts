@@ -238,6 +238,60 @@ pub fn next_frame(then: &'static dyn Fn(f64)) -> u32 {
   }
 });
 
+// ADR 0653: a function JS gives is a `dyn Fn` of its signature, the one type
+// of a JS function value: an event handler property read, called, compared
+// by identity and kept, and a closure given to it, each the JS a person
+// writes.
+test("a function JS gives is a dyn Fn of its signature", async () => {
+  const withWeb = ["--", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const dir = fixture("function-values");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::Cell;
+
+use js::Unknown;
+use webapi::{HTMLElement, PointerEvent};
+
+thread_local! {
+    static SAVED: Cell<Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>>> = const { Cell::new(None) };
+}
+
+pub fn keep(button: &HTMLElement) {
+    SAVED.set(button.onclick());
+}
+
+pub fn same(button: &HTMLElement) -> bool {
+    match (SAVED.get(), button.onclick()) {
+        (Some(saved), Some(now)) => std::ptr::eq(saved, now),
+        _ => false,
+    }
+}
+
+pub fn click(button: &HTMLElement, event: &PointerEvent) -> Option<&'static Unknown> {
+    button.onclick().and_then(|onclick| onclick(event))
+}
+
+pub fn replace(button: &HTMLElement, seen: &'static dyn Fn(i32)) {
+    button.set_onclick(Some(Box::new(move |event| seen(event.client_x()))));
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("  saved = button.onclick;\n");
+  expect(js).toContain("    return saved === now;\n");
+  expect(js).toContain("button.onclick = (event) => {\n    seen(event.clientX);\n  };");
+  const { click, keep, replace, same } = await import(join(dir, "lib.js"));
+  const button: any = {};
+  const handler = (event: { clientX: number }) => event.clientX * 2;
+  button.onclick = handler;
+  keep(button);
+  const other: any = {};
+  other.onclick = () => 0;
+  expect([same(button), same(other), click(button, { clientX: 3 }), click({ onclick: null }, { clientX: 3 })]).toEqual([true, false, 6, undefined]);
+  const seen: number[] = [];
+  replace(button, (x: number) => seen.push(x));
+  button.onclick({ clientX: 5 });
+  expect([seen, same(button)]).toEqual([[5], false]);
+});
+
 // ADR 0271: JS's truthiness of a value, `!value` as a person tests one, and
 // a value of any shape given a type it's vouched to have, the value itself.
 test("a JS value is tested as JS tests it, and cast as it's vouched", async () => {

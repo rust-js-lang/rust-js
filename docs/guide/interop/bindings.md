@@ -520,6 +520,12 @@ export async function open(other) {
 - **A callback is a closure**: `Box<dyn Fn(..)>` for one JS may call again,
   `Box<dyn FnOnce()>` for one it calls once. JS calls it with its
   parameters ([ADR 0260](../../decisions/0260-webapi-callbacks.md)).
+- **A function JS gives is a `&'static dyn Fn` of its signature**, its
+  `any` an `Option<&Unknown>`: `button.onclick()` is an
+  `Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>>`, to
+  call, keep, or compare by `std::ptr::eq`, which is `===`. TypeScript's
+  `Function`, of whatever it takes, is `&dyn Fn()`, as `js::Kind::Function`
+  is ([ADR 0653](../../decisions/0653-a-js-function-value-is-a-dyn-fn-of-its-signature.md)).
 - **`#[rust_js::nullable]` makes the result's `None` `null`** for a caller
   that tests `!== null`; `#[rust_js::nullable(range)]` passes the parameter
   `range`'s `None` as `null`. Reading a result, `None` is `undefined` or

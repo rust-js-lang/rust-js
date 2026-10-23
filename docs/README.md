@@ -329,7 +329,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0257 A closure that only spawns an async block is an async arrow](decisions/0257-spawning-closure-async-arrow.md)
 - [0258 A promise's then, a module of a component, next/head and the Router](decisions/0258-search-bindings.md)
 - [0259 A module's constant element, and an image's title](decisions/0259-constant-elements.md)
-- [0260 A binding's callback parameter, and IntersectionObserver](decisions/0260-webapi-callbacks.md)
+- [0260 A binding's callback parameter, and IntersectionObserver](decisions/0260-webapi-callbacks.md) *(amended by 0653: a function JS gives is a `dyn Fn`)*
 - [0261 Defaults that do nothing don't move what's made beside them](decisions/0261-defaults-made-in-place.md)
 - [0262 When Rust and JS disagree, what the program can observe decides](decisions/0262-when-rust-and-js-disagree.md)
 - [0263 next/router's withRouter, and a flattened struct taken apart](decisions/0263-with-router.md)
@@ -579,7 +579,8 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0645 `js::is_defined` of a static is given the static itself](decisions/0645-is-defined-of-a-static-is-of-the-static.md) *(amended by 0647: the static isn't read)*
 - [0646 A chain held, then its fallback, is one `||`](decisions/0646-a-held-chain-and-its-fallback-is-one-or.md)
 - [0647 What `is_defined` names is no read; a test kept by its truth is `&&`](decisions/0647-type-name-as-react-writes-it.md)
-- [0648 V8's stack trace API is the node crate's, as @types/node types it](decisions/0648-v8s-stack-trace-api-is-the-node-crates.md)
+- [0648 V8's stack trace API is the node crate's, as @types/node types it](decisions/0648-v8s-stack-trace-api-is-the-node-crates.md) *(amended by 0653: captureStackTrace bound)*
+- [0653 A JS function value is a `dyn Fn` of its signature](decisions/0653-a-js-function-value-is-a-dyn-fn-of-its-signature.md)
 - [0623 A copy std makes of a `Copy` value is a copy](decisions/0623-a-copy-std-makes-is-a-copy.md)
 - [0436 Every `dyn` that's a pair keeps its value's drop, `dyn Send` too](decisions/0436-every-dyn-keeps-its-drop.md)
 - [0437 A scope's drops on a panic are one `try { .. } finally { .. }`](decisions/0437-a-scopes-drops-are-one-finally.md)

@@ -1,6 +1,8 @@
 # 0648. V8's stack trace API is the node crate's, as @types/node types it
 
-Status: Accepted. Extends [0272](0272-node.md) and
+Status: Accepted. Amended by
+[0653](0653-a-js-function-value-is-a-dyn-fn-of-its-signature.md): `Error.captureStackTrace`
+is bound, its `Function` a `&dyn Fn()`. Extends [0272](0272-node.md) and
 [0351](0351-node-coverage.md), whose measure counts `Error`'s members
 too. Amends [0443](0443-a-value-a-caller-may-leave-out-is-an-option.md):
 a setter's `None` is no optional argument.

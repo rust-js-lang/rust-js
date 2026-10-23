@@ -678,8 +678,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // An object's, by the object, wherever it's reached from: a copy of
         // what a pointer points to is a copy (`mutation.rs`), so the object
-        // is the place's.
-        if self.is_object(pointee) && !self.is_cell_pointee(pointee) {
+        // is the place's. A `dyn Fn`'s, by the JS function it is, as a
+        // JS object's is (ADR 0653): `std::ptr::eq(a, b)` is `a === b`.
+        let function = matches!(pointee.kind(), ty::Dynamic(..)) && self.is_callable(pointee);
+        if (self.is_object(pointee) || function) && !self.is_cell_pointee(pointee) {
             return Ok(Expr::call(Expr::helper("$ptrTo"), vec![place]));
         }
         // A type parameter's value, an object or not as its caller gives

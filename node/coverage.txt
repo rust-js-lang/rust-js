@@ -1,5 +1,5 @@
 # The node crate against @types/node: bun test test/node-coverage.test.ts
-# exports: 162 of 1538 (10.5%)
+# exports: 163 of 1538 (10.6%)
 # not bound by design (x): 3, TypeScript's own
 # assert 0 of 28
 - assert#Assert
@@ -461,8 +461,8 @@ x type buffer#WithImplicitCoercion
 # domain 0 of 2
 - domain#create
 - domain#Domain
-# Error 2 of 3
-- Error#captureStackTrace
+# Error 3 of 3
++ Error#captureStackTrace
 + Error#prepareStackTrace
 + Error#stackTraceLimit
 # events 11 of 16

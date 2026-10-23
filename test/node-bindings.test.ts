@@ -762,6 +762,25 @@ pub fn limited(limit: f64) -> f64 {
     js_error::set_stack_trace_limit(limit);
     previous
 }
+
+pub fn captured(target: &JsError) {
+    js_error::capture_stack_trace(target, None);
+}
+
+pub fn trimmed(target: &JsError, above: &'static dyn Fn()) {
+    js_error::capture_stack_trace(target, Some(above));
+}
+
+fn function_of(_: &JsError, structured_stack_trace: &[&CallSite]) -> bool {
+    structured_stack_trace.first().and_then(|call_site| call_site.get_function()).is_some()
+}
+
+pub fn has_function(error: &JsError) -> bool {
+    js_error::set_prepare_stack_trace(Some(&function_of));
+    let stack = error.stack();
+    js_error::set_prepare_stack_trace::<bool>(None);
+    stack.is_some()
+}
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `node=${join(node, "libnode.rmeta")}`, "--extern", `js=${join(node, "libjs.rmeta")}`, "-L", node]);
   // Each as React writes it: the hook a property of `Error`, read and
@@ -776,13 +795,16 @@ pub fn limited(limit: f64) -> f64 {
 }`);
   expect(js).toContain("  Error.prepareStackTrace = files;\n  const stack = error.stack;\n  Error.prepareStackTrace = undefined;\n");
   expect(js).toContain("  const previous = Error.stackTraceLimit;\n  Error.stackTraceLimit = limit;\n");
+  expect(js).toContain("  Error.captureStackTrace(target);\n");
+  expect(js).toContain("  Error.captureStackTrace(target, above);\n");
+  expect(js).toContain(".getFunction()");
   expect(readFileSync(join(dir, "default_prepare_stack_trace.js"), "utf8")).toContain("\nexport default undefined;\n");
   const v8 = readFileSync(join(dir, "default_prepare_stack_trace_v8.js"), "utf8");
   expect(v8).toContain("    stack += callSite.toString();\n");
   expect(v8).toContain("export function install() {\n  Error.prepareStackTrace = prepareStackTrace;\n}");
   expect(v8).toContain("export default prepareStackTrace;");
   writeFileSync(join(dir, "package.json"), '{ "type": "module" }');
-  writeFileSync(join(dir, "run.js"), `import { filesOf, formatOwnerStack, limited } from "./lib.js";
+  writeFileSync(join(dir, "run.js"), `import { captured, filesOf, formatOwnerStack, limited, trimmed } from "./lib.js";
 import prepareStackTrace, { install } from "./default_prepare_stack_trace_v8.js";
 
 const ours = () => "ours";
@@ -797,7 +819,19 @@ const cleared = Error.prepareStackTrace === undefined;
 const previous = limited(1);
 const one = new Error("one").stack.split("\\n").length;
 limited(previous);
-console.log(JSON.stringify({ owner: owner[0], at: owner[1].startsWith("    at "), restored, installed, v8: v8[0], v8At: v8[1].startsWith("    at "), files, cleared, previous, one }));
+const target = { name: "Target", message: "here" };
+captured(target);
+function outer() {
+  const inner = {};
+  trimmed(inner, outer);
+  return inner;
+}
+const around = () => outer();
+const trimmedStack = around().stack.split("\\n");
+console.log(JSON.stringify({
+  owner: owner[0], at: owner[1].startsWith("    at "), restored, installed, v8: v8[0], v8At: v8[1].startsWith("    at "), files, cleared, previous, one,
+  target: target.stack.split("\\n")[0], capturedAt: target.stack.includes("at captured"), trimmed: trimmedStack[1].includes("around"),
+}));
 `);
   const p = Bun.spawnSync(["node", "run.js"], { cwd: dir, stderr: "pipe" });
   expect([p.exitCode, p.stderr.toString()]).toEqual([0, ""]);
@@ -812,5 +846,8 @@ console.log(JSON.stringify({ owner: owner[0], at: owner[1].startsWith("    at ")
     cleared: true,
     previous: 10,
     one: 2,
+    target: "Target: here",
+    capturedAt: true,
+    trimmed: true,
   });
 });
