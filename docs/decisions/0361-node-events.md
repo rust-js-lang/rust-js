@@ -1,6 +1,8 @@
 # 0361. Node's events are names of their own, typed by their emitters
 
-Status: Accepted. Extends [0272](0272-node.md); adapts webapi's
+Status: Accepted. Amended by [0656](0656-an-events-emit-arguments-are-typescripts-emits.md):
+an event's `emit` arguments are TypeScript's `emit`'s, not its listener's.
+Extends [0272](0272-node.md); adapts webapi's
 [0223](0223-webapi-event-and-tag-maps.md) and
 [0282](0282-event-listener-methods.md).
 

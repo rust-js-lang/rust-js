@@ -352,4 +352,13 @@ export const mutations: Mutation[] = [
     replace: "            && let Some(x) = made(then).filter(|_| false)\n",
     tests: ["test/lowering-options.test.ts", "-t", "React's typeName"],
   },
+  {
+    name: "dyn-fn-falsy",
+    breaks: "a `dyn Fn` may be falsy, so whether an event handler property is set is `onclick != null`, not `!!onclick`",
+    file: "src/lower/std_types/option.rs",
+    find: "                    || matches!(ty.kind(), ty::Dynamic(..)) && self.is_callable(ty))\n",
+    replace: "                    || false)\n",
+    tests: ["test/snapshots.test.ts", "-t", "^web_forms"],
+    snapshots: true,
+  },
 ];

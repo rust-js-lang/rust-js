@@ -98,6 +98,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             {
                 return None;
             }
+            // A binding crate's `dyn`, `dyn IntoUnknown`, is the value it's
+            // of, as JS is given it: a dictionary's member of `any` (ADR 0654).
+            ty::Dynamic(traits, ..)
+                if traits.principal_def_id().is_some_and(|t| {
+                    !self.recognition().is_pair_trait(t) && !super::recognition::is_std_crate(self.tcx, t)
+                }) =>
+            {
+                return None;
+            }
             // `dyn ReactNode` is the node itself, any of them (ADR 0242).
             ty::Dynamic(traits, ..)
                 if traits

@@ -221,7 +221,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let debug = tr.def_id == self.debug_trait();
         let ord = tr.def_id == self.ord_trait();
         let partial_ord = tr.def_id == self.partial_ord_trait();
+        // `PartialEq<u32>` or `PartialOrd<u32>` of another type than itself: its
+        // impl's, never a comparison of it with itself.
+        let of_other = (eq || partial_ord)
+            && tr
+                .args
+                .types()
+                .nth(1)
+                .is_some_and(|rhs| rhs.peel_refs() != ty.peel_refs());
         if (default || clone || eq || display || to_string || debug || ord || partial_ord)
+            && !of_other
             && !self.has_user_impl(tr.def_id, ty)
         {
             if debug {

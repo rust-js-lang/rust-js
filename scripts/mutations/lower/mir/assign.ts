@@ -474,4 +474,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^forwarding_mut_impl.rs$"],
   },
+  {
+    name: "mut-field-given-refused",
+    breaks: "`inc(&mut es[0].n)` is refused, its object not named where it's borrowed",
+    file: "src/lower/mir/assign.rs",
+    find: "                js::ExprKind::Member(..) | js::ExprKind::Index(..) if !fixed_place(&place) && !one_value => {\n",
+    replace: "                js::ExprKind::Member(..) | js::ExprKind::Index(..) if false => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^mut_field_given.rs$"],
+  },
 ];

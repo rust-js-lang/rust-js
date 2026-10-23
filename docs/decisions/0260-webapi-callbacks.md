@@ -1,7 +1,9 @@
 # 0260. A binding's callback parameter, and IntersectionObserver
 
 Status: Accepted. Extends [0024](0024-web-crate.md) and
-[0219](0219-webapi-sequences.md).
+[0219](0219-webapi-sequences.md). Amended by
+[0653](0653-a-js-function-value-is-a-dyn-fn-of-its-signature.md): a function
+JS gives is a `dyn Fn` of its signature, not a `JsObject`.
 Amended by [0282](0282-event-listener-methods.md): event listener methods
 take closures directly; other WebIDL callbacks retain their existing forms.
 

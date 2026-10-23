@@ -13,7 +13,7 @@ function metersPartialEqU32_eq(meters, other) {
 }
 
 export const metersPartialOrdU32 = {
-  PartialEq: () => ({ eq: metersPartialEqU32_eq }),
+  PartialEq: () => metersPartialEqU32,
   partialCmp: metersPartialOrdU32_partialCmp,
 };
 

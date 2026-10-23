@@ -238,6 +238,181 @@ pub fn next_frame(then: &'static dyn Fn(f64)) -> u32 {
   }
 });
 
+// ADR 0653: a function JS gives is a `dyn Fn` of its signature, the one type
+// of a JS function value: an event handler property read, called, compared
+// by identity and kept, and a closure given to it, each the JS a person
+// writes.
+test("a function JS gives is a dyn Fn of its signature", async () => {
+  const withWeb = ["--", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const dir = fixture("function-values");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::Cell;
+
+use js::Unknown;
+use webapi::{HTMLElement, PointerEvent};
+
+thread_local! {
+    static SAVED: Cell<Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>>> = const { Cell::new(None) };
+}
+
+pub fn keep(button: &HTMLElement) {
+    SAVED.set(button.onclick());
+}
+
+pub fn same(button: &HTMLElement) -> bool {
+    match (SAVED.get(), button.onclick()) {
+        (Some(saved), Some(now)) => std::ptr::eq(saved, now),
+        _ => false,
+    }
+}
+
+pub fn click(button: &HTMLElement, event: &PointerEvent) -> Option<&'static Unknown> {
+    button.onclick().and_then(|onclick| onclick(event))
+}
+
+pub fn replace(button: &HTMLElement, seen: &'static dyn Fn(i32)) {
+    button.set_onclick(Some(Box::new(move |event| seen(event.client_x()))));
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("  saved = button.onclick;\n");
+  expect(js).toContain("    return saved === now;\n");
+  expect(js).toContain("button.onclick = (event) => {\n    seen(event.clientX);\n  };");
+  const { click, keep, replace, same } = await import(join(dir, "lib.js"));
+  const button: any = {};
+  const handler = (event: { clientX: number }) => event.clientX * 2;
+  button.onclick = handler;
+  keep(button);
+  const other: any = {};
+  other.onclick = () => 0;
+  expect([same(button), same(other), click(button, { clientX: 3 }), click({ onclick: null }, { clientX: 3 })]).toEqual([true, false, 6, undefined]);
+  const seen: number[] = [];
+  replace(button, (x: number) => seen.push(x));
+  button.onclick({ clientX: 5 });
+  expect([seen, same(button)]).toEqual([[5], false]);
+});
+
+// ADR 0654: a dictionary's member of any value, `ErrorEventInit`'s `error?:
+// any`, is a `dyn IntoUnknown`, as a rest parameter's item is, and so is
+// `PromiseRejectionEventInit`'s `promise`, TypeScript's `Promise<any>`: React's
+// `new window.ErrorEvent('error', {bubbles: true, cancelable: true,
+// message, error})`, and a Rust value as a `CustomEvent`'s detail.
+test("a dictionary's member of any value is a dyn IntoUnknown", async () => {
+  const withWeb = ["--", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const dir = fixture("any-members");
+  writeFileSync(join(dir, "lib.rs"), `use js::{Promise, Unknown};
+use webapi::{CustomEvent, CustomEventInit, ErrorEvent, ErrorEventInit, PromiseRejectionEvent, PromiseRejectionEventInit};
+
+pub struct Point {
+    pub x: f64,
+}
+
+pub fn error_of(error: Option<&Unknown>, message: &str) -> &'static ErrorEvent {
+    webapi::error_event::new(
+        "error",
+        Some(ErrorEventInit {
+            bubbles: Some(true),
+            cancelable: Some(true),
+            message: Some(message),
+            error: Some(&error),
+            ..Default::default()
+        }),
+    )
+}
+
+pub fn moved(x: f64) -> &'static CustomEvent {
+    webapi::custom_event::new("moved", Some(CustomEventInit { detail: Some(&Point { x }), ..Default::default() }))
+}
+
+pub fn rejected(promise: Promise<String>, reason: &str) -> &'static PromiseRejectionEvent {
+    webapi::promise_rejection_event::new(
+        "unhandledrejection",
+        PromiseRejectionEventInit {
+            bubbles: None,
+            cancelable: None,
+            composed: None,
+            promise: &promise,
+            reason: Some(&reason),
+        },
+    )
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('return new ErrorEvent("error", { bubbles: true, cancelable: true, message, error });');
+  expect(js).toContain('return new CustomEvent("moved", { detail: { x } });');
+  expect(js).toContain('return new PromiseRejectionEvent("unhandledrejection", { promise, reason });');
+  const globals = globalThis as any;
+  const previous = [globals.ErrorEvent, globals.CustomEvent, globals.PromiseRejectionEvent];
+  const made = (name: string) => class {
+    constructor(public type: string, public init: unknown) {}
+    kind = name;
+  };
+  [globals.ErrorEvent, globals.CustomEvent, globals.PromiseRejectionEvent] = ["ErrorEvent", "CustomEvent", "PromiseRejectionEvent"].map(made);
+  try {
+    const lib = await import(join(dir, "lib.js"));
+    const thrown = new Error("boom");
+    const promise = Promise.resolve("x");
+    expect([lib.errorOf(thrown, "boom").init, lib.errorOf(undefined, "none").init, lib.moved(2).init, lib.rejected(promise, "why").init]).toEqual([
+      { bubbles: true, cancelable: true, message: "boom", error: thrown },
+      { bubbles: true, cancelable: true, message: "none", error: undefined },
+      { detail: { x: 2 } },
+      { promise, reason: "why" },
+    ]);
+  } finally {
+    [globals.ErrorEvent, globals.CustomEvent, globals.PromiseRejectionEvent] = previous;
+  }
+});
+
+// ADR 0655: a binding of `any`, `reportError(e: any)`, as a value is a `fn`
+// of `Option<&'static Unknown>`, the host's or a fallback, chosen where the
+// module loads, as React's `reportGlobalError` is; and a value of it alone
+// is the module's `const`.
+test("a binding of any as a value is a fn of a static Unknown", async () => {
+  const withWeb = ["--", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const dir = fixture("any-binding-value");
+  writeFileSync(join(dir, "lib.rs"), `use js::Unknown;
+
+thread_local! {
+    static REPORT_GLOBAL_ERROR: fn(Option<&'static Unknown>) =
+        if js::is_defined(webapi::global::report_error::<Option<&Unknown>>) {
+            webapi::global::report_error
+        } else {
+            |error| webapi::console::error((error,))
+        };
+    static HOST_REPORT_ERROR: fn(Option<&'static Unknown>) = webapi::global::report_error;
+}
+
+js::export_default!(REPORT_GLOBAL_ERROR);
+
+pub fn hosts(error: Option<&'static Unknown>) {
+    HOST_REPORT_ERROR.with(|report| report(error));
+}
+`);
+  const globals = globalThis as any;
+  const previous = [globals.reportError, console.error];
+  const reported: unknown[] = [];
+  const logged: unknown[] = [];
+  globals.reportError = (error: unknown) => reported.push(error);
+  console.error = (error: unknown) => logged.push(error);
+  try {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
+    const js = readFileSync(join(dir, "lib.js"), "utf8");
+    expect(js).toContain('let reportGlobalError;\nif (typeof reportError !== "undefined") {\n  reportGlobalError = reportError;\n} else {');
+    expect(js).toContain("const hostReportError = reportError;");
+    expect(js).toContain("export default reportGlobalError;");
+    const lib = await import(join(dir, "lib.js"));
+    lib.default("first");
+    lib.hosts("second");
+    globals.reportError = undefined;
+    writeFileSync(join(dir, "again.js"), readFileSync(join(dir, "lib.js"), "utf8"));
+    (await import(join(dir, "again.js"))).default("third");
+    expect([reported, logged]).toEqual([["first", "second"], ["third"]]);
+  } finally {
+    [globals.reportError, console.error] = previous;
+  }
+});
+
 // ADR 0271: JS's truthiness of a value, `!value` as a person tests one, and
 // a value of any shape given a type it's vouched to have, the value itself.
 test("a JS value is tested as JS tests it, and cast as it's vouched", async () => {

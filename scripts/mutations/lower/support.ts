@@ -82,4 +82,12 @@ export const mutations: Mutation[] = [
     replace: "                let given = super::recognition::known_by_bounds(key) && !self.is_sorted(ty);\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_btree_keys.rs$"],
   },
+  {
+    name: "binding-dyn-refused",
+    breaks: "a binding crate's `dyn IntoUnknown`, an `ErrorEventInit`'s `error`, is refused as a value, so `..Default::default()` of one is",
+    file: "src/lower/support.rs",
+    find: "                    !self.recognition().is_pair_trait(t) && !super::recognition::is_std_crate(self.tcx, t)\n",
+    replace: "                    false\n",
+    tests: ["test/bindings.test.ts", "-t", "member of any value"],
+  },
 ];

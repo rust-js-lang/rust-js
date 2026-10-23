@@ -1004,12 +1004,16 @@ impl Emits<event::RejectionHandled> for Process {
 
 impl Emits<event::UncaughtException> for Process {
     type Listener = dyn Fn(&JsError, UncaughtExceptionOrigin);
-    type Args = (&'static JsError, UncaughtExceptionOrigin);
+    // `emit(event, error)`: what `@types/node` gives `emit`, where Node
+    // gives its listeners where it came from too (ADR 0656).
+    type Args = (&'static JsError,);
 }
 
 impl Emits<event::UncaughtExceptionMonitor> for Process {
     type Listener = dyn Fn(&JsError, UncaughtExceptionOrigin);
-    type Args = (&'static JsError, UncaughtExceptionOrigin);
+    // `emit(event, error)`: what `@types/node` gives `emit`, where Node
+    // gives its listeners where it came from too (ADR 0656).
+    type Args = (&'static JsError,);
 }
 
 impl Emits<event::UnhandledRejection> for Process {

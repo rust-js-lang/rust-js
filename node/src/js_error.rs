@@ -21,6 +21,15 @@ use js::{JsError, Unknown};
 
 use crate::CallSite;
 
+/// [`Error.captureStackTrace(targetObject, constructorOpt)`](https://nodejs.org/api/errors.html#errorcapturestacktracetargetobject-constructoropt):
+/// a `stack` on `target_object`, of where it's called, without the frames
+/// of `constructor_opt` and those it called, a function of whatever it
+/// takes, TypeScript's `Function` (ADR 0653).
+#[cfg_attr(rust_js, rust_js::link_name = "Error.captureStackTrace")]
+pub fn capture_stack_trace(target_object: &dyn core::any::Any, constructor_opt: Option<&dyn Fn()>) {
+    unreachable!()
+}
+
 /// [`Error.prepareStackTrace`](https://v8.dev/docs/stack-trace-api#customizing-stack-traces):
 /// the hook that writes an error's `stack`, given the error and its
 /// frames, or `None`, `undefined`, as it is until a program sets one, when

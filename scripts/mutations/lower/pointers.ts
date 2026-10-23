@@ -6,7 +6,7 @@ export const mutations: Mutation[] = [
     name: "pointer-pointee-object-by-place",
     breaks: "an object's pointer is its place's, `$ptr(a, \"value\")`, not the object's: two to it differ",
     file: "src/lower/pointers.rs",
-    find: "        if self.is_object(pointee) && !self.is_cell_pointee(pointee) {\n            return Ok(Expr::call(Expr::helper(\"$ptrTo\")",
+    find: "        if (self.is_object(pointee) || function) && !self.is_cell_pointee(pointee) {\n            return Ok(Expr::call(Expr::helper(\"$ptrTo\")",
     replace: "        if false {\n            return Ok(Expr::call(Expr::helper(\"$ptrTo\")",
     tests: ["test/corpus.test.ts", "-t", "^raw_pointers.rs$"],
   },
@@ -583,5 +583,13 @@ export const mutations: Mutation[] = [
     replace: "        if let (Some(x), Some(y)) = (object_of(&a).filter(|_| false), object_of(&b)) {",
     tests: ["test/corpus.test.ts", "-t", "^raw_pointers.rs$"],
     snapshots: true,
+  },
+  {
+    name: "dyn-fn-pointer-refused",
+    breaks: "`std::ptr::eq` of two `&dyn Fn`s, an event handler read twice, is refused as a raw pointer to a place JS can't name",
+    file: "src/lower/pointers.rs",
+    find: "        let function = matches!(pointee.kind(), ty::Dynamic(..)) && self.is_callable(pointee);\n",
+    replace: "        let function = false;\n",
+    tests: ["test/bindings.test.ts", "-t", "a function JS gives is a dyn Fn"],
   },
 ];

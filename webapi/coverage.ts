@@ -10,7 +10,23 @@ import { open } from "@rust-js/typescript";
 
 /** A class's members, and of them its methods, and what each that gives a
  * `NodeListOf<X>` lists, `querySelectorAll`'s `Element`. */
-export type Members = { members: Set<string>; methods: Set<string>; statics: Set<string>; ctor: boolean; extends: string[]; lists: Map<string, string> };
+export type Members = {
+  members: Set<string>;
+  methods: Set<string>;
+  statics: Set<string>;
+  ctor: boolean;
+  extends: string[];
+  lists: Map<string, string>;
+  /** Its properties TypeScript types as a function, `onclick`'s `((ev) => any) | null`. */
+  functions: Set<string>;
+};
+
+/** Whether TypeScript's `type` is a function's, or none, `| null`. */
+const isFunction = (type: any): boolean =>
+  type?.kind === "function" ||
+  (type?.kind === "union" &&
+    type.types.some((t: any) => t.kind === "function") &&
+    type.types.every((t: any) => t.kind === "function" || (t.kind === "keyword" && ["null", "undefined"].includes(t.keyword))));
 
 export type Coverage = {
   /** Every member of TypeScript's classes, `Element.append`. */
@@ -47,7 +63,7 @@ export async function typescript(): Promise<Map<string, Members>> {
   await session.close();
   const interfaces = new Map<string, Members>();
   const of = (name: string) => {
-    if (!interfaces.has(name)) interfaces.set(name, { members: new Set(), methods: new Set(), statics: new Set(), ctor: false, extends: [], lists: new Map() });
+    if (!interfaces.has(name)) interfaces.set(name, { members: new Set(), methods: new Set(), statics: new Set(), ctor: false, extends: [], lists: new Map(), functions: new Set() });
     return interfaces.get(name)!;
   };
   const classes = new Set<string>();
@@ -57,6 +73,7 @@ export async function typescript(): Promise<Map<string, Members>> {
       for (const e of d.extends) if (e.kind === "reference") m.extends.push(e.name);
       for (const member of d.members) if (member.kind === "method" || member.kind === "property") m.members.add(member.name);
       for (const member of d.members) if (member.kind === "method") m.methods.add(member.name);
+      for (const member of d.members) if (member.kind === "property" && isFunction(member.type)) m.functions.add(member.name);
       for (const member of d.members) {
         const item = listed(member);
         if (item && !m.lists.has(member.name)) m.lists.set(member.name, item);
@@ -85,16 +102,18 @@ export async function typescript(): Promise<Map<string, Members>> {
     const members = new Set([...m.members, ...mixins(name, new Set())].filter((x) => !parents.has(x)));
     // Its methods and lists, its mixins' and its parents' too.
     const methods = new Set<string>();
+    const functions = new Set<string>();
     const lists = new Map<string, string>();
     const add = (n: string, seen: Set<string>) => {
       if (seen.has(n)) return;
       seen.add(n);
       for (const x of of(n).methods) methods.add(x);
+      for (const x of of(n).functions) functions.add(x);
       for (const [x, item] of of(n).lists) if (!lists.has(x)) lists.set(x, item);
       for (const e of of(n).extends) add(e, seen);
     };
     add(name, new Set());
-    out.set(name, { ...m, members, methods, lists });
+    out.set(name, { ...m, members, methods, lists, functions });
   }
   return out;
 }
@@ -103,9 +122,11 @@ export async function typescript(): Promise<Map<string, Members>> {
  * link name says, `get x` and `set x` are `x`, `new X` the constructor,
  * `X.y` and `get X.y` the static `y`, or its own name; and each constant, a member and
  * a static of its name. */
-function webapi(): { bound: Set<string>; types: Set<string>; parents: Map<string, string> } {
+function webapi(): { bound: Set<string>; types: Set<string>; parents: Map<string, string>; objects: Set<string> } {
   const text = readFileSync(lib, "utf8");
   const bound = new Set<string>();
+  // Each property read as a `JsObject`, `Document.onclick` before ADR 0653.
+  const objects = new Set<string>();
   // The type a module is of: its JS name, `rust_js::name` or its own.
   let struct = "";
   let named = "";
@@ -138,13 +159,23 @@ function webapi(): { bound: Set<string>; types: Set<string>; parents: Map<string
         : /^[A-Z][\w.]*\.\w+$/.test(plain) ? `static:${plain.split(".").pop()}`
         : plain;
       bound.add(`${type}.${member}`);
+      if (js.startsWith("get ") && /->.*\bJsObject\b/.test(l)) objects.add(`${type}.${member}`);
     }
     if (fn) link = undefined;
   }
   const types = new Set([...text.matchAll(/^pub struct (\w+)/gm)].map((m) => m[1]));
   // What each type derefs to: a member of its parent is one of its own.
   const parents = new Map([...text.matchAll(/^impl Deref for (\w+) \{\n\s+type Target = (\w+);/gm)].map((m) => [m[1], m[2]]));
-  return { bound, types, parents };
+  return { bound, types, parents, objects };
+}
+
+/** Each property TypeScript types as a function that the crate reads as an
+ * object, a `JsObject`, where a function JS gives is a `dyn Fn` of its
+ * signature (ADR 0653): none. */
+export async function functionsAsObjects(): Promise<string[]> {
+  const ts = await typescript();
+  const { objects } = webapi();
+  return [...objects].filter((x) => ts.get(x.slice(0, x.indexOf(".")))?.functions.has(x.slice(x.indexOf(".") + 1))).sort();
 }
 
 /** The classes WebIDL gives a constructor JS can call: not one TypeScript

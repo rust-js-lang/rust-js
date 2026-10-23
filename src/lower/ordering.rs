@@ -442,11 +442,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // Its `<` is std's default, its impl's `partial_cmp` against 0, which
         // `None`'s `undefined` makes false; its `partial_cmp`, its impl's.
         if other {
-            let Some(op) = operator.filter(|_| self.is_user_impl(tr)) else {
+            let generic = matches!(ty.kind(), ty::Param(_));
+            let Some(op) = operator.filter(|_| generic || self.is_user_impl(tr)) else {
                 return Ok(None);
             };
             let partial_cmp = trait_method(self.tcx, tr.def_id, "partial_cmp");
-            let order = self.impl_call(partial_cmp, tr.args, vec![a, b], span)?;
+            // Of a type parameter, its caller's impl, its dictionary's.
+            let order = match generic {
+                true => {
+                    let dictionary = self.dictionary(tr, span)?;
+                    let name = super::bindings::fn_name(self.tcx, partial_cmp);
+                    Expr::call(Expr::member(dictionary, name), vec![a, b])
+                }
+                false => self.impl_call(partial_cmp, tr.args, vec![a, b], span)?,
+            };
             return Ok(Some(Expr::bin(op, order, Expr::int(0))));
         }
         // JS's own `<` orders numbers and `bool`s as Rust does, and strings

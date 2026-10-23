@@ -94,6 +94,45 @@ export function first(text) {
 }
 ```
 
+A binding of TypeScript's `any`, `reportError(e: any)`, is generic, so
+its value is of the type it's given: a `fn` of `Option<&'static
+Unknown>`, a JS value of any shape, which lives as long as JS keeps it, as
+a binding gives one. A `fn` of `Option<&Unknown>` of any lifetime is no
+generic's: rustc says "one type is more general than the other"
+([ADR 0655](../../decisions/0655-an-any-binding-as-a-value-is-a-fn-of-a-static-unknown.md)):
+
+```rust
+use js::Unknown;
+
+thread_local! {
+    static REPORT_GLOBAL_ERROR: fn(Option<&'static Unknown>) =
+        if js::is_defined(webapi::global::report_error::<Option<&Unknown>>) {
+            webapi::global::report_error
+        } else {
+            |error| webapi::console::error((error,))
+        };
+}
+
+pub fn report(error: Option<&'static Unknown>) {
+    REPORT_GLOBAL_ERROR.with(|report| report(error));
+}
+```
+
+```js
+let reportGlobalError;
+if (typeof reportError !== "undefined") {
+  reportGlobalError = reportError;
+} else {
+  reportGlobalError = (error) => {
+    console.error(error);
+  };
+}
+
+export function report(error) {
+  reportGlobalError(error);
+}
+```
+
 ## Where it comes from
 
 What's before a `#` is the module, written into the `import` as it is.
@@ -512,7 +551,10 @@ export async function open(other) {
 - **Values are as [JavaScript types](types.md) has them**: a `&str` is a
   string, a tuple an array, a struct an object.
 - **An options object is a struct of `Option` fields**, the rest
-  `..Default::default()`. A `None` field is left out.
+  `..Default::default()`. A `None` field is left out. One of any value,
+  TypeScript's `any`, is an `Option<&dyn IntoUnknown>`, given as it is:
+  `ErrorEventInit { error: Some(&error), .. }` is `{ error }`
+  ([ADR 0654](../../decisions/0654-a-dictionary-member-of-any-value-is-a-dyn-into-unknown.md)).
 - **What may throw returns `Result<T, &JsError>`**: the call runs in a `try`,
   and what JS threw is the `Err`. A binding that doesn't say so lets a throw
   through, as a panic ([Errors, panics and exceptions](exceptions.md)).
@@ -520,6 +562,12 @@ export async function open(other) {
 - **A callback is a closure**: `Box<dyn Fn(..)>` for one JS may call again,
   `Box<dyn FnOnce()>` for one it calls once. JS calls it with its
   parameters ([ADR 0260](../../decisions/0260-webapi-callbacks.md)).
+- **A function JS gives is a `&'static dyn Fn` of its signature**, its
+  `any` an `Option<&Unknown>`: `button.onclick()` is an
+  `Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>>`, to
+  call, keep, or compare by `std::ptr::eq`, which is `===`. TypeScript's
+  `Function`, of whatever it takes, is `&dyn Fn()`, as `js::Kind::Function`
+  is ([ADR 0653](../../decisions/0653-a-js-function-value-is-a-dyn-fn-of-its-signature.md)).
 - **`#[rust_js::nullable]` makes the result's `None` `null`** for a caller
   that tests `!== null`; `#[rust_js::nullable(range)]` passes the parameter
   `range`'s `None` as `null`. Reading a result, `None` is `undefined` or

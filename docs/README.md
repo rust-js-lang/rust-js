@@ -329,7 +329,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0257 A closure that only spawns an async block is an async arrow](decisions/0257-spawning-closure-async-arrow.md)
 - [0258 A promise's then, a module of a component, next/head and the Router](decisions/0258-search-bindings.md)
 - [0259 A module's constant element, and an image's title](decisions/0259-constant-elements.md)
-- [0260 A binding's callback parameter, and IntersectionObserver](decisions/0260-webapi-callbacks.md)
+- [0260 A binding's callback parameter, and IntersectionObserver](decisions/0260-webapi-callbacks.md) *(amended by 0653: a function JS gives is a `dyn Fn`)*
 - [0261 Defaults that do nothing don't move what's made beside them](decisions/0261-defaults-made-in-place.md)
 - [0262 When Rust and JS disagree, what the program can observe decides](decisions/0262-when-rust-and-js-disagree.md)
 - [0263 next/router's withRouter, and a flattened struct taken apart](decisions/0263-with-router.md)
@@ -430,7 +430,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0358 A number from a `bool` or a `char` is its cast](decisions/0358-numbers-from-bool-and-char.md)
 - [0359 next/font: each Google Font a function, generated](decisions/0359-next-font.md)
 - [0360 The app's crate is a program: `RUST_JS_APP`, recorded for Cargo](decisions/0360-the-app-is-a-program.md)
-- [0361 Node's events are names of their own, typed by their emitters](decisions/0361-node-events.md)
+- [0361 Node's events are names of their own, typed by their emitters](decisions/0361-node-events.md) *(amended by 0656: `emit` takes what TypeScript's does)*
 - [0362 A field's `RefCell` never counted is the value it holds](decisions/0362-refcell-fields-never-counted.md)
 - [0363 Children of any node are given by reference](decisions/0363-children-of-any-node.md)
 - [0364 Bodies are lowered from their MIR](decisions/0364-mir-lowering.md)
@@ -579,8 +579,12 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0645 `js::is_defined` of a static is given the static itself](decisions/0645-is-defined-of-a-static-is-of-the-static.md) *(amended by 0647: the static isn't read)*
 - [0646 A chain held, then its fallback, is one `||`](decisions/0646-a-held-chain-and-its-fallback-is-one-or.md)
 - [0647 What `is_defined` names is no read; a test kept by its truth is `&&`](decisions/0647-type-name-as-react-writes-it.md)
-- [0648 V8's stack trace API is the node crate's, as @types/node types it](decisions/0648-v8s-stack-trace-api-is-the-node-crates.md)
+- [0648 V8's stack trace API is the node crate's, as @types/node types it](decisions/0648-v8s-stack-trace-api-is-the-node-crates.md) *(amended by 0653: captureStackTrace bound)*
 - [0649 `#[inline(never)]` is `/** @noinline */`](decisions/0649-inline-never-is-noinline.md)
+- [0653 A JS function value is a `dyn Fn` of its signature](decisions/0653-a-js-function-value-is-a-dyn-fn-of-its-signature.md)
+- [0654 A dictionary's member of any value is a `dyn IntoUnknown`](decisions/0654-a-dictionary-member-of-any-value-is-a-dyn-into-unknown.md)
+- [0655 A binding of `any` as a value is a `fn` of `Option<&'static Unknown>`](decisions/0655-an-any-binding-as-a-value-is-a-fn-of-a-static-unknown.md)
+- [0656 An event's `emit` arguments are what TypeScript's `emit` takes](decisions/0656-an-events-emit-arguments-are-typescripts-emits.md)
 - [0623 A copy std makes of a `Copy` value is a copy](decisions/0623-a-copy-std-makes-is-a-copy.md)
 - [0436 Every `dyn` that's a pair keeps its value's drop, `dyn Send` too](decisions/0436-every-dyn-keeps-its-drop.md)
 - [0437 A scope's drops on a panic are one `try { .. } finally { .. }`](decisions/0437-a-scopes-drops-are-one-finally.md)

@@ -7,7 +7,7 @@ import { expect, test } from "bun:test";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { measure, render } from "../webapi/coverage";
+import { functionsAsObjects, measure, render } from "../webapi/coverage";
 import { generatorOutput, root } from "./support";
 
 const baseline = join(root, "webapi/coverage.txt");
@@ -28,3 +28,11 @@ test("the webapi crate binds what it bound of TypeScript's DOM", async () => {
 test("the webapi crate is what its generator writes", () => {
   expect(generatorOutput("webapi/generate.ts")).toBe(readFileSync(join(root, "webapi/src/lib.rs"), "utf8"));
 });
+
+// ADR 0653: a function JS gives is a `dyn Fn` of its signature, the one
+// type of a JS function value, never a `JsObject`: what TypeScript types
+// as a function, `onclick`'s `((ev: PointerEvent) => any) | null`, is
+// `Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>>`.
+test("a function the webapi crate reads is a dyn Fn of its signature, not a JsObject", async () => {
+  expect(await functionsAsObjects()).toEqual([]);
+}, 60_000);

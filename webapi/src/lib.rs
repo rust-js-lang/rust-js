@@ -1373,7 +1373,7 @@ impl Element {
     #[cfg_attr(rust_js, rust_js::link_name = "get onfullscreenchange")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onfullscreenchange(&self) -> Option<&'static JsObject> {
+    pub fn onfullscreenchange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -1390,7 +1390,7 @@ impl Element {
     #[cfg_attr(rust_js, rust_js::link_name = "get onfullscreenerror")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onfullscreenerror(&self) -> Option<&'static JsObject> {
+    pub fn onfullscreenerror(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -2865,7 +2865,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::link_name = "get onfullscreenchange")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onfullscreenchange(&self) -> Option<&'static JsObject> {
+    pub fn onfullscreenchange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -2882,7 +2882,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::link_name = "get onfullscreenerror")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onfullscreenerror(&self) -> Option<&'static JsObject> {
+    pub fn onfullscreenerror(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -3223,7 +3223,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::link_name = "get onreadystatechange")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onreadystatechange(&self) -> Option<&'static JsObject> {
+    pub fn onreadystatechange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -3240,7 +3240,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::link_name = "get onvisibilitychange")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onvisibilitychange(&self) -> Option<&'static JsObject> {
+    pub fn onvisibilitychange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -3401,7 +3401,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::link_name = "get onpointerlockchange")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onpointerlockchange(&self) -> Option<&'static JsObject> {
+    pub fn onpointerlockchange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -3418,7 +3418,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::link_name = "get onpointerlockerror")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onpointerlockerror(&self) -> Option<&'static JsObject> {
+    pub fn onpointerlockerror(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -3710,7 +3710,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::link_name = "get onanimationstart")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onanimationstart(&self) -> Option<&'static JsObject> {
+    pub fn onanimationstart(&self) -> Option<&'static dyn Fn(&AnimationEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -3727,7 +3727,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::link_name = "get onanimationiteration")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onanimationiteration(&self) -> Option<&'static JsObject> {
+    pub fn onanimationiteration(&self) -> Option<&'static dyn Fn(&AnimationEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -3744,7 +3744,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::link_name = "get onanimationend")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onanimationend(&self) -> Option<&'static JsObject> {
+    pub fn onanimationend(&self) -> Option<&'static dyn Fn(&AnimationEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -3761,7 +3761,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::link_name = "get onanimationcancel")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onanimationcancel(&self) -> Option<&'static JsObject> {
+    pub fn onanimationcancel(&self) -> Option<&'static dyn Fn(&AnimationEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -3778,7 +3778,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::link_name = "get ontransitionrun")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ontransitionrun(&self) -> Option<&'static JsObject> {
+    pub fn ontransitionrun(&self) -> Option<&'static dyn Fn(&TransitionEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -3795,7 +3795,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::link_name = "get ontransitionstart")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ontransitionstart(&self) -> Option<&'static JsObject> {
+    pub fn ontransitionstart(&self) -> Option<&'static dyn Fn(&TransitionEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -3812,7 +3812,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::link_name = "get ontransitionend")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ontransitionend(&self) -> Option<&'static JsObject> {
+    pub fn ontransitionend(&self) -> Option<&'static dyn Fn(&TransitionEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -3829,7 +3829,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::link_name = "get ontransitioncancel")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ontransitioncancel(&self) -> Option<&'static JsObject> {
+    pub fn ontransitioncancel(&self) -> Option<&'static dyn Fn(&TransitionEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -3846,7 +3846,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::link_name = "get onabort")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onabort(&self) -> Option<&'static JsObject> {
+    pub fn onabort(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -3863,7 +3863,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::link_name = "get onauxclick")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onauxclick(&self) -> Option<&'static JsObject> {
+    pub fn onauxclick(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -3880,7 +3880,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::link_name = "get onbeforeinput")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onbeforeinput(&self) -> Option<&'static JsObject> {
+    pub fn onbeforeinput(&self) -> Option<&'static dyn Fn(&InputEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -3897,7 +3897,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::link_name = "get onbeforematch")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onbeforematch(&self) -> Option<&'static JsObject> {
+    pub fn onbeforematch(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -3914,7 +3914,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::link_name = "get onbeforetoggle")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onbeforetoggle(&self) -> Option<&'static JsObject> {
+    pub fn onbeforetoggle(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -3931,7 +3931,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::link_name = "get onblur")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onblur(&self) -> Option<&'static JsObject> {
+    pub fn onblur(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -3948,7 +3948,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::link_name = "get oncancel")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn oncancel(&self) -> Option<&'static JsObject> {
+    pub fn oncancel(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -3965,7 +3965,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::link_name = "get oncanplay")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn oncanplay(&self) -> Option<&'static JsObject> {
+    pub fn oncanplay(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -3982,7 +3982,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::link_name = "get oncanplaythrough")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn oncanplaythrough(&self) -> Option<&'static JsObject> {
+    pub fn oncanplaythrough(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -3999,7 +3999,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::link_name = "get onchange")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onchange(&self) -> Option<&'static JsObject> {
+    pub fn onchange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -4016,7 +4016,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::link_name = "get onclick")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onclick(&self) -> Option<&'static JsObject> {
+    pub fn onclick(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -4033,7 +4033,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::link_name = "get onclose")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onclose(&self) -> Option<&'static JsObject> {
+    pub fn onclose(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -4050,7 +4050,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::link_name = "get oncommand")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn oncommand(&self) -> Option<&'static JsObject> {
+    pub fn oncommand(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -4067,7 +4067,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::link_name = "get oncontextlost")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn oncontextlost(&self) -> Option<&'static JsObject> {
+    pub fn oncontextlost(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -4084,7 +4084,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::link_name = "get oncontextmenu")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn oncontextmenu(&self) -> Option<&'static JsObject> {
+    pub fn oncontextmenu(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -4101,7 +4101,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::link_name = "get oncontextrestored")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn oncontextrestored(&self) -> Option<&'static JsObject> {
+    pub fn oncontextrestored(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -4118,7 +4118,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::link_name = "get oncopy")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn oncopy(&self) -> Option<&'static JsObject> {
+    pub fn oncopy(&self) -> Option<&'static dyn Fn(&ClipboardEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -4135,7 +4135,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::link_name = "get oncuechange")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn oncuechange(&self) -> Option<&'static JsObject> {
+    pub fn oncuechange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -4152,7 +4152,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::link_name = "get oncut")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn oncut(&self) -> Option<&'static JsObject> {
+    pub fn oncut(&self) -> Option<&'static dyn Fn(&ClipboardEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -4169,7 +4169,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::link_name = "get ondblclick")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ondblclick(&self) -> Option<&'static JsObject> {
+    pub fn ondblclick(&self) -> Option<&'static dyn Fn(&MouseEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -4186,7 +4186,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::link_name = "get ondrag")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ondrag(&self) -> Option<&'static JsObject> {
+    pub fn ondrag(&self) -> Option<&'static dyn Fn(&DragEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -4203,7 +4203,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::link_name = "get ondragend")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ondragend(&self) -> Option<&'static JsObject> {
+    pub fn ondragend(&self) -> Option<&'static dyn Fn(&DragEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -4220,7 +4220,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::link_name = "get ondragenter")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ondragenter(&self) -> Option<&'static JsObject> {
+    pub fn ondragenter(&self) -> Option<&'static dyn Fn(&DragEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -4237,7 +4237,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::link_name = "get ondragleave")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ondragleave(&self) -> Option<&'static JsObject> {
+    pub fn ondragleave(&self) -> Option<&'static dyn Fn(&DragEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -4254,7 +4254,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::link_name = "get ondragover")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ondragover(&self) -> Option<&'static JsObject> {
+    pub fn ondragover(&self) -> Option<&'static dyn Fn(&DragEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -4271,7 +4271,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::link_name = "get ondragstart")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ondragstart(&self) -> Option<&'static JsObject> {
+    pub fn ondragstart(&self) -> Option<&'static dyn Fn(&DragEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -4288,7 +4288,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::link_name = "get ondrop")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ondrop(&self) -> Option<&'static JsObject> {
+    pub fn ondrop(&self) -> Option<&'static dyn Fn(&DragEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -4305,7 +4305,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::link_name = "get ondurationchange")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ondurationchange(&self) -> Option<&'static JsObject> {
+    pub fn ondurationchange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -4322,7 +4322,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::link_name = "get onemptied")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onemptied(&self) -> Option<&'static JsObject> {
+    pub fn onemptied(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -4339,7 +4339,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::link_name = "get onended")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onended(&self) -> Option<&'static JsObject> {
+    pub fn onended(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -4356,7 +4356,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::link_name = "get onerror")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onerror(&self) -> Option<&'static JsObject> {
+    pub fn onerror(&self) -> Option<&'static dyn Fn(EventOrStr<'_>, Option<&str>, Option<u32>, Option<u32>, Option<&Unknown>) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -4373,7 +4373,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::link_name = "get onfocus")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onfocus(&self) -> Option<&'static JsObject> {
+    pub fn onfocus(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -4390,7 +4390,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::link_name = "get onformdata")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onformdata(&self) -> Option<&'static JsObject> {
+    pub fn onformdata(&self) -> Option<&'static dyn Fn(&FormDataEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -4407,7 +4407,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::link_name = "get oninput")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn oninput(&self) -> Option<&'static JsObject> {
+    pub fn oninput(&self) -> Option<&'static dyn Fn(&InputEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -4424,7 +4424,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::link_name = "get oninvalid")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn oninvalid(&self) -> Option<&'static JsObject> {
+    pub fn oninvalid(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -4441,7 +4441,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::link_name = "get onkeydown")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onkeydown(&self) -> Option<&'static JsObject> {
+    pub fn onkeydown(&self) -> Option<&'static dyn Fn(&KeyboardEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -4458,7 +4458,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::link_name = "get onkeypress")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onkeypress(&self) -> Option<&'static JsObject> {
+    pub fn onkeypress(&self) -> Option<&'static dyn Fn(&KeyboardEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -4475,7 +4475,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::link_name = "get onkeyup")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onkeyup(&self) -> Option<&'static JsObject> {
+    pub fn onkeyup(&self) -> Option<&'static dyn Fn(&KeyboardEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -4492,7 +4492,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::link_name = "get onload")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onload(&self) -> Option<&'static JsObject> {
+    pub fn onload(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -4509,7 +4509,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::link_name = "get onloadeddata")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onloadeddata(&self) -> Option<&'static JsObject> {
+    pub fn onloadeddata(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -4526,7 +4526,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::link_name = "get onloadedmetadata")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onloadedmetadata(&self) -> Option<&'static JsObject> {
+    pub fn onloadedmetadata(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -4543,7 +4543,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::link_name = "get onloadstart")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onloadstart(&self) -> Option<&'static JsObject> {
+    pub fn onloadstart(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -4560,7 +4560,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::link_name = "get onmousedown")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onmousedown(&self) -> Option<&'static JsObject> {
+    pub fn onmousedown(&self) -> Option<&'static dyn Fn(&MouseEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -4577,7 +4577,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::link_name = "get onmouseenter")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onmouseenter(&self) -> Option<&'static JsObject> {
+    pub fn onmouseenter(&self) -> Option<&'static dyn Fn(&MouseEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -4594,7 +4594,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::link_name = "get onmouseleave")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onmouseleave(&self) -> Option<&'static JsObject> {
+    pub fn onmouseleave(&self) -> Option<&'static dyn Fn(&MouseEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -4611,7 +4611,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::link_name = "get onmousemove")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onmousemove(&self) -> Option<&'static JsObject> {
+    pub fn onmousemove(&self) -> Option<&'static dyn Fn(&MouseEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -4628,7 +4628,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::link_name = "get onmouseout")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onmouseout(&self) -> Option<&'static JsObject> {
+    pub fn onmouseout(&self) -> Option<&'static dyn Fn(&MouseEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -4645,7 +4645,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::link_name = "get onmouseover")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onmouseover(&self) -> Option<&'static JsObject> {
+    pub fn onmouseover(&self) -> Option<&'static dyn Fn(&MouseEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -4662,7 +4662,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::link_name = "get onmouseup")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onmouseup(&self) -> Option<&'static JsObject> {
+    pub fn onmouseup(&self) -> Option<&'static dyn Fn(&MouseEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -4679,7 +4679,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::link_name = "get onpaste")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onpaste(&self) -> Option<&'static JsObject> {
+    pub fn onpaste(&self) -> Option<&'static dyn Fn(&ClipboardEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -4696,7 +4696,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::link_name = "get onpause")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onpause(&self) -> Option<&'static JsObject> {
+    pub fn onpause(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -4713,7 +4713,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::link_name = "get onplay")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onplay(&self) -> Option<&'static JsObject> {
+    pub fn onplay(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -4730,7 +4730,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::link_name = "get onplaying")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onplaying(&self) -> Option<&'static JsObject> {
+    pub fn onplaying(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -4747,7 +4747,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::link_name = "get onprogress")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onprogress(&self) -> Option<&'static JsObject> {
+    pub fn onprogress(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -4764,7 +4764,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::link_name = "get onratechange")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onratechange(&self) -> Option<&'static JsObject> {
+    pub fn onratechange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -4781,7 +4781,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::link_name = "get onreset")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onreset(&self) -> Option<&'static JsObject> {
+    pub fn onreset(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -4798,7 +4798,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::link_name = "get onresize")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onresize(&self) -> Option<&'static JsObject> {
+    pub fn onresize(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -4815,7 +4815,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::link_name = "get onscroll")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onscroll(&self) -> Option<&'static JsObject> {
+    pub fn onscroll(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -4832,7 +4832,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::link_name = "get onscrollend")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onscrollend(&self) -> Option<&'static JsObject> {
+    pub fn onscrollend(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -4849,7 +4849,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::link_name = "get onsecuritypolicyviolation")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onsecuritypolicyviolation(&self) -> Option<&'static JsObject> {
+    pub fn onsecuritypolicyviolation(&self) -> Option<&'static dyn Fn(&SecurityPolicyViolationEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -4866,7 +4866,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::link_name = "get onseeked")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onseeked(&self) -> Option<&'static JsObject> {
+    pub fn onseeked(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -4883,7 +4883,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::link_name = "get onseeking")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onseeking(&self) -> Option<&'static JsObject> {
+    pub fn onseeking(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -4900,7 +4900,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::link_name = "get onselect")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onselect(&self) -> Option<&'static JsObject> {
+    pub fn onselect(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -4917,7 +4917,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::link_name = "get onslotchange")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onslotchange(&self) -> Option<&'static JsObject> {
+    pub fn onslotchange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -4934,7 +4934,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::link_name = "get onstalled")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onstalled(&self) -> Option<&'static JsObject> {
+    pub fn onstalled(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -4951,7 +4951,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::link_name = "get onsubmit")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onsubmit(&self) -> Option<&'static JsObject> {
+    pub fn onsubmit(&self) -> Option<&'static dyn Fn(&SubmitEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -4968,7 +4968,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::link_name = "get onsuspend")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onsuspend(&self) -> Option<&'static JsObject> {
+    pub fn onsuspend(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -4985,7 +4985,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::link_name = "get ontimeupdate")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ontimeupdate(&self) -> Option<&'static JsObject> {
+    pub fn ontimeupdate(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -5002,7 +5002,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::link_name = "get ontoggle")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ontoggle(&self) -> Option<&'static JsObject> {
+    pub fn ontoggle(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -5019,7 +5019,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::link_name = "get onvolumechange")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onvolumechange(&self) -> Option<&'static JsObject> {
+    pub fn onvolumechange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -5036,7 +5036,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::link_name = "get onwaiting")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onwaiting(&self) -> Option<&'static JsObject> {
+    pub fn onwaiting(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -5053,7 +5053,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::link_name = "get onwebkitanimationend")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onwebkitanimationend(&self) -> Option<&'static JsObject> {
+    pub fn onwebkitanimationend(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -5070,7 +5070,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::link_name = "get onwebkitanimationiteration")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onwebkitanimationiteration(&self) -> Option<&'static JsObject> {
+    pub fn onwebkitanimationiteration(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -5087,7 +5087,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::link_name = "get onwebkitanimationstart")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onwebkitanimationstart(&self) -> Option<&'static JsObject> {
+    pub fn onwebkitanimationstart(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -5104,7 +5104,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::link_name = "get onwebkittransitionend")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onwebkittransitionend(&self) -> Option<&'static JsObject> {
+    pub fn onwebkittransitionend(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -5121,7 +5121,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::link_name = "get onwheel")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onwheel(&self) -> Option<&'static JsObject> {
+    pub fn onwheel(&self) -> Option<&'static dyn Fn(&WheelEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -5138,7 +5138,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::link_name = "get onpointerover")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onpointerover(&self) -> Option<&'static JsObject> {
+    pub fn onpointerover(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -5155,7 +5155,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::link_name = "get onpointerenter")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onpointerenter(&self) -> Option<&'static JsObject> {
+    pub fn onpointerenter(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -5172,7 +5172,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::link_name = "get onpointerdown")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onpointerdown(&self) -> Option<&'static JsObject> {
+    pub fn onpointerdown(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -5189,7 +5189,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::link_name = "get onpointermove")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onpointermove(&self) -> Option<&'static JsObject> {
+    pub fn onpointermove(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -5206,7 +5206,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::link_name = "get onpointerrawupdate")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onpointerrawupdate(&self) -> Option<&'static JsObject> {
+    pub fn onpointerrawupdate(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -5223,7 +5223,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::link_name = "get onpointerup")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onpointerup(&self) -> Option<&'static JsObject> {
+    pub fn onpointerup(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -5240,7 +5240,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::link_name = "get onpointercancel")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onpointercancel(&self) -> Option<&'static JsObject> {
+    pub fn onpointercancel(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -5257,7 +5257,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::link_name = "get onpointerout")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onpointerout(&self) -> Option<&'static JsObject> {
+    pub fn onpointerout(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -5274,7 +5274,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::link_name = "get onpointerleave")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onpointerleave(&self) -> Option<&'static JsObject> {
+    pub fn onpointerleave(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -5291,7 +5291,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::link_name = "get ongotpointercapture")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ongotpointercapture(&self) -> Option<&'static JsObject> {
+    pub fn ongotpointercapture(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -5308,7 +5308,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::link_name = "get onlostpointercapture")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onlostpointercapture(&self) -> Option<&'static JsObject> {
+    pub fn onlostpointercapture(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -5325,7 +5325,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::link_name = "get onselectstart")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onselectstart(&self) -> Option<&'static JsObject> {
+    pub fn onselectstart(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -5342,7 +5342,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::link_name = "get onselectionchange")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onselectionchange(&self) -> Option<&'static JsObject> {
+    pub fn onselectionchange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -5359,7 +5359,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::link_name = "get ontouchstart")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ontouchstart(&self) -> Option<&'static JsObject> {
+    pub fn ontouchstart(&self) -> Option<&'static dyn Fn(&TouchEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -5376,7 +5376,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::link_name = "get ontouchend")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ontouchend(&self) -> Option<&'static JsObject> {
+    pub fn ontouchend(&self) -> Option<&'static dyn Fn(&TouchEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -5393,7 +5393,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::link_name = "get ontouchmove")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ontouchmove(&self) -> Option<&'static JsObject> {
+    pub fn ontouchmove(&self) -> Option<&'static dyn Fn(&TouchEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -5410,7 +5410,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::link_name = "get ontouchcancel")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ontouchcancel(&self) -> Option<&'static JsObject> {
+    pub fn ontouchcancel(&self) -> Option<&'static dyn Fn(&TouchEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -5936,7 +5936,7 @@ impl AbortSignal {
     #[cfg_attr(rust_js, rust_js::link_name = "get onabort")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onabort(&self) -> Option<&'static JsObject> {
+    pub fn onabort(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -6365,7 +6365,7 @@ impl HTMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onanimationstart")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onanimationstart(&self) -> Option<&'static JsObject> {
+    pub fn onanimationstart(&self) -> Option<&'static dyn Fn(&AnimationEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -6382,7 +6382,7 @@ impl HTMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onanimationiteration")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onanimationiteration(&self) -> Option<&'static JsObject> {
+    pub fn onanimationiteration(&self) -> Option<&'static dyn Fn(&AnimationEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -6399,7 +6399,7 @@ impl HTMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onanimationend")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onanimationend(&self) -> Option<&'static JsObject> {
+    pub fn onanimationend(&self) -> Option<&'static dyn Fn(&AnimationEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -6416,7 +6416,7 @@ impl HTMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onanimationcancel")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onanimationcancel(&self) -> Option<&'static JsObject> {
+    pub fn onanimationcancel(&self) -> Option<&'static dyn Fn(&AnimationEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -6433,7 +6433,7 @@ impl HTMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get ontransitionrun")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ontransitionrun(&self) -> Option<&'static JsObject> {
+    pub fn ontransitionrun(&self) -> Option<&'static dyn Fn(&TransitionEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -6450,7 +6450,7 @@ impl HTMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get ontransitionstart")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ontransitionstart(&self) -> Option<&'static JsObject> {
+    pub fn ontransitionstart(&self) -> Option<&'static dyn Fn(&TransitionEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -6467,7 +6467,7 @@ impl HTMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get ontransitionend")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ontransitionend(&self) -> Option<&'static JsObject> {
+    pub fn ontransitionend(&self) -> Option<&'static dyn Fn(&TransitionEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -6484,7 +6484,7 @@ impl HTMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get ontransitioncancel")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ontransitioncancel(&self) -> Option<&'static JsObject> {
+    pub fn ontransitioncancel(&self) -> Option<&'static dyn Fn(&TransitionEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -6501,7 +6501,7 @@ impl HTMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onabort")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onabort(&self) -> Option<&'static JsObject> {
+    pub fn onabort(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -6518,7 +6518,7 @@ impl HTMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onauxclick")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onauxclick(&self) -> Option<&'static JsObject> {
+    pub fn onauxclick(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -6535,7 +6535,7 @@ impl HTMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onbeforeinput")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onbeforeinput(&self) -> Option<&'static JsObject> {
+    pub fn onbeforeinput(&self) -> Option<&'static dyn Fn(&InputEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -6552,7 +6552,7 @@ impl HTMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onbeforematch")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onbeforematch(&self) -> Option<&'static JsObject> {
+    pub fn onbeforematch(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -6569,7 +6569,7 @@ impl HTMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onbeforetoggle")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onbeforetoggle(&self) -> Option<&'static JsObject> {
+    pub fn onbeforetoggle(&self) -> Option<&'static dyn Fn(&ToggleEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -6586,7 +6586,7 @@ impl HTMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onblur")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onblur(&self) -> Option<&'static JsObject> {
+    pub fn onblur(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -6603,7 +6603,7 @@ impl HTMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get oncancel")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn oncancel(&self) -> Option<&'static JsObject> {
+    pub fn oncancel(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -6620,7 +6620,7 @@ impl HTMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get oncanplay")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn oncanplay(&self) -> Option<&'static JsObject> {
+    pub fn oncanplay(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -6637,7 +6637,7 @@ impl HTMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get oncanplaythrough")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn oncanplaythrough(&self) -> Option<&'static JsObject> {
+    pub fn oncanplaythrough(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -6654,7 +6654,7 @@ impl HTMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onchange")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onchange(&self) -> Option<&'static JsObject> {
+    pub fn onchange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -6671,7 +6671,7 @@ impl HTMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onclick")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onclick(&self) -> Option<&'static JsObject> {
+    pub fn onclick(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -6688,7 +6688,7 @@ impl HTMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onclose")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onclose(&self) -> Option<&'static JsObject> {
+    pub fn onclose(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -6705,7 +6705,7 @@ impl HTMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get oncommand")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn oncommand(&self) -> Option<&'static JsObject> {
+    pub fn oncommand(&self) -> Option<&'static dyn Fn(&CommandEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -6722,7 +6722,7 @@ impl HTMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get oncontextlost")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn oncontextlost(&self) -> Option<&'static JsObject> {
+    pub fn oncontextlost(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -6739,7 +6739,7 @@ impl HTMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get oncontextmenu")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn oncontextmenu(&self) -> Option<&'static JsObject> {
+    pub fn oncontextmenu(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -6756,7 +6756,7 @@ impl HTMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get oncontextrestored")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn oncontextrestored(&self) -> Option<&'static JsObject> {
+    pub fn oncontextrestored(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -6773,7 +6773,7 @@ impl HTMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get oncopy")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn oncopy(&self) -> Option<&'static JsObject> {
+    pub fn oncopy(&self) -> Option<&'static dyn Fn(&ClipboardEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -6790,7 +6790,7 @@ impl HTMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get oncuechange")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn oncuechange(&self) -> Option<&'static JsObject> {
+    pub fn oncuechange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -6807,7 +6807,7 @@ impl HTMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get oncut")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn oncut(&self) -> Option<&'static JsObject> {
+    pub fn oncut(&self) -> Option<&'static dyn Fn(&ClipboardEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -6824,7 +6824,7 @@ impl HTMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get ondblclick")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ondblclick(&self) -> Option<&'static JsObject> {
+    pub fn ondblclick(&self) -> Option<&'static dyn Fn(&MouseEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -6841,7 +6841,7 @@ impl HTMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get ondrag")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ondrag(&self) -> Option<&'static JsObject> {
+    pub fn ondrag(&self) -> Option<&'static dyn Fn(&DragEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -6858,7 +6858,7 @@ impl HTMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get ondragend")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ondragend(&self) -> Option<&'static JsObject> {
+    pub fn ondragend(&self) -> Option<&'static dyn Fn(&DragEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -6875,7 +6875,7 @@ impl HTMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get ondragenter")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ondragenter(&self) -> Option<&'static JsObject> {
+    pub fn ondragenter(&self) -> Option<&'static dyn Fn(&DragEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -6892,7 +6892,7 @@ impl HTMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get ondragleave")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ondragleave(&self) -> Option<&'static JsObject> {
+    pub fn ondragleave(&self) -> Option<&'static dyn Fn(&DragEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -6909,7 +6909,7 @@ impl HTMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get ondragover")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ondragover(&self) -> Option<&'static JsObject> {
+    pub fn ondragover(&self) -> Option<&'static dyn Fn(&DragEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -6926,7 +6926,7 @@ impl HTMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get ondragstart")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ondragstart(&self) -> Option<&'static JsObject> {
+    pub fn ondragstart(&self) -> Option<&'static dyn Fn(&DragEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -6943,7 +6943,7 @@ impl HTMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get ondrop")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ondrop(&self) -> Option<&'static JsObject> {
+    pub fn ondrop(&self) -> Option<&'static dyn Fn(&DragEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -6960,7 +6960,7 @@ impl HTMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get ondurationchange")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ondurationchange(&self) -> Option<&'static JsObject> {
+    pub fn ondurationchange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -6977,7 +6977,7 @@ impl HTMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onemptied")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onemptied(&self) -> Option<&'static JsObject> {
+    pub fn onemptied(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -6994,7 +6994,7 @@ impl HTMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onended")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onended(&self) -> Option<&'static JsObject> {
+    pub fn onended(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -7011,7 +7011,7 @@ impl HTMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onerror")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onerror(&self) -> Option<&'static JsObject> {
+    pub fn onerror(&self) -> Option<&'static dyn Fn(EventOrStr<'_>, Option<&str>, Option<u32>, Option<u32>, Option<&Unknown>) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -7028,7 +7028,7 @@ impl HTMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onfocus")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onfocus(&self) -> Option<&'static JsObject> {
+    pub fn onfocus(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -7045,7 +7045,7 @@ impl HTMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onformdata")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onformdata(&self) -> Option<&'static JsObject> {
+    pub fn onformdata(&self) -> Option<&'static dyn Fn(&FormDataEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -7062,7 +7062,7 @@ impl HTMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get oninput")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn oninput(&self) -> Option<&'static JsObject> {
+    pub fn oninput(&self) -> Option<&'static dyn Fn(&InputEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -7079,7 +7079,7 @@ impl HTMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get oninvalid")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn oninvalid(&self) -> Option<&'static JsObject> {
+    pub fn oninvalid(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -7096,7 +7096,7 @@ impl HTMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onkeydown")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onkeydown(&self) -> Option<&'static JsObject> {
+    pub fn onkeydown(&self) -> Option<&'static dyn Fn(&KeyboardEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -7113,7 +7113,7 @@ impl HTMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onkeypress")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onkeypress(&self) -> Option<&'static JsObject> {
+    pub fn onkeypress(&self) -> Option<&'static dyn Fn(&KeyboardEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -7130,7 +7130,7 @@ impl HTMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onkeyup")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onkeyup(&self) -> Option<&'static JsObject> {
+    pub fn onkeyup(&self) -> Option<&'static dyn Fn(&KeyboardEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -7147,7 +7147,7 @@ impl HTMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onload")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onload(&self) -> Option<&'static JsObject> {
+    pub fn onload(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -7164,7 +7164,7 @@ impl HTMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onloadeddata")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onloadeddata(&self) -> Option<&'static JsObject> {
+    pub fn onloadeddata(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -7181,7 +7181,7 @@ impl HTMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onloadedmetadata")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onloadedmetadata(&self) -> Option<&'static JsObject> {
+    pub fn onloadedmetadata(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -7198,7 +7198,7 @@ impl HTMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onloadstart")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onloadstart(&self) -> Option<&'static JsObject> {
+    pub fn onloadstart(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -7215,7 +7215,7 @@ impl HTMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onmousedown")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onmousedown(&self) -> Option<&'static JsObject> {
+    pub fn onmousedown(&self) -> Option<&'static dyn Fn(&MouseEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -7232,7 +7232,7 @@ impl HTMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onmouseenter")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onmouseenter(&self) -> Option<&'static JsObject> {
+    pub fn onmouseenter(&self) -> Option<&'static dyn Fn(&MouseEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -7249,7 +7249,7 @@ impl HTMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onmouseleave")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onmouseleave(&self) -> Option<&'static JsObject> {
+    pub fn onmouseleave(&self) -> Option<&'static dyn Fn(&MouseEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -7266,7 +7266,7 @@ impl HTMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onmousemove")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onmousemove(&self) -> Option<&'static JsObject> {
+    pub fn onmousemove(&self) -> Option<&'static dyn Fn(&MouseEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -7283,7 +7283,7 @@ impl HTMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onmouseout")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onmouseout(&self) -> Option<&'static JsObject> {
+    pub fn onmouseout(&self) -> Option<&'static dyn Fn(&MouseEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -7300,7 +7300,7 @@ impl HTMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onmouseover")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onmouseover(&self) -> Option<&'static JsObject> {
+    pub fn onmouseover(&self) -> Option<&'static dyn Fn(&MouseEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -7317,7 +7317,7 @@ impl HTMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onmouseup")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onmouseup(&self) -> Option<&'static JsObject> {
+    pub fn onmouseup(&self) -> Option<&'static dyn Fn(&MouseEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -7334,7 +7334,7 @@ impl HTMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onpaste")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onpaste(&self) -> Option<&'static JsObject> {
+    pub fn onpaste(&self) -> Option<&'static dyn Fn(&ClipboardEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -7351,7 +7351,7 @@ impl HTMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onpause")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onpause(&self) -> Option<&'static JsObject> {
+    pub fn onpause(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -7368,7 +7368,7 @@ impl HTMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onplay")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onplay(&self) -> Option<&'static JsObject> {
+    pub fn onplay(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -7385,7 +7385,7 @@ impl HTMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onplaying")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onplaying(&self) -> Option<&'static JsObject> {
+    pub fn onplaying(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -7402,7 +7402,7 @@ impl HTMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onprogress")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onprogress(&self) -> Option<&'static JsObject> {
+    pub fn onprogress(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -7419,7 +7419,7 @@ impl HTMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onratechange")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onratechange(&self) -> Option<&'static JsObject> {
+    pub fn onratechange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -7436,7 +7436,7 @@ impl HTMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onreset")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onreset(&self) -> Option<&'static JsObject> {
+    pub fn onreset(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -7453,7 +7453,7 @@ impl HTMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onresize")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onresize(&self) -> Option<&'static JsObject> {
+    pub fn onresize(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -7470,7 +7470,7 @@ impl HTMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onscroll")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onscroll(&self) -> Option<&'static JsObject> {
+    pub fn onscroll(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -7487,7 +7487,7 @@ impl HTMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onscrollend")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onscrollend(&self) -> Option<&'static JsObject> {
+    pub fn onscrollend(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -7504,7 +7504,7 @@ impl HTMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onsecuritypolicyviolation")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onsecuritypolicyviolation(&self) -> Option<&'static JsObject> {
+    pub fn onsecuritypolicyviolation(&self) -> Option<&'static dyn Fn(&SecurityPolicyViolationEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -7521,7 +7521,7 @@ impl HTMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onseeked")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onseeked(&self) -> Option<&'static JsObject> {
+    pub fn onseeked(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -7538,7 +7538,7 @@ impl HTMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onseeking")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onseeking(&self) -> Option<&'static JsObject> {
+    pub fn onseeking(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -7555,7 +7555,7 @@ impl HTMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onselect")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onselect(&self) -> Option<&'static JsObject> {
+    pub fn onselect(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -7572,7 +7572,7 @@ impl HTMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onslotchange")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onslotchange(&self) -> Option<&'static JsObject> {
+    pub fn onslotchange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -7589,7 +7589,7 @@ impl HTMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onstalled")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onstalled(&self) -> Option<&'static JsObject> {
+    pub fn onstalled(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -7606,7 +7606,7 @@ impl HTMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onsubmit")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onsubmit(&self) -> Option<&'static JsObject> {
+    pub fn onsubmit(&self) -> Option<&'static dyn Fn(&SubmitEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -7623,7 +7623,7 @@ impl HTMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onsuspend")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onsuspend(&self) -> Option<&'static JsObject> {
+    pub fn onsuspend(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -7640,7 +7640,7 @@ impl HTMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get ontimeupdate")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ontimeupdate(&self) -> Option<&'static JsObject> {
+    pub fn ontimeupdate(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -7657,7 +7657,7 @@ impl HTMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get ontoggle")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ontoggle(&self) -> Option<&'static JsObject> {
+    pub fn ontoggle(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -7674,7 +7674,7 @@ impl HTMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onvolumechange")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onvolumechange(&self) -> Option<&'static JsObject> {
+    pub fn onvolumechange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -7691,7 +7691,7 @@ impl HTMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onwaiting")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onwaiting(&self) -> Option<&'static JsObject> {
+    pub fn onwaiting(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -7708,7 +7708,7 @@ impl HTMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onwebkitanimationend")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onwebkitanimationend(&self) -> Option<&'static JsObject> {
+    pub fn onwebkitanimationend(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -7725,7 +7725,7 @@ impl HTMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onwebkitanimationiteration")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onwebkitanimationiteration(&self) -> Option<&'static JsObject> {
+    pub fn onwebkitanimationiteration(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -7742,7 +7742,7 @@ impl HTMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onwebkitanimationstart")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onwebkitanimationstart(&self) -> Option<&'static JsObject> {
+    pub fn onwebkitanimationstart(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -7759,7 +7759,7 @@ impl HTMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onwebkittransitionend")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onwebkittransitionend(&self) -> Option<&'static JsObject> {
+    pub fn onwebkittransitionend(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -7776,7 +7776,7 @@ impl HTMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onwheel")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onwheel(&self) -> Option<&'static JsObject> {
+    pub fn onwheel(&self) -> Option<&'static dyn Fn(&WheelEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -7793,7 +7793,7 @@ impl HTMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onpointerover")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onpointerover(&self) -> Option<&'static JsObject> {
+    pub fn onpointerover(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -7810,7 +7810,7 @@ impl HTMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onpointerenter")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onpointerenter(&self) -> Option<&'static JsObject> {
+    pub fn onpointerenter(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -7827,7 +7827,7 @@ impl HTMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onpointerdown")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onpointerdown(&self) -> Option<&'static JsObject> {
+    pub fn onpointerdown(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -7844,7 +7844,7 @@ impl HTMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onpointermove")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onpointermove(&self) -> Option<&'static JsObject> {
+    pub fn onpointermove(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -7861,7 +7861,7 @@ impl HTMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onpointerrawupdate")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onpointerrawupdate(&self) -> Option<&'static JsObject> {
+    pub fn onpointerrawupdate(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -7878,7 +7878,7 @@ impl HTMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onpointerup")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onpointerup(&self) -> Option<&'static JsObject> {
+    pub fn onpointerup(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -7895,7 +7895,7 @@ impl HTMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onpointercancel")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onpointercancel(&self) -> Option<&'static JsObject> {
+    pub fn onpointercancel(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -7912,7 +7912,7 @@ impl HTMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onpointerout")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onpointerout(&self) -> Option<&'static JsObject> {
+    pub fn onpointerout(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -7929,7 +7929,7 @@ impl HTMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onpointerleave")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onpointerleave(&self) -> Option<&'static JsObject> {
+    pub fn onpointerleave(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -7946,7 +7946,7 @@ impl HTMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get ongotpointercapture")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ongotpointercapture(&self) -> Option<&'static JsObject> {
+    pub fn ongotpointercapture(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -7963,7 +7963,7 @@ impl HTMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onlostpointercapture")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onlostpointercapture(&self) -> Option<&'static JsObject> {
+    pub fn onlostpointercapture(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -7980,7 +7980,7 @@ impl HTMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onselectstart")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onselectstart(&self) -> Option<&'static JsObject> {
+    pub fn onselectstart(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -7997,7 +7997,7 @@ impl HTMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onselectionchange")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onselectionchange(&self) -> Option<&'static JsObject> {
+    pub fn onselectionchange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -8014,7 +8014,7 @@ impl HTMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get ontouchstart")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ontouchstart(&self) -> Option<&'static JsObject> {
+    pub fn ontouchstart(&self) -> Option<&'static dyn Fn(&TouchEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -8031,7 +8031,7 @@ impl HTMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get ontouchend")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ontouchend(&self) -> Option<&'static JsObject> {
+    pub fn ontouchend(&self) -> Option<&'static dyn Fn(&TouchEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -8048,7 +8048,7 @@ impl HTMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get ontouchmove")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ontouchmove(&self) -> Option<&'static JsObject> {
+    pub fn ontouchmove(&self) -> Option<&'static dyn Fn(&TouchEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -8065,7 +8065,7 @@ impl HTMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get ontouchcancel")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ontouchcancel(&self) -> Option<&'static JsObject> {
+    pub fn ontouchcancel(&self) -> Option<&'static dyn Fn(&TouchEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -14022,7 +14022,7 @@ impl HTMLBodyElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get ongamepadconnected")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ongamepadconnected(&self) -> Option<&'static JsObject> {
+    pub fn ongamepadconnected(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -14039,7 +14039,7 @@ impl HTMLBodyElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get ongamepaddisconnected")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ongamepaddisconnected(&self) -> Option<&'static JsObject> {
+    pub fn ongamepaddisconnected(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -14056,7 +14056,7 @@ impl HTMLBodyElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onafterprint")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onafterprint(&self) -> Option<&'static JsObject> {
+    pub fn onafterprint(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -14073,7 +14073,7 @@ impl HTMLBodyElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onbeforeprint")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onbeforeprint(&self) -> Option<&'static JsObject> {
+    pub fn onbeforeprint(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -14090,7 +14090,7 @@ impl HTMLBodyElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onbeforeunload")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onbeforeunload(&self) -> Option<&'static JsObject> {
+    pub fn onbeforeunload(&self) -> Option<&'static dyn Fn(&Event) -> Option<String>> {
         unreachable!()
     }
 
@@ -14107,7 +14107,7 @@ impl HTMLBodyElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onhashchange")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onhashchange(&self) -> Option<&'static JsObject> {
+    pub fn onhashchange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -14124,7 +14124,7 @@ impl HTMLBodyElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onlanguagechange")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onlanguagechange(&self) -> Option<&'static JsObject> {
+    pub fn onlanguagechange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -14141,7 +14141,7 @@ impl HTMLBodyElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onmessage")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onmessage(&self) -> Option<&'static JsObject> {
+    pub fn onmessage(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -14158,7 +14158,7 @@ impl HTMLBodyElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onmessageerror")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onmessageerror(&self) -> Option<&'static JsObject> {
+    pub fn onmessageerror(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -14175,7 +14175,7 @@ impl HTMLBodyElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onoffline")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onoffline(&self) -> Option<&'static JsObject> {
+    pub fn onoffline(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -14192,7 +14192,7 @@ impl HTMLBodyElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get ononline")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ononline(&self) -> Option<&'static JsObject> {
+    pub fn ononline(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -14209,7 +14209,7 @@ impl HTMLBodyElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onpagehide")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onpagehide(&self) -> Option<&'static JsObject> {
+    pub fn onpagehide(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -14226,7 +14226,7 @@ impl HTMLBodyElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onpagereveal")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onpagereveal(&self) -> Option<&'static JsObject> {
+    pub fn onpagereveal(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -14243,7 +14243,7 @@ impl HTMLBodyElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onpageshow")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onpageshow(&self) -> Option<&'static JsObject> {
+    pub fn onpageshow(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -14260,7 +14260,7 @@ impl HTMLBodyElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onpageswap")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onpageswap(&self) -> Option<&'static JsObject> {
+    pub fn onpageswap(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -14277,7 +14277,7 @@ impl HTMLBodyElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onpopstate")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onpopstate(&self) -> Option<&'static JsObject> {
+    pub fn onpopstate(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -14294,7 +14294,7 @@ impl HTMLBodyElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onrejectionhandled")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onrejectionhandled(&self) -> Option<&'static JsObject> {
+    pub fn onrejectionhandled(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -14311,7 +14311,7 @@ impl HTMLBodyElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onstorage")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onstorage(&self) -> Option<&'static JsObject> {
+    pub fn onstorage(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -14328,7 +14328,7 @@ impl HTMLBodyElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onunhandledrejection")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onunhandledrejection(&self) -> Option<&'static JsObject> {
+    pub fn onunhandledrejection(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -14345,7 +14345,7 @@ impl HTMLBodyElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onunload")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onunload(&self) -> Option<&'static JsObject> {
+    pub fn onunload(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -15623,7 +15623,7 @@ impl HTMLVideoElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onenterpictureinpicture")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onenterpictureinpicture(&self) -> Option<&'static JsObject> {
+    pub fn onenterpictureinpicture(&self) -> Option<&'static dyn Fn(&PictureInPictureEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -15640,7 +15640,7 @@ impl HTMLVideoElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onleavepictureinpicture")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onleavepictureinpicture(&self) -> Option<&'static JsObject> {
+    pub fn onleavepictureinpicture(&self) -> Option<&'static dyn Fn(&PictureInPictureEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -15929,7 +15929,7 @@ impl HTMLMediaElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onencrypted")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onencrypted(&self) -> Option<&'static JsObject> {
+    pub fn onencrypted(&self) -> Option<&'static dyn Fn(&MediaEncryptedEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -15946,7 +15946,7 @@ impl HTMLMediaElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onwaitingforkey")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onwaitingforkey(&self) -> Option<&'static JsObject> {
+    pub fn onwaitingforkey(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -18129,7 +18129,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get onorientationchange")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onorientationchange(&self) -> Option<&'static JsObject> {
+    pub fn onorientationchange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -18714,7 +18714,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get ondeviceorientation")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ondeviceorientation(&self) -> Option<&'static JsObject> {
+    pub fn ondeviceorientation(&self) -> Option<&'static dyn Fn(&DeviceOrientationEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -18731,7 +18731,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get ondeviceorientationabsolute")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ondeviceorientationabsolute(&self) -> Option<&'static JsObject> {
+    pub fn ondeviceorientationabsolute(&self) -> Option<&'static dyn Fn(&DeviceOrientationEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -18748,7 +18748,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get ondevicemotion")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ondevicemotion(&self) -> Option<&'static JsObject> {
+    pub fn ondevicemotion(&self) -> Option<&'static dyn Fn(&DeviceMotionEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -18797,7 +18797,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get onanimationstart")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onanimationstart(&self) -> Option<&'static JsObject> {
+    pub fn onanimationstart(&self) -> Option<&'static dyn Fn(&AnimationEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -18814,7 +18814,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get onanimationiteration")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onanimationiteration(&self) -> Option<&'static JsObject> {
+    pub fn onanimationiteration(&self) -> Option<&'static dyn Fn(&AnimationEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -18831,7 +18831,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get onanimationend")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onanimationend(&self) -> Option<&'static JsObject> {
+    pub fn onanimationend(&self) -> Option<&'static dyn Fn(&AnimationEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -18848,7 +18848,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get onanimationcancel")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onanimationcancel(&self) -> Option<&'static JsObject> {
+    pub fn onanimationcancel(&self) -> Option<&'static dyn Fn(&AnimationEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -18865,7 +18865,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get ontransitionrun")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ontransitionrun(&self) -> Option<&'static JsObject> {
+    pub fn ontransitionrun(&self) -> Option<&'static dyn Fn(&TransitionEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -18882,7 +18882,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get ontransitionstart")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ontransitionstart(&self) -> Option<&'static JsObject> {
+    pub fn ontransitionstart(&self) -> Option<&'static dyn Fn(&TransitionEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -18899,7 +18899,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get ontransitionend")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ontransitionend(&self) -> Option<&'static JsObject> {
+    pub fn ontransitionend(&self) -> Option<&'static dyn Fn(&TransitionEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -18916,7 +18916,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get ontransitioncancel")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ontransitioncancel(&self) -> Option<&'static JsObject> {
+    pub fn ontransitioncancel(&self) -> Option<&'static dyn Fn(&TransitionEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -18933,7 +18933,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get onabort")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onabort(&self) -> Option<&'static JsObject> {
+    pub fn onabort(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -18950,7 +18950,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get onauxclick")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onauxclick(&self) -> Option<&'static JsObject> {
+    pub fn onauxclick(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -18967,7 +18967,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get onbeforeinput")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onbeforeinput(&self) -> Option<&'static JsObject> {
+    pub fn onbeforeinput(&self) -> Option<&'static dyn Fn(&InputEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -18984,7 +18984,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get onbeforematch")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onbeforematch(&self) -> Option<&'static JsObject> {
+    pub fn onbeforematch(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -19001,7 +19001,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get onbeforetoggle")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onbeforetoggle(&self) -> Option<&'static JsObject> {
+    pub fn onbeforetoggle(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -19018,7 +19018,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get onblur")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onblur(&self) -> Option<&'static JsObject> {
+    pub fn onblur(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -19035,7 +19035,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get oncancel")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn oncancel(&self) -> Option<&'static JsObject> {
+    pub fn oncancel(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -19052,7 +19052,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get oncanplay")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn oncanplay(&self) -> Option<&'static JsObject> {
+    pub fn oncanplay(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -19069,7 +19069,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get oncanplaythrough")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn oncanplaythrough(&self) -> Option<&'static JsObject> {
+    pub fn oncanplaythrough(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -19086,7 +19086,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get onchange")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onchange(&self) -> Option<&'static JsObject> {
+    pub fn onchange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -19103,7 +19103,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get onclick")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onclick(&self) -> Option<&'static JsObject> {
+    pub fn onclick(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -19120,7 +19120,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get onclose")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onclose(&self) -> Option<&'static JsObject> {
+    pub fn onclose(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -19137,7 +19137,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get oncommand")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn oncommand(&self) -> Option<&'static JsObject> {
+    pub fn oncommand(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -19154,7 +19154,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get oncontextlost")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn oncontextlost(&self) -> Option<&'static JsObject> {
+    pub fn oncontextlost(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -19171,7 +19171,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get oncontextmenu")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn oncontextmenu(&self) -> Option<&'static JsObject> {
+    pub fn oncontextmenu(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -19188,7 +19188,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get oncontextrestored")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn oncontextrestored(&self) -> Option<&'static JsObject> {
+    pub fn oncontextrestored(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -19205,7 +19205,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get oncopy")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn oncopy(&self) -> Option<&'static JsObject> {
+    pub fn oncopy(&self) -> Option<&'static dyn Fn(&ClipboardEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -19222,7 +19222,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get oncuechange")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn oncuechange(&self) -> Option<&'static JsObject> {
+    pub fn oncuechange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -19239,7 +19239,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get oncut")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn oncut(&self) -> Option<&'static JsObject> {
+    pub fn oncut(&self) -> Option<&'static dyn Fn(&ClipboardEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -19256,7 +19256,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get ondblclick")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ondblclick(&self) -> Option<&'static JsObject> {
+    pub fn ondblclick(&self) -> Option<&'static dyn Fn(&MouseEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -19273,7 +19273,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get ondrag")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ondrag(&self) -> Option<&'static JsObject> {
+    pub fn ondrag(&self) -> Option<&'static dyn Fn(&DragEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -19290,7 +19290,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get ondragend")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ondragend(&self) -> Option<&'static JsObject> {
+    pub fn ondragend(&self) -> Option<&'static dyn Fn(&DragEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -19307,7 +19307,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get ondragenter")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ondragenter(&self) -> Option<&'static JsObject> {
+    pub fn ondragenter(&self) -> Option<&'static dyn Fn(&DragEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -19324,7 +19324,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get ondragleave")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ondragleave(&self) -> Option<&'static JsObject> {
+    pub fn ondragleave(&self) -> Option<&'static dyn Fn(&DragEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -19341,7 +19341,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get ondragover")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ondragover(&self) -> Option<&'static JsObject> {
+    pub fn ondragover(&self) -> Option<&'static dyn Fn(&DragEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -19358,7 +19358,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get ondragstart")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ondragstart(&self) -> Option<&'static JsObject> {
+    pub fn ondragstart(&self) -> Option<&'static dyn Fn(&DragEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -19375,7 +19375,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get ondrop")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ondrop(&self) -> Option<&'static JsObject> {
+    pub fn ondrop(&self) -> Option<&'static dyn Fn(&DragEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -19392,7 +19392,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get ondurationchange")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ondurationchange(&self) -> Option<&'static JsObject> {
+    pub fn ondurationchange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -19409,7 +19409,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get onemptied")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onemptied(&self) -> Option<&'static JsObject> {
+    pub fn onemptied(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -19426,7 +19426,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get onended")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onended(&self) -> Option<&'static JsObject> {
+    pub fn onended(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -19443,7 +19443,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get onerror")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onerror(&self) -> Option<&'static JsObject> {
+    pub fn onerror(&self) -> Option<&'static dyn Fn(EventOrStr<'_>, Option<&str>, Option<u32>, Option<u32>, Option<&Unknown>) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -19460,7 +19460,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get onfocus")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onfocus(&self) -> Option<&'static JsObject> {
+    pub fn onfocus(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -19477,7 +19477,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get onformdata")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onformdata(&self) -> Option<&'static JsObject> {
+    pub fn onformdata(&self) -> Option<&'static dyn Fn(&FormDataEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -19494,7 +19494,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get oninput")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn oninput(&self) -> Option<&'static JsObject> {
+    pub fn oninput(&self) -> Option<&'static dyn Fn(&InputEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -19511,7 +19511,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get oninvalid")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn oninvalid(&self) -> Option<&'static JsObject> {
+    pub fn oninvalid(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -19528,7 +19528,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get onkeydown")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onkeydown(&self) -> Option<&'static JsObject> {
+    pub fn onkeydown(&self) -> Option<&'static dyn Fn(&KeyboardEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -19545,7 +19545,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get onkeypress")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onkeypress(&self) -> Option<&'static JsObject> {
+    pub fn onkeypress(&self) -> Option<&'static dyn Fn(&KeyboardEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -19562,7 +19562,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get onkeyup")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onkeyup(&self) -> Option<&'static JsObject> {
+    pub fn onkeyup(&self) -> Option<&'static dyn Fn(&KeyboardEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -19579,7 +19579,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get onload")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onload(&self) -> Option<&'static JsObject> {
+    pub fn onload(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -19596,7 +19596,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get onloadeddata")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onloadeddata(&self) -> Option<&'static JsObject> {
+    pub fn onloadeddata(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -19613,7 +19613,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get onloadedmetadata")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onloadedmetadata(&self) -> Option<&'static JsObject> {
+    pub fn onloadedmetadata(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -19630,7 +19630,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get onloadstart")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onloadstart(&self) -> Option<&'static JsObject> {
+    pub fn onloadstart(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -19647,7 +19647,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get onmousedown")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onmousedown(&self) -> Option<&'static JsObject> {
+    pub fn onmousedown(&self) -> Option<&'static dyn Fn(&MouseEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -19664,7 +19664,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get onmouseenter")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onmouseenter(&self) -> Option<&'static JsObject> {
+    pub fn onmouseenter(&self) -> Option<&'static dyn Fn(&MouseEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -19681,7 +19681,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get onmouseleave")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onmouseleave(&self) -> Option<&'static JsObject> {
+    pub fn onmouseleave(&self) -> Option<&'static dyn Fn(&MouseEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -19698,7 +19698,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get onmousemove")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onmousemove(&self) -> Option<&'static JsObject> {
+    pub fn onmousemove(&self) -> Option<&'static dyn Fn(&MouseEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -19715,7 +19715,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get onmouseout")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onmouseout(&self) -> Option<&'static JsObject> {
+    pub fn onmouseout(&self) -> Option<&'static dyn Fn(&MouseEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -19732,7 +19732,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get onmouseover")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onmouseover(&self) -> Option<&'static JsObject> {
+    pub fn onmouseover(&self) -> Option<&'static dyn Fn(&MouseEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -19749,7 +19749,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get onmouseup")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onmouseup(&self) -> Option<&'static JsObject> {
+    pub fn onmouseup(&self) -> Option<&'static dyn Fn(&MouseEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -19766,7 +19766,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get onpaste")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onpaste(&self) -> Option<&'static JsObject> {
+    pub fn onpaste(&self) -> Option<&'static dyn Fn(&ClipboardEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -19783,7 +19783,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get onpause")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onpause(&self) -> Option<&'static JsObject> {
+    pub fn onpause(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -19800,7 +19800,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get onplay")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onplay(&self) -> Option<&'static JsObject> {
+    pub fn onplay(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -19817,7 +19817,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get onplaying")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onplaying(&self) -> Option<&'static JsObject> {
+    pub fn onplaying(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -19834,7 +19834,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get onprogress")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onprogress(&self) -> Option<&'static JsObject> {
+    pub fn onprogress(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -19851,7 +19851,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get onratechange")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onratechange(&self) -> Option<&'static JsObject> {
+    pub fn onratechange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -19868,7 +19868,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get onreset")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onreset(&self) -> Option<&'static JsObject> {
+    pub fn onreset(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -19885,7 +19885,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get onresize")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onresize(&self) -> Option<&'static JsObject> {
+    pub fn onresize(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -19902,7 +19902,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get onscroll")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onscroll(&self) -> Option<&'static JsObject> {
+    pub fn onscroll(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -19919,7 +19919,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get onscrollend")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onscrollend(&self) -> Option<&'static JsObject> {
+    pub fn onscrollend(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -19936,7 +19936,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get onsecuritypolicyviolation")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onsecuritypolicyviolation(&self) -> Option<&'static JsObject> {
+    pub fn onsecuritypolicyviolation(&self) -> Option<&'static dyn Fn(&SecurityPolicyViolationEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -19953,7 +19953,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get onseeked")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onseeked(&self) -> Option<&'static JsObject> {
+    pub fn onseeked(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -19970,7 +19970,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get onseeking")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onseeking(&self) -> Option<&'static JsObject> {
+    pub fn onseeking(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -19987,7 +19987,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get onselect")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onselect(&self) -> Option<&'static JsObject> {
+    pub fn onselect(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -20004,7 +20004,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get onslotchange")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onslotchange(&self) -> Option<&'static JsObject> {
+    pub fn onslotchange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -20021,7 +20021,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get onstalled")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onstalled(&self) -> Option<&'static JsObject> {
+    pub fn onstalled(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -20038,7 +20038,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get onsubmit")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onsubmit(&self) -> Option<&'static JsObject> {
+    pub fn onsubmit(&self) -> Option<&'static dyn Fn(&SubmitEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -20055,7 +20055,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get onsuspend")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onsuspend(&self) -> Option<&'static JsObject> {
+    pub fn onsuspend(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -20072,7 +20072,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get ontimeupdate")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ontimeupdate(&self) -> Option<&'static JsObject> {
+    pub fn ontimeupdate(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -20089,7 +20089,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get ontoggle")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ontoggle(&self) -> Option<&'static JsObject> {
+    pub fn ontoggle(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -20106,7 +20106,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get onvolumechange")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onvolumechange(&self) -> Option<&'static JsObject> {
+    pub fn onvolumechange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -20123,7 +20123,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get onwaiting")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onwaiting(&self) -> Option<&'static JsObject> {
+    pub fn onwaiting(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -20140,7 +20140,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get onwebkitanimationend")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onwebkitanimationend(&self) -> Option<&'static JsObject> {
+    pub fn onwebkitanimationend(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -20157,7 +20157,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get onwebkitanimationiteration")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onwebkitanimationiteration(&self) -> Option<&'static JsObject> {
+    pub fn onwebkitanimationiteration(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -20174,7 +20174,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get onwebkitanimationstart")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onwebkitanimationstart(&self) -> Option<&'static JsObject> {
+    pub fn onwebkitanimationstart(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -20191,7 +20191,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get onwebkittransitionend")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onwebkittransitionend(&self) -> Option<&'static JsObject> {
+    pub fn onwebkittransitionend(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -20208,7 +20208,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get onwheel")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onwheel(&self) -> Option<&'static JsObject> {
+    pub fn onwheel(&self) -> Option<&'static dyn Fn(&WheelEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -20225,7 +20225,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get onpointerover")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onpointerover(&self) -> Option<&'static JsObject> {
+    pub fn onpointerover(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -20242,7 +20242,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get onpointerenter")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onpointerenter(&self) -> Option<&'static JsObject> {
+    pub fn onpointerenter(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -20259,7 +20259,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get onpointerdown")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onpointerdown(&self) -> Option<&'static JsObject> {
+    pub fn onpointerdown(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -20276,7 +20276,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get onpointermove")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onpointermove(&self) -> Option<&'static JsObject> {
+    pub fn onpointermove(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -20293,7 +20293,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get onpointerrawupdate")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onpointerrawupdate(&self) -> Option<&'static JsObject> {
+    pub fn onpointerrawupdate(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -20310,7 +20310,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get onpointerup")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onpointerup(&self) -> Option<&'static JsObject> {
+    pub fn onpointerup(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -20327,7 +20327,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get onpointercancel")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onpointercancel(&self) -> Option<&'static JsObject> {
+    pub fn onpointercancel(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -20344,7 +20344,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get onpointerout")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onpointerout(&self) -> Option<&'static JsObject> {
+    pub fn onpointerout(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -20361,7 +20361,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get onpointerleave")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onpointerleave(&self) -> Option<&'static JsObject> {
+    pub fn onpointerleave(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -20378,7 +20378,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get ongotpointercapture")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ongotpointercapture(&self) -> Option<&'static JsObject> {
+    pub fn ongotpointercapture(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -20395,7 +20395,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get onlostpointercapture")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onlostpointercapture(&self) -> Option<&'static JsObject> {
+    pub fn onlostpointercapture(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -20412,7 +20412,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get onselectstart")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onselectstart(&self) -> Option<&'static JsObject> {
+    pub fn onselectstart(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -20429,7 +20429,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get onselectionchange")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onselectionchange(&self) -> Option<&'static JsObject> {
+    pub fn onselectionchange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -20446,7 +20446,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get ontouchstart")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ontouchstart(&self) -> Option<&'static JsObject> {
+    pub fn ontouchstart(&self) -> Option<&'static dyn Fn(&TouchEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -20463,7 +20463,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get ontouchend")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ontouchend(&self) -> Option<&'static JsObject> {
+    pub fn ontouchend(&self) -> Option<&'static dyn Fn(&TouchEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -20480,7 +20480,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get ontouchmove")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ontouchmove(&self) -> Option<&'static JsObject> {
+    pub fn ontouchmove(&self) -> Option<&'static dyn Fn(&TouchEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -20497,7 +20497,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get ontouchcancel")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ontouchcancel(&self) -> Option<&'static JsObject> {
+    pub fn ontouchcancel(&self) -> Option<&'static dyn Fn(&TouchEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -20514,7 +20514,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get ongamepadconnected")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ongamepadconnected(&self) -> Option<&'static JsObject> {
+    pub fn ongamepadconnected(&self) -> Option<&'static dyn Fn(&GamepadEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -20531,7 +20531,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get ongamepaddisconnected")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ongamepaddisconnected(&self) -> Option<&'static JsObject> {
+    pub fn ongamepaddisconnected(&self) -> Option<&'static dyn Fn(&GamepadEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -20548,7 +20548,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get onafterprint")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onafterprint(&self) -> Option<&'static JsObject> {
+    pub fn onafterprint(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -20565,7 +20565,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get onbeforeprint")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onbeforeprint(&self) -> Option<&'static JsObject> {
+    pub fn onbeforeprint(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -20582,7 +20582,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get onbeforeunload")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onbeforeunload(&self) -> Option<&'static JsObject> {
+    pub fn onbeforeunload(&self) -> Option<&'static dyn Fn(&BeforeUnloadEvent) -> Option<String>> {
         unreachable!()
     }
 
@@ -20599,7 +20599,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get onhashchange")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onhashchange(&self) -> Option<&'static JsObject> {
+    pub fn onhashchange(&self) -> Option<&'static dyn Fn(&HashChangeEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -20616,7 +20616,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get onlanguagechange")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onlanguagechange(&self) -> Option<&'static JsObject> {
+    pub fn onlanguagechange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -20633,7 +20633,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get onmessage")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onmessage(&self) -> Option<&'static JsObject> {
+    pub fn onmessage(&self) -> Option<&'static dyn Fn(&MessageEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -20650,7 +20650,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get onmessageerror")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onmessageerror(&self) -> Option<&'static JsObject> {
+    pub fn onmessageerror(&self) -> Option<&'static dyn Fn(&MessageEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -20667,7 +20667,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get onoffline")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onoffline(&self) -> Option<&'static JsObject> {
+    pub fn onoffline(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -20684,7 +20684,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get ononline")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ononline(&self) -> Option<&'static JsObject> {
+    pub fn ononline(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -20701,7 +20701,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get onpagehide")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onpagehide(&self) -> Option<&'static JsObject> {
+    pub fn onpagehide(&self) -> Option<&'static dyn Fn(&PageTransitionEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -20718,7 +20718,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get onpagereveal")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onpagereveal(&self) -> Option<&'static JsObject> {
+    pub fn onpagereveal(&self) -> Option<&'static dyn Fn(&PageRevealEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -20735,7 +20735,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get onpageshow")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onpageshow(&self) -> Option<&'static JsObject> {
+    pub fn onpageshow(&self) -> Option<&'static dyn Fn(&PageTransitionEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -20752,7 +20752,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get onpageswap")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onpageswap(&self) -> Option<&'static JsObject> {
+    pub fn onpageswap(&self) -> Option<&'static dyn Fn(&PageSwapEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -20769,7 +20769,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get onpopstate")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onpopstate(&self) -> Option<&'static JsObject> {
+    pub fn onpopstate(&self) -> Option<&'static dyn Fn(&PopStateEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -20786,7 +20786,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get onrejectionhandled")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onrejectionhandled(&self) -> Option<&'static JsObject> {
+    pub fn onrejectionhandled(&self) -> Option<&'static dyn Fn(&PromiseRejectionEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -20803,7 +20803,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get onstorage")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onstorage(&self) -> Option<&'static JsObject> {
+    pub fn onstorage(&self) -> Option<&'static dyn Fn(&StorageEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -20820,7 +20820,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get onunhandledrejection")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onunhandledrejection(&self) -> Option<&'static JsObject> {
+    pub fn onunhandledrejection(&self) -> Option<&'static dyn Fn(&PromiseRejectionEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -20837,7 +20837,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get onunload")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onunload(&self) -> Option<&'static JsObject> {
+    pub fn onunload(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -21842,7 +21842,7 @@ impl Performance {
     #[cfg_attr(rust_js, rust_js::link_name = "get onresourcetimingbufferfull")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onresourcetimingbufferfull(&self) -> Option<&'static JsObject> {
+    pub fn onresourcetimingbufferfull(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -21859,7 +21859,7 @@ impl Performance {
     #[cfg_attr(rust_js, rust_js::link_name = "mark")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn mark(&self, mark_name: &str, mark_options: Option<PerformanceMarkOptions>) -> &'static PerformanceMark {
+    pub fn mark(&self, mark_name: &str, mark_options: Option<PerformanceMarkOptions<'_>>) -> &'static PerformanceMark {
         unreachable!()
     }
 
@@ -31970,7 +31970,7 @@ impl MediaQueryList {
     #[cfg_attr(rust_js, rust_js::link_name = "get onchange")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onchange(&self) -> Option<&'static JsObject> {
+    pub fn onchange(&self) -> Option<&'static dyn Fn(&MediaQueryListEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -34244,7 +34244,7 @@ impl SVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onanimationstart")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onanimationstart(&self) -> Option<&'static JsObject> {
+    pub fn onanimationstart(&self) -> Option<&'static dyn Fn(&AnimationEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -34261,7 +34261,7 @@ impl SVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onanimationiteration")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onanimationiteration(&self) -> Option<&'static JsObject> {
+    pub fn onanimationiteration(&self) -> Option<&'static dyn Fn(&AnimationEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -34278,7 +34278,7 @@ impl SVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onanimationend")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onanimationend(&self) -> Option<&'static JsObject> {
+    pub fn onanimationend(&self) -> Option<&'static dyn Fn(&AnimationEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -34295,7 +34295,7 @@ impl SVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onanimationcancel")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onanimationcancel(&self) -> Option<&'static JsObject> {
+    pub fn onanimationcancel(&self) -> Option<&'static dyn Fn(&AnimationEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -34312,7 +34312,7 @@ impl SVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get ontransitionrun")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ontransitionrun(&self) -> Option<&'static JsObject> {
+    pub fn ontransitionrun(&self) -> Option<&'static dyn Fn(&TransitionEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -34329,7 +34329,7 @@ impl SVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get ontransitionstart")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ontransitionstart(&self) -> Option<&'static JsObject> {
+    pub fn ontransitionstart(&self) -> Option<&'static dyn Fn(&TransitionEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -34346,7 +34346,7 @@ impl SVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get ontransitionend")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ontransitionend(&self) -> Option<&'static JsObject> {
+    pub fn ontransitionend(&self) -> Option<&'static dyn Fn(&TransitionEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -34363,7 +34363,7 @@ impl SVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get ontransitioncancel")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ontransitioncancel(&self) -> Option<&'static JsObject> {
+    pub fn ontransitioncancel(&self) -> Option<&'static dyn Fn(&TransitionEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -34380,7 +34380,7 @@ impl SVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onabort")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onabort(&self) -> Option<&'static JsObject> {
+    pub fn onabort(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -34397,7 +34397,7 @@ impl SVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onauxclick")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onauxclick(&self) -> Option<&'static JsObject> {
+    pub fn onauxclick(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -34414,7 +34414,7 @@ impl SVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onbeforeinput")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onbeforeinput(&self) -> Option<&'static JsObject> {
+    pub fn onbeforeinput(&self) -> Option<&'static dyn Fn(&InputEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -34431,7 +34431,7 @@ impl SVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onbeforematch")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onbeforematch(&self) -> Option<&'static JsObject> {
+    pub fn onbeforematch(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -34448,7 +34448,7 @@ impl SVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onbeforetoggle")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onbeforetoggle(&self) -> Option<&'static JsObject> {
+    pub fn onbeforetoggle(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -34465,7 +34465,7 @@ impl SVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onblur")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onblur(&self) -> Option<&'static JsObject> {
+    pub fn onblur(&self) -> Option<&'static dyn Fn(&FocusEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -34482,7 +34482,7 @@ impl SVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get oncancel")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn oncancel(&self) -> Option<&'static JsObject> {
+    pub fn oncancel(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -34499,7 +34499,7 @@ impl SVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get oncanplay")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn oncanplay(&self) -> Option<&'static JsObject> {
+    pub fn oncanplay(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -34516,7 +34516,7 @@ impl SVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get oncanplaythrough")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn oncanplaythrough(&self) -> Option<&'static JsObject> {
+    pub fn oncanplaythrough(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -34533,7 +34533,7 @@ impl SVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onchange")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onchange(&self) -> Option<&'static JsObject> {
+    pub fn onchange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -34550,7 +34550,7 @@ impl SVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onclick")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onclick(&self) -> Option<&'static JsObject> {
+    pub fn onclick(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -34567,7 +34567,7 @@ impl SVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onclose")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onclose(&self) -> Option<&'static JsObject> {
+    pub fn onclose(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -34584,7 +34584,7 @@ impl SVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get oncommand")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn oncommand(&self) -> Option<&'static JsObject> {
+    pub fn oncommand(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -34601,7 +34601,7 @@ impl SVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get oncontextlost")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn oncontextlost(&self) -> Option<&'static JsObject> {
+    pub fn oncontextlost(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -34618,7 +34618,7 @@ impl SVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get oncontextmenu")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn oncontextmenu(&self) -> Option<&'static JsObject> {
+    pub fn oncontextmenu(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -34635,7 +34635,7 @@ impl SVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get oncontextrestored")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn oncontextrestored(&self) -> Option<&'static JsObject> {
+    pub fn oncontextrestored(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -34652,7 +34652,7 @@ impl SVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get oncopy")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn oncopy(&self) -> Option<&'static JsObject> {
+    pub fn oncopy(&self) -> Option<&'static dyn Fn(&ClipboardEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -34669,7 +34669,7 @@ impl SVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get oncuechange")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn oncuechange(&self) -> Option<&'static JsObject> {
+    pub fn oncuechange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -34686,7 +34686,7 @@ impl SVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get oncut")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn oncut(&self) -> Option<&'static JsObject> {
+    pub fn oncut(&self) -> Option<&'static dyn Fn(&ClipboardEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -34703,7 +34703,7 @@ impl SVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get ondblclick")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ondblclick(&self) -> Option<&'static JsObject> {
+    pub fn ondblclick(&self) -> Option<&'static dyn Fn(&MouseEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -34720,7 +34720,7 @@ impl SVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get ondrag")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ondrag(&self) -> Option<&'static JsObject> {
+    pub fn ondrag(&self) -> Option<&'static dyn Fn(&DragEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -34737,7 +34737,7 @@ impl SVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get ondragend")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ondragend(&self) -> Option<&'static JsObject> {
+    pub fn ondragend(&self) -> Option<&'static dyn Fn(&DragEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -34754,7 +34754,7 @@ impl SVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get ondragenter")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ondragenter(&self) -> Option<&'static JsObject> {
+    pub fn ondragenter(&self) -> Option<&'static dyn Fn(&DragEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -34771,7 +34771,7 @@ impl SVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get ondragleave")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ondragleave(&self) -> Option<&'static JsObject> {
+    pub fn ondragleave(&self) -> Option<&'static dyn Fn(&DragEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -34788,7 +34788,7 @@ impl SVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get ondragover")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ondragover(&self) -> Option<&'static JsObject> {
+    pub fn ondragover(&self) -> Option<&'static dyn Fn(&DragEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -34805,7 +34805,7 @@ impl SVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get ondragstart")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ondragstart(&self) -> Option<&'static JsObject> {
+    pub fn ondragstart(&self) -> Option<&'static dyn Fn(&DragEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -34822,7 +34822,7 @@ impl SVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get ondrop")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ondrop(&self) -> Option<&'static JsObject> {
+    pub fn ondrop(&self) -> Option<&'static dyn Fn(&DragEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -34839,7 +34839,7 @@ impl SVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get ondurationchange")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ondurationchange(&self) -> Option<&'static JsObject> {
+    pub fn ondurationchange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -34856,7 +34856,7 @@ impl SVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onemptied")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onemptied(&self) -> Option<&'static JsObject> {
+    pub fn onemptied(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -34873,7 +34873,7 @@ impl SVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onended")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onended(&self) -> Option<&'static JsObject> {
+    pub fn onended(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -34890,7 +34890,7 @@ impl SVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onerror")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onerror(&self) -> Option<&'static JsObject> {
+    pub fn onerror(&self) -> Option<&'static dyn Fn(EventOrStr<'_>, Option<&str>, Option<u32>, Option<u32>, Option<&Unknown>) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -34907,7 +34907,7 @@ impl SVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onfocus")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onfocus(&self) -> Option<&'static JsObject> {
+    pub fn onfocus(&self) -> Option<&'static dyn Fn(&FocusEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -34924,7 +34924,7 @@ impl SVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onformdata")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onformdata(&self) -> Option<&'static JsObject> {
+    pub fn onformdata(&self) -> Option<&'static dyn Fn(&FormDataEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -34941,7 +34941,7 @@ impl SVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get oninput")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn oninput(&self) -> Option<&'static JsObject> {
+    pub fn oninput(&self) -> Option<&'static dyn Fn(&InputEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -34958,7 +34958,7 @@ impl SVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get oninvalid")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn oninvalid(&self) -> Option<&'static JsObject> {
+    pub fn oninvalid(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -34975,7 +34975,7 @@ impl SVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onkeydown")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onkeydown(&self) -> Option<&'static JsObject> {
+    pub fn onkeydown(&self) -> Option<&'static dyn Fn(&KeyboardEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -34992,7 +34992,7 @@ impl SVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onkeypress")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onkeypress(&self) -> Option<&'static JsObject> {
+    pub fn onkeypress(&self) -> Option<&'static dyn Fn(&KeyboardEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -35009,7 +35009,7 @@ impl SVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onkeyup")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onkeyup(&self) -> Option<&'static JsObject> {
+    pub fn onkeyup(&self) -> Option<&'static dyn Fn(&KeyboardEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -35026,7 +35026,7 @@ impl SVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onload")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onload(&self) -> Option<&'static JsObject> {
+    pub fn onload(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -35043,7 +35043,7 @@ impl SVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onloadeddata")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onloadeddata(&self) -> Option<&'static JsObject> {
+    pub fn onloadeddata(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -35060,7 +35060,7 @@ impl SVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onloadedmetadata")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onloadedmetadata(&self) -> Option<&'static JsObject> {
+    pub fn onloadedmetadata(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -35077,7 +35077,7 @@ impl SVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onloadstart")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onloadstart(&self) -> Option<&'static JsObject> {
+    pub fn onloadstart(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -35094,7 +35094,7 @@ impl SVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onmousedown")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onmousedown(&self) -> Option<&'static JsObject> {
+    pub fn onmousedown(&self) -> Option<&'static dyn Fn(&MouseEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -35111,7 +35111,7 @@ impl SVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onmouseenter")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onmouseenter(&self) -> Option<&'static JsObject> {
+    pub fn onmouseenter(&self) -> Option<&'static dyn Fn(&MouseEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -35128,7 +35128,7 @@ impl SVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onmouseleave")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onmouseleave(&self) -> Option<&'static JsObject> {
+    pub fn onmouseleave(&self) -> Option<&'static dyn Fn(&MouseEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -35145,7 +35145,7 @@ impl SVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onmousemove")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onmousemove(&self) -> Option<&'static JsObject> {
+    pub fn onmousemove(&self) -> Option<&'static dyn Fn(&MouseEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -35162,7 +35162,7 @@ impl SVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onmouseout")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onmouseout(&self) -> Option<&'static JsObject> {
+    pub fn onmouseout(&self) -> Option<&'static dyn Fn(&MouseEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -35179,7 +35179,7 @@ impl SVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onmouseover")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onmouseover(&self) -> Option<&'static JsObject> {
+    pub fn onmouseover(&self) -> Option<&'static dyn Fn(&MouseEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -35196,7 +35196,7 @@ impl SVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onmouseup")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onmouseup(&self) -> Option<&'static JsObject> {
+    pub fn onmouseup(&self) -> Option<&'static dyn Fn(&MouseEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -35213,7 +35213,7 @@ impl SVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onpaste")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onpaste(&self) -> Option<&'static JsObject> {
+    pub fn onpaste(&self) -> Option<&'static dyn Fn(&ClipboardEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -35230,7 +35230,7 @@ impl SVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onpause")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onpause(&self) -> Option<&'static JsObject> {
+    pub fn onpause(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -35247,7 +35247,7 @@ impl SVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onplay")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onplay(&self) -> Option<&'static JsObject> {
+    pub fn onplay(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -35264,7 +35264,7 @@ impl SVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onplaying")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onplaying(&self) -> Option<&'static JsObject> {
+    pub fn onplaying(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -35281,7 +35281,7 @@ impl SVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onprogress")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onprogress(&self) -> Option<&'static JsObject> {
+    pub fn onprogress(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -35298,7 +35298,7 @@ impl SVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onratechange")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onratechange(&self) -> Option<&'static JsObject> {
+    pub fn onratechange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -35315,7 +35315,7 @@ impl SVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onreset")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onreset(&self) -> Option<&'static JsObject> {
+    pub fn onreset(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -35332,7 +35332,7 @@ impl SVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onresize")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onresize(&self) -> Option<&'static JsObject> {
+    pub fn onresize(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -35349,7 +35349,7 @@ impl SVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onscroll")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onscroll(&self) -> Option<&'static JsObject> {
+    pub fn onscroll(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -35366,7 +35366,7 @@ impl SVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onscrollend")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onscrollend(&self) -> Option<&'static JsObject> {
+    pub fn onscrollend(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -35383,7 +35383,7 @@ impl SVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onsecuritypolicyviolation")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onsecuritypolicyviolation(&self) -> Option<&'static JsObject> {
+    pub fn onsecuritypolicyviolation(&self) -> Option<&'static dyn Fn(&SecurityPolicyViolationEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -35400,7 +35400,7 @@ impl SVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onseeked")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onseeked(&self) -> Option<&'static JsObject> {
+    pub fn onseeked(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -35417,7 +35417,7 @@ impl SVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onseeking")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onseeking(&self) -> Option<&'static JsObject> {
+    pub fn onseeking(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -35434,7 +35434,7 @@ impl SVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onselect")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onselect(&self) -> Option<&'static JsObject> {
+    pub fn onselect(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -35451,7 +35451,7 @@ impl SVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onslotchange")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onslotchange(&self) -> Option<&'static JsObject> {
+    pub fn onslotchange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -35468,7 +35468,7 @@ impl SVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onstalled")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onstalled(&self) -> Option<&'static JsObject> {
+    pub fn onstalled(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -35485,7 +35485,7 @@ impl SVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onsubmit")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onsubmit(&self) -> Option<&'static JsObject> {
+    pub fn onsubmit(&self) -> Option<&'static dyn Fn(&SubmitEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -35502,7 +35502,7 @@ impl SVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onsuspend")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onsuspend(&self) -> Option<&'static JsObject> {
+    pub fn onsuspend(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -35519,7 +35519,7 @@ impl SVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get ontimeupdate")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ontimeupdate(&self) -> Option<&'static JsObject> {
+    pub fn ontimeupdate(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -35536,7 +35536,7 @@ impl SVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get ontoggle")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ontoggle(&self) -> Option<&'static JsObject> {
+    pub fn ontoggle(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -35553,7 +35553,7 @@ impl SVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onvolumechange")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onvolumechange(&self) -> Option<&'static JsObject> {
+    pub fn onvolumechange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -35570,7 +35570,7 @@ impl SVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onwaiting")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onwaiting(&self) -> Option<&'static JsObject> {
+    pub fn onwaiting(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -35587,7 +35587,7 @@ impl SVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onwebkitanimationend")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onwebkitanimationend(&self) -> Option<&'static JsObject> {
+    pub fn onwebkitanimationend(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -35604,7 +35604,7 @@ impl SVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onwebkitanimationiteration")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onwebkitanimationiteration(&self) -> Option<&'static JsObject> {
+    pub fn onwebkitanimationiteration(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -35621,7 +35621,7 @@ impl SVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onwebkitanimationstart")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onwebkitanimationstart(&self) -> Option<&'static JsObject> {
+    pub fn onwebkitanimationstart(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -35638,7 +35638,7 @@ impl SVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onwebkittransitionend")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onwebkittransitionend(&self) -> Option<&'static JsObject> {
+    pub fn onwebkittransitionend(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -35655,7 +35655,7 @@ impl SVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onwheel")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onwheel(&self) -> Option<&'static JsObject> {
+    pub fn onwheel(&self) -> Option<&'static dyn Fn(&WheelEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -35672,7 +35672,7 @@ impl SVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onpointerover")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onpointerover(&self) -> Option<&'static JsObject> {
+    pub fn onpointerover(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -35689,7 +35689,7 @@ impl SVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onpointerenter")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onpointerenter(&self) -> Option<&'static JsObject> {
+    pub fn onpointerenter(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -35706,7 +35706,7 @@ impl SVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onpointerdown")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onpointerdown(&self) -> Option<&'static JsObject> {
+    pub fn onpointerdown(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -35723,7 +35723,7 @@ impl SVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onpointermove")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onpointermove(&self) -> Option<&'static JsObject> {
+    pub fn onpointermove(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -35740,7 +35740,7 @@ impl SVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onpointerrawupdate")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onpointerrawupdate(&self) -> Option<&'static JsObject> {
+    pub fn onpointerrawupdate(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -35757,7 +35757,7 @@ impl SVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onpointerup")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onpointerup(&self) -> Option<&'static JsObject> {
+    pub fn onpointerup(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -35774,7 +35774,7 @@ impl SVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onpointercancel")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onpointercancel(&self) -> Option<&'static JsObject> {
+    pub fn onpointercancel(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -35791,7 +35791,7 @@ impl SVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onpointerout")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onpointerout(&self) -> Option<&'static JsObject> {
+    pub fn onpointerout(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -35808,7 +35808,7 @@ impl SVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onpointerleave")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onpointerleave(&self) -> Option<&'static JsObject> {
+    pub fn onpointerleave(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -35825,7 +35825,7 @@ impl SVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get ongotpointercapture")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ongotpointercapture(&self) -> Option<&'static JsObject> {
+    pub fn ongotpointercapture(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -35842,7 +35842,7 @@ impl SVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onlostpointercapture")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onlostpointercapture(&self) -> Option<&'static JsObject> {
+    pub fn onlostpointercapture(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -35859,7 +35859,7 @@ impl SVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onselectstart")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onselectstart(&self) -> Option<&'static JsObject> {
+    pub fn onselectstart(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -35876,7 +35876,7 @@ impl SVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onselectionchange")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onselectionchange(&self) -> Option<&'static JsObject> {
+    pub fn onselectionchange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -35893,7 +35893,7 @@ impl SVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get ontouchstart")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ontouchstart(&self) -> Option<&'static JsObject> {
+    pub fn ontouchstart(&self) -> Option<&'static dyn Fn(&TouchEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -35910,7 +35910,7 @@ impl SVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get ontouchend")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ontouchend(&self) -> Option<&'static JsObject> {
+    pub fn ontouchend(&self) -> Option<&'static dyn Fn(&TouchEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -35927,7 +35927,7 @@ impl SVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get ontouchmove")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ontouchmove(&self) -> Option<&'static JsObject> {
+    pub fn ontouchmove(&self) -> Option<&'static dyn Fn(&TouchEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -35944,7 +35944,7 @@ impl SVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get ontouchcancel")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ontouchcancel(&self) -> Option<&'static JsObject> {
+    pub fn ontouchcancel(&self) -> Option<&'static dyn Fn(&TouchEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -36477,7 +36477,7 @@ impl SVGSVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get ongamepadconnected")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ongamepadconnected(&self) -> Option<&'static JsObject> {
+    pub fn ongamepadconnected(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -36494,7 +36494,7 @@ impl SVGSVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get ongamepaddisconnected")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ongamepaddisconnected(&self) -> Option<&'static JsObject> {
+    pub fn ongamepaddisconnected(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -36511,7 +36511,7 @@ impl SVGSVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onafterprint")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onafterprint(&self) -> Option<&'static JsObject> {
+    pub fn onafterprint(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -36528,7 +36528,7 @@ impl SVGSVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onbeforeprint")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onbeforeprint(&self) -> Option<&'static JsObject> {
+    pub fn onbeforeprint(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -36545,7 +36545,7 @@ impl SVGSVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onbeforeunload")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onbeforeunload(&self) -> Option<&'static JsObject> {
+    pub fn onbeforeunload(&self) -> Option<&'static dyn Fn(&Event) -> Option<String>> {
         unreachable!()
     }
 
@@ -36562,7 +36562,7 @@ impl SVGSVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onhashchange")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onhashchange(&self) -> Option<&'static JsObject> {
+    pub fn onhashchange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -36579,7 +36579,7 @@ impl SVGSVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onlanguagechange")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onlanguagechange(&self) -> Option<&'static JsObject> {
+    pub fn onlanguagechange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -36596,7 +36596,7 @@ impl SVGSVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onmessage")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onmessage(&self) -> Option<&'static JsObject> {
+    pub fn onmessage(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -36613,7 +36613,7 @@ impl SVGSVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onmessageerror")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onmessageerror(&self) -> Option<&'static JsObject> {
+    pub fn onmessageerror(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -36630,7 +36630,7 @@ impl SVGSVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onoffline")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onoffline(&self) -> Option<&'static JsObject> {
+    pub fn onoffline(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -36647,7 +36647,7 @@ impl SVGSVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get ononline")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ononline(&self) -> Option<&'static JsObject> {
+    pub fn ononline(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -36664,7 +36664,7 @@ impl SVGSVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onpagehide")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onpagehide(&self) -> Option<&'static JsObject> {
+    pub fn onpagehide(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -36681,7 +36681,7 @@ impl SVGSVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onpagereveal")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onpagereveal(&self) -> Option<&'static JsObject> {
+    pub fn onpagereveal(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -36698,7 +36698,7 @@ impl SVGSVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onpageshow")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onpageshow(&self) -> Option<&'static JsObject> {
+    pub fn onpageshow(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -36715,7 +36715,7 @@ impl SVGSVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onpageswap")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onpageswap(&self) -> Option<&'static JsObject> {
+    pub fn onpageswap(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -36732,7 +36732,7 @@ impl SVGSVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onpopstate")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onpopstate(&self) -> Option<&'static JsObject> {
+    pub fn onpopstate(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -36749,7 +36749,7 @@ impl SVGSVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onrejectionhandled")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onrejectionhandled(&self) -> Option<&'static JsObject> {
+    pub fn onrejectionhandled(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -36766,7 +36766,7 @@ impl SVGSVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onstorage")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onstorage(&self) -> Option<&'static JsObject> {
+    pub fn onstorage(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -36783,7 +36783,7 @@ impl SVGSVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onunhandledrejection")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onunhandledrejection(&self) -> Option<&'static JsObject> {
+    pub fn onunhandledrejection(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -36800,7 +36800,7 @@ impl SVGSVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onunload")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onunload(&self) -> Option<&'static JsObject> {
+    pub fn onunload(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -38993,7 +38993,7 @@ impl SVGAnimationElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onbegin")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onbegin(&self) -> Option<&'static JsObject> {
+    pub fn onbegin(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -39010,7 +39010,7 @@ impl SVGAnimationElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onend")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onend(&self) -> Option<&'static JsObject> {
+    pub fn onend(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -39027,7 +39027,7 @@ impl SVGAnimationElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onrepeat")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onrepeat(&self) -> Option<&'static JsObject> {
+    pub fn onrepeat(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -42070,7 +42070,7 @@ impl Animation {
     #[cfg_attr(rust_js, rust_js::link_name = "get onfinish")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onfinish(&self) -> Option<&'static JsObject> {
+    pub fn onfinish(&self) -> Option<&'static dyn Fn(&AnimationPlaybackEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -42087,7 +42087,7 @@ impl Animation {
     #[cfg_attr(rust_js, rust_js::link_name = "get oncancel")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn oncancel(&self) -> Option<&'static JsObject> {
+    pub fn oncancel(&self) -> Option<&'static dyn Fn(&AnimationPlaybackEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -42104,7 +42104,7 @@ impl Animation {
     #[cfg_attr(rust_js, rust_js::link_name = "get onremove")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onremove(&self) -> Option<&'static JsObject> {
+    pub fn onremove(&self) -> Option<&'static dyn Fn(&AnimationPlaybackEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -42881,7 +42881,7 @@ impl AudioDecoder {
     #[cfg_attr(rust_js, rust_js::link_name = "get ondequeue")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ondequeue(&self) -> Option<&'static JsObject> {
+    pub fn ondequeue(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -43034,7 +43034,7 @@ impl AudioEncoder {
     #[cfg_attr(rust_js, rust_js::link_name = "get ondequeue")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ondequeue(&self) -> Option<&'static JsObject> {
+    pub fn ondequeue(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -43596,7 +43596,7 @@ impl AudioScheduledSourceNode {
     #[cfg_attr(rust_js, rust_js::link_name = "get onended")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onended(&self) -> Option<&'static JsObject> {
+    pub fn onended(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -43706,7 +43706,7 @@ impl AudioWorkletNode {
     #[cfg_attr(rust_js, rust_js::link_name = "get onprocessorerror")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onprocessorerror(&self) -> Option<&'static JsObject> {
+    pub fn onprocessorerror(&self) -> Option<&'static dyn Fn(&ErrorEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -43949,7 +43949,7 @@ impl BaseAudioContext {
     #[cfg_attr(rust_js, rust_js::link_name = "get onstatechange")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onstatechange(&self) -> Option<&'static JsObject> {
+    pub fn onstatechange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -44366,7 +44366,7 @@ impl BroadcastChannel {
     #[cfg_attr(rust_js, rust_js::link_name = "get onmessage")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onmessage(&self) -> Option<&'static JsObject> {
+    pub fn onmessage(&self) -> Option<&'static dyn Fn(&MessageEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -44383,7 +44383,7 @@ impl BroadcastChannel {
     #[cfg_attr(rust_js, rust_js::link_name = "get onmessageerror")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onmessageerror(&self) -> Option<&'static JsObject> {
+    pub fn onmessageerror(&self) -> Option<&'static dyn Fn(&MessageEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -44427,7 +44427,7 @@ impl ByteLengthQueuingStrategy {
     #[cfg_attr(rust_js, rust_js::link_name = "get size")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn size(&self) -> &'static JsObject {
+    pub fn size(&self) -> &'static dyn Fn() {
         unreachable!()
     }
 
@@ -49757,7 +49757,7 @@ impl CloseWatcher {
     #[cfg_attr(rust_js, rust_js::link_name = "get oncancel")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn oncancel(&self) -> Option<&'static JsObject> {
+    pub fn oncancel(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -49774,7 +49774,7 @@ impl CloseWatcher {
     #[cfg_attr(rust_js, rust_js::link_name = "get onclose")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onclose(&self) -> Option<&'static JsObject> {
+    pub fn onclose(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -50162,7 +50162,7 @@ impl CookieStore {
     #[cfg_attr(rust_js, rust_js::link_name = "get onchange")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onchange(&self) -> Option<&'static JsObject> {
+    pub fn onchange(&self) -> Option<&'static dyn Fn(&CookieChangeEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -50237,7 +50237,7 @@ impl CountQueuingStrategy {
     #[cfg_attr(rust_js, rust_js::link_name = "get size")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn size(&self) -> &'static JsObject {
+    pub fn size(&self) -> &'static dyn Fn() {
         unreachable!()
     }
 
@@ -50466,7 +50466,7 @@ pub mod custom_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new CustomEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new(r#type: &str, event_init_dict: Option<CustomEventInit>) -> &'static CustomEvent {
+    pub fn new(r#type: &str, event_init_dict: Option<CustomEventInit<'_>>) -> &'static CustomEvent {
         unreachable!()
     }
 
@@ -52391,7 +52391,7 @@ impl DocumentPictureInPicture {
     #[cfg_attr(rust_js, rust_js::link_name = "get onenter")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onenter(&self) -> Option<&'static JsObject> {
+    pub fn onenter(&self) -> Option<&'static dyn Fn(&DocumentPictureInPictureEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -53909,7 +53909,7 @@ impl EventSource {
     #[cfg_attr(rust_js, rust_js::link_name = "get onopen")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onopen(&self) -> Option<&'static JsObject> {
+    pub fn onopen(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -53926,7 +53926,7 @@ impl EventSource {
     #[cfg_attr(rust_js, rust_js::link_name = "get onmessage")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onmessage(&self) -> Option<&'static JsObject> {
+    pub fn onmessage(&self) -> Option<&'static dyn Fn(&MessageEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -53943,7 +53943,7 @@ impl EventSource {
     #[cfg_attr(rust_js, rust_js::link_name = "get onerror")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onerror(&self) -> Option<&'static JsObject> {
+    pub fn onerror(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -54135,7 +54135,7 @@ impl FileReader {
     #[cfg_attr(rust_js, rust_js::link_name = "get onloadstart")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onloadstart(&self) -> Option<&'static JsObject> {
+    pub fn onloadstart(&self) -> Option<&'static dyn Fn(&ProgressEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -54152,7 +54152,7 @@ impl FileReader {
     #[cfg_attr(rust_js, rust_js::link_name = "get onprogress")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onprogress(&self) -> Option<&'static JsObject> {
+    pub fn onprogress(&self) -> Option<&'static dyn Fn(&ProgressEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -54169,7 +54169,7 @@ impl FileReader {
     #[cfg_attr(rust_js, rust_js::link_name = "get onload")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onload(&self) -> Option<&'static JsObject> {
+    pub fn onload(&self) -> Option<&'static dyn Fn(&ProgressEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -54186,7 +54186,7 @@ impl FileReader {
     #[cfg_attr(rust_js, rust_js::link_name = "get onabort")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onabort(&self) -> Option<&'static JsObject> {
+    pub fn onabort(&self) -> Option<&'static dyn Fn(&ProgressEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -54203,7 +54203,7 @@ impl FileReader {
     #[cfg_attr(rust_js, rust_js::link_name = "get onerror")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onerror(&self) -> Option<&'static JsObject> {
+    pub fn onerror(&self) -> Option<&'static dyn Fn(&ProgressEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -54220,7 +54220,7 @@ impl FileReader {
     #[cfg_attr(rust_js, rust_js::link_name = "get onloadend")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onloadend(&self) -> Option<&'static JsObject> {
+    pub fn onloadend(&self) -> Option<&'static dyn Fn(&ProgressEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -54924,7 +54924,7 @@ impl FontFaceSet {
     #[cfg_attr(rust_js, rust_js::link_name = "get onloading")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onloading(&self) -> Option<&'static JsObject> {
+    pub fn onloading(&self) -> Option<&'static dyn Fn(&FontFaceSetLoadEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -54941,7 +54941,7 @@ impl FontFaceSet {
     #[cfg_attr(rust_js, rust_js::link_name = "get onloadingdone")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onloadingdone(&self) -> Option<&'static JsObject> {
+    pub fn onloadingdone(&self) -> Option<&'static dyn Fn(&FontFaceSetLoadEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -54958,7 +54958,7 @@ impl FontFaceSet {
     #[cfg_attr(rust_js, rust_js::link_name = "get onloadingerror")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onloadingerror(&self) -> Option<&'static JsObject> {
+    pub fn onloadingerror(&self) -> Option<&'static dyn Fn(&FontFaceSetLoadEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -55962,7 +55962,7 @@ impl GPUDevice {
     #[cfg_attr(rust_js, rust_js::link_name = "get onuncapturederror")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onuncapturederror(&self) -> Option<&'static JsObject> {
+    pub fn onuncapturederror(&self) -> Option<&'static dyn Fn(&GPUUncapturedErrorEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -58082,7 +58082,7 @@ impl HTMLFrameSetElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get ongamepadconnected")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ongamepadconnected(&self) -> Option<&'static JsObject> {
+    pub fn ongamepadconnected(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -58099,7 +58099,7 @@ impl HTMLFrameSetElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get ongamepaddisconnected")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ongamepaddisconnected(&self) -> Option<&'static JsObject> {
+    pub fn ongamepaddisconnected(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -58116,7 +58116,7 @@ impl HTMLFrameSetElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onafterprint")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onafterprint(&self) -> Option<&'static JsObject> {
+    pub fn onafterprint(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -58133,7 +58133,7 @@ impl HTMLFrameSetElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onbeforeprint")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onbeforeprint(&self) -> Option<&'static JsObject> {
+    pub fn onbeforeprint(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -58150,7 +58150,7 @@ impl HTMLFrameSetElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onbeforeunload")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onbeforeunload(&self) -> Option<&'static JsObject> {
+    pub fn onbeforeunload(&self) -> Option<&'static dyn Fn(&Event) -> Option<String>> {
         unreachable!()
     }
 
@@ -58167,7 +58167,7 @@ impl HTMLFrameSetElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onhashchange")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onhashchange(&self) -> Option<&'static JsObject> {
+    pub fn onhashchange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -58184,7 +58184,7 @@ impl HTMLFrameSetElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onlanguagechange")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onlanguagechange(&self) -> Option<&'static JsObject> {
+    pub fn onlanguagechange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -58201,7 +58201,7 @@ impl HTMLFrameSetElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onmessage")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onmessage(&self) -> Option<&'static JsObject> {
+    pub fn onmessage(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -58218,7 +58218,7 @@ impl HTMLFrameSetElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onmessageerror")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onmessageerror(&self) -> Option<&'static JsObject> {
+    pub fn onmessageerror(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -58235,7 +58235,7 @@ impl HTMLFrameSetElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onoffline")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onoffline(&self) -> Option<&'static JsObject> {
+    pub fn onoffline(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -58252,7 +58252,7 @@ impl HTMLFrameSetElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get ononline")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ononline(&self) -> Option<&'static JsObject> {
+    pub fn ononline(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -58269,7 +58269,7 @@ impl HTMLFrameSetElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onpagehide")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onpagehide(&self) -> Option<&'static JsObject> {
+    pub fn onpagehide(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -58286,7 +58286,7 @@ impl HTMLFrameSetElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onpagereveal")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onpagereveal(&self) -> Option<&'static JsObject> {
+    pub fn onpagereveal(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -58303,7 +58303,7 @@ impl HTMLFrameSetElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onpageshow")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onpageshow(&self) -> Option<&'static JsObject> {
+    pub fn onpageshow(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -58320,7 +58320,7 @@ impl HTMLFrameSetElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onpageswap")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onpageswap(&self) -> Option<&'static JsObject> {
+    pub fn onpageswap(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -58337,7 +58337,7 @@ impl HTMLFrameSetElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onpopstate")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onpopstate(&self) -> Option<&'static JsObject> {
+    pub fn onpopstate(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -58354,7 +58354,7 @@ impl HTMLFrameSetElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onrejectionhandled")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onrejectionhandled(&self) -> Option<&'static JsObject> {
+    pub fn onrejectionhandled(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -58371,7 +58371,7 @@ impl HTMLFrameSetElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onstorage")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onstorage(&self) -> Option<&'static JsObject> {
+    pub fn onstorage(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -58388,7 +58388,7 @@ impl HTMLFrameSetElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onunhandledrejection")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onunhandledrejection(&self) -> Option<&'static JsObject> {
+    pub fn onunhandledrejection(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -58405,7 +58405,7 @@ impl HTMLFrameSetElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onunload")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onunload(&self) -> Option<&'static JsObject> {
+    pub fn onunload(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -59321,7 +59321,7 @@ impl IDBDatabase {
     #[cfg_attr(rust_js, rust_js::link_name = "get onabort")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onabort(&self) -> Option<&'static JsObject> {
+    pub fn onabort(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -59338,7 +59338,7 @@ impl IDBDatabase {
     #[cfg_attr(rust_js, rust_js::link_name = "get onclose")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onclose(&self) -> Option<&'static JsObject> {
+    pub fn onclose(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -59355,7 +59355,7 @@ impl IDBDatabase {
     #[cfg_attr(rust_js, rust_js::link_name = "get onerror")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onerror(&self) -> Option<&'static JsObject> {
+    pub fn onerror(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -59372,7 +59372,7 @@ impl IDBDatabase {
     #[cfg_attr(rust_js, rust_js::link_name = "get onversionchange")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onversionchange(&self) -> Option<&'static JsObject> {
+    pub fn onversionchange(&self) -> Option<&'static dyn Fn(&IDBVersionChangeEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -59819,7 +59819,7 @@ impl IDBOpenDBRequest {
     #[cfg_attr(rust_js, rust_js::link_name = "get onblocked")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onblocked(&self) -> Option<&'static JsObject> {
+    pub fn onblocked(&self) -> Option<&'static dyn Fn(&IDBVersionChangeEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -59836,7 +59836,7 @@ impl IDBOpenDBRequest {
     #[cfg_attr(rust_js, rust_js::link_name = "get onupgradeneeded")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onupgradeneeded(&self) -> Option<&'static JsObject> {
+    pub fn onupgradeneeded(&self) -> Option<&'static dyn Fn(&IDBVersionChangeEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -59921,7 +59921,7 @@ impl IDBRequest {
     #[cfg_attr(rust_js, rust_js::link_name = "get onsuccess")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onsuccess(&self) -> Option<&'static JsObject> {
+    pub fn onsuccess(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -59938,7 +59938,7 @@ impl IDBRequest {
     #[cfg_attr(rust_js, rust_js::link_name = "get onerror")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onerror(&self) -> Option<&'static JsObject> {
+    pub fn onerror(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -60047,7 +60047,7 @@ impl IDBTransaction {
     #[cfg_attr(rust_js, rust_js::link_name = "get onabort")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onabort(&self) -> Option<&'static JsObject> {
+    pub fn onabort(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -60064,7 +60064,7 @@ impl IDBTransaction {
     #[cfg_attr(rust_js, rust_js::link_name = "get oncomplete")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn oncomplete(&self) -> Option<&'static JsObject> {
+    pub fn oncomplete(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -60081,7 +60081,7 @@ impl IDBTransaction {
     #[cfg_attr(rust_js, rust_js::link_name = "get onerror")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onerror(&self) -> Option<&'static JsObject> {
+    pub fn onerror(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -60892,7 +60892,7 @@ impl MIDIAccess {
     #[cfg_attr(rust_js, rust_js::link_name = "get onstatechange")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onstatechange(&self) -> Option<&'static JsObject> {
+    pub fn onstatechange(&self) -> Option<&'static dyn Fn(&MIDIConnectionEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -60989,7 +60989,7 @@ impl MIDIInput {
     #[cfg_attr(rust_js, rust_js::link_name = "get onmidimessage")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onmidimessage(&self) -> Option<&'static JsObject> {
+    pub fn onmidimessage(&self) -> Option<&'static dyn Fn(&MIDIMessageEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -61296,7 +61296,7 @@ impl MIDIPort {
     #[cfg_attr(rust_js, rust_js::link_name = "get onstatechange")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onstatechange(&self) -> Option<&'static JsObject> {
+    pub fn onstatechange(&self) -> Option<&'static dyn Fn(&MIDIConnectionEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -61373,7 +61373,7 @@ impl MathMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onanimationstart")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onanimationstart(&self) -> Option<&'static JsObject> {
+    pub fn onanimationstart(&self) -> Option<&'static dyn Fn(&AnimationEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -61390,7 +61390,7 @@ impl MathMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onanimationiteration")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onanimationiteration(&self) -> Option<&'static JsObject> {
+    pub fn onanimationiteration(&self) -> Option<&'static dyn Fn(&AnimationEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -61407,7 +61407,7 @@ impl MathMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onanimationend")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onanimationend(&self) -> Option<&'static JsObject> {
+    pub fn onanimationend(&self) -> Option<&'static dyn Fn(&AnimationEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -61424,7 +61424,7 @@ impl MathMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onanimationcancel")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onanimationcancel(&self) -> Option<&'static JsObject> {
+    pub fn onanimationcancel(&self) -> Option<&'static dyn Fn(&AnimationEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -61441,7 +61441,7 @@ impl MathMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get ontransitionrun")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ontransitionrun(&self) -> Option<&'static JsObject> {
+    pub fn ontransitionrun(&self) -> Option<&'static dyn Fn(&TransitionEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -61458,7 +61458,7 @@ impl MathMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get ontransitionstart")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ontransitionstart(&self) -> Option<&'static JsObject> {
+    pub fn ontransitionstart(&self) -> Option<&'static dyn Fn(&TransitionEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -61475,7 +61475,7 @@ impl MathMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get ontransitionend")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ontransitionend(&self) -> Option<&'static JsObject> {
+    pub fn ontransitionend(&self) -> Option<&'static dyn Fn(&TransitionEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -61492,7 +61492,7 @@ impl MathMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get ontransitioncancel")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ontransitioncancel(&self) -> Option<&'static JsObject> {
+    pub fn ontransitioncancel(&self) -> Option<&'static dyn Fn(&TransitionEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -61509,7 +61509,7 @@ impl MathMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onabort")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onabort(&self) -> Option<&'static JsObject> {
+    pub fn onabort(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -61526,7 +61526,7 @@ impl MathMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onauxclick")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onauxclick(&self) -> Option<&'static JsObject> {
+    pub fn onauxclick(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -61543,7 +61543,7 @@ impl MathMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onbeforeinput")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onbeforeinput(&self) -> Option<&'static JsObject> {
+    pub fn onbeforeinput(&self) -> Option<&'static dyn Fn(&InputEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -61560,7 +61560,7 @@ impl MathMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onbeforematch")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onbeforematch(&self) -> Option<&'static JsObject> {
+    pub fn onbeforematch(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -61577,7 +61577,7 @@ impl MathMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onbeforetoggle")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onbeforetoggle(&self) -> Option<&'static JsObject> {
+    pub fn onbeforetoggle(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -61594,7 +61594,7 @@ impl MathMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onblur")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onblur(&self) -> Option<&'static JsObject> {
+    pub fn onblur(&self) -> Option<&'static dyn Fn(&FocusEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -61611,7 +61611,7 @@ impl MathMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get oncancel")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn oncancel(&self) -> Option<&'static JsObject> {
+    pub fn oncancel(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -61628,7 +61628,7 @@ impl MathMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get oncanplay")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn oncanplay(&self) -> Option<&'static JsObject> {
+    pub fn oncanplay(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -61645,7 +61645,7 @@ impl MathMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get oncanplaythrough")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn oncanplaythrough(&self) -> Option<&'static JsObject> {
+    pub fn oncanplaythrough(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -61662,7 +61662,7 @@ impl MathMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onchange")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onchange(&self) -> Option<&'static JsObject> {
+    pub fn onchange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -61679,7 +61679,7 @@ impl MathMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onclick")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onclick(&self) -> Option<&'static JsObject> {
+    pub fn onclick(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -61696,7 +61696,7 @@ impl MathMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onclose")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onclose(&self) -> Option<&'static JsObject> {
+    pub fn onclose(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -61713,7 +61713,7 @@ impl MathMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get oncommand")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn oncommand(&self) -> Option<&'static JsObject> {
+    pub fn oncommand(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -61730,7 +61730,7 @@ impl MathMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get oncontextlost")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn oncontextlost(&self) -> Option<&'static JsObject> {
+    pub fn oncontextlost(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -61747,7 +61747,7 @@ impl MathMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get oncontextmenu")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn oncontextmenu(&self) -> Option<&'static JsObject> {
+    pub fn oncontextmenu(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -61764,7 +61764,7 @@ impl MathMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get oncontextrestored")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn oncontextrestored(&self) -> Option<&'static JsObject> {
+    pub fn oncontextrestored(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -61781,7 +61781,7 @@ impl MathMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get oncopy")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn oncopy(&self) -> Option<&'static JsObject> {
+    pub fn oncopy(&self) -> Option<&'static dyn Fn(&ClipboardEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -61798,7 +61798,7 @@ impl MathMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get oncuechange")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn oncuechange(&self) -> Option<&'static JsObject> {
+    pub fn oncuechange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -61815,7 +61815,7 @@ impl MathMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get oncut")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn oncut(&self) -> Option<&'static JsObject> {
+    pub fn oncut(&self) -> Option<&'static dyn Fn(&ClipboardEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -61832,7 +61832,7 @@ impl MathMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get ondblclick")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ondblclick(&self) -> Option<&'static JsObject> {
+    pub fn ondblclick(&self) -> Option<&'static dyn Fn(&MouseEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -61849,7 +61849,7 @@ impl MathMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get ondrag")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ondrag(&self) -> Option<&'static JsObject> {
+    pub fn ondrag(&self) -> Option<&'static dyn Fn(&DragEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -61866,7 +61866,7 @@ impl MathMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get ondragend")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ondragend(&self) -> Option<&'static JsObject> {
+    pub fn ondragend(&self) -> Option<&'static dyn Fn(&DragEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -61883,7 +61883,7 @@ impl MathMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get ondragenter")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ondragenter(&self) -> Option<&'static JsObject> {
+    pub fn ondragenter(&self) -> Option<&'static dyn Fn(&DragEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -61900,7 +61900,7 @@ impl MathMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get ondragleave")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ondragleave(&self) -> Option<&'static JsObject> {
+    pub fn ondragleave(&self) -> Option<&'static dyn Fn(&DragEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -61917,7 +61917,7 @@ impl MathMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get ondragover")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ondragover(&self) -> Option<&'static JsObject> {
+    pub fn ondragover(&self) -> Option<&'static dyn Fn(&DragEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -61934,7 +61934,7 @@ impl MathMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get ondragstart")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ondragstart(&self) -> Option<&'static JsObject> {
+    pub fn ondragstart(&self) -> Option<&'static dyn Fn(&DragEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -61951,7 +61951,7 @@ impl MathMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get ondrop")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ondrop(&self) -> Option<&'static JsObject> {
+    pub fn ondrop(&self) -> Option<&'static dyn Fn(&DragEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -61968,7 +61968,7 @@ impl MathMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get ondurationchange")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ondurationchange(&self) -> Option<&'static JsObject> {
+    pub fn ondurationchange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -61985,7 +61985,7 @@ impl MathMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onemptied")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onemptied(&self) -> Option<&'static JsObject> {
+    pub fn onemptied(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -62002,7 +62002,7 @@ impl MathMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onended")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onended(&self) -> Option<&'static JsObject> {
+    pub fn onended(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -62019,7 +62019,7 @@ impl MathMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onerror")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onerror(&self) -> Option<&'static JsObject> {
+    pub fn onerror(&self) -> Option<&'static dyn Fn(EventOrStr<'_>, Option<&str>, Option<u32>, Option<u32>, Option<&Unknown>) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -62036,7 +62036,7 @@ impl MathMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onfocus")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onfocus(&self) -> Option<&'static JsObject> {
+    pub fn onfocus(&self) -> Option<&'static dyn Fn(&FocusEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -62053,7 +62053,7 @@ impl MathMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onformdata")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onformdata(&self) -> Option<&'static JsObject> {
+    pub fn onformdata(&self) -> Option<&'static dyn Fn(&FormDataEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -62070,7 +62070,7 @@ impl MathMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get oninput")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn oninput(&self) -> Option<&'static JsObject> {
+    pub fn oninput(&self) -> Option<&'static dyn Fn(&InputEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -62087,7 +62087,7 @@ impl MathMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get oninvalid")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn oninvalid(&self) -> Option<&'static JsObject> {
+    pub fn oninvalid(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -62104,7 +62104,7 @@ impl MathMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onkeydown")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onkeydown(&self) -> Option<&'static JsObject> {
+    pub fn onkeydown(&self) -> Option<&'static dyn Fn(&KeyboardEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -62121,7 +62121,7 @@ impl MathMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onkeypress")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onkeypress(&self) -> Option<&'static JsObject> {
+    pub fn onkeypress(&self) -> Option<&'static dyn Fn(&KeyboardEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -62138,7 +62138,7 @@ impl MathMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onkeyup")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onkeyup(&self) -> Option<&'static JsObject> {
+    pub fn onkeyup(&self) -> Option<&'static dyn Fn(&KeyboardEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -62155,7 +62155,7 @@ impl MathMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onload")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onload(&self) -> Option<&'static JsObject> {
+    pub fn onload(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -62172,7 +62172,7 @@ impl MathMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onloadeddata")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onloadeddata(&self) -> Option<&'static JsObject> {
+    pub fn onloadeddata(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -62189,7 +62189,7 @@ impl MathMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onloadedmetadata")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onloadedmetadata(&self) -> Option<&'static JsObject> {
+    pub fn onloadedmetadata(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -62206,7 +62206,7 @@ impl MathMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onloadstart")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onloadstart(&self) -> Option<&'static JsObject> {
+    pub fn onloadstart(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -62223,7 +62223,7 @@ impl MathMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onmousedown")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onmousedown(&self) -> Option<&'static JsObject> {
+    pub fn onmousedown(&self) -> Option<&'static dyn Fn(&MouseEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -62240,7 +62240,7 @@ impl MathMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onmouseenter")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onmouseenter(&self) -> Option<&'static JsObject> {
+    pub fn onmouseenter(&self) -> Option<&'static dyn Fn(&MouseEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -62257,7 +62257,7 @@ impl MathMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onmouseleave")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onmouseleave(&self) -> Option<&'static JsObject> {
+    pub fn onmouseleave(&self) -> Option<&'static dyn Fn(&MouseEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -62274,7 +62274,7 @@ impl MathMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onmousemove")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onmousemove(&self) -> Option<&'static JsObject> {
+    pub fn onmousemove(&self) -> Option<&'static dyn Fn(&MouseEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -62291,7 +62291,7 @@ impl MathMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onmouseout")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onmouseout(&self) -> Option<&'static JsObject> {
+    pub fn onmouseout(&self) -> Option<&'static dyn Fn(&MouseEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -62308,7 +62308,7 @@ impl MathMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onmouseover")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onmouseover(&self) -> Option<&'static JsObject> {
+    pub fn onmouseover(&self) -> Option<&'static dyn Fn(&MouseEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -62325,7 +62325,7 @@ impl MathMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onmouseup")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onmouseup(&self) -> Option<&'static JsObject> {
+    pub fn onmouseup(&self) -> Option<&'static dyn Fn(&MouseEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -62342,7 +62342,7 @@ impl MathMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onpaste")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onpaste(&self) -> Option<&'static JsObject> {
+    pub fn onpaste(&self) -> Option<&'static dyn Fn(&ClipboardEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -62359,7 +62359,7 @@ impl MathMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onpause")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onpause(&self) -> Option<&'static JsObject> {
+    pub fn onpause(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -62376,7 +62376,7 @@ impl MathMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onplay")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onplay(&self) -> Option<&'static JsObject> {
+    pub fn onplay(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -62393,7 +62393,7 @@ impl MathMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onplaying")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onplaying(&self) -> Option<&'static JsObject> {
+    pub fn onplaying(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -62410,7 +62410,7 @@ impl MathMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onprogress")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onprogress(&self) -> Option<&'static JsObject> {
+    pub fn onprogress(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -62427,7 +62427,7 @@ impl MathMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onratechange")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onratechange(&self) -> Option<&'static JsObject> {
+    pub fn onratechange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -62444,7 +62444,7 @@ impl MathMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onreset")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onreset(&self) -> Option<&'static JsObject> {
+    pub fn onreset(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -62461,7 +62461,7 @@ impl MathMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onresize")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onresize(&self) -> Option<&'static JsObject> {
+    pub fn onresize(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -62478,7 +62478,7 @@ impl MathMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onscroll")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onscroll(&self) -> Option<&'static JsObject> {
+    pub fn onscroll(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -62495,7 +62495,7 @@ impl MathMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onscrollend")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onscrollend(&self) -> Option<&'static JsObject> {
+    pub fn onscrollend(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -62512,7 +62512,7 @@ impl MathMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onsecuritypolicyviolation")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onsecuritypolicyviolation(&self) -> Option<&'static JsObject> {
+    pub fn onsecuritypolicyviolation(&self) -> Option<&'static dyn Fn(&SecurityPolicyViolationEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -62529,7 +62529,7 @@ impl MathMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onseeked")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onseeked(&self) -> Option<&'static JsObject> {
+    pub fn onseeked(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -62546,7 +62546,7 @@ impl MathMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onseeking")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onseeking(&self) -> Option<&'static JsObject> {
+    pub fn onseeking(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -62563,7 +62563,7 @@ impl MathMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onselect")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onselect(&self) -> Option<&'static JsObject> {
+    pub fn onselect(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -62580,7 +62580,7 @@ impl MathMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onslotchange")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onslotchange(&self) -> Option<&'static JsObject> {
+    pub fn onslotchange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -62597,7 +62597,7 @@ impl MathMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onstalled")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onstalled(&self) -> Option<&'static JsObject> {
+    pub fn onstalled(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -62614,7 +62614,7 @@ impl MathMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onsubmit")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onsubmit(&self) -> Option<&'static JsObject> {
+    pub fn onsubmit(&self) -> Option<&'static dyn Fn(&SubmitEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -62631,7 +62631,7 @@ impl MathMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onsuspend")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onsuspend(&self) -> Option<&'static JsObject> {
+    pub fn onsuspend(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -62648,7 +62648,7 @@ impl MathMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get ontimeupdate")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ontimeupdate(&self) -> Option<&'static JsObject> {
+    pub fn ontimeupdate(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -62665,7 +62665,7 @@ impl MathMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get ontoggle")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ontoggle(&self) -> Option<&'static JsObject> {
+    pub fn ontoggle(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -62682,7 +62682,7 @@ impl MathMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onvolumechange")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onvolumechange(&self) -> Option<&'static JsObject> {
+    pub fn onvolumechange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -62699,7 +62699,7 @@ impl MathMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onwaiting")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onwaiting(&self) -> Option<&'static JsObject> {
+    pub fn onwaiting(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -62716,7 +62716,7 @@ impl MathMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onwebkitanimationend")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onwebkitanimationend(&self) -> Option<&'static JsObject> {
+    pub fn onwebkitanimationend(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -62733,7 +62733,7 @@ impl MathMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onwebkitanimationiteration")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onwebkitanimationiteration(&self) -> Option<&'static JsObject> {
+    pub fn onwebkitanimationiteration(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -62750,7 +62750,7 @@ impl MathMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onwebkitanimationstart")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onwebkitanimationstart(&self) -> Option<&'static JsObject> {
+    pub fn onwebkitanimationstart(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -62767,7 +62767,7 @@ impl MathMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onwebkittransitionend")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onwebkittransitionend(&self) -> Option<&'static JsObject> {
+    pub fn onwebkittransitionend(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -62784,7 +62784,7 @@ impl MathMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onwheel")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onwheel(&self) -> Option<&'static JsObject> {
+    pub fn onwheel(&self) -> Option<&'static dyn Fn(&WheelEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -62801,7 +62801,7 @@ impl MathMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onpointerover")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onpointerover(&self) -> Option<&'static JsObject> {
+    pub fn onpointerover(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -62818,7 +62818,7 @@ impl MathMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onpointerenter")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onpointerenter(&self) -> Option<&'static JsObject> {
+    pub fn onpointerenter(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -62835,7 +62835,7 @@ impl MathMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onpointerdown")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onpointerdown(&self) -> Option<&'static JsObject> {
+    pub fn onpointerdown(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -62852,7 +62852,7 @@ impl MathMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onpointermove")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onpointermove(&self) -> Option<&'static JsObject> {
+    pub fn onpointermove(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -62869,7 +62869,7 @@ impl MathMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onpointerrawupdate")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onpointerrawupdate(&self) -> Option<&'static JsObject> {
+    pub fn onpointerrawupdate(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -62886,7 +62886,7 @@ impl MathMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onpointerup")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onpointerup(&self) -> Option<&'static JsObject> {
+    pub fn onpointerup(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -62903,7 +62903,7 @@ impl MathMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onpointercancel")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onpointercancel(&self) -> Option<&'static JsObject> {
+    pub fn onpointercancel(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -62920,7 +62920,7 @@ impl MathMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onpointerout")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onpointerout(&self) -> Option<&'static JsObject> {
+    pub fn onpointerout(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -62937,7 +62937,7 @@ impl MathMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onpointerleave")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onpointerleave(&self) -> Option<&'static JsObject> {
+    pub fn onpointerleave(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -62954,7 +62954,7 @@ impl MathMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get ongotpointercapture")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ongotpointercapture(&self) -> Option<&'static JsObject> {
+    pub fn ongotpointercapture(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -62971,7 +62971,7 @@ impl MathMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onlostpointercapture")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onlostpointercapture(&self) -> Option<&'static JsObject> {
+    pub fn onlostpointercapture(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -62988,7 +62988,7 @@ impl MathMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onselectstart")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onselectstart(&self) -> Option<&'static JsObject> {
+    pub fn onselectstart(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -63005,7 +63005,7 @@ impl MathMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onselectionchange")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onselectionchange(&self) -> Option<&'static JsObject> {
+    pub fn onselectionchange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -63022,7 +63022,7 @@ impl MathMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get ontouchstart")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ontouchstart(&self) -> Option<&'static JsObject> {
+    pub fn ontouchstart(&self) -> Option<&'static dyn Fn(&TouchEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -63039,7 +63039,7 @@ impl MathMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get ontouchend")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ontouchend(&self) -> Option<&'static JsObject> {
+    pub fn ontouchend(&self) -> Option<&'static dyn Fn(&TouchEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -63056,7 +63056,7 @@ impl MathMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get ontouchmove")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ontouchmove(&self) -> Option<&'static JsObject> {
+    pub fn ontouchmove(&self) -> Option<&'static dyn Fn(&TouchEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -63073,7 +63073,7 @@ impl MathMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get ontouchcancel")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ontouchcancel(&self) -> Option<&'static JsObject> {
+    pub fn ontouchcancel(&self) -> Option<&'static dyn Fn(&TouchEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -63260,7 +63260,7 @@ impl MediaDevices {
     #[cfg_attr(rust_js, rust_js::link_name = "get ondevicechange")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ondevicechange(&self) -> Option<&'static JsObject> {
+    pub fn ondevicechange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -63555,7 +63555,7 @@ impl MediaKeySession {
     #[cfg_attr(rust_js, rust_js::link_name = "get onkeystatuseschange")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onkeystatuseschange(&self) -> Option<&'static JsObject> {
+    pub fn onkeystatuseschange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -63572,7 +63572,7 @@ impl MediaKeySession {
     #[cfg_attr(rust_js, rust_js::link_name = "get onmessage")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onmessage(&self) -> Option<&'static JsObject> {
+    pub fn onmessage(&self) -> Option<&'static dyn Fn(&MediaKeyMessageEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -63956,7 +63956,7 @@ impl MediaRecorder {
     #[cfg_attr(rust_js, rust_js::link_name = "get onstart")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onstart(&self) -> Option<&'static JsObject> {
+    pub fn onstart(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -63973,7 +63973,7 @@ impl MediaRecorder {
     #[cfg_attr(rust_js, rust_js::link_name = "get onstop")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onstop(&self) -> Option<&'static JsObject> {
+    pub fn onstop(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -63990,7 +63990,7 @@ impl MediaRecorder {
     #[cfg_attr(rust_js, rust_js::link_name = "get ondataavailable")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ondataavailable(&self) -> Option<&'static JsObject> {
+    pub fn ondataavailable(&self) -> Option<&'static dyn Fn(&BlobEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -64007,7 +64007,7 @@ impl MediaRecorder {
     #[cfg_attr(rust_js, rust_js::link_name = "get onpause")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onpause(&self) -> Option<&'static JsObject> {
+    pub fn onpause(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -64024,7 +64024,7 @@ impl MediaRecorder {
     #[cfg_attr(rust_js, rust_js::link_name = "get onresume")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onresume(&self) -> Option<&'static JsObject> {
+    pub fn onresume(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -64041,7 +64041,7 @@ impl MediaRecorder {
     #[cfg_attr(rust_js, rust_js::link_name = "get onerror")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onerror(&self) -> Option<&'static JsObject> {
+    pub fn onerror(&self) -> Option<&'static dyn Fn(&ErrorEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -64277,7 +64277,7 @@ impl MediaSource {
     #[cfg_attr(rust_js, rust_js::link_name = "get onsourceopen")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onsourceopen(&self) -> Option<&'static JsObject> {
+    pub fn onsourceopen(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -64294,7 +64294,7 @@ impl MediaSource {
     #[cfg_attr(rust_js, rust_js::link_name = "get onsourceended")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onsourceended(&self) -> Option<&'static JsObject> {
+    pub fn onsourceended(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -64311,7 +64311,7 @@ impl MediaSource {
     #[cfg_attr(rust_js, rust_js::link_name = "get onsourceclose")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onsourceclose(&self) -> Option<&'static JsObject> {
+    pub fn onsourceclose(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -64480,7 +64480,7 @@ impl MediaStream {
     #[cfg_attr(rust_js, rust_js::link_name = "get onaddtrack")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onaddtrack(&self) -> Option<&'static JsObject> {
+    pub fn onaddtrack(&self) -> Option<&'static dyn Fn(&MediaStreamTrackEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -64497,7 +64497,7 @@ impl MediaStream {
     #[cfg_attr(rust_js, rust_js::link_name = "get onremovetrack")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onremovetrack(&self) -> Option<&'static JsObject> {
+    pub fn onremovetrack(&self) -> Option<&'static dyn Fn(&MediaStreamTrackEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -64678,7 +64678,7 @@ impl MediaStreamTrack {
     #[cfg_attr(rust_js, rust_js::link_name = "get onmute")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onmute(&self) -> Option<&'static JsObject> {
+    pub fn onmute(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -64695,7 +64695,7 @@ impl MediaStreamTrack {
     #[cfg_attr(rust_js, rust_js::link_name = "get onunmute")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onunmute(&self) -> Option<&'static JsObject> {
+    pub fn onunmute(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -64720,7 +64720,7 @@ impl MediaStreamTrack {
     #[cfg_attr(rust_js, rust_js::link_name = "get onended")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onended(&self) -> Option<&'static JsObject> {
+    pub fn onended(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -64932,7 +64932,7 @@ impl MessagePort {
     #[cfg_attr(rust_js, rust_js::link_name = "get onclose")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onclose(&self) -> Option<&'static JsObject> {
+    pub fn onclose(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -64949,7 +64949,7 @@ impl MessagePort {
     #[cfg_attr(rust_js, rust_js::link_name = "get onmessage")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onmessage(&self) -> Option<&'static JsObject> {
+    pub fn onmessage(&self) -> Option<&'static dyn Fn(&MessageEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -64966,7 +64966,7 @@ impl MessagePort {
     #[cfg_attr(rust_js, rust_js::link_name = "get onmessageerror")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onmessageerror(&self) -> Option<&'static JsObject> {
+    pub fn onmessageerror(&self) -> Option<&'static dyn Fn(&MessageEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -65450,6 +65450,14 @@ impl Navigation {
         unreachable!()
     }
 
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Navigation/updateCurrentEntry)
+    #[cfg_attr(rust_js, rust_js::link_name = "updateCurrentEntry")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn update_current_entry(&self, options: NavigationUpdateCurrentEntryOptions<'_>) {
+        unreachable!()
+    }
+
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Navigation/transition)
     #[cfg_attr(rust_js, rust_js::link_name = "get transition")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
@@ -65494,7 +65502,7 @@ impl Navigation {
     #[cfg_attr(rust_js, rust_js::link_name = "reload")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn reload(&self) -> NavigationResult {
+    pub fn reload(&self, options: Option<NavigationReloadOptions<'_>>) -> NavigationResult {
         unreachable!()
     }
 
@@ -65502,7 +65510,7 @@ impl Navigation {
     #[cfg_attr(rust_js, rust_js::link_name = "traverseTo")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn traverse_to(&self, key: &str) -> NavigationResult {
+    pub fn traverse_to(&self, key: &str, options: Option<NavigationOptions<'_>>) -> NavigationResult {
         unreachable!()
     }
 
@@ -65510,7 +65518,7 @@ impl Navigation {
     #[cfg_attr(rust_js, rust_js::link_name = "back")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn back(&self) -> NavigationResult {
+    pub fn back(&self, options: Option<NavigationOptions<'_>>) -> NavigationResult {
         unreachable!()
     }
 
@@ -65518,7 +65526,7 @@ impl Navigation {
     #[cfg_attr(rust_js, rust_js::link_name = "forward")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn forward(&self) -> NavigationResult {
+    pub fn forward(&self, options: Option<NavigationOptions<'_>>) -> NavigationResult {
         unreachable!()
     }
 
@@ -65526,7 +65534,7 @@ impl Navigation {
     #[cfg_attr(rust_js, rust_js::link_name = "get onnavigate")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onnavigate(&self) -> Option<&'static JsObject> {
+    pub fn onnavigate(&self) -> Option<&'static dyn Fn(&NavigateEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -65543,7 +65551,7 @@ impl Navigation {
     #[cfg_attr(rust_js, rust_js::link_name = "get onnavigatesuccess")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onnavigatesuccess(&self) -> Option<&'static JsObject> {
+    pub fn onnavigatesuccess(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -65560,7 +65568,7 @@ impl Navigation {
     #[cfg_attr(rust_js, rust_js::link_name = "get onnavigateerror")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onnavigateerror(&self) -> Option<&'static JsObject> {
+    pub fn onnavigateerror(&self) -> Option<&'static dyn Fn(&ErrorEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -65577,7 +65585,7 @@ impl Navigation {
     #[cfg_attr(rust_js, rust_js::link_name = "get oncurrententrychange")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn oncurrententrychange(&self) -> Option<&'static JsObject> {
+    pub fn oncurrententrychange(&self) -> Option<&'static dyn Fn(&NavigationCurrentEntryChangeEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -65808,7 +65816,7 @@ impl NavigationHistoryEntry {
     #[cfg_attr(rust_js, rust_js::link_name = "get ondispose")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ondispose(&self) -> Option<&'static JsObject> {
+    pub fn ondispose(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -66080,7 +66088,7 @@ impl Notification {
     #[cfg_attr(rust_js, rust_js::link_name = "get onclick")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onclick(&self) -> Option<&'static JsObject> {
+    pub fn onclick(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -66097,7 +66105,7 @@ impl Notification {
     #[cfg_attr(rust_js, rust_js::link_name = "get onshow")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onshow(&self) -> Option<&'static JsObject> {
+    pub fn onshow(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -66114,7 +66122,7 @@ impl Notification {
     #[cfg_attr(rust_js, rust_js::link_name = "get onerror")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onerror(&self) -> Option<&'static JsObject> {
+    pub fn onerror(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -66131,7 +66139,7 @@ impl Notification {
     #[cfg_attr(rust_js, rust_js::link_name = "get onclose")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onclose(&self) -> Option<&'static JsObject> {
+    pub fn onclose(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -66348,7 +66356,7 @@ impl OfflineAudioContext {
     #[cfg_attr(rust_js, rust_js::link_name = "get oncomplete")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn oncomplete(&self) -> Option<&'static JsObject> {
+    pub fn oncomplete(&self) -> Option<&'static dyn Fn(&OfflineAudioCompletionEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -66457,7 +66465,7 @@ impl OffscreenCanvas {
     #[cfg_attr(rust_js, rust_js::link_name = "get oncontextlost")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn oncontextlost(&self) -> Option<&'static JsObject> {
+    pub fn oncontextlost(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -66474,7 +66482,7 @@ impl OffscreenCanvas {
     #[cfg_attr(rust_js, rust_js::link_name = "get oncontextrestored")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn oncontextrestored(&self) -> Option<&'static JsObject> {
+    pub fn oncontextrestored(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -68121,7 +68129,7 @@ impl PaymentRequest {
     #[cfg_attr(rust_js, rust_js::link_name = "get onshippingaddresschange")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onshippingaddresschange(&self) -> Option<&'static JsObject> {
+    pub fn onshippingaddresschange(&self) -> Option<&'static dyn Fn(&PaymentRequestUpdateEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -68138,7 +68146,7 @@ impl PaymentRequest {
     #[cfg_attr(rust_js, rust_js::link_name = "get onshippingoptionchange")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onshippingoptionchange(&self) -> Option<&'static JsObject> {
+    pub fn onshippingoptionchange(&self) -> Option<&'static dyn Fn(&PaymentRequestUpdateEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -68155,7 +68163,7 @@ impl PaymentRequest {
     #[cfg_attr(rust_js, rust_js::link_name = "get onpaymentmethodchange")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onpaymentmethodchange(&self) -> Option<&'static JsObject> {
+    pub fn onpaymentmethodchange(&self) -> Option<&'static dyn Fn(&PaymentMethodChangeEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -68324,7 +68332,7 @@ impl PaymentResponse {
     #[cfg_attr(rust_js, rust_js::link_name = "get onpayerdetailchange")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onpayerdetailchange(&self) -> Option<&'static JsObject> {
+    pub fn onpayerdetailchange(&self) -> Option<&'static dyn Fn(&PaymentRequestUpdateEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -68474,7 +68482,7 @@ pub mod performance_mark {
     #[cfg_attr(rust_js, rust_js::link_name = "new PerformanceMark")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new(mark_name: &str, mark_options: Option<PerformanceMarkOptions>) -> &'static PerformanceMark {
+    pub fn new(mark_name: &str, mark_options: Option<PerformanceMarkOptions<'_>>) -> &'static PerformanceMark {
         unreachable!()
     }
 
@@ -69310,7 +69318,7 @@ impl PermissionStatus {
     #[cfg_attr(rust_js, rust_js::link_name = "get onchange")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onchange(&self) -> Option<&'static JsObject> {
+    pub fn onchange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -69430,7 +69438,7 @@ impl PictureInPictureWindow {
     #[cfg_attr(rust_js, rust_js::link_name = "get onresize")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onresize(&self) -> Option<&'static JsObject> {
+    pub fn onresize(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -69583,7 +69591,7 @@ pub mod pop_state_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new PopStateEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new(r#type: &str, event_init_dict: Option<PopStateEventInit>) -> &'static PopStateEvent {
+    pub fn new(r#type: &str, event_init_dict: Option<PopStateEventInit<'_>>) -> &'static PopStateEvent {
         unreachable!()
     }
 
@@ -69803,7 +69811,7 @@ pub mod promise_rejection_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new PromiseRejectionEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new(r#type: &str, event_init_dict: PromiseRejectionEventInit) -> &'static PromiseRejectionEvent {
+    pub fn new(r#type: &str, event_init_dict: PromiseRejectionEventInit<'_>) -> &'static PromiseRejectionEvent {
         unreachable!()
     }
 
@@ -70140,7 +70148,7 @@ impl RTCDTMFSender {
     #[cfg_attr(rust_js, rust_js::link_name = "get ontonechange")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ontonechange(&self) -> Option<&'static JsObject> {
+    pub fn ontonechange(&self) -> Option<&'static dyn Fn(&RTCDTMFToneChangeEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -70333,7 +70341,7 @@ impl RTCDataChannel {
     #[cfg_attr(rust_js, rust_js::link_name = "get onopen")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onopen(&self) -> Option<&'static JsObject> {
+    pub fn onopen(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -70350,7 +70358,7 @@ impl RTCDataChannel {
     #[cfg_attr(rust_js, rust_js::link_name = "get onbufferedamountlow")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onbufferedamountlow(&self) -> Option<&'static JsObject> {
+    pub fn onbufferedamountlow(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -70367,7 +70375,7 @@ impl RTCDataChannel {
     #[cfg_attr(rust_js, rust_js::link_name = "get onerror")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onerror(&self) -> Option<&'static JsObject> {
+    pub fn onerror(&self) -> Option<&'static dyn Fn(&RTCErrorEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -70384,7 +70392,7 @@ impl RTCDataChannel {
     #[cfg_attr(rust_js, rust_js::link_name = "get onclosing")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onclosing(&self) -> Option<&'static JsObject> {
+    pub fn onclosing(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -70401,7 +70409,7 @@ impl RTCDataChannel {
     #[cfg_attr(rust_js, rust_js::link_name = "get onclose")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onclose(&self) -> Option<&'static JsObject> {
+    pub fn onclose(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -70426,7 +70434,7 @@ impl RTCDataChannel {
     #[cfg_attr(rust_js, rust_js::link_name = "get onmessage")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onmessage(&self) -> Option<&'static JsObject> {
+    pub fn onmessage(&self) -> Option<&'static dyn Fn(&MessageEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -70587,7 +70595,7 @@ impl RTCDtlsTransport {
     #[cfg_attr(rust_js, rust_js::link_name = "get onstatechange")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onstatechange(&self) -> Option<&'static JsObject> {
+    pub fn onstatechange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -70604,7 +70612,7 @@ impl RTCDtlsTransport {
     #[cfg_attr(rust_js, rust_js::link_name = "get onerror")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onerror(&self) -> Option<&'static JsObject> {
+    pub fn onerror(&self) -> Option<&'static dyn Fn(&RTCErrorEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -71034,7 +71042,7 @@ impl RTCIceTransport {
     #[cfg_attr(rust_js, rust_js::link_name = "get onstatechange")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onstatechange(&self) -> Option<&'static JsObject> {
+    pub fn onstatechange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -71051,7 +71059,7 @@ impl RTCIceTransport {
     #[cfg_attr(rust_js, rust_js::link_name = "get ongatheringstatechange")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ongatheringstatechange(&self) -> Option<&'static JsObject> {
+    pub fn ongatheringstatechange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -71068,7 +71076,7 @@ impl RTCIceTransport {
     #[cfg_attr(rust_js, rust_js::link_name = "get onselectedcandidatepairchange")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onselectedcandidatepairchange(&self) -> Option<&'static JsObject> {
+    pub fn onselectedcandidatepairchange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -71289,7 +71297,7 @@ impl RTCPeerConnection {
     #[cfg_attr(rust_js, rust_js::link_name = "get onnegotiationneeded")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onnegotiationneeded(&self) -> Option<&'static JsObject> {
+    pub fn onnegotiationneeded(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -71306,7 +71314,7 @@ impl RTCPeerConnection {
     #[cfg_attr(rust_js, rust_js::link_name = "get onicecandidate")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onicecandidate(&self) -> Option<&'static JsObject> {
+    pub fn onicecandidate(&self) -> Option<&'static dyn Fn(&RTCPeerConnectionIceEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -71323,7 +71331,7 @@ impl RTCPeerConnection {
     #[cfg_attr(rust_js, rust_js::link_name = "get onicecandidateerror")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onicecandidateerror(&self) -> Option<&'static JsObject> {
+    pub fn onicecandidateerror(&self) -> Option<&'static dyn Fn(&RTCPeerConnectionIceErrorEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -71340,7 +71348,7 @@ impl RTCPeerConnection {
     #[cfg_attr(rust_js, rust_js::link_name = "get onsignalingstatechange")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onsignalingstatechange(&self) -> Option<&'static JsObject> {
+    pub fn onsignalingstatechange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -71357,7 +71365,7 @@ impl RTCPeerConnection {
     #[cfg_attr(rust_js, rust_js::link_name = "get oniceconnectionstatechange")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn oniceconnectionstatechange(&self) -> Option<&'static JsObject> {
+    pub fn oniceconnectionstatechange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -71374,7 +71382,7 @@ impl RTCPeerConnection {
     #[cfg_attr(rust_js, rust_js::link_name = "get onicegatheringstatechange")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onicegatheringstatechange(&self) -> Option<&'static JsObject> {
+    pub fn onicegatheringstatechange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -71391,7 +71399,7 @@ impl RTCPeerConnection {
     #[cfg_attr(rust_js, rust_js::link_name = "get onconnectionstatechange")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onconnectionstatechange(&self) -> Option<&'static JsObject> {
+    pub fn onconnectionstatechange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -71473,7 +71481,7 @@ impl RTCPeerConnection {
     #[cfg_attr(rust_js, rust_js::link_name = "get ontrack")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ontrack(&self) -> Option<&'static JsObject> {
+    pub fn ontrack(&self) -> Option<&'static dyn Fn(&RTCTrackEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -71506,7 +71514,7 @@ impl RTCPeerConnection {
     #[cfg_attr(rust_js, rust_js::link_name = "get ondatachannel")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ondatachannel(&self) -> Option<&'static JsObject> {
+    pub fn ondatachannel(&self) -> Option<&'static dyn Fn(&RTCDataChannelEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -71981,7 +71989,7 @@ impl RTCSctpTransport {
     #[cfg_attr(rust_js, rust_js::link_name = "get onstatechange")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onstatechange(&self) -> Option<&'static JsObject> {
+    pub fn onstatechange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -72743,7 +72751,7 @@ impl RemotePlayback {
     #[cfg_attr(rust_js, rust_js::link_name = "get onconnecting")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onconnecting(&self) -> Option<&'static JsObject> {
+    pub fn onconnecting(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -72760,7 +72768,7 @@ impl RemotePlayback {
     #[cfg_attr(rust_js, rust_js::link_name = "get onconnect")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onconnect(&self) -> Option<&'static JsObject> {
+    pub fn onconnect(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -72777,7 +72785,7 @@ impl RemotePlayback {
     #[cfg_attr(rust_js, rust_js::link_name = "get ondisconnect")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ondisconnect(&self) -> Option<&'static JsObject> {
+    pub fn ondisconnect(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -74436,7 +74444,7 @@ impl ScreenOrientation {
     #[cfg_attr(rust_js, rust_js::link_name = "get onchange")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onchange(&self) -> Option<&'static JsObject> {
+    pub fn onchange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -74481,7 +74489,7 @@ impl ScriptProcessorNode {
     #[cfg_attr(rust_js, rust_js::link_name = "get onaudioprocess")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onaudioprocess(&self) -> Option<&'static JsObject> {
+    pub fn onaudioprocess(&self) -> Option<&'static dyn Fn(&AudioProcessingEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -74969,7 +74977,7 @@ impl SerialPort {
     #[cfg_attr(rust_js, rust_js::link_name = "get onconnect")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onconnect(&self) -> Option<&'static JsObject> {
+    pub fn onconnect(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -74986,7 +74994,7 @@ impl SerialPort {
     #[cfg_attr(rust_js, rust_js::link_name = "get ondisconnect")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ondisconnect(&self) -> Option<&'static JsObject> {
+    pub fn ondisconnect(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -75127,7 +75135,7 @@ impl ServiceWorker {
     #[cfg_attr(rust_js, rust_js::link_name = "get onstatechange")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onstatechange(&self) -> Option<&'static JsObject> {
+    pub fn onstatechange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -75144,7 +75152,7 @@ impl ServiceWorker {
     #[cfg_attr(rust_js, rust_js::link_name = "get onerror")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onerror(&self) -> Option<&'static JsObject> {
+    pub fn onerror(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -75237,7 +75245,7 @@ impl ServiceWorkerContainer {
     #[cfg_attr(rust_js, rust_js::link_name = "get oncontrollerchange")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn oncontrollerchange(&self) -> Option<&'static JsObject> {
+    pub fn oncontrollerchange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -75254,7 +75262,7 @@ impl ServiceWorkerContainer {
     #[cfg_attr(rust_js, rust_js::link_name = "get onmessage")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onmessage(&self) -> Option<&'static JsObject> {
+    pub fn onmessage(&self) -> Option<&'static dyn Fn(&MessageEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -75271,7 +75279,7 @@ impl ServiceWorkerContainer {
     #[cfg_attr(rust_js, rust_js::link_name = "get onmessageerror")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onmessageerror(&self) -> Option<&'static JsObject> {
+    pub fn onmessageerror(&self) -> Option<&'static dyn Fn(&MessageEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -75404,7 +75412,7 @@ impl ServiceWorkerRegistration {
     #[cfg_attr(rust_js, rust_js::link_name = "get onupdatefound")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onupdatefound(&self) -> Option<&'static JsObject> {
+    pub fn onupdatefound(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -75505,7 +75513,7 @@ impl ShadowRoot {
     #[cfg_attr(rust_js, rust_js::link_name = "get onslotchange")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onslotchange(&self) -> Option<&'static JsObject> {
+    pub fn onslotchange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -75670,7 +75678,7 @@ impl SharedWorker {
     #[cfg_attr(rust_js, rust_js::link_name = "get onerror")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onerror(&self) -> Option<&'static JsObject> {
+    pub fn onerror(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -75795,7 +75803,7 @@ impl SourceBuffer {
     #[cfg_attr(rust_js, rust_js::link_name = "get onupdatestart")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onupdatestart(&self) -> Option<&'static JsObject> {
+    pub fn onupdatestart(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -75812,7 +75820,7 @@ impl SourceBuffer {
     #[cfg_attr(rust_js, rust_js::link_name = "get onupdate")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onupdate(&self) -> Option<&'static JsObject> {
+    pub fn onupdate(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -75829,7 +75837,7 @@ impl SourceBuffer {
     #[cfg_attr(rust_js, rust_js::link_name = "get onupdateend")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onupdateend(&self) -> Option<&'static JsObject> {
+    pub fn onupdateend(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -75846,7 +75854,7 @@ impl SourceBuffer {
     #[cfg_attr(rust_js, rust_js::link_name = "get onerror")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onerror(&self) -> Option<&'static JsObject> {
+    pub fn onerror(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -75863,7 +75871,7 @@ impl SourceBuffer {
     #[cfg_attr(rust_js, rust_js::link_name = "get onabort")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onabort(&self) -> Option<&'static JsObject> {
+    pub fn onabort(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -75948,7 +75956,7 @@ impl SourceBufferList {
     #[cfg_attr(rust_js, rust_js::link_name = "get onaddsourcebuffer")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onaddsourcebuffer(&self) -> Option<&'static JsObject> {
+    pub fn onaddsourcebuffer(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -75965,7 +75973,7 @@ impl SourceBufferList {
     #[cfg_attr(rust_js, rust_js::link_name = "get onremovesourcebuffer")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onremovesourcebuffer(&self) -> Option<&'static JsObject> {
+    pub fn onremovesourcebuffer(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -76239,7 +76247,7 @@ impl SpeechSynthesis {
     #[cfg_attr(rust_js, rust_js::link_name = "get onvoiceschanged")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onvoiceschanged(&self) -> Option<&'static JsObject> {
+    pub fn onvoiceschanged(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -76548,7 +76556,7 @@ impl SpeechSynthesisUtterance {
     #[cfg_attr(rust_js, rust_js::link_name = "get onstart")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onstart(&self) -> Option<&'static JsObject> {
+    pub fn onstart(&self) -> Option<&'static dyn Fn(&SpeechSynthesisEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -76565,7 +76573,7 @@ impl SpeechSynthesisUtterance {
     #[cfg_attr(rust_js, rust_js::link_name = "get onend")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onend(&self) -> Option<&'static JsObject> {
+    pub fn onend(&self) -> Option<&'static dyn Fn(&SpeechSynthesisEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -76582,7 +76590,7 @@ impl SpeechSynthesisUtterance {
     #[cfg_attr(rust_js, rust_js::link_name = "get onerror")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onerror(&self) -> Option<&'static JsObject> {
+    pub fn onerror(&self) -> Option<&'static dyn Fn(&SpeechSynthesisErrorEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -76599,7 +76607,7 @@ impl SpeechSynthesisUtterance {
     #[cfg_attr(rust_js, rust_js::link_name = "get onpause")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onpause(&self) -> Option<&'static JsObject> {
+    pub fn onpause(&self) -> Option<&'static dyn Fn(&SpeechSynthesisEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -76616,7 +76624,7 @@ impl SpeechSynthesisUtterance {
     #[cfg_attr(rust_js, rust_js::link_name = "get onresume")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onresume(&self) -> Option<&'static JsObject> {
+    pub fn onresume(&self) -> Option<&'static dyn Fn(&SpeechSynthesisEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -76633,7 +76641,7 @@ impl SpeechSynthesisUtterance {
     #[cfg_attr(rust_js, rust_js::link_name = "get onmark")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onmark(&self) -> Option<&'static JsObject> {
+    pub fn onmark(&self) -> Option<&'static dyn Fn(&SpeechSynthesisEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -76650,7 +76658,7 @@ impl SpeechSynthesisUtterance {
     #[cfg_attr(rust_js, rust_js::link_name = "get onboundary")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onboundary(&self) -> Option<&'static JsObject> {
+    pub fn onboundary(&self) -> Option<&'static dyn Fn(&SpeechSynthesisEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -77384,7 +77392,7 @@ impl TaskSignal {
     #[cfg_attr(rust_js, rust_js::link_name = "get onprioritychange")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onprioritychange(&self) -> Option<&'static JsObject> {
+    pub fn onprioritychange(&self) -> Option<&'static dyn Fn(&TaskPriorityChangeEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -77766,7 +77774,7 @@ impl TextTrack {
     #[cfg_attr(rust_js, rust_js::link_name = "get oncuechange")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn oncuechange(&self) -> Option<&'static JsObject> {
+    pub fn oncuechange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -77883,7 +77891,7 @@ impl TextTrackCue {
     #[cfg_attr(rust_js, rust_js::link_name = "get onenter")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onenter(&self) -> Option<&'static JsObject> {
+    pub fn onenter(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -77900,7 +77908,7 @@ impl TextTrackCue {
     #[cfg_attr(rust_js, rust_js::link_name = "get onexit")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onexit(&self) -> Option<&'static JsObject> {
+    pub fn onexit(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -78004,7 +78012,7 @@ impl TextTrackList {
     #[cfg_attr(rust_js, rust_js::link_name = "get onchange")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onchange(&self) -> Option<&'static JsObject> {
+    pub fn onchange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -78021,7 +78029,7 @@ impl TextTrackList {
     #[cfg_attr(rust_js, rust_js::link_name = "get onaddtrack")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onaddtrack(&self) -> Option<&'static JsObject> {
+    pub fn onaddtrack(&self) -> Option<&'static dyn Fn(&TrackEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -78038,7 +78046,7 @@ impl TextTrackList {
     #[cfg_attr(rust_js, rust_js::link_name = "get onremovetrack")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onremovetrack(&self) -> Option<&'static JsObject> {
+    pub fn onremovetrack(&self) -> Option<&'static dyn Fn(&TrackEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -79122,7 +79130,7 @@ impl VideoDecoder {
     #[cfg_attr(rust_js, rust_js::link_name = "get ondequeue")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ondequeue(&self) -> Option<&'static JsObject> {
+    pub fn ondequeue(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -79239,7 +79247,7 @@ impl VideoEncoder {
     #[cfg_attr(rust_js, rust_js::link_name = "get ondequeue")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ondequeue(&self) -> Option<&'static JsObject> {
+    pub fn ondequeue(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -79736,7 +79744,7 @@ impl VisualViewport {
     #[cfg_attr(rust_js, rust_js::link_name = "get onresize")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onresize(&self) -> Option<&'static JsObject> {
+    pub fn onresize(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -79753,7 +79761,7 @@ impl VisualViewport {
     #[cfg_attr(rust_js, rust_js::link_name = "get onscroll")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onscroll(&self) -> Option<&'static JsObject> {
+    pub fn onscroll(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -79770,7 +79778,7 @@ impl VisualViewport {
     #[cfg_attr(rust_js, rust_js::link_name = "get onscrollend")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onscrollend(&self) -> Option<&'static JsObject> {
+    pub fn onscrollend(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -79909,7 +79917,7 @@ impl WakeLockSentinel {
     #[cfg_attr(rust_js, rust_js::link_name = "get onrelease")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onrelease(&self) -> Option<&'static JsObject> {
+    pub fn onrelease(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -85990,7 +85998,7 @@ impl WebSocket {
     #[cfg_attr(rust_js, rust_js::link_name = "get onopen")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onopen(&self) -> Option<&'static JsObject> {
+    pub fn onopen(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -86007,7 +86015,7 @@ impl WebSocket {
     #[cfg_attr(rust_js, rust_js::link_name = "get onerror")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onerror(&self) -> Option<&'static JsObject> {
+    pub fn onerror(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -86024,7 +86032,7 @@ impl WebSocket {
     #[cfg_attr(rust_js, rust_js::link_name = "get onclose")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onclose(&self) -> Option<&'static JsObject> {
+    pub fn onclose(&self) -> Option<&'static dyn Fn(&CloseEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -86065,7 +86073,7 @@ impl WebSocket {
     #[cfg_attr(rust_js, rust_js::link_name = "get onmessage")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onmessage(&self) -> Option<&'static JsObject> {
+    pub fn onmessage(&self) -> Option<&'static dyn Fn(&MessageEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -86491,7 +86499,7 @@ impl Worker {
     #[cfg_attr(rust_js, rust_js::link_name = "get onerror")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onerror(&self) -> Option<&'static JsObject> {
+    pub fn onerror(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -86508,7 +86516,7 @@ impl Worker {
     #[cfg_attr(rust_js, rust_js::link_name = "get onmessage")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onmessage(&self) -> Option<&'static JsObject> {
+    pub fn onmessage(&self) -> Option<&'static dyn Fn(&MessageEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -86525,7 +86533,7 @@ impl Worker {
     #[cfg_attr(rust_js, rust_js::link_name = "get onmessageerror")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onmessageerror(&self) -> Option<&'static JsObject> {
+    pub fn onmessageerror(&self) -> Option<&'static dyn Fn(&MessageEvent) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -86782,7 +86790,7 @@ impl XMLHttpRequest {
     #[cfg_attr(rust_js, rust_js::link_name = "get onreadystatechange")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onreadystatechange(&self) -> Option<&'static JsObject> {
+    pub fn onreadystatechange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -86995,7 +87003,7 @@ impl XMLHttpRequestEventTarget {
     #[cfg_attr(rust_js, rust_js::link_name = "get onloadstart")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onloadstart(&self) -> Option<&'static JsObject> {
+    pub fn onloadstart(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -87012,7 +87020,7 @@ impl XMLHttpRequestEventTarget {
     #[cfg_attr(rust_js, rust_js::link_name = "get onprogress")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onprogress(&self) -> Option<&'static JsObject> {
+    pub fn onprogress(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -87029,7 +87037,7 @@ impl XMLHttpRequestEventTarget {
     #[cfg_attr(rust_js, rust_js::link_name = "get onabort")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onabort(&self) -> Option<&'static JsObject> {
+    pub fn onabort(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -87046,7 +87054,7 @@ impl XMLHttpRequestEventTarget {
     #[cfg_attr(rust_js, rust_js::link_name = "get onerror")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onerror(&self) -> Option<&'static JsObject> {
+    pub fn onerror(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -87063,7 +87071,7 @@ impl XMLHttpRequestEventTarget {
     #[cfg_attr(rust_js, rust_js::link_name = "get onload")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onload(&self) -> Option<&'static JsObject> {
+    pub fn onload(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -87080,7 +87088,7 @@ impl XMLHttpRequestEventTarget {
     #[cfg_attr(rust_js, rust_js::link_name = "get ontimeout")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ontimeout(&self) -> Option<&'static JsObject> {
+    pub fn ontimeout(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -87097,7 +87105,7 @@ impl XMLHttpRequestEventTarget {
     #[cfg_attr(rust_js, rust_js::link_name = "get onloadend")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onloadend(&self) -> Option<&'static JsObject> {
+    pub fn onloadend(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -89372,10 +89380,11 @@ pub struct CurrentUserDetailsOptions<'a> {
 
 /// The [`CustomEventInit`](https://developer.mozilla.org/docs/Web/API/CustomEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
-pub struct CustomEventInit {
+pub struct CustomEventInit<'a> {
     pub bubbles: Option<bool>,
     pub cancelable: Option<bool>,
     pub composed: Option<bool>,
+    pub detail: Option<&'a dyn IntoUnknown>,
 }
 
 /// The [`DelayOptions`](https://developer.mozilla.org/docs/Web/API/DelayOptions) dictionary: a JS object of these fields, a `None` one not given.
@@ -89636,6 +89645,7 @@ pub struct ErrorEventInit<'a> {
     pub filename: Option<&'a str>,
     pub lineno: Option<u32>,
     pub colno: Option<u32>,
+    pub error: Option<&'a dyn IntoUnknown>,
 }
 
 /// The [`EventInit`](https://developer.mozilla.org/docs/Web/API/EventInit) dictionary: a JS object of these fields, a `None` one not given.
@@ -90586,8 +90596,9 @@ pub struct MediaStreamTrackEventInit<'a> {
 }
 
 /// The [`MemoryDescriptor`](https://developer.mozilla.org/docs/Web/API/MemoryDescriptor) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
 pub struct MemoryDescriptor<'a> {
+    pub initial: &'a dyn IntoUnknown,
+    pub maximum: Option<&'a dyn IntoUnknown>,
     pub address: Option<&'a str>,
 }
 
@@ -90597,6 +90608,7 @@ pub struct MessageEventInit<'a> {
     pub bubbles: Option<bool>,
     pub cancelable: Option<bool>,
     pub composed: Option<bool>,
+    pub data: Option<&'a dyn IntoUnknown>,
     pub origin: Option<&'a str>,
     pub last_event_id: Option<&'a str>,
     pub source: Option<MessageEventSource<'a>>,
@@ -90693,6 +90705,7 @@ pub struct NavigateEventInit<'a> {
     pub signal: &'a AbortSignal,
     pub form_data: Option<&'a FormData>,
     pub download_request: Option<&'a str>,
+    pub info: Option<&'a dyn IntoUnknown>,
     #[cfg_attr(rust_js, rust_js::name = "hasUAVisualTransition")]
     pub has_ua_visual_transition: Option<bool>,
     pub source_element: Option<&'a Element>,
@@ -90719,7 +90732,27 @@ pub struct NavigationInterceptOptions<'a> {
 /// The [`NavigationNavigateOptions`](https://developer.mozilla.org/docs/Web/API/NavigationNavigateOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct NavigationNavigateOptions<'a> {
+    pub info: Option<&'a dyn IntoUnknown>,
+    pub state: Option<&'a dyn IntoUnknown>,
     pub history: Option<&'a str>,
+}
+
+/// The [`NavigationOptions`](https://developer.mozilla.org/docs/Web/API/NavigationOptions) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Default)]
+pub struct NavigationOptions<'a> {
+    pub info: Option<&'a dyn IntoUnknown>,
+}
+
+/// The [`NavigationReloadOptions`](https://developer.mozilla.org/docs/Web/API/NavigationReloadOptions) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Default)]
+pub struct NavigationReloadOptions<'a> {
+    pub info: Option<&'a dyn IntoUnknown>,
+    pub state: Option<&'a dyn IntoUnknown>,
+}
+
+/// The [`NavigationUpdateCurrentEntryOptions`](https://developer.mozilla.org/docs/Web/API/NavigationUpdateCurrentEntryOptions) dictionary: a JS object of these fields, a `None` one not given.
+pub struct NavigationUpdateCurrentEntryOptions<'a> {
+    pub state: &'a dyn IntoUnknown,
 }
 
 /// The [`NotificationOptions`](https://developer.mozilla.org/docs/Web/API/NotificationOptions) dictionary: a JS object of these fields, a `None` one not given.
@@ -90738,6 +90771,7 @@ pub struct NotificationOptions<'a> {
     pub renotify: Option<bool>,
     pub silent: Option<bool>,
     pub require_interaction: Option<bool>,
+    pub data: Option<&'a dyn IntoUnknown>,
     pub actions: Option<&'a [NotificationAction]>,
 }
 
@@ -90918,13 +90952,15 @@ pub struct PaymentValidationErrors<'a> {
 
 /// The [`PerformanceMarkOptions`](https://developer.mozilla.org/docs/Web/API/PerformanceMarkOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
-pub struct PerformanceMarkOptions {
+pub struct PerformanceMarkOptions<'a> {
+    pub detail: Option<&'a dyn IntoUnknown>,
     pub start_time: Option<f64>,
 }
 
 /// The [`PerformanceMeasureOptions`](https://developer.mozilla.org/docs/Web/API/PerformanceMeasureOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct PerformanceMeasureOptions<'a> {
+    pub detail: Option<&'a dyn IntoUnknown>,
     pub start: Option<StrOrNumber<'a>>,
     pub duration: Option<f64>,
     pub end: Option<StrOrNumber<'a>>,
@@ -91020,10 +91056,11 @@ pub struct PointerLockOptions {
 
 /// The [`PopStateEventInit`](https://developer.mozilla.org/docs/Web/API/PopStateEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
-pub struct PopStateEventInit {
+pub struct PopStateEventInit<'a> {
     pub bubbles: Option<bool>,
     pub cancelable: Option<bool>,
     pub composed: Option<bool>,
+    pub state: Option<&'a dyn IntoUnknown>,
     #[cfg_attr(rust_js, rust_js::name = "hasUAVisualTransition")]
     pub has_ua_visual_transition: Option<bool>,
 }
@@ -91048,11 +91085,12 @@ pub struct ProgressEventInit {
 }
 
 /// The [`PromiseRejectionEventInit`](https://developer.mozilla.org/docs/Web/API/PromiseRejectionEventInit) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
-pub struct PromiseRejectionEventInit {
+pub struct PromiseRejectionEventInit<'a> {
     pub bubbles: Option<bool>,
     pub cancelable: Option<bool>,
     pub composed: Option<bool>,
+    pub promise: &'a dyn IntoUnknown,
+    pub reason: Option<&'a dyn IntoUnknown>,
 }
 
 /// The [`PublicKeyCredentialCreationOptionsJSON`](https://developer.mozilla.org/docs/Web/API/PublicKeyCredentialCreationOptionsJSON) dictionary: a JS object of these fields, a `None` one not given.
@@ -91161,6 +91199,7 @@ pub struct RequestInit<'a> {
     pub signal: Option<&'a AbortSignal>,
     pub duplex: Option<&'a str>,
     pub priority: Option<&'a str>,
+    pub window: Option<&'a dyn IntoUnknown>,
 }
 
 /// The [`ResizeObserverOptions`](https://developer.mozilla.org/docs/Web/API/ResizeObserverOptions) dictionary: a JS object of these fields, a `None` one not given.

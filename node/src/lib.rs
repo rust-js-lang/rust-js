@@ -80,9 +80,10 @@ impl CallSite {
         unreachable!()
     }
 
-    /// `callSite.getFunction()`: its function, `None` in strict mode, as a function JS gives is an object.
+    /// `callSite.getFunction()`: its function, `None` in strict mode, of
+    /// whatever it takes, TypeScript's `Function` (ADR 0653).
     #[cfg_attr(rust_js, rust_js::link_name = "getFunction")]
-    pub fn get_function(&self) -> Option<&'static JsObject> {
+    pub fn get_function(&self) -> Option<&'static dyn Fn()> {
         unreachable!()
     }
 

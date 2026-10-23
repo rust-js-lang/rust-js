@@ -805,7 +805,9 @@ export function each(items, f) {
 ```
 
 - **A closure, an `fn` pointer, a `dyn Fn` and an `impl Fn` are a JS
-  function**, an arrow where it's made.
+  function**, an arrow where it's made. One JS gives is a `&'static dyn
+  Fn` of its signature, and `std::ptr::eq` of two is `===`
+  ([ADR 0653](../../decisions/0653-a-js-function-value-is-a-dyn-fn-of-its-signature.md)).
 - **A `dyn Trait` is `{ value, impl }`**: the value, and its impl's
   dictionary of methods ([ADR 0049](../../decisions/0049-traits-and-generics.md)).
 

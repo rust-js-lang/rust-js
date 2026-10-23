@@ -175,6 +175,12 @@ impl<'c, 'q, 'a, 'tcx> Finder<'c, 'q, 'a, 'tcx> {
                     let placed = match parent.map(|p| &self.thir[p].kind) {
                         None => self.lets.contains_key(&child),
                         Some(ExprKind::Call { args, .. }) => args.contains(&child),
+                        // A block's value, `{ let r = r.clone(); move || *r }`, made
+                        // for a `let`: what it took is the block's, seen where the
+                        // `let` is.
+                        Some(ExprKind::Block { block }) if self.thir[*block].expr == Some(child) => {
+                            self.block_for_let(parent.expect("a block"))
+                        }
                         _ => false,
                     };
                     // One its maker gives back or makes a `dyn Fn` carries its drop (ADRs
@@ -204,6 +210,25 @@ impl<'c, 'q, 'a, 'tcx> Finder<'c, 'q, 'a, 'tcx> {
             }
             _ => {}
         }
+    }
+
+    /// Whether the block `block`, an expression being walked, is a `let`'s
+    /// value, as it is or through the scopes around it.
+    fn block_for_let(&self, block: ExprId) -> bool {
+        let Some(at) = self.stack.iter().rposition(|&e| e == block) else {
+            return false;
+        };
+        let mut child = block;
+        for &parent in self.stack[..at].iter().rev() {
+            if self.lets.contains_key(&child) {
+                return true;
+            }
+            match self.thir[parent].kind {
+                ExprKind::Scope { .. } | ExprKind::Use { .. } => child = parent,
+                _ => return false,
+            }
+        }
+        self.lets.contains_key(&child)
     }
 
     /// Whether a call of `callee`, a function's type, may drop a closure

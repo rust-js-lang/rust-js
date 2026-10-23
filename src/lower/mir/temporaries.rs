@@ -414,6 +414,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // `lm_get_mut(i).unwrap().1`, made there once.
             Value::Ref(ref place) if let Some(cell) = self.held_cell(place) => cell,
             Value::Ref(place) if fixed_place(&place) => Expr::handle(place),
+            // A field or an item of an object reached another way, `$index(v,
+            // 0)[0]` of `&mut v[0].0`: a handle on it, `$handleOn`, the object
+            // reached once, where it's borrowed, the same while it lasts.
+            Value::Ref(Expr {
+                kind: js::ExprKind::Member(object, field),
+                ..
+            }) => Expr::call_helper("$handleOn", vec![*object, Expr::str(&field)]),
+            Value::Ref(Expr {
+                kind: js::ExprKind::Index(object, key),
+                ..
+            }) if key.is_constant() || matches!(key.kind, js::ExprKind::Var(_)) => {
+                Expr::call_helper("$handleOn", vec![*object, *key])
+            }
             // Of what a generic `Option`'s `Some` holds, `$someValue(o)`: a
             // handle that reads it so and writes `o` a `Some`, given a handle
             // on `o` (ADR 0051).

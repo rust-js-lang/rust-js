@@ -61,3 +61,14 @@ a `T` is `TAdd.add(a, b)`.
 - **Generic `Into` is in** (`generic_into`): `impl Into<String>` of a `&str`,
   a `String` and a `char`, the crate's `From`, of a type to itself, and
   widening to `i64`.
+
+## Amendment: `PartialOrd<u32>` and `PartialEq<u32>` in generic code
+
+`x <= 3u32` in code bounded by `T: PartialOrd<u32>` was refused (#120):
+only the crate's own impl of a comparison with another type was called.
+Of a type parameter, it's its caller's impl, the dictionary's
+`partialCmp`, against 0. And a dictionary of `PartialEq<u32>` or
+`PartialOrd<u32>` of a struct was made as one of the struct with itself,
+`(a, b) => $cmp(a[0], b[0])`, wherever its impl was the crate's own of
+another type: it's the impl's, never synthesized, so `Cents(300) == 3`
+asks the crate's `eq`. Held by `test/corpus/generic_other_type_compare.rs`.
