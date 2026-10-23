@@ -464,9 +464,14 @@ fn inlined_of(body: &mut Vec<Stmt>, hints: &Hints) {
     let changed = changing(body);
     let set = js::Writes::of(body).by_closures();
     let paired = paired_temporaries(body);
-    js::statement_lists(body, &mut |s| {
-        inlined(s, &changed, &set, hints.plain, hints.captured, &paired)
-    });
+    let facts = MoveFacts {
+        changing: &changed,
+        set: &set,
+        plain: hints.plain,
+        captured: hints.captured,
+        paired: &paired,
+    };
+    js::statement_lists(body, &mut |s| inlined(s, &facts));
 }
 
 /// How many times each name is mentioned.

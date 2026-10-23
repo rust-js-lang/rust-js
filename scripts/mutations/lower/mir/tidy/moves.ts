@@ -1,0 +1,86 @@
+// Mutations of src/lower/mir/tidy/moves.rs (ADR 0093): a temporary's
+// value moved where what the program does would change.
+import type { Mutation } from "../../../../mutations";
+
+export const mutations: Mutation[] = [
+  {
+    name: "mir-tidy-captured-kept",
+    breaks: "what an element made before a branch reads stays a `const className = cn(…)`, not read where it's written",
+    file: "src/lower/mir/tidy/moves.rs",
+    find: "    if !is_temporary(name) && !element {\n",
+    replace: "    if !is_temporary(name) {\n",
+    tests: ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"],
+  },
+  {
+    name: "mir-tidy-element-read-held",
+    breaks: "what an element made ahead of a branch reads stays a `const` where elements before it come first, `className$1`",
+    file: "src/lower/mir/tidy/moves.rs",
+    find: "        true if element => {\n",
+    replace: "        true if false && element => {\n",
+    tests: ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"],
+  },
+  {
+    name: "mir-tidy-inlined-no-backtrack",
+    breaks: "of temporaries one after another, only the last is read where it's read, `cn(_8, _14, x)`",
+    file: "src/lower/mir/tidy/moves.rs",
+    find: "        i = i.saturating_sub(1);\n",
+    replace: "",
+    tests: ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"],
+  },
+  {
+    name: "mir-tidy-inlined-not-past",
+    breaks: "a temporary is read in place only by the statement right after it, `const _34 = formatted; const args$1 = args;` kept",
+    file: "src/lower/mir/tidy/moves.rs",
+    find: "    if !past {\n",
+    replace: "    if !past || at > 0 {\n",
+    tests: ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"],
+  },
+  {
+    "name": "target-root-not-inlined",
+    "breaks": "`const _25 = ref.current; _25[k] = v` stays, not `ref.current[k] = v` (and no `??=` of it)",
+    "file": "src/lower/mir/tidy/moves.rs",
+    "find": "                (true, true) => Some(Read::Target),\n",
+    "replace": "                (true, true) => None,\n",
+    "tests": ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"]
+  },
+  {
+    "name": "mir-tidy-past-borrow-blocks",
+    "breaks": "a chain stays a `const _4` ahead of a callback's borrow, `const list$1 = list;`, not the array's own `forEach`",
+    "file": "src/lower/mir/tidy/moves.rs",
+    "find": "    if !past {\n",
+    "replace": "    if !past || (acts && at > 0) {\n",
+    "tests": ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"]
+  },
+  {
+    "name": "mir-tidy-guarded-read-blocked",
+    "breaks": "a value made where its test holds isn't read where that test holds, `const className$2 = error != null ? cn(..) : undefined` kept",
+    "file": "src/lower/mir/tidy/moves.rs",
+    "find": "            if guard.is_some_and(|g| same_test(a, g))",
+    "replace": "            if false && guard.is_some_and(|g| same_test(a, g))",
+    "tests": ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"]
+  },
+  {
+    "name": "mir-pure-value-held-past-calls",
+    "breaks": "what does nothing, of a `let` no closure sets, `showToc && toc.length !== 0`, is held ahead of the calls before its read",
+    "file": "src/lower/mir/tidy/moves.rs",
+    "find": "unchanged_by_calls || !e.has_effects()",
+    "replace": "!e.has_effects()",
+    "tests": ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"]
+  },
+  {
+    "name": "inlined-pure-not-past-statements",
+    "breaks": "what does nothing, of variables no statement between assigns, `version === \"Canary\"`, stays held before a loop",
+    "file": "src/lower/mir/tidy/moves.rs",
+    "find": "\n        || (unchanged_by_calls && reads.iter().all(|v| !assigns(&rest[..at], v)));",
+    "replace": ";",
+    "tests": ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"]
+  },
+  {
+    "name": "jsx-key-read-in-written-order",
+    "breaks": "a `key` that does something is read in place, made after the children by JS's JSX runtime, `[1, 3, 2]`",
+    "file": "src/lower/mir/tidy/moves.rs",
+    "find": "                && let Some(found) = leads(key, name, guard, passes)\n",
+    "replace": "                && false\n                && let Some(found) = leads(key, name, guard, passes)\n",
+    "tests": ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"]
+  },
+];
