@@ -59,3 +59,18 @@ what it says, and nothing else.**
   added to `moved`, and a test of its `Why` beside it.
 - `tidy/bindings.rs`, which held it, keeps the declarations, aliases and
   temporaries' names, under its cap.
+
+## Amendment: two arms as one assignment, decided apart too
+
+A second review (2026-10-24) found `branch_values` as `inlined` was: the
+arms' shape, why they may be one value, which reads better, which comes
+first and the rewrite, one guard of one `match` arm. **`one_assignment`
+decides whether `if (t) { x = a; } else { x = b; }` is `x = t ? a : b;`,
+and gives what that takes**: the target, each arm's value placed where its
+arm is, and whether the `else`'s comes first. `branch_values` writes it,
+and nothing else. The unit test `one_assignment_of_two_arms` pins each
+reason beside the case it refuses: two variables, an arm that does more,
+each adding to it, a conditional of more branches but a temporary's, the
+function's result with an arm of nothing, and a `switch`'s arms; and a
+test that does something, which is evaluated once either way. The JS is
+the same, byte for byte.

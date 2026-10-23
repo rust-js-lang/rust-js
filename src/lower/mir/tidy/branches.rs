@@ -282,37 +282,13 @@ pub(super) fn branch_values(
                 StmtKind::If(test.clone(), then.clone(), Some(vec![chained]))
             }
             StmtKind::If(test, ref then, Some(ref otherwise))
-                if let Some((x, yes)) = assigned_only(then)
-                    && let Some((y, no)) = assigned_only(otherwise)
-                    && x == y
-                    // Not one of more branches, which reads best as they are.
-                    // A temporary's, an `if` the program wrote as a value, is one.
-                    && ((small(yes) && small(no)) || is_temporary(x))
-                    // The function's, as `returned_values` gives it.
-                    && (x != result || folds_into_return(yes, no))
-                    // Nor each adding to it, `out += a`, as written.
-                    && !(updates(x, yes) && updates(x, no))
-                    // Nor a `switch`'s arms (ADR 0629).
-                    && !switched(&test, span, switches) =>
+                if let Some(one) = one_assignment(&test, (then, otherwise), span, (result, switches)) =>
             {
-                // The value the program wrote first, first: `a || b ? x : y` of
-                // `if a || b { x } else { y }` MIR tests `!a && !b` of.
-                // A chain's next test in the `else` whichever comes first, as one
-                // is written: `a === "x" ? y : a === "z" ? .. : ..`, a match's arms.
-                let no_first = match (
-                    matches!(yes.kind, ExprKind::Cond(..)),
-                    matches!(no.kind, ExprKind::Cond(..)),
-                ) {
-                    (true, false) => true,
-                    (false, true) => false,
-                    _ => matches!((first_written(then), first_written(otherwise)), (Some(t), Some(o)) if o < t),
+                let value = match one.no_first {
+                    true => conditional(test.negated_test(), one.no, one.yes, booleans),
+                    false => conditional(test, one.yes, one.no, booleans),
                 };
-                let (yes, no) = (spanned(yes, then[0].span), spanned(no, otherwise[0].span));
-                let value = match no_first {
-                    true => conditional(test.clone().negated_test(), no, yes, booleans),
-                    false => conditional(test.clone(), yes, no, booleans),
-                };
-                StmtKind::Assign(Expr::var(x), value)
+                StmtKind::Assign(Expr::var(&one.target), value)
             }
             // `l: { if (!a) { if (!b) { s; break l; } } t }`, `||`'s: `if (a ||
             // b) { t } else { s }`, where nothing else breaks to `l`; and `l:
@@ -524,6 +500,58 @@ pub(super) fn small(e: &Expr) -> bool {
 /// Whether `value`, given `x`, is `x` changed, `x + a`: `x += a`.
 pub(super) fn updates(x: &str, value: &Expr) -> bool {
     matches!(&value.kind, ExprKind::Binary(_, of, _) if matches!(&of.kind, ExprKind::Var(v) if v == x))
+}
+
+/// `if (test) { x = yes; } else { x = no; }` as one assignment, `x = test ?
+/// yes : no;`: what it assigns, each arm's value placed where its arm is,
+/// and whether the `else`'s comes first. The one place that says whether
+/// two arms are one value (`branch_values` writes what it says).
+pub(super) struct OneAssignment {
+    pub(super) target: String,
+    pub(super) yes: Expr,
+    pub(super) no: Expr,
+    pub(super) no_first: bool,
+}
+
+/// Whether the arms of an `if` of `test`, at `span`, are one assignment,
+/// and how: both assign one variable alone; not of more branches, which
+/// read best as they are, but where it's a temporary's, an `if` the
+/// program wrote as a value; the function's result only where it folds
+/// into its `return` (`returned_values`); not each adding to it, `out +=
+/// a`, as written; nor a `switch`'s arms (ADR 0629). The value the program
+/// wrote first comes first: `a || b ? x : y` of `if a || b { x } else { y }`
+/// MIR tests `!a && !b` of, and a chain's next test in the `else`
+/// whichever comes first, as a match's arms are written.
+pub(super) fn one_assignment(
+    test: &Expr,
+    (then, otherwise): (&[Stmt], &[Stmt]),
+    span: js::Span,
+    (result, switches): (&str, &[Switch]),
+) -> Option<OneAssignment> {
+    let (x, yes) = assigned_only(then)?;
+    let (y, no) = assigned_only(otherwise)?;
+    let one = x == y
+        && ((small(yes) && small(no)) || is_temporary(x))
+        && (x != result || folds_into_return(yes, no))
+        && !(updates(x, yes) && updates(x, no))
+        && !switched(test, span, switches);
+    if !one {
+        return None;
+    }
+    let no_first = match (
+        matches!(yes.kind, ExprKind::Cond(..)),
+        matches!(no.kind, ExprKind::Cond(..)),
+    ) {
+        (true, false) => true,
+        (false, true) => false,
+        _ => matches!((first_written(then), first_written(otherwise)), (Some(t), Some(o)) if o < t),
+    };
+    Some(OneAssignment {
+        target: x.to_string(),
+        yes: spanned(yes, then[0].span),
+        no: spanned(no, otherwise[0].span),
+        no_first,
+    })
 }
 
 /// The variable `stmts` only assign, and what to: `x = a;`.

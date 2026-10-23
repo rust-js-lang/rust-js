@@ -452,6 +452,86 @@ mod tests {
         StmtKind::Expr(Expr::call(Expr::var(f), Vec::new())).at(js::Span::NONE)
     }
 
+    fn assign(x: &str, value: Expr) -> Stmt {
+        StmtKind::Assign(Expr::var(x), value).at(js::Span::NONE)
+    }
+
+    /// Two arms that assign one variable are one assignment of a
+    /// conditional; each reason they aren't, beside the case it refuses
+    /// (`branches::one_assignment`).
+    #[test]
+    fn one_assignment_of_two_arms() {
+        use super::branches::one_assignment;
+        let none = js::Span::NONE;
+        let one = |then: Vec<Stmt>, otherwise: Vec<Stmt>, test: &Expr| {
+            one_assignment(test, (&then, &otherwise), none, ("_0", &[])).map(|one| one.target)
+        };
+        let c = Expr::var("c");
+        // Accepted: one variable, each arm a value.
+        assert_eq!(
+            one(vec![assign("x", Expr::num(1))], vec![assign("x", Expr::num(2))], &c),
+            Some("x".into())
+        );
+        // A test that does something is evaluated once either way.
+        let called = Expr::call(Expr::var("ready"), Vec::new());
+        assert!(
+            one(
+                vec![assign("x", Expr::num(1))],
+                vec![assign("x", Expr::num(2))],
+                &called
+            )
+            .is_some()
+        );
+        // Refused: two variables.
+        assert_eq!(
+            one(vec![assign("x", Expr::num(1))], vec![assign("y", Expr::num(2))], &c),
+            None
+        );
+        // Refused: an arm that does more than assign.
+        assert_eq!(
+            one(
+                vec![call("f"), assign("x", Expr::num(1))],
+                vec![assign("x", Expr::num(2))],
+                &c
+            ),
+            None
+        );
+        // Refused: each adding to it, as written, `x = x + 1`.
+        let add = |n| Expr::bin(Op::Add, Expr::var("x"), Expr::num(n));
+        assert_eq!(one(vec![assign("x", add(1))], vec![assign("x", add(2))], &c), None);
+        // Refused: an arm that's a conditional, of more branches, but of a temporary.
+        let cond = Expr::cond(Expr::var("d"), Expr::num(1), Expr::num(2));
+        assert_eq!(
+            one(vec![assign("x", cond.clone())], vec![assign("x", Expr::num(3))], &c),
+            None
+        );
+        assert!(one(vec![assign("_4", cond)], vec![assign("_4", Expr::num(3))], &c).is_some());
+        // Refused: the function's result where an arm gives nothing.
+        assert_eq!(
+            one(
+                vec![assign("_0", Expr::num(1))],
+                vec![assign("_0", Expr::undefined())],
+                &c
+            ),
+            None
+        );
+        // Refused: a `switch`'s arms, where the test is one's pattern (ADR 0629).
+        let at = js::Span { lo: 10, hi: 20 };
+        let switches = [super::super::hints::Switch {
+            span: js::Span { lo: 0, hi: 100 },
+            arms: vec![super::super::hints::SwitchArm {
+                span: at,
+                pattern: at,
+                guard: None,
+                constants: Vec::new(),
+            }],
+        }];
+        let then = [assign("x", Expr::num(1))];
+        let otherwise = [assign("x", Expr::num(2))];
+        assert!(one_assignment(&c, (&then, &otherwise), at, ("_0", &switches)).is_none());
+        assert!(one_assignment(&c, (&then, &otherwise), none, ("_0", &switches)).is_some());
+    }
+
     /// What finishes a body, after the stages that tidy it, in the order it
     /// ran when it was a function of its own, `named`: the last passes
     /// `--tidy-until` may stop after, and the contracts checked after them
