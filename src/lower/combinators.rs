@@ -800,8 +800,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Comb::BinarySearchByKey => {
                 let (key, f) = (next(), next());
                 let key = once(self, key, "key", out);
+                // `binary_search_by_key::<B, F>`'s `B`, after its owner's own:
+                // a slice's `T`, a deque's `T` and allocator.
                 let key_ty = generic_args
                     .types()
+                    .rev()
                     .nth(1)
                     .expect("`binary_search_by_key` has a key type");
                 let compare = self.cmp_fn(key_ty, false, span)?;
