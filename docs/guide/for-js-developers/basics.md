@@ -715,7 +715,9 @@ export function httpStatus(code) {
 `|` is several cases in one arm, `1..=5` a range, and `if` after a pattern
 a guard. A `match` of three cases or more, each constant of its patterns
 one and a last `_` one, each arm a constant or a `|` of them
-(a literal, a `const`, an enum's variant of no field) with no guard, and
+(a literal, a `const`, an enum's variant of no field, the registry's
+symbol, or a `Some` of them, [ADR
+0634](../../decisions/0634-a-registered-symbol-is-a-const.md)) with no guard, and
 at most a last `_`, is a `switch`: `|`'s constants are stacked `case`s, `_`
 is the `default`, left out where it does nothing, and each case ends in
 `break;` where it'd go on, in a block `{ .. }` where it declares a name.

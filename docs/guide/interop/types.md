@@ -42,6 +42,7 @@ from your crate and what a binding must be given.
 | `dyn Trait` | `{ value, impl }` | [Functions](#functions-and-trait-objects) |
 | a JS type, `struct X(PhantomData<JsObject>)` | the JS object | [JS values](#js-values-jsobject-and-unknown) |
 | `js::Unknown` | any JS value | [JS values](#js-values-jsobject-and-unknown) |
+| `js::SymbolFor` | the registry's symbol, `Symbol.for(key)` | [Symbols](#symbols) |
 
 Names follow one rule too: [every Rust name is camelCase in JS](#names).
 
@@ -879,6 +880,82 @@ export function same(a, b) {
 ```
 - `js::Json` is a JSON value, and `js::Dict<T>` a plain object of `T`s by
   name, TypeScript's `Record<string, T>`.
+
+## Symbols
+
+A symbol of JS's registry, `Symbol.for(key)`, is a `js::SymbolFor`: a
+value of its key, so a `const` holds one and a `match` names it, as
+React's tags are. Two are equal where their keys are, as `===` finds
+them; its key, `.0`, is `Symbol.keyFor(symbol)`. Any other symbol, one of
+its own, `js::symbol::new("id")`, or a well-known one,
+`js::symbol::iterator`, is a `&js::Symbol`
+([ADR 0634](../../decisions/0634-a-registered-symbol-is-a-const.md)).
+
+`js::SymbolFor::from_value(value)` reads a value of any shape as one:
+`None` of any other value. Matched against the registry's symbols, its
+patterns each a `Some` of them or `_`, it's the value itself, as no other
+value is one of them, and a `match` of three cases or more is a `switch`
+of it:
+
+```rust
+use js::{SymbolFor, Unknown};
+
+pub const REACT_FRAGMENT_TYPE: SymbolFor = SymbolFor("react.fragment");
+pub const REACT_PROFILER_TYPE: SymbolFor = SymbolFor("react.profiler");
+pub const REACT_MEMO_TYPE: SymbolFor = SymbolFor("react.memo");
+pub const REACT_LAZY_TYPE: SymbolFor = SymbolFor("react.lazy");
+
+pub fn name(ty: Option<&Unknown>) -> Option<&'static str> {
+    match SymbolFor::from_value(ty) {
+        Some(REACT_FRAGMENT_TYPE) => Some("Fragment"),
+        Some(REACT_PROFILER_TYPE) => Some("Profiler"),
+        _ => None,
+    }
+}
+
+pub fn is_lazy(ty: &Unknown) -> bool {
+    matches!(SymbolFor::from_value(js::get(ty, "$$typeof")), Some(REACT_LAZY_TYPE))
+}
+
+pub fn key(value: Option<&Unknown>) -> Option<&'static str> {
+    SymbolFor::from_value(value).map(|symbol| symbol.0)
+}
+```
+
+```js
+import { $symbolFor } from "@rust-js/runtime";
+
+export const REACT_FRAGMENT_TYPE = Symbol.for("react.fragment");
+export const REACT_PROFILER_TYPE = Symbol.for("react.profiler");
+export const REACT_MEMO_TYPE = Symbol.for("react.memo");
+export const REACT_LAZY_TYPE = Symbol.for("react.lazy");
+
+export function name(ty) {
+  switch (ty) {
+    case REACT_FRAGMENT_TYPE:
+      return "Fragment";
+    case REACT_PROFILER_TYPE:
+      return "Profiler";
+    default:
+      return;
+  }
+}
+
+export function isLazy(ty) {
+  return ty.$$typeof === REACT_LAZY_TYPE;
+}
+
+export function key(value) {
+  const symbol = $symbolFor(value);
+  return symbol != null ? Symbol.keyFor(symbol) : undefined;
+}
+```
+
+Where the program tells its `Some` from its `None`, a `None =>` arm or a
+`Some(symbol)` it binds, it's checked, `$symbolFor(value)`: the value
+where it's the registry's, `undefined` where not. `js::SymbolFor(key)`
+is the one way to make one; `js::symbol::r#for` is gone, an error that
+says so.
 
 ## Names
 

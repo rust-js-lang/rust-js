@@ -592,4 +592,20 @@ export const mutations: Mutation[] = [
     replace: "        let same = self.eq_values(Expr::var(\"a\"), Expr::var(\"b\"), (ty, ty), span, &mut body)?;",
     tests: ["test/corpus.test.ts", "-t", "^partial_eq_other_type.rs$"],
   },
+  {
+    name: "registered-symbol-key-tested",
+    breaks: "a pattern of the registry's symbol tests its key, `Symbol.keyFor(ty) === \"react.fragment\"`, which throws of a value not a symbol",
+    file: "src/lower/std_impls.rs",
+    find: "                if let Some(symbol) = super::representation::symbol_of_key(key) {\n",
+    replace: "                if let Some(symbol) = super::representation::symbol_of_key(key).filter(|_| false) {\n",
+    tests: ["test/lowering-symbols.test.ts", "-t", "a match of the registry's symbols"],
+  },
+  {
+    name: "registered-symbol-equal-by-key",
+    breaks: "`==` of two registered symbols compares them as structs, not by JS's `===`",
+    file: "src/lower/std_impls.rs",
+    find: "            || self.recognition().is_symbol_for(ty)\n            || self.is_string_like(ty)\n",
+    replace: "            || self.is_string_like(ty)\n",
+    tests: ["test/lowering-symbols.test.ts", "-t", "Symbol.for its key"],
+  },
 ];

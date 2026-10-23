@@ -780,9 +780,9 @@ pub fn make(immediate: bool) -> Box<dyn Fn()> {
 });
 
 // ADR 0619: a thread-local of a primitive, never written, keeps its name as a
-// const does, \`export const REACT_ELEMENT_TYPE = Symbol.for(..)\`, React's
-// symbols'; one of a function or an object, or a Cell, is a camelCase
-// variable.
+// const does, \`export const OWNER_SYMBOL = Symbol("owner")\`, a symbol of
+// its own (the registry's is a \`const\`, ADR 0634); one of a function or an
+// object, or a Cell, is a camelCase variable.
 test("a thread-local of a primitive is named as a constant", async () => {
   const dir = fixture("constant-thread-locals");
   writeFileSync(join(dir, "lib.rs"), `use std::cell::Cell;
@@ -790,14 +790,14 @@ test("a thread-local of a primitive is named as a constant", async () => {
 use js::Symbol;
 
 thread_local! {
-    pub static REACT_ELEMENT_TYPE: &'static Symbol = js::symbol::r#for("react.transitional.element");
+    pub static OWNER_SYMBOL: &'static Symbol = js::symbol::new("owner");
     pub static FRAME_YIELD_MS: f64 = js::math::random() * 0.0 + 5.0;
     pub static LOCAL_NOW: fn() -> f64 = js::date::now;
     pub static CLICK_COUNT: Cell<u32> = const { Cell::new(0) };
 }
 
-pub fn is_element(s: &Symbol) -> bool {
-    REACT_ELEMENT_TYPE.with(|t| std::ptr::eq(*t, s))
+pub fn is_owner(s: &Symbol) -> bool {
+    OWNER_SYMBOL.with(|t| std::ptr::eq(*t, s))
 }
 
 pub fn yield_ms() -> f64 {
@@ -806,12 +806,12 @@ pub fn yield_ms() -> f64 {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain('export const REACT_ELEMENT_TYPE = Symbol.for("react.transitional.element");');
+  expect(js).toContain('export const OWNER_SYMBOL = Symbol("owner");');
   expect(js).toContain("export const FRAME_YIELD_MS = ");
   expect(js).toContain("export const localNow = Date.now;");
   expect(js).toContain("export const clickCount = { value: 0 };");
   const lib = await import(join(dir, "lib.js"));
-  expect([lib.isElement(Symbol.for("react.transitional.element")), lib.yieldMs()]).toEqual([true, 5]);
+  expect([lib.isOwner(lib.OWNER_SYMBOL), lib.isOwner(Symbol("owner")), lib.yieldMs()]).toEqual([true, false, 5]);
 });
 
 // Two references to one field, `let a = &x.0; let b = &x.0;`: each its

@@ -581,4 +581,20 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/serde.test.ts", "-t", "changes to and from Null"],
   },
+  {
+    name: "registered-symbol-const-its-struct",
+    breaks: "a `const` of the registry's symbol is its key's array, `[\"react.fragment\"]`, not `Symbol.for(\"react.fragment\")`",
+    file: "src/lower/representation.rs",
+    find: "        return Some(symbol_for(const_js(tcx, key.try_to_value()?)?));\n",
+    replace: "        return Some(Expr::array(vec![const_js(tcx, key.try_to_value()?)?]));\n",
+    tests: ["test/lowering-symbols.test.ts", "-t", "a match of the registry's symbols"],
+  },
+  {
+    name: "registered-symbol-key-itself",
+    breaks: "the registry's symbol's key, `.0`, is the symbol, not `Symbol.keyFor(symbol)`",
+    file: "src/lower/representation.rs",
+    find: "            return symbol_key(base);\n",
+    replace: "            return base;\n",
+    tests: ["test/lowering-symbols.test.ts", "-t", "Symbol.for its key"],
+  },
 ];

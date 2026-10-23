@@ -27,7 +27,7 @@ pub use proxy::{ProxyHandler, RevocableProxy, proxy_handler};
 pub mod reflect;
 pub use reflect::{PropertyDescriptor, property_descriptor};
 pub mod symbol;
-pub use symbol::Symbol;
+pub use symbol::{Symbol, SymbolFor};
 mod typed_arrays;
 pub use typed_arrays::*;
 mod weak;

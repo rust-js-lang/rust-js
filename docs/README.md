@@ -551,7 +551,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0616 An import read only by a `const` is the import by that name](decisions/0616-an-import-read-by-a-const-is-it.md)
 - [0617 A parameter is written by its argument](decisions/0617-a-parameter-is-written-by-its-argument.md)
 - [0618 `Array.isArray` and `Object.getPrototypeOf` are the js crate's](decisions/0618-array-is-array-and-get-prototype-of.md)
-- [0619 A thread-local of a primitive is named as a constant](decisions/0619-a-primitive-thread-local-is-a-constant.md)
+- [0619 A thread-local of a primitive is named as a constant](decisions/0619-a-primitive-thread-local-is-a-constant.md) *(amended by 0634: the registry's symbol is a `const`)*
 - [0620 An `Option` a test says is there is written as it is](decisions/0620-an-option-a-test-says-is-there.md)
 - [0621 A comment before a macro's opening is its code's; one after a module's last code ends its JS](decisions/0621-comments-around-macros-and-at-a-modules-end.md)
 - [0622 A global binding a module names is its `const`](decisions/0622-a-global-binding-a-module-names-is-its-const.md)
@@ -560,11 +560,12 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0626 What a library hands a crate is what its items reach](decisions/0626-what-a-library-hands-a-crate.md)
 - [0627 A number literal keeps its base and its exponent](decisions/0627-a-number-literal-keeps-its-base-and-exponent.md)
 - [0628 A loop after a loop is after it](decisions/0628-a-loop-after-a-loop-is-after-it.md)
-- [0629 A `match` of constants is a `switch`](decisions/0629-a-match-of-constants-is-a-switch.md)
+- [0629 A `match` of constants is a `switch`](decisions/0629-a-match-of-constants-is-a-switch.md) *(amended by 0634: a `Some`'s constants and the registry's symbols are cases)*
 - [0630 A comment inside an expression is after the code before it](decisions/0630-a-comment-inside-an-expression.md)
 - [0631 A step of one is `++`](decisions/0631-a-step-of-one-is-plus-plus.md)
 - [0632 A JS string's `length` is below `u32::MAX`, and a counter below it doesn't wrap](decisions/0632-a-js-strings-length-is-below-u32-max.md)
 - [0633 A binding named through a module is read through it](decisions/0633-a-binding-named-through-a-module-is-read-through-it.md)
+- [0634 A registered symbol is a `const`, and a `match` of them a `switch`](decisions/0634-a-registered-symbol-is-a-const.md)
 - [0623 A copy std makes of a `Copy` value is a copy](decisions/0623-a-copy-std-makes-is-a-copy.md)
 - [0436 Every `dyn` that's a pair keeps its value's drop, `dyn Send` too](decisions/0436-every-dyn-keeps-its-drop.md)
 - [0437 A scope's drops on a panic are one `try { .. } finally { .. }`](decisions/0437-a-scopes-drops-are-one-finally.md)

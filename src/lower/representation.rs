@@ -463,6 +463,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // 0177, 0188, 0447), has none in JS.
         if self.is_std_wrapper(ty)
             || self.is_js_object(ty)
+            || self.recognition().is_symbol_for(ty)
             || self.recognition().is_path_like(ty)
             || Num::of(ty).is_some()
         {
@@ -496,6 +497,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 _ => 0,
             };
             return if i == held { base } else { Expr::undefined() };
+        }
+        // The registry's symbol's key (ADR 0634).
+        if self.recognition().is_symbol_for(ty) {
+            return symbol_key(base);
         }
         match (self.shape(ty), &base.kind) {
             // A part of `[a, b]` (a `match (a, b)` subject) is just `a`.
@@ -1054,6 +1059,16 @@ pub(super) fn const_js<'tcx>(tcx: TyCtxt<'tcx>, value: ty::Value<'tcx>) -> Optio
     if let Some(c) = char_value(value) {
         return Some(Expr::str(c.to_string()));
     }
+    // The registry's symbol, `Symbol.for("react.memo")`, of its key (ADR 0634).
+    if let ty::Adt(adt, _) = ty.kind()
+        && super::recognition::is_symbol_for_def(tcx, adt.did())
+    {
+        let ty::ValTreeKind::Branch(items) = &**value.valtree else {
+            return None;
+        };
+        let [key] = &items[..] else { return None };
+        return Some(symbol_for(const_js(tcx, key.try_to_value()?)?));
+    }
     // A `Discriminant`'s is its number, inside std's struct (ADR 0393).
     if super::recognition::is_discriminant_type(tcx, ty) {
         let leaf = innermost(value)?.try_to_leaf()?;
@@ -1235,6 +1250,36 @@ pub(super) fn variant_field(tcx: TyCtxt<'_>, variant: &ty::VariantDef, i: usize)
 /// An `Ordering` is -1, 0 or 1 (ADR 0036), its discriminant, which a JS
 /// comparator returns as it is.
 pub(super) use super::recognition::ordering_value;
+
+/// A `js::SymbolFor` of `key`, the registry's symbol, `Symbol.for(key)`
+/// (ADR 0634): the one way one is made, a constant's, a value's, a
+/// constructor's.
+pub(super) fn symbol_for(key: Expr) -> Expr {
+    Expr::call(Expr::member(Expr::var("Symbol"), "for"), vec![key])
+}
+
+/// A `js::SymbolFor`'s key, its `.0`: `Symbol.keyFor(symbol)` (ADR 0634).
+fn symbol_key(symbol: Expr) -> Expr {
+    Expr::call(Expr::member(Expr::var("Symbol"), "keyFor"), vec![symbol])
+}
+
+/// The symbol whose key `read` is, where it's a `js::SymbolFor`'s,
+/// `symbol_key`'s: what a test of its key against text compares instead,
+/// `symbol === Symbol.for(text)` (ADR 0634).
+pub(super) fn symbol_of_key(read: &Expr) -> Option<&Expr> {
+    match &read.kind {
+        js::ExprKind::Call(callee, args)
+            if matches!(&callee.kind, js::ExprKind::Member(object, name)
+                if name == "keyFor" && matches!(&object.kind, js::ExprKind::Var(v) if v == "Symbol")) =>
+        {
+            match &args[..] {
+                [symbol] => Some(symbol),
+                _ => None,
+            }
+        }
+        _ => None,
+    }
+}
 
 /// A `char` constant (ADR 0034).
 pub(super) fn char_value(value: ty::Value<'_>) -> Option<char> {

@@ -395,4 +395,12 @@ export const mutations: Mutation[] = [
     replace: "                    && false\n",
     tests: ["test/corpus.test.ts", "-t", "^ptr_eq_through_refs.rs$"],
   },
+  {
+    name: "registered-read-some-unknown",
+    breaks: "a value read as the registry's symbol, only tested against them, is tested for its `Some`, `if (ty != null) { switch (ty) { .. } }`",
+    file: "src/lower/mir/rvalues.rs",
+    find: "                if place.projection.is_empty() && state.options.registered.contains(&place.local) =>\n",
+    replace: "                if place.projection.is_empty() && state.options.registered.contains(&place.local) && false =>\n",
+    tests: ["test/lowering-symbols.test.ts", "-t", "a match of the registry's symbols"],
+  },
 ];

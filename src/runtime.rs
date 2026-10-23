@@ -287,6 +287,7 @@ helpers! {
     InsertAt,
     RemoveAt,
     Swap,
+    SymbolFor,
     Truncate,
     Dedup,
     DedupBy,
@@ -370,6 +371,7 @@ fn declared(source: &str) -> impl Iterator<Item = &str> {
 /// `$f64Max(a, b)`: a call of one does what its arguments do, and nothing
 /// else.
 const PURE: &[&str] = &[
+    "$symbolFor",
     "$pathEq",
     "$pathCmp",
     "$find",
@@ -759,6 +761,8 @@ impl Helper {
             // `v.remove(i)`: the item, and a panic past the end.
             Helper::RemoveAt => include_str!("runtime/remove_at.js"),
             Helper::Swap => include_str!("runtime/swap.js"),
+            // `js::SymbolFor::from_value(value)` (ADR 0634).
+            Helper::SymbolFor => include_str!("runtime/symbol_for.js"),
             Helper::Truncate => include_str!("runtime/truncate.js"),
             Helper::DedupBy => include_str!("runtime/dedup_by.js"),
             Helper::SwapRemove => include_str!("runtime/swap_remove.js"),

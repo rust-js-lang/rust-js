@@ -301,8 +301,10 @@ export function last() {
   module keeps its Rust name, `CACHE` beside `cache()`
   ([ADR 0579](../../decisions/0579-a-thread-local-is-named-as-a-variable.md)).
   One of a primitive, a number, text or a symbol, which nothing writes,
-  keeps its name as a constant does, `REACT_ELEMENT_TYPE`
-  ([ADR 0619](../../decisions/0619-a-primitive-thread-local-is-a-constant.md)).
+  keeps its name as a constant does, `OWNER_SYMBOL`
+  ([ADR 0619](../../decisions/0619-a-primitive-thread-local-is-a-constant.md));
+  the registry's symbol is a `const`, `js::SymbolFor`
+  ([Symbols](types.md#symbols)).
 - **A `let` if it's set, a `const` otherwise.**
 - **A `const` is a constant, named as written**, `MAX_RECENT`.
 - **It's the cell, `{ value }`,** where the cell itself is handed out,

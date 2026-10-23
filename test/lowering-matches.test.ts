@@ -431,7 +431,7 @@ pub fn object(x: Option<&js::Unknown>) -> bool {
   expect([lib.object(null), lib.object({}), lib.object(1)]).toEqual([false, true, false]);
 });
 
-test("a `match` of an `Option`'s strings from MIR is the `else if` chain a person writes", async () => {
+test("a `match` of an `Option`'s strings from MIR is the `switch` or `else if` chain a person writes", async () => {
   const dir = fixture("mir-option-string-match");
   writeFileSync(join(dir, "lib.rs"), `pub fn flagged(flag: Option<&str>, mut arg: String) -> String {
     match flag {
@@ -461,23 +461,34 @@ pub fn nested(flag: Option<&str>, v: &mut Vec<u32>) {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
   const js = readFileSync(join(dir, "mir.js"), "utf8");
+  // Of three cases or more, a `switch`, a `Some`'s constants its cases
+  // (ADRs 0629, 0634).
   expect(js).toContain(`export function flagged(flag, arg) {
-  if (flag === "s") {
-    arg += "";
-  } else if (flag === "d" || flag === "i") {
-    arg = $trim(arg);
-  } else if (flag === "f") {
-    arg = arg.toUpperCase();
+  switch (flag) {
+    case "s":
+      arg += "";
+      break;
+    case "d":
+    case "i":
+      arg = $trim(arg);
+      break;
+    case "f":
+      arg = arg.toUpperCase();
+      break;
   }
   return arg;
 }`);
   expect(js).toContain(`export function named(flag, v) {
-  if (flag === "s") {
-    v.push(1);
-  } else if (flag === "d") {
-    v.push(2);
-  } else {
-    v.push(3);
+  switch (flag) {
+    case "s":
+      v.push(1);
+      break;
+    case "d":
+      v.push(2);
+      break;
+    default:
+      v.push(3);
+      break;
   }
 }`);
   expect(js).toContain(`export function nested(flag, v) {

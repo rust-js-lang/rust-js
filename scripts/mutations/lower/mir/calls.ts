@@ -203,4 +203,20 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^assign_impl_on_number.rs$"],
   },
+  {
+    name: "registered-read-unchecked",
+    breaks: "a value read as the registry's symbol whose `Some` the program tells is the value itself, so a string is its `Some`",
+    file: "src/lower/mir/calls.rs",
+    find: "                match crate::lower::body_queries::registered_reads(tcx, self.thir).contains(&span) {\n",
+    replace: "                match true {\n",
+    tests: ["test/lowering-symbols.test.ts", "-t", "a read of one it tells is checked"],
+  },
+  {
+    name: "registered-read-checked",
+    breaks: "a value read as the registry's symbol only tested against them is checked, `switch ($symbolFor(type))`, not the value",
+    file: "src/lower/mir/calls.rs",
+    find: "                match crate::lower::body_queries::registered_reads(tcx, self.thir).contains(&span) {\n",
+    replace: "                match false {\n",
+    tests: ["test/lowering-symbols.test.ts", "-t", "a match of the registry's symbols"],
+  },
 ];

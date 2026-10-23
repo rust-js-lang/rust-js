@@ -145,6 +145,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if rustc_hir::find_attr!(tcx, def_id, RustcEiiForeignItem) {
             return Err(self.unsupported(span, "externally implementable items, `#[eii]`,"));
         }
+        // A value read as the registry's symbol (ADR 0634): itself where
+        // it's only tested against the registry's, `switch (type)`; else
+        // itself where it's one, `undefined` where not, `$symbolFor(value)`.
+        if crate::lower::recognition::is_symbol_for_read(tcx, def_id) {
+            let value = values.into_iter().next().expect("the value read");
+            return Ok(
+                match crate::lower::body_queries::registered_reads(tcx, self.thir).contains(&span) {
+                    true => value,
+                    false => Value::Expr(Expr::call_helper("$symbolFor", vec![self.value_expr(value, span)?])),
+                },
+            );
+        }
         match bindings::js_form(tcx, def_id) {
             bindings::JsForm::Jsx(tag) => {
                 let given = self.jsx_args(def_id, values, arg_tys, span, |cx, i, ty| match (tag.as_str(), i) {

@@ -546,20 +546,47 @@ pub(crate) fn jsx_given_props<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> (Ha
     (props, bases)
 }
 
-/// Each value a body's patterns test of a number or a `char`, by its type
-/// and bits, and the `const` they name it by: `Some(IMMEDIATE_PRIORITY)`
-/// where every pattern of it is that constant, `None` where one is written
-/// another way, a literal or another constant (ADR 0590).
-pub(super) fn constant_patterns<'tcx>(thir: &Thir<'tcx>) -> HashMap<(ty::Ty<'tcx>, u128), Option<DefId>> {
-    let mut found: HashMap<(ty::Ty<'tcx>, u128), Option<DefId>> = HashMap::new();
+/// A value a pattern tests, which a `const` may name (`constant_patterns`):
+/// a number's or a `char`'s, by its type and bits; or the registry's
+/// symbol's, `js::SymbolFor`'s, by its key (ADR 0634).
+#[derive(Clone, PartialEq, Eq, Hash)]
+pub(super) enum PatternValue<'tcx> {
+    Bits(ty::Ty<'tcx>, u128),
+    Key(String),
+}
+
+/// Each value a body's patterns test of a number, a `char` or the
+/// registry's symbol, and the `const` they name it by:
+/// `Some(IMMEDIATE_PRIORITY)` where every pattern of it is that constant,
+/// `None` where one is written another way, a literal or another constant
+/// (ADRs 0590, 0634).
+pub(super) fn constant_patterns<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    thir: &Thir<'tcx>,
+) -> HashMap<PatternValue<'tcx>, Option<DefId>> {
+    let mut found: HashMap<PatternValue<'tcx>, Option<DefId>> = HashMap::new();
     let mut of = |pattern: &Pat<'tcx>| {
         pattern.walk_always(|pat| {
-            if let PatKind::Constant { value } = &pat.kind
-                && (pat.ty.is_integral() || pat.ty.is_char())
-                && let Some(leaf) = value.valtree.try_to_leaf()
-            {
-                let named = pat.extra.as_ref().and_then(|extra| extra.expanded_const);
-                (found.entry((pat.ty, leaf.to_bits_unchecked())))
+            let named = pat.extra.as_ref().and_then(|extra| extra.expanded_const);
+            let value = match &pat.kind {
+                PatKind::Constant { value } if pat.ty.is_integral() || pat.ty.is_char() => value
+                    .valtree
+                    .try_to_leaf()
+                    .map(|leaf| PatternValue::Bits(pat.ty, leaf.to_bits_unchecked())),
+                // Its key's pattern, a string's, inside it.
+                PatKind::Leaf { subpatterns }
+                    if matches!(pat.ty.kind(), ty::Adt(adt, _)
+                    if super::recognition::is_symbol_for_def(tcx, adt.did())) =>
+                {
+                    match &subpatterns[..] {
+                        [key] => pattern_text(&key.pattern).map(PatternValue::Key),
+                        _ => None,
+                    }
+                }
+                _ => None,
+            };
+            if let Some(value) = value {
+                (found.entry(value))
                     .and_modify(|seen| *seen = seen.filter(|&d| Some(d) == named))
                     .or_insert(named);
             }
@@ -577,4 +604,86 @@ pub(super) fn constant_patterns<'tcx>(thir: &Thir<'tcx>) -> HashMap<(ty::Ty<'tcx
         }
     }
     found
+}
+
+/// Where each `js::SymbolFor::from_value(value)` is called, its `fn_span`,
+/// whose value the body only tests against the registry's symbols: what a
+/// `match`, a `matches!` or an `if let` compares, of patterns each `_` or a
+/// `Some` of them, `Some(REACT_MEMO_TYPE | REACT_LAZY_TYPE)`, binding
+/// nothing. There, no other value is one of them, so the value itself
+/// answers each as its `Some` would (ADR 0634).
+pub(super) fn registered_reads<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> HashSet<Span> {
+    let read = |mut e: ExprId| {
+        while let ExprKind::Scope { value: inner, .. } | ExprKind::Use { source: inner } = thir[e].kind {
+            e = inner;
+        }
+        match thir[e].kind {
+            ExprKind::Call { fun, fn_span, .. } => match *thir[fun].ty.kind() {
+                ty::FnDef(def_id, _) if super::recognition::is_symbol_for_read(tcx, def_id) => Some(fn_span),
+                _ => None,
+            },
+            _ => None,
+        }
+    };
+    (thir.exprs.iter())
+        .filter_map(|e| match e.kind {
+            ExprKind::Match {
+                scrutinee, ref arms, ..
+            } => {
+                let span = read(scrutinee)?;
+                (arms.iter())
+                    .all(|&arm| tests_registered(tcx, &thir[arm].pattern))
+                    .then_some(span)
+            }
+            ExprKind::Let { expr, ref pat } => tests_registered(tcx, pat).then_some(read(expr)?),
+            _ => None,
+        })
+        .collect()
+}
+
+/// Whether `pattern`, of an `Option<js::SymbolFor>`, is `_` or a `Some` of
+/// the registry's symbols, binding nothing (`registered_reads`).
+fn tests_registered<'tcx>(tcx: TyCtxt<'tcx>, pattern: &Pat<'tcx>) -> bool {
+    let symbol = |pat: &Pat<'tcx>| {
+        let mut each = true;
+        pat.walk_always(|p| {
+            each &= match &p.kind {
+                PatKind::Or { .. } | PatKind::Deref { .. } => true,
+                PatKind::Leaf { subpatterns } => {
+                    matches!(p.ty.kind(), ty::Adt(adt, _) if super::recognition::is_symbol_for_def(tcx, adt.did()))
+                        && matches!(&subpatterns[..], [key] if pattern_text(&key.pattern).is_some())
+                }
+                PatKind::Constant { .. } => p.ty.is_str(),
+                _ => false,
+            }
+        });
+        each
+    };
+    match &pattern.kind {
+        PatKind::Wild => true,
+        PatKind::Or { pats } => pats.iter().all(|p| tests_registered(tcx, p)),
+        PatKind::Variant {
+            adt_def, subpatterns, ..
+        } if tcx.is_lang_item(adt_def.did(), LangItem::Option) => {
+            matches!(&subpatterns[..], [some] if symbol(&some.pattern))
+        }
+        _ => false,
+    }
+}
+
+/// The text a pattern of a string, `"react.memo"`, is.
+fn pattern_text(pattern: &Pat<'_>) -> Option<String> {
+    match &pattern.kind {
+        PatKind::Deref { subpattern, .. } => pattern_text(subpattern),
+        PatKind::Constant { value } if pattern.ty.is_str() => {
+            let ty::ValTreeKind::Branch(bytes) = &*value.valtree else {
+                return None;
+            };
+            let bytes = (bytes.iter())
+                .map(|byte| Some(byte.try_to_value()?.try_to_leaf()?.to_u8()))
+                .collect::<Option<Vec<u8>>>()?;
+            String::from_utf8(bytes).ok()
+        }
+        _ => None,
+    }
 }

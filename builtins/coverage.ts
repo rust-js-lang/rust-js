@@ -29,6 +29,10 @@ export const GLOBALS = ["parseInt", "parseFloat", "isNaN", "isFinite", "encodeUR
 /** A Rust type whose JS class isn't its name. */
 const CLASS_OF: Record<string, string> = { JsError: "Error" };
 
+/** A Rust type whose value JS makes by a static of its own: the
+ * registry's symbol, `js::SymbolFor(key)`, `Symbol.for(key)` (ADR 0634). */
+const MADE_BY: Record<string, string> = { SymbolFor: "Symbol.static:for" };
+
 export type Coverage = { all: string[]; covered: string[] };
 
 const libs = new URL("../node_modules/typescript-es/lib/", import.meta.url).pathname;
@@ -134,6 +138,7 @@ function bindings(): Set<string> {
       if (!s) return;
       const name = lines.slice(Math.max(0, i - 4), i).join("\n").match(/rust_js::name = "([\w.]+)"/)?.[1];
       classes.set(s, CLASS_OF[s] ?? name ?? s);
+      if (MADE_BY[s]) bound.add(MADE_BY[s]);
     });
   }
   for (const f of files) {

@@ -107,7 +107,32 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         OptionWrites {
             null_nones: self.mir_null_nones(body, locals),
             made_some: self.mir_made_some(body, locals),
+            registered: self.mir_registered(body),
         }
+    }
+
+    /// The locals `OptionWrites::registered` says: each a call of
+    /// `js::SymbolFor::from_value` gives, whose value the body only tests
+    /// against the registry's symbols (`registered_reads`, ADR 0634).
+    fn mir_registered(&self, body: &mir::Body<'tcx>) -> std::collections::HashSet<Local> {
+        let reads = crate::lower::body_queries::registered_reads(self.tcx, self.thir);
+        (body.basic_blocks.iter())
+            .filter_map(|data| match &data.terminator().kind {
+                TerminatorKind::Call {
+                    func,
+                    destination,
+                    fn_span,
+                    ..
+                } if destination.projection.is_empty()
+                    && reads.contains(fn_span)
+                    && fn_def(func.ty(&body.local_decls, self.tcx))
+                        .is_some_and(|(def_id, _)| crate::lower::recognition::is_symbol_for_read(self.tcx, def_id)) =>
+                {
+                    Some(destination.local)
+                }
+                _ => None,
+            })
+            .collect()
     }
 
     /// The locals `OptionWrites::made_some` says: each write a `Some(..)`, or a

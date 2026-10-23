@@ -603,8 +603,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(Value::Expr(Expr::undefined()));
         }
         // A binding: the JS function, method, property or operator it names
-        // (ADRs 0019, 0020), given its arguments.
-        if bindings::is_binding(tcx, def_id) {
+        // (ADRs 0019, 0020), given its arguments; the registry's symbol's read too (ADR 0634).
+        if bindings::is_binding(tcx, def_id) || crate::lower::recognition::is_symbol_for_read(tcx, def_id) {
             return self.mir_binding_call((def_id, generic_args), values, &arg_tys, span, out);
         }
         // A function giving each variant its own name gives what it's given,

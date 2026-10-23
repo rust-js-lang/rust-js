@@ -1,7 +1,10 @@
 # 0629. A `match` of constants is a `switch`
 
 Status: Accepted. Amends [ADR 0014](0014-match-lowering.md), which made
-every `match` an `if` chain.
+every `match` an `if` chain. Amended by
+[0634](0634-a-registered-symbol-is-a-const.md): a `Some` of constants,
+where it's the value itself, is those constants, and the registry's
+symbol, `js::SymbolFor`, is one.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N, nothing the program
 can observe: a `switch` compares what it's given with each `case` by

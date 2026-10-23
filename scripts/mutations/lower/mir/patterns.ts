@@ -66,4 +66,12 @@ export const mutations: Mutation[] = [
     replace: "                    true => false,\n",
     tests: ["test/bindings.test.ts", "-t", "a nullable function's None is null"],
   },
+  {
+    name: "registered-reads-all",
+    breaks: "every value read as the registry's symbol is the value itself, where the program tells its `None` too",
+    file: "src/lower/mir/patterns.rs",
+    find: "                    && reads.contains(fn_span)\n",
+    replace: "",
+    tests: ["test/lowering-symbols.test.ts", "-t", "a read of one it tells is checked"],
+  },
 ];

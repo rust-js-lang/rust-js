@@ -332,6 +332,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let scalar = ty.is_integral() || ty.is_floating_point() || ty.is_char() || ty.is_str();
                 scalar.then(|| vec![Constant::Value(self.js_span(pattern.span))])
             }
+            // The registry's symbol, `REACT_MEMO_TYPE`, which `===` compares
+            // as it does its key (ADR 0634).
+            thir::PatKind::Leaf { .. } if self.recognition().is_symbol_for(pattern.ty) => {
+                Some(vec![Constant::Value(self.js_span(pattern.span))])
+            }
+            // A `Some` of constants, where it's the value itself (ADR
+            // 0030), whose test of each says it's there.
+            thir::PatKind::Variant {
+                adt_def, subpatterns, ..
+            } if self.tcx.is_lang_item(adt_def.did(), LangItem::Option)
+                && let [some] = &subpatterns[..]
+                && !self.boxed_payload(some.pattern.ty) =>
+            {
+                self.constants_of(&some.pattern)
+            }
             thir::PatKind::Variant {
                 adt_def,
                 variant_index,

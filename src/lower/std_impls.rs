@@ -719,6 +719,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // A value of any shape, `js::Unknown`, by JS's `===` (ADR 0612).
         let any = matches!(ty.kind(), ty::Adt(adt, _) if super::declarations::any_shape(self.tcx, adt.did()));
         let primitive = any
+            // The registry's symbols, the same where their keys are (ADR 0634).
+            || self.recognition().is_symbol_for(ty)
             || self.is_string_like(ty)
             || self.is_parse_error(ty)
             || self.recognition().is_type_id(ty)
@@ -820,6 +822,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.eq_value(a, b, ty, span, out)
     }
 
+    /// The registry's symbol of `text`: the `const` the body's patterns name
+    /// it by, `REACT_MEMO_TYPE` (ADRs 0590, 0634), else `Symbol.for(text)`.
+    fn named_symbol(&mut self, text: &Expr, span: Span) -> R<Expr> {
+        if let js::ExprKind::Str(key) = &text.kind
+            && let Some(&Some(named)) = super::body_queries::constant_patterns(self.tcx, self.thir)
+                .get(&super::body_queries::PatternValue::Key(key.clone()))
+        {
+            let ty = self.tcx.type_of(named).instantiate_identity().skip_normalization();
+            return self.named_const(named, ty::List::empty(), ty, span);
+        }
+        Ok(super::representation::symbol_for(text.clone()))
+    }
+
     pub(super) fn eq_value(&mut self, a: Expr, b: Expr, ty: Ty<'tcx>, span: Span, out: &mut Vec<Stmt>) -> R<Expr> {
         let (mut a, _) = self.through_refs(a, ty);
         let (mut b, mut ty) = self.through_refs(b, ty);
@@ -861,6 +876,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // A path's components, `a/b` and `a//b` alike (ADR 0401).
         if self.recognition().is_path(ty) {
             return Ok(Expr::call(Expr::helper("$pathEq"), vec![a, b]));
+        }
+        // A registered symbol's key and text: the symbol and the text's,
+        // `type === REACT_MEMO_TYPE` of `Symbol.keyFor(type) === "react.memo"`,
+        // as a pattern of one tests it, which holds of any value (ADR 0634).
+        if ty.is_str() {
+            for (key, text) in [(&a, &b), (&b, &a)] {
+                if let Some(symbol) = super::representation::symbol_of_key(key) {
+                    let named = self.named_symbol(text, span)?;
+                    return Ok(Expr::bin(Op::Eq, symbol.clone(), named));
+                }
+            }
         }
         if self.js_eq(ty).is_some() {
             return Ok(Expr::bin(Op::Eq, a, b));

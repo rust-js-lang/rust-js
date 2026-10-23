@@ -1,14 +1,16 @@
 //! JS's [`Symbol`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Symbol):
-//! a value unlike any other, a property's key no string can be (ADR 0283).
+//! a value unlike any other, a property's key no string can be (ADR 0283);
+//! and the registry's, [`SymbolFor`], a `const` a `match` names (ADR 0634).
 
 // A binding's parameters are its JS function's: its body never runs.
 #![allow(unused_variables)]
 
-use super::{Defined, JsObject, PropertyKey};
+use super::{Defined, JsObject, PropertyKey, Unknown};
 use core::marker::PhantomData;
 
 /// [`Symbol`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Symbol):
-/// `symbol::new("id")` is a new one, `symbol::r#for("id")` the registry's.
+/// any symbol, `symbol::new("id")` a new one; the registry's is a
+/// [`SymbolFor`].
 #[cfg_attr(rust_js, rust_js::types = "symbol")]
 pub struct Symbol(PhantomData<JsObject>);
 
@@ -101,16 +103,50 @@ pub fn new(description: &str) -> &'static Symbol {
     unreachable!()
 }
 
-/// [`Symbol.for(key)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Symbol/for):
-/// the registry's symbol of `key`, the same each time.
-#[cfg_attr(rust_js, rust_js::link_name = "Symbol.for")]
-pub fn r#for(key: &str) -> &'static Symbol {
+/// Gone (ADR 0634): the registry's symbol of `key` is a value,
+/// `js::SymbolFor(key)`, which a `const` holds and a `match` names.
+pub fn r#for<K: Gone>(key: K) -> &'static Symbol {
     unreachable!()
 }
+
+/// What [`r#for`] took, which nothing is: it's gone (ADR 0634).
+#[diagnostic::on_unimplemented(
+    message = "`js::symbol::r#for` is gone: the registry's symbol of a key is `js::SymbolFor(key)` (ADR 0634)",
+    label = "write `js::SymbolFor(key)`"
+)]
+pub trait Gone {}
 
 /// [`Symbol.keyFor(symbol)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Symbol/keyFor):
 /// the registry's key of `symbol`, `None` of one not the registry's.
 #[cfg_attr(rust_js, rust_js::link_name = "Symbol.keyFor")]
 pub fn key_for(symbol: &Symbol) -> Option<String> {
     unreachable!()
+}
+
+/// [`Symbol.for(key)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Symbol/for):
+/// the registry's symbol of `key`, the same wherever it's made, so two are
+/// equal where their keys are, as JS's `===` finds them (ADR 0634). JS's
+/// is the symbol: `pub const REACT_MEMO_TYPE: js::SymbolFor =
+/// js::SymbolFor("react.memo");` is `export const REACT_MEMO_TYPE =
+/// Symbol.for("react.memo");`, and a `match` of them a `switch`. Its key,
+/// `.0`, is `Symbol.keyFor(symbol)`.
+#[cfg_attr(rust_js, rust_js::types = "symbol")]
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub struct SymbolFor<'a>(pub &'a str);
+
+// A value, never `undefined`, and a property's key.
+unsafe impl Defined for SymbolFor<'_> {}
+impl PropertyKey for SymbolFor<'_> {}
+
+impl SymbolFor<'static> {
+    /// `value` as the registry's symbol, `None` of any other value, a
+    /// symbol of its own or none: matched against the registry's, `match
+    /// js::SymbolFor::from_value(ty) { Some(REACT_MEMO_TYPE) => .., _ => ..
+    /// }`, the value itself, `switch (type) { case REACT_MEMO_TYPE: .. }`,
+    /// as no other value is one of them; else
+    /// `$symbolFor(value)`, the value where it's the registry's, `undefined`
+    /// where not (ADR 0634).
+    pub fn from_value(value: Option<&Unknown>) -> Option<SymbolFor<'static>> {
+        unreachable!()
+    }
 }

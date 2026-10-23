@@ -98,4 +98,20 @@ export const mutations: Mutation[] = [
     replace: "        let value = if let Some(at) = transparent.filter(|_| false)\n",
     tests: ["test/corpus.test.ts", "-t", "^transparent_constructor_value.rs$"],
   },
+  {
+    name: "registered-symbol-made-its-struct",
+    breaks: "the registry's symbol made of a key, `SymbolFor(key)`, is its key's array, `[key]`, not `Symbol.for(key)`",
+    file: "src/lower/aggregates.rs",
+    find: "            return Ok(super::representation::symbol_for(key.clone()));\n",
+    replace: "            return Ok(Expr::array(vec![key.clone()]));\n",
+    tests: ["test/lowering-symbols.test.ts", "-t", "Symbol.for its key"],
+  },
+  {
+    name: "registered-symbol-constructor-its-struct",
+    breaks: "`.map(SymbolFor)` makes its key's array, `[value]`, not `Symbol.for(value)`",
+    file: "src/lower/aggregates.rs",
+    find: "            super::representation::symbol_for(key)\n",
+    replace: "            Expr::array(vec![key])\n",
+    tests: ["test/lowering-symbols.test.ts", "-t", "Symbol.for its key"],
+  },
 ];

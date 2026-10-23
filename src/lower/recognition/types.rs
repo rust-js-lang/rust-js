@@ -140,6 +140,11 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             && self.tcx.item_name(adt.did()).as_str() == "JsError")
     }
 
+    /// `js::SymbolFor`, the registry's symbol of a key (ADR 0634).
+    pub(in crate::lower) fn is_symbol_for(&self, ty: Ty<'tcx>) -> bool {
+        matches!(ty.kind(), ty::Adt(adt, _) if is_symbol_for_def(self.tcx, adt.did()))
+    }
+
     pub(in crate::lower) fn is_js_object(&self, ty: Ty<'tcx>) -> bool {
         let ty::Adt(adt, args) = ty.kind() else { return false };
         if !adt.is_struct() {
@@ -861,3 +866,22 @@ const VEC_LIKE: &[StdItem] = &[
     StdItem::BinaryHeap,
     StdItem::LinkedList,
 ];
+
+/// Whether `did` is `js::SymbolFor`, the registry's symbol of a key, its JS
+/// `Symbol.for(key)` (ADR 0634): the builtins crate's. The one answer, which
+/// a constant's value asks too.
+pub(in crate::lower) fn is_symbol_for_def(tcx: TyCtxt<'_>, did: DefId) -> bool {
+    tcx.crate_name(did.krate).as_str() == "js" && tcx.item_name(did).as_str() == "SymbolFor"
+}
+
+/// Whether `did` is `js::SymbolFor::from_value`, a value of any shape read
+/// as the registry's symbol (ADR 0634).
+pub(in crate::lower) fn is_symbol_for_read(tcx: TyCtxt<'_>, did: DefId) -> bool {
+    tcx.crate_name(did.krate).as_str() == "js"
+        && tcx.item_name(did).as_str() == "from_value"
+        && tcx.opt_parent(did).is_some_and(|imp| {
+            tcx.def_kind(imp) == DefKind::Impl { of_trait: false }
+                && matches!(tcx.type_of(imp).instantiate_identity().skip_normalization().kind(),
+                    ty::Adt(adt, _) if is_symbol_for_def(tcx, adt.did()))
+        })
+}

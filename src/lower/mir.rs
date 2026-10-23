@@ -290,6 +290,11 @@ struct OptionWrites {
     /// The locals only ever `Some(..)`, and shared references to one: never
     /// `None`, so `==` to one is `===` (`strictly_equal`).
     made_some: std::collections::HashSet<Local>,
+    /// The locals a `js::SymbolFor::from_value` gives whose value is only
+    /// tested against the registry's symbols (`registered_reads`): the
+    /// value read itself, a `Some` wherever it's tested, as each case
+    /// compares it by `===` (ADR 0634).
+    registered: std::collections::HashSet<Local>,
 }
 
 /// A body's lowering state.

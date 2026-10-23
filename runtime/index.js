@@ -9216,6 +9216,12 @@ export function $swap(v, a, b, deque = false) {
   [v[a], v[b]] = [v[b], v[a]];
 }
 
+// `js::SymbolFor::from_value(value)` (ADR 0634): the value where it's the
+// registry's symbol, `undefined` where it's any other.
+export function $symbolFor(value) {
+  return typeof value === "symbol" && Symbol.keyFor(value) !== undefined ? value : undefined;
+}
+
 // `v.truncate(length)`: what's past it gone, and of items with a destructor,
 // each dropped by `drop`, in order, once it's out, as std's are (ADR 0098).
 export function $truncate(v, length, drop) {

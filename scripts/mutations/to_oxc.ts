@@ -185,7 +185,7 @@ export const mutations: Mutation[] = [
     file: "src/to_oxc.rs",
     find: "                    && pattern.trim_end().ends_with(\"=>\")\n",
     replace: "                    && pattern.trim_end().ends_with(\"=>\") && false\n",
-    tests: ["test/lowering-matches.test.ts", "-t", "a match of constants tests each"],
+    tests: ["test/lowering-matches.test.ts", "-t", "a match of constants cases each"],
   },
   {
     name: "item-macro-comment-lost",

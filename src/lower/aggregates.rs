@@ -74,6 +74,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 return Ok(value.clone());
             }
         }
+        // The registry's symbol of its key (ADR 0634).
+        if self.recognition().is_symbol_for(ty)
+            && let Some(key) = fields.first()
+        {
+            return Ok(super::representation::symbol_for(key.clone()));
+        }
         if let Some(inner) = self.option_of(ty) {
             return Ok(match fields.into_iter().next() {
                 Some(value) if self.boxed_payload(inner) => self.some(value),
@@ -231,6 +237,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && at < items.len()
         {
             items[at].clone()
+        } else if self.recognition().is_symbol_for(ty) {
+            // The registry's symbol of its key, `Symbol.for(value)` (ADR 0634).
+            let [key] = <[Expr; 1]>::try_from(items).map_err(|_| self.unsupported(span, "this constructor"))?;
+            super::representation::symbol_for(key)
         } else if self.untagged(ty).is_some() || bindings::is_tagged_otherwise(self.tcx, adt_def.did(), variant) {
             // An untagged enum's variant is its payload (ADR 0214), and a
             // discriminated union's `otherwise` the object it holds (ADR 0284).

@@ -428,6 +428,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             {
                 return Ok(Value::Branch(tried.clone(), *ty));
             }
+            // A value read as the registry's symbol, only tested against
+            // the registry's: a `Some`, its value compared by `===` to each
+            // (ADR 0634).
+            Rvalue::Discriminant(place)
+                if place.projection.is_empty() && state.options.registered.contains(&place.local) =>
+            {
+                Expr::int(1)
+            }
             Rvalue::Discriminant(place) => {
                 let ty = place.ty(decls, tcx).ty;
                 let subject = self.mir_place(state, *place, span, out)?;

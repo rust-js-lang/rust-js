@@ -1,6 +1,10 @@
 # 0619. A thread-local of a primitive is named as a constant
 
 Status: Accepted. Amends [0579](0579-a-thread-local-is-named-as-a-variable.md).
+Amended by [0634](0634-a-registered-symbol-is-a-const.md): the registry's
+symbol is a `const`, `js::SymbolFor`, which a `match` names; a
+thread-local of a symbol is one of its own, `js::symbol::new`, or a
+well-known one.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): A: only a name.
 

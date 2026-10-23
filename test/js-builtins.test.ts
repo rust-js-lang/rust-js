@@ -94,8 +94,8 @@ pub fn errors() -> (String, String, f64, f64) {
     (e.name(), e.message(), parse_int("42px", Some(10)), parse_int("0x1f", None))
 }
 pub fn symbols() -> (bool, Option<String>, Option<String>) {
-    let a = symbol::r#for("app");
-    (js::object::is(a, symbol::r#for("app")), symbol::key_for(a), symbol::new("local").description())
+    let local = symbol::new("local");
+    (js::object::is(local, local), symbol::key_for(local), local.description())
 }
 pub struct State {
     pub n: u32,
@@ -114,13 +114,13 @@ pub fn weak(state: &'static State) -> (Option<u32>, bool) {
   expect(js).toContain('const e = new Error("boom");');
   // A radix given or not, as TypeScript's `radix?`: `parseInt(text)` reads `0x` as hex.
   expect(js).toContain('parseInt("42px", 10), parseInt("0x1f")]');
-  expect(js).toContain('const a = Symbol.for("app");');
+  expect(js).toContain('const local = Symbol("local");');
   expect(js).toContain("const seen = new WeakMap();\n  seen.set(state, state.n);\n  const r = new WeakRef(state);");
   const lib = await import(join(dir, "lib.js"));
   expect(lib.matched("ab cd7")).toEqual(["7", 3, "cdcd7", true]);
   expect(lib.matched("none")).toBe(undefined);
   expect(lib.errors()).toEqual(["Error", "boom", 42, 31]);
-  expect(lib.symbols()).toEqual([true, "app", "local"]);
+  expect(lib.symbols()).toEqual([true, undefined, "local"]);
   expect(lib.weak({ n: 5 })).toEqual([5, true]);
 });
 

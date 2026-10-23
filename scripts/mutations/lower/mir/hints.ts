@@ -158,4 +158,20 @@ export const mutations: Mutation[] = [
     replace: "                let cases: usize = arms.len();\n",
     tests: ["test/lowering-matches.test.ts", "-t", "a match of constants is a switch"],
   },
+  {
+    name: "switch-of-somes-unseen",
+    breaks: "a `match` of a `Some`'s constants, `Some(\"s\")`, isn't a `switch`, but an `if` chain",
+    file: "src/lower/mir/hints.rs",
+    find: "                && !self.boxed_payload(some.pattern.ty) =>\n",
+    replace: "                && !self.boxed_payload(some.pattern.ty)\n                && false =>\n",
+    tests: ["test/lowering-matches.test.ts", "-t", "strings from MIR is the"],
+  },
+  {
+    name: "switch-of-registered-symbols-unseen",
+    breaks: "a `match` of the registry's symbols isn't a `switch`, but an `if` chain",
+    file: "src/lower/mir/hints.rs",
+    find: "            thir::PatKind::Leaf { .. } if self.recognition().is_symbol_for(pattern.ty) => {\n",
+    replace: "            thir::PatKind::Leaf { .. } if self.recognition().is_symbol_for(pattern.ty) && false => {\n",
+    tests: ["test/lowering-symbols.test.ts", "-t", "a match of the registry's symbols"],
+  },
 ];
