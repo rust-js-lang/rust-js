@@ -169,7 +169,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // An `async` block's future drops what it took as its body ends,
             // in that body; its body has run, as a promise's does, by the
             // time anything else drops it (ADR 0029): there it's nothing.
-            ty::Coroutine(def_id, _) if self.body_owner == *def_id => self.drop_taken(*def_id, span, made, out)?,
+            ty::Coroutine(def_id, _) if self.frame.owner == *def_id => self.drop_taken(*def_id, span, made, out)?,
             ty::Coroutine(..) => {}
             // A function's, the drop it carries, if any (ADR 0521).
             ty::Dynamic(predicates, ..) if crate::lower::recognition::is_fn_dyn(self.tcx, predicates) => {
@@ -468,15 +468,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     pub(in crate::lower) fn drop_facts(&mut self) -> R<Rc<Facts>> {
-        let key = std::ptr::from_ref(self.thir) as usize;
+        let key = std::ptr::from_ref(self.frame.thir) as usize;
         if let Some(facts) = self.drop_state.facts.get(&key) {
             return Ok(facts.clone());
         }
         let facts = Rc::new(find_facts(
             &self.drop_query(),
             self.krate.cell_borrows,
-            self.thir,
-            self.body_owner,
+            self.frame.thir,
+            self.frame.owner,
         ));
         self.drop_state.facts.insert(key, facts.clone());
         let mut failed = None;
@@ -493,7 +493,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// that hold a value with a destructor: one made where JS can't see what
     /// it took, given away uncalled, or assigned.
     pub(in crate::lower) fn check_closure_drops(&self) -> R<()> {
-        let facts = find_facts(&self.drop_query(), self.krate.cell_borrows, self.thir, self.body_owner);
+        let facts = find_facts(
+            &self.drop_query(),
+            self.krate.cell_borrows,
+            self.frame.thir,
+            self.frame.owner,
+        );
         let mut failed = None;
         for (span, what, _) in facts.problems.iter().filter(|(.., closure)| *closure) {
             failed = Some(self.unsupported(*span, what));

@@ -73,7 +73,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         ) {
             return None;
         }
-        let Some(kind) = crate::lower::recognition::function_kind(self.tcx, self.body_owner, ty) else {
+        let Some(kind) = crate::lower::recognition::function_kind(self.tcx, self.frame.owner, ty) else {
             return unused().filter(|_| self.drops_function(ty));
         };
         if !self.drops_function(ty) {
@@ -97,7 +97,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> R<()> {
         let inputs = self.tcx.fn_sig(callee).instantiate_identity().skip_binder().inputs();
         for (&ty, &input) in tys.iter().zip(inputs) {
-            let kind = crate::lower::recognition::function_kind(self.tcx, self.body_owner, ty);
+            let kind = crate::lower::recognition::function_kind(self.tcx, self.frame.owner, ty);
             if kind.is_some_and(|kind| kind != ty::ClosureKind::FnOnce)
                 && crate::lower::recognition::function_kind(self.tcx, callee, input) == Some(ty::ClosureKind::FnOnce)
                 && self.drops_function(ty)
@@ -116,7 +116,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// std call that writes a place or a map's entry may leave unrun, is
     /// dropped there, as `get_or_insert_with`'s is (ADR 0469).
     pub(in crate::lower) fn drops_unrun(&self, ty: Ty<'tcx>) -> bool {
-        crate::lower::recognition::function_kind(self.tcx, self.body_owner, ty) == Some(ty::ClosureKind::FnOnce)
+        crate::lower::recognition::function_kind(self.tcx, self.frame.owner, ty) == Some(ty::ClosureKind::FnOnce)
             && self.drops_function(ty)
     }
 

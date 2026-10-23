@@ -26,21 +26,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 _ => true,
             })
         };
-        for stmt in self.thir.stmts.iter() {
+        for stmt in self.frame.thir.stmts.iter() {
             if let thir::StmtKind::Let { pattern, .. } = &stmt.kind {
                 bound(pattern);
             }
         }
-        for expr in self.thir.exprs.iter() {
+        for expr in self.frame.thir.exprs.iter() {
             if let thir::ExprKind::Let { pat, .. } = &expr.kind {
                 bound(pat);
             }
         }
-        for arm in self.thir.arms.iter() {
+        for arm in self.frame.thir.arms.iter() {
             bound(&arm.pattern);
         }
         // An arm's of the value whole, `x if x.len() > 1`, as a variant's part.
-        spans.extend((self.thir.arms.iter()).filter_map(|arm| match arm.pattern.kind {
+        spans.extend((self.frame.thir.arms.iter()).filter_map(|arm| match arm.pattern.kind {
             thir::PatKind::Binding { .. } => Some(arm.pattern.span),
             _ => None,
         }));
@@ -105,7 +105,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Each variable a `let` binds: where the `let` is written, which its
     /// declaration maps to (`State::let_spans`).
     pub(super) fn mir_let_spans(&self, body: &mir::Body<'tcx>) -> HashMap<Local, js::Span> {
-        let lets: Vec<(Span, Span)> = (self.thir.stmts.iter())
+        let lets: Vec<(Span, Span)> = (self.frame.thir.stmts.iter())
             .filter_map(|s| match &s.kind {
                 thir::StmtKind::Let { pattern, span, .. } => Some((pattern.span, *span)),
                 _ => None,
@@ -135,7 +135,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// The locals `OptionWrites::present` says: each a call
     /// `body_queries::present_calls` says gives what's there.
     fn mir_present(&self, body: &mir::Body<'tcx>) -> std::collections::HashSet<Local> {
-        let calls = crate::lower::body_queries::present_calls(self.tcx, self.thir);
+        let calls = crate::lower::body_queries::present_calls(self.tcx, self.frame.thir);
         (body.basic_blocks.iter())
             .filter_map(|data| match &data.terminator().kind {
                 TerminatorKind::Call {
@@ -150,7 +150,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `js::SymbolFor::from_value` gives, whose value the body only tests
     /// against the registry's symbols (`registered_reads`, ADR 0634).
     fn mir_registered(&self, body: &mir::Body<'tcx>) -> std::collections::HashSet<Local> {
-        let reads = crate::lower::body_queries::registered_reads(self.tcx, self.thir);
+        let reads = crate::lower::body_queries::registered_reads(self.tcx, self.frame.thir);
         (body.basic_blocks.iter())
             .filter_map(|data| match &data.terminator().kind {
                 TerminatorKind::Call {
@@ -213,7 +213,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// the rest, a `Rest` or a flattened struct's (ADR 0195, 0204).
     pub(super) fn let_pattern_bindings(&self, body: &mir::Body<'tcx>) -> Vec<(Local, bool)> {
         let mut spans = Vec::new();
-        for stmt in self.thir.stmts.iter() {
+        for stmt in self.frame.thir.stmts.iter() {
             let thir::StmtKind::Let { pattern, .. } = &stmt.kind else {
                 continue;
             };
@@ -293,7 +293,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// binds each to, by value.
     pub(super) fn mir_param_patterns(&mut self, body: &mir::Body<'tcx>) -> Vec<ParamPattern> {
         let mut patterns = Vec::new();
-        for (i, param) in self.thir.params.iter().enumerate() {
+        for (i, param) in self.frame.thir.params.iter().enumerate() {
             let Some(pat) = param.pat.as_deref() else { continue };
             if !matches!(pat.kind, thir::PatKind::Leaf { .. }) {
                 continue;

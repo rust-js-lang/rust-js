@@ -16,6 +16,6 @@ export const mutations: Mutation[] = [
     file: "src/runtime/unzip.js",
     find: "  Iterator.from(pairs).forEach(([x, y]) => {\n",
     replace: "  Iterator.prototype.forEach.call(Iterator.from(pairs), ([x, y]) => {\n",
-    tests: ["test/corpus.test.ts",  "-t",  "^own_fold_and_nth.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^own_fold_and_nth.rs$"],
   },
 ];

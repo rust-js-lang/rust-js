@@ -532,7 +532,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/recognition/iterators.rs",
     find: "            Some(\"Chain\") => 2,\n",
     replace: "            Some(\"Chain\") => 0,\n",
-    tests: ["test/corpus.test.ts",  "-t",  "^own_fold_and_nth.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^own_fold_and_nth.rs$"],
   },
   {
     name: "folds-its-own-never",
@@ -540,6 +540,6 @@ export const mutations: Mutation[] = [
     file: "src/lower/recognition/iterators.rs",
     find: "            return !ty.is_ref() && self.own_iterator_method(ty, \"fold\").is_some();\n",
     replace: "            return false;\n",
-    tests: ["test/corpus.test.ts",  "-t",  "^own_fold_and_nth.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^own_fold_and_nth.rs$"],
   },
 ];

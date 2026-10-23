@@ -259,9 +259,7 @@ enum Nested<'tcx> {
 /// it's left (`leave_body`): what every body has of its own, and what its
 /// kind has too, as `Nested` says.
 struct Enclosing<'a, 'tcx> {
-    thir: &'a Thir<'tcx>,
-    body_facts: &'a body_queries::BodyFacts,
-    body_owner: DefId,
+    frame: BodyFrame<'a, 'tcx>,
     drops: drops::EnclosingDrops<'tcx>,
     kind: EnclosingKind<'tcx>,
 }
@@ -399,8 +397,8 @@ struct FnCx<'a, 'tcx> {
     /// In a generic type's derived `serialize` or `deserialize` (ADR
     /// 0080): each type parameter, and the parameter that writes or reads it.
     codecs: Vec<(Ty<'tcx>, String)>,
-    thir: &'a Thir<'tcx>,
-    body_facts: &'a body_queries::BodyFacts,
+    /// The body being lowered: its own, or a nested one's (`lowered_in`).
+    frame: BodyFrame<'a, 'tcx>,
     /// The module receiving this function and its recorded dependencies.
     module: LocalModId,
     /// What this body knows of its variables.
@@ -428,8 +426,17 @@ struct FnCx<'a, 'tcx> {
     walks: RefCell<HashMap<ty::TypingEnv<'tcx>, Rc<TypeWalks<'tcx>>>>,
     /// What's dropped, and where (ADR 0098).
     drop_state: drops::DropState<'tcx>,
+}
+
+/// What a body being lowered has of its own, which a nested one, a
+/// closure's or a copied default's, takes whole and gives back
+/// (`lowered_in`): its THIR, the facts asked of it, and whose it is. A
+/// field every body has of its own goes here, and is swapped with it.
+struct BodyFrame<'a, 'tcx> {
+    thir: &'a Thir<'tcx>,
+    facts: &'a body_queries::BodyFacts,
     /// Whose body `thir` is: its scope tree says where temporaries end.
-    body_owner: DefId,
+    owner: DefId,
 }
 
 /// What the generic item being lowered is given, besides its arguments.
@@ -580,7 +587,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     fn strip(&self, e: ExprId) -> ExprId {
-        strip(self.thir, e)
+        strip(self.frame.thir, e)
     }
 
     fn fresh(&mut self, base: &str) -> String {

@@ -41,3 +41,21 @@ Rust's visibility holds.**
   onto the item's and taken off after.
 - Held by `scripts/mutations/lower/traits/given.ts`: facts and const
   parameters that stayed given past a default break the corpus.
+
+## Amended
+
+The fourth review (2026-10-23) found that every nested body still swapped
+three fields one by one, `thir`, `body_facts` and `body_owner`, so a new
+field a body has of its own had three places to be added and one to be
+forgotten. They are one `BodyFrame`, `FnCx::frame`, which `enter_body`
+swaps whole and `leave_body` gives back. A field every body has of its
+own goes in it. What differs by kind on purpose stays in `Nested`'s
+kinds: a constant's names, and a copied default's names, locals, given
+evidence and typing environment. `enter_body_drops`'s `frame` flag,
+always `true`, is gone.
+
+No program can tell whether the frame is given back today. Every nested
+body is lowered while a dictionary is built, and the dictionary reads no
+frame after it. A mutation that keeps the nested frame survives, so it
+isn't kept. The give-back is `lowered_in`'s contract all the same.
+

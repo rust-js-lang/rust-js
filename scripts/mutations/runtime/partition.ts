@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     file: "src/runtime/partition.js",
     find: "  Iterator.from(items).forEach((item) => {\n",
     replace: "  Iterator.from(items).toArray().forEach((item) => {\n",
-    tests: ["test/corpus.test.ts",  "-t",  "^consumers_step_each.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^consumers_step_each.rs$"],
   },
   {
     name: "partition-steps",
@@ -16,6 +16,6 @@ export const mutations: Mutation[] = [
     file: "src/runtime/partition.js",
     find: "  Iterator.from(items).forEach((item) => {\n",
     replace: "  Iterator.prototype.forEach.call(Iterator.from(items), (item) => {\n",
-    tests: ["test/corpus.test.ts",  "-t",  "^own_fold_and_nth.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^own_fold_and_nth.rs$"],
   },
 ];

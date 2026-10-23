@@ -486,7 +486,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // A component's props with a default, given where JS takes them apart
         // (ADR 0212).
-        for param in &self.thir.params {
+        for param in &self.frame.thir.params {
             self.check_props_taken_apart(param.ty, param.pat.as_deref(), param.ty_span.unwrap_or(span))?;
         }
         // Its dictionaries, for its bounds, after its parameters (ADR 0049).
@@ -709,7 +709,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             at: BasicBlock::from_usize(0),
             statement: 0,
             ranges: self.range_patterns(),
-            returns: (self.thir.exprs.iter())
+            returns: (self.frame.thir.exprs.iter())
                 .filter(|e| matches!(e.kind, thir::ExprKind::Return { .. }))
                 .map(|e| self.js_span(e.span))
                 .collect(),
@@ -949,11 +949,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let written = self.written();
         // The closures a `let` names that a hook's function alone is, by
         // their names (ADR 0297).
-        let named: Vec<rustc_span::Span> = (self.thir.stmts.iter())
+        let named: Vec<rustc_span::Span> = (self.frame.thir.stmts.iter())
             .filter_map(|stmt| match &stmt.kind {
                 thir::StmtKind::Let { pattern, .. }
                     if let thir::PatKind::Binding { var, .. } = pattern.kind
-                        && self.body_facts.named_callbacks.contains(&var) =>
+                        && self.frame.facts.named_callbacks.contains(&var) =>
                 {
                     Some(pattern.span)
                 }

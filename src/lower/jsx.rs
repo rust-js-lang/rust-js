@@ -276,7 +276,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // lists them (ADR 0674). Each where it's written, which MIR's value
         // doesn't say: a `key` written before it goes before it.
         if let Some(props) = props
-            && let ExprKind::Adt(adt) = &self.thir[super::body_queries::strip(self.thir, props)].kind
+            && let ExprKind::Adt(adt) = &self.frame.thir[super::body_queries::strip(self.frame.thir, props)].kind
             && let Shape::Object(types) = self.shape(ty)
         {
             for f in adt.fields.iter() {
@@ -286,7 +286,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         && key == name
                         && value.span.is_none()
                     {
-                        value.span = self.js_span(self.thir[f.expr].span);
+                        value.span = self.js_span(self.frame.thir[f.expr].span);
                     }
                 }
             }
@@ -327,7 +327,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // What gives each prop, by its name, where the struct is made here.
         let mut given = HashMap::new();
         if let Some(props) = props
-            && let ExprKind::Adt(adt) = &self.thir[super::body_queries::strip(self.thir, props)].kind
+            && let ExprKind::Adt(adt) = &self.frame.thir[super::body_queries::strip(self.frame.thir, props)].kind
             && let Shape::Object(types) = self.shape(ty)
         {
             for field in adt.fields.iter() {
@@ -387,7 +387,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     let value = match given.get(&name) {
                         Some(&child) => {
                             let child = self.referred_children(child);
-                            child_ty = self.thir[child].ty;
+                            child_ty = self.frame.thir[child].ty;
                             self.shown_if(child, value)
                         }
                         None => value,
@@ -435,11 +435,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// to, `(a, b)` of `&(a, b)`, its children each a child, as JSX's are.
     fn referred_children(&self, e: ExprId) -> ExprId {
         let e = self.strip(e);
-        match self.thir[e].kind {
+        match self.frame.thir[e].kind {
             ExprKind::PointerCoercion { source, .. } => self.referred_children(source),
             ExprKind::Borrow { arg, .. } => self.referred_children(arg),
             // `Some(&(a, b))`, of optional children.
-            ExprKind::Adt(ref some) if self.option_of(self.thir[e].ty).is_some() && some.fields.len() == 1 => {
+            ExprKind::Adt(ref some) if self.option_of(self.frame.thir[e].ty).is_some() && some.fields.len() == 1 => {
                 self.referred_children(some.fields[0].expr)
             }
             _ => e,
@@ -504,7 +504,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// by its name: a field's value's place, and a flattened struct's made
     /// here, each of its own (ADR 0213).
     fn written_at(&self, props: ExprId, ty: Ty<'tcx>, written: &mut HashMap<String, BytePos>) {
-        let ExprKind::Adt(adt) = &self.thir[super::body_queries::strip(self.thir, props)].kind else {
+        let ExprKind::Adt(adt) = &self.frame.thir[super::body_queries::strip(self.frame.thir, props)].kind else {
             return;
         };
         let Shape::Object(types) = self.shape(ty) else { return };
@@ -512,7 +512,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let i = field.name.as_usize();
             super::bindings::is_flatten_field(self.tcx, ty, i)
                 && matches!(
-                    self.thir[super::body_queries::strip(self.thir, field.expr)].kind,
+                    self.frame.thir[super::body_queries::strip(self.frame.thir, field.expr)].kind,
                     ExprKind::Adt(_)
                 )
         };
@@ -522,7 +522,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let key = &types[field.name.as_usize()].0;
             written
                 .entry(key.clone())
-                .or_insert(self.thir[field.expr].span.source_callsite().lo());
+                .or_insert(self.frame.thir[field.expr].span.source_callsite().lo());
         }
         for field in adt.fields.iter().filter(|field| made_here(field)) {
             let mut inner = HashMap::new();
@@ -618,7 +618,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `variant.Icon && <variant.Icon />`.
     fn shown_if(&self, child: ExprId, value: Expr) -> Expr {
         // Children are a tuple, of tuples too: each its own.
-        if let ExprKind::Tuple { fields } = &self.thir[self.strip(child)].kind
+        if let ExprKind::Tuple { fields } = &self.frame.thir[self.strip(child)].kind
             && let js::ExprKind::Array(items) = &value.kind
             && fields.len() == items.len()
         {
@@ -659,9 +659,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Is `child` a call of an `Option` of a JS object, `variant.icon.map(..)`,
     /// or of another value never falsy (ADR 0298)?
     fn maps_js_object(&self, child: ExprId) -> bool {
-        matches!(self.thir[self.strip(child)].kind, ExprKind::Call { ref args, .. }
+        matches!(self.frame.thir[self.strip(child)].kind, ExprKind::Call { ref args, .. }
             if args.first().is_some_and(|&receiver| self
-                .option_of(self.thir[receiver].ty)
+                .option_of(self.frame.thir[receiver].ty)
                 .is_some_and(|inner| self.is_js_object(inner.peel_refs()) || self.never_falsy(inner))))
     }
 

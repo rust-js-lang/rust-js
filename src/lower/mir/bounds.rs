@@ -11,10 +11,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// bounds: the index there, `a[i]`, is among them.
     pub(super) fn known_in_bounds(&self, msg: &mir::AssertMessage<'tcx>, span: Span) -> bool {
         matches!(msg, mir::AssertKind::BoundsCheck { .. })
-            && (self.thir.exprs.iter_enumerated()).any(|(id, e)| {
+            && (self.frame.thir.exprs.iter_enumerated()).any(|(id, e)| {
                 matches!(e.kind, thir::ExprKind::Index { .. })
                     && e.span == span
-                    && self.body_facts.in_bounds.contains(&id)
+                    && self.frame.facts.in_bounds.contains(&id)
             })
     }
 
@@ -39,7 +39,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Whether THIR's call of `def_id` at `span` has its indexes in bounds,
     /// as the body's ranges show.
     fn indexes_in_bounds(&self, def_id: rustc_span::def_id::DefId, span: Span) -> bool {
-        (self.thir_call(def_id, span)).is_some_and(|(fun, _)| self.body_facts.in_bounds.contains(&fun))
+        (self.thir_call(def_id, span)).is_some_and(|(fun, _)| self.frame.facts.in_bounds.contains(&fun))
     }
 
     /// Whether a call is `v[i]` through `index_mut`, of a value JS can't

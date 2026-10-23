@@ -151,7 +151,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if crate::lower::recognition::is_symbol_for_read(tcx, def_id) {
             let value = values.into_iter().next().expect("the value read");
             return Ok(
-                match crate::lower::body_queries::registered_reads(tcx, self.thir).contains(&span) {
+                match crate::lower::body_queries::registered_reads(tcx, self.frame.thir).contains(&span) {
                     true => value,
                     false => Value::Expr(Expr::call_helper("$symbolFor", vec![self.value_expr(value, span)?])),
                 },
@@ -222,7 +222,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // looked for where any path is read through a module.
         let named = match self.krate.held_reads.is_empty() {
             true => span,
-            false => (self.thir_call(def_id, span)).map_or(span, |(fun, _)| self.thir[fun].span),
+            false => (self.thir_call(def_id, span)).map_or(span, |(fun, _)| self.frame.thir[fun].span),
         };
         let js_span = self.js_span(span);
         Ok(Value::Expr(self.binding_values(

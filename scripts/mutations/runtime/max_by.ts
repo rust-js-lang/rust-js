@@ -40,7 +40,7 @@ export const mutations: Mutation[] = [
     file: "src/runtime/max_by.js",
     find: "  const it = Iterator.from(items);\n",
     replace: "  const it = Iterator.from(Iterator.from(items).toArray());\n",
-    tests: ["test/corpus.test.ts",  "-t",  "^consumers_step_each.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^consumers_step_each.rs$"],
   },
   {
     name: "extreme-folds-without-first",
@@ -48,6 +48,6 @@ export const mutations: Mutation[] = [
     file: "src/runtime/max_by.js",
     find: "  const first = it.next();\n  if (first.done) return undefined;\n  const kept = it.reduce(",
     replace: "  const first = { done: false, value: undefined };\n  const kept = it.reduce(",
-    tests: ["test/corpus.test.ts",  "-t",  "^own_fold_and_nth.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^own_fold_and_nth.rs$"],
   },
 ];

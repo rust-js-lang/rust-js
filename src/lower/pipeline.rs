@@ -343,8 +343,11 @@ pub fn lower_crate<'tcx>(
             codecs: Vec::new(),
             krate: &crate_facts,
             dependencies: Default::default(),
-            thir: body.map_or(&no_body, |body| &body.thir),
-            body_facts: body.map_or(&no_facts, |body| &body.facts),
+            frame: super::BodyFrame {
+                thir: body.map_or(&no_body, |body| &body.thir),
+                facts: body.map_or(&no_facts, |body| &body.facts),
+                owner: def_id,
+            },
             module,
             locals: Locals::default(),
             names,
@@ -356,7 +359,6 @@ pub fn lower_crate<'tcx>(
             item: def_id,
             walks: Default::default(),
             drop_state: Default::default(),
-            body_owner: def_id,
         };
         let result = match body {
             // Each body, a function's or an initializer's, from its MIR (ADR 0364).

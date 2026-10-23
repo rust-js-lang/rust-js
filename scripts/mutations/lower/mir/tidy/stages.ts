@@ -492,7 +492,7 @@ export const mutations: Mutation[] = [
     find: "            pass(\"branch values\", branch_values_of),\n            pass(\"declarations\", |b, _| declarations(b)),\n            pass(\"inlined in values\", inlined_of),\n",
     replace: "            pass(\"declarations\", |b, _| declarations(b)),\n            pass(\"inlined in values\", inlined_of),\n",
     snapshots: true,
-    tests: ["test/corpus.test.ts",  "-t",  "^(expression_values|char_from_code).rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(expression_values|char_from_code).rs$"],
   },
   {
     name: "values-chain-declarations-off",
@@ -501,6 +501,6 @@ export const mutations: Mutation[] = [
     find: "            pass(\"branch values\", branch_values_of),\n            pass(\"declarations\", |b, _| declarations(b)),\n            pass(\"inlined in values\", inlined_of),\n",
     replace: "            pass(\"branch values\", branch_values_of),\n            pass(\"inlined in values\", inlined_of),\n",
     snapshots: true,
-    tests: ["test/corpus.test.ts",  "-t",  "^(matrix_integers|sales_report).rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(matrix_integers|sales_report).rs$"],
   },
 ];

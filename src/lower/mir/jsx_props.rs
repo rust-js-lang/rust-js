@@ -59,22 +59,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         operands: &IndexVec<FieldIdx, Operand<'tcx>>,
         span: Span,
     ) -> Option<Place<'tcx>> {
-        let strip = |e| crate::lower::body_queries::strip(self.thir, e);
-        let base = (self.thir.exprs.iter()).find_map(|e| match &e.kind {
+        let strip = |e| crate::lower::body_queries::strip(self.frame.thir, e);
+        let base = (self.frame.thir.exprs.iter()).find_map(|e| match &e.kind {
             thir::ExprKind::Adt(adt) if e.span == span => match &adt.base {
                 thir::AdtExprBase::Base(fru) => Some(strip(fru.base)),
                 _ => None,
             },
             _ => None,
         })?;
-        let named = |var: thir::ExprId| match self.thir[var].kind {
+        let named = |var: thir::ExprId| match self.frame.thir[var].kind {
             thir::ExprKind::VarRef { id } => Some(id.0),
             thir::ExprKind::UpvarRef { var_hir_id, .. } => Some(var_hir_id.0),
             _ => None,
         };
-        let (var, deref) = match self.thir[base].kind {
+        let (var, deref) = match self.frame.thir[base].kind {
             thir::ExprKind::Deref { arg }
-                if matches!(self.thir[arg].ty.kind(), ty::Ref(_, _, ty::Mutability::Not))
+                if matches!(self.frame.thir[arg].ty.kind(), ty::Ref(_, _, ty::Mutability::Not))
                     && named(strip(arg)).is_some() =>
             {
                 (Some(strip(arg)), true)
@@ -89,7 +89,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // or `..posts[0]`, as react.dev's home page gives each BlogCard a
             // post: the place MIR reads each of its fields from, `(*t).title`.
             thir::ExprKind::Deref { arg }
-                if matches!(self.thir[arg].ty.kind(), ty::Ref(_, _, ty::Mutability::Not))
+                if matches!(self.frame.thir[arg].ty.kind(), ty::Ref(_, _, ty::Mutability::Not))
                     && !bindings::has_flatten(self.tcx, ty) =>
             {
                 (None, false)
@@ -172,7 +172,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 value,
                 ty,
                 expr,
-                span: expr.map_or(span, |e| self.thir[e].span),
+                span: expr.map_or(span, |e| self.frame.thir[e].span),
             });
         }
         Ok(given)
@@ -204,7 +204,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let place = self
             .thir_call_args(def_id, span)
             .and_then(|args| self.mut_borrowed(*args.get(i)?))?;
-        Some(&self.thir[self.strip(place)].kind)
+        Some(&self.frame.thir[self.strip(place)].kind)
     }
 
     /// THIR's update whose base is the call at `span`, MIR's there, of a
@@ -212,11 +212,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// each default the update reads. `None` of another, or where a default the
     /// update replaces is made still, for its effects.
     pub(super) fn default_base_at(&mut self, span: Span) -> R<Option<Vec<(String, Expr)>>> {
-        let strip = |e| crate::lower::body_queries::strip(self.thir, e);
-        let found = (self.thir.exprs.iter()).find_map(|e| match &e.kind {
+        let strip = |e| crate::lower::body_queries::strip(self.frame.thir, e);
+        let found = (self.frame.thir.exprs.iter()).find_map(|e| match &e.kind {
             thir::ExprKind::Adt(adt) => match &adt.base {
                 thir::AdtExprBase::Base(fru)
-                    if matches!(self.thir[strip(fru.base)].kind,
+                    if matches!(self.frame.thir[strip(fru.base)].kind,
                         thir::ExprKind::Call { fn_span, .. } if fn_span.source_equal(span)) =>
                 {
                     Some((
@@ -242,9 +242,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Whether THIR's cast at `span`, MIR's there, is of a float it knows whole
     /// and in the target's range: the value as it is (`whole_casts`).
     pub(super) fn whole_cast_at(&self, span: Span) -> bool {
-        let mut casts = (self.thir.exprs.iter_enumerated())
+        let mut casts = (self.frame.thir.exprs.iter_enumerated())
             .filter(|(_, e)| matches!(e.kind, thir::ExprKind::Cast { .. }) && e.span.source_equal(span));
-        matches!((casts.next(), casts.next()), (Some((id, _)), None) if self.body_facts.whole_casts.contains(&id))
+        matches!((casts.next(), casts.next()), (Some((id, _)), None) if self.frame.facts.whole_casts.contains(&id))
     }
 
     /// THIR's call of `def_id` at `fn_span`, MIR's call there, where it's
@@ -254,10 +254,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         def_id: rustc_span::def_id::DefId,
         fn_span: Span,
     ) -> Option<(thir::ExprId, Vec<thir::ExprId>)> {
-        let mut calls = self.thir.exprs.iter().filter_map(|e| match &e.kind {
+        let mut calls = self.frame.thir.exprs.iter().filter_map(|e| match &e.kind {
             thir::ExprKind::Call {
                 fun, args, fn_span: at, ..
-            } if *at == fn_span && matches!(*self.thir[*fun].ty.kind(), ty::FnDef(id, _) if id == def_id) => {
+            } if *at == fn_span && matches!(*self.frame.thir[*fun].ty.kind(), ty::FnDef(id, _) if id == def_id) => {
                 Some((*fun, args.to_vec()))
             }
             _ => None,

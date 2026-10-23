@@ -510,7 +510,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 // A value the program's patterns name by a `const`, as that
                 // reads (ADR 0590): `priorityLevel === ImmediatePriority`.
-                if let Some(Some(named)) = crate::lower::body_queries::constant_patterns(self.tcx, self.thir)
+                if let Some(Some(named)) = crate::lower::body_queries::constant_patterns(self.tcx, self.frame.thir)
                     .get(&crate::lower::body_queries::PatternValue::Bits(ty, value))
                     .copied()
                 {

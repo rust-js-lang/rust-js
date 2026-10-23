@@ -7,13 +7,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Start lowering a body inside the one being lowered: its own facts, and
     /// none of the enclosing one's statement and scopes. A copied default's,
     /// `default`, is given its trait's type parameters' drops and those it
-    /// can't make (ADR 0098).
-    /// `frame`: a closure's or a copied default's, a JS function of its own,
-    /// which declares its own drop functions.
+    /// can't make (ADR 0098). It's a JS function of its own, a closure's or
+    /// a copied default's, which declares its own drop functions.
     pub(in crate::lower) fn enter_body_drops(
         &mut self,
         default: Option<DefaultDrops<'tcx>>,
-        frame: bool,
     ) -> R<EnclosingDrops<'tcx>> {
         let swapped = default.is_some();
         if let Some(default) = default {
@@ -23,7 +21,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.drop_facts()?;
         Ok(EnclosingDrops {
             swapped,
-            hoisted: frame.then(|| self.begin_hoisting()),
+            hoisted: self.begin_hoisting(),
         })
     }
 
@@ -46,10 +44,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let outer = self.drop_state.outer.pop().expect("the function's drops");
             self.restore_drops(outer);
         }
-        match enclosing.hoisted {
-            Some(outer) => self.end_hoisting(outer),
-            None => Vec::new(),
-        }
+        self.end_hoisting(enclosing.hoisted)
     }
 
     /// The std associated types of the function being lowered's type
@@ -174,7 +169,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             self_args: (self.drop_state.types.self_args).replace((
                 self_args,
                 self.impl_typing_env().unwrap_or(self.typing_env),
-                ty::GenericArgs::identity_for_item(self.tcx, self.body_owner),
+                ty::GenericArgs::identity_for_item(self.tcx, self.frame.owner),
             )),
             used: std::mem::take(&mut self.drop_state.used_drops),
             unsupported: std::mem::replace(&mut self.drop_state.types.unsupported, unsupported),

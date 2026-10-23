@@ -232,7 +232,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/iter/collect.rs",
     find: "        self.is_lang_adt(output, LangItem::String)\n            ||",
     replace: "        false\n            ||",
-    tests: ["test/corpus.test.ts",  "-t",  "^own_fold_and_nth.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^own_fold_and_nth.rs$"],
   },
   {
     name: "collects-by-fold-vecs",
@@ -240,6 +240,6 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/iter/collect.rs",
     find: "            || output.is_unit()\n",
     replace: "            || output.is_unit()\n            || self.is_vec_like(output)\n",
-    tests: ["test/corpus.test.ts",  "-t",  "^own_fold_and_nth.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^own_fold_and_nth.rs$"],
   },
 ];

@@ -40,7 +40,7 @@ export const mutations: Mutation[] = [
     file: "src/runtime/iterator.js",
     find: "  if (fold !== undefined) it.fold = (init, f) => fold(iterator, init, f);\n",
     replace: "",
-    tests: ["test/corpus.test.ts",  "-t",  "^own_fold_and_nth.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^own_fold_and_nth.rs$"],
   },
   {
     name: "iterator-own-nth-unused",
@@ -48,6 +48,6 @@ export const mutations: Mutation[] = [
     file: "src/runtime/iterator.js",
     find: "  if (nth !== undefined) it.nth = (k) => step(nth(iterator, k));\n",
     replace: "",
-    tests: ["test/corpus.test.ts",  "-t",  "^own_fold_and_nth.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^own_fold_and_nth.rs$"],
   },
 ];

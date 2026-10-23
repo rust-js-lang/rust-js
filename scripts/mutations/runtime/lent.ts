@@ -8,6 +8,6 @@ export const mutations: Mutation[] = [
     file: "src/runtime/lent.js",
     find: "  if (it.nth !== undefined) lent.nth = (k) => it.nth(k);\n",
     replace: "",
-    tests: ["test/corpus.test.ts",  "-t",  "^own_fold_and_nth.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^own_fold_and_nth.rs$"],
   },
 ];

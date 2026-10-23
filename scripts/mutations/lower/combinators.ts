@@ -547,6 +547,6 @@ export const mutations: Mutation[] = [
     file: "src/lower/combinators.rs",
     find: "            true => self.by_its_fold(items, iterable),\n",
     replace: "            true => items,\n",
-    tests: ["test/corpus.test.ts",  "-t",  "^own_fold_and_nth.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^own_fold_and_nth.rs$"],
   },
 ];

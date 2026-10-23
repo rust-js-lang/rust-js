@@ -321,6 +321,6 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_types/text.rs",
     find: "                self.by_its_fold(items, ty)\n",
     replace: "                items\n",
-    tests: ["test/corpus.test.ts",  "-t",  "^own_fold_and_nth.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^own_fold_and_nth.rs$"],
   },
 ];
