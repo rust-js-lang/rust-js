@@ -39,7 +39,7 @@ on:
         type: string
         default: ''
       mutation_shards:
-        description: 'With mutations: machines they''re split across, as scripts/ci.ts's MUTATION_SHARDS. Each sets itself up, so more is more minutes.'
+        description: 'With mutations: machines they''re split across, as scripts/ci.ts''s MUTATION_SHARDS. Each sets itself up, so more is more minutes.'
         required: false
         type: string
         default: '1'
@@ -74,7 +74,7 @@ on:
         type: string
         default: ''
       mutation_shards:
-        description: 'With mutations: machines they''re split across, 1, 2, 4 or 8. Each sets itself up, so more is more minutes.'
+        description: 'With mutations: machines they''re split across, as scripts/ci.ts''s MUTATION_SHARDS. Each sets itself up, so more is more minutes.'
         required: false
         type: string
         default: '1'

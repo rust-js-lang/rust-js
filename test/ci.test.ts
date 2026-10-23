@@ -2,7 +2,7 @@
 // shards, the mutations a change touches, and each branch's latest run.
 
 import { expect, test } from "bun:test";
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { checkedSince, latestRuns, MUTATION_SHARDS, mutationShards, timingsRun } from "../scripts/ci";
 import { type Change, changedLines, changedMutations, enclosingFunction, testBlocks } from "../scripts/mutations";
@@ -181,5 +181,14 @@ test("the workflows' mutation shards are ci.ts's", () => {
   const matrix = [...tests.matchAll(/inputs\.mutation_shards == '(\d+)' && '\[([\d, ]+)\]'/g)].map((m) => [Number(m[1]), m[2]]);
   expect(matrix.map(([n]) => n).sort((a, b) => Number(a) - Number(b))).toEqual(MUTATION_SHARDS.filter((n) => n > 1));
   for (const [n, list] of matrix) expect(list).toBe(Array.from({ length: Number(n) }, (_, i) => i + 1).join(", "));
+});
+
+// A workflow GitHub can't read runs nothing, and says so only where it's
+// started: each is YAML, its quotes closed.
+test("every workflow is YAML", () => {
+  const dir = join(root, ".github/workflows");
+  for (const file of readdirSync(dir).filter((f) => f.endsWith(".yml"))) {
+    expect(() => Bun.YAML.parse(readFileSync(join(dir, file), "utf8")), file).not.toThrow();
+  }
 });
 

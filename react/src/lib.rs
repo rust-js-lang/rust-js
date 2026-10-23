@@ -746,10 +746,12 @@ macro_rules! handle {
 /// only. `let (count, set_count) = use_state(|| 0);` is `const [count,
 /// setCount] = useState(0);`, and `use_state(load_notes)` is
 /// `useState(loadNotes)` (ADR 0593): as rescript-react's, one function, of
-/// any state, a function's too.
+/// any state, a function's too. React calls `initial` during this call, if
+/// at all, and keeps nothing of it, so it may borrow what the component
+/// holds: `use_state(|| todo.title.clone())`.
 #[cfg_attr(rust_js, rust_js::link_name = "react#useState")]
 #[cfg_attr(rust_js, rust_js::lazy(initial))]
-pub fn use_state<T>(initial: impl FnOnce() -> T + 'static) -> (&'static T, &'static Dispatch<SetStateAction<T>>) {
+pub fn use_state<T>(initial: impl FnOnce() -> T) -> (&'static T, &'static Dispatch<SetStateAction<T>>) {
     unreachable!()
 }
 
