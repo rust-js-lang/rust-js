@@ -24,7 +24,7 @@ function main() {
   const a = [2];
   const b = [20];
   console.log(
-    `${centimetersPartialEqMillimeters_eq(a, b)} ${centimetersPartialEqMillimeters_eq(a, b)} ${same(a, b, { eq: centimetersPartialEqMillimeters_eq })}`,
+    `${centimetersPartialEqMillimeters_eq(a, b)} ${centimetersPartialEqMillimeters_eq(a, b)} ${same(a, b, centimetersPartialEqMillimeters)}`,
   );
   const value = [[1]];
   const value$1 = [[10]];

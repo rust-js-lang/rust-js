@@ -7,7 +7,7 @@ import { expect, test } from "bun:test";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { runSync } from "./child";
-import { fixture, root } from "./support";
+import { crateIncluded, fixture, root } from "./support";
 
 const versionOf = (dir: string) =>
   (Bun.TOML.parse(readFileSync(join(root, dir, "Cargo.toml"), "utf8")) as { package: { version: string } }).package.version;
@@ -34,10 +34,10 @@ test("the binding crates package for crates.io, each at its version", () => {
       .map((file) => file.slice(`${name}-${versions[name]}/`.length))
       .filter((file) => !["Cargo.lock", "Cargo.toml", "Cargo.toml.orig", ".cargo_vcs_info.json"].includes(file))
       .sort();
-  expect(listed("rust-js-builtins")).toEqual(["README.md", "src/atomics.rs", "src/date.rs", "src/intl.rs", "src/lib.rs", "src/promise.rs", "src/proxy.rs", "src/reflect.rs", "src/symbol.rs", "src/typed_arrays.rs", "src/weak.rs"]);
-  expect(listed("rust-js-webapi")).toEqual(["README.md", "src/lib.rs"]);
+  expect(listed("rust-js-builtins")).toEqual(crateIncluded("builtins"));
+  expect(listed("rust-js-webapi")).toEqual(crateIncluded("webapi"));
   expect(versionOf("react")).toBe(versionOf("."));
-  expect(listed("rust-js-react")).toEqual(["README.md", "build.rs", "src/attributes.rs", "src/children.rs", "src/dom.rs", "src/elements.rs", "src/event.rs", "src/lib.rs", "versions.json"]);
-  expect(listed("rust-js-next")).toEqual(["README.md", "src/app.rs", "src/cache.rs", "src/custom_server.rs", "src/data_fetching.rs", "src/document.rs", "src/dynamic.rs", "src/error.rs", "src/font.rs", "src/font/google.rs", "src/font/local.rs", "src/form.rs", "src/head.rs", "src/headers.rs", "src/image.rs", "src/instrumentation.rs", "src/legacy.rs", "src/legacy/image.rs", "src/lib.rs", "src/link.rs", "src/metadata.rs", "src/navigation.rs", "src/offline.rs", "src/og.rs", "src/pages.rs", "src/router.rs", "src/script.rs", "src/segment.rs", "src/server.rs", "src/web_vitals.rs"]);
-  expect(listed("rust-js-node")).toEqual(["README.md", "src/buffer.rs", "src/event.rs", "src/events.rs", "src/fs.rs", "src/http.rs", "src/lib.rs", "src/path.rs", "src/process.rs", "src/querystring.rs", "src/url.rs", "src/util.rs"]);
+  expect(listed("rust-js-react")).toEqual(crateIncluded("react"));
+  expect(listed("rust-js-next")).toEqual(crateIncluded("next"));
+  expect(listed("rust-js-node")).toEqual(crateIncluded("node"));
 }, 600_000);

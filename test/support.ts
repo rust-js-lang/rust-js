@@ -270,6 +270,25 @@ export function installRuntime(app: string) {
 export const fixtures = join(target, "fixtures");
 const mine = join(fixtures, `${process.pid}-${crypto.randomUUID().slice(0, 8)}`);
 
+/** What a binding crate packages, as its `Cargo.toml`'s `include` names
+ * it: each file of each path it lists, relative to the crate, sorted. The
+ * one list of a crate's files, which its crates.io package and its npm
+ * package are held to, so a file the crate gains is packaged without a
+ * second list to keep. */
+export function crateIncluded(crate: string): string[] {
+  const dir = join(root, crate);
+  const manifest = Bun.TOML.parse(readFileSync(join(dir, "Cargo.toml"), "utf8")) as { package: { include: string[] } };
+  return manifest.package.include
+    .flatMap((path) => {
+      const at = join(dir, path);
+      if (!statSync(at).isDirectory()) return [path];
+      return readdirSync(at, { recursive: true, withFileTypes: true })
+        .filter((entry) => entry.isFile())
+        .map((entry) => join(entry.parentPath, entry.name).slice(dir.length + 1));
+    })
+    .sort();
+}
+
 export function fixture(name: string): string {
   if (!existsSync(mine)) {
     mkdirSync(mine, { recursive: true });

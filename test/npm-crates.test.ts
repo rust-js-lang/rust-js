@@ -8,7 +8,7 @@ import { expect, test } from "bun:test";
 import { mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { runSync } from "./child";
-import { fixture, root, run } from "./support";
+import { crateIncluded, fixture, root, run } from "./support";
 
 const cargo = (dir: string) => Bun.TOML.parse(readFileSync(join(root, dir, "Cargo.toml"), "utf8")) as { package: { name: string; version: string } };
 
@@ -32,15 +32,15 @@ test("builtins, webapi, react and next are npm packages of their crates, which a
   };
   const repository = (directory: string) => ({ type: "git", url: "git+https://github.com/rust-js-lang/rust-js.git", directory });
   const crates = { "@rust-js/builtins": "~0.0.2", "@rust-js/webapi": "~0.0.3" };
-  for (const [name, peers, crateFiles] of [
-    ["builtins", undefined, ["src/atomics.rs", "src/date.rs", "src/intl.rs", "src/lib.rs", "src/promise.rs", "src/proxy.rs", "src/reflect.rs", "src/symbol.rs", "src/typed_arrays.rs", "src/weak.rs"]],
-    ["webapi", { "@rust-js/builtins": crates["@rust-js/builtins"] }, ["src/lib.rs"]],
+  for (const [name, peers] of [
+    ["builtins", undefined],
+    ["webapi", { "@rust-js/builtins": crates["@rust-js/builtins"] }],
     // React's own, the library it binds, and what its build script reads.
-    ["react", { ...crates, react: ">=18.0.0", "react-dom": ">=18.0.0" }, ["build.rs", "src/attributes.rs", "src/children.rs", "src/dom.rs", "src/elements.rs", "src/event.rs", "src/lib.rs", "versions.json"]],
+    ["react", { ...crates, react: ">=18.0.0", "react-dom": ">=18.0.0" }],
     // Node.js's, which a Next.js page's server code uses, of webapi's URL.
-    ["node", crates, ["src/buffer.rs", "src/event.rs", "src/events.rs", "src/fs.rs", "src/http.rs", "src/lib.rs", "src/path.rs", "src/process.rs", "src/querystring.rs", "src/url.rs", "src/util.rs"]],
+    ["node", crates],
     // Next.js's, the library it binds, and React's and Node.js's crates, which it uses.
-    ["next", { "@rust-js/builtins": crates["@rust-js/builtins"], "@rust-js/node": `~${cargo("node").package.version}`, "@rust-js/react": `~${cargo("react").package.version}`, next: ">=16.0.0" }, ["src/app.rs", "src/cache.rs", "src/custom_server.rs", "src/data_fetching.rs", "src/document.rs", "src/dynamic.rs", "src/error.rs", "src/font.rs", "src/font/google.rs", "src/font/local.rs", "src/form.rs", "src/head.rs", "src/headers.rs", "src/image.rs", "src/instrumentation.rs", "src/legacy.rs", "src/legacy/image.rs", "src/lib.rs", "src/link.rs", "src/metadata.rs", "src/navigation.rs", "src/offline.rs", "src/og.rs", "src/pages.rs", "src/router.rs", "src/script.rs", "src/segment.rs", "src/server.rs", "src/web_vitals.rs"]],
+    ["next", { "@rust-js/builtins": crates["@rust-js/builtins"], "@rust-js/node": `~${cargo("node").package.version}`, "@rust-js/react": `~${cargo("react").package.version}`, next: ">=16.0.0" }],
   ] as const) {
     const dir = unpacked(name);
     const pkg = JSON.parse(readFileSync(join(dir, "package.json"), "utf8"));
@@ -55,7 +55,7 @@ test("builtins, webapi, react and next are npm packages of their crates, which a
     expect(pkg.keywords).toContain("rust-js");
     expect(pkg.peerDependencies).toEqual(peers);
     // The crate as Cargo packages it: its Rust, no path to where it was.
-    expect(files(dir)).toEqual(["Cargo.toml", "LICENSE", "README.md", "package.json", ...crateFiles].sort());
+    expect(files(dir)).toEqual(["Cargo.toml", "LICENSE", "package.json", ...crateIncluded(name)].sort());
     expect(readFileSync(join(dir, "Cargo.toml"), "utf8")).not.toContain("path = \"../");
   }
 

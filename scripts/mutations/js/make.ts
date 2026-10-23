@@ -77,11 +77,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "truthy-tested-for-null",
-    breaks: "`code != null && !!code` is kept, not `!!code`, `code ? ..` of text",
+    breaks: "`s != null && !!s` is kept, not `!!s`, `s.is_some_and(|s| !s.is_empty())`'s",
     file: "src/js/make.rs",
     find: "            && let ExprKind::Unary(UnaryOp::Not, of) = &inner.kind\n            && same_path(tested, of)\n",
     replace: "            && let ExprKind::Unary(UnaryOp::Not, of) = &inner.kind\n            && same_path(tested, of)\n            && false\n",
-    tests: ["test/jsx-children.test.ts", "-t", "filtered child, in place"],
+    tests: ["test/lowering-options.test.ts", "-t", "is_some_and of the truth of what it holds"],
   },
   {
     name: "handle-value-kept",
@@ -109,28 +109,12 @@ export const mutations: Mutation[] = [
     "tests": ["test/lowering-branches.test.ts", "-t", "a test of text's truth is no optional chain"]
   },
   {
-    "name": "is-array-chain-first-unread",
-    "breaks": "`val != null && Array.isArray(val) && ..` keeps its null test",
-    "file": "src/js/make.rs",
-    "find": "        while let ExprKind::Binary(Op::And, a, _) = &first.kind {\n            first = a;\n        }\n",
-    "replace": "",
-    "tests": ["test/lowering-branches.test.ts", "-t", "a let chain from MIR is one test"]
-  },
-  {
     name: "text-joined-twice",
     breaks: "a number made text and joined to text stays `\"\" + n + \"px\"`, not `n + \"px\"`",
     file: "src/js/make.rs",
     find: "            && matches!(rhs.kind, ExprKind::Str(_) | ExprKind::Template(..))\n",
     replace: "            && false\n",
     tests: ["test/bindings.test.ts", "-t", "as react.dev's Console does"],
-  },
-  {
-    "name": "option-literal-tested",
-    "breaks": "an Option compared to a literal keeps its test, `option != null && option === \"index\"`",
-    "file": "src/js/make.rs",
-    "find": "        // `a != null && a === \"index\"` is `a === \"index\"`: no literal is\n        // `null` or `undefined`.\n        if op == Op::And\n",
-    "replace": "        // `a != null && a === \"index\"` is `a === \"index\"`: no literal is\n        // `null` or `undefined`.\n        if false\n",
-    "tests": ["test/lowering-options.test.ts", "-t", "compared to a literal needs no test"]
   },
   {
     name: "mir-tidy-not-de-morgan",

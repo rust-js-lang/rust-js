@@ -187,4 +187,12 @@ export const mutations: Mutation[] = [
     replace: "            if false && ty.peel_refs().is_char() {\n",
     tests: ["test/corpus.test.ts", "-t", "^(clamp_ord|clamp_char_bounds)\\.rs$"],
   },
+  {
+    name: "generic-other-type-compare-refused",
+    breaks: "`x <= 3u32` in code bounded by `T: PartialOrd<u32>` is refused",
+    file: "src/lower/ordering.rs",
+    find: "            let Some(op) = operator.filter(|_| generic || self.is_user_impl(tr)) else {\n",
+    replace: "            let Some(op) = operator.filter(|_| self.is_user_impl(tr)) else {\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_other_type_compare.rs$"],
+  },
 ];

@@ -409,26 +409,12 @@ impl Expr {
         {
             return rhs;
         }
-        // `a != null && a === "index"` is `a === "index"`: no literal is
-        // `null` or `undefined`.
-        if op == Op::And
-            && let Some(tested) = null_test(&lhs, true)
-            && let ExprKind::Binary(Op::Eq, a, b) = &rhs.kind
-            && [(a, b), (b, a)].iter().any(|(x, literal)| {
-                same_path(tested, x) && matches!(literal.kind, ExprKind::Str(_) | ExprKind::Bool(_) | ExprKind::Num(_))
-            })
-        {
-            return rhs;
-        }
         // `a != null && Array.isArray(a)` is `Array.isArray(a)`: no array is
-        // `null` or `undefined`; and of `Array.isArray(a) && ..`, that.
-        let mut first = &rhs;
-        while let ExprKind::Binary(Op::And, a, _) = &first.kind {
-            first = a;
-        }
+        // `null` or `undefined`. A chain after it, `&& ..`, is made from the
+        // left, this first.
         if op == Op::And
             && let Some(tested) = presence_of(&lhs)
-            && let ExprKind::Call(callee, args) = &first.kind
+            && let ExprKind::Call(callee, args) = &rhs.kind
             && let (ExprKind::Member(array, is_array), [of]) = (&callee.kind, args.as_slice())
             && matches!(&array.kind, ExprKind::Var(name) if name == "Array")
             && is_array == "isArray"

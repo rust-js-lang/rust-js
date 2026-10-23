@@ -362,4 +362,12 @@ export const mutations: Mutation[] = [
     replace: "        if is_std_def(self.tcx, tr.def_id, StdItem::FmtWrite)",
     tests: ["test/corpus.test.ts", "-t", "^io_write_mut_generic.rs$"],
   },
+  {
+    name: "other-type-compare-synthesized",
+    breaks: "a `PartialOrd<u32>` dictionary of a struct compares it with itself, not by its impl",
+    file: "src/lower/traits/dictionaries.rs",
+    find: "            && !of_other\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^generic_other_type_compare.rs$"],
+  },
 ];
