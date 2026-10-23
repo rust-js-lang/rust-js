@@ -12,11 +12,13 @@ mod applied;
 mod expr_walk;
 mod make;
 mod stmt_walk;
+mod walk;
 
 pub use self::{
     applied::{applied_blocks, applied_call, applied_tried, returns},
     expr_walk::*,
     stmt_walk::*,
+    walk::*,
 };
 
 use std::collections::{BTreeSet, HashMap, HashSet};

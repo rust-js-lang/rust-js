@@ -18,7 +18,7 @@ pub(super) fn exit_after(stmts: &mut [Stmt], i: usize) -> Option<Vec<Stmt>> {
     }
     // The labels inside it, whose jumps don't leave it.
     let mut inner: HashSet<String> = label.iter().cloned().collect();
-    js::statement_lists(&mut body.clone(), &mut |list| {
+    js::each_list(body, &mut |list| {
         for stmt in list.iter() {
             match &stmt.kind {
                 StmtKind::Labeled(l, _)
@@ -38,7 +38,7 @@ pub(super) fn exit_after(stmts: &mut [Stmt], i: usize) -> Option<Vec<Stmt>> {
     let stays = |s: &Stmt| {
         let mut own: HashSet<String> = HashSet::new();
         let mut jumps: Vec<String> = Vec::new();
-        js::statement_lists(&mut vec![s.clone()], &mut |list| {
+        js::each_list(std::slice::from_ref(s), &mut |list| {
             for stmt in list.iter() {
                 match &stmt.kind {
                     StmtKind::Labeled(l, _)

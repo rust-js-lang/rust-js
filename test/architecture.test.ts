@@ -350,6 +350,16 @@ test("tidying asks neither rustc nor the function being lowered", () => {
   }
 });
 
+// A tree's walks are written once, `js/walk.rs`, and made twice: to read it,
+// `each_list` and `each_expr`, and to change it, `statement_lists` and
+// `each_expr_mut`. What only reads a tree walks it as it is: twenty
+// analyses copied a tree to walk it with the walk that changes one.
+test("what reads a tree walks it without copying it", () => {
+  const copying = /(?:statement_lists|each_expr_mut)\(&mut (?:vec!\[)?[\w.\[\]]+\.(?:clone|to_vec)\(\)/;
+  const offenders = files("src").filter((file) => file.endsWith(".rs") && copying.test(read(file)));
+  expect(offenders).toEqual([]);
+});
+
 // Tidy's passes are one list, `stages::STAGES`, in stages that each say what
 // they leave a body with (ADR 0659): `tidy` runs the list and checks it, and
 // calls no pass itself, so the order, and why, are read in one place. A pass

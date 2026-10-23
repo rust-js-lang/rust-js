@@ -431,7 +431,7 @@ pub(in crate::lower) fn unguarded(body: &mut Vec<Stmt>) {
         }
     });
     let mut kept: HashMap<String, usize> = HashMap::new();
-    js::each_expr_mut(&mut body.clone(), &mut |e| match &e.kind {
+    js::each_expr(body, &mut |e| match &e.kind {
         js::ExprKind::Member(of, key)
             if key == js::HELD
                 && let js::ExprKind::Var(g) = &of.kind

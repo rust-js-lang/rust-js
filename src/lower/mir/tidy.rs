@@ -396,9 +396,9 @@ fn read_past_calls(e: &Expr, set: &HashSet<String>, plain: &HashSet<String>) -> 
 /// The variables a closure in `body` sets, `x = ..` in an arrow's body.
 fn closures_set(body: &[Stmt]) -> HashSet<String> {
     let mut set = HashSet::new();
-    js::each_expr_mut(&mut body.to_vec(), &mut |e| {
+    js::each_expr(body, &mut |e| {
         if let ExprKind::Arrow(_, body) | ExprKind::AsyncArrow(_, body) = &e.kind {
-            js::statement_lists(&mut body.clone(), &mut |list| {
+            js::each_list(body, &mut |list| {
                 for stmt in list.iter() {
                     if let StmtKind::Assign(target, _) = &stmt.kind {
                         let mut root = target;
@@ -456,7 +456,7 @@ fn set_elsewhere(body: &[Stmt]) -> HashSet<String> {
 /// given may set.
 fn handled(body: &[Stmt]) -> HashSet<String> {
     let mut handled = HashSet::new();
-    js::each_expr_mut(&mut body.to_vec(), &mut |e| {
+    js::each_expr(body, &mut |e| {
         if let ExprKind::Handle(place) | ExprKind::Pair(place, _) = &e.kind
             && let ExprKind::Var(name) = &place.kind
         {

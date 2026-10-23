@@ -34,7 +34,7 @@ pub(super) const NOTHING_AFTER_A_JUMP: Contract = Contract {
     name: "nothing after a jump",
     broken: |body| {
         let mut found = None;
-        each_list(body, &mut |stmts| {
+        crate::js::each_list(body, &mut |stmts| {
             if found.is_none()
                 && let Some(i) = stmts.iter().position(jumps)
                 && i + 1 < stmts.len()
@@ -51,7 +51,7 @@ pub(super) const LABELS_NAMED: Contract = Contract {
     name: "each label named",
     broken: |body| {
         let mut found = None;
-        each_list(body, &mut |stmts| {
+        crate::js::each_list(body, &mut |stmts| {
             for stmt in stmts.iter() {
                 if found.is_none()
                     && let StmtKind::Labeled(label, inner)
@@ -171,7 +171,7 @@ fn unlanded<'a>(stmts: &'a [Stmt], targets: &mut Vec<Target<'a>>) -> Option<Stri
 
 fn twice_declared(body: &[Stmt]) -> Option<String> {
     let mut found = None;
-    each_list(body, &mut |stmts| {
+    crate::js::each_list(body, &mut |stmts| {
         let mut seen = std::collections::HashSet::new();
         for stmt in stmts {
             if let StmtKind::Let(name, _) | StmtKind::Const(name, _) = &stmt.kind
@@ -183,33 +183,6 @@ fn twice_declared(body: &[Stmt]) -> Option<String> {
         }
     });
     found
-}
-
-/// Each list of statements in `body`, `body` too, not in its closures.
-fn each_list<'a>(body: &'a [Stmt], f: &mut dyn FnMut(&'a [Stmt])) {
-    f(body);
-    for stmt in body {
-        match &stmt.kind {
-            StmtKind::If(_, a, b) => {
-                each_list(a, f);
-                if let Some(b) = b {
-                    each_list(b, f);
-                }
-            }
-            StmtKind::While { body, .. }
-            | StmtKind::ForOf { body, .. }
-            | StmtKind::For { body, .. }
-            | StmtKind::Labeled(_, body) => each_list(body, f),
-            StmtKind::Switch { cases, default, .. } => {
-                crate::js::case_lists(cases, default).for_each(|b| each_list(b, f))
-            }
-            StmtKind::Try(a, b) | StmtKind::TryCatch(a, _, b) => {
-                each_list(a, f);
-                each_list(b, f);
-            }
-            _ => {}
-        }
-    }
 }
 
 #[cfg(test)]

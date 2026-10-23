@@ -281,7 +281,7 @@ pub(super) fn holed_lists(body: &mut Vec<Stmt>) {
     // Each list with holes, by its name, its one item's index, and whether
     // it's assigned, not declared with it.
     let mut lists: Vec<(String, i128, bool)> = Vec::new();
-    js::statement_lists(&mut body.clone(), &mut |stmts| {
+    js::each_list(body, &mut |stmts| {
         for stmt in stmts.iter() {
             let (name, value, assigned) = match &stmt.kind {
                 StmtKind::Const(name, value) | StmtKind::Let(name, Some(value)) => (name.clone(), value, false),
@@ -377,7 +377,7 @@ pub(super) fn handles_in_place(body: &mut [Stmt]) {
 /// of, as MIR holds a reference written again before it's made.
 pub(super) fn read_handles(body: &mut Vec<Stmt>) {
     let mut handles: Vec<(String, Expr, bool)> = Vec::new();
-    js::statement_lists(&mut body.clone(), &mut |stmts| {
+    js::each_list(body, &mut |stmts| {
         for (k, stmt) in stmts.iter().enumerate() {
             if let StmtKind::Const(name, value) = &stmt.kind
                 && let ExprKind::Handle(place) = &value.kind
@@ -527,7 +527,7 @@ pub(super) fn plain_cells(body: &mut Vec<Stmt>) {
             }
         }
     });
-    js::each_expr_mut(&mut body.clone(), &mut |e| {
+    js::each_expr(body, &mut |e| {
         if let ExprKind::Arrow(params, _) | ExprKind::AsyncArrow(params, _) = &e.kind {
             for name in params.iter().flat_map(|p| p.names()) {
                 *bound.entry(name.to_string()).or_default() += 1;
