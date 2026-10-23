@@ -485,17 +485,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let ne = method == IterMethod::Ne;
                 self.iterators_eq((it, arg()), (item, iter_ty, arg_tys[1]), (lent, ne), span)?
             }
-            // The pairing, `(x, i) => [i, x]`, in place of which a
-            // callback that takes the pair apart is given each item and its
-            // index, of an array (`eager_chains`).
-            Some(IterMethod::Enumerate) => {
-                let pair = Expr::array(vec![Expr::var("i"), Expr::var("x")]);
-                let f = Expr::arrow(
-                    vec!["x".into(), "i".into()],
-                    vec![StmtKind::Return(Some(pair)).at(js::Span::NONE)],
-                );
-                method("map", it, vec![f])
-            }
+            Some(IterMethod::Enumerate) => enumerated(it),
+            Some(m) if m.compares() => self.iterators_cmp((it, arg()), (item, arg_tys[1]), m, span)?,
             Some(IterMethod::Fold) => self.folded(it, (Some(arg()), arg()), (arg_tys, item)),
             Some(IterMethod::Reduce) => self.folded(it, (None, arg()), (arg_tys, item)),
             Some(m) if m.tries() => self.try_folded(it, m, &mut arg, (own, output), span)?,
@@ -582,4 +573,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             || self.explicit_adapter(iter_ty)
             || self.struct_hint_known(iter_ty)
     }
+}
+
+/// `it.enumerate()`: each item and its index, `(x, i) => [i, x]`, in
+/// place of which a callback that takes the pair apart is given each item
+/// and its index, of an array (`eager_chains`).
+fn enumerated(it: Expr) -> Expr {
+    let pair = Expr::array(vec![Expr::var("i"), Expr::var("x")]);
+    let f = Expr::arrow(
+        vec!["x".into(), "i".into()],
+        vec![StmtKind::Return(Some(pair)).at(js::Span::NONE)],
+    );
+    Expr::call(Expr::member(it, "map"), vec![f])
 }

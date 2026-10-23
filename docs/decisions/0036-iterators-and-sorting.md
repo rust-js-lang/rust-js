@@ -151,3 +151,14 @@ which the numbers' sum is what's made of them:
 else given their `partial_cmp`, a `char`'s by code point, a derived one's.
 It stops at the first pair out of order, so an iterator's later items
 aren't made. Held by `test/corpus/is_sorted_items.rs`.
+
+## Amendment: comparing two iterators
+
+`cmp`, `partial_cmp`, `lt`, `le`, `gt` and `ge` of two iterators were
+refused (#117). They're `$iterCmp(a, b, cmp)`, which steps both in turn as
+std's `cmp_by` does, `a` before `b`, to the first `Ordering` of two that
+isn't `Equal`, or which ends first; given `partial_cmp`, `undefined` where
+two items have none, `None`. `lt` and the rest are it against 0,
+`$iterCmp(..) < 0`, which `undefined` fails, as std's are `false` of it.
+Items with a destructor, which it doesn't drop as it compares them, are
+refused. Held by `test/corpus/iter_compare.rs`.

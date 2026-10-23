@@ -444,6 +444,12 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "nth" => IterMethod::Nth,
             "partition" => IterMethod::Partition,
             "is_sorted" => IterMethod::IsSorted,
+            "cmp" => IterMethod::Cmp,
+            "partial_cmp" => IterMethod::PartialCmp,
+            "lt" => IterMethod::Lt,
+            "le" => IterMethod::Le,
+            "gt" => IterMethod::Gt,
+            "ge" => IterMethod::Ge,
             "collect" => IterMethod::Collect,
             _ => return None,
         })
@@ -960,6 +966,14 @@ pub(crate) fn zipped_sources<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<(T
 pub(crate) enum IterMethod {
     /// `is_sorted()`: each item at most the next, by its `PartialOrd`.
     IsSorted,
+    /// `cmp` and `partial_cmp` of two iterators, and `lt`, `le`, `gt` and
+    /// `ge`, by their items' `Ordering`.
+    Cmp,
+    PartialCmp,
+    Lt,
+    Le,
+    Gt,
+    Ge,
     IntoIter,
     FromIter,
     Next,
@@ -1024,6 +1038,12 @@ impl IterMethod {
     /// (ADRs 0458, 0539).
     pub(crate) fn tries(self) -> bool {
         matches!(self, IterMethod::TryFold | IterMethod::TryForEach)
+    }
+
+    /// One comparing two iterators by their items' `Ordering`.
+    pub(crate) fn compares(self) -> bool {
+        use IterMethod::*;
+        matches!(self, Cmp | PartialCmp | Lt | Le | Gt | Ge)
     }
 
     /// A lazy adapter that holds what it steps, so an owning source given it
