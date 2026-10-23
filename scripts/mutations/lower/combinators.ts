@@ -537,8 +537,8 @@ export const mutations: Mutation[] = [
     name: "search-key-type-of-owner",
     breaks: "`binary_search_by_key`'s key type is its owner's second, a deque's allocator, so a deque's is refused",
     file: "src/lower/combinators.rs",
-    find: "                    .rev()\n                    .nth(1)\n                    .expect(\"`binary_search_by_key` has a key type\");\n",
-    replace: "                    .nth(1)\n                    .expect(\"`binary_search_by_key` has a key type\");\n",
+    find: "    (generic_args.types().rev().nth(1)).expect(\"`binary_search_by_key` has a key type\")\n",
+    replace: "    (generic_args.types().nth(1)).expect(\"`binary_search_by_key` has a key type\")\n",
     tests: ["test/corpus.test.ts", "-t", "^deque_search_by_key.rs$"],
   },
 ];
