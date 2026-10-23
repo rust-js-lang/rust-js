@@ -174,7 +174,7 @@ for (const [name, source, message, crate] of [
   ["an untagged enum's variants of one kind, matched", '#[rust_js::untagged] pub enum E { A(&\'static str), B(char) }\npub fn f(e: E) -> u32 { match e { E::A(_) => 1, E::B(_) => 2 } }', "which JS can't tell apart"],
   ["an untagged enum's variants of one kind, cloned", '#[rust_js::untagged] #[derive(Clone)] pub enum E { A(String), B(&\'static str) }\npub fn f(s: String) -> E { E::A(s) }', "which JS can't tell apart"],
   // A variadic binding's rest arguments are its last parameter, a slice (ADR 0221).
-  ["a variadic binding of no slice", '#[rust_js::link_name = "Math.max"]\n#[rust_js::variadic]\n#[allow(unused_variables)]\nfn max(a: f64, b: f64) -> f64 { unreachable!() }\npub fn f() -> f64 { max(1.0, 2.0) }', "isn't a slice"],
+  ["a variadic binding of no slice", '#[rust_js::link_name = "Math.max"]\n#[rust_js::variadic]\n#[allow(unused_variables)]\nfn max(a: f64, b: f64) -> f64 { unreachable!() }\npub fn f() -> f64 { max(1.0, 2.0) }', "isn't rest arguments"],
   // A JS function is bound one way, an ordinary function with
   // `#[rust_js::link_name]` (ADR 0373): one in an `extern` block is
   // refused, its error saying the one way.

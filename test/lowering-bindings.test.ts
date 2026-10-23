@@ -780,14 +780,14 @@ use crate::internals::REACT_SHARED_INTERNALS;
 use js::Unknown;
 
 pub fn merged<'a>(target: &'a Unknown, source: &Unknown) -> &'a Unknown {
-    assign(target, &[Some(source)])
+    assign(target, (source,))
 }
 
 pub fn listed(object: &Unknown) -> Vec<String> {
     crate::keys::keys(object)
 }
 
-pub fn merger() -> for<'a> fn(&'a Unknown, &[Option<&Unknown>]) -> &'a Unknown {
+pub fn merger() -> for<'a> fn(&'a Unknown, &'static [Option<&'static Unknown>]) -> &'a Unknown {
     assign
 }
 
@@ -799,7 +799,7 @@ pub fn internals() -> &'static Internals {
 use js::Unknown;
 
 pub fn merged<'a>(target: &'a Unknown, source: &Unknown) -> &'a Unknown {
-    js::object::assign(target, &[Some(source)])
+    js::object::assign(target, (source,))
 }
 
 pub fn internals() -> &'static Internals {

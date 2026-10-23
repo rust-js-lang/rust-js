@@ -1,7 +1,7 @@
 //! [`next/cache`](https://nextjs.org/docs/app/api-reference/functions/cacheLife):
 //! how long what a `"use cache"` module renders is kept, and making it stale.
 
-use js::Promise;
+use js::{Promise, Rest};
 use react::webapi::ReadableStream;
 
 /// Keep what this `"use cache"` renders for `profile`'s time: a profile's
@@ -41,14 +41,14 @@ impl IntoCacheLife for CacheLife {}
 /// [`revalidate_tag`] and [`update_tag`] make stale.
 #[cfg_attr(rust_js, rust_js::link_name = "next/cache#cacheTag")]
 #[cfg_attr(rust_js, rust_js::variadic)]
-pub fn cache_tag(tags: &[&str]) {
+pub fn cache_tag(tags: impl Rest<str>) {
     unreachable!()
 }
 
 /// [`cache_tag`], by its name before Next.js 16.
 #[cfg_attr(rust_js, rust_js::link_name = "next/cache#unstable_cacheTag")]
 #[cfg_attr(rust_js, rust_js::variadic)]
-pub fn unstable_cache_tag(tags: &[&str]) {
+pub fn unstable_cache_tag(tags: impl Rest<str>) {
     unreachable!()
 }
 

@@ -18,7 +18,7 @@
 
 use core::marker::PhantomData;
 
-use js::{JsObject, Promise, Symbol};
+use js::{JsObject, Promise, Rest, Symbol, Takes};
 
 /// What an emitter's event `E` is: its listener's type, `dyn Fn(f64)`, and
 /// its arguments as [`EventEmitterExt::emit`] gives them, `(f64,)`. An
@@ -227,12 +227,15 @@ pub fn get_max_listeners<T: EventEmitterExt>(emitter: &T) -> f64 {
     unreachable!()
 }
 
+/// A rest parameter of emitters takes each, of any emitter type (ADR 0640).
+impl<'a, T: EventEmitterExt> Takes<&'a T> for EventEmitter {}
+
 /// [`events.setMaxListeners(n, ...eventTargets)`](https://nodejs.org/api/events.html#eventssetmaxlistenersn-eventtargets):
 /// each of `event_targets`', or, of none, each new emitter's; of `n`, or
 /// [`default_max_listeners`].
 #[cfg_attr(rust_js, rust_js::link_name = "events#setMaxListeners")]
 #[cfg_attr(rust_js, rust_js::variadic)]
-pub fn set_max_listeners(n: Option<f64>, event_targets: &[&EventEmitter]) {
+pub fn set_max_listeners(n: Option<f64>, event_targets: impl Rest<EventEmitter>) {
     unreachable!()
 }
 

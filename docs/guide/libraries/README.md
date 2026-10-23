@@ -229,7 +229,9 @@ How WebIDL maps to Rust, one rule for each:
   `el.append((node, "text"))` is `el.append(node, "text")`, and
   `console::error(("%s is %s", name, kind))` is `console.error("%s is %s",
   name, kind)`; `(x,)` is one, `()` none, and a `None` before none is no
-  argument, `console::time_log(None, ())` being `console.timeLog()`
+  argument, `console::time_log(None, ())` being `console.timeLog()`. A
+  slice or a `Vec` of them is spread: `el.append(&children)` is
+  `el.append(...children)`
   ([ADR 0640](../../decisions/0640-a-rest-parameter-is-a-tuple.md)).
 - **A cast is `unchecked_from`:** `html_input_element::unchecked_from(el)`.
 

@@ -359,7 +359,7 @@ pub fn bytes() -> (u32, u32, i8, Vec<u8>) {
     let view = data_view::new(buffer, None, None);
     view.set_int16(0, -2, true);
     let bytes = uint8_array::new_with_buffer(buffer, None, None);
-    let signed = int8_array::of(&[1, -1, 127]);
+    let signed = int8_array::of((1, -1, 127));
     (buffer.byte_length(), bytes.length(), signed.get(1).unwrap_or(0), bytes.subarray(Some(0), Some(2)).values().collect())
 }
 pub fn bigs() -> (i64, bool) {

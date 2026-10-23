@@ -6,7 +6,7 @@
 use core::marker::PhantomData;
 use core::ops::Deref;
 
-use js::{ArrayBuffer, JsObject, Uint8Array};
+use js::{ArrayBuffer, JsObject, Rest, Uint8Array};
 
 use crate::BufferEncoding;
 
@@ -59,7 +59,7 @@ impl Buffer {
     /// [`Buffer.of(...items)`](https://nodejs.org/api/buffer.html#static-method-bufferofitems).
     #[cfg_attr(rust_js, rust_js::link_name = "Buffer.of")]
     #[cfg_attr(rust_js, rust_js::variadic)]
-    pub fn of(items: &[u8]) -> &'static Buffer {
+    pub fn of(items: impl Rest<u8>) -> &'static Buffer {
         unreachable!()
     }
 

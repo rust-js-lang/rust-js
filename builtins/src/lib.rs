@@ -425,23 +425,25 @@ pub unsafe trait StructuredClone {}
 pub trait IntoUnknown {}
 impl<T: ?Sized> IntoUnknown for T {}
 
-/// The arguments a TypeScript rest parameter, `...data: T[]`, is given: a
-/// tuple, each of its own type, one a `T` takes ([`Takes`]), `()` of none
-/// and `(x,)` of one (ADR 0640). A `#[rust_js::variadic]` binding's last
-/// parameter, whose items are the call's arguments:
-/// `console::error(("%s is %s", name, kind))` is `console.error("%s is %s",
-/// name, kind)`. `T` is `dyn IntoUnknown` of TypeScript's `any`, a
-/// union's `dyn Into..` trait, or the type an argument is a reference to,
-/// `str`.
+/// The arguments a TypeScript rest parameter, `...data: T[]`, is given
+/// (ADR 0640): a tuple, its arguments, each of its own type, one a `T`
+/// takes ([`Takes`]), `()` of none and `(x,)` of one; or a slice or a
+/// `Vec` of them, by reference, spread. A `#[rust_js::variadic]` binding's
+/// last parameter: `console::error(("%s is %s", name, kind))` is
+/// `console.error("%s is %s", name, kind)`, and `math::max(&values)`
+/// `Math.max(...values)`. `T` is `dyn IntoUnknown` of TypeScript's `any`, a
+/// union's `dyn Into..` trait, the type an argument is a reference to,
+/// `str`, or a number's own type, `f64`.
 #[diagnostic::on_unimplemented(
-    message = "`{Self}` is not a tuple of rest arguments",
-    note = "a rest parameter is given a tuple, `(a, b)`, `(a,)` of one and `()` of none"
+    message = "`{Self}` is not rest arguments",
+    note = "a rest parameter is given a tuple of its arguments, `(a, b)`, `(a,)` of one and `()` of none, or a slice or a `Vec` to spread, `&values`"
 )]
 pub trait Rest<T: ?Sized> {}
 
 /// What a rest parameter of `T`s takes as one of its arguments, an `A`: any
-/// value, of `dyn IntoUnknown`; text, of `str`; and a union's members, or
-/// an interface and the ones that extend it, as webapi says (ADR 0640).
+/// value, of `dyn IntoUnknown`; text, of `str`; a number of its own type;
+/// and a union's members, or an interface and the ones that extend it, as
+/// webapi and node say (ADR 0640).
 #[diagnostic::on_unimplemented(message = "a rest parameter of `{Self}`s takes no `{A}`")]
 pub trait Takes<A> {}
 
@@ -449,6 +451,21 @@ impl<A> Takes<A> for dyn IntoUnknown {}
 impl<'a> Takes<&'a str> for str {}
 impl<'a> Takes<&'a String> for str {}
 impl Takes<String> for str {}
+
+/// A number, TypeScript's `number` or `bigint`, of its own type.
+macro_rules! takes_itself {
+    ($($t:ty),*) => {
+        $(impl Takes<$t> for $t {})*
+    };
+}
+
+takes_itself!(i8, u8, i16, u16, i32, u32, i64, u64, f32, f64);
+
+/// A slice of them, spread.
+impl<'a, T: ?Sized + Takes<A>, A> Rest<T> for &'a [A] {}
+
+/// A `Vec` of them, spread.
+impl<'a, T: ?Sized + Takes<A>, A> Rest<T> for &'a Vec<A> {}
 
 /// A tuple of up to 12, each item one `T` takes.
 macro_rules! rest {
@@ -1123,6 +1140,8 @@ pub mod number {
 /// asks for it here. The rest, `x.sqrt()` say, are `Math`'s already
 /// (ADR 0283).
 pub mod math {
+    use super::Rest;
+
     /// [`Math.round(x)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Math/round):
     /// the nearest integer, a half up, `-2.5` to `-2`, where `x.round()`
     /// takes it away from zero, to `-3`.
@@ -1136,7 +1155,7 @@ pub mod math {
     /// is the other number of a `NaN`. Of none, `-Infinity`.
     #[cfg_attr(rust_js, rust_js::link_name = "Math.max")]
     #[cfg_attr(rust_js, rust_js::variadic)]
-    pub fn max(values: &[f64]) -> f64 {
+    pub fn max(values: impl Rest<f64>) -> f64 {
         unreachable!()
     }
 
@@ -1145,7 +1164,7 @@ pub mod math {
     /// is the other number of a `NaN`. Of none, `Infinity`.
     #[cfg_attr(rust_js, rust_js::link_name = "Math.min")]
     #[cfg_attr(rust_js, rust_js::variadic)]
-    pub fn min(values: &[f64]) -> f64 {
+    pub fn min(values: impl Rest<f64>) -> f64 {
         unreachable!()
     }
 
@@ -1338,7 +1357,7 @@ pub mod object {
     /// a `None` source, `null` or `undefined`, skipped; `target`.
     #[cfg_attr(rust_js, rust_js::link_name = "Object.assign")]
     #[cfg_attr(rust_js, rust_js::variadic)]
-    pub fn assign<'a>(target: &'a Unknown, sources: &[Option<&Unknown>]) -> &'a Unknown {
+    pub fn assign<'a>(target: &'a Unknown, sources: impl Rest<dyn IntoUnknown>) -> &'a Unknown {
         unreachable!()
     }
 

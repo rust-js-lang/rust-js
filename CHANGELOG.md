@@ -781,7 +781,12 @@ released any more: `rust-js build` is the one way to build an app.
   `classList.add(...tokens)`, take `impl js::Rest<T>`, a tuple, each
   argument of its own type: `console::error(("%s is %s", name, kind))` is
   `console.error("%s is %s", name, kind)`. A call of one is `(x,)`, of
-  none `()`; each took one argument, or none after an optional one.
+  none `()`; each took one argument, or none after an optional one. A
+  slice or a `Vec` of them, by reference, is spread, `el.append(&children)`
+  being `el.append(...children)`; the js, node and next crates' rest
+  parameters are `impl js::Rest<T>` too, `math::max((a, b))`,
+  `path::join(("a", "b"))`, `object::assign(target, (source,))`, where
+  each took a slice written out.
 - **`js::concat_text` of any value is what may throw** (ADR 0639): of an
   `&Unknown` or an `Option<&Unknown>`, `"" + value` gives `Result<String,
   &JsError>`, as it throws of a symbol; of text and numbers, a `String`

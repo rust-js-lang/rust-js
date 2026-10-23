@@ -357,7 +357,7 @@ use crate::internals::REACT_SHARED_INTERNALS;
 use js::Unknown;
 
 pub fn merged<'a>(target: &'a Unknown, source: &Unknown) -> &'a Unknown {
-    assign(target, &[Some(source)])
+    assign(target, (source,))
 }
 
 pub fn internals() -> &'static Internals {
@@ -365,7 +365,7 @@ pub fn internals() -> &'static Internals {
 }
 
 pub fn direct<'a>(target: &'a Unknown, source: &Unknown) -> &'a Unknown {
-    js::object::assign(target, &[Some(source)])
+    js::object::assign(target, (source,))
 }
 ```
 

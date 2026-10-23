@@ -82,7 +82,7 @@ pub async fn listed(dir: String) -> Vec<String> {
     let stat = util::promisify(fs::stat);
     let mut kinds = Vec::new();
     for subdir in readdir(&dir).await {
-        let res = path::resolve(&[&dir, &subdir]);
+        let res = path::resolve((&dir, &subdir));
         kinds.push(format!("{subdir}:{}", stat(&res).await.is_directory()));
     }
     kinds
@@ -170,8 +170,8 @@ fn parts(parsed: ParsedPath) -> String {
 pub fn all() -> Vec<String> {
     vec![
         path::normalize("/a//b/../c"),
-        path::join(&["a", "b", "../c"]),
-        path::resolve(&["/a", "b"]),
+        path::join(("a", "b", "../c")),
+        path::resolve(("/a", "b")),
         path::relative("/a/b", "/a/c"),
         path::dirname("/a/b.txt"),
         path::basename("/a/b.txt", None),
@@ -188,7 +188,7 @@ pub fn all() -> Vec<String> {
 
 pub fn platform(platform: &PlatformPath) -> Vec<String> {
     vec![
-        platform.join(&["a", "b"]),
+        platform.join(("a", "b")),
         platform.sep(),
         platform.delimiter(),
         platform.basename("c:/x/y.txt", Some(".txt")),
@@ -268,7 +268,7 @@ pub fn all() -> Vec<String> {
         format!("{} {}", bytes.read_uint8(Some(2)), bytes.read_uint_be(0, 3)),
         filled.to_string(None, None, None),
         format!("{} {} {}", hi.index_of("l", None, None), hi.last_index_of("l", None, None), hi.includes("xyz", None, None)),
-        format!("{} {}", Buffer::compare_buffers(&bytes, &hex), bytes.equals(&Buffer::of(&[1, 2, 3]))),
+        format!("{} {}", Buffer::compare_buffers(&bytes, &hex), bytes.equals(&Buffer::of((1, 2, 3)))),
         hi.subarray(Some(0), Some(1)).to_string(None, None, None),
         bytes.to_json().data.len().to_string(),
         format!("{} {}", Buffer::is_buffer(hi), Buffer::is_encoding("utf8")),
