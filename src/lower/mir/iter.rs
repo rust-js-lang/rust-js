@@ -260,27 +260,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Some(stepped) = self.given_iterator_call(std_method, iter_ty, &values) {
             return Ok(Some(stepped));
         }
-        // `x.into_iter()`: a range stays one, an iterator is itself, and a
-        // collection's items a JS iterator; not one held as it is (ADR 0552).
         if std_method == Some(IterMethod::IntoIter) && !self.holds_into_iter(receiver_ty) {
             let value = values.into_iter().next().expect("the receiver");
-            if self.recognition().is_given_iterable(receiver_ty) {
-                return Ok(Some(crate::lower::iterators::given_into_iter(value)));
-            }
-            if self.range_kind(iter_ty).is_some() || self.implements_iterator(receiver_ty) {
-                return Ok(Some(value));
-            }
-            // `for x in &mut v` of numbers: handles on its items, as
-            // `iter_mut()`'s are, `mir_std_call`'s (ADR 0099).
-            let handles = matches!(receiver_ty.kind(), ty::Ref(_, _, Mutability::Mut))
-                && self.iterator_item(output).is_some_and(|item| self.is_cell(item));
-            if handles {
-                return Ok(None);
-            }
-            if iter_ty.is_array() || iter_ty.is_slice() || self.is_vec_like(iter_ty) {
-                return Ok(Some(self.std_iterator(value, output)));
-            }
-            return Ok(None);
+            return Ok(self.value_into_iter(value, receiver_ty, output));
+        }
+        // A range's own `nth`, `last` and `count`, of its bounds (#163).
+        if let Some(stepped) = self.range_own_step(std_method, iter_ty, &values) {
+            return Ok(Some(stepped));
         }
         // `B::from_iter(items)`, which `items.collect()` is (ADR 0160).
         if std_method == Some(IterMethod::FromIter) {
@@ -557,6 +543,24 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Some(IterMethod::Collect) => self.collected_into(it, output, item, Some(iter_ty), span)?,
             _ => return Ok(None),
         }))
+    }
+
+    /// `x.into_iter()`, of `value` of type `receiver_ty`: a range stays one,
+    /// an iterator is itself, and a collection's items a JS iterator; `None`
+    /// of what `mir_std_call` makes, `for x in &mut v`'s handles on numbers
+    /// (ADR 0099).
+    fn value_into_iter(&mut self, value: Expr, receiver_ty: Ty<'tcx>, output: Ty<'tcx>) -> Option<Expr> {
+        let iter_ty = receiver_ty.peel_refs();
+        if self.recognition().is_given_iterable(receiver_ty) {
+            return Some(crate::lower::iterators::given_into_iter(value));
+        }
+        if self.range_kind(iter_ty).is_some() || self.implements_iterator(receiver_ty) {
+            return Some(value);
+        }
+        let handles = matches!(receiver_ty.kind(), ty::Ref(_, _, Mutability::Mut))
+            && self.iterator_item(output).is_some_and(|item| self.is_cell(item));
+        let items = iter_ty.is_array() || iter_ty.is_slice() || self.is_vec_like(iter_ty);
+        (!handles && items).then(|| self.std_iterator(value, output))
     }
 
     /// Whether `$sizeHint` finds an `iter_ty`'s size: a `$iter`'s, exact, a

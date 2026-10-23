@@ -10,12 +10,4 @@ export const mutations: Mutation[] = [
     replace: "  for (let i = start; i < end; i++) {",
     tests: ["test/corpus.test.ts", "-t", "^range_steps_known.rs$"],
   },
-  {
-    name: "lazy-range-len-floor",
-    breaks: "how many numbers a range `step` apart has rounds down, missing the last",
-    file: "src/runtime/lazy_range.js",
-    find: "Math.ceil((end - start) / step)",
-    replace: "Math.floor((end - start) / step)",
-    tests: ["test/corpus.test.ts", "-t", "^range_steps_known.rs$"],
-  },
 ];
