@@ -116,3 +116,11 @@ holds, and the walk settles.
 - Mutations `string-length-past-int32` (the most `2^31`, so two may wrap),
   `string-length-below-engines` (`2^30 - 1`, so three don't wrap) and
   `widened-counter-within-forgotten`.
+
+## Amendment: an array of sized items is shorter still (ADR 0697)
+
+A `Vec` or a slice of items that take up room is at most `isize::MAX`
+items long, as no Rust allocation is larger in bytes, so its `len()` is
+at most `2^31 - 1` too, and `len() as isize - 1` is `length - 1`
+([0697](0697-a-signed-index-tested-not-negative-is-a-js-index.md)). One of
+items of no size may still be `u32::MAX` long.

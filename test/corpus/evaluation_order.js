@@ -25,7 +25,7 @@ function main() {
   const pair = { right: note(log, "right", 2), left: note(log, "left", 1) };
   console.log(`pair ${pair.left} ${pair.right}`);
   console.log(`[${log.map((item) => $debugStr(item)).join(", ")}]`);
-  const zero = ((log.length | 0) - 8) | 0;
+  const zero = log.length - 8;
   (($div(note(log, "before", 1), zero, -2147483648) | 0) + note(log, "never", 2)) | 0;
   console.log("unreachable");
 }

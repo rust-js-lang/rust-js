@@ -109,12 +109,11 @@ function main() {
   }
   const weighed = $dynCell({ id: 4, label: 2 }, i32Weight);
   const value = weighed.id | 0;
-  const { label: value$1, impl } = weighed;
   try {
     try {
       try {
         try {
-          console.log(`${(value + impl.weight(value$1)) | 0}`);
+          console.log(`${(value + weighed.impl.weight(weighed.label)) | 0}`);
         } finally {
           $rcDrop(sent, (value) => {
             value.impl.$drop?.(value.label);

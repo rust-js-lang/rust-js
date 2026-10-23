@@ -57,17 +57,15 @@ function main() {
     }
     const named = new Map();
     try {
-      const tmp = named;
-      const tmp$1 = adder("a1", 1);
-      const insert = $insert(tmp, "a", tmp$1);
+      const tmp = adder("a1", 1);
+      const insert = $insert(named, "a", tmp);
       if (insert != null) {
         $dispose(insert);
       }
-      const tmp$2 = named;
-      const tmp$3 = adder("a2", 2);
-      const tmp$4 = $insert(tmp$2, "a", tmp$3);
-      if (tmp$4 != null) {
-        $dispose(tmp$4);
+      const tmp$1 = adder("a2", 2);
+      const tmp$2 = $insert(named, "a", tmp$1);
+      if (tmp$2 != null) {
+        $dispose(tmp$2);
       }
       console.log("replaced");
       const remove = $removeAt(handlers, 0);

@@ -165,6 +165,18 @@ pub(super) fn bound_into(
     })
 }
 
+/// Of the first `bound` of `stmts`, the `const`s a chain's tests read in
+/// place (`bound_into`), each nothing after reads: gone, the tests' alone.
+pub(super) fn unread_bound(stmts: &mut Vec<Stmt>, bound: usize) {
+    for at in (0..bound).rev() {
+        if let StmtKind::Const(name, _) = &stmts[at].kind
+            && js::mentions_in(&stmts[at + 1..], name) == 0
+        {
+            stmts.remove(at);
+        }
+    }
+}
+
 /// Whether `e` is a binding's read of a property, of `getters`, where the
 /// program calls one, which a getter may be (ADR 0672).
 fn reads_a_getter(e: &Expr, getters: &[js::Span]) -> bool {
@@ -215,13 +227,7 @@ pub(super) fn and_tests(stmts: &mut Vec<Stmt>, conditions: &[(js::Span, js::Span
         let first = std::mem::replace(test, Expr::undefined());
         *test = unimplied(Expr::bin(Op::And, first, second));
         then.extend(body);
-        for at in (0..bound).rev() {
-            if let StmtKind::Const(name, _) = &then[at].kind
-                && js::mentions_in(&then[at + 1..], name) == 0
-            {
-                then.remove(at);
-            }
-        }
+        unread_bound(then, bound);
     }
     // Its name is its own in the function, as each MIR local's is, so in
     // this list too (`contracts::DECLARED_ONCE`).

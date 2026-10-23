@@ -199,3 +199,27 @@ pub fn is_simple_object(object: &Unknown) -> bool {
   const hidden = Object.defineProperty({}, "b", { value: 1, enumerable: false });
   expect([lib.isSimpleObject(props as never), lib.isSimpleObject(hidden as never), lib.isSimpleObject({ a: 1 } as never)]).toEqual([true, false, true]);
 });
+
+// ADR 0697: of `if a || v[i] != w[j] { return 1; }`, an index in bounds
+// MIR reads into a temporary between the tests, the read is the test's
+// alone where nothing after it reads it (`unread_bound`, as `and_tests`
+// leaves one): `if (j === 0 || v[i] !== w[j])`, no `const value = v[i];`
+// left after it.
+test("a read a test takes in place is gone where nothing else reads it", async () => {
+  const { js, lib } = await compiled(
+    "unread-bound-read",
+    `pub fn differs(v: &[i32], w: &[i32], i: usize, j: usize) -> usize {
+    if i < v.len() && j < w.len() {
+        if j == 0 || v[i] != w[j] {
+            return 1;
+        }
+    }
+    0
+}
+`,
+  );
+  expect(js).toContain("    if (j === 0 || v[i] !== w[j]) {\n      return 1;\n    }\n  }\n  return 0;\n");
+  expect(js).not.toContain("const value");
+  const differs = lib.differs as unknown as (v: number[], w: number[], i: number, j: number) => number;
+  expect([differs([1, 2], [1, 2], 1, 1), differs([1, 2], [1, 3], 1, 1), differs([1], [1], 0, 0), differs([], [1], 0, 0)]).toEqual([0, 1, 1, 0]);
+});

@@ -27,7 +27,7 @@ export function Card({ title, children }) {
 function reduce(todos, action) {
   if (action.TAG === "Add") {
     const next = todos.map((t) => ({ id: t.id, text: t.text, done: t.done }));
-    next.push({ id: (todos.length + 1) >>> 0, text: action._0, done: false });
+    next.push({ id: todos.length + 1, text: action._0, done: false });
     return next;
   }
   const captured = action._0;

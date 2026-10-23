@@ -842,3 +842,79 @@ test("a range pattern's bounds are one test", async () => {
   expect([100, 90, 89, 80, 79, 101].map(lib.grade)).toEqual(["A", "A", "B", "B", "F", "F"]);
 });
 
+
+// ADR 0697: an `as` of an integer already in its target's range is the
+// number as it is, `s` of `s as usize` under `s >= 0`, and a slice's
+// length of items that take up room is at most `isize`'s most, so `len()
+// as isize - 1` is `length - 1`. A counter below a length stays below it
+// past the loop, so its `as isize` is itself too, and `i != xs.len()` of
+// one at most the length puts it below. React's describeNativeComponentFrame
+// matches two stacks from their ends so, its indices `isize`s that go
+// below zero. Where nothing shows the sign, `i as usize` keeps its `>>> 0`
+// and its check, and an `isize`'s `- 1` its `| 0`.
+test("a signed index tested not negative is a JS index as it is", async () => {
+  const dir = fixture("signed-index");
+  writeFileSync(join(dir, "lib.rs"), `pub fn common(sample: &[&str], control: &[&str]) -> isize {
+    let mut s = 0;
+    while s < sample.len() && sample[s] != "Root" {
+        s += 1;
+    }
+    let mut s = s as isize;
+    let mut c = control.len() as isize - 1;
+    if s as usize == sample.len() {
+        s = sample.len() as isize - 1;
+    }
+    while s >= 1 && c >= 0 {
+        if sample[s as usize] != control[c as usize] {
+            return s;
+        }
+        s -= 1;
+        c -= 1;
+    }
+    -1
+}
+
+pub fn at(items: &[i32], i: isize) -> i32 {
+    items[i as usize]
+}
+
+pub fn down(s: isize) -> isize {
+    s - 1
+}
+
+pub fn units(items: &[()]) -> isize {
+    items.len() as isize - 1
+}
+
+pub fn guarded(items: &[i32], s: isize) -> i32 {
+    if s as usize >= 1 && (s as usize) < items.len() { items[s as usize] } else { 0 }
+}
+
+pub fn past(items: &[i32]) -> i32 {
+    let i = items.len() + 1;
+    if i != items.len() { items[i] } else { 0 }
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("  let c = control.length - 1;\n");
+  expect(js).toContain("  if (s === sample.length) {\n    s = sample.length - 1;\n  }\n");
+  expect(js).toContain("    if (sample[s] !== control[c]) {\n      return s;\n    }\n    s--;\n    c--;\n");
+  expect(js).not.toContain("s | 0");
+  // Nothing shows `i`'s sign, nor `s`'s: `usize`'s, `isize`'s wraps.
+  expect(js).toContain("  return $index(items, i >>> 0);\n");
+  expect(js).toContain("  return (s - 1) | 0;\n");
+  // Items of no size may be more than `isize`'s most.
+  expect(js).toContain("  return ((items.length | 0) - 1) | 0;\n");
+  const lib = await import(join(dir, "lib.js"));
+  expect(lib.common(["a", "x", "Root", "m"], ["b", "Root", "m"])).toBe(2);
+  expect(lib.common(["a", "x", "m"], ["b", "y", "m"])).toBe(1);
+  expect(lib.common(["Root"], ["Root"])).toBe(-1);
+  expect(lib.at([4, 5], 1)).toBe(5);
+  expect(() => lib.at([4, 5], -1)).toThrow("index out of bounds");
+  expect([lib.down(-(2 ** 31)), lib.down(0)]).toEqual([2 ** 31 - 1, -1]);
+  // A test of an `as` that may change the number shows nothing of `s`.
+  expect([lib.guarded([4, 5], 1), lib.guarded([4, 5], -1), lib.guarded([4, 5], 0)]).toEqual([5, 0, 0]);
+  // One past the length isn't below it for not being the length.
+  expect(() => lib.past([1])).toThrow("index out of bounds");
+});

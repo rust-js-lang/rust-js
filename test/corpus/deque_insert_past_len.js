@@ -9,7 +9,7 @@ export function entry() {
 function main() {
   const queue = [];
   queue.push(1);
-  const at = (queue.length + 1) >>> 0;
+  const at = queue.length + 1;
   $dequeInsert(queue, at, 5);
 }
 //# sourceMappingURL=case.js.map

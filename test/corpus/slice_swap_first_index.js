@@ -10,8 +10,8 @@ function main() {
   const v = [1, 2, 3];
   $swap(v, 0, 2);
   console.log(`[${v.join(", ")}]`);
-  const a = (v.length + 1) >>> 0;
-  const b = (v.length + 2) >>> 0;
+  const a = v.length + 1;
+  const b = v.length + 2;
   $swap(v, a, b);
 }
 //# sourceMappingURL=case.js.map
