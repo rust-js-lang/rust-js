@@ -35,6 +35,7 @@ mod std_calls;
 mod structure;
 mod temporaries;
 mod tidy;
+pub(super) use tidy::pass_names as tidy_pass_names;
 mod writer;
 
 use self::queries::*;
@@ -452,6 +453,11 @@ impl<'tcx> State<'_, 'tcx> {
     /// first in the function's body.
     fn settled_lets(&self) -> impl Iterator<Item = Stmt> + '_ {
         (self.settled.iter()).map(|&local| StmtKind::Let(self.locals.names[local].clone(), None).at(js::Span::NONE))
+    }
+
+    /// Each drop flag, by its name (`mir/drops.rs`).
+    fn flag_names(&self) -> HashSet<String> {
+        self.flags.iter().flatten().cloned().collect()
     }
 }
 
@@ -947,8 +953,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .filter(|&(_, &b)| b)
                 .map(|(path, _)| path.clone()),
         );
-        // Each drop flag, by its name (`mir/drops.rs`).
-        let flags: HashSet<String> = state.flags.iter().flatten().cloned().collect();
+        let flags = state.flag_names();
         tidy::tidy(
             &mut out,
             &tidy::Hints {
@@ -971,6 +976,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 concise: &self.locals.mir.concise.clone(),
                 flags: &flags,
                 fuse: self.fuse_import().as_deref(),
+                until: self.krate.tidy_until,
             },
         );
         tidy::destructured_params(&mut params, &mut out);

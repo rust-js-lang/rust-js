@@ -570,7 +570,7 @@ pub(super) fn chain(body: &[Stmt], label: &str) -> Option<(Vec<Expr>, String, Ex
 pub(super) fn or_chain(body: &[Stmt], label: &str) -> Option<(Vec<Expr>, Vec<Stmt>, Vec<Stmt>)> {
     let [first, then @ ..] = body else { return None };
     let (tests, otherwise) = broken_chain(std::slice::from_ref(first), label)?;
-    if tests.is_empty() || targets(then, label) || targets(&otherwise, label) {
+    if tests.is_empty() || js::names_jump(then, label) || js::names_jump(&otherwise, label) {
         return None;
     }
     Some((tests, otherwise, then.to_vec()))

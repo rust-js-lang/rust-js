@@ -332,7 +332,7 @@ pub(super) fn guarded(stmts: &mut Vec<Stmt>) {
         if !tail.last().is_some_and(ends) {
             continue;
         }
-        if guards == 0 || targets(rest, label) || !rest.last().is_some_and(ends) {
+        if guards == 0 || js::names_jump(rest, label) || !rest.last().is_some_and(ends) {
             continue;
         }
         // What `rest` declares, now beside what's before it.
