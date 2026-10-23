@@ -94,6 +94,45 @@ export function first(text) {
 }
 ```
 
+A binding of TypeScript's `any`, `reportError(e: any)`, is generic, so
+its value is of the type it's given: a `fn` of `Option<&'static
+Unknown>`, a JS value of any shape, which lives as long as JS keeps it, as
+a binding gives one. A `fn` of `Option<&Unknown>` of any lifetime is no
+generic's: rustc says "one type is more general than the other"
+([ADR 0655](../../decisions/0655-an-any-binding-as-a-value-is-a-fn-of-a-static-unknown.md)):
+
+```rust
+use js::Unknown;
+
+thread_local! {
+    static REPORT_GLOBAL_ERROR: fn(Option<&'static Unknown>) =
+        if js::is_defined(webapi::global::report_error::<Option<&Unknown>>) {
+            webapi::global::report_error
+        } else {
+            |error| webapi::console::error((error,))
+        };
+}
+
+pub fn report(error: Option<&'static Unknown>) {
+    REPORT_GLOBAL_ERROR.with(|report| report(error));
+}
+```
+
+```js
+let reportGlobalError;
+if (typeof reportError !== "undefined") {
+  reportGlobalError = reportError;
+} else {
+  reportGlobalError = (error) => {
+    console.error(error);
+  };
+}
+
+export function report(error) {
+  reportGlobalError(error);
+}
+```
+
 ## Where it comes from
 
 What's before a `#` is the module, written into the `import` as it is.

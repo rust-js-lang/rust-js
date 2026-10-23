@@ -364,6 +364,55 @@ pub fn rejected(promise: Promise<String>, reason: &str) -> &'static PromiseRejec
   }
 });
 
+// ADR 0655: a binding of `any`, `reportError(e: any)`, as a value is a `fn`
+// of `Option<&'static Unknown>`, the host's or a fallback, chosen where the
+// module loads, as React's `reportGlobalError` is; and a value of it alone
+// is the module's `const`.
+test("a binding of any as a value is a fn of a static Unknown", async () => {
+  const withWeb = ["--", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const dir = fixture("any-binding-value");
+  writeFileSync(join(dir, "lib.rs"), `use js::Unknown;
+
+thread_local! {
+    static REPORT_GLOBAL_ERROR: fn(Option<&'static Unknown>) =
+        if js::is_defined(webapi::global::report_error::<Option<&Unknown>>) {
+            webapi::global::report_error
+        } else {
+            |error| webapi::console::error((error,))
+        };
+    static HOST_REPORT_ERROR: fn(Option<&'static Unknown>) = webapi::global::report_error;
+}
+
+js::export_default!(REPORT_GLOBAL_ERROR);
+
+pub fn hosts(error: Option<&'static Unknown>) {
+    HOST_REPORT_ERROR.with(|report| report(error));
+}
+`);
+  const globals = globalThis as any;
+  const previous = [globals.reportError, console.error];
+  const reported: unknown[] = [];
+  const logged: unknown[] = [];
+  globals.reportError = (error: unknown) => reported.push(error);
+  console.error = (error: unknown) => logged.push(error);
+  try {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
+    const js = readFileSync(join(dir, "lib.js"), "utf8");
+    expect(js).toContain('let reportGlobalError;\nif (typeof reportError !== "undefined") {\n  reportGlobalError = reportError;\n} else {');
+    expect(js).toContain("const hostReportError = reportError;");
+    expect(js).toContain("export default reportGlobalError;");
+    const lib = await import(join(dir, "lib.js"));
+    lib.default("first");
+    lib.hosts("second");
+    globals.reportError = undefined;
+    writeFileSync(join(dir, "again.js"), readFileSync(join(dir, "lib.js"), "utf8"));
+    (await import(join(dir, "again.js"))).default("third");
+    expect([reported, logged]).toEqual([["first", "second"], ["third"]]);
+  } finally {
+    [globals.reportError, console.error] = previous;
+  }
+});
+
 // ADR 0271: JS's truthiness of a value, `!value` as a person tests one, and
 // a value of any shape given a type it's vouched to have, the value itself.
 test("a JS value is tested as JS tests it, and cast as it's vouched", async () => {
