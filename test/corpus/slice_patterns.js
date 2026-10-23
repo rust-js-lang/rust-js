@@ -32,11 +32,9 @@ function describe(xs) {
 }
 
 function greet(words) {
-  if (words.length === 2) {
-    if (words[0] === "hello") {
-      const name = words[1];
-      return `hi ${name}`;
-    }
+  if (words.length === 2 && words[0] === "hello") {
+    const name = words[1];
+    return `hi ${name}`;
   }
   if (words.length >= 1) {
     if (words[0] === "hello") {

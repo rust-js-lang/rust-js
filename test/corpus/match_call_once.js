@@ -21,10 +21,8 @@ function pick(x) {
   if (n === 2 || n === 3) {
     return 20;
   }
-  if (n >= 4) {
-    if (n <= 9) {
-      return 30;
-    }
+  if (n >= 4 && n <= 9) {
+    return 30;
   }
   if (n < 0) {
     return 40;

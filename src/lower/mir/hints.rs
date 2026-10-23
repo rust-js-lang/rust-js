@@ -110,7 +110,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         let guard = self.thir[arm].guard?;
                         Some((tested, self.js_span(self.thir[guard].span)))
                     });
-                    std::iter::once((tested, tested)).chain(guards).collect()
+                    // And an arm's pattern, where MIR tests a range's two
+                    // bounds, `90..=100`'s `score >= 90 && score <= 100`.
+                    let patterns = (arms.iter()).map(|&arm| {
+                        let pattern = self.js_span(self.thir[arm].pattern.span);
+                        (pattern, pattern)
+                    });
+                    std::iter::once((tested, tested))
+                        .chain(guards)
+                        .chain(patterns)
+                        .collect()
                 }
                 _ => Vec::new(),
             })

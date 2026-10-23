@@ -38,3 +38,12 @@ flag's, named for what it guards (`flags::tests_flag`).
   `enums` snapshot.
 - Mutations: the tests nested, a joined flag left unnamed, an implied
   part kept, `"object"` taken to imply a value.
+
+## Amendment: a range's two bounds are one test
+
+A range pattern, `90..=100`, is two tests MIR makes, which were an `if`
+in an `if`: `if (score >= 90) { if (score <= 100) .. }`. An arm's pattern
+is a condition the program wrote, as its scrutinee is, so its tests are
+one: `if (score >= 90 && score <= 100)`, and a slice's length and its
+first element alike. Held by `test/lowering-numbers.test.ts`, "a range
+pattern's bounds are one test", and the mutation `range-arm-tests-apart`.

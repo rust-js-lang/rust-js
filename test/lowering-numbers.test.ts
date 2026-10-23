@@ -776,3 +776,22 @@ pub fn popped(v: &mut Vec<u8>) -> bool {
   expect([lib.popped(v), v]).toEqual([true, [1]]);
 });
 
+// ADR 0614: a range pattern's two bounds are one test, as its arm is one
+// pattern: \`score >= 90 && score <= 100\`, not an \`if\` in an \`if\`.
+test("a range pattern's bounds are one test", async () => {
+  const dir = fixture("range-arms");
+  writeFileSync(join(dir, "lib.rs"), `pub fn grade(score: u32) -> char {
+    match score {
+        90..=100 => 'A',
+        80..=89 => 'B',
+        _ => 'F',
+    }
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('  if (score >= 90 && score <= 100) {\n    return "A";\n  }\n  if (score >= 80 && score <= 89) {\n');
+  const lib = await import(join(dir, "lib.js"));
+  expect([100, 90, 89, 80, 79, 101].map(lib.grade)).toEqual(["A", "A", "B", "B", "F", "F"]);
+});
+

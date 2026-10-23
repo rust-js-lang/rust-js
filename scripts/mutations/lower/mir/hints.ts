@@ -6,8 +6,8 @@ export const mutations: Mutation[] = [
     name: "pattern-tests-nested",
     breaks: "`(Some(x), Some(y))`'s tests are `if (p != null) { if (q != null) {` nested",
     file: "src/lower/mir/hints.rs",
-    find: "                    std::iter::once((tested, tested)).chain(guards).collect()\n",
-    replace: "                    guards.collect()\n",
+    find: "                    std::iter::once((tested, tested))\n                        .chain(guards)\n",
+    replace: "                    std::iter::empty()\n                        .chain(guards)\n",
     tests: ["test/lowering-matches.test.ts", "-t", "a match arm's pattern of parts"],
   },
   {
@@ -173,5 +173,13 @@ export const mutations: Mutation[] = [
     find: "            thir::PatKind::Leaf { .. } if self.recognition().is_symbol_for(pattern.ty) => {\n",
     replace: "            thir::PatKind::Leaf { .. } if self.recognition().is_symbol_for(pattern.ty) && false => {\n",
     tests: ["test/lowering-symbols.test.ts", "-t", "a match of the registry's symbols"],
+  },
+  {
+    name: "range-arm-tests-apart",
+    breaks: "a range pattern's two bounds are an `if` in an `if`, not `score >= 90 && score <= 100`",
+    file: "src/lower/mir/hints.rs",
+    find: "                        .chain(patterns)\n",
+    replace: "                        .chain(patterns.take(0))\n",
+    tests: ["test/lowering-numbers.test.ts", "-t", "a range pattern's bounds are one test"],
   },
 ];
