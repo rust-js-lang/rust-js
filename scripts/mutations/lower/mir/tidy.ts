@@ -163,7 +163,6 @@ export const mutations: Mutation[] = [
     replace: "\"Number\" | \"String\"))",
     tests: ["test/corpus.test.ts", "-t", "^(sales_report|map_eq).rs$"],
     snapshots: true,
-    snapshots: true,
   },
   {
     name: "mir-tidy-pure-call-unread-past",
