@@ -345,6 +345,7 @@ helpers! {
     Lent,
     Folded,
     FoldBy,
+    CharPattern,
     CollectResults,
     CollectOptions,
     CmpIn,
@@ -689,6 +690,7 @@ impl Helper {
             Helper::Lent => include_str!("runtime/lent.js"),
             Helper::Folded => include_str!("runtime/folded.js"),
             Helper::FoldBy => include_str!("runtime/fold_by.js"),
+            Helper::CharPattern => include_str!("runtime/char_pattern.js"),
             Helper::CollectResults => include_str!("runtime/collect_results.js"),
             Helper::CollectOptions => include_str!("runtime/collect_options.js"),
             // `partial_cmp` of `f64`s: `None` if either is `NaN`.

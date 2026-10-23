@@ -124,8 +124,9 @@ sharing one is copying it: `clone()` is the string itself, and `push_str` is
   `replace`, `starts_with`** and the other common methods behave as Rust's,
   with an empty pattern too. A closure, a function such as
   `char::is_numeric`, or a set of `char`s, `[';', ',']`, is a pattern of
-  `find`, `rfind`, `split`, `contains`, `starts_with`, `ends_with` and the
-  `trim_*_matches` ([0157](../decisions/0157-char-predicates.md)); `get(range)`
+  every method that takes one: `find`, `split`, `rsplitn`, `match_indices`,
+  `split_once`, `strip_suffix`, `replacen` and the rest
+  ([0157](../decisions/0157-char-predicates.md)); `get(range)`
   is `None` where slicing panics. `splitn`, `rsplit`, `split_terminator`, `split_at`,
   `match_indices`, `matches` and the `trim_*_matches` search as Rust's do,
   `rsplit` from the end ([0150](../decisions/0150-string-patterns.md)).
