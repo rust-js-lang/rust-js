@@ -64,6 +64,54 @@ pub mod weak_map {
     }
 }
 
+/// [`Map`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Map)
+/// of what a [`WeakMap`] keys, an object by itself, held strongly: what a
+/// program keeps where the host has no `WeakMap`, as React's
+/// `typeof WeakMap === 'function' ? WeakMap : Map` does. TypeScript's
+/// `Map<K, V>`, which is a `WeakMap<K, V>` too, so it derefs to one: its
+/// `get`, `set`, `has` and `delete` are a `WeakMap`'s (ADR 0699). A map of
+/// what Rust hashes, text or a number, is a `HashMap`, a `Map` in JS.
+#[cfg_attr(rust_js, rust_js::types = "Map<K, V>")]
+pub struct Map<K: WeakKey + ?Sized, V: Defined>(PhantomData<JsObject>, PhantomData<(*const K, V)>);
+
+/// A `Map` is a `WeakMap` of what it holds, as TypeScript's `Map<K, V>` is
+/// one: the map itself.
+impl<K: WeakKey + ?Sized, V: Defined> core::ops::Deref for Map<K, V> {
+    type Target = WeakMap<K, V>;
+
+    fn deref(&self) -> &WeakMap<K, V> {
+        // Never runs: rust-js compiles this `Deref` to the object itself.
+        unsafe { &*(self as *const Self as *const WeakMap<K, V>) }
+    }
+}
+
+impl<K: WeakKey + ?Sized, V: Defined> Map<K, V> {
+    /// [`map.size`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Map/size):
+    /// how many keys it has.
+    #[cfg_attr(rust_js, rust_js::link_name = "get size")]
+    pub fn size(&self) -> u32 {
+        unreachable!()
+    }
+
+    /// [`map.clear()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Map/clear):
+    /// each key and its value gone.
+    #[cfg_attr(rust_js, rust_js::link_name = "clear")]
+    pub fn clear(&self) {
+        unreachable!()
+    }
+}
+
+pub mod map {
+    use super::*;
+
+    /// [`new Map()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Map/Map):
+    /// one of nothing.
+    #[cfg_attr(rust_js, rust_js::link_name = "new Map")]
+    pub fn new<K: WeakKey + ?Sized, V: Defined>() -> &'static Map<K, V> {
+        unreachable!()
+    }
+}
+
 /// [`WeakSet`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/WeakSet):
 /// the values it holds, each held weakly.
 #[cfg_attr(rust_js, rust_js::types = "WeakSet<T>")]

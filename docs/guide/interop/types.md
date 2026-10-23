@@ -218,6 +218,27 @@ export function middle(items) {
   runtime's `$KeyMap`.
 - **A `BTreeMap` is a `Map` and a `BTreeSet` a `Set`,** iterated in key
   order.
+- **A `js::Map` is a `Map` of what a `WeakMap` keys**, an object by itself,
+  held strongly, and it's a `WeakMap` too, as TypeScript's `Map` is: a
+  `WeakMap` where the host has one, and a `Map` where it hasn't, is one
+  value ([ADR 0699](../../decisions/0699-a-map-of-objects-is-a-weak-map.md)):
+
+```rust
+use js::{JsObject, Unknown, WeakMap};
+
+thread_local! {
+    pub static CACHE: &'static WeakMap<dyn Fn() -> Option<&'static Unknown>, String> =
+        if js::is_defined(js::weak_map::new::<JsObject, String>) {
+            js::weak_map::new()
+        } else {
+            js::map::new()
+        };
+}
+```
+
+```js
+export const cache = typeof WeakMap !== "undefined" ? new WeakMap() : new Map();
+```
 
 ## Structs
 

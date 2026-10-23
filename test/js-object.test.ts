@@ -481,3 +481,165 @@ pub fn given() -> Option<&'static Unknown> {
   expect(lib.applied(function (this: any, a: string) { return this.n + a; }, { n: "n" })).toBe("na");
   expect(lib.given()).toBe(1);
 });
+
+// ADRs 0694 to 0699: React's `shared/ReactComponentStackFrame.js` as a port writes
+// it, each shape upstream's: `Fake` a function declaration where it's
+// written, `new fn()`, `delete fn.prototype.props`, `fn()` for what it
+// gives, `maybePromise.catch(() => {})`, and its cache a `WeakMap` or, of a
+// host without one, a `Map`. Run of a function component, a class, and an
+// async component whose rejection is silenced.
+test("React's component stack frame is found as upstream finds it", async () => {
+  const { js, lib, warnings } = await compiled("js-object-component-frame", `use js::{JsError, JsObject, Kind, Promise, PropertyDescriptor, Unknown, WeakMap, object, reflect};
+use std::panic::{AssertUnwindSafe, catch_unwind};
+
+thread_local! {
+    static COMPONENT_FRAME_CACHE: &'static WeakMap<dyn Fn() -> Option<&'static Unknown>, String> =
+        if js::is_defined(js::weak_map::new::<JsObject, String>) {
+            js::weak_map::new()
+        } else {
+            js::map::new()
+        };
+}
+
+/// What the \`finally\` without \`Reflect.construct\` puts back.
+struct RestoreProps {
+    prototype: &'static Unknown,
+    prev_props: Option<PropertyDescriptor<'static>>,
+}
+
+impl Drop for RestoreProps {
+    fn drop(&mut self) {
+        match &self.prev_props {
+            Some(prev_props) => {
+                object::define_property(self.prototype, "props", prev_props);
+            }
+            None => {
+                js::delete(self.prototype, "props");
+            }
+        }
+    }
+}
+
+#[cfg_attr(rust_js, rust_js::name = "DetermineComponentFrameRoot")]
+pub fn determine_component_frame_root(
+    r#fn: &dyn Fn() -> Option<&'static Unknown>,
+    construct: bool,
+    reflected: bool,
+) -> (Option<String>, Option<String>) {
+    let mut control: Option<&'static JsError> = None;
+    let tried = catch_unwind(AssertUnwindSafe(|| {
+        // This should throw.
+        if construct {
+            // Something should be setting the props in the constructor.
+            #[cfg_attr(rust_js, rust_js::name = "Fake")]
+            fn fake() -> Option<&'static Unknown> {
+                panic!();
+            }
+            object::define_property(
+                unsafe { js::cast::<&Unknown>(js::get(js::unknown(&fake), "prototype")) },
+                "props",
+                &PropertyDescriptor {
+                    set: Some(&|_| panic!()),
+                    ..Default::default()
+                },
+            );
+            if reflected && js::is_defined(reflect::construct) {
+                if let Err(x) = catch_unwind(|| reflect::construct(&fake, &[], None)) {
+                    control = x.downcast_ref::<&'static JsError>().copied();
+                }
+                reflect::construct(r#fn, &[], Some(&fake));
+            } else {
+                if let Err(x) = catch_unwind(fake) {
+                    control = x.downcast_ref::<&'static JsError>().copied();
+                }
+                let prototype: &'static Unknown = unsafe { js::cast(js::get(js::unknown(r#fn), "prototype")) };
+                let prev_props = object::get_own_property_descriptor(prototype, "props");
+                object::define_property(
+                    prototype,
+                    "props",
+                    &PropertyDescriptor {
+                        configurable: Some(true),
+                        set: Some(&|_| panic!()),
+                        ..Default::default()
+                    },
+                );
+                let _restore_props = RestoreProps { prototype, prev_props };
+                js::new(js::unknown(r#fn), ());
+            }
+        } else {
+            control = Some(js::js_error::new(""));
+            let maybe_promise = r#fn();
+            // If the function component returns a promise, it's likely an async
+            // component, which we don't yet support. Attach a noop catch handler to
+            // silence the error.
+            if let Some(maybe_promise) = maybe_promise
+                && let Kind::Function(_) = js::classify(js::get(maybe_promise, "catch"))
+            {
+                unsafe { js::cast::<Promise<Option<&'static Unknown>>>(Some(maybe_promise)) }.catch(|_| {});
+            }
+        }
+    }));
+    if let Err(sample) = tried
+        && let Some(sample) = sample.downcast_ref::<&'static JsError>()
+        && let Some(control) = control
+        && let Some(sample_stack) = sample.stack()
+    {
+        return (Some(sample_stack), control.stack());
+    }
+    (None, None)
+}
+
+pub fn cached(r#fn: &dyn Fn() -> Option<&'static Unknown>, frame: String) -> Option<String> {
+    COMPONENT_FRAME_CACHE.with(|cache| {
+        let before = cache.get(r#fn);
+        cache.set(r#fn, frame);
+        before
+    })
+}
+`);
+  expect(warnings).toEqual([]);
+  expect(js).toContain('const componentFrameCache = typeof WeakMap !== "undefined" ? new WeakMap() : new Map();');
+  expect(js).toContain(
+    '    if (construct) {\n      // Something should be setting the props in the constructor.\n      function Fake() {\n        throw new Error("explicit panic");\n      }\n      Object.defineProperty(Fake.prototype, "props", {',
+  );
+  expect(js).toContain("Reflect.construct(Fake, []);");
+  expect(js).toContain("Reflect.construct(fn, [], Fake);");
+  expect(js).toContain("new fn();");
+  expect(js).toContain('delete _restoreProps.prototype.props;');
+  expect(js).toContain("const maybePromise = fn();");
+  expect(js).toContain("maybePromise.catch(() => {});");
+  // A class's constructor sets its props, which the setter throws of:
+  // constructed as `Fake`, by `Reflect.construct`, or as itself, by `new`.
+  const seen: string[] = [];
+  class Component {
+    constructor() {
+      seen.push(new.target.name);
+      (this as any).props = {};
+      seen.push("set");
+    }
+  }
+  // What a component throws, reading what's not there; an `Error` of
+  // JS's own constructor is a panic's (ADR 0660).
+  function FunctionComponent(): never {
+    throw new TypeError("rendered");
+  }
+  for (const reflected of [true, false]) {
+    expect(lib.DetermineComponentFrameRoot(Component, true, reflected)).toEqual([undefined, undefined]);
+  }
+  expect(seen).toEqual(["Fake", "Component"]);
+  expect(Object.hasOwn(Component.prototype, "props")).toBe(false);
+  const [sample, control] = lib.DetermineComponentFrameRoot(FunctionComponent, false, true);
+  expect(sample).toContain("FunctionComponent");
+  expect(control).not.toContain("FunctionComponent");
+  let unhandled = 0;
+  const count = () => unhandled++;
+  process.on("unhandledRejection", count);
+  try {
+    expect(lib.DetermineComponentFrameRoot(async () => { throw new Error("async"); }, false, true)).toEqual([undefined, undefined]);
+    await new Promise((resolve) => setTimeout(resolve, 10));
+  } finally {
+    process.off("unhandledRejection", count);
+  }
+  expect(unhandled).toBe(0);
+  expect([lib.cached(FunctionComponent, "a"), lib.cached(FunctionComponent, "b")]).toEqual([undefined, "a"]);
+});

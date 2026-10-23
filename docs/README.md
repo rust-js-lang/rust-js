@@ -352,7 +352,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0280 A field that's `undefined` is no key](decisions/0280-undefined-fields-left-out.md)
 - [0281 The webapi crate covers TypeScript's DOM, and a test holds it](decisions/0281-webapi-covers-typescripts-dom.md)
 - [0282 One method API for event listeners](decisions/0282-event-listener-methods.md)
-- [0283 The js crate covers TypeScript's ES library, and a test holds it](decisions/0283-js-crate-covers-typescripts-es-library.md) *(amended by 0666: descriptors and handlers are dictionaries, `Object` measured; by 0677: a weak collection is typed as TypeScript's)*
+- [0283 The js crate covers TypeScript's ES library, and a test holds it](decisions/0283-js-crate-covers-typescripts-es-library.md) *(amended by 0666: descriptors and handlers are dictionaries, `Object` measured; by 0677: a weak collection is typed as TypeScript's; by 0698: `catch`'s handler gives a value or a promise; by 0699: `js::Map` of weak keys)*
 - [0284 An enum tagged by a property of its own is a discriminated union](decisions/0284-discriminated-unions.md)
 - [0285 `std::ptr::eq` of JS objects is whether they're one](decisions/0285-ptr-eq.md)
 - [0286 A component that sometimes renders nothing returns an `Option`](decisions/0286-components-that-render-nothing.md)
@@ -619,6 +619,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0696 A constructor is a `fn` item, declared where it's written](decisions/0696-a-constructor-is-a-fn-item-where-its-written.md)
 - [0697 `delete` of a property is JS's `delete`, `js::delete`](decisions/0697-delete-is-jss-delete.md)
 - [0698 A `catch` handler gives a value or a promise, as TypeScript's](decisions/0698-a-catch-handler-gives-a-value-or-a-promise.md)
+- [0699 A `Map` of what a `WeakMap` keys is a `WeakMap`, for a fallback](decisions/0699-a-map-of-objects-is-a-weak-map.md)
 - [0436 Every `dyn` that's a pair keeps its value's drop, `dyn Send` too](decisions/0436-every-dyn-keeps-its-drop.md)
 - [0437 A scope's drops on a panic are one `try { .. } finally { .. }`](decisions/0437-a-scopes-drops-are-one-finally.md)
 - [0438 An optional prop is given `Some(..)`, or left out](decisions/0438-an-optional-prop-is-given-some.md)
