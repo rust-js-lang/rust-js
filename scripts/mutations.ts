@@ -51,27 +51,39 @@ export const mutations: Mutation[] = lists.flatMap((list) => list.mutations);
 
 /** A file a change touches, and the lines of it, as it is now, that it
  * changed: each `[first, last]`, from 1. */
-export type Change = { file: string; lines: [number, number][] };
+/** Lines a change makes in a file as it is now, or, `base`, takes from it
+ * as it was: a test renamed, moved or deleted is where it was. */
+export type Change = { file: string; lines: [number, number][]; base?: boolean };
 
 /** A change's mutations (DEVELOPMENT.md, ADR 0093): those it adds or edits,
  * of `base`'s; those of a function it changes, the function the mutated
- * code is in; and those whose tests it changes, a test they name, or a
- * corpus case. What a change elsewhere does to them, as making the code
- * one guards redundant, the nightly run of all of them finds. `read` gives
- * a file as it is now. */
-export function changedMutations(now: Mutation[], base: Mutation[], changes: Change[], read: (file: string) => string | undefined): Mutation[] {
+ * code is in; and those whose tests it changes, a test they name as it is
+ * or as it was, renamed or moved away, or a corpus case. What a change
+ * elsewhere does to them, as making the code one guards redundant, the
+ * nightly run of all of them finds. `read` gives a file as it is now, and
+ * `readBase` as it was. */
+export function changedMutations(
+  now: Mutation[],
+  base: Mutation[],
+  changes: Change[],
+  read: (file: string) => string | undefined,
+  readBase: (file: string) => string | undefined,
+): Mutation[] {
   const same = (a: Mutation, b: Mutation) => JSON.stringify(a) === JSON.stringify(b);
-  const changed = new Map(changes.map((c) => [c.file, c.lines]));
+  const changed = new Map(changes.filter((c) => !c.base).map((c) => [c.file, c.lines]));
+  const taken = new Map(changes.filter((c) => c.base).map((c) => [c.file, c.lines]));
   const overlaps = (lines: [number, number][], [first, last]: [number, number]) => lines.some(([a, b]) => a <= last && b >= first);
   // A test file's tests the change touches, by name: all of them where it
   // changes what they share, above the first. A corpus case is its own test.
-  const touchedTests = (file: string): string[] | "all" => {
-    const lines = changed.get(file);
-    const source = lines && read(file);
+  const touchedIn = (lines: [number, number][] | undefined, source: string | undefined): string[] | "all" => {
     if (!lines || source === undefined) return [];
     const blocks = testBlocks(source);
     if (blocks.length === 0 || overlaps(lines, [1, blocks[0].first - 1])) return "all";
     return blocks.filter((block) => overlaps(lines, [block.first, block.last])).map((block) => block.name);
+  };
+  const touchedTests = (file: string): string[] | "all" => {
+    const [is, was] = [touchedIn(changed.get(file), read(file)), touchedIn(taken.get(file), readBase(file))];
+    return is === "all" || was === "all" ? "all" : [...is, ...was];
   };
   const cases = changes.filter((c) => c.file.startsWith("test/corpus/")).map((c) => c.file.slice("test/corpus/".length));
   return now.filter((m) => {
@@ -96,7 +108,7 @@ export function changedMutations(now: Mutation[], base: Mutation[], changes: Cha
 
 /** The mutations, of `among`, a change since `base` runs (`--changed`). */
 export async function changedSince(base: string, among: Mutation[] = mutations): Promise<Mutation[]> {
-  const { changes, mutations: old } = await since(base);
+  const { from, changes, mutations: old } = await since(base);
   const read = (file: string) => {
     try {
       return readFileSync(join(root, file), "utf8");
@@ -104,7 +116,11 @@ export async function changedSince(base: string, among: Mutation[] = mutations):
       return undefined;
     }
   };
-  return changedMutations(among, old, changes, read);
+  const readBase = (file: string) => {
+    const shown = runSync(["git", "show", `${from}:${file}`], root, 60_000);
+    return shown.code === 0 ? shown.stdout : undefined;
+  };
+  return changedMutations(among, old, changes, read, readBase);
 }
 
 /** The lines of the function lines `first` to `last` are in, the innermost,
@@ -147,30 +163,38 @@ export function testBlocks(source: string): { name: string; first: number; last:
   }));
 }
 
-/** The lines `git diff -U0` says each file's change is in, as it is now. */
+/** The lines `git diff -U0` says each file's change is in, as it is now,
+ * and, `base`, as it was. */
 export function changedLines(diff: string): Change[] {
   const changes: Change[] = [];
-  let current: Change | undefined;
+  let was: Change | undefined;
+  let is: Change | undefined;
+  // Lines none of are on one side are between two there: both are where
+  // the change is.
+  const span = (from: number, count: number): [number, number] => (count === 0 ? [from, from + 1] : [from, from + count - 1]);
   for (const line of diff.split("\n")) {
-    if (line.startsWith("+++ ")) {
-      current = line === "+++ /dev/null" ? undefined : { file: line.slice("+++ b/".length), lines: [] };
-      if (current) changes.push(current);
+    if (line.startsWith("--- ")) {
+      was = line === "--- /dev/null" ? undefined : { file: line.slice("--- a/".length), lines: [], base: true };
+      if (was) changes.push(was);
       continue;
     }
-    const hunk = line.match(/^@@ -\d+(?:,\d+)? \+(\d+)(?:,(\d+))? @@/);
-    if (hunk && current) {
-      const from = Number(hunk[1]);
-      const count = hunk[2] === undefined ? 1 : Number(hunk[2]);
-      // Lines taken away are between two: both are where the change is.
-      current.lines.push(count === 0 ? [from, from + 1] : [from, from + count - 1]);
+    if (line.startsWith("+++ ")) {
+      is = line === "+++ /dev/null" ? undefined : { file: line.slice("+++ b/".length), lines: [] };
+      if (is) changes.push(is);
+      continue;
     }
+    const hunk = line.match(/^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@/);
+    if (!hunk) continue;
+    const count = (n: string | undefined) => (n === undefined ? 1 : Number(n));
+    was?.lines.push(span(Number(hunk[1]), count(hunk[2])));
+    is?.lines.push(span(Number(hunk[3]), count(hunk[4])));
   }
   return changes;
 }
 
 /** The files changed since where this branch left `base`, and the
  * mutations as they were there. */
-async function since(base: string): Promise<{ files: string[]; changes: Change[]; mutations: Mutation[] }> {
+async function since(base: string): Promise<{ from: string; files: string[]; changes: Change[]; mutations: Mutation[] }> {
   const git = (args: string[]) => {
     const p = runSync(["git", ...args], root, 60_000);
     if (p.code !== 0) throw new Error(`git ${args.join(" ")} failed:\n${p.stderr}`);
@@ -200,7 +224,7 @@ async function since(base: string): Promise<{ files: string[]; changes: Change[]
   // first imports from it, so one written after isn't found.
   for (const copy of copies) old.push(...(await import(copy)).mutations);
   rmSync(there, { recursive: true, force: true });
-  return { files, changes, mutations: old };
+  return { from, files, changes, mutations: old };
 }
 
 // Where the mutated crate is built, and the compilers kept: one copy of

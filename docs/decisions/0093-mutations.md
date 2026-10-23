@@ -181,3 +181,14 @@ rest across a dozen files. Each was audited:
 
 What a mutation can't reach isn't untested: rustc checks the crates'
 types where they're used, and the corpus runs each against native Rust.
+
+## Amendment: a test renamed or moved away runs its mutations
+
+A change's mutations were those of the tests it touched as they are now,
+so splitting `lowering.test.ts` by concept, and renaming "a match of
+constants tests each", ran none of the mutations naming the tests that
+went: they named nothing, and the nightly's every shard stopped on the
+first. A change's lines are read on both sides of its diff, as the file is
+and as it was, a deleted file's too, so a mutation of a test's old name, or
+its old file, runs and says so. Held by `test/ci.test.ts`, "the changed
+mutations are of the functions and tests a change touches".

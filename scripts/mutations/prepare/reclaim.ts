@@ -1,7 +1,7 @@
 // Mutations of src/prepare/reclaim.rs (ADR 0093).
 import type { Mutation } from "../../mutations";
 
-const tests = ["test/lowering.test.ts", "-t", "nothing it shadows"];
+const tests = ["test/lowering-names.test.ts", "-t", "nothing it shadows"];
 
 export const mutations: Mutation[] = [
   {
