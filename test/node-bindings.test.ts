@@ -303,8 +303,9 @@ console.log(JSON.stringify(all()));
 test("node's events are typed by their emitters", () => {
   const dir = fixture("node-events");
   const node = buildNode();
-  writeFileSync(join(dir, "lib.rs"), `use node::event::Exit;
+  writeFileSync(join(dir, "lib.rs"), `use node::event::{Exit, UncaughtException};
 use node::events::{self, Emits, EventEmitter, EventEmitterExt};
+use node::js::JsError;
 use node::process::{self, Signals};
 
 #[cfg_attr(rust_js, rust_js::link_name = "globalThis.log")]
@@ -356,6 +357,12 @@ pub fn signalled() {
     process::once(Signals::Sigusr2, Box::new(|signal| log(&format!("signal {signal:?}"))));
     process::emit(Signals::Sigusr2, (Signals::Sigusr2,));
 }
+
+// What @types/node gives \`emit\`, the error alone (ADR 0656).
+pub fn uncaught(error: &'static JsError) -> bool {
+    process::once(UncaughtException, Box::new(|error, _| log(&format!("uncaught {}", error.message()))));
+    process::emit(UncaughtException, (error,))
+}
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `node=${join(node, "libnode.rmeta")}`, "-L", node]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
@@ -366,13 +373,15 @@ pub fn signalled() {
   }
   expect(js).toContain('process.on("exit", (code) =>');
   expect(js).toContain("EventEmitter.defaultMaxListeners = 11;");
+  expect(js).toContain('return process.emit("uncaughtException", error);');
   writeFileSync(join(dir, "package.json"), '{ "type": "module" }');
-  writeFileSync(join(dir, "run.js"), `import { awaited, emitted, signalled } from "./lib.js";
+  writeFileSync(join(dir, "run.js"), `import { awaited, emitted, signalled, uncaught } from "./lib.js";
 const logged = [];
 globalThis.log = (what) => logged.push(what);
 const got = emitted();
 logged.push(await awaited());
 signalled();
+logged.push(uncaught(new Error("boom")));
 console.log(JSON.stringify({ got, logged }));
 `);
   const p = Bun.spawnSync(["node", "run.js"], { cwd: dir, stderr: "pipe" });
@@ -380,7 +389,7 @@ console.log(JSON.stringify({ got, logged }));
   const [json, exit] = p.stdout.toString().trim().split("\n");
   expect(JSON.parse(json)).toEqual({
     got: ["11", "true", "true", "1", "5", "ping", "5"],
-    logged: ["on 1 a", "once 1", "on 2 b", "awaited 3 c", "signal Sigusr2"],
+    logged: ["on 1 a", "once 1", "on 2 b", "awaited 3 c", "signal Sigusr2", "uncaught boom", true],
   });
   expect(exit).toBe("exit 0");
 });

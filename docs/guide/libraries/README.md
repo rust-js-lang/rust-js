@@ -331,6 +331,12 @@ export function unhooked() {
   Fn(&JsError, &[&CallSite]) -> String> = None; }` is `export default
   undefined;`.
 
+An emitter's events are typed by it, as `@types/node`'s `on` and `emit`
+overloads are: a listener is given what Node gives it, and `emit` takes
+what TypeScript's does, `process::emit(UncaughtException, (error,))` being
+`process.emit("uncaughtException", error)`
+([ADR 0656](../../decisions/0656-an-events-emit-arguments-are-typescripts-emits.md)).
+
 ## `react` and `next`
 
 React's and React DOM's whole API, as of React 19, for whichever React from
