@@ -60,6 +60,8 @@ pub(in crate::lower) enum NumOp {
     /// `x.exp2()`: `2 ** x`, as `powf` is (ADR 0136).
     Exp2,
     Round,
+    /// `x.round_ties_even()`: a tie to the even integer.
+    RoundTiesEven,
     /// `a.total_cmp(&b)`: IEEE 754's total order, as Rust has it.
     TotalCmp,
     IsNan,
@@ -377,6 +379,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             NumOp::Exp2 => rounded(Expr::bin(Op::Pow, Expr::num(2.0), arg())),
             NumOp::Round => helper("$round", vec![arg()]),
+            NumOp::RoundTiesEven => helper("$roundTiesEven", vec![arg()]),
             NumOp::TotalCmp => helper("$totalCmp", vec![arg(), arg()]),
             NumOp::IsNan => number("isNaN", vec![arg()]),
             NumOp::IsFinite => number("isFinite", vec![arg()]),

@@ -59,3 +59,12 @@ wants JS's answer calls them; `f64`'s methods keep Rust's.**
 ## Since
 
 2026-10-13.
+
+## Amendment: `round_ties_even()`
+
+`round_ties_even()` of an `f64` or an `f32` was refused. It's
+`$roundTiesEven(x)`: JS's `Math.round` takes a tie up, so an odd integer
+it reached from a tie, one exactly a half below it, goes down instead; a
+negative tie keeps its sign, `-0.5`'s `-0`, as Rust's does. Case (ADR
+0262): results would change, so Rust's, paid in the helper. Held by
+`test/corpus/round_ties.rs` and the mutation `round-ties-even-up`.

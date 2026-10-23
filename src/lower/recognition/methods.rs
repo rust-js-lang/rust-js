@@ -91,6 +91,7 @@ pub(super) fn number(name: &str, num: Num) -> Option<NumOp> {
         "mul_add" if float => NumOp::MulAdd,
         "powf" if float => NumOp::Powf,
         "round" if float => NumOp::Round,
+        "round_ties_even" if float => NumOp::RoundTiesEven,
         "total_cmp" if float => NumOp::TotalCmp,
         "is_nan" if float => NumOp::IsNan,
         "is_finite" if float => NumOp::IsFinite,
