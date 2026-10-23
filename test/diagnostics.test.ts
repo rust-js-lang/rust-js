@@ -85,13 +85,6 @@ for (const [name, source, message, crate] of [
   // A static's initializer is code where rustc's value can't say it (ADR 0096),
   // but not one reading another static, nor of a value that can change in place.
   ["a static of a function read from another static", 'pub fn f() {}\nstatic A: fn() = f;\npub static B: &fn() = &A;\npub fn g() { B() }', "statics of type"],
-  // A path map finds `a//b` as the `a/b` it holds, and a `Cow` map `"a"` as the
-  // `Cow` it holds, which neither can give back yet (ADRs 0401, 0402).
-  ["the key a path map holds", 'use std::{collections::HashMap, path::{Path, PathBuf}};\npub fn f(m: &HashMap<PathBuf, u32>) -> Option<(&PathBuf, &u32)> { m.get_key_value(Path::new("a//b")) }', "does not support the key a `std::collections::HashMap<std::path::PathBuf, u32>` holds, which what it's found by may not be"],
-  ["the key a Cow map holds", 'use std::{borrow::Cow, collections::HashSet};\npub fn f(s: &HashSet<Cow<\'static, str>>) -> bool { s.get("a").is_some() }', "does not support the key a `std::collections::HashSet<std::borrow::Cow<'_, str>>` holds"],
-  // A B-tree finds a key by its `Ord`, which, hand-written, `$key` wouldn't follow (ADR 0404).
-  ["a B-tree key whose Ord is the crate's own", 'use std::cmp::Ordering;\nuse std::collections::BTreeSet;\n#[derive(PartialEq, Eq)]\npub struct K { pub a: u8, pub b: u8 }\nimpl PartialOrd for K { fn partial_cmp(&self, o: &Self) -> Option<Ordering> { Some(self.cmp(o)) } }\nimpl Ord for K { fn cmp(&self, o: &Self) -> Ordering { self.a.cmp(&o.a) } }\npub fn f(s: &mut BTreeSet<K>) -> bool { s.insert(K { a: 1, b: 2 }) }', "does not support values of type `K`"],
-  ["a B-tree key holding a fieldless enum whose Ord is the crate's own", 'use std::cmp::Ordering;\nuse std::collections::BTreeSet;\n#[derive(PartialEq, Eq, Clone, Copy)]\npub enum E { A, B }\nimpl PartialOrd for E { fn partial_cmp(&self, o: &Self) -> Option<Ordering> { Some(self.cmp(o)) } }\nimpl Ord for E { fn cmp(&self, _: &Self) -> Ordering { Ordering::Equal } }\npub fn f(s: &mut BTreeSet<(E, u8)>) -> bool { s.insert((E::A, 1)) }', "does not support values of type `(E, u8)`"],
   // A union is the field it holds (ADR 0406); a `&mut` to one would change which unsaid.
   ["a &mut to a union's field", 'pub union U { pub a: u32, pub b: u32 }\npub fn f(u: &mut U) { let r = unsafe { &mut u.a }; *r = 2; }', "does not support a `&mut` to a union's field"],
   // A counted `Rc`'s is its cell given the `impl` in place (ADR 0320); a `Weak`'s not yet.

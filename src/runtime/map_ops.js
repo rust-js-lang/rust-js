@@ -1,10 +1,11 @@
 // A map's or a set's own methods (ADR 0325): a `Map`, a `Set`, or a
 // `$KeyMap` or `$KeySet` of keys found by value, the same to each.
 
-// The key a map or a set holds equal to `key`: a `$KeyMap`'s, or the key
-// itself, a `Map`'s (ADR 0467).
+// The key a map or a set holds equal to `key`, or `undefined`: a
+// `$KeyMap`'s, or the key itself, a `Map`'s (ADR 0467).
 function $storedKey(m, key) {
-  return m.storedKey === undefined ? key : m.storedKey(key);
+  if (m.storedKey !== undefined) return m.storedKey(key);
+  return m.has(key) ? key : undefined;
 }
 
 // `m.retain(f)`: the entries `f` keeps, visited in `entries`' order, a
@@ -48,7 +49,7 @@ function $drainAll(m) {
 }
 
 function $getKeyValue(m, key) {
-  return m.has(key) ? [key, m.get(key)] : undefined;
+  return m.has(key) ? [$storedKey(m, key), m.get(key)] : undefined;
 }
 
 function $removeEntry(m, key) {
@@ -62,10 +63,17 @@ function $removeEntry(m, key) {
 // `s.replace(x)`: the item equal to `x` that was there, or `None`, and `x`
 // in its place.
 function $setReplace(s, x) {
-  const had = s.has(x);
+  const held = $storedKey(s, x);
   s.delete(x);
   s.add(x);
-  return had ? x : undefined;
+  return held;
+}
+
+// `s.take(x)` of items it finds others by: the one it held, taken out.
+function $setTake(s, x) {
+  const held = $storedKey(s, x);
+  s.delete(x);
+  return held;
 }
 
 // A B-tree's first or last entry, `[key, value]`, or a set's item, by its
@@ -220,13 +228,14 @@ function $entryRemove([m, key], entry) {
 }
 
 // `m.entry(key)` kept or matched: `Occupied` or `Vacant`, as its key is
-// there or not, of `[m, key]`, which its methods are of (ADR 0345); where
+// there or not, of `[m, key]`, the key it holds where it's there, which its
+// methods are of (ADR 0345); where
 // it's there, the key given dropped by `dropKey`, of keys with a destructor
 // (ADR 0467).
 function $entry(m, key, dropKey) {
   const there = m.has(key);
   if (there) dropKey?.(key);
-  return { TAG: there ? "Occupied" : "Vacant", _0: [m, key] };
+  return { TAG: there ? "Occupied" : "Vacant", _0: [m, there ? $storedKey(m, key) : key] };
 }
 
 // An entry's `and_modify(f)`: `f` given its value where its key is there,
