@@ -143,3 +143,11 @@ min)`, `wrapping_div`'s and whether `MIN / -1` wrapped; `$saturatingDiv`,
 `MAX` of it; `$isMultipleOf`, of a zero divisor whether it's zero, as
 std's; and a cast `as` the other type of its width. A zero divisor panics
 as `/` does. Held by `test/corpus/int_div_sign_methods.rs`.
+
+`unbounded_shl` and `unbounded_shr`, `next_multiple_of` and
+`checked_next_multiple_of`, and `wrapping_rem_euclid` and
+`wrapping_div_euclid` were refused too (#119). A shift past the width is
+0, or a negative's `-1` shifted right, and below it as `<<` and `>>` are;
+`$nextMultipleOf` wraps past the range as overflow does, its checked form
+none; the wrapping Euclidean forms are 0 and `MIN` of `MIN` by `-1`, where
+the plain ones panic. Held by `test/corpus/int_shift_multiple_methods.rs`.
