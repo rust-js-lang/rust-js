@@ -7,7 +7,7 @@ use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
 
 use crate::lower::analysis::{ClosureFacts, Counted};
-use crate::lower::recognition::{Recognition, StdItem, rc_pointee, weak_pointee};
+use crate::lower::recognition::{Recognition, StdItem, any_trait, rc_pointee, weak_pointee};
 use crate::lower::traits::{EvidenceQuery, may_have_destructors};
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_hir::{BindingMode, ByRef};
@@ -563,6 +563,13 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
         walk: &mut Walk<'tcx>,
     ) -> Drops<'tcx> {
         let tcx = self.recognition.tcx;
+        // A `dyn Any`'s, where the crate makes one of what drops (ADR 0691).
+        if predicates.principal_def_id().is_some() && predicates.principal_def_id() == any_trait(tcx) {
+            return match self.closure_facts.any_dyns_drop {
+                true => Drops::Runs,
+                false => Drops::Nothing,
+            };
+        }
         let Some(principal) = predicates
             .principal_def_id()
             .filter(|id| id.is_local() && !self.library)

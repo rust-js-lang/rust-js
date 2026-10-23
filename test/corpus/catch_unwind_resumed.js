@@ -17,34 +17,12 @@ function main() {
       throw error;
     }
   };
-  let result;
   try {
-    result = $catchUnwind(value);
-  } catch (error) {
-    console.log(`drop ${outer}`);
-    throw error;
-  }
-  try {
+    const result = $catchUnwind(value);
     console.log("caught");
-  } catch (error) {
     if (result.TAG === "Err") {
-      result._0.impl.$drop?.(result._0.value);
-    }
-    console.log(`drop ${outer}`);
-    throw error;
-  }
-  if (result.TAG === "Err") {
-    const payload = result._0;
-    try {
+      const payload = result._0;
       throw $unwinding(payload);
-    } catch (error) {
-      console.log(`drop ${outer}`);
-      throw error;
-    }
-  }
-  try {
-    if (result.TAG === "Err") {
-      result._0.impl.$drop?.(result._0.value);
     }
   } finally {
     console.log(`drop ${outer}`);

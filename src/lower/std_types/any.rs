@@ -77,6 +77,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             false => is,
         };
         let inside = Expr::held(pair.clone());
+        // A panic's `Error` is what JS threw too, its payload's `error`
+        // (ADR 0692): a `&JsError` is that where it isn't the payload itself.
+        let thrown = matches!(of.kind(), ty::Ref(_, inner, _) if self.recognition().is_js_error(*inner));
+        if thrown && op != AnyOp::DowncastMut {
+            let error = Expr::member(pair.clone(), js::PANIC_ERROR);
+            let panicked = Expr::bin(Op::Ne, error.clone(), Expr::undefined());
+            return Ok(Some(match op {
+                AnyOp::Is => Expr::bin(Op::Or, is, panicked),
+                AnyOp::DowncastRef => Expr::cond(is, inside, error),
+                _ => Expr::cond(
+                    is,
+                    result::ok(inside),
+                    Expr::cond(panicked, result::ok(error), result::err(pair)),
+                ),
+            }));
+        }
         Ok(Some(match op {
             AnyOp::Is => is,
             // `Some` boxed where it looks like `None` (ADR 0051).

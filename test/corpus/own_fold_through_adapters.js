@@ -20,29 +20,26 @@ function ownIterator_next(own) {
 }
 
 function ownIterator_fold(own, init, f, dropB, dropF) {
+  let result;
   try {
-    console.log(`fold ${own[0]}`);
-  } catch (error) {
-    dropF?.(f);
-    dropB?.(init);
-    ownDrop_drop(own);
-    throw error;
-  }
-  let folded = init;
-  while (own[1] < 3) {
-    own[1] = (own[1] + 1) >>> 0;
-    const value = folded;
     try {
-      folded = f(value, own[1]);
+      console.log(`fold ${own[0]}`);
     } catch (error) {
       dropF?.(f);
-      ownDrop_drop(own);
+      dropB?.(init);
       throw error;
     }
-  }
-  const result = folded;
-  try {
-    dropF?.(f);
+    let folded = init;
+    try {
+      while (own[1] < 3) {
+        own[1] = (own[1] + 1) >>> 0;
+        const value = folded;
+        folded = f(value, own[1]);
+      }
+      result = folded;
+    } finally {
+      dropF?.(f);
+    }
   } finally {
     ownDrop_drop(own);
   }

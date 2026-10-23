@@ -1,7 +1,31 @@
-// Mutations of src/runtime/unwind.js (ADR 0660).
+// Mutations of src/runtime/unwind.js (ADRs 0660, 0692).
 import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
+  {
+    name: "panic-error-lost",
+    breaks: "a thrown `Error` of JS's own constructor is a panic's message alone, so a downcast to `&JsError` finds none and its `stack` is gone",
+    file: "src/runtime/unwind.js",
+    find: "    return { value: e.message, impl: $panicMessage, error: e };\n",
+    replace: "    return { value: e.message, impl: $panicMessage };\n",
+    tests: ["test/lowering-unwinds.test.ts", "-t", "a thrown Error answers both downcasts"],
+  },
+  {
+    name: "resumed-panic-made-again",
+    breaks: "`resume_unwind` of a thrown `Error`'s payload throws a new `Error` of its message, not the same one",
+    file: "src/runtime/unwind.js",
+    find: "  if (payload.error && payload.value === payload.error.message) {\n",
+    replace: "  if (false) {\n",
+    tests: ["test/lowering-unwinds.test.ts", "-t", "a thrown Error answers both downcasts"],
+  },
+  {
+    name: "resumed-panic-message-unchanged",
+    breaks: "`resume_unwind` of a panic's payload whose message was changed through `downcast_mut` throws the `Error` of its old message",
+    file: "src/runtime/unwind.js",
+    find: "  if (payload.error && payload.value === payload.error.message) {\n",
+    replace: "  if (payload.error) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^catch_unwind_message_changed.rs$"],
+  },
   {
     name: "panic-any-error",
     breaks: "a `RangeError` JS threw is a panic, its payload its message, not the `&JsError` it is",

@@ -230,28 +230,26 @@ function both(items, first) {
   let c$live = true;
   const [a, , c] = items;
   let dropped = 0;
-  if (first) {
-    a$live = false;
-    try {
-      noisyDrop_drop(a);
-    } catch (error) {
-      noisyDrop_drop(c);
-      noisyDrop_drop(items[1]);
-      throw error;
-    }
-    dropped++;
-  } else {
-    c$live = false;
-    try {
-      noisyDrop_drop(c);
-    } catch (error) {
-      noisyDrop_drop(a);
-      noisyDrop_drop(items[1]);
-      throw error;
-    }
-    dropped += 2;
-  }
   try {
+    if (first) {
+      a$live = false;
+      try {
+        noisyDrop_drop(a);
+      } catch (error) {
+        noisyDrop_drop(c);
+        throw error;
+      }
+      dropped++;
+    } else {
+      c$live = false;
+      try {
+        noisyDrop_drop(c);
+      } catch (error) {
+        noisyDrop_drop(a);
+        throw error;
+      }
+      dropped += 2;
+    }
     try {
       try {
         console.log(`end of both ${dropped}`);

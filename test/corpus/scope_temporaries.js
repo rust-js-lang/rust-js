@@ -92,19 +92,14 @@ function main() {
   let n = 2;
   while (true) {
     const value = make(n);
-    let tmp;
     try {
-      tmp = Noisy.big(value) === false;
-    } catch (error) {
+      const tmp = Noisy.big(value) === false;
+      if (!tmp) {
+        break;
+      }
+    } finally {
       console.log(`drop ${value[0]}`);
-      throw error;
     }
-    if (!tmp) {
-      console.log(`drop ${value[0]}`);
-
-      break;
-    }
-    console.log(`drop ${value[0]}`);
     console.log(`round ${n}`);
     n = (n + 1) & 255;
   }
@@ -126,37 +121,27 @@ function main() {
 
   const value$1 = make(7);
   const value$2 = [7];
-  let tmp;
   try {
-    tmp = $eq(value$1, value$2);
-  } catch (error) {
-    console.log(`drop ${value$2[0]}`);
-    console.log(`drop ${value$1[0]}`);
-    throw error;
-  }
-  if (!tmp) {
     try {
-      $assertFailed("Eq", noisyDebug_fmt(value$1), noisyDebug_fmt(value$2));
-    } catch (error) {
+      const tmp = $eq(value$1, value$2);
+      if (!tmp) {
+        $assertFailed("Eq", noisyDebug_fmt(value$1), noisyDebug_fmt(value$2));
+      }
+    } finally {
       console.log(`drop ${value$2[0]}`);
-      console.log(`drop ${value$1[0]}`);
-      throw error;
     }
-  }
-  try {
-    console.log(`drop ${value$2[0]}`);
   } finally {
     console.log(`drop ${value$1[0]}`);
   }
   const value$3 = make(8);
-  let tmp$1;
+  let tmp;
   try {
-    tmp$1 = Noisy.big(value$3);
+    tmp = Noisy.big(value$3);
   } catch (error) {
     console.log(`drop ${value$3[0]}`);
     throw error;
   }
-  if (!tmp$1) {
+  if (!tmp) {
     console.log(`drop ${value$3[0]}`);
     throw new Error("assertion failed: make(8).big()");
   }

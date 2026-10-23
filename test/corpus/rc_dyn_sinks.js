@@ -62,73 +62,23 @@ function main() {
   const rc = { value: {}, strong: 1, weak: 0 };
   $dynCell(rc.value, loudSink);
   const sinks = [tmp, rc];
-  let iter;
-  try {
-    iter = $iter(sinks);
-  } catch (error) {
-    for (const item of sinks) {
-      $rcDrop(item, (value) => {
-        value.impl.$drop?.(value.value);
-      });
-    }
-    $rcDrop(counter);
-    throw error;
-  }
-  let borrowMut;
-  while (true) {
-    let tmp;
-    try {
-      tmp = $next(iter);
-    } catch (error) {
-      for (const item of sinks) {
-        $rcDrop(item, (value) => {
-          value.impl.$drop?.(value.value);
-        });
-      }
-      $rcDrop(counter);
-      throw error;
-    }
-    if (!tmp) {
-      break;
-    }
-    const sink = tmp;
-    try {
-      borrowMut = $borrowMut(sink.value, true);
-    } catch (error) {
-      for (const item of sinks) {
-        $rcDrop(item, (value) => {
-          value.impl.$drop?.(value.value);
-        });
-      }
-      $rcDrop(counter);
-      throw error;
-    }
-    try {
-      borrowMut.impl.take(borrowMut, 2);
-    } catch (error) {
-      $unborrow(borrowMut);
-      for (const item of sinks) {
-        $rcDrop(item, (value) => {
-          value.impl.$drop?.(value.value);
-        });
-      }
-      $rcDrop(counter);
-      throw error;
-    }
-    try {
-      $unborrow(borrowMut);
-    } catch (error) {
-      for (const item of sinks) {
-        $rcDrop(item, (value) => {
-          value.impl.$drop?.(value.value);
-        });
-      }
-      $rcDrop(counter);
-      throw error;
-    }
-  }
   try {
     try {
+      const iter = $iter(sinks);
+      let borrowMut;
+      while (true) {
+        const tmp = $next(iter);
+        if (!tmp) {
+          break;
+        }
+        const sink = tmp;
+        borrowMut = $borrowMut(sink.value, true);
+        try {
+          borrowMut.impl.take(borrowMut, 2);
+        } finally {
+          $unborrow(borrowMut);
+        }
+      }
       const borrow = $borrow($index(sinks, 0).value, true);
       try {
         const total = borrow.impl.total(borrow.value);

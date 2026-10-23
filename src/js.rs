@@ -51,6 +51,11 @@ pub const HELD: &str = "value";
 /// 0049), beside its `value`.
 pub const DICTIONARY: &str = "impl";
 
+/// The field a panic's payload holds the `Error` it was thrown as in,
+/// `payload.error`, beside its message, `value` (ADR 0692): what JS threw
+/// too, which a downcast to a `&JsError` finds.
+pub const PANIC_ERROR: &str = "error";
+
 /// The function of a `dyn`'s dictionary that drops what it holds, `$drop`,
 /// if that has a destructor.
 pub const DICTIONARY_DROP: &str = "$drop";

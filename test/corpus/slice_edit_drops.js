@@ -249,59 +249,21 @@ function lend() {
   }
   try {
     $exchange(a[0], b[0]);
-  } catch (error) {
-    for (const item of d) {
-      loudDrop_drop(item);
+    const splitFirstMut = $splitEndMut(d, false);
+    if (splitFirstMut) {
+      const head = splitFirstMut[0];
+      const rest = splitFirstMut[1];
+      head[0] = (head[0] + (rest.length & 255)) & 255;
     }
-    throw error;
-  }
-  let splitFirstMut;
-  try {
-    splitFirstMut = $splitEndMut(d, false);
-  } catch (error) {
-    for (const item of d) {
-      loudDrop_drop(item);
-    }
-    throw error;
-  }
-  if (splitFirstMut) {
-    const head = splitFirstMut[0];
-    const rest = splitFirstMut[1];
-    head[0] = (head[0] + (rest.length & 255)) & 255;
-  }
-  let iter;
-  try {
-    iter = $iter($chunksMut(d, 2));
-  } catch (error) {
-    for (const item of d) {
-      loudDrop_drop(item);
-    }
-    throw error;
-  }
-  while (true) {
-    let tmp;
-    try {
-      tmp = $next(iter);
-    } catch (error) {
-      for (const item of d) {
-        loudDrop_drop(item);
+    const iter = $iter($chunksMut(d, 2));
+    while (true) {
+      const tmp = $next(iter);
+      if (!tmp) {
+        break;
       }
-      throw error;
-    }
-    if (!tmp) {
-      break;
-    }
-    const chunk = tmp;
-    try {
+      const chunk = tmp;
       chunk.reverse();
-    } catch (error) {
-      for (const item of d) {
-        loudDrop_drop(item);
-      }
-      throw error;
     }
-  }
-  try {
     const tmp = ids(d);
     console.log(`edited [${tmp.join(", ")}]`);
   } finally {

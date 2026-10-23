@@ -82,105 +82,34 @@ function defaults() {
 function popped() {
   const v = [[7], [8]];
   const value = (l) => l[0] === 8;
-  let popped;
   try {
-    popped = $popIf(v, value);
-  } catch (error) {
-    for (const item of v) {
-      loudDrop_drop(item);
-    }
-    throw error;
-  }
-  const value$1 = (l) => {
-    const result = l[0];
-    loudDrop_drop(l);
-    return result;
-  };
-  let tmp;
-  try {
-    tmp = popped ? value$1(popped) : undefined;
-  } catch (error) {
-    for (const item of v) {
-      loudDrop_drop(item);
-    }
-    throw error;
-  }
-  try {
+    const popped = $popIf(v, value);
+    const value$1 = (l) => {
+      const result = l[0];
+      loudDrop_drop(l);
+      return result;
+    };
+    const tmp = popped ? value$1(popped) : undefined;
     console.log(`popped ${tmp == null ? "None" : `Some(${tmp})`}`);
-  } catch (error) {
-    for (const item of v) {
-      loudDrop_drop(item);
-    }
-    throw error;
-  }
-  const value$2 = (l) => l[0] === 0;
-  let none;
-  try {
-    none = $popIf(v, value$2);
-  } catch (error) {
-    for (const item of v) {
-      loudDrop_drop(item);
-    }
-    throw error;
-  }
-  try {
-    console.log(`none ${!none}`);
-  } catch (error) {
-    if (none != null) {
-      loudDrop_drop(none);
-    }
-    for (const item of v) {
-      loudDrop_drop(item);
-    }
-    throw error;
-  }
-  const q = [[9], [10]];
-  const value$3 = (l) => l[0] === 9;
-  let front;
-  try {
-    front = $popFrontIf(q, value$3, false);
-  } catch (error) {
-    for (const item of q) {
-      loudDrop_drop(item);
-    }
-    if (none != null) {
-      loudDrop_drop(none);
-    }
-    for (const item of v) {
-      loudDrop_drop(item);
-    }
-    throw error;
-  }
-  const value$4 = (l) => l[0];
-  try {
-    const value = front ? value$4(front) : undefined;
-    console.log(`front ${value == null ? "None" : `Some(${value})`}`);
-  } catch (error) {
-    if (front != null) {
-      loudDrop_drop(front);
-    }
-    for (const item of q) {
-      loudDrop_drop(item);
-    }
-    if (none != null) {
-      loudDrop_drop(none);
-    }
-    for (const item of v) {
-      loudDrop_drop(item);
-    }
-    throw error;
-  }
-  const o = [11];
-  if (o) {
-    o[0] = (o[0] + 1) & 255;
-  }
-  const value$5 = (l) => l[0];
-  try {
+    const value$2 = (l) => l[0] === 0;
+    const none = $popIf(v, value$2);
     try {
+      console.log(`none ${!none}`);
+      const q = [[9], [10]];
+      const value = (l) => l[0] === 9;
       try {
+        const front = $popFrontIf(q, value, false);
+        const value$1 = (l) => l[0];
         try {
+          const value = front ? value$1(front) : undefined;
+          console.log(`front ${value == null ? "None" : `Some(${value})`}`);
+          const o = [11];
+          if (o) {
+            o[0] = (o[0] + 1) & 255;
+          }
+          const value$2 = (l) => l[0];
           try {
-            const value = o ? value$5(o) : undefined;
+            const value = o ? value$2(o) : undefined;
             console.log(`as_mut ${value == null ? "None" : `Some(${value})`}`);
           } finally {
             if (o != null) {
