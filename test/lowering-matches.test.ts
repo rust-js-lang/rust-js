@@ -414,10 +414,7 @@ pub fn numbers(x: Option<&js::Unknown>, y: Option<&js::Unknown>) -> f64 {
 
 // A let chain's \`!= null\` of what's then a number, which that implies,
 // past a binding between, one of Rust's data that a \`&mut\` changes.
-pub struct Pair {
-    pub left: Option<u32>,
-    pub right: u32,
-}
+pub struct Pair { pub left: Option<u32>, pub right: u32 }
 
 pub fn weighed(x: Option<&js::Unknown>, pair: &mut Pair) -> f64 {
     pair.right += 1;
