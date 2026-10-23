@@ -220,6 +220,47 @@ impl Expr {
         }
     }
 
+    /// `new Error(message)`: a panic, of Rust's or a port's (ADR 0012), the
+    /// one way rust-js makes one; `new Error()` of an empty message,
+    /// `panic!("")`'s, as `message` is `""` either way (ADR 0706).
+    pub fn panic(message: Expr) -> Expr {
+        let args = match &message.kind {
+            ExprKind::Str(text) if text.is_empty() => Vec::new(),
+            _ => vec![message],
+        };
+        Expr::new_(Expr::var("Error"), args)
+    }
+
+    /// Of `new Error(..)`, a panic: what it's made of.
+    pub fn panic_message(&self) -> Option<&[Expr]> {
+        match &self.kind {
+            ExprKind::New(class, args) if matches!(&class.kind, ExprKind::Var(name) if name == "Error") => Some(args),
+            _ => None,
+        }
+    }
+
+    /// What a downcast of the payload `pair` to a `&JsError` finds (ADR
+    /// 0692): its value where `is`, its `Any` being a `&JsError`'s; else a
+    /// panic's `Error`, `pair.error`.
+    pub fn thrown_error(is: Expr, pair: Expr) -> Expr {
+        Expr::cond(is, Expr::held(pair.clone()), Expr::member(pair, PANIC_ERROR))
+    }
+
+    /// Of `Expr::thrown_error`'s, the payload.
+    pub fn thrown_error_of(&self) -> Option<&Expr> {
+        let ExprKind::Cond(_, value, error) = &self.kind else {
+            return None;
+        };
+        match (&value.kind, &error.kind) {
+            (ExprKind::Member(a, held), ExprKind::Member(b, panic))
+                if held == HELD && panic == PANIC_ERROR && a == b =>
+            {
+                Some(a)
+            }
+            _ => None,
+        }
+    }
+
     /// `$catchUnwind(f)`: `catch_unwind(f)`'s `Result`, `f()`'s value, or
     /// what unwound, `$unwound(e)` of what was thrown (ADR 0660).
     pub fn caught_unwind(f: Expr) -> Expr {

@@ -2,9 +2,16 @@
 //! JS call's (ADRs 0035, 0637) or `catch_unwind`'s (ADR 0660), and what
 //! the `catch` reads of what was thrown.
 
-use crate::js::{self, Expr, ExprKind, Stmt, StmtKind};
+use std::collections::HashSet;
+
+use crate::js::{self, Expr, ExprKind, Pattern, Stmt, StmtKind};
+
+/// What a `catch` of an unwind names what it caught, where it reads the
+/// payload `$unwound` makes of it.
+const THROWN: &str = "thrown";
 
 pub(super) fn try_catches(body: &mut Vec<Stmt>) {
+    unwound_lets(body);
     // `$try(() => f())` whose result is ignored, `let _ = f();`, is `try {
     // f(); } catch {}`: the call, what it threw dropped.
     for stmt in body.iter_mut() {
@@ -146,7 +153,6 @@ fn try_catch(made: &Stmt, tested: &Stmt, before: &[Stmt], rest: &[Stmt]) -> Opti
     // `Err`'s binding, of the `catch`'s, `thrown` (ADR 0660).
     let (binding, in_catch) = match (caught, &error) {
         (js::Caught::Unwound, Some(payload)) => {
-            const THROWN: &str = "thrown";
             if payload == THROWN || js::mentions_in(err, THROWN) > 0 {
                 return None;
             }
@@ -164,9 +170,13 @@ fn try_catch(made: &Stmt, tested: &Stmt, before: &[Stmt], rest: &[Stmt]) -> Opti
         _ => (error.clone(), err.to_vec()),
     };
     // A closure's body, of `catch_unwind(|| ..)`, its value returned: in
-    // the `try`, its `return`s the function's (ADR 0660).
-    let caught =
-        |tried: Vec<Stmt>| StmtKind::TryCatch(js::applied_tried(tried), binding.clone(), in_catch.clone()).at(span);
+    // the `try`, its `return`s the function's (ADR 0660); and what the
+    // `catch` reads of the payload as it was thrown (ADR 0706).
+    let caught = |tried: Vec<Stmt>| {
+        let tried = js::applied_tried(tried);
+        let (binding, handler) = read_as_thrown(binding.clone(), in_catch.clone(), &tried);
+        StmtKind::TryCatch(tried, binding, handler).at(span)
+    };
     let alone = StmtKind::Expr(call.clone()).at(span);
     // What can't throw: what makes values, and what leaves with one.
     let cannot_throw = |stmt: &Stmt| match &stmt.kind {
@@ -204,6 +214,170 @@ fn try_catch(made: &Stmt, tested: &Stmt, before: &[Stmt], rest: &[Stmt]) -> Opti
     out.push(caught(vec![tried]));
     out.extend(ok.iter().cloned());
     Some((out, taken))
+}
+
+/// `const { _0: x } = $catchUnwind(f);` of an `f` that never returns, `let
+/// Err(x) = catch_unwind(|| panic!(""))`'s, whose `Ok` is none: `try {
+/// ..f's body } catch (thrown) { const x = $unwound(thrown); .. }`, the
+/// `catch` what follows up to its last read of `x`, as what follows runs
+/// only once `f` threw (ADR 0706).
+fn unwound_lets(body: &mut Vec<Stmt>) {
+    let mut i = 0;
+    while i < body.len() {
+        if let Some((made, taken)) = unwound_let(&body[i], &body[i + 1..]) {
+            let made_len = made.len();
+            body.splice(i..=i + taken, made);
+            i += made_len - 1;
+        }
+        i += 1;
+    }
+}
+
+/// `unwound_lets`' of `stmt`, then `rest`: the `try`, after what it
+/// declares, and how many of `rest` its `catch` takes.
+fn unwound_let(stmt: &Stmt, rest: &[Stmt]) -> Option<(Vec<Stmt>, usize)> {
+    // `const { _0: x } = r;`, or `const r = ..; const x = r._0;`.
+    let (key, payload, value, rest, skipped) = match (&stmt.kind, rest.first().map(|s| &s.kind)) {
+        (
+            StmtKind::Destructure {
+                pattern: Pattern::Object(fields, None),
+                value,
+                mutable: false,
+            },
+            _,
+        ) => match fields.as_slice() {
+            [(key, Pattern::Name(payload), None)] => (key.as_str(), payload, value, rest, 0),
+            _ => return None,
+        },
+        (StmtKind::Const(result, value), Some(StmtKind::Const(payload, read))) => match &read.kind {
+            ExprKind::Member(of, key)
+                if matches!(&of.kind, ExprKind::Var(v) if v == result) && js::mentions_in(rest, result) == 1 =>
+            {
+                (key.as_str(), payload, value, &rest[1..], 1)
+            }
+            _ => return None,
+        },
+        _ => return None,
+    };
+    let (call, js::Caught::Unwound) = value.caught()? else {
+        return None;
+    };
+    // `f` never returns: its body throws last, and returns nowhere.
+    let ExprKind::Call(_, args) = &value.kind else {
+        return None;
+    };
+    let never_returns = matches!(args.as_slice(), [f] if matches!(&f.kind, ExprKind::Arrow(params, body)
+        if params.is_empty()
+            && !js::returns(body).0
+            && matches!(body.last().map(|s| &s.kind), Some(StmtKind::Throw(_)))));
+    if key != "_0" || !never_returns || payload == THROWN || js::mentions_in(rest, THROWN) > 0 {
+        return None;
+    }
+    let last = rest
+        .iter()
+        .rposition(|s| js::mentions_in(std::slice::from_ref(s), payload) > 0)?;
+    let (caught, after) = rest.split_at(last + 1);
+    // What the `catch` declares that what follows reads, `let control;`
+    // before the `try`, set in the `catch`; anything else it declares, in
+    // a block of its own, read nowhere else.
+    let read_after = |name: &str| js::mentions_in(after, name) > 0;
+    let mut declared = Vec::new();
+    let mut handler =
+        vec![StmtKind::Const(payload.clone(), Expr::call_helper("$unwound", vec![Expr::var(THROWN)])).at(stmt.span)];
+    for s in caught {
+        match &s.kind {
+            StmtKind::Const(name, value) | StmtKind::Let(name, Some(value)) if read_after(name) => {
+                declared.push(StmtKind::Let(name.clone(), None).at(s.span));
+                handler.push(StmtKind::Assign(Expr::var(name), value.clone()).at(s.span));
+            }
+            _ => handler.push(s.clone()),
+        }
+    }
+    let mut inner = HashSet::new();
+    js::each_declared(&handler, &mut |name| {
+        inner.insert(name.to_string());
+    });
+    if inner.iter().any(|name| read_after(name)) {
+        return None;
+    }
+    let tried = js::applied_tried(vec![StmtKind::Expr(call).at(stmt.span)]);
+    let (binding, handler) = read_as_thrown(Some(THROWN.to_string()), handler, &tried);
+    declared.push(StmtKind::TryCatch(tried, binding, handler).at(stmt.span));
+    Some((declared, skipped + last + 1))
+}
+
+/// A `catch (thrown) { const payload = $unwound(thrown); .. }` of `tried`,
+/// what it reads of `payload` as `thrown` is (ADR 0706): its
+/// `resume_unwind`, `$unwinding(payload)`, of a payload only read, as
+/// `$unwinding($unwound(e))` is `e`; and where `tried` throws only its own
+/// panics, `new Error(..)`, its `&JsError`, that `Error`. Where nothing
+/// else reads the payload, the `catch` is of it, `catch (payload)`.
+fn read_as_thrown(binding: Option<String>, handler: Vec<Stmt>, tried: &[Stmt]) -> (Option<String>, Vec<Stmt>) {
+    let Some(thrown) = binding else {
+        return (binding, handler);
+    };
+    let Some(Stmt {
+        kind: StmtKind::Const(payload, made),
+        ..
+    }) = handler.first()
+    else {
+        return (Some(thrown), handler);
+    };
+    let unwound = matches!(&made.kind, ExprKind::Call(callee, args)
+        if callee.helper_name() == Some("$unwound")
+            && matches!(args.as_slice(), [arg] if matches!(&arg.kind, ExprKind::Var(v) if *v == thrown)));
+    if !unwound {
+        return (Some(thrown), handler);
+    }
+    let payload = payload.clone();
+    let mut rest = handler[1..].to_vec();
+    let of_payload = |e: &Expr| matches!(&e.kind, ExprKind::Var(v) if *v == payload);
+    let resumed = |e: &Expr| {
+        matches!(&e.kind, ExprKind::Call(callee, args)
+            if callee.helper_name() == Some("$unwinding") && matches!(args.as_slice(), [arg] if of_payload(arg)))
+    };
+    // Only read: each mention a field's, `payload.impl`, or its resume,
+    // and none written through it.
+    let mut read = 0;
+    js::each_expr(&rest, &mut |e| match &e.kind {
+        ExprKind::Member(of, _) if of_payload(of) => read += 1,
+        _ if resumed(e) => read += 1,
+        _ => {}
+    });
+    let only_read = read == js::mentions_in(&rest, &payload) && !js::Writes::of(&rest).changed.contains(&payload);
+    let panics_only = throws_only_panics(tried);
+    js::each_expr_mut(&mut rest, &mut |e| {
+        if (only_read && resumed(e)) || (panics_only && e.thrown_error_of().is_some_and(of_payload)) {
+            *e = Expr::var(&thrown).or_at(e.span);
+        }
+    });
+    let mut declared = 0;
+    js::each_declared(&rest, &mut |name| declared += usize::from(name == payload));
+    if js::mentions_in(&rest, &payload) > 0 || declared > 0 {
+        let mut kept = vec![handler[0].clone()];
+        kept.extend(rest);
+        return (Some(thrown), kept);
+    }
+    js::each_expr_mut(&mut rest, &mut |e| {
+        if matches!(&e.kind, ExprKind::Var(v) if *v == thrown) {
+            *e = Expr::var(&payload).or_at(e.span);
+        }
+    });
+    (Some(payload), rest)
+}
+
+/// Whether `stmts` are panics alone, `throw new Error(..)` of literals and
+/// variables, which throw nothing but what they make: an operator or a
+/// read may run JS that throws anything, `"" + value` a `TypeError` of a
+/// symbol.
+fn throws_only_panics(stmts: &[Stmt]) -> bool {
+    !stmts.is_empty()
+        && stmts.iter().all(|stmt| match &stmt.kind {
+            StmtKind::Throw(e) => e.panic_message().is_some_and(|args| {
+                (args.iter()).all(|a| matches!(a.kind, ExprKind::Str(_) | ExprKind::Var(_)) || a.is_constant())
+            }),
+            _ => false,
+        })
 }
 
 /// `$try(() => call).TAG === "Err"`, or `!== "Ok"`: whether a JS call

@@ -555,7 +555,7 @@ pub fn text(value: &Unknown) -> String {
 ```
 
 ```js
-import { $index, $panicMessage, $unwinding, $unwound } from "@rust-js/runtime";
+import { $index, $panicMessage, $unwound } from "@rust-js/runtime";
 
 export function url(value) {
   try {
@@ -604,7 +604,7 @@ export function text(value) {
     if (option != null && option.name === "TypeError") {
       return "";
     }
-    throw $unwinding(payload);
+    throw thrown;
   }
 }
 ```
@@ -617,7 +617,37 @@ export function text(value) {
   the `Error` itself, its `stack`, as a `&JsError` ([ADR 0692](../../decisions/0692-a-thrown-error-is-a-panic-and-what-js-threw.md)).
 - **`resume_unwind(payload)` throws it again**: a thrown `Error` or what
   JS threw, itself; text, its panic; any other payload, an `Error` that a
-  `catch_unwind` gives back as it was.
+  `catch_unwind` gives back as it was. Of a payload only read, it's
+  `throw` of what was caught, the same object, `throw thrown` above.
+- **`panic!` is the one way to throw an `Error`**, `panic!("")` a `new
+  Error()`: a JS value isn't `Send`, so rustc refuses `resume_unwind`
+  and `panic_any` of a `&JsError`. Caught where the `try` is panics alone,
+  its `&JsError` is that `Error`, its `stack` where it was
+  thrown, and the `catch` is of the `Err`'s binding ([ADR 0706](../../decisions/0706-panic-is-the-one-way-a-port-throws-an-error.md)):
+
+```rust
+use js::JsError;
+use std::panic::catch_unwind;
+
+pub fn control_stack() -> Option<String> {
+    let Err(x) = catch_unwind(|| panic!(""));
+    let control = x.downcast_ref::<&'static JsError>().copied();
+    control.and_then(|error| error.stack())
+}
+```
+
+```js
+export function controlStack() {
+  let control;
+  try {
+    throw new Error();
+  } catch (x) {
+    control = x;
+  }
+  return control?.stack;
+}
+```
+
 - **What it unwinds through is dropped** before `catch_unwind` returns,
   as [above](#unwinding-runs-drop). The payload drops nothing, a panic's
   message or what JS threw, unless the crate makes a `dyn Any` of a value

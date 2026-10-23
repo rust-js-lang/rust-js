@@ -81,7 +81,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 **Semantics**
 
 - [0011 Integers are JS numbers, wrapped like release Rust](decisions/0011-numbers.md)
-- [0012 Panics throw, via runtime helpers emitted on demand](decisions/0012-panics-and-runtime-helpers.md) *(helpers' place replaced by 0103; amended by 0660: `catch_unwind` catches one)*
+- [0012 Panics throw, via runtime helpers emitted on demand](decisions/0012-panics-and-runtime-helpers.md) *(helpers' place replaced by 0103; amended by 0660: `catch_unwind` catches one; 0706: a panic of no message is an `Error` of none)*
 - [0013 Fieldless enum variants are strings](decisions/0013-fieldless-enums.md)
 - [0033 Enums with fields are ReScript's tagged objects](decisions/0033-enums-with-fields.md)
 - [0035 JS that throws is a `Result`; `?` returns early](decisions/0035-results-and-throwing-js.md) *(amended by 0637: a `match` of its `Result` is `try` and `catch`; 0643: its `unwrap()` is the call)*
@@ -592,7 +592,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0657 An `if` of one value each, a function's too, is a conditional](decisions/0657-an-if-of-one-value-each-is-a-conditional.md) *(amended by 0658: a branch with a comment too)*
 - [0658 A comment before a branch's value is before it in the conditional](decisions/0658-a-comment-before-a-branchs-value-is-before-it-in-the-conditional.md)
 - [0659 Tidy is a list of stages, each with what it leaves a body with](decisions/0659-tidy-is-a-list-of-stages-with-contracts.md)
-- [0660 `catch_unwind` catches what JS throws, a panic among it](decisions/0660-catch-unwind-catches-what-js-throws.md) *(amended by 0691: a payload drops nothing where no `dyn Any` does; 0692: a thrown `Error` is a `&JsError` too)*
+- [0660 `catch_unwind` catches what JS throws, a panic among it](decisions/0660-catch-unwind-catches-what-js-throws.md) *(amended by 0691: a payload drops nothing where no `dyn Any` does; 0692: a thrown `Error` is a `&JsError` too; 0706: what's caught read as it was thrown)*
 - [0664 A function's last slice marked `#[rust_js::rest]` is JS's rest parameter](decisions/0664-a-functions-rest-slice-is-jss-rest-parameter.md)
 - [0666 The js crate binds `Object`'s reflection, a descriptor a dictionary](decisions/0666-the-js-crate-binds-objects-reflection.md)
 - [0667 `console` is a value, and a `fn` of rest arguments is the JS function](decisions/0667-console-is-a-value-and-rest-arguments-are-one.md)
@@ -616,7 +616,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0689 A move's decision is apart from the move: `moved` says where and why, `inlined` applies it](decisions/0689-a-moves-decision-is-apart-from-the-move.md)
 - [0690 An iterator given as it is folds by its own `fold`, and drops once](decisions/0690-an-iterator-given-as-it-is-folds-by-its-own-fold.md)
 - [0691 A `dyn Any` drops where the crate makes one of what drops](decisions/0691-a-dyn-any-drops-where-the-crate-makes-one-that-does.md)
-- [0692 A thrown `Error` is a panic's message and what JS threw, both](decisions/0692-a-thrown-error-is-a-panic-and-what-js-threw.md)
+- [0692 A thrown `Error` is a panic's message and what JS threw, both](decisions/0692-a-thrown-error-is-a-panic-and-what-js-threw.md) *(amended by 0706: its `&JsError` of a `try` of panics alone is the `Error`, and resumed is `throw` of it)*
 - [0693 A guard's scope is one `finally`, its `if`s, loops and `return`s in it](decisions/0693-a-guards-scope-is-one-finally-its-returns-in-it.md) *(amended by 0705: read as any body, its guard's fields its variables)*
 - [0694 `ManuallyDrop::drop`, `extend` of what holds nothing, a matched call's value and `{}` of an `impl Display`](decisions/0694-four-refusals-of-drops-and-displays-lifted.md)
 - [0695 `new` of a function value is JS's `new`, `js::new`](decisions/0695-new-of-a-function-value-is-jss-new.md)
@@ -630,6 +630,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0703 A closure made before a call a guard unwinds is made where it's read](decisions/0703-a-closure-made-before-a-guarded-call-is-made-where-its-read.md)
 - [0704 A module variable an `if` makes is assigned only where it's something](decisions/0704-a-module-variable-is-assigned-only-what-isnt-undefined.md)
 - [0705 A guard's scope reads as any body, its fields the variables it was made of](decisions/0705-a-guards-scope-reads-as-any-body.md)
+- [0706 `panic!` is the one way a port throws an `Error`, and what's caught is read as it was thrown](decisions/0706-panic-is-the-one-way-a-port-throws-an-error.md)
 - [0436 Every `dyn` that's a pair keeps its value's drop, `dyn Send` too](decisions/0436-every-dyn-keeps-its-drop.md) *(amended by 0691: a `dyn Any` drops where the crate makes one of what drops)*
 - [0437 A scope's drops on a panic are one `try { .. } finally { .. }`](decisions/0437-a-scopes-drops-are-one-finally.md) *(amended by 0693: its `if`s, loops and `return`s in it)*
 - [0438 An optional prop is given `Some(..)`, or left out](decisions/0438-an-optional-prop-is-given-some.md)

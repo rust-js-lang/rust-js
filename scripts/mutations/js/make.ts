@@ -301,4 +301,12 @@ export const mutations: Mutation[] = [
     replace: "                ] => Expr::call(f.clone(), Vec::new()),\n                _ => Expr::call(f.clone(), Vec::new()),\n",
     tests: ["test/lowering-unwinds.test.ts", "-t", "a payload is a panic's message"],
   },
+  {
+    name: "panic-of-nothing-written",
+    breaks: "`panic!(\"\")` is `new Error(\"\")`, not `new Error()`",
+    file: "src/js/make.rs",
+    find: "            ExprKind::Str(text) if text.is_empty() => Vec::new(),\n",
+    replace: "",
+    tests: ["test/lowering-unwinds.test.ts", "-t", "a port throws an Error by panic!"],
+  },
 ];

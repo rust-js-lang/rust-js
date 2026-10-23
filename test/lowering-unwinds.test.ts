@@ -462,9 +462,8 @@ pub fn counted(n: u32) -> u32 {
     count
 }
 `);
-  expect(js).toContain(`  } catch (thrown) {
-    const payload = $unwound(thrown);
-    throw $unwinding(payload);
+  expect(js).toContain(`  } catch (payload) {
+    throw payload;
   }`);
   // An `AssertUnwindSafe` is what it holds: its closure's body is the `try`'s.
   expect(js).toContain(`  let count = 0;
@@ -795,6 +794,112 @@ pub fn changed(mut previous: u32) -> u32 {
     ["restored", 10, undefined],
   ]);
   for (const name of ["work", "lines", "restored", "define", "del"]) delete g[name];
+});
+
+// React's DetermineComponentFrameRoot throws its control error to catch
+// it, `try { throw Error(); } catch (x) { control = x; }`: a port's
+// `panic!("")` caught, its `&JsError` the `Error` thrown (ADR 0706); and a
+// payload resumed is thrown as it was caught.
+test("a port throws an Error by panic! and catches it as thrown", async () => {
+  const { js, dir } = compiled("unwind-as-thrown", `use js::JsError;
+use std::panic::{catch_unwind, resume_unwind};
+
+pub fn control() -> Option<String> {
+    let Err(x) = catch_unwind(|| panic!(""));
+    let control = x.downcast_ref::<&'static JsError>().copied();
+    control.and_then(|c| c.stack())
+}
+
+pub fn assigned(n: u32) -> String {
+    let mut control: Option<&'static JsError> = None;
+    match catch_unwind(|| panic!("")) {
+        Err(x) => control = x.downcast_ref::<&'static JsError>().copied(),
+    }
+    match control {
+        Some(error) if n > 1 => error.message(),
+        _ => String::from("none"),
+    }
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "globalThis.render")]
+fn render() -> u32 {
+    unreachable!()
+}
+
+pub fn rethrown() -> u32 {
+    match catch_unwind(render) {
+        Ok(n) => n,
+        Err(payload) => resume_unwind(payload),
+    }
+}
+
+pub fn named() -> u32 {
+    match catch_unwind(render) {
+        Ok(n) => n,
+        Err(payload) => {
+            if payload.downcast_ref::<String>().is_some_and(|m| m == "skip") {
+                return 0;
+            }
+            resume_unwind(payload)
+        }
+    }
+}
+
+pub fn of_any() -> Option<String> {
+    match catch_unwind(render) {
+        Ok(_) => None,
+        Err(payload) => payload.downcast_ref::<&'static JsError>().map(|e| e.message()),
+    }
+}
+`);
+  expect(js).toContain(`export function control() {
+  let control;
+  try {
+    throw new Error();
+  } catch (x) {
+    control = x;
+  }
+  return control?.stack;
+}`);
+  expect(js).toContain(`  } catch (x) {
+    control = x;
+  }`);
+  expect(js).toContain(`  try {
+    return globalThis.render();
+  } catch (payload) {
+    throw payload;
+  }`);
+  // Read otherwise, the payload is kept, and thrown again as it was.
+  expect(js).toContain("    throw thrown;\n");
+  // What a call throws may be any value: its downcast's test is kept.
+  expect(js).toContain('payload.impl.typeId() === "&js::JsError" ? payload.value : payload.error');
+  const lib = await import(join(dir, "lib.js"));
+  const g = globalThis as Record<string, unknown>;
+  expect(lib.control()).toContain("Error");
+  expect([lib.assigned(1), lib.assigned(2)]).toEqual(["none", ""]);
+  const thrown = new TypeError("no props");
+  g.render = () => {
+    throw thrown;
+  };
+  for (const f of [lib.rethrown, lib.named]) {
+    let caught: unknown;
+    try {
+      f();
+    } catch (e) {
+      caught = e;
+    }
+    expect(caught).toBe(thrown);
+  }
+  expect(lib.ofAny()).toBe("no props");
+  g.render = () => {
+    throw new Error("skip");
+  };
+  expect(lib.named()).toBe(0);
+  g.render = () => {
+    throw 5;
+  };
+  expect(lib.ofAny()).toBe(undefined);
+  delete g.render;
 });
 
 // rust-js's panics unwind (ADR 0090); where the crate asked them to abort,

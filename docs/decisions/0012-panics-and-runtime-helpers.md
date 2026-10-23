@@ -4,6 +4,9 @@ Status: Accepted, and its helpers' place replaced by [0103](0103-runtime-package
 `throw new Error(..)`: see [0026](0026-testing.md). Amended by
 [0660](0660-catch-unwind-catches-what-js-throws.md): Rust code catches a panic,
 and what JS throws, with `catch_unwind`; a panic is what `$isPanic` says.
+Amended by [0706](0706-panic-is-the-one-way-a-port-throws-an-error.md):
+`panic!("")` is `new Error()`, and `panic!` the one way a port throws an
+`Error`.
 
 Case: C, D ([0262](0262-when-rust-and-js-disagree.md)).
 

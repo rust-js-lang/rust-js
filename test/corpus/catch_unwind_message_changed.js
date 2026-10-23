@@ -42,9 +42,8 @@ function main() {
   const kept = $catchUnwind(() => {
     try {
       return fails(4);
-    } catch (thrown) {
-      const payload = $unwound(thrown);
-      throw $unwinding(payload);
+    } catch (payload) {
+      throw payload;
     }
   });
   const option$1 = kept.TAG === "Err" ? kept._0 : undefined;

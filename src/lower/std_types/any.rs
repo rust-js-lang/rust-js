@@ -85,7 +85,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let panicked = Expr::bin(Op::Ne, error.clone(), Expr::undefined());
             return Ok(Some(match op {
                 AnyOp::Is => Expr::bin(Op::Or, is, panicked),
-                AnyOp::DowncastRef => Expr::cond(is, inside, error),
+                AnyOp::DowncastRef => Expr::thrown_error(is, pair),
                 _ => Expr::cond(
                     is,
                     result::ok(inside),
