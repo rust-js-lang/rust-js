@@ -65,14 +65,13 @@ function main() {
     const value$4 = [1];
     try {
       const removeEntry = $removeEntry(m, value$4);
-      const value = removeEntry
-        ? (([k, v]) => {
-            const result = [k[0], v];
-            keyDrop_drop(k);
-            return result;
-          })(removeEntry)
-        : undefined;
-      console.log(`removed ${value == null ? "None" : `Some((${value[0]}, ${value[1]}))`}`);
+      const value = ([k, v]) => {
+        const result = [k[0], v];
+        keyDrop_drop(k);
+        return result;
+      };
+      const value$1 = removeEntry ? value(removeEntry) : undefined;
+      console.log(`removed ${value$1 == null ? "None" : `Some((${value$1[0]}, ${value$1[1]}))`}`);
     } finally {
       keyDrop_drop(value$4);
     }
@@ -106,27 +105,25 @@ function main() {
     }
     $add(s, [4], keyDrop_drop);
     const replace = $setReplace(s, [4]);
-    const value$1 = replace
-      ? ((k) => {
-          const result = k[0];
-          keyDrop_drop(k);
-          return result;
-        })(replace)
-      : undefined;
-    console.log(`replace ${value$1 == null ? "None" : `Some(${value$1})`}`);
-    const value$2 = [4];
+    const value$1 = (k) => {
+      const result = k[0];
+      keyDrop_drop(k);
+      return result;
+    };
+    const value$2 = replace ? value$1(replace) : undefined;
+    console.log(`replace ${value$2 == null ? "None" : `Some(${value$2})`}`);
+    const value$3 = [4];
     try {
-      const take = s.delete(value$2) ? value$2 : undefined;
-      const value = take
-        ? ((k) => {
-            const result = k[0];
-            keyDrop_drop(k);
-            return result;
-          })(take)
-        : undefined;
-      console.log(`take ${value == null ? "None" : `Some(${value})`}`);
+      const take = s.delete(value$3) ? value$3 : undefined;
+      const value = (k) => {
+        const result = k[0];
+        keyDrop_drop(k);
+        return result;
+      };
+      const value$1 = take ? value(take) : undefined;
+      console.log(`take ${value$1 == null ? "None" : `Some(${value$1})`}`);
     } finally {
-      keyDrop_drop(value$2);
+      keyDrop_drop(value$3);
     }
     $add(s, [7], keyDrop_drop);
     $retainSet(s, (k) => k[0] !== 7, s, keyDrop_drop);

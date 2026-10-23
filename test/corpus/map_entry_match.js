@@ -17,14 +17,14 @@ export function entry() {
 function main() {
   const counts = new Map();
   for (const word of ["a", "b", "a", "c", "a"]) {
-    const value = $entry(counts, word);
-    if (value.TAG === "Occupied") {
-      const seen = value._0;
+    const entry = $entry(counts, word);
+    if (entry.TAG === "Occupied") {
+      const seen = entry._0;
       const getMut = $entryGet(seen, true);
       getMut.value = (getMut.value + 1) | 0;
     } else {
-      console.log(`first ${value._0[1]}`);
-      $vacantInsert(value._0, 1, true);
+      console.log(`first ${entry._0[1]}`);
+      $vacantInsert(entry._0, 1, true);
     }
   }
   const sorted = Array.from(counts);
@@ -52,9 +52,9 @@ function main() {
   );
 
   const empty = new Map();
-  const entry = $entry(empty, "z");
-  if (entry.TAG === "Vacant") {
-    const key = entry._0[1];
+  const value = $entry(empty, "z");
+  if (value.TAG === "Vacant") {
+    const key = value._0[1];
     console.log(`${key} ${empty.size}`);
   }
 }

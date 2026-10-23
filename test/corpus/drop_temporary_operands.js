@@ -30,39 +30,39 @@ function three(a, b, n) {
 }
 
 function main() {
-  const noisy = make("a");
+  const value = make("a");
+  let noisy;
+  try {
+    noisy = make("b");
+  } catch (error) {
+    console.log(`drop ${value[0]}`);
+    throw error;
+  }
   let tmp;
   try {
-    tmp = make("b");
+    tmp = third(false);
   } catch (error) {
     console.log(`drop ${noisy[0]}`);
+    console.log(`drop ${value[0]}`);
     throw error;
   }
+  console.log(`${three(value, noisy, tmp)}`);
+  const value$1 = make("c");
   let tmp$1;
   try {
-    tmp$1 = third(false);
+    tmp$1 = make("d");
   } catch (error) {
-    console.log(`drop ${tmp[0]}`);
-    console.log(`drop ${noisy[0]}`);
+    console.log(`drop ${value$1[0]}`);
     throw error;
   }
-  console.log(`${three(noisy, tmp, tmp$1)}`);
-  const value = make("c");
   let tmp$2;
   try {
-    tmp$2 = make("d");
+    tmp$2 = third(true);
   } catch (error) {
-    console.log(`drop ${value[0]}`);
+    console.log(`drop ${tmp$1[0]}`);
+    console.log(`drop ${value$1[0]}`);
     throw error;
   }
-  let tmp$3;
-  try {
-    tmp$3 = third(true);
-  } catch (error) {
-    console.log(`drop ${tmp$2[0]}`);
-    console.log(`drop ${value[0]}`);
-    throw error;
-  }
-  console.log(`${three(value, tmp$2, tmp$3)}`);
+  console.log(`${three(value$1, tmp$1, tmp$2)}`);
 }
 //# sourceMappingURL=case.js.map

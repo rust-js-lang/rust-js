@@ -24,14 +24,13 @@ function main() {
     .filter(Boolean);
   try {
     const next = $next(it);
-    const value = next
-      ? ((l) => {
-          const result = l[0];
-          loudDrop_drop(l);
-          return result;
-        })(next)
-      : undefined;
-    console.log(`${value == null ? "None" : `Some(${value})`}`);
+    const value = (l) => {
+      const result = l[0];
+      loudDrop_drop(l);
+      return result;
+    };
+    const value$1 = next ? value(next) : undefined;
+    console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
   } finally {
     it.return();
   }

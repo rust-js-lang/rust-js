@@ -70,18 +70,18 @@ function main() {
         if (!sink) {
           break;
         }
-        const value = $borrowMut(sink.value, true);
+        const receiver = $borrowMut(sink.value, true);
         try {
-          value.impl.take(value, 2);
+          receiver.impl.take(receiver, 2);
         } finally {
-          $unborrow(value);
+          $unborrow(receiver);
         }
       }
-      const receiver = $borrow($index(sinks, 0).value, true);
+      const value = $borrow($index(sinks, 0).value, true);
       try {
-        console.log(`${receiver.impl.total(receiver.value)} ${$index(sinks, 0).strong}`);
+        console.log(`${value.impl.total(value.value)} ${$index(sinks, 0).strong}`);
       } finally {
-        $unborrow(receiver);
+        $unborrow(value);
       }
     } finally {
       for (const item of sinks) {

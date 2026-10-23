@@ -92,9 +92,9 @@ function main() {
       break;
     }
     const n = tmp;
-    let tmp$1;
+    let insert;
     try {
-      tmp$1 = $insert(map, n & 255, [(n * 10) >>> 0]);
+      insert = $insert(map, n & 255, [(n * 10) >>> 0]);
     } catch (error) {
       if (map$live) {
         for (const [, value] of $sortedEntries(map, $cmp)) {
@@ -104,8 +104,8 @@ function main() {
       throw error;
     }
     try {
-      if (tmp$1 != null) {
-        loudDrop_drop(tmp$1);
+      if (insert != null) {
+        loudDrop_drop(insert);
       }
     } catch (error) {
       if (map$live) {
@@ -132,13 +132,12 @@ function main() {
   let found;
   try {
     const find = $findDropping($lent(value$2), (l) => l[0] === 2, loudDrop_drop, false);
-    found = find
-      ? ((l) => {
-          const result = l[0];
-          loudDrop_drop(l);
-          return result;
-        })(find)
-      : undefined;
+    const value = (l) => {
+      const result = l[0];
+      loudDrop_drop(l);
+      return result;
+    };
+    found = find ? value(find) : undefined;
   } finally {
     for (const item of value$2) {
       loudDrop_drop(item);
@@ -146,28 +145,9 @@ function main() {
   }
   console.log(`${found == null ? "None" : `Some(${found})`}`);
   const all = new Map();
-  let insert;
-  try {
-    insert = $insert(all, 1, [7]);
-  } catch (error) {
-    for (const [, value] of $sortedEntries(all, $cmp)) {
-      loudDrop_drop(value);
-    }
-    throw error;
-  }
-  try {
-    if (insert != null) {
-      loudDrop_drop(insert);
-    }
-  } catch (error) {
-    for (const [, value] of $sortedEntries(all, $cmp)) {
-      loudDrop_drop(value);
-    }
-    throw error;
-  }
   let loud;
   try {
-    loud = $insert(all, 2, [8]);
+    loud = $insert(all, 1, [7]);
   } catch (error) {
     for (const [, value] of $sortedEntries(all, $cmp)) {
       loudDrop_drop(value);
@@ -177,6 +157,25 @@ function main() {
   try {
     if (loud != null) {
       loudDrop_drop(loud);
+    }
+  } catch (error) {
+    for (const [, value] of $sortedEntries(all, $cmp)) {
+      loudDrop_drop(value);
+    }
+    throw error;
+  }
+  let tmp;
+  try {
+    tmp = $insert(all, 2, [8]);
+  } catch (error) {
+    for (const [, value] of $sortedEntries(all, $cmp)) {
+      loudDrop_drop(value);
+    }
+    throw error;
+  }
+  try {
+    if (tmp != null) {
+      loudDrop_drop(tmp);
     }
   } catch (error) {
     for (const [, value] of $sortedEntries(all, $cmp)) {

@@ -376,4 +376,13 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^interpreter.rs$"],
     snapshots: true,
   },
+  {
+    name: "temporaries-named-by-nesting",
+    breaks: "temporaries are named outer lists first, so a `let` set late takes `next` from one read first",
+    file: "src/lower/mir/tidy/bindings.rs",
+    find: "    renames.sort_by_key(|(from, ..)| first.get(from).copied().unwrap_or(usize::MAX));\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^adapter_drops.rs$"],
+    snapshots: true,
+  },
 ];

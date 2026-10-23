@@ -62,12 +62,11 @@ function bumped(v) {
   let x = 1;
   const b = v.pop();
   const a = x;
-  if (
-    !(() => {
-      x = (x + 10) >>> 0;
-      return false;
-    })()
-  ) {
+  const value = () => {
+    x = (x + 10) >>> 0;
+    return false;
+  };
+  if (!value()) {
     if (b != null) {
       return (((((a * 100) >>> 0) + b) >>> 0) + x) >>> 0;
     }

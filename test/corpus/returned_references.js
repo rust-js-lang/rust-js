@@ -29,9 +29,9 @@ function main() {
   const value$1 = $unwrap(items[1]);
   value$1.count = (value$1.count + 1) >>> 0;
   const log = [];
-  const value$2 = value(log);
-  const value$3 = pick(items, log);
-  value$3.count = value$2;
+  const value$3 = value(log);
+  const value$2 = pick(items, log);
+  value$2.count = value$3;
   console.log(
     `[${items.map((item) => itemDebug_fmt(item)).join(", ")}] [${log.map((item) => $debugStr(item)).join(", ")}]`,
   );

@@ -18,14 +18,13 @@ function main() {
   let it = $iter(noisy([1, 2, 3]));
   try {
     const nthBack = $nthBack(it, 1, undefined, noisyDrop_drop);
-    const value = nthBack
-      ? ((n) => {
-          const result = n[0];
-          noisyDrop_drop(n);
-          return result;
-        })(nthBack)
-      : undefined;
-    console.log(`${value == null ? "None" : `Some(${value})`}`);
+    const value = (n) => {
+      const result = n[0];
+      noisyDrop_drop(n);
+      return result;
+    };
+    const value$1 = nthBack ? value(nthBack) : undefined;
+    console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
     console.log(`left ${it.end - it.at}`);
   } finally {
     for (const item of it) {
@@ -35,14 +34,13 @@ function main() {
   it = $iter(noisy([4, 5, 6]));
   try {
     const rfind = $findBack(it, (n) => n[0] === 4, undefined, noisyDrop_drop);
-    const value = rfind
-      ? ((n) => {
-          const result = n[0];
-          noisyDrop_drop(n);
-          return result;
-        })(rfind)
-      : undefined;
-    console.log(`${value == null ? "None" : `Some(${value})`}`);
+    const value = (n) => {
+      const result = n[0];
+      noisyDrop_drop(n);
+      return result;
+    };
+    const value$1 = rfind ? value(rfind) : undefined;
+    console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
     console.log(
       `${$foldBack($iter(noisy([7, 8])), 0, (sum, n) => {
         const result = (((sum * 10) >>> 0) + n[0]) >>> 0;
@@ -50,9 +48,9 @@ function main() {
         return result;
       })}`,
     );
-    const value$1 = $iter(noisy([1, 2, 3]));
+    const value$2 = $iter(noisy([1, 2, 3]));
     try {
-      const value = $lent(value$1)
+      const value = $lent(value$2)
         .map((n) => {
           const result = n[0] > 1 ? n[0] : undefined;
           noisyDrop_drop(n);
@@ -61,7 +59,7 @@ function main() {
         .find((item) => item != null);
       console.log(`${value == null ? "None" : `Some(${value})`}`);
     } finally {
-      for (const item of value$1) {
+      for (const item of value$2) {
         noisyDrop_drop(item);
       }
     }

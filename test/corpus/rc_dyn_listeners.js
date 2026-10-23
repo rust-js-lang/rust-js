@@ -71,16 +71,14 @@ function main() {
       let parent;
       try {
         const upgrade = $upgrade(borrow.value);
-        parent =
-          (upgrade
-            ? ((p) => {
-                const result = p.value.name;
-                $rcDrop(p, (value) => {
-                  $weakDrop(value.parent.value);
-                });
-                return result;
-              })(upgrade)
-            : undefined) ?? "";
+        const value = (p) => {
+          const result = p.value.name;
+          $rcDrop(p, (value) => {
+            $weakDrop(value.parent.value);
+          });
+          return result;
+        };
+        parent = (upgrade ? value(upgrade) : undefined) ?? "";
       } finally {
         $unborrow(borrow);
       }

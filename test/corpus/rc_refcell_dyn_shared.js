@@ -69,18 +69,18 @@ function main() {
     { value: { seen: [] }, impl: loggerListener },
   ];
   for (const listener of listeners) {
-    const value = $borrowMut(listener, true);
+    const receiver = $borrowMut(listener, true);
     try {
-      value.impl.notify(value, "start");
+      receiver.impl.notify(receiver, "start");
     } finally {
-      $unborrow(value);
+      $unborrow(receiver);
     }
   }
-  const receiver = $borrowMut($index(listeners, 0), true);
+  const value = $borrowMut($index(listeners, 0), true);
   try {
-    receiver.impl.notify(receiver, "stop");
+    value.impl.notify(value, "stop");
   } finally {
-    $unborrow(receiver);
+    $unborrow(value);
   }
   const borrow = $borrow(logger, true);
   try {

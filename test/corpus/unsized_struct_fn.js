@@ -9,16 +9,16 @@ export function entry() {
 function main() {
   const total = { value: 0 };
   const add = { value: (x) => (x * 2) | 0 };
-  let borrowMut;
+  let tmp;
   for (const x of [1, 2, 3]) {
-    const value = $borrowMut(add, true);
+    const borrowMut = $borrowMut(add, true);
     try {
-      const value$1 = value.value(x);
-      borrowMut = $borrowMut(total, true);
-      borrowMut.value = (borrowMut.value + value$1) | 0;
-      $unborrow(borrowMut);
+      const value = borrowMut.value(x);
+      tmp = $borrowMut(total, true);
+      tmp.value = (tmp.value + value) | 0;
+      $unborrow(tmp);
     } finally {
-      $unborrow(value);
+      $unborrow(borrowMut);
     }
   }
   const borrow = $borrow(total, true);

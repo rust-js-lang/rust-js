@@ -116,6 +116,13 @@ function main() {
   console.log(`map_or ${value$6}`);
   const a$7 = [8];
   const b = [9];
+  const value$22 = () => {
+    try {
+      return Loud.get(a$7);
+    } finally {
+      console.log(`drop ${a$7[0]}`);
+    }
+  };
   const f$7 = (x) => {
     try {
       return (x + Loud.get(b)) >>> 0;
@@ -123,16 +130,7 @@ function main() {
       console.log(`drop ${b[0]}`);
     }
   };
-  const value$7 =
-    some != null
-      ? f$7(some)
-      : (() => {
-          try {
-            return Loud.get(a$7);
-          } finally {
-            console.log(`drop ${a$7[0]}`);
-          }
-        })();
+  const value$7 = some != null ? f$7(some) : value$22();
   if (some != null) {
     console.log(`drop ${a$7[0]}`);
   }
@@ -278,6 +276,13 @@ function main() {
   console.log(`map_or ${value$17}`);
   const a$18 = [16];
   const b$1 = [17];
+  const value$23 = (e) => {
+    try {
+      return (e + Loud.get(a$18)) >>> 0;
+    } finally {
+      console.log(`drop ${a$18[0]}`);
+    }
+  };
   const f$18 = (x) => {
     try {
       return (x + Loud.get(b$1)) >>> 0;
@@ -285,16 +290,7 @@ function main() {
       console.log(`drop ${b$1[0]}`);
     }
   };
-  const value$18 =
-    ok.TAG === "Ok"
-      ? f$18(ok._0)
-      : ((e) => {
-          try {
-            return (e + Loud.get(a$18)) >>> 0;
-          } finally {
-            console.log(`drop ${a$18[0]}`);
-          }
-        })(ok._0);
+  const value$18 = ok.TAG === "Ok" ? f$18(ok._0) : value$23(ok._0);
   if (ok.TAG === "Ok") {
     console.log(`drop ${a$18[0]}`);
   }

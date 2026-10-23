@@ -138,22 +138,22 @@ function main() {
   } finally {
     $unborrow(value);
   }
-  const value$2 = $borrow(cell, true);
+  const value$1 = $borrow(cell, true);
   const probe = [cell, 0];
-  const n = (value$2.value.length + probe[1]) >>> 0;
+  const n = (value$1.value.length + probe[1]) >>> 0;
   try {
     probeDrop_drop(probe);
   } finally {
-    $unborrow(value$2);
+    $unborrow(value$1);
   }
   console.log(`${n}`);
   const peeks = [[cell]];
-  const value$1 = $borrow(cell, true);
+  const value$2 = $borrow(cell, true);
   let m;
   try {
-    m = (value$1.value.length + peeks.map((item) => peekClone_clone(item)).length) >>> 0;
+    m = (value$2.value.length + peeks.map((item) => peekClone_clone(item)).length) >>> 0;
   } finally {
-    $unborrow(value$1);
+    $unborrow(value$2);
   }
   console.log(`${m}`);
   const options = [[cell]];

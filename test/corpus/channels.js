@@ -58,9 +58,9 @@ function main() {
     try {
       produce(tx);
       $unwrapOk($send(tx2, { id: 9, name: "late" }), undefined, (e) => "SendError { .. }");
-      const value = $tryRecv(rx);
-      if (value.TAG === "Ok") {
-        console.log(`first ${value._0.id}`);
+      const tryRecv = $tryRecv(rx);
+      if (tryRecv.TAG === "Ok") {
+        console.log(`first ${tryRecv._0.id}`);
       }
     } finally {
       $dropSender(tx2);
@@ -70,12 +70,12 @@ function main() {
         .map((item) => $debugStr(item))
         .join(", ")}]`,
     );
-    const tryRecv = $tryRecv(rx);
-    console.log(`${tryRecv.TAG === "Err" && tryRecv._0 === "Disconnected"}`);
+    const value = $tryRecv(rx);
+    console.log(`${value.TAG === "Err" && value._0 === "Disconnected"}`);
 
-    const value = $channel();
-    const tx$1 = value[0];
-    const rx$1 = value[1];
+    const value$1 = $channel();
+    const tx$1 = value$1[0];
+    const rx$1 = value$1[1];
     try {
       $dropReceiver(rx$1);
       console.log(`${$send(tx$1, 5).TAG === "Err"}`);

@@ -57,14 +57,13 @@ function main() {
                 console.log(`drop ${value._0[0]}`);
               }
               const take = $cellReplace(t);
-              const value$1 = take
-                ? ((l) => {
-                    const result = l[0];
-                    console.log(`drop ${l[0]}`);
-                    return result;
-                  })(take)
-                : undefined;
-              console.log(`took ${value$1 == null ? "None" : `Some(${value$1})`}`);
+              const value$1 = (l) => {
+                const result = l[0];
+                console.log(`drop ${l[0]}`);
+                return result;
+              };
+              const value$2 = take ? value$1(take) : undefined;
+              console.log(`took ${value$2 == null ? "None" : `Some(${value$2})`}`);
               console.log("end");
             } finally {
               if (t.value != null) {

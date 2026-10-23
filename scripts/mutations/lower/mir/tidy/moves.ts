@@ -83,4 +83,13 @@ export const mutations: Mutation[] = [
     "replace": "                && false\n                && let Some(found) = leads(key, name, guard, passes)\n",
     "tests": ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"]
   },
+  {
+    name: "closure-of-statements-called-in-place",
+    breaks: "a closure of statements is moved into its call, `x ? ((l) => { .. })(x) : undefined`, not called by its name",
+    file: "src/lower/mir/tidy/moves.rs",
+    find: "    if called_closure_of_statements(value, expr, name) {\n",
+    replace: "    if false && called_closure_of_statements(value, expr, name) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^(adapter_drops|tuple_scrutinee_calls).rs$"],
+    snapshots: true,
+  },
 ];
