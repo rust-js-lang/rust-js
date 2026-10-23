@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "classify-some-local-unknown",
+    breaks: "what `classify(Some(value))` gives isn't known to be there, so a test of its object leaves out `null`",
+    file: "src/lower/mir/patterns.rs",
+    find: "                } if destination.projection.is_empty() && calls.contains(fn_span) => Some(destination.local),\n",
+    replace: "                } if false && calls.contains(fn_span) => Some(destination.local),\n",
+    tests: ["test/lowering-switches.test.ts", "-t", "undefined and null"],
+  },
+  {
     name: "mir-payload-of-for-loop",
     breaks: "a `for` loop's item, its desugaring's `Some(x)`, is read in place, so the loop is MIR's `while (true)`",
     file: "src/lower/mir/patterns.rs",

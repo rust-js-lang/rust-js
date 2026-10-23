@@ -290,6 +290,20 @@ pub fn blocks(fallback: Fallback) -> bool {
     matches!(fallback, Fallback::Blocking)
 }
 
+// One that's \`undefined\` or \`null\` (ADR 0676).
+#[rust_js::untagged]
+pub enum Field<'a> {
+    Text(&'a str),
+    #[rust_js::undefined]
+    Missing,
+    #[rust_js::null]
+    Cleared,
+}
+
+pub fn cleared(field: Field) -> bool {
+    matches!(field, Field::Cleared)
+}
+
 // An enum with fields is its tagged objects' union, a variant without its
 // name (ADR 0033); a discriminated union's, each an object (ADR 0284).
 pub enum Shape {
@@ -405,6 +419,7 @@ pub fn fail(message: &str) -> ! {
     "type Json = string | number | boolean | (Json | null | undefined)[] | {\n    [key: string]: Json | null | undefined;\n};",
     "export type Size = string | number;",
     'export type Fallback = boolean | "blocking";',
+    "export type Field = string | undefined | null;",
     "export function width(size: Size): string;",
     "export type Items<T> = T[] | string;",
     "export function count(items: Items<number>): number;",

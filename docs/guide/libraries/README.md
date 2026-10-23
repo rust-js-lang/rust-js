@@ -39,13 +39,13 @@ use js::{Kind, classify, json, reg_exp, set_timeout};
 
 pub fn describe(text: &str) -> String {
     match json::parse(text) {
-        Ok(Some(value)) => match classify(value) {
+        Ok(value) => match classify(value) {
+            Kind::Null => "null".to_string(),
             Kind::String(s) => format!("text {s}"),
             Kind::Number(n) => format!("number {n}"),
             Kind::Array(items) => format!("{} items", items.len()),
             _ => "something else".to_string(),
         },
-        Ok(None) => "null".to_string(),
         Err(error) => js::js_error::to_string(error),
     }
 }
@@ -60,29 +60,29 @@ pub fn later(name: String) {
 ```
 
 ```js
-import { $displayF64, $try } from "@rust-js/runtime";
+import { $displayF64 } from "@rust-js/runtime";
 
 export function describe(text) {
-  const value$1 = $try(() => JSON.parse(text));
-  if (value$1.TAG === "Ok") {
-    if (value$1._0 != null) {
-      const value = value$1._0;
-      if (Array.isArray(value)) {
-        return `${value.length} items`;
-      }
-      switch (typeof value) {
-        case "string":
-          return `text ${value}`;
-        case "number":
-          return `number ${$displayF64(value)}`;
-        default:
-          return "something else";
-      }
-    }
+  let value;
+  try {
+    value = JSON.parse(text);
+  } catch (error) {
+    return String(error);
+  }
+  if (value === null) {
     return "null";
   }
-  const error = value$1._0;
-  return String(error);
+  if (Array.isArray(value)) {
+    return `${value.length} items`;
+  }
+  switch (typeof value) {
+    case "string":
+      return `text ${value}`;
+    case "number":
+      return `number ${$displayF64(value)}`;
+    default:
+      return "something else";
+  }
 }
 
 export function isNumber(text) {
@@ -100,7 +100,8 @@ What it has:
 
 - **A value of any shape is a `js::Unknown`,** TypeScript's `unknown`:
   what `json::parse` gives, or a binding's `any`. `classify(value)` tells
-  what it is, a `Kind` to `match`, by `typeof` and `Array.isArray`;
+  what an `Option<&Unknown>` is, a `Kind` to `match`, by `typeof`, `===
+  null` and `Array.isArray`, `undefined` and `null` too (ADR 0676);
   `get(value, key)`, `set(value, key, to)` and `has(value, key)` are
   `value[key]` and `key in value`; `object::keys` is `Object.keys`
   ([ADR 0225](../../decisions/0225-unknown-values.md)). A `Json` is a JSON

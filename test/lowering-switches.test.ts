@@ -160,8 +160,8 @@ use std::panic::catch_unwind;
 
 /// \`value[key]\`, where it's text.
 fn text_at(value: &Unknown, key: &str) -> Option<String> {
-    match js::get(value, key).map(js::classify) {
-        Some(Kind::String(text)) => Some(text.to_string()),
+    match js::classify(js::get(value, key)) {
+        Kind::String(text) => Some(text.to_string()),
         _ => None,
     }
 }
@@ -171,7 +171,7 @@ pub fn get_io_description(value: Option<&Unknown>) -> String {
         let Some(value) = value else {
             return String::new();
         };
-        match js::classify(value) {
+        match js::classify(Some(value)) {
             Kind::Function(_) => text_at(value, "name").unwrap_or_default(),
             Kind::Object(_) | Kind::Array(_) => text_at(value, "url").unwrap_or_default(),
             Kind::String(text) => text.to_string(),
@@ -182,8 +182,9 @@ pub fn get_io_description(value: Option<&Unknown>) -> String {
     .unwrap_or_default()
 }
 
-pub fn describe(value: &Unknown) -> String {
+pub fn describe(value: Option<&Unknown>) -> String {
     match js::classify(value) {
+        Kind::Undefined | Kind::Null => "nothing".to_string(),
         Kind::Array(items) => format!("{} items", items.len()),
         Kind::String(text) => format!("text {text}"),
         Kind::Number(_) => "a number".to_string(),
@@ -197,7 +198,7 @@ pub fn describe(value: &Unknown) -> String {
 
 pub fn weighed(value: &Unknown, on: bool) -> u32 {
     let mut n = 0;
-    match js::classify(value) {
+    match js::classify(Some(value)) {
         Kind::Function(_) | Kind::String(_) => n += 1,
         Kind::Number(_) => n += 2,
         Kind::Bool(_) if on => n += 3,
@@ -207,14 +208,14 @@ pub fn weighed(value: &Unknown, on: bool) -> u32 {
 }
 
 pub fn objects(value: &Unknown) -> u32 {
-    match js::classify(value) {
+    match js::classify(Some(value)) {
         Kind::Object(_) | Kind::Array(_) => 1,
         _ => 0,
     }
 }
 
 pub fn listed(value: &Unknown) -> u32 {
-    match js::classify(value) {
+    match js::classify(Some(value)) {
         Kind::String(_) => 1,
         Kind::Array(_) => 2,
         _ => 0,
@@ -223,8 +224,8 @@ pub fn listed(value: &Unknown) -> u32 {
 
 pub fn tally(values: &[&Unknown]) -> [u32; 4] {
     let (mut texts, mut arrays, mut numbers, mut others) = (0, 0, 0, 0);
-    for value in values {
-        match js::classify(value) {
+    for &value in values {
+        match js::classify(Some(value)) {
             Kind::String(_) => texts += 1,
             Kind::Array(_) => arrays += 1,
             Kind::Number(_) => numbers += 1,
@@ -235,7 +236,7 @@ pub fn tally(values: &[&Unknown]) -> [u32; 4] {
 }
 
 pub fn named(value: &Unknown) -> String {
-    match js::classify(value) {
+    match js::classify(Some(value)) {
         Kind::String(text) => text.to_string(),
         Kind::Number(_) => "a number".to_string(),
         Kind::Object(object) => text_at(object, "name").unwrap_or_default(),
@@ -268,6 +269,9 @@ pub fn named(value: &Unknown) -> String {
   }
 }`);
   expect(js).toContain(`export function describe(value) {
+  if (value == null) {
+    return "nothing";
+  }
   if (Array.isArray(value)) {
     return \`\${value.length} items\`;
   }
@@ -333,7 +337,7 @@ function fetchUser() {}
 const values = [throwing, Symbol("s"), { url: "https://react.dev", name: "dev" }, ["a"], "hello", fetchUser, 42, 7n, true, {}, null, undefined];
 console.log(JSON.stringify(values.map(getIoDescription)));
 const defined = values.filter((v) => v != null && v !== throwing);
-console.log(JSON.stringify(defined.map(describe)));
+console.log(JSON.stringify([...defined, null, undefined].map(describe)));
 console.log(JSON.stringify(tally(defined)));
 console.log(JSON.stringify(defined.map(named)));
 console.log(JSON.stringify([defined.map(objects), defined.map(listed)]));
@@ -343,11 +347,174 @@ console.log(JSON.stringify([defined.map(objects), defined.map(listed)]));
   expect(ran.stdout).toBe(
     [
       `["","","https://react.dev","","hello","fetchUser","42","7","","","",""]`,
-      `["s","dev","1 items","text hello","a function","a number","a bigint","true",""]`,
+      `["s","dev","1 items","text hello","a function","a number","a bigint","true","","nothing","nothing"]`,
       `[1,1,1,6]`,
       `["","dev","","hello","","a number","","",""]`,
       `[[0,1,1,0,0,0,0,0,1],[0,0,2,1,0,0,0,0,0]]`,
       "",
     ].join("\n"),
   );
+});
+
+// ADR 0676: `js::classify` takes an `Option<&Unknown>`, and `js::Kind` has
+// `Undefined` and `Null`, so one `match` tells every JS value as `typeof`
+// and `=== null` do: `Undefined` is `case "undefined"`, and `Null` sits in
+// `case "object"`, `if (value === null)`, or is it, with the objects an arm
+// takes beside it. React's `describeValueForErrorMessage`
+// (shared/ReactSerializationErrors.js), whose `null` is `"Null"`, its
+// `Object.prototype.toString`'s, and `undefined` `"undefined"`. Of one
+// that's there, `classify(Some(value))`, an object's test is what it was.
+test("a match of what a value is tells undefined and null", () => {
+  const dir = fixture("typeof-nullish");
+  writeFileSync(join(dir, "lib.rs"), `use js::{Kind, Unknown};
+
+pub fn describe_value(value: Option<&Unknown>) -> String {
+    match js::classify(value) {
+        Kind::String(text) => js::json::stringify(text),
+        Kind::Null | Kind::Object(_) | Kind::Array(_) => {
+            if js::array::is_array(value) {
+                return "[...]".to_string();
+            }
+            js::object::to_string(value).unwrap()
+        }
+        Kind::Function(_) => "function".to_string(),
+        _ => js::string(value),
+    }
+}
+
+pub fn named(value: Option<&Unknown>) -> String {
+    match js::classify(value) {
+        Kind::Array(items) => format!("{} items", items.len()),
+        Kind::Object(object) => js::string(js::get(object, "name")),
+        Kind::Null => "null".to_string(),
+        Kind::String(text) => text.to_string(),
+        Kind::Undefined => "nothing".to_string(),
+        _ => String::new(),
+    }
+}
+
+pub fn parsed(value: Option<&Unknown>) -> String {
+    match js::classify(value) {
+        Kind::Null => "null".to_string(),
+        Kind::String(text) => text.to_string(),
+        Kind::Number(_) => "a number".to_string(),
+        _ => String::new(),
+    }
+}
+
+pub fn is_object(value: Option<&Unknown>) -> bool {
+    matches!(js::classify(value), Kind::Object(_))
+}
+
+pub fn is_null(value: Option<&Unknown>) -> bool {
+    matches!(js::classify(value), Kind::Null)
+}
+
+pub fn is_undefined(value: Option<&Unknown>) -> bool {
+    matches!(js::classify(value), Kind::Undefined)
+}
+
+pub fn there(value: &Unknown) -> bool {
+    matches!(js::classify(Some(value)), Kind::Object(_))
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs()]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain(`export function describeValue(value) {
+  switch (typeof value) {
+    case "string":
+      return JSON.stringify(value);
+    case "object":
+      if (Array.isArray(value)) {
+        return "[...]";
+      }
+      return Object.prototype.toString.call(value);
+    case "function":
+      return "function";
+    default:
+      return String(value);
+  }
+}`);
+  expect(js).toContain(`export function named(value) {
+  if (Array.isArray(value)) {
+    return \`\${value.length} items\`;
+  }
+  switch (typeof value) {
+    case "object":
+      if (value === null) {
+        return "null";
+      }
+      return String(value.name);
+    case "string":
+      return value;
+    case "undefined":
+      return "nothing";
+    default:
+      return "";
+  }
+}`);
+  // Where no arm takes the objects, `null`'s `if` is before the `switch`.
+  expect(js).toContain(`export function parsed(value) {
+  if (value === null) {
+    return "null";
+  }
+  switch (typeof value) {
+    case "string":
+      return value;
+    case "number":
+      return "a number";
+    default:
+      return "";
+  }
+}`);
+  expect(js).toContain(`export function isObject(value) {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}`);
+  expect(js).toContain(`export function isNull(value) {
+  return value === null;
+}`);
+  expect(js).toContain(`export function isUndefined(value) {
+  return value === undefined;
+}`);
+  expect(js).toContain(`export function there(value) {
+  return typeof value === "object" && !Array.isArray(value);
+}`);
+  // Each `===`, never `== null`, which is both.
+  expect(js).not.toMatch(/ [!=]= (null|undefined)/);
+  writeFileSync(join(dir, "run.mjs"), `import * as lib from "./lib.js";
+const values = [null, undefined, "a long string", ["a"], { name: "dev" }, new Date(0), () => 1, 7n, 1];
+for (const f of [lib.describeValue, lib.named, lib.parsed, lib.isObject, lib.isNull, lib.isUndefined]) {
+  console.log(JSON.stringify(values.map((v) => f(v))));
+}
+console.log(JSON.stringify(values.filter((v) => v != null).map((v) => lib.there(v))));
+`);
+  const ran = runSync([node!, join(dir, "run.mjs")], root, 30_000);
+  expect(ran.stderr).toBe("");
+  expect(ran.stdout).toBe(
+    [
+      `["[object Null]","undefined","\\"a long string\\"","[...]","[object Object]","[object Date]","function","7","1"]`,
+      `["null","nothing","a long string","1 items","dev","undefined","","",""]`,
+      `["null","","a long string","","","","","","a number"]`,
+      `[false,false,false,false,true,true,false,false,false]`,
+      `[true,false,false,false,false,false,false,false,false]`,
+      `[false,true,false,false,false,false,false,false,false]`,
+      `[false,false,true,true,false,false,false]`,
+      "",
+    ].join("\n"),
+  );
+});
+
+// ADR 0676: `js::classify` takes an `Option<&Unknown>`, the one way: of a
+// value that's there, `classify(Some(value))`, which rustc says of a
+// `&Unknown`.
+test("classify of a value that's there is of its Some", () => {
+  const dir = fixture("classify-some");
+  writeFileSync(join(dir, "lib.rs"), `pub fn text(value: &js::Unknown) -> bool {
+    matches!(js::classify(value), js::Kind::String(_))
+}
+`);
+  const out = runSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs()], root, 120_000);
+  expect(out.code).not.toBe(0);
+  expect(out.stderr).toContain("expected `Option<&Unknown>`, found `&Unknown`");
+  expect(out.stderr).toContain("Some(value)");
 });

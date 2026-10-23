@@ -4,7 +4,9 @@ Status: Accepted. Extends [0102](0102-js-and-webapi.md), [0214](0214-untagged-en
 and [0024](0024-web-crate.md). Amended by
 [0668](0668-a-match-of-what-a-value-is-is-a-switch-of-its-typeof.md): `Kind`
 has a `Symbol`, and its `Object` is an object no array is, `typeof value
-=== "object"`; a `match` of it is a `switch (typeof value)`.
+=== "object"`; a `match` of it is a `switch (typeof value)`. Amended by
+[0676](0676-kind-tells-undefined-and-null.md): `classify` takes an
+`Option<&Unknown>`, and `Kind` has `Undefined` and `Null`.
 
 Case: N, C, D ([0262](0262-when-rust-and-js-disagree.md)).
 

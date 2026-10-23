@@ -254,6 +254,7 @@ In this table, `lower.rs`, `names.rs` and `runtime.rs` are at the `src/` root.
 | A `String` appended to twice | `std_types/text.rs` | `appended` |
 | Runtime helper identity and properties | `runtime.rs` | `exports`, `helper_of`, `is_pure`, `names_a_place` |
 | A function's rest parameter and its calls' rest arguments | `bindings.rs`; `calls.rs` | `marked_rest`, `takes_rest`; `rest_given`, `spread_rest` |
+| An untagged enum's `undefined` and `null`, and what's there of `classify(Some(v))` | `untagged.rs`; `body_queries.rs` | `unit_value`, `holds_nullish`, `told_by_kind`; `given_present`, `present_calls` |
 
 **Calls.** `mir/dispatch.rs::mir_call` handles special calls and sends evaluated
 arguments to `mir_call_values`. Calls then go to iterator, trait, binding or

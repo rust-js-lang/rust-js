@@ -6,7 +6,9 @@ whose `switch` compared a value with constants: it compares a value's
 tests it. Amends [0225](0225-unknown-values.md): `js::Kind` has a
 `Symbol`, and its `Object` is an object no array is. Amends
 [0214](0214-untagged-enums.md): an `otherwise` variant that's one kind
-`typeof` tells is tested as that kind.
+`typeof` tells is tested as that kind. Amended by
+[0676](0676-kind-tells-undefined-and-null.md): `Kind::Undefined` is `case
+"undefined"`, and `Kind::Null` is in `case "object"`.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N, and one rare and
 harmless. A `switch` compares `typeof value` with each `case` by `===`,

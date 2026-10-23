@@ -87,8 +87,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 None => Expr::undefined(),
             });
         }
-        if self.untagged(ty).is_some() && variant.fields.is_empty() {
-            return Ok(Expr::str(bindings::variant_name(self.tcx, variant)));
+        if self.untagged(ty).is_some()
+            && let Some(value) = super::untagged::unit_value(self.tcx, variant)
+        {
+            return Ok(value);
         }
         if self.untagged(ty).is_some() || bindings::is_tagged_otherwise(self.tcx, adt_def.did(), variant) {
             let Ok([field]) = <[Expr; 1]>::try_from(fields) else {

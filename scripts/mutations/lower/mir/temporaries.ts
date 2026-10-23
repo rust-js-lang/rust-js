@@ -134,8 +134,8 @@ export const mutations: Mutation[] = [
     name: "mir-flush-discriminant",
     breaks: "a discriminant pending when MIR flushes, a loop's `next()` under a drop flag's unwind, is read as a value and refused",
     file: "src/lower/mir/temporaries.rs",
-    find: "            if let Value::Discriminant(subject, _) = &value\n                && subject.reads_same()\n",
-    replace: "            if let Value::Discriminant(subject, _) = &value\n                && false\n",
+    find: "            if let Value::Discriminant(subject, ..) = &value\n                && subject.reads_same()\n",
+    replace: "            if let Value::Discriminant(subject, ..) = &value\n                && false\n",
     tests: ["test/corpus.test.ts", "-t", "refcell_borrows"],
   },
   {

@@ -757,8 +757,13 @@ impl<'tcx> Declarations<'_, 'tcx> {
                 let types: Vec<Value> = (adt.variants().iter())
                     .map(|v| match v.fields.iter().next() {
                         Some(field) => self.ts(field.ty(self.tcx, args).skip_normalization()),
-                        // One without fields, its name's string.
-                        None => json!({ "kind": "literal", "value": variant_name(self.tcx, v) }),
+                        // One without fields, its name's string, or `null` or
+                        // `undefined` (ADR 0676).
+                        None => match super::untagged::unit_value(self.tcx, v).map(|e| e.kind) {
+                            Some(crate::js::ExprKind::Null) => keyword("null"),
+                            Some(crate::js::ExprKind::Undefined) => keyword("undefined"),
+                            _ => json!({ "kind": "literal", "value": variant_name(self.tcx, v) }),
+                        },
                     })
                     .collect();
                 union(types)

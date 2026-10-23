@@ -24,13 +24,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// That `subject` is `variant` of its enum: the one test of it, what a
     /// pattern, a clone, `==`, a drop and a codec ask. An `Option`'s
     /// presence, an untagged one's kind (ADR 0214), a discriminated union's
-    /// `otherwise` (ADR 0284), an `Ordering`'s number, or its tag.
+    /// `otherwise` (ADR 0284), an `Ordering`'s number, or its tag. An
+    /// untagged one `present`, `classify(Some(value))`'s, is never
+    /// `undefined` nor `null`, which no test leaves out then (ADR 0676).
     pub(in crate::lower) fn variant_test(
         &self,
         subject: Expr,
         ty: Ty<'tcx>,
         adt: ty::AdtDef<'tcx>,
         variant: VariantIdx,
+        present: bool,
     ) -> Expr {
         let def = adt.variant(variant);
         if self.tcx.is_lang_item(adt.did(), LangItem::Option) {
@@ -48,7 +51,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // An untagged enum's variant, told by its value's kind (ADR 0214).
         if bindings::is_untagged(self.tcx, adt.did()) {
-            return self.untagged_variant_test(ty, def, &subject);
+            return self.untagged_variant_test(ty, def, &subject, present);
         }
         // A discriminated union's `otherwise`: an object whose tag is none
         // of the others' (ADR 0284).
@@ -120,7 +123,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             false => self.spill("value", subject, out),
         };
         variants.into_iter().rev().fold(literal(last), |rest, (variant, n)| {
-            Expr::cond(self.variant_test(subject.clone(), ty, adt, variant), literal(n), rest)
+            Expr::cond(
+                self.variant_test(subject.clone(), ty, adt, variant, false),
+                literal(n),
+                rest,
+            )
         })
     }
 
@@ -219,6 +226,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // `undefined` before it's written (ADR 0332).
             || self.recognition().uninit_of(ty).is_some()
             || matches!(ty.kind(), ty::Adt(adt, _) if adt.is_struct() && adt.non_enum_variant().fields.is_empty())
+            // An untagged enum of `undefined` or `null`, `js::Kind` (ADR 0676).
+            || matches!(ty.kind(), ty::Adt(adt, _) if super::untagged::holds_nullish(self.tcx, *adt))
     }
 
     /// Does a `ty` have one value, as a zero-sized type does: `()`, a unit

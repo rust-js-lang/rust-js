@@ -843,6 +843,28 @@ pub fn auto(m: Mode) -> bool {
   expect([failed.exitCode === 0, failed.stderr.toString()]).toEqual([false, expect.stringContaining("`Auto` and `Text` hold values of one kind")]);
 });
 
+// ADR 0676: an untagged enum's `#[rust_js::null]` variant is `null`, and
+// holds nothing, as `js::Kind::Null` does.
+test("an untagged enum's null variant holds nothing", () => {
+  const dir = fixture("untagged-null-field");
+  writeFileSync(join(dir, "lib.rs"), `#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum Field {
+    Count(f64),
+    #[cfg_attr(rust_js, rust_js::null)]
+    Cleared(bool),
+}
+
+pub fn cleared(f: Field) -> bool {
+    matches!(f, Field::Cleared(_))
+}
+`);
+  const failed = Bun.spawnSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")], { cwd: root, stderr: "pipe" });
+  expect([failed.exitCode === 0, failed.stderr.toString()]).toEqual([
+    false,
+    expect.stringContaining("an untagged enum's `#[rust_js::null]` variant, `Cleared`, is `null`, and holds nothing"),
+  ]);
+});
+
 // ADR 0668: an `otherwise` variant is tested as the one kind `typeof` tells
 // that the others aren't, `js::Kind::Object`'s `"object"`; a literal,
 // `"auto"`, is one string, not every one, so beside it what's left is a
@@ -867,7 +889,7 @@ pub fn other(setting: Setting) -> bool {
 }
 
 pub fn object(value: &js::Unknown) -> bool {
-    matches!(js::classify(value), js::Kind::Object(_))
+    matches!(js::classify(Some(value)), js::Kind::Object(_))
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);

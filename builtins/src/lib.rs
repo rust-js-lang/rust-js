@@ -183,11 +183,13 @@ impl PartialEq for Unknown {
     }
 }
 
-/// What an [`Unknown`] is, as JS's `typeof` and `Array.isArray` tell it:
-/// each variant's value is the value itself (ADR 0214), a `match` of them
-/// a `switch (typeof value)` (ADR 0668). An array's items may be
+/// What a JS value is, as JS's `typeof`, `=== null` and `Array.isArray`
+/// tell it: each variant's value is the value itself (ADR 0214), a `match`
+/// of them a `switch (typeof value)` (ADR 0668). An `Option<&Unknown>`'s
+/// `None` is `Undefined` or `Null` (ADR 0676). An array's items may be
 /// `undefined` or `null`; a function is a `Function`; what's left, an
-/// object no array is, an `Object`, whose properties [`get`] reads.
+/// object neither `null` nor an array, an `Object`, whose properties
+/// [`get`] reads.
 #[cfg_attr(rust_js, rust_js::untagged)]
 pub enum Kind<'a> {
     String(&'a str),
@@ -200,8 +202,14 @@ pub enum Kind<'a> {
     /// A function, `typeof value === "function"`, of whatever it takes.
     Function(&'a dyn Fn()),
     Array(&'a [Option<&'a Unknown>]),
-    /// What the others aren't: `typeof value === "object"`, not an array,
-    /// as an `Unknown` is never `null` (ADR 0668).
+    /// `undefined`: `value === undefined`.
+    #[cfg_attr(rust_js, rust_js::undefined)]
+    Undefined,
+    /// `null`: `value === null`, which `typeof` says is an `"object"`.
+    #[cfg_attr(rust_js, rust_js::null)]
+    Null,
+    /// What the others aren't: `typeof value === "object"`, neither `null`
+    /// nor an array (ADR 0668).
     #[cfg_attr(rust_js, rust_js::otherwise)]
     Object(&'a Unknown),
 }
@@ -220,10 +228,11 @@ pub mod array {
 }
 
 /// What `value` is: `match classify(value) { Kind::String(s) => .., .. }`,
-/// a `typeof` of it in JS. The value itself.
+/// a `typeof` of it in JS; of `None`, `Undefined` or `Null`, and of one
+/// that's there, `classify(Some(value))` (ADR 0676). The value itself.
 #[cfg_attr(rust_js, rust_js::link_name = "this")]
 #[allow(unused_variables)]
-pub fn classify(this: &Unknown) -> Kind<'_> {
+pub fn classify(this: Option<&Unknown>) -> Kind<'_> {
     unreachable!()
 }
 

@@ -3,6 +3,14 @@ import type { Mutation } from "../../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "same-test-strict-null-undefined",
+    breaks: "`x === null` is taken for `x === undefined`, so a `match`'s `Kind::Null` arm after `Kind::Undefined`'s is dropped",
+    file: "src/lower/mir/tidy/branches.rs",
+    find: "                        matches!(p, Op::LooseEq | Op::LooseNe) || k.kind == l.kind\n",
+    replace: "                        true\n",
+    tests: ["test/lowering-switches.test.ts", "-t", "undefined and null"],
+  },
+  {
     name: "typeof-implies-object-too",
     breaks: "`typeof x === \"object\"` is taken to imply `x != null`, which `null` isn't",
     file: "src/lower/mir/tidy/branches.rs",

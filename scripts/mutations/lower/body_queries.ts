@@ -3,6 +3,22 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "classify-some-not-present",
+    breaks: "`classify(Some(value))` may be `null`, so its object's test leaves `null` out, `value !== null`",
+    file: "src/lower/body_queries.rs",
+    find: "    (identity && untagged && matches!(&args[..], [arg] if some(*arg))).then_some(fn_span)",
+    replace: "    (identity && untagged && matches!(&args[..], [arg] if some(*arg) && false)).then_some(fn_span)",
+    tests: ["test/lowering-switches.test.ts", "-t", "a match of what a value is"],
+  },
+  {
+    name: "classify-any-present",
+    breaks: "`classify(value)` of an `Option` is taken as there, so its object's test takes `null`",
+    file: "src/lower/body_queries.rs",
+    find: "    (identity && untagged && matches!(&args[..], [arg] if some(*arg))).then_some(fn_span)",
+    replace: "    (identity && untagged).then_some(fn_span)",
+    tests: ["test/lowering-switches.test.ts", "-t", "undefined and null"],
+  },
+  {
     name: "other-module-static-unread",
     breaks: "a static made of another module's components is refused, as if JS hadn't imported them first",
     file: "src/lower/body_queries.rs",

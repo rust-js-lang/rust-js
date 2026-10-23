@@ -538,7 +538,7 @@ pub fn Kinds<C: ReactNode>(ListProps { children }: ListProps<C>) -> JSX::Element
         kinds.push(match child {
             Child::Text(text) => format!("text {text}"),
             Child::Number(n) => format!("number {n}"),
-            Child::Element(element) => match js::classify(element.r#type()) {
+            Child::Element(element) => match js::classify(Some(element.r#type())) {
                 Kind::String(tag) => format!("<{tag}> {}", element.key().unwrap_or("")),
                 _ => "component".to_string(),
             },
@@ -567,10 +567,10 @@ pub fn More(ListProps { children }: ListProps<&'static dyn ReactNode>) -> JSX::E
 }
 pub fn Id<C: ReactNode>(ListProps { children }: ListProps<C>) -> JSX::Element {
     let id = match kind_of(&children) {
-        ReactNodeKind::Element(element) => js::get(element.props(), "id").map(js::classify),
+        ReactNodeKind::Element(element) => js::get(element.props(), "id"),
         _ => None,
     };
-    jsx! { <p>{if let Some(Kind::String(id)) = id { id } else { "none" }}</p> }
+    jsx! { <p>{if let Kind::String(id) = js::classify(id) { id } else { "none" }}</p> }
 }
 `);
   args.push("--extern", `js=${join(target, "libjs.rmeta")}`);
@@ -609,7 +609,7 @@ pub fn Block<C: ReactNode>(BlockProps { children }: BlockProps<C>) -> JSX::Eleme
         message = text.to_string();
     } else if let ReactNodeKind::Element(element) = kind_of(&children)
         && let Some(inner) = js::get(element.props(), "children")
-        && let Kind::String(text) = classify(inner)
+        && let Kind::String(text) = classify(Some(inner))
     {
         message = text.to_string();
     } else {
@@ -993,7 +993,7 @@ use react::{ElementType, FRAGMENT, JSX, jsx};
 
 pub fn revived(r#type: &'static Unknown, key: &'static Unknown, props: &'static Unknown) -> JSX::Element {
     let mut Type = ElementType::from_unknown(r#type);
-    if matches!(classify(r#type), Kind::String("wrapper")) {
+    if matches!(classify(Some(r#type)), Kind::String("wrapper")) {
         Type = FRAGMENT;
     }
     jsx! { <Type key={key} {...props} /> }

@@ -409,7 +409,11 @@ export function size(input) {
 - **`#[rust_js::untagged]` makes each value its payload**, as TypeScript's
   `string | number` is. `match` tests each payload's kind, `typeof`,
   `Array.isArray` or `instanceof`, so each variant holds one value, and no
-  two of one kind. The last may be `#[rust_js::otherwise]`: whatever the
+  two of one kind. One without fields is its name's string, or `undefined`,
+  `#[rust_js::undefined]`, or `null`, `#[rust_js::null]`, as `js::Kind`'s
+  are, each tested by `===`
+  ([ADR 0676](../../decisions/0676-kind-tells-undefined-and-null.md)).
+  The last may be `#[rust_js::otherwise]`: whatever the
   others aren't ([ADR 0214](../../decisions/0214-untagged-enums.md)); where
   that's one kind `typeof` tells, as `js::Kind::Object`'s `"object"`, it's
   tested as that kind. A `match` of three cases or more of kinds `typeof`
@@ -825,22 +829,23 @@ reference ([ADR 0111](../../decisions/0111-js-types-as-structs.md)). See
 
 A JS value of any shape, TypeScript's `unknown`, is a `js::Unknown`. It's
 never `undefined` or `null`: an `Option<&Unknown>` is `None` of those.
-`js::classify` tells what it is, as a `js::Kind` to `match`
-([ADR 0225](../../decisions/0225-unknown-values.md)): a variant for each
-kind `typeof` tells, `String`, `Number`, `BigInt`, `Bool`, `Symbol`,
-`Function` and `Object`, an object no array is, and `Array`, which
-`Array.isArray` does. A `match` of them is a `switch (typeof value)`, an
-array an `if` before it
+`js::classify` tells what an `Option<&Unknown>` is, as a `js::Kind` to
+`match` ([ADR 0225](../../decisions/0225-unknown-values.md)): a variant
+for each kind `typeof` tells, `Undefined`, `String`, `Number`, `BigInt`,
+`Bool`, `Symbol`, `Function` and `Object`, an object neither `null` nor
+an array; `Null`, which `=== null` does, and `Array`, which
+`Array.isArray` does ([ADR 0676](../../decisions/0676-kind-tells-undefined-and-null.md));
+of one that's there, `classify(Some(value))`. A `match` of them is a
+`switch (typeof value)`, an array an `if` before it, `null` one in `case
+"object"`, and `undefined` or `null` an `if (value == null)` before it
 ([ADR 0668](../../decisions/0668-a-match-of-what-a-value-is-is-a-switch-of-its-typeof.md)).
 
 ```rust
 use js::{Kind, Unknown};
 
 pub fn describe(value: Option<&Unknown>) -> String {
-    let Some(value) = value else {
-        return "nothing".to_string();
-    };
     match js::classify(value) {
+        Kind::Undefined | Kind::Null => "nothing".to_string(),
         Kind::String(text) => format!("text of {} bytes", text.len()),
         Kind::Number(n) => format!("the number {n}"),
         Kind::BigInt(n) => format!("the bigint {n}"),
