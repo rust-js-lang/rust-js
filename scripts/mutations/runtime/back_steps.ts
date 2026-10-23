@@ -114,4 +114,12 @@ export const mutations: Mutation[] = [
     replace: "    return stepped.skip(0, \"back\");\n",
     tests: ["test/corpus.test.ts", "-t", "^rev_step_by.rs$"],
   },
+  {
+    name: "flatten-ends-other-side-dropped",
+    breaks: "a flatten whose source is done gives nothing of the inner list the other end started",
+    file: "src/runtime/back_steps.js",
+    find: "        if (inner[other] === undefined) return done;\n        const at = inner[other][by]();\n",
+    replace: "        if (true) return done;\n        const at = inner[other][by]();\n",
+    tests: ["test/corpus.test.ts", "-t", "^flatten_from_its_back.rs$"],
+  },
 ];

@@ -3,6 +3,23 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "fields-read-as-declared",
+    breaks: "a struct literal's fields are read as declared, not as its object lists them, so in a loop each of `Point { y: step(..), x: step(..), .. }` is set aside in a variable first",
+    file: "src/lower/mir/rvalues.rs",
+    find: "        let read: &[usize] = order.as_deref().unwrap_or(&declared);\n",
+    replace: "        let read: &[usize] = &declared;\n",
+    tests: ["test/corpus.test.ts", "-t", "struct_fields_as_written"],
+    snapshots: true,
+  },
+  {
+    name: "spread-fields-as-declared",
+    breaks: "an update's fields after its base's spread are listed as declared, `{ ...logs, log: 2, warn: 1 }` of `Logs { warn: .., log: .., ..logs }`",
+    file: "src/lower/mir/rvalues.rs",
+    find: "            let given: Vec<usize> = order\n                .into_iter()\n",
+    replace: "            let given: Vec<usize> = { let mut o = order; o.sort(); o }\n                .into_iter()\n",
+    tests: ["test/lowering-structs-enums.test.ts", "-t", "a struct literal's keys are in the order written"],
+  },
+  {
     name: "held-fn-pointer-in-place",
     breaks: "a binding taken as a `fn` through the module that holds it is read in place, `Object.assign(target, ...sources)`",
     file: "src/lower/mir/rvalues.rs",

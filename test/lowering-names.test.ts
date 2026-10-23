@@ -281,12 +281,18 @@ pub fn gated(n: u32, o: Option<u32>) -> u32 {
 pub fn start() -> u32 {
     START.with(|s| *s)
 }
+// Right below, no blank line in the Rust.
+pub fn below() -> u32 {
+    4
+}
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("// The file's own leading comment, its header's.\n");
   expect(js.match(/leading comment/g)?.length).toBe(1);
   expect(js).toContain("// Why b is two.\nexport function b() {");
+  // A function apart from the one before, its comment with it.
+  expect(js).toContain("}\n\n// Right below, no blank line in the Rust.\nexport function below() {");
   expect(js).toContain("/**\n * The sum, documented.\n * Of two lines.\n */\nexport function sum(x) {\n  // Add them.\n  const y");
   expect(js).toContain("  /* Then b. */\n  return (y + b()) >>> 0;");
   expect(js).not.toContain("No JS");

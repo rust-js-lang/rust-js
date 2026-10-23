@@ -608,24 +608,40 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         })
                 })
             };
-            let given: Vec<&Operand<'tcx>> = (operands.iter().enumerate())
-                .filter(|&(i, o)| !of_base(i, o))
-                .map(|(_, o)| o)
+            // The fields given, as written, after the spread, which JS's
+            // fields after it override.
+            let order = self.written_order(&self.tcx.adt_def(did), VariantIdx::ZERO, span);
+            let given: Vec<usize> = order
+                .into_iter()
+                .filter(|&i| !of_base(i, &operands[FieldIdx::from_usize(i)]))
                 .collect();
-            let values = self.take_operands(state, &given, out)?;
+            let given_operands: Vec<&Operand<'tcx>> =
+                given.iter().map(|&i| &operands[FieldIdx::from_usize(i)]).collect();
+            let values = self.take_operands(state, &given_operands, out)?;
             let mut props = vec![Prop::Spread(base)];
-            let mut values = values.into_iter();
-            for (i, operand) in operands.iter().enumerate() {
-                if of_base(i, operand) {
-                    continue;
-                }
-                let value = self.value_expr(values.next().expect("given"), span)?;
+            for (i, value) in given.into_iter().zip(values) {
+                let value = self.value_expr(value, span)?;
                 props.push(Prop::Field(names[i].0.clone(), self.holding(value, names[i].1)));
             }
             return Ok(Value::Expr(Expr::object(props)));
         }
+        // A struct's or a variant's fields, read in the order its object
+        // lists them, as written (ADR 0674).
+        let order = match kind {
+            AggregateKind::Adt(did, variant_index, _, _, None) => {
+                Some(self.written_order(&self.tcx.adt_def(*did), *variant_index, span))
+            }
+            _ => None,
+        };
+        let declared: Vec<usize> = (0..operands.len()).collect();
+        let read: &[usize] = order.as_deref().unwrap_or(&declared);
+        let in_order: Vec<&Operand<'tcx>> = read.iter().map(|&i| &operands[FieldIdx::from_usize(i)]).collect();
+        let mut taken: Vec<Option<Value<'tcx>>> = (0..operands.len()).map(|_| None).collect();
+        for (&i, value) in read.iter().zip(self.take_operands(state, &in_order, out)?) {
+            taken[i] = Some(value);
+        }
+        let values: Vec<Value<'tcx>> = taken.into_iter().map(|v| v.expect("each operand read")).collect();
         let operands: Vec<&Operand<'tcx>> = operands.iter().collect();
-        let values = self.take_operands(state, &operands, out)?;
         match kind {
             AggregateKind::Array(_) => Ok(Value::List(values)),
             AggregateKind::Tuple if values.is_empty() => Ok(Value::Expr(Expr::undefined())),
@@ -644,7 +660,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     .map(|v| self.value_expr(v, span))
                     .collect::<R<Vec<_>>>()?;
                 let nulled: Vec<bool> = operands.iter().map(|o| self.nulled(state, o)).collect();
-                let value = self.adt_value(ty, *variant_index, exprs, &nulled, span)?;
+                let value = self.adt_value(ty, *variant_index, exprs, &nulled, order.as_deref(), span)?;
                 // A compiled std iterator's struct, `Peekable { iter, peeked }`
                 // in std's own `peekable`, is the JS iterator it is where
                 // it's made, stepped by the compiled impl's `next` and sized

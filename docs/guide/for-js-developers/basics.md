@@ -632,6 +632,12 @@ export function moved(p, dx) {
   object too; rustc won't let you change it.
 - `..p.clone()` is Rust's spread, `{ ...p, x }`; the rest of the fields
   come from `p`.
+- The object lists the fields in the order you write them, which is the
+  order Rust evaluates them in: `Point { y: f(), x: g() }` is `{ y: f(),
+  x: g() }`. What `..base` fills comes after them, or is spread before
+  them, `{ ...p, y, x }`
+  ([ADR 0674](../../decisions/0674-a-struct-literals-fields-are-in-the-order-written.md)).
+  `{:?}` still shows them as the struct declares them.
 - Methods go in an `impl` block: [Advanced: classes](advanced.md#classes).
 - An object used as a dictionary, with keys only known at run time, is a
   `HashMap`: [Collections: maps](collections.md#map-and-set).

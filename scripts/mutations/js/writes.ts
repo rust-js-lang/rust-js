@@ -23,7 +23,7 @@ export const mutations: Mutation[] = [
     name: "writes-closures-unseen",
     breaks: "what a closure writes is unseen, so a value read past a call of it is read as it was",
     file: "src/js/writes.rs",
-    find: "            ExprKind::Arrow(_, body) | ExprKind::AsyncArrow(_, body) => nested.walk(body, true),\n",
+    find: "            ExprKind::Arrow(_, body) | ExprKind::AsyncArrow(_, body) => self.lists(body, true),\n",
     replace: "            ExprKind::Arrow(..) | ExprKind::AsyncArrow(..) => {}\n",
     tests: ["test/corpus.test.ts", "-t", "^(assignment_order|tuple_scrutinee_calls).rs$"],
     snapshots: true,

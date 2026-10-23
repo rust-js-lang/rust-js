@@ -292,8 +292,8 @@ import dynamic from "next/dynamic";
 import Script from "next/script";
 
 const MapView = dynamic(() => import("./map.jsx"), {
-  loading: () => <p>Loading map</p>,
   ssr: false,
+  loading: () => <p>Loading map</p>,
 });
 
 export function Contact() {

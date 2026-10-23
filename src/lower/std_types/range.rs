@@ -190,11 +190,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         _ => None,
                     };
                     let held = held.unwrap_or_else(|| Expr::member(range.clone(), field));
-                    this.adt_value(bound, index, vec![held], &[], span)?
+                    this.adt_value(bound, index, vec![held], &[], None, span)?
                 }
                 RangeBound::Unbounded => {
                     let index = variant("Unbounded").ok_or_else(|| this.unsupported(span, "this range's bounds"))?;
-                    this.adt_value(bound, index, Vec::new(), &[], span)?
+                    this.adt_value(bound, index, Vec::new(), &[], None, span)?
                 }
             })
         };

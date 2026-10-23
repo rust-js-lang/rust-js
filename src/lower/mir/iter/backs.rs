@@ -167,6 +167,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     None if self.stepped_from_its_back(output) && self.range_kind(iter_ty).is_some() => {
                         self.as_double_ended(receiver.clone(), iter_ty, span)?
                     }
+                    None if self.is_user_iterator(iter_ty) => {
+                        self.user_iterator_knowing(receiver.clone(), iter_ty, (back, len), span)?
+                    }
                     None => receiver.clone(),
                 };
                 // An owning source of items with a destructor, closed to drop
@@ -184,10 +187,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Some(IterMethod::Enumerate)
                 if self.knows_its_back(output) || self.knows_its_length(output) || self.explicit_adapter(output) =>
             {
-                let (back, len) = (self.knows_its_back(iter_ty), self.knows_its_length(iter_ty));
+                // Of the crate's, what it can be made to know.
+                let back = self.knows_its_back(iter_ty) || self.user_double_ended(iter_ty);
+                let len = self.knows_its_length(iter_ty) || self.user_exact_size(iter_ty);
                 let it = match self.given_js_iterator(receiver.clone(), iter_ty, back, len) {
                     Some(it) => it,
                     None if self.explicit_adapter(output) => self.held_source(receiver.clone(), iter_ty, span)?,
+                    None if self.is_user_iterator(iter_ty) => {
+                        self.user_iterator_knowing(receiver.clone(), iter_ty, (back, len), span)?
+                    }
                     None => receiver.clone(),
                 };
                 Expr::call_helper("$enumerate", vec![it])
@@ -223,6 +231,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     Some(it) => it,
                     None if self.stepped_from_its_back(output) && self.range_kind(iter_ty).is_some() => {
                         self.as_double_ended(receiver.clone(), iter_ty, span)?
+                    }
+                    None if self.is_user_iterator(iter_ty) => {
+                        self.user_iterator_knowing(receiver.clone(), iter_ty, (true, false), span)?
                     }
                     None => receiver.clone(),
                 };

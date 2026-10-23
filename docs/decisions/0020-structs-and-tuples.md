@@ -4,6 +4,9 @@ Status: Accepted. Extends [0013](0013-fieldless-enums.md) to types with fields.
 (Amended: an array of what's changed in place contains it too.)
 Amended by [0443](0443-a-value-a-caller-may-leave-out-is-an-option.md): a `()`
 as a `dyn` JS is given the value of is an array too, `useEffect(f, [])`.
+Amended by [0674](0674-a-struct-literals-fields-are-in-the-order-written.md): a
+struct expression's object lists its fields as written, then what `..base`
+fills, the order Rust evaluates them in, so none is set aside to keep it.
 
 Case: C, A, B, D ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -40,7 +43,7 @@ The naive JS, `let b = a; b.x = 5;`, changes `a` too.
 
 | Rust | JS |
 |---|---|
-| `struct Point { x: i32, y: i32 }`, `Point { x, y }` | `{ x, y }`, fields in declaration order |
+| `struct Point { x: i32, y: i32 }`, `Point { x, y }` | `{ x, y }`, fields in the order written (ADR 0674) |
 | `struct Size(u32, u32)`, `(a, b)` | `[a, b]` |
 | `struct Marker;` | `undefined`, like `()` |
 | `p.x`, `t.0` | `p.x`, `t[0]` |
@@ -103,7 +106,9 @@ variable, and every path by which a value of a changed type reaches one (a
 `let`, an argument, a field of a new struct) is a read, which copies it.
 
 **Evaluation order.** Rust evaluates struct fields in the order they're
-written; the object lists them in declaration order. If that reorders two
+written; the object listed them in declaration order (amended: it lists them
+as written, ADR 0674, so this is only where a struct's fields aren't an
+object's). If that reorders two
 expressions with effects (calls, or divisions that can panic), both go into
 `const`s first, named after their fields:
 
@@ -120,7 +125,8 @@ return { x, y };
   or constructor to learn.
 - **One shape per type.** Declaration order means every `Point` is built
   with the same keys in the same order, so JS engines give them one hidden
-  class, and property access stays fast.
+  class, and property access stays fast. (Amended by 0674: a literal lists them
+  as written, as JS written by hand does.)
 - **Writes stay writes.** `p.x += 1` is one field store, not a new object.
   That is also what `&mut` will want: a reference to a struct can be the
   object itself.

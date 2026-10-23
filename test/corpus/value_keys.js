@@ -36,7 +36,7 @@ function main() {
   // A struct key, its fields given in another order than declared.
   const walls = new $KeyMap();
   walls.set({ x: 1, y: 2 }, "stone");
-  walls.set({ x: 1, y: 2 }, "brick");
+  walls.set({ y: 2, x: 1 }, "brick");
   const size = walls.size;
   const get = walls.get({ x: 1, y: 2 });
   const value = walls.get({ x: 2, y: 1 });
@@ -90,7 +90,7 @@ function main() {
   const value$8 = $unwrap($mutGet(balances, ann));
   value$8.value = (value$8.value + 5) | 0;
   const value$9 = { ...ann, at: { ...ann.at } };
-  const other = { owner: value$9.owner, id: BigInt.asUintN(64, 1n << 41n), at: { ...value$9.at } };
+  const other = { id: BigInt.asUintN(64, 1n << 41n), owner: value$9.owner, at: { ...value$9.at } };
   const value$10 = balances.get(ann);
   const value$11 = balances.get(other);
   console.log(

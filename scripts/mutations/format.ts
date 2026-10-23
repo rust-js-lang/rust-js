@@ -11,6 +11,14 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-cells.test.ts", "-t", "a thread-local an if makes"],
   },
   {
+    name: "function-mark-apart",
+    breaks: "`disabledLog.__reactDisabledLog = true;` is a blank line apart from the function it marks",
+    file: "src/format.rs",
+    find: "            let marked = marks(&pair[0], &pair[1]);\n",
+    replace: "            let marked = false && marks(&pair[0], &pair[1]);\n",
+    tests: ["test/js-object.test.ts", "-t", "a function's property is set where its module loads it"],
+  },
+  {
     name: "transform-map-unmoved",
     breaks: "a transform's text is written with the map of the text it was given, which points at other lines",
     file: "src/format.rs",
