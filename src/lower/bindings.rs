@@ -231,7 +231,7 @@ pub(super) fn reads_string_length(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
 
 /// Does this binding read a property, `get x`, `get X.y` or `get []`,
 /// `js::get`'s, which a getter may be, so it runs as often as it's
-/// called (ADR 0671)?
+/// called (ADR 0672)?
 pub(super) fn reads_a_property(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
     is_binding(tcx, def_id) && matches!(js_form(tcx, def_id), JsForm::Get(_) | JsForm::GetIndex)
 }

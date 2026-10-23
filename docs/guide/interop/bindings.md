@@ -442,7 +442,7 @@ A getter runs once for each call of its binding, as Rust calls it: a
 property an `if let` chain tests and binds, `let Some(Kind::String(url)) =
 js::get(request, "url").map(js::classify)`, is read once, `const url =
 request.url;`, and tested as that, not read again in the test
-([ADR 0671](../../decisions/0671-a-property-a-test-reads-is-read-once.md)).
+([ADR 0672](../../decisions/0672-a-property-a-test-reads-is-read-once.md)).
 
 `js::concat_text` is `"" + value`: of text or a number, its `String`; of a
 value of any shape, a `Result`, as `+` throws of a symbol and of an object

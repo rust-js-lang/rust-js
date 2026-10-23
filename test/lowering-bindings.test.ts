@@ -1126,7 +1126,7 @@ pub fn timed() -> bool {
   expect([lib.tooled(), lib.timed()]).toEqual([false, true]);
 });
 
-// ADR 0671: `js::get(request, "url")` reads the property once, as Rust
+// ADR 0672: `js::get(request, "url")` reads the property once, as Rust
 // calls it once, so a getter runs once. Joined into the `if` before it,
 // `request != null && typeof request.url === "string"`, the read a `let`
 // chain binds was read again for its binding, `const url = request.url;`,

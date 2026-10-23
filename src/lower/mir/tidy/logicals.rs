@@ -144,7 +144,7 @@ fn has_conditional(e: &Expr) -> bool {
 /// read of a property, of `getters`, whose getter may run, and `test`
 /// reads it twice or `again` says what's after the `const`s reads it too,
 /// by its index and name: a getter's, `request.url`, runs once, as Rust's
-/// `js::get` does (ADR 0671). What reads variables, or Rust's data, a
+/// `js::get` does (ADR 0672). What reads variables, or Rust's data, a
 /// field, `node.count`, or a tuple's item, `pair[0]`, reads the same again.
 pub(super) fn bound_into(
     test: &Expr,

@@ -510,7 +510,7 @@ console.log(JSON.stringify(values.map(described)));
 // is upstream's `switch (typeof value)`, its arms in the program's order:
 // its string case tests a length in UTF-16 units, `value.length` (ADR 0632),
 // its object case an object or an array, `typeof request === "object"`
-// (ADR 0668), each property read once (ADR 0671). Run in Node beside what
+// (ADR 0668), each property read once (ADR 0672). Run in Node beside what
 // upstream's JS gives of each value: a symbol, a throwing getter, arrays,
 // an `Error`, each property, each kind.
 test("React's getIODescription is upstream's switch of a typeof", () => {

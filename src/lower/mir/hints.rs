@@ -18,7 +18,7 @@ pub(super) struct Written {
     /// Each `&&` or `||` the program wrote.
     pub logicals: Vec<js::Span>,
     /// Each read of a property by a binding, `js::get(request, "url")`,
-    /// which a getter may be: read as often as it's called (ADR 0671).
+    /// which a getter may be: read as often as it's called (ADR 0672).
     pub getters: Vec<js::Span>,
     /// Each `if` of a `continue`, alone or ending what it does.
     pub continues: Vec<js::Span>,

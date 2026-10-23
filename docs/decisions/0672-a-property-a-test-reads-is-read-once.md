@@ -1,4 +1,4 @@
-# 0671. A property a chain tests and binds is read once
+# 0672. A property a chain tests and binds is read once
 
 Status: Accepted. Amends tidy's `and tests` and `returning_chain`, which
 ADR 0614's chains of tests are joined by.

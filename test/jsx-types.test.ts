@@ -596,7 +596,7 @@ pub fn Id<C: ReactNode>(ListProps { children }: ListProps<C>) -> JSX::Element {
 // As react.dev's TerminalBlock reads its message, text or an element's text:
 // a let chain of what's told apart by a node's kind is the `if`s a person
 // writes, the node itself tested. Its element's `children` is read once, as
-// `js::get` reads it (ADR 0671), so the chain's two failures reach its
+// `js::get` reads it (ADR 0672), so the chain's two failures reach its
 // `else` by a label, where it read `children.props.children` twice.
 test("JSX components read their children's text in a let chain as a person writes it", async () => {
   const { dir, args } = compile(`#![allow(non_snake_case)]
