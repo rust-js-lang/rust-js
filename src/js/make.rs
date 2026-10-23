@@ -239,24 +239,16 @@ impl Expr {
         }
     }
 
-    /// What a downcast of the payload `pair` to a `&JsError` finds (ADR
-    /// 0692): its value where `is`, its `Any` being a `&JsError`'s; else a
-    /// panic's `Error`, `pair.error`.
-    pub fn thrown_error(is: Expr, pair: Expr) -> Expr {
-        Expr::cond(is, Expr::held(pair.clone()), Expr::member(pair, PANIC_ERROR))
+    /// What was thrown of an unwind's payload `pair`, `pair.error`, which
+    /// its downcast to a `&JsError` finds (ADR 0710).
+    pub fn thrown_error(pair: Expr) -> Expr {
+        Expr::member(pair, THROWN_VALUE)
     }
 
     /// Of `Expr::thrown_error`'s, the payload.
     pub fn thrown_error_of(&self) -> Option<&Expr> {
-        let ExprKind::Cond(_, value, error) = &self.kind else {
-            return None;
-        };
-        match (&value.kind, &error.kind) {
-            (ExprKind::Member(a, held), ExprKind::Member(b, panic))
-                if held == HELD && panic == PANIC_ERROR && a == b =>
-            {
-                Some(a)
-            }
+        match &self.kind {
+            ExprKind::Member(pair, field) if field == THROWN_VALUE => Some(pair),
             _ => None,
         }
     }

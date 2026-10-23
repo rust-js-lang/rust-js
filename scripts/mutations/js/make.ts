@@ -309,4 +309,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/lowering-unwinds.test.ts", "-t", "a port throws an Error by panic!"],
   },
+  {
+    name: "thrown-error-unrecognized",
+    breaks: "a downcast of an unwind's payload to `&JsError`, `payload.error`, isn't known as what was thrown",
+    file: "src/js/make.rs",
+    find: "            ExprKind::Member(pair, field) if field == THROWN_VALUE => Some(pair),\n",
+    replace: "            ExprKind::Member(pair, field) if false && field == THROWN_VALUE => Some(pair),\n",
+    tests: ["test/lowering-unwinds.test.ts", "-t", "every unwind"],
+  },
 ];

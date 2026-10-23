@@ -5,7 +5,9 @@ Status: Accepted, by the user's decision of 2026-10-24. Amends
 message was `new Error("")`, and [0660](0660-catch-unwind-catches-what-js-throws.md)
 and [0692](0692-a-thrown-error-is-a-panic-and-what-js-threw.md), whose
 `catch` read what it caught through `$unwound`, and whose `resume_unwind`
-of it was `$unwinding(payload)`.
+of it was `$unwinding(payload)`. Amended by
+[0710](0710-every-unwinds-payload-is-the-js-error-thrown.md): a downcast to
+a `&JsError` is what was thrown of any `try`, not only one of panics.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): A where what's read is
 the same value, `$unwinding($unwound(e))` being `e`; for `new Error()`,
@@ -123,6 +125,7 @@ try {
 - Corpus case `catch_unwind_rethrown` against native Rust; the
   architecture test "a panic's Error is made in one place".
 - Mutations `resumed-made-again`,
-  `resumed-after-write`, `thrown-error-of-any-try`,
+  `resumed-after-write`, `thrown-error-of-any-try` (replaced by 0710's
+  `thrown-error-read-as-payload`),
   `catch-unnamed`, `unwound-let-kept`, `unwound-let-declared-inside`
   (`prepare/catches.rs`), `panic-of-nothing-written` (`js/make.rs`).

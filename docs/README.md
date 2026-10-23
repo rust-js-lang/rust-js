@@ -616,7 +616,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0689 A move's decision is apart from the move: `moved` says where and why, `inlined` applies it](decisions/0689-a-moves-decision-is-apart-from-the-move.md)
 - [0690 An iterator given as it is folds by its own `fold`, and drops once](decisions/0690-an-iterator-given-as-it-is-folds-by-its-own-fold.md)
 - [0691 A `dyn Any` drops where the crate makes one of what drops](decisions/0691-a-dyn-any-drops-where-the-crate-makes-one-that-does.md)
-- [0692 A thrown `Error` is a panic's message and what JS threw, both](decisions/0692-a-thrown-error-is-a-panic-and-what-js-threw.md) *(amended by 0706: its `&JsError` of a `try` of panics alone is the `Error`, and resumed is `throw` of it)*
+- [0692 A thrown `Error` is a panic's message and what JS threw, both](decisions/0692-a-thrown-error-is-a-panic-and-what-js-threw.md) *(amended by 0706: its `&JsError` of a `try` of panics alone is the `Error`, and resumed is `throw` of it; 0710: every payload's `&JsError` is what was thrown)*
 - [0693 A guard's scope is one `finally`, its `if`s, loops and `return`s in it](decisions/0693-a-guards-scope-is-one-finally-its-returns-in-it.md) *(amended by 0705: read as any body, its guard's fields its variables)*
 - [0694 `ManuallyDrop::drop`, `extend` of what holds nothing, a matched call's value and `{}` of an `impl Display`](decisions/0694-four-refusals-of-drops-and-displays-lifted.md)
 - [0695 `new` of a function value is JS's `new`, `js::new`](decisions/0695-new-of-a-function-value-is-jss-new.md)
@@ -630,9 +630,10 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0703 A closure made before a call a guard unwinds is made where it's read](decisions/0703-a-closure-made-before-a-guarded-call-is-made-where-its-read.md)
 - [0704 A module variable an `if` makes is assigned only where it's something](decisions/0704-a-module-variable-is-assigned-only-what-isnt-undefined.md)
 - [0705 A guard's scope reads as any body, its fields the variables it was made of](decisions/0705-a-guards-scope-reads-as-any-body.md)
-- [0706 `panic!` is the one way a port throws an `Error`, and what's caught is read as it was thrown](decisions/0706-panic-is-the-one-way-a-port-throws-an-error.md)
+- [0706 `panic!` is the one way a port throws an `Error`, and what's caught is read as it was thrown](decisions/0706-panic-is-the-one-way-a-port-throws-an-error.md) *(amended by 0710: of any `try`)*
 - [0708 A comment before an argument, or a field, is before it](decisions/0708-a-comment-before-an-argument-is-before-it.md)
 - [0709 A signed counter below a length stays below it, past its loop and through its `as`](decisions/0709-a-signed-counter-below-a-length-stays-below-it.md)
+- [0710 Every unwind's payload downcasts as the `&JsError` thrown](decisions/0710-every-unwinds-payload-is-the-js-error-thrown.md)
 - [0436 Every `dyn` that's a pair keeps its value's drop, `dyn Send` too](decisions/0436-every-dyn-keeps-its-drop.md) *(amended by 0691: a `dyn Any` drops where the crate makes one of what drops)*
 - [0437 A scope's drops on a panic are one `try { .. } finally { .. }`](decisions/0437-a-scopes-drops-are-one-finally.md) *(amended by 0693: its `if`s, loops and `return`s in it)*
 - [0438 An optional prop is given `Some(..)`, or left out](decisions/0438-an-optional-prop-is-given-some.md)

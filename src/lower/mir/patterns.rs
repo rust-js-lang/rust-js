@@ -128,8 +128,62 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             null_nones: self.mir_null_nones(body, locals),
             made_some: self.mir_made_some(body, locals),
             registered: self.mir_registered(body),
+            thrown: self.mir_thrown(body, locals),
             present: self.mir_present(body),
         }
+    }
+
+    /// The locals `OptionWrites::thrown` says, each written once: a
+    /// `downcast_ref` that finds what was thrown (`finds_thrown`), its
+    /// `Some`'s discriminant; and `?` of one, its `Continue`'s.
+    fn mir_thrown(&self, body: &mir::Body<'tcx>, locals: &Locals) -> HashMap<Local, u128> {
+        let tcx = self.tcx;
+        // The discriminant of `ty`'s variant `variant`, a lang item.
+        let discriminant = |ty: Ty<'tcx>, variant: LangItem| match ty.kind() {
+            ty::Adt(adt, _) => {
+                let id = tcx.lang_items().get(variant)?;
+                Some(adt.discriminant_for_variant(tcx, adt.variant_index_with_id(id)).val)
+            }
+            _ => None,
+        };
+        let calls = || {
+            (body.basic_blocks.iter()).filter_map(|data| match &data.terminator().kind {
+                TerminatorKind::Call {
+                    func,
+                    args,
+                    destination,
+                    ..
+                } if destination.projection.is_empty() && locals.writes[destination.local] == 1 => {
+                    let (def_id, generic_args) = fn_def(func.ty(&body.local_decls, tcx))?;
+                    Some((def_id, generic_args, args.first()?, destination.local))
+                }
+                _ => None,
+            })
+        };
+        let downcast = Std::Any(crate::lower::std_types::any::AnyOp::DowncastRef);
+        let mut thrown: HashMap<Local, u128> = calls()
+            .filter_map(|(def_id, generic_args, receiver, local)| {
+                let any = receiver.node.ty(&body.local_decls, tcx).peel_refs();
+                let found = self.recognition().classify(def_id, generic_args) == Some(downcast)
+                    && self.finds_thrown(any, generic_args.types().last()?);
+                let ty = body.local_decls[local].ty;
+                found
+                    .then(|| Some((local, discriminant(ty, LangItem::OptionSome)?)))
+                    .flatten()
+            })
+            .collect();
+        let tried: Vec<(Local, u128)> = calls()
+            .filter_map(|(def_id, _, tried, local)| {
+                let place = tried.node.place()?;
+                let of_thrown = place.projection.is_empty() && thrown.contains_key(&place.local);
+                let ty = body.local_decls[local].ty;
+                (of_thrown && tcx.is_lang_item(def_id, LangItem::TryTraitBranch))
+                    .then(|| Some((local, discriminant(ty, LangItem::ControlFlowContinue)?)))
+                    .flatten()
+            })
+            .collect();
+        thrown.extend(tried);
+        thrown
     }
 
     /// The locals `OptionWrites::present` says: each a call

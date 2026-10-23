@@ -6,6 +6,9 @@ payload its message, and whose panic resumed was a new `Error`.
 Amended by [0706](0706-panic-is-the-one-way-a-port-throws-an-error.md):
 a `&JsError` of a `try` that throws only its own panics is the `Error`
 thrown, and a payload only read is resumed as `throw` of what was caught.
+Amended by [0710](0710-every-unwinds-payload-is-the-js-error-thrown.md):
+every payload downcasts as the `&JsError` thrown, `payload.error`, a
+typed one's its `$Unwinding`.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): B, a payload of a panic
 that downcasts as a `&JsError` too, where Rust's is a `&str` or a `String`

@@ -428,4 +428,12 @@ export const mutations: Mutation[] = [
     replace: "                            return Ok(Value::Expr(it));\n",
     tests: ["test/corpus.test.ts", "-t", "^own_fold_and_nth.rs$"],
   },
+  {
+    name: "thrown-tested-none",
+    breaks: "a downcast of an unwind's payload to `&JsError` is `None` where what was thrown is falsy",
+    file: "src/lower/mir/rvalues.rs",
+    find: "                    && let Some(&discriminant) = state.options.thrown.get(&place.local) =>\n",
+    replace: "                    && let Some(&discriminant) = state.options.thrown.get(&place.local).filter(|_| false) =>\n",
+    tests: ["test/lowering-unwinds.test.ts", "-t", "every unwind"],
+  },
 ];

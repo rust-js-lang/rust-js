@@ -598,13 +598,11 @@ export function firstText(values) {
 export function text(value) {
   try {
     return "" + value;
-  } catch (thrown) {
-    const payload = $unwound(thrown);
-    const option = payload.impl.typeId() === "&js::JsError" ? payload.value : payload.error;
-    if (option != null && option.name === "TypeError") {
+  } catch (payload) {
+    if (payload != null && payload.name === "TypeError") {
       return "";
     }
-    throw thrown;
+    throw payload;
   }
 }
 ```
@@ -615,24 +613,42 @@ export function text(value) {
   JS's own constructor, `new Error(..)`, is a panic, whoever threw it, and
   what JS threw too: its message downcasts as a `&str` and a `String`, and
   the `Error` itself, its `stack`, as a `&JsError` ([ADR 0692](../../decisions/0692-a-thrown-error-is-a-panic-and-what-js-threw.md)).
+- **Every payload downcasts as a `&'static JsError` too, what was
+  thrown**: a panic's `Error`, what JS threw, a falsy value among it, or
+  the `Error` a payload of another type, `resume_unwind(Box::new(5))`'s,
+  is thrown in, which still downcasts to its own type. So the `Some` of
+  `downcast_ref::<&JsError>()` is what's matched, its `None` arm never
+  taken and left out, and the `catch` is of what was thrown ([ADR 0710](../../decisions/0710-every-unwinds-payload-is-the-js-error-thrown.md)).
+  A falsy one's `Option` carried on as a value, `.copied()`, `.is_some()`,
+  is `None`, as JS's `if (x)` reads it.
 - **`resume_unwind(payload)` throws it again**: a thrown `Error` or what
   JS threw, itself; text, its panic; any other payload, an `Error` that a
   `catch_unwind` gives back as it was. Of a payload only read, it's
   `throw` of what was caught, the same object, `throw thrown` above.
 - **`panic!` is the one way to throw an `Error`**, `panic!("")` a `new
   Error()`: a JS value isn't `Send`, so rustc refuses `resume_unwind`
-  and `panic_any` of a `&JsError`. Caught where the `try` is panics alone,
-  its `&JsError` is that `Error`, its `stack` where it was
-  thrown, and the `catch` is of the `Err`'s binding ([ADR 0706](../../decisions/0706-panic-is-the-one-way-a-port-throws-an-error.md)):
+  and `panic_any` of a `&JsError`. Caught, its `&JsError` is that
+  `Error`, its `stack` where it was thrown, and the `catch` is of the
+  `Err`'s binding ([ADR 0706](../../decisions/0706-panic-is-the-one-way-a-port-throws-an-error.md)):
 
 ```rust
-use js::JsError;
+use js::{JsError, Unknown};
 use std::panic::catch_unwind;
 
 pub fn control_stack() -> Option<String> {
     let Err(x) = catch_unwind(|| panic!(""));
     let control = x.downcast_ref::<&'static JsError>().copied();
     control.and_then(|error| error.stack())
+}
+
+pub fn described(value: &Unknown) -> String {
+    match catch_unwind(|| js::concat_text(value).unwrap()) {
+        Ok(text) => text,
+        Err(x) => match x.downcast_ref::<&'static JsError>() {
+            Some(x) => format!("\nError describing: {}\n{}", x.message(), x.stack().unwrap_or_default()),
+            None => String::from("\nError describing"),
+        },
+    }
 }
 ```
 
@@ -645,6 +661,14 @@ export function controlStack() {
     control = x;
   }
   return control?.stack;
+}
+
+export function described(value) {
+  try {
+    return "" + value;
+  } catch (x) {
+    return `\nError describing: ${x.message}\n${x.stack ?? ""}`;
+  }
 }
 ```
 

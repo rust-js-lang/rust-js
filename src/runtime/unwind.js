@@ -18,17 +18,20 @@ const $panicMessage = { typeId: () => "&str" };
 const $jsThrown = { typeId: () => "&js::JsError" };
 
 // A payload that's neither text nor what JS threw, `resume_unwind(Box::new(5))`,
-// thrown: an `Error`, so its host shows where, as Rust's hook shows it.
+// thrown: an `Error`, so its host shows where, as Rust's hook shows it; and
+// what the payload's `&JsError` is, its `error`, as every unwind's payload
+// downcasts as what was thrown (ADR 0710).
 class $Unwinding extends Error {
   constructor(payload) {
     super("Box<dyn Any>");
     this.payload = payload;
+    payload.error = this;
   }
 }
 
 // What unwound, of `e`, thrown: a payload thrown as it is; a panic's
 // message, and the `Error` it was, what JS threw too (ADR 0692); or what
-// JS threw.
+// JS threw. Each one's `error` is `e`, what its `&JsError` is (ADR 0710).
 function $unwound(e) {
   if (e instanceof $Unwinding) {
     return e.payload;
@@ -36,14 +39,17 @@ function $unwound(e) {
   if ($isPanic(e)) {
     return { value: e.message, impl: $panicMessage, error: e };
   }
-  return { value: e, impl: $jsThrown };
+  return { value: e, impl: $jsThrown, error: e };
 }
 
-// What's thrown to unwind with `payload`: a panic's `Error`, its message
-// as it was, or what JS threw, itself; a panic of text, its `Error`; any
-// other, in a `$Unwinding`.
+// What's thrown to unwind with `payload`: the `$Unwinding` it was thrown
+// in, a panic's `Error`, its message as it was, or what JS threw, itself;
+// a panic of text, its `Error`; any other, in a `$Unwinding`.
 function $unwinding(payload) {
-  if (payload.error && payload.value === payload.error.message) {
+  if (payload.error instanceof $Unwinding) {
+    return payload.error;
+  }
+  if (payload.impl === $panicMessage && payload.value === payload.error.message) {
     return payload.error;
   }
   const id = payload.impl.typeId();

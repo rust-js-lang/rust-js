@@ -26,9 +26,6 @@ Estimated difficulty, hardest first; this is not implementation order:
    compiled, `Peekable`'s first.
 3. [A library rust-js can't compile whole is compiled item by item](per-item-library-refusal.md):
    amends ADR 0415; what keeps aho-corasick, so regex, from compiling.
-4. [A `&JsError` downcast of a caught unwind is what was thrown](js-error-downcast-is-what-was-thrown.md):
-   would amend ADRs 0692 and 0706; waits on the user's choice of how a
-   payload of another type, a `$Unwinding`, is ruled out.
 
 
 Suggested order: iterators, then shipped crates one at a time (memchr's is accepted in
