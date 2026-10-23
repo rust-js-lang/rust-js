@@ -81,3 +81,10 @@ clone what it has left (ADR 0181). A constant of one, rustc's
 its clone wasn't known, and runs: its uses read `NOTHING.items.slice(..)`,
 what the constant has left, wordier than `[]`, as a constant iterator,
 which is rare, is held whole.
+
+## Amendment: `unzip` into a map or a set
+
+`unzip` into what isn't a `Vec` was refused (#165). A side that's a map
+or a set is made empty and extended by its items, `$extendMap(new
+Set(), unzipped[1], true)`, as std's `unzip` extends each side's
+`Default`. Held by `test/corpus/unzip_into_maps.rs`.
