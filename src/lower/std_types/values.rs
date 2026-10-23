@@ -282,6 +282,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     // `successors`, whose items are the consumer's and which
                     // drops the one it holds where it's closed (ADR 0465).
                     | Std::IterSource(IterSource::Successors)
+                    // `vec![x; n]`, which owns `x`, or drops it of none.
+                    | Std::FromElem
             )
         {
             // Of a type parameter's only, a generic iterator's chrono folds:
