@@ -204,4 +204,20 @@ export const mutations: Mutation[] = [
     replace: "                    .any(|_| true)\n",
     tests: ["test/corpus.test.ts", "-t", "^kept_read_past_branch.rs$"],
   },
+  {
+    name: "mut-field-returned-refused",
+    breaks: "`&mut v[0].0` returned is refused",
+    file: "src/lower/mir/temporaries.rs",
+    find: "            }) => Expr::call_helper(\"$handleOn\", vec![*object, Expr::str(&field)]),\n",
+    replace: "            }) if false => Expr::call_helper(\"$handleOn\", vec![*object, Expr::str(&field)]),\n",
+    tests: ["test/corpus.test.ts", "-t", "^mut_field_given.rs$"],
+  },
+  {
+    name: "mut-item-returned-refused",
+    breaks: "`&mut v[0].0` returned, an item of an object reached another way, is refused",
+    file: "src/lower/mir/temporaries.rs",
+    find: "            }) if key.is_constant() || matches!(key.kind, js::ExprKind::Var(_)) => {\n",
+    replace: "            }) if false => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^mut_field_given.rs$"],
+  },
 ];

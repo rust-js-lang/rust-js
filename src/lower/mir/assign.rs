@@ -756,6 +756,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let one_value = param
                 .builtin_deref(true)
                 .is_some_and(|pointee| self.has_one_value(pointee));
+            // A field or an item of an object reached another way, `es[0].n`'s
+            // `$index(es, 0)`: that object named where it's borrowed, the
+            // same object, so the place is fixed.
+            let place = match place.kind {
+                js::ExprKind::Member(..) | js::ExprKind::Index(..) if !fixed_place(&place) && !one_value => {
+                    self.fixed_place_of(place, out)
+                }
+                _ => place,
+            };
             if !fixed_place(&place) && !one_value {
                 let js::ExprKind::Member(handle, field) = &place.kind else {
                     return Err(self.unsupported(span, "a `&mut` of a number given, from its MIR"));
@@ -866,5 +875,30 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Ok(field) => Expr::member(object, field),
             Err(index) => Expr::index(object, index),
         })
+    }
+}
+
+impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// `place`, a field or an item, fixed: what holds it named, where it
+    /// isn't fixed, an object that's the same however it's reached, and an
+    /// index that isn't a constant or a name named too.
+    fn fixed_place_of(&mut self, place: Expr, out: &mut Vec<Stmt>) -> Expr {
+        let span = place.span;
+        let mut fixed = |e: Expr, name: &str, this: &mut Self| match fixed_place(&e) {
+            true => e,
+            false => this.spill(name, e, out),
+        };
+        match place.kind {
+            js::ExprKind::Member(object, field) => Expr::member(fixed(*object, "item", self), &field).or_at(span),
+            js::ExprKind::Index(object, index) => {
+                let object = fixed(*object, "items", self);
+                let index = match index.is_constant() || matches!(index.kind, js::ExprKind::Var(_)) {
+                    true => *index,
+                    false => self.spill("at", *index, out),
+                };
+                Expr::index(object, index).or_at(span)
+            }
+            kind => Expr { kind, ..place },
+        }
     }
 }

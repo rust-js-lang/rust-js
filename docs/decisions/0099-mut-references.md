@@ -400,3 +400,16 @@ is revealed first, so a returned closure's `&mut` is the function, as a
 closure made here is. ADR 0262's case: it threw, so Rust's. Held by
 `test/corpus/impl_fn_mut_lent.rs` and the mutation
 `boxable-opaque-unrevealed`.
+
+## Amendment: a `&mut` of a field or an item reached another way
+
+`inc(&mut es[0].n)` and `fn first(v: &mut Vec<(i32, i32)>) -> &mut i32 {
+&mut v[0].0 }` were refused (#120): the place, `$index(es, 0).n`, isn't a
+fixed one, so a box of it couldn't be copied back, nor a handle made.
+The object holding the field or the item is the same however it's
+reached, and Rust reaches the place where it's borrowed. Given, that
+object is named there, `const item = $index(es, 0)`, and the place copied
+back through it; kept or returned, it's `$handleOn(object, key)`, the
+object reached once, where it's borrowed, the same while the borrow
+lasts, so an index past the end panics there, as Rust's does. Held by
+`test/corpus/mut_field_given.rs`.
