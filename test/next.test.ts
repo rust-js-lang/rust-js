@@ -960,7 +960,7 @@ test("next build builds a Next.js app whose routes and components are Rust, rust
   expect(requestJsx).toContain("(await draftMode()).isEnabled");
   expect(requestJsx).toContain('const lighten = async () => {\n    "use server";\n    (await cookies()).set("theme", "light");\n  };');
   const actionsJs = readFileSync(join(dir, "app/actions.js"), "utf8");
-  expect(actionsJs).toContain('jar.set("theme", theme, { sameSite: "lax", maxAge: 3600 });');
+  expect(actionsJs).toContain('jar.set("theme", theme, { maxAge: 3600, sameSite: "lax" });');
   expect(actionsJs).toContain('jar.delete({ name: "old", path: "/" });');
   // A page's module has no declarations beside it, which Turbopack would
   // take as a page of its own; another module has (ADR 0276).

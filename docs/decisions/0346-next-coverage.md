@@ -90,6 +90,13 @@ next/cache's `CacheEntry`, `CacheHandler`, `prefetch` and `navigation` are
 bound. `CacheLifeProfiles`, an empty interface an app augments with its
 profiles' names, has no Rust form, as the `Infer…` types haven't.
 
+## Amendment: Next.js 16.4.3
+
+The example is of Next.js 16.4.3 (2026-10-23), the patch release past a
+security advisory over 16.4.0 that made `next build` refuse to run. Its
+declarations bind as 16.4.0's did; only the generated fonts' header names
+the version.
+
 ## Amendment: what's left to JavaScript
 
 The app's config, next.config.js, and a deployment adapter, the module its
