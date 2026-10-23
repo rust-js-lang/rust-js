@@ -73,18 +73,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // A function a variable holds, `js::import!(f).await`'s: called as
         // that variable, which may be all that holds it, not as its import.
-        // One a JS function, or the crate's that JS calls as it is, given no
-        // dictionaries nor boxes.
+        // One a JS function, or the crate's that JS calls as it is
+        // (`called_as_held`).
         let called_as_js = match bindings::is_binding(self.tcx, def_id) {
             true => {
                 !crate::lower::bindings::is_method(self.tcx, def_id)
                     && matches!(bindings::js_form(self.tcx, def_id), bindings::JsForm::Call(_))
             }
-            false => {
-                self.krate.fns.contains_key(&def_id)
-                    && self.tcx.generics_of(def_id).count() == 0
-                    && (0..args.len()).all(|i| !self.param_is_box(def_id, i))
-            }
+            false => self.called_as_held(def_id, args.len()),
         };
         if let Operand::Copy(_) | Operand::Move(_) = func
             && called_as_js

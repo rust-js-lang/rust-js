@@ -590,6 +590,12 @@ error that says so, `` `#[rust_js::nullable]` of a function is of its
 result, which isn't an `Option` ``
 ([0586](../decisions/0586-a-nullable-field-is-an-option.md)).
 
+- **A function's last slice marked `#[rust_js::rest]` is JS's rest
+  parameter,** `function f(code, ...args)`, which a call from Rust gives
+  its slice spread, `f(code, ...args)`, or the items of an array written
+  out, `f(code, a, b)`; it's the last parameter's and a shared slice's,
+  and a compile error that says so anywhere else
+  ([0664](../decisions/0664-a-functions-rest-slice-is-jss-rest-parameter.md)).
 - **A `pub use` of another module's item re-exports it,** `pub use
   shapes::area` being `export { area } from "./shapes.js";`
   ([0240](../decisions/0240-reexports.md)).

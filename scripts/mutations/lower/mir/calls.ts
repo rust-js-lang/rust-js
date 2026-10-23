@@ -243,4 +243,12 @@ export const mutations: Mutation[] = [
     replace: "        Ok(Value::Expr(called))\n",
     tests: ["test/js-builtins.test.ts", "-t", "is a throwing function"],
   },
+  {
+    name: "rest-variable-called-as-js",
+    breaks: "a variable of a function whose last parameter is `#[rust_js::rest]` is called as the variable, the arrow that spreads it, `named([x])`, where the function reads as written, `total(x)`",
+    file: "src/lower/mir/calls.rs",
+    find: "            && !self.takes_rest(def_id)\n",
+    replace: "",
+    tests: ["test/rest-parameters.test.ts", "-t", "rest slice is JS's rest parameter"],
+  },
 ];

@@ -2,7 +2,7 @@
 //! function, method, property or operator it names (ADRs 0019, 0020).
 
 use super::bindings::{JsForm, is_binding, is_method, is_optional_param, is_variadic, js_form};
-use super::calls::given_to_js;
+use super::calls::{given_to_js, spread_rest};
 use super::recognition::StdItem;
 use super::{FnCx, R};
 use crate::js;
@@ -72,14 +72,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     "a `#[rust_js::variadic]` binding whose last parameter isn't rest arguments: a tuple, a slice or a `Vec`",
                 ));
             }
-            match args.pop() {
-                Some(Expr {
-                    kind: js::ExprKind::Array(items),
-                    ..
-                }) => args.extend(items),
-                Some(last) => args.push(Expr::spread(last)),
-                None => {}
-            }
+            spread_rest(&mut args);
         }
         // What skips what's falsy is given `test && value` for `test ?
         // value : undefined`: `false` is skipped as `undefined` is, and
@@ -185,6 +178,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// binding's or the crate's, imported when it's run, or the module.
     pub(super) fn dynamic_import_of(&mut self, id: DefId, module: bool, span: Span) -> R<Expr> {
         let tcx = self.tcx;
+        // What holds it is called with its slice whole, where it takes
+        // JS's rest arguments (ADR 0664).
+        if self.takes_rest(id) {
+            return Err(self.unsupported(span, "importing a function whose last parameter is `#[rust_js::rest]`"));
+        }
         let (from, export) = if is_binding(tcx, id) {
             let path = super::bindings::js_path(tcx, id).unwrap_or_default();
             match super::bindings::js_import(&path) {
