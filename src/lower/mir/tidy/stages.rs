@@ -198,10 +198,12 @@ pub(super) const STAGES: &[Stage] = &[
                 js::statement_lists(b, &mut |s| guarded_lets(s, h.captured))
             }),
             pass("inlined", inlined_of),
+            // What those reads leave makes more of what `inlined` reads, a
+            // `const`: `branch values` makes one of an `if` each of whose
+            // branches writes it, `const pair = [i != null ? i : 99, 2]`,
+            // and `declarations` one of a `let` written once. `inlined`
+            // again reads those in place, its one dependency on them.
             pass("branch values", branch_values_of),
-            pass("tables in values", |b, h| {
-                js::statement_lists(b, &mut |s| table_reads(s, &h.written.tables))
-            }),
             pass("declarations", |b, _| declarations(b)),
             pass("inlined in values", inlined_of),
             // A tuple's part held, `const _3$0 = v.pop();`, which an arm's

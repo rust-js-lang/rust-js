@@ -219,8 +219,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if method == IterMethod::Position {
             return Ok(Expr::call_helper("$position", vec![it, found]));
         }
+        // Of one that knows its back and its length, stepped from its back.
         if self.array_source(iter_ty).is_none() {
-            return Err(self.unsupported(span, "`rposition` of a lazy iterator, from its MIR"));
+            // An array made where it's made, a `$iter` of it, knows both.
+            let made = self.steps_an_array(iter_ty);
+            let back = made || self.knows_its_back(iter_ty) || self.user_double_ended(iter_ty);
+            if !(back && (made || self.knows_its_length(iter_ty) || self.user_exact_size(iter_ty))) {
+                return Err(self.unsupported(span, "`rposition` of a lazy iterator, from its MIR"));
+            }
+            // What a `&mut` lends, which it's stepped from its back as it is.
+            let it = crate::lower::iterators::unlent(&it).clone();
+            let it = self.as_exact_size(it, iter_ty, true, span)?;
+            return Ok(Expr::call_helper("$rposition", vec![it, found]));
         }
         let items = crate::lower::iterators::unlent(&it).clone();
         Ok(Expr::call_helper("$rposition", vec![items, found]))

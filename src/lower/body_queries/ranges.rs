@@ -13,10 +13,11 @@ use rustc_middle::middle::region;
 /// A `Vec` or a slice, by the variable it's in and the fields to it.
 type Slice = (Vec<usize>, LocalVarId);
 
-/// The most a JS string's `length` is: below `2^32 - 1`, as every engine's
-/// string is, V8's below 2^29, SpiderMonkey's 2^30 - 2, JavaScriptCore's
-/// 2^31 - 1 (ADR 0632). An array's may be `2^32 - 1`, `u32`'s most.
-const STRING_LENGTH_MOST: i128 = (1 << 32) - 2;
+/// The most a JS string's `length` is: `2^31 - 1`, as every engine's
+/// string is at most, V8's below 2^29, SpiderMonkey's 2^30 - 2,
+/// JavaScriptCore's 2^31 - 1, so two add without passing `u32`'s most
+/// (ADRs 0632, 0682). An array's may be `2^32 - 1`, `u32`'s most.
+const STRING_LENGTH_MOST: i128 = (1 << 31) - 1;
 
 /// An upper bound of an integer by a slice's length `L`, `⌊(c·L + b) /
 /// 2^s⌋`: `L - 1` of an index `i < xs.len()`, `L / 2 - 1` of one below its
@@ -1022,7 +1023,9 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
             // left holds. An integer still growing is taken first as at
             // most one below its type's most, where its `+ 1` can't wrap,
             // a counter's below a length; growing past that, anything
-            // (ADR 0632).
+            // (ADR 0632). One found within what it was taken as, a
+            // counter's below a string's length, keeps it: it holds
+            // (ADR 0682).
             if round >= 3
                 && let (Some(next), Some(head)) = (next.as_mut(), &head)
             {
@@ -1031,8 +1034,8 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
                 next.vars = (vars.into_iter())
                     .filter_map(|(v, r)| {
                         let was = head.vars.get(&v)?;
-                        if *was == r {
-                            return Some((v, r));
+                        if was.join(&r) == *was {
+                            return Some((v, was.clone()));
                         }
                         let below_most = most.get(&v)? - 1;
                         (was.hi < below_most && r.hi <= below_most && r.lo >= was.lo).then(|| {

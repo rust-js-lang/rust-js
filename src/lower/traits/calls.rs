@@ -230,21 +230,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(super) fn impl_const_getter(&mut self, id: DefId, span: Span) -> R<Expr> {
         let body = (self.krate.closures.get(&id).copied())
             .ok_or_else(|| self.unsupported(span, "a generic impl's constant of its parameters"))?;
-        let enclosing = self.enter_body(
-            body,
-            id,
-            crate::lower::Nested::Closure {
-                names: self.names.clone(),
-            },
-        )?;
+        let nested = crate::lower::Nested::Closure {
+            names: self.names.clone(),
+        };
         // From its MIR (ADR 0364), its value given back.
         let mut stmts = Vec::new();
-        let lowered = match &body.mir {
-            Some(mir) => self.mir_signature(body, mir, &mut stmts),
-            None => Err(self.unsupported(span, "this constant, without its MIR")),
-        };
-        let hoisted = self.leave_body(enclosing);
-        lowered?;
+        let (_, hoisted) = self.lowered_in(body, id, nested, |cx| match &body.mir {
+            Some(mir) => cx.mir_signature(body, mir, &mut stmts),
+            None => Err(cx.unsupported(span, "this constant, without its MIR")),
+        })?;
         stmts.splice(0..0, hoisted);
         Ok(Expr::arrow(Vec::new(), stmts))
     }

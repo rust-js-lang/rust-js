@@ -48,7 +48,7 @@ function productIterator_next(product, IIterator, JClone, JIterator, IItemClone)
 }
 
 function product(a, b, IIterator, JClone, IItemClone) {
-  return { a, aCur: IIterator.next(a), b: JClone.clone(b), bOrig: b };
+  return { aCur: IIterator.next(a), a, b: JClone.clone(b), bOrig: b };
 }
 
 function main() {

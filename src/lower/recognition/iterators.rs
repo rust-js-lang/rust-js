@@ -458,12 +458,19 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// `VecDeque::iter()`'s, over the array a `VecDeque` is.
     /// A std iterator of what's an array already, or made one where it's
     /// made, `$iter` of it: an `Option`'s or a `Result`'s `iter()`, and an
-    /// `Option`'s `into_iter()`, `[]` or `[x]`, a `LinkedList`'s, and a string's `char_indices()`, its pairs
-    /// (ADR 0530).
+    /// `Option`'s `into_iter()`, `[]` or `[x]`, a `LinkedList`'s, a string's
+    /// `char_indices()`, its pairs (ADR 0530), and a slice's chunks and
+    /// windows.
     pub(in crate::lower) fn iterates_items(&self, ty: Ty<'tcx>) -> bool {
         let ty = self.reveal(ty);
         matches!(ty.kind(), ty::Adt(adt, _) if matches!(std_path(self.tcx, adt.did()).as_str(),
-            "std::option::Iter" | "std::option::IntoIter" | "std::result::Iter" | "std::collections::linked_list::Iter" | "std::str::CharIndices"))
+            "std::option::Iter" | "std::option::IntoIter" | "std::result::Iter" | "std::collections::linked_list::Iter" | "std::str::CharIndices"
+            // A slice's chunks and windows, the array of them `$chunks` and
+            // the like make (ADR 0335).
+            | "std::slice::Chunks" | "std::slice::ChunksMut" | "std::slice::Windows"
+            | "std::slice::ChunksExact" | "std::slice::ChunksExactMut"
+            | "std::slice::RChunks" | "std::slice::RChunksMut"
+            | "std::slice::RChunksExact" | "std::slice::RChunksExactMut"))
             // A byte's escape, its bytes (ADR 0558).
             || is_byte_escape(self.tcx, ty)
     }
@@ -501,7 +508,10 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                     "std::option::Iter",
                     "std::option::IntoIter",
                     "std::result::IterMut",
-                    // A slice's chunks and splits, copies or views (ADR 0335).
+                    // A slice's chunks, windows and splits, copies or views (ADR 0335).
+                    "std::slice::Chunks",
+                    "std::slice::ChunksMut",
+                    "std::slice::Windows",
                     "std::slice::ChunksExact",
                     "std::slice::ChunksExactMut",
                     "std::slice::RChunks",
@@ -799,6 +809,19 @@ pub(crate) fn cloned_source<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Ty<
 pub(crate) fn mapped_source<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
     match ty.kind() {
         ty::Adt(adt, args) if std_path(tcx, adt.did()) == "std::iter::Map" => Some(args.type_at(0)),
+        _ => None,
+    }
+}
+
+/// Of std's `Flatten<I>` or `FlatMap<I, U, F>` of type `ty`, its source,
+/// and, of a `FlatMap`, what its function makes, `U`: a `Flatten`'s is its
+/// source's item.
+pub(crate) fn flattened_source<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<(Ty<'tcx>, Option<Ty<'tcx>>)> {
+    match ty.kind() {
+        ty::Adt(adt, args) if std_path(tcx, adt.did()) == "std::iter::Flatten" => Some((args.type_at(0), None)),
+        ty::Adt(adt, args) if std_path(tcx, adt.did()) == "std::iter::FlatMap" => {
+            Some((args.type_at(0), Some(args.type_at(1))))
+        }
         _ => None,
     }
 }

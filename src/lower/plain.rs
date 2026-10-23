@@ -314,7 +314,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ty::Tuple(_) | ty::Array(..) => Expr::array(values),
             _ => {
                 let nulled = vec![false; values.len()];
-                self.adt_value(ty, VariantIdx::ZERO, values, &nulled, span)?
+                self.adt_value(ty, VariantIdx::ZERO, values, &nulled, None, span)?
             }
         })
     }

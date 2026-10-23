@@ -857,7 +857,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     let discard_when = comb == IterComb::SkipWhile;
                     exprs.insert(0, self.dropping_discarded(test, item, discard_when, span, out)?);
                 }
-                self.iter_comb(comb, it, exprs.into_iter(), generic_args, iter_ty, span, out)?
+                let made = self.iter_comb(comb, it, exprs.into_iter(), generic_args, iter_ty, span, out)?;
+                // A flatten the crate steps from its back, made knowing it
+                // (ADR 0545): `$flattenEnds`.
+                match matches!(comb, IterComb::Flatten | IterComb::FlatMap) && self.stepped_from_its_back(output) {
+                    true => self.as_double_ended(made, output, span)?,
+                    false => made,
+                }
             }
             // `cycle()` of another iterator than std's over an array, cloned
             // (ADR 0491); and one a struct holds, of an array's too, which

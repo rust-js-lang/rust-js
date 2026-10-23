@@ -1,6 +1,8 @@
 # 0250. Props updated from a reference are a spread
 
-Status: Accepted. Extends [0213](0213-props-as-written.md).
+Status: Accepted. Extends [0213](0213-props-as-written.md). Amended by
+[0674](0674-a-struct-literals-fields-are-in-the-order-written.md): the fields
+after the spread are as written.
 
 Case: N, C ([0262](0262-when-rust-and-js-disagree.md)).
 

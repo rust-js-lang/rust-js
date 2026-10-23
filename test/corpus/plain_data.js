@@ -10,6 +10,7 @@ import {
   $floatFromBits,
   $floatToBits,
   $fromBytes,
+  $index,
   $toBytes,
 } from "@rust-js/runtime";
 
@@ -55,6 +56,12 @@ function longest(words) {
     }
   }
   return best;
+}
+
+function firstLen(words) {
+  const q = words;
+  const all = q;
+  return $byteLen($index(all, 0));
 }
 
 function main() {
@@ -168,5 +175,6 @@ function main() {
   const halves = { low: 0, high: 0 };
   console.log(`${halvesDebug_fmt(halves)}`);
   console.log(`${longest(["a", "abc", "ab"])}`);
+  console.log(`${firstLen(["four", "x"])}`);
 }
 //# sourceMappingURL=case.js.map

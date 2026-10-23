@@ -23,16 +23,27 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     // ── Closures (ADR 0022) ─────────────────────────────────────────────
 
-    /// Start lowering `body`, a body inside the one being lowered, as
-    /// `nested` says it starts. Each body is checked for what it drops (ADR
-    /// 0098). A body that
-    /// fails leaves the state as it is: its whole item fails with it.
-    pub(super) fn enter_body(
+    /// `lower` of `body`, a body inside the one being lowered, entered as
+    /// `nested` says and left whatever `lower` gives, an error too: what it
+    /// gives, and the drop functions the body declares, for its top. The
+    /// one way into a nested body and out of it.
+    pub(super) fn lowered_in<T>(
         &mut self,
         body: &'a Body<'tcx>,
         owner: DefId,
         nested: Nested<'tcx>,
-    ) -> R<Enclosing<'a, 'tcx>> {
+        lower: impl FnOnce(&mut Self) -> R<T>,
+    ) -> R<(T, Vec<Stmt>)> {
+        let enclosing = self.enter_body(body, owner, nested)?;
+        let lowered = lower(self);
+        let hoisted = self.leave_body(enclosing);
+        Ok((lowered?, hoisted))
+    }
+
+    /// Start lowering `body`, as `nested` says it starts. Each body is
+    /// checked for what it drops (ADR 0098). A body that fails to start
+    /// leaves the state as it is: its whole item fails with it.
+    fn enter_body(&mut self, body: &'a Body<'tcx>, owner: DefId, nested: Nested<'tcx>) -> R<Enclosing<'a, 'tcx>> {
         let thir = std::mem::replace(&mut self.thir, &body.thir);
         let body_facts = std::mem::replace(&mut self.body_facts, &body.facts);
         let body_owner = std::mem::replace(&mut self.body_owner, owner);
@@ -45,19 +56,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 names: std::mem::replace(&mut self.names, names),
             },
             Nested::Default {
-                evidence,
-                self_args,
+                given,
                 typing_env,
                 drops,
                 unsupported,
                 items,
                 slots,
             } => {
-                default_drops = Some((drops, unsupported, items, slots, self_args));
+                default_drops = Some((drops, unsupported, items, slots, given.self_args));
                 EnclosingKind::Default(Box::new(ItemScope {
                     names: self.names.clone(),
                     locals: std::mem::take(&mut self.locals),
-                    given: self.enter_default(evidence, self_args),
+                    given: self.enter_default(*given),
                     typing_env: std::mem::replace(&mut self.typing_env, typing_env),
                 }))
             }
@@ -73,7 +83,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// Finish the body `enter_body` started, and go back to the enclosing one:
     /// the drop functions it declares, for its top.
-    pub(super) fn leave_body(&mut self, enclosing: Enclosing<'a, 'tcx>) -> Vec<Stmt> {
+    fn leave_body(&mut self, enclosing: Enclosing<'a, 'tcx>) -> Vec<Stmt> {
         let hoisted = self.leave_body_drops(enclosing.drops);
         self.thir = enclosing.thir;
         self.body_facts = enclosing.body_facts;

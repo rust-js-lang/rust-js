@@ -1736,6 +1736,42 @@ export function $enumerate(iter, count = 0) {
   return enumerated;
 }
 
+// A flatten of a JS iterator that knows its back, `it.flatMap(each)`, each
+// of whose items `each` makes what knows its back too, an array's `$iter`:
+// which knows its own, as Rust's `Flatten` and `FlatMap` are double-ended
+// where their source and its items are. From the front, the front inner's
+// items, then the next of the source's, then, its source done, the back
+// inner's; from the back, the same the other way, as std's `FlattenCompat`
+// steps them, its source fused. Closing it closes its source.
+export function $flattenEnds(it, each) {
+  const done = { done: true, value: undefined };
+  const inner = { next: undefined, back: undefined };
+  // Its source, once done from either end, stays done, as std's `Fuse` of
+  // it does.
+  let ended = false;
+  const step = (by, own, other) => () => {
+    for (;;) {
+      if (inner[own] !== undefined) {
+        const at = inner[own][by]();
+        if (!at.done) return at;
+        inner[own] = undefined;
+      }
+      const outer = ended ? done : it[by]();
+      if (outer.done) {
+        ended = true;
+        if (inner[other] === undefined) return done;
+        const at = inner[other][by]();
+        if (at.done) inner[other] = undefined;
+        return at;
+      }
+      inner[own] = $iter(each(outer.value));
+    }
+  };
+  const flat = new $Steps(step("next", "next", "back"), () => $closed(it));
+  flat.back = step("back", "back", "next");
+  return flat;
+}
+
 // How many numbers an exclusive range, `a..b`, has left: an
 // `ExactSizeIterator`'s `len()`, of its state (ADR 0456), and `count()`'s,
 // without stepping each, as std's is.
@@ -10673,8 +10709,18 @@ export function $position(items, found) {
 // `rposition(f)` of a slice's items, or a `$iter` of them stepped from its
 // front: where the last of what's left that `f` finds is, each tested from
 // the back as Rust's is, or `undefined`, `None`. A `$iter` is left stepped
-// from its back to it, as Rust leaves it.
+// from its back to it, as Rust leaves it. Of another JS iterator that knows
+// its back and its length, its length, then each from its back, as std's
+// `try_rfold` steps it.
 export function $rposition(items, found) {
+  if (!Array.isArray(items) && items.items === undefined) {
+    let i = items.len();
+    for (let step = items.back(); !step.done; step = items.back()) {
+      i--;
+      if (found(step.value)) return i;
+    }
+    return undefined;
+  }
   const iter = items.items !== undefined;
   const [array, at, end] = iter ? [items.items, items.at, items.end] : [items, 0, items.length];
   for (let i = end - 1; i >= at; i--) {

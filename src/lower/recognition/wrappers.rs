@@ -48,6 +48,15 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         (rc_pointee(tcx, owner).is_some() && tcx.item_name(def_id).as_str() == "new").then(|| (true, args.type_at(0)))
     }
 
+    /// What a wrapper of std's that's what it holds holds: `ManuallyDrop`'s
+    /// and `MaybeDangling`'s, whose `==` and clone are its value's, as it is
+    /// in JS (`transparent`).
+    pub(in crate::lower) fn std_wrapped(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
+        (self.is_lang_adt(ty, LangItem::ManuallyDrop) || self.is_lang_adt(ty, LangItem::MaybeDangling))
+            .then(|| self.transparent(ty))
+            .flatten()
+    }
+
     /// A type that's the value it holds in JS, whose field is it: a
     /// `#[repr(transparent)]` struct of the crate's or a dependency's (ADR
     /// 0584), a `MaybeUninit` (ADR 0332), and what std makes one of,

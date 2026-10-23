@@ -4,7 +4,9 @@ Status: Accepted. Extends [0102](0102-js-and-webapi.md), [0214](0214-untagged-en
 and [0024](0024-web-crate.md). Amended by
 [0668](0668-a-match-of-what-a-value-is-is-a-switch-of-its-typeof.md): `Kind`
 has a `Symbol`, and its `Object` is an object no array is, `typeof value
-=== "object"`; a `match` of it is a `switch (typeof value)`.
+=== "object"`; a `match` of it is a `switch (typeof value)`. Amended by
+[0673](0673-a-function-is-a-value-of-any-shape.md): `js::unknown` takes a
+function too, which isn't `Defined` only because Rust can't say it is.
 
 Case: N, C, D ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -119,6 +121,7 @@ value.name = "new";
   (Amended: they were `any`.)
 - **What's never nullish is an `Unknown` too**, `js::unknown(text)`, as any
   value is TypeScript's `unknown`: a `Defined` value, the value itself.
+  (Amended by 0673: or a function, `js::unknown(&f)`.)
   react.dev's ConsoleBlock's message is its text or an element's
   `props.children`, either an `Unknown`. **And `js::string(value)` is
   `String(value)`**, any value as text as JS makes it, `"undefined"` of

@@ -479,6 +479,18 @@ mod tests {
     // fails where it's reached, so it goes. Within `if (p != null) { .. }`,
     // `p != null` holds, so an `if` of it there is its `then`, and one of
     // `p.item != null` within `if (p.item == null)` is gone.
+
+    /// Closures nested 64 deep, the innermost setting `x`: each closure's
+    /// body asked once, not once for each closure around it.
+    #[test]
+    fn rebinds_walks_nested_closures_once() {
+        let mut body = vec![StmtKind::Assign(Expr::var("x"), Expr::int(1)).at(js::Span::NONE)];
+        for _ in 0..64 {
+            body = vec![StmtKind::Expr(Expr::arrow(Vec::new(), body)).at(js::Span::NONE)];
+        }
+        assert!(super::bindings::rebinds(&body, "x"));
+        assert!(!super::bindings::rebinds(&body, "y"));
+    }
     #[test]
     fn a_test_an_earlier_one_decided_goes() {
         let mut after = vec![

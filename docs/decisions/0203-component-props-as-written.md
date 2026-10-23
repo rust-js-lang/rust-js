@@ -1,6 +1,9 @@
 # 0203. A component's props are as written
 
 Status: Accepted. Amends [0192](0192-next.md) and [0200](0200-binding-props-borrow.md).
+Amended by [0674](0674-a-struct-literals-fields-are-in-the-order-written.md):
+the props struct's object lists them in this order, so JSX takes them as
+it lists them.
 
 Case: N, A ([0262](0262-when-rust-and-js-disagree.md)).
 

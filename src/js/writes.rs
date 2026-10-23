@@ -48,32 +48,34 @@ impl Writes {
     }
 
     fn walk(&mut self, stmts: &[Stmt], in_closure: bool) {
-        // What a closure or a declared function writes, each walked as one.
-        let mut nested = Writes::default();
-        each_list(stmts, &mut |list| {
-            for stmt in list {
-                match &stmt.kind {
-                    StmtKind::Assign(target, _) | StmtKind::Compound(_, target, _) => self.target(target, in_closure),
-                    StmtKind::Function(function) => nested.walk(&function.body, true),
-                    _ => {}
-                }
-            }
-        });
+        // Each expression once, however deep: each closure's and each
+        // declared function's own statements are walked where it's found,
+        // never what's nested in them, which this finds in turn.
+        self.lists(stmts, in_closure);
         each_expr(stmts, &mut |e| match &e.kind {
             ExprKind::Handle(place) | ExprKind::Pair(place, _) => {
                 if let ExprKind::Var(name) = &place.kind {
                     self.handled.insert(name.clone());
                 }
             }
-            ExprKind::Arrow(_, body) | ExprKind::AsyncArrow(_, body) => nested.walk(body, true),
-            ExprKind::Function(function) => nested.walk(&function.body, true),
+            ExprKind::Arrow(_, body) | ExprKind::AsyncArrow(_, body) => self.lists(body, true),
+            ExprKind::Function(function) => self.lists(&function.body, true),
             _ => {}
         });
-        self.replaced.extend(nested.replaced);
-        self.replaced_in_closures.extend(nested.replaced_in_closures);
-        self.changed.extend(nested.changed);
-        self.changed_in_closures.extend(nested.changed_in_closures);
-        self.handled.extend(nested.handled);
+    }
+
+    /// What `stmts`' own lists write, not their closures', and their
+    /// declared functions' as a closure's.
+    fn lists(&mut self, stmts: &[Stmt], in_closure: bool) {
+        each_list(stmts, &mut |list| {
+            for stmt in list {
+                match &stmt.kind {
+                    StmtKind::Assign(target, _) | StmtKind::Compound(_, target, _) => self.target(target, in_closure),
+                    StmtKind::Function(function) => self.lists(&function.body, true),
+                    _ => {}
+                }
+            }
+        });
     }
 
     /// What writing `target` writes: its variable's binding, or the object
@@ -142,6 +144,19 @@ mod tests {
         assert_eq!(names(&writes.changed_in_closures), ["o"]);
         assert_eq!(names(&writes.by_closures()), ["o", "x"]);
         assert!(writes.may_replace("x"));
+    }
+
+    /// Closures nested 64 deep, the innermost assigning: each closure's
+    /// body is walked once, not once for each closure around it, which
+    /// would be 2^64 walks of the innermost.
+    #[test]
+    fn nested_closures_are_walked_once() {
+        let mut body = vec![assign(Expr::var("x"))];
+        for _ in 0..64 {
+            body = vec![stmt(StmtKind::Expr(Expr::arrow(Vec::new(), body)))];
+        }
+        let writes = Writes::of(&body);
+        assert_eq!(names(&writes.replaced_in_closures), ["x"]);
     }
 
     #[test]

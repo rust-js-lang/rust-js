@@ -41,7 +41,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         if let CowOp::From { owned } = op {
             let variant = rustc_abi::VariantIdx::from_usize(usize::from(owned));
-            return self.adt_value(cow_ty, variant, vec![cow], &[], span);
+            return self.adt_value(cow_ty, variant, vec![cow], &[], None, span);
         }
         let mut variants = adt.variants().iter();
         let (borrowed_variant, owned_variant) =

@@ -228,22 +228,61 @@ pub fn classify(this: &Unknown) -> Kind<'_> {
 }
 
 /// `value` as a JS value of any shape, which it is: what's never `undefined`
-/// nor `null` (`Defined`), text or a number, say, as any value is
-/// TypeScript's `unknown`. The value itself.
+/// nor `null` ([`AnyShape`]), text or a number, say, or a function, as any
+/// value is TypeScript's `unknown`. The value itself:
+/// `js::set(js::unknown(&disabled_log), "__reactDisabledLog", true)` is
+/// `disabledLog.__reactDisabledLog = true` (ADR 0673).
 #[cfg_attr(rust_js, rust_js::link_name = "this")]
 #[allow(unused_variables)]
-pub fn unknown<T: Defined + ?Sized>(this: &T) -> &Unknown {
+pub fn unknown<T: AnyShape<M> + ?Sized, M>(this: &T) -> &Unknown {
     unreachable!()
 }
 
 /// `value`, given by value, as a JS value of any shape: an element, a
-/// handle, or an object of its fields, made where it's given, which
-/// [`unknown`] would borrow only for its block. The value itself, kept as
-/// long as JS has it.
+/// handle, or an object of its fields, made where it's given, or a
+/// closure, which [`unknown`] would borrow only for its block. The value
+/// itself, kept as long as JS has it.
 #[cfg_attr(rust_js, rust_js::link_name = "this")]
 #[allow(unused_variables)]
-pub fn unknown_of<T: Defined + 'static>(this: T) -> &'static Unknown {
+pub fn unknown_of<T: AnyShape<M> + 'static, M>(this: T) -> &'static Unknown {
     unreachable!()
+}
+
+/// What [`unknown`] takes, a JS value of any shape, never `undefined` nor
+/// `null`: a [`Defined`] value, or a function, of whatever it takes, a
+/// function item, a closure, a `fn` pointer or a `dyn Fn`, each a JS
+/// function, which is an object (ADR 0673). `M` is which one, rustc's to
+/// infer: no program names it. A function isn't `Defined` only because
+/// Rust can't say each is: a function item's type has no name, and an
+/// impl for each `Fn` would be one for `&T` too.
+pub trait AnyShape<M: ?Sized> {}
+
+impl<T: Defined + ?Sized> AnyShape<()> for T {}
+
+/// A function of each arity up to 12, its marker the `fn` pointer of its
+/// signature.
+macro_rules! functions {
+    ($(($($a:ident),*))*) => {
+        $(
+            impl<F: FnOnce($($a),*) -> R + ?Sized, R, $($a),*> AnyShape<fn($($a),*) -> R> for F {}
+        )*
+    };
+}
+
+functions! {
+    ()
+    (A)
+    (A, B)
+    (A, B, C)
+    (A, B, C, D)
+    (A, B, C, D, E)
+    (A, B, C, D, E, F1)
+    (A, B, C, D, E, F1, G)
+    (A, B, C, D, E, F1, G, H)
+    (A, B, C, D, E, F1, G, H, I)
+    (A, B, C, D, E, F1, G, H, I, J)
+    (A, B, C, D, E, F1, G, H, I, J, K)
+    (A, B, C, D, E, F1, G, H, I, J, K, L)
 }
 
 /// Whether `value` is [truthy](https://developer.mozilla.org/docs/Glossary/Truthy),

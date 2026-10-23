@@ -52,4 +52,12 @@ export const mutations: Mutation[] = [
     replace: "                        if held != asked {\n",
     tests: ["test/corpus.test.ts", "-t", "^rev_lazy_drops.rs$"],
   },
+  {
+    name: "flatten-back-stepped-unseen",
+    breaks: "a flatten held in a variable, then stepped from its back, is made as it is, not knowing its back",
+    file: "src/lower/analysis/back_stepped.rs",
+    find: "    if flattened_source(tcx, adapter).is_some() {\n",
+    replace: "    if false && flattened_source(tcx, adapter).is_some() {\n",
+    tests: ["test/corpus.test.ts", "-t", "^flatten_from_its_back.rs$"],
+  },
 ];
