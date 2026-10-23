@@ -126,18 +126,23 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: '24'
-      - name: Install pinned Rust toolchain
-        run: rustup show
-      - uses: actions/cache@v6
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target/debug
-          key: test-${{ runner.os }}-${{ hashFiles('Cargo.lock', 'rust-toolchain.toml') }}-${{ github.sha }}
-          restore-keys: test-${{ runner.os }}-${{ hashFiles('Cargo.lock', 'rust-toolchain.toml') }}-
-      - run: bun install --frozen-lockfile
-      - run: bunx --bun playwright install --with-deps chromium
+      # Each of what the suite needs at once (parallel steps): the
+      # toolchain, the last build, and the packages with their browser.
+      - parallel:
+          - name: Install pinned Rust toolchain
+            run: rustup show
+          - uses: actions/cache@v6
+            with:
+              path: |
+                ~/.cargo/registry
+                ~/.cargo/git
+                target/debug
+              key: test-${{ runner.os }}-${{ hashFiles('Cargo.lock', 'rust-toolchain.toml') }}-${{ github.sha }}
+              restore-keys: test-${{ runner.os }}-${{ hashFiles('Cargo.lock', 'rust-toolchain.toml') }}-
+          - name: Install packages and the browser
+            run: |
+              bun install --frozen-lockfile
+              bunx --bun playwright install --with-deps chromium
       - name: Read the last run's timings
         env:
           GH_TOKEN: ${{ github.token }}
@@ -174,17 +179,18 @@ jobs:
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version-file: package.json
-      - name: Install pinned Rust toolchain
-        run: rustup show
-      - uses: actions/cache@v6
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target/debug
-          key: examples-${{ runner.os }}-${{ hashFiles('Cargo.lock', 'rust-toolchain.toml') }}-${{ github.sha }}
-          restore-keys: examples-${{ runner.os }}-${{ hashFiles('Cargo.lock', 'rust-toolchain.toml') }}-
-      - run: bun install --frozen-lockfile
+      - parallel:
+          - name: Install pinned Rust toolchain
+            run: rustup show
+          - uses: actions/cache@v6
+            with:
+              path: |
+                ~/.cargo/registry
+                ~/.cargo/git
+                target/debug
+              key: examples-${{ runner.os }}-${{ hashFiles('Cargo.lock', 'rust-toolchain.toml') }}-${{ github.sha }}
+              restore-keys: examples-${{ runner.os }}-${{ hashFiles('Cargo.lock', 'rust-toolchain.toml') }}-
+          - run: bun install --frozen-lockfile
       # The compiler the example's Vite plugin finds, this checkout's.
       - run: cargo build --locked
       - run: bun run --cwd examples/vite-react build
@@ -197,29 +203,35 @@ jobs:
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version-file: package.json
-      - name: Install pinned toolchain and targets
-        run: |
-          rustup show
-          rustup target add wasm32-wasip1 wasm32-unknown-unknown
-      - name: Prepare the pinned rustc frontend
-        run: |
-          git init -q wasm/rustc
-          git -C wasm/rustc remote add origin https://github.com/rust-lang/rust.git
-          git -C wasm/rustc sparse-checkout set --cone compiler library/proc_macro
-          git -C wasm/rustc fetch -q --depth=1 --filter=blob:none origin "$(bun scripts/toolchain.ts commit)"
-          git -C wasm/rustc checkout -q FETCH_HEAD
-      - uses: actions/cache@v6
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            wasm/target
-          key: wasm-check-${{ runner.os }}-${{ hashFiles('wasm/Cargo.lock', 'wasm/patches/*', 'wasm/.cargo/config.toml', 'rust-toolchain.toml') }}
-          restore-keys: wasm-check-${{ runner.os }}-
-      - run: bun install --frozen-lockfile
-      - run: bunx --bun playwright install --with-deps chromium
+      - parallel:
+          # The rustc frontend's commit is the toolchain's, asked of its
+          # rustc: after it's installed, or two rustups download at once.
+          - name: Install pinned toolchain and targets, and its rustc frontend
+            run: |
+              rustup show
+              rustup target add wasm32-wasip1 wasm32-unknown-unknown
+              git init -q wasm/rustc
+              git -C wasm/rustc remote add origin https://github.com/rust-lang/rust.git
+              git -C wasm/rustc sparse-checkout set --cone compiler library/proc_macro
+              git -C wasm/rustc fetch -q --depth=1 --filter=blob:none origin "$(bun scripts/toolchain.ts commit)"
+              git -C wasm/rustc checkout -q FETCH_HEAD
+          - uses: actions/cache@v6
+            with:
+              path: |
+                ~/.cargo/registry
+                ~/.cargo/git
+                wasm/target
+              key: wasm-check-${{ runner.os }}-${{ hashFiles('wasm/Cargo.lock', 'wasm/patches/*', 'wasm/.cargo/config.toml', 'rust-toolchain.toml') }}
+              restore-keys: wasm-check-${{ runner.os }}-
+          - run: bun install --frozen-lockfile
+      # The browser, while the WASM builds: the tests after need it.
+      - name: Install the browser
+        id: browser
+        run: bunx --bun playwright install --with-deps chromium
+        background: true
       - name: Build WASM from the candidate sources
         run: bun run wasm
+      - wait: browser
       - name: Require native snapshots and browser parity
         env:
           RUST_JS_REQUIRE_WASM: '1'
