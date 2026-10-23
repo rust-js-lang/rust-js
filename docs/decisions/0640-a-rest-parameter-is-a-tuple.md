@@ -4,7 +4,7 @@ Status: Accepted. Extends [0221](0221-variadic-bindings.md), whose tuple
 was an emitter's arguments; amends [0313](0313-console-forms.md), whose
 `console` took one value per call, and [0443](0443-a-value-a-caller-may-leave-out-is-an-option.md),
 whose trailing `None` of a variadic binding was always given.
-Extended by [0663](0663-console-is-a-value-and-rest-arguments-are-one.md):
+Extended by [0667](0667-console-is-a-value-and-rest-arguments-are-one.md):
 rest arguments as a value, `&dyn js::Rest<T>`, spread.
 
 Amended below: a slice or a `Vec` is spread, and every rest parameter is

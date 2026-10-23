@@ -107,7 +107,7 @@ pub fn set_prototype_of(target: &Unknown, prototype: Option<&Unknown>) -> bool {
 /// [What a property is](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object/defineProperty#description),
 /// TypeScript's `PropertyDescriptor`: its value and whether it's
 /// `writable`, or its getter and setter, and whether it's `enumerable` and
-/// `configurable`. A dictionary, as webapi's are (ADR 0662): a struct of
+/// `configurable`. A dictionary, as webapi's are (ADR 0666): a struct of
 /// `Option`s, each `None` left out, the rest `..Default::default()`, or
 /// another descriptor's, `PropertyDescriptor { value: Some(&prev), ..props
 /// }`, which is `{ ...props, value: prev }`. What one `define_property` is

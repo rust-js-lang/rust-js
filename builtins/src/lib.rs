@@ -472,7 +472,7 @@ impl<'a, T: ?Sized + Takes<A>, A> Rest<T> for &'a Vec<A> {}
 /// Rest arguments as a value, spread: what a `fn` whose rest parameter is
 /// one is given, so a binding taken as one, `fn(&'static dyn Rest<dyn
 /// IntoUnknown>)` of `console::log`, is its JS function itself, `prev =
-/// console.log` (ADR 0663).
+/// console.log` (ADR 0667).
 impl<'a, T: ?Sized> Rest<T> for &'a dyn Rest<T> {}
 
 /// A tuple of up to 12, each item one `T` takes.

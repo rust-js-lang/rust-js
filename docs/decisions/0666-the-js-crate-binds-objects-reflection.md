@@ -1,4 +1,4 @@
-# 0662. The js crate binds `Object`'s reflection, a descriptor a dictionary
+# 0666. The js crate binds `Object`'s reflection, a descriptor a dictionary
 
 Status: Accepted. Amends [0283](0283-js-crate-covers-typescripts-es-library.md),
 whose `PropertyDescriptor` and `ProxyHandler` were made empty, `{}`, and

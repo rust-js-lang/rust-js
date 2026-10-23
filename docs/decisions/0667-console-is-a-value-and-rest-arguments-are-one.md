@@ -1,4 +1,4 @@
-# 0663. `console` is a value, and a `fn` of rest arguments is the JS function
+# 0667. `console` is a value, and a `fn` of rest arguments is the JS function
 
 Status: Accepted. Amends [0602](0602-a-binding-taken-as-a-fn-is-its-function.md),
 whose variadic binding taken as a `fn` stayed an arrow that read the

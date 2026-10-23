@@ -113,7 +113,7 @@ What it has:
   value: prev }`. What `define_properties` and `create` take is a
   `PropertyDescriptorMap`, a `Dict` of descriptors or a struct of them,
   `unsafe impl PropertyDescriptorMap for Logs<'_> {}`
-  ([ADR 0662](../../decisions/0662-the-js-crate-binds-objects-reflection.md)).
+  ([ADR 0666](../../decisions/0666-the-js-crate-binds-objects-reflection.md)).
 - **Whether the host has a global is `is_defined(binding)`,** `typeof X
   !== "undefined"`: `is_defined(set_immediate)`, which a browser hasn't
   ([Access to the global scope](../interop/global-scope.md#a-global-some-hosts-lack)).

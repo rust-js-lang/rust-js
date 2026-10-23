@@ -347,7 +347,7 @@ pub fn proxied(o: &'static Unknown) -> (String, String, bool) {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  // A descriptor and a handler are dictionaries (ADR 0662).
+  // A descriptor and a handler are dictionaries (ADR 0666).
   expect(js).toContain('const d = { value: "fixed", writable: false };');
   expect(js).toContain("const handler = {\n    get: (target, key) => {");
   expect(js).toContain("Reflect.setPrototypeOf(o, null)");

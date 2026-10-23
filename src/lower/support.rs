@@ -152,7 +152,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     .is_some_and(|t| self.tcx.fn_trait_kind_from_def_id(t).is_some()) =>
             {
                 // Of rest arguments as a value, which a `fn` pointer's call
-                // spreads and a `dyn Fn`'s would give as one array (ADR 0663).
+                // spreads and a `dyn Fn`'s would give as one array (ADR 0667).
                 let inputs = traits.principal().and_then(|p| p.skip_binder().args.types().next());
                 let rest = inputs.is_some_and(|args| match args.kind() {
                     ty::Tuple(items) => items.iter().any(|t| super::bindings::is_rest_value(self.tcx, t)),

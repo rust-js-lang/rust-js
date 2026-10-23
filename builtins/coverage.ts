@@ -4,7 +4,7 @@
 // statics and constructor, against what src binds by each function's link
 // name. `Array`, `String`, `Number`, `Math`, `Map` and `Set` are Rust's own
 // types' (`Vec`, `str`, `f64`, `HashMap`): not counted. Of `Object`, its
-// constructor's statics are (ADR 0662): its own members, `toString` and
+// constructor's statics are (ADR 0666): its own members, `toString` and
 // `hasOwnProperty`, are every value's, and `new Object()` a struct's.
 // See docs/decisions/0283-js-crate-covers-typescripts-es-library.md.
 

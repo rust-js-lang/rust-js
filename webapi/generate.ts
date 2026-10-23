@@ -175,7 +175,7 @@ const FIELD_TYPES: Record<string, string> = { "RequestInit.headers": "&'a Header
 
 // The globals at the crate root: `document`, `window`, `performance`, which
 // a worker has too, `navigator`, and `history`, the page's; and `console`,
-// a namespace's value (ADR 0663).
+// a namespace's value (ADR 0667).
 const GLOBALS: [string, string][] = [
   ["document", "Document"], ["window", "Window"], ["performance", "Performance"], ["navigator", "Navigator"], ["history", "History"],
   ["console", "Console"],
@@ -1425,7 +1425,7 @@ for (const name of NAMESPACES) {
   // A namespace that's a global value too, TypeScript's `declare var
   // console: Console`: the value's type, of no members of its own, as the
   // namespace's are its module's functions, read as values as any
-  // binding is (ADR 0663).
+  // binding is (ADR 0667).
   const value = GLOBALS.find(([global]) => global === name)?.[1];
   if (value) {
     line();

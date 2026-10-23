@@ -43,7 +43,7 @@ impl RevocableProxy {
 
 /// [A proxy's traps](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Proxy/Proxy/handler),
 /// TypeScript's `ProxyHandler`: a dictionary, as a `PropertyDescriptor` is
-/// (ADR 0662), of a closure JS keeps for each trap, `ProxyHandler { get:
+/// (ADR 0666), of a closure JS keeps for each trap, `ProxyHandler { get:
 /// Some(Box::new(|target, key, receiver| ..)), ..Default::default() }`; an
 /// operation without one is its target's. Each takes the target, and a
 /// key is a string or a symbol.

@@ -1,5 +1,5 @@
-// JS's object reflection, as the js crate binds `Object` (ADR 0662), and
-// `console` as a value, its functions read as values (ADR 0663): the
+// JS's object reflection, as the js crate binds `Object` (ADR 0666), and
+// `console` as a value, its functions read as values (ADR 0667): the
 // shapes React's `shared/ReactSerializationErrors.js` and
 // `shared/ConsolePatchingDev.js` are written in. Each test is a program of
 // its own, compiled and run.
@@ -31,7 +31,7 @@ function refused(name: string, source: string): string {
   return result.stderr.toString();
 }
 
-// ADR 0662: each of TypeScript's `ObjectConstructor` statics, typed as it
+// ADR 0666: each of TypeScript's `ObjectConstructor` statics, typed as it
 // types them, a descriptor a dictionary: a struct of `Option`s, each `None`
 // left out, one descriptor's update of another a spread.
 test("Object's statics are JS's, a property descriptor a dictionary", async () => {
@@ -89,7 +89,7 @@ pub fn symbols(o: &Unknown) -> usize {
   expect(lib.symbols({ [Symbol("s")]: 1, t: 2 })).toBe(1);
 });
 
-// ADR 0662: React's `isObjectPrototype`, `isGetter` and `objectName`, of
+// ADR 0666: React's `isObjectPrototype`, `isGetter` and `objectName`, of
 // `Object.prototype` as a value, `Object.getOwnPropertyNames`, `in`, and a
 // descriptor's getter.
 test("React's serialization errors read an object as upstream does", async () => {
@@ -165,7 +165,7 @@ pub fn object_name(object: Option<&Unknown>) -> String {
   expect([lib.objectName([]), lib.objectName(new Map()), lib.objectName({})]).toEqual(["Array", "Map", "Object"]);
 });
 
-// ADR 0663: `console` is a value, `webapi::console`, and its functions are
+// ADR 0667: `console` is a value, `webapi::console`, and its functions are
 // read as values as any binding is (ADR 0602): a variadic one taken as a
 // `fn` of rest arguments, `&dyn js::Rest<T>`, is its JS function itself,
 // which a call spreads. React's `disableLogs` and `reenableLogs`.
@@ -267,7 +267,7 @@ pub fn called(name: &'static str) {
   }
 });
 
-// ADR 0663: rest arguments as a value are a binding's, which a `fn`
+// ADR 0667: rest arguments as a value are a binding's, which a `fn`
 // pointer's call spreads; a Rust function or closure that takes them, or a
 // `dyn Fn` of them, whose call gives them as one array, is refused.
 test("rest arguments as a value are refused where a call wouldn't spread them", () => {

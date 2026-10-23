@@ -600,7 +600,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         for local in mir_body.args_iter().skip(skip).filter(|&l| Some(l) != formatter) {
             let ty = mir_body.local_decls[local].ty;
             // Rest arguments as a value are a binding's, which a `fn`
-            // pointer's call spreads (ADR 0663): a Rust function given them
+            // pointer's call spreads (ADR 0667): a Rust function given them
             // would be given only the first.
             if super::bindings::is_rest_value(self.tcx, ty) {
                 return Err(self.unsupported(

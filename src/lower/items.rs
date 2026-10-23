@@ -160,7 +160,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Err(self.unsupported(span, &what));
         }
         // Rest arguments as a value, its last, gathered as they're spread,
-        // `(...data) => console.log(...data)` (ADR 0663).
+        // `(...data) => console.log(...data)` (ADR 0667).
         let rest = super::bindings::is_variadic(self.tcx, def_id)
             && inputs
                 .last()

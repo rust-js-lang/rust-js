@@ -17,7 +17,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let ty::FnPtr(sig, _) = func.ty(&state.body.local_decls, self.tcx).kind() else {
             return Err(self.unsupported(span, "calling a function value, from its MIR"));
         };
-        // Rest arguments as a value, its last parameter, spread (ADR 0663):
+        // Rest arguments as a value, its last parameter, spread (ADR 0667):
         // the pointer is a variadic binding's JS function.
         let rest = (sig.skip_binder().inputs().last()).is_some_and(|&ty| bindings::is_rest_value(self.tcx, ty));
         let mut operands: Vec<&Operand<'tcx>> = vec![func];

@@ -787,7 +787,7 @@ pub(super) fn is_variadic(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
 }
 
 /// Whether `ty` is rest arguments as a value, `&dyn js::Rest<T>`, of the
-/// trait marked `#[rust_js::rest]` (ADR 0663): spread where it's given, to
+/// trait marked `#[rust_js::rest]` (ADR 0667): spread where it's given, to
 /// a variadic binding or to a `fn` pointer whose last parameter it is.
 pub(super) fn is_rest_value(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
     let path = [Symbol::intern("rust_js"), Symbol::intern("rest")];

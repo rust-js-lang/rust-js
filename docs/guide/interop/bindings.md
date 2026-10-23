@@ -135,7 +135,7 @@ A variadic binding, of a TypeScript rest parameter, is a `fn` of rest
 arguments as a value, `&'static dyn js::Rest<T>`, so it's the function
 itself, and a call of it spreads them, as a variadic binding's call does.
 A Rust function or closure that takes one is refused: it takes a slice
-([ADR 0663](../../decisions/0663-console-is-a-value-and-rest-arguments-are-one.md)).
+([ADR 0667](../../decisions/0667-console-is-a-value-and-rest-arguments-are-one.md)).
 `console` itself is `webapi::console`:
 
 ```rust
