@@ -285,7 +285,7 @@ export function report() {
       out += `err ${$displayJsonError(value._0)}\n`;
     }
   }
-  const v = $unwrapOk(
+  let v = $unwrapOk(
     $fromJson('{"name":"n","list":[1,2,3],"nested":{"k":"v"},"flag":true,"f":2.5}', $json.value),
     undefined,
     $debugJsonError,
@@ -316,7 +316,7 @@ export function report() {
   const j = { TAG: "Object", _0: map };
   out += `${$jsonValueText(j, false)}\n${$debugJsonValue(j)}\n`;
   const n = 5;
-  const name = "abc";
+  let name = "abc";
   const value$6 = new Map();
   value$6.set("n", { TAG: "Number", _0: $jsonInt(n) });
   value$6.set("name", { TAG: "String", _0: name });
@@ -846,28 +846,28 @@ export function report() {
       { TAG: "Object", _0: value$81 },
     ],
   });
-  const v$1 = { TAG: "Object", _0: value$80 };
-  out += `${$jsonValueText(v$1, true)}\n`;
-  const obj = $jsonValueAs(v$1, "Object");
+  v = { TAG: "Object", _0: value$80 };
+  out += `${$jsonValueText(v, true)}\n`;
+  let obj = $jsonValueAs(v, "Object");
   if (obj) {
     obj.set("d", { TAG: "String", _0: "new" });
     obj.delete("b");
   }
-  const copy = $jsonValueClone(v$1);
-  const items = $jsonValueAs($jsonIndex(v$1, "a"), "Array");
+  const copy = $jsonValueClone(v);
+  const items = $jsonValueAs($jsonIndex(v, "a"), "Array");
   if (items) {
     out += `${items.length} items\n`;
   }
-  const obj$1 = $jsonValueAs(v$1, "Object");
-  if (obj$1) {
-    obj$1.set("e", { TAG: "Bool", _0: false });
+  obj = $jsonValueAs(v, "Object");
+  if (obj) {
+    obj.set("e", { TAG: "Bool", _0: false });
   }
-  out += `${$jsonValueText(v$1, false)}\n${$jsonValueText(copy, false)}\n`;
-  for (const [key, value$1] of $sortedEntries($unwrap($jsonValueAs(v$1, "Object")), $cmp)) {
+  out += `${$jsonValueText(v, false)}\n${$jsonValueText(copy, false)}\n`;
+  for (const [key, value$1] of $sortedEntries($unwrap($jsonValueAs(v, "Object")), $cmp)) {
     out += `${key}=${$jsonValueText(value$1, false)};`;
   }
   out += "\n";
-  const keys = $sortedEntries($unwrap($jsonValueAs(v$1, "Object")), $cmp).map((entry) => entry[0]);
+  const keys = $sortedEntries($unwrap($jsonValueAs(v, "Object")), $cmp).map((entry) => entry[0]);
   out += `[${keys.map((item) => $debugStr(item)).join(", ")}]\n`;
   const d = "Null";
   out += `${$jsonValueText(d, false)} ${d === "Null"} ${"Null" === d}\n`;
@@ -877,9 +877,9 @@ export function report() {
     3,
     "i64",
   )}\n`;
-  const option = $jsonGet(v$1, "d");
-  const name$1 = (option != null ? $jsonValueAs(option, "String") : undefined) ?? "none";
-  out += `${name$1}\n`;
+  const option = $jsonGet(v, "d");
+  name = (option != null ? $jsonValueAs(option, "String") : undefined) ?? "none";
+  out += `${name}\n`;
   for (const text of [
     '{"kind":"Data","payload":{"z":[1,2]}}',
     '{"payload":"p","kind":"Data"}',

@@ -26,9 +26,9 @@ export function smallPartialEqSmall(AArray, BArray, AItemPartialEqBItem) {
 
 function smallPartialEqSmall_eq(small, other, AArray, BArray, AItemPartialEqBItem) {
   const value = AArray.items(small[0]);
-  other = BArray.items(other[0]);
+  const other$1 = BArray.items(other[0]);
   return (
-    value.length === other.length && value.every((x, i) => AItemPartialEqBItem.eq(x, other[i]))
+    value.length === other$1.length && value.every((x, i) => AItemPartialEqBItem.eq(x, other$1[i]))
   );
 }
 

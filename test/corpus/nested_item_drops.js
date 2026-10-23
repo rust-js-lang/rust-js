@@ -116,9 +116,9 @@ function firsts(iterable, dropI, dropIIntoIter, dropIItemItem, dropIItemIntoIter
 }
 
 function concat(iter, IItemExtendIItemItem, dropIItem, dropIIntoIter, dropIItemIntoIter) {
-  iter = $intoIter(iter);
+  const iter$1 = $intoIter(iter);
   const result = $reduce(
-    iter,
+    iter$1,
     (a, b) => {
       let self;
       try {
@@ -133,7 +133,7 @@ function concat(iter, IItemExtendIItemItem, dropIItem, dropIIntoIter, dropIItemI
     },
     true,
   );
-  dropIIntoIter?.(iter);
+  dropIIntoIter?.(iter$1);
   return result;
 }
 

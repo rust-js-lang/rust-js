@@ -169,7 +169,7 @@ function main() {
       console.log(`drop ${value$4.a[0]}`);
     }
   }
-  const pair = early(false);
+  let pair = early(false);
   let pair$0$live = true;
   if (pair) {
     pair$0$live = false;
@@ -204,7 +204,7 @@ function main() {
     }
   };
   console.log(`check ${check(10)}`);
-  const pair$1 = (stop) => {
+  pair = (stop) => {
     const noisy = make(11);
     if (stop) {
       const result = undefined;
@@ -213,7 +213,7 @@ function main() {
     }
     return { a: noisy, b: 2 };
   };
-  const value$5 = pair$1(true);
+  const value$5 = pair(true);
   try {
     console.log(`pair ${!value$5}`);
   } finally {

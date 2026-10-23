@@ -34,4 +34,12 @@ export const mutations: Mutation[] = [
     replace: "    let call = StmtKind::Expr(Expr::call(Expr::arrow(params.to_vec(), body.to_vec()), args.clone())).at(stmt.span);\n    block_of(&call, whole, false).filter(|_| false)\n",
     tests: ["test/lowering.test.ts", "-t", "a Drop dropped once"],
   },
+  {
+    name: "tried-return-called",
+    breaks: "`catch_unwind(|| { .. })`'s body returned stays a closure called in the `try`",
+    file: "src/js/applied.rs",
+    find: "            match body_of(value).filter(|body| body.last().is_some_and(ends)) {\n",
+    replace: "            match body_of(value).filter(|_| false) {\n",
+    tests: ["test/lowering-unwinds.test.ts", "-t", "getIODescription"],
+  },
 ];

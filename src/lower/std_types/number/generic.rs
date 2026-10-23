@@ -214,7 +214,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             TypeFact::Name => "type_name",
             TypeFact::Id => "the `TypeId`",
             TypeFact::NeedsDrop => "needs_drop",
-            TypeFact::Map | TypeFact::Set => "a map's class",
+            TypeFact::Map | TypeFact::Set | TypeFact::TreeMap | TypeFact::TreeSet => "a map's class",
             TypeFact::Sort => "an unstable sort",
             TypeFact::Fused => "whether it's a `FusedIterator`",
         };
@@ -269,8 +269,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // The class of a map keyed by it, as one made where its type's known
         // is (ADR 0466).
-        if matches!(fact, TypeFact::Map | TypeFact::Set) {
-            return self.map_class(fact == TypeFact::Set, Some(of), span);
+        if let Some((set, sorted)) = fact.map_kind() {
+            return self.map_class(set, sorted, Some(of), span);
         }
         // Whether its `Fuse` keeps it as it ends (ADR 0543).
         if fact == TypeFact::Fused {

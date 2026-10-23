@@ -31,22 +31,22 @@ function main() {
   console.log(`${n}`);
 
   const slice = [1, 2, 3];
-  const cells = $mutItems(slice);
+  let cells = $mutItems(slice);
   bumpAll(cells);
   console.log(`${cells.length} [${slice.join(", ")}]`);
 
   const array = [1, 2, 3];
-  const cells$1 = $mutItems(array);
-  cells$1[0].value = 99;
-  $cellSwap(cells$1[1], cells$1[2]);
+  cells = $mutItems(array);
+  cells[0].value = 99;
+  $cellSwap(cells[1], cells[2]);
   console.log(`[${array.join(", ")}]`);
 
   reset(array);
   console.log(`[${array.join(", ")}]`);
 
   const words = ["a", "b"];
-  const cells$2 = $mutItems(words);
-  cells$2[1].value = "z";
+  cells = $mutItems(words);
+  cells[1].value = "z";
   console.log(`[${words.map((item) => $debugStr(item)).join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

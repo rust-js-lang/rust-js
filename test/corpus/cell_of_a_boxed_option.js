@@ -24,7 +24,7 @@ function formatClone_clone(format, IClone) {
 
 function main() {
   const words = { inner: ["a"] };
-  const copy = formatClone_clone(words, { clone: (value) => value });
+  let copy = formatClone_clone(words, { clone: (value) => value });
   const old = words.inner;
   words.inner = undefined;
   const old$1 = copy.inner;
@@ -33,11 +33,11 @@ function main() {
     `${old == null ? "None" : `Some([${old.map((item) => $debugStr(item)).join(", ")}])`} ${old$1 == null ? "None" : `Some([${old$1.map((item) => $debugStr(item)).join(", ")}])`}`,
   );
   const nested = { inner: $some(undefined) };
-  const copy$1 = formatClone_clone(nested, { clone: (value) => value });
+  copy = formatClone_clone(nested, { clone: (value) => value });
   const old$2 = nested.inner;
   nested.inner = undefined;
-  const old$3 = copy$1.inner;
-  copy$1.inner = undefined;
+  const old$3 = copy.inner;
+  copy.inner = undefined;
   console.log(
     `${old$2 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(old$2))})`} ${old$3 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(old$3))})`}`,
   );

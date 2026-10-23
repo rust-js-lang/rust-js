@@ -60,11 +60,11 @@ function main() {
 
   // The loop changes the collection it started with, whatever `cur`
   // holds after.
-  const a = [1, 2];
-  const b = [10, 20];
+  let a = [1, 2];
+  let b = [10, 20];
   let cur = a;
-  const iter = $iter($mutItems(cur));
-  const x = $next(iter);
+  let iter = $iter($mutItems(cur));
+  let x = $next(iter);
   if (x != null) {
     cur = b;
     x.value = (x.value + 1) | 0;
@@ -73,16 +73,16 @@ function main() {
   console.log(`[${a.join(", ")}] [${b.join(", ")}]`);
 
   // And if it's a field that holds the reference.
-  const a$1 = [1, 2];
-  const b$1 = [10, 20];
-  const h = { list: a$1 };
-  const iter$1 = $iter($mutItems(h.list));
-  const x$1 = $next(iter$1);
-  if (x$1 != null) {
-    h.list = b$1;
-    x$1.value = (x$1.value + 1) | 0;
+  a = [1, 2];
+  b = [10, 20];
+  const h = { list: a };
+  iter = $iter($mutItems(h.list));
+  x = $next(iter);
+  if (x != null) {
+    h.list = b;
+    x.value = (x.value + 1) | 0;
   }
   h.list[$at(h.list, 0)] = (h.list[0] + 5) | 0;
-  console.log(`[${a$1.join(", ")}] [${b$1.join(", ")}]`);
+  console.log(`[${a.join(", ")}] [${b.join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

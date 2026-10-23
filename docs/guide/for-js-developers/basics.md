@@ -98,7 +98,44 @@ export function banner(count) {
 ```
 
 Rust lets you shadow a name with a new `let`, `let input = input.trim();`.
-JS can't, so the second one gets a suffix, `input$1`.
+Where nothing reads the old one after it, the new one is the same JS
+variable, assigned, a `let` now. Where something still can, a closure made
+before it, a loop's next turn, a drop at the block's end, JS can't declare
+the name twice, so the new one gets a suffix, `count$1`:
+
+```rust
+pub fn label(input: &str) -> String {
+    let label = input.trim();
+    let mut label = label.to_uppercase();
+    label.push('!');
+    label
+}
+
+pub fn counted(start: u32) -> (u32, u32) {
+    let count = start;
+    let read = move || count;
+    let count = count + 1;
+    (read(), count)
+}
+```
+
+```js
+import { $trim } from "@rust-js/runtime";
+
+export function label(input) {
+  let label = $trim(input);
+  label = label.toUpperCase();
+  label += "!";
+  return label;
+}
+
+export function counted(start) {
+  const count = start;
+  const read = () => count;
+  const count$1 = (count + 1) >>> 0;
+  return [read(), count$1];
+}
+```
 
 ## Numbers
 
@@ -1187,6 +1224,11 @@ export function label(text) {
   ok).and_then(|v| js::get(v, key))` before a fallback is `(ok &&
   value?.[key]) || ..`, as React writes it
   ([ADR 0647](../../decisions/0647-type-name-as-react-writes-it.md)).
+- A `let mut` set again where it's falsy is one `||` too: `let mut name =
+  error.name(); if name.is_empty() { name = "Error".to_string(); }` is
+  `const name = error.name || "Error";`, as React writes it, and set again
+  where it's `None`, `is_none()`, `??`
+  ([ADR 0651](../../decisions/0651-a-let-then-its-fallback-is-or.md)).
 
 A value JS gives you that may be `null` is an `Option` too:
 [JavaScript types](../interop/types.md).

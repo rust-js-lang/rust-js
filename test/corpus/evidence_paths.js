@@ -132,20 +132,19 @@ function main() {
   console.log(`${iDigits.digitSum($iter([1, 2, 3]))}`);
   const p = { x: 1 };
   const self = { value: p };
-  const before = pointMovableS(
-    { clone: (value) => value },
-    { add: (a, b) => (a + b) | 0 },
-  ).translate(self, 3);
+  let before = pointMovableS({ clone: (value) => value }, { add: (a, b) => (a + b) | 0 }).translate(
+    self,
+    3,
+  );
   $assign(p, self.value);
   console.log(`${before} ${pointPositionedS_x(p, { clone: (value) => value })}`);
   const bag = { x: [[1]] };
   const self$1 = { value: bag };
-  const before$1 = pointMovableS({ clone: (value) => [value[0].slice()] }, bagAdd).translate(
-    self$1,
-    [[2, 3]],
-  );
+  before = pointMovableS({ clone: (value) => [value[0].slice()] }, bagAdd).translate(self$1, [
+    [2, 3],
+  ]);
   $assign(bag, self$1.value);
   const value$1 = pointPositionedS_x(bag, { clone: (value) => [value[0].slice()] });
-  console.log(`${bagDebug_fmt(before$1)} ${bagDebug_fmt(value$1)}`);
+  console.log(`${bagDebug_fmt(before)} ${bagDebug_fmt(value$1)}`);
 }
 //# sourceMappingURL=case.js.map

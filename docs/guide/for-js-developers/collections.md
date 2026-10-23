@@ -661,7 +661,85 @@ export function scores() {
 }
 ```
 
-([ADR 0059](../../decisions/0059-hashmap.md), [ADR 0121](../../decisions/0121-value-keys.md).)
+A key whose `Ord` you wrote yourself is found by it, as std's B-tree finds
+it: the map is an `$ordMap` of that `cmp`, its entries kept in its order,
+and a key it finds `Equal` finds the one the map holds:
+
+```rust
+use std::cmp::Ordering;
+use std::collections::BTreeSet;
+
+#[derive(Debug)]
+pub struct Release {
+    pub major: u32,
+    pub name: String,
+}
+
+impl PartialEq for Release {
+    fn eq(&self, other: &Self) -> bool {
+        self.major == other.major
+    }
+}
+
+impl Eq for Release {}
+
+impl PartialOrd for Release {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for Release {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.major.cmp(&other.major)
+    }
+}
+
+pub fn named(releases: &BTreeSet<Release>, major: u32) -> Option<&str> {
+    let probe = Release { major, name: String::new() };
+    releases.get(&probe).map(|release| release.name.as_str())
+}
+
+pub fn releases() -> BTreeSet<Release> {
+    BTreeSet::new()
+}
+```
+
+```js
+import { $cmp, $ordSet, $storedKey } from "@rust-js/runtime";
+
+export const releasePartialEq = { eq: releasePartialEq_eq };
+
+function releasePartialEq_eq(release, other) {
+  return release.major === other.major;
+}
+
+export const releasePartialOrd = {
+  PartialEq: () => releasePartialEq,
+  partialCmp: releasePartialOrd_partialCmp,
+};
+
+function releasePartialOrd_partialCmp(release, other) {
+  return releaseOrd_cmp(release, other);
+}
+
+export const releaseOrd = { PartialOrd: () => releasePartialOrd, cmp: releaseOrd_cmp };
+
+function releaseOrd_cmp(release, other) {
+  return $cmp(release.major, other.major);
+}
+
+export function named(releases, major) {
+  const probe = { major, name: "" };
+  return $storedKey(releases, probe)?.name;
+}
+
+export function releases() {
+  return new ($ordSet(releaseOrd_cmp))();
+}
+```
+
+([ADR 0059](../../decisions/0059-hashmap.md), [ADR 0121](../../decisions/0121-value-keys.md), [ADR 0404](../../decisions/0404-a-b-tree-keyed-by-value.md).)
 
 ## Objects as dictionaries
 
@@ -833,8 +911,7 @@ export function safePrefix(s) {
 export function build(names) {
   let out = "";
   for (const name of names) {
-    out += name;
-    out += ";";
+    out += name + ";";
   }
   return out;
 }
@@ -882,7 +959,7 @@ export function toNumber(s) {
 | `s.indexOf(t)` | `s.find(t)`, an `Option`: `s.indexOf(t)` where it's only a place to cut `s` at |
 | `s.slice(a, b)` | `&s[a..b]`: `s.slice(a, b)` at places found in `s`; `s.get(a..b)` for an `Option` |
 | `s.startsWith(p) ? s.slice(n) : ..` | `s.strip_prefix(p)`, an `Option`; `strip_suffix` of `endsWith` |
-| `s += t` | `s.push_str(t)` on a `String` |
+| `s += t` | `s.push_str(t)` on a `String`; two in a row, one a value and one text written out, are one, `s += name + ";"` ([ADR 0652](../../decisions/0652-consecutive-appends-are-one.md)) |
 | `Number(s)` | `s.parse::<f64>()`, a `Result` |
 
 - **Offsets are bytes,** so `&s[..3]` of `"héllo"` is `"hé"`. A slice

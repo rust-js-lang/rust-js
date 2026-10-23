@@ -64,8 +64,8 @@ function main() {
   cur$1.count = (cur$1.count + 1) | 0;
   cur.count = (cur.count + 5) | 0;
   console.log(`${a.count} ${b.count}`);
-  const xs = [1, 2];
-  const ys = [10, 20];
+  let xs = [1, 2];
+  let ys = [10, 20];
   let list = xs;
   $index(list, 0);
   const item = list;
@@ -75,37 +75,37 @@ function main() {
   console.log(`[${xs.join(", ")}] [${ys.join(", ")}]`);
 
   // Through a reference in a field that's assigned again: the same.
-  const xs$1 = [1, 2];
-  const ys$1 = [10, 20];
+  xs = [1, 2];
+  ys = [10, 20];
   const na = { count: 1 };
   const nb = { count: 10 };
-  const h = { list: xs$1, node: na };
+  const h = { list: xs, node: na };
   $index(h.list, 0);
   const { list: list$2, node } = h;
-  h.list = ys$1;
+  h.list = ys;
   h.node = nb;
   list$2[0] = (list$2[0] + 1) | 0;
   node.count = (node.count + 1) | 0;
   h.list[$at(h.list, 1)] = (h.list[1] + 1) | 0;
-  console.log(`[${xs$1.join(", ")}] [${ys$1.join(", ")}] ${na.count} ${nb.count}`);
+  console.log(`[${xs.join(", ")}] [${ys.join(", ")}] ${na.count} ${nb.count}`);
 
   // In an element, or behind another reference: the same.
-  const xs$2 = [1, 2];
-  const ys$2 = [10, 20];
-  const refs = [xs$2];
+  xs = [1, 2];
+  ys = [10, 20];
+  const refs = [xs];
   $index(refs[0], 0);
   const item$1 = refs[0];
-  refs[0] = ys$2;
+  refs[0] = ys;
   item$1[0] = (item$1[0] + 1) | 0;
-  console.log(`[${xs$2.join(", ")}] [${ys$2.join(", ")}]`);
-  const xs$3 = [1, 2];
-  const ys$3 = [10, 20];
-  let list$1 = xs$3;
+  console.log(`[${xs.join(", ")}] [${ys.join(", ")}]`);
+  xs = [1, 2];
+  ys = [10, 20];
+  let list$1 = xs;
   $index(list$1, 0);
   const item$2 = list$1;
-  list$1 = ys$3;
+  list$1 = ys;
   item$2[0] = (item$2[0] + 1) | 0;
-  console.log(`[${xs$3.join(", ")}] [${ys$3.join(", ")}]`);
+  console.log(`[${xs.join(", ")}] [${ys.join(", ")}]`);
 
   // A field of an element, and an element of an element.
   const nodes = [{ count: 1 }, { count: 2 }];

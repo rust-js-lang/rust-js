@@ -68,6 +68,9 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             || self.tcx.is_diagnostic_item(rustc_span::sym::PinMacroHelper, adt.did())
             // A `NonZero`, its number (ADR 0177), in std's `NonZeroU8Inner`.
             || is_non_zero(adt.did())
+            // An `AssertUnwindSafe`, what it holds, which rustc checks
+            // where it's needed (ADR 0660).
+            || std_path(self.tcx, adt.did()) == "std::panic::AssertUnwindSafe"
             || std_path(self.tcx, adt.did()).starts_with("std::num::niche_types::");
         // A `MaybeUninit` is a union of it and `()`.
         let mut held = adt.all_fields().map(|field| self.field_ty(field, args));

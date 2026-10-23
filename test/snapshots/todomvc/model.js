@@ -73,8 +73,11 @@ export function load() {
   }
   const json = storage.getItem(KEY);
   if (json != null) {
-    const result = $try(() => JSON.parse(json));
-    return result.TAG === "Ok" ? result._0 : [];
+    try {
+      return JSON.parse(json);
+    } catch {
+      return [];
+    }
   }
   return [];
 }

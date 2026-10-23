@@ -104,7 +104,7 @@ function main() {
       .map((x) => (x * 2) | 0)
       .reduce((a, b) => (a + b) | 0, 0)}`,
   );
-  const ids = $iterator({ start: 1 }, $rangeFromNext).take(3).toArray();
+  let ids = $iterator({ start: 1 }, $rangeFromNext).take(3).toArray();
   const numbered = $lazyZip(
     $iterator({ start: 1 }, $rangeFromNext),
     $iter(Array.from("abc")),
@@ -123,13 +123,13 @@ function main() {
   );
 
   const w = { rows: { start: 1, end: 3 } };
-  const letters = ["a", "b", "c", "d"];
+  let letters = ["a", "b", "c", "d"];
   console.log(
     `[${$slice(letters, w.rows.start, w.rows.end)
       .map((item) => $debugStr(item))
       .join(", ")}]`,
   );
-  const iter = w.rows;
+  let iter = w.rows;
   while (true) {
     const row = $rangeNext(iter);
     if (row == null) {
@@ -138,9 +138,9 @@ function main() {
     $print(`${row} `);
   }
   const span = { start: 10, end: 12 };
-  const iter$1 = span;
+  iter = span;
   while (true) {
-    const n = $rangeInclusiveNext(iter$1);
+    const n = $rangeInclusiveNext(iter);
     if (n == null) {
       break;
     }
@@ -165,11 +165,11 @@ function main() {
   $rangeNext(a);
   const b = { start: a.start, end: a.end };
   $rangeNext(a);
-  const ids$1 = { start: 100 };
-  const firstId = $rangeFromNext(ids$1);
-  const secondId = $rangeFromNext(ids$1);
+  ids = { start: 100 };
+  const firstId = $rangeFromNext(ids);
+  const secondId = $rangeFromNext(ids);
   console.log(
-    `${a.start}..${a.end} ${b.start}..${b.end} ${firstId == null ? "None" : `Some(${firstId})`} ${secondId == null ? "None" : `Some(${secondId})`} ${ids$1.start}.. ${$rangeLen(
+    `${a.start}..${a.end} ${b.start}..${b.end} ${firstId == null ? "None" : `Some(${firstId})`} ${secondId == null ? "None" : `Some(${secondId})`} ${ids.start}.. ${$rangeLen(
       { start: 0, end: 5 },
     )}`,
   );
@@ -202,20 +202,20 @@ function main() {
   console.log(`[${gone.join(", ")}] [${numbers.join(", ")}] [${$slice(numbers, 0, 2).join(", ")}]`);
 
   // `char`s step past the surrogates, which no `char` is.
-  const letters$1 = $iterator({ start: "a", end: "e" }, $rangeNext).toArray().join("");
+  letters = $iterator({ start: "a", end: "e" }, $rangeNext).toArray().join("");
   const around = $iterator({ start: "퟾", end: "" }, $rangeInclusiveNext).toArray();
   const kept = new Set();
   $extendMap(kept, $charRange("퟾", "", true), true);
-  const iter$2 = { start: "x", end: "z" };
+  iter = { start: "x", end: "z" };
   while (true) {
-    const c = $rangeInclusiveNext(iter$2);
+    const c = $rangeInclusiveNext(iter);
     if (c == null) {
       break;
     }
     $print(c);
   }
   console.log(
-    ` ${letters$1} [${around.map((item) => $debugStr(item, "'")).join(", ")}] ${kept.size} ${"a" <= "hat" && "hat" < "m"}`,
+    ` ${letters} [${around.map((item) => $debugStr(item, "'")).join(", ")}] ${kept.size} ${"a" <= "hat" && "hat" < "m"}`,
   );
 }
 

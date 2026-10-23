@@ -6,7 +6,7 @@
 import { beforeAll, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { buildReact, compiler, fixture, run, target } from "./support";
+import { buildNode, buildReact, compiler, fixture, run, target } from "./support";
 
 beforeAll(buildReact, 600_000);
 
@@ -696,4 +696,115 @@ pub fn main() {
   const js = readFileSync(join(dir, "mir.js"), "utf8");
   expect(js).toContain('const value = parse("x");');
   expect(js).not.toContain("((result) =>");
+});
+
+// ADR 0652: a `String` appended to twice, one after the other, is one `+=`
+// of the two joined by `+`, as React's DefaultPrepareStackTraceV8 writes
+// `stack += '\n    at ' + structuredStackTrace[i].toString();`. Its JS was
+//
+//   for (const callSite of structuredStackTrace) {
+//     stack += '\n    at ';
+//     stack += callSite.toString();
+//   }
+//
+// Two pieces of text written out are one. Not where the second reads the
+// string, which sees the first appended; nor a number's, whose `+` rounds
+// at each step; nor two strings' appends, one each; and two values, each
+// with its text, a line each.
+test("consecutive appends to a string are one +=", async () => {
+  const dir = fixture("consecutive-appends");
+  const node = buildNode();
+  writeFileSync(join(dir, "lib.rs"), `use js::JsError;
+use node::CallSite;
+
+pub fn prepare_stack_trace(error: &JsError, structured_stack_trace: &[&CallSite]) -> String {
+    let mut name = error.name();
+    if name.is_empty() {
+        name = "Error".to_string();
+    }
+    let message = error.message();
+    let mut stack = name + ": " + &message;
+    for call_site in structured_stack_trace {
+        stack += "\\n    at ";
+        stack += &call_site.to_string();
+    }
+    stack
+}
+
+pub fn asked(x: &str) -> String {
+    let mut t = x.trim().to_string();
+    t.push('!');
+    t.push('?');
+    t.push_str(x);
+    t
+}
+
+pub fn doubled(t: &str) -> String {
+    let mut s = t.to_string();
+    s.push('a');
+    s.push_str(&s.clone());
+    s
+}
+
+pub fn stepped(x: f64) -> f64 {
+    let mut f = x;
+    f += 1.0;
+    f += 1.0;
+    f
+}
+
+pub fn lines(a: &str, b: &str) -> String {
+    let mut out = String::new();
+    out += a;
+    out += "\\n";
+    out += b;
+    out += "\\n";
+    out
+}
+
+pub fn paired(x: &str) -> String {
+    let mut a = String::new();
+    let mut b = String::new();
+    a.push_str(x);
+    b.push('-');
+    format!("{b}|{a}")
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `node=${join(node, "libnode.rmeta")}`, "--extern", `js=${join(node, "libjs.rmeta")}`, "-L", node]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain(`  let stack = name + ": " + message;
+  for (const callSite of structuredStackTrace) {
+    stack += "\\n    at " + callSite.toString();
+  }
+`);
+  expect(js).toContain('  let t = $trim(x);\n  t += "!?" + x;\n');
+  expect(js).toContain('  s += "a";\n  s += s;\n');
+  expect(js).toContain("  f++;\n  f++;\n");
+  // Of a value each, a line each.
+  expect(js).toContain('  out += a + "\\n";\n  out += b + "\\n";\n');
+  const lib = await import(join(dir, "lib.js"));
+  const sites = [{ toString: () => "f (a.js:1)" }, { toString: () => "g (b.js:2)" }];
+  expect(lib.prepareStackTrace({ name: "", message: "m" }, sites)).toBe("Error: m\n    at f (a.js:1)\n    at g (b.js:2)");
+  expect([lib.asked(" a "), lib.doubled("x"), lib.stepped(1e16), lib.paired("x"), lib.lines("a", "b")]).toEqual([
+    "a!? a ",
+    "xaxa",
+    1e16,
+    "-|x",
+    "a\nb\n",
+  ]);
+  // V8's own hook, in Node, of its call sites, an error's name its own or
+  // none.
+  writeFileSync(join(dir, "package.json"), '{ "type": "module" }');
+  writeFileSync(join(dir, "run.js"), `import { prepareStackTrace } from "./lib.js";
+
+Error.prepareStackTrace = prepareStackTrace;
+const named = new TypeError("boom").stack.split("\\n");
+const error = new Error("plain");
+error.name = "";
+const unnamed = error.stack.split("\\n");
+console.log(JSON.stringify({ named: named[0], at: named[1].startsWith("    at "), unnamed: unnamed[0] }));
+`);
+  const p = Bun.spawnSync(["node", "run.js"], { cwd: dir, stderr: "pipe" });
+  expect([p.exitCode, p.stderr.toString()]).toEqual([0, ""]);
+  expect(JSON.parse(p.stdout.toString())).toEqual({ named: "TypeError: boom", at: true, unnamed: "Error: plain" });
 });

@@ -79,3 +79,11 @@ or `BTreeSet<T>` of a `K: Ord` was refused (#165). A B-tree's is asked
 too, its order its key's `Ord` dictionary's, as a sorted map's always
 is. Held by `test/corpus/generic_btree_keys.rs`. A crate trait's
 associated type as a key, `HashMap<T::Id, T>`, is still refused.
+
+## Amendment: a B-tree's own fact
+
+A generic B-tree was given its caller's `Map` or `Set` fact, a hashed
+map's class: a `$KeyMap` of keys whose `Ord` is the crate's own, which
+finds a key by its fields, not by its `cmp`. A B-tree asks its own fact,
+`TreeMap` or `TreeSet` (`TypeFact::of_map`), whose class may be an
+`$ordMap(cmp)` ([ADR 0404](0404-a-b-tree-keyed-by-value.md) amended).

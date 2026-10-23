@@ -186,4 +186,12 @@ export const mutations: Mutation[] = [
     replace: "            (None, Some(_)) => match None::<(FieldIdx, String)> {\n",
     tests: ["test/corpus.test.ts", "-t", "^closure_writes_captured_formatter.rs$"],
   },
+  {
+    name: "unwritten-writer-read",
+    breaks: "a writer that fails having written nothing, whose `let` tidy took, reads its undeclared string, a ReferenceError",
+    file: "src/lower/mir/writer.rs",
+    find: "            true if js::mentions_in(out, name) == 0 => {\n",
+    replace: "            true if false => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^fmt_error_unwritten.rs$"],
+  },
 ];

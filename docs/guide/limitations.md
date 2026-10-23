@@ -104,7 +104,6 @@ keys by value and never hashes ([ADR 0121](../decisions/0121-value-keys.md)).
 
 ## Panics, processes and I/O
 
-- `catch_unwind`: `let r = std::panic::catch_unwind(|| 1); println!("{}", r.is_ok());`
 - `panic::set_hook`: `std::panic::set_hook(Box::new(|_| {}));`
 - `process::abort`: `std::process::abort();`
 - Standard input: `let mut s = String::new(); let _ = std::io::stdin().read_line(&mut s);`

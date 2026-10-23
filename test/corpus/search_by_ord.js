@@ -21,7 +21,7 @@ function versionDebug_fmt(version) {
 }
 
 function main() {
-  const levels = [
+  let levels = [
     { TAG: "High", name: "b" },
     { TAG: "Mid", _0: 3 },
     "Low",
@@ -56,7 +56,7 @@ function main() {
       `${levelDebug_fmt(probe)} ${arg.TAG === "Ok" ? `Ok(${arg._0})` : `Err(${arg._0})`}`,
     );
   }
-  const versions = [
+  let versions = [
     [1, 0, "a"],
     [1, 2, "b"],
     [2, 0, ""],
@@ -93,7 +93,7 @@ function main() {
     return aKey == bKey;
   });
   console.log(`[${names.map((item) => $debugStr(item)).join(", ")}]`);
-  const levels$1 = [
+  levels = [
     { TAG: "Mid", _0: 1 },
     { TAG: "Mid", _0: 2 },
     "Low",
@@ -108,24 +108,24 @@ function main() {
       return "mid";
     }
   };
-  $dedupByCells(levels$1, (a, b) => {
+  $dedupByCells(levels, (a, b) => {
     const aKey = key$1(a);
     const bKey = key$1(b);
     return aKey == bKey;
   });
-  console.log(`[${levels$1.map((item) => levelDebug_fmt(item)).join(", ")}]`);
-  const versions$1 = [
+  console.log(`[${levels.map((item) => levelDebug_fmt(item)).join(", ")}]`);
+  versions = [
     [1, 0, "a"],
     [1, 0, "b"],
     [1, 2, "c"],
     [1, 0, "d"],
   ];
   const key$2 = (v) => [v[0], v[1]];
-  $dedupBy(versions$1, (a, b) => {
+  $dedupBy(versions, (a, b) => {
     const aKey = key$2(a);
     const bKey = key$2(b);
     return $eq(aKey, bKey);
   });
-  console.log(`[${versions$1.map((item) => versionDebug_fmt(item)).join(", ")}]`);
+  console.log(`[${versions.map((item) => versionDebug_fmt(item)).join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

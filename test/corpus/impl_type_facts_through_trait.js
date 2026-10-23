@@ -89,14 +89,14 @@ function parsed(text, TSize) {
 }
 
 function main() {
-  const s = stackFromIteratorT_fromIter($iter([1, 2, 3]), 1);
-  const u = stackFromIteratorT_fromIter($iter([undefined, undefined]), 0);
+  let s = stackFromIteratorT_fromIter($iter([1, 2, 3]), 1);
+  let u = stackFromIteratorT_fromIter($iter([undefined, undefined]), 0);
   console.log(`${s.items.length} ${s.sized} ${u.items.length} ${u.sized}`);
-  const s$1 = stackClone_clone(s, { clone: (value) => value }, 1);
-  const u$1 = stackClone_clone(u, { clone: (value) => value }, 0);
-  fill(s$1, 4, { clone: (value) => value }, 1);
-  fill(u$1, undefined, { clone: (value) => value }, 0);
-  console.log(`${s$1.items.length} ${s$1.sized} ${u$1.items.length} ${u$1.sized}`);
+  s = stackClone_clone(s, { clone: (value) => value }, 1);
+  u = stackClone_clone(u, { clone: (value) => value }, 0);
+  fill(s, 4, { clone: (value) => value }, 1);
+  fill(u, undefined, { clone: (value) => value }, 0);
+  console.log(`${s.items.length} ${s.sized} ${u.items.length} ${u.sized}`);
   const a = copied([1, 2], { clone: (value) => value }, 4);
   const b = copied([undefined, undefined], { clone: (value) => value }, 0);
   const c = parsed("abc", 2);

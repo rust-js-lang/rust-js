@@ -99,6 +99,14 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^returned_closure_drops.rs$"],
   },
   {
+    name: "transparent-made-here",
+    breaks: "a closure that holds a value with a destructor, in an `AssertUnwindSafe` given to `catch_unwind`, is refused as made where it's not kept",
+    file: "src/lower/drops/facts.rs",
+    find: "                ExprKind::Adt(..) if self.cx.recognition.transparent(self.thir[parent].ty).is_some() => child = parent,\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "catch_unwind_payloads"],
+  },
+  {
     name: "closure-block-value-refused",
     breaks: "a closure holding an `Rc` made as a block's value for a `let` is refused",
     file: "src/lower/drops/facts.rs",

@@ -771,6 +771,23 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### Changed
 
+- **Consecutive appends to a `String` are one `+=`** (ADR 0652): React's
+  `prepareStackTrace` is `stack += "\n    at " + callSite.toString();`,
+  where `stack += "\n    at "; stack += &call_site.to_string();` was two;
+  of one value and the text around it, or text alone, `t += "!?"`, and
+  not where the second reads the string.
+- **A `let`, then its fallback where it's falsy, is `||`** (ADR 0651):
+  React's `prepareStackTrace` is `const name = error.name || "Error";`,
+  where `let mut name = error.name(); if name.is_empty() { .. }` was `let
+  name = error.name; if (!name) { name = "Error"; }`; and set where it's
+  `None`, `const v = o ?? 3`.
+- **A `let` that shadows a binding read no more is that binding** (ADR
+  0650): React's `formatOwnerStack` is `let stack = error.stack ?? "";
+  .. if (..) { stack = stack.slice(29); }`, one variable, set again, where
+  `let mut stack = stack.as_str();` was `let stack$1 = stack;`. Of a
+  binding of the shadow's own block or a parameter, the program's own,
+  that nothing reads after it, a closure, a handle or a drop neither; a
+  loop's `let` never takes one from outside it.
 - **`#[inline(never)]` is `/** @noinline */`** (ADR 0649), Closure
   Compiler's annotation, in the function's JSDoc where it has one, as
   React keeps `testStringCoercion` out of line; rust-js keeps it a function
@@ -939,6 +956,10 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### Fixed
 
+- **A writer that fails having written nothing** (ADR 0187 amended), `fn
+  fmt(&self, _: &mut fmt::Formatter) -> fmt::Result { Err(fmt::Error) }`,
+  threw a `ReferenceError` of the string tidy had taken; it's `throw
+  $fmtWritten(error, "")`.
 - **rustc crashed** on a const argument in a signature of a trait nothing
   implements, `FixedOutput<'_, 10>`, which the analysis of what calls
   reach a function typechecked too early (ADR 0577 amended).

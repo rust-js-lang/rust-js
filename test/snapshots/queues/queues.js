@@ -162,11 +162,11 @@ export function heaps() {
   let popped = "";
   for (let i = 0; i < 4; i++) {
     popped += $unwrap($heapPop(h, taskOrd_cmp)).name;
-    popped += Iterator.from(h)
-      .map((t) => t.name)
-      .toArray()
-      .join("");
-    popped += " ";
+    popped +=
+      Iterator.from(h)
+        .map((t) => t.name)
+        .toArray()
+        .join("") + " ";
   }
   out += `${popped}\n`;
   const sorted = $heapSorted(h.slice(), taskOrd_cmp)

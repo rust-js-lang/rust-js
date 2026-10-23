@@ -82,15 +82,15 @@ function main() {
     const arg$6 = order($slice(down, 0, 3));
     console.log(`${n}: ${value} ${arg$6}`);
 
-    const picked = base.slice();
+    let picked = base.slice();
     const middle = (picked.length / 2) >>> 0;
     const key$5 = (p) => p[0];
     const nth = $selectNthUnstable(picked, middle, (a, b) => key$5(a) < key$5(b), "network")[1];
     const arg$7 = order(picked);
     console.log(`${n}: (${nth[0]}, ${nth[1]}) ${arg$7}`);
-    const picked$1 = base.slice();
-    $selectNthUnstable(picked$1, 1, (a, b) => $cmp(b[0], a[0]) < 0, "network");
-    const arg$8 = order(picked$1);
+    picked = base.slice();
+    $selectNthUnstable(picked, 1, (a, b) => $cmp(b[0], a[0]) < 0, "network");
+    const arg$8 = order(picked);
     console.log(`${n}: ${arg$8}`);
     const numbers = base.map((p) => ((p[1] * 31) >>> 0) % 17);
     const selectNthUnstable = $selectNthUnstable(numbers, middle, (a, b) => a < b, "network", true);

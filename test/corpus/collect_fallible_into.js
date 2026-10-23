@@ -35,15 +35,15 @@ function parseKv(s) {
         if (result.TAG === "Err") {
           return result;
         }
-        const [k, v] = result._0;
+        let [k, v] = result._0;
         const result$1 = $parseBig(v, -9223372036854775808n, 9223372036854775807n);
         const result$2 =
           result$1.TAG === "Err" ? { TAG: "Err", _0: `${k}: ${result$1._0}` } : result$1;
         if (result$2.TAG === "Err") {
           return result$2;
         }
-        const v$1 = result$2._0;
-        return { TAG: "Ok", _0: [k, v$1] };
+        v = result$2._0;
+        return { TAG: "Ok", _0: [k, v] };
       }),
     (values) => new Map(values),
   );
@@ -71,7 +71,7 @@ function bag(words) {
 
 function main() {
   const some = $collectOptions($iter([5, 4]), false, bagFromIteratorI32_fromIter);
-  const none = $collectOptions($iter([5, undefined]), false, bagFromIteratorI32_fromIter);
+  let none = $collectOptions($iter([5, undefined]), false, bagFromIteratorI32_fromIter);
   const value = bag(["3", "1", "2"]);
   const value$1 = bag(["1", "x"]);
   console.log(
@@ -117,7 +117,7 @@ function main() {
     false,
     (values) => new Set(values),
   );
-  const none$1 = $collectOptions(
+  none = $collectOptions(
     ["3", "x"].values().map((s) => {
       const result = $parseInt(s, 0, 4294967295);
       return result.TAG === "Ok" ? result._0 : undefined;
@@ -135,7 +135,7 @@ function main() {
     ["1", "2"].values().map((s) => $parseInt(s, -2147483648, 2147483647)),
   );
   console.log(
-    `${words.TAG === "Ok" ? `Ok(${$debugStr(words._0)})` : `Err(${$debugStr(words._0)})`} ${set == null ? "None" : `Some({${Array.from($sortedKeys(set, $cmp)).join(", ")}})`} ${none$1 == null ? "None" : `Some({${Array.from($sortedKeys(none$1, $cmp)).join(", ")}})`} [${pairs.map((item) => `(${item[0]}, ${item[1]})`).join(", ")}] ${vecOk.TAG === "Ok" ? `Ok([${vecOk._0.join(", ")}])` : `Err(${$debugStr(vecOk._0)})`}`,
+    `${words.TAG === "Ok" ? `Ok(${$debugStr(words._0)})` : `Err(${$debugStr(words._0)})`} ${set == null ? "None" : `Some({${Array.from($sortedKeys(set, $cmp)).join(", ")}})`} ${none == null ? "None" : `Some({${Array.from($sortedKeys(none, $cmp)).join(", ")}})`} [${pairs.map((item) => `(${item[0]}, ${item[1]})`).join(", ")}] ${vecOk.TAG === "Ok" ? `Ok([${vecOk._0.join(", ")}])` : `Err(${$debugStr(vecOk._0)})`}`,
   );
 }
 //# sourceMappingURL=case.js.map

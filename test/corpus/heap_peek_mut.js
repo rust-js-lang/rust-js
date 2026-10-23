@@ -39,7 +39,7 @@ function loudPartialOrd_partialCmp(loud, other) {
 
 function main() {
   const heap = $heapFrom([3, 8, 5, 1], $cmp);
-  const top = $peekMut(heap, $cmp);
+  let top = $peekMut(heap, $cmp);
   if (top) {
     try {
       $peekMutTop(top, true).value = 0;
@@ -48,37 +48,37 @@ function main() {
     }
   }
   console.log(`[${heap.join(", ")}]`);
-  const top$1 = $unwrap($peekMut(heap, $cmp));
+  top = $unwrap($peekMut(heap, $cmp));
   try {
-    const tmp = $peekMutTop(top$1, true);
+    const tmp = $peekMutTop(top, true);
     tmp.value = (tmp.value - 10) | 0;
-    console.log(`${top$1.heap[0]} PeekMut(${top$1.heap[0]})`);
+    console.log(`${top.heap[0]} PeekMut(${top.heap[0]})`);
   } finally {
-    $peekMutDrop(top$1);
+    $peekMutDrop(top);
   }
   console.log(`[${heap.join(", ")}]`);
-  const top$2 = $unwrap($peekMut(heap, $cmp));
-  console.log(`popped ${$peekMutPop(top$2)}`);
+  top = $unwrap($peekMut(heap, $cmp));
+  console.log(`popped ${$peekMutPop(top)}`);
   console.log(`[${heap.join(", ")}]`);
   const loud = [];
   $heapPush(loud, [2], loudOrd_cmp);
   $heapPush(loud, [7], loudOrd_cmp);
   console.log("read");
-  const top$3 = $peekMut(loud, loudOrd_cmp);
-  if (top$3) {
+  top = $peekMut(loud, loudOrd_cmp);
+  if (top) {
     try {
-      console.log(`top ${top$3.heap[0][0]}`);
+      console.log(`top ${top.heap[0][0]}`);
     } finally {
-      $peekMutDrop(top$3);
+      $peekMutDrop(top);
     }
   }
   console.log("write");
-  const top$4 = $peekMut(loud, loudOrd_cmp);
-  if (top$4) {
+  top = $peekMut(loud, loudOrd_cmp);
+  if (top) {
     try {
-      $peekMutTop(top$4)[0] = 1;
+      $peekMutTop(top)[0] = 1;
     } finally {
-      $peekMutDrop(top$4);
+      $peekMutDrop(top);
     }
   }
   const peekMut = $peekMut([], $cmp);

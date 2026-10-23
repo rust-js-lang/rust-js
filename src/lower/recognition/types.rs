@@ -194,6 +194,13 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         self.is_std_type(ty, StdItem::HashSet) || self.is_std_type(ty, StdItem::BTreeSet)
     }
 
+    /// A B-tree, `BTreeMap` or `BTreeSet`, serde_json's `Map` too: one
+    /// that goes over its keys in their order.
+    pub(in crate::lower) fn is_sorted(&self, ty: Ty<'tcx>) -> bool {
+        let ty = ty.peel_refs();
+        self.is_std_type(ty, StdItem::BTreeMap) || self.is_std_type(ty, StdItem::BTreeSet) || self.is_json_map(ty)
+    }
+
     /// A channel's end, `mpsc::Sender` or `mpsc::Receiver` (ADR 0142).
     pub(in crate::lower) fn channel_end(&self, ty: Ty<'tcx>) -> Option<ChannelEnd> {
         let ty::Adt(adt, _) = ty.kind() else {
@@ -596,6 +603,10 @@ pub(crate) enum TypeFact {
     /// type says: `Map`, or `$KeyMap` of one found by value (ADR 0466).
     Map,
     Set,
+    /// The class of a `BTreeMap` of it, and of a `BTreeSet`: a hashed one's,
+    /// or of one whose `Ord` is its own, `$ordMap(cmp)` (ADR 0404).
+    TreeMap,
+    TreeSet,
     /// What std's unstable sort picks for its items by their layout, its
     /// small sort or partition (ADRs 0342, 0471).
     Sort,
@@ -606,7 +617,7 @@ pub(crate) enum TypeFact {
 
 impl TypeFact {
     /// Every fact: the one list of them.
-    pub(crate) const ALL: [TypeFact; 9] = [
+    pub(crate) const ALL: [TypeFact; 11] = [
         TypeFact::Size,
         TypeFact::Align,
         TypeFact::Name,
@@ -614,6 +625,8 @@ impl TypeFact {
         TypeFact::NeedsDrop,
         TypeFact::Map,
         TypeFact::Set,
+        TypeFact::TreeMap,
+        TypeFact::TreeSet,
         TypeFact::Sort,
         TypeFact::Fused,
     ];
@@ -633,21 +646,38 @@ impl TypeFact {
             TypeFact::NeedsDrop => "NeedsDrop",
             TypeFact::Map => "Map",
             TypeFact::Set => "Set",
+            TypeFact::TreeMap => "TreeMap",
+            TypeFact::TreeSet => "TreeSet",
             TypeFact::Sort => "Sort",
             TypeFact::Fused => "Fused",
         }
+    }
+
+    /// The fact of a map's class, or a set's, hashed or a B-tree.
+    pub(crate) fn of_map(set: bool, sorted: bool) -> TypeFact {
+        [[TypeFact::Map, TypeFact::Set], [TypeFact::TreeMap, TypeFact::TreeSet]][usize::from(sorted)][usize::from(set)]
+    }
+
+    /// Of a map's class, or a set's: whether a set's, and whether a B-tree's.
+    pub(crate) fn map_kind(self) -> Option<(bool, bool)> {
+        [(false, false), (true, false), (false, true), (true, true)]
+            .into_iter()
+            .find(|&(set, sorted)| TypeFact::of_map(set, sorted) == self)
     }
 }
 
 /// A map or a set, hashed or a B-tree, of a type parameter's keys, or a
 /// std associated type's of one, `ty` itself: its key, and its class's
-/// fact, `Map` or `Set`, which a caller gives (ADR 0466).
+/// fact, `Map`, `Set`, `TreeMap` or `TreeSet`, which a caller gives
+/// (ADRs 0466, 0404).
 pub(crate) fn map_of_param<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<(Ty<'tcx>, TypeFact)> {
     let ty::Adt(adt, args) = ty.kind() else { return None };
     let is = |item| is_std_def(tcx, adt.did(), item);
     let fact = match () {
-        _ if is(StdItem::HashMap) || is(StdItem::BTreeMap) => TypeFact::Map,
-        _ if is(StdItem::HashSet) || is(StdItem::BTreeSet) => TypeFact::Set,
+        _ if is(StdItem::HashMap) => TypeFact::Map,
+        _ if is(StdItem::HashSet) => TypeFact::Set,
+        _ if is(StdItem::BTreeMap) => TypeFact::TreeMap,
+        _ if is(StdItem::BTreeSet) => TypeFact::TreeSet,
         _ => return None,
     };
     let key = args.types().next()?;

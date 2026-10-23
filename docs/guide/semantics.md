@@ -414,7 +414,8 @@ fields, `const previous = depth; try { .. } finally { depth = previous; }`
 
 Differences: a value with a destructor that JS holds, given out by an
 exported generic function, is never dropped; a `drop` that panics while
-another panic unwinds replaces that panic, where Rust aborts.
+another panic unwinds replaces that panic, where Rust aborts, and
+`catch_unwind` catches the replacement ([0660](../decisions/0660-catch-unwind-catches-what-js-throws.md)).
 
 Generic code drops a value of an associated type through its impl's
 dictionary ([0178](../decisions/0178-associated-type-drops.md)).
@@ -452,13 +453,18 @@ Differences:
   uncaught panic is the host's error: a JS stack trace and exit code 1,
   where Rust prints `thread 'main' panicked at` and exits with 101. A
   `main` that returns `Err` returns it to its caller.
-- **JS can catch a panic,** an ordinary `Error`; Rust code can't
-  (`catch_unwind` is refused).
+- **`catch_unwind` catches what JS throws,** a panic or a getter's throw,
+  as JS's `try`: a panic's payload is its message, which downcasts as a
+  `&str` and as a `String` both, where Rust's is one; what JS threw is a
+  `&'static JsError`; and a thrown `Error` of JS's own constructor is a
+  panic, whoever threw it. A caught panic writes nothing, where Rust's
+  hook writes its message; `set_hook` is refused, and so is unwinding where
+  the crate's panics abort ([0660](../decisions/0660-catch-unwind-catches-what-js-throws.md)).
 - **`unwrap()` of a throwing JS call's `Result` is the call:** what JS
   threw goes on as itself, `JSON.parse(text)` throwing its `SyntaxError`,
   where Rust's panic says ``called `Result::unwrap()` on an `Err` value``.
-  Only JS that catches it sees the difference. `expect(msg)` keeps its
-  message ([0643](../decisions/0643-unwrap-of-a-throwing-call-is-the-call.md)).
+  Only what catches it sees the difference, JS or a `catch_unwind`, whose
+  payload is the `&JsError`. `expect(msg)` keeps its message ([0643](../decisions/0643-unwrap-of-a-throwing-call-is-the-call.md)).
 - **Recursion is as deep as the JS engine's stack allows,** about 10,000
   calls in Node and in browsers, where Rust's main thread has 8 MB:
   deeper, JS throws `RangeError: Maximum call stack size exceeded`, which
@@ -656,7 +662,9 @@ React and JSX are [their own pages](README.md#react).
 8. A future starts when it's made, and runs though no one awaits it.
 9. There's one thread: a channel's `recv()` that would wait forever panics.
 10. Nothing calls `main`; an uncaught panic is the host's error, exit code 1.
-11. JS can catch a panic; a `drop` panicking during a panic replaces it.
+11. A panic is an `Error`, which JS catches, and `catch_unwind` catches what
+    JS throws; a panic's message downcasts as a `&str` and a `String`; a
+    `drop` panicking during a panic replaces it.
 12. A value with a destructor that JS holds is never dropped.
 13. A writer of the crate's is given each `write!`'s text in one `write_str`.
 14. A generic iterator's `size_hint()` is its array's length, or `(0, None)`.

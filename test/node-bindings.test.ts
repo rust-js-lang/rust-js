@@ -809,7 +809,7 @@ pub fn has_function(error: &JsError) -> bool {
   expect(js).toContain(".getFunction()");
   expect(readFileSync(join(dir, "default_prepare_stack_trace.js"), "utf8")).toContain("\nexport default undefined;\n");
   const v8 = readFileSync(join(dir, "default_prepare_stack_trace_v8.js"), "utf8");
-  expect(v8).toContain("    stack += callSite.toString();\n");
+  expect(v8).toContain('    stack += "\\n    at " + callSite.toString();\n');
   expect(v8).toContain("export function install() {\n  Error.prepareStackTrace = prepareStackTrace;\n}");
   expect(v8).toContain("export default prepareStackTrace;");
   writeFileSync(join(dir, "package.json"), '{ "type": "module" }');

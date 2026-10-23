@@ -67,8 +67,7 @@ export function rejoined(path) {
 export function built(n) {
   let s = "";
   for (let i = 0; i < n; i++) {
-    s += String(i);
-    s += ",";
+    s += String(i) + ",";
   }
   s += "!";
   return s;

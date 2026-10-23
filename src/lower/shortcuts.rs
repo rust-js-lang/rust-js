@@ -80,6 +80,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.recognition().is_set(ty)
     }
 
+    /// A `BTreeMap` or `BTreeSet`, whose order is its keys' (ADR 0059).
+    pub(in crate::lower) fn is_sorted(&self, ty: Ty<'tcx>) -> bool {
+        self.recognition().is_sorted(ty)
+    }
+
     /// The trait's arguments for `Self = ty`, with `ty` for any others too:
     /// `PartialEq`'s `Rhs` is `Self` unless it says otherwise.
     pub(super) fn args_of(&self, trait_id: DefId, ty: Ty<'tcx>) -> ty::GenericArgsRef<'tcx> {
@@ -231,9 +236,5 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `serde_json::Value`, `Number` or `Map`.
     pub(in crate::lower) fn json_type(&self, ty: Ty<'tcx>) -> Option<Json> {
         self.recognition().json_type(ty)
-    }
-
-    pub(in crate::lower) fn is_json_map(&self, ty: Ty<'tcx>) -> bool {
-        self.recognition().is_json_map(ty)
     }
 }

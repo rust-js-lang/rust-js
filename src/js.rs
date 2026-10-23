@@ -14,7 +14,7 @@ mod make;
 mod stmt_walk;
 
 pub use self::{
-    applied::{applied_blocks, applied_call, returns},
+    applied::{applied_blocks, applied_call, applied_tried, returns},
     expr_walk::*,
     stmt_walk::*,
 };
@@ -379,6 +379,15 @@ pub enum StmtKind {
     /// `"use cache";`: a function's or an arrow's directive, first in its body
     /// (ADR 0349).
     Directive(String),
+}
+
+/// What a `try`'s `catch` of a `Result` is given (`Expr::caught`): what
+/// was thrown as it is, a JS call's `Err` (ADR 0035), or what unwound, the
+/// payload `$unwound(e)` makes of it, `catch_unwind`'s (ADR 0660).
+#[derive(Clone, Copy, PartialEq, Debug)]
+pub enum Caught {
+    Thrown,
+    Unwound,
 }
 
 impl StmtKind {

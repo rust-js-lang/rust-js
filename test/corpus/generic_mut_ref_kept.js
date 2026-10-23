@@ -186,7 +186,7 @@ function main() {
     },
   );
   value$3.value = (value$3.value + 20) | 0;
-  const r = pick(
+  let r = pick(
     true,
     {
       get value() {
@@ -297,9 +297,9 @@ function main() {
   console.log(`[${stackDeref_deref(stack).join(", ")}] ${totalDeref_deref(total)}`);
 
   const k = { n: 1 };
-  const r$1 = cSlot_slot(k);
-  if (r$1 != null) {
-    r$1.value = (r$1.value + 1) | 0;
+  r = cSlot_slot(k);
+  if (r != null) {
+    r.value = (r.value + 1) | 0;
   }
   console.log(`${cDebug_fmt(k)}`);
 }

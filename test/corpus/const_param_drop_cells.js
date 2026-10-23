@@ -12,12 +12,12 @@ const Builder = {
   },
 
   push(builder, value, N) {
-    value = $some(value);
+    const value$1 = $some(value);
     const len = builder.len;
     if (!(len < N)) {
       throw new Error(`index out of bounds: the len is ${N} but the index is ${len}`);
     }
-    builder.items[len] = value;
+    builder.items[len] = value$1;
     builder.len = (builder.len + 1) >>> 0;
   },
 };

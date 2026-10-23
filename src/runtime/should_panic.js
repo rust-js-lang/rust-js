@@ -1,13 +1,13 @@
-
 // `#[should_panic]` (ADR 0026): the test passes only if it panics, and if
 // `expected` is given, only if the panic message contains it, as with
-// libtest. A panic is a plain `Error` (ADR 0012); anything else thrown, a
-// `TypeError` say, is the JS going wrong, and fails the test as it is.
+// libtest. A panic is what `$isPanic` says is one (ADR 0660); anything else
+// thrown, a `TypeError` say, is the JS going wrong, and fails the test as it
+// is.
 function $shouldPanic(f, expected) {
   try {
     f();
   } catch (e) {
-    if (!(e instanceof Error && e.constructor === Error)) {
+    if (!$isPanic(e)) {
       throw e;
     }
     const message = e.message;

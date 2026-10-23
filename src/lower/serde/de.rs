@@ -170,9 +170,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let item = args.type_at(0);
                 let read = self.json_reader(item, span)?;
                 // Of items found by their value, a `$KeySet` of the array's
-                // (ADR 0121), as JSON's `set` makes a `Set`.
-                if self.is_value_key(item) && !self.is_js_key(item) {
-                    let class = self.map_class(true, Some(item), span)?;
+                // (ADR 0121), or by their own `Ord`, an `$ordSet(cmp)`'s (ADR
+                // 0404), as JSON's `set` makes a `Set`.
+                let class = self.map_class(true, self.is_sorted(ty), Some(item), span)?;
+                if !matches!(&class.kind, js::ExprKind::Var(name) if name == "Set") {
                     let items = Expr::call(Expr::call(reader("vec"), vec![read]), vec![Expr::var("json")]);
                     let made = Expr::new_(class, vec![items]);
                     return Ok(Expr::arrow(

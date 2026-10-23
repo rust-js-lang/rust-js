@@ -78,18 +78,18 @@ function main() {
     [2, "b"],
   ];
   const n = pairs[0][0];
-  const c = pairs[0][1];
+  let c = pairs[0][1];
   console.log(`${n} ${c}`);
 
   // An array's, irrefutable: its items, and its rest, a shorter array.
   const a = 10;
   const b = 20;
-  const c$1 = 30;
+  c = 30;
   const value = [1, 2, 3, 4];
   const first = value[0];
   const rest = value.slice(1, 4);
   const last = rest[2];
-  console.log(`${a} ${b} ${c$1} ${first} [${rest.join(", ")}] ${last}`);
+  console.log(`${a} ${b} ${c} ${first} [${rest.join(", ")}] ${last}`);
   console.log(`${sum3([1, 2, 3])}`);
 
   // A constant array as a pattern: its items.

@@ -311,8 +311,7 @@ pub fn unhooked() {
 function prepareStackTrace(error, structuredStackTrace) {
   let stack = error.name + ": " + error.message;
   for (const callSite of structuredStackTrace) {
-    stack += "\n    at ";
-    stack += callSite.toString();
+    stack += "\n    at " + callSite.toString();
   }
   return stack;
 }

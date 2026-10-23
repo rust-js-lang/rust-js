@@ -54,22 +54,22 @@ function pointFromStr_fromStr(s) {
   if (result.TAG === "Err") {
     return result;
   }
-  const [x, y] = result._0;
+  let [x, y] = result._0;
   const result$1 = $parseInt($trim(x), -2147483648, 2147483647);
   const result$2 =
     result$1.TAG === "Err" ? { TAG: "Err", _0: { TAG: "Number", _0: result$1._0 } } : result$1;
   if (result$2.TAG === "Err") {
     return result$2;
   }
-  const x$1 = result$2._0;
+  x = result$2._0;
   const result$3 = $parseInt($trim(y), -2147483648, 2147483647);
   const result$4 =
     result$3.TAG === "Err" ? { TAG: "Err", _0: { TAG: "Number", _0: result$3._0 } } : result$3;
   if (result$4.TAG === "Err") {
     return result$4;
   }
-  const y$1 = result$4._0;
-  return { TAG: "Ok", _0: { x: x$1, y: y$1 } };
+  y = result$4._0;
+  return { TAG: "Ok", _0: { x, y } };
 }
 
 function total(text) {

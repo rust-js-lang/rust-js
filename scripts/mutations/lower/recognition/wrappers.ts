@@ -228,4 +228,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^cell_(const|drops).rs$"],
   },
 
+  {
+    name: "assert-unwind-safe-a-struct",
+    breaks: "an `AssertUnwindSafe` is an array of its closure, which `catch_unwind` calls as a function",
+    file: "src/lower/recognition/wrappers.rs",
+    find: "            || std_path(self.tcx, adt.did()) == \"std::panic::AssertUnwindSafe\"\n",
+    replace: "",
+    tests: ["test/lowering-unwinds.test.ts", "-t", "resume_unwind throws what unwound"],
+  },
 ];

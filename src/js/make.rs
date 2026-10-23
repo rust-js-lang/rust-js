@@ -175,6 +175,46 @@ impl Expr {
         }
     }
 
+    /// `$catchUnwind(f)`: `catch_unwind(f)`'s `Result`, `f()`'s value, or
+    /// what unwound, `$unwound(e)` of what was thrown (ADR 0660).
+    pub fn caught_unwind(f: Expr) -> Expr {
+        Expr::call_helper("$catchUnwind", vec![f])
+    }
+
+    /// What a `try` of this `Result` holds, and whether its `catch` is given
+    /// what was thrown as it is, `$try(() => call)`'s (ADR 0637), or what
+    /// unwound, `$unwound(e)`, `$catchUnwind(f)`'s, of `f()`: an arrow's
+    /// body, `() => g(x)`'s `g(x)` (ADR 0660).
+    pub fn caught(&self) -> Option<(Expr, Caught)> {
+        if let Some(call) = self.tried_call() {
+            return Some((call.clone(), Caught::Thrown));
+        }
+        let ExprKind::Call(callee, args) = &self.kind else {
+            return None;
+        };
+        let (Some("$catchUnwind"), [f]) = (callee.helper_name(), args.as_slice()) else {
+            return None;
+        };
+        // What makes `f` runs before it's caught, as Rust makes it before
+        // `catch_unwind` is called: never in the `try`.
+        if f.may_throw() {
+            return None;
+        }
+        let run = match &f.kind {
+            ExprKind::Arrow(params, body) if params.is_empty() => match body.as_slice() {
+                [
+                    Stmt {
+                        kind: StmtKind::Return(Some(value)),
+                        ..
+                    },
+                ] => value.clone(),
+                _ => Expr::call(f.clone(), Vec::new()),
+            },
+            _ => Expr::call(f.clone(), Vec::new()),
+        };
+        Some((run, Caught::Unwound))
+    }
+
     /// What a throwing JS call's `Result` is of, where nothing catches its
     /// throw: the call, of `$try(() => call)`, and `await p`, of `await
     /// $settle(p)` (ADRs 0035, 0643). Its throw, or its rejection, goes on

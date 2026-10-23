@@ -19,6 +19,7 @@
 //! | `mpsc` channels | a queue | `channel` |
 //! | `Pin` | its pointer | `pin` |
 //! | `MaybeUninit`, a `Box` of one | what it holds, or `undefined` | `uninit` |
+//! | `catch_unwind`, `resume_unwind` | a `try`, `$catchUnwind(f)`; `throw $unwinding(payload)` | `unwind` |
 //! | `TypeId`, `dyn Any` | its type's key, a string; `{ value, impl }` | `any` |
 //! | `env::args`, `process::exit`: Node's process | its helper, `$args()` | `process` |
 //! | `Path`, `PathBuf` | its text; its methods `path.js`'s | `path` |
@@ -57,5 +58,6 @@ pub(super) mod result;
 pub(super) mod slice;
 pub(super) mod text;
 pub(super) mod uninit;
+pub(super) mod unwind;
 mod values;
 pub(super) mod vec;

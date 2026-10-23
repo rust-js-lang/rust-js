@@ -382,13 +382,14 @@ export function $assertFailed(kind, left, right, message) {
 
 // `#[should_panic]` (ADR 0026): the test passes only if it panics, and if
 // `expected` is given, only if the panic message contains it, as with
-// libtest. A panic is a plain `Error` (ADR 0012); anything else thrown, a
-// `TypeError` say, is the JS going wrong, and fails the test as it is.
+// libtest. A panic is what `$isPanic` says is one (ADR 0660); anything else
+// thrown, a `TypeError` say, is the JS going wrong, and fails the test as it
+// is.
 export function $shouldPanic(f, expected) {
   try {
     f();
   } catch (e) {
-    if (!(e instanceof Error && e.constructor === Error)) {
+    if (!$isPanic(e)) {
       throw e;
     }
     const message = e.message;
@@ -904,6 +905,161 @@ export class $KeySet extends Set {
       f.call(that, item, item, this);
     }
   }
+}
+
+// A B-tree of keys it finds by their own `Ord` (ADR 0404): its entries
+// kept in `cmp`'s order, each found by a binary search, so a key `cmp`
+// says is `Equal` to one it holds finds that one, as std's B-tree does.
+export class $OrdMap extends Map {
+  #entries = [];
+  constructor(cmp, entries) {
+    super();
+    this.cmp = cmp;
+    if (entries) {
+      for (const [key, value] of entries) {
+        this.set(key, value);
+      }
+    }
+  }
+  // Where `key` is, or would go: its index, and whether it's there.
+  at(key) {
+    let low = 0;
+    let high = this.#entries.length;
+    while (low < high) {
+      const mid = (low + high) >>> 1;
+      const order = this.cmp(this.#entries[mid][0], key);
+      if (order === 0) return [mid, true];
+      if (order < 0) low = mid + 1;
+      else high = mid;
+    }
+    return [low, false];
+  }
+  get size() {
+    return this.#entries.length;
+  }
+  get(key) {
+    const [i, there] = this.at(key);
+    return there ? this.#entries[i][1] : undefined;
+  }
+  set(key, value) {
+    const [i, there] = this.at(key);
+    if (there) {
+      this.#entries[i][1] = value;
+    } else {
+      this.#entries.splice(i, 0, [key, value]);
+    }
+    return this;
+  }
+  has(key) {
+    return this.at(key)[1];
+  }
+  // The key it holds equal to `key` (ADR 0467).
+  storedKey(key) {
+    const [i, there] = this.at(key);
+    return there ? this.#entries[i][0] : undefined;
+  }
+  delete(key) {
+    const [i, there] = this.at(key);
+    if (there) this.#entries.splice(i, 1);
+    return there;
+  }
+  clear() {
+    this.#entries = [];
+  }
+  *entries() {
+    for (const [key, value] of this.#entries) {
+      yield [key, value];
+    }
+  }
+  *keys() {
+    for (const [key] of this.#entries) {
+      yield key;
+    }
+  }
+  *values() {
+    for (const [, value] of this.#entries) {
+      yield value;
+    }
+  }
+  [Symbol.iterator]() {
+    return this.entries();
+  }
+  forEach(f, that) {
+    for (const [key, value] of this.entries()) {
+      f.call(that, value, key, this);
+    }
+  }
+}
+
+export class $OrdSet extends Set {
+  #items;
+  constructor(cmp, items) {
+    super();
+    this.#items = new $OrdMap(cmp);
+    if (items) {
+      for (const item of items) {
+        this.add(item);
+      }
+    }
+  }
+  get size() {
+    return this.#items.size;
+  }
+  add(item) {
+    if (!this.#items.has(item)) {
+      this.#items.set(item, item);
+    }
+    return this;
+  }
+  has(item) {
+    return this.#items.has(item);
+  }
+  storedKey(item) {
+    return this.#items.storedKey(item);
+  }
+  delete(item) {
+    return this.#items.delete(item);
+  }
+  clear() {
+    this.#items.clear();
+  }
+  values() {
+    return this.#items.keys();
+  }
+  keys() {
+    return this.#items.keys();
+  }
+  *entries() {
+    for (const item of this.#items.keys()) {
+      yield [item, item];
+    }
+  }
+  [Symbol.iterator]() {
+    return this.#items.keys();
+  }
+  forEach(f, that) {
+    for (const item of this.#items.keys()) {
+      f.call(that, item, item, this);
+    }
+  }
+}
+
+// The class of a B-tree ordered by `cmp`, which `new` makes as `Map` is
+// made, of its entries or none, and which a copy of one makes again.
+export function $ordMap(cmp) {
+  return class extends $OrdMap {
+    constructor(entries) {
+      super(cmp, entries);
+    }
+  };
+}
+
+export function $ordSet(cmp) {
+  return class extends $OrdSet {
+    constructor(items) {
+      super(cmp, items);
+    }
+  };
 }
 
 export function $sortedEntries(map, cmp) {
@@ -3724,10 +3880,11 @@ export function $insertMut(v, i, x, handle) {
 // A map's or a set's own methods (ADR 0325): a `Map`, a `Set`, or a
 // `$KeyMap` or `$KeySet` of keys found by value, the same to each.
 
-// The key a map or a set holds equal to `key`: a `$KeyMap`'s, or the key
-// itself, a `Map`'s (ADR 0467).
+// The key a map or a set holds equal to `key`, or `undefined`: a
+// `$KeyMap`'s, or the key itself, a `Map`'s (ADR 0467).
 export function $storedKey(m, key) {
-  return m.storedKey === undefined ? key : m.storedKey(key);
+  if (m.storedKey !== undefined) return m.storedKey(key);
+  return m.has(key) ? key : undefined;
 }
 
 // `m.retain(f)`: the entries `f` keeps, visited in `entries`' order, a
@@ -3771,7 +3928,7 @@ export function $drainAll(m) {
 }
 
 export function $getKeyValue(m, key) {
-  return m.has(key) ? [key, m.get(key)] : undefined;
+  return m.has(key) ? [$storedKey(m, key), m.get(key)] : undefined;
 }
 
 export function $removeEntry(m, key) {
@@ -3785,10 +3942,17 @@ export function $removeEntry(m, key) {
 // `s.replace(x)`: the item equal to `x` that was there, or `None`, and `x`
 // in its place.
 export function $setReplace(s, x) {
-  const had = s.has(x);
+  const held = $storedKey(s, x);
   s.delete(x);
   s.add(x);
-  return had ? x : undefined;
+  return held;
+}
+
+// `s.take(x)` of items it finds others by: the one it held, taken out.
+export function $setTake(s, x) {
+  const held = $storedKey(s, x);
+  s.delete(x);
+  return held;
 }
 
 // A B-tree's first or last entry, `[key, value]`, or a set's item, by its
@@ -3943,13 +4107,14 @@ export function $entryRemove([m, key], entry) {
 }
 
 // `m.entry(key)` kept or matched: `Occupied` or `Vacant`, as its key is
-// there or not, of `[m, key]`, which its methods are of (ADR 0345); where
+// there or not, of `[m, key]`, the key it holds where it's there, which its
+// methods are of (ADR 0345); where
 // it's there, the key given dropped by `dropKey`, of keys with a destructor
 // (ADR 0467).
 export function $entry(m, key, dropKey) {
   const there = m.has(key);
   if (there) dropKey?.(key);
-  return { TAG: there ? "Occupied" : "Vacant", _0: [m, key] };
+  return { TAG: there ? "Occupied" : "Vacant", _0: [m, there ? $storedKey(m, key) : key] };
 }
 
 // An entry's `and_modify(f)`: `f` given its value where its key is there,
@@ -10037,6 +10202,68 @@ export function $try(f) {
     return { TAG: "Ok", _0: f() };
   } catch (e) {
     return { TAG: "Err", _0: e };
+  }
+}
+
+// Unwinding (ADR 0660): what JS throws, a panic's `Error` or anything else,
+// unwinds Rust's frames; `catch_unwind` catches it, its payload a `Box<dyn
+// Any + Send>`, the pair `{ value, impl }` (ADR 0331), and `resume_unwind`
+// throws one.
+
+// Whether `e`, thrown, is a panic: an `Error` of JS's own constructor, as
+// `panic!` throws (ADR 0012), whoever threw it; or a payload that isn't
+// text, which `resume_unwind` throws in a `$Unwinding`.
+export function $isPanic(e) {
+  return e instanceof $Unwinding || (e instanceof Error && e.constructor === Error);
+}
+
+// A panic's message as a `dyn Any`'s `Any`: a `&str`, which a downcast to a
+// `String` finds too, as JS doesn't keep which a panic's was.
+export const $panicMessage = { typeId: () => "&str" };
+
+// What JS threw, as a `dyn Any`'s `Any`: a `&'static JsError`.
+export const $jsThrown = { typeId: () => "&js::JsError" };
+
+// A payload that's neither text nor what JS threw, `resume_unwind(Box::new(5))`,
+// thrown: an `Error`, so its host shows where, as Rust's hook shows it.
+export class $Unwinding extends Error {
+  constructor(payload) {
+    super("Box<dyn Any>");
+    this.payload = payload;
+  }
+}
+
+// What unwound, of `e`, thrown: a payload thrown as it is, a panic's
+// message, or what JS threw.
+export function $unwound(e) {
+  if (e instanceof $Unwinding) {
+    return e.payload;
+  }
+  if ($isPanic(e)) {
+    return { value: e.message, impl: $panicMessage };
+  }
+  return { value: e, impl: $jsThrown };
+}
+
+// What's thrown to unwind with `payload`: what JS threw, itself; a panic of
+// text, its `Error`; any other, in a `$Unwinding`.
+export function $unwinding(payload) {
+  const id = payload.impl.typeId();
+  if (id === "&js::JsError") {
+    return payload.value;
+  }
+  if (id === "&str" || id === "alloc::string::String") {
+    return new Error(payload.value);
+  }
+  return new $Unwinding(payload);
+}
+
+// `catch_unwind(f)`: `Ok` of what `f()` gives, or `Err` of what unwound.
+export function $catchUnwind(f) {
+  try {
+    return { TAG: "Ok", _0: f() };
+  } catch (e) {
+    return { TAG: "Err", _0: $unwound(e) };
   }
 }
 

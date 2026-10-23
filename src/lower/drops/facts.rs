@@ -125,6 +125,9 @@ impl<'c, 'q, 'a, 'tcx> Finder<'c, 'q, 'a, 'tcx> {
                 | ExprKind::Use { .. }
                 | ExprKind::ValueTypeAscription { .. }
                 | ExprKind::PlaceTypeAscription { .. } => child = parent,
+                // A type that's the value it holds, `AssertUnwindSafe(f)`, is
+                // its value's place (ADR 0660).
+                ExprKind::Adt(..) if self.cx.recognition.transparent(self.thir[parent].ty).is_some() => child = parent,
                 _ => return (Some(parent), child),
             }
         }

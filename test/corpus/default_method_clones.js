@@ -12,12 +12,12 @@ const sTr = { a: (h, TClone) => h, b: (h, TClone) => ({ ...h, item: h.item.slice
 
 function main() {
   const n = { item: 1 };
-  const c = sTr.a(n, { clone: (value) => value });
+  let c = sTr.a(n, { clone: (value) => value });
   console.log(`${n.item} ${c.item}`);
 
   const h = { item: [1] };
-  const c$1 = sTr.b(h, { clone: (value) => value });
-  c$1.item.push(2);
-  console.log(`[${h.item.join(", ")}] [${c$1.item.join(", ")}]`);
+  c = sTr.b(h, { clone: (value) => value });
+  c.item.push(2);
+  console.log(`[${h.item.join(", ")}] [${c.item.join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

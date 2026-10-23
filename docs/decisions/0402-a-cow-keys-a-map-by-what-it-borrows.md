@@ -43,3 +43,9 @@ counts.get("a");
   and B-tree maps and sets by borrowed and owned text, asks with `&str`
   and with `Cow`s, shows which variant each holds, and keys a map by
   `Cow<[i32]>`, each with native Rust; both rustc tests pass.
+
+## Amendment: the key it holds, given back
+
+What gives back the key a map holds, refused above, gives it: `$storedKey`,
+the one it holds equal to the one asked with ([ADR 0404](0404-a-b-tree-keyed-by-value.md)
+amended). Held by `test/corpus/held_keys.rs`.

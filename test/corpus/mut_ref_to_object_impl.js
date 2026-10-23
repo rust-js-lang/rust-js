@@ -37,12 +37,12 @@ function main() {
   refMutMoneyAddAssignMoney_addAssign(self, { ...five });
   r = self.value;
   const total = { value: r };
-  const r$1 = bump(total, { ...five }, refMutMoneyAddAssignMoney).value;
+  let r$1 = bump(total, { ...five }, refMutMoneyAddAssignMoney).value;
   $assign(r, total.value);
   r$1.cents = BigInt.asIntN(64, r$1.cents + 1n);
   const other = { cents: 100n, note: [0, 0] };
-  const r$2 = other;
-  moneyAddAssign_addAssign(r$2, { ...five });
+  r$1 = other;
+  moneyAddAssign_addAssign(r$1, { ...five });
   console.log(`${moneyDebug_fmt(m)} ${moneyDebug_fmt(other)} ${m.note.length}`);
 }
 //# sourceMappingURL=case.js.map

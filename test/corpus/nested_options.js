@@ -65,7 +65,7 @@ function main() {
   console.log(
     `${depth(undefined)} ${depth($some(undefined))} ${depth($some($some(undefined)))} ${depth(4)}`,
   );
-  const units = [$some(undefined), undefined];
+  let units = [$some(undefined), undefined];
   const firsts = [$someAt(units, 0), $someAt(units, 1), $someAt(units, 5)];
   console.log(
     `[${firsts.map((item) => (item == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${unitDebug_fmt($someValue(value))})`))($someValue(item))})`)).join(", ")}]`,
@@ -126,8 +126,8 @@ function main() {
   console.log(
     `${okOr.TAG === "Ok" ? `Ok(${okOr._0 == null ? "None" : `Some(${okOr._0})`})` : `Err(${$debugStr(okOr._0)})`} ${o != null && value$3 == null} ${value$11 == null ? "None" : `Some(${value$11})`}`,
   );
-  const units$1 = [undefined, undefined];
-  const items = units$1.map(() => {});
+  units = [undefined, undefined];
+  const items = units.map(() => {});
   const last = $someAt(items, items.length - 1);
   const items$1 = [];
   const value$12 = $someAt(items$1, items$1.length - 1);

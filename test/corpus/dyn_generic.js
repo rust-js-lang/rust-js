@@ -55,7 +55,7 @@ function two(c, CCounter) {
 
 function main() {
   const square = [3];
-  const shape = { value: square, impl: squareShape };
+  let shape = { value: square, impl: squareShape };
   console.log(
     `${$displayF64(
       areaOf(shape, {
@@ -65,9 +65,9 @@ function main() {
       }),
     )}`,
   );
-  const shape$1 = { value: square, impl: squareShape };
+  shape = { value: square, impl: squareShape };
   grow(
-    { value: shape$1 },
+    { value: shape },
     {
       area: (object) => object.impl.area(object.value),
       scale: (object, arg1) => object.value.impl.scale(object.value, arg1),

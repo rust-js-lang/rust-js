@@ -260,6 +260,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     // A `dyn Any`'s downcasts, which lend or move what they're
                     // given, a `Box`'s or an `Rc`'s, or give it back (ADR 0520).
                     | Std::Any(AnyOp::Is | AnyOp::DowncastRef | AnyOp::DowncastMut | AnyOp::Downcast)
+                    // Unwinding's: `catch_unwind`'s closure, called once, drops
+                    // what it holds as it returns or unwinds; `resume_unwind`'s
+                    // payload goes on to what catches it (ADR 0660).
+                    | Std::Unwind(_)
                     // A `Peekable`'s, which lend the next item, or give it,
                     // keeping it where it's not taken (ADR 0514).
                     | Std::Step(StepOp::Peek | StepOp::PeekMut | StepOp::NextIf | StepOp::NextIfEq)
@@ -438,6 +442,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(js);
         }
         if let Some(js) = self.any_call(known, call, &mut values, out)? {
+            return Ok(js);
+        }
+        if let Some(js) = self.unwind_call(known, call, &mut values, out)? {
             return Ok(js);
         }
         if let Some(js) = self.process_call(known, &mut values) {
@@ -619,6 +626,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Std::Pin(_) => unreachable!("lowered by pin_call"),
             Std::Any(_) => unreachable!("lowered by any_call"),
             Std::Process(_) => unreachable!("lowered by process_call"),
+            Std::Unwind(_) => unreachable!("lowered by unwind_call"),
             Std::Memchr(_) => unreachable!("lowered by memchr_call"),
             Std::Location(_) => unreachable!("lowered by location_call"),
             Std::Backtrace(_) => unreachable!("lowered by backtrace_call"),

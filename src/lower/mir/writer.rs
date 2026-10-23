@@ -32,6 +32,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // One that may fail gives what it wrote before, in front of
             // what what it called did (ADR 0187): `let f = ""; try { .. }
             // catch (error) { .. } return f;`.
+            // One that writes nothing, its string made `""` and given as it
+            // is, `return "";`, whose `let` tidy took: what it wrote before
+            // is `""`, and its body gives what it gives.
+            true if js::mentions_in(out, name) == 0 => {
+                let error = self.fresh("error");
+                let written = Expr::call(Expr::helper("$fmtWritten"), vec![Expr::var(&error), Expr::str("")]);
+                let handler = vec![StmtKind::Throw(written).at(js::Span::NONE)];
+                *out = vec![StmtKind::TryCatch(std::mem::take(out), Some(error), handler).at(js::Span::NONE)];
+            }
             true => {
                 let made = (out.iter()).position(|s| matches!(&s.kind, StmtKind::Let(n, _) if n == name));
                 let mut body = out.split_off(made.map_or(0, |at| at + 1));

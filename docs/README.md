@@ -81,7 +81,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 **Semantics**
 
 - [0011 Integers are JS numbers, wrapped like release Rust](decisions/0011-numbers.md)
-- [0012 Panics throw, via runtime helpers emitted on demand](decisions/0012-panics-and-runtime-helpers.md) *(helpers' place replaced by 0103)*
+- [0012 Panics throw, via runtime helpers emitted on demand](decisions/0012-panics-and-runtime-helpers.md) *(helpers' place replaced by 0103; amended by 0660: `catch_unwind` catches one)*
 - [0013 Fieldless enum variants are strings](decisions/0013-fieldless-enums.md)
 - [0033 Enums with fields are ReScript's tagged objects](decisions/0033-enums-with-fields.md)
 - [0035 JS that throws is a `Result`; `?` returns early](decisions/0035-results-and-throwing-js.md) *(amended by 0637: a `match` of its `Result` is `try` and `catch`; 0643: its `unwrap()` is the call)*
@@ -167,7 +167,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0095 The JS rust-js makes runs on Node; Bun runs the tests](decisions/0095-node-runtime.md)
 - [0096 A `static` is its module's value, and a `static mut` its `{ value }`](decisions/0096-statics.md)
 - [0097 A user `Deref` or `IndexMut` is its method, and an auto trait's impl is nothing](decisions/0097-deref-and-marker-impls.md)
-- [0098 A destructor runs where rustc runs it, in a `finally`](decisions/0098-destructors.md)
+- [0098 A destructor runs where rustc runs it, in a `finally`](decisions/0098-destructors.md) *(amended by 0660: a panic's drops run before `catch_unwind` returns)*
 - [0099 A `&mut` held in a variable names its place; one kept elsewhere is a handle](decisions/0099-mut-references.md)
 - [0100 Each crate is compiled once, to JS of its own, with a manifest of what crosses](decisions/0100-separate-crates.md)
 - [0101 Cargo builds a workspace with rust-js as its workspace wrapper](decisions/0101-cargo-workspace-wrapper.md)
@@ -400,7 +400,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0328 A `RefCell` counts its borrows, as std's does](decisions/0328-refcell-borrow-counts.md)
 - [0329 A `Pin` is its pointer](decisions/0329-pin.md)
 - [0330 An `undefined` given to JS is an argument](decisions/0330-undefined-given-to-js.md)
-- [0331 A `TypeId` is its type's name, and a `dyn Any` a pair](decisions/0331-dyn-any.md)
+- [0331 A `TypeId` is its type's name, and a `dyn Any` a pair](decisions/0331-dyn-any.md) *(amended by 0660: what unwound is one)*
 - [0332 A `MaybeUninit` is its value, or `undefined` before it's written](decisions/0332-maybe-uninit.md)
 - [0333 A heap's `append`, `retain`, `drain` and `peek_mut`, and a `Vec`'s `push_mut`](decisions/0333-heap-and-vec-methods.md)
 - [0334 A `&mut str` is a cell of the text, written in place](decisions/0334-mut-str.md)
@@ -541,7 +541,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0606 A blank line before an item's attributes is before the item](decisions/0606-a-blank-line-before-attributes.md)
 - [0607 A variable's field is given a call's value in place](decisions/0607-a-field-is-given-a-call-in-place.md)
 - [0608 A `Drop` is its body at each drop](decisions/0608-a-drop-is-its-body-at-each-drop.md)
-- [0609 A `let` that shadows a parameter read no more is the parameter assigned](decisions/0609-a-shadowed-parameter-is-assigned.md)
+- [0609 A `let` that shadows a parameter read no more is the parameter assigned](decisions/0609-a-shadowed-parameter-is-assigned.md) *(extended by 0650: any binding of its block)*
 - [0610 A function that only calls a module variable's function is that variable](decisions/0610-a-forwarding-function-is-its-variable.md)
 - [0611 A default export the macro holds is the function's declaration](decisions/0611-a-default-export-is-where-its-macro-is.md)
 - [0612 Two values of any shape are equal by JS's `===`](decisions/0612-unknown-equality-is-strict.md)
@@ -566,9 +566,9 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0632 A JS string's `length` is below `u32::MAX`, and a counter below it doesn't wrap](decisions/0632-a-js-strings-length-is-below-u32-max.md)
 - [0633 A binding named through a module is read through it](decisions/0633-a-binding-named-through-a-module-is-read-through-it.md)
 - [0634 A registered symbol is a `const`, and a `match` of them a `switch`](decisions/0634-a-registered-symbol-is-a-const.md)
-- [0635 A `filter` by truth, then a fallback, is `||`](decisions/0635-a-filter-by-truth-then-a-fallback-is-or.md) *(extended by 0646: a chain held, then its fallback)*
+- [0635 A `filter` by truth, then a fallback, is `||`](decisions/0635-a-filter-by-truth-then-a-fallback-is-or.md) *(extended by 0646: a chain held, then its fallback; 0651: a `let`, then its fallback)*
 - [0636 A guarded arm of a `match` of constants is a case](decisions/0636-a-guarded-arm-is-a-case.md)
-- [0637 A `match` of a throwing call's `Result` is `try` and `catch`](decisions/0637-a-match-of-a-throwing-call-is-try-catch.md) *(amended by 0639: whether a call threw is `try`)*
+- [0637 A `match` of a throwing call's `Result` is `try` and `catch`](decisions/0637-a-match-of-a-throwing-call-is-try-catch.md) *(amended by 0639: whether a call threw is `try`; 0660: `catch_unwind`'s too, and `unwrap_or(d)` returned)*
 - [0638 A nullable function's call is `null` already](decisions/0638-a-nullable-functions-call-is-null-already.md)
 - [0639 `concat_text` of any value is what may throw; whether a call threw is `try`](decisions/0639-concat-text-of-any-value-may-throw.md)
 - [0640 A TypeScript rest parameter is a variadic binding of a tuple](decisions/0640-a-rest-parameter-is-a-tuple.md) *(extended by 0663: rest arguments as a value)*
@@ -581,12 +581,16 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0647 What `is_defined` names is no read; a test kept by its truth is `&&`](decisions/0647-type-name-as-react-writes-it.md)
 - [0648 V8's stack trace API is the node crate's, as @types/node types it](decisions/0648-v8s-stack-trace-api-is-the-node-crates.md) *(amended by 0653: captureStackTrace bound)*
 - [0649 `#[inline(never)]` is `/** @noinline */`](decisions/0649-inline-never-is-noinline.md)
+- [0650 A `let` that shadows a binding read no more is that binding, assigned](decisions/0650-a-shadow-of-a-binding-read-no-more-is-that-binding.md)
+- [0651 A `let`, then its fallback where it's falsy, is `||`](decisions/0651-a-let-then-its-fallback-is-or.md)
+- [0652 Consecutive appends to a `String` are one `+=`](decisions/0652-consecutive-appends-are-one.md)
 - [0653 A JS function value is a `dyn Fn` of its signature](decisions/0653-a-js-function-value-is-a-dyn-fn-of-its-signature.md)
 - [0654 A dictionary's member of any value is a `dyn IntoUnknown`](decisions/0654-a-dictionary-member-of-any-value-is-a-dyn-into-unknown.md)
 - [0655 A binding of `any` as a value is a `fn` of `Option<&'static Unknown>`](decisions/0655-an-any-binding-as-a-value-is-a-fn-of-a-static-unknown.md)
 - [0656 An event's `emit` arguments are what TypeScript's `emit` takes](decisions/0656-an-events-emit-arguments-are-typescripts-emits.md)
 - [0657 An `if` of one value each, a function's too, is a conditional](decisions/0657-an-if-of-one-value-each-is-a-conditional.md) *(amended by 0658: a branch with a comment too)*
 - [0658 A comment before a branch's value is before it in the conditional](decisions/0658-a-comment-before-a-branchs-value-is-before-it-in-the-conditional.md)
+- [0660 `catch_unwind` catches what JS throws, a panic among it](decisions/0660-catch-unwind-catches-what-js-throws.md)
 - [0662 The js crate binds `Object`'s reflection, a descriptor a dictionary](decisions/0662-the-js-crate-binds-objects-reflection.md)
 - [0663 `console` is a value, and a `fn` of rest arguments is the JS function](decisions/0663-console-is-a-value-and-rest-arguments-are-one.md)
 - [0623 A copy std makes of a `Copy` value is a copy](decisions/0623-a-copy-std-makes-is-a-copy.md)
@@ -727,7 +731,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0570 A closing source is dropped when it's done](decisions/0570-a-closing-source-is-dropped-when-done.md)
 - [0571 `pin!` and a ready future](decisions/0571-pin-macro-and-a-ready-future.md)
 - [0050 Snapshots of the generated JS, reviewed as diffs](decisions/0050-snapshots.md)
-- [0026 Tests are Rust's `#[test]`, run by `bun test` in happy-dom](decisions/0026-testing.md)
+- [0026 Tests are Rust's `#[test]`, run by `bun test` in happy-dom](decisions/0026-testing.md) *(amended by 0660: a panic is what `$isPanic` says)*
 - [0027 Real-browser tests: Playwright Test and Vitest's browser mode, on Bun](decisions/0027-real-browser-tests.md)
 - [0032 The playground is written in Rust, compiled by rust-js, a part at a time](decisions/0032-dogfooding-the-playground.md)
 - [0044 The playground on React, one component per file](decisions/0044-playground-on-react.md)
