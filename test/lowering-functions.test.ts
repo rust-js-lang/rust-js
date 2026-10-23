@@ -216,12 +216,20 @@ test("a function written in a body is declared in it", async () => {
         }
         return big();
     }
-    apply(twice)
+    if n > 5 {
+        return apply(twice) + 1;
+    }
+    n
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  // Each in the block it's written in (ADR 0696): `twice` at the body's
+  // top, not in the `if` that alone uses it; `big` in its `if`.
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain("export function doubled(n) {\n  function twice(n) {");
+  expect(js).toContain("  if (n > 10) {\n    function big() {");
   const lib = await import(join(dir, "mir.js"));
-  expect([lib.doubled(3), lib.doubled(11)]).toEqual([6, 1000]);
+  expect([lib.doubled(3), lib.doubled(6), lib.doubled(11)]).toEqual([3, 13, 1000]);
 });
 
 // ADR 0020: only a mutated type is copied, and that's decided per type: a

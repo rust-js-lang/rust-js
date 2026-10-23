@@ -983,7 +983,7 @@ export function isMarked(log) {
 ```
 - **A constructor is a `fn` item**, a function declaration, which `new`
   constructs and which has a `prototype`, declared where it's written, in
-  the innermost block that holds each use of it; a closure is an arrow
+  the block it's written in; a closure is an arrow
   function, which `new` throws a `TypeError` of
   ([ADR 0696](../../decisions/0696-a-constructor-is-a-fn-item-where-its-written.md)):
 

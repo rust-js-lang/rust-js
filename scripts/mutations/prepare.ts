@@ -96,7 +96,7 @@ export const mutations: Mutation[] = [
     file: "src/prepare.rs",
     find: "                if !matches!(value.kind, ExprKind::Undefined) {\n",
     replace: "                if true {\n",
-    tests: ["test/lowering-cells.test.ts", "-t", "None of is assigned only"],
+    tests: ["test/lowering-cells.test.ts", "-t", "None of is assigned only|build global.s if"],
   },
   {
     name: "assigned-empty-then-kept",
@@ -104,7 +104,7 @@ export const mutations: Mutation[] = [
     file: "src/prepare.rs",
     find: "                    (true, false) => StmtKind::If(test.clone().negated_test(), otherwise, None),\n",
     replace: "                    (true, false) => StmtKind::If(test.clone(), then, Some(otherwise)),\n",
-    tests: ["test/lowering-cells.test.ts", "-t", "None of is assigned only"],
+    tests: ["test/lowering-cells.test.ts", "-t", "None of is assigned only|build global.s if"],
   },
   {
     name: "unread-property-dropped",

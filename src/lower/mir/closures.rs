@@ -246,24 +246,33 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 span: js::Span::NONE,
             };
             let hole = StmtKind::Expr(hole).at(js::Span::NONE);
-            // In the innermost block it's written in that holds each use
-            // of it, a JS function declaration being its block's alone
-            // (ADR 0696): `if (construct) { function Fake() {..} .. }`.
+            // In the block it's written in, a JS function declaration
+            // being its block's alone (ADR 0696): `if (construct) {
+            // function Fake() {..} .. }`; one written at its body's top is
+            // there, not in the `if` that uses it.
             let name = &self.krate.fns[&id].name;
             let uses = js::mentions_in(out, name);
-            // The lists holding them all nest, each in the one before: the
-            // last of them, in the order they're walked, outermost first.
-            let (mut index, mut innermost) = (0, None);
+            let block = self.js_span(self.krate.local_functions[&id]);
+            // The lists holding them all nest, each in the one before,
+            // walked outermost first: the first of them with a statement
+            // written after it in its block is the block's.
+            let (mut index, mut written_in) = (0, None);
             js::statement_lists(out, &mut |list| {
-                if index > 0 && uses > 0 && js::mentions_in(list, name) == uses && written_before(list, at).is_some() {
-                    innermost = Some(index);
+                if written_in.is_none()
+                    && uses > 0
+                    && js::mentions_in(list, name) == uses
+                    && list
+                        .iter()
+                        .any(|s| !s.span.is_none() && s.span.lo > at && s.span.lo < block.hi)
+                {
+                    written_in = Some(index);
                 }
                 index += 1;
             });
-            if let Some(innermost) = innermost {
+            if let Some(written_in) = written_in {
                 let mut index = 0;
                 js::statement_lists(out, &mut |list| {
-                    if index == innermost
+                    if index == written_in
                         && let Some(i) = written_before(list, at)
                     {
                         list.insert(i, hole.clone());
