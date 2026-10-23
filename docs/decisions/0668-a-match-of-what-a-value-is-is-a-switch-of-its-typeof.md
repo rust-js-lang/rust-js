@@ -225,7 +225,9 @@ cases, is put in its written order as before.
   of `js::Kind` whose arm MIR tests first is written after one that
   leaves.
 - Held by `test/lowering-switches.test.ts`, "an arm that returns early is
-  still its case of a switch of a typeof", run in Node, and the mutation
+  still its case of a switch of a typeof", run in Node, and "React's
+  getIODescription is upstream's switch of a typeof", the port whole, run
+  in Node beside upstream's answers; and the mutation
   `written-first-of-a-switch`.
 
 ## Amendment: an object or an array is `typeof value === "object"`

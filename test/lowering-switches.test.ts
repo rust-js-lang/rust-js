@@ -504,3 +504,206 @@ console.log(JSON.stringify(values.map(described)));
   expect(ran.stderr).toBe("");
   expect(ran.stdout).toBe(`["","a","https://react.dev/learn","/learn","","hello","","fetchUser","42","7",""]\n`);
 });
+
+// React's `getIODescription` (shared/ReactIODescription.js), its port whole,
+// is upstream's `switch (typeof value)`, its arms in the program's order:
+// its string case tests a length in UTF-16 units, `value.length` (ADR 0632),
+// its object case an object or an array, `typeof request === "object"`
+// (ADR 0668), each property read once (ADR 0671). Run in Node beside what
+// upstream's JS gives of each value: a symbol, a throwing getter, arrays,
+// an `Error`, each property, each kind.
+test("React's getIODescription is upstream's switch of a typeof", () => {
+  const dir = fixture("io-description");
+  writeFileSync(join(dir, "lib.rs"), `use std::panic::catch_unwind;
+
+use js::{JsError, Kind, Unknown};
+
+pub fn get_io_description(value: Option<&Unknown>) -> String {
+    catch_unwind(|| {
+        let Some(value) = value else {
+            return String::new();
+        };
+        match js::classify(value) {
+            Kind::Function(_) => match js::get(value, "name").map(js::classify) {
+                Some(Kind::String(name)) => name.to_string(),
+                _ => String::new(),
+            },
+            Kind::Object(_) | Kind::Array(_) => {
+                // Test the object for a bunch of common property names that are useful identifiers.
+                if unsafe { js::cast::<&JsError>(Some(value)) }.is_error() {
+                    return js::string(js::get(value, "message"));
+                }
+                if let Some(Kind::String(url)) = js::get(value, "url").map(js::classify) {
+                    return url.to_string();
+                }
+                if let Some(Kind::String(href)) = js::get(value, "href").map(js::classify) {
+                    return href.to_string();
+                }
+                if let Some(Kind::String(src)) = js::get(value, "src").map(js::classify) {
+                    return src.to_string();
+                }
+                if let Some(Kind::String(current_src)) =
+                    js::get(value, "currentSrc").map(js::classify)
+                {
+                    return current_src.to_string();
+                }
+                if let Some(Kind::String(command)) = js::get(value, "command").map(js::classify) {
+                    return command.to_string();
+                }
+                if let Some(request) = js::get(value, "request")
+                    && let Kind::Object(_) | Kind::Array(_) = js::classify(request)
+                    && let Some(Kind::String(url)) = js::get(request, "url").map(js::classify)
+                {
+                    return url.to_string();
+                }
+                if let Some(response) = js::get(value, "response")
+                    && let Kind::Object(_) | Kind::Array(_) = js::classify(response)
+                    && let Some(Kind::String(url)) = js::get(response, "url").map(js::classify)
+                {
+                    return url.to_string();
+                }
+                if let Some(id) = js::get(value, "id")
+                    && let Kind::String(_) | Kind::Number(_) | Kind::BigInt(_) = js::classify(id)
+                {
+                    return js::string(Some(id));
+                }
+                if let Some(Kind::String(name)) = js::get(value, "name").map(js::classify) {
+                    return name.to_string();
+                }
+                let str = js::string(Some(value));
+                if str.starts_with("[object ")
+                    || str.encode_utf16().count() < 5
+                    || str.encode_utf16().count() > 500
+                {
+                    // This is probably not a useful description.
+                    return String::new();
+                }
+                str
+            }
+            Kind::String(text) => {
+                if text.encode_utf16().count() < 5 || text.encode_utf16().count() > 500 {
+                    return String::new();
+                }
+                text.to_string()
+            }
+            Kind::Number(_) | Kind::BigInt(_) => js::string(Some(value)),
+            // Not useful descriptors.
+            _ => String::new(),
+        }
+    })
+    .unwrap_or_default()
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs()]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain(`export function getIoDescription(value) {
+  try {
+    if (value == null) {
+      return "";
+    }
+    switch (typeof value) {
+      case "function": {
+        const name = value.name;
+        if (typeof name === "string") {
+          return name;
+        }
+        return "";
+      }
+      case "object": {
+        // Test the object for a bunch of common property names that are useful identifiers.
+        if (value instanceof Error) {
+          return String(value.message);
+        }
+        const url = value.url;
+        if (typeof url === "string") {
+          return url;
+        }
+        const href = value.href;
+        if (typeof href === "string") {
+          return href;
+        }
+        const src = value.src;
+        if (typeof src === "string") {
+          return src;
+        }
+        const currentSrc = value.currentSrc;
+        if (typeof currentSrc === "string") {
+          return currentSrc;
+        }
+        const command = value.command;
+        if (typeof command === "string") {
+          return command;
+        }
+        const request = value.request;
+        if (request != null && typeof request === "object") {
+          const url = request.url;
+          if (typeof url === "string") {
+            return url;
+          }
+        }
+        const response = value.response;
+        if (response != null && typeof response === "object") {
+          const url = response.url;
+          if (typeof url === "string") {
+            return url;
+          }
+        }
+        const id = value.id;
+        if (typeof id === "string" || typeof id === "number" || typeof id === "bigint") {
+          return String(id);
+        }
+        const name = value.name;
+        if (typeof name === "string") {
+          return name;
+        }
+        const str = String(value);
+        if (str.startsWith("[object ") || str.length < 5 || str.length > 500) {
+          // This is probably not a useful description.
+          return "";
+        }
+        return str;
+      }
+      case "string":
+        if (value.length < 5 || value.length > 500) {
+          return "";
+        }
+        return value;
+      case "number":
+      case "bigint":
+        return String(value);
+      default:
+        // Not useful descriptors.
+        return "";
+    }
+  } catch {
+    return "";
+  }
+}`);
+  expect(js).not.toContain("import");
+  writeFileSync(join(dir, "run.mjs"), `import { getIoDescription } from "./lib.js";
+const throwing = { get url() { throw new TypeError("no url"); } };
+const reads = [];
+const counted = { get request() { reads.push("request"); return { get url() { reads.push("url"); return "/counted"; } }; } };
+function fetchUser() {}
+const values = [
+  throwing, Symbol("s"), ["a", "b"], ["https://react.dev/learn"], new TypeError("failed"),
+  { url: "https://react.dev" }, { href: "/learn" }, { currentSrc: "/video.mp4" }, { command: "ls" }, { request: { url: "/api" } }, { request: null, response: { url: "/res" } },
+  { request: ["x"], id: 7 }, { id: 8n }, { id: "user-1" }, { name: "dev" }, { toString: () => "a described thing" },
+  {}, "hello", "hi", "\\u{1F600}\\u{1F600}\\u{1F600}", "x".repeat(501), fetchUser, () => {}, 42, 7n, true, null, undefined,
+  counted,
+];
+console.log(JSON.stringify([values.map(getIoDescription), reads]));
+`);
+  const ran = runSync([node!, join(dir, "run.mjs")], root, 30_000);
+  expect(ran.stderr).toBe("");
+  // Upstream's, of each value but the last, which upstream reads more
+  // often than once.
+  expect(JSON.parse(ran.stdout)).toEqual([
+    [
+      "", "", "", "https://react.dev/learn", "failed", "https://react.dev", "/learn", "/video.mp4", "ls", "/api", "/res", "7", "8",
+      "user-1", "dev", "a described thing", "", "hello", "", "\u{1F600}\u{1F600}\u{1F600}", "", "fetchUser", "", "42",
+      "7", "", "", "", "/counted",
+    ],
+    ["request", "url"],
+  ]);
+});

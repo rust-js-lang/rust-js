@@ -106,4 +106,6 @@ nothing, `let Some(Kind::String(_)) = js::get(request, "url")..`, is still
 
 - `test/lowering-bindings.test.ts`, "a property a let chain tests and
   binds is read once", whose getters count their reads in Bun.
+- `test/lowering-switches.test.ts`, "React's getIODescription is
+  upstream's switch of a typeof", whose `request` getters count theirs.
 - The mutation `bound-property-read-twice`.
