@@ -618,13 +618,17 @@ pub fn cached(r#fn: &dyn Fn() -> Option<&'static Unknown>, frame: String) -> Opt
       seen.push("set");
     }
   }
-  // What a component throws, reading what's not there; an `Error` of
-  // JS's own constructor is a panic's (ADR 0660).
   function FunctionComponent(): never {
-    throw new TypeError("rendered");
+    throw Error();
   }
+  // The sample is the setter's throw, in the class's frame; the control
+  // `Fake`'s, each under `DetermineComponentFrameRoot`.
   for (const reflected of [true, false]) {
-    expect(lib.DetermineComponentFrameRoot(Component, true, reflected)).toEqual([undefined, undefined]);
+    const [sample, control] = lib.DetermineComponentFrameRoot(Component, true, reflected);
+    expect(sample).toContain("at new Component");
+    expect(sample).toContain("DetermineComponentFrameRoot");
+    expect(control).toContain("Fake");
+    expect(control).not.toContain("Component (");
   }
   expect(seen).toEqual(["Fake", "Component"]);
   expect(Object.hasOwn(Component.prototype, "props")).toBe(false);
