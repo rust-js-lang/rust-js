@@ -391,7 +391,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 let mut called = Vec::new();
                 let value = match state.awaits.contains(&block) {
-                    true => self.mir_await(state, func, args, *fn_span, &mut called),
+                    true => self.mir_await(state, func, args, *destination, *fn_span, &mut called),
                     false => self.mir_call(state, func, args, *destination, *fn_span, &mut called),
                 };
                 let value = value?;

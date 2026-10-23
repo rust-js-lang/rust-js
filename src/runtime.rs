@@ -287,6 +287,7 @@ helpers! {
     InsertAt,
     RemoveAt,
     Swap,
+    Settled,
     Truncate,
     Dedup,
     DedupBy,
@@ -759,6 +760,7 @@ impl Helper {
             // `v.remove(i)`: the item, and a panic past the end.
             Helper::RemoveAt => include_str!("runtime/remove_at.js"),
             Helper::Swap => include_str!("runtime/swap.js"),
+            Helper::Settled => include_str!("runtime/settled.js"),
             Helper::Truncate => include_str!("runtime/truncate.js"),
             Helper::DedupBy => include_str!("runtime/dedup_by.js"),
             Helper::SwapRemove => include_str!("runtime/swap_remove.js"),

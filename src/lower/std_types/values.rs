@@ -456,7 +456,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Some(js) = self.backtrace_call(known, call, &mut values) {
             return Ok(js);
         }
-        if let Some(js) = self.future_call(known, &mut values) {
+        if let Some(js) = self.future_call(known, &mut values, tys) {
             return Ok(js);
         }
         if let Some(js) = self.alloc_call(known, call, &mut values, out)? {
