@@ -1224,6 +1224,11 @@ export function label(text) {
   ok).and_then(|v| js::get(v, key))` before a fallback is `(ok &&
   value?.[key]) || ..`, as React writes it
   ([ADR 0647](../../decisions/0647-type-name-as-react-writes-it.md)).
+- A `let mut` set again where it's falsy is one `||` too: `let mut name =
+  error.name(); if name.is_empty() { name = "Error".to_string(); }` is
+  `const name = error.name || "Error";`, as React writes it, and set again
+  where it's `None`, `is_none()`, `??`
+  ([ADR 0651](../../decisions/0651-a-let-then-its-fallback-is-or.md)).
 
 A value JS gives you that may be `null` is an `Option` too:
 [JavaScript types](../interop/types.md).

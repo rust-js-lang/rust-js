@@ -1332,3 +1332,107 @@ pub fn counted_name(value: Option<&Unknown>) -> (String, u32) {
   }
   expect(named).toBe("Map");
 });
+
+// ADR 0651: a `let`, then its fallback where JS's `!x` finds it falsy, is
+// one `||`, as React's DefaultPrepareStackTraceV8 writes `const name =
+// error.name || 'Error';`. Its JS was
+//
+//   let name = error.name;
+//   if (!name) {
+//     name = 'Error';
+//   }
+//
+// Its fallback where it's none, `x ??= c`, is `??`. Not a `c` that reads
+// `x`, nor a test that isn't the truth, a number's `=== 0`, which NaN
+// fails, a string's `=== "x"`; and a `let` still, set after.
+test("a let then its fallback where it's falsy is one ||", async () => {
+  const dir = fixture("declared-fallback");
+  writeFileSync(join(dir, "lib.rs"), `use js::JsError;
+
+pub fn heading(error: &JsError) -> String {
+    let mut name = error.name();
+    if name.is_empty() {
+        name = "Error".to_string();
+    }
+    let message = error.message();
+    name + ": " + &message
+}
+
+pub fn shouted(s: &str) -> String {
+    let mut label = s.to_string();
+    if label.is_empty() {
+        label = "none".to_string();
+    }
+    label.push('!');
+    label
+}
+
+pub fn asked(t: &str) -> String {
+    let mut s = t.to_string();
+    if s.is_empty() {
+        s = format!("{s}?");
+    }
+    s
+}
+
+pub fn nonzero(x: f64) -> f64 {
+    let mut f = x;
+    if f == 0.0 {
+        f = 1.0;
+    }
+    f
+}
+
+pub fn renamed(t: &str) -> String {
+    let mut name = t.to_string();
+    if name == "x" {
+        name = "y".to_string();
+    }
+    name
+}
+
+pub fn given(o: Option<u32>) -> Option<u32> {
+    let mut v = o;
+    if v.is_none() {
+        v = Some(3);
+    }
+    v
+}
+
+pub fn either(o: Option<String>) -> String {
+    let mut n = o.unwrap_or_default();
+    if n.is_empty() {
+        n = "x".to_string();
+    }
+    n
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain(`export function heading(error) {
+  const name = error.name || "Error";
+  const message = error.message;
+  return name + ": " + message;
+}`);
+  expect(js).toContain('  let label = s || "none";\n  label += "!";\n');
+  expect(js).toContain("  let s = t;\n  if (!s) {\n    s = `${s}?`;\n  }\n");
+  expect(js).toContain("  let f = x;\n  if (f === 0) {\n    f = 1;\n  }\n");
+  expect(js).toContain('  let name = t;\n  if (name === "x") {\n');
+  expect(js).toContain("  const v = o ?? 3;\n");
+  expect(js).toContain('  const n = (o ?? "") || "x";\n');
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.heading({ name: "", message: "m" }), lib.heading({ name: "TypeError", message: "m" })]).toEqual([
+    "Error: m",
+    "TypeError: m",
+  ]);
+  expect([lib.shouted(""), lib.shouted("a"), lib.asked(""), lib.asked("a")]).toEqual(["none!", "a!", "?", "a"]);
+  expect([lib.nonzero(0), lib.nonzero(Number.NaN), lib.nonzero(2)]).toEqual([1, Number.NaN, 2]);
+  expect([lib.renamed("x"), lib.renamed("")]).toEqual(["y", ""]);
+  expect([lib.given(undefined), lib.given(0), lib.either(undefined), lib.either(""), lib.either("a")]).toEqual([
+    3,
+    0,
+    "x",
+    "x",
+    "a",
+  ]);
+});

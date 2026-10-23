@@ -771,6 +771,11 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### Changed
 
+- **A `let`, then its fallback where it's falsy, is `||`** (ADR 0651):
+  React's `prepareStackTrace` is `const name = error.name || "Error";`,
+  where `let mut name = error.name(); if name.is_empty() { .. }` was `let
+  name = error.name; if (!name) { name = "Error"; }`; and set where it's
+  `None`, `const v = o ?? 3`.
 - **A `let` that shadows a binding read no more is that binding** (ADR
   0650): React's `formatOwnerStack` is `let stack = error.stack ?? "";
   .. if (..) { stack = stack.slice(29); }`, one variable, set again, where
