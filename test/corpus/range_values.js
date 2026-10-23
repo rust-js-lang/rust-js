@@ -10,6 +10,7 @@ import {
   $iter,
   $iterator,
   $lazyRange,
+  $lazyRangeLen,
   $lazyZip,
   $print,
   $range,
@@ -168,7 +169,7 @@ function main() {
   const firstId = $rangeFromNext(ids$1);
   const secondId = $rangeFromNext(ids$1);
   console.log(
-    `${a.start}..${a.end} ${b.start}..${b.end} ${firstId == null ? "None" : `Some(${firstId})`} ${secondId == null ? "None" : `Some(${secondId})`} ${ids$1.start}.. ${$lazyRange(0, 5).reduce((n) => n + 1, 0)}`,
+    `${a.start}..${a.end} ${b.start}..${b.end} ${firstId == null ? "None" : `Some(${firstId})`} ${secondId == null ? "None" : `Some(${secondId})`} ${ids$1.start}.. ${$lazyRangeLen(0, 5)}`,
   );
 
   const labelled = { span: { start: 2, end: 5 }, name: "x" };

@@ -239,6 +239,7 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     named_temporaries(body);
     iterators::consumed_into_iters(body, fuse);
     js::each_expr_mut(body, &mut crate::lower::std_types::range::range_items);
+    js::each_expr_mut(body, &mut crate::lower::std_types::range::range_steps);
     eager_chains(body);
     js::statement_lists(body, &mut |stmts| eager_spreads(stmts));
     // A block, or branches, a function's body or a loop's ends in, the function's value made
@@ -287,6 +288,7 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     // they're stepped.
     iterators::consumed_into_iters(body, fuse);
     js::each_expr_mut(body, &mut crate::lower::std_types::range::range_items);
+    js::each_expr_mut(body, &mut crate::lower::std_types::range::range_steps);
     eager_chains(body);
     // Of each, a callback that passes what it's given on to Rust's function,
     // `(x, i) => f(x, i)`: `f` itself.

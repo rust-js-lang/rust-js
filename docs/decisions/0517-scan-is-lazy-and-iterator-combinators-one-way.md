@@ -69,3 +69,14 @@ array's, which has nothing to close, steps on. A std adapter over a
 source that isn't fused, the crate's iterator that gives `None` then
 `Some`, is fused, a JS iterator helper's: the guide lists it. Held by
 `test/corpus/scan_map_while_unfused.rs`.
+
+## Amendment: a lazy range's steps are its bounds' arithmetic
+
+A range made where it's stepped, `$lazyRange(a, b)`, stepped every
+number for `step_by`, `skip`, `count` and `last`, where std's range
+knows them by arithmetic: `(0..u32::MAX).step_by(1 << 30)` never
+finished (#163). Tidy folds each (`range_steps`): `step_by(n)` is
+`$lazyRange(a, b, n)`, `skip(n)` starts it `n` steps on, `count()` is
+`$lazyRangeLen(a, b)` and `last()` `$lazyRangeLast(a, b)`. A range of
+`u64`s, BigInts, and one lent or stepped from its back still step each.
+Held by `test/corpus/range_steps_known.rs`.
