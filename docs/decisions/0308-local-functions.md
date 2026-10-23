@@ -1,7 +1,7 @@
 # 0308. A function written in a body is that body's
 
 Status: Accepted; amended by [0696](0696-a-constructor-is-a-fn-item-where-its-written.md):
-in the innermost block that holds each use of it, after its comments.
+in the block it's written in, after its comments.
 Amends [0296](0296-named-function-expressions.md): where a function a
 block makes and doesn't give is.
 
@@ -95,6 +95,6 @@ another module.
 
 A function written in an `if`'s block was declared in its body's own
 list, after the `if`, as no statement of that list was written after it;
-and the comment above it was lost. It's declared in the innermost block
-that holds each use of it, before what's written after it there, with
+and the comment above it was lost. It's declared in the block it's
+written in, before what's written after it there, with
 its comments (ADR 0696).

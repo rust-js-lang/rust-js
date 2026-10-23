@@ -377,7 +377,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0305 A binding marked `require` is read through `require(module)`](decisions/0305-require.md)
 - [0306 A module's items are where its Rust has them](decisions/0306-item-order.md)
 - [0307 A trait's binding method is read of the value itself](decisions/0307-binding-trait-methods.md)
-- [0308 A function written in a body is that body's](decisions/0308-local-functions.md) *(amended by 0696: in the innermost block that holds each use of it, after its comments)*
+- [0308 A function written in a body is that body's](decisions/0308-local-functions.md) *(amended by 0696: in the block it's written in, after its comments)*
 - [0309 A `match` that only gives a value is one expression](decisions/0309-value-matches.md)
 - [0310 Any value is read as JS reads it](decisions/0310-any-value-as-js-reads-it.md) *(amended by 0639: `concat_text` of any value may throw)*
 - [0311 `.flatten()` of a read of items that may be `None` is the read](decisions/0311-flattened-reads.md)

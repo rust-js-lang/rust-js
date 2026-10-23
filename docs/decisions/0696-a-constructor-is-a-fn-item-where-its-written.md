@@ -1,6 +1,7 @@
 # 0696. A constructor is a `fn` item, declared where it's written
 
-Status: Accepted. Amends [0308](0308-local-functions.md),
+Status: Accepted; amended below: in the block it's written in, not the
+innermost one that uses it. Amends [0308](0308-local-functions.md),
 whose function written in a body was declared in its body's own list,
 not the block it's written in, and without its comments.
 
@@ -34,8 +35,7 @@ where it's written; and the comment above it was gone.
 
 **A constructor Rust writes is a `fn` item: a function declaration,
 which JS constructs and gives a `prototype`, declared where it's
-written, in the innermost block that holds each use of it, after its
-comments.**
+written, in the block it's written in, after its comments.**
 
 ```rust
 if construct {
@@ -55,11 +55,11 @@ if (construct) {
   Object.defineProperty(Fake.prototype, "props", {
 ```
 
-- **The innermost block that holds each use**, of those it's written in:
-  JS scopes a declaration in a block to it, so one used outside its
-  block, as Rust allows, is declared in the block that holds each use.
-  One used nowhere, or written after each statement of its block, is
-  declared in its body's list, as before.
+- **The block it's written in**, where it holds each use: JS scopes a
+  declaration in a block to it, so one whose uses lowering put outside
+  that block's statements is declared in the innermost block that holds
+  each use. One used nowhere, or written after each statement of its
+  block, is declared in its body's list, as before.
 - **Its comments are above it**: the declaration is where its `fn` is,
   so a comment before it is before it (ADR 0444).
 - **Its name is a constructor's where it's named one**: `rust_js::name
@@ -94,3 +94,37 @@ if (construct) {
 - `test/lowering-functions.test.ts`, "a function written in a body is
   declared in it", where `big` is now in its `if`.
 - Mutations `written-fn-in-its-body-list`, `written-fn-comment-lost`.
+
+## Amendment: the block it's written in, not the one using it
+
+It was declared in the innermost block that held each use of it, so one
+written at a body's top and used in one `if` moved into that `if`:
+
+```rust
+pub fn cleanup(on: bool) -> Option<fn()> {
+    fn noop() {}
+    if on { Some(noop) } else { None }
+}
+```
+```js
+export function cleanup(on) {
+  if (on) {
+    function noop() {}
+    return noop;
+  }
+}
+```
+
+A declaration stays where it's written (least surprise): the block it's
+in is the one `local_functions` found it in, and the list it's declared
+in is the outermost of those holding each use that has a statement
+written after it in that block. `cleanup` declares `noop` first, and
+React's `Fake`, written in `if (construct)`, is in that `if`, as
+before. Nothing that must hold moved `noop`: the innermost list was
+the simplest test of "its block" that `Fake` passed.
+
+- `test/lowering-branches.test.ts`, "a return of undefined is a bare
+  return": `noop` at `cleanup`'s top, its `if` a bare `return noop`.
+- `test/lowering-functions.test.ts`, "a function written in a body is
+  declared in it": `twice` at its body's top, used in one `if`.
+- Mutation `written-fn-in-the-block-using-it`.
