@@ -404,6 +404,14 @@ export const OMITTED_PROP_ERROR =
 export const PAGE = `<main>
   <h1>Hi</h1>
 </main>`;
+
+export function formatProdErrorMessage(code, url) {
+  return (
+    `Minified React error #${code}; visit ${url} for the full message or ` +
+    'use the non-minified dev environment for full errors and additional ' +
+    'helpful warnings.'
+  );
+}
 ```
 
 ```rust
@@ -420,6 +428,18 @@ pub const PAGE: &str = r#"<main>
 pub fn version() -> &'static str {
     concat!("v", 2, ".", 1)
 }
+
+pub fn format_prod_error_message(code: u32, url: &str) -> String {
+    format!(
+        concat!(
+            "Minified React error #{}; visit {} for the full message or ",
+            "use the non-minified dev environment for full errors and additional ",
+            "helpful warnings."
+        ),
+        code,
+        url
+    )
+}
 ```
 
 ```js
@@ -435,6 +455,14 @@ export const PAGE = `<main>
 export function version() {
   return "v" + "2" + "." + "1";
 }
+
+export function formatProdErrorMessage(code, url) {
+  return (
+    `Minified React error #${code}; visit ${url} for the full message or ` +
+    "use the non-minified dev environment for full errors and additional " +
+    "helpful warnings."
+  );
+}
 ```
 
 - Each of `concat!`'s arguments is its own JS string, in order: a
@@ -443,6 +471,12 @@ export function version() {
   string.
 - A `concat!` of another macro, `concat!("v", env!("VERSION"))`, is the
   one string rustc makes of it.
+- A format string of a `concat!`, `format!(concat!(..), ..)` or
+  `println!`'s, is its pieces too: each a template literal where it holds
+  a placeholder, and otherwise a string. One whose placeholder or `{{`
+  is split across two pieces, `concat!("{", "}")`, is one, as
+  only the string they make has it; so is one rustc writes a literal
+  argument into, `format!(concat!("a ", "{}"), "b")`.
 
 ## Functions and arrow functions
 

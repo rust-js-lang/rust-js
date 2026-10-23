@@ -421,6 +421,37 @@ pub struct StrPiece {
     pub lines: bool,
 }
 
+/// How a template's format string is written in its source, which its JS
+/// writes as it is: one template literal, its line breaks as they are
+/// where it's written across lines (ADR 0066); or `concat!`'s pieces, each
+/// its own literal joined by `+`, a template literal where it holds a
+/// value and otherwise a string (ADR 0641).
+#[derive(Clone, PartialEq, Default)]
+pub struct TemplateLayout {
+    /// Whether its first piece, the whole of one not broken, is written
+    /// across lines.
+    pub lines: bool,
+    /// Where its source breaks it into its next piece, in order.
+    pub breaks: Vec<TemplateBreak>,
+}
+
+impl TemplateLayout {
+    /// One template literal on one line.
+    pub fn is_plain(&self) -> bool {
+        !self.lines && self.breaks.is_empty()
+    }
+}
+
+/// Where a template's source breaks it into its next piece: in a text, by
+/// its index, at a byte offset in it, as a value is never broken.
+#[derive(Clone, PartialEq)]
+pub struct TemplateBreak {
+    pub text: usize,
+    pub at: usize,
+    /// Whether the piece it starts is written across lines.
+    pub lines: bool,
+}
+
 #[derive(Clone, PartialEq)]
 pub enum ExprKind {
     Num(f64),
@@ -495,9 +526,9 @@ pub enum ExprKind {
     /// A regular expression literal, as written: `/^\p{White_Space}$/u` (ADR 0063).
     Regex(String),
     /// `\`Some(${x})\``: the texts around the values, as they read (one more
-    /// than the values), and the values (ADR 0066); and whether a line break
-    /// in its texts is one, where its format string was written across lines.
-    Template(Vec<String>, Vec<Expr>, bool),
+    /// than the values), and the values (ADR 0066); and how its format
+    /// string is written, across lines or as `concat!`'s pieces.
+    Template(Vec<String>, Vec<Expr>, TemplateLayout),
     /// `{ get value() { return x; }, set value(value) { x = value; } }`: a
     /// `&mut` kept, reading and writing its place each time (ADR 0099). The
     /// place is what's read then, not before: it's never taken out.

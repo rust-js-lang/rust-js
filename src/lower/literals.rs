@@ -2,7 +2,8 @@
 //! is: one literal; one across lines, a template literal of them; or
 //! `concat!`'s pieces, each its own literal joined by `+` (ADR 0641). The
 //! one answer of what pieces a string is written as, wherever a literal's
-//! value is lowered: in THIR, in MIR's constants, and as a `const`'s value.
+//! value is lowered: in THIR, in MIR's constants, and as a `const`'s value;
+//! and of a format string, which `format_args.rs` breaks its template by.
 
 use rustc_ast::token;
 use rustc_lexer::{LiteralKind, TokenKind};
@@ -63,15 +64,46 @@ fn written_across_lines(text: &str, code: &str) -> bool {
         }
 }
 
-/// The pieces of `concat!(..)`, written at `span`, whose value is `text`:
-/// each argument's text, as `concat!` writes it, a string's, a char's, an
-/// integer's, a float's or a bool's. `None` where an argument isn't a
-/// literal, a macro's value, `stringify!(b)`, which rustc expands first,
-/// or where the pieces aren't `text`, which the one literal then is.
-fn concat_pieces(tcx: TyCtxt<'_>, text: &str, span: Span) -> Option<Vec<StrPiece>> {
-    let code = tcx.sess.source_map().span_to_snippet(span).ok()?;
+/// How the format string of the macro call at `span`, `format!(..)` or
+/// `panic!(..)`, is written, as rustc keeps no span of its own: the call's
+/// first string literal, one piece, `format!("..", ..)`'s and `write!(f,
+/// "..", ..)`'s; or its first `concat!` of literals, its pieces,
+/// `format!(concat!("..", ".."), ..)`'s (ADR 0641). Each piece's text is
+/// the format string's, `{}` and all, which the caller checks against the
+/// template rustc made of it. `None` where it has neither.
+pub(super) fn format_string(tcx: TyCtxt<'_>, span: Span) -> Option<Vec<StrPiece>> {
+    let code = tcx.sess.source_map().span_to_snippet(span.source_callsite()).ok()?;
+    let tokens = tokens(&code);
+    for (i, &(kind, code)) in tokens.iter().enumerate() {
+        match kind {
+            TokenKind::Literal {
+                kind: LiteralKind::Str { .. } | LiteralKind::RawStr { .. },
+                ..
+            } => return Some(vec![piece(kind, code)?]),
+            // To its first closing delimiter, which ends it where its
+            // arguments are literals, and otherwise ends what isn't one.
+            TokenKind::Ident
+                if code == "concat" && tokens.get(i + 1).is_some_and(|(kind, _)| *kind == TokenKind::Bang) =>
+            {
+                let close = (tokens[i..].iter()).position(|(kind, _)| {
+                    matches!(
+                        kind,
+                        TokenKind::CloseParen | TokenKind::CloseBracket | TokenKind::CloseBrace
+                    )
+                })?;
+                return concat_arguments(&tokens[i..=i + close]);
+            }
+            _ => {}
+        }
+    }
+    None
+}
+
+/// `code`'s tokens, by Rust's lexer, each its kind and its text: not its
+/// whitespace or comments.
+fn tokens(code: &str) -> Vec<(TokenKind, &str)> {
     let mut at = 0;
-    let tokens: Vec<(TokenKind, &str)> = rustc_lexer::tokenize(&code, rustc_lexer::FrontmatterAllowed::No)
+    rustc_lexer::tokenize(code, rustc_lexer::FrontmatterAllowed::No)
         .map(|token| {
             let text = &code[at..at + token.len as usize];
             at += token.len as usize;
@@ -83,7 +115,31 @@ fn concat_pieces(tcx: TyCtxt<'_>, text: &str, span: Span) -> Option<Vec<StrPiece
                 TokenKind::Whitespace | TokenKind::LineComment { .. } | TokenKind::BlockComment { .. }
             )
         })
-        .collect();
+        .collect()
+}
+
+/// The pieces of `concat!(..)`, written at `span`, whose value is `text`:
+/// each argument's text, as `concat!` writes it, a string's, a char's, an
+/// integer's, a float's or a bool's. `None` where an argument isn't a
+/// literal, a macro's value, `stringify!(b)`, which rustc expands first,
+/// or where the pieces aren't `text`, which the one literal then is. Of
+/// `println!(concat!(..))`, `text` ends with the line break `println!`
+/// writes after them, which the last piece then does.
+fn concat_pieces(tcx: TyCtxt<'_>, text: &str, span: Span) -> Option<Vec<StrPiece>> {
+    let code = tcx.sess.source_map().span_to_snippet(span).ok()?;
+    let mut pieces = concat_arguments(&tokens(&code))?;
+    let joined: String = pieces.iter().map(|piece| piece.text.as_str()).collect();
+    match text.strip_suffix('\n') {
+        _ if joined == text => {}
+        Some(line) if line == joined => pieces.last_mut()?.text.push('\n'),
+        _ => return None,
+    }
+    Some(pieces)
+}
+
+/// The pieces of the call `concat!(..)`, its `tokens`: each argument's text,
+/// as `concat!` writes it, where each is a literal.
+fn concat_arguments(tokens: &[(TokenKind, &str)]) -> Option<Vec<StrPiece>> {
     // `concat!(..)`, or `std::concat![..]`: its path, then its arguments.
     let bang = tokens.iter().position(|(kind, _)| *kind == TokenKind::Bang)?;
     let path = &tokens[..bang];
@@ -120,8 +176,7 @@ fn concat_pieces(tcx: TyCtxt<'_>, text: &str, span: Span) -> Option<Vec<StrPiece
             _ => return None,
         }
     }
-    let joined: String = pieces.iter().map(|piece| piece.text.as_str()).collect();
-    (joined == text).then_some(pieces)
+    Some(pieces)
 }
 
 /// One of `concat!`'s arguments, a literal written as `code`, as `concat!`

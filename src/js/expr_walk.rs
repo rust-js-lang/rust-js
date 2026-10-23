@@ -225,7 +225,9 @@ impl Expr {
             ExprKind::Await(a) => ExprKind::Await(one(a)?),
             ExprKind::Spread(a) => ExprKind::Spread(one(a)?),
             ExprKind::Stringed(a) => ExprKind::Stringed(one(a)?),
-            ExprKind::Template(texts, values, lines) => ExprKind::Template(texts.clone(), all(values)?, *lines),
+            ExprKind::Template(texts, values, layout) => {
+                ExprKind::Template(texts.clone(), all(values)?, layout.clone())
+            }
             ExprKind::Jsx(jsx) => ExprKind::Jsx(Box::new(Jsx {
                 tag: match &jsx.tag {
                     JsxTag::Component(c) => JsxTag::Component(c.replace(with, callbacks)?),

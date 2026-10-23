@@ -84,14 +84,7 @@ impl<'a> Cx<'a> {
             // across lines, a template literal of them (ADR 0641).
             ExprKind::Written(pieces) => {
                 let piece = |piece: &js::StrPiece| match piece.lines {
-                    true => {
-                        let value = TemplateElementValue {
-                            raw: self.name(&template_raw(&piece.text, true)).into(),
-                            cooked: Some(self.name(&piece.text).into()),
-                        };
-                        let quasis = ArenaVec::from_iter_in([TemplateElement::new(SPAN, value, true, b)], b);
-                        Expression::new_template_literal(sp, quasis, ArenaVec::new_in(b), b)
-                    }
+                    true => self.template_literal(sp, &[&piece.text], &[], true),
                     false => Expression::new_string_literal(sp, self.allocator.alloc_str(&piece.text), None, b),
                 };
                 let mut pieces = pieces.iter().map(piece);
@@ -100,17 +93,37 @@ impl<'a> Cx<'a> {
                     Expression::new_binary_expression(sp, joined, BinaryOperator::Addition, next, b)
                 })
             }
-            ExprKind::Template(texts, values, lines) => {
-                let quasis = texts.iter().enumerate().map(|(i, text)| {
-                    let value = TemplateElementValue {
-                        raw: self.name(&template_raw(text, *lines)).into(),
-                        cooked: Some(self.name(text).into()),
+            // One template literal, or `concat!`'s pieces joined by `+`, each
+            // a template literal where it holds a value or is written across
+            // lines, and otherwise a string literal (ADR 0641).
+            ExprKind::Template(texts, values, layout) if layout.breaks.is_empty() => {
+                let texts: Vec<&str> = texts.iter().map(String::as_str).collect();
+                self.template_literal(sp, &texts, values, layout.lines)
+            }
+            ExprKind::Template(texts, values, layout) => {
+                let last = texts.len() - 1;
+                let starts = std::iter::once((0, 0, layout.lines))
+                    .chain(layout.breaks.iter().map(|at| (at.text, at.at, at.lines)));
+                let ends = (layout.breaks.iter().map(|at| (at.text, at.at))).chain([(last, texts[last].len())]);
+                let mut pieces = starts.zip(ends).map(|((from, start, lines), (to, end))| {
+                    let piece_texts: Vec<&str> = match from == to {
+                        true => vec![&texts[from][start..end]],
+                        false => std::iter::once(&texts[from][start..])
+                            .chain(texts[from + 1..to].iter().map(String::as_str))
+                            .chain([&texts[to][..end]])
+                            .collect(),
                     };
-                    TemplateElement::new(SPAN, value, i + 1 == texts.len(), b)
+                    match (from == to, lines) {
+                        (true, false) => {
+                            Expression::new_string_literal(sp, self.allocator.alloc_str(piece_texts[0]), None, b)
+                        }
+                        _ => self.template_literal(sp, &piece_texts, &values[from..to], lines),
+                    }
                 });
-                let quasis = ArenaVec::from_iter_in(quasis, b);
-                let values = ArenaVec::from_iter_in(values.iter().map(|v| self.expr(v)), b);
-                Expression::new_template_literal(sp, quasis, values, b)
+                let first = pieces.next().expect("a template's first piece");
+                pieces.fold(first, |joined, next| {
+                    Expression::new_binary_expression(sp, joined, BinaryOperator::Addition, next, b)
+                })
             }
             ExprKind::Unary(op, arg) => {
                 let op = match op {
@@ -194,6 +207,22 @@ impl<'a> Cx<'a> {
     }
 
     /// A JSX element (ADR 0040), laid out by the formatter.
+    /// `` `a ${x} b` ``: the texts around `values`, its line breaks as they
+    /// are where it's written across `lines` (ADR 0066).
+    fn template_literal(&self, sp: Span, texts: &[&str], values: &[js::Expr], lines: bool) -> Expression<'a> {
+        let b = &self.b;
+        let quasis = texts.iter().enumerate().map(|(i, text)| {
+            let value = TemplateElementValue {
+                raw: self.name(&template_raw(text, lines)).into(),
+                cooked: Some(self.name(text).into()),
+            };
+            TemplateElement::new(SPAN, value, i + 1 == texts.len(), b)
+        });
+        let quasis = ArenaVec::from_iter_in(quasis, b);
+        let values = ArenaVec::from_iter_in(values.iter().map(|v| self.expr(v)), b);
+        Expression::new_template_literal(sp, quasis, values, b)
+    }
+
     fn jsx(&self, sp: Span, jsx: &js::Jsx) -> Expression<'a> {
         let b = &self.b;
         let mut children = ArenaVec::new_in(b);

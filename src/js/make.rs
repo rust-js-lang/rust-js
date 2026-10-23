@@ -93,14 +93,59 @@ impl Expr {
         if kept.is_empty() {
             return Expr::str(folded.pop().expect("a text"));
         }
-        Expr::new(ExprKind::Template(folded, kept, false))
+        Expr::new(ExprKind::Template(folded, kept, TemplateLayout::default()))
     }
 
     /// A template written across `lines`: its line breaks written as they are.
     pub fn with_lines(self, lines: bool) -> Expr {
         match self.kind {
-            ExprKind::Template(texts, values, _) => Expr::new(ExprKind::Template(texts, values, lines)),
+            ExprKind::Template(texts, values, _) => Expr::new(ExprKind::Template(
+                texts,
+                values,
+                TemplateLayout {
+                    lines,
+                    breaks: Vec::new(),
+                },
+            )),
             _ => self,
+        }
+    }
+
+    /// A template whose format string is written as `pieces`, `concat!`'s,
+    /// each its texts and values, as `template` takes them, and whether
+    /// it's written across lines: one template, broken where they are
+    /// (ADR 0641). Of no values, the pieces are a string's.
+    pub fn template_pieces(pieces: Vec<(Vec<String>, Vec<Expr>, bool)>) -> Expr {
+        let (mut texts, mut values) = (vec![String::new()], Vec::new());
+        let mut layout = TemplateLayout::default();
+        let mut strings = Vec::new();
+        for (i, (piece_texts, piece_values, lines)) in pieces.into_iter().enumerate() {
+            let (piece_texts, piece_values) = match Expr::template(piece_texts, piece_values).kind {
+                ExprKind::Str(text) => (vec![text], Vec::new()),
+                ExprKind::Template(piece_texts, piece_values, _) => (piece_texts, piece_values),
+                _ => unreachable!("a template is a string or a template"),
+            };
+            let last = texts.last_mut().expect("a text");
+            match i {
+                0 => layout.lines = lines,
+                _ => layout.breaks.push(TemplateBreak {
+                    text: values.len(),
+                    at: last.len(),
+                    lines,
+                }),
+            }
+            strings.push(StrPiece {
+                text: piece_texts.concat(),
+                lines,
+            });
+            let mut piece_texts = piece_texts.into_iter();
+            last.push_str(&piece_texts.next().expect("a text"));
+            values.extend(piece_values);
+            texts.extend(piece_texts);
+        }
+        match values.is_empty() {
+            true => Expr::written(strings),
+            false => Expr::new(ExprKind::Template(texts, values, layout)),
         }
     }
 
