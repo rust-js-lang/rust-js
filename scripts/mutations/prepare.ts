@@ -3,6 +3,22 @@ import type { Mutation } from "../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "fallen-held-kept",
+    breaks: "`const type = a || b || undefined; return type ?? \"Object\";` stays, not `a || b || \"Object\"`",
+    file: "src/prepare.rs",
+    find: "    fallen_held(body);\n",
+    replace: "",
+    tests: ["test/lowering-options.test.ts", "-t", "filter by truth then a fallback"],
+  },
+  {
+    name: "fallen-held-read-twice",
+    breaks: "a chain held and read again after its fallback's statement takes the fallback, where it was `undefined`",
+    file: "src/prepare.rs",
+    find: "        if js::mentions_in(&after[1..], name) != 0 || js::mentions_in(&after[..1], name) != 1 {\n",
+    replace: "        if js::mentions_in(&after[..1], name) != 1 {\n",
+    tests: ["test/lowering-options.test.ts", "-t", "filter by truth then a fallback"],
+  },
+  {
     name: "truth-kept-unfallen",
     breaks: "`(a || undefined) ?? b`, a `filter` by truth's then `or(b)`, stays, not `a || b`",
     file: "src/prepare.rs",

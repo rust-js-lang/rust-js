@@ -771,6 +771,9 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### Changed
 
+- **A chain held, then its fallback, is one `||`** (ADR 0646): React's
+  `typeName`, `const type = a || b || "Object"; return type;`, where it
+  was `const type = a || b || undefined; return type ?? "Object";`.
 - **`js::is_defined` of a static is given the static itself** (ADR 0645):
   `js::is_defined(js::symbol::to_string_tag)` is `typeof Symbol !==
   "undefined" && typeof Symbol.toStringTag !== "undefined"`;

@@ -514,7 +514,7 @@ fn block(body: &mut Vec<Stmt>) {
             *value = None;
         }
     }
-    for stmt in body {
+    for stmt in body.iter_mut() {
         match &mut stmt.kind {
             StmtKind::Const(_, e)
             | StmtKind::Expr(e)
@@ -579,6 +579,46 @@ fn block(body: &mut Vec<Stmt>) {
             | StmtKind::Continue(_)
             | StmtKind::Directive(_) => {}
         }
+    }
+    fallen_held(body);
+}
+
+/// `const type = a || b || undefined; return type ?? "Object";` is `const
+/// type = a || b || "Object"; return type;`: a chain held, whose fallback
+/// the next statement gives where it reads it, its one read, is the
+/// chain's, `fallen_to`'s, as a person writes it (ADR 0646). Only a
+/// constant fallback, which nothing after the `const` could change, nor
+/// its being made earlier.
+fn fallen_held(body: &mut [Stmt]) {
+    for at in 1..body.len() {
+        let (before, after) = body.split_at_mut(at);
+        let StmtKind::Const(name, chain) = &mut before[at - 1].kind else {
+            continue;
+        };
+        if js::mentions_in(&after[1..], name) != 0 || js::mentions_in(&after[..1], name) != 1 {
+            continue;
+        }
+        let (StmtKind::Return(Some(read)) | StmtKind::Const(_, read) | StmtKind::Expr(read)) = &mut after[0].kind
+        else {
+            continue;
+        };
+        let ExprKind::Binary(js::Op::Coalesce, held, fallback) = &read.kind else {
+            continue;
+        };
+        if !matches!(&held.kind, ExprKind::Var(v) if v == name) || !fallback.is_constant() {
+            continue;
+        }
+        let Some(fallen) = fallen_to(chain, fallback) else {
+            continue;
+        };
+        *chain = Expr {
+            span: chain.span,
+            ..fallen
+        };
+        *read = Expr {
+            span: read.span,
+            ..(**held).clone()
+        };
     }
 }
 

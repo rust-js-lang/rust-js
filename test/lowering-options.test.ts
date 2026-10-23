@@ -1191,6 +1191,23 @@ pub fn ordered() -> Vec<u32> {
     log.push(found.unwrap_or(0));
     log
 }
+
+// React's typeName: the chain held, then given through a cast, the
+// identity, then its fallback.
+pub fn type_name(value: &Unknown) -> String {
+    let r#type = js::get(value, "tag")
+        .filter(|v| js::truthy(Some(*v)))
+        .or_else(|| js::get(value, "name"))
+        .filter(|v| js::truthy(Some(*v)));
+    unsafe { js::cast::<Option<String>>(r#type) }.unwrap_or_else(|| "Object".to_string())
+}
+
+// One read again after its fallback keeps its \`undefined\` there.
+pub fn tag_shown(value: &Unknown) -> (String, bool) {
+    let tag = js::get(value, "tag").filter(|v| js::truthy(Some(*v)));
+    let shown = unsafe { js::cast::<Option<String>>(tag) }.unwrap_or_else(|| "Object".to_string());
+    (shown, tag.is_some())
+}
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
@@ -1203,6 +1220,7 @@ pub fn ordered() -> Vec<u32> {
   expect(js).toContain("export function first(a, b, c) {\n  return a || b || c;\n}");
   expect(js).toContain("export function kept(a) {\n  return a || null;\n}");
   expect(js).toContain('export function label(a) {\n  return a || "Memo";\n}');
+  expect(js).toContain('export function typeName(value) {\n  const type = value.tag || value.name || "Object";\n  return type;\n}');
   expect(js).toContain("export function shout(a) {\n  return a ? a.toUpperCase() : undefined;\n}");
   // A predicate that isn't the truth of what it holds is its own test.
   expect(js).toContain("export function falsyOr(a, b) {\n  return a != null && !a ? a : b;\n}");
@@ -1215,6 +1233,8 @@ pub fn ordered() -> Vec<u32> {
       expect(lib.displayName({ displayName: x, name: y })).toEqual(x || y || null);
       expect(lib.functionName({ displayName: x, name: y })).toEqual(x || y || "");
       expect(lib.memoName({ type: { displayName: x } })).toEqual(x || "Memo");
+      expect(lib.typeName({ tag: x, name: y })).toEqual(x || y || "Object");
+      expect(lib.tagShown({ tag: x })).toEqual([x || "Object", !!x]);
       expect(lib.either(x ?? undefined, y ?? undefined)).toEqual(x || (y ?? undefined));
       expect(lib.eitherOr(x ?? undefined, y ?? undefined, object)).toEqual(x || (y ?? object));
       expect(lib.given(x ?? undefined, y)).toEqual(x || y);

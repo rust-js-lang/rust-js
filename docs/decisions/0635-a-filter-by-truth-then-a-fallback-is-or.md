@@ -2,7 +2,9 @@
 
 Status: Accepted. Amends [0266](0266-text-or.md), whose `||` of a value
 kept where it's truthy preparation writes now, of every fallback, a
-chain's and a nullable result's too.
+chain's and a nullable result's too. Extended by
+[0646](0646-a-held-chain-and-its-fallback-is-one-or.md): a chain held in a
+`const`, then its fallback, is one `||` too.
 
 Case: A ([0262](0262-when-rust-and-js-disagree.md)): no program can tell.
 

@@ -1178,6 +1178,11 @@ export function label(text) {
 - Only a `filter` by the truth of what it holds is `||`: any other test,
   `filter(|n| *n > 0)`, is a conditional, `n != null && n > 0 ? n : 1`.
 - Text is falsy only where it's empty, so `!t.is_empty()` is its truth.
+- A chain held in a `let`, its fallback given after, is one `||` too:
+  `let r#type = ..filter(..); r#type.unwrap_or_else(|| "Object".into())`
+  is `const type = a || b || "Object"; return type;`, where the fallback
+  is a literal and the `let` read only there
+  ([ADR 0646](../../decisions/0646-a-held-chain-and-its-fallback-is-one-or.md)).
 
 A value JS gives you that may be `null` is an `Option` too:
 [JavaScript types](../interop/types.md).
