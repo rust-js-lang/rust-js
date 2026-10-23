@@ -26,6 +26,12 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         })
     }
 
+    /// serde_json's `Value`, whose `Null` is the string `"Null"` and each
+    /// other variant an object (ADR 0083).
+    pub(in crate::lower) fn is_json_value(&self, ty: Ty<'tcx>) -> bool {
+        self.json_type(ty) == Some(Json::Value)
+    }
+
     pub(in crate::lower) fn is_json_map(&self, ty: Ty<'tcx>) -> bool {
         self.json_type(ty) == Some(Json::Map)
     }
@@ -134,9 +140,13 @@ pub(in crate::lower) enum JsonMethod {
     IsTag(&'static str),
     IsNumber(&'static str),
     AsTag(&'static str),
+    /// `as_array_mut()` and `as_object_mut()` of a `&mut Value`, a cell of it.
+    AsTagMut(&'static str),
     AsF64,
     AsInt(&'static str),
     Get,
+    /// `get_mut(key)`: a handle on the entry, `$jsonGetMut`.
+    GetMut,
     Unsupported {
         owner: &'static str,
         name: Symbol,
@@ -169,13 +179,16 @@ impl JsonMethod {
             "is_i64" => Self::IsNumber("i64"),
             "as_bool" => Self::AsTag("Bool"),
             "as_str" => Self::AsTag("String"),
-            "as_array" | "as_array_mut" => Self::AsTag("Array"),
-            "as_object" | "as_object_mut" => Self::AsTag("Object"),
+            "as_array" => Self::AsTag("Array"),
+            "as_object" => Self::AsTag("Object"),
+            "as_array_mut" => Self::AsTagMut("Array"),
+            "as_object_mut" => Self::AsTagMut("Object"),
             "as_number" => Self::AsTag("Number"),
             "as_f64" => Self::AsF64,
             "as_u64" => Self::AsInt("u64"),
             "as_i64" => Self::AsInt("i64"),
-            "get" | "get_mut" => Self::Get,
+            "get" => Self::Get,
+            "get_mut" => Self::GetMut,
             _ => Self::Unsupported { owner: "Value", name },
         }
     }

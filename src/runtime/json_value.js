@@ -127,6 +127,17 @@ function $jsonGet(value, key) {
   if (typeof key === "string") return value.TAG === "Object" ? value._0.get(key) : undefined;
   return value.TAG === "Array" ? value._0[key] : undefined;
 }
+// `get_mut(key)` of a `&mut Value`, a cell of it, `null`'s string being no
+// object (ADR 0083): a handle on the entry, which reads and writes it in its
+// object's map or its array, or `undefined` if it isn't there.
+function $jsonGetMut(cell, key) {
+  const value = cell.value;
+  const items = typeof key === "string" ? value.TAG === "Object" && value._0 : value.TAG === "Array" && value._0;
+  if (!items || (typeof key === "string" ? !items.has(key) : key >= items.length)) return undefined;
+  return typeof key === "string"
+    ? { get value() { return items.get(key); }, set value(next) { items.set(key, next); } }
+    : { get value() { return items[key]; }, set value(next) { items[key] = next; } };
+}
 function $jsonIndex(value, key) {
   return $jsonGet(value, key) ?? "Null";
 }

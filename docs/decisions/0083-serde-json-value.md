@@ -92,3 +92,14 @@ JSON text is.
   change it through `as_object_mut()`.
 - `as_u64()` and `as_i64()` give 64-bit integers, which rust-js can't hold
   yet; `as_f64()` works. (They work now, as BigInts: ADR 0086.)
+
+## Amendment: a `&mut Value` is a cell
+
+A `Value`'s `Null` is the string `"Null"`, each other variant an object;
+a `Value` was taken as an object all the same, written in place by
+`$assign`, which a change to or from `Null` can't be: it threw (#169).
+A `Value` isn't an object (`is_object`), so a `&mut Value` is a cell of
+it, written whole; `get_mut(key)` is a handle on the entry,
+`$jsonGetMut`, and `as_array_mut()` and `as_object_mut()` read what the
+cell holds, whose array or map is changed in place. Held by the serde
+test "a Value written through a &mut changes to and from Null".

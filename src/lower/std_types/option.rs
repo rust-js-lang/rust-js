@@ -592,8 +592,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             within.pop();
             return each;
         }
-        // A `NonZero` is its number (ADR 0177), never `0` or `0n`.
+        // A `NonZero` is its number (ADR 0177), never `0` or `0n`; a
+        // serde_json `Value` an object or `"Null"` (ADR 0083).
         crate::lower::recognition::is_non_zero_ty(ty)
+            || self.recognition().is_json_value(ty)
             || self.option_of(ty).is_none()
                 && !any
                 && (self.is_object(ty) || matches!(ty.kind(), ty::Closure(..) | ty::FnDef(..) | ty::FnPtr(..)))
