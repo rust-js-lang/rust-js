@@ -465,7 +465,8 @@ test("iterators are array methods, and sorting takes comparators", async () => {
   expect(js).toContain("  w.sort((a, b) => $cmp(key(a), key(b)));");
   // `then_with` is `||`: `Equal` is 0.
   expect(js).toContain("  w.sort((a, b) => $cmp(!a, !b) || $cmp(a, b));");
-  expect(js).toContain("  if (cmp === -1) {");
+  // A match of an \`Ordering\` is a switch of its numbers (ADR 0629).
+  expect(js).toContain("  switch ($cmp(a, b)) {\n    case -1:\n      return -1;\n");
 });
 
 // ADR 0035: JS that throws, as a `Result`; and `?`.
@@ -691,8 +692,8 @@ test("string methods are JS's, and format! is a template literal", async () => {
   expect(js).toContain('    s += String(i);\n    s += ",";');
   // A `char` is a one-character string.
   expect(js).toContain('  const c = windows ? "\\\\" : "/";');
-  // A string literal pattern is `===` on the JS string, without `!= null` in `Some`.
-  expect(js).toContain('  }\n  if (s === "abc" || s === "stats.rs") {');
+  // A match of string literals is a switch of them (ADR 0629).
+  expect(js).toContain('    case "abc":\n    case "stats.rs":\n      return 1;\n');
   // Of a tuple's part, the option bound where it was made (ADR 0369); its
   // `else if (top != null)` after `if (top == null)`, decided, is gone (ADR 0564).
   expect(js).toContain('  } else if (top === "ab") {');
