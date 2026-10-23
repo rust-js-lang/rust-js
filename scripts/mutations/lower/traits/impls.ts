@@ -455,11 +455,12 @@ export const mutations: Mutation[] = [
   },
   {
     name: "dictionary-coded-const-getter",
-    breaks: "a library's dictionary of an impl's function constant looks for a generic impl's initializer, and is refused",
+    breaks: "a dictionary's entry of an impl's function constant lowers its initializer again, where it's the module's constant it is (ADR 0410)",
     file: "src/lower/traits/impls.rs",
     find: "                        Some(own) if crate::lower::analysis::impl_const(self.tcx, own) => Expr::arrow(\n",
     replace: "                        Some(own) if false && crate::lower::analysis::impl_const(self.tcx, own) => Expr::arrow(\n",
     tests: ["test/corpus.test.ts", "-t", "^impl_fn_consts.rs$"],
+    snapshots: true,
   },
   {
     name: "dictionary-const-a-function",
