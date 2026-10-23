@@ -151,3 +151,12 @@ as `/` does. Held by `test/corpus/int_div_sign_methods.rs`.
 `$nextMultipleOf` wraps past the range as overflow does, its checked form
 none; the wrapping Euclidean forms are 0 and `MIN` of `MIN` by `-1`, where
 the plain ones panic. Held by `test/corpus/int_shift_multiple_methods.rs`.
+
+And the rest of #119: `overflowing_shl`, `overflowing_shr`,
+`overflowing_abs` and `overflowing_pow`, the wrapping one and whether it
+wrapped; `ilog(base)` and `checked_ilog`, `$ilog` given its base, a base
+below 2 panicking as std's does, or none; `checked_isqrt` of a signed
+integer, none of a negative; the `_add_signed` and `_add_unsigned` forms,
+checked, wrapping, saturating and overflowing, of their exact sum; and
+`checked_signed_diff`; and a byte's `eq_ignore_ascii_case`. Held by
+`test/corpus/int_overflow_sign_methods.rs`.

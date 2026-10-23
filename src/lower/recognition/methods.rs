@@ -1,6 +1,6 @@
 //! Pure method-name tables, called only after library/type identity checks.
 
-use super::{Comb, IterComb, Num, NumOp, TextOp};
+use super::{Comb, IterComb, Num, NumOp, SignMode, TextOp};
 use rustc_middle::mir::BinOp;
 
 /// Which `TextOp` a method of a `char` or a `str` is.
@@ -127,6 +127,19 @@ pub(super) fn number(name: &str, num: Num) -> Option<NumOp> {
         "wrapping_div_euclid" if !float => NumOp::WrappingEuclid { div: true },
         "checked_next_multiple_of" if !float && !signed => NumOp::NextMultipleOf { checked: true },
         "next_multiple_of" if !float && !signed => NumOp::NextMultipleOf { checked: false },
+        "ilog" if !float => NumOp::IlogBase { checked: false },
+        "checked_ilog" if !float => NumOp::IlogBase { checked: true },
+        "checked_isqrt" if signed => NumOp::CheckedIsqrt,
+        "overflowing_shl" if !float => NumOp::OverflowingShift { right: false },
+        "overflowing_shr" if !float => NumOp::OverflowingShift { right: true },
+        "overflowing_abs" if signed => NumOp::OverflowingAbs,
+        "overflowing_pow" if !float => NumOp::OverflowingPow,
+        "checked_add_signed" | "checked_add_unsigned" if !float => NumOp::AddOtherSign(SignMode::Checked),
+        "wrapping_add_signed" | "wrapping_add_unsigned" if !float => NumOp::AddOtherSign(SignMode::Wrapping),
+        "saturating_add_signed" | "saturating_add_unsigned" if !float => NumOp::AddOtherSign(SignMode::Saturating),
+        "overflowing_add_signed" | "overflowing_add_unsigned" if !float => NumOp::AddOtherSign(SignMode::Overflowing),
+        "checked_signed_diff" if !float && !signed => NumOp::CheckedSignedDiff,
+        "eq_ignore_ascii_case" if !float && !signed => NumOp::BytesEqIgnoreAsciiCase,
         "unbounded_shl" if !float => NumOp::UnboundedShift { right: false },
         "unbounded_shr" if !float => NumOp::UnboundedShift { right: true },
         "wrapping_rem" if !float => NumOp::WrappingRem,
