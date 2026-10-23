@@ -1,6 +1,7 @@
 // How much of Node.js's API the node crate binds: each export of each
 // module @types/node declares, `declare module "fs"`, and `process`'s and
 // `console`'s members, as `import process from "process"` is the global,
+// and what it adds to the `Error` global, V8's stack trace API (ADR 0648),
 // `+` where the crate binds it, a value by its `link_name`, `fs#readFileSync` or
 // `process.cwd`, a type or a class by an item of its name in the module's
 // file, http.rs's of `http`, or in lib.rs, the crate's own; `-` where it
@@ -17,6 +18,15 @@ const src = join(import.meta.dir, "src");
 
 type Kind = "value" | "type";
 export type Module = { name: string; exports: { name: string; kind: Kind; bound: boolean; unbound?: boolean }[] };
+
+// The globals whose members are counted, each by its interface and the
+// file that declares it: `process` and `console` are `export =` the global,
+// and `Error`'s are what `globals.d.ts` adds to `ErrorConstructor`.
+const GLOBALS = [
+  { name: "process", shape: "Process", file: "process.d.ts" },
+  { name: "console", shape: "Console", file: "console.d.ts" },
+  { name: "Error", shape: "ErrorConstructor", file: "globals.d.ts" },
+];
 
 // What isn't bound by design, each list with why: `x`, counted apart, as
 // react's coverage has it (ADR 0347).
@@ -94,7 +104,7 @@ async function declared(): Promise<Map<string, Map<string, Kind>>> {
       const assigned = module.declarations
         .map((d: any) => (d.kind === "other" ? d.text.match(/^export = (\w+);/)?.[1] : undefined))
         .find(Boolean);
-      if (assigned && !["process", "console"].includes(assigned)) {
+      if (assigned && !GLOBALS.some((g) => g.name === assigned)) {
         own.clear();
         const interfaces = new Map<string, any>();
         const index = (list: any[]) => {
@@ -127,10 +137,9 @@ async function declared(): Promise<Map<string, Map<string, Kind>>> {
   for (const [name, froms] of reexports) {
     for (const from of froms) for (const [e, kind] of modules.get(from) ?? []) modules.get(name)!.set(e, kind);
   }
-  // `process` and `console` are `export =` the global: their members are
-  // what its interface, `Process` or `Console`, has.
-  for (const [name, shape] of [["process", "Process"], ["console", "Console"]]) {
-    const file = join(types, `${name}.d.ts`);
+  // A global's members are what its interface, `Process` say, has.
+  for (const { name, shape, file: declares } of GLOBALS) {
+    const file = join(types, declares);
     const ts = await open([file]);
     const { declarations } = await ts.read(file);
     await ts.close();
@@ -175,7 +184,9 @@ function bindings(): { links: Set<string>; items: Set<string> } {
       ...[...sources.matchAll(/link_name = "(?:new |get |set )?([\w/]+)#(\w+)(?:\.(\w+))?/g)].flatMap((m) =>
         m[3] ? [`${m[1]}#${m[2]}`, `${m[1]}#${m[3]}`] : [`${m[1]}#${m[2]}`],
       ),
-      ...[...sources.matchAll(/link_name = "(?:get |set )?process\.(\w+)"/g)].map((m) => `process#${m[1]}`),
+      ...[...sources.matchAll(/link_name = "(?:get |set )?(\w+)\.(\w+)"/g)]
+        .filter((m) => GLOBALS.some((g) => g.name === m[1]))
+        .map((m) => `${m[1]}#${m[2]}`),
     ]),
     items: new Set(files.flatMap((f) => (f === "lib.rs" ? items(f).map((i) => `*#${i}`) : items(f).map((i) => `${f.slice(0, -3)}#${i}`)))),
   };

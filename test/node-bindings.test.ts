@@ -692,3 +692,125 @@ pub fn handle(req: &IncomingMessage, res: &ServerResponse) {
     server.close();
   }
 });
+
+// ADR 0648: V8's stack trace API, as @types/node types it, in the forms
+// React's owner stacks write it: `formatOwnerStack` saves the hook, sets
+// `DefaultPrepareStackTrace`, `undefined` in a browser's build, reads the
+// error's stack and restores it; `DefaultPrepareStackTraceV8` is a hook of
+// its own, the module's default, which a server's build sets. Run in Node.
+test("V8's stack trace hook is saved, set and restored", () => {
+  const dir = fixture("node-stack-trace");
+  const node = buildNode();
+  writeFileSync(join(dir, "lib.rs"), `use js::JsError;
+use node::{CallSite, js_error};
+
+pub mod default_prepare_stack_trace {
+    use js::JsError;
+    use node::CallSite;
+
+    js::export_default! {
+        pub const DEFAULT_PREPARE_STACK_TRACE: Option<&'static dyn Fn(&JsError, &[&CallSite]) -> String> = None;
+    }
+}
+
+pub mod default_prepare_stack_trace_v8 {
+    use js::JsError;
+    use node::CallSite;
+
+    fn prepare_stack_trace(error: &JsError, structured_stack_trace: &[&CallSite]) -> String {
+        let mut stack = error.name() + ": " + &error.message();
+        for call_site in structured_stack_trace {
+            stack += "\\n    at ";
+            stack += &call_site.to_string();
+        }
+        stack
+    }
+
+    js::export_default!(prepare_stack_trace);
+
+    pub fn install() {
+        node::js_error::set_prepare_stack_trace(Some(&prepare_stack_trace));
+    }
+}
+
+use default_prepare_stack_trace::DEFAULT_PREPARE_STACK_TRACE;
+
+pub fn format_owner_stack(error: &JsError) -> Option<String> {
+    let prev_prepare_stack_trace = js_error::prepare_stack_trace();
+    js_error::set_prepare_stack_trace(DEFAULT_PREPARE_STACK_TRACE);
+    let stack = error.stack();
+    js_error::set_prepare_stack_trace(prev_prepare_stack_trace);
+    stack
+}
+
+fn files(_: &JsError, structured_stack_trace: &[&CallSite]) -> String {
+    let first = structured_stack_trace.first();
+    let file = first.and_then(|call_site| call_site.get_file_name()).unwrap_or_default();
+    let line = first.and_then(|call_site| call_site.get_line_number()).unwrap_or_default();
+    format!("{file}:{line}")
+}
+
+pub fn files_of(error: &JsError) -> Option<String> {
+    js_error::set_prepare_stack_trace(Some(&files));
+    let stack = error.stack();
+    js_error::set_prepare_stack_trace::<String>(None);
+    stack
+}
+
+pub fn limited(limit: f64) -> f64 {
+    let previous = js_error::stack_trace_limit();
+    js_error::set_stack_trace_limit(limit);
+    previous
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `node=${join(node, "libnode.rmeta")}`, "--extern", `js=${join(node, "libjs.rmeta")}`, "-L", node]);
+  // Each as React writes it: the hook a property of `Error`, read and
+  // written, `undefined` too; the default a value of its own.
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain(`export function formatOwnerStack(error) {
+  const prevPrepareStackTrace = Error.prepareStackTrace;
+  Error.prepareStackTrace = DEFAULT_PREPARE_STACK_TRACE;
+  const stack = error.stack;
+  Error.prepareStackTrace = prevPrepareStackTrace;
+  return stack;
+}`);
+  expect(js).toContain("  Error.prepareStackTrace = files;\n  const stack = error.stack;\n  Error.prepareStackTrace = undefined;\n");
+  expect(js).toContain("  const previous = Error.stackTraceLimit;\n  Error.stackTraceLimit = limit;\n");
+  expect(readFileSync(join(dir, "default_prepare_stack_trace.js"), "utf8")).toContain("\nexport default undefined;\n");
+  const v8 = readFileSync(join(dir, "default_prepare_stack_trace_v8.js"), "utf8");
+  expect(v8).toContain("    stack += callSite.toString();\n");
+  expect(v8).toContain("export function install() {\n  Error.prepareStackTrace = prepareStackTrace;\n}");
+  expect(v8).toContain("export default prepareStackTrace;");
+  writeFileSync(join(dir, "package.json"), '{ "type": "module" }');
+  writeFileSync(join(dir, "run.js"), `import { filesOf, formatOwnerStack, limited } from "./lib.js";
+import prepareStackTrace, { install } from "./default_prepare_stack_trace_v8.js";
+
+const ours = () => "ours";
+Error.prepareStackTrace = ours;
+const owner = formatOwnerStack(new Error("react-stack-top-frame")).split("\\n");
+const restored = Error.prepareStackTrace === ours;
+install();
+const installed = Error.prepareStackTrace === prepareStackTrace;
+const v8 = new Error("boom").stack.split("\\n");
+const files = filesOf(new Error("here"));
+const cleared = Error.prepareStackTrace === undefined;
+const previous = limited(1);
+const one = new Error("one").stack.split("\\n").length;
+limited(previous);
+console.log(JSON.stringify({ owner: owner[0], at: owner[1].startsWith("    at "), restored, installed, v8: v8[0], v8At: v8[1].startsWith("    at "), files, cleared, previous, one }));
+`);
+  const p = Bun.spawnSync(["node", "run.js"], { cwd: dir, stderr: "pipe" });
+  expect([p.exitCode, p.stderr.toString()]).toEqual([0, ""]);
+  expect(JSON.parse(p.stdout.toString())).toEqual({
+    owner: "Error: react-stack-top-frame",
+    at: true,
+    restored: true,
+    installed: true,
+    v8: "Error: boom",
+    v8At: true,
+    files: `file://${join(dir, "run.js")}:11`,
+    cleared: true,
+    previous: 10,
+    one: 2,
+  });
+});
