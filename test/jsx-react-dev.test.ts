@@ -41,7 +41,7 @@ use react::{JSX, ReactNode, RefObject, jsx, use_effect, use_ref};
 #[cfg_attr(rust_js, rust_js::variadic)]
 #[cfg_attr(rust_js, rust_js::skips_falsy)]
 #[allow(unused_variables)]
-pub fn cn(classes: &[Option<&str>]) -> String {
+pub fn cn(classes: impl js::Rest<dyn js::IntoUnknown>) -> String {
     unreachable!()
 }
 #[derive(Default)]
@@ -161,7 +161,7 @@ pub fn SidebarLink(
             target={Some(target)}
             passHref={Some(true)}
             aria-current={selected.then_some("page".into())}
-            className={Some(cn(&[
+            className={Some(cn((
                 Some("p-2 pe-2 w-full rounded-none lg:rounded-e-2xl text-start hover:bg-gray-5 dark:hover:bg-gray-80 relative flex items-center justify-between"),
                 (level > 0).then_some("text-sm ps-6"),
                 (level < 2).then_some("ps-5"),
@@ -170,7 +170,7 @@ pub fn SidebarLink(
                 (level > 0 && !selected).then_some("text-base text-secondary dark:text-secondary-dark"),
                 selected.then_some("text-base text-link dark:text-link-dark bg-highlight dark:bg-highlight-dark border-blue-40 hover:bg-highlight hover:text-link dark:hover:bg-highlight-dark dark:hover:text-link-dark"),
                 is_pending.then_some("dark:bg-gray-70 bg-gray-3 dark:hover:bg-gray-70 hover:bg-gray-3"),
-            ]).as_str())}>
+            )).as_str())}>
             // This here needs to be refactored ofc
             <div>
                 {title}{" "}
@@ -203,11 +203,11 @@ pub fn SidebarLink(
 
             {(is_expanded.is_some() && !hide_arrow.unwrap_or(false)).then(|| jsx! {
                 <span
-                    className={cn(&[
+                    className={cn((
                         Some("pe-1"),
                         is_expanded.unwrap_or(false).then_some("text-link dark:text-link-dark"),
                         (!is_expanded.unwrap_or(false)).then_some("text-tertiary dark:text-tertiary-dark"),
-                    ])}>
+                    ))}>
                     <IconNavArrow
                         displayDirection={Some(if is_expanded.unwrap_or(false) { DisplayDirection::Down } else { DisplayDirection::End })}
                     />
@@ -668,7 +668,7 @@ use react::{JSX, ReactNode, jsx};
 #[cfg_attr(rust_js, rust_js::variadic)]
 #[cfg_attr(rust_js, rust_js::skips_falsy)]
 #[allow(unused_variables)]
-fn cn(classes: &[Option<&str>]) -> String {
+fn cn(classes: impl js::Rest<dyn js::IntoUnknown>) -> String {
     unreachable!()
 }
 pub struct Variant {
@@ -692,9 +692,9 @@ pub struct CalloutProps<C: ReactNode> {
 pub fn Callout<C: ReactNode>(CalloutProps { children, wip }: CalloutProps<C>) -> JSX::Element {
     let variant = if wip { &variantMap.wip } else { &variantMap.note };
     jsx! {
-        <div className={cn(&[Some("callout"), Some(variant.container_classes)])}>
-            <h3 className={cn(&[Some("title"), Some(variant.text_color)])}>
-                {variant.icon.map(|icon| jsx! { <i className={cn(&[Some("icon"), Some(variant.text_color)])}>{icon}</i> })}
+        <div className={cn((Some("callout"), Some(variant.container_classes)))}>
+            <h3 className={cn((Some("title"), Some(variant.text_color)))}>
+                {variant.icon.map(|icon| jsx! { <i className={cn((Some("icon"), Some(variant.text_color)))}>{icon}</i> })}
                 {variant.title}
             </h3>
             <div>{children}</div>
@@ -702,7 +702,7 @@ pub fn Callout<C: ReactNode>(CalloutProps { children, wip }: CalloutProps<C>) ->
     }
 }
 `, { "cn.js": "export default (...classes) => classes.filter(Boolean).join(\" \");\n" });
-  run(args);
+  run([...args, "--extern", `js=${join(target, "libjs.rmeta")}`]);
   const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
   expect(jsx).not.toContain("const className");
   const lib = await import(join(dir, "lib.jsx"));

@@ -207,7 +207,7 @@ unsafe extern "Rust" {
 use shared::assign::assign;
 
 pub fn merged<'a>(target: &'a Unknown, source: &Unknown) -> &'a Unknown {
-    assign(target, &[Some(source)])
+    assign(target, (source,))
 }
 
 pub fn internals() -> &'static shared::Internals {
@@ -215,7 +215,7 @@ pub fn internals() -> &'static shared::Internals {
 }
 
 pub fn direct<'a>(target: &'a Unknown, source: &Unknown) -> &'a Unknown {
-    js::object::assign(target, &[Some(source)])
+    js::object::assign(target, (source,))
 }
 `);
   const output = join(dir, "app/lib.js");

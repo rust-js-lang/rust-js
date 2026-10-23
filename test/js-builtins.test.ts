@@ -11,7 +11,7 @@ import { buildReact, compiler, fixture, run, target } from "./support";
 beforeAll(buildReact, 600_000);
 
 // ADR 0035: what a JS function threw is shown as JS shows it, `String(error)`,
-// `SyntaxError: ..`, by `{:?}` and by an `unwrap`'s panic.
+// `SyntaxError: ..`, by `{:?}` and by an `expect`'s panic.
 test("a JS error is shown as JS shows it", async () => {
   const withJs = ["--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
   const dir = fixture("js-error");
@@ -72,8 +72,157 @@ pub fn shown(text: &str) -> String {
   expect([lib.keptOrTold("[1]"), lib.keptOrTold("{")]).toEqual([[1], undefined]);
   expect([lib.told("1"), lib.told("{").startsWith("SyntaxError")]).toEqual(["", true]);
   expect([lib.valid("[1]"), lib.valid("{")]).toEqual([true, false]);
-  expect(() => lib.parsed("{")).toThrow("called `Result::unwrap()` on an `Err` value: SyntaxError");
+  // Its `unwrap()` is the call, which throws what JS threw (ADR 0643).
+  expect(() => lib.parsed("{")).toThrow(SyntaxError);
   expect([lib.shown("{").startsWith("SyntaxError: "), lib.shown("1")]).toEqual([true, "parsed"]);
+});
+
+// ADR 0643: `.unwrap()` of a throwing JS call is the call itself, its throw
+// what JS threw: `JSON.parse(text)`, `"" + value`, `await p`. An
+// `.expect(msg)` keeps its message, `$unwrapOk`'s; and a `Result` held,
+// unwrapped later, is `$try`'s.
+test("unwrap of a throwing JS call is the call", async () => {
+  const withJs = ["--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const dir = fixture("unwrap-throwing");
+  writeFileSync(join(dir, "lib.rs"), `use js::{Promise, Unknown, json};
+pub fn parsed(text: &str) -> Option<&'static Unknown> {
+    json::parse(text).unwrap()
+}
+pub fn coerced(value: Option<&Unknown>) -> String {
+    js::concat_text(value).unwrap()
+}
+pub async fn awaited(p: Promise<f64>) -> f64 {
+    js::settle(p).await.unwrap()
+}
+pub fn expected(text: &str) -> Option<&'static Unknown> {
+    json::parse(text).expect("valid JSON")
+}
+pub fn held(text: &str, first: bool) -> Option<&'static Unknown> {
+    let parsed = json::parse(text);
+    if first {
+        println!("parsing");
+    }
+    parsed.unwrap()
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("function parsed(text) {\n  return JSON.parse(text);\n}");
+  expect(js).toContain('function coerced(value) {\n  return "" + value;\n}');
+  expect(js).toContain("async function awaited(p) {\n  return await p;\n}");
+  expect(js).toContain('$unwrapOk(\n    $try(() => JSON.parse(text)),\n    "valid JSON",');
+  expect(js).toContain("const parsed = $try(() => JSON.parse(text));");
+  const lib = await import(join(dir, "lib.js"));
+  expect(lib.parsed("[1]")).toEqual([1]);
+  expect(() => lib.parsed("{")).toThrow(SyntaxError);
+  expect(() => lib.coerced(Symbol("s"))).toThrow(TypeError);
+  expect(lib.coerced(1)).toBe("1");
+  expect(await lib.awaited(Promise.resolve(2))).toBe(2);
+  expect(lib.awaited(Promise.reject(new RangeError("no")))).rejects.toThrow(RangeError);
+  expect(() => lib.expected("{")).toThrow("valid JSON: SyntaxError");
+  expect(() => lib.held("{", false)).toThrow("called `Result::unwrap()` on an `Err` value: SyntaxError");
+});
+
+// ADR 0644: a function whose result is a throwing call's `Result`, each
+// return, is a throwing function, as React's `testStringCoercion` is: its
+// JS returns the call's value, and its calls are throwing calls, a `try` of
+// `is_err()`, the call of `unwrap()`, `$try` of `?`. A `pub` one keeps its
+// `Result`, which JS reads; one that returns its own call keeps `$try`.
+test("a function whose result is a throwing call's is a throwing function", async () => {
+  const withJs = ["--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const dir = fixture("throwing-functions");
+  writeFileSync(join(dir, "lib.rs"), `use js::{JsError, Unknown, json};
+
+fn test_string_coercion(value: Option<&Unknown>) -> Result<String, &'static JsError> {
+    // For whoever follows the stack here.
+    js::concat_text(value)
+}
+
+fn will_coercion_throw(value: Option<&Unknown>) -> bool {
+    test_string_coercion(value).is_err()
+}
+
+pub fn check_key_string_coercion(value: Option<&Unknown>) -> Option<String> {
+    if will_coercion_throw(value) {
+        eprintln!("unsupported");
+        return Some(test_string_coercion(value).unwrap());
+    }
+    None
+}
+
+fn parsed(text: &str) -> Result<Option<&'static Unknown>, &'static JsError> {
+    json::parse(text)
+}
+
+pub fn valid(text: &str) -> bool {
+    match parsed(text) {
+        Ok(_) => true,
+        Err(_) => false,
+    }
+}
+
+pub fn present(text: &str) -> Result<bool, &'static JsError> {
+    let value = parsed(text)?;
+    Ok(value.is_some())
+}
+
+pub fn coerced(value: Option<&Unknown>) -> Result<String, &'static JsError> {
+    js::concat_text(value)
+}
+
+fn nested(value: Option<&Unknown>, depth: u32) -> Result<String, &'static JsError> {
+    if depth == 0 {
+        js::concat_text(value)
+    } else {
+        nested(value, depth - 1)
+    }
+}
+
+pub fn deep(value: Option<&Unknown>) -> bool {
+    nested(value, 2).is_err()
+}
+
+fn or_none(text: &str) -> Result<Option<&'static Unknown>, &'static JsError> {
+    if text.is_empty() {
+        return Ok(None);
+    }
+    json::parse(text)
+}
+
+pub fn parses(text: &str) -> bool {
+    or_none(text).is_ok()
+}
+
+fn number(text: &str) -> Result<u32, std::num::ParseIntError> {
+    text.parse()
+}
+
+pub fn numeric(text: &str) -> bool {
+    number(text).is_ok()
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('function testStringCoercion(value) {\n  // For whoever follows the stack here.\n  return "" + value;\n}');
+  expect(js).toContain("function willCoercionThrow(value) {\n  try {\n    testStringCoercion(value);\n    return false;\n  } catch {\n    return true;\n  }\n}");
+  expect(js).toContain("    return testStringCoercion(value);\n");
+  expect(js).toContain("function valid(text) {\n  try {\n    parsed(text);\n    return true;\n  } catch {\n    return false;\n  }\n}");
+  expect(js).toContain("$try(() => parsed(text))");
+  expect(js).toContain('function coerced(value) {\n  return $try(() => "" + value);\n}');
+  expect(js).toContain('$try(() => "" + value)');
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.checkKeyStringCoercion("a"), lib.checkKeyStringCoercion(1)]).toEqual([undefined, undefined]);
+  expect(() => lib.checkKeyStringCoercion(Symbol("s"))).toThrow(TypeError);
+  expect([lib.valid("[1]"), lib.valid("{")]).toEqual([true, false]);
+  expect([lib.present("1"), lib.present("null")]).toEqual([{ TAG: "Ok", _0: true }, { TAG: "Ok", _0: false }]);
+  expect(lib.present("{").TAG).toBe("Err");
+  expect([lib.coerced(1), lib.coerced(Symbol("s")).TAG]).toEqual([{ TAG: "Ok", _0: "1" }, "Err"]);
+  expect([lib.deep(1), lib.deep(Symbol("s"))]).toEqual([false, true]);
+  // One that makes its own \`Ok\` too keeps its \`Result\`.
+  expect(js).toContain("  return $try(() => JSON.parse(text));\n}");
+  expect([lib.parses(""), lib.parses("1"), lib.parses("{")]).toEqual([true, true, false]);
+  // One of a Rust \`Result\`, no JS call's, is no throwing function.
+  expect([lib.numeric("12"), lib.numeric("x")]).toEqual([true, false]);
 });
 
 // ADR 0283: a regular expression's match, an `Error`'s parts, symbols, the
@@ -312,7 +461,7 @@ pub fn bytes() -> (u32, u32, i8, Vec<u8>) {
     let view = data_view::new(buffer, None, None);
     view.set_int16(0, -2, true);
     let bytes = uint8_array::new_with_buffer(buffer, None, None);
-    let signed = int8_array::of(&[1, -1, 127]);
+    let signed = int8_array::of((1, -1, 127));
     (buffer.byte_length(), bytes.length(), signed.get(1).unwrap_or(0), bytes.subarray(Some(0), Some(2)).values().collect())
 }
 pub fn bigs() -> (i64, bool) {

@@ -52,7 +52,7 @@ line();
 line("// A binding's parameters are its JS function's: its body never runs.");
 line("#![allow(unused_variables)]");
 line();
-line("use super::{Defined, JsError, JsObject, StructuredClone};");
+line("use super::{Defined, JsError, JsObject, Rest, StructuredClone};");
 line("use core::marker::PhantomData;");
 
 // ── Buffers ──────────────────────────────────────────────────────────────
@@ -205,7 +205,7 @@ for (const [name, e] of ELEMENTS) {
   line();
   moduleFn(`[\`new ${name}(length)\`](${page(`${name}/${name}`)}): \`length\` elements, each 0.`, `new ${name}`, `new(length: u32) -> &'static ${name}`);
   moduleFn(`[\`${name}.from(items)\`](${t("from")}): a typed array of \`items\`.`, `${name}.from`, `from(items: &[${e}]) -> &'static ${name}`);
-  moduleFn(`[\`${name}.of(..items)\`](${t("of")}): a typed array of \`items\`.`, `${name}.of`, `of(items: &[${e}]) -> &'static ${name}`, true);
+  moduleFn(`[\`${name}.of(..items)\`](${t("of")}): a typed array of \`items\`.`, `${name}.of`, `of(items: impl Rest<${e}>) -> &'static ${name}`, true);
   method(`[\`new ${name}(buffer, byteOffset, length)\`](${page(`${name}/${name}`)}): a view of \`length\` elements from \`byte_offset\`, all of \`buffer\` where they aren't given.`, `new ${name}`, `new_with_buffer<B: ArrayBufferLike>(buffer: &B, byte_offset: Option<u32>, length: Option<u32>) -> &'static ${name}<B>`);
   close();
   line("}");

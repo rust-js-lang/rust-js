@@ -279,6 +279,11 @@ pub fn filled(el: &Element, child: &Element, name: &str, kind: String) {
     el.append((child, "text"));
     el.class_list().add((name, kind));
 }
+
+pub fn listed(el: &Element, children: Vec<&Element>, names: &[&str]) {
+    el.append(&children);
+    el.class_list().add(names);
+}
 `;
   writeFileSync(join(dir, "lib.rs"), source);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
@@ -293,6 +298,8 @@ pub fn filled(el: &Element, child: &Element, name: &str, kind: String) {
   expect(js).toContain("console.timeLog(undefined, ...held);");
   expect(js).toContain('el.append(child, "text");');
   expect(js).toContain("el.classList.add(name, kind);");
+  // A `Vec` or a slice of them, spread.
+  expect(js).toContain("el.append(...children);\n  el.classList.add(...names);");
   const lib = await import(join(dir, "lib.js"));
   const said: unknown[][] = [];
   const kept = { ...console };
@@ -322,10 +329,11 @@ pub fn filled(el: &Element, child: &Element, name: &str, kind: String) {
   const appended: unknown[][] = [];
   const el = { append: (...a: unknown[]) => appended.push(a), classList: { add: (...a: unknown[]) => appended.push(a) } };
   lib.filled(el, "child", "a", "b");
-  expect(appended).toEqual([["child", "text"], ["a", "b"]]);
+  lib.listed(el, ["c", "d"], ["e"]);
+  expect(appended).toEqual([["child", "text"], ["a", "b"], ["c", "d"], ["e"]]);
   // A value that isn't a tuple says what to write.
   writeFileSync(join(dir, "lib.rs"), source.replace("console::warn((message,));", "console::warn(message);"));
   const result = Bun.spawnSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "wrong.js"), ...withWeb], { cwd: dir });
   expect(result.exitCode).not.toBe(0);
-  expect(result.stderr.toString()).toContain("`&str` is not a tuple of rest arguments");
+  expect(result.stderr.toString()).toContain("`&str` is not rest arguments");
 });

@@ -771,17 +771,41 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### Changed
 
+- **A chain held, then its fallback, is one `||`** (ADR 0646): React's
+  `typeName`, `const type = a || b || "Object"; return type;`, where it
+  was `const type = a || b || undefined; return type ?? "Object";`.
+- **`js::is_defined` of a static is given the static itself** (ADR 0645):
+  `js::is_defined(js::symbol::to_string_tag)` is `typeof Symbol !==
+  "undefined" && typeof Symbol.toStringTag !== "undefined"`;
+  `js::is_defined(&webapi::performance)`, a reference, is refused, written
+  `js::is_defined(webapi::performance)`.
+- **A function whose result is a throwing call's `Result` throws** (ADR
+  0644): React's `testStringCoercion`, `js::concat_text(value)`, is
+  `return "" + value;`, and its calls are throwing calls,
+  `try { testStringCoercion(value); return false; } catch { return true; }`
+  of its `is_err()`, `testStringCoercion(value)` of its `unwrap()`. Not a
+  `pub` one, whose JS callers read its `Result`.
+- **`unwrap()` of a throwing JS call is the call** (ADR 0643):
+  `json::parse(text).unwrap()` is `JSON.parse(text)`, its `SyntaxError`
+  thrown as JS threw it, where it was `$unwrapOk($try(..))` and Rust's
+  panic of it; `js::settle(p).await.unwrap()` is `await p`. `expect(msg)`
+  keeps its message.
 - **A TypeScript rest parameter is a tuple** (ADR 0640): webapi's 53
   bindings of one, `console.error(...data)`, `el.append(...nodes)`,
   `classList.add(...tokens)`, take `impl js::Rest<T>`, a tuple, each
   argument of its own type: `console::error(("%s is %s", name, kind))` is
   `console.error("%s is %s", name, kind)`. A call of one is `(x,)`, of
-  none `()`; each took one argument, or none after an optional one.
+  none `()`; each took one argument, or none after an optional one. A
+  slice or a `Vec` of them, by reference, is spread, `el.append(&children)`
+  being `el.append(...children)`; the js, node and next crates' rest
+  parameters are `impl js::Rest<T>` too, `math::max((a, b))`,
+  `path::join(("a", "b"))`, `object::assign(target, (source,))`, where
+  each took a slice written out.
 - **`js::concat_text` of any value is what may throw** (ADR 0639): of an
-  `&Unknown` or an `Option<&Unknown>`, `value + ""` gives `Result<String,
+  `&Unknown` or an `Option<&Unknown>`, `"" + value` gives `Result<String,
   &JsError>`, as it throws of a symbol; of text and numbers, a `String`
   still. Whether a call threw, returned, `is_err()` or a `match` of `true`
-  and `false`, is `try { value + ""; return false; } catch { return true;
+  and `false`, is `try { "" + value; return false; } catch { return true;
   }`, as React's `willCoercionThrow` writes it.
 - **`Rc::ptr_eq` of an object is its identity** (ADR 0582): of an `Rc` of
   a struct with fields, `a === b`, counting nothing.

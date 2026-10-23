@@ -182,8 +182,13 @@ export function later(task) {
 
 - **It's asked of a binding**, a JS function's or a class's,
   `js::is_defined(webapi::message_channel::new)`, whose type names the
-  global, or a global value's, `js::is_defined(&webapi::performance)`, of
-  the static it refers to: a variable between asks of the same one.
+  global, or a global value's, its static given as itself,
+  `js::is_defined(webapi::performance)`: a variable between asks of the
+  same one. A static of a path asks each part,
+  `js::is_defined(js::symbol::to_string_tag)` being `typeof Symbol !==
+  "undefined" && typeof Symbol.toStringTag !== "undefined"`; a reference
+  to a static, `&webapi::performance`, is refused
+  ([ADR 0645](../../decisions/0645-is-defined-of-a-static-is-of-the-static.md)).
 - **Each part of a path is asked**, `js::is_defined(webapi::Performance::now)`
   of the one global that type is, `typeof performance !== "undefined" &&
   typeof performance.now !== "undefined"`: a host may lack any of them.

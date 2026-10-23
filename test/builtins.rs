@@ -152,7 +152,7 @@ pub fn rounded(x: f64) -> (f64, f64) {
 /// `Math.max(a, b)` and `Math.min(a, b)`, `NaN` of a `NaN`, and Rust's, the
 /// other number.
 pub fn bounds(a: f64, b: f64) -> [f64; 4] {
-    [js::math::max(&[a, b]), a.max(b), js::math::min(&[a, b]), a.min(b)]
+    [js::math::max((a, b)), a.max(b), js::math::min((a, b)), a.min(b)]
 }
 
 /// `Math.sign(x)`, `0` of a zero, and `x.signum()`, `1` of `0`.

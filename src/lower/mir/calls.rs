@@ -250,7 +250,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let called = Expr::call(self.fn_ref(def_id), exprs);
         // A generic `&mut T`'s box, of an object `T` here: what's in it.
         let called = self.generic_result_values((def_id, generic_args), called, span)?;
-        Ok(Value::Expr(self.fmt_result_value(def_id, generic_args, called)))
+        let called = self.fmt_result_value(def_id, generic_args, called);
+        // A throwing function's call is a throwing call (ADR 0644).
+        Ok(Value::Expr(self.catching(def_id, generic_args, called)))
     }
 
     /// What binding `def_id` is given as its `i`th argument, `value` of
@@ -311,17 +313,28 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let path = self.defined_path(steps, span)?;
             return self.mir_defined_parts(Some(path), span);
         }
-        let global = args
-            .first()
-            .and_then(|arg| match *arg.node.ty(&body.local_decls, tcx).kind() {
-                ty::FnDef(f, _) if bindings::is_binding(tcx, f) && bindings::is_method(tcx, f) => {
-                    self.member_of_global(f)
+        let Some(arg) = args.first() else {
+            return self.mir_defined_parts(None, span);
+        };
+        let given = arg.node.ty(&body.local_decls, tcx);
+        let global = match *given.kind() {
+            ty::FnDef(f, _) if bindings::is_binding(tcx, f) && bindings::is_method(tcx, f) => self.member_of_global(f),
+            ty::FnDef(f, _) if bindings::is_binding(tcx, f) => bindings::js_path(tcx, f),
+            _ => match self.static_given(body, &arg.node).filter(|&s| tcx.is_foreign_item(s)) {
+                // A static is given as itself, as a function binding is,
+                // `is_defined(js::symbol::to_string_tag)`; a reference to
+                // it is refused, naming the one way (ADR 0645).
+                Some(s) if refs(given) > refs(tcx.type_of(s).instantiate_identity().skip_normalization()) => {
+                    return Err(self.tcx.dcx().span_err(
+                        span,
+                        "`js::is_defined` of a static is given the static itself, \
+                         `js::is_defined(webapi::performance)`, not a reference to it",
+                    ));
                 }
-                ty::FnDef(f, _) if bindings::is_binding(tcx, f) => bindings::js_path(tcx, f),
-                _ => (self.static_given(body, &arg.node))
-                    .filter(|&s| tcx.is_foreign_item(s))
-                    .and_then(|s| bindings::js_path(tcx, s)),
-            });
+                Some(s) => bindings::js_path(tcx, s),
+                None => None,
+            },
+        };
         self.mir_defined_parts(global, span)
     }
 
@@ -442,7 +455,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     fn static_given(&self, body: &mir::Body<'tcx>, operand: &Operand<'tcx>) -> Option<rustc_span::def_id::DefId> {
         let local = match operand {
             Operand::Constant(c) => return self.const_static(c),
-            Operand::Copy(place) | Operand::Move(place) => place.as_local()?,
+            Operand::Copy(place) | Operand::Move(place) => match place.projection.as_slice() {
+                [] => place.local,
+                // The static's value, read through its address (ADR 0645).
+                [PlaceElem::Deref] => return self.static_given(body, &Operand::Copy(Place::from(place.local))),
+                _ => return None,
+            },
             _ => return None,
         };
         let assigned: Vec<&Rvalue<'tcx>> = (body.basic_blocks.iter())
@@ -487,5 +505,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             _ => value,
         }
+    }
+}
+
+/// How many references `ty` is of what it refers to: `&&Symbol`'s two.
+fn refs(ty: Ty<'_>) -> usize {
+    match *ty.kind() {
+        ty::Ref(_, inner, _) => 1 + refs(inner),
+        _ => 0,
     }
 }

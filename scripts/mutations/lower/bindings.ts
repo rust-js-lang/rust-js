@@ -236,9 +236,9 @@ export const mutations: Mutation[] = [
   },
   {
     name: "text-form-called",
-    breaks: "`#[link_name = \"+ \\\"\\\"\"]` is a call of `+ \"\"`, not `value + \"\"`",
+    breaks: "`#[link_name = \"\\\"\\\" +\"]` is a call of `\"\" +`, not `\"\" + value`",
     file: "src/lower/bindings.rs",
-    find: "        \"+ \\\"\\\"\" => return JsForm::Text,\n",
+    find: "        \"\\\"\\\" +\" => return JsForm::Text,\n",
     replace: "",
     tests: ["test/bindings.test.ts", "-t", "react.dev's Console"],
   },

@@ -514,7 +514,7 @@ fn block(body: &mut Vec<Stmt>) {
             *value = None;
         }
     }
-    for stmt in body {
+    for stmt in body.iter_mut() {
         match &mut stmt.kind {
             StmtKind::Const(_, e)
             | StmtKind::Expr(e)
@@ -579,6 +579,46 @@ fn block(body: &mut Vec<Stmt>) {
             | StmtKind::Continue(_)
             | StmtKind::Directive(_) => {}
         }
+    }
+    fallen_held(body);
+}
+
+/// `const type = a || b || undefined; return type ?? "Object";` is `const
+/// type = a || b || "Object"; return type;`: a chain held, whose fallback
+/// the next statement gives where it reads it, its one read, is the
+/// chain's, `fallen_to`'s, as a person writes it (ADR 0646). Only a
+/// constant fallback, which nothing after the `const` could change, nor
+/// its being made earlier.
+fn fallen_held(body: &mut [Stmt]) {
+    for at in 1..body.len() {
+        let (before, after) = body.split_at_mut(at);
+        let StmtKind::Const(name, chain) = &mut before[at - 1].kind else {
+            continue;
+        };
+        if js::mentions_in(&after[1..], name) != 0 || js::mentions_in(&after[..1], name) != 1 {
+            continue;
+        }
+        let (StmtKind::Return(Some(read)) | StmtKind::Const(_, read) | StmtKind::Expr(read)) = &mut after[0].kind
+        else {
+            continue;
+        };
+        let ExprKind::Binary(js::Op::Coalesce, held, fallback) = &read.kind else {
+            continue;
+        };
+        if !matches!(&held.kind, ExprKind::Var(v) if v == name) || !fallback.is_constant() {
+            continue;
+        }
+        let Some(fallen) = fallen_to(chain, fallback) else {
+            continue;
+        };
+        *chain = Expr {
+            span: chain.span,
+            ..fallen
+        };
+        *read = Expr {
+            span: read.span,
+            ..(**held).clone()
+        };
     }
 }
 
@@ -685,7 +725,7 @@ fn try_catches(body: &mut Vec<Stmt>) {
     // f(); } catch {}`: the call, what it threw dropped.
     for stmt in body.iter_mut() {
         if let StmtKind::Expr(e) = &stmt.kind
-            && let Some(call) = tried(e)
+            && let Some(call) = e.tried_call()
         {
             let tried = vec![StmtKind::Expr(call.clone()).at(stmt.span)];
             stmt.kind = StmtKind::TryCatch(tried, None, Vec::new());
@@ -736,7 +776,7 @@ fn try_catch(made: &Stmt, tested: &Stmt, before: &[Stmt], rest: &[Stmt]) -> Opti
     let StmtKind::Const(result, value) = &made.kind else {
         return None;
     };
-    let call = tried(value)?;
+    let call = value.tried_call()?;
     let StmtKind::If(test, then, otherwise) = &tested.kind else {
         return None;
     };
@@ -854,30 +894,7 @@ fn threw(e: &Expr) -> Option<(&Expr, bool)> {
     if field != "TAG" || (s != "Ok" && s != "Err") {
         return None;
     }
-    Some((tried(of)?, (*op == js::Op::Eq) == (s == "Err")))
-}
-
-/// The call `$try(() => call)` tries, of a JS call whose throw is an `Err`
-/// (ADR 0035).
-fn tried(e: &Expr) -> Option<&Expr> {
-    let ExprKind::Call(callee, args) = &e.kind else {
-        return None;
-    };
-    let (Some(helper), [thunk]) = (callee.helper_name(), args.as_slice()) else {
-        return None;
-    };
-    let ExprKind::Arrow(params, thunk) = &thunk.kind else {
-        return None;
-    };
-    match thunk.as_slice() {
-        [
-            Stmt {
-                kind: StmtKind::Return(Some(call)),
-                ..
-            },
-        ] if helper == "$try" && params.is_empty() => Some(call),
-        _ => None,
-    }
+    Some((of.tried_call()?, (*op == js::Op::Eq) == (s == "Err")))
 }
 
 /// `if (x == null) { x = e; }` is `x = x ?? e`, printed `x ??= e`: the

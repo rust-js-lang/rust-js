@@ -492,7 +492,7 @@ use next::cache::{CacheLife, cache_life, cache_tag};
 pub async fn cached_count(n: u32) -> u32 {
     cache_life("hours");
     cache_life(CacheLife { stale: Some(60.0), ..Default::default() });
-    cache_tag(&["count", "clock"]);
+    cache_tag(("count", "clock"));
     n + 1
 }
 `;

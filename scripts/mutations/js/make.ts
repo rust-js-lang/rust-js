@@ -118,7 +118,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "text-joined-twice",
-    breaks: "a number made text and joined to text stays `n + \"\" + \"px\"`, not `n + \"px\"`",
+    breaks: "a number made text and joined to text stays `\"\" + n + \"px\"`, not `n + \"px\"`",
     file: "src/js/make.rs",
     find: "            && matches!(rhs.kind, ExprKind::Str(_) | ExprKind::Template(..))\n",
     replace: "            && false\n",
@@ -142,7 +142,7 @@ export const mutations: Mutation[] = [
   },
   {
     "name": "text-joined-to-text",
-    "breaks": "`\"#\" + (id + \"\")` keeps its `+ \"\"`",
+    "breaks": "`\"#\" + (\"\" + id)` keeps its `\"\" +`",
     "file": "src/js/make.rs",
     "find": "            && matches!(lhs.kind, ExprKind::Str(_) | ExprKind::Template(..))\n",
     "replace": "            && false\n",
@@ -250,5 +250,13 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^cycled_iterators.rs$"],
     snapshots: true,
+  },
+  {
+    name: "uncaught-settle-kept",
+    breaks: "`js::settle(p).await.unwrap()` is `$unwrapOk(await $settle(p))`, not `await p`",
+    file: "src/js/make.rs",
+    find: "            (Some(\"$settle\"), [promise]) => Some(Expr {\n",
+    replace: "            (Some(\"$settled\"), [promise]) => Some(Expr {\n",
+    tests: ["test/js-builtins.test.ts", "-t", "unwrap of a throwing JS call"],
   },
 ];

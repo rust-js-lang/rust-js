@@ -278,7 +278,8 @@ pub(super) enum JsForm {
     /// `typeof !== "undefined"`: whether the host has the global of the
     /// binding given, `typeof MessageChannel !== "undefined"` (ADR 0597).
     Defined,
-    /// `+ ""`: `this + ""`, any value as JS's `+` makes it text (ADR 0310).
+    /// `"" +`: `"" + this`, any value as JS's `+` makes it text (ADRs 0310,
+    /// 0639).
     Text,
     /// `set []`: `this[key] = value`.
     SetIndex,
@@ -298,7 +299,7 @@ pub(super) fn js_form(tcx: TyCtxt<'_>, def_id: DefId) -> JsForm {
         "!!" => return JsForm::Truthy,
         "typeof" => return JsForm::TypeOf,
         "typeof !== \"undefined\"" => return JsForm::Defined,
-        "+ \"\"" => return JsForm::Text,
+        "\"\" +" => return JsForm::Text,
         "set []" => return JsForm::SetIndex,
         "import()" => return JsForm::Import { module: false },
         "import(*)" => return JsForm::Import { module: true },

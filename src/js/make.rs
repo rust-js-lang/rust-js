@@ -145,6 +145,59 @@ impl Expr {
         }
     }
 
+    /// `$try(() => call)`: a JS call whose throw is an `Err`, its `Result`
+    /// (ADR 0035).
+    pub fn tried(call: Expr) -> Expr {
+        let span = call.span;
+        let thunk = Expr::arrow(Vec::new(), vec![StmtKind::Return(Some(call)).at(span)]);
+        Expr::call_helper("$try", vec![thunk])
+    }
+
+    /// The call `$try(() => call)` tries, of one [`Expr::tried`] made.
+    pub fn tried_call(&self) -> Option<&Expr> {
+        let ExprKind::Call(callee, args) = &self.kind else {
+            return None;
+        };
+        let (Some("$try"), [thunk]) = (callee.helper_name(), args.as_slice()) else {
+            return None;
+        };
+        match &thunk.kind {
+            ExprKind::Arrow(params, body) if params.is_empty() => match body.as_slice() {
+                [
+                    Stmt {
+                        kind: StmtKind::Return(Some(call)),
+                        ..
+                    },
+                ] => Some(call),
+                _ => None,
+            },
+            _ => None,
+        }
+    }
+
+    /// What a throwing JS call's `Result` is of, where nothing catches its
+    /// throw: the call, of `$try(() => call)`, and `await p`, of `await
+    /// $settle(p)` (ADRs 0035, 0643). Its throw, or its rejection, goes on
+    /// as JS made it.
+    pub fn uncaught(&self) -> Option<Expr> {
+        if let Some(call) = self.tried_call() {
+            return Some(call.clone());
+        }
+        let ExprKind::Await(settled) = &self.kind else {
+            return None;
+        };
+        let ExprKind::Call(callee, args) = &settled.kind else {
+            return None;
+        };
+        match (callee.helper_name(), args.as_slice()) {
+            (Some("$settle"), [promise]) => Some(Expr {
+                span: self.span,
+                ..Expr::await_(promise.clone())
+            }),
+            _ => None,
+        }
+    }
+
     /// A call of the runtime's helper `name`, `$cmp(a, b)`.
     pub fn call_helper(name: &'static str, args: Vec<Expr>) -> Expr {
         Expr::call(Expr::helper(name), args)
@@ -383,20 +436,20 @@ impl Expr {
         {
             return rhs;
         }
-        // `x + "" + "px"` is `x + "px"`: either makes text of `x` as `+`
+        // `"" + x + "px"` is `x + "px"`: either makes text of `x` as `+`
         // does, then joins.
         if op == Op::Add
             && matches!(rhs.kind, ExprKind::Str(_) | ExprKind::Template(..))
-            && let ExprKind::Binary(Op::Add, x, empty) = &lhs.kind
+            && let ExprKind::Binary(Op::Add, empty, x) = &lhs.kind
             && matches!(&empty.kind, ExprKind::Str(s) if s.is_empty())
         {
             return Expr::bin(Op::Add, (**x).clone(), rhs);
         }
-        // `"#" + (x + "")` is `"#" + x`: text joined to `x` makes text of it
-        // as `+ ""` does.
+        // `"#" + ("" + x)` is `"#" + x`: text joined to `x` makes text of it
+        // as `"" +` does.
         if op == Op::Add
             && matches!(lhs.kind, ExprKind::Str(_) | ExprKind::Template(..))
-            && let ExprKind::Binary(Op::Add, x, empty) = &rhs.kind
+            && let ExprKind::Binary(Op::Add, empty, x) = &rhs.kind
             && matches!(&empty.kind, ExprKind::Str(s) if s.is_empty())
         {
             return Expr::bin(Op::Add, lhs, (**x).clone());

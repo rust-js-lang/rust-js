@@ -330,7 +330,7 @@ pub fn circle(radius: f64) -> &'static Circle {
 | `"this()"` | `this(..)` | calling a JS function value |
 | `"typeof"` | `typeof this` | `js::type_of` |
 | `"!!"` | `!!this` | `js::truthy` |
-| `"+ \"\""` | `this + ""` | `js::concat_text` |
+| `"\"\" +"` | `"" + this` | `js::concat_text` |
 | `"get []"`, `"set []"`, `"in []"` | `this[key]`, `this[key] = v`, `key in this` | `js::get`, `js::set`, `js::has` |
 | `"{}"`, `"{label, value}"` | `{}`, `{ label, value }` | an object of the arguments |
 | `"<tag>"`, `"prop name"` | JSX | React's element bindings |
@@ -338,7 +338,7 @@ pub fn circle(radius: f64) -> &'static Circle {
 A module's `#` goes with the forms that aren't of a value: a function, `new`,
 `get` of a static. A method of a module, `this` and `"pkg#f"`, is an error.
 
-`js::concat_text` is `value + ""`: of text or a number, its `String`; of a
+`js::concat_text` is `"" + value`: of text or a number, its `String`; of a
 value of any shape, a `Result`, as `+` throws of a symbol and of an object
 whose `valueOf` throws (ADR 0639). A `match` of it, or its `is_err()`, is
 JS's `try`:
@@ -378,7 +378,7 @@ export function width(n) {
 
 export function willCoercionThrow(value) {
   try {
-    value + "";
+    "" + value;
     return false;
   } catch {
     return true;
@@ -526,12 +526,12 @@ export async function open(other) {
   `null` either way ([ADR 0275](../../decisions/0275-nullable-writes-null.md)).
 - **`#[rust_js::variadic]` makes the last parameter the rest
   arguments** ([ADR 0221](../../decisions/0221-variadic-bindings.md)). A
-  TypeScript rest parameter, `log(...data: any[])`, is `impl js::Rest<T>`,
-  a tuple, each argument of its own type that a `T` takes: `dyn
-  IntoUnknown` of `any`, `str` of `string`; `(x,)` is one, `()` none
-  ([ADR 0640](../../decisions/0640-a-rest-parameter-is-a-tuple.md)). A
-  slice's items are the arguments, and one not written out is spread,
-  `log(...values)`.
+  TypeScript rest parameter, `log(...data: any[])`, is `impl js::Rest<T>`
+  ([ADR 0640](../../decisions/0640-a-rest-parameter-is-a-tuple.md)):
+  given a tuple, its arguments, each of its own type that a `T` takes,
+  `dyn IntoUnknown` of `any`, `str` of `string`, `f64` of `number`, `(x,)`
+  one and `()` none; given a slice or a `Vec` by reference, spread,
+  `log(&values)` being `log(...values)`. A slice declared is refused.
 - **A cast is `this`, unchecked, so it's an `unsafe fn`**; check first with
   `instanceof`. webapi has one for each interface,
   `html_input_element::unchecked_from(target)`.
@@ -695,7 +695,7 @@ See [Components and props](../react/components.md).
 | Attribute | Says |
 |---|---|
 | `#[rust_js::nullable]`, `#[rust_js::nullable(param)]` | its result's, or that parameter's, `None` is `null` |
-| `#[rust_js::variadic]` | its last parameter, a slice or a tuple, a TypeScript rest parameter's `impl js::Rest<T>`, is the rest arguments |
+| `#[rust_js::variadic]` | its last parameter, `impl js::Rest<T>` or a tuple, is the rest arguments |
 | `#[rust_js::require]` | it's read through `require(module)`, not imported |
 | `#[rust_js::cannot_throw]` | it can't throw, as reading a data property can't |
 | `#[rust_js::skips_falsy]` | it skips what's falsy, as `classnames` does: `test && value` |

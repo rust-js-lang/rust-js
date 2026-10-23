@@ -3,7 +3,7 @@
 
 use core::marker::PhantomData;
 
-use js::JsObject;
+use js::{JsObject, Rest};
 
 unsafe extern "Rust" {
 
@@ -43,7 +43,7 @@ pub fn normalize(path: &str) -> String {
 /// `paths`, joined by the separator, and normalized.
 #[cfg_attr(rust_js, rust_js::link_name = "path#join")]
 #[cfg_attr(rust_js, rust_js::variadic)]
-pub fn join(paths: &[&str]) -> String {
+pub fn join(paths: impl Rest<str>) -> String {
     unreachable!()
 }
 
@@ -52,7 +52,7 @@ pub fn join(paths: &[&str]) -> String {
 /// directory.
 #[cfg_attr(rust_js, rust_js::link_name = "path#resolve")]
 #[cfg_attr(rust_js, rust_js::variadic)]
-pub fn resolve(paths: &[&str]) -> String {
+pub fn resolve(paths: impl Rest<str>) -> String {
     unreachable!()
 }
 
@@ -155,13 +155,13 @@ impl PlatformPath {
 
     #[cfg_attr(rust_js, rust_js::link_name = "join")]
     #[cfg_attr(rust_js, rust_js::variadic)]
-    pub fn join(&self, paths: &[&str]) -> String {
+    pub fn join(&self, paths: impl Rest<str>) -> String {
         unreachable!()
     }
 
     #[cfg_attr(rust_js, rust_js::link_name = "resolve")]
     #[cfg_attr(rust_js, rust_js::variadic)]
-    pub fn resolve(&self, paths: &[&str]) -> String {
+    pub fn resolve(&self, paths: impl Rest<str>) -> String {
         unreachable!()
     }
 

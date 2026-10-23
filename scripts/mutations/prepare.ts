@@ -3,6 +3,22 @@ import type { Mutation } from "../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "fallen-held-kept",
+    breaks: "`const type = a || b || undefined; return type ?? \"Object\";` stays, not `a || b || \"Object\"`",
+    file: "src/prepare.rs",
+    find: "    fallen_held(body);\n",
+    replace: "",
+    tests: ["test/lowering-options.test.ts", "-t", "filter by truth then a fallback"],
+  },
+  {
+    name: "fallen-held-read-twice",
+    breaks: "a chain held and read again after its fallback's statement takes the fallback, where it was `undefined`",
+    file: "src/prepare.rs",
+    find: "        if js::mentions_in(&after[1..], name) != 0 || js::mentions_in(&after[..1], name) != 1 {\n",
+    replace: "        if js::mentions_in(&after[..1], name) != 1 {\n",
+    tests: ["test/lowering-options.test.ts", "-t", "filter by truth then a fallback"],
+  },
+  {
     name: "truth-kept-unfallen",
     breaks: "`(a || undefined) ?? b`, a `filter` by truth's then `or(b)`, stays, not `a || b`",
     file: "src/prepare.rs",
@@ -158,8 +174,8 @@ export const mutations: Mutation[] = [
     name: "threw-the-other-way",
     breaks: "`is_err()` is `try { f(); return true; } catch { return false; }`, true where it didn't throw",
     file: "src/prepare.rs",
-    find: "    Some((tried(of)?, (*op == js::Op::Eq) == (s == \"Err\")))\n",
-    replace: "    Some((tried(of)?, (*op == js::Op::Eq) == (s == \"Ok\")))\n",
+    find: "    Some((of.tried_call()?, (*op == js::Op::Eq) == (s == \"Err\")))\n",
+    replace: "    Some((of.tried_call()?, (*op == js::Op::Eq) == (s == \"Ok\")))\n",
     tests: ["test/bindings.test.ts", "-t", "concat_text of any value"],
   },
   {
@@ -343,8 +359,8 @@ export const mutations: Mutation[] = [
     "name": "ignored-try-kept",
     "breaks": "an ignored `$try(() => f())`, `let _ = f();`, stays the helper, not `try { f(); } catch {}`",
     "file": "src/prepare.rs",
-    "find": "            && let Some(call) = tried(e)\n",
-    "replace": "            && let Some(call) = tried(e).filter(|_| false)\n",
+    "find": "            && let Some(call) = e.tried_call()\n",
+    "replace": "            && let Some(call) = e.tried_call().filter(|_| false)\n",
     "tests": ["test/lowering-bindings.test.ts", "-t", "ignored result of a call"]
   },
   {

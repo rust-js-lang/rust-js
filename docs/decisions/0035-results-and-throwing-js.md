@@ -3,7 +3,10 @@
 Status: Accepted; amended by [0588](0588-a-binding-throws-by-its-declared-result.md),
 whose binding declared to give a type parameter never says it may throw;
 by [0637](0637-a-match-of-a-throwing-call-is-try-catch.md): a `match` of
-its `Result` is `try` and `catch` of the call.
+its `Result` is `try` and `catch` of the call; by
+[0643](0643-unwrap-of-a-throwing-call-is-the-call.md): its `unwrap()` is
+the call; extended by [0644](0644-a-function-of-a-throwing-calls-result-throws.md):
+a function whose result is a throwing call's throws too.
 Builds on [0033](0033-enums-with-fields.md), where a `Result` is
 ReScript's `{ TAG: "Ok", _0: v }`.
 

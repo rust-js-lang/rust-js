@@ -9,7 +9,7 @@
 // A binding's parameters are its JS function's: its body never runs.
 #![allow(unused_variables)]
 
-use super::{Defined, JsError, JsObject, StructuredClone};
+use super::{Defined, JsError, JsObject, Rest, StructuredClone};
 use core::marker::PhantomData;
 
 /// [`ArrayBuffer`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/ArrayBuffer): bytes, which a typed array or a
@@ -558,7 +558,7 @@ pub mod int8_array {
     /// [`Int8Array.of(..items)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/of): a typed array of `items`.
     #[cfg_attr(rust_js, rust_js::link_name = "Int8Array.of")]
     #[cfg_attr(rust_js, rust_js::variadic)]
-    pub fn of(items: &[i8]) -> &'static Int8Array {
+    pub fn of(items: impl Rest<i8>) -> &'static Int8Array {
         unreachable!()
     }
 
@@ -833,7 +833,7 @@ pub mod uint8_array {
     /// [`Uint8Array.of(..items)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/of): a typed array of `items`.
     #[cfg_attr(rust_js, rust_js::link_name = "Uint8Array.of")]
     #[cfg_attr(rust_js, rust_js::variadic)]
-    pub fn of(items: &[u8]) -> &'static Uint8Array {
+    pub fn of(items: impl Rest<u8>) -> &'static Uint8Array {
         unreachable!()
     }
 
@@ -1108,7 +1108,7 @@ pub mod uint8_clamped_array {
     /// [`Uint8ClampedArray.of(..items)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/of): a typed array of `items`.
     #[cfg_attr(rust_js, rust_js::link_name = "Uint8ClampedArray.of")]
     #[cfg_attr(rust_js, rust_js::variadic)]
-    pub fn of(items: &[u8]) -> &'static Uint8ClampedArray {
+    pub fn of(items: impl Rest<u8>) -> &'static Uint8ClampedArray {
         unreachable!()
     }
 
@@ -1383,7 +1383,7 @@ pub mod int16_array {
     /// [`Int16Array.of(..items)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/of): a typed array of `items`.
     #[cfg_attr(rust_js, rust_js::link_name = "Int16Array.of")]
     #[cfg_attr(rust_js, rust_js::variadic)]
-    pub fn of(items: &[i16]) -> &'static Int16Array {
+    pub fn of(items: impl Rest<i16>) -> &'static Int16Array {
         unreachable!()
     }
 
@@ -1658,7 +1658,7 @@ pub mod uint16_array {
     /// [`Uint16Array.of(..items)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/of): a typed array of `items`.
     #[cfg_attr(rust_js, rust_js::link_name = "Uint16Array.of")]
     #[cfg_attr(rust_js, rust_js::variadic)]
-    pub fn of(items: &[u16]) -> &'static Uint16Array {
+    pub fn of(items: impl Rest<u16>) -> &'static Uint16Array {
         unreachable!()
     }
 
@@ -1933,7 +1933,7 @@ pub mod int32_array {
     /// [`Int32Array.of(..items)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/of): a typed array of `items`.
     #[cfg_attr(rust_js, rust_js::link_name = "Int32Array.of")]
     #[cfg_attr(rust_js, rust_js::variadic)]
-    pub fn of(items: &[i32]) -> &'static Int32Array {
+    pub fn of(items: impl Rest<i32>) -> &'static Int32Array {
         unreachable!()
     }
 
@@ -2208,7 +2208,7 @@ pub mod uint32_array {
     /// [`Uint32Array.of(..items)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/of): a typed array of `items`.
     #[cfg_attr(rust_js, rust_js::link_name = "Uint32Array.of")]
     #[cfg_attr(rust_js, rust_js::variadic)]
-    pub fn of(items: &[u32]) -> &'static Uint32Array {
+    pub fn of(items: impl Rest<u32>) -> &'static Uint32Array {
         unreachable!()
     }
 
@@ -2483,7 +2483,7 @@ pub mod float32_array {
     /// [`Float32Array.of(..items)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/of): a typed array of `items`.
     #[cfg_attr(rust_js, rust_js::link_name = "Float32Array.of")]
     #[cfg_attr(rust_js, rust_js::variadic)]
-    pub fn of(items: &[f32]) -> &'static Float32Array {
+    pub fn of(items: impl Rest<f32>) -> &'static Float32Array {
         unreachable!()
     }
 
@@ -2758,7 +2758,7 @@ pub mod float64_array {
     /// [`Float64Array.of(..items)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/of): a typed array of `items`.
     #[cfg_attr(rust_js, rust_js::link_name = "Float64Array.of")]
     #[cfg_attr(rust_js, rust_js::variadic)]
-    pub fn of(items: &[f64]) -> &'static Float64Array {
+    pub fn of(items: impl Rest<f64>) -> &'static Float64Array {
         unreachable!()
     }
 
@@ -3033,7 +3033,7 @@ pub mod big_int64_array {
     /// [`BigInt64Array.of(..items)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/of): a typed array of `items`.
     #[cfg_attr(rust_js, rust_js::link_name = "BigInt64Array.of")]
     #[cfg_attr(rust_js, rust_js::variadic)]
-    pub fn of(items: &[i64]) -> &'static BigInt64Array {
+    pub fn of(items: impl Rest<i64>) -> &'static BigInt64Array {
         unreachable!()
     }
 
@@ -3308,7 +3308,7 @@ pub mod big_uint64_array {
     /// [`BigUint64Array.of(..items)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/of): a typed array of `items`.
     #[cfg_attr(rust_js, rust_js::link_name = "BigUint64Array.of")]
     #[cfg_attr(rust_js, rust_js::variadic)]
-    pub fn of(items: &[u64]) -> &'static BigUint64Array {
+    pub fn of(items: impl Rest<u64>) -> &'static BigUint64Array {
         unreachable!()
     }
 

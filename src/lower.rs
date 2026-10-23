@@ -312,6 +312,9 @@ struct CrateFacts<'a, 'tcx> {
     /// the crate's or its libraries' may, as a generic `T`'s then may (ADR 0187).
     failing: &'a HashSet<DefId>,
     any_failing: bool,
+    /// The throwing functions, whose result is a throwing JS call's, each
+    /// return its call's value (ADR 0644).
+    throwing: &'a HashSet<DefId>,
     /// Whether a `Vec`'s capacity is kept, as the crate or a library it uses
     /// asks it (ADR 0419).
     keeps_capacity: bool,

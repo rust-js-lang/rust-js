@@ -51,7 +51,8 @@ app.append((b, "!"));                     // app.append(b, "!"), a rest paramete
 - A rest parameter, `...nodes`, is a tuple, each argument of its own type, which the binding
   spreads ([ADR 0640](../docs/decisions/0640-a-rest-parameter-is-a-tuple.md)):
   `el.append((node, "text"))` is `el.append(node, "text")`, `console::log((x,))` is
-  `console.log(x)`, and `console::log(())` is `console.log()`.
+  `console.log(x)`, and `console::log(())` is `console.log()`; a slice or a `Vec` of them is
+  spread, `el.append(&children)` is `el.append(...children)`.
 - An options object is a struct of `Option` fields, the rest `..Default::default()`:
   `RequestInit { method: Some("POST"), body: Some(json.into()), ..Default::default() }`.
 - A constructor is `new`, `event::new("ping", None)`, and `request::new(url, None)`.

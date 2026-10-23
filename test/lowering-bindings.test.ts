@@ -780,14 +780,14 @@ use crate::internals::REACT_SHARED_INTERNALS;
 use js::Unknown;
 
 pub fn merged<'a>(target: &'a Unknown, source: &Unknown) -> &'a Unknown {
-    assign(target, &[Some(source)])
+    assign(target, (source,))
 }
 
 pub fn listed(object: &Unknown) -> Vec<String> {
     crate::keys::keys(object)
 }
 
-pub fn merger() -> for<'a> fn(&'a Unknown, &[Option<&Unknown>]) -> &'a Unknown {
+pub fn merger() -> for<'a> fn(&'a Unknown, &'static [Option<&'static Unknown>]) -> &'a Unknown {
     assign
 }
 
@@ -799,7 +799,7 @@ pub fn internals() -> &'static Internals {
 use js::Unknown;
 
 pub fn merged<'a>(target: &'a Unknown, source: &Unknown) -> &'a Unknown {
-    js::object::assign(target, &[Some(source)])
+    js::object::assign(target, (source,))
 }
 
 pub fn internals() -> &'static Internals {
@@ -1035,7 +1035,13 @@ unsafe extern "Rust" {
 }
 
 pub fn valued() -> bool {
-    js::is_defined(&ABSENT_VALUE)
+    js::is_defined(ABSENT_VALUE)
+}
+
+// A static of a path, each part asked (ADR 0624), as React asks
+// \`Symbol.toStringTag\`.
+pub fn tagged() -> bool {
+    js::is_defined(js::symbol::to_string_tag)
 }
 
 #[cfg_attr(rust_js, rust_js::link_name = "rustJsTools.hook")]
@@ -1070,6 +1076,7 @@ pub fn timed() -> bool {
   expect(js).toContain('typeof rustJsPresentHook !== "undefined"');
   expect(js).toContain('typeof RustJsAbsentClass !== "undefined"');
   expect(js).toContain('return typeof rustJsAbsentValue !== "undefined";');
+  expect(js).toContain('return typeof Symbol !== "undefined" && typeof Symbol.toStringTag !== "undefined";');
   // Each part of a path, and a method of a global's type of that global.
   expect(js).toContain('return typeof rustJsTools !== "undefined" && typeof rustJsTools.hook !== "undefined";');
   expect(js).toContain('return typeof rustJsClock !== "undefined" && typeof rustJsClock.now !== "undefined";');

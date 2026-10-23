@@ -5,6 +5,9 @@ was an emitter's arguments; amends [0313](0313-console-forms.md), whose
 `console` took one value per call, and [0443](0443-a-value-a-caller-may-leave-out-is-an-option.md),
 whose trailing `None` of a variadic binding was always given.
 
+Amended below: a slice or a `Vec` is spread, and every rest parameter is
+`impl js::Rest<T>`, the js and node crates' too.
+
 Case ([0262](0262-when-rust-and-js-disagree.md)): N, a binding's shape:
 each call gives JS the arguments TypeScript's would.
 
@@ -120,11 +123,13 @@ console.log();
   the share of `renamed x$1`, whose count is the same, grows, 855.1 to
   855.2: no name is renamed that wasn't.
 - A rest of a collection a program holds, `el.append(...children)`, isn't
-  bound: a tuple's length is known. Nor was it before.
+  bound: a tuple's length is known. Nor was it before. (Amended below: a
+  slice or a `Vec` is spread, `el.append(&children)`.)
 - The js crate's and node's hand-written rest parameters are still
   slices, ADR 0221's first form: `math::max(&[a, b])`, `path::join(&[..])`,
   `object::assign(target, &[..])`, whose `&[Option<&Unknown>]` is
-  narrower than TypeScript's `any[]`.
+  narrower than TypeScript's `any[]`. (Amended below: each is `impl
+  js::Rest<T>`.)
 
 ## What holds it
 
@@ -138,3 +143,35 @@ console.log();
 - `test/compiler.test.ts`, the webapi forms' `app.append(input, "!")`.
 - Mutations in `scripts/mutations/lower/binding_calls.ts`: a `None`
   before a rest of none given.
+
+## Amendment: a slice or a `Vec` is spread, and every rest parameter is `Rest`
+
+`Rest<T>` is a tuple, its arguments, `math::max((a, b))` being
+`Math.max(a, b)`, or a slice or a `Vec` of what a `T` takes, by
+reference, spread: `math::max(&values)` is `Math.max(...values)`,
+`el.append(&children)` `el.append(...children)`, which a tuple couldn't
+give. An array written out, `&[a, b]`, is neither, and is refused by
+`Rest`'s message, "`&[f64; 2]` is not rest arguments": the arguments
+written out are a tuple. A number `Takes` its own type, `f64` and the
+integers a typed array holds.
+
+Every rest parameter is `impl js::Rest<T>`, so the js and node crates'
+hand-written slices are too: `math::max`, `math::min`, `object::assign`
+(whose sources take any value, TypeScript's `any`, where they were
+`Option<&Unknown>`), each typed array's `of`, node's `path::join` and
+`resolve` and a platform's, `Buffer::of` and `events::set_max_listeners`
+(of any emitter), and next's `cache_tag` and `unstable_cache_tag`. A
+variadic binding whose rest parameter is declared a slice or a `Vec` is
+refused, its error naming `impl js::Rest<T>`. A tuple declared, an
+emitter's `Emits<E>::Args`, stays: TypeScript's `...args: Args<K>` is a
+tuple of its own.
+
+`(x,)` is still one argument and `()` none, in Rust as JS spreads them.
+
+Held by `test/bindings.test.ts`, "a rest parameter takes a tuple or a
+slice to spread": `Math.max(a, b, 1)` of a tuple, `Math.max(...values)`
+of a `Vec` and of a slice, each run, and an array written out and a
+slice declared refused; `test/webapi-bindings.test.ts`'s
+`el.append(...children)` and `classList.add(...names)`; and mutations in
+`scripts/mutations/lower/binding_calls.ts`: a `Vec` refused, a slice
+declared accepted.

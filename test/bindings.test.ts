@@ -355,25 +355,52 @@ pub fn nested(parts: Vec<Option<&Unknown>>) -> String {
   expect([lib.nested([null]), lib.nested([undefined]), lib.nested([1])]).toEqual(["null", "undefined", "1"]);
 });
 
-// A binding's last parameter, a slice, can be JS's rest arguments,
-// `#[rust_js::variadic]`: a slice written out is the arguments, as
-// react.dev calls `cn("a", className)`, and another one spread (ADR 0221).
-test("a variadic binding takes a slice as its rest arguments", async () => {
+// A rest parameter, `#[rust_js::variadic]`'s last, is `impl js::Rest<T>`
+// (ADRs 0221, 0640): a tuple is its arguments, `Math.max(a, b, 1)`, and a
+// slice or a `Vec` of them, by reference, is spread, `Math.max(...values)`.
+// A slice written out is no tuple, and a slice declared is refused,
+// naming the one way.
+test("a rest parameter takes a tuple or a slice to spread", async () => {
+  const withJs = ["--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
   const dir = fixture("variadic");
-  writeFileSync(join(dir, "lib.rs"), `#[cfg_attr(rust_js, rust_js::link_name = "Math.max")] #[rust_js::variadic] #[allow(unused_variables)] fn max(values: &[f64]) -> f64 { unreachable!() }
+  const source = `use js::Rest;
+#[cfg_attr(rust_js, rust_js::link_name = "Math.max")]
+#[cfg_attr(rust_js, rust_js::variadic)]
+#[allow(unused_variables)]
+fn max(values: impl Rest<f64>) -> f64 {
+    unreachable!()
+}
 pub fn largest(a: f64, b: f64) -> f64 {
-    max(&[a, b, 1.0])
+    max((a, b, 1.0))
 }
 pub fn largest_of(values: Vec<f64>) -> f64 {
     max(&values)
 }
-`);
-  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+pub fn largest_in(values: &[f64]) -> f64 {
+    max(values)
+}
+pub fn smallest(values: &[f64]) -> f64 {
+    js::math::min(values)
+}
+`;
+  writeFileSync(join(dir, "lib.rs"), source);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("return Math.max(a, b, 1);");
   expect(js).toContain("return Math.max(...values);");
+  expect(js).toContain("return Math.min(...values);");
   const lib = await import(join(dir, "lib.js"));
-  expect([lib.largest(-3, -2), lib.largest(4, 2), lib.largestOf([2, 9, 4])]).toEqual([1, 4, 9]);
+  expect([lib.largest(-3, -2), lib.largest(4, 2), lib.largestOf([2, 9, 4]), lib.largestIn([3, 1]), lib.smallest([3, 1])]).toEqual([1, 4, 9, 3, 1]);
+  for (const [wrong, written, error] of [
+    ["max((a, b, 1.0))", "max(&[a, b, 1.0])", "`&[f64; 3]` is not rest arguments"],
+    ["fn max(values: impl Rest<f64>)", "fn max(values: &[f64])", "`impl js::Rest<T>`"],
+  ]) {
+    const declared = written.startsWith("fn ") ? source.replace("max((a, b, 1.0))", "max(&[a, b, 1.0])").replace("use js::Rest;\n", "") : source;
+    writeFileSync(join(dir, "lib.rs"), declared.replace(wrong, written));
+    const result = Bun.spawnSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "wrong.js"), ...withJs], { cwd: dir });
+    expect(result.exitCode).not.toBe(0);
+    expect(result.stderr.toString()).toContain(error);
+  }
 });
 
 // A variadic binding's last parameter may be a tuple, as an emitter's
@@ -435,16 +462,16 @@ pub fn calls(held: (f64, &str)) -> Vec<String> {
 test("a binding that skips what's falsy is given test && value", async () => {
   const dir = fixture("skips-falsy");
   writeFileSync(join(dir, "cn.js"), 'export default (...classes) => classes.filter(Boolean).join(" ");\n');
-  writeFileSync(join(dir, "lib.rs"), `#[cfg_attr(rust_js, rust_js::link_name = "./cn.js#default")] #[rust_js::variadic] #[rust_js::skips_falsy] #[allow(unused_variables)] fn cn(classes: &[Option<&str>]) -> String { unreachable!() } #[cfg_attr(rust_js, rust_js::link_name = "./cn.js#default")] #[rust_js::variadic] #[allow(unused_variables)] fn plain(classes: &[Option<&str>]) -> String { unreachable!() }
+  writeFileSync(join(dir, "lib.rs"), `#[cfg_attr(rust_js, rust_js::link_name = "./cn.js#default")] #[rust_js::variadic] #[rust_js::skips_falsy] #[allow(unused_variables)] fn cn(classes: impl js::Rest<dyn js::IntoUnknown>) -> String { unreachable!() } #[cfg_attr(rust_js, rust_js::link_name = "./cn.js#default")] #[rust_js::variadic] #[allow(unused_variables)] fn plain(classes: impl js::Rest<dyn js::IntoUnknown>) -> String { unreachable!() }
 pub fn classes(expanded: bool, shown: bool) -> String {
-    cn(&[Some("a"), expanded.then_some("wide"), (!expanded && shown).then_some("tall")])
+    cn((Some("a"), expanded.then_some("wide"), (!expanded && shown).then_some("tall")))
 }
 pub fn listed(expanded: bool) -> String {
-    plain(&[Some("a"), expanded.then_some("wide")])
+    plain((Some("a"), expanded.then_some("wide")))
 }
 pub struct Failure(pub u32);
 pub fn flagged(error: Option<&Failure>, ready: bool) -> String {
-    cn(&[Some("a"), (error.is_some() || ready).then_some("b")])
+    cn((Some("a"), (error.is_some() || ready).then_some("b")))
 }
 #[derive(Clone, Copy)]
 pub enum Dir {
@@ -467,7 +494,7 @@ pub struct ChevronProps {
 }
 pub fn chevron(props: ChevronProps) -> String {
     let d = props.d;
-    let classes = cn(&[
+    let classes = cn((
         matches!(d, Some(Dir::Down)).then_some("r0"),
         matches!(d, Some(Dir::Left)).then_some("r90"),
         matches!(d, Some(Dir::Up)).then_some("r180"),
@@ -475,21 +502,21 @@ pub fn chevron(props: ChevronProps) -> String {
         matches!(d, Some(Dir::Start)).then_some("s"),
         matches!(d, Some(Dir::End)).then_some("e"),
         props.class_name,
-    ]);
+    ));
     classes
 }
 pub fn numbered(n: Option<u32>) -> String {
-    cn(&[matches!(n, Some(1)).then_some("one"), matches!(n, Some(2)).then_some("two"), Some("c")])
+    cn((matches!(n, Some(1)).then_some("one"), matches!(n, Some(2)).then_some("two"), Some("c")))
 }
 pub fn kept(n: Option<u32>) -> String {
-    plain(&[matches!(n, Some(1)).then_some("one"), matches!(n, Some(2)).then_some("two")])
+    plain((matches!(n, Some(1)).then_some("one"), matches!(n, Some(2)).then_some("two")))
 }
 // A test of a string's truth, read as it is, as react.dev's Footer.
 pub fn linked(href: Option<&str>) -> String {
-    cn(&[Some("a"), href.filter(|href| !href.is_empty()).map(|_| "hover")])
+    cn((Some("a"), href.filter(|href| !href.is_empty()).map(|_| "hover")))
 }
 `);
-  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
   const js = readFileSync(join(dir, "mir.js"), "utf8");
   expect(js).toContain('return cn("a", expanded && "wide", !expanded && shown && "tall");');
   expect(js).toContain('return cn("a", expanded ? "wide" : undefined);');
@@ -735,7 +762,7 @@ pub fn tag_of(value: Option<&Unknown>) -> Result<String, &'static JsError> {
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain('text.replace(pattern, (matched, escaped, _ptn, flag) =>\n    escaped ? matched : `<${flag ?? ""}>`,\n  );');
   expect(js).toContain('return text.replace(/%{2,2}/g, "%");');
-  expect(js).toContain('return $try(() => value + "");');
+  expect(js).toContain('return $try(() => "" + value);');
   // Text joined to it already makes it text, as react.dev writes `right - left + 'px'`.
   expect(js).toContain('return n + "px";');
   expect(js).toContain('return count + " " + noun;');
@@ -788,9 +815,9 @@ pub fn width(n: f64) -> String {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain('function willCoercionThrow(value) {\n  try {\n    value + "";\n    return false;\n  } catch {\n    return true;\n  }\n}');
-  expect(js).toContain('function throws(value) {\n  try {\n    value + "";\n    return false;\n  } catch {\n    return true;\n  }\n}');
-  expect(js).toContain('function coercible(value) {\n  try {\n    value + "";\n    return true;\n  } catch {\n    return false;\n  }\n}');
+  expect(js).toContain('function willCoercionThrow(value) {\n  try {\n    "" + value;\n    return false;\n  } catch {\n    return true;\n  }\n}');
+  expect(js).toContain('function throws(value) {\n  try {\n    "" + value;\n    return false;\n  } catch {\n    return true;\n  }\n}');
+  expect(js).toContain('function coercible(value) {\n  try {\n    "" + value;\n    return true;\n  } catch {\n    return false;\n  }\n}');
   // Of a number, nothing to catch.
   expect(js).toContain('return n + "px";');
   expect(js).not.toContain("$try");
@@ -914,6 +941,8 @@ pub fn formatStr(inputArgs: Vec<Option<&'static Unknown>>) -> Vec<Option<&'stati
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js"), ...withJs]);
   const js = readFileSync(join(dir, "mir.js"), "utf8");
   expect(js).toContain("    formatted = formatted.replace(REGEXP, (match, escaped, ptn, flag) => {\n");
+  // react.dev's `arg = arg + ''`, a symbol's throw its own (ADR 0643).
+  expect(js).toContain('arg = "" + arg;');
   const lib = await import(join(dir, "mir.js"));
   expect(lib.formatStr(["a %s b %d", "x", "4.2", "y"])).toEqual(["a x b 4 y"]);
 });

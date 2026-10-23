@@ -395,6 +395,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     false => self.mir_call(state, func, args, *destination, *fn_span, &mut called),
                 };
                 let value = value?;
+                // A throwing function's result, a throwing call's, is the
+                // call's value: its throw goes on, to the throwing
+                // function's caller's `try` (ADR 0644).
+                let value = match value {
+                    Value::Expr(e)
+                        if destination.local == mir::RETURN_PLACE
+                            && destination.projection.is_empty()
+                            && self.krate.throwing.contains(&state.body.source.def_id()) =>
+                    {
+                        Value::Expr(e.uncaught().unwrap_or(e))
+                    }
+                    value => value,
+                };
                 // What the call writes, a setter's `n.textContent = "x"` or a
                 // cell's `count = 5`, after what was made before it, which
                 // may read what it writes.

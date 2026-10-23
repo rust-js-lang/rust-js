@@ -3,6 +3,7 @@
 
 use super::bindings::{JsForm, is_binding, is_method, is_optional_param, is_variadic, js_form};
 use super::calls::given_to_js;
+use super::recognition::StdItem;
 use super::{FnCx, R};
 use crate::js;
 use crate::js::{Expr, Op, StmtKind, UnaryOp};
@@ -27,12 +28,33 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Err(self.tcx.dcx().span_err(span, refused));
         }
         let this = is_method(self.tcx, def_id).then(|| args.remove(0));
-        // Its last argument, a slice, is JS's rest arguments: what an
-        // array written out holds, or the slice spread (ADR 0221).
-        // Or a tuple, as an emitter's event's arguments are, of its type at
-        // this call: `()`, an empty array, none.
+        // Its last argument is JS's rest arguments (ADRs 0221, 0640): a
+        // tuple, `impl js::Rest<T>`'s or an emitter's event's, its items,
+        // `()` none; a slice or a `Vec` of them, spread, or what an array
+        // written out holds.
         if is_variadic(self.tcx, def_id) {
-            let last = (self.tcx.fn_sig(def_id).instantiate(self.tcx, generic_args))
+            let sig = self.tcx.fn_sig(def_id);
+            let collection = |ty: ty::Ty<'tcx>| {
+                let ty = ty.peel_refs();
+                ty.is_slice() || self.is_std_type(ty, StdItem::Vec)
+            };
+            // A slice declared is the one way's old form: a rest parameter
+            // is `impl js::Rest<T>`, given a tuple or a slice.
+            let declared = (sig
+                .instantiate_identity()
+                .skip_normalization()
+                .skip_binder()
+                .inputs()
+                .last())
+            .copied();
+            if declared.is_some_and(collection) {
+                return Err(self.tcx.dcx().span_err(
+                    span,
+                    "a `#[rust_js::variadic]` binding's rest parameter is `impl js::Rest<T>`, \
+                     given a tuple of its arguments or a slice or a `Vec` to spread, not a slice",
+                ));
+            }
+            let last = (sig.instantiate(self.tcx, generic_args))
                 .skip_normalization()
                 .skip_binder()
                 .inputs()
@@ -44,10 +66,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     .unwrap_or(ty)
             });
             let tuple = last.is_some_and(|ty| matches!(ty.kind(), ty::Tuple(_)));
-            if !last.is_some_and(|ty| ty.peel_refs().is_slice()) && !tuple {
+            if !last.is_some_and(collection) && !tuple {
                 return Err(self.unsupported(
                     span,
-                    "a `#[rust_js::variadic]` binding whose last parameter isn't a slice or a tuple",
+                    "a `#[rust_js::variadic]` binding whose last parameter isn't rest arguments: a tuple, a slice or a `Vec`",
                 ));
             }
             match args.pop() {
@@ -138,7 +160,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Expr::unary(UnaryOp::Not, Expr::unary(UnaryOp::Not, this))
             }
             (JsForm::TypeOf, Some(this)) if args.is_empty() => Expr::unary(UnaryOp::Typeof, this),
-            (JsForm::Text, Some(this)) if args.is_empty() => Expr::bin(Op::Add, this, Expr::str("")),
+            (JsForm::Text, Some(this)) if args.is_empty() => Expr::bin(Op::Add, Expr::str(""), this),
             (JsForm::SetIndex, Some(this)) if args.len() == 2 => {
                 let (key, value) = (args.remove(0), args.remove(0));
                 out.push(StmtKind::Assign(keyed(this, key), value).at(self.js_span(span)));
