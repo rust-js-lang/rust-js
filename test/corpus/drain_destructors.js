@@ -213,10 +213,9 @@ function main() {
           }
           throw error;
         }
-        const value = (n) => n[0];
         try {
-          const value$1 = first ? value(first) : undefined;
-          console.log(`first ${value$1 == null ? "None" : `Some(${value$1})`}`);
+          const value = first?.[0];
+          console.log(`first ${value == null ? "None" : `Some(${value})`}`);
         } catch (error) {
           if (first != null) {
             console.log(`drop ${first[0]}`);
@@ -230,8 +229,7 @@ function main() {
           for (const item of d) {
             console.log(`drop ${item[0]}`);
           }
-          const length = w.length;
-          console.log(`after drain ${length}`);
+          console.log(`after drain ${w.length}`);
         } finally {
           if (first != null) {
             console.log(`drop ${first[0]}`);

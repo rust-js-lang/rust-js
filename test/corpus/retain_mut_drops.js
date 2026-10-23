@@ -12,28 +12,33 @@ function loudDrop_drop(loud) {
 
 function main() {
   const v = [[1], [2], [3], [4]];
-  const value = (l) => {
-    l[0] = (l[0] + 10) & 255;
-    return l[0] % 2 === 0;
-  };
   try {
-    $retainMut(v, value, false, loudDrop_drop);
+    $retainMut(
+      v,
+      (l) => {
+        l[0] = (l[0] + 10) & 255;
+        return l[0] % 2 === 0;
+      },
+      false,
+      loudDrop_drop,
+    );
     const tmp = v.map((l) => l[0]);
     console.log(`[${tmp.join(", ")}]`);
-    const value$1 = [[5], [6]];
-    const tmp$1 = $iter(value$1);
+    const value = [[5], [6]];
+    const tmp$1 = $iter(value);
     const d = tmp$1.toArray();
-    const value$2 = (l) => l[0] === 6;
     try {
-      $retainMut(d, value$2, false, loudDrop_drop);
-      const length = d.length;
-      console.log(`${length}`);
+      $retainMut(d, (l) => l[0] === 6, false, loudDrop_drop);
+      console.log(`${d.length}`);
       const n = [1, 2, 3];
-      const value = (x) => {
-        x.value = (x.value * 3) | 0;
-        return x.value > 3;
-      };
-      $retainMut(n, value, true);
+      $retainMut(
+        n,
+        (x) => {
+          x.value = (x.value * 3) | 0;
+          return x.value > 3;
+        },
+        true,
+      );
       console.log(`[${n.join(", ")}]`);
     } finally {
       for (const item of d) {

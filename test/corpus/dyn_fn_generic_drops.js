@@ -40,11 +40,14 @@ function main() {
     }
     const i = tmp;
     const guard = [i];
-    const value = () => (Guard.id(guard) * 10) >>> 0;
     try {
-      Registry.add(registry, value, (value) => {
-        console.log(`drop guard ${guard[0]}`);
-      });
+      Registry.add(
+        registry,
+        () => (Guard.id(guard) * 10) >>> 0,
+        (value) => {
+          console.log(`drop guard ${guard[0]}`);
+        },
+      );
     } catch (error) {
       for (const item of registry.callbacks) {
         $dispose(item);
@@ -52,9 +55,8 @@ function main() {
       throw error;
     }
   }
-  const value = () => 7;
   try {
-    Registry.add(registry, value);
+    Registry.add(registry, () => 7);
     const sum = registry.callbacks.map((f) => f()).reduce((a, b) => (a + b) >>> 0, 0);
     console.log(`sum ${sum}`);
     $truncate(registry.callbacks, 1, $dispose);

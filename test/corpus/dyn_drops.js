@@ -150,9 +150,7 @@ function main() {
       try {
         const tmp = holder.shape.impl.name(holder.shape.value);
         console.log(`${tmp}`);
-        const value = ["given"];
-        const impl = noisyShape;
-        const tmp$1 = consume({ value, impl });
+        const tmp$1 = consume({ value: ["given"], impl: noisyShape });
         console.log(`${tmp$1}`);
         const kept = ["kept"];
         try {

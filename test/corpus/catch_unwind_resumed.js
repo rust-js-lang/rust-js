@@ -8,18 +8,17 @@ export function entry() {
 
 function main() {
   const outer = 0;
-  const value = () => {
-    const inner = 1;
-    try {
-      throw new Error("resumed 3");
-    } catch (error) {
-      console.log(`drop ${inner}`);
-      throw error;
-    }
-  };
   let result;
   try {
-    result = $catchUnwind(value);
+    result = $catchUnwind(() => {
+      const inner = 1;
+      try {
+        throw new Error("resumed 3");
+      } catch (error) {
+        console.log(`drop ${inner}`);
+        throw error;
+      }
+    });
   } catch (error) {
     console.log(`drop ${outer}`);
     throw error;

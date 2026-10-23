@@ -78,27 +78,25 @@ function main() {
       min: 4,
       filler: (i) => (i * 10) >>> 0,
     };
-    const value$1 = [];
-    const value$2 = (all, x) => {
-      all.push(x);
-      return all;
-    };
     const tmp$1 = PadUsing.rfold(
       pad,
-      value$1,
-      value$2,
+      [],
+      (all, x) => {
+        all.push(x);
+        return all;
+      },
       { next: $next },
       { next_back: $nextBack },
       { len: (iterator) => iterator.len() },
     );
     console.log(`[${tmp$1.join(", ")}]`);
     const tmp$2 = lastSquare(5);
-    const value$3 = lastSquare(1);
+    const value$1 = lastSquare(1);
     console.log(
-      `${tmp$2 == null ? "None" : `Some(${tmp$2})`} ${value$3 == null ? "None" : `Some(${value$3})`}`,
+      `${tmp$2 == null ? "None" : `Some(${tmp$2})`} ${value$1 == null ? "None" : `Some(${value$1})`}`,
     );
-    const value$4 = [1, 2, 3];
-    const inner = $iter(value$4);
+    const value$2 = [1, 2, 3];
+    const inner = $iter(value$2);
     const doubledLen = Counted.doubledLen(
       { inner },
       { next: $next },

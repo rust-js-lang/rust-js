@@ -178,9 +178,8 @@ export function shared(times) {
   const writer = log;
   for (let i = 0; i < times; i++) {
     const borrowMut = $borrowMut(writer, true);
-    const value = Math.imul(i, i);
     try {
-      borrowMut.value.push(value);
+      borrowMut.value.push(Math.imul(i, i));
     } finally {
       $unborrow(borrowMut);
     }

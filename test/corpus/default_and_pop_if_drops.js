@@ -81,24 +81,23 @@ function defaults() {
 
 function popped() {
   const v = [[7], [8]];
-  const value = (l) => l[0] === 8;
   let popped;
   try {
-    popped = $popIf(v, value);
+    popped = $popIf(v, (l) => l[0] === 8);
   } catch (error) {
     for (const item of v) {
       loudDrop_drop(item);
     }
     throw error;
   }
-  const value$1 = (l) => {
+  const map = (l) => {
     const result = l[0];
     loudDrop_drop(l);
     return result;
   };
   let tmp;
   try {
-    tmp = popped ? value$1(popped) : undefined;
+    tmp = popped ? map(popped) : undefined;
   } catch (error) {
     for (const item of v) {
       loudDrop_drop(item);
@@ -113,10 +112,9 @@ function popped() {
     }
     throw error;
   }
-  const value$2 = (l) => l[0] === 0;
   let none;
   try {
-    none = $popIf(v, value$2);
+    none = $popIf(v, (l) => l[0] === 0);
   } catch (error) {
     for (const item of v) {
       loudDrop_drop(item);
@@ -135,10 +133,9 @@ function popped() {
     throw error;
   }
   const q = [[9], [10]];
-  const value$3 = (l) => l[0] === 9;
   let front;
   try {
-    front = $popFrontIf(q, value$3, false);
+    front = $popFrontIf(q, (l) => l[0] === 9, false);
   } catch (error) {
     for (const item of q) {
       loudDrop_drop(item);
@@ -151,9 +148,8 @@ function popped() {
     }
     throw error;
   }
-  const value$4 = (l) => l[0];
   try {
-    const value = front ? value$4(front) : undefined;
+    const value = front?.[0];
     console.log(`front ${value == null ? "None" : `Some(${value})`}`);
   } catch (error) {
     if (front != null) {
@@ -174,13 +170,12 @@ function popped() {
   if (o) {
     o[0] = (o[0] + 1) & 255;
   }
-  const value$5 = (l) => l[0];
   try {
     try {
       try {
         try {
           try {
-            const value = o ? value$5(o) : undefined;
+            const value = o?.[0];
             console.log(`as_mut ${value == null ? "None" : `Some(${value})`}`);
           } finally {
             if (o != null) {

@@ -220,4 +220,20 @@ export const mutations: Mutation[] = [
     replace: "            }) if false => {\n",
     tests: ["test/corpus.test.ts", "-t", "^mut_field_given.rs$"],
   },
+  {
+    name: "closure-made-throws-first",
+    breaks: "a closure made before a call that unwinds elsewhere is made first, `const value = (cache) => cache; try { tmp = value(cache); }`, not `with` applied in place",
+    file: "src/lower/mir/temporaries.rs",
+    find: "                    Value::Expr(e) => e.may_throw(),\n",
+    replace: "                    Value::Expr(_) => true,\n",
+    tests: ["test/lowering-cells.test.ts", "-t", "with is its variable under a guard"],
+  },
+  {
+    name: "throwing-made-not-first",
+    breaks: "what's made before a call that unwinds elsewhere and may throw runs in the call's `try`, its panic dropping what that call's would",
+    file: "src/lower/mir/temporaries.rs",
+    find: "            !movable(state, value)\n                && match value {\n",
+    replace: "            false\n                && match value {\n",
+    tests: ["test/corpus.test.ts", "-t", "drop"],
+  },
 ];

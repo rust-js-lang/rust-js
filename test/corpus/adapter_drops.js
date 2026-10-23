@@ -123,10 +123,9 @@ function main() {
   let pair$live;
   try {
     pair = $next(zipped);
-    const value = ([a, b]) => [a[0], b[0]];
     try {
-      const value$1 = pair ? value(pair) : undefined;
-      console.log(`zip ${value$1 == null ? "None" : `Some((${value$1[0]}, ${value$1[1]}))`}`);
+      const value = pair ? [pair[0][0], pair[1][0]] : undefined;
+      console.log(`zip ${value == null ? "None" : `Some((${value[0]}, ${value[1]}))`}`);
       pair$live = false;
     } finally {
       if (pair != null) {

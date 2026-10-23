@@ -146,20 +146,18 @@ function bagExtendLoud_extend(bag, items, dropI, dropIIntoIter) {
 
 function main() {
   const found = first([["a"], ["b"], ["c"]], $dropEach(loudDrop_drop));
-  const value = (l) => l[0];
   try {
-    console.log(`first ${found != null ? value(found) : "none"}`);
-    const value$1 = [["d"], ["e"], ["f"]];
-    const rest = $iter(value$1);
+    console.log(`first ${found?.[0] ?? "none"}`);
+    const value = [["d"], ["e"], ["f"]];
+    const rest = $iter(value);
     const found$1 = relay($iterator({ rest }, drainIterator_next), (it) => {
       console.log(`drain dropped, ${it.of.rest.end - it.of.rest.at} left`);
       for (const item of it.of.rest) {
         loudDrop_drop(item);
       }
     });
-    const value$2 = (l) => l[0];
     try {
-      console.log(`relayed ${found$1 != null ? value$2(found$1) : "none"}`);
+      console.log(`relayed ${found$1?.[0] ?? "none"}`);
       const value = [["g"], ["h"]];
       const tmp = $iter(value);
       const rest = skipOne(tmp, { next: $next }, $dropEach(loudDrop_drop), loudDrop_drop);
@@ -190,12 +188,10 @@ function main() {
             }
           },
         );
-        const length = bag[0].length;
-        console.log(`bag ${length}`);
+        console.log(`bag ${bag[0].length}`);
         const value = [["l"], ["stop"], ["m"]];
         bagExtendLoud_extend(bag, value, $dropEach(loudDrop_drop), $dropEach(loudDrop_drop));
-        const value$2 = bag[0].length;
-        console.log(`bag ${value$2}`);
+        console.log(`bag ${bag[0].length}`);
       } finally {
         for (const item of bag[0]) {
           loudDrop_drop(item);

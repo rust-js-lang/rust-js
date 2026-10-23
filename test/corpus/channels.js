@@ -123,8 +123,7 @@ function main() {
     try {
       $dropReceiver(rx$1);
       const tmp = $send(tx, 5);
-      const value = tmp.TAG === "Err";
-      console.log(`${value}`);
+      console.log(`${tmp.TAG === "Err"}`);
 
       const tmp$1 = $channel();
       const tx$1 = tmp$1[0];
@@ -144,8 +143,7 @@ function main() {
           $dropSender(tx$1);
         }
         const recv = $recv(rx);
-        const value = recv.TAG === "Err";
-        console.log(`${value}`);
+        console.log(`${recv.TAG === "Err"}`);
       } finally {
         $dropReceiver(rx);
       }

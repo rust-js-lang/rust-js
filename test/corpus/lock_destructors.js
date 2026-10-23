@@ -51,9 +51,8 @@ function main() {
       $unborrow(tmp);
     }
     const tmp$1 = $lockRead(l, true);
-    const value = tmp$1.value;
     try {
-      console.log(`${value.length} held`);
+      console.log(`${tmp$1.value.length} held`);
     } finally {
       $unborrow(tmp$1);
     }

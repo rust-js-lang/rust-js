@@ -152,9 +152,8 @@ function main() {
     $unborrow(value$4);
   }
   const again = $tryBorrow($index(shapes, 1), true);
-  const value$5 = again.TAG === "Ok";
   try {
-    console.log(`${value$5}`);
+    console.log(`${again.TAG === "Ok"}`);
   } finally {
     if (again.TAG === "Ok") {
       $unborrow(again._0);

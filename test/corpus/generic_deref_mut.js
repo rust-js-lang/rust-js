@@ -104,10 +104,10 @@ function main() {
   console.log(`${n}`);
   const cell = { value: 3 };
   const borrowMut = $borrowMut(cell, true);
+  const p$4 = { value: borrowMut };
   try {
-    const p = { value: borrowMut };
-    bump(p, { Deref: () => ({ deref: (x) => x.value }), derefMut: (cell) => cell.value });
-    $assign(borrowMut, p.value);
+    bump(p$4, { Deref: () => ({ deref: (x) => x.value }), derefMut: (cell) => cell.value });
+    $assign(borrowMut, p$4.value);
   } finally {
     $unborrow(borrowMut);
   }
@@ -119,9 +119,9 @@ function main() {
   }
 
   let s = "hi";
-  const p$4 = { value: s };
-  shout(p$4, { Deref: () => ({ deref: (x) => x }), derefMut: (cell) => cell });
-  s = p$4.value;
+  const p$5 = { value: s };
+  shout(p$5, { Deref: () => ({ deref: (x) => x }), derefMut: (cell) => cell });
+  s = p$5.value;
   console.log(`${s}`);
 
   eitherSides();

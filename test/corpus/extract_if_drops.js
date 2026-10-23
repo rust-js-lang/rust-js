@@ -26,9 +26,8 @@ function ids(v) {
 
 function collected() {
   const v = [[1], [2], [3], [4], [5]];
-  const value = (l) => l[0] % 2 === 1;
   try {
-    const extractIf = Iterator.from($extractIf(v, 0, undefined, value));
+    const extractIf = Iterator.from($extractIf(v, 0, undefined, (l) => l[0] % 2 === 1));
     const odd = extractIf.toArray();
     try {
       const tmp = ids(odd);
@@ -52,12 +51,12 @@ function stoppedEarly() {
   try {
     const e = Iterator.from($extractIf(w, 1, undefined, () => true));
     const first = $next(e);
-    const value = (l) => {
+    const map = (l) => {
       const result = l[0];
       loudDrop_drop(l);
       return result;
     };
-    const mapOr = first != null ? value(first) : 0;
+    const mapOr = first != null ? map(first) : 0;
     const tmp = w;
     const tmp$1 = ids(tmp);
     console.log(`first ${mapOr} left [${tmp$1.join(", ")}]`);
@@ -70,12 +69,14 @@ function stoppedEarly() {
 
 function counted() {
   const list = [[20], [21]];
-  const value = (l) => l[0] === 20;
   try {
-    const n = Iterator.from($extractIf(list, 0, undefined, value)).reduce((n, item) => {
-      loudDrop_drop(item);
-      return n + 1;
-    }, 0);
+    const n = Iterator.from($extractIf(list, 0, undefined, (l) => l[0] === 20)).reduce(
+      (n, item) => {
+        loudDrop_drop(item);
+        return n + 1;
+      },
+      0,
+    );
     console.log(`counted ${n} left ${list.length}`);
   } finally {
     for (const item of list) {
@@ -95,13 +96,12 @@ function fromMaps() {
     $cmp,
     loudDrop_drop,
   );
-  const value = (k) => k === 2;
   let iter;
   try {
     iter = Iterator.from(
       $mapExtractIf(
         m,
-        value,
+        (k) => k === 2,
         $treeRange(m, $cmp, false, "BTreeMap", "Unbounded", "Unbounded", false),
         false,
         false,
@@ -155,12 +155,14 @@ function fromMaps() {
   }
   try {
     const h = $extendMap(new Map(), [[1, [40]]], false, loudDrop_drop);
-    const value = (_, l) => l[0] === 40;
     try {
-      const gone = Iterator.from($mapExtractIf(h, value, h, false, false)).reduce((n, item) => {
-        loudDrop_drop(item[1]);
-        return n + 1;
-      }, 0);
+      const gone = Iterator.from($mapExtractIf(h, (_, l) => l[0] === 40, h, false, false)).reduce(
+        (n, item) => {
+          loudDrop_drop(item[1]);
+          return n + 1;
+        },
+        0,
+      );
       const size = h.size;
       console.log(`hash ${gone} ${size} ${m.size}`);
     } finally {

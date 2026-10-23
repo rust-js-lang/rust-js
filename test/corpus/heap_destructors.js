@@ -26,17 +26,16 @@ function main() {
     $heapPush(h, [9], (a, b) => $cmp(a[0], b[0]));
     $heapPush(h, [5], (a, b) => $cmp(a[0], b[0]));
     const top = $heapPop(h, (a, b) => $cmp(a[0], b[0]));
-    const value = (o) => o[0];
     try {
-      const value$1 = top ? value(top) : undefined;
-      console.log(`top ${value$1 == null ? "None" : `Some(${value$1})`}`);
+      const value = top?.[0];
+      console.log(`top ${value == null ? "None" : `Some(${value})`}`);
     } finally {
       if (top != null) {
         oDrop_drop(top);
       }
     }
-    const value$1 = [[1], [7]];
-    const other = $heapFrom(value$1, (a, b) => $cmp(a[0], b[0]));
+    const value = [[1], [7]];
+    const other = $heapFrom(value, (a, b) => $cmp(a[0], b[0]));
     try {
       $heapAppend(h, other, (a, b) => $cmp(a[0], b[0]));
       const length = h.length;
@@ -59,12 +58,16 @@ function main() {
         console.log(`[${tmp.join(", ")}]`);
         const value = [[20], [25], [21], [30]];
         const r = $heapFrom(value, (a, b) => $cmp(a[0], b[0]));
-        const value$1 = (o) => {
-          console.log(`keep ${o[0]}?`);
-          return o[0] % 5 === 0;
-        };
         try {
-          $heapRetain(r, value$1, (a, b) => $cmp(a[0], b[0]), oDrop_drop);
+          $heapRetain(
+            r,
+            (o) => {
+              console.log(`keep ${o[0]}?`);
+              return o[0] % 5 === 0;
+            },
+            (a, b) => $cmp(a[0], b[0]),
+            oDrop_drop,
+          );
           const o = r[0];
           const value = o?.[0];
           console.log(`retained ${value == null ? "None" : `Some(${value})`}`);
@@ -73,15 +76,14 @@ function main() {
             oDrop_drop(item);
           }
         }
-        const value$2 = [[11], [12]];
-        const k = $heapFrom(value$2, (a, b) => $cmp(a[0], b[0]));
+        const value$1 = [[11], [12]];
+        const k = $heapFrom(value$1, (a, b) => $cmp(a[0], b[0]));
         try {
           const tmp = $iter(k.splice(0));
           for (const item of tmp) {
             oDrop_drop(item);
           }
-          const value = k.length;
-          console.log(`end ${value}`);
+          console.log(`end ${k.length}`);
         } finally {
           for (const item of k) {
             oDrop_drop(item);

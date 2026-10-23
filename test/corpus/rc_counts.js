@@ -97,13 +97,12 @@ function main() {
     $rcDrop(a);
     throw error;
   }
-  let tmp$1;
+  const value$2 = a.weak;
   let upgrade;
-  let tmp$2;
+  let tmp$1;
   try {
-    tmp$1 = a.weak;
     upgrade = $upgrade(weak);
-    tmp$2 = (n) => {
+    tmp$1 = (n) => {
       const result = n.value;
       $rcDrop(n);
       return result;
@@ -113,16 +112,16 @@ function main() {
     $rcDrop(a);
     throw error;
   }
-  let tmp$3;
+  let tmp$2;
   try {
-    tmp$3 = upgrade ? tmp$2(upgrade) : undefined;
+    tmp$2 = upgrade ? tmp$1(upgrade) : undefined;
   } catch (error) {
     $weakDrop(weak);
     $rcDrop(a);
     throw error;
   }
   try {
-    console.log(`${tmp$1} ${tmp$3 == null ? "None" : `Some(${tmp$3})`}`);
+    console.log(`${value$2} ${tmp$2 == null ? "None" : `Some(${tmp$2})`}`);
   } catch (error) {
     $weakDrop(weak);
     $rcDrop(a);
@@ -153,26 +152,25 @@ function main() {
     $rcDrop(a);
     throw error;
   }
-  const value$2 = (a.value + 1) | 0;
   try {
-    console.log(`${value$2}`);
+    console.log(`${(a.value + 1) | 0}`);
   } catch (error) {
     $rcDrop(shared);
     $weakDrop(weak);
     $rcDrop(a);
     throw error;
   }
-  let tmp$4;
+  let tmp$3;
   try {
     a = $makeMut(a);
-    tmp$4 = a;
+    tmp$3 = a;
   } catch (error) {
     $rcDrop(shared);
     $weakDrop(weak);
     $rcDrop(a);
     throw error;
   }
-  tmp$4.value = (tmp$4.value + 10) | 0;
+  tmp$3.value = (tmp$3.value + 10) | 0;
   try {
     console.log(`${a.value} ${shared.value} ${a === shared}`);
   } catch (error) {
@@ -181,36 +179,36 @@ function main() {
     $rcDrop(a);
     throw error;
   }
+  let tmp$4;
+  try {
+    tmp$4 = $tryUnwrap(shared);
+  } catch (error) {
+    $weakDrop(weak);
+    $rcDrop(a);
+    throw error;
+  }
+  try {
+    console.log(`${tmp$4.TAG === "Ok" ? `Ok(${tmp$4._0})` : `Err(${tmp$4._0.value})`}`);
+  } catch (error) {
+    if (tmp$4.TAG === "Err") {
+      $rcDrop(tmp$4._0);
+    }
+    $weakDrop(weak);
+    $rcDrop(a);
+    throw error;
+  }
+  try {
+    if (tmp$4.TAG === "Err") {
+      $rcDrop(tmp$4._0);
+    }
+  } catch (error) {
+    $weakDrop(weak);
+    $rcDrop(a);
+    throw error;
+  }
   let tmp$5;
   try {
-    tmp$5 = $tryUnwrap(shared);
-  } catch (error) {
-    $weakDrop(weak);
-    $rcDrop(a);
-    throw error;
-  }
-  try {
-    console.log(`${tmp$5.TAG === "Ok" ? `Ok(${tmp$5._0})` : `Err(${tmp$5._0.value})`}`);
-  } catch (error) {
-    if (tmp$5.TAG === "Err") {
-      $rcDrop(tmp$5._0);
-    }
-    $weakDrop(weak);
-    $rcDrop(a);
-    throw error;
-  }
-  try {
-    if (tmp$5.TAG === "Err") {
-      $rcDrop(tmp$5._0);
-    }
-  } catch (error) {
-    $weakDrop(weak);
-    $rcDrop(a);
-    throw error;
-  }
-  let tmp$6;
-  try {
-    tmp$6 = $upgrade(weak);
+    tmp$5 = $upgrade(weak);
   } catch (error) {
     $weakDrop(weak);
     $rcDrop(a);
@@ -220,11 +218,11 @@ function main() {
     try {
       const tmp = $intoInner(a);
       console.log(
-        `${tmp$6 == null ? "None" : `Some(${tmp$6.value})`} ${tmp == null ? "None" : `Some(${tmp})`}`,
+        `${tmp$5 == null ? "None" : `Some(${tmp$5.value})`} ${tmp == null ? "None" : `Some(${tmp})`}`,
       );
     } finally {
-      if (tmp$6 != null) {
-        $rcDrop(tmp$6);
+      if (tmp$5 != null) {
+        $rcDrop(tmp$5);
       }
     }
     const tmp = $upgrade(weak);
@@ -422,9 +420,9 @@ function main() {
       $rcDrop(leaf, dropNode$1);
       throw error;
     }
-    let tmp$5;
+    let tmp$6;
     try {
-      tmp$5 = $borrow(leaf.value.parent, true);
+      tmp$6 = $borrow(leaf.value.parent, true);
     } catch (error) {
       const dropNode = (node) => {
         $weakDrop(node.parent.value);
@@ -445,7 +443,7 @@ function main() {
     let tmp$7;
     let tmp$8;
     try {
-      tmp$7 = $upgrade(tmp$5.value);
+      tmp$7 = $upgrade(tmp$6.value);
       tmp$8 = (p) => {
         const result = p.value.name;
         const dropNode = (node) => {
@@ -458,7 +456,7 @@ function main() {
         return result;
       };
     } catch (error) {
-      $unborrow(tmp$5);
+      $unborrow(tmp$6);
       const dropNode = (node) => {
         $weakDrop(node.parent.value);
         for (const item of node.children.value) {
@@ -479,7 +477,7 @@ function main() {
     try {
       map = tmp$7 ? tmp$8(tmp$7) : undefined;
     } catch (error) {
-      $unborrow(tmp$5);
+      $unborrow(tmp$6);
       const dropNode = (node) => {
         $weakDrop(node.parent.value);
         for (const item of node.children.value) {
@@ -502,7 +500,7 @@ function main() {
     try {
       tmp$9 = $borrow(branch.value.children, true);
     } catch (error) {
-      $unborrow(tmp$5);
+      $unborrow(tmp$6);
       const dropNode = (node) => {
         $weakDrop(node.parent.value);
         for (const item of node.children.value) {
@@ -519,14 +517,14 @@ function main() {
       $rcDrop(leaf, dropNode$1);
       throw error;
     }
-    const value$4 = tmp$9.value;
+    const length = tmp$9.value.length;
     try {
       console.log(
-        `${map == null ? "None" : `Some(${$debugStr(map)})`} ${value$2} ${value$3} ${value$4.length}`,
+        `${map == null ? "None" : `Some(${$debugStr(map)})`} ${value$2} ${value$3} ${length}`,
       );
     } catch (error) {
       $unborrow(tmp$9);
-      $unborrow(tmp$5);
+      $unborrow(tmp$6);
       const dropNode = (node) => {
         $weakDrop(node.parent.value);
         for (const item of node.children.value) {
@@ -546,7 +544,7 @@ function main() {
     try {
       $unborrow(tmp$9);
     } catch (error) {
-      $unborrow(tmp$5);
+      $unborrow(tmp$6);
       const dropNode = (node) => {
         $weakDrop(node.parent.value);
         for (const item of node.children.value) {
@@ -564,7 +562,7 @@ function main() {
       throw error;
     }
     try {
-      $unborrow(tmp$5);
+      $unborrow(tmp$6);
     } catch (error) {
       const dropNode = (node) => {
         $weakDrop(node.parent.value);
@@ -601,14 +599,13 @@ function main() {
       $rcDrop(leaf, dropNode$1);
       throw error;
     }
-    let dropNode;
+    const dropNode = (node) => {
+      $weakDrop(node.parent.value);
+      for (const item of node.children.value) {
+        $rcDrop(item, dropNode);
+      }
+    };
     try {
-      dropNode = (node) => {
-        $weakDrop(node.parent.value);
-        for (const item of node.children.value) {
-          $rcDrop(item, dropNode);
-        }
-      };
       $rcDrop(branch, dropNode);
     } catch (error) {
       const dropNode = (node) => {
@@ -760,9 +757,9 @@ function main() {
       throw error;
     }
     text = String(seven.value);
-    const value$5 = shared.strong;
+    const value$4 = shared.strong;
     try {
-      console.log(`${text} ${value$5}`);
+      console.log(`${text} ${value$4}`);
     } catch (error) {
       $rcDrop(shared);
       $rcDrop(seven);
@@ -815,8 +812,7 @@ function main() {
       $rcDrop(leaf, dropNode);
       throw error;
     }
-    let dropNode$1;
-    dropNode$1 = (node) => {
+    const dropNode$1 = (node) => {
       $weakDrop(node.parent.value);
       for (const item of node.children.value) {
         $rcDrop(item, dropNode$1);

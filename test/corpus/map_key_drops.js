@@ -89,8 +89,7 @@ function main() {
       keyDrop_drop,
     );
     $insert(m, [6], 6, keyDrop_drop);
-    const value$3 = (k) => k[0] !== 6;
-    $retainMap(m, value$3, m, true, undefined, keyDrop_drop);
+    $retainMap(m, (k) => k[0] !== 6, m, true, undefined, keyDrop_drop);
     console.log("--");
   } finally {
     for (const item of m.keys()) {
@@ -132,8 +131,7 @@ function main() {
       keyDrop_drop(value$1);
     }
     $add(s, [7], keyDrop_drop);
-    const value$2 = (k) => k[0] !== 7;
-    $retainSet(s, value$2, s, keyDrop_drop);
+    $retainSet(s, (k) => k[0] !== 7, s, keyDrop_drop);
     $add(s, [8], keyDrop_drop);
   } finally {
     for (const item of s) {

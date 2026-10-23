@@ -45,39 +45,37 @@ function main() {
   const loud = "fold";
   const value = [];
   const captured = loud;
-  const value$1 = (v, t) => {
-    v.push([t, captured]);
-    return v;
-  };
   try {
     const tags = Ends.taggedBack(
       { inner: { start: 0, end: 3 } },
       value,
-      value$1,
+      (v, t) => {
+        v.push([t, captured]);
+        return v;
+      },
       { next: $rangeNext },
       { next_back: $rangeNextBack },
     );
     console.log(
       `[${tags.map((item) => `(${tagDebug_fmt(item[0], { fmt: (value) => String(value) })}, ${$debugStr(item[1])})`).join(", ")}]`,
     );
-    const value$2 = ["x", "y"];
-    const inner = $iter(value$2);
-    const value$3 = (s, t) => s + t[0];
+    const value$1 = ["x", "y"];
+    const inner = $iter(value$1);
     const words = Ends.taggedBack(
       { inner },
       "",
-      value$3,
+      (s, t) => s + t[0],
       { next: $next },
       { next_back: $nextBack },
     );
     console.log(`${words}`);
-    const value$4 = Ends.heldBack(
+    const value$2 = Ends.heldBack(
       { inner: { start: 5, end: 8 } },
       { next: $rangeNext },
       { next_back: $rangeNextBack },
     );
     console.log(
-      `${value$4 == null ? "None" : `Some(${tagDebug_fmt(value$4, { fmt: (value) => String(value) })})`}`,
+      `${value$2 == null ? "None" : `Some(${tagDebug_fmt(value$2, { fmt: (value) => String(value) })})`}`,
     );
   } finally {
     console.log(`drop ${loud}`);

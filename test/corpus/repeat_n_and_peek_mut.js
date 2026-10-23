@@ -39,10 +39,9 @@ function repeated() {
       some.return();
       throw error;
     }
-    const value = (l) => l[0];
     try {
-      const value$1 = first ? value(first) : undefined;
-      console.log(`first ${value$1 == null ? "None" : `Some(${value$1})`}`);
+      const value = first?.[0];
+      console.log(`first ${value == null ? "None" : `Some(${value})`}`);
     } catch (error) {
       if (first != null) {
         loudDrop_drop(first);

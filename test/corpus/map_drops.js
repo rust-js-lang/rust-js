@@ -83,14 +83,14 @@ function main() {
     }
     throw error;
   }
-  const value = (n) => {
+  const map = (n) => {
     const result = n[0];
     console.log(`drop ${n[0]}`);
     return result;
   };
-  let map;
+  let tmp$1;
   try {
-    map = old ? value(old) : undefined;
+    tmp$1 = old ? map(old) : undefined;
   } catch (error) {
     for (const [, value] of $sortedEntries(sorted, $cmp)) {
       console.log(`drop ${value[0]}`);
@@ -98,7 +98,7 @@ function main() {
     throw error;
   }
   try {
-    console.log(`replaced ${map ?? "none"}`);
+    console.log(`replaced ${tmp$1 ?? "none"}`);
   } catch (error) {
     for (const [, value] of $sortedEntries(sorted, $cmp)) {
       console.log(`drop ${value[0]}`);
@@ -114,9 +114,9 @@ function main() {
     }
     throw error;
   }
-  const value$1 = !!taken;
+  const value = !!taken;
   try {
-    console.log(`took ${value$1} ${sorted.size}`);
+    console.log(`took ${value} ${sorted.size}`);
   } catch (error) {
     if (taken != null) {
       console.log(`drop ${taken[0]}`);
@@ -180,17 +180,15 @@ function main() {
       try {
         const handles = new Map();
         try {
-          const tmp = handles;
-          const tmp$1 = $rcClone(shared);
-          const tmp$2 = $insert(tmp, "a", tmp$1);
-          if (tmp$2 != null) {
-            $rcDrop(tmp$2);
+          const tmp = $rcClone(shared);
+          const tmp$1 = $insert(handles, "a", tmp);
+          if (tmp$1 != null) {
+            $rcDrop(tmp$1);
           }
-          const tmp$3 = handles;
-          const tmp$4 = $rcClone(shared);
-          const tmp$5 = $insert(tmp$3, "b", tmp$4);
-          if (tmp$5 != null) {
-            $rcDrop(tmp$5);
+          const tmp$2 = $rcClone(shared);
+          const tmp$3 = $insert(handles, "b", tmp$2);
+          if (tmp$3 != null) {
+            $rcDrop(tmp$3);
           }
           console.log(`${shared.strong}`);
           const remove = $remove(handles, "a");

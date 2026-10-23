@@ -32,9 +32,8 @@ function main() {
     }
   }
   it = $iter(noisy([4, 5, 6]));
-  const value = (n) => n[0] === 4;
   try {
-    const rfind = $findBack(it, value, undefined, noisyDrop_drop);
+    const rfind = $findBack(it, (n) => n[0] === 4, undefined, noisyDrop_drop);
     const tmp = (n) => {
       const result = n[0];
       noisyDrop_drop(n);
@@ -53,14 +52,13 @@ function main() {
     console.log(`${tmp$5}`);
     const tmp$6 = noisy([1, 2, 3]);
     const tmp$7 = $iter(tmp$6);
-    const value$1 = (n) => {
-      const result = n[0] > 1 ? n[0] : undefined;
-      noisyDrop_drop(n);
-      return result;
-    };
     try {
       const value = $lent(tmp$7)
-        .map(value$1)
+        .map((n) => {
+          const result = n[0] > 1 ? n[0] : undefined;
+          noisyDrop_drop(n);
+          return result;
+        })
         .find((item) => item != null);
       console.log(`${value == null ? "None" : `Some(${value})`}`);
     } finally {

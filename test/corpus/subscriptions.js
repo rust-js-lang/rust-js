@@ -101,14 +101,13 @@ const Component = {
       console.log(`${n} got ${m}`);
     });
     const c = { value: 0 };
-    const value = () => {
-      const borrowMut = $borrowMut(c, true);
-      borrowMut.value = (borrowMut.value + 1) | 0;
-      $unborrow(borrowMut);
-    };
     let second;
     try {
-      second = subscribe(bus, value);
+      second = subscribe(bus, () => {
+        const borrowMut = $borrowMut(c, true);
+        borrowMut.value = (borrowMut.value + 1) | 0;
+        $unborrow(borrowMut);
+      });
     } catch (error) {
       subscriptionDrop_drop(first);
       $weakDrop(first.bus);
@@ -181,14 +180,17 @@ function main() {
       throw error;
     }
     const comps = [a];
-    const value = (c) => c.name !== "a";
     try {
-      $retain(comps, value, (component) => {
-        for (const item of component.subs) {
-          subscriptionDrop_drop(item);
-          $weakDrop(item.bus);
-        }
-      });
+      $retain(
+        comps,
+        (c) => c.name !== "a",
+        (component) => {
+          for (const item of component.subs) {
+            subscriptionDrop_drop(item);
+            $weakDrop(item.bus);
+          }
+        },
+      );
       publish(bus, "empty");
       const borrow = $borrow(bus.value, true);
       try {

@@ -120,9 +120,8 @@ function concat(iter, IItemExtendIItemItem, dropIItem, dropIIntoIter, dropIItemI
   const result = $reduce(
     iter$1,
     (a, b) => {
-      let self;
+      const self = { value: a };
       try {
-        self = { value: a };
         IItemExtendIItemItem.extend(self, b, dropIItem, dropIItemIntoIter);
         $assign(a, self.value);
       } catch (error) {
@@ -242,9 +241,8 @@ function main() {
     },
     $dropEach(loudDrop_drop),
   );
-  const value = (v) => v.length;
   try {
-    console.log(`all ${all != null ? value(all) : 0}`);
+    console.log(`all ${all?.length ?? 0}`);
   } catch (error) {
     if (all != null) {
       for (const item of all) {
@@ -253,10 +251,10 @@ function main() {
     }
     throw error;
   }
-  const value$1 = [[[20], [21]]];
+  const value = [[[20], [21]]];
   let groups$1;
   try {
-    groups$1 = [$iter(value$1)];
+    groups$1 = [$iter(value)];
   } catch (error) {
     if (all != null) {
       for (const item of all) {

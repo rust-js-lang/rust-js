@@ -30,19 +30,24 @@ function main() {
     $cmp,
     noisyDrop_drop,
   );
-  const value = (k, v) => {
-    console.log(`keep ${k}? ${v[0]}`);
-    return k % 2 === 0;
-  };
   try {
-    $retainMap(tree, value, $sortedEntries(tree, $cmp), false, noisyDrop_drop);
+    $retainMap(
+      tree,
+      (k, v) => {
+        console.log(`keep ${k}? ${v[0]}`);
+        return k % 2 === 0;
+      },
+      $sortedEntries(tree, $cmp),
+      false,
+      noisyDrop_drop,
+    );
     const tmp = $sortedEntries(tree, $cmp).map((entry) => entry[0]);
     console.log(`[${tmp.join(", ")}]`);
-    const value$1 = [
+    const value = [
       [2, [21]],
       [7, [70]],
     ];
-    $extendMap(tree, value$1, false, noisyDrop_drop);
+    $extendMap(tree, value, false, noisyDrop_drop);
     const tmp$1 = $sortedEntries(tree, $cmp)
       .map((entry) => entry[1])
       .map((v) => v[0]);
@@ -61,8 +66,7 @@ function main() {
       noisyDrop_drop(value);
     }
     tree.clear();
-    const size = tree.size;
-    console.log(`cleared ${size}`);
+    console.log(`cleared ${tree.size}`);
 
     const hash = new Map();
     try {
@@ -75,10 +79,8 @@ function main() {
       const entry = tmp;
       $orInsert(entry._0[0], entry._0[1], tmp$1, noisyDrop_drop);
       $extendMap(hash, [["a", [3]]], false, noisyDrop_drop);
-      const value = (_, v) => v[0] > 5;
-      $retainMap(hash, value, hash, false, noisyDrop_drop);
-      const value$1 = hash.size;
-      console.log(`hash ${value$1}`);
+      $retainMap(hash, (_, v) => v[0] > 5, hash, false, noisyDrop_drop);
+      console.log(`hash ${hash.size}`);
       const tmp$2 = $insert(hash, "b", [4]);
       if (tmp$2 != null) {
         noisyDrop_drop(tmp$2);
@@ -99,9 +101,9 @@ function main() {
         const drain = $iter($drainAll(drained));
         const taken = drain.toArray();
         const length = taken.length;
-        const value = drained.size;
+        const size = drained.size;
         try {
-          console.log(`taken ${length} left ${value}`);
+          console.log(`taken ${length} left ${size}`);
         } finally {
           for (const item of taken) {
             noisyDrop_drop(item[1]);

@@ -309,9 +309,8 @@ function main() {
     }
     throw error;
   }
-  const value = (d) => d[0];
   try {
-    console.log(`closure ${closure != null ? value(closure) : 0}`);
+    console.log(`closure ${closure?.[0] ?? 0}`);
   } catch (error) {
     if (closure != null) {
       dDrop_drop(closure);
@@ -404,10 +403,9 @@ function main() {
     }
     throw error;
   }
-  const value$1 = Boolean;
   let tmp$7;
   try {
-    tmp$7 = keep(tmp$6, value$1, (option) => {
+    tmp$7 = keep(tmp$6, Boolean, (option) => {
       if (option != null) {
         dDrop_drop(option);
       }
@@ -477,11 +475,10 @@ function main() {
     }
     throw error;
   }
-  let fallback;
+  const fallback = "Nothing";
   let mapped;
   let one;
   try {
-    fallback = "Nothing";
     if (tmp$8 != null) {
       try {
         mapped = { TAG: "One", _0: tmp$8 };
@@ -545,11 +542,10 @@ function main() {
     }
     throw error;
   }
-  let fallback$1;
+  const fallback$1 = { TAG: "One", _0: tmp$10 };
   let mapped$1;
   let nothing;
   try {
-    fallback$1 = { TAG: "One", _0: tmp$10 };
     if (tmp$9 != null) {
       try {
         mapped$1 = { TAG: "One", _0: tmp$9 };
@@ -577,9 +573,9 @@ function main() {
     }
     throw error;
   }
-  const value$2 = nothing.TAG === "One";
+  const value = nothing.TAG === "One";
   try {
-    console.log(`nothing ${value$2}`);
+    console.log(`nothing ${value}`);
   } catch (error) {
     if (nothing.TAG === "One") {
       dDrop_drop(nothing._0);
@@ -880,9 +876,8 @@ function main() {
     }
     throw error;
   }
-  const value$3 = (d) => d[0];
   try {
-    console.log(`ok ${ok.TAG === "Ok" ? value$3(ok._0) : 0}`);
+    console.log(`ok ${ok.TAG === "Ok" ? ok._0[0] : 0}`);
   } catch (error) {
     if (ok.TAG === "Ok") {
       dDrop_drop(ok._0);
@@ -957,9 +952,8 @@ function main() {
     }
     throw error;
   }
-  const value$4 = err.TAG === "Err";
   try {
-    console.log(`err ${value$4}`);
+    console.log(`err ${err.TAG === "Err"}`);
   } catch (error) {
     if (err.TAG === "Ok") {
       dDrop_drop(err._0);
@@ -1597,14 +1591,14 @@ function main() {
       const d = tmp$25._0[0];
       tmp$0$1$live = false;
       const e = tmp$25._0[1];
-      const value = (e) => {
+      const map = (e) => {
         const result = e[0];
         dDrop_drop(e);
         return result;
       };
       let tmp;
       try {
-        tmp = e != null ? value(e) : 0;
+        tmp = e != null ? map(e) : 0;
       } catch (error) {
         dDrop_drop(d);
         if (err.TAG === "Ok") {

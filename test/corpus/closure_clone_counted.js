@@ -193,9 +193,8 @@ function main() {
       $dispose(read2);
       throw error;
     }
-    let value;
+    const value = [a, b];
     try {
-      value = [a, b];
       $dispose(value[0]);
       $dispose(value[1]);
     } catch (error) {
@@ -204,10 +203,9 @@ function main() {
     }
     let holder$live = true;
     const holder = { f: read2 };
-    let props;
+    const props = { ...holder };
     let f;
     try {
-      props = { ...holder };
       f = $clone(holder.f);
       holder$live = false;
     } catch (error) {

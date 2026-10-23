@@ -1072,3 +1072,57 @@ pub fn pair() -> String {
   expect((await import(join(dir, "mir.js"))).run()).toBe(2);
   expect((await import(join(dir, "mir.js"))).pair()).toBe("11 22");
 });
+
+// ADR 0699: a thread-local's `.with(|c| *c)` is its variable (ADR 0270)
+// where something's there to drop as a panic unwinds too, React's
+// `COMPONENT_FRAME_CACHE.with(|cache| *cache)` under its `finally`'s guard:
+// the closure made where it's applied, so nothing's called and nothing's
+// tried, not `const value = (cache) => cache; try { tmp = value(cache); }`.
+test("a thread-local's with is its variable under a guard", async () => {
+  const dir = fixture("with-under-guard");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::{Cell, RefCell};
+
+thread_local! {
+    static BUSY: Cell<bool> = const { Cell::new(false) };
+    static CACHE: Option<&'static RefCell<Vec<String>>> = Some(Box::leak(Box::new(RefCell::new(Vec::new()))));
+}
+
+struct Restore;
+
+impl Drop for Restore {
+    fn drop(&mut self) {
+        BUSY.set(false);
+    }
+}
+
+fn checked(name: &str) -> String {
+    if name.is_empty() {
+        panic!("empty");
+    }
+    name.to_string()
+}
+
+pub fn describe(name: &str) -> usize {
+    BUSY.set(true);
+    let _restore = Restore;
+    let frame = checked(name);
+    if let Some(cache) = CACHE.with(|cache| *cache) {
+        cache.borrow_mut().push(frame);
+        return cache.borrow().len();
+    }
+    0
+}
+
+pub fn busy() -> bool {
+    BUSY.get()
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("  if (cache) {\n");
+  expect(js).not.toContain("=> cache");
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.describe("a"), lib.describe("b"), lib.busy()]).toEqual([1, 2, false]);
+  expect(() => lib.describe("")).toThrow("empty");
+  expect(lib.busy()).toBe(false);
+});

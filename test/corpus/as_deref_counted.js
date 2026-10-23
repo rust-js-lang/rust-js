@@ -19,10 +19,9 @@ function main() {
       // Two counted layers: `as_deref` takes off one.
       const nested = { value: { value: "in", strong: 1, weak: 0 }, strong: 1, weak: 0 };
       const inner = nested?.value;
-      const value$1 = (rc) => rc.strong;
+      const strong = inner?.strong;
       try {
-        const map = inner ? value$1(inner) : undefined;
-        console.log(`${map == null ? "None" : `Some(${map})`} ${$unwrap(nested).strong}`);
+        console.log(`${strong == null ? "None" : `Some(${strong})`} ${$unwrap(nested).strong}`);
         const countedOk = { TAG: "Ok", _0: { value: [3], strong: 1, weak: 0 } };
         try {
           const value = countedOk.TAG === "Ok" ? { TAG: "Ok", _0: countedOk._0.value } : countedOk;

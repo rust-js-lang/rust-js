@@ -22,9 +22,8 @@ function main() {
   }
   const downcast =
     shared.impl.typeId() === "u8" ? { TAG: "Ok", _0: shared } : { TAG: "Err", _0: shared };
-  const value = downcast.TAG === "Ok";
   try {
-    console.log(`${value}`);
+    console.log(`${downcast.TAG === "Ok"}`);
   } catch (error) {
     if (downcast.TAG === "Ok") {
       $rcDrop(downcast._0);

@@ -58,9 +58,8 @@ function main() {
     }
     return result;
   });
-  const value$4 = (l) => l[0];
   try {
-    console.log(`loudest ${loudest != null ? value$4(loudest) : 0}`);
+    console.log(`loudest ${loudest?.[0] ?? 0}`);
     console.log("end");
   } finally {
     if (loudest != null) {
