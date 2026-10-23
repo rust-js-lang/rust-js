@@ -140,16 +140,29 @@ fn has_conditional(e: &Expr) -> bool {
 /// `test`, after the `const`s `bound`, each a read that does nothing, with
 /// what each is read in place, those after it first: the one answer to
 /// whether a test may read a value bound before it, of `if`s joined into a
-/// chain. `None` where one isn't such a read, or where one reads more than
-/// variables, a property, whose getter may run, and `test` reads it twice
-/// or `again` says what's after the `const`s reads it too, by its index and
-/// name: a getter's, `request.url`, runs once, as Rust's `js::get` does
-/// (ADR 0671). What reads only variables reads the same again.
-pub(super) fn bound_into(test: &Expr, bound: &[Stmt], again: &dyn Fn(usize, &str) -> usize) -> Option<Expr> {
+/// chain. `None` where one isn't such a read, or where one is a binding's
+/// read of a property, of `getters`, whose getter may run, and `test`
+/// reads it twice or `again` says what's after the `const`s reads it too,
+/// by its index and name: a getter's, `request.url`, runs once, as Rust's
+/// `js::get` does (ADR 0671). What reads variables, or Rust's data, a
+/// field, `node.count`, or a tuple's item, `pair[0]`, reads the same again.
+pub(super) fn bound_into(
+    test: &Expr,
+    bound: &[Stmt],
+    getters: &[js::Span],
+    again: &dyn Fn(usize, &str) -> usize,
+) -> Option<Expr> {
+    let getter = |e: &Expr| {
+        matches!(
+            e.kind,
+            ExprKind::Member(..) | ExprKind::OptionalMember(..) | ExprKind::Index(..)
+        ) && !e.span.is_none()
+            && (getters.iter()).any(|at| at.lo <= e.span.lo && e.span.hi <= at.hi)
+    };
     (bound.iter().enumerate().rev()).try_fold(test.clone(), |test, (at, stmt)| match &stmt.kind {
         StmtKind::Const(name, value) if value.reads_same() => {
             let tested = js::mentions_in(&[StmtKind::Expr(test.clone()).at(js::Span::NONE)], name);
-            if !value.reads_only_vars() && tested > 0 && tested + again(at, name) > 1 {
+            if getter(value) && tested > 0 && tested + again(at, name) > 1 {
                 return None;
             }
             test.substitute(&|v| (v == name).then(|| value.clone()))
@@ -165,7 +178,7 @@ pub(super) fn bound_into(test: &Expr, bound: &[Stmt], again: &dyn Fn(usize, &str
 /// child.type` a closure took, is gone: `b` reads it, once. Not where that
 /// would read a property twice (`bound_into`): `const url = request.url;
 /// if (typeof url === "string") { return url; }` stays.
-pub(super) fn and_tests(stmts: &mut [Stmt], conditions: &[(js::Span, js::Span)]) {
+pub(super) fn and_tests(stmts: &mut [Stmt], conditions: &[(js::Span, js::Span)], getters: &[js::Span]) {
     let within = |c: &js::Span, s: js::Span| !s.is_none() && c.lo <= s.lo && s.hi <= c.hi;
     for stmt in stmts.iter_mut() {
         let span = stmt.span;
@@ -181,7 +194,7 @@ pub(super) fn and_tests(stmts: &mut [Stmt], conditions: &[(js::Span, js::Span)])
             continue;
         }
         let again = |at: usize, name: &str| js::mentions_in(body, name) + js::mentions_in(&bound[at + 1..], name);
-        let Some(second) = bound_into(second, bound, &again) else {
+        let Some(second) = bound_into(second, bound, getters, &again) else {
             continue;
         };
         let bound = bound.len();

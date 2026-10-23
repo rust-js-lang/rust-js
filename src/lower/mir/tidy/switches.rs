@@ -286,26 +286,18 @@ fn switch_at(
 /// Of the cases of a `switch (typeof value)` (ADR 0668), each arm of
 /// variants `typeof` doesn't tell, an array's, taken out, an `if` of its
 /// test, its statements and where it's written: what's before the
-/// `switch`. The test of an arm of an array and an object both, `Object
-/// | Array`, is what `typeof` says, `case "object"`; of one of what it
-/// doesn't tell and what it does, `String | Array`, none. What the
-/// others' tests leave out, `Kind::Object`'s `!Array.isArray(value)`, is
-/// what's before, or there's no `switch`: `case "object"` would take an
-/// array.
+/// `switch`. An arm of an array and an object both, `Object | Array`, is
+/// one `case "object"` already, as its variants' owner tells of them
+/// together (`untagged::union_parts`); of one of what `typeof` doesn't
+/// tell and what it does, `String | Array`, none. What the others' tests
+/// leave out, `Kind::Object`'s `!Array.isArray(value)`, is what's before,
+/// or there's no `switch`: `case "object"` would take an array.
 fn arrays_before(cases: &mut Vec<Case>) -> Option<Vec<(Expr, Vec<Stmt>, js::Span)>> {
     let mut before = Vec::new();
     let mut i = 0;
     while i < cases.len() {
         let values = &mut cases[i].0;
-        let tested = std::mem::take(&mut values.tested);
-        let excluding = std::mem::take(&mut values.excluding);
-        values.excluding = (excluding.iter())
-            .filter(|e| !tested.iter().any(|t| alike(t, e)))
-            .cloned()
-            .collect();
-        let alone: Vec<Expr> = (tested.into_iter())
-            .filter(|t| !excluding.iter().any(|e| alike(t, e)))
-            .collect();
+        let alone = std::mem::take(&mut values.tested);
         match (alone.is_empty(), values.values.is_empty() && !cases[i].2) {
             (true, _) => i += 1,
             (false, false) => return None,

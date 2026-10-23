@@ -254,6 +254,9 @@ In this table, `lower.rs`, `names.rs` and `runtime.rs` are at the `src/` root.
 | A `String` appended to twice | `std_types/text.rs` | `appended` |
 | Runtime helper identity and properties | `runtime.rs` | `exports`, `helper_of`, `is_pure`, `names_a_place` |
 | A function's rest parameter and its calls' rest arguments | `bindings.rs`; `calls.rs` | `marked_rest`, `takes_rest`; `rest_given`, `spread_rest` |
+| What an untagged enum's variants are together, a test's and a `switch`'s case | `untagged.rs` | `untagged_test`, `untagged_cases` |
+| A string's count of UTF-16 units, its `length` | `recognition/types.rs` | `counts_utf16_units` |
+| A binding's read of a property, which a getter may be, and a chain's test of one | `bindings.rs`; `mir/tidy/logicals.rs` | `reads_a_property`; `bound_into` |
 
 **Calls.** `mir/dispatch.rs::mir_call` handles special calls and sends evaluated
 arguments to `mir_call_values`. Calls then go to iterator, trait, binding or

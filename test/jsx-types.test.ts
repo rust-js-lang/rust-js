@@ -595,7 +595,9 @@ pub fn Id<C: ReactNode>(ListProps { children }: ListProps<C>) -> JSX::Element {
 
 // As react.dev's TerminalBlock reads its message, text or an element's text:
 // a let chain of what's told apart by a node's kind is the `if`s a person
-// writes, the node itself tested, no label to reach its `else`.
+// writes, the node itself tested. Its element's `children` is read once, as
+// `js::get` reads it (ADR 0671), so the chain's two failures reach its
+// `else` by a label, where it read `children.props.children` twice.
 test("JSX components read their children's text in a let chain as a person writes it", async () => {
   const { dir, args } = compile(`#![allow(non_snake_case)]
 use js::{Kind, classify};
@@ -621,15 +623,22 @@ pub fn Block<C: ReactNode>(BlockProps { children }: BlockProps<C>) -> JSX::Eleme
   args.push("--extern", `js=${join(target, "libjs.rmeta")}`);
   run(args);
   const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
-  // The chain as it's written, one `else` for what fails it.
-  expect(jsx).toContain(`  if (typeof children === "string") {
-    message = children;
-  } else if (isValidElement(children) && typeof children.props.children === "string") {
-    const inner = children.props.children;
-    message = inner;
-  } else {
-    throw new Error("Expected plain text.");
+  // The chain as it's written, one `throw` for what fails it.
+  expect(jsx).toContain(`  bb27: {
+    if (typeof children === "string") {
+      message = children;
+    } else {
+      if (isValidElement(children)) {
+        const inner = children.props.children;
+        if (typeof inner === "string") {
+          message = inner;
+          break bb27;
+        }
+      }
+      throw new Error("Expected plain text.");
+    }
   }`);
+  expect(jsx.match(/children\.props\.children/g)?.length).toBe(1);
   const { Block } = await import(join(dir, "lib.jsx"));
   const { createElement } = await import("react");
   expect(renderToStaticMarkup(createElement(Block, null, "npm i"))).toBe("<pre>npm i</pre>");

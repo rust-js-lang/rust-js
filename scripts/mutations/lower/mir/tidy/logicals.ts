@@ -54,8 +54,17 @@ export const mutations: Mutation[] = [
     name: "bound-property-read-twice",
     breaks: "a property a `let` chain binds and tests is read in its test and again for its binding, `typeof request.url === \"string\"` then `const url = request.url`: a getter runs twice, where `js::get` runs once",
     file: "src/lower/mir/tidy/logicals.rs",
-    find: "            if !value.reads_only_vars() && tested > 0 && tested + again(at, name) > 1 {\n",
-    replace: "            if false && !value.reads_only_vars() && tested > 0 && tested + again(at, name) > 1 {\n",
+    find: "            if getter(value) && tested > 0 && tested + again(at, name) > 1 {\n",
+    replace: "            if false && getter(value) && tested > 0 && tested + again(at, name) > 1 {\n",
     tests: ["test/lowering-bindings.test.ts", "-t", "a property a let chain tests and binds is read once"],
   },
+  {
+    name: "bound-rust-data-a-getter",
+    breaks: "Rust's data a chain binds and tests, a field, `const c = node.count`, or a tuple's item, `value[0]`, isn't read in the test, `node.count != null && node.count > 1`, as if a getter could read it",
+    file: "src/lower/mir/tidy/logicals.rs",
+    find: "            && (getters.iter()).any(|at| at.lo <= e.span.lo && e.span.hi <= at.hi)\n",
+    replace: "            || true\n",
+    tests: ["test/lowering-loops.test.ts", "-t", "if-let chains and loops from MIR read as written"],
+  },
+
 ];

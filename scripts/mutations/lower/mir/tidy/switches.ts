@@ -118,14 +118,7 @@ export const mutations: Mutation[] = [
     replace: "        match (alone.is_empty(), false) {\n",
     tests: typeofs,
   },
-  {
-    name: "typeof-object-and-array-not-object",
-    breaks: "`Kind::Object(_) | Kind::Array(_)` isn't `case \"object\"`, its array an `if` beside it, so no `switch`",
-    file: "src/lower/mir/tidy/switches.rs",
-    find: "            .filter(|t| !excluding.iter().any(|e| alike(t, e)))\n",
-    replace: "",
-    tests: typeofs,
-  },
+
   {
     name: "typeof-object-takes-arrays",
     breaks: "an arm of `Kind::Object` whose arrays are `_`'s is `case \"object\"`, which takes an array",

@@ -102,8 +102,8 @@ export const mutations: Mutation[] = [
     "name": "mir-switch-cases-ungrouped",
     "breaks": "an or-pattern's values that go to one block are a test each from MIR, the block copied into each, one copy's `const right` an assignment of nothing declared",
     "file": "src/lower/mir/structure.rs",
-    "find": "                    match grouped.iter_mut().find(|(_, t)| *t == target) {\n",
-    "replace": "                    match None::<&mut (Expr, BasicBlock)> {\n",
+    "find": "                    match grouped.iter_mut().find(|(_, t, _)| *t == target) {\n",
+    "replace": "                    match None::<&mut (Expr, BasicBlock, Vec<u128>)> {\n",
     "tests": ["test/lowering-matches.test.ts", "-t", "an or-pattern's values from MIR"]
   },
   {

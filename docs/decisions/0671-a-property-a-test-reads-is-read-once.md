@@ -48,15 +48,20 @@ reads, as its getter may do something.
 
 ## Decision
 
-**A test reads in place a value bound before it only where that's the one
-read of it, or it reads nothing but variables.** One place answers it,
-tidy's `logicals::bound_into`, which `and tests` and `returning_chain` ask:
+**A test reads in place a binding's read of a property bound before it
+only where that's the one read of it.** One place answers it, tidy's
+`logicals::bound_into`, which `and tests` and `returning_chain` ask:
 
-- a `const` of what `reads_only_vars`, a variable, is read in place
-  wherever it's read, as before;
-- one of a property is read in place where the test reads it once and
-  nothing after reads it: the `const` goes, its read moved into the test,
-  where it was read anyway, in the same order;
+- which read is a binding's is the binding's to say, `bindings::
+  reads_a_property`, `get x`, `get X.y` and `get []`, `js::get`'s; the
+  hints carry where the program calls one, `Written::getters`, by the span
+  of its call, which its JS has, as the hints carry each `&&`;
+- a `const` of anything else, a variable, a Rust struct's field,
+  `node.count`, a tuple's item, `pair[0]`, is read in place wherever it's
+  read, as before: no getter is Rust's data's;
+- one of a binding's read is read in place where the test reads it once
+  and nothing after reads it: the `const` goes, its read moved into the
+  test, where it was read anyway, in the same order;
 - otherwise the chain isn't joined there: `const url = request.url; if
   (typeof url === "string") { return url; }`, one read.
 
@@ -91,16 +96,33 @@ nothing, `let Some(Kind::String(_)) = js::get(request, "url")..`, is still
   value.request.url`**: React reads each property twice, and three times
   `value.request`; the port reads each once, as its Rust says. Reading
   again would be the second read Rust doesn't make.
-- **Telling a JS object's property from a plain Rust field in tidy**:
-  tidy knows plain values by name (`Hints::plain`), but a field of one is
-  already read in place by MIR's lowering (ADR 0194), so none reaches
-  these chains as a `const`.
+- **Plain values by name** (`Hints::plain`): by the names MIR's lowering
+  gave them, which tidy's `named temporaries` has changed by the time
+  chains are joined, `_5` of `const value = h > 0 ? [h, h + 1] :
+  undefined`; and a struct through a `&mut`, `node.count` of a node the
+  loop writes `node.seen = true` of, isn't plain, though no getter reads it.
+- **Every read but a variable's, or every read by a name**: `value[0]` of
+  a tuple and `node.count` of a struct read twice are Rust's data, as
+  `examples/options.rs`'s snapshot and `test/lowering-loops.test.ts` have
+  them, `node.count != null && node.count > 1`; they'd have been
+  `const`s for nothing.
 
 ## Consequences
 
-- The corpus, the snapshots and the guide don't change: none of them
-  binds a property in a chain whose later test and body both read it.
+- The corpus, the snapshots and the guide's examples don't change: none of
+  them binds a binding's read in a chain whose later test and body both
+  read it. The guide's `interop/bindings.md` says it.
 - React's `getIODescription` reads `request.url` and `response.url` once.
+- **A chain whose failures share an `else` reaches it by a label** where
+  its read is bound: react.dev's `TerminalBlock`, `else if let
+  ReactNodeKind::Element(element) = kind_of(&children) && let Some(inner)
+  = js::get(element.props(), "children") && let Kind::String(text) = ..`,
+  was `else if (isValidElement(children) && typeof children.props.children
+  === "string") { const inner = children.props.children; ..}`, two reads,
+  and is `if (isValidElement(children)) { const inner =
+  children.props.children; if (typeof inner === "string") { ..; break bb27;
+  } } throw ..` in a block, one. React's own reads the property twice; the
+  port's Rust reads it once. `test/jsx-types.test.ts` holds it.
 
 ## What holds it
 
@@ -108,4 +130,6 @@ nothing, `let Some(Kind::String(_)) = js::get(request, "url")..`, is still
   binds is read once", whose getters count their reads in Bun.
 - `test/lowering-switches.test.ts`, "React's getIODescription is
   upstream's switch of a typeof", whose `request` getters count theirs.
-- The mutation `bound-property-read-twice`.
+- The mutations `bound-property-read-twice`, `getters-unseen` and
+  `bound-rust-data-a-getter`, which `test/lowering-loops.test.ts`'s
+  "if-let chains and loops from MIR read as written" holds.

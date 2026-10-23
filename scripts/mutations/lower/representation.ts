@@ -319,8 +319,8 @@ export const mutations: Mutation[] = [
     name: "mir-untagged-variant-tagged",
     breaks: "an untagged enum's variant is tested by a tag it has none of",
     file: "src/lower/representation.rs",
-    find: "        if bindings::is_untagged(self.tcx, adt.did()) {\n            return self.untagged_variant_test(ty, def, &subject);\n",
-    replace: "        if false && bindings::is_untagged(self.tcx, adt.did()) {\n            return self.untagged_variant_test(ty, def, &subject);\n",
+    find: "        if bindings::is_untagged(self.tcx, adt.did()) {\n            return self.untagged_variant_test(ty, &[def], &subject);\n",
+    replace: "        if false && bindings::is_untagged(self.tcx, adt.did()) {\n            return self.untagged_variant_test(ty, &[def], &subject);\n",
     tests: ["test/corpus.test.ts","-t","untagged_enums"],
   },
   {

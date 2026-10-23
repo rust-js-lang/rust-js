@@ -327,6 +327,7 @@ pub fn named(value: &Unknown) -> String {
   // array's \`if\`: an \`if\` chain, as ADR 0629's \`switch\` is of three.
   expect(js).toMatch(/export function objects\(value\) \{\n  if \(/);
   expect(js).toMatch(/export function listed\(value\) \{\n  if \(/);
+  expect(js.slice(js.indexOf("export function listed"), js.indexOf("export function tally"))).not.toContain("switch");
   writeFileSync(join(dir, "run.mjs"), `import { getIoDescription, describe, tally, named, objects, listed } from "./lib.js";
 const throwing = { get url() { throw new TypeError("no url"); } };
 function fetchUser() {}

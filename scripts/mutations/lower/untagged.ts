@@ -86,8 +86,8 @@ export const mutations: Mutation[] = [
     name: "otherwise-tested-as-its-kind",
     breaks: "the `#[rust_js::otherwise]` variant is tested as its own value's kind, an object, so an array or a number is neither variant",
     file: "src/lower/untagged.rs",
-    find: "        if otherwise(variant) && self.otherwise_kind(adt, args).is_none() {\n",
-    replace: "        if false && otherwise(variant) && self.otherwise_kind(adt, args).is_none() {\n",
+    find: "        if let Some(&variant) = (variants.iter()).find(|v| otherwise(v) && self.otherwise_kind(adt, args).is_none()) {\n",
+    replace: "        if let Some(&variant) = (variants.iter()).find(|v| false && otherwise(v) && self.otherwise_kind(adt, args).is_none()) {\n",
     tests: ["test/compiler.test.ts", "-t", "untagged enum is its payload"],
   },
   {

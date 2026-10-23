@@ -219,7 +219,7 @@ pub(super) fn table_read(arms: &[(Option<Expr>, Expr)], names: &[String]) -> Opt
 /// `matches!`'s, is `x = a && b ? t : f;`.
 pub(super) fn branch_values(
     stmts: &mut Vec<Stmt>,
-    returns: &[js::Span],
+    (returns, getters): (&[js::Span], &[js::Span]),
     booleans: &HashSet<String>,
     (result, switches): (&str, &[Switch]),
 ) {
@@ -382,7 +382,7 @@ pub(super) fn branch_values(
     } else if let [before @ .., last_if, last] = stmts.as_slice()
         && let StmtKind::Return(Some(_)) = &last.kind
         && written(returns, last.span)
-        && let Some((tests, body)) = returning_chain(std::slice::from_ref(last_if))
+        && let Some((tests, body)) = returning_chain(std::slice::from_ref(last_if), getters)
         // Not `if c { return a; } else { return b; }`'s: a `let … else`'s
         // rest ends where it goes on, not at a `return` the program wrote.
         && !body.last().is_some_and(|s| matches!(s.kind, StmtKind::Return(_)) && written(returns, s.span))
@@ -406,7 +406,7 @@ pub(super) fn branch_values(
 /// read that does nothing, written into later tests, as `broken_chain`'s:
 /// each kept, so not a property, which a test would read again
 /// (`bound_into`).
-pub(super) fn returning_chain(stmts: &[Stmt]) -> Option<(Vec<Expr>, Vec<Stmt>)> {
+pub(super) fn returning_chain(stmts: &[Stmt], getters: &[js::Span]) -> Option<(Vec<Expr>, Vec<Stmt>)> {
     let [
         bound @ ..,
         Stmt {
@@ -417,14 +417,14 @@ pub(super) fn returning_chain(stmts: &[Stmt]) -> Option<(Vec<Expr>, Vec<Stmt>)> 
     else {
         return None;
     };
-    let (mut tests, body) = match returning_chain(inner) {
+    let (mut tests, body) = match returning_chain(inner, getters) {
         Some(chain) => chain,
         None if inner.last().is_some_and(ends) => (Vec::new(), inner.clone()),
         None => return None,
     };
     tests.insert(0, test.clone());
     for test in &mut tests {
-        *test = bound_into(test, bound, &|_, _| 1)?;
+        *test = bound_into(test, bound, getters, &|_, _| 1)?;
     }
     let mut all = bound.to_vec();
     all.extend(body);

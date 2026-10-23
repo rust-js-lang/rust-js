@@ -15,7 +15,7 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-and-tests-off",
     breaks: "`if (a) { if (b) { s } }` of one condition stays nested, not `if (a && b)`",
     file: "src/lower/mir/tidy/stages.rs",
-    find: "            pass(\"and tests\", |b, h| {\n                bottom_up(b, &mut |s| and_tests(s, &h.written.conditions))\n            }),\n",
+    find: "            pass(\"and tests\", |b, h| {\n                bottom_up(b, &mut |s| and_tests(s, &h.written.conditions, &h.written.getters))\n            }),\n",
     replace: "",
     tests: ["test/lowering-branches.test.ts", "test/lowering-loops.test.ts", "-t", "if-let chains and loops from MIR|a let chain from MIR is one test"],
   },
@@ -129,7 +129,7 @@ export const mutations: Mutation[] = [
     "name": "mir-tidy-written-first-unswapped",
     "breaks": "an if-let chain from MIR keeps its first arm last, the panic's test first: `if (kind.TAG !== \"Text\") { .. throw } message = ..`",
     "file": "src/lower/mir/tidy/stages.rs",
-    "find": "    pass(\"written first\", |b, _| {\n        js::statement_lists(b, &mut |s| written_first(s))\n    }),\n",
+    "find": "    pass(\"written first\", |b, h| {\n        js::statement_lists(b, &mut |s| written_first(s, &h.written.switches))\n    }),\n",
     "replace": "",
     "tests": ["test/corpus.test.ts", "-t", "^(returns_in_place|untagged_enums).rs$"],
     "snapshots": true
