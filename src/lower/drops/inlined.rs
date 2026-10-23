@@ -46,9 +46,9 @@ pub(in crate::lower) fn inlined_drops(items: &mut Vec<Item>, drops: &HashSet<Str
 
 /// `inlined_drops`' of the drop `name`.
 fn inline_drop(items: &mut Vec<Item>, name: &str) {
-    let Some(at) = items.iter().position(|item| {
-        matches!(item, Item::Function(f) if &f.name == name && matches!(f.params.as_slice(), [Pattern::Name(_)]))
-    }) else {
+    let Some(at) = items.iter().position(
+        |item| matches!(item, Item::Function(f) if f.name == name && matches!(f.params.as_slice(), [Pattern::Name(_)])),
+    ) else {
         return;
     };
     let Item::Function(drop) = &items[at] else {
