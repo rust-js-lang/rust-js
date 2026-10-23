@@ -2,9 +2,12 @@
 // shards, the mutations a change touches, and each branch's latest run.
 
 import { expect, test } from "bun:test";
-import { checkedSince, latestRuns, mutationShards, timingsRun } from "../scripts/ci";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import { checkedSince, latestRuns, MUTATION_SHARDS, mutationShards, timingsRun } from "../scripts/ci";
 import { type Change, changedLines, changedMutations, enclosingFunction, testBlocks } from "../scripts/mutations";
 import { shard } from "../scripts/shard";
+import { root } from "./support";
 
 const files = ["a", "b", "c", "d", "e", "f", "g"].map((name) => `test/${name}.test.ts`);
 
@@ -131,7 +134,7 @@ test("a diff's changed lines are where the file is changed now, and was", () => 
 // A check's mutations on as many machines as keeps each near twenty, about
 // as long as the suite takes on its two: MIR's run suites of seconds each.
 test("a check's mutations are split to about twenty a machine", () => {
-  expect([0, 20, 21, 40, 41, 80, 81, 400].map(mutationShards)).toEqual(["1", "1", "2", "2", "4", "4", "8", "8"]);
+  expect([0, 20, 21, 40, 41, 80, 81, 160, 161, 400].map(mutationShards)).toEqual(["1", "1", "2", "2", "4", "4", "8", "8", "16", "16"]);
 });
 
 const run = (headBranch: string, databaseId: number, status: string, conclusion: string, headSha = `sha${databaseId}`) =>
@@ -167,3 +170,16 @@ test("the shards balance by the newest kept timings", () => {
   expect(timingsRun(artifacts.filter((a) => a.run !== 3))).toBe(2);
   expect(timingsRun([artifact("bless-test-1", 7, "2026-10-21T12:00:00Z")])).toBeUndefined();
 });
+
+// One list of how many machines mutations split across: check.yml's choices
+// and rustc-tests.yml's matrix are scripts/ci.ts's, each count its shards.
+test("the workflows' mutation shards are ci.ts's", () => {
+  const check = readFileSync(join(root, ".github/workflows/check.yml"), "utf8");
+  const options = check.match(/mutation_shards:\n\s+description: .*\n\s+type: choice\n\s+options: \[(.*)\]/)?.[1];
+  expect(options?.split(", ").map((o) => Number(o.slice(1, -1)))).toEqual(MUTATION_SHARDS);
+  const tests = readFileSync(join(root, ".github/workflows/rustc-tests.yml"), "utf8");
+  const matrix = [...tests.matchAll(/inputs\.mutation_shards == '(\d+)' && '\[([\d, ]+)\]'/g)].map((m) => [Number(m[1]), m[2]]);
+  expect(matrix.map(([n]) => n).sort((a, b) => Number(a) - Number(b))).toEqual(MUTATION_SHARDS.filter((n) => n > 1));
+  for (const [n, list] of matrix) expect(list).toBe(Array.from({ length: Number(n) }, (_, i) => i + 1).join(", "));
+});
+

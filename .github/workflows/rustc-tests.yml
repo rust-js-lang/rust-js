@@ -39,7 +39,7 @@ on:
         type: string
         default: ''
       mutation_shards:
-        description: 'With mutations: machines they''re split across, 1, 2, 4 or 8. Each sets itself up, so more is more minutes.'
+        description: 'With mutations: machines they''re split across, as scripts/ci.ts's MUTATION_SHARDS. Each sets itself up, so more is more minutes.'
         required: false
         type: string
         default: '1'
@@ -301,7 +301,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: ${{ fromJSON(inputs.mutation_shards == '8' && '[1, 2, 3, 4, 5, 6, 7, 8]' || inputs.mutation_shards == '4' && '[1, 2, 3, 4]' || inputs.mutation_shards == '2' && '[1, 2]' || '[1]') }}
+        shard: ${{ fromJSON(inputs.mutation_shards == '16' && '[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]' || inputs.mutation_shards == '8' && '[1, 2, 3, 4, 5, 6, 7, 8]' || inputs.mutation_shards == '4' && '[1, 2, 3, 4]' || inputs.mutation_shards == '2' && '[1, 2]' || '[1]') }}
     steps:
       # All of the history: a change's mutations are found from where it
       # left main.

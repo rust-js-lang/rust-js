@@ -24,7 +24,7 @@ on:
       mutation_shards:
         description: 'Machines the mutations are split across, as many as keeps each near forty: ci:check counts them.'
         type: choice
-        options: ['1', '2', '4', '8']
+        options: ['1', '2', '4', '8', '16']
         default: '1'
   # By nightly.yml, of `main`: every mutation, where a branch's check runs
   # only its own.
@@ -231,11 +231,11 @@ jobs:
 
   # The mutations the change touches (ADR 0093): those in the functions and
   # tests it changes, and those it adds or edits, on as many machines as
-  # ci:check counts they need. Nightly runs all of them, on 8 machines.
+  # ci:check counts they need. Nightly runs all of them, on 16 machines.
   mutations:
     needs: plan
     uses: ./.github/workflows/rustc-tests.yml
     with:
       mutations: true
       mutation_args: ${{ !inputs.nightly && format('--changed={0}', inputs.since || needs.plan.outputs.since) || '' }}
-      mutation_shards: ${{ inputs.nightly && '8' || inputs.mutation_shards || needs.plan.outputs.shards }}
+      mutation_shards: ${{ inputs.nightly && '16' || inputs.mutation_shards || needs.plan.outputs.shards }}

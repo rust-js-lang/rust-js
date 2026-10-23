@@ -192,3 +192,17 @@ first. A change's lines are read on both sides of its diff, as the file is
 and as it was, a deleted file's too, so a mutation of a test's old name, or
 its old file, runs and says so. Held by `test/ci.test.ts`, "the changed
 mutations are of the functions and tests a change touches".
+
+## Amendment: two workers a machine, sixteen machines a night
+
+A nightly's mutations took 117 to 214 minutes a shard, 97% of its
+machine time, and the run waited for the slowest. On CI's four cores a
+shard runs two workers, not one: each build is mostly one thread, and
+PR #97 measured 18.4 s a mutation against 23.5 s, 1.28× faster. The
+nightly splits them across 16 machines, not 8: a public repository's
+standard runners cost nothing, and the Free plan runs 20 jobs at once,
+which the nightly's other jobs hold only for their first twenty minutes.
+Each mutation's build and tests are timed, `mutation-timings-<shard>`,
+for the shards to be balanced by next. The counts a check may split
+across are one list, `MUTATION_SHARDS` in `scripts/ci.ts`, which
+`test/ci.test.ts` holds the workflows' choices and matrix to.

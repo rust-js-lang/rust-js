@@ -68,7 +68,7 @@ branch's one running, and no branch's run touches another's.
 |---|---|---|---|
 | The new test, seen to fail, then pass | yes, on the Mac: it's the point | in the suite | in the suite |
 | Its module's focused tests, `bun test test/<file>.test.ts -t <name>` | yes, on the Mac | in the suite | in the suite |
-| The new mutations, `bun scripts/mutations.ts <name>` | yes, on the Mac | the changed ones | all of them, on 8 machines |
+| The new mutations, `bun scripts/mutations.ts <name>` | yes, on the Mac | the changed ones | all of them, on 16 machines |
 | `bun run check:fast`: lint, the corpus, the lowering, compiler and bindings suites, the snapshots, JSX and diagnostics a change touches, its new mutations, at once | yes, before each commit | | |
 | `bun run ci:status`: main's latest run | yes, before each commit: a red one is fixed first | | |
 | Reading the generated JS and snapshot diffs | yes | the bless patch, read before it's committed | |
@@ -284,7 +284,7 @@ Its jobs run at once:
 | `examples` | the Vite example's build | 10 min |
 | `wasm` | build `rust-js.wasm`, then the snapshot and playground tests with it | 30 min |
 | `rustc` | rustc's suite, a release build, then 6 shards and a report; a lists patch on failure | 20 min |
-| `mutations` | `--changed=<since>`: the mutations in a function the change touches, or of a test or corpus case it touches, and those it adds or edits (ADR 0093), on 1–8 machines, about twenty a machine, as the `plan` job counts them | 0–15 min |
+| `mutations` | `--changed=<since>`: the mutations in a function the change touches, or of a test or corpus case it touches, and those it adds or edits (ADR 0093), on 1–16 machines, about twenty a machine, as the `plan` job counts them | 0–15 min |
 
 ### `rustc-tests.yml`, by hand, and called by `check.yml`
 
@@ -301,7 +301,7 @@ gh workflow run "rustc tests" -f bless=true    # rustc's lists, as a bless patch
 ### `nightly.yml`, each night at 02:00 UTC+7, of `main`
 
 Every test there is: `check.yml`'s jobs, its suite in 2 shards and every
-mutation on 8 machines where a branch's check runs only its own, and 600
+mutation on 16 machines where a branch's check runs only its own, and 600
 generated programs, new ones each night, from the day's number. It's a
 group of its own, so it neither cancels nor waits for a push's check.
 `bun run ci:status` shows its latest run first; GitHub mails a failure to

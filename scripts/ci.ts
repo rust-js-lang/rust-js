@@ -96,12 +96,17 @@ function status() {
  * ahead, isn't what would be checked. Its mutations are of what changed
  * since `since`: of `main`, by default, since its last finished check, or
  * the commit before; of another branch, since it left `main`. */
+/** The machines mutations may be split across: the workflows' choices
+ * and matrix are these, as `test/ci.test.ts` holds them. The nightly takes
+ * the most, its every mutation on each of the Free plan's 20 at once
+ * but the few its other jobs hold for their first minutes. */
+export const MUTATION_SHARDS = [1, 2, 4, 8, 16];
+
 /** Machines for a check's mutations, as many as keeps each near twenty,
- * five minutes or so, as long as the suite on its two: 1, 2, 4 or 8, as
- * the workflow takes. */
+ * five minutes or so, as long as the suite on its two. */
 export function mutationShards(count: number): string {
   const wanted = Math.ceil(count / 20);
-  return String([1, 2, 4, 8].find((n) => n >= wanted) ?? 8);
+  return String(MUTATION_SHARDS.find((n) => n >= wanted) ?? MUTATION_SHARDS.at(-1));
 }
 
 async function check(branch: string, shards: string, since?: string) {
