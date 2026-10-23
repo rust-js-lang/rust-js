@@ -54,16 +54,16 @@ function counterIterator_next(counter) {
 }
 
 function firsts(iter, n, IIterator, IClone, dropI) {
-  iter = $cycleOf(iter, IClone.clone, IIterator.next, true, dropI).take(n);
-  const result = iter.toArray();
-  iter.return();
+  const iter$1 = $cycleOf(iter, IClone.clone, IIterator.next, true, dropI).take(n);
+  const result = iter$1.toArray();
+  iter$1.return();
   return result;
 }
 
 function two(iter, dropI) {
-  iter = $closing(Iterator.from(iter), dropI).take(2);
-  const result = iter.toArray();
-  iter.return();
+  const iter$1 = $closing(Iterator.from(iter), dropI).take(2);
+  const result = iter$1.toArray();
+  iter$1.return();
   return result;
 }
 

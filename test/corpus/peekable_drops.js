@@ -79,7 +79,7 @@ function more() {
 }
 
 function main() {
-  const it = iterator_peekable(
+  let it = iterator_peekable(
     $iter([[1], [2], [3]]),
     { next: $next },
     $dropEach(loudDrop_drop),
@@ -119,7 +119,7 @@ function main() {
       loudDrop_drop($someValue(it.peeked));
     }
   }
-  const it$1 = iterator_peekable(
+  it = iterator_peekable(
     $iter([[4], [5], [6]]),
     { next: $next },
     $dropEach(loudDrop_drop),
@@ -128,14 +128,14 @@ function main() {
   const value = (l) => l[0] === 9;
   let none;
   try {
-    none = $nextIf(it$1, value);
+    none = $nextIf(it, value);
   } catch (error) {
-    for (const item of it$1.iter) {
+    for (const item of it.iter) {
       loudDrop_drop(item);
     }
-    if (it$1.peeked != null) {
-      if ($someValue(it$1.peeked) != null) {
-        loudDrop_drop($someValue(it$1.peeked));
+    if (it.peeked != null) {
+      if ($someValue(it.peeked) != null) {
+        loudDrop_drop($someValue(it.peeked));
       }
     }
     throw error;
@@ -146,23 +146,23 @@ function main() {
     if (none != null) {
       loudDrop_drop(none);
     }
-    for (const item of it$1.iter) {
+    for (const item of it.iter) {
       loudDrop_drop(item);
     }
-    if (it$1.peeked != null) {
-      if ($someValue(it$1.peeked) != null) {
-        loudDrop_drop($someValue(it$1.peeked));
+    if (it.peeked != null) {
+      if ($someValue(it.peeked) != null) {
+        loudDrop_drop($someValue(it.peeked));
       }
     }
     throw error;
   }
   try {
-    for (const item of it$1.iter) {
+    for (const item of it.iter) {
       loudDrop_drop(item);
     }
-    if (it$1.peeked != null) {
-      if ($someValue(it$1.peeked) != null) {
-        loudDrop_drop($someValue(it$1.peeked));
+    if (it.peeked != null) {
+      if ($someValue(it.peeked) != null) {
+        loudDrop_drop($someValue(it.peeked));
       }
     }
     const lazy = iterator_peekable(

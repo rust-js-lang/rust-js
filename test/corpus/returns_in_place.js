@@ -83,9 +83,9 @@ function describe(token, limit) {
       if (result.TAG === "Err") {
         return result;
       }
-      const n = result._0;
-      const n$1 = (n * 2) | 0;
-      text = String(n$1);
+      let n = result._0;
+      n = (n * 2) | 0;
+      text = String(n);
     }
   }
   return { TAG: "Ok", _0: `<${text}>` };

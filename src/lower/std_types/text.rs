@@ -3,8 +3,10 @@
 //! questions are regular expressions of the Unicode properties Rust uses:
 //! `c.is_whitespace()` is `/^\p{White_Space}$/u.test(c)`.
 
+use std::collections::HashSet;
+
 use crate::js;
-use crate::js::{Expr, Op, Stmt, StmtKind};
+use crate::js::{Expr, ExprKind, Op, Stmt, StmtKind};
 use crate::lower::calls::Call;
 use crate::lower::recognition::{Std, trait_method};
 use crate::lower::representation::Num;
@@ -930,4 +932,92 @@ pub(in crate::lower) fn utf8_bytes(text: Expr) -> Expr {
     let encoder = Expr::new_(Expr::var("TextEncoder"), Vec::new());
     let encoded = Expr::call(Expr::member(encoder, "encode"), vec![text]);
     Expr::call(Expr::member(Expr::var("Array"), "from"), vec![encoded])
+}
+
+/// `s += a; s += b;`, a `String` of the body's own appended to twice, one
+/// after the other, is `s += a + b`, as JS writes text built up, where one
+/// of them is text written out and the other one value, or text too (ADR
+/// 0652):
+/// `a` and `b` are text, JS's `+` of them is the same text, and makes them
+/// left to right, `a` then `b`, as the two did. `b` is made before `a` is
+/// appended, so not where it reads `s`, which would see `a` there; nor in a
+/// `try`, whose `catch` or `finally` would see `s` without `a` where `b`
+/// throws. Nothing else can see `s` before it's appended to: Rust lends it
+/// to nothing while it's changed. Two pieces of text written out are one,
+/// `t += "!?"`.
+pub(in crate::lower) fn appended(stmts: &mut Vec<Stmt>, text: &HashSet<String>) {
+    let mut i = 0;
+    while i + 1 < stmts.len() {
+        if let Some((s, a)) = append_of(&stmts[i], text)
+            && let Some((t, b)) = append_of(&stmts[i + 1], text)
+            && s == t
+            && !b.mentions_var(s)
+            && values(a) + values(b) <= 1
+        {
+            let pieces = match (&a.kind, &b.kind) {
+                (ExprKind::Str(a), ExprKind::Str(b)) => Expr::str(format!("{a}{b}")),
+                _ => Expr::bin(Op::Add, a.clone(), b.clone()),
+            };
+            let s = s.to_string();
+            stmts[i].kind = StmtKind::Assign(Expr::var(&s), Expr::bin(Op::Add, Expr::var(&s), pieces));
+            stmts.remove(i + 1);
+            continue;
+        }
+        i += 1;
+    }
+    for stmt in stmts.iter_mut() {
+        match &mut stmt.kind {
+            StmtKind::If(_, a, b) => {
+                appended(a, text);
+                if let Some(b) = b {
+                    appended(b, text);
+                }
+            }
+            StmtKind::While { body, .. }
+            | StmtKind::ForOf { body, .. }
+            | StmtKind::For { body, .. }
+            | StmtKind::Labeled(_, body) => appended(body, text),
+            StmtKind::Switch { cases, default, .. } => {
+                js::case_lists_mut(cases, default).for_each(|body| appended(body, text));
+            }
+            // What a `try` runs is what its `catch` or `finally` may see
+            // part of; they themselves are seen by nothing after.
+            StmtKind::Try(_, after) | StmtKind::TryCatch(_, _, after) => appended(after, text),
+            // A function's are its own body's.
+            StmtKind::Function(_)
+            | StmtKind::Const(..)
+            | StmtKind::Let(..)
+            | StmtKind::Destructure { .. }
+            | StmtKind::Assign(..)
+            | StmtKind::Compound(..)
+            | StmtKind::Expr(_)
+            | StmtKind::Break(_)
+            | StmtKind::Continue(_)
+            | StmtKind::Directive(_)
+            | StmtKind::Return(_)
+            | StmtKind::Throw(_) => {}
+        }
+    }
+}
+
+/// How many of what `+` joins in `e` aren't text written out: an append of
+/// one, and the text around it, `"\n    at " + callSite.toString()`, is
+/// one, where two, `a + "\n" + b`, read better appended one at a time.
+fn values(e: &Expr) -> usize {
+    match &e.kind {
+        ExprKind::Str(_) | ExprKind::Written(_) => 0,
+        ExprKind::Binary(Op::Add, a, b) => values(a) + values(b),
+        _ => 1,
+    }
+}
+
+/// The `String` `stmt` appends to, `s = s + a`, and what it appends.
+fn append_of<'s>(stmt: &'s Stmt, text: &HashSet<String>) -> Option<(&'s str, &'s Expr)> {
+    let StmtKind::Assign(target, value) = &stmt.kind else {
+        return None;
+    };
+    let (ExprKind::Var(s), ExprKind::Binary(Op::Add, to, appended)) = (&target.kind, &value.kind) else {
+        return None;
+    };
+    (text.contains(s) && matches!(&to.kind, ExprKind::Var(t) if t == s)).then_some((s.as_str(), &**appended))
 }

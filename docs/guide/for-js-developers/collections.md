@@ -833,8 +833,7 @@ export function safePrefix(s) {
 export function build(names) {
   let out = "";
   for (const name of names) {
-    out += name;
-    out += ";";
+    out += name + ";";
   }
   return out;
 }
@@ -882,7 +881,7 @@ export function toNumber(s) {
 | `s.indexOf(t)` | `s.find(t)`, an `Option`: `s.indexOf(t)` where it's only a place to cut `s` at |
 | `s.slice(a, b)` | `&s[a..b]`: `s.slice(a, b)` at places found in `s`; `s.get(a..b)` for an `Option` |
 | `s.startsWith(p) ? s.slice(n) : ..` | `s.strip_prefix(p)`, an `Option`; `strip_suffix` of `endsWith` |
-| `s += t` | `s.push_str(t)` on a `String` |
+| `s += t` | `s.push_str(t)` on a `String`; two in a row, one a value and one text written out, are one, `s += name + ";"` ([ADR 0652](../../decisions/0652-consecutive-appends-are-one.md)) |
 | `Number(s)` | `s.parse::<f64>()`, a `Result` |
 
 - **Offsets are bytes,** so `&s[..3]` of `"héllo"` is `"hé"`. A slice

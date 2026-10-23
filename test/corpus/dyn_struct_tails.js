@@ -49,7 +49,7 @@ function deep(x) {
 }
 
 function main() {
-  const f1 = { f1: 5, ptr: { f: 42 } };
+  let f1 = { f1: 5, ptr: { f: 42 } };
   console.log(`${foo($dynCell(f1, bar1ToBar))}`);
   bump($dynCell(f1, bar1ToBar));
   console.log(`${foo($dynCell(f1, bar1ToBar))} ${f1.ptr.f}`);
@@ -60,8 +60,8 @@ function main() {
   $dynCell(d.ptr, isizeToBar);
   console.log(`${deep(d)}`);
   const fat = $dynCell(f1, bar1ToBar);
-  const f1$1 = fat.f1;
+  f1 = fat.f1;
   const ptr = { value: fat.ptr, impl: fat.impl };
-  console.log(`${f1$1} ${ptr.impl.toVal(ptr.value)}`);
+  console.log(`${f1} ${ptr.impl.toVal(ptr.value)}`);
 }
 //# sourceMappingURL=case.js.map

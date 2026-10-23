@@ -9,18 +9,18 @@ export function entry() {
 function sum(at) {
   let total = 0;
   while (at) {
-    const node = at;
-    const node$1 = node.value;
-    total = (total + node$1.value) | 0;
-    at = node$1.next;
+    let node = at;
+    node = node.value;
+    total = (total + node.value) | 0;
+    at = node.next;
   }
   return total;
 }
 
 function main() {
-  const last = { value: 3 };
-  const last$1 = $unwrap($ptrTo(last));
-  const first = $ptrTo({ value: 2, next: last$1 });
+  let last = { value: 3 };
+  last = $unwrap($ptrTo(last));
+  const first = $ptrTo({ value: 2, next: last });
   console.log(`${sum(first)}`);
   first.value.value = 10;
   console.log(`${sum(first)}`);

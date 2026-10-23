@@ -190,7 +190,7 @@ function parseOrder(text) {
         if (result.TAG === "Err") {
           return result;
         }
-        const [sku, quantity] = result._0;
+        let [sku, quantity] = result._0;
         const result$1 = $parseInt($trim(quantity), 0, 4294967295);
         const result$2 =
           result$1.TAG === "Err"
@@ -199,8 +199,8 @@ function parseOrder(text) {
         if (result$2.TAG === "Err") {
           return result$2;
         }
-        const quantity$1 = result$2._0;
-        return { TAG: "Ok", _0: [$trim(sku).toUpperCase(), quantity$1] };
+        quantity = result$2._0;
+        return { TAG: "Ok", _0: [$trim(sku).toUpperCase(), quantity] };
       }),
   );
 }

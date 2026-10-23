@@ -541,7 +541,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0606 A blank line before an item's attributes is before the item](decisions/0606-a-blank-line-before-attributes.md)
 - [0607 A variable's field is given a call's value in place](decisions/0607-a-field-is-given-a-call-in-place.md)
 - [0608 A `Drop` is its body at each drop](decisions/0608-a-drop-is-its-body-at-each-drop.md)
-- [0609 A `let` that shadows a parameter read no more is the parameter assigned](decisions/0609-a-shadowed-parameter-is-assigned.md)
+- [0609 A `let` that shadows a parameter read no more is the parameter assigned](decisions/0609-a-shadowed-parameter-is-assigned.md) *(extended by 0650: any binding of its block)*
 - [0610 A function that only calls a module variable's function is that variable](decisions/0610-a-forwarding-function-is-its-variable.md)
 - [0611 A default export the macro holds is the function's declaration](decisions/0611-a-default-export-is-where-its-macro-is.md)
 - [0612 Two values of any shape are equal by JS's `===`](decisions/0612-unknown-equality-is-strict.md)
@@ -566,7 +566,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0632 A JS string's `length` is below `u32::MAX`, and a counter below it doesn't wrap](decisions/0632-a-js-strings-length-is-below-u32-max.md)
 - [0633 A binding named through a module is read through it](decisions/0633-a-binding-named-through-a-module-is-read-through-it.md)
 - [0634 A registered symbol is a `const`, and a `match` of them a `switch`](decisions/0634-a-registered-symbol-is-a-const.md)
-- [0635 A `filter` by truth, then a fallback, is `||`](decisions/0635-a-filter-by-truth-then-a-fallback-is-or.md) *(extended by 0646: a chain held, then its fallback)*
+- [0635 A `filter` by truth, then a fallback, is `||`](decisions/0635-a-filter-by-truth-then-a-fallback-is-or.md) *(extended by 0646: a chain held, then its fallback; 0651: a `let`, then its fallback)*
 - [0636 A guarded arm of a `match` of constants is a case](decisions/0636-a-guarded-arm-is-a-case.md)
 - [0637 A `match` of a throwing call's `Result` is `try` and `catch`](decisions/0637-a-match-of-a-throwing-call-is-try-catch.md) *(amended by 0639: whether a call threw is `try`)*
 - [0638 A nullable function's call is `null` already](decisions/0638-a-nullable-functions-call-is-null-already.md)
@@ -581,6 +581,9 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0647 What `is_defined` names is no read; a test kept by its truth is `&&`](decisions/0647-type-name-as-react-writes-it.md)
 - [0648 V8's stack trace API is the node crate's, as @types/node types it](decisions/0648-v8s-stack-trace-api-is-the-node-crates.md) *(amended by 0653: captureStackTrace bound)*
 - [0649 `#[inline(never)]` is `/** @noinline */`](decisions/0649-inline-never-is-noinline.md)
+- [0650 A `let` that shadows a binding read no more is that binding, assigned](decisions/0650-a-shadow-of-a-binding-read-no-more-is-that-binding.md)
+- [0651 A `let`, then its fallback where it's falsy, is `||`](decisions/0651-a-let-then-its-fallback-is-or.md)
+- [0652 Consecutive appends to a `String` are one `+=`](decisions/0652-consecutive-appends-are-one.md)
 - [0653 A JS function value is a `dyn Fn` of its signature](decisions/0653-a-js-function-value-is-a-dyn-fn-of-its-signature.md)
 - [0654 A dictionary's member of any value is a `dyn IntoUnknown`](decisions/0654-a-dictionary-member-of-any-value-is-a-dyn-into-unknown.md)
 - [0655 A binding of `any` as a value is a `fn` of `Option<&'static Unknown>`](decisions/0655-an-any-binding-as-a-value-is-a-fn-of-a-static-unknown.md)

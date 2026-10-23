@@ -112,12 +112,12 @@ async function loadSysrootFile(name) {
  */
 async function loadPackages(start, stat) {
   const runtime = (await window.fetch("./runtime.js")).text();
-  const packages = (await window.fetch("./packages.json")).json();
+  let packages = (await window.fetch("./packages.json")).json();
   const modules = [["@rust-js/runtime", await runtime]];
-  const packages$1 = await packages;
-  $extend(modules, Object.entries(packages$1.modules));
+  packages = await packages;
+  $extend(modules, Object.entries(packages.modules));
   stat("download runtime and packages", ms(performance.now() - start));
-  return [modules, Object.entries(packages$1.styles)];
+  return [modules, Object.entries(packages.styles)];
 }
 
 async function loadBindingCrate(name, start, stat) {

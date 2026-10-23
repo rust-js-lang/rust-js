@@ -1451,18 +1451,18 @@ export function report() {
     out += `err ${$displayJsonError(value$22._0)}\n`;
   }
   const page = { items: [{ name: "z", age: 9 }], total: 1 };
-  out += $unwrapOk(
-    $toJson(
-      page,
-      (value, json) => {
-        pageSerialize_serialize(value, json, userSerialize_serialize);
-      },
-      true,
-    ),
-    undefined,
-    $debugJsonError,
-  );
-  out += "\n";
+  out +=
+    $unwrapOk(
+      $toJson(
+        page,
+        (value, json) => {
+          pageSerialize_serialize(value, json, userSerialize_serialize);
+        },
+        true,
+      ),
+      undefined,
+      $debugJsonError,
+    ) + "\n";
   for (const text of [
     '{"result":{"Ok":5},"all":[{"Ok":true},{"Err":3}]}',
     '{"result":{"Err":"bad"},"all":[]}',
@@ -1505,55 +1505,55 @@ export function report() {
     }
   }
   const temp = { celsius: -3 };
-  out += $unwrapOk($toJson(temp, tempSerialize_serialize, false), undefined, $debugJsonError);
-  out += "\n";
-  out += $unwrapOk(
-    $toJson(
-      [temp, temp],
+  out +=
+    $unwrapOk($toJson(temp, tempSerialize_serialize, false), undefined, $debugJsonError) + "\n";
+  out +=
+    $unwrapOk(
+      $toJson(
+        [temp, temp],
+        (value, json) => {
+          json.beginArray();
+          for (const item of value) {
+            json.element();
+            tempSerialize_serialize(item, json);
+          }
+          json.endArray();
+        },
+        false,
+      ),
+      undefined,
+      $debugJsonError,
+    ) + "\n";
+  out +=
+    roundtrip(
+      { name: "a", age: 1 },
+      userSerialize_serialize,
+      userDeserialize_deserialize,
+      userDebug,
+    ) + "\n";
+  out +=
+    roundtrip(
+      [1, 2],
       (value, json) => {
         json.beginArray();
         for (const item of value) {
           json.element();
-          tempSerialize_serialize(item, json);
+          json.int(item);
         }
         json.endArray();
       },
-      false,
-    ),
-    undefined,
-    $debugJsonError,
-  );
-  out += "\n";
-  out += roundtrip(
-    { name: "a", age: 1 },
-    userSerialize_serialize,
-    userDeserialize_deserialize,
-    userDebug,
-  );
-  out += "\n";
-  out += roundtrip(
-    [1, 2],
-    (value, json) => {
-      json.beginArray();
-      for (const item of value) {
-        json.element();
-        json.int(item);
-      }
-      json.endArray();
-    },
-    $json.vec($json.u32),
-    { fmt: (value) => `[${value.join(", ")}]` },
-  );
-  out += "\n";
-  out += roundtrip(
-    { data: { name: "b", age: 2 }, ok: true },
-    (value, json) => {
-      responseSerialize_serialize(value, json, userSerialize_serialize);
-    },
-    $json.with(responseDeserialize_deserialize, userDeserialize_deserialize),
-    responseDebug(userDebug),
-  );
-  out += "\n";
+      $json.vec($json.u32),
+      { fmt: (value) => `[${value.join(", ")}]` },
+    ) + "\n";
+  out +=
+    roundtrip(
+      { data: { name: "b", age: 2 }, ok: true },
+      (value, json) => {
+        responseSerialize_serialize(value, json, userSerialize_serialize);
+      },
+      $json.with(responseDeserialize_deserialize, userDeserialize_deserialize),
+      responseDebug(userDebug),
+    ) + "\n";
   const users = decodeAll(['{"name":"c","age":3}', '{"name":"d"}'], userDeserialize_deserialize);
   out += `[${users.map((item) => (item.TAG === "Ok" ? `Ok(${userDebug_fmt(item._0)})` : `Err(${$debugStr(item._0)})`)).join(", ")}]\n`;
   const reply = decode(
@@ -1564,12 +1564,12 @@ export function report() {
   const n = borrowed("7", $json.u8);
   const m = borrowed("x", $json.u8);
   out += `${n == null ? "None" : `Some(${n})`} ${m == null ? "None" : `Some(${m})`}\n`;
-  out += encode({ ok: true }, (value, json) => {
-    responseSerialize_serialize(value, json, (value, json) => {
-      json.null();
-    });
-  });
-  out += "\n";
+  out +=
+    encode({ ok: true }, (value, json) => {
+      responseSerialize_serialize(value, json, (value, json) => {
+        json.null();
+      });
+    }) + "\n";
   const value$23 = $fromJson(
     '{"name":"a","page":1,"total":9,"x":5}',
     listingDeserialize_deserialize,
@@ -1753,18 +1753,16 @@ export function report() {
     out += `err ${$displayJsonError(value$45._0)}\n`;
   }
   const value$46 = $toJson({ id: 1, n: 2 }, badSerialize_serialize, false);
-  out += value$46.TAG === "Ok" ? value$46._0 : $displayJsonError(value$46._0);
-  out += "\n";
+  out += (value$46.TAG === "Ok" ? value$46._0 : $displayJsonError(value$46._0)) + "\n";
   const value$47 = $toJson({ items: [1] }, badSeqSerialize_serialize, false);
-  out += value$47.TAG === "Ok" ? value$47._0 : $displayJsonError(value$47._0);
-  out += "\n";
+  out += (value$47.TAG === "Ok" ? value$47._0 : $displayJsonError(value$47._0)) + "\n";
   const listing = { name: "p", meta: { page: 2, total: 3 }, extra: new Map() };
-  out += $unwrapOk(
-    $toJson({ listing, flag: false }, nestedSerialize_serialize, true),
-    undefined,
-    $debugJsonError,
-  );
-  out += "\n";
+  out +=
+    $unwrapOk(
+      $toJson({ listing, flag: false }, nestedSerialize_serialize, true),
+      undefined,
+      $debugJsonError,
+    ) + "\n";
   for (const text of [
     '{"name":"ann","tags":["a","b"],"note":null}',
     '{"name":"a\\nb","tags":[],"note":null}',

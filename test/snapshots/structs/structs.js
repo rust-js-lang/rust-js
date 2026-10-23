@@ -152,13 +152,13 @@ export function classify([a, b]) {
       return 0;
     }
   } else if (b !== 0) {
-    const x = a;
+    let x = a;
     const y = b;
     if (x === y) {
       return 2;
     }
-    const x$1 = a;
-    if (x$1 < 0) {
+    x = a;
+    if (x < 0) {
       return 3;
     }
     return 4;
@@ -170,8 +170,8 @@ export function classify([a, b]) {
 export function quadrant(x, y) {
   const value = point(x, y);
   if (value.x !== 0 && value.y !== 0) {
-    const x = value.x;
-    const y$1 = value.y;
+    let x = value.x;
+    let y$1 = value.y;
     if (x > 0) {
       if (y$1 > 0) {
         const x = value.x;
@@ -179,13 +179,13 @@ export function quadrant(x, y) {
         return 1;
       }
     }
-    const x$1 = value.x;
-    if (x$1 < 0) {
+    x = value.x;
+    if (x < 0) {
       const x = value.x;
       return (2 + (y < 0 ? 1 : 0)) | 0;
     }
-    const y$2 = value.y;
-    return (y$2 * 4) | 0;
+    y$1 = value.y;
+    return (y$1 * 4) | 0;
   }
   return 0;
 }

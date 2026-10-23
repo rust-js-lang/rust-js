@@ -6,7 +6,7 @@
 
 use std::collections::HashSet;
 
-use crate::js::{self, Expr, ExprKind, JsxTag, Op, Prop, Stmt, StmtKind};
+use crate::js::{self, Expr, ExprKind, JsxTag, Op, Prop, Stmt, StmtKind, UnaryOp};
 
 mod reclaim;
 
@@ -586,6 +586,80 @@ fn block(body: &mut Vec<Stmt>) {
         }
     }
     fallen_held(body);
+    fallen_declared(body);
+}
+
+/// `let name = error.name; if (!name) { name = "Error"; }` is `const name =
+/// error.name || "Error";`: a `let`, then its fallback where its value is
+/// falsy, the very `!x` JS tests its truth by, is `e || c`, as React
+/// writes it; and of its fallback where it's none, `x ??= c` of `if (x ==
+/// null)` (`coalescing`), `e ?? c` (ADR 0651). Each makes `c` only where
+/// `e` is falsy, or none, as the `if` did. Not of a `c` that reads `x`,
+/// which the declaration would read before it's made; a `const` where
+/// nothing sets `x` after.
+fn fallen_declared(body: &mut Vec<Stmt>) {
+    let mut i = 0;
+    while i + 1 < body.len() {
+        if let StmtKind::Let(name, Some(value)) = &body[i].kind
+            && let Some((op, fallback)) = fallback_of(&body[i + 1], name)
+            && !fallback.mentions_var(name)
+        {
+            let name = name.clone();
+            let value = Expr {
+                span: value.span,
+                ..Expr::bin(op, value.clone(), fallback)
+            };
+            body[i].kind = match set_in(&body[i + 2..], &name) {
+                true => StmtKind::Let(name, Some(value)),
+                false => StmtKind::Const(name, value),
+            };
+            body.remove(i + 1);
+        }
+        i += 1;
+    }
+}
+
+/// The fallback `stmt` gives the variable `name`: `c` of `if (!x) { x =
+/// c; }`, by `||`, or of `x = x ?? c`, by `??`.
+fn fallback_of(stmt: &Stmt, name: &str) -> Option<(Op, Expr)> {
+    let is = |e: &Expr| matches!(&e.kind, ExprKind::Var(v) if v == name);
+    match &stmt.kind {
+        StmtKind::If(test, then, None) if matches!(&test.kind, ExprKind::Unary(UnaryOp::Not, x) if is(x)) => {
+            match then.as_slice() {
+                [
+                    Stmt {
+                        kind: StmtKind::Assign(target, fallback),
+                        ..
+                    },
+                ] if is(target) => Some((Op::Or, fallback.clone())),
+                _ => None,
+            }
+        }
+        StmtKind::Assign(target, value) if is(target) => match &value.kind {
+            ExprKind::Binary(Op::Coalesce, x, fallback) if is(x) => Some((Op::Coalesce, (**fallback).clone())),
+            _ => None,
+        },
+        _ => None,
+    }
+}
+
+/// Whether `stmts` set the variable `name`, in a closure too: assign it, or
+/// make a `&mut`'s handle on it.
+fn set_in(stmts: &[Stmt], name: &str) -> bool {
+    let is = |e: &Expr| matches!(&e.kind, ExprKind::Var(v) if v == name);
+    let mut stmts = stmts.to_vec();
+    let mut set = false;
+    js::each_block_mut(&mut stmts, &mut |list| {
+        set |= list
+            .iter()
+            .any(|s| matches!(&s.kind, StmtKind::Assign(target, _) | StmtKind::Compound(_, target, _) if is(target)));
+    });
+    js::each_expr_mut(&mut stmts, &mut |e| {
+        if let ExprKind::Handle(place) | ExprKind::Pair(place, _) = &e.kind {
+            set |= is(place);
+        }
+    });
+    set
 }
 
 /// `const type = a || b || undefined; return type ?? "Object";` is `const

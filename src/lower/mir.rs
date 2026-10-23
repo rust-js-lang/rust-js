@@ -285,6 +285,25 @@ struct Locals {
     declared: IndexVec<Local, bool>,
     /// Each one the program names, not a macro of std's.
     user: IndexVec<Local, bool>,
+    /// Each one a `String`, which `push_str` appends to by `+`.
+    text: IndexVec<Local, bool>,
+}
+
+impl Locals {
+    /// What tidy's last passes ask of them, by name: those the program
+    /// names (`user`), and its `String`s (`text`).
+    fn named(&self) -> tidy::Named {
+        let names = |of: &IndexVec<Local, bool>| -> HashSet<String> {
+            (self.names.iter_enumerated())
+                .filter(|&(local, name)| of[local] && !name.is_empty())
+                .map(|(_, name)| name.clone())
+                .collect()
+        };
+        tidy::Named {
+            user: names(&self.user),
+            text: names(&self.text),
+        }
+    }
 }
 
 /// What a body's writes say of its `Option`s.
@@ -928,7 +947,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .filter(|&(_, &b)| b)
                 .map(|(path, _)| path.clone()),
         );
-        let plain = self.plain_names();
         // Each drop flag, by its name (`mir/drops.rs`).
         let flags: HashSet<String> = state.flags.iter().flatten().cloned().collect();
         tidy::tidy(
@@ -948,7 +966,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 captured: &captured,
                 booleans: &booleans,
                 numbers: &numbers,
-                plain: &plain,
+                plain: &self.plain_names(),
                 forwarding: &self.locals.mir.forwarding.clone(),
                 concise: &self.locals.mir.concise.clone(),
                 flags: &flags,
@@ -956,7 +974,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             },
         );
         tidy::destructured_params(&mut params, &mut out);
-        tidy::named(&params, &mut out, &flags, &self.temporaries_names(mir_body, &state));
+        let suggested = self.temporaries_names(mir_body, &state);
+        tidy::named(&params, &mut out, &flags, &suggested, &state.locals.named());
         self.body_epilogue(&mut state, &mut out);
         Ok((params, out))
     }

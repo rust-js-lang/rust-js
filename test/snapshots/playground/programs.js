@@ -40,23 +40,23 @@ export function resolve(from, specifier) {
 export function link(files) {
   const imports = /^import ([^;]+?) from "([^"]+)";/gm;
   const sourceMap = /^\/\/# sourceMappingURL=.*$/m;
-  const entries = [];
+  let entries = [];
   for (const [path, code] of files.values().map((item) => [item[0], item[1]])) {
     const from = path;
-    const body = code.replace(imports, (_, names, specifier) => {
+    let body = code.replace(imports, (_, names, specifier) => {
       const target = JSON.stringify(`rust-js:${resolve(from, specifier)}`);
       return `import ${names} from ${target};`;
     });
-    const body$1 = body.replace(sourceMap, "");
+    body = body.replace(sourceMap, "");
     const specifier = JSON.stringify(`rust-js:${path}`);
     // Identical module bodies must still have separate state.
     const url = JSON.stringify(
-      `data:text/javascript,${encodeURIComponent(body$1)}#${encodeURIComponent(path)}`,
+      `data:text/javascript,${encodeURIComponent(body)}#${encodeURIComponent(path)}`,
     );
     entries.push(`${specifier}: ${url}`);
   }
-  const entries$1 = entries.join(",");
-  return `<script type="importmap">{"imports":{${entries$1}}}<\/script>`;
+  entries = entries.join(",");
+  return `<script type="importmap">{"imports":{${entries}}}<\/script>`;
 }
 
 /**

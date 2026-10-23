@@ -47,15 +47,15 @@ test("React's owner stack reads as upstream's", async () => {
   if (stack.startsWith("Error: react-stack-top-frame\\n")) {
     stack = stack.slice(29);
   }
-  const idx = stack.indexOf("\\n");
+  let idx = stack.indexOf("\\n");
   if (idx !== -1) {
     // Pop the JSX frame.
     stack = stack.slice(idx + 1);
   }
   const at = stack.indexOf("react_stack_bottom_frame");
-  const idx$1 = at !== -1 ? stack.slice(0, at).lastIndexOf("\\n") : -1;
-  if (idx$1 !== -1) {
-    stack = stack.slice(0, idx$1);
+  idx = at !== -1 ? stack.slice(0, at).lastIndexOf("\\n") : -1;
+  if (idx !== -1) {
+    stack = stack.slice(0, idx);
     return stack;
   }
   return "";

@@ -15,64 +15,7 @@ pub(super) fn module(module: &mut js::Module) {
     imports(module);
     own_items(module);
     for item in &mut module.items {
-        item.functions_mut().for_each(shadowed_params);
         locals(item);
-    }
-}
-
-/// `const level$1 = e;` at a function's top, shadowing its parameter
-/// `level`, which nothing reads after it, nor a closure made before it:
-/// `level = e;`, the parameter assigned, read by its name after (ADR
-/// 0609).
-fn shadowed_params(function: &mut js::Function) {
-    let params: Vec<String> = (function.params.iter())
-        .filter_map(|p| match p {
-            js::Pattern::Name(name) => Some(name.clone()),
-            _ => None,
-        })
-        .collect();
-    let mut i = 0;
-    while i < function.body.len() {
-        let (StmtKind::Const(shadow, value) | StmtKind::Let(shadow, Some(value))) = &function.body[i].kind else {
-            i += 1;
-            continue;
-        };
-        let Some((base, _)) = crate::names::apart(shadow) else {
-            i += 1;
-            continue;
-        };
-        if !params.iter().any(|p| p == base) {
-            i += 1;
-            continue;
-        }
-        let (base, shadow, value) = (base.to_string(), shadow.clone(), value.clone());
-        // Read after by its old value, or by a closure that may run after.
-        let before = StmtKind::Expr(value.clone()).at(function.body[i].span);
-        let mut made_before: Vec<Stmt> = function.body[..i].to_vec();
-        made_before.push(before);
-        let mut captured = false;
-        js::each_expr_mut(&mut made_before, &mut |e| {
-            if let ExprKind::Arrow(_, body) | ExprKind::AsyncArrow(_, body) = &e.kind {
-                captured |= js::mentions_in(body, &base) > 0;
-            }
-        });
-        if captured || js::mentions_in(&function.body[i + 1..], &base) > 0 {
-            i += 1;
-            continue;
-        }
-        let span = function.body[i].span;
-        let itself = matches!(&value.kind, ExprKind::Var(v) if *v == base);
-        function.body[i] = StmtKind::Assign(Expr::var(&base), value).at(span);
-        js::each_expr_mut(&mut function.body[i + 1..], &mut |e| {
-            if matches!(&e.kind, ExprKind::Var(v) if *v == shadow) {
-                *e = Expr::var(&base).or_at(e.span);
-            }
-        });
-        // `let mut n = n;`, the parameter itself: nothing to assign.
-        match itself {
-            true => _ = function.body.remove(i),
-            false => i += 1,
-        }
     }
 }
 

@@ -31,16 +31,16 @@ function generic(o, TPartialEq, TDebug) {
 }
 
 function pair(o, p) {
-  const a = o.value;
-  const b = p.value;
+  let a = o.value;
+  let b = p.value;
   if (a < b) {
     const a = o.value;
     const b = p.value;
     return (b - a) | 0;
   }
-  const a$1 = o.value;
-  const b$1 = p.value;
-  return (a$1 - b$1) | 0;
+  a = o.value;
+  b = p.value;
+  return (a - b) | 0;
 }
 
 function main() {

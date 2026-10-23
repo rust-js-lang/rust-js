@@ -23,7 +23,7 @@ export function entry() {
 }
 
 function main() {
-  const a = { value: 5, strong: 1, weak: 0 };
+  let a = { value: 5, strong: 1, weak: 0 };
   const strong = a.strong;
   try {
     console.log(`${strong} ${a.weak}`);
@@ -63,7 +63,6 @@ function main() {
     $rcDrop(a);
     throw error;
   }
-
   try {
     console.log(`${a.strong} ${a === b}`);
   } catch (error) {
@@ -83,27 +82,26 @@ function main() {
     $rcDrop(a);
     throw error;
   }
-  let a$1 = a;
   let tmp;
   try {
-    tmp = $unwrap(a$1.strong === 1 && a$1.weak === 0 ? a$1 : undefined);
+    tmp = $unwrap(a.strong === 1 && a.weak === 0 ? a : undefined);
   } catch (error) {
-    $rcDrop(a$1);
+    $rcDrop(a);
     throw error;
   }
   tmp.value = (tmp.value + 1) | 0;
   let weak;
   try {
-    weak = $downgrade(a$1);
+    weak = $downgrade(a);
   } catch (error) {
-    $rcDrop(a$1);
+    $rcDrop(a);
     throw error;
   }
   let tmp$1;
   let upgrade;
   let tmp$2;
   try {
-    tmp$1 = a$1.weak;
+    tmp$1 = a.weak;
     upgrade = $upgrade(weak);
     tmp$2 = (n) => {
       const result = n.value;
@@ -112,7 +110,7 @@ function main() {
     };
   } catch (error) {
     $weakDrop(weak);
-    $rcDrop(a$1);
+    $rcDrop(a);
     throw error;
   }
   let tmp$3;
@@ -120,67 +118,67 @@ function main() {
     tmp$3 = upgrade ? tmp$2(upgrade) : undefined;
   } catch (error) {
     $weakDrop(weak);
-    $rcDrop(a$1);
+    $rcDrop(a);
     throw error;
   }
   try {
     console.log(`${tmp$1} ${tmp$3 == null ? "None" : `Some(${tmp$3})`}`);
   } catch (error) {
     $weakDrop(weak);
-    $rcDrop(a$1);
+    $rcDrop(a);
     throw error;
   }
   let shared;
   try {
-    shared = $rcClone(a$1);
+    shared = $rcClone(a);
   } catch (error) {
     $weakDrop(weak);
-    $rcDrop(a$1);
+    $rcDrop(a);
     throw error;
   }
   try {
-    const value = a$1.strong === 1 && a$1.weak === 0 ? a$1 : undefined;
+    const value = a.strong === 1 && a.weak === 0 ? a : undefined;
     console.log(`${value == null ? "None" : `Some(${value.value})`}`);
   } catch (error) {
     $rcDrop(shared);
     $weakDrop(weak);
-    $rcDrop(a$1);
+    $rcDrop(a);
     throw error;
   }
   try {
-    a$1 = $makeMut(a$1);
+    a = $makeMut(a);
   } catch (error) {
     $rcDrop(shared);
     $weakDrop(weak);
-    $rcDrop(a$1);
+    $rcDrop(a);
     throw error;
   }
-  const value$2 = (a$1.value + 1) | 0;
+  const value$2 = (a.value + 1) | 0;
   try {
     console.log(`${value$2}`);
   } catch (error) {
     $rcDrop(shared);
     $weakDrop(weak);
-    $rcDrop(a$1);
+    $rcDrop(a);
     throw error;
   }
   let tmp$4;
   try {
-    a$1 = $makeMut(a$1);
-    tmp$4 = a$1;
+    a = $makeMut(a);
+    tmp$4 = a;
   } catch (error) {
     $rcDrop(shared);
     $weakDrop(weak);
-    $rcDrop(a$1);
+    $rcDrop(a);
     throw error;
   }
   tmp$4.value = (tmp$4.value + 10) | 0;
   try {
-    console.log(`${a$1.value} ${shared.value} ${a$1 === shared}`);
+    console.log(`${a.value} ${shared.value} ${a === shared}`);
   } catch (error) {
     $rcDrop(shared);
     $weakDrop(weak);
-    $rcDrop(a$1);
+    $rcDrop(a);
     throw error;
   }
   let tmp$5;
@@ -188,7 +186,7 @@ function main() {
     tmp$5 = $tryUnwrap(shared);
   } catch (error) {
     $weakDrop(weak);
-    $rcDrop(a$1);
+    $rcDrop(a);
     throw error;
   }
   try {
@@ -198,7 +196,7 @@ function main() {
       $rcDrop(tmp$5._0);
     }
     $weakDrop(weak);
-    $rcDrop(a$1);
+    $rcDrop(a);
     throw error;
   }
   try {
@@ -207,7 +205,7 @@ function main() {
     }
   } catch (error) {
     $weakDrop(weak);
-    $rcDrop(a$1);
+    $rcDrop(a);
     throw error;
   }
   let tmp$6;
@@ -215,12 +213,12 @@ function main() {
     tmp$6 = $upgrade(weak);
   } catch (error) {
     $weakDrop(weak);
-    $rcDrop(a$1);
+    $rcDrop(a);
     throw error;
   }
   try {
     try {
-      const tmp = $intoInner(a$1);
+      const tmp = $intoInner(a);
       console.log(
         `${tmp$6 == null ? "None" : `Some(${tmp$6.value})`} ${tmp == null ? "None" : `Some(${tmp})`}`,
       );
@@ -701,7 +699,7 @@ function main() {
       throw error;
     }
 
-    const text = { value: "hi", strong: 1, weak: 0 };
+    let text = { value: "hi", strong: 1, weak: 0 };
     let other;
 
     // Its text, as `{}` shows it, what it points at.
@@ -761,10 +759,10 @@ function main() {
       $rcDrop(leaf, dropNode);
       throw error;
     }
-    const text$1 = String(seven.value);
+    text = String(seven.value);
     const value$5 = shared.strong;
     try {
-      console.log(`${text$1} ${value$5}`);
+      console.log(`${text} ${value$5}`);
     } catch (error) {
       $rcDrop(shared);
       $rcDrop(seven);

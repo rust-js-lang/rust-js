@@ -41,7 +41,7 @@ function main() {
   console.log(
     `${value$6 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$6))})`}`,
   );
-  const v = $mutGet(opts, 1);
+  let v = $mutGet(opts, 1);
   if (v != null) {
     v.value = undefined;
   }
@@ -49,14 +49,14 @@ function main() {
   console.log(
     `${value$7 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$7))})`}`,
   );
-  const v$1 = $mutGet(units, "zz");
-  if (v$1 != null) {
-    v$1.value = undefined;
+  v = $mutGet(units, "zz");
+  if (v != null) {
+    v.value = undefined;
   }
   units.set("q");
-  const v$2 = $mutGet(units, "q");
-  if (v$2 != null) {
-    v$2.value = undefined;
+  v = $mutGet(units, "q");
+  if (v != null) {
+    v.value = undefined;
     console.log("got q");
   }
 }

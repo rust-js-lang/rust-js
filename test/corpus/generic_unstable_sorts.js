@@ -50,14 +50,14 @@ function main() {
   ]);
   const by = sorted(tags.slice(), byKey, "network");
   console.log(`${$debugStr(by.map((t) => t[1]).join(""))}`);
-  const wide = $range(0, 30).map((i) => [
+  let wide = $range(0, 30).map((i) => [
     BigInt.asUintN(64, BigInt((((i * 3) | 0) % 4) | 0)),
     0n,
     0n,
     String.fromCharCode((97 + (i & 255)) & 255),
   ]);
-  const wide$1 = sorted(wide, (a, b) => $cmp(a[0], b[0]), "general");
-  console.log(`${$debugStr(wide$1.map((t) => t[3]).join(""))}`);
+  wide = sorted(wide, (a, b) => $cmp(a[0], b[0]), "general");
+  console.log(`${$debugStr(wide.map((t) => t[3]).join(""))}`);
   console.log(
     `[${smallest([9, 3, 7, 1, 8, 2], 3, { cmp: $cmp }, { clone: (value) => value }, "network").join(
       ", ",

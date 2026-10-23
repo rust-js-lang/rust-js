@@ -31,7 +31,7 @@ function doubled(v) {
 function main() {
   const v = [1, 2, 3, 4];
 
-  const kept = v
+  let kept = v
     .values()
     .map((x) => noisy("map", (x * 2) | 0))
     .filter((x) => noisy("filter", x) > 2)
@@ -40,7 +40,7 @@ function main() {
 
   // `fold`'s start is made before any item is stepped: a stage that does
   // something runs after it.
-  const total = v
+  let total = v
     .values()
     .filter((x) => noisy("kept", x) % 2 === 0)
     .reduce((acc, x) => (acc + x) | 0, noisy("start", 100));
@@ -97,7 +97,7 @@ function main() {
     console.log(`${i} ${x}`);
   }
 
-  const total$1 = v.map((x) => noisy("sum", x)).reduce((a, b) => (a + b) | 0, 0);
+  total = v.map((x) => noisy("sum", x)).reduce((a, b) => (a + b) | 0, 0);
   const inspect = (x) => {
     console.log(`saw ${x}`);
   };
@@ -107,12 +107,12 @@ function main() {
       return item;
     })
     .filter((x) => x > 2).length;
-  console.log(`${total$1} ${count}`);
+  console.log(`${total} ${count}`);
 
   // A chain kept in a variable that's only iterated, and the other side of
   // a `zip` or a `chain`, run in their turn too.
-  const kept$1 = v.values().map((x) => noisy("kept", x));
-  for (const x of kept$1) {
+  kept = v.values().map((x) => noisy("kept", x));
+  for (const x of kept) {
     console.log(`kept body ${x}`);
   }
   const counted = v.values().filter((x) => noisy("counted", x) > 1);

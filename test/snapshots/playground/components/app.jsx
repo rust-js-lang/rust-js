@@ -111,10 +111,10 @@ export function App() {
       setProgram(undefined);
     } else if (prepared.TAG === "Blocked") {
       setProgram(undefined);
-      const names = prepared._0.map((s) => `"${s}"`);
-      const names$1 = names.join(", ");
+      let names = prepared._0.map((s) => `"${s}"`);
+      names = names.join(", ");
       setStatus((s) => {
-        const text = `${s.text} Not run: it imports ${names$1}, which the playground can't load. Bundle it with bun build.`;
+        const text = `${s.text} Not run: it imports ${names}, which the playground can't load. Bundle it with bun build.`;
         return say(text, "Bad");
       });
     } else {

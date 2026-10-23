@@ -16,9 +16,9 @@ function main() {
   const doubled = numbers.map((n) => (n * 2) | 0);
   const total = numbers.reduce((a, b) => (a + b) | 0, 0);
   console.log(`[${doubled.join(", ")}] ${total}`);
-  const items = [{ name: "a", count: 1 }];
-  const items$1 = bumped(items);
-  for (const item of items$1) {
+  let items = [{ name: "a", count: 1 }];
+  items = bumped(items);
+  for (const item of items) {
     console.log(`${item.name} ${item.count}`);
   }
 }

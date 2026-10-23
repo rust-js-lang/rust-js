@@ -153,7 +153,7 @@ function main() {
     : typeof left === "number"
       ? typeof right === "number" && left === right
       : false;
-  const other = 1 === ["1"];
+  let other = 1 === ["1"];
   console.log(`${same} ${other} true`);
 
   const lone = ["b"];
@@ -172,11 +172,11 @@ function main() {
     }
   }
   const pair = { held: ["p"], other: ["q"] };
-  const other$1 = pair.other;
+  other = pair.other;
   try {
-    console.log(`moved ${other$1[0]}`);
+    console.log(`moved ${other[0]}`);
   } catch (error) {
-    noisyDrop_drop(other$1);
+    noisyDrop_drop(other);
     if (Array.isArray(pair.held)) {
       noisyDrop_drop(pair.held);
     }
@@ -197,7 +197,7 @@ function main() {
     try {
       console.log(`quiet ${pair.held}`);
     } catch (error) {
-      noisyDrop_drop(other$1);
+      noisyDrop_drop(other);
       if (Array.isArray(pair.held)) {
         noisyDrop_drop(pair.held);
       }
@@ -238,7 +238,7 @@ function main() {
           noisyDrop_drop(both.second);
         }
       }
-      noisyDrop_drop(other$1);
+      noisyDrop_drop(other);
       if (Array.isArray(pair.held)) {
         noisyDrop_drop(pair.held);
       }
@@ -269,7 +269,7 @@ function main() {
           noisyDrop_drop(both.second);
         }
       }
-      noisyDrop_drop(other$1);
+      noisyDrop_drop(other);
       if (Array.isArray(pair.held)) {
         noisyDrop_drop(pair.held);
       }
@@ -315,7 +315,7 @@ function main() {
         noisyDrop_drop(both.second);
       }
     }
-    noisyDrop_drop(other$1);
+    noisyDrop_drop(other);
     if (Array.isArray(pair.held)) {
       noisyDrop_drop(pair.held);
     }
@@ -362,7 +362,7 @@ function main() {
           noisyDrop_drop(both.second);
         }
       }
-      noisyDrop_drop(other$1);
+      noisyDrop_drop(other);
       if (Array.isArray(pair.held)) {
         noisyDrop_drop(pair.held);
       }
@@ -412,7 +412,7 @@ function main() {
             noisyDrop_drop(both.second);
           }
         }
-        noisyDrop_drop(other$1);
+        noisyDrop_drop(other);
         if (Array.isArray(pair.held)) {
           noisyDrop_drop(pair.held);
         }
@@ -458,7 +458,7 @@ function main() {
             noisyDrop_drop(both.second);
           }
         }
-        noisyDrop_drop(other$1);
+        noisyDrop_drop(other);
         if (Array.isArray(pair.held)) {
           noisyDrop_drop(pair.held);
         }
@@ -504,7 +504,7 @@ function main() {
             noisyDrop_drop(both.second);
           }
         }
-        noisyDrop_drop(other$1);
+        noisyDrop_drop(other);
         if (Array.isArray(pair.held)) {
           noisyDrop_drop(pair.held);
         }
@@ -556,7 +556,7 @@ function main() {
         noisyDrop_drop(both.second);
       }
     }
-    noisyDrop_drop(other$1);
+    noisyDrop_drop(other);
     if (Array.isArray(pair.held)) {
       noisyDrop_drop(pair.held);
     }
@@ -603,7 +603,7 @@ function main() {
           noisyDrop_drop(both.second);
         }
       }
-      noisyDrop_drop(other$1);
+      noisyDrop_drop(other);
       if (Array.isArray(pair.held)) {
         noisyDrop_drop(pair.held);
       }
@@ -654,7 +654,7 @@ function main() {
             noisyDrop_drop(both.second);
           }
         }
-        noisyDrop_drop(other$1);
+        noisyDrop_drop(other);
         if (Array.isArray(pair.held)) {
           noisyDrop_drop(pair.held);
         }
@@ -701,7 +701,7 @@ function main() {
           noisyDrop_drop(both.second);
         }
       }
-      noisyDrop_drop(other$1);
+      noisyDrop_drop(other);
       if (Array.isArray(pair.held)) {
         noisyDrop_drop(pair.held);
       }
@@ -746,7 +746,7 @@ function main() {
         noisyDrop_drop(both.second);
       }
     }
-    noisyDrop_drop(other$1);
+    noisyDrop_drop(other);
     if (Array.isArray(pair.held)) {
       noisyDrop_drop(pair.held);
     }
@@ -782,7 +782,7 @@ function main() {
       }
     }
   } catch (error) {
-    noisyDrop_drop(other$1);
+    noisyDrop_drop(other);
     if (Array.isArray(pair.held)) {
       noisyDrop_drop(pair.held);
     }
@@ -802,7 +802,7 @@ function main() {
   both$0$live = false;
   both$0$first$live = false;
   try {
-    noisyDrop_drop(other$1);
+    noisyDrop_drop(other);
   } catch (error) {
     if (Array.isArray(pair.held)) {
       noisyDrop_drop(pair.held);
