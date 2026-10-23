@@ -388,4 +388,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^deque_slices.rs$"],
     snapshots: true,
   },
+  {
+    name: "slice-from-ref-unwrapped",
+    breaks: "`slice::from_ref(&x)` is `x`, not a slice of it",
+    file: "src/lower/std_types/slice.rs",
+    find: "            SliceOp::FromRef => Expr::array(vec![arg()]),\n",
+    replace: "            SliceOp::FromRef => arg(),\n",
+    tests: ["test/corpus.test.ts", "-t", "^slice_from_ref.rs$"],
+  },
 ];

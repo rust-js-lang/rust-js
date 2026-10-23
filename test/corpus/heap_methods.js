@@ -59,5 +59,9 @@ function main() {
   console.log(
     `[${words.map((item) => $debugStr(item)).join(", ")}] ${words[0] == null ? "None" : `Some(${$debugStr(words[0])})`}`,
   );
+  // Its `Vec`, `From`'s or `Into`'s, is its items in that order.
+  const from = late;
+  const into = words;
+  console.log(`[${from.join(", ")}] [${into.map((item) => $debugStr(item)).join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

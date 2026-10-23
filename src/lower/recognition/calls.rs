@@ -138,6 +138,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             }
             "std::mem::zeroed" => return Some(Some(Std::Uninit(UninitOp::Zeroed))),
             "std::array::from_fn" => return Some(Some(Std::Slice(SliceOp::FromFn))),
+            "std::slice::from_ref" | "std::array::from_ref" => return Some(Some(Std::Slice(SliceOp::FromRef))),
             _ => {}
         }
         // A `NonNull` of a reference, `NonNull::from(&mut x)`: a pointer to
@@ -925,6 +926,10 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         if self.is_std_type(to_ty, StdItem::VecDeque) || self.is_std_type(to_ty, StdItem::LinkedList) || (vec && items)
         {
             return Some(Std::ToVec);
+        }
+        // A heap's `Vec` is the array it is, as `into_vec()` gives it.
+        if vec && self.is_std_type(from_ty, StdItem::BinaryHeap) {
+            return Some(Std::Same);
         }
         // A `Vec<u8>` of text, its bytes, as `into_bytes()` gives them.
         if vec && (from_ty.peel_refs().is_str() || self.is_lang_adt(from_ty, LangItem::String)) {

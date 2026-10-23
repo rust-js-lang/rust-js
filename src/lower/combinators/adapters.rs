@@ -450,13 +450,40 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 };
                 Expr::call(Expr::helper("$partition"), vec![items, next()])
             }
+            // Each side a `Vec`, or a map or a set made empty and extended
+            // by its items, as std's `unzip` does: `unzip::<A, B, FromA,
+            // FromB>`'s last two.
             IterComb::Unzip => {
-                let into = generic_args.types().skip(3).all(|into| self.is_vec_like(into));
-                if !into {
-                    return Err(self.unsupported(span, "`unzip` into what isn't a `Vec`"));
+                let sides: Vec<Ty<'tcx>> = generic_args.types().skip(3).collect();
+                if !sides.iter().all(|&side| self.is_vec_like(side) || self.is_map(side)) {
+                    return Err(self.unsupported(span, "`unzip` into what isn't a `Vec`, a map or a set"));
                 }
                 let items = method(items, "toArray", Vec::new());
-                Expr::call(Expr::helper("$unzip"), vec![items])
+                let pairs = Expr::call(Expr::helper("$unzip"), vec![items]);
+                if sides.iter().all(|&side| self.is_vec_like(side)) {
+                    return Ok(pairs);
+                }
+                let pairs = self.spill("unzipped", pairs, out);
+                let mut parts = Vec::new();
+                for (i, &side) in sides.iter().enumerate() {
+                    let part = Expr::index(pairs.clone(), Expr::int(i as i128));
+                    parts.push(match side.kind() {
+                        ty::Adt(_, args) if self.is_map(side) => {
+                            let class =
+                                self.map_class(self.is_set(side), self.is_sorted(side), args.types().next(), span)?;
+                            let made = Expr::new_(class, Vec::new());
+                            self.map_values(
+                                crate::lower::std_types::map::MapOp::Extend,
+                                (vec![made, part], &[side, side]),
+                                generic_args,
+                                span,
+                                out,
+                            )?
+                        }
+                        _ => part,
+                    });
+                }
+                Expr::array(parts)
             }
         })
     }

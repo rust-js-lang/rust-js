@@ -22,45 +22,6 @@ pub(in crate::lower::mir::tidy) fn own_jumps(stmts: &[Stmt], label: Option<&str>
     })
 }
 
-/// Of each block `l`, the statements it ends after, `tail_else`'s.
-pub(in crate::lower::mir::tidy) fn tail_elses(stmts: &mut [Stmt]) {
-    fn tails(list: &mut Vec<Stmt>, label: &str) {
-        *list = tail_else(std::mem::take(list), label);
-        if let Some(Stmt {
-            kind: StmtKind::If(_, then, otherwise),
-            ..
-        }) = list.last_mut()
-        {
-            tails(then, label);
-            if let Some(otherwise) = otherwise {
-                tails(otherwise, label);
-            }
-        }
-    }
-    for stmt in stmts {
-        if let StmtKind::Labeled(label, body) = &mut stmt.kind {
-            let label = label.clone();
-            tails(body, &label);
-        }
-    }
-}
-
-/// `if (c) { s; break l; } t`, statements `l` ends after: `if (c) { s }
-/// else { t }`, an `else if` chain's, `t` so too.
-pub(in crate::lower::mir::tidy) fn tail_else(mut stmts: Vec<Stmt>, label: &str) -> Vec<Stmt> {
-    let breaks = |list: &[Stmt]| matches!(list.last(), Some(Stmt { kind: StmtKind::Break(Some(l)), .. }) if l == label);
-    if stmts.len() < 2 || !matches!(&stmts[0].kind, StmtKind::If(_, then, None) if breaks(then)) {
-        return stmts;
-    }
-    let rest = stmts.split_off(1);
-    let first = stmts.remove(0);
-    let StmtKind::If(test, mut then, None) = first.kind else {
-        unreachable!("matched")
-    };
-    then.pop();
-    vec![StmtKind::If(test, then, Some(tail_else(rest, label))).at(first.span)]
-}
-
 /// `result = e; return result;` is `return e;`: nothing reads the return
 /// place once it's returned, nor could a closure.
 pub(in crate::lower::mir::tidy) fn returned(stmts: &mut Vec<Stmt>, result: &str) {

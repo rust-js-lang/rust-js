@@ -67,3 +67,9 @@ of heap order, so `pop` and `peek` weren't the greatest (#158). It's
 std's steps, `$heapExtend`: each pushed at the end, then the heap rebuilt
 from the first, as `append` is, by any `Extend`, generic code's too.
 Held by `test/corpus/heap_extend.rs`.
+
+## Amendment: a heap's `Vec`, `From`'s and `Into`'s
+
+`Vec::from(heap)` and `heap.into()` were refused (#165). Each is the
+array the heap is, as `into_vec()` is: `classify_conversion` says so with
+std's other conversions. Held by `test/corpus/heap_methods.rs`.
