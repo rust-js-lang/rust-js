@@ -72,3 +72,13 @@ The `.d.ts` model has one kind for both, `{ kind: "export", from?, names }`,
 - Mutations: the own alias dropped, a constant's re-export dropped, a
   `pub use` renaming its own module's reads, the alias unprinted, not in
   the manifest, not in the `.d.ts`.
+
+## Amendment: a list that names a type is text
+
+The model's `export` has no type-only name, so reading
+`export { type AllowSharedBuffer, Buffer }` as one dropped the `type`. A
+list that names a type stays text, as `export type { .. }` does. The node
+and next coverages read the `export` kind, a name imported into the module
+as well as its own, so @types/node's buffer exports stay bound. Held by
+`test/typescript.test.ts`, "read keeps an export list that names a type as
+text", and the node and next coverage tests.

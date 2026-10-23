@@ -227,6 +227,14 @@ async function exportsOf(path: string, seen: Set<string> = new Set()): Promise<M
       exported.set(as, { kind: typeOnly ? "type" : (entry?.kind ?? "value"), origin: entry?.origin });
     }
   };
+  // A name of the module's own, or one it imports, exported by a name:
+  // `export { greetAll as unstable_greet };`.
+  const exportOwn = async (names: [string, string][], typeOnly: boolean) => {
+    for (const [name, as] of names) {
+      const entry = await own(name);
+      exported.set(as, { kind: typeOnly ? "type" : (entry?.kind ?? "value"), origin: entry?.origin });
+    }
+  };
   for (const d of declarations) {
     if ("name" in d && typeof d.name === "string" && ["interface", "type", "const", "function", "class", "enum"].includes(d.kind)) {
       declare(d.name, kindOf(d));
@@ -240,8 +248,7 @@ async function exportsOf(path: string, seen: Set<string> = new Set()): Promise<M
       }
     }
     if (d.kind === "export" && d.from !== undefined) await reexport(d.from, d.names, false);
-    // Its own, by another name: `export { greetAll as unstable_greet };`.
-    if (d.kind === "export" && d.from === undefined) for (const [name, alias] of d.names) exported.set(alias, local.get(name)!);
+    if (d.kind === "export" && d.from === undefined) await exportOwn(d.names, false);
     if (d.kind === "export-default") exported.set("default", (await own(d.name)) ?? { kind: "value" });
     if (d.kind === "other") {
       // The model leaves a class as text, after its doc comment.
@@ -262,11 +269,9 @@ async function exportsOf(path: string, seen: Set<string> = new Set()): Promise<M
         });
         await reexport(m[3], names, Boolean(m[1]));
       } else if ((m = text.match(/^export (type )?\{([\s\S]*?)\}\s*;?\s*$/))) {
-        // A name of the module's own, or one it imports, exported as it is.
         for (const s of m[2].split(",").map((s) => s.trim()).filter(Boolean)) {
           const [name, as] = s.replace(/^type /, "").split(/\s+as\s+/);
-          const entry = await own(name.replace(/^type /, ""));
-          exported.set(as ?? name, { kind: m[1] || s.startsWith("type ") ? "type" : (entry?.kind ?? "value"), origin: entry?.origin });
+          await exportOwn([[name, as ?? name]], Boolean(m[1]) || s.startsWith("type "));
         }
       } else if ((m = text.match(/^export default (\w+)/))) {
         exported.set("default", (await own(m[1])) ?? { kind: "value" });

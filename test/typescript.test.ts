@@ -159,6 +159,23 @@ test("read takes @types/react's element attributes apart", async () => {
   }
 }, 60_000);
 
+// The model has no type-only name, so a list that names one is text, as
+// `export type { .. }` is: @types/node's `export { type AllowSharedBuffer, Buffer }`.
+test("read keeps an export list that names a type as text", async () => {
+  const file = join(fixture("typescript-export-types"), "buffer.d.ts");
+  writeFileSync(file, "type A = 1;\ndeclare const B: 2;\nexport { type A, B };\nexport { B as C };\n");
+  const ts = await open([file]);
+  try {
+    const { declarations: read } = await ts.read(file);
+    expect(read.slice(2)).toEqual([
+      { kind: "other", text: "export { type A, B };" },
+      { kind: "export", names: [["B", "C"]] },
+    ]);
+  } finally {
+    await ts.close();
+  }
+});
+
 // What it prints is erasable syntax only, TypeScript's `erasableSyntaxOnly`
 // (ADR 0206): types, which TypeScript checks as a .ts file's, and no
 // namespace of values, which it refuses to print.

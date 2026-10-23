@@ -211,7 +211,8 @@ function readStatements(statements, text) {
       }
       case SyntaxKind.ExportDeclaration: {
         const named = node.exportClause;
-        if (named?.kind !== SyntaxKind.NamedExports || node.isTypeOnly) {
+        // A list that's types, or names one, is text: the model has no type-only name.
+        if (named?.kind !== SyntaxKind.NamedExports || node.isTypeOnly || named.elements.some((e) => e.isTypeOnly)) {
           out.push({ kind: "other", text: sourceOf(node, text) });
           break;
         }
