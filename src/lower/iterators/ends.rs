@@ -174,6 +174,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         known: Std,
         call: Call<'_, 'tcx>,
         values: &mut std::vec::IntoIter<Expr>,
+        out: &mut Vec<Stmt>,
     ) -> R<Option<Expr>> {
         let Call {
             generic_args,
@@ -183,6 +184,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         } = call;
         let mut arg = || values.next().expect("rustc checked the arguments");
         Ok(Some(match known {
+            // Each's items, as `zip`'s argument's are (ADR 0528): of items
+            // with no destructor, which `a.zip(b)` drops where `b` runs out.
+            Std::IterSource(IterSource::Zip) => {
+                let (a, b) = (arg(), arg());
+                let held = [tys[0], tys[1]].map(|ty| self.iterable_item(ty));
+                if held
+                    .iter()
+                    .any(|&item| self.drops(item) != crate::lower::drops::Drops::Nothing)
+                {
+                    return Err(self.unsupported(span, "`std::iter::zip` of items with a destructor"));
+                }
+                let a = self.iterable_items(a, tys[0], span, out)?;
+                let b = self.iterable_items(b, tys[1], span, out)?;
+                Expr::call_helper("$lazyZip", vec![a, b])
+            }
             Std::IterSource(IterSource::Once) => Expr::array(vec![arg()]),
             Std::IterSource(IterSource::Empty) => Expr::array(vec![]),
             // Its value's drop too, which it runs when it's closed (ADR 0422);

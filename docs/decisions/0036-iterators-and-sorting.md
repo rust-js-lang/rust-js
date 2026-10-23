@@ -162,3 +162,11 @@ two items have none, `None`. `lt` and the rest are it against 0,
 `$iterCmp(..) < 0`, which `undefined` fails, as std's are `false` of it.
 Items with a destructor, which it doesn't drop as it compares them, are
 refused. Held by `test/corpus/iter_compare.rs`.
+
+## Amendment: `std::iter::zip`
+
+`std::iter::zip(a, b)`, `a.into_iter().zip(b)`, was refused (#117). It's
+`$lazyZip` of each's items as `zip`'s argument's are made (ADR 0528): an
+array's as it is, a B-tree's in order, a range's stepped, an `Option`'s
+`[]` or `[x]`. Of items with a destructor, which `zip` drops where one side
+runs out, it's refused. Held by `test/corpus/zip_function.rs`.

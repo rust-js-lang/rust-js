@@ -245,6 +245,8 @@ pub(super) enum IterSource {
     RepeatWith,
     Successors,
     FromFn,
+    /// `std::iter::zip(a, b)`, `a.into_iter().zip(b)`.
+    Zip,
 }
 
 /// Stepping through an iterator (ADR 0071): a local that `next()` is called
