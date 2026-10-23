@@ -555,8 +555,9 @@ impl Expr {
             ExprKind::Unary(_, a) => a.has_effects(),
             ExprKind::Binary(_, a, b) => a.has_effects() || b.has_effects(),
             ExprKind::Cond(a, b, c) => a.has_effects() || b.has_effects() || c.has_effects(),
-            // A number wrapped to its width, `BigInt.asIntN(64, n)`, or
-            // computed by `Math`, `Math.max(a, 0)`, but for `Math.random()`,
+            // A number wrapped to its width, `BigInt.asIntN(64, n)`, a
+            // registered symbol's, or one computed by `Math`, `Math.max(a,
+            // 0)`, but for `Math.random()`,
             // which steps its state: what its arguments do. Nothing the
             // program names shadows `Math`; that one's renamed, `Math$`.
             ExprKind::Call(callee, args)
@@ -565,6 +566,9 @@ impl Expr {
                     && match global.as_str() {
                         "BigInt" => matches!(name.as_str(), "asIntN" | "asUintN"),
                         "Math" => name != "random",
+                        // A registered symbol of its key, and the key of one,
+                        // `js::SymbolFor`'s, whose type says it is one (ADR 0634).
+                        "Symbol" => matches!(name.as_str(), "for" | "keyFor"),
                         _ => false,
                     } =>
             {

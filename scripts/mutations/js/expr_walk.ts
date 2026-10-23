@@ -116,4 +116,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^iter_next_back.rs$"],
     snapshots: true,
   },
+  {
+    name: "symbol-key-has-effects",
+    breaks: "a guarded arm's dead read of a registered symbol's key is kept, `Symbol.keyFor(ty);`",
+    file: "src/js/expr_walk.rs",
+    find: "                        \"Symbol\" => matches!(name.as_str(), \"for\" | \"keyFor\"),\n",
+    replace: "",
+    tests: ["test/lowering-symbols.test.ts", "-t", "a guarded arm of a registered symbol reads no key it doesn't use"],
+  },
 ];

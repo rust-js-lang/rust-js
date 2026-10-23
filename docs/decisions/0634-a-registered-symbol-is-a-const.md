@@ -172,3 +172,15 @@ as a constant (ADR 0619).
   `scripts/mutations/lower/std_impls.ts`,
   `scripts/mutations/lower/aggregates.ts` and
   `scripts/mutations/lower/mir/calls.ts`, `scripts/mutations/lower/mir/rvalues.ts`, `scripts/mutations/lower/mir/patterns.ts`.
+
+## Amendment: a registered symbol and its key do nothing (2026-10-23)
+
+`Symbol.for(key)` and `Symbol.keyFor(symbol)` have no effects
+(`Expr::has_effects`): a `js::SymbolFor`'s key is read only of a value its
+type says is a registered symbol, which `keyFor` can't throw of. So what
+nothing reads of one goes, as a guarded arm's key MIR reads for its guard
+did not, `Symbol.keyFor(ty);` twice in the arm. Found porting React's
+`getComponentNameFromType`. `test/lowering-symbols.test.ts`, "a guarded
+arm of a registered symbol reads no key it doesn't use"; mutation
+`symbol-key-has-effects`.
+

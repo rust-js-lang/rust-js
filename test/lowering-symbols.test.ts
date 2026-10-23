@@ -150,6 +150,31 @@ pub fn named(value: Option<&Unknown>) -> &'static str {
 
 // ADR 0634: the registry's symbol is made one way, `js::SymbolFor(key)`;
 // `js::symbol::r#for` is gone, an error that says so.
+// ADR 0634, amended: a guarded arm's pattern, which MIR reads the key of
+// for its guard, leaves no `Symbol.keyFor(ty);` of what nothing reads: the
+// registry's symbol and its key do nothing, of a value its type says is one.
+test("a guarded arm of a registered symbol reads no key it doesn't use", async () => {
+  const dir = fixture("registered-symbols-guarded");
+  writeFileSync(join(dir, "lib.rs"), `use js::{SymbolFor, Unknown};
+
+pub const A: SymbolFor = SymbolFor("a");
+pub const B: SymbolFor = SymbolFor("b");
+
+pub fn name(ty: Option<&Unknown>, flag: bool) -> u32 {
+    match SymbolFor::from_value(ty) {
+        Some(A) => 1,
+        Some(B) if flag => 2,
+        _ => 3,
+    }
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs()]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).not.toContain("keyFor");
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.name(Symbol.for("a"), false), lib.name(Symbol.for("b"), true), lib.name(Symbol.for("b"), false), lib.name(1, true)]).toEqual([1, 2, 3, 3]);
+});
+
 test("js::symbol::r#for is gone, an error naming js::SymbolFor", () => {
   const dir = fixture("symbol-for-gone");
   writeFileSync(join(dir, "lib.rs"), `pub fn app() -> &'static js::Symbol {
