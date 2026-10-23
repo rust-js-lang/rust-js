@@ -428,6 +428,7 @@ pub fn circle(radius: f64) -> &'static Circle {
 | `"this"` | `this` | a cast, unchecked |
 | `"instanceof X"` | `this instanceof X` | a cast's test |
 | `"this()"` | `this(..)` | calling a JS function value |
+| `"new this()"` | `new this(..)` | `js::new` |
 | `"typeof"` | `typeof this` | `js::type_of` |
 | `"!!"` | `!!this` | `js::truthy` |
 | `"\"\" +"` | `"" + this` | `js::concat_text` |

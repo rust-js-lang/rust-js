@@ -162,6 +162,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Expr::undefined()
             }
             (JsForm::CallThis, Some(this)) => Expr::call(this, args),
+            (JsForm::NewThis, Some(this)) => Expr::new_(this, args),
             (JsForm::InstanceOf(class), Some(this)) if args.is_empty() => {
                 Expr::bin(Op::InstanceOf, this, self.js_ref(&class))
             }

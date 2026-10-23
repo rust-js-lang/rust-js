@@ -210,4 +210,12 @@ export const mutations: Mutation[] = [
     replace: "        if false {\n",
     tests: ["test/rest-parameters.test.ts", "-t", "refused: imported"],
   },
+  {
+    name: "js-new-this-called",
+    breaks: "`js::new(f, ..)` is `f(..)`, a call, not `new f(..)`",
+    file: "src/lower/binding_calls.rs",
+    find: "            (JsForm::NewThis, Some(this)) => Expr::new_(this, args),\n",
+    replace: "            (JsForm::NewThis, Some(this)) => Expr::call(this, args),\n",
+    tests: ["test/js-object.test.ts", "-t", "new of a function value is JS's new"],
+  },
 ];

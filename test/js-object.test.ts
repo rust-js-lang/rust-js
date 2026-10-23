@@ -356,6 +356,36 @@ pub fn held() {
 `)).toContain("rust-js does not support values of type `dyn std::ops::Fn(&dyn js::Rest<dyn js::IntoUnknown>)` yet");
 });
 
+// ADR 0695: JS's `new` of a function value is the js crate's, of a value
+// of any shape, as TypeScript has it of an `any`'s: `js::new(js::unknown(f),
+// (a, b))` is `new f(a, b)`, its arguments a rest parameter's. A closure is
+// an arrow, which `new` throws of, a panic.
+test("new of a function value is JS's new", async () => {
+  const { js, lib, warnings } = await compiled("js-object-new", `use js::{IntoUnknown, Unknown};
+
+pub fn made(class: &Unknown, a: f64, rest: &[&dyn IntoUnknown]) -> (&'static Unknown, &'static Unknown, &'static Unknown) {
+    (js::new(class, ()), js::new(class, (a, "b")), js::new(class, rest))
+}
+
+pub fn arrow() -> bool {
+    let f = || 1;
+    std::panic::catch_unwind(|| js::new(js::unknown(&f), ())).is_err()
+}
+`);
+  expect(warnings).toEqual([]);
+  expect(js).toContain('return [new class$(), new class$(a, "b"), new class$(...rest)];');
+  class Thing {
+    args: unknown[];
+    constructor(...args: unknown[]) {
+      this.args = args;
+    }
+  }
+  const [none, two, spread] = lib.made(Thing, 1, ["x", 2]);
+  expect([none.args, two.args, spread.args]).toEqual([[], [1, "b"], ["x", 2]]);
+  expect(none).toBeInstanceOf(Thing);
+  expect(lib.arrow()).toBe(true);
+});
+
 // ADR 0694: TypeScript's `Function` is `&dyn Fn() -> Option<&'static
 // Unknown>`, one form everywhere: called of nothing, what it gives is any
 // value, as `js::Kind::Function` holds it and `Reflect` takes it.

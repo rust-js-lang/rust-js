@@ -905,6 +905,23 @@ export function describe(value) {
   `js::object::has_own_property.call(value, key)` is
   `Object.prototype.hasOwnProperty.call(value, key)`, a property of its own
   ([ADR 0615](../../decisions/0615-has-own-property-the-function.md)).
+- `js::new(value, arguments)` is `new value(..)`, its arguments a tuple,
+  `()` of none, or a slice spread, as a rest parameter's
+  ([ADR 0695](../../decisions/0695-new-of-a-function-value-is-jss-new.md)):
+
+```rust
+use js::Unknown;
+
+pub fn made(class: &Unknown, name: &str) -> &'static Unknown {
+    js::new(class, (name, 1))
+}
+```
+
+```js
+export function made(class$, name) {
+  return new class$(name, 1);
+}
+```
 - **A function is a value of any shape too**, a function item, a closure,
   a `fn` pointer or a `dyn Fn`: `js::unknown(&f)` is `f`, whose
   property `js::set` writes, here when its module loads, right after it

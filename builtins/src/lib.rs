@@ -452,6 +452,20 @@ pub fn get<K: PropertyKey + ?Sized>(this: &Unknown, key: &K) -> Option<&'static 
     unreachable!()
 }
 
+/// `new value(...arguments)`: what JS's `new` makes of a function, of a
+/// value of any shape, as TypeScript's `new` is of an `any`'s: a `fn` item,
+/// `js::new(js::unknown(&fake), ())`, or a function JS gives,
+/// `js::new(js::unknown(r#fn), (a, b))`; a closure is an arrow function,
+/// which JS throws a `TypeError` of, a panic, as of what's no constructor
+/// (ADR 0695). Its arguments are a rest parameter's, a tuple of them, `()`
+/// of none, or a slice spread.
+#[cfg_attr(rust_js, rust_js::link_name = "new this()")]
+#[cfg_attr(rust_js, rust_js::variadic)]
+#[allow(unused_variables)]
+pub fn new(this: &Unknown, arguments: impl Rest<dyn IntoUnknown>) -> &'static Unknown {
+    unreachable!()
+}
+
 /// `key in value`: whether an object has a property of that name, its own
 /// or its prototype's, as JS's `in` asks.
 #[cfg_attr(rust_js, rust_js::link_name = "in []")]
