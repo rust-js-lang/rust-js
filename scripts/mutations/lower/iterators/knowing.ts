@@ -70,8 +70,8 @@ export const mutations: Mutation[] = [
     name: "enumerate-back-unknown",
     breaks: "an `enumerate` of what knows its back and length isn't seen to know its back",
     file: "src/lower/iterators/knowing.rs",
-    find: "            return self.knows_its_back(source) && self.knows_its_length(source);\n",
-    replace: "            return false && self.knows_its_back(source) && self.knows_its_length(source);\n",
+    find: "            return (self.knows_its_back(source) || self.user_double_ended(source))\n",
+    replace: "            return false && (self.knows_its_back(source) || self.user_double_ended(source))\n",
     tests: ["test/corpus.test.ts", "-t", "^fuse_enumerate_ends.rs$"],
   },
   {
@@ -142,8 +142,8 @@ export const mutations: Mutation[] = [
     name: "own-size-hint-dropped",
     breaks: "the crate's iterator made a JS iterator isn't given its own `size_hint`, so generic code asks `(0, None)`",
     file: "src/lower/iterators/knowing.rs",
-    find: "        let hint = self.own_size_hint(ty, span)?;\n",
-    replace: "        let hint = None;\n",
+    find: "        let (next, boxed) = self.user_next(ty, trait_id, method, span)?;\n        let hint = self.own_size_hint(ty, span)?;\n",
+    replace: "        let (next, boxed) = self.user_next(ty, trait_id, method, span)?;\n        let hint = None;\n",
     tests: ["test/corpus.test.ts", "-t", "^adapter_size_hints.rs$"],
   },
   {
@@ -249,5 +249,13 @@ export const mutations: Mutation[] = [
     find: "            && method == \"flatMap\"\n",
     replace: "            && method == \"never\"\n",
     tests: ["test/corpus.test.ts", "-t", "^flatten_from_its_back.rs$"],
+  },
+  {
+    name: "user-iterator-backless",
+    breaks: "the crate's double-ended iterator, asked its back, is made without its `next_back`",
+    file: "src/lower/iterators/knowing.rs",
+    find: "            Some(double_ended) if back => Some(self.user_next(ty, double_ended, \"next_back\", span)?.0),\n",
+    replace: "            Some(_) if back => None,\n",
+    tests: ["test/corpus.test.ts", "-t", "^user_iterator_ends.rs$"],
   },
 ];

@@ -49,3 +49,16 @@ is given one that knows its back, and its `it.len()` is its `len()`.**
   iterator, a range's, an empty range's, a map's, and of one that's
   double-ended too, after stepping its back, and gives a variable's
   iterator on, against native Rust; a mutation of each part is caught.
+
+## Amendment: the crate's own, made knowing where it's asked
+
+The crate's iterator whose type is a `DoubleEndedIterator` or an
+`ExactSizeIterator` was a JS iterator of its `next` alone, so
+`enumerate().rev()` and `rposition` of one were refused (#165). Where its
+back or its length is asked, it's made knowing them,
+`user_iterator_knowing`: its `next_back`, and its length its own
+`size_hint`'s, which `$exactLen` checks is exact as std's `len()` does.
+`$rposition` of one steps it from its back, as std's `try_rfold` does.
+Where nothing asks, it's made as it was, and given as it was to generic
+code. A `map` of one whose `len()` is asked is refused still. Held by
+`test/corpus/user_iterator_ends.rs`.

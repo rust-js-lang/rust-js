@@ -254,6 +254,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `next_back` is its own: `rev()` of it is a JS iterator of that,
     /// `$iterator(it, spanDoubleEndedIterator_next_back)`, stepped from the
     /// back as Rust's is (ADR 0164).
+    /// Whether `ty` is an iterator of the crate's that's double-ended, by
+    /// its own `next_back`, which `user_iterator_knowing` gives it.
+    pub(in crate::lower) fn user_double_ended(&self, ty: ty::Ty<'tcx>) -> bool {
+        self.own_next_back(ty).is_ok_and(|back| back.is_some())
+    }
+
+    /// Whether `ty` is an iterator of the crate's that's an
+    /// `ExactSizeIterator`, its length its hint's.
+    pub(in crate::lower) fn user_exact_size(&self, ty: ty::Ty<'tcx>) -> bool {
+        self.is_user_iterator(ty)
+            && (self.recognition().exact_size_iterator()).is_some_and(|exact| self.has_user_impl(exact, ty.peel_refs()))
+    }
+
     pub(in crate::lower) fn own_next_back(&self, ty: ty::Ty<'tcx>) -> R<Option<DefId>> {
         if !self.is_user_iterator(ty) {
             return Ok(None);
