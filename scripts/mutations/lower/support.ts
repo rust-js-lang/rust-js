@@ -46,7 +46,7 @@ export const mutations: Mutation[] = [
     name: "generic-map-refused",
     breaks: "a hash map of a type parameter's keys is refused",
     file: "src/lower/support.rs",
-    find: "                let given = super::recognition::known_by_bounds(key) && !self.is_sorted(ty);\n",
+    find: "                let given = super::recognition::known_by_bounds(key);\n",
     replace: "                let given = false;\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_maps.rs$"],
   },
@@ -73,5 +73,13 @@ export const mutations: Mutation[] = [
     find: "            ty::Adt(..) if let Some(held) = self.transparent(ty) => return self.unsupported_in(held, seen),\n",
     replace: "",
     tests: ["test/diagnostics.test.ts", "-t", "a ManuallyDrop of what's refused"],
+  },
+  {
+    name: "btree-of-param-unsupported",
+    breaks: "a `BTreeMap` of a type parameter's keys is a type rust-js can't represent, refused where it's made",
+    file: "src/lower/support.rs",
+    find: "                let given = super::recognition::known_by_bounds(key);\n",
+    replace: "                let given = super::recognition::known_by_bounds(key) && !self.is_sorted(ty);\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_btree_keys.rs$"],
   },
 ];
