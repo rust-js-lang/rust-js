@@ -675,4 +675,12 @@ export const mutations: Mutation[] = [
     replace: "        if false && vec && (from_ty.peel_refs().is_str() || self.is_lang_adt(from_ty, LangItem::String)) {\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_from_items.rs$"],
   },
+  {
+    name: "catch-unwind-resumes",
+    breaks: "`catch_unwind(f)` is `resume_unwind(f)`",
+    file: "src/lower/recognition/calls.rs",
+    find: "                \"std::panic::catch_unwind\" => return Some(Some(Std::Unwind(UnwindOp::Catch))),\n",
+    replace: "                \"std::panic::catch_unwind\" => return Some(Some(Std::Unwind(UnwindOp::Resume))),\n",
+    tests: ["test/lowering-unwinds.test.ts", "-t", "getIODescription"],
+  },
 ];

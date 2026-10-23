@@ -66,4 +66,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^future_size_unwinds.rs$"],
   },
+  {
+    name: "panics-never-abort",
+    breaks: "a crate built with `-C panic=abort` is lowered as one whose panics unwind, so `catch_unwind` catches in it",
+    file: "src/main.rs",
+    find: "        self.panics_abort = config.opts.cg.panic == Some(rustc_target::spec::PanicStrategy::Abort);\n",
+    replace: "        self.panics_abort = false;\n",
+    tests: ["test/lowering-unwinds.test.ts", "-t", "unwinding is refused where panics abort"],
+  },
 ];

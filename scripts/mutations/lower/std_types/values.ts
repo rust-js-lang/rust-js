@@ -650,4 +650,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^boxed_option_results.rs$"],
   },
+  {
+    name: "unwind-of-a-destructor",
+    breaks: "`catch_unwind` of a closure that holds a value with a destructor, and `resume_unwind` of one, are refused",
+    file: "src/lower/std_types/values.rs",
+    find: "                    | Std::Unwind(_)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "catch_unwind_drops"],
+  },
 ];

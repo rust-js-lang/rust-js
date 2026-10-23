@@ -849,10 +849,10 @@ fn try_catches(body: &mut Vec<Stmt>) {
     // f(); } catch {}`: the call, what it threw dropped.
     for stmt in body.iter_mut() {
         if let StmtKind::Expr(e) = &stmt.kind
-            && let Some(call) = e.tried_call()
+            && let Some((call, _)) = e.caught()
         {
-            let tried = vec![StmtKind::Expr(call.clone()).at(stmt.span)];
-            stmt.kind = StmtKind::TryCatch(tried, None, Vec::new());
+            let tried = vec![StmtKind::Expr(call).at(stmt.span)];
+            stmt.kind = StmtKind::TryCatch(js::applied_tried(tried), None, Vec::new());
         }
         // Whether it threw, returned, `match f() { Ok(_) => false, Err(_)
         // => true }` or `f().is_err()`, is `try { f(); return false; }
@@ -862,11 +862,11 @@ fn try_catches(body: &mut Vec<Stmt>) {
         {
             let span = stmt.span;
             let tried = vec![
-                StmtKind::Expr(call.clone()).at(span),
+                StmtKind::Expr(call).at(span),
                 StmtKind::Return(Some(Expr::bool(!of_throw))).at(span),
             ];
             let caught = vec![StmtKind::Return(Some(Expr::bool(of_throw))).at(span)];
-            stmt.kind = StmtKind::TryCatch(tried, None, caught);
+            stmt.kind = StmtKind::TryCatch(js::applied_tried(tried), None, caught);
         }
     }
     let mut i = 0;
@@ -900,7 +900,21 @@ fn try_catch(made: &Stmt, tested: &Stmt, before: &[Stmt], rest: &[Stmt]) -> Opti
     let StmtKind::Const(result, value) = &made.kind else {
         return None;
     };
-    let call = value.tried_call()?;
+    let (call, caught) = value.caught()?;
+    // A `?:` of it returned, `unwrap_or(d)`'s, is the `if` of its arms,
+    // each returned (ADR 0660).
+    let arms;
+    let tested = match &tested.kind {
+        StmtKind::Return(Some(Expr {
+            kind: ExprKind::Cond(test, then, otherwise),
+            ..
+        })) => {
+            let returned = |e: &Expr| vec![StmtKind::Return(Some(e.clone())).at(tested.span)];
+            arms = StmtKind::If((**test).clone(), returned(then), Some(returned(otherwise))).at(tested.span);
+            &arms
+        }
+        _ => tested,
+    };
     let StmtKind::If(test, then, otherwise) = &tested.kind else {
         return None;
     };
@@ -964,7 +978,27 @@ fn try_catch(made: &Stmt, tested: &Stmt, before: &[Stmt], rest: &[Stmt]) -> Opti
         return None;
     }
     let span = made.span;
-    let caught = |tried: Vec<Stmt>| StmtKind::TryCatch(tried, error.clone(), err.to_vec()).at(span);
+    // What unwound is the payload `$unwound` makes of what was thrown: the
+    // `Err`'s binding, of the `catch`'s, `thrown` (ADR 0660).
+    let (binding, in_catch) = match (caught, &error) {
+        (js::Caught::Unwound, Some(payload)) => {
+            const THROWN: &str = "thrown";
+            if payload == THROWN || js::mentions_in(err, THROWN) > 0 {
+                return None;
+            }
+            let unwound = Expr::call_helper("$unwound", vec![Expr::var(THROWN)]);
+            let made = StmtKind::Const(payload.clone(), unwound).at(span);
+            (
+                Some(THROWN.to_string()),
+                std::iter::once(made).chain(err.iter().cloned()).collect(),
+            )
+        }
+        _ => (error.clone(), err.to_vec()),
+    };
+    // A closure's body, of `catch_unwind(|| ..)`, its value returned: in
+    // the `try`, its `return`s the function's (ADR 0660).
+    let caught =
+        |tried: Vec<Stmt>| StmtKind::TryCatch(js::applied_tried(tried), binding.clone(), in_catch.clone()).at(span);
     let alone = StmtKind::Expr(call.clone()).at(span);
     // What can't throw: what makes values, and what leaves with one.
     let cannot_throw = |stmt: &Stmt| match &stmt.kind {
@@ -1008,7 +1042,7 @@ fn try_catch(made: &Stmt, tested: &Stmt, before: &[Stmt], rest: &[Stmt]) -> Opti
 /// threw, a `match` of its `Result` that gives `true` of the one and
 /// `false` of the other, or its `is_err()`, `is_ok()`. The call, and the
 /// test's value where it threw (ADR 0639).
-fn threw(e: &Expr) -> Option<(&Expr, bool)> {
+fn threw(e: &Expr) -> Option<(Expr, bool)> {
     let ExprKind::Binary(op @ (js::Op::Eq | js::Op::Ne), tag, variant) = &e.kind else {
         return None;
     };
@@ -1018,7 +1052,7 @@ fn threw(e: &Expr) -> Option<(&Expr, bool)> {
     if field != "TAG" || (s != "Ok" && s != "Err") {
         return None;
     }
-    Some((of.tried_call()?, (*op == js::Op::Eq) == (s == "Err")))
+    Some((of.caught()?.0, (*op == js::Op::Eq) == (s == "Err")))
 }
 
 /// `if (x == null) { x = e; }` is `x = x ?? e`, printed `x ??= e`: the

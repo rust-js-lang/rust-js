@@ -1,0 +1,61 @@
+// Mutations of src/runtime/unwind.js (ADR 0660).
+import type { Mutation } from "../../mutations";
+
+export const mutations: Mutation[] = [
+  {
+    name: "panic-any-error",
+    breaks: "a `RangeError` JS threw is a panic, its payload its message, not the `&JsError` it is",
+    file: "src/runtime/unwind.js",
+    find: "  return e instanceof $Unwinding || (e instanceof Error && e.constructor === Error);\n",
+    replace: "  return e instanceof $Unwinding || e instanceof Error;\n",
+    tests: ["test/lowering-unwinds.test.ts", "-t", "a payload is a panic's message"],
+  },
+  {
+    name: "js-throw-a-message",
+    breaks: "what JS threw unwinds as a panic's message, so a downcast to `&JsError` finds none",
+    file: "src/runtime/unwind.js",
+    find: "  return { value: e, impl: $jsThrown };\n",
+    replace: "  return { value: String(e), impl: $panicMessage };\n",
+    tests: ["test/lowering-unwinds.test.ts", "-t", "a payload is a panic's message"],
+  },
+  {
+    name: "resumed-js-throw-wrapped",
+    breaks: "`resume_unwind` of what JS threw throws an `Error` of its text, not what was thrown",
+    file: "src/runtime/unwind.js",
+    find: "  if (id === \"&js::JsError\") {\n    return payload.value;\n",
+    replace: "  if (id === \"&js::JsError\") {\n    return new Error(String(payload.value));\n",
+    tests: ["test/lowering-unwinds.test.ts", "-t", "a payload is a panic's message"],
+  },
+  {
+    name: "resumed-text-not-a-panic",
+    breaks: "`resume_unwind` of a panic's message throws a `Box<dyn Any>`, not the panic",
+    file: "src/runtime/unwind.js",
+    find: "    return new Error(payload.value);\n",
+    replace: "    return new $Unwinding(payload);\n",
+    tests: ["test/lowering-unwinds.test.ts", "-t", "resume_unwind throws what unwound"],
+  },
+  {
+    name: "resumed-payload-lost",
+    breaks: "a payload resumed is caught as a panic of `Box<dyn Any>`, so its downcast to `i32` fails",
+    file: "src/runtime/unwind.js",
+    find: "  if (e instanceof $Unwinding) {\n    return e.payload;\n",
+    replace: "  if (false) {\n    return e.payload;\n",
+    tests: ["test/lowering-unwinds.test.ts", "-t", "resume_unwind throws what unwound"],
+  },
+  {
+    name: "caught-unwound-raw",
+    breaks: "`catch_unwind`'s `Err` holds what was thrown, not its payload",
+    file: "src/runtime/unwind.js",
+    find: "    return { TAG: \"Err\", _0: $unwound(e) };\n",
+    replace: "    return { TAG: \"Err\", _0: e };\n",
+    tests: ["test/corpus.test.ts", "-t", "catch_unwind_payloads"],
+  },
+  {
+    name: "panic-message-not-a-str",
+    breaks: "a panic's message isn't a `&str`, so `downcast_ref::<&str>()` finds none",
+    file: "src/runtime/unwind.js",
+    find: "const $panicMessage = { typeId: () => \"&str\" };\n",
+    replace: "const $panicMessage = { typeId: () => \"str\" };\n",
+    tests: ["test/lowering-unwinds.test.ts", "-t", "a payload is a panic's message"],
+  },
+];

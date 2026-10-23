@@ -121,6 +121,41 @@ fn block_of(stmt: &Stmt, whole: &[Stmt], tail: bool) -> Option<Vec<Stmt>> {
     Some(body)
 }
 
+/// What a `try` holds, `tried`, a block of its own, with a closure of
+/// nothing called where it's made, `catch_unwind(|| ..)`'s (ADR 0660),
+/// as its body: `return (() => { .. })();` its body, each `return` of it
+/// the function's, as returning what it returns is, where it never ends
+/// without one, as a closure of a value doesn't; and `(() => { .. })();`
+/// first, its body where it never returns. Not of an async closure, whose
+/// value is a promise.
+pub fn applied_tried(mut tried: Vec<Stmt>) -> Vec<Stmt> {
+    let body_of = |value: &Expr| match &value.kind {
+        ExprKind::Call(callee, args) if args.is_empty() => match &callee.kind {
+            ExprKind::Arrow(params, body) if params.is_empty() => Some(body.clone()),
+            _ => None,
+        },
+        _ => None,
+    };
+    match tried.first().map(|s| &s.kind) {
+        Some(StmtKind::Return(Some(value))) if tried.len() == 1 => {
+            match body_of(value).filter(|body| body.last().is_some_and(ends)) {
+                Some(body) => body,
+                None => tried,
+            }
+        }
+        // What its body declares is named apart from the function's other
+        // names, as lowering names each, until reclaimed (ADR 0352).
+        Some(StmtKind::Expr(value)) => match body_of(value) {
+            Some(body) if !returns(&body).0 => {
+                tried.splice(0..1, body);
+                tried
+            }
+            _ => tried,
+        },
+        _ => tried,
+    }
+}
+
 /// Whether `stmts` return, but in a closure of their own, and whether a
 /// `return` gives a value.
 pub fn returns(stmts: &[Stmt]) -> (bool, bool) {

@@ -1,7 +1,9 @@
 # 0026. Tests are Rust's `#[test]`, run by `bun test` in happy-dom
 
 Status: Accepted. Extends [0012](0012-panics-and-runtime-helpers.md) to
-`panic!` and the assertion macros.
+`panic!` and the assertion macros. Amended by
+[0660](0660-catch-unwind-catches-what-js-throws.md): `$shouldPanic` asks
+`$isPanic` what a panic is.
 
 Case: N, C ([0262](0262-when-rust-and-js-disagree.md)).
 

@@ -41,6 +41,17 @@ struct Pass {
     held: HashSet<(LocalModId, LocalModId, String, bool, DefId)>,
 }
 
+/// How the crate is built, as its command asks.
+pub struct Built {
+    /// For others to use, a library (ADR 0100).
+    pub library: bool,
+    /// Given std's bodies to lower (ADR 0561).
+    pub std_bodies: bool,
+    /// Asked to abort on a panic, `-C panic=abort`, which rust-js unwinds
+    /// (ADR 0090): unwinding is refused of it (ADR 0660).
+    pub panics_abort: bool,
+}
+
 /// Lower every function, grouped by module. Reports all unsupported
 /// features as rustc errors.
 pub fn lower_crate<'tcx>(
@@ -49,9 +60,13 @@ pub fn lower_crate<'tcx>(
     initializers: &[Body<'tcx>],
     serde_attrs: &super::SerdeAttributes,
     dependencies: &crate::library::Dependencies,
-    export_library: bool,
-    std_bodies: bool,
+    built: Built,
 ) -> Option<Unlinked> {
+    let Built {
+        library: export_library,
+        std_bodies,
+        panics_abort,
+    } = built;
     let sources = super::sources::CapturedSources::new(tcx);
     let AnalyzedCrate {
         bodies,
@@ -217,6 +232,7 @@ pub fn lower_crate<'tcx>(
     let crate_facts = CrateFacts {
         foreign: &foreign,
         library: export_library,
+        panics_abort,
         sources: &sources,
         mutated: &mutated,
         counted: &counted,

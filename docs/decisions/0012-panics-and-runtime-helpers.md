@@ -1,7 +1,9 @@
 # 0012. Panics throw, via runtime helpers emitted on demand
 
 Status: Accepted, and its helpers' place replaced by [0103](0103-runtime-package.md): a module imports them from `@rust-js/runtime`, not each its own. `panic!` and the assertion macros followed, with the same
-`throw new Error(..)`: see [0026](0026-testing.md).
+`throw new Error(..)`: see [0026](0026-testing.md). Amended by
+[0660](0660-catch-unwind-catches-what-js-throws.md): Rust code catches a panic,
+and what JS throws, with `catch_unwind`; a panic is what `$isPanic` says.
 
 Case: C, D ([0262](0262-when-rust-and-js-disagree.md)).
 

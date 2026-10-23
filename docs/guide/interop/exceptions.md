@@ -2,7 +2,8 @@
 
 Rust has two kinds of failure, and each is what JS would make of it: a
 `Result` is a value you return, and a panic is a thrown `Error`. A JS
-exception reaches Rust as an `Err`, where you ask for one, or as a panic.
+exception reaches Rust as an `Err`, where you ask for one, or unwinds it
+as a panic does, which `catch_unwind` catches.
 
 Every example was compiled by rust-js as it is today. The JS shown is what
 it writes, without its header comment and source-map line.
@@ -16,7 +17,7 @@ it writes, without its header comment and source-map line.
 - [`RefCell` borrows](#refcell-borrows)
 - [Arithmetic and indexing](#arithmetic-and-indexing)
 - [Assertions, `unreachable!` and `todo!`](#assertions-unreachable-and-todo)
-- [JS catches a panic; Rust can't](#js-catches-a-panic-rust-cant)
+- [Catch an unwind: `catch_unwind`](#catch-an-unwind-catch_unwind)
 - [Exiting the process](#exiting-the-process)
 
 ## A panic is a thrown `Error`
@@ -202,8 +203,11 @@ import { loadConfig } from "./config.js";
 import { $byteLen, $trim, $try, $unwrapOk } from "@rust-js/runtime";
 
 export function configOrDefault(path) {
-  const result = $try(() => loadConfig(path));
-  return result.TAG === "Ok" ? result._0 : "";
+  try {
+    return loadConfig(path);
+  } catch {
+    return "";
+  }
 }
 
 export function config(path) {
@@ -478,7 +482,7 @@ export function check(items, expected) {
   implemented`.
 - `debug_assert!` is checked, as `assert!` is.
 
-## JS catches a panic; Rust can't
+## Catch an unwind: `catch_unwind`
 
 A panic is an ordinary `Error`, so JS that calls Rust catches it:
 
@@ -494,11 +498,113 @@ try {
 
 An uncaught one is the host's error: a stack trace in the console, and in
 Node exit code 1, where native Rust prints `thread 'main' panicked at` and
-exits with 101. Rust code can't catch a panic: `std::panic::catch_unwind`
-is refused, and so is `std::panic::set_hook`:
+exits with 101.
+
+Rust catches an unwind with `std::panic::catch_unwind`, and an unwind is
+whatever JS throws through your Rust: a panic, or what a getter, a
+binding or a callback threw ([ADR 0660](../../decisions/0660-catch-unwind-catches-what-js-throws.md)).
+Where its `Result` is matched, or its `unwrap_or` returned, it's JS's
+`try`, the closure's body in it:
+
+```rust
+use js::{JsError, Kind, Unknown};
+use std::panic;
+
+pub fn url(value: &Unknown) -> String {
+    panic::catch_unwind(|| match js::get(value, "url").map(js::classify) {
+        Some(Kind::String(url)) => url.to_string(),
+        _ => String::new(),
+    })
+    .unwrap_or_default()
+}
+
+pub fn item(items: &[u32], at: usize) -> String {
+    match panic::catch_unwind(|| items[at]) {
+        Ok(item) => item.to_string(),
+        Err(payload) => match payload.downcast_ref::<String>() {
+            Some(message) => message.clone(),
+            None => "a panic".to_string(),
+        },
+    }
+}
+
+pub fn text(value: &Unknown) -> String {
+    match panic::catch_unwind(|| js::concat_text(value).unwrap()) {
+        Ok(text) => text,
+        Err(payload) => {
+            if payload.downcast_ref::<&'static JsError>().is_some_and(|error| error.name() == "TypeError") {
+                return String::new();
+            }
+            panic::resume_unwind(payload)
+        }
+    }
+}
+```
+
+```js
+import { $index, $panicMessage, $unwinding, $unwound } from "@rust-js/runtime";
+
+export function url(value) {
+  try {
+    const url = value.url;
+    if (typeof url === "string") {
+      return url;
+    }
+    return "";
+  } catch {
+    return "";
+  }
+}
+
+export function item(items, at) {
+  try {
+    const item = $index(items, at);
+    return String(item);
+  } catch (thrown) {
+    const payload = $unwound(thrown);
+    const message =
+      payload.impl.typeId() === "alloc::string::String" || payload.impl === $panicMessage
+        ? payload.value
+        : undefined;
+    if (message != null) {
+      return message;
+    }
+    return "a panic";
+  }
+}
+
+export function text(value) {
+  try {
+    return "" + value;
+  } catch (thrown) {
+    const payload = $unwound(thrown);
+    const option = payload.impl.typeId() === "&js::JsError" ? payload.value : undefined;
+    if (option != null && option.name === "TypeError") {
+      return "";
+    }
+    throw $unwinding(payload);
+  }
+}
+```
+
+- **The payload is a `Box<dyn Any + Send>`**: a panic's message, which
+  downcasts as a `&str` and as a `String` both, as JS doesn't keep which
+  Rust's was; or what JS threw, a `&'static JsError`. A thrown `Error` of
+  JS's own constructor, `new Error(..)`, is a panic, whoever threw it.
+- **`resume_unwind(payload)` throws it again**: what JS threw, itself; a
+  panic's message, its panic; any other payload, an `Error` that a
+  `catch_unwind` gives back as it was.
+- **What it unwinds through is dropped** before `catch_unwind` returns,
+  as [above](#unwinding-runs-drop). rustc checks `UnwindSafe`;
+  `AssertUnwindSafe(|| ..)` is the closure it holds.
+- **A future's panic is its promise's**: `catch_unwind` of a closure that
+  makes one is `Ok` of it, and the panic is thrown where it's awaited.
+- **Refused**: `std::panic::set_hook` and `take_hook`, as rust-js has no
+  hook, and `catch_unwind` in a crate whose panics abort, `panic =
+  "abort"`, as rust-js's always unwind:
 
 ```text
-error: rust-js does not support calling `std::panic::catch_unwind` yet
+error: rust-js does not support unwinding where a panic aborts, `panic = "abort"`: rust-js's panics unwind yet
 ```
 
 Return a `Result` for a failure the caller handles.

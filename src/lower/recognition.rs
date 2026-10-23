@@ -41,6 +41,7 @@ use super::std_types::rc::RcOp;
 use super::std_types::slice::{SliceOp, SortWith};
 use super::std_types::text::{StringEdit, TextOp};
 use super::std_types::uninit::UninitOp;
+use super::std_types::unwind::UnwindOp;
 use rustc_ast::Mutability;
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_hir::def::DefKind;
@@ -185,6 +186,8 @@ pub(super) enum Std {
     Pin(PinOp),
     /// `TypeId`s and a `dyn Any`'s downcasts (ADR 0331).
     Any(AnyOp),
+    /// Unwinding: `catch_unwind` and `resume_unwind` (ADR 0660).
+    Unwind(UnwindOp),
     /// The process a program runs in, Node's (ADR 0391): `env::args()`.
     Process(ProcessOp),
     /// memchr's searches, of the crate rustc builds (ADR 0529).

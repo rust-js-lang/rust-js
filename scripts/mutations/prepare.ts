@@ -174,8 +174,8 @@ export const mutations: Mutation[] = [
     name: "threw-the-other-way",
     breaks: "`is_err()` is `try { f(); return true; } catch { return false; }`, true where it didn't throw",
     file: "src/prepare.rs",
-    find: "    Some((of.tried_call()?, (*op == js::Op::Eq) == (s == \"Err\")))\n",
-    replace: "    Some((of.tried_call()?, (*op == js::Op::Eq) == (s == \"Ok\")))\n",
+    find: "    Some((of.caught()?.0, (*op == js::Op::Eq) == (s == \"Err\")))\n",
+    replace: "    Some((of.caught()?.0, (*op == js::Op::Eq) == (s == \"Ok\")))\n",
     tests: ["test/bindings.test.ts", "-t", "concat_text of any value"],
   },
   {
@@ -359,8 +359,8 @@ export const mutations: Mutation[] = [
     "name": "ignored-try-kept",
     "breaks": "an ignored `$try(() => f())`, `let _ = f();`, stays the helper, not `try { f(); } catch {}`",
     "file": "src/prepare.rs",
-    "find": "            && let Some(call) = e.tried_call()\n",
-    "replace": "            && let Some(call) = e.tried_call().filter(|_| false)\n",
+    "find": "            && let Some((call, _)) = e.caught()\n",
+    "replace": "            && let Some((call, _)) = e.caught().filter(|_| false)\n",
     "tests": ["test/lowering-bindings.test.ts", "-t", "ignored result of a call"]
   },
   {
@@ -628,5 +628,29 @@ export const mutations: Mutation[] = [
     find: "        if function.noinline {\n",
     replace: "        if false {\n",
     tests: ["test/emission.test.ts", "-t", "inline\\(never\\)"],
+  },
+  {
+    name: "returned-unwrap-or-tried",
+    breaks: "a throwing call's `unwrap_or(d)` returned is `$try` and its `TAG`, not `try { return f(); } catch { return d; }`",
+    file: "src/prepare.rs",
+    find: "            arms = StmtKind::If((**test).clone(), returned(then), Some(returned(otherwise))).at(tested.span);\n            &arms\n",
+    replace: "            arms = StmtKind::If((**test).clone(), returned(then), Some(returned(otherwise))).at(tested.span);\n            _ = &arms;\n            tested\n",
+    tests: ["test/lowering-bindings.test.ts", "-t", "unwrap_or of a throwing call"],
+  },
+  {
+    name: "unwound-caught-raw",
+    breaks: "a `catch_unwind`'s `Err` arm, written in a `catch`, reads what was thrown as its payload",
+    file: "src/prepare.rs",
+    find: "        (js::Caught::Unwound, Some(payload)) => {\n",
+    replace: "        (js::Caught::Unwound, Some(payload)) if false => {\n",
+    tests: ["test/lowering-unwinds.test.ts", "-t", "a payload is a panic's message"],
+  },
+  {
+    name: "thrown-shadowed",
+    breaks: "a `catch_unwind`'s `catch (thrown)` hides a `thrown` its `Err` arm reads",
+    file: "src/prepare.rs",
+    find: "            if payload == THROWN || js::mentions_in(err, THROWN) > 0 {\n",
+    replace: "            if payload == THROWN {\n",
+    tests: ["test/lowering-unwinds.test.ts", "-t", "a payload is a panic's message"],
   },
 ];
