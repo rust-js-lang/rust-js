@@ -597,7 +597,7 @@ export function text(value) {
     return "" + value;
   } catch (thrown) {
     const payload = $unwound(thrown);
-    const option = payload.impl.typeId() === "&js::JsError" ? payload.value : undefined;
+    const option = payload.impl.typeId() === "&js::JsError" ? payload.value : payload.error;
     if (option != null && option.name === "TypeError") {
       return "";
     }
@@ -609,9 +609,11 @@ export function text(value) {
 - **The payload is a `Box<dyn Any + Send>`**: a panic's message, which
   downcasts as a `&str` and as a `String` both, as JS doesn't keep which
   Rust's was; or what JS threw, a `&'static JsError`. A thrown `Error` of
-  JS's own constructor, `new Error(..)`, is a panic, whoever threw it.
-- **`resume_unwind(payload)` throws it again**: what JS threw, itself; a
-  panic's message, its panic; any other payload, an `Error` that a
+  JS's own constructor, `new Error(..)`, is a panic, whoever threw it, and
+  what JS threw too: its message downcasts as a `&str` and a `String`, and
+  the `Error` itself, its `stack`, as a `&JsError` ([ADR 0692](../../decisions/0692-a-thrown-error-is-a-panic-and-what-js-threw.md)).
+- **`resume_unwind(payload)` throws it again**: a thrown `Error` or what
+  JS threw, itself; text, its panic; any other payload, an `Error` that a
   `catch_unwind` gives back as it was.
 - **What it unwinds through is dropped** before `catch_unwind` returns,
   as [above](#unwinding-runs-drop). The payload drops nothing, a panic's

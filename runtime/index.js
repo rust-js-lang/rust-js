@@ -10504,21 +10504,26 @@ export class $Unwinding extends Error {
   }
 }
 
-// What unwound, of `e`, thrown: a payload thrown as it is, a panic's
-// message, or what JS threw.
+// What unwound, of `e`, thrown: a payload thrown as it is; a panic's
+// message, and the `Error` it was, what JS threw too (ADR 0692); or what
+// JS threw.
 export function $unwound(e) {
   if (e instanceof $Unwinding) {
     return e.payload;
   }
   if ($isPanic(e)) {
-    return { value: e.message, impl: $panicMessage };
+    return { value: e.message, impl: $panicMessage, error: e };
   }
   return { value: e, impl: $jsThrown };
 }
 
-// What's thrown to unwind with `payload`: what JS threw, itself; a panic of
-// text, its `Error`; any other, in a `$Unwinding`.
+// What's thrown to unwind with `payload`: a panic's `Error`, its message
+// as it was, or what JS threw, itself; a panic of text, its `Error`; any
+// other, in a `$Unwinding`.
 export function $unwinding(payload) {
+  if (payload.error && payload.value === payload.error.message) {
+    return payload.error;
+  }
   const id = payload.impl.typeId();
   if (id === "&js::JsError") {
     return payload.value;

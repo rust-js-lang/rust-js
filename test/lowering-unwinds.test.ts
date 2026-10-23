@@ -306,8 +306,9 @@ pub fn rethrown(value: Option<&Unknown>) -> String {
     return n * 2;
   };
   // A `RangeError` is what JS threw; an `Error` of JS's own constructor, a
-  // panic's form, is a panic, whoever threw it.
-  expect([lib.fromJs(2), lib.fromJs(-1), lib.fromJs(0)]).toEqual(["4", "RangeError: negative", "a panic, zero"]);
+  // panic's form, is a panic, whoever threw it, and what JS threw too
+  // (ADR 0692): the `&JsError` downcast, tried first, finds it.
+  expect([lib.fromJs(2), lib.fromJs(-1), lib.fromJs(0)]).toEqual(["4", "RangeError: negative", "Error: zero"]);
   delete g.risky;
   // What JS threw goes on as itself.
   const symbol = Symbol("s");
@@ -319,6 +320,75 @@ pub fn rethrown(value: Option<&Unknown>) -> String {
   }
   expect(caught).toBeInstanceOf(TypeError);
   expect(lib.rethrown("text")).toBe("text");
+});
+
+// A thrown `Error` of JS's own constructor, a panic's form, is a panic and
+// what JS threw both (ADR 0692): its payload downcasts as its message, a
+// `&str` and a `String`, and as the `&JsError` it is, whose `stack` React's
+// `catch (sample) { .. sample.stack .. }` reads; `resume_unwind` of it
+// throws the same `Error` again. A panic's JS stays `throw new Error(..)`.
+test("a thrown Error answers both downcasts", async () => {
+  const { js, dir } = compiled("unwind-error-both", `use js::JsError;
+use std::panic::{catch_unwind, resume_unwind};
+
+#[cfg_attr(rust_js, rust_js::link_name = "globalThis.render")]
+fn render() -> u32 {
+    unreachable!()
+}
+
+pub fn sample_stack() -> Option<String> {
+    let Err(sample) = catch_unwind(render) else {
+        return None;
+    };
+    let message = sample.downcast_ref::<&str>().copied().unwrap_or("none");
+    let owned = sample.downcast_ref::<String>().cloned().unwrap_or_default();
+    let error = sample.downcast_ref::<&'static JsError>()?;
+    Some(format!("{message}|{owned}|{}|{}", error.message(), error.stack()?.contains(message)))
+}
+
+pub fn is_error(n: u32) -> bool {
+    catch_unwind(|| if n > 1 { panic!("big {n}") } else { n })
+        .err()
+        .is_some_and(|payload| payload.is::<&JsError>())
+}
+
+pub fn boxed(n: u32) -> String {
+    match catch_unwind(|| if n > 1 { panic!("big {n}") } else { n }) {
+        Ok(n) => n.to_string(),
+        Err(payload) => match payload.downcast::<&JsError>() {
+            Ok(error) => error.message(),
+            Err(_) => "not an Error".to_string(),
+        },
+    }
+}
+
+pub fn rethrown() -> u32 {
+    match catch_unwind(render) {
+        Ok(n) => n,
+        Err(payload) => resume_unwind(payload),
+    }
+}
+`);
+  expect(js).toContain('throw new Error(`big ${n}`);');
+  const lib = await import(join(dir, "lib.js"));
+  const g = globalThis as Record<string, unknown>;
+  const thrown = new Error("no props");
+  g.render = () => {
+    throw thrown;
+  };
+  expect(lib.sampleStack()).toBe("no props|no props|no props|true");
+  expect([lib.isError(1), lib.isError(2)]).toEqual([false, true]);
+  expect([lib.boxed(1), lib.boxed(3)]).toEqual(["1", "big 3"]);
+  let caught: unknown;
+  try {
+    lib.rethrown();
+  } catch (e) {
+    caught = e;
+  }
+  expect(caught).toBe(thrown);
+  g.render = () => 7;
+  expect([lib.sampleStack(), lib.rethrown()]).toEqual([undefined, 7]);
+  delete g.render;
 });
 
 // `resume_unwind` throws its payload again: a panic's message, a panic of
@@ -344,6 +414,10 @@ pub fn number() -> i32 {
 
 pub fn uncaught() {
     panic::resume_unwind(Box::new(5i32));
+}
+
+pub fn text() {
+    panic::resume_unwind(Box::new(String::from("as text")));
 }
 
 fn made(n: u32) -> impl FnOnce() -> u32 {
@@ -408,6 +482,8 @@ pub fn counted(n: u32) -> u32 {
   expect(() => lib.again(5)).toThrow(new Error("big 5"));
   expect(lib.number()).toBe(5);
   expect(() => lib.uncaught()).toThrow("Box<dyn Any>");
+  // Text resumed is the panic of it, an `Error` of JS's own constructor.
+  expect(() => lib.text()).toThrow(new Error("as text"));
   expect([lib.counted(1), lib.counted(5)]).toEqual([1, 11]);
   // What makes the closure isn't caught, as it runs before `catch_unwind`.
   expect([lib.given(2), lib.given(3)]).toEqual([2, 0]);
