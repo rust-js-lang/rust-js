@@ -175,9 +175,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .map(|e| self.js_span(e.span))
             .collect();
         // Where each call of a binding that reads a property is.
-        let getters: Vec<js::Span> = (self.thir.exprs.iter())
+        let getters: Vec<js::Span> = (self.frame.thir.exprs.iter())
             .filter(|e| {
-                matches!(e.kind, thir::ExprKind::Call { fun, .. } if matches!(self.thir[fun].ty.kind(),
+                matches!(e.kind, thir::ExprKind::Call { fun, .. } if matches!(self.frame.thir[fun].ty.kind(),
                     ty::FnDef(def_id, _) if bindings::reads_a_property(self.tcx, *def_id)))
             })
             .map(|e| self.js_span(e.span))
