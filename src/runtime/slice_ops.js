@@ -84,9 +84,17 @@ function $copyWithin(v, start, end, dest) {
   v.copyWithin(dest, start, end);
 }
 
-// `is_sorted_by(f)`: `f` of each two in a row, `true` for all.
-function $isSortedBy(v, f) {
-  for (let i = 1; i < v.length; i++) if (!f(v[i - 1], v[i])) return false;
+// `is_sorted_by(f)` of a slice's or an iterator's items: `f` of each two
+// in a row, `true` for all. It stops at the first `false`, as Rust's does,
+// so an iterator's later items aren't made.
+function $isSortedBy(items, f) {
+  let first = true;
+  let last;
+  for (const item of items) {
+    if (!first && !f(last, item)) return false;
+    first = false;
+    last = item;
+  }
   return true;
 }
 

@@ -145,12 +145,14 @@ which the numbers' sum is what's made of them:
 
 ## Amendment: `is_sorted()`
 
-`is_sorted()` of a slice or an iterator was refused (#117). It's
-`$isSorted(items)`, each item at most the next by `<=` where that's their
-`PartialOrd`'s, a number's, a float's, which NaN fails, or a `bool`'s;
-else given their `partial_cmp`, a `char`'s by code point, a derived one's.
-It stops at the first pair out of order, so an iterator's later items
-aren't made. Held by `test/corpus/is_sorted_items.rs`.
+`is_sorted()` of an iterator was refused (#117). It's a slice's, one
+answer, `is_sorted_call`: `$isSortedBy(items, (a, b) => a <= b)` of
+numbers, JS's `<=` being `false` of a NaN as `partial_cmp`'s is, else their
+`partial_cmp` at most `Equal`. `$isSortedBy` steps any iterable, stopping
+at the first pair out of order, so an iterator's later items aren't made.
+(A first cut gave slices a second form, `$isSorted`, beside the one they
+had; it's gone.) Held by `test/corpus/is_sorted_items.rs` and
+`test/corpus/slice_methods.rs`.
 
 ## Amendment: comparing two iterators
 
