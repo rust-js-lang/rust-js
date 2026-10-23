@@ -116,3 +116,14 @@ case: results would change, so Rust's. Held by
 `test/corpus/display_options_handed_on.rs` and the mutations
 `format-of-box-not-what-it-holds`, `display-handed-on-nothing` and
 `dyn-parse-error-unpadded`.
+
+## Amendment: options that reach what shows a value
+
+Three of a placeholder's options didn't reach what shows a value (#175):
+a `Duration`'s `{:.2?}`, whose number its precision skipped, is
+`$debugDuration(d, 2)`, rounded as std's is, a tie to even, and zeros
+past its 9; std's errors' `{:#?}` and width, `ParseIntError`'s and the
+rest's and a `Utf8Error`'s, are their derived `Debug`'s, on lines of
+their own and their numbers padded; and an alignment, a fill or `0`
+without a width is an option too, which a `fmt` asks of its `Formatter`,
+`f.align()`. Held by `test/corpus/format_options_reached.rs`.

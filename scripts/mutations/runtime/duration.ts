@@ -18,4 +18,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts","-t","duration"],
   },
+  {
+    name: "duration-tie-up",
+    breaks: "`{:.3?}` of a `Duration` at a tie rounds up, where std's rounds to even",
+    file: "src/runtime/duration.js",
+    find: "(rest > half || (rest === half && last % 2 === 1))",
+    replace: "(rest >= half)",
+    tests: ["test/corpus.test.ts", "-t", "^format_options_reached.rs$"],
+  },
 ];

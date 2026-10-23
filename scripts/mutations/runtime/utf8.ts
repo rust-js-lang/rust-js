@@ -138,4 +138,12 @@ export const mutations: Mutation[] = [
     replace: "bytes",
     tests: ["test/corpus.test.ts", "-t", "^encode_utf8_written.rs$"],
   },
+  {
+    name: "utf8-error-unpadded",
+    breaks: "`{:3?}` of a `Utf8Error` pads none of its numbers",
+    file: "src/runtime/utf8.js",
+    find: "  const n = (number) => $padIntegral(true, \"\", String(number), options);\n",
+    replace: "  const n = (number) => String(number);\n",
+    tests: ["test/corpus.test.ts", "-t", "^format_options_reached.rs$"],
+  },
 ];

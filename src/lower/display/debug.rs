@@ -231,10 +231,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(Expr::call_helper("$ioErrorDebug", list));
         }
         // Their derived `Debug`s (ADR 0172).
+        // Pretty as it's asked, `{:#?}`'s, and its numbers padded as the
+        // options say.
         if let Some(owned) = self.recognition().utf8_error(ty) {
             let mut list = vec![value];
-            if owned {
-                list.push(Expr::bool(true));
+            let may_be_pretty = !matches!(pretty, Pretty::Plain);
+            if owned || may_be_pretty {
+                list.push(Expr::bool(owned));
+            }
+            if may_be_pretty {
+                list.push(pretty.options());
             }
             return Ok(Expr::call(Expr::helper("$debugUtf8Error"), list));
         }
@@ -284,10 +290,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 unreachable!("a struct")
             };
             let name = self.tcx.item_name(adt.did());
-            return Ok(Expr::call(
-                Expr::helper("$debugParseError"),
-                vec![value, Expr::str(name.as_str())],
-            ));
+            let mut list = vec![value, Expr::str(name.as_str())];
+            if pretty.known() != Some(false) {
+                list.push(pretty.options());
+            }
+            return Ok(Expr::call(Expr::helper("$debugParseError"), list));
         }
         if self.is_lang_adt(ty, LangItem::OrderingEnum) {
             let names = ["Less", "Equal", "Greater"];

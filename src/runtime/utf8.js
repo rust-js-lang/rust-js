@@ -86,11 +86,23 @@ function $utf8ErrorMessage(error) {
     : `invalid utf-8 sequence of ${error.errorLen} bytes from index ${error.validUpTo}`;
 }
 
-// A `Utf8Error`'s derived `Debug`, or a `FromUtf8Error`'s (`owned`).
-function $debugUtf8Error(error, owned = false) {
-  if (owned) return `FromUtf8Error { bytes: [${error.bytes.join(", ")}], error: ${$debugUtf8Error(error.error)} }`;
-  const length = error.errorLen === undefined ? "None" : `Some(${error.errorLen})`;
-  return `Utf8Error { valid_up_to: ${error.validUpTo}, error_len: ${length} }`;
+// A `Utf8Error`'s derived `Debug`, or a `FromUtf8Error`'s (`owned`), its
+// numbers padded as `options` say, a derived `Debug`'s fields are; with
+// `{:#?}`, `options.alternate`, on lines of their own, indented.
+function $debugUtf8Error(error, owned = false, options) {
+  const n = (number) => $padIntegral(true, "", String(number), options);
+  if (options?.alternate) {
+    const inner = (text) => text.replaceAll("\n", "\n    ");
+    if (owned) {
+      const bytes = error.bytes.length === 0 ? "[]" : `[\n${error.bytes.map((b) => `        ${n(b)},\n`).join("")}    ]`;
+      return `FromUtf8Error {\n    bytes: ${bytes},\n    error: ${inner($debugUtf8Error(error.error, false, options))},\n}`;
+    }
+    const length = error.errorLen === undefined ? "None" : `Some(\n        ${n(error.errorLen)},\n    )`;
+    return `Utf8Error {\n    valid_up_to: ${n(error.validUpTo)},\n    error_len: ${length},\n}`;
+  }
+  if (owned) return `FromUtf8Error { bytes: [${error.bytes.map(n).join(", ")}], error: ${$debugUtf8Error(error.error, false, options)} }`;
+  const length = error.errorLen === undefined ? "None" : `Some(${n(error.errorLen)})`;
+  return `Utf8Error { valid_up_to: ${n(error.validUpTo)}, error_len: ${length} }`;
 }
 
 // A byte slice's `escape_ascii()` (ADR 0341): each byte as `u8::escape_ascii`

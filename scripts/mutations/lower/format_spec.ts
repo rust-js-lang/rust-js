@@ -150,8 +150,8 @@ export const mutations: Mutation[] = [
     name: "debug-hex-composite-not-given",
     breaks: "`{:x?}` of a composite isn't given to its parts, so its integers show in decimal",
     file: "src/lower/format_spec.rs",
-    find: "        let options = width.is_some() || precision.is_some() || spec.plus || spec.debug_hex.is_some();\n",
-    replace: "        let options = width.is_some() || precision.is_some() || spec.plus;\n",
+    find: "            || spec.debug_hex.is_some()\n            || spec.align.is_some()\n",
+    replace: "            || spec.align.is_some()\n",
     tests: ["test/corpus.test.ts", "-t", "^debug_hex_composite.rs$"],
   },
   {
@@ -185,5 +185,21 @@ export const mutations: Mutation[] = [
     find: "            Std::FmtDisplay => self.display_handed_on(value, ty),\n",
     replace: "            Std::FmtDisplay => (value, ty),\n",
     tests: ["test/corpus.test.ts", "-t", "^display_options_handed_on.rs$"],
+  },
+  {
+    name: "duration-precision-dropped",
+    breaks: "`{:.2?}` of a `Duration` shows it in full, its precision dropped",
+    file: "src/lower/format_spec.rs",
+    find: "                Expr::call(Expr::helper(\"$debugDuration\"), vec![value, digits])\n",
+    replace: "                Expr::call(Expr::helper(\"$debugDuration\"), vec![value])\n",
+    tests: ["test/corpus.test.ts", "-t", "^format_options_reached.rs$"],
+  },
+  {
+    name: "align-without-width-dropped",
+    breaks: "`{:<}` without a width gives a `fmt` no options, so `f.align()` is `None`",
+    file: "src/lower/format_spec.rs",
+    find: "            || spec.align.is_some()\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^format_options_reached.rs$"],
   },
 ];

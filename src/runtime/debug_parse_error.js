@@ -15,7 +15,11 @@ function $parseErrorKind(message) {
   return kinds[message];
 }
 
-function $debugParseError(message, name) {
-  if (name === "TryFromIntError") return `TryFromIntError(${$parseErrorKind(message)})`;
-  return name === "ParseBoolError" ? name : `${name} { kind: ${$parseErrorKind(message)} }`;
+// Its derived `Debug`; with `{:#?}`, `options.alternate`, on lines of
+// their own, indented.
+function $debugParseError(message, name, options) {
+  const kind = $parseErrorKind(message);
+  if (name === "ParseBoolError") return name;
+  if (name === "TryFromIntError") return options?.alternate ? `TryFromIntError(\n    ${kind},\n)` : `TryFromIntError(${kind})`;
+  return options?.alternate ? `${name} {\n    kind: ${kind},\n}` : `${name} { kind: ${kind} }`;
 }
