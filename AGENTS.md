@@ -268,6 +268,19 @@ in CONTRIBUTING.md.
 - **A timed-out command isn't rerun with more time.** Split it (one file,
   `-t <name>`, one mutation, one folder of rustc's tests) or send it to CI.
 
+## Keep the disk free
+
+Builds are big: each worktree's `target/`, the mutation runner's build
+dirs and corpus fixtures run to many gigabytes, and a full disk stops every
+command, and every agent, mid-task.
+
+- **Clean up once in a while**, and always when a task ends: remove the
+  `target/` of a worktree whose branch is merged, and a finished agent's
+  worktree (`git worktree remove`; its branch stays). Check with
+  `df -h ~` before starting long work.
+- **Only what's yours**: never remove another session's worktree, or one
+  holding uncommitted or unmerged work; commit it first.
+
 ## Where checks run
 
 Every check runs on the Mac (its malware scan is off for the apps that run
