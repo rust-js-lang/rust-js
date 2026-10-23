@@ -99,14 +99,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^generic_from.rs$"],
   },
   {
-    name: "extern-fn-value-accepted",
-    breaks: "another crate's function in an `extern` block, given as a value, is a binding's arrow, a second form (ADR 0373)",
-    file: "src/lower/items.rs",
-    find: "        if self.tcx.is_foreign_item(def_id) {\n            let refused = super::bindings::extern_fn_refused(self.tcx, def_id);\n            return Err(self.tcx.dcx().span_err(span, refused));\n        }\n",
-    replace: "",
-    tests: ["test/diagnostics.test.ts", "-t", "another crate's function in an extern block"],
-  },
-  {
     name: "guard-deref-value-unknown",
     breaks: "std's `Deref` of a `Ref<T>` in a dictionary, stable_deref_trait's, is refused",
     file: "src/lower/items.rs",

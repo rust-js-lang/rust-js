@@ -120,10 +120,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         named: Span,
         span: Span,
     ) -> R<Expr> {
-        if self.tcx.is_foreign_item(def_id) {
-            let refused = super::bindings::extern_fn_refused(self.tcx, def_id);
-            return Err(self.tcx.dcx().span_err(span, refused));
-        }
+        // One in an `extern` block is refused by its call, `binding_values`,
+        // the one place that asks (ADR 0373).
         let inputs = self
             .tcx
             .fn_sig(def_id)
