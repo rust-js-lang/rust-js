@@ -81,14 +81,12 @@ function grade(score, age) {
   if (score >= 90) {
     return "A";
   }
-  if (score >= 70) {
-    if (score <= 89) {
-      const a = age;
-      if (a < 30) {
-        return "B+";
-      }
-      return "B";
+  if (score >= 70 && score <= 89) {
+    const a = age;
+    if (a < 30) {
+      return "B+";
     }
+    return "B";
   }
   return "C";
 }
