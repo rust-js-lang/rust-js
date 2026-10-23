@@ -282,8 +282,11 @@ fn bottom_up(stmts: &mut Vec<Stmt>, f: &mut dyn FnMut(&mut Vec<Stmt>)) {
 /// `l: { if (t) { a; throw e; } b; }`, of an arm `b` MIR made the block's
 /// fall-through though it's written before `a`, which leaves the block,
 /// `if let Text(..) = k { b } else { a }`: `l: { if (!t) { b } else { a } }`,
-/// as written. `b` runs where `t` doesn't hold either way.
-fn written_first(stmts: &mut [Stmt]) {
+/// as written. `b` runs where `t` doesn't hold either way. Not of an arm of
+/// a `match` that's a `switch` (`switches`), whose cases are written as its
+/// arms are, whatever order MIR tests them in: its chain stays as MIR tests
+/// it, for the `switch` to read (ADR 0668).
+fn written_first(stmts: &mut [Stmt], switches: &[Switch]) {
     for stmt in stmts {
         let StmtKind::Labeled(label, body) = &mut stmt.kind else {
             continue;
@@ -291,9 +294,12 @@ fn written_first(stmts: &mut [Stmt]) {
         let [first, rest @ ..] = body.as_slice() else {
             continue;
         };
-        let StmtKind::If(_, then, None) = &first.kind else {
+        let StmtKind::If(test, then, None) = &first.kind else {
             continue;
         };
+        if switched(test, first.span, switches) {
+            continue;
+        }
         let leaves = |s: &Stmt| match &s.kind {
             StmtKind::Throw(_) | StmtKind::Return(_) => true,
             StmtKind::Break(Some(l)) => l == label,

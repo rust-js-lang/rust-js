@@ -428,8 +428,8 @@ const JUMPS: &[Pass] = &[
         })
     }),
     // An arm MIR made the block's fall-through, written first: first.
-    pass("written first", |b, _| {
-        js::statement_lists(b, &mut |s| written_first(s))
+    pass("written first", |b, h| {
+        js::statement_lists(b, &mut |s| written_first(s, &h.written.switches))
     }),
     pass("branch ends", |b, _| js::statement_lists(b, &mut |s| branch_ends(s))),
     pass("tail jumps", |b, _| js::statement_lists(b, &mut |s| tail_jumps(s))),

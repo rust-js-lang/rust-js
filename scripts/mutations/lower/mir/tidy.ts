@@ -233,4 +233,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^temporary_borrows.rs$"],
   },
+  {
+    name: "written-first-of-a-switch",
+    breaks: "an arm of a `switch (typeof value)` MIR tests first, whose case returns early, is turned `if (typeof value !== \"string\")` and the `match` stays an `if` chain",
+    file: "src/lower/mir/tidy.rs",
+    find: "        if switched(test, first.span, switches) {\n            continue;\n        }\n",
+    replace: "",
+    tests: ["test/lowering-switches.test.ts", "-t", "an arm that returns early is still its case"],
+  },
 ];

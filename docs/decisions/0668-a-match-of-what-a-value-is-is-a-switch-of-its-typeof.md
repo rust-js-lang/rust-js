@@ -184,3 +184,46 @@ switch (typeof value) {
 - Mutations in `scripts/mutations/lower/untagged.ts`,
   `scripts/mutations/lower/mir/hints.ts` and
   `scripts/mutations/lower/mir/tidy/switches.ts`.
+
+## Amendment: an arm that returns early is still its case
+
+React's `getIODescription`, ported whole, has a string arm that tests its
+length first, `if text.encode_utf16().count() < 5 || .. { return
+String::new(); }`, and an object arm of a dozen statements, each an early
+`return`. It was no `switch`, but
+
+```js
+if (typeof value !== "string") {
+  if (typeof value === "number" || typeof value === "bigint") { .. }
+  if (typeof value === "function") { .. }
+  ..
+  return "";
+}
+if (..) { return ""; }
+return value;
+```
+
+Not the arms' bodies, the `let .. else` before the `match`, nor their
+order: MIR tests `Kind::String` first, its variants' order, and tidy's
+`written first`, which puts first an arm MIR made the fall-through though
+it's written before the one tested (`if let Text(..) = k { b } else { a
+}`), took the `Function`, `Object` and `Number` arms, all written before
+the string's, for that arm: it negated the string's test and put them in
+it. A `switch` reads an untagged enum's tests as MIR makes them, never
+negated, so it found no chain.
+
+**An `if` of an arm of a `match` that's a `switch` stays as MIR tests
+it**: `written first` asks `switches::switched`, the one answer to whether
+an `if` tests a switch's arm, as `branch values` does, and leaves it. The
+`switch` writes its cases as the arms are written anyway, so the order
+`written first` was for is kept. A `match` that isn't a `switch`, of two
+cases, is put in its written order as before.
+
+- Case: N, as the Decision's: the same tests in another order, of kinds no
+  two of which a value is.
+- The corpus, the snapshots and the guide don't change: none has a `match`
+  of `js::Kind` whose arm MIR tests first is written after one that
+  leaves.
+- Held by `test/lowering-switches.test.ts`, "an arm that returns early is
+  still its case of a switch of a typeof", run in Node, and the mutation
+  `written-first-of-a-switch`.

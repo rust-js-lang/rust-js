@@ -7,7 +7,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { runSync } from "./child";
 import { node } from "./programs";
-import { buildReact, compiler, fixture, root, run, target } from "./support";
+import { buildReact, compiler, fixture, installRuntime, root, run, target } from "./support";
 
 beforeAll(buildReact, 600_000);
 
@@ -350,4 +350,80 @@ console.log(JSON.stringify([defined.map(objects), defined.map(listed)]));
       "",
     ].join("\n"),
   );
+});
+
+// ADR 0668, amended: an arm that returns early, `if text.len() < 5 { return
+// String::new(); }`, is still its case. MIR tests `Kind::String` first, and
+// what's written before it, the `Function` and `Object` arms, was put first
+// as an `if (typeof value !== "string") { .. }` with the string's statements
+// after it, which no `switch` reads. A switch's arm's test stays as MIR
+// tests it: the `switch` writes the cases as the arms are. React's
+// `getIODescription`, whose string case tests its length.
+test("an arm that returns early is still its case of a switch of a typeof", () => {
+  const dir = fixture("typeof-switch-returns");
+  writeFileSync(join(dir, "lib.rs"), `use js::{Kind, Unknown};
+
+pub fn described(value: &Unknown) -> String {
+    match js::classify(value) {
+        Kind::Function(_) => match js::get(value, "name").map(js::classify) {
+            Some(Kind::String(name)) => name.to_string(),
+            _ => String::new(),
+        },
+        Kind::Object(_) | Kind::Array(_) => {
+            if let Some(Kind::String(url)) = js::get(value, "url").map(js::classify) {
+                return url.to_string();
+            }
+            let text = js::string(Some(value));
+            if text.starts_with("[object ") {
+                return String::new();
+            }
+            text
+        }
+        Kind::String(text) => {
+            if text.len() < 5 {
+                return String::new();
+            }
+            text.to_string()
+        }
+        Kind::Number(_) | Kind::BigInt(_) => js::string(Some(value)),
+        _ => String::new(),
+    }
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs()]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain(`export function described(value) {
+  switch (typeof value) {
+    case "function": {
+      const name = value.name;
+      if (typeof name === "string") {
+        return name;
+      }
+      return "";
+    }
+    case "object": {`);
+  expect(js).toContain(`      return text;
+    }
+    case "string":
+      if ($byteLen(value) < 5) {
+        return "";
+      }
+      return value;
+    case "number":
+    case "bigint":
+      return String(value);
+    default:
+      return "";
+  }
+}`);
+  expect(js).not.toContain(`typeof value !== "string"`);
+  installRuntime(dir);
+  writeFileSync(join(dir, "run.mjs"), `import { described } from "./lib.js";
+function fetchUser() {}
+const values = [Symbol("s"), ["a"], ["https://react.dev/learn"], { url: "/learn" }, {}, "hello", "hi", fetchUser, 42, 7n, true];
+console.log(JSON.stringify(values.map(described)));
+`);
+  const ran = runSync([node!, join(dir, "run.mjs")], root, 30_000);
+  expect(ran.stderr).toBe("");
+  expect(ran.stdout).toBe(`["","a","https://react.dev/learn","/learn","","hello","","fetchUser","42","7",""]\n`);
 });
