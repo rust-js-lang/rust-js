@@ -103,7 +103,7 @@ export const mutations: Mutation[] = [
     name: "lent-made-iterator",
     breaks: "a lent iterator, already a JS one, is made one again, `Iterator.from($lent(it))`",
     file: "src/lower/iterators/stepping.rs",
-    find: "        if is_lent(&value) {\n            return value;\n        }\n",
+    find: "        if is_lent(&value) || is_js_iterator(&value) {\n            return value;\n        }\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^(by_ref_chains|take_destructors).rs$"],
     snapshots: true,
@@ -171,5 +171,14 @@ export const mutations: Mutation[] = [
     find: "        if self.is_sorted(ty) {\n            return self.in_order_of(value, ty, span);\n        }\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^btree_given_in_order.rs$"],
+  },
+  {
+    name: "js-iterator-rewrapped",
+    breaks: "a JS iterator isn't made one again",
+    file: "src/lower/iterators/stepping.rs",
+    find: "        if is_lent(&value) || is_js_iterator(&value) {",
+    replace: "        if is_lent(&value) {",
+    tests: ["test/corpus.test.ts", "-t", "^adapter_drops.rs$"],
+    snapshots: true,
   },
 ];

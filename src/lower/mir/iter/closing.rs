@@ -125,6 +125,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         (lent, ne): (bool, bool),
         span: Span,
     ) -> R<Expr> {
+        // A range's, or the crate's, stepped as one, as `chain`'s and `zip`'s are.
+        let other = self.as_js_iterator(other, other_ty, span)?;
         let other = match self.closing_drop(other_ty, span)? {
             Some(drop) => Expr::call_helper("$closing", vec![self.js_iterator(other), drop]),
             None => other,

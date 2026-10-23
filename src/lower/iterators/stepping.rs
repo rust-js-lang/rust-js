@@ -5,9 +5,9 @@ use super::*;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `Iterator.from(value)`: a JS iterator of an array or of one, which
-    /// steps either (ADR 0061).
+    /// steps either (ADR 0061); one already, as it is.
     pub(in crate::lower) fn js_iterator(&self, value: Expr) -> Expr {
-        if is_lent(&value) {
+        if is_lent(&value) || is_js_iterator(&value) {
             return value;
         }
         Expr::call(Expr::member(Expr::var("Iterator"), "from"), vec![value])

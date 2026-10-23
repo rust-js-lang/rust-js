@@ -10,4 +10,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^own_fold_and_nth.rs$"],
   },
+  {
+    name: "lent-try-fold-own",
+    breaks: "a lent iterator's tryFold is its iterator's",
+    file: "src/runtime/lent.js",
+    find: "  if (it.tryFold !== undefined) lent.tryFold",
+    replace: "  if (false) lent.tryFold",
+    tests: ["test/corpus.test.ts", "-t", "skip_try_fold"],
+  },
 ];

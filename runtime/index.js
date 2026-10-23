@@ -1092,6 +1092,13 @@ export function $ordSet(cmp) {
 // through them does too, `reduce` (`sum`, `count`, `fold`), `forEach`, a
 // `map`'s, a `filter`'s or a `flatMap`'s fold, and `drop`'s (`skip`'s)
 // first step (#162).
+//
+// Its `tryFold` is std's `try_fold`, which no crate's iterator writes (its
+// `Try` is unstable), but std's adapters do: what stops early, `some`
+// (`any`), `every` (`all`), `find`, `$position` and `try_fold`'s helpers,
+// asks it, and a `map`, a `take` and a `flatMap` pass it to their source,
+// and a `filter` steps its source's `find`, as std's do, so a `drop`'s is
+// std's `Skip`'s: its source's `nth(n - 1)`, then its source's `tryFold`.
 export class $Steps extends Iterator {
   constructor(next, close) {
     super();
@@ -1114,6 +1121,35 @@ export class $Steps extends Iterator {
       if (step.done) return step;
     }
     return this.next();
+  }
+  // Std's `try_fold`: `f` of each item, given what it gave, until `broke`
+  // says what it gave stops it, as `?` would, which it gives back.
+  tryFold(init, f, broke) {
+    let folded = init;
+    for (let step = this.next(); !step.done; step = this.next()) {
+      folded = f(folded, step.value);
+      if (broke(folded)) return folded;
+    }
+    return folded;
+  }
+  some(found) {
+    let i = 0;
+    const some = this.tryFold(false, (_, x) => found(x, i++), (hit) => hit);
+    if (some) this.return();
+    return some;
+  }
+  every(holds) {
+    let i = 0;
+    const every = this.tryFold(true, (_, x) => holds(x, i++), (held) => !held);
+    if (!every) this.return();
+    return every;
+  }
+  find(found) {
+    let i = 0;
+    let item;
+    const hit = this.tryFold(false, (_, x) => found(x, i++) && ((item = x), true), (hit) => hit);
+    if (hit) this.return();
+    return item;
   }
   reduce(f, ...init) {
     let i = 0;
@@ -1140,16 +1176,17 @@ export class $Steps extends Iterator {
     );
     // Std's `Map::fold`, its source's of each mapped.
     mapped.fold = (init, g) => this.fold(init, (a, x) => g(a, f(x, i++)));
+    mapped.tryFold = (init, g, broke) => this.tryFold(init, (a, x) => g(a, f(x, i++)), broke);
     return mapped;
   }
   filter(keep) {
     let i = 0;
+    // Each step, std's `Filter::next`, its source's `find`, a `try_fold`.
     const kept = new $Steps(
       () => {
-        for (;;) {
-          const step = this.next();
-          if (step.done || keep(step.value, i++)) return step;
-        }
+        let item;
+        const found = this.tryFold(false, (_, x) => keep(x, i++) && ((item = x), true), (found) => found);
+        return found ? { done: false, value: item } : { done: true, value: undefined };
       },
       () => this.return(),
     );
@@ -1195,11 +1232,34 @@ export class $Steps extends Iterator {
       ended = true;
       return this.fold(folded, (a, x) => Iterator.from(f(x, i++)).reduce(g, a));
     };
+    // Its `try_fold`, std's: the rest of the one it's in, then its source's
+    // of each one's, the one it stops in kept for its next step.
+    flat.tryFold = (init, g, broke) => {
+      let folded = init;
+      if (inner !== undefined) {
+        folded = $lent(inner).tryFold(folded, g, broke);
+        if (broke(folded)) return folded;
+        inner = undefined;
+      }
+      if (ended) return folded;
+      folded = this.tryFold(
+        folded,
+        (a, x) => {
+          inner = Iterator.from(f(x, i++));
+          const made = $lent(inner).tryFold(a, g, broke);
+          if (!broke(made)) inner = undefined;
+          return made;
+        },
+        broke,
+      );
+      if (!broke(folded)) ended = true;
+      return folded;
+    };
     return flat;
   }
   // Std's `Take`: each of its `n` steps steps its source, a `None` too.
   take(n) {
-    return new $Steps(
+    const taken = new $Steps(
       () => {
         if (n === 0) return this.return();
         n--;
@@ -1207,10 +1267,26 @@ export class $Steps extends Iterator {
       },
       () => this.return(),
     );
+    // Its `try_fold`, std's: its source's, stopped once it's taken `n`.
+    taken.tryFold = (init, g, broke) => {
+      if (n === 0) return init;
+      let full = false;
+      return this.tryFold(
+        init,
+        (a, x) => {
+          n--;
+          full = n === 0;
+          return g(a, x);
+        },
+        (a) => full || broke(a),
+      );
+    };
+    return taken;
   }
   // Std's `Skip`: its first step is its source's `nth(n)`, which stops at a
-  // `None`, and gives it; each after is its source's. Its fold, the source's
-  // after its `nth(n - 1)`.
+  // `None`, and gives it; each after is its source's. Its fold and its
+  // `try_fold`, the source's after its `nth(n - 1)`; its `nth(k)`, its
+  // source's `nth(n + k)`.
   drop(n) {
     const skipped = new $Steps(
       () => {
@@ -1228,6 +1304,19 @@ export class $Steps extends Iterator {
         if (this.nth(k - 1).done) return init;
       }
       return this.fold(init, g);
+    };
+    skipped.tryFold = (init, g, broke) => {
+      if (n > 0) {
+        const k = n;
+        n = 0;
+        if (this.nth(k - 1).done) return init;
+      }
+      return this.tryFold(init, g, broke);
+    };
+    skipped.nth = (k) => {
+      const skip = n;
+      n = 0;
+      return this.nth(skip + k);
     };
     return skipped;
   }
@@ -1470,10 +1559,18 @@ export function $closing(it, drop) {
     return step;
   }, close);
   closing.back = () => it.back();
+  // Its `nth`, its iterator's, the crate's own where it writes one.
+  if (it.nth !== undefined) closing.nth = (k) => it.nth(k);
   closing.fold = (init, f) => {
     const folded = it.fold !== undefined ? it.fold(init, f) : it.reduce((a, x) => f(a, x), init);
     if (it.ownFold) closed = true;
     close();
+    return folded;
+  };
+  // Its `try_fold`, its iterator's, done with where it isn't stopped.
+  closing.tryFold = (init, f, broke) => {
+    const folded = $lent(it).tryFold(init, f, broke);
+    if (!broke(folded)) close();
     return folded;
   };
   return closing;
@@ -1982,7 +2079,7 @@ export function $nextBackSome(it) {
 export function $lazyScan(items, init, f, handle = true) {
   const state = handle ? { value: init } : init;
   const source = items[Symbol.iterator]();
-  return new $Steps(
+  const scanning = new $Steps(
     () => {
       const step = source.next();
       const next = step.done ? undefined : f(state, step.value);
@@ -1992,6 +2089,23 @@ export function $lazyScan(items, init, f, handle = true) {
     },
     () => source.return?.(),
   );
+  // Its `try_fold`, its source's, stopped at a `None`.
+  scanning.tryFold = (init, g, broke) => {
+    let stopped = false;
+    const folded = $lent(source).tryFold(
+      init,
+      (a, x) => {
+        const next = f(state, x);
+        if (next !== undefined) return g(a, next);
+        stopped = true;
+        return a;
+      },
+      (a) => stopped || broke(a),
+    );
+    if (stopped) source.return?.();
+    return folded;
+  };
+  return scanning;
 }
 
 export class $JsonError extends Error {
@@ -2545,18 +2659,23 @@ export function $binarySearchBy(items, f) {
 // `a.cmp(b)` of two iterators, or `partial_cmp`: each item in turn, as
 // Rust's `cmp_by` steps them, the first `Ordering` of two that isn't
 // `Equal`, `undefined` where `partial_cmp` of two is `None`; else which
-// ended first, `a` stepped before `b` each time.
+// ended first, `a` stepped before `b` each time: `a` by its `tryFold`, as
+// std's `iter_compare` steps it by `try_for_each`, `b` by its `next`.
 export function $iterCmp(a, b, cmp) {
   const x = a[Symbol.iterator]();
   const y = b[Symbol.iterator]();
-  for (;;) {
-    const p = x.next();
-    if (p.done) return y.next().done ? 0 : -1;
-    const q = y.next();
-    if (q.done) return 1;
-    const order = cmp(p.value, q.value);
-    if (order !== 0) return order;
-  }
+  let order = 0;
+  const stopped = $lent(x).tryFold(
+    false,
+    (_, p) => {
+      const q = y.next();
+      order = q.done ? 1 : cmp(p, q.value);
+      return order !== 0;
+    },
+    (stop) => stop,
+  );
+  if (stopped) return order;
+  return y.next().done ? 0 : -1;
 }
 
 // `v.rotate_left(n)`: its first `n` items moved to its end. More than it
@@ -4881,14 +5000,9 @@ export function $findBy(s, p, last) {
 // far and each item in turn, till one gives `None`, which it gives, the rest
 // left to step; else what the last gave. Of what could look like `None`,
 // `Option<()>`'s, `try_for_each`'s, each `Some` boxed (ADRs 0051, 0539).
+// It's `it`'s `tryFold`, as std's adapters route it.
 export function $tryFoldSome(it, init, f) {
-  let made = init;
-  for (let step = it.next(); !step.done; step = it.next()) {
-    const some = f(made, step.value);
-    if (some == null) return undefined;
-    made = $someValue(some);
-  }
-  return $some(made);
+  return $lent(it).tryFold($some(init), (made, x) => f($someValue(made), x), (made) => made == null);
 }
 
 // A hand-written `Serialize` or `Deserialize`'s function, which gives a
@@ -5125,13 +5239,9 @@ export function $floatMidpoint(a, b) {
 // `it.try_fold(init, f)` into a `Result` (ADR 0458): `f` of what's made so
 // far and each item in turn, till one gives an `Err`, which it gives, the
 // rest left to step; else the `Ok` the last gave.
+// It's `it`'s `tryFold`, as std's adapters route it.
 export function $tryFoldOk(it, init, f) {
-  let made = { TAG: "Ok", _0: init };
-  for (let step = it.next(); !step.done; step = it.next()) {
-    made = f(made._0, step.value);
-    if (made.TAG === "Err") return made;
-  }
-  return made;
+  return $lent(it).tryFold({ TAG: "Ok", _0: init }, (made, x) => f(made._0, x), (made) => made.TAG === "Err");
 }
 
 // `s.starts_with(p)`, or `ends_with`, of a predicate of a `char`: whether it
@@ -10100,7 +10210,7 @@ export function $zip(a, b) {
 // it's done, as std's lets it go, and `b` stepped on after a `None`, as
 // std's is; each closed as it ends, which drops what each holds (ADR 0465).
 // Its fold, std's, `a`'s then `b`'s, which an iterator rust-js makes routes
-// through the crate's own (#162).
+// through the crate's own (#162), and its `try_fold`, `a`'s then `b`'s.
 export function $lazyChain(a, b) {
   let first = a[Symbol.iterator]();
   const second = b[Symbol.iterator]();
@@ -10130,6 +10240,18 @@ export function $lazyChain(a, b) {
     }
     folded = second.reduce(f, folded);
     second.return?.();
+    return folded;
+  };
+  chained.tryFold = (init, f, broke) => {
+    let folded = init;
+    if (first !== undefined) {
+      folded = $lent(first).tryFold(folded, f, broke);
+      if (broke(folded)) return folded;
+      first.return?.();
+      first = undefined;
+    }
+    folded = $lent(second).tryFold(folded, f, broke);
+    if (!broke(folded)) second.return?.();
     return folded;
   };
   return chained;
@@ -10231,10 +10353,11 @@ export function $rev(it) {
 // `it.take_while(keep)`: each item `keep` holds of; the first it doesn't
 // ends it for good, closing what it steps, as Rust's flag does, and a
 // `None` of its source ends what's stepped now, as Rust's passes it on.
+// Its `try_fold`, its source's, stopped where `keep` doesn't hold.
 export function $lazyTakeWhile(items, keep) {
   const source = items[Symbol.iterator]();
   let ended = false;
-  return new $Steps(
+  const taking = new $Steps(
     () => {
       if (ended) return { done: true, value: undefined };
       const step = source.next();
@@ -10245,15 +10368,23 @@ export function $lazyTakeWhile(items, keep) {
     },
     () => source.return?.(),
   );
+  taking.tryFold = (init, f, broke) => {
+    if (ended) return init;
+    const folded = $lent(source).tryFold(init, (a, x) => (keep(x) ? f(a, x) : ((ended = true), a)), (a) => ended || broke(a));
+    if (ended) source.return?.();
+    return folded;
+  };
+  return taking;
 }
 
 // `it.map_while(f)`: each of what `f` gives that `present` keeps; one it
 // doesn't ends what's stepped now, closing what it steps, as `$lazyScan`'s
 // `None` does, and a step after steps on, as Rust's `MapWhile`, which
-// isn't fused, does, where `take_while` stays ended.
+// isn't fused, does, where `take_while` stays ended. Its `try_fold`, its
+// source's, stopped at what `present` doesn't keep.
 export function $lazyMapWhile(items, f, present) {
   const source = items[Symbol.iterator]();
-  return new $Steps(
+  const mapping = new $Steps(
     () => {
       const step = source.next();
       const value = step.done ? undefined : f(step.value);
@@ -10263,26 +10394,54 @@ export function $lazyMapWhile(items, f, present) {
     },
     () => source.return?.(),
   );
+  mapping.tryFold = (init, g, broke) => {
+    let stopped = false;
+    const folded = $lent(source).tryFold(
+      init,
+      (a, x) => {
+        const value = f(x);
+        if (present(value)) return g(a, value);
+        stopped = true;
+        return a;
+      },
+      (a) => stopped || broke(a),
+    );
+    if (stopped) source.return?.();
+    return folded;
+  };
+  return mapping;
 }
 
 // `it.skip_while(skip)`: its items from the first `skip` doesn't hold of;
 // a `None` of its source while it skips ends what's stepped now, as Rust's
-// `find` gives it.
+// `find` gives it. Each step is its source's `find`, a `try_fold`, as
+// std's is; its `try_fold`, its first step, then its source's.
 export function $lazySkipWhile(items, skip) {
   const source = items[Symbol.iterator]();
   let skipping = true;
-  return new $Steps(
+  const skipped = new $Steps(
     () => {
-      for (;;) {
-        const step = source.next();
-        if (step.done || !skipping || !skip(step.value)) {
-          if (!step.done) skipping = false;
-          return step;
-        }
-      }
+      let item;
+      const found = $lent(source).tryFold(
+        false,
+        (_, x) => (!skipping || !skip(x)) && ((skipping = false), (item = x), true),
+        (found) => found,
+      );
+      return found ? { done: false, value: item } : { done: true, value: undefined };
     },
     () => source.return?.(),
   );
+  skipped.tryFold = (init, f, broke) => {
+    let folded = init;
+    if (skipping) {
+      const step = skipped.next();
+      if (step.done) return folded;
+      folded = f(folded, step.value);
+      if (broke(folded)) return folded;
+    }
+    return $lent(source).tryFold(folded, f, broke);
+  };
+  return skipped;
 }
 
 // `iter::repeat(value)`: a clone of `value` each step, and `value` dropped,
@@ -10711,10 +10870,12 @@ export function $formatFloat(value, options, show) {
 // from it and stops early, as `take` or a loop that breaks does, closes
 // this, not `it`, which its lender goes on stepping. Its `nth` is `it`'s,
 // as std's `&mut I` gives it, the crate's own where `$iterator` was given
-// it; its `fold`, std's, of `next` (#162).
+// it; its `fold`, std's, of `next` (#162); its `tryFold`, `it`'s, as
+// std's `&mut I` gives it, where `it` is std's adapter of one.
 export function $lent(it) {
   const lent = new $Steps(() => it.next());
   if (it.nth !== undefined) lent.nth = (k) => it.nth(k);
+  if (it.tryFold !== undefined) lent.tryFold = (init, f, broke) => it.tryFold(init, f, broke);
   return lent;
 }
 
@@ -10924,24 +11085,35 @@ export function $cmpItems(a, b, cmp) {
 // one differs or either ends; by `eq`, or `===` of what JS compares so. Of
 // items with a destructor, each compared pair dropped, `b`'s first, and one
 // left where the other ended; each closed as it ends, which drops what it
-// holds, `b` first, as std's are dropped (ADR 0465).
+// holds, `b` first, as std's are dropped (ADR 0465). `a` is stepped by its
+// `tryFold`, as std's `iter_compare` steps it by `try_for_each`, and `b` by
+// its `next`.
 export function $iterEq(a, b, eq, dropA, dropB) {
   const x = a[Symbol.iterator]();
   const y = b[Symbol.iterator]();
   try {
-    for (;;) {
-      const p = x.next();
-      const q = y.next();
-      if (p.done || q.done) {
-        if (!q.done) dropB?.(q.value);
-        if (!p.done) dropA?.(p.value);
-        return p.done === q.done;
-      }
-      const same = eq ? eq(p.value, q.value) : p.value === q.value;
-      dropB?.(q.value);
-      dropA?.(p.value);
-      if (!same) return false;
-    }
+    let same = true;
+    const stopped = $lent(x).tryFold(
+      false,
+      (_, p) => {
+        const q = y.next();
+        if (q.done) {
+          dropA?.(p);
+          same = false;
+          return true;
+        }
+        same = eq ? eq(p, q.value) : p === q.value;
+        dropB?.(q.value);
+        dropA?.(p);
+        return !same;
+      },
+      (stop) => stop,
+    );
+    if (stopped) return same;
+    const q = y.next();
+    if (q.done) return true;
+    dropB?.(q.value);
+    return false;
   } finally {
     y.return?.();
     x.return?.();
@@ -11012,11 +11184,8 @@ export function $min(items) {
 
 export function $position(items, found) {
   let i = 0;
-  for (const item of items) {
-    if (found(item)) return i;
-    i++;
-  }
-  return undefined;
+  const hit = $lent(items[Symbol.iterator]()).tryFold(false, (_, item) => found(item) || (i++, false), (hit) => hit);
+  return hit ? i : undefined;
 }
 
 // `rposition(f)` of a slice's items, or a `$iter` of them stepped from its

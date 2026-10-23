@@ -68,3 +68,9 @@ once: by its own `fold`, which takes it, or after its consumer.**
   it steps by `nth` is refused (#180), as it was before.
 - Held by `test/corpus/own_fold_through_adapters.rs`, against native Rust,
   and by the mutations of each file changed.
+
+## Amended by
+
+[ADR 0695](0695-what-stops-early-steps-by-try-fold.md): `$closing` and
+`$lent` pass on their iterator's `try_fold` and `nth` as they do its
+`fold`.

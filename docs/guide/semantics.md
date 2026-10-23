@@ -696,3 +696,8 @@ React and JSX are [their own pages](README.md#react).
     with a destructor, drops what it holds at that first `None`, where std
     drops it with the adapter; what the iterator gives after is stepped as
     std's is (ADR 0669).
+21. Where the crate's iterator's impl writes its own `nth`, std passes it,
+    and `try_fold`'s `nth(n - 1)` of a `skip`, through an `enumerate`, a
+    `take`, a `fuse`, a `peekable`, a `step_by`, a `flatten` and a `skip`'s
+    `last`, which rust-js steps by `next` (#182); elsewhere it's asked as
+    std asks it (ADR 0695).

@@ -26,4 +26,12 @@ export const mutations: Mutation[] = [
     replace: "    if (next !== undefined) return { done: false, value: next };\n    it.next = () => ({ done: true, value: undefined });\n",
     tests: ["test/corpus.test.ts", "-t", "^scan_map_while_unfused.rs$"],
   },
+  {
+    name: "scan-try-fold-by-next",
+    breaks: "scan passes tryFold to its source",
+    file: "src/runtime/scan.js",
+    find: "  scanning.tryFold = (init, g, broke) => {",
+    replace: "  scanning.tryFoldUnused = (init, g, broke) => {",
+    tests: ["test/corpus.test.ts", "-t", "skip_try_fold"],
+  },
 ];

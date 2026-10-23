@@ -7,7 +7,7 @@
 function $lazyScan(items, init, f, handle = true) {
   const state = handle ? { value: init } : init;
   const source = items[Symbol.iterator]();
-  return new $Steps(
+  const scanning = new $Steps(
     () => {
       const step = source.next();
       const next = step.done ? undefined : f(state, step.value);
@@ -17,4 +17,21 @@ function $lazyScan(items, init, f, handle = true) {
     },
     () => source.return?.(),
   );
+  // Its `try_fold`, its source's, stopped at a `None`.
+  scanning.tryFold = (init, g, broke) => {
+    let stopped = false;
+    const folded = $lent(source).tryFold(
+      init,
+      (a, x) => {
+        const next = f(state, x);
+        if (next !== undefined) return g(a, next);
+        stopped = true;
+        return a;
+      },
+      (a) => stopped || broke(a),
+    );
+    if (stopped) source.return?.();
+    return folded;
+  };
+  return scanning;
 }
