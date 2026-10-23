@@ -97,9 +97,7 @@ fn item(state: &Shared, view: View, todo: &Todo) -> &'static Element {
     let delete = text("button", "×");
     on(delete, "click", state, view, Box::new(move |s| s.todos.retain(|t| t.id != id)));
 
-    li.append(check);
-    li.append(title);
-    li.append(delete);
+    li.append((check, title, delete));
     li
 }
 
@@ -112,7 +110,7 @@ fn render(state: &Shared, view: View) {
             left += 1;
         }
         if shown(s.filter, todo) {
-            view.list.append(item(state, view, todo));
+            view.list.append((item(state, view, todo),));
         }
     }
     let noun = if left == 1 { " item left" } else { " items left" };
@@ -140,19 +138,17 @@ pub fn main() {
 
     // Which todos to show, and clearing the completed ones.
     let footer = create("p");
-    footer.append(view.left);
+    footer.append((view.left,));
     for (label, filter) in [("All", Filter::All), ("Active", Filter::Active), ("Completed", Filter::Completed)] {
         let b = text("button", label);
         on(b, "click", &state, view, Box::new(move |s| s.filter = filter));
-        footer.append(b);
+        footer.append((b,));
     }
     let clear = text("button", "Clear completed");
     on(clear, "click", &state, view, Box::new(|s| s.todos.retain(|t| !t.done)));
-    footer.append(clear);
+    footer.append((clear,));
 
-    app.append(input);
-    app.append(view.list);
-    app.append(footer);
+    app.append((input, view.list, footer));
     render(&state, view);
 }
 
@@ -169,7 +165,7 @@ mod tests {
         body.set_text_content("");
         let app = create("div");
         app.set_id("app");
-        body.append(app);
+        body.append((app,));
         main();
         app
     }

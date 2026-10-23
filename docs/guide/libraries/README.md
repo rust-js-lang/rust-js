@@ -157,7 +157,7 @@ pub fn mount() {
             let _ = storage.set_item("clicked-at", &x.to_string());
         }
     }, None);
-    app.append(button);
+    app.append((button,));
 }
 
 pub async fn load(url: &str) -> String {
@@ -222,9 +222,15 @@ How WebIDL maps to Rust, one rule for each:
   ([ADR 0223](../../decisions/0223-webapi-event-and-tag-maps.md)).
   `EventTargetExt` gives every target `add_event_listener` and
   `remove_event_listener` ([ADR 0282](../../decisions/0282-event-listener-methods.md)).
-- **A union is each of its members as it is:** `el.before("text")` and
-  `el.before(node)`; a union a JS API gives is an enum of its members
-  ([ADR 0215](../../decisions/0215-webapi-unions.md)).
+- **A union is each of its members as it is:** `window.fetch(url, None)`
+  and `window.fetch(request, None)`; a union a JS API gives is an enum of
+  its members ([ADR 0215](../../decisions/0215-webapi-unions.md)).
+- **A rest parameter is a tuple, each argument of its own type:**
+  `el.append((node, "text"))` is `el.append(node, "text")`, and
+  `console::error(("%s is %s", name, kind))` is `console.error("%s is %s",
+  name, kind)`; `(x,)` is one, `()` none, and a `None` before none is no
+  argument, `console::time_log(None, ())` being `console.timeLog()`
+  ([ADR 0640](../../decisions/0640-a-rest-parameter-is-a-tuple.md)).
 - **A cast is `unchecked_from`:** `html_input_element::unchecked_from(el)`.
 
 ## `node`: Node.js

@@ -391,7 +391,7 @@ export function willCoercionThrow(value) {
 ```rust
 use std::marker::PhantomData;
 
-use js::{JsError, JsObject, Promise, Unknown};
+use js::{IntoUnknown, JsError, JsObject, Promise, Rest, Unknown};
 
 pub struct Editor(PhantomData<JsObject>);
 
@@ -454,7 +454,7 @@ pub unsafe fn unchecked_editor(this: &Unknown) -> &Editor {
 
 #[cfg_attr(rust_js, rust_js::link_name = "console.log")]
 #[cfg_attr(rust_js, rust_js::variadic)]
-pub fn log(values: &[&str]) {
+pub fn log(data: impl Rest<dyn IntoUnknown>) {
     unreachable!()
 }
 
@@ -475,7 +475,7 @@ pub async fn open(other: &Unknown) -> Result<(), &'static JsError> {
         let other = unsafe { unchecked_editor(other) };
         select(other, None);
     }
-    log(&["parsed", &js::type_of(Some(tree))]);
+    log(("parsed", js::type_of(Some(tree))));
     Ok(())
 }
 ```
@@ -524,9 +524,14 @@ export async function open(other) {
   that tests `!== null`; `#[rust_js::nullable(range)]` passes the parameter
   `range`'s `None` as `null`. Reading a result, `None` is `undefined` or
   `null` either way ([ADR 0275](../../decisions/0275-nullable-writes-null.md)).
-- **`#[rust_js::variadic]` makes the last parameter, a slice, the rest
-  arguments**: a slice written out is the arguments, another is spread,
-  `log(...values)` ([ADR 0221](../../decisions/0221-variadic-bindings.md)).
+- **`#[rust_js::variadic]` makes the last parameter the rest
+  arguments** ([ADR 0221](../../decisions/0221-variadic-bindings.md)). A
+  TypeScript rest parameter, `log(...data: any[])`, is `impl js::Rest<T>`,
+  a tuple, each argument of its own type that a `T` takes: `dyn
+  IntoUnknown` of `any`, `str` of `string`; `(x,)` is one, `()` none
+  ([ADR 0640](../../decisions/0640-a-rest-parameter-is-a-tuple.md)). A
+  slice's items are the arguments, and one not written out is spread,
+  `log(...values)`.
 - **A cast is `this`, unchecked, so it's an `unsafe fn`**; check first with
   `instanceof`. webapi has one for each interface,
   `html_input_element::unchecked_from(target)`.
@@ -690,7 +695,7 @@ See [Components and props](../react/components.md).
 | Attribute | Says |
 |---|---|
 | `#[rust_js::nullable]`, `#[rust_js::nullable(param)]` | its result's, or that parameter's, `None` is `null` |
-| `#[rust_js::variadic]` | its last parameter, a slice or a tuple, is the rest arguments |
+| `#[rust_js::variadic]` | its last parameter, a slice or a tuple, a TypeScript rest parameter's `impl js::Rest<T>`, is the rest arguments |
 | `#[rust_js::require]` | it's read through `require(module)`, not imported |
 | `#[rust_js::cannot_throw]` | it can't throw, as reading a data property can't |
 | `#[rust_js::skips_falsy]` | it skips what's falsy, as `classnames` does: `test && value` |

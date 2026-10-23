@@ -26,6 +26,5 @@ pub fn main() {
     button.add_event_listener(Click, move |_| {
         spawn(Box::new(load(URL, output)));
     }, None);
-    app.append(button);
-    app.append(output);
+    app.append((button, output));
 }

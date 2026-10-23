@@ -65,7 +65,7 @@ pub fn draw() -> (&'static SVGSVGElement, &'static SVGCircleElement, bool) {
     let svg = document.create_element_ns(Svg, SvgTag);
     let circle = document.create_element_ns(Svg, Circle);
     circle.set_attribute("r", "4");
-    svg.append(circle);
+    svg.append((circle,));
     (svg, circle, circle.is_point_in_fill(None))
 }
 pub fn named() -> &'static webapi::Element {
@@ -229,4 +229,103 @@ pub fn asked() -> bool {
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain('return confirm("Clear all your edits?");');
   expect(js).toContain('return window.confirm("Sure?");');
+});
+
+// ADR 0640: a TypeScript rest parameter, `error(...data: any[])`, is a
+// variadic binding of a tuple, each argument of its own type: React's
+// `console.error(format, propName, typeName(value))`, an element's
+// `append(node, "text")`; `(x,)` is one, `()` none, and a `None` before
+// none is left out, as a trailing one is.
+test("a rest parameter is a tuple, each argument its own type", async () => {
+  const withWeb = ["--", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const dir = fixture("rest-tuple");
+  const source = `use js::Unknown;
+use webapi::{Element, console};
+
+pub fn check_prop(prop_name: &str, type_name: String) {
+    console::error((
+        "The provided \`%s\` prop is an unsupported type %s. \\
+         This value must be coerced to a string before using it here.",
+        prop_name,
+        type_name,
+    ));
+}
+
+pub fn logged(value: Option<&Unknown>, n: f64) {
+    console::log(("value", value, n));
+}
+
+pub fn warned(message: &str) {
+    console::warn((message,));
+}
+
+pub fn blank() {
+    console::log(());
+}
+
+pub fn checked(ok: bool, message: &str) {
+    console::assert(Some(ok), (message,));
+}
+
+pub fn timed() {
+    console::time_log(None, ());
+}
+
+pub fn spread(held: (&str, f64)) {
+    console::time_log(None, held);
+}
+
+pub fn filled(el: &Element, child: &Element, name: &str, kind: String) {
+    el.append((child, "text"));
+    el.class_list().add((name, kind));
+}
+`;
+  writeFileSync(join(dir, "lib.rs"), source);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('  console.error(\n    "The provided `%s` prop is an unsupported type %s. This value must be coerced to a string before using it here.",\n    propName,\n    typeName,\n  );');
+  expect(js).toContain('console.log("value", value, n);');
+  expect(js).toContain("console.warn(message);");
+  expect(js).toContain("console.log();");
+  expect(js).toContain("console.assert(ok, message);");
+  expect(js).toContain("console.timeLog();");
+  // Before a spread, a `None` is still `undefined`, its place kept.
+  expect(js).toContain("console.timeLog(undefined, ...held);");
+  expect(js).toContain('el.append(child, "text");');
+  expect(js).toContain("el.classList.add(name, kind);");
+  const lib = await import(join(dir, "lib.js"));
+  const said: unknown[][] = [];
+  const kept = { ...console };
+  for (const method of ["error", "log", "warn", "assert", "timeLog"] as const) {
+    (console as any)[method] = (...args: unknown[]) => said.push([method, ...args]);
+  }
+  try {
+    lib.checkProp("key", "Symbol");
+    lib.logged(undefined, 2);
+    lib.warned("careful");
+    lib.blank();
+    lib.checked(false, "no");
+    lib.timed();
+    lib.spread(["a", 1]);
+  } finally {
+    Object.assign(console, kept);
+  }
+  expect(said).toEqual([
+    ["error", "The provided `%s` prop is an unsupported type %s. This value must be coerced to a string before using it here.", "key", "Symbol"],
+    ["log", "value", undefined, 2],
+    ["warn", "careful"],
+    ["log"],
+    ["assert", false, "no"],
+    ["timeLog"],
+    ["timeLog", undefined, "a", 1],
+  ]);
+  const appended: unknown[][] = [];
+  const el = { append: (...a: unknown[]) => appended.push(a), classList: { add: (...a: unknown[]) => appended.push(a) } };
+  lib.filled(el, "child", "a", "b");
+  expect(appended).toEqual([["child", "text"], ["a", "b"]]);
+  // A value that isn't a tuple says what to write.
+  writeFileSync(join(dir, "lib.rs"), source.replace("console::warn((message,));", "console::warn(message);"));
+  const result = Bun.spawnSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "wrong.js"), ...withWeb], { cwd: dir });
+  expect(result.exitCode).not.toBe(0);
+  expect(result.stderr.toString()).toContain("`&str` is not a tuple of rest arguments");
 });

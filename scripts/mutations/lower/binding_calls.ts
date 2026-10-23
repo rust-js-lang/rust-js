@@ -174,8 +174,16 @@ export const mutations: Mutation[] = [
     name: "binding-trailing-none-given",
     breaks: "a binding's trailing `None` of an optional parameter is written, `addRule(\"p\", undefined, undefined)`",
     file: "src/lower/binding_calls.rs",
-    find: "                && is_optional_param(self.tcx, def_id, args.len() - 1 + offset)\n",
-    replace: "                && false\n",
+    find: "            && is_optional_param(self.tcx, def_id, args.len() - 1 + offset)\n",
+    replace: "            && false\n",
     tests: ["test/bindings.test.ts", "-t", "trailing None is no argument"],
+  },
+  {
+    name: "rest-of-none-keeps-none",
+    breaks: "a `None` before a rest of none, `console::time_log(None, ())`, is `console.timeLog(undefined)`",
+    file: "src/lower/binding_calls.rs",
+    find: "            .is_some_and(|last| matches!(last.kind, js::ExprKind::Undefined))\n            && is_optional_param(",
+    replace: "            .is_some_and(|last| matches!(last.kind, js::ExprKind::Undefined))\n            && !is_variadic(self.tcx, def_id)\n            && is_optional_param(",
+    tests: ["test/webapi-bindings.test.ts", "-t", "a rest parameter is a tuple"],
   },
 ];

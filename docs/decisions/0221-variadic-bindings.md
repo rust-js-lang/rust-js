@@ -71,3 +71,4 @@ rule holds.
 ## Amended by
 
 - [0373](0373-one-binding-form.md): A binding of a JS function is an ordinary function, and a JS type a struct
+- [0640](0640-a-rest-parameter-is-a-tuple.md): A TypeScript rest parameter is a tuple, `impl js::Rest<T>`, each argument its own type

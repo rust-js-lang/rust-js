@@ -16,7 +16,7 @@ b.set_text_content("+");                 // b.textContent = "+"
 b.add_event_listener(Click, |e| {
     e.client_x();                         // e is the PointerEvent a button's click is
 }, None);
-app.append(b);                            // app.append(b)
+app.append((b, "!"));                     // app.append(b, "!"), a rest parameter's tuple
 ```
 
 - Each interface is a type (`Element`, `HTMLInputElement`), its members its
@@ -41,13 +41,17 @@ app.append(b);                            // app.append(b)
 - A promise is a `Promise<T>`, the js crate's, to `.await`: `window.fetch(url, None).await`
   ([ADR 0029](../docs/decisions/0029-async-await.md)). `js::settle(p).await` is a `Result`.
 - Binary data is JS's `ArrayBuffer` and `Uint8Array`, the js crate's: `r.bytes().await`.
-- A union parameter takes each member as it is, `impl IntoNodeOrStr`, and a union's value is
+- A union parameter takes each member as it is, `impl IntoRequestInfo`, and a union's value is
   an untagged enum, the member itself ([ADR 0215](../docs/decisions/0215-webapi-unions.md),
-  [ADR 0229](../docs/decisions/0229-union-parameters.md)): `el.before("text")` is JS's `el.before("text")`, and
+  [ADR 0229](../docs/decisions/0229-union-parameters.md)): `window.fetch(request, None)` is JS's `window.fetch(request)`, and
   `response::new(Some(&blob), None)` is `new Response(blob)`. An optional argument is an
   `Option`, a union's borrowed, `Some(&value)`, and a trailing `None` is no argument
   ([ADR 0443](../docs/decisions/0443-a-value-a-caller-may-leave-out-is-an-option.md)):
   `window.fetch(url, Some(init))`, `e.encode(Some("hi"))`, `window.fetch(url, None)` is `window.fetch(url)`.
+- A rest parameter, `...nodes`, is a tuple, each argument of its own type, which the binding
+  spreads ([ADR 0640](../docs/decisions/0640-a-rest-parameter-is-a-tuple.md)):
+  `el.append((node, "text"))` is `el.append(node, "text")`, `console::log((x,))` is
+  `console.log(x)`, and `console::log(())` is `console.log()`.
 - An options object is a struct of `Option` fields, the rest `..Default::default()`:
   `RequestInit { method: Some("POST"), body: Some(json.into()), ..Default::default() }`.
 - A constructor is `new`, `event::new("ping", None)`, and `request::new(url, None)`.

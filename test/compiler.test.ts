@@ -797,7 +797,7 @@ test("the counter's JS is plain DOM code", async () => {
   expect(js).toContain('b.addEventListener("click", () => {');
   expect(js).toContain("count.value = (count.value + by) | 0;");
   expect(js).toContain("output.textContent = String(count.value);");
-  expect(js).toContain("app.append(output);");
+  expect(js).toContain('app.append(stepper("-", -1, count, output), output, stepper("+", 1, count, output));');
 });
 
 // Each `#[link_name]` form the webapi crate uses (ADR 0024), in test/web_forms.rs.
@@ -809,9 +809,9 @@ test("the webapi crate's bindings become plain JS", async () => {
   // A result that may be `null` is an `Option` (ADR 0030), unwrapped here.
   expect(js).toContain('const app = $unwrap(document.getElementById("app"), "the page has an #app");');
   expect(js).toContain("return $unwrap(app.textContent) + input.value;");
-  // A union is its untagged enum, whose value is the member itself (ADR 0215).
-  expect(js).toContain("app.append(input);");
-  expect(js).toContain('app.append("!");');
+  // A union is its untagged enum, whose value is the member itself (ADR
+  // 0215); a rest parameter's tuple, its arguments (ADR 0640).
+  expect(js).toContain('app.append(input, "!");');
   // Constructors, and a global used as an `EventTarget` through `Deref`.
   expect(js).toContain('const ping = new Event("ping");');
   // A closure returning \`()\` is a block body: JS gets no return value Rust didn't have.

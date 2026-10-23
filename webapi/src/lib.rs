@@ -12,7 +12,7 @@
 
 use core::marker::PhantomData;
 use core::ops::Deref;
-use js::{ArrayBuffer, BigInt64Array, BigUint64Array, DataView, Defined, Float32Array, Float64Array, Int16Array, Int32Array, Int8Array, IntoUnknown, JsError, JsObject, Promise, SharedArrayBuffer, StructuredClone, Uint16Array, Uint32Array, Uint8Array, Uint8ClampedArray, Unknown};
+use js::{ArrayBuffer, BigInt64Array, BigUint64Array, DataView, Defined, Float32Array, Float64Array, Int16Array, Int32Array, Int8Array, IntoUnknown, JsError, JsObject, Promise, Rest, SharedArrayBuffer, StructuredClone, Takes, Uint16Array, Uint32Array, Uint8Array, Uint8ClampedArray, Unknown};
 
 unsafe extern "Rust" {
     /// The `document` global.
@@ -687,25 +687,28 @@ impl CharacterData {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CharacterData/before)
     #[cfg_attr(rust_js, rust_js::link_name = "before")]
+    #[cfg_attr(rust_js, rust_js::variadic)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn before(&self, nodes: impl IntoNodeOrStr) {
+    pub fn before(&self, nodes: impl Rest<dyn IntoNodeOrStr>) {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CharacterData/after)
     #[cfg_attr(rust_js, rust_js::link_name = "after")]
+    #[cfg_attr(rust_js, rust_js::variadic)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn after(&self, nodes: impl IntoNodeOrStr) {
+    pub fn after(&self, nodes: impl Rest<dyn IntoNodeOrStr>) {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CharacterData/replaceWith)
     #[cfg_attr(rust_js, rust_js::link_name = "replaceWith")]
+    #[cfg_attr(rust_js, rust_js::variadic)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn replace_with(&self, nodes: impl IntoNodeOrStr) {
+    pub fn replace_with(&self, nodes: impl Rest<dyn IntoNodeOrStr>) {
         unreachable!()
     }
 
@@ -1546,25 +1549,28 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/prepend)
     #[cfg_attr(rust_js, rust_js::link_name = "prepend")]
+    #[cfg_attr(rust_js, rust_js::variadic)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn prepend(&self, nodes: impl IntoNodeOrStr) {
+    pub fn prepend(&self, nodes: impl Rest<dyn IntoNodeOrStr>) {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/append)
     #[cfg_attr(rust_js, rust_js::link_name = "append")]
+    #[cfg_attr(rust_js, rust_js::variadic)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn append(&self, nodes: impl IntoNodeOrStr) {
+    pub fn append(&self, nodes: impl Rest<dyn IntoNodeOrStr>) {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/replaceChildren)
     #[cfg_attr(rust_js, rust_js::link_name = "replaceChildren")]
+    #[cfg_attr(rust_js, rust_js::variadic)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn replace_children(&self, nodes: impl IntoNodeOrStr) {
+    pub fn replace_children(&self, nodes: impl Rest<dyn IntoNodeOrStr>) {
         unreachable!()
     }
 
@@ -1610,25 +1616,28 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/before)
     #[cfg_attr(rust_js, rust_js::link_name = "before")]
+    #[cfg_attr(rust_js, rust_js::variadic)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn before(&self, nodes: impl IntoNodeOrStr) {
+    pub fn before(&self, nodes: impl Rest<dyn IntoNodeOrStr>) {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/after)
     #[cfg_attr(rust_js, rust_js::link_name = "after")]
+    #[cfg_attr(rust_js, rust_js::variadic)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn after(&self, nodes: impl IntoNodeOrStr) {
+    pub fn after(&self, nodes: impl Rest<dyn IntoNodeOrStr>) {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/replaceWith)
     #[cfg_attr(rust_js, rust_js::link_name = "replaceWith")]
+    #[cfg_attr(rust_js, rust_js::variadic)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn replace_with(&self, nodes: impl IntoNodeOrStr) {
+    pub fn replace_with(&self, nodes: impl Rest<dyn IntoNodeOrStr>) {
         unreachable!()
     }
 
@@ -3098,17 +3107,19 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/write)
     #[cfg_attr(rust_js, rust_js::link_name = "write")]
+    #[cfg_attr(rust_js, rust_js::variadic)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn write(&self, text: &str) {
+    pub fn write(&self, text: impl Rest<str>) {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/writeln)
     #[cfg_attr(rust_js, rust_js::link_name = "writeln")]
+    #[cfg_attr(rust_js, rust_js::variadic)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn writeln(&self, text: &str) {
+    pub fn writeln(&self, text: impl Rest<str>) {
         unreachable!()
     }
 
@@ -3622,25 +3633,28 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/prepend)
     #[cfg_attr(rust_js, rust_js::link_name = "prepend")]
+    #[cfg_attr(rust_js, rust_js::variadic)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn prepend(&self, nodes: impl IntoNodeOrStr) {
+    pub fn prepend(&self, nodes: impl Rest<dyn IntoNodeOrStr>) {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/append)
     #[cfg_attr(rust_js, rust_js::link_name = "append")]
+    #[cfg_attr(rust_js, rust_js::variadic)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn append(&self, nodes: impl IntoNodeOrStr) {
+    pub fn append(&self, nodes: impl Rest<dyn IntoNodeOrStr>) {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/replaceChildren)
     #[cfg_attr(rust_js, rust_js::link_name = "replaceChildren")]
+    #[cfg_attr(rust_js, rust_js::variadic)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn replace_children(&self, nodes: impl IntoNodeOrStr) {
+    pub fn replace_children(&self, nodes: impl Rest<dyn IntoNodeOrStr>) {
         unreachable!()
     }
 
@@ -5507,25 +5521,28 @@ impl DocumentFragment {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DocumentFragment/prepend)
     #[cfg_attr(rust_js, rust_js::link_name = "prepend")]
+    #[cfg_attr(rust_js, rust_js::variadic)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn prepend(&self, nodes: impl IntoNodeOrStr) {
+    pub fn prepend(&self, nodes: impl Rest<dyn IntoNodeOrStr>) {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DocumentFragment/append)
     #[cfg_attr(rust_js, rust_js::link_name = "append")]
+    #[cfg_attr(rust_js, rust_js::variadic)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn append(&self, nodes: impl IntoNodeOrStr) {
+    pub fn append(&self, nodes: impl Rest<dyn IntoNodeOrStr>) {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DocumentFragment/replaceChildren)
     #[cfg_attr(rust_js, rust_js::link_name = "replaceChildren")]
+    #[cfg_attr(rust_js, rust_js::variadic)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn replace_children(&self, nodes: impl IntoNodeOrStr) {
+    pub fn replace_children(&self, nodes: impl Rest<dyn IntoNodeOrStr>) {
         unreachable!()
     }
 
@@ -5598,17 +5615,19 @@ impl DOMTokenList {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMTokenList/add)
     #[cfg_attr(rust_js, rust_js::link_name = "add")]
+    #[cfg_attr(rust_js, rust_js::variadic)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn add(&self, tokens: &str) {
+    pub fn add(&self, tokens: impl Rest<str>) {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMTokenList/remove)
     #[cfg_attr(rust_js, rust_js::link_name = "remove")]
+    #[cfg_attr(rust_js, rust_js::variadic)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn remove(&self, tokens: &str) {
+    pub fn remove(&self, tokens: impl Rest<str>) {
         unreachable!()
     }
 
@@ -18063,9 +18082,10 @@ impl HTMLSlotElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLSlotElement/assign)
     #[cfg_attr(rust_js, rust_js::link_name = "assign")]
+    #[cfg_attr(rust_js, rust_js::variadic)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn assign(&self, nodes: impl IntoElementOrText) {
+    pub fn assign(&self, nodes: impl Rest<dyn IntoElementOrText>) {
         unreachable!()
     }
 
@@ -20904,9 +20924,10 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/setTimeout)
     #[cfg_attr(rust_js, rust_js::link_name = "setTimeout")]
+    #[cfg_attr(rust_js, rust_js::variadic)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_timeout(&self, handler: &str, timeout: Option<i32>) -> i32 {
+    pub fn set_timeout(&self, handler: &str, timeout: Option<i32>, arguments: impl Rest<dyn IntoUnknown>) -> i32 {
         unreachable!()
     }
 
@@ -20920,9 +20941,10 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/setInterval)
     #[cfg_attr(rust_js, rust_js::link_name = "setInterval")]
+    #[cfg_attr(rust_js, rust_js::variadic)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_interval(&self, handler: &str, timeout: Option<i32>) -> i32 {
+    pub fn set_interval(&self, handler: &str, timeout: Option<i32>, arguments: impl Rest<dyn IntoUnknown>) -> i32 {
         unreachable!()
     }
 
@@ -45600,9 +45622,10 @@ pub mod css_math_max {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSMathMax/CSSMathMax)
     #[cfg_attr(rust_js, rust_js::link_name = "new CSSMathMax")]
+    #[cfg_attr(rust_js, rust_js::variadic)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new(args: impl IntoCSSNumberish) -> &'static CSSMathMax {
+    pub fn new(args: impl Rest<dyn IntoCSSNumberish>) -> &'static CSSMathMax {
         unreachable!()
     }
 
@@ -45644,9 +45667,10 @@ pub mod css_math_min {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSMathMin/CSSMathMin)
     #[cfg_attr(rust_js, rust_js::link_name = "new CSSMathMin")]
+    #[cfg_attr(rust_js, rust_js::variadic)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new(args: impl IntoCSSNumberish) -> &'static CSSMathMin {
+    pub fn new(args: impl Rest<dyn IntoCSSNumberish>) -> &'static CSSMathMin {
         unreachable!()
     }
 
@@ -45732,9 +45756,10 @@ pub mod css_math_product {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSMathProduct/CSSMathProduct)
     #[cfg_attr(rust_js, rust_js::link_name = "new CSSMathProduct")]
+    #[cfg_attr(rust_js, rust_js::variadic)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new(args: impl IntoCSSNumberish) -> &'static CSSMathProduct {
+    pub fn new(args: impl Rest<dyn IntoCSSNumberish>) -> &'static CSSMathProduct {
         unreachable!()
     }
 
@@ -45776,9 +45801,10 @@ pub mod css_math_sum {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSMathSum/CSSMathSum)
     #[cfg_attr(rust_js, rust_js::link_name = "new CSSMathSum")]
+    #[cfg_attr(rust_js, rust_js::variadic)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new(args: impl IntoCSSNumberish) -> &'static CSSMathSum {
+    pub fn new(args: impl Rest<dyn IntoCSSNumberish>) -> &'static CSSMathSum {
         unreachable!()
     }
 
@@ -46079,57 +46105,64 @@ pub mod css_numeric_value {
 impl CSSNumericValue {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSNumericValue/add)
     #[cfg_attr(rust_js, rust_js::link_name = "add")]
+    #[cfg_attr(rust_js, rust_js::variadic)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn add(&self, values: impl IntoCSSNumberish) -> &'static CSSNumericValue {
+    pub fn add(&self, values: impl Rest<dyn IntoCSSNumberish>) -> &'static CSSNumericValue {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSNumericValue/sub)
     #[cfg_attr(rust_js, rust_js::link_name = "sub")]
+    #[cfg_attr(rust_js, rust_js::variadic)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn sub(&self, values: impl IntoCSSNumberish) -> &'static CSSNumericValue {
+    pub fn sub(&self, values: impl Rest<dyn IntoCSSNumberish>) -> &'static CSSNumericValue {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSNumericValue/mul)
     #[cfg_attr(rust_js, rust_js::link_name = "mul")]
+    #[cfg_attr(rust_js, rust_js::variadic)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn mul(&self, values: impl IntoCSSNumberish) -> &'static CSSNumericValue {
+    pub fn mul(&self, values: impl Rest<dyn IntoCSSNumberish>) -> &'static CSSNumericValue {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSNumericValue/div)
     #[cfg_attr(rust_js, rust_js::link_name = "div")]
+    #[cfg_attr(rust_js, rust_js::variadic)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn div(&self, values: impl IntoCSSNumberish) -> &'static CSSNumericValue {
+    pub fn div(&self, values: impl Rest<dyn IntoCSSNumberish>) -> &'static CSSNumericValue {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSNumericValue/min)
     #[cfg_attr(rust_js, rust_js::link_name = "min")]
+    #[cfg_attr(rust_js, rust_js::variadic)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn min(&self, values: impl IntoCSSNumberish) -> &'static CSSNumericValue {
+    pub fn min(&self, values: impl Rest<dyn IntoCSSNumberish>) -> &'static CSSNumericValue {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSNumericValue/max)
     #[cfg_attr(rust_js, rust_js::link_name = "max")]
+    #[cfg_attr(rust_js, rust_js::variadic)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn max(&self, values: impl IntoCSSNumberish) -> &'static CSSNumericValue {
+    pub fn max(&self, values: impl Rest<dyn IntoCSSNumberish>) -> &'static CSSNumericValue {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSNumericValue/equals)
     #[cfg_attr(rust_js, rust_js::link_name = "equals")]
+    #[cfg_attr(rust_js, rust_js::variadic)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn equals(&self, value: impl IntoCSSNumberish) -> bool {
+    pub fn equals(&self, value: impl Rest<dyn IntoCSSNumberish>) -> bool {
         unreachable!()
     }
 
@@ -46143,9 +46176,10 @@ impl CSSNumericValue {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSNumericValue/toSum)
     #[cfg_attr(rust_js, rust_js::link_name = "toSum")]
+    #[cfg_attr(rust_js, rust_js::variadic)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn to_sum(&self, units: &str) -> &'static CSSMathSum {
+    pub fn to_sum(&self, units: impl Rest<str>) -> &'static CSSMathSum {
         unreachable!()
     }
 
@@ -52501,25 +52535,28 @@ impl DocumentType {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DocumentType/before)
     #[cfg_attr(rust_js, rust_js::link_name = "before")]
+    #[cfg_attr(rust_js, rust_js::variadic)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn before(&self, nodes: impl IntoNodeOrStr) {
+    pub fn before(&self, nodes: impl Rest<dyn IntoNodeOrStr>) {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DocumentType/after)
     #[cfg_attr(rust_js, rust_js::link_name = "after")]
+    #[cfg_attr(rust_js, rust_js::variadic)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn after(&self, nodes: impl IntoNodeOrStr) {
+    pub fn after(&self, nodes: impl Rest<dyn IntoNodeOrStr>) {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DocumentType/replaceWith)
     #[cfg_attr(rust_js, rust_js::link_name = "replaceWith")]
+    #[cfg_attr(rust_js, rust_js::variadic)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn replace_with(&self, nodes: impl IntoNodeOrStr) {
+    pub fn replace_with(&self, nodes: impl Rest<dyn IntoNodeOrStr>) {
         unreachable!()
     }
 
@@ -58865,9 +58902,10 @@ pub mod highlight {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Highlight/Highlight)
     #[cfg_attr(rust_js, rust_js::link_name = "new Highlight")]
+    #[cfg_attr(rust_js, rust_js::variadic)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new(initial_ranges: &AbstractRange) -> &'static Highlight {
+    pub fn new(initial_ranges: impl Rest<AbstractRange>) -> &'static Highlight {
         unreachable!()
     }
 }
@@ -71408,9 +71446,10 @@ impl RTCPeerConnection {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnection/addTrack)
     #[cfg_attr(rust_js, rust_js::link_name = "addTrack")]
+    #[cfg_attr(rust_js, rust_js::variadic)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn add_track(&self, track: &MediaStreamTrack, streams: &MediaStream) -> &'static RTCRtpSender {
+    pub fn add_track(&self, track: &MediaStreamTrack, streams: impl Rest<MediaStream>) -> &'static RTCRtpSender {
         unreachable!()
     }
 
@@ -71776,9 +71815,10 @@ impl RTCRtpSender {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCRtpSender/setStreams)
     #[cfg_attr(rust_js, rust_js::link_name = "setStreams")]
+    #[cfg_attr(rust_js, rust_js::variadic)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_streams(&self, streams: &MediaStream) {
+    pub fn set_streams(&self, streams: impl Rest<MediaStream>) {
         unreachable!()
     }
 
@@ -76900,17 +76940,19 @@ pub mod style_property_map {
 impl StylePropertyMap {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/StylePropertyMap/set)
     #[cfg_attr(rust_js, rust_js::link_name = "set")]
+    #[cfg_attr(rust_js, rust_js::variadic)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set(&self, property: &str, values: impl IntoCSSStyleValueOrStr) {
+    pub fn set(&self, property: &str, values: impl Rest<dyn IntoCSSStyleValueOrStr>) {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/StylePropertyMap/append)
     #[cfg_attr(rust_js, rust_js::link_name = "append")]
+    #[cfg_attr(rust_js, rust_js::variadic)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn append(&self, property: &str, values: impl IntoCSSStyleValueOrStr) {
+    pub fn append(&self, property: &str, values: impl Rest<dyn IntoCSSStyleValueOrStr>) {
         unreachable!()
     }
 
@@ -87436,9 +87478,10 @@ pub mod console {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/console/assert)
     #[cfg_attr(rust_js, rust_js::link_name = "console.assert")]
+    #[cfg_attr(rust_js, rust_js::variadic)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn assert(condition: Option<bool>) {
+    pub fn assert(condition: Option<bool>, data: impl Rest<dyn IntoUnknown>) {
         unreachable!()
     }
 
@@ -87452,33 +87495,37 @@ pub mod console {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/console/debug)
     #[cfg_attr(rust_js, rust_js::link_name = "console.debug")]
+    #[cfg_attr(rust_js, rust_js::variadic)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn debug<D>(data: D) {
+    pub fn debug(data: impl Rest<dyn IntoUnknown>) {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/console/error)
     #[cfg_attr(rust_js, rust_js::link_name = "console.error")]
+    #[cfg_attr(rust_js, rust_js::variadic)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn error<D>(data: D) {
+    pub fn error(data: impl Rest<dyn IntoUnknown>) {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/console/info)
     #[cfg_attr(rust_js, rust_js::link_name = "console.info")]
+    #[cfg_attr(rust_js, rust_js::variadic)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn info<D>(data: D) {
+    pub fn info(data: impl Rest<dyn IntoUnknown>) {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/console/log)
     #[cfg_attr(rust_js, rust_js::link_name = "console.log")]
+    #[cfg_attr(rust_js, rust_js::variadic)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn log<D>(data: D) {
+    pub fn log(data: impl Rest<dyn IntoUnknown>) {
         unreachable!()
     }
 
@@ -87492,17 +87539,19 @@ pub mod console {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/console/trace)
     #[cfg_attr(rust_js, rust_js::link_name = "console.trace")]
+    #[cfg_attr(rust_js, rust_js::variadic)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn trace<D>(data: D) {
+    pub fn trace(data: impl Rest<dyn IntoUnknown>) {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/console/warn)
     #[cfg_attr(rust_js, rust_js::link_name = "console.warn")]
+    #[cfg_attr(rust_js, rust_js::variadic)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn warn<D>(data: D) {
+    pub fn warn(data: impl Rest<dyn IntoUnknown>) {
         unreachable!()
     }
 
@@ -87516,9 +87565,10 @@ pub mod console {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/console/dirxml)
     #[cfg_attr(rust_js, rust_js::link_name = "console.dirxml")]
+    #[cfg_attr(rust_js, rust_js::variadic)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn dirxml<D>(data: D) {
+    pub fn dirxml(data: impl Rest<dyn IntoUnknown>) {
         unreachable!()
     }
 
@@ -87540,17 +87590,19 @@ pub mod console {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/console/group)
     #[cfg_attr(rust_js, rust_js::link_name = "console.group")]
+    #[cfg_attr(rust_js, rust_js::variadic)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn group<D>(data: D) {
+    pub fn group(data: impl Rest<dyn IntoUnknown>) {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/console/groupCollapsed)
     #[cfg_attr(rust_js, rust_js::link_name = "console.groupCollapsed")]
+    #[cfg_attr(rust_js, rust_js::variadic)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn group_collapsed<D>(data: D) {
+    pub fn group_collapsed(data: impl Rest<dyn IntoUnknown>) {
         unreachable!()
     }
 
@@ -87572,9 +87624,10 @@ pub mod console {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/console/timeLog)
     #[cfg_attr(rust_js, rust_js::link_name = "console.timeLog")]
+    #[cfg_attr(rust_js, rust_js::variadic)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn time_log(label: Option<&str>) {
+    pub fn time_log(label: Option<&str>, data: impl Rest<dyn IntoUnknown>) {
         unreachable!()
     }
 
@@ -91891,6 +91944,8 @@ pub trait IntoAddEventListenerOptionsOrBool: sealed::Sealed {}
 impl IntoAddEventListenerOptionsOrBool for AddEventListenerOptions<'_> {}
 impl IntoAddEventListenerOptionsOrBool for bool {}
 impl IntoAddEventListenerOptionsOrBool for AddEventListenerOptionsOrBool<'_> {}
+/// A rest parameter of `AddEventListenerOptions | boolean`s takes each member (ADR 0640).
+impl<A: IntoAddEventListenerOptionsOrBool> Takes<A> for dyn IntoAddEventListenerOptionsOrBool {}
 
 impl<'a> AddEventListenerOptionsOrBool<'a> {
     /// The member a parameter was given, as its enum, to `match`: the value itself.
@@ -92024,6 +92079,8 @@ impl IntoAllowSharedBufferSource for &Float32Array {}
 impl IntoAllowSharedBufferSource for &Float64Array {}
 impl IntoAllowSharedBufferSource for &DataView {}
 impl IntoAllowSharedBufferSource for AllowSharedBufferSource<'_> {}
+/// A rest parameter of `ArrayBuffer | SharedArrayBuffer | Int8Array | Int16Array | Int32Array | Uint8Array | Uint16Array | Uint32Array | Uint8ClampedArray | BigInt64Array | BigUint64Array | Float32Array | Float64Array | DataView`s takes each member (ADR 0640).
+impl<A: IntoAllowSharedBufferSource> Takes<A> for dyn IntoAllowSharedBufferSource {}
 
 impl<'a> AllowSharedBufferSource<'a> {
     /// The member a parameter was given, as its enum, to `match`: the value itself.
@@ -92141,6 +92198,8 @@ impl IntoArrayBufferView for &Float32Array {}
 impl IntoArrayBufferView for &Float64Array {}
 impl IntoArrayBufferView for &DataView {}
 impl IntoArrayBufferView for ArrayBufferView<'_> {}
+/// A rest parameter of `Int8Array | Int16Array | Int32Array | Uint8Array | Uint16Array | Uint32Array | Uint8ClampedArray | BigInt64Array | BigUint64Array | Float32Array | Float64Array | DataView`s takes each member (ADR 0640).
+impl<A: IntoArrayBufferView> Takes<A> for dyn IntoArrayBufferView {}
 
 impl<'a> ArrayBufferView<'a> {
     /// The member a parameter was given, as its enum, to `match`: the value itself.
@@ -92185,6 +92244,8 @@ impl IntoBlobOrMediaSource for &Blob {}
 impl IntoBlobOrMediaSource for &File {}
 impl IntoBlobOrMediaSource for &MediaSource {}
 impl IntoBlobOrMediaSource for BlobOrMediaSource<'_> {}
+/// A rest parameter of `Blob | MediaSource`s takes each member (ADR 0640).
+impl<A: IntoBlobOrMediaSource> Takes<A> for dyn IntoBlobOrMediaSource {}
 
 impl<'a> BlobOrMediaSource<'a> {
     /// The member a parameter was given, as its enum, to `match`: the value itself.
@@ -92333,6 +92394,8 @@ impl IntoBlobPart for &Blob {}
 impl IntoBlobPart for &File {}
 impl IntoBlobPart for &str {}
 impl IntoBlobPart for BlobPart<'_> {}
+/// A rest parameter of `Int8Array | Int16Array | Int32Array | Uint8Array | Uint16Array | Uint32Array | Uint8ClampedArray | BigInt64Array | BigUint64Array | Float32Array | Float64Array | DataView | ArrayBuffer | Blob | string`s takes each member (ADR 0640).
+impl<A: IntoBlobPart> Takes<A> for dyn IntoBlobPart {}
 
 impl<'a> BlobPart<'a> {
     /// The member a parameter was given, as its enum, to `match`: the value itself.
@@ -92370,6 +92433,8 @@ pub trait IntoBluetoothServiceUUID: sealed::Sealed {}
 impl IntoBluetoothServiceUUID for &str {}
 impl IntoBluetoothServiceUUID for u32 {}
 impl IntoBluetoothServiceUUID for BluetoothServiceUUID<'_> {}
+/// A rest parameter of `BluetoothServiceUUID`s takes each member (ADR 0640).
+impl<A: IntoBluetoothServiceUUID> Takes<A> for dyn IntoBluetoothServiceUUID {}
 
 impl<'a> BluetoothServiceUUID<'a> {
     /// The member a parameter was given, as its enum, to `match`: the value itself.
@@ -92549,6 +92614,8 @@ impl IntoBodyInit for &FormData {}
 impl IntoBodyInit for &URLSearchParams {}
 impl IntoBodyInit for &str {}
 impl IntoBodyInit for BodyInit<'_> {}
+/// A rest parameter of `ReadableStream | Blob | Int8Array | Int16Array | Int32Array | Uint8Array | Uint16Array | Uint32Array | Uint8ClampedArray | BigInt64Array | BigUint64Array | Float32Array | Float64Array | DataView | ArrayBuffer | FormData | URLSearchParams | string`s takes each member (ADR 0640).
+impl<A: IntoBodyInit> Takes<A> for dyn IntoBodyInit {}
 
 impl<'a> BodyInit<'a> {
     /// The member a parameter was given, as its enum, to `match`: the value itself.
@@ -92586,6 +92653,8 @@ pub trait IntoBoolOrImportNodeOptions: sealed::Sealed {}
 impl IntoBoolOrImportNodeOptions for bool {}
 impl IntoBoolOrImportNodeOptions for ImportNodeOptions<'_> {}
 impl IntoBoolOrImportNodeOptions for BoolOrImportNodeOptions<'_> {}
+/// A rest parameter of `boolean | ImportNodeOptions`s takes each member (ADR 0640).
+impl<A: IntoBoolOrImportNodeOptions> Takes<A> for dyn IntoBoolOrImportNodeOptions {}
 
 impl<'a> BoolOrImportNodeOptions<'a> {
     /// The member a parameter was given, as its enum, to `match`: the value itself.
@@ -92623,6 +92692,8 @@ pub trait IntoBoolOrMediaTrackConstraints: sealed::Sealed {}
 impl IntoBoolOrMediaTrackConstraints for bool {}
 impl IntoBoolOrMediaTrackConstraints for MediaTrackConstraints {}
 impl IntoBoolOrMediaTrackConstraints for BoolOrMediaTrackConstraints {}
+/// A rest parameter of `boolean | MediaTrackConstraints`s takes each member (ADR 0640).
+impl<A: IntoBoolOrMediaTrackConstraints> Takes<A> for dyn IntoBoolOrMediaTrackConstraints {}
 
 impl BoolOrMediaTrackConstraints {
     /// The member a parameter was given, as its enum, to `match`: the value itself.
@@ -92668,6 +92739,8 @@ impl IntoBoolOrNumberOrStr for bool {}
 impl IntoBoolOrNumberOrStr for f64 {}
 impl IntoBoolOrNumberOrStr for &str {}
 impl IntoBoolOrNumberOrStr for BoolOrNumberOrStr<'_> {}
+/// A rest parameter of `boolean | number | string`s takes each member (ADR 0640).
+impl<A: IntoBoolOrNumberOrStr> Takes<A> for dyn IntoBoolOrNumberOrStr {}
 
 impl<'a> BoolOrNumberOrStr<'a> {
     /// The member a parameter was given, as its enum, to `match`: the value itself.
@@ -92705,6 +92778,8 @@ pub trait IntoBoolOrScrollIntoViewOptions: sealed::Sealed {}
 impl IntoBoolOrScrollIntoViewOptions for bool {}
 impl IntoBoolOrScrollIntoViewOptions for ScrollIntoViewOptions<'_> {}
 impl IntoBoolOrScrollIntoViewOptions for BoolOrScrollIntoViewOptions<'_> {}
+/// A rest parameter of `boolean | ScrollIntoViewOptions`s takes each member (ADR 0640).
+impl<A: IntoBoolOrScrollIntoViewOptions> Takes<A> for dyn IntoBoolOrScrollIntoViewOptions {}
 
 impl<'a> BoolOrScrollIntoViewOptions<'a> {
     /// The member a parameter was given, as its enum, to `match`: the value itself.
@@ -92742,6 +92817,8 @@ pub trait IntoBoolOrStr: sealed::Sealed {}
 impl IntoBoolOrStr for bool {}
 impl IntoBoolOrStr for &str {}
 impl IntoBoolOrStr for BoolOrStr<'_> {}
+/// A rest parameter of `boolean | string`s takes each member (ADR 0640).
+impl<A: IntoBoolOrStr> Takes<A> for dyn IntoBoolOrStr {}
 
 impl<'a> BoolOrStr<'a> {
     /// The member a parameter was given, as its enum, to `match`: the value itself.
@@ -92867,6 +92944,8 @@ impl IntoBufferSource for &Float64Array {}
 impl IntoBufferSource for &DataView {}
 impl IntoBufferSource for &ArrayBuffer {}
 impl IntoBufferSource for BufferSource<'_> {}
+/// A rest parameter of `Int8Array | Int16Array | Int32Array | Uint8Array | Uint16Array | Uint32Array | Uint8ClampedArray | BigInt64Array | BigUint64Array | Float32Array | Float64Array | DataView | ArrayBuffer`s takes each member (ADR 0640).
+impl<A: IntoBufferSource> Takes<A> for dyn IntoBufferSource {}
 
 impl<'a> BufferSource<'a> {
     /// The member a parameter was given, as its enum, to `match`: the value itself.
@@ -93015,6 +93094,8 @@ impl IntoBufferSourceOrBlobOrStr for &Blob {}
 impl IntoBufferSourceOrBlobOrStr for &File {}
 impl IntoBufferSourceOrBlobOrStr for &str {}
 impl IntoBufferSourceOrBlobOrStr for BufferSourceOrBlobOrStr<'_> {}
+/// A rest parameter of `Int8Array | Int16Array | Int32Array | Uint8Array | Uint16Array | Uint32Array | Uint8ClampedArray | BigInt64Array | BigUint64Array | Float32Array | Float64Array | DataView | ArrayBuffer | Blob | string`s takes each member (ADR 0640).
+impl<A: IntoBufferSourceOrBlobOrStr> Takes<A> for dyn IntoBufferSourceOrBlobOrStr {}
 
 impl<'a> BufferSourceOrBlobOrStr<'a> {
     /// The member a parameter was given, as its enum, to `match`: the value itself.
@@ -93148,6 +93229,8 @@ impl IntoBufferSourceOrJsonWebKey for &DataView {}
 impl IntoBufferSourceOrJsonWebKey for &ArrayBuffer {}
 impl IntoBufferSourceOrJsonWebKey for JsonWebKey {}
 impl IntoBufferSourceOrJsonWebKey for BufferSourceOrJsonWebKey<'_> {}
+/// A rest parameter of `Int8Array | Int16Array | Int32Array | Uint8Array | Uint16Array | Uint32Array | Uint8ClampedArray | BigInt64Array | BigUint64Array | Float32Array | Float64Array | DataView | ArrayBuffer | JsonWebKey`s takes each member (ADR 0640).
+impl<A: IntoBufferSourceOrJsonWebKey> Takes<A> for dyn IntoBufferSourceOrJsonWebKey {}
 
 impl<'a> BufferSourceOrJsonWebKey<'a> {
     /// The member a parameter was given, as its enum, to `match`: the value itself.
@@ -93281,6 +93364,8 @@ impl IntoBufferSourceOrStr for &DataView {}
 impl IntoBufferSourceOrStr for &ArrayBuffer {}
 impl IntoBufferSourceOrStr for &str {}
 impl IntoBufferSourceOrStr for BufferSourceOrStr<'_> {}
+/// A rest parameter of `Int8Array | Int16Array | Int32Array | Uint8Array | Uint16Array | Uint32Array | Uint8ClampedArray | BigInt64Array | BigUint64Array | Float32Array | Float64Array | DataView | ArrayBuffer | string`s takes each member (ADR 0640).
+impl<A: IntoBufferSourceOrStr> Takes<A> for dyn IntoBufferSourceOrStr {}
 
 impl<'a> BufferSourceOrStr<'a> {
     /// The member a parameter was given, as its enum, to `match`: the value itself.
@@ -93358,6 +93443,8 @@ impl IntoCanvasImageSource for &ImageBitmap {}
 impl IntoCanvasImageSource for &OffscreenCanvas {}
 impl IntoCanvasImageSource for &VideoFrame {}
 impl IntoCanvasImageSource for CanvasImageSource<'_> {}
+/// A rest parameter of `CanvasImageSource`s takes each member (ADR 0640).
+impl<A: IntoCanvasImageSource> Takes<A> for dyn IntoCanvasImageSource {}
 
 impl<'a> CanvasImageSource<'a> {
     /// The member a parameter was given, as its enum, to `match`: the value itself.
@@ -93458,6 +93545,8 @@ impl IntoCSSNumberish for &CSSMathSum {}
 impl IntoCSSNumberish for &CSSMathValue {}
 impl IntoCSSNumberish for &CSSUnitValue {}
 impl IntoCSSNumberish for CSSNumberish<'_> {}
+/// A rest parameter of `CSSNumberish`s takes each member (ADR 0640).
+impl<A: IntoCSSNumberish> Takes<A> for dyn IntoCSSNumberish {}
 
 impl<'a> CSSNumberish<'a> {
     /// The member a parameter was given, as its enum, to `match`: the value itself.
@@ -93558,6 +93647,8 @@ impl IntoCSSNumericValueOrCSSKeywordValue for &CSSMathValue {}
 impl IntoCSSNumericValueOrCSSKeywordValue for &CSSUnitValue {}
 impl IntoCSSNumericValueOrCSSKeywordValue for &CSSKeywordValue {}
 impl IntoCSSNumericValueOrCSSKeywordValue for CSSNumericValueOrCSSKeywordValue<'_> {}
+/// A rest parameter of `CSSNumericValue | CSSKeywordValue`s takes each member (ADR 0640).
+impl<A: IntoCSSNumericValueOrCSSKeywordValue> Takes<A> for dyn IntoCSSNumericValueOrCSSKeywordValue {}
 
 impl<'a> CSSNumericValueOrCSSKeywordValue<'a> {
     /// The member a parameter was given, as its enum, to `match`: the value itself.
@@ -93666,6 +93757,8 @@ impl IntoCSSPerspectiveValue for &CSSUnitValue {}
 impl IntoCSSPerspectiveValue for &str {}
 impl IntoCSSPerspectiveValue for &CSSKeywordValue {}
 impl IntoCSSPerspectiveValue for CSSPerspectiveValue<'_> {}
+/// A rest parameter of `CSSPerspectiveValue`s takes each member (ADR 0640).
+impl<A: IntoCSSPerspectiveValue> Takes<A> for dyn IntoCSSPerspectiveValue {}
 
 impl<'a> CSSPerspectiveValue<'a> {
     /// The member a parameter was given, as its enum, to `match`: the value itself.
@@ -93801,6 +93894,8 @@ impl IntoCSSStyleValueOrStr for &CSSUnitValue {}
 impl IntoCSSStyleValueOrStr for &CSSUnparsedValue {}
 impl IntoCSSStyleValueOrStr for &str {}
 impl IntoCSSStyleValueOrStr for CSSStyleValueOrStr<'_> {}
+/// A rest parameter of `CSSStyleValue | string`s takes each member (ADR 0640).
+impl<A: IntoCSSStyleValueOrStr> Takes<A> for dyn IntoCSSStyleValueOrStr {}
 
 impl<'a> CSSStyleValueOrStr<'a> {
     /// The member a parameter was given, as its enum, to `match`: the value itself.
@@ -93838,6 +93933,8 @@ pub trait IntoCSSUnparsedSegment: sealed::Sealed {}
 impl IntoCSSUnparsedSegment for &str {}
 impl IntoCSSUnparsedSegment for &CSSVariableReferenceValue {}
 impl IntoCSSUnparsedSegment for CSSUnparsedSegment<'_> {}
+/// A rest parameter of `CSSUnparsedSegment`s takes each member (ADR 0640).
+impl<A: IntoCSSUnparsedSegment> Takes<A> for dyn IntoCSSUnparsedSegment {}
 
 impl<'a> CSSUnparsedSegment<'a> {
     /// The member a parameter was given, as its enum, to `match`: the value itself.
@@ -94017,6 +94114,8 @@ impl IntoDocumentOrXMLHttpRequestBodyInit for &FormData {}
 impl IntoDocumentOrXMLHttpRequestBodyInit for &URLSearchParams {}
 impl IntoDocumentOrXMLHttpRequestBodyInit for &str {}
 impl IntoDocumentOrXMLHttpRequestBodyInit for DocumentOrXMLHttpRequestBodyInit<'_> {}
+/// A rest parameter of `Document | Blob | Int8Array | Int16Array | Int32Array | Uint8Array | Uint16Array | Uint32Array | Uint8ClampedArray | BigInt64Array | BigUint64Array | Float32Array | Float64Array | DataView | ArrayBuffer | FormData | URLSearchParams | string`s takes each member (ADR 0640).
+impl<A: IntoDocumentOrXMLHttpRequestBodyInit> Takes<A> for dyn IntoDocumentOrXMLHttpRequestBodyInit {}
 
 impl<'a> DocumentOrXMLHttpRequestBodyInit<'a> {
     /// The member a parameter was given, as its enum, to `match`: the value itself.
@@ -95069,6 +95168,8 @@ impl IntoElementOrDocument for &MathMLElement {}
 impl IntoElementOrDocument for &Document {}
 impl IntoElementOrDocument for &XMLDocument {}
 impl IntoElementOrDocument for ElementOrDocument<'_> {}
+/// A rest parameter of `Element | Document`s takes each member (ADR 0640).
+impl<A: IntoElementOrDocument> Takes<A> for dyn IntoElementOrDocument {}
 
 impl<'a> ElementOrDocument<'a> {
     /// The member a parameter was given, as its enum, to `match`: the value itself.
@@ -96114,6 +96215,8 @@ impl IntoElementOrProcessingInstruction for &HTMLUnknownElement {}
 impl IntoElementOrProcessingInstruction for &MathMLElement {}
 impl IntoElementOrProcessingInstruction for &ProcessingInstruction {}
 impl IntoElementOrProcessingInstruction for ElementOrProcessingInstruction<'_> {}
+/// A rest parameter of `Element | ProcessingInstruction`s takes each member (ADR 0640).
+impl<A: IntoElementOrProcessingInstruction> Takes<A> for dyn IntoElementOrProcessingInstruction {}
 
 impl<'a> ElementOrProcessingInstruction<'a> {
     /// The member a parameter was given, as its enum, to `match`: the value itself.
@@ -97166,6 +97269,8 @@ impl IntoElementOrText for &MathMLElement {}
 impl IntoElementOrText for &Text {}
 impl IntoElementOrText for &CDATASection {}
 impl IntoElementOrText for ElementOrText<'_> {}
+/// A rest parameter of `Element | Text`s takes each member (ADR 0640).
+impl<A: IntoElementOrText> Takes<A> for dyn IntoElementOrText {}
 
 impl<'a> ElementOrText<'a> {
     /// The member a parameter was given, as its enum, to `match`: the value itself.
@@ -97203,6 +97308,8 @@ pub trait IntoEventListenerOptionsOrBool: sealed::Sealed {}
 impl IntoEventListenerOptionsOrBool for EventListenerOptions {}
 impl IntoEventListenerOptionsOrBool for bool {}
 impl IntoEventListenerOptionsOrBool for EventListenerOptionsOrBool {}
+/// A rest parameter of `EventListenerOptions | boolean`s takes each member (ADR 0640).
+impl<A: IntoEventListenerOptionsOrBool> Takes<A> for dyn IntoEventListenerOptionsOrBool {}
 
 impl EventListenerOptionsOrBool {
     /// The member a parameter was given, as its enum, to `match`: the value itself.
@@ -97723,6 +97830,8 @@ impl IntoEventOrStr for &TrackEvent {}
 impl IntoEventOrStr for &WebGLContextEvent {}
 impl IntoEventOrStr for &str {}
 impl IntoEventOrStr for EventOrStr<'_> {}
+/// A rest parameter of `Event | string`s takes each member (ADR 0640).
+impl<A: IntoEventOrStr> Takes<A> for dyn IntoEventOrStr {}
 
 impl<'a> EventOrStr<'a> {
     /// The member a parameter was given, as its enum, to `match`: the value itself.
@@ -97768,6 +97877,8 @@ impl IntoFileOrStrOrFormData for &File {}
 impl IntoFileOrStrOrFormData for &str {}
 impl IntoFileOrStrOrFormData for &FormData {}
 impl IntoFileOrStrOrFormData for FileOrStrOrFormData<'_> {}
+/// A rest parameter of `File | string | FormData`s takes each member (ADR 0640).
+impl<A: IntoFileOrStrOrFormData> Takes<A> for dyn IntoFileOrStrOrFormData {}
 
 impl<'a> FileOrStrOrFormData<'a> {
     /// The member a parameter was given, as its enum, to `match`: the value itself.
@@ -97924,6 +98035,8 @@ impl IntoFileSystemWriteChunkType for &File {}
 impl IntoFileSystemWriteChunkType for &str {}
 impl IntoFileSystemWriteChunkType for WriteParams<'_> {}
 impl IntoFileSystemWriteChunkType for FileSystemWriteChunkType<'_> {}
+/// A rest parameter of `Int8Array | Int16Array | Int32Array | Uint8Array | Uint16Array | Uint32Array | Uint8ClampedArray | BigInt64Array | BigUint64Array | Float32Array | Float64Array | DataView | ArrayBuffer | Blob | string | WriteParams`s takes each member (ADR 0640).
+impl<A: IntoFileSystemWriteChunkType> Takes<A> for dyn IntoFileSystemWriteChunkType {}
 
 impl<'a> FileSystemWriteChunkType<'a> {
     /// The member a parameter was given, as its enum, to `match`: the value itself.
@@ -97961,6 +98074,8 @@ pub trait IntoFloat32List: sealed::Sealed {}
 impl IntoFloat32List for &Float32Array {}
 impl IntoFloat32List for &[f32] {}
 impl IntoFloat32List for Float32List<'_> {}
+/// A rest parameter of `Float32List`s takes each member (ADR 0640).
+impl<A: IntoFloat32List> Takes<A> for dyn IntoFloat32List {}
 
 impl<'a> Float32List<'a> {
     /// The member a parameter was given, as its enum, to `match`: the value itself.
@@ -97998,6 +98113,8 @@ pub trait IntoFormDataEntryValue: sealed::Sealed {}
 impl IntoFormDataEntryValue for &File {}
 impl IntoFormDataEntryValue for &str {}
 impl IntoFormDataEntryValue for FormDataEntryValue<'_> {}
+/// A rest parameter of `FormDataEntryValue`s takes each member (ADR 0640).
+impl<A: IntoFormDataEntryValue> Takes<A> for dyn IntoFormDataEntryValue {}
 
 impl<'a> FormDataEntryValue<'a> {
     /// The member a parameter was given, as its enum, to `match`: the value itself.
@@ -99065,6 +99182,8 @@ impl IntoGeometryNode for &MathMLElement {}
 impl IntoGeometryNode for &Document {}
 impl IntoGeometryNode for &XMLDocument {}
 impl IntoGeometryNode for GeometryNode<'_> {}
+/// A rest parameter of `Text | Element | Document`s takes each member (ADR 0640).
+impl<A: IntoGeometryNode> Takes<A> for dyn IntoGeometryNode {}
 
 impl<'a> GeometryNode<'a> {
     /// The member a parameter was given, as its enum, to `match`: the value itself.
@@ -99134,6 +99253,8 @@ impl IntoGPUBindingResource for &GPUBuffer {}
 impl IntoGPUBindingResource for GPUBufferBinding<'_> {}
 impl IntoGPUBindingResource for &GPUExternalTexture {}
 impl IntoGPUBindingResource for GPUBindingResource<'_> {}
+/// A rest parameter of `GPUBindingResource`s takes each member (ADR 0640).
+impl<A: IntoGPUBindingResource> Takes<A> for dyn IntoGPUBindingResource {}
 
 impl<'a> GPUBindingResource<'a> {
     /// The member a parameter was given, as its enum, to `match`: the value itself.
@@ -99171,6 +99292,8 @@ pub trait IntoGPUColor: sealed::Sealed {}
 impl IntoGPUColor for &[f64] {}
 impl IntoGPUColor for GPUColorDict {}
 impl IntoGPUColor for GPUColor<'_> {}
+/// A rest parameter of `GPUColor`s takes each member (ADR 0640).
+impl<A: IntoGPUColor> Takes<A> for dyn IntoGPUColor {}
 
 impl<'a> GPUColor<'a> {
     /// The member a parameter was given, as its enum, to `match`: the value itself.
@@ -99248,6 +99371,8 @@ impl IntoGPUCopyExternalImageSource for &VideoFrame {}
 impl IntoGPUCopyExternalImageSource for &HTMLCanvasElement {}
 impl IntoGPUCopyExternalImageSource for &OffscreenCanvas {}
 impl IntoGPUCopyExternalImageSource for GPUCopyExternalImageSource<'_> {}
+/// A rest parameter of `GPUCopyExternalImageSource`s takes each member (ADR 0640).
+impl<A: IntoGPUCopyExternalImageSource> Takes<A> for dyn IntoGPUCopyExternalImageSource {}
 
 impl<'a> GPUCopyExternalImageSource<'a> {
     /// The member a parameter was given, as its enum, to `match`: the value itself.
@@ -99285,6 +99410,8 @@ pub trait IntoGPUExtent3D: sealed::Sealed {}
 impl IntoGPUExtent3D for &[u32] {}
 impl IntoGPUExtent3D for GPUExtent3DDict {}
 impl IntoGPUExtent3D for GPUExtent3D<'_> {}
+/// A rest parameter of `GPUExtent3D`s takes each member (ADR 0640).
+impl<A: IntoGPUExtent3D> Takes<A> for dyn IntoGPUExtent3D {}
 
 impl<'a> GPUExtent3D<'a> {
     /// The member a parameter was given, as its enum, to `match`: the value itself.
@@ -99322,6 +99449,8 @@ pub trait IntoGPUOrigin2D: sealed::Sealed {}
 impl IntoGPUOrigin2D for &[u32] {}
 impl IntoGPUOrigin2D for GPUOrigin2DDict {}
 impl IntoGPUOrigin2D for GPUOrigin2D<'_> {}
+/// A rest parameter of `GPUOrigin2D`s takes each member (ADR 0640).
+impl<A: IntoGPUOrigin2D> Takes<A> for dyn IntoGPUOrigin2D {}
 
 impl<'a> GPUOrigin2D<'a> {
     /// The member a parameter was given, as its enum, to `match`: the value itself.
@@ -99359,6 +99488,8 @@ pub trait IntoGPUOrigin3D: sealed::Sealed {}
 impl IntoGPUOrigin3D for &[u32] {}
 impl IntoGPUOrigin3D for GPUOrigin3DDict {}
 impl IntoGPUOrigin3D for GPUOrigin3D<'_> {}
+/// A rest parameter of `GPUOrigin3D`s takes each member (ADR 0640).
+impl<A: IntoGPUOrigin3D> Takes<A> for dyn IntoGPUOrigin3D {}
 
 impl<'a> GPUOrigin3D<'a> {
     /// The member a parameter was given, as its enum, to `match`: the value itself.
@@ -99396,6 +99527,8 @@ pub trait IntoGPUPipelineLayoutOrStr: sealed::Sealed {}
 impl IntoGPUPipelineLayoutOrStr for &GPUPipelineLayout {}
 impl IntoGPUPipelineLayoutOrStr for &str {}
 impl IntoGPUPipelineLayoutOrStr for GPUPipelineLayoutOrStr<'_> {}
+/// A rest parameter of `GPUPipelineLayout | string`s takes each member (ADR 0640).
+impl<A: IntoGPUPipelineLayoutOrStr> Takes<A> for dyn IntoGPUPipelineLayoutOrStr {}
 
 impl<'a> GPUPipelineLayoutOrStr<'a> {
     /// The member a parameter was given, as its enum, to `match`: the value itself.
@@ -99433,6 +99566,8 @@ pub trait IntoGPUTextureOrGPUTextureView: sealed::Sealed {}
 impl IntoGPUTextureOrGPUTextureView for &GPUTexture {}
 impl IntoGPUTextureOrGPUTextureView for &GPUTextureView {}
 impl IntoGPUTextureOrGPUTextureView for GPUTextureOrGPUTextureView<'_> {}
+/// A rest parameter of `GPUTexture | GPUTextureView`s takes each member (ADR 0640).
+impl<A: IntoGPUTextureOrGPUTextureView> Takes<A> for dyn IntoGPUTextureOrGPUTextureView {}
 
 impl<'a> GPUTextureOrGPUTextureView<'a> {
     /// The member a parameter was given, as its enum, to `match`: the value itself.
@@ -99470,6 +99605,8 @@ pub trait IntoHTMLCanvasElementOrOffscreenCanvas: sealed::Sealed {}
 impl IntoHTMLCanvasElementOrOffscreenCanvas for &HTMLCanvasElement {}
 impl IntoHTMLCanvasElementOrOffscreenCanvas for &OffscreenCanvas {}
 impl IntoHTMLCanvasElementOrOffscreenCanvas for HTMLCanvasElementOrOffscreenCanvas<'_> {}
+/// A rest parameter of `HTMLCanvasElement | OffscreenCanvas`s takes each member (ADR 0640).
+impl<A: IntoHTMLCanvasElementOrOffscreenCanvas> Takes<A> for dyn IntoHTMLCanvasElementOrOffscreenCanvas {}
 
 impl<'a> HTMLCanvasElementOrOffscreenCanvas<'a> {
     /// The member a parameter was given, as its enum, to `match`: the value itself.
@@ -100529,6 +100666,8 @@ impl IntoHTMLCollectionOrElement for &HTMLParamElement {}
 impl IntoHTMLCollectionOrElement for &HTMLUnknownElement {}
 impl IntoHTMLCollectionOrElement for &MathMLElement {}
 impl IntoHTMLCollectionOrElement for HTMLCollectionOrElement<'_> {}
+/// A rest parameter of `HTMLCollection | Element`s takes each member (ADR 0640).
+impl<A: IntoHTMLCollectionOrElement> Takes<A> for dyn IntoHTMLCollectionOrElement {}
 
 impl<'a> HTMLCollectionOrElement<'a> {
     /// The member a parameter was given, as its enum, to `match`: the value itself.
@@ -101063,6 +101202,8 @@ impl IntoHTMLElementOrNumber for &HTMLParamElement {}
 impl IntoHTMLElementOrNumber for &HTMLUnknownElement {}
 impl IntoHTMLElementOrNumber for i32 {}
 impl IntoHTMLElementOrNumber for HTMLElementOrNumber<'_> {}
+/// A rest parameter of `HTMLElement | number`s takes each member (ADR 0640).
+impl<A: IntoHTMLElementOrNumber> Takes<A> for dyn IntoHTMLElementOrNumber {}
 
 impl<'a> HTMLElementOrNumber<'a> {
     /// The member a parameter was given, as its enum, to `match`: the value itself.
@@ -101100,6 +101241,8 @@ pub trait IntoHTMLOptionElementOrHTMLOptGroupElement: sealed::Sealed {}
 impl IntoHTMLOptionElementOrHTMLOptGroupElement for &HTMLOptionElement {}
 impl IntoHTMLOptionElementOrHTMLOptGroupElement for &HTMLOptGroupElement {}
 impl IntoHTMLOptionElementOrHTMLOptGroupElement for HTMLOptionElementOrHTMLOptGroupElement<'_> {}
+/// A rest parameter of `HTMLOptionElement | HTMLOptGroupElement`s takes each member (ADR 0640).
+impl<A: IntoHTMLOptionElementOrHTMLOptGroupElement> Takes<A> for dyn IntoHTMLOptionElementOrHTMLOptGroupElement {}
 
 impl<'a> HTMLOptionElementOrHTMLOptGroupElement<'a> {
     /// The member a parameter was given, as its enum, to `match`: the value itself.
@@ -101137,6 +101280,8 @@ pub trait IntoHTMLOrSVGScriptElement: sealed::Sealed {}
 impl IntoHTMLOrSVGScriptElement for &HTMLScriptElement {}
 impl IntoHTMLOrSVGScriptElement for &SVGScriptElement {}
 impl IntoHTMLOrSVGScriptElement for HTMLOrSVGScriptElement<'_> {}
+/// A rest parameter of `HTMLOrSVGScriptElement`s takes each member (ADR 0640).
+impl<A: IntoHTMLOrSVGScriptElement> Takes<A> for dyn IntoHTMLOrSVGScriptElement {}
 
 impl<'a> HTMLOrSVGScriptElement<'a> {
     /// The member a parameter was given, as its enum, to `match`: the value itself.
@@ -101174,6 +101319,8 @@ pub trait IntoHTMLVideoElementOrVideoFrame: sealed::Sealed {}
 impl IntoHTMLVideoElementOrVideoFrame for &HTMLVideoElement {}
 impl IntoHTMLVideoElementOrVideoFrame for &VideoFrame {}
 impl IntoHTMLVideoElementOrVideoFrame for HTMLVideoElementOrVideoFrame<'_> {}
+/// A rest parameter of `HTMLVideoElement | VideoFrame`s takes each member (ADR 0640).
+impl<A: IntoHTMLVideoElementOrVideoFrame> Takes<A> for dyn IntoHTMLVideoElementOrVideoFrame {}
 
 impl<'a> HTMLVideoElementOrVideoFrame<'a> {
     /// The member a parameter was given, as its enum, to `match`: the value itself.
@@ -101211,6 +101358,8 @@ pub trait IntoIDBObjectStoreOrIDBIndex: sealed::Sealed {}
 impl IntoIDBObjectStoreOrIDBIndex for &IDBObjectStore {}
 impl IntoIDBObjectStoreOrIDBIndex for &IDBIndex {}
 impl IntoIDBObjectStoreOrIDBIndex for IDBObjectStoreOrIDBIndex<'_> {}
+/// A rest parameter of `IDBObjectStore | IDBIndex`s takes each member (ADR 0640).
+impl<A: IntoIDBObjectStoreOrIDBIndex> Takes<A> for dyn IntoIDBObjectStoreOrIDBIndex {}
 
 impl<'a> IDBObjectStoreOrIDBIndex<'a> {
     /// The member a parameter was given, as its enum, to `match`: the value itself.
@@ -101263,6 +101412,8 @@ impl IntoIDBObjectStoreOrIDBIndexOrIDBCursor for &IDBIndex {}
 impl IntoIDBObjectStoreOrIDBIndexOrIDBCursor for &IDBCursor {}
 impl IntoIDBObjectStoreOrIDBIndexOrIDBCursor for &IDBCursorWithValue {}
 impl IntoIDBObjectStoreOrIDBIndexOrIDBCursor for IDBObjectStoreOrIDBIndexOrIDBCursor<'_> {}
+/// A rest parameter of `IDBObjectStore | IDBIndex | IDBCursor`s takes each member (ADR 0640).
+impl<A: IntoIDBObjectStoreOrIDBIndexOrIDBCursor> Takes<A> for dyn IntoIDBObjectStoreOrIDBIndexOrIDBCursor {}
 
 impl<'a> IDBObjectStoreOrIDBIndexOrIDBCursor<'a> {
     /// The member a parameter was given, as its enum, to `match`: the value itself.
@@ -101363,6 +101514,8 @@ impl IntoImageBitmapSource for &Blob {}
 impl IntoImageBitmapSource for &File {}
 impl IntoImageBitmapSource for &ImageData {}
 impl IntoImageBitmapSource for ImageBitmapSource<'_> {}
+/// A rest parameter of `ImageBitmapSource`s takes each member (ADR 0640).
+impl<A: IntoImageBitmapSource> Takes<A> for dyn IntoImageBitmapSource {}
 
 impl<'a> ImageBitmapSource<'a> {
     /// The member a parameter was given, as its enum, to `match`: the value itself.
@@ -101511,6 +101664,8 @@ impl IntoImageBufferSource for &DataView {}
 impl IntoImageBufferSource for &ReadableStream {}
 impl IntoImageBufferSource for &WebTransportReceiveStream {}
 impl IntoImageBufferSource for ImageBufferSource<'_> {}
+/// A rest parameter of `ArrayBuffer | SharedArrayBuffer | Int8Array | Int16Array | Int32Array | Uint8Array | Uint16Array | Uint32Array | Uint8ClampedArray | BigInt64Array | BigUint64Array | Float32Array | Float64Array | DataView | ReadableStream`s takes each member (ADR 0640).
+impl<A: IntoImageBufferSource> Takes<A> for dyn IntoImageBufferSource {}
 
 impl<'a> ImageBufferSource<'a> {
     /// The member a parameter was given, as its enum, to `match`: the value itself.
@@ -101548,6 +101703,8 @@ pub trait IntoInt32List: sealed::Sealed {}
 impl IntoInt32List for &Int32Array {}
 impl IntoInt32List for &[i32] {}
 impl IntoInt32List for Int32List<'_> {}
+/// A rest parameter of `Int32List`s takes each member (ADR 0640).
+impl<A: IntoInt32List> Takes<A> for dyn IntoInt32List {}
 
 impl<'a> Int32List<'a> {
     /// The member a parameter was given, as its enum, to `match`: the value itself.
@@ -101585,6 +101742,8 @@ pub trait IntoLineAndPositionSetting: sealed::Sealed {}
 impl IntoLineAndPositionSetting for f64 {}
 impl IntoLineAndPositionSetting for &str {}
 impl IntoLineAndPositionSetting for LineAndPositionSetting<'_> {}
+/// A rest parameter of `LineAndPositionSetting`s takes each member (ADR 0640).
+impl<A: IntoLineAndPositionSetting> Takes<A> for dyn IntoLineAndPositionSetting {}
 
 impl<'a> LineAndPositionSetting<'a> {
     /// The member a parameter was given, as its enum, to `match`: the value itself.
@@ -101622,6 +101781,8 @@ pub trait IntoListenerOrStartViewTransitionOptions: sealed::Sealed {}
 impl IntoListenerOrStartViewTransitionOptions for Box<dyn FnMut() -> Promise<Option<&'static Unknown>>> {}
 impl IntoListenerOrStartViewTransitionOptions for StartViewTransitionOptions<'_> {}
 impl IntoListenerOrStartViewTransitionOptions for ListenerOrStartViewTransitionOptions<'_> {}
+/// A rest parameter of `EventListener | StartViewTransitionOptions`s takes each member (ADR 0640).
+impl<A: IntoListenerOrStartViewTransitionOptions> Takes<A> for dyn IntoListenerOrStartViewTransitionOptions {}
 
 impl<'a> ListenerOrStartViewTransitionOptions<'a> {
     /// The member a parameter was given, as its enum, to `match`: the value itself.
@@ -101659,6 +101820,8 @@ pub trait IntoListOrStr: sealed::Sealed {}
 impl IntoListOrStr for &[&[&str]] {}
 impl IntoListOrStr for &str {}
 impl IntoListOrStr for ListOrStr<'_> {}
+/// A rest parameter of `List | string`s takes each member (ADR 0640).
+impl<A: IntoListOrStr> Takes<A> for dyn IntoListOrStr {}
 
 impl<'a> ListOrStr<'a> {
     /// The member a parameter was given, as its enum, to `match`: the value itself.
@@ -101696,6 +101859,8 @@ pub trait IntoMediaListOrStr: sealed::Sealed {}
 impl IntoMediaListOrStr for &MediaList {}
 impl IntoMediaListOrStr for &str {}
 impl IntoMediaListOrStr for MediaListOrStr<'_> {}
+/// A rest parameter of `MediaList | string`s takes each member (ADR 0640).
+impl<A: IntoMediaListOrStr> Takes<A> for dyn IntoMediaListOrStr {}
 
 impl<'a> MediaListOrStr<'a> {
     /// The member a parameter was given, as its enum, to `match`: the value itself.
@@ -101748,6 +101913,8 @@ impl IntoMediaProvider for &MediaSource {}
 impl IntoMediaProvider for &Blob {}
 impl IntoMediaProvider for &File {}
 impl IntoMediaProvider for MediaProvider<'_> {}
+/// A rest parameter of `MediaProvider`s takes each member (ADR 0640).
+impl<A: IntoMediaProvider> Takes<A> for dyn IntoMediaProvider {}
 
 impl<'a> MediaProvider<'a> {
     /// The member a parameter was given, as its enum, to `match`: the value itself.
@@ -101792,6 +101959,8 @@ impl IntoMediaStreamTrackOrStr for &MediaStreamTrack {}
 impl IntoMediaStreamTrackOrStr for &CanvasCaptureMediaStreamTrack {}
 impl IntoMediaStreamTrackOrStr for &str {}
 impl IntoMediaStreamTrackOrStr for MediaStreamTrackOrStr<'_> {}
+/// A rest parameter of `MediaStreamTrack | string`s takes each member (ADR 0640).
+impl<A: IntoMediaStreamTrackOrStr> Takes<A> for dyn IntoMediaStreamTrackOrStr {}
 
 impl<'a> MediaStreamTrackOrStr<'a> {
     /// The member a parameter was given, as its enum, to `match`: the value itself.
@@ -101837,6 +102006,8 @@ impl IntoMessageEventSource for &Window {}
 impl IntoMessageEventSource for &MessagePort {}
 impl IntoMessageEventSource for &ServiceWorker {}
 impl IntoMessageEventSource for MessageEventSource<'_> {}
+/// A rest parameter of `MessageEventSource`s takes each member (ADR 0640).
+impl<A: IntoMessageEventSource> Takes<A> for dyn IntoMessageEventSource {}
 
 impl<'a> MessageEventSource<'a> {
     /// The member a parameter was given, as its enum, to `match`: the value itself.
@@ -102966,6 +103137,8 @@ impl IntoNodeOrStr for &ShadowRoot {}
 impl IntoNodeOrStr for &XMLDocument {}
 impl IntoNodeOrStr for &str {}
 impl IntoNodeOrStr for NodeOrStr<'_> {}
+/// A rest parameter of `Node | string`s takes each member (ADR 0640).
+impl<A: IntoNodeOrStr> Takes<A> for dyn IntoNodeOrStr {}
 
 impl<'a> NodeOrStr<'a> {
     /// The member a parameter was given, as its enum, to `match`: the value itself.
@@ -103003,6 +103176,8 @@ pub trait IntoNumberOrDOMPointInit: sealed::Sealed {}
 impl IntoNumberOrDOMPointInit for f64 {}
 impl IntoNumberOrDOMPointInit for DOMPointInit {}
 impl IntoNumberOrDOMPointInit for NumberOrDOMPointInit {}
+/// A rest parameter of `number | DOMPointInit`s takes each member (ADR 0640).
+impl<A: IntoNumberOrDOMPointInit> Takes<A> for dyn IntoNumberOrDOMPointInit {}
 
 impl NumberOrDOMPointInit {
     /// The member a parameter was given, as its enum, to `match`: the value itself.
@@ -103048,6 +103223,8 @@ impl IntoNumberOrDOMPointInitOrList for f64 {}
 impl IntoNumberOrDOMPointInitOrList for DOMPointInit {}
 impl IntoNumberOrDOMPointInitOrList for &[NumberOrDOMPointInit] {}
 impl IntoNumberOrDOMPointInitOrList for NumberOrDOMPointInitOrList<'_> {}
+/// A rest parameter of `number | DOMPointInit | List`s takes each member (ADR 0640).
+impl<A: IntoNumberOrDOMPointInitOrList> Takes<A> for dyn IntoNumberOrDOMPointInitOrList {}
 
 impl<'a> NumberOrDOMPointInitOrList<'a> {
     /// The member a parameter was given, as its enum, to `match`: the value itself.
@@ -103085,6 +103262,8 @@ pub trait IntoNumberOrKeyframeAnimationOptions: sealed::Sealed {}
 impl IntoNumberOrKeyframeAnimationOptions for f64 {}
 impl IntoNumberOrKeyframeAnimationOptions for KeyframeAnimationOptions<'_> {}
 impl IntoNumberOrKeyframeAnimationOptions for NumberOrKeyframeAnimationOptions<'_> {}
+/// A rest parameter of `number | KeyframeAnimationOptions`s takes each member (ADR 0640).
+impl<A: IntoNumberOrKeyframeAnimationOptions> Takes<A> for dyn IntoNumberOrKeyframeAnimationOptions {}
 
 impl<'a> NumberOrKeyframeAnimationOptions<'a> {
     /// The member a parameter was given, as its enum, to `match`: the value itself.
@@ -103122,6 +103301,8 @@ pub trait IntoNumberOrKeyframeEffectOptions: sealed::Sealed {}
 impl IntoNumberOrKeyframeEffectOptions for f64 {}
 impl IntoNumberOrKeyframeEffectOptions for KeyframeEffectOptions<'_> {}
 impl IntoNumberOrKeyframeEffectOptions for NumberOrKeyframeEffectOptions<'_> {}
+/// A rest parameter of `number | KeyframeEffectOptions`s takes each member (ADR 0640).
+impl<A: IntoNumberOrKeyframeEffectOptions> Takes<A> for dyn IntoNumberOrKeyframeEffectOptions {}
 
 impl<'a> NumberOrKeyframeEffectOptions<'a> {
     /// The member a parameter was given, as its enum, to `match`: the value itself.
@@ -103159,6 +103340,8 @@ pub trait IntoNumberOrList: sealed::Sealed {}
 impl IntoNumberOrList for f64 {}
 impl IntoNumberOrList for &[f64] {}
 impl IntoNumberOrList for NumberOrList<'_> {}
+/// A rest parameter of `number | List`s takes each member (ADR 0640).
+impl<A: IntoNumberOrList> Takes<A> for dyn IntoNumberOrList {}
 
 impl<'a> NumberOrList<'a> {
     /// The member a parameter was given, as its enum, to `match`: the value itself.
@@ -103196,6 +103379,8 @@ pub trait IntoNumberOrStr: sealed::Sealed {}
 impl IntoNumberOrStr for f64 {}
 impl IntoNumberOrStr for &str {}
 impl IntoNumberOrStr for NumberOrStr<'_> {}
+/// A rest parameter of `number | string`s takes each member (ADR 0640).
+impl<A: IntoNumberOrStr> Takes<A> for dyn IntoNumberOrStr {}
 
 impl<'a> NumberOrStr<'a> {
     /// The member a parameter was given, as its enum, to `match`: the value itself.
@@ -103257,6 +103442,8 @@ impl IntoOffscreenRenderingContext for &WebGLRenderingContext {}
 impl IntoOffscreenRenderingContext for &WebGL2RenderingContext {}
 impl IntoOffscreenRenderingContext for &GPUCanvasContext {}
 impl IntoOffscreenRenderingContext for OffscreenRenderingContext<'_> {}
+/// A rest parameter of `OffscreenRenderingContext`s takes each member (ADR 0640).
+impl<A: IntoOffscreenRenderingContext> Takes<A> for dyn IntoOffscreenRenderingContext {}
 
 impl<'a> OffscreenRenderingContext<'a> {
     /// The member a parameter was given, as its enum, to `match`: the value itself.
@@ -103294,6 +103481,8 @@ pub trait IntoPath2DOrStr: sealed::Sealed {}
 impl IntoPath2DOrStr for &Path2D {}
 impl IntoPath2DOrStr for &str {}
 impl IntoPath2DOrStr for Path2DOrStr<'_> {}
+/// A rest parameter of `Path2D | string`s takes each member (ADR 0640).
+impl<A: IntoPath2DOrStr> Takes<A> for dyn IntoPath2DOrStr {}
 
 impl<'a> Path2DOrStr<'a> {
     /// The member a parameter was given, as its enum, to `match`: the value itself.
@@ -104339,6 +104528,8 @@ impl IntoRadioNodeListOrElement for &HTMLParamElement {}
 impl IntoRadioNodeListOrElement for &HTMLUnknownElement {}
 impl IntoRadioNodeListOrElement for &MathMLElement {}
 impl IntoRadioNodeListOrElement for RadioNodeListOrElement<'_> {}
+/// A rest parameter of `RadioNodeList | Element`s takes each member (ADR 0640).
+impl<A: IntoRadioNodeListOrElement> Takes<A> for dyn IntoRadioNodeListOrElement {}
 
 impl<'a> RadioNodeListOrElement<'a> {
     /// The member a parameter was given, as its enum, to `match`: the value itself.
@@ -104376,6 +104567,8 @@ pub trait IntoReadableStreamReader: sealed::Sealed {}
 impl IntoReadableStreamReader for &ReadableStreamDefaultReader {}
 impl IntoReadableStreamReader for &ReadableStreamBYOBReader {}
 impl IntoReadableStreamReader for ReadableStreamReader<'_> {}
+/// A rest parameter of `ReadableStreamReader`s takes each member (ADR 0640).
+impl<A: IntoReadableStreamReader> Takes<A> for dyn IntoReadableStreamReader {}
 
 impl<'a> ReadableStreamReader<'a> {
     /// The member a parameter was given, as its enum, to `match`: the value itself.
@@ -104437,6 +104630,8 @@ impl IntoRenderingContext for &WebGLRenderingContext {}
 impl IntoRenderingContext for &WebGL2RenderingContext {}
 impl IntoRenderingContext for &GPUCanvasContext {}
 impl IntoRenderingContext for RenderingContext<'_> {}
+/// A rest parameter of `RenderingContext`s takes each member (ADR 0640).
+impl<A: IntoRenderingContext> Takes<A> for dyn IntoRenderingContext {}
 
 impl<'a> RenderingContext<'a> {
     /// The member a parameter was given, as its enum, to `match`: the value itself.
@@ -104474,6 +104669,8 @@ pub trait IntoRequestInfo: sealed::Sealed {}
 impl IntoRequestInfo for &Request {}
 impl IntoRequestInfo for &str {}
 impl IntoRequestInfo for RequestInfo<'_> {}
+/// A rest parameter of `RequestInfo`s takes each member (ADR 0640).
+impl<A: IntoRequestInfo> Takes<A> for dyn IntoRequestInfo {}
 
 impl<'a> RequestInfo<'a> {
     /// The member a parameter was given, as its enum, to `match`: the value itself.
@@ -104511,6 +104708,8 @@ pub trait IntoSanitizerAttribute: sealed::Sealed {}
 impl IntoSanitizerAttribute for &str {}
 impl IntoSanitizerAttribute for SanitizerAttributeNamespace {}
 impl IntoSanitizerAttribute for SanitizerAttribute<'_> {}
+/// A rest parameter of `SanitizerAttribute`s takes each member (ADR 0640).
+impl<A: IntoSanitizerAttribute> Takes<A> for dyn IntoSanitizerAttribute {}
 
 impl<'a> SanitizerAttribute<'a> {
     /// The member a parameter was given, as its enum, to `match`: the value itself.
@@ -104548,6 +104747,8 @@ pub trait IntoSanitizerConfigOrStr: sealed::Sealed {}
 impl IntoSanitizerConfigOrStr for SanitizerConfig {}
 impl IntoSanitizerConfigOrStr for &str {}
 impl IntoSanitizerConfigOrStr for SanitizerConfigOrStr<'_> {}
+/// A rest parameter of `SanitizerConfig | string`s takes each member (ADR 0640).
+impl<A: IntoSanitizerConfigOrStr> Takes<A> for dyn IntoSanitizerConfigOrStr {}
 
 impl<'a> SanitizerConfigOrStr<'a> {
     /// The member a parameter was given, as its enum, to `match`: the value itself.
@@ -104585,6 +104786,8 @@ pub trait IntoSanitizerElement: sealed::Sealed {}
 impl IntoSanitizerElement for &str {}
 impl IntoSanitizerElement for SanitizerElementNamespace {}
 impl IntoSanitizerElement for SanitizerElement<'_> {}
+/// A rest parameter of `SanitizerElement`s takes each member (ADR 0640).
+impl<A: IntoSanitizerElement> Takes<A> for dyn IntoSanitizerElement {}
 
 impl<'a> SanitizerElement<'a> {
     /// The member a parameter was given, as its enum, to `match`: the value itself.
@@ -104622,6 +104825,8 @@ pub trait IntoSanitizerElementWithAttributes: sealed::Sealed {}
 impl IntoSanitizerElementWithAttributes for &str {}
 impl IntoSanitizerElementWithAttributes for SanitizerElementNamespaceWithAttributes {}
 impl IntoSanitizerElementWithAttributes for SanitizerElementWithAttributes<'_> {}
+/// A rest parameter of `SanitizerElementWithAttributes`s takes each member (ADR 0640).
+impl<A: IntoSanitizerElementWithAttributes> Takes<A> for dyn IntoSanitizerElementWithAttributes {}
 
 impl<'a> SanitizerElementWithAttributes<'a> {
     /// The member a parameter was given, as its enum, to `match`: the value itself.
@@ -104667,6 +104872,8 @@ impl IntoSanitizerOrSanitizerConfigOrStr for &Sanitizer {}
 impl IntoSanitizerOrSanitizerConfigOrStr for SanitizerConfig {}
 impl IntoSanitizerOrSanitizerConfigOrStr for &str {}
 impl IntoSanitizerOrSanitizerConfigOrStr for SanitizerOrSanitizerConfigOrStr<'_> {}
+/// A rest parameter of `Sanitizer | SanitizerConfig | string`s takes each member (ADR 0640).
+impl<A: IntoSanitizerOrSanitizerConfigOrStr> Takes<A> for dyn IntoSanitizerOrSanitizerConfigOrStr {}
 
 impl<'a> SanitizerOrSanitizerConfigOrStr<'a> {
     /// The member a parameter was given, as its enum, to `match`: the value itself.
@@ -104704,6 +104911,8 @@ pub trait IntoSanitizerPI: sealed::Sealed {}
 impl IntoSanitizerPI for &str {}
 impl IntoSanitizerPI for SanitizerProcessingInstruction {}
 impl IntoSanitizerPI for SanitizerPI<'_> {}
+/// A rest parameter of `SanitizerPI`s takes each member (ADR 0640).
+impl<A: IntoSanitizerPI> Takes<A> for dyn IntoSanitizerPI {}
 
 impl<'a> SanitizerPI<'a> {
     /// The member a parameter was given, as its enum, to `match`: the value itself.
@@ -104741,6 +104950,8 @@ pub trait IntoStrOrArrayBuffer: sealed::Sealed {}
 impl IntoStrOrArrayBuffer for &str {}
 impl IntoStrOrArrayBuffer for &ArrayBuffer {}
 impl IntoStrOrArrayBuffer for StrOrArrayBuffer<'_> {}
+/// A rest parameter of `string | ArrayBuffer`s takes each member (ADR 0640).
+impl<A: IntoStrOrArrayBuffer> Takes<A> for dyn IntoStrOrArrayBuffer {}
 
 impl<'a> StrOrArrayBuffer<'a> {
     /// The member a parameter was given, as its enum, to `match`: the value itself.
@@ -104778,6 +104989,8 @@ pub trait IntoStrOrAudioSinkOptions: sealed::Sealed {}
 impl IntoStrOrAudioSinkOptions for &str {}
 impl IntoStrOrAudioSinkOptions for AudioSinkOptions<'_> {}
 impl IntoStrOrAudioSinkOptions for StrOrAudioSinkOptions<'_> {}
+/// A rest parameter of `string | AudioSinkOptions`s takes each member (ADR 0640).
+impl<A: IntoStrOrAudioSinkOptions> Takes<A> for dyn IntoStrOrAudioSinkOptions {}
 
 impl<'a> StrOrAudioSinkOptions<'a> {
     /// The member a parameter was given, as its enum, to `match`: the value itself.
@@ -104911,6 +105124,8 @@ impl IntoStrOrBufferSource for &Float64Array {}
 impl IntoStrOrBufferSource for &DataView {}
 impl IntoStrOrBufferSource for &ArrayBuffer {}
 impl IntoStrOrBufferSource for StrOrBufferSource<'_> {}
+/// A rest parameter of `string | Int8Array | Int16Array | Int32Array | Uint8Array | Uint16Array | Uint32Array | Uint8ClampedArray | BigInt64Array | BigUint64Array | Float32Array | Float64Array | DataView | ArrayBuffer`s takes each member (ADR 0640).
+impl<A: IntoStrOrBufferSource> Takes<A> for dyn IntoStrOrBufferSource {}
 
 impl<'a> StrOrBufferSource<'a> {
     /// The member a parameter was given, as its enum, to `match`: the value itself.
@@ -104956,6 +105171,8 @@ impl IntoStrOrCanvasGradientOrCanvasPattern for &str {}
 impl IntoStrOrCanvasGradientOrCanvasPattern for &CanvasGradient {}
 impl IntoStrOrCanvasGradientOrCanvasPattern for &CanvasPattern {}
 impl IntoStrOrCanvasGradientOrCanvasPattern for StrOrCanvasGradientOrCanvasPattern<'_> {}
+/// A rest parameter of `string | CanvasGradient | CanvasPattern`s takes each member (ADR 0640).
+impl<A: IntoStrOrCanvasGradientOrCanvasPattern> Takes<A> for dyn IntoStrOrCanvasGradientOrCanvasPattern {}
 
 impl<'a> StrOrCanvasGradientOrCanvasPattern<'a> {
     /// The member a parameter was given, as its enum, to `match`: the value itself.
@@ -104993,6 +105210,8 @@ pub trait IntoStrOrElementCreationOptions: sealed::Sealed {}
 impl IntoStrOrElementCreationOptions for &str {}
 impl IntoStrOrElementCreationOptions for ElementCreationOptions<'_> {}
 impl IntoStrOrElementCreationOptions for StrOrElementCreationOptions<'_> {}
+/// A rest parameter of `string | ElementCreationOptions`s takes each member (ADR 0640).
+impl<A: IntoStrOrElementCreationOptions> Takes<A> for dyn IntoStrOrElementCreationOptions {}
 
 impl<'a> StrOrElementCreationOptions<'a> {
     /// The member a parameter was given, as its enum, to `match`: the value itself.
@@ -105030,6 +105249,8 @@ pub trait IntoStrOrList: sealed::Sealed {}
 impl IntoStrOrList for &str {}
 impl IntoStrOrList for &[&str] {}
 impl IntoStrOrList for StrOrList<'_> {}
+/// A rest parameter of `string | List`s takes each member (ADR 0640).
+impl<A: IntoStrOrList> Takes<A> for dyn IntoStrOrList {}
 
 impl<'a> StrOrList<'a> {
     /// The member a parameter was given, as its enum, to `match`: the value itself.
@@ -105067,6 +105288,8 @@ pub trait IntoStrOrNumber: sealed::Sealed {}
 impl IntoStrOrNumber for &str {}
 impl IntoStrOrNumber for u32 {}
 impl IntoStrOrNumber for StrOrNumber<'_> {}
+/// A rest parameter of `string | number`s takes each member (ADR 0640).
+impl<A: IntoStrOrNumber> Takes<A> for dyn IntoStrOrNumber {}
 
 impl<'a> StrOrNumber<'a> {
     /// The member a parameter was given, as its enum, to `match`: the value itself.
@@ -105104,6 +105327,8 @@ pub trait IntoStrOrPerformanceMeasureOptions: sealed::Sealed {}
 impl IntoStrOrPerformanceMeasureOptions for &str {}
 impl IntoStrOrPerformanceMeasureOptions for PerformanceMeasureOptions<'_> {}
 impl IntoStrOrPerformanceMeasureOptions for StrOrPerformanceMeasureOptions<'_> {}
+/// A rest parameter of `string | PerformanceMeasureOptions`s takes each member (ADR 0640).
+impl<A: IntoStrOrPerformanceMeasureOptions> Takes<A> for dyn IntoStrOrPerformanceMeasureOptions {}
 
 impl<'a> StrOrPerformanceMeasureOptions<'a> {
     /// The member a parameter was given, as its enum, to `match`: the value itself.
@@ -105141,6 +105366,8 @@ pub trait IntoStrOrSharedWorkerOptions: sealed::Sealed {}
 impl IntoStrOrSharedWorkerOptions for &str {}
 impl IntoStrOrSharedWorkerOptions for SharedWorkerOptions<'_> {}
 impl IntoStrOrSharedWorkerOptions for StrOrSharedWorkerOptions<'_> {}
+/// A rest parameter of `string | SharedWorkerOptions`s takes each member (ADR 0640).
+impl<A: IntoStrOrSharedWorkerOptions> Takes<A> for dyn IntoStrOrSharedWorkerOptions {}
 
 impl<'a> StrOrSharedWorkerOptions<'a> {
     /// The member a parameter was given, as its enum, to `match`: the value itself.
@@ -105178,6 +105405,8 @@ pub trait IntoStrOrTaskSignal: sealed::Sealed {}
 impl IntoStrOrTaskSignal for &str {}
 impl IntoStrOrTaskSignal for &TaskSignal {}
 impl IntoStrOrTaskSignal for StrOrTaskSignal<'_> {}
+/// A rest parameter of `string | TaskSignal`s takes each member (ADR 0640).
+impl<A: IntoStrOrTaskSignal> Takes<A> for dyn IntoStrOrTaskSignal {}
 
 impl<'a> StrOrTaskSignal<'a> {
     /// The member a parameter was given, as its enum, to `match`: the value itself.
@@ -105255,6 +105484,8 @@ impl IntoTexImageSource for &HTMLVideoElement {}
 impl IntoTexImageSource for &OffscreenCanvas {}
 impl IntoTexImageSource for &VideoFrame {}
 impl IntoTexImageSource for TexImageSource<'_> {}
+/// A rest parameter of `TexImageSource`s takes each member (ADR 0640).
+impl<A: IntoTexImageSource> Takes<A> for dyn IntoTexImageSource {}
 
 impl<'a> TexImageSource<'a> {
     /// The member a parameter was given, as its enum, to `match`: the value itself.
@@ -105292,6 +105523,8 @@ pub trait IntoTogglePopoverOptionsOrBool: sealed::Sealed {}
 impl IntoTogglePopoverOptionsOrBool for TogglePopoverOptions<'_> {}
 impl IntoTogglePopoverOptionsOrBool for bool {}
 impl IntoTogglePopoverOptionsOrBool for TogglePopoverOptionsOrBool<'_> {}
+/// A rest parameter of `TogglePopoverOptions | boolean`s takes each member (ADR 0640).
+impl<A: IntoTogglePopoverOptionsOrBool> Takes<A> for dyn IntoTogglePopoverOptionsOrBool {}
 
 impl<'a> TogglePopoverOptionsOrBool<'a> {
     /// The member a parameter was given, as its enum, to `match`: the value itself.
@@ -105329,6 +105562,8 @@ pub trait IntoUint32List: sealed::Sealed {}
 impl IntoUint32List for &Uint32Array {}
 impl IntoUint32List for &[u32] {}
 impl IntoUint32List for Uint32List<'_> {}
+/// A rest parameter of `Uint32List`s takes each member (ADR 0640).
+impl<A: IntoUint32List> Takes<A> for dyn IntoUint32List {}
 
 impl<'a> Uint32List<'a> {
     /// The member a parameter was given, as its enum, to `match`: the value itself.
@@ -105366,6 +105601,8 @@ pub trait IntoURLPatternInput: sealed::Sealed {}
 impl IntoURLPatternInput for &str {}
 impl IntoURLPatternInput for URLPatternInit {}
 impl IntoURLPatternInput for URLPatternInput<'_> {}
+/// A rest parameter of `URLPatternInput`s takes each member (ADR 0640).
+impl<A: IntoURLPatternInput> Takes<A> for dyn IntoURLPatternInput {}
 
 impl<'a> URLPatternInput<'a> {
     /// The member a parameter was given, as its enum, to `match`: the value itself.
@@ -105403,6 +105640,8 @@ pub trait IntoVibratePattern: sealed::Sealed {}
 impl IntoVibratePattern for u32 {}
 impl IntoVibratePattern for &[u32] {}
 impl IntoVibratePattern for VibratePattern<'_> {}
+/// A rest parameter of `VibratePattern`s takes each member (ADR 0640).
+impl<A: IntoVibratePattern> Takes<A> for dyn IntoVibratePattern {}
 
 impl<'a> VibratePattern<'a> {
     /// The member a parameter was given, as its enum, to `match`: the value itself.
@@ -105440,6 +105679,8 @@ pub trait IntoWorkerOrWorkerAndParameters: sealed::Sealed {}
 impl IntoWorkerOrWorkerAndParameters for &Worker {}
 impl IntoWorkerOrWorkerAndParameters for WorkerAndParameters<'_> {}
 impl IntoWorkerOrWorkerAndParameters for WorkerOrWorkerAndParameters<'_> {}
+/// A rest parameter of `Worker | WorkerAndParameters`s takes each member (ADR 0640).
+impl<A: IntoWorkerOrWorkerAndParameters> Takes<A> for dyn IntoWorkerOrWorkerAndParameters {}
 
 impl<'a> WorkerOrWorkerAndParameters<'a> {
     /// The member a parameter was given, as its enum, to `match`: the value itself.
@@ -105449,6 +105690,14 @@ impl<'a> WorkerOrWorkerAndParameters<'a> {
         unreachable!()
     }
 }
+
+/// A rest parameter of `AbstractRange`s takes each, and each that extends it (ADR 0640).
+impl<'a> Takes<&'a AbstractRange> for AbstractRange {}
+impl<'a> Takes<&'a Range> for AbstractRange {}
+impl<'a> Takes<&'a StaticRange> for AbstractRange {}
+
+/// A rest parameter of `MediaStream`s takes each, and each that extends it (ADR 0640).
+impl<'a> Takes<&'a MediaStream> for MediaStream {}
 
 mod sealed {
     use super::*;

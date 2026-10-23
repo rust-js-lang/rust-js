@@ -24,7 +24,6 @@ export function main() {
   button.addEventListener("click", () => {
     load(URL, output);
   });
-  app.append(button);
-  app.append(output);
+  app.append(button, output);
 }
 //# sourceMappingURL=fetch.js.map

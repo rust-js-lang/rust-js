@@ -290,7 +290,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0218 What JSX holds stays where it's written](decisions/0218-jsx-holds-in-place.md)
 - [0219 A sequence a webapi function takes is a slice](decisions/0219-webapi-sequences.md)
 - [0220 A JSX tag can be a value, named by a capitalized local](decisions/0220-jsx-tag-values.md)
-- [0221 A binding's last slice can be its rest arguments](decisions/0221-variadic-bindings.md)
+- [0221 A binding's last slice can be its rest arguments](decisions/0221-variadic-bindings.md) *(amended by 0640: a TypeScript rest parameter is a tuple)*
 - [0222 An editor checks the app through rust-js](decisions/0222-editor-check.md)
 - [0223 The webapi crate knows each event's type and each tag's element](decisions/0223-webapi-event-and-tag-maps.md)
 - [0224 A tag's element reaches its handlers and its `ref`](decisions/0224-typed-intrinsic-elements.md)
@@ -382,7 +382,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0310 Any value is read as JS reads it](decisions/0310-any-value-as-js-reads-it.md) *(amended by 0639: `concat_text` of any value may throw)*
 - [0311 `.flatten()` of a read of items that may be `None` is the read](decisions/0311-flattened-reads.md)
 - [0312 `js::shown` is any value as a template shows it](decisions/0312-shown.md)
-- [0313 Loops, spreads and calls as a person writes them](decisions/0313-console-forms.md)
+- [0313 Loops, spreads and calls as a person writes them](decisions/0313-console-forms.md) *(amended by 0640: `console` takes a tuple)*
 - [0314 Each std data structure works or is refused, and coverage only grows](decisions/0314-std-data-structures.md)
 - [0315 A `Vec`'s capacity does nothing, and its edits are std's](decisions/0315-vec-capacity-and-edits.md)
 - [0316 A `LinkedList` is an array, as a `VecDeque` is](decisions/0316-linked-list.md)
@@ -571,6 +571,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0637 A `match` of a throwing call's `Result` is `try` and `catch`](decisions/0637-a-match-of-a-throwing-call-is-try-catch.md) *(amended by 0639: whether a call threw is `try`)*
 - [0638 A nullable function's call is `null` already](decisions/0638-a-nullable-functions-call-is-null-already.md)
 - [0639 `concat_text` of any value is what may throw; whether a call threw is `try`](decisions/0639-concat-text-of-any-value-may-throw.md)
+- [0640 A TypeScript rest parameter is a variadic binding of a tuple](decisions/0640-a-rest-parameter-is-a-tuple.md)
 - [0623 A copy std makes of a `Copy` value is a copy](decisions/0623-a-copy-std-makes-is-a-copy.md)
 - [0436 Every `dyn` that's a pair keeps its value's drop, `dyn Send` too](decisions/0436-every-dyn-keeps-its-drop.md)
 - [0437 A scope's drops on a panic are one `try { .. } finally { .. }`](decisions/0437-a-scopes-drops-are-one-finally.md)
@@ -579,7 +580,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0440 A binding needs no `#[allow]`](decisions/0440-a-binding-needs-no-allow.md)
 - [0441 A `()` given a function value is no argument](decisions/0441-a-unit-is-no-argument.md)
 - [0442 A web API that throws for what a program can't prevent is a `Result`](decisions/0442-a-web-api-that-may-throw-is-a-result.md)
-- [0443 A value a caller may leave out is an `Option`, in each direction](decisions/0443-a-value-a-caller-may-leave-out-is-an-option.md)
+- [0443 A value a caller may leave out is an `Option`, in each direction](decisions/0443-a-value-a-caller-may-leave-out-is-an-option.md) *(amended by 0640: a `None` before a rest of none is no argument)*
 - [0444 A comment is in the JS where its code is, and so is a blank line](decisions/0444-a-comment-is-where-its-code-is.md)
 - [0445 Generic code extends and collects into what it's given](decisions/0445-extend-and-collect-in-generic-code.md)
 - [0446 A `dyn fmt::Write` is a pair, and `fmt::write` is `write_fmt`](decisions/0446-a-dyn-fmt-write.md)

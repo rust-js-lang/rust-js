@@ -425,6 +425,56 @@ pub unsafe trait StructuredClone {}
 pub trait IntoUnknown {}
 impl<T: ?Sized> IntoUnknown for T {}
 
+/// The arguments a TypeScript rest parameter, `...data: T[]`, is given: a
+/// tuple, each of its own type, one a `T` takes ([`Takes`]), `()` of none
+/// and `(x,)` of one (ADR 0640). A `#[rust_js::variadic]` binding's last
+/// parameter, whose items are the call's arguments:
+/// `console::error(("%s is %s", name, kind))` is `console.error("%s is %s",
+/// name, kind)`. `T` is `dyn IntoUnknown` of TypeScript's `any`, a
+/// union's `dyn Into..` trait, or the type an argument is a reference to,
+/// `str`.
+#[diagnostic::on_unimplemented(
+    message = "`{Self}` is not a tuple of rest arguments",
+    note = "a rest parameter is given a tuple, `(a, b)`, `(a,)` of one and `()` of none"
+)]
+pub trait Rest<T: ?Sized> {}
+
+/// What a rest parameter of `T`s takes as one of its arguments, an `A`: any
+/// value, of `dyn IntoUnknown`; text, of `str`; and a union's members, or
+/// an interface and the ones that extend it, as webapi says (ADR 0640).
+#[diagnostic::on_unimplemented(message = "a rest parameter of `{Self}`s takes no `{A}`")]
+pub trait Takes<A> {}
+
+impl<A> Takes<A> for dyn IntoUnknown {}
+impl<'a> Takes<&'a str> for str {}
+impl<'a> Takes<&'a String> for str {}
+impl Takes<String> for str {}
+
+/// A tuple of up to 12, each item one `T` takes.
+macro_rules! rest {
+    ($(($($a:ident),*))*) => {
+        $(
+            impl<T: ?Sized $(+ Takes<$a>)*, $($a),*> Rest<T> for ($($a,)*) {}
+        )*
+    };
+}
+
+rest! {
+    ()
+    (A)
+    (A, B)
+    (A, B, C)
+    (A, B, C, D)
+    (A, B, C, D, E)
+    (A, B, C, D, E, F)
+    (A, B, C, D, E, F, G)
+    (A, B, C, D, E, F, G, H)
+    (A, B, C, D, E, F, G, H, I)
+    (A, B, C, D, E, F, G, H, I, J)
+    (A, B, C, D, E, F, G, H, I, J, K)
+    (A, B, C, D, E, F, G, H, I, J, K, L)
+}
+
 /// A value that's never `undefined` nor `null` in JS, as `None` is: an
 /// `Option` of one is the value or `undefined`, not a box (ADR 0051), so
 /// one a clone copies as it is.

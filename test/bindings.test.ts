@@ -148,7 +148,7 @@ pub fn count<'a>(values: impl IntoFloat32List + 'a) -> u32 {
 }
 
 pub fn page(el: &Element, blob: &Blob, url: &str) -> (&'static Response, js::Promise<&'static Response>) {
-    el.before("text");
+    el.before(("text",));
     (response::new(Some(&blob), None), window.fetch(url, None))
 }
 `;

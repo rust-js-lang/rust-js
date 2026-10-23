@@ -29,9 +29,7 @@ export function main() {
   const count = { value: 0 };
   const output = document.createElement("output");
   output.textContent = "0";
-  // An `Element` is a `Node` (`Deref`), so it goes where `append` wants a `Node`.
-  app.append(stepper("-", -1, count, output));
-  app.append(output);
-  app.append(stepper("+", 1, count, output));
+  // `append` takes any number of nodes, each an element or text.
+  app.append(stepper("-", -1, count, output), output, stepper("+", 1, count, output));
 }
 //# sourceMappingURL=counter.js.map

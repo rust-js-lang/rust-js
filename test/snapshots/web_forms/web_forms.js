@@ -6,8 +6,7 @@ export function forms() {
   const input = document.createElement("input");
   input.value = "typed";
   const app = $unwrap(document.getElementById("app"), "the page has an #app");
-  app.append(input);
-  app.append("!");
+  app.append(input, "!");
   const ping = new Event("ping");
   app.addEventListener("ping", (e) => {
     e.preventDefault();

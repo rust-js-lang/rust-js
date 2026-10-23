@@ -771,6 +771,12 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### Changed
 
+- **A TypeScript rest parameter is a tuple** (ADR 0640): webapi's 53
+  bindings of one, `console.error(...data)`, `el.append(...nodes)`,
+  `classList.add(...tokens)`, take `impl js::Rest<T>`, a tuple, each
+  argument of its own type: `console::error(("%s is %s", name, kind))` is
+  `console.error("%s is %s", name, kind)`. A call of one is `(x,)`, of
+  none `()`; each took one argument, or none after an optional one.
 - **`js::concat_text` of any value is what may throw** (ADR 0639): of an
   `&Unknown` or an `Option<&Unknown>`, `value + ""` gives `Result<String,
   &JsError>`, as it throws of a symbol; of text and numbers, a `String`

@@ -45,8 +45,7 @@ pub fn main() {
             running.set(false);
         }));
     }, None);
-    app.append(start);
-    app.append(output);
+    app.append((start, output));
 }
 
 #[cfg(test)]
@@ -61,7 +60,7 @@ mod tests {
         body.set_text_content("");
         let app = document.create_element(Div);
         app.set_id("app");
-        body.append(app);
+        body.append((app,));
         app
     }
 

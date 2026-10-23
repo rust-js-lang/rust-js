@@ -41,7 +41,6 @@ export function main() {
       running = false;
     })();
   });
-  app.append(start);
-  app.append(output);
+  app.append(start, output);
 }
 //# sourceMappingURL=countdown.js.map

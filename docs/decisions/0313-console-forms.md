@@ -1,7 +1,8 @@
 # 0313. Loops, spreads and calls as a person writes them
 
 Status: Accepted. Amends the range `for` loop's end (ADR 0025) and
-`chain` (ADR 0036).
+`chain` (ADR 0036). Amended by [0640](0640-a-rest-parameter-is-a-tuple.md):
+`console` takes a tuple of its arguments.
 
 Case: A ([0262](0262-when-rust-and-js-disagree.md)), but for a dropped
 trailing `undefined`, B: only `arguments.length` tells.
@@ -55,3 +56,5 @@ And webapi had no `console`, whose `console.warn` it calls.
   `None` is left out.
 - webapi's `console` takes one value per call: WebIDL's `any... data` is
   one generic argument, as the generator binds a variadic `any` today.
+  (Amended by ADR 0640: a tuple of any number, each its own type,
+  `console::warn(("%s", x))`.)

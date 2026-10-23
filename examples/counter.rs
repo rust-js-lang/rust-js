@@ -38,10 +38,12 @@ pub fn main() {
     let count = Rc::new(Cell::new(0));
     let output = document.create_element(Output);
     output.set_text_content("0");
-    // An `Element` is a `Node` (`Deref`), so it goes where `append` wants a `Node`.
-    app.append(stepper("-", -1, &count, output));
-    app.append(output);
-    app.append(stepper("+", 1, &count, output));
+    // `append` takes any number of nodes, each an element or text.
+    app.append((
+        stepper("-", -1, &count, output),
+        output,
+        stepper("+", 1, &count, output),
+    ));
 }
 
 // Tests, in Rust (ADR 0026): `rust-js --test` compiles them, and `bun test`
@@ -58,7 +60,7 @@ mod tests {
         body.set_text_content("");
         let app = document.create_element(Div);
         app.set_id("app");
-        body.append(app);
+        body.append((app,));
         app
     }
 

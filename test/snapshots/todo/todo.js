@@ -88,9 +88,7 @@ function item(state, view, todo) {
     $retain(s.todos, (t) => t.id !== id);
   });
 
-  li.append(check);
-  li.append(title);
-  li.append(delete$);
+  li.append(check, title, delete$);
   return li;
 }
 
@@ -185,9 +183,7 @@ export function main() {
   });
   footer.append(clear);
 
-  app.append(input);
-  app.append(view.list);
-  app.append(footer);
+  app.append(input, view.list, footer);
   render(state, view);
 }
 //# sourceMappingURL=todo.js.map

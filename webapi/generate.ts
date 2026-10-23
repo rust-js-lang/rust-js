@@ -682,8 +682,34 @@ function paramType(t: IdlType): string | undefined {
 const skipped = new Map<string, number>();
 const skip = (why: string) => skipped.set(why, (skipped.get(why) ?? 0) + 1);
 
-/** A binding; `nullable`, its parameters whose `None` is `null` (ADR 0275). */
-type Fn = { name: string; jsName: string; params: string[]; result: string; doc: string[]; nullable?: string[]; typeParams?: string[] };
+/** A binding; `nullable`, its parameters whose `None` is `null` (ADR 0275);
+ * `variadic`, its last a rest parameter's tuple (ADR 0640). */
+type Fn = { name: string; jsName: string; params: string[]; result: string; doc: string[]; nullable?: string[]; typeParams?: string[]; variadic?: boolean };
+
+/** The interfaces a rest parameter's arguments are, `...streams:
+ * MediaStream[]`'s: each `Takes` a reference to it, and to each that
+ * extends it (ADR 0640). */
+const restInterfaces = new Set<string>();
+
+/**
+ * What a rest parameter of `type`, a parameter's Rust, is a tuple of, its
+ * `Rest<T>`'s `T` (ADR 0640): `any`'s `dyn IntoUnknown`, a union's `dyn
+ * IntoNodeOrStr`, text's `str`, an interface's `MediaStream`, each of
+ * which `Takes` what its parameter takes.
+ */
+function restItem(type: string): string {
+  if (type === ANY) return "dyn IntoUnknown";
+  const union = unions.get(type.replace(/<'_>$/, ""));
+  if (union) return `dyn Into${union.name}`;
+  if (type === "&str") return "str";
+  const of = type.match(/^&(\w+)$/)?.[1];
+  const named = of && INTERFACES.find((n) => typeName(n) === of);
+  if (named) {
+    restInterfaces.add(named);
+    return of;
+  }
+  throw new Error(`a rest parameter of \`${type}\`: no \`Takes\` says what it takes`);
+}
 
 // Operations whose typed form, by an event's or a tag's type (ADR 0223), has
 // their name: the form that takes any string is `_named`.
@@ -833,7 +859,7 @@ function functionsOf(declared: Interface): Fn[] {
     const names: string[] = [];
     const types: string[] = [];
     for (const a of args) {
-      if (a.optional) break;
+      if (a.optional || a.variadic) break;
       const type = paramType(a.idlType);
       if (!type) {
         const why = rustType(a.idlType, "param");
@@ -847,15 +873,22 @@ function functionsOf(declared: Interface): Fn[] {
 
   // The one form: its required arguments, then each optional one an
   // `Option`, as TypeScript's `x?` (ADR 0443): `encode(this, input)`. The
-  // first whose type isn't bound ends them, a caller leaving it out.
+  // first whose type isn't bound ends them, a caller leaving it out. Then
+  // its rest parameter, `...data`, a tuple of what its type takes, the
+  // binding variadic (ADR 0640).
   const form = (base: string, sig: { names: string[]; types: string[] }, args: Arg[]) => {
     const params = sig.types.map((type, j) => `${sig.names[j]}: ${type}`);
-    for (const a of args.filter((a) => a.optional)) {
+    for (const a of args.filter((a) => !a.variadic)) {
+      if (!a.optional) continue;
       const type = paramType(a.idlType);
-      if (!type) break;
+      if (!type) return { name: base, params, variadic: false };
       params.push(`${snake(a.name)}: Option<${type}>`);
     }
-    return { name: base, params };
+    const rest = args.find((a) => a.variadic);
+    const type = rest && paramType(rest.idlType);
+    if (!rest || !type) return { name: base, params, variadic: false };
+    params.push(`${snake(rest.name)}: impl Rest<${restItem(type)}>`);
+    return { name: base, params, variadic: true };
   };
 
   for (const [index, { member: m }] of i.members.entries()) {
@@ -935,7 +968,7 @@ function functionsOf(declared: Interface): Fn[] {
       }
       // `new`, its optional arguments `Option`s (ADR 0443).
       const v = form("new", sig, m.arguments ?? []);
-      fns.push({ name: v.name, jsName: `new ${jsName(i)}`, params: v.params, result: `&'static ${typeName(i.name)}`, doc: [`[MDN](${mdn(i.name, i.name)})`] });
+      fns.push({ name: v.name, jsName: `new ${jsName(i)}`, params: v.params, result: `&'static ${typeName(i.name)}`, doc: [`[MDN](${mdn(i.name, i.name)})`], variadic: v.variadic });
     } else if (m.type === "attribute") {
       // A static attribute is a function of the class's module, read at
       // each call: `notification::permission()`, `Notification.permission`.
@@ -1025,7 +1058,7 @@ function functionsOf(declared: Interface): Fn[] {
       const base = lead.length > 0 ? identifier(`${plain(name)}_with_${lead.join("_and_")}`) : name;
       const v = form(base, sig, m.arguments ?? []);
       const jsName = isStatic ? `${i.name}.${m.name}` : member(m.name);
-      fns.push({ name: v.name, jsName, params: isStatic ? v.params : [...self, ...v.params], result: orNull(result, m.idlType!), doc });
+      fns.push({ name: v.name, jsName, params: isStatic ? v.params : [...self, ...v.params], result: orNull(result, m.idlType!), doc, variadic: v.variadic });
     }
   }
 
@@ -1187,7 +1220,7 @@ line(`//! Import \`EventTargetExt\` for \`button.add_event_listener(Click, |e| .
 line();
 line(`use core::marker::PhantomData;`);
 line(`use core::ops::Deref;`);
-line(`use js::{${[...BUILTINS, "Defined", "IntoUnknown", "JsError", "JsObject", "Promise", "StructuredClone", "Unknown"].sort().join(", ")}};`);
+line(`use js::{${[...BUILTINS, "Defined", "IntoUnknown", "JsError", "JsObject", "Promise", "Rest", "StructuredClone", "Takes", "Unknown"].sort().join(", ")}};`);
 line();
 line(`unsafe extern "Rust" {`);
 GLOBALS.forEach(([name, type], k) => {
@@ -1232,6 +1265,7 @@ function generic(f: Fn): string {
   return [
     ...f.doc.map((d) => `    /// ${d}`),
     `    #[cfg_attr(rust_js, rust_js::link_name = ${JSON.stringify(f.jsName)})]`,
+    ...(f.variadic ? ["    #[cfg_attr(rust_js, rust_js::variadic)]"] : []),
     ...(f.nullable ? [`    #[cfg_attr(rust_js, rust_js::nullable(${f.nullable.join(", ")}))]`] : []),
     "    // rust-js writes its JS: the body never runs, nor reads a parameter.",
     "    #[allow(unused_variables)]",
@@ -1474,6 +1508,8 @@ for (const union of [...unions.values()].sort((a, b) => a.name.localeCompare(b.n
     line(`impl Into${union.name} for ${member} {}`);
     sealed.add(member);
   }
+  line(`/// A rest parameter of \`${ts}\`s takes each member (ADR 0640).`);
+  line(`impl<A: Into${union.name}> Takes<A> for dyn Into${union.name} {}`);
   line();
   line(`impl${lifetime} ${union.name}${lifetime} {`);
   line(`    /// The member a parameter was given, as its enum, to \`match\`: the value itself.`);
@@ -1483,6 +1519,15 @@ for (const union of [...unions.values()].sort((a, b) => a.name.localeCompare(b.n
   line(`        unreachable!()`);
   line(`    }`);
   line(`}`);
+}
+// What a rest parameter of an interface takes: a reference to it, or to one
+// that extends it (ADR 0640).
+for (const named of [...restInterfaces].sort()) {
+  line();
+  line(`/// A rest parameter of \`${jsName(interfaces.get(named)!)}\`s takes each, and each that extends it (ADR 0640).`);
+  for (const n of INTERFACES.filter((n) => n === named || ancestors(n).includes(named))) {
+    line(`impl<'a> Takes<&'a ${typeName(n)}> for ${typeName(named)} {}`);
+  }
 }
 line();
 line(`mod sealed {`);

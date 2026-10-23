@@ -2,7 +2,8 @@
 
 Status: Accepted; amended by [0593](0593-a-lazy-argument-is-its-value.md),
 whose `use_state` is one function, and [0594](0594-an-overload-an-options-dictionary-holds-is-it.md),
-whose overload an options dictionary holds is that one. Amends [0024](0024-web-crate.md),
+whose overload an options dictionary holds is that one, and [0640](0640-a-rest-parameter-is-a-tuple.md),
+whose `None` before a rest of none is no argument. Amends [0024](0024-web-crate.md),
 [0102](0102-js-and-webapi.md) and [0272](0272-node.md), whose `_with_` forms
 of an optional argument are gone, and [0020](0020-structs-and-tuples.md):
 a `()` as a `dyn` JS is given the value of is an array too. Extends
@@ -177,3 +178,5 @@ never was). The array argument, which no binding reads, isn't given.
   from the start.
 - A trailing `None` given a variadic binding is still `undefined`:
   `setMaxListeners(undefined, ...targets)`, which Node reads as left out.
+  (Amended by ADR 0640: before a spread; before a rest of none written
+  out, `()`, it's no argument, `console.timeLog()`.)

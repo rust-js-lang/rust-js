@@ -77,16 +77,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
         }
         // A trailing `None` of an optional parameter, TypeScript's `x?`, is no
-        // argument, as a person leaves one out (ADR 0443).
-        if !is_variadic(self.tcx, def_id) {
-            let offset = usize::from(this.is_some());
-            while args
-                .last()
-                .is_some_and(|last| matches!(last.kind, js::ExprKind::Undefined))
-                && is_optional_param(self.tcx, def_id, args.len() - 1 + offset)
-            {
-                args.pop();
-            }
+        // argument, as a person leaves one out (ADR 0443): of a variadic
+        // binding too, before a rest of none, `console.timeLog()` (ADR
+        // 0640). A rest's argument is no optional parameter's, nor a spread,
+        // so a `None` before one stays.
+        let offset = usize::from(this.is_some());
+        while args
+            .last()
+            .is_some_and(|last| matches!(last.kind, js::ExprKind::Undefined))
+            && is_optional_param(self.tcx, def_id, args.len() - 1 + offset)
+        {
+            args.pop();
         }
         given_to_js(&mut args);
         let value = match (js_form(self.tcx, def_id), this) {
