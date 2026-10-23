@@ -71,6 +71,7 @@ async function declared(): Promise<Map<string, Map<string, Kind>>> {
           local.set(d.name, kind);
           if (d.exported || !marked) own.set(d.name, kind);
         }
+        if (d.kind === "export" && d.from === undefined) for (const [name, as] of d.names) own.set(as, local.get(name) ?? "value");
         if (d.kind !== "other") continue;
         const text: string = d.text;
         const cls = classOf(text);

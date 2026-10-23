@@ -195,7 +195,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // own, a generic `T`'s or a `dyn`'s is given them as an object.
         let shown = self.shown_type(ty);
         let leaf = num.is_some() || shown.is_bool() || shown.is_unit() || self.is_string_like(shown);
-        let options = width.is_some() || precision.is_some() || spec.plus || spec.debug_hex.is_some();
+        // An alignment, a fill or `0` is an option too, which a `fmt` may ask
+        // of its `Formatter` though there's no width to pad to.
+        let options = width.is_some()
+            || precision.is_some()
+            || spec.plus
+            || spec.debug_hex.is_some()
+            || spec.align.is_some()
+            || spec.fill != ' '
+            || spec.zero;
         if options && !leaf && matches!(kind, Std::FmtDisplay | Std::FmtDebug) {
             let given = Pretty::Given(options_object(spec, &width, &precision), spec.alternate);
             let options = Options { spec, width, precision };
@@ -255,6 +263,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     return Err(self.unsupported(span, &format!("`{{:e}}` of a `{ty}`")));
                 };
                 exp_text(value, num, upper, precision.clone())
+            }
+            // `{:.2?}` of a `Duration`: its fraction to that many digits,
+            // rounded as std's `Debug` rounds it (ADR 0188).
+            Std::FmtDebug
+                if let Some(digits) = precision.clone()
+                    && crate::lower::recognition::is_duration_ty(ty) =>
+            {
+                Expr::call(Expr::helper("$debugDuration"), vec![value, digits])
             }
             // `{:.2}` of an `f64`: exact, and rounded as Rust rounds.
             _ if let Some(digits) = precision.clone()

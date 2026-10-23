@@ -168,6 +168,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // at once (ADR 0029).
         if self.tcx.coroutine_is_async(def_id) {
             self.place_written(written, &mut stmts);
+            // What it gives, settled where a promise would adopt it (#172).
+            if let ty::Coroutine(_, args) = self.tcx.type_of(def_id).skip_binder().kind()
+                && self.may_be_thenable(args.as_coroutine().return_ty())
+            {
+                js::statement_lists(&mut stmts, &mut |list| {
+                    for stmt in list.iter_mut() {
+                        if let StmtKind::Return(Some(value)) = &mut stmt.kind {
+                            let given = std::mem::replace(value, Expr::undefined());
+                            *value = Expr::call_helper("$settled", vec![given]);
+                        }
+                    }
+                });
+            }
             return Ok(Expr::call(Expr::async_arrow(params, stmts), Vec::new()));
         }
         // An `async` closure's body is the one it makes: its async arrow's.

@@ -185,6 +185,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         state: &mut State<'_, 'tcx>,
         func: &Operand<'tcx>,
         args: &[rustc_span::Spanned<Operand<'tcx>>],
+        destination: mir::Place<'tcx>,
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<Value<'tcx>> {
@@ -210,7 +211,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // points at (ADR 0329): the place it's to, or its cell's `value`.
         let pointer = self.recognition().pinned(ty).unwrap_or(ty);
         let awaited = self.value_expr(awaited, span)?;
-        Ok(Value::Expr(Expr::await_(self.through_refs(awaited, pointer).0)))
+        let awaited = Expr::await_(self.through_refs(awaited, pointer).0);
+        // What it gives, out of the box `$settled` put it in, where it may
+        // be a thenable (#172).
+        let output = destination.ty(&state.body.local_decls, self.tcx).ty;
+        Ok(Value::Expr(match self.may_be_thenable(output) {
+            true => Expr::call_helper("$unsettled", vec![awaited]),
+            false => awaited,
+        }))
     }
 
     /// Any other function as a value, `.map(str::len)`: the arrow that calls

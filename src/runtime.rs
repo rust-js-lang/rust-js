@@ -288,6 +288,7 @@ helpers! {
     RemoveAt,
     Swap,
     SymbolFor,
+    Settled,
     Truncate,
     Dedup,
     DedupBy,
@@ -763,6 +764,7 @@ impl Helper {
             Helper::Swap => include_str!("runtime/swap.js"),
             // `js::SymbolFor::from_value(value)` (ADR 0634).
             Helper::SymbolFor => include_str!("runtime/symbol_for.js"),
+            Helper::Settled => include_str!("runtime/settled.js"),
             Helper::Truncate => include_str!("runtime/truncate.js"),
             Helper::DedupBy => include_str!("runtime/dedup_by.js"),
             Helper::SwapRemove => include_str!("runtime/swap_remove.js"),

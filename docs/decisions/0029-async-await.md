@@ -143,3 +143,17 @@ the call.
 ## Amended by
 
 - [0373](0373-one-binding-form.md): A binding of a JS function is an ordinary function, and a JS type a struct
+
+## Amendment: what a future gives isn't adopted
+
+A future is a JS promise, and a promise resolved with a thenable adopts
+it, which Rust's future never does: an `async fn` giving a struct with a
+function named `then` never resolved, and one giving `Some(future)` was
+flattened, `None` (#172). Where a future's output may be a thenable,
+`may_be_thenable`'s answer, a future, an `Option` or a `Box` of one, a
+struct with a function named `then`, or a type only a caller knows, what
+resolves it, an async body's `return` or `ready(v)`, gives
+`$settled(value)`, which boxes it only if it's a thenable, and its
+`.await` takes `$unsettled(..)` of what it gives. Any other output is as
+it was. Held by the lowering test "an awaited value that's a thenable
+isn't adopted".

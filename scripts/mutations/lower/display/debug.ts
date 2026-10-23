@@ -330,4 +330,12 @@ export const mutations: Mutation[] = [
     replace: "    ) -> R<Expr> {\n        let (value, ty) = self.through_boxes(value, ty.peel_refs());",
     tests: ["test/corpus.test.ts", "-t", "mut_ref_compare"],
   },
+  {
+    name: "parse-error-pretty-dropped",
+    breaks: "`{:#?}` of a `ParseIntError` is its one line",
+    file: "src/lower/display/debug.rs",
+    find: "            let mut list = vec![value, Expr::str(name.as_str())];\n            if pretty.known() != Some(false) {\n",
+    replace: "            let mut list = vec![value, Expr::str(name.as_str())];\n            if false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^format_options_reached.rs$"],
+  },
 ];

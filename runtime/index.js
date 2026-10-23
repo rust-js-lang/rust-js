@@ -8206,9 +8206,13 @@ export function $parseErrorKind(message) {
   return kinds[message];
 }
 
-export function $debugParseError(message, name) {
-  if (name === "TryFromIntError") return `TryFromIntError(${$parseErrorKind(message)})`;
-  return name === "ParseBoolError" ? name : `${name} { kind: ${$parseErrorKind(message)} }`;
+// Its derived `Debug`; with `{:#?}`, `options.alternate`, on lines of
+// their own, indented.
+export function $debugParseError(message, name, options) {
+  const kind = $parseErrorKind(message);
+  if (name === "ParseBoolError") return name;
+  if (name === "TryFromIntError") return options?.alternate ? `TryFromIntError(\n    ${kind},\n)` : `TryFromIntError(${kind})`;
+  return options?.alternate ? `${name} {\n    kind: ${kind},\n}` : `${name} { kind: ${kind} }`;
 }
 
 export function $siftUp(heap, start, pos, cmp) {
@@ -8593,11 +8597,23 @@ export function $utf8ErrorMessage(error) {
     : `invalid utf-8 sequence of ${error.errorLen} bytes from index ${error.validUpTo}`;
 }
 
-// A `Utf8Error`'s derived `Debug`, or a `FromUtf8Error`'s (`owned`).
-export function $debugUtf8Error(error, owned = false) {
-  if (owned) return `FromUtf8Error { bytes: [${error.bytes.join(", ")}], error: ${$debugUtf8Error(error.error)} }`;
-  const length = error.errorLen === undefined ? "None" : `Some(${error.errorLen})`;
-  return `Utf8Error { valid_up_to: ${error.validUpTo}, error_len: ${length} }`;
+// A `Utf8Error`'s derived `Debug`, or a `FromUtf8Error`'s (`owned`), its
+// numbers padded as `options` say, a derived `Debug`'s fields are; with
+// `{:#?}`, `options.alternate`, on lines of their own, indented.
+export function $debugUtf8Error(error, owned = false, options) {
+  const n = (number) => $padIntegral(true, "", String(number), options);
+  if (options?.alternate) {
+    const inner = (text) => text.replaceAll("\n", "\n    ");
+    if (owned) {
+      const bytes = error.bytes.length === 0 ? "[]" : `[\n${error.bytes.map((b) => `        ${n(b)},\n`).join("")}    ]`;
+      return `FromUtf8Error {\n    bytes: ${bytes},\n    error: ${inner($debugUtf8Error(error.error, false, options))},\n}`;
+    }
+    const length = error.errorLen === undefined ? "None" : `Some(\n        ${n(error.errorLen)},\n    )`;
+    return `Utf8Error {\n    valid_up_to: ${n(error.validUpTo)},\n    error_len: ${length},\n}`;
+  }
+  if (owned) return `FromUtf8Error { bytes: [${error.bytes.map(n).join(", ")}], error: ${$debugUtf8Error(error.error, false, options)} }`;
+  const length = error.errorLen === undefined ? "None" : `Some(${n(error.errorLen)})`;
+  return `Utf8Error { valid_up_to: ${n(error.validUpTo)}, error_len: ${length} }`;
 }
 
 // A byte slice's `escape_ascii()` (ADR 0341): each byte as `u8::escape_ascii`
@@ -9111,8 +9127,10 @@ export function $durationChecked(sum) {
   return sum > 18446744073709551615999999999n ? undefined : sum;
 }
 // `{:?}`: in the largest unit it has a whole one of, its fraction's
-// trailing zeros dropped, as std's writes it.
-export function $debugDuration(duration) {
+// trailing zeros dropped, as std's writes it; with a `precision`, `{:.2?}`,
+// that many digits of it, rounded to the nearest, a tie to even, as std's
+// is, and zeros past its 9.
+export function $debugDuration(duration, precision) {
   const secs = duration / 1000000000n;
   const nanos = Number(duration % 1000000000n);
   const [whole, part, digits, unit] =
@@ -9123,8 +9141,25 @@ export function $debugDuration(duration) {
         : nanos >= 1000
           ? [Math.floor(nanos / 1000), nanos % 1000, 3, "µs"]
           : [nanos, 0, 0, "ns"];
-  const fraction = part === 0 ? "" : "." + String(part).padStart(digits, "0").replace(/0+$/, "");
-  return `${whole}${fraction}${unit}`;
+  if (precision === undefined) {
+    const fraction = part === 0 ? "" : "." + String(part).padStart(digits, "0").replace(/0+$/, "");
+    return `${whole}${fraction}${unit}`;
+  }
+  const all = digits === 0 ? "" : String(part).padStart(digits, "0");
+  let kept = all.slice(0, Math.min(precision, digits));
+  let integer = BigInt(whole);
+  const rest = all.slice(kept.length);
+  const last = kept === "" ? Number(integer % 10n) : Number(kept[kept.length - 1]);
+  // Up past half, and of a tie, to even.
+  const half = "5".padEnd(rest.length, "0");
+  if (rest !== "" && (rest > half || (rest === half && last % 2 === 1))) {
+    const next = kept === "" ? "1" : String(BigInt(kept) + 1n).padStart(kept.length, "0");
+    if (next.length > kept.length) {
+      integer += 1n;
+      kept = next.slice(1);
+    } else kept = next;
+  }
+  return `${integer}${precision > 0 ? "." + kept.padEnd(precision, "0") : ""}${unit}`;
 }
 
 export function $byteLen(s) {
@@ -9220,6 +9255,18 @@ export function $swap(v, a, b, deque = false) {
 // registry's symbol, `undefined` where it's any other.
 export function $symbolFor(value) {
   return typeof value === "symbol" && Symbol.keyFor(value) !== undefined ? value : undefined;
+}
+
+// What a future resolves to, as a promise is resolved by JS's rules: one
+// that's itself a thenable, a promise or an object with a `then`, a
+// promise would adopt, where Rust's future gives it as it is. Boxed, then,
+// `$settled`, and taken out of its box where it's awaited, `$unsettled`.
+export function $settled(value) {
+  const thenable = value !== null && (typeof value === "object" || typeof value === "function") && typeof value.then === "function";
+  return thenable ? { $settled: value } : value;
+}
+export function $unsettled(value) {
+  return value !== null && typeof value === "object" && "$settled" in value ? value.$settled : value;
 }
 
 // `v.truncate(length)`: what's past it gone, and of items with a destructor,

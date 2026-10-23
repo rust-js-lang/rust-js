@@ -205,10 +205,11 @@ fn lowered_bodies(tcx: TyCtxt<'_>) -> Vec<Body<'_>> {
             // a generic impl's, or can't say its value, a `String`'s (ADR
             // 0176). And a trait's default, which a library's dictionary reads
             // as its initializer, never computed where no consumer reads it.
+            // Of one with a body: a `type const` has none.
             DefKind::AssocConst { .. } => {
-                tcx.trait_impl_of_assoc(def_id.to_def_id()).is_some()
-                    || (tcx.trait_of_assoc(def_id.to_def_id()).is_some()
-                        && tcx.hir_maybe_body_owned_by(def_id).is_some())
+                (tcx.trait_impl_of_assoc(def_id.to_def_id()).is_some()
+                    || tcx.trait_of_assoc(def_id.to_def_id()).is_some())
+                    && tcx.hir_maybe_body_owned_by(def_id).is_some()
             }
             _ => false,
         })

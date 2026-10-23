@@ -126,8 +126,8 @@ export const mutations: Mutation[] = [
     name: "mir-await-unawaited",
     breaks: "`.await` of a promise is the promise, not what it resolves to",
     file: "src/lower/mir/dispatch.rs",
-    find: "        Ok(Value::Expr(Expr::await_(self.through_refs(awaited, pointer).0)))\n",
-    replace: "        Ok(Value::Expr(self.through_refs(awaited, pointer).0))\n",
+    find: "        let awaited = Expr::await_(self.through_refs(awaited, pointer).0);\n",
+    replace: "        let awaited = self.through_refs(awaited, pointer).0;\n",
     tests: ["test/compiler.test.ts","-t","async code becomes"],
   },
   {
@@ -459,5 +459,13 @@ export const mutations: Mutation[] = [
     replace: "        if matches!(known, Std::Same)\n",
     tests: ["test/corpus.test.ts", "-t", "pin_box"],
     snapshots: true,
+  },
+  {
+    name: "await-unsettled-dropped",
+    breaks: "an awaited thenable stays in the box `$settled` put it in",
+    file: "src/lower/mir/dispatch.rs",
+    find: "            true => Expr::call_helper(\"$unsettled\", vec![awaited]),\n",
+    replace: "            true => awaited,\n",
+    tests: ["test/lowering-functions.test.ts", "-t", "thenable"],
   },
 ];

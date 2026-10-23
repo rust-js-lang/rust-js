@@ -90,3 +90,13 @@ function, derived or not.**
   table of them gives the Rust one, `{ "best fit": "BestFit", lookup:
   "Lookup" }[fit]`, of a tagged enum's tag (ADR 0284). (Amended: it was
   the JS name.)
+
+## Amendment: a `Box<dyn Debug>`
+
+A `dyn Debug` is the string it shows, made where a `&dyn Debug` is; but
+`is_dyn_debug` saw through references alone, so a `Box<dyn Debug>` or an
+`Rc<dyn Debug>` was its value, interpolated raw: `0.30000001192092896`,
+`[object Object]` (#174). It sees through a `Box` and an `Rc` that isn't
+counted, each its value (ADR 0023); a counted one, a library's, whose
+value would be the string where its count is kept, is refused. Held by
+`test/corpus/boxed_dyn_debug.rs`.

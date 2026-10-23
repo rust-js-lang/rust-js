@@ -1011,6 +1011,42 @@ pub async fn made() -> u32 {
   expect(await lib.made()).toBe(3);
 });
 
+// A future's output a promise would adopt, a thenable, is boxed where the
+// promise is resolved, `$settled`, and taken out where it's awaited,
+// `$unsettled` (#172): a struct with a function named `then`, and a future
+// of a future, which a promise would flatten. A future's output that can't
+// be one is as it is.
+test("an awaited value that's a thenable isn't adopted", async () => {
+  const dir = fixture("async-thenable");
+  writeFileSync(join(dir, "lib.rs"), `use std::pin::Pin;
+pub struct Hook {
+    then: Box<dyn Fn(u32) -> u32>,
+}
+async fn make(n: u32) -> Hook {
+    Hook { then: Box::new(move |x| x + n) }
+}
+async fn pick() -> Option<Pin<Box<dyn Future<Output = ()>>>> {
+    Some(Box::pin(async {}))
+}
+async fn plain() -> u32 {
+    4
+}
+pub async fn report() -> String {
+    let hook = make(5).await;
+    let ready = std::future::ready(Hook { then: Box::new(|x| x * 3) }).await;
+    let inner = pick().await.is_some();
+    format!("{} {} {} {}", (hook.then)(1), (ready.then)(2), inner, plain().await)
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("await plain()}");
+  expect(js).toContain("$unsettled(await make(5))");
+  // One adopted never resolves: a second on, it's taken for hung.
+  const hung = new Promise((resolve) => setTimeout(() => resolve("hung"), 1000));
+  expect(await Promise.race([(await import(join(dir, "lib.js"))).report(), hung])).toBe("6 6 true 4");
+});
+
 // `mem::take(&mut current)` of a variable takes it and gives it a new
 // value, `const old = current; current = [];`, not `$take(current, [])` of
 // the object, a closure's `&mut` capture of one too, which is the

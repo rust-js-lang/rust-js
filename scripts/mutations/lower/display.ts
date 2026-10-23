@@ -181,4 +181,12 @@ export const mutations: Mutation[] = [
     replace: "            Some(_) => self.writing.given.clone(),\n",
     tests: ["test/crates.test.ts", "-t", "as its own crate takes them"],
   },
+  {
+    name: "boxed-dyn-debug-raw",
+    breaks: "a `Box<dyn Debug>` is its value, interpolated raw by `{:?}`, `0.30000001192092896` and `[object Object]`",
+    file: "src/lower/display.rs",
+    find: "            && (ty.is_box() || self.is_rc(ty) && self.counted_rc(ty).is_none())\n",
+    replace: "            && false\n",
+    tests: ["test/corpus.test.ts", "-t", "^boxed_dyn_debug.rs$"],
+  },
 ];
