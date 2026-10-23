@@ -67,16 +67,17 @@ export function describe(text) {
   if (value$1.TAG === "Ok") {
     if (value$1._0 != null) {
       const value = value$1._0;
-      if (typeof value === "string") {
-        return `text ${value}`;
-      }
-      if (typeof value === "number") {
-        return `number ${$displayF64(value)}`;
-      }
       if (Array.isArray(value)) {
         return `${value.length} items`;
       }
-      return "something else";
+      switch (typeof value) {
+        case "string":
+          return `text ${value}`;
+        case "number":
+          return `number ${$displayF64(value)}`;
+        default:
+          return "something else";
+      }
     }
     return "null";
   }

@@ -6,7 +6,8 @@
 use std::collections::HashSet;
 
 use crate::js::{self, Expr, ExprKind, Op, Stmt, StmtKind, UnaryOp};
-use crate::lower::mir::hints::{Constant, Switch, SwitchArm};
+use crate::lower::mir::hints::{Constant, SUBJECT, Switch, SwitchArm};
+use crate::lower::untagged::TypeofCase;
 
 use super::{first_written, is_temporary, relabeled, written_loop};
 
@@ -45,7 +46,7 @@ fn walk(
     let mut i = 0;
     while i < list.len() {
         if let Some((switch, taken)) = switch_at(list, i, switches, around.as_deref_mut()) {
-            list.splice(i..i + taken, [switch]);
+            list.splice(i..i + taken, switch);
             // A temporary only its test reads, `const _5 = s.charCodeAt(i);`
             // just before, but for what's declared, unset, `let v;`: its
             // value, read in place.
@@ -193,19 +194,38 @@ fn named_value(list: &mut Vec<Stmt>, i: usize) {
 
 /// A case of a `switch`: its values, its statements, whether it's the
 /// `default`, a last `_`'s, and where its arm is written.
-type Case = (Vec<Expr>, Vec<Stmt>, bool, js::Span);
+type Case = (Values, Vec<Stmt>, bool, js::Span);
 
-/// The `switch` of the chain at `stmts[at]`, of the `match` whose first
-/// arm's pattern its test is written at, and how many statements it is.
-/// `around`, the loop it's in, whose label each `break` of it names now.
-fn switch_at(stmts: &[Stmt], at: usize, switches: &[Switch], around: Option<&mut Around>) -> Option<(Stmt, usize)> {
+/// What an arm's case compares: its values; and of a `switch (typeof
+/// value)` (ADR 0668), the tests of its variants `typeof` doesn't tell,
+/// `Array.isArray(value)`, and those its variants' tests leave out, which
+/// an arm of an array tests before the `switch`.
+#[derive(Default)]
+struct Values {
+    values: Vec<Expr>,
+    tested: Vec<Expr>,
+    excluding: Vec<Expr>,
+}
+
+/// The statements of the chain at `stmts[at]`, of the `match` an arm's
+/// pattern of which its test is written at, a `switch`, and how many they
+/// are. `around`, the loop it's in, whose label each `break` of it names
+/// now.
+fn switch_at(
+    stmts: &[Stmt],
+    at: usize,
+    switches: &[Switch],
+    around: Option<&mut Around>,
+) -> Option<(Vec<Stmt>, usize)> {
     let first = &stmts[at];
     let at_test = tested_at(first)?;
-    let written = (switches.iter()).find(|s| s.arms.first().is_some_and(|arm| within(at_test, arm.pattern)))?;
-    let arms = &written.arms;
+    let written = (switches.iter()).find(|s| (s.arms.iter()).any(|arm| within(at_test, arm.pattern)))?;
+    let arms: Vec<&SwitchArm> = written.arms.iter().collect();
     let mut discriminant = None;
-    let (mut cases, mut taken) = chain(&stmts[at..], arms, false, &mut discriminant)?;
+    let (mut cases, mut taken) = chain(&stmts[at..], &arms, false, &mut discriminant)?;
     let discriminant = discriminant?;
+    // Its cases as its arms are written, whatever order MIR tests them in.
+    cases.sort_by_key(|case| case.3.lo);
     // What follows it to its list's end, where one case alone goes on to
     // it and it's that arm's, written there or MIR's: that case's, `'.' =>
     // break` of a loop's `break` after it.
@@ -223,6 +243,9 @@ fn switch_at(stmts: &[Stmt], at: usize, switches: &[Switch], around: Option<&mut
         cases[only].1.extend(after.iter().cloned());
         taken = stmts.len() - at;
     }
+    // Each arm of an array, which `typeof` says is an object, an `if` of
+    // its test before the `switch`, and so what the others' leave out.
+    let before = arrays_before(&mut cases)?;
     // A `break` of no label in a case, of the loop around it, which in a
     // `switch` would leave the `switch`: of the loop's label.
     if cases.iter().any(|(_, body, ..)| js::breaks(body, None)) {
@@ -237,7 +260,7 @@ fn switch_at(stmts: &[Stmt], at: usize, switches: &[Switch], around: Option<&mut
     for (values, body, last, _) in cases {
         match last {
             true => default = Some(body),
-            false => switched.push((values, body)),
+            false => switched.push((values.values, body)),
         }
     }
     // Where the `match` is written, not its first arm's pattern, which the
@@ -248,7 +271,56 @@ fn switch_at(stmts: &[Stmt], at: usize, switches: &[Switch], around: Option<&mut
         cases: switched,
         default,
     };
-    Some((switch.at(span), taken))
+    // Each `if` before it, its `else` the rest, where it goes on.
+    let written = (before.into_iter().rev()).fold(vec![switch.at(span)], |rest, (test, body, at)| {
+        match body.last().is_some_and(js::ends) {
+            true => std::iter::once(StmtKind::If(test, body, None).at(at))
+                .chain(rest)
+                .collect(),
+            false => vec![StmtKind::If(test, body, Some(rest)).at(at)],
+        }
+    });
+    Some((written, taken))
+}
+
+/// Of the cases of a `switch (typeof value)` (ADR 0668), each arm of
+/// variants `typeof` doesn't tell, an array's, taken out, an `if` of its
+/// test, its statements and where it's written: what's before the
+/// `switch`. The test of an arm of an array and an object both, `Object
+/// | Array`, is what `typeof` says, `case "object"`; of one of what it
+/// doesn't tell and what it does, `String | Array`, none. What the
+/// others' tests leave out, `Kind::Object`'s `!Array.isArray(value)`, is
+/// what's before, or there's no `switch`: `case "object"` would take an
+/// array.
+fn arrays_before(cases: &mut Vec<Case>) -> Option<Vec<(Expr, Vec<Stmt>, js::Span)>> {
+    let mut before = Vec::new();
+    let mut i = 0;
+    while i < cases.len() {
+        let values = &mut cases[i].0;
+        let tested = std::mem::take(&mut values.tested);
+        let excluding = std::mem::take(&mut values.excluding);
+        values.excluding = (excluding.iter())
+            .filter(|e| !tested.iter().any(|t| alike(t, e)))
+            .cloned()
+            .collect();
+        let alone: Vec<Expr> = (tested.into_iter())
+            .filter(|t| !excluding.iter().any(|e| alike(t, e)))
+            .collect();
+        match (alone.is_empty(), values.values.is_empty() && !cases[i].2) {
+            (true, _) => i += 1,
+            (false, false) => return None,
+            (false, true) => {
+                let (_, body, _, span) = cases.remove(i);
+                let test = (alone.into_iter())
+                    .reduce(|a, b| Expr::bin(Op::Or, a, b))
+                    .expect("a test");
+                before.push((test, body, span));
+            }
+        }
+    }
+    let left_out =
+        (cases.iter()).all(|(values, ..)| (values.excluding.iter()).all(|e| before.iter().any(|(t, ..)| alike(t, e))));
+    left_out.then_some(before)
 }
 
 /// The cases `stmts` test of `arms`, in order, and how many statements they
@@ -261,42 +333,47 @@ fn switch_at(stmts: &[Stmt], at: usize, switches: &[Switch], around: Option<&mut
 /// test compares, as the first tells.
 fn chain(
     stmts: &[Stmt],
-    arms: &[SwitchArm],
+    arms: &[&SwitchArm],
     whole: bool,
     discriminant: &mut Option<Expr>,
 ) -> Option<(Vec<Case>, usize)> {
     let mut cases = Vec::new();
     let mut i = 0;
-    for (k, arm) in arms.iter().enumerate() {
+    let mut left = arms.to_vec();
+    while !left.is_empty() {
+        // The arm whose pattern its test is written at, of those left,
+        // wherever MIR tests it, an untagged enum's in its variants' order:
+        // each tests what no other does.
         let tested = match stmts.get(i) {
             Some(
                 stmt @ Stmt {
                     kind: StmtKind::If(test, then, otherwise),
                     ..
                 },
-            ) if !arm.constants.is_empty() && tested_at(stmt).is_some_and(|at| within(at, arm.pattern)) => {
-                Some((test, then, otherwise))
-            }
+            ) => (left.iter())
+                .position(|arm| !arm.constants.is_empty() && tested_at(stmt).is_some_and(|at| within(at, arm.pattern)))
+                .map(|k| (left.remove(k), test, then, otherwise)),
             _ => None,
         };
-        let Some((test, then, otherwise)) = tested else {
-            // The rest, untested: the last arm's.
-            if k + 1 != arms.len() {
+        let Some((arm, test, then, otherwise)) = tested else {
+            // The rest, untested: the last arm's, the one left. A chain
+            // begun past an arm's test leaves that arm and the last, a `_`
+            // or one Rust proved, which no test is of: no `switch`.
+            let [arm] = left[..] else {
                 return None;
-            }
+            };
             let taken = rest(&stmts[i..], arm, whole);
-            let values = untested(arm)?;
+            let values = untested(arm, discriminant)?;
             cases.push((values, stmts[i..i + taken].to_vec(), arm.constants.is_empty(), arm.span));
             return Some((cases, i + taken));
         };
         // Its test negated, the last arm's branch: its own the `else`, or
         // what's after where that leaves.
         let mut negated = discriminant.clone();
-        if k + 2 == arms.len()
+        if let [last] = left[..]
             && let Some(values) = values_of(test, &arm.constants, true, &mut negated)
         {
             *discriminant = negated;
-            let last = &arms[k + 1];
             let (own, taken) = match otherwise {
                 Some(otherwise) => (otherwise.clone(), 0),
                 None if then.last().is_some_and(js::ends) => {
@@ -306,7 +383,12 @@ fn chain(
                 None => (Vec::new(), 0),
             };
             cases.push((values, own, false, arm.span));
-            cases.push((untested(last)?, then.clone(), last.constants.is_empty(), last.span));
+            cases.push((
+                untested(last, discriminant)?,
+                then.clone(),
+                last.constants.is_empty(),
+                last.span,
+            ));
             let taken = i + 1 + taken;
             return (!whole || taken == stmts.len()).then_some((cases, taken));
         }
@@ -321,7 +403,7 @@ fn chain(
         match otherwise {
             // The rest, the `else`'s, all of it.
             Some(otherwise) => {
-                let (rest, taken) = chain(otherwise, &arms[k + 1..], true, discriminant)?;
+                let (rest, taken) = chain(otherwise, &left, true, discriminant)?;
                 if taken != otherwise.len() {
                     return None;
                 }
@@ -374,18 +456,132 @@ fn rest(stmts: &[Stmt], arm: &SwitchArm, whole: bool) -> usize {
 
 /// The values of `arm`, which no test says: none of a `_`, the `default`;
 /// a variant's, of a last arm Rust proved the rest of.
-fn untested(arm: &SwitchArm) -> Option<Vec<Expr>> {
+fn untested(arm: &SwitchArm, discriminant: &Option<Expr>) -> Option<Values> {
+    let values = |values| Values {
+        values,
+        ..Values::default()
+    };
     match arm.constants.as_slice() {
-        [] => Some(Vec::new()),
-        [Constant::Variant(value)] => Some(vec![value.clone()]),
-        _ => None,
+        [] => Some(values(Vec::new())),
+        [Constant::Variant(value)] => Some(values(vec![value.clone()])),
+        // Variants of an untagged enum, of what the `switch` tells, `typeof
+        // value` (ADR 0668).
+        kinds => {
+            let Some(Expr {
+                kind: ExprKind::Unary(UnaryOp::Typeof, subject),
+                ..
+            }) = discriminant
+            else {
+                return None;
+            };
+            let mut untested = Values::default();
+            for constant in kinds {
+                match constant {
+                    Constant::Kind(TypeofCase::Typeof(case, excluding)) => {
+                        untested.values.push(Expr::str(*case));
+                        (untested.excluding).extend(excluding.iter().map(|e| of_subject(e, subject)));
+                    }
+                    Constant::Kind(TypeofCase::Tested(test)) => untested.tested.push(of_subject(test, subject)),
+                    _ => return None,
+                }
+            }
+            Some(untested)
+        }
     }
+}
+
+/// `test`, of `SUBJECT`, of `subject`.
+fn of_subject(test: &Expr, subject: &Expr) -> Expr {
+    let mut test = test.clone();
+    test.each_mut(&mut |e| {
+        if matches!(&e.kind, ExprKind::Var(v) if v == SUBJECT) {
+            *e = subject.clone();
+        }
+    });
+    test
+}
+
+/// The values of `tests`, each a test of a variant of an untagged enum,
+/// `constants`, in any order, as MIR tests an or-pattern's in its
+/// variants': `typeof value === "string"`'s `"string"`, and of what
+/// `typeof` doesn't tell, its test (ADR 0668); the values in the order
+/// the pattern names them. What `discriminant` is, `typeof value`, or the
+/// first says.
+fn kinds_of(tests: &[&Expr], constants: &[Constant], discriminant: &mut Option<Expr>) -> Option<Values> {
+    let mut left: Vec<(usize, &TypeofCase)> = (constants.iter().enumerate())
+        .map(|(k, c)| match c {
+            Constant::Kind(case) => Some((k, case)),
+            _ => None,
+        })
+        .collect::<Option<_>>()?;
+    let mut kinds = Values::default();
+    let mut values = Vec::new();
+    for &test in tests {
+        let mut ands = Vec::new();
+        alternatives(test, Op::And, &mut ands);
+        // What it tests: of `typeof value === "string"`, `value`; of
+        // `Array.isArray(value)`, what's in it the variant's test is of.
+        let typeof_of = |e: &Expr| match &e.kind {
+            ExprKind::Binary(Op::Eq, a, b) => match (&a.kind, &b.kind) {
+                (ExprKind::Unary(UnaryOp::Typeof, subject), ExprKind::Str(case)) => {
+                    Some((subject.clone(), case.clone()))
+                }
+                _ => None,
+            },
+            _ => None,
+        };
+        let at = (left.iter()).position(|(_, case)| match case {
+            TypeofCase::Typeof(case, excluding) => typeof_of(ands[0]).is_some_and(|(subject, of)| {
+                of == *case
+                    && ands.len() == excluding.len() + 1
+                    && (ands[1..].iter().zip(excluding))
+                        .all(|(and, e)| alike(and, &Expr::unary(UnaryOp::Not, of_subject(e, &subject))))
+                    && compared(discriminant, &Expr::unary(UnaryOp::Typeof, (*subject).clone()))
+            }),
+            TypeofCase::Tested(of) => {
+                let mut within = Vec::new();
+                test.clone().each_mut(&mut |e| within.push(e.clone()));
+                let subject = match &*discriminant {
+                    Some(Expr {
+                        kind: ExprKind::Unary(UnaryOp::Typeof, subject),
+                        ..
+                    }) => Some((**subject).clone()),
+                    Some(_) => None,
+                    None => within.into_iter().find(|s| alike(&of_subject(of, s), test)),
+                };
+                subject.is_some_and(|subject| {
+                    alike(&of_subject(of, &subject), test)
+                        && compared(discriminant, &Expr::unary(UnaryOp::Typeof, subject))
+                })
+            }
+        })?;
+        match left.remove(at) {
+            (k, TypeofCase::Typeof(_, excluding)) => {
+                let Some(Expr {
+                    kind: ExprKind::Unary(_, subject),
+                    ..
+                }) = &*discriminant
+                else {
+                    unreachable!("a `typeof` it tests")
+                };
+                let ExprKind::Binary(_, _, value) = &ands[0].kind else {
+                    unreachable!("a `typeof` test")
+                };
+                values.push((k, (**value).clone()));
+                kinds.excluding.extend(excluding.iter().map(|e| of_subject(e, subject)));
+            }
+            (_, TypeofCase::Tested(_)) => kinds.tested.push(test.clone()),
+        }
+    }
+    values.sort_by_key(|&(k, _)| k);
+    kinds.values = values.into_iter().map(|(_, value)| value).collect();
+    Some(kinds)
 }
 
 /// The values `test` compares what it tests to, of an arm of `constants`,
 /// each in turn: `n === 1 || n === 2`'s, or, `negated`, `n !== 1 && n !==
 /// 2`'s, of what `discriminant` is, or the first says, `n`.
-fn values_of(test: &Expr, constants: &[Constant], negated: bool, discriminant: &mut Option<Expr>) -> Option<Vec<Expr>> {
+fn values_of(test: &Expr, constants: &[Constant], negated: bool, discriminant: &mut Option<Expr>) -> Option<Values> {
     let (joined, compares) = match negated {
         false => (Op::Or, Op::Eq),
         true => (Op::And, Op::Ne),
@@ -394,6 +590,14 @@ fn values_of(test: &Expr, constants: &[Constant], negated: bool, discriminant: &
     alternatives(test, joined, &mut tests);
     if tests.len() != constants.len() {
         return None;
+    }
+    // Variants of an untagged enum, which MIR tests as they are, each by
+    // its kind, never negated (ADR 0668).
+    if constants.iter().any(|c| matches!(c, Constant::Kind(_))) {
+        return match negated {
+            true => None,
+            false => kinds_of(&tests, constants, discriminant),
+        };
     }
     let mut values = Vec::new();
     for (test, constant) in tests.into_iter().zip(constants) {
@@ -413,6 +617,7 @@ fn values_of(test: &Expr, constants: &[Constant], negated: bool, discriminant: &
         let (fits, written) = match constant {
             Constant::Variant(variant) => (alike(variant, value), js::Span::NONE),
             Constant::Value(span) => (true, *span),
+            Constant::Kind(_) => (false, js::Span::NONE),
         };
         if !fits || !compared(discriminant, tested) {
             return None;
@@ -424,7 +629,10 @@ fn values_of(test: &Expr, constants: &[Constant], negated: bool, discriminant: &
         }
         values.push(value);
     }
-    Some(values)
+    Some(Values {
+        values,
+        ..Values::default()
+    })
 }
 
 /// Whether `tested` is what `discriminant` is, or the first is.

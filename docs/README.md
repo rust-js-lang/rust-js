@@ -283,7 +283,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0211 `Option::as_deref` of a `String` or a `Vec` is the option](decisions/0211-option-as-deref.md)
 - [0212 A props field's default is where JS takes them apart](decisions/0212-props-defaults.md)
 - [0213 A component's props are given as one flat list](decisions/0213-props-as-written.md)
-- [0214 An untagged enum is its payload: TS's `string | Blob`](decisions/0214-untagged-enums.md)
+- [0214 An untagged enum is its payload: TS's `string | Blob`](decisions/0214-untagged-enums.md) *(amended by 0668: an `otherwise` of one `typeof` kind is tested as it)*
 - [0215 The webapi crate's unions are untagged enums](decisions/0215-webapi-unions.md)
 - [0216 A slice's `concat` of parts written out is an array of them, spread](decisions/0216-concat-spread.md)
 - [0217 `enumerate()` then a callback's method is the method, given each index](decisions/0217-enumerate-index.md)
@@ -294,7 +294,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0222 An editor checks the app through rust-js](decisions/0222-editor-check.md)
 - [0223 The webapi crate knows each event's type and each tag's element](decisions/0223-webapi-event-and-tag-maps.md)
 - [0224 A tag's element reaches its handlers and its `ref`](decisions/0224-typed-intrinsic-elements.md)
-- [0225 A JS value of unknown shape is a `js::Unknown`](decisions/0225-unknown-values.md)
+- [0225 A JS value of unknown shape is a `js::Unknown`](decisions/0225-unknown-values.md) *(amended by 0668: `Kind::Symbol`, and a `match` of `Kind` a `switch (typeof value)`)*
 - [0226 A component looks inside its children as React's `Children` does](decisions/0226-react-children.md)
 - [0227 The react crate's types have @types/react's names](decisions/0227-react-type-names.md)
 - [0228 A tag takes the attributes @types/react gives it](decisions/0228-per-tag-attributes.md)
@@ -560,7 +560,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0626 What a library hands a crate is what its items reach](decisions/0626-what-a-library-hands-a-crate.md)
 - [0627 A number literal keeps its base and its exponent](decisions/0627-a-number-literal-keeps-its-base-and-exponent.md)
 - [0628 A loop after a loop is after it](decisions/0628-a-loop-after-a-loop-is-after-it.md)
-- [0629 A `match` of constants is a `switch`](decisions/0629-a-match-of-constants-is-a-switch.md) *(amended by 0634: a `Some`'s constants and the registry's symbols are cases; by 0636: a guarded arm is a case)*
+- [0629 A `match` of constants is a `switch`](decisions/0629-a-match-of-constants-is-a-switch.md) *(amended by 0634: a `Some`'s constants and the registry's symbols are cases; by 0636: a guarded arm is a case; by 0668: a `match` of what a value is is a `switch (typeof value)`)*
 - [0630 A comment inside an expression is after the code before it](decisions/0630-a-comment-inside-an-expression.md)
 - [0631 A step of one is `++`](decisions/0631-a-step-of-one-is-plus-plus.md)
 - [0632 A JS string's `length` is below `u32::MAX`, and a counter below it doesn't wrap](decisions/0632-a-js-strings-length-is-below-u32-max.md)
@@ -591,6 +591,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0657 An `if` of one value each, a function's too, is a conditional](decisions/0657-an-if-of-one-value-each-is-a-conditional.md) *(amended by 0658: a branch with a comment too)*
 - [0658 A comment before a branch's value is before it in the conditional](decisions/0658-a-comment-before-a-branchs-value-is-before-it-in-the-conditional.md)
 - [0660 `catch_unwind` catches what JS throws, a panic among it](decisions/0660-catch-unwind-catches-what-js-throws.md)
+- [0668 A `match` of what a value is is a `switch` of its `typeof`](decisions/0668-a-match-of-what-a-value-is-is-a-switch-of-its-typeof.md)
 - [0623 A copy std makes of a `Copy` value is a copy](decisions/0623-a-copy-std-makes-is-a-copy.md)
 - [0436 Every `dyn` that's a pair keeps its value's drop, `dyn Send` too](decisions/0436-every-dyn-keeps-its-drop.md)
 - [0437 A scope's drops on a panic are one `try { .. } finally { .. }`](decisions/0437-a-scopes-drops-are-one-finally.md)

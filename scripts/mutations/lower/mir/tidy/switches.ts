@@ -3,6 +3,7 @@ import type { Mutation } from "../../../../mutations";
 
 const switches = ["test/lowering-matches.test.ts", "-t", "a match of constants is a switch"];
 const guarded = ["test/lowering-switches.test.ts", "-t", "a guarded arm of a match of constants"];
+const typeofs = ["test/lowering-switches.test.ts", "-t", "a match of what a value is"];
 
 export const mutations: Mutation[] = [
   {
@@ -25,8 +26,8 @@ export const mutations: Mutation[] = [
     name: "switch-negated-arm-unread",
     breaks: "an arm MIR tests negated, `if (c !== \".\")`, keeps the whole `match` an `if` chain",
     file: "src/lower/mir/tidy/switches.rs",
-    find: "        if k + 2 == arms.len()\n",
-    replace: "        if false && k + 2 == arms.len()\n",
+    find: "        if let [last] = left[..]\n",
+    replace: "        if false && let [last] = left[..]\n",
     tests: switches,
   },
   {
@@ -84,5 +85,53 @@ export const mutations: Mutation[] = [
     find: "        ExprKind::Binary(Op::And, first, _) if test.span.is_none() => test_at(first, span),\n",
     replace: "",
     tests: guarded,
+  },
+  {
+    name: "typeof-cases-in-variant-order",
+    breaks: "a `switch (typeof value)`'s cases are its variants' order, MIR's, `case \"string\"` first, not its arms'",
+    file: "src/lower/mir/tidy/switches.rs",
+    find: "    cases.sort_by_key(|case| case.3.lo);\n",
+    replace: "",
+    tests: typeofs,
+  },
+  {
+    name: "typeof-arms-in-written-order-only",
+    breaks: "an arm's test is looked for where it's written, not where MIR tests it, so a `match` of what a value is with a `_` is an `if` chain",
+    file: "src/lower/mir/tidy/switches.rs",
+    find: "            ) => (left.iter())\n                .position(",
+    replace: "            ) => (left.iter().take(1))\n                .position(",
+    tests: typeofs,
+  },
+  {
+    name: "typeof-or-pattern-in-variant-order",
+    breaks: "an or-pattern's cases are in its variants' order, MIR's, `Function | String`'s `case \"string\": case \"function\":`",
+    file: "src/lower/mir/tidy/switches.rs",
+    find: "    values.sort_by_key(|&(k, _)| k);\n",
+    replace: "",
+    tests: typeofs,
+  },
+  {
+    name: "typeof-array-not-before",
+    breaks: "an arm of `Kind::Array`, which `typeof` says is an object, isn't an `if` before the `switch`, so no `switch`",
+    file: "src/lower/mir/tidy/switches.rs",
+    find: "        match (alone.is_empty(), values.values.is_empty() && !cases[i].2) {\n",
+    replace: "        match (alone.is_empty(), false) {\n",
+    tests: typeofs,
+  },
+  {
+    name: "typeof-object-and-array-not-object",
+    breaks: "`Kind::Object(_) | Kind::Array(_)` isn't `case \"object\"`, its array an `if` beside it, so no `switch`",
+    file: "src/lower/mir/tidy/switches.rs",
+    find: "            .filter(|t| !excluding.iter().any(|e| alike(t, e)))\n",
+    replace: "",
+    tests: typeofs,
+  },
+  {
+    name: "typeof-object-takes-arrays",
+    breaks: "an arm of `Kind::Object` whose arrays are `_`'s is `case \"object\"`, which takes an array",
+    file: "src/lower/mir/tidy/switches.rs",
+    find: "    left_out.then_some(before)\n",
+    replace: "    Some(before)\n",
+    tests: typeofs,
   },
 ];

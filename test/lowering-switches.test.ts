@@ -5,7 +5,9 @@
 import { beforeAll, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { buildReact, compiler, fixture, run, target } from "./support";
+import { runSync } from "./child";
+import { node } from "./programs";
+import { buildReact, compiler, fixture, root, run, target } from "./support";
 
 beforeAll(buildReact, 600_000);
 
@@ -141,4 +143,211 @@ pub fn again(n: u32, on: bool, log: &mut Vec<u32>) {
   const again: number[] = [];
   [1, 2, 3, 4].forEach((n) => [true, false].forEach((on) => lib.again(n, on, again)));
   expect(again).toEqual([1, 1, 2, 2, 3, 4]);
+});
+
+// ADR 0668: a `match` of what a value is, `js::classify(value)`, is a
+// `switch (typeof value)`, each variant its `typeof`'s case, an or-pattern's
+// stacked, `_` the `default`; `Kind::Object` and `Kind::Array` together
+// `case "object"`, and an arm of `Kind::Array` alone, which `typeof`
+// doesn't tell, an `if` of `Array.isArray(value)` before it. A symbol is a
+// `Kind::Symbol`, and `Kind::Object` a `typeof value === "object"` not an
+// array. React's `getIODescription` (shared/ReactIODescription.js), its
+// `try` the `catch_unwind` of ADR 0660.
+test("a match of what a value is is a switch of its typeof", () => {
+  const dir = fixture("typeof-switches");
+  writeFileSync(join(dir, "lib.rs"), `use js::{Kind, Unknown};
+use std::panic::catch_unwind;
+
+/// \`value[key]\`, where it's text.
+fn text_at(value: &Unknown, key: &str) -> Option<String> {
+    match js::get(value, key).map(js::classify) {
+        Some(Kind::String(text)) => Some(text.to_string()),
+        _ => None,
+    }
+}
+
+pub fn get_io_description(value: Option<&Unknown>) -> String {
+    catch_unwind(|| {
+        let Some(value) = value else {
+            return String::new();
+        };
+        match js::classify(value) {
+            Kind::Function(_) => text_at(value, "name").unwrap_or_default(),
+            Kind::Object(_) | Kind::Array(_) => text_at(value, "url").unwrap_or_default(),
+            Kind::String(text) => text.to_string(),
+            Kind::Number(_) | Kind::BigInt(_) => js::string(Some(value)),
+            _ => String::new(),
+        }
+    })
+    .unwrap_or_default()
+}
+
+pub fn describe(value: &Unknown) -> String {
+    match js::classify(value) {
+        Kind::Array(items) => format!("{} items", items.len()),
+        Kind::String(text) => format!("text {text}"),
+        Kind::Number(_) => "a number".to_string(),
+        Kind::BigInt(_) => "a bigint".to_string(),
+        Kind::Bool(b) => format!("{b}"),
+        Kind::Symbol(symbol) => symbol.description().unwrap_or_default(),
+        Kind::Function(_) => "a function".to_string(),
+        Kind::Object(object) => text_at(object, "name").unwrap_or_default(),
+    }
+}
+
+pub fn weighed(value: &Unknown, on: bool) -> u32 {
+    let mut n = 0;
+    match js::classify(value) {
+        Kind::Function(_) | Kind::String(_) => n += 1,
+        Kind::Number(_) => n += 2,
+        Kind::Bool(_) if on => n += 3,
+        _ => {}
+    }
+    n
+}
+
+pub fn objects(value: &Unknown) -> u32 {
+    match js::classify(value) {
+        Kind::Object(_) | Kind::Array(_) => 1,
+        _ => 0,
+    }
+}
+
+pub fn listed(value: &Unknown) -> u32 {
+    match js::classify(value) {
+        Kind::String(_) => 1,
+        Kind::Array(_) => 2,
+        _ => 0,
+    }
+}
+
+pub fn tally(values: &[&Unknown]) -> [u32; 4] {
+    let (mut texts, mut arrays, mut numbers, mut others) = (0, 0, 0, 0);
+    for value in values {
+        match js::classify(value) {
+            Kind::String(_) => texts += 1,
+            Kind::Array(_) => arrays += 1,
+            Kind::Number(_) => numbers += 1,
+            _ => others += 1,
+        }
+    }
+    [texts, arrays, numbers, others]
+}
+
+pub fn named(value: &Unknown) -> String {
+    match js::classify(value) {
+        Kind::String(text) => text.to_string(),
+        Kind::Number(_) => "a number".to_string(),
+        Kind::Object(object) => text_at(object, "name").unwrap_or_default(),
+        _ => String::new(),
+    }
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs()]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain(`export function getIoDescription(value) {
+  try {
+    if (value == null) {
+      return "";
+    }
+    switch (typeof value) {
+      case "function":
+        return textAt(value, "name") ?? "";
+      case "object":
+        return textAt(value, "url") ?? "";
+      case "string":
+        return value;
+      case "number":
+      case "bigint":
+        return String(value);
+      default:
+        return "";
+    }
+  } catch {
+    return "";
+  }
+}`);
+  expect(js).toContain(`export function describe(value) {
+  if (Array.isArray(value)) {
+    return \`\${value.length} items\`;
+  }
+  switch (typeof value) {
+    case "string":
+      return \`text \${value}\`;
+    case "number":
+      return "a number";
+    case "bigint":
+      return "a bigint";
+    case "boolean":
+      return String(value);
+    case "symbol":
+      return value.description ?? "";
+    case "function":
+      return "a function";
+    case "object":
+      return textAt(value, "name") ?? "";
+  }
+}`);
+  expect(js).toContain(`    if (Array.isArray(value)) {
+      arrays = (arrays + 1) >>> 0;
+    } else {
+      switch (typeof value) {
+        case "string":
+          texts = (texts + 1) >>> 0;
+          break;
+        case "number":
+          numbers = (numbers + 1) >>> 0;
+          break;
+        default:
+          others = (others + 1) >>> 0;
+          break;
+      }
+    }`);
+  // An or-pattern's cases as it names them; a guarded arm's, its guard in
+  // it (ADR 0636).
+  expect(js).toContain(`  switch (typeof value) {
+    case "function":
+    case "string":
+      n++;
+      break;
+    case "number":
+      n += 2;
+      break;
+    case "boolean":
+      if (on) {
+        n += 3;
+      }
+      break;
+  }`);
+  // An \`Object\` arm whose arrays are \`_\`'s: \`case "object"\` would take
+  // them, so an \`if\` chain, \`Object\` tested as an object not an array.
+  expect(js).toContain(`  if (typeof value === "object" && !Array.isArray(value)) {`);
+  expect(js).not.toContain(`typeof value !== "string"`);
+  // Of two cases, `"object"` and a \`default\`, or a \`"string"\` beside an
+  // array's \`if\`: an \`if\` chain, as ADR 0629's \`switch\` is of three.
+  expect(js).toMatch(/export function objects\(value\) \{\n  if \(/);
+  expect(js).toMatch(/export function listed\(value\) \{\n  if \(/);
+  writeFileSync(join(dir, "run.mjs"), `import { getIoDescription, describe, tally, named, objects, listed } from "./lib.js";
+const throwing = { get url() { throw new TypeError("no url"); } };
+function fetchUser() {}
+const values = [throwing, Symbol("s"), { url: "https://react.dev", name: "dev" }, ["a"], "hello", fetchUser, 42, 7n, true, {}, null, undefined];
+console.log(JSON.stringify(values.map(getIoDescription)));
+const defined = values.filter((v) => v != null && v !== throwing);
+console.log(JSON.stringify(defined.map(describe)));
+console.log(JSON.stringify(tally(defined)));
+console.log(JSON.stringify(defined.map(named)));
+console.log(JSON.stringify([defined.map(objects), defined.map(listed)]));
+`);
+  const ran = runSync([node!, join(dir, "run.mjs")], root, 30_000);
+  expect(ran.stderr).toBe("");
+  expect(ran.stdout).toBe(
+    [
+      `["","","https://react.dev","","hello","fetchUser","42","7","","","",""]`,
+      `["s","dev","1 items","text hello","a function","a number","a bigint","true",""]`,
+      `[1,1,1,6]`,
+      `["","dev","","hello","","a number","","",""]`,
+      `[[0,1,1,0,0,0,0,0,1],[0,0,2,1,0,0,0,0,0]]`,
+      "",
+    ].join("\n"),
+  );
 });
