@@ -21,7 +21,7 @@ pub mod date;
 pub use date::Date;
 pub mod intl;
 pub mod promise;
-pub use promise::{PromiseSettledResult, PromiseWithResolvers};
+pub use promise::{Fulfils, PromiseSettledResult, PromiseWithResolvers};
 pub mod proxy;
 pub use proxy::{ProxyHandler, RevocableProxy};
 pub mod reflect;
