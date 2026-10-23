@@ -757,6 +757,14 @@ pub fn wide(n: i64) -> bool {
     matches!(n, i64::MIN..=-10)
 }
 
+pub fn kind(c: char) -> u8 {
+    match c {
+        '\\0'..='/' => 0,
+        '\\u{80}'..=char::MAX => 1,
+        _ => 2,
+    }
+}
+
 // Its other side still runs.
 #[allow(clippy::absurd_extreme_comparisons)]
 pub fn popped(v: &mut Vec<u8>) -> bool {
@@ -768,10 +776,13 @@ pub fn popped(v: &mut Vec<u8>) -> bool {
   expect(js).toContain('  if (n <= -1) {\n    return "negative";\n  }\n');
   expect(js).toContain("return n >= 200;");
   expect(js).toContain("return n <= -10n;");
+  expect(js).toContain('  if (c <= "/") {\n    return 0;\n  }\n');
+  expect(js).not.toContain("$cmp");
   const lib = await import(join(dir, "lib.js"));
   expect([-2147483648, -1, 0, 7].map(lib.sign)).toEqual(["negative", "negative", "zero", "positive"]);
   expect([0, 199, 200, 255].map(lib.top)).toEqual([false, false, true, true]);
   expect([-(2n ** 63n), -10n, -9n].map(lib.wide)).toEqual([true, true, false]);
+  expect(["\0", "/", "0", "\x80", "\u{10FFFF}"].map(lib.kind)).toEqual([0, 0, 2, 1, 1]);
   const v = [1, 2];
   expect([lib.popped(v), v]).toEqual([true, [1]]);
 });
