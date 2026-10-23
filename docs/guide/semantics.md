@@ -658,3 +658,6 @@ React and JSX are [their own pages](README.md#react).
 17. A std adapter, `map` or `filter`, of an iterator that isn't fused, the
     crate's iterator that gives `None` then `Some`, ends at its first
     `None`, as a JS iterator helper does.
+18. A consumer of the crate's iterator steps its `next`: where its impl
+    writes its own `fold` or `nth`, `sum()`, `count()`, `for_each`,
+    `skip(n)` and `step_by(n)` don't call them, as std's would.

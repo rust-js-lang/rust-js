@@ -89,3 +89,14 @@ no translation of a direct call gives JS a deeper stack, and how deep a
 call goes is its input's, so no compile error can say where. It's the
 fourth case's, as near as it gets: listed among the guide's differences
 (`semantics.md`, 16), with what to write instead, an explicit stack.
+
+## Amendment: the crate's iterator's own `fold` and `nth`
+
+std routes `sum`, `count`, `for_each` and `last` through an iterator's
+`fold`, and `skip` and `step_by` through its `nth`, so an impl that
+writes its own runs it; rust-js steps the crate's iterator by its `next`
+alone (#162). Results change only where the impl's own `fold` or `nth`
+does something its `next` doesn't, a side effect or another answer, which
+std's contract doesn't forbid but no iterator is written for: listed
+among the guide's differences (`semantics.md`, 18), the issue open for
+whether it's kept.
