@@ -50,6 +50,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if self.recognition().is_discriminant(ty) {
             return Ok(join(vec![Expr::str("Discriminant("), value, Expr::str(")")]));
         }
+        // A `Weak` shows none of what it points at, `(Weak)`, as std's does.
+        if crate::lower::recognition::weak_pointee(self.tcx, ty).is_some() {
+            return Ok(Expr::str("(Weak)"));
+        }
         // A heap's `PeekMut` shows its top, `PeekMut(8)` (ADR 0333).
         if let Some(item) = self.recognition().peek_mut_of(ty) {
             let top = Expr::index(Expr::member(value, "heap"), Expr::int(0));
