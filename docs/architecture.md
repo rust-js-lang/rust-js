@@ -1,554 +1,356 @@
 # Architecture
 
-How rust-js is put together: what each part does, what it may not do, and
-where a change goes. The [design decisions](README.md) say why each part
-works the way it does; this page says where it is. The boundaries below
-are executable: [architecture.test.ts](../test/architecture.test.ts)
-checks each one. What isn't built yet is at [the end](#not-yet), and the
-[roadmap](../ROADMAP.md) tracks it.
+The current map of rust-js: responsibilities, contracts, and where a change
+belongs. [AGENTS.md](../AGENTS.md) defines the principles;
+[the guide](guide/README.md) explains the supported language and APIs;
+[design decisions](README.md) record why. This page describes the code,
+not a proposed architecture.
+
+[Architecture tests](../test/architecture.test.ts) enforce layer dependencies,
+selected ownership boundaries, module coverage, and the existence of the
+owner APIs below. They do not prove every architectural or semantic claim.
+`bun run architecture` reports dependencies and ownership; behavior tests
+check what compiled programs observe.
 
 ## Policies
 
-### One pinned Rust toolchain per release
-
-Each rust-js release supports one exact Rust toolchain. The current pin is
-the stable release `1.99.0`; [rust-toolchain.toml](../rust-toolchain.toml) is the source of
-truth. This follows [ADR 0003](decisions/0003-pin-nightly-toolchain.md) and
-[ADR 0109](decisions/0109-stable-release.md).
-
-The compiler uses rustc's internal APIs, THIR and MIR, so a toolchain upgrade
-is a deliberate compatibility change. Update the pin, adapt frontend and
-lowering assumptions, rebuild matching dependencies and WASI artifacts, and
-run the conformance, snapshot, and native/browser parity suites together.
-Compiler metadata and caches must not be reused across incompatible
-toolchains.
-
-Older application source may compile under the pinned frontend within our
-supported language subset. That does not promise the behavior or diagnostics
-of an older rustc. Rust editions and compiler versions are separate concerns.
-Users needing an earlier toolchain use a matching earlier rust-js distribution.
-
-Simultaneous support for multiple rustc versions is outside this architecture's
-current scope. Do not add version-specific frontend adapters or another typed
-Rust representation solely for hypothetical multi-version support.
-
-### Modern JavaScript output; downstream compatibility
-
-rust-js emits readable modern, standardized JavaScript, ES modules, and JSX
-where requested by the program. It does not offer separate ES6, ES8, or
-browser-specific code-generation modes. There is no internal JavaScript
-compatibility or downlevel-transformation phase.
-
-The application configures its JavaScript toolchain to transform syntax, process
-JSX, bundle modules, and provide the runtime polyfills its deployment targets
-need. Syntax transformation alone does not supply missing runtime APIs. Both
-generated application code and emitted runtime helpers must pass through this
-pipeline, with source maps preserved back to the Rust source.
-
-| Responsibility | Owner |
-| --- | --- |
-| Rust evaluation order, copying, overflow, representations, and errors | rust-js |
-| Readable modern JS/JSX, ES modules, semantic helpers, and source maps | rust-js |
-| Browser targets, syntax lowering, JSX transformation, and module conversion | Application's JavaScript toolchain |
-| Compatibility polyfills, bundling, minification, and code splitting | Application's JavaScript toolchain |
-
-Modern output is a documented release contract, not permission to emit arbitrary
-experimental syntax. Each release must declare its syntax baseline, required
-runtime capabilities, and supported environments for direct execution without
-transformation. New requirements need compatibility tests and release notes.
-
-Not every capability can be supplied by ordinary downlevel transforms or
-polyfills. For example, helpers currently use native BigInt arithmetic. The
-supported deployment configuration must preserve those semantics or exclude
-environments that cannot provide them. Choosing an old syntax target alone is
-not proof of runtime compatibility.
-
-Integration tests exercise representative downstream production builds and their
-source maps. The playground must either run on an environment satisfying the
-direct-execution contract or apply the same downstream transformations before
-running generated programs.
-
-## Hosts
-
-Native and browser builds use the same compiler implementation. Hosts supply
-inputs and consume results; they do not implement Rust semantics. The browser
-uses a worker running the WASI compiler, with a supported virtual filesystem
-and dependency set.
-
-```mermaid
-flowchart TB
-    CLI["Command-line host"]
-    Vite["Vite host: watch, overlay, refresh"]
-    Next["Next.js host: compile beside the app, then run next"]
-    Browser["Playground host: editor and worker lifecycle"]
-    Build["Build adapter: resolve inputs, prepare dependencies, cache"]
-    Native["Native compiler process"]
-    Worker["Browser worker and WASI host"]
-    Core["Shared compiler implementation"]
-    Result["Diagnostics or complete artifact set and manifest"]
-    NativeOutput["Native publication: stage, replace, rollback"]
-    BrowserOutput["Browser publication: expose successful virtual output"]
-    App["Application JS, JSX, source maps and runtime modules"]
-
-    CLI --> Build
-    Vite --> Build
-    Next --> Build
-    Browser --> Worker
-    Build --> Native
-    Native --> Core
-    Worker --> Core
-    Core --> Result
-    Result --> NativeOutput
-    Result --> BrowserOutput
-    NativeOutput --> App
-    BrowserOutput --> App
-```
-
-The native build adapter resolves the supported Cargo dependency graph, features,
-bindings, compiler version, and toolchain. It produces explicit compilation
-inputs. The browser host supplies equivalent inputs for its supported scope;
-arbitrary Cargo build scripts and procedural macros are not implicitly promised
-in a browser.
-
-An app's Rust is compiled one way, `rust-js build`, its own process beside
-the app's dev server, `next dev` or `vite`, which knows nothing of rust-js
-(ADR 0412): it compiles the app's Rust once, each time it's run, to JS, JSX
-and declarations beside it, as a Cargo build's copies are (ADR 0101), so
-the dev server and its Fast Refresh see them as the app's own. The builder,
-`checkCargo`, validates each manifest the compiler wrote. Installed
-compiler and binding packages can be used without a source checkout.
-
-## The pipeline
-
-rust-js reuses rustc for everything up to type checking and borrow
-checking, as ReScript reuses OCaml's, and writes JavaScript from each
-body's MIR, with its THIR read beside it:
-
-```text
- .rs ─► rustc: parse, resolve, type check, borrow check ─► THIR, MIR (copied out)
-                                                              │
- ┌─ front end: src/lower.rs, src/lower/ ──────────────────────▼──────────────┐
- │  analysis  ─► what the whole crate is: dictionaries, drops, laziness ...  │
- │  pipeline  ─► each function, lowered with its own FnCx                    │
- │  mir.rs    ─► each body's MIR, its blocks structured ─► our JS AST        │
- │               (src/js.rs); its THIR read for names, spans and facts       │
- │  tidy.rs   ─► that JS, written as a person writes it                      │
- └──────────────────────────────────┬────────────────────────────────────────┘
-                                    ▼  owned output: no rustc types from here
- reachability, link, names, prepare (readability), output, publish
-                                    ▼
- printing: to_oxc.rs ─► oxc ─► format.rs ─► .js + .js.map
-```
-
-Four layers. The arrows above are the order work happens in; a module uses
-only the layers its row allows. The architecture test resolves each
-module's `crate::` and `super::` paths and checks them against this table:
-
-| Layer | Modules | May use | May not |
-|---|---|---|---|
-| Driver | `main.rs`, `command.rs`, `cargo.rs`, `panic_runtime.rs` | every layer | |
-| Front end | `lower.rs`, `lower/`, `jsx_syntax.rs`, `jsx_syntax/` | the front end, owned output | publish files; link |
-| Owned output | `js.rs`, `js/`, `program.rs`, `comments.rs`, `link.rs`, `reachability.rs`, `names.rs`, `prepare.rs`, `prepare/`, `output.rs`, `publish.rs`, `manifest.rs`, `library.rs`, `runtime.rs`, `settings.rs`, `hooks.rs`, `paths.rs` | owned output | use rustc |
-| Printing | `to_oxc.rs`, `to_oxc/`, `format.rs`, `typescript.rs`, `prettier.rs` | printing, owned output | be bypassed: only they print a module's JS and declarations, by oxc or TypeScript, and lay them out, by oxfmt or the app's Prettier; a manifest's JSON and the `#[test]` runner's imports and calls are the artifact planner's |
-
-Two owned modules start printing, and are named as its exceptions:
-`output.rs` prints each module it plans, its JS by oxc (`to_oxc.rs`) and
-its declarations by TypeScript (`typescript.rs`, ADR 0207), and has the
-app's Prettier lay them out (`prettier.rs`, ADR 0381), the map moved to
-its layout (`format.rs`); `hooks.rs` formats what a hook returns
-(`format.rs`). Another exception is a change
-to this table and its test. Within a layer, no modules use each other in
-a cycle: a helper more than one needs, as `paths.rs`'s, has its own home.
-
-**Who owns each phase.** A failure at any phase produces diagnostics and
-prevents publication; rustc remains the authority on Rust validity. THIR
-and MIR are captured before rustc's analysis consumes them, but capturing
-a body doesn't authorize emitting it: lowering starts only once the
-analysis gate passes.
-
-| Owner | Owns | Does not own |
-| --- | --- | --- |
-| Driver | Compiler invocation, rustc callbacks, phase sequencing, diagnostic gates | Feature lowering or Vite behavior |
-| Syntax expansion | JSX-to-Rust syntax translation and source provenance | Bypassing Rust checks or deciding JS representations |
-| Analysis | Definition indexes, validated bindings, trait and representation facts, item names and reserved imports | Mutable function state, emission, filesystem writes |
-| Lowering pipeline | Work scheduling, demand-driven codecs, Rust-specific retention policy and module assembly | Import alias resolution, the helpers a module asks for, publication |
-| Lowering | Rust-to-JS semantics, control flow, places, copying, evaluation order | Formatting, output paths, installation |
-| Linker | Symbol resolution, collision-free aliases, the helpers each module's code writes, completed linked output | Rust-specific retention policy, re-lowering bodies or changing expression semantics |
-| Runtime catalog | Helper implementations and their exported names, one package module | Rust syntax recognition or host setup |
-| Preparation | Readability transformations that preserve evaluation regions: `s += t`, a destructuring of side-by-side reads, no `else` after a branch that leaves, `a || b` of `a ? a : b`, and `x || y` of `(x || undefined) ?? y`, a test without its `!!`, `return;` of `undefined`, no JSX attribute of `undefined`, a `&mut`'s handle as its getter and setter | New language semantics or predicted printer indentation |
-| Printer adapter | oxc conversion and source-map generation (`to_oxc.rs`), layout by oxfmt and blank lines between statements (`format.rs`), and the spelling of a value only the parser can check, a `RegExp` literal; the crate's transforms of the laid-out JS and its `sourceMappingURL` are the artifact planner's | Rust type decisions, readability rewrites, a helper's meaning, choosing runtime imports, or artifact publication |
-| Artifact planner | Filenames, collisions, manifest, each module's runtime imports, complete generated bytes, and which files an older build wrote are stale: in its output's directory, neither written nor read now, still as written by fingerprint | Rust semantics or editor lifecycle |
-| Publisher | Carrying out the plan: staging, unchanged-file preservation, removing the files the plan calls stale, failure recovery | Compiler transformations, or deciding what's stale |
-
-## Inside the front end
-
-The front end turns one function's MIR into JS, its THIR read beside it
-for names, spans and facts ([ADR 0364](decisions/0364-mir-lowering.md)).
-`FnCx` holds what a function takes. Its state is grouped by concern, each
-group read and written only by the module that owns it, which others ask:
-what a generic item is given (`Given`), what writing to a `Formatter`
-knows (`display::Writing`), what walks of types found (`TypeWalks`), the
-recursive types being cloned (`cloning`), and what's dropped where
-(`drops::DropState`). A body lowered from its MIR has a state of its own
-beside it, `mir::State`: its temporaries, labels, captures, drop flags
-and the places its `&mut`s are to. It's `mir.rs`'s: a module of `mir/`
-touches only the fields the architecture test lists for it, `drops.rs` its
-flags and what's made before one is set, `writer.rs` a writer's string.
-
-State follows three lifetimes:
-
-- **Compilation:** immutable definition and representation facts, shared by all
-  functions. Any analysis cache has an explicit owner and input key.
-- **Function:** local bindings, allocated names, scopes, and accumulated symbol
-  and helper dependencies. Nested function contexts inherit only what they need
-  and return their dependencies explicitly.
-- **Body:** a MIR body's temporaries, made and not yet used, in the order
-  they're made, and its blocks' labels: `mir::State`, never a shared
-  scratch slot on the function context.
-
-MIR says what runs, in the order it runs: each value in a temporary of its
-own, each borrow, move and check. So the JS is correct as it's made, and
-made readable only where that's proved to change nothing: blocks become
-labeled blocks and loops (`mir/cfg.rs`), a temporary used once is written
-where it's used where nothing runs between that could see it (`fold`), and
-`mir/tidy.rs` writes the body as a person writes it, from the JS and what
-lowering's `Hints` say of it.
-
-Operation classification is side-effect-free. It identifies a supported
-operation and its representation requirements before emission. Prefer rustc
-identities and diagnostic items; unavoidable library-layout assumptions live in
-one recognition boundary and have toolchain-upgrade tests. A lang item,
-`LangItem::String`, is rustc's identity for what the language itself uses,
-which any module may ask of `is_lang_item`; a std item known by its name, a
-diagnostic item or a symbol, `sym::Target`, is recognition's alone, as a
-rule holds.
-
-Its modules come in two kinds.
-
-**Questions, which emit nothing.** They read THIR, MIR's facts and types,
-and answer. Each is checked to stay that way.
-
-| Module | Answers |
-|---|---|
-| `recognition.rs`, `recognition/` | Which std function or method a call is, a `Std`: `classify` asks what's known by identity, then a trait's method, then a type's own; and std's names and layout, `StdItem`, `cell_value_field`, `deref_target` |
-| `body_queries.rs`, `body_queries/ranges.rs` | What a body has, found once before it's lowered: `for` loops, the callbacks a hook is given, the casts of whole numbers, the statics it reads; and what its integers can be where it reads them (`ranges`, ADR 0576), walking it as it runs, a function only calls reach from what they give it (ADR 0577): the indexes they show in bounds, and the `+`, `-` and `*` that can't leave their type's range; a JS string's `length` is a binding's that `bindings.rs`'s `reads_string_length` says reads it (ADR 0632) |
-| `drops/types.rs` | What dropping a type runs, and what a pattern moves, asked through a `DropQuery`: types, the crate's facts, which type parameters have drops, and the bounds of the dictionaries given, never `FnCx` |
-| `drops/facts.rs` | What's refused of a body's values with destructors, and its momentary borrows, found before it's lowered, from a `DropQuery` and the body's THIR |
-| `analysis.rs`, `analysis/` | What the whole crate is, before any function is lowered: what it refuses, the names its items have in JS, the types it changes in place, its drops' and `Debug`'s needs, the functions only calls reach (`only_called`, ADR 0577), its bodies' ranges, all at once (`collect_ranges`), and what each body may borrow, of its cells (`cell_borrows`, ADR 0580) |
-| `shortcuts.rs` | Nothing of its own: `self.is_map(ty)` for `self.recognition().is_map(ty)`, each question answered in `recognition/` |
-| `std_coverage.rs` | How much of std rust-js knows: each stable method of what `recognition/registry.rs` measures, its data structures, the iterator traits' provided methods and the adapters' impls, `+` where `classify` knows it or its body is compiled, for the ratchet in `docs/std-coverage.txt` (ADR 0314); and what each method's body in std is made of, through the MIR the toolchain ships, `safe`, `spec`, `opaque`, `memory` or `none` (ADR 0561) |
-
-**Lowering of Rust's constructs.**
-
-| Module | Lowers |
-|---|---|
-| `mir.rs` | A body from its MIR: its signature and its function, and the state its parts share (`State`, `Found`, `Locals`) |
-| `mir/structure.rs`, `mir/temporaries.rs`, `mir/locals.rs`, `mir/patterns.rs`, `mir/closures.rs` | Its blocks and terminators, structured; temporaries folded where they're read; each local's name and use; the locals a pattern binds; a closure's arrow |
-| `mir/assign.rs`, `mir/places.rs`, `mir/operands.rs`, `mir/rvalues.rs` | An assignment and the `&mut`s given to a call; a place; an operand and a constant; an rvalue and an aggregate |
-| `mir/dispatch.rs`, `mir/jsx_props.rs`, `mir/entries.rs`, `mir/queries.rs` | A call, handed on by what's called (`mir_call`); a JSX binding's props; std calls that change a place; what a body's MIR says of a local, a place or a block |
-| `mir/cfg.rs`, `mir/drops.rs`, `mir/awaits.rs`, `mir/iter.rs`, `mir/iter/` | A MIR body's control flow, made labeled blocks and loops; what each `Drop` drops, by rustc's drop elaboration, and its flags; `.await`; iterators, lazy as Rust's adapters are |
-| `mir/bounds.rs` | What an index the body's ranges show in bounds is: an `Assert` not made, `v[i]` read as JS reads it, an item's place through `index_mut` unchecked, `swap` and `swap_remove` JS's own swap (ADRs 0292, 0576, 0578) |
-| `mir/offsets.rs` | Which of a body's string offsets are only places in the string they were found in, so JS's UTF-16 units count them (`in_units`, ADR 0642): by a walk of its MIR as it runs, the string each local holds, by where its value was made, and each offset's, then each local whose every operation is of places; what a strip whose `Option` is only tested and taken apart needs (`cut`); and what a closure given a place found is told (`Seed`). A question: it emits nothing |
-| `mir/hints.rs` | What tidy is told of a body that its THIR says (`written`): where each `if`'s condition, `&&`, `if` of a `continue`, loop and table `match` is written; the names of `bool`s and of integers (`typed_names`); and what each temporary is suggested to be named, rust-analyzer's suggestion of the call that made it or the type it holds (`temporaries_names`, ADR 0569). A question: it emits nothing |
-| `mir/writer.rs` | A writer's `Formatter` from MIR, and its body's end (`writer_epilogue`): which locals are it, its `Debug` builders, what's refused of it, and a call that writes to it, whose JS `display.rs` writes |
-| `mir/calls.rs` | A call of what isn't std's: a closure's, a binding's, the crate's own function's, and an operator's that assigns through a `&mut` |
-| `mir/std_calls.rs` | A std call of its values and places, by its kind: `format_args!`'s parts, text, a map's, a `Vec`'s or a slice's, an iterator's, a place's, a value's, each saying `None` to the rest |
-| `mir/tidy.rs`, `mir/tidy/`, `mir/tidy/jumps/` | The JS of a body from its MIR, written as a person writes it: each rewrite changes nothing that runs. `tidy.rs` is the order of the passes, what they're told (`Hints`), and the facts they share; each concept's passes are a module of `tidy/`: `jumps.rs` (exits, labels), `loops.rs`, `branches.rs` (tests, chains, a value each branch gives), `logicals.rs` (a value written with `&&` and `||`, returned as one, and one condition's tests joined), `bindings.rs` (declarations, aliases, temporaries and their names), `destructuring.rs`, `values.rs` (arrays, handles, callbacks, cells), `decisions.rs` (a match MIR tests as a tree, an `if` chain of its arms), `flags.rs` (drop flags where they're known, and their names), and `unwinds.rs` (a scope's drops on a panic, one `try { .. } finally { .. }`) |
-| `lower.rs` | `FnCx` and its state, and what every module shares: diagnostics, names, constants |
-| `literals.rs` | A string literal as its source writes it (`string_literal`), in THIR, in MIR's constants and as a `const`'s or a `static`'s value: one literal, one across lines a template literal of them, or `concat!`'s pieces joined by `+` (ADR 0641) |
-| `bodies.rs` | Entering and leaving a body inside the one being lowered, a closure's or a copied default's |
-| `patterns.rs` | A pattern's JS, a binding's or a parameter's, and its defaults |
-| `loops.rs`, `places.rs` | A `for` over the crate's own `IntoIterator`; a place that's leaked |
-| `calls.rs` | What calls share: `Call`, a call made; `apply`, calling a function value; `catching`, a JS call that may throw made a `Result` (ADR 0035); `given_to_js` |
-| `mut_refs.rs` | A `&mut` to a value JS can't change in place, given to a call or given back by one: a box, the place, or a std call's items |
-| `drops.rs`, `drops/`, `mir/drops.rs` | Destructors: what each drop runs and the drop functions it's written in (`drops.rs`, and its parts: a value's parts' drops, `parts.rs`; a body's drops and the slots a call's given, `scopes.rs`; a drop as a function, `functions.rs`; what a body's drops use, `uses.rs`); where and when a body drops, by rustc's drop elaboration of its MIR, and its flags (`mir/drops.rs`, ADR 0364); a std function lowered in place drops its own in a `try`'s `finally` |
-| `representation.rs` | How each Rust value is represented: its shape, an `Option`'s payload, a cell, a number |
-| `copies.rs` | When a value is copied: where it's read, if something changes one of its kind in place |
-| `support.rs` | What rust-js can represent, and the error where a value it can't is made or bound |
-| `refusal.rs` | How a refusal is said, `refuse` and its `words`: "rust-js does not support .. yet", and of addressable memory, that (ADR 0390) |
-| `aggregates.rs` | Structs, variants and tuple structs made, by fields or a struct update, and constructors as values |
-| `pointers.rs` | A raw pointer, a handle on its place, `$ptr(object, key)` or `$ptrTo(object)`, or `null`: what a pointer is taken to, `*p`, std's functions of one, and what's refused, an address, or a place JS may hold a copy of (ADR 0407) |
-| `plain.rs` | Plain data, numbers, `bool`s and `char`s in tuples, arrays and structs, at rustc's offsets for wasm32: `layout`, the one answer of a type's layout; a `transmute` of plain data, its bytes as another type's; a zeroed value (ADR 0408) |
-| `unions.rs` | A union, the object of the one field it holds: its fields read, written and copied, rust-js's error where one's read as another type's (ADR 0406) |
-| `std_types/`, `std_types/number/` | std's data structures and values, one module each, as its `mod.rs` tables them: `vec.rs` and `slice.rs` (`Vec`, `VecDeque`, slices, arrays), `map.rs`, `heap.rs`, `text.rs`, `number.rs`, `option.rs`, `result.rs` (`?` and the `From` of its error), `cell.rs`, `rc.rs`, `cow.rs`, `once.rs`, `lazy.rs`, `range.rs`, `channel.rs`, `pin.rs`, `uninit.rs`, `any.rs`, `process.rs` (Node's process, the one list of what works in Node only, ADR 0391), `path.rs` (a path's methods, over its components, ADR 0405); and `values.rs`, which hands a std call to its type's module (ADR 0314). A rewrite tidy makes of a type's helpers is the type's module's, which tidy calls: a map's counted entry (`map::counted_entries`), a range made as stepped (`range::range_items`), a cell's borrow none can fail (`cell::unguarded`) |
-| `iterators.rs`, `iterators/`, `combinators.rs`, `combinators/` | Iterator chains and what ends them, and whether a value is a JS iterator or an array; `Option`'s and `Result`'s combinators, and more adapters |
-| `items.rs` | References to items: what a function or a binding is in JS, whether it's the crate's, which impl a call runs |
-| `traits.rs`, `traits/`, `std_impls.rs`, `ordering.rs` | Traits: bounds and evidence (`traits.rs`), where a dictionary is (`routes.rs`), a dictionary built (`dictionaries.rs`) and an impl's lowered (`impls.rs`), `dyn` (`dyns.rs`), calls of an impl's method (`calls.rs`), what's given (`given.rs`, `drop_params.rs`) and the words of their names (`words.rs`); `Clone`, `Default`, `PartialEq`, `Ord` |
-| `display.rs`, `display/`, `format_args.rs`, `format_spec.rs` | `Display` and `Debug`, a `Display`'s string written (`written.rs`) and `{:?}` (`debug.rs`), `format_args!`, placeholders' options |
-| `serde.rs`, `serde/` | serde's derives and serde_json |
-| `shipped.rs` | The API of a crate rustc builds that rust-js writes the JS of, as it writes std's: memchr's searches, over the byte arrays slices are (ADR 0529); which crates are such, and at which versions, is Cargo's catalog's, `cargo::READ_AS_RUSTC_BUILDS_THEM` |
-| `jsx.rs`, `jsx_api.rs`, `bindings.rs`, `binding_calls.rs`, `untagged.rs`, `liveness.rs` | JSX, bindings to JavaScript and a binding's call, and untagged enums, told apart by their payload's kind (ADR 0214); and what JS reads, the fields of a struct given a binding, which rustc's dead-code lint can't see (ADR 0440) |
-| `declarations.rs` | A module's TypeScript declarations, what it exports as Rust types it (ADR 0196) |
-| `library.rs`, `sources.rs`, `pipeline.rs` | Libraries' contracts, source files, and the crate as a whole |
-
-**Who owns what.** A concept that more than one module needs has one
-module that owns it: its state, the questions about it, and the JS it's
-written as, which the others ask for. [architecture.test.ts](../test/architecture.test.ts)
-holds the ones below to it, and checks that each function the table names
-is there; `bun run architecture` shows where each stands: what's read
-outside its owner, and how much each module knows of the rest.
-
-| Concept | Owner | What the others ask |
-|---|---|---|
-| What lowering from MIR found of a body's variables, `mir::Found` (ADR 0364) | `mir.rs` | `alike_local`, `plain_local`, `note_tested`, `note_falsy` |
-| What dropping runs, and where | `drops.rs`, `drops/` | `drop_value`, `item_drop`, `drop_function`, `enter_body_drops` |
-| Whether a value is a JS iterator or an array, and its JS: `Iterator.from`, a range's `$iterator` (ADRs 0061, 0364) | `iterators.rs` | `is_js_iterator`, `js_iterator`, `from_iterator`, `stepped`, `stepped_by`, `stepped_range` |
-| Whether a generic iterator is given as it is, and its `Iterator` dictionary, `{ next }` (ADR 0411) | `iterators.rs` | `given_as_it_is`, `iterator_dictionary`, `iterator_evidence`; which functions step one, `analysis/iterator_steps.rs` |
-| An array's items stepped, `$iter`, and a generic iterator lent, `$lent` (ADR 0071) | `iterators.rs` | `stepped_items`, `is_stepped_items`, `iterated`, `lent_iterator`, `unlent` |
-| `&mut`s to values JS can't change in place, given to a call: a box, `{ value: place }`, and what's copied back (ADR 0074) | `mut_refs.rs` | `boxed`, `copied_back`, `mut_borrowed`, `nested_mut_object` |
-| Writing to a `Formatter`: its JS; of MIR, which locals are it and its builders (ADRs 0054, 0136) | `display.rs`; `mir/writer.rs` | `formatter_answer`, `written_of`, `builder_written`, `mir_writer_call` |
-| What a function or a binding is in JS | `items.rs` | `fn_ref`, `js_ref`, `resolve_instance` |
-| Where a binding is read: in place, or through the module a caller's path names it through that holds it, and what each module holds of one (ADRs 0622, 0633) | `bindings.rs`; `items.rs` | `held`, `held_path`; `binding_ref` |
-| Dictionaries and evidence: where a given one is, by its bound (`EvidenceQuery`), and its JS | `traits/routes.rs`, `traits/dictionaries.rs`, `traits/impls.rs` | `dictionary`, `evidence_for`, `has_evidence`, `impl_call` |
-| What a generic function was given: dictionaries, a copied default's arguments, type facts (ADRs 0049, 0145) | `traits/given.rs` | `in_impl_terms`, `given_evidence`, `given_type_fact`, `resolve_self_instance`, `enter_default` |
-| The box of a `Some` that looks like `None` (ADR 0051) | `std_types/option.rs` | `some`, `some_value`, `some_literal`, `is_some_box` |
-| When a value is copied | `copies.rs` | `copy_if_needed`, `contains_mutated` |
-| A map's or a set's JS: a `Map` or a `Set`, and a call whose answer nothing reads, JS's own method (ADR 0059) | `std_types/map.rs` | `map_values`, `discarded_calls` |
-| A cell, a thread-local's among them, and a module's own one made a plain `let` (ADRs 0025, 0270) | `std_types/cell.rs` | `cell_call`, `plain_statics` |
-| Which std function a call is | `recognition/calls.rs` | `classify`, and its answers through `shortcuts.rs` |
-| Std's names and layout: which std item a type, trait or function is | `recognition/std_items.rs`, `recognition/types.rs` | `StdItem`, `is_std_type`, `is_std_def`, `std_item`, `trait_method`, `cell_value_field`, `deref_target`, `debug_builder`, `builder_step`, `iterator_method` |
-| What's measured of std, each by its name and where std defines it: its data structures, the iterator traits and the adapters (ADRs 0314, 0561) | `recognition/registry.rs` | `measured` |
-| Which std bodies are compiled into `@rust-js/std`, which std type is its struct and which struct is a JS iterator, and which of the crate's modules a std body goes into (ADR 0561) | `recognition/std_items.rs` | `compiled_std`, `is_compiled_std`, `is_compiled_std_type`, `is_compiled_std_iterator`, `std_home_module`, `memory_intrinsic`, `addresses_memory` |
-| What addresses memory in MIR, a raw pointer made, read or written through, or a cast to one (ADRs 0407, 0561) | `pointers.rs` | `raw_pointee`, `mir_addresses_memory` |
-| A std-private trait's call whose impl rustc leaves to the caller's type: the impls' methods, and the type whose being a `FusedIterator` picks (ADR 0566) | `recognition/iterators.rs`, `recognition/std_items.rs` | `fused_specialization`, `std_private` |
-| What steps a compiled std iterator's struct where it's made, its `next` and its `size_hint`, and whether a use site can step it by a compiled extension's method (ADR 0566) | `iterators.rs` | `std_iterator_steps`, `compiled_step` |
-| What a type parameter makes as an `IntoIterator` held as it is, and a value of it (ADRs 0552, 0566) | `iterators.rs` | `into_iter_held_as_it_is`, `into_iter_as_it_is` |
-| Which of a function value's parameters generic code gives a box of what its caller has as an object (ADRs 0454, 0566) | `mut_refs.rs` | `unboxed_by_function` |
-| The module a body's JS goes into, the crate's own or a std body's (ADR 0561) | `lower.rs` | `body_module` |
-| std's bodies as the crate's, each from the MIR the toolchain ships, with its closures (ADR 0561) | `analysis.rs` | `collect_std_bodies` |
-| A trait dictionary's cache, apart from the runtime's helpers (ADR 0049) | `names.rs` | `dictionary_cache` |
-| Whether a string's offset is only a place in the string it was found in, JS's units, and the JS of one: `indexOf`, `slice`, `startsWith`, `-1` where it's `None` (ADR 0642) | `mir/offsets.rs`; `std_types/text.rs` | `in_units`, `call_in_units`, `step`, `cut`, `seed`; `found`, `sliced_in_units` |
-| What a runtime helper is: one the package exports, the helper that declares a name, one whose call does only what its arguments do, one that names a place | `runtime.rs` | `exports`, `helper_of`, `is_pure`, `names_a_place` |
-
-**Calls.** A call is lowered from MIR by `mir_call`, which hands it on by
-what's called:
-
-```text
- mir_call(f, args)                                   mir/dispatch.rs
-   ├─ a write to a `Formatter`, a `Debug` builder's step   mir/writer.rs
-   ├─ a function value, `js::import!`, a struct update's `..Default::default()`
-   └─ mir_call_values(f, its arguments' values)
-         ├─ an iterator's method                     mir/iter.rs: mir_iter_call
-         ├─ a trait's method of the crate's, or a dictionary's
-         │                                           traits.rs: trait_call
-         ├─ a closure, `a += b` through a `&mut`     mir/calls.rs
-         ├─ a binding                                mir/calls.rs: mir_binding_call,
-         │                                           binding_calls.rs: binding_values
-         ├─ the crate's own function                 mir/calls.rs: mir_crate_call,
-         │                                           items.rs: fn_ref
-         └─ one of std's: classify(f) = Some(known)
-               └─ mir_std_call(known): what every std call must keep (drops,
-                  a `fmt::Error`, `Option` boxing)
-                     ├─ of its values and places, by its kind
-                     │                               mir/std_calls.rs: mir_fmt_call,
-                     │     mir_text_call, mir_map_call, mir_vec_call ..
-                     └─ of its values alone: std_values(known)
-                                                     std_types/values.rs
-                           └─ the module of its type: std_types/vec.rs  slice.rs
-                              option.rs  cell.rs  number.rs  text.rs  map.rs ..
-                              iterators.rs  combinators.rs  format_args.rs ..
-```
-
-`std_values` names every `Std` variant, so a new variant is a compile
-error until something lowers it. `mir_call_values` and `mir_std_call` are
-held to the lengths they have: what's new goes to its type's module, not
-the dispatcher.
-
-**Iterators.** Whether a value is a JS iterator or an array is one
-question, `iterators::is_js_iterator`, asked of the JS lowering from MIR
-makes: a chain stays a JS iterator, whose helpers are lazy as Rust's
-adapters are, until something ends it ([ADR 0139](decisions/0139-lazy-chains.md),
-[ADR 0364](decisions/0364-mir-lowering.md)). Only `iterators.rs` and its
-parts, `iterators/`, write or take apart `Iterator.from` and a range's
-`$iterator`.
-
-**Runtime helpers.** The JS that generated code imports from
-`@rust-js/runtime`: each is a file, `src/runtime/<name>.js`, which
-`runtime.rs` names and orders, and the package is made from them
-([ADR 0103](decisions/0103-runtime-package.md)). Lowering writes a helper
-by the name it exports, `Expr::helper("$cmp")`, which checks the runtime
-has it; the linker asks for the helper behind each name a module's tree
-reads, and `output.rs` imports the ones its prepared tree reads, which
-the printer is given. A name the compiler makes for a module of its own,
-a dictionary's cache, is never a name the runtime exports
-(`runtime::exports`).
-
-## Owned output and source origins
-
-The JS tree remains small and independent of rustc and oxc. It names the
-fields of the values it models: what a box, a cell or a handle holds,
-`js::HELD`, and a `dyn` pair's dictionary, `js::DICTIONARY`; no module
-spells them, as the architecture test holds. Lowering may use rustc
-types internally, but completed phase outputs do not expose `TyCtxt`, `DefId`, or
-borrowed rustc source files to printing or publication.
-
-Symbolic references use explicit symbol identities rather than special strings
-masquerading as JavaScript identifiers. Linking resolves them into ordinary
-names. The linked output contract forbids unresolved references: the
-artifact planner refuses a module that holds what only an earlier phase
-resolves, a symbol, a function's hole, a drop's argument, a handle, an
-`import()` without its specifier (`js::Module::unprintable`), before it's
-printed.
-
-Source origins use compiler-owned file identities and spans. They retain the
-origin of copied trait bodies, macro expansions, and cross-module code, so output
-is not restricted to one source file per generated module. JSX expansion and
-formatting preserve or explicitly remap this provenance.
-
-Use named phase outputs to make ownership visible: captured input, analyzed
-facts, lowered modules, linked modules, and artifact plan. Introduce only the
-types needed to enforce real invariants; avoid parallel copies of every tree.
-
-## Libraries
-
-A library rust-js compiles is JS of its own, with a versioned manifest of
-what crosses to its consumers: exported representations, trait evidence,
-symbol identities, the bindings its modules hold (ADR 0633), and runtime ABI
-([ADR 0100](decisions/0100-separate-crates.md)); Cargo runs each crate's
-compilation ([ADR 0101](decisions/0101-cargo-workspace-wrapper.md)). rustc
-metadata alone is not a substitute for JavaScript linkage information. A
-manifest from another build, or a library a consumer wasn't told of, is
-refused. Compiled output is reusable only when its source inputs,
-dependencies, features, target options, compiler, toolchain, and ABI
-versions agree.
-
-`@rust-js/std` is a library of this kind whose bodies are std's own, each
-lowered from the MIR the toolchain ships ([ADR 0561](decisions/0561-std-bodies.md)):
-`bun run std` compiles `std/lib.rs` with `--std-bodies` and commits its JS
-and manifest in `std/`; the compiler builds the manifest in, so every
-other crate is compiled against it and imports it by the package's name,
-`@rust-js/std/iter.js`. Only its own items are a library's: the rest of
-std is std's, and its values are the program's as the program has them.
-
-## Publication
-
-A versioned manifest is the contract between compiler and hosts. Named producer
-types and validating consumers agree on sources, modules, imports, artifact
-paths, fingerprints, and compiler/ABI identity. Hosts reject incompatible
-versions with an actionable error. Virtual paths are remapped as structured
-fields, never by replacing text inside serialized JSON.
-
-```mermaid
-sequenceDiagram
-    participant Host as CLI or Vite
-    participant Build as Build adapter
-    participant Compiler as Compiler pipeline
-    participant Publisher as Native publisher
-    Host->>Build: Build changed inputs
-    Build->>Build: Resolve dependencies and validate cache keys
-    Build->>Compiler: Compile explicit inputs
-    alt Any compiler phase fails
-        Compiler-->>Build: Diagnostics
-        Build-->>Host: Failure - previous artifacts remain
-    else Compilation succeeds
-        Compiler->>Publisher: Complete validated artifact plan
-        Publisher->>Publisher: Stage files and preserve originals
-        alt Publication fails
-            Publisher->>Publisher: Roll back and report recovery errors
-            Publisher-->>Build: Publication failure
-            Build-->>Host: Failure - no successful build notification
-        else Publication succeeds
-            Publisher->>Publisher: Publish manifest last
-            Publisher-->>Build: Successful manifest
-            Build-->>Host: Changed artifacts and dependencies
-            Host->>Host: Update watches and refresh affected modules
-        end
-    end
-```
-
-Each host keeps the same split: what's stale is the plan's to decide, and
-the publisher's to remove, each still as written. `output.rs` decides, for
-both compilers: natively, `publish.rs` removes; a WASI compiler, given the
-older manifest by its host, says what's stale in the manifest it hands it,
-and the host's `publishArtifacts` removes them but for a link to what's
-written, which the compiler can't see
-([ADR 0375](decisions/0375-the-compiler-says-what-is-stale.md)); and a Cargo build's copies
-beside each module's Rust are decided by `writeInSource`, from a ledger of
-what they are in place of a manifest, and published by the same `commit`
-([ADR 0101](decisions/0101-cargo-workspace-wrapper.md)).
-Native multi-file publication provides rollback for ordinary I/O failures; it
-does not claim crash-atomic replacement across all files. Cleanup removes only
-obsolete artifacts still matching their recorded ownership fingerprints.
-Browser compilation writes into a fresh virtual filesystem and exposes the
-result only after success. Browser and native results obey the same semantic
-contract despite these different publication mechanisms.
-
-The playground's execution frame is a separate trust boundary from its compiler
-worker and editor. Untrusted programs run in an isolated origin or appropriately
-sandboxed frame, with validated messages and run identities. Worker cancellation
-and preview recovery are host responsibilities.
+- **One pinned toolchain.** [rust-toolchain.toml](../rust-toolchain.toml)
+  owns the exact Rust version and target components. rustc owns Rust validity;
+  rust-js uses its internal THIR and MIR APIs. Upgrades require adapting the
+  compiler and rebuilding matching native dependencies and WASI artifacts.
+  `src/command.rs::TARGET` fixes the checked target to `wasm32-unknown-unknown`,
+  including 32-bit `usize`, independently of the host running the compiler.
+- **Modern JavaScript.** Output is readable JS/JSX and ES modules. There is
+  no ES-version selection or downlevel pass. Application tooling owns JSX
+  transformation, bundling, deployment targets and polyfills; rust-js owns
+  Rust semantics and source maps. Syntax lowering alone cannot supply runtime
+  capabilities such as BigInt. A numbered compatibility matrix remains open.
+- **Single semantic authority.** Each question has one owner. Other phases
+  call its API or consume its explicit result, including through manifests.
+  Owners are distributed by responsibility; no phase reconstructs another's
+  rule from generated text or private representation details.
 
 ## Where the code is
 
-One compiler crate, whose module visibility and owned phase outputs keep
-the boundaries; packages split only when independent reuse, dependency
-isolation, or release needs justify it. Only the linker can construct the
-`Linked` value artifact planning requires, and only artifact planning the
-`ArtifactPlan` the publisher carries out. Build hosts consume the manifest
-instead of inferring compiler output.
+The native compiler and the WASI build share `src/main.rs` and its modules.
+`wasm/Cargo.toml` builds the same sources against a patched rustc frontend
+compiled for WASI; it is a separate build package, not a second compiler.
 
 | Responsibility | Code |
 | --- | --- |
-| Driver and syntax | `src/main.rs`, `src/command.rs`, `src/cargo.rs`, `src/panic_runtime.rs`, `src/jsx_syntax.rs`, `src/jsx_syntax/` |
-| Analysis and lowering | `src/lower/analysis.rs`, `src/lower/pipeline.rs`, `src/lower.rs`, `src/lower/` |
-| Linking and runtime | `src/link.rs`, `src/reachability.rs`, `src/names.rs`, `src/runtime.rs`, `src/runtime/` |
-| std's bodies as a package | `std/lib.rs`, the crate `bun run std` compiles with `--std-bodies`; `std/*.js` and `std/manifest.json`, what it writes, committed and built in (ADR 0561) |
-| JS tree and presentation | `src/js.rs`, `src/js/`, `src/prepare.rs`, `src/prepare/`, `src/to_oxc.rs`, `src/to_oxc/`, `src/format.rs`, `src/typescript.rs` |
-| Owned modules and source origins | `src/program.rs`, `src/lower/sources.rs` |
-| Libraries, settings and hooks | `src/library.rs`, `src/settings.rs`, `src/hooks.rs`, `src/paths.rs` |
+| Compiler entry, command parsing, Cargo wrapper, panic reporting | `src/main.rs`, `src/command.rs`, `src/cargo.rs`, `src/panic_runtime.rs` |
+| JSX syntax expansion and provenance | `src/jsx_syntax.rs`, `src/jsx_syntax/` |
+| Rust analysis and lowering | `src/lower.rs`, `src/lower/` (detailed below) |
+| Owned JS tree, source arena and comments | `src/js.rs`, `src/js/`, `src/program.rs`, `src/comments.rs` |
+| Reachability, linking and names | `src/reachability.rs`, `src/link.rs`, `src/names.rs` |
+| Readability and printing | `src/prepare.rs`, `src/prepare/`, `src/to_oxc.rs`, `src/to_oxc/`, `src/format.rs`, `src/typescript.rs`, `src/prettier.rs`; `typescript/` prints the declaration model |
+| Library contracts, configuration, hooks and path utilities | `src/library.rs`, `src/settings.rs`, `src/hooks.rs`, `src/paths.rs` |
 | Artifact planning, manifest and publication | `src/output.rs`, `src/manifest.rs`, `src/publish.rs` |
-| Build adapter and native hosts | `tooling/build.js`, `tooling/manifest.js`, `tooling/cargo.js`, `tooling/cli.js` |
-| Browser host | `wasm/web/compile-rust.ts`, `tooling/publish.js`, `wasm/web/compiler-client.js`, `wasm/web/compiler-worker.js`, `wasm/web/rust/compiler.rs` |
-| Bindings: JS's builtins, the web's APIs, React, Node, Next.js, serde | `builtins/`, `webapi/`, `react/`, `node/`, `next/`, `serde/`; the crates shipped, each once, `tooling/crates.js`, which hosts and packaging read |
-| Tests: what each kind checks | `test/corpus/` and `test/corpus.test.ts` (each program run natively and as JS, its JS a snapshot); `test/snapshots/` (examples' JS); `test/lowering*.test.ts`, `test/jsx*.test.ts` (a construct's JS, a file for each concept); `test/compiler.test.ts` (native Rust beside the JS); `test/architecture.test.ts` (these boundaries); `test/sourcemap.ts` (a source map decoder) |
+| Runtime helper catalog and implementations | `src/runtime.rs`, `src/runtime/`; generated package in `runtime/` |
+| Compiled standard-library bodies | `std/lib.rs`, generated `std/*.js` and `std/manifest.json` |
+| Native app build and editor check | `tooling/cli.js`, `tooling/build.js`, `tooling/cargo.js`, `tooling/check.js` |
+| Host manifest validation and file publication | `tooling/manifest.js`, `tooling/publish.js` |
+| npm/Cargo integration and shipped binding catalog | `tooling/patch.js`, `tooling/crates.js` |
+| Shipped JS, web, React, Node and Next.js bindings | `builtins/`, `webapi/`, `react/`, `node/`, `next/`; the authoritative list is `tooling/crates.js` |
+| External crates used by compiler tests | `serde/` builds crates.io dependencies; it is not a shipped binding crate |
+| WASI compiler build | `wasm/Cargo.toml`, `wasm/build.sh`, `wasm/patches/` |
+| Playground UI and in-browser compiler host | `wasm/web/rust/`, `wasm/web/compiler-client.js`, `wasm/web/compiler-worker.js`, `wasm/web/frame-report.js` |
+| Playground build and served assets | `wasm/web/compile-rust.ts`, `wasm/web/site.ts`, `wasm/web/vite.config.ts` |
+| Tests and mutation tooling | `test/`, `scripts/mutations.ts`, `scripts/mutations/`, `scripts/matrix.ts` |
+| Packaging, release and CI | `scripts/package-*.ts`, `scripts/ci.ts`, `.github/workflows/` |
+
+## Hosts
+
+An application compiles Rust through `rust-js build`, once per invocation
+([ADR 0412](decisions/0412-rust-js-build-is-its-own-process.md)).
+It writes JS/JSX and declarations beside the Rust; `--check` compares generated
+source files without replacing them. Vite and Next.js consume those files.
+They do not host a rust-js compiler plugin or schedule Rust compilation.
+
+`tooling/build.js` finds the compiler, checks runtime package versions, and
+coordinates Cargo and project checks. `tooling/cargo.js` reads Cargo metadata
+and runs Cargo with rust-js as its wrapper; `src/cargo.rs` decides how each
+invocation is handled. Workspace, path and npm-provided source crates compile
+to separate JS libraries. Registry and Git dependencies are attempted too;
+when compilation is refused, their Rust metadata and the refusal are retained
+so use of unsupported code can produce a diagnostic. Binding crates and the
+catalog `READ_AS_RUSTC_BUILDS_THEM` supply Rust metadata; the compiler lowers
+their supported APIs through its binding and domain modules.
+This supports dependency graphs within the compiler's supported subset, not
+arbitrary crates or native-only behavior.
+
+The playground has two distinct paths:
+
+- **Building the playground itself:** `compile-rust.ts` runs the WASI compiler
+  under Bun and publishes its output to disk through `tooling/publish.js`.
+  `site.ts` prepares the compiler, sysroot, bindings and preview assets.
+- **Compiling a user's program in the browser:** `compiler-client.js` creates
+  one worker per compilation and owns timeout/cancellation. The worker calls
+  `rust/compiler.rs`'s generated JS, which runs the WASI compiler in a fresh
+  virtual filesystem and returns successful output described by its manifest.
+  This path uses the supplied dependencies, not a general browser Cargo build.
+
+The preview is a separate trust boundary: `rust/components/result_frame.rs`
+uses an iframe with `sandbox="allow-scripts"`, and validates the sender and
+run identity of messages. Compiler workers do not execute the resulting app.
+
+## The pipeline
+
+`main.rs` expands JSX during parsing and captures THIR before MIR construction
+consumes it. It collects MIR and body facts, then requires rustc's full
+analysis (including borrow checking and lints) to succeed before lowering.
+Capturing a body is not permission to emit it.
+
+```text
+Rust source
+    |
+    v
+rustc + JSX expansion -> captured THIR, MIR and body facts
+    |
+    v
+rustc analysis succeeds
+    |
+    v
+lower/pipeline.rs: analyze crate -> lower bodies -> assemble retained modules
+    |                              MIR -> JS AST -> body tidy
+    v
+program::Unlinked             owned data: no rustc types beyond this boundary
+    |
+    v
+link.rs -> link::Linked       resolve symbols and aliases; collect helpers
+    |
+    v
+output.rs                    plan paths; prepare JS; validate; choose imports
+    |                        print JS/maps and declarations; run transforms
+    v
+output::ArtifactPlan         all bytes and stale-file candidates prepared
+    |
+    v
+publish.rs                   stage, replace, clean up; roll back on I/O error
+```
+
+Linking runs in the driver's rustc callback. Artifact planning waits until
+rustc has exited successfully, including writing any requested Rust metadata.
+Only the linker constructs `Linked`; only artifact planning constructs
+`ArtifactPlan`. Compilation or planning failure prevents publication.
+Project check hooks run after publication and may still fail the command.
+
+| Phase | Owns | Must not do |
+| --- | --- | --- |
+| Syntax expansion | JSX-to-Rust syntax and source provenance | Bypass rustc or choose JS representations |
+| Analysis | Validated bindings, indexes, names and crate/body facts | Emit functions or write output |
+| Lowering pipeline | Scheduling, codecs, retention policy and module assembly | Resolve import aliases or publish |
+| MIR and domain lowering | Evaluation order, control flow, places, copies, drops and representations | Format text or choose artifact paths |
+| Body tidy | Readable control flow from JS and explicit lowering hints | Query rustc or mutable function context |
+| Linker | Symbol resolution, collision-free import aliases and helper dependencies | Re-lower Rust or change expression semantics |
+| Preparation | Readability rewrites on completed JS, preserving behavior | Depend on Rust types or predicted indentation |
+| Printing | oxc conversion, JS layout and maps; TypeScript declaration printing | Decide Rust semantics, runtime imports or publication |
+| Artifact planner | Paths, imports, prepared/printed bytes, transforms, manifest and stale candidates | Decide Rust semantics |
+| Publisher | Staging, replacement, unchanged files, safe cleanup and rollback | Transform code or infer stale candidates |
+
+### Dependency layers
+
+These are dependency rules, not execution order. Paths are relative to `src/`.
+
+| Layer | Modules | May depend on |
+| --- | --- | --- |
+| Driver | `main.rs`, `command.rs`, `cargo.rs`, `panic_runtime.rs` | Every layer |
+| Front end | `lower.rs`, `lower/`, `jsx_syntax.rs`, `jsx_syntax/` | Front end and earlier-use owned data/utilities; no linking, preparation or publication |
+| Owned output | `js.rs`, `js/`, `program.rs`, `comments.rs`, `link.rs`, `reachability.rs`, `names.rs`, `prepare.rs`, `prepare/`, `output.rs`, `publish.rs`, `manifest.rs`, `library.rs`, `runtime.rs`, `settings.rs`, `hooks.rs`, `paths.rs` | Owned output; no rustc |
+| Printing | `to_oxc.rs`, `to_oxc/`, `format.rs`, `typescript.rs`, `prettier.rs` | Printing and owned output; no rustc |
+
+The named orchestration exceptions are `output.rs`, which invokes the printing
+adapters, and `hooks.rs`, which invokes `format.rs`. Only printing adapters use
+oxc. `output.rs` also writes manifest JSON and the test runner's imports/calls.
+The architecture test checks top-level dependency cycles; it treats the parts
+of `lower/` as one module, not as individually cycle-checked units.
+
+## Inside the front end
+
+Paths in this section are relative to `src/lower/` unless stated otherwise.
+
+State has three scopes: crate facts shared across functions; `FnCx` for a
+function's context; and `mir::State` for one body's temporaries, labels,
+captures and drop flags. `bodies.rs` manages nested-body entry and restoration.
+Concern-specific state (drops, trait evidence, formatting, cloning and type
+walks) is accessed only by the owners allowed in the architecture tests.
+
+Recognition and query modules answer questions without emitting code.
+Recognition owns std names, diagnostic identities and library-layout
+assumptions; rustc lang items remain available through rustc's identity API.
+`shortcuts.rs` only forwards recognition queries.
+
+| Responsibility | Modules |
+| --- | --- |
+| Crate facts and validation | `analysis.rs`, `analysis/` |
+| Body facts and integer ranges | `body_queries.rs`, `body_queries/` |
+| std recognition and coverage | `recognition.rs`, `recognition/`, `shortcuts.rs`, `std_coverage.rs` |
+| Function contexts, assembly and source capture | `bodies.rs`, `pipeline.rs`, `sources.rs`, `library.rs` |
+| MIR lowering, control flow, calls, places, temporaries and drops | `mir.rs`, `mir/`, `mir/iter/` |
+| Body readability passes | `mir/tidy.rs`, `mir/tidy/`, `mir/tidy/jumps/` |
+| Value shape, copy policy, support and diagnostics | `representation.rs`, `copies.rs`, `support.rs`, `refusal.rs` |
+| Values, patterns, calls and places | `aggregates.rs`, `literals.rs`, `patterns.rs`, `calls.rs`, `loops.rs`, `places.rs` |
+| Mutable references, pointers, plain-data layout and unions | `mut_refs.rs`, `pointers.rs`, `plain.rs`, `unions.rs` |
+| Destructors and their facts | `drops.rs`, `drops/`; `mir/drops.rs` follows rustc's drop elaboration |
+| std types and calls | `std_types/`, `std_types/number/`; `std_types/values.rs` dispatches to each type's module |
+| Iterators and combinators | `iterators.rs`, `iterators/`, `combinators.rs`, `combinators/` |
+| Item references, traits, dictionaries and standard impls | `items.rs`, `traits.rs`, `traits/`, `std_impls.rs`, `ordering.rs` |
+| Formatting | `display.rs`, `display/`, `format_args.rs`, `format_spec.rs` |
+| Serde and supported external crate APIs | `serde.rs`, `serde/`, `shipped.rs` |
+| JSX, JS bindings, untagged values and JS-visible uses | `jsx.rs`, `jsx_api.rs`, `bindings.rs`, `binding_calls.rs`, `untagged.rs`, `liveness.rs` |
+| Exported TypeScript declaration model | `declarations.rs` |
+
+MIR determines execution order. `mir/cfg.rs` structures blocks;
+`mir/temporaries.rs` folds temporary reads only when intervening effects allow
+it. `mir/hints.rs` supplies source facts and `mir/offsets.rs` analyzes string
+offsets without emission. `mir/tidy.rs` coordinates body rewrites. Type-specific
+rewrites remain with their type's owner; downstream `src/prepare.rs` works
+only on the completed JS tree. The printer owns spelling and layout, including
+expression forms determined while converting to oxc; Rust decisions stay upstream.
+
+### Semantic owners
+
+Consumers use these APIs instead of inspecting another owner's state or JS
+representation. This is an index of shared contracts, not every function.
+The architecture test checks the named modules and APIs exist and separately
+enforces selected access rules; `bun run architecture` reports those boundaries.
+In this table, `lower.rs`, `names.rs` and `runtime.rs` are at the `src/` root.
+
+| Concept | Owner | What the others ask |
+|---|---|---|
+| MIR variable facts | `mir.rs` | `alike_local`, `plain_local`, `note_tested`, `note_falsy` |
+| Drop behavior and placement | `drops.rs`, `drops/` | `drop_value`, `item_drop`, `drop_function`, `enter_body_drops` |
+| JS iterator versus array representation | `iterators.rs` | `is_js_iterator`, `js_iterator`, `from_iterator`, `stepped`, `stepped_by`, `stepped_range` |
+| Generic iterator evidence | `iterators.rs` | `given_as_it_is`, `iterator_dictionary`, `iterator_evidence`; which functions step one, `analysis/iterator_steps.rs` |
+| Array stepping and lent iterators | `iterators.rs` | `stepped_items`, `is_stepped_items`, `iterated`, `lent_iterator`, `unlent` |
+| Mutable-reference boxes and copy-back | `mut_refs.rs` | `boxed`, `copied_back`, `mut_borrowed`, `nested_mut_object` |
+| Formatter output and MIR writer calls | `display.rs`; `mir/writer.rs` | `formatter_answer`, `written_of`, `builder_written`, `mir_writer_call` |
+| Function and binding references | `items.rs` | `fn_ref`, `js_ref`, `resolve_instance` |
+| Bindings held by modules | `bindings.rs`; `items.rs` | `held`, `held_path`; `binding_ref` |
+| Trait dictionaries and evidence | `traits/routes.rs`, `traits/dictionaries.rs`, `traits/impls.rs` | `dictionary`, `evidence_for`, `has_evidence`, `impl_call` |
+| Generic arguments and copied defaults | `traits/given.rs` | `in_impl_terms`, `given_evidence`, `given_type_fact`, `resolve_self_instance`, `enter_default` |
+| Ambiguous Option payload boxing | `std_types/option.rs` | `some`, `some_value`, `some_literal`, `is_some_box` |
+| Copy policy | `copies.rs` | `copy_if_needed`, `contains_mutated` |
+| Map/set operations and discarded results | `std_types/map.rs` | `map_values`, `discarded_calls` |
+| Cells and plain module statics | `std_types/cell.rs` | `cell_call`, `plain_statics` |
+| Std call classification | `recognition/calls.rs` | `classify`, and its answers through `shortcuts.rs` |
+| Std identities and layout | `recognition/std_items.rs`, `recognition/types.rs`, `recognition/fmt.rs`, `recognition/iterators.rs` | `StdItem`, `is_std_type`, `is_std_def`, `std_item`, `trait_method`, `cell_value_field`, `deref_target`, `debug_builder`, `builder_step`, `iterator_method` |
+| Std coverage catalog | `recognition/registry.rs` | `measured` |
+| Compiled std bodies, types and module placement | `recognition/std_items.rs`, `recognition/iterators.rs` | `compiled_std`, `is_compiled_std`, `is_compiled_std_type`, `is_compiled_std_iterator`, `std_home_module`, `memory_intrinsic`, `addresses_memory` |
+| Memory-addressing operations | `pointers.rs` | `raw_pointee`, `mir_addresses_memory` |
+| Std-private iterator specialization | `recognition/iterators.rs`, `recognition/std_items.rs` | `fused_specialization`, `std_private` |
+| Compiled iterator stepping | `iterators.rs` | `std_iterator_steps`, `compiled_step` |
+| Generic IntoIterator representation | `iterators.rs` | `into_iter_held_as_it_is`, `into_iter_as_it_is` |
+| Function-value mutable arguments | `mut_refs.rs` | `unboxed_by_function` |
+| Body module placement | `lower.rs` | `body_module` |
+| Std body capture | `analysis.rs` | `collect_std_bodies` |
+| Dictionary cache names | `names.rs` | `dictionary_cache` |
+| String offsets in JS units | `mir/offsets.rs`; `std_types/text.rs` | `in_units`, `call_in_units`, `step`, `cut`, `seed`; `found`, `sliced_in_units` |
+| Runtime helper identity and properties | `runtime.rs` | `exports`, `helper_of`, `is_pure`, `names_a_place` |
+
+**Calls.** `mir/dispatch.rs::mir_call` handles special calls and sends evaluated
+arguments to `mir_call_values`. Calls then go to iterator, trait, binding or
+crate-function lowering. Recognized std calls go through `mir_std_call` in
+the same dispatcher, delegating place-sensitive behavior to `mir/std_calls.rs`
+and value-only behavior to `std_types/values.rs` and the owning type.
+`std_values` exhaustively matches `Std`. New behavior belongs in its domain
+module, not in a growing dispatcher;
+the architecture test holds dispatcher sizes.
+
+## Owned output and source origins
+
+`src/js.rs` defines a compiler-owned AST independent of rustc and oxc.
+`src/program.rs` carries modules, symbolic imports, declarations and a source
+arena. `src/lower/sources.rs` converts source information to owned text and
+spans, retaining origins across files and copied bodies. JSX expansion and
+formatting preserve or remap those origins.
+
+Linking resolves symbolic references to ordinary names. During planning,
+`js::Module::unprintable` rejects unresolved symbols, function holes, drop
+arguments, handles and unresolved dynamic imports before printing. Representation
+constants such as `js::HELD` and `js::DICTIONARY` belong to the AST; consumers
+do not repeat their spelling.
+
+`src/to_oxc.rs` and `src/to_oxc/` convert JS to oxc and generate source maps;
+`src/format.rs` lays it out with oxfmt and remaps changed text. Declarations
+flow from `src/lower/declarations.rs` through `src/typescript.rs` to `typescript/`.
+`src/output.rs` coordinates crate transforms, optional application Prettier,
+map adjustment and final artifact assembly.
+
+## Libraries and runtime
+
+A compiled library has JS plus a versioned `src/library.rs` contract embedded
+in the host manifest. It carries exported item identities, trait requirements,
+held bindings, input fingerprints and crate identity; rustc metadata alone
+cannot describe JS linkage. Consumers validate library/compiler identity and
+required dependencies. Cargo provides build configuration and caching;
+`src/cargo.rs` makes compiler identity visible to Cargo's fingerprints.
+
+`@rust-js/std` contains selected std bodies compiled from the pinned toolchain's
+MIR. The catalog in `src/lower/recognition/std_items.rs` owns which ones. `bun run std`
+regenerates the committed JS and manifest in `std/`; other compilations use
+that built-in manifest and import the package. Hand-modeled std operations
+remain in their domain modules until migrated.
+
+`src/runtime.rs` owns helper names, dependencies and implementations in
+`src/runtime/`; `bun run runtime` generates `runtime/index.js`. Lowering requests
+helpers through `Expr::helper`. Linking collects helper dependencies, and
+artifact planning selects imports from the prepared tree's actual reads.
+The printer receives those imports; it does not infer them from text.
+
+## Publication
+
+`src/manifest.rs` is the compiler/host contract; `tooling/manifest.js` validates
+it and remaps virtual paths as structured fields. It reports modules, imports,
+source destinations, artifacts, fingerprints and compiler identity, so hosts
+do not rediscover them by parsing generated JS or guessing filenames.
+
+`src/output.rs` prepares all artifacts and decides which old outputs are stale.
+`src/publish.rs` stages bytes, preserves unchanged files, backs up replacements
+and removals, and publishes the manifest last. Ordinary I/O failures trigger
+rollback; this is not crash-atomic publication. Cleanup requires the old file
+to retain its recorded fingerprint and protects current inputs and outputs.
+
+For disk publication of WASI results, the compiler reports stale candidates in
+the manifest. `tooling/publish.js` validates artifacts, checks disk aliases and
+fingerprints, and commits them. The in-browser host instead exposes successful
+results from its fresh virtual filesystem.
+
+Cargo's copies beside source are a separate publication step:
+`tooling/cargo.js::writeInSource` uses compiler-reported destinations and link
+ranges, relinks moved imports, and tracks ownership in a ledger. Its stale
+copies come from that ledger; `tooling/publish.js::commit` writes them. It does
+not independently decide the compiler's output paths.
 
 ## Where a change goes
 
-A std function or method rust-js doesn't know yet:
-
-1. **Recognize it**: a `Std` variant, in `recognition.rs`, and where `classify`
-   finds it: in `recognition/calls.rs` for a function's or a trait method's,
-   `recognition/inherent.rs` for a type's own, or `recognition/methods.rs`'s
-   tables.
-2. **Lower it** in its domain's function: `std_types/vec.rs` for a `Vec`'s, `std_types/text.rs`
-   for a string's, and so on. If it needs a runtime helper, add
-   `src/runtime/<name>.js` and name it in `runtime.rs`.
-3. **Prove it**: a corpus case in `test/corpus/`, compared with native Rust,
-   and, of numbers, strings or chars, its row in the boundary matrices,
-   `scripts/matrix.ts` ([ADR 0182](decisions/0182-boundary-matrices.md));
-   mutations in its module's list in `scripts/mutations/`, each a bug its
-   tests must catch;
-   and a design decision in `docs/decisions/` if it's a new choice.
-
-A new kind of value, construct or analysis goes with its kind above: a
-question that emits nothing in a module of its own, checked as the others
-are, and lowering in the module of the construct. Check the generated JS
-reads as a person would write it, and run the checks
-[CONTRIBUTING.md](../CONTRIBUTING.md) asks for before pushing, as
-[AGENTS.md](../AGENTS.md) runs them.
+1. Find the semantic owner above. Extend its API or facts rather than adding
+   a competing rule. For a new responsibility, update this map and its checks.
+2. For std support, recognition identifies the operation; MIR call lowering
+   handles places and effects; the type's module handles values. Extend the
+   compiled-std catalog when compiling std's body instead of modeling its API.
+3. Preserve phase contracts. Rust facts belong upstream; owned JS rewrites
+   belong in tidy or preparation according to the facts they require; spelling
+   and layout belong in printing; paths and cleanup policy belong in planning.
+4. Verify with the relevant native-vs-JS corpus cases, output snapshots,
+   boundary matrices and mutations. Architecture tests protect dependencies;
+   `test/host-boundaries.test.ts` checks host contracts; integration tests cover
+   app builds and native/browser parity.
+5. Update the guide for observable changes and record new decisions in an ADR.
+   Follow [CONTRIBUTING.md](../CONTRIBUTING.md) and the local/CI limits in
+   [AGENTS.md](../AGENTS.md).
 
 ## Not yet
 
-The boundaries above hold today. These are targets: the
-[roadmap](../ROADMAP.md) tracks the first four, and the third
-architecture audit found the rest.
+[ROADMAP.md](../ROADMAP.md) owns milestones and release qualification;
+[the limitations](guide/limitations.md) describe unsupported program behavior.
+Do not read current mechanisms as promises of:
 
-- **A numbered ES baseline and environment matrix** for running output
-  directly, without the application's transformations (M1.1, M5.2).
-- **General Cargo dependency graphs** compiled crate by crate (M8.1), and
-  packaged releases beyond macOS arm64 (M4).
-- **Measured budgets** for phase time, peak memory, generated bytes, and
-  edit-to-refresh latency on application-scale workloads (M5.1).
-- **Checks before a commit lands:** the check runs on each push to `main`,
-  after it's pushed; nothing refuses a commit that fails it.
-- **The safe stratum compiled, one adapter at a time** (ADR 0561):
-  `Peekable` and `Fuse` are (ADR 0566); each other adapter is a line of
-  `COMPILED_STD` and the retirement of its hand-modeled helper, the held
-  adapters' (ADRs 0542 to 0549); and `Iterator`'s provided methods the
-  recognizers don't rewrite. A std adapter's derived `Debug` not yet
-  compiled, `Copied`'s, is refused where a compiled type shows it.
-- **Short functions:** `mir_call` (118 lines), `mir_call_values` (301),
-  `mir_std_call` (254), `mir_function` (414), `classify_inherent` (840),
-  `classify_trait_method` (422), `comb_values` (691) and `mir_iter_call`
-  (502) are held to their lengths, which the architecture test holds
-  exactly, each lowered as what's left in it goes where its kind is.
+- A complete host/browser compatibility matrix or numbered direct-execution
+  JS baseline.
+- Arbitrary Cargo dependency compatibility or browser Cargo/build-script support.
+- Measured application-scale performance budgets.
+- Compilation of every std body; the catalog still selects only part of std.
+
+Dispatcher and file-size caps are held in the architecture tests. Use those
+checks and reports for current measurements rather than copying counts here.
