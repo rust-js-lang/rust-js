@@ -90,27 +90,43 @@ pub(in crate::lower) enum RangeOp {
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
-    /// A range's own `nth(n)`, `last()` and `count()`, of `a..b`, `values`
-    /// it and `n`: of its bounds, without stepping each number, as std's
-    /// `Range`'s are (#163), `$rangeNth`, `$rangeLast` and, of numbers that
-    /// aren't BigInts, `$rangeLen`. `None` of another method or range.
+    /// A range's own `nth(n)`, `last()` and `count()`, of `a..b` or
+    /// `a..=b`, or of one reversed, `(a..b).rev()`, `values` it and `n`: of
+    /// its bounds, without stepping each number, as std's are (#163),
+    /// `$rangeNth`, `$rangeInclusiveNthBack`, of a reversed one's
+    /// `$iterator`'s bounds, `.of`. `None` of another
+    /// method, or of a range of `char`s, which steps by code point, or a
+    /// count of BigInts, which isn't a `usize`.
     pub(in crate::lower) fn range_own_step(
         &self,
         method: Option<IterMethod>,
         range: Ty<'tcx>,
         values: &[Expr],
     ) -> Option<Expr> {
-        if self.range_kind(range) != Some(RangeKind::Exclusive) {
-            return None;
-        }
-        let numbers = self.range_index(range).and_then(Num::of).is_some_and(|num| !num.big());
-        let name = match method? {
-            IterMethod::Nth => "$rangeNth",
-            IterMethod::Last => "$rangeLast",
-            IterMethod::Count if numbers => "$rangeLen",
+        let reversed = self.recognition().reversed(range);
+        let kind = self.range_kind(reversed.unwrap_or(range))?;
+        let num = self.range_index(reversed.unwrap_or(range)).and_then(Num::of)?;
+        let name = match (method?, kind, reversed.is_some()) {
+            (IterMethod::Nth, RangeKind::Exclusive, false) => "$rangeNth",
+            (IterMethod::Nth, RangeKind::Exclusive, true) => "$rangeNthBack",
+            (IterMethod::Nth, RangeKind::Inclusive, false) => "$rangeInclusiveNth",
+            (IterMethod::Nth, RangeKind::Inclusive, true) => "$rangeInclusiveNthBack",
+            (IterMethod::Last, RangeKind::Exclusive, false) => "$rangeLast",
+            (IterMethod::Last, RangeKind::Inclusive, false) => "$rangeInclusiveLast",
+            (IterMethod::Last, RangeKind::Exclusive, true) => "$rangeFirst",
+            (IterMethod::Last, RangeKind::Inclusive, true) => "$rangeInclusiveFirst",
+            (IterMethod::Count, RangeKind::Exclusive, _) if !num.big() => "$rangeLen",
+            (IterMethod::Count, RangeKind::Inclusive, _) if !num.big() => "$rangeInclusiveLen",
             _ => return None,
         };
-        Some(Expr::call_helper(name, values.to_vec()))
+        let mut values = values.to_vec();
+        // A reversed one's bounds, its `$iterator`'s: those it was made of,
+        // where it's made here, once `reversed_step` reads them.
+        if reversed.is_some() {
+            let first = values.first_mut()?;
+            *first = Expr::member(first.clone(), "of");
+        }
+        Some(Expr::call_helper(name, values))
     }
 
     /// A range's `len()`, `range_count` of its bounds, where it's a range
@@ -421,8 +437,47 @@ pub(in crate::lower) fn range_items(e: &mut Expr) {
 /// steps on; a range's own `count()` and `last()` are `range_own_step`'s.
 /// Run after `range_items`, each of its source first.
 pub(in crate::lower) fn range_steps(e: &mut Expr) {
-    while let Some(folded) = range_step(e) {
+    while let Some(folded) = range_step(e).or_else(|| reversed_step(e)) {
         *e = folded;
+    }
+}
+
+/// Of a range made where it's stepped from its end, `$iterator({ start,
+/// end }, $rangeNextBack)`: its bounds, where `.of` reads them, as
+/// `range_own_step` does of one a variable holds; and `.drop(n)` of it, its
+/// end `n` before, as `Rev`'s `skip` is the range's `nth_back`, where its
+/// end is a number, not a BigInt `n` isn't (#163).
+fn reversed_step(e: &Expr) -> Option<Expr> {
+    match &e.kind {
+        js::ExprKind::Member(made, field) if field == "of" => {
+            crate::lower::iterators::stepped_range(made)?;
+            let js::ExprKind::Call(_, args) = &made.kind else {
+                unreachable!("a stepped range is a call")
+            };
+            Some(args[0].clone())
+        }
+        js::ExprKind::Call(callee, args) => {
+            let (js::ExprKind::Member(made, method), [n]) = (&callee.kind, &args[..]) else {
+                return None;
+            };
+            let range = crate::lower::iterators::stepped_range(made)?;
+            if method != "drop" || !range.back || !n.reads_same() || range.end.as_int().is_none() {
+                return None;
+            }
+            let end = match (range.end.as_int(), n.as_int()) {
+                (Some(end), Some(n)) => Expr::int(end - n),
+                _ => Expr::bin(Op::Sub, range.end.clone(), n.clone()),
+            };
+            let js::ExprKind::Call(stepper, made_args) = &made.kind else {
+                unreachable!("a stepped range is a call")
+            };
+            let bounds = Expr::object(vec![
+                Prop::Field("start".to_string(), range.start.clone()),
+                Prop::Field("end".to_string(), end),
+            ]);
+            Some(Expr::call((**stepper).clone(), vec![bounds, made_args[1].clone()]))
+        }
+        _ => None,
     }
 }
 

@@ -30,6 +30,20 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             && self.tcx.item_name(adt.did()).as_str() == "Peekable")
     }
 
+    /// What a `Rev`, std's, steps from its end: the `Range<u32>` of a
+    /// `Rev<Range<u32>>`.
+    pub(in crate::lower) fn reversed(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
+        match ty.peel_refs().kind() {
+            ty::Adt(adt, args)
+                if self.tcx.crate_name(adt.did().krate) == rustc_span::sym::core
+                    && self.tcx.item_name(adt.did()).as_str() == "Rev" =>
+            {
+                Some(args.type_at(0))
+            }
+            _ => None,
+        }
+    }
+
     /// A `dyn Iterator`, boxed or lent: a JS iterator, whatever made it; of
     /// a `dyn DoubleEndedIterator`, one that knows its back (ADR 0429).
     pub(in crate::lower) fn is_dyn_iter(&self, ty: Ty<'tcx>) -> bool {
