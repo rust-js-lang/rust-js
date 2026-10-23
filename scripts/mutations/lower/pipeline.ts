@@ -420,8 +420,8 @@ export const mutations: Mutation[] = [
     name: "bound-global-default-refused",
     breaks: "`js::export_default!(assign)` of a global binding is refused as no function of its module's",
     file: "src/lower/pipeline.rs",
-    find: "                    Some(function) if unset && super::bindings::global_function(tcx, function).is_some() => {\n",
-    replace: "                    Some(function) if false && unset && super::bindings::global_function(tcx, function).is_some() => {\n",
+    find: "                    Some(function) if unset && super::bindings::held_path(tcx, function).is_some() => {\n",
+    replace: "                    Some(function) if false && unset && super::bindings::held_path(tcx, function).is_some() => {\n",
     tests: ["test/lowering-bindings.test.ts", "-t", "a global binding a module names"],
   },
   {

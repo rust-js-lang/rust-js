@@ -35,7 +35,7 @@ pub(super) fn module<'tcx>(
     reexports: &[Reexport],
     aliases: &[(String, String)],
     plain_ref_cells: &HashSet<Ty<'tcx>>,
-    fns: &HashMap<DefId, super::FnInfo>,
+    (fns, held): (&HashMap<DefId, super::FnInfo>, &[super::bindings::HeldBinding]),
 ) -> Option<Value> {
     let mut out = Declarations {
         tcx,
@@ -69,16 +69,18 @@ pub(super) fn module<'tcx>(
         };
         items.extend(declaration.map(|declaration| documented(declaration, tcx, def_id)));
     }
-    // A global binding it names as a value, `typeof Object.assign`, as
-    // TypeScript has it (ADR 0622).
-    for bound in super::bindings::bound_globals(tcx, module, default_export) {
-        items.push(json!({
-            "kind": "const",
-            "name": bound.name,
-            "type": { "kind": "typeof", "name": bound.global },
-            "exported": bound.export,
-            "declare": !bound.export,
-        }));
+    // A binding it holds as a value, a global function's `typeof
+    // Object.assign`, as TypeScript has it (ADR 0622), a static's its type
+    // (ADR 0633); not one re-exported from another module that holds it.
+    for held in held.iter().filter(|held| held.through.is_none()) {
+        let mut declared = match tcx.def_kind(held.binding) {
+            DefKind::Static { .. } => out.constant(held.binding),
+            _ => json!({ "kind": "const", "type": { "kind": "typeof", "name": held.path } }),
+        };
+        declared["name"] = json!(held.name);
+        declared["exported"] = json!(held.export);
+        declared["declare"] = json!(!held.export);
+        items.push(declared);
     }
     if let Some(def_id) = default_export {
         // One only `js::export_default!` exports is declared, but exported
@@ -88,7 +90,8 @@ pub(super) fn module<'tcx>(
         // A constant's is declared, then exported, `declare const v: string;
         // export default v;`, as TypeScript has no default `const` (ADR 0625).
         let default_declared = default_declared && tcx.def_kind(def_id) == DefKind::Fn;
-        if !tcx.visibility(def_id).is_public() {
+        // A binding's is its `const`'s, declared above.
+        if !tcx.visibility(def_id).is_public() && super::bindings::held_path(tcx, def_id).is_none() {
             out.erased = out.erased(def_id);
             let mut declared = match tcx.def_kind(def_id) {
                 DefKind::Fn => out.function(def_id),

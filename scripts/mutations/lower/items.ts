@@ -70,8 +70,8 @@ export const mutations: Mutation[] = [
     name: "copied-default-import-unused",
     breaks: "a trait's default that calls a JS import, copied into an impl in another module, calls it there unimported, and throws a `ReferenceError`",
     file: "src/lower/items.rs",
-    find: "            Some((export, rest)) => {\n                self.dependencies\n                    .borrow_mut()\n                    .package_uses\n                    .insert((self.module, export.clone()));\n                global(",
-    replace: "            Some((export, rest)) => {\n                global(",
+    find: "        super::path_read(path, self.krate.required, |export| {\n            self.dependencies\n                .borrow_mut()\n                .package_uses\n                .insert((self.module, export.clone()));\n",
+    replace: "        super::path_read(path, self.krate.required, |export| {\n",
     tests: ["test/traits.test.ts", "-t", "impls and default bodies retain their defining modules across cycles"],
   },
   {
@@ -81,14 +81,6 @@ export const mutations: Mutation[] = [
     find: "        if self.krate.named_expressions.contains(&def_id) {",
     replace: "        if false {",
     tests: ["test/jsx-children.test.ts", "-t", "a function a block makes and gives"],
-  },
-  {
-    name: "required-imported",
-    breaks: "a `#[rust_js::require]` binding is read as an import that was never made",
-    file: "src/lower/items.rs",
-    find: "            Some((export, rest)) if self.krate.required.contains(&export) => {\n",
-    replace: "            Some((export, rest)) if false && self.krate.required.contains(&export) => {\n",
-    tests: ["test/bindings.test.ts", "-t", "a required binding"],
   },
   {
     name: "leak-fn-unboxed",

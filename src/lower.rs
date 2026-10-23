@@ -326,6 +326,9 @@ struct CrateFacts<'a, 'tcx> {
     imports: &'a HashMap<LocalModId, HashMap<Export, String>>,
     /// The exports read through `require(module)`, not imported (ADR 0305).
     required: &'a HashSet<Export>,
+    /// Where a path reads a binding through the module that holds it, by
+    /// the path's span (ADR 0633).
+    held_reads: &'a HashMap<Span, bindings::HeldRead>,
     /// What the crate's libraries export (ADR 0100).
     foreign: &'a library::Foreign<'a, 'tcx>,
     /// Is this crate compiled as a library, for others to use (ADR 0100)?
@@ -367,6 +370,10 @@ struct Dependencies {
     references: HashSet<(LocalModId, DefId)>,
     package_uses: HashSet<(LocalModId, Export)>,
     uses: Vec<(DefId, DefId)>,
+    /// Each binding a module reads through another of the crate's that
+    /// holds it, by its `const`'s name there and whether it's that
+    /// module's default (ADR 0633).
+    held: HashSet<(LocalModId, LocalModId, String, bool, DefId)>,
 }
 
 struct FnCx<'a, 'tcx> {
@@ -744,7 +751,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(Some(Expr::helper(if max { "$f64Max" } else { "$f64Min" })));
         }
         if is_binding(self.tcx, def_id) {
-            return self.binding_value(def_id, args, span).map(Some);
+            return self.binding_value(def_id, args, span, span).map(Some);
         }
         Ok(None)
     }
@@ -847,6 +854,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         } else {
             self.unsupported(span, &format!("implementation evidence for `{tr}`"))
         }
+    }
+}
+
+/// What a binding's path reads, `console.log`, `react.__CLIENT_INTERNALS..`
+/// of `react#*.__CLIENT_INTERNALS..` by `import`'s name of the export it's
+/// in, or `require("eslint-plugin-react-hooks").rules` of one required
+/// (ADRs 0028, 0305).
+fn path_read(path: &str, required: &HashSet<Export>, import: impl FnOnce(&Export) -> String) -> Expr {
+    match bindings::js_import(path) {
+        Some((export, rest)) if required.contains(&export) => {
+            let module = Expr::call(Expr::var("require"), vec![Expr::str(&export.0)]);
+            format!("{}{rest}", export.1).split('.').fold(module, Expr::member)
+        }
+        Some((export, rest)) => global(&format!("{}{rest}", import(&export))),
+        None => global(path),
     }
 }
 

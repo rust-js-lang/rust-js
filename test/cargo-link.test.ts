@@ -2,11 +2,11 @@ import { beforeAll, expect, test } from "bun:test";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { runSync } from "./child";
-import { buildCompiler, compiler, fixture, root, run } from "./support";
+import { buildReact, compiler, fixture, root, run, target } from "./support";
 import { parseManifest } from "../tooling/manifest.js";
 import { channel } from "../scripts/toolchain.ts";
 
-beforeAll(buildCompiler, 600_000);
+beforeAll(buildReact, 600_000);
 
 // A library is compiled by rust-js, which writes its JS, its manifest, and
 // the metadata its consumers' rustc reads, from one build (ADR 0100).
@@ -173,3 +173,64 @@ pub fn run() -> usize {
   expect([given.code === 0, given.stderr]).toEqual([false, expect.stringContaining("with_borrow_mut` of a value with a destructor")]);
 });
 
+
+// ADR 0633: a consumer that names a binding through a library's module
+// that holds it reads it through that module, as react-reconciler reads
+// `shared/assign` and `shared/ReactSharedInternals`: its manifest says what
+// each module exports of a binding, which the consumer imports.
+test("a library's module that holds a binding is what a consumer reads it through", async () => {
+  const dir = fixture("held-binding-library");
+  const extern = ["--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  mkdirSync(join(dir, "shared"), { recursive: true });
+  writeFileSync(join(dir, "shared/lib.rs"), `pub mod assign;
+pub mod internals;
+
+pub struct Internals(core::marker::PhantomData<js::JsObject>);
+
+unsafe extern "Rust" {
+    #[cfg_attr(rust_js, rust_js::name = "ReactSharedInternals")]
+    #[link_name = "react#*.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE"]
+    pub safe static REACT_SHARED_INTERNALS: &'static Internals;
+}
+`);
+  writeFileSync(join(dir, "shared/assign.rs"), "pub use js::object::assign;\n\njs::export_default!(assign);\n");
+  writeFileSync(join(dir, "shared/internals.rs"), "pub use crate::REACT_SHARED_INTERNALS;\n\njs::export_default!(REACT_SHARED_INTERNALS);\n");
+  const libraryManifest = join(dir, "shared/manifest.json"), metadata = join(dir, "shared/libshared.rmeta");
+  run([compiler, join(dir, "shared/lib.rs"), "-o", join(dir, "shared/lib.js"), "--library", "--manifest", libraryManifest, "--", "--crate-name", "shared", `--emit=metadata=${metadata}`, ...extern]);
+  const contract = JSON.parse(readFileSync(libraryManifest, "utf8")).library;
+  expect(contract.held.map((held: any) => [held.module, held.rust_name, held.export])).toEqual([
+    [["assign"], "assign", "default"],
+    [["internals"], "REACT_SHARED_INTERNALS", "default"],
+  ]);
+  mkdirSync(join(dir, "app"), { recursive: true });
+  writeFileSync(join(dir, "app/lib.rs"), `use js::Unknown;
+use shared::assign::assign;
+
+pub fn merged<'a>(target: &'a Unknown, source: &Unknown) -> &'a Unknown {
+    assign(target, &[Some(source)])
+}
+
+pub fn internals() -> &'static shared::Internals {
+    shared::internals::REACT_SHARED_INTERNALS
+}
+
+pub fn direct<'a>(target: &'a Unknown, source: &Unknown) -> &'a Unknown {
+    js::object::assign(target, &[Some(source)])
+}
+`);
+  const output = join(dir, "app/lib.js");
+  run([compiler, join(dir, "app/lib.rs"), "-o", output, "--dependency", libraryManifest, "--", "--crate-name", "app", "--extern", `shared=${metadata}`, ...extern]);
+  const app = readFileSync(output, "utf8");
+  expect(app).toContain('import assign from "../shared/assign.js";\nimport ReactSharedInternals from "../shared/internals.js";\n');
+  expect(app).toContain("  return assign(target, source);\n");
+  expect(app).toContain("  return ReactSharedInternals;\n");
+  expect(app).toContain("  return Object.assign(target, source);\n");
+  expect(app).not.toContain('"react"');
+  mkdirSync(join(dir, "node_modules/react"), { recursive: true });
+  writeFileSync(join(dir, "node_modules/react/package.json"), '{ "name": "react", "type": "module", "main": "index.js" }\n');
+  writeFileSync(join(dir, "node_modules/react/index.js"), "export const __CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE = { H: null };\n");
+  const lib = await import(output);
+  expect(lib.merged({ a: 1 }, { b: 2 })).toEqual({ a: 1, b: 2 });
+  const react = await import(join(dir, "node_modules/react/index.js"));
+  expect(lib.internals()).toBe(react.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE);
+}, 120_000);

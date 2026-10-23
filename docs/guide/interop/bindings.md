@@ -146,6 +146,14 @@ export function celebrate() {
 - **`#[rust_js::require]` reads it through `require(module)`**, where a
   module must be read that way, an ESLint plugin's
   ([ADR 0305](../../decisions/0305-require.md)).
+- **Named through a module that holds it, it's read through that
+  module**: where `assign.rs` holds `Object.assign` as its default, a
+  call of `crate::assign::assign` imports it, `import assign from
+  "./assign.js"`, and is `assign(target, source)`, a static's read and a
+  `fn` taken of one too; a call of `js::object::assign`, the binding
+  itself, is `Object.assign(target, source)`
+  ([ADR 0633](../../decisions/0633-a-binding-named-through-a-module-is-read-through-it.md),
+  and [the default export](../project/modules.md#the-default-export)).
 
 To publish bindings of an npm package for others, see
 [Dependencies](../project/dependencies.md).

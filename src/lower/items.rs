@@ -2,13 +2,13 @@
 //! in JS, whether it's the crate's, and which impl a call runs (ADRs 0049,
 //! 0100).
 
-use super::bindings::{JsForm, is_binding, is_method, js_form, js_import};
+use super::bindings::{Holder, JsForm, is_binding, is_method, js_form};
 use super::fn_def;
 use super::recognition::Std;
 use super::representation::Num;
 use super::std_types::number::NumOp;
 use super::std_types::text::TextOp;
-use super::{FnCx, R, camel_case, global};
+use super::{FnCx, R, camel_case};
 use crate::js;
 use crate::js::{Expr, ExprKind, Op, Pattern, StmtKind};
 
@@ -64,27 +64,62 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A JS global (`console.log`) or an explicit package import
     /// (`node:path#posix.join` is `posix.join`, ADR 0028).
     pub(super) fn js_ref(&self, path: &str) -> Expr {
-        match js_import(path) {
-            // `require("eslint-plugin-react-hooks").rules` (ADR 0305).
-            Some((export, rest)) if self.krate.required.contains(&export) => {
-                let module = Expr::call(Expr::var("require"), vec![Expr::str(&export.0)]);
-                format!("{}{rest}", export.1).split('.').fold(module, Expr::member)
+        super::path_read(path, self.krate.required, |export| {
+            self.dependencies
+                .borrow_mut()
+                .package_uses
+                .insert((self.module, export.clone()));
+            self.krate.imports[&self.module][export].clone()
+        })
+    }
+
+    /// What a binding's `path` reads where the caller names it, at
+    /// `named` (ADR 0633): through the module that holds it, where the
+    /// caller names it through that module, that module's export, imported;
+    /// else in place, as `js_ref` reads it.
+    pub(super) fn binding_ref(&self, path: &str, named: Span) -> Expr {
+        let Some(read) = self.krate.held_reads.get(&named) else {
+            return self.js_ref(path);
+        };
+        match &read.holder {
+            Holder::Module(module) if *module == self.module => Expr::var(&read.name),
+            Holder::Module(module) => {
+                let default = read.import == "default";
+                (self.dependencies.borrow_mut().held).insert((
+                    self.module,
+                    *module,
+                    read.name.clone(),
+                    default,
+                    read.binding,
+                ));
+                Expr {
+                    reads: false,
+                    kind: js::ExprKind::Symbol(super::module_symbol(*module, &read.name)),
+                    span: js::Span::NONE,
+                }
             }
-            Some((export, rest)) => {
+            Holder::Library(from) => {
+                let export = (from.clone(), read.import.clone());
+                let name = self.krate.imports[&self.module][&export].clone();
                 self.dependencies
                     .borrow_mut()
                     .package_uses
-                    .insert((self.module, export.clone()));
-                global(&format!("{}{rest}", self.krate.imports[&self.module][&export]))
+                    .insert((self.module, export));
+                Expr::var(&name)
             }
-            None => global(path),
         }
     }
 
     /// A binding as a value, `.map(encode)` (ADR 0039): an arrow of its own
     /// parameters, calling it as a call would, so JS gives it no more than
     /// Rust does. `[..].map(parseInt)` would give `parseInt` each index too.
-    pub(super) fn binding_value(&mut self, def_id: DefId, args: ty::GenericArgsRef<'tcx>, span: Span) -> R<Expr> {
+    pub(super) fn binding_value(
+        &mut self,
+        def_id: DefId,
+        args: ty::GenericArgsRef<'tcx>,
+        named: Span,
+        span: Span,
+    ) -> R<Expr> {
         if self.tcx.is_foreign_item(def_id) {
             let refused = super::bindings::extern_fn_refused(self.tcx, def_id);
             return Err(self.tcx.dcx().span_err(span, refused));
@@ -120,7 +155,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .map(|(i, (name, &ty))| self.binding_arg(def_id, i, Expr::var(name), ty))
             .collect();
         let mut made = Vec::new();
-        let body = self.binding_values((def_id, args), values, self.js_span(span), span, &mut made)?;
+        let body = self.binding_values((def_id, args), values, (self.js_span(span), named), span, &mut made)?;
         // One that's a statement, a setter's, is no value.
         if !made.is_empty() {
             let what = format!("`{}` as a value", self.tcx.def_path_str(def_id));
@@ -136,9 +171,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// it's taken, as a Rust `fn` is fixed once taken, `const
     /// localSetImmediate = setImmediate`, where its arrow (`binding_value`)
     /// only passes its parameters on; else that arrow. What hands a `fn` to
-    /// JS gives it no more than Rust does, `.map((item) => f(item))`.
-    pub(super) fn binding_fn_pointer(&mut self, def_id: DefId, args: ty::GenericArgsRef<'tcx>, span: Span) -> R<Expr> {
-        let arrow = self.binding_value(def_id, args, span)?;
+    /// JS gives it no more than Rust does, `.map((item) => f(item))`. It's
+    /// read where it's `named`, through the module that holds it (ADR 0633).
+    pub(super) fn binding_fn_pointer(
+        &mut self,
+        def_id: DefId,
+        args: ty::GenericArgsRef<'tcx>,
+        named: Span,
+        span: Span,
+    ) -> R<Expr> {
+        let arrow = self.binding_value(def_id, args, named, span)?;
         let ExprKind::Arrow(params, body) = &arrow.kind else {
             return Ok(arrow);
         };

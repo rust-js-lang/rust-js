@@ -1,7 +1,10 @@
 # 0622. A global binding a module names is its `const`
 
 Status: Accepted. Extends [0240](0240-reexports.md) and
-[0611](0611-a-default-export-is-where-its-macro-is.md).
+[0611](0611-a-default-export-is-where-its-macro-is.md); amended by
+[0633](0633-a-binding-named-through-a-module-is-read-through-it.md): a
+caller that names one through the module reads it through it, and a
+binding's static is a module's `const` too.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): A: what a module
 exports, which a JS caller sees, and nothing a Rust caller does.
@@ -75,10 +78,11 @@ upstream's `const`. @rust-js/typescript's model gains the type
 
 ## Consequences
 
-- A call of it is still its binding's, `Object.assign(a, b)`, in the
-  module and in one that names it through the module: a call through a
-  module's name of a global is a decision of its own, made where React's
-  first caller of `shared/assign` is ported.
+- A call of it is its binding's, `Object.assign(a, b)`, where the caller
+  names the binding itself; one that names it through the module reads
+  it through it, `import assign from "./assign.js"`, and calls
+  `assign(a, b)` (ADR 0633, which makes a binding's static a module's
+  `const` as well).
 - A `pub use` of a method's binding, `this.name(..)`, still writes
   nothing: it's no value a module can hold.
 

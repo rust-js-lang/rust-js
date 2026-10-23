@@ -12,12 +12,13 @@ use rustc_span::def_id::DefId;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `def_id`'s call, given `args`, each as JS is given it: `fun_span`,
-    /// where its name is written.
+    /// where its name is written, and `named`, rustc's span of the path
+    /// that names it, which says where it's read (ADR 0633).
     pub(in crate::lower) fn binding_values(
         &mut self,
         (def_id, generic_args): (DefId, ty::GenericArgsRef<'tcx>),
         mut args: Vec<Expr>,
-        fun_span: js::Span,
+        (fun_span, named): (js::Span, Span),
         span: Span,
         out: &mut Vec<js::Stmt>,
     ) -> R<Expr> {
@@ -93,7 +94,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             (JsForm::Call(name), Some(this)) if !name.contains('#') => {
                 Expr::call(Expr::member(this, name).or_at(fun_span), args)
             }
-            (JsForm::Call(name), None) => Expr::call(self.js_ref(&name).or_at(fun_span), args),
+            (JsForm::Call(name), None) => Expr::call(self.binding_ref(&name, named).or_at(fun_span), args),
             (JsForm::New(name), None) => Expr::new_(self.js_ref(&name).or_at(fun_span), args),
             (JsForm::Get(name), Some(this)) if args.is_empty() && !name.contains('#') => Expr::member(this, name),
             // A class's static property, read at each call: `Notification.permission`.

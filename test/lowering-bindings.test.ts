@@ -4,7 +4,7 @@
 // its own, compiled and run.
 
 import { beforeAll, expect, test } from "bun:test";
-import { readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { runSync } from "./child";
 import { buildReact, compiler, fixture, root, run, target } from "./support";
@@ -636,6 +636,106 @@ pub use js::object::keys as names;
   const merged = (await import(join(dir, "assign.js"))).default({}, { a: 1 }, null, { b: 2 });
   expect(merged).toEqual({ a: 1, b: 2 });
   expect((await import(join(dir, "keys.js"))).names({ x: 1 })).toEqual(["x"]);
+});
+
+// ADR 0633: a caller that names a binding through the module that holds it
+// reads it through that module, as React's reconciler reads
+// `shared/assign` and `shared/ReactSharedInternals`: imported by that
+// module's export and read by that name, called with JS's arguments. A
+// binding's static is a module's `const` as a global's function is, and a
+// caller that names the binding itself reads it in place.
+test("a binding named through the module that holds it is read through it", async () => {
+  const dir = fixture("held-bindings");
+  writeFileSync(join(dir, "lib.rs"), `pub mod assign;
+pub mod direct;
+pub mod internals;
+pub mod keys;
+pub mod names;
+pub mod reconciler;
+
+pub struct Internals(core::marker::PhantomData<js::JsObject>);
+
+unsafe extern "Rust" {
+    #[cfg_attr(rust_js, rust_js::name = "ReactSharedInternals")]
+    #[link_name = "react#*.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE"]
+    pub safe static REACT_SHARED_INTERNALS: &'static Internals;
+}
+`);
+  writeFileSync(join(dir, "assign.rs"), `pub(crate) use js::object::assign;
+
+js::export_default!(assign);
+`);
+  writeFileSync(join(dir, "internals.rs"), `pub(crate) use crate::REACT_SHARED_INTERNALS;
+
+js::export_default!(REACT_SHARED_INTERNALS);
+`);
+  writeFileSync(join(dir, "keys.rs"), `pub use js::object::keys;
+`);
+  // Named through the module that holds it, re-exported from it.
+  writeFileSync(join(dir, "names.rs"), `pub use crate::keys::keys;
+pub use crate::keys::keys as names;
+`);
+  writeFileSync(join(dir, "reconciler.rs"), `use crate::Internals;
+use crate::assign::assign;
+use crate::internals::REACT_SHARED_INTERNALS;
+use js::Unknown;
+
+pub fn merged<'a>(target: &'a Unknown, source: &Unknown) -> &'a Unknown {
+    assign(target, &[Some(source)])
+}
+
+pub fn listed(object: &Unknown) -> Vec<String> {
+    crate::keys::keys(object)
+}
+
+pub fn merger() -> for<'a> fn(&'a Unknown, &[Option<&Unknown>]) -> &'a Unknown {
+    assign
+}
+
+pub fn internals() -> &'static Internals {
+    REACT_SHARED_INTERNALS
+}
+`);
+  writeFileSync(join(dir, "direct.rs"), `use crate::Internals;
+use js::Unknown;
+
+pub fn merged<'a>(target: &'a Unknown, source: &Unknown) -> &'a Unknown {
+    js::object::assign(target, &[Some(source)])
+}
+
+pub fn internals() -> &'static Internals {
+    crate::REACT_SHARED_INTERNALS
+}
+`);
+  // A stand-in for React, which shares its internals with its renderers.
+  mkdirSync(join(dir, "node_modules/react"), { recursive: true });
+  writeFileSync(join(dir, "node_modules/react/package.json"), '{ "name": "react", "type": "module", "main": "index.js" }\n');
+  writeFileSync(join(dir, "node_modules/react/index.js"), "export const __CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE = { H: null };\n");
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const internals = readFileSync(join(dir, "internals.js"), "utf8");
+  expect(internals).toContain('import * as react from "react";\n\nconst ReactSharedInternals = react.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE;\n\nexport default ReactSharedInternals;\n');
+  const reconciler = readFileSync(join(dir, "reconciler.js"), "utf8");
+  expect(reconciler).toContain('import assign from "./assign.js";\nimport ReactSharedInternals from "./internals.js";\nimport { keys } from "./keys.js";\n');
+  expect(reconciler).toContain("  return assign(target, source);\n");
+  expect(reconciler).toContain("  return keys(object);\n");
+  expect(reconciler).toContain("  return (target, sources) => assign(target, ...sources);\n");
+  expect(reconciler).toContain("  return ReactSharedInternals;\n");
+  expect(reconciler).not.toContain("Object.");
+  expect(reconciler).not.toContain('"react"');
+  expect(readFileSync(join(dir, "names.js"), "utf8")).toContain('\nexport { keys, keys as names } from "./keys.js";\n');
+  expect((await import(join(dir, "names.js"))).names({ z: 0 })).toEqual(["z"]);
+  // Named itself, it's read in place.
+  const direct = readFileSync(join(dir, "direct.js"), "utf8");
+  expect(direct).toContain("  return Object.assign(target, source);\n");
+  expect(direct).toContain("  return react.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE;\n");
+  expect(direct).not.toContain("./");
+  const lib = await import(join(dir, "reconciler.js"));
+  expect(lib.merged({ a: 1 }, { b: 2 })).toEqual({ a: 1, b: 2 });
+  expect(lib.merger()({}, [{ c: 3 }, null])).toEqual({ c: 3 });
+  expect(lib.listed({ x: 1, y: 2 })).toEqual(["x", "y"]);
+  const react = await import(join(dir, "node_modules/react/index.js"));
+  expect(lib.internals()).toBe(react.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE);
+  expect((await import(join(dir, "direct.js"))).internals()).toBe(lib.internals());
 });
 
 // ADR 0588: a binding says it may throw by the result it's declared with,

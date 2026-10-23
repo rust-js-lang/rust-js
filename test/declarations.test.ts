@@ -643,6 +643,31 @@ export const wrong: string = assign({ a: 1 }, { b: 2 });
   expect(errors.map((error) => error.slice(0, error.indexOf(":")))).toEqual(["use.ts(5,14)"]);
 });
 
+// A binding's static a module holds is declared as its type, and one a
+// module names through another that holds it is that module's, re-exported
+// (ADR 0633).
+test("declarations give a binding's static a module holds its type", () => {
+  buildReact();
+  const dir = fixture("declarations-held-statics");
+  writeFileSync(join(dir, "Cargo.toml"), '[package]\nname = "app"\nversion = "0.0.0"\nedition = "2024"\n');
+  writeFileSync(join(dir, "lib.rs"), "pub mod iterator;\npub mod keys;\npub mod names;\n");
+  writeFileSync(join(dir, "iterator.rs"), "pub(crate) use js::symbol::iterator;\n\njs::export_default!(iterator);\n");
+  writeFileSync(join(dir, "keys.rs"), "pub use js::object::keys;\n");
+  writeFileSync(join(dir, "names.rs"), "pub use crate::keys::keys as names;\n");
+  run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  expect(readFileSync(join(dir, "iterator.js"), "utf8")).toContain("\nconst iterator = Symbol.iterator;\n\nexport default iterator;\n");
+  expect(readFileSync(join(dir, "iterator.d.ts"), "utf8")).toContain("declare const iterator: symbol;\n\nexport default iterator;\n");
+  expect(readFileSync(join(dir, "names.d.ts"), "utf8")).toContain('export { keys as names } from "./keys.js";\n');
+  writeFileSync(join(dir, "use.ts"), `import iterator from "./iterator.js";
+import { names } from "./names.js";
+export const step: symbol = iterator;
+export const listed: string[] = names({ x: 1 });
+export const wrong: number = iterator;
+`);
+  const errors = typeChecked(dir, "use.ts");
+  expect(errors.map((error) => error.slice(0, error.indexOf(":")))).toEqual(["use.ts(5,14)"]);
+});
+
 // A parameter named as a word JS keeps, `new`, is declared as the JS names
 // it, `new$`: TypeScript reads no parameter `new`. Found by the pilot's
 // `create(new: &NewContact)` once every build wrote declarations.

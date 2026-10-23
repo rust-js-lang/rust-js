@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "held-unlisted",
+    breaks: "a library's manifest says nothing of the bindings its modules hold, so a consumer reads each in place",
+    file: "src/lower/library.rs",
+    find: "                export: binding.import()?.to_string(),\n",
+    replace: "                export: binding.import().filter(|_| false)?.to_string(),\n",
+    tests: ["test/cargo-link.test.ts", "-t", "holds a binding"],
+  },
+  {
     name: "library-crate-hash-unchecked",
     breaks: "a library's manifest is taken beside the metadata of another build of it",
     file: "src/lower/library.rs",

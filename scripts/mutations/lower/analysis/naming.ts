@@ -3,6 +3,22 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "held-read-imported-too",
+    breaks: "a module that reads a binding through the module that holds it imports what the binding reads as well, `import * as react from \"react\"`, unused",
+    file: "src/lower/analysis/naming.rs",
+    find: "            if !is_binding(tcx, def_id) || held.reads.contains_key(&expr.span) {\n",
+    replace: "            if !is_binding(tcx, def_id) {\n",
+    tests: ["test/lowering-bindings.test.ts", "-t", "named through the module"],
+  },
+  {
+    name: "held-import-named-by-module",
+    breaks: "a library's module's `const` is imported by its module's name, `internals`, not the `const`'s, `ReactSharedInternals`",
+    file: "src/lower/analysis/naming.rs",
+    find: "                _ if uses.named.contains_key(export_key) => uses.named[export_key].clone(),\n",
+    replace: "",
+    tests: ["test/cargo-link.test.ts", "-t", "holds a binding"],
+  },
+  {
     name: "reexport-renames-own",
     breaks: "`pub use self::current_time as time_now` renames the function itself, which then has no `currentTime`",
     file: "src/lower/analysis/naming.rs",

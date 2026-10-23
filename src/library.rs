@@ -55,6 +55,26 @@ pub struct Item {
     pub stepped: Vec<(u32, String)>,
 }
 
+/// A binding a module of the library holds as a value of its own, its
+/// `const` (ADR 0633), which a consumer naming the binding through that
+/// module imports.
+#[derive(Clone, Serialize, Deserialize)]
+pub struct Held {
+    /// rustc's `DefPathHash` of the binding.
+    pub binding: String,
+    /// rustc's `DefPathHash` of the module that holds it, which a
+    /// consumer's path names.
+    pub holder: String,
+    /// Its name in that module in Rust, which the path names it by.
+    pub rust_name: String,
+    /// The module whose file it's in.
+    pub module: Vec<String>,
+    /// What that file exports it by: `default`, or its name.
+    pub export: String,
+    /// Its `const`'s name there, which an import of it is named after.
+    pub name: String,
+}
+
 #[derive(Serialize, Deserialize)]
 pub struct Library {
     pub version: u32,
@@ -81,6 +101,10 @@ pub struct Library {
     /// only then.
     #[serde(default)]
     pub writers_take_options: bool,
+    /// The bindings its modules hold (ADR 0633). A library a compiler
+    /// wrote before held none a consumer read through it.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub held: Vec<Held>,
 }
 
 /// An item as a consumer imports it: from a JS file, relative to its own
@@ -98,6 +122,16 @@ pub struct Imported {
     pub stepped: Vec<(u32, String)>,
 }
 
+/// A binding a library's module holds as a consumer imports it: from a JS
+/// file, relative to its own output, by its export (ADR 0633).
+#[derive(Clone)]
+pub struct HeldImport {
+    pub binding: String,
+    pub from: String,
+    pub export: String,
+    pub name: String,
+}
+
 /// What one library gives its consumers.
 #[derive(Default, Clone)]
 pub struct Exports {
@@ -110,6 +144,9 @@ pub struct Exports {
     pub writers_take_options: bool,
     pub items: HashMap<String, Imported>,
     pub impls: HashSet<String>,
+    /// Each binding a module holds, by the module's key and the binding's
+    /// name in it.
+    pub held: HashMap<(String, String), HeldImport>,
 }
 
 #[derive(Default)]
@@ -162,17 +199,19 @@ impl Dependencies {
                 impls: library.impls.into_iter().collect(),
                 ..Exports::default()
             };
-            for item in library.items {
-                let module = manifest
-                    .modules
-                    .iter()
-                    .find(|m| m.module == item.module)
+            // Where a module's JS is, from the consumer's.
+            let specifier = |path: &Vec<String>| -> Result<String, String> {
+                let module = (manifest.modules.iter())
+                    .find(|m| &m.module == path)
                     .ok_or("dependency export references a missing module")?;
                 if !manifest.artifacts.iter().any(|a| a.file == module.file) {
                     return Err("dependency module is not a fingerprinted artifact".into());
                 }
+                Ok(crate::paths::specifier(parent, &module.file))
+            };
+            for item in library.items {
                 let imported = Imported {
-                    from: crate::paths::specifier(parent, &module.file),
+                    from: specifier(&item.module)?,
                     export: item.export,
                     member: item.member,
                     drops: item.drops,
@@ -183,6 +222,17 @@ impl Dependencies {
                     stepped: item.stepped,
                 };
                 if exports.items.insert(item.key, imported).is_some() {
+                    return Err("duplicate dependency export".into());
+                }
+            }
+            for held in library.held {
+                let imported = HeldImport {
+                    binding: held.binding,
+                    from: specifier(&held.module)?,
+                    export: held.export,
+                    name: held.name,
+                };
+                if exports.held.insert((held.holder, held.rust_name), imported).is_some() {
                     return Err("duplicate dependency export".into());
                 }
             }

@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "held-call-named-at-call",
+    breaks: "a binding's call is asked where it's read by the call's span, not its path's, so one named through the module that holds it is read in place",
+    file: "src/lower/mir/calls.rs",
+    find: "            false => (self.thir_call(def_id, span)).map_or(span, |(fun, _)| self.thir[fun].span),\n",
+    replace: "            false => (self.thir_call(def_id, span)).map_or(span, |_| span),\n",
+    tests: ["test/lowering-bindings.test.ts", "-t", "named through the module"],
+  },
+  {
     name: "defined-member-refused",
     breaks: "`js::is_defined(Clock::now)` of a method of a global's type is refused",
     file: "src/lower/mir/calls.rs",

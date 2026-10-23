@@ -1,10 +1,11 @@
 //! Translate checked Rust identities to the library contract (ADR 0100): the
 //! items a library exports, and the ones a consumer imports.
 
+use super::bindings::HeldBinding;
 use super::{FnInfo, module_path};
-use crate::library::{Dependencies, Imported, Item, Library, VERSION};
+use crate::library::{Dependencies, Held, HeldImport, Imported, Item, Library, VERSION};
 use rustc_middle::ty::TyCtxt;
-use rustc_span::def_id::{DefId, LOCAL_CRATE};
+use rustc_span::def_id::{DefId, LOCAL_CRATE, LocalModId};
 use std::collections::{BTreeSet, HashMap, HashSet};
 
 /// What a library and its consumers both call an item: rustc's `DefPathHash`
@@ -51,12 +52,14 @@ pub(super) struct Contracts<'a> {
     pub(super) writers_take_options: bool,
 }
 
-/// The items another crate can reach, and the impls it calls through them.
+/// The items another crate can reach, and the impls it calls through them;
+/// and the bindings its modules hold, which a consumer naming one through
+/// its module reads through it (ADR 0633).
 pub(super) fn exports(
     tcx: TyCtxt<'_>,
     functions: &HashMap<DefId, FnInfo>,
     contracts: &Contracts<'_>,
-    trait_impls: &[DefId],
+    (trait_impls, held): (&[DefId], &HashMap<LocalModId, Vec<HeldBinding>>),
     dependencies: &Dependencies,
 ) -> Library {
     let Contracts {
@@ -106,6 +109,20 @@ pub(super) fn exports(
         .map(|&id| key(tcx, id))
         .collect();
     impls.sort();
+    let mut held: Vec<Held> = (held.iter())
+        .flat_map(|(&module, bindings)| bindings.iter().map(move |binding| (module, binding)))
+        .filter_map(|(module, binding)| {
+            Some(Held {
+                binding: key(tcx, binding.binding),
+                holder: key(tcx, module.to_def_id()),
+                rust_name: binding.ident.to_string(),
+                module: module_path(tcx, module),
+                export: binding.import()?.to_string(),
+                name: binding.name.clone(),
+            })
+        })
+        .collect();
+    held.sort_by(|a, b| (&a.module, &a.rust_name).cmp(&(&b.module, &b.rust_name)));
     Library {
         version: VERSION,
         name: crate_name.to_string(),
@@ -125,6 +142,7 @@ pub(super) fn exports(
         inputs: Vec::new(),
         keeps_capacity: *keeps_capacity,
         writers_take_options: *writers_take_options,
+        held,
     }
 }
 
@@ -203,6 +221,19 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
             .libraries
             .get(self.tcx.crate_name(id.krate).as_str())?;
         library.items.get(&key(self.tcx, id))
+    }
+
+    /// How a library's `module` holds `binding` by its name `ident` there,
+    /// if it does (ADR 0633).
+    pub(super) fn held(&self, module: DefId, ident: rustc_span::Symbol, binding: DefId) -> Option<&'a HeldImport> {
+        let library = (self.dependencies.libraries).get(self.tcx.crate_name(module.krate).as_str())?;
+        let held = library.held.get(&(key(self.tcx, module), ident.to_string()))?;
+        (held.binding == key(self.tcx, binding)).then_some(held)
+    }
+
+    /// Every binding the libraries' modules hold, as the imports they'd be.
+    pub(super) fn all_held(&self) -> impl Iterator<Item = &'a HeldImport> {
+        (self.dependencies.libraries.values()).flat_map(|library| library.held.values())
     }
 
     /// Why `id` can't be used, if it's a library's its manifest doesn't list.

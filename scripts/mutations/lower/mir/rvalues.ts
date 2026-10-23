@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "held-fn-pointer-in-place",
+    breaks: "a binding taken as a `fn` through the module that holds it is read in place, `Object.assign(target, ...sources)`",
+    file: "src/lower/mir/rvalues.rs",
+    find: "                                Operand::Constant(c) => c.span,\n",
+    replace: "                                Operand::Constant(_) => rustc_span::DUMMY_SP,\n",
+    tests: ["test/lowering-bindings.test.ts", "-t", "named through the module"],
+  },
+  {
     name: "binding-reified-as-arrow",
     breaks: "a binding taken as a `fn` is its arrow, which reads the global at each call",
     file: "src/lower/mir/rvalues.rs",

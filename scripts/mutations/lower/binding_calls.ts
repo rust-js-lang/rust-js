@@ -62,8 +62,8 @@ export const mutations: Mutation[] = [
     name: "global-call-on-window",
     breaks: "a global function binding, `global::fetch(url)`, is called as `window.fetch(url)`, which a worker or Node has no `window` for",
     file: "src/lower/binding_calls.rs",
-    find: "            (JsForm::Call(name), None) => Expr::call(self.js_ref(&name).or_at(fun_span), args),",
-    replace: "            (JsForm::Call(name), None) => Expr::call(self.js_ref(&format!(\"window.{name}\")).or_at(fun_span), args),",
+    find: "            (JsForm::Call(name), None) => Expr::call(self.binding_ref(&name, named).or_at(fun_span), args),",
+    replace: "            (JsForm::Call(name), None) => Expr::call(self.binding_ref(&format!(\"window.{name}\"), named).or_at(fun_span), args),",
     tests: ["test/webapi-bindings.test.ts", "-t", "the global scope's functions are called bare"],
   },
   {

@@ -301,7 +301,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && !tcx.is_mutable_static(def_id)
         {
             let referred = match tcx.is_foreign_item(def_id) {
-                true => Some(self.js_global(def_id)),
+                true => Some(self.js_global(def_id, c.span)),
                 false => self.krate.fns.contains_key(&def_id).then(|| self.fn_ref(def_id)),
             };
             if let Some(referred) = referred {
@@ -342,9 +342,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// A JS global a binding names (ADR 0021), read as its name, as
     /// TypeScript's `declare var` is: whether the host has it is
-    /// `js::is_defined`'s (ADR 0597).
-    fn js_global(&self, def_id: rustc_span::def_id::DefId) -> Expr {
-        self.js_ref(&bindings::js_name(self.tcx, def_id))
+    /// `js::is_defined`'s (ADR 0597). Read where its path names it,
+    /// at `named`, through the module that holds it (ADR 0633).
+    fn js_global(&self, def_id: rustc_span::def_id::DefId, named: Span) -> Expr {
+        self.binding_ref(&bindings::js_name(self.tcx, def_id), named)
     }
 
     /// The static a constant points to the start of: `&LOG`, a promoted

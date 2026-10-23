@@ -36,6 +36,9 @@ struct Pass {
     /// Which items each module uses from another, and which JS imports.
     references: HashSet<(LocalModId, DefId)>,
     package_uses: HashSet<(LocalModId, Export)>,
+    /// The bindings each module reads through another that holds them
+    /// (ADR 0633).
+    held: HashSet<(LocalModId, LocalModId, String, bool, DefId)>,
 }
 
 /// Lower every function, grouped by module. Reports all unsupported
@@ -90,6 +93,7 @@ pub fn lower_crate<'tcx>(
         quiet_locals,
         named_expressions,
         local_functions,
+        held,
     } = analyze_crate(tcx, all_bodies, initializers, dependencies, export_library, std_bodies)?;
     // Each module's default export, which a module of the crate imports as
     // its default, not by a name of its own (ADR 0251).
@@ -239,6 +243,7 @@ pub fn lower_crate<'tcx>(
         fns: &fns,
         imports: &import_names,
         required: &required,
+        held_reads: &held.reads,
         trait_impls: &trait_impls,
         serde_attrs,
         pretty_debug,
@@ -421,6 +426,7 @@ pub fn lower_crate<'tcx>(
         let initializer = initialized.iter().any(|body| body.def_id == def_id);
         pass.references.extend(lowered.dependencies.references.drain());
         pass.package_uses.extend(lowered.dependencies.package_uses.drain());
+        pass.held.extend(lowered.dependencies.held.drain());
         // A dictionary given nothing is its module's `const`, what its entries
         // share beside it; one given something, its function, its cache a
         // `const` beside it (ADR 0592).
@@ -634,6 +640,12 @@ pub fn lower_crate<'tcx>(
             .or_default()
             .insert((info.module, name, defaulted.contains(&id), local));
     }
+    // And a binding it reads through another that holds it, by its export
+    // there, named as the importer's `use` names it (ADR 0633).
+    for (from, holder, name, default, binding) in &pass.held {
+        let local = renamed_in(tcx, *from).remove(binding).unwrap_or_else(|| name.clone());
+        (targets.entry(*from).or_default()).insert((*holder, name.clone(), *default, local));
+    }
     // What another module than its own calls, which stays a function.
     let called_elsewhere: HashSet<DefId> = (pass.references.iter())
         .filter(|&&(from, id)| fns[&id].module != from)
@@ -716,6 +728,8 @@ pub fn lower_crate<'tcx>(
                     );
                 }
             }
+            // What it holds of a binding as a value of its own (ADRs 0622, 0633).
+            let module_held = held.modules.get(&module).map_or(&[][..], Vec::as_slice);
             let mut default_export = None;
             let mut default_declared = false;
             // Another module's function, re-exported as the default (ADR 0240).
@@ -735,9 +749,14 @@ pub fn lower_crate<'tcx>(
                     Some(function) if unset && fns.get(&function).is_some_and(|info| info.owner.is_none()) => {
                         default_from = Some(function);
                     }
-                    // A global binding, its `const` (ADR 0622).
-                    Some(function) if unset && super::bindings::global_function(tcx, function).is_some() => {
-                        default_export = Some(function);
+                    // A binding, its `const` (ADRs 0622, 0633), or one it names
+                    // through another module that holds it, re-exported.
+                    Some(function) if unset && super::bindings::held_path(tcx, function).is_some() => {
+                        let reexported = (module_held.iter())
+                            .any(|held| held.binding == function && held.default && held.through.is_some());
+                        if !reexported {
+                            default_export = Some(function);
+                        }
                     }
                     _ => {
                         tcx.dcx().span_err(
@@ -747,19 +766,23 @@ pub fn lower_crate<'tcx>(
                     }
                 }
             }
-            let (reexports, aliases) = reexports(tcx, module, &fns, &paths, default_from);
-            // A global binding it names as a value, its `const` (ADR 0622).
-            let globals = super::bindings::bound_globals(tcx, module, default_export);
-            const_items
-                .entry(module)
-                .or_default()
-                .extend(globals.into_iter().map(|bound| js::Const {
-                    name: bound.name,
-                    value: super::global(&bound.global),
-                    export: bound.export,
-                    mutable: false,
-                    span: bound.span.map_or(js::Span::NONE, |span| sources.span(span)),
-                }));
+            let (reexports, aliases) = reexports(tcx, module, &fns, &paths, (default_from, module_held));
+            // A binding it holds, its `const` of what the binding reads (ADRs
+            // 0622, 0633); not one it re-exports from another that holds it.
+            let names = import_names.get(&module);
+            const_items.entry(module).or_default().extend(
+                (module_held.iter())
+                    .filter(|held| held.through.is_none())
+                    .map(|held| js::Const {
+                        name: held.name.clone(),
+                        value: super::path_read(&held.path, &required, |export| {
+                            names.expect("its imports")[export].clone()
+                        }),
+                        export: held.export,
+                        mutable: false,
+                        span: held.span.map_or(js::Span::NONE, |span| sources.span(span)),
+                    }),
+            );
             let no_plain = HashSet::new();
             let plain_ref_cells = plain_ref_cells.get().unwrap_or(&no_plain);
             let declarations = super::declarations::module(
@@ -770,7 +793,7 @@ pub fn lower_crate<'tcx>(
                 &reexports,
                 &aliases,
                 plain_ref_cells,
-                &fns,
+                (&fns, module_held),
             );
             let mut lowered = LoweredModule {
                 path: paths[&module].clone(),
@@ -886,7 +909,7 @@ pub fn lower_crate<'tcx>(
                     keeps_capacity,
                     writers_take_options,
                 },
-                &trait_impls,
+                (&trait_impls, &held.modules),
                 dependencies,
             )
         }),
@@ -907,11 +930,30 @@ fn reexports(
     module: LocalModId,
     fns: &HashMap<DefId, FnInfo>,
     paths: &HashMap<LocalModId, Vec<String>>,
-    default_from: Option<DefId>,
+    (default_from, held): (Option<DefId>, &[super::bindings::HeldBinding]),
 ) -> (Vec<Reexport>, Vec<(String, String)>) {
     let mut grouped: BTreeMap<Vec<String>, Vec<(String, String)>> = BTreeMap::new();
     let mut specified: BTreeMap<String, Vec<(String, String)>> = BTreeMap::new();
     let mut aliases = Vec::new();
+    // A binding it names through another module that holds it, that
+    // module's export, by its name and as its default (ADR 0633).
+    for held in held {
+        if let Some(super::bindings::HeldRead {
+            holder: super::bindings::Holder::Module(holder),
+            import,
+            ..
+        }) = &held.through
+            && let Some(from) = paths.get(holder)
+        {
+            let named = grouped.entry(from.clone()).or_default();
+            if held.export {
+                named.push((import.clone(), held.name.clone()));
+            }
+            if held.default {
+                named.push((import.clone(), "default".to_string()));
+            }
+        }
+    }
     if let Some(info) = default_from.and_then(|function| fns.get(&function))
         && let Some(from) = paths.get(&info.module)
     {

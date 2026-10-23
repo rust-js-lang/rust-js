@@ -24,15 +24,29 @@ pub(super) struct JsUses {
     pub(super) bound_to: HashMap<Export, HashSet<DefId>>,
     /// The exports read through `require(module)`, not imported (ADR 0305).
     pub(super) required: HashSet<Export>,
+    /// An import named after what the module it's from names it: the
+    /// `const` a library's module holds a binding as (ADR 0633).
+    pub(super) named: HashMap<Export, String>,
 }
 
-pub(super) fn js_uses<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&Body<'tcx>]) -> JsUses {
+pub(super) fn js_uses<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&Body<'tcx>], held: &bindings::Held) -> JsUses {
     let mut uses = JsUses {
         globals: HashSet::new(),
         imported: BTreeMap::new(),
         bound_to: HashMap::new(),
         required: HashSet::new(),
+        named: HashMap::new(),
     };
+    // What a module's `const` of a binding reads (ADR 0633), `import * as
+    // react from "react"` of `react.__CLIENT_INTERNALS..`.
+    for (&module, bindings) in &held.modules {
+        for binding in bindings.iter().filter(|binding| binding.through.is_none()) {
+            if let Some((export, _)) = js_import(&binding.path) {
+                uses.bound_to.entry(export.clone()).or_default().insert(binding.binding);
+                uses.imported.entry(export).or_default().insert(module);
+            }
+        }
+    }
     for body in all_bodies {
         let module = crate::lower::body_module(tcx, body.def_id);
         // What `js::import!` imports when it's asked for, which nothing
@@ -60,7 +74,9 @@ pub(super) fn js_uses<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&Body<'tcx>]) -> Js
                 }
                 _ => continue,
             };
-            if !is_binding(tcx, def_id) {
+            // One read through the module that holds it is that module's
+            // (ADR 0633).
+            if !is_binding(tcx, def_id) || held.reads.contains_key(&expr.span) {
                 continue;
             }
             match js_path(tcx, def_id).as_deref().map(|path| (path, js_import(path))) {
@@ -183,6 +199,7 @@ pub(super) fn name_imports(
                 .get(export_key)
                 .is_some_and(|held| !held.iter().any(|id| itself(&id)));
             let base = match (export.as_str(), held_by, holder) {
+                _ if uses.named.contains_key(export_key) => uses.named[export_key].clone(),
                 ("default", Some(name), _) => name,
                 ("default", None, Some(module)) if statics => crate::lower::upper_first(&camel_case(&module)),
                 ("*", _, Some(module)) => module,

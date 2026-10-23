@@ -510,6 +510,9 @@ pub(super) struct AnalyzedCrate<'a, 'tcx> {
     /// The functions written in a function's body, each a function
     /// declaration there (ADR 0308).
     pub local_functions: HashMap<DefId, rustc_span::Span>,
+    /// What each module holds of a binding, and where a path reads one
+    /// through it (ADR 0633).
+    pub held: bindings::Held,
 }
 
 pub(super) fn analyze_crate<'a, 'tcx>(
@@ -607,13 +610,23 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     let all_bodies = &all_bodies;
     let closures: HashMap<DefId, &Body<'tcx>> = closures.into_iter().map(|b| (b.def_id, b)).collect();
 
-    let mut uses = js_uses(tcx, all_bodies);
+    // What each module holds of a binding, and where a path reads one
+    // through it (ADR 0633).
+    let held = bindings::held(tcx, &foreign);
+    let mut uses = js_uses(tcx, all_bodies, &held);
     // What the crate's libraries export (ADR 0100) is named before lowering,
     // and imported by the modules that turn out to use it.
     for imported in foreign.all() {
         let export = (imported.from.clone(), imported.export.clone());
         uses.bound_to.entry(export.clone()).or_default();
         uses.imported.entry(export).or_default();
+    }
+    // A binding a library's module holds, named after its `const` there.
+    for held in foreign.all_held() {
+        let export = (held.from.clone(), held.export.clone());
+        uses.bound_to.entry(export.clone()).or_default();
+        uses.imported.entry(export.clone()).or_default();
+        uses.named.insert(export, held.name.clone());
     }
 
     // `const` items (ADR 0031) and statics (ADR 0096), with the values rustc
@@ -899,6 +912,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         quiet_locals,
         named_expressions,
         local_functions,
+        held,
     })
 }
 

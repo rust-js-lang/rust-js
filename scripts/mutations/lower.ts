@@ -3,6 +3,14 @@ import type { Mutation } from "../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "required-imported",
+    breaks: "a `#[rust_js::require]` binding is read as an import that was never made",
+    file: "src/lower.rs",
+    find: "        Some((export, rest)) if required.contains(&export) => {\n",
+    replace: "        Some((export, rest)) if false && required.contains(&export) => {\n",
+    tests: ["test/bindings.test.ts", "-t", "a required binding"],
+  },
+  {
     name: "tagged-variant-made-with-tag",
     breaks: "a discriminated union's variant is made `{ TAG: \"fulfilled\", value }`",
     file: "src/lower.rs",

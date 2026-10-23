@@ -304,21 +304,112 @@ export default "19.3.0";
 
 Another module's function as the default is re-exported:
 `js::export_default!(super::page::page);` is
-`export { page as default } from "./page.js";`. A global's binding the
-module `use`s is its `const`, as a `pub use` of one is
-([ADR 0622](../../decisions/0622-a-global-binding-a-module-names-is-its-const.md)):
+`export { page as default } from "./page.js";`. A binding the module
+`use`s, a global's function or a binding's static, is its `const`, as a
+`pub use` of one is
+([ADRs 0622](../../decisions/0622-a-global-binding-a-module-names-is-its-const.md),
+[0633](../../decisions/0633-a-binding-named-through-a-module-is-read-through-it.md)).
+A static's `const` is named as any item is, by its `#[rust_js::name]`
+where JS's name isn't its Rust one; what its path needs is imported,
+`react#*` the module's namespace.
+
+A module that names a binding through a module that holds it, its
+default or a `pub use`, reads it through that module, as it reads a
+function: it imports that module's default, or the name it exports, and
+calls it by that name, with the binding's own arguments, as upstream's
+`assign(..)` is. One that names the binding itself, `js::object::assign`,
+reads it in place:
 
 ```rust
-use js::object::assign;
+// src/lib.rs
+pub mod assign;
+pub mod internals;
+pub mod reconciler;
+
+pub struct Internals(core::marker::PhantomData<js::JsObject>);
+
+unsafe extern "Rust" {
+    #[cfg_attr(rust_js, rust_js::name = "ReactSharedInternals")]
+    #[link_name = "react#*.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE"]
+    pub safe static REACT_SHARED_INTERNALS: &'static Internals;
+}
+```
+
+```rust
+// src/assign.rs
+pub(crate) use js::object::assign;
 
 js::export_default!(assign);
 ```
 
+```rust
+// src/internals.rs
+pub(crate) use crate::REACT_SHARED_INTERNALS;
+
+js::export_default!(REACT_SHARED_INTERNALS);
+```
+
+```rust
+// src/reconciler.rs
+use crate::Internals;
+use crate::assign::assign;
+use crate::internals::REACT_SHARED_INTERNALS;
+use js::Unknown;
+
+pub fn merged<'a>(target: &'a Unknown, source: &Unknown) -> &'a Unknown {
+    assign(target, &[Some(source)])
+}
+
+pub fn internals() -> &'static Internals {
+    REACT_SHARED_INTERNALS
+}
+
+pub fn direct<'a>(target: &'a Unknown, source: &Unknown) -> &'a Unknown {
+    js::object::assign(target, &[Some(source)])
+}
+```
+
 ```js
+// src/assign.js
 const assign = Object.assign;
 
 export default assign;
 ```
+
+```js
+// src/internals.js
+import * as react from "react";
+
+const ReactSharedInternals = react.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE;
+
+export default ReactSharedInternals;
+```
+
+```js
+// src/reconciler.js
+import assign from "./assign.js";
+import ReactSharedInternals from "./internals.js";
+
+export function merged(target, source) {
+  return assign(target, source);
+}
+
+export function internals() {
+  return ReactSharedInternals;
+}
+
+export function direct(target, source) {
+  return Object.assign(target, source);
+}
+```
+
+A `pub use` of a binding through a module that holds it is that module's,
+re-exported, `export { keys } from "./keys.js";`; across crates, a
+library's manifest says what each of its modules holds, which a crate
+that names a binding through one imports from the library's JS. A
+library's module is named by a crate that uses it only where it's `pub`,
+so its `pub use` of a binding exports it by its name as well as the
+default, as a `pub` function the macro names is.
 
 ## Import a module for its effect
 

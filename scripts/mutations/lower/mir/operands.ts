@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "held-static-in-place",
+    breaks: "a binding's static named through the module that holds it is read in place, `react.__CLIENT_INTERNALS..`",
+    file: "src/lower/mir/operands.rs",
+    find: "        self.binding_ref(&bindings::js_name(self.tcx, def_id), named)\n",
+    replace: "        self.js_ref(&bindings::js_name(self.tcx, def_id))\n",
+    tests: ["test/lowering-bindings.test.ts", "-t", "named through the module"],
+  },
+  {
     name: "mir-const-param-unread",
     breaks: "a const generic parameter is a constant MIR can't name, not its caller's value",
     file: "src/lower/mir/operands.rs",

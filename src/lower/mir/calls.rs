@@ -206,11 +206,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let value = self.value_expr(value, span)?;
             exprs.push(self.binding_arg(def_id, i, value, ty));
         }
+        // Where its path names it, which says where it's read (ADR 0633),
+        // looked for where any path is read through a module.
+        let named = match self.krate.held_reads.is_empty() {
+            true => span,
+            false => (self.thir_call(def_id, span)).map_or(span, |(fun, _)| self.thir[fun].span),
+        };
         let js_span = self.js_span(span);
         Ok(Value::Expr(self.binding_values(
             (def_id, generic_args),
             exprs,
-            js_span,
+            (js_span, named),
             span,
             out,
         )?))

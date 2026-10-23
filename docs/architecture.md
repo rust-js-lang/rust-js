@@ -296,6 +296,7 @@ outside its owner, and how much each module knows of the rest.
 | `&mut`s to values JS can't change in place, given to a call: a box, `{ value: place }`, and what's copied back (ADR 0074) | `mut_refs.rs` | `boxed`, `copied_back`, `mut_borrowed`, `nested_mut_object` |
 | Writing to a `Formatter`: its JS; of MIR, which locals are it and its builders (ADRs 0054, 0136) | `display.rs`; `mir/writer.rs` | `formatter_answer`, `written_of`, `builder_written`, `mir_writer_call` |
 | What a function or a binding is in JS | `items.rs` | `fn_ref`, `js_ref`, `resolve_instance` |
+| Where a binding is read: in place, or through the module a caller's path names it through that holds it, and what each module holds of one (ADRs 0622, 0633) | `bindings.rs`; `items.rs` | `held`, `held_path`; `binding_ref` |
 | Dictionaries and evidence: where a given one is, by its bound (`EvidenceQuery`), and its JS | `traits/routes.rs`, `traits/dictionaries.rs`, `traits/impls.rs` | `dictionary`, `evidence_for`, `has_evidence`, `impl_call` |
 | What a generic function was given: dictionaries, a copied default's arguments, type facts (ADRs 0049, 0145) | `traits/given.rs` | `in_impl_terms`, `given_evidence`, `given_type_fact`, `resolve_self_instance`, `enter_default` |
 | The box of a `Some` that looks like `None` (ADR 0051) | `std_types/option.rs` | `some`, `some_value`, `some_literal`, `is_some_box` |
@@ -399,7 +400,7 @@ types needed to enforce real invariants; avoid parallel copies of every tree.
 
 A library rust-js compiles is JS of its own, with a versioned manifest of
 what crosses to its consumers: exported representations, trait evidence,
-symbol identities, and runtime ABI
+symbol identities, the bindings its modules hold (ADR 0633), and runtime ABI
 ([ADR 0100](decisions/0100-separate-crates.md)); Cargo runs each crate's
 compilation ([ADR 0101](decisions/0101-cargo-workspace-wrapper.md)). rustc
 metadata alone is not a substitute for JavaScript linkage information. A
