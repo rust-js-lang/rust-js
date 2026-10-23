@@ -673,8 +673,8 @@ export const mutations: Mutation[] = [
     name: "else-if-links-unheld",
     breaks: "an `else if` of an arm that goes on isn't held a link, so its `else` goes past a `return`",
     file: "src/prepare.rs",
-    find: "            chained.insert(els as *const Vec<Stmt>);\n",
-    replace: "            let _ = els;\n",
+    find: "    let link = slot == js::Slot::Else\n",
+    replace: "    let link = slot == js::Slot::Block\n",
     tests: ["test/lowering-written-branches.test.ts", "-t", "an else-if chain keeps its else"],
   },
   {

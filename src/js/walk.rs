@@ -10,6 +10,7 @@ macro_rules! walks {
     (
         $([$($m:tt)*])?
         lists: $lists:ident($list:ty),
+        slotted: $slotted:ident,
         exprs: $exprs:ident,
         expr: $expr:ident,
         cases: $cases:ident,
@@ -18,25 +19,30 @@ macro_rules! walks {
     ) => {
         /// `stmts`, and each list nested in its statements, not in its closures.
         pub fn $lists(stmts: $list, f: &mut dyn FnMut($list)) {
-            f(stmts);
+            $slotted(stmts, Slot::Block, &mut |list, _| f(list));
+        }
+
+        /// `$lists`, each list given where it is, `stmts` at `slot`.
+        pub fn $slotted(stmts: $list, slot: Slot, f: &mut dyn FnMut($list, Slot)) {
+            f(stmts, slot);
             for stmt in stmts.$iter() {
                 match & $($($m)*)? stmt.kind {
                     StmtKind::If(_, a, b) => {
-                        $lists(a, f);
+                        $slotted(a, Slot::Block, f);
                         if let Some(b) = b {
-                            $lists(b, f);
+                            $slotted(b, Slot::Else, f);
                         }
                     }
                     StmtKind::While { body, .. }
                     | StmtKind::ForOf { body, .. }
                     | StmtKind::For { body, .. }
-                    | StmtKind::Labeled(_, body) => $lists(body, f),
+                    | StmtKind::Labeled(_, body) => $slotted(body, Slot::Block, f),
                     StmtKind::Switch { cases, default, .. } => {
-                        $cases(cases, default).for_each(|body| $lists(body, f));
+                        $cases(cases, default).for_each(|body| $slotted(body, Slot::Block, f));
                     }
                     StmtKind::Try(a, b) | StmtKind::TryCatch(a, _, b) => {
-                        $lists(a, f);
-                        $lists(b, f);
+                        $slotted(a, Slot::Block, f);
+                        $slotted(b, Slot::Block, f);
                     }
                     // A function's, as a closure's, are its own.
                     StmtKind::Const(..)
@@ -192,8 +198,17 @@ macro_rules! walks {
     };
 }
 
+/// Where a list of statements is: an `if`'s `else`, or another block, a
+/// function's body, a branch's, a loop's or a case's.
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub enum Slot {
+    Block,
+    Else,
+}
+
 walks! {
     lists: each_list(&[Stmt]),
+    slotted: each_list_in,
     exprs: each_expr,
     expr: each,
     cases: case_lists,
@@ -204,6 +219,7 @@ walks! {
 walks! {
     [mut]
     lists: statement_lists(&mut Vec<Stmt>),
+    slotted: statement_lists_in,
     exprs: each_expr_mut,
     expr: each_mut,
     cases: case_lists_mut,

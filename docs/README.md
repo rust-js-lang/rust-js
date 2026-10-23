@@ -306,7 +306,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0234 A component of an element's props is an `ElementType`, rendered as a tag](decisions/0234-element-type.md)
 - [0235 A child shown only if a test holds is `test && child`, where the test can't render](decisions/0235-children-shown-if.md)
 - [0236 What JSX makes is `JSX::Element`, TypeScript's `JSX.Element`](decisions/0236-jsx-element.md)
-- [0237 An `if` whose branch leaves has no `else`](decisions/0237-no-else-after-leaving.md) *(amended by 0683: an `else if` of an arm that goes on stays one)*
+- [0237 An `if` whose branch leaves has no `else`](decisions/0237-no-else-after-leaving.md) *(amended by 0683: an `else if` of an arm that goes on stays one; amended: which `else` is a link is the walk's to say)*
 - [0238 A value kept for good is the value; children are kept as JS values](decisions/0238-kept-values-and-children.md)
 - [0239 A local of a component's function type is that component as a tag](decisions/0239-local-components.md)
 - [0240 A `pub use` of another module's function is re-exported from it](decisions/0240-reexports.md)

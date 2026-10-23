@@ -15,9 +15,17 @@ export const mutations: Mutation[] = [
     name: "walks-skip-switches",
     breaks: "a list walk skips a `switch`'s cases",
     file: "src/js/walk.rs",
-    find: "                        $cases(cases, default).for_each(|body| $lists(body, f));\n",
+    find: "                        $cases(cases, default).for_each(|body| $slotted(body, Slot::Block, f));\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^temporaries_taken_apart.rs$"],
     snapshots: true,
+  },
+  {
+    name: "else-slot-unsaid",
+    breaks: "the walk says an `if`'s `else` is where it is",
+    file: "src/js/walk.rs",
+    find: "                            $slotted(b, Slot::Else, f);",
+    replace: "                            $slotted(b, Slot::Block, f);",
+    tests: ["test/lowering-written-branches.test.ts", "-t", "an else-if chain keeps its else"],
   },
 ];

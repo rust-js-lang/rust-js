@@ -122,20 +122,25 @@ pub fn returning_its_call(value: &mut Expr) {
 /// a closure's body too, and a function's declared in them, `function
 /// inner() { .. }` (ADR 0308): for a pass that changes them. Each once.
 pub fn each_block_mut(stmts: &mut Vec<Stmt>, f: &mut dyn FnMut(&mut Vec<Stmt>)) {
+    each_slotted_block_mut(stmts, &mut |list, _| f(list));
+}
+
+/// `each_block_mut`, each list given where it is (`Slot`).
+fn each_slotted_block_mut(stmts: &mut Vec<Stmt>, f: &mut dyn FnMut(&mut Vec<Stmt>, Slot)) {
     own_blocks(stmts, f);
     // Each closure, however deep, a declared function's too.
     each_expr_mut(stmts, &mut |e| closure_blocks(e, f));
 }
 
 /// `each_block_mut` of an expression's closures, a constant's value's.
-fn each_block_in_mut(value: &mut Expr, f: &mut dyn FnMut(&mut Vec<Stmt>)) {
+fn each_block_in_mut(value: &mut Expr, f: &mut dyn FnMut(&mut Vec<Stmt>, Slot)) {
     value.each_mut(&mut |e| closure_blocks(e, f));
 }
 
 /// `stmts`' own lists, and those of the functions declared in them.
-fn own_blocks(stmts: &mut Vec<Stmt>, f: &mut dyn FnMut(&mut Vec<Stmt>)) {
-    statement_lists(stmts, &mut |list| {
-        f(list);
+fn own_blocks(stmts: &mut Vec<Stmt>, f: &mut dyn FnMut(&mut Vec<Stmt>, Slot)) {
+    statement_lists_in(stmts, Slot::Block, &mut |list, slot| {
+        f(list, slot);
         for stmt in list.iter_mut() {
             if let StmtKind::Function(function) = &mut stmt.kind {
                 own_blocks(&mut function.body, f);
@@ -145,7 +150,7 @@ fn own_blocks(stmts: &mut Vec<Stmt>, f: &mut dyn FnMut(&mut Vec<Stmt>)) {
 }
 
 /// The lists of `e`, if it's a closure, its own, not its closures'.
-fn closure_blocks(e: &mut Expr, f: &mut dyn FnMut(&mut Vec<Stmt>)) {
+fn closure_blocks(e: &mut Expr, f: &mut dyn FnMut(&mut Vec<Stmt>, Slot)) {
     match &mut e.kind {
         ExprKind::Arrow(_, body) | ExprKind::AsyncArrow(_, body) => own_blocks(body, f),
         ExprKind::Function(function) => own_blocks(&mut function.body, f),
@@ -577,13 +582,19 @@ pub fn each_item_expr_mut(items: &mut [Item], f: &mut dyn FnMut(&mut Expr)) {
 /// module runs when it's loaded, its functions' and methods' bodies, and
 /// each closure's, a constant's too.
 pub fn each_item_block_mut(items: &mut [Item], f: &mut dyn FnMut(&mut Vec<Stmt>)) {
+    each_item_slotted_block_mut(items, &mut |list, _| f(list));
+}
+
+/// `each_item_block_mut`, each list given where it is (`Slot`): an `if`'s
+/// `else`, or another block.
+pub fn each_item_slotted_block_mut(items: &mut [Item], f: &mut dyn FnMut(&mut Vec<Stmt>, Slot)) {
     for item in items {
         match item {
             Item::Const(constant) => each_block_in_mut(&mut constant.value, f),
-            Item::Statements(stmts) => each_block_mut(stmts, f),
+            Item::Statements(stmts) => each_slotted_block_mut(stmts, f),
             Item::Namespace(_) | Item::Function(_) => item
                 .functions_mut()
-                .for_each(|function| each_block_mut(&mut function.body, f)),
+                .for_each(|function| each_slotted_block_mut(&mut function.body, f)),
         }
     }
 }
