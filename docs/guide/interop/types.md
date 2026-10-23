@@ -946,6 +946,37 @@ export function isMarked(log) {
   return log.__reactDisabledLog != null;
 }
 ```
+- **A constructor is a `fn` item**, a function declaration, which `new`
+  constructs and which has a `prototype`, declared where it's written, in
+  the innermost block that holds each use of it; a closure is an arrow
+  function, which `new` throws a `TypeError` of
+  ([ADR 0696](../../decisions/0696-a-constructor-is-a-fn-item-where-its-written.md)):
+
+```rust
+use js::Unknown;
+
+pub fn sample(construct: bool) -> Option<&'static Unknown> {
+    if construct {
+        // What the props are set on.
+        #[cfg_attr(rust_js, rust_js::name = "Fake")]
+        fn fake() -> Option<&'static Unknown> {
+            None
+        }
+        return js::get(js::new(js::unknown(&fake), ()), "props");
+    }
+    None
+}
+```
+
+```js
+export function sample(construct) {
+  if (construct) {
+    // What the props are set on.
+    function Fake() {}
+    return new Fake().props;
+  }
+}
+```
 - **`==` of two is JS's `===`**, of two `Option<&Unknown>` too, where a
   `null` isn't an `undefined`, unlike std's `Option`
   ([ADR 0612](../../decisions/0612-unknown-equality-is-strict.md)):

@@ -240,15 +240,47 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .collect();
         written.sort_by_key(|&(at, _)| at);
         for (at, id) in written {
-            let after = out.iter().position(|s| !s.span.is_none() && s.span.lo > at);
-            let ends = matches!(out.last(), Some(s) if matches!(s.kind, StmtKind::Return(_)));
-            let i = after.unwrap_or(out.len() - usize::from(ends));
             let hole = Expr {
                 reads: false,
                 kind: js::ExprKind::FunctionHole(id.index.as_u32()),
                 span: js::Span::NONE,
             };
-            out.insert(i, StmtKind::Expr(hole).at(js::Span::NONE));
+            let hole = StmtKind::Expr(hole).at(js::Span::NONE);
+            // In the innermost block it's written in that holds each use
+            // of it, a JS function declaration being its block's alone
+            // (ADR 0696): `if (construct) { function Fake() {..} .. }`.
+            let name = &self.krate.fns[&id].name;
+            let uses = js::mentions_in(out, name);
+            // The lists holding them all nest, each in the one before: the
+            // last of them, in the order they're walked, outermost first.
+            let (mut index, mut innermost) = (0, None);
+            js::statement_lists(out, &mut |list| {
+                if index > 0 && uses > 0 && js::mentions_in(list, name) == uses && written_before(list, at).is_some() {
+                    innermost = Some(index);
+                }
+                index += 1;
+            });
+            if let Some(innermost) = innermost {
+                let mut index = 0;
+                js::statement_lists(out, &mut |list| {
+                    if index == innermost
+                        && let Some(i) = written_before(list, at)
+                    {
+                        list.insert(i, hole.clone());
+                    }
+                    index += 1;
+                });
+                continue;
+            }
+            let ends = matches!(out.last(), Some(s) if matches!(s.kind, StmtKind::Return(_)));
+            let i = written_before(out, at).unwrap_or(out.len() - usize::from(ends));
+            out.insert(i, hole);
         }
     }
+}
+
+/// Where in `list` a function written at `at` goes: before its first
+/// statement written after it.
+fn written_before(list: &[Stmt], at: u32) -> Option<usize> {
+    list.iter().position(|s| !s.span.is_none() && s.span.lo > at)
 }

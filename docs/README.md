@@ -377,7 +377,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0305 A binding marked `require` is read through `require(module)`](decisions/0305-require.md)
 - [0306 A module's items are where its Rust has them](decisions/0306-item-order.md)
 - [0307 A trait's binding method is read of the value itself](decisions/0307-binding-trait-methods.md)
-- [0308 A function written in a body is that body's](decisions/0308-local-functions.md)
+- [0308 A function written in a body is that body's](decisions/0308-local-functions.md) *(amended by 0696: in the innermost block that holds each use of it, after its comments)*
 - [0309 A `match` that only gives a value is one expression](decisions/0309-value-matches.md)
 - [0310 Any value is read as JS reads it](decisions/0310-any-value-as-js-reads-it.md) *(amended by 0639: `concat_text` of any value may throw)*
 - [0311 `.flatten()` of a read of items that may be `None` is the read](decisions/0311-flattened-reads.md)
@@ -616,6 +616,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0689 A move's decision is apart from the move: `moved` says where and why, `inlined` applies it](decisions/0689-a-moves-decision-is-apart-from-the-move.md)
 - [0694 TypeScript's `Function` gives any value, `&dyn Fn() -> Option<&'static Unknown>`](decisions/0694-typescripts-function-gives-any-value.md)
 - [0695 `new` of a function value is JS's `new`, `js::new`](decisions/0695-new-of-a-function-value-is-jss-new.md)
+- [0696 A constructor is a `fn` item, declared where it's written](decisions/0696-a-constructor-is-a-fn-item-where-its-written.md)
 - [0436 Every `dyn` that's a pair keeps its value's drop, `dyn Send` too](decisions/0436-every-dyn-keeps-its-drop.md)
 - [0437 A scope's drops on a panic are one `try { .. } finally { .. }`](decisions/0437-a-scopes-drops-are-one-finally.md)
 - [0438 An optional prop is given `Some(..)`, or left out](decisions/0438-an-optional-prop-is-given-some.md)

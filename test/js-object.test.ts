@@ -386,6 +386,40 @@ pub fn arrow() -> bool {
   expect(lib.arrow()).toBe(true);
 });
 
+// ADR 0696: a constructor Rust writes is a `fn` item, a function
+// declaration, constructed and with a `prototype`: where it's written, in
+// the innermost block that uses it, after its comments.
+test("a constructor is a fn item, declared where it's written", async () => {
+  const { js, lib, warnings } = await compiled("js-object-constructor", `use js::Unknown;
+
+pub fn point(x: f64) -> (bool, f64) {
+    #[cfg_attr(rust_js, rust_js::name = "Point")]
+    fn point() -> Option<&'static Unknown> {
+        None
+    }
+    if x > 0.0 {
+        // Where a positive one starts.
+        #[cfg_attr(rust_js, rust_js::name = "Origin")]
+        fn origin() -> Option<&'static Unknown> {
+            None
+        }
+        let prototype: &Unknown = unsafe { js::cast(js::get(js::unknown(&origin), "prototype")) };
+        js::set(prototype, "x", x);
+        let made = js::new(js::unknown(&origin), ());
+        return (js::get(made, "constructor") == Some(js::unknown(&origin)), unsafe { js::cast(js::get(made, "x")) });
+    }
+    (js::get(js::new(js::unknown(&point), ()), "constructor") == Some(js::unknown(&point)), 0.0)
+}
+`);
+  expect(warnings).toEqual([]);
+  expect(js).toContain(
+    "export function point(x) {\n  function Point() {}\n  if (x > 0) {\n    // Where a positive one starts.\n    function Origin() {}\n    const prototype = Origin.prototype;",
+  );
+  expect(js).toContain("const made = new Origin();");
+  expect(lib.point(3)).toEqual([true, 3]);
+  expect(lib.point(-1)).toEqual([true, 0]);
+});
+
 // ADR 0694: TypeScript's `Function` is `&dyn Fn() -> Option<&'static
 // Unknown>`, one form everywhere: called of nothing, what it gives is any
 // value, as `js::Kind::Function` holds it and `Reflect` takes it.
