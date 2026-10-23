@@ -73,5 +73,49 @@ function main() {
     .toArray()
     .at(-1);
   console.log(`${value$5 == null ? "None" : `Some(${value$5})`}`);
+  fused();
+}
+
+function flakyIterator_next(flaky) {
+  flaky.n = (flaky.n + 1) >>> 0;
+  if (flaky.n !== 1) {
+    if (flaky.n === 2) {
+      return;
+    }
+    if (flaky.n === 3) {
+      return [2, 3];
+    }
+    return;
+  }
+  return [1];
+}
+
+function flakyDoubleEndedIterator_nextBack(flaky) {
+  return flakyIterator_next(flaky);
+}
+
+function fused() {
+  const f = $flattenEnds(
+    $iterator({ n: 0 }, flakyIterator_next, false, flakyDoubleEndedIterator_nextBack),
+    (item) => $iter(item),
+  );
+  const nextBack = $nextBack(f);
+  const value = $nextBack(f);
+  const value$1 = $nextBack(f);
+  const value$2 = $next(f);
+  console.log(
+    `${nextBack == null ? "None" : `Some(${nextBack})`} ${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`} ${value$2 == null ? "None" : `Some(${value$2})`}`,
+  );
+  const g = $flattenEnds(
+    $iterator({ n: 0 }, flakyIterator_next, false, flakyDoubleEndedIterator_nextBack),
+    (v) => v,
+  );
+  const next = $next(g);
+  const value$3 = $next(g);
+  const value$4 = $nextBack(g);
+  const value$5 = $next(g);
+  console.log(
+    `${next == null ? "None" : `Some(${next})`} ${value$3 == null ? "None" : `Some(${value$3})`} ${value$4 == null ? "None" : `Some(${value$4})`} ${value$5 == null ? "None" : `Some(${value$5})`}`,
+  );
 }
 //# sourceMappingURL=case.js.map

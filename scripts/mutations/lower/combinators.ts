@@ -533,4 +533,12 @@ export const mutations: Mutation[] = [
     replace: "            && let Some((kept, value)) = super::std_types::option::filtered(subject).filter(|_| false)\n",
     tests: ["test/lowering-options.test.ts", "-t", "React's typeName"],
   },
+  {
+    name: "search-key-type-of-owner",
+    breaks: "`binary_search_by_key`'s key type is its owner's second, a deque's allocator, so a deque's is refused",
+    file: "src/lower/combinators.rs",
+    find: "    (generic_args.types().rev().nth(1)).expect(\"`binary_search_by_key` has a key type\")\n",
+    replace: "    (generic_args.types().nth(1)).expect(\"`binary_search_by_key` has a key type\")\n",
+    tests: ["test/corpus.test.ts", "-t", "^deque_search_by_key.rs$"],
+  },
 ];

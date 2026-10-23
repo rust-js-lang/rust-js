@@ -36,4 +36,43 @@ fn main() {
         v.iter().flatten().nth_back(2)
     );
     println!("{:?}", v.iter().flatten().last());
+    fused();
+}
+
+// A source that gives `None` and then more: done once it's given `None`,
+// from either end, as std's `Fuse` of it is.
+struct Flaky {
+    n: u32,
+}
+
+impl Iterator for Flaky {
+    type Item = Vec<u32>;
+    fn next(&mut self) -> Option<Vec<u32>> {
+        self.n += 1;
+        match self.n {
+            1 => Some(vec![1]),
+            2 => None,
+            3 => Some(vec![2, 3]),
+            _ => None,
+        }
+    }
+}
+
+impl DoubleEndedIterator for Flaky {
+    fn next_back(&mut self) -> Option<Vec<u32>> {
+        self.next()
+    }
+}
+
+fn fused() {
+    let mut f = Flaky { n: 0 }.flatten();
+    println!(
+        "{:?} {:?} {:?} {:?}",
+        f.next_back(),
+        f.next_back(),
+        f.next_back(),
+        f.next()
+    );
+    let mut g = Flaky { n: 0 }.flat_map(|v| v);
+    println!("{:?} {:?} {:?} {:?}", g.next(), g.next(), g.next_back(), g.next());
 }

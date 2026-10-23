@@ -800,10 +800,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Comb::BinarySearchByKey => {
                 let (key, f) = (next(), next());
                 let key = once(self, key, "key", out);
-                let key_ty = generic_args
-                    .types()
-                    .nth(1)
-                    .expect("`binary_search_by_key` has a key type");
+                let key_ty = search_key(generic_args);
                 let compare = self.cmp_fn(key_ty, false, span)?;
                 let item = Expr::var("item");
                 let mapped = apply(f, vec![item]);
@@ -1052,4 +1049,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let items = super::iterators::fresh_iter_source(&items).cloned().unwrap_or(items);
         self.copied_into(items, self.iterable_item(iterable), self.slice_item(into), span)
     }
+}
+
+/// `binary_search_by_key::<B, F>`'s `B`, of its generic arguments, after its
+/// owner's own: a slice's `T`, a deque's `T` and allocator.
+fn search_key<'tcx>(generic_args: ty::GenericArgsRef<'tcx>) -> ty::Ty<'tcx> {
+    (generic_args.types().rev().nth(1)).expect("`binary_search_by_key` has a key type")
 }

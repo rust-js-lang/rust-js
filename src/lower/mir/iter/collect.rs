@@ -221,8 +221,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // Of one that knows its back and its length, stepped from its back.
         if self.array_source(iter_ty).is_none() {
-            let back = self.knows_its_back(iter_ty) || self.user_double_ended(iter_ty);
-            if !(back && (self.knows_its_length(iter_ty) || self.user_exact_size(iter_ty))) {
+            // An array made where it's made, a `$iter` of it, knows both.
+            let made = self.steps_an_array(iter_ty);
+            let back = made || self.knows_its_back(iter_ty) || self.user_double_ended(iter_ty);
+            if !(back && (made || self.knows_its_length(iter_ty) || self.user_exact_size(iter_ty))) {
                 return Err(self.unsupported(span, "`rposition` of a lazy iterator, from its MIR"));
             }
             // What a `&mut` lends, which it's stepped from its back as it is.

@@ -1742,10 +1742,13 @@ export function $enumerate(iter, count = 0) {
 // where their source and its items are. From the front, the front inner's
 // items, then the next of the source's, then, its source done, the back
 // inner's; from the back, the same the other way, as std's `FlattenCompat`
-// steps them. Closing it closes its source.
+// steps them, its source fused. Closing it closes its source.
 export function $flattenEnds(it, each) {
   const done = { done: true, value: undefined };
   const inner = { next: undefined, back: undefined };
+  // Its source, once done from either end, stays done, as std's `Fuse` of
+  // it does.
+  let ended = false;
   const step = (by, own, other) => () => {
     for (;;) {
       if (inner[own] !== undefined) {
@@ -1753,8 +1756,9 @@ export function $flattenEnds(it, each) {
         if (!at.done) return at;
         inner[own] = undefined;
       }
-      const outer = it[by]();
+      const outer = ended ? done : it[by]();
       if (outer.done) {
+        ended = true;
         if (inner[other] === undefined) return done;
         const at = inner[other][by]();
         if (at.done) inner[other] = undefined;
