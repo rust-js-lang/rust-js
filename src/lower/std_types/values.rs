@@ -112,6 +112,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             | MapOp::OrDefault
                             | MapOp::Len
                             | MapOp::IsEmpty
+                            // What it splits off it moves into the map it
+                            // gives, dropping none (#171).
+                            | MapOp::TreeSplitOff
                     )
                     // A cell keeps it, and gives the old one back; a `Cell` of one is
                     // refused by its type (ADR 0320).

@@ -666,4 +666,12 @@ export const mutations: Mutation[] = [
     replace: "))",
     tests: ["test/corpus.test.ts", "-t", "^refused_drops_and_displays.rs$"],
   },
+  {
+    name: "tree-split-off-refused",
+    breaks: "`BTreeMap::split_off` of values with a destructor is refused",
+    file: "src/lower/std_types/values.rs",
+    find: "                            | MapOp::TreeSplitOff\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^refused_drops_and_displays.rs$"],
+  },
 ];

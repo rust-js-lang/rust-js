@@ -2,12 +2,19 @@
 
 import {
   $byteLen,
+  $cmp,
   $displayF64,
   $extend,
+  $insert,
+  $iter,
   $lazyRange,
+  $next,
   $pad,
   $plus,
   $repeatingWith,
+  $sortedEntries,
+  $sortedKeys,
+  $treeSplitOff,
 } from "@rust-js/runtime";
 
 export function entry() {
@@ -20,11 +27,11 @@ function manuallyDropped() {
   console.log("after");
   const kept = [1];
   console.log(`${kept[0]}`);
-  const inner = [3];
-  const other = [4];
+  const inner = 3;
+  const other = 4;
   console.log("holder");
-  console.log(`drop ${inner[0]}`);
-  console.log(`drop ${other[0]}`);
+  console.log(`drop ${inner}`);
+  console.log(`drop ${other}`);
   const v = [[5], [6]];
   for (const item of v) {
     console.log(`drop ${item[0]}`);
@@ -378,5 +385,129 @@ function main() {
   extended();
   matched();
   displayed();
+  splitOff();
+}
+
+function splitOff() {
+  const m = new Map();
+  let m$live = true;
+  let iter;
+  try {
+    iter = $iter([1, 5, 3, 7]);
+  } catch (error) {
+    for (const [, value] of $sortedEntries(m, $cmp)) {
+      console.log(`drop ${value[0]}`);
+    }
+    throw error;
+  }
+  while (true) {
+    let tmp;
+    try {
+      tmp = $next(iter);
+    } catch (error) {
+      if (m$live) {
+        for (const [, value] of $sortedEntries(m, $cmp)) {
+          console.log(`drop ${value[0]}`);
+        }
+      }
+      throw error;
+    }
+    if (tmp == null) {
+      break;
+    }
+    const i = tmp;
+    let insert;
+    try {
+      insert = $insert(m, i, [i]);
+    } catch (error) {
+      if (m$live) {
+        for (const [, value] of $sortedEntries(m, $cmp)) {
+          console.log(`drop ${value[0]}`);
+        }
+      }
+      throw error;
+    }
+    try {
+      if (insert != null) {
+        console.log(`drop ${insert[0]}`);
+      }
+    } catch (error) {
+      if (m$live) {
+        for (const [, value] of $sortedEntries(m, $cmp)) {
+          console.log(`drop ${value[0]}`);
+        }
+      }
+      throw error;
+    }
+  }
+  let hi;
+  try {
+    hi = $treeSplitOff(m, 4, $cmp, false);
+  } catch (error) {
+    if (m$live) {
+      for (const [, value] of $sortedEntries(m, $cmp)) {
+        console.log(`drop ${value[0]}`);
+      }
+    }
+    throw error;
+  }
+  let collect;
+  try {
+    collect = $sortedEntries(m, $cmp).map((entry) => entry[0]);
+  } catch (error) {
+    for (const [, value] of $sortedEntries(hi, $cmp)) {
+      console.log(`drop ${value[0]}`);
+    }
+    if (m$live) {
+      for (const [, value] of $sortedEntries(m, $cmp)) {
+        console.log(`drop ${value[0]}`);
+      }
+    }
+    throw error;
+  }
+  let tmp;
+  try {
+    tmp = $sortedEntries(hi, $cmp).map((entry) => entry[0]);
+  } catch (error) {
+    for (const [, value] of $sortedEntries(hi, $cmp)) {
+      console.log(`drop ${value[0]}`);
+    }
+    if (m$live) {
+      for (const [, value] of $sortedEntries(m, $cmp)) {
+        console.log(`drop ${value[0]}`);
+      }
+    }
+    throw error;
+  }
+  try {
+    console.log(`[${collect.join(", ")}] [${tmp.join(", ")}]`);
+  } catch (error) {
+    for (const [, value] of $sortedEntries(hi, $cmp)) {
+      console.log(`drop ${value[0]}`);
+    }
+    if (m$live) {
+      for (const [, value] of $sortedEntries(m, $cmp)) {
+        console.log(`drop ${value[0]}`);
+      }
+    }
+    throw error;
+  }
+  m$live = false;
+  try {
+    for (const [, value] of $sortedEntries(m, $cmp)) {
+      console.log(`drop ${value[0]}`);
+    }
+    console.log("mid");
+    const s = new Set($lazyRange(1, 6));
+    const t = $treeSplitOff(s, 3, $cmp, true);
+    console.log(
+      `{${Array.from($sortedKeys(s, $cmp)).join(", ")}} {${Array.from($sortedKeys(t, $cmp)).join(", ")}}`,
+    );
+  } finally {
+    for (const [, value] of $sortedEntries(hi, $cmp)) {
+      console.log(`drop ${value[0]}`);
+    }
+  }
+  console.log("end");
 }
 //# sourceMappingURL=case.js.map

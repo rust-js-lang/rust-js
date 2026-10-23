@@ -34,6 +34,8 @@ check that didn't know a case it covers:
 - **A pending discriminant of what doesn't read the same is held first**,
   its subject a `const` where it's flushed, and the discriminant kept for
   its switch, as the switch holds a scrutinee with effects.
+- **`BTreeMap::split_off` keeps what it takes**, moved into the map it
+  gives, as `insert` and `remove` give back what they take.
 - **The shown type is revealed** (`shown_type`), so `{}` and `{:?}` of an
   `impl Display` are of what it hides.
 
@@ -43,5 +45,5 @@ check that didn't know a case it covers:
   and the mutations `manually-drop-drop-skipped`,
   `extend-of-nothing-held-refused`, `discriminant-of-a-call-refused` and
   `shown-impl-display-hidden`.
-- #171's serde items, a `Box<dyn Iterator>` of a struct with `Drop`, and
-  `BTreeMap::split_off` of values with one, stay refused.
+- #171's serde items and a `Box<dyn Iterator>` of a struct with `Drop`
+  stay refused.

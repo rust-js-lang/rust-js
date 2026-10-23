@@ -1,7 +1,9 @@
 // What was refused where Rust is fine (#171): `ManuallyDrop::drop` of what
 // it holds, in place; `extend` by what holds nothing to drop, of items
 // with a destructor; a `match` of what a call gives, of a value with a
-// destructor; `{}` of an `impl Display` a function gives.
+// destructor; `{}` of an `impl Display` a function gives; `split_off` of
+// a B-tree of values with a destructor.
+use std::collections::{BTreeMap, BTreeSet};
 use std::fmt;
 use std::mem::ManuallyDrop;
 struct Md(u32);
@@ -155,4 +157,27 @@ fn main() {
     extended();
     matched();
     displayed();
+    split_off();
+}
+
+struct Sd(u32);
+impl Drop for Sd {
+    fn drop(&mut self) {
+        println!("drop {}", self.0);
+    }
+}
+fn split_off() {
+    let mut m = BTreeMap::new();
+    for i in [1, 5, 3, 7] {
+        m.insert(i, Sd(i));
+    }
+    let hi = m.split_off(&4);
+    println!("{:?} {:?}", m.keys().collect::<Vec<_>>(), hi.keys().collect::<Vec<_>>());
+    drop(m);
+    println!("mid");
+    let mut s: BTreeSet<u32> = (1..6).collect();
+    let t = s.split_off(&3);
+    println!("{s:?} {t:?}");
+    drop(hi);
+    println!("end");
 }
