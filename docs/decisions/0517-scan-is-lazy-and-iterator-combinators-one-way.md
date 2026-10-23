@@ -96,5 +96,6 @@ bounds' as `a..b`'s are, `$rangeInclusiveNth`, `$rangeInclusiveLast`,
 reversed one's `nth` is its `nth_back`, `$rangeNthBack` of its
 `$iterator`'s bounds, `.of`, which tidy reads from where it's made; its
 `last()` its start, `$rangeFirst`; and its `skip(n)`, where it's made with
-a number end, that end `n` before. A reversed range's `step_by` still
-steps each (#163). Held by `test/corpus/range_own_steps.rs`.
+a number end, that end `n` before; its `step_by`, its numbers from its
+end, `$lazyRangeBack(a, b, n)`, of BigInts too (#163). Held by
+`test/corpus/range_own_steps.rs` and `test/corpus/range_steps_known.rs`.

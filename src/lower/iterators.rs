@@ -319,7 +319,7 @@ pub(super) fn is_stepped_items(e: &Expr) -> bool {
 /// 0561), `$lazyScan` (ADR 0517) and `$lazyMapWhile`, not fused, and each of
 /// its generators,
 /// which the runtime package's test holds this list to; a range's, its own.
-pub(crate) const ITERATOR_HELPERS: [&str; 26] = [
+pub(crate) const ITERATOR_HELPERS: [&str; 27] = [
     "$stdIterator",
     "$memchrIter",
     "$mapEnds",
@@ -336,6 +336,7 @@ pub(crate) const ITERATOR_HELPERS: [&str; 26] = [
     "$rev",
     "$closing",
     super::std_types::range::LAZY_RANGE,
+    super::std_types::range::LAZY_RANGE_BACK,
     "$lazyTakeWhile",
     "$lazySkipWhile",
     "$lazyScan",

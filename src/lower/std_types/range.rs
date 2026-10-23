@@ -12,6 +12,8 @@ use rustc_span::Span;
 
 /// A range made as stepped, lazily, its runtime's generator (ADR 0472).
 pub(crate) const LAZY_RANGE: &str = "$lazyRange";
+/// A range's numbers from its end, `$lazyRangeBack(a, b, step)`.
+pub(crate) const LAZY_RANGE_BACK: &str = "$lazyRangeBack";
 
 /// Which of std's ranges a type is.
 #[derive(Clone, Copy, PartialEq, Debug)]
@@ -446,7 +448,8 @@ pub(in crate::lower) fn range_steps(e: &mut Expr) {
 /// end }, $rangeNextBack)`: its bounds, where `.of` reads them, as
 /// `range_own_step` does of one a variable holds; and `.drop(n)` of it, its
 /// end `n` before, as `Rev`'s `skip` is the range's `nth_back`, where its
-/// end is a number, not a BigInt `n` isn't (#163).
+/// end is a number, not a BigInt `n` isn't; and `.step_by(n)` of it, its
+/// numbers from its end, `$lazyRangeBack(a, b, n)` (#163).
 fn reversed_step(e: &Expr) -> Option<Expr> {
     match &e.kind {
         js::ExprKind::Member(made, field) if field == "of" => {
@@ -461,6 +464,16 @@ fn reversed_step(e: &Expr) -> Option<Expr> {
                 return None;
             };
             let range = crate::lower::iterators::stepped_range(made)?;
+            // `step_by(n)`, which tidy wrote as a filter of every `n`th:
+            // the numbers from its end, `n` apart.
+            if method == "filter" && range.back {
+                let step = every_nth(n)?;
+                let mut args = vec![range.start.clone(), range.end.clone(), step];
+                if range.inclusive {
+                    args.push(Expr::bool(true));
+                }
+                return Some(Expr::call_helper(LAZY_RANGE_BACK, args));
+            }
             if method != "drop" || !range.back || !n.reads_same() || range.end.as_int().is_none() {
                 return None;
             }

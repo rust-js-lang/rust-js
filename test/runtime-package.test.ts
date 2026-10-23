@@ -40,8 +40,13 @@ test("the compiler's iterator helpers are $iterator, $intoIter, $cycleOf, $repea
   const list = source.match(/pub\(crate\) const ITERATOR_HELPERS: \[&str; \d+\] = \[([^\]]*)\]/)![1];
   // A range's, named where ranges are.
   const range = readFileSync(join(root, "src", "lower", "std_types", "range.rs"), "utf8");
-  const lazyRange = range.match(/pub\(crate\) const LAZY_RANGE: &str = "(\$\w+)";/)![1];
-  const listed = [...list.replace("super::std_types::range::LAZY_RANGE", `"${lazyRange}"`).matchAll(/"(\$[\w$]+)"/g)].map(
+  const named = (constant: string) => range.match(new RegExp(`pub\\(crate\\) const ${constant}: &str = "(\\$\\w+)";`))![1];
+  const listed = [
+    ...list
+      .replace("super::std_types::range::LAZY_RANGE_BACK", `"${named("LAZY_RANGE_BACK")}"`)
+      .replace("super::std_types::range::LAZY_RANGE", `"${named("LAZY_RANGE")}"`)
+      .matchAll(/"(\$[\w$]+)"/g),
+  ].map(
     (m) => m[1],
   );
   expect(listed.toSorted()).toEqual(
