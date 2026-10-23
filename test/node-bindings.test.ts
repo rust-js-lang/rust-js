@@ -778,7 +778,7 @@ pub fn limited(limit: f64) -> f64 {
   expect(js).toContain("  const previous = Error.stackTraceLimit;\n  Error.stackTraceLimit = limit;\n");
   expect(readFileSync(join(dir, "default_prepare_stack_trace.js"), "utf8")).toContain("\nexport default undefined;\n");
   const v8 = readFileSync(join(dir, "default_prepare_stack_trace_v8.js"), "utf8");
-  expect(v8).toContain("    stack += callSite.toString();\n");
+  expect(v8).toContain('    stack += "\\n    at " + callSite.toString();\n');
   expect(v8).toContain("export function install() {\n  Error.prepareStackTrace = prepareStackTrace;\n}");
   expect(v8).toContain("export default prepareStackTrace;");
   writeFileSync(join(dir, "package.json"), '{ "type": "module" }');

@@ -56,6 +56,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             changed: IndexVec::from_elem_n(false, n),
             declared: IndexVec::from_elem_n(false, n),
             user: IndexVec::from_elem_n(false, n),
+            text: IndexVec::from_elem_n(false, n),
         };
         let mut user: IndexVec<Local, Option<String>> = IndexVec::from_elem_n(None, n);
         let sm = self.tcx.sess.source_map();
@@ -174,6 +175,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             if body.local_decls[local].ty.is_unit() || body.local_decls[local].ty.is_never() {
                 continue;
             }
+            locals.text[local] = self.is_lang_adt(body.local_decls[local].ty, LangItem::String);
             // Bound by a parameter's pattern: the name THIR's pattern gives it.
             if let Some((_, name)) = named.iter().find(|(l, _)| *l == local) {
                 locals.names[local] = name.clone();

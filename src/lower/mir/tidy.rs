@@ -29,25 +29,33 @@ use self::{
 };
 use super::hints::Switch;
 
+/// What a body's last passes ask of its locals, by name: those the program
+/// names, and its `String`s.
+pub(super) struct Named {
+    pub(super) user: HashSet<String>,
+    pub(super) text: HashSet<String>,
+}
+
 /// A body tidied, once its parameters are taken apart: its temporaries
 /// named, its drop flags too, and then, its temporaries named alike, each
 /// run of statements a value's drop ends one `try { .. } finally { .. }`
 /// (ADR 0437), what a `try` declared before it, `let x;`, where it's made;
-/// and a shadow of a binding the program names, `user`, read no more, that
-/// binding (ADR 0650).
+/// a shadow of a binding the program names read no more, that binding
+/// (ADR 0650); and a `String` appended to twice, once (ADR 0652).
 pub(super) fn named(
     params: &[js::Pattern],
     body: &mut Vec<Stmt>,
     flags: &HashSet<String>,
     suggested: &HashMap<String, Vec<String>>,
-    user: &HashSet<String>,
+    locals: &Named,
 ) {
     bindings::readable_temporaries(params, body, suggested);
     flags::named_flags(body, flags);
     js::statement_lists(body, &mut unwinds::scoped_drops);
     bindings::declarations(body);
     js::statement_lists(body, &mut unwinds::returned_through_finally);
-    bindings::shadowed(params, body, user);
+    bindings::shadowed(params, body, &locals.user);
+    crate::lower::std_types::text::appended(body, &locals.text);
 }
 
 /// What MIR's lowering, and THIR, say of a body for tidying it.

@@ -41,8 +41,7 @@ function main() {
   s = out.value;
   console.log(`${s}`);
   let t = "x";
-  t += "1";
-  t += "!";
+  t += "1!";
   const ok = true;
   console.log(`${t} ${ok}`);
 }

@@ -1,6 +1,6 @@
 # shape	count	per 10,000 lines
 files	859
-lines	89585
+lines	89579
 temporaries	1	0.1
 labeled blocks	22	2.5
 while (true)	155	17.3

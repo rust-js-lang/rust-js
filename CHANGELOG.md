@@ -771,6 +771,11 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### Changed
 
+- **Consecutive appends to a `String` are one `+=`** (ADR 0652): React's
+  `prepareStackTrace` is `stack += "\n    at " + callSite.toString();`,
+  where `stack += "\n    at "; stack += &call_site.to_string();` was two;
+  of one value and the text around it, or text alone, `t += "!?"`, and
+  not where the second reads the string.
 - **A `let`, then its fallback where it's falsy, is `||`** (ADR 0651):
   React's `prepareStackTrace` is `const name = error.name || "Error";`,
   where `let mut name = error.name(); if name.is_empty() { .. }` was `let

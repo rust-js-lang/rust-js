@@ -15,9 +15,7 @@ const Log = {
 
 function main() {
   let s = "";
-  s += "ab";
-  s += "c";
-  s += "-7";
+  s += "abc-7";
   const log = { text: "" };
   Log.add(log, "one");
   Log.add(log, s);
