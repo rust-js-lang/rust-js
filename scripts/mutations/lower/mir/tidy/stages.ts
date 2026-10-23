@@ -150,7 +150,8 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/tidy/stages.rs",
     "find": "            pass(\"written chains\", |b, _| {\n                js::statement_lists(b, &mut |s| written_chains(s))\n            }),\n",
     "replace": "",
-    "tests": ["test/lowering-loops.test.ts", "test/lowering-matches.test.ts", "-t", "arms as statements chain in written order|an else-if at a loop's end from MIR stays one past a written continue"]
+    "tests": ["test/corpus.test.ts", "-t", "^(format_options_reached|nonzero).rs$"],
+    "snapshots": true
   },
   {
     "name": "mir-tidy-guarded-lets-kept",

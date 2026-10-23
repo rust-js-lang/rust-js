@@ -412,6 +412,24 @@ pub fn numbers(x: Option<&js::Unknown>, y: Option<&js::Unknown>) -> f64 {
     }
 }
 
+// A let chain's \`!= null\` of what's then a number, which that implies,
+// past a binding between, one of Rust's data that a \`&mut\` changes.
+pub struct Pair {
+    pub left: Option<u32>,
+    pub right: u32,
+}
+
+pub fn weighed(x: Option<&js::Unknown>, pair: &mut Pair) -> f64 {
+    pair.right += 1;
+    if let Some(v) = x
+        && let Some(left) = pair.left
+        && let js::Kind::Number(n) = js::classify(Some(v))
+    {
+        return n + f64::from(left);
+    }
+    0.0
+}
+
 // \`typeof null\` is "object": its \`!= null\` stays.
 pub fn object(x: Option<&js::Unknown>) -> bool {
     match x {
@@ -425,10 +443,12 @@ pub fn object(x: Option<&js::Unknown>) -> bool {
   expect(js).toContain("  if (p != null && q != null) {\n");
   // A test a later one implies, \`x != null\` of \`typeof x === "number"\`'s, is gone.
   expect(js).toContain('  if (typeof x === "number" && typeof y === "number") {\n');
+  expect(js).toContain('  if (pair.left != null && typeof x === "number") {\n');
   const lib = await import(join(dir, "lib.js"));
   expect([lib.both(1, 2, 0), lib.both(1, undefined, 9), lib.both(undefined, 2, 9)]).toEqual([3, 9, 9]);
   expect([lib.numbers(1, 2), lib.numbers(1, "2"), lib.numbers(null, 2)]).toEqual([3, 0, 0]);
   expect([lib.object(null), lib.object({}), lib.object(1)]).toEqual([false, true, false]);
+  expect([lib.weighed(4, { left: 1, right: 0 }), lib.weighed("4", { left: 1, right: 0 }), lib.weighed(4, { right: 0 })]).toEqual([5, 0, 0]);
 });
 
 test("a `match` of an `Option`'s strings from MIR is the `switch` or `else if` chain a person writes", async () => {
