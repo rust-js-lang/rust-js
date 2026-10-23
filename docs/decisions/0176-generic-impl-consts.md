@@ -70,3 +70,7 @@ impl was generic; but rustc's value tree can't say a `String`'s or a
 kept the dictionary was refused (#156). Every trait impl's constant keeps
 its initializer, which the dictionary lowers where the value can't be
 read: `{ EMPTY: "" }`. Held by `test/corpus/impl_const_string.rs`.
+
+An initializer is kept only where the constant has a body: a `type const`
+has none, and lowering one crashed. Held by `test/diagnostics.test.ts`'s
+type-constant test.
