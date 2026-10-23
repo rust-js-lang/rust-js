@@ -843,6 +843,41 @@ pub fn auto(m: Mode) -> bool {
   expect([failed.exitCode === 0, failed.stderr.toString()]).toEqual([false, expect.stringContaining("`Auto` and `Text` hold values of one kind")]);
 });
 
+// ADR 0668: an `otherwise` variant is tested as the one kind `typeof` tells
+// that the others aren't, `js::Kind::Object`'s `"object"`; a literal,
+// `"auto"`, is one string, not every one, so beside it what's left is a
+// string or an object, none of the others' tests.
+test("an untagged enum's otherwise is the kind left, which a literal doesn't take", async () => {
+  const dir = fixture("otherwise-kinds");
+  writeFileSync(join(dir, "lib.rs"), `#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum Setting<'a> {
+    #[cfg_attr(rust_js, rust_js::name = "auto")]
+    Auto,
+    Size(f64),
+    Big(i64),
+    On(bool),
+    Key(&'a js::Symbol),
+    Call(&'a dyn Fn()),
+    #[cfg_attr(rust_js, rust_js::otherwise)]
+    Other(&'a js::Unknown),
+}
+
+pub fn other(setting: Setting) -> bool {
+    matches!(setting, Setting::Other(_))
+}
+
+pub fn object(value: &js::Unknown) -> bool {
+    matches!(js::classify(value), js::Kind::Object(_))
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('return typeof value === "object" && !Array.isArray(value);');
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.other("auto"), lib.other("xyz"), lib.other({}), lib.other(1), lib.other(Symbol())]).toEqual([false, true, true, false, false]);
+  expect([lib.object({}), lib.object([]), lib.object(Symbol()), lib.object(() => 1), lib.object("s")]).toEqual([true, false, false, false, false]);
+});
+
 // A derived order of an enum with fields: by variant, as declared, then
 // the variant's fields in turn, as Rust's derive compares them; a float's
 // \`NaN\` among them unordered.

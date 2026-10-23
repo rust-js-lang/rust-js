@@ -66,10 +66,13 @@ What it found, the first time it ran:
 - **One question answered twice**: `labels::targets` and
   `tails::names_jump` were the same function. It's `js::names_jump`, beside
   `js::names_break`.
-- **Three passes that change nothing for the test their mutation names**
-  (`handles in place`, `tail elses`, `typeof tests`): another pass already
-  makes what the test asks for, as the trace shows. Each survived its
-  mutation before this change too. They're followed up apart.
+- **Four passes whose mutation survived**, each before this change too.
+  Compiling the corpus with each left out showed which cases it changes:
+  `written first`'s and `handles in place`'s mutations now check those
+  cases' JS. `tail elses` and `typeof tests` changed no program's JS, in
+  the corpus, the examples or the lowering tests: lowering writes a lone
+  `typeof` test now, and a later pass makes the `else` `tail elses` did.
+  Both are gone.
 
 ## Next
 

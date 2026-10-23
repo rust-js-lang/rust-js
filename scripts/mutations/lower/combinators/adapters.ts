@@ -258,4 +258,12 @@ export const mutations: Mutation[] = [
     replace: "Expr::call(Expr::helper(\"$lazyTakeWhile\"), vec![method(items, \"map\", vec![next()]), present()])",
     tests: ["test/corpus.test.ts", "-t", "^scan_map_while_unfused.rs$"],
   },
+  {
+    name: "unzip-into-a-map-refused",
+    breaks: "`unzip` into a map or a set is refused",
+    file: "src/lower/combinators/adapters.rs",
+    find: "                if !sides.iter().all(|&side| self.is_vec_like(side) || self.is_map(side)) {\n",
+    replace: "                if !sides.iter().all(|&side| self.is_vec_like(side)) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^unzip_into_maps.rs$"],
+  },
 ];

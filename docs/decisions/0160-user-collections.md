@@ -66,3 +66,11 @@ are, another's iterator as `collect` steps it, then `collected_into`.
 `Vec::from_iter([5, 4].into_iter().map(..))` is `[5, 4].map(..)`. Of
 what's neither, an `Option` say, it's refused yet. The `from_iter_called`
 corpus case makes each kind of collection so, against native Rust.
+
+## Amendment: `from_iter` of a map or a set
+
+`Vec::from_iter(set)` and the rest of a map's or a set's, which
+`into_iter().collect()` is, were refused, as `from_iter` took only a
+sequence or an iterator (#165). A map's or a set's are its items in its
+order, `map_items`'s, as its `iter()` gives them: a B-tree's its keys'.
+Held by `test/corpus/from_iter_of_maps.rs`.

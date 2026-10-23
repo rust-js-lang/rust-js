@@ -3,7 +3,10 @@
 Status: Accepted. Extends [0033](0033-enums-with-fields.md): an enum marked
 `#[rust_js::untagged]` has no tag. Amended by [0229](0229-union-parameters.md): a
 binding's parameter of one is `impl` a sealed trait of its members, of an
-ordinary function (ADR 0039), as an `extern` one can't be generic.
+ordinary function (ADR 0039), as an `extern` one can't be generic. Amended
+by [0668](0668-a-match-of-what-a-value-is-is-a-switch-of-its-typeof.md): an
+`otherwise` variant that's one kind `typeof` tells, `js::Kind::Object`'s
+`"object"`, is tested as that kind; a `js::Symbol` is a kind, `"symbol"`.
 
 Case: A, D ([0262](0262-when-rust-and-js-disagree.md)).
 

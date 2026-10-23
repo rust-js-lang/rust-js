@@ -165,6 +165,9 @@ pub(in crate::lower) enum SliceOp {
     /// `array::from_fn(f)`: `Array.from({ length: N }, (_, i) => ..)`, `f`
     /// given each index.
     FromFn,
+    /// `slice::from_ref(&x)` and `array::from_ref(&x)`: `[x]`, of one item
+    /// it shares.
+    FromRef,
     /// A `VecDeque`'s `swap_remove_back(i)` or `swap_remove_front(i)`.
     DequeSwapRemove {
         front: bool,
@@ -836,6 +839,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 };
                 helper("$repeatItems", Expr::optional_args(vec![items, n], vec![copy]))
             }
+            SliceOp::FromRef => Expr::array(vec![arg()]),
             SliceOp::FromFn => {
                 // `from_fn::<T, N, F>`: its length, the second.
                 let n = generic_args.const_at(1);

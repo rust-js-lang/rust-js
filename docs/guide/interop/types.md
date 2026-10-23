@@ -410,7 +410,11 @@ export function size(input) {
   `string | number` is. `match` tests each payload's kind, `typeof`,
   `Array.isArray` or `instanceof`, so each variant holds one value, and no
   two of one kind. The last may be `#[rust_js::otherwise]`: whatever the
-  others aren't ([ADR 0214](../../decisions/0214-untagged-enums.md)).
+  others aren't ([ADR 0214](../../decisions/0214-untagged-enums.md)); where
+  that's one kind `typeof` tells, as `js::Kind::Object`'s `"object"`, it's
+  tested as that kind. A `match` of three cases or more of kinds `typeof`
+  tells is a `switch (typeof value)`, as a `match` of constants is a
+  `switch` ([ADR 0668](../../decisions/0668-a-match-of-what-a-value-is-is-a-switch-of-its-typeof.md)).
 
 ## Option and Result
 
@@ -511,6 +515,7 @@ export function ratio(a, b) {
   `#[rust_js::nullable(range)]`
   ([ADR 0275](../../decisions/0275-nullable-writes-null.md),
   [ADR 0578](../../decisions/0578-a-nullable-result-where-its-written.md)).
+  A `Some(..)` given to one is its value, `Object.create(Object.prototype)`.
   A result is `?? null` of an `Option` that may be `undefined`, and a
   nullable function's call as it is, `null` for `None` already, `return
   last(b);` ([ADR 0638](../../decisions/0638-a-nullable-functions-call-is-null-already.md)).
@@ -821,7 +826,12 @@ reference ([ADR 0111](../../decisions/0111-js-types-as-structs.md)). See
 A JS value of any shape, TypeScript's `unknown`, is a `js::Unknown`. It's
 never `undefined` or `null`: an `Option<&Unknown>` is `None` of those.
 `js::classify` tells what it is, as a `js::Kind` to `match`
-([ADR 0225](../../decisions/0225-unknown-values.md)).
+([ADR 0225](../../decisions/0225-unknown-values.md)): a variant for each
+kind `typeof` tells, `String`, `Number`, `BigInt`, `Bool`, `Symbol`,
+`Function` and `Object`, an object no array is, and `Array`, which
+`Array.isArray` does. A `match` of them is a `switch (typeof value)`, an
+array an `if` before it
+([ADR 0668](../../decisions/0668-a-match-of-what-a-value-is-is-a-switch-of-its-typeof.md)).
 
 ```rust
 use js::{Kind, Unknown};
@@ -835,6 +845,7 @@ pub fn describe(value: Option<&Unknown>) -> String {
         Kind::Number(n) => format!("the number {n}"),
         Kind::BigInt(n) => format!("the bigint {n}"),
         Kind::Bool(b) => format!("{b}"),
+        Kind::Symbol(symbol) => symbol.to_string(),
         Kind::Function(_) => "a function".to_string(),
         Kind::Array(items) => format!("{} items", items.len()),
         Kind::Object(object) => match js::get(object, "name") {
@@ -852,29 +863,30 @@ export function describe(value) {
   if (value == null) {
     return "nothing";
   }
-  if (typeof value === "string") {
-    return `text of ${$byteLen(value)} bytes`;
-  }
-  if (typeof value === "number") {
-    return `the number ${$displayF64(value)}`;
-  }
-  if (typeof value === "bigint") {
-    return `the bigint ${value}`;
-  }
-  if (typeof value === "boolean") {
-    return String(value);
-  }
-  if (typeof value === "function") {
-    return "a function";
-  }
   if (Array.isArray(value)) {
     return `${value.length} items`;
   }
-  const name = value.name;
-  if (name != null) {
-    return `an object named ${String(name)}`;
+  switch (typeof value) {
+    case "string":
+      return `text of ${$byteLen(value)} bytes`;
+    case "number":
+      return `the number ${$displayF64(value)}`;
+    case "bigint":
+      return `the bigint ${value}`;
+    case "boolean":
+      return String(value);
+    case "symbol":
+      return value.toString();
+    case "function":
+      return "a function";
+    case "object": {
+      const name = value.name;
+      if (name != null) {
+        return `an object named ${String(name)}`;
+      }
+      return "an object";
+    }
   }
-  return "an object";
 }
 ```
 

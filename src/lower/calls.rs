@@ -82,8 +82,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 }
 
 /// A call's last argument given as JS's rest arguments (ADRs 0221, 0640,
-/// 0664): an array written out, its items, `f(a, b)` of `&[a, b]`, and none
-/// of `&[]`; any other value, an array held, spread, `f(...items)`.
+/// 0664, 0667): an array written out, a slice's or a tuple's, its items,
+/// `f(a, b)` of `&[a, b]`, `log("a", 1)` of `&("a", 1)`, and none of `&[]`;
+/// any other value, an array held, spread, `f(...items)`. Of a call of a
+/// function taking a rest, a variadic binding, and a `fn` pointer whose
+/// last parameter is a `&dyn js::Rest<T>`.
 pub(super) fn spread_rest(args: &mut Vec<Expr>) {
     match args.pop() {
         Some(Expr {

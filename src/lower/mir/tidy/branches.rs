@@ -610,33 +610,6 @@ pub(super) fn negated(test: &Expr) -> bool {
     }
 }
 
-/// `a && x != null && typeof x === "string"`, an `Option`'s test before a
-/// classification's: `a && typeof x === "string"`, of a type no `null` is.
-pub(super) fn typeof_tests(e: &mut Expr) {
-    let ExprKind::Binary(Op::And, left, right) = &e.kind else {
-        return;
-    };
-    let ExprKind::Binary(Op::Eq, kind, name) = &right.kind else {
-        return;
-    };
-    let (ExprKind::Unary(UnaryOp::Typeof, x), ExprKind::Str(name)) = (&kind.kind, &name.kind) else {
-        return;
-    };
-    if matches!(name.as_str(), "object" | "undefined") {
-        return;
-    }
-    let set = |e: &Expr| {
-        matches!(&e.kind, ExprKind::Binary(Op::LooseNe, y, null)
-            if matches!(null.kind, ExprKind::Null | ExprKind::Undefined) && js::same_path(x, y))
-    };
-    let tested = (**right).clone();
-    *e = match &left.kind {
-        _ if set(left) => tested,
-        ExprKind::Binary(Op::And, first, last) if set(last) => Expr::bin(Op::And, (**first).clone(), tested),
-        _ => return,
-    };
-}
-
 /// `!e` of a chain of tests, part by part, `!!a || b !== c` of `!a && b ===
 /// c`: a `bool`, as `!e` is, each `!x` of what's not one `!!x`.
 pub(super) fn negated_bools(e: Expr, booleans: &HashSet<String>) -> Expr {

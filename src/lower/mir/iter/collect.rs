@@ -97,6 +97,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             };
             return Ok(Some(self.collected_into(items, output, item, None, span)?));
         }
+        // A map's or a set's items, in its order: its entries, a map's, or
+        // its items, a set's.
+        if self.is_map(iter_ty)
+            && let ty::Adt(_, args) = iter_ty.kind()
+        {
+            let item = match self.is_set(iter_ty) {
+                true => args.type_at(0),
+                false => Ty::new_tup(self.tcx, &[args.type_at(0), args.type_at(1)]),
+            };
+            let items = self.map_items(items, iter_ty, crate::lower::std_types::map::Part::Entries, span)?;
+            return Ok(Some(self.collected_into(items, output, Some(item), None, span)?));
+        }
         if !matches!(given.kind(), ty::Param(_)) && !self.implements_iterator(given) {
             return Ok(None);
         }

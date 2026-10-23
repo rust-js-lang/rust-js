@@ -677,19 +677,6 @@ impl Expr {
         )
     }
 
-    /// A function, an object, an array or a string made here: never `null`
-    /// nor `undefined`, as an `Option`'s `Some` of it.
-    pub fn is_made_here(&self) -> bool {
-        matches!(
-            self.kind,
-            ExprKind::Arrow(..)
-                | ExprKind::AsyncArrow(..)
-                | ExprKind::Object(_)
-                | ExprKind::Array(_)
-                | ExprKind::Template(..)
-        )
-    }
-
     /// A constant, or an object made here of them, which nothing made
     /// before it or after can change.
     pub fn is_made_of_constants(&self) -> bool {

@@ -68,3 +68,23 @@ Its declaration stays `?: T | null`: a TypeScript caller may leave it out.
 A nullable field given a copy of another's value, `error.rule_id.clone()`,
 is given it as it is, as one given the field itself is: it's `null` where
 it's `None` already, react.dev's runESLint's `ruleId: error.ruleId`.
+
+## Amendment: a `Some(..)` given to a nullable parameter
+
+A binding's nullable parameter given a `Some(..)` wrote it `value ??
+null`, `Object.create(Object.prototype ?? null)` ([0666](0666-the-js-crate-binds-objects-reflection.md)),
+where a field given one writes it as it is: whether an `Option` is
+`null` or a value already had two answers, the field's (`nulled`, in
+`mir/rvalues.rs`) and the parameter's, which knew only a literal, or a
+function, an object or an array made in the call (`Expr::is_made_here`).
+A parameter asks the field's question now, of each operand its call is
+given: a `Some(..)`, a nullable field read, or a variable bound to one,
+is as it is, `Object.create(Object.prototype)`, `JSON.stringify(items,
+keys, 2)` of `Some(keys)`. A `Some` of what's made in the call is one of
+them, so `is_made_here` is gone. Case A, as before: the value is the
+`Some`'s, which is never `undefined`.
+
+Held by `test/lowering-options.test.ts`, "a binding's nullable
+parameter's None is null", `test/js-object.test.ts`'s `Object.create`,
+and the mutations `nullable-param-some-coalesced` (which takes in
+`mir-nullable-made-coalesced`) and `nullable-param-nulled-unasked`.

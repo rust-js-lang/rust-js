@@ -81,8 +81,10 @@ export function title() {
 ```
 
 The crates declare the globals every host has: `webapi::window`,
-`webapi::document`, `webapi::navigator`, `webapi::history` and
-`webapi::performance`.
+`webapi::document`, `webapi::navigator`, `webapi::history`,
+`webapi::performance` and `webapi::console`, the `console` namespace as a
+value, whose functions are the `webapi::console` module's,
+`console::log((..))` ([ADR 0667](../../decisions/0667-console-is-a-value-and-rest-arguments-are-one.md)).
 
 ## Global functions
 
@@ -213,7 +215,20 @@ export function later(task) {
 `js::type_of(value)` is `typeof value`, as text: for a message. To branch on
 what a value is, `match` on `js::classify(value)`, whose `Kind` rustc makes
 you handle in full ([ADR 0310](../../decisions/0310-any-value-as-js-reads-it.md),
-[ADR 0225](../../decisions/0225-unknown-values.md)).
+[ADR 0225](../../decisions/0225-unknown-values.md)). It's a `switch (typeof
+value)`: each variant its `typeof`'s case, a symbol's `case "symbol"`, an
+or-pattern's stacked, `_` the `default`
+([ADR 0668](../../decisions/0668-a-match-of-what-a-value-is-is-a-switch-of-its-typeof.md)).
+
+- **`Kind::Object` is `case "object"`**, an object no array is: an
+  `Unknown` is never `null`. `Kind::Object(_) | Kind::Array(_)` is one
+  `case "object"`.
+- **An arm of `Kind::Array` alone is an `if` before the `switch`**,
+  `if (Array.isArray(value))`, as `typeof` says an array is an object.
+  Where arrays are `_`'s and an arm is `Kind::Object`'s, it's an `if`
+  chain: `case "object"` would take an array.
+- **Of two cases, an `if`**, as a `match` of constants is
+  ([ADR 0629](../../decisions/0629-a-match-of-constants-is-a-switch.md)).
 
 ```rust
 use js::{Kind, Unknown};
@@ -237,13 +252,14 @@ export function kind(value) {
 }
 
 export function width(value) {
-  if (typeof value === "string") {
-    return parseFloat(value);
+  switch (typeof value) {
+    case "number":
+      return value;
+    case "string":
+      return parseFloat(value);
+    default:
+      return 0;
   }
-  if (typeof value === "number") {
-    return value;
-  }
-  return 0;
 }
 ```
 

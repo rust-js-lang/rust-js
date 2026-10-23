@@ -271,6 +271,7 @@ fn show(value: Option<&Unknown>) -> String {
             Kind::Number(n) => n.to_string(),
             Kind::BigInt(n) => format!("{n}n"),
             Kind::Bool(b) => b.to_string(),
+            Kind::Symbol(symbol) => symbol.to_string(),
             Kind::Function(_) => "fn".to_string(),
             Kind::Array(items) => format!("[{}]", items.iter().map(|item| show(*item)).collect::<Vec<_>>().join(",")),
             Kind::Object(fields) => format!(
@@ -304,11 +305,11 @@ pub fn body(response: &webapi::Response) -> Promise<Option<&'static Unknown>> {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  // `classify` is the value, each variant told by `typeof`; a key that's a
+  // `classify` is the value, each variant told by `typeof`, a `switch` of
+  // it, an array by `Array.isArray` before it (ADR 0668); a key that's a
   // variable is `[key]`, one written that's a name `.name`.
-  expect(js).toContain('}\n  if (typeof value === "string") {');
-  expect(js).toContain("}\n  if (Array.isArray(value)) {");
-  expect(js).toContain('if (typeof value === "function") {');
+  expect(js).toContain('}\n  if (Array.isArray(value)) {\n    return `[${value.map(show).join(",")}]`;\n  }\n  switch (typeof value) {\n    case "string":');
+  expect(js).toContain('    case "symbol":\n      return value.toString();\n    case "function":\n      return "fn";\n    case "object":');
   expect(js).toContain("Object.keys(value)");
   expect(js).toContain("show(value[key])");
   expect(js).toContain('  if (value$1.TAG === "Ok" && value$1._0 != null) {\n    const value = value$1._0;\n    value.name = "new";\n    return show(value);');

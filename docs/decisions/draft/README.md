@@ -26,6 +26,8 @@ Estimated difficulty, hardest first; this is not implementation order:
    compiled, `Peekable`'s first.
 3. [A library rust-js can't compile whole is compiled item by item](per-item-library-refusal.md):
    amends ADR 0415; what keeps aho-corasick, so regex, from compiling.
+6. [A property of a function is set as an object's is](a-property-of-a-function.md):
+   extends ADRs 0225 and 0267; React's `disabledLog.__reactDisabledLog = true`.
 
 
 Suggested order: iterators, then shipped crates one at a time (memchr's is accepted in
