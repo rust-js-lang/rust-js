@@ -3,7 +3,9 @@
 Status: Accepted; extended by [0577](0577-a-function-only-calls-reach.md),
 whose functions are given what their calls give them, and by
 [0632](0632-a-js-strings-length-is-below-u32-max.md), a JS string's
-`length`, `i + k` tested and a growing counter. Replaces [0292](0292-known-bounds.md)'s
+`length`, `i + k` tested and a growing counter, whose bound
+[0682](0682-a-js-strings-length-is-at-most-int32-max.md) lowers so two
+lengths add without a wrap. Replaces [0292](0292-known-bounds.md)'s
 regions, whose cases it keeps, and narrows where [0011](0011-numbers.md)'s
 wraps are written.
 

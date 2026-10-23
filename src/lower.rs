@@ -240,8 +240,7 @@ enum Nested<'tcx> {
     /// its own, a copy of the names, and the impl's evidence, arguments,
     /// typing environment and drops.
     Default {
-        evidence: Vec<(ty::TraitRef<'tcx>, Expr)>,
-        self_args: ty::GenericArgsRef<'tcx>,
+        given: Box<traits::DefaultGiven<'tcx>>,
         typing_env: ty::TypingEnv<'tcx>,
         /// The drop, by name, for each of its trait's type parameters the
         /// impl's argument for has one (ADR 0098), and those rust-js can't

@@ -219,8 +219,8 @@ pub(super) fn is_binding(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
 
 /// Does this binding read a JS string's `length`, `get length` of a
 /// string `this`, as the js crate's `string::length` does? Its value is
-/// any engine's string's, which the integer ranges know is below
-/// `2^32 - 1` (ADR 0632).
+/// any engine's string's, which the integer ranges know is at most
+/// `2^31 - 1` (ADRs 0632, 0682).
 pub(super) fn reads_string_length(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
     is_binding(tcx, def_id)
         && is_method(tcx, def_id)

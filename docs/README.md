@@ -563,7 +563,8 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0629 A `match` of constants is a `switch`](decisions/0629-a-match-of-constants-is-a-switch.md) *(amended by 0634: a `Some`'s constants and the registry's symbols are cases; by 0636: a guarded arm is a case; by 0668: a `match` of what a value is is a `switch (typeof value)`)*
 - [0630 A comment inside an expression is after the code before it](decisions/0630-a-comment-inside-an-expression.md)
 - [0631 A step of one is `++`](decisions/0631-a-step-of-one-is-plus-plus.md)
-- [0632 A JS string's `length` is below `u32::MAX`, and a counter below it doesn't wrap](decisions/0632-a-js-strings-length-is-below-u32-max.md)
+- [0632 A JS string's `length` is below `u32::MAX`, and a counter below it doesn't wrap](decisions/0632-a-js-strings-length-is-below-u32-max.md) *(amended by 0682: at most `2^31 - 1`, so two add without a wrap)*
+- [0682 A JS string's `length` is at most `2^31 - 1`, so two add without a wrap](decisions/0682-a-js-strings-length-is-at-most-int32-max.md)
 - [0633 A binding named through a module is read through it](decisions/0633-a-binding-named-through-a-module-is-read-through-it.md)
 - [0634 A registered symbol is a `const`, and a `match` of them a `switch`](decisions/0634-a-registered-symbol-is-a-const.md)
 - [0635 A `filter` by truth, then a fallback, is `||`](decisions/0635-a-filter-by-truth-then-a-fallback-is-or.md) *(extended by 0646: a chain held, then its fallback; 0651: a `let`, then its fallback)*
@@ -599,6 +600,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0623 A copy std makes of a `Copy` value is a copy](decisions/0623-a-copy-std-makes-is-a-copy.md)
 - [0669 An adapter steps its source as std's does](decisions/0669-an-adapter-steps-its-source-as-stds-does.md)
 - [0670 A tree's writes have one owner, and its walks one definition](decisions/0670-a-trees-writes-have-one-owner.md)
+- [0671 A nested body is lowered in one call](decisions/0671-a-nested-body-is-lowered-in-one-call.md)
 - [0683 An `if` keeps its test and branches as written, and an `else if` stays a chain](decisions/0683-an-if-is-as-written-and-an-else-if-stays-a-chain.md)
 - [0436 Every `dyn` that's a pair keeps its value's drop, `dyn Send` too](decisions/0436-every-dyn-keeps-its-drop.md)
 - [0437 A scope's drops on a panic are one `try { .. } finally { .. }`](decisions/0437-a-scopes-drops-are-one-finally.md)
