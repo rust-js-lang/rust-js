@@ -980,6 +980,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .map(|(path, _)| path.clone()),
         );
         let flags = state.flag_names();
+        let params = std::cell::RefCell::new(params);
         tidy::tidy(
             &mut out,
             &tidy::Hints {
@@ -1003,11 +1004,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 flags: &flags,
                 fuse: self.fuse_import().as_deref(),
                 until: self.krate.tidy_until,
+                params: &params,
+                suggested: &self.temporaries_names(mir_body, &state),
+                named: &state.locals.named(),
             },
         );
-        tidy::destructured_params(&mut params, &mut out);
-        let suggested = self.temporaries_names(mir_body, &state);
-        tidy::named(&params, &mut out, &flags, &suggested, &state.locals.named());
+        let params = params.into_inner();
         self.body_epilogue(&mut state, &mut out);
         Ok((params, out))
     }

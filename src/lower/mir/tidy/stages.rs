@@ -426,6 +426,35 @@ pub(super) const STAGES: &[Stage] = &[
         ],
         ensures: &[contracts::NOTHING_AFTER_A_JUMP, contracts::LABELS_NAMED],
     },
+    // The body as it's written, its parameters taken apart: its temporaries
+    // named, its drop flags too, and then, its temporaries named alike, each
+    // run of statements a value's drop ends one `try { .. } finally { .. }`
+    // (ADR 0437), what a `try` declared before it, `let x;`, where it's
+    // made; a shadow of a binding the program names read no more, that
+    // binding (ADR 0650); and a `String` appended to twice, once (ADR 0652).
+    Stage {
+        name: "finish",
+        passes: &[
+            pass("parameters", |b, h| destructured_params(&mut h.params.borrow_mut(), b)),
+            pass("temporaries named", |b, h| {
+                bindings::readable_temporaries(&h.params.borrow(), b, h.suggested)
+            }),
+            pass("flags named", |b, h| flags::named_flags(b, h.flags)),
+            pass("drop scopes", |b, _| js::statement_lists(b, &mut unwinds::scoped_drops)),
+            pass("declarations", |b, _| bindings::declarations(b)),
+            pass("returns through finally", |b, _| {
+                js::statement_lists(b, &mut unwinds::returned_through_finally)
+            }),
+            pass("shadows", |b, h| {
+                bindings::shadowed(&h.params.borrow(), b, &h.named.user)
+            }),
+            pass("appends", |b, h| {
+                crate::lower::std_types::text::appended(b, &h.named.text)
+            }),
+        ],
+        // What `settled` ensured, kept: what's printed is checked as it is.
+        ensures: &[contracts::NOTHING_AFTER_A_JUMP, contracts::LABELS_NAMED],
+    },
 ];
 
 /// `jumps`, run twice.

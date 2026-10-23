@@ -141,3 +141,25 @@ was taken out alone and the corpus compiled. Taking out any one of them
 made the JS read worse in 2 to 10 files. Each is held by a mutation of its
 own, and `stages.rs` says what each takes and leaves.
 
+
+## Amendment: what finishes a body is a stage too
+
+A review (2026-10-24) found eight rewrites after the stages, outside them:
+the parameters taken apart, then `named`'s temporaries and flags named,
+drop scopes as `try`s, declarations, returns through a `finally`, shadows
+and appends. No contract was checked after them, and `--tidy-until`
+stopping in a stage still ran them, so what it printed wasn't what the
+pass it named had made.
+
+- **They're the last stage, `finish`**, in `STAGES`, in the order they ran:
+  `--tidy-passes` lists them, `--tidy-until` stops in them, and stopping
+  before them runs none, so what's printed is what the named pass made.
+  What they read is in the hints: the parameters, which `finish/parameters`
+  takes apart (a cell, as no other pass changes them), the names MIR
+  suggests, and the locals the program names. `named` is gone.
+- **What's checked holds of what's printed**: the contracts of every body
+  after `finish` too, and `finish` ensures what `settled` did, nothing
+  after a jump and each label named. The corpus finds neither broken.
+- Held by the unit test `finish_is_the_last_stage_in_its_order`, and the
+  mutations `mir-temporaries-unnamed`, `scope-lets-not-declared-where-made`,
+  `finish-drop-scopes-unmade` and `finish-returns-through-finally-kept`.

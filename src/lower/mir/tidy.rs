@@ -40,28 +40,6 @@ pub(super) struct Named {
     pub(super) text: HashSet<String>,
 }
 
-/// A body tidied, once its parameters are taken apart: its temporaries
-/// named, its drop flags too, and then, its temporaries named alike, each
-/// run of statements a value's drop ends one `try { .. } finally { .. }`
-/// (ADR 0437), what a `try` declared before it, `let x;`, where it's made;
-/// a shadow of a binding the program names read no more, that binding
-/// (ADR 0650); and a `String` appended to twice, once (ADR 0652).
-pub(super) fn named(
-    params: &[js::Pattern],
-    body: &mut Vec<Stmt>,
-    flags: &HashSet<String>,
-    suggested: &HashMap<String, Vec<String>>,
-    locals: &Named,
-) {
-    bindings::readable_temporaries(params, body, suggested);
-    flags::named_flags(body, flags);
-    js::statement_lists(body, &mut unwinds::scoped_drops);
-    bindings::declarations(body);
-    js::statement_lists(body, &mut unwinds::returned_through_finally);
-    bindings::shadowed(params, body, &locals.user);
-    crate::lower::std_types::text::appended(body, &locals.text);
-}
-
 /// What MIR's lowering, and THIR, say of a body for tidying it.
 pub(super) struct Hints<'h> {
     /// The name of the function's return place.
@@ -105,6 +83,12 @@ pub(super) struct Hints<'h> {
     pub(super) fuse: Option<&'h str>,
     /// The pass to stop after, `--tidy-until`'s, `stage/pass`.
     pub(super) until: Option<&'h str>,
+    /// The function's parameters, which the `finish` stage takes apart.
+    pub(super) params: &'h std::cell::RefCell<Vec<js::Pattern>>,
+    /// The names MIR suggests of its temporaries, for `finish` to give.
+    pub(super) suggested: &'h HashMap<String, Vec<String>>,
+    /// The locals the program names, and its `String`s, by name.
+    pub(super) named: &'h Named,
 }
 
 /// `body`, tidied, by what `hints` say of it: each stage's passes in turn
@@ -466,6 +450,30 @@ mod tests {
 
     fn call(f: &str) -> js::Stmt {
         StmtKind::Expr(Expr::call(Expr::var(f), Vec::new())).at(js::Span::NONE)
+    }
+
+    /// What finishes a body, after the stages that tidy it, in the order it
+    /// ran when it was a function of its own, `named`: the last passes
+    /// `--tidy-until` may stop after, and the contracts checked after them
+    /// (ADR 0659, amended).
+    #[test]
+    fn finish_is_the_last_stage_in_its_order() {
+        let names = super::pass_names();
+        let finish: Vec<&str> = names.iter().filter_map(|n| n.strip_prefix("finish/")).collect();
+        assert_eq!(
+            finish,
+            [
+                "parameters",
+                "temporaries named",
+                "flags named",
+                "drop scopes",
+                "declarations",
+                "returns through finally",
+                "shadows",
+                "appends",
+            ]
+        );
+        assert!(names.last().is_some_and(|n| n == "finish/appends"));
     }
 
     fn present(x: &str) -> Expr {
