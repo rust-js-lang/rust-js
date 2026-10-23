@@ -1125,3 +1125,83 @@ pub fn timed() -> bool {
   (globalThis as Record<string, unknown>).rustJsClock = { now: () => 1 };
   expect([lib.tooled(), lib.timed()]).toEqual([false, true]);
 });
+
+// ADR 0671: `js::get(request, "url")` reads the property once, as Rust
+// calls it once, so a getter runs once. Joined into the `if` before it,
+// `request != null && typeof request.url === "string"`, the read a `let`
+// chain binds was read again for its binding, `const url = request.url;`,
+// where React's `getIODescription` tests `value.request.url`: a getter ran
+// twice. A test reads in place what's bound before it only where that's read
+// once, or reads nothing but variables.
+test("a property a let chain tests and binds is read once", async () => {
+  const dir = fixture("property-read-once");
+  writeFileSync(join(dir, "lib.rs"), `use js::{Kind, Unknown};
+
+pub fn requested_url(value: &Unknown) -> String {
+    if let Some(request) = js::get(value, "request")
+        && let Some(Kind::String(url)) = js::get(request, "url").map(js::classify)
+    {
+        return url.to_string();
+    }
+    String::new()
+}
+
+pub fn has_url(value: &Unknown) -> bool {
+    if let Some(request) = js::get(value, "request")
+        && let Some(Kind::String(_)) = js::get(request, "url").map(js::classify)
+    {
+        return true;
+    }
+    false
+}
+
+pub fn same(value: &Unknown, other: &Unknown) -> bool {
+    if let Some(Kind::String(a)) = js::get(value, "url").map(js::classify)
+        && let Some(Kind::String(b)) = js::get(other, "url").map(js::classify)
+    {
+        return a == b;
+    }
+    false
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain(`export function requestedUrl(value) {
+  const request = value.request;
+  if (request != null) {
+    const url = request.url;
+    if (typeof url === "string") {
+      return url;
+    }
+  }
+  return "";
+}`);
+  // Read once, in the test, which binds nothing: in place.
+  expect(js).toContain(`if (request != null && typeof request.url === "string") {
+    return true;
+  }`);
+  expect(js.match(/request\.url/g)?.length).toBe(2);
+  const lib = await import(join(dir, "lib.js"));
+  const reads: string[] = [];
+  const counted = (name: string, url: unknown) => ({
+    get request() {
+      reads.push(`${name}.request`);
+      return {
+        get url() {
+          reads.push(`${name}.url`);
+          return url;
+        },
+      };
+    },
+    get url() {
+      reads.push(`${name}.url`);
+      return url;
+    },
+  });
+  expect(lib.requestedUrl(counted("a", "/api"))).toBe("/api");
+  expect(lib.requestedUrl(counted("b", 7))).toBe("");
+  expect(lib.requestedUrl({ request: null })).toBe("");
+  expect(lib.hasUrl(counted("c", "/api"))).toBe(true);
+  expect(lib.same(counted("d", "/x"), counted("e", "/x"))).toBe(true);
+  expect(reads).toEqual(["a.request", "a.url", "b.request", "b.url", "c.request", "c.url", "d.url", "e.url"]);
+});

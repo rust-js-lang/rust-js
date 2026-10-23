@@ -438,6 +438,12 @@ pub fn circle(radius: f64) -> &'static Circle {
 A module's `#` goes with the forms that aren't of a value: a function, `new`,
 `get` of a static. A method of a module, `this` and `"pkg#f"`, is an error.
 
+A getter runs once for each call of its binding, as Rust calls it: a
+property an `if let` chain tests and binds, `let Some(Kind::String(url)) =
+js::get(request, "url").map(js::classify)`, is read once, `const url =
+request.url;`, and tested as that, not read again in the test
+([ADR 0671](../../decisions/0671-a-property-a-test-reads-is-read-once.md)).
+
 `js::concat_text` is `"" + value`: of text or a number, its `String`; of a
 value of any shape, a `Result`, as `+` throws of a symbol and of an object
 whose `valueOf` throws (ADR 0639). A `match` of it, or its `is_err()`, is

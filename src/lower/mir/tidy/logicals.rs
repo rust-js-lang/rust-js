@@ -137,11 +137,34 @@ fn has_conditional(e: &Expr) -> bool {
     found
 }
 
+/// `test`, after the `const`s `bound`, each a read that does nothing, with
+/// what each is read in place, those after it first: the one answer to
+/// whether a test may read a value bound before it, of `if`s joined into a
+/// chain. `None` where one isn't such a read, or where one reads more than
+/// variables, a property, whose getter may run, and `test` reads it twice
+/// or `again` says what's after the `const`s reads it too, by its index and
+/// name: a getter's, `request.url`, runs once, as Rust's `js::get` does
+/// (ADR 0671). What reads only variables reads the same again.
+pub(super) fn bound_into(test: &Expr, bound: &[Stmt], again: &dyn Fn(usize, &str) -> usize) -> Option<Expr> {
+    (bound.iter().enumerate().rev()).try_fold(test.clone(), |test, (at, stmt)| match &stmt.kind {
+        StmtKind::Const(name, value) if value.reads_same() => {
+            let tested = js::mentions_in(&[StmtKind::Expr(test.clone()).at(js::Span::NONE)], name);
+            if !value.reads_only_vars() && tested > 0 && tested + again(at, name) > 1 {
+                return None;
+            }
+            test.substitute(&|v| (v == name).then(|| value.clone()))
+        }
+        _ => None,
+    })
+}
+
 /// `if (a) { if (b) { s } }`, the tests of one condition the program wrote,
 /// `a && b`'s: `if (a && b) { s }`. What's bound between them, a read that
 /// does nothing, comes first in `s`, and `b` reads its value, as
 /// `if let`s chained with `&&` read; one only `b` read, `const captured =
-/// child.type` a closure took, is gone: `b` reads it, once.
+/// child.type` a closure took, is gone: `b` reads it, once. Not where that
+/// would read a property twice (`bound_into`): `const url = request.url;
+/// if (typeof url === "string") { return url; }` stays.
 pub(super) fn and_tests(stmts: &mut [Stmt], conditions: &[(js::Span, js::Span)]) {
     let within = |c: &js::Span, s: js::Span| !s.is_none() && c.lo <= s.lo && s.hi <= c.hi;
     for stmt in stmts.iter_mut() {
@@ -150,24 +173,17 @@ pub(super) fn and_tests(stmts: &mut [Stmt], conditions: &[(js::Span, js::Span)])
             continue;
         };
         let [bound @ .., inner] = then.as_slice() else { continue };
-        let StmtKind::If(second, _, None) = &inner.kind else {
+        let StmtKind::If(second, body, None) = &inner.kind else {
             continue;
         };
         let one = (conditions.iter()).any(|(first, then)| within(first, span) && within(then, inner.span));
-        let pure = bound
-            .iter()
-            .all(|s| matches!(&s.kind, StmtKind::Const(_, value) if value.reads_same()));
-        if !one || !pure {
+        if !one {
             continue;
         }
-        let second = bound
-            .iter()
-            .rev()
-            .try_fold(second.clone(), |second, stmt| match &stmt.kind {
-                StmtKind::Const(name, value) => second.substitute(&|v| (v == name).then(|| value.clone())),
-                _ => None,
-            });
-        let Some(second) = second else { continue };
+        let again = |at: usize, name: &str| js::mentions_in(body, name) + js::mentions_in(&bound[at + 1..], name);
+        let Some(second) = bound_into(second, bound, &again) else {
+            continue;
+        };
         let bound = bound.len();
         let Some(Stmt {
             kind: StmtKind::If(_, body, None),

@@ -403,7 +403,9 @@ pub(super) fn branch_values(
 
 /// Of `if (a) { const x = e; if (b) { s } }`, `s` ending where it leaves:
 /// `[a, b]` and `const x = e; s`, what a level binds before its test, a
-/// read that does nothing, written into later tests, as `broken_chain`'s.
+/// read that does nothing, written into later tests, as `broken_chain`'s:
+/// each kept, so not a property, which a test would read again
+/// (`bound_into`).
 pub(super) fn returning_chain(stmts: &[Stmt]) -> Option<(Vec<Expr>, Vec<Stmt>)> {
     let [
         bound @ ..,
@@ -415,25 +417,14 @@ pub(super) fn returning_chain(stmts: &[Stmt]) -> Option<(Vec<Expr>, Vec<Stmt>)> 
     else {
         return None;
     };
-    if !bound
-        .iter()
-        .all(|s| matches!(&s.kind, StmtKind::Const(_, value) if value.reads_same()))
-    {
-        return None;
-    }
     let (mut tests, body) = match returning_chain(inner) {
         Some(chain) => chain,
         None if inner.last().is_some_and(ends) => (Vec::new(), inner.clone()),
         None => return None,
     };
     tests.insert(0, test.clone());
-    for stmt in bound.iter().rev() {
-        let StmtKind::Const(name, value) = &stmt.kind else {
-            unreachable!("matched")
-        };
-        for test in &mut tests {
-            *test = test.substitute(&|v| (v == name).then(|| value.clone()))?;
-        }
+    for test in &mut tests {
+        *test = bound_into(test, bound, &|_, _| 1)?;
     }
     let mut all = bound.to_vec();
     all.extend(body);

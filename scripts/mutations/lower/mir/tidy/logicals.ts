@@ -50,4 +50,12 @@ export const mutations: Mutation[] = [
     "replace": "        && false\n",
     "tests": ["test/lowering-branches.test.ts", "-t", "a value written with && is returned as one"]
   },
+  {
+    name: "bound-property-read-twice",
+    breaks: "a property a `let` chain binds and tests is read in its test and again for its binding, `typeof request.url === \"string\"` then `const url = request.url`: a getter runs twice, where `js::get` runs once",
+    file: "src/lower/mir/tidy/logicals.rs",
+    find: "            if !value.reads_only_vars() && tested > 0 && tested + again(at, name) > 1 {\n",
+    replace: "            if false && !value.reads_only_vars() && tested > 0 && tested + again(at, name) > 1 {\n",
+    tests: ["test/lowering-bindings.test.ts", "-t", "a property a let chain tests and binds is read once"],
+  },
 ];
