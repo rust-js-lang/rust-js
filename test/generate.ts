@@ -4,6 +4,8 @@
 //
 //   seed ──► program ──► native and JS differ? ──► reduce ──► a few lines, and the seed
 
+import { prelude } from "./generate-prelude";
+
 // A random number generator whose numbers a seed says: mulberry32.
 export function random(seed: number) {
   let state = seed >>> 0;
@@ -107,7 +109,10 @@ export type Expr =
   // whose closures may `note`: Rust's iterators are lazy, each item through
   // every step before the next, and an end may stop early, `next()`,
   // `any(..)`, so what's noted, and when, says in which order they run.
-  | { kind: "chain"; ty: Ty; elem: IntTy; source: Expr; rev: boolean; steps: Step[]; end: End }
+  // Its source a `Vec`'s items, or, of `i32`s, `count`, the crate's own
+  // iterator `Count { at: 0, end: source }`, whose `fold` and `nth` its own
+  // are and print they're called, which std's consumers call (#162).
+  | { kind: "chain"; ty: Ty; elem: IntTy; source: Expr; count?: boolean; rev: boolean; steps: Step[]; end: End }
   // `loop` as an expression, `break value` where its test holds or its
   // count runs out, its counter `c3` in scope; and a `match` of an integer
   // whose arms are a value, values `1 | 2`, a range `3..=9`, or a binding
@@ -151,6 +156,9 @@ export type Step = { op: "map" | "filter"; x: string; body: Expr } | { op: "take
 export type End =
   | { op: "collect" | "sum" | "count" | "max" | "min" | "last" | "next" }
   | { op: "any" | "all"; x: string; body: Expr }
+  // A key made of each item as it comes, which may `note`: what's noted,
+  // and when, says it's made between one step and the next (#179).
+  | { op: "max_by_key" | "min_by_key"; x: string; body: Expr }
   | { op: "fold"; init: Expr; x: string; acc: string; body: Expr };
 
 export type Stmt =
@@ -601,7 +609,12 @@ function chain(r: Random, ty: Ty, scope: Scope, depth: number): Expr | undefined
     end = { op: "collect" };
   } else if (optionOf) {
     elem = optionOf;
-    end = { op: r.pick(["max", "min", "last", "next"] as const) };
+    if (r.chance(0.3)) {
+      const { x, body } = closure(elem, elem);
+      end = { op: r.pick(["max_by_key", "min_by_key"] as const), x, body };
+    } else {
+      end = { op: r.pick(["max", "min", "last", "next"] as const) };
+    }
   } else if (ty === "bool") {
     elem = r.pick(intTypes);
     const { x, body } = closure(elem, "bool");
@@ -632,6 +645,10 @@ function chain(r: Random, ty: Ty, scope: Scope, depth: number): Expr | undefined
     }
     return { op, n: r.int(4) };
   });
+  if (elem === "i32" && r.chance(0.3)) {
+    const source: Expr = { kind: "lit", ty: "i32", value: BigInt(r.int(6)) };
+    return { kind: "chain", ty, elem, source, count: true, rev: false, steps, end };
+  }
   return { kind: "chain", ty, elem, source: expr(r, `Vec<${elem}>`, scope, depth - 1), rev: r.chance(0.3), steps, end };
 }
 
@@ -1008,10 +1025,13 @@ function show(e: Expr): string {
               ? ".count() as u32"
               : end.op === "any" || end.op === "all"
                 ? `.${end.op}(move |${end.x}: ${t}| ${show(end.body)})`
+                : end.op === "max_by_key" || end.op === "min_by_key"
+                  ? `.${end.op}(move |&${end.x}: &${t}| -> ${t} { ${show(end.body)} })`
                 : end.op === "fold"
                   ? `.fold(${show(end.init)}, move |${end.acc}: ${t}, ${end.x}: ${t}| -> ${t} { ${show(end.body)} })`
                   : `.${end.op}()`;
-      return `(${show(e.source)}.into_iter()${e.rev ? ".rev()" : ""}${steps.join("")}${tail})`;
+      const source = e.count ? `Count { at: 0, end: ${show(e.source)} }` : `${show(e.source)}.into_iter()`;
+      return `(${source}${e.rev ? ".rev()" : ""}${steps.join("")}${tail})`;
     }
     case "dread":
       return `${e.name}.0`;
@@ -1254,124 +1274,12 @@ function lines(stmts: Stmt[], indent: string): string[] {
   });
 }
 
-/** The program as Rust: its statements in `main`, `id`, which hides a
- * literal's value from rustc's checks, and the struct `S`. */
+/** The program as Rust: its statements in `main`, after the items every
+ * program has (`prelude`). */
 export function print(program: Program, seed?: number): string {
   return [
     ...(seed === undefined ? [] : [`// Generated from seed ${seed}.`]),
-    "fn id<T>(x: T) -> T {",
-    "    x",
-    "}",
-    "",
-    "fn note<T>(tag: u32, x: T) -> T {",
-    '    println!("note {tag}");',
-    "    x",
-    "}",
-    "",
-    "fn bump(s: &mut S) -> i32 {",
-    "    s.a = s.a.wrapping_add(1);",
-    "    s.a",
-    "}",
-    "",
-    "impl S {",
-    "    fn get(&self) -> i32 {",
-    "        self.a",
-    "    }",
-    "",
-    "    fn add(&mut self, n: i32) -> i32 {",
-    "        self.a = self.a.wrapping_add(n);",
-    "        self.a",
-    "    }",
-    "",
-    "    fn scaled(self, k: i32) -> S {",
-    "        S { a: self.a.wrapping_mul(k), b: self.b, c: self.c }",
-    "    }",
-    "}",
-    "",
-    "trait Shape {",
-    "    fn area(&self) -> i64;",
-    "",
-    "    fn name(&self) -> String {",
-    '        String::from("shape")',
-    "    }",
-    "",
-    "    fn grow(&mut self, by: i64);",
-    "}",
-    "",
-    "struct Sq(i64);",
-    "",
-    "struct Rect(i64, i64);",
-    "",
-    "impl Shape for Sq {",
-    "    fn area(&self) -> i64 {",
-    "        self.0.wrapping_mul(self.0)",
-    "    }",
-    "",
-    "    fn grow(&mut self, by: i64) {",
-    "        self.0 = self.0.wrapping_add(by);",
-    "    }",
-    "}",
-    "",
-    "impl Shape for Rect {",
-    "    fn area(&self) -> i64 {",
-    "        self.0.wrapping_mul(self.1)",
-    "    }",
-    "",
-    "    fn name(&self) -> String {",
-    '        format!("rect {}x{}", self.0, self.1)',
-    "    }",
-    "",
-    "    fn grow(&mut self, by: i64) {",
-    "        self.0 = self.0.wrapping_add(by);",
-    "        self.1 = self.1.wrapping_sub(by);",
-    "    }",
-    "}",
-    "",
-    "fn total<T: Shape>(items: &[T]) -> i64 {",
-    "    items.iter().map(|s| s.area()).fold(0, |a, b| a.wrapping_add(b))",
-    "}",
-    "",
-    "fn describe(s: &dyn Shape) -> String {",
-    '    format!("{} {}", s.name(), s.area())',
-    "}",
-    "",
-    "type Shapes = Vec<Box<dyn Shape>>;",
-    "",
-    "use std::cell::RefCell;",
-    "use std::rc::Rc;",
-    "",
-    "type Shared = Rc<RefCell<i64>>;",
-    "",
-    "type Pair = (i32, u8);",
-    "",
-    "struct D(u32);",
-    "",
-    "impl Drop for D {",
-    "    fn drop(&mut self) {",
-    '        println!("drop {}", self.0);',
-    "    }",
-    "}",
-    "",
-    "fn take(d: D) -> u32 {",
-    "    d.0",
-    "}",
-    "",
-    "use std::collections::BTreeMap;",
-    "",
-    "type Map = BTreeMap<u8, i32>;",
-    "",
-    "#[derive(Debug, Clone, Copy, PartialEq)]",
-    "enum E {",
-    "    A,",
-    "    B(i32),",
-    "    C { x: u8, y: bool },",
-    "}",
-    "",
-    "#[derive(Debug, Clone, Copy, PartialEq)]",
-    `struct S {`,
-    ...struct.fields.map(([name, ty]) => `    ${name}: ${ty},`),
-    "}",
-    "",
+    ...prelude(struct.fields),
     "#[allow(unused, arithmetic_overflow, unconditional_panic)]",
     "fn main() {",
     ...lines(program, "    "),

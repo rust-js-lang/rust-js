@@ -5,9 +5,9 @@ import {
   $KeySet,
   $byteLen,
   $eq,
+  $given,
   $hashSlice,
   $iter,
-  $iterator,
   $next,
   $nextSome,
   $orInsert,
@@ -38,7 +38,7 @@ function tCounting(TIterator) {
   return $traitImpl($tCounting, [TIterator], () => ({
     countsBy: (self, f, KHash, KPartialEq, KMap) => {
       const counts = new KMap();
-      $iterator(self, TIterator.next, true)
+      $given(self, TIterator, true)
         .map((item) => f(item))
         .forEach((k) => {
           const current = $orInsert(counts, k, 0);
@@ -50,7 +50,7 @@ function tCounting(TIterator) {
       tCounting(TIterator).countsBy(self, (x) => x, SelfItemHash, SelfItemPartialEq, SelfItemMap),
     tallyBy: (self, f, KHash, KPartialEq, KMap) =>
       tCounting({ next: $nextSome }).counts(
-        $iterator(self, TIterator.next, true).map((item) => f(item)),
+        $given(self, TIterator, true).map((item) => f(item)),
         KHash,
         KPartialEq,
         KMap,

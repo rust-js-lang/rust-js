@@ -78,3 +78,13 @@ error: rust-js does not support giving `total`'s `I` a type with a destructor, w
   destructor: a `for` loop over an iterator of them in generic code.
 - **A requirement is the parameter's, not the place's:** one loop over `I`
   takes none of `I` for the whole function.
+
+## Amended (#180)
+
+`nth`, through a `&mut` or of an iterator it ends holding nothing of, is
+one of the steps that leave no item undropped (`IterComb::leaves_none`):
+it drops each item it passes over (`$nthDropping`) and gives back the one
+it stops at. So a generic function given, by value, an iterator with a
+destructor that it steps by `nth` takes that iterator's drop, where it was
+refused.
+

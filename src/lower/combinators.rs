@@ -222,12 +222,13 @@ impl IterComb {
     /// Whether it leaves no item with a destructor undropped (ADR 0098): it
     /// moves each it takes on, `partition`'s into one of its two (ADR 0445),
     /// `find_map`'s to its function; or it drops each it passes over,
-    /// `max_by`'s and `min_by`'s, by a key or not. `filter_map`'s, an adapter
-    /// that holds its source, is `holds_its_sources`' (ADR 0518).
+    /// `max_by`'s and `min_by`'s, by a key or not, and `nth`'s, which gives
+    /// back the one it stops at (#180). `filter_map`'s, an adapter that
+    /// holds its source, is `holds_its_sources`' (ADR 0518).
     pub(in crate::lower) fn leaves_none(self) -> bool {
         matches!(
             self,
-            IterComb::Partition | IterComb::FindMap | IterComb::MaxBy(_) | IterComb::MaxByKey(_)
+            IterComb::Partition | IterComb::FindMap | IterComb::MaxBy(_) | IterComb::MaxByKey(_) | IterComb::Nth
         )
     }
 }

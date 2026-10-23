@@ -1,9 +1,10 @@
 //! What the crate does with its closures that JS can't see in a function:
 //! whether one holding a value with a destructor is made a `dyn Fn` (ADR
-//! 0521), and which are cloned apart (ADR 0522).
+//! 0521), and which are cloned apart (ADR 0522); and, as a `dyn Fn`'s, of
+//! a `dyn Any`, whether a value with a destructor is made one (ADR 0691).
 
 use crate::lower::Body;
-use crate::lower::recognition::{given_back, is_fn_dyn, rc_pointee};
+use crate::lower::recognition::{any_trait, given_back, is_fn_dyn, rc_pointee};
 use rustc_hir::def_id::DefId;
 use rustc_middle::thir::{ExprKind, Thir};
 use rustc_middle::ty::adjustment::PointerCoercion;
@@ -16,6 +17,10 @@ pub struct ClosureFacts {
     /// Whether a function holding a value with a destructor is made a `dyn
     /// Fn`, which then drops it: a library's may be.
     pub fn_dyns_drop: bool,
+    /// Whether a value with a destructor is made a `dyn Any`, which then
+    /// drops it: what unwound, a panic's message or what JS threw, drops
+    /// nothing, nor a `dyn Any` of anything else (ADR 0691).
+    pub any_dyns_drop: bool,
     /// The closures made a `dyn Fn`, each carrying its drop.
     made_fn_dyns: HashSet<DefId>,
     /// The closures cloned, `Clone::clone`'s or a `T: Clone`'s.
@@ -55,6 +60,7 @@ impl ClosureFacts {
             .collect();
         ClosureFacts {
             fn_dyns_drop: library,
+            any_dyns_drop: false,
             made_fn_dyns,
             cloned,
             cloned_apart: HashSet::new(),
@@ -149,9 +155,39 @@ pub(super) fn fn_dyns_drop<'tcx>(
         .any(|from| drops(from) || from.has_non_region_param() && closure_drops())
 }
 
+/// Whether any of `all_bodies` makes a value a `dyn Any` that `drops` says
+/// has something to drop, or a type parameter's, where `params_may_drop`;
+/// or, where `foreign_drops`, a library may have made one (ADR 0691).
+/// Only the crate makes one: std's of its own is a panic's message.
+pub(super) fn any_dyns_drop<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    all_bodies: &[&Body<'tcx>],
+    (params_may_drop, foreign_drops): (bool, bool),
+    drops: impl Fn(Ty<'tcx>) -> bool,
+) -> bool {
+    let Some(any) = any_trait(tcx) else {
+        return false;
+    };
+    let of_any = |predicates: &ty::List<ty::PolyExistentialPredicate<'tcx>>| predicates.principal_def_id() == Some(any);
+    foreign_drops
+        || (all_bodies.iter())
+            .flat_map(|body| dyn_sources(tcx, &body.thir, of_any))
+            .any(|from| drops(from) || params_may_drop && from.has_non_region_param())
+}
+
 /// The functions `thir` makes `dyn Fn`s of, `Box<F>` to `Box<dyn Fn()>`'s
 /// `F`.
 fn fn_dyn_sources<'a, 'tcx>(tcx: TyCtxt<'tcx>, thir: &'a Thir<'tcx>) -> impl Iterator<Item = Ty<'tcx>> + 'a {
+    dyn_sources(tcx, thir, move |predicates| is_fn_dyn(tcx, predicates))
+}
+
+/// The values `thir` makes `dyn`s of that `of` says are its, `Box<T>` to
+/// `Box<dyn Trait>`'s `T`.
+fn dyn_sources<'a, 'tcx>(
+    tcx: TyCtxt<'tcx>,
+    thir: &'a Thir<'tcx>,
+    of: impl Fn(&'tcx ty::List<ty::PolyExistentialPredicate<'tcx>>) -> bool + 'a,
+) -> impl Iterator<Item = Ty<'tcx>> + 'a {
     thir.exprs.iter().filter_map(move |expr| {
         let ExprKind::PointerCoercion {
             cast: PointerCoercion::Unsize,
@@ -165,7 +201,7 @@ fn fn_dyn_sources<'a, 'tcx>(tcx: TyCtxt<'tcx>, thir: &'a Thir<'tcx>) -> impl Ite
         let ty::Dynamic(predicates, ..) = to.kind() else {
             return None;
         };
-        is_fn_dyn(tcx, predicates).then_some(())?;
+        of(predicates).then_some(())?;
         pointee(tcx, thir[source].ty)
     })
 }

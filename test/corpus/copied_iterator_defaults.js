@@ -2,8 +2,8 @@
 
 import {
   $closing,
+  $given,
   $iter,
-  $iterator,
   $lent,
   $next,
   $rangeNext,
@@ -68,12 +68,14 @@ function tTotals(TIterator, dropT) {
   return $traitImpl($tTotals, [TIterator, dropT], () => ({
     total: (self) => {
       const iter = self;
-      const result = $iterator(iter, TIterator.next).reduce((a, b) => (a + b) & 255, 0);
-      dropT?.(iter);
+      const result = $given(iter, TIterator).reduce((a, b) => (a + b) & 255, 0);
+      if (TIterator.fold === undefined) {
+        dropT?.(iter);
+      }
       return result;
     },
     doubled: (self) => {
-      const iter = $closing($iterator(self, TIterator.next), dropT).map((x) => (x * 2) & 255);
+      const iter = $closing($given(self, TIterator), dropT).map((x) => (x * 2) & 255);
       const result = iter.toArray();
       iter.return();
       return result;
@@ -98,7 +100,7 @@ function tTotals(TIterator, dropT) {
       }
       return n;
     },
-    firstTwo: (self) => $lent($iterator(self, TIterator.next)).take(2).toArray(),
+    firstTwo: (self) => $lent($given(self, TIterator)).take(2).toArray(),
     $drop: dropT,
   }));
 }

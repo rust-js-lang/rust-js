@@ -7,21 +7,13 @@ export function entry() {
 function keep(n, fail) {
   try {
     console.log(`keep ${n[0]}`);
-  } catch (error) {
-    console.log(`drop ${n[0]}`);
-    throw error;
-  }
-  if (fail) {
-    try {
+    if (fail) {
       throw new Error("kept too often");
-    } catch (error) {
-      console.log(`drop ${n[0]}`);
-      throw error;
     }
+    return [(n[0] + 10) & 255];
+  } finally {
+    console.log(`drop ${n[0]}`);
   }
-  const result = [(n[0] + 10) & 255];
-  console.log(`drop ${n[0]}`);
-  return result;
 }
 
 function swapY(p, fail) {

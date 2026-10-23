@@ -329,17 +329,14 @@ pub fn work(fail: bool) -> u32 {
 export function work(fail) {
   const _outer = { name: "outer" };
   const name = "inner";
-  if (fail) {
-    try {
-      throw new Error("failed");
-    } catch (error) {
-      console.log(`closing ${name}`);
-      console.log(`closing ${_outer.name}`);
-      throw error;
-    }
-  }
   try {
-    console.log(`closing ${name}`);
+    try {
+      if (fail) {
+        throw new Error("failed");
+      }
+    } finally {
+      console.log(`closing ${name}`);
+    }
   } finally {
     console.log(`closing ${_outer.name}`);
   }
@@ -351,6 +348,10 @@ export function work(fail) {
 A JS exception thrown through Rust code unwinds it the same way. A `drop`
 that panics while another panic unwinds replaces that panic, where Rust
 aborts.
+
+A scope's `if`s, loops and `return`s from inside them are in its `try`,
+whose `finally` drops what it holds however it's left: a guard whose
+`Drop` restores state is a `finally` ([ADR 0693](../../decisions/0693-a-guards-scope-is-one-finally-its-returns-in-it.md)).
 
 ## `RefCell` borrows
 
@@ -597,7 +598,7 @@ export function text(value) {
     return "" + value;
   } catch (thrown) {
     const payload = $unwound(thrown);
-    const option = payload.impl.typeId() === "&js::JsError" ? payload.value : undefined;
+    const option = payload.impl.typeId() === "&js::JsError" ? payload.value : payload.error;
     if (option != null && option.name === "TypeError") {
       return "";
     }
@@ -609,12 +610,17 @@ export function text(value) {
 - **The payload is a `Box<dyn Any + Send>`**: a panic's message, which
   downcasts as a `&str` and as a `String` both, as JS doesn't keep which
   Rust's was; or what JS threw, a `&'static JsError`. A thrown `Error` of
-  JS's own constructor, `new Error(..)`, is a panic, whoever threw it.
-- **`resume_unwind(payload)` throws it again**: what JS threw, itself; a
-  panic's message, its panic; any other payload, an `Error` that a
+  JS's own constructor, `new Error(..)`, is a panic, whoever threw it, and
+  what JS threw too: its message downcasts as a `&str` and a `String`, and
+  the `Error` itself, its `stack`, as a `&JsError` ([ADR 0692](../../decisions/0692-a-thrown-error-is-a-panic-and-what-js-threw.md)).
+- **`resume_unwind(payload)` throws it again**: a thrown `Error` or what
+  JS threw, itself; text, its panic; any other payload, an `Error` that a
   `catch_unwind` gives back as it was.
 - **What it unwinds through is dropped** before `catch_unwind` returns,
-  as [above](#unwinding-runs-drop). rustc checks `UnwindSafe`;
+  as [above](#unwinding-runs-drop). The payload drops nothing, a panic's
+  message or what JS threw, unless the crate makes a `dyn Any` of a value
+  with a destructor, so a crate with destructors catches as JS's `try`
+  too ([ADR 0691](../../decisions/0691-a-dyn-any-drops-where-the-crate-makes-one-that-does.md)). rustc checks `UnwindSafe`;
   `AssertUnwindSafe(|| ..)` is the closure it holds.
 - **A future's panic is its promise's**: `catch_unwind` of a closure that
   makes one is `Ok` of it, and the panic is thrown where it's awaited.

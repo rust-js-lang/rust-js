@@ -12,15 +12,13 @@ function noisyDrop_drop(noisy) {
 
 function deep(n) {
   const _guard = ["deep"];
-  if (n > 0) {
-    try {
+  try {
+    if (n > 0) {
       throw new Error("deep panic");
-    } catch (error) {
-      noisyDrop_drop(_guard);
-      throw error;
     }
+  } finally {
+    noisyDrop_drop(_guard);
   }
-  noisyDrop_drop(_guard);
 }
 
 function main() {

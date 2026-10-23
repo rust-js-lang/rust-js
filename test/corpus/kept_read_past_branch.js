@@ -12,59 +12,30 @@ function id(x) {
 function droppedAfter() {
   const loud = 5;
   let w = 0;
-  while (true) {
-    let tmp;
-    try {
-      tmp = w < id(2);
-    } catch (error) {
-      console.log(`drop ${loud}`);
-      throw error;
-    }
-    if (!tmp) {
-      break;
-    }
-    w = (w + 1) >>> 0;
-    let tmp$1;
-    try {
-      tmp$1 = new Map();
-    } catch (error) {
-      console.log(`drop ${loud}`);
-      throw error;
-    }
-    let tmp$2;
-    try {
-      tmp$2 = [tmp$1.size, id(1)];
-    } catch (error) {
-      console.log(`drop ${loud}`);
-      throw error;
-    }
-    let size;
-    if (tmp$2[0] === 7) {
-      size = 1;
-    } else {
-      const y = tmp$2[1];
-      let tmp;
-      try {
-        tmp = id(false);
-      } catch (error) {
-        console.log(`drop ${loud}`);
-        throw error;
-      }
-      if (tmp) {
-        const y = tmp$2[1];
-        size = y;
-      } else {
-        size = 2;
-      }
-    }
-    try {
-      console.log(`${size}`);
-    } catch (error) {
-      console.log(`drop ${loud}`);
-      throw error;
-    }
-  }
   try {
+    while (true) {
+      const tmp = w < id(2);
+      if (!tmp) {
+        break;
+      }
+      w = (w + 1) >>> 0;
+      const tmp$1 = new Map();
+      const tmp$2 = [tmp$1.size, id(1)];
+      let size;
+      if (tmp$2[0] === 7) {
+        size = 1;
+      } else {
+        const y = tmp$2[1];
+        const tmp = id(false);
+        if (tmp) {
+          const y = tmp$2[1];
+          size = y;
+        } else {
+          size = 2;
+        }
+      }
+      console.log(`${size}`);
+    }
     console.log(`${loud}`);
   } finally {
     console.log(`drop ${loud}`);
@@ -78,40 +49,22 @@ function droppedEachPass() {
   while (w < id(2)) {
     w = (w + 1) >>> 0;
     const each = (w + 10) >>> 0;
-    let tmp;
     try {
-      tmp = new Map();
-    } catch (error) {
-      console.log(`drop ${each}`);
-      throw error;
-    }
-    let tmp$1;
-    try {
-      tmp$1 = [tmp.size, id(1)];
-    } catch (error) {
-      console.log(`drop ${each}`);
-      throw error;
-    }
-    let size;
-    if (tmp$1[0] === 7) {
-      size = 1;
-    } else {
-      const y = tmp$1[1];
-      let tmp;
-      try {
-        tmp = id(false);
-      } catch (error) {
-        console.log(`drop ${each}`);
-        throw error;
-      }
-      if (tmp) {
-        const y = tmp$1[1];
-        size = y;
+      const tmp = new Map();
+      const tmp$1 = [tmp.size, id(1)];
+      let size;
+      if (tmp$1[0] === 7) {
+        size = 1;
       } else {
-        size = 2;
+        const y = tmp$1[1];
+        const tmp = id(false);
+        if (tmp) {
+          const y = tmp$1[1];
+          size = y;
+        } else {
+          size = 2;
+        }
       }
-    }
-    try {
       console.log(`${size}`);
     } finally {
       console.log(`drop ${each}`);

@@ -72,23 +72,25 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(self.stepped_items(items))
     }
 
-    /// `it.map(f)` or `it.filter(f)`, `name`'s, of an iterator cloned apart
-    /// (ADR 0525): made by a function of its source and its function, `make`,
+    /// An adapter cloned apart (ADR 0525), `name`'s, `map`'s or `chain`'s,
+    /// of its two `parts`, a source and its function or two sources: made by
+    /// a function of them, `make`, which `build` writes the adapter of, and
     /// which its clone, `$cloning`'s, calls again with a clone of each, as a
-    /// closure cloned apart is (ADR 0522). Its source's position is all its
+    /// closure cloned apart is (ADR 0522). Its sources' positions are all its
     /// state, a JS iterator helper's, so a clone of it is where it is.
     pub(super) fn cloned_apart_adapter(
         &mut self,
-        (name, source, f): (&str, Expr, Expr),
-        (source_ty, f_ty, output): (Ty<'tcx>, Ty<'tcx>, Ty<'tcx>),
-        (lent, own): (bool, bool),
+        (name, parts, names): (&str, [Expr; 2], [&str; 2]),
+        (part_tys, output): ([Ty<'tcx>; 2], Ty<'tcx>),
+        lent: bool,
         span: Span,
         made: &mut Vec<Stmt>,
+        build: impl FnOnce(&mut Self, Expr, Expr) -> R<Expr>,
     ) -> R<Expr> {
         let dropping = self
             .iterator_item(output)
             .is_some_and(|item| self.drops(item) != crate::lower::drops::Drops::Nothing);
-        if lent || source_ty.is_ref() || dropping {
+        if lent || part_tys[0].is_ref() || dropping {
             return Err(self.unsupported(
                 span,
                 &format!("cloning a `{output}` that's lent, or of items with a destructor"),
@@ -96,7 +98,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // Of generic code's source or function, cloned by its `Clone`'s
         // dictionary, which it's given only where it's bound by one.
-        let unbound = [source_ty, f_ty].into_iter().find(|&ty| {
+        let unbound = part_tys.into_iter().find(|&ty| {
             self.is_unknown(ty)
                 && self
                     .evidence_for(ty::TraitRef::new(self.tcx, self.clone_trait(), [ty]))
@@ -108,25 +110,24 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 &format!("cloning a `{output}` made where `{ty}` isn't bound by `Clone`"),
             ));
         }
-        let (it, function) = (self.fresh("it"), self.fresh("f"));
-        // `makeMap`, `makeFilter`.
+        let (a, b) = (self.fresh(names[0]), self.fresh(names[1]));
+        // `makeMap`, `makeChain`.
         let make = self.fresh(&format!("make{}{}", name[..1].to_uppercase(), &name[1..]));
-        let stepped = self.as_js_iterator(Expr::var(&it), source_ty, span)?;
-        let callback = self.unary_callback(Expr::var(&function), own);
-        let adapter = Expr::call(Expr::member(stepped, name), vec![callback]);
+        let adapter = build(self, Expr::var(&a), Expr::var(&b))?;
         let mut cloned = Vec::new();
         let clones = vec![
-            self.clone_value(Expr::var(&it), source_ty, span, &mut cloned)?,
-            self.clone_value(Expr::var(&function), f_ty, span, &mut cloned)?,
+            self.clone_value(Expr::var(&a), part_tys[0], span, &mut cloned)?,
+            self.clone_value(Expr::var(&b), part_tys[1], span, &mut cloned)?,
         ];
         cloned.push(StmtKind::Return(Some(Expr::call(Expr::var(&make), clones))).at(js::Span::NONE));
         let carried = Expr::call_helper("$cloning", vec![adapter, Expr::arrow(Vec::new(), cloned)]);
         let maker = Expr::arrow(
-            vec![it.as_str().into(), function.as_str().into()],
+            vec![a.as_str().into(), b.as_str().into()],
             vec![StmtKind::Return(Some(carried)).at(js::Span::NONE)],
         );
         made.push(StmtKind::Let(make.clone(), Some(maker)).at(self.js_span(span)));
-        Ok(Expr::call(Expr::var(&make), vec![source, f]))
+        let [first, second] = parts;
+        Ok(Expr::call(Expr::var(&make), vec![first, second]))
     }
 
     /// Whether `next_back()` of an iterator of type `iter_ty` is `$nextBack`'s:

@@ -20,7 +20,7 @@ use rustc_span::def_id::DefId;
 
 use crate::js::{self, Expr, Op, Stmt, StmtKind};
 use crate::lower::iterators::{collected, from_iterator, is_js_iterator, made_array, stepped_range};
-use crate::lower::recognition::{IterMethod, StdItem, is_std_def, std_item};
+use crate::lower::recognition::{IterMethod, Parted, StdItem, is_std_def, std_item};
 use crate::lower::representation::Num;
 use crate::lower::std_types::heap::HeapOp;
 use crate::lower::std_types::range::RangeKind;
@@ -53,7 +53,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 return Ok(None);
             };
             let result = self.spill("result", result, made);
-            self.drop_value(held, receiver_ty, span, made)?;
+            self.dropped_consumed(held, (receiver_ty, def_id, output), span, made)?;
             return Ok(Some(result));
         }
         self.cloned_apart_call(def_id, (trait_id, arg_tys), values, output, span, made)
@@ -105,25 +105,64 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
         made: &mut Vec<Stmt>,
     ) -> R<Option<Expr>> {
-        let std_method = self.recognition().iterator_method(def_id);
-        if !(matches!(std_method, Some(IterMethod::Map | IterMethod::Filter)) && self.iterator_cloned_apart(output)) {
+        let parted = crate::lower::recognition::cloned_parts(self.tcx, self.reveal(output));
+        let (Some((parted, _, stored)), [receiver_ty, other_ty, ..]) = (parted, arg_tys) else {
+            return self.holding_function(def_id, (trait_id, arg_tys), values, output, span, made);
+        };
+        if values.len() != 2 || !self.iterator_cloned_apart(output) {
             return self.holding_function(def_id, (trait_id, arg_tys), values, output, span, made);
         }
+        let (receiver_ty, other_ty) = (*receiver_ty, *other_ty);
         let name = self.tcx.item_name(def_id);
-        let receiver_ty = arg_tys[0];
         let mut values = values.into_iter();
-        let (receiver, f) = (
+        let (receiver, other) = (
             values.next().expect("the receiver"),
-            values.next().expect("the function"),
+            values.next().expect("its other part"),
         );
-        let own = arg_tys.get(1).is_some_and(|ty| self.is_crate_fn_item(*ty));
+        // A chain's or a zip's other side given as what makes an iterator,
+        // a `Vec`, an array or a slice: made the array's iterator here, and
+        // cloned as the iterator the adapter keeps, where it is (#181). One
+        // given as an iterator is as the receiver is, its JS value where it
+        // is; any other, refused.
+        let iterates = matches!(parted, Parted::Map | Parted::Filter) || self.implements_iterator(other_ty);
+        let (other, other_ty) = match iterates {
+            true => (other, other_ty),
+            false if self.array_source(stored).is_some() => {
+                let items = self.iterable_items(other, other_ty, span, made)?;
+                (self.stepped_items(items), stored)
+            }
+            false => {
+                return Err(self.unsupported(
+                    span,
+                    &format!("cloning a `{output}` of a `{other_ty}` it makes an iterator of"),
+                ));
+            }
+        };
+        let parts = [receiver, other];
         let lent = matches!(receiver_ty.kind(), ty::Ref(_, _, Mutability::Mut));
+        let names = match parted {
+            Parted::Map | Parted::Filter => ["it", "f"],
+            Parted::Chain | Parted::Zip => ["a", "b"],
+        };
+        let own = self.is_crate_fn_item(other_ty);
         let adapter = self.cloned_apart_adapter(
-            (name.as_str(), receiver, f),
-            (receiver_ty, arg_tys[1], output),
-            (lent, own),
+            (name.as_str(), parts, names),
+            ([receiver_ty, other_ty], output),
+            lent,
             span,
             made,
+            |cx, a, b| {
+                let a = cx.as_js_iterator(a, receiver_ty, span)?;
+                Ok(match parted {
+                    // Its source given its function, `it.map(f)`.
+                    Parted::Map | Parted::Filter => {
+                        let callback = cx.unary_callback(b, own);
+                        Expr::call(Expr::member(a, name.as_str()), vec![callback])
+                    }
+                    Parted::Chain => Expr::call_helper("$lazyChain", vec![a, cx.as_js_iterator(b, other_ty, span)?]),
+                    Parted::Zip => Expr::call_helper("$lazyZip", vec![a, cx.as_js_iterator(b, other_ty, span)?]),
+                })
+            },
         )?;
         Ok(Some(adapter))
     }
@@ -163,6 +202,33 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         )))
     }
 
+    /// `held`, an iterator of type `receiver` its std method `method` took
+    /// by value, dropped after it, as `dropped_after` says: of a type
+    /// parameter given as it is, consumed by `fold`, where its dictionary
+    /// has the crate's own, which took it and dropped it, not again (#162).
+    fn dropped_consumed(
+        &mut self,
+        held: Expr,
+        (receiver, method, output): (Ty<'tcx>, DefId, Ty<'tcx>),
+        span: Span,
+        made: &mut Vec<Stmt>,
+    ) -> R<()> {
+        let iterator = std_item(self.tcx, StdItem::Iterator);
+        let Some(dictionary) =
+            (self.iterator_evidence(receiver, iterator)).filter(|_| self.consumes_by_fold(method, output))
+        else {
+            return self.drop_value(held, receiver, span, made);
+        };
+        let mut dropped = Vec::new();
+        self.drop_value(held, receiver, span, &mut dropped)?;
+        if !dropped.is_empty() {
+            let fold = crate::lower::bindings::trait_method_name(self.tcx, iterator, "fold");
+            let unfolded = Expr::bin(Op::Eq, Expr::member(dictionary, fold), Expr::undefined());
+            made.push(StmtKind::If(unfolded, dropped, None).at(self.js_span(span)));
+        }
+        Ok(())
+    }
+
     /// Whether an iterator taken by value, `items.fold(..)`'s, of a
     /// `receiver` with something to drop, is dropped after its method, as
     /// the method's end drops it and JS doesn't: consumed, `collect()`, then
@@ -180,6 +246,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
     ) -> R<bool> {
         if self.drops(receiver) == crate::lower::drops::Drops::Nothing {
+            return Ok(false);
+        }
+        // What the crate's own `fold` is called by: it takes the iterator
+        // and drops it, so nothing's dropped after (#162). Not of an adapter
+        // that holds a function with a destructor, which it doesn't drop.
+        if self.consumes_by_fold(def_id, output) && self.recognition().folds_its_own(receiver) {
+            if (self.recognition().held_function(receiver))
+                .is_some_and(|function| self.drops(function) != crate::lower::drops::Drops::Nothing)
+            {
+                return Err(self.unsupported(
+                    span,
+                    "an adapter holding a closure with a destructor, over an iterator whose impl writes its own `fold`",
+                ));
+            }
             return Ok(false);
         }
         let params_only = self.drop_query().drops_but_params(receiver) == crate::lower::drops::Drops::Nothing;

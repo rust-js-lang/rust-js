@@ -3,6 +3,7 @@
 import {
   $enumerate,
   $foldBack,
+  $given,
   $iter,
   $iterator,
   $iteratorValue,
@@ -26,7 +27,7 @@ export function entry() {
 }
 
 function positions(iter, f, IIterator) {
-  return { iter: $enumerate($iterator(iter, IIterator.next, true)), f };
+  return { iter: $enumerate($given(iter, IIterator, true)), f };
 }
 
 function positionsIterator_next(positions) {
@@ -108,7 +109,7 @@ const Wrap = {
   lastTripled(wrap, RIterator, RDoubleEndedIterator) {
     return $foldBack(
       $mapEnds(
-        $iterator(wrap.inner, RIterator.next, false, RDoubleEndedIterator.next_back),
+        $given(wrap.inner, RIterator, false, RDoubleEndedIterator.next_back),
         (x) => (x * 3) >>> 0,
       ),
       undefined,

@@ -96,3 +96,10 @@ through the crate's own `fold` and `nth` wherever std's does.**
   `test/corpus/own_fold_and_nth.rs` and `restarting_iterators.rs`'s
   `flat_map`, each with native Rust, and by the mutations of each file
   changed.
+
+## Amended by
+
+[ADR 0690](0690-an-iterator-given-as-it-is-folds-by-its-own-fold.md): an
+iterator given as it is, by its dictionary, `Peekable`'s and `Fuse`'s
+sources among them, folds by its own `fold` too, and an iterator that
+fold takes is dropped once.

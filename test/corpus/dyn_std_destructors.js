@@ -45,74 +45,34 @@ function main() {
   const shown = { value: [2], impl: dDisplay };
   try {
     console.log(`${shown.impl.fmt(shown.value)}`);
-  } catch (error) {
-    shown.impl.$drop?.(shown.value);
-    throw error;
-  }
-  const items = [
-    { value: [3], impl: { typeId: () => "lib::D", $drop: dDrop_drop } },
-    { value: 5, impl: { typeId: () => "u8" } },
-  ];
-  const length = items.length;
-  try {
-    console.log(`${length}`);
-  } catch (error) {
-    for (const item of items) {
-      item.impl.$drop?.(item.value);
-    }
-    shown.impl.$drop?.(shown.value);
-    throw error;
-  }
-  let tmp;
-  try {
-    tmp = fail(4);
-  } catch (error) {
-    for (const item of items) {
-      item.impl.$drop?.(item.value);
-    }
-    shown.impl.$drop?.(shown.value);
-    throw error;
-  }
-  let tmp$0$live = true;
-  if (tmp.TAG === "Err") {
-    tmp$0$live = false;
-    const e = tmp._0;
+    const items = [
+      { value: [3], impl: { typeId: () => "lib::D", $drop: dDrop_drop } },
+      { value: 5, impl: { typeId: () => "u8" } },
+    ];
+    const length = items.length;
     try {
-      console.log(`err ${e.impl.Display().fmt(e.value)}`);
-    } catch (error) {
-      e.impl.$drop?.(e.value);
-      for (const item of items) {
-        item.impl.$drop?.(item.value);
-      }
-      shown.impl.$drop?.(shown.value);
-      throw error;
-    }
-    try {
-      e.impl.$drop?.(e.value);
-    } catch (error) {
-      for (const item of items) {
-        item.impl.$drop?.(item.value);
-      }
-      shown.impl.$drop?.(shown.value);
-      throw error;
-    }
-  } else {
-    const n = tmp._0;
-    try {
-      console.log(`${n}`);
-    } catch (error) {
+      console.log(`${length}`);
+      const tmp = fail(4);
+      let tmp$0$live = true;
       if (tmp.TAG === "Err") {
-        tmp._0.impl.$drop?.(tmp._0.value);
+        tmp$0$live = false;
+        const e = tmp._0;
+        try {
+          console.log(`err ${e.impl.Display().fmt(e.value)}`);
+        } finally {
+          e.impl.$drop?.(e.value);
+        }
+      } else {
+        const n = tmp._0;
+        try {
+          console.log(`${n}`);
+        } catch (error) {
+          if (tmp.TAG === "Err") {
+            tmp._0.impl.$drop?.(tmp._0.value);
+          }
+          throw error;
+        }
       }
-      for (const item of items) {
-        item.impl.$drop?.(item.value);
-      }
-      shown.impl.$drop?.(shown.value);
-      throw error;
-    }
-  }
-  try {
-    try {
       if (tmp.TAG === "Err") {
         if (tmp$0$live) {
           tmp._0.impl.$drop?.(tmp._0.value);

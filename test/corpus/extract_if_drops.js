@@ -96,9 +96,8 @@ function fromMaps() {
     loudDrop_drop,
   );
   const value = (k) => k === 2;
-  let iter;
   try {
-    iter = Iterator.from(
+    const iter = Iterator.from(
       $mapExtractIf(
         m,
         value,
@@ -107,57 +106,24 @@ function fromMaps() {
         false,
       ),
     );
-  } catch (error) {
-    for (const [, value] of $sortedEntries(m, $cmp)) {
-      loudDrop_drop(value);
-    }
-    throw error;
-  }
-  let tmp;
-  while (true) {
-    try {
+    let tmp;
+    while (true) {
       tmp = $next(iter);
-    } catch (error) {
-      for (const [, value] of $sortedEntries(m, $cmp)) {
-        loudDrop_drop(value);
+      if (!tmp) {
+        break;
       }
-      throw error;
-    }
-    if (!tmp) {
-      break;
-    }
-    const k = tmp[0];
-    const l = tmp[1];
-    try {
-      console.log(`map took ${k} ${l[0]}`);
-    } catch (error) {
-      loudDrop_drop(l);
-      for (const [, value] of $sortedEntries(m, $cmp)) {
-        loudDrop_drop(value);
+      const k = tmp[0];
+      const l = tmp[1];
+      try {
+        console.log(`map took ${k} ${l[0]}`);
+      } finally {
+        loudDrop_drop(l);
       }
-      throw error;
     }
-    try {
-      loudDrop_drop(l);
-    } catch (error) {
-      for (const [, value] of $sortedEntries(m, $cmp)) {
-        loudDrop_drop(value);
-      }
-      throw error;
-    }
-    try {
-    } catch (error) {
-      for (const [, value] of $sortedEntries(m, $cmp)) {
-        loudDrop_drop(value);
-      }
-      throw error;
-    }
-  }
-  try {
     const h = $extendMap(new Map(), [[1, [40]]], false, loudDrop_drop);
-    const value = (_, l) => l[0] === 40;
+    const value$1 = (_, l) => l[0] === 40;
     try {
-      const gone = Iterator.from($mapExtractIf(h, value, h, false, false)).reduce((n, item) => {
+      const gone = Iterator.from($mapExtractIf(h, value$1, h, false, false)).reduce((n, item) => {
         loudDrop_drop(item[1]);
         return n + 1;
       }, 0);

@@ -457,7 +457,8 @@ Differences:
   as JS's `try`: a panic's payload is its message, which downcasts as a
   `&str` and as a `String` both, where Rust's is one; what JS threw is a
   `&'static JsError`; and a thrown `Error` of JS's own constructor is a
-  panic, whoever threw it. A caught panic writes nothing, where Rust's
+  panic, whoever threw it, and a `&JsError` too, where Rust's panic is
+  none ([0692](../decisions/0692-a-thrown-error-is-a-panic-and-what-js-threw.md)). A caught panic writes nothing, where Rust's
   hook writes its message; `set_hook` is refused, and so is unwinding where
   the crate's panics abort ([0660](../decisions/0660-catch-unwind-catches-what-js-throws.md)).
 - **`unwrap()` of a throwing JS call's `Result` is the call:** what JS
@@ -669,7 +670,8 @@ React and JSX are [their own pages](README.md#react).
 9. There's one thread: a channel's `recv()` that would wait forever panics.
 10. Nothing calls `main`; an uncaught panic is the host's error, exit code 1.
 11. A panic is an `Error`, which JS catches, and `catch_unwind` catches what
-    JS throws; a panic's message downcasts as a `&str` and a `String`; a
+    JS throws; a panic's message downcasts as a `&str` and a `String`, and
+    its `Error` as a `&JsError`; a
     `drop` panicking during a panic replaces it.
 12. A value with a destructor that JS holds is never dropped.
 13. A writer of the crate's is given each `write!`'s text in one `write_str`.
@@ -681,12 +683,10 @@ React and JSX are [their own pages](README.md#react).
     `count()` alike.
 16. Recursion deeper than about 10,000 calls throws a `RangeError`, the JS
     engine's stack's limit.
-17. Where the crate's iterator's impl writes its own `fold` or `nth`,
-    std's consumers call them (ADR 0687), except in generic code given the
-    iterator as it is, by its dictionary (ADR 0411), a `Peekable` of it
-    among them, which steps its `next`. In a library, that `fold` is given
-    no drops: an accumulator with a destructor that it drops, or that a
-    panic in it unwinds, isn't dropped.
+17. Where the crate's iterator's impl writes its own `fold`, std's
+    consumers call it (ADRs 0687, 0690); in a library, it's given no drops:
+    an accumulator with a destructor that it drops, or that a panic in it
+    unwinds, isn't dropped.
 18. A `VecDeque`'s `as_slices()` gives all its items first and none second,
     where std's split is its ring buffer's.
 19. `unwrap()` of a throwing JS call's `Result` throws what JS threw, not

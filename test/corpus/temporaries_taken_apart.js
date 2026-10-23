@@ -249,118 +249,56 @@ function main() {
       throw error;
     }
   }
-
-  let tmp$2;
-  try {
-    tmp$2 = make(5);
-  } catch (error) {
-    loudDrop_drop(right);
-    loudDrop_drop(x);
-    throw error;
-  }
-  let tmp$3;
-  try {
-    tmp$3 = [tmp$2, make(6)];
-  } catch (error) {
-    loudDrop_drop(tmp$2);
-    loudDrop_drop(right);
-    loudDrop_drop(x);
-    throw error;
-  }
-  const p = tmp$3[0];
-  try {
-    console.log("arm");
-  } catch (error) {
-    loudDrop_drop(p);
-    loudDrop_drop(tmp$3[1]);
-    loudDrop_drop(right);
-    loudDrop_drop(x);
-    throw error;
-  }
-  const y = p;
-  try {
-    loudDrop_drop(tmp$3[1]);
-  } catch (error) {
-    loudDrop_drop(y);
-    loudDrop_drop(right);
-    loudDrop_drop(x);
-    throw error;
-  }
-  try {
-    console.log(`after y ${y[0]}`);
-  } catch (error) {
-    loudDrop_drop(y);
-    loudDrop_drop(right);
-    loudDrop_drop(x);
-    throw error;
-  }
-  let tmp$4;
-
-  try {
-    tmp$4 = make(7);
-  } catch (error) {
-    loudDrop_drop(y);
-    loudDrop_drop(right);
-    loudDrop_drop(x);
-    throw error;
-  }
-  let tmp$5;
-  try {
-    tmp$5 = [tmp$4, make(8)];
-  } catch (error) {
-    if (tmp$4 != null) {
-      loudDrop_drop(tmp$4);
-    }
-    loudDrop_drop(y);
-    loudDrop_drop(right);
-    loudDrop_drop(x);
-    throw error;
-  }
-  if (tmp$5[0]) {
-    const z = tmp$5[0];
-    try {
-      console.log(`if ${z[0]}`);
-    } catch (error) {
-      loudDrop_drop(z);
-      loudDrop_drop(tmp$5[1]);
-      loudDrop_drop(y);
-      loudDrop_drop(right);
-      loudDrop_drop(x);
-      throw error;
-    }
-    try {
-      loudDrop_drop(z);
-    } catch (error) {
-      loudDrop_drop(tmp$5[1]);
-      loudDrop_drop(y);
-      loudDrop_drop(right);
-      loudDrop_drop(x);
-      throw error;
-    }
-    try {
-      loudDrop_drop(tmp$5[1]);
-    } catch (error) {
-      loudDrop_drop(y);
-      loudDrop_drop(right);
-      loudDrop_drop(x);
-      throw error;
-    }
-  } else {
-    try {
-      if (tmp$5[0]) {
-        loudDrop_drop(tmp$5[0]);
-      }
-      loudDrop_drop(tmp$5[1]);
-    } catch (error) {
-      loudDrop_drop(y);
-      loudDrop_drop(right);
-      loudDrop_drop(x);
-      throw error;
-    }
-  }
   try {
     try {
+      const tmp = make(5);
+      let tmp$1;
       try {
+        tmp$1 = [tmp, make(6)];
+      } catch (error) {
+        loudDrop_drop(tmp);
+        throw error;
+      }
+      const p = tmp$1[0];
+      try {
+        console.log("arm");
+      } catch (error) {
+        loudDrop_drop(p);
+        loudDrop_drop(tmp$1[1]);
+        throw error;
+      }
+      const y = p;
+      try {
+        loudDrop_drop(tmp$1[1]);
+        console.log(`after y ${y[0]}`);
+        const tmp = make(7);
+
+        let tmp$2;
+        try {
+          tmp$2 = [tmp, make(8)];
+        } catch (error) {
+          if (tmp != null) {
+            loudDrop_drop(tmp);
+          }
+          throw error;
+        }
+        if (tmp$2[0]) {
+          const z = tmp$2[0];
+          try {
+            try {
+              console.log(`if ${z[0]}`);
+            } finally {
+              loudDrop_drop(z);
+            }
+          } finally {
+            loudDrop_drop(tmp$2[1]);
+          }
+        } else {
+          if (tmp$2[0]) {
+            loudDrop_drop(tmp$2[0]);
+          }
+          loudDrop_drop(tmp$2[1]);
+        }
         // `ref b` keeps the temporary for the block, less what `a` moves out.
         const before = make(1);
         try {
@@ -406,33 +344,33 @@ function main() {
         const kept = make(9);
         const whole = kept[0];
         loudDrop_drop(kept);
-        const tmp = make(50);
-        let tmp$1;
+        const tmp$3 = make(50);
+        let tmp$4;
         try {
-          tmp$1 = [tmp, make(51)];
+          tmp$4 = [tmp$3, make(51)];
         } catch (error) {
-          loudDrop_drop(tmp);
+          loudDrop_drop(tmp$3);
           throw error;
         }
-        someBorrowed(tmp$1);
-        const tmp$2 = make(52);
-        let tmp$3;
+        someBorrowed(tmp$4);
+        const tmp$5 = make(52);
+        let tmp$6;
         try {
-          tmp$3 = [tmp$2, make(53)];
+          tmp$6 = [tmp$5, make(53)];
         } catch (error) {
-          loudDrop_drop(tmp$2);
+          loudDrop_drop(tmp$5);
           throw error;
         }
-        allBorrowed(tmp$3);
-        const tmp$4 = make(54);
-        let tmp$5;
+        allBorrowed(tmp$6);
+        const tmp$7 = make(54);
+        let tmp$8;
         try {
-          tmp$5 = [tmp$4, make(55)];
+          tmp$8 = [tmp$7, make(55)];
         } catch (error) {
-          loudDrop_drop(tmp$4);
+          loudDrop_drop(tmp$7);
           throw error;
         }
-        allMoved(tmp$5);
+        allMoved(tmp$8);
         const closure = (_2) => {
           const a = _2[0];
           const b = _2[1];
@@ -446,15 +384,15 @@ function main() {
             loudDrop_drop(_2[1]);
           }
         };
-        const tmp$6 = make(56);
-        let tmp$7;
+        const tmp$9 = make(56);
+        let tmp$10;
         try {
-          tmp$7 = [tmp$6, make(57)];
+          tmp$10 = [tmp$9, make(57)];
         } catch (error) {
-          loudDrop_drop(tmp$6);
+          loudDrop_drop(tmp$9);
           throw error;
         }
-        closure(tmp$7);
+        closure(tmp$10);
         console.log(`end ${whole}`);
       } finally {
         loudDrop_drop(y);

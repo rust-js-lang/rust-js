@@ -507,6 +507,33 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             false => None,
         };
         props.extend(hint.map(|hint| crate::js::Prop::Field("hint".into(), hint)));
+        // Its fold, std's: a peekable's what it peeked at then its source's,
+        // a fuse's its source's while it has one, by the source's
+        // dictionary, which has that impl's own `fold` (#162); a fuse's
+        // source, which it lets go of, dropped by its drop after, as its
+        // `next` drops it at its end.
+        let fold = match ty.peel_refs().kind() {
+            ty::Adt(_, args) if self.is_peekable(ty) => Some(("$peekableFold", args.type_at(0))),
+            ty::Adt(_, args) if self.recognition().is_fuse(ty) => Some(("$fuseFold", args.type_at(0))),
+            _ => None,
+        };
+        if let Some((helper, source)) = fold {
+            let mut args = vec![Expr::var("it"), Expr::var("init"), Expr::var("f")];
+            let dictionary = self.iterator_evidence(source, iterator);
+            let drop = match helper {
+                "$fuseFold" => self.drop_function(source, span)?,
+                _ => None,
+            };
+            if dictionary.is_some() || drop.is_some() {
+                args.push(dictionary.unwrap_or_else(Expr::undefined));
+            }
+            args.extend(drop);
+            let fold = Expr::arrow(
+                vec!["it".into(), "init".into(), "f".into()],
+                vec![StmtKind::Return(Some(Expr::call_helper(helper, args))).at(js::Span::NONE)],
+            );
+            props.push(crate::js::Prop::Field("fold".into(), fold));
+        }
         Ok(Expr::object(props))
     }
 

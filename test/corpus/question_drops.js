@@ -58,26 +58,19 @@ function climb(d) {
 }
 
 function first(d) {
-  let tmp;
-  try {
-    tmp = step(d);
-  } catch (error) {
-    dDrop_drop(d);
-    throw error;
-  }
   let result;
-  if (tmp) {
-    const e = tmp;
-    result = (e[0] + d[0]) >>> 0;
-    try {
+  try {
+    const tmp = step(d);
+    if (tmp) {
+      const e = tmp;
+      result = (e[0] + d[0]) >>> 0;
       dDrop_drop(e);
-    } finally {
-      dDrop_drop(d);
+      return result;
     }
-    return result;
+    result = undefined;
+  } finally {
+    dDrop_drop(d);
   }
-  result = undefined;
-  dDrop_drop(d);
   return result;
 }
 
@@ -97,17 +90,11 @@ function fallible(d) {
 }
 
 function go(d) {
-  let tmp;
-  try {
-    tmp = fallible(d);
-  } catch (error) {
-    dDrop_drop(d);
-    throw error;
-  }
   let result;
-  if (tmp.TAG !== "Err") {
-    const e = tmp._0;
-    try {
+  try {
+    const tmp = fallible(d);
+    if (tmp.TAG !== "Err") {
+      const e = tmp._0;
       try {
         if (tmp.TAG === "Err") {
           if (tmp.TAG === "Err") {
@@ -118,13 +105,12 @@ function go(d) {
       } finally {
         dDrop_drop(e);
       }
-    } finally {
-      dDrop_drop(d);
+      return result;
     }
-    return result;
+    result = tmp;
+  } finally {
+    dDrop_drop(d);
   }
-  result = tmp;
-  dDrop_drop(d);
   return result;
 }
 

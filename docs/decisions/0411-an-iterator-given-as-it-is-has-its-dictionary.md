@@ -84,3 +84,9 @@ const w = $iterator({ inner: { start: 0, end: 4 } }, (iterator) =>
 - A loop over a generic adapter's iterator of `Clone` items reads
   `$iterator(IClone.clone(items), IIterator.next, true)` where it read
   `IClone.clone(items)`: right of a range too, which that wasn't.
+
+## Amended by
+
+[ADR 0690](0690-an-iterator-given-as-it-is-folds-by-its-own-fold.md): the
+dictionary carries the crate's own `fold` and `nth`, and a value given
+as it is is stepped by `$given(it, IIterator)`, which reads them.

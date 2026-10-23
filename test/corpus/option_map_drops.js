@@ -148,371 +148,93 @@ function main() {
     throw error;
   }
   try {
-    if (kept != null) {
-      dDrop_drop(kept[0]);
-    }
-  } catch (error) {
-    if (generic != null) {
-      dDrop_drop(generic[0]);
-    }
-    if (none != null) {
-      dDrop_drop(none[0]);
-    }
-    throw error;
-  }
-  let tmp$2;
-  try {
-    tmp$2 = make(4);
-  } catch (error) {
-    if (generic != null) {
-      dDrop_drop(generic[0]);
-    }
-    if (none != null) {
-      dDrop_drop(none[0]);
-    }
-    throw error;
-  }
-  let tmp$3;
-  try {
-    tmp$3 = keepIf(tmp$2, false, dDrop_drop);
-  } catch (error) {
-    if (generic != null) {
-      dDrop_drop(generic[0]);
-    }
-    if (none != null) {
-      dDrop_drop(none[0]);
-    }
-    throw error;
-  }
-  try {
-    console.log(`${!tmp$3}`);
-  } catch (error) {
-    if (tmp$3 != null) {
-      dDrop_drop(tmp$3);
-    }
-    if (generic != null) {
-      dDrop_drop(generic[0]);
-    }
-    if (none != null) {
-      dDrop_drop(none[0]);
-    }
-    throw error;
-  }
-  try {
-    if (tmp$3 != null) {
-      dDrop_drop(tmp$3);
-    }
-  } catch (error) {
-    if (generic != null) {
-      dDrop_drop(generic[0]);
-    }
-    if (none != null) {
-      dDrop_drop(none[0]);
-    }
-    throw error;
-  }
-  let tmp$4;
-  try {
-    tmp$4 = $some(make(5));
-  } catch (error) {
-    if (generic != null) {
-      dDrop_drop(generic[0]);
-    }
-    if (none != null) {
-      dDrop_drop(none[0]);
-    }
-    throw error;
-  }
-  let tmp$5;
-  try {
-    tmp$5 = keepIf(tmp$4, false, (option) => {
-      if (option != null) {
-        dDrop_drop(option);
-      }
-    });
-  } catch (error) {
-    if (generic != null) {
-      dDrop_drop(generic[0]);
-    }
-    if (none != null) {
-      dDrop_drop(none[0]);
-    }
-    throw error;
-  }
-  try {
-    console.log(`${tmp$5 == null}`);
-  } catch (error) {
-    if (tmp$5 != null) {
-      if ($someValue(tmp$5) != null) {
-        dDrop_drop($someValue(tmp$5));
-      }
-    }
-    if (generic != null) {
-      dDrop_drop(generic[0]);
-    }
-    if (none != null) {
-      dDrop_drop(none[0]);
-    }
-    throw error;
-  }
-  try {
-    if (tmp$5 != null) {
-      if ($someValue(tmp$5) != null) {
-        dDrop_drop($someValue(tmp$5));
-      }
-    }
-  } catch (error) {
-    if (generic != null) {
-      dDrop_drop(generic[0]);
-    }
-    if (none != null) {
-      dDrop_drop(none[0]);
-    }
-    throw error;
-  }
-  let tmp$6;
-  try {
-    tmp$6 = $some(make(0));
-  } catch (error) {
-    if (generic != null) {
-      dDrop_drop(generic[0]);
-    }
-    if (none != null) {
-      dDrop_drop(none[0]);
-    }
-    throw error;
-  }
-  let tmp$7;
-  try {
-    tmp$7 = keepIf(tmp$6, false, (option) => {
-      if (option != null) {
-        dDrop_drop(option);
-      }
-    });
-  } catch (error) {
-    if (generic != null) {
-      dDrop_drop(generic[0]);
-    }
-    if (none != null) {
-      dDrop_drop(none[0]);
-    }
-    throw error;
-  }
-  try {
-    console.log(`${tmp$7 == null}`);
-  } catch (error) {
-    if (tmp$7 != null) {
-      if ($someValue(tmp$7) != null) {
-        dDrop_drop($someValue(tmp$7));
-      }
-    }
-    if (generic != null) {
-      dDrop_drop(generic[0]);
-    }
-    if (none != null) {
-      dDrop_drop(none[0]);
-    }
-    throw error;
-  }
-  try {
-    if (tmp$7 != null) {
-      if ($someValue(tmp$7) != null) {
-        dDrop_drop($someValue(tmp$7));
-      }
-    }
-  } catch (error) {
-    if (generic != null) {
-      dDrop_drop(generic[0]);
-    }
-    if (none != null) {
-      dDrop_drop(none[0]);
-    }
-    throw error;
-  }
-  let tmp$8;
-  try {
-    tmp$8 = $some(make(6));
-  } catch (error) {
-    if (generic != null) {
-      dDrop_drop(generic[0]);
-    }
-    if (none != null) {
-      dDrop_drop(none[0]);
-    }
-    throw error;
-  }
-  let nested;
-  try {
-    nested = keepIf(tmp$8, true, (option) => {
-      if (option != null) {
-        dDrop_drop(option);
-      }
-    });
-  } catch (error) {
-    if (generic != null) {
-      dDrop_drop(generic[0]);
-    }
-    if (none != null) {
-      dDrop_drop(none[0]);
-    }
-    throw error;
-  }
-  try {
-    console.log(`${nested != null}`);
-  } catch (error) {
-    if (nested != null) {
-      if ($someValue(nested) != null) {
-        dDrop_drop($someValue(nested));
-      }
-    }
-    if (generic != null) {
-      dDrop_drop(generic[0]);
-    }
-    if (none != null) {
-      dDrop_drop(none[0]);
-    }
-    throw error;
-  }
-  let tmp$9;
-  try {
-    tmp$9 = checked(1);
-  } catch (error) {
-    if (nested != null) {
-      if ($someValue(nested) != null) {
-        dDrop_drop($someValue(nested));
-      }
-    }
-    if (generic != null) {
-      dDrop_drop(generic[0]);
-    }
-    if (none != null) {
-      dDrop_drop(none[0]);
-    }
-    throw error;
-  }
-  const ok = tmp$9.TAG === "Ok" ? { TAG: "Ok", _0: [tmp$9._0] } : tmp$9;
-  const value$3 = (l) => l[0][0];
-  try {
-    console.log(`ok ${ok.TAG === "Ok" ? value$3(ok._0) : 0}`);
-  } catch (error) {
-    if (ok.TAG === "Ok") {
-      dDrop_drop(ok._0[0]);
-    }
-    if (nested != null) {
-      if ($someValue(nested) != null) {
-        dDrop_drop($someValue(nested));
-      }
-    }
-    if (generic != null) {
-      dDrop_drop(generic[0]);
-    }
-    if (none != null) {
-      dDrop_drop(none[0]);
-    }
-    throw error;
-  }
-  let tmp$10;
-  try {
-    tmp$10 = checked(12);
-  } catch (error) {
-    if (ok.TAG === "Ok") {
-      dDrop_drop(ok._0[0]);
-    }
-    if (nested != null) {
-      if ($someValue(nested) != null) {
-        dDrop_drop($someValue(nested));
-      }
-    }
-    if (generic != null) {
-      dDrop_drop(generic[0]);
-    }
-    if (none != null) {
-      dDrop_drop(none[0]);
-    }
-    throw error;
-  }
-  const value$4 = tmp$10.TAG === "Ok" ? { TAG: "Ok", _0: [tmp$10._0] } : tmp$10;
-  let value$0$live = true;
-  if (value$4.TAG === "Ok") {
-    value$0$live = false;
     try {
-      console.log(`ok ${value$4._0[0][0]}`);
-    } catch (error) {
-      dDrop_drop(value$4._0[0]);
-      if (ok.TAG === "Ok") {
-        dDrop_drop(ok._0[0]);
+      if (kept != null) {
+        dDrop_drop(kept[0]);
       }
-      if (nested != null) {
-        if ($someValue(nested) != null) {
-          dDrop_drop($someValue(nested));
-        }
-      }
-      if (generic != null) {
-        dDrop_drop(generic[0]);
-      }
-      if (none != null) {
-        dDrop_drop(none[0]);
-      }
-      throw error;
-    }
-    try {
-      dDrop_drop(value$4._0[0]);
-    } catch (error) {
-      if (ok.TAG === "Ok") {
-        dDrop_drop(ok._0[0]);
-      }
-      if (nested != null) {
-        if ($someValue(nested) != null) {
-          dDrop_drop($someValue(nested));
-        }
-      }
-      if (generic != null) {
-        dDrop_drop(generic[0]);
-      }
-      if (none != null) {
-        dDrop_drop(none[0]);
-      }
-      throw error;
-    }
-  } else {
-    try {
-      console.log(`err ${value$4._0}`);
-    } catch (error) {
-      if (value$4.TAG === "Ok") {
-        dDrop_drop(value$4._0[0]);
-      }
-      if (ok.TAG === "Ok") {
-        dDrop_drop(ok._0[0]);
-      }
-      if (nested != null) {
-        if ($someValue(nested) != null) {
-          dDrop_drop($someValue(nested));
-        }
-      }
-      if (generic != null) {
-        dDrop_drop(generic[0]);
-      }
-      if (none != null) {
-        dDrop_drop(none[0]);
-      }
-      throw error;
-    }
-  }
-  try {
-    try {
+      const tmp = make(4);
+      const tmp$1 = keepIf(tmp, false, dDrop_drop);
       try {
+        console.log(`${!tmp$1}`);
+      } finally {
+        if (tmp$1 != null) {
+          dDrop_drop(tmp$1);
+        }
+      }
+      const tmp$2 = $some(make(5));
+      const tmp$3 = keepIf(tmp$2, false, (option) => {
+        if (option != null) {
+          dDrop_drop(option);
+        }
+      });
+      try {
+        console.log(`${tmp$3 == null}`);
+      } finally {
+        if (tmp$3 != null) {
+          if ($someValue(tmp$3) != null) {
+            dDrop_drop($someValue(tmp$3));
+          }
+        }
+      }
+      const tmp$4 = $some(make(0));
+      const tmp$5 = keepIf(tmp$4, false, (option) => {
+        if (option != null) {
+          dDrop_drop(option);
+        }
+      });
+      try {
+        console.log(`${tmp$5 == null}`);
+      } finally {
+        if (tmp$5 != null) {
+          if ($someValue(tmp$5) != null) {
+            dDrop_drop($someValue(tmp$5));
+          }
+        }
+      }
+      const tmp$6 = $some(make(6));
+      const nested = keepIf(tmp$6, true, (option) => {
+        if (option != null) {
+          dDrop_drop(option);
+        }
+      });
+      try {
+        console.log(`${nested != null}`);
+        const tmp = checked(1);
+        const ok = tmp.TAG === "Ok" ? { TAG: "Ok", _0: [tmp._0] } : tmp;
+        const value = (l) => l[0][0];
         try {
-          if (value$4.TAG === "Ok") {
+          console.log(`ok ${ok.TAG === "Ok" ? value(ok._0) : 0}`);
+          const tmp = checked(12);
+          const value$1 = tmp.TAG === "Ok" ? { TAG: "Ok", _0: [tmp._0] } : tmp;
+          let value$0$live = true;
+          if (value$1.TAG === "Ok") {
+            value$0$live = false;
+            try {
+              console.log(`ok ${value$1._0[0][0]}`);
+            } finally {
+              dDrop_drop(value$1._0[0]);
+            }
+          } else {
+            try {
+              console.log(`err ${value$1._0}`);
+            } catch (error) {
+              if (value$1.TAG === "Ok") {
+                dDrop_drop(value$1._0[0]);
+              }
+              throw error;
+            }
+          }
+          if (value$1.TAG === "Ok") {
             if (value$0$live) {
-              dDrop_drop(value$4._0[0]);
+              dDrop_drop(value$1._0[0]);
             }
           }
           value$0$live = false;
-          const tmp = checked(2);
-          const generic = wrappedResult(tmp);
-          const value = (w) => w[0][0];
+          const tmp$1 = checked(2);
+          const generic = wrappedResult(tmp$1);
+          const value$2 = (w) => w[0][0];
           try {
-            console.log(`generic ${generic.TAG === "Ok" ? value(generic._0) : 0}`);
+            console.log(`generic ${generic.TAG === "Ok" ? value$2(generic._0) : 0}`);
             const tmp = checked(3);
             const tmp$1 = discardResult(tmp, false, dDrop_drop);
             const tmp$2 = checked(4);

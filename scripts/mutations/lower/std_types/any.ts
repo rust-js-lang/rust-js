@@ -1,7 +1,31 @@
-// Mutations of src/lower/std_types/any.rs (ADR 0331).
+// Mutations of src/lower/std_types/any.rs (ADRs 0331, 0692).
 import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
+  {
+    name: "js-error-downcast-of-panic-unseen",
+    breaks: "a downcast to `&JsError` of a thrown `Error`'s payload finds none, its `stack` lost",
+    file: "src/lower/std_types/any.rs",
+    find: "        if thrown && op != AnyOp::DowncastMut {\n",
+    replace: "        if false && thrown && op != AnyOp::DowncastMut {\n",
+    tests: ["test/lowering-unwinds.test.ts", "-t", "a thrown Error answers both downcasts"],
+  },
+  {
+    name: "js-error-is-of-panic-unseen",
+    breaks: "`is::<&JsError>()` of a thrown `Error`'s payload is `false`, where its downcast finds it",
+    file: "src/lower/std_types/any.rs",
+    find: "                AnyOp::Is => Expr::bin(Op::Or, is, panicked),\n",
+    replace: "                AnyOp::Is => is,\n",
+    tests: ["test/lowering-unwinds.test.ts", "-t", "a thrown Error answers both downcasts"],
+  },
+  {
+    name: "js-error-box-downcast-of-panic-unseen",
+    breaks: "`Box::downcast::<&JsError>()` of a thrown `Error`'s payload is its `Err`, where its `downcast_ref` finds it",
+    file: "src/lower/std_types/any.rs",
+    find: "                    Expr::cond(panicked, result::ok(error), result::err(pair)),\n",
+    replace: "                    result::err(pair),\n",
+    tests: ["test/lowering-unwinds.test.ts", "-t", "a thrown Error answers both downcasts"],
+  },
   {
     name: "downcast-ref-unboxed",
     breaks: "`downcast_ref::<Option<u16>>()` of a `None`-looking value isn't boxed",

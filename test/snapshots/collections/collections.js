@@ -187,30 +187,20 @@ export function shared(times) {
   }
   const v = $borrow(log, true);
   let total = 0;
-  let iter;
   try {
-    iter = $iter(v.value);
-  } catch (error) {
+    const iter = $iter(v.value);
+    while (true) {
+      const tmp = $next(iter);
+      if (tmp == null) {
+        break;
+      }
+      const x = tmp;
+      total = (total + x) | 0;
+    }
+    return [total, v.value.length];
+  } finally {
     $unborrow(v);
-    throw error;
   }
-  while (true) {
-    let tmp;
-    try {
-      tmp = $next(iter);
-    } catch (error) {
-      $unborrow(v);
-      throw error;
-    }
-    if (tmp == null) {
-      break;
-    }
-    const x = tmp;
-    total = (total + x) | 0;
-  }
-  const result = [total, v.value.length];
-  $unborrow(v);
-  return result;
 }
 
 /** Strings: `trim`, `is_empty`, `==`, `String::from`. */
