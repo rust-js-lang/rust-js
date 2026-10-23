@@ -330,7 +330,7 @@ pub fn circle(radius: f64) -> &'static Circle {
 | `"this()"` | `this(..)` | calling a JS function value |
 | `"typeof"` | `typeof this` | `js::type_of` |
 | `"!!"` | `!!this` | `js::truthy` |
-| `"+ \"\""` | `this + ""` | `js::concat_text` |
+| `"\"\" +"` | `"" + this` | `js::concat_text` |
 | `"get []"`, `"set []"`, `"in []"` | `this[key]`, `this[key] = v`, `key in this` | `js::get`, `js::set`, `js::has` |
 | `"{}"`, `"{label, value}"` | `{}`, `{ label, value }` | an object of the arguments |
 | `"<tag>"`, `"prop name"` | JSX | React's element bindings |
@@ -338,7 +338,7 @@ pub fn circle(radius: f64) -> &'static Circle {
 A module's `#` goes with the forms that aren't of a value: a function, `new`,
 `get` of a static. A method of a module, `this` and `"pkg#f"`, is an error.
 
-`js::concat_text` is `value + ""`: of text or a number, its `String`; of a
+`js::concat_text` is `"" + value`: of text or a number, its `String`; of a
 value of any shape, a `Result`, as `+` throws of a symbol and of an object
 whose `valueOf` throws (ADR 0639). A `match` of it, or its `is_err()`, is
 JS's `try`:
@@ -378,7 +378,7 @@ export function width(n) {
 
 export function willCoercionThrow(value) {
   try {
-    value + "";
+    "" + value;
     return false;
   } catch {
     return true;

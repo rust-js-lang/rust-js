@@ -118,7 +118,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "text-joined-twice",
-    breaks: "a number made text and joined to text stays `n + \"\" + \"px\"`, not `n + \"px\"`",
+    breaks: "a number made text and joined to text stays `\"\" + n + \"px\"`, not `n + \"px\"`",
     file: "src/js/make.rs",
     find: "            && matches!(rhs.kind, ExprKind::Str(_) | ExprKind::Template(..))\n",
     replace: "            && false\n",
@@ -142,7 +142,7 @@ export const mutations: Mutation[] = [
   },
   {
     "name": "text-joined-to-text",
-    "breaks": "`\"#\" + (id + \"\")` keeps its `+ \"\"`",
+    "breaks": "`\"#\" + (\"\" + id)` keeps its `\"\" +`",
     "file": "src/js/make.rs",
     "find": "            && matches!(lhs.kind, ExprKind::Str(_) | ExprKind::Template(..))\n",
     "replace": "            && false\n",

@@ -3,7 +3,8 @@
 Status: Accepted. Amends [0310](0310-any-value-as-js-reads-it.md), whose
 `concat_text` gave a `String` of every value, and
 [0637](0637-a-match-of-a-throwing-call-is-try-catch.md), whose `try` was
-of a `match` whose arms are statements.
+of a `match` whose arms are statements. Amended below: `"" + value`, empty
+text first.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): C, N. Results would
 change, so Rust's is kept: `value + ""` of a symbol throws, where its
@@ -106,3 +107,17 @@ export function willCoercionThrow(value) {
   and `None`; and a number's text, a `String`.
 - Mutations in `scripts/mutations/prepare.ts`: the test not made a `try`,
   and its `true` and `false` the other way round.
+
+## Amendment: `"" + value`, empty text first
+
+`concat_text(value)` is `"" + value`, as React writes `'' + value`, where
+it was `value + ""`; its link form is `"\"\" +"`, a prefix as `typeof` and
+`!!` are, where it was `"+ \"\""`. Case A: nothing the program can observe.
+`+` asks each side's primitive with no hint, `ToPrimitive(value,
+default)`, its `Symbol.toPrimitive` or `valueOf` then `toString`, either
+way round, and joins; a symbol throws the same `TypeError` on either side.
+Only which operand is read first differs, and `""` is a literal.
+
+Text joined to it still makes text of it: `"" + n + "px"` is `n + "px"`,
+and `"#" + ("" + id)` is `"#" + id`. React's `willCoercionThrow` is `try {
+"" + value; return false; } catch { return true; }`.

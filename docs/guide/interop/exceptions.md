@@ -246,7 +246,7 @@ export function hasConfig(path) {
   `TypeError: no file missing`, what an `expect` shows.
 - **The crates say which JS calls may throw.** The `js` crate's
   `decode_uri_component` and `Json::parse` return a `Result`, and
-  `concat_text`, `value + ""`, of a value of any shape. webapi's
+  `concat_text`, `"" + value`, of a value of any shape. webapi's
   call that throws for what a program can't prevent returns one, as
   `window.local_storage()` does where the page may not keep data; one
   that throws only of a misuse, an invalid selector, panics ([ADR 0442](../../decisions/0442-a-web-api-that-may-throw-is-a-result.md)).

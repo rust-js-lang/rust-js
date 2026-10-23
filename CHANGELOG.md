@@ -778,10 +778,10 @@ released any more: `rust-js build` is the one way to build an app.
   `console.error("%s is %s", name, kind)`. A call of one is `(x,)`, of
   none `()`; each took one argument, or none after an optional one.
 - **`js::concat_text` of any value is what may throw** (ADR 0639): of an
-  `&Unknown` or an `Option<&Unknown>`, `value + ""` gives `Result<String,
+  `&Unknown` or an `Option<&Unknown>`, `"" + value` gives `Result<String,
   &JsError>`, as it throws of a symbol; of text and numbers, a `String`
   still. Whether a call threw, returned, `is_err()` or a `match` of `true`
-  and `false`, is `try { value + ""; return false; } catch { return true;
+  and `false`, is `try { "" + value; return false; } catch { return true;
   }`, as React's `willCoercionThrow` writes it.
 - **`Rc::ptr_eq` of an object is its identity** (ADR 0582): of an `Rc` of
   a struct with fields, `a === b`, counting nothing.

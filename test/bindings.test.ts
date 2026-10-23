@@ -735,7 +735,7 @@ pub fn tag_of(value: Option<&Unknown>) -> Result<String, &'static JsError> {
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain('text.replace(pattern, (matched, escaped, _ptn, flag) =>\n    escaped ? matched : `<${flag ?? ""}>`,\n  );');
   expect(js).toContain('return text.replace(/%{2,2}/g, "%");');
-  expect(js).toContain('return $try(() => value + "");');
+  expect(js).toContain('return $try(() => "" + value);');
   // Text joined to it already makes it text, as react.dev writes `right - left + 'px'`.
   expect(js).toContain('return n + "px";');
   expect(js).toContain('return count + " " + noun;');
@@ -788,9 +788,9 @@ pub fn width(n: f64) -> String {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain('function willCoercionThrow(value) {\n  try {\n    value + "";\n    return false;\n  } catch {\n    return true;\n  }\n}');
-  expect(js).toContain('function throws(value) {\n  try {\n    value + "";\n    return false;\n  } catch {\n    return true;\n  }\n}');
-  expect(js).toContain('function coercible(value) {\n  try {\n    value + "";\n    return true;\n  } catch {\n    return false;\n  }\n}');
+  expect(js).toContain('function willCoercionThrow(value) {\n  try {\n    "" + value;\n    return false;\n  } catch {\n    return true;\n  }\n}');
+  expect(js).toContain('function throws(value) {\n  try {\n    "" + value;\n    return false;\n  } catch {\n    return true;\n  }\n}');
+  expect(js).toContain('function coercible(value) {\n  try {\n    "" + value;\n    return true;\n  } catch {\n    return false;\n  }\n}');
   // Of a number, nothing to catch.
   expect(js).toContain('return n + "px";');
   expect(js).not.toContain("$try");

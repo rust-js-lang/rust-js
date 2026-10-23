@@ -310,12 +310,12 @@ pub fn parse_float<T: ToText>(text: T) -> f64 {
     unreachable!()
 }
 
-/// `value + ""`: any value as text, as JS's `+` makes it, `result += value`
+/// `"" + value`: any value as text, as JS's `+` makes it, `result += value`
 /// say: of an object, by its `valueOf` first, where `String(value)` asks its
 /// `toString` (ADR 0310). Of a value of any shape, a `Result`: it throws of
 /// a symbol, which `String` names, and of an object whose `valueOf` throws,
 /// an `Err` (ADR 0639); of text or a number, its text.
-#[cfg_attr(rust_js, rust_js::link_name = "+ \"\"")]
+#[cfg_attr(rust_js, rust_js::link_name = "\"\" +")]
 #[allow(unused_variables)]
 pub fn concat_text<T: ToText>(this: T) -> T::Text {
     unreachable!()

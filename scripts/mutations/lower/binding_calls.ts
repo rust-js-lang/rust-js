@@ -179,6 +179,14 @@ export const mutations: Mutation[] = [
     tests: ["test/bindings.test.ts", "-t", "trailing None is no argument"],
   },
   {
+    name: "text-empty-last",
+    breaks: "`concat_text(value)` is `value + \"\"`, not `\"\" + value` as React writes it",
+    file: "src/lower/binding_calls.rs",
+    find: "Expr::bin(Op::Add, Expr::str(\"\"), this)",
+    replace: "Expr::bin(Op::Add, this, Expr::str(\"\"))",
+    tests: ["test/bindings.test.ts", "-t", "concat_text of any value"],
+  },
+  {
     name: "rest-of-none-keeps-none",
     breaks: "a `None` before a rest of none, `console::time_log(None, ())`, is `console.timeLog(undefined)`",
     file: "src/lower/binding_calls.rs",

@@ -383,20 +383,20 @@ impl Expr {
         {
             return rhs;
         }
-        // `x + "" + "px"` is `x + "px"`: either makes text of `x` as `+`
+        // `"" + x + "px"` is `x + "px"`: either makes text of `x` as `+`
         // does, then joins.
         if op == Op::Add
             && matches!(rhs.kind, ExprKind::Str(_) | ExprKind::Template(..))
-            && let ExprKind::Binary(Op::Add, x, empty) = &lhs.kind
+            && let ExprKind::Binary(Op::Add, empty, x) = &lhs.kind
             && matches!(&empty.kind, ExprKind::Str(s) if s.is_empty())
         {
             return Expr::bin(Op::Add, (**x).clone(), rhs);
         }
-        // `"#" + (x + "")` is `"#" + x`: text joined to `x` makes text of it
-        // as `+ ""` does.
+        // `"#" + ("" + x)` is `"#" + x`: text joined to `x` makes text of it
+        // as `"" +` does.
         if op == Op::Add
             && matches!(lhs.kind, ExprKind::Str(_) | ExprKind::Template(..))
-            && let ExprKind::Binary(Op::Add, x, empty) = &rhs.kind
+            && let ExprKind::Binary(Op::Add, empty, x) = &rhs.kind
             && matches!(&empty.kind, ExprKind::Str(s) if s.is_empty())
         {
             return Expr::bin(Op::Add, lhs, (**x).clone());
