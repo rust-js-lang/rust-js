@@ -11,13 +11,13 @@ function id(x) {
 function main() {
   let v22 = id(0);
   let c900595 = 0;
-  let tmp;
   while (true) {
     c900595 = (c900595 + 1) >>> 0;
     if (!(c900595 > id(2)) && !id(false)) {
       continue;
     }
     v22 = v22;
+    let tmp;
     bb22: {
       if (id(false)) {
         tmp = id(0n);

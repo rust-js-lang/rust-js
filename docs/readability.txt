@@ -7,4 +7,4 @@ while (true)	155	16.9
 $iter	608	66.2
 Iterator.from	134	14.6
 return;	83	9
-renamed x$1	7345	800.3
+renamed x$1	7343	800
