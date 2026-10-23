@@ -658,4 +658,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "catch_unwind_drops"],
   },
+  {
+    name: "extend-of-nothing-held-refused",
+    breaks: "`v.extend((2..4).map(D))` of items with a destructor is refused",
+    file: "src/lower/std_types/values.rs",
+    find: " || self.drops(tys[1]) == Drops::Nothing))",
+    replace: "))",
+    tests: ["test/corpus.test.ts", "-t", "^refused_drops_and_displays.rs$"],
+  },
 ];

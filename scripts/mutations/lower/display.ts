@@ -197,4 +197,12 @@ export const mutations: Mutation[] = [
     replace: "            && false\n",
     tests: ["test/corpus.test.ts", "-t", "^boxed_dyn_debug.rs$"],
   },
+  {
+    name: "shown-impl-display-hidden",
+    breaks: "`{}` of an `impl Display` a function gives is refused",
+    file: "src/lower/display.rs",
+    find: "        let ty = self.reveal(ty);\n        match ty.kind() {\n            ty::Adt(_, args) if self.shows_inside(ty)",
+    replace: "        match ty.kind() {\n            ty::Adt(_, args) if self.shows_inside(ty)",
+    tests: ["test/corpus.test.ts", "-t", "^refused_drops_and_displays.rs$"],
+  },
 ];

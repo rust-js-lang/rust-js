@@ -180,4 +180,12 @@ export const mutations: Mutation[] = [
     replace: "(mutable && self.is_boxable(guarded))",
     tests: ["test/corpus.test.ts", "-t", "^refcell_generic_mut_method.rs$"],
   },
+  {
+    name: "manually-drop-drop-skipped",
+    breaks: "`ManuallyDrop::drop(&mut m)` drops nothing",
+    file: "src/lower/std_types/cell.rs",
+    find: "                let value = self.droppable(value, held, out);\n                self.drop_value(value, held, span, out)?;\n",
+    replace: "                let _ = (value, held);\n",
+    tests: ["test/corpus.test.ts", "-t", "^refused_drops_and_displays.rs$"],
+  },
 ];

@@ -316,6 +316,9 @@ pub(super) enum Std {
     /// `mem::drop(x)`: `x`'s destructor, and `mem::forget(x)`: none (ADR 0098).
     Drop,
     Forget,
+    /// `ManuallyDrop::drop(&mut m)`: the destructor of what `m` holds, in
+    /// place, which `mem::drop(&mut m)`, of a reference, never runs (#171).
+    DropPointee,
     /// `mem::swap(&mut a, &mut b)` and `mem::replace(&mut a, v)` of places:
     /// each written in turn.
     Swap,

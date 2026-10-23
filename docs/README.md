@@ -167,7 +167,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0095 The JS rust-js makes runs on Node; Bun runs the tests](decisions/0095-node-runtime.md)
 - [0096 A `static` is its module's value, and a `static mut` its `{ value }`](decisions/0096-statics.md)
 - [0097 A user `Deref` or `IndexMut` is its method, and an auto trait's impl is nothing](decisions/0097-deref-and-marker-impls.md)
-- [0098 A destructor runs where rustc runs it, in a `finally`](decisions/0098-destructors.md) *(amended by 0660: a panic's drops run before `catch_unwind` returns)*
+- [0098 A destructor runs where rustc runs it, in a `finally`](decisions/0098-destructors.md) *(amended by 0660: a panic's drops run before `catch_unwind` returns; amended by 0694: `extend` of what holds nothing)*
 - [0099 A `&mut` held in a variable names its place; one kept elsewhere is a handle](decisions/0099-mut-references.md)
 - [0100 Each crate is compiled once, to JS of its own, with a manifest of what crosses](decisions/0100-separate-crates.md)
 - [0101 Cargo builds a workspace with rust-js as its workspace wrapper](decisions/0101-cargo-workspace-wrapper.md)
@@ -475,7 +475,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0403 A map's value that could look like `None` is given back boxed](decisions/0403-a-map-value-that-looks-like-none.md)
 - [0404 A B-tree keyed by value, whose `Ord` is derived](decisions/0404-a-b-tree-keyed-by-value.md)
 - [0405 A path's methods go over its components, as Rust's do on Unix](decisions/0405-a-paths-methods.md)
-- [0406 A union is the object of the field it holds](decisions/0406-a-union-is-the-field-it-holds.md)
+- [0406 A union is the object of the field it holds](decisions/0406-a-union-is-the-field-it-holds.md) *(amended by 0694: `ManuallyDrop::drop`)*
 - [0407 A raw pointer is a handle on its place](decisions/0407-a-raw-pointer-is-a-handle-on-its-place.md)
 - [0408 Plain data is its bytes](decisions/0408-plain-data-is-its-bytes.md)
 - [0409 A struct of a `dyn` last field is the struct, with its `impl`](decisions/0409-a-struct-of-a-dyn-last-field.md)
@@ -618,6 +618,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0691 A `dyn Any` drops where the crate makes one of what drops](decisions/0691-a-dyn-any-drops-where-the-crate-makes-one-that-does.md)
 - [0692 A thrown `Error` is a panic's message and what JS threw, both](decisions/0692-a-thrown-error-is-a-panic-and-what-js-threw.md)
 - [0693 A guard's scope is one `finally`, its `if`s, loops and `return`s in it](decisions/0693-a-guards-scope-is-one-finally-its-returns-in-it.md)
+- [0694 `ManuallyDrop::drop`, `extend` of what holds nothing, a matched call's value and `{}` of an `impl Display`](decisions/0694-four-refusals-of-drops-and-displays-lifted.md)
 - [0436 Every `dyn` that's a pair keeps its value's drop, `dyn Send` too](decisions/0436-every-dyn-keeps-its-drop.md) *(amended by 0691: a `dyn Any` drops where the crate makes one of what drops)*
 - [0437 A scope's drops on a panic are one `try { .. } finally { .. }`](decisions/0437-a-scopes-drops-are-one-finally.md) *(amended by 0693: its `if`s, loops and `return`s in it)*
 - [0438 An optional prop is given `Some(..)`, or left out](decisions/0438-an-optional-prop-is-given-some.md)
