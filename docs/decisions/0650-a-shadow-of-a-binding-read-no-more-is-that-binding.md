@@ -103,8 +103,8 @@ The old one is read no more where:
 
 ## Consequences
 
-- The readability gate's `renamed x$1` is 7,125 lines where it was 7,580,
-  797.5 in 10,000 where it was 848.4; 64 corpus cases and 6 snapshots read
+- The readability gate's `renamed x$1` is 7,171 lines where it was 7,626,
+  800.5 in 10,000 where it was 851.2; 64 corpus cases and 6 snapshots read
   so, each run as native Rust is.
 - Two temporaries named after a parameter, `iter` and `other`, which 0609
   assigned to it, are named apart again, `const iter$1 =
