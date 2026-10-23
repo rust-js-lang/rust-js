@@ -186,6 +186,50 @@ pub fn named(n: u32) -> u32 {
   expect(js).toContain('case 79 /* "O" */:\n    case 99 /* "c" */:\n    case 100 /* "d" */:\n');
 });
 
+// ADR 0708: a comment before a call's argument, or an object literal's
+// field, is before it, as React's describeNativeComponentFrame has its
+// comments before `'name'` in `Object.defineProperty(..)`'s arguments.
+test("a comment before an argument or a field is before it", async () => {
+  const dir = fixture("argument-comments");
+  writeFileSync(join(dir, "lib.rs"), `use js::{PropertyDescriptor, object};
+
+#[cfg_attr(rust_js, rust_js::name = "DetermineComponentFrameRoot")]
+fn determine_component_frame_root() -> u32 {
+    1
+}
+
+pub fn renamed() -> bool {
+    // V8 utilizes a function's \`name\` property when generating a stack trace.
+    object::define_property(
+        js::unknown(&determine_component_frame_root),
+        // Configurable properties can be updated even if its writable descriptor
+        // is set to \`false\`.
+        // $FlowFixMe[cannot-write]
+        "name",
+        &PropertyDescriptor {
+            // What a stack trace names it.
+            value: Some(&"DetermineComponentFrameRoot"),
+            ..Default::default()
+        },
+    );
+    js::get(js::unknown(&determine_component_frame_root), "name") == Some(js::unknown(&"DetermineComponentFrameRoot"))
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain(
+    "  Object.defineProperty(\n    DetermineComponentFrameRoot,\n" +
+      "    // Configurable properties can be updated even if its writable descriptor\n" +
+      "    // is set to `false`.\n" +
+      "    // $FlowFixMe[cannot-write]\n" +
+      '    "name",\n' +
+      "    {\n      // What a stack trace names it.\n" +
+      '      value: "DetermineComponentFrameRoot",\n    },\n  );\n',
+  );
+  const lib = await import(join(dir, "lib.js"));
+  expect(lib.renamed()).toBe(true);
+});
+
 // ADR 0444: a comment is its JS's where its code is, before the statement
 // or item it's before, as written; a doc comment, `///`, is a JSDoc one; one
 // before what has no JS, a struct's, is nobody's.
