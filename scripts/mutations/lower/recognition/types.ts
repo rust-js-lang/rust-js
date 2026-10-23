@@ -235,4 +235,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/lowering-functions.test.ts", "-t", "an async block or closure drops what it took"],
   },
+  {
+    name: "string-drain-unrecognised",
+    breaks: "a string Drain steps as chars() do",
+    file: "src/lower/recognition/types.rs",
+    find: "== \"std::string::Drain\")",
+    replace: "== \"std::string::Drained\")",
+    tests: ["test/corpus.test.ts", "-t", "str_odds"],
+  },
 ];

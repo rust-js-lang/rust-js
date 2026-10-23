@@ -293,6 +293,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let shown = self.debug_string_with(left, Ty::new_slice(self.tcx, self.tcx.types.char), span, pretty)?;
             return Ok(join(vec![Expr::str("Chars("), shown, Expr::str(")")]));
         }
+        // A string's `drain(range)`, `Drain("bc")`: what it has left, as
+        // a `&str` (#118).
+        if self.recognition().is_string_drain(ty) {
+            if pretty.known() != Some(false) {
+                return Err(self.unsupported(span, "`{:#?}` of a string's `drain(range)`"));
+            }
+            let left = Expr::call_helper("$debugStr", vec![Expr::call_helper("$restStr", vec![value])]);
+            return Ok(join(vec![Expr::str("Drain("), left, Expr::str(")")]));
+        }
         // A path shows its text as a string does (ADR 0173).
         if self.recognition().is_path_like(ty) {
             return Ok(Expr::call(Expr::helper("$debugStr"), vec![value]));

@@ -11,6 +11,6 @@ function main() {
   const start = ($byteLen(s) + 1) >>> 0;
   const drained = $strDrain(s, start);
   s = drained[0];
-  console.log(`${Iterator.from(drained[1]).reduce((n) => n + 1, 0)}`);
+  console.log(`${drained[1].length}`);
 }
 //# sourceMappingURL=case.js.map

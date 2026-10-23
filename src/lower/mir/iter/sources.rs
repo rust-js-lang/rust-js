@@ -64,6 +64,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     .or_else(|| crate::lower::recognition::cloned_source(self.tcx, ty))
                     .is_some_and(|source| self.steps_an_array(source)))
             || self.recognition().is_str_chars(ty)
+            || self.recognition().is_string_drain(ty)
             || self.is_str_split(ty)
             || self.recognition().is_deque_iter(ty)
             || self.recognition().is_slice_iter_mut(ty)

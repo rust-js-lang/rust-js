@@ -174,7 +174,7 @@ export const mutations: Mutation[] = [
     "name": "mir-chars-as-str-refused",
     "breaks": "`c.as_str()` of a string's `chars()` from MIR is refused",
     "file": "src/lower/mir/std_calls.rs",
-    "find": "                if op == StepOp::AsStr\n",
+    "find": "                if matches!(op, StepOp::AsStr | StepOp::Offset)\n",
     "replace": "                if false\n",
     "tests": ["test/lowering-strings.test.ts", "-t", "the rest of a string's chars from MIR"]
   },
@@ -725,6 +725,14 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/std_calls.rs",
     find: "StringEdit::Drain => taken.map(|chars| self.stepped_items(chars)),",
     replace: "StringEdit::Drain => taken,",
+    tests: ["test/corpus.test.ts", "-t", "str_odds"],
+  },
+  {
+    name: "char-indices-as-str-pairs",
+    breaks: "CharIndices::as_str reads its [byte, char]s",
+    file: "src/lower/mir/std_calls.rs",
+    find: "StepOp::AsStr if self.recognition().is_char_indices(arg_tys[0].peel_refs()) => {",
+    replace: "StepOp::AsStr if false => {",
     tests: ["test/corpus.test.ts", "-t", "str_odds"],
   },
 ];

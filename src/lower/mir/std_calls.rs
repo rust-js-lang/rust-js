@@ -946,7 +946,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     .into_iter();
                 let it = exprs.next().expect("the iterator");
                 match op {
-                    // A string's `chars()`' rest, as a string.
+                    // A string's `chars()`' rest, as a string, and its
+                    // `char_indices()`', of its `[byte, char]`s (#118).
+                    StepOp::AsStr if self.recognition().is_char_indices(arg_tys[0].peel_refs()) => {
+                        Expr::call_helper("$charIndicesStr", vec![it])
+                    }
                     StepOp::AsStr => Expr::call_helper("$restStr", vec![it]),
                     StepOp::Offset => Expr::call_helper("$charIndicesOffset", vec![it]),
                     StepOp::Cycle => {

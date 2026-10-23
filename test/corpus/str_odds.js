@@ -3,13 +3,16 @@
 import {
   $charIndices,
   $charIndicesOffset,
+  $charIndicesStr,
   $debugStr,
   $encodeCharUtf16,
   $iter,
   $next,
+  $nextBack,
   $parseErrorKind,
   $parseInt,
   $print,
+  $rest,
   $restStr,
   $strDrain,
   $unwrapErr,
@@ -41,12 +44,16 @@ function main() {
       .join(", ")}])`,
   );
 
-  const it = $iter($charIndices("aé😀b"));
+  let it = $iter($charIndices("aé😀b"));
   $print(String($charIndicesOffset(it)));
   while ($next(it)) {
     $print(` ${$charIndicesOffset(it)}`);
   }
   console.log("");
+  it = $iter($charIndices("aé😀b"));
+  $nextBack(it);
+  $next(it);
+  console.log(`${$charIndicesOffset(it)} ${$debugStr($charIndicesStr(it))}`);
 
   const buf = [0, 0];
   for (const ch of ["a", "é", "😀"]) {
@@ -57,11 +64,22 @@ function main() {
   let s = "héllo wörld";
   const drained = $strDrain(s, 1, 7);
   s = drained[0];
-  const d = $iter(drained[1]);
+  let d = $iter(drained[1]);
   console.log(`${$debugStr($restStr(d))}`);
   $next(d);
   console.log(`${$debugStr($restStr(d))}`);
   const rest = d.toArray().join("");
   console.log(`${rest} ${s}`);
+
+  s = "héllo wörld";
+  const drained$1 = $strDrain(s, 1, 10);
+  s = drained$1[0];
+  d = $iter(drained$1[1]);
+  const value = $nextBack(d);
+  console.log(
+    `${value == null ? "None" : `Some(${$debugStr(value, "'")})`} Drain(${$debugStr($restStr(d))})`,
+  );
+  const back = $rest(d).toReversed().join("");
+  console.log(`${back} ${s}`);
 }
 //# sourceMappingURL=case.js.map

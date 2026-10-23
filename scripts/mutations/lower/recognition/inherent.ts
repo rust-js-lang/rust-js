@@ -347,19 +347,11 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-cells.test.ts", "-t", "a thread-local Cell's take and replace"],
   },
   {
-    name: "drain-as-str-refused",
-    breaks: "a string Drain's as_str is its rest",
-    file: "src/lower/recognition/inherent.rs",
-    find: "== \"std::string::Drain\");",
-    replace: "== \"std::string::Drained\");",
-    tests: ["test/corpus.test.ts", "-t", "str_odds"],
-  },
-  {
     name: "char-indices-offset-refused",
     breaks: "CharIndices::offset is recognised",
     file: "src/lower/recognition/inherent.rs",
-    find: "\"offset\" if char_indices =>",
-    replace: "\"offset\" if char_indices && false =>",
+    find: "\"offset\" if self.is_char_indices(owner) =>",
+    replace: "\"offset\" if false =>",
     tests: ["test/corpus.test.ts", "-t", "str_odds"],
   },
   {

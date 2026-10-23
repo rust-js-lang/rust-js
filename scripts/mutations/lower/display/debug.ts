@@ -354,4 +354,12 @@ export const mutations: Mutation[] = [
     replace: "Expr::str(\"(\"), shown,",
     tests: ["test/corpus.test.ts", "-t", "str_odds"],
   },
+  {
+    name: "drain-debug-unnamed",
+    breaks: "a string Drain's Debug names it",
+    file: "src/lower/display/debug.rs",
+    find: "Expr::str(\"Drain(\"), left,",
+    replace: "Expr::str(\"(\"), left,",
+    tests: ["test/corpus.test.ts", "-t", "str_odds"],
+  },
 ];

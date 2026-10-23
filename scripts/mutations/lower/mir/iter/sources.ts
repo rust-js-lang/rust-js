@@ -189,4 +189,12 @@ export const mutations: Mutation[] = [
     replace: "            None if false && crate::lower::recognition::is_text_escape(self.tcx, ty) => Ok(self.js_iterator(value)),",
     tests: ["test/corpus.test.ts", "-t", "^escape_iterators.rs$"],
   },
+  {
+    name: "string-drain-no-back",
+    breaks: "a string Drain's next_back is an array's",
+    file: "src/lower/mir/iter/sources.rs",
+    find: "            || self.recognition().is_string_drain(ty)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "str_odds"],
+  },
 ];
