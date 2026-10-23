@@ -542,3 +542,10 @@ its source is closed (`closing`), dropping it, then each value collected
 is dropped, as std's `try_process` drops them, `$collectResults` and
 `$collectOptions` given the value's drop. Held by
 `test/corpus/drops_of_consumed_iterators.rs`.
+
+## Amendment: `vec![x; n]` of a value with a destructor
+
+`vec![x; n]` of an `Rc` or of a `Clone` type with a destructor was refused
+(#120). It's `$repeat(x, n, clone, drop)`, as std's `from_elem` makes it:
+`n - 1` clones, then `x` itself, each slot its own value, and of `n` 0,
+`x` dropped. Held by `test/corpus/vec_repeat_drops.rs`.
