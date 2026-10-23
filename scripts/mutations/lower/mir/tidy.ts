@@ -3,14 +3,6 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
-    name: "tidy-handle-assign-unseen",
-    breaks: "a variable a handle's setter assigns is taken for one nothing sets after a tuple holds it, and read after the setter ran",
-    file: "src/lower/mir/tidy.rs",
-    find: "        if let ExprKind::Handle(place) | ExprKind::Pair(place, _) = &e.kind\n",
-    replace: "        if false && let ExprKind::Handle(place) | ExprKind::Pair(place, _) = &e.kind\n",
-    tests: ["test/corpus.test.ts", "-t", "tuple_scrutinee_calls"],
-  },
-  {
     name: "mir-tidy-inlined-past-changed-reads",
     breaks: "a temporary that does something is written past reads of what it changes, `d.n + reset(d)`",
     file: "src/lower/mir/tidy.rs",

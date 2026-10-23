@@ -2,6 +2,7 @@
 
 Status: Accepted. Amends [0066](0066-template-literals.md), whose string
 written across lines was the one form a literal kept of its source.
+Amended: a format string of a `concat!` is its pieces too.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N, nothing the program
 can observe: `"a " + "b"` is the string `"a b"` is.
@@ -52,9 +53,8 @@ user's decision, 2026-10-23): each argument its own JS string, in order.
   `static`'s value, a call's argument, `console.error("a " + "b")`, a
   `let`, a return, a pattern, a JSX child or prop, `{"a " + "b"}`, and
   `panic!(concat!(..))`'s message, `throw new Error("a " + "b")`.
-- **A format string of a `concat!` with a placeholder** is the template
-  it was, `` `n is ${n}` ``: `format_args!` reads the one string rustc
-  made, and its pieces are the template's text.
+- **A format string of a `concat!` is its pieces too**, each a template
+  where it holds a placeholder (amended below; it was the one template).
 - **A `concat!` of anything but literals is the one string it is**:
   `concat!("a", stringify!(b))`, `concat!(env!("V"), "x")` and a nested
   `concat!` are expanded by rustc first, and their pieces aren't in the
@@ -124,3 +124,66 @@ joined, is the literal rustc made: anything else is the one string.
   `scripts/mutations/lower/recognition/std_items.ts` and
   `scripts/mutations/to_oxc/expressions.ts`.
 - The guide's [Basics: strings](../guide/for-js-developers/basics.md#strings-and-template-literals).
+
+## Amendment: a format string of a `concat!`
+
+React's `formatProdErrorMessage` ends its message as prettier lays out a
+`+` of a template and two strings:
+
+```js
+  return (
+    `Minified React error #${code}; visit ${url} for the full message or ` +
+    'use the non-minified dev environment for full errors and additional ' +
+    'helpful warnings.'
+  );
+```
+
+The port writes std's way, `format!(concat!("..{}..{}.. ", "..", ".."),
+code, url)`, which was one template of 160 characters.
+
+**A format string of a `concat!` of literals is its pieces joined by `+`**
+(the user's decision, 2026-10-23), wherever `format_args!` is:
+`format!`, `print!`, `println!`, `write!`, `panic!`, `assert!`'s message.
+Each piece is a template literal where it holds a placeholder, and
+otherwise a string, `` "n is " + `${n}` + "!" ``; one written across lines is a
+template literal with its line breaks, as a literal's piece is. Of
+positional, named and spec'd arguments alike, `{1}`, `{x:.1$}`, `{:>8}`:
+each is formatted as it is and put in its piece.
+
+- **One template where a piece holds part of a placeholder or an
+  escape**: `concat!` joins first and `format_args!` parses the string
+  it made, so `concat!("{", "}")` is a placeholder only the whole has,
+  and `concat!("a{", "{b")` a `{{`. So is one whose template rustc wrote
+  otherwise than the source has it: a literal argument written in,
+  `format!(concat!("v ", "{}{}"), "lit", n)`, or a nested `format_args!`
+  flattened into it.
+- **The template is rustc's**: rustc keeps no span of the format string,
+  so `literals.rs`'s `format_string` reads the call's source, its first
+  string literal or `concat!` of literals, and `format_args.rs`'s
+  `written_pieces` splits rustc's template by the pieces' text and
+  placeholders only where they're what the template is, piece for piece;
+  anything else is the one template. A reading that's wrong can lose the
+  pieces, never change the string. `println!`'s line break, which it adds
+  after the pieces, is the last piece's, there and in a `println!` of a
+  `concat!` with nothing to show, `console.log("a " + "b")`.
+- **The JS tree's template says how its source breaks it**:
+  `Template(texts, values, TemplateLayout)`, the layout the `lines` of
+  ADR 0066 and the `TemplateBreak`s, each a text and an offset in it, as
+  a value is never broken. Every pass sees one template, as it is: its
+  values are evaluated in the order they were, and a `+` of strings is
+  the template's string. `Expr::template_pieces` makes it of the pieces;
+  of no values left, rustc's literal folded in, its pieces are a
+  `Written`'s, a constant, `"n + 1 is " + "4"`. Tidy's splice of a
+  value's template into the one it's in moves the breaks with the texts.
+  The printer writes each piece, `+` between.
+- **No source spans of their own**: a piece's span is the macro call's,
+  as a literal's pieces' are; rustc's spans are of the call.
+
+What holds it: `test/lowering-strings.test.ts`, "a format string of a
+concat! is its pieces joined by +", React's message as upstream writes it,
+each kind of argument, each case of one template, a `println!`, a
+`write!`, a `Display`'s `write!` and a `panic!`, each run in Node; the
+corpus's `format_concat_pieces.rs`, against native Rust; mutations in
+`scripts/mutations/lower/format_args.ts`, `lower/literals.ts`,
+`lower/display.ts`, `lower/mir/std_calls.ts`, `lower/mir/tidy/values.ts`,
+`js/make.ts` and `to_oxc/expressions.ts`.

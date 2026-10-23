@@ -74,6 +74,23 @@ What it found, the first time it ran:
   `typeof` test now, and a later pass makes the `else` `tail elses` did.
   Both are gone.
 
+**Amended: a let chain's binding is its `then`'s.** "No program's JS"
+missed one the JSX tests compile, react.dev's TerminalBlock: `else if
+let Element(e) = .. && let Some(inner) = js::get(..) && let String(_) =
+..` kept its arm in a labeled block, `bb27: { if (..) {..} else { if (..)
+{ ..; break bb27; } throw .. } }`. The later pass is `written elses`, which
+makes an `if` the program wrote with an `else` as it wrote it, where its
+`exit`'s statements are each written in its `then`. Here `const inner =
+children.props.children;` was written in the condition, where the chain
+makes it, so the `else` wasn't made, and `settle jumps` had no `break` at
+a branch's end to drop. A statement written in the condition is the
+`then`'s, where the binding's in scope; `tail elses`, which made the
+`else` of any block's `if (c) { s; break l; } t`, written or not, stays
+gone: one pass makes a written `else`. `test/jsx-types.test.ts`'s let
+chain and `test/lowering-branches.test.ts`'s chain whose binding is kept
+in its arm hold it, with the mutation `written-else-binding-not-then`. A
+pass is gone only once the JSX tests, too, show it changes nothing.
+
 ## Next
 
 The review's other three, as rust-js takes them, each a change of its own:
@@ -99,3 +116,9 @@ The review's other three, as rust-js takes them, each a change of its own:
   (`scripts/mutations/lower/mir/tidy/stages.ts`).
 - A broken contract is a panic in a debug build: a test that ran fine may
   fail where tidy was wrong all along, and should.
+
+## Extended: what a pass reads has one owner
+
+What a tree writes of its variables, which several passes read, is
+`js::Writes`'s alone, and a tree's walks are written once
+([ADR 0670](0670-a-trees-writes-have-one-owner.md)).

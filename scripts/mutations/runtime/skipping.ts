@@ -14,8 +14,8 @@ export const mutations: Mutation[] = [
     name: "skip-dropping-unclosed",
     breaks: "closing a `skip` of items with a destructor doesn't close what it steps",
     file: "src/runtime/skipping.js",
-    find: "    return: () => $closed(skipping.iter),\n",
-    replace: "    return: () => ({ done: true, value: undefined }),\n",
+    find: "    () => $closed(skipping.iter),\n",
+    replace: "    () => {},\n",
     tests: ["test/corpus.test.ts", "-t", "^take_destructors.rs$"],
   },
   {

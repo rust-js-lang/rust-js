@@ -169,7 +169,7 @@ fn named_value(list: &mut Vec<Stmt>, i: usize) {
     let Some(at) = declared.map(|k| i - 1 - k) else { return };
     // Each of its mentions in the `switch` a case's assignment of it.
     let mut assigned = 0;
-    js::statement_lists(&mut vec![list[i].clone()], &mut |stmts| {
+    js::each_list(std::slice::from_ref(&list[i]), &mut |stmts| {
         assigned += (stmts.iter())
             .filter(
                 |s| matches!(&s.kind, StmtKind::Assign(t, _) if matches!(&t.kind, ExprKind::Var(v) if v == temporary)),

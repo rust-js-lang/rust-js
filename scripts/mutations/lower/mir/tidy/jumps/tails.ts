@@ -108,9 +108,17 @@ export const mutations: Mutation[] = [
     name: "written-else-left-a-guard",
     breaks: "an `if` the program wrote with an `else` that returns is a guard, `if (!c) { return; } …`, and its `else if` an `else { if }` with a `continue`",
     file: "src/lower/mir/tidy/jumps/tails.rs",
-    find: "                (false, true) if of(then, rest) => Some(true),\n",
+    find: "                (false, true) if of(then, Some(cond), rest) => Some(true),\n",
     replace: "",
     tests: ["test/lowering-branches.test.ts", "-t", "an if written with an else keeps it"],
+  },
+  {
+    name: "written-else-binding-not-then",
+    breaks: "a let chain's binding, written in its condition, isn't its `then`'s, so its `else if` is an `else { if (c) { …; break bb27; } throw … }` in a labeled block",
+    file: "src/lower/mir/tidy/jumps/tails.rs",
+    find: " || made.is_some_and(|c| within(c, s.span)))\n",
+    replace: " || made.is_some_and(|_| false))\n",
+    tests: ["test/lowering-branches.test.ts", "-t", "binding kept in its arm"],
   },
   {
     name: "tail-if-returns-each",

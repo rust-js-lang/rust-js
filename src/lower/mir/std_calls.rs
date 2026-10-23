@@ -5,6 +5,7 @@
 //! lowers what none knows of its values alone, by `std_values`.
 
 use super::*;
+use crate::lower::format_args::Piece;
 
 /// What's called, a std function `classify` knows, and its type's parts.
 #[derive(Clone, Copy)]
@@ -74,12 +75,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let Value::List(mut items) = items else {
                     return Err(self.unsupported(span, "these format arguments, from its MIR"));
                 };
-                let mut parts = self.formatted_parts(&items, &bytes, span)?;
+                let template = crate::lower::format_args::decode_template(&bytes)
+                    .ok_or_else(|| self.unsupported(span, "this format string"))?;
+                // As its format string is written: across lines, or
+                // `concat!`'s pieces (ADRs 0066, 0641).
+                let written = crate::lower::format_args::written_pieces(tcx, span, template);
+                let template: Vec<_> = written.iter().flat_map(|(pieces, _)| pieces.iter().cloned()).collect();
+                let mut parts = self.written_parts(&items, &written, span)?;
                 // Rust evaluates each argument before it formats any, where
                 // the template formats each where it's written: where that
                 // would run one after formatting that runs code, each
                 // argument that does something is held first (ADR 0377).
-                if self.formats_out_of_order(&items, &bytes, span)? {
+                if self.formats_out_of_order(&items, &template, span)? {
                     self.flush(state, out)?;
                     for item in items.iter_mut() {
                         if let Value::Fmt(_, _, value) = item
@@ -88,7 +95,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             *value = self.spill("_$", std::mem::replace(value, Expr::undefined()), out);
                         }
                     }
-                    parts = self.formatted_parts(&items, &bytes, span)?;
+                    parts = self.written_parts(&items, &written, span)?;
                 }
                 // Of what may fail, its `Arguments` say so to `format!`'s or
                 // `print!`'s: `fmt_may_fail` of each, by its trait (ADR 0187).
@@ -99,9 +106,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     Value::Fmt(_, ty, _) => self.krate.any_failing && ty.peel_refs().is_adt(),
                     _ => false,
                 });
-                // Written across lines, its line breaks as they are (ADR 0066).
-                let lines = bytes.contains(&b'\n') && self.format_string_across_lines(span);
-                let joined = crate::lower::display::join(parts).with_lines(lines);
+                let joined = crate::lower::display::join_written(parts);
                 if fails {
                     return Ok(Some(Value::Fmt(Std::FmtNew, output, joined)));
                 }
@@ -164,7 +169,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// formatted with a stand-in for each argument, what each formatting
     /// runs alone. MIR's folding keeps the arguments in the order given, and
     /// one read twice held.
-    fn formats_out_of_order(&mut self, items: &[Value<'tcx>], bytes: &[u8], span: Span) -> R<bool> {
+    fn formats_out_of_order(&mut self, items: &[Value<'tcx>], template: &[Piece], span: Span) -> R<bool> {
         let effectful: Vec<bool> = (items.iter())
             .map(|item| matches!(item, Value::Fmt(_, _, value) if value.has_effects()))
             .collect();
@@ -179,7 +184,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             })
             .collect();
         let mut formatted = false;
-        for part in self.formatted_parts(&stood, bytes, span)? {
+        for part in self.formatted_parts(&stood, template, span)? {
             let mut reads = false;
             part.visit_vars(&mut |var| reads |= (0..items.len()).any(|i| effectful[i] && var == stand_in(i)));
             if reads && formatted {
@@ -190,16 +195,27 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(false)
     }
 
-    /// Each part of a format string, `bytes`, its text and each argument of
-    /// `items` formatted as its spec says.
-    fn formatted_parts(&mut self, items: &[Value<'tcx>], bytes: &[u8], span: Span) -> R<Vec<Expr>> {
+    /// Each written piece of a format string, `written`, its parts, as
+    /// `formatted_parts`, and whether it's written across lines.
+    fn written_parts(
+        &mut self,
+        items: &[Value<'tcx>],
+        written: &[(Vec<Piece>, bool)],
+        span: Span,
+    ) -> R<Vec<(Vec<Expr>, bool)>> {
+        (written.iter())
+            .map(|(template, lines)| Ok((self.formatted_parts(items, template, span)?, *lines)))
+            .collect()
+    }
+
+    /// Each part of a format string's template, its text and each argument
+    /// of `items` formatted as its spec says.
+    fn formatted_parts(&mut self, items: &[Value<'tcx>], template: &[Piece], span: Span) -> R<Vec<Expr>> {
         let mut parts = Vec::new();
-        for piece in crate::lower::format_args::decode_template(bytes)
-            .ok_or_else(|| self.unsupported(span, "this format string"))?
-        {
-            parts.push(match piece {
-                crate::lower::format_args::Piece::Text(text) => Expr::str(text),
-                crate::lower::format_args::Piece::Argument(i, spec) => {
+        for piece in template {
+            parts.push(match *piece {
+                Piece::Text(ref text) => Expr::str(text),
+                Piece::Argument(i, spec) => {
                     let bad = || self.unsupported(span, "this format argument, from its MIR");
                     let item = |i: usize| match items.get(i) {
                         Some(Value::Fmt(kind, ty, value)) => Some((*kind, *ty, value.clone())),

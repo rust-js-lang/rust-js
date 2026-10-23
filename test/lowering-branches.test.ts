@@ -1182,6 +1182,47 @@ pub fn message(kind: Kind) -> String {
   expect(() => lib.message({ TAG: "Element", _0: undefined })).toThrow("plain string");
 });
 
+// A binding a let chain makes in its condition, kept a `const` in its
+// `then`, is the `then`'s: the chain is still an `else if`, no label to
+// reach its `else` (ADR 0659).
+test("an if-let chain's binding kept in its arm keeps the chain an else if", async () => {
+  const dir = fixture("if-let-chain-binding");
+  writeFileSync(join(dir, "lib.rs"), `pub enum Kind {
+    Text(String),
+    Element(Vec<String>),
+    Other,
+}
+pub fn message(kind: Kind) -> String {
+    let message: String;
+    if let Kind::Text(text) = &kind {
+        message = text.to_string();
+    } else if let Kind::Element(child) = &kind
+        && let Some(text) = child.first()
+        && text.len() > 1
+    {
+        message = text.clone();
+    } else {
+        panic!("Expected a plain string.");
+    }
+    message
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain(`  if (kind.TAG === "Text") {
+    message = kind._0;
+  } else if (kind.TAG === "Element" && kind._0[0] != null && $byteLen(kind._0[0]) > 1) {
+    const text = kind._0[0];
+    message = text;
+  } else {
+    throw new Error("Expected a plain string.");
+  }`);
+  const lib = await import(join(dir, "mir.js"));
+  expect([lib.message({ TAG: "Text", _0: "a" }), lib.message({ TAG: "Element", _0: ["bc"] })]).toEqual(["a", "bc"]);
+  expect(() => lib.message({ TAG: "Element", _0: ["b"] })).toThrow("plain string");
+  expect(() => lib.message({ TAG: "Other" })).toThrow("plain string");
+});
+
 // An `||` chain whose part is an `Option`'s `is_some()`, of an object:
 // `!!error || ..`, a `bool` part by part, not `!(!error && ..)`; and one
 // only tested, `error || ..`, as react.dev's Preview hides its content.

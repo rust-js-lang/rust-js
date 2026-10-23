@@ -44,7 +44,10 @@ function $closed(it) {
 // (ADRs 0455, 0456). Closing it closes its source (ADR 0465).
 function $mapEnds(it, f) {
   const mapped = (step) => (step.done ? step : { done: false, value: f(step.value) });
-  const map = Iterator.from({ next: () => mapped(it.next()), return: () => $closed(it) });
+  const map = new $Steps(
+    () => mapped(it.next()),
+    () => $closed(it),
+  );
   if (it.back !== undefined) map.back = () => mapped(it.back());
   if (it.len !== undefined) map.len = () => it.len();
   return map;
@@ -57,52 +60,60 @@ function $mapEnds(it, f) {
 function $chainEnds(a, b) {
   const done = { done: true, value: undefined };
   const sides = { a, b };
+  // The first side let go of once it's done, as std's clears it; the
+  // second stepped on, as std's is.
   const step = (first, second, by) => () => {
-    for (const side of [first, second]) {
-      if (sides[side] === undefined) continue;
-      const at = sides[side][by]();
+    if (sides[first] !== undefined) {
+      const at = sides[first][by]();
       if (!at.done) return at;
-      sides[side] = undefined;
+      sides[first] = undefined;
     }
-    return done;
+    return sides[second] === undefined ? done : sides[second][by]();
   };
-  const chain = Iterator.from({
-    next: step("a", "b", "next"),
-    return: () => {
-      sides.a?.return?.();
-      sides.b?.return?.();
-      return done;
-    },
+  const chain = new $Steps(step("a", "b", "next"), () => {
+    sides.a?.return?.();
+    sides.b?.return?.();
   });
   chain.back = step("b", "a", "back");
   return chain;
 }
 
-// `it.step_by(step)` of a JS iterator that knows its back and its length,
-// which knows its back too, as Rust's `StepBy` is double-ended where its
-// source is exact-sized: the first item, then each `step`th, from the
-// front; from the back, the last of those, found by the source's length,
-// as std's `next_back_index` finds it. Closing it closes its source.
-function $stepByEnds(it, step) {
-  let first = true;
+// `it.step_by(step)`, as Rust's `StepBy` steps: its first item, then
+// each `step`th, a skip stopped by a `None`, which it gives, and stepped on
+// after, as std's `nth` is; each passed over dropped, `drop`, where items
+// have a destructor (ADR 0465). Closing it closes its source.
+function $stepBy(it, step, drop) {
   const skip = (k, by) => {
     for (; k > 0; k--) {
       const at = it[by]();
       if (at.done) return at;
+      drop?.(at.value);
     }
     return it[by]();
   };
-  const stepped = Iterator.from({
-    next() {
-      const at = skip(first ? 0 : step - 1, "next");
-      first = false;
+  const stepped = new $Steps(
+    () => {
+      const at = skip(stepped.first ? 0 : step - 1, "next");
+      stepped.first = false;
       return at;
     },
-    return: () => $closed(it),
-  });
+    () => $closed(it),
+  );
+  stepped.first = true;
+  stepped.skip = skip;
+  return stepped;
+}
+
+// `it.step_by(step)` of a JS iterator that knows its back and its length,
+// which knows its back too, as Rust's `StepBy` is double-ended where its
+// source is exact-sized: `$stepBy`'s from the front; from the back, the
+// last of those, found by the source's length, as std's `next_back_index`
+// finds it.
+function $stepByEnds(it, step) {
+  const stepped = $stepBy(it, step);
   stepped.back = () => {
     const rem = it.len() % step;
-    return skip(first ? (rem === 0 ? step - 1 : rem - 1) : rem, "back");
+    return stepped.skip(stepped.first ? (rem === 0 ? step - 1 : rem - 1) : rem, "back");
   };
   return stepped;
 }
@@ -116,7 +127,7 @@ function $filterEnds(it, p) {
     for (let at = step(); !at.done; at = step()) if (p(at.value)) return at;
     return { done: true, value: undefined };
   };
-  const filter = Iterator.from({ next: kept(() => it.next()) });
+  const filter = new $Steps(kept(() => it.next()));
   if (it.back !== undefined) filter.back = kept(() => it.back());
   return filter;
 }
@@ -131,13 +142,13 @@ function $filterEnds(it, p) {
 // at the `count` it's given; closing it closes what it steps.
 function $enumerate(iter, count = 0) {
   const pair = (step, at) => (step.done ? step : { done: false, value: [at, step.value] });
-  const enumerated = Iterator.from({
-    next: () => {
+  const enumerated = new $Steps(
+    () => {
       const step = enumerated.iter.next();
       return step.done ? step : pair(step, enumerated.count++);
     },
-    return: () => $closed(enumerated.iter),
-  });
+    () => $closed(enumerated.iter),
+  );
   enumerated.iter = iter;
   enumerated.count = count;
   enumerated.hint = () => $sizeHint(enumerated.iter);

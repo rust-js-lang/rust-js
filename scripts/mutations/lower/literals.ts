@@ -3,7 +3,33 @@ import type { Mutation } from "../../mutations";
 
 const concat = ["test/lowering-strings.test.ts", "-t", "a concat! of literals is its pieces joined by"];
 
+const format = ["test/lowering-strings.test.ts", "-t", "a format string of a concat! is its pieces joined by"];
+
 export const mutations: Mutation[] = [
+  {
+    name: "format-string-concat-unseen",
+    breaks: "a format string of a `concat!` is one template, as if its pieces weren't in the source",
+    file: "src/lower/literals.rs",
+    find: "                return concat_arguments(&tokens[i..=i + close]);",
+    replace: "                return None;",
+    tests: format,
+  },
+  {
+    name: "format-string-literal-unread",
+    breaks: "a format string's literal isn't read, so one written across lines is a template of `\\n`s",
+    file: "src/lower/literals.rs",
+    find: "            } => return Some(vec![piece(kind, code)?]),",
+    replace: "            } => return None,",
+    tests: ["test/lowering-strings.test.ts", "-t", "a format string written across lines"],
+  },
+  {
+    name: "concat-println-newline-unread",
+    breaks: "a `println!` of a `concat!` of literals alone is one string, as its line break isn't in the pieces",
+    file: "src/lower/literals.rs",
+    find: "        Some(line) if line == joined => pieces.last_mut()?.text.push('\\n'),\n",
+    replace: "",
+    tests: format,
+  },
   {
     name: "concat-one-literal",
     breaks: "a `concat!` of literals is one string, not its pieces joined by `+`",

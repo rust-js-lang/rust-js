@@ -163,12 +163,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts","-t","type_facts"],
   },
   {
-    "name": "mir-format-lines-flattened",
-    "breaks": "a format string MIR's template has, written across lines, is a template of `\\n`s",
-    "file": "src/lower/mir/std_calls.rs",
-    "find": "let lines = bytes.contains(&b'\\n') && self.format_string_across_lines(span);",
-    "replace": "let lines = false;",
-    "tests": ["test/lowering-strings.test.ts", "-t", "a format string written across lines keeps its lines"]
+    name: "mir-format-pieces-unwritten",
+    breaks: "a format string's pieces, `concat!`'s, are each formatted, but only the first is written",
+    file: "src/lower/mir/std_calls.rs",
+    find: "            .map(|(template, lines)| Ok((self.formatted_parts(items, template, span)?, *lines)))\n",
+    replace: "            .take(1)\n            .map(|(template, lines)| Ok((self.formatted_parts(items, template, span)?, *lines)))\n",
+    tests: ["test/lowering-strings.test.ts", "-t", "a format string of a concat! is its pieces joined by"],
   },
   {
     "name": "mir-chars-as-str-refused",
@@ -522,8 +522,8 @@ export const mutations: Mutation[] = [
     name: "format-arguments-in-place",
     breaks: "a format string's argument that does something is evaluated where the template formats it, after a `Debug` of an earlier one that prints",
     file: "src/lower/mir/std_calls.rs",
-    find: "                if self.formats_out_of_order(&items, &bytes, span)? {\n",
-    replace: "                if false && self.formats_out_of_order(&items, &bytes, span)? {\n",
+    find: "                if self.formats_out_of_order(&items, &template, span)? {\n",
+    replace: "                if false && self.formats_out_of_order(&items, &template, span)? {\n",
     tests: ["test/corpus.test.ts", "-t", "^format_arguments_first.rs$"],
   },
   {

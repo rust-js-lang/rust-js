@@ -196,7 +196,7 @@ export const mutations: Mutation[] = [
     "name": "mir-tidy-lets-block",
     "breaks": "a `let` no closure sets, `target`, blocks a prop held after it, as any variable set again",
     "file": "src/lower/mir/tidy/stages.rs",
-    "find": "    let set = closures_set(body);\n",
+    "find": "    let set = js::Writes::of(body).by_closures();\n",
     "replace": "    let set = changed.clone();\n",
     "tests": ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"]
   },
@@ -418,7 +418,7 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-applied-values-kept",
     breaks: "a value `{:?}` reads twice, given as it's made, stays a function called in place, `((result) => ..)(f())`, not `const value = f();`",
     file: "src/lower/mir/tidy/stages.rs",
-    find: "            pass(\"applied values\", |b, h| {\n                let set = closures_set(b);\n                let mut taken = HashSet::new();\n                js::names_in(b, &mut taken);\n                js::statement_lists(b, &mut |s| applied_values(s, &set, h.plain, &mut taken))\n            }),\n",
+    find: "            pass(\"applied values\", |b, h| {\n                let set = js::Writes::of(b).by_closures();\n                let mut taken = HashSet::new();\n                js::names_in(b, &mut taken);\n                js::statement_lists(b, &mut |s| applied_values(s, &set, h.plain, &mut taken))\n            }),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^option_result_methods.rs$"],
     snapshots: true,

@@ -601,8 +601,8 @@ export const mutations: Mutation[] = [
     name: "fallen-declared-set-after-const",
     breaks: "a variable set after its fallback is a `const`, and setting it throws",
     file: "src/prepare.rs",
-    find: "            body[i].kind = match set_in(&body[i + 2..], &name) {\n",
-    replace: "            body[i].kind = match false && set_in(&body[i + 2..], &name) {\n",
+    find: "            body[i].kind = match js::Writes::of(&body[i + 2..]).may_replace(&name) {\n",
+    replace: "            body[i].kind = match false && js::Writes::of(&body[i + 2..]).may_replace(&name) {\n",
     tests: ["test/lowering-options.test.ts", "-t", "a let then its fallback"],
   },
   {

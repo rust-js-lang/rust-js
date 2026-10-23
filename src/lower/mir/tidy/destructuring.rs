@@ -482,7 +482,12 @@ pub(super) fn tuple_reads(
         let mut indexed = 0;
         js::each_expr_mut(&mut stmts[i + 1..], &mut |e| indexed += usize::from(item(e).is_some()));
         // Read only, not set through, `children[0] = ..`.
-        if sets_through(&stmts[i + 1..], &t) || indexed == 0 || indexed != js::mentions_in(&stmts[i + 1..], &t) {
+        let writes = js::Writes::of(&stmts[i + 1..]);
+        if writes.replaced.contains(&t)
+            || writes.changed.contains(&t)
+            || indexed == 0
+            || indexed != js::mentions_in(&stmts[i + 1..], &t)
+        {
             i += 1;
             continue;
         }
