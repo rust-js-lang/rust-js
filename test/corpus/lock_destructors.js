@@ -15,7 +15,7 @@ function guardDrop_drop(guard) {
 }
 
 function main() {
-  const m = undefined;
+  let m;
   try {
     console.log("made");
   } finally {
@@ -68,14 +68,14 @@ function main() {
   } finally {
     noisyDrop_drop(h.lock.value);
   }
-  const m$1 = { value: ["old"] };
+  m = { value: ["old"] };
   const noisy = ["new"];
   let tmp;
   try {
-    tmp = $lock(m$1, true);
+    tmp = $lock(m, true);
   } catch (error) {
     noisyDrop_drop(noisy);
-    noisyDrop_drop(m$1.value);
+    noisyDrop_drop(m.value);
     throw error;
   }
   try {
@@ -83,20 +83,20 @@ function main() {
   } catch (error) {
     $assign(tmp.value, noisy);
     $unborrow(tmp);
-    noisyDrop_drop(m$1.value);
+    noisyDrop_drop(m.value);
     throw error;
   }
   $assign(tmp.value, noisy);
   try {
     $unborrow(tmp);
   } catch (error) {
-    noisyDrop_drop(m$1.value);
+    noisyDrop_drop(m.value);
     throw error;
   }
   try {
     console.log("replaced");
   } catch (error) {
-    noisyDrop_drop(m$1.value);
+    noisyDrop_drop(m.value);
     throw error;
   }
   const w = { value: ["before"] };
@@ -107,7 +107,7 @@ function main() {
   } catch (error) {
     noisyDrop_drop(value);
     noisyDrop_drop(w.value);
-    noisyDrop_drop(m$1.value);
+    noisyDrop_drop(m.value);
     throw error;
   }
   try {
@@ -116,7 +116,7 @@ function main() {
     $assign(tmp$1.value, value);
     $unborrow(tmp$1);
     noisyDrop_drop(w.value);
-    noisyDrop_drop(m$1.value);
+    noisyDrop_drop(m.value);
     throw error;
   }
   $assign(tmp$1.value, value);
@@ -128,10 +128,10 @@ function main() {
       noisyDrop_drop(w.value);
     }
   } finally {
-    noisyDrop_drop(m$1.value);
+    noisyDrop_drop(m.value);
   }
-  const m$2 = ["taken"];
-  const inner = m$2;
+  m = ["taken"];
+  const inner = m;
   try {
     console.log(`took ${inner[0]}`);
   } finally {

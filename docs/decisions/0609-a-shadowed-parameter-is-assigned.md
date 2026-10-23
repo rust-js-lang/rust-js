@@ -1,7 +1,9 @@
 # 0609. A `let` that shadows a parameter read no more is the parameter assigned
 
 Status: Accepted. Extends [0352](0352-reclaimed-names.md)'s reclaimed
-names.
+names. Extended by [0650](0650-a-shadow-of-a-binding-read-no-more-is-that-binding.md):
+any binding of the shadow's block, the program's own, is assigned; the
+pass is tidy's, `tidy::shadowed`, not preparation's.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): A: the same values are
 read; only the name changes.

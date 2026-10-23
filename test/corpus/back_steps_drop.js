@@ -15,7 +15,7 @@ function noisy(ns) {
 }
 
 function main() {
-  const it = $iter(noisy([1, 2, 3]));
+  let it = $iter(noisy([1, 2, 3]));
   try {
     const nthBack = $nthBack(it, 1, undefined, noisyDrop_drop);
     const tmp = (n) => {
@@ -31,10 +31,10 @@ function main() {
       noisyDrop_drop(item);
     }
   }
-  const it$1 = $iter(noisy([4, 5, 6]));
+  it = $iter(noisy([4, 5, 6]));
   const value = (n) => n[0] === 4;
   try {
-    const rfind = $findBack(it$1, value, undefined, noisyDrop_drop);
+    const rfind = $findBack(it, value, undefined, noisyDrop_drop);
     const tmp = (n) => {
       const result = n[0];
       noisyDrop_drop(n);
@@ -69,7 +69,7 @@ function main() {
       }
     }
   } finally {
-    for (const item of it$1) {
+    for (const item of it) {
       noisyDrop_drop(item);
     }
   }

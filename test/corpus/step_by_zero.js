@@ -7,8 +7,8 @@ export function entry() {
 }
 
 function every(items, step) {
-  step = $step(step);
-  return items.filter((_, i) => i % step === 0);
+  const step$1 = $step(step);
+  return items.filter((_, i) => i % step$1 === 0);
 }
 
 function main() {

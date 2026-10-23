@@ -53,10 +53,10 @@ function main() {
   sorted.sort((a, b) => $cmp(b.units, a.units) || $cmp(a.item, b.item));
   const top = sorted.slice(0, 3).map((s) => `${s.units}x${s.item}`);
   console.log(`${top.join(", ")}`);
-  const items = new Set(all.values().map((s) => s.item));
-  const items$1 = Array.from(items);
-  items$1.sort($cmp);
-  console.log(`[${items$1.map((item) => $debugStr(item)).join(", ")}]`);
+  let items = new Set(all.values().map((s) => s.item));
+  items = Array.from(items);
+  items.sort($cmp);
+  console.log(`[${items.map((item) => $debugStr(item)).join(", ")}]`);
   const units = all.map((s) => s.units);
   const diffs = $windows(units, 2).map((w) => {
     const value = BigInt($index(w, 1));
@@ -73,13 +73,13 @@ function main() {
     .map((x, i) => [i, x])
     .filter((_, i) => i % 2 === 0);
   console.log(`[${pairs.map((item) => `(${item[0]}, ${$debugStr(item[1])})`).join(", ")}]`);
-  const zipped = $lazyZip($iter(units), $cycle(items$1))
+  const zipped = $lazyZip($iter(units), $cycle(items))
     .map(([u, i]) => String(u) + i)
     .toArray();
   console.log(`[${zipped.map((item) => $debugStr(item)).join(", ")}]`);
   const chunks = $chunks(units, 2).map((c) => c.reduce((a, b) => (a * b) >>> 0, 1));
   console.log(`[${chunks.join(", ")}]`);
-  const letters = items$1
+  const letters = items
     .toReversed()
     .flatMap((i) => Array.from(i).slice(0, 1))
     .join("");

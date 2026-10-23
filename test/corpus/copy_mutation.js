@@ -44,7 +44,7 @@ function main() {
   console.log(`[${grid.map((item) => `[${item.join(", ")}]`).join(", ")}] [${row.join(", ")}]`);
 
   const shape = { name: "tri", points: [{ ...a }, { ...b }] };
-  const copy = { ...shape, points: shape.points.map((item) => ({ ...item })) };
+  let copy = { ...shape, points: shape.points.map((item) => ({ ...item })) };
   copy.name += "-copy";
   $index(copy.points, 0).y = -1;
   copy.points.push({ x: 0, y: 0 });
@@ -55,7 +55,7 @@ function main() {
   console.log(`${pointDebug_fmt(a)} ${pointDebug_fmt(c)} ${arg}`);
 
   const item = { ...a };
-  const points = Array.from({ length: 3 }, () => ({ ...item }));
+  let points = Array.from({ length: 3 }, () => ({ ...item }));
   for (const p of points) {
     p.y = (p.y * 3) | 0;
   }
@@ -75,32 +75,32 @@ function main() {
   );
 
   const tagged = { n: 1 };
-  const copy$1 = duplicate(tagged, { clone: (value) => value });
-  copy$1.n = (copy$1.n + 1) | 0;
-  console.log(`${tagged.n} ${copy$1.n}`);
+  copy = duplicate(tagged, { clone: (value) => value });
+  copy.n = (copy.n + 1) | 0;
+  console.log(`${tagged.n} ${copy.n}`);
 
   const holder = { item: 1 };
-  const copy$2 = held(holder, { clone: (value) => value });
-  copy$2.item = (copy$2.item + 1) >>> 0;
-  console.log(`${holder.item} ${copy$2.item}`);
+  copy = held(holder, { clone: (value) => value });
+  copy.item = (copy.item + 1) >>> 0;
+  console.log(`${holder.item} ${copy.item}`);
 
   // An array of what's changed in place is copied as it is: what a
   // closure given its items by value changes, and a copy's item, leave
   // the array they came from as it was.
-  const points$1 = [
+  points = [
     { x: 1, y: 2 },
     { x: 3, y: 4 },
   ];
-  const moved$1 = points$1
+  const moved$1 = points
     .map((item) => ({ ...item }))
     .map((p) => {
       p.x = (p.x + 10) | 0;
       return p;
     });
-  const copied = points$1.map((item) => ({ ...item }));
+  const copied = points.map((item) => ({ ...item }));
   copied[0].y = 0;
   console.log(
-    `[${points$1.map((item) => pointDebug_fmt(item)).join(", ")}] [${moved$1.map((item) => pointDebug_fmt(item)).join(", ")}] [${copied.map((item) => pointDebug_fmt(item)).join(", ")}]`,
+    `[${points.map((item) => pointDebug_fmt(item)).join(", ")}] [${moved$1.map((item) => pointDebug_fmt(item)).join(", ")}] [${copied.map((item) => pointDebug_fmt(item)).join(", ")}]`,
   );
 }
 //# sourceMappingURL=case.js.map

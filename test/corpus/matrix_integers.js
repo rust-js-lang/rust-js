@@ -53,8 +53,8 @@ function f32Bits(x) {
 }
 
 function main() {
-  const values = [-128, -127, -1, 0, 1, 2, 7, 126, 127];
-  const bits = 8;
+  let values = [-128, -127, -1, 0, 1, 2, 7, 126, 127];
+  let bits = 8;
   for (const a of values) {
     const value = Math.clz32(a & 255) - 24;
     const value$1 = $trailingZeros(a & 255, 8);
@@ -125,9 +125,9 @@ function main() {
       );
     }
   }
-  const values$1 = [-32768, -32767, -1, 0, 1, 2, 7, 32766, 32767];
-  const bits$1 = 16;
-  for (const a of values$1) {
+  values = [-32768, -32767, -1, 0, 1, 2, 7, 32766, 32767];
+  bits = 16;
+  for (const a of values) {
     const value = Math.clz32(a & 65535) - 16;
     const value$1 = $trailingZeros(a & 65535, 16);
     const value$2 = $countOnes(a & 65535);
@@ -139,7 +139,7 @@ function main() {
     const value$8 = $checked(-a, -32768, 32767);
     const value$9 = ($pow(a, 0) << 16) >> 16;
     const value$10 = ($pow(a, 2) << 16) >> 16;
-    const value$11 = ($pow(a, (bits$1 - 1) >>> 0) << 16) >> 16;
+    const value$11 = ($pow(a, (bits - 1) >>> 0) << 16) >> 16;
     const arg = $checkedPow(a, 3, -32768, 32767);
     console.log(
       `i16 ${a}: zeros ${value} ${value$1} ones ${value$2} ${value$3} swap ${value$4} rev ${value$5} rot ${value$6} ${value$7} neg ${(-a << 16) >> 16} ${value$8 == null ? "None" : `Some(${value$8})`} pow ${value$9} ${value$10} ${value$11} ${arg == null ? "None" : `Some(${arg})`}`,
@@ -158,7 +158,7 @@ function main() {
     console.log(
       `i16 ${a}: as ${(a << 24) >> 24} ${a} ${a} ${value$13} ${value$14} ${a & 255} ${a & 65535} ${a >>> 0} ${value$15} ${value$16} f32 ${value$17} f64 ${arg$2}`,
     );
-    for (const s of [0, 1, (bits$1 - 1) >>> 0, bits$1, (bits$1 + 1) >>> 0]) {
+    for (const s of [0, 1, (bits - 1) >>> 0, bits, (bits + 1) >>> 0]) {
       const value = s < 16 ? ((a << (s & 15)) << 16) >> 16 : undefined;
       const value$1 = s < 16 ? a >> (s & 15) : undefined;
       console.log(
@@ -171,7 +171,7 @@ function main() {
     console.log(
       `i16 ${a}: signed ${value$18} ${value$19} ${value$20 == null ? "None" : `Some(${value$20})`} ${Math.abs(a)}`,
     );
-    for (const b of values$1) {
+    for (const b of values) {
       const quotient =
         $checkedDiv(a, b, -32768) == null
           ? "-"
@@ -197,9 +197,9 @@ function main() {
       );
     }
   }
-  const values$2 = [-2147483648, -2147483647, -1, 0, 1, 2, 7, 2147483646, 2147483647];
-  const bits$2 = 32;
-  for (const a of values$2) {
+  values = [-2147483648, -2147483647, -1, 0, 1, 2, 7, 2147483646, 2147483647];
+  bits = 32;
+  for (const a of values) {
     const value = Math.clz32(a);
     const value$1 = $trailingZeros(a, 32);
     const value$2 = $countOnes(a);
@@ -211,7 +211,7 @@ function main() {
     const value$8 = $checked(-a, -2147483648, 2147483647);
     const value$9 = $pow(a, 0);
     const value$10 = $pow(a, 2);
-    const value$11 = $pow(a, (bits$2 - 1) >>> 0);
+    const value$11 = $pow(a, (bits - 1) >>> 0);
     const arg = $checkedPow(a, 3, -2147483648, 2147483647);
     console.log(
       `i32 ${a}: zeros ${value} ${value$1} ones ${value$2} ${value$3} swap ${value$4} rev ${value$5} rot ${value$6} ${value$7} neg ${-a | 0} ${value$8 == null ? "None" : `Some(${value$8})`} pow ${value$9} ${value$10} ${value$11} ${arg == null ? "None" : `Some(${arg})`}`,
@@ -230,7 +230,7 @@ function main() {
     console.log(
       `i32 ${a}: as ${(a << 24) >> 24} ${(a << 16) >> 16} ${a} ${value$13} ${value$14} ${a & 255} ${a & 65535} ${a >>> 0} ${value$15} ${value$16} f32 ${value$17} f64 ${arg$2}`,
     );
-    for (const s of [0, 1, (bits$2 - 1) >>> 0, bits$2, (bits$2 + 1) >>> 0]) {
+    for (const s of [0, 1, (bits - 1) >>> 0, bits, (bits + 1) >>> 0]) {
       const value = s < 32 ? (a << s) | 0 : undefined;
       const value$1 = s < 32 ? a >> s : undefined;
       console.log(
@@ -243,7 +243,7 @@ function main() {
     console.log(
       `i32 ${a}: signed ${value$18} ${value$19} ${value$20 == null ? "None" : `Some(${value$20})`} ${Math.abs(a)}`,
     );
-    for (const b of values$2) {
+    for (const b of values) {
       const quotient =
         $checkedDiv(a, b, -2147483648) == null
           ? "-"
@@ -270,7 +270,7 @@ function main() {
       );
     }
   }
-  const values$3 = [
+  values = [
     -9223372036854775808n,
     -9223372036854775807n,
     -1n,
@@ -281,8 +281,8 @@ function main() {
     9223372036854775806n,
     9223372036854775807n,
   ];
-  const bits$3 = 64;
-  for (const a of values$3) {
+  bits = 64;
+  for (const a of values) {
     const value = $bigLeadingZeros(a);
     const value$1 = $bigTrailingZeros(a);
     const value$2 = $bigCountOnes(a);
@@ -295,7 +295,7 @@ function main() {
     const value$9 = $bigChecked(-a, -9223372036854775808n, 9223372036854775807n);
     const value$10 = BigInt.asIntN(64, $bigPow(a, 0));
     const value$11 = BigInt.asIntN(64, $bigPow(a, 2));
-    const value$12 = BigInt.asIntN(64, $bigPow(a, (bits$3 - 1) >>> 0));
+    const value$12 = BigInt.asIntN(64, $bigPow(a, (bits - 1) >>> 0));
     const arg = $checkedPow(a, 3, -9223372036854775808n, 9223372036854775807n);
     console.log(
       `i64 ${a}: zeros ${value} ${value$1} ones ${value$2} ${value$3} swap ${value$4} rev ${value$5} rot ${value$6} ${value$7} neg ${value$8} ${value$9 == null ? "None" : `Some(${value$9})`} pow ${value$10} ${value$11} ${value$12} ${arg == null ? "None" : `Some(${arg})`}`,
@@ -323,7 +323,7 @@ function main() {
     console.log(
       `i64 ${a}: as ${value$14} ${value$15} ${value$16} ${a} ${a} ${value$17} ${value$18} ${value$19} ${value$20} ${value$21} f32 ${value$22} f64 ${arg$2}`,
     );
-    for (const s of [0, 1, (bits$3 - 1) >>> 0, bits$3, (bits$3 + 1) >>> 0]) {
+    for (const s of [0, 1, (bits - 1) >>> 0, bits, (bits + 1) >>> 0]) {
       const value = BigInt.asIntN(64, a << (BigInt(s) & 63n));
       const value$1 = a >> (BigInt(s) & 63n);
       const value$2 = s < 64 ? BigInt.asIntN(64, a << (BigInt(s) & 63n)) : undefined;
@@ -338,7 +338,7 @@ function main() {
     console.log(
       `i64 ${a}: signed ${value$23} ${value$24} ${value$25 == null ? "None" : `Some(${value$25})`} ${$bigAbs(a)}`,
     );
-    for (const b of values$3) {
+    for (const b of values) {
       const quotient =
         $bigCheckedDiv(a, b, -9223372036854775808n) == null
           ? "-"
@@ -388,7 +388,7 @@ function main() {
       );
     }
   }
-  const values$4 = [
+  values = [
     -170141183460469231731687303715884105728n,
     -170141183460469231731687303715884105727n,
     -1n,
@@ -399,8 +399,8 @@ function main() {
     170141183460469231731687303715884105726n,
     170141183460469231731687303715884105727n,
   ];
-  const bits$4 = 128;
-  for (const a of values$4) {
+  bits = 128;
+  for (const a of values) {
     const value = $bigLeadingZeros(a, 128);
     const value$1 = $bigTrailingZeros(a, 128);
     const value$2 = $bigCountOnes(a, 128);
@@ -417,7 +417,7 @@ function main() {
     );
     const value$10 = BigInt.asIntN(128, $bigPow(a, 0, 128));
     const value$11 = BigInt.asIntN(128, $bigPow(a, 2, 128));
-    const value$12 = BigInt.asIntN(128, $bigPow(a, (bits$4 - 1) >>> 0, 128));
+    const value$12 = BigInt.asIntN(128, $bigPow(a, (bits - 1) >>> 0, 128));
     const arg = $checkedPow(
       a,
       3,
@@ -455,7 +455,7 @@ function main() {
     console.log(
       `i128 ${a}: as ${value$14} ${value$15} ${value$16} ${value$17} ${a} ${value$18} ${value$19} ${value$20} ${value$21} ${value$22} f32 ${value$23} f64 ${arg$2}`,
     );
-    for (const s of [0, 1, (bits$4 - 1) >>> 0, bits$4, (bits$4 + 1) >>> 0]) {
+    for (const s of [0, 1, (bits - 1) >>> 0, bits, (bits + 1) >>> 0]) {
       const value = BigInt.asIntN(128, a << (BigInt(s) & 127n));
       const value$1 = a >> (BigInt(s) & 127n);
       const value$2 = s < 128 ? BigInt.asIntN(128, a << (BigInt(s) & 127n)) : undefined;
@@ -474,7 +474,7 @@ function main() {
     console.log(
       `i128 ${a}: signed ${value$24} ${value$25} ${value$26 == null ? "None" : `Some(${value$26})`} ${$bigAbs(a)}`,
     );
-    for (const b of values$4) {
+    for (const b of values) {
       const quotient =
         $bigCheckedDiv(a, b, -170141183460469231731687303715884105728n) == null
           ? "-"
@@ -548,9 +548,9 @@ function main() {
       );
     }
   }
-  const values$5 = [0, 1, 255, 0, 1, 2, 7, 254, 255];
-  const bits$5 = 8;
-  for (const a of values$5) {
+  values = [0, 1, 255, 0, 1, 2, 7, 254, 255];
+  bits = 8;
+  for (const a of values) {
     const value = Math.clz32(a) - 24;
     const value$1 = $trailingZeros(a, 8);
     const value$2 = $countOnes(a);
@@ -562,7 +562,7 @@ function main() {
     const value$8 = $checked(-a, 0, 255);
     const value$9 = $pow(a, 0) & 255;
     const value$10 = $pow(a, 2) & 255;
-    const value$11 = $pow(a, (bits$5 - 1) >>> 0) & 255;
+    const value$11 = $pow(a, (bits - 1) >>> 0) & 255;
     const arg = $checkedPow(a, 3, 0, 255);
     console.log(
       `u8 ${a}: zeros ${value} ${value$1} ones ${value$2} ${value$3} swap ${value$4} rev ${value$5} rot ${value$6} ${value$7} neg ${-a & 255} ${value$8 == null ? "None" : `Some(${value$8})`} pow ${value$9} ${value$10} ${value$11} ${arg == null ? "None" : `Some(${arg})`}`,
@@ -581,7 +581,7 @@ function main() {
     console.log(
       `u8 ${a}: as ${(a << 24) >> 24} ${a} ${a} ${value$13} ${value$14} ${a} ${a} ${a} ${value$15} ${value$16} f32 ${value$17} f64 ${arg$2}`,
     );
-    for (const s of [0, 1, (bits$5 - 1) >>> 0, bits$5, (bits$5 + 1) >>> 0]) {
+    for (const s of [0, 1, (bits - 1) >>> 0, bits, (bits + 1) >>> 0]) {
       const value = s < 8 ? (a << (s & 7)) & 255 : undefined;
       const value$1 = s < 8 ? a >>> (s & 7) : undefined;
       console.log(
@@ -589,7 +589,7 @@ function main() {
       );
     }
     console.log(`u8 ${a}: unsigned ${a !== 0 && (a & (a - 1)) === 0}`);
-    for (const b of values$5) {
+    for (const b of values) {
       const quotient =
         $checkedDiv(a, b, 0) == null ? "-" : `${$div(a, b) & 255} ${$rem(a, b) & 255}`;
       const value = $checked(a + b, 0, 255);
@@ -613,9 +613,9 @@ function main() {
       );
     }
   }
-  const values$6 = [0, 1, 65535, 0, 1, 2, 7, 65534, 65535];
-  const bits$6 = 16;
-  for (const a of values$6) {
+  values = [0, 1, 65535, 0, 1, 2, 7, 65534, 65535];
+  bits = 16;
+  for (const a of values) {
     const value = Math.clz32(a) - 16;
     const value$1 = $trailingZeros(a, 16);
     const value$2 = $countOnes(a);
@@ -627,7 +627,7 @@ function main() {
     const value$8 = $checked(-a, 0, 65535);
     const value$9 = $pow(a, 0) & 65535;
     const value$10 = $pow(a, 2) & 65535;
-    const value$11 = $pow(a, (bits$6 - 1) >>> 0) & 65535;
+    const value$11 = $pow(a, (bits - 1) >>> 0) & 65535;
     const arg = $checkedPow(a, 3, 0, 65535);
     console.log(
       `u16 ${a}: zeros ${value} ${value$1} ones ${value$2} ${value$3} swap ${value$4} rev ${value$5} rot ${value$6} ${value$7} neg ${-a & 65535} ${value$8 == null ? "None" : `Some(${value$8})`} pow ${value$9} ${value$10} ${value$11} ${arg == null ? "None" : `Some(${arg})`}`,
@@ -646,7 +646,7 @@ function main() {
     console.log(
       `u16 ${a}: as ${(a << 24) >> 24} ${(a << 16) >> 16} ${a} ${value$13} ${value$14} ${a & 255} ${a} ${a} ${value$15} ${value$16} f32 ${value$17} f64 ${arg$2}`,
     );
-    for (const s of [0, 1, (bits$6 - 1) >>> 0, bits$6, (bits$6 + 1) >>> 0]) {
+    for (const s of [0, 1, (bits - 1) >>> 0, bits, (bits + 1) >>> 0]) {
       const value = s < 16 ? (a << (s & 15)) & 65535 : undefined;
       const value$1 = s < 16 ? a >>> (s & 15) : undefined;
       console.log(
@@ -654,7 +654,7 @@ function main() {
       );
     }
     console.log(`u16 ${a}: unsigned ${a !== 0 && (a & (a - 1)) === 0}`);
-    for (const b of values$6) {
+    for (const b of values) {
       const quotient =
         $checkedDiv(a, b, 0) == null ? "-" : `${$div(a, b) & 65535} ${$rem(a, b) & 65535}`;
       const value = $checked(a + b, 0, 65535);
@@ -678,9 +678,9 @@ function main() {
       );
     }
   }
-  const values$7 = [0, 1, 4294967295, 0, 1, 2, 7, 4294967294, 4294967295];
-  const bits$7 = 32;
-  for (const a of values$7) {
+  values = [0, 1, 4294967295, 0, 1, 2, 7, 4294967294, 4294967295];
+  bits = 32;
+  for (const a of values) {
     const value = Math.clz32(a);
     const value$1 = $trailingZeros(a, 32);
     const value$2 = $countOnes(a);
@@ -692,7 +692,7 @@ function main() {
     const value$8 = $checked(-a, 0, 4294967295);
     const value$9 = $pow(a, 0) >>> 0;
     const value$10 = $pow(a, 2) >>> 0;
-    const value$11 = $pow(a, (bits$7 - 1) >>> 0) >>> 0;
+    const value$11 = $pow(a, (bits - 1) >>> 0) >>> 0;
     const arg = $checkedPow(a, 3, 0, 4294967295);
     console.log(
       `u32 ${a}: zeros ${value} ${value$1} ones ${value$2} ${value$3} swap ${value$4} rev ${value$5} rot ${value$6} ${value$7} neg ${-a >>> 0} ${value$8 == null ? "None" : `Some(${value$8})`} pow ${value$9} ${value$10} ${value$11} ${arg == null ? "None" : `Some(${arg})`}`,
@@ -711,7 +711,7 @@ function main() {
     console.log(
       `u32 ${a}: as ${(a << 24) >> 24} ${(a << 16) >> 16} ${a | 0} ${value$13} ${value$14} ${a & 255} ${a & 65535} ${a} ${value$15} ${value$16} f32 ${value$17} f64 ${arg$2}`,
     );
-    for (const s of [0, 1, (bits$7 - 1) >>> 0, bits$7, (bits$7 + 1) >>> 0]) {
+    for (const s of [0, 1, (bits - 1) >>> 0, bits, (bits + 1) >>> 0]) {
       const value = s < 32 ? (a << s) >>> 0 : undefined;
       const value$1 = s < 32 ? a >>> s : undefined;
       console.log(
@@ -719,7 +719,7 @@ function main() {
       );
     }
     console.log(`u32 ${a}: unsigned ${a !== 0 && (a & (a - 1)) === 0}`);
-    for (const b of values$7) {
+    for (const b of values) {
       const quotient =
         $checkedDiv(a, b, 0) == null ? "-" : `${$div(a, b) >>> 0} ${$rem(a, b) >>> 0}`;
       const value = Math.imul(a, b) >>> 0;
@@ -744,7 +744,7 @@ function main() {
       );
     }
   }
-  const values$8 = [
+  values = [
     0n,
     1n,
     18446744073709551615n,
@@ -755,8 +755,8 @@ function main() {
     18446744073709551614n,
     18446744073709551615n,
   ];
-  const bits$8 = 64;
-  for (const a of values$8) {
+  bits = 64;
+  for (const a of values) {
     const value = $bigLeadingZeros(a);
     const value$1 = $bigTrailingZeros(a);
     const value$2 = $bigCountOnes(a);
@@ -769,7 +769,7 @@ function main() {
     const value$9 = $bigChecked(-a, 0n, 18446744073709551615n);
     const value$10 = BigInt.asUintN(64, $bigPow(a, 0));
     const value$11 = BigInt.asUintN(64, $bigPow(a, 2));
-    const value$12 = BigInt.asUintN(64, $bigPow(a, (bits$8 - 1) >>> 0));
+    const value$12 = BigInt.asUintN(64, $bigPow(a, (bits - 1) >>> 0));
     const arg = $checkedPow(a, 3, 0n, 18446744073709551615n);
     console.log(
       `u64 ${a}: zeros ${value} ${value$1} ones ${value$2} ${value$3} swap ${value$4} rev ${value$5} rot ${value$6} ${value$7} neg ${value$8} ${value$9 == null ? "None" : `Some(${value$9})`} pow ${value$10} ${value$11} ${value$12} ${arg == null ? "None" : `Some(${arg})`}`,
@@ -791,7 +791,7 @@ function main() {
     console.log(
       `u64 ${a}: as ${value$14} ${value$15} ${value$16} ${value$17} ${a} ${value$18} ${value$19} ${value$20} ${a} ${a} f32 ${value$21} f64 ${arg$2}`,
     );
-    for (const s of [0, 1, (bits$8 - 1) >>> 0, bits$8, (bits$8 + 1) >>> 0]) {
+    for (const s of [0, 1, (bits - 1) >>> 0, bits, (bits + 1) >>> 0]) {
       const value = BigInt.asUintN(64, a << (BigInt(s) & 63n));
       const value$1 = a >> (BigInt(s) & 63n);
       const value$2 = s < 64 ? BigInt.asUintN(64, a << (BigInt(s) & 63n)) : undefined;
@@ -801,7 +801,7 @@ function main() {
       );
     }
     console.log(`u64 ${a}: unsigned ${a !== 0n && (a & (a - 1n)) === 0n}`);
-    for (const b of values$8) {
+    for (const b of values) {
       const quotient = $bigCheckedDiv(a, b) == null ? "-" : `${$bigDiv(a, b)} ${$bigRem(a, b)}`;
       const value = BigInt.asUintN(64, a + b);
       const value$1 = BigInt.asUintN(64, a - b);
@@ -843,7 +843,7 @@ function main() {
       );
     }
   }
-  const values$9 = [
+  values = [
     0n,
     1n,
     340282366920938463463374607431768211455n,
@@ -854,8 +854,8 @@ function main() {
     BigInt.asUintN(128, 340282366920938463463374607431768211455n - 1n),
     340282366920938463463374607431768211455n,
   ];
-  const bits$9 = 128;
-  for (const a of values$9) {
+  bits = 128;
+  for (const a of values) {
     const value = $bigLeadingZeros(a, 128);
     const value$1 = $bigTrailingZeros(a, 128);
     const value$2 = $bigCountOnes(a, 128);
@@ -868,7 +868,7 @@ function main() {
     const value$9 = $bigChecked(-a, 0n, 340282366920938463463374607431768211455n);
     const value$10 = BigInt.asUintN(128, $bigPow(a, 0, 128));
     const value$11 = BigInt.asUintN(128, $bigPow(a, 2, 128));
-    const value$12 = BigInt.asUintN(128, $bigPow(a, (bits$9 - 1) >>> 0, 128));
+    const value$12 = BigInt.asUintN(128, $bigPow(a, (bits - 1) >>> 0, 128));
     const arg = $checkedPow(a, 3, 0n, 340282366920938463463374607431768211455n);
     console.log(
       `u128 ${a}: zeros ${value} ${value$1} ones ${value$2} ${value$3} swap ${value$4} rev ${value$5} rot ${value$6} ${value$7} neg ${value$8} ${value$9 == null ? "None" : `Some(${value$9})`} pow ${value$10} ${value$11} ${value$12} ${arg == null ? "None" : `Some(${arg})`}`,
@@ -892,7 +892,7 @@ function main() {
     console.log(
       `u128 ${a}: as ${value$14} ${value$15} ${value$16} ${value$17} ${value$18} ${value$19} ${value$20} ${value$21} ${value$22} ${a} f32 ${value$23} f64 ${arg$2}`,
     );
-    for (const s of [0, 1, (bits$9 - 1) >>> 0, bits$9, (bits$9 + 1) >>> 0]) {
+    for (const s of [0, 1, (bits - 1) >>> 0, bits, (bits + 1) >>> 0]) {
       const value = BigInt.asUintN(128, a << (BigInt(s) & 127n));
       const value$1 = a >> (BigInt(s) & 127n);
       const value$2 = s < 128 ? BigInt.asUintN(128, a << (BigInt(s) & 127n)) : undefined;
@@ -902,7 +902,7 @@ function main() {
       );
     }
     console.log(`u128 ${a}: unsigned ${a !== 0n && (a & (a - 1n)) === 0n}`);
-    for (const b of values$9) {
+    for (const b of values) {
       const quotient = $bigCheckedDiv(a, b) == null ? "-" : `${$bigDiv(a, b)} ${$bigRem(a, b)}`;
       const value = BigInt.asUintN(128, a + b);
       const value$1 = BigInt.asUintN(128, a - b);

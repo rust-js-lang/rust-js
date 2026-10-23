@@ -7,6 +7,8 @@ export function entry() {
 }
 
 function unused() {
+  let _x = 42;
+  _x = 42;
   ({}).value = 42;
   ({}).value = 42;
   ({}).value = 42;

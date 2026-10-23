@@ -771,6 +771,13 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### Changed
 
+- **A `let` that shadows a binding read no more is that binding** (ADR
+  0650): React's `formatOwnerStack` is `let stack = error.stack ?? "";
+  .. if (..) { stack = stack.slice(29); }`, one variable, set again, where
+  `let mut stack = stack.as_str();` was `let stack$1 = stack;`. Of a
+  binding of the shadow's own block or a parameter, the program's own,
+  that nothing reads after it, a closure, a handle or a drop neither; a
+  loop's `let` never takes one from outside it.
 - **What `js::is_defined` names is no read** (ADR 0647): of a static,
   `Symbol.toStringTag` was read before its `typeof` test, which threw
   where the host has no `Symbol`. React's `typeName` is

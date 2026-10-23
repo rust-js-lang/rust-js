@@ -1,0 +1,210 @@
+// What the compiler writes of a `let` that shadows a binding: the one JS
+// variable where the binding it shadows is read no more, assigned its new
+// value (ADR 0650, extending 0609's parameters to every binding), and a
+// name of its own where anything could still see the old one. Each test is
+// a program of its own, compiled and run.
+
+import { expect, test } from "bun:test";
+import { readFileSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
+import { buildNode, compiler, fixture, run } from "./support";
+
+// React's `formatOwnerStack` (packages/shared/ReactOwnerStackFrames.js), as
+// its port writes it. Its JS was
+//
+//   const stack = error.stack ?? '';
+//   Error.prepareStackTrace = prevPrepareStackTrace;
+//   let stack$1 = stack;
+//   if (stack$1.startsWith('Error: react-stack-top-frame\n')) {
+//     stack$1 = stack$1.slice(29);
+//   }
+//   const idx = stack$1.indexOf('\n');
+//   ..
+//   const idx$1 = at !== -1 ? stack$1.slice(0, at).lastIndexOf('\n') : -1;
+//
+// where React has one `let stack` and one `let idx`, each assigned again.
+test("a let that shadows a binding read no more is that binding, as React's formatOwnerStack", () => {
+  const dir = fixture("shadowed-react-owner-stack");
+  const node = buildNode();
+  writeFileSync(join(dir, "lib.rs"), `use js::JsError;
+use node::js_error;
+
+pub fn format_owner_stack(error: &JsError) -> String {
+    let prev_prepare_stack_trace = js_error::prepare_stack_trace();
+    js_error::set_prepare_stack_trace::<String>(None);
+    let stack = error.stack().unwrap_or_default();
+    js_error::set_prepare_stack_trace(prev_prepare_stack_trace);
+    let mut stack = stack.as_str();
+    if let Some(rest) = stack.strip_prefix("Error: react-stack-top-frame\\n") {
+        stack = rest;
+    }
+    if let Some(idx) = stack.find('\\n') {
+        // Pop the JSX frame.
+        stack = &stack[idx + 1..];
+    }
+    let idx = stack
+        .find("react_stack_bottom_frame")
+        .and_then(|idx| stack[..idx].rfind('\\n'));
+    if let Some(idx) = idx {
+        stack = &stack[..idx];
+    } else {
+        return String::new();
+    }
+    stack.to_string()
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `node=${join(node, "libnode.rmeta")}`, "--extern", `js=${join(node, "libjs.rmeta")}`, "-L", node]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain(`  let stack = error.stack ?? "";
+  Error.prepareStackTrace = prevPrepareStackTrace;
+  if (stack.startsWith("Error: react-stack-top-frame\\n")) {
+    stack = stack.slice(29);
+  }
+  let idx = stack.indexOf("\\n");
+  if (idx !== -1) {
+    // Pop the JSX frame.
+    stack = stack.slice(idx + 1);
+  }
+  const at = stack.indexOf("react_stack_bottom_frame");
+  idx = at !== -1 ? stack.slice(0, at).lastIndexOf("\\n") : -1;
+  if (idx !== -1) {
+    stack = stack.slice(0, idx);
+    return stack;
+  }
+  return "";
+`);
+  expect(js).not.toContain("$1");
+  writeFileSync(join(dir, "package.json"), '{ "type": "module" }');
+  writeFileSync(join(dir, "run.js"), `import { formatOwnerStack } from "./lib.js";
+
+function react_stack_bottom_frame(f) { return f(); }
+const inner = () => new Error("react-stack-top-frame");
+const owner = formatOwnerStack(react_stack_bottom_frame(() => inner()));
+const outside = formatOwnerStack(new Error("react-stack-top-frame"));
+console.log(JSON.stringify({ frames: owner.split("\\n").length, at: owner.trimStart().startsWith("at "), outside }));
+`);
+  const p = Bun.spawnSync(["node", "run.js"], { cwd: dir, stderr: "pipe" });
+  expect([p.exitCode, p.stderr.toString()]).toEqual([0, ""]);
+  // The top frame and the JSX frame cut, and what's below the bottom one.
+  expect(JSON.parse(p.stdout.toString())).toEqual({ frames: 1, at: true, outside: "" });
+});
+
+// Where anything could still see the old binding, the new one keeps its
+// own name: a loop's turn, which reads what's outside it again; a closure
+// made before, which reads it when it's called; a `&mut`'s place, and a
+// handle on it, which reads and sets it where it's used; and a drop at the
+// scope's end. The new value's type is JS's to change, and a
+// `for`'s pattern is its block's binding, `let` once it's set.
+test("a let that shadows a binding something still sees keeps its own name", async () => {
+  const dir = fixture("shadowed-and-seen");
+  writeFileSync(join(dir, "lib.rs"), `pub struct Noisy(pub &'static str);
+
+impl Drop for Noisy {
+    fn drop(&mut self) {
+        println!("drop {}", self.0);
+    }
+}
+
+pub fn looped(x: u32) -> Vec<u32> {
+    let mut out = Vec::new();
+    for i in 0..3 {
+        let x = x + i;
+        out.push(x);
+    }
+    out
+}
+
+pub fn captured(s: &str) -> usize {
+    let n = s.len();
+    let f = move || n;
+    let n = n * 2 + s.len();
+    f() + n
+}
+
+pub fn handled(s: &str) -> usize {
+    let mut a = s.len();
+    let r = &mut a;
+    let a = s.len() * 10;
+    *r += 1;
+    *r + a
+}
+
+fn shout<T: AsMut<str>>(mut t: T, n: usize) -> usize {
+    let part = t.as_mut();
+    let t = n;
+    part.make_ascii_uppercase();
+    t + part.len()
+}
+
+pub fn shouted(s: &str, n: usize) -> usize {
+    shout(s.to_string(), n)
+}
+
+pub fn dropped() -> &'static str {
+    let g = Noisy("a");
+    let g = Noisy(if g.0.is_empty() { "c" } else { "b" });
+    g.0
+}
+
+pub fn retyped(d: u32) -> u32 {
+    let text = format!("{d}1");
+    let text: u32 = text.parse().unwrap();
+    text + 1
+}
+
+pub fn trimmed(lines: &[&str]) -> Vec<usize> {
+    let mut out = Vec::new();
+    for line in lines {
+        let line = line.trim();
+        out.push(line.len());
+    }
+    out
+}
+
+pub fn chained(s: &str) -> String {
+    let t = s.trim();
+    let t = t.to_uppercase();
+    t + "!"
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  // Each turn reads the parameter anew.
+  expect(js).toContain("    const x$1 = (x + i) >>> 0;\n    out.push(x$1);\n");
+  // Read by a closure made before.
+  expect(js).toContain("  const f = () => n;\n  const n$1 = ");
+  // Set through the `&mut` after.
+  expect(js).toContain("  const a$1 = ($byteLen(s) * 10) >>> 0;\n");
+  // Read and set through a handle on the old one after.
+  expect(js).toContain("  const t$1 = n;\n  part.value = $asciiCase(part.value, true);\n");
+  // Dropped at the scope's end, after the new one.
+  expect(js).toContain("    console.log(`drop ${g$1}`);\n  } finally {\n    console.log(`drop ${g}`);\n");
+  // A number where it was text.
+  expect(js).toContain("  let text = `${d}1`;\n  text = $unwrapOk(");
+  // The pattern's own, set.
+  expect(js).toContain("  for (let line of lines) {\n    line = $trim(line);\n");
+  expect(js).toContain("  let t = $trim(s);\n  t = t.toUpperCase();\n  return t + \"!\";\n");
+  const lib = await import(join(dir, "lib.js"));
+  const logged: string[] = [];
+  const log = console.log;
+  console.log = (line: string) => logged.push(line);
+  let dropped: string;
+  try {
+    dropped = lib.dropped();
+  } finally {
+    console.log = log;
+  }
+  expect([lib.looped(10), lib.captured("ab"), lib.handled("ab"), dropped, logged]).toEqual([
+    [10, 11, 12],
+    2 + 6,
+    3 + 20,
+    "b",
+    ["drop b", "drop a"],
+  ]);
+  expect([lib.retyped(4), lib.trimmed([" a ", "bc  "]), lib.chained(" ok "), lib.shouted("ab", 3)]).toEqual([
+    42,
+    [1, 2],
+    "OK!",
+    5,
+  ]);
+});

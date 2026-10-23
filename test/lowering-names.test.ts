@@ -464,7 +464,8 @@ pub fn both(a: bool) -> u32 {
 }
 
 // An else after a branch that returns is written after its if, in the
-// function's block, beside its other n.
+// function's block, beside its other n, read no more: that n, assigned
+// (ADR 0650).
 pub fn early(a: bool, k: u32) -> u32 {
     let n = k + 1;
     if a {
@@ -488,7 +489,7 @@ pub fn again(mut items: Vec<u32>) -> usize {
   expect(js).toContain("  if (a) {\n    const n = 1;\n    return n + 1;\n  }\n  const n = 2;\n  return n * 3;");
   expect(js).toContain("    const m = n;\n    const n$1 = 1;");
   expect(js).toContain("  items.pop();\n  const n = items.length;");
-  expect(js).toContain("    return n;\n  }\n  const n$1 = 2;");
+  expect(js).toContain("  let n = (k + 1) >>> 0;\n  if (a) {\n    return n;\n  }\n  n = 2;\n  return n * 3;");
   const lib = await import(join(dir, "lib.js"));
   expect([lib.twice(true), lib.twice(false), lib.both(true), lib.both(false), lib.again([1, 2]), lib.early(true, 4), lib.early(false, 4)]).toEqual([2, 6, 11, 10, 1, 5, 6]);
 });

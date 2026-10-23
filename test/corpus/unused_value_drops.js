@@ -140,16 +140,16 @@ function main() {
           };
           const tmp = f != null ? value$1(f) : 0;
           console.log(`f ${tmp}`);
-          const g = { TAG: "Err", _0: 1 };
+          let g = { TAG: "Err", _0: 1 };
           const f$2 = [12];
           const value$2 = g.TAG === "Ok" ? g._0 : f$2;
           if (g.TAG === "Ok") {
             loudDrop_drop(f$2);
           }
-          const g$1 = value$2;
+          g = value$2;
           try {
-            console.log(`g ${g$1[0]}`);
-            const h = { TAG: "Ok", _0: [13] };
+            console.log(`g ${g[0]}`);
+            let h = { TAG: "Ok", _0: [13] };
             const value = [14];
             const value$1 = (l) => l;
             let mapped;
@@ -162,10 +162,10 @@ function main() {
             } else {
               mapped = value;
             }
-            const h$1 = mapped;
+            h = mapped;
             try {
-              console.log(`h ${h$1[0]}`);
-              const i = { TAG: "Ok", _0: [15] };
+              console.log(`h ${h[0]}`);
+              let i = { TAG: "Ok", _0: [15] };
               const f = { TAG: "Ok", _0: [16] };
               const value = i.TAG === "Ok" ? i : f;
               if (i.TAG === "Ok") {
@@ -173,13 +173,13 @@ function main() {
                   loudDrop_drop(f._0);
                 }
               }
-              const i$1 = value;
+              i = value;
               const value$1 = (l) => {
                 const result = l[0];
                 loudDrop_drop(l);
                 return result;
               };
-              const tmp = i$1.TAG === "Ok" ? value$1(i$1._0) : 0;
+              const tmp = i.TAG === "Ok" ? value$1(i._0) : 0;
               console.log(`i ${tmp}`);
 
               let value$2;
@@ -282,10 +282,10 @@ function main() {
                 loudDrop_drop(p);
               }
             } finally {
-              loudDrop_drop(h$1);
+              loudDrop_drop(h);
             }
           } finally {
-            loudDrop_drop(g$1);
+            loudDrop_drop(g);
           }
         } finally {
           loudDrop_drop(e);

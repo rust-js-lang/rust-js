@@ -67,7 +67,7 @@ function main() {
   }
   try {
     console.log(`b ${!b}`);
-    const c = { TAG: "Ok", _0: [4] };
+    let c = { TAG: "Ok", _0: [4] };
     let kept;
     const f$1 = { TAG: "Ok", _0: [5] };
     if (c.TAG === "Err") {
@@ -85,7 +85,7 @@ function main() {
         loudDrop_drop(f$1._0);
       }
     }
-    const c$1 = value;
+    c = value;
     const value$1 = (l) => {
       const result = l[0];
       loudDrop_drop(l);
@@ -93,14 +93,14 @@ function main() {
     };
     let mapped;
     const fallback = 0;
-    if (c$1.TAG === "Ok") {
-      mapped = value$1(c$1._0);
+    if (c.TAG === "Ok") {
+      mapped = value$1(c._0);
     } else {
       mapped = fallback;
-      loudDrop_drop(c$1._0);
+      loudDrop_drop(c._0);
     }
     console.log(`c ${mapped}`);
-    const d = { TAG: "Err", _0: [6] };
+    let d = { TAG: "Err", _0: [6] };
     let kept$1;
     const f$2 = { TAG: "Ok", _0: [7] };
     if (d.TAG === "Err") {
@@ -118,16 +118,16 @@ function main() {
         loudDrop_drop(f$2._0);
       }
     }
-    const d$1 = value$2;
-    const value$3 = d$1.TAG === "Err";
+    d = value$2;
+    const value$3 = d.TAG === "Err";
     try {
       console.log(`d ${value$3}`);
     } catch (error) {
-      if (d$1.TAG === "Ok") {
-        loudDrop_drop(d$1._0);
+      if (d.TAG === "Ok") {
+        loudDrop_drop(d._0);
       }
-      if (d$1.TAG === "Err") {
-        loudDrop_drop(d$1._0);
+      if (d.TAG === "Err") {
+        loudDrop_drop(d._0);
       }
       throw error;
     }
@@ -135,11 +135,11 @@ function main() {
     try {
       e = pick([8], [9], loudDrop_drop, loudDrop_drop);
     } catch (error) {
-      if (d$1.TAG === "Ok") {
-        loudDrop_drop(d$1._0);
+      if (d.TAG === "Ok") {
+        loudDrop_drop(d._0);
       }
-      if (d$1.TAG === "Err") {
-        loudDrop_drop(d$1._0);
+      if (d.TAG === "Err") {
+        loudDrop_drop(d._0);
       }
       throw error;
     }
@@ -152,22 +152,22 @@ function main() {
     try {
       tmp = e != null ? value$4(e) : 0;
     } catch (error) {
-      if (d$1.TAG === "Ok") {
-        loudDrop_drop(d$1._0);
+      if (d.TAG === "Ok") {
+        loudDrop_drop(d._0);
       }
-      if (d$1.TAG === "Err") {
-        loudDrop_drop(d$1._0);
+      if (d.TAG === "Err") {
+        loudDrop_drop(d._0);
       }
       throw error;
     }
     try {
       console.log(`e ${tmp}`);
     } catch (error) {
-      if (d$1.TAG === "Ok") {
-        loudDrop_drop(d$1._0);
+      if (d.TAG === "Ok") {
+        loudDrop_drop(d._0);
       }
-      if (d$1.TAG === "Err") {
-        loudDrop_drop(d$1._0);
+      if (d.TAG === "Err") {
+        loudDrop_drop(d._0);
       }
       throw error;
     }
@@ -175,11 +175,11 @@ function main() {
     try {
       f = pick(undefined, [10], loudDrop_drop, loudDrop_drop);
     } catch (error) {
-      if (d$1.TAG === "Ok") {
-        loudDrop_drop(d$1._0);
+      if (d.TAG === "Ok") {
+        loudDrop_drop(d._0);
       }
-      if (d$1.TAG === "Err") {
-        loudDrop_drop(d$1._0);
+      if (d.TAG === "Err") {
+        loudDrop_drop(d._0);
       }
       throw error;
     }
@@ -189,11 +189,11 @@ function main() {
       if (f != null) {
         loudDrop_drop(f);
       }
-      if (d$1.TAG === "Ok") {
-        loudDrop_drop(d$1._0);
+      if (d.TAG === "Ok") {
+        loudDrop_drop(d._0);
       }
-      if (d$1.TAG === "Err") {
-        loudDrop_drop(d$1._0);
+      if (d.TAG === "Err") {
+        loudDrop_drop(d._0);
       }
       throw error;
     }
@@ -204,11 +204,11 @@ function main() {
       if (f != null) {
         loudDrop_drop(f);
       }
-      if (d$1.TAG === "Ok") {
-        loudDrop_drop(d$1._0);
+      if (d.TAG === "Ok") {
+        loudDrop_drop(d._0);
       }
-      if (d$1.TAG === "Err") {
-        loudDrop_drop(d$1._0);
+      if (d.TAG === "Err") {
+        loudDrop_drop(d._0);
       }
       throw error;
     }
@@ -225,11 +225,11 @@ function main() {
       if (f != null) {
         loudDrop_drop(f);
       }
-      if (d$1.TAG === "Ok") {
-        loudDrop_drop(d$1._0);
+      if (d.TAG === "Ok") {
+        loudDrop_drop(d._0);
       }
-      if (d$1.TAG === "Err") {
-        loudDrop_drop(d$1._0);
+      if (d.TAG === "Err") {
+        loudDrop_drop(d._0);
       }
       throw error;
     }
@@ -239,11 +239,11 @@ function main() {
       if (f != null) {
         loudDrop_drop(f);
       }
-      if (d$1.TAG === "Ok") {
-        loudDrop_drop(d$1._0);
+      if (d.TAG === "Ok") {
+        loudDrop_drop(d._0);
       }
-      if (d$1.TAG === "Err") {
-        loudDrop_drop(d$1._0);
+      if (d.TAG === "Err") {
+        loudDrop_drop(d._0);
       }
       throw error;
     }
@@ -252,19 +252,19 @@ function main() {
         loudDrop_drop(f);
       }
     } catch (error) {
-      if (d$1.TAG === "Ok") {
-        loudDrop_drop(d$1._0);
+      if (d.TAG === "Ok") {
+        loudDrop_drop(d._0);
       }
-      if (d$1.TAG === "Err") {
-        loudDrop_drop(d$1._0);
+      if (d.TAG === "Err") {
+        loudDrop_drop(d._0);
       }
       throw error;
     }
-    if (d$1.TAG === "Ok") {
-      loudDrop_drop(d$1._0);
+    if (d.TAG === "Ok") {
+      loudDrop_drop(d._0);
     }
-    if (d$1.TAG === "Err") {
-      loudDrop_drop(d$1._0);
+    if (d.TAG === "Err") {
+      loudDrop_drop(d._0);
     }
   } finally {
     if (b != null) {

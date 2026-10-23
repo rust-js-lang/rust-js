@@ -57,7 +57,7 @@ function main() {
     },
   };
   value$4.value = (value$4.value + value$3) | 0;
-  const a = [0, 0];
+  let a = [0, 0];
   const value$5 = value("array =", 3);
   const value$6 = index("array =", 0);
   a[$at(a, value$6)] = value$5;
@@ -122,32 +122,32 @@ function main() {
   // A `Vec`'s index is `index_mut(&mut *cur, i)`, which takes `*cur`
   // before `i` runs; an array's is the place `(*cur)[i]`, which follows
   // `cur` after. Found in review.
-  const a$1 = [1, 2];
-  const b = [10, 20];
-  let cur = a$1;
+  a = [1, 2];
+  let b = [10, 20];
+  let cur = a;
   const value$18 = cur;
   cur = b;
   value$18[$at(value$18, 0)] = (value$18[0] + 1) | 0;
-  console.log(`[${a$1.join(", ")}] [${b.join(", ")}]`);
-  const a$2 = [1, 2];
-  const b$1 = [10, 20];
-  let cur$1 = a$2;
-  const value$19 = cur$1;
-  cur$1 = b$1;
+  console.log(`[${a.join(", ")}] [${b.join(", ")}]`);
+  a = [1, 2];
+  b = [10, 20];
+  cur = a;
+  const value$19 = cur;
+  cur = b;
   value$19[$at(value$19, 0)] = 7;
-  console.log(`[${a$2.join(", ")}] [${b$1.join(", ")}]`);
-  const a$3 = [1, 2];
-  const b$2 = [10, 20];
-  let cur$2 = a$3;
-  const value$20 = cur$2;
-  cur$2 = b$2;
+  console.log(`[${a.join(", ")}] [${b.join(", ")}]`);
+  a = [1, 2];
+  b = [10, 20];
+  cur = a;
+  const value$20 = cur;
+  cur = b;
   value$20[$at(value$20, 0)] = (value$20[0] + 1) | 0;
-  console.log(`[${a$3.join(", ")}] [${b$2.join(", ")}]`);
-  const a$4 = [1, 2].slice();
-  const b$3 = [10, 20].slice();
-  const cur$3 = b$3;
-  cur$3[0] = (cur$3[0] + 1) | 0;
-  console.log(`[${a$4.join(", ")}] [${b$3.join(", ")}]`);
+  console.log(`[${a.join(", ")}] [${b.join(", ")}]`);
+  a = [1, 2].slice();
+  b = [10, 20].slice();
+  const cur$1 = b;
+  cur$1[0] = (cur$1[0] + 1) | 0;
+  console.log(`[${a.join(", ")}] [${b.join(", ")}]`);
   const empty = [];
   const value$21 = value("out of bounds", 8);
   const index$5 = index("out of bounds", 0);

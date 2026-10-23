@@ -287,6 +287,16 @@ struct Locals {
     user: IndexVec<Local, bool>,
 }
 
+impl Locals {
+    /// The names of those the program names (`user`).
+    fn user_names(&self) -> HashSet<String> {
+        (self.names.iter_enumerated())
+            .filter(|&(local, _)| self.user[local])
+            .map(|(_, name)| name.clone())
+            .collect()
+    }
+}
+
 /// What a body's writes say of its `Option`s.
 #[derive(Default)]
 struct OptionWrites {
@@ -927,7 +937,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .filter(|&(_, &b)| b)
                 .map(|(path, _)| path.clone()),
         );
-        let plain = self.plain_names();
         // Each drop flag, by its name (`mir/drops.rs`).
         let flags: HashSet<String> = state.flags.iter().flatten().cloned().collect();
         tidy::tidy(
@@ -947,7 +956,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 captured: &captured,
                 booleans: &booleans,
                 numbers: &numbers,
-                plain: &plain,
+                plain: &self.plain_names(),
                 forwarding: &self.locals.mir.forwarding.clone(),
                 concise: &self.locals.mir.concise.clone(),
                 flags: &flags,
@@ -955,7 +964,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             },
         );
         tidy::destructured_params(&mut params, &mut out);
-        tidy::named(&params, &mut out, &flags, &self.temporaries_names(mir_body, &state));
+        let suggested = self.temporaries_names(mir_body, &state);
+        tidy::named(&params, &mut out, &flags, &suggested, &state.locals.user_names());
         self.body_epilogue(&mut state, &mut out);
         Ok((params, out))
     }

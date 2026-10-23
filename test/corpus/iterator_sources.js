@@ -98,7 +98,7 @@ function main() {
     [2, "b"],
   ]);
   console.log(`[${left.join(", ")}] [${right.map((item) => $debugStr(item, "'")).join(", ")}]`);
-  const squares = $successors(2n, (n) => BigInt.asUintN(64, n * n))
+  let squares = $successors(2n, (n) => BigInt.asUintN(64, n * n))
     .take(4)
     .toArray();
   console.log(`[${squares.join(", ")}]`);
@@ -129,15 +129,13 @@ function main() {
     .toArray();
   $index(rows, 0).push(1);
   let k = 0;
-  const squares$1 = $repeatingWith(() => {
+  squares = $repeatingWith(() => {
     k = (k + 1) | 0;
     return Math.imul(k, k);
   })
     .take(3)
     .toArray();
-  console.log(
-    `[${rows.map((item) => `[${item.join(", ")}]`).join(", ")}] [${squares$1.join(", ")}]`,
-  );
+  console.log(`[${rows.map((item) => `[${item.join(", ")}]`).join(", ")}] [${squares.join(", ")}]`);
   // `successors` finds the next item before it gives this one.
   let calls = 0;
   const taken = $successors(1, (n) => {

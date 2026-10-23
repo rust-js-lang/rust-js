@@ -47,7 +47,7 @@ function splitFirst(iter, k, dropI, dropIItem) {
 
 function main() {
   const v = $range(1, 6).map((value) => [value]);
-  const iter = $closing($iter(v), $dropEach(nDrop_drop)).take(2);
+  let iter = $closing($iter(v), $dropEach(nDrop_drop)).take(2);
   let tmp;
   while (true) {
     try {
@@ -77,13 +77,13 @@ function main() {
   }
   console.log("after loop");
   const w = $range(6, 10).map((value) => [value]);
-  const iter$1 = $closing($iter(w), $dropEach(nDrop_drop)).take(3);
+  iter = $closing($iter(w), $dropEach(nDrop_drop)).take(3);
   let tmp$1;
   while (true) {
     try {
-      tmp$1 = $next(iter$1);
+      tmp$1 = $next(iter);
     } catch (error) {
-      iter$1.return();
+      iter.return();
       throw error;
     }
     if (tmp$1) {
@@ -93,13 +93,13 @@ function main() {
           console.log("break");
         } catch (error) {
           nDrop_drop(n);
-          iter$1.return();
+          iter.return();
           throw error;
         }
         try {
           nDrop_drop(n);
         } catch (error) {
-          iter$1.return();
+          iter.return();
           throw error;
         }
       } else {
@@ -107,19 +107,19 @@ function main() {
           console.log(`got ${n[0]}`);
         } catch (error) {
           nDrop_drop(n);
-          iter$1.return();
+          iter.return();
           throw error;
         }
         try {
           nDrop_drop(n);
         } catch (error) {
-          iter$1.return();
+          iter.return();
           throw error;
         }
         continue;
       }
     }
-    iter$1.return();
+    iter.return();
     break;
   }
   console.log("after break");
@@ -301,13 +301,13 @@ function main() {
     }
     throw error;
   }
-  const iter$2 = skip;
+  iter = skip;
   let tmp$5;
   while (true) {
     try {
-      tmp$5 = $next(iter$2);
+      tmp$5 = $next(iter);
     } catch (error) {
-      iter$2.return();
+      iter.return();
       for (const item of all) {
         nDrop_drop(item);
       }
@@ -330,7 +330,7 @@ function main() {
         console.log(`after skip ${n[0]}`);
       } catch (error) {
         nDrop_drop(n);
-        iter$2.return();
+        iter.return();
         for (const item of all) {
           nDrop_drop(item);
         }
@@ -351,7 +351,7 @@ function main() {
         try {
           nDrop_drop(n);
         } catch (error) {
-          iter$2.return();
+          iter.return();
           for (const item of all) {
             nDrop_drop(item);
           }
@@ -372,7 +372,7 @@ function main() {
         try {
           nDrop_drop(n);
         } catch (error) {
-          iter$2.return();
+          iter.return();
           for (const item of all) {
             nDrop_drop(item);
           }
@@ -393,7 +393,7 @@ function main() {
       }
     }
     try {
-      iter$2.return();
+      iter.return();
     } catch (error) {
       for (const item of all) {
         nDrop_drop(item);
@@ -964,9 +964,9 @@ function main() {
     throw error;
   }
   let owned$live = true;
-  let iter$3;
+  let iter$1;
   try {
-    iter$3 = $lent(owned).take(2);
+    iter$1 = $lent(owned).take(2);
   } catch (error) {
     for (const item of owned) {
       nDrop_drop(item);
@@ -996,7 +996,7 @@ function main() {
   let tmp$13;
   while (true) {
     try {
-      tmp$13 = $next(iter$3);
+      tmp$13 = $next(iter$1);
     } catch (error) {
       if (owned$live) {
         for (const item of owned) {

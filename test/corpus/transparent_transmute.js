@@ -53,7 +53,7 @@ function main() {
   const value$2 = $eq(owned, [9, 8, 7, 6]);
   console.log(`${uuidDebug_fmt(owned)} ${value$2}`);
   const named = "ada";
-  const text = named;
+  let text = named;
   console.log(`${named} ${$byteLen(text)}`);
   const blank = [0, 0, 0, 0];
   const written = blank;
@@ -70,16 +70,16 @@ function main() {
   const items = [1];
   widened(items).push(2);
   console.log(`[${items.join(", ")}]`);
-  let text$1 = "a";
+  text = "a";
   const value = longer({
     get value() {
-      return text$1;
+      return text;
     },
     set value(value) {
-      text$1 = value;
+      text = value;
     },
   });
   value.value += "b";
-  console.log(`${text$1}`);
+  console.log(`${text}`);
 }
 //# sourceMappingURL=case.js.map

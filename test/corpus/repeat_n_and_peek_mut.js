@@ -67,7 +67,7 @@ function repeated() {
 
 function peeked() {
   const it = iterator_peekable($iter([1, 2, 3]), { next: $next });
-  const x = $peekCell(it);
+  let x = $peekCell(it);
   if (x != null) {
     x.value = (x.value * 10) | 0;
   }
@@ -76,9 +76,9 @@ function peeked() {
     $lazyRange(1, 4).map((x) => (x * 2) | 0),
     { next: $next },
   );
-  const x$1 = $peekCell(lazy);
-  if (x$1 != null) {
-    x$1.value = (x$1.value + 100) | 0;
+  x = $peekCell(lazy);
+  if (x != null) {
+    x.value = (x.value + 100) | 0;
   }
   console.log(`[${lazy.toArray().join(", ")}]`);
   const words = iterator_peekable($iter(["a", "b"]), { next: $next });

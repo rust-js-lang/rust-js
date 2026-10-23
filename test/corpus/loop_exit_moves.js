@@ -30,7 +30,7 @@ function guarded(limit) {
 
 // A name declared before the loop, shadowed after it.
 function shadowed(words) {
-  const count = words.length;
+  let count = words.length;
   let i = 0;
   while (true) {
     if (i === words.length || $index(words, i) === "stop") {
@@ -38,9 +38,9 @@ function shadowed(words) {
     }
     i = (i + 1) >>> 0;
   }
-  const count$1 = (count - i) >>> 0;
-  console.log(`${count$1} left`);
-  return count$1;
+  count = (count - i) >>> 0;
+  console.log(`${count} left`);
+  return count;
 }
 
 // A loop after the loop, with a `break` of its own.
@@ -104,7 +104,7 @@ function setInLoop(values) {
 
 // A name shadowed after the loop by one that doesn't read it.
 function reshadowed(limit) {
-  const label = limit * 2;
+  let label = limit * 2;
   console.log(`label ${label}`);
   let n = 0;
   while (true) {
@@ -113,8 +113,8 @@ function reshadowed(limit) {
       break;
     }
   }
-  const label$1 = `n=${n}`;
-  return label$1;
+  label = `n=${n}`;
+  return label;
 }
 
 // A `return` written in the loop stays where it's written.
@@ -144,15 +144,15 @@ function shadowInLoop(values) {
   const it = $iter(values);
   let total = 0;
   while (true) {
-    const v = $next(it);
+    let v = $next(it);
     if (v == null) {
       break;
     }
-    const v$1 = (v * 2) | 0;
-    if (v$1 <= 3) {
+    v = (v * 2) | 0;
+    if (v <= 3) {
       break;
     }
-    total = (total + v$1) | 0;
+    total = (total + v) | 0;
   }
   return total;
 }

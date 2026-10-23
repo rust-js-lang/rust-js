@@ -149,12 +149,12 @@ export function main() {
   input.placeholder = "What needs to be done?";
   const adding = state;
   input.addEventListener("keydown", (e) => {
-    const title = input.value;
-    const title$1 = $trim(title);
-    if (e.key === "Enter" && title$1) {
+    let title = input.value;
+    title = $trim(title);
+    if (e.key === "Enter" && title) {
       const borrowMut = $borrowMut(adding, true);
       try {
-        add(borrowMut.value, title$1);
+        add(borrowMut.value, title);
       } finally {
         $unborrow(borrowMut);
       }

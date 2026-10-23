@@ -1139,3 +1139,192 @@ pub(super) fn paired_temporaries(body: &[Stmt]) -> HashSet<String> {
         .filter(|name| pairs.get(name).is_some_and(|&n| mentions.get(name) == Some(&(2 * n))))
         .collect()
 }
+
+/// `const stack$1 = e;`, a `let` that shadows a binding of its own block,
+/// or a parameter of the body or of the `for` whose block it is, each one
+/// the program names, `user`, where that binding is read no more after it:
+/// `stack = e;`, the binding assigned, a `let` now, read by its name after,
+/// as React's `formatOwnerStack` sets its `stack` (ADR 0650, which extends
+/// 0609's parameters to every binding). Of the binding itself, `let mut
+/// stack = stack.as_str();`, nothing. Not where a closure, a function or a
+/// `&mut`'s handle reads or sets the old one, which may run after; nor of
+/// `let x$1;`, which is `undefined` till it's set. A loop's block is a
+/// block of its own, so a `let` there never shadows what's outside it,
+/// which each turn reads anew. Of a closure's body too, which is a body.
+pub(super) fn shadowed(params: &[js::Pattern], body: &mut Vec<Stmt>, user: &HashSet<String>) {
+    let heads: Vec<String> = params.iter().flat_map(|p| p.names()).map(str::to_string).collect();
+    let mut captured = captured(body);
+    shadowed_block(body, &heads, user, &mut captured);
+}
+
+/// What `body`'s closures, the functions it declares and its `&mut`s'
+/// handles read or set: not where they're written, but whenever they run.
+fn captured(body: &mut Vec<Stmt>) -> HashSet<String> {
+    let mut captured = HashSet::new();
+    let mut insert = |name: &str| _ = captured.insert(name.to_string());
+    js::each_expr_mut(body, &mut |e| match &e.kind {
+        ExprKind::Arrow(_, stmts) | ExprKind::AsyncArrow(_, stmts) => js::visit_stmts(stmts, &mut insert),
+        ExprKind::Function(function) => js::visit_stmts(&function.body, &mut insert),
+        ExprKind::Handle(place) | ExprKind::Pair(place, _) => place.visit_vars(&mut insert),
+        _ => {}
+    });
+    js::statement_lists(body, &mut |stmts| {
+        for stmt in stmts.iter() {
+            if let StmtKind::Function(function) = &stmt.kind {
+                js::visit_stmts(&function.body, &mut insert);
+            }
+        }
+    });
+    captured
+}
+
+/// `shadowed` of the block `stmts`, whose bindings are `heads` and what it
+/// declares, then of each block in it, a loop's its own. Whether one of
+/// `heads` is set now, which a `for`'s pattern then declares with `let`.
+fn shadowed_block(
+    stmts: &mut Vec<Stmt>,
+    heads: &[String],
+    user: &HashSet<String>,
+    captured: &mut HashSet<String>,
+) -> bool {
+    let mut heads_set = false;
+    let mut i = 0;
+    while i < stmts.len() {
+        let Some(shadowed) = shadow_of(stmts, i, heads, user, captured) else {
+            i += 1;
+            continue;
+        };
+        if shadowed.set {
+            match shadowed.at {
+                Some(at) => set_binding(&mut stmts[at]),
+                None => heads_set = true,
+            }
+        }
+        match shadowed.assigned {
+            true => i += 1,
+            false => _ = stmts.remove(i),
+        }
+    }
+    for stmt in stmts.iter_mut() {
+        match &mut stmt.kind {
+            StmtKind::ForOf {
+                pattern, mutable, body, ..
+            } => {
+                let names: Vec<String> = pattern.names().into_iter().map(str::to_string).collect();
+                if shadowed_block(body, &names, user, captured) {
+                    *mutable = true;
+                }
+            }
+            StmtKind::If(_, a, b) => {
+                shadowed_block(a, &[], user, captured);
+                if let Some(b) = b {
+                    shadowed_block(b, &[], user, captured);
+                }
+            }
+            StmtKind::While { body, .. } | StmtKind::For { body, .. } | StmtKind::Labeled(_, body) => {
+                shadowed_block(body, &[], user, captured);
+            }
+            StmtKind::Switch { cases, default, .. } => {
+                for body in js::case_lists_mut(cases, default) {
+                    shadowed_block(body, &[], user, captured);
+                }
+            }
+            StmtKind::Try(a, b) | StmtKind::TryCatch(a, _, b) => {
+                shadowed_block(a, &[], user, captured);
+                shadowed_block(b, &[], user, captured);
+            }
+            // A function's, as a closure's, are its own body's.
+            StmtKind::Function(_)
+            | StmtKind::Const(..)
+            | StmtKind::Let(..)
+            | StmtKind::Destructure { .. }
+            | StmtKind::Assign(..)
+            | StmtKind::Compound(..)
+            | StmtKind::Expr(_)
+            | StmtKind::Break(_)
+            | StmtKind::Continue(_)
+            | StmtKind::Directive(_)
+            | StmtKind::Return(_)
+            | StmtKind::Throw(_) => {}
+        }
+    }
+    heads_set
+}
+
+/// A shadow `shadow_of` made the binding it shadows: the statement of its
+/// block that declares the binding, `None` of a head; whether the binding
+/// is set now; and whether the shadow's statement is its assignment, or
+/// is to go.
+struct Shadowed {
+    at: Option<usize>,
+    set: bool,
+    assigned: bool,
+}
+
+/// `stmts[i]`, a `const` or `let` of a name given apart, made the binding
+/// of its block it shadows, where that's read no more after it: assigned
+/// the shadow's value, and each read of the shadow the binding's.
+fn shadow_of(
+    stmts: &mut [Stmt],
+    i: usize,
+    heads: &[String],
+    user: &HashSet<String>,
+    captured: &mut HashSet<String>,
+) -> Option<Shadowed> {
+    let (shadow, value, is_let) = match &stmts[i].kind {
+        StmtKind::Const(shadow, value) => (shadow.clone(), Some(value), false),
+        StmtKind::Let(shadow, value) => (shadow.clone(), value.as_ref(), true),
+        _ => return None,
+    };
+    let (base, _) = crate::names::apart(&shadow)?;
+    // The nearest binding before it of its name, or of one given apart
+    // from it, `stack$1` of `stack$2`.
+    let kin = |name: &str| name == base || crate::names::apart(name).is_some_and(|(b, _)| b == base);
+    let declaring = |s: &Stmt| -> Vec<String> {
+        match &s.kind {
+            StmtKind::Const(name, _) | StmtKind::Let(name, _) => vec![name.clone()],
+            StmtKind::Destructure { pattern, .. } => pattern.names().into_iter().map(str::to_string).collect(),
+            _ => Vec::new(),
+        }
+    };
+    let (at, binding) = match stmts[..i].iter().rposition(|s| declaring(s).iter().any(|n| kin(n))) {
+        Some(at) => (Some(at), declaring(&stmts[at]).into_iter().rev().find(|n| kin(n))?),
+        None => (None, heads.iter().rev().find(|n| kin(n))?.clone()),
+    };
+    if !user.contains(&shadow)
+        || !user.contains(&binding)
+        || captured.contains(&binding)
+        || js::mentions_in(&stmts[i + 1..], &binding) > 0
+    {
+        return None;
+    }
+    // Not `let x$1;`, which is `undefined` till it's set, where `x` isn't.
+    let value = value?;
+    // Set now: assigned the shadow's value, but its own; or by what set the
+    // shadow, a `let` the program sets.
+    let assigned = !matches!(&value.kind, ExprKind::Var(v) if *v == binding);
+    let set = assigned || is_let;
+    if assigned {
+        stmts[i] = StmtKind::Assign(Expr::var(&binding), value.clone()).at(stmts[i].span);
+    }
+    js::each_expr_mut(&mut stmts[i + 1..], &mut |e| {
+        if matches!(&e.kind, ExprKind::Var(v) if *v == shadow) {
+            *e = Expr::var(&binding).or_at(e.span);
+        }
+    });
+    if captured.contains(&shadow) {
+        captured.insert(binding);
+    }
+    Some(Shadowed { at, set, assigned })
+}
+
+/// The declaration of a binding the program sets now: a `const`'s a `let`'s.
+fn set_binding(stmt: &mut Stmt) {
+    match &mut stmt.kind {
+        StmtKind::Const(name, value) => {
+            stmt.kind = StmtKind::Let(std::mem::take(name), Some(std::mem::replace(value, Expr::undefined())));
+        }
+        StmtKind::Destructure { mutable, .. } => *mutable = true,
+        _ => {}
+    }
+}

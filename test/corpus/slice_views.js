@@ -49,7 +49,7 @@ function main() {
   console.log(`[${v.join(", ")}]`);
   $view(v, 4).fill(0);
   console.log(`[${v.join(", ")}]`);
-  const part = $view(v, 1, 3);
+  let part = $view(v, 1, 3);
   part[$at(part, 0)] = 7;
   $swap(part, 0, 1);
   console.log(`${part.length} [${v.join(", ")}]`);
@@ -147,17 +147,17 @@ function main() {
     part.fill(2);
   }
   console.log(`[${words.join(", ")}]`);
-  const part$1 = $viewGet(words, 1, 3);
+  part = $viewGet(words, 1, 3);
 
-  if (part$1) {
-    part$1.fill(5);
+  if (part) {
+    part.fill(5);
   }
   console.log(`${!$viewGet(words, 5, 9)} [${words.join(", ")}]`);
   $view(words, 0, 2).fill(6);
   const getUncheckedMut = $mutAt(words, 2);
   getUncheckedMut.value = (getUncheckedMut.value + 1) | 0;
   console.log(`[${words.join(", ")}]`);
-  const head = words.length >= 2 ? $view(words, 0, 2) : undefined;
+  let head = words.length >= 2 ? $view(words, 0, 2) : undefined;
 
   if (head) {
     head[1] = 0;
@@ -193,21 +193,21 @@ function main() {
       .map((item) => `[${item.join(", ")}]`)
       .join(", ")}]`,
   );
-  const head$1 = runs.length >= 2 ? $view(runs, 0, 2) : undefined;
+  head = runs.length >= 2 ? $view(runs, 0, 2) : undefined;
 
-  if (head$1) {
-    $assign(head$1, [7, 8]);
+  if (head) {
+    $assign(head, [7, 8]);
   }
   console.log(`[${runs.join(", ")}]`);
 
   const points = [{ x: 1 }, { x: 2 }, { x: 3 }];
-  const [head$2, tail$1] = $splitAtMut(points, 1);
+  const [head$1, tail$1] = $splitAtMut(points, 1);
   const value$3 = $index(tail$1, 1).x;
-  const value$4 = head$2.length;
+  const value$4 = head$1.length;
   if (0 >= value$4) {
     throw new Error(`index out of bounds: the len is ${value$4} but the index is 0`);
   }
-  head$2[0].x = value$3;
+  head$1[0].x = value$3;
   tail$1[$at(tail$1, 0)] = { x: 0 };
   const result$1 = $view(points, 1);
   $swap(result$1, 0, 1);

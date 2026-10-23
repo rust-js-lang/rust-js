@@ -104,7 +104,7 @@ function main() {
   const cell = { value: 1.5 };
   const v = $borrowMut(cell, true);
   v.value++;
-  const r = v.value;
+  let r = v.value;
   try {
     console.log(`${$displayF64(r)} ${$displayF64(v.value)}`);
   } finally {
@@ -134,17 +134,17 @@ function main() {
       })
       .join(", ")}]`,
   );
-  const r$1 = $lockRead(text, true);
-  const value$10 = $byteLen(r$1.value);
+  r = $lockRead(text, true);
+  const value$10 = $byteLen(r.value);
   try {
     const borrow = $borrow(cell, true);
     try {
-      console.log(`${r$1.value} ${value$10} ${$displayF64(borrow.value)}`);
+      console.log(`${r.value} ${value$10} ${$displayF64(borrow.value)}`);
     } finally {
       $unborrow(borrow);
     }
   } finally {
-    $unborrow(r$1);
+    $unborrow(r);
   }
 }
 //# sourceMappingURL=case.js.map

@@ -28,13 +28,13 @@ function main() {
 
   const m = new Map();
   m.set(1, 5);
-  const v = $mutGet(m, 1);
+  let v = $mutGet(m, 1);
   if (v != null) {
     console.log(`${(v.value + 1) | 0}`);
   }
-  const v$1 = $mutGet(m, 1);
-  if (v$1 != null) {
-    v$1.value = (v$1.value + 1) | 0;
+  v = $mutGet(m, 1);
+  if (v != null) {
+    v.value = (v.value + 1) | 0;
   }
   const value$1 = m.get(1);
   console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
@@ -59,7 +59,7 @@ function main() {
       },
     },
   ];
-  const r = refs.pop();
+  let r = refs.pop();
   if (r != null) {
     r.value = (r.value + 5) | 0;
   }
@@ -75,8 +75,8 @@ function main() {
       c = value;
     },
   };
-  const r$1 = $unwrap(o);
-  r$1.value = (r$1.value + 1) | 0;
+  r = $unwrap(o);
+  r.value = (r.value + 1) | 0;
   console.log(`${a} ${b} ${c}`);
 }
 //# sourceMappingURL=case.js.map

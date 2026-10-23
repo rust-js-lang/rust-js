@@ -18,7 +18,7 @@ export function entry() {
 
 function main() {
   const names = new Map($lazyRange(1, 5).map((i) => [i, String(i)]));
-  const first = $endEntry(names, $cmp, false);
+  let first = $endEntry(names, $cmp, false);
   if (first) {
     const value = $entryGet(first, true);
     value.value += "!";
@@ -40,12 +40,12 @@ function main() {
     ["a", 1],
     ["c", 3],
   ]);
-  const first$1 = $endEntry(counts, $cmp, false);
-  if (first$1) {
-    const getMut = $entryGet(first$1, true);
+  first = $endEntry(counts, $cmp, false);
+  if (first) {
+    const getMut = $entryGet(first, true);
     getMut.value = (getMut.value + 10) | 0;
-    const old = $entryInsert(first$1, 100);
-    const arg = $entryGet(first$1);
+    const old = $entryInsert(first, 100);
+    const arg = $entryGet(first);
     console.log(`${old} ${arg}`);
   }
   const value = $entryGet($unwrap($endEntry(counts, $cmp, true)), true);
