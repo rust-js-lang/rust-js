@@ -37,12 +37,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let unwind = state.unwind.take();
         let mut made = Vec::new();
         let mut kept = Vec::new();
-        for (local, value) in std::mem::take(&mut state.pending) {
-            // A discriminant, which only a switch reads, of what reads the
-            // same anywhere: kept for it.
-            if let Value::Discriminant(subject, ..) = &value
-                && subject.reads_same()
-            {
+        for (local, mut value) in std::mem::take(&mut state.pending) {
+            // A discriminant, which only a switch reads: kept for it, of
+            // what reads the same anywhere, a call's value held first, here,
+            // `*w.r()`'s (#171).
+            if let Value::Discriminant(subject, ..) = &mut value {
+                if !subject.reads_same() {
+                    let made_once = std::mem::replace(subject, Expr::undefined());
+                    *subject = self.spill("_$", made_once, &mut made);
+                }
                 kept.push((local, value));
                 continue;
             }

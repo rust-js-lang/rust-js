@@ -259,6 +259,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "std::mem::ManuallyDrop::<T>::new" | "std::mem::ManuallyDrop::<T>::into_inner" => {
                 return Some(Some(Std::Same));
             }
+            "std::mem::ManuallyDrop::<T>::drop" => return Some(Some(Std::DropPointee)),
             // A `NonZero` is its number (ADR 0177).
             "std::num::NonZero::<T>::get" | "std::num::NonZero::<T>::new_unchecked" => return Some(Some(Std::Same)),
             "std::num::NonZero::<T>::new" => return Some(Some(Std::NonZeroNew)),

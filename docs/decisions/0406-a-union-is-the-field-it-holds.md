@@ -64,3 +64,7 @@ rust-js does not support reading a union's `float` while it holds `int`, which r
   test refuses a read as another type, and a field read after another's
   written. Eleven of rustc's union tests pass; those that read bytes as
   another type's stop with the error.
+
+## Amended by
+
+[ADR 0694](0694-four-refusals-of-drops-and-displays-lifted.md): `ManuallyDrop::drop(&mut m)` drops what `m` holds, in place.

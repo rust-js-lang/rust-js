@@ -562,3 +562,7 @@ block's variables it took are the function's in the JS, seen where the
 `let` is, so it's placed too, through scopes, and drops what it took as a
 closure made for the `let` does. Held by
 `test/corpus/closure_block_value.rs`.
+
+## Amended by
+
+[ADR 0694](0694-four-refusals-of-drops-and-displays-lifted.md): `extend` by what holds nothing to drop, of items with a destructor, and a `match` of what a call gives, flushed before its switch, are kept.
