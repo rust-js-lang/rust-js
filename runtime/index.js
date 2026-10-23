@@ -766,6 +766,11 @@ export function $orInsertWith(map, key, make, dropKey, dropMake) {
   return map.get(key);
 }
 
+// `or_insert_with_key(make)`: `make` given the key.
+export function $orInsertWithKey(map, key, make, dropKey, dropMake) {
+  return $orInsertWith(map, key, () => make(key), dropKey, dropMake && (() => dropMake(make)));
+}
+
 export function $key(value) {
   if (value == null) {
     return "~";

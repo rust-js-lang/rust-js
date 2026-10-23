@@ -922,6 +922,20 @@ pub(super) fn aliases(body: &mut Vec<Stmt>, captured: &HashSet<String>) {
 /// A `let x;` MIR declares first, where it's first named: before the first
 /// statement that names it, and in the one branch of an `if` that does; in
 /// a loop's body that assigns it before it's read.
+/// Whether `stmt` reads `name` where it's the variable, not only in a
+/// closure whose parameter of that name shadows it, `(a, b) => ..`'s `b`.
+fn reads_past_shadows(stmt: &Stmt, name: &str) -> bool {
+    let mut unshadowed = [stmt.clone()];
+    js::each_expr_mut(&mut unshadowed, &mut |e| {
+        if let ExprKind::Arrow(params, _) | ExprKind::AsyncArrow(params, _) = &e.kind
+            && params.iter().any(|p| p.names().contains(&name))
+        {
+            *e = Expr::undefined();
+        }
+    });
+    js::mentions_in(&unshadowed, name) > 0
+}
+
 pub(super) fn sunk_lets(stmts: &mut Vec<Stmt>) {
     let mut i = 0;
     while i < stmts.len() {
@@ -931,7 +945,8 @@ pub(super) fn sunk_lets(stmts: &mut Vec<Stmt>) {
         };
         let name = name.clone();
         let names = |stmt: &Stmt| js::mentions_in(std::slice::from_ref(stmt), &name) > 0;
-        let Some(first) = (i + 1..stmts.len()).find(|&j| names(&stmts[j])) else {
+        let Some(first) = (i + 1..stmts.len()).find(|&j| names(&stmts[j]) && reads_past_shadows(&stmts[j], &name))
+        else {
             i += 1;
             continue;
         };

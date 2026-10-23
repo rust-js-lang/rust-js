@@ -54,16 +54,14 @@ function main() {
   s = o$1.value;
   let n;
   const o$2 = { value: n };
-  let a;
-  let b;
   generic(o$2, { eq: (a, b) => a === b }, { fmt: (value) => String(value) });
   n = o$2.value;
   let tmp;
   const o$3 = { value: tmp };
   generic(o$3, { eq: (a, b) => a === b }, { fmt: (value) => String(value) });
   tmp = o$3.value;
-  a = 2;
-  b = 7;
+  let a = 2;
+  let b = 7;
   const o$4 = { value: a };
   const p = { value: b };
   const value = pair(o$4, p);

@@ -799,7 +799,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // `$orInsert`, which is the value, an object; of a number,
         // `*m.entry(k).or_insert(0) += 1`, a handle on the key's value,
         // `$mutGet`'s (ADR 0152). The entry is `$entry(m, k)`, `{ TAG, _0: [m, k] }`.
-        if let Std::Map(op @ (MapOp::OrInsert | MapOp::OrInsertWith | MapOp::OrDefault)) = known {
+        if let Std::Map(op @ (MapOp::OrInsert | MapOp::OrInsertWith { .. } | MapOp::OrDefault)) = known {
             return self.or_insert_values(state, op, values, (generic_args, output), span, out);
         }
         // `&mut *s` of a `String`, `as_mut_str()`: a `&mut str` to all of

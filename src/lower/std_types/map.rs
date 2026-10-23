@@ -42,7 +42,11 @@ pub(in crate::lower) enum MapOp {
     /// `m.entry(k)`: `[m, k]`, for `or_insert` and the rest.
     Entry,
     OrInsert,
-    OrInsertWith,
+    /// `or_insert_with(f)`, and `or_insert_with_key(f)`, whose `f` is given
+    /// the key (`keyed`).
+    OrInsertWith {
+        keyed: bool,
+    },
     OrDefault,
     /// `collect()` or `from` pairs: `new Map(pairs)`, or `new Set(items)`.
     From {
@@ -225,7 +229,8 @@ pub(in crate::lower) fn map_method(name: &str, of: MapOwner) -> Option<MapOp> {
         },
         "and_modify" if entry => MapOp::AndModify,
         "or_insert" if entry => MapOp::OrInsert,
-        "or_insert_with" if entry => MapOp::OrInsertWith,
+        "or_insert_with" if entry => MapOp::OrInsertWith { keyed: false },
+        "or_insert_with_key" if entry => MapOp::OrInsertWith { keyed: true },
         "or_default" if entry => MapOp::OrDefault,
         _ => return None,
     })
@@ -656,7 +661,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 map_ops("$entryRemove", list)
             }
-            MapOp::OrInsert | MapOp::OrInsertWith | MapOp::OrDefault => {
+            MapOp::OrInsert | MapOp::OrInsertWith { .. } | MapOp::OrDefault => {
                 return Err(self.unsupported(span, "an entry's value, of its value alone"));
             }
         })
