@@ -17,8 +17,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let error = self.fresh("error");
             let caught = Expr::call_helper("$writeCaught", vec![Expr::var(&error)]);
             let converted = conversion.map_or_else(|| caught.clone(), |conversion| conversion.of(caught.clone()));
-            let handler =
-                vec![StmtKind::Return(Some(crate::lower::std_types::result::err(converted))).at(js::Span::NONE)];
+            let handler = vec![StmtKind::Return(Some(crate::js::result::err(converted))).at(js::Span::NONE)];
             *out = vec![StmtKind::TryCatch(std::mem::take(out), Some(error), handler).at(js::Span::NONE)];
         }
     }

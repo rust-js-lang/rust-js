@@ -1074,7 +1074,7 @@ test("a typeof test after a null check is the typeof test from MIR", async () =>
   writeFileSync(join(dir, "lib.rs"), `pub fn text(ok: bool, given: Option<&'static js::Unknown>) -> &'static str {
     if ok
         && let Some(t) = given
-        && let js::Kind::String(s) = js::classify(t)
+        && let js::Kind::String(s) = js::classify(Some(t))
     {
         s
     } else {

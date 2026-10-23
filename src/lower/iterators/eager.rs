@@ -143,8 +143,6 @@ pub(super) fn fresh(items: &Expr) -> bool {
             js::ExprKind::Var(name) => [
                 "$charIndices",
                 "$range",
-                "$bigRange",
-                "$charRange",
                 "$zip",
                 "$windows",
                 "$chunks",
@@ -208,15 +206,12 @@ pub(in crate::lower) fn eager_chains(stmts: &mut [Stmt]) {
             };
             return;
         }
-        // What reads every item alone, `$max`'s: of the array itself, not a
-        // copy, `$max(xs)`; `$maxBy`'s compares as each comes.
-        if matches!(&callee.kind, js::ExprKind::Var(v)
-            if ["$max", "$min", "$maxBy", "$minBy", "$maxByKey", "$minByKey"].contains(&v.as_str()))
-            && let Some(first) = args.first()
-            && let js::ExprKind::Call(to_array, none) = &first.kind
-            && none.is_empty()
-            && let js::ExprKind::Member(chain, name) = &to_array.kind
-            && name == "toArray"
+        // What reads every item, as each comes, `$max`'s: of the array
+        // itself, `$max(xs)`; `$maxBy`'s compares as each comes.
+        if callee
+            .helper_name()
+            .is_some_and(|name| HELPERS_STEPPING_ALL.contains(&name))
+            && let Some(chain) = args.first()
             && let Some((items, _)) = eager_items(chain, true, args.get(1))
         {
             let mut args = args.clone();
@@ -540,11 +535,19 @@ pub(in crate::lower) fn consumed_into_iters(body: &mut Vec<Stmt>, fuse: Option<&
         }
     });
     js::each_expr_mut(body, &mut |e| {
-        if let js::ExprKind::Call(callee, _) = &mut e.kind
-            && let js::ExprKind::Member(object, method) = &mut callee.kind
+        let js::ExprKind::Call(callee, args) = &mut e.kind else {
+            return;
+        };
+        if let js::ExprKind::Member(object, method) = &mut callee.kind
             && STEPPED_TILL_DONE.contains(&method.as_str())
         {
             stepped_in_place(object, false, fuse);
+        } else if callee
+            .helper_name()
+            .is_some_and(|name| HELPERS_STEPPING_ALL.contains(&name))
+            && let Some(first) = args.first_mut()
+        {
+            stepped_in_place(first, false, fuse);
         }
     });
 }

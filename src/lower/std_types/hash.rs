@@ -2,7 +2,7 @@
 //! a `$SipHasher`; and what std's `Hash` of its own types writes to a
 //! hasher, any `Hasher`, as std's impls write it.
 
-use crate::js::{self, Expr, Op, Pattern, Stmt, StmtKind};
+use crate::js::{self, Expr, Pattern, Stmt, StmtKind};
 use crate::lower::calls::Call;
 use crate::lower::mut_refs::boxed;
 use crate::lower::recognition::{Std, StdItem, is_std_def, std_item};
@@ -311,10 +311,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let mut arms = Vec::new();
                 for (discriminant, held) in [(0, ok), (1, err)] {
                     let mut arm = vec![hasher.write(&self.hasher_key("write_isize"), vec![Expr::int(discriminant)])];
-                    self.hash_writes(Expr::member(value.clone(), "_0"), held, hasher, span, &mut arm)?;
+                    self.hash_writes(crate::js::result::held(value.clone()), held, hasher, span, &mut arm)?;
                     arms.push(arm);
                 }
-                let is_ok = Expr::bin(Op::Eq, Expr::member(value, "TAG"), Expr::str("Ok"));
+                let is_ok = crate::js::result::is(value, true);
                 let err = arms.pop();
                 out.push(StmtKind::If(is_ok, arms.pop().expect("`Ok`'s"), err).at(js::Span::NONE));
             }

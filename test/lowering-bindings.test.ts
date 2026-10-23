@@ -264,21 +264,19 @@ test("an unknown JS value is classified, and its properties read by name", async
   const dir = fixture("unknown");
   writeFileSync(join(dir, "lib.rs"), `use js::{Kind, Promise, Unknown, classify, json, object};
 fn show(value: Option<&Unknown>) -> String {
-    match value {
-        None => "null".to_string(),
-        Some(value) => match classify(value) {
-            Kind::String(text) => format!("'{text}'"),
-            Kind::Number(n) => n.to_string(),
-            Kind::BigInt(n) => format!("{n}n"),
-            Kind::Bool(b) => b.to_string(),
-            Kind::Symbol(symbol) => symbol.to_string(),
-            Kind::Function(_) => "fn".to_string(),
-            Kind::Array(items) => format!("[{}]", items.iter().map(|item| show(*item)).collect::<Vec<_>>().join(",")),
-            Kind::Object(fields) => format!(
-                "{{{}}}",
-                object::keys(fields).iter().map(|key| format!("{key}:{}", show(js::get(fields, key)))).collect::<Vec<_>>().join(",")
-            ),
-        },
+    match classify(value) {
+        Kind::Undefined | Kind::Null => "null".to_string(),
+        Kind::String(text) => format!("'{text}'"),
+        Kind::Number(n) => n.to_string(),
+        Kind::BigInt(n) => format!("{n}n"),
+        Kind::Bool(b) => b.to_string(),
+        Kind::Symbol(symbol) => symbol.to_string(),
+        Kind::Function(_) => "fn".to_string(),
+        Kind::Array(items) => format!("[{}]", items.iter().map(|item| show(*item)).collect::<Vec<_>>().join(",")),
+        Kind::Object(fields) => format!(
+            "{{{}}}",
+            object::keys(fields).iter().map(|key| format!("{key}:{}", show(js::get(fields, key)))).collect::<Vec<_>>().join(",")
+        ),
     }
 }
 pub fn parsed(text: &str) -> String {
@@ -1139,7 +1137,7 @@ test("a property a let chain tests and binds is read once", async () => {
 
 pub fn requested_url(value: &Unknown) -> String {
     if let Some(request) = js::get(value, "request")
-        && let Some(Kind::String(url)) = js::get(request, "url").map(js::classify)
+        && let Kind::String(url) = js::classify(js::get(request, "url"))
     {
         return url.to_string();
     }
@@ -1148,7 +1146,7 @@ pub fn requested_url(value: &Unknown) -> String {
 
 pub fn has_url(value: &Unknown) -> bool {
     if let Some(request) = js::get(value, "request")
-        && let Some(Kind::String(_)) = js::get(request, "url").map(js::classify)
+        && let Kind::String(_) = js::classify(js::get(request, "url"))
     {
         return true;
     }
@@ -1156,8 +1154,8 @@ pub fn has_url(value: &Unknown) -> bool {
 }
 
 pub fn same(value: &Unknown, other: &Unknown) -> bool {
-    if let Some(Kind::String(a)) = js::get(value, "url").map(js::classify)
-        && let Some(Kind::String(b)) = js::get(other, "url").map(js::classify)
+    if let Kind::String(a) = js::classify(js::get(value, "url"))
+        && let Kind::String(b) = js::classify(js::get(other, "url"))
     {
         return a == b;
     }
@@ -1166,11 +1164,11 @@ pub fn same(value: &Unknown, other: &Unknown) -> bool {
 
 pub fn text_of(value: &Unknown) -> String {
     let text: String;
-    if let Kind::String(own) = js::classify(value) {
+    if let Kind::String(own) = js::classify(Some(value)) {
         text = own.to_string();
-    } else if let Kind::Object(object) = js::classify(value)
+    } else if let Kind::Object(object) = js::classify(Some(value))
         && let Some(inner) = js::get(object, "url")
-        && let Kind::String(url) = js::classify(inner)
+        && let Kind::String(url) = js::classify(Some(inner))
     {
         text = url.to_string();
     } else {

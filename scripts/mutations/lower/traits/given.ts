@@ -71,8 +71,8 @@ export const mutations: Mutation[] = [
     name: "drop-evidence-unseen",
     breaks: "a dictionary given only its type parameter's drop is taken to take nothing, its function read as its object",
     file: "src/lower/traits/given.rs",
-    find: "            || !self.drops_taken(id).is_empty()\n",
-    replace: "",
+    find: "        self.takes_more_than_drops(id) || !self.drops_taken(id).is_empty()\n",
+    replace: "        self.takes_more_than_drops(id)\n",
     tests: ["test/corpus.test.ts", "-t", "^associated_consts.rs$"],
   },
   {

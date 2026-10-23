@@ -32,13 +32,39 @@ use rustc_span::def_id::DefId;
 /// that knows its back, which `$nextBack` steps (ADR 0429). The one JS form
 /// of it.
 pub(in crate::lower) fn stepped(value: Expr, next: Expr, boxed: bool, back: Option<Expr>) -> Expr {
-    stepped_ends(value, next, boxed, back, None, None)
+    stepped_ends(value, next, boxed, back, None, None, (None, None))
+}
+
+/// `it`, an iterator of the crate's made a JS one, behind a `dyn Iterator`:
+/// std's `Box<I>` and `&mut I` give `nth` to its own, but `fold` is std's,
+/// of `next`, which `$iterator` isn't given then (#162).
+pub(in crate::lower) fn behind_a_dyn(mut it: Expr) -> Expr {
+    if let js::ExprKind::Call(callee, given) = &mut it.kind
+        && callee.helper_name() == Some("$iterator")
+        && given.len() > 6
+    {
+        given[6] = Expr::undefined();
+        fewest_iterator_args(given);
+    }
+    it
+}
+
+/// A `$iterator` call's arguments, `given`, without those at the end that
+/// are its defaults: an `undefined`, and `boxed`'s `false`.
+pub(in crate::lower) fn fewest_iterator_args(given: &mut Vec<Expr>) {
+    while given.len() > 2 && matches!(given.last().map(|e| &e.kind), Some(js::ExprKind::Undefined)) {
+        given.pop();
+    }
+    if given.len() == 3 && matches!(given[2].kind, js::ExprKind::Bool(false)) {
+        given.pop();
+    }
 }
 
 /// `stepped`'s, given `len` too, its length, one that knows it, an
-/// `ExactSizeIterator`'s (ADR 0456), and `hint`, its own `size_hint`, an
+/// `ExactSizeIterator`'s (ADR 0456), `hint`, its own `size_hint`, an
 /// iterator of the crate's whose impl has one: what `size_hint()` of it
-/// gives in generic code, as in its own.
+/// gives in generic code, as in its own; and `own`, its own `fold` and
+/// `nth`, which std's consumers call (#162).
 pub(in crate::lower) fn stepped_ends(
     value: Expr,
     next: Expr,
@@ -46,19 +72,20 @@ pub(in crate::lower) fn stepped_ends(
     back: Option<Expr>,
     len: Option<Expr>,
     hint: Option<Expr>,
+    (fold, nth): (Option<Expr>, Option<Expr>),
 ) -> Expr {
+    // Each given, and each before it, `undefined` where it isn't.
+    let given = [boxed.then(|| Expr::bool(true)), back, len, hint, fold, nth];
+    let Some(last) = given.iter().rposition(Option::is_some) else {
+        return Expr::call(Expr::helper("$iterator"), vec![value, next]);
+    };
     let mut list = vec![value, next];
-    let given = [back.is_some(), len.is_some(), hint.is_some()];
-    if boxed || given.contains(&true) {
-        list.push(Expr::bool(boxed));
+    for (at, arg) in given.into_iter().enumerate().take(last + 1) {
+        list.push(arg.unwrap_or_else(|| match at {
+            0 => Expr::bool(false),
+            _ => Expr::undefined(),
+        }));
     }
-    if given[1..].contains(&true) || back.is_some() {
-        list.push(back.unwrap_or_else(Expr::undefined));
-    }
-    if hint.is_some() || len.is_some() {
-        list.push(len.unwrap_or_else(Expr::undefined));
-    }
-    list.extend(hint);
     Expr::call(Expr::helper("$iterator"), list)
 }
 

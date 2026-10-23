@@ -7,6 +7,10 @@ has a `Symbol`, and its `Object` is an object no array is, `typeof value
 === "object"`; a `match` of it is a `switch (typeof value)`. Amended by
 [0673](0673-a-function-is-a-value-of-any-shape.md): `js::unknown` takes a
 function too, which isn't `Defined` only because Rust can't say it is.
+Amended by [0676](0676-kind-tells-undefined-and-null.md): `classify` takes
+an `Option<&Unknown>`, and `Kind` has `Undefined` and `Null`. Amended by
+[0677](0677-a-weak-key-is-what-kind-holds.md): `Kind::Object` holds a
+`&JsObject`, which derefs to the `Unknown` it is.
 
 Case: N, C, D ([0262](0262-when-rust-and-js-disagree.md)).
 

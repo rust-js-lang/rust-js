@@ -6,7 +6,9 @@ import { beforeAll, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { buildReact, compiler, fixture, run, target } from "./support";
+import { runSync } from "./child";
+import { node } from "./programs";
+import { buildReact, compiler, fixture, root, run, target } from "./support";
 
 beforeAll(buildReact, 600_000);
 
@@ -271,6 +273,98 @@ pub fn weak(state: &'static State) -> (Option<u32>, bool) {
   expect(lib.errors()).toEqual(["Error", "boom", 42, 31]);
   expect(lib.symbols()).toEqual([true, undefined, "local"]);
   expect(lib.weak({ n: 5 })).toEqual([5, true]);
+});
+
+// ADR 0677: a weak collection is typed as TypeScript types it,
+// `WeakMap<K, V>`, and what `js::Kind` holds of an object, an array, a
+// function or a symbol is a key: `Kind::Object`'s a `&JsObject`, TS's
+// `object`, which reads as the `Unknown` it is. React's `jsxPropsParents`
+// (shared/ReactSerializationErrors.js), with no cast and no `const key`.
+test("a weak map is keyed by what js::Kind holds", async () => {
+  const dir = fixture("weak-keys");
+  writeFileSync(join(dir, "lib.rs"), `use js::{JsObject, Kind, Unknown, WeakKey, WeakMap};
+
+thread_local! {
+    pub static PROPS_PARENTS: &'static WeakMap<JsObject, &'static Unknown> = js::weak_map::new();
+    pub static CHILDREN_PARENTS: &'static WeakMap<[Option<&'static Unknown>], &'static Unknown> = js::weak_map::new();
+    pub static NAMED: &'static WeakMap<dyn WeakKey, &'static str> = js::weak_map::new();
+}
+
+pub fn remember(value: Option<&'static Unknown>, parent: &'static Unknown) -> bool {
+    match js::classify(value) {
+        Kind::Object(props) => PROPS_PARENTS.with(|parents| parents.set(props, parent)),
+        Kind::Array(children) => CHILDREN_PARENTS.with(|parents| parents.set(children, parent)),
+        _ => return false,
+    }
+    true
+}
+
+pub fn parent(value: Option<&'static Unknown>) -> Option<&'static Unknown> {
+    match js::classify(value) {
+        Kind::Object(props) => PROPS_PARENTS.with(|parents| parents.get(props)),
+        Kind::Array(children) => CHILDREN_PARENTS.with(|parents| parents.get(children)),
+        _ => None,
+    }
+}
+
+pub fn name(value: Option<&'static Unknown>) -> String {
+    match js::classify(value) {
+        Kind::Object(object) => {
+            NAMED.with(|named| named.set(object, "object"));
+            js::string(js::get(object, "name"))
+        }
+        Kind::Symbol(symbol) => {
+            NAMED.with(|named| named.set(symbol, "symbol"));
+            symbol.description().unwrap_or_default()
+        }
+        _ => String::new(),
+    }
+}
+
+pub fn function_seen(value: Option<&'static Unknown>, seen: &'static WeakMap<dyn Fn(), bool>) -> bool {
+    match js::classify(value) {
+        Kind::Function(function) => {
+            let before = seen.has(function);
+            seen.set(function, true);
+            before
+        }
+        _ => false,
+    }
+}
+`);
+  run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("export const propsParents = new WeakMap();");
+  expect(js).toMatch(/propsParents\.set\(value, parent\)/);
+  expect(js).toMatch(/childrenParents\.get\(value\)/);
+  expect(js).not.toContain("const key");
+  const declarations = readFileSync(join(dir, "lib.d.ts"), "utf8");
+  expect(declarations).toContain("export const propsParents: WeakMap<object, unknown>;");
+  expect(declarations).toContain("export const childrenParents: WeakMap<(unknown | null | undefined)[], unknown>;");
+  expect(declarations).toContain("export const named: WeakMap<WeakKey, string>;");
+  writeFileSync(join(dir, "run.mjs"), `import * as lib from "./lib.js";
+const props = { name: "props" };
+const children = ["a"];
+const parent = { type: "div" };
+const s = Symbol("s");
+const f = () => 1;
+const seen = new WeakMap();
+console.log(JSON.stringify([lib.remember(props, parent), lib.remember(children, parent), lib.remember("text", parent)]));
+console.log(JSON.stringify([lib.parent(props) === parent, lib.parent(children) === parent, lib.parent({}), lib.parent(null)]));
+console.log(JSON.stringify([lib.name(props), lib.name(s), lib.name(1), lib.named.get(props), lib.named.get(s)]));
+console.log(JSON.stringify([lib.functionSeen(f, seen), lib.functionSeen(f, seen), lib.functionSeen(props, seen)]));
+`);
+  const ran = runSync([node!, join(dir, "run.mjs")], root, 30_000);
+  expect(ran.stderr).toBe("");
+  expect(ran.stdout).toBe(
+    [
+      `[true,true,false]`,
+      `[true,true,null,null]`,
+      `["props","s","","object","symbol"]`,
+      `[false,true,false]`,
+      "",
+    ].join("\n"),
+  );
 });
 
 // ADR 0283: JS's Promise's statics and methods are the js crate's, as

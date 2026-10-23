@@ -133,7 +133,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             if !self.contains_mutated(t) {
                                 continue;
                             }
-                            let test = self.untagged_variant_test(ty, &[variant], &e);
+                            let test = self.untagged_variant_test(ty, &[variant], &e, false);
                             value = Expr::cond(test, self.copy(e.clone(), t), value);
                         }
                         value
@@ -156,7 +156,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                                 props.push(Prop::Field(name.clone(), self.copy(Expr::member(e.clone(), name), t)));
                             }
                         }
-                        let tag = self.variant_test(e.clone(), ty, *adt, adt.variant_index_with_id(variant.def_id));
+                        let tag =
+                            self.variant_test(e.clone(), ty, *adt, adt.variant_index_with_id(variant.def_id), false);
                         value = Expr::cond(tag, Expr::object(props), value);
                     }
                     value

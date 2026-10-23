@@ -522,13 +522,18 @@ export function $shift(items) {
 // generic `next` may box its `Some` (ADR 0051): `boxed` unboxes it. `of`
 // is what it's of, which its drop drops (ADR 0421). Given its `nextBack`,
 // it knows its back, which `$nextBack` steps; given its `len`, its length,
-// an `ExactSizeIterator`'s (ADR 0456).
-export function $iterator(iterator, next, boxed = false, nextBack, len, hint) {
+// an `ExactSizeIterator`'s (ADR 0456). Given its own `fold` and `nth`, the
+// crate's impl's, std's consumers call them (#162).
+export function $iterator(iterator, next, boxed = false, nextBack, len, hint, fold, nth) {
   const step = (item) => (item == null ? { done: true, value: undefined } : { done: false, value: boxed ? $someValue(item) : item });
   const it = new $Steps(() => step(next(iterator)));
+  // The crate's own `fold` and `nth`, where its impl writes them, which
+  // what std routes through them calls (#162).
+  if (fold !== undefined) it.fold = (init, f) => fold(iterator, init, f);
+  if (nth !== undefined) it.nth = (k) => step(nth(iterator, k));
   it.of = iterator;
   // Another of a value of its type, stepped as it is: a clone's (ADR 0473).
-  it.with = (value) => $iterator(value, next, boxed, nextBack, len, hint);
+  it.with = (value) => $iterator(value, next, boxed, nextBack, len, hint, fold, nth);
   if (nextBack !== undefined) {
     it.back = () => step(nextBack(iterator));
   }
@@ -1065,10 +1070,16 @@ export function $ordSet(cmp) {
 
 // An iterator rust-js makes, stepped as Rust's is: each `next` steps on, so
 // one that gave `None` may give more, as the crate's own or `from_fn`'s may,
-// and its `map`, `filter`, `take` and `drop` are std's adapters, which pass
+// and its `map`, `filter`, `flatMap`, `take` and `drop` are std's adapters, which pass
 // that on, where JS's iterator helpers stay ended at their first `done`
 // (#161, ADR 0669). Of a source that never gives more, each is JS's. `close`
 // is what its `return()` closes.
+//
+// Its `fold` and `nth` are std's, of its `next`, unless the crate's iterator
+// it steps writes its own, which `$iterator` gives it: then what std routes
+// through them does too, `reduce` (`sum`, `count`, `fold`), `forEach`, a
+// `map`'s, a `filter`'s or a `flatMap`'s fold, and `drop`'s (`skip`'s)
+// first step (#162).
 export class $Steps extends Iterator {
   constructor(next, close) {
     super();
@@ -1078,19 +1089,50 @@ export class $Steps extends Iterator {
       return { done: true, value: undefined };
     };
   }
+  // Std's `fold`: `f` of each item, given what it gave.
+  fold(init, f) {
+    let folded = init;
+    for (let step = this.next(); !step.done; step = this.next()) folded = f(folded, step.value);
+    return folded;
+  }
+  // Std's `nth`: `k` stepped past, a `None` among them ending it, then the next.
+  nth(k) {
+    for (; k > 0; k--) {
+      const step = this.next();
+      if (step.done) return step;
+    }
+    return this.next();
+  }
+  reduce(f, ...init) {
+    let i = 0;
+    if (init.length > 0) return this.fold(init[0], (a, x) => f(a, x, i++));
+    const first = this.next();
+    if (first.done) throw new TypeError("Reduce of empty iterator with no initial value");
+    i = 1;
+    return this.fold(first.value, (a, x) => f(a, x, i++));
+  }
+  forEach(f) {
+    let i = 0;
+    this.fold(undefined, (_, x) => {
+      f(x, i++);
+    });
+  }
   map(f) {
     let i = 0;
-    return new $Steps(
+    const mapped = new $Steps(
       () => {
         const step = this.next();
         return step.done ? step : { done: false, value: f(step.value, i++) };
       },
       () => this.return(),
     );
+    // Std's `Map::fold`, its source's of each mapped.
+    mapped.fold = (init, g) => this.fold(init, (a, x) => g(a, f(x, i++)));
+    return mapped;
   }
   filter(keep) {
     let i = 0;
-    return new $Steps(
+    const kept = new $Steps(
       () => {
         for (;;) {
           const step = this.next();
@@ -1099,6 +1141,49 @@ export class $Steps extends Iterator {
       },
       () => this.return(),
     );
+    // Std's `Filter::fold`, its source's of each kept.
+    kept.fold = (init, g) => this.fold(init, (a, x) => (keep(x, i++) ? g(a, x) : a));
+    return kept;
+  }
+  // Std's `FlatMap`: each item of what `f` makes of each of its source's,
+  // its source stepped no more once it's given `None`, as std's fuses it.
+  // Its fold, std's, the rest of the one it's in, then its source's of each
+  // one's fold.
+  flatMap(f) {
+    let i = 0;
+    let inner;
+    let ended = false;
+    const flat = new $Steps(
+      () => {
+        for (;;) {
+          if (inner !== undefined) {
+            const step = inner.next();
+            if (!step.done) return step;
+            inner = undefined;
+          }
+          if (ended) return { done: true, value: undefined };
+          const step = this.next();
+          if (step.done) {
+            ended = true;
+            return step;
+          }
+          inner = Iterator.from(f(step.value, i++));
+        }
+      },
+      () => {
+        inner?.return?.();
+        this.return();
+      },
+    );
+    flat.fold = (init, g) => {
+      let folded = init;
+      if (inner !== undefined) folded = inner.reduce(g, folded);
+      inner = undefined;
+      if (ended) return folded;
+      ended = true;
+      return this.fold(folded, (a, x) => Iterator.from(f(x, i++)).reduce(g, a));
+    };
+    return flat;
   }
   // Std's `Take`: each of its `n` steps steps its source, a `None` too.
   take(n) {
@@ -1111,22 +1196,28 @@ export class $Steps extends Iterator {
       () => this.return(),
     );
   }
-  // Std's `Skip`: its first step passes `n`, or stops at a `None`, which it
-  // gives; each after is its source's.
+  // Std's `Skip`: its first step is its source's `nth(n)`, which stops at a
+  // `None`, and gives it; each after is its source's. Its fold, the source's
+  // after its `nth(n - 1)`.
   drop(n) {
-    return new $Steps(
+    const skipped = new $Steps(
       () => {
-        for (; n > 0; n--) {
-          const step = this.next();
-          if (step.done) {
-            n = 0;
-            return step;
-          }
-        }
-        return this.next();
+        if (n === 0) return this.next();
+        const k = n;
+        n = 0;
+        return this.nth(k);
       },
       () => this.return(),
     );
+    skipped.fold = (init, g) => {
+      if (n > 0) {
+        const k = n;
+        n = 0;
+        if (this.nth(k - 1).done) return init;
+      }
+      return this.fold(init, g);
+    };
+    return skipped;
   }
 }
 
@@ -1660,6 +1751,9 @@ export function $chainEnds(a, b) {
 // have a destructor (ADR 0465). Closing it closes its source.
 export function $stepBy(it, step, drop) {
   const skip = (k, by) => {
+    // From the front, its source's `nth`, as std's `StepBy` steps it, the
+    // crate's own where it writes one (#162).
+    if (by === "next" && drop === undefined && it.nth !== undefined) return it.nth(k);
     for (; k > 0; k--) {
       const at = it[by]();
       if (at.done) return at;
@@ -2026,12 +2120,6 @@ export function $parseBig(s, min, max, radix = 10) {
     if (negative ? n < min : n > max) return overflow();
   }
   return { TAG: "Ok", _0: n };
-}
-
-export function $bigRange(start, end) {
-  const items = [];
-  for (let i = start; i < end; i++) items.push(i);
-  return items;
 }
 
 // A range's numbers, made as they're stepped, `step` apart: `$lazyRange(0,
@@ -5827,17 +5915,6 @@ export function $pretty(open, items, close, rest = false) {
   }
   const lines = items.map((item) => "    " + item.replaceAll("\n", "\n    ") + ",\n").join("");
   return open + "\n" + lines + (rest ? "    ..\n" : "") + close;
-}
-
-export function $charRange(start, end, inclusive = false) {
-  const items = [];
-  const last = end.codePointAt(0) - (inclusive ? 0 : 1);
-  for (let c = start.codePointAt(0); c <= last; c++) {
-    if (c < 0xd800 || c > 0xdfff) {
-      items.push(String.fromCodePoint(c));
-    }
-  }
-  return items;
 }
 
 export function $tryFromInt(x, lo, hi) {
@@ -9972,10 +10049,12 @@ export function $zip(a, b) {
 // `a.chain(b)`, lazy: each of `a`'s, then each of `b`'s; `a` closed once
 // it's done, as std's lets it go, and `b` stepped on after a `None`, as
 // std's is; each closed as it ends, which drops what each holds (ADR 0465).
+// Its fold, std's, `a`'s then `b`'s, which an iterator rust-js makes routes
+// through the crate's own (#162).
 export function $lazyChain(a, b) {
   let first = a[Symbol.iterator]();
   const second = b[Symbol.iterator]();
-  return new $Steps(
+  const chained = new $Steps(
     () => {
       if (first !== undefined) {
         const step = first.next();
@@ -9992,6 +10071,18 @@ export function $lazyChain(a, b) {
       second.return?.();
     },
   );
+  chained.fold = (init, f) => {
+    let folded = init;
+    if (first !== undefined) {
+      folded = first.reduce(f, folded);
+      first.return?.();
+      first = undefined;
+    }
+    folded = second.reduce(f, folded);
+    second.return?.();
+    return folded;
+  };
+  return chained;
 }
 
 // `a.zip(b)`, lazy: a pair of each's next, till either ends; an item of
@@ -10281,16 +10372,28 @@ export function $fromFn(f, boxed = false) {
   });
 }
 
+// `unzip()` of `pairs`, an array or an iterator of pairs: each side's
+// items, put in as each pair comes, by std's `fold`, which an iterator
+// rust-js makes routes through the crate's own (#162).
 export function $unzip(pairs) {
-  return [pairs.map(([a]) => a), pairs.map(([, b]) => b)];
+  const a = [];
+  const b = [];
+  Iterator.from(pairs).forEach(([x, y]) => {
+    a.push(x);
+    b.push(y);
+  });
+  return [a, b];
 }
 
+// `partition(keep)` of `items`, an array or an iterator: `[yes, no]`, each
+// item put in one as it comes, by std's `for_each`, which an iterator
+// rust-js makes routes through the crate's own `fold` (#162, #179).
 export function $partition(items, keep) {
   const yes = [];
   const no = [];
-  for (const item of items) {
+  Iterator.from(items).forEach((item) => {
     (keep(item) ? yes : no).push(item);
-  }
+  });
   return [yes, no];
 }
 
@@ -10551,9 +10654,26 @@ export function $formatFloat(value, options, show) {
 
 // A JS iterator lent as a `&mut` (ADR 0071): it steps `it`, and what takes
 // from it and stops early, as `take` or a loop that breaks does, closes
-// this, not `it`, which its lender goes on stepping.
+// this, not `it`, which its lender goes on stepping. Its `nth` is `it`'s,
+// as std's `&mut I` gives it, the crate's own where `$iterator` was given
+// it; its `fold`, std's, of `next` (#162).
 export function $lent(it) {
-  return new $Steps(() => it.next());
+  const lent = new $Steps(() => it.next());
+  if (it.nth !== undefined) lent.nth = (k) => it.nth(k);
+  return lent;
+}
+
+// The items of `it` its `fold` gives, the crate's own its impl writes,
+// listed as they're given and stepped after: what a consumer std routes
+// through `fold` takes of such an iterator, `last` and `collect` into a
+// string, a hash map or set, a list (#162).
+export function $folded(it) {
+  return it
+    .fold([], (items, item) => {
+      items.push(item);
+      return items;
+    })
+    .values();
 }
 
 // `collect()` into a `Result`: the first `Err`, where it stops, as Rust's
@@ -10646,25 +10766,24 @@ export function $thenCmp(...orders) {
 }
 
 // `max_by(compare)` and `min_by(compare)` of `items`, an array or an
-// iterator: std's fold, `compare(kept, item)` as each comes, the later kept
-// where they're equal for `max`, the earlier for `min`; each passed over
-// given to `drop` as it's passed, of items with a destructor (ADR 0098);
-// boxed where it may look like `None` (ADR 0051).
+// iterator: std's `reduce`, its first item, then its fold of the rest, which
+// an iterator rust-js makes routes through the crate's own `fold` (#162),
+// `compare(kept, item)` as each comes (#179), the later kept where they're
+// equal for `max`, the earlier for `min`; each passed over given to `drop`
+// as it's passed, of items with a destructor (ADR 0098); boxed where it may
+// look like `None` (ADR 0051).
 export function $extremeBy(items, compare, max, boxed, drop) {
-  let kept;
-  let seen = false;
-  for (const item of items) {
-    if (!seen) {
-      kept = item;
-      seen = true;
-    } else if ((compare(kept, item) > 0) === max) {
+  const it = Iterator.from(items);
+  const first = it.next();
+  if (first.done) return undefined;
+  const kept = it.reduce((kept, item) => {
+    if ((compare(kept, item) > 0) === max) {
       drop?.(item);
-    } else {
-      drop?.(kept);
-      kept = item;
+      return kept;
     }
-  }
-  if (!seen) return undefined;
+    drop?.(kept);
+    return item;
+  }, first.value);
   return boxed ? $some(kept) : kept;
 }
 export function $maxBy(items, compare, boxed = false, drop = undefined) {
@@ -10676,9 +10795,7 @@ export function $minBy(items, compare, boxed = false, drop = undefined) {
 // `max_by_key(key)` and `min_by_key(key)`: each item's key made once, as it
 // comes, as std pairs them, and the keys compared by `compare`.
 export function $extremeByKey(items, key, compare, max, boxed, drop) {
-  const keyed = (function* () {
-    for (const item of items) yield [key(item), item];
-  })();
+  const keyed = Iterator.from(items).map((item) => [key(item), item]);
   const pair = $extremeBy(keyed, (a, b) => compare(a[0], b[0]), max, false, drop && ((pair) => drop(pair[1])));
   return pair === undefined ? undefined : boxed ? $some(pair[1]) : pair[1];
 }
@@ -10689,12 +10806,16 @@ export function $minByKey(items, key, compare, boxed = false, drop = undefined) 
   return $extremeByKey(items, key, compare, false, boxed, drop);
 }
 
+// `max()` of `items`, numbers, `bool`s or `Ordering`s: std's
+// `max_by(Ord::cmp)`, which steps them as each comes (#179).
 export function $max(items) {
-  return items.length === 0 ? undefined : items.reduce((max, x) => (x >= max ? x : max));
+  return $maxBy(items, $cmp);
 }
 
+// `min()` of `items`, numbers, `bool`s or `Ordering`s: std's
+// `min_by(Ord::cmp)`, which steps them as each comes (#179).
 export function $min(items) {
-  return items.length === 0 ? undefined : items.reduce((min, x) => (x < min ? x : min));
+  return $minBy(items, $cmp);
 }
 
 export function $position(items, found) {

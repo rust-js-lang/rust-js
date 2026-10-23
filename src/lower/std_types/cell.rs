@@ -2,10 +2,10 @@
 
 use std::collections::{HashMap, HashSet};
 
+use crate::js::result;
 use crate::js::{self, Expr, Op, Prop, Stmt, StmtKind};
 use crate::lower::calls::{Call, apply};
 use crate::lower::recognition::{Std, StdItem};
-use crate::lower::std_types::result;
 use crate::lower::{FnCx, R};
 use rustc_middle::ty::{self, Ty};
 

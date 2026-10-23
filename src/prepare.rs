@@ -28,7 +28,8 @@ pub fn module(module: &mut js::Module) {
             js::Item::Namespace(_) | js::Item::Function(_) => {}
         }
     }
-    js::each_item_block_mut(&mut module.items, &mut unelsed);
+    let mut chained = HashSet::new();
+    js::each_item_block_mut(&mut module.items, &mut |stmts| unelsed(stmts, &mut chained));
     reclaim::module(module);
     compound(module);
     read_together(module);
@@ -252,17 +253,36 @@ fn assigned(stmts: &[Stmt], name: &str) -> Option<Vec<Stmt>> {
 /// An `if` whose branch never goes on, `js::ends`', by a `return`, a
 /// `throw`, a `break` or a `continue`, has no `else`: what was in it
 /// follows, as JS writes it, `if (c) { return a; } return b;` (ADR 0237). Before its
-/// locals are named, which then see the block they're in.
-fn unelsed(stmts: &mut Vec<Stmt>) {
+/// locals are named, which then see the block they're in. An `else if` of
+/// an arm that goes on stays one, `if (a) { x = 1; } else if (b) { return;
+/// } else { .. }`: what's in its `else` would be the outer `else`'s, the
+/// chain broken, as ESLint's `no-else-return` allows it (ADR 0237,
+/// amended). `chained` holds each such `else`, as the lists are walked
+/// from the outside in: the `else` lists of the `if`s seen, by where they
+/// are, which nothing moves until they're walked.
+fn unelsed(stmts: &mut Vec<Stmt>, chained: &mut HashSet<*const Vec<Stmt>>) {
+    let link = chained.remove(&(stmts as *const Vec<Stmt>));
     let mut i = 0;
     while i < stmts.len() {
         if let StmtKind::If(_, then, els @ Some(_)) = &mut stmts[i].kind
+            && !link
             && then.last().is_some_and(js::ends)
         {
             let els = els.take().expect("matched");
             stmts.splice(i + 1..i + 1, els);
         }
         i += 1;
+    }
+    for stmt in stmts.iter() {
+        if let StmtKind::If(_, _, Some(els)) = &stmt.kind
+            && let [
+                Stmt {
+                    kind: StmtKind::If(..), ..
+                },
+            ] = els.as_slice()
+        {
+            chained.insert(els as *const Vec<Stmt>);
+        }
     }
 }
 
@@ -899,21 +919,18 @@ fn try_catch(made: &Stmt, tested: &Stmt, before: &[Stmt], rest: &[Stmt]) -> Opti
     let StmtKind::If(test, then, otherwise) = &tested.kind else {
         return None;
     };
-    let ExprKind::Binary(op @ (js::Op::Eq | js::Op::Ne), tag, variant) = &test.kind else {
-        return None;
-    };
-    let of_result = |e: &Expr, name: &str| {
-        matches!(&e.kind, ExprKind::Member(of, field)
-        if field == name && matches!(&of.kind, ExprKind::Var(v) if v == result))
-    };
     // Whether the `if` is of the `Ok`: `TAG === "Ok"`, or `!== "Err"`.
-    let of_ok = match &variant.kind {
-        ExprKind::Str(s) if of_result(tag, "TAG") && (s == "Ok" || s == "Err") => (*op == js::Op::Eq) == (s == "Ok"),
-        _ => return None,
-    };
+    let (tested, ok, eq) = js::result::tested(test)?;
+    if !matches!(&tested.kind, ExprKind::Var(v) if v == result) {
+        return None;
+    }
+    let of_ok = ok == eq;
     // Each arm's statements, and how many of `rest` are one's: an `if`'s
     // and its `else`'s; or, after an arm that leaves, the other's, `rest`,
-    // which leaves too, where it's the `Err`'s, the `catch`'s.
+    // which leaves too, where it's the `Err`'s, the `catch`'s; or, after an
+    // `Ok` arm that leaves where `rest` goes on, none, the `catch`'s, what
+    // follows the `try` run where the call threw, as it ran after the `if`
+    // (ADR 0637, amended).
     let leaves = |stmts: &[Stmt]| stmts.last().is_some_and(js::ends);
     let (ok, err, taken): (&[Stmt], &[Stmt], usize) = match (of_ok, otherwise) {
         (true, Some(otherwise)) => (then, otherwise, 0),
@@ -922,13 +939,13 @@ fn try_catch(made: &Stmt, tested: &Stmt, before: &[Stmt], rest: &[Stmt]) -> Opti
         (true, None) if leaves(rest) => (then, rest, rest.len()),
         (false, None) if leaves(then) => (rest, then, rest.len()),
         (false, None) => (&[], then, 0),
-        (true, None) => return None,
+        (true, None) => (then, &[], 0),
     };
     let after = &rest[taken..];
     // Each arm's binding, `const v = result._0;`: the `Ok`'s value, and the
     // `Err`'s error, the `catch`'s.
     let bound = |stmts: &[Stmt]| match stmts.first().map(|s| &s.kind) {
-        Some(StmtKind::Const(name, value)) if of_result(value, "_0") => Some(name.clone()),
+        Some(StmtKind::Const(name, value)) if js::result::reads_held(value, result) => Some(name.clone()),
         _ => None,
     };
     let (value_name, error) = (bound(ok), bound(err));
@@ -939,7 +956,7 @@ fn try_catch(made: &Stmt, tested: &Stmt, before: &[Stmt], rest: &[Stmt]) -> Opti
     let kept = |stmt: &Stmt| -> Option<StmtKind> {
         let read = |e: &Expr| match &value_name {
             Some(name) => matches!(&e.kind, ExprKind::Var(v) if v == name),
-            None => of_result(e, "_0"),
+            None => js::result::reads_held(e, result),
         };
         match &stmt.kind {
             StmtKind::Return(Some(e)) if read(e) => Some(StmtKind::Return(Some(call.clone()))),
@@ -1024,16 +1041,8 @@ fn try_catch(made: &Stmt, tested: &Stmt, before: &[Stmt], rest: &[Stmt]) -> Opti
 /// `false` of the other, or its `is_err()`, `is_ok()`. The call, and the
 /// test's value where it threw (ADR 0639).
 fn threw(e: &Expr) -> Option<(Expr, bool)> {
-    let ExprKind::Binary(op @ (js::Op::Eq | js::Op::Ne), tag, variant) = &e.kind else {
-        return None;
-    };
-    let (ExprKind::Member(of, field), ExprKind::Str(s)) = (&tag.kind, &variant.kind) else {
-        return None;
-    };
-    if field != "TAG" || (s != "Ok" && s != "Err") {
-        return None;
-    }
-    Some((of.caught()?.0, (*op == js::Op::Eq) == (s == "Err")))
+    let (of, ok, eq) = js::result::tested(e)?;
+    Some((of.caught()?.0, eq != ok))
 }
 
 /// `if (x == null) { x = e; }` is `x = x ?? e`, printed `x ??= e`: the

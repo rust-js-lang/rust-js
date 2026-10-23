@@ -211,6 +211,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 from_back,
                 Some(Expr::helper(len)),
                 None,
+                (None, None),
             ));
         }
         if self.steps_an_array(ty) {
@@ -418,7 +419,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> R<Expr> {
         let (next, boxed) = self.user_next(ty, trait_id, method, span)?;
         let hint = self.own_size_hint(ty, span)?;
-        Ok(stepped_ends(value, next, boxed, None, None, hint))
+        let own = self.own_fold_and_nth(ty, span)?;
+        Ok(stepped_ends(value, next, boxed, None, None, hint, own))
     }
 
     /// An iterator of the crate's as a JS one stepped from its front that
@@ -450,7 +452,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 vec![StmtKind::Return(Some(exact)).at(js::Span::NONE)],
             )
         });
-        Ok(stepped_ends(value, next, boxed, back, len, hint))
+        let own = self.own_fold_and_nth(ty, span)?;
+        Ok(stepped_ends(value, next, boxed, back, len, hint, own))
     }
 
     /// The `size_hint` of the crate's iterator `ty`, where its impl has one

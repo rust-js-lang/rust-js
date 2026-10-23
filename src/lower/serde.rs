@@ -31,8 +31,8 @@ pub(super) use super::recognition::Json;
 use super::recognition::{SkipPredicate, StdItem, std_item};
 use super::representation::{Num, variant_field};
 use super::{FnCx, R, lower_first};
+use crate::js::result;
 use crate::js::{self, Expr, Op, Stmt, StmtKind};
-use crate::lower::std_types::result;
 use rustc_ast::visit::{self, Visitor};
 use rustc_hir::def::CtorKind;
 use rustc_hir::{self as hir, intravisit};
@@ -533,12 +533,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 self.write_json(value, json, args.type_at(0), span, out)
             }
             // `{"Ok": ..}` or `{"Err": ..}`, as serde's impl writes one.
-            ty::Adt(_, args) if self.is_std_type(ty, StdItem::Result) => {
+            ty::Adt(adt, args) if self.is_std_type(ty, StdItem::Result) => {
                 let mut branches = Vec::new();
-                for (i, name) in ["Ok", "Err"].into_iter().enumerate() {
+                for (i, variant) in adt.variants().iter().enumerate() {
                     let mut body = Vec::new();
                     self.emit(json, "beginObject", Vec::new(), &mut body);
-                    self.emit(json, "key", vec![Expr::str(name)], &mut body);
+                    self.emit(json, "key", vec![Expr::str(variant.name.as_str())], &mut body);
                     self.write_json(result::held(value.clone()), json, args.type_at(i), span, &mut body)?;
                     self.emit(json, "endObject", Vec::new(), &mut body);
                     branches.push(body);
@@ -761,7 +761,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Some(rest) => {
                     // As a pattern tests it, of any representation (ADR 0284).
                     let index = adt.variant_index_with_id(variant.def_id);
-                    let test = self.variant_test(value.clone(), Ty::new_adt(self.tcx, adt, args), adt, index);
+                    let test = self.variant_test(value.clone(), Ty::new_adt(self.tcx, adt, args), adt, index, false);
                     vec![StmtKind::If(test, body, Some(rest)).at(js::Span::NONE)]
                 }
             });

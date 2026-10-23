@@ -150,6 +150,11 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         if !adt.is_struct() {
             return false;
         }
+        // `JsObject` itself, what `Kind::Object` holds, TypeScript's
+        // `object` (ADR 0677).
+        if self.is_js_object_itself(ty) {
+            return true;
+        }
         // `PhantomData<JsObject>`, then only more markers, for a generic one
         // like `Promise<T>`.
         let mut fields = adt.non_enum_variant().fields.iter().map(|f| self.field_ty(f, args));

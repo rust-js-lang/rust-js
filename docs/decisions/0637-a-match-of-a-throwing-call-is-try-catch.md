@@ -132,3 +132,19 @@ rewrite of what's around it, as an ignored result's `try { f(); } catch
   goes on and of `?`, each run where the call throws and where the `Ok`
   arm's own code throws, which isn't caught.
 - Mutations in `scripts/mutations/prepare.ts`.
+
+## Amendment: an `Ok` arm that leaves, with nothing after it
+
+**An `if let Ok(v) = f() { return v; }` with nothing after it in its
+block is `try { return f(); } catch {}`**: its `Err` arm does nothing, and
+what follows the block runs where the call threw, as it does after the
+`try`. React's `describeElementType` writes it so of a lazy component,
+`try { return describeElementType(init(payload)); } catch (x) {}`, which
+its port's `if let Ok(name) = catch_unwind(..) { return name; }` wasn't:
+the `Result` made, and its `TAG` tested, as only an `Ok` arm that goes
+on, or one followed by statements that leave, were a `try`. Case N: the
+same runs either way.
+
+- `test/lowering-unwinds.test.ts`, "an if let Ok of catch_unwind that
+  returns is a try whose catch does nothing", run where it throws and
+  where it doesn't; mutation `ok-arm-leaving-alone-kept`.

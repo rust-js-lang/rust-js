@@ -7,7 +7,7 @@ use super::*;
 /// the loop's `continue`: the block's statements in its place. And one that
 /// ends `if (!c) { a; b }`, as MIR has a `continue` the program wrote,
 /// `if (c) { continue; } a; b`.
-pub(in crate::lower::mir::tidy) fn continued(stmts: &mut [Stmt], guards: &[js::Span]) {
+pub(in crate::lower::mir::tidy) fn continued(stmts: &mut [Stmt], guards: &[(js::Span, js::Span)]) {
     for stmt in stmts.iter_mut() {
         let (looped, body) = match &mut stmt.kind {
             StmtKind::While { label, body, .. }
@@ -40,7 +40,7 @@ pub(in crate::lower::mir::tidy) fn continued(stmts: &mut [Stmt], guards: &[js::S
                 // One the program ended with a `continue`, `if (t) { a;
                 // continue; }`, of what MIR has as its `else`.
                 Some(StmtKind::If(_, _, Some(otherwise)))
-                    if written(guards, body.last().expect("matched").span)
+                    if tests_continue(guards, body.last().expect("matched").span)
                         && !declared(otherwise).any(|name| declared(&body[..body.len() - 1]).any(|n| n == name)) =>
                 {
                     let Some(Stmt {
@@ -59,7 +59,8 @@ pub(in crate::lower::mir::tidy) fn continued(stmts: &mut [Stmt], guards: &[js::S
                 // Of one statement, where the program wrote the `continue`,
                 // whatever its test, `i % 2 !== 0` of `i % 2 == 0`.
                 Some(StmtKind::If(test, then, None))
-                    if written(guards, body.last().expect("matched").span) || (negated(test) && then.len() > 1) =>
+                    if tests_continue(guards, body.last().expect("matched").span)
+                        || (negated(test) && then.len() > 1) =>
                 {
                     let Some(Stmt {
                         kind: StmtKind::If(test, then, None),
@@ -79,35 +80,66 @@ pub(in crate::lower::mir::tidy) fn continued(stmts: &mut [Stmt], guards: &[js::S
     }
 }
 
-/// Each loop's `continue` the program didn't write, of `written`, where
-/// its body ends anyway, in the branches that end it: none, as a block
-/// returned in place leaves them (ADR 0432).
-pub(in crate::lower::mir::tidy) fn tail_continues(stmts: &mut [Stmt], written: &[js::Span]) {
+/// Whether `span` is of the test of an `if` of a `continue` the program
+/// wrote, of `continues` (`Written::continues`).
+pub(in crate::lower::mir::tidy) fn tests_continue(continues: &[(js::Span, js::Span)], span: js::Span) -> bool {
+    continues
+        .iter()
+        .any(|(test, _)| written(std::slice::from_ref(test), span))
+}
+
+/// The `continue` an `if` of `continues` ends its `then` with, where the
+/// program wrote it: its comment is before it (ADR 0684).
+pub(in crate::lower::mir::tidy) fn written_continues(stmts: &mut [Stmt], continues: &[(js::Span, js::Span)]) {
+    for stmt in stmts.iter_mut() {
+        let span = stmt.span;
+        if let StmtKind::If(_, then, _) = &mut stmt.kind
+            && let Some(last) = then.last_mut()
+            && matches!(last.kind, StmtKind::Continue(_))
+            && last.span.is_none()
+            && let Some((_, at)) = continues
+                .iter()
+                .find(|(test, _)| written(std::slice::from_ref(test), span))
+        {
+            last.span = *at;
+        }
+    }
+}
+
+/// Each loop's `continue` where its body ends anyway, in the branches that
+/// end it: none, as a block returned in place leaves them (ADR 0432). One
+/// the program wrote there, `if (c) { a; continue; }` last, does nothing
+/// either; one it wrote before more, `if (c) { continue; } return b;`, is
+/// kept, as written (ADR 0684).
+pub(in crate::lower::mir::tidy) fn tail_continues(stmts: &mut [Stmt]) {
     for stmt in stmts.iter_mut() {
         if let StmtKind::While { label, body, .. }
         | StmtKind::ForOf { label, body, .. }
         | StmtKind::For { label, body, .. } = &mut stmt.kind
         {
-            ends_going_on(body, label, written);
+            ends_going_on(body, label);
         }
     }
 }
 
 /// A `continue` where the body of loop `looped` ends anyway, in the
-/// branches that end it, but one in `kept`: none.
-fn ends_going_on(stmts: &mut Vec<Stmt>, looped: &Option<String>, kept: &[js::Span]) {
+/// branches that end it: none. Of an `else` that's only one, `if (c) {
+/// ..; return; } else { continue; }`, no `else` (ADR 0684).
+fn ends_going_on(stmts: &mut Vec<Stmt>, looped: &Option<String>) {
     let more = stmts.len() > 1;
-    let span = stmts.last().map(|s| s.span);
     match stmts.last_mut().map(|s| &mut s.kind) {
-        Some(StmtKind::Continue(l))
-            if (l.is_none() || l == looped) && more && !span.is_some_and(|span| written(kept, span)) =>
-        {
+        Some(StmtKind::Continue(l)) if (l.is_none() || l == looped) && more => {
             stmts.pop();
         }
         Some(StmtKind::If(_, then, otherwise)) => {
-            ends_going_on(then, looped, kept);
-            if let Some(otherwise) = otherwise {
-                ends_going_on(otherwise, looped, kept);
+            ends_going_on(then, looped);
+            if let Some(branch) = otherwise {
+                if matches!(branch.as_slice(), [Stmt { kind: StmtKind::Continue(l), .. }] if l.is_none() || l == looped)
+                {
+                    *otherwise = None;
+                } else {
+                    ends_going_on(branch, looped);
+                }
             }
         }
         _ => {}

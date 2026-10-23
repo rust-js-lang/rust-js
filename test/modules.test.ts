@@ -671,6 +671,20 @@ test("a default export is the function's declaration where the macro holds it", 
   expect(lib.both()).toBe(1);
 });
 
+// ADR 0611: a function only `js::export_default!` names, as React's
+// DefaultPrepareStackTraceV8 has its hook, is used, as JS imports it:
+// rust-js's check warns of none, a generic one's either, and of a function
+// nothing names still.
+test("a function only js::export_default! names is no dead code", () => {
+  const dir = fixture("default-only-use");
+  writeFileSync(join(dir, "lib.rs"), "mod v8;\nmod first;\n");
+  writeFileSync(join(dir, "v8.rs"), "fn prepare_stack_trace(name: &str) -> String {\n    format!(\"{name}: \")\n}\n\njs::export_default!(prepare_stack_trace);\n\nfn unnamed() {}\n");
+  writeFileSync(join(dir, "first.rs"), "fn first<T>(items: Vec<T>) -> Option<T> {\n    items.into_iter().next()\n}\n\njs::export_default!(first);\n");
+  const built = Bun.spawnSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target], { cwd: dir });
+  const warned = built.stderr.toString().split("\n").filter((line) => line.startsWith("warning:") && !/warnings? emitted/.test(line));
+  expect([built.exitCode, warned]).toEqual([0, ["warning: function `unnamed` is never used"]]);
+});
+
 // ADR 0625: of a `const` itself, its value is the default, `export
 // default "19.3.0";`, as React's ReactVersion, JS having no declaration of
 // a constant as a default; another module reads it as its default.

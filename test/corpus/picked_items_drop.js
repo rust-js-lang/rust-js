@@ -86,7 +86,7 @@ function main() {
             const value = [["j"], ["kk"], ["l"]];
             const tmp = $iter(value);
             const tmp$1 = (n) => $byteLen(n[0]) === 1;
-            const partition = $partition(tmp.toArray(), tmp$1);
+            const partition = $partition(tmp, tmp$1);
             const kept = partition[0];
             const rest = partition[1];
             try {

@@ -20,8 +20,10 @@ pub(super) struct Written {
     /// Each read of a property by a binding, `js::get(request, "url")`,
     /// which a getter may be: read as often as it's called (ADR 0672).
     pub getters: Vec<js::Span>,
-    /// Each `if` of a `continue`, alone or ending what it does.
-    pub continues: Vec<js::Span>,
+    /// Each `if` of a `continue`, alone or ending what it does: where its
+    /// condition is, and where the `continue` is, which its comment is
+    /// before (ADR 0684).
+    pub continues: Vec<(js::Span, js::Span)>,
     /// Each loop, whether as a `while`, and its label.
     pub loops: Vec<(js::Span, bool, Option<String>)>,
     /// Each `match` the program wrote whose every arm tests constants, a
@@ -60,13 +62,14 @@ impl SwitchArm {
     /// How many cases it is: a `_`'s `default`, else a case of each
     /// constant but an array's, which `typeof` says is an object: `Object |
     /// Array`'s `"object"` is one, and an array's alone none, an `if`
-    /// before the `switch` (ADR 0668).
+    /// before the `switch` (ADR 0668); nor is `null`'s, an `if` in `case
+    /// "object"` (ADR 0676).
     fn cases(&self) -> usize {
         use crate::lower::untagged::TypeofCase;
         match self.constants.is_empty() {
             true => 1,
             false => (self.constants.iter())
-                .filter(|c| !matches!(c, Constant::Kind(TypeofCase::Tested(_))))
+                .filter(|c| !matches!(c, Constant::Kind(TypeofCase::Tested(_) | TypeofCase::Inside(..))))
                 .count(),
         }
     }
@@ -181,7 +184,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .collect();
         // Where each `if` the program wrote of a `continue` tests: one alone,
         // or one that ends what it does.
-        let continues: Vec<js::Span> = (self.thir.exprs.iter())
+        let continues: Vec<(js::Span, js::Span)> = (self.thir.exprs.iter())
             .filter_map(|e| match e.kind {
                 thir::ExprKind::If { cond, then, .. } => {
                     let mut then = then;
@@ -209,7 +212,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         only = inner;
                     }
                     matches!(self.thir[only].kind, thir::ExprKind::Continue { .. })
-                        .then(|| self.js_span(self.thir[cond].span))
+                        .then(|| (self.js_span(self.thir[cond].span), self.js_span(self.thir[only].span)))
                 }
                 _ => None,
             })
@@ -283,11 +286,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 let e = &self.thir[value];
                 let thir::ExprKind::Match {
-                    ref arms, match_source, ..
+                    scrutinee,
+                    ref arms,
+                    match_source,
+                    ..
                 } = e.kind
                 else {
                     return None;
                 };
+                // What's matched is there, `classify(Some(value))`'s (ADR 0676).
+                let present = crate::lower::body_queries::given_present(self.tcx, self.thir, scrutinee).is_some();
                 if match_source != rustc_hir::MatchSource::Normal
                     || e.span.from_expansion()
                     || self.read_in_place(hir_id)
@@ -301,7 +309,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     .map(|(i, arm)| {
                         let constants = match &arm.pattern.kind {
                             thir::PatKind::Wild if i == last && arm.guard.is_none() => Some(Vec::new()),
-                            _ => (self.constants_of(&arm.pattern))
+                            _ => (self.constants_of(&arm.pattern, present))
                                 .filter(|_| arm.guard.is_none() || self.fails_to_nothing(&arm.pattern, &arms[i + 1..])),
                         }?;
                         Some(SwitchArm {
@@ -422,7 +430,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 variant_index,
                 subpatterns,
             } if crate::lower::bindings::is_untagged(self.tcx, adt_def.did())
-                && !adt_def.variant(*variant_index).fields.is_empty()
+                && crate::lower::untagged::told_by_kind(self.tcx, adt_def.variant(*variant_index))
                 && (subpatterns.iter()).all(|field| {
                     matches!(
                         field.pattern.kind,
@@ -451,9 +459,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Each constant `pattern` names, if it names constants alone: a literal,
     /// a `const` (ADR 0590), a variant of no field that JS tests as a value
     /// it's equal to, `k === "Function"` (ADR 0013), each of an or-pattern.
-    fn constants_of(&self, pattern: &thir::Pat<'tcx>) -> Option<Vec<Constant>> {
+    /// Of a value `present`, `classify(Some(value))`'s, as `untagged_case`
+    /// has it (ADR 0676).
+    fn constants_of(&self, pattern: &thir::Pat<'tcx>, present: bool) -> Option<Vec<Constant>> {
         match &pattern.kind {
-            thir::PatKind::Deref { subpattern, .. } => self.constants_of(subpattern),
+            thir::PatKind::Deref { subpattern, .. } => self.constants_of(subpattern, present),
             // Of a number, a `char` or a string, which `===` compares by its
             // value; not a `bool`, which has two, its `if`'s.
             thir::PatKind::Constant { .. } => {
@@ -474,17 +484,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 && let [some] = &subpatterns[..]
                 && !self.boxed_payload(some.pattern.ty) =>
             {
-                self.constants_of(&some.pattern)
+                self.constants_of(&some.pattern, false)
             }
             // A variant of an untagged enum, by what `typeof` says of it, its
-            // value bound or not, which is the value itself (ADR 0668); or
-            // an or-pattern of them, by what they are together, `Object |
-            // Array`'s `"object"`, as their test is.
+            // value bound or not, which is the value itself (ADR 0668), or
+            // `undefined` or `null` (ADR 0676); or an or-pattern of them,
+            // by what they are together, `Object | Array`'s `"object"`, as
+            // their test is.
             thir::PatKind::Variant { .. } | thir::PatKind::Or { .. }
                 if let Some((adt, args, variants)) = self.untagged_variants(pattern) =>
             {
                 let subject = js::Expr::var(SUBJECT);
-                let cases = self.recognition().untagged_cases(adt, args, &variants, &subject)?;
+                let cases = (self.recognition()).untagged_cases(adt, args, &variants, &subject, present)?;
                 Some(cases.into_iter().map(Constant::Kind).collect())
             }
             thir::PatKind::Variant {
@@ -494,7 +505,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 ..
             } if subpatterns.is_empty() && adt_def.variant(*variant_index).fields.is_empty() => {
                 let subject = js::Expr::var(SUBJECT);
-                let test = self.variant_test(subject.clone(), pattern.ty, *adt_def, *variant_index);
+                let test = self.variant_test(subject.clone(), pattern.ty, *adt_def, *variant_index, false);
                 match test.kind {
                     js::ExprKind::Binary(js::Op::Eq, s, value) if *s == subject => {
                         Some(vec![Constant::Variant(*value)])
@@ -503,7 +514,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
             }
             thir::PatKind::Or { pats } => {
-                let each: Option<Vec<Vec<Constant>>> = pats.iter().map(|p| self.constants_of(p)).collect();
+                let each: Option<Vec<Vec<Constant>>> = pats.iter().map(|p| self.constants_of(p, present)).collect();
                 Some(each?.concat())
             }
             _ => None,
@@ -512,7 +523,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// Where each `let … else { continue; }` the program wrote is, which MIR
     /// tests as an `if` of the `continue` in its place.
-    fn let_else_continues(&self) -> Vec<js::Span> {
+    fn let_else_continues(&self) -> Vec<(js::Span, js::Span)> {
         (self.thir.stmts.iter())
             .filter_map(|stmt| match stmt.kind {
                 thir::StmtKind::Let {
@@ -534,7 +545,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     {
                         only = inner;
                     }
-                    matches!(self.thir[only].kind, thir::ExprKind::Continue { .. }).then(|| self.js_span(span))
+                    matches!(self.thir[only].kind, thir::ExprKind::Continue { .. })
+                        .then(|| (self.js_span(span), self.js_span(self.thir[only].span)))
                 }
                 _ => None,
             })

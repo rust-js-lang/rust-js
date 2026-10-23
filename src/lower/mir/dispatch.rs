@@ -531,7 +531,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 return Ok(Value::Expr(self.thrown_residual(residual, output)));
             }
             let convert = self.tried_conversion(ty, Some(output), span)?;
-            let converted = convert.map(|conversion| conversion.of(Expr::member(residual.clone(), "_0")));
+            let converted = convert.map(|conversion| conversion.of(crate::js::result::held(residual.clone())));
             return Ok(Value::Expr(self.tried_returned(residual, ty, converted)));
         }
         // `x.into()` is the `From::from(x)` it calls, the crate's own (ADR 0052).

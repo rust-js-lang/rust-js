@@ -11,6 +11,7 @@
 mod applied;
 mod expr_walk;
 mod make;
+pub mod result;
 mod stmt_walk;
 mod walk;
 mod writes;
@@ -53,6 +54,16 @@ pub const DICTIONARY: &str = "impl";
 /// The function of a `dyn`'s dictionary that drops what it holds, `$drop`,
 /// if that has a destructor.
 pub const DICTIONARY_DROP: &str = "$drop";
+
+/// The property an enum's value says its variant in, `e.TAG` (ADR 0033),
+/// where the enum doesn't name its own, `#[rust_js::tag = ".."]`.
+pub const TAG: &str = "TAG";
+
+/// The property a tuple variant holds its field `i` in, `_0`, `_1`, as in
+/// ReScript (ADR 0033).
+pub fn positional(i: usize) -> String {
+    format!("_{i}")
+}
 
 pub struct Module {
     pub header: String,

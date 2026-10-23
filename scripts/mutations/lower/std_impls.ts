@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "untagged-undefined-loosely-null",
+    breaks: "an untagged enum's `undefined` is `==` its `null`, as an `Option`'s `None` is",
+    file: "src/lower/std_impls.rs",
+    find: "            let none = !nullish && [&a, &b]",
+    replace: "            let none = [&a, &b]",
+    tests: ["test/corpus.test.ts", "-t", "untagged_null_undefined"],
+  },
+  {
     name: "unknown-eq-refused",
     breaks: "`a == b` of two `js::Unknown`s is refused",
     file: "src/lower/std_impls.rs",
@@ -22,7 +30,7 @@ export const mutations: Mutation[] = [
     name: "untagged-unit-eq-any",
     breaks: "a variant without fields equals any value of the enum",
     file: "src/lower/std_impls.rs",
-    find: "                        let both = self.untagged_variant_test(ty, &[variant], &b);",
+    find: "                        let both = self.untagged_variant_test(ty, &[variant], &b, false);",
     replace: "                        let both = Expr::bool(true);",
     tests: ["test/lowering-structs-enums.test.ts", "-t", "variant without fields is its name"],
   },

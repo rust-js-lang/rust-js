@@ -767,6 +767,41 @@ export function fee(member, amount) {
 An `if` condition must be a `bool`. There's no truthiness: write
 `!s.is_empty()`, `n != 0`, `opt.is_some()`.
 
+An `if` statement is the one you wrote: its test as written and its
+branches in their order. A branch that returns needs no `else` after it,
+as ESLint's `no-else-return` has it, but an `else if` after an arm that
+goes on stays one chain:
+
+```rust
+pub fn describe(kind: u32, ready: bool, dev: bool) -> String {
+    let label;
+    if kind == 1 {
+        label = "element".to_string();
+    } else if kind == 2 {
+        return "client".to_string();
+    } else if dev && ready {
+        label = "<jsx>".to_string();
+    } else {
+        label = "{...}".to_string();
+    }
+    label
+}
+```
+
+```js
+export function describe(kind, ready, dev) {
+  let label;
+  if (kind === 1) {
+    label = "element";
+  } else if (kind === 2) {
+    return "client";
+  } else {
+    label = dev && ready ? "<jsx>" : "{...}";
+  }
+  return label;
+}
+```
+
 ## `switch` and `match`
 
 `match` is `switch` that can't fall through, can't forget a case, and has a
@@ -938,7 +973,6 @@ export function name(kind, tracing) {
       if (tracing) {
         return "TracingMarker";
       }
-      break;
   }
 }
 ```
@@ -1378,13 +1412,15 @@ export function describe(v) {
 `String(n)` for very large and very small numbers.
 
 A value from JavaScript whose type you don't know, what an `any` API
-returns, is a `js::Unknown`, and `js::classify` is `typeof`:
+returns, is a `js::Unknown`, or `None` where it's `undefined` or `null`,
+and `js::classify` is `typeof`, of those too:
 
 ```rust
 use js::{Kind, Unknown, classify};
 
-pub fn describe(value: &Unknown) -> String {
+pub fn describe(value: Option<&Unknown>) -> String {
     match classify(value) {
+        Kind::Undefined => "nothing".to_string(),
         Kind::String(s) => format!("text {s}"),
         Kind::Number(n) => format!("number {n}"),
         Kind::Bool(b) => format!("flag {b}"),
@@ -1402,6 +1438,8 @@ export function describe(value) {
     return `${value.length} items`;
   }
   switch (typeof value) {
+    case "undefined":
+      return "nothing";
     case "string":
       return `text ${value}`;
     case "number":

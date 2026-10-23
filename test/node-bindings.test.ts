@@ -6,7 +6,7 @@ import { beforeAll, expect, test } from "bun:test";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { runSync } from "./child";
-import { buildNode, buildReact, compiler, fixture, root, run, target } from "./support";
+import { buildNode, buildReact, cargoApp, compiler, fixture, root, run, target } from "./support";
 
 beforeAll(buildReact, 600_000);
 
@@ -714,11 +714,10 @@ test("V8's stack trace hook is saved, set and restored", () => {
 use node::{CallSite, js_error};
 
 pub mod default_prepare_stack_trace {
-    use js::JsError;
-    use node::CallSite;
+    use node::js_error::PrepareStackTrace;
 
     js::export_default! {
-        pub const DEFAULT_PREPARE_STACK_TRACE: Option<&'static dyn Fn(&JsError, &[&CallSite]) -> String> = None;
+        pub const DEFAULT_PREPARE_STACK_TRACE: Option<&'static PrepareStackTrace<String>> = None;
     }
 }
 
@@ -861,6 +860,34 @@ console.log(JSON.stringify({
   });
 });
 
+// ADR 0686: the hook's type has a name, `js_error::PrepareStackTrace<R>`,
+// as @types/node's `prepareStackTrace` has one, so React's
+// `DefaultPrepareStackTrace`, a `const` of it, is clean under clippy's
+// defaults: spelled out, its `dyn Fn` is too complex a type to clippy.
+test("the stack trace hook's type is named, clean under clippy", () => {
+  const dir = fixture("node-prepare-stack-trace-clippy");
+  cargoApp(dir, `use js::JsError;
+use node::js_error::{self, PrepareStackTrace};
+
+pub const DEFAULT_PREPARE_STACK_TRACE: Option<&'static PrepareStackTrace<String>> = None;
+
+pub fn format_owner_stack(error: &JsError) -> Option<String> {
+    let prev_prepare_stack_trace = js_error::prepare_stack_trace();
+    js_error::set_prepare_stack_trace(DEFAULT_PREPARE_STACK_TRACE);
+    let stack = error.stack();
+    js_error::set_prepare_stack_trace(prev_prepare_stack_trace);
+    stack
+}
+`, {
+    toml: `js = { package = "rust-js-builtins", path = ${JSON.stringify(join(root, "builtins"))} }
+node = { package = "rust-js-node", path = ${JSON.stringify(join(root, "node"))} }
+`,
+  });
+  const clippy = runSync(["cargo", "clippy", "--offline", "--message-format=short", "--manifest-path", join(dir, "Cargo.toml"), "--target-dir", join(dir, "target"), "--", "-D", "warnings"], dir, 300_000, { RUSTC_BOOTSTRAP: undefined });
+  const said = clippy.stderr.split("\n").filter((line) => /\b(?:warning|error)\b/.test(line));
+  expect([clippy.code, said]).toEqual([0, []]);
+});
+
 // ADRs 0657 and 0658: React's reportGlobalError as its port writes it, the
 // host's reportError or a polyfill: a const of a conditional, each branch's
 // comment before its value, as upstream's; run in Node, whose reportError
@@ -885,8 +912,8 @@ thread_local! {
         |error| {
             if js::is_defined(window) && js::is_defined(error_event::new) {
                 // Browser Polyfill
-                let message = match error.and_then(|error| js::get(error, "message")).map(js::classify) {
-                    Some(Kind::String(message)) => message.to_string(),
+                let message = match js::classify(error.and_then(|error| js::get(error, "message"))) {
+                    Kind::String(message) => message.to_string(),
                     _ => js::string(error),
                 };
                 let event = error_event::new(

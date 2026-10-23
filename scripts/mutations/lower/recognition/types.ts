@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "js-object-itself-unknown",
+    breaks: "`JsObject`, what `Kind::Object` holds, isn't a JS object, so its `Deref` to the `Unknown` it is isn't the object itself",
+    file: "src/lower/recognition/types.rs",
+    find: "        if self.is_js_object_itself(ty) {\n            return true;\n        }\n",
+    replace: "",
+    tests: ["test/js-builtins.test.ts", "-t", "keyed by what js::Kind holds"],
+  },
+  {
     name: "js-type-of-struct-unrecognized",
     breaks: "`pub struct Element(PhantomData<JsObject>)` is a Rust struct to copy, not a JS object, now `JsObject` is a struct",
     file: "src/lower/recognition/types.rs",

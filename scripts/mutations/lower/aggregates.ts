@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "untagged-null-made-a-string",
+    breaks: "an untagged enum's `#[rust_js::null]` variant is made its name's string",
+    file: "src/lower/aggregates.rs",
+    find: "            && let Some(value) = super::untagged::unit_value(self.tcx, variant)\n",
+    replace: "            && let Some(value) = super::untagged::unit_value(self.tcx, variant).map(|_| Expr::str(bindings::variant_name(self.tcx, variant)))\n",
+    tests: ["test/corpus.test.ts", "-t", "untagged_null_undefined"],
+  },
+  {
     name: "replaced-node-default-made",
     breaks: "an update's base makes the default of the children it gives, `C::default()`, which needs a dictionary",
     file: "src/lower/aggregates.rs",
@@ -78,8 +86,8 @@ export const mutations: Mutation[] = [
     name: "adt-value-fmt-ok-thrown",
     breaks: "a `fmt::Result`'s `Ok` from MIR is thrown as an `Err` is",
     file: "src/lower/aggregates.rs",
-    find: "                \"Ok\" => Expr::undefined(),\n",
-    replace: "                \"Ok\" if false => Expr::undefined(),\n",
+    find: "                    true => Expr::undefined(),\n",
+    replace: "                    true if false => Expr::undefined(),\n",
     tests: ["test/corpus.test.ts","-t","write_to_string"],
   },
   {

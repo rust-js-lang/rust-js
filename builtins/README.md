@@ -33,8 +33,9 @@ spawn(Box::new(async move {                            // runs, unawaited
   A Rust value's JSON is serde's ([ADR 0077](../docs/decisions/0077-serde-json.md)).
 - `Unknown` is a JS value of any shape, as TypeScript's `unknown` is
   ([ADR 0225](../docs/decisions/0225-unknown-values.md)): what `json::parse(text)`
-  gives, or `webapi`'s `r.json()`. `classify(value)` tells what it is,
-  a `Kind` to `match`, by `typeof`; `get(value, key)` and `set(value, key, to)`
+  gives, or `webapi`'s `r.json()`. `classify(value)` tells what an
+  `Option<&Unknown>` is, a `Kind` to `match`, by `typeof`, `undefined` and
+  `null` too ([ADR 0676](../docs/decisions/0676-kind-tells-undefined-and-null.md)); `get(value, key)` and `set(value, key, to)`
   are `value[key]`; `object::keys(value)` is `Object.keys`, and
   `object::has_own_property.call(value, key)` is
   `Object.prototype.hasOwnProperty.call(value, key)`; `object::get_prototype_of(value)` is

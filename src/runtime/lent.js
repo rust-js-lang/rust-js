@@ -1,7 +1,10 @@
-
 // A JS iterator lent as a `&mut` (ADR 0071): it steps `it`, and what takes
 // from it and stops early, as `take` or a loop that breaks does, closes
-// this, not `it`, which its lender goes on stepping.
+// this, not `it`, which its lender goes on stepping. Its `nth` is `it`'s,
+// as std's `&mut I` gives it, the crate's own where `$iterator` was given
+// it; its `fold`, std's, of `next` (#162).
 function $lent(it) {
-  return new $Steps(() => it.next());
+  const lent = new $Steps(() => it.next());
+  if (it.nth !== undefined) lent.nth = (k) => it.nth(k);
+  return lent;
 }

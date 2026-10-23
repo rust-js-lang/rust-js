@@ -199,12 +199,15 @@ type Case = (Values, Vec<Stmt>, bool, js::Span);
 /// What an arm's case compares: its values; and of a `switch (typeof
 /// value)` (ADR 0668), the tests of its variants `typeof` doesn't tell,
 /// `Array.isArray(value)`, and those its variants' tests leave out, which
-/// an arm of an array tests before the `switch`.
+/// an arm of an array tests before the `switch`; and the tests of its
+/// variants `typeof` says are another case's, `null`'s `value === null`
+/// of `"object"`, an `if` in that case (ADR 0676).
 #[derive(Default)]
 struct Values {
     values: Vec<Expr>,
     tested: Vec<Expr>,
     excluding: Vec<Expr>,
+    inside: Vec<(&'static str, Expr)>,
 }
 
 /// The statements of the chain at `stmts[at]`, of the `match` an arm's
@@ -243,8 +246,10 @@ fn switch_at(
         cases[only].1.extend(after.iter().cloned());
         taken = stmts.len() - at;
     }
-    // Each arm of an array, which `typeof` says is an object, an `if` of
-    // its test before the `switch`, and so what the others' leave out.
+    // Each arm of `null`, which `typeof` says is an object, an `if` of its
+    // test in `case "object"`; and each of an array, an `if` of its test
+    // before the `switch`, and so what the others' leave out.
+    nulls_inside(&mut cases)?;
     let before = arrays_before(&mut cases)?;
     // A `break` of no label in a case, of the loop around it, which in a
     // `switch` would leave the `switch`: of the loop's label.
@@ -281,6 +286,71 @@ fn switch_at(
         }
     });
     Some((written, taken))
+}
+
+/// Of the cases of a `switch (typeof value)` (ADR 0668), each arm of
+/// `null`, which `typeof` says is an object (ADR 0676). An arm that
+/// takes the objects too, `Null | Object | Array`, is its `case "object"`
+/// already, as its variants' owner tells of them together
+/// (`untagged::union_parts`); of one alone, an `if` of its test first in the case of the arm that
+/// takes them, `case "object": if (value === null) { .. }`, as React
+/// writes it. What that case's test leaves out is then told. Of one alone
+/// where no arm takes the objects, an `if` before the `switch`, as an
+/// array's is; of `Undefined | Null`, what's `== null`, an `if` of it
+/// before the `switch`, as an `Option`'s `None` is tested (ADR 0030); of
+/// one of `null` and another case, `Null | String`, none.
+fn nulls_inside(cases: &mut Vec<Case>) -> Option<()> {
+    // Whether `values` has the case `at`, `"object"`.
+    let takes = |values: &[Expr], at: &str| (values.iter()).any(|v| matches!(&v.kind, ExprKind::Str(s) if s == at));
+    let mut nullish = Vec::new();
+    for case in cases.iter_mut() {
+        let values = &mut case.0;
+        let undefined = matches!(&values.values[..], [v] if matches!(&v.kind, ExprKind::Str(s) if s == "undefined"));
+        if let (true, true, [(_, null)]) = (undefined && values.tested.is_empty(), !case.2, &values.inside[..])
+            && let ExprKind::Binary(Op::Eq, subject, _) = &null.kind
+        {
+            let none = Expr::bin(Op::LooseEq, (**subject).clone(), Expr::null());
+            values.tested.push(none.or_at(null.span));
+            nullish.push(null.clone());
+            values.values.clear();
+            values.inside.clear();
+        }
+    }
+    for case in cases.iter_mut() {
+        case.0.excluding.retain(|e| !nullish.iter().any(|t| alike(t, e)));
+    }
+    let mut i = 0;
+    while i < cases.len() {
+        if cases[i].0.inside.is_empty() {
+            i += 1;
+            continue;
+        }
+        let only = cases[i].0.values.is_empty() && cases[i].0.tested.is_empty() && !cases[i].2;
+        let ([(at, test)], true) = (&cases[i].0.inside[..], only) else {
+            return None;
+        };
+        let (at, test) = (*at, test.clone());
+        // No arm takes the objects: an `if` before the `switch`, as an
+        // array's is.
+        let Some(taker) = (cases.iter()).position(|(values, ..)| takes(&values.values, at)) else {
+            cases[i].0.inside.clear();
+            cases[i].0.tested.push(test);
+            i += 1;
+            continue;
+        };
+        let (_, body, _, span) = cases.remove(i);
+        let taker = if taker > i { taker - 1 } else { taker };
+        let (values, rest, ..) = &mut cases[taker];
+        values.excluding.retain(|e| !alike(&test, e));
+        let taken = std::mem::take(rest);
+        *rest = match body.last().is_some_and(js::ends) {
+            true => std::iter::once(StmtKind::If(test, body, None).at(span))
+                .chain(taken)
+                .collect(),
+            false => vec![StmtKind::If(test, body, Some(taken)).at(span)],
+        };
+    }
+    Some(())
 }
 
 /// Of the cases of a `switch (typeof value)` (ADR 0668), each arm of
@@ -474,6 +544,9 @@ fn untested(arm: &SwitchArm, discriminant: &Option<Expr>) -> Option<Values> {
                         (untested.excluding).extend(excluding.iter().map(|e| of_subject(e, subject)));
                     }
                     Constant::Kind(TypeofCase::Tested(test)) => untested.tested.push(of_subject(test, subject)),
+                    Constant::Kind(TypeofCase::Inside(case, test)) => {
+                        untested.inside.push((case, of_subject(test, subject)));
+                    }
                     _ => return None,
                 }
             }
@@ -511,13 +584,16 @@ fn kinds_of(tests: &[&Expr], constants: &[Constant], discriminant: &mut Option<E
     for &test in tests {
         let mut ands = Vec::new();
         alternatives(test, Op::And, &mut ands);
-        // What it tests: of `typeof value === "string"`, `value`; of
-        // `Array.isArray(value)`, what's in it the variant's test is of.
+        // What it tests: of `typeof value === "string"`, `value`, and of
+        // `value === undefined`, which is `typeof value === "undefined"`
+        // (ADR 0676), too; of `Array.isArray(value)`, what's in it the
+        // variant's test is of.
         let typeof_of = |e: &Expr| match &e.kind {
             ExprKind::Binary(Op::Eq, a, b) => match (&a.kind, &b.kind) {
                 (ExprKind::Unary(UnaryOp::Typeof, subject), ExprKind::Str(case)) => {
                     Some((subject.clone(), case.clone()))
                 }
+                (_, ExprKind::Undefined) => Some((a.clone(), "undefined".to_string())),
                 _ => None,
             },
             _ => None,
@@ -530,7 +606,7 @@ fn kinds_of(tests: &[&Expr], constants: &[Constant], discriminant: &mut Option<E
                         .all(|(and, e)| alike(and, &Expr::unary(UnaryOp::Not, of_subject(e, &subject))))
                     && compared(discriminant, &Expr::unary(UnaryOp::Typeof, (*subject).clone()))
             }),
-            TypeofCase::Tested(of) => {
+            TypeofCase::Tested(of) | TypeofCase::Inside(_, of) => {
                 let mut within = Vec::new();
                 test.clone().each_mut(&mut |e| within.push(e.clone()));
                 let subject = match &*discriminant {
@@ -548,7 +624,7 @@ fn kinds_of(tests: &[&Expr], constants: &[Constant], discriminant: &mut Option<E
             }
         })?;
         match left.remove(at) {
-            (k, TypeofCase::Typeof(_, excluding)) => {
+            (k, TypeofCase::Typeof(case, excluding)) => {
                 let Some(Expr {
                     kind: ExprKind::Unary(_, subject),
                     ..
@@ -559,10 +635,13 @@ fn kinds_of(tests: &[&Expr], constants: &[Constant], discriminant: &mut Option<E
                 let ExprKind::Binary(_, _, value) = &ands[0].kind else {
                     unreachable!("a `typeof` test")
                 };
-                values.push((k, (**value).clone()));
+                // The case's word, where the test's written: `undefined`'s
+                // `"undefined"`.
+                values.push((k, Expr::str(*case).or_at(value.span)));
                 kinds.excluding.extend(excluding.iter().map(|e| of_subject(e, subject)));
             }
             (_, TypeofCase::Tested(_)) => kinds.tested.push(test.clone()),
+            (_, TypeofCase::Inside(case, _)) => kinds.inside.push((case, test.clone())),
         }
     }
     values.sort_by_key(|&(k, _)| k);

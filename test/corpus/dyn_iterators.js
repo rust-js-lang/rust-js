@@ -43,11 +43,7 @@ function doubled(it) {
 function main() {
   const v = [1, 2, 3, 4, 5, 6];
   console.log(`[${evens(v).toArray().join(", ")}]`);
-  const value = $max(
-    evens(v)
-      .map((n) => (n * 10) >>> 0)
-      .toArray(),
-  );
+  const value = $max(evens(v).map((n) => (n * 10) >>> 0));
   console.log(`${value == null ? "None" : `Some(${value})`}`);
   console.log(`[${numbers(true).toArray().join(", ")}]`);
   console.log(`${numbers(false).reduce((a, b) => (a + b) >>> 0, 0)}`);

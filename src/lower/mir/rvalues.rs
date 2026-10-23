@@ -188,7 +188,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 {
                     let discriminant = self.take_operands(state, &[l], out)?.remove(0);
                     let enum_ty = match &discriminant {
-                        Value::Discriminant(_, enum_ty) => *enum_ty,
+                        Value::Discriminant(_, enum_ty, _) => *enum_ty,
                         _ => ty,
                     };
                     let test = self.switch_test(&discriminant, enum_ty, variant.to_bits_unchecked(), span)?;
@@ -359,10 +359,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         }
                         if self.recognition().is_dyn_iter(*to) {
                             let iterator = from.builtin_deref(true).unwrap_or(from);
-                            return Ok(Value::Expr(match self.knows_its_back(*to) {
+                            let it = match self.knows_its_back(*to) {
                                 true => self.as_double_ended(value, iterator, span)?,
                                 false => self.as_js_iterator(value, iterator, span)?,
-                            }));
+                            };
+                            return Ok(Value::Expr(crate::lower::iterators::behind_a_dyn(it)));
                         }
                         // A `&dyn Debug` is the string it shows (ADR 0060), made
                         // where it's read: by `{:#?}`, as that shows it.
@@ -427,7 +428,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // An enum's discriminant, `ordering as i32`'s: the enum made a
                 // number, as `cast` makes it.
                 let v = match self.mir_operand(state, operand, out)? {
-                    Value::Discriminant(value, enum_ty) => {
+                    Value::Discriminant(value, enum_ty, _) => {
                         return Ok(Value::Expr(self.cast(value, enum_ty, *to, span)?));
                     }
                     v => self.value_expr(v, Span::default())?,
@@ -470,8 +471,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             Rvalue::Discriminant(place) => {
                 let ty = place.ty(decls, tcx).ty;
+                let present = place.projection.is_empty() && state.options.present.contains(&place.local);
                 let subject = self.mir_place(state, *place, span, out)?;
-                return Ok(Value::Discriminant(subject, ty));
+                return Ok(Value::Discriminant(subject, ty, present));
             }
             Rvalue::Aggregate(kind, operands) => return self.mir_aggregate(state, kind, operands, span, out),
             // `[x; N]` (ADR 0107); an item that's a constant is a named one's,

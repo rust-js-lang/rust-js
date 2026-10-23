@@ -2,7 +2,9 @@
 
 Status: Accepted. Amended by
 [0653](0653-a-js-function-value-is-a-dyn-fn-of-its-signature.md): `Error.captureStackTrace`
-is bound, its `Function` a `&dyn Fn()`. Extends [0272](0272-node.md) and
+is bound, its `Function` a `&dyn Fn()`; and by
+[0686](0686-the-stack-trace-hooks-type-is-named.md): the hook's type is
+named, `js_error::PrepareStackTrace<R>`. Extends [0272](0272-node.md) and
 [0351](0351-node-coverage.md), whose measure counts `Error`'s members
 too. Amends [0443](0443-a-value-a-caller-may-leave-out-is-an-option.md):
 a setter's `None` is no optional argument.
@@ -130,3 +132,12 @@ undefined` was refused, "the `#[link_name]` with this signature".
 - `node/coverage.txt`: `Error#prepareStackTrace` and
   `Error#stackTraceLimit` bound.
 - Mutation `setter-value-optional`.
+
+## Amendment: the hook's type is named
+
+The getter and setter spelled the hook's type out, and so did React's
+`DefaultPrepareStackTrace`, a `const` of it, which clippy refused as too
+complex a type. The node crate names it, `js_error::PrepareStackTrace<R>`,
+`dyn Fn(&JsError, &[&CallSite]) -> R`, which the getter and setter take
+and give, and a port's `const` is `Option<&'static
+PrepareStackTrace<String>>` (ADR 0686).

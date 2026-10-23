@@ -290,6 +290,41 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         (self.array_source(source) == Some(false) || self.range_kind(source).is_some()).then_some(None)
     }
 
+    /// The `Iterator` method `name` the impl of the crate's iterator `ty`
+    /// writes, where it writes one.
+    pub(in crate::lower) fn own_iterator_method(&self, ty: Ty<'tcx>, name: &str) -> Option<DefId> {
+        if !self.is_user_iterator(ty) {
+            return None;
+        }
+        let iterator = std_item(self.tcx, StdItem::Iterator);
+        let tr = ty::TraitRef::new(self.tcx, iterator, [ty.peel_refs()]);
+        let imp = self.user_impl(tr)?;
+        let method = trait_method(self.tcx, iterator, name);
+        self.tcx.impl_item_implementor_ids(imp).get(&method).copied()
+    }
+
+    /// Whether std's `fold` of a `ty`, an iterator, reaches the `fold` the
+    /// impl of a crate's iterator writes (#162): of that iterator, and of
+    /// each adapter whose `fold` is its source's, its sources'. Not through
+    /// a `&mut` or a `dyn`, whose `fold` is std's, of `next`.
+    pub(in crate::lower) fn folds_its_own(&self, ty: Ty<'tcx>) -> bool {
+        let ty = self.reveal(ty);
+        if self.is_user_iterator(ty) {
+            return !ty.is_ref() && self.own_iterator_method(ty, "fold").is_some();
+        }
+        let ty::Adt(adt, args) = ty.kind() else { return false };
+        let path = std_path(self.tcx, adt.did());
+        let sources = match path.strip_prefix("std::iter::") {
+            Some("Chain") => 2,
+            Some(
+                "Map" | "Filter" | "FilterMap" | "Enumerate" | "Inspect" | "Skip" | "SkipWhile" | "Copied" | "Cloned"
+                | "Fuse" | "Peekable" | "FlatMap" | "Flatten",
+            ) => 1,
+            _ => 0,
+        };
+        args.types().take(sources).any(|source| self.folds_its_own(source))
+    }
+
     /// What an iterator of type `iterator` gives, its `Item`, normalized:
     /// the one place that works it out.
     pub(crate) fn iterator_item(&self, iterator: Ty<'tcx>) -> Option<Ty<'tcx>> {

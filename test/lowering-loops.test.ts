@@ -1406,3 +1406,42 @@ pub fn rest_mut(v: Vec<Vec<u32>>) -> usize {
   const lib = await import(join(dir, "lib.js"));
   expect([lib.plainMut([[1], [2, 3]]), lib.restMut([[1], [2, 3], [4]])]).toEqual([5, 5]);
 });
+
+// React's describeObjectForErrorMessage declares `let substr;` in each
+// loop's body, where its `if` chain sets it: a `let` the program declares
+// in a loop's body, set on each way through the block MIR makes of the
+// chain before it's read, is in that body, not hoisted out of the loop.
+test("a let a loop's body declares, set in a chain's block, is in the body", async () => {
+  const dir = fixture("loop-body-lets");
+  writeFileSync(join(dir, "lib.rs"), `use js::{Kind, Unknown};
+
+pub fn joined(items: &[Option<&Unknown>], expanded: Option<&str>) -> (String, Option<u32>) {
+    let mut str = "[".to_string();
+    let mut start = None;
+    for (i, &value) in items.iter().enumerate() {
+        if i > 0 {
+            str += ", ";
+        }
+        let substr = if let Some(object) = value
+            && let Kind::Object(_) | Kind::Array(_) = js::classify(object)
+        {
+            "{...}".to_string()
+        } else {
+            js::string(value)
+        };
+        if expanded == Some(i.to_string().as_str()) {
+            start = Some(js::string::length(&str));
+        }
+        str += &substr;
+    }
+    str += "]";
+    (str, start)
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('    if (i > 0) {\n      str += ", ";\n    }\n    let substr;\n    if (\n');
+  expect(js).not.toContain("  let substr;\n  for");
+  const lib = await import(join(dir, "lib.js"));
+  expect(lib.joined([1, { a: 1 }, "x", undefined], "2")).toEqual(["[1, {...}, x, undefined]", 11]);
+});

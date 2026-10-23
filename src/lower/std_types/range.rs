@@ -244,44 +244,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .collect()
     }
 
-    /// A range's items: `$range(r.start, r.end)`, `$range(a, b + 1)` of
-    /// `a..=b`, and `$lazyRange(a)` of `a..`, a JS iterator that never ends.
-    pub(in crate::lower) fn range_items(
-        &mut self,
-        range: Expr,
-        ty: Ty<'tcx>,
-        span: Span,
-        out: &mut Vec<Stmt>,
-    ) -> R<Expr> {
-        let kind = self.range_kind(ty).expect("a range");
-        let index = self.range_index(ty);
-        if index.is_some_and(|index| index.is_char()) && matches!(kind, RangeKind::Exclusive | RangeKind::Inclusive) {
-            let mut list = self.range_parts(range, kind, out);
-            if kind == RangeKind::Inclusive {
-                list.push(Expr::bool(true));
-            }
-            return Ok(Expr::call(Expr::helper("$charRange"), list));
-        }
-        let Some(num) = index.and_then(Num::of) else {
-            return Err(self.unsupported(span, &format!("iterating over `{ty}`")));
-        };
-        let parts = self.range_parts(range, kind, out);
-        Ok(match (kind, parts.as_slice()) {
-            (RangeKind::Exclusive | RangeKind::Inclusive, [start, end]) => {
-                // `..=6` is `..7`.
-                let end = match end.as_int() {
-                    Some(n) if kind == RangeKind::Inclusive && !num.big() => Expr::int(n + 1),
-                    _ if kind == RangeKind::Inclusive => Expr::bin(Op::Add, end.clone(), num.literal(1)),
-                    _ => end.clone(),
-                };
-                let name = if num.big() { "$bigRange" } else { "$range" };
-                Expr::call(Expr::helper(name), vec![start.clone(), end])
-            }
-            (RangeKind::From, [start]) => Expr::call(Expr::helper(LAZY_RANGE), vec![start.clone()]),
-            _ => return Err(self.unsupported(span, &format!("iterating over `{ty}`"))),
-        })
-    }
-
     /// `{:?}` of a range: its bounds', around its dots, `1..4` or `..=4`.
     pub(in crate::lower) fn range_debug(&mut self, range: Expr, ty: Ty<'tcx>, span: Span, pretty: &Pretty) -> R<Expr> {
         let kind = self.range_kind(ty).expect("a range");

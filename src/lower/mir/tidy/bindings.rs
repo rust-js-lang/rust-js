@@ -965,7 +965,7 @@ pub(super) fn sunk_lets(stmts: &mut Vec<Stmt>) {
         if alone
             && let StmtKind::ForOf { body, .. } | StmtKind::For { body, .. } | StmtKind::While { body, .. } =
                 &mut stmts[first].kind
-            && assigned_first(body, &name)
+            && assigned_first(body, &name, &[])
             && !looped_reads(&stmts[first], &name)
         {
             let (StmtKind::ForOf { body, .. } | StmtKind::For { body, .. } | StmtKind::While { body, .. }) =
@@ -989,17 +989,19 @@ pub(super) fn sunk_lets(stmts: &mut Vec<Stmt>) {
 
 /// Whether `stmts` assign `name` before anything reads it, each way through
 /// them that names it: first `name = e`, or a branch of an `if` that does
-/// so, which is all that names it; or an `if` each of whose branches does
-/// so or leaves the turn first, `let y = match x { 0 => continue, .. }`'s;
-/// or a loop or a labeled block that is all that names it, whose body does
-/// so.
-pub(super) fn assigned_first(stmts: &[Stmt], name: &str) -> bool {
+/// so, which is all that names it; or a loop or a labeled block that is all
+/// that names it, whose body does so; or, of what's read after too, an
+/// `if` or a labeled block each way on through which does so, or leaves the
+/// turn first, `let y = match x { 0 => continue, .. }`'s (`assigned_on`).
+/// `past`, of each block around, whether its `break` goes where nothing
+/// reads it unassigned.
+pub(super) fn assigned_first(stmts: &[Stmt], name: &str, past: &[(String, bool)]) -> bool {
     let names = |s: &Stmt| js::mentions_in(std::slice::from_ref(s), name) > 0;
     let Some(at) = stmts.iter().position(names) else {
         return false;
     };
     let alone = !stmts[at + 1..].iter().any(names);
-    let assigned = |stmts: &[Stmt]| !stmts.iter().any(names) || assigned_first(stmts, name);
+    let assigned = |stmts: &[Stmt]| !stmts.iter().any(names) || assigned_first(stmts, name, past);
     match &stmts[at].kind {
         StmtKind::Assign(target, value) => {
             matches!(&target.kind, ExprKind::Var(v) if v == name) && !value.mentions_var(name)
@@ -1007,37 +1009,91 @@ pub(super) fn assigned_first(stmts: &[Stmt], name: &str) -> bool {
         StmtKind::If(test, then, otherwise) => {
             !test.mentions_var(name)
                 && (alone && assigned(then) && otherwise.as_deref().is_none_or(assigned)
-                    || assigned_on(then, name) && otherwise.as_deref().is_some_and(|o| assigned_on(o, name)))
+                    || assigned_on(&stmts[at..], name, false, past))
         }
         // A loop inside, all that names it, whose body assigns it first each
         // turn: nothing reads it but there.
         StmtKind::ForOf { body, .. } | StmtKind::For { body, .. } | StmtKind::While { body, .. } => {
-            alone && !looped_reads(&stmts[at], name) && assigned_first(body, name)
+            alone && !looped_reads(&stmts[at], name) && assigned_first(body, name, past)
         }
-        // A labeled block, all that names it, that does so.
-        StmtKind::Labeled(_, body) => alone && assigned_first(body, name),
+        // A labeled block, all that names it, that does so, its `break`
+        // going where nothing reads it; or one each of whose ways out does,
+        // a `let`'s value MIR made in it, `l: { if (a) { x = 1; break l; } x
+        // = 2; } f(x)`.
+        StmtKind::Labeled(label, body) => {
+            alone && assigned_first(body, name, &within(past, label, true))
+                || assigned_on(&stmts[at..], name, false, past)
+        }
         _ => false,
     }
 }
 
+/// `past` and the block `label`, whose `break` goes where `ok` says.
+fn within(past: &[(String, bool)], label: &str, ok: bool) -> Vec<(String, bool)> {
+    past.iter().cloned().chain([(label.to_string(), ok)]).collect()
+}
+
 /// Whether each way through `stmts` that goes on past them assigns `name`
-/// before anything reads it: one that leaves the turn first, by `continue`,
-/// `return`, `throw` or the loop's own `break`, doesn't go on. A labeled
-/// `break` may go on, to the end of a block in the turn.
-pub(super) fn assigned_on(stmts: &[Stmt], name: &str) -> bool {
+/// before anything reads it, `after` whether a way that names nothing to
+/// their end does so by what follows: one that leaves the turn first, by
+/// `continue`, `return`, `throw` or the loop's own `break`, doesn't go on;
+/// one that `break`s a block or a loop inside the turn goes where `past`
+/// says, by its label, `""` the innermost loop's (`within`).
+pub(super) fn assigned_on(stmts: &[Stmt], name: &str, after: bool, past: &[(String, bool)]) -> bool {
     let names = |s: &Stmt| js::mentions_in(std::slice::from_ref(s), name) > 0;
-    for stmt in stmts {
+    // Where a `break` of `label` goes is fine: one of none here leaves the turn.
+    let broken_ok = |label: &str| past.iter().rev().find(|(l, _)| l == label).is_none_or(|(_, ok)| *ok);
+    for (k, stmt) in stmts.iter().enumerate() {
         if names(stmt) {
-            return assigned_first(std::slice::from_ref(stmt), name);
+            let on = || assigned_on(&stmts[k + 1..], name, after, past);
+            return match &stmt.kind {
+                StmtKind::Assign(target, value) => {
+                    matches!(&target.kind, ExprKind::Var(v) if v == name) && !value.mentions_var(name)
+                }
+                StmtKind::If(test, then, otherwise) => {
+                    let on = on();
+                    !test.mentions_var(name)
+                        && assigned_on(then, name, on, past)
+                        && assigned_on(otherwise.as_deref().unwrap_or_default(), name, on, past)
+                }
+                StmtKind::Labeled(label, body) => {
+                    let on = on();
+                    assigned_on(body, name, on, &within(past, label, on))
+                }
+                // A loop it leaves only by its `break`s, each of which goes on
+                // set, or to what sets it: its end goes round again.
+                StmtKind::While { cond, body, label } if matches!(cond.kind, ExprKind::Bool(true)) => {
+                    let on = on();
+                    let inner = within(past, "", on);
+                    let inner = match label {
+                        Some(label) => within(&inner, label, on),
+                        None => inner,
+                    };
+                    assigned_on(body, name, true, &inner)
+                }
+                _ => false,
+            };
         }
-        if matches!(
-            stmt.kind,
-            StmtKind::Continue(_) | StmtKind::Return(_) | StmtKind::Throw(_) | StmtKind::Break(None)
-        ) {
-            return true;
+        match &stmt.kind {
+            StmtKind::Continue(_) | StmtKind::Return(_) | StmtKind::Throw(_) => return true,
+            StmtKind::Break(label) => return broken_ok(label.as_deref().unwrap_or_default()),
+            _ => {}
+        }
+        // What it names nothing in may `break` a block or a loop it's in,
+        // unset.
+        let one = std::slice::from_ref(stmt);
+        let innermost = past.iter().rposition(|(l, _)| l.is_empty());
+        let unset = past.iter().enumerate().any(|(i, (label, ok))| {
+            !ok && match label.as_str() {
+                "" => Some(i) == innermost && js::breaks(one, None),
+                label => js::names_break(one, label),
+            }
+        });
+        if unset {
+            return false;
         }
     }
-    false
+    after
 }
 
 /// `let x; .. x = e;` is `.. let x = e;`, where nothing between names `x`,

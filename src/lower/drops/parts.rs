@@ -274,7 +274,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         }
                         let test = match adt.variants().len() {
                             1 => Expr::bool(true),
-                            _ => self.variant_test(value.clone(), ty, *adt, adt.variant_index_with_id(variant.def_id)),
+                            _ => self.variant_test(
+                                value.clone(),
+                                ty,
+                                *adt,
+                                adt.variant_index_with_id(variant.def_id),
+                                false,
+                            ),
                         };
                         out.push(StmtKind::If(test, fields, None).at(js_span));
                     }

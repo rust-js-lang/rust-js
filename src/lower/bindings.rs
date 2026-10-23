@@ -711,7 +711,7 @@ pub(super) fn given_bool(tcx: TyCtxt<'_>, def_id: DefId) -> Option<bool> {
 /// one it names, `#[rust_js::tag = "status"]`, a discriminated union's,
 /// each variant an object of it, its fieldless ones too (ADR 0284).
 pub(super) fn tag_key(tcx: TyCtxt<'_>, adt: DefId) -> String {
-    declared_tag(tcx, adt).unwrap_or_else(|| "TAG".to_string())
+    declared_tag(tcx, adt).unwrap_or_else(|| js::TAG.to_string())
 }
 
 /// An enum's `#[rust_js::tag = ".."]`, if it has one.
@@ -836,6 +836,26 @@ pub(super) fn takes_rest(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
 pub(super) fn is_otherwise(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
     let path = [Symbol::intern("rust_js"), Symbol::intern("otherwise")];
     tcx.get_attrs_by_path(def_id, &path).next().is_some()
+}
+
+/// What JS value an untagged enum's variant without fields is, where it's
+/// none of a string: `null`, `#[rust_js::null]`, or `undefined`,
+/// `#[rust_js::undefined]`, `js::Kind`'s `Null` and `Undefined` (ADR 0676).
+#[derive(Clone, Copy, PartialEq, Debug)]
+pub(super) enum Nullish {
+    Null,
+    Undefined,
+}
+
+/// `def_id`'s `#[rust_js::null]` or `#[rust_js::undefined]`, if it has one.
+pub(super) fn given_nullish(tcx: TyCtxt<'_>, def_id: DefId) -> Option<Nullish> {
+    let marked = |name: &str| {
+        let path = [Symbol::intern("rust_js"), Symbol::intern(name)];
+        tcx.get_attrs_by_path(def_id, &path).next().is_some()
+    };
+    [("null", Nullish::Null), ("undefined", Nullish::Undefined)]
+        .into_iter()
+        .find_map(|(name, nullish)| marked(name).then_some(nullish))
 }
 
 /// A JS object type's test, `#[rust_js::test = "react#isValidElement"]`:

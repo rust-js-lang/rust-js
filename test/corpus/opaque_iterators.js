@@ -32,7 +32,7 @@ function main() {
   console.log(
     `${find == null ? "None" : `Some(${find})`} ${value$1 == null ? "None" : `Some(${value$1})`}`,
   );
-  const max = $max(tens(v).toArray());
+  const max = $max(tens(v));
   console.log(
     `${max == null ? "None" : `Some(${max})`} ${tens(v).reduce((n) => n + 1, 0)} ${((value) => (value == null ? "None" : `Some(${value})`))(tens(v).toArray().at(-1))}`,
   );

@@ -235,7 +235,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     (rest.iter().enumerate().rev()).fold(
                         Expr::int((variants.len() - 1) as i128),
                         |others, (i, &(v, _))| {
-                            Expr::cond(cx.variant_test(x.clone(), ty, *adt, v), Expr::int(i as i128), others)
+                            Expr::cond(
+                                cx.variant_test(x.clone(), ty, *adt, v, false),
+                                Expr::int(i as i128),
+                                others,
+                            )
                         },
                     )
                 };
@@ -270,7 +274,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             .expect("a field"),
                         false => Expr::call(Expr::helper("$thenCmp"), orders),
                     };
-                    same = Expr::cond(self.variant_test(a.clone(), ty, *adt, v), fields, same);
+                    same = Expr::cond(self.variant_test(a.clone(), ty, *adt, v, false), fields, same);
                 }
                 Ok(Expr::bin(Op::Or, order, same))
             }

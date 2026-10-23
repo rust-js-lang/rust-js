@@ -40,7 +40,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         for (local, value) in std::mem::take(&mut state.pending) {
             // A discriminant, which only a switch reads, of what reads the
             // same anywhere: kept for it.
-            if let Value::Discriminant(subject, _) = &value
+            if let Value::Discriminant(subject, ..) = &value
                 && subject.reads_same()
             {
                 kept.push((local, value));

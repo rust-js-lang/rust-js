@@ -1,6 +1,6 @@
 // An iterator that gives `None` and then more, the crate's own or `from_fn`'s:
 // each std adapter over it passes that on, as std's do, where JS's iterator
-// helpers stay ended; `fuse` ends it (#161).
+// helpers stay ended; `fuse` ends it (#161), as `flat_map` does its source.
 struct Flaky {
     n: u32,
 }
@@ -57,6 +57,7 @@ fn main() {
             Some(*s)
         }))
     );
+    println!("flat_map {:?}", twice(f().flat_map(|x| 0..x % 3)));
     println!("fuse {:?}", twice(f().fuse()));
     println!("peekable {:?}", twice(f().peekable()));
     let mut n = 0;

@@ -31,8 +31,8 @@ function peeked(p, PPeek) {
   return PPeek.peek(p);
 }
 
-function helperTaking(_u, dropU) {
-  dropU?.(_u);
+function helperTaking(u, dropU) {
+  dropU?.(u);
 }
 
 const $wrapPass = new WeakMap();

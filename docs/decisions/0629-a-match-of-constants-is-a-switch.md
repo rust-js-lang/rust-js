@@ -161,3 +161,23 @@ loop: for (const c of s) {
 - Mutations in `scripts/mutations/lower/mir/hints.ts`,
   `scripts/mutations/lower/mir/tidy/switches.ts` and
   `scripts/mutations/to_oxc/statements.ts`.
+
+## Amendment: a `break` only where a case goes on to another
+
+**A case ends in `break;` only where it goes on and a case follows it**:
+the last of a `switch`'s, which JS falls out of, has none, as React's
+`describeElementType` ends `case REACT_VIEW_TRANSITION_TYPE: if
+(enableViewTransition) { return 'ViewTransition'; } }`; and one that
+never goes on has none, of a `try` too, each of whose arms leaves, `try
+{ return ..; } catch { return ''; }` (`js::ends`, which knew no `try`).
+Case N: a `break` there does nothing.
+
+- Every `switch`'s last case loses its `break;`: four corpus cases, two
+  snapshots, a guide page and the tests that held one. `catch_unwind_resumed`,
+  whose `else` ended in a `try` that rethrows, now reads its guard first,
+  `if (result.TAG === "Err") { .. }`, then the drops, as `js::ends` says
+  that `try` never goes on. `docs/readability.txt` counts seven lines
+  fewer, which moves the renames' share up a tenth: no more of them.
+- `test/lowering-switch-ends.test.ts`, "a case needs no break where it
+  leaves or it's the last"; mutations `last-case-broken` and
+  `tried-case-broken`.

@@ -143,7 +143,7 @@ export const mutations: Mutation[] = [
     "name": "mir-enum-cast-refused",
     "breaks": "`ordering as i32` from MIR is refused, its discriminant read as a value",
     "file": "src/lower/mir/rvalues.rs",
-    "find": "                    Value::Discriminant(value, enum_ty) => {\n                        return Ok(Value::Expr(self.cast(value, enum_ty, *to, span)?));\n                    }\n",
+    "find": "                    Value::Discriminant(value, enum_ty, _) => {\n                        return Ok(Value::Expr(self.cast(value, enum_ty, *to, span)?));\n                    }\n",
     "replace": "",
     "tests": ["test/lowering-numbers.test.ts", "-t", "an enum cast to a number from MIR"]
   },
@@ -419,5 +419,13 @@ export const mutations: Mutation[] = [
     find: "                            (Operand::Constant(_), Some(units)) => Expr::int(units as i128),",
     replace: "                            (Operand::Constant(_), Some(_)) => self.value_expr(part, span)?,",
     tests: ["test/lowering-string-places.test.ts", "-t", "stepped past"],
+  },
+  {
+    name: "dyn-iterator-as-made",
+    breaks: "a `dyn Iterator` of the crate's iterator keeps its own `fold`, which std's `Box` doesn't give it",
+    file: "src/lower/mir/rvalues.rs",
+    find: "                            return Ok(Value::Expr(crate::lower::iterators::behind_a_dyn(it)));\n",
+    replace: "                            return Ok(Value::Expr(it));\n",
+    tests: ["test/corpus.test.ts",  "-t",  "^own_fold_and_nth.rs$"],
   },
 ];

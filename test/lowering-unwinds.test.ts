@@ -30,8 +30,8 @@ use std::panic::catch_unwind;
 
 /// \`value[key]\`, where it's text.
 fn text_at(value: &Unknown, key: &str) -> Option<String> {
-    match js::get(value, key).map(js::classify) {
-        Some(Kind::String(text)) => Some(text.to_string()),
+    match js::classify(js::get(value, key)) {
+        Kind::String(text) => Some(text.to_string()),
         _ => None,
     }
 }
@@ -43,7 +43,7 @@ pub fn get_io_description(value: Option<&Unknown>) -> String {
         let Some(value) = value else {
             return String::new();
         };
-        match js::classify(value) {
+        match js::classify(Some(value)) {
             Kind::Function(_) => text_at(value, "name").unwrap_or_default(),
             Kind::Object(object) => {
                 if let Some(url) = text_at(object, "url") {
@@ -69,8 +69,8 @@ pub fn get_io_description(value: Option<&Unknown>) -> String {
 
 /// The same, its body a function of its own.
 fn describe(value: Option<&Unknown>) -> String {
-    match value.map(js::classify) {
-        Some(Kind::Object(object)) => text_at(object, "url").unwrap_or_default(),
+    match js::classify(value) {
+        Kind::Object(object) => text_at(object, "url").unwrap_or_default(),
         _ => String::new(),
     }
 }
@@ -356,6 +356,36 @@ pub async fn late(n: u32) -> u32 {
   const lib = await import(join(dir, "lib.js"));
   expect(await lib.late(2)).toBe(2);
   expect(lib.late(5)).rejects.toThrow("late 5");
+});
+
+// React's describeElementType resolves a lazy component's type, which may
+// throw: `try { return describeElementType(init(payload)); } catch (x) {}`,
+// then on to what follows. Its port's `if let Ok(name) = catch_unwind(..)
+// { return name; }`, in a block of its own, is that `try`, its `catch`
+// nothing, not the `Result` made and its `TAG` tested (ADR 0637, amended).
+test("an if let Ok of catch_unwind that returns is a try whose catch does nothing", async () => {
+  const { js, dir } = compiled("unwind-if-let-ok", `use std::panic::catch_unwind;
+
+fn init(payload: u32) -> u32 {
+    if payload == 0 {
+        panic!("not loaded");
+    }
+    payload
+}
+
+pub fn lazy(kind: u32, payload: u32) -> String {
+    if kind == 3 {
+        if let Ok(name) = catch_unwind(|| format!("<{}>", init(payload))) {
+            return name;
+        }
+    }
+    String::new()
+}
+`);
+  expect(js).toContain('  if (kind === 3) {\n    try {\n      return `<${init(payload)}>`;\n    } catch {}\n  }\n  return "";');
+  expect(js).not.toContain("TAG");
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.lazy(3, 2), lib.lazy(3, 0), lib.lazy(1, 2)]).toEqual(["<2>", "", ""]);
 });
 
 // rust-js's panics unwind (ADR 0090); where the crate asked them to abort,

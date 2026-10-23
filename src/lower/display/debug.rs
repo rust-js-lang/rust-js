@@ -286,7 +286,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // A `Cow` shows what it borrows or owns (ADR 0319).
         if let Some((borrowed, _)) = self.recognition().cow_parts(ty) {
-            return self.debug_string_with(Expr::member(value, "_0"), borrowed, span, pretty);
+            return self.debug_string_with(Expr::member(value, js::positional(0)), borrowed, span, pretty);
         }
         // A parse error is its message (ADR 0063), which says its kind.
         if self.is_parse_error(ty) {
@@ -583,7 +583,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Ok(self.pretty_or(pretty, plain, "{", mapped, "}"))
             }
             ty::Adt(_, args) if std(StdItem::Result) => {
-                let inside = || Expr::member(Expr::var("result"), "_0");
+                let inside = || crate::js::result::held(Expr::var("result"));
                 let ok = self.debug_string_with(inside(), args.type_at(0), span, pretty)?;
                 let err = self.debug_string_with(inside(), args.type_at(1), span, pretty)?;
                 let f = Expr::arrow(

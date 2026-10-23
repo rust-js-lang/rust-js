@@ -215,7 +215,7 @@ export const mutations: Mutation[] = [
     name: "or-pattern-tests-each",
     breaks: "an or-pattern of an untagged enum's variants tests each, `Array.isArray(v) || (typeof v === \"object\" && !Array.isArray(v))`, not what they are together",
     file: "src/lower/mir/structure.rs",
-    find: "                        *test = self.mir_variant_test(enum_value.clone(), *enum_ty, *adt, &variants);\n",
+    find: "                        *test = self.mir_variant_test(enum_value.clone(), *enum_ty, *adt, &variants, *present);\n",
     replace: "",
     tests: ["test/lowering-switches.test.ts", "-t", "a test of an object or an array is typeof object"],
   },

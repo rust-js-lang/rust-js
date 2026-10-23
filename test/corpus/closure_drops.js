@@ -16,11 +16,11 @@ function callOnce(f, dropF) {
   return f();
 }
 
-function keep(_f, dropF) {
+function keep(f, dropF) {
   try {
     console.log("not called");
   } finally {
-    dropF?.(_f);
+    dropF?.(f);
   }
 }
 

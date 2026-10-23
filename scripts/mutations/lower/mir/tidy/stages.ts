@@ -436,7 +436,7 @@ export const mutations: Mutation[] = [
     name: "tail-continues-unwritten-kept",
     breaks: "a `continue` the program didn't write, left at a loop body's end by a block returned in place, stays",
     file: "src/lower/mir/tidy/stages.rs",
-    find: "            pass(\"tail continues\", |b, h| {\n                js::statement_lists(b, &mut |s| tail_continues(s, &h.written.continues))\n            }),\n",
+    find: "            pass(\"tail continues\", |b, _| {\n                js::statement_lists(b, &mut |s| tail_continues(s))\n            }),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^interpreter.rs$"],
     snapshots: true,

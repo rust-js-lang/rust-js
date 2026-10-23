@@ -48,7 +48,6 @@ function main() {
         break;
       case "Nan":
         kind = "?";
-        break;
     }
     $print(`${kind} ${$classify(x, 1.1754943508222875e-38)} `);
   }

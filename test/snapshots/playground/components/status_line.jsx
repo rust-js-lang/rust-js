@@ -13,7 +13,6 @@ export function StatusLine({ status }) {
       break;
     case "Bad":
       color = "text-bad";
-      break;
   }
   return (
     <span id="status" role="status" className={color}>

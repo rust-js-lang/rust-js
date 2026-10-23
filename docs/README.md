@@ -96,7 +96,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0054 `Display`: a `fmt` returns the string it writes](decisions/0054-display.md)
 - [0055 The crate's own `Iterator` is a JS iterator](decisions/0055-iterator.md)
 - [0056 Indexing: `$index(v, i)` to read, `v[$at(v, i)] = x` to write](decisions/0056-indexing.md)
-- [0057 `PartialOrd` and `Ord`: an `Ordering`, and the parts in turn](decisions/0057-ordering.md)
+- [0057 `PartialOrd` and `Ord`: an `Ordering`, and the parts in turn](decisions/0057-ordering.md) *(amended by 0687: `max()` and the rest step their iterator as each comes)*
 - [0058 Format options, where Rust applies them](decisions/0058-format-options.md)
 - [0059 `HashMap` is a JS `Map`, `HashSet` a `Set`, keyed by value](decisions/0059-hashmap.md)
 - [0060 `{:?}` by the type, and a derived `Debug` is a function](decisions/0060-debug.md)
@@ -283,7 +283,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0211 `Option::as_deref` of a `String` or a `Vec` is the option](decisions/0211-option-as-deref.md)
 - [0212 A props field's default is where JS takes them apart](decisions/0212-props-defaults.md)
 - [0213 A component's props are given as one flat list](decisions/0213-props-as-written.md)
-- [0214 An untagged enum is its payload: TS's `string | Blob`](decisions/0214-untagged-enums.md) *(amended by 0668: an `otherwise` of one `typeof` kind is tested as it)*
+- [0214 An untagged enum is its payload: TS's `string | Blob`](decisions/0214-untagged-enums.md) *(amended by 0668: an `otherwise` of one `typeof` kind is tested as it; by 0676: a variant without fields may be `undefined` or `null`)*
 - [0215 The webapi crate's unions are untagged enums](decisions/0215-webapi-unions.md)
 - [0216 A slice's `concat` of parts written out is an array of them, spread](decisions/0216-concat-spread.md)
 - [0217 `enumerate()` then a callback's method is the method, given each index](decisions/0217-enumerate-index.md)
@@ -294,7 +294,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0222 An editor checks the app through rust-js](decisions/0222-editor-check.md)
 - [0223 The webapi crate knows each event's type and each tag's element](decisions/0223-webapi-event-and-tag-maps.md)
 - [0224 A tag's element reaches its handlers and its `ref`](decisions/0224-typed-intrinsic-elements.md)
-- [0225 A JS value of unknown shape is a `js::Unknown`](decisions/0225-unknown-values.md) *(amended by 0668: `Kind::Symbol`, and a `match` of `Kind` a `switch (typeof value)`; by 0673: `js::unknown` of a function)*
+- [0225 A JS value of unknown shape is a `js::Unknown`](decisions/0225-unknown-values.md) *(amended by 0668: `Kind::Symbol`, and a `match` of `Kind` a `switch (typeof value)`; by 0673: `js::unknown` of a function; by 0676: `classify` takes an `Option<&Unknown>`, and `Kind` has `Undefined` and `Null`; by 0677: `Kind::Object` holds a `&JsObject`)*
 - [0226 A component looks inside its children as React's `Children` does](decisions/0226-react-children.md)
 - [0227 The react crate's types have @types/react's names](decisions/0227-react-type-names.md)
 - [0228 A tag takes the attributes @types/react gives it](decisions/0228-per-tag-attributes.md)
@@ -306,7 +306,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0234 A component of an element's props is an `ElementType`, rendered as a tag](decisions/0234-element-type.md)
 - [0235 A child shown only if a test holds is `test && child`, where the test can't render](decisions/0235-children-shown-if.md)
 - [0236 What JSX makes is `JSX::Element`, TypeScript's `JSX.Element`](decisions/0236-jsx-element.md)
-- [0237 An `if` whose branch leaves has no `else`](decisions/0237-no-else-after-leaving.md)
+- [0237 An `if` whose branch leaves has no `else`](decisions/0237-no-else-after-leaving.md) *(amended by 0683: an `else if` of an arm that goes on stays one)*
 - [0238 A value kept for good is the value; children are kept as JS values](decisions/0238-kept-values-and-children.md)
 - [0239 A local of a component's function type is that component as a tag](decisions/0239-local-components.md)
 - [0240 A `pub use` of another module's function is re-exported from it](decisions/0240-reexports.md)
@@ -352,7 +352,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0280 A field that's `undefined` is no key](decisions/0280-undefined-fields-left-out.md)
 - [0281 The webapi crate covers TypeScript's DOM, and a test holds it](decisions/0281-webapi-covers-typescripts-dom.md)
 - [0282 One method API for event listeners](decisions/0282-event-listener-methods.md)
-- [0283 The js crate covers TypeScript's ES library, and a test holds it](decisions/0283-js-crate-covers-typescripts-es-library.md) *(amended by 0666: descriptors and handlers are dictionaries, `Object` measured)*
+- [0283 The js crate covers TypeScript's ES library, and a test holds it](decisions/0283-js-crate-covers-typescripts-es-library.md) *(amended by 0666: descriptors and handlers are dictionaries, `Object` measured; by 0677: a weak collection is typed as TypeScript's)*
 - [0284 An enum tagged by a property of its own is a discriminated union](decisions/0284-discriminated-unions.md)
 - [0285 `std::ptr::eq` of JS objects is whether they're one](decisions/0285-ptr-eq.md)
 - [0286 A component that sometimes renders nothing returns an `Option`](decisions/0286-components-that-render-nothing.md)
@@ -505,7 +505,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0433 What's written after a loop is after it](decisions/0433-whats-written-after-a-loop-is-after-it.md)
 - [0434 A temporary of a variable is the variable, until it changes](decisions/0434-a-temporary-of-a-variable-is-the-variable.md)
 - [0435 Rust's world and React's: each its own names, JSX the boundary](decisions/0435-rust-and-react-two-worlds.md)
-- [0573 Every Rust name is camelCase in JS](decisions/0573-every-rust-name-is-camel-case-in-js.md)
+- [0573 Every Rust name is camelCase in JS](decisions/0573-every-rust-name-is-camel-case-in-js.md) *(amended by 0678: a parameter's leading `_` isn't in its JS name)*
 - [0574 What React's scheduler heap asks: a nullable result, an object's `Some`, a runtime that loads anywhere](decisions/0574-what-reacts-scheduler-heap-asks.md)
 - [0575 An `if` keeps the `else` it's written with, and a tail `if` of two values is a conditional](decisions/0575-an-if-keeps-its-else-and-a-tail-if-is-a-conditional.md)
 - [0576 What a body's integers can be: an index in bounds, an operator that can't wrap, a swap JS's own](decisions/0576-what-a-bodys-integers-can-be.md)
@@ -560,7 +560,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0626 What a library hands a crate is what its items reach](decisions/0626-what-a-library-hands-a-crate.md)
 - [0627 A number literal keeps its base and its exponent](decisions/0627-a-number-literal-keeps-its-base-and-exponent.md)
 - [0628 A loop after a loop is after it](decisions/0628-a-loop-after-a-loop-is-after-it.md)
-- [0629 A `match` of constants is a `switch`](decisions/0629-a-match-of-constants-is-a-switch.md) *(amended by 0634: a `Some`'s constants and the registry's symbols are cases; by 0636: a guarded arm is a case; by 0668: a `match` of what a value is is a `switch (typeof value)`)*
+- [0629 A `match` of constants is a `switch`](decisions/0629-a-match-of-constants-is-a-switch.md) *(amended by 0634: a `Some`'s constants and the registry's symbols are cases; by 0636: a guarded arm is a case; by 0668: a `match` of what a value is is a `switch (typeof value)`; amended: a `break` only where a case goes on to another)*
 - [0630 A comment inside an expression is after the code before it](decisions/0630-a-comment-inside-an-expression.md)
 - [0631 A step of one is `++`](decisions/0631-a-step-of-one-is-plus-plus.md)
 - [0632 A JS string's `length` is below `u32::MAX`, and a counter below it doesn't wrap](decisions/0632-a-js-strings-length-is-below-u32-max.md) *(amended by 0682: at most `2^31 - 1`, so two add without a wrap)*
@@ -569,7 +569,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0634 A registered symbol is a `const`, and a `match` of them a `switch`](decisions/0634-a-registered-symbol-is-a-const.md)
 - [0635 A `filter` by truth, then a fallback, is `||`](decisions/0635-a-filter-by-truth-then-a-fallback-is-or.md) *(extended by 0646: a chain held, then its fallback; 0651: a `let`, then its fallback)*
 - [0636 A guarded arm of a `match` of constants is a case](decisions/0636-a-guarded-arm-is-a-case.md)
-- [0637 A `match` of a throwing call's `Result` is `try` and `catch`](decisions/0637-a-match-of-a-throwing-call-is-try-catch.md) *(amended by 0639: whether a call threw is `try`; 0660: `catch_unwind`'s too, and `unwrap_or(d)` returned)*
+- [0637 A `match` of a throwing call's `Result` is `try` and `catch`](decisions/0637-a-match-of-a-throwing-call-is-try-catch.md) *(amended by 0639: whether a call threw is `try`; 0660: `catch_unwind`'s too, and `unwrap_or(d)` returned; amended: an `Ok` arm that leaves, nothing after it, `catch {}`)*
 - [0638 A nullable function's call is `null` already](decisions/0638-a-nullable-functions-call-is-null-already.md)
 - [0639 `concat_text` of any value is what may throw; whether a call threw is `try`](decisions/0639-concat-text-of-any-value-may-throw.md)
 - [0640 A TypeScript rest parameter is a variadic binding of a tuple](decisions/0640-a-rest-parameter-is-a-tuple.md) *(extended by 0667: rest arguments as a value)*
@@ -580,7 +580,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0645 `js::is_defined` of a static is given the static itself](decisions/0645-is-defined-of-a-static-is-of-the-static.md) *(amended by 0647: the static isn't read)*
 - [0646 A chain held, then its fallback, is one `||`](decisions/0646-a-held-chain-and-its-fallback-is-one-or.md)
 - [0647 What `is_defined` names is no read; a test kept by its truth is `&&`](decisions/0647-type-name-as-react-writes-it.md)
-- [0648 V8's stack trace API is the node crate's, as @types/node types it](decisions/0648-v8s-stack-trace-api-is-the-node-crates.md) *(amended by 0653: captureStackTrace bound)*
+- [0648 V8's stack trace API is the node crate's, as @types/node types it](decisions/0648-v8s-stack-trace-api-is-the-node-crates.md) *(amended by 0653: captureStackTrace bound; 0686: the hook's type is named)*
 - [0649 `#[inline(never)]` is `/** @noinline */`](decisions/0649-inline-never-is-noinline.md)
 - [0650 A `let` that shadows a binding read no more is that binding, assigned](decisions/0650-a-shadow-of-a-binding-read-no-more-is-that-binding.md)
 - [0651 A `let`, then its fallback where it's falsy, is `||`](decisions/0651-a-let-then-its-fallback-is-or.md)
@@ -596,19 +596,28 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0664 A function's last slice marked `#[rust_js::rest]` is JS's rest parameter](decisions/0664-a-functions-rest-slice-is-jss-rest-parameter.md)
 - [0666 The js crate binds `Object`'s reflection, a descriptor a dictionary](decisions/0666-the-js-crate-binds-objects-reflection.md)
 - [0667 `console` is a value, and a `fn` of rest arguments is the JS function](decisions/0667-console-is-a-value-and-rest-arguments-are-one.md)
-- [0668 A `match` of what a value is is a `switch` of its `typeof`](decisions/0668-a-match-of-what-a-value-is-is-a-switch-of-its-typeof.md)
+- [0668 A `match` of what a value is is a `switch` of its `typeof`](decisions/0668-a-match-of-what-a-value-is-is-a-switch-of-its-typeof.md) *(amended by 0676: `undefined` is `case "undefined"`, and `null` in `case "object"`)*
 - [0673 A function is a JS value of any shape, whose property `js::set` writes](decisions/0673-a-function-is-a-value-of-any-shape.md)
 - [0674 A struct literal's object lists its fields in the order written](decisions/0674-a-struct-literals-fields-are-in-the-order-written.md)
 - [0623 A copy std makes of a `Copy` value is a copy](decisions/0623-a-copy-std-makes-is-a-copy.md)
-- [0669 An adapter steps its source as std's does](decisions/0669-an-adapter-steps-its-source-as-stds-does.md)
+- [0669 An adapter steps its source as std's does](decisions/0669-an-adapter-steps-its-source-as-stds-does.md) *(amended by 0687: and gives the crate's own `fold` and `nth` on)*
 - [0670 A tree's writes have one owner, and its walks one definition](decisions/0670-a-trees-writes-have-one-owner.md)
 - [0671 A nested body is lowered in one call](decisions/0671-a-nested-body-is-lowered-in-one-call.md)
 - [0672 A property a chain tests and binds is read once](decisions/0672-a-property-a-test-reads-is-read-once.md)
+- [0676 `js::Kind` tells `undefined` and `null`](decisions/0676-kind-tells-undefined-and-null.md)
+- [0677 A weak collection's key is what `js::Kind` holds](decisions/0677-a-weak-key-is-what-kind-holds.md)
+- [0678 A parameter's leading `_` isn't in its JS name](decisions/0678-a-parameters-underscore-isnt-its-js-name.md)
+- [0683 An `if` keeps its test and branches as written, and an `else if` stays a chain](decisions/0683-an-if-is-as-written-and-an-else-if-stays-a-chain.md)
+- [0684 A `continue` the program wrote is where it wrote it, with its comment](decisions/0684-a-continue-the-program-wrote-is-where-it-wrote-it.md)
+- [0685 A `let` a loop's body declares is in it, set in a block MIR made](decisions/0685-a-let-a-loops-body-declares-is-in-it.md)
+- [0686 The stack trace hook's type is named, `js_error::PrepareStackTrace<R>`](decisions/0686-the-stack-trace-hooks-type-is-named.md)
+- [0687 A consumer steps its iterator as std's does, through the crate's own `fold` and `nth`](decisions/0687-a-consumer-steps-its-iterator-as-std-does.md)
+- [0688 A `Result`'s JS, and an enum's, has one owner, `js::result` and `js`](decisions/0688-a-results-js-has-one-owner.md)
 - [0436 Every `dyn` that's a pair keeps its value's drop, `dyn Send` too](decisions/0436-every-dyn-keeps-its-drop.md)
 - [0437 A scope's drops on a panic are one `try { .. } finally { .. }`](decisions/0437-a-scopes-drops-are-one-finally.md)
 - [0438 An optional prop is given `Some(..)`, or left out](decisions/0438-an-optional-prop-is-given-some.md)
 - [0439 A component is named as JSX names it, and needs no `#[allow]`](decisions/0439-a-component-is-named-as-jsx-names-it.md)
-- [0440 A binding needs no `#[allow]`](decisions/0440-a-binding-needs-no-allow.md)
+- [0440 A binding needs no `#[allow]`](decisions/0440-a-binding-needs-no-allow.md) *(amended: a descriptor map's fields and a default export's function are used; a plain clippy warns of them)*
 - [0441 A `()` given a function value is no argument](decisions/0441-a-unit-is-no-argument.md)
 - [0442 A web API that throws for what a program can't prevent is a `Result`](decisions/0442-a-web-api-that-may-throw-is-a-result.md)
 - [0443 A value a caller may leave out is an `Option`, in each direction](decisions/0443-a-value-a-caller-may-leave-out-is-an-option.md) *(amended by 0640: a `None` before a rest of none is no argument; 0648: a setter's `None` is written)*

@@ -222,6 +222,7 @@ pub(super) fn branch_values(
     (returns, getters): (&[js::Span], &[js::Span]),
     booleans: &HashSet<String>,
     (result, switches): (&str, &[Switch]),
+    continues: &[(js::Span, js::Span)],
 ) {
     stmts.retain_mut(|stmt| {
         let span = stmt.span;
@@ -314,17 +315,21 @@ pub(super) fn branch_values(
                 StmtKind::Assign(Expr::var(x), value)
             }
             // `l: { if (!a) { if (!b) { s; break l; } } t }`, `||`'s: `if (a ||
-            // b) { t } else { s }`, where nothing else breaks to `l`; of tests
-            // not all negated, `if (a && b) { s } else { t }` once later passes
-            // write its branches as the program did.
+            // b) { t } else { s }`, where nothing else breaks to `l`; and `l:
+            // { if (a) { if (b) { s; break l; } } t }`, `&&`'s, `if (a && b) {
+            // s } else { t }`: the branch the program wrote first, first, its
+            // test as written (ADR 0683).
             StmtKind::Labeled(label, body) if let Some((tests, otherwise, then)) = or_chain(&body, &label) => {
                 let test = (tests.into_iter())
                     .rev()
                     .reduce(|b, a| Expr::bin(Op::And, a, b))
                     .expect("one");
-                match then.is_empty() {
-                    true => StmtKind::If(test, otherwise, None),
-                    false => StmtKind::If(test.negated_test(), then, Some(otherwise)),
+                let chain_first =
+                    matches!((first_written(&otherwise), first_written(&then)), (Some(s), Some(t)) if s < t);
+                match (then.is_empty(), chain_first) {
+                    (true, _) => StmtKind::If(test, otherwise, None),
+                    (false, true) => StmtKind::If(test, otherwise, Some(then)),
+                    (false, false) => StmtKind::If(test.negated_test(), then, Some(otherwise)),
                 }
             }
             StmtKind::Labeled(label, body) => match chain(&body, &label) {
@@ -384,8 +389,11 @@ pub(super) fn branch_values(
         && written(returns, last.span)
         && let Some((tests, body)) = returning_chain(std::slice::from_ref(last_if), getters)
         // Not `if c { return a; } else { return b; }`'s: a `let … else`'s
-        // rest ends where it goes on, not at a `return` the program wrote.
+        // rest ends where it goes on, not at a `return` the program wrote;
+        // nor `if c { continue; } return b;`'s, an `if` the program wrote
+        // of a `continue` (ADR 0684).
         && !body.last().is_some_and(|s| matches!(s.kind, StmtKind::Return(_)) && written(returns, s.span))
+        && !tests_continue(continues, last_if.span)
         && !declared(&body).any(|name| declared(before).any(|n| n == name))
     {
         // `f` the program wrote, a `let … else`'s else: `if (!(a && b)) {
@@ -723,7 +731,11 @@ pub(super) fn same_test(a: &Expr, b: &Expr) -> bool {
         (ExprKind::Binary(p, x, k), ExprKind::Binary(q, y, l)) if p == q => {
             js::same_path(x, y)
                 && match (&k.kind, &l.kind) {
-                    (ExprKind::Null | ExprKind::Undefined, ExprKind::Null | ExprKind::Undefined) => true,
+                    // `== null` is `== undefined`; `=== null` isn't
+                    // `=== undefined` (ADR 0676).
+                    (ExprKind::Null | ExprKind::Undefined, ExprKind::Null | ExprKind::Undefined) => {
+                        matches!(p, Op::LooseEq | Op::LooseNe) || k.kind == l.kind
+                    }
                     (ExprKind::Str(k), ExprKind::Str(l)) => k == l,
                     _ => k.as_int().is_some() && k.as_int() == l.as_int(),
                 }

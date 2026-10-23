@@ -105,10 +105,10 @@ function firstEven(values) {
       return result;
     }
     const n = result._0;
-    if (n % 2 !== 1) {
-      return { TAG: "Ok", _0: n };
+    if (n % 2 === 1) {
+      continue;
     }
-    continue;
+    return { TAG: "Ok", _0: n };
   }
 }
 

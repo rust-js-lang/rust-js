@@ -390,8 +390,7 @@ export function genericIterations() {
     $max(
       $iterator({ n: 5 }, countdownIterator_next)
         .map((x, i) => [i, x])
-        .map(([i, x]) => Math.imul(i, x) >>> 0)
-        .toArray(),
+        .map(([i, x]) => Math.imul(i, x) >>> 0),
     ),
   ];
 }
@@ -414,7 +413,7 @@ function wordOrd_cmp(word, other) {
 
 export function largest(xs, TOrd, TCopy) {
   return $maxBy(
-    xs.map((item) => TCopy.copy(item)),
+    xs.values().map((item) => TCopy.copy(item)),
     TOrd.cmp,
     true,
   );

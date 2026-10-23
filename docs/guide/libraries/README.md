@@ -39,13 +39,13 @@ use js::{Kind, classify, json, reg_exp, set_timeout};
 
 pub fn describe(text: &str) -> String {
     match json::parse(text) {
-        Ok(Some(value)) => match classify(value) {
+        Ok(value) => match classify(value) {
+            Kind::Null => "null".to_string(),
             Kind::String(s) => format!("text {s}"),
             Kind::Number(n) => format!("number {n}"),
             Kind::Array(items) => format!("{} items", items.len()),
             _ => "something else".to_string(),
         },
-        Ok(None) => "null".to_string(),
         Err(error) => js::js_error::to_string(error),
     }
 }
@@ -60,29 +60,29 @@ pub fn later(name: String) {
 ```
 
 ```js
-import { $displayF64, $try } from "@rust-js/runtime";
+import { $displayF64 } from "@rust-js/runtime";
 
 export function describe(text) {
-  const value$1 = $try(() => JSON.parse(text));
-  if (value$1.TAG === "Ok") {
-    if (value$1._0 != null) {
-      const value = value$1._0;
-      if (Array.isArray(value)) {
-        return `${value.length} items`;
-      }
-      switch (typeof value) {
-        case "string":
-          return `text ${value}`;
-        case "number":
-          return `number ${$displayF64(value)}`;
-        default:
-          return "something else";
-      }
-    }
+  let value;
+  try {
+    value = JSON.parse(text);
+  } catch (error) {
+    return String(error);
+  }
+  if (value === null) {
     return "null";
   }
-  const error = value$1._0;
-  return String(error);
+  if (Array.isArray(value)) {
+    return `${value.length} items`;
+  }
+  switch (typeof value) {
+    case "string":
+      return `text ${value}`;
+    case "number":
+      return `number ${$displayF64(value)}`;
+    default:
+      return "something else";
+  }
 }
 
 export function isNumber(text) {
@@ -100,7 +100,8 @@ What it has:
 
 - **A value of any shape is a `js::Unknown`,** TypeScript's `unknown`:
   what `json::parse` gives, or a binding's `any`. `classify(value)` tells
-  what it is, a `Kind` to `match`, by `typeof` and `Array.isArray`;
+  what an `Option<&Unknown>` is, a `Kind` to `match`, by `typeof`, `===
+  null` and `Array.isArray`, `undefined` and `null` too (ADR 0676);
   `get(value, key)`, `set(value, key, to)` and `has(value, key)` are
   `value[key]` and `key in value`; `object::keys` is `Object.keys`
   ([ADR 0225](../../decisions/0225-unknown-values.md)). A `Json` is a JSON
@@ -143,7 +144,11 @@ What it has:
 - **The rest of the ES library:** `Date`, `Intl`'s formatters, typed arrays
   and `ArrayBuffer`, `Atomics`, `Symbol`, `WeakMap`, `WeakRef`,
   `FinalizationRegistry`, `Proxy`, `Reflect`, `encode_uri_component` and
-  the other global functions.
+  the other global functions. A weak collection is typed as TypeScript
+  types it, `WeakMap<K, V>`, its key a `js::WeakKey`: an object, what
+  `js::Kind` holds of an object (a `&JsObject`, TypeScript's `object`), an
+  array or a function, or a symbol; of any of them, `dyn WeakKey`
+  ([ADR 0677](../../decisions/0677-a-weak-key-is-what-kind-holds.md)).
 - **The module's own JS:** `js::import!` imports a file for its effects or
   an item lazily, `js::import_module!` a module, `js::export_default!` a
   module's default export, `js::directive!("use client")` its directive,
@@ -330,16 +335,17 @@ export function unhooked() {
 }
 ```
 
-- **The hook is a JS function**, `Option<&'static dyn Fn(&JsError,
-  &[&CallSite]) -> R>`, `None` of `undefined`: what was read is set back
-  as it is, and a Rust function by reference, `Some(&prepare_stack_trace)`.
-  What it gives is TypeScript's `any`: a hook JS set gives an `Unknown`,
-  and one Rust sets gives any `R`, which a bare `None` names.
+- **The hook is a JS function**, `Option<&'static PrepareStackTrace<R>>`,
+  `None` of `undefined`, its type named in `js_error` as `@types/node`
+  types it, `dyn Fn(&JsError, &[&CallSite]) -> R` ([ADR 0686](../../decisions/0686-the-stack-trace-hooks-type-is-named.md)):
+  what was read is set back as it is, and a Rust function by reference,
+  `Some(&prepare_stack_trace)`. What it gives is TypeScript's `any`: a
+  hook JS set gives an `Unknown`, and one Rust sets gives any `R`, which a
+  bare `None` names.
 - **A module's default of no hook** is a `const` of its type, as React's
   `DefaultPrepareStackTrace` is in a browser's build: `js::export_default!
-  { pub const DEFAULT_PREPARE_STACK_TRACE: Option<&'static dyn
-  Fn(&JsError, &[&CallSite]) -> String> = None; }` is `export default
-  undefined;`.
+  { pub const DEFAULT_PREPARE_STACK_TRACE: Option<&'static
+  PrepareStackTrace<String>> = None; }` is `export default undefined;`.
 
 An emitter's events are typed by it, as `@types/node`'s `on` and `emit`
 overloads are: a listener is given what Node gives it, and `emit` takes

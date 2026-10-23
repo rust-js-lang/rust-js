@@ -108,8 +108,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return self.as_js_iterator(value, inner, span).map(Some);
         }
         if self.is_std_type(inner, crate::lower::recognition::StdItem::Result) {
-            let ok = Expr::bin(Op::Eq, Expr::member(value.clone(), "TAG"), Expr::str("Ok"));
-            let items = Expr::array(vec![Expr::member(value, "_0")]);
+            let ok = crate::js::result::is(value.clone(), true);
+            let items = Expr::array(vec![crate::js::result::held(value)]);
             return Ok(Some(Expr::cond(ok, items, Expr::array(Vec::new()))));
         }
         // A B-tree's, in its keys' order, which its JS map isn't (ADR 0059).
@@ -378,8 +378,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let item = self
                     .iterator_item(receiver_ty.peel_refs())
                     .ok_or_else(|| self.unsupported(span, "this iterator's items"))?;
-                // Its items, listed, as `$max`'s are.
-                let items = method(items, "toArray", Vec::new());
+                // Its items as they come, which the helper steps (#179).
                 let f = next();
                 match comb {
                     IterComb::MaxBy(_) => {
@@ -449,7 +448,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // Of `&T`s, each a copy where it needs one (`copied_into`), into
             // `partition::<B, F>`'s `B`, after `Self`.
             IterComb::Partition => {
-                let items = method(items, "toArray", Vec::new());
                 let into = generic_args.types().nth(1).and_then(|into| self.slice_item(into));
                 let items = match self.iterator_item(receiver_ty.peel_refs()) {
                     Some(from) => self.copied_into(items, from, into, span)?,
@@ -465,7 +463,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 if !sides.iter().all(|&side| self.is_vec_like(side) || self.is_map(side)) {
                     return Err(self.unsupported(span, "`unzip` into what isn't a `Vec`, a map or a set"));
                 }
-                let items = method(items, "toArray", Vec::new());
                 let pairs = Expr::call(Expr::helper("$unzip"), vec![items]);
                 if sides.iter().all(|&side| self.is_vec_like(side)) {
                     return Ok(pairs);

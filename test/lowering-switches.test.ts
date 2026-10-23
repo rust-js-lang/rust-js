@@ -116,11 +116,11 @@ pub fn again(n: u32, on: bool, log: &mut Vec<u32>) {
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs()]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain(
-    '  switch (ty) {\n    case REACT_FRAGMENT_TYPE:\n      return "Fragment";\n    case REACT_PROFILER_TYPE:\n      return "Profiler";\n    case REACT_TRACING_MARKER_TYPE:\n      if (tracing) {\n        return "TracingMarker";\n      }\n      break;\n  }\n',
+    '  switch (ty) {\n    case REACT_FRAGMENT_TYPE:\n      return "Fragment";\n    case REACT_PROFILER_TYPE:\n      return "Profiler";\n    case REACT_TRACING_MARKER_TYPE:\n      if (tracing) {\n        return "TracingMarker";\n      }\n  }\n',
   );
   expect(js).toContain('    case C:\n      if (on) {\n        return "c";\n      }\n      break;\n    case B:\n      return "b";\n  }\n  return "none";\n');
-  expect(js).toContain("    case C:\n      if (on) {\n        log.push(3);\n      }\n      break;\n  }\n  log.push(0);\n");
-  expect(js).toContain("        break loop;\n      case C:\n        if (on) {\n          continue;\n        }\n        break;\n    }\n");
+  expect(js).toContain("    case C:\n      if (on) {\n        log.push(3);\n      }\n  }\n  log.push(0);\n");
+  expect(js).toContain("        break loop;\n      case C:\n        if (on) {\n          continue;\n        }\n    }\n");
   expect(js).toContain('    case "Class":\n      if (on) {\n        return 2;\n      }\n      break;\n    case "Host":\n      return 3;\n  }\n');
   // A later arm that could take the constant, `_ => 0`, `C => ..`: an `if` chain.
   expect(js).toMatch(/export function taken\(n, on\) \{\n  if \(n === A\)/);
@@ -160,8 +160,8 @@ use std::panic::catch_unwind;
 
 /// \`value[key]\`, where it's text.
 fn text_at(value: &Unknown, key: &str) -> Option<String> {
-    match js::get(value, key).map(js::classify) {
-        Some(Kind::String(text)) => Some(text.to_string()),
+    match js::classify(js::get(value, key)) {
+        Kind::String(text) => Some(text.to_string()),
         _ => None,
     }
 }
@@ -171,7 +171,7 @@ pub fn get_io_description(value: Option<&Unknown>) -> String {
         let Some(value) = value else {
             return String::new();
         };
-        match js::classify(value) {
+        match js::classify(Some(value)) {
             Kind::Function(_) => text_at(value, "name").unwrap_or_default(),
             Kind::Object(_) | Kind::Array(_) => text_at(value, "url").unwrap_or_default(),
             Kind::String(text) => text.to_string(),
@@ -182,8 +182,9 @@ pub fn get_io_description(value: Option<&Unknown>) -> String {
     .unwrap_or_default()
 }
 
-pub fn describe(value: &Unknown) -> String {
+pub fn describe(value: Option<&Unknown>) -> String {
     match js::classify(value) {
+        Kind::Undefined | Kind::Null => "nothing".to_string(),
         Kind::Array(items) => format!("{} items", items.len()),
         Kind::String(text) => format!("text {text}"),
         Kind::Number(_) => "a number".to_string(),
@@ -197,7 +198,7 @@ pub fn describe(value: &Unknown) -> String {
 
 pub fn weighed(value: &Unknown, on: bool) -> u32 {
     let mut n = 0;
-    match js::classify(value) {
+    match js::classify(Some(value)) {
         Kind::Function(_) | Kind::String(_) => n += 1,
         Kind::Number(_) => n += 2,
         Kind::Bool(_) if on => n += 3,
@@ -207,14 +208,14 @@ pub fn weighed(value: &Unknown, on: bool) -> u32 {
 }
 
 pub fn objects(value: &Unknown) -> u32 {
-    match js::classify(value) {
+    match js::classify(Some(value)) {
         Kind::Object(_) | Kind::Array(_) => 1,
         _ => 0,
     }
 }
 
 pub fn listed(value: &Unknown) -> u32 {
-    match js::classify(value) {
+    match js::classify(Some(value)) {
         Kind::String(_) => 1,
         Kind::Array(_) => 2,
         _ => 0,
@@ -223,8 +224,8 @@ pub fn listed(value: &Unknown) -> u32 {
 
 pub fn tally(values: &[&Unknown]) -> [u32; 4] {
     let (mut texts, mut arrays, mut numbers, mut others) = (0, 0, 0, 0);
-    for value in values {
-        match js::classify(value) {
+    for &value in values {
+        match js::classify(Some(value)) {
             Kind::String(_) => texts += 1,
             Kind::Array(_) => arrays += 1,
             Kind::Number(_) => numbers += 1,
@@ -235,7 +236,7 @@ pub fn tally(values: &[&Unknown]) -> [u32; 4] {
 }
 
 pub fn named(value: &Unknown) -> String {
-    match js::classify(value) {
+    match js::classify(Some(value)) {
         Kind::String(text) => text.to_string(),
         Kind::Number(_) => "a number".to_string(),
         Kind::Object(object) => text_at(object, "name").unwrap_or_default(),
@@ -268,6 +269,9 @@ pub fn named(value: &Unknown) -> String {
   }
 }`);
   expect(js).toContain(`export function describe(value) {
+  if (value == null) {
+    return "nothing";
+  }
   if (Array.isArray(value)) {
     return \`\${value.length} items\`;
   }
@@ -300,7 +304,6 @@ pub fn named(value: &Unknown) -> String {
           break;
         default:
           others = (others + 1) >>> 0;
-          break;
       }
     }`);
   // An or-pattern's cases as it names them; a guarded arm's, its guard in
@@ -317,7 +320,6 @@ pub fn named(value: &Unknown) -> String {
       if (on) {
         n += 3;
       }
-      break;
   }`);
   // An \`Object\` arm whose arrays are \`_\`'s: \`case "object"\` would take
   // them, so an \`if\` chain, \`Object\` tested as an object not an array.
@@ -327,14 +329,13 @@ pub fn named(value: &Unknown) -> String {
   // array's \`if\`: an \`if\` chain, as ADR 0629's \`switch\` is of three.
   expect(js).toMatch(/export function objects\(value\) \{\n  if \(/);
   expect(js).toMatch(/export function listed\(value\) \{\n  if \(/);
-  expect(js.slice(js.indexOf("export function listed"), js.indexOf("export function tally"))).not.toContain("switch");
   writeFileSync(join(dir, "run.mjs"), `import { getIoDescription, describe, tally, named, objects, listed } from "./lib.js";
 const throwing = { get url() { throw new TypeError("no url"); } };
 function fetchUser() {}
 const values = [throwing, Symbol("s"), { url: "https://react.dev", name: "dev" }, ["a"], "hello", fetchUser, 42, 7n, true, {}, null, undefined];
 console.log(JSON.stringify(values.map(getIoDescription)));
 const defined = values.filter((v) => v != null && v !== throwing);
-console.log(JSON.stringify(defined.map(describe)));
+console.log(JSON.stringify([...defined, null, undefined].map(describe)));
 console.log(JSON.stringify(tally(defined)));
 console.log(JSON.stringify(defined.map(named)));
 console.log(JSON.stringify([defined.map(objects), defined.map(listed)]));
@@ -344,13 +345,176 @@ console.log(JSON.stringify([defined.map(objects), defined.map(listed)]));
   expect(ran.stdout).toBe(
     [
       `["","","https://react.dev","","hello","fetchUser","42","7","","","",""]`,
-      `["s","dev","1 items","text hello","a function","a number","a bigint","true",""]`,
+      `["s","dev","1 items","text hello","a function","a number","a bigint","true","","nothing","nothing"]`,
       `[1,1,1,6]`,
       `["","dev","","hello","","a number","","",""]`,
       `[[0,1,1,0,0,0,0,0,1],[0,0,2,1,0,0,0,0,0]]`,
       "",
     ].join("\n"),
   );
+});
+
+// ADR 0676: `js::classify` takes an `Option<&Unknown>`, and `js::Kind` has
+// `Undefined` and `Null`, so one `match` tells every JS value as `typeof`
+// and `=== null` do: `Undefined` is `case "undefined"`, and `Null` sits in
+// `case "object"`, `if (value === null)`, or is it, with the objects an arm
+// takes beside it. React's `describeValueForErrorMessage`
+// (shared/ReactSerializationErrors.js), whose `null` is `"Null"`, its
+// `Object.prototype.toString`'s, and `undefined` `"undefined"`. Of one
+// that's there, `classify(Some(value))`, an object's test is what it was.
+test("a match of what a value is tells undefined and null", () => {
+  const dir = fixture("typeof-nullish");
+  writeFileSync(join(dir, "lib.rs"), `use js::{Kind, Unknown};
+
+pub fn describe_value(value: Option<&Unknown>) -> String {
+    match js::classify(value) {
+        Kind::String(text) => js::json::stringify(text),
+        Kind::Null | Kind::Object(_) | Kind::Array(_) => {
+            if js::array::is_array(value) {
+                return "[...]".to_string();
+            }
+            js::object::to_string(value).unwrap()
+        }
+        Kind::Function(_) => "function".to_string(),
+        _ => js::string(value),
+    }
+}
+
+pub fn named(value: Option<&Unknown>) -> String {
+    match js::classify(value) {
+        Kind::Array(items) => format!("{} items", items.len()),
+        Kind::Object(object) => js::string(js::get(object, "name")),
+        Kind::Null => "null".to_string(),
+        Kind::String(text) => text.to_string(),
+        Kind::Undefined => "nothing".to_string(),
+        _ => String::new(),
+    }
+}
+
+pub fn parsed(value: Option<&Unknown>) -> String {
+    match js::classify(value) {
+        Kind::Null => "null".to_string(),
+        Kind::String(text) => text.to_string(),
+        Kind::Number(_) => "a number".to_string(),
+        _ => String::new(),
+    }
+}
+
+pub fn is_object(value: Option<&Unknown>) -> bool {
+    matches!(js::classify(value), Kind::Object(_))
+}
+
+pub fn is_null(value: Option<&Unknown>) -> bool {
+    matches!(js::classify(value), Kind::Null)
+}
+
+pub fn is_undefined(value: Option<&Unknown>) -> bool {
+    matches!(js::classify(value), Kind::Undefined)
+}
+
+pub fn there(value: &Unknown) -> bool {
+    matches!(js::classify(Some(value)), Kind::Object(_))
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs()]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain(`export function describeValue(value) {
+  switch (typeof value) {
+    case "string":
+      return JSON.stringify(value);
+    case "object":
+      if (Array.isArray(value)) {
+        return "[...]";
+      }
+      return Object.prototype.toString.call(value);
+    case "function":
+      return "function";
+    default:
+      return String(value);
+  }
+}`);
+  expect(js).toContain(`export function named(value) {
+  if (Array.isArray(value)) {
+    return \`\${value.length} items\`;
+  }
+  switch (typeof value) {
+    case "object":
+      if (value === null) {
+        return "null";
+      }
+      return String(value.name);
+    case "string":
+      return value;
+    case "undefined":
+      return "nothing";
+    default:
+      return "";
+  }
+}`);
+  // Where no arm takes the objects, `null`'s `if` is before the `switch`.
+  expect(js).toContain(`export function parsed(value) {
+  if (value === null) {
+    return "null";
+  }
+  switch (typeof value) {
+    case "string":
+      return value;
+    case "number":
+      return "a number";
+    default:
+      return "";
+  }
+}`);
+  expect(js).toContain(`export function isObject(value) {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}`);
+  expect(js).toContain(`export function isNull(value) {
+  return value === null;
+}`);
+  expect(js).toContain(`export function isUndefined(value) {
+  return value === undefined;
+}`);
+  expect(js).toContain(`export function there(value) {
+  return typeof value === "object" && !Array.isArray(value);
+}`);
+  // Each `===`, never `== null`, which is both.
+  expect(js).not.toMatch(/ [!=]= (null|undefined)/);
+  writeFileSync(join(dir, "run.mjs"), `import * as lib from "./lib.js";
+const values = [null, undefined, "a long string", ["a"], { name: "dev" }, new Date(0), () => 1, 7n, 1];
+for (const f of [lib.describeValue, lib.named, lib.parsed, lib.isObject, lib.isNull, lib.isUndefined]) {
+  console.log(JSON.stringify(values.map((v) => f(v))));
+}
+console.log(JSON.stringify(values.filter((v) => v != null).map((v) => lib.there(v))));
+`);
+  const ran = runSync([node!, join(dir, "run.mjs")], root, 30_000);
+  expect(ran.stderr).toBe("");
+  expect(ran.stdout).toBe(
+    [
+      `["[object Null]","undefined","\\"a long string\\"","[...]","[object Object]","[object Date]","function","7","1"]`,
+      `["null","nothing","a long string","1 items","dev","undefined","","",""]`,
+      `["null","","a long string","","","","","","a number"]`,
+      `[false,false,false,false,true,true,false,false,false]`,
+      `[true,false,false,false,false,false,false,false,false]`,
+      `[false,true,false,false,false,false,false,false,false]`,
+      `[false,false,true,true,false,false,false]`,
+      "",
+    ].join("\n"),
+  );
+});
+
+// ADR 0676: `js::classify` takes an `Option<&Unknown>`, the one way: of a
+// value that's there, `classify(Some(value))`, which rustc says of a
+// `&Unknown`.
+test("classify of a value that's there is of its Some", () => {
+  const dir = fixture("classify-some");
+  writeFileSync(join(dir, "lib.rs"), `pub fn text(value: &js::Unknown) -> bool {
+    matches!(js::classify(value), js::Kind::String(_))
+}
+`);
+  const out = runSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs()], root, 120_000);
+  expect(out.code).not.toBe(0);
+  expect(out.stderr).toContain("expected `Option<&Unknown>`, found `&Unknown`");
+  expect(out.stderr).toContain("Some(value)");
 });
 
 // ADR 0668, amended: a test that a value is one of an or-pattern's
@@ -367,7 +531,7 @@ test("a test of an object or an array is typeof object", () => {
 
 pub fn requested(value: &Unknown) -> bool {
     if let Some(request) = js::get(value, "request")
-        && let Kind::Object(_) | Kind::Array(_) = js::classify(request)
+        && let Kind::Object(_) | Kind::Array(_) = js::classify(Some(request))
     {
         return true;
     }
@@ -375,22 +539,30 @@ pub fn requested(value: &Unknown) -> bool {
 }
 
 pub fn objects(value: &Unknown) -> u32 {
-    match js::classify(value) {
+    match js::classify(Some(value)) {
         Kind::Object(_) | Kind::Array(_) => 1,
         _ => 0,
     }
 }
 
 pub fn callable_or_object(value: &Unknown) -> bool {
-    matches!(js::classify(value), Kind::Function(_) | Kind::Object(_) | Kind::Array(_))
+    matches!(js::classify(Some(value)), Kind::Function(_) | Kind::Object(_) | Kind::Array(_))
 }
 
 pub fn plain_or_text(value: &Unknown) -> bool {
-    matches!(js::classify(value), Kind::Object(_) | Kind::String(_))
+    matches!(js::classify(Some(value)), Kind::Object(_) | Kind::String(_))
 }
 
 pub fn listed_or_text(value: &Unknown) -> bool {
-    matches!(js::classify(value), Kind::Array(_) | Kind::String(_))
+    matches!(js::classify(Some(value)), Kind::Array(_) | Kind::String(_))
+}
+
+pub fn maybe_object(value: Option<&Unknown>) -> bool {
+    matches!(js::classify(value), Kind::Object(_) | Kind::Array(_))
+}
+
+pub fn any_object(value: Option<&Unknown>) -> bool {
+    matches!(js::classify(value), Kind::Null | Kind::Object(_) | Kind::Array(_))
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs()]);
@@ -411,8 +583,14 @@ pub fn listed_or_text(value: &Unknown) -> bool {
   expect(js).toContain(`return typeof value === "function" || typeof value === "object";`);
   expect(js).toContain(`return typeof value === "string" || (typeof value === "object" && !Array.isArray(value));`);
   expect(js).toContain(`return typeof value === "string" || Array.isArray(value);`);
+  // Of what may be `null`, an object that's not, and of `null` too, what
+  // `typeof` says (ADR 0676).
+  expect(js).toContain(`return typeof value === "object" && value !== null;`);
+  expect(js).toContain(`export function anyObject(value) {
+  return typeof value === "object";
+}`);
   expect(js).not.toContain(`Array.isArray(value) || (typeof value === "object"`);
-  writeFileSync(join(dir, "run.mjs"), `import { requested, objects, callableOrObject, plainOrText, listedOrText } from "./lib.js";
+  writeFileSync(join(dir, "run.mjs"), `import { requested, objects, callableOrObject, plainOrText, listedOrText, maybeObject, anyObject } from "./lib.js";
 function fetchUser() {}
 const values = [{}, ["a"], "text", fetchUser, 42, 7n, true, Symbol("s"), new Map()];
 console.log(JSON.stringify([
@@ -421,12 +599,14 @@ console.log(JSON.stringify([
   values.map(callableOrObject),
   values.map(plainOrText),
   values.map(listedOrText),
+  [...values, null, undefined].map(maybeObject),
+  [...values, null, undefined].map(anyObject),
 ]));
 `);
   const ran = runSync([node!, join(dir, "run.mjs")], root, 30_000);
   expect(ran.stderr).toBe("");
   expect(ran.stdout).toBe(
-    `[[true,true,false,false,false,false],[1,1,0,0,0,0,0,0,1],[true,true,false,true,false,false,false,false,true],[true,false,true,false,false,false,false,false,true],[false,true,true,false,false,false,false,false,false]]\n`,
+    `[[true,true,false,false,false,false],[1,1,0,0,0,0,0,0,1],[true,true,false,true,false,false,false,false,true],[true,false,true,false,false,false,false,false,true],[false,true,true,false,false,false,false,false,false],[true,true,false,false,false,false,false,false,true,false,false],[true,true,false,false,false,false,false,false,true,true,false]]\n`,
   );
 });
 
@@ -442,13 +622,13 @@ test("an arm that returns early is still its case of a switch of a typeof", () =
   writeFileSync(join(dir, "lib.rs"), `use js::{Kind, Unknown};
 
 pub fn described(value: &Unknown) -> String {
-    match js::classify(value) {
-        Kind::Function(_) => match js::get(value, "name").map(js::classify) {
-            Some(Kind::String(name)) => name.to_string(),
+    match js::classify(Some(value)) {
+        Kind::Function(_) => match js::classify(js::get(value, "name")) {
+            Kind::String(name) => name.to_string(),
             _ => String::new(),
         },
         Kind::Object(_) | Kind::Array(_) => {
-            if let Some(Kind::String(url)) = js::get(value, "url").map(js::classify) {
+            if let Kind::String(url) = js::classify(js::get(value, "url")) {
                 return url.to_string();
             }
             let text = js::string(Some(value));
@@ -524,9 +704,9 @@ pub fn get_io_description(value: Option<&Unknown>) -> String {
         let Some(value) = value else {
             return String::new();
         };
-        match js::classify(value) {
-            Kind::Function(_) => match js::get(value, "name").map(js::classify) {
-                Some(Kind::String(name)) => name.to_string(),
+        match js::classify(Some(value)) {
+            Kind::Function(_) => match js::classify(js::get(value, "name")) {
+                Kind::String(name) => name.to_string(),
                 _ => String::new(),
             },
             Kind::Object(_) | Kind::Array(_) => {
@@ -534,41 +714,39 @@ pub fn get_io_description(value: Option<&Unknown>) -> String {
                 if unsafe { js::cast::<&JsError>(Some(value)) }.is_error() {
                     return js::string(js::get(value, "message"));
                 }
-                if let Some(Kind::String(url)) = js::get(value, "url").map(js::classify) {
+                if let Kind::String(url) = js::classify(js::get(value, "url")) {
                     return url.to_string();
                 }
-                if let Some(Kind::String(href)) = js::get(value, "href").map(js::classify) {
+                if let Kind::String(href) = js::classify(js::get(value, "href")) {
                     return href.to_string();
                 }
-                if let Some(Kind::String(src)) = js::get(value, "src").map(js::classify) {
+                if let Kind::String(src) = js::classify(js::get(value, "src")) {
                     return src.to_string();
                 }
-                if let Some(Kind::String(current_src)) =
-                    js::get(value, "currentSrc").map(js::classify)
-                {
+                if let Kind::String(current_src) = js::classify(js::get(value, "currentSrc")) {
                     return current_src.to_string();
                 }
-                if let Some(Kind::String(command)) = js::get(value, "command").map(js::classify) {
+                if let Kind::String(command) = js::classify(js::get(value, "command")) {
                     return command.to_string();
                 }
                 if let Some(request) = js::get(value, "request")
-                    && let Kind::Object(_) | Kind::Array(_) = js::classify(request)
-                    && let Some(Kind::String(url)) = js::get(request, "url").map(js::classify)
+                    && let Kind::Object(_) | Kind::Array(_) = js::classify(Some(request))
+                    && let Kind::String(url) = js::classify(js::get(request, "url"))
                 {
                     return url.to_string();
                 }
                 if let Some(response) = js::get(value, "response")
-                    && let Kind::Object(_) | Kind::Array(_) = js::classify(response)
-                    && let Some(Kind::String(url)) = js::get(response, "url").map(js::classify)
+                    && let Kind::Object(_) | Kind::Array(_) = js::classify(Some(response))
+                    && let Kind::String(url) = js::classify(js::get(response, "url"))
                 {
                     return url.to_string();
                 }
                 if let Some(id) = js::get(value, "id")
-                    && let Kind::String(_) | Kind::Number(_) | Kind::BigInt(_) = js::classify(id)
+                    && let Kind::String(_) | Kind::Number(_) | Kind::BigInt(_) = js::classify(Some(id))
                 {
                     return js::string(Some(id));
                 }
-                if let Some(Kind::String(name)) = js::get(value, "name").map(js::classify) {
+                if let Kind::String(name) = js::classify(js::get(value, "name")) {
                     return name.to_string();
                 }
                 let str = js::string(Some(value));

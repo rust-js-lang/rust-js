@@ -122,7 +122,6 @@ helpers! {
     BigAbsDiff,
     BigMinMax,
     ParseBig,
-    BigRange,
     LazyRange,
     RangeNext,
     RangeInclusiveNext,
@@ -220,7 +219,6 @@ helpers! {
     Take,
     Exchange,
     Pretty,
-    CharRange,
     TryFromInt,
     Print,
     Process,
@@ -345,6 +343,7 @@ helpers! {
     Formatted,
     FormatFloat,
     Lent,
+    Folded,
     CollectResults,
     CollectOptions,
     CmpIn,
@@ -561,7 +560,6 @@ impl Helper {
             // `a..`'s `next()`: past its type's end it counts on, as `$lazyRange` does.
             Helper::RangeFromNext => include_str!("runtime/range_from_next.js"),
             // A range of `char`s, which skips the surrogates no `char` is, as Rust's does.
-            Helper::CharRange => include_str!("runtime/char_range.js"),
             // `{:#?}`'s parts (ADR 0137): each on a line of its own, indented by
             // four spaces, its own lines too, and ended by a comma; none, `[]`.
             Helper::Pretty => include_str!("runtime/pretty.js"),
@@ -662,7 +660,6 @@ impl Helper {
             Helper::RangeNextBack => include_str!("runtime/range_next_back.js"),
             Helper::RangeInclusiveNextBack => include_str!("runtime/range_inclusive_next_back.js"),
             Helper::CharStep => include_str!("runtime/char_step.js"),
-            Helper::BigRange => include_str!("runtime/big_range.js"),
             Helper::Cmp => include_str!("runtime/cmp.js"),
             // `{:.2}` of an `f64`: its exact value, rounded to even on a tie, as
             // Rust does. JS's `toFixed` rounds a tie up, and past 1e21 it
@@ -689,6 +686,7 @@ impl Helper {
             Helper::Formatted => include_str!("runtime/formatted.js"),
             Helper::FormatFloat => include_str!("runtime/format_float.js"),
             Helper::Lent => include_str!("runtime/lent.js"),
+            Helper::Folded => include_str!("runtime/folded.js"),
             Helper::CollectResults => include_str!("runtime/collect_results.js"),
             Helper::CollectOptions => include_str!("runtime/collect_options.js"),
             // `partial_cmp` of `f64`s: `None` if either is `NaN`.

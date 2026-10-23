@@ -3,6 +3,38 @@ import type { Mutation } from "../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "parameter-underscore-kept",
+    breaks: "a parameter's `_`, Rust's mark of one unused, is in its JS name, `describeClientReference(_ref)`",
+    file: "src/lower.rs",
+    find: "        true => unmarked.to_string(),\n",
+    replace: "        true => named.clone(),\n",
+    tests: ["test/lowering-names.test.ts", "-t", "leading underscore"],
+  },
+  {
+    name: "parameter-underscore-reserved",
+    breaks: "`_new` without its `_` is `new`, a word JS keeps, given apart as `new$`",
+    file: "src/lower.rs",
+    find: "    match crate::names::js_ident(unmarked) == unmarked && !taken() {",
+    replace: "    match !taken() {",
+    tests: ["test/lowering-names.test.ts", "-t", "leading underscore"],
+  },
+  {
+    name: "parameter-underscore-collides",
+    breaks: "`_x` beside an `x` is `x` too, so one is `x$1`",
+    file: "src/lower.rs",
+    find: "    match crate::names::js_ident(unmarked) == unmarked && !taken() {",
+    replace: "    match crate::names::js_ident(unmarked) == unmarked {",
+    tests: ["test/lowering-names.test.ts", "-t", "leading underscore"],
+  },
+  {
+    name: "parameter-closure-bindings-unseen",
+    breaks: "a closure's binding isn't its function's, so `_base` beside a closure's `base` is `base`, which the closure's shadows",
+    file: "src/lower.rs",
+    find: "            if let rustc_hir::ExprKind::Closure(closure) = expr.kind {\n                intravisit::walk_body(self, self.tcx.hir_body(closure.body));\n            }\n",
+    replace: "",
+    tests: ["test/lowering-names.test.ts", "-t", "leading underscore"],
+  },
+  {
     name: "required-imported",
     breaks: "a `#[rust_js::require]` binding is read as an import that was never made",
     file: "src/lower.rs",

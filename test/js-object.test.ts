@@ -8,18 +8,22 @@ import { beforeAll, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { buildReact, compiler, fixture, run, target } from "./support";
+import { runSync } from "./child";
+import { buildReact, compiler, fixture, root, target } from "./support";
 
 beforeAll(buildReact, 600_000);
 
 const withJs = ["--", "--extern", `js=${join(target, "libjs.rmeta")}`, "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "-L", target];
 
-/** `source` compiled, its JS, and the module it is, loaded. */
-async function compiled(name: string, source: string): Promise<{ js: string; lib: any }> {
+/** `source` compiled, its JS, the module it is, loaded, and what rustc
+ * warned of, a line each. */
+async function compiled(name: string, source: string): Promise<{ js: string; lib: any; warnings: string[] }> {
   const dir = fixture(name);
   writeFileSync(join(dir, "lib.rs"), source);
-  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
-  return { js: readFileSync(join(dir, "lib.js"), "utf8"), lib: await import(join(dir, "lib.js")) };
+  const built = runSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs], root, 600_000);
+  expect(built.code, built.stderr).toBe(0);
+  const warnings = built.stderr.split("\n").filter((line) => line.startsWith("warning:") && !/warnings? emitted/.test(line));
+  return { js: readFileSync(join(dir, "lib.js"), "utf8"), lib: await import(join(dir, "lib.js")), warnings };
 }
 
 /** What rust-js says of `source`, which it refuses. */
@@ -169,13 +173,16 @@ pub fn object_name(object: Option<&Unknown>) -> String {
 // ADR 0667: `console` is a value, `webapi::console`, and its functions are
 // read as values as any binding is (ADR 0602): a variadic one taken as a
 // `fn` of rest arguments, `&dyn js::Rest<T>`, is its JS function itself,
-// which a call spreads. React's `disableLogs` and `reenableLogs`.
+// which a call spreads. React's `disableLogs` and `reenableLogs`. Its
+// `Logs`, a struct given `Object.defineProperties` as a `&dyn
+// PropertyDescriptorMap`, has each field read by JS, as rust-js's liveness
+// tells rustc (ADR 0440): none is warned of as never read.
 test("console is a value, its functions read as values", async () => {
   const methods = ["log", "info", "warn", "error", "group", "group_collapsed", "group_end"];
   const camel = (m: string) => m.replace(/_(\w)/g, (_, c) => c.toUpperCase());
   const upper = (m: string) => m.toUpperCase();
   const field = (m: string, value: string) => `                ${m}: PropertyDescriptor { value: Some(&PREV_${upper(m)}.get()), ..${value} },`;
-  const { js, lib } = await compiled("js-object-react-console", `use std::cell::Cell;
+  const { js, lib, warnings } = await compiled("js-object-react-console", `use std::cell::Cell;
 
 use js::{IntoUnknown, PropertyDescriptor, PropertyDescriptorMap, Rest, object};
 use webapi::console;
@@ -246,6 +253,7 @@ pub fn called(name: &'static str) {
     console::warn(&(name,) as &dyn Rest<dyn IntoUnknown>);
 }
 `);
+  expect(warnings).toEqual([]);
   expect(js).toContain("let prevLog;\nlet prevInfo;");
   expect(js).toContain("function disabledLog() {}\ndisabledLog.__reactDisabledLog = true;\n\nexport function disableLogs() {");
   expect(js).toContain("    prevLog = console.log;\n    prevInfo = console.info;");

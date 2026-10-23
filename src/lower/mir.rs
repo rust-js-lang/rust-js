@@ -178,8 +178,10 @@ enum Value<'tcx> {
     Fmt(Std, Ty<'tcx>, Expr),
     /// An array of values, `format_args!`'s arguments among them.
     List(Vec<Value<'tcx>>),
-    /// The variant of an enum, read to choose a branch: the enum and its type.
-    Discriminant(Expr, Ty<'tcx>),
+    /// The variant of an enum, read to choose a branch: the enum, its type,
+    /// and whether it's an untagged one given of what's there, never
+    /// `undefined` nor `null`, `classify(Some(value))`'s (ADR 0676).
+    Discriminant(Expr, Ty<'tcx>, bool),
     /// A shared reference to a place, which nothing changes while it's held
     /// (borrowck says so): the place, read where it's used.
     Place(Expr),
@@ -322,6 +324,9 @@ struct OptionWrites {
     /// value read itself, a `Some` wherever it's tested, as each case
     /// compares it by `===` (ADR 0634).
     registered: std::collections::HashSet<Local>,
+    /// The untagged enums a call gives of a `Some(..)`, `js::classify(Some(value))`'s
+    /// (`body_queries::present_calls`): never `undefined` nor `null` (ADR 0676).
+    present: std::collections::HashSet<Local>,
 }
 
 /// A body's lowering state.

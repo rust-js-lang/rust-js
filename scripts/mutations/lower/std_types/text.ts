@@ -247,8 +247,8 @@ export const mutations: Mutation[] = [
     name: "joined-text-own-items",
     breaks: "a `String` extended by a `BTreeSet` of `char`s takes them in insertion order, not as `iterable_items` steps them",
     file: "src/lower/std_types/text.rs",
-    find: "            Some(ty) => self.iterable_items(items, ty, span, out)?,\n",
-    replace: "            Some(_) => items,\n",
+    find: "                let items = self.iterable_items(items, ty, span, out)?;\n                self.by_its_fold(items, ty)\n",
+    replace: "                self.by_its_fold(items, ty)\n",
     tests: ["test/corpus.test.ts", "-t", "^btree_given_in_order.rs$"],
   },
   {
@@ -314,5 +314,13 @@ export const mutations: Mutation[] = [
     find: "                | TextOp::MatchesBy(_)\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^matches_by_predicate.rs$"],
+  },
+  {
+    name: "string-extend-steps",
+    breaks: "`extend` of a `String` by the crate's iterator steps it by `next`, not by its own `fold`",
+    file: "src/lower/std_types/text.rs",
+    find: "                self.by_its_fold(items, ty)\n",
+    replace: "                items\n",
+    tests: ["test/corpus.test.ts",  "-t",  "^own_fold_and_nth.rs$"],
   },
 ];

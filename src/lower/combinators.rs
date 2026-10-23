@@ -12,8 +12,8 @@ use self::adapters::*;
 use super::calls::apply;
 use super::drops::Drops;
 use super::recognition::trait_method;
-use super::std_types::result;
 use super::{FnCx, R, representation::Num};
+use crate::js::result;
 use crate::js::{self, Expr, Op, Prop, Stmt, StmtKind};
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_middle::ty::{self, Ty};
@@ -1046,6 +1046,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         out: &mut Vec<Stmt>,
     ) -> R<Expr> {
         let items = self.iterable_items(items, iterable, span, out)?;
+        let items = match self.collects_by_fold(into) {
+            true => self.by_its_fold(items, iterable),
+            false => items,
+        };
         let items = super::iterators::fresh_iter_source(&items).cloned().unwrap_or(items);
         self.copied_into(items, self.iterable_item(iterable), self.slice_item(into), span)
     }

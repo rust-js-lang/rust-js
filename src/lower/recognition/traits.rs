@@ -36,10 +36,20 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     }
 
     pub(in crate::lower) fn is_user_impl(&self, tr: ty::TraitRef<'tcx>) -> bool {
+        self.user_impl(tr).is_some()
+    }
+
+    /// The impl of the crate's, or a dependency's, that `tr` selects.
+    pub(in crate::lower) fn user_impl(&self, tr: ty::TraitRef<'tcx>) -> Option<DefId> {
         let tr = self.tcx.erase_and_anonymize_regions(tr);
-        matches!(self.tcx.codegen_select_candidate(self.typing_env.as_query_input(tr)),
+        match self.tcx.codegen_select_candidate(self.typing_env.as_query_input(tr)) {
             Ok(ImplSource::UserDefined(imp))
-                if self.trait_impls.contains(&imp.impl_def_id) || self.foreign.has_impl(imp.impl_def_id))
+                if self.trait_impls.contains(&imp.impl_def_id) || self.foreign.has_impl(imp.impl_def_id) =>
+            {
+                Some(imp.impl_def_id)
+            }
+            _ => None,
+        }
     }
 
     /// A type only a caller knows: a type parameter, or an associated type of

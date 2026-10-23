@@ -3,6 +3,22 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "typeof-nullish-no-case",
+    breaks: "`Kind::Undefined` and `Kind::Null`, which have no fields, aren't cases of a `switch (typeof value)`",
+    file: "src/lower/mir/hints.rs",
+    find: "                && crate::lower::untagged::told_by_kind(self.tcx, adt_def.variant(*variant_index))\n",
+    replace: "                && !adt_def.variant(*variant_index).fields.is_empty()\n",
+    tests: ["test/lowering-switches.test.ts", "-t", "undefined and null"],
+  },
+  {
+    name: "typeof-switch-present-unknown",
+    breaks: "a `switch` of `classify(Some(value))` isn't told it's there, so its object's case leaves out `null`",
+    file: "src/lower/mir/hints.rs",
+    find: "                let present = crate::lower::body_queries::given_present(self.tcx, self.thir, scrutinee).is_some();\n",
+    replace: "                let present = false;\n",
+    tests: ["test/lowering-switches.test.ts", "-t", "a match of what a value is is a switch"],
+  },
+  {
     name: "pattern-tests-nested",
     breaks: "`(Some(x), Some(y))`'s tests are `if (p != null) { if (q != null) {` nested",
     file: "src/lower/mir/hints.rs",
@@ -210,7 +226,7 @@ export const mutations: Mutation[] = [
     name: "typeof-array-counted-a-case",
     breaks: "an arm of `Kind::Array`, an `if` before the `switch`, counts a case, so `String`, `Array` and `_` are a `switch` of two",
     file: "src/lower/mir/hints.rs",
-    find: "                .filter(|c| !matches!(c, Constant::Kind(TypeofCase::Tested(_))))\n",
+    find: "                .filter(|c| !matches!(c, Constant::Kind(TypeofCase::Tested(_) | TypeofCase::Inside(..))))\n",
     replace: "",
     tests: ["test/lowering-switches.test.ts", "-t", "a match of what a value is"],
   },

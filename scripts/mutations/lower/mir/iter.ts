@@ -14,8 +14,8 @@ export const mutations: Mutation[] = [
     name: "mir-max-is-min",
     breaks: "`max()` of an iterator from MIR is its least item",
     file: "src/lower/mir/iter.rs",
-    find: "                self.extreme_of(std_method == Some(IterMethod::Max), items, item, span)?\n",
-    replace: "                self.extreme_of(std_method == Some(IterMethod::Min), items, item, span)?\n",
+    find: "                self.extreme_of(std_method == Some(IterMethod::Max), it, item, span)?\n",
+    replace: "                self.extreme_of(std_method == Some(IterMethod::Min), it, item, span)?\n",
     tests: ["test/corpus.test.ts","-t","enum_order|opaque_iterators|generic_as_ref|returned_references"],
   },
   {

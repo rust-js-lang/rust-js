@@ -541,4 +541,12 @@ export const mutations: Mutation[] = [
     replace: "    (generic_args.types().nth(1)).expect(\"`binary_search_by_key` has a key type\")\n",
     tests: ["test/corpus.test.ts", "-t", "^deque_search_by_key.rs$"],
   },
+  {
+    name: "list-extend-steps",
+    breaks: "`extend` of a `LinkedList` by the crate's iterator steps it by `next`, not by its own `fold`",
+    file: "src/lower/combinators.rs",
+    find: "            true => self.by_its_fold(items, iterable),\n",
+    replace: "            true => items,\n",
+    tests: ["test/corpus.test.ts",  "-t",  "^own_fold_and_nth.rs$"],
+  },
 ];

@@ -46,7 +46,7 @@ function main() {
     },
     {
       extend: (collection, items) => {
-        $extendMap(collection.value, items, true);
+        $extendMap(collection.value, $sortedKeys(items, $cmp), true);
       },
     },
   );
@@ -61,7 +61,7 @@ function main() {
     },
     {
       extend: (collection, items) => {
-        $extendMap(collection.value, items, true);
+        $extendMap(collection.value, $sortedKeys(items, $cmp), true);
       },
     },
   );

@@ -5,13 +5,18 @@
 // generic `next` may box its `Some` (ADR 0051): `boxed` unboxes it. `of`
 // is what it's of, which its drop drops (ADR 0421). Given its `nextBack`,
 // it knows its back, which `$nextBack` steps; given its `len`, its length,
-// an `ExactSizeIterator`'s (ADR 0456).
-function $iterator(iterator, next, boxed = false, nextBack, len, hint) {
+// an `ExactSizeIterator`'s (ADR 0456). Given its own `fold` and `nth`, the
+// crate's impl's, std's consumers call them (#162).
+function $iterator(iterator, next, boxed = false, nextBack, len, hint, fold, nth) {
   const step = (item) => (item == null ? { done: true, value: undefined } : { done: false, value: boxed ? $someValue(item) : item });
   const it = new $Steps(() => step(next(iterator)));
+  // The crate's own `fold` and `nth`, where its impl writes them, which
+  // what std routes through them calls (#162).
+  if (fold !== undefined) it.fold = (init, f) => fold(iterator, init, f);
+  if (nth !== undefined) it.nth = (k) => step(nth(iterator, k));
   it.of = iterator;
   // Another of a value of its type, stepped as it is: a clone's (ADR 0473).
-  it.with = (value) => $iterator(value, next, boxed, nextBack, len, hint);
+  it.with = (value) => $iterator(value, next, boxed, nextBack, len, hint, fold, nth);
   if (nextBack !== undefined) {
     it.back = () => step(nextBack(iterator));
   }

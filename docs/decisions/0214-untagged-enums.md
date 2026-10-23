@@ -7,6 +7,9 @@ ordinary function (ADR 0039), as an `extern` one can't be generic. Amended
 by [0668](0668-a-match-of-what-a-value-is-is-a-switch-of-its-typeof.md): an
 `otherwise` variant that's one kind `typeof` tells, `js::Kind::Object`'s
 `"object"`, is tested as that kind; a `js::Symbol` is a kind, `"symbol"`.
+Amended by [0676](0676-kind-tells-undefined-and-null.md): a variant
+without fields may be `undefined`, `#[rust_js::undefined]`, or `null`,
+`#[rust_js::null]`.
 
 Case: A, D ([0262](0262-when-rust-and-js-disagree.md)).
 

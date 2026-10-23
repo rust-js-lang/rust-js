@@ -131,3 +131,9 @@ refused (#165). A B-tree compares as its items in its order, as a
 sequence does (`$cmpItems`), a map's its entries, key then value; its
 keys' own `Ord` orders them, and `f64` values make it partial. Held by
 `test/corpus/btree_compare.rs`.
+
+## Amended by
+
+[ADR 0687](0687-a-consumer-steps-its-iterator-as-std-does.md): `max()`,
+`min()` and the `_by` and `_by_key` ones are given the iterator, not its
+array, and step it as std's `reduce` does, each item as it comes.

@@ -117,6 +117,27 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(Some(self.collected_into(it, output, item, Some(given), span)?))
     }
 
+    /// Whether std's `collect` into an `output` takes its items by `fold`,
+    /// its `extend` by `for_each`: a string's, a hash map's or set's, a
+    /// list's and `()`'s; not a `Vec`'s, a deque's, a heap's or a B-tree's,
+    /// which step them by `next`.
+    pub(in crate::lower) fn collects_by_fold(&self, output: Ty<'tcx>) -> bool {
+        self.is_lang_adt(output, LangItem::String)
+            || self.is_map(output) && !self.is_sorted(output)
+            || self.is_std_type(output, StdItem::LinkedList)
+            || output.is_unit()
+    }
+
+    /// `it`, an iterator of type `iter_ty`, as a consumer std routes through
+    /// `fold` takes it: where that reaches the crate's own, `$folded(it)`,
+    /// its items as that gives them (#162); else `it`.
+    pub(in crate::lower) fn by_its_fold(&self, it: Expr, iter_ty: Ty<'tcx>) -> Expr {
+        match self.recognition().folds_its_own(iter_ty) {
+            true => Expr::call_helper("$folded", vec![it]),
+            false => it,
+        }
+    }
+
     pub(in crate::lower) fn collected_into(
         &mut self,
         it: Expr,
@@ -126,6 +147,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
     ) -> R<Expr> {
         let method = |name: &str, it: Expr, args: Vec<Expr>| Expr::call(Expr::member(it, name), args);
+        let it = match iter_ty {
+            Some(iter_ty) if self.collects_by_fold(output) => self.by_its_fold(it, iter_ty),
+            _ => it,
+        };
         let items = |it: Expr| match iter_ty {
             Some(_) => method("toArray", it, Vec::new()),
             None => it,

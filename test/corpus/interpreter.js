@@ -215,8 +215,8 @@ const Parser = {
 
   program(parser) {
     const stmts = [];
-    let stmt;
     while (Parser.peek(parser) != null) {
+      let stmt;
       if (Parser.peek(parser) === "Let") {
         Parser.next(parser);
         const t = Parser.next(parser);

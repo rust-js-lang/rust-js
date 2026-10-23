@@ -20,7 +20,7 @@ function via(x) {
   go(x, refMutI32Bump);
 }
 
-function pass(_t) {
+function pass(t) {
   return 7;
 }
 

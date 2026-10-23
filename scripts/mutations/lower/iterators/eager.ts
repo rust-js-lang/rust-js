@@ -127,8 +127,8 @@ export const mutations: Mutation[] = [
     "name": "extreme-of-copy",
     "breaks": "`max()` of a copied slice from MIR is `$max(xs.slice())`, a copy for a read",
     "file": "src/lower/iterators/eager.rs",
-    "find": "[\"$max\", \"$min\", \"$maxBy\", \"$minBy\", \"$maxByKey\", \"$minByKey\"].contains(&v.as_str())",
-    "replace": "[\"$none\"].contains(&v.as_str())",
+    "find": "            .is_some_and(|name| HELPERS_STEPPING_ALL.contains(&name))\n            && let Some(chain) = args.first()\n",
+    "replace": "            .is_some_and(|_| false)\n            && let Some(chain) = args.first()\n",
     "tests": ["test/lowering-iterators.test.ts", "-t", "iterator chains from MIR are array methods"]
   },
   {
@@ -315,5 +315,14 @@ export const mutations: Mutation[] = [
     find: "                \"$rchunks\",\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^rchunks_remainder.rs$"],
+  },
+  {
+    name: "helper-keeps-hint",
+    breaks: "an iterator of the crate's a helper steps till it ends, `$maxByKey`'s, keeps a `size_hint` nothing asks",
+    file: "src/lower/iterators/eager.rs",
+    find: "            && let Some(first) = args.first_mut()\n        {\n            stepped_in_place(first, false, fuse);\n",
+    replace: "            && let Some(first) = args.first_mut()\n        {\n            let _ = (first, fuse);\n",
+    snapshots: true,
+    tests: ["test/corpus.test.ts",  "-t",  "^user_iterator_ends.rs$"],
   },
 ];

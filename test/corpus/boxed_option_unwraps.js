@@ -20,13 +20,13 @@ function firstOr(cur, it) {
 }
 
 function least(it, f) {
-  const option = $minBy(Iterator.from(it).toArray(), f, true);
+  const option = $minBy(Iterator.from(it), f, true);
   return option == null ? [] : [$someValue(option)];
 }
 
 function most(items, TOrd, TClone) {
   return $maxByKey(
-    items.map((item) => TClone.clone(item)),
+    items.values().map((item) => TClone.clone(item)),
     (x) => TClone.clone(x),
     TOrd.cmp,
     true,

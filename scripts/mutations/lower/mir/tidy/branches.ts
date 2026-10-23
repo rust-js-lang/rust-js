@@ -3,6 +3,14 @@ import type { Mutation } from "../../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "same-test-strict-null-undefined",
+    breaks: "`x === null` is taken for `x === undefined`, so a `match`'s `Kind::Null` arm after `Kind::Undefined`'s is dropped",
+    file: "src/lower/mir/tidy/branches.rs",
+    find: "                        matches!(p, Op::LooseEq | Op::LooseNe) || k.kind == l.kind\n",
+    replace: "                        true\n",
+    tests: ["test/lowering-switches.test.ts", "-t", "undefined and null"],
+  },
+  {
     name: "typeof-implies-object-too",
     breaks: "`typeof x === \"object\"` is taken to imply `x != null`, which `null` isn't",
     file: "src/lower/mir/tidy/branches.rs",
@@ -445,5 +453,21 @@ export const mutations: Mutation[] = [
     find: "        _ => !matches!(e.kind, ExprKind::Cond(..)),\n",
     replace: "        _ => !matches!(e.kind, ExprKind::Cond(..) | ExprKind::Arrow(..)),\n",
     tests: ["test/lowering-branches.test.ts", "-t", "a function.s too, is a conditional"],
+  },
+  {
+    name: "mir-tidy-and-chain-turned",
+    breaks: "`if a && b { s } else { t }` from MIR is `if (!a || !b) { t } else { s }`, its branches turned",
+    file: "src/lower/mir/tidy/branches.rs",
+    find: "                    (false, true) => StmtKind::If(test, otherwise, Some(then)),\n",
+    replace: "                    (false, true) => StmtKind::If(test.negated_test(), then, Some(otherwise)),\n",
+    tests: ["test/lowering-written-branches.test.ts", "-t", "an if of an && keeps its test"],
+  },
+  {
+    name: "written-continue-guarded",
+    breaks: "`if a && b { continue; } return false;` is a `let … else`'s guard, `if (!a || !b) { return false; }`, its `continue` and comment gone",
+    file: "src/lower/mir/tidy/branches.rs",
+    find: "        && !tests_continue(continues, last_if.span)\n",
+    replace: "",
+    tests: ["test/lowering-written-branches.test.ts", "-t", "a continue the program wrote"],
   },
 ];

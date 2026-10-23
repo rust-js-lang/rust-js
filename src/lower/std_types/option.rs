@@ -5,8 +5,8 @@ use crate::js::{Expr, Op, Prop, Stmt, StmtKind, UnaryOp};
 use crate::lower::calls::{Call, apply};
 use crate::lower::drops::Drops;
 
+use crate::js::result;
 use crate::lower::recognition::Std;
-use crate::lower::std_types::result;
 use crate::lower::{FnCx, R};
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_hir::def_id::DefId;
@@ -103,7 +103,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let value = if boxed { self.some(value) } else { value };
                 let name = self.fresh("value");
                 let then = vec![StmtKind::Assign(Expr::var(&name), value).at(js::Span::NONE)];
-                let error = (Expr::member(result, "_0"), generic_args.type_at(1));
+                let error = (result::held(result), generic_args.type_at(1));
                 self.or_dropped(ok, name, then, error, otherwise, span, out)?
             }
             Std::ResultOk | Std::ResultOr => {

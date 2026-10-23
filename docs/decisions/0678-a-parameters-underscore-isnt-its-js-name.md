@@ -1,0 +1,74 @@
+# 0678. A parameter's leading `_` isn't in its JS name
+
+Status: Accepted. Amends [0573](0573-every-rust-name-is-camel-case-in-js.md),
+whose names kept a leading `_`: a parameter's is Rust's mark of one
+unused, which its JS name and its declaration's are without.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): A. A parameter's name
+changes nothing a program does, and where it would, another binding's
+of the same name, it stays as Rust writes it.
+
+## Context
+
+React's `describeClientReference(ref)` (shared/ReactSerializationErrors.js)
+doesn't read its parameter. Its port writes `fn
+describe_client_reference(_ref: &Unknown)`, as rustc's `unused_variables`
+asks, and rust-js wrote `function describeClientReference(_ref)`: the `_`
+is Rust's, for its lint, and no JS reader's. The user decided
+(2026-10-23): a parameter's leading `_` doesn't reach JS.
+
+## Decision
+
+**A parameter's JS name is its camelCase name without a leading `_`**,
+the one place it's made, `lower::parameter_name`, which a body's
+parameter and its function's declaration both ask:
+
+```rust
+fn describe_client_reference(_ref: &Unknown) -> String {
+    "client".to_string()
+}
+```
+```js
+function describeClientReference(ref) {
+  return "client";
+}
+```
+
+- **Where what's left is a word JS keeps, it stays**: `_new`, not
+  `new$`, which reads as no name a person would write.
+- **Where another binding of the function has that name, it stays**:
+  `fn beside(_x: u32, x: u32)` is `beside(_x, x)`, not `x` and `x$1`; a
+  closure's binding, inside the function or around a closure's
+  parameter, too: `move |base| base + _base` keeps `_base`, which the
+  closure's `base` would shadow.
+- **A closure's parameter is one too**: `|_event, count| count + 1` is
+  `(event, count) => (count + 1) >>> 0`.
+- **Only a parameter**, a function's or a closure's, as the user
+  decided; a `let _guard` keeps its name.
+
+## Why
+
+- **The `_` is Rust's lint's**: `unused_variables` asks for it, and JS
+  has no such lint to answer; upstream writes `ref`.
+- **One place**: the declaration names a parameter as its JS does, so a
+  TypeScript caller sees `ref` in both.
+
+## Alternatives
+
+- **Every binding's `_`**, a `let`'s too: the decision was of
+  parameters; a `let _guard = lock()` is kept for what it drops.
+- **`ref` beside `x` renamed, `x$1`**: a rename where Rust's name reads
+  as well.
+
+## Consequences
+
+- Seven corpus cases and a snapshot drop a parameter's `_`:
+  `keep(f, dropF)`, `oddPartialEq_eq(odd, other)`, `pass(t)`.
+
+## What holds it
+
+- `test/lowering-names.test.ts`, "a parameter's leading underscore isn't
+  in its JS name", its JS and its declarations, run.
+- Mutations in `scripts/mutations/lower.ts`,
+  `scripts/mutations/lower/mir/locals.ts` and
+  `scripts/mutations/lower/declarations.ts`.

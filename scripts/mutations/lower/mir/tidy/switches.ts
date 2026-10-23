@@ -127,4 +127,37 @@ export const mutations: Mutation[] = [
     replace: "    Some(before)\n",
     tests: typeofs,
   },
+  {
+    name: "typeof-null-not-inside",
+    breaks: "an arm of `Kind::Null` alone is an `if` before the `switch` where an arm takes the objects, not in its `case \"object\"`",
+    file: "src/lower/mir/tidy/switches.rs",
+    find: "        let Some(taker) = (cases.iter()).position(|(values, ..)| takes(&values.values, at)) else {",
+    replace: "        let Some(taker) = None::<usize> else {",
+    tests: typeofs,
+  },
+  {
+    name: "typeof-null-no-taker-no-switch",
+    breaks: "an arm of `Kind::Null` where no arm takes the objects makes no `switch`",
+    file: "src/lower/mir/tidy/switches.rs",
+    find: "            cases[i].0.inside.clear();\n            cases[i].0.tested.push(test);\n            i += 1;\n            continue;\n",
+    replace: "            return None;\n",
+    tests: typeofs,
+  },
+
+  {
+    name: "typeof-nullish-strict",
+    breaks: "`Undefined | Null` before the `switch` is `value === null`, which `undefined` fails",
+    file: "src/lower/mir/tidy/switches.rs",
+    find: "            let none = Expr::bin(Op::LooseEq, (**subject).clone(), Expr::null());",
+    replace: "            let none = Expr::bin(Op::Eq, (**subject).clone(), Expr::null());",
+    tests: typeofs,
+  },
+  {
+    name: "typeof-undefined-untold",
+    breaks: "`value === undefined` isn't `typeof value === \"undefined\"`'s case, so a `match` of `Kind::Undefined` is no `switch`",
+    file: "src/lower/mir/tidy/switches.rs",
+    find: "                (_, ExprKind::Undefined) => Some((a.clone(), \"undefined\".to_string())),\n",
+    replace: "",
+    tests: typeofs,
+  },
 ];

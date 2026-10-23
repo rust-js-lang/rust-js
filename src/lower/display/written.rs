@@ -414,7 +414,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Some((borrowed, _)) = self.recognition().cow_parts(ty)
             && borrowed.is_str()
         {
-            return Ok(Expr::member(value, "_0"));
+            return Ok(Expr::member(value, js::positional(0)));
         }
         // A path's `display()`, its text (ADR 0173).
         if self.recognition().is_path_like(ty) {

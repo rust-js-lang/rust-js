@@ -475,7 +475,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         match self.shape(Ty::new_adt(self.tcx, adt, args)) {
             Shape::Object(fields) => fields.into_iter().map(|(key, _)| key).collect(),
-            _ => (0..variant.fields.len()).map(|i| format!("_{i}")).collect(),
+            _ => (0..variant.fields.len()).map(js::positional).collect(),
         }
     }
 
@@ -494,7 +494,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 return Expr::str(name);
             }
             let fields = self.field_keys(adt, variant, args).into_iter().zip(items);
-            let tag = Prop::Field("TAG".into(), Expr::str(name));
+            let tag = Prop::Field(js::TAG.into(), Expr::str(name));
             return Expr::object(
                 std::iter::once(tag)
                     .chain(fields.map(|(k, v)| Prop::Field(k, v)))

@@ -6,12 +6,12 @@
 use std::collections::HashSet;
 
 use crate::js;
+use crate::js::result;
 use crate::js::{Expr, ExprKind, Op, Stmt, StmtKind};
 use crate::lower::calls::Call;
 use crate::lower::recognition::{Std, trait_method};
 use crate::lower::representation::Num;
 use crate::lower::std_types::range::RangeKind;
-use crate::lower::std_types::result;
 use crate::lower::{FnCx, R};
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_middle::ty::{self, Ty};
@@ -245,8 +245,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<Expr> {
+        // By `for_each`, std's, so through the crate's own `fold`.
         let items = match ty {
-            Some(ty) => self.iterable_items(items, ty, span, out)?,
+            Some(ty) => {
+                let items = self.iterable_items(items, ty, span, out)?;
+                self.by_its_fold(items, ty)
+            }
             None => items,
         };
         let ty = ty.map(|ty| ty.peel_refs());

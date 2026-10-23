@@ -84,6 +84,9 @@ function $chainEnds(a, b) {
 // have a destructor (ADR 0465). Closing it closes its source.
 function $stepBy(it, step, drop) {
   const skip = (k, by) => {
+    // From the front, its source's `nth`, as std's `StepBy` steps it, the
+    // crate's own where it writes one (#162).
+    if (by === "next" && drop === undefined && it.nth !== undefined) return it.nth(k);
     for (; k > 0; k--) {
       const at = it[by]();
       if (at.done) return at;

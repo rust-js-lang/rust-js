@@ -260,8 +260,8 @@ pub(super) const STAGES: &[Stage] = &[
             pass("written elses", |b, h| {
                 js::statement_lists(b, &mut |s| written_elses(s, &h.written.elses))
             }),
-            pass("tail continues", |b, h| {
-                js::statement_lists(b, &mut |s| tail_continues(s, &h.written.continues))
+            pass("tail continues", |b, _| {
+                js::statement_lists(b, &mut |s| tail_continues(s))
             }),
             // A check MIR wrote first in a chain's last `else`: the chain's arm.
             pass("chained checks", |b, _| {
@@ -413,6 +413,11 @@ pub(super) const STAGES: &[Stage] = &[
                 switches::switches(b, &h.written.switches, &h.written.loops)
             }),
             pass("source spans", |b, _| js::statement_lists(b, &mut |s| source_spans(s))),
+            // A `continue` the program wrote, where it wrote it, which its
+            // comment is before (ADR 0684).
+            pass("written continues", |b, h| {
+                js::statement_lists(b, &mut |s| written_continues(s, &h.written.continues))
+            }),
         ],
         ensures: &[contracts::NOTHING_AFTER_A_JUMP, contracts::LABELS_NAMED],
     },
@@ -445,7 +450,13 @@ const JUMPS: &[Pass] = &[
 fn branch_values_of(body: &mut Vec<Stmt>, hints: &Hints) {
     let made = (hints.result, hints.written.switches.as_slice());
     bottom_up(body, &mut |s| {
-        branch_values(s, (hints.returns, &hints.written.getters), hints.booleans, made)
+        branch_values(
+            s,
+            (hints.returns, &hints.written.getters),
+            hints.booleans,
+            made,
+            &hints.written.continues,
+        )
     });
 }
 

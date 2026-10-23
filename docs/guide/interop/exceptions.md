@@ -503,16 +503,17 @@ exits with 101.
 Rust catches an unwind with `std::panic::catch_unwind`, and an unwind is
 whatever JS throws through your Rust: a panic, or what a getter, a
 binding or a callback threw ([ADR 0660](../../decisions/0660-catch-unwind-catches-what-js-throws.md)).
-Where its `Result` is matched, or its `unwrap_or` returned, it's JS's
-`try`, the closure's body in it:
+Where its `Result` is matched, its `unwrap_or` returned, or an `if let
+Ok(v)` returns `v`, it's JS's `try`, the closure's body in it; the last's
+`catch` does nothing, what follows running where it threw:
 
 ```rust
 use js::{JsError, Kind, Unknown};
 use std::panic;
 
 pub fn url(value: &Unknown) -> String {
-    panic::catch_unwind(|| match js::get(value, "url").map(js::classify) {
-        Some(Kind::String(url)) => url.to_string(),
+    panic::catch_unwind(|| match js::classify(js::get(value, "url")) {
+        Kind::String(url) => url.to_string(),
         _ => String::new(),
     })
     .unwrap_or_default()
@@ -526,6 +527,15 @@ pub fn item(items: &[u32], at: usize) -> String {
             None => "a panic".to_string(),
         },
     }
+}
+
+pub fn first_text(values: &[&Unknown]) -> String {
+    for &value in values {
+        if let Ok(text) = panic::catch_unwind(|| js::concat_text(value).unwrap()) {
+            return text;
+        }
+    }
+    String::new()
 }
 
 pub fn text(value: &Unknown) -> String {
@@ -571,6 +581,15 @@ export function item(items, at) {
     }
     return "a panic";
   }
+}
+
+export function firstText(values) {
+  for (const value of values) {
+    try {
+      return "" + value;
+    } catch {}
+  }
+  return "";
 }
 
 export function text(value) {

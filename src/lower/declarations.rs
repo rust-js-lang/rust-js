@@ -589,7 +589,11 @@ impl<'tcx> Declarations<'_, 'tcx> {
             .map(|(i, &ty)| {
                 // As its JS spells it, a word JS keeps given apart, `new$`.
                 let name = match idents.get(i).copied().flatten() {
-                    Some(ident) => crate::names::js_ident(&super::camel_case(ident.name.as_str())),
+                    // Its JS name's, without a `_` of one unused (ADR 0678).
+                    Some(ident) => {
+                        let named = super::parameter_name(self.tcx, def_id, ident.name.as_str());
+                        crate::names::js_ident(&named)
+                    }
                     // A pattern, `TagProps { variant, .. }`: its props'.
                     None => "props".to_string(),
                 };
@@ -757,8 +761,13 @@ impl<'tcx> Declarations<'_, 'tcx> {
                 let types: Vec<Value> = (adt.variants().iter())
                     .map(|v| match v.fields.iter().next() {
                         Some(field) => self.ts(field.ty(self.tcx, args).skip_normalization()),
-                        // One without fields, its name's string.
-                        None => json!({ "kind": "literal", "value": variant_name(self.tcx, v) }),
+                        // One without fields, its name's string, or `null` or
+                        // `undefined` (ADR 0676).
+                        None => match super::untagged::unit_value(self.tcx, v).map(|e| e.kind) {
+                            Some(crate::js::ExprKind::Null) => keyword("null"),
+                            Some(crate::js::ExprKind::Undefined) => keyword("undefined"),
+                            _ => json!({ "kind": "literal", "value": variant_name(self.tcx, v) }),
+                        },
                     })
                     .collect();
                 union(types)
@@ -785,11 +794,10 @@ impl<'tcx> Declarations<'_, 'tcx> {
                         if v.fields.is_empty() && !tagged {
                             return name;
                         }
-                        let tuple = matches!(v.ctor_kind(), Some(rustc_hir::def::CtorKind::Fn));
                         let tag = json!({ "kind": "property", "name": key, "optional": false, "readonly": false, "type": name });
                         let fields = v.fields.iter().enumerate().map(|(i, field)| {
                             let ty = self.field_ts(field.ty(self.tcx, args).skip_normalization());
-                            let name = if tuple { format!("_{i}") } else { field_key(self.tcx, field) };
+                            let name = crate::lower::representation::variant_field(self.tcx, v, i);
                             json!({ "kind": "property", "name": name, "optional": false, "readonly": false, "type": ty })
                         });
                         json!({ "kind": "object", "members": std::iter::once(tag).chain(fields).collect::<Vec<_>>() })

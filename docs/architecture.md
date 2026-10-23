@@ -247,6 +247,7 @@ In this table, `lower.rs`, `names.rs` and `runtime.rs` are at the `src/` root.
 | Generic IntoIterator representation | `iterators.rs` | `into_iter_held_as_it_is`, `into_iter_as_it_is` |
 | Function-value mutable arguments | `mut_refs.rs` | `unboxed_by_function` |
 | Body module placement | `lower.rs` | `body_module` |
+| A parameter's JS name, its body's and its declaration's | `lower.rs` | `parameter_name` |
 | Std body capture | `analysis.rs` | `collect_std_bodies` |
 | Dictionary cache names | `names.rs` | `dictionary_cache` |
 | String offsets in JS units | `mir/offsets.rs`; `std_types/text.rs` | `in_units`, `call_in_units`, `step`, `cut`, `seed`; `found`, `sliced_in_units` |
@@ -255,6 +256,7 @@ In this table, `lower.rs`, `names.rs` and `runtime.rs` are at the `src/` root.
 | Runtime helper identity and properties | `runtime.rs` | `exports`, `helper_of`, `is_pure`, `names_a_place` |
 | A function's rest parameter and its calls' rest arguments | `bindings.rs`; `calls.rs` | `marked_rest`, `takes_rest`; `rest_given`, `spread_rest` |
 | The order a struct literal's object lists its fields, and reads them, in | `aggregates.rs` | `written_order` |
+| An untagged enum's `undefined` and `null`, and what's there of `classify(Some(v))` | `untagged.rs`; `body_queries.rs` | `unit_value`, `holds_nullish`, `told_by_kind`; `given_present`, `present_calls` |
 | What an untagged enum's variants are together, a test's and a `switch`'s case | `untagged.rs` | `untagged_test`, `untagged_cases` |
 | A string's count of UTF-16 units, its `length` | `recognition/types.rs` | `counts_utf16_units` |
 | A binding's read of a property, which a getter may be, and a chain's test of one | `bindings.rs`; `mir/tidy/logicals.rs` | `reads_a_property`; `bound_into` |
@@ -280,7 +282,9 @@ Linking resolves symbolic references to ordinary names. During planning,
 `js::Module::unprintable` rejects unresolved symbols, function holes, drop
 arguments, handles and unresolved dynamic imports before printing. Representation
 constants such as `js::HELD` and `js::DICTIONARY` belong to the AST; consumers
-do not repeat their spelling.
+do not repeat their spelling. So does an enum's shape, `js::TAG` and
+`js::positional(i)`, and a `Result`'s, made, tested and read by `js::result`,
+which lowering and `src/prepare.rs` both ask ([ADR 0688](decisions/0688-a-results-js-has-one-owner.md)).
 
 `src/to_oxc.rs` and `src/to_oxc/` convert JS to oxc and generate source maps;
 `src/format.rs` lays it out with oxfmt and remaps changed text. Declarations
