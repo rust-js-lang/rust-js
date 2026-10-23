@@ -301,6 +301,35 @@ pub fn report() -> String {
   }
 });
 
+// A `&mut Value` is a cell of it, `Null` being a string no write changes in
+// place: written through by `*r = v`, `get_mut` a handle on the entry, and
+// `as_array_mut` its array, from `Null` to an object and back.
+test("serde: a Value written through a &mut changes to and from Null", async () => {
+  const dir = fixture("serde-value-mut");
+  writeFileSync(join(dir, "cases.rs"), `use serde_json::{json, Value};
+fn clear(slot: &mut Value) {
+    *slot = Value::Null;
+}
+pub fn report() -> String {
+    let mut whole = json!({"k": 1});
+    clear(&mut whole);
+    let mut v = json!({"n": 2.5, "m": null, "list": [1, null]});
+    if let Some(n) = v.get_mut("n") {
+        *n = Value::Null;
+    }
+    *v.get_mut("m").unwrap() = json!("s");
+    for item in v.get_mut("list").unwrap().as_array_mut().unwrap().iter_mut() {
+        *item = Value::Null;
+    }
+    let taken = std::mem::take(v.get_mut("m").unwrap());
+    let missing = v.get_mut("missing").is_none();
+    format!("{whole} {v} {taken} {missing}")
+}
+`);
+  const expected = JSON.parse(run([native(dir)]));
+  expect((await compiled(dir)).report()).toBe(expected);
+});
+
 // A set of structs, an array in JSON, found by value as it's read (ADR
 // 0121): two equal items are one, as serde_json's `HashSet` has them.
 test("serde: a set of structs read from JSON has each value once", async () => {

@@ -416,11 +416,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // (ADR 0033). A crate's own with a fieldless variant isn't: that
             // variant is a string, which can't become another in place, so
             // `*r = ..` is its place's, as a number's is (ADR 0147). One of
-            // std's or serde_json's is its methods' object, as it was, a
-            // `Value`'s rust-js's own (ADR 0083). `Option` is its value itself
-            // (ADR 0030), not an object.
+            // std's or serde_json's is its methods' object, as it was; not
+            // a `Value`, whose `Null` is a string, which can't become another
+            // in place (ADR 0083). `Option` is its value itself (ADR 0030),
+            // not an object.
             || matches!(ty.kind(), ty::Adt(adt, _) if adt.is_enum()
                 && !self.tcx.is_lang_item(adt.did(), LangItem::Option)
+                && !self.recognition().is_json_value(ty)
                 && adt.variants().iter().any(|v| !v.fields.is_empty())
                 && (adt.variants().iter().all(|v| !v.fields.is_empty())
                     || !(adt.did().is_local() || self.krate.foreign.in_library(adt.did()))))

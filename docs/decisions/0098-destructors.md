@@ -529,3 +529,16 @@ combinators move each item on, `IterComb::moves_each_on`, which the check
 of a call's drops and of a combinator's ask; it was a list in each.
 litemap's `other.values.lm_into_iter().filter_map(..)` of generic items
 compiles.
+
+## Amendment: what an iterator consumed drops
+
+Two consumers dropped nothing where Rust drops (#170). An `impl
+Iterator` a function returns, of the crate's iterator with a destructor,
+consumed by `sum()`, `collect()` or `count()`: `is_user_iterator` asked
+of the opaque type, which isn't one, where it's the type it hides; it
+answers of that now, so it's dropped after, as a concrete one is. And a
+`collect()` into a `Result` or an `Option` that stops: what's left of
+its source is closed (`closing`), dropping it, then each value collected
+is dropped, as std's `try_process` drops them, `$collectResults` and
+`$collectOptions` given the value's drop. Held by
+`test/corpus/drops_of_consumed_iterators.rs`.

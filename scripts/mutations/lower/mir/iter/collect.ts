@@ -186,4 +186,12 @@ export const mutations: Mutation[] = [
     replace: "            Some(made) if !self.boxed_payload(made) => \"$tryFoldSome\",\n",
     tests: ["test/corpus.test.ts", "-t", "^try_for_each.rs$"],
   },
+  {
+    name: "collect-fallible-source-unclosed",
+    breaks: "a `collect` into a `Result` that stops at an `Err` leaves what's left of its source undropped",
+    file: "src/lower/mir/iter/collect.rs",
+    find: "                Some(iter_ty) => self.closing(it, iter_ty, span)?,\n",
+    replace: "                Some(_) => it,\n",
+    tests: ["test/corpus.test.ts", "-t", "^drops_of_consumed_iterators.rs$"],
+  },
 ];

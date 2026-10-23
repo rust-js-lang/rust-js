@@ -6,8 +6,8 @@ export const mutations: Mutation[] = [
     "name": "collect-options-not-into",
     "breaks": "`collect()` into an `Option` of a set gives the array of its items",
     "file": "src/runtime/collect_options.js",
-    "find": "  return into ? into(values) : values;\n",
-    "replace": "  return values;\n",
+    "find": "  if (!failed) return into ? into(values) : values;\n",
+    "replace": "  if (!failed) return values;\n",
     "tests": [
       "test/corpus.test.ts",
       "-t",

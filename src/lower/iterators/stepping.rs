@@ -50,6 +50,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 })
             }
         };
+        // Where it stops, what's collected dropped, each value (ADR 0098).
+        let value = item.and_then(|item| match item.kind() {
+            ty::Adt(_, args) => args.types().next(),
+            _ => None,
+        });
+        let drop = match value {
+            Some(value) => self.std_drop_function(value, span)?,
+            None => None,
+        };
+        let into = match (into, &drop) {
+            (None, Some(_)) => Some(Expr::undefined()),
+            (into, _) => into,
+        };
         Ok(if self.option_of(target).is_some() {
             let mut list = vec![items];
             let boxed = item.is_some_and(|item| self.option_of(item).is_some_and(|inner| self.boxed_payload(inner)));
@@ -57,10 +70,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 list.push(Expr::bool(boxed));
             }
             list.extend(into);
+            list.extend(drop);
             Expr::call(Expr::helper("$collectOptions"), list)
         } else {
             let mut list = vec![items];
             list.extend(into);
+            list.extend(drop);
             Expr::call(Expr::helper("$collectResults"), list)
         })
     }

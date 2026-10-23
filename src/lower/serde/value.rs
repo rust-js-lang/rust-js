@@ -149,6 +149,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             JsonMethod::IsTag(tag) => Expr::bin(Op::Eq, Expr::member(receiver.clone(), "TAG"), Expr::str(tag)),
             JsonMethod::IsNumber(kind) => call("$jsonValueIs", vec![Expr::str(kind)]),
             JsonMethod::AsTag(tag) => call("$jsonValueAs", vec![Expr::str(tag)]),
+            // Of a `&mut Value`, a cell of it, `null`'s string being none to
+            // change in place: what it holds, whose array or map is changed.
+            JsonMethod::AsTagMut(tag) => Expr::call(
+                Expr::helper("$jsonValueAs"),
+                vec![Expr::held(receiver.clone()), Expr::str(tag)],
+            ),
             JsonMethod::AsF64 => call("$jsonValueF64", Vec::new()),
             JsonMethod::AsInt(kind) => call("$jsonValueInt", vec![Expr::str(kind)]),
             // `get(k)` of an object, or `get(i)` of an array: `None` if it
@@ -156,6 +162,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             JsonMethod::Get => {
                 let key = values.remove(0);
                 call("$jsonGet", vec![key])
+            }
+            JsonMethod::GetMut => {
+                let key = values.remove(0);
+                call("$jsonGetMut", vec![key])
             }
             JsonMethod::NumberFromF64 | JsonMethod::Unsupported { .. } => {
                 unreachable!("handled before receiver extraction")

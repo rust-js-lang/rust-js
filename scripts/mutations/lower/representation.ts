@@ -573,4 +573,12 @@ export const mutations: Mutation[] = [
     replace: "        !self.is_cell_pointee(ty) && (",
     tests: ["test/corpus.test.ts", "-t", "^guard_swap_refused.rs$"],
   },
+  {
+    name: "json-value-written-in-place",
+    breaks: "a `&mut Value` is the value itself, written in place, which `Null`, a string, can't be",
+    file: "src/lower/representation.rs",
+    find: "                && !self.recognition().is_json_value(ty)\n",
+    replace: "",
+    tests: ["test/serde.test.ts", "-t", "changes to and from Null"],
+  },
 ];

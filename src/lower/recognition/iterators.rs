@@ -51,13 +51,13 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     }
 
     /// Is `ty` an iterator of the crate's, or a library's, stepped by its
-    /// impl's `next` (ADR 0055)? Not a compiled std one's, `Peekable`'s,
-    /// whose struct steps itself, a JS iterator (ADR 0561).
+    /// impl's `next` (ADR 0055), an `impl Iterator` that's one too? Not a
+    /// compiled std one's, `Peekable`'s, whose struct steps itself, a JS
+    /// iterator (ADR 0561).
     pub(in crate::lower) fn is_user_iterator(&self, ty: ty::Ty<'tcx>) -> bool {
         let iterator = self.tcx.get_diagnostic_item(sym::Iterator).expect("std has `Iterator`");
-        matches!(ty.peel_refs().kind(), ty::Adt(..))
-            && self.has_user_impl(iterator, ty.peel_refs())
-            && !is_compiled_std_iterator(self.tcx, ty)
+        let ty = self.reveal(ty.peel_refs());
+        matches!(ty.kind(), ty::Adt(..)) && self.has_user_impl(iterator, ty) && !is_compiled_std_iterator(self.tcx, ty)
     }
 
     pub(in crate::lower) fn is_reverse(&self, ty: Ty<'tcx>) -> bool {

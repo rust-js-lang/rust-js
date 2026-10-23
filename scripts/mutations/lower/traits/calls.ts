@@ -325,4 +325,12 @@ export const mutations: Mutation[] = [
     replace: "let b = b.expect(\"two operands\");",
     tests: ["test/corpus.test.ts", "-t", "generic_bitwise_operators"],
   },
+  {
+    name: "mut-mut-object-to-generic-given",
+    breaks: "a `&mut &mut` of an object given to generic code is a box short, read as the object's field of `undefined`",
+    file: "src/lower/traits/calls.rs",
+    find: "        if crate_call\n            && let Some(ty) = generic_args.types().find(|&ty| {\n",
+    replace: "        if false\n            && let Some(ty) = generic_args.types().find(|&ty| {\n",
+    tests: ["test/corpus.test.ts", "-t", "^mut_mut_object_to_generic.rs$"],
+  },
 ];

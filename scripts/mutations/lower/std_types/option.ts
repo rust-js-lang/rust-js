@@ -303,4 +303,13 @@ export const mutations: Mutation[] = [
     replace: "            Std::ResultOk if self.drops(generic_args.type_at(1)) != Drops::Nothing => {",
     tests: ["test/corpus.test.ts", "-t", "^unused_value_drops.rs$"],
   },
+  {
+    name: "json-value-maybe-falsy",
+    breaks: "an `Option<Value>`'s presence is `!= null`, not its truth, though a `Value` is never falsy",
+    file: "src/lower/std_types/option.rs",
+    find: "            || self.recognition().is_json_value(ty)\n",
+    replace: "",
+    tests: ["test/snapshots.test.ts"],
+    snapshots: true,
+  },
 ];

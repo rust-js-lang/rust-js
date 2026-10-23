@@ -7872,6 +7872,17 @@ export function $jsonGet(value, key) {
   if (typeof key === "string") return value.TAG === "Object" ? value._0.get(key) : undefined;
   return value.TAG === "Array" ? value._0[key] : undefined;
 }
+// `get_mut(key)` of a `&mut Value`, a cell of it, `null`'s string being no
+// object (ADR 0083): a handle on the entry, which reads and writes it in its
+// object's map or its array, or `undefined` if it isn't there.
+export function $jsonGetMut(cell, key) {
+  const value = cell.value;
+  const items = typeof key === "string" ? value.TAG === "Object" && value._0 : value.TAG === "Array" && value._0;
+  if (!items || (typeof key === "string" ? !items.has(key) : key >= items.length)) return undefined;
+  return typeof key === "string"
+    ? { get value() { return items.get(key); }, set value(next) { items.set(key, next); } }
+    : { get value() { return items[key]; }, set value(next) { items[key] = next; } };
+}
 export function $jsonIndex(value, key) {
   return $jsonGet(value, key) ?? "Null";
 }
@@ -9830,26 +9841,41 @@ export function $lent(it) {
 
 // `collect()` into a `Result`: the first `Err`, where it stops, as Rust's
 // does, or `Ok` of all the values, made `into` the collection where it's
-// one but an array.
-export function $collectResults(items, into) {
+// one but an array. Stopped, what it steps is closed, dropping what's left
+// of it, then each value collected is dropped by `drop`, as std's are.
+export function $collectResults(items, into, drop) {
   const values = [];
+  let failed;
   for (const item of items) {
-    if (item.TAG === "Err") return item;
+    if (item.TAG === "Err") {
+      failed = item;
+      break;
+    }
     values.push(item._0);
   }
-  return { TAG: "Ok", _0: into ? into(values) : values };
+  if (failed === undefined) return { TAG: "Ok", _0: into ? into(values) : values };
+  if (drop) values.forEach((value) => drop(value));
+  return failed;
 }
 
 // `collect()` into an `Option`: `None` at the first `None`, where it stops,
 // as Rust's does, or all the values, each out of its box where it has one
 // (ADR 0051), made `into` the collection where it's one but an array.
-export function $collectOptions(items, boxed = false, into) {
+// Stopped, what it steps is closed, dropping what's left of it, then each
+// value collected is dropped by `drop`, as std's are.
+export function $collectOptions(items, boxed = false, into, drop) {
   const values = [];
+  let failed = false;
   for (const item of items) {
-    if (item == null) return undefined;
+    if (item == null) {
+      failed = true;
+      break;
+    }
     values.push(boxed ? $someValue(item) : item);
   }
-  return into ? into(values) : values;
+  if (!failed) return into ? into(values) : values;
+  if (drop) values.forEach((value) => drop(value));
+  return undefined;
 }
 
 export function $cmpIn(names, a, b) {

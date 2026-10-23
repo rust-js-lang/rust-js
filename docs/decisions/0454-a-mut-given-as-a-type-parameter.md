@@ -142,3 +142,11 @@ of a number or a `String` was lost (#167). The cell a place's `&mut` is
 the `value` of, a call's, one made there, or one a place holds, is
 `held_cell`'s answer, which a call's arguments and a value's handle both
 ask: it's given on as it is. Held by `test/corpus/forwarding_mut_impl.rs`.
+
+A `&mut &mut` of an object given for a type parameter of the crate's,
+`drive(&mut &mut c)` through `impl<T: Trait + ?Sized> Trait for &mut T`,
+needs generic code's box at each level, `{ value: { value: c } }`, where
+the caller's `&mut` of an object is the object and the adaptation is one
+level, `given_box`'s: it was a box short and threw (#167). It's refused
+(`check_call_takes`), held by `test/corpus/mut_mut_object_to_generic.rs`;
+a `&mut` of one, and a `&mut &mut` of a number, are given as they are.

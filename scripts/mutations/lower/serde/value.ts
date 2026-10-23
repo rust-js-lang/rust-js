@@ -45,4 +45,20 @@ export const mutations: Mutation[] = [
     replace: "                Expr::call(Expr::member(value, \"map\"), vec![arrow])",
     tests: ["test/serde.test.ts", "-t", "nested Value conversions"],
   },
+  {
+    name: "json-get-mut-unhandled",
+    breaks: "`get_mut` of a `Value` is `get`'s, of its cell, which has no entries",
+    file: "src/lower/serde/value.rs",
+    find: "                call(\"$jsonGetMut\", vec![key])\n",
+    replace: "                call(\"$jsonGet\", vec![key])\n",
+    tests: ["test/serde.test.ts", "-t", "changes to and from Null"],
+  },
+  {
+    name: "json-as-mut-of-cell",
+    breaks: "`as_array_mut()` of a `&mut Value` asks its cell, not what it holds",
+    file: "src/lower/serde/value.rs",
+    find: "                vec![Expr::held(receiver.clone()), Expr::str(tag)],\n",
+    replace: "                vec![receiver.clone(), Expr::str(tag)],\n",
+    tests: ["test/serde.test.ts", "-t", "changes to and from Null"],
+  },
 ];
