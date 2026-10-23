@@ -389,6 +389,7 @@ mod tests {
             body,
             export: false,
             is_async: false,
+            noinline: false,
             span: Span::NONE,
             name_span: Span::NONE,
         })

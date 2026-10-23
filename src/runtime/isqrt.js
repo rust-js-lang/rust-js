@@ -1,5 +1,10 @@
 // `x.isqrt()` of an integer, a number or a BigInt: its square root, rounded
 // down. A BigInt's starts from a float's guess, which it corrects.
+// `x.checked_isqrt()` of a signed integer: none of a negative.
+function $checkedIsqrt(x) {
+  return x < 0 ? undefined : $isqrt(x);
+}
+
 function $isqrt(x) {
   if (x < 0) throw new Error("argument of integer square root cannot be negative");
   if (typeof x !== "bigint") return Math.floor(Math.sqrt(x));

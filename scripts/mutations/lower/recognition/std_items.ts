@@ -171,4 +171,12 @@ export const mutations: Mutation[] = [
     replace: "is_some_and(|id| !tcx.is_diagnostic_item(Symbol::intern(\"macro_concat\"), id))",
     tests: ["test/lowering-strings.test.ts", "-t", "a concat! of literals is its pieces joined by"],
   },
+  {
+    name: "noinline-of-any-inline",
+    breaks: "`#[inline]` and `#[inline(always)]` are `@noinline` too",
+    file: "src/lower/recognition/std_items.rs",
+    find: "Inline(rustc_hir::attrs::InlineAttr::Never, _))\n",
+    replace: "Inline(_, _))\n",
+    tests: ["test/emission.test.ts", "-t", "inline\\(never\\)"],
+  },
 ];

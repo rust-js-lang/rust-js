@@ -235,4 +235,12 @@ export const mutations: Mutation[] = [
     replace: "                let column = inside.then(|| (c.lo as usize - line_start) as u32).filter(|_| false);\n",
     tests: ["test/lowering-names.test.ts", "-t", "a comment inside an expression is after the code before it"],
   },
+  {
+    name: "noinline-beside-its-docs",
+    breaks: "`@noinline` is a JSDoc of its own beside a function's docs, not their last line",
+    file: "src/to_oxc.rs",
+    find: "                if noinline && run > 0 && i + run == own.len() {\n",
+    replace: "                if false {\n",
+    tests: ["test/emission.test.ts", "-t", "inline\\(never\\)"],
+  },
 ];

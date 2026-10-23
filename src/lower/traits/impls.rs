@@ -602,6 +602,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             body,
             export: self.tcx.visibility(tr.def_id).is_public(),
             is_async: false,
+            noinline: false,
             span: self.js_span(span),
             name_span: js::Span::NONE,
         };

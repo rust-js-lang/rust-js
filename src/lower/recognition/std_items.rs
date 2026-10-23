@@ -123,6 +123,14 @@ pub(crate) fn is_c_variadic(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
         && tcx.fn_sig(def_id).skip_binder().skip_binder().c_variadic()
 }
 
+/// Whether `def_id` is marked `#[inline(never)]`: kept out of its callers'
+/// place, by rust-js too, and written `/** @noinline */`, Closure Compiler's
+/// same meaning (ADR 0649). `#[inline]` and `#[inline(always)]` say
+/// nothing: a JS engine decides.
+pub(crate) fn is_noinline(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
+    rustc_hir::find_attr!(tcx, def_id, Inline(rustc_hir::attrs::InlineAttr::Never, _))
+}
+
 /// Which of std's functions that work in Node only `id` is, if it's one.
 pub(crate) fn node_only(tcx: TyCtxt<'_>, id: DefId) -> Option<ProcessOp> {
     let path = std_path(tcx, id);
