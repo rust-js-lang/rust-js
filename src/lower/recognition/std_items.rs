@@ -344,6 +344,15 @@ pub(crate) fn is_transmute(tcx: TyCtxt<'_>, id: DefId) -> bool {
 
 /// A `char`'s `to_uppercase()` or `to_lowercase()`: the `char`s of its
 /// mapping, an array (ADR 0070).
+/// Whether what's written at `span` is what std's `concat!` made, the one
+/// string literal of its arguments (ADR 0641): by the macro, not its name,
+/// which a crate's own may have.
+pub(crate) fn from_concat(tcx: TyCtxt<'_>, span: rustc_span::Span) -> bool {
+    let expansion = span.ctxt().outer_expn_data();
+    matches!(expansion.kind, ExpnKind::Macro(MacroKind::Bang, _))
+        && (expansion.macro_def_id).is_some_and(|id| tcx.is_diagnostic_item(Symbol::intern("macro_concat"), id))
+}
+
 /// `pin!`'s `Pin::new_unchecked` of the variable it pins.
 pub(crate) fn is_pin_macro_fn(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
     std_path(tcx, def_id) == "std::pin::pin_new_unchecked_in_helper"

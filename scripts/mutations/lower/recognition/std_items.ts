@@ -163,4 +163,12 @@ export const mutations: Mutation[] = [
     replace: "                && !tcx.visibility(called).is_public()\n                && false\n",
     tests: ["test/std-package.test.ts"],
   },
+  {
+    name: "concat-macro-unknown",
+    breaks: "what std's `concat!` made isn't known as its, and so is one string, not its pieces",
+    file: "src/lower/recognition/std_items.rs",
+    find: "is_some_and(|id| tcx.is_diagnostic_item(Symbol::intern(\"macro_concat\"), id))",
+    replace: "is_some_and(|id| !tcx.is_diagnostic_item(Symbol::intern(\"macro_concat\"), id))",
+    tests: ["test/lowering-strings.test.ts", "-t", "a concat! of literals is its pieces joined by"],
+  },
 ];

@@ -115,12 +115,12 @@ export const mutations: Mutation[] = [
     tests: ["test/snapshots.test.ts", "-t", "counter"],
   },
   {
-    name: "mir-literal-lines-flattened",
-    breaks: "a string MIR's constant has, written across lines, is a string of `\\n`s",
+    name: "mir-literal-unwritten",
+    breaks: "a string MIR's constant has is one literal, though its source writes it across lines or as `concat!`'s pieces",
     file: "src/lower/mir/operands.rs",
-    find: "text.contains('\\n') && crate::lower::literal_across_lines(tcx, c.span)",
-    replace: "text.contains('\\n') && false",
-    tests: ["test/lowering-strings.test.ts", "-t", "a string written across lines keeps its lines"],
+    find: "            js::ExprKind::Str(text) => crate::lower::literals::string_literal(tcx, text, c.span).or_at(value.span),\n",
+    replace: "",
+    tests: ["test/lowering-strings.test.ts", "-t", "a string written across lines keeps its lines|a concat! of literals is its pieces joined by"],
   },
   {
     name: "constant-number-unplaced",

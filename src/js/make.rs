@@ -49,8 +49,14 @@ impl Expr {
         Expr::new(ExprKind::Str(s.into()))
     }
 
-    pub fn lines(s: impl Into<String>) -> Expr {
-        Expr::new(ExprKind::Lines(s.into()))
+    /// A string as its source writes it, its pieces in order: one piece on
+    /// one line is a string literal, any other a `Written` (ADR 0641).
+    pub fn written(mut pieces: Vec<StrPiece>) -> Expr {
+        match pieces.as_slice() {
+            [] => Expr::str(""),
+            [piece] if !piece.lines => Expr::str(pieces.pop().expect("a piece").text),
+            _ => Expr::new(ExprKind::Written(pieces)),
+        }
     }
 
     /// A regular expression literal, as written: `/^[0-9]$/`.
@@ -526,7 +532,7 @@ impl Expr {
                 | ExprKind::BigUint(_)
                 | ExprKind::Bool(_)
                 | ExprKind::Str(_)
-                | ExprKind::Lines(_)
+                | ExprKind::Written(_)
                 | ExprKind::Undefined
                 | ExprKind::GivenUndefined
                 | ExprKind::Null

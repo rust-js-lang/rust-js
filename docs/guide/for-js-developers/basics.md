@@ -354,6 +354,59 @@ export function logUser(name, age) {
 `s.len()` is the length in UTF-8 bytes, not `s.length`. See
 [Collections: strings](collections.md#strings).
 
+A string literal is written as its source writes it. A long one split
+over lines, which JS joins with `+`, is std's `concat!` of its pieces;
+one written across lines is a template literal of them:
+
+```js
+export const OMITTED_PROP_ERROR =
+  'This object has been omitted by React in the console log ' +
+  'to avoid sending too much data from the server. Try logging smaller ' +
+  'or more specific objects.';
+
+export const PAGE = `<main>
+  <h1>Hi</h1>
+</main>`;
+```
+
+```rust
+pub const OMITTED_PROP_ERROR: &str = concat!(
+    "This object has been omitted by React in the console log ",
+    "to avoid sending too much data from the server. Try logging smaller ",
+    "or more specific objects."
+);
+
+pub const PAGE: &str = r#"<main>
+  <h1>Hi</h1>
+</main>"#;
+
+pub fn version() -> &'static str {
+    concat!("v", 2, ".", 1)
+}
+```
+
+```js
+export const OMITTED_PROP_ERROR =
+  "This object has been omitted by React in the console log " +
+  "to avoid sending too much data from the server. Try logging smaller " +
+  "or more specific objects.";
+
+export const PAGE = `<main>
+  <h1>Hi</h1>
+</main>`;
+
+export function version() {
+  return "v" + "2" + "." + "1";
+}
+```
+
+- Each of `concat!`'s arguments is its own JS string, in order: a
+  `char`'s, a number's or a `bool`'s too, as `concat!` writes it, `"2"`.
+- A `\` ending a line continues one literal, as it does in Rust: one JS
+  string.
+- A `concat!` of another macro, `concat!("v", env!("VERSION"))`, is the
+  one string rustc makes of it.
+
 ## Functions and arrow functions
 
 A `fn` is a `function`; a closure, `|n| n * 2`, is an arrow function.

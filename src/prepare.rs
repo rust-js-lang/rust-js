@@ -1270,7 +1270,7 @@ fn expr(e: &mut Expr) {
         | ExprKind::BigUint(_)
         | ExprKind::Bool(_)
         | ExprKind::Str(_)
-        | ExprKind::Lines(_)
+        | ExprKind::Written(_)
         | ExprKind::Undefined
         | ExprKind::GivenUndefined
         | ExprKind::Null

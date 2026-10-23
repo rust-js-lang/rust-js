@@ -20,13 +20,13 @@ use std::collections::{BTreeSet, HashMap, HashSet};
 use std::rc::Rc;
 use std::sync::Arc;
 
-use rustc_ast::{LitKind, StrStyle};
+use rustc_ast::LitKind;
 use rustc_hir::def::{CtorKind, DefKind};
 
 use rustc_middle::thir::{ExprId, LocalVarId, Pat, PatKind, Thir};
 
 use rustc_middle::ty::{self, GenericArgsRef, Ty, TyCtxt, TypeVisitableExt};
-use rustc_span::def_id::{CRATE_MOD_ID, DefId, LocalDefId, LocalModId};
+use rustc_span::def_id::{CRATE_MOD_ID, DefId, LocalModId};
 use rustc_span::{ErrorGuaranteed, SourceFile, Span};
 
 use crate::js::{self, Expr, Prop, Stmt, StmtKind};
@@ -50,6 +50,7 @@ mod iterators;
 mod jsx;
 mod jsx_api;
 mod library;
+mod literals;
 pub(crate) mod liveness;
 mod loops;
 mod mir;
@@ -522,11 +523,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     fn literal(&self, lit: &LitKind, neg: bool, ty: Ty<'tcx>, span: Span) -> R<Expr> {
         match *lit {
             LitKind::Bool(b) => Ok(Expr::bool(b)),
-            // One written across lines keeps them, a template literal.
-            LitKind::Str(s, style) if s.as_str().contains('\n') && written_across_lines(self.tcx, style, span) => {
-                Ok(Expr::lines(s.as_str()))
-            }
-            LitKind::Str(s, _) => Ok(Expr::str(s.as_str())),
+            // As it's written: across lines, a template literal of them, or
+            // `concat!`'s pieces joined by `+` (ADR 0641).
+            LitKind::Str(s, _) => Ok(literals::string_literal(self.tcx, s.as_str(), span)),
             // A `char` is a string of one character (ADR 0034).
             LitKind::Char(c) => Ok(Expr::str(c.to_string())),
             LitKind::Int(n, _) => {
@@ -1012,54 +1011,5 @@ fn module_symbol(module: LocalModId, export: &str) -> crate::js::Symbol {
     crate::js::Symbol {
         module: module.to_def_id().index.as_u32(),
         export: export.to_owned(),
-    }
-}
-
-/// Whether a string literal's line breaks are written as such in its
-/// source, not as `\n`: a raw string's always are, and a cooked one's
-/// where it spans lines, other than by a `\` ending one, which leaves
-/// the break out.
-fn written_across_lines(tcx: TyCtxt<'_>, style: StrStyle, span: Span) -> bool {
-    !span.from_expansion()
-        && match style {
-            StrStyle::Raw(_) => true,
-            StrStyle::Cooked => tcx
-                .sess
-                .source_map()
-                .span_to_snippet(span)
-                .is_ok_and(|code| code.match_indices('\n').any(|(i, _)| !code[..i].ends_with('\\'))),
-        }
-}
-
-/// Whether the string literal at `span` is written across lines, as MIR's
-/// constant of it says only by where it's written.
-pub(super) fn literal_across_lines(tcx: TyCtxt<'_>, span: Span) -> bool {
-    let Ok(code) = tcx.sess.source_map().span_to_snippet(span) else {
-        return false;
-    };
-    let style = match code.chars().next() {
-        Some('r') => StrStyle::Raw(0),
-        Some('"') => StrStyle::Cooked,
-        _ => return false,
-    };
-    written_across_lines(tcx, style, span)
-}
-
-/// A `const`'s text, `const PAGE: &str = r#"<main>..`, written across
-/// lines: a template literal of them, as a literal written so in place is.
-fn const_lines(tcx: TyCtxt<'_>, def_id: LocalDefId, value: Expr) -> Expr {
-    let js::ExprKind::Str(text) = &value.kind else {
-        return value;
-    };
-    let body = tcx.hir_body_owned_by(def_id);
-    match body.value.kind {
-        rustc_hir::ExprKind::Lit(lit)
-            if let rustc_ast::LitKind::Str(_, style) = lit.node
-                && text.contains('\n')
-                && written_across_lines(tcx, style, lit.span) =>
-        {
-            Expr::lines(text.as_str())
-        }
-        _ => value,
     }
 }

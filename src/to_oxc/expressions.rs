@@ -80,13 +80,25 @@ impl<'a> Cx<'a> {
             ExprKind::Jsx(jsx) => self.jsx(sp, jsx),
             // Printed as written, as `number` prints an integer.
             ExprKind::Regex(literal) => Expression::new_identifier(sp, self.name(literal), b),
-            ExprKind::Lines(text) => {
-                let value = TemplateElementValue {
-                    raw: self.name(&template_raw(text, true)).into(),
-                    cooked: Some(self.name(text).into()),
+            // Its pieces joined by `+`, each a string literal or, written
+            // across lines, a template literal of them (ADR 0641).
+            ExprKind::Written(pieces) => {
+                let piece = |piece: &js::StrPiece| match piece.lines {
+                    true => {
+                        let value = TemplateElementValue {
+                            raw: self.name(&template_raw(&piece.text, true)).into(),
+                            cooked: Some(self.name(&piece.text).into()),
+                        };
+                        let quasis = ArenaVec::from_iter_in([TemplateElement::new(SPAN, value, true, b)], b);
+                        Expression::new_template_literal(sp, quasis, ArenaVec::new_in(b), b)
+                    }
+                    false => Expression::new_string_literal(sp, self.allocator.alloc_str(&piece.text), None, b),
                 };
-                let quasis = ArenaVec::from_iter_in([TemplateElement::new(SPAN, value, true, b)], b);
-                Expression::new_template_literal(sp, quasis, ArenaVec::new_in(b), b)
+                let mut pieces = pieces.iter().map(piece);
+                let first = pieces.next().expect("a written string's pieces");
+                pieces.fold(first, |joined, next| {
+                    Expression::new_binary_expression(sp, joined, BinaryOperator::Addition, next, b)
+                })
             }
             ExprKind::Template(texts, values, lines) => {
                 let quasis = texts.iter().enumerate().map(|(i, text)| {

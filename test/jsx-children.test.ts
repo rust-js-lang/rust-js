@@ -31,6 +31,34 @@ function compile(source: string, files: Record<string, string> = {}) {
 // prop written before them: JSX reads its props, then its children, as Rust
 // does. A `Link` whose props flatten an anchor's is such a child, as
 // react.dev's `Breadcrumbs` has it.
+// ADR 0641: a `concat!` of literals, a child's or a prop's, is its pieces
+// joined by `+` in JSX too, `{"a " + "b"}`, as a `const` of one is.
+test("a concat! child or prop is its pieces joined by +", async () => {
+  const source = `#![allow(non_snake_case)]
+use react::{JSX, jsx};
+
+const HINT: &str = concat!("Try logging smaller ", "or more specific objects.");
+
+pub fn Note() -> JSX::Element {
+    jsx! {
+        <p className={concat!("note ", "wide")} title={HINT}>
+            {concat!("Omitted ", "by React. ")}
+            {HINT}
+        </p>
+    }
+}
+`;
+  const { dir, args } = compile(source);
+  run(args);
+  const output = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(output).toContain('const HINT = "Try logging smaller " + "or more specific objects.";');
+  expect(output).toContain('    <p className={"note " + "wide"} title={HINT}>\n      {"Omitted " + "by React. "}\n      {HINT}\n    </p>');
+  const result = await import(join(dir, "lib.jsx"));
+  expect(renderToStaticMarkup(result.Note())).toBe(
+    '<p class="note wide" title="Try logging smaller or more specific objects.">Omitted by React. Try logging smaller or more specific objects.</p>',
+  );
+});
+
 // A list of children a chain collects: an array's `map`, each item given
 // its index.
 test("a list of children a chain collects is an array's map", async () => {

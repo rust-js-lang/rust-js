@@ -1,0 +1,95 @@
+// Mutations of src/lower/literals.rs (ADR 0093).
+import type { Mutation } from "../../mutations";
+
+const concat = ["test/lowering-strings.test.ts", "-t", "a concat! of literals is its pieces joined by"];
+
+export const mutations: Mutation[] = [
+  {
+    name: "concat-one-literal",
+    breaks: "a `concat!` of literals is one string, not its pieces joined by `+`",
+    file: "src/lower/literals.rs",
+    find: "    let pieces = match recognition::from_concat(tcx, span) {",
+    replace: "    let pieces = match false {",
+    tests: concat,
+  },
+  {
+    name: "concat-trailing-comma-refused",
+    breaks: "a `concat!` with a comma after its last argument is one string",
+    file: "src/lower/literals.rs",
+    find: "        [rest @ .., (TokenKind::Comma, _)] => rest,\n",
+    replace: "",
+    tests: concat,
+  },
+  {
+    name: "concat-negative-unsigned",
+    breaks: "a negative number of a `concat!`, `-3`, is its digits alone, and so the one string",
+    file: "src/lower/literals.rs",
+    find: "                text: format!(\"-{}\", number(*kind, code)?),",
+    replace: "                text: number(*kind, code)?,",
+    tests: concat,
+  },
+  {
+    name: "concat-bool-unread",
+    breaks: "a `bool` of a `concat!` isn't a piece, and so the `concat!` is one string",
+    file: "src/lower/literals.rs",
+    find: "        TokenKind::Ident if code == \"true\" || code == \"false\" => code.to_owned(),\n",
+    replace: "",
+    tests: concat,
+  },
+  {
+    name: "concat-piece-lines-flattened",
+    breaks: "a piece of a `concat!` written across lines is a string of `\\n`s",
+    file: "src/lower/literals.rs",
+    find: "    let lines = written_across_lines(&text, code);",
+    replace: "    let lines = false;",
+    tests: concat,
+  },
+  {
+    name: "literal-lines-flattened",
+    breaks: "a string literal written across lines is a string of `\\n`s",
+    file: "src/lower/literals.rs",
+    find: ".is_ok_and(|code| written_across_lines(text, &code));",
+    replace: ".is_ok_and(|_| false);",
+    tests: ["test/lowering-strings.test.ts", "-t", "written across lines"],
+  },
+  {
+    name: "raw-lines-escaped",
+    breaks: "a raw string written across lines is one line of `\\n`s",
+    file: "src/lower/literals.rs",
+    find: "            Some('r') => true,",
+    replace: "            Some('r') => false,",
+    tests: ["test/lowering-strings.test.ts", "-t", "a string written across lines"],
+  },
+  {
+    name: "literal-lines-cooked-unread",
+    breaks: "a string written across lines, not raw, is a string of `\\n`s",
+    file: "src/lower/literals.rs",
+    find: "            Some('\"') => code.match_indices('\\n').any(|(i, _)| !code[..i].ends_with('\\\\')),",
+    replace: "            Some('\"') => false,",
+    tests: ["test/lowering-strings.test.ts", "-t", "a string written across lines keeps its lines"],
+  },
+  {
+    name: "continued-line-kept",
+    breaks: "a string whose line ends in `\\` is printed with a line break where it has `\\n`",
+    file: "src/lower/literals.rs",
+    find: "            Some('\"') => code.match_indices('\\n').any(|(i, _)| !code[..i].ends_with('\\\\')),",
+    replace: "            Some('\"') => code.contains('\\n'),",
+    tests: ["test/lowering-strings.test.ts", "-t", "a string written across lines keeps its lines"],
+  },
+  {
+    name: "literal-lines-of-none",
+    breaks: "a raw string with no line break is a template literal",
+    file: "src/lower/literals.rs",
+    find: "    text.contains('\\n')\n        && match code.chars().next() {",
+    replace: "    true\n        && match code.chars().next() {",
+    tests: ["test/lowering-strings.test.ts", "-t", "a concat! of literals is its pieces joined by|written across lines"],
+  },
+  {
+    name: "const-string-unwritten",
+    breaks: "a `const` of a string is one literal, though its source writes it across lines or as `concat!`'s pieces",
+    file: "src/lower/literals.rs",
+    find: "            string_literal(tcx, text, lit.span).or_at(value.span)\n",
+    replace: "            value.clone()\n",
+    tests: ["test/lowering-strings.test.ts", "-t", "a concat! of literals is its pieces joined by|const of a string written across lines"],
+  },
+];
