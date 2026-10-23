@@ -5450,6 +5450,20 @@ export function $tryFromInt(x, lo, hi) {
   return { TAG: "Ok", _0: typeof hi === "bigint" ? BigInt(x) : Number(x) };
 }
 
+// `char::try_from(n)` of a `u32`: `Ok` of its `char`, or the error a
+// surrogate's or one past `char::MAX`'s is, its message (ADR 0063).
+export function $charTryFrom(n) {
+  const c = $fromU32(n);
+  return c === undefined ? { TAG: "Err", _0: "converted integer out of range for `char`" } : { TAG: "Ok", _0: c };
+}
+
+// `u8::try_from(c)` of a `char`: `Ok` of its code point up to 255, or the
+// error, its message.
+export function $u8TryFromChar(c) {
+  const n = c.codePointAt(0);
+  return n > 255 ? { TAG: "Err", _0: "unicode code point out of range" } : { TAG: "Ok", _0: n };
+}
+
 export const $printed = ["", ""];
 export function $print(text) {
   $write(text, 0);
@@ -8369,6 +8383,8 @@ export function $parseErrorKind(message) {
 export function $debugParseError(message, name, options) {
   const kind = $parseErrorKind(message);
   if (name === "ParseBoolError") return name;
+  // A `char`'s, which hold `()`.
+  if (name === "CharTryFromError" || name === "TryFromCharError") return options?.alternate ? `${name}(\n    (),\n)` : `${name}(())`;
   if (name === "TryFromIntError") return options?.alternate ? `TryFromIntError(\n    ${kind},\n)` : `TryFromIntError(${kind})`;
   return options?.alternate ? `${name} {\n    kind: ${kind},\n}` : `${name} { kind: ${kind} }`;
 }

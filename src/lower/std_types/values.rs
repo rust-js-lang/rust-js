@@ -640,6 +640,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             | Std::Clock { .. }
             | Std::SliceToArray { .. }
             | Std::TryFromInt { .. }
+            | Std::TryFromChar { .. }
             | Std::FromDigit
             | Std::FromU32
             | Std::Cmp

@@ -651,4 +651,12 @@ export const mutations: Mutation[] = [
     replace: "        BinOp::BitOr => \"intersection\",\n",
     tests: ["test/corpus.test.ts", "-t", "^set_operators.rs$"],
   },
+  {
+    name: "char-try-from-refused",
+    breaks: "`char::try_from(n)` of a `u32` is refused",
+    file: "src/lower/recognition/calls.rs",
+    find: "        (ty::Uint(ty::UintTy::U32), ty::Char) => Some(Std::TryFromChar { to_char: true }),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^char_try_from.rs$"],
+  },
 ];

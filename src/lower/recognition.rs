@@ -124,6 +124,12 @@ pub(super) enum Std {
     TryFromInt {
         into: bool,
     },
+    /// `char::try_from(n)` of a `u32`, `to_char`, or `u8::try_from(c)` of a
+    /// `char`, or their `try_into()`: `Ok` of it in range, or a
+    /// `CharTryFromError` or a `TryFromCharError`, each its message.
+    TryFromChar {
+        to_char: bool,
+    },
     /// An iterator's `cloned()` and `copied()`: its items, each cloned if
     /// that could be told apart from sharing it (ADR 0052).
     Cloned,

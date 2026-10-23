@@ -618,7 +618,7 @@ const dispatchers: [string, string, number][] = [
   ["src/lower/mir/dispatch.rs", "    fn mir_std_call(", 147],
   ["src/lower/mir.rs", "    fn mir_function(", 362],
   ["src/lower/recognition/inherent.rs", "    pub(super) fn classify_inherent(", 761],
-  ["src/lower/recognition/calls.rs", "    fn classify_trait_method(", 251],
+  ["src/lower/recognition/calls.rs", "    fn classify_trait_method(", 247],
   ["src/lower/combinators.rs", "    pub(in crate::lower) fn comb_values(", 605],
   ["src/lower/mir/iter.rs", "    pub(in crate::lower) fn mir_iter_call(", 28],
   ["src/lower/mir/iter.rs", "    fn mir_iter_method(", 283],

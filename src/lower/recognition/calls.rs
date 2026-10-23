@@ -780,16 +780,12 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         if let Some(conversion) = self.classify_conversion(trait_, args) {
             return Some(conversion);
         }
-        // Between integers, which may not fit.
         let into = tcx.is_diagnostic_item(sym::TryInto, trait_);
         let sides =
             conversion_sides(tcx, trait_, args).filter(|_| into || tcx.is_diagnostic_item(sym::TryFrom, trait_));
         let (from_ty, to_ty) = (sides.map(|(from, _)| from), sides.map(|(_, to)| to));
-        if let (Some(from), Some(to)) = (from_ty.and_then(|t| Num::of(t.peel_refs())), to_ty.and_then(Num::of))
-            && !from.float()
-            && !to.float()
-        {
-            return Some(Std::TryFromInt { into });
+        if let Some(tried) = sides.and_then(|(from, to)| try_conversion(from.peel_refs(), to, into)) {
+            return Some(tried);
         }
         // A slice into an array of its length, shared or copied (ADR 0189);
         // a `Vec`, moved into one (ADR 0557).
@@ -1203,6 +1199,23 @@ pub(super) fn peekable_step(name: &str) -> Option<StepOp> {
 fn iterator_step(name: &str) -> Option<StepOp> {
     match name {
         "cycle" => Some(StepOp::Cycle),
+        _ => None,
+    }
+}
+
+/// A `TryFrom` or a `TryInto` of `from` into `to` std makes, `into` of
+/// `try_into()`: between integers, which may not fit; a `u32` into a
+/// `char`, or a `char` into a `u8`.
+fn try_conversion<'tcx>(from: Ty<'tcx>, to: Ty<'tcx>, into: bool) -> Option<Std> {
+    if let (Some(a), Some(b)) = (Num::of(from), Num::of(to))
+        && !a.float()
+        && !b.float()
+    {
+        return Some(Std::TryFromInt { into });
+    }
+    match (from.kind(), to.kind()) {
+        (ty::Uint(ty::UintTy::U32), ty::Char) => Some(Std::TryFromChar { to_char: true }),
+        (ty::Char, ty::Uint(ty::UintTy::U8)) => Some(Std::TryFromChar { to_char: false }),
         _ => None,
     }
 }
