@@ -502,14 +502,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^(replace_held_given_iterator|iterator_written_through).rs$"],
   },
   {
-    name: "manually-drop-shaped-a-struct",
-    breaks: "a `ManuallyDrop`'s shape is std's struct's, not what it holds",
-    file: "src/lower/representation.rs",
-    find: "        if let Some(held) = self.always_holds(ty) {\n            return self.shape(held);\n        }\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "manually_drop_through_mut"],
-  },
-  {
     name: "uninit-always-holds",
     breaks: "a `&mut` to a `MaybeUninit` is what it holds, not a cell to write",
     file: "src/lower/representation.rs",

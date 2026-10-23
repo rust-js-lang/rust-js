@@ -91,7 +91,9 @@ test("root and child output collisions leave no partial artifacts", async () => 
     writeFileSync(input, `${body}\npub mod same { ${body} }`);
     const p = Bun.spawnSync([compiler, input, "-o", output, "--", "--extern", `react=${join(target, "libreact.rmeta")}`, "-L", target]);
     expect(p.exitCode).not.toBe(0);
-    expect(p.stderr.toString()).toContain("collision");
+    // The same file twice, not two that differ by case.
+    expect(p.stderr.toString()).toContain("output collision at `");
+    expect(p.stderr.toString()).toContain("; pick another output name");
     expect(existsSync(output)).toBe(false);
     expect(existsSync(join(dir, "same.jsx"))).toBe(false);
   }
