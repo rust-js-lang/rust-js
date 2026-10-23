@@ -129,49 +129,18 @@ function main() {
     { impl: keepTakeA(noisyDrop_drop) },
     { value: [1], impl: wrapTakeNoisy({ default: () => 0 }) },
   ];
-  let iter;
   try {
-    iter = all.entries();
-  } catch (error) {
-    for (const item of all) {
-      item.impl.$drop?.(item.value);
-    }
-    throw error;
-  }
-  while (true) {
-    let tmp;
-    try {
-      tmp = $next(iter);
-    } catch (error) {
-      for (const item of all) {
-        item.impl.$drop?.(item.value);
+    const iter = all.entries();
+    while (true) {
+      const tmp = $next(iter);
+      if (!tmp) {
+        break;
       }
-      throw error;
-    }
-    if (!tmp) {
-      break;
-    }
-    const i = tmp[0];
-    const t = tmp[1];
-    let tmp$1;
-    try {
-      tmp$1 = t.impl.take(t.value, [(10 + (i & 255)) & 255]);
-    } catch (error) {
-      for (const item of all) {
-        item.impl.$drop?.(item.value);
-      }
-      throw error;
-    }
-    try {
+      const i = tmp[0];
+      const t = tmp[1];
+      const tmp$1 = t.impl.take(t.value, [(10 + (i & 255)) & 255]);
       console.log(`${tmp$1}`);
-    } catch (error) {
-      for (const item of all) {
-        item.impl.$drop?.(item.value);
-      }
-      throw error;
     }
-  }
-  try {
     console.log("end");
   } finally {
     for (const item of all) {

@@ -218,5 +218,6 @@ export const mutations: Mutation[] = [
     find: "    leaves(body);\n}\n",
     replace: "}\n",
     tests: ["test/corpus.test.ts", "-t", "loop|while|break"],
+    snapshots: true,
   },
 ];

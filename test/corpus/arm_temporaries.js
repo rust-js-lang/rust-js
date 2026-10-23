@@ -97,35 +97,21 @@ function first(k) {
   let result;
   if (k != null) {
     const held = ["held"];
-    let tmp;
     try {
-      tmp = make(k, true);
-    } catch (error) {
-      loudDrop_drop(held);
-      throw error;
-    }
-    tmp$0$live = true;
-    if (tmp) {
-      tmp$0$live = false;
-      const l = tmp;
-      try {
-        console.log(`got ${l[0]} with ${held[0]}`);
-      } catch (error) {
-        loudDrop_drop(l);
-        loudDrop_drop(held);
-        throw error;
+      const tmp = make(k, true);
+      tmp$0$live = true;
+      if (tmp) {
+        tmp$0$live = false;
+        const l = tmp;
+        try {
+          console.log(`got ${l[0]} with ${held[0]}`);
+          result = $byteLen(l[0]);
+        } finally {
+          loudDrop_drop(l);
+        }
+      } else {
+        result = 0;
       }
-      result = $byteLen(l[0]);
-      try {
-        loudDrop_drop(l);
-      } catch (error) {
-        loudDrop_drop(held);
-        throw error;
-      }
-    } else {
-      result = 0;
-    }
-    try {
       if (tmp) {
         if (tmp$0$live) {
           loudDrop_drop(tmp);

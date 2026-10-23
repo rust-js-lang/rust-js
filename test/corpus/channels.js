@@ -19,33 +19,19 @@ export function entry() {
 
 function produce(tx) {
   const iter = { start: 1, end: 3 };
-  while (true) {
-    let tmp;
-    try {
-      tmp = $rangeInclusiveNext(iter);
-    } catch (error) {
-      $dropSender(tx);
-      throw error;
-    }
-    if (tmp == null) {
-      break;
-    }
-    const id = tmp;
-    let send;
-    try {
-      send = $send(tx, { id, name: `job ${id}` });
-    } catch (error) {
-      $dropSender(tx);
-      throw error;
-    }
-    try {
+  try {
+    while (true) {
+      const tmp = $rangeInclusiveNext(iter);
+      if (tmp == null) {
+        break;
+      }
+      const id = tmp;
+      const send = $send(tx, { id, name: `job ${id}` });
       $unwrapOk(send, undefined, (e) => "SendError { .. }");
-    } catch (error) {
-      $dropSender(tx);
-      throw error;
     }
+  } finally {
+    $dropSender(tx);
   }
-  $dropSender(tx);
 }
 
 function drain(rx) {
@@ -71,46 +57,17 @@ function main() {
     throw error;
   }
   try {
-    produce(tx);
-  } catch (error) {
-    $dropSender(tx2);
-    $dropReceiver(rx);
-    throw error;
-  }
-  let send;
-  try {
-    send = $send(tx2, { id: 9, name: "late" });
-  } catch (error) {
-    $dropSender(tx2);
-    $dropReceiver(rx);
-    throw error;
-  }
-  try {
-    $unwrapOk(send, undefined, (e) => "SendError { .. }");
-  } catch (error) {
-    $dropSender(tx2);
-    $dropReceiver(rx);
-    throw error;
-  }
-  let tryRecv;
-  try {
-    tryRecv = $tryRecv(rx);
-  } catch (error) {
-    $dropSender(tx2);
-    $dropReceiver(rx);
-    throw error;
-  }
-  if (tryRecv.TAG === "Ok") {
     try {
-      console.log(`first ${tryRecv._0.id}`);
-    } catch (error) {
+      produce(tx);
+      const send = $send(tx2, { id: 9, name: "late" });
+      $unwrapOk(send, undefined, (e) => "SendError { .. }");
+      const tryRecv = $tryRecv(rx);
+      if (tryRecv.TAG === "Ok") {
+        console.log(`first ${tryRecv._0.id}`);
+      }
+    } finally {
       $dropSender(tx2);
-      $dropReceiver(rx);
-      throw error;
     }
-  }
-  try {
-    $dropSender(tx2);
     const tmp = drain(rx);
     console.log(`[${tmp.map((item) => $debugStr(item)).join(", ")}]`);
     const tmp$1 = $tryRecv(rx);
@@ -118,18 +75,18 @@ function main() {
     console.log(`${value}`);
 
     const tmp$2 = $channel();
-    const tx = tmp$2[0];
+    const tx$1 = tmp$2[0];
     const rx$1 = tmp$2[1];
     try {
       $dropReceiver(rx$1);
-      const tmp = $send(tx, 5);
+      const tmp = $send(tx$1, 5);
       console.log(`${tmp.TAG === "Err"}`);
 
       const tmp$1 = $channel();
-      const tx$1 = tmp$1[0];
+      const tx = tmp$1[0];
       const rx = tmp$1[1];
       const notify = () => {
-        $unwrapOk($send(tx$1, "done"), undefined, (e) => "SendError { .. }");
+        $unwrapOk($send(tx, "done"), undefined, (e) => "SendError { .. }");
       };
       try {
         try {
@@ -140,7 +97,7 @@ function main() {
           const value$1 = tmp.TAG === "Err" && tmp._0 === "Empty";
           console.log(`${value$1}`);
         } finally {
-          $dropSender(tx$1);
+          $dropSender(tx);
         }
         const recv = $recv(rx);
         console.log(`${recv.TAG === "Err"}`);
@@ -148,7 +105,7 @@ function main() {
         $dropReceiver(rx);
       }
     } finally {
-      $dropSender(tx);
+      $dropSender(tx$1);
     }
   } finally {
     $dropReceiver(rx);

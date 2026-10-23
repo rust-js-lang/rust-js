@@ -243,113 +243,33 @@ function main() {
   const rc = { value: { value: { name: "loud" } }, strong: 1, weak: 0 };
   $dynCell(rc.value, loudSink);
   const sinks = [tmp$3, rc];
-  let iter;
-  try {
-    iter = sinks.entries();
-  } catch (error) {
-    for (const item of sinks) {
-      $rcDrop(item, (value) => {
-        value.impl.$drop?.(value.value);
-      });
-    }
-    $rcDrop(counter);
-    $rcDrop(leaf, (value) => {
-      $weakDrop(value.parent.value);
-    });
-    $rcDrop(root, (value) => {
-      $weakDrop(value.parent.value);
-    });
-    throw error;
-  }
-  let tmp$4;
-  while (true) {
-    let tmp;
-    try {
-      tmp = $next(iter);
-    } catch (error) {
-      for (const item of sinks) {
-        $rcDrop(item, (value) => {
-          value.impl.$drop?.(value.value);
-        });
-      }
-      $rcDrop(counter);
-      $rcDrop(leaf, (value) => {
-        $weakDrop(value.parent.value);
-      });
-      $rcDrop(root, (value) => {
-        $weakDrop(value.parent.value);
-      });
-      throw error;
-    }
-    if (!tmp) {
-      break;
-    }
-    const i = tmp[0];
-    const sink = tmp[1];
-    try {
-      tmp$4 = $borrowMut(sink.value, true);
-    } catch (error) {
-      for (const item of sinks) {
-        $rcDrop(item, (value) => {
-          value.impl.$drop?.(value.value);
-        });
-      }
-      $rcDrop(counter);
-      $rcDrop(leaf, (value) => {
-        $weakDrop(value.parent.value);
-      });
-      $rcDrop(root, (value) => {
-        $weakDrop(value.parent.value);
-      });
-      throw error;
-    }
-    try {
-      tmp$4.impl.take(tmp$4, (i + 1) >>> 0);
-    } catch (error) {
-      $unborrow(tmp$4);
-      for (const item of sinks) {
-        $rcDrop(item, (value) => {
-          value.impl.$drop?.(value.value);
-        });
-      }
-      $rcDrop(counter);
-      $rcDrop(leaf, (value) => {
-        $weakDrop(value.parent.value);
-      });
-      $rcDrop(root, (value) => {
-        $weakDrop(value.parent.value);
-      });
-      throw error;
-    }
-    try {
-      $unborrow(tmp$4);
-    } catch (error) {
-      for (const item of sinks) {
-        $rcDrop(item, (value) => {
-          value.impl.$drop?.(value.value);
-        });
-      }
-      $rcDrop(counter);
-      $rcDrop(leaf, (value) => {
-        $weakDrop(value.parent.value);
-      });
-      $rcDrop(root, (value) => {
-        $weakDrop(value.parent.value);
-      });
-      throw error;
-    }
-  }
   try {
     try {
       try {
         try {
-          const tmp = $borrow($index(sinks, 0).value, true);
+          const iter = sinks.entries();
+          let tmp;
+          while (true) {
+            const tmp$1 = $next(iter);
+            if (!tmp$1) {
+              break;
+            }
+            const i = tmp$1[0];
+            const sink = tmp$1[1];
+            tmp = $borrowMut(sink.value, true);
+            try {
+              tmp.impl.take(tmp, (i + 1) >>> 0);
+            } finally {
+              $unborrow(tmp);
+            }
+          }
+          const tmp$1 = $borrow($index(sinks, 0).value, true);
           try {
-            const total = tmp.impl.total(tmp.value);
-            const tmp$1 = $index(sinks, 0).strong;
-            console.log(`${total} ${tmp$1} ${counter.strong}`);
+            const total = tmp$1.impl.total(tmp$1.value);
+            const tmp = $index(sinks, 0).strong;
+            console.log(`${total} ${tmp} ${counter.strong}`);
           } finally {
-            $unborrow(tmp);
+            $unborrow(tmp$1);
           }
         } finally {
           for (const item of sinks) {

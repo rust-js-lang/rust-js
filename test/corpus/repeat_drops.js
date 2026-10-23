@@ -23,206 +23,144 @@ function main() {
   const v = [];
   try {
     fill(v, ["a"], 2);
-  } catch (error) {
-    for (const item of v) {
-      loudDrop_drop(item);
-    }
-    throw error;
-  }
-  let tmp;
-  try {
-    tmp = $repeating(["b"], undefined, loudDrop_drop);
-  } catch (error) {
-    for (const item of v) {
-      loudDrop_drop(item);
-    }
-    throw error;
-  }
-  let it;
-  try {
-    it = tmp.take(3);
-  } catch (error) {
-    for (const item of v) {
-      loudDrop_drop(item);
-    }
-    throw error;
-  }
-  let first;
-  try {
-    first = $next(it);
-  } catch (error) {
-    it.return();
-    for (const item of v) {
-      loudDrop_drop(item);
-    }
-    throw error;
-  }
-  try {
-    console.log(`took ${first?.[0] ?? "none"}`);
-  } catch (error) {
-    if (first != null) {
-      loudDrop_drop(first);
-    }
-    it.return();
-    for (const item of v) {
-      loudDrop_drop(item);
-    }
-    throw error;
-  }
-  let it$live = false;
-  try {
-    it.return();
-  } catch (error) {
-    if (first != null) {
-      loudDrop_drop(first);
-    }
-    for (const item of v) {
-      loudDrop_drop(item);
-    }
-    throw error;
-  }
-  try {
-    console.log("dropped it");
-  } catch (error) {
-    if (first != null) {
-      loudDrop_drop(first);
-    }
-    for (const item of v) {
-      loudDrop_drop(item);
-    }
-    throw error;
-  }
-  let tmp$1;
-  try {
-    tmp$1 = $repeating(["c"], undefined, loudDrop_drop);
-  } catch (error) {
-    if (first != null) {
-      loudDrop_drop(first);
-    }
-    for (const item of v) {
-      loudDrop_drop(item);
-    }
-    throw error;
-  }
-  let unused;
-  try {
-    unused = tmp$1.take(1);
-  } catch (error) {
-    if (first != null) {
-      loudDrop_drop(first);
-    }
-    for (const item of v) {
-      loudDrop_drop(item);
-    }
-    throw error;
-  }
-  try {
-    unused.return();
-  } catch (error) {
-    if (first != null) {
-      loudDrop_drop(first);
-    }
-    for (const item of v) {
-      loudDrop_drop(item);
-    }
-    throw error;
-  }
-  let tmp$2;
-  try {
-    tmp$2 = $repeating(["d"], undefined, loudDrop_drop);
-  } catch (error) {
-    if (first != null) {
-      loudDrop_drop(first);
-    }
-    for (const item of v) {
-      loudDrop_drop(item);
-    }
-    throw error;
-  }
-  let take;
-  try {
-    take = tmp$2.take(2);
-  } catch (error) {
-    if (first != null) {
-      loudDrop_drop(first);
-    }
-    for (const item of v) {
-      loudDrop_drop(item);
-    }
-    throw error;
-  }
-  const iter = take;
-  let loud;
-  while (true) {
+    const tmp = $repeating(["b"], undefined, loudDrop_drop);
+    const it = tmp.take(3);
+    let first;
     try {
-      loud = $next(iter);
+      first = $next(it);
     } catch (error) {
-      iter.return();
+      it.return();
+      throw error;
+    }
+    try {
+      console.log(`took ${first?.[0] ?? "none"}`);
+    } catch (error) {
       if (first != null) {
         loudDrop_drop(first);
       }
-      if (it$live) {
-        it.return();
-      }
-      for (const item of v) {
-        loudDrop_drop(item);
+      it.return();
+      throw error;
+    }
+    let it$live = false;
+    try {
+      it.return();
+    } catch (error) {
+      if (first != null) {
+        loudDrop_drop(first);
       }
       throw error;
     }
-    if (!loud) {
+    try {
+      console.log("dropped it");
+    } catch (error) {
+      if (first != null) {
+        loudDrop_drop(first);
+      }
+      throw error;
+    }
+    let tmp$1;
+    try {
+      tmp$1 = $repeating(["c"], undefined, loudDrop_drop);
+    } catch (error) {
+      if (first != null) {
+        loudDrop_drop(first);
+      }
+      throw error;
+    }
+    let unused;
+    try {
+      unused = tmp$1.take(1);
+    } catch (error) {
+      if (first != null) {
+        loudDrop_drop(first);
+      }
+      throw error;
+    }
+    try {
+      unused.return();
+    } catch (error) {
+      if (first != null) {
+        loudDrop_drop(first);
+      }
+      throw error;
+    }
+    let tmp$2;
+    try {
+      tmp$2 = $repeating(["d"], undefined, loudDrop_drop);
+    } catch (error) {
+      if (first != null) {
+        loudDrop_drop(first);
+      }
+      throw error;
+    }
+    let take;
+    try {
+      take = tmp$2.take(2);
+    } catch (error) {
+      if (first != null) {
+        loudDrop_drop(first);
+      }
+      throw error;
+    }
+    const iter = take;
+    let loud;
+    while (true) {
       try {
-        iter.return();
+        loud = $next(iter);
       } catch (error) {
+        iter.return();
         if (first != null) {
           loudDrop_drop(first);
         }
         if (it$live) {
           it.return();
         }
-        for (const item of v) {
-          loudDrop_drop(item);
+        throw error;
+      }
+      if (!loud) {
+        try {
+          iter.return();
+        } catch (error) {
+          if (first != null) {
+            loudDrop_drop(first);
+          }
+          if (it$live) {
+            it.return();
+          }
+          throw error;
+        }
+        break;
+      }
+      const item = loud;
+      try {
+        console.log(`got ${item[0]}`);
+      } catch (error) {
+        loudDrop_drop(item);
+        iter.return();
+        if (first != null) {
+          loudDrop_drop(first);
+        }
+        if (it$live) {
+          it.return();
         }
         throw error;
       }
-      break;
-    }
-    const item = loud;
-    try {
-      console.log(`got ${item[0]}`);
-    } catch (error) {
-      loudDrop_drop(item);
-      iter.return();
-      if (first != null) {
-        loudDrop_drop(first);
-      }
-      if (it$live) {
-        it.return();
-      }
-      for (const item of v) {
+      try {
         loudDrop_drop(item);
+      } catch (error) {
+        iter.return();
+        if (first != null) {
+          loudDrop_drop(first);
+        }
+        if (it$live) {
+          it.return();
+        }
+        throw error;
       }
-      throw error;
     }
+    let tmp$3;
     try {
-      loudDrop_drop(item);
-    } catch (error) {
-      iter.return();
-      if (first != null) {
-        loudDrop_drop(first);
-      }
-      if (it$live) {
-        it.return();
-      }
-      for (const item of v) {
-        loudDrop_drop(item);
-      }
-      throw error;
-    }
-  }
-  try {
-    let tmp;
-    try {
-      tmp = $repeating(["e"], undefined, loudDrop_drop);
+      tmp$3 = $repeating(["e"], undefined, loudDrop_drop);
     } catch (error) {
       if (first != null) {
         loudDrop_drop(first);
@@ -234,7 +172,7 @@ function main() {
     }
     let skipped;
     try {
-      skipped = $skipping(tmp, 1, loudDrop_drop);
+      skipped = $skipping(tmp$3, 1, loudDrop_drop);
     } catch (error) {
       if (first != null) {
         loudDrop_drop(first);
@@ -302,9 +240,9 @@ function main() {
       throw error;
     }
     const value$1 = [["j"]];
-    let tmp$1;
+    let tmp$4;
     try {
-      tmp$1 = $iter(value$1);
+      tmp$4 = $iter(value$1);
     } catch (error) {
       if (first != null) {
         loudDrop_drop(first);
@@ -315,7 +253,7 @@ function main() {
       throw error;
     }
     try {
-      $extend(v, tmp$1);
+      $extend(v, tmp$4);
     } catch (error) {
       if (first != null) {
         loudDrop_drop(first);
@@ -325,9 +263,9 @@ function main() {
       }
       throw error;
     }
-    let tmp$2;
+    let tmp$5;
     try {
-      tmp$2 = $iter([["k"]]);
+      tmp$5 = $iter([["k"]]);
     } catch (error) {
       if (first != null) {
         loudDrop_drop(first);
@@ -338,7 +276,7 @@ function main() {
       throw error;
     }
     try {
-      $extend(v, tmp$2);
+      $extend(v, tmp$5);
     } catch (error) {
       if (first != null) {
         loudDrop_drop(first);

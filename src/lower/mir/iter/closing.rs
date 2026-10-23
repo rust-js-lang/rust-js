@@ -81,14 +81,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// What closes a `ty` an adapter holds, its own drop: of one that owns
     /// items with a destructor, a generic one whose drop its caller gives,
-    /// or the crate's own with one, stepped as `$iterator(value, next)`.
+    /// the crate's own with one, stepped as `$iterator(value, next)`, or a
+    /// compiled std iterator's struct holding one, a `Peekable`'s, which is
+    /// the JS iterator itself (ADR 0561).
     /// `None` of one with nothing to drop.
     pub(in crate::lower) fn closing_drop(&mut self, ty: Ty<'tcx>, span: Span) -> R<Option<Expr>> {
         let owns = match self.recognition().owned_into_items(ty) {
             Some(item) => self.drops(item) != crate::lower::drops::Drops::Nothing,
             None => {
+                let compiled = crate::lower::recognition::is_compiled_std_iterator(self.tcx, ty);
                 self.given_drop(ty).is_some()
-                    || self.is_user_iterator(ty) && self.drops(ty) != crate::lower::drops::Drops::Nothing
+                    || (self.is_user_iterator(ty) || compiled) && self.drops(ty) != crate::lower::drops::Drops::Nothing
             }
         };
         match owns {
@@ -97,7 +100,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // 0514).
             true => {
                 let stepped = self.is_user_iterator(ty) || self.iterator_given_as_it_is(ty);
-                self.held_drop_function(ty, stepped, span)
+                match stepped {
+                    true => self.held_drop_function(ty, stepped, span),
+                    // A compiled std iterator's struct is the JS iterator
+                    // `$closing` closes, `it`, as `it.of` is of one stepped.
+                    false if crate::lower::recognition::is_compiled_std_iterator(self.tcx, ty) => {
+                        self.drop_function_of(ty, Some("it"), span)
+                    }
+                    false => self.held_drop_function(ty, stepped, span),
+                }
             }
             false => Ok(None),
         }

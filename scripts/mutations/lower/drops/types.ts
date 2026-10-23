@@ -252,6 +252,14 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^copied_default_own_params.rs$"],
   },
   {
+    name: "any-dyn-drops-by-the-crate",
+    breaks: "every `dyn Any` of a crate with destructors drops, a caught panic's payload too, so `catch_unwind(..).unwrap_or_default()` is `$catchUnwind` and a `kept`",
+    file: "src/lower/drops/types.rs",
+    find: "            return match self.closure_facts.any_dyns_drop {\n",
+    replace: "            return match true {\n",
+    tests: ["test/lowering-unwinds.test.ts", "-t", "destructors leave catch_unwind"],
+  },
+  {
     name: "async-fn-future-holds-arguments",
     breaks: "an `async fn`'s future is taken to hold its arguments, which its body drops too",
     file: "src/lower/drops/types.rs",

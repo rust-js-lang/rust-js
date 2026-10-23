@@ -62,8 +62,8 @@ export const mutations: Mutation[] = [
     name: "given-iterator-unboxed",
     breaks: "an adapter's `I` of a generic item, made a JS iterator, keeps its `Some` boxed",
     file: "src/lower/iterators/dictionaries.rs",
-    find: "        let boxed = self.iterator_item(ty).is_none_or(|item| self.boxed_payload(item));\n        Some(stepped_ends(",
-    replace: "        let boxed = false;\n        Some(stepped_ends(",
+    find: "        let boxed = self.iterator_item(ty).is_none_or(|item| self.boxed_payload(item));\n        // Each given,",
+    replace: "        let boxed = false;\n        // Each given,",
     tests: ["test/corpus.test.ts", "-t", "^iterator_adapters.rs$"],
   },
   {
@@ -87,8 +87,8 @@ export const mutations: Mutation[] = [
     name: "cycle-of-array-unstepped",
     breaks: "`cycled()` of an array's iterator a struct holds is refused",
     file: "src/lower/iterators/dictionaries.rs",
-    find: "            None if self.steps_an_array(ty) => {\n                let boxed = self.iterator_item(ty).is_some_and(|item| self.boxed_payload(item));\n",
-    replace: "            None if self.steps_an_array(ty) && false => {\n                let boxed = self.iterator_item(ty).is_some_and(|item| self.boxed_payload(item));\n",
+    find: "            None if self.steps_an_array(ty) || self.iterator_cloned_apart(ty) => {\n                let boxed",
+    replace: "            None if (self.steps_an_array(ty) || self.iterator_cloned_apart(ty)) && false => {\n                let boxed",
     tests: ["test/corpus.test.ts", "-t", "^held_cycle.rs$"],
   },
   {
@@ -106,5 +106,21 @@ export const mutations: Mutation[] = [
     find: "        let double_ended = crate::lower::recognition::is_double_ended(self.tcx, trait_id);\n",
     replace: "        let double_ended = !crate::lower::recognition::is_double_ended(self.tcx, trait_id);\n",
     tests: ["test/corpus.test.ts", "-t", "^given_iterator_extensions.rs$"],
+  },
+  {
+    name: "dictionary-own-fold-left-out",
+    breaks: "the crate's iterator's dictionary leaves out its own `fold` and `nth`",
+    file: "src/lower/iterators/dictionaries.rs",
+    find: "        for (name, own) in [(\"fold\", fold), (\"nth\", nth)] {\n",
+    replace: "        for (name, own) in [(\"fold\", fold), (\"nth\", nth)].into_iter().filter(|_| false) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^own_fold_through_adapters.rs$"],
+  },
+  {
+    name: "cycle-of-cloned-apart-refused",
+    breaks: "`cycle()` of a `map` or a `filter` is refused",
+    file: "src/lower/iterators/dictionaries.rs",
+    find: "            None if self.steps_an_array(ty) || self.iterator_cloned_apart(ty) => {\n",
+    replace: "            None if self.steps_an_array(ty) => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^cloned_chains_and_cycles.rs$"],
   },
 ];

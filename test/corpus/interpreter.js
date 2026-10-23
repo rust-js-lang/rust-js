@@ -416,26 +416,18 @@ const Env = {
 
   get(env, name) {
     const scope = $borrow(env[0], true);
-    let get;
-    try {
-      get = scope.value.vars.get(name);
-    } catch (error) {
-      $unborrow(scope);
-      throw error;
-    }
     let result;
-    if (get) {
-      const v = get;
-      result = v;
-    } else {
-      try {
+    try {
+      const get = scope.value.vars.get(name);
+      if (get) {
+        const v = get;
+        result = v;
+      } else {
         result = scope.value.parent != null ? Env.get(scope.value.parent, name) : undefined;
-      } catch (error) {
-        $unborrow(scope);
-        throw error;
       }
+    } finally {
+      $unborrow(scope);
     }
-    $unborrow(scope);
     return result;
   },
 

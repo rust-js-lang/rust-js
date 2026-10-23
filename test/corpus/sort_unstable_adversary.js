@@ -29,68 +29,34 @@ function adversary(n, select) {
   const compare = (x, y) => {
     asked = (asked + 1) >>> 0;
     const v = $borrowMut(values, true);
-    let tmp;
     try {
-      tmp = $index(v.value, x) === gas;
-    } catch (error) {
-      $unborrow(v);
-      throw error;
-    }
-    if (tmp) {
-      let tmp;
-      try {
-        tmp = $index(v.value, y) === gas;
-      } catch (error) {
-        $unborrow(v);
-        throw error;
-      }
+      const tmp = $index(v.value, x) === gas;
       if (tmp) {
-        if (x === candidate) {
-          const value = solid;
-          try {
+        const tmp = $index(v.value, y) === gas;
+        if (tmp) {
+          if (x === candidate) {
+            const value = solid;
             $index(v.value, x);
-          } catch (error) {
-            $unborrow(v);
-            throw error;
-          }
-          v.value[x] = value;
-        } else {
-          const value = solid;
-          try {
+            v.value[x] = value;
+          } else {
+            const value = solid;
             $index(v.value, y);
-          } catch (error) {
-            $unborrow(v);
-            throw error;
+            v.value[y] = value;
           }
-          v.value[y] = value;
+          solid = (solid + 1) >>> 0;
         }
-        solid = (solid + 1) >>> 0;
       }
-    }
-    let tmp$1;
-    try {
-      tmp$1 = $index(v.value, x) === gas;
-    } catch (error) {
-      $unborrow(v);
-      throw error;
-    }
-    if (tmp$1) {
-      candidate = x;
-    } else {
-      let tmp;
-      try {
-        tmp = $index(v.value, y) === gas;
-      } catch (error) {
-        $unborrow(v);
-        throw error;
+      const tmp$1 = $index(v.value, x) === gas;
+      if (tmp$1) {
+        candidate = x;
+      } else {
+        const tmp = $index(v.value, y) === gas;
+        if (tmp) {
+          candidate = y;
+        }
       }
-      if (tmp) {
-        candidate = y;
-      }
-    }
-    try {
-      const tmp = $index(v.value, x);
-      return $cmp(tmp, $index(v.value, y));
+      const tmp$2 = $index(v.value, x);
+      return $cmp(tmp$2, $index(v.value, y));
     } finally {
       $unborrow(v);
     }

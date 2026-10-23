@@ -19,6 +19,22 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^dyn_fn_generic_drops.rs$"],
   },
   {
+    name: "any-dyn-drops-unseen",
+    breaks: "a value with a destructor made a `dyn Any`, a payload `resume_unwind` throws, leaves the `dyn Any` dropping nothing",
+    file: "src/lower/analysis/closures.rs",
+    find: "            .any(|from| drops(from) || params_may_drop && from.has_non_region_param())\n",
+    replace: "            .any(|from| params_may_drop && from.has_non_region_param())\n",
+    tests: ["test/corpus.test.ts", "-t", "^catch_unwind_drops.rs$"],
+  },
+  {
+    name: "any-dyn-generic-unseen",
+    breaks: "a type parameter's value made a `dyn Any`, given one with a destructor, leaves the `dyn Any` dropping nothing",
+    file: "src/lower/analysis/closures.rs",
+    find: "            .any(|from| drops(from) || params_may_drop && from.has_non_region_param())\n",
+    replace: "            .any(|from| drops(from))\n",
+    tests: ["test/corpus.test.ts", "-t", "^dyn_any_drops_by_need.rs$"],
+  },
+  {
     name: "fn-dyn-closure-drops-unseen",
     breaks: "a closure holding a value with a destructor, given to a type parameter made a `dyn Fn`, isn't seen to drop",
     file: "src/lower/analysis/closures.rs",

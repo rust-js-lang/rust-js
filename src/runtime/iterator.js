@@ -12,7 +12,11 @@ function $iterator(iterator, next, boxed = false, nextBack, len, hint, fold, nth
   const it = new $Steps(() => step(next(iterator)));
   // The crate's own `fold` and `nth`, where its impl writes them, which
   // what std routes through them calls (#162).
-  if (fold !== undefined) it.fold = (init, f) => fold(iterator, init, f);
+  // That `fold` takes what it steps and drops it, which `ownFold` says.
+  if (fold !== undefined) {
+    it.fold = (init, f) => fold(iterator, init, f);
+    it.ownFold = true;
+  }
   if (nth !== undefined) it.nth = (k) => step(nth(iterator, k));
   it.of = iterator;
   // Another of a value of its type, stepped as it is: a clone's (ADR 0473).
@@ -46,4 +50,12 @@ function $knowing(it, back, len) {
   while (source.knowing === undefined && source.iter !== undefined) source = source.iter;
   source.knowing?.(back, len);
   return it;
+}
+
+// A value of a type parameter given as it is (ADR 0411), as a JS iterator
+// stepped by its `Iterator` dictionary, `iterator`: its `next`, and its own
+// `fold`, `nth` and `size_hint` where the crate's impl writes them (#162);
+// `boxed`, its back and its length as `$iterator`'s.
+function $given(value, iterator, boxed = false, nextBack, len) {
+  return $iterator(value, iterator.next, boxed, nextBack, len, iterator.sizeHint, iterator.fold, iterator.nth);
 }

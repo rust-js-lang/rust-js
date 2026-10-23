@@ -8,9 +8,8 @@ export function entry() {
 
 function main() {
   const outer = 0;
-  let result;
   try {
-    result = $catchUnwind(() => {
+    const result = $catchUnwind(() => {
       const inner = 1;
       try {
         throw new Error("resumed 3");
@@ -19,31 +18,10 @@ function main() {
         throw error;
       }
     });
-  } catch (error) {
-    console.log(`drop ${outer}`);
-    throw error;
-  }
-  try {
     console.log("caught");
-  } catch (error) {
     if (result.TAG === "Err") {
-      result._0.impl.$drop?.(result._0.value);
-    }
-    console.log(`drop ${outer}`);
-    throw error;
-  }
-  if (result.TAG === "Err") {
-    const payload = result._0;
-    try {
+      const payload = result._0;
       throw $unwinding(payload);
-    } catch (error) {
-      console.log(`drop ${outer}`);
-      throw error;
-    }
-  }
-  try {
-    if (result.TAG === "Err") {
-      result._0.impl.$drop?.(result._0.value);
     }
   } finally {
     console.log(`drop ${outer}`);

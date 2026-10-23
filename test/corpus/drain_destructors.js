@@ -12,195 +12,71 @@ function ids(v) {
 
 function main() {
   const v = $range(1, 9).map((value) => [value]);
-  let drain;
   try {
-    drain = $iter($drain(v, 6));
-  } catch (error) {
-    for (const item of v) {
-      console.log(`drop ${item[0]}`);
-    }
-    throw error;
-  }
-  try {
+    const drain = $iter($drain(v, 6));
     for (const item of drain) {
       console.log(`drop ${item[0]}`);
     }
-  } catch (error) {
-    for (const item of v) {
-      console.log(`drop ${item[0]}`);
-    }
-    throw error;
-  }
-  let tmp;
-  try {
-    tmp = ids(v);
-  } catch (error) {
-    for (const item of v) {
-      console.log(`drop ${item[0]}`);
-    }
-    throw error;
-  }
-  try {
+    const tmp = ids(v);
     console.log(`after statement [${tmp.join(", ")}]`);
-  } catch (error) {
-    for (const item of v) {
-      console.log(`drop ${item[0]}`);
-    }
-    throw error;
-  }
-  let tmp$1;
-  try {
-    tmp$1 = $iter($drain(v, 0, 2));
-  } catch (error) {
-    for (const item of v) {
-      console.log(`drop ${item[0]}`);
-    }
-    throw error;
-  }
-  let taken;
-  try {
-    taken = tmp$1.toArray();
-  } catch (error) {
-    for (const item of v) {
-      console.log(`drop ${item[0]}`);
-    }
-    throw error;
-  }
-  let tmp$2;
-  let tmp$3;
-  try {
-    tmp$2 = ids(taken);
-    tmp$3 = v;
-  } catch (error) {
-    for (const item of taken) {
-      console.log(`drop ${item[0]}`);
-    }
-    for (const item of v) {
-      console.log(`drop ${item[0]}`);
-    }
-    throw error;
-  }
-  let tmp$4;
-  try {
-    tmp$4 = ids(tmp$3);
-  } catch (error) {
-    for (const item of taken) {
-      console.log(`drop ${item[0]}`);
-    }
-    for (const item of v) {
-      console.log(`drop ${item[0]}`);
-    }
-    throw error;
-  }
-  try {
-    console.log(`taken [${tmp$2.join(", ")}] left [${tmp$4.join(", ")}]`);
-  } catch (error) {
-    for (const item of taken) {
-      console.log(`drop ${item[0]}`);
-    }
-    for (const item of v) {
-      console.log(`drop ${item[0]}`);
-    }
-    throw error;
-  }
-  let tmp$5;
-  try {
-    tmp$5 = $iter($drain(v, 1));
-  } catch (error) {
-    for (const item of taken) {
-      console.log(`drop ${item[0]}`);
-    }
-    for (const item of v) {
-      console.log(`drop ${item[0]}`);
-    }
-    throw error;
-  }
-  const iter = tmp$5;
-  let tmp$6;
-  while (true) {
+    const tmp$1 = $iter($drain(v, 0, 2));
+    const taken = tmp$1.toArray();
     try {
-      tmp$6 = $next(iter);
-    } catch (error) {
-      for (const item of iter) {
-        console.log(`drop ${item[0]}`);
-      }
-      for (const item of taken) {
-        console.log(`drop ${item[0]}`);
-      }
-      for (const item of v) {
-        console.log(`drop ${item[0]}`);
-      }
-      throw error;
-    }
-    if (tmp$6) {
-      const n = tmp$6;
-      try {
-        console.log(`got ${n[0]}`);
-      } catch (error) {
-        console.log(`drop ${n[0]}`);
+      const tmp = ids(taken);
+      const tmp$1 = v;
+      const tmp$2 = ids(tmp$1);
+      console.log(`taken [${tmp.join(", ")}] left [${tmp$2.join(", ")}]`);
+      const tmp$3 = $iter($drain(v, 1));
+      const iter = tmp$3;
+      let tmp$4;
+      while (true) {
+        try {
+          tmp$4 = $next(iter);
+        } catch (error) {
+          for (const item of iter) {
+            console.log(`drop ${item[0]}`);
+          }
+          throw error;
+        }
+        if (tmp$4) {
+          const n = tmp$4;
+          try {
+            console.log(`got ${n[0]}`);
+          } catch (error) {
+            console.log(`drop ${n[0]}`);
+            for (const item of iter) {
+              console.log(`drop ${item[0]}`);
+            }
+            throw error;
+          }
+          if (n[0] === 4) {
+            try {
+              console.log(`drop ${n[0]}`);
+            } catch (error) {
+              for (const item of iter) {
+                console.log(`drop ${item[0]}`);
+              }
+              throw error;
+            }
+          } else {
+            try {
+              console.log(`drop ${n[0]}`);
+            } catch (error) {
+              for (const item of iter) {
+                console.log(`drop ${item[0]}`);
+              }
+              throw error;
+            }
+            continue;
+          }
+        }
         for (const item of iter) {
           console.log(`drop ${item[0]}`);
         }
-        for (const item of taken) {
-          console.log(`drop ${item[0]}`);
-        }
-        for (const item of v) {
-          console.log(`drop ${item[0]}`);
-        }
-        throw error;
+        break;
       }
-      if (n[0] === 4) {
-        try {
-          console.log(`drop ${n[0]}`);
-        } catch (error) {
-          for (const item of iter) {
-            console.log(`drop ${item[0]}`);
-          }
-          for (const item of taken) {
-            console.log(`drop ${item[0]}`);
-          }
-          for (const item of v) {
-            console.log(`drop ${item[0]}`);
-          }
-          throw error;
-        }
-      } else {
-        try {
-          console.log(`drop ${n[0]}`);
-        } catch (error) {
-          for (const item of iter) {
-            console.log(`drop ${item[0]}`);
-          }
-          for (const item of taken) {
-            console.log(`drop ${item[0]}`);
-          }
-          for (const item of v) {
-            console.log(`drop ${item[0]}`);
-          }
-          throw error;
-        }
-        continue;
-      }
-    }
-    try {
-      for (const item of iter) {
-        console.log(`drop ${item[0]}`);
-      }
-    } catch (error) {
-      for (const item of taken) {
-        console.log(`drop ${item[0]}`);
-      }
-      for (const item of v) {
-        console.log(`drop ${item[0]}`);
-      }
-      throw error;
-    }
-    break;
-  }
-  try {
-    try {
-      const tmp = ids(v);
-      console.log(`after loop [${tmp.join(", ")}]`);
+      const tmp$5 = ids(v);
+      console.log(`after loop [${tmp$5.join(", ")}]`);
       const w = $range(10, 14).map((value) => [value]);
       try {
         const d = $iter($drain(w, 0));

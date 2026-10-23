@@ -118,6 +118,90 @@ console.log(JSON.stringify([throwing, trapped, { url: "u" }].map(getUrl)));
   );
 });
 
+// A crate with destructors whose `dyn Any`s hold none of them catches as
+// one without (ADR 0691): what unwound, a panic's message or what JS threw,
+// drops nothing, so `unwrap_or_default()` is still `try { return ..; }
+// catch { return ""; }`, not `$catchUnwind` and a `kept` that drops it. And
+// a `match` whose `Ok` arm is the closure's value and whose `Err` arm reads
+// the payload, ReactComponentInfoStack's, is `try { ..; return info; }
+// catch (thrown) { .. }`, its `let` the shadow its arm sets again.
+test("a crate's destructors leave catch_unwind JS's try", async () => {
+  const { js, dir } = compiled("unwind-destructors", `use js::{JsError, Kind, Unknown};
+use std::panic::catch_unwind;
+
+pub struct Restore(pub u32);
+
+impl Drop for Restore {
+    fn drop(&mut self) {
+        self.0 = 0;
+    }
+}
+
+pub fn describe(value: &Unknown) -> String {
+    catch_unwind(|| match js::classify(js::get(value, "url")) {
+        Kind::String(url) => url.to_string(),
+        _ => String::new(),
+    })
+    .unwrap_or_default()
+}
+
+pub struct Info {
+    pub name: String,
+    pub owner: Option<&'static Info>,
+    pub debug_stack: Option<&'static JsError>,
+}
+
+pub fn owner_stack(info: &Info) -> String {
+    match catch_unwind(|| {
+        let mut stack = String::new();
+        if info.owner.is_none() {
+            return info.name.clone();
+        }
+        let mut owner = info.owner;
+        while let Some(current) = owner {
+            stack += "\\n";
+            if let Some(debug_stack) = current.debug_stack {
+                stack += &debug_stack.message();
+            }
+            owner = current.owner;
+        }
+        stack
+    }) {
+        Ok(stack) => stack,
+        Err(x) => match x.downcast_ref::<&'static JsError>() {
+            Some(x) => format!("\\nError generating stack: {}", x.message()),
+            None => String::from("\\nError generating stack"),
+        },
+    }
+}
+`);
+  expect(js).not.toContain("$catchUnwind");
+  expect(js).not.toContain("kept");
+  expect(js).toContain(`export function describe(value) {
+  try {`);
+  expect(js).toContain(`  } catch {
+    return "";
+  }
+}`);
+  expect(js).toContain(`export function ownerStack(info) {
+  try {
+    let stack = "";`);
+  expect(js).toContain(`    return stack;
+  } catch (thrown) {
+    let x = $unwound(thrown);`);
+  const lib = await import(join(dir, "lib.js"));
+  const throwing = { get url() { throw new TypeError("no url"); } };
+  expect([lib.describe({ url: "u" }), lib.describe(throwing), lib.describe({})]).toEqual(["u", "", ""]);
+  const root = { name: "Root", owner: undefined, debugStack: { message: "at Root" } };
+  const child = { name: "Child", owner: root, debugStack: { message: "at Child" } };
+  const broken = { name: "Broken", owner: { debugStack: { get message() { throw new RangeError("lost"); } } } };
+  expect([lib.ownerStack(root), lib.ownerStack(child), lib.ownerStack(broken)]).toEqual([
+    "Root",
+    "\nat Root",
+    "\nError generating stack: lost",
+  ]);
+});
+
 // A panic's payload is its message, as Rust's is; JS doesn't keep whether
 // it was a literal's `&str` or a formatted `String`, so it downcasts as
 // either. What JS threw is a `&'static JsError`, itself.
@@ -222,8 +306,9 @@ pub fn rethrown(value: Option<&Unknown>) -> String {
     return n * 2;
   };
   // A `RangeError` is what JS threw; an `Error` of JS's own constructor, a
-  // panic's form, is a panic, whoever threw it.
-  expect([lib.fromJs(2), lib.fromJs(-1), lib.fromJs(0)]).toEqual(["4", "RangeError: negative", "a panic, zero"]);
+  // panic's form, is a panic, whoever threw it, and what JS threw too
+  // (ADR 0692): the `&JsError` downcast, tried first, finds it.
+  expect([lib.fromJs(2), lib.fromJs(-1), lib.fromJs(0)]).toEqual(["4", "RangeError: negative", "Error: zero"]);
   delete g.risky;
   // What JS threw goes on as itself.
   const symbol = Symbol("s");
@@ -235,6 +320,75 @@ pub fn rethrown(value: Option<&Unknown>) -> String {
   }
   expect(caught).toBeInstanceOf(TypeError);
   expect(lib.rethrown("text")).toBe("text");
+});
+
+// A thrown `Error` of JS's own constructor, a panic's form, is a panic and
+// what JS threw both (ADR 0692): its payload downcasts as its message, a
+// `&str` and a `String`, and as the `&JsError` it is, whose `stack` React's
+// `catch (sample) { .. sample.stack .. }` reads; `resume_unwind` of it
+// throws the same `Error` again. A panic's JS stays `throw new Error(..)`.
+test("a thrown Error answers both downcasts", async () => {
+  const { js, dir } = compiled("unwind-error-both", `use js::JsError;
+use std::panic::{catch_unwind, resume_unwind};
+
+#[cfg_attr(rust_js, rust_js::link_name = "globalThis.render")]
+fn render() -> u32 {
+    unreachable!()
+}
+
+pub fn sample_stack() -> Option<String> {
+    let Err(sample) = catch_unwind(render) else {
+        return None;
+    };
+    let message = sample.downcast_ref::<&str>().copied().unwrap_or("none");
+    let owned = sample.downcast_ref::<String>().cloned().unwrap_or_default();
+    let error = sample.downcast_ref::<&'static JsError>()?;
+    Some(format!("{message}|{owned}|{}|{}", error.message(), error.stack()?.contains(message)))
+}
+
+pub fn is_error(n: u32) -> bool {
+    catch_unwind(|| if n > 1 { panic!("big {n}") } else { n })
+        .err()
+        .is_some_and(|payload| payload.is::<&JsError>())
+}
+
+pub fn boxed(n: u32) -> String {
+    match catch_unwind(|| if n > 1 { panic!("big {n}") } else { n }) {
+        Ok(n) => n.to_string(),
+        Err(payload) => match payload.downcast::<&JsError>() {
+            Ok(error) => error.message(),
+            Err(_) => "not an Error".to_string(),
+        },
+    }
+}
+
+pub fn rethrown() -> u32 {
+    match catch_unwind(render) {
+        Ok(n) => n,
+        Err(payload) => resume_unwind(payload),
+    }
+}
+`);
+  expect(js).toContain('throw new Error(`big ${n}`);');
+  const lib = await import(join(dir, "lib.js"));
+  const g = globalThis as Record<string, unknown>;
+  const thrown = new Error("no props");
+  g.render = () => {
+    throw thrown;
+  };
+  expect(lib.sampleStack()).toBe("no props|no props|no props|true");
+  expect([lib.isError(1), lib.isError(2)]).toEqual([false, true]);
+  expect([lib.boxed(1), lib.boxed(3)]).toEqual(["1", "big 3"]);
+  let caught: unknown;
+  try {
+    lib.rethrown();
+  } catch (e) {
+    caught = e;
+  }
+  expect(caught).toBe(thrown);
+  g.render = () => 7;
+  expect([lib.sampleStack(), lib.rethrown()]).toEqual([undefined, 7]);
+  delete g.render;
 });
 
 // `resume_unwind` throws its payload again: a panic's message, a panic of
@@ -260,6 +414,10 @@ pub fn number() -> i32 {
 
 pub fn uncaught() {
     panic::resume_unwind(Box::new(5i32));
+}
+
+pub fn text() {
+    panic::resume_unwind(Box::new(String::from("as text")));
 }
 
 fn made(n: u32) -> impl FnOnce() -> u32 {
@@ -324,6 +482,8 @@ pub fn counted(n: u32) -> u32 {
   expect(() => lib.again(5)).toThrow(new Error("big 5"));
   expect(lib.number()).toBe(5);
   expect(() => lib.uncaught()).toThrow("Box<dyn Any>");
+  // Text resumed is the panic of it, an `Error` of JS's own constructor.
+  expect(() => lib.text()).toThrow(new Error("as text"));
   expect([lib.counted(1), lib.counted(5)]).toEqual([1, 11]);
   // What makes the closure isn't caught, as it runs before `catch_unwind`.
   expect([lib.given(2), lib.given(3)]).toEqual([2, 0]);
@@ -386,6 +546,82 @@ pub fn lazy(kind: u32, payload: u32) -> String {
   expect(js).not.toContain("TAG");
   const lib = await import(join(dir, "lib.js"));
   expect([lib.lazy(3, 2), lib.lazy(3, 0), lib.lazy(1, 2)]).toEqual(["<2>", "", ""]);
+});
+
+// React's describeNativeComponentFrame restores what it changed in one
+// `finally`; its port's guard, whose `Drop` restores it, is that `finally`
+// (ADR 0693): its scope's `if`, loop and `return` from inside them in the
+// `try`, not a `try` and `catch` of the drop for each statement.
+test("a guard's scope is one finally, its returns in it", async () => {
+  const { js, dir } = compiled("unwind-guard-scope", `use std::cell::Cell;
+
+thread_local! {
+    static REENTRY: Cell<bool> = const { Cell::new(false) };
+}
+
+struct Restore {
+    previous: u32,
+}
+
+impl Drop for Restore {
+    fn drop(&mut self) {
+        REENTRY.set(false);
+        restored(self.previous);
+    }
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "globalThis.work")]
+fn work(n: u32) -> u32 {
+    n
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "globalThis.restored")]
+fn restored(_: u32) {}
+
+pub fn guarded(n: u32) -> String {
+    if REENTRY.get() {
+        return String::new();
+    }
+    {
+        REENTRY.set(true);
+        let previous = work(0);
+        let _restore = Restore { previous };
+        let first = work(n);
+        if first > 3 {
+            let mut i = 0;
+            while i < first {
+                if work(i) == 7 {
+                    return format!("found {i}");
+                }
+                i += 1;
+            }
+        }
+    }
+    String::from("none")
+}
+`);
+  expect(js).not.toContain("catch (error)");
+  expect(js.match(/finally/g)?.length).toBe(1);
+  expect(js).toContain(`  } finally {
+    reentry = false;
+    globalThis.restored(_restore.previous);
+  }
+  return "none";`);
+  const lib = await import(join(dir, "lib.js"));
+  const g = globalThis as Record<string, unknown>;
+  const restores: number[] = [];
+  g.restored = (n: number) => restores.push(n);
+  g.work = (n: number) => {
+    if (n === 30) throw new RangeError("thirty");
+    return n === 0 ? 40 : n;
+  };
+  expect([lib.guarded(2), lib.guarded(8)]).toEqual(["none", "found 7"]);
+  expect(() => lib.guarded(30)).toThrow("thirty");
+  expect(restores).toEqual([40, 40, 40]);
+  // Restored each time, so the next call isn't a reentry.
+  expect(lib.guarded(2)).toBe("none");
+  delete g.restored;
+  delete g.work;
 });
 
 // rust-js's panics unwind (ADR 0090); where the crate asked them to abort,

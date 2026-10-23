@@ -720,6 +720,15 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         closure_facts.fn_dyns_drop = true;
         counted = counted_with(&closure_facts);
     }
+    // Whether a value with a destructor is made a `dyn Any`, which then
+    // drops it (ADR 0691): what unwound, of a panic or of JS, drops nothing.
+    // One that drops only by a `dyn Any` it holds doesn't, so one pass does.
+    if closures::any_dyns_drop(tcx, all_bodies, (params_may_drop, foreign.any()), |ty| {
+        super::drops::drop_runs(recognition, (library, &closure_facts), &counted, ty)
+    }) {
+        closure_facts.any_dyns_drop = true;
+        counted = counted_with(&closure_facts);
+    }
     // The map and filter types it steps from their back (ADR 0545), and of
     // an array's items with a destructor, which its native forms don't step.
     let back_stepped = back_stepped::back_stepped(tcx, recognition, all_bodies, |item| {

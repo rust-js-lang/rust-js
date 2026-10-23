@@ -17,147 +17,45 @@ export function entry() {
 
 function main() {
   const sorted = new Map();
-  let insert;
   try {
-    insert = $insert(sorted, 3, ["c"]);
-  } catch (error) {
-    for (const [, value] of $sortedEntries(sorted, $cmp)) {
-      console.log(`drop ${value[0]}`);
-    }
-    throw error;
-  }
-  try {
+    const insert = $insert(sorted, 3, ["c"]);
     if (insert != null) {
       console.log(`drop ${insert[0]}`);
     }
-  } catch (error) {
-    for (const [, value] of $sortedEntries(sorted, $cmp)) {
-      console.log(`drop ${value[0]}`);
-    }
-    throw error;
-  }
-  let noisy;
-  try {
-    noisy = $insert(sorted, 1, ["a"]);
-  } catch (error) {
-    for (const [, value] of $sortedEntries(sorted, $cmp)) {
-      console.log(`drop ${value[0]}`);
-    }
-    throw error;
-  }
-  try {
+    const noisy = $insert(sorted, 1, ["a"]);
     if (noisy != null) {
       console.log(`drop ${noisy[0]}`);
     }
-  } catch (error) {
-    for (const [, value] of $sortedEntries(sorted, $cmp)) {
-      console.log(`drop ${value[0]}`);
-    }
-    throw error;
-  }
-  let tmp;
-  try {
-    tmp = $insert(sorted, 2, ["b"]);
-  } catch (error) {
-    for (const [, value] of $sortedEntries(sorted, $cmp)) {
-      console.log(`drop ${value[0]}`);
-    }
-    throw error;
-  }
-  try {
+    const tmp = $insert(sorted, 2, ["b"]);
     if (tmp != null) {
       console.log(`drop ${tmp[0]}`);
     }
-  } catch (error) {
-    for (const [, value] of $sortedEntries(sorted, $cmp)) {
-      console.log(`drop ${value[0]}`);
-    }
-    throw error;
-  }
-  let old;
-  try {
-    old = $insert(sorted, 2, ["b2"]);
-  } catch (error) {
-    for (const [, value] of $sortedEntries(sorted, $cmp)) {
-      console.log(`drop ${value[0]}`);
-    }
-    throw error;
-  }
-  const map = (n) => {
-    const result = n[0];
-    console.log(`drop ${n[0]}`);
-    return result;
-  };
-  let tmp$1;
-  try {
-    tmp$1 = old ? map(old) : undefined;
-  } catch (error) {
-    for (const [, value] of $sortedEntries(sorted, $cmp)) {
-      console.log(`drop ${value[0]}`);
-    }
-    throw error;
-  }
-  try {
+    const old = $insert(sorted, 2, ["b2"]);
+    const map = (n) => {
+      const result = n[0];
+      console.log(`drop ${n[0]}`);
+      return result;
+    };
+    const tmp$1 = old ? map(old) : undefined;
     console.log(`replaced ${tmp$1 ?? "none"}`);
-  } catch (error) {
-    for (const [, value] of $sortedEntries(sorted, $cmp)) {
-      console.log(`drop ${value[0]}`);
-    }
-    throw error;
-  }
-  let taken;
-  try {
-    taken = $remove(sorted, 1);
-  } catch (error) {
-    for (const [, value] of $sortedEntries(sorted, $cmp)) {
-      console.log(`drop ${value[0]}`);
-    }
-    throw error;
-  }
-  const value = !!taken;
-  try {
-    console.log(`took ${value} ${sorted.size}`);
-  } catch (error) {
-    if (taken != null) {
-      console.log(`drop ${taken[0]}`);
-    }
-    for (const [, value] of $sortedEntries(sorted, $cmp)) {
-      console.log(`drop ${value[0]}`);
-    }
-    throw error;
-  }
-  try {
-    if (taken != null) {
-      console.log(`drop ${taken[0]}`);
-    }
-  } catch (error) {
-    for (const [, value] of $sortedEntries(sorted, $cmp)) {
-      console.log(`drop ${value[0]}`);
-    }
-    throw error;
-  }
-  let get;
-  try {
-    get = sorted.get(3);
-  } catch (error) {
-    for (const [, value] of $sortedEntries(sorted, $cmp)) {
-      console.log(`drop ${value[0]}`);
-    }
-    throw error;
-  }
-  if (get) {
-    const n = get;
+    const taken = $remove(sorted, 1);
+    const value = !!taken;
     try {
-      console.log(`has ${n[0]}`);
-    } catch (error) {
-      for (const [, value] of $sortedEntries(sorted, $cmp)) {
-        console.log(`drop ${value[0]}`);
+      console.log(`took ${value} ${sorted.size}`);
+    } finally {
+      if (taken != null) {
+        console.log(`drop ${taken[0]}`);
       }
-      throw error;
     }
-  }
-  for (const [, value] of $sortedEntries(sorted, $cmp)) {
-    console.log(`drop ${value[0]}`);
+    const get = sorted.get(3);
+    if (get) {
+      const n = get;
+      console.log(`has ${n[0]}`);
+    }
+  } finally {
+    for (const [, value] of $sortedEntries(sorted, $cmp)) {
+      console.log(`drop ${value[0]}`);
+    }
   }
   console.log("sorted dropped");
 

@@ -234,6 +234,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/temporaries.rs",
     find: "            !movable(state, value)\n                && match value {\n",
     replace: "            false\n                && match value {\n",
-    tests: ["test/corpus.test.ts", "-t", "drop"],
+    tests: ["test/corpus.test.ts", "-t", "^vec_destructors.rs$|^take_destructors.rs$"],
+    snapshots: true,
   },
 ];

@@ -955,11 +955,18 @@ fn try_catch(made: &Stmt, tested: &Stmt, before: &[Stmt], rest: &[Stmt]) -> Opti
     let after = &rest[taken..];
     // Each arm's binding, `const v = result._0;`: the `Ok`'s value, and the
     // `Err`'s error, the `catch`'s.
+    // `let` where the arm sets it again, a shadow that's the binding it
+    // shadows (ADR 0650), `let x = result._0; x = ..`.
     let bound = |stmts: &[Stmt]| match stmts.first().map(|s| &s.kind) {
-        Some(StmtKind::Const(name, value)) if js::result::reads_held(value, result) => Some(name.clone()),
+        Some(StmtKind::Const(name, value)) if js::result::reads_held(value, result) => Some((name.clone(), false)),
+        Some(StmtKind::Let(name, Some(value))) if js::result::reads_held(value, result) => Some((name.clone(), true)),
         _ => None,
     };
-    let (value_name, error) = (bound(ok), bound(err));
+    let (value_name, error) = (bound(ok).map(|(name, _)| name), bound(err));
+    let (error, set_again) = match error {
+        Some((name, set_again)) => (Some(name), set_again),
+        None => (None, false),
+    };
     let ok = &ok[usize::from(value_name.is_some())..];
     let err = &err[usize::from(error.is_some())..];
     // The `Ok`'s value kept as it is, `return result._0;` or `x =
@@ -996,7 +1003,11 @@ fn try_catch(made: &Stmt, tested: &Stmt, before: &[Stmt], rest: &[Stmt]) -> Opti
                 return None;
             }
             let unwound = Expr::call_helper("$unwound", vec![Expr::var(THROWN)]);
-            let made = StmtKind::Const(payload.clone(), unwound).at(span);
+            let made = match set_again {
+                true => StmtKind::Let(payload.clone(), Some(unwound)),
+                false => StmtKind::Const(payload.clone(), unwound),
+            }
+            .at(span);
             (
                 Some(THROWN.to_string()),
                 std::iter::once(made).chain(err.iter().cloned()).collect(),

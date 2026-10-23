@@ -34,7 +34,7 @@ test("a generic count of items no caller gives a drop for drops none", () => {
   writeFileSync(join(dir, "lib.rs"), readFileSync(join(root, "test/corpus/yielded_item_drops.rs"), "utf8").replace("fn main()", "pub fn main()"));
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain("return $iterator(IClone.clone(iter), IIterator.next, true).reduce((n) => n + 1, 0);");
+  expect(js).toContain("return $given(IClone.clone(iter), IIterator, true).reduce((n) => n + 1, 0);");
   expect(js).not.toContain("IIterator.$dropItem");
 });
 

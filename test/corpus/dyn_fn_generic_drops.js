@@ -25,22 +25,14 @@ const Registry = {
 function main() {
   const registry = { callbacks: [] };
   const iter = { start: 1, end: 2 };
-  while (true) {
-    let tmp;
-    try {
-      tmp = $rangeInclusiveNext(iter);
-    } catch (error) {
-      for (const item of registry.callbacks) {
-        $dispose(item);
+  try {
+    while (true) {
+      const tmp = $rangeInclusiveNext(iter);
+      if (tmp == null) {
+        break;
       }
-      throw error;
-    }
-    if (tmp == null) {
-      break;
-    }
-    const i = tmp;
-    const guard = [i];
-    try {
+      const i = tmp;
+      const guard = [i];
       Registry.add(
         registry,
         () => (Guard.id(guard) * 10) >>> 0,
@@ -48,14 +40,7 @@ function main() {
           console.log(`drop guard ${guard[0]}`);
         },
       );
-    } catch (error) {
-      for (const item of registry.callbacks) {
-        $dispose(item);
-      }
-      throw error;
     }
-  }
-  try {
     Registry.add(registry, () => 7);
     const sum = registry.callbacks.map((f) => f()).reduce((a, b) => (a + b) >>> 0, 0);
     console.log(`sum ${sum}`);

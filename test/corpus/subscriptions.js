@@ -52,46 +52,21 @@ function subscribe(bus, f) {
 
 function publish(bus, msg) {
   const b = $borrow(bus.value, true);
-  let ids;
   try {
-    ids = Array.from(b.value.handlers.keys());
-  } catch (error) {
-    $unborrow(b);
-    throw error;
-  }
-  try {
+    const ids = Array.from(b.value.handlers.keys());
     ids.sort($cmp);
-  } catch (error) {
-    $unborrow(b);
-    throw error;
-  }
-  let iter;
-  try {
-    iter = $iter(ids);
-  } catch (error) {
-    $unborrow(b);
-    throw error;
-  }
-  while (true) {
-    let tmp;
-    try {
-      tmp = $next(iter);
-    } catch (error) {
-      $unborrow(b);
-      throw error;
-    }
-    if (tmp == null) {
-      break;
-    }
-    const id = tmp;
-    try {
+    const iter = $iter(ids);
+    while (true) {
+      const tmp = $next(iter);
+      if (tmp == null) {
+        break;
+      }
+      const id = tmp;
       $unwrap(b.value.handlers.get(id), "no entry found for key")(msg);
-    } catch (error) {
-      $unborrow(b);
-      throw error;
     }
+  } finally {
+    $unborrow(b);
   }
-  $unborrow(b);
 }
 
 const Component = {
