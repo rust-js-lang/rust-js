@@ -718,12 +718,14 @@ a guard. A `match` of three cases or more, each constant of its patterns
 one and a last `_` one, each arm a constant or a `|` of them
 (a literal, a `const`, an enum's variant of no field, the registry's
 symbol, or a `Some` of them, [ADR
-0634](../../decisions/0634-a-registered-symbol-is-a-const.md)) with no guard, and
-at most a last `_`, is a `switch`: `|`'s constants are stacked `case`s, `_`
-is the `default`, left out where it does nothing, and each case ends in
-`break;` where it'd go on, in a block `{ .. }` where it declares a name.
-Any other `match`, of a range, a guard, a binding, or of two cases, is an
-`if` chain ([ADR 0014](../../decisions/0014-match-lowering.md), [ADR
+0634](../../decisions/0634-a-registered-symbol-is-a-const.md)), and at most
+a last `_`, is a `switch`: `|`'s constants are stacked `case`s, `_` is the
+`default`, left out where it does nothing, and each case ends in `break;`
+where it'd go on, in a block `{ .. }` where it declares a name. An arm with
+a guard is a case that tests it, where what Rust tries when the guard
+fails does nothing: each later arm that could match its constants is a
+`_ => {}`, as below. Any other `match`, of a range, a binding, a guard a
+later arm goes on from, or of two cases, is an `if` chain ([ADR 0014](../../decisions/0014-match-lowering.md), [ADR
 0629](../../decisions/0629-a-match-of-constants-is-a-switch.md)); and one
 whose value is read in place, `f(match n { .. })`, is a `?:`, as JS has
 no `switch` expression. An arm that names a `const` tests it by its name,
@@ -758,6 +760,45 @@ export function timeout(level) {
       return 1073741823;
     default:
       return 5000;
+  }
+}
+```
+
+A guarded arm, as clippy's `collapsible_match` asks an `if` in an arm to
+be written, is a case whose statements test the guard:
+
+```rust
+pub const FRAGMENT: u8 = 1;
+pub const PROFILER: u8 = 2;
+pub const TRACING_MARKER: u8 = 3;
+
+pub fn name(kind: u8, tracing: bool) -> Option<&'static str> {
+    match kind {
+        FRAGMENT => return Some("Fragment"),
+        PROFILER => return Some("Profiler"),
+        TRACING_MARKER if tracing => return Some("TracingMarker"),
+        _ => {}
+    }
+    None
+}
+```
+
+```js
+export const FRAGMENT = 1;
+export const PROFILER = 2;
+export const TRACING_MARKER = 3;
+
+export function name(kind, tracing) {
+  switch (kind) {
+    case FRAGMENT:
+      return "Fragment";
+    case PROFILER:
+      return "Profiler";
+    case TRACING_MARKER:
+      if (tracing) {
+        return "TracingMarker";
+      }
+      break;
   }
 }
 ```

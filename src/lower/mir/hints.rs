@@ -42,12 +42,13 @@ pub(super) struct Switch {
     pub arms: Vec<SwitchArm>,
 }
 
-/// An arm of a `match` of constants (`Written::switches`): where it and
-/// its pattern are written, and each constant its pattern names, `1 | 2`'s
-/// two, none of a last `_`, the `switch`'s `default`.
+/// An arm of a `match` of constants (`Written::switches`): where it, its
+/// pattern and its guard are written, and each constant its pattern names,
+/// `1 | 2`'s two, none of a last `_`, the `switch`'s `default`.
 pub(super) struct SwitchArm {
     pub span: js::Span,
     pub pattern: js::Span,
+    pub guard: Option<js::Span>,
     pub constants: Vec<Constant>,
 }
 
@@ -237,10 +238,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// Each `match` the program wrote, not a macro, `matches!`, of three
-    /// arms or more, whose every arm tests constants, with no guard or
-    /// binding, but for a last `_`, and whose value isn't read in place,
-    /// which JS has no `switch` expression for (ADR 0629): its arms. The
-    /// one answer to which `match` is a `switch`.
+    /// arms or more, whose every arm tests constants, with no binding, but
+    /// for a last `_`, and whose value isn't read in place, which JS has no
+    /// `switch` expression for (ADR 0629): its arms. An arm with a guard is
+    /// one where a failed guard goes on to nothing (`fails_to_nothing`).
+    /// The one answer to which `match` is a `switch`.
     fn written_switches(&self) -> Vec<Switch> {
         // Each once, of the scopes THIR has of it.
         let mut seen = std::collections::HashSet::new();
@@ -273,16 +275,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     return None;
                 }
                 let last = arms.len().checked_sub(1)?;
+                let arms: Vec<&thir::Arm<'tcx>> = arms.iter().map(|&arm| &self.thir[arm]).collect();
                 let arms: Vec<SwitchArm> = (arms.iter().enumerate())
-                    .map(|(i, &arm)| {
-                        let arm = &self.thir[arm];
+                    .map(|(i, arm)| {
                         let constants = match &arm.pattern.kind {
-                            thir::PatKind::Wild if i == last => Some(Vec::new()),
-                            _ => self.constants_of(&arm.pattern).filter(|_| arm.guard.is_none()),
+                            thir::PatKind::Wild if i == last && arm.guard.is_none() => Some(Vec::new()),
+                            _ => (self.constants_of(&arm.pattern))
+                                .filter(|_| arm.guard.is_none() || self.fails_to_nothing(&arm.pattern, &arms[i + 1..])),
                         }?;
                         Some(SwitchArm {
                             span: self.js_span(arm.span),
                             pattern: self.js_span(arm.pattern.span),
+                            guard: arm.guard.map(|guard| self.js_span(self.thir[guard].span)),
                             constants,
                         })
                     })
@@ -326,6 +330,62 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             child = id;
         }
         true
+    }
+
+    /// Whether what Rust tries after a guard of an arm of `pattern` fails,
+    /// the arms `later`, does nothing: each that may match a value `pattern`
+    /// does is a last `_ => {}` (ADR 0629). Then the arm is a case whose
+    /// statements test the guard, `case C: if (on) { .. } break;`.
+    fn fails_to_nothing(&self, pattern: &thir::Pat<'tcx>, later: &[&thir::Arm<'tcx>]) -> bool {
+        (later.iter()).all(|arm| {
+            !self.may_match_alike(pattern, &arm.pattern)
+                || (matches!(arm.pattern.kind, thir::PatKind::Wild)
+                    && arm.guard.is_none()
+                    && self.does_nothing(arm.body))
+        })
+    }
+
+    /// Whether a value `a` matches may be one `b` matches, of the patterns
+    /// of constants (`constants_of`): unless each constant of one is a value
+    /// another of the other's isn't, a variant or the value a constant
+    /// pattern is (`body_queries::pattern_value`). Of a string's or a
+    /// float's, which that doesn't tell, it may.
+    fn may_match_alike(&self, a: &thir::Pat<'tcx>, b: &thir::Pat<'tcx>) -> bool {
+        use thir::PatKind;
+        match (&a.kind, &b.kind) {
+            (PatKind::Deref { subpattern, .. }, _) => self.may_match_alike(subpattern, b),
+            (_, PatKind::Deref { subpattern, .. }) => self.may_match_alike(a, subpattern),
+            (PatKind::Or { pats }, _) => pats.iter().any(|a| self.may_match_alike(a, b)),
+            (_, PatKind::Or { pats }) => pats.iter().any(|b| self.may_match_alike(a, b)),
+            (
+                PatKind::Variant {
+                    variant_index: x,
+                    subpatterns: xs,
+                    ..
+                },
+                PatKind::Variant {
+                    variant_index: y,
+                    subpatterns: ys,
+                    ..
+                },
+            ) => x == y && (xs.iter().zip(ys)).all(|(x, y)| self.may_match_alike(&x.pattern, &y.pattern)),
+            _ => match (
+                crate::lower::body_queries::pattern_value(self.tcx, a),
+                crate::lower::body_queries::pattern_value(self.tcx, b),
+            ) {
+                (Some(x), Some(y)) => x == y,
+                _ => true,
+            },
+        }
+    }
+
+    /// Whether `body`, an arm's, is `{}`.
+    fn does_nothing(&self, mut body: thir::ExprId) -> bool {
+        while let thir::ExprKind::Scope { value: inner, .. } = self.thir[body].kind {
+            body = inner;
+        }
+        matches!(self.thir[body].kind, thir::ExprKind::Block { block }
+            if self.thir[block].stmts.is_empty() && self.thir[block].expr.is_none())
     }
 
     /// Each constant `pattern` names, if it names constants alone: a literal,

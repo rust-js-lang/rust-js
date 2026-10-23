@@ -571,24 +571,7 @@ pub(super) fn constant_patterns<'tcx>(
             // of a type the pattern doesn't keep, so it's its value.
             let named = (pat.extra.as_ref().and_then(|extra| extra.expanded_const))
                 .filter(|&d| tcx.generics_of(d).count() == 0);
-            let value = match &pat.kind {
-                PatKind::Constant { value } if pat.ty.is_integral() || pat.ty.is_char() => value
-                    .valtree
-                    .try_to_leaf()
-                    .map(|leaf| PatternValue::Bits(pat.ty, leaf.to_bits_unchecked())),
-                // Its key's pattern, a string's, inside it.
-                PatKind::Leaf { subpatterns }
-                    if matches!(pat.ty.kind(), ty::Adt(adt, _)
-                    if super::recognition::is_symbol_for_def(tcx, adt.did())) =>
-                {
-                    match &subpatterns[..] {
-                        [key] => pattern_text(&key.pattern).map(PatternValue::Key),
-                        _ => None,
-                    }
-                }
-                _ => None,
-            };
-            if let Some(value) = value {
+            if let Some(value) = pattern_value(tcx, pat) {
                 (found.entry(value))
                     .and_modify(|seen| *seen = seen.filter(|&d| Some(d) == named))
                     .or_insert(named);
@@ -671,6 +654,29 @@ fn tests_registered<'tcx>(tcx: TyCtxt<'tcx>, pattern: &Pat<'tcx>) -> bool {
             matches!(&subpatterns[..], [some] if symbol(&some.pattern))
         }
         _ => false,
+    }
+}
+
+/// The value `pat` tests, of a number, a `char` or the registry's symbol,
+/// itself, not what's in it: the one answer to which value a constant
+/// pattern is (`PatternValue`).
+pub(super) fn pattern_value<'tcx>(tcx: TyCtxt<'tcx>, pat: &Pat<'tcx>) -> Option<PatternValue<'tcx>> {
+    match &pat.kind {
+        PatKind::Constant { value } if pat.ty.is_integral() || pat.ty.is_char() => value
+            .valtree
+            .try_to_leaf()
+            .map(|leaf| PatternValue::Bits(pat.ty, leaf.to_bits_unchecked())),
+        // Its key's pattern, a string's, inside it.
+        PatKind::Leaf { subpatterns }
+            if matches!(pat.ty.kind(), ty::Adt(adt, _)
+            if super::recognition::is_symbol_for_def(tcx, adt.did())) =>
+        {
+            match &subpatterns[..] {
+                [key] => pattern_text(&key.pattern).map(PatternValue::Key),
+                _ => None,
+            }
+        }
+        _ => None,
     }
 }
 

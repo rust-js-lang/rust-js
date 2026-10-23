@@ -310,9 +310,10 @@ fn chain(
             let taken = i + 1 + taken;
             return (!whole || taken == stmts.len()).then_some((cases, taken));
         }
+        let (tested, body) = guarded(test, then, arm.guard)?;
         cases.push((
-            values_of(test, &arm.constants, false, discriminant)?,
-            then.clone(),
+            values_of(&tested, &arm.constants, false, discriminant)?,
+            body,
             false,
             arm.span,
         ));
@@ -336,6 +337,28 @@ fn chain(
     // Each arm tested: what's after them isn't the `match`'s, but in an
     // `else`, which nothing reaches.
     (!whole || i == stmts.len()).then_some((cases, i))
+}
+
+/// An arm's `if`, its test and its statements, as its case has them: of a
+/// guarded arm whose guard the test joins, `n === C && on`, its pattern's
+/// test, and what it does in an `if` of the guard, `if (on) { .. }`; else
+/// as they are, the guard's `if` in its statements (ADR 0629).
+fn guarded(test: &Expr, then: &[Stmt], guard: Option<js::Span>) -> Option<(Expr, Vec<Stmt>)> {
+    let mut tests = Vec::new();
+    alternatives(test, Op::And, &mut tests);
+    let at = guard
+        .and_then(|guard| (tests.iter()).position(|t| test_at(t, js::Span::NONE).is_some_and(|at| within(at, guard))));
+    let Some(at) = at else {
+        return Some((test.clone(), then.to_vec()));
+    };
+    let join = |tests: &[&Expr]| {
+        (tests.iter())
+            .map(|&t| t.clone())
+            .reduce(|a, b| Expr::bin(Op::And, a, b))
+    };
+    let (pattern, guard) = (join(&tests[..at])?, join(&tests[at..])?);
+    let span = guard.span;
+    Some((pattern, vec![StmtKind::If(guard, then.to_vec(), None).at(span)]))
 }
 
 /// How many of `stmts`, after the arms tested before `arm`, are its: all,
@@ -454,9 +477,13 @@ fn tested_at(stmt: &Stmt) -> Option<u32> {
     test_at(test, stmt.span)
 }
 
-/// Where `test`, of an `if` at `span`, is written.
+/// Where `test`, of an `if` at `span`, is written: of tests `&&` joins
+/// where the program didn't, a pattern's and its guard's, the first's.
 fn test_at(test: &Expr, span: js::Span) -> Option<u32> {
-    [test.span, span].into_iter().find(|s| !s.is_none()).map(|s| s.lo)
+    match &test.kind {
+        ExprKind::Binary(Op::And, first, _) if test.span.is_none() => test_at(first, span),
+        _ => [test.span, span].into_iter().find(|s| !s.is_none()).map(|s| s.lo),
+    }
 }
 
 /// Whether `if (test)`, at `span`, tests an arm of a `match` of constants,

@@ -86,8 +86,8 @@ export const mutations: Mutation[] = [
     name: "registered-symbol-pattern-unnamed",
     breaks: "a pattern of the registry's symbol tests it by its value, `ty === Symbol.for(\"react.fragment\")`, not by the `const` that names it",
     file: "src/lower/body_queries.rs",
-    find: "                        [key] => pattern_text(&key.pattern).map(PatternValue::Key),\n",
-    replace: "                        [_] => None,\n",
+    find: "                [key] => pattern_text(&key.pattern).map(PatternValue::Key),\n",
+    replace: "                [_] => None,\n",
     tests: ["test/lowering-symbols.test.ts", "-t", "a match of the registry's symbols"],
   },
   {

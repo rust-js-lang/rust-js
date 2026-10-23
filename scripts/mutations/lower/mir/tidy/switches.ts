@@ -2,6 +2,7 @@
 import type { Mutation } from "../../../../mutations";
 
 const switches = ["test/lowering-matches.test.ts", "-t", "a match of constants is a switch"];
+const guarded = ["test/lowering-switches.test.ts", "-t", "a guarded arm of a match of constants"];
 
 export const mutations: Mutation[] = [
   {
@@ -67,5 +68,21 @@ export const mutations: Mutation[] = [
     find: "    let span = written.span;\n",
     replace: "    let span = first.span;\n",
     tests: ["test/lowering-names.test.ts", "-t", "a comment inside an expression is after the code before it"],
+  },
+  {
+    name: "switch-joined-guard-unsplit",
+    breaks: "a guarded arm whose test joins its guard, `n === C && on`, isn't a case, so its `match` is an `if` chain",
+    file: "src/lower/mir/tidy/switches.rs",
+    find: "    let Some(at) = at else {\n",
+    replace: "    let Some(at) = at.filter(|_| false) else {\n",
+    tests: guarded,
+  },
+  {
+    name: "switch-joined-test-unplaced",
+    breaks: "a test `&&` joins where the program didn't, a pattern's and its guard's, is where the `if` is, not its arm's, so no case",
+    file: "src/lower/mir/tidy/switches.rs",
+    find: "        ExprKind::Binary(Op::And, first, _) if test.span.is_none() => test_at(first, span),\n",
+    replace: "",
+    tests: guarded,
   },
 ];

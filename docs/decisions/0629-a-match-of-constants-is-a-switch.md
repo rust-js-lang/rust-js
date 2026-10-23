@@ -4,7 +4,9 @@ Status: Accepted. Amends [ADR 0014](0014-match-lowering.md), which made
 every `match` an `if` chain. Amended by
 [0634](0634-a-registered-symbol-is-a-const.md): a `Some` of constants,
 where it's the value itself, is those constants, and the registry's
-symbol, `js::SymbolFor`, is one.
+symbol, `js::SymbolFor`, is one; by
+[0636](0636-a-guarded-arm-is-a-case.md): a guarded arm is a case that
+tests its guard, where a failed guard goes on to nothing.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N, nothing the program
 can observe: a `switch` compares what it's given with each `case` by
