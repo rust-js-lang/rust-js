@@ -87,8 +87,8 @@ export const mutations: Mutation[] = [
     name: "cycle-of-array-unstepped",
     breaks: "`cycled()` of an array's iterator a struct holds is refused",
     file: "src/lower/iterators/dictionaries.rs",
-    find: "            None if self.steps_an_array(ty) => {\n                let boxed = self.iterator_item(ty).is_some_and(|item| self.boxed_payload(item));\n",
-    replace: "            None if self.steps_an_array(ty) && false => {\n                let boxed = self.iterator_item(ty).is_some_and(|item| self.boxed_payload(item));\n",
+    find: "            None if self.steps_an_array(ty) || self.iterator_cloned_apart(ty) => {\n                let boxed",
+    replace: "            None if (self.steps_an_array(ty) || self.iterator_cloned_apart(ty)) && false => {\n                let boxed",
     tests: ["test/corpus.test.ts", "-t", "^held_cycle.rs$"],
   },
   {
@@ -114,5 +114,13 @@ export const mutations: Mutation[] = [
     find: "        for (name, own) in [(\"fold\", fold), (\"nth\", nth)] {\n",
     replace: "        for (name, own) in [(\"fold\", fold), (\"nth\", nth)].into_iter().filter(|_| false) {\n",
     tests: ["test/corpus.test.ts", "-t", "^own_fold_through_adapters.rs$"],
+  },
+  {
+    name: "cycle-of-cloned-apart-refused",
+    breaks: "`cycle()` of a `map` or a `filter` is refused",
+    file: "src/lower/iterators/dictionaries.rs",
+    find: "            None if self.steps_an_array(ty) || self.iterator_cloned_apart(ty) => {\n",
+    replace: "            None if self.steps_an_array(ty) => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^cloned_chains_and_cycles.rs$"],
   },
 ];

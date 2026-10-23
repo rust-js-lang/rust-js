@@ -75,3 +75,28 @@ alone: its count is state a `map`'s function isn't. A clone of one is
 ADR 0542's, an explicit adapter that keeps its count where its clone
 reads it (that ADR's amendment). Only a `Map` and a `Filter`, of a source
 and a function alone, are made again.
+
+## Amended (#181)
+
+A `Chain` and a `Zip` are cloned apart too: adapters made of two parts
+alone, their two sources, as a `Map` and a `Filter` are of their source
+and function (`Recognition::cloned_parts`, which says which it is,
+`Parted`). `makeChain(a, b)` is `$lazyChain(a, b)`, carrying its clone,
+`makeChain` of a clone of each, where it is.
+
+The other side of a `chain(..)` or a `zip(..)` is an `IntoIterator`.
+Given as an iterator, it is as the receiver is: its JS value says where
+it is. Given as a `Vec`, an array or a slice, it's made the array's
+iterator before the maker (`$iter`), and cloned as the iterator the
+adapter keeps, so a clone after stepping goes on from there. Another,
+whose JS value can't say where it is, `once(x)`'s array, is refused.
+
+And `cycle()` of an adapter cloned apart is `$cycleOf(it, $clone, $next)`:
+`cycle` requires `Self: Clone`, so the crate's clones already hold it,
+and each round steps a fresh clone of the original, its closures run
+again, as std's `Cycle` does.
+
+Held by `test/corpus/cloned_chains_and_cycles.rs`, against native Rust, and
+by the mutations `chain-not-cloned-apart`, `zip-not-cloned-apart`,
+`zip-side-array-uncloned` and `cycle-of-cloned-apart-refused`.
+

@@ -87,7 +87,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// array (ADR 0181): `$cycleOf(it, clone, next, boxed)`, which keeps a
     /// clone of it and steps a fresh clone of that each time what it steps
     /// ends, as Rust's `Cycle` does (ADR 0491): a range's, the crate's own,
-    /// or a type parameter's given as it is, by its dictionaries; given its
+    /// an adapter cloned apart, a `map`'s or a `filter`'s (ADR 0525), or a
+    /// type parameter's given as it is, by its dictionaries; given its
     /// drop, of one with a destructor, which drops each it replaces, and
     /// both it holds as it's closed.
     pub(in crate::lower) fn cycled(&mut self, it: Expr, ty: Ty<'tcx>, span: Span) -> R<Expr> {
@@ -101,8 +102,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let iterator = std_item(self.tcx, StdItem::Iterator);
                 self.user_next(ty, iterator, "next", span)?
             }
-            // An array's, a struct holds, its `$iter` stepped (ADR 0544).
-            None if self.steps_an_array(ty) => {
+            // An array's, a struct holds, its `$iter` stepped (ADR 0544),
+            // and an adapter cloned apart, a `map`'s or a `filter`'s, the
+            // JS iterator it is, which its clone makes again (ADR 0525).
+            None if self.steps_an_array(ty) || self.iterator_cloned_apart(ty) => {
                 let boxed = self.iterator_item(ty).is_some_and(|item| self.boxed_payload(item));
                 (Expr::helper(if boxed { "$nextSome" } else { "$next" }), boxed)
             }
