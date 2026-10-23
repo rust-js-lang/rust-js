@@ -279,7 +279,9 @@ Linking resolves symbolic references to ordinary names. During planning,
 `js::Module::unprintable` rejects unresolved symbols, function holes, drop
 arguments, handles and unresolved dynamic imports before printing. Representation
 constants such as `js::HELD` and `js::DICTIONARY` belong to the AST; consumers
-do not repeat their spelling.
+do not repeat their spelling. So does an enum's shape, `js::TAG` and
+`js::positional(i)`, and a `Result`'s, made, tested and read by `js::result`,
+which lowering and `src/prepare.rs` both ask ([ADR 0688](decisions/0688-a-results-js-has-one-owner.md)).
 
 `src/to_oxc.rs` and `src/to_oxc/` convert JS to oxc and generate source maps;
 `src/format.rs` lays it out with oxfmt and remaps changed text. Declarations

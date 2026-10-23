@@ -534,6 +534,29 @@ test("a JS form of a concept is written by the concept's owner", () => {
   expect(strays).toEqual([]);
 });
 
+// An enum's JS, `{ TAG: "Circle", _0: radius }`, is spelled by `js.rs`
+// alone, `js::TAG` and `js::positional(i)`, and a `Result`'s, `{ TAG:
+// "Ok", _0: value }`, is made, tested and read by `js::result` alone:
+// lowering, which makes and reads them, and preparation, which reads a
+// `$try`'s `match` back into a `try`, both ask (the fourth review:
+// preparation recognized a `Result`'s tag and payload on its own, and
+// fifteen of lowering's reads spelled them).
+test("an enum's JS is `js`'s, and a `Result`'s `js::result`'s", () => {
+  // Its code, not the comments that show the JS it makes.
+  const code = (file: string) => read(file).split("\n").filter(line => !/^\s*\/\//.test(line)).join("\n");
+  const askers = ["src/lower.rs", ...files("src/lower"), "src/prepare.rs", ...files("src/prepare")];
+  for (const [owner, spelled] of [
+    ["src/js.rs", /"TAG"|format!\("_\{i\}"\)/],
+    ["src/js/result.rs", /"(?:Ok|Err)"/],
+  ] as const) {
+    expect(code(owner), owner).toMatch(spelled);
+    expect(askers.filter(file => spelled.test(code(file))), owner).toEqual([]);
+  }
+  // A variant's field read or written by its own spelling, `x._0`.
+  const positional = /Expr::member\([^;]*?,\s*"_\d+"\)|Field\("_\d+"|field == "_\d+"/;
+  expect(askers.filter(file => positional.test(code(file)))).toEqual([]);
+});
+
 // A rule of an owner is of what its owner has: one of state that's gone,
 // or spelled so it's never found, holds whatever the others do. Seven of
 // the twelve rules of state matched nothing, and passed (the third

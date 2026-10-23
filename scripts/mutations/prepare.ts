@@ -174,8 +174,8 @@ export const mutations: Mutation[] = [
     name: "threw-the-other-way",
     breaks: "`is_err()` is `try { f(); return true; } catch { return false; }`, true where it didn't throw",
     file: "src/prepare.rs",
-    find: "    Some((of.caught()?.0, (*op == js::Op::Eq) == (s == \"Err\")))\n",
-    replace: "    Some((of.caught()?.0, (*op == js::Op::Eq) == (s == \"Ok\")))\n",
+    find: "    Some((of.caught()?.0, eq != ok))\n",
+    replace: "    Some((of.caught()?.0, eq == ok))\n",
     tests: ["test/bindings.test.ts", "-t", "concat_text of any value"],
   },
   {
@@ -431,8 +431,8 @@ export const mutations: Mutation[] = [
     name: "try-err-tag-misread",
     breaks: "an `if` of `TAG === \"Err\"` is read as the `Ok`'s, its arms swapped",
     file: "src/prepare.rs",
-    find: "=> (*op == js::Op::Eq) == (s == \"Ok\"),\n",
-    replace: "=> *op == js::Op::Eq,\n",
+    find: "    let of_ok = ok == eq;\n",
+    replace: "    let of_ok = eq;\n",
     tests: ["test/lowering-bindings.test.ts", "-t", "a match of a throwing call"],
   },
   {

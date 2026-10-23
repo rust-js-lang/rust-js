@@ -794,11 +794,10 @@ impl<'tcx> Declarations<'_, 'tcx> {
                         if v.fields.is_empty() && !tagged {
                             return name;
                         }
-                        let tuple = matches!(v.ctor_kind(), Some(rustc_hir::def::CtorKind::Fn));
                         let tag = json!({ "kind": "property", "name": key, "optional": false, "readonly": false, "type": name });
                         let fields = v.fields.iter().enumerate().map(|(i, field)| {
                             let ty = self.field_ts(field.ty(self.tcx, args).skip_normalization());
-                            let name = if tuple { format!("_{i}") } else { field_key(self.tcx, field) };
+                            let name = crate::lower::representation::variant_field(self.tcx, v, i);
                             json!({ "kind": "property", "name": name, "optional": false, "readonly": false, "type": ty })
                         });
                         json!({ "kind": "object", "members": std::iter::once(tag).chain(fields).collect::<Vec<_>>() })

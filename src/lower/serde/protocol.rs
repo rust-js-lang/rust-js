@@ -4,11 +4,11 @@
 //! elements written in turn. Each call gives `Ok`, as serde_json's writing
 //! to a string does; an error thrown in it is the codec's, as a derived one's.
 
+use crate::js::result;
 use crate::js::{Expr, StmtKind};
 use crate::lower::recognition::{
     SerdeCompound, SerdeError, SerdeHint, SerdeNext, SerdeOp, SerdeScalar, VisitorMethod, visitor_methods,
 };
-use crate::lower::std_types::result;
 use crate::lower::{FnCx, R};
 use rustc_middle::ty;
 use rustc_span::Span;

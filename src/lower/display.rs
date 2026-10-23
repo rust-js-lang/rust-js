@@ -13,8 +13,8 @@ use super::recognition::{BuilderStep, ChannelError, DebugBuilder, FmtResultAnswe
 use super::recognition::{StdItem, WriteCall, opt_std_item, std_item};
 use super::representation::{self, Num};
 use super::{FnCx, R};
+use crate::js::result;
 use crate::js::{self, Expr, Op, Stmt, StmtKind};
-use crate::lower::std_types::result;
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_middle::ty::{self, Ty, TypeVisitableExt};
 use rustc_span::Span;
@@ -187,12 +187,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             FmtResultAnswer::Unwrap | FmtResultAnswer::Expect | FmtResultAnswer::UnwrapOr => Expr::undefined(),
             FmtResultAnswer::Is(ok) => Expr::bool(ok),
             FmtResultAnswer::Ok => self.some(Expr::undefined()),
-            FmtResultAnswer::MapErr => super::std_types::result::ok(Expr::undefined()),
+            FmtResultAnswer::MapErr => crate::js::result::ok(Expr::undefined()),
             // Its function given `()`, `undefined`, which one that takes
             // it as a value reads, `map(Ok)`'s.
             FmtResultAnswer::Map => {
                 let f = message.clone().expect("`map`'s function");
-                super::std_types::result::ok(crate::lower::calls::apply(f, vec![Expr::undefined()]))
+                crate::js::result::ok(crate::lower::calls::apply(f, vec![Expr::undefined()]))
             }
         };
         // Only what `$writeTry` caught may be an `Err`, or a variable it's in,
@@ -220,11 +220,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         match answer {
             FmtResultAnswer::Ok => Expr::cond(ok, self.some(Expr::undefined()), Expr::undefined()),
             FmtResultAnswer::UnwrapOr => Expr::undefined(),
-            FmtResultAnswer::Map => Expr::cond(ok, constant, super::std_types::result::err(result)),
+            FmtResultAnswer::Map => Expr::cond(ok, constant, crate::js::result::err(result)),
             FmtResultAnswer::MapErr => {
                 let f = message.expect("`map_err`'s function");
-                let mapped = super::std_types::result::err(self.applied(f, result));
-                Expr::cond(ok, super::std_types::result::ok(Expr::undefined()), mapped)
+                let mapped = crate::js::result::err(self.applied(f, result));
+                Expr::cond(ok, crate::js::result::ok(Expr::undefined()), mapped)
             }
             FmtResultAnswer::Is(true) => ok,
             FmtResultAnswer::Is(false) => Expr::bin(Op::Ne, result, Expr::undefined()),
@@ -753,7 +753,10 @@ pub(super) fn append_written(target: &Expr, written: Expr, pieces: bool, js_span
 /// the text around its `OsString`'s `{:?}` (ADR 0391). A value shown is held
 /// where it's read twice (ADR 0377).
 fn var_error_shown(value: Expr, (present, before, after): (&str, &str, &str)) -> Expr {
-    let shown = Expr::call(Expr::helper("$debugStr"), vec![Expr::member(value.clone(), "_0")]);
+    let shown = Expr::call(
+        Expr::helper("$debugStr"),
+        vec![Expr::member(value.clone(), js::positional(0))],
+    );
     let unicode = Expr::template(vec![before.to_string(), after.to_string()], vec![shown]);
     Expr::cond(
         Expr::bin(Op::Eq, value, Expr::str("NotPresent")),

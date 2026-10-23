@@ -100,11 +100,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // A write's result's `Ok` is nothing (ADRs 0054, 0132); its error is
         // thrown, a `fmt::Error` (ADR 0187) or the `io::Error` (ADR 0462).
         if self.is_write_result(ty) {
-            return Ok(match variant.name.as_str() {
-                "Ok" => Expr::undefined(),
-                _ if self.is_fmt_result(ty) => Expr::call(Expr::helper("$fmtError"), Vec::new()),
-                _ => Expr::call_helper("$ioThrow", fields),
-            });
+            return Ok(
+                match self
+                    .tcx
+                    .is_lang_item(variant.def_id, rustc_hir::attrs::lang_items::LangItem::ResultOk)
+                {
+                    true => Expr::undefined(),
+                    _ if self.is_fmt_result(ty) => Expr::call(Expr::helper("$fmtError"), Vec::new()),
+                    _ => Expr::call_helper("$ioThrow", fields),
+                },
+            );
         }
         // A `ManuallyDrop`, or what `pin!` pins, is the value it holds; a
         // `#[repr(transparent)]` struct its field, beside a marker's (ADR 0584).
@@ -275,7 +280,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // own names for them.
         let params: Vec<String> = match sig.inputs().len() {
             1 => vec!["value".into()],
-            count => (0..count).map(|i| format!("_{i}")).collect(),
+            count => (0..count).map(js::positional).collect(),
         };
         let items: Vec<Expr> = params.iter().map(|name| Expr::var(name)).collect();
         // A `#[repr(transparent)]` struct is its field, as `adt_value` makes

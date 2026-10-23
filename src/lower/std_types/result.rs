@@ -1,100 +1,11 @@
-//! A `Result`'s JS, `{ TAG: "Ok", _0: value }`, as an enum with fields is
-//! (ADR 0019), made, tested and read here alone; `?` of an `Option` or a
-//! `Result`, and the `From` that converts its error (ADRs 0052, 0141).
+//! `?` of an `Option` or a `Result`, and the `From` that converts its
+//! error (ADRs 0052, 0141). A `Result`'s JS itself is `js::result`'s.
 
-use crate::js::{self, Expr, Op, Prop, StmtKind};
+use crate::js::result::{err, held, is};
+use crate::js::{self, Expr, Prop, StmtKind};
 use crate::lower::recognition::{StdItem, std_item};
 use crate::lower::{FnCx, R};
 use rustc_middle::ty::{self, Ty};
-
-/// `Ok`'s name as a `Result`'s `TAG` holds it, or `Err`'s where `ok` isn't.
-fn name(ok: bool) -> &'static str {
-    if ok { "Ok" } else { "Err" }
-}
-
-/// A `Result` whose `TAG` is `tag`, a variant's name or another's tag, of
-/// `value`.
-pub(in crate::lower) fn tagged(tag: Expr, value: Expr) -> Expr {
-    Expr::object(vec![Prop::Field("TAG".into(), tag), Prop::Field("_0".into(), value)])
-}
-
-/// `Ok(value)`, or `Err(value)` where `ok` isn't.
-pub(in crate::lower) fn made(ok: bool, value: Expr) -> Expr {
-    tagged(Expr::str(name(ok)), value)
-}
-
-pub(in crate::lower) fn ok(value: Expr) -> Expr {
-    made(true, value)
-}
-
-pub(in crate::lower) fn err(value: Expr) -> Expr {
-    made(false, value)
-}
-
-/// Whether `result` is an `Ok`, or an `Err` where `ok` isn't:
-/// `result.TAG === "Ok"`.
-pub(in crate::lower) fn is(result: Expr, ok: bool) -> Expr {
-    Expr::bin(Op::Eq, tag(result), Expr::str(name(ok)))
-}
-
-/// Its `TAG`, which variant it is.
-pub(in crate::lower) fn tag(result: Expr) -> Expr {
-    Expr::member(result, "TAG")
-}
-
-/// What it holds, of either variant: `result._0`.
-pub(in crate::lower) fn held(result: Expr) -> Expr {
-    Expr::member(result, "_0")
-}
-
-/// What unwrapping `result` gives where it's an `Ok` just made, a lock's or
-/// a `to_value` that can't fail, and what else it's given, a fallback or a
-/// message, does nothing seen: what it holds (ADRs 0144, 0449). Each way a
-/// `Result` is unwrapped, `unwrap()`, `unwrap_or(d)`, `unwrap_or_else(f)`.
-pub(in crate::lower) fn unwrapped_made(result: &Expr, given: &[Expr]) -> Option<Expr> {
-    made_ok(result)
-        .filter(|_| given.iter().all(|e| !e.has_effects()))
-        .cloned()
-}
-
-/// What an `Ok` just made holds, `{ TAG: "Ok", _0: value }`'s `value`.
-pub(in crate::lower) fn made_ok(e: &Expr) -> Option<&Expr> {
-    made_ok_payload(e).flatten()
-}
-
-/// Whether `e` is an `Ok` just made, and what it holds: `{ TAG: "Ok", _0:
-/// value }`'s `value`, or nothing of an `Ok(())`'s, `{ TAG: "Ok" }`.
-pub(in crate::lower) fn made_ok_payload(e: &Expr) -> Option<Option<&Expr>> {
-    let js::ExprKind::Object(props) = &e.kind else {
-        return None;
-    };
-    let ok = |tag: &str, name: &Expr| tag == "TAG" && matches!(&name.kind, js::ExprKind::Str(s) if s == "Ok");
-    match props.as_slice() {
-        [Prop::Field(tag, name)] if ok(tag, name) => Some(None),
-        [Prop::Field(tag, name), Prop::Field(field, value)] if ok(tag, name) && field == "_0" => Some(Some(value)),
-        _ => None,
-    }
-}
-
-/// Of a test `is` makes, or its negation, `r.TAG !== "Err"`: what it tests,
-/// whether it's of `Ok`, and whether it's `===`.
-pub(in crate::lower) fn tested(test: &Expr) -> Option<(&Expr, bool, bool)> {
-    let js::ExprKind::Binary(op @ (Op::Eq | Op::Ne), tag, name) = &test.kind else {
-        return None;
-    };
-    let js::ExprKind::Member(result, key) = &tag.kind else {
-        return None;
-    };
-    let js::ExprKind::Str(name) = &name.kind else {
-        return None;
-    };
-    let ok = match name.as_str() {
-        "Ok" => true,
-        "Err" => false,
-        _ => return None,
-    };
-    (key == "TAG").then_some((&**result, ok, *op == Op::Eq))
-}
 
 /// How `?` makes an error the function's: a `From` of the crate's own,
 /// called on it, or for a `Box<dyn Error>`, its dictionary (ADR 0141).

@@ -6,12 +6,12 @@
 use std::collections::HashSet;
 
 use crate::js;
+use crate::js::result;
 use crate::js::{Expr, ExprKind, Op, Stmt, StmtKind};
 use crate::lower::calls::Call;
 use crate::lower::recognition::{Std, trait_method};
 use crate::lower::representation::Num;
 use crate::lower::std_types::range::RangeKind;
-use crate::lower::std_types::result;
 use crate::lower::{FnCx, R};
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_middle::ty::{self, Ty};

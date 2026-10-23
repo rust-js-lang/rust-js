@@ -96,7 +96,7 @@ export const mutations: Mutation[] = [
     name: "stream-write-count-bare",
     breaks: "a stream's `write(bytes)` is the count, not `Ok` of it",
     file: "src/lower/format_args.rs",
-    find: "                    StreamOp::Written { .. } => super::std_types::result::ok(written),\n",
+    find: "                    StreamOp::Written { .. } => crate::js::result::ok(written),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^io_writers.rs$"],
     snapshots: true,

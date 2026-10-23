@@ -694,7 +694,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 let result = self.view_call("$getDisjointMut", list);
                 match unchecked {
-                    true => Expr::member(result, "_0"),
+                    true => crate::js::result::held(result),
                     false => result,
                 }
             }

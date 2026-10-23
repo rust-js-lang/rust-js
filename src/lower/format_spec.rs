@@ -127,7 +127,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Some((borrowed, _)) = self.recognition().cow_parts(ty)
             && borrowed.is_str()
         {
-            return (Expr::member(value, "_0"), text);
+            return (Expr::member(value, crate::js::positional(0)), text);
         }
         if self.recognition().is_path_like(ty) || self.is_parse_error(ty) {
             return (value, text);

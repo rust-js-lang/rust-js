@@ -108,8 +108,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return self.as_js_iterator(value, inner, span).map(Some);
         }
         if self.is_std_type(inner, crate::lower::recognition::StdItem::Result) {
-            let ok = Expr::bin(Op::Eq, Expr::member(value.clone(), "TAG"), Expr::str("Ok"));
-            let items = Expr::array(vec![Expr::member(value, "_0")]);
+            let ok = crate::js::result::is(value.clone(), true);
+            let items = Expr::array(vec![crate::js::result::held(value)]);
             return Ok(Some(Expr::cond(ok, items, Expr::array(Vec::new()))));
         }
         // A B-tree's, in its keys' order, which its JS map isn't (ADR 0059).

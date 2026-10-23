@@ -10,7 +10,7 @@ use crate::lower::recognition::{Json, JsonCall, JsonConversion, JsonMethod};
 use crate::lower::representation::Num;
 use crate::lower::{FnCx, R};
 
-use crate::lower::std_types::result;
+use crate::js::result;
 use rustc_middle::ty::Ty;
 use rustc_span::Span;
 
@@ -35,8 +35,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 if self.is_string_like(ty) || ty.is_bool() || ty.is_unit() || Num::of(ty).is_some() {
                     let value = if ty.is_char() {
                         Expr::object(vec![
-                            Prop::Field("TAG".into(), Expr::str("String")),
-                            Prop::Field("_0".into(), value),
+                            Prop::Field(js::TAG.into(), Expr::str("String")),
+                            Prop::Field(js::positional(0), value),
                         ])
                     } else {
                         self.json_value_from(value, ty, span)?
@@ -146,7 +146,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             JsonMethod::NumberKind(kind) => Expr::bin(Op::Eq, Expr::member(receiver.clone(), "kind"), Expr::str(kind)),
             JsonMethod::NumberIsI64 => call("$jsonNumberIsI64", Vec::new()),
             JsonMethod::IsNull => Expr::bin(Op::Eq, receiver.clone(), Expr::str("Null")),
-            JsonMethod::IsTag(tag) => Expr::bin(Op::Eq, Expr::member(receiver.clone(), "TAG"), Expr::str(tag)),
+            JsonMethod::IsTag(tag) => Expr::bin(Op::Eq, Expr::member(receiver.clone(), js::TAG), Expr::str(tag)),
             JsonMethod::IsNumber(kind) => call("$jsonValueIs", vec![Expr::str(kind)]),
             JsonMethod::AsTag(tag) => call("$jsonValueAs", vec![Expr::str(tag)]),
             // Of a `&mut Value`, a cell of it, `null`'s string being none to
@@ -179,8 +179,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let from = from.peel_refs();
         let variant = |tag: &str, value: Expr| {
             Expr::object(vec![
-                Prop::Field("TAG".into(), Expr::str(tag)),
-                Prop::Field("_0".into(), value),
+                Prop::Field(js::TAG.into(), Expr::str(tag)),
+                Prop::Field(js::positional(0), value),
             ])
         };
         // A `Vec` of what makes one, or an `Option` of one: `Null` for `None`.

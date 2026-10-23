@@ -179,9 +179,7 @@ pub(in crate::lower::mir::tidy) fn made_ok_tried(stmts: &mut Vec<Stmt>) {
         // What it holds, read in its place, where reading it there is the same.
         if let Some(value) = payload.filter(|value| value.is_constant() || matches!(value.kind, ExprKind::Var(_))) {
             js::each_expr_mut(&mut stmts[i + 1..], &mut |e| {
-                if matches!(&e.kind, ExprKind::Member(of, field)
-                    if field == "_0" && matches!(&of.kind, ExprKind::Var(r) if *r == name))
-                {
+                if result::reads_held(e, &name) {
                     *e = value.clone();
                 }
             });

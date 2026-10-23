@@ -11,12 +11,12 @@ use self::generic::*;
 pub(in crate::lower) use self::operators::*;
 
 use crate::js::StmtKind;
+use crate::js::result;
 use crate::js::{self, Expr, Op, Stmt, UnaryOp};
 use crate::lower::calls::Call;
 use crate::lower::discriminants;
 use crate::lower::recognition::{Std, TypeFact, any_trait};
 use crate::lower::representation::{Num, is_fieldless_enum};
-use crate::lower::std_types::result;
 use crate::lower::{FnCx, R};
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_middle::mir::{BinOp, UnOp};

@@ -9,7 +9,7 @@ mod tried;
 pub(super) use self::{continues::*, labels::*, tails::*, tried::*};
 
 use super::*;
-use crate::lower::std_types::result;
+use crate::js::result;
 
 /// A loop's body that ends `if (c) { a; continue l; } break;`, `l` the loop
 /// or none, or any jump, or, where `nested`, an `if` that's of this shape

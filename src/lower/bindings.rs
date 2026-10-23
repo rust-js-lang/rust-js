@@ -704,7 +704,7 @@ pub(super) fn given_bool(tcx: TyCtxt<'_>, def_id: DefId) -> Option<bool> {
 /// one it names, `#[rust_js::tag = "status"]`, a discriminated union's,
 /// each variant an object of it, its fieldless ones too (ADR 0284).
 pub(super) fn tag_key(tcx: TyCtxt<'_>, adt: DefId) -> String {
-    declared_tag(tcx, adt).unwrap_or_else(|| "TAG".to_string())
+    declared_tag(tcx, adt).unwrap_or_else(|| js::TAG.to_string())
 }
 
 /// An enum's `#[rust_js::tag = ".."]`, if it has one.

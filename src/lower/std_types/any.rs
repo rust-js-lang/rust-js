@@ -2,10 +2,10 @@
 //! `TypeId` is its key, rustc's name for it, and a `dyn Any` the pair of a
 //! value and its `Any` dictionary, `{ type_id: () => "i32" }`.
 
+use crate::js::result;
 use crate::js::{self, Expr, Op, Prop, Stmt, StmtKind};
 use crate::lower::calls::Call;
 use crate::lower::recognition::{Std, TypeFact, any_trait, linked_twice};
-use crate::lower::std_types::result;
 use crate::lower::{FnCx, R};
 use rustc_middle::ty::{self, Ty};
 use rustc_span::Span;

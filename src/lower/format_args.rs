@@ -225,7 +225,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let stream = Expr::num(f64::from(u8::from(error)));
                 let written = Expr::call(Expr::helper("$printBytes"), vec![bytes, stream]);
                 match op {
-                    StreamOp::Written { .. } => super::std_types::result::ok(written),
+                    StreamOp::Written { .. } => crate::js::result::ok(written),
                     _ => written,
                 }
             }

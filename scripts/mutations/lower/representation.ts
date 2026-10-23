@@ -215,8 +215,8 @@ export const mutations: Mutation[] = [
     name: "struct-variant-fields-numbered",
     breaks: "a struct variant's fields are `_0`, `_1` as a tuple variant's are, so a JS caller's `{ TAG: \"Rect\", w, h }` isn't the shape it gets",
     file: "src/lower/representation.rs",
-    find: "        Some(CtorKind::Fn) => format!(\"_{i}\"),\n        _ => field_key(tcx, variant.fields.iter().nth(i).expect(\"a field of this variant\")),",
-    replace: "        _ => format!(\"_{i}\"),",
+    find: "        Some(CtorKind::Fn) => js::positional(i),\n        _ => field_key(tcx, variant.fields.iter().nth(i).expect(\"a field of this variant\")),",
+    replace: "        _ => js::positional(i),",
     tests: ["test/compiler.test.ts", "-t", "enums with fields are tagged objects, as in ReScript"],
   },
   {

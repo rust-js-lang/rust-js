@@ -42,7 +42,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     },
                     out,
                 );
-                let parts = Expr::member(entry, "_0");
+                let parts = Expr::member(entry, js::positional(0));
                 (
                     Expr::index(parts.clone(), Expr::int(0)),
                     Expr::index(parts, Expr::int(1)),
@@ -168,7 +168,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(super) fn thrown_residual(&self, residual: Expr, output: Ty<'tcx>) -> Expr {
         match self.is_fmt_result(output) {
             true => Expr::call(Expr::helper("$fmtError"), Vec::new()),
-            false => Expr::call_helper("$ioThrow", vec![Expr::member(residual, "_0")]),
+            false => Expr::call_helper("$ioThrow", vec![crate::js::result::held(residual)]),
         }
     }
 

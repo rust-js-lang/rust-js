@@ -59,7 +59,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         let tag = Expr::member(cow.clone(), tag_key(self.tcx, adt.did()));
         let borrowed = Expr::bin(Op::Eq, tag.clone(), Expr::str(variant_name(self.tcx, borrowed_variant)));
-        let value = Expr::member(cow.clone(), "_0");
+        let value = Expr::member(cow.clone(), crate::js::positional(0));
         let clone = self.owned_clone(value.clone(), owned, span, out)?;
         if op == CowOp::IntoOwned {
             return Ok(Expr::cond(borrowed, clone, value));
@@ -78,7 +78,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `cow == "a"` as `cow._0 === "a"`. `None` of another type.
     pub(in crate::lower) fn cow_deref(&self, cow: &Expr, ty: Ty<'tcx>) -> Option<(Expr, Ty<'tcx>)> {
         let (borrowed, _) = self.recognition().cow_parts(ty)?;
-        Some((Expr::member(cow.clone(), "_0"), borrowed))
+        Some((Expr::member(cow.clone(), crate::js::positional(0)), borrowed))
     }
 
     /// One side of `==` of a `Cow` and what it borrows: a `Cow`'s, through

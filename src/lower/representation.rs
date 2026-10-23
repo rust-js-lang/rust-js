@@ -1251,7 +1251,7 @@ pub(super) fn const_js<'tcx>(tcx: TyCtxt<'tcx>, value: ty::Value<'tcx>) -> Optio
 /// tuple variant, as in ReScript, and its name in a struct variant.
 pub(super) fn variant_field(tcx: TyCtxt<'_>, variant: &ty::VariantDef, i: usize) -> String {
     match variant.ctor_kind() {
-        Some(CtorKind::Fn) => format!("_{i}"),
+        Some(CtorKind::Fn) => js::positional(i),
         _ => field_key(tcx, variant.fields.iter().nth(i).expect("a field of this variant")),
     }
 }
