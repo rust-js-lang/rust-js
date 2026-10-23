@@ -70,3 +70,12 @@ group(points, ..., $KeyMap);
   drop yet (ADR 0321).
 - **A `BTreeMap` of a type parameter's keys is refused still**: its order is
   its key's too.
+
+## Amendment: a B-tree's class
+
+A map or a set of a type parameter's keys has its class from its caller,
+but only a `HashMap`'s and a `HashSet`'s were asked: a `BTreeMap<K, V>`
+or `BTreeSet<T>` of a `K: Ord` was refused (#165). A B-tree's is asked
+too, its order its key's `Ord` dictionary's, as a sorted map's always
+is. Held by `test/corpus/generic_btree_keys.rs`. A crate trait's
+associated type as a key, `HashMap<T::Id, T>`, is still refused.

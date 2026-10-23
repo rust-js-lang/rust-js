@@ -130,9 +130,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // A `HashMap` or `HashSet` (ADR 0059): keys JS compares by value.
             ty::Adt(_, args) if self.is_map(ty) => {
                 let key = args.type_at(0);
-                // A type parameter's, a hash map's, its class its caller's
-                // (ADR 0466).
-                let given = super::recognition::known_by_bounds(key) && !self.is_sorted(ty);
+                // A type parameter's, its class its caller's (ADR 0466).
+                let given = super::recognition::known_by_bounds(key);
                 if !given && !self.is_key(key, self.is_sorted(ty)) {
                     return Some(key);
                 }

@@ -195,4 +195,12 @@ export const mutations: Mutation[] = [
     replace: "(tcx.is_lang_item(trait_, LangItem::Index) || false && tcx.is_lang_item(trait_, LangItem::IndexMut))",
     tests: ["test/lowering-options.test.ts", "-t", "nullable result is written"],
   },
+  {
+    name: "btree-of-param-classless",
+    breaks: "a `BTreeSet` of a type parameter's keys is refused, its class not asked of its caller",
+    file: "src/lower/recognition/types.rs",
+    find: "        _ if is(StdItem::HashSet) || is(StdItem::BTreeSet) => TypeFact::Set,\n",
+    replace: "        _ if is(StdItem::HashSet) => TypeFact::Set,\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_btree_keys.rs$"],
+  },
 ];

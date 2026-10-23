@@ -634,14 +634,15 @@ impl TypeFact {
     }
 }
 
-/// A `HashMap` or a `HashSet` of a type parameter's keys, or a std
-/// associated type's of one, `ty` itself: its key, and its class's fact,
-/// `Map` or `Set`, which a caller gives (ADR 0466).
+/// A map or a set, hashed or a B-tree, of a type parameter's keys, or a
+/// std associated type's of one, `ty` itself: its key, and its class's
+/// fact, `Map` or `Set`, which a caller gives (ADR 0466).
 pub(crate) fn map_of_param<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<(Ty<'tcx>, TypeFact)> {
     let ty::Adt(adt, args) = ty.kind() else { return None };
+    let is = |item| is_std_def(tcx, adt.did(), item);
     let fact = match () {
-        _ if is_std_def(tcx, adt.did(), StdItem::HashMap) => TypeFact::Map,
-        _ if is_std_def(tcx, adt.did(), StdItem::HashSet) => TypeFact::Set,
+        _ if is(StdItem::HashMap) || is(StdItem::BTreeMap) => TypeFact::Map,
+        _ if is(StdItem::HashSet) || is(StdItem::BTreeSet) => TypeFact::Set,
         _ => return None,
     };
     let key = args.types().next()?;
