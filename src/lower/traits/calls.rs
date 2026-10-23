@@ -60,8 +60,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// What's refused of a call of `def_id`: a collection of the crate's
-    /// taken as any `IntoIterator`, and a type taken as what its own
-    /// `Borrow` gives (ADRs 0160, 0167).
+    /// taken as any `IntoIterator`, a type taken as what its own `Borrow`
+    /// gives (ADRs 0160, 0167), and a `&mut &mut` of an object given to
+    /// generic code (ADR 0454).
     pub(in crate::lower) fn check_call_takes(
         &self,
         def_id: DefId,
@@ -75,6 +76,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Some(ty) = self.borrowed_by_user(def_id, generic_args)? {
             let path = self.tcx.def_path_str(def_id);
             return Err(self.unsupported(span, &format!("`{path}` of a `{ty}` as what its own `Borrow` gives")));
+        }
+        // A `&mut` of a `&mut` of an object for a type parameter of the
+        // crate's: generic code's each `&mut` is a box (ADR 0454), where
+        // the caller's `&mut` of an object is the object, adapted one level
+        // only, `given_box`'s, so it would be a box short (#167).
+        let crate_call =
+            self.is_rust_fn(def_id) || self.tcx.trait_of_assoc(def_id).is_some_and(|tr| self.is_rust_trait(tr));
+        if crate_call
+            && let Some(ty) = generic_args.types().find(|&ty| {
+                matches!(ty.kind(), ty::Ref(_, inner, ty::Mutability::Mut)
+                    if matches!(inner.kind(), ty::Ref(_, object, ty::Mutability::Mut) if self.is_object(*object)))
+            })
+        {
+            return Err(self.unsupported(
+                span,
+                &format!("a `{ty}`, a `&mut` of a `&mut` of an object, given to generic code"),
+            ));
         }
         Ok(())
     }
