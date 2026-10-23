@@ -31,7 +31,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             map: adt(StdItem::HashMap) || adt(StdItem::BTreeMap) || self.is_json_map(owner),
             set: adt(StdItem::HashSet) || adt(StdItem::BTreeSet),
             std_map: adt(StdItem::HashMap) || adt(StdItem::BTreeMap),
-            btree_map: adt(StdItem::BTreeMap),
+            sorted: self.is_sorted(owner),
             placed: matches!(owner.kind(), ty::Adt(adt, _) if is_index_map(tcx, adt.did())),
             entry: adt(StdItem::HashMapEntry) || adt(StdItem::BTreeEntry),
             occupied: self.is_occupied_entry(owner),

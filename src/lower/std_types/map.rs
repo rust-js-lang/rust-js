@@ -19,6 +19,7 @@ pub(in crate::lower) enum MapOp {
     /// `HashMap::new()`, `new Map()`, and `HashSet::new()`, `new Set()`.
     New {
         set: bool,
+        sorted: bool,
     },
     /// A map's `insert`: `m.set(k, v)`, or `$insert(m, k, v)` for the old value.
     Insert,
@@ -135,7 +136,7 @@ pub(in crate::lower) struct MapOwner {
     pub(in crate::lower) map: bool,
     pub(in crate::lower) set: bool,
     pub(in crate::lower) std_map: bool,
-    pub(in crate::lower) btree_map: bool,
+    pub(in crate::lower) sorted: bool,
     pub(in crate::lower) placed: bool,
     pub(in crate::lower) entry: bool,
     pub(in crate::lower) occupied: bool,
@@ -149,7 +150,7 @@ pub(in crate::lower) fn map_method(name: &str, of: MapOwner) -> Option<MapOp> {
         map,
         set,
         std_map,
-        btree_map,
+        sorted,
         placed,
         entry,
         occupied,
@@ -167,7 +168,7 @@ pub(in crate::lower) fn map_method(name: &str, of: MapOwner) -> Option<MapOp> {
         "pop" if placed => MapOp::ByPlace(PlaceOp::Pop),
         "sort_keys" if placed && map => MapOp::ByPlace(PlaceOp::SortKeys),
         "sort" if placed && set => MapOp::ByPlace(PlaceOp::SortKeys),
-        "new" | "with_capacity" if map || set => MapOp::New { set },
+        "new" | "with_capacity" if map || set => MapOp::New { set, sorted },
         "insert" if map => MapOp::Insert,
         "insert" if set => MapOp::Add,
         "get" | "get_mut" if map => MapOp::Get,
@@ -211,7 +212,7 @@ pub(in crate::lower) fn map_method(name: &str, of: MapOwner) -> Option<MapOp> {
         "keys" if map => MapOp::Iter(Part::Keys),
         "values" | "values_mut" if map => MapOp::Iter(Part::Values),
         "entry" if map => MapOp::Entry,
-        "first_entry" | "last_entry" if btree_map => MapOp::EndEntry {
+        "first_entry" | "last_entry" if std_map && sorted => MapOp::EndEntry {
             last: name == "last_entry",
         },
         "key" if occupied || vacant => MapOp::EntryKey,
@@ -260,12 +261,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
-    /// A `BTreeMap` or `BTreeSet`, whose order is its keys' (ADR 0059).
-    pub(in crate::lower) fn is_sorted(&self, ty: Ty<'tcx>) -> bool {
-        let ty = ty.peel_refs();
-        self.is_std_type(ty, StdItem::BTreeMap) || self.is_std_type(ty, StdItem::BTreeSet) || self.is_json_map(ty)
-    }
-
     /// What goes over a map or a set, in order: `m` itself for a hashed one,
     /// whose order is arbitrary, and `$sortedEntries(m, $cmp)` for a B-tree.
     pub(in crate::lower) fn in_order_of(&mut self, map: Expr, ty: Ty<'tcx>, span: Span) -> R<Expr> {
@@ -285,9 +280,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// What makes a map or a set of `key`s: `Map` and `Set`, or for a key
     /// that compares by value, `$KeyMap` and `$KeySet` (ADR 0121), for a
     /// path, `$PathMap` and `$PathSet` (ADR 0401), and for a `Cow`,
-    /// `$CowMap` and `$CowSet` (ADR 0402). One of no key type, serde_json's
-    /// `Map`, is of strings.
-    pub(in crate::lower) fn map_class(&mut self, set: bool, key: Option<Ty<'tcx>>, span: Span) -> R<Expr> {
+    /// `$CowMap` and `$CowSet` (ADR 0402), and for a B-tree's key whose
+    /// `Ord` is its own, `$ordMap(cmp)` and `$ordSet(cmp)` (ADR 0404). One
+    /// of no key type, serde_json's `Map`, is of strings.
+    pub(in crate::lower) fn map_class(
+        &mut self,
+        set: bool,
+        sorted: bool,
+        key: Option<Ty<'tcx>>,
+        span: Span,
+    ) -> R<Expr> {
         // A type parameter's, or a std associated type's of one, its
         // caller's, `KMap` (ADR 0466).
         if let Some(key) = key
@@ -303,7 +305,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     )
             )
         {
-            let fact = if set { TypeFact::Set } else { TypeFact::Map };
+            let fact = TypeFact::of_map(set, sorted);
             let given = match key.kind() {
                 ty::Param(param) => self.given_type_fact(param.index, fact),
                 _ => self.given_fact_of(key, fact),
@@ -316,6 +318,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Some(key) if self.recognition().is_path(key) => ["$PathMap", "$PathSet"][usize::from(set)],
             // `Cow`s, each kept under what it borrows (ADR 0402).
             Some(key) if self.is_cow_key(key) => ["$CowMap", "$CowSet"][usize::from(set)],
+            // Kept in its `cmp`'s order, each found by it (ADR 0404).
+            Some(key) if sorted && self.found_by_cmp(key) => {
+                let cmp = self.cmp_fn(key, false, span)?;
+                return Ok(Expr::call_helper(["$ordMap", "$ordSet"][usize::from(set)], vec![cmp]));
+            }
             Some(key) if self.is_value_key(key) && !self.is_js_key(key) => ["$KeyMap", "$KeySet"][usize::from(set)],
             _ => return Ok(Expr::var(["Map", "Set"][usize::from(set)])),
         };
@@ -326,13 +333,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// arguments have it, the map's among them, as `collect` and `From`
     /// have it, or else the first, `HashMap::<K, V>::new`'s; serde_json's
     /// `Map::new()` has none.
-    fn made(&mut self, set: bool, generic_args: ty::GenericArgsRef<'tcx>, span: Span) -> R<Expr> {
+    fn made(&mut self, set: bool, sorted: bool, generic_args: ty::GenericArgsRef<'tcx>, span: Span) -> R<Expr> {
         let map = generic_args.types().find(|&t| self.is_map(t.peel_refs()));
         let key = match map.map(|t| t.peel_refs().kind()) {
             Some(ty::Adt(_, args)) => args.types().next(),
             _ => generic_args.types().next(),
         };
-        self.map_class(set, key, span)
+        self.map_class(set, sorted, key, span)
     }
 
     /// A map or a set made of `items`, `collect`'s or `from`'s, of what its
@@ -351,8 +358,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         items: Expr,
         span: Span,
     ) -> R<Expr> {
-        let class = self.made(set, generic_args, span)?;
         let map = generic_args.types().find(|&t| self.is_map(t.peel_refs()));
+        let sorted = map.is_some_and(|map| self.is_sorted(map));
+        let class = self.made(set, sorted, generic_args, span)?;
         let (key, value) = match map.map(|map| map.peel_refs().kind()) {
             Some(ty::Adt(_, args)) => (args.types().next(), args.types().nth(1).filter(|_| !set)),
             _ => (None, None),
@@ -365,10 +373,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             });
         }
         let drops = Expr::optional_args(Vec::new(), drops);
-        let sorted = map.is_some_and(|map| self.is_sorted(map));
         let made = Expr::new_(class.clone(), Vec::new());
         Ok(match key {
-            Some(key) if sorted && (!drops.is_empty() || self.finds_others(key)) => {
+            Some(key) if sorted && (!drops.is_empty() || self.finds_others(key, sorted)) => {
                 let cmp = self.cmp_fn(key, false, span)?;
                 let list = vec![made, items, Expr::bool(set), cmp]
                     .into_iter()
@@ -410,24 +417,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let gives_item = matches!(op, MapOp::SetGet | MapOp::SetTake | MapOp::SetReplace);
         if gives_item && types.first().is_some_and(|&item| self.boxed_payload(item)) {
             return Err(self.unsupported(span, &format!("an item of a `{receiver}` that could look like `None`")));
-        }
-        // The key a map holds given back, of one it finds others by: the one
-        // asked with, not yet (ADRs 0401, 0402).
-        let gives_key = matches!(
-            op,
-            MapOp::GetKeyValue
-                | MapOp::RemoveEntry
-                | MapOp::SetGet
-                | MapOp::SetTake
-                | MapOp::SetReplace
-                | MapOp::EntryKey
-                | MapOp::EntryRemove { entry: true }
-        );
-        if gives_key && types.first().is_some_and(|&key| self.finds_others(key)) {
-            return Err(self.unsupported(
-                span,
-                &format!("the key a `{receiver}` holds, which what it's found by may not be"),
-            ));
         }
         let ordered = matches!(
             op,
@@ -492,6 +481,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             MapOp::DrainAll => map_ops("$drainAll", vec![arg()]),
             MapOp::GetKeyValue => map_ops("$getKeyValue", vec![arg(), arg()]),
             MapOp::RemoveEntry => map_ops("$removeEntry", vec![arg(), arg()]),
+            // Of items it finds others by, the one it holds (ADRs 0401, 0402,
+            // 0404).
+            MapOp::SetGet if self.finds_others(types[0], self.is_sorted(receiver)) => {
+                map_ops("$storedKey", vec![arg(), arg()])
+            }
+            MapOp::SetTake if self.finds_others(types[0], self.is_sorted(receiver)) => {
+                map_ops("$setTake", vec![arg(), arg()])
+            }
             MapOp::SetGet | MapOp::SetTake => {
                 let (s, x) = (arg(), arg());
                 let x = if x.reads_same() { x } else { self.spill("item", x, out) };
@@ -537,7 +534,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             MapOp::TreeRange { .. } | MapOp::ExtractIf => {
                 return Err(self.unsupported(span, "a map's range, of its value alone"));
             }
-            MapOp::New { set } => Expr::new_(self.made(set, generic_args, span)?, Vec::new()),
+            MapOp::New { set, sorted } => Expr::new_(self.made(set, sorted, generic_args, span)?, Vec::new()),
             MapOp::From { set } => {
                 let items = arg();
                 let items = self.items_of(items, tys[0], span, out)?;
@@ -812,11 +809,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// A key a map finds another by that it can be told apart from: a
     /// path, `a//b` finding `a/b` (ADR 0401), or a `Cow`, `Borrowed("a")`
-    /// finding `Owned("a")` (ADR 0402). The key it holds given back isn't
+    /// finding `Owned("a")` (ADR 0402), or a B-tree's found by its `cmp`
+    /// (ADR 0404). The key it holds given back isn't
     /// the one asked with, and of equal ones a B-tree made of items keeps
     /// the last, where `insert` keeps the first.
-    fn finds_others(&self, key: Ty<'tcx>) -> bool {
-        self.is_cow_key(key) || self.recognition().is_path(key)
+    fn finds_others(&self, key: Ty<'tcx>, sorted: bool) -> bool {
+        self.is_cow_key(key) || self.recognition().is_path(key) || (sorted && self.found_by_cmp(key))
+    }
+
+    /// A B-tree's key it finds by its `cmp`, in an `$OrdMap` (ADR 0404):
+    /// one whose `Ord` isn't the order of its value, so two it orders
+    /// `Equal` may differ.
+    pub(in crate::lower) fn found_by_cmp(&self, key: Ty<'tcx>) -> bool {
+        !self.is_key(key, true)
     }
 
     /// A key a `$KeyMap` finds by its value (ADR 0121): one that isn't its

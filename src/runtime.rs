@@ -64,6 +64,7 @@ helpers! {
     Key,
     KeyMap,
     KeySet,
+    OrdMap,
     SortedEntries,
     ToDigit,
     Lines,
@@ -745,6 +746,9 @@ impl Helper {
             // A `HashSet` whose item compares by value (ADR 0121): a `Set` of
             // the items, found by their strings.
             Helper::KeySet => include_str!("runtime/key_set.js"),
+            // A B-tree of keys found by their own `Ord` (ADR 0404): its entries
+            // kept sorted, each found by a binary search of `cmp`.
+            Helper::OrdMap => include_str!("runtime/ord_map.js"),
             // A map's `insert` for its value: the one it replaced, or `None`.
             Helper::Insert => include_str!("runtime/insert.js"),
             // A set's `insert` for its value: whether it wasn't there yet.

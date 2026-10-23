@@ -54,3 +54,9 @@ sizes.get("src/./main.rs");
   Rust; the rustc test passes. Mutations keep `.` parts, drop the root,
   order components as text, key a map by its text, and keep a B-tree's
   first.
+
+## Amendment: the key it holds, given back
+
+What gives back the key a map holds, refused above, gives it: `$storedKey`,
+the one it holds equal to the one asked with ([ADR 0404](0404-a-b-tree-keyed-by-value.md)
+amended). Held by `test/corpus/held_keys.rs`.
