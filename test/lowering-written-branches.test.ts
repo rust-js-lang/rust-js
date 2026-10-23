@@ -7,15 +7,16 @@
 import { beforeAll, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { buildReact, compiler, fixture, run } from "./support";
+import { buildReact, compiler, fixture, run, target } from "./support";
 
 beforeAll(buildReact, 600_000);
 
-/** `rust` compiled in a fixture of `name`: its JS, and its module. */
+/** `rust` compiled in a fixture of `name`, against the js crate: its JS,
+ * and its module. */
 async function compiled(name: string, rust: string): Promise<{ js: string; lib: Record<string, (...args: never[]) => unknown> }> {
   const dir = fixture(name);
   writeFileSync(join(dir, "lib.rs"), rust);
-  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
   return { js: readFileSync(join(dir, "lib.js"), "utf8"), lib: await import(join(dir, "lib.js")) };
 }
 
@@ -164,4 +165,37 @@ pub fn simple(names: Vec<String>, enumerable: Vec<bool>, getters: Vec<bool>) -> 
     simple(["ref", "b"], [false, false], [true, true]),
     simple(["a"], [true], [false]),
   ]).toEqual([true, false, false, true]);
+});
+
+// isSimpleObject itself, of the js crate's reflection: its `let … else`
+// guard, then its `if` of a `continue`, which ends the loop's body. Its
+// `else`, MIR's `continue` the loop's turn ends with anyway, is no `else`
+// (ADR 0684), not `} else { continue; }`, left past the `return` as a
+// `continue;` the program didn't write.
+test("a loop's body that ends in an if of a continue has no continue after it", async () => {
+  const { js, lib } = await compiled("written-continues-js", `use js::Unknown;
+
+pub fn is_simple_object(object: &Unknown) -> bool {
+    let names = js::object::get_own_property_names(object);
+    for name in &names {
+        let Some(descriptor) = js::object::get_own_property_descriptor(object, name) else {
+            return false;
+        };
+        if !descriptor.enumerable.unwrap_or_default() {
+            if (name == "key" || name == "ref") && descriptor.get.is_some() {
+                // React adds key and ref getters to props objects to issue warnings.
+                continue;
+            }
+            return false;
+        }
+    }
+    true
+}
+`);
+  expect(js).toContain(
+    '      if ((name === "key" || name === "ref") && descriptor.get) {\n        // React adds key and ref getters to props objects to issue warnings.\n        continue;\n      }\n      return false;\n    }\n  }\n  return true;\n',
+  );
+  const props = Object.defineProperty({ a: 1 }, "key", { get: () => 1, enumerable: false });
+  const hidden = Object.defineProperty({}, "b", { value: 1, enumerable: false });
+  expect([lib.isSimpleObject(props as never), lib.isSimpleObject(hidden as never), lib.isSimpleObject({ a: 1 } as never)]).toEqual([true, false, true]);
 });

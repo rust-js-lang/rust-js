@@ -123,7 +123,8 @@ pub(in crate::lower::mir::tidy) fn tail_continues(stmts: &mut [Stmt]) {
 }
 
 /// A `continue` where the body of loop `looped` ends anyway, in the
-/// branches that end it: none.
+/// branches that end it: none. Of an `else` that's only one, `if (c) {
+/// ..; return; } else { continue; }`, no `else` (ADR 0684).
 fn ends_going_on(stmts: &mut Vec<Stmt>, looped: &Option<String>) {
     let more = stmts.len() > 1;
     match stmts.last_mut().map(|s| &mut s.kind) {
@@ -132,8 +133,13 @@ fn ends_going_on(stmts: &mut Vec<Stmt>, looped: &Option<String>) {
         }
         Some(StmtKind::If(_, then, otherwise)) => {
             ends_going_on(then, looped);
-            if let Some(otherwise) = otherwise {
-                ends_going_on(otherwise, looped);
+            if let Some(branch) = otherwise {
+                if matches!(branch.as_slice(), [Stmt { kind: StmtKind::Continue(l), .. }] if l.is_none() || l == looped)
+                {
+                    *otherwise = None;
+                } else {
+                    ends_going_on(branch, looped);
+                }
             }
         }
         _ => {}

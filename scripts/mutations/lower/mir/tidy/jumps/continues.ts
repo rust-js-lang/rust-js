@@ -76,4 +76,12 @@ export const mutations: Mutation[] = [
     replace: "            let _ = at;\n",
     tests: ["test/lowering-written-branches.test.ts", "-t", "a continue the program wrote"],
   },
+  {
+    name: "else-continue-kept",
+    breaks: "an `else` of only the `continue` a loop's body ends with anyway stays, and is left past a `return` as a `continue;` the program didn't write",
+    file: "src/lower/mir/tidy/jumps/continues.rs",
+    find: "                    *otherwise = None;\n",
+    replace: "                    let _ = otherwise;\n",
+    tests: ["test/lowering-written-branches.test.ts", "-t", "has no continue after it"],
+  },
 ];

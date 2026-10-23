@@ -80,3 +80,17 @@ statement's is.
 - `test/lowering-written-branches.test.ts`, "a continue the program wrote
   keeps its if, its test and its comment": isSimpleObject's shape, run.
 - Mutations: `written-continue-guarded`, `written-continue-unplaced`.
+
+## Amendment: an `else` of only the loop's `continue` is no `else`
+
+**Where a loop's body ends in `if (t) { ..; return; } else { continue;
+}`, the `continue` MIR wrote for the turn's end, the `if` has no
+`else`**: `tail_continues` dropped such a `continue` only where it
+followed something in its list, and preparation then left it past the
+`return`, a `continue;` the program didn't write, as React's
+`isSimpleObject` read once its `let … else` was a guard. Now it ends
+`return false; } }`, as React's does.
+
+- `test/lowering-written-branches.test.ts`, "a loop's body that ends in an
+  if of a continue has no continue after it", of the js crate's
+  reflection, run; mutation `else-continue-kept`.
