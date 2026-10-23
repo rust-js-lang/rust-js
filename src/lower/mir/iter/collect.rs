@@ -18,6 +18,28 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Some(num) = Num::of(output) {
             return Ok(self.accumulated_numbers(it, num, sum));
         }
+        // Into an `Option` or a `Result` of numbers: the first `None` or
+        // `Err`, where it stops, or the numbers' own, as `collect()` into one
+        // gives them.
+        let option = self.option_of(output);
+        let result = (self.recognition().is_result(output))
+            .then(|| match output.kind() {
+                ty::Adt(_, args) => Some(args.type_at(0)),
+                _ => None,
+            })
+            .flatten();
+        if let Some(num) = option.or(result).and_then(Num::of) {
+            let values = self.fresh("values");
+            let total = self.accumulated_numbers(Expr::var(&values), num, sum);
+            let into = Expr::arrow(
+                vec![values.into()],
+                vec![StmtKind::Return(Some(total)).at(js::Span::NONE)],
+            );
+            return Ok(match option {
+                Some(_) => Expr::call_helper("$collectOptions", vec![it, Expr::bool(false), into]),
+                None => Expr::call_helper("$collectResults", vec![it, into]),
+            });
+        }
         let unsupported = || self.unsupported(span, &format!("`{name}` of a `{output}`, from its MIR"));
         let (Some(item), Some(accumulation)) = (item, crate::lower::recognition::accumulation_of(self.tcx, method))
         else {

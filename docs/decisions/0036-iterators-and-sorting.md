@@ -133,3 +133,12 @@ of text, a heap's or a set's. A collection of the crate's own, its
 compiled, given the values, `$collectResults(items, bagFromIter)`; one
 of std's rust-js doesn't know, an `Rc<[T]>`'s, is refused.
 `collect_fallible_into` runs each against native Rust.
+
+## Amendment: `sum()` and `product()` into an `Option` or a `Result`
+
+`sum()` and `product()` into an `Option` or a `Result` of numbers were
+refused, std's `Sum` impls having no dictionary here (#117). They're
+`collect()` into one, the first `None` or `Err` where stepping stops, of
+which the numbers' sum is what's made of them:
+`$collectOptions(it, false, (values) => values.reduce(..))`. Held by
+`test/corpus/sum_fallible.rs`.
