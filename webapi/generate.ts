@@ -442,11 +442,12 @@ function rustType(t: IdlType, at: Position): string | { skip: string } {
     return `Box<dyn FnMut(${args.join(", ")})${result === "()" ? "" : ` -> ${result}`}>`;
   }
   // A function JS gives is a `dyn Fn` of its signature, `Function`'s, which
-  // says none, `dyn Fn()`, as `js::Kind::Function` is (ADR 0653). What's
+  // says none, `dyn Fn() -> Option<&'static Unknown>`, called of nothing
+  // for any value, as `js::Kind::Function` is (ADRs 0653, 0694). What's
   // no function isn't one: a callback interface, `walker.filter`, a
   // function or an object of `acceptNode`; and a constructor,
   // `customElements.get(name)`'s, which `new` calls.
-  if (at === "result" && name === "Function") return "&'static dyn Fn()";
+  if (at === "result" && name === "Function") return "&'static dyn Fn() -> Option<&'static Unknown>";
   if (at === "result" && callbacks.has(name) && !constructors.has(name)) {
     // An `any` it's given is a value of any shape, as JS has it.
     const args = (callbacks.get(name)!.arguments ?? []).map((a) => (a.idlType.idlType === "any" ? "Option<&Unknown>" : paramType(a.idlType)));

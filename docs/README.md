@@ -585,7 +585,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0650 A `let` that shadows a binding read no more is that binding, assigned](decisions/0650-a-shadow-of-a-binding-read-no-more-is-that-binding.md)
 - [0651 A `let`, then its fallback where it's falsy, is `||`](decisions/0651-a-let-then-its-fallback-is-or.md)
 - [0652 Consecutive appends to a `String` are one `+=`](decisions/0652-consecutive-appends-are-one.md)
-- [0653 A JS function value is a `dyn Fn` of its signature](decisions/0653-a-js-function-value-is-a-dyn-fn-of-its-signature.md)
+- [0653 A JS function value is a `dyn Fn` of its signature](decisions/0653-a-js-function-value-is-a-dyn-fn-of-its-signature.md) *(amended by 0694: TypeScript's `Function` gives any value)*
 - [0654 A dictionary's member of any value is a `dyn IntoUnknown`](decisions/0654-a-dictionary-member-of-any-value-is-a-dyn-into-unknown.md)
 - [0655 A binding of `any` as a value is a `fn` of `Option<&'static Unknown>`](decisions/0655-an-any-binding-as-a-value-is-a-fn-of-a-static-unknown.md)
 - [0656 An event's `emit` arguments are what TypeScript's `emit` takes](decisions/0656-an-events-emit-arguments-are-typescripts-emits.md)
@@ -614,6 +614,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0687 A consumer steps its iterator as std's does, through the crate's own `fold` and `nth`](decisions/0687-a-consumer-steps-its-iterator-as-std-does.md)
 - [0688 A `Result`'s JS, and an enum's, has one owner, `js::result` and `js`](decisions/0688-a-results-js-has-one-owner.md)
 - [0689 A move's decision is apart from the move: `moved` says where and why, `inlined` applies it](decisions/0689-a-moves-decision-is-apart-from-the-move.md)
+- [0694 TypeScript's `Function` gives any value, `&dyn Fn() -> Option<&'static Unknown>`](decisions/0694-typescripts-function-gives-any-value.md)
 - [0436 Every `dyn` that's a pair keeps its value's drop, `dyn Send` too](decisions/0436-every-dyn-keeps-its-drop.md)
 - [0437 A scope's drops on a panic are one `try { .. } finally { .. }`](decisions/0437-a-scopes-drops-are-one-finally.md)
 - [0438 An optional prop is given `Some(..)`, or left out](decisions/0438-an-optional-prop-is-given-some.md)

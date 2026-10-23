@@ -355,3 +355,37 @@ pub fn held() {
 }
 `)).toContain("rust-js does not support values of type `dyn std::ops::Fn(&dyn js::Rest<dyn js::IntoUnknown>)` yet");
 });
+
+// ADR 0694: TypeScript's `Function` is `&dyn Fn() -> Option<&'static
+// Unknown>`, one form everywhere: called of nothing, what it gives is any
+// value, as `js::Kind::Function` holds it and `Reflect` takes it.
+test("TypeScript's Function gives any value", async () => {
+  const { js, lib, warnings } = await compiled("js-object-function", `use js::{Kind, Unknown, reflect};
+
+pub fn called(value: Option<&'static Unknown>) -> Option<&'static Unknown> {
+    match js::classify(value) {
+        Kind::Function(f) => f(),
+        _ => None,
+    }
+}
+
+pub fn applied(f: &dyn Fn() -> Option<&'static Unknown>, this: &Unknown) -> Option<&'static Unknown> {
+    reflect::apply(f, Some(this), &[Some(js::unknown("a"))])
+}
+
+pub fn given() -> Option<&'static Unknown> {
+    fn one() -> Option<&'static Unknown> {
+        Some(js::unknown(&1))
+    }
+    called(Some(js::unknown(&one)))
+}
+`);
+  expect(warnings).toEqual([]);
+  expect(js).toContain("return value();");
+  expect(js).toContain('return Reflect.apply(f, this$, ["a"]);');
+  expect(lib.called(() => "made")).toBe("made");
+  expect(lib.called(() => {})).toBeUndefined();
+  expect(lib.called("text")).toBeUndefined();
+  expect(lib.applied(function (this: any, a: string) { return this.n + a; }, { n: "n" })).toBe("na");
+  expect(lib.given()).toBe(1);
+});

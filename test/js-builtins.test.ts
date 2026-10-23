@@ -321,7 +321,7 @@ pub fn name(value: Option<&'static Unknown>) -> String {
     }
 }
 
-pub fn function_seen(value: Option<&'static Unknown>, seen: &'static WeakMap<dyn Fn(), bool>) -> bool {
+pub fn function_seen(value: Option<&'static Unknown>, seen: &'static WeakMap<dyn Fn() -> Option<&'static Unknown>, bool>) -> bool {
     match js::classify(value) {
         Kind::Function(function) => {
             let before = seen.has(function);

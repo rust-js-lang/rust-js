@@ -16,7 +16,7 @@ pub unsafe trait WeakKey {}
 
 // What `js::Kind` holds of an array and a function, each an object (ADR 0677).
 unsafe impl<T> WeakKey for [T] {}
-unsafe impl WeakKey for dyn Fn() + '_ {}
+unsafe impl WeakKey for dyn Fn() -> Option<&'static super::Unknown> + '_ {}
 
 /// [`WeakMap`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/WeakMap):
 /// a value of each key it holds, the key held weakly.

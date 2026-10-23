@@ -214,8 +214,9 @@ pub enum Kind<'a> {
     Bool(bool),
     /// A symbol, `typeof value === "symbol"`.
     Symbol(&'a Symbol),
-    /// A function, `typeof value === "function"`, of whatever it takes.
-    Function(&'a dyn Fn()),
+    /// A function, `typeof value === "function"`, TypeScript's `Function`:
+    /// called of nothing, what it gives is any value (ADR 0694).
+    Function(&'a dyn Fn() -> Option<&'static Unknown>),
     Array(&'a [Option<&'a Unknown>]),
     /// `undefined`: `value === undefined`.
     #[cfg_attr(rust_js, rust_js::undefined)]

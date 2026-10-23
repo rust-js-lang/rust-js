@@ -12,7 +12,7 @@ use super::{Dict, IntoUnknown, PropertyKey, Unknown};
 /// [`Reflect.apply(f, this, args)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Reflect/apply):
 /// what `f` gives, called with `this` and `arguments`.
 #[cfg_attr(rust_js, rust_js::link_name = "Reflect.apply")]
-pub fn apply(target: &dyn Fn(), this_argument: Option<&Unknown>, arguments: &[Option<&Unknown>]) -> Option<&'static Unknown> {
+pub fn apply(target: &dyn Fn() -> Option<&'static Unknown>, this_argument: Option<&Unknown>, arguments: &[Option<&Unknown>]) -> Option<&'static Unknown> {
     unreachable!()
 }
 
@@ -20,7 +20,11 @@ pub fn apply(target: &dyn Fn(), this_argument: Option<&Unknown>, arguments: &[Op
 /// `new C(...arguments)`, as if `new_target`'s, whose `prototype` it has,
 /// where it's given.
 #[cfg_attr(rust_js, rust_js::link_name = "Reflect.construct")]
-pub fn construct(target: &dyn Fn(), arguments: &[Option<&Unknown>], new_target: Option<&dyn Fn()>) -> &'static Unknown {
+pub fn construct(
+    target: &dyn Fn() -> Option<&'static Unknown>,
+    arguments: &[Option<&Unknown>],
+    new_target: Option<&dyn Fn() -> Option<&'static Unknown>>,
+) -> &'static Unknown {
     unreachable!()
 }
 
