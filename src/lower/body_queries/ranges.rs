@@ -1112,10 +1112,13 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
                             (Some((s, x)), Some((t, y))) if s == t && x.join(*y) == *x => Some((s.clone(), *x)),
                             _ => None,
                         };
-                        let below_most = most.get(&v)? - 1;
+                        // One bound by a length is at most what that bound
+                        // is, up to its type's most: the length holds it,
+                        // not a `+ 1` that can't wrap (ADR 0709).
+                        let type_most = *most.get(&v)?;
                         let hi = match &below {
-                            Some((s, x)) => below_most.min(x.most(*length_most.get(s).unwrap_or(&(u32::MAX as i128)))),
-                            None => below_most,
+                            Some((s, x)) => type_most.min(x.most(*length_most.get(s).unwrap_or(&(u32::MAX as i128)))),
+                            None => type_most - 1,
                         };
                         (was.hi < hi && r.hi <= hi && r.lo >= was.lo).then(|| {
                             let widened = Range { lo: was.lo, hi, below };
@@ -1258,7 +1261,8 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
     }
 
     /// The integer `e` is through each `as` that keeps it, `s` of `s as
-    /// usize` where `s >= 0` (ADR 0701): what it is, the integer it's of is.
+    /// usize` where `s >= 0`, and `xs.len()` of `xs.len() as isize` of
+    /// sized items (ADR 0701): what it is, the integer it's of is.
     fn uncast(&self, mut e: ExprId, known: &Option<Known>) -> ExprId {
         let thir = self.thir;
         loop {
@@ -1266,25 +1270,38 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
             let ExprKind::Cast { source } = thir[e].kind else {
                 return e;
             };
-            let (Some((lo, hi)), Some(var)) = (type_range(thir[e].ty), var_of(thir, source)) else {
+            let (Some((lo, hi)), Some(of)) = (type_range(thir[e].ty), self.cast_of(source, known)) else {
                 return e;
             };
-            let Some(of) = (known.as_ref())
-                .and_then(|k| k.vars.get(&var).cloned())
-                .or_else(|| type_range(thir[source].ty).map(|(lo, hi)| Range::of(lo, hi)))
-            else {
-                return e;
-            };
-            if !(lo <= of.lo && of.hi <= hi) {
+            if !(lo <= of.0 && of.1 <= hi) {
                 return e;
             }
             e = source;
         }
     }
 
-    /// `side != xs.len()` of a `side` at most the length: below it.
+    /// What `source`, an `as`'s, is without walking it: a variable's range
+    /// as known, or of its type; a slice's `len()`, from 0 to its most
+    /// (ADR 0709).
+    fn cast_of(&self, source: ExprId, known: &Option<Known>) -> Option<(i128, i128)> {
+        let thir = self.thir;
+        if let Some(var) = var_of(thir, source) {
+            return (known.as_ref())
+                .and_then(|k| k.vars.get(&var).map(|r| (r.lo, r.hi)))
+                .or_else(|| type_range(thir[source].ty));
+        }
+        match thir[strip(thir, source)].kind {
+            ExprKind::Call { fun, .. } if matches!(self.asks(source), Some((SliceLength::Len, _))) => {
+                Some((0, self.length_most_of(fun)))
+            }
+            _ => None,
+        }
+    }
+
+    /// `side != xs.len()` of a `side` at most the length: below it, and
+    /// so through each `as` that keeps either, `s != xs.len() as isize`.
     fn below_length(&self, side: ExprId, length: ExprId, known: &mut Option<Known>) {
-        let Some((SliceLength::Len, items)) = self.asks(length) else {
+        let Some((SliceLength::Len, items)) = self.asks(self.uncast(length, known)) else {
             return;
         };
         let (Some(slice), Some(var)) = (self.slice(items), var_of(self.thir, self.uncast(side, known))) else {

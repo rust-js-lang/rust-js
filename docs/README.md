@@ -625,13 +625,14 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0698 A `catch` handler gives a value or a promise, as TypeScript's](decisions/0698-a-catch-handler-gives-a-value-or-a-promise.md)
 - [0699 A `Map` of what a `WeakMap` keys is a `WeakMap`, for a fallback](decisions/0699-a-map-of-objects-is-a-weak-map.md)
 - [0700 TypeScript's `Function` gives any value, `&dyn Fn() -> Option<&'static Unknown>`](decisions/0700-typescripts-function-gives-any-value.md)
-- [0701 A signed index tested not negative is a JS index as it is](decisions/0701-a-signed-index-tested-not-negative-is-a-js-index.md)
+- [0701 A signed index tested not negative is a JS index as it is](decisions/0701-a-signed-index-tested-not-negative-is-a-js-index.md) *(extended by 0709: a signed counter below a length, past its loop and its `as`)*
 - [0702 A `while` is its test, and its `break` is where it was written](decisions/0702-a-while-is-its-test-and-its-break-where-written.md)
 - [0703 A closure made before a call a guard unwinds is made where it's read](decisions/0703-a-closure-made-before-a-guarded-call-is-made-where-its-read.md)
 - [0704 A module variable an `if` makes is assigned only where it's something](decisions/0704-a-module-variable-is-assigned-only-what-isnt-undefined.md)
 - [0705 A guard's scope reads as any body, its fields the variables it was made of](decisions/0705-a-guards-scope-reads-as-any-body.md)
 - [0706 `panic!` is the one way a port throws an `Error`, and what's caught is read as it was thrown](decisions/0706-panic-is-the-one-way-a-port-throws-an-error.md)
 - [0708 A comment before an argument, or a field, is before it](decisions/0708-a-comment-before-an-argument-is-before-it.md)
+- [0709 A signed counter below a length stays below it, past its loop and through its `as`](decisions/0709-a-signed-counter-below-a-length-stays-below-it.md)
 - [0436 Every `dyn` that's a pair keeps its value's drop, `dyn Send` too](decisions/0436-every-dyn-keeps-its-drop.md) *(amended by 0691: a `dyn Any` drops where the crate makes one of what drops)*
 - [0437 A scope's drops on a panic are one `try { .. } finally { .. }`](decisions/0437-a-scopes-drops-are-one-finally.md) *(amended by 0693: its `if`s, loops and `return`s in it)*
 - [0438 An optional prop is given `Some(..)`, or left out](decisions/0438-an-optional-prop-is-given-some.md)

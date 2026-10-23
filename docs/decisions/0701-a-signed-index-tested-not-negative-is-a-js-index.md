@@ -6,6 +6,9 @@ most `isize`'s most; amends [0682](0682-a-js-strings-length-is-at-most-int32-max
 "an array's may be `2^32 - 1`" and
 [0672](0672-a-property-a-test-reads-is-read-once.md)'s `returning_chain`,
 whose bound reads nothing after reads are gone, as `and_tests`' are.
+Extended by [0709](0709-a-signed-counter-below-a-length-stays-below-it.md):
+a counter below a length is widened to that length's most, and a test
+sees through the `as` of a length too.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): 1, the program can't
 observe it. A cast left out is one that keeps the number, an index left

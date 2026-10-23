@@ -685,10 +685,20 @@ pub fn hops(mut i: u32, n: u32) -> (u32, u32) {
     }
     (k, i)
 }
+
+pub fn upto(n: u8) -> u8 {
+    let mut i: u8 = 0;
+    while i + 1 < n {
+        i += 1;
+    }
+    i
+}
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain("  while (i + 1 < formatString.length) {\n");
+  // \`i + 1 < n\` puts \`i\` below \`n - 1\`, at most 253 of a \`u8\`: its \`+= 1\`
+  // can't wrap, and it settles round the loop at most 254.
+  expect(js).toContain("  while (i + 1 < n) {\n    i++;\n  }\n");
   expect(js).toContain("    if (formatString.charCodeAt(i) !== 37) {\n      i++;\n      continue;\n    }\n    i++;\n    n = (n + 1) >>> 0;\n    i++;\n");
   expect(js).toContain("  while (i + 1 < items.length) {\n");
   expect(js).toMatch(/\n {4}i\+\+;\n {2}\}\n {2}return s;/);
@@ -698,6 +708,7 @@ pub fn hops(mut i: u32, n: u32) -> (u32, u32) {
   expect([lib.count("a%b%c"), lib.count("%%%%"), lib.count(""), lib.count("%")]).toEqual([2, 2, 0, 0]);
   expect([lib.pairs([1, 2, 4]), lib.pairs([]), lib.pairs([5])]).toEqual([5, 0, 0]);
   expect([lib.skips([0, 1, 0, 0, 2]), lib.skips([])]).toEqual([2, 0]);
+  expect([lib.upto(0), lib.upto(1), lib.upto(255)]).toEqual([0, 0, 254]);
   // \`i + 1\` of \`u32::MAX\` wraps to 0, below 5, so \`i\` steps on from 1.
   expect(js).toContain("    i = (i + 2) >>> 0;\n    k = (k + 1) >>> 0;\n");
   expect(lib.hops(0xffffffff, 5)).toEqual([3, 5]);
@@ -917,4 +928,52 @@ pub fn past(items: &[i32]) -> i32 {
   expect([lib.guarded([4, 5], 1), lib.guarded([4, 5], -1), lib.guarded([4, 5], 0)]).toEqual([5, 0, 0]);
   // One past the length isn't below it for not being the length.
   expect(() => lib.past([1])).toThrow("index out of bounds");
+});
+
+// ADR 0709: an `isize` counter from 0 below `len() as isize` is at most the
+// length round its loop, not one below `isize`'s most, so `s as usize` is
+// `s` and the index in bounds; past the loop, `s != len() as isize` puts it
+// below the length, through the `as` that keeps it. React's ported
+// `describeNativeComponentFrame` reads `sampleLines[s]` as upstream does.
+test("a signed counter below a length stays below it past its loop", async () => {
+  const dir = fixture("signed-counter");
+  writeFileSync(join(dir, "lib.rs"), `pub fn root(lines: &[&str], control: &[&str]) -> isize {
+    let mut s: isize = 0;
+    while s < lines.len() as isize && !lines[s as usize].contains("Root") {
+        s += 1;
+    }
+    if s == lines.len() as isize {
+        return -1;
+    }
+    let mut c = control.len() as isize - 1;
+    while s >= 1 && c >= 0 {
+        if lines[s as usize] != control[c as usize] {
+            return s;
+        }
+        s -= 1;
+        c -= 1;
+    }
+    0
+}
+
+pub fn past(lines: &[&str]) -> usize {
+    let mut s: isize = 0;
+    while s < lines.len() as isize && !lines[s as usize].contains("Root") {
+        s += 1;
+    }
+    lines[s as usize].len()
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('  while (s < lines.length && !lines[s].includes("Root")) {\n    s++;\n  }\n');
+  expect(js).toContain("    if (lines[s] !== control[c]) {\n      return s;\n    }\n");
+  // Past its loop it may be the length: checked where it's read.
+  expect(js).toContain("$index(lines, s)");
+  const lib = await import(join(dir, "lib.js"));
+  expect(lib.root(["a", "Root", "x"], ["b", "c", "x"])).toBe(1);
+  expect(lib.root(["a", "b"], ["b"])).toBe(-1);
+  expect(lib.root(["Root"], ["Root"])).toBe(0);
+  expect(lib.past(["a", "Root"])).toBe(4);
+  expect(() => lib.past(["a"])).toThrow("index out of bounds");
 });
