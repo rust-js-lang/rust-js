@@ -56,7 +56,7 @@ impl Expr {
             | ExprKind::BigUint(_)
             | ExprKind::Bool(_)
             | ExprKind::Str(_)
-            | ExprKind::Lines(_)
+            | ExprKind::Written(_)
             | ExprKind::Undefined
             | ExprKind::GivenUndefined
             | ExprKind::Null
@@ -121,7 +121,7 @@ impl Expr {
             | ExprKind::BigUint(_)
             | ExprKind::Bool(_)
             | ExprKind::Str(_)
-            | ExprKind::Lines(_)
+            | ExprKind::Written(_)
             | ExprKind::Undefined
             | ExprKind::GivenUndefined
             | ExprKind::Null
@@ -239,7 +239,7 @@ impl Expr {
             | ExprKind::BigUint(_)
             | ExprKind::Bool(_)
             | ExprKind::Str(_)
-            | ExprKind::Lines(_)
+            | ExprKind::Written(_)
             | ExprKind::Undefined
             | ExprKind::GivenUndefined
             | ExprKind::Null
@@ -525,7 +525,7 @@ impl Expr {
             | ExprKind::BigUint(_)
             | ExprKind::Bool(_)
             | ExprKind::Str(_)
-            | ExprKind::Lines(_)
+            | ExprKind::Written(_)
             | ExprKind::Undefined
             | ExprKind::GivenUndefined
             | ExprKind::Null

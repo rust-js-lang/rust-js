@@ -10,4 +10,12 @@ export const mutations: Mutation[] = [
     replace: "  for (let i = start; i < end; i++) {",
     tests: ["test/corpus.test.ts", "-t", "^range_steps_known.rs$"],
   },
+  {
+    name: "lazy-range-back-inclusive-short",
+    breaks: "a reversed `a..=b`'s `step_by` starts below its end `b`, as `a..b`'s does",
+    file: "src/runtime/lazy_range.js",
+    find: "  for (let i = inclusive ? end : end - (big ? 1n : 1); i >= start; i -= by) {\n",
+    replace: "  for (let i = end - (big ? 1n : 1); i >= start; i -= by) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^range_steps_known.rs$"],
+  },
 ];

@@ -401,6 +401,14 @@ pub struct Symbol {
     pub export: String,
 }
 
+/// A piece of a string as its source writes it: its text, and whether it's
+/// written across lines, a template literal of them.
+#[derive(Clone, PartialEq)]
+pub struct StrPiece {
+    pub text: String,
+    pub lines: bool,
+}
+
 #[derive(Clone, PartialEq)]
 pub enum ExprKind {
     Num(f64),
@@ -410,9 +418,12 @@ pub enum ExprKind {
     BigUint(u128),
     Bool(bool),
     Str(String),
-    /// A string written across lines in its source, `r#"<div>` and on: a
-    /// template literal with its line breaks, as a person writes a page.
-    Lines(String),
+    /// A string written in its source otherwise than as one literal on one
+    /// line, as its pieces: `concat!("a ", "b")`'s, each its own literal
+    /// joined by `+`, `"a " + "b"` (ADR 0641); and one written across
+    /// lines, `r#"<div>` and on, a template literal with its line breaks,
+    /// as a person writes a page. Never one piece on one line, a `Str`'s.
+    Written(Vec<StrPiece>),
     Undefined,
     /// `undefined` given to JS, a binding or a JS function, which no pass
     /// leaves out of a call: what it calls may count its arguments,

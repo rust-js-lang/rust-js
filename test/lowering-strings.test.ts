@@ -93,6 +93,102 @@ pub fn page() -> String {
   expect(page()).toBe("<main>\n  <h1>Hi</h1>\n</main>|a\nb");
 });
 
+// ADR 0641: a `concat!` of literals is its pieces joined by `+`, as written,
+// as React splits a long message over lines: each its own JS string, in
+// order, a string's text and a char's, an integer's, a float's or a bool's
+// as `concat!` writes it. A piece written across lines is a template
+// literal of them, and one a `\` continues is one piece, as it's one
+// literal in Rust; a `concat!` of a macro's value is the one string it is.
+// A `static`'s, and a `panic!`'s message, are its pieces too.
+test("a concat! of literals is its pieces joined by +", async () => {
+  const dir = fixture("concat-pieces");
+  writeFileSync(join(dir, "lib.rs"), `use react::webapi::console;
+
+pub const OMITTED_PROP_ERROR: &str = concat!(
+    "This object has been omitted by React in the console log ",
+    "to avoid sending too much data from the server. Try logging smaller ",
+    "or more specific objects."
+);
+
+pub fn warn() {
+    console::error(concat!("a ", "b"));
+}
+
+pub fn kinds() -> &'static str {
+    concat!("v", 1, ".", 2.5, '!', true, -3, 0x10, 1e3)
+}
+
+pub fn continued() -> &'static str {
+    concat!(
+        "a \\
+         b",
+        "c",
+    )
+}
+
+pub fn lines() -> &'static str {
+    concat!(r#"<a>
+</a>"#, r"!")
+}
+
+pub fn macro_arg() -> &'static str {
+    concat!("a", stringify!(b))
+}
+
+pub fn one() -> &'static str {
+    concat!("one")
+}
+
+pub fn bound() -> usize {
+    let s = concat!("x", "yz");
+    s.len()
+}
+
+pub fn twice() -> (&'static str, &'static str) {
+    (OMITTED_PROP_ERROR, OMITTED_PROP_ERROR)
+}
+
+pub static GREETING: &str = concat!("hello ", "world");
+
+pub fn fails() {
+    panic!(concat!("Expected a ", "ref."));
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `react=${join(target, "libreact.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain([
+    "export const OMITTED_PROP_ERROR =",
+    '  "This object has been omitted by React in the console log " +',
+    '  "to avoid sending too much data from the server. Try logging smaller " +',
+    '  "or more specific objects.";',
+  ].join("\n"));
+  expect(js).toContain('  console.error("a " + "b");');
+  expect(js).toContain('  return "v" + "1" + "." + "2.5" + "!" + "true" + "-3" + "16" + "1e3";');
+  expect(js).toContain('  return "a b" + "c";');
+  expect(js).toContain('  return (\n    `<a>\n</a>` + "!"\n  );');
+  expect(js).toContain('  return "ab";');
+  expect(js).toContain('  return "one";');
+  expect(js).toContain('"x" + "yz"');
+  expect(js).toContain("  return [OMITTED_PROP_ERROR, OMITTED_PROP_ERROR];");
+  expect(js).toContain('export const GREETING = "hello " + "world";');
+  expect(js).toContain('  throw new Error("Expected a " + "ref.");');
+  const lib = await import(join(dir, "lib.js"));
+  expect(lib.OMITTED_PROP_ERROR).toBe("This object has been omitted by React in the console log to avoid sending too much data from the server. Try logging smaller or more specific objects.");
+  expect([lib.kinds(), lib.continued(), lib.lines(), lib.macroArg(), lib.one(), lib.bound()])
+    .toEqual(["v1.2.5!true-3161e3", "a bc", "<a>\n</a>!", "ab", "one", 3]);
+  expect(lib.GREETING).toBe("hello world");
+  expect(() => lib.fails()).toThrow("Expected a ref.");
+  const logged: unknown[] = [];
+  const error = console.error;
+  console.error = (...args: unknown[]) => logged.push(args);
+  try {
+    lib.warn();
+  } finally {
+    console.error = error;
+  }
+  expect(logged).toEqual([["a b"]]);
+});
+
 // ADR 0034: a replacement is the text it is, as Rust's is: JS reads `$&` and
 // `$1` in a string as what's matched, so one with a `$` doubles it, and one
 // not written out is a function's, `() => t`. `replacen(.., 1)` is JS's

@@ -87,3 +87,9 @@ mutations unwrap any `String`, and keep a number's `fmt` an arrow.
   its sandbox's files so; the playground's own test runner's text is laid
   out anew. A lowering test has one of a raw string and one of `\n`s,
   which stays a string; mutations write each either way.
+- **A `concat!` of literals is its pieces joined by `+`** (2026-10-23,
+  [ADR 0641](0641-concat-is-its-pieces-joined-by-plus.md)), each piece
+  written across lines a template literal of them, as one literal is. A
+  string written across lines and one in pieces are one kind of the JS
+  tree, `Written`, which `src/lower/literals.rs` makes, and a `static`'s
+  string is written as a `const`'s.

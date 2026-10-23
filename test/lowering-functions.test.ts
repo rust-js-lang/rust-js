@@ -1011,6 +1011,60 @@ pub async fn made() -> u32 {
   expect(await lib.made()).toBe(3);
 });
 
+// #173: an \`async move\` block drops what it took as its body ends, where
+// Rust's future, awaited, is dropped; one dropped unawaited has run, as a
+// promise does (ADR 0029), and dropped it then. An \`async\` closure drops
+// what it took where it's dropped, as a closure does; an \`async fn\` its
+// arguments, once.
+test("an async block or closure drops what it took", async () => {
+  const dir = fixture("async-drops");
+  writeFileSync(join(dir, "lib.rs"), `pub struct D(pub &'static str, pub std::rc::Rc<std::cell::RefCell<Vec<String>>>);
+impl Drop for D {
+    fn drop(&mut self) {
+        self.1.borrow_mut().push(format!("drop {}", self.0));
+    }
+}
+fn size(d: &D) -> usize {
+    d.0.len()
+}
+async fn consume(d: D) {
+    d.1.borrow_mut().push(format!("consume {}", d.0));
+}
+pub async fn report() -> Vec<String> {
+    let log = std::rc::Rc::new(std::cell::RefCell::new(Vec::new()));
+    let d = D("d", log.clone());
+    async move {
+        d.1.borrow_mut().push(format!("in {}", d.0));
+    }
+    .await;
+    log.borrow_mut().push("after".to_string());
+    let g = D("g", log.clone());
+    let unawaited = async move { size(&g) };
+    drop(unawaited);
+    let c = D("c", log.clone());
+    let call = async move || {
+        c.1.borrow_mut().push(format!("call {}", c.0));
+    };
+    call().await;
+    call().await;
+    drop(call);
+    let e = D("e", log.clone());
+    let once = async move || {
+        let taken = e;
+        taken.1.borrow_mut().push(format!("took {}", taken.0));
+    };
+    once().await;
+    consume(D("f", log.clone())).await;
+    log.borrow_mut().push("end".to_string());
+    let lines = log.borrow().clone();
+    lines
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const { report } = await import(join(dir, "lib.js"));
+  expect(await report()).toEqual(["in d", "drop d", "after", "drop g", "call c", "call c", "drop c", "took e", "drop e", "consume f", "drop f", "end"]);
+});
+
 // A future's output a promise would adopt, a thenable, is boxed where the
 // promise is resolved, `$settled`, and taken out where it's awaited,
 // `$unsettled` (#172): a struct with a function named `then`, and a future

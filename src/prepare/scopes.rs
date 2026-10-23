@@ -333,7 +333,7 @@ impl Walk {
             | ExprKind::BigUint(_)
             | ExprKind::Bool(_)
             | ExprKind::Str(_)
-            | ExprKind::Lines(_)
+            | ExprKind::Written(_)
             | ExprKind::Null
             | ExprKind::Symbol(_)
             | ExprKind::Regex(_)

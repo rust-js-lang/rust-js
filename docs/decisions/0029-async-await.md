@@ -157,3 +157,16 @@ resolves it, an async body's `return` or `ready(v)`, gives
 `.await` takes `$unsettled(..)` of what it gives. Any other output is as
 it was. Held by the lowering test "an awaited value that's a thenable
 isn't adopted".
+
+## Amendment: an `async` block drops what it took
+
+An `async move` block, an async arrow called at once, never dropped what
+it took: its coroutine's captures had no types where its body was lowered,
+and nothing dropped them (#173). Its body drops them as it ends, where
+Rust's future, awaited, is dropped; one dropped unawaited has run, as a
+promise does, and dropped them then, so dropping the future elsewhere drops
+nothing. An `async` closure drops what it took where it's dropped, as a
+closure does, and one whose body took part of it drops what's left. What a
+closure, an `async` closure or an `async` block holds is one answer,
+`held_types`. Held by `test/lowering-functions.test.ts`, "an async block or
+closure drops what it took".

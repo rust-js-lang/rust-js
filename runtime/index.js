@@ -1691,6 +1691,17 @@ export function* $lazyRange(start, end = Infinity, step = 1) {
   }
 }
 
+// A range's numbers from its end, `step` apart, made as they're stepped:
+// `$lazyRangeBack(0, n, 3)` of `(0..n).rev().step_by(3)`, of `a..=b`
+// `inclusive`, its end the first; of numbers or BigInts alike.
+export function* $lazyRangeBack(start, end, step, inclusive = false) {
+  const big = typeof end === "bigint";
+  const by = big ? BigInt(step) : step;
+  for (let i = inclusive ? end : end - (big ? 1n : 1); i >= start; i -= by) {
+    yield i;
+  }
+}
+
 // A `Range`'s `next()`, `{ start, end }`: its start, moved past, while it's
 // before its end; a `char`'s by its code point.
 export function $rangeNext(range) {

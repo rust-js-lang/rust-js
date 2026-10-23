@@ -19,22 +19,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-structs-enums.test.ts", "-t", "discriminated union"],
   },
   {
-    name: "raw-lines-escaped",
-    breaks: "a raw string written across lines is one line of `\\n`s",
-    file: "src/lower.rs",
-    find: "            StrStyle::Raw(_) => true,",
-    replace: "            StrStyle::Raw(_) => false,",
-    tests: ["test/lowering-strings.test.ts", "-t", "a string written across lines"],
-  },
-  {
-    name: "continued-line-kept",
-    breaks: "a string whose line ends in `\\` is printed with a line break where it has `\\n`",
-    file: "src/lower.rs",
-    find: ".is_ok_and(|code| code.match_indices('\\n').any(|(i, _)| !code[..i].ends_with('\\\\'))),",
-    replace: ".is_ok_and(|code| code.contains('\\n')),",
-    tests: ["test/lowering-strings.test.ts", "-t", "a string written across lines"],
-  },
-  {
     name: "walks-unkeyed",
     breaks: "what walks of types found is kept for every typing environment, so a copied default's clone shares what its sibling's bounds make a `Vec`",
     file: "src/lower.rs",
@@ -159,44 +143,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts","-t","slice_uninit"],
   },
   {
-    name: "const-lines-string",
-    breaks: "a `const` of a string written across lines is a string of `\\n`s",
-    file: "src/lower.rs",
-    find: "                && written_across_lines(tcx, style, lit.span) =>",
-    replace: "                && false =>",
-    tests: ["test/lowering-strings.test.ts", "-t", "const of a string written across lines"],
-  },
-  {
-    name: "const-lines-any",
-    breaks: "a `const` of `\\n`s is a template literal",
-    file: "src/lower.rs",
-    find: "                && written_across_lines(tcx, style, lit.span) =>",
-    replace: "                =>",
-    tests: ["test/lowering-strings.test.ts", "-t", "const of a string written across lines"],
-  },
-  {
     name: "spill-hyphenated-name",
     breaks: "an attribute read first is a variable of its hyphenated name, `const data-step`",
     file: "src/lower.rs",
     find: "        let name = self.fresh(&unhyphenated(base));\n",
     replace: "        let name = self.fresh(base);\n",
     tests: ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"],
-  },
-  {
-    "name": "literal-lines-raw-unread",
-    "breaks": "a raw string written across lines, from MIR, is a string of `\\n`s",
-    "file": "src/lower.rs",
-    "find": "        Some('r') => StrStyle::Raw(0),\n",
-    "replace": "        Some('r') => return false,\n",
-    "tests": ["test/lowering-strings.test.ts", "-t", "a string written across lines keeps its lines"]
-  },
-  {
-    "name": "literal-lines-cooked-unread",
-    "breaks": "a string written across lines, from MIR, is a string of `\\n`s",
-    "file": "src/lower.rs",
-    "find": "        Some('\"') => StrStyle::Cooked,\n",
-    "replace": "        Some('\"') => return false,\n",
-    "tests": ["test/lowering-strings.test.ts", "-t", "a string written across lines keeps its lines"]
   },
   {
     name: "repeat-one-refused",

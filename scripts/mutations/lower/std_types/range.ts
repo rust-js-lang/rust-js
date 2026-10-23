@@ -210,4 +210,12 @@ export const mutations: Mutation[] = [
     replace: "            if true || method != \"drop\" || !range.back || !n.reads_same() || range.end.as_int().is_none() {\n",
     tests: ["test/corpus.test.ts", "-t", "^range_own_steps.rs$"],
   },
+  {
+    name: "reversed-range-step-by-stepped",
+    breaks: "`step_by(n)` of a reversed range steps each number, `(0..u32::MAX).rev().step_by(1 << 30)` never ending",
+    file: "src/lower/std_types/range.rs",
+    find: "            if method == \"filter\" && range.back {\n",
+    replace: "            if false && method == \"filter\" && range.back {\n",
+    tests: ["test/corpus.test.ts", "-t", "^range_steps_known.rs$"],
+  },
 ];

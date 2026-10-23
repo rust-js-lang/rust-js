@@ -351,7 +351,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let ty = place.ty(&state.body.local_decls, tcx).ty;
         let fields: Vec<Ty<'tcx>> = match ty.kind() {
             ty::Tuple(items) => items.iter().collect(),
-            ty::Closure(_, args) => args.as_closure().upvar_tys().iter().collect(),
+            ty::Closure(..) | ty::Coroutine(..) | ty::CoroutineClosure(..) => {
+                crate::lower::recognition::held_types(ty).map_or_else(Vec::new, |(_, held)| held.to_vec())
+            }
             ty::Adt(adt, args) if adt.is_struct() => adt
                 .non_enum_variant()
                 .fields

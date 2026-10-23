@@ -43,6 +43,14 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-names.test.ts", "-t", "isn't a name is read by its key"],
   },
   {
+    name: "written-pieces-reversed",
+    breaks: "a string written as `concat!`'s pieces prints them last first",
+    file: "src/to_oxc/expressions.rs",
+    find: "                    Expression::new_binary_expression(sp, joined, BinaryOperator::Addition, next, b)",
+    replace: "                    Expression::new_binary_expression(sp, next, BinaryOperator::Addition, joined, b)",
+    tests: ["test/lowering-strings.test.ts", "-t", "a concat! of literals is its pieces joined by"],
+  },
+  {
     name: "lines-escaped",
     breaks: "a string written across lines is a template literal of `\\n`s",
     file: "src/to_oxc/expressions.rs",
