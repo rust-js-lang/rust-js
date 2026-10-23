@@ -36,7 +36,7 @@ function main() {
     .slice(0, 1);
   $index(reversed, 0).x = 4;
   const [small] = $partition(
-    points.slice().map((item) => ({ ...item })),
+    points.map((item) => ({ ...item })),
     (p) => p.x < 3,
   );
   $index(small, 0).x = 6;

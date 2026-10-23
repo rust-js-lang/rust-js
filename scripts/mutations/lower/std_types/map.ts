@@ -59,14 +59,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts","-t","extract_if"],
   },
   {
-    name: "range-items-of-ignored",
-    breaks: "a set made of a range is made of the range object",
-    file: "src/lower/std_types/map.rs",
-    find: "            Some(_) => self.range_items(items, ty.peel_refs(), span, out),",
-    replace: "            Some(_) => Ok(items),",
-    tests: ["test/corpus.test.ts","-t","range_into_set"],
-  },
-  {
     name: "entry-get-no-handle",
     breaks: "an entry's `get_mut` of a number is the number",
     file: "src/lower/std_types/map.rs",
@@ -404,5 +396,21 @@ export const mutations: Mutation[] = [
     find: "        \"or_insert_with_key\" if entry => MapOp::OrInsertWith { keyed: true },\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^entry_or_insert_with_key.rs$"],
+  },
+  {
+    name: "map-extend-raw",
+    breaks: "`extend` of a set by the crate's iterator is given the struct, not its items, which JS can't step",
+    file: "src/lower/std_types/map.rs",
+    find: "                let items = self.iterable_items(items, tys[1], span, out)?;\n",
+    replace: "",
+    tests: ["test/corpus.test.ts",  "-t",  "^own_fold_and_nth.rs$"],
+  },
+  {
+    name: "map-extend-steps",
+    breaks: "`extend` of a hash map or set by the crate's iterator steps it by `next`, not by its own `fold`",
+    file: "src/lower/std_types/map.rs",
+    find: "                let items = self.by_its_fold(items, tys[1]);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts",  "-t",  "^own_fold_and_nth.rs$"],
   },
 ];

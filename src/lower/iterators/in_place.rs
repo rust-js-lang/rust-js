@@ -9,6 +9,20 @@ pub(super) const STEPPED_TILL_DONE: [&str; 11] = [
     "map", "filter", "take", "drop", "flatMap", "toArray", "reduce", "forEach", "some", "every", "find",
 ];
 
+/// What the runtime's helpers step their first argument till its first
+/// `done` with, each item as it comes (#179): the extremes', `partition`'s
+/// and `unzip`'s.
+pub(in crate::lower) const HELPERS_STEPPING_ALL: [&str; 8] = [
+    "$max",
+    "$min",
+    "$maxBy",
+    "$minBy",
+    "$maxByKey",
+    "$minByKey",
+    "$partition",
+    "$unzip",
+];
+
 /// `e`, stepped till it ends, by a `for` or not: of an `$intoIter(xs)`,
 /// where nothing reads where it is, JS's iterator of `xs`, which a `for`
 /// makes itself (ADR 0475); of a `fuse()` of a JS iterator, the iterator,
@@ -23,15 +37,10 @@ pub(super) fn stepped_in_place(e: &mut Expr, by_for: bool, fuse: Option<&str>) {
         stepped_in_place(&mut given[0], false, fuse);
     }
     // An iterator of the crate's stepped till it ends, which nothing asks
-    // its size: given no `size_hint`, nor the places before it.
-    if callee.helper_name() == Some("$iterator") && given.len() == 6 {
-        given.truncate(5);
-        while given.len() > 2 && matches!(given.last().map(|e| &e.kind), Some(js::ExprKind::Undefined)) {
-            given.pop();
-        }
-        if given.len() == 3 && matches!(given[2].kind, js::ExprKind::Bool(false)) {
-            given.pop();
-        }
+    // its size: given no `size_hint`, nor the places before it it needs.
+    if callee.helper_name() == Some("$iterator") && given.len() >= 6 {
+        given[5] = Expr::undefined();
+        fewest_iterator_args(given);
         return;
     }
     let fused = matches!(&callee.kind, js::ExprKind::Var(name) if Some(name.as_str()) == fuse);

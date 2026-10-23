@@ -49,7 +49,7 @@ function rank(l) {
 
 function greatest(items, IItemOrd, dropIItem, dropIIntoIter) {
   const iter = $intoIter(items);
-  const result = $maxBy(iter.toArray(), IItemOrd.cmp, true, dropIItem);
+  const result = $maxBy(iter, IItemOrd.cmp, true, dropIItem);
   dropIIntoIter?.(iter);
   return result;
 }

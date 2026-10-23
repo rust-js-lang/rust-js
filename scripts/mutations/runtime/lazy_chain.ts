@@ -10,4 +10,12 @@ export const mutations: Mutation[] = [
     replace: "    },\n",
     tests: ["test/corpus.test.ts", "-t", "^adapter_drops.rs$"],
   },
+  {
+    name: "chain-fold-steps",
+    breaks: "`chain`'s fold steps each side by `next`, not by its own `fold`, `a`'s then `b`'s",
+    file: "src/runtime/lazy_chain.js",
+    find: "  chained.fold = (init, f) => {\n",
+    replace: "  chained.unused = (init, f) => {\n",
+    tests: ["test/corpus.test.ts",  "-t",  "^own_fold_and_nth.rs$"],
+  },
 ];

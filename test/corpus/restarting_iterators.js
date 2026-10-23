@@ -137,13 +137,17 @@ function main() {
   console.log(
     `scan ([${value$14[0].join(", ")}], [${value$14[1].join(", ")}], [${value$14[2].join(", ")}])`,
   );
-  const value$15 = twice(iterator_fuse(f(), { next: flakyIterator_next }, false));
+  const value$15 = twice($iterator(f(), flakyIterator_next).flatMap((x) => $lazyRange(0, x % 3)));
   console.log(
-    `fuse ([${value$15[0].join(", ")}], [${value$15[1].join(", ")}], [${value$15[2].join(", ")}])`,
+    `flat_map ([${value$15[0].join(", ")}], [${value$15[1].join(", ")}], [${value$15[2].join(", ")}])`,
   );
-  const value$16 = twice(iterator_peekable(f(), { next: flakyIterator_next }));
+  const value$16 = twice(iterator_fuse(f(), { next: flakyIterator_next }, false));
   console.log(
-    `peekable ([${value$16[0].join(", ")}], [${value$16[1].join(", ")}], [${value$16[2].join(", ")}])`,
+    `fuse ([${value$16[0].join(", ")}], [${value$16[1].join(", ")}], [${value$16[2].join(", ")}])`,
+  );
+  const value$17 = twice(iterator_peekable(f(), { next: flakyIterator_next }));
+  console.log(
+    `peekable ([${value$17[0].join(", ")}], [${value$17[1].join(", ")}], [${value$17[2].join(", ")}])`,
   );
   const n = 0;
   let n$1 = n;
@@ -155,9 +159,9 @@ function main() {
       }
     }),
   );
-  const value$17 = twice(from.map((x) => (x + 1) >>> 0));
+  const value$18 = twice(from.map((x) => (x + 1) >>> 0));
   console.log(
-    `from_fn ([${value$17[0].join(", ")}], [${value$17[1].join(", ")}], [${value$17[2].join(", ")}])`,
+    `from_fn ([${value$18[0].join(", ")}], [${value$18[1].join(", ")}], [${value$18[2].join(", ")}])`,
   );
 }
 //# sourceMappingURL=case.js.map

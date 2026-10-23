@@ -506,12 +506,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 None => return Ok(None),
             },
-            // Of all the items, in order, as of an array.
+            // Of its items as they come, which the helper steps (#179).
             Some(IterMethod::Max | IterMethod::Min) => {
-                let items = method("toArray", it, Vec::new());
-                self.extreme_of(std_method == Some(IterMethod::Max), items, item, span)?
+                self.extreme_of(std_method == Some(IterMethod::Max), it, item, span)?
             }
-            Some(IterMethod::Last) => self.last_value(it, item, span, made)?,
+            Some(IterMethod::Last) => self.last_value(self.by_its_fold(it, iter_ty), item, span, made)?,
             Some(IterMethod::IsSorted) => match item {
                 Some(item) => self.is_sorted_call(it, item, span)?,
                 None => return Ok(None),

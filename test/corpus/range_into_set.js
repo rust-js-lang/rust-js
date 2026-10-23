@@ -6,7 +6,6 @@ import {
   $extendMap,
   $iterator,
   $lazyRange,
-  $range,
   $rangeInclusiveNext,
   $sortedKeys,
   $unwrap,
@@ -22,8 +21,8 @@ function main() {
   const m = new Map($lazyRange(1, 4).map((i) => [i, Math.imul(i, i)]));
   const u = new Set($iterator({ start: "a", end: "c" }, $rangeInclusiveNext));
   const more = new Set();
-  $extendMap(more, $range(2, 5), true);
-  $extendMap(more, $range(4, (s.size | 0) + 1), true);
+  $extendMap(more, $lazyRange(2, 5), true);
+  $extendMap(more, $lazyRange(4, (s.size | 0) + 1), true);
   const value = $unwrap(m.get(3), "no entry found for key");
   console.log(
     `${s.size} {${Array.from($sortedKeys(t, $cmp)).join(", ")}} ${value} {${Array.from(

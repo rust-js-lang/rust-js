@@ -174,10 +174,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// a caller's location, which only a `#[track_caller]` function takes. One
     /// that takes none is its module's `const` (ADR 0592).
     pub(in crate::lower) fn takes_evidence(&self, id: DefId) -> bool {
+        self.takes_more_than_drops(id) || !self.drops_taken(id).is_empty()
+    }
+
+    /// Whether `id` takes evidence besides its drops: a const parameter's
+    /// value, a bound's dictionary or a type's fact, without which a call
+    /// of it can't be made; a drop it's not given it doesn't do.
+    pub(in crate::lower) fn takes_more_than_drops(&self, id: DefId) -> bool {
         !const_params(self.tcx, id).is_empty()
             || !bounds(self.tcx, self.krate.foreign, self.krate.given, id).is_empty()
             || !self.facts_asked(id).is_empty()
-            || !self.drops_taken(id).is_empty()
     }
 
     pub(in crate::lower) fn evidence_params(&mut self, id: DefId) -> Vec<js::Pattern> {

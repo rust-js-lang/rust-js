@@ -162,7 +162,7 @@ function main() {
       .join(", ")}]`,
   );
   console.log(
-    `${$iterator(cd(4), countdownIterator_next).reduce((a, b) => (a + b) >>> 0, 0)} ${((value) => (value == null ? "None" : `Some(${value})`))($maxByKey($iterator(cd(4), countdownIterator_next).toArray(), (x) => x % 3, $cmp))}`,
+    `${$iterator(cd(4), countdownIterator_next).reduce((a, b) => (a + b) >>> 0, 0)} ${((value) => (value == null ? "None" : `Some(${value})`))($maxByKey($iterator(cd(4), countdownIterator_next), (x) => x % 3, $cmp))}`,
   );
   const value$1 = $rposition(
     $iterator(

@@ -274,4 +274,12 @@ export const mutations: Mutation[] = [
     replace: "                if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^restarting_iterators.rs$"],
   },
+  {
+    name: "extreme-by-listed",
+    breaks: "`max_by_key` lists every item before its key is made of the first",
+    file: "src/lower/combinators/adapters.rs",
+    find: "                // Its items as they come, which the helper steps (#179).\n                let f = next();\n",
+    replace: "                let items = method(items, \"toArray\", Vec::new());\n                let f = next();\n",
+    tests: ["test/corpus.test.ts",  "-t",  "^consumers_step_each.rs$"],
+  },
 ];

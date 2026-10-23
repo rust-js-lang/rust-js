@@ -250,10 +250,25 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(value)
     }
 
-    /// `DoubleEndedIterator`, if `ty` is an iterator of the crate's whose
-    /// `next_back` is its own: `rev()` of it is a JS iterator of that,
-    /// `$iterator(it, spanDoubleEndedIterator_next_back)`, stepped from the
-    /// back as Rust's is (ADR 0164).
+    /// The crate's iterator `ty`'s own `fold` and `nth`, where its impl
+    /// writes them: the functions what std routes through them calls,
+    /// `$iterator`'s (#162). One that takes evidence besides its drops, a
+    /// bound's dictionary, can't be given what each caller would: refused.
+    pub(in crate::lower) fn own_fold_and_nth(&self, ty: ty::Ty<'tcx>, span: Span) -> R<(Option<Expr>, Option<Expr>)> {
+        let own = |name: &str| -> R<Option<Expr>> {
+            let Some(written) = self.recognition().own_iterator_method(ty, name) else {
+                return Ok(None);
+            };
+            // Given no drops: what std's consumers fold, through the
+            // runtime, is a JS value whose type it can't name (#162).
+            if self.takes_more_than_drops(written) {
+                return Err(self.unsupported(span, &format!("an iterator's own `{name}` given a dictionary")));
+            }
+            Ok(Some(self.fn_ref(written)))
+        };
+        Ok((own("fold")?, own("nth")?))
+    }
+
     /// Whether `ty` is an iterator of the crate's that's double-ended, by
     /// its own `next_back`, which `user_iterator_knowing` gives it.
     pub(in crate::lower) fn user_double_ended(&self, ty: ty::Ty<'tcx>) -> bool {
@@ -267,6 +282,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && (self.recognition().exact_size_iterator()).is_some_and(|exact| self.has_user_impl(exact, ty.peel_refs()))
     }
 
+    /// `DoubleEndedIterator`, if `ty` is an iterator of the crate's whose
+    /// `next_back` is its own: `rev()` of it is a JS iterator of that,
+    /// `$iterator(it, spanDoubleEndedIterator_next_back)`, stepped from the
+    /// back as Rust's is (ADR 0164).
     pub(in crate::lower) fn own_next_back(&self, ty: ty::Ty<'tcx>) -> R<Option<DefId>> {
         if !self.is_user_iterator(ty) {
             return Ok(None);

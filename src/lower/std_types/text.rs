@@ -232,8 +232,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<Expr> {
+        // By `for_each`, std's, so through the crate's own `fold`.
         let items = match ty {
-            Some(ty) => self.iterable_items(items, ty, span, out)?,
+            Some(ty) => {
+                let items = self.iterable_items(items, ty, span, out)?;
+                self.by_its_fold(items, ty)
+            }
             None => items,
         };
         let ty = ty.map(|ty| ty.peel_refs());

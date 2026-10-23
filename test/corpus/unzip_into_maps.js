@@ -22,14 +22,16 @@ function main() {
   const [a] = unzipped;
   const b = $extendMap(new Set(), unzipped[1], true);
   console.log(`[${a.join(", ")}] ${b.size}`);
-  const unzipped$1 = $unzip(
-    [
-      [[2, 1], "x"],
-      [[1, 9], "y"],
-      [[2, 1], "z"],
-    ].slice(),
+  const unzipped$1 = $unzip([
+    [[2, 1], "x"],
+    [[1, 9], "y"],
+    [[2, 1], "z"],
+  ]);
+  const c = $extendMap(
+    new $KeySet(),
+    $sortedKeys(unzipped$1[0], (a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1])),
+    true,
   );
-  const c = $extendMap(new $KeySet(), unzipped$1[0], true);
   const [, d] = unzipped$1;
   console.log(
     `{${Array.from($sortedKeys(c, (a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1])))
@@ -42,7 +44,7 @@ function main() {
     [3, [4, "r"]],
   ]);
   const [e] = unzipped$2;
-  const f = $extendMap(new Map(), unzipped$2[1], false);
+  const f = $extendMap(new Map(), $sortedEntries(unzipped$2[1], $cmp), false);
   console.log(
     `[${e.join(", ")}] {${Array.from($sortedEntries(f, $cmp))
       .map(([key, value]) => `${key}: ${$debugStr(value)}`)

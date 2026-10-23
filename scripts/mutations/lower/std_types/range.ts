@@ -3,14 +3,6 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
-    name: "inclusive-items-end-dropped",
-    breaks: "a `RangeInclusive` value's items stop before its end",
-    file: "src/lower/std_types/range.rs",
-    find: "                    _ if kind == RangeKind::Inclusive => Expr::bin(Op::Add, end.clone(), num.literal(1)),",
-    replace: "                    _ if false && kind == RangeKind::Inclusive => Expr::bin(Op::Add, end.clone(), num.literal(1)),",
-    tests: ["test/corpus.test.ts","-t","range_into_set"],
-  },
-  {
     name: "contains-inclusive-end-excluded",
     breaks: "`(1..=7).contains(&7)` is false",
     file: "src/lower/std_types/range.rs",

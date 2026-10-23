@@ -116,7 +116,7 @@ export function consumers(n) {
         }
       })
       .find((item) => item != null),
-    $partition(v.slice(), (x) => x % 2 === 0),
+    $partition(v, (x) => x % 2 === 0),
   ];
 }
 

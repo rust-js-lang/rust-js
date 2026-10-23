@@ -359,10 +359,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         }
                         if self.recognition().is_dyn_iter(*to) {
                             let iterator = from.builtin_deref(true).unwrap_or(from);
-                            return Ok(Value::Expr(match self.knows_its_back(*to) {
+                            let it = match self.knows_its_back(*to) {
                                 true => self.as_double_ended(value, iterator, span)?,
                                 false => self.as_js_iterator(value, iterator, span)?,
-                            }));
+                            };
+                            return Ok(Value::Expr(crate::lower::iterators::behind_a_dyn(it)));
                         }
                         // A `&dyn Debug` is the string it shows (ADR 0060), made
                         // where it's read: by `{:#?}`, as that shows it.

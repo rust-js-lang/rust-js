@@ -58,3 +58,10 @@ are std's adapters, which pass a `None` on. The JS still reads `.map(f)`.**
   guide's differences.
 - Held by `test/corpus/restarting_iterators.rs`, each adapter with native
   Rust, and by `scripts/mutations/runtime/steps.ts`.
+
+## Amended by
+
+[ADR 0687](0687-a-consumer-steps-its-iterator-as-std-does.md): a `$Steps`
+has std's `fold` and `nth` too, the crate's own where its impl writes
+them, and its `map`, `filter` and `flatMap`, and `$lazyChain`, fold by
+their source's.

@@ -1,4 +1,5 @@
-
+// `min()` of `items`, numbers, `bool`s or `Ordering`s: std's
+// `min_by(Ord::cmp)`, which steps them as each comes (#179).
 function $min(items) {
-  return items.length === 0 ? undefined : items.reduce((min, x) => (x < min ? x : min));
+  return $minBy(items, $cmp);
 }

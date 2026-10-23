@@ -532,7 +532,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             MapOp::TreeAppend => map_ops("$treeAppend", vec![arg(), arg(), Expr::bool(set)]),
             MapOp::Extend => {
                 let (m, items) = (arg(), arg());
-                let items = self.items_of(items, tys[1], span, out)?;
+                // By `for_each`, std's, so through the crate's own `fold`.
+                let items = self.iterable_items(items, tys[1], span, out)?;
+                let items = self.by_its_fold(items, tys[1]);
                 let list = vec![m, items, Expr::bool(set)];
                 map_ops("$extendMap", with_drops(list, vec![values_drop, keys_drop]))
             }
@@ -542,7 +544,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             MapOp::New { set, sorted } => Expr::new_(self.made(set, sorted, generic_args, span)?, Vec::new()),
             MapOp::From { set } => {
                 let items = arg();
-                let items = self.items_of(items, tys[0], span, out)?;
                 self.made_of(set, generic_args, items, span)?
             }
             MapOp::ByPlace(op) => match op {
@@ -668,15 +669,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Part::Values => method(m, "values", Vec::new()),
         };
         Ok(Expr::call(Expr::member(Expr::var("Array"), "from"), vec![items]))
-    }
-
-    /// What a map or a set is made of, or extended by: a range's items, as a
-    /// range kept as a value is an object (ADR 0129); anything else as it is.
-    fn items_of(&mut self, items: Expr, ty: Ty<'tcx>, span: Span, out: &mut Vec<Stmt>) -> R<Expr> {
-        match self.range_kind(ty.peel_refs()) {
-            Some(_) => self.range_items(items, ty.peel_refs(), span, out),
-            None => Ok(items),
-        }
     }
 
     /// `m.extract_if(f)`, or a B-tree's `extract_if(range, f)`, of the map's

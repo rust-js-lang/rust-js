@@ -35,7 +35,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         Ok(Expr::arrow(vec!["item".into()], body))
     }
-    /// `max()` or `min()` of `items`, an array of `item`s: of
+    /// `max()` or `min()` of `items`, an iterator of `item`s, or an array:
+    /// of
     /// what JS's `<` doesn't order, by its `cmp` (ADR 0057), each passed over
     /// dropped as it's passed, of items with a destructor (ADR 0098).
     pub(in crate::lower) fn extreme_of(

@@ -526,4 +526,20 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^chunks_from_their_back.rs$"],
   },
+  {
+    name: "folds-its-own-not-through-chain",
+    breaks: "`last()` of a `chain` of the crate's iterator steps it by `next`, not by each side's own `fold`",
+    file: "src/lower/recognition/iterators.rs",
+    find: "            Some(\"Chain\") => 2,\n",
+    replace: "            Some(\"Chain\") => 0,\n",
+    tests: ["test/corpus.test.ts",  "-t",  "^own_fold_and_nth.rs$"],
+  },
+  {
+    name: "folds-its-own-never",
+    breaks: "`collect` into a string or a hash map, and `last()`, of the crate's iterator step it by `next`, not by its own `fold`",
+    file: "src/lower/recognition/iterators.rs",
+    find: "            return !ty.is_ref() && self.own_iterator_method(ty, \"fold\").is_some();\n",
+    replace: "            return false;\n",
+    tests: ["test/corpus.test.ts",  "-t",  "^own_fold_and_nth.rs$"],
+  },
 ];

@@ -34,4 +34,20 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^adapter_size_hints.rs$"],
   },
+  {
+    name: "iterator-own-fold-unused",
+    breaks: "the crate's iterator's own `fold` isn't called by what std routes through it",
+    file: "src/runtime/iterator.js",
+    find: "  if (fold !== undefined) it.fold = (init, f) => fold(iterator, init, f);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts",  "-t",  "^own_fold_and_nth.rs$"],
+  },
+  {
+    name: "iterator-own-nth-unused",
+    breaks: "the crate's iterator's own `nth` isn't called by `skip`",
+    file: "src/runtime/iterator.js",
+    find: "  if (nth !== undefined) it.nth = (k) => step(nth(iterator, k));\n",
+    replace: "",
+    tests: ["test/corpus.test.ts",  "-t",  "^own_fold_and_nth.rs$"],
+  },
 ];

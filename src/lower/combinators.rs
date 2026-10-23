@@ -1046,6 +1046,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         out: &mut Vec<Stmt>,
     ) -> R<Expr> {
         let items = self.iterable_items(items, iterable, span, out)?;
+        let items = match self.collects_by_fold(into) {
+            true => self.by_its_fold(items, iterable),
+            false => items,
+        };
         let items = super::iterators::fresh_iter_source(&items).cloned().unwrap_or(items);
         self.copied_into(items, self.iterable_item(iterable), self.slice_item(into), span)
     }
