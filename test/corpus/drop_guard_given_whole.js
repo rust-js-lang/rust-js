@@ -4,6 +4,7 @@ export function entry() {
   main();
 }
 
+/** @noinline */
 function show(seen) {
   return (seen[0] * 2) >>> 0;
 }

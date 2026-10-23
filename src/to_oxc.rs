@@ -269,6 +269,7 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> (String, V
     let mut found = Vec::new();
     let mut trailing = Vec::new();
     let spans = statement_spans(module);
+    let noinline = noinline_starts(module);
     let mut starts: Vec<u32> = spans.iter().map(|&(lo, _)| lo).collect();
     starts.sort_unstable();
     starts.dedup();
@@ -422,6 +423,10 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> (String, V
         }
         for (at, own) in starts_and_end {
             let mut pieces: Vec<(u32, u32)> = Vec::new();
+            // A function kept out of line, `#[inline(never)]`, says so in its
+            // JSDoc, the last line of its own, or one of its own (ADR 0649).
+            let noinline = noinline.contains(&at);
+            let mut said = false;
             let mut i = 0;
             while i < own.len() {
                 let comment = own[i];
@@ -436,7 +441,11 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> (String, V
                     .collect();
                 // A doc comment's lines, before one item: one JSDoc of them,
                 // or each as written where JS can't hold one (`jsdoc`).
-                let lines: Vec<&str> = lines.iter().map(|l| l.trim_start_matches("///")).collect();
+                let mut lines: Vec<&str> = lines.iter().map(|l| l.trim_start_matches("///")).collect();
+                if noinline && run > 0 && i + run == own.len() {
+                    lines.push(NOINLINE);
+                    said = true;
+                }
                 match crate::comments::jsdoc(&lines).filter(|_| run > 0) {
                     Some(jsdoc) => {
                         let lo = text.len() as u32;
@@ -461,6 +470,11 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> (String, V
                 })
             {
                 pieces.push(blank(&text));
+            }
+            if noinline && !said {
+                let lo = text.len() as u32;
+                text.push_str(&format!("/** {NOINLINE} */"));
+                pieces.push((lo, text.len() as u32));
             }
             for (lo, hi) in pieces {
                 let written = &text[lo as usize..hi as usize];
@@ -497,6 +511,23 @@ fn list_spans(list: &[js::Stmt]) -> impl Iterator<Item = (u32, u32)> + '_ {
     (list.iter())
         .filter(|stmt| !stmt.span.is_none())
         .map(|stmt| (stmt.span.lo, stmt.span.hi))
+}
+
+/// Closure Compiler's annotation of a function kept out of line, Rust's
+/// `#[inline(never)]` (ADR 0649).
+const NOINLINE: &str = "@noinline";
+
+/// Where each of `module`'s functions marked `#[inline(never)]` starts.
+fn noinline_starts(module: &Module) -> std::collections::HashSet<u32> {
+    let functions = (module.items.iter()).flat_map(|item| match item {
+        js::Item::Function(f) => vec![f],
+        js::Item::Namespace(n) => n.methods.iter().collect(),
+        _ => Vec::new(),
+    });
+    functions
+        .filter(|f| f.noinline && !f.span.is_none())
+        .map(|f| f.span.lo)
+        .collect()
 }
 
 /// The span of each statement and item of `module`, closures' and nested

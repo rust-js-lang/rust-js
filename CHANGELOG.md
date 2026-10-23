@@ -771,6 +771,10 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### Changed
 
+- **`#[inline(never)]` is `/** @noinline */`** (ADR 0649), Closure
+  Compiler's annotation, in the function's JSDoc where it has one, as
+  React keeps `testStringCoercion` out of line; rust-js keeps it a function
+  of its own. `#[inline]` and `#[inline(always)]` say nothing.
 - **What `js::is_defined` names is no read** (ADR 0647): of a static,
   `Symbol.toStringTag` was read before its `typeof` test, which threw
   where the host has no `Symbol`. React's `typeName` is

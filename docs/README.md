@@ -579,6 +579,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0645 `js::is_defined` of a static is given the static itself](decisions/0645-is-defined-of-a-static-is-of-the-static.md) *(amended by 0647: the static isn't read)*
 - [0646 A chain held, then its fallback, is one `||`](decisions/0646-a-held-chain-and-its-fallback-is-one-or.md)
 - [0647 What `is_defined` names is no read; a test kept by its truth is `&&`](decisions/0647-type-name-as-react-writes-it.md)
+- [0649 `#[inline(never)]` is `/** @noinline */`](decisions/0649-inline-never-is-noinline.md)
 - [0623 A copy std makes of a `Copy` value is a copy](decisions/0623-a-copy-std-makes-is-a-copy.md)
 - [0436 Every `dyn` that's a pair keeps its value's drop, `dyn Send` too](decisions/0436-every-dyn-keeps-its-drop.md)
 - [0437 A scope's drops on a panic are one `try { .. } finally { .. }`](decisions/0437-a-scopes-drops-are-one-finally.md)

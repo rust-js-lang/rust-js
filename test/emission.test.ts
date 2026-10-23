@@ -206,3 +206,90 @@ test("a file's leading comments are its JS's", async () => {
   expect(readFileSync(join(dir, "after.js"), "utf8")).toContain("Do not edit.\n\n// The license.\n\n// The function's, right above it.\nexport function four() {");
   expect((await import(join(dir, "lib.js"))).answer()).toBe(42);
 });
+
+// ADR 0649: a function marked `#[inline(never)]` is written with Closure
+// Compiler's `/** @noinline */` before it, as React's testStringCoercion
+// is, in its JSDoc where it has one; nor does rust-js put its body in its
+// caller's place, a forwarding function's variable (ADR 0610). `#[inline]`
+// and `#[inline(always)]` are a JS engine's to decide, and say nothing.
+test("a function marked #[inline(never)] is @noinline", async () => {
+  const { buildCompiler, fixture, compiler } = await import("./support");
+  const { writeFileSync, readFileSync } = await import("node:fs");
+  buildCompiler();
+  const dir = fixture("noinline");
+  writeFileSync(join(dir, "lib.rs"), `#[inline(never)]
+fn test_string_coercion(value: f64) -> String {
+    // If you ended up here by following an exception call stack, here's what's
+    // happened.
+    format!("{value}")
+}
+
+/// Its docs.
+#[inline(never)]
+pub fn documented(n: i32) -> i32 {
+    n + 1
+}
+
+/// Its docs,
+/// over two lines.
+#[inline(never)]
+pub fn long(n: i32) -> i32 {
+    n + 2
+}
+
+#[inline]
+pub fn hinted(n: i32) -> i32 {
+    n * 2
+}
+
+#[inline(always)]
+pub fn always(n: i32) -> i32 {
+    n * 3
+}
+
+thread_local! {
+    static GET: fn(i32) -> i32 = |n| n;
+}
+
+#[inline(never)]
+pub fn forwarded(n: i32) -> i32 {
+    GET.with(|get| get(n))
+}
+
+pub fn coerced(value: f64) -> String {
+    test_string_coercion(value)
+}
+
+#[derive(Clone, Copy)]
+pub enum Section {
+    #[cfg_attr(rust_js, rust_js::name = "learn")]
+    Learn,
+}
+
+impl Section {
+    #[inline(never)]
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Section::Learn => "learn",
+        }
+    }
+}
+
+pub fn named(section: Section) -> &'static str {
+    section.as_str()
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("/** @noinline */\nfunction testStringCoercion(value) {\n  // If you ended up here");
+  expect(js).toContain("/**\n * Its docs.\n * @noinline\n */\nexport function documented(n) {");
+  expect(js).toContain("/**\n * Its docs,\n * over two lines.\n * @noinline\n */\nexport function long(n) {");
+  expect(js).toContain("\nexport function hinted(n) {");
+  expect(js).toContain("\nexport function always(n) {");
+  expect(js.match(/@noinline/g)?.length).toBe(5);
+  expect(js).toContain("@noinline */\nexport function forwarded(n) {");
+  // A function giving each variant its own name is called, not its
+  // argument (ADR 0264).
+  expect(js).toContain("  /** @noinline */\n  asStr(section) {");
+  expect(js).toContain("return Section.asStr(section);");
+});

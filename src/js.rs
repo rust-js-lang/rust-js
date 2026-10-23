@@ -194,6 +194,9 @@ pub struct Function {
     pub export: bool,
     /// `async function`: an `async fn` (ADR 0029).
     pub is_async: bool,
+    /// `#[inline(never)]`: written `/** @noinline */` before it, and kept
+    /// out of its callers' place (ADR 0649).
+    pub noinline: bool,
     /// The whole `fn` item, and just its name.
     pub span: Span,
     pub name_span: Span,
@@ -643,6 +646,7 @@ mod tests {
             body: ret(Expr::var("y")),
             export: false,
             is_async: false,
+            noinline: false,
             span: Span::NONE,
             name_span: Span::NONE,
         };
@@ -668,6 +672,7 @@ mod tests {
             body: vec![StmtKind::Const("y".into(), Expr::var("x")).at(Span::NONE)],
             export: false,
             is_async: false,
+            noinline: false,
             span: Span::NONE,
             name_span: Span::NONE,
         };

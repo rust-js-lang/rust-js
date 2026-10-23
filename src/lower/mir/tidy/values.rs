@@ -650,6 +650,7 @@ pub(super) fn named_callbacks(stmts: &mut Vec<Stmt>, callbacks: &HashSet<String>
                 body,
                 export: false,
                 is_async,
+                noinline: false,
                 span: value.span,
                 name_span: span,
             };
