@@ -106,7 +106,7 @@ fn scope_end(stmts: &[Stmt], start: usize) -> Option<usize> {
                 }
             }
             // One made of values, which can't throw, or the run ends.
-            _ if !made_of_values(stmt) => return None,
+            _ if !stmt.only_makes_values() => return None,
             _ => {}
         }
     }
@@ -130,17 +130,6 @@ fn dropped_last(stmt: &Stmt) -> Option<&Stmt> {
 /// A `catch` that only throws on what it caught.
 fn rethrows(handler: &[Stmt], error: &str) -> bool {
     matches!(handler, [Stmt { kind: StmtKind::Throw(Expr { kind: ExprKind::Var(v), .. }), .. }] if v == error)
-}
-
-/// A declaration or an assignment of a value made of values: nothing in it
-/// can throw.
-fn made_of_values(stmt: &Stmt) -> bool {
-    match &stmt.kind {
-        StmtKind::Let(_, None) => true,
-        StmtKind::Const(_, value) | StmtKind::Let(_, Some(value)) => !value.may_throw(),
-        StmtKind::Assign(target, value) => !target.may_throw() && !value.may_throw(),
-        _ => false,
-    }
 }
 
 /// Whether running `stmts` may leave them other than at their end or by a

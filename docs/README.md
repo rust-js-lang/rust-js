@@ -84,7 +84,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0012 Panics throw, via runtime helpers emitted on demand](decisions/0012-panics-and-runtime-helpers.md) *(helpers' place replaced by 0103)*
 - [0013 Fieldless enum variants are strings](decisions/0013-fieldless-enums.md)
 - [0033 Enums with fields are ReScript's tagged objects](decisions/0033-enums-with-fields.md)
-- [0035 JS that throws is a `Result`; `?` returns early](decisions/0035-results-and-throwing-js.md)
+- [0035 JS that throws is a `Result`; `?` returns early](decisions/0035-results-and-throwing-js.md) *(amended by 0637: a `match` of its `Result` is `try` and `catch`)*
 - [0020 Structs are objects, tuples are arrays](decisions/0020-structs-and-tuples.md)
 - [0049 Trait dictionaries, generics, and read-only trait objects](decisions/0049-traits-and-generics.md)
 - [0047 Methods are an object of functions named after their type](decisions/0047-methods.md)
@@ -568,6 +568,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0634 A registered symbol is a `const`, and a `match` of them a `switch`](decisions/0634-a-registered-symbol-is-a-const.md)
 - [0635 A `filter` by truth, then a fallback, is `||`](decisions/0635-a-filter-by-truth-then-a-fallback-is-or.md)
 - [0636 A guarded arm of a `match` of constants is a case](decisions/0636-a-guarded-arm-is-a-case.md)
+- [0637 A `match` of a throwing call's `Result` is `try` and `catch`](decisions/0637-a-match-of-a-throwing-call-is-try-catch.md)
 - [0623 A copy std makes of a `Copy` value is a copy](decisions/0623-a-copy-std-makes-is-a-copy.md)
 - [0436 Every `dyn` that's a pair keeps its value's drop, `dyn Send` too](decisions/0436-every-dyn-keeps-its-drop.md)
 - [0437 A scope's drops on a panic are one `try { .. } finally { .. }`](decisions/0437-a-scopes-drops-are-one-finally.md)

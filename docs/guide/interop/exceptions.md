@@ -172,11 +172,18 @@ pub fn decoded(text: &str) -> String {
         Err(error) => format!("{}: {}", error.name(), error.message()),
     }
 }
+
+pub fn config_length(path: &str) -> Option<usize> {
+    match load_config(path) {
+        Ok(text) => Some(text.trim().len()),
+        Err(_) => None,
+    }
+}
 ```
 
 ```js
 import { loadConfig } from "./config.js";
-import { $try, $unwrapOk } from "@rust-js/runtime";
+import { $byteLen, $trim, $try, $unwrapOk } from "@rust-js/runtime";
 
 export function configOrDefault(path) {
   const result = $try(() => loadConfig(path));
@@ -192,16 +199,31 @@ export function config(path) {
 }
 
 export function decoded(text) {
-  const value = $try(() => decodeURIComponent(text));
-  if (value.TAG === "Ok") {
-    const decoded = value._0;
-    return decoded;
+  try {
+    return decodeURIComponent(text);
+  } catch (error) {
+    return `${error.name}: ${error.message}`;
   }
-  const error = value._0;
-  return `${error.name}: ${error.message}`;
+}
+
+export function configLength(path) {
+  let text;
+  try {
+    text = loadConfig(path);
+  } catch {
+    return;
+  }
+  return $byteLen($trim(text));
 }
 ```
 
+- **A `match` of the `Result` is `try` and `catch`** of the call, the
+  `Err`'s binding the `catch`'s, where its `Err` arm reads the error by
+  that binding alone ([ADR 0637](../../decisions/0637-a-match-of-a-throwing-call-is-try-catch.md)).
+  Only the call is in the `try`, as only it is caught in Rust: what the
+  `Ok` arm does is in it where it can't throw, and after it where it may
+  and the `Err` arm leaves, its value a `let` the `try` sets. Any other
+  use of the `Result` is `$try`'s `{ TAG, _0 }`.
 - **`&JsError` is whatever was thrown**: `message()`, `name()`,
   `cause()` and `stack()` read an `Error`'s; `is_error()` says whether it
   is one, since JS may throw anything. Its `{:?}` is `String(error)`,

@@ -71,6 +71,105 @@ pub fn twice(n: f64) {
   expect(calls).toEqual([-1, -2, -1]);
 });
 
+// ADR 0637: a `match` of a throwing call's `Result` whose `Err` arm reads
+// no error, or binds it, is `try { .. } catch { .. }` of the call, as
+// React's `getComponentNameFromType` writes `try { .. init(payload) .. }
+// catch (x) { return null; }`. Only the call is in the `try`, as only it is
+// in Rust: the `Ok` arm's code is after it, its value a `let` the `try`
+// sets, where it may throw and the `Err` arm leaves; in it, where it can't.
+// Otherwise, `$try`.
+test("a match of a throwing call's Result is try and catch", async () => {
+  const dir = fixture("matched-try");
+  writeFileSync(join(dir, "lib.rs"), `use js::JsError;
+
+#[cfg_attr(rust_js, rust_js::link_name = "globalThis.risky")]
+#[allow(unused_variables)]
+fn risky(n: f64) -> Result<f64, &'static JsError> {
+    unreachable!()
+}
+
+fn checked(n: f64) -> f64 {
+    if n > 100.0 {
+        panic!("too big");
+    }
+    n * 2.0
+}
+
+pub fn returned(n: f64) -> Option<f64> {
+    return match risky(n) {
+        Ok(resolved) => Some(checked(resolved)),
+        Err(_) => None,
+    };
+}
+
+pub fn tail(n: f64) -> Option<f64> {
+    match risky(n) {
+        Ok(v) => Some(checked(v)),
+        Err(_) => None,
+    }
+}
+
+pub fn named(n: f64) -> String {
+    match risky(n) {
+        Ok(v) => format!("{}", checked(v)),
+        Err(error) => error.message(),
+    }
+}
+
+pub fn err_first(n: f64) -> f64 {
+    match risky(n) {
+        Err(_) => -1.0,
+        Ok(v) => checked(v),
+    }
+}
+
+pub fn kept(n: f64) -> f64 {
+    match risky(n) {
+        Ok(v) => v,
+        Err(_) => -1.0,
+    }
+}
+
+pub fn questioned(n: f64) -> Result<f64, &'static JsError> {
+    let v = risky(n)?;
+    Ok(checked(v))
+}
+
+pub fn shared(n: f64) -> f64 {
+    let doubled = match risky(n) {
+        Ok(v) => checked(v),
+        Err(_) => 0.0,
+    };
+    doubled + 1.0
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain(
+    "export function returned(n) {\n  let resolved;\n  try {\n    resolved = globalThis.risky(n);\n  } catch {\n    return;\n  }\n  return checked(resolved);\n}",
+  );
+  expect(js).toContain("export function tail(n) {\n  let v;\n  try {\n    v = globalThis.risky(n);\n  } catch {\n    return;\n  }\n  return checked(v);\n}");
+  expect(js).toContain("  } catch (error) {\n    return error.message;\n  }\n  return $displayF64(checked(v));\n");
+  expect(js).toContain("export function errFirst(n) {\n  let v;\n  try {\n    v = globalThis.risky(n);\n  } catch {\n    return -1;\n  }\n  return checked(v);\n}");
+  expect(js).toContain("export function kept(n) {\n  try {\n    return globalThis.risky(n);\n  } catch {\n    return -1;\n  }\n}");
+  // An `Err` arm that goes on, and an `Ok` arm that may throw; a `Result`
+  // read otherwise, as `?` returns it: `$try`.
+  expect(js).toContain("export function shared(n) {\n  const risky = $try(() => globalThis.risky(n));\n");
+  expect(js).toContain("export function questioned(n) {\n  const result = $try(() => globalThis.risky(n));\n");
+  const lib = await import(join(dir, "lib.js"));
+  (globalThis as any).risky = (n: number) => {
+    if (n < 0) throw new TypeError("negative");
+    return n;
+  };
+  expect([lib.returned(2), lib.returned(-1), lib.tail(3), lib.tail(-1)]).toEqual([4, undefined, 6, undefined]);
+  expect([lib.named(2), lib.named(-1), lib.kept(5), lib.kept(-5), lib.shared(2), lib.shared(-2)]).toEqual(["4", "negative", 5, -1, 5, 1]);
+  // What the `Ok` arm throws isn't the `Err`'s: it's thrown on.
+  expect([lib.errFirst(3), lib.errFirst(-3)]).toEqual([6, -1]);
+  expect(lib.questioned(2)).toEqual({ TAG: "Ok", _0: 4 });
+  expect(lib.questioned(-2)._0).toBeInstanceOf(TypeError);
+  for (const f of [lib.returned, lib.tail, lib.named, lib.errFirst, lib.shared]) expect(() => f(101)).toThrow("too big");
+});
+
 // `set X.y` of a function without a receiver writes a global's property,
 // `process.exitCode = 1`, as `get X.y` reads one.
 test("a binding sets a static property", async () => {

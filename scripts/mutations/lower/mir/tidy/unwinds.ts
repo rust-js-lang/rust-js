@@ -25,7 +25,7 @@ export const mutations: Mutation[] = [
     name: "scope-across-throwing-statement",
     breaks: "a run goes on past a statement that may throw outside any `try`",
     file: "src/lower/mir/tidy/unwinds.rs",
-    find: "            _ if !made_of_values(stmt) => return None,\n",
+    find: "            _ if !stmt.only_makes_values() => return None,\n",
     replace: "",
     tests: panics,
   },

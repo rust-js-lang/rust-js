@@ -700,86 +700,130 @@ fn try_catches(body: &mut Vec<Stmt>) {
             .count();
         let at = i + 1 + declared;
         if at < body.len()
-            && let Some((caught, taken)) = try_catch(&body[i], &body[at], &body[at + 1..])
+            && let Some((caught, taken)) = try_catch(&body[i], &body[at], &body[..i], &body[at + 1..])
         {
-            let span = body[i].span;
-            body.splice(at..i + taken + declared, [caught.at(span)]);
+            body.splice(at..at + 1 + taken, caught);
             body.remove(i);
         }
         i += 1;
     }
 }
 
-/// The `try` of what `made` and `tested`, and the statements of `rest` it
-/// takes, say, with how many statements it is.
-fn try_catch(made: &Stmt, tested: &Stmt, rest: &[Stmt]) -> Option<(StmtKind, usize)> {
+/// A `match` of a JS call's `Result` (ADR 0035), `made`, its `$try`, then
+/// `tested`, the `if` of its `Ok` or its `Err`, and of `rest`, what follows
+/// it: `try { .. } catch { .. }` of the call (ADR 0637), and how many of
+/// `rest` it takes. The `Err` arm reads no error but by its binding, the
+/// `catch`'s. Only the call is in the `try`, as only it is in Rust: what
+/// the `Ok` arm does is too where it can't throw, `try { return f(); }`;
+/// else it's after it, where the `Err` arm leaves, the `Ok`'s value a `let`
+/// the `try` sets, `let v; try { v = f(); } catch { return; } g(v);`.
+/// `before`, what's before it, which that `let` mustn't clash with.
+fn try_catch(made: &Stmt, tested: &Stmt, before: &[Stmt], rest: &[Stmt]) -> Option<(Vec<Stmt>, usize)> {
     let StmtKind::Const(result, value) = &made.kind else {
         return None;
     };
     let call = tried(value)?;
-    let StmtKind::If(test, kept, failed) = &tested.kind else {
+    let StmtKind::If(test, then, otherwise) = &tested.kind else {
         return None;
     };
-    // An `if` that returns, then the one return of the `Err`, ending the
-    // block: the two arms of a `match`, as MIR's lowering leaves them.
-    let (failed, rest, taken) = match (failed, rest) {
-        (Some(failed), _) => (failed.as_slice(), rest, 2),
-        (
-            None,
-            [
-                last @ Stmt {
-                    kind: StmtKind::Return(_),
-                    ..
-                },
-            ],
-        ) => (std::slice::from_ref(last), &[][..], 3),
-        _ => return None,
-    };
-    let ExprKind::Binary(js::Op::Eq, tag, ok) = &test.kind else {
+    let ExprKind::Binary(op @ (js::Op::Eq | js::Op::Ne), tag, variant) = &test.kind else {
         return None;
     };
     let of_result = |e: &Expr, name: &str| {
         matches!(&e.kind, ExprKind::Member(of, field)
         if field == name && matches!(&of.kind, ExprKind::Var(v) if v == result))
     };
-    if !of_result(tag, "TAG")
-        || !matches!(&ok.kind, ExprKind::Str(s) if s == "Ok")
-        || js::mentions_in(failed, result) > 0
-        || js::mentions_in(rest, result) > 0
-    {
+    // Whether the `if` is of the `Ok`: `TAG === "Ok"`, or `!== "Err"`.
+    let of_ok = match &variant.kind {
+        ExprKind::Str(s) if of_result(tag, "TAG") && (s == "Ok" || s == "Err") => (*op == js::Op::Eq) == (s == "Ok"),
+        _ => return None,
+    };
+    // Each arm's statements, and how many of `rest` are one's: an `if`'s
+    // and its `else`'s; or, after an arm that leaves, the other's, `rest`,
+    // which leaves too, where it's the `Err`'s, the `catch`'s.
+    let leaves = |stmts: &[Stmt]| stmts.last().is_some_and(js::ends);
+    let (ok, err, taken): (&[Stmt], &[Stmt], usize) = match (of_ok, otherwise) {
+        (true, Some(otherwise)) => (then, otherwise, 0),
+        (false, Some(otherwise)) => (otherwise, then, 0),
+        (true, None) if !leaves(then) => (then, &[], 0),
+        (true, None) if leaves(rest) => (then, rest, rest.len()),
+        (false, None) if leaves(then) => (rest, then, rest.len()),
+        (false, None) => (&[], then, 0),
+        (true, None) => return None,
+    };
+    let after = &rest[taken..];
+    // Each arm's binding, `const v = result._0;`: the `Ok`'s value, and the
+    // `Err`'s error, the `catch`'s.
+    let bound = |stmts: &[Stmt]| match stmts.first().map(|s| &s.kind) {
+        Some(StmtKind::Const(name, value)) if of_result(value, "_0") => Some(name.clone()),
+        _ => None,
+    };
+    let (value_name, error) = (bound(ok), bound(err));
+    let ok = &ok[usize::from(value_name.is_some())..];
+    let err = &err[usize::from(error.is_some())..];
+    // The `Ok`'s value kept as it is, `return result._0;` or `x =
+    // result._0;`, or its binding's: the call's.
+    let kept = |stmt: &Stmt| -> Option<StmtKind> {
+        let read = |e: &Expr| match &value_name {
+            Some(name) => matches!(&e.kind, ExprKind::Var(v) if v == name),
+            None => of_result(e, "_0"),
+        };
+        match &stmt.kind {
+            StmtKind::Return(Some(e)) if read(e) => Some(StmtKind::Return(Some(call.clone()))),
+            StmtKind::Assign(to, e) if read(e) && matches!(to.kind, ExprKind::Var(_)) => {
+                Some(StmtKind::Assign(to.clone(), call.clone()))
+            }
+            _ => None,
+        }
+    };
+    let held = match ok {
+        [stmt] => kept(stmt).map(|kind| kind.at(stmt.span)),
+        _ => None,
+    };
+    // Nothing else reads the `Result`.
+    let reads = js::mentions_in(ok, result) + js::mentions_in(err, result) + js::mentions_in(after, result);
+    if reads != usize::from(held.is_some() && value_name.is_none()) {
         return None;
     }
-    // The `Ok`'s value kept, as it is: nothing else, which could throw. Its
-    // binding, `const text = result._0;`, read only by that, is the value.
-    let held;
-    let (kept, span) = match kept.as_slice() {
-        [Stmt { kind, span }] => (kind, span),
-        [
-            Stmt {
-                kind: StmtKind::Const(name, value),
-                ..
-            },
-            Stmt { kind, span },
-        ] if of_result(value, "_0") => {
-            let read = |e: &Expr| matches!(&e.kind, ExprKind::Var(v) if v == name);
-            held = match kind {
-                StmtKind::Return(Some(e)) if read(e) => StmtKind::Return(Some(value.clone())),
-                StmtKind::Assign(to, e) if read(e) => StmtKind::Assign(to.clone(), value.clone()),
-                _ => return None,
-            };
-            (&held, span)
-        }
-        _ => return None,
+    let span = made.span;
+    let caught = |tried: Vec<Stmt>| StmtKind::TryCatch(tried, error.clone(), err.to_vec()).at(span);
+    let alone = StmtKind::Expr(call.clone()).at(span);
+    // What can't throw: what makes values, and what leaves with one.
+    let cannot_throw = |stmt: &Stmt| match &stmt.kind {
+        StmtKind::Return(value) => value.as_ref().is_none_or(|v| !v.may_throw()),
+        StmtKind::Break(_) | StmtKind::Continue(_) => true,
+        _ => stmt.only_makes_values(),
     };
-    let body = match kept {
-        StmtKind::Return(Some(e)) if of_result(e, "_0") => StmtKind::Return(Some(call.clone())),
-        // Past an `if` with no `else`, only one that returns.
-        StmtKind::Assign(to, e) if of_result(e, "_0") && matches!(to.kind, ExprKind::Var(_)) && taken == 2 => {
-            StmtKind::Assign(to.clone(), call.clone())
+    if let Some(held) = held {
+        return Some((vec![caught(vec![held])], taken));
+    }
+    // What the `Ok` arm does can't throw: in the `try`.
+    if ok.iter().all(cannot_throw) {
+        let first = match &value_name {
+            Some(name) => StmtKind::Const(name.clone(), call.clone()).at(span),
+            None => alone,
+        };
+        let tried = std::iter::once(first).chain(ok.iter().cloned()).collect();
+        return Some((vec![caught(tried)], taken));
+    }
+    // Else after it, where the `Err` arm leaves, its value set by the `try`:
+    // a `let` of a name nothing else here reads or declares.
+    let unread =
+        |name: &String| js::mentions_in(before, name) + js::mentions_in(err, name) + js::mentions_in(after, name) == 0;
+    if !leaves(err) || !value_name.as_ref().is_none_or(unread) {
+        return None;
+    }
+    let mut out = Vec::new();
+    let tried = match &value_name {
+        Some(name) => {
+            out.push(StmtKind::Let(name.clone(), None).at(span));
+            StmtKind::Assign(Expr::var(name), call.clone()).at(span)
         }
-        _ => return None,
+        None => alone,
     };
-    Some((StmtKind::TryCatch(vec![body.at(*span)], None, failed.to_vec()), taken))
+    out.push(caught(vec![tried]));
+    out.extend(ok.iter().cloned());
+    Some((out, taken))
 }
 
 /// The call `$try(() => call)` tries, of a JS call whose throw is an `Err`

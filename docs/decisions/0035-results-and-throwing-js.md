@@ -1,7 +1,9 @@
 # 0035. JS that throws is a `Result`; `?` returns early
 
 Status: Accepted; amended by [0588](0588-a-binding-throws-by-its-declared-result.md),
-whose binding declared to give a type parameter never says it may throw.
+whose binding declared to give a type parameter never says it may throw;
+by [0637](0637-a-match-of-a-throwing-call-is-try-catch.md): a `match` of
+its `Result` is `try` and `catch` of the call.
 Builds on [0033](0033-enums-with-fields.md), where a `Result` is
 ReScript's `{ TAG: "Ok", _0: v }`.
 

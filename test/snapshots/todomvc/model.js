@@ -65,11 +65,12 @@ const KEY = "todos-rust-js";
 
 /** The todos kept from before, or none. */
 export function load() {
-  const localStorage = $try(() => window.localStorage);
-  if (localStorage.TAG !== "Ok") {
+  let storage;
+  try {
+    storage = window.localStorage;
+  } catch {
     return [];
   }
-  const storage = localStorage._0;
   const json = storage.getItem(KEY);
   if (json != null) {
     const result = $try(() => JSON.parse(json));

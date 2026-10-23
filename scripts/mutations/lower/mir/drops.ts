@@ -22,7 +22,7 @@ export const mutations: Mutation[] = [
     name: "mir-unwind-never-caught",
     breaks: "what may panic is never in a `try`, so nothing is dropped as a panic unwinds",
     file: "src/lower/mir/drops.rs",
-    find: "        if !body.iter().any(may_throw) {\n",
+    find: "        if body.iter().all(Stmt::only_makes_values) {\n",
     replace: "        if true {\n",
     tests: ["test/corpus.test.ts", "-t", "drop|refcell_"],
   },

@@ -387,6 +387,22 @@ pub fn ends(stmt: &Stmt) -> bool {
     }
 }
 
+impl Stmt {
+    /// Whether running this only makes values and assigns them, none of
+    /// which may throw (`Expr::may_throw`): it neither throws nor leaves.
+    /// The one answer of a statement's: what a panic's drops need no
+    /// `catch` of, what a scope's `finally` runs past, what a `try` of a
+    /// throwing call holds.
+    pub fn only_makes_values(&self) -> bool {
+        match &self.kind {
+            StmtKind::Const(_, value) | StmtKind::Let(_, Some(value)) | StmtKind::Expr(value) => !value.may_throw(),
+            StmtKind::Assign(target, value) => !target.may_throw() && !value.may_throw(),
+            StmtKind::Let(_, None) => true,
+            _ => false,
+        }
+    }
+}
+
 /// A `dyn`'s pair, `{ value, impl }`, made of what does nothing: a shared
 /// reference's, which nothing assigns through, so its parts read alike.
 pub fn is_read_pair(props: &[Prop]) -> bool {

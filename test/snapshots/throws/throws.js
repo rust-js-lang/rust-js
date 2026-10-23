@@ -4,17 +4,17 @@ import { $iter, $next, $settle, $try } from "@rust-js/runtime";
 
 /** The numbers' sum, or what `JSON.parse` threw. */
 export function sumJson(json) {
-  const parseNumbers = $try(() => JSON.parse(json));
-  if (parseNumbers.TAG === "Ok") {
-    const numbers = parseNumbers._0;
-    let sum = 0;
-    for (const n of numbers) {
-      sum = (sum + n) >>> 0;
-    }
-    return { TAG: "Ok", _0: sum };
+  let numbers;
+  try {
+    numbers = JSON.parse(json);
+  } catch (e) {
+    return { TAG: "Err", _0: String(e) };
   }
-  const e = parseNumbers._0;
-  return { TAG: "Err", _0: String(e) };
+  let sum = 0;
+  for (const n of numbers) {
+    sum = (sum + n) >>> 0;
+  }
+  return { TAG: "Ok", _0: sum };
 }
 
 /** `?` on a thrown error: it's an `Err` like any other. */
@@ -53,12 +53,12 @@ export function uri(text) {
   const encoded = encodeURIComponent(text);
   const result = $try(() => decodeURIComponent(encoded));
   const decoded = result.TAG === "Err" ? { TAG: "Err", _0: String(result._0) } : result;
-  const decodeUriComponent = $try(() => decodeURIComponent("%E0%A4%A"));
-  if (decodeUriComponent.TAG === "Ok") {
+  try {
+    decodeURIComponent("%E0%A4%A");
     return [encoded, decoded];
+  } catch (e) {
+    return [encoded + " " + String(e), decoded];
   }
-  const e = decodeUriComponent._0;
-  return [encoded + " " + String(e), decoded];
 }
 
 /**

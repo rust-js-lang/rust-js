@@ -626,7 +626,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// declares, it assigns, declared before.
     pub(super) fn unwinding(&mut self, body: Vec<Stmt>, cleanup: Vec<Stmt>, span: js::Span, out: &mut Vec<Stmt>) {
         // What can't throw needs no `catch`: a value made of values.
-        if !body.iter().any(may_throw) {
+        if body.iter().all(Stmt::only_makes_values) {
             out.extend(body);
             return;
         }
@@ -645,17 +645,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let mut handler = cleanup;
         handler.push(StmtKind::Throw(Expr::var(&error)).at(span));
         out.push(StmtKind::TryCatch(inner, Some(error), handler).at(span));
-    }
-}
-
-/// Whether running `stmt` may throw: whether it does anything but make
-/// values and assign them.
-fn may_throw(stmt: &Stmt) -> bool {
-    match &stmt.kind {
-        StmtKind::Const(_, value) | StmtKind::Let(_, Some(value)) | StmtKind::Expr(value) => value.may_throw(),
-        StmtKind::Assign(target, value) => target.may_throw() || value.may_throw(),
-        StmtKind::Let(_, None) => false,
-        _ => true,
     }
 }
 
