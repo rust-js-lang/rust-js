@@ -922,6 +922,20 @@ export function made(class$, name) {
   return new class$(name, 1);
 }
 ```
+- `js::delete(value, key)` is `delete value[key]`, whether it's gone
+  ([ADR 0697](../../decisions/0697-delete-is-jss-delete.md)):
+
+```rust
+pub fn forget(props: &js::Unknown) {
+    js::delete(props, "ref");
+}
+```
+
+```js
+export function forget(props) {
+  delete props.ref;
+}
+```
 - **A function is a value of any shape too**, a function item, a closure,
   a `fn` pointer or a `dyn Fn`: `js::unknown(&f)` is `f`, whose
   property `js::set` writes, here when its module loads, right after it

@@ -124,4 +124,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/lowering-symbols.test.ts", "-t", "a guarded arm of a registered symbol reads no key it doesn't use"],
   },
+  {
+    name: "delete-has-no-effects",
+    breaks: "`delete o.p` does nothing, as what it's of reads, so a pass may drop or move it",
+    file: "src/js/expr_walk.rs",
+    find: "            ExprKind::Unary(op, a) => op.writes() || a.has_effects(),\n",
+    replace: "            ExprKind::Unary(_, a) => a.has_effects(),\n",
+    tests: ["test/js-object.test.ts", "-t", "delete is JS's operator"],
+  },
 ];

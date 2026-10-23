@@ -131,6 +131,7 @@ impl<'a> Cx<'a> {
                     UnaryOp::Not => UnaryOperator::LogicalNot,
                     UnaryOp::BitNot => UnaryOperator::BitwiseNot,
                     UnaryOp::Typeof => UnaryOperator::Typeof,
+                    UnaryOp::Delete => UnaryOperator::Delete,
                 };
                 Expression::new_unary_expression(sp, op, self.expr(arg), b)
             }

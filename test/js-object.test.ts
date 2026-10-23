@@ -420,6 +420,34 @@ pub fn point(x: f64) -> (bool, f64) {
   expect(lib.point(-1)).toEqual([true, 0]);
 });
 
+// ADR 0697: JS's `delete` is the js crate's, of a value of any shape, as
+// TypeScript has it of an `any`'s: `js::delete(o, "p")` is `delete o.p`, a
+// statement where nothing reads whether it's gone.
+test("delete is JS's operator", async () => {
+  const { js, lib, warnings } = await compiled("js-object-delete", `use js::Unknown;
+
+pub fn deleted(o: &Unknown, key: &str) -> (bool, bool) {
+    js::delete(o, "props");
+    let gone = js::delete(o, key);
+    (gone, js::has(o, "props"))
+}
+
+pub fn had(o: &Unknown) -> (bool, bool) {
+    let gone = js::delete(o, "a");
+    let has = js::has(o, "a");
+    (has, gone)
+}
+`);
+  expect(warnings).toEqual([]);
+  expect(js).toContain("delete o.props;\n  const gone = delete o[key];");
+  // Before what's after it, as it's written: it changes what that reads.
+  expect(lib.had({ a: 1 })).toEqual([false, true]);
+  const o: any = { props: 1, kept: 2, gone: 3 };
+  expect(lib.deleted(o, "gone")).toEqual([true, false]);
+  expect(o).toEqual({ kept: 2 });
+  expect(() => lib.deleted(Object.freeze({ props: 1 }), "x")).toThrow(TypeError);
+});
+
 // ADR 0694: TypeScript's `Function` is `&dyn Fn() -> Option<&'static
 // Unknown>`, one form everywhere: called of nothing, what it gives is any
 // value, as `js::Kind::Function` holds it and `Reflect` takes it.

@@ -491,7 +491,7 @@ impl Expr {
                     value.has_effects()
                 }
             }),
-            ExprKind::Unary(_, a) => a.has_effects(),
+            ExprKind::Unary(op, a) => op.writes() || a.has_effects(),
             ExprKind::Binary(_, a, b) => a.has_effects() || b.has_effects(),
             ExprKind::Cond(a, b, c) => a.has_effects() || b.has_effects() || c.has_effects(),
             // A number wrapped to its width, `BigInt.asIntN(64, n)`, a

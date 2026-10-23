@@ -265,6 +265,9 @@ pub(super) enum JsForm {
     /// `new this(..)`: `this` is a JS function, constructed, `js::new`'s
     /// (ADR 0695).
     NewThis,
+    /// `delete []`: `delete this[key]`, an own property gone, `js::delete`'s
+    /// (ADR 0697).
+    Delete,
     /// A JSX element (ADR 0040): `<div>`, `<>`, an imported component like
     /// `<react#StrictMode>`, or `<*>` for the component given first.
     Jsx(String),
@@ -304,6 +307,7 @@ pub(super) fn js_form(tcx: TyCtxt<'_>, def_id: DefId) -> JsForm {
         "this" => return JsForm::This,
         "this()" => return JsForm::CallThis,
         "new this()" => return JsForm::NewThis,
+        "delete []" => return JsForm::Delete,
         "prop" => return JsForm::Prop(None),
         "get []" => return JsForm::GetIndex,
         "in []" => return JsForm::In,

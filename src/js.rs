@@ -594,6 +594,16 @@ pub enum UnaryOp {
     BitNot,
     /// `typeof x`: what an untagged enum's variant is told by (ADR 0214).
     Typeof,
+    /// `delete x.key`: the property gone, `js::delete`'s (ADR 0697).
+    Delete,
+}
+
+impl UnaryOp {
+    /// Whether it changes what it's of, as `delete` does: an expression of
+    /// it is never pure, whatever it's of.
+    pub fn writes(self) -> bool {
+        matches!(self, UnaryOp::Delete)
+    }
 }
 
 #[derive(Clone, Copy, PartialEq)]

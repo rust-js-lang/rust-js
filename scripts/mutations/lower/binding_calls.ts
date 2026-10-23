@@ -218,4 +218,12 @@ export const mutations: Mutation[] = [
     replace: "            (JsForm::NewThis, Some(this)) => Expr::call(this, args),\n",
     tests: ["test/js-object.test.ts", "-t", "new of a function value is JS's new"],
   },
+  {
+    name: "js-delete-read",
+    breaks: "`js::delete(o, key)` is `o[key]`, a read, not `delete o[key]`",
+    file: "src/lower/binding_calls.rs",
+    find: "                Expr::unary(UnaryOp::Delete, keyed(this, args.remove(0)))\n",
+    replace: "                keyed(this, args.remove(0))\n",
+    tests: ["test/js-object.test.ts", "-t", "delete is JS's operator"],
+  },
 ];

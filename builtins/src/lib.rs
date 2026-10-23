@@ -452,6 +452,16 @@ pub fn get<K: PropertyKey + ?Sized>(this: &Unknown, key: &K) -> Option<&'static 
     unreachable!()
 }
 
+/// `delete value[key]`: the object's own property of that name gone, as
+/// JS's `delete` makes it, and whether it is, `false` of one that can't
+/// be, which JS's strict mode throws a `TypeError` of, a panic (ADR 0697).
+/// Of a value of any shape, as TypeScript's `delete` is of an `any`'s.
+#[cfg_attr(rust_js, rust_js::link_name = "delete []")]
+#[allow(unused_variables)]
+pub fn delete<K: PropertyKey + ?Sized>(this: &Unknown, key: &K) -> bool {
+    unreachable!()
+}
+
 /// `new value(...arguments)`: what JS's `new` makes of a function, of a
 /// value of any shape, as TypeScript's `new` is of an `any`'s: a `fn` item,
 /// `js::new(js::unknown(&fake), ())`, or a function JS gives,
