@@ -8,6 +8,7 @@ import {
   $eq,
   $exchange,
   $fill,
+  $iter,
   $next,
   $resize,
   $splitAtMut,
@@ -270,7 +271,7 @@ function lend() {
   }
   let iter;
   try {
-    iter = Iterator.from($chunksMut(d, 2));
+    iter = $iter($chunksMut(d, 2));
   } catch (error) {
     for (const item of d) {
       loudDrop_drop(item);

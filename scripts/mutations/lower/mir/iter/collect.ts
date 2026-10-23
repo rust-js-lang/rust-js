@@ -222,8 +222,8 @@ export const mutations: Mutation[] = [
     name: "rposition-of-user-refused",
     breaks: "`rposition` of the crate's double-ended, exact-sized iterator is refused",
     file: "src/lower/mir/iter/collect.rs",
-    find: "            let back = self.knows_its_back(iter_ty) || self.user_double_ended(iter_ty);\n",
-    replace: "            let back = self.knows_its_back(iter_ty);\n",
+    find: "            let back = made || self.knows_its_back(iter_ty) || self.user_double_ended(iter_ty);\n",
+    replace: "            let back = made || self.knows_its_back(iter_ty);\n",
     tests: ["test/corpus.test.ts", "-t", "^user_iterator_ends.rs$"],
   },
 ];

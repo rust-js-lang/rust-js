@@ -109,3 +109,11 @@ one, and leaned on that copy, copies now: `<[T; N]>::try_from(&v[..])` is
 a part, `$slice`'s copy already, nor of a literal. A lowering test makes
 each, and runs them; mutations copy all of it, alias the array, and copy a
 part twice. Seven corpus cases read the shorter JS.
+
+## Amendment: chunks and windows from their back
+
+`next_back()`, `rev()` and `rposition` of a slice's `chunks`, `windows`,
+`chunks_exact` and `rchunks` were refused, though each is the array of
+them its making makes, a `$iter` of it, which knows its back and its
+length. They're `iterates_items`'s now, an array made where it's made.
+Held by `test/corpus/chunks_from_their_back.rs`.
