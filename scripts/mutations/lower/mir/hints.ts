@@ -262,12 +262,4 @@ export const mutations: Mutation[] = [
     replace: "                let (adt, args, mut variants) = each.next()??;\n                return None;\n",
     tests: ["test/lowering-switches.test.ts", "-t", "a match of what a value is is a switch"],
   },
-  {
-    name: "getters-unseen",
-    breaks: "a binding's read of a property isn't known for one a getter may be, so a chain reads `request.url` in its test and again for its binding",
-    file: "src/lower/mir/hints.rs",
-    find: "                    ty::FnDef(def_id, _) if bindings::reads_a_property(self.tcx, *def_id)))\n",
-    replace: "                    ty::FnDef(def_id, _) if bindings::reads_a_property(self.tcx, *def_id) && false))\n",
-    tests: ["test/lowering-bindings.test.ts", "-t", "a property a let chain tests and binds is read once"],
-  },
 ];

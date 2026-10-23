@@ -43,7 +43,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
         }
         Expr {
-            reads: false,
+            known: js::Known::Nothing,
             kind: js::ExprKind::Object(flat),
             span: made.span,
         }

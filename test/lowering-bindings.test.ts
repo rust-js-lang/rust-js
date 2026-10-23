@@ -1124,6 +1124,43 @@ pub fn timed() -> bool {
   expect([lib.tooled(), lib.timed()]).toEqual([false, true]);
 });
 
+// ADR 0672: a `get x` binding's read is one a getter may answer, as
+// `js::get`'s is, which the binding's lowering says of the expression it
+// writes (`js::Known::Getter`): a let chain that tests and binds it reads it
+// once.
+test("a get binding's property a let chain tests and binds is read once", async () => {
+  const dir = fixture("get-binding-read-once");
+  writeFileSync(join(dir, "lib.rs"), `#[cfg_attr(rust_js, rust_js::link_name = "get url")]
+#[allow(unused_variables)]
+fn url(this: &js::JsObject) -> Option<String> {
+    unreachable!()
+}
+
+pub fn long_url(page: &js::JsObject, ready: bool) -> String {
+    if ready
+        && let Some(found) = url(page)
+        && found.len() > 3
+    {
+        return found;
+    }
+    String::new()
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const lib = await import(join(dir, "lib.js"));
+  let reads = 0;
+  const page = (url: unknown) => ({
+    get url() {
+      reads += 1;
+      return url;
+    },
+  });
+  expect(lib.longUrl(page("/api/x"), true)).toBe("/api/x");
+  expect(lib.longUrl(page("/a"), true)).toBe("");
+  expect(lib.longUrl(page("/api/x"), false)).toBe("");
+  expect(reads).toBe(2);
+});
+
 // ADR 0672: `js::get(request, "url")` reads the property once, as Rust
 // calls it once, so a getter runs once. Joined into the `if` before it,
 // `request != null && typeof request.url === "string"`, the read a `let`

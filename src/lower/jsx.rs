@@ -627,7 +627,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .map(|(item, &field)| self.shown_if(field, item))
                 .collect();
             return Expr {
-                reads: false,
+                known: js::Known::Nothing,
                 kind: js::ExprKind::Array(items),
                 span: value.span,
             };
@@ -650,7 +650,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             _ => (**test).clone(),
         };
         Expr {
-            reads: false,
+            known: js::Known::Nothing,
             kind: js::ExprKind::Binary(js::Op::And, Box::new(test), shown.clone()),
             span: value.span,
         }

@@ -721,7 +721,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Expr {
                     kind,
                     span: range.span,
-                    reads: false,
+                    known: js::Known::Nothing,
                 },
                 Expr::int(0),
             ],

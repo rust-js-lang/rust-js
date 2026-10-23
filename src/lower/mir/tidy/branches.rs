@@ -219,7 +219,7 @@ pub(super) fn table_read(arms: &[(Option<Expr>, Expr)], names: &[String]) -> Opt
 /// `matches!`'s, is `x = a && b ? t : f;`.
 pub(super) fn branch_values(
     stmts: &mut Vec<Stmt>,
-    (returns, getters): (&[js::Span], &[js::Span]),
+    returns: &[js::Span],
     booleans: &HashSet<String>,
     (result, switches): (&str, &[Switch]),
     continues: &[(js::Span, js::Span)],
@@ -387,7 +387,7 @@ pub(super) fn branch_values(
     } else if let [before @ .., last_if, last] = stmts.as_slice()
         && let StmtKind::Return(Some(_)) = &last.kind
         && written(returns, last.span)
-        && let Some((tests, body)) = returning_chain(std::slice::from_ref(last_if), getters)
+        && let Some((tests, body)) = returning_chain(std::slice::from_ref(last_if))
         // Not `if c { return a; } else { return b; }`'s: a `let … else`'s
         // rest ends where it goes on, not at a `return` the program wrote;
         // nor `if c { continue; } return b;`'s, an `if` the program wrote
@@ -414,7 +414,7 @@ pub(super) fn branch_values(
 /// read that does nothing, written into later tests, as `broken_chain`'s:
 /// each kept, so not a property, which a test would read again
 /// (`bound_into`).
-pub(super) fn returning_chain(stmts: &[Stmt], getters: &[js::Span]) -> Option<(Vec<Expr>, Vec<Stmt>)> {
+pub(super) fn returning_chain(stmts: &[Stmt]) -> Option<(Vec<Expr>, Vec<Stmt>)> {
     let [
         bound @ ..,
         Stmt {
@@ -425,14 +425,14 @@ pub(super) fn returning_chain(stmts: &[Stmt], getters: &[js::Span]) -> Option<(V
     else {
         return None;
     };
-    let (mut tests, body) = match returning_chain(inner, getters) {
+    let (mut tests, body) = match returning_chain(inner) {
         Some(chain) => chain,
         None if inner.last().is_some_and(ends) => (Vec::new(), inner.clone()),
         None => return None,
     };
     tests.insert(0, test.clone());
     for test in &mut tests {
-        *test = bound_into(test, bound, getters, &|_, _| 1)?;
+        *test = bound_into(test, bound, &|_, _| 1)?;
     }
     let mut all = bound.to_vec();
     all.extend(body);
@@ -622,7 +622,7 @@ pub(super) fn negated_bools(e: Expr, booleans: &HashSet<String>) -> Expr {
         kind => Expr::unary(
             UnaryOp::Not,
             Expr {
-                reads: false,
+                known: js::Known::Nothing,
                 kind,
                 span: e.span,
             },
@@ -769,7 +769,7 @@ pub(super) fn or_all(a: Expr, b: Expr) -> Expr {
             Op::Or,
             a,
             Expr {
-                reads: false,
+                known: js::Known::Nothing,
                 kind,
                 span: b.span,
             },

@@ -187,8 +187,9 @@ impl Expr {
             | ExprKind::Import(_)
             | ExprKind::Regex(_) => self.kind.clone(),
         };
+        // The node it was, of new parts: what's known of it is still so.
         Some(Expr {
-            reads: false,
+            known: self.known,
             kind,
             span: self.span,
         })
@@ -259,14 +260,14 @@ impl Expr {
                 let span = self.span;
                 kept.into_iter()
                     .reduce(|a, b| Expr {
-                        reads: false,
+                        known: Known::Nothing,
                         kind: ExprKind::Binary(Op::And, Box::new(a), Box::new(b)),
                         span,
                     })
                     .expect("a part")
             }
             ExprKind::Binary(op @ Op::Or, a, b) => Expr {
-                reads: false,
+                known: Known::Nothing,
                 kind: ExprKind::Binary(*op, Box::new(a.as_test(changed)), Box::new(b.as_test(changed))),
                 span: self.span,
             },

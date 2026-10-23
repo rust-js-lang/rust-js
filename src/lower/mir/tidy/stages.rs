@@ -257,7 +257,7 @@ pub(super) const STAGES: &[Stage] = &[
             // A chain's tests, where each is read in place now: `if (a) { if
             // (f(a)) { .. } }`, `if (a && f(a))`.
             pass("and tests", |b, h| {
-                bottom_up(b, &mut |s| and_tests(s, &h.written.conditions, &h.written.getters))
+                bottom_up(b, &mut |s| and_tests(s, &h.written.conditions))
             }),
             // An `if` the program wrote with an `else`, as it wrote it, its
             // tests one now; and the `continue`s its branches end with, which
@@ -455,13 +455,7 @@ const JUMPS: &[Pass] = &[
 fn branch_values_of(body: &mut Vec<Stmt>, hints: &Hints) {
     let made = (hints.result, hints.written.switches.as_slice());
     bottom_up(body, &mut |s| {
-        branch_values(
-            s,
-            (hints.returns, &hints.written.getters),
-            hints.booleans,
-            made,
-            &hints.written.continues,
-        )
+        branch_values(s, hints.returns, hints.booleans, made, &hints.written.continues)
     });
 }
 

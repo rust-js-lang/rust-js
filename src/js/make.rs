@@ -8,15 +8,24 @@ impl Expr {
         Expr {
             kind,
             span: Span::NONE,
-            reads: false,
+            known: Known::Nothing,
         }
     }
 
     /// `of.method(args)`, of a `str` or a slice `of` as Rust's types tell.
     pub fn read(of: Expr, method: &str, args: Vec<Expr>) -> Expr {
         Expr {
-            reads: true,
+            known: Known::Read,
             ..Expr::call(Expr::member(of, method), args)
+        }
+    }
+
+    /// This, a binding's read of a property, which a getter may answer
+    /// (`Known::Getter`).
+    pub fn answered_by_a_getter(self) -> Expr {
+        Expr {
+            known: Known::Getter,
+            ..self
         }
     }
 
@@ -408,7 +417,7 @@ impl Expr {
             kind => Expr::unary(
                 UnaryOp::Not,
                 Expr {
-                    reads: false,
+                    known: self.known,
                     kind,
                     span: self.span,
                 },
@@ -438,7 +447,7 @@ impl Expr {
                 _ => Op::LooseEq,
             };
             return Expr {
-                reads: false,
+                known: Known::Nothing,
                 kind: ExprKind::Binary(ne, a.clone(), b.clone()),
                 span: arg.span,
             };

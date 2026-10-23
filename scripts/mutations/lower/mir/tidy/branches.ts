@@ -78,8 +78,8 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-let-else-return-nested",
     breaks: "a `let … else { return f }` stays `if (a) { if (b) { return t; } } return f;`, not a guard",
     file: "src/lower/mir/tidy/branches.rs",
-    find: "        && let Some((tests, body)) = returning_chain(std::slice::from_ref(last_if), getters)\n",
-    replace: "        && let Some((tests, body)) = returning_chain(std::slice::from_ref(last_if), getters).filter(|_| false)\n",
+    find: "        && let Some((tests, body)) = returning_chain(std::slice::from_ref(last_if))\n",
+    replace: "        && let Some((tests, body)) = returning_chain(std::slice::from_ref(last_if)).filter(|_| false)\n",
     tests: ["test/lowering-matches.test.ts", "-t", "let-else from MIR is a guard"],
   },
   {

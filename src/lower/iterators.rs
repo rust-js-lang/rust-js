@@ -414,7 +414,7 @@ pub(super) fn from_iterator(e: Expr) -> Result<Expr, Expr> {
             Ok(args.pop().expect("one"))
         }
         kind => Err(Expr {
-            reads: false,
+            known: js::Known::Nothing,
             kind,
             span: e.span,
         }),
@@ -479,7 +479,7 @@ pub(super) fn iterated(e: Expr) -> Expr {
             args.pop().expect("one")
         }
         kind => Expr {
-            reads: false,
+            known: js::Known::Nothing,
             kind,
             span: e.span,
         },

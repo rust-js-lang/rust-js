@@ -91,7 +91,7 @@ pub(in crate::lower) fn passed_on(f: &Expr, unread: bool) -> Option<Expr> {
             .zip(&names)
             .all(|(a, n)| matches!(&a.kind, js::ExprKind::Var(v) if v == n));
     passed.then(|| Expr {
-        reads: false,
+        known: js::Known::Nothing,
         kind: js::ExprKind::Var(g.clone()),
         span: f.span,
     })

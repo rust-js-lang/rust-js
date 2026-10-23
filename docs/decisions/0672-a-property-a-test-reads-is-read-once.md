@@ -155,3 +155,25 @@ nothing, `let Some(Kind::String(_)) = js::get(request, "url")..`, is still
 - The mutations `bound-property-read-twice`, `getters-unseen` and
   `bound-rust-data-a-getter`, which `test/lowering-loops.test.ts`'s
   "if-let chains and loops from MIR read as written" holds.
+
+## Amendment: the read says it's a getter's, not where it's written
+
+Which read a getter may answer was told by where the program calls the
+binding: the hints carried each such call's span, `Written::getters`,
+and `bound_into` asked whether a property read's span lay in one. So a
+pass that made a read anew had to keep its span for the read to stay
+protected, a fact carried by where code came from (a review,
+2026-10-24).
+
+- **The expression says it**: `js::Expr::known`, `Known::Getter`, set where
+  the binding's lowering writes the read, `get x`, `get X.y` and `get []`
+  (`binding_calls.rs`, `answered_by_a_getter`). `bound_into` asks the
+  expression; `Written::getters` and `bindings::reads_a_property` are gone.
+- **One field for what an owner knows of an expression**: `Known` takes
+  the place of `Expr::reads`, the `str` or slice method's call that only
+  reads, `Known::Read`, so there aren't two. What's rebuilt of new parts,
+  `substitute`'s and `negated_test`'s, keeps it, where `reads` was lost.
+- The JS is the same, byte for byte. `test/lowering-bindings.test.ts`'s
+  "a get binding's property a let chain tests and binds is read once"
+  holds `get x`'s, with the mutation `get-getter-unseen`; `getters-unseen`
+  holds `js::get`'s.

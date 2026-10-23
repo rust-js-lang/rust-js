@@ -15,7 +15,7 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-and-tests-off",
     breaks: "`if (a) { if (b) { s } }` of one condition stays nested, not `if (a && b)`",
     file: "src/lower/mir/tidy/stages.rs",
-    find: "            pass(\"and tests\", |b, h| {\n                bottom_up(b, &mut |s| and_tests(s, &h.written.conditions, &h.written.getters))\n            }),\n",
+    find: "            pass(\"and tests\", |b, h| {\n                bottom_up(b, &mut |s| and_tests(s, &h.written.conditions))\n            }),\n",
     replace: "",
     tests: ["test/lowering-branches.test.ts", "test/lowering-loops.test.ts", "-t", "if-let chains and loops from MIR|a let chain from MIR is one test"],
   },

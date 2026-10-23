@@ -288,7 +288,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         span,
                         ..
                     } => Expr {
-                        reads: false,
+                        known: js::Known::Nothing,
                         kind: js::ExprKind::Cond(Box::new(present), value, none),
                         span,
                     },

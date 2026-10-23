@@ -17,9 +17,6 @@ pub(super) struct Written {
     pub elses: Vec<(js::Span, js::Span, js::Span)>,
     /// Each `&&` or `||` the program wrote.
     pub logicals: Vec<js::Span>,
-    /// Each read of a property by a binding, `js::get(request, "url")`,
-    /// which a getter may be: read as often as it's called (ADR 0672).
-    pub getters: Vec<js::Span>,
     /// Each `if` of a `continue`, alone or ending what it does: where its
     /// condition is, and where the `continue` is, which its comment is
     /// before (ADR 0684).
@@ -174,14 +171,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .filter(|e| matches!(e.kind, thir::ExprKind::LogicalOp { .. }))
             .map(|e| self.js_span(e.span))
             .collect();
-        // Where each call of a binding that reads a property is.
-        let getters: Vec<js::Span> = (self.frame.thir.exprs.iter())
-            .filter(|e| {
-                matches!(e.kind, thir::ExprKind::Call { fun, .. } if matches!(self.frame.thir[fun].ty.kind(),
-                    ty::FnDef(def_id, _) if bindings::reads_a_property(self.tcx, *def_id)))
-            })
-            .map(|e| self.js_span(e.span))
-            .collect();
         // Where each `if` the program wrote of a `continue` tests: one alone,
         // or one that ends what it does.
         let continues: Vec<(js::Span, js::Span)> = (self.frame.thir.exprs.iter())
@@ -258,7 +247,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             conditions,
             elses,
             logicals,
-            getters,
             continues,
             loops,
             switches,

@@ -6,8 +6,8 @@ export const mutations: Mutation[] = [
     name: "static-getter-call-unsupported",
     breaks: "a call of a `get X.y` binding without a receiver, a class's static property, is rejected",
     file: "src/lower/binding_calls.rs",
-    find: "            (JsForm::Get(name), None) if args.is_empty() => self.js_ref(&name).or_at(fun_span),",
-    replace: "            (JsForm::Get(name), None) if false => self.js_ref(&name).or_at(fun_span),",
+    find: "            (JsForm::Get(name), None) if args.is_empty() => self.js_ref(&name).or_at(fun_span).answered_by_a_getter(),",
+    replace: "            (JsForm::Get(name), None) if false => self.js_ref(&name).or_at(fun_span).answered_by_a_getter(),",
     tests: ["test/lowering-bindings.test.ts", "-t", "a binding reads a static property"],
   },
   {
@@ -209,5 +209,21 @@ export const mutations: Mutation[] = [
     find: "        if self.takes_rest(id) {\n",
     replace: "        if false {\n",
     tests: ["test/rest-parameters.test.ts", "-t", "refused: imported"],
+  },
+  {
+    name: "getters-unseen",
+    breaks: "a binding's read of a property isn't known for one a getter may be, so a chain reads `request.url` in its test and again for its binding",
+    file: "src/lower/binding_calls.rs",
+    find: "keyed(this, args.remove(0)).answered_by_a_getter(),",
+    replace: "keyed(this, args.remove(0)),",
+    tests: ["test/lowering-bindings.test.ts", "-t", "a property a let chain tests and binds is read once"],
+  },
+  {
+    name: "get-getter-unseen",
+    breaks: "a `get x` binding's read isn't said to be one a getter may answer, so a let chain reads it twice",
+    file: "src/lower/binding_calls.rs",
+    find: "                Expr::member(this, name).answered_by_a_getter()\n",
+    replace: "                Expr::member(this, name)\n",
+    tests: ["test/lowering-bindings.test.ts", "-t", "get binding's property a let chain"],
   },
 ];
