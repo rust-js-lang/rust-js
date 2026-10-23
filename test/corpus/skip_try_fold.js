@@ -14,6 +14,7 @@ import {
   $lazyTakeWhile,
   $lent,
   $next,
+  $nth,
   $position,
   $tryFoldOk,
   $tryFoldSome,
@@ -112,21 +113,21 @@ function main() {
       },
     )}`,
   );
-  const value = $lent(
-    $iterator(
-      c(),
-      countIterator_next,
-      false,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      countIterator_nth,
-    ).drop(2),
-  )
-    .drop(1)
-    .take(1)
-    .toArray()[0];
+  const value = $nth(
+    $lent(
+      $iterator(
+        c(),
+        countIterator_next,
+        false,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        countIterator_nth,
+      ).drop(2),
+    ),
+    1,
+  );
   console.log(`${value == null ? "None" : `Some(${value})`}`);
   console.log(
     `${$lent($iterator(c(), countIterator_next, false, undefined, undefined, undefined, undefined, countIterator_nth).drop(2)).some((x) => x > 5)}`,

@@ -100,6 +100,7 @@ helpers! {
     Iter,
     Next,
     NextSome,
+    Nth,
     NextBack,
     BackSteps,
     RangeLen,
@@ -877,6 +878,7 @@ impl Helper {
             Helper::Next => include_str!("runtime/next.js"),
             // Of a generic `T`'s: a `Some` that looks like `None` is boxed (ADR 0051).
             Helper::NextSome => include_str!("runtime/next_some.js"),
+            Helper::Nth => include_str!("runtime/nth.js"),
             // `it.next_back()` of one that knows where it is: its last item left.
             Helper::NextBack => include_str!("runtime/next_back.js"),
             Helper::BackSteps => include_str!("runtime/back_steps.js"),

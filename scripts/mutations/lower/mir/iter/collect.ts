@@ -242,4 +242,12 @@ export const mutations: Mutation[] = [
     replace: "            || output.is_unit()\n            || self.is_vec_like(output)\n",
     tests: ["test/corpus.test.ts", "-t", "^own_fold_and_nth.rs$"],
   },
+  {
+    name: "by-fold-ignores-own-nth",
+    breaks: "what takes by fold asks a skip's nth(n - 1)",
+    file: "src/lower/mir/iter/collect.rs",
+    find: "        match recognition.folds_its_own(iter_ty) || recognition.folds_by_its_own_nth(iter_ty) {",
+    replace: "        match recognition.folds_its_own(iter_ty) {",
+    tests: ["test/corpus.test.ts", "-t", "^own_nth_through_adapters.rs$"],
+  },
 ];

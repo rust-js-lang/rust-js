@@ -1267,6 +1267,17 @@ export class $Steps extends Iterator {
       },
       () => this.return(),
     );
+    // Its `nth(k)`, std's: its source's, where it has more than `k` left;
+    // else its source's past what it has left, and done.
+    taken.nth = (k) => {
+      if (n > k) {
+        n -= k + 1;
+        return this.nth(k);
+      }
+      if (n > 0) this.nth(n - 1);
+      n = 0;
+      return this.return();
+    };
     // Its `try_fold`, std's: its source's, stopped once it's taken `n`.
     taken.tryFold = (init, g, broke) => {
       if (n === 0) return init;
@@ -1773,6 +1784,19 @@ export function $nextSome(it) {
   return step.done ? undefined : $some(step.value);
 }
 
+// `it.nth(k)` of an iterator whose `nth` is its own, the crate's or std's
+// adapter's (#182): its item, or `undefined` for `None`, as `$next`'s.
+export function $nth(it, k) {
+  const step = it.nth(k);
+  return step.done ? undefined : step.value;
+}
+
+// `it.nth(k)` of items that look like `None`: its `Some` boxed (ADR 0051).
+export function $nthSome(it, k) {
+  const step = it.nth(k);
+  return step.done ? undefined : $some(step.value);
+}
+
 // `next_back()` of a JS iterator that knows its back, a `$iter` or a
 // `$iterator` given its `nextBack`: Rust's `Option` of its last item.
 export function $nextBack(it) {
@@ -1863,7 +1887,9 @@ export function $chainEnds(a, b) {
 // `it.step_by(step)`, as Rust's `StepBy` steps: its first item, then
 // each `step`th, a skip stopped by a `None`, which it gives, and stepped on
 // after, as std's `nth` is; each passed over dropped, `drop`, where items
-// have a destructor (ADR 0465). Closing it closes its source.
+// have a destructor (ADR 0465). Closing it closes its source. Its `nth`,
+// `fold` and `tryFold` are std's: its first item its source's `next`, then
+// each its source's `nth` (#182).
 export function $stepBy(it, step, drop) {
   const skip = (k, by) => {
     // From the front, its source's `nth`, as std's `StepBy` steps it, the
@@ -1886,6 +1912,32 @@ export function $stepBy(it, step, drop) {
   );
   stepped.first = true;
   stepped.skip = skip;
+  stepped.nth = (n) => {
+    if (stepped.first) {
+      stepped.first = false;
+      const head = it.next();
+      if (n === 0) return head;
+      if (!head.done) drop?.(head.value);
+      n -= 1;
+    }
+    return skip((n + 1) * step - 1, "next");
+  };
+  stepped.tryFold = (init, f, broke) => {
+    let folded = init;
+    if (stepped.first) {
+      stepped.first = false;
+      const head = it.next();
+      if (head.done) return folded;
+      folded = f(folded, head.value);
+      if (broke(folded)) return folded;
+    }
+    for (let at = skip(step - 1, "next"); !at.done; at = skip(step - 1, "next")) {
+      folded = f(folded, at.value);
+      if (broke(folded)) return folded;
+    }
+    return folded;
+  };
+  stepped.fold = (init, f) => stepped.tryFold(init, f, () => false);
   return stepped;
 }
 

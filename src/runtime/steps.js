@@ -185,6 +185,17 @@ class $Steps extends Iterator {
       },
       () => this.return(),
     );
+    // Its `nth(k)`, std's: its source's, where it has more than `k` left;
+    // else its source's past what it has left, and done.
+    taken.nth = (k) => {
+      if (n > k) {
+        n -= k + 1;
+        return this.nth(k);
+      }
+      if (n > 0) this.nth(n - 1);
+      n = 0;
+      return this.return();
+    };
     // Its `try_fold`, std's: its source's, stopped once it's taken `n`.
     taken.tryFold = (init, g, broke) => {
       if (n === 0) return init;

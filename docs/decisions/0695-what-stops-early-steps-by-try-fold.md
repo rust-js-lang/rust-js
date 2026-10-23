@@ -1,4 +1,4 @@
-# 0695. What stops early steps by `try_fold`, as std's adapters route it
+# 0695. What stops early steps by `try_fold`, and `nth` is passed on, as std's adapters route them
 
 Status: Accepted. Amends [0687](0687-a-consumer-steps-its-iterator-as-std-does.md)
 and [0690](0690-an-iterator-given-as-it-is-folds-by-its-own-fold.md), whose
@@ -58,18 +58,30 @@ it, and each adapter passes it on as std's does.**
 - **`eq`'s other side** is `as_js_iterator`'s, as `chain`'s and `zip`'s are.
   `js_iterator` gives back what's a JS iterator already, where it wrapped
   it again.
+- **`nth` is passed on as std's is** (#182). `take`'s `nth(k)` is its
+  source's while it has more than `k` left. `$stepBy`'s `nth`, `fold` and
+  `tryFold` take its first item by its source's `next`, then each by its
+  `nth`. Where std's `nth` reaches the crate's own,
+  `Recognition::nths_its_own` (of it, through a `&mut`, a `skip`, a `take`
+  and a `step_by`), `it.nth(k)` is `$nth(it, k)`, as `it.next()` is
+  `$next(it)`, where it was `it.drop(k).take(1)`, a `skip`'s `next`.
+- **What takes by `fold`** is given `$folded(it)` where its fold asks an
+  `nth` that's the crate's own, `folds_by_its_own_nth` (a `skip`'s and a
+  `step_by`'s, through each adapter whose fold is its source's), as where
+  it reaches the crate's own `fold`: `last`, and `collect` into a `String`
+  or a set. Both questions walk one list, `folded_sources`.
 
 ## Consequences
 
-- Held by `test/corpus/skip_try_fold.rs`, against native Rust, and by the
+- Held by `test/corpus/skip_try_fold.rs` and
+  `test/corpus/own_nth_through_adapters.rs`, against native Rust, and by the
   mutations of each file changed.
 - These still step by `next` (#182):
   - a `peekable()` and a `fuse()`, std's bodies compiled (ADR 0561), whose
     dictionary has no `try_fold`;
   - `flatten` and a `flat_map` of what isn't a `$Steps`, which are JS's
     own `flatMap`;
-  - and std's `nth` of an `enumerate`, a `take`, a `fuse`, a `peekable`, a
-    `step_by`'s first step, and `skip`'s `last`, which pass `nth` to their
-    source.
+  - and std's `nth` of an `enumerate`, a `fuse` and a `peekable`, which
+    pass it to their source.
 
   Each differs only where an iterator writes its own `nth`.

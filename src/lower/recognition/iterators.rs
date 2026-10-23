@@ -349,17 +349,64 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         if self.is_user_iterator(ty) {
             return !ty.is_ref() && self.own_iterator_method(ty, "fold").is_some();
         }
-        let ty::Adt(adt, args) = ty.kind() else { return false };
-        let path = std_path(self.tcx, adt.did());
-        let sources = match path.strip_prefix("std::iter::") {
-            Some("Chain") => 2,
-            Some(
-                "Map" | "Filter" | "FilterMap" | "Enumerate" | "Inspect" | "Skip" | "SkipWhile" | "Copied" | "Cloned"
-                | "Fuse" | "Peekable" | "FlatMap" | "Flatten",
-            ) => 1,
-            _ => 0,
+        self.folded_sources(ty).any(|source| self.folds_its_own(source))
+    }
+
+    /// Whether std's `fold` of a `ty`, an iterator, asks an `nth` that
+    /// reaches the crate's own (#182): a `skip`'s, its source's `nth(n -
+    /// 1)`, and a `step_by`'s, each step its source's `nth`; and each
+    /// adapter's whose `fold` is its source's, of its sources.
+    pub(in crate::lower) fn folds_by_its_own_nth(&self, ty: Ty<'tcx>) -> bool {
+        let ty = self.reveal(ty);
+        if let ty::Adt(adt, args) = ty.kind()
+            && matches!(
+                std_path(self.tcx, adt.did()).as_str(),
+                "std::iter::Skip" | "std::iter::StepBy"
+            )
+            && args.types().next().is_some_and(|source| self.nths_its_own(source))
+        {
+            return true;
+        }
+        self.folded_sources(ty).any(|source| self.folds_by_its_own_nth(source))
+    }
+
+    /// What std's `fold` of a `ty`, a std adapter, folds by: of each whose
+    /// `fold` is its source's, its sources; none of another.
+    fn folded_sources(&self, ty: Ty<'tcx>) -> impl Iterator<Item = Ty<'tcx>> + 'tcx {
+        let (sources, args) = match ty.kind() {
+            ty::Adt(adt, args) => {
+                let sources = match std_path(self.tcx, adt.did()).strip_prefix("std::iter::") {
+                    Some("Chain") => 2,
+                    Some(
+                        "Map" | "Filter" | "FilterMap" | "Enumerate" | "Inspect" | "Skip" | "SkipWhile" | "Copied"
+                        | "Cloned" | "Fuse" | "Peekable" | "FlatMap" | "Flatten",
+                    ) => 1,
+                    _ => 0,
+                };
+                (sources, Some(*args))
+            }
+            _ => (0, None),
         };
-        args.types().take(sources).any(|source| self.folds_its_own(source))
+        args.into_iter().flat_map(|args| args.types()).take(sources)
+    }
+
+    /// Whether std's `nth` of a `ty`, an iterator, reaches the `nth` the
+    /// impl of a crate's iterator writes (#182): of that iterator, through a
+    /// `&mut` of it, and of each adapter whose `nth` is its source's and
+    /// whose `$Steps` has it, `skip`'s, `take`'s and `step_by`'s.
+    pub(in crate::lower) fn nths_its_own(&self, ty: Ty<'tcx>) -> bool {
+        let ty = self.reveal(ty);
+        if let ty::Ref(_, inner, ty::Mutability::Mut) = ty.kind() {
+            return self.nths_its_own(*inner);
+        }
+        if self.is_user_iterator(ty) {
+            return self.own_iterator_method(ty, "nth").is_some();
+        }
+        let ty::Adt(adt, args) = ty.kind() else { return false };
+        matches!(
+            std_path(self.tcx, adt.did()).strip_prefix("std::iter::"),
+            Some("Skip" | "Take" | "StepBy")
+        ) && args.types().next().is_some_and(|source| self.nths_its_own(source))
     }
 
     /// What an iterator of type `iterator` gives, its `Item`, normalized:

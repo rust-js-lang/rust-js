@@ -138,10 +138,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// `it`, an iterator of type `iter_ty`, as a consumer std routes through
-    /// `fold` takes it: where that reaches the crate's own, `$folded(it)`,
-    /// its items as that gives them (#162); else `it`.
+    /// `fold` takes it: where that reaches the crate's own `fold` (#162), or
+    /// asks its `nth`, as a `skip`'s and a `step_by`'s does (#182),
+    /// `$folded(it)`, its items as that gives them; else `it`.
     pub(in crate::lower) fn by_its_fold(&self, it: Expr, iter_ty: Ty<'tcx>) -> Expr {
-        match self.recognition().folds_its_own(iter_ty) {
+        let recognition = self.recognition();
+        match recognition.folds_its_own(iter_ty) || recognition.folds_by_its_own_nth(iter_ty) {
             true => Expr::call_helper("$folded", vec![it]),
             false => it,
         }

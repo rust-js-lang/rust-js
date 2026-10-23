@@ -63,8 +63,8 @@ export const mutations: Mutation[] = [
     name: "steps-drop-steps",
     breaks: "`skip(n)` steps its source by `next`, not by its own `nth`",
     file: "src/runtime/steps.js",
-    find: "        return this.nth(k);\n",
-    replace: "        for (let j = 0; j < k; j++) if (this.next().done) return { done: true, value: undefined };\n        return this.next();\n",
+    find: "        n = 0;\n        return this.nth(k);\n",
+    replace: "        n = 0;\n        for (let j = 0; j < k; j++) if (this.next().done) return { done: true, value: undefined };\n        return this.next();\n",
     tests: ["test/corpus.test.ts", "-t", "^own_fold_and_nth.rs$"],
   },
   {
@@ -170,5 +170,21 @@ export const mutations: Mutation[] = [
     find: "      if (broke(folded)) return folded;\n    }\n    return folded;\n  }\n  some(",
     replace: "    }\n    return folded;\n  }\n  some(",
     tests: ["test/corpus.test.ts", "-t", "skip_try_fold"],
+  },
+  {
+    name: "take-nth-by-next",
+    breaks: "take's nth is its source's",
+    file: "src/runtime/steps.js",
+    find: "    taken.nth = (k) => {",
+    replace: "    taken.nthUnused = (k) => {",
+    tests: ["test/corpus.test.ts", "-t", "^own_nth_through_adapters.rs$"],
+  },
+  {
+    name: "take-nth-past-end-unasked",
+    breaks: "take's nth past what's left asks its source's nth(n - 1)",
+    file: "src/runtime/steps.js",
+    find: "      if (n > 0) this.nth(n - 1);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^own_nth_through_adapters.rs$"],
   },
 ];
