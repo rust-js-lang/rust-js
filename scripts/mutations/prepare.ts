@@ -147,6 +147,22 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-bindings.test.ts", "-t", "a match of a throwing call"],
   },
   {
+    name: "threw-kept-as-helper",
+    breaks: "whether a JS call threw, returned, is `return $try(() => f()).TAG !== \"Ok\";`, not `try { f(); return false; } catch { return true; }`",
+    file: "src/prepare.rs",
+    find: "            && let Some((call, of_throw)) = threw(e)\n",
+    replace: "            && let Some((call, of_throw)) = threw(e).filter(|_| false)\n",
+    tests: ["test/bindings.test.ts", "-t", "concat_text of any value"],
+  },
+  {
+    name: "threw-the-other-way",
+    breaks: "`is_err()` is `try { f(); return true; } catch { return false; }`, true where it didn't throw",
+    file: "src/prepare.rs",
+    find: "    Some((tried(of)?, (*op == js::Op::Eq) == (s == \"Err\")))\n",
+    replace: "    Some((tried(of)?, (*op == js::Op::Eq) == (s == \"Ok\")))\n",
+    tests: ["test/bindings.test.ts", "-t", "concat_text of any value"],
+  },
+  {
     name: "coalescing-if",
     breaks: "`if (SEEN == null) { SEEN = n; }`, not `SEEN ??= n`",
     file: "src/prepare.rs",

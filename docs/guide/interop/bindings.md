@@ -338,6 +338,11 @@ pub fn circle(radius: f64) -> &'static Circle {
 A module's `#` goes with the forms that aren't of a value: a function, `new`,
 `get` of a static. A method of a module, `this` and `"pkg#f"`, is an error.
 
+`js::concat_text` is `value + ""`: of text or a number, its `String`; of a
+value of any shape, a `Result`, as `+` throws of a symbol and of an object
+whose `valueOf` throws (ADR 0639). A `match` of it, or its `is_err()`, is
+JS's `try`:
+
 ```rust
 use js::Unknown;
 
@@ -346,8 +351,15 @@ pub fn draw(meta: &Unknown) -> bool {
         js::set(meta, "drawn", true);
     }
     let scale = js::get(meta, "scale");
-    println!("{}", js::concat_text(scale));
     js::truthy(scale)
+}
+
+pub fn width(n: f64) -> String {
+    js::concat_text(n) + "px"
+}
+
+pub fn will_coercion_throw(value: Option<&Unknown>) -> bool {
+    js::concat_text(value).is_err()
 }
 ```
 
@@ -357,8 +369,20 @@ export function draw(meta) {
     meta.drawn = true;
   }
   const scale = meta.scale;
-  console.log(`${scale + ""}`);
   return !!scale;
+}
+
+export function width(n) {
+  return n + "px";
+}
+
+export function willCoercionThrow(value) {
+  try {
+    value + "";
+    return false;
+  } catch {
+    return true;
+  }
 }
 ```
 

@@ -379,7 +379,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0307 A trait's binding method is read of the value itself](decisions/0307-binding-trait-methods.md)
 - [0308 A function written in a body is that body's](decisions/0308-local-functions.md)
 - [0309 A `match` that only gives a value is one expression](decisions/0309-value-matches.md)
-- [0310 Any value is read as JS reads it](decisions/0310-any-value-as-js-reads-it.md)
+- [0310 Any value is read as JS reads it](decisions/0310-any-value-as-js-reads-it.md) *(amended by 0639: `concat_text` of any value may throw)*
 - [0311 `.flatten()` of a read of items that may be `None` is the read](decisions/0311-flattened-reads.md)
 - [0312 `js::shown` is any value as a template shows it](decisions/0312-shown.md)
 - [0313 Loops, spreads and calls as a person writes them](decisions/0313-console-forms.md)
@@ -568,8 +568,9 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0634 A registered symbol is a `const`, and a `match` of them a `switch`](decisions/0634-a-registered-symbol-is-a-const.md)
 - [0635 A `filter` by truth, then a fallback, is `||`](decisions/0635-a-filter-by-truth-then-a-fallback-is-or.md)
 - [0636 A guarded arm of a `match` of constants is a case](decisions/0636-a-guarded-arm-is-a-case.md)
-- [0637 A `match` of a throwing call's `Result` is `try` and `catch`](decisions/0637-a-match-of-a-throwing-call-is-try-catch.md)
+- [0637 A `match` of a throwing call's `Result` is `try` and `catch`](decisions/0637-a-match-of-a-throwing-call-is-try-catch.md) *(amended by 0639: whether a call threw is `try`)*
 - [0638 A nullable function's call is `null` already](decisions/0638-a-nullable-functions-call-is-null-already.md)
+- [0639 `concat_text` of any value is what may throw; whether a call threw is `try`](decisions/0639-concat-text-of-any-value-may-throw.md)
 - [0623 A copy std makes of a `Copy` value is a copy](decisions/0623-a-copy-std-makes-is-a-copy.md)
 - [0436 Every `dyn` that's a pair keeps its value's drop, `dyn Send` too](decisions/0436-every-dyn-keeps-its-drop.md)
 - [0437 A scope's drops on a panic are one `try { .. } finally { .. }`](decisions/0437-a-scopes-drops-are-one-finally.md)

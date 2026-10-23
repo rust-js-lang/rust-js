@@ -266,14 +266,31 @@ pub unsafe fn cast<T>(this: Option<&Unknown>) -> T {
 /// What JS takes as text where it wants text, which TypeScript's `string`
 /// is given: text, or any value, which JS makes text, `"undefined"` of
 /// `None` (ADR 0310); a number as JS writes it, `1e+21`.
-pub trait ToText {}
+pub trait ToText {
+    /// What [`concat_text`] gives of it: its text, of text or a number; of
+    /// a value of any shape, a `Result`, as JS's `+` throws of a symbol and
+    /// of an object whose `valueOf` throws (ADR 0639).
+    type Text;
+}
 
-impl ToText for &str {}
-impl ToText for &String {}
-impl ToText for String {}
-impl ToText for &Unknown {}
-impl ToText for Option<&Unknown> {}
-impl ToText for f64 {}
+impl ToText for &str {
+    type Text = String;
+}
+impl ToText for &String {
+    type Text = String;
+}
+impl ToText for String {
+    type Text = String;
+}
+impl ToText for &Unknown {
+    type Text = Result<String, &'static JsError>;
+}
+impl ToText for Option<&Unknown> {
+    type Text = Result<String, &'static JsError>;
+}
+impl ToText for f64 {
+    type Text = String;
+}
 
 /// [`parseInt(text, radix)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/parseInt):
 /// the integer `text` starts with, `NaN` of none: `"4x"` is 4, where Rust's
@@ -295,10 +312,12 @@ pub fn parse_float<T: ToText>(text: T) -> f64 {
 
 /// `value + ""`: any value as text, as JS's `+` makes it, `result += value`
 /// say: of an object, by its `valueOf` first, where `String(value)` asks its
-/// `toString`; and it throws of a symbol, which `String` names (ADR 0310).
+/// `toString` (ADR 0310). Of a value of any shape, a `Result`: it throws of
+/// a symbol, which `String` names, and of an object whose `valueOf` throws,
+/// an `Err` (ADR 0639); of text or a number, its text.
 #[cfg_attr(rust_js, rust_js::link_name = "+ \"\"")]
 #[allow(unused_variables)]
-pub fn concat_text<T: ToText>(this: T) -> String {
+pub fn concat_text<T: ToText>(this: T) -> T::Text {
     unreachable!()
 }
 

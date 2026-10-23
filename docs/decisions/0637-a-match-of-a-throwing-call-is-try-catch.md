@@ -2,7 +2,10 @@
 
 Status: Accepted. Amends [0035](0035-results-and-throwing-js.md), whose
 `match` of a binding's `Result` was `$try` and its `TAG`, but for an `Ok`
-arm that only gives the value.
+arm that only gives the value. Amended by
+[0639](0639-concat-text-of-any-value-may-throw.md): whether the call
+threw, returned, `is_err()` or a `match` of `true` and `false`, is `try {
+f(); return false; } catch { return true; }`.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N, nothing the program
 can observe: the call is caught where Rust catches it and nothing else

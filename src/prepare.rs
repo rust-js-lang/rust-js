@@ -690,6 +690,20 @@ fn try_catches(body: &mut Vec<Stmt>) {
             let tried = vec![StmtKind::Expr(call.clone()).at(stmt.span)];
             stmt.kind = StmtKind::TryCatch(tried, None, Vec::new());
         }
+        // Whether it threw, returned, `match f() { Ok(_) => false, Err(_)
+        // => true }` or `f().is_err()`, is `try { f(); return false; }
+        // catch { return true; }` (ADR 0639).
+        if let StmtKind::Return(Some(e)) = &stmt.kind
+            && let Some((call, of_throw)) = threw(e)
+        {
+            let span = stmt.span;
+            let tried = vec![
+                StmtKind::Expr(call.clone()).at(span),
+                StmtKind::Return(Some(Expr::bool(!of_throw))).at(span),
+            ];
+            let caught = vec![StmtKind::Return(Some(Expr::bool(of_throw))).at(span)];
+            stmt.kind = StmtKind::TryCatch(tried, None, caught);
+        }
     }
     let mut i = 0;
     while i + 1 < body.len() {
@@ -824,6 +838,23 @@ fn try_catch(made: &Stmt, tested: &Stmt, before: &[Stmt], rest: &[Stmt]) -> Opti
     out.push(caught(vec![tried]));
     out.extend(ok.iter().cloned());
     Some((out, taken))
+}
+
+/// `$try(() => call).TAG === "Err"`, or `!== "Ok"`: whether a JS call
+/// threw, a `match` of its `Result` that gives `true` of the one and
+/// `false` of the other, or its `is_err()`, `is_ok()`. The call, and the
+/// test's value where it threw (ADR 0639).
+fn threw(e: &Expr) -> Option<(&Expr, bool)> {
+    let ExprKind::Binary(op @ (js::Op::Eq | js::Op::Ne), tag, variant) = &e.kind else {
+        return None;
+    };
+    let (ExprKind::Member(of, field), ExprKind::Str(s)) = (&tag.kind, &variant.kind) else {
+        return None;
+    };
+    if field != "TAG" || (s != "Ok" && s != "Err") {
+        return None;
+    }
+    Some((tried(of)?, (*op == js::Op::Eq) == (s == "Err")))
 }
 
 /// The call `$try(() => call)` tries, of a JS call whose throw is an `Err`

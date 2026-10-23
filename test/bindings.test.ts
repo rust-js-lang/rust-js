@@ -694,7 +694,8 @@ pub fn unescaped(text: &str) -> String {
     reg_exp::replace(text, reg_exp::new("%{2,2}", "g"), "%")
 }
 
-pub fn text_of(value: Option<&Unknown>) -> String {
+// Of any value, what may throw, of a symbol (ADR 0639).
+pub fn text_of(value: Option<&Unknown>) -> Result<String, &'static JsError> {
     js::concat_text(value)
 }
 
@@ -706,7 +707,7 @@ pub fn counted(count: f64, noun: &str) -> String {
     js::concat_text(count) + " " + noun
 }
 
-pub fn anchor(id: Option<&Unknown>) -> String {
+pub fn anchor(id: f64) -> String {
     "#".to_string() + &js::concat_text(id)
 }
 
@@ -734,7 +735,7 @@ pub fn tag_of(value: Option<&Unknown>) -> Result<String, &'static JsError> {
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain('text.replace(pattern, (matched, escaped, _ptn, flag) =>\n    escaped ? matched : `<${flag ?? ""}>`,\n  );');
   expect(js).toContain('return text.replace(/%{2,2}/g, "%");');
-  expect(js).toContain('return value + "";');
+  expect(js).toContain('return $try(() => value + "");');
   // Text joined to it already makes it text, as react.dev writes `right - left + 'px'`.
   expect(js).toContain('return n + "px";');
   expect(js).toContain('return count + " " + noun;');
@@ -746,8 +747,9 @@ pub fn tag_of(value: Option<&Unknown>) -> Result<String, &'static JsError> {
   expect(js).toContain("Object.prototype.toString.call(value)");
   const lib = await import(join(dir, "lib.js"));
   expect([lib.formatted("a %s b %%d"), lib.unescaped("100%% sure")]).toEqual(["a <s> b %%d", "100% sure"]);
-  expect([lib.textOf(undefined), lib.textOf(12), lib.textOf({})]).toEqual(["undefined", "12", "[object Object]"]);
-  expect([lib.px(1.5), lib.px(-0), lib.counted(2, "videos"), lib.anchor("intro"), lib.anchor(undefined)]).toEqual(["1.5px", "0px", "2 videos", "#intro", "#undefined"]);
+  expect([lib.textOf(undefined), lib.textOf(12), lib.textOf({})].map((r) => r._0)).toEqual(["undefined", "12", "[object Object]"]);
+  expect(lib.textOf(Symbol("s")).TAG).toBe("Err");
+  expect([lib.px(1.5), lib.px(-0), lib.counted(2, "videos"), lib.anchor(2), lib.anchor(1e21)]).toEqual(["1.5px", "0px", "2 videos", "#2", "#1e+21"]);
   expect([lib.intOf("42px"), lib.intOf(undefined), lib.floatOf("1e21"), lib.floatOf("x")]).toEqual(["42", "NaN", "1e+21", "NaN"]);
   const cyclic: any = {};
   cyclic.self = cyclic;
@@ -755,6 +757,49 @@ pub fn tag_of(value: Option<&Unknown>) -> Result<String, &'static JsError> {
   expect(lib.jsonOf(cyclic).TAG).toBe("Err");
   expect([lib.kindOf(undefined), lib.kindOf("s"), lib.kindOf(1n)]).toEqual(["undefined", "string", "bigint"]);
   expect([lib.tagOf([]), lib.tagOf(null)]).toEqual([{ TAG: "Ok", _0: "[object Array]" }, { TAG: "Ok", _0: "[object Null]" }]);
+});
+
+// ADR 0639: `value + ""` of a value of any shape may throw, of a symbol or
+// of an object whose `valueOf` throws, so its result is a `Result`, which
+// React's `willCoercionThrow` catches; of a number or text, it's `String`.
+test("concat_text of any value is a Result, which a match catches", async () => {
+  const withJs = ["--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const dir = fixture("concat-text-throws");
+  writeFileSync(join(dir, "lib.rs"), `use js::Unknown;
+
+pub fn will_coercion_throw(value: Option<&Unknown>) -> bool {
+    match js::concat_text(value) {
+        Ok(_) => false,
+        Err(_) => true,
+    }
+}
+
+pub fn throws(value: &Unknown) -> bool {
+    js::concat_text(value).is_err()
+}
+
+pub fn coercible(value: &Unknown) -> bool {
+    js::concat_text(value).is_ok()
+}
+
+pub fn width(n: f64) -> String {
+    js::concat_text(n) + "px"
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('function willCoercionThrow(value) {\n  try {\n    value + "";\n    return false;\n  } catch {\n    return true;\n  }\n}');
+  expect(js).toContain('function throws(value) {\n  try {\n    value + "";\n    return false;\n  } catch {\n    return true;\n  }\n}');
+  expect(js).toContain('function coercible(value) {\n  try {\n    value + "";\n    return true;\n  } catch {\n    return false;\n  }\n}');
+  // Of a number, nothing to catch.
+  expect(js).toContain('return n + "px";');
+  expect(js).not.toContain("$try");
+  const lib = await import(join(dir, "lib.js"));
+  const throwing = { valueOf() { throw new Error("no"); } };
+  const values = [undefined, null, 1, "a", {}, 2n, Symbol("s"), throwing];
+  expect(values.map(lib.willCoercionThrow)).toEqual([false, false, false, false, false, false, true, true]);
+  expect([lib.throws(Symbol("s")), lib.throws(2n), lib.coercible(Symbol("s")), lib.coercible(2n)]).toEqual([true, false, false, true]);
+  expect(lib.width(1.5)).toBe("1.5px");
 });
 
 // `localeCompare`, an `Ordering`, as an Intl collator gives -1, 0 or 1: a
@@ -832,7 +877,7 @@ pub fn formatStr(inputArgs: Vec<Option<&'static Unknown>>) -> Vec<Option<&'stati
                 let mut arg = args.pop_front().flatten();
                 match flag {
                     Some("s") => {
-                        arg = Some(js::unknown_of(js::concat_text(arg)));
+                        arg = Some(js::unknown_of(js::concat_text(arg).unwrap()));
                     }
                     Some("d") | Some("i") => {
                         arg = Some(js::unknown_of(number::to_string(js::parse_int(arg, Some(10)))));

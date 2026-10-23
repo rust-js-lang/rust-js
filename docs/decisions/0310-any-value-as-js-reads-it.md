@@ -1,7 +1,8 @@
 # 0310. Any value is read as JS reads it
 
 Status: Accepted. Extends the js crate (ADR 0102) and its `Unknown` (ADR
-0225).
+0225). Amended by [0639](0639-concat-text-of-any-value-may-throw.md):
+`concat_text` of a value of any shape gives a `Result`, as it may throw.
 
 Case: A ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -61,8 +62,10 @@ $try(() => JSON.stringify(msg, null, 2));
   TypeScript's `string` is given: text, or any value, `None` too.
 - **`value + ""`** is its own binding, `#[link_name = "+ \"\""]`, not
   `String(value)`: `+` asks an object's `valueOf` first and throws of a
-  symbol. **`typeof`** is a link form too, `#[link_name = "typeof"]`, as
-  `instanceof` is.
+  symbol. (Amended by ADR 0639: of a value of any shape it gives a
+  `Result<String, &JsError>`, by `ToText`'s `Text`, a `String` of text
+  and numbers; it gave a `String` of each.) **`typeof`** is a link form
+  too, `#[link_name = "typeof"]`, as `instanceof` is.
 - **Whether a binding may throw is of the call's types**: the instantiated
   signature's `Result`, so `stringify_with` of an `Unknown` runs in a `try`
   and of a `JsonText` doesn't.

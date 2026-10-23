@@ -771,6 +771,12 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### Changed
 
+- **`js::concat_text` of any value is what may throw** (ADR 0639): of an
+  `&Unknown` or an `Option<&Unknown>`, `value + ""` gives `Result<String,
+  &JsError>`, as it throws of a symbol; of text and numbers, a `String`
+  still. Whether a call threw, returned, `is_err()` or a `match` of `true`
+  and `false`, is `try { value + ""; return false; } catch { return true;
+  }`, as React's `willCoercionThrow` writes it.
 - **`Rc::ptr_eq` of an object is its identity** (ADR 0582): of an `Rc` of
   a struct with fields, `a === b`, counting nothing.
 - **A closure called as a statement where it's made is its body** (ADR

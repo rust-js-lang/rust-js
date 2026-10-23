@@ -179,6 +179,10 @@ pub fn config_length(path: &str) -> Option<usize> {
         Err(_) => None,
     }
 }
+
+pub fn has_config(path: &str) -> bool {
+    load_config(path).is_ok()
+}
 ```
 
 ```js
@@ -215,6 +219,15 @@ export function configLength(path) {
   }
   return $byteLen($trim(text));
 }
+
+export function hasConfig(path) {
+  try {
+    loadConfig(path);
+    return true;
+  } catch {
+    return false;
+  }
+}
 ```
 
 - **A `match` of the `Result` is `try` and `catch`** of the call, the
@@ -222,14 +235,18 @@ export function configLength(path) {
   that binding alone ([ADR 0637](../../decisions/0637-a-match-of-a-throwing-call-is-try-catch.md)).
   Only the call is in the `try`, as only it is caught in Rust: what the
   `Ok` arm does is in it where it can't throw, and after it where it may
-  and the `Err` arm leaves, its value a `let` the `try` sets. Any other
-  use of the `Result` is `$try`'s `{ TAG, _0 }`.
+  and the `Err` arm leaves, its value a `let` the `try` sets. Whether it
+  threw, returned, `is_ok()` or `is_err()` or a `match` of `true` and
+  `false`, is `try { f(); return true; } catch { return false; }`
+  ([ADR 0639](../../decisions/0639-concat-text-of-any-value-may-throw.md)).
+  Any other use of the `Result` is `$try`'s `{ TAG, _0 }`.
 - **`&JsError` is whatever was thrown**: `message()`, `name()`,
   `cause()` and `stack()` read an `Error`'s; `is_error()` says whether it
   is one, since JS may throw anything. Its `{:?}` is `String(error)`,
   `TypeError: no file missing`, what an `expect` shows.
 - **The crates say which JS calls may throw.** The `js` crate's
-  `decode_uri_component` and `Json::parse` return a `Result`. webapi's
+  `decode_uri_component` and `Json::parse` return a `Result`, and
+  `concat_text`, `value + ""`, of a value of any shape. webapi's
   call that throws for what a program can't prevent returns one, as
   `window.local_storage()` does where the page may not keep data; one
   that throws only of a misuse, an invalid selector, panics ([ADR 0442](../../decisions/0442-a-web-api-that-may-throw-is-a-result.md)).
