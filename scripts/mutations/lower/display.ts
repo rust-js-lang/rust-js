@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "format-pieces-last-only",
+    breaks: "a format string of `concat!`'s pieces is its last piece alone",
+    file: "src/lower/display.rs",
+    find: "    if pieces.len() == 1 {\n        let (parts, lines) = pieces.pop().expect(\"a piece\");",
+    replace: "    if !pieces.is_empty() {\n        let (parts, lines) = pieces.pop().expect(\"a piece\");",
+    tests: ["test/lowering-strings.test.ts", "-t", "a format string of a concat! is its pieces joined by"],
+  },
+  {
     name: "pretty-always-plain",
     breaks: "`{:#?}` of std's types is plain",
     file: "src/lower/display.rs",

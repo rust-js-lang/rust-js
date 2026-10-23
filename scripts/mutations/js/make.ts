@@ -1,7 +1,33 @@
 // Mutations of src/js/make.rs (ADR 0093).
 import type { Mutation } from "../../mutations";
 
+const pieces = ["test/lowering-strings.test.ts", "-t", "a format string of a concat! is its pieces joined by"];
+
 export const mutations: Mutation[] = [
+  {
+    name: "template-piece-break-at-start",
+    breaks: "a template's piece of `concat!`'s starts at its text's start, not where the one before ends",
+    file: "src/js/make.rs",
+    find: "                    at: last.len(),\n",
+    replace: "                    at: 0,\n",
+    tests: pieces,
+  },
+  {
+    name: "template-pieces-of-text-one-string",
+    breaks: "`concat!`'s pieces of a format string with nothing left to show are one string",
+    file: "src/js/make.rs",
+    find: "            true => Expr::written(strings),\n",
+    replace: "            true => Expr::str(texts.concat()),\n",
+    tests: pieces,
+  },
+  {
+    name: "template-first-piece-lines-dropped",
+    breaks: "the first of a template's `concat!` pieces, written across lines, prints its line breaks as `\\n`",
+    file: "src/js/make.rs",
+    find: "                0 => layout.lines = lines,\n",
+    replace: "                0 => {}\n",
+    tests: pieces,
+  },
   {
     name: "optional-call-any-fallback",
     breaks: "`o != null ? o.m(x) : false` is `o?.m(x)`, nothing where it should be `false`",

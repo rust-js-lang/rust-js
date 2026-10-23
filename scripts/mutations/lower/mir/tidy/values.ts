@@ -3,6 +3,22 @@ import type { Mutation } from "../../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "applied-template-breaks-unmoved",
+    breaks: "a template's `concat!` pieces, after a value's template is put in its place, break where they did in texts that are now longer",
+    file: "src/lower/mir/tidy/values.rs",
+    find: "        (at.text, at.at) = (text, shift + at.at);",
+    replace: "        (at.text, at.at) = (text, at.at);",
+    tests: ["test/lowering-strings.test.ts", "-t", "a format string of a concat! is its pieces joined by"],
+  },
+  {
+    name: "applied-template-into-pieces-unspliced",
+    breaks: "a value's template put in place of its call in a template of `concat!`'s pieces is a template in a template",
+    file: "src/lower/mir/tidy/values.rs",
+    find: "    if layout.lines || layout.breaks.iter().any(|at| at.lines) {",
+    replace: "    if layout.lines || !layout.breaks.is_empty() {",
+    tests: ["test/lowering-strings.test.ts", "-t", "a format string of a concat! is its pieces joined by"],
+  },
+  {
     name: "mir-tidy-plain-cell-escapes",
     breaks: "a cell given whole, `bump(c)`, is a variable too, and what it's given reads `undefined`",
     file: "src/lower/mir/tidy/values.rs",
