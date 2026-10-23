@@ -613,6 +613,88 @@ pub fn put(args: &mut Vec<String>, i: usize, made: impl Fn() -> String) {
 // u32` of `indexOf`'s once it isn't -1, is the value as it is
 // (`whole_casts`), not `$f64ToInt(index, ..)`, as react.dev's CodeBlock
 // finds a highlight's column.
+// ADR 0632: a JS string's `length`, a binding's `get length` of a string,
+// is below 2^32 - 1, as every engine's string is, so a counter that steps
+// below it, `i + 1 < length(s)`, as React's normalizeConsoleFormat's does,
+// can't wrap: `i + 1` and its `i += 1` are written as they are. A test of
+// `i + 1` narrows `i` where the add can't wrap, and a counter that keeps
+// growing is taken first as one below its type's most: a step of one
+// below a slice's length is `i++` too. Another `get length`, of an array,
+// may be 2^32 - 1, so two steps below it keep their wrap, as a test of an
+// `i + 1` that may have wrapped shows nothing of `i`.
+test("a counter below a JS string's length doesn't wrap", async () => {
+  const dir = fixture("string-length-counter");
+  writeFileSync(join(dir, "lib.rs"), `pub fn count(format_string: &str) -> u32 {
+    let mut n = 0;
+    let mut i = 0;
+    while i + 1 < js::string::length(format_string) {
+        if js::string::char_code_at(format_string, i) != 37.0 {
+            i += 1;
+            continue;
+        }
+        i += 1;
+        n += 1;
+        i += 1;
+    }
+    n
+}
+
+pub fn pairs(items: &[u32]) -> u32 {
+    let mut s = 0;
+    let mut i = 0;
+    while i + 1 < items.len() {
+        s ^= items[i] ^ items[i + 1];
+        i += 1;
+    }
+    s
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "get length")]
+#[allow(unused_variables)]
+fn units(this: &[f64]) -> u32 {
+    unreachable!()
+}
+
+pub fn skips(items: &[f64]) -> u32 {
+    let mut n = 0;
+    let mut i = 0;
+    while i + 1 < units(items) {
+        if items[i as usize] != 0.0 {
+            i += 1;
+            continue;
+        }
+        n += 1;
+        i += 2;
+    }
+    n
+}
+
+pub fn hops(mut i: u32, n: u32) -> (u32, u32) {
+    let mut k = 0;
+    while i + 1 < n {
+        i += 2;
+        k += 1;
+    }
+    (k, i)
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("  while (i + 1 < formatString.length) {\n");
+  expect(js).toContain("    if (formatString.charCodeAt(i) !== 37) {\n      i++;\n      continue;\n    }\n    i++;\n    n = (n + 1) >>> 0;\n    i++;\n");
+  expect(js).toContain("  while (i + 1 < items.length) {\n");
+  expect(js).toMatch(/\n {4}i\+\+;\n {2}\}\n {2}return s;/);
+  expect(js).toContain("  while ((i + 1) >>> 0 < items.length) {\n");
+  expect(js).toContain("    i = (i + 2) >>> 0;\n");
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.count("a%b%c"), lib.count("%%%%"), lib.count(""), lib.count("%")]).toEqual([2, 2, 0, 0]);
+  expect([lib.pairs([1, 2, 4]), lib.pairs([]), lib.pairs([5])]).toEqual([5, 0, 0]);
+  expect([lib.skips([0, 1, 0, 0, 2]), lib.skips([])]).toEqual([2, 0]);
+  // \`i + 1\` of \`u32::MAX\` wraps to 0, below 5, so \`i\` steps on from 1.
+  expect(js).toContain("    i = (i + 2) >>> 0;\n    k = (k + 1) >>> 0;\n");
+  expect(lib.hops(0xffffffff, 5)).toEqual([3, 5]);
+});
+
 test("a whole float's cast is the float from MIR too", async () => {
   const dir = fixture("whole-cast");
   writeFileSync(join(dir, "lib.rs"), `use js::string;

@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "any-length-a-strings",
+    breaks: "an array's `get length` is taken for a JS string's, below `2^32 - 1`, so two steps below it lose their wrap",
+    file: "src/lower/bindings.rs",
+    find: "            .is_some_and(|this| this.peel_refs().is_str())\n",
+    replace: "            .is_some()\n",
+    tests: ["test/lowering-numbers.test.ts", "-t", "below a JS string"],
+  },
+  {
     name: "primitive-thread-local-camel",
     breaks: "`REACT_ELEMENT_TYPE` of a symbol is `reactElementType`",
     file: "src/lower/bindings.rs",

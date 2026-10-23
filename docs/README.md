@@ -563,6 +563,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0629 A `match` of constants is a `switch`](decisions/0629-a-match-of-constants-is-a-switch.md)
 - [0630 A comment inside an expression is after the code before it](decisions/0630-a-comment-inside-an-expression.md)
 - [0631 A step of one is `++`](decisions/0631-a-step-of-one-is-plus-plus.md)
+- [0632 A JS string's `length` is below `u32::MAX`, and a counter below it doesn't wrap](decisions/0632-a-js-strings-length-is-below-u32-max.md)
 - [0623 A copy std makes of a `Copy` value is a copy](decisions/0623-a-copy-std-makes-is-a-copy.md)
 - [0436 Every `dyn` that's a pair keeps its value's drop, `dyn Send` too](decisions/0436-every-dyn-keeps-its-drop.md)
 - [0437 A scope's drops on a panic are one `try { .. } finally { .. }`](decisions/0437-a-scopes-drops-are-one-finally.md)

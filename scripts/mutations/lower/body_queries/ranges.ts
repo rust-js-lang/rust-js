@@ -3,6 +3,46 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "string-length-any-u32",
+    breaks: "a JS string's `length` may be `u32::MAX`, so a counter two steps below it wraps, `(i + 1) >>> 0 < formatString.length`",
+    file: "src/lower/body_queries/ranges.rs",
+    find: "                .map(|_| Range::of(0, STRING_LENGTH_MOST)),\n",
+    replace: "                .map(|_| Range::of(0, u32::MAX as i128)),\n",
+    tests: ["test/lowering-numbers.test.ts", "-t", "below a JS string"],
+  },
+  {
+    name: "string-length-impure",
+    breaks: "a test of a JS string's `length` isn't read, so `i + 1 < length(s)` shows nothing of `i`",
+    file: "src/lower/body_queries/ranges.rs",
+    find: "                ) || reads_string_length(tcx, def_id)\n",
+    replace: "                ) || false\n",
+    tests: ["test/lowering-numbers.test.ts", "-t", "below a JS string"],
+  },
+  {
+    name: "sum-narrowed-wrapped",
+    breaks: "`i + 1 < n` narrows `i` where `i + 1` may have wrapped to 0, so `i += 2` below it is written without its wrap",
+    file: "src/lower/body_queries/ranges.rs",
+    find: "                if k >= 0 && hi + k <= most {\n",
+    replace: "                if k >= 0 {\n",
+    tests: ["test/lowering-numbers.test.ts", "-t", "below a JS string"],
+  },
+  {
+    name: "sum-narrowed-unshifted",
+    breaks: "`i + 1 < n` narrows `i` below `n`, not `n - 1`, so two steps below a JS string's length may wrap",
+    file: "src/lower/body_queries/ranges.rs",
+    find: "                        hi: other.hi - k,\n",
+    replace: "                        hi: other.hi,\n",
+    tests: ["test/lowering-numbers.test.ts", "-t", "below a JS string"],
+  },
+  {
+    name: "growing-counter-forgotten",
+    breaks: "a counter still growing is anything at once, so `i + 1 < formatString.length` keeps its wrap",
+    file: "src/lower/body_queries/ranges.rs",
+    find: "                        (was.hi < below_most && r.hi <= below_most && r.lo >= was.lo).then(|| {\n",
+    replace: "                        (false && was.hi < below_most && r.hi <= below_most && r.lo >= was.lo).then(|| {\n",
+    tests: ["test/lowering-numbers.test.ts", "-t", "below a JS string"],
+  },
+  {
     name: "ranges-is-empty-unread",
     breaks: "`is_empty()` false shows nothing, so `items[0]` in its `else` is `$index(items, 0)`",
     file: "src/lower/body_queries/ranges.rs",

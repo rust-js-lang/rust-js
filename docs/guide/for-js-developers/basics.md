@@ -218,7 +218,11 @@ export function parseAge(s) {
   is `n--`
   ([ADR 0631](../../decisions/0631-a-step-of-one-is-plus-plus.md)). An
   integer's keeps its wrap, `n = (n + 1) >>> 0`, unless what comes before
-  shows it can't wrap: below a length, `i < xs.len()`, `i += 1` is `i++`:
+  shows it can't wrap: below a length, `i < xs.len()` or `i + 1 <
+  js::string::length(s)`, `i += 1` is `i++`. A JS string's `length` is
+  below `2^32 - 1`, as every engine's is, so two steps below it don't
+  wrap either
+  ([ADR 0632](../../decisions/0632-a-js-strings-length-is-below-u32-max.md)):
 
 ```rust
 pub fn count_below(xs: &[u32], limit: u32) -> usize {
@@ -227,6 +231,19 @@ pub fn count_below(xs: &[u32], limit: u32) -> usize {
         i += 1;
     }
     i
+}
+
+pub fn placeholders(format: &str) -> u32 {
+    let mut n = 0;
+    let mut i = 0;
+    while i + 1 < js::string::length(format) {
+        if js::string::char_code_at(format, i) == 37.0 {
+            n += 1;
+            i += 1;
+        }
+        i += 1;
+    }
+    n
 }
 ```
 
@@ -237,6 +254,19 @@ export function countBelow(xs, limit) {
     i++;
   }
   return i;
+}
+
+export function placeholders(format) {
+  let n = 0;
+  let i = 0;
+  while (i + 1 < format.length) {
+    if (format.charCodeAt(i) === 37) {
+      n = (n + 1) >>> 0;
+      i++;
+    }
+    i++;
+  }
+  return n;
 }
 ```
 - **A literal keeps its base and its exponent**, `0xff`, `0b1010`, `1e4`,

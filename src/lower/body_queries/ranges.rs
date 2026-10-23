@@ -6,11 +6,17 @@
 //! its type's range, written without its wrap, `(i + 1) * 2 - 1`.
 
 use super::*;
+use crate::lower::bindings::reads_string_length;
 use crate::lower::recognition::{VecView, vec_view};
 use rustc_middle::middle::region;
 
 /// A `Vec` or a slice, by the variable it's in and the fields to it.
 type Slice = (Vec<usize>, LocalVarId);
+
+/// The most a JS string's `length` is: below `2^32 - 1`, as every engine's
+/// string is, V8's below 2^29, SpiderMonkey's 2^30 - 2, JavaScriptCore's
+/// 2^31 - 1 (ADR 0632). An array's may be `2^32 - 1`, `u32`'s most.
+const STRING_LENGTH_MOST: i128 = (1 << 32) - 2;
 
 /// An upper bound of an integer by a slice's length `L`, `⌊(c·L + b) /
 /// 2^s⌋`: `L - 1` of an index `i < xs.len()`, `L / 2 - 1` of one below its
@@ -225,6 +231,8 @@ struct Walk<'a, 'tcx> {
     /// never known.
     volatile: HashSet<LocalVarId>,
     changes: HashMap<LocalVarId, Vec<Span>>,
+    /// The most each integer variable's type holds.
+    most: HashMap<LocalVarId, i128>,
     targets: Vec<Target>,
     /// A jump the walk can't follow: nothing it found holds.
     lost: bool,
@@ -298,6 +306,7 @@ pub(in crate::lower) fn ranges<'tcx>(
             ops: HashMap::new(),
             volatile: volatile(thir),
             changes: changes(thir),
+            most: most(thir),
             targets: Vec::new(),
             lost: false,
             callees: &callees,
@@ -401,6 +410,29 @@ fn volatile(thir: &Thir<'_>) -> HashSet<LocalVarId> {
         .collect()
 }
 
+/// The most each integer variable the body reads holds, by its type.
+fn most(thir: &Thir<'_>) -> HashMap<LocalVarId, i128> {
+    (thir.exprs.iter())
+        .filter_map(|expr| match expr.kind {
+            ExprKind::VarRef { id } | ExprKind::UpvarRef { var_hir_id: id, .. } => {
+                type_range(expr.ty).map(|(_, hi)| (id, hi))
+            }
+            _ => None,
+        })
+        .collect()
+}
+
+/// The integer a literal is, `1` of `i + 1`.
+fn literal(thir: &Thir<'_>, e: ExprId) -> Option<i128> {
+    match thir[strip(thir, e)].kind {
+        ExprKind::Literal { lit, neg } => match lit.node {
+            rustc_ast::LitKind::Int(n, _) => Some(if neg { -(n.get() as i128) } else { n.get() as i128 }),
+            _ => None,
+        },
+        _ => None,
+    }
+}
+
 /// The variable `e` reads, of the body or a closure's capture.
 fn var_of(thir: &Thir<'_>, e: ExprId) -> Option<LocalVarId> {
     match thir[strip(thir, e)].kind {
@@ -462,7 +494,7 @@ fn pure<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>, e: ExprId) -> bool {
                 matches!(
                     slice_length(tcx, def_id, generic_args),
                     Some(SliceLength::Len | SliceLength::IsEmpty)
-                )
+                ) || reads_string_length(tcx, def_id)
             }) && args.iter().all(|&arg| pure(tcx, thir, arg))
         }
         _ => false,
@@ -816,7 +848,10 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
                     below: Some((slice, Below::LENGTH)),
                 }
             }),
-            _ => None,
+            // A JS string's `length`, a binding's.
+            _ => fn_def(thir[strip(thir, fun)].ty)
+                .filter(|&(def_id, _)| reads_string_length(self.tcx, def_id))
+                .map(|_| Range::of(0, STRING_LENGTH_MOST)),
         }
     }
 
@@ -971,11 +1006,32 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
             let continued = scope.and_then(|at| self.targets[at].continues.take());
             let mut next = either(entry.clone(), either(here, continued));
             // Past a few rounds, what still changes is forgotten: what's
-            // left holds.
+            // left holds. An integer still growing is taken first as at
+            // most one below its type's most, where its `+ 1` can't wrap,
+            // a counter's below a length; growing past that, anything
+            // (ADR 0632).
             if round >= 3
                 && let (Some(next), Some(head)) = (next.as_mut(), &head)
             {
-                next.vars.retain(|v, r| head.vars.get(v) == Some(r));
+                let most = &self.most;
+                let vars = std::mem::take(&mut next.vars);
+                next.vars = (vars.into_iter())
+                    .filter_map(|(v, r)| {
+                        let was = head.vars.get(&v)?;
+                        if *was == r {
+                            return Some((v, r));
+                        }
+                        let below_most = most.get(&v)? - 1;
+                        (was.hi < below_most && r.hi <= below_most && r.lo >= was.lo).then(|| {
+                            let widened = Range {
+                                lo: was.lo,
+                                hi: below_most,
+                                below: None,
+                            };
+                            (v, widened)
+                        })
+                    })
+                    .collect();
                 next.lengths.retain(|s, l| head.lengths.get(s) == Some(l));
             }
             if next == head {
@@ -1102,9 +1158,36 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
         }
     }
 
-    /// A variable `side` that's `op` `other`, narrowed.
+    /// A variable `side` that's `op` `other`, narrowed; and of `i + k`
+    /// that can't have wrapped, `i` that's `op` `other - k` (ADR 0632).
     fn narrow(&self, side: ExprId, op: BinOp, other: &Range, known: &mut Option<Known>) {
         let thir = self.thir;
+        if let ExprKind::Binary {
+            op: BinOp::Add,
+            lhs,
+            rhs,
+        } = thir[strip(thir, side)].kind
+        {
+            for (term, k) in [(lhs, rhs), (rhs, lhs)] {
+                let (Some(k), Some((_, most)), Some(var)) =
+                    (literal(thir, k), type_range(thir[term].ty), var_of(thir, term))
+                else {
+                    continue;
+                };
+                let hi = (known.as_ref())
+                    .and_then(|known| known.vars.get(&var))
+                    .map_or(most, |r| r.hi);
+                if k >= 0 && hi + k <= most {
+                    let less = Range {
+                        lo: other.lo - k,
+                        hi: other.hi - k,
+                        below: (other.below.as_ref()).map(|(s, b)| (s.clone(), b.offset(-k))),
+                    };
+                    self.narrow(term, op, &less, known);
+                }
+            }
+            return;
+        }
         let Some(var) = var_of(thir, side) else { return };
         let Some((lo, hi)) = type_range(thir[side].ty) else {
             return;

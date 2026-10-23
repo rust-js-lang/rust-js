@@ -216,6 +216,18 @@ pub(super) fn is_binding(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
     tcx.is_foreign_item(def_id) || tool_link_name(tcx, def_id).is_some()
 }
 
+/// Does this binding read a JS string's `length`, `get length` of a
+/// string `this`, as the js crate's `string::length` does? Its value is
+/// any engine's string's, which the integer ranges know is below
+/// `2^32 - 1` (ADR 0632).
+pub(super) fn reads_string_length(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
+    is_binding(tcx, def_id)
+        && is_method(tcx, def_id)
+        && matches!(js_form(tcx, def_id), JsForm::Get(name) if name == "length")
+        && (tcx.fn_sig(def_id).skip_binder().skip_binder().inputs().first())
+            .is_some_and(|this| this.peel_refs().is_str())
+}
+
 /// A JS function whose first parameter is named `this` is a method:
 /// `f(x, a)` calls `x.f(a)`, a type's own as well, `Mouse::widen(this)`.
 /// So is a Rust method's `self`.
