@@ -239,6 +239,16 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// Is std's `AsRef<to>` or `AsMut<to>` of a `from`, through as many
     /// references as it's behind, the same JS value (ADR 0162): text as a
     /// `str`, and a `Vec`, an array or a slice as a slice.
+    /// Whether std's `AsRef<to>` of a `from` gives the same JS value: text
+    /// as a `str`, a sequence as a slice (ADR 0162), what a `Box` or an `Rc`
+    /// holds, and text or a path as a `Path`, which is its text (ADRs 0331,
+    /// 0505, 0173). The one answer, of a call of `as_ref` and of the
+    /// dictionary generic code is given.
+    pub(in crate::lower) fn as_ref_is_itself(&self, from: Ty<'tcx>, to: Ty<'tcx>) -> bool {
+        let held = from.is_box() || rc_pointee(self.tcx, from.peel_refs()).is_some() || self.is_path_like(to);
+        self.views_as_itself(from, to) || held && self.borrows_as_itself(from, to)
+    }
+
     pub(in crate::lower) fn views_as_itself(&self, from: Ty<'tcx>, to: Ty<'tcx>) -> bool {
         let from = from.peel_refs();
         let sequence = from.is_array() || from.is_slice() || self.is_vec_like(from);

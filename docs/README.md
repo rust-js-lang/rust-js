@@ -231,7 +231,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0159 A type's own `FromStr` is what `parse` calls](decisions/0159-user-from-str.md)
 - [0160 A collection of the crate's: its own `IntoIterator`, `FromIterator`, `Extend`, `Sum` and `Product`](decisions/0160-user-collections.md)
 - [0161 `T: FromStr` in generic code: a dictionary, std's or the crate's](decisions/0161-generic-from-str.md)
-- [0162 `AsRef` and `AsMut` in generic code: a dictionary, the value itself for std's](decisions/0162-generic-as-ref.md)
+- [0162 `AsRef` and `AsMut` in generic code: a dictionary, the value itself for std's](decisions/0162-generic-as-ref.md) *(amended by 0698: a reference's, and a path's as a `Path`)*
 - [0163 A trait's generic method is given drops for its own type parameters, as its trait declares them](decisions/0163-trait-method-drops.md)
 - [0164 An iterator of the crate's from both ends, and of a known length](decisions/0164-double-ended-iterators.md)
 - [0165 `{:x}`, `{:e}` and `{:p}` of the crate's types call its own impls](decisions/0165-other-fmt-traits.md)
@@ -622,6 +622,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0695 What stops early steps by `try_fold`, and `nth` is passed on, as std's adapters route them](decisions/0695-what-stops-early-steps-by-try-fold.md)
 - [0696 What lowering a function finds of drops is returned with it](decisions/0696-what-lowering-finds-of-drops-is-returned-with-it.md)
 - [0697 Lowering's hidden contracts, held where they're relied on](decisions/0697-lowerings-hidden-contracts-held.md)
+- [0698 A reference given to generic code is what it refers to](decisions/0698-a-reference-given-to-generic-code.md)
 - [0436 Every `dyn` that's a pair keeps its value's drop, `dyn Send` too](decisions/0436-every-dyn-keeps-its-drop.md) *(amended by 0691: a `dyn Any` drops where the crate makes one of what drops)*
 - [0437 A scope's drops on a panic are one `try { .. } finally { .. }`](decisions/0437-a-scopes-drops-are-one-finally.md) *(amended by 0693: its `if`s, loops and `return`s in it)*
 - [0438 An optional prop is given `Some(..)`, or left out](decisions/0438-an-optional-prop-is-given-some.md)

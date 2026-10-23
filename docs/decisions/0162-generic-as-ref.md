@@ -85,3 +85,7 @@ base64's `decode<T: AsRef<[u8]>>(input: T)` is given text. Its
 dictionary's `as_ref` is the text's UTF-8 bytes, as `as_bytes()` gives
 them, `utf8_bytes`, the one place both are made.
 `test/corpus/as_ref_bytes.rs` holds it.
+
+## Amended by
+
+[ADR 0698](0698-a-reference-given-to-generic-code.md): a reference's `AsRef` is what it refers to's, and whether std's `AsRef` is the value is `as_ref_is_itself`'s, a path's as a `Path` too.

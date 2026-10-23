@@ -9,7 +9,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(in crate::lower) fn as_js_iterator(&mut self, value: Expr, ty: Ty<'tcx>, span: Span) -> R<Expr> {
         // The crate's own behind an `impl Iterator` too.
         let ty = self.reveal(ty);
-        match self.range_kind(ty) {
+        // A `&mut` to a range, `take2(&mut it)`'s: the range, stepped where
+        // it is, as its lender goes on from where it's left.
+        let ranged = match ty.kind() {
+            ty::Ref(_, inner, Mutability::Mut) if self.range_kind(*inner).is_some() => *inner,
+            _ => ty,
+        };
+        match self.range_kind(ranged) {
             Some(kind) => match kind.step(false) {
                 Some(step) => Ok(self.stepped_by(value, Expr::helper(step))),
                 None => Err(self.unsupported(span, "iterating this range, from its MIR")),

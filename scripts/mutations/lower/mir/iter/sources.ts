@@ -119,8 +119,8 @@ export const mutations: Mutation[] = [
     name: "mir-opaque-iterator-unrevealed",
     breaks: "MIR's iterator of the crate's behind `impl Iterator` is given as the struct, not a JS iterator",
     file: "src/lower/mir/iter/sources.rs",
-    find: "        let ty = self.reveal(ty);\n        match self.range_kind(ty) {\n",
-    replace: "        match self.range_kind(ty) {\n",
+    find: "        let ty = self.reveal(ty);\n        // A `&mut` to a range",
+    replace: "        // A `&mut` to a range",
     tests: ["test/lowering-iterators.test.ts", "-t", "takes the crate's own from behind"],
   },
   {
@@ -196,5 +196,13 @@ export const mutations: Mutation[] = [
     find: "            || self.recognition().is_string_drain(ty)\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "str_odds"],
+  },
+  {
+    name: "mut-range-given-raw",
+    breaks: "a &mut range given as an iterator is stepped where it is",
+    file: "src/lower/mir/iter/sources.rs",
+    find: "            ty::Ref(_, inner, Mutability::Mut) if self.range_kind(*inner).is_some() => *inner,",
+    replace: "            ty::Ref(_, inner, Mutability::Mut) if false && self.range_kind(*inner).is_some() => *inner,",
+    tests: ["test/corpus.test.ts", "-t", "^references_given_to_generics.rs$"],
   },
 ];

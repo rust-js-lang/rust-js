@@ -495,7 +495,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         if is_std_def(self.tcx, tr.def_id, StdItem::AsRef)
             && !self.has_user_impl(tr.def_id, ty)
-            && self.recognition().views_as_itself(ty, tr.args.type_at(1))
+            && self.recognition().as_ref_is_itself(ty, tr.args.type_at(1))
         {
             let same = Expr::arrow(
                 vec!["value".into()],
@@ -705,7 +705,51 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Ok(ImplSource::Builtin(BuiltinImplSource::Object(_), _)) = selected {
             return self.object_dictionary(tr, span);
         }
+        // A reference's, by std's impl that passes it on to what it refers
+        // to, `impl<T: AsRef<U>> AsRef<U> for &T`: that one's, as a reference
+        // is the value it refers to in JS.
+        if let Some(referent) = self.forwarded_to_referent(tr, typing_env) {
+            return self.dictionary(referent, span);
+        }
         Err(self.no_evidence(span, tr))
+    }
+
+    /// `tr` of what `tr`'s type refers to, where its impl is std's that
+    /// passes it on: of a type `&T` or `&mut T` of its own parameter `T`, and
+    /// asking `T` the same trait. `None` of another.
+    fn forwarded_to_referent(
+        &self,
+        tr: ty::TraitRef<'tcx>,
+        typing_env: ty::TypingEnv<'tcx>,
+    ) -> Option<ty::TraitRef<'tcx>> {
+        let ty::Ref(_, referent, _) = tr.self_ty().kind() else {
+            return None;
+        };
+        let (impl_id, _) = evidence_impl(self.tcx, typing_env, tr)?;
+        if !crate::lower::recognition::is_std_crate(self.tcx, impl_id) {
+            return None;
+        }
+        let ty::Ref(_, param, _) = self
+            .tcx
+            .type_of(impl_id)
+            .instantiate_identity()
+            .skip_normalization()
+            .kind()
+        else {
+            return None;
+        };
+        let ty::Param(param) = param.kind() else { return None };
+        let clauses = self.tcx.clauses_of(impl_id).instantiate_identity(self.tcx);
+        let passes_on = clauses.into_iter().any(|(clause, _)| {
+            clause.skip_normalization().as_trait_clause().is_some_and(|t| {
+                t.def_id() == tr.def_id && matches!(t.self_ty().skip_binder().kind(), ty::Param(p) if p == param)
+            })
+        });
+        passes_on.then(|| {
+            let mut args: Vec<ty::GenericArg<'tcx>> = tr.args.iter().collect();
+            args[0] = (*referent).into();
+            ty::TraitRef::new(self.tcx, tr.def_id, args)
+        })
     }
 
     /// A dictionary's facts of its associated types, what generic code asks

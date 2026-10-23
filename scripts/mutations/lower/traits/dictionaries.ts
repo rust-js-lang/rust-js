@@ -54,7 +54,7 @@ export const mutations: Mutation[] = [
     name: "std-as-ref-dictionary-missing",
     breaks: "`shout(\"hi\")` of an `S: AsRef<str>` has no dictionary for a `&str`'s",
     file: "src/lower/traits/dictionaries.rs",
-    find: "            && self.recognition().views_as_itself(ty, tr.args.type_at(1))\n        {\n            let same",
+    find: "            && self.recognition().as_ref_is_itself(ty, tr.args.type_at(1))\n        {\n            let same",
     replace: "            && false\n        {\n            let same",
     tests: ["test/corpus.test.ts", "-t", "generic_as_ref"],
   },
@@ -369,5 +369,13 @@ export const mutations: Mutation[] = [
     find: "            && !of_other\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^generic_other_type_compare.rs$"],
+  },
+  {
+    name: "reference-dictionary-unforwarded",
+    breaks: "a reference's dictionary through std's forwarding impl is its referent's",
+    file: "src/lower/traits/dictionaries.rs",
+    find: "        if let Some(referent) = self.forwarded_to_referent(tr, typing_env) {",
+    replace: "        if let Some(referent) = None::<ty::TraitRef<'tcx>> {",
+    tests: ["test/corpus.test.ts", "-t", "^references_given_to_generics.rs$"],
   },
 ];

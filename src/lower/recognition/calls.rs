@@ -572,8 +572,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         // an `Rc`'s, or text's as a `Path` (ADRs 0331, 0505, 0173).
         if is_std_def(tcx, trait_, StdItem::AsRef)
             && tcx.item_name(def_id).as_str() == "as_ref"
-            && (ty.is_box() || rc_pointee(tcx, ty.peel_refs()).is_some() || self.is_path_like(args.type_at(1)))
-            && self.borrows_as_itself(ty, args.type_at(1))
+            && self.as_ref_is_itself(ty, args.type_at(1))
         {
             return Some(Std::Same);
         }

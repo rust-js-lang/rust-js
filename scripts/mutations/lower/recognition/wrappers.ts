@@ -236,4 +236,28 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/lowering-unwinds.test.ts", "-t", "resume_unwind throws what unwound"],
   },
+  {
+    name: "as-ref-path-not-itself",
+    breaks: "std's AsRef of a path as a Path is the value, in a dictionary too",
+    file: "src/lower/recognition/wrappers.rs",
+    find: "        self.views_as_itself(from, to) || held && self.borrows_as_itself(from, to)",
+    replace: "        self.views_as_itself(from, to)",
+    tests: ["test/corpus.test.ts", "-t", "^references_given_to_generics.rs$"],
+  },
+  {
+    name: "as-ref-path-dispatched",
+    breaks: "`as_ref()` of text as a `Path` asks for std's impl's dictionary, which there's none of, and is refused",
+    file: "src/lower/recognition/wrappers.rs",
+    find: "        let held = from.is_box() || rc_pointee(self.tcx, from.peel_refs()).is_some() || self.is_path_like(to);",
+    replace: "        let held = from.is_box() || rc_pointee(self.tcx, from.peel_refs()).is_some();",
+    tests: ["test/corpus.test.ts", "-t", "^as_ref_path.rs$"],
+  },
+  {
+    name: "rc-as-ref-refused",
+    breaks: "`rc.as_ref()` of an `Rc` is refused, its `AsRef` evidence unmade",
+    file: "src/lower/recognition/wrappers.rs",
+    find: "        let held = from.is_box() || rc_pointee(self.tcx, from.peel_refs()).is_some() || self.is_path_like(to);",
+    replace: "        let held = from.is_box() || self.is_path_like(to);",
+    tests: ["test/corpus.test.ts", "-t", "^counted_rc_borrow.rs$"],
+  },
 ];

@@ -324,14 +324,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^plain_data.rs$"],
   },
   {
-    name: "as-ref-path-dispatched",
-    breaks: "`as_ref()` of text as a `Path` asks for std's impl's dictionary, which there's none of, and is refused",
-    file: "src/lower/recognition/calls.rs",
-    find: "            && (ty.is_box() || rc_pointee(tcx, ty.peel_refs()).is_some() || self.is_path_like(args.type_at(1)))\n",
-    replace: "            && (ty.is_box() || rc_pointee(tcx, ty.peel_refs()).is_some())\n",
-    tests: ["test/corpus.test.ts", "-t", "^as_ref_path.rs$"],
-  },
-  {
     name: "user-io-write-unrecognized",
     breaks: "`write!` to a writer of bytes of the crate's, of known type, isn't its dictionary's, and is refused",
     file: "src/lower/recognition/calls.rs",
@@ -538,14 +530,6 @@ export const mutations: Mutation[] = [
     find: "        \"sort_unstable\" | \"select_nth_unstable\" => SortWith::Order,\n",
     replace: "        \"sort_unstable\" => SortWith::Order,\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_unstable_sorts.rs$"],
-  },
-  {
-    name: "rc-as-ref-refused",
-    breaks: "`rc.as_ref()` of an `Rc` is refused, its `AsRef` evidence unmade",
-    file: "src/lower/recognition/calls.rs",
-    find: "            && (ty.is_box() || rc_pointee(tcx, ty.peel_refs()).is_some() || self.is_path_like(args.type_at(1)))\n",
-    replace: "            && (ty.is_box() || self.is_path_like(args.type_at(1)))\n",
-    tests: ["test/corpus.test.ts", "-t", "^counted_rc_borrow.rs$"],
   },
   {
     name: "vec-to-array-refused",
