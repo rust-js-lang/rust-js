@@ -33,6 +33,9 @@ pub(in crate::lower) enum SliceOp {
     CopyFromSlice,
     CloneFromSlice,
     SwapWithSlice,
+    /// A `VecDeque`'s `as_slices()` and `as_mut_slices()`: the one array
+    /// it is, then none, `[d, []]`, writes through the first its own.
+    DequeSlices,
     CopyWithin,
     IsSorted,
     IsSortedBy,
@@ -622,6 +625,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 )
             }
             SliceOp::SwapWithSlice => helper("$swapWithSlice", vec![arg(), arg()]),
+            SliceOp::DequeSlices => Expr::array(vec![arg(), Expr::array(Vec::new())]),
             // Each two in a row, by their `PartialOrd`, `is_sorted_call`'s.
             SliceOp::IsSorted => self.is_sorted_call(arg(), item(), span)?,
             SliceOp::IsSortedBy => helper("$isSortedBy", vec![arg(), arg()]),

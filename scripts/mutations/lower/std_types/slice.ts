@@ -379,4 +379,13 @@ export const mutations: Mutation[] = [
     replace: "                helper(\"$repeatItems\", Expr::optional_args(vec![items, n], vec![copy.filter(|_| false)]))",
     tests: ["test/corpus.test.ts", "-t", "^copied_structs_apart.rs$"],
   },
+  {
+    name: "deque-slices-swapped",
+    breaks: "a `VecDeque`'s `as_slices()` gives none first, so `as_mut_slices()`'s first writes nowhere and a reader of the first sees nothing",
+    file: "src/lower/std_types/slice.rs",
+    find: "            SliceOp::DequeSlices => Expr::array(vec![arg(), Expr::array(Vec::new())]),\n",
+    replace: "            SliceOp::DequeSlices => Expr::array(vec![Expr::array(Vec::new()), arg()]),\n",
+    tests: ["test/corpus.test.ts", "-t", "^deque_slices.rs$"],
+    snapshots: true,
+  },
 ];

@@ -99,7 +99,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "retain" if heap => Some(Std::Heap(HeapOp::Retain)),
             "drain" if heap => Some(Std::Heap(HeapOp::Drain)),
             "peek_mut" if heap => Some(Std::Heap(HeapOp::PeekMut)),
-            "as_slice" if heap => Some(Std::Same),
+            "as_slice" | "make_contiguous" if heap || deque => Some(Std::Same),
             "remove" if deque => Some(Std::DequeRemove),
             "extract_if" if adt(StdItem::Vec) || adt(StdItem::LinkedList) => Some(Std::Slice(SliceOp::ExtractIf {
                 range: adt(StdItem::Vec),
@@ -117,7 +117,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "pop_front" if deque => Some(Std::Method("shift")),
             "front" | "front_mut" if deque => Some(Std::First),
             "back" | "back_mut" if deque => Some(Std::SliceLast),
-            "make_contiguous" if deque => Some(Std::Same),
+            "as_slices" | "as_mut_slices" if deque => Some(Std::Slice(SliceOp::DequeSlices)),
             // A JS array has no capacity: asking for some does nothing (ADR
             // 0315). A `Vec`'s is `capacity_op`'s (ADR 0419).
             "reserve" | "reserve_exact" | "shrink_to" | "shrink_to_fit" if deque || heap || of.map || of.set => {

@@ -79,3 +79,14 @@ refuses (#137). `as_js_iterator` steps an escape as its `char`s,
 `flat_map`'s `inner_iterable` asks it. Held by
 `test/corpus/escape_iterators.rs` and the mutations
 `escape-stepped-as-text` and `flat-map-escape-as-text`.
+
+## Amendment: `as_slices()` and `as_mut_slices()`
+
+A `VecDeque`'s `as_slices()` was refused. A `VecDeque` is one JS array
+(this ADR), so its two halves are that array and none, `[d, []]`, and a
+write through the first of `as_mut_slices()` is the deque's own. Where std
+splits them is its ring buffer's, which it doesn't promise: a program that
+prints `a.len()` after a rotation can see std's split differ. Case (ADR
+0262): rare and harmless, JS's; listed among the guide's differences
+(`semantics.md`, 19). Held by
+`test/corpus/deque_slices.rs` and the mutation `deque-slices-swapped`.
