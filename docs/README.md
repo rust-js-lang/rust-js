@@ -580,7 +580,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0645 `js::is_defined` of a static is given the static itself](decisions/0645-is-defined-of-a-static-is-of-the-static.md) *(amended by 0647: the static isn't read)*
 - [0646 A chain held, then its fallback, is one `||`](decisions/0646-a-held-chain-and-its-fallback-is-one-or.md)
 - [0647 What `is_defined` names is no read; a test kept by its truth is `&&`](decisions/0647-type-name-as-react-writes-it.md)
-- [0648 V8's stack trace API is the node crate's, as @types/node types it](decisions/0648-v8s-stack-trace-api-is-the-node-crates.md) *(amended by 0653: captureStackTrace bound)*
+- [0648 V8's stack trace API is the node crate's, as @types/node types it](decisions/0648-v8s-stack-trace-api-is-the-node-crates.md) *(amended by 0653: captureStackTrace bound; 0686: the hook's type is named)*
 - [0649 `#[inline(never)]` is `/** @noinline */`](decisions/0649-inline-never-is-noinline.md)
 - [0650 A `let` that shadows a binding read no more is that binding, assigned](decisions/0650-a-shadow-of-a-binding-read-no-more-is-that-binding.md)
 - [0651 A `let`, then its fallback where it's falsy, is `||`](decisions/0651-a-let-then-its-fallback-is-or.md)
@@ -609,6 +609,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0683 An `if` keeps its test and branches as written, and an `else if` stays a chain](decisions/0683-an-if-is-as-written-and-an-else-if-stays-a-chain.md)
 - [0684 A `continue` the program wrote is where it wrote it, with its comment](decisions/0684-a-continue-the-program-wrote-is-where-it-wrote-it.md)
 - [0685 A `let` a loop's body declares is in it, set in a block MIR made](decisions/0685-a-let-a-loops-body-declares-is-in-it.md)
+- [0686 The stack trace hook's type is named, `js_error::PrepareStackTrace<R>`](decisions/0686-the-stack-trace-hooks-type-is-named.md)
 - [0436 Every `dyn` that's a pair keeps its value's drop, `dyn Send` too](decisions/0436-every-dyn-keeps-its-drop.md)
 - [0437 A scope's drops on a panic are one `try { .. } finally { .. }`](decisions/0437-a-scopes-drops-are-one-finally.md)
 - [0438 An optional prop is given `Some(..)`, or left out](decisions/0438-an-optional-prop-is-given-some.md)

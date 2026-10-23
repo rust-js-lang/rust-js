@@ -21,6 +21,13 @@ use js::{JsError, Unknown};
 
 use crate::CallSite;
 
+/// [`Error.prepareStackTrace`](https://v8.dev/docs/stack-trace-api#customizing-stack-traces)'s
+/// type, `(err: Error, stackTraces: NodeJS.CallSite[]) => R`, a JS
+/// function given the error and its frames, which gives an `R`: named, as
+/// clippy asks of a type this long (ADR 0686). A hook a program holds is
+/// `Option<&'static PrepareStackTrace<String>>`, `None` `undefined`.
+pub type PrepareStackTrace<R> = dyn Fn(&JsError, &[&CallSite]) -> R;
+
 /// [`Error.captureStackTrace(targetObject, constructorOpt)`](https://nodejs.org/api/errors.html#errorcapturestacktracetargetobject-constructoropt):
 /// a `stack` on `target_object`, of where it's called, without the frames
 /// of `constructor_opt` and those it called, a function of whatever it
@@ -35,7 +42,7 @@ pub fn capture_stack_trace(target_object: &dyn core::any::Any, constructor_opt: 
 /// frames, or `None`, `undefined`, as it is until a program sets one, when
 /// V8 writes its own. What it gives is of any shape, `any`.
 #[cfg_attr(rust_js, rust_js::link_name = "get Error.prepareStackTrace")]
-pub fn prepare_stack_trace() -> Option<&'static dyn Fn(&JsError, &[&CallSite]) -> Option<&'static Unknown>> {
+pub fn prepare_stack_trace() -> Option<&'static PrepareStackTrace<Option<&'static Unknown>>> {
     unreachable!()
 }
 
@@ -44,7 +51,7 @@ pub fn prepare_stack_trace() -> Option<&'static dyn Fn(&JsError, &[&CallSite]) -
 /// `None`, `undefined`, V8's own again. It may give any value, `any`: a
 /// `None` of no hook says of what, `set_prepare_stack_trace::<String>(None)`.
 #[cfg_attr(rust_js, rust_js::link_name = "set Error.prepareStackTrace")]
-pub fn set_prepare_stack_trace<R>(hook: Option<&'static dyn Fn(&JsError, &[&CallSite]) -> R>) {
+pub fn set_prepare_stack_trace<R>(hook: Option<&'static PrepareStackTrace<R>>) {
     unreachable!()
 }
 

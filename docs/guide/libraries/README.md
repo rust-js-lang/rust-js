@@ -335,16 +335,17 @@ export function unhooked() {
 }
 ```
 
-- **The hook is a JS function**, `Option<&'static dyn Fn(&JsError,
-  &[&CallSite]) -> R>`, `None` of `undefined`: what was read is set back
-  as it is, and a Rust function by reference, `Some(&prepare_stack_trace)`.
-  What it gives is TypeScript's `any`: a hook JS set gives an `Unknown`,
-  and one Rust sets gives any `R`, which a bare `None` names.
+- **The hook is a JS function**, `Option<&'static PrepareStackTrace<R>>`,
+  `None` of `undefined`, its type named in `js_error` as `@types/node`
+  types it, `dyn Fn(&JsError, &[&CallSite]) -> R` ([ADR 0686](../../decisions/0686-the-stack-trace-hooks-type-is-named.md)):
+  what was read is set back as it is, and a Rust function by reference,
+  `Some(&prepare_stack_trace)`. What it gives is TypeScript's `any`: a
+  hook JS set gives an `Unknown`, and one Rust sets gives any `R`, which a
+  bare `None` names.
 - **A module's default of no hook** is a `const` of its type, as React's
   `DefaultPrepareStackTrace` is in a browser's build: `js::export_default!
-  { pub const DEFAULT_PREPARE_STACK_TRACE: Option<&'static dyn
-  Fn(&JsError, &[&CallSite]) -> String> = None; }` is `export default
-  undefined;`.
+  { pub const DEFAULT_PREPARE_STACK_TRACE: Option<&'static
+  PrepareStackTrace<String>> = None; }` is `export default undefined;`.
 
 An emitter's events are typed by it, as `@types/node`'s `on` and `emit`
 overloads are: a listener is given what Node gives it, and `emit` takes
