@@ -203,4 +203,20 @@ export const mutations: Mutation[] = [
     replace: "        _ if is(StdItem::HashSet) => TypeFact::Set,\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_btree_keys.rs$"],
   },
+  {
+    name: "held-types-no-async-block",
+    breaks: "an `async move` block's future holds nothing, so its body drops none of what it took",
+    file: "src/lower/recognition/types.rs",
+    find: "        ty::Coroutine(def_id, args) => (def_id, args.as_coroutine().upvar_tys()),\n",
+    replace: "",
+    tests: ["test/lowering-functions.test.ts", "-t", "an async block or closure drops what it took"],
+  },
+  {
+    name: "held-types-no-async-closure",
+    breaks: "an `async` closure holds nothing, so dropping it drops none of what it took",
+    file: "src/lower/recognition/types.rs",
+    find: "        ty::CoroutineClosure(def_id, args) => (def_id, args.as_coroutine_closure().upvar_tys()),\n",
+    replace: "",
+    tests: ["test/lowering-functions.test.ts", "-t", "an async block or closure drops what it took"],
+  },
 ];

@@ -97,9 +97,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// given: each type parameter it holds is given one, a closure's of what
     /// it took (ADR 0485).
     pub(in crate::lower) fn holds_given_drops(&self, ty: Ty<'tcx>) -> bool {
-        let held = match ty.kind() {
-            ty::Closure(_, args) => args.as_closure().tupled_upvars_ty(),
-            _ => ty,
+        let held = match crate::lower::recognition::held_types(ty) {
+            Some((_, held)) => Ty::new_tup(self.tcx, held),
+            None => ty,
         };
         owned_params(self.tcx, held)
             .into_iter()

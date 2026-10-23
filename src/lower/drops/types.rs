@@ -366,12 +366,21 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
             ty::Tuple(items) => all(self, &mut items.iter(), walk),
             ty::Array(item, _) | ty::Slice(item) => self.drops_in(*item, walk),
             // What it holds, which it took whole: its drop drops that. Part of
-            // one, `t.0`, would need its own flags.
-            ty::Closure(def_id, args) => match all(self, &mut args.as_closure().upvar_tys().iter(), walk) {
-                Drops::Runs if self.takes_whole(*def_id) => Drops::Runs,
-                Drops::Runs => Drops::Unsupported(ty, "a closure that holds part of a value with a destructor"),
-                found => found,
-            },
+            // one, `t.0`, would need its own flags. A closure's, an `async`
+            // closure's, and an `async` block's future's, which drops what it
+            // took as its body ends (#173); an `async fn`'s, whose body drops
+            // its arguments, holds nothing else.
+            ty::Closure(..) | ty::CoroutineClosure(..) | ty::Coroutine(..)
+                if let Some((def_id, held)) = crate::lower::recognition::held_types(ty)
+                    && (!matches!(ty.kind(), ty::Coroutine(..))
+                        || crate::lower::recognition::is_async_block(self.recognition.tcx, def_id)) =>
+            {
+                match all(self, &mut held.iter(), walk) {
+                    Drops::Runs if self.takes_whole(def_id) => Drops::Runs,
+                    Drops::Runs => Drops::Unsupported(ty, "a closure that holds part of a value with a destructor"),
+                    found => found,
+                }
+            }
             ty::Adt(_, args) if ty.is_box() || self.recognition.is_vec_like(ty) => self.drops_in(args.type_at(0), walk),
             ty::Param(_) if walk.params_none => Drops::Nothing,
             // A type parameter a caller gives a drop function for.

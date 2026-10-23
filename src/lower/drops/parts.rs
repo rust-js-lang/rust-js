@@ -165,7 +165,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ty::Closure(def_id, _) if self.krate.closure_facts.carries_its_drop(self.tcx, *def_id) => {
                 out.push(StmtKind::Expr(Expr::call_helper("$dispose", vec![value])).at(js_span));
             }
-            ty::Closure(def_id, _) => self.drop_taken(*def_id, span, made, out)?,
+            ty::Closure(def_id, _) | ty::CoroutineClosure(def_id, _) => self.drop_taken(*def_id, span, made, out)?,
+            // An `async` block's future drops what it took as its body ends,
+            // in that body; its body has run, as a promise's does, by the
+            // time anything else drops it (ADR 0029): there it's nothing.
+            ty::Coroutine(def_id, _) if self.body_owner == *def_id => self.drop_taken(*def_id, span, made, out)?,
+            ty::Coroutine(..) => {}
             // A function's, the drop it carries, if any (ADR 0521).
             ty::Dynamic(predicates, ..) if crate::lower::recognition::is_fn_dyn(self.tcx, predicates) => {
                 out.push(StmtKind::Expr(Expr::call_helper("$dispose", vec![value])).at(js_span));

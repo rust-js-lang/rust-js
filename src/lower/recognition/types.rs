@@ -885,3 +885,29 @@ pub(in crate::lower) fn is_symbol_for_read(tcx: TyCtxt<'_>, did: DefId) -> bool 
                     ty::Adt(adt, _) if is_symbol_for_def(tcx, adt.did()))
         })
 }
+
+/// What a closure, an `async` closure or an `async` block's future holds,
+/// by type, what it took, and whose it is: the one answer of each place
+/// that drops, reads or lays out what one of them took. `None` of another
+/// type.
+pub(crate) fn held_types<'tcx>(ty: Ty<'tcx>) -> Option<(DefId, &'tcx ty::List<Ty<'tcx>>)> {
+    Some(match *ty.kind() {
+        ty::Closure(def_id, args) => (def_id, args.as_closure().upvar_tys()),
+        ty::CoroutineClosure(def_id, args) => (def_id, args.as_coroutine_closure().upvar_tys()),
+        ty::Coroutine(def_id, args) => (def_id, args.as_coroutine().upvar_tys()),
+        _ => return None,
+    })
+}
+
+/// Whether `def_id` is an `async` block's coroutine, `async move { .. }`:
+/// what it took is its own, as a closure's is, where an `async fn`'s holds
+/// its arguments, which its body drops.
+pub(crate) fn is_async_block(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
+    matches!(
+        tcx.coroutine_kind(def_id),
+        Some(rustc_hir::CoroutineKind::Desugared(
+            rustc_hir::CoroutineDesugaring::Async,
+            rustc_hir::CoroutineSource::Block
+        ))
+    )
+}

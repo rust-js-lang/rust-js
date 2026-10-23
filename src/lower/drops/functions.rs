@@ -110,7 +110,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(in crate::lower) fn drops_once(&self, ty: Ty<'tcx>) -> bool {
         match ty.kind() {
             // Its drop drops what it holds, not the function.
-            ty::Closure(..) => true,
+            ty::Closure(..) | ty::Coroutine(..) | ty::CoroutineClosure(..) => true,
             ty::Adt(_, args) if ty.is_box() || self.recognition().pinned(ty).is_some() => {
                 self.drops_once(args.type_at(0))
             }

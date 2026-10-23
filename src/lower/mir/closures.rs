@@ -84,10 +84,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Err(self.unsupported(span, "this closure, without its MIR"));
         };
         let mut captures = Vec::new();
-        let upvars = match self.tcx.type_of(def_id).skip_binder().kind() {
-            ty::Closure(_, args) => args.as_closure().upvar_tys().to_vec(),
-            _ => Vec::new(),
-        };
+        let upvars = crate::lower::recognition::held_types(self.tcx.type_of(def_id).skip_binder())
+            .map_or_else(Vec::new, |(_, held)| held.to_vec());
         for (i, value) in captured.into_iter().enumerate() {
             captures.push(match value {
                 Value::Ref(place) | Value::Place(place) => (place, true),

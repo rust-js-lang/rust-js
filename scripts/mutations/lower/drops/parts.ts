@@ -174,8 +174,8 @@ export const mutations: Mutation[] = [
     name: "carried-dropped-by-places",
     breaks: "a closure that carries its drop is dropped by its maker's variables where it's made, once for each clone",
     file: "src/lower/drops/parts.rs",
-    find: "                out.push(StmtKind::Expr(Expr::call_helper(\"$dispose\", vec![value])).at(js_span));\n            }\n            ty::Closure(def_id, _) => self.drop_taken",
-    replace: "                self.drop_taken(*def_id, span, made, out)?;\n            }\n            ty::Closure(def_id, _) => self.drop_taken",
+    find: "                out.push(StmtKind::Expr(Expr::call_helper(\"$dispose\", vec![value])).at(js_span));\n            }\n            ty::Closure(def_id, _) | ty::CoroutineClosure(def_id, _) => self.drop_taken",
+    replace: "                self.drop_taken(*def_id, span, made, out)?;\n            }\n            ty::Closure(def_id, _) | ty::CoroutineClosure(def_id, _) => self.drop_taken",
     tests: ["test/corpus.test.ts", "-t", "^closure_clone_counted.rs$"],
   },
   {
@@ -217,5 +217,13 @@ export const mutations: Mutation[] = [
     find: "    plain.contains(&tcx.erase_and_anonymize_regions(ty))\n",
     replace: "    plain.contains(&ty)\n",
     tests: ["test/lowering-cells.test.ts", "-t", "written by replace and take"],
+  },
+  {
+    name: "future-dropped-again",
+    breaks: "an `async` block's future, dropped after its body has run, drops what it took again",
+    file: "src/lower/drops/parts.rs",
+    find: "            ty::Coroutine(..) => {}\n",
+    replace: "            ty::Coroutine(def_id, _) => self.drop_taken(*def_id, span, made, out)?,\n",
+    tests: ["test/lowering-functions.test.ts", "-t", "an async block or closure drops what it took"],
   },
 ];

@@ -30,8 +30,8 @@ export const mutations: Mutation[] = [
     name: "closure-part-taken",
     breaks: "a closure that takes part of a value with a destructor is taken as holding it whole",
     file: "src/lower/drops/types.rs",
-    find: "                Drops::Runs if self.takes_whole(*def_id) => Drops::Runs,",
-    replace: "                Drops::Runs if true || self.takes_whole(*def_id) => Drops::Runs,",
+    find: "                    Drops::Runs if self.takes_whole(def_id) => Drops::Runs,",
+    replace: "                    Drops::Runs if true || self.takes_whole(def_id) => Drops::Runs,",
     tests: ["test/traits.test.ts", "-t", "closure holding part"],
   },
   {
@@ -250,5 +250,13 @@ export const mutations: Mutation[] = [
     find: "        if !in_trait_terms {\n            return None;\n        }\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^copied_default_own_params.rs$"],
+  },
+  {
+    name: "async-fn-future-holds-arguments",
+    breaks: "an `async fn`'s future is taken to hold its arguments, which its body drops too",
+    file: "src/lower/drops/types.rs",
+    find: "                        || crate::lower::recognition::is_async_block(self.recognition.tcx, def_id)) =>\n",
+    replace: "                        || true) =>\n",
+    tests: ["test/lowering-functions.test.ts", "-t", "an async block or closure drops what it took"],
   },
 ];
