@@ -614,7 +614,7 @@ test("a throwing JS call is a Result, and ? returns early", async () => {
   expect(decoded).toEqual({ TAG: "Ok", _0: "a b&ü" });
 
   const js = await Bun.file(join(target, "throws.js")).text();
-  expect(js).toContain("  const parseNumbers = $try(() => JSON.parse(json));");
+  expect(js).toContain("  try {\n    numbers = JSON.parse(json);\n  } catch (e) {");
   expect(js).toContain('  const result = $try(() => JSON.parse(json));\n  if (result.TAG === "Err") {\n    return result;\n  }');
   expect(js).toContain('await $settle(Promise.reject("no"))');
   // A web API that throws where the page may not keep data, an `Err`
