@@ -194,4 +194,20 @@ export const mutations: Mutation[] = [
     replace: "                Some(_) => it,\n",
     tests: ["test/corpus.test.ts", "-t", "^drops_of_consumed_iterators.rs$"],
   },
+  {
+    name: "fallible-sum-of-results-as-options",
+    breaks: "`sum()` into a `Result` collects as into an `Option`, so an `Err` is a value",
+    file: "src/lower/mir/iter/collect.rs",
+    find: "                None => Expr::call_helper(\"$collectResults\", vec![it, into]),\n",
+    replace: "                None => Expr::call_helper(\"$collectOptions\", vec![it, Expr::bool(false), into]),\n",
+    tests: ["test/corpus.test.ts", "-t", "^sum_fallible.rs$"],
+  },
+  {
+    name: "fallible-sum-refused",
+    breaks: "`sum()` into an `Option` of numbers is refused, as a dictionary of no impl",
+    file: "src/lower/mir/iter/collect.rs",
+    find: "        if let Some(num) = option.or(result).and_then(Num::of) {\n",
+    replace: "        if let Some(num) = option.or(result).and_then(Num::of).filter(|_| false) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^sum_fallible.rs$"],
+  },
 ];

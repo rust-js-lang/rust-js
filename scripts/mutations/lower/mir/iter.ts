@@ -6,8 +6,8 @@ export const mutations: Mutation[] = [
     name: "mir-enumerate-swapped",
     breaks: "`enumerate` gives `(item, index)`, not `(index, item)`",
     file: "src/lower/mir/iter.rs",
-    find: "                let pair = Expr::array(vec![Expr::var(\"i\"), Expr::var(\"x\")]);\n",
-    replace: "                let pair = Expr::array(vec![Expr::var(\"x\"), Expr::var(\"i\")]);\n",
+    find: "    let pair = Expr::array(vec![Expr::var(\"i\"), Expr::var(\"x\")]);\n",
+    replace: "    let pair = Expr::array(vec![Expr::var(\"x\"), Expr::var(\"i\")]);\n",
     tests: ["test/corpus.test.ts", "-t", "labeled_blocks"],
   },
   {

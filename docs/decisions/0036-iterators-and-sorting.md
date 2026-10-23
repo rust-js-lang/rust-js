@@ -133,3 +133,32 @@ of text, a heap's or a set's. A collection of the crate's own, its
 compiled, given the values, `$collectResults(items, bagFromIter)`; one
 of std's rust-js doesn't know, an `Rc<[T]>`'s, is refused.
 `collect_fallible_into` runs each against native Rust.
+
+## Amendment: `sum()` and `product()` into an `Option` or a `Result`
+
+`sum()` and `product()` into an `Option` or a `Result` of numbers were
+refused, std's `Sum` impls having no dictionary here (#117). They're
+`collect()` into one, the first `None` or `Err` where stepping stops, of
+which the numbers' sum is what's made of them:
+`$collectOptions(it, false, (values) => values.reduce(..))`. Held by
+`test/corpus/sum_fallible.rs`.
+
+## Amendment: `is_sorted()`
+
+`is_sorted()` of a slice or an iterator was refused (#117). It's
+`$isSorted(items)`, each item at most the next by `<=` where that's their
+`PartialOrd`'s, a number's, a float's, which NaN fails, or a `bool`'s;
+else given their `partial_cmp`, a `char`'s by code point, a derived one's.
+It stops at the first pair out of order, so an iterator's later items
+aren't made. Held by `test/corpus/is_sorted_items.rs`.
+
+## Amendment: comparing two iterators
+
+`cmp`, `partial_cmp`, `lt`, `le`, `gt` and `ge` of two iterators were
+refused (#117). They're `$iterCmp(a, b, cmp)`, which steps both in turn as
+std's `cmp_by` does, `a` before `b`, to the first `Ordering` of two that
+isn't `Equal`, or which ends first; given `partial_cmp`, `undefined` where
+two items have none, `None`. `lt` and the rest are it against 0,
+`$iterCmp(..) < 0`, which `undefined` fails, as std's are `false` of it.
+Items with a destructor, which it doesn't drop as it compares them, are
+refused. Held by `test/corpus/iter_compare.rs`.

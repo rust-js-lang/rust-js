@@ -2063,6 +2063,41 @@ export function $binarySearchBy(items, f) {
   return order === 0 ? { TAG: "Ok", _0: base } : { TAG: "Err", _0: base + (order === -1 ? 1 : 0) };
 }
 
+// `is_sorted()` of a slice's or an iterator's items: each at most the next,
+// by `<=`, or where that isn't their `PartialOrd`'s, by `cmp`, their
+// `Ordering`, `Less` or `Equal`. It stops at the first that isn't, as
+// Rust's does, so an iterator's later items aren't made.
+export function $isSorted(items, cmp) {
+  let first = true;
+  let last;
+  for (const item of items) {
+    if (!first) {
+      const order = cmp ? cmp(last, item) : undefined;
+      if (cmp ? order !== -1 && order !== 0 : !(last <= item)) return false;
+    }
+    first = false;
+    last = item;
+  }
+  return true;
+}
+
+// `a.cmp(b)` of two iterators, or `partial_cmp`: each item in turn, as
+// Rust's `cmp_by` steps them, the first `Ordering` of two that isn't
+// `Equal`, `undefined` where `partial_cmp` of two is `None`; else which
+// ended first, `a` stepped before `b` each time.
+export function $iterCmp(a, b, cmp) {
+  const x = a[Symbol.iterator]();
+  const y = b[Symbol.iterator]();
+  for (;;) {
+    const p = x.next();
+    if (p.done) return y.next().done ? 0 : -1;
+    const q = y.next();
+    if (q.done) return 1;
+    const order = cmp(p.value, q.value);
+    if (order !== 0) return order;
+  }
+}
+
 // `v.rotate_left(n)`: its first `n` items moved to its end. More than it
 // has fails Rust's assertion, of `n` named `name` as std names it.
 export function $rotateLeft(v, n, name) {

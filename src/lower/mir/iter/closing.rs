@@ -141,6 +141,38 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         })
     }
 
+    /// `a.cmp(b)` of two iterators, `partial_cmp`, and `lt`, `le`, `gt` and
+    /// `ge`: `$iterCmp(a, b, cmp)`, which steps both in turn as std's
+    /// `cmp_by` does, by their items' `Ord` or `PartialOrd`; `lt` and the rest
+    /// it against 0, which `partial_cmp`'s `None`, `undefined`, fails, as
+    /// std's are `false` of it. Of items with a destructor, which it doesn't
+    /// drop as it compares them, refused.
+    pub(super) fn iterators_cmp(
+        &mut self,
+        (it, other): (Expr, Expr),
+        (item, other_ty): (Option<Ty<'tcx>>, Ty<'tcx>),
+        method: IterMethod,
+        span: Span,
+    ) -> R<Expr> {
+        let other_item = self.iterable_item(other_ty);
+        // `it` is stepped already; what it's compared with, as it's given.
+        let other = self.as_js_iterator(other, other_ty, span)?;
+        let item = item.filter(|&item| item == other_item);
+        let Some(item) = item.filter(|&item| self.drops(item) == crate::lower::drops::Drops::Nothing) else {
+            return Err(self.unsupported(span, "comparing iterators of these items"));
+        };
+        let compare = self.cmp_fn(item, method != IterMethod::Cmp, span)?;
+        let order = Expr::call_helper("$iterCmp", vec![it, other, compare]);
+        let op = match method {
+            IterMethod::Lt => Op::Lt,
+            IterMethod::Le => Op::Le,
+            IterMethod::Gt => Op::Gt,
+            IterMethod::Ge => Op::Ge,
+            _ => return Ok(order),
+        };
+        Ok(Expr::bin(op, order, Expr::int(0)))
+    }
+
     /// `skip(n)` of `it`: JS's `drop(n)`; of items with a destructor,
     /// `$skipping`, each it skips dropped as it's skipped, as Rust's `nth`
     /// drops it (ADRs 0422, 0465).

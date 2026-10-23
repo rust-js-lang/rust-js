@@ -138,4 +138,20 @@ export const mutations: Mutation[] = [
     replace: "                let stepped = self.is_user_iterator(ty);\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_adapter_source_drops.rs$"],
   },
+  {
+    name: "iter-partial-cmp-total",
+    breaks: "`partial_cmp` of two iterators compares by `cmp`, giving an `Ordering` of a NaN",
+    file: "src/lower/mir/iter/closing.rs",
+    find: "        let compare = self.cmp_fn(item, method != IterMethod::Cmp, span)?;\n",
+    replace: "        let compare = self.cmp_fn(item, false, span)?;\n",
+    tests: ["test/corpus.test.ts", "-t", "^iter_compare.rs$"],
+  },
+  {
+    name: "iter-lt-as-le",
+    breaks: "`lt` of two iterators is `le`, true of equal ones",
+    file: "src/lower/mir/iter/closing.rs",
+    find: "            IterMethod::Lt => Op::Lt,\n",
+    replace: "            IterMethod::Lt => Op::Le,\n",
+    tests: ["test/corpus.test.ts", "-t", "^iter_compare.rs$"],
+  },
 ];

@@ -485,35 +485,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let ne = method == IterMethod::Ne;
                 self.iterators_eq((it, arg()), (item, iter_ty, arg_tys[1]), (lent, ne), span)?
             }
-            // The pairing, `(x, i) => [i, x]`, in place of which a
-            // callback that takes the pair apart is given each item and its
-            // index, of an array (`eager_chains`).
-            Some(IterMethod::Enumerate) => {
-                let pair = Expr::array(vec![Expr::var("i"), Expr::var("x")]);
-                let f = Expr::arrow(
-                    vec!["x".into(), "i".into()],
-                    vec![StmtKind::Return(Some(pair)).at(js::Span::NONE)],
-                );
-                method("map", it, vec![f])
-            }
+            Some(IterMethod::Enumerate) => enumerated(it),
+            Some(m) if m.compares() => self.iterators_cmp((it, arg()), (item, arg_tys[1]), m, span)?,
             Some(IterMethod::Fold) => self.folded(it, (Some(arg()), arg()), (arg_tys, item)),
             Some(IterMethod::Reduce) => self.folded(it, (None, arg()), (arg_tys, item)),
             Some(m) if m.tries() => self.try_folded(it, m, &mut arg, (own, output), span)?,
-            // Each item counted, and dropped as `count` drops it.
-            Some(IterMethod::Count) => {
-                let n = self.fresh("n");
-                let x = self.fresh("item");
-                let mut body = Vec::new();
-                if let Some(item) = item {
-                    self.drop_value(Expr::var(&x), item, span, &mut body)?;
-                }
-                let mut params = vec![n.clone().into()];
-                if !body.is_empty() {
-                    params.push(x.into());
-                }
-                body.push(StmtKind::Return(Some(Expr::bin(Op::Add, Expr::var(&n), Expr::int(1)))).at(js::Span::NONE));
-                method("reduce", it, vec![Expr::arrow(params, body), Expr::int(0)])
-            }
+            Some(IterMethod::Count) => self.counted(it, item, span)?,
             Some(IterMethod::Sum | IterMethod::Product) => {
                 let sum = std_method == Some(IterMethod::Sum);
                 self.accumulated((it, def_id), (output, item), sum, span)?
@@ -535,6 +512,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 self.extreme_of(std_method == Some(IterMethod::Max), items, item, span)?
             }
             Some(IterMethod::Last) => self.last_value(it, item, span, made)?,
+            Some(IterMethod::IsSorted) => match item {
+                Some(item) => self.is_sorted_call(it, item, span)?,
+                None => return Ok(None),
+            },
             Some(IterMethod::Nth) => match dropping {
                 Some(item) => self.dropping_pick("$nthDropping", it, arg(), item, span)?,
                 None => return Ok(None),
@@ -543,6 +524,25 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Some(IterMethod::Collect) => self.collected_into(it, output, item, Some(iter_ty), span)?,
             _ => return Ok(None),
         }))
+    }
+
+    /// `it.count()`: each item counted, and dropped as `count` drops it.
+    fn counted(&mut self, it: Expr, item: Option<Ty<'tcx>>, span: Span) -> R<Expr> {
+        let n = self.fresh("n");
+        let x = self.fresh("item");
+        let mut body = Vec::new();
+        if let Some(item) = item {
+            self.drop_value(Expr::var(&x), item, span, &mut body)?;
+        }
+        let mut params = vec![n.clone().into()];
+        if !body.is_empty() {
+            params.push(x.into());
+        }
+        body.push(StmtKind::Return(Some(Expr::bin(Op::Add, Expr::var(&n), Expr::int(1)))).at(js::Span::NONE));
+        Ok(Expr::call(
+            Expr::member(it, "reduce"),
+            vec![Expr::arrow(params, body), Expr::int(0)],
+        ))
     }
 
     /// `x.into_iter()`, of `value` of type `receiver_ty`: a range stays one,
@@ -573,4 +573,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             || self.explicit_adapter(iter_ty)
             || self.struct_hint_known(iter_ty)
     }
+}
+
+/// `it.enumerate()`: each item and its index, `(x, i) => [i, x]`, in
+/// place of which a callback that takes the pair apart is given each item
+/// and its index, of an array (`eager_chains`).
+fn enumerated(it: Expr) -> Expr {
+    let pair = Expr::array(vec![Expr::var("i"), Expr::var("x")]);
+    let f = Expr::arrow(
+        vec!["x".into(), "i".into()],
+        vec![StmtKind::Return(Some(pair)).at(js::Span::NONE)],
+    );
+    Expr::call(Expr::member(it, "map"), vec![f])
 }

@@ -133,6 +133,8 @@ pub(super) enum Comb {
     ResultCloned,
     Contains,
     BinarySearch,
+    /// `is_sorted()`: each item at most the next, by its `PartialOrd`.
+    IsSorted,
     /// `binary_search_by(f)`, and `_by_key(&b, f)`: by a comparison.
     BinarySearchBy,
     BinarySearchByKey,
@@ -759,22 +761,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // `==` item by item for the rest (ADR 0053).
             Comb::SplitOff => helper("$splitOff", vec![subject, next()]),
             Comb::BinarySearch => {
-                let x = next();
-                let item = self
-                    .slice_item(subject_ty)
-                    .ok_or_else(|| self.unsupported(span, "`binary_search` of this"))?;
-                // What `<` orders as `Ord` does, `is_primitive_ord`'s.
-                if self.is_primitive_ord(item) {
-                    return Ok(helper("$binarySearch", vec![subject, x]));
-                }
-                // Any other by its `Ord`, as `sort()` orders it: strings and
-                // `char`s by code point (ADR 0183), a derived one by its
-                // variants and fields.
-                let x = once(self, x, "item", out);
-                let mut body = Vec::new();
-                let order = self.cmp_value(Expr::var("each"), x, item, false, span, &mut body)?;
-                body.push(StmtKind::Return(Some(order)).at(js::Span::NONE));
-                helper("$binarySearchBy", vec![subject, Expr::arrow(vec!["each".into()], body)])
+                let item =
+                    (self.slice_item(subject_ty)).ok_or_else(|| self.unsupported(span, "`binary_search` of this"))?;
+                self.binary_searched(subject, next(), item, span, out)?
             }
             Comb::Contains => {
                 let x = next();
@@ -805,6 +794,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     items
                 };
                 helper("$extend", vec![subject, items])
+            }
+            Comb::IsSorted => {
+                let item =
+                    (self.slice_item(subject_ty)).ok_or_else(|| self.unsupported(span, "`is_sorted` of this"))?;
+                self.is_sorted_call(subject, item, span)?
             }
             Comb::BinarySearchBy => helper("$binarySearchBy", vec![subject, next()]),
             // `f(item)` compared with `b`, by its type's `Ord`.
