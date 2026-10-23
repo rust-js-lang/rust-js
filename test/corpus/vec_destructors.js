@@ -338,7 +338,7 @@ function main() {
               throw error;
             }
             try {
-              const value = second ? second[0] : undefined;
+              const value = second?.[0];
               console.log(
                 `${map == null ? "None" : `Some(${map})`} ${value == null ? "None" : `Some(${value})`}`,
               );

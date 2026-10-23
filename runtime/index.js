@@ -1996,6 +1996,14 @@ export function $matches(s, p) {
   return found;
 }
 
+// `s.matches(p)` of a predicate of a `char`: each `char` it holds of, from
+// the start, or of `s.rmatches(p)`, `rev`, from the end, as Rust asks it.
+export function $matchesBy(s, matches, rev = false) {
+  const chars = Array.from(s);
+  if (rev) chars.reverse();
+  return chars.filter((c) => matches(c));
+}
+
 // `s.trim_matches(p)`, or `trim_start_matches` and `trim_end_matches`: `p`
 // taken off as often as it matches there, a `char` or a string, or each
 // `char` a closure says.
@@ -4193,6 +4201,16 @@ export function $clamp(x, min, max) {
   return x < min ? min : x > max ? max : x;
 }
 
+// `x.clamp(min, max)` of what `cmp` orders, `Ord`'s: `min` or `max` if it's
+// past either. Bounds the wrong way round panic as `Ord`'s default does,
+// or, given `show`, as a `char`'s does, each as `{:?}` shows it.
+export function $clampBy(x, min, max, cmp, show) {
+  if (cmp(min, max) > 0) {
+    throw new Error(show ? `min > max. min = ${show(min)}, max = ${show(max)}` : "assertion failed: min <= max");
+  }
+  return cmp(x, min) < 0 ? min : cmp(x, max) > 0 ? max : x;
+}
+
 // `x.clamp(min, max)` of a float: `min` or `max` if it's past either, and a
 // NaN itself. `min` past `max`, or either a NaN, panics, showing each with
 // `debug`, as `{:?}` shows an `f64` or an `f32`.
@@ -5448,6 +5466,20 @@ export function $tryFromInt(x, lo, hi) {
   if (x < lo) return { TAG: "Err", _0: "number too small to fit in target type" };
   if (x > hi) return { TAG: "Err", _0: "number too large to fit in target type" };
   return { TAG: "Ok", _0: typeof hi === "bigint" ? BigInt(x) : Number(x) };
+}
+
+// `char::try_from(n)` of a `u32`: `Ok` of its `char`, or the error a
+// surrogate's or one past `char::MAX`'s is, its message (ADR 0063).
+export function $charTryFrom(n) {
+  const c = $fromU32(n);
+  return c === undefined ? { TAG: "Err", _0: "converted integer out of range for `char`" } : { TAG: "Ok", _0: c };
+}
+
+// `u8::try_from(c)` of a `char`: `Ok` of its code point up to 255, or the
+// error, its message.
+export function $u8TryFromChar(c) {
+  const n = c.codePointAt(0);
+  return n > 255 ? { TAG: "Err", _0: "unicode code point out of range" } : { TAG: "Ok", _0: n };
 }
 
 export const $printed = ["", ""];
@@ -8369,6 +8401,8 @@ export function $parseErrorKind(message) {
 export function $debugParseError(message, name, options) {
   const kind = $parseErrorKind(message);
   if (name === "ParseBoolError") return name;
+  // A `char`'s, which hold `()`.
+  if (name === "CharTryFromError" || name === "TryFromCharError") return options?.alternate ? `${name}(\n    (),\n)` : `${name}(())`;
   if (name === "TryFromIntError") return options?.alternate ? `TryFromIntError(\n    ${kind},\n)` : `TryFromIntError(${kind})`;
   return options?.alternate ? `${name} {\n    kind: ${kind},\n}` : `${name} { kind: ${kind} }`;
 }

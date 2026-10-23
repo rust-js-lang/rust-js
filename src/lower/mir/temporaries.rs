@@ -4,6 +4,33 @@
 use super::*;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// What `js::is_defined` is given isn't read: it names what's asked of,
+    /// `typeof` of its path, so a static's value MIR copies into its
+    /// argument, `Symbol.toStringTag`, is no read before the test, which
+    /// throws where the host hasn't the global (ADR 0647).
+    pub(super) fn unread_defined_operands(
+        &self,
+        state: &mut State<'_, 'tcx>,
+        func: &Operand<'tcx>,
+        args: &[rustc_span::Spanned<Operand<'tcx>>],
+    ) {
+        let Some((def_id, _)) = fn_def(func.ty(&state.body.local_decls, self.tcx)) else {
+            return;
+        };
+        if !bindings::is_binding(self.tcx, def_id)
+            || !matches!(bindings::js_form(self.tcx, def_id), bindings::JsForm::Defined)
+        {
+            return;
+        }
+        for arg in args {
+            if let Operand::Move(place) | Operand::Copy(place) = &arg.node
+                && let Some(local) = place.as_local()
+            {
+                state.pending.retain(|(l, _)| *l != local);
+            }
+        }
+    }
+
     /// Each temporary made and not yet used, made here, as `const`s: what
     /// runs next must not run before them, nor change what they read.
     pub(super) fn flush(&mut self, state: &mut State<'_, 'tcx>, out: &mut Vec<Stmt>) -> R<()> {

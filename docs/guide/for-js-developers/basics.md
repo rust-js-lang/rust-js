@@ -1183,6 +1183,10 @@ export function label(text) {
   is `const type = a || b || "Object"; return type;`, where the fallback
   is a literal and the `let` read only there
   ([ADR 0646](../../decisions/0646-a-held-chain-and-its-fallback-is-one-or.md)).
+- What `||` keeps by its truth is `&&` of its test: `value.filter(|_|
+  ok).and_then(|v| js::get(v, key))` before a fallback is `(ok &&
+  value?.[key]) || ..`, as React writes it
+  ([ADR 0647](../../decisions/0647-type-name-as-react-writes-it.md)).
 
 A value JS gives you that may be `null` is an `Option` too:
 [JavaScript types](../interop/types.md).

@@ -36,7 +36,7 @@ function tExt(TIterator) {
           .map(([i, x]) => [x, i]),
         { cmp: (a, b) => SelfItemOrd.cmp(a[0], b[0]) || $cmp(a[1], b[1]) },
       );
-      return option ? option[1] : undefined;
+      return option?.[1];
     },
   }));
 }

@@ -31,7 +31,7 @@ function main() {
   const items = [3, 1, 2];
   const slice = items;
   const length = slice?.length;
-  const value$1 = slice != null ? slice[0] : undefined;
+  const value$1 = slice?.[0];
   console.log(
     `${length == null ? "None" : `Some(${length})`} ${value$1 == null ? "None" : `Some(${value$1})`}`,
   );

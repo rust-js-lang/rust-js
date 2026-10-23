@@ -372,19 +372,19 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "as_str" | "as_mut_str" if string => Std::Same,
             "trim" if owner.is_str() => Std::Trim { start: true, end: true },
             // A closure, a function or a set of `char`s as the pattern (ADRs 0063, 0157).
-            "split" | "splitn" | "contains" if owner.is_str() && self_ty.is_some_and(|p| self.is_char_predicate(p)) => {
+            "split" | "splitn" | "contains" | "find" | "rfind" | "starts_with" | "ends_with" | "matches"
+            | "rmatches"
+                if owner.is_str() && self_ty.is_some_and(|p| self.is_char_predicate(p)) =>
+            {
                 Std::Text(match name.as_str() {
                     "split" => TextOp::SplitBy,
                     "splitn" => TextOp::SplitNBy,
-                    _ => TextOp::ContainsBy,
-                })
-            }
-            "find" | "rfind" if owner.is_str() && self_ty.is_some_and(|p| self.is_char_predicate(p)) => {
-                Std::Text(TextOp::FindBy(name.as_str() == "rfind"))
-            }
-            "starts_with" | "ends_with" if owner.is_str() && self_ty.is_some_and(|p| self.is_char_predicate(p)) => {
-                Std::Text(TextOp::StartsBy {
-                    end: name.as_str() == "ends_with",
+                    "contains" => TextOp::ContainsBy,
+                    "find" | "rfind" => TextOp::FindBy(name.as_str() == "rfind"),
+                    "matches" | "rmatches" => TextOp::MatchesBy(name.as_str() == "rmatches"),
+                    end => TextOp::StartsBy {
+                        end: end == "ends_with",
+                    },
                 })
             }
             "split_ascii_whitespace" if owner.is_str() => Std::Text(TextOp::SplitAsciiWhitespace),

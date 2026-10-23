@@ -771,6 +771,12 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### Changed
 
+- **What `js::is_defined` names is no read** (ADR 0647): of a static,
+  `Symbol.toStringTag` was read before its `typeof` test, which threw
+  where the host has no `Symbol`. React's `typeName` is
+  `(hasToStringTag && value?.[Symbol.toStringTag]) || value?.constructor?.name || "Object"`:
+  `t ? x : undefined` kept by `||` is `t && x`, `a != null ? a[k] :
+  undefined` is `a?.[k]`, and `flatten()` of `bool::then` `c ? x : undefined`.
 - **A chain held, then its fallback, is one `||`** (ADR 0646): React's
   `typeName`, `const type = a || b || "Object"; return type;`, where it
   was `const type = a || b || undefined; return type ?? "Object";`.

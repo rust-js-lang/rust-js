@@ -20,6 +20,8 @@ function $parseErrorKind(message) {
 function $debugParseError(message, name, options) {
   const kind = $parseErrorKind(message);
   if (name === "ParseBoolError") return name;
+  // A `char`'s, which hold `()`.
+  if (name === "CharTryFromError" || name === "TryFromCharError") return options?.alternate ? `${name}(\n    (),\n)` : `${name}(())`;
   if (name === "TryFromIntError") return options?.alternate ? `TryFromIntError(\n    ${kind},\n)` : `TryFromIntError(${kind})`;
   return options?.alternate ? `${name} {\n    kind: ${kind},\n}` : `${name} { kind: ${kind} }`;
 }

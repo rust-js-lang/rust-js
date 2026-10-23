@@ -267,4 +267,12 @@ export const mutations: Mutation[] = [
     replace: "        (Some(n), false) => slice(vec![Expr::int(n as i128)]),",
     tests: ["test/lowering-string-places.test.ts", "-t", "strip tested"],
   },
+  {
+    name: "matches-by-set-unmade",
+    breaks: "`matches` of a set of `char`s is given the set, not the predicate of being one, and throws",
+    file: "src/lower/std_types/text.rs",
+    find: "                | TextOp::MatchesBy(_)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^matches_by_predicate.rs$"],
+  },
 ];

@@ -344,4 +344,12 @@ export const mutations: Mutation[] = [
     replace: "                if let [result, ..] = list.as_slice()\n",
     tests: ["test/js-builtins.test.ts", "-t", "unwrap of a throwing JS call"],
   },
+  {
+    name: "flatten-of-then-boxed",
+    breaks: "`c.then(|| o).flatten()` is `$someValue(c ? $some(o) : undefined)`, not `c ? o : undefined`",
+    file: "src/lower/std_types/option.rs",
+    find: "            && let Some(x) = made(then)\n",
+    replace: "            && let Some(x) = made(then).filter(|_| false)\n",
+    tests: ["test/lowering-options.test.ts", "-t", "React's typeName"],
+  },
 ];

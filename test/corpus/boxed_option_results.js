@@ -12,7 +12,7 @@ function main() {
   const none = { TAG: "Err" };
   const value = unit.TAG === "Err" ? $some(unit._0) : undefined;
   const value$1 = none.TAG === "Err" ? $some(none._0) : undefined;
-  const value$2 = $someValue(none.TAG === "Err" ? $some(none._0) : undefined);
+  const value$2 = none.TAG === "Err" ? none._0 : undefined;
   console.log(
     `${value == null ? "None" : "Some(())"} ${value$1 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$1))})`} ${value$2 == null ? "None" : `Some(${value$2})`}`,
   );
