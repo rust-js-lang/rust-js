@@ -558,8 +558,8 @@ pub(super) enum PatternValue<'tcx> {
 /// Each value a body's patterns test of a number, a `char` or the
 /// registry's symbol, and the `const` they name it by:
 /// `Some(IMMEDIATE_PRIORITY)` where every pattern of it is that constant,
-/// `None` where one is written another way, a literal or another constant
-/// (ADRs 0590, 0634).
+/// `None` where one is written another way, a literal, another constant or
+/// a trait's (ADRs 0590, 0634).
 pub(super) fn constant_patterns<'tcx>(
     tcx: TyCtxt<'tcx>,
     thir: &Thir<'tcx>,
@@ -567,7 +567,10 @@ pub(super) fn constant_patterns<'tcx>(
     let mut found: HashMap<PatternValue<'tcx>, Option<DefId>> = HashMap::new();
     let mut of = |pattern: &Pat<'tcx>| {
         pattern.walk_always(|pat| {
-            let named = pat.extra.as_ref().and_then(|extra| extra.expanded_const);
+            // A constant of no generics: a trait's, `<u8 as Level>::HIGH`, is
+            // of a type the pattern doesn't keep, so it's its value.
+            let named = (pat.extra.as_ref().and_then(|extra| extra.expanded_const))
+                .filter(|&d| tcx.generics_of(d).count() == 0);
             let value = match &pat.kind {
                 PatKind::Constant { value } if pat.ty.is_integral() || pat.ty.is_char() => value
                     .valtree

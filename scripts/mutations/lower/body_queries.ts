@@ -106,4 +106,12 @@ export const mutations: Mutation[] = [
     replace: "                PatKind::Constant { .. } => p.ty.is_str(),\n                _ => true,\n",
     tests: ["test/lowering-symbols.test.ts", "-t", "a read of one it tells is checked"],
   },
+  {
+    name: "pattern-trait-const-named",
+    breaks: "a pattern of a trait's constant, `<u8 as Level>::HIGH`, is named with no type, and rustc crashes resolving it",
+    file: "src/lower/body_queries.rs",
+    find: "                .filter(|&d| tcx.generics_of(d).count() == 0);\n",
+    replace: ";\n",
+    tests: ["test/corpus.test.ts", "-t", "^match_trait_const\\.rs$"],
+  },
 ];
