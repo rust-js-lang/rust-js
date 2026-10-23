@@ -8,7 +8,7 @@ export function entry() {
 
 function main() {
   const v = [1, 2, 3];
-  const end = (v.length + 6) >>> 0;
+  const end = v.length + 6;
   Iterator.from($extractIf(v, 0, end, () => true, true));
   console.log("made");
 }

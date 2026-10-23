@@ -146,10 +146,13 @@ function main() {
     }
     throw error;
   }
-  const value = (n) => make(n, n === "c");
   let one;
   try {
-    one = Mapped.andThen({ TAG: "Ambiguous", _0: "c", _1: "d" }, value, loudDrop_drop);
+    one = Mapped.andThen(
+      { TAG: "Ambiguous", _0: "c", _1: "d" },
+      (n) => make(n, n === "c"),
+      loudDrop_drop,
+    );
   } catch (error) {
     if (both.TAG === "Single") {
       loudDrop_drop(both._0);
@@ -179,10 +182,9 @@ function main() {
     }
     throw error;
   }
-  const value$1 = (n) => make(n, true);
   let single;
   try {
-    single = Mapped.andThen({ TAG: "Single", _0: "e" }, value$1, loudDrop_drop);
+    single = Mapped.andThen({ TAG: "Single", _0: "e" }, (n) => make(n, true), loudDrop_drop);
   } catch (error) {
     if (one.TAG === "Single") {
       loudDrop_drop(one._0);
@@ -226,10 +228,9 @@ function main() {
     }
     throw error;
   }
-  const value$2 = (n) => make(n, false);
   let none;
   try {
-    none = Mapped.andThen({ TAG: "Single", _0: "f" }, value$2, loudDrop_drop);
+    none = Mapped.andThen({ TAG: "Single", _0: "f" }, (n) => make(n, false), loudDrop_drop);
   } catch (error) {
     if (single.TAG === "Single") {
       loudDrop_drop(single._0);

@@ -12,9 +12,7 @@ function main() {
   d.unshift(0);
   const a = d;
   const b = [];
-  console.log(
-    `${(a.length + b.length) >>> 0} ${$lazyChain($iter(a), b).reduce((a, b) => (a + b) | 0, 0)}`,
-  );
+  console.log(`${a.length + b.length} ${$lazyChain($iter(a), b).reduce((a, b) => (a + b) | 0, 0)}`);
   const all = [...a, ...b];
   console.log(`[${all.join(", ")}]`);
   const x = d;

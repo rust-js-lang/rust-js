@@ -51,9 +51,8 @@ function main() {
     undefined,
     dDrop_drop,
   );
-  const value = r.TAG === "Err";
   try {
-    console.log(`err ${value}`);
+    console.log(`err ${r.TAG === "Err"}`);
     const o = $collectOptions(
       $closing($iter([[3], undefined, [4]]), (intoIter) => {
         for (const item of intoIter) {
@@ -79,9 +78,8 @@ function main() {
         undefined,
         dDrop_drop,
       );
-      const value = all.TAG === "Ok";
       try {
-        console.log(`ok ${value}`);
+        console.log(`ok ${all.TAG === "Ok"}`);
       } finally {
         if (all.TAG === "Ok") {
           for (const item of all._0) {

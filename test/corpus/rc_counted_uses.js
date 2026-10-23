@@ -658,10 +658,9 @@ function main() {
     throw error;
   }
 
-  const value$2 = (me) => ({ me: $weakClone(me), name: "self" });
   let owner;
   try {
-    owner = $newCyclic(value$2);
+    owner = $newCyclic((me) => ({ me: $weakClone(me), name: "self" }));
   } catch (error) {
     $rcDrop(other$1);
     for (const item of lists) {
@@ -780,7 +779,7 @@ function main() {
     }
     throw error;
   }
-  const value$3 = owner.strong;
+  const value$2 = owner.strong;
   let tmp$8;
   try {
     tmp$8 = $upgrade(owner.value.me);
@@ -830,7 +829,7 @@ function main() {
     throw error;
   }
   try {
-    console.log(`${value$3} ${owner === tmp$9}`);
+    console.log(`${value$2} ${owner === tmp$9}`);
   } catch (error) {
     $rcDrop(tmp$9, (value) => {
       $weakDrop(value.me);
@@ -881,12 +880,12 @@ function main() {
     throw error;
   }
   const defaulted = { value: 0, strong: 1, weak: 0 };
-  const value$4 = { value: 5, strong: 1, weak: 0 };
-  const arg$2 = $cmp(value$4.value, defaulted.value) > 0;
+  const value$3 = { value: 5, strong: 1, weak: 0 };
+  const arg$2 = $cmp(value$3.value, defaulted.value) > 0;
   try {
     console.log(`${defaulted.value} ${arg$2}`);
   } catch (error) {
-    $rcDrop(value$4);
+    $rcDrop(value$3);
     $rcDrop(defaulted);
     $rcDrop(owner, (value) => {
       $weakDrop(value.me);
@@ -909,7 +908,7 @@ function main() {
     throw error;
   }
   try {
-    $rcDrop(value$4);
+    $rcDrop(value$3);
   } catch (error) {
     $rcDrop(defaulted);
     $rcDrop(owner, (value) => {

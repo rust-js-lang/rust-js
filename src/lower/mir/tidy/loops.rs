@@ -280,6 +280,49 @@ pub(super) fn unarrayed(e: Expr) -> Expr {
     }
 }
 
+/// `body; break;`, a loop's body that leaves where it ends, each `break`
+/// where the program wrote it: of a last `if (t) { a } else { b; continue;
+/// }`, `if (t) { a; break; } b`, the turn's rest after the `if`; of `if (t)
+/// { b; continue; } else { a }`, `if (t) { b } else { a; break; }`. A
+/// `break` after what leaves anyway is dropped by `unreachable`, the one
+/// pass that drops what's after a leave. A `continue` of no label, in the
+/// loop's body and no loop in it, is the loop's own.
+fn broken_after(body: &mut Vec<Stmt>) {
+    let goes_on = |s: &Stmt| matches!(s.kind, StmtKind::Continue(None));
+    // What follows a branch that leaves anyway is `unreachable`'s to drop.
+    let leaves = |stmts: &mut Vec<Stmt>| stmts.push(StmtKind::Break(None).at(js::Span::NONE));
+    if let Some(Stmt {
+        kind: StmtKind::If(_, then, Some(otherwise)),
+        ..
+    }) = body.last_mut()
+    {
+        match (then.last().is_some_and(goes_on), otherwise.last().is_some_and(goes_on)) {
+            (false, true) => {
+                otherwise.pop();
+                let rest = std::mem::take(otherwise);
+                let Some(Stmt {
+                    kind: StmtKind::If(_, then, otherwise),
+                    ..
+                }) = body.last_mut()
+                else {
+                    unreachable!("matched")
+                };
+                *otherwise = None;
+                leaves(then);
+                body.extend(rest);
+                return;
+            }
+            (true, false) => {
+                then.pop();
+                leaves(otherwise);
+                return;
+            }
+            _ => {}
+        }
+    }
+    leaves(body);
+}
+
 /// `while (true) { if (t) { exit } rest }`, `exit` leaving, and nothing in
 /// `rest` leaving the loop: `while (!t) { rest } exit`, as the program
 /// wrote it; of an `exit` that ends with the loop's `break`, without it.
@@ -310,6 +353,46 @@ pub(super) fn while_tests(stmts: &mut Vec<Stmt>, loops: &[(js::Span, bool, Optio
         {
             let rest = otherwise.take().unwrap_or_default();
             body.extend(rest);
+        }
+        // `while (true) { if (t) { rest } else { break; } }`, the `while`
+        // itself as Rust writes it, its test as written (ADR 0683): `while
+        // (t) { rest }` (ADR 0702). A `break` of no label, in the loop's
+        // body and no loop in it, is the loop's own.
+        let own_break = |s: &Stmt| matches!(s.kind, StmtKind::Break(None));
+        if let StmtKind::While { cond, body, .. } = &mut stmts[i].kind
+            && matches!(cond.kind, ExprKind::Bool(true))
+            && let (
+                Some(Stmt {
+                    kind: StmtKind::If(_, _, otherwise),
+                    ..
+                }),
+                after,
+            ) = match body.as_slice() {
+                [only] => (Some(only), None),
+                [first, last] => (Some(first), Some(last)),
+                _ => (None, None),
+            }
+            && match (otherwise, after) {
+                (Some(exit), None) => matches!(exit.as_slice(), [b] if own_break(b)),
+                (None, Some(last)) => own_break(last),
+                _ => false,
+            }
+        {
+            let ended = body.len() == 2;
+            let Some(Stmt {
+                kind: StmtKind::If(test, mut rest, _),
+                ..
+            }) = body.drain(..1).next()
+            else {
+                unreachable!("matched")
+            };
+            if ended {
+                broken_after(&mut rest);
+            }
+            *cond = test;
+            *body = rest;
+            i += 1;
+            continue;
         }
         if let StmtKind::While { label, cond, body } = &stmts[i].kind
             && matches!(cond.kind, ExprKind::Bool(true))

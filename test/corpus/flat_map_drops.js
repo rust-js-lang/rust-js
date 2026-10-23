@@ -77,17 +77,12 @@ function bothLeft() {
   );
   try {
     const one = $next(it);
-    console.log(
-      `one ${
-        one != null
-          ? ((l) => {
-              const result = l[0];
-              loudDrop_drop(l);
-              return result;
-            })(one)
-          : 0
-      }`,
-    );
+    const map = (l) => {
+      const result = l[0];
+      loudDrop_drop(l);
+      return result;
+    };
+    console.log(`one ${one != null ? map(one) : 0}`);
   } finally {
     it.return();
   }

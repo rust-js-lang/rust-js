@@ -627,9 +627,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `try` whose `catch` drops it and throws the panic on. What `body`
     /// declares, it assigns, declared before.
     pub(super) fn unwinding(&mut self, body: Vec<Stmt>, cleanup: Vec<Stmt>, span: js::Span, out: &mut Vec<Stmt>) {
-        // What can't throw needs no `catch`: a value made of values.
-        if body.iter().all(Stmt::only_makes_values) {
-            out.extend(body);
+        // What can't throw needs no `catch`: a value made of values, and
+        // what's made so before what can, a closure the call is given.
+        let first = body.iter().take_while(|s| s.only_makes_values()).count();
+        let mut body = body.into_iter();
+        out.extend(body.by_ref().take(first));
+        let mut body = body.peekable();
+        if body.peek().is_none() {
             return;
         }
         let mut inner = Vec::new();

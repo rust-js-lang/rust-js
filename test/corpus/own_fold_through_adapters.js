@@ -64,11 +64,9 @@ function plainIterator_next(plain) {
 
 const Holder = {
   total(holder, IIterator, dropI) {
-    const it = holder.it;
-    let iter;
+    const iter = holder.it;
     let result;
     try {
-      iter = it;
       result = $given(iter, IIterator).reduce((a, b) => (a + b) >>> 0, 0);
       if (IIterator.fold === undefined) {
         dropI?.(iter);
@@ -155,7 +153,6 @@ function main() {
   console.log(
     `${$iterator(["j", 0], ownIterator_next, false, undefined, undefined, undefined, ownIterator_fold, ownIterator_nth).reduce((a, b) => (a + b) >>> 0, 0)}`,
   );
-  const value$2 = (x) => (x + 1) >>> 0;
   console.log(
     `${$closing(
       $iterator(
@@ -172,7 +169,7 @@ function main() {
         ownDrop_drop(it.of);
       },
     )
-      .map((item) => value$2(item))
+      .map((x) => (x + 1) >>> 0)
       .reduce((a, b) => (a + b) >>> 0, 0)}`,
   );
   peeked = iterator_peekable(
@@ -186,16 +183,15 @@ function main() {
     ownDrop_drop(peeked.iter);
     throw error;
   }
-  const value$3 = (x) => (x * 2) >>> 0;
   console.log(
     `[${$closing(peeked, (it) => {
       ownDrop_drop(it.iter);
     })
-      .map((item) => value$3(item))
+      .map((x) => (x * 2) >>> 0)
       .toArray()
       .join(", ")}]`,
   );
-  const value$4 = (x) => (x * 2) >>> 0;
+  const value$2 = (x) => (x * 2) >>> 0;
   console.log(
     `${$closing(
       iterator_peekable(
@@ -207,10 +203,10 @@ function main() {
         ownDrop_drop(it.iter);
       },
     )
-      .map((item) => value$4(item))
+      .map((item) => value$2(item))
       .reduce((a, b) => (a + b) >>> 0, 0)}`,
   );
-  const value$5 = (x) => (x * 2) >>> 0;
+  const value$3 = (x) => (x * 2) >>> 0;
   console.log(
     `${$closing(
       iterator_fuse(
@@ -225,10 +221,10 @@ function main() {
         }
       },
     )
-      .map((item) => value$5(item))
+      .map((item) => value$3(item))
       .reduce((a, b) => (a + b) >>> 0, 0)}`,
   );
-  const value$6 = (x) => x % 2 === 1;
+  const value$4 = (x) => x % 2 === 1;
   console.log(
     `${$closing(
       iterator_peekable(
@@ -240,15 +236,15 @@ function main() {
         ownDrop_drop(it.iter);
       },
     )
-      .filter((item) => value$6(item))
+      .filter((item) => value$4(item))
       .reduce((n) => n + 1, 0)}`,
   );
-  const value$7 = (x) => (x * 2) >>> 0;
+  const value$5 = (x) => (x * 2) >>> 0;
   console.log(
     `${$closing(iterator_peekable(["p", 0], { next: plainIterator_next }, plainDrop_drop), (it) => {
       plainDrop_drop(it.iter);
     })
-      .map((item) => value$7(item))
+      .map((item) => value$5(item))
       .reduce((a, b) => (a + b) >>> 0, 0)}`,
   );
   console.log(
@@ -262,7 +258,7 @@ function main() {
       .toArray()
       .join(", ")}]`,
   );
-  const value$8 = (x) => (x + 1) >>> 0;
+  const value$6 = (x) => (x + 1) >>> 0;
   console.log(
     `[${$closing(
       iterator_fuse(["r", 0], { next: plainIterator_next }, false, plainDrop_drop),
@@ -272,7 +268,7 @@ function main() {
         }
       },
     )
-      .map((item) => value$8(item))
+      .map((item) => value$6(item))
       .toArray()
       .join(", ")}]`,
   );
@@ -283,12 +279,11 @@ function main() {
     plainDrop_drop(stepped.iter);
     throw error;
   }
-  const value$9 = (x) => (x * 2) >>> 0;
   console.log(
     `[${$closing(stepped, (it) => {
       plainDrop_drop(it.iter);
     })
-      .map((item) => value$9(item))
+      .map((x) => (x * 2) >>> 0)
       .toArray()
       .join(", ")}]`,
   );

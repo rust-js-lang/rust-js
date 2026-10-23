@@ -26,10 +26,9 @@ function main() {
     $heapPush(h, [9], (a, b) => $cmp(a[0], b[0]));
     $heapPush(h, [5], (a, b) => $cmp(a[0], b[0]));
     const top = $heapPop(h, (a, b) => $cmp(a[0], b[0]));
-    const value = (o) => o[0];
     try {
-      const value$1 = top ? value(top) : undefined;
-      console.log(`top ${value$1 == null ? "None" : `Some(${value$1})`}`);
+      const value = top?.[0];
+      console.log(`top ${value == null ? "None" : `Some(${value})`}`);
     } finally {
       if (top != null) {
         oDrop_drop(top);
@@ -54,15 +53,19 @@ function main() {
       try {
         console.log(`[${sorted.map((o) => o[0]).join(", ")}]`);
         const r = $heapFrom([[20], [25], [21], [30]], (a, b) => $cmp(a[0], b[0]));
-        const value = (o) => {
-          console.log(`keep ${o[0]}?`);
-          return o[0] % 5 === 0;
-        };
         try {
-          $heapRetain(r, value, (a, b) => $cmp(a[0], b[0]), oDrop_drop);
+          $heapRetain(
+            r,
+            (o) => {
+              console.log(`keep ${o[0]}?`);
+              return o[0] % 5 === 0;
+            },
+            (a, b) => $cmp(a[0], b[0]),
+            oDrop_drop,
+          );
           const o = r[0];
-          const value$1 = o?.[0];
-          console.log(`retained ${value$1 == null ? "None" : `Some(${value$1})`}`);
+          const value = o?.[0];
+          console.log(`retained ${value == null ? "None" : `Some(${value})`}`);
         } finally {
           for (const item of r) {
             oDrop_drop(item);

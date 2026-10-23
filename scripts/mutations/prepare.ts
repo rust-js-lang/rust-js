@@ -91,6 +91,22 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-cells.test.ts", "-t", "a thread-local an if makes"],
   },
   {
+    name: "assigned-undefined-written",
+    breaks: "a thread-local an `if` makes `None` of is `else { cache = undefined; }`, which `let cache;` is already",
+    file: "src/prepare.rs",
+    find: "                if !matches!(value.kind, ExprKind::Undefined) {\n",
+    replace: "                if true {\n",
+    tests: ["test/lowering-cells.test.ts", "-t", "None of is assigned only"],
+  },
+  {
+    name: "assigned-empty-then-kept",
+    breaks: "of a thread-local `None` where its test holds, `if (t) {} else { x = 1; }`, not the other's test",
+    file: "src/prepare.rs",
+    find: "                    (true, false) => StmtKind::If(test.clone().negated_test(), otherwise, None),\n",
+    replace: "                    (true, false) => StmtKind::If(test.clone(), then, Some(otherwise)),\n",
+    tests: ["test/lowering-cells.test.ts", "-t", "None of is assigned only"],
+  },
+  {
     name: "unread-property-dropped",
     breaks: "`const _width = el.offsetWidth;`, a binding's getter that lays the page out, is dropped",
     file: "src/prepare.rs",

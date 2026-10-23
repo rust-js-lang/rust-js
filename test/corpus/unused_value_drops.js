@@ -77,17 +77,12 @@ function main() {
         loudDrop_drop(f);
       }
       const c = value;
-      console.log(
-        `c ${
-          c != null
-            ? ((l) => {
-                const result = l[0];
-                loudDrop_drop(l);
-                return result;
-              })(c)
-            : 0
-        }`,
-      );
+      const map = (l) => {
+        const result = l[0];
+        loudDrop_drop(l);
+        return result;
+      };
+      console.log(`c ${c != null ? map(c) : 0}`);
       const condition$1 = false;
       const f$1 = [5];
       const value$1 = condition$1 ? f$1 : undefined;
@@ -99,31 +94,30 @@ function main() {
         console.log(`c2 ${!c2}`);
         const option = 6;
         const f = [7];
-        const value$1 = option != null ? { TAG: "Ok", _0: option } : { TAG: "Err", _0: f };
+        const value = option != null ? { TAG: "Ok", _0: option } : { TAG: "Err", _0: f };
         if (option != null) {
           loudDrop_drop(f);
         }
-        const d = value$1;
-        let value$2;
+        const d = value;
+        let value$1;
         if (d.TAG === "Ok") {
-          value$2 = d._0;
+          value$1 = d._0;
         } else {
-          value$2 = undefined;
+          value$1 = undefined;
           loudDrop_drop(d._0);
         }
-        console.log(`d ${value$2 == null ? "None" : `Some(${value$2})`}`);
-        const loud = [8];
-        const value = [9];
-        const value$3 = (l) => l;
+        console.log(`d ${value$1 == null ? "None" : `Some(${value$1})`}`);
+        const option$1 = [8];
+        const fallback = [9];
         let mapped;
-        if (loud != null) {
+        if (option$1 != null) {
           try {
-            mapped = value$3(loud);
+            mapped = option$1;
           } finally {
-            loudDrop_drop(value);
+            loudDrop_drop(fallback);
           }
         } else {
-          mapped = value;
+          mapped = fallback;
         }
         const e = mapped;
         try {
@@ -137,17 +131,12 @@ function main() {
             }
           }
           const f = value;
-          console.log(
-            `f ${
-              f != null
-                ? ((l) => {
-                    const result$2 = l[0];
-                    loudDrop_drop(l);
-                    return result$2;
-                  })(f)
-                : 0
-            }`,
-          );
+          const map = (l) => {
+            const result$2 = l[0];
+            loudDrop_drop(l);
+            return result$2;
+          };
+          console.log(`f ${f != null ? map(f) : 0}`);
           let g = { TAG: "Err", _0: 1 };
           const f$2 = [12];
           const value$1 = g.TAG === "Ok" ? g._0 : f$2;
@@ -158,17 +147,16 @@ function main() {
           try {
             console.log(`g ${g[0]}`);
             let h = { TAG: "Ok", _0: [13] };
-            const value = [14];
-            const value$1 = (l) => l;
+            const fallback = [14];
             let mapped;
             if (h.TAG === "Ok") {
               try {
-                mapped = value$1(h._0);
+                mapped = h._0;
               } finally {
-                loudDrop_drop(value);
+                loudDrop_drop(fallback);
               }
             } else {
-              mapped = value;
+              mapped = fallback;
             }
             h = mapped;
             try {
@@ -182,17 +170,12 @@ function main() {
                 }
               }
               i = value;
-              console.log(
-                `i ${
-                  i.TAG === "Ok"
-                    ? ((l) => {
-                        const result = l[0];
-                        loudDrop_drop(l);
-                        return result;
-                      })(i._0)
-                    : 0
-                }`,
-              );
+              const map = (l) => {
+                const result = l[0];
+                loudDrop_drop(l);
+                return result;
+              };
+              console.log(`i ${i.TAG === "Ok" ? map(i._0) : 0}`);
 
               const result = { TAG: "Err", _0: [20] };
               let value$1;
@@ -263,17 +246,12 @@ function main() {
                   try {
                     console.log(`m ${!m}`);
                     const k = maybe(true, [27], loudDrop_drop);
-                    console.log(
-                      `k ${
-                        k != null
-                          ? ((l) => {
-                              const result = l[0];
-                              loudDrop_drop(l);
-                              return result;
-                            })(k)
-                          : 0
-                      }`,
-                    );
+                    const map = (l) => {
+                      const result = l[0];
+                      loudDrop_drop(l);
+                      return result;
+                    };
+                    console.log(`k ${k != null ? map(k) : 0}`);
                     const first = firstOr($iterator([0], genIterator_next), [40], loudDrop_drop);
                     try {
                       console.log(`first ${first[0]}`);

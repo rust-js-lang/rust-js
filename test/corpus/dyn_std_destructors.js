@@ -49,9 +49,8 @@ function main() {
       { value: [3], impl: { typeId: () => "lib::D", $drop: dDrop_drop } },
       { value: 5, impl: { typeId: () => "u8" } },
     ];
-    const length = items.length;
     try {
-      console.log(`${length}`);
+      console.log(`${items.length}`);
       const value = fail(4);
       let value$0$live = true;
       if (value.TAG === "Err") {

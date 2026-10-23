@@ -12,17 +12,20 @@ function loudDrop_drop(loud) {
 
 function main() {
   const v = [[1], [2], [3], [4]];
-  const value = (l) => {
-    l[0] = (l[0] + 10) & 255;
-    return l[0] % 2 === 0;
-  };
   try {
-    $retainMut(v, value, false, loudDrop_drop);
+    $retainMut(
+      v,
+      (l) => {
+        l[0] = (l[0] + 10) & 255;
+        return l[0] % 2 === 0;
+      },
+      false,
+      loudDrop_drop,
+    );
     console.log(`[${v.map((l) => l[0]).join(", ")}]`);
     const d = [[5], [6]];
-    const value$1 = (l) => l[0] === 6;
     try {
-      $retainMut(d, value$1, false, loudDrop_drop);
+      $retainMut(d, (l) => l[0] === 6, false, loudDrop_drop);
       console.log(`${d.length}`);
       const n = [1, 2, 3];
       $retainMut(

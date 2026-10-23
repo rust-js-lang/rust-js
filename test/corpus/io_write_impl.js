@@ -52,17 +52,16 @@ function render(out, n, WWrite) {
 
 function main() {
   const b = { bytes: [] };
+  const out = { value: b };
   try {
-    const out = { value: b };
     const value = render(out, 7, bufWrite(16));
     $assign(b, out.value);
     const write = bufWrite_write(b, [33, 33], 16);
     const n = write.TAG === "Ok" ? write._0 : undefined;
     const value$1 = bufWrite(16).writeFmt({ value: b }, "1");
     const writeAll = bufWrite(16).writeAll({ value: b }, [63]);
-    const value$2 = n;
     console.log(
-      `${$unwrapOk($fromUtf8(b.bytes.slice(), true), undefined, (e) => $debugUtf8Error(e, true))} ${value$2 == null ? "None" : `Some(${value$2})`}`,
+      `${$unwrapOk($fromUtf8(b.bytes.slice(), true), undefined, (e) => $debugUtf8Error(e, true))} ${n == null ? "None" : `Some(${n})`}`,
     );
   } finally {
     bufDrop_drop(b, 16);

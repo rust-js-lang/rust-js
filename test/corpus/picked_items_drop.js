@@ -27,9 +27,8 @@ function third(it, dropI) {
 }
 
 function named(it, name, dropI) {
-  const value = (n) => n[0] === name;
   try {
-    return $findDropping($lent(Iterator.from(it)), (item) => value(item), noisyDrop_drop, false);
+    return $findDropping($lent(Iterator.from(it)), (n) => n[0] === name, noisyDrop_drop, false);
   } finally {
     dropI?.(it);
   }
@@ -40,26 +39,23 @@ function main() {
   const it = $iter(v);
   try {
     const x = $nthDropping($lent(it), 1, noisyDrop_drop, false);
-    const value = (n) => n[0];
     try {
-      console.log(`got ${(x ? value(x) : undefined) ?? "none"}`);
+      console.log(`got ${x?.[0] ?? "none"}`);
     } finally {
       if (x != null) {
         noisyDrop_drop(x);
       }
     }
     const y = third($iter([["p"], ["q"], ["r"]]), $dropEach(noisyDrop_drop));
-    const value$1 = (n) => n[0];
     try {
-      console.log(`got ${(y ? value$1(y) : undefined) ?? "none"}`);
+      console.log(`got ${y?.[0] ?? "none"}`);
       const z = third($iter([["s"]]), $dropEach(noisyDrop_drop));
       try {
         console.log(`none ${!z}`);
         const value = $iter([["e"], ["f"], ["g"]]);
-        const value$1 = (n) => n[0] === "f";
         let f;
         try {
-          f = $findDropping($lent(value), (item) => value$1(item), noisyDrop_drop, false);
+          f = $findDropping($lent(value), (n) => n[0] === "f", noisyDrop_drop, false);
         } catch (error) {
           for (const item of value) {
             noisyDrop_drop(item);
@@ -70,11 +66,10 @@ function main() {
           for (const item of value) {
             noisyDrop_drop(item);
           }
-          console.log(`found ${(f ? f[0] : undefined) ?? "none"}`);
+          console.log(`found ${f?.[0] ?? "none"}`);
           const g = named($iter([["h"], ["i"]]), "i", $dropEach(noisyDrop_drop));
-          const value$1 = (n) => n[0];
           try {
-            console.log(`found ${(g ? value$1(g) : undefined) ?? "none"}`);
+            console.log(`found ${g?.[0] ?? "none"}`);
             const partition = $partition([["j"], ["kk"], ["l"]], (n) => $byteLen(n[0]) === 1);
             const kept = partition[0];
             const rest = partition[1];

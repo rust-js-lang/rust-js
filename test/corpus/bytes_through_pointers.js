@@ -135,13 +135,13 @@ function main() {
     (bytes) => $fromBytes(bytes, 4, true, false),
   );
   for (let i = 0; i < 4; i++) {
-    $ptrAdd(s, i).value = (0x10 * (((i & 255) + 1) & 255)) & 255;
+    $ptrAdd(s, i).value = 0x10 * (i + 1);
   }
   console.log(`0x${slot.value.toString(16)}`);
   const raw = Array.from({ length: 4 });
   const r = $ptr(raw, 0);
   for (let i = 0; i < 4; i++) {
-    $ptrAdd(r, i).value = ((i & 255) + 1) & 255;
+    $ptrAdd(r, i).value = i + 1;
   }
   console.log(`0x${$ptrRetyped(r, 4, false).value.toString(16)}`);
   console.log(

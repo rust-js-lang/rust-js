@@ -192,6 +192,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         acting.map(|(local, _)| *local).collect()
     }
 
+    /// Whether a temporary made and not yet used may throw, so runs before
+    /// a call that unwinds elsewhere, outside its `try`. A closure made,
+    /// `cache => cache`, can't: it's made where it's read, `with`'s applied
+    /// in place (ADR 0703).
+    pub(super) fn may_throw_first(&self, state: &State<'_, 'tcx>) -> bool {
+        (state.pending.iter()).any(|(_, value)| {
+            !movable(state, value)
+                && match value {
+                    Value::Expr(e) => e.may_throw(),
+                    _ => true,
+                }
+        })
+    }
+
     /// A local's value: its temporary's, taken where it's used, or its
     /// variable. A temporary used before others made after it, which would
     /// change their order, has all of them made first.

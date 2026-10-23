@@ -52,21 +52,19 @@ function extended() {
     }
     throw error;
   }
-  const length = v.length;
   try {
-    console.log(`${length}`);
+    console.log(`${v.length}`);
   } catch (error) {
     for (const item of v) {
       console.log(`drop ${item[0]}`);
     }
     throw error;
   }
-  const value = (x) => x % 2 === 1;
   try {
     $extend(
       v,
       $lazyRange(5, 8)
-        .filter((item) => value(item))
+        .filter((x) => x % 2 === 1)
         .map((x) => [(x * 10) >>> 0]),
     );
   } catch (error) {
@@ -104,9 +102,8 @@ function extended() {
     }
     throw error;
   }
-  const value$1 = w.length;
   try {
-    console.log(`${value$1}`);
+    console.log(`${w.length}`);
   } catch (error) {
     for (const item of w) {
       console.log(`drop ${item[0]}`);

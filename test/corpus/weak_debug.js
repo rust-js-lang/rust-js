@@ -323,14 +323,13 @@ function main() {
     $rcDrop(root, dropNode$1);
     throw error;
   }
-  let dropNode;
+  const dropNode = (node) => {
+    $weakDrop(node.parent.value);
+    for (const item of node.kids) {
+      $rcDrop(item, dropNode);
+    }
+  };
   try {
-    dropNode = (node) => {
-      $weakDrop(node.parent.value);
-      for (const item of node.kids) {
-        $rcDrop(item, dropNode);
-      }
-    };
     $rcDrop(kid, dropNode);
   } catch (error) {
     const dropNode = (node) => {

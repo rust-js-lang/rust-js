@@ -48,13 +48,9 @@ function mapped() {
   const kept = $lazyMapWhile(
     $closing($iter(louds), $dropEach(loudDrop_drop)),
     (l) => {
-      const value = l[0] > 0;
-      const value$1 = () => l[0];
-      try {
-        return value ? value$1() : undefined;
-      } finally {
-        loudDrop_drop(l);
-      }
+      const result = l[0] > 0 ? l[0] : undefined;
+      loudDrop_drop(l);
+      return result;
     },
     (item) => item != null,
   ).toArray();

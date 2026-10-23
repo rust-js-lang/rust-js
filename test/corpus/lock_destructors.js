@@ -51,9 +51,8 @@ function main() {
       $unborrow(value);
     }
     const value$1 = $lockRead(l, true);
-    const value$2 = value$1.value;
     try {
-      console.log(`${value$2.length} held`);
+      console.log(`${value$1.value.length} held`);
     } finally {
       $unborrow(value$1);
     }
@@ -100,12 +99,12 @@ function main() {
     throw error;
   }
   const w = { value: ["before"] };
-  const value$2 = ["after"];
+  const value = ["after"];
   let tmp$1;
   try {
     tmp$1 = $lock(w, true);
   } catch (error) {
-    noisyDrop_drop(value$2);
+    noisyDrop_drop(value);
     noisyDrop_drop(w.value);
     noisyDrop_drop(m.value);
     throw error;
@@ -113,13 +112,13 @@ function main() {
   try {
     noisyDrop_drop(tmp$1.value);
   } catch (error) {
-    $assign(tmp$1.value, value$2);
+    $assign(tmp$1.value, value);
     $unborrow(tmp$1);
     noisyDrop_drop(w.value);
     noisyDrop_drop(m.value);
     throw error;
   }
-  $assign(tmp$1.value, value$2);
+  $assign(tmp$1.value, value);
   try {
     try {
       $unborrow(tmp$1);

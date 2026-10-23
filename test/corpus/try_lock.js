@@ -77,9 +77,8 @@ function main() {
       }
     }
     const value$1 = $tryLock(m, true);
-    const value$2 = value$1.TAG === "Err";
     try {
-      console.log(`${value$2}`);
+      console.log(`${value$1.TAG === "Err"}`);
     } catch (error) {
       if (value$1.TAG === "Ok") {
         $unborrow(value$1._0);

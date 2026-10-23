@@ -90,9 +90,9 @@ function main() {
       noisyDrop_drop(swapped);
       throw error;
     }
-    const value = (n) => n[0];
+    const key = (n) => n[0];
     try {
-      v.sort((a, b) => $cmp(value(a), value(b)));
+      v.sort((a, b) => $cmp(key(a), key(b)));
     } catch (error) {
       noisyDrop_drop(swapped);
       throw error;
@@ -110,9 +110,8 @@ function main() {
       noisyDrop_drop(swapped);
       throw error;
     }
-    const value$1 = (a, b) => $cmp(b[0], a[0]);
     try {
-      v.sort(value$1);
+      v.sort((a, b) => $cmp(b[0], a[0]));
     } catch (error) {
       noisyDrop_drop(swapped);
       throw error;
@@ -130,9 +129,9 @@ function main() {
       noisyDrop_drop(swapped);
       throw error;
     }
-    const value$2 = (n) => n[0];
+    const key$1 = (n) => n[0];
     try {
-      $sortUnstable(v, (a, b) => value$2(a) < value$2(b), "general8");
+      $sortUnstable(v, (a, b) => key$1(a) < key$1(b), "general8");
     } catch (error) {
       noisyDrop_drop(swapped);
       throw error;
@@ -277,18 +276,21 @@ function main() {
         noisyDrop_drop(swapped);
 
         const w = $range(10, 20).map((value) => [value]);
-        const value = (n) => {
-          console.log(`keep ${n[0]}?`);
-          return n[0] % 3 !== 0;
-        };
         try {
-          $retain(w, value, noisyDrop_drop);
+          $retain(
+            w,
+            (n) => {
+              console.log(`keep ${n[0]}?`);
+              return n[0] % 3 !== 0;
+            },
+            noisyDrop_drop,
+          );
           console.log(`[${ids(w).join(", ")}]`);
-          const value$1 = (n) => {
+          const key = (n) => {
             console.log(`key ${n[0]}`);
             return (n[0] / 4) >>> 0;
           };
-          $dedupBy(w, (a, b) => value$1(a) === value$1(b), noisyDrop_drop);
+          $dedupBy(w, (a, b) => key(a) === key(b), noisyDrop_drop);
           console.log(`[${ids(w).join(", ")}]`);
           $truncate(w, 3, noisyDrop_drop);
           console.log(`[${ids(w).join(", ")}]`);
@@ -315,19 +317,7 @@ function main() {
               }
               throw error;
             }
-            const value = (n) => n[0];
-            let map;
-            try {
-              map = front ? value(front) : undefined;
-            } catch (error) {
-              if (second != null) {
-                noisyDrop_drop(second);
-              }
-              if (front != null) {
-                noisyDrop_drop(front);
-              }
-              throw error;
-            }
+            const map = front?.[0];
             try {
               const value = second?.[0];
               console.log(
@@ -366,9 +356,8 @@ function main() {
                 $closing($iter(items), $dropEach(noisyDrop_drop)).map((item) => value(item)),
                 noisyDrop_drop,
               );
-              const value$1 = (n) => n[0];
               try {
-                const value = last ? value$1(last) : undefined;
+                const value = last?.[0];
                 console.log(`last ${value == null ? "None" : `Some(${value})`}`);
               } finally {
                 if (last != null) {

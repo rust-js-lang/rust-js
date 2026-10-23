@@ -30,12 +30,17 @@ function main() {
     $cmp,
     noisyDrop_drop,
   );
-  const value = (k, v) => {
-    console.log(`keep ${k}? ${v[0]}`);
-    return k % 2 === 0;
-  };
   try {
-    $retainMap(tree, value, $sortedEntries(tree, $cmp), false, noisyDrop_drop);
+    $retainMap(
+      tree,
+      (k, v) => {
+        console.log(`keep ${k}? ${v[0]}`);
+        return k % 2 === 0;
+      },
+      $sortedEntries(tree, $cmp),
+      false,
+      noisyDrop_drop,
+    );
     console.log(
       `[${$sortedEntries(tree, $cmp)
         .map((entry) => entry[0])

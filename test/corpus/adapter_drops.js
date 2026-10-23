@@ -123,10 +123,9 @@ function main() {
   let pair$live;
   try {
     pair = $next(zipped);
-    const value = ([a, b]) => [a[0], b[0]];
     try {
-      const value$1 = pair ? value(pair) : undefined;
-      console.log(`zip ${value$1 == null ? "None" : `Some((${value$1[0]}, ${value$1[1]}))`}`);
+      const value = pair ? [pair[0][0], pair[1][0]] : undefined;
+      console.log(`zip ${value == null ? "None" : `Some((${value[0]}, ${value[1]}))`}`);
       pair$live = false;
     } finally {
       if (pair != null) {
@@ -134,8 +133,8 @@ function main() {
         loudDrop_drop(pair[1]);
       }
     }
-    const value$1 = $next(zipped);
-    const value$2 = value$1
+    const value = $next(zipped);
+    const value$1 = value
       ? (([a, b]) => {
           const result = [a[0], b[0]];
           try {
@@ -144,11 +143,11 @@ function main() {
             loudDrop_drop(a);
           }
           return result;
-        })(value$1)
+        })(value)
       : undefined;
-    console.log(`zip ${value$2 == null ? "None" : `Some((${value$2[0]}, ${value$2[1]}))`}`);
-    const value$3 = $next(zipped);
-    const value$4 = value$3
+    console.log(`zip ${value$1 == null ? "None" : `Some((${value$1[0]}, ${value$1[1]}))`}`);
+    const value$2 = $next(zipped);
+    const value$3 = value$2
       ? (([a, b]) => {
           const result = [a[0], b[0]];
           try {
@@ -157,9 +156,9 @@ function main() {
             loudDrop_drop(a);
           }
           return result;
-        })(value$3)
+        })(value$2)
       : undefined;
-    console.log(`zip ${value$4 == null ? "None" : `Some((${value$4[0]}, ${value$4[1]}))`}`);
+    console.log(`zip ${value$3 == null ? "None" : `Some((${value$3[0]}, ${value$3[1]}))`}`);
   } finally {
     zipped.return();
   }

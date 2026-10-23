@@ -213,9 +213,8 @@ function main() {
         }
       }
       const closure = kept$1;
-      const value$3 = (d) => d[0];
       try {
-        console.log(`closure ${closure != null ? value$3(closure) : 0}`);
+        console.log(`closure ${closure?.[0] ?? 0}`);
         const value = keep(make(6), (d) => d[0] > 9, dDrop_drop);
         try {
           console.log(`generic ${!value}`);
@@ -311,14 +310,12 @@ function main() {
 
               const value$2 = make(15);
               const ok = value$2 != null ? { TAG: "Ok", _0: value$2 } : { TAG: "Err", _0: "none" };
-              const value$3 = (d) => d[0];
               try {
-                console.log(`ok ${ok.TAG === "Ok" ? value$3(ok._0) : 0}`);
+                console.log(`ok ${ok.TAG === "Ok" ? ok._0[0] : 0}`);
                 const value = make(0);
                 const err = value != null ? { TAG: "Ok", _0: value } : { TAG: "Err", _0: "none" };
-                const value$1 = err.TAG === "Err";
                 try {
-                  console.log(`err ${value$1}`);
+                  console.log(`err ${err.TAG === "Err"}`);
                   const value = parse("16", dNamed);
                   let value$0$live$1 = true;
                   if (value.TAG === "Ok") {
@@ -344,28 +341,28 @@ function main() {
                     }
                   }
                   value$0$live$1 = false;
-                  const value$2 = parse("x", dNamed);
+                  const value$1 = parse("x", dNamed);
                   let value$0$live$2 = true;
-                  if (value$2.TAG === "Ok") {
+                  if (value$1.TAG === "Ok") {
                     value$0$live$2 = false;
                     try {
-                      console.log(`parsed ${value$2._0[0]}`);
+                      console.log(`parsed ${value$1._0[0]}`);
                     } finally {
-                      dDrop_drop(value$2._0);
+                      dDrop_drop(value$1._0);
                     }
                   } else {
                     try {
-                      console.log(`${value$2._0}`);
+                      console.log(`${value$1._0}`);
                     } catch (error) {
-                      if (value$2.TAG === "Ok") {
-                        dDrop_drop(value$2._0);
+                      if (value$1.TAG === "Ok") {
+                        dDrop_drop(value$1._0);
                       }
                       throw error;
                     }
                   }
-                  if (value$2.TAG === "Ok") {
+                  if (value$1.TAG === "Ok") {
                     if (value$0$live$2) {
-                      dDrop_drop(value$2._0);
+                      dDrop_drop(value$1._0);
                     }
                   }
                   value$0$live$2 = false;
@@ -420,13 +417,13 @@ function main() {
                       const d = value$1._0[0];
                       value$0$1$live = false;
                       const e = value$1._0[1];
-                      const value = (e) => {
+                      const map = (e) => {
                         const result = e[0];
                         dDrop_drop(e);
                         return result;
                       };
                       try {
-                        console.log(`pair ${d[0]} ${e != null ? value(e) : 0}`);
+                        console.log(`pair ${d[0]} ${e != null ? map(e) : 0}`);
                       } finally {
                         dDrop_drop(d);
                       }

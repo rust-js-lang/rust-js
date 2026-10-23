@@ -27,15 +27,13 @@ function splitFirst(iter, k, dropI, dropIItem) {
     dropI?.(iter);
     throw error;
   }
-  let iter$1;
   let result;
   try {
-    iter$1 = iter;
-    result = Iterator.from(iter$1).reduce((n, item) => {
+    result = Iterator.from(iter).reduce((n, item) => {
       dropIItem?.(item);
       return n + 1;
     }, 0);
-    dropI?.(iter$1);
+    dropI?.(iter);
   } catch (error) {
     for (const item of first) {
       dropIItem?.(item);
@@ -136,10 +134,9 @@ function main() {
       t.return();
       throw error;
     }
-    const value = (n) => n[0];
     try {
-      const value$1 = one ? value(one) : undefined;
-      console.log(`one ${value$1 == null ? "None" : `Some(${value$1})`}`);
+      const value = one?.[0];
+      console.log(`one ${value == null ? "None" : `Some(${value})`}`);
     } catch (error) {
       if (one != null) {
         nDrop_drop(one);
@@ -566,9 +563,8 @@ function main() {
       }
       throw error;
     }
-    const value$1 = (n) => n[0];
     try {
-      const value = next ? value$1(next) : undefined;
+      const value = next?.[0];
       console.log(`next ${value == null ? "None" : `Some(${value})`}`);
     } catch (error) {
       if (next != null) {

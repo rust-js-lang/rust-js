@@ -33,17 +33,16 @@ function main() {
     }
   }
   it = $iter(noisy([4, 5, 6]));
-  const value = (n) => n[0] === 4;
   try {
-    const rfind = $findBack(it, value, undefined, noisyDrop_drop);
-    const value$1 = rfind
+    const rfind = $findBack(it, (n) => n[0] === 4, undefined, noisyDrop_drop);
+    const value = rfind
       ? ((n) => {
           const result = n[0];
           noisyDrop_drop(n);
           return result;
         })(rfind)
       : undefined;
-    console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
+    console.log(`${value == null ? "None" : `Some(${value})`}`);
     console.log(
       `${$foldBack($iter(noisy([7, 8])), 0, (sum, n) => {
         const result = (((sum * 10) >>> 0) + n[0]) >>> 0;
@@ -51,19 +50,18 @@ function main() {
         return result;
       })}`,
     );
-    const value$2 = $iter(noisy([1, 2, 3]));
-    const value$3 = (n) => {
-      const result = n[0] > 1 ? n[0] : undefined;
-      noisyDrop_drop(n);
-      return result;
-    };
+    const value$1 = $iter(noisy([1, 2, 3]));
     try {
-      const value = $lent(value$2)
-        .map(value$3)
+      const value = $lent(value$1)
+        .map((n) => {
+          const result = n[0] > 1 ? n[0] : undefined;
+          noisyDrop_drop(n);
+          return result;
+        })
         .find((item) => item != null);
       console.log(`${value == null ? "None" : `Some(${value})`}`);
     } finally {
-      for (const item of value$2) {
+      for (const item of value$1) {
         noisyDrop_drop(item);
       }
     }

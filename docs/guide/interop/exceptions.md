@@ -377,9 +377,8 @@ export function record(log) {
   const entries = $borrow(log, true);
   try {
     const borrowMut = $borrowMut(log, true);
-    const value = `${entries.value.length} entries`;
     try {
-      borrowMut.value.push(value);
+      borrowMut.value.push(`${entries.value.length} entries`);
     } finally {
       $unborrow(borrowMut);
     }

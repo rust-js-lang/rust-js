@@ -23,31 +23,29 @@ function deep(n) {
 
 function main() {
   const _outer = ["outer"];
-  const value = () => {
-    const _a = ["a"];
-    const moved = ["moved"];
-    const kept = ["kept"];
-    try {
-      try {
-        noisyDrop_drop(kept);
-        deep(1);
-      } finally {
-        noisyDrop_drop(moved);
-      }
-      const _never = ["never"];
-      noisyDrop_drop(_never);
-    } finally {
-      noisyDrop_drop(_a);
-    }
-  };
   try {
-    const result = $catchUnwind(value);
-    const value$1 = result.TAG === "Err";
+    const result = $catchUnwind(() => {
+      const _a = ["a"];
+      const moved = ["moved"];
+      const kept = ["kept"];
+      try {
+        try {
+          noisyDrop_drop(kept);
+          deep(1);
+        } finally {
+          noisyDrop_drop(moved);
+        }
+        const _never = ["never"];
+        noisyDrop_drop(_never);
+      } finally {
+        noisyDrop_drop(_a);
+      }
+    });
     try {
-      console.log(`caught: ${value$1}`);
+      console.log(`caught: ${result.TAG === "Err"}`);
 
       const held = ["captured"];
-      const result = $catchUnwind(() => {
+      const result$1 = $catchUnwind(() => {
         const taken = held;
         try {
           console.log(`holding ${taken[0]}`);
@@ -62,9 +60,8 @@ function main() {
           throw error;
         }
       });
-      const value = result.TAG === "Err";
       try {
-        console.log(`caught again: ${value}`);
+        console.log(`caught again: ${result$1.TAG === "Err"}`);
 
         const result = $catchUnwind(() => {
           throw $unwinding({
@@ -72,9 +69,8 @@ function main() {
             impl: { typeId: () => "lib::Noisy", $drop: noisyDrop_drop },
           });
         });
-        const value$1 = result.TAG === "Err";
         try {
-          console.log(`payload caught: ${value$1}`);
+          console.log(`payload caught: ${result.TAG === "Err"}`);
         } finally {
           if (result.TAG === "Err") {
             result._0.impl.$drop?.(result._0.value);
@@ -82,8 +78,8 @@ function main() {
         }
         console.log("end");
       } finally {
-        if (result.TAG === "Err") {
-          result._0.impl.$drop?.(result._0.value);
+        if (result$1.TAG === "Err") {
+          result$1._0.impl.$drop?.(result$1._0.value);
         }
       }
     } finally {

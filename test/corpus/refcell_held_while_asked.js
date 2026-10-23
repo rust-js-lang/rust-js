@@ -32,9 +32,8 @@ function asksShared() {
 
 function probeDrop_drop(probe) {
   const tryBorrowMut = $tryBorrow(probe[0], true);
-  const value = tryBorrowMut.TAG === "Err";
   try {
-    console.log(`drop sees it borrowed: ${value}`);
+    console.log(`drop sees it borrowed: ${tryBorrowMut.TAG === "Err"}`);
   } finally {
     if (tryBorrowMut.TAG === "Ok") {
       $unborrow(tryBorrowMut._0);
@@ -46,9 +45,8 @@ export const peekClone = { clone: peekClone_clone };
 
 function peekClone_clone(peek) {
   const tryBorrowMut = $tryBorrow(peek[0], true);
-  const value = tryBorrowMut.TAG === "Err";
   try {
-    console.log(`clone sees it borrowed: ${value}`);
+    console.log(`clone sees it borrowed: ${tryBorrowMut.TAG === "Err"}`);
   } finally {
     if (tryBorrowMut.TAG === "Ok") {
       $unborrow(tryBorrowMut._0);

@@ -125,10 +125,9 @@ function main() {
     $dropEach(loudDrop_drop),
     loudDrop_drop,
   );
-  const value = (l) => l[0] === 9;
   let none;
   try {
-    none = $nextIf(it, value);
+    none = $nextIf(it, (l) => l[0] === 9);
   } catch (error) {
     for (const item of it.iter) {
       loudDrop_drop(item);

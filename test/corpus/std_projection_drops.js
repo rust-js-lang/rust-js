@@ -146,9 +146,8 @@ function bagExtendLoud_extend(bag, items, dropI, dropIIntoIter) {
 
 function main() {
   const found = first([["a"], ["b"], ["c"]], $dropEach(loudDrop_drop));
-  const value = (l) => l[0];
   try {
-    console.log(`first ${found != null ? value(found) : "none"}`);
+    console.log(`first ${found?.[0] ?? "none"}`);
     const found$1 = relay(
       $iterator({ rest: $iter([["d"], ["e"], ["f"]]) }, drainIterator_next),
       (it) => {
@@ -158,9 +157,8 @@ function main() {
         }
       },
     );
-    const value$1 = (l) => l[0];
     try {
-      console.log(`relayed ${found$1 != null ? value$1(found$1) : "none"}`);
+      console.log(`relayed ${found$1?.[0] ?? "none"}`);
       const rest = skipOne(
         $iter([["g"], ["h"]]),
         { next: $next },

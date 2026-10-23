@@ -183,7 +183,7 @@ function main() {
 
   const runs = [1, 1, 2, 3, 3, 3];
   for (const run of $chunkByMut(runs, (a, b) => a === b)) {
-    const n = run.length | 0;
+    const n = run.length;
     run[$at(run, 0)] = n;
   }
   console.log(`[${runs.join(", ")}]`);

@@ -7,51 +7,46 @@ export function entry() {
 }
 
 function main() {
-  const c = { value: [1] };
+  let c = [1];
+  const old$1 = c;
+  c = [2];
   try {
-    const cell = c;
-    const old$1 = cell.value;
-    cell.value = [2];
     if (old$1 != null) {
       console.log(`drop ${old$1[0]}`);
     }
-    const old = c.value;
-    c.value = undefined;
-    const value = (l) => l[0];
+    const old = c;
+    c = undefined;
     try {
-      const value$1 = old ? value(old) : undefined;
-      console.log(`old ${value$1 == null ? "None" : `Some(${value$1})`}`);
-      const taken = c.value;
-      c.value = undefined;
+      const value = old?.[0];
+      console.log(`old ${value == null ? "None" : `Some(${value})`}`);
+      const taken = c;
+      c = undefined;
       try {
         console.log(`taken ${!taken}`);
-        const cell = c;
-        const old = cell.value;
-        cell.value = [3];
+        const old = c;
+        c = [3];
         if (old != null) {
           console.log(`drop ${old[0]}`);
         }
         const o = {};
-        const value = o.value;
         try {
-          console.log(`${!value}`);
+          console.log(`${!o.value}`);
           const set = $onceSet(o, [4]);
           if (set.TAG === "Err") {
             console.log(`drop ${set._0[0]}`);
           }
           const again = $onceSet(o, [5]);
-          const loud = again.TAG === "Err" ? again._0 : undefined;
-          const value$1 = loud
-            ? ((l) => {
-                const result = l[0];
-                console.log(`drop ${l[0]}`);
-                return result;
-              })(loud)
-            : undefined;
-          console.log(`again ${value$1 == null ? "None" : `Some(${value$1})`}`);
-          const l = o.value;
-          const value$2 = l?.[0];
-          console.log(`got ${value$2 == null ? "None" : `Some(${value$2})`}`);
+          const l = again.TAG === "Err" ? again._0 : undefined;
+          const map = (l) => {
+            const result = l[0];
+            console.log(`drop ${l[0]}`);
+            return result;
+          };
+          const value = l ? map(l) : undefined;
+          console.log(`again ${value == null ? "None" : `Some(${value})`}`);
+          const l$1 = o.value;
+          const value$1 = l$1?.[0];
+          console.log(`got ${value$1 == null ? "None" : `Some(${value$1})`}`);
           const lazy = {};
           try {
             console.log(`init ${$getOrInit(lazy, () => [6])[0]}`);
@@ -97,8 +92,8 @@ function main() {
       }
     }
   } finally {
-    if (c.value != null) {
-      console.log(`drop ${c.value[0]}`);
+    if (c != null) {
+      console.log(`drop ${c[0]}`);
     }
   }
 }

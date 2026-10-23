@@ -55,13 +55,12 @@ function main() {
           .map((l) => l[0])
           .join(", ")}]`,
       );
-      const value = (i) => {
-        console.log(`make ${i}`);
-        return [i % 2, [(10 + i) & 255]];
-      };
       const c = $treeFrom(
         new Map(),
-        $lazyRange(0, 4).map((item) => value(item)),
+        $lazyRange(0, 4).map((i) => {
+          console.log(`make ${i}`);
+          return [i % 2, [(10 + i) & 255]];
+        }),
         false,
         $cmp,
         loudDrop_drop,

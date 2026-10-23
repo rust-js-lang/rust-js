@@ -31,9 +31,8 @@ function main() {
       it.return();
       throw error;
     }
-    const value = (l) => l[0];
     try {
-      console.log(`took ${first != null ? value(first) : "none"}`);
+      console.log(`took ${first?.[0] ?? "none"}`);
     } catch (error) {
       if (first != null) {
         loudDrop_drop(first);
@@ -204,9 +203,9 @@ function main() {
       }
       throw error;
     }
-    const value$1 = [["g"]];
+    const value = [["g"]];
     try {
-      $extend(v, value$1);
+      $extend(v, value);
     } catch (error) {
       if (first != null) {
         loudDrop_drop(first);
@@ -227,9 +226,8 @@ function main() {
       }
       throw error;
     }
-    let option;
+    const option = ["i"];
     try {
-      option = ["i"];
       $extend(v, option == null ? [] : [option]);
     } catch (error) {
       if (first != null) {
@@ -240,10 +238,10 @@ function main() {
       }
       throw error;
     }
-    const value$2 = [["j"]];
+    const value$1 = [["j"]];
     let tmp$3;
     try {
-      tmp$3 = $iter(value$2);
+      tmp$3 = $iter(value$1);
     } catch (error) {
       if (first != null) {
         loudDrop_drop(first);
@@ -265,10 +263,8 @@ function main() {
       throw error;
     }
     let tmp$4;
-    let tmp$5;
     try {
-      tmp$4 = v;
-      tmp$5 = $iter([["k"]]);
+      tmp$4 = $iter([["k"]]);
     } catch (error) {
       if (first != null) {
         loudDrop_drop(first);
@@ -279,7 +275,7 @@ function main() {
       throw error;
     }
     try {
-      $extend(tmp$4, tmp$5);
+      $extend(v, tmp$4);
     } catch (error) {
       if (first != null) {
         loudDrop_drop(first);
@@ -289,9 +285,8 @@ function main() {
       }
       throw error;
     }
-    const length = v.length;
     try {
-      console.log(`end ${length}`);
+      console.log(`end ${v.length}`);
     } catch (error) {
       if (first != null) {
         loudDrop_drop(first);

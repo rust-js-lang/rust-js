@@ -44,15 +44,14 @@ function main() {
   const loud = "fold";
   const value = [];
   const captured = loud;
-  const value$1 = (v, t) => {
-    v.push([t, captured]);
-    return v;
-  };
   try {
     const tags = Ends.taggedBack(
       { inner: { start: 0, end: 3 } },
       value,
-      value$1,
+      (v, t) => {
+        v.push([t, captured]);
+        return v;
+      },
       { next: $rangeNext },
       { next_back: $rangeNextBack },
     );
@@ -67,13 +66,13 @@ function main() {
       { next_back: $nextBack },
     );
     console.log(`${words}`);
-    const value$2 = Ends.heldBack(
+    const value$1 = Ends.heldBack(
       { inner: { start: 5, end: 8 } },
       { next: $rangeNext },
       { next_back: $rangeNextBack },
     );
     console.log(
-      `${value$2 == null ? "None" : `Some(${tagDebug_fmt(value$2, { fmt: (value) => String(value) })})`}`,
+      `${value$1 == null ? "None" : `Some(${tagDebug_fmt(value$1, { fmt: (value) => String(value) })})`}`,
     );
   } finally {
     console.log(`drop ${loud}`);

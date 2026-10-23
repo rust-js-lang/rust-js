@@ -22,8 +22,8 @@ export const mutations: Mutation[] = [
     name: "mir-unwind-never-caught",
     breaks: "what may panic is never in a `try`, so nothing is dropped as a panic unwinds",
     file: "src/lower/mir/drops.rs",
-    find: "        if body.iter().all(Stmt::only_makes_values) {\n",
-    replace: "        if true {\n",
+    find: "        let first = body.iter().take_while(|s| s.only_makes_values()).count();\n",
+    replace: "        let first = body.len();\n",
     tests: ["test/corpus.test.ts", "-t", "drop|refcell_"],
   },
   {
@@ -97,5 +97,14 @@ export const mutations: Mutation[] = [
     find: "                None => self.complete_drop(state, block, (part, path), span, out)?,\n            }\n        }\n        if !cleanup",
     replace: "                None => self.drop_place(state, part, span, out)?,\n            }\n        }\n        if !cleanup",
     tests: ["test/corpus.test.ts", "-t", "^array_partial_moves.rs$"],
+  },
+  {
+    name: "unwinding-made-first-tried",
+    breaks: "a closure made before a call that may panic is assigned in its `try`, `let key; try { key = (n) => n[0]; .. }`, not `const key = (n) => n[0];` before it",
+    file: "src/lower/mir/drops.rs",
+    find: "        let first = body.iter().take_while(|s| s.only_makes_values()).count();\n",
+    replace: "        let first = if body.iter().all(Stmt::only_makes_values) { body.len() } else { 0 };\n",
+    tests: ["test/corpus.test.ts", "-t", "^vec_destructors.rs$"],
+    snapshots: true,
   },
 ];

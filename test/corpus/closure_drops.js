@@ -118,17 +118,19 @@ function main() {
     throw error;
   }
   const e = ["e"];
-  const value = () => {
-    const x = e;
-    const result = $byteLen(x[0]);
-    console.log(`drop ${x[0]}`);
-    return result;
-  };
   let tmp;
   try {
-    tmp = callOnce(value, (value) => {
-      console.log(`drop ${e[0]}`);
-    });
+    tmp = callOnce(
+      () => {
+        const x = e;
+        const result = $byteLen(x[0]);
+        console.log(`drop ${x[0]}`);
+        return result;
+      },
+      (value) => {
+        console.log(`drop ${e[0]}`);
+      },
+    );
   } catch (error) {
     console.log(`drop ${r[0]}`);
     throw error;
@@ -140,18 +142,20 @@ function main() {
     throw error;
   }
   const f = "f";
-  const value$1 = () => {
-    try {
-      console.log(`drop ${f}`);
-    } catch (error) {
-      throw error;
-    }
-    return 4;
-  };
   try {
-    keep(value$1, (value) => {
-      console.log(`drop ${f}`);
-    });
+    keep(
+      () => {
+        try {
+          console.log(`drop ${f}`);
+        } catch (error) {
+          throw error;
+        }
+        return 4;
+      },
+      (value) => {
+        console.log(`drop ${f}`);
+      },
+    );
   } catch (error) {
     console.log(`drop ${r[0]}`);
     throw error;

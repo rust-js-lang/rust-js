@@ -47,14 +47,13 @@ function loudDrop_drop(loud) {
 // Each item it's given is the closure's, dropped there; what it leaves is
 // the iterator's, dropped with it.
 function sumBelow(it, limit, dropI) {
-  const value = (sum, loud) => {
-    const result = (sum + loud[0]) >>> 0 <= limit ? (sum + loud[0]) >>> 0 : undefined;
-    loudDrop_drop(loud);
-    return result;
-  };
   let sum;
   try {
-    sum = $tryFoldSome(Iterator.from(it), 0, (a, b) => value(a, b));
+    sum = $tryFoldSome(Iterator.from(it), 0, (sum, loud) => {
+      const result = (sum + loud[0]) >>> 0 <= limit ? (sum + loud[0]) >>> 0 : undefined;
+      loudDrop_drop(loud);
+      return result;
+    });
     console.log("stopped");
   } finally {
     dropI?.(it);

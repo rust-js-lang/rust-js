@@ -28,8 +28,7 @@ function builderDrop_drop(builder, N, dropT) {
 
 function filled(word, N) {
   const builder = Builder.new(N);
-  const end = N;
-  for (let i = 0; i < end; i++) {
+  for (let i = 0; i < N; i++) {
     try {
       Builder.push(builder, word, N);
     } catch (error) {

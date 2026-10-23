@@ -78,9 +78,8 @@ function main() {
   console.log(`read ${read == null ? "None" : `Some(${read})`}`);
   const value = make(2);
   const kept = value ? [value] : undefined;
-  const value$1 = (l) => l[0][0];
   try {
-    console.log(`kept ${kept != null ? value$1(kept) : 0}`);
+    console.log(`kept ${kept?.[0][0] ?? 0}`);
   } catch (error) {
     if (kept != null) {
       dDrop_drop(kept[0]);
@@ -132,9 +131,8 @@ function main() {
     }
     throw error;
   }
-  const value$2 = (w) => w[0][0];
   try {
-    console.log(`generic ${generic != null ? value$2(generic) : 0}`);
+    console.log(`generic ${generic?.[0][0] ?? 0}`);
   } catch (error) {
     if (generic != null) {
       dDrop_drop(generic[0]);
@@ -197,39 +195,37 @@ function main() {
         console.log(`${nested != null}`);
         const value = checked(1);
         const ok = value.TAG === "Ok" ? { TAG: "Ok", _0: [value._0] } : value;
-        const value$1 = (l) => l[0][0];
         try {
-          console.log(`ok ${ok.TAG === "Ok" ? value$1(ok._0) : 0}`);
+          console.log(`ok ${ok.TAG === "Ok" ? ok._0[0][0] : 0}`);
           const value = checked(12);
-          const value$2 = value.TAG === "Ok" ? { TAG: "Ok", _0: [value._0] } : value;
+          const value$1 = value.TAG === "Ok" ? { TAG: "Ok", _0: [value._0] } : value;
           let value$0$live = true;
-          if (value$2.TAG === "Ok") {
+          if (value$1.TAG === "Ok") {
             value$0$live = false;
             try {
-              console.log(`ok ${value$2._0[0][0]}`);
+              console.log(`ok ${value$1._0[0][0]}`);
             } finally {
-              dDrop_drop(value$2._0[0]);
+              dDrop_drop(value$1._0[0]);
             }
           } else {
             try {
-              console.log(`err ${value$2._0}`);
+              console.log(`err ${value$1._0}`);
             } catch (error) {
-              if (value$2.TAG === "Ok") {
-                dDrop_drop(value$2._0[0]);
+              if (value$1.TAG === "Ok") {
+                dDrop_drop(value$1._0[0]);
               }
               throw error;
             }
           }
-          if (value$2.TAG === "Ok") {
+          if (value$1.TAG === "Ok") {
             if (value$0$live) {
-              dDrop_drop(value$2._0[0]);
+              dDrop_drop(value$1._0[0]);
             }
           }
           value$0$live = false;
           const generic = wrappedResult(checked(2));
-          const value$3 = (w) => w[0][0];
           try {
-            console.log(`generic ${generic.TAG === "Ok" ? value$3(generic._0) : 0}`);
+            console.log(`generic ${generic.TAG === "Ok" ? generic._0[0][0] : 0}`);
             console.log(
               `${discardResult(checked(3), false, dDrop_drop)} ${discardResult(checked(4), true, dDrop_drop)}`,
             );

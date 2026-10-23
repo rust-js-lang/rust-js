@@ -1,0 +1,113 @@
+# 0702. A `while` is its test, and its `break` is where it was written
+
+Status: Accepted. Extends tidy's `while_tests` and
+[0683](0683-an-if-is-as-written-and-an-else-if-stays-a-chain.md)'s `if`
+as written, which left a loop's test in its body.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N. How the JS reads;
+nothing that runs changes.
+
+## Context
+
+React's `describeNativeComponentFrame` (shared/ReactComponentStackFrame.js)
+has two loops its port writes as Rust does:
+
+```rust
+while s < sample_lines.len() && !sample_lines[s].contains("DetermineComponentFrameRoot") {
+    s += 1;
+}
+while s >= 1 && c >= 0 {
+    if sample_lines[s as usize] != control_lines[c as usize] {
+        // ..
+        break;
+    }
+    s -= 1;
+    c -= 1;
+}
+```
+
+rust-js wrote neither as a `while` of its test:
+
+```js
+while (true) {
+  if (s >= sampleLines.length || sampleLines[s].includes("Root")) {
+    break;
+  }
+  s++;
+}
+while (true) {
+  if (s >= 1 && c >= 0) {
+    if (sampleLines[s] !== controlLines[c]) {
+      // ..
+    } else {
+      s--;
+      c--;
+      continue;
+    }
+  }
+  break;
+}
+```
+
+A `while` is `loop { if test { body } else { break } }` to rustc. Where
+its test calls, a `Vec`'s index here, ADR 0683's `written elses` keeps
+that `if` as written, its `else` the `break`; `while_tests` took a loop's
+test only from `if (t) { break; } rest`. In the port, inside its guard's
+`try`s, the second also took a labeled block, `bb163: { .. break bb163;
+}`, round the `while (true)`.
+
+## Decision
+
+**`while (true) { if (t) { rest } else { break; } }` is `while (t) {
+rest }`**, and **`while (true) { if (t) { rest } break; }` is `while (t) {
+rest; break; }`**, of a loop the program wrote as a `while`
+(`while_tests`). The `break`, and the `continue` below, are of no label:
+in the loop's body and no loop in it, that's the loop's own, so no label
+is compared. Of that `break` after the `if`, where `rest` ends `if (u) {
+a } else { b; continue; }`, the `break` is `a`'s and `b` the turn's rest
+after it, `if (u) { a; break; } b`, and of `if (u) { b; continue; } else
+{ a }`, `if (u) { b } else { a; break; }`, as written (`broken_after`):
+
+```js
+while (s < sampleLines.length && !sampleLines[s].includes("Root")) {
+  s++;
+}
+while (s >= 1 && c >= 0) {
+  if (sampleLines[s] !== controlLines[c]) {
+    // ..
+    break;
+  }
+  s--;
+  c--;
+}
+```
+
+A `loop` the program wrote stays `while (true)`, its `break` where it's
+written: upstream's `do { .. } while (s >= 1 && c >= 0)` is the port's
+`loop { ..; if !(s >= 1 && c >= 0) { break; } }`, which JS's tree has no
+`do … while` for yet.
+
+## Why
+
+- **The loop the program wrote**: its test is the `while`'s, as Rust and
+  upstream have it, not an `if` and a `break` the reader puts back
+  together.
+- **One rule for a `while`'s test**, wherever its `if` came from:
+  `while_tests` takes it of either form.
+
+## Alternatives
+
+- **Undo `written elses` in a loop's head**: the `if` the program wrote
+  with an `else` would lose it elsewhere too. Rejected.
+- **A `for (; t; s--, c--)`**: upstream's, but the port writes `s -= 1;
+  c -= 1;` as statements after the `if`, which a `for`'s update would
+  move. Left for when a `for` the program can't write in Rust is asked for.
+
+## What holds it
+
+- `test/lowering-written-loops.test.ts`, "a while is its test, its break
+  where it was written", run in JS.
+- `test/corpus/signed_index.rs`, React's loops, run in both.
+- Mutations `while-of-else-break-unread`, `while-of-tail-break-unread`,
+  `broken-after-continued-branch`, `broken-after-continued-then`,
+  `broken-after-then-unbroken`, `broken-after-else-unbroken`.

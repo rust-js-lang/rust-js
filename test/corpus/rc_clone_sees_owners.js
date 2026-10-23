@@ -76,33 +76,39 @@ function main() {
       try {
         console.log(`${second.strong}`);
         let lone = { value: [1], strong: 1, weak: 0 };
-        const value = (kept) => {
-          const value = $rcClone(lone);
-          try {
-            if (kept.value != null) {
-              $rcDrop(kept.value, loneDrop_drop);
-            }
-          } finally {
-            kept.value = value;
-          }
-        };
         try {
-          $withBorrowMut(kept, value, true);
+          $withBorrowMut(
+            kept,
+            (kept) => {
+              const value = $rcClone(lone);
+              try {
+                if (kept.value != null) {
+                  $rcDrop(kept.value, loneDrop_drop);
+                }
+              } finally {
+                kept.value = value;
+              }
+            },
+            true,
+          );
           lone = $makeMut(lone, (value) => loneClone_clone(value), loneDrop_drop);
           console.log(`made ${lone.value[0]}`);
           const shared = { value: [5], strong: 1, weak: 0 };
-          const value$1 = (kept) => {
-            const lone = $rcClone(shared);
-            try {
-              if (kept.value != null) {
-                $rcDrop(kept.value, loneDrop_drop);
-              }
-            } finally {
-              kept.value = lone;
-            }
-          };
           try {
-            $withBorrowMut(kept, value$1, true);
+            $withBorrowMut(
+              kept,
+              (kept) => {
+                const lone = $rcClone(shared);
+                try {
+                  if (kept.value != null) {
+                    $rcDrop(kept.value, loneDrop_drop);
+                  }
+                } finally {
+                  kept.value = lone;
+                }
+              },
+              true,
+            );
           } catch (error) {
             $rcDrop(shared, loneDrop_drop);
             throw error;

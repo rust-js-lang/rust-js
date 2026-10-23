@@ -129,10 +129,9 @@ function main() {
     loudDrop_drop,
   );
   const value$2 = $iter($sortedKeys(set, (a, b) => $cmp(a[0], b[0])));
-  const value$3 = (l) => l[0] === 2;
   let found;
   try {
-    const find = $findDropping($lent(value$2), (item) => value$3(item), loudDrop_drop, false);
+    const find = $findDropping($lent(value$2), (l) => l[0] === 2, loudDrop_drop, false);
     found = find
       ? ((l) => {
           const result = l[0];

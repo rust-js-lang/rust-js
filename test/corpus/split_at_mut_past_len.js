@@ -8,7 +8,7 @@ export function entry() {
 
 function main() {
   const v = [1, 2, 3, 4];
-  const mid = (v.length + 1) >>> 0;
+  const mid = v.length + 1;
   const [a] = $splitAtMut(v, mid);
   a[$at(a, 0)] = 0;
 }

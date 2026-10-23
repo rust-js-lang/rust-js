@@ -13,13 +13,16 @@ function loudDrop_drop(loud) {
 function main() {
   const items = [[1], [2], [3]];
   let made = 10;
-  const value = () => {
-    made = (made + 1) >>> 0;
-    console.log(`make ${made}`);
-    return [made];
-  };
   try {
-    $fillWith(items, value, loudDrop_drop);
+    $fillWith(
+      items,
+      () => {
+        made = (made + 1) >>> 0;
+        console.log(`make ${made}`);
+        return [made];
+      },
+      loudDrop_drop,
+    );
     console.log(`${items.map((l) => String(l[0])).join(" ")}`);
     $fillWith($view(items, 0, 2), () => [0], loudDrop_drop);
     console.log("end");

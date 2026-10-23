@@ -90,37 +90,36 @@ function main() {
       }
     }
     console.log(`[${v.map((l) => l[0]).join(", ")}]`);
-    const o = [7];
-    const value = (l) => {
-      console.log(`saw ${l[0]}`);
-    };
-    if (o != null) {
-      value(o);
+    const option = [7];
+    if (option != null) {
+      const inspected = (l) => {
+        console.log(`saw ${l[0]}`);
+      };
+      inspected(option);
     }
-    const value$1 = o
-      ? ((l) => {
-          const result = l[0];
-          console.log(`drop ${l[0]}`);
-          return result;
-        })(o)
-      : undefined;
-    console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
+    const o = option;
+    const map = (l) => {
+      const result = l[0];
+      console.log(`drop ${l[0]}`);
+      return result;
+    };
+    const value = o ? map(o) : undefined;
+    console.log(`${value == null ? "None" : `Some(${value})`}`);
     const r = { TAG: "Ok", _0: [8] };
-    const value$2 = (l) => {
-      console.log(`ok ${l[0]}`);
-    };
     if (r.TAG === "Ok") {
-      value$2(r._0);
+      const inspected = (l) => {
+        console.log(`ok ${l[0]}`);
+      };
+      inspected(r._0);
     }
-    const value$3 = (e) => {
-      console.log(`err ${e}`);
-    };
     if (r.TAG === "Err") {
-      value$3(r._0);
+      const inspected = (e) => {
+        console.log(`err ${e}`);
+      };
+      inspected(r._0);
     }
-    const value$4 = r.TAG === "Ok";
     try {
-      console.log(`${value$4}`);
+      console.log(`${r.TAG === "Ok"}`);
     } finally {
       if (r.TAG === "Ok") {
         console.log(`drop ${r._0[0]}`);

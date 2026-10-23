@@ -116,15 +116,16 @@ function main() {
   console.log(`map_or ${value$6}`);
   const a$7 = [8];
   const b = [9];
+  const f$7 = (x) => {
+    try {
+      return (x + Loud.get(b)) >>> 0;
+    } finally {
+      console.log(`drop ${b[0]}`);
+    }
+  };
   const value$7 =
     some != null
-      ? ((x) => {
-          try {
-            return (x + Loud.get(b)) >>> 0;
-          } finally {
-            console.log(`drop ${b[0]}`);
-          }
-        })(some)
+      ? f$7(some)
       : (() => {
           try {
             return Loud.get(a$7);
@@ -140,77 +141,68 @@ function main() {
   }
   console.log(`map_or_else ${value$7}`);
   const a$8 = [10];
-  const value$8 =
-    some ??
-    (() => {
-      try {
-        return Loud.get(a$8);
-      } finally {
-        console.log(`drop ${a$8[0]}`);
-      }
-    })();
+  const f$8 = () => {
+    try {
+      return Loud.get(a$8);
+    } finally {
+      console.log(`drop ${a$8[0]}`);
+    }
+  };
+  const value$8 = some ?? f$8();
   if (some != null) {
     console.log(`drop ${a$8[0]}`);
   }
   console.log(`unwrap_or_else ${value$8}`);
   const a$9 = [24];
-  const value$9 =
-    some != null
-      ? { TAG: "Ok", _0: some }
-      : {
-          TAG: "Err",
-          _0: (() => {
-            try {
-              return Loud.get(a$9);
-            } finally {
-              console.log(`drop ${a$9[0]}`);
-            }
-          })(),
-        };
+  const f$9 = () => {
+    try {
+      return Loud.get(a$9);
+    } finally {
+      console.log(`drop ${a$9[0]}`);
+    }
+  };
+  const value$9 = some != null ? { TAG: "Ok", _0: some } : { TAG: "Err", _0: f$9() };
   if (some != null) {
     console.log(`drop ${a$9[0]}`);
   }
   console.log(`ok_or_else ${value$9.TAG === "Ok" ? `Ok(${value$9._0})` : `Err(${value$9._0})`}`);
   const a$10 = [25];
-  const value$10 =
-    some ??
-    (() => {
-      try {
-        return Loud.get(a$10);
-      } finally {
-        console.log(`drop ${a$10[0]}`);
-      }
-    })();
+  const f$10 = () => {
+    try {
+      return Loud.get(a$10);
+    } finally {
+      console.log(`drop ${a$10[0]}`);
+    }
+  };
+  const value$10 = some ?? f$10();
   if (some != null) {
     console.log(`drop ${a$10[0]}`);
   }
   console.log(`or_else ${value$10 == null ? "None" : `Some(${value$10})`}`);
   const a$11 = [26];
   const condition = false;
-  const value$11 = condition
-    ? (() => {
-        try {
-          return Loud.get(a$11);
-        } finally {
-          console.log(`drop ${a$11[0]}`);
-        }
-      })()
-    : undefined;
+  const f$11 = () => {
+    try {
+      return Loud.get(a$11);
+    } finally {
+      console.log(`drop ${a$11[0]}`);
+    }
+  };
+  const value$11 = condition ? f$11() : undefined;
   if (!condition) {
     console.log(`drop ${a$11[0]}`);
   }
   console.log(`then ${value$11 == null ? "None" : `Some(${value$11})`}`);
   const a$12 = [27];
   const condition$1 = true;
-  const value$12 = condition$1
-    ? (() => {
-        try {
-          return Loud.get(a$12);
-        } finally {
-          console.log(`drop ${a$12[0]}`);
-        }
-      })()
-    : undefined;
+  const f$12 = () => {
+    try {
+      return Loud.get(a$12);
+    } finally {
+      console.log(`drop ${a$12[0]}`);
+    }
+  };
+  const value$12 = condition$1 ? f$12() : undefined;
   if (!condition$1) {
     console.log(`drop ${a$12[0]}`);
   }
@@ -218,43 +210,33 @@ function main() {
   const ok = { TAG: "Ok", _0: 1 };
   const err = { TAG: "Err", _0: 2 };
   const a$13 = [11];
-  const value$13 =
-    err.TAG === "Ok"
-      ? {
-          TAG: "Ok",
-          _0: ((x) => {
-            try {
-              return (x + Loud.get(a$13)) >>> 0;
-            } finally {
-              console.log(`drop ${a$13[0]}`);
-            }
-          })(err._0),
-        }
-      : err;
+  const f$13 = (x) => {
+    try {
+      return (x + Loud.get(a$13)) >>> 0;
+    } finally {
+      console.log(`drop ${a$13[0]}`);
+    }
+  };
+  const value$13 = err.TAG === "Ok" ? { TAG: "Ok", _0: f$13(err._0) } : err;
   if (err.TAG === "Err") {
     console.log(`drop ${a$13[0]}`);
   }
   console.log(`map ${value$13.TAG === "Ok" ? `Ok(${value$13._0})` : `Err(${value$13._0})`}`);
   const a$14 = [12];
-  const value$14 =
-    ok.TAG === "Err"
-      ? {
-          TAG: "Err",
-          _0: ((e) => {
-            try {
-              return (e + Loud.get(a$14)) >>> 0;
-            } finally {
-              console.log(`drop ${a$14[0]}`);
-            }
-          })(ok._0),
-        }
-      : ok;
+  const f$14 = (e) => {
+    try {
+      return (e + Loud.get(a$14)) >>> 0;
+    } finally {
+      console.log(`drop ${a$14[0]}`);
+    }
+  };
+  const value$14 = ok.TAG === "Err" ? { TAG: "Err", _0: f$14(ok._0) } : ok;
   if (ok.TAG === "Ok") {
     console.log(`drop ${a$14[0]}`);
   }
   console.log(`map_err ${value$14.TAG === "Ok" ? `Ok(${value$14._0})` : `Err(${value$14._0})`}`);
   const a$15 = [13];
-  const value$22 = (x) => {
+  const f$15 = (x) => {
     let tmp;
     try {
       tmp = (x + Loud.get(a$15)) >>> 0;
@@ -263,52 +245,49 @@ function main() {
     }
     return { TAG: "Ok", _0: tmp };
   };
-  const value$15 = err.TAG === "Ok" ? value$22(err._0) : err;
+  const value$15 = err.TAG === "Ok" ? f$15(err._0) : err;
   if (err.TAG === "Err") {
     console.log(`drop ${a$15[0]}`);
   }
   console.log(`and_then ${value$15.TAG === "Ok" ? `Ok(${value$15._0})` : `Err(${value$15._0})`}`);
   const a$16 = [14];
-  const value$16 =
-    ok.TAG === "Ok"
-      ? ok._0
-      : ((e) => {
-          try {
-            return (e + Loud.get(a$16)) >>> 0;
-          } finally {
-            console.log(`drop ${a$16[0]}`);
-          }
-        })(ok._0);
+  const f$16 = (e) => {
+    try {
+      return (e + Loud.get(a$16)) >>> 0;
+    } finally {
+      console.log(`drop ${a$16[0]}`);
+    }
+  };
+  const value$16 = ok.TAG === "Ok" ? ok._0 : f$16(ok._0);
   if (ok.TAG === "Ok") {
     console.log(`drop ${a$16[0]}`);
   }
   console.log(`unwrap_or_else ${value$16}`);
   const a$17 = [15];
-  const value$17 =
-    err.TAG === "Ok"
-      ? ((x) => {
-          try {
-            return (x + Loud.get(a$17)) >>> 0;
-          } finally {
-            console.log(`drop ${a$17[0]}`);
-          }
-        })(err._0)
-      : 0;
+  const f$17 = (x) => {
+    try {
+      return (x + Loud.get(a$17)) >>> 0;
+    } finally {
+      console.log(`drop ${a$17[0]}`);
+    }
+  };
+  const value$17 = err.TAG === "Ok" ? f$17(err._0) : 0;
   if (err.TAG === "Err") {
     console.log(`drop ${a$17[0]}`);
   }
   console.log(`map_or ${value$17}`);
   const a$18 = [16];
   const b$1 = [17];
+  const f$18 = (x) => {
+    try {
+      return (x + Loud.get(b$1)) >>> 0;
+    } finally {
+      console.log(`drop ${b$1[0]}`);
+    }
+  };
   const value$18 =
     ok.TAG === "Ok"
-      ? ((x) => {
-          try {
-            return (x + Loud.get(b$1)) >>> 0;
-          } finally {
-            console.log(`drop ${b$1[0]}`);
-          }
-        })(ok._0)
+      ? f$18(ok._0)
       : ((e) => {
           try {
             return (e + Loud.get(a$18)) >>> 0;
@@ -324,35 +303,33 @@ function main() {
   }
   console.log(`map_or_else ${value$18}`);
   const a$19 = [18];
-  const value$19 =
-    err.TAG === "Ok" &&
-    ((x) => {
-      try {
-        return x > Loud.get(a$19);
-      } finally {
-        console.log(`drop ${a$19[0]}`);
-      }
-    })(err._0);
+  const f$19 = (x) => {
+    try {
+      return x > Loud.get(a$19);
+    } finally {
+      console.log(`drop ${a$19[0]}`);
+    }
+  };
+  const value$19 = err.TAG === "Ok" && f$19(err._0);
   if (err.TAG === "Err") {
     console.log(`drop ${a$19[0]}`);
   }
   console.log(`is_ok_and ${value$19}`);
   const a$20 = [19];
-  const value$20 =
-    ok.TAG === "Err" &&
-    ((e) => {
-      try {
-        return e > Loud.get(a$20);
-      } finally {
-        console.log(`drop ${a$20[0]}`);
-      }
-    })(ok._0);
+  const f$20 = (e) => {
+    try {
+      return e > Loud.get(a$20);
+    } finally {
+      console.log(`drop ${a$20[0]}`);
+    }
+  };
+  const value$20 = ok.TAG === "Err" && f$20(ok._0);
   if (ok.TAG === "Ok") {
     console.log(`drop ${a$20[0]}`);
   }
   console.log(`is_err_and ${value$20}`);
   const a$21 = [28];
-  const value$23 = (e) => {
+  const f$21 = (e) => {
     let tmp;
     try {
       tmp = (e + Loud.get(a$21)) >>> 0;
@@ -361,7 +338,7 @@ function main() {
     }
     return { TAG: "Err", _0: tmp };
   };
-  const value$21 = ok.TAG === "Ok" ? ok : value$23(ok._0);
+  const value$21 = ok.TAG === "Ok" ? ok : f$21(ok._0);
   if (ok.TAG === "Ok") {
     console.log(`drop ${a$21[0]}`);
   }
@@ -431,7 +408,7 @@ function main() {
   orInsertWith.value = (orInsertWith.value + 1) >>> 0;
   let slot = 3;
   const a$25 = [23];
-  const value$24 = () => {
+  const f$22 = () => {
     try {
       return Loud.get(a$25);
     } finally {
@@ -439,7 +416,7 @@ function main() {
     }
   };
   if (slot == null) {
-    slot = value$24();
+    slot = f$22();
   } else {
     console.log(`drop ${a$25[0]}`);
   }

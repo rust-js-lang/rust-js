@@ -91,9 +91,8 @@ function main() {
     }
     throw error;
   }
-  const value$1 = (l) => l[0];
   try {
-    console.log(`took ${last != null ? value$1(last) : "none"}`);
+    console.log(`took ${last?.[0] ?? "none"}`);
   } catch (error) {
     if (last != null) {
       loudDrop_drop(last);

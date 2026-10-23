@@ -8,7 +8,7 @@ export function entry() {
 
 function main() {
   const v = [1, 2, 3, 4];
-  const end = (v.length + 5) >>> 0;
+  const end = v.length + 5;
   const part = $view(v, 2, end);
   console.log("made");
   part[$at(part, 0)] = 0;

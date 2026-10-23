@@ -393,7 +393,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // that unwinds elsewhere runs first.
                 let unwind = drops::cleans_up(state.body, state.drops.as_ref(), *unwind);
                 self.unread_defined_operands(state, func, args);
-                if state.unwind != unwind && !self.acting(state).is_empty() {
+                if state.unwind != unwind && self.may_throw_first(state) {
                     self.flush(state, &mut out)?;
                 }
                 state.unwind = None;
