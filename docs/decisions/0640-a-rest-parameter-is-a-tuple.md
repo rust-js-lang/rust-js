@@ -115,7 +115,10 @@ console.log();
 
 - A call of one is `(x,)`: `body.append((app,))`, `console::warn((msg,))`.
   The examples' consecutive appends are one call each, `app.append((input,
-  view.list, footer))`, `app.append(input, view.list, footer)`.
+  view.list, footer))`, `app.append(input, view.list, footer)`. In
+  `docs/readability.txt` the JS is 9 lines shorter, 88,219 to 88,210, so
+  the share of `renamed x$1`, whose count is the same, grows, 855.1 to
+  855.2: no name is renamed that wasn't.
 - A rest of a collection a program holds, `el.append(...children)`, isn't
   bound: a tuple's length is known. Nor was it before.
 - The js crate's and node's hand-written rest parameters are still
