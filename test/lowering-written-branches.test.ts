@@ -200,7 +200,7 @@ pub fn is_simple_object(object: &Unknown) -> bool {
   expect([lib.isSimpleObject(props as never), lib.isSimpleObject(hidden as never), lib.isSimpleObject({ a: 1 } as never)]).toEqual([true, false, true]);
 });
 
-// ADR 0697: of `if a || v[i] != w[j] { return 1; }`, an index in bounds
+// ADR 0701: of `if a || v[i] != w[j] { return 1; }`, an index in bounds
 // MIR reads into a temporary between the tests, the read is the test's
 // alone where nothing after it reads it (`unread_bound`, as `and_tests`
 // leaves one): `if (j === 0 || v[i] !== w[j])`, no `const value = v[i];`

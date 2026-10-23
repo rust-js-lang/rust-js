@@ -1,4 +1,4 @@
-# 0698. A `while` is its test, and its `break` is where it was written
+# 0702. A `while` is its test, and its `break` is where it was written
 
 Status: Accepted. Extends tidy's `while_tests` and
 [0683](0683-an-if-is-as-written-and-an-else-if-stays-a-chain.md)'s `if`
@@ -60,11 +60,13 @@ test only from `if (t) { break; } rest`. In the port, inside its guard's
 
 **`while (true) { if (t) { rest } else { break; } }` is `while (t) {
 rest }`**, and **`while (true) { if (t) { rest } break; }` is `while (t) {
-rest; break; }`**, of a loop the program wrote as a `while`, its own
-`break` (`while_tests`). Of that `break` after the `if`, where `rest` ends
-`if (u) { a } else { b; continue; }`, the `break` is `a`'s and `b` the
-turn's rest after it, `if (u) { a; break; } b`, as written
-(`broken_after`):
+rest; break; }`**, of a loop the program wrote as a `while`
+(`while_tests`). The `break`, and the `continue` below, are of no label:
+in the loop's body and no loop in it, that's the loop's own, so no label
+is compared. Of that `break` after the `if`, where `rest` ends `if (u) {
+a } else { b; continue; }`, the `break` is `a`'s and `b` the turn's rest
+after it, `if (u) { a; break; } b`, and of `if (u) { b; continue; } else
+{ a }`, `if (u) { b } else { a; break; }`, as written (`broken_after`):
 
 ```js
 while (s < sampleLines.length && !sampleLines[s].includes("Root")) {
@@ -107,5 +109,5 @@ written: upstream's `do { .. } while (s >= 1 && c >= 0)` is the port's
   where it was written", run in JS.
 - `test/corpus/signed_index.rs`, React's loops, run in both.
 - Mutations `while-of-else-break-unread`, `while-of-tail-break-unread`,
-  `while-of-else-other-label`, `broken-after-continued-branch`,
-  `broken-after-unbroken`, `broken-after-then-unbroken`.
+  `broken-after-continued-branch`, `broken-after-continued-then`,
+  `broken-after-then-unbroken`, `broken-after-else-unbroken`.

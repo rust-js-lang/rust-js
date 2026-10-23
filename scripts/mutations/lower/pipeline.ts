@@ -432,4 +432,12 @@ export const mutations: Mutation[] = [
     replace: "                value\n",
     tests: ["test/lowering-numbers.test.ts", "-t", "a number literal keeps its base and its exponent"],
   },
+  {
+    name: "written-fn-comment-lost",
+    breaks: "a function written in a body is declared with no span, so the comment before it is lost",
+    file: "src/lower/pipeline.rs",
+    find: "                stmt.span = function.span;\n",
+    replace: "",
+    tests: ["test/js-object.test.ts", "-t", "a constructor is a fn item"],
+  },
 ];

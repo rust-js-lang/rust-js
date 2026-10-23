@@ -79,6 +79,19 @@ pub(in crate::lower) enum TextOp {
     StartsBy {
         end: bool,
     },
+    /// Of a predicate of a `char` too (#118): `rsplit(p)`, or `rsplitn(n,
+    /// p)`, `true`; `split_terminator(p)`, or `rsplit_terminator`, `true`;
+    /// `split_inclusive(p)`; `match_indices(p)`, or `rmatch_indices`,
+    /// `true`; `split_once(p)`, or `rsplit_once`, `true`; `strip_prefix(p)`,
+    /// or `strip_suffix`, `true`; `replace(p, to)`, or `replacen(p, to, n)`,
+    /// `true`.
+    RsplitBy(bool),
+    SplitTerminatorBy(bool),
+    SplitInclusiveBy,
+    MatchIndicesBy(bool),
+    SplitOnceBy(bool),
+    StripBy(bool),
+    ReplaceBy(bool),
     SplitAsciiWhitespace,
     /// `s.get(range)`: `&s[range]`, or `None` where that would panic.
     StrGet,
@@ -341,7 +354,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // A set of `char`s as a pattern is the predicate of being one of
         // them, as a closure or a function is a predicate (ADR 0157).
         // Its pattern's argument, after `splitn`'s count.
-        let at = if op == TextOp::SplitNBy { 2 } else { 1 };
+        let at = if matches!(op, TextOp::SplitNBy | TextOp::RsplitBy(true)) {
+            2
+        } else {
+            1
+        };
         if matches!(
             op,
             TextOp::SplitBy
@@ -351,6 +368,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 | TextOp::MatchesBy(_)
                 | TextOp::StartsBy { .. }
                 | TextOp::TrimMatches { .. }
+                | TextOp::RsplitBy(_)
+                | TextOp::SplitTerminatorBy(_)
+                | TextOp::SplitInclusiveBy
+                | TextOp::MatchIndicesBy(_)
+                | TextOp::SplitOnceBy(_)
+                | TextOp::StripBy(_)
+                | TextOp::ReplaceBy(_)
         ) && let Some(pattern) = tys.get(at)
             && let ty::Array(item, _) | ty::Slice(item) = pattern.peel_refs().kind()
             && item.is_char()
@@ -410,6 +434,37 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Expr::call(Expr::member(Expr::var("Array"), "from"), vec![mapped])
             }
             TextOp::SplitBy => Expr::call(Expr::helper("$splitBy"), vec![arg(), arg()]),
+            TextOp::RsplitBy(limited) => {
+                let s = arg();
+                let n = limited.then(&mut arg);
+                let mut list = vec![s, arg()];
+                list.extend(n);
+                call("$rsplitBy", list)
+            }
+            TextOp::SplitTerminatorBy(rev)
+            | TextOp::MatchIndicesBy(rev)
+            | TextOp::SplitOnceBy(rev)
+            | TextOp::StripBy(rev) => {
+                let mut list = vec![arg(), arg()];
+                if rev {
+                    list.push(Expr::bool(true));
+                }
+                let helper = match op {
+                    TextOp::SplitTerminatorBy(_) => "$splitTerminatorBy",
+                    TextOp::MatchIndicesBy(_) => "$matchIndicesBy",
+                    TextOp::SplitOnceBy(_) => "$splitOnceBy",
+                    _ => "$stripBy",
+                };
+                call(helper, list)
+            }
+            TextOp::SplitInclusiveBy => call("$splitInclusiveBy", vec![arg(), arg()]),
+            TextOp::ReplaceBy(limited) => {
+                let mut list = vec![arg(), arg(), arg()];
+                if limited {
+                    list.push(arg());
+                }
+                call("$replaceBy", list)
+            }
             TextOp::MatchesBy(rev) => {
                 let mut list = vec![arg(), arg()];
                 if rev {

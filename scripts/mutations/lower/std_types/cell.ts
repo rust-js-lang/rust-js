@@ -27,22 +27,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "collection_methods"],
   },
   {
-    name: "local-with-closure-called",
-    breaks: "`with` of a closure of one statement calls it, not its statement in place",
-    file: "src/lower/std_types/cell.rs",
-    find: "                crate::lower::calls::apply_in(f, vec![key], out)\n",
-    replace: "                crate::lower::calls::apply(f, vec![key])\n",
-    tests: ["test/lowering-cells.test.ts", "-t", "with of a one-statement closure"],
-  },
-  {
-    name: "with-statement-called",
-    breaks: "a thread-local's `with` of a one-statement closure calls it in place, `((it) => { .. })(LOGGER)`",
-    file: "src/lower/std_types/cell.rs",
-    find: "                crate::lower::calls::apply_in(f, vec![key], out)\n",
-    replace: "                apply(f, vec![key])\n",
-    tests: ["test/lowering-cells.test.ts", "-t", "with of a one-statement closure"],
-  },
-  {
     name: "cell-get-mut-copy",
     breaks: "a number `Cell`'s `get_mut` gives the number, so a write through it is lost",
     file: "src/lower/std_types/cell.rs",
@@ -179,5 +163,13 @@ export const mutations: Mutation[] = [
     find: "(mutable && self.handles_mut(guarded))",
     replace: "(mutable && self.is_boxable(guarded))",
     tests: ["test/corpus.test.ts", "-t", "^refcell_generic_mut_method.rs$"],
+  },
+  {
+    name: "manually-drop-drop-skipped",
+    breaks: "`ManuallyDrop::drop(&mut m)` drops nothing",
+    file: "src/lower/std_types/cell.rs",
+    find: "                let value = self.droppable(value, held, out);\n                self.drop_value(value, held, span, out)?;\n",
+    replace: "                let _ = (value, held);\n",
+    tests: ["test/corpus.test.ts", "-t", "^refused_drops_and_displays.rs$"],
   },
 ];

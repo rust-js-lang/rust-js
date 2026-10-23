@@ -79,3 +79,16 @@ against native Rust.
 predicate holds of, `rmatches` asking it from the end as Rust's does; a
 set is the predicate of being one of it, as for `split`. Held by
 `test/corpus/matches_by_predicate.rs`.
+
+## Amended (#118)
+
+A predicate of a `char` is a pattern of every `str` method that takes
+one: `rsplit`, `rsplitn`, `split_terminator`, `rsplit_terminator`,
+`split_inclusive`, `match_indices`, `rmatch_indices`, `split_once`,
+`rsplit_once`, `strip_prefix`, `strip_suffix`, `replace` and `replacen`
+were refused of one. Each is a `…By` op of `TextOp`, as `split`'s and
+`find`'s are, its runtime helper `char_pattern.js`'s, of one primitive,
+`$charMatches`, each match one `char`, where it starts in UTF-16 units and
+in UTF-8 bytes. A set of `char`s is the predicate of being one of them,
+as before. Held by `test/corpus/char_patterns.rs` against native Rust.
+

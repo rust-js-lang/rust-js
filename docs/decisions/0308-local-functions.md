@@ -1,7 +1,9 @@
 # 0308. A function written in a body is that body's
 
-Status: Accepted. Amends [0296](0296-named-function-expressions.md): where
-a function a block makes and doesn't give is.
+Status: Accepted; amended by [0696](0696-a-constructor-is-a-fn-item-where-its-written.md):
+in the innermost block that holds each use of it, after its comments.
+Amends [0296](0296-named-function-expressions.md): where a function a
+block makes and doesn't give is.
 
 Case: A ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -88,3 +90,11 @@ wasn't imported, and the copy called an `inner` its trait's module never
 had. One written in a trait's default is the trait module's, which each
 copy imports. `test/corpus/default_inner_fn.rs` holds it, of an impl in
 another module.
+
+## Amendment: in the block it's written in
+
+A function written in an `if`'s block was declared in its body's own
+list, after the `if`, as no statement of that list was written after it;
+and the comment above it was lost. It's declared in the innermost block
+that holds each use of it, before what's written after it there, with
+its comments (ADR 0696).

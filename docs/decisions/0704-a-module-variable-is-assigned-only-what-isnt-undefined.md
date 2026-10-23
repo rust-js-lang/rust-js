@@ -1,4 +1,4 @@
-# 0700. A module variable an `if` makes is assigned only where it's something
+# 0704. A module variable an `if` makes is assigned only where it's something
 
 Status: Accepted. Amends [0601](0601-a-module-variable-an-if-makes-is-a-let.md),
 whose `let name;` each branch assigns.

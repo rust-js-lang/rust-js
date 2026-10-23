@@ -156,10 +156,10 @@ nothing, `let Some(Kind::String(_)) = js::get(request, "url")..`, is still
   `bound-rust-data-a-getter`, which `test/lowering-loops.test.ts`'s
   "if-let chains and loops from MIR read as written" holds.
 
-## Amendment: a read nothing after reads is gone (ADR 0697)
+## Amendment: a read nothing after reads is gone (ADR 0701)
 
 `returning_chain` kept each `const` it bound into a later test, though
 nothing after the chain read it: `const value = v[i];` after `if (j ===
 0 || v[i] !== w[j]) { return 1; }`. It drops those now, by the rule
 `and_tests` had, one function both ask, `logicals::unread_bound`
-([0697](0697-a-signed-index-tested-not-negative-is-a-js-index.md)).
+([0701](0701-a-signed-index-tested-not-negative-is-a-js-index.md)).

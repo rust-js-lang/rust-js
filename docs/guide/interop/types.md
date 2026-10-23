@@ -218,6 +218,27 @@ export function middle(items) {
   runtime's `$KeyMap`.
 - **A `BTreeMap` is a `Map` and a `BTreeSet` a `Set`,** iterated in key
   order.
+- **A `js::Map` is a `Map` of what a `WeakMap` keys**, an object by itself,
+  held strongly, and it's a `WeakMap` too, as TypeScript's `Map` is: a
+  `WeakMap` where the host has one, and a `Map` where it hasn't, is one
+  value ([ADR 0699](../../decisions/0699-a-map-of-objects-is-a-weak-map.md)):
+
+```rust
+use js::{JsObject, Unknown, WeakMap};
+
+thread_local! {
+    pub static CACHE: &'static WeakMap<dyn Fn() -> Option<&'static Unknown>, String> =
+        if js::is_defined(js::weak_map::new::<JsObject, String>) {
+            js::weak_map::new()
+        } else {
+            js::map::new()
+        };
+}
+```
+
+```js
+export const cache = typeof WeakMap !== "undefined" ? new WeakMap() : new Map();
+```
 
 ## Structs
 
@@ -905,6 +926,37 @@ export function describe(value) {
   `js::object::has_own_property.call(value, key)` is
   `Object.prototype.hasOwnProperty.call(value, key)`, a property of its own
   ([ADR 0615](../../decisions/0615-has-own-property-the-function.md)).
+- `js::new(value, arguments)` is `new value(..)`, its arguments a tuple,
+  `()` of none, or a slice spread, as a rest parameter's
+  ([ADR 0695](../../decisions/0695-new-of-a-function-value-is-jss-new.md)):
+
+```rust
+use js::Unknown;
+
+pub fn made(class: &Unknown, name: &str) -> &'static Unknown {
+    js::new(class, (name, 1))
+}
+```
+
+```js
+export function made(class$, name) {
+  return new class$(name, 1);
+}
+```
+- `js::delete(value, key)` is `delete value[key]`, whether it's gone
+  ([ADR 0697](../../decisions/0697-delete-is-jss-delete.md)):
+
+```rust
+pub fn forget(props: &js::Unknown) {
+    js::delete(props, "ref");
+}
+```
+
+```js
+export function forget(props) {
+  delete props.ref;
+}
+```
 - **A function is a value of any shape too**, a function item, a closure,
   a `fn` pointer or a `dyn Fn`: `js::unknown(&f)` is `f`, whose
   property `js::set` writes, here when its module loads, right after it
@@ -927,6 +979,37 @@ disabledLog.__reactDisabledLog = true;
 
 export function isMarked(log) {
   return log.__reactDisabledLog != null;
+}
+```
+- **A constructor is a `fn` item**, a function declaration, which `new`
+  constructs and which has a `prototype`, declared where it's written, in
+  the innermost block that holds each use of it; a closure is an arrow
+  function, which `new` throws a `TypeError` of
+  ([ADR 0696](../../decisions/0696-a-constructor-is-a-fn-item-where-its-written.md)):
+
+```rust
+use js::Unknown;
+
+pub fn sample(construct: bool) -> Option<&'static Unknown> {
+    if construct {
+        // What the props are set on.
+        #[cfg_attr(rust_js, rust_js::name = "Fake")]
+        fn fake() -> Option<&'static Unknown> {
+            None
+        }
+        return js::get(js::new(js::unknown(&fake), ()), "props");
+    }
+    None
+}
+```
+
+```js
+export function sample(construct) {
+  if (construct) {
+    // What the props are set on.
+    function Fake() {}
+    return new Fake().props;
+  }
 }
 ```
 - **`==` of two is JS's `===`**, of two `Option<&Unknown>` too, where a

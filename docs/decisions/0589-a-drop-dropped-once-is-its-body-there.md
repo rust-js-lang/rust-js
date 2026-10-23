@@ -88,3 +88,15 @@ given, where nothing else names it.
 - Mutations: a twice-dropped one inlined, the guard kept whole, one read
   whole taken apart, any function inlined, one called elsewhere inlined,
   the `try` not returning, the call never applied.
+
+## Amended (2026-10-24)
+
+The drops are inlined in an order, not a set's. A set's order changed
+from one build to the next, and with it the JS: `Holder`'s drop, which
+calls `Md`'s, inlined after `Md`'s, left its guard's fields `[3]`, read
+`inner[0]`; before it, taken apart, `3`. Now each in turn is one no other
+drop left calls, the caller first, so each guard is taken apart where
+it's made, and the module's order among those. Held by the mutation
+`drops-inlined-callees-first`, whose JS
+`test/corpus/refused_drops_and_displays.js` isn't.
+

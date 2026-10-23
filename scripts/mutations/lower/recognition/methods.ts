@@ -90,4 +90,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^map_while_drops.rs$"],
   },
+  {
+    name: "splitn-by-unknown",
+    breaks: "`splitn` of a set of `char`s or a closure is refused",
+    file: "src/lower/recognition/methods.rs",
+    find: "        \"splitn\" => TextOp::SplitNBy,\n",
+    replace: "        \"splitn\" => TextOp::SplitN,\n",
+    tests: ["test/corpus.test.ts", "-t", "^splitn_by.rs$"],
+  },
 ];

@@ -1,4 +1,4 @@
-# 0699. A closure made before a call a guard unwinds is made where it's read
+# 0703. A closure made before a call a guard unwinds is made where it's read
 
 Status: Accepted. Extends [0270](0270-module-variables.md), whose
 `.with(|c| *c)` is the thread-local's variable, and

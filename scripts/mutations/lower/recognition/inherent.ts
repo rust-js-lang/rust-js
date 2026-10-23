@@ -339,14 +339,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^poison_error.rs$"],
   },
   {
-    name: "splitn-by-unknown",
-    breaks: "`splitn` of a set of `char`s or a closure is refused",
-    file: "src/lower/recognition/inherent.rs",
-    find: "                    \"splitn\" => TextOp::SplitNBy,\n",
-    replace: "                    \"splitn\" => TextOp::SplitN,\n",
-    tests: ["test/corpus.test.ts", "-t", "^splitn_by.rs$"],
-  },
-  {
     name: "local-cell-take-unknown",
     breaks: "a thread-local `Cell`'s `take` is refused",
     file: "src/lower/recognition/inherent.rs",

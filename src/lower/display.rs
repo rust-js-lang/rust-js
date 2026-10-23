@@ -448,6 +448,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// The type `ty` shows: what a `Box` or an `Rc` holds, as they are it in
     /// JS, and `ty` itself otherwise.
     pub(super) fn shown_type(&self, ty: Ty<'tcx>) -> Ty<'tcx> {
+        // What an `impl Display` a function gives hides: its type, whose
+        // own `Display` it is (#171).
+        let ty = self.reveal(ty);
         match ty.kind() {
             ty::Adt(_, args) if self.shows_inside(ty) => args.types().next().expect("what it holds").peel_refs(),
             _ => ty,

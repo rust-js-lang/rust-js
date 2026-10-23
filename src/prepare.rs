@@ -39,7 +39,7 @@ pub fn module(module: &mut js::Module) {
 /// thread-local's an `if` gives, not exported: `let name;` and the
 /// closure's body, each `return v` at its ends `name = v`, an early one's
 /// `if` the rest's `else`, as JS writes it (ADR 0601); a `return
-/// undefined` nothing, as `let name;` is that already (ADR 0700):
+/// undefined` nothing, as `let name;` is that already (ADR 0704):
 ///
 /// ```js
 /// let schedule;

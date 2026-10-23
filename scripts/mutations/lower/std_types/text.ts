@@ -239,7 +239,7 @@ export const mutations: Mutation[] = [
     name: "splitn-set-pattern-unmade",
     breaks: "`splitn(2, ['e', 'E'])`'s set isn't made a predicate, and JS calls the array",
     file: "src/lower/std_types/text.rs",
-    find: "        let at = if op == TextOp::SplitNBy { 2 } else { 1 };\n",
+    find: "        let at = if matches!(op, TextOp::SplitNBy | TextOp::RsplitBy(true)) {\n            2\n        } else {\n            1\n        };\n",
     replace: "        let at = 1;\n",
     tests: ["test/corpus.test.ts", "-t", "^splitn_by.rs$"],
   },
@@ -322,5 +322,13 @@ export const mutations: Mutation[] = [
     find: "                self.by_its_fold(items, ty)\n",
     replace: "                items\n",
     tests: ["test/corpus.test.ts", "-t", "^own_fold_and_nth.rs$"],
+  },
+  {
+    name: "char-set-pattern-unconverted",
+    breaks: "a set of `char`s as `rsplit_once`'s pattern is called as a function",
+    file: "src/lower/std_types/text.rs",
+    find: "                | TextOp::SplitOnceBy(_)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^char_patterns.rs$"],
   },
 ];

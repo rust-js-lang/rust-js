@@ -60,7 +60,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // type says is closed to drop it, or is refused (ADRs 0465, 0518).
         // A slice's op that lends its items, or views of them, drops none
         // (ADR 0507).
-        let moves_all = (known == Std::Comb(Comb::Extend) && self.ends_holding_nothing(tys[1]))
+        // Or what holds nothing to drop itself, `(2..4).map(D)`, whose items
+        // are made as they're stepped (#171).
+        let moves_all = (known == Std::Comb(Comb::Extend)
+            && (self.ends_holding_nothing(tys[1]) || self.drops(tys[1]) == Drops::Nothing))
             || (matches!(known, Std::IterComb(comb) if comb.leaves_none())
                 && (tys[0].is_ref() || self.ends_holding_nothing(tys[0])))
             || matches!(known, Std::IterComb(comb) if comb.holds_its_sources())
@@ -71,6 +74,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 known,
                 Std::Drop
                     | Std::Forget
+                    | Std::DropPointee
                     | Std::Swap
                     | Std::Replace
                     | Std::CloneFrom
@@ -108,6 +112,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             | MapOp::OrDefault
                             | MapOp::Len
                             | MapOp::IsEmpty
+                            // What it splits off it moves into the map it
+                            // gives, dropping none (#171).
+                            | MapOp::TreeSplitOff
                     )
                     // A cell keeps it, and gives the old one back; a `Cell` of one is
                     // refused by its type (ADR 0320).
@@ -606,6 +613,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             | Std::Lock
             | Std::Drop
             | Std::Forget
+            | Std::DropPointee
             | Std::AtomicLoad
             | Std::AtomicStore
             | Std::AtomicSwap

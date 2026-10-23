@@ -1,4 +1,4 @@
-# 0697. A signed index tested not negative is a JS index as it is
+# 0701. A signed index tested not negative is a JS index as it is
 
 Status: Accepted. Extends [0576](0576-what-a-bodys-integers-can-be.md)'s
 ranges, past an `as`, with a slice's length of items that take up room at

@@ -7,7 +7,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { compiler, fixture, run } from "./support";
 
-// ADR 0698: a `while` whose test calls, `!lines[s].contains(..)` of a
+// ADR 0702: a `while` whose test calls, `!lines[s].contains(..)` of a
 // `Vec`'s index, is `while (test) { .. }`, its test as written (ADR 0683),
 // not `while (true) { if (s >= lines.length || ..) { break; } .. }`; and
 // one whose body leaves by a `break` in an `if`, the rest stepping on, is

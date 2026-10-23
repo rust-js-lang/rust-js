@@ -56,9 +56,9 @@ is set once, and JS has no `const` set in branches.
   which stay calls.
 - Mutations: the pass off, a top declaration taken, the blank line kept.
 
-## Amendment: `undefined` is no assignment (ADR 0700)
+## Amendment: `undefined` is no assignment (ADR 0704)
 
 A `return undefined` at an end, an `Option`'s `None`, assigns nothing:
 `let name;` is `undefined` already, so `else { name = undefined; }` is
 gone, and a `then` left with nothing is the `else`'s under its test
-negated ([0700](0700-a-module-variable-is-assigned-only-what-isnt-undefined.md)).
+negated ([0704](0704-a-module-variable-is-assigned-only-what-isnt-undefined.md)).

@@ -1055,6 +1055,8 @@ fn fill_holes(stmts: &mut Vec<js::Stmt>, holes: &mut HashMap<u32, js::Function>)
                 && let js::ExprKind::FunctionHole(index) = e.kind
                 && let Some(function) = holes.remove(&index)
             {
+                // Where it's written, which its comments are before.
+                stmt.span = function.span;
                 stmt.kind = StmtKind::Function(Box::new(function));
             }
         }

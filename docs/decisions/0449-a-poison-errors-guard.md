@@ -73,3 +73,14 @@ n.value = (n.value + 1) >>> 0;
 
 - uuid gets past its clock sequence's lock, to `Deref` of a generic
   `MutexGuard<C>`, the next gap.
+
+## Amended (2026-10-24)
+
+A closure called where it's made is put in place in one way: tidy's
+`applied arrows`, of what reads the same. `calls::apply_in`, which put a
+one-statement closure in place where `LocalKey::with` was lowered, was a
+second way, and made no JS of its own: with it gone, the corpus's JS is
+the same, and its mutations survived. It's gone, and `with` calls its
+closure, which that pass puts in place. `test/lowering-cells.test.ts`'s
+"with of a one-statement closure is its statement" holds it.
+

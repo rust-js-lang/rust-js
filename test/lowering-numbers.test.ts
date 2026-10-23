@@ -843,7 +843,7 @@ test("a range pattern's bounds are one test", async () => {
 });
 
 
-// ADR 0697: an `as` of an integer already in its target's range is the
+// ADR 0701: an `as` of an integer already in its target's range is the
 // number as it is, `s` of `s as usize` under `s >= 0`, and a slice's
 // length of items that take up room is at most `isize`'s most, so `len()
 // as isize - 1` is `length - 1`. A counter below a length stays below it

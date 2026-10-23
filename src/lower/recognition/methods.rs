@@ -357,3 +357,27 @@ pub(super) fn iterator(name: &str) -> Option<IterComb> {
         _ => return None,
     })
 }
+
+/// Which `TextOp` a `str`'s method of a predicate of a `char` is, a
+/// closure's, a function's or a set of `char`s' (ADRs 0063, 0157, #118):
+/// every method that takes a pattern.
+pub(super) fn char_pattern(name: &str) -> Option<TextOp> {
+    Some(match name {
+        "split" => TextOp::SplitBy,
+        "splitn" => TextOp::SplitNBy,
+        "contains" => TextOp::ContainsBy,
+        "find" | "rfind" => TextOp::FindBy(name == "rfind"),
+        "matches" | "rmatches" => TextOp::MatchesBy(name == "rmatches"),
+        "starts_with" | "ends_with" => TextOp::StartsBy {
+            end: name == "ends_with",
+        },
+        "rsplit" | "rsplitn" => TextOp::RsplitBy(name == "rsplitn"),
+        "split_terminator" | "rsplit_terminator" => TextOp::SplitTerminatorBy(name == "rsplit_terminator"),
+        "split_inclusive" => TextOp::SplitInclusiveBy,
+        "match_indices" | "rmatch_indices" => TextOp::MatchIndicesBy(name == "rmatch_indices"),
+        "split_once" | "rsplit_once" => TextOp::SplitOnceBy(name == "rsplit_once"),
+        "strip_prefix" | "strip_suffix" => TextOp::StripBy(name == "strip_suffix"),
+        "replace" | "replacen" => TextOp::ReplaceBy(name == "replacen"),
+        _ => return None,
+    })
+}

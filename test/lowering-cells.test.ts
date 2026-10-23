@@ -1073,7 +1073,7 @@ pub fn pair() -> String {
   expect((await import(join(dir, "mir.js"))).pair()).toBe("11 22");
 });
 
-// ADR 0700: a thread-local an `if` makes `None` of where it doesn't, as
+// ADR 0704: a thread-local an `if` makes `None` of where it doesn't, as
 // React's componentFrameCache is `let componentFrameCache; if (__DEV__) {
 // componentFrameCache = new WeakMap(); }`, is assigned only where it's
 // something: `let` leaves it `undefined` already, and an `else` of nothing
@@ -1112,7 +1112,7 @@ pub fn first() -> Option<u32> {
   expect([lib.remember(4), lib.remember(5), lib.first()]).toEqual([1, 2, 1]);
 });
 
-// ADR 0699: a thread-local's `.with(|c| *c)` is its variable (ADR 0270)
+// ADR 0703: a thread-local's `.with(|c| *c)` is its variable (ADR 0270)
 // where something's there to drop as a panic unwinds too, React's
 // `COMPONENT_FRAME_CACHE.with(|cache| *cache)` under its `finally`'s guard:
 // the closure made where it's applied, so nothing's called and nothing's

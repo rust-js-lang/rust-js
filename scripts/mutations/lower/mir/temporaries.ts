@@ -134,8 +134,8 @@ export const mutations: Mutation[] = [
     name: "mir-flush-discriminant",
     breaks: "a discriminant pending when MIR flushes, a loop's `next()` under a drop flag's unwind, is read as a value and refused",
     file: "src/lower/mir/temporaries.rs",
-    find: "            if let Value::Discriminant(subject, ..) = &value\n                && subject.reads_same()\n",
-    replace: "            if let Value::Discriminant(subject, ..) = &value\n                && false\n",
+    find: "            if let Value::Discriminant(subject, ..) = &mut value {\n",
+    replace: "            if let Value::Discriminant(subject, ..) = &mut value\n                && false\n            {\n",
     tests: ["test/corpus.test.ts", "-t", "refcell_borrows"],
   },
   {
@@ -236,5 +236,13 @@ export const mutations: Mutation[] = [
     replace: "            false\n                && match value {\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_destructors.rs$|^take_destructors.rs$"],
     snapshots: true,
+  },
+  {
+    name: "discriminant-of-a-call-refused",
+    breaks: "a `match` of what a call gives, flushed before its switch, is refused",
+    file: "src/lower/mir/temporaries.rs",
+    find: "                if !subject.reads_same() {\n                    let made_once = std::mem::replace(subject, Expr::undefined());\n                    *subject = self.spill(\"_$\", made_once, &mut made);\n                }\n                kept.push((local, value));\n                continue;\n",
+    replace: "                if subject.reads_same() {\n                    kept.push((local, value));\n                    continue;\n                }\n",
+    tests: ["test/corpus.test.ts", "-t", "^refused_drops_and_displays.rs$"],
   },
 ];

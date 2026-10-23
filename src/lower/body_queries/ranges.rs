@@ -21,7 +21,7 @@ type Slice = (Vec<usize>, LocalVarId);
 const STRING_LENGTH_MOST: i128 = (1 << 31) - 1;
 
 /// The most a slice's length is of items that take up room: `isize`'s
-/// most, as no Rust allocation is larger in bytes (ADR 0697). Of items of
+/// most, as no Rust allocation is larger in bytes (ADR 0701). Of items of
 /// no size, or of a size not known, `u32`'s most.
 const SIZED_SLICE_LENGTH_MOST: i128 = i32::MAX as i128;
 
@@ -596,7 +596,7 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
     }
 
     /// The most the length `fun`, a slice's `len()`, reads is: below
-    /// `isize`'s most of items that take up room (ADR 0697), `u32`'s of
+    /// `isize`'s most of items that take up room (ADR 0701), `u32`'s of
     /// the rest.
     fn length_most_of(&self, fun: ExprId) -> i128 {
         let item = fn_def(self.thir[strip(self.thir, fun)].ty).and_then(|(_, args)| args.types().next());
@@ -788,7 +788,7 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
                 None
             }
             // An integer `as` another whose range it's already in is the
-            // same number, `s as usize` of an `s >= 0` (ADR 0697).
+            // same number, `s as usize` of an `s >= 0` (ADR 0701).
             ExprKind::Cast { source } if ty_range.is_some() && type_range(thir[source].ty).is_some() => {
                 let value = self.expr(source, known);
                 let kept = value.filter(|v| ty_range.is_some_and(|(lo, hi)| lo <= v.lo && v.hi <= hi));
@@ -1107,7 +1107,7 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
                         }
                         // Still at most what it was by a length, a counter
                         // below `xs.len()`: at most that, where the length
-                        // is its most (ADR 0697).
+                        // is its most (ADR 0701).
                         let below = match (&was.below, &r.below) {
                             (Some((s, x)), Some((t, y))) if s == t && x.join(*y) == *x => Some((s.clone(), *x)),
                             _ => None,
@@ -1258,7 +1258,7 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
     }
 
     /// The integer `e` is through each `as` that keeps it, `s` of `s as
-    /// usize` where `s >= 0` (ADR 0697): what it is, the integer it's of is.
+    /// usize` where `s >= 0` (ADR 0701): what it is, the integer it's of is.
     fn uncast(&self, mut e: ExprId, known: &Option<Known>) -> ExprId {
         let thir = self.thir;
         loop {

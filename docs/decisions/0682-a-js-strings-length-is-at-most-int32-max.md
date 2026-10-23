@@ -117,10 +117,10 @@ holds, and the walk settles.
   `string-length-below-engines` (`2^30 - 1`, so three don't wrap) and
   `widened-counter-within-forgotten`.
 
-## Amendment: an array of sized items is shorter still (ADR 0697)
+## Amendment: an array of sized items is shorter still (ADR 0701)
 
 A `Vec` or a slice of items that take up room is at most `isize::MAX`
 items long, as no Rust allocation is larger in bytes, so its `len()` is
 at most `2^31 - 1` too, and `len() as isize - 1` is `length - 1`
-([0697](0697-a-signed-index-tested-not-negative-is-a-js-index.md)). One of
+([0701](0701-a-signed-index-tested-not-negative-is-a-js-index.md)). One of
 items of no size may still be `u32::MAX` long.

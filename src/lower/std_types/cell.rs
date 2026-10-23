@@ -160,6 +160,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 self.drop_value(value, ty, span, out)?;
                 Expr::undefined()
             }
+            // What a `&mut ManuallyDrop<T>` points at, a `T`, as a
+            // `ManuallyDrop` is what it holds (ADR 0406), dropped in place.
+            Std::DropPointee => {
+                let (value, pointee) = self.through_refs(arg(), tys[0]);
+                let held = self.recognition().std_wrapped(pointee).unwrap_or(pointee);
+                let value = self.droppable(value, held, out);
+                self.drop_value(value, held, span, out)?;
+                Expr::undefined()
+            }
             Std::Forget => {
                 let value = arg();
                 if value.has_effects() {
@@ -246,7 +255,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             Std::LocalWith => {
                 let (key, f) = (arg(), arg());
-                crate::lower::calls::apply_in(f, vec![key], out)
+                crate::lower::calls::apply(f, vec![key])
             }
             Std::LocalBorrow { mutable } => {
                 let mut given = vec![arg(), arg()];

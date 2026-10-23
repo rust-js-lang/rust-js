@@ -1,5 +1,5 @@
 // An `isize` tested `>= 0` before `v[s as usize]` is a JS index as it is,
-// and `len() as isize - 1` is `length - 1` (ADR 0697): React's stack-frame
+// and `len() as isize - 1` is `length - 1` (ADR 0701): React's stack-frame
 // matching, `describeNativeComponentFrame`'s loop, its indices below zero
 // where it runs out. One not tested is `usize`'s, and past the end it panics,
 // as `-1 as usize` does.
