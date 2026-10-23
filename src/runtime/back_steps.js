@@ -78,6 +78,35 @@ function $chainEnds(a, b) {
   return chain;
 }
 
+// `it.step_by(step)` of a JS iterator that knows its back and its length,
+// which knows its back too, as Rust's `StepBy` is double-ended where its
+// source is exact-sized: the first item, then each `step`th, from the
+// front; from the back, the last of those, found by the source's length,
+// as std's `next_back_index` finds it. Closing it closes its source.
+function $stepByEnds(it, step) {
+  let first = true;
+  const skip = (k, by) => {
+    for (; k > 0; k--) {
+      const at = it[by]();
+      if (at.done) return at;
+    }
+    return it[by]();
+  };
+  const stepped = Iterator.from({
+    next() {
+      const at = skip(first ? 0 : step - 1, "next");
+      first = false;
+      return at;
+    },
+    return: () => $closed(it),
+  });
+  stepped.back = () => {
+    const rem = it.len() % step;
+    return skip(first ? (rem === 0 ? step - 1 : rem - 1) : rem, "back");
+  };
+  return stepped;
+}
+
 // A filter of a JS iterator that knows its back, `it.filter(p)`, which
 // knows it too, as Rust's `Filter` is double-ended where its source is:
 // each of its source's items `p` keeps, from either end, `p` asked of each

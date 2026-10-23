@@ -106,4 +106,12 @@ export const mutations: Mutation[] = [
     replace: "  chain.back = step(\"a\", \"b\", \"back\");\n",
     tests: ["test/corpus.test.ts", "-t", "^rev_chain.rs$"],
   },
+  {
+    name: "step-by-back-from-end",
+    breaks: "`step_by(n).rev()` starts at its source's last item, not the last it keeps",
+    file: "src/runtime/back_steps.js",
+    find: "    return skip(first ? (rem === 0 ? step - 1 : rem - 1) : rem, \"back\");\n",
+    replace: "    return skip(0, \"back\");\n",
+    tests: ["test/corpus.test.ts", "-t", "^rev_step_by.rs$"],
+  },
 ];

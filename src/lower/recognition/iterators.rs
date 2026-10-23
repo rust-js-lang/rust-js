@@ -803,6 +803,14 @@ pub(crate) fn mapped_source<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Ty<
     }
 }
 
+/// Of std's `StepBy<I>` of type `ty`, its source.
+pub(crate) fn stepped_by_source<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
+    match ty.kind() {
+        ty::Adt(adt, args) if std_path(tcx, adt.did()) == "std::iter::StepBy" => Some(args.type_at(0)),
+        _ => None,
+    }
+}
+
 /// Of std's `Chain<A, B>` of type `ty`, its two sources.
 pub(crate) fn chained_sources<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<(Ty<'tcx>, Ty<'tcx>)> {
     match ty.kind() {
