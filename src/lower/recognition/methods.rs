@@ -264,7 +264,6 @@ pub(super) fn combinator(name: &str, option: bool, result: bool, vec: bool, slic
         "is_err_and" if result => Comb::IsErrAnd,
         "contains" if slice => Comb::Contains,
         "binary_search" if slice => Comb::BinarySearch,
-        "is_sorted" if slice => Comb::IsSorted,
         "binary_search_by" if slice => Comb::BinarySearchBy,
         "binary_search_by_key" if slice => Comb::BinarySearchByKey,
         "rotate_left" if slice => Comb::Rotate {

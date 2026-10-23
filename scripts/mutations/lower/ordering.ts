@@ -147,14 +147,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^recursive_order.rs$"],
   },
   {
-    name: "is-sorted-by-lte",
-    breaks: "`is_sorted()` of `char`s or of an enum compares by `<=`, which orders an astral `char` and an object wrongly",
-    file: "src/lower/ordering.rs",
-    find: "        Ok(Expr::call_helper(\"$isSorted\", vec![items, compare]))\n",
-    replace: "        Ok(Expr::call_helper(\"$isSorted\", vec![items]).or_at(compare.span))\n",
-    tests: ["test/corpus.test.ts", "-t", "^is_sorted_items.rs$"],
-  },
-  {
     name: "binary-search-by-lt",
     breaks: "`binary_search` of a derived `Ord` enum compares by `<`, which orders objects as strings",
     file: "src/lower/ordering.rs",
@@ -170,5 +162,21 @@ export const mutations: Mutation[] = [
     replace: "        if super::representation::Num::of(item).is_some_and(|n| !n.float()) || item.is_bool() {\n            return Ok(Expr::call_helper(\"$binarySearch\", vec![items, x]));\n",
     tests: ["test/corpus.test.ts", "-t", "^ordered_searches.rs$"],
     snapshots: true,
+  },
+  {
+    name: "is-sorted-by-lte",
+    breaks: "`is_sorted()` of `char`s or of an enum compares by `<=`, which orders an astral `char` and an object wrongly",
+    file: "src/lower/ordering.rs",
+    find: "        let le = match super::representation::Num::of(item) {\n            Some(_) => Expr::bin(Op::Le, a, b),\n",
+    replace: "        let le = match Some(()) {\n            Some(_) => Expr::bin(Op::Le, a, b),\n",
+    tests: ["test/corpus.test.ts", "-t", "^is_sorted_items.rs$"],
+  },
+  {
+    name: "is-sorted-nan",
+    breaks: "`is_sorted` of a NaN says it's sorted",
+    file: "src/lower/ordering.rs",
+    find: "            Some(_) => Expr::bin(Op::Le, a, b),\n",
+    replace: "            Some(_) => Expr::unary(crate::js::UnaryOp::Not, Expr::bin(Op::Gt, a, b)),\n",
+    tests: ["test/corpus.test.ts", "-t", "slice_methods"],
   },
 ];

@@ -258,4 +258,12 @@ export const mutations: Mutation[] = [
     replace: "    drop?.(v[i]);\n    v[i] = f();\n",
     tests: ["test/corpus.test.ts", "-t", "^fill_with_drops.rs$"],
   },
+  {
+    name: "is-sorted-by-steps-all",
+    breaks: "`is_sorted()` of an iterator steps every item, where std's stops at the first out of order",
+    file: "src/runtime/slice_ops.js",
+    find: "    if (!first && !f(last, item)) return false;\n",
+    replace: "    if (!first && !f(last, item)) first = first;\n",
+    tests: ["test/corpus.test.ts", "-t", "^is_sorted_items.rs$"],
+  },
 ];

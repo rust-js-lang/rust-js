@@ -622,24 +622,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 )
             }
             SliceOp::SwapWithSlice => helper("$swapWithSlice", vec![arg(), arg()]),
-            // Each two in a row, by their `PartialOrd`.
-            // A number's is JS's `<=`, `false` of a NaN as `partial_cmp`'s is.
-            SliceOp::IsSorted => {
-                let items = arg();
-                let (a, b) = (Expr::var("a"), Expr::var("b"));
-                let le = match Num::of(item()) {
-                    Some(_) => Expr::bin(Op::Le, a, b),
-                    None => {
-                        let cmp = self.cmp_fn(item(), true, span)?;
-                        Expr::bin(Op::Le, Expr::call(cmp, vec![a, b]), Expr::int(0))
-                    }
-                };
-                let in_order = Expr::arrow(
-                    vec!["a".into(), "b".into()],
-                    vec![crate::js::StmtKind::Return(Some(le)).at(crate::js::Span::NONE)],
-                );
-                helper("$isSortedBy", vec![items, in_order])
-            }
+            // Each two in a row, by their `PartialOrd`, `is_sorted_call`'s.
+            SliceOp::IsSorted => self.is_sorted_call(arg(), item(), span)?,
             SliceOp::IsSortedBy => helper("$isSortedBy", vec![arg(), arg()]),
             SliceOp::IsSortedByKey => {
                 let (items, key) = (arg(), arg());

@@ -355,17 +355,25 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         ))
     }
 
-    /// `is_sorted()` of `items`, an array or an iterator of `item`s:
-    /// `$isSorted(items)` where `<=` is their `PartialOrd`'s, a number's,
-    /// a float's, whose NaN it orders as `partial_cmp` doesn't, or a
-    /// `bool`'s; else given their `partial_cmp`, a `char`'s by code point.
+    /// `is_sorted()` of `items`, a slice or an iterator of `item`s, each two
+    /// in a row by their `PartialOrd`: `$isSortedBy(items, (a, b) => a <=
+    /// b)` of numbers, JS's `<=` being `false` of a NaN as `partial_cmp`'s
+    /// is; else their `partial_cmp` at most `Equal`, which `None` isn't.
     pub(in crate::lower) fn is_sorted_call(&mut self, items: Expr, item: Ty<'tcx>, span: Span) -> R<Expr> {
         let item = item.peel_refs();
-        if super::representation::Num::of(item).is_some() || item.is_bool() {
-            return Ok(Expr::call_helper("$isSorted", vec![items]));
-        }
-        let compare = self.cmp_fn(item, true, span)?;
-        Ok(Expr::call_helper("$isSorted", vec![items, compare]))
+        let (a, b) = (Expr::var("a"), Expr::var("b"));
+        let le = match super::representation::Num::of(item) {
+            Some(_) => Expr::bin(Op::Le, a, b),
+            None => {
+                let cmp = self.cmp_fn(item, true, span)?;
+                Expr::bin(Op::Le, Expr::call(cmp, vec![a, b]), Expr::int(0))
+            }
+        };
+        let in_order = Expr::arrow(
+            vec!["a".into(), "b".into()],
+            vec![StmtKind::Return(Some(le)).at(js::Span::NONE)],
+        );
+        Ok(Expr::call_helper("$isSortedBy", vec![items, in_order]))
     }
 
     /// `(a, b) => <their Ordering>`, or the function itself: `$cmp`,

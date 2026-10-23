@@ -133,8 +133,6 @@ pub(super) enum Comb {
     ResultCloned,
     Contains,
     BinarySearch,
-    /// `is_sorted()`: each item at most the next, by its `PartialOrd`.
-    IsSorted,
     /// `binary_search_by(f)`, and `_by_key(&b, f)`: by a comparison.
     BinarySearchBy,
     BinarySearchByKey,
@@ -245,6 +243,8 @@ pub(super) enum IterSource {
     RepeatWith,
     Successors,
     FromFn,
+    /// `std::iter::zip(a, b)`, `a.into_iter().zip(b)`.
+    Zip,
 }
 
 /// Stepping through an iterator (ADR 0071): a local that `next()` is called
@@ -794,11 +794,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     items
                 };
                 helper("$extend", vec![subject, items])
-            }
-            Comb::IsSorted => {
-                let item =
-                    (self.slice_item(subject_ty)).ok_or_else(|| self.unsupported(span, "`is_sorted` of this"))?;
-                self.is_sorted_call(subject, item, span)?
             }
             Comb::BinarySearchBy => helper("$binarySearchBy", vec![subject, next()]),
             // `f(item)` compared with `b`, by its type's `Ord`.

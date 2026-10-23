@@ -332,6 +332,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                 "std::iter::repeat_with" => Some(IterSource::RepeatWith),
                 "std::iter::successors" => Some(IterSource::Successors),
                 "std::iter::from_fn" => Some(IterSource::FromFn),
+                "std::iter::zip" => Some(IterSource::Zip),
                 _ => None,
             };
             if let Some(source) = source {

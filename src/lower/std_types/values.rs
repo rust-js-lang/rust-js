@@ -480,7 +480,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Some(js) = self.numeric_call(known, call, &mut values, out)? {
             return Ok(js);
         }
-        if let Some(js) = self.iter_source_call(known, call, &mut values)? {
+        if let Some(js) = self.iter_source_call(known, call, &mut values, out)? {
             return Ok(js);
         }
         if let Some(js) = self.string_call(known, call, &mut values)? {

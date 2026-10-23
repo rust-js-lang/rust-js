@@ -803,6 +803,19 @@ pub(crate) fn mapped_source<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Ty<
     }
 }
 
+/// Of std's `Skip<I>` or `Take<I>` of type `ty`, its source, and whether
+/// it's a `Skip`.
+pub(crate) fn counted_source<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<(Ty<'tcx>, bool)> {
+    match ty.kind() {
+        ty::Adt(adt, args) => match std_path(tcx, adt.did()).as_str() {
+            "std::iter::Skip" => Some((args.type_at(0), true)),
+            "std::iter::Take" => Some((args.type_at(0), false)),
+            _ => None,
+        },
+        _ => None,
+    }
+}
+
 /// Of std's adapter of type `ty` that holds its source and a function
 /// alone, `Map<I, F>` or `Filter<I, P>`, its source and its function: all
 /// it keeps, a JS iterator helper's state being its source's (ADR 0525).

@@ -2063,24 +2063,6 @@ export function $binarySearchBy(items, f) {
   return order === 0 ? { TAG: "Ok", _0: base } : { TAG: "Err", _0: base + (order === -1 ? 1 : 0) };
 }
 
-// `is_sorted()` of a slice's or an iterator's items: each at most the next,
-// by `<=`, or where that isn't their `PartialOrd`'s, by `cmp`, their
-// `Ordering`, `Less` or `Equal`. It stops at the first that isn't, as
-// Rust's does, so an iterator's later items aren't made.
-export function $isSorted(items, cmp) {
-  let first = true;
-  let last;
-  for (const item of items) {
-    if (!first) {
-      const order = cmp ? cmp(last, item) : undefined;
-      if (cmp ? order !== -1 && order !== 0 : !(last <= item)) return false;
-    }
-    first = false;
-    last = item;
-  }
-  return true;
-}
-
 // `a.cmp(b)` of two iterators, or `partial_cmp`: each item in turn, as
 // Rust's `cmp_by` steps them, the first `Ordering` of two that isn't
 // `Equal`, `undefined` where `partial_cmp` of two is `None`; else which
@@ -3359,9 +3341,17 @@ export function $copyWithin(v, start, end, dest) {
   v.copyWithin(dest, start, end);
 }
 
-// `is_sorted_by(f)`: `f` of each two in a row, `true` for all.
-export function $isSortedBy(v, f) {
-  for (let i = 1; i < v.length; i++) if (!f(v[i - 1], v[i])) return false;
+// `is_sorted_by(f)` of a slice's or an iterator's items: `f` of each two
+// in a row, `true` for all. It stops at the first `false`, as Rust's does,
+// so an iterator's later items aren't made.
+export function $isSortedBy(items, f) {
+  let first = true;
+  let last;
+  for (const item of items) {
+    if (!first && !f(last, item)) return false;
+    first = false;
+    last = item;
+  }
   return true;
 }
 
