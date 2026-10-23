@@ -54,8 +54,7 @@ function main() {
   const value$1 = make("c");
   let empty;
   try {
-    const tmp = Noisy.name(value$1);
-    empty = !tmp;
+    empty = !Noisy.name(value$1);
   } finally {
     console.log(`drop ${value$1[0]}`);
   }
@@ -63,12 +62,12 @@ function main() {
   const kept = make("d");
   try {
     console.log(`kept ${kept[0]}`);
-    const tmp = make("e");
-    const field = tmp[0];
+    const value = make("e");
+    const field = value[0];
     try {
       console.log(`field ${field}`);
     } finally {
-      console.log(`drop ${tmp[0]}`);
+      console.log(`drop ${value[0]}`);
     }
   } finally {
     console.log(`drop ${kept[0]}`);

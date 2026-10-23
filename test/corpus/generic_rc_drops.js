@@ -111,32 +111,31 @@ function main() {
   try {
     try {
       const next = teeIterator_next(a, { next: $next }, { clone: (value) => value });
-      const tmp = teeIterator_next(a, { next: $next }, { clone: (value) => value });
-      const value = teeIterator_next(b, { next: $next }, { clone: (value) => value });
+      const value = teeIterator_next(a, { next: $next }, { clone: (value) => value });
+      const value$1 = teeIterator_next(b, { next: $next }, { clone: (value) => value });
       console.log(
-        `${next == null ? "None" : `Some(${next})`} ${tmp == null ? "None" : `Some(${tmp})`} ${value == null ? "None" : `Some(${value})`}`,
+        `${next == null ? "None" : `Some(${next})`} ${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`}`,
       );
-      const value$1 = [[1], [2]];
-      const tmp$1 = $iter(value$1);
-      const tmp$2 = tee(tmp$1, $dropEach(loudDrop_drop), loudDrop_drop);
-      const c = tmp$2[0];
-      const d = tmp$2[1];
+      const value$2 = tee($iter([[1], [2]]), $dropEach(loudDrop_drop), loudDrop_drop);
+      const c = value$2[0];
+      const d = value$2[1];
       try {
         try {
-          const loud = teeIterator_next(
+          const value = teeIterator_next(
             c,
             { next: $next },
             { clone: (value) => value },
             $dropEach(loudDrop_drop),
             loudDrop_drop,
           );
-          const tmp = (l) => {
-            const result = l[0];
-            loudDrop_drop(l);
-            return result;
-          };
-          const tmp$1 = loud ? tmp(loud) : undefined;
-          console.log(`${tmp$1 == null ? "None" : `Some(${tmp$1})`}`);
+          const value$1 = value
+            ? ((l) => {
+                const result = l[0];
+                loudDrop_drop(l);
+                return result;
+              })(value)
+            : undefined;
+          console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
         } finally {
           $rcDrop(d.rcbuffer, (value) => {
             for (const item of value.value.backlog) {
@@ -148,20 +147,21 @@ function main() {
           });
         }
         console.log("d dropped");
-        const tmp = teeIterator_next(
+        const loud = teeIterator_next(
           c,
           { next: $next },
           { clone: (value) => value },
           $dropEach(loudDrop_drop),
           loudDrop_drop,
         );
-        const tmp$1 = (l) => {
-          const result = l[0];
-          loudDrop_drop(l);
-          return result;
-        };
-        const tmp$2 = tmp ? tmp$1(tmp) : undefined;
-        console.log(`${tmp$2 == null ? "None" : `Some(${tmp$2})`}`);
+        const value = loud
+          ? ((l) => {
+              const result = l[0];
+              loudDrop_drop(l);
+              return result;
+            })(loud)
+          : undefined;
+        console.log(`${value == null ? "None" : `Some(${value})`}`);
       } finally {
         $rcDrop(c.rcbuffer, (value) => {
           for (const item of value.value.backlog) {
@@ -172,18 +172,16 @@ function main() {
           }
         });
       }
-      const value$2 = [undefined, 1];
-      const tmp$3 = $iter(value$2);
-      const tmp$4 = tee(tmp$3);
-      const e = tmp$4[0];
-      const f = tmp$4[1];
+      const value$3 = tee($iter([undefined, 1]));
+      const e = value$3[0];
+      const f = value$3[1];
       try {
         try {
-          const tmp = teeIterator_next(e, { next: $nextSome }, { clone: (value) => value });
-          const tmp$1 = teeIterator_next(f, { next: $nextSome }, { clone: (value) => value });
-          const value = teeIterator_next(f, { next: $nextSome }, { clone: (value) => value });
+          const value = teeIterator_next(e, { next: $nextSome }, { clone: (value) => value });
+          const value$1 = teeIterator_next(f, { next: $nextSome }, { clone: (value) => value });
+          const value$2 = teeIterator_next(f, { next: $nextSome }, { clone: (value) => value });
           console.log(
-            `${tmp == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(tmp))})`} ${tmp$1 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(tmp$1))})`} ${value == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value))})`}`,
+            `${value == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value))})`} ${value$1 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$1))})`} ${value$2 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$2))})`}`,
           );
           console.log("end");
         } finally {

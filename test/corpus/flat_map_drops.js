@@ -77,13 +77,17 @@ function bothLeft() {
   );
   try {
     const one = $next(it);
-    const value = (l) => {
-      const result = l[0];
-      loudDrop_drop(l);
-      return result;
-    };
-    const tmp = one != null ? value(one) : 0;
-    console.log(`one ${tmp}`);
+    console.log(
+      `one ${
+        one != null
+          ? ((l) => {
+              const result = l[0];
+              loudDrop_drop(l);
+              return result;
+            })(one)
+          : 0
+      }`,
+    );
   } finally {
     it.return();
   }

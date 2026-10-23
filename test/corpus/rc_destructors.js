@@ -118,8 +118,7 @@ function main() {
         noisyDrop_drop(item);
       }
     });
-    const length = v.length;
-    console.log(`${length} ${$index(v, 0).value.name[0]}`);
+    console.log(`${v.length} ${$index(v, 0).value.name[0]}`);
   } finally {
     for (const item of v) {
       $rcDrop(item, (value) => {
@@ -188,16 +187,16 @@ function main() {
     } finally {
       $unborrow(borrow);
     }
-    const tmp = $borrowMut(other.value, true);
+    const value = $borrowMut(other.value, true);
     let last;
     try {
-      last = tmp.value.pop();
+      last = value.value.pop();
     } catch (error) {
-      $unborrow(tmp);
+      $unborrow(value);
       throw error;
     }
     try {
-      $unborrow(tmp);
+      $unborrow(value);
       console.log(`popped ${!!last}`);
     } finally {
       if (last != null) {

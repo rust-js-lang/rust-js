@@ -44,18 +44,18 @@ function main() {
   }
   const l = { value: [["a"], ["b"]] };
   try {
-    const tmp = $lock(l, true);
+    const value = $lock(l, true);
     try {
-      tmp.value.push(["c"]);
+      value.value.push(["c"]);
     } finally {
-      $unborrow(tmp);
+      $unborrow(value);
     }
-    const tmp$1 = $lockRead(l, true);
-    const value = tmp$1.value;
+    const value$1 = $lockRead(l, true);
+    const value$2 = value$1.value;
     try {
-      console.log(`${value.length} held`);
+      console.log(`${value$2.length} held`);
     } finally {
-      $unborrow(tmp$1);
+      $unborrow(value$1);
     }
   } finally {
     for (const item of l.value) {
@@ -100,12 +100,12 @@ function main() {
     throw error;
   }
   const w = { value: ["before"] };
-  const value = ["after"];
+  const value$2 = ["after"];
   let tmp$1;
   try {
     tmp$1 = $lock(w, true);
   } catch (error) {
-    noisyDrop_drop(value);
+    noisyDrop_drop(value$2);
     noisyDrop_drop(w.value);
     noisyDrop_drop(m.value);
     throw error;
@@ -113,13 +113,13 @@ function main() {
   try {
     noisyDrop_drop(tmp$1.value);
   } catch (error) {
-    $assign(tmp$1.value, value);
+    $assign(tmp$1.value, value$2);
     $unborrow(tmp$1);
     noisyDrop_drop(w.value);
     noisyDrop_drop(m.value);
     throw error;
   }
-  $assign(tmp$1.value, value);
+  $assign(tmp$1.value, value$2);
   try {
     try {
       $unborrow(tmp$1);

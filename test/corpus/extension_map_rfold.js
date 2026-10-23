@@ -59,24 +59,21 @@ function main() {
     console.log(
       `[${tags.map((item) => `(${tagDebug_fmt(item[0], { fmt: (value) => String(value) })}, ${$debugStr(item[1])})`).join(", ")}]`,
     );
-    const value$2 = ["x", "y"];
-    const inner = $iter(value$2);
-    const value$3 = (s, t) => s + t[0];
     const words = Ends.taggedBack(
-      { inner },
+      { inner: $iter(["x", "y"]) },
       "",
-      value$3,
+      (s, t) => s + t[0],
       { next: $next },
       { next_back: $nextBack },
     );
     console.log(`${words}`);
-    const value$4 = Ends.heldBack(
+    const value$2 = Ends.heldBack(
       { inner: { start: 5, end: 8 } },
       { next: $rangeNext },
       { next_back: $rangeNextBack },
     );
     console.log(
-      `${value$4 == null ? "None" : `Some(${tagDebug_fmt(value$4, { fmt: (value) => String(value) })})`}`,
+      `${value$2 == null ? "None" : `Some(${tagDebug_fmt(value$2, { fmt: (value) => String(value) })})`}`,
     );
   } finally {
     console.log(`drop ${loud}`);

@@ -190,11 +190,10 @@ export function shared(times) {
   try {
     const iter = $iter(v.value);
     while (true) {
-      const tmp = $next(iter);
-      if (tmp == null) {
+      const x = $next(iter);
+      if (x == null) {
         break;
       }
-      const x = tmp;
       total = (total + x) | 0;
     }
     return [total, v.value.length];

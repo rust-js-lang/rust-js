@@ -24,13 +24,13 @@ function main() {
   $unborrow(borrowMut);
   const borrow = $borrow(limit, true);
   try {
-    const tmp = $borrow({}, true);
+    const value = $borrow({}, true);
     try {
       console.log(
-        `${borrow.value == null ? "None" : `Some(${borrow.value})`} ${tmp.value == null ? "None" : `Some(${tmp.value})`}`,
+        `${borrow.value == null ? "None" : `Some(${borrow.value})`} ${value.value == null ? "None" : `Some(${value.value})`}`,
       );
     } finally {
-      $unborrow(tmp);
+      $unborrow(value);
     }
   } finally {
     $unborrow(borrow);

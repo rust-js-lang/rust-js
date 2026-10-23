@@ -18,13 +18,14 @@ function main() {
   let it = $iter(noisy([1, 2, 3]));
   try {
     const nthBack = $nthBack(it, 1, undefined, noisyDrop_drop);
-    const tmp = (n) => {
-      const result = n[0];
-      noisyDrop_drop(n);
-      return result;
-    };
-    const tmp$1 = nthBack ? tmp(nthBack) : undefined;
-    console.log(`${tmp$1 == null ? "None" : `Some(${tmp$1})`}`);
+    const value = nthBack
+      ? ((n) => {
+          const result = n[0];
+          noisyDrop_drop(n);
+          return result;
+        })(nthBack)
+      : undefined;
+    console.log(`${value == null ? "None" : `Some(${value})`}`);
     console.log(`left ${it.end - it.at}`);
   } finally {
     for (const item of it) {
@@ -35,36 +36,34 @@ function main() {
   const value = (n) => n[0] === 4;
   try {
     const rfind = $findBack(it, value, undefined, noisyDrop_drop);
-    const tmp = (n) => {
-      const result = n[0];
-      noisyDrop_drop(n);
-      return result;
-    };
-    const tmp$1 = rfind ? tmp(rfind) : undefined;
-    console.log(`${tmp$1 == null ? "None" : `Some(${tmp$1})`}`);
-    const tmp$2 = noisy([7, 8]);
-    const tmp$3 = $iter(tmp$2);
-    const tmp$4 = (sum, n) => {
-      const result = (((sum * 10) >>> 0) + n[0]) >>> 0;
-      noisyDrop_drop(n);
-      return result;
-    };
-    const tmp$5 = $foldBack(tmp$3, 0, tmp$4);
-    console.log(`${tmp$5}`);
-    const tmp$6 = noisy([1, 2, 3]);
-    const tmp$7 = $iter(tmp$6);
-    const value$1 = (n) => {
+    const value$1 = rfind
+      ? ((n) => {
+          const result = n[0];
+          noisyDrop_drop(n);
+          return result;
+        })(rfind)
+      : undefined;
+    console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
+    console.log(
+      `${$foldBack($iter(noisy([7, 8])), 0, (sum, n) => {
+        const result = (((sum * 10) >>> 0) + n[0]) >>> 0;
+        noisyDrop_drop(n);
+        return result;
+      })}`,
+    );
+    const value$2 = $iter(noisy([1, 2, 3]));
+    const value$3 = (n) => {
       const result = n[0] > 1 ? n[0] : undefined;
       noisyDrop_drop(n);
       return result;
     };
     try {
-      const value = $lent(tmp$7)
-        .map(value$1)
+      const value = $lent(value$2)
+        .map(value$3)
         .find((item) => item != null);
       console.log(`${value == null ? "None" : `Some(${value})`}`);
     } finally {
-      for (const item of tmp$7) {
+      for (const item of value$2) {
         noisyDrop_drop(item);
       }
     }

@@ -95,11 +95,11 @@ function main() {
     const value = $borrow(s, true);
     try {
       const name = value.impl.name(value.value);
-      const tmp = $borrow(s, true);
+      const value$1 = $borrow(s, true);
       try {
-        console.log(`${name} ${$displayF64(tmp.impl.area(tmp.value))}`);
+        console.log(`${name} ${$displayF64(value$1.impl.area(value$1.value))}`);
       } finally {
-        $unborrow(tmp);
+        $unborrow(value$1);
       }
     } finally {
       $unborrow(value);
@@ -110,8 +110,7 @@ function main() {
   $unborrow(value);
   const receiver = $borrow($index(shapes, 0), true);
   try {
-    const tmp = receiver.impl.name(receiver.value);
-    console.log(`${tmp}`);
+    console.log(`${receiver.impl.name(receiver.value)}`);
   } finally {
     $unborrow(receiver);
   }
@@ -126,11 +125,11 @@ function main() {
   const value$2 = $borrow(labeled, true);
   try {
     const label = value$2.impl.label(value$2.value);
-    const borrow = $borrow($index(shapes, 0), true);
+    const value = $borrow($index(shapes, 0), true);
     try {
-      console.log(`${label} ${$displayF64(borrow.impl.area(borrow.value))}`);
+      console.log(`${label} ${$displayF64(value.impl.area(value.value))}`);
     } finally {
-      $unborrow(borrow);
+      $unborrow(value);
     }
   } finally {
     $unborrow(value$2);
@@ -146,8 +145,7 @@ function main() {
   }
   const value$4 = $borrow(boxed, true);
   try {
-    const tmp = value$4.impl.name(value$4.value);
-    console.log(`${tmp}`);
+    console.log(`${value$4.impl.name(value$4.value)}`);
   } finally {
     $unborrow(value$4);
   }

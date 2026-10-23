@@ -93,8 +93,7 @@ function main() {
   while (true) {
     const value = make(n);
     try {
-      const tmp = Noisy.big(value) === false;
-      if (!tmp) {
+      if (!(Noisy.big(value) === false)) {
         break;
       }
     } finally {
@@ -106,11 +105,11 @@ function main() {
   const inner = 50;
   let found;
   try {
-    const tmp = make(5);
+    const value = make(5);
     try {
-      found = Noisy.big(tmp);
+      found = Noisy.big(value);
     } finally {
-      console.log(`drop ${tmp[0]}`);
+      console.log(`drop ${value[0]}`);
     }
   } finally {
     console.log(`drop ${inner}`);
@@ -123,8 +122,7 @@ function main() {
   const value$2 = [7];
   try {
     try {
-      const tmp = $eq(value$1, value$2);
-      if (!tmp) {
+      if (!$eq(value$1, value$2)) {
         $assertFailed("Eq", noisyDebug_fmt(value$1), noisyDebug_fmt(value$2));
       }
     } finally {

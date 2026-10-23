@@ -13,9 +13,9 @@ function main() {
   for (const x of [1, 2, 3]) {
     const value = $borrowMut(add, true);
     try {
-      const tmp = value.value(x);
+      const value$1 = value.value(x);
       borrowMut = $borrowMut(total, true);
-      borrowMut.value = (borrowMut.value + tmp) | 0;
+      borrowMut.value = (borrowMut.value + value$1) | 0;
       $unborrow(borrowMut);
     } finally {
       $unborrow(value);

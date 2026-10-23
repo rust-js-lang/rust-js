@@ -15,13 +15,14 @@ function main() {
   const r = $rev($closing($iter(v), $dropEach(loudDrop_drop)));
   try {
     const next = $next(r);
-    const tmp = (l) => {
-      const result = l[0];
-      loudDrop_drop(l);
-      return result;
-    };
-    const tmp$1 = next ? tmp(next) : undefined;
-    console.log(`${tmp$1 == null ? "None" : `Some(${tmp$1})`}`);
+    const value = next
+      ? ((l) => {
+          const result = l[0];
+          loudDrop_drop(l);
+          return result;
+        })(next)
+      : undefined;
+    console.log(`${value == null ? "None" : `Some(${value})`}`);
   } finally {
     r.return();
   }
@@ -42,8 +43,7 @@ function main() {
   try {
     console.log(`${firsts.length}`);
     console.log("end");
-    const value = [[10], [11], [12], [13]];
-    const held = $iter(value);
+    const held = $iter([[10], [11], [12], [13]]);
     let loud;
     try {
       loud = $next(held);
@@ -65,14 +65,15 @@ function main() {
     }
     const back = $rev($closing(held, $dropEach(loudDrop_drop)));
     try {
-      const tmp = $next(back);
-      const tmp$1 = (l) => {
-        const result = l[0];
-        loudDrop_drop(l);
-        return result;
-      };
-      const tmp$2 = tmp ? tmp$1(tmp) : undefined;
-      console.log(`${tmp$2 == null ? "None" : `Some(${tmp$2})`}`);
+      const value = $next(back);
+      const value$1 = value
+        ? ((l) => {
+            const result = l[0];
+            loudDrop_drop(l);
+            return result;
+          })(value)
+        : undefined;
+      console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
     } finally {
       back.return();
     }

@@ -33,8 +33,7 @@ function ownIterator_fold(own, init, f, dropB, dropF) {
     try {
       while (own[1] < 3) {
         own[1] = (own[1] + 1) >>> 0;
-        const value = folded;
-        folded = f(value, own[1]);
+        folded = f(folded, own[1]);
       }
       result = folded;
     } finally {

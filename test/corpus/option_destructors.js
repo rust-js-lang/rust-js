@@ -52,47 +52,44 @@ function main() {
           console.log(`drop ${older[0]}`);
         }
       }
-      const value$1 = (n) => n[0] > 5;
       let taken;
-      if (slot.pending != null && value$1(slot.pending)) {
+      if (slot.pending != null && slot.pending[0] > 5) {
         taken = slot.pending;
         slot.pending = undefined;
       }
       const kept = taken;
       try {
         console.log(`kept ${!kept}`);
-        const value = (n) => n[0] === 3;
         let taken$1;
-        if (slot.pending != null && value(slot.pending)) {
+        if (slot.pending != null && slot.pending[0] === 3) {
           taken$1 = slot.pending;
           slot.pending = undefined;
         }
         const taken = taken$1;
-        const value$1 = (n) => n[0];
+        const value = (n) => n[0];
         try {
-          const map = taken ? value$1(taken) : undefined;
-          const noisy = slot.pending;
-          console.log(`taken ${map == null ? "None" : `Some(${map})`} left ${!noisy}`);
-          const value = [4];
+          const map = taken ? value(taken) : undefined;
+          console.log(`taken ${map == null ? "None" : `Some(${map})`} left ${!slot.pending}`);
+          const noisy = [4];
           try {
             if (slot.pending != null) {
               console.log(`drop ${slot.pending[0]}`);
             }
           } finally {
-            slot.pending = value;
+            slot.pending = noisy;
           }
-          const tmp = made(5);
+          const value$1 = made(5);
           if (slot.pending != null) {
             console.log(`drop ${slot.pending[0]}`);
           }
-          slot.pending = tmp;
+          slot.pending = value$1;
           const held = slot.pending;
           console.log(`held ${held[0]}`);
-          const tmp$1 = made(6);
+          const value$2 = made(6);
           if (slot.pending == null) {
-            slot.pending = tmp$1;
+            slot.pending = value$2;
           } else {
-            console.log(`drop ${tmp$1[0]}`);
+            console.log(`drop ${value$2[0]}`);
           }
           const same = slot.pending;
           console.log(`same ${same[0]}`);
@@ -103,16 +100,16 @@ function main() {
           } finally {
             slot.pending = undefined;
           }
-          const tmp$2 = made(7);
+          const value$3 = made(7);
           if (slot.pending == null) {
-            slot.pending = tmp$2;
+            slot.pending = value$3;
           } else {
-            console.log(`drop ${tmp$2[0]}`);
+            console.log(`drop ${value$3[0]}`);
           }
           const fresh = slot.pending;
           console.log(`fresh ${fresh[0]}`);
-          const value$2 = () => made(8);
-          slot.pending ??= value$2();
+          const value$4 = () => made(8);
+          slot.pending ??= value$4();
           const with$ = slot.pending;
           console.log(`with ${with$[0]}`);
           console.log("end");

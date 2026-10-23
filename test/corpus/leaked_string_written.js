@@ -41,7 +41,7 @@ function main() {
     text.value = $asciiCase(text.value, true);
     console.log(`${text.value}`);
   }
-  const noisy = undefined;
+  let noisy;
   console.log(`${noisyDebug_fmt(noisy)} kept`);
 
   const r = { value: 5 };

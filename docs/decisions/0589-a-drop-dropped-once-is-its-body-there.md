@@ -5,6 +5,8 @@ a `Drop` is its body at each drop, a written guard's fields `let`s, a
 one-field tuple's its field. Extends [0098](0098-destructors.md)'s destructors and
 [0581](0581-a-closure-called-as-a-statement-is-its-body.md)'s bodies in
 place.
+Amended by [0705](0705-a-guards-scope-reads-as-any-body.md): a guard's
+field of a variable nothing sets later is that variable.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): A. Each rewrite runs
 the same code in the same order.

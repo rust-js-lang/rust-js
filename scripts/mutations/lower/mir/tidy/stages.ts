@@ -504,4 +504,12 @@ export const mutations: Mutation[] = [
     snapshots: true,
     tests: ["test/corpus.test.ts", "-t", "^(matrix_integers|sales_report).rs$"],
   },
+  {
+    name: "unwound-stages-none",
+    breaks: "no stage runs again once a scope is one `finally`, `const result = frame; return result;` left",
+    file: "src/lower/mir/tidy/stages.rs",
+    find: "pub(super) const UNWOUND: &[&str] = &[\"names\", \"in place\", \"chains\"];\n",
+    replace: "pub(super) const UNWOUND: &[&str] = &[\"names\", \"in place\"];\n",
+    tests: ["test/lowering-unwinds.test.ts", "-t", "a guard's fields are its variables"],
+  },
 ];

@@ -47,7 +47,7 @@ function main() {
       console.log(`caught: ${value$1}`);
 
       const held = ["captured"];
-      const value = () => {
+      const result = $catchUnwind(() => {
         const taken = held;
         try {
           console.log(`holding ${taken[0]}`);
@@ -61,19 +61,17 @@ function main() {
           noisyDrop_drop(taken);
           throw error;
         }
-      };
-      const result = $catchUnwind(value);
-      const value$2 = result.TAG === "Err";
+      });
+      const value = result.TAG === "Err";
       try {
-        console.log(`caught again: ${value$2}`);
+        console.log(`caught again: ${value}`);
 
-        const value = () => {
+        const result = $catchUnwind(() => {
           throw $unwinding({
             value: ["payload"],
             impl: { typeId: () => "lib::Noisy", $drop: noisyDrop_drop },
           });
-        };
-        const result = $catchUnwind(value);
+        });
         const value$1 = result.TAG === "Err";
         try {
           console.log(`payload caught: ${value$1}`);

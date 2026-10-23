@@ -23,10 +23,9 @@ function main() {
   for (const [i, w] of ["a", "b", "a"].entries()) {
     const n = w;
     try {
-      const entry = $entry(m, [1, w]);
       const captured = n;
-      const value = (k) => `${k[1]}-${captured}-${i}`;
-      $orInsertWithKey(entry._0[0], entry._0[1], value);
+      const entry = $entry(m, [1, w]);
+      $orInsertWithKey(entry._0[0], entry._0[1], (k) => `${k[1]}-${captured}-${i}`);
       const v = $mutGet(entry._0[0], entry._0[1]);
       v.value += "!";
     } finally {

@@ -23,8 +23,7 @@ function main() {
   const v = [];
   try {
     fill(v, ["a"], 2);
-    const tmp = $repeating(["b"], undefined, loudDrop_drop);
-    const it = tmp.take(3);
+    const it = $repeating(["b"], undefined, loudDrop_drop).take(3);
     let first;
     try {
       first = $next(it);
@@ -59,9 +58,9 @@ function main() {
       }
       throw error;
     }
-    let tmp$1;
+    let tmp;
     try {
-      tmp$1 = $repeating(["c"], undefined, loudDrop_drop);
+      tmp = $repeating(["c"], undefined, loudDrop_drop);
     } catch (error) {
       if (first != null) {
         loudDrop_drop(first);
@@ -70,7 +69,7 @@ function main() {
     }
     let unused;
     try {
-      unused = tmp$1.take(1);
+      unused = tmp.take(1);
     } catch (error) {
       if (first != null) {
         loudDrop_drop(first);
@@ -85,9 +84,9 @@ function main() {
       }
       throw error;
     }
-    let tmp$2;
+    let tmp$1;
     try {
-      tmp$2 = $repeating(["d"], undefined, loudDrop_drop);
+      tmp$1 = $repeating(["d"], undefined, loudDrop_drop);
     } catch (error) {
       if (first != null) {
         loudDrop_drop(first);
@@ -96,7 +95,7 @@ function main() {
     }
     let take;
     try {
-      take = tmp$2.take(2);
+      take = tmp$1.take(2);
     } catch (error) {
       if (first != null) {
         loudDrop_drop(first);
@@ -159,9 +158,9 @@ function main() {
         throw error;
       }
     }
-    let tmp$3;
+    let tmp$2;
     try {
-      tmp$3 = $repeating(["e"], undefined, loudDrop_drop);
+      tmp$2 = $repeating(["e"], undefined, loudDrop_drop);
     } catch (error) {
       if (first != null) {
         loudDrop_drop(first);
@@ -173,7 +172,7 @@ function main() {
     }
     let skipped;
     try {
-      skipped = $skipping(tmp$3, 1, loudDrop_drop);
+      skipped = $skipping(tmp$2, 1, loudDrop_drop);
     } catch (error) {
       if (first != null) {
         loudDrop_drop(first);
@@ -242,34 +241,34 @@ function main() {
       throw error;
     }
     const value$2 = [["j"]];
+    let tmp$3;
+    try {
+      tmp$3 = $iter(value$2);
+    } catch (error) {
+      if (first != null) {
+        loudDrop_drop(first);
+      }
+      if (it$live) {
+        it.return();
+      }
+      throw error;
+    }
+    try {
+      $extend(v, tmp$3);
+    } catch (error) {
+      if (first != null) {
+        loudDrop_drop(first);
+      }
+      if (it$live) {
+        it.return();
+      }
+      throw error;
+    }
     let tmp$4;
-    try {
-      tmp$4 = $iter(value$2);
-    } catch (error) {
-      if (first != null) {
-        loudDrop_drop(first);
-      }
-      if (it$live) {
-        it.return();
-      }
-      throw error;
-    }
-    try {
-      $extend(v, tmp$4);
-    } catch (error) {
-      if (first != null) {
-        loudDrop_drop(first);
-      }
-      if (it$live) {
-        it.return();
-      }
-      throw error;
-    }
     let tmp$5;
-    let tmp$6;
     try {
-      tmp$5 = v;
-      tmp$6 = $iter([["k"]]);
+      tmp$4 = v;
+      tmp$5 = $iter([["k"]]);
     } catch (error) {
       if (first != null) {
         loudDrop_drop(first);
@@ -280,7 +279,7 @@ function main() {
       throw error;
     }
     try {
-      $extend(tmp$5, tmp$6);
+      $extend(tmp$4, tmp$5);
     } catch (error) {
       if (first != null) {
         loudDrop_drop(first);

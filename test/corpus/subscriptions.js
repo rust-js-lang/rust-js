@@ -57,11 +57,10 @@ function publish(bus, msg) {
     ids.sort($cmp);
     const iter = $iter(ids);
     while (true) {
-      const tmp = $next(iter);
-      if (tmp == null) {
+      const id = $next(iter);
+      if (id == null) {
         break;
       }
-      const id = tmp;
       $unwrap(b.value.handlers.get(id), "no entry found for key")(msg);
     }
   } finally {
@@ -120,9 +119,8 @@ function main() {
       }
       throw error;
     }
-    const length = b.subs.length;
     try {
-      console.log(`${b.name} has ${length}`);
+      console.log(`${b.name} has ${b.subs.length}`);
     } catch (error) {
       for (const item of b.subs) {
         subscriptionDrop_drop(item);

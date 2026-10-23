@@ -27,19 +27,20 @@ function main() {
   const iter = { start: 1, end: 2 };
   try {
     while (true) {
-      const tmp = $rangeInclusiveNext(iter);
-      if (tmp == null) {
+      const i = $rangeInclusiveNext(iter);
+      if (i == null) {
         break;
       }
-      const i = tmp;
       const guard = [i];
-      const value = () => (Guard.id(guard) * 10) >>> 0;
-      Registry.add(registry, value, (value) => {
-        console.log(`drop guard ${guard[0]}`);
-      });
+      Registry.add(
+        registry,
+        () => (Guard.id(guard) * 10) >>> 0,
+        (value) => {
+          console.log(`drop guard ${guard[0]}`);
+        },
+      );
     }
-    const value = () => 7;
-    Registry.add(registry, value);
+    Registry.add(registry, () => 7);
     const sum = registry.callbacks.map((f) => f()).reduce((a, b) => (a + b) >>> 0, 0);
     console.log(`sum ${sum}`);
     $truncate(registry.callbacks, 1, $dispose);

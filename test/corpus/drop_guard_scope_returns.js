@@ -18,16 +18,13 @@ function step(n) {
 function find(limit, wanted) {
   const previous = depth;
   depth = (previous + 1) >>> 0;
-  const _restore = { previous };
   try {
     const first = step(limit);
     if (first > 3) {
       let i = 0;
       while (i < limit) {
-        const tmp = step(i) === wanted;
-        if (tmp) {
-          const result = `found ${i} at depth ${depth}`;
-          return result;
+        if (step(i) === wanted) {
+          return `found ${i} at depth ${depth}`;
         }
         if (i > 15) {
           break;
@@ -36,8 +33,8 @@ function find(limit, wanted) {
       }
     }
   } finally {
-    console.log(`restore ${_restore.previous} (was ${depth})`);
-    depth = _restore.previous;
+    console.log(`restore ${previous} (was ${depth})`);
+    depth = previous;
   }
   return `none at depth ${depth}`;
 }

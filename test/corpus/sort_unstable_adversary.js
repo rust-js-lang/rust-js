@@ -30,33 +30,22 @@ function adversary(n, select) {
     asked = (asked + 1) >>> 0;
     const v = $borrowMut(values, true);
     try {
-      const tmp = $index(v.value, x) === gas;
-      if (tmp) {
-        const tmp = $index(v.value, y) === gas;
-        if (tmp) {
-          if (x === candidate) {
-            const get = solid;
-            $index(v.value, x);
-            v.value[x] = get;
-          } else {
-            const tmp = solid;
-            $index(v.value, y);
-            v.value[y] = tmp;
-          }
-          solid = (solid + 1) >>> 0;
+      if ($index(v.value, x) === gas && $index(v.value, y) === gas) {
+        if (x === candidate) {
+          const value = solid;
+          v.value[$at(v.value, x)] = value;
+        } else {
+          const value = solid;
+          v.value[$at(v.value, y)] = value;
         }
+        solid = (solid + 1) >>> 0;
       }
-      const tmp$1 = $index(v.value, x) === gas;
-      if (tmp$1) {
+      if ($index(v.value, x) === gas) {
         candidate = x;
-      } else {
-        const tmp = $index(v.value, y) === gas;
-        if (tmp) {
-          candidate = y;
-        }
+      } else if ($index(v.value, y) === gas) {
+        candidate = y;
       }
-      const tmp$2 = $index(v.value, x);
-      return $cmp(tmp$2, $index(v.value, y));
+      return $cmp($index(v.value, x), $index(v.value, y));
     } finally {
       $unborrow(v);
     }

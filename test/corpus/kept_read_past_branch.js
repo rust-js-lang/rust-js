@@ -13,26 +13,17 @@ function droppedAfter() {
   const loud = 5;
   let w = 0;
   try {
-    while (true) {
-      const tmp = w < id(2);
-      if (!tmp) {
-        break;
-      }
+    while (w < id(2)) {
       w = (w + 1) >>> 0;
-      const tmp$1 = new Map();
-      const tmp$2 = [tmp$1.size, id(1)];
+      const value = new Map().size;
+      const y = id(1);
       let size;
-      if (tmp$2[0] === 7) {
+      if (value === 7) {
         size = 1;
+      } else if (id(false)) {
+        size = y;
       } else {
-        const y = tmp$2[1];
-        const tmp = id(false);
-        if (tmp) {
-          const y = tmp$2[1];
-          size = y;
-        } else {
-          size = 2;
-        }
+        size = 2;
       }
       console.log(`${size}`);
     }
@@ -50,20 +41,15 @@ function droppedEachPass() {
     w = (w + 1) >>> 0;
     const each = (w + 10) >>> 0;
     try {
-      const tmp = new Map();
-      const tmp$1 = [tmp.size, id(1)];
+      const value = new Map().size;
+      const y = id(1);
       let size;
-      if (tmp$1[0] === 7) {
+      if (value === 7) {
         size = 1;
+      } else if (id(false)) {
+        size = y;
       } else {
-        const y = tmp$1[1];
-        const tmp = id(false);
-        if (tmp) {
-          const y = tmp$1[1];
-          size = y;
-        } else {
-          size = 2;
-        }
+        size = 2;
       }
       console.log(`${size}`);
     } finally {

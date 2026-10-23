@@ -76,35 +76,35 @@ function main() {
     const it = $iter($splice(v, 0, 1, []));
     try {
       const next = $next(it);
-      const tmp = (l) => {
-        const result = l[0];
-        console.log(`drop ${l[0]}`);
-        return result;
-      };
-      const tmp$1 = next ? tmp(next) : undefined;
-      console.log(`${tmp$1 == null ? "None" : `Some(${tmp$1})`}`);
+      const value = next
+        ? ((l) => {
+            const result = l[0];
+            console.log(`drop ${l[0]}`);
+            return result;
+          })(next)
+        : undefined;
+      console.log(`${value == null ? "None" : `Some(${value})`}`);
     } finally {
       for (const item of it) {
         console.log(`drop ${item[0]}`);
       }
     }
-    const tmp = v.map((l) => l[0]);
-    console.log(`[${tmp.join(", ")}]`);
-    const loud = [7];
+    console.log(`[${v.map((l) => l[0]).join(", ")}]`);
+    const o = [7];
     const value = (l) => {
       console.log(`saw ${l[0]}`);
     };
-    if (loud != null) {
-      value(loud);
+    if (o != null) {
+      value(o);
     }
-    const o = loud;
-    const value$1 = (l) => {
-      const result = l[0];
-      console.log(`drop ${l[0]}`);
-      return result;
-    };
-    const tmp$1 = o ? value$1(o) : undefined;
-    console.log(`${tmp$1 == null ? "None" : `Some(${tmp$1})`}`);
+    const value$1 = o
+      ? ((l) => {
+          const result = l[0];
+          console.log(`drop ${l[0]}`);
+          return result;
+        })(o)
+      : undefined;
+    console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
     const r = { TAG: "Ok", _0: [8] };
     const value$2 = (l) => {
       console.log(`ok ${l[0]}`);

@@ -99,16 +99,14 @@ function render(state, view) {
   try {
     const iter = $iter(s.value.todos);
     while (true) {
-      const tmp = $next(iter);
-      if (!tmp) {
+      const todo = $next(iter);
+      if (!todo) {
         break;
       }
-      const todo = tmp;
       if (!todo.done) {
         left = (left + 1) | 0;
       }
-      const tmp$1 = shown(s.value.filter, todo);
-      if (tmp$1) {
+      if (shown(s.value.filter, todo)) {
         view.list.append(item(state, view, todo));
       }
     }

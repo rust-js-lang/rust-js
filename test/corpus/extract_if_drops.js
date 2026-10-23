@@ -28,13 +28,11 @@ function collected() {
   const v = [[1], [2], [3], [4], [5]];
   const value = (l) => l[0] % 2 === 1;
   try {
-    const extractIf = Iterator.from($extractIf(v, 0, undefined, value));
-    const odd = extractIf.toArray();
+    const odd = Iterator.from($extractIf(v, 0, undefined, value)).toArray();
     try {
-      const tmp = ids(odd);
-      const tmp$1 = v;
-      const tmp$2 = ids(tmp$1);
-      console.log(`odd [${tmp.join(", ")}] kept [${tmp$2.join(", ")}]`);
+      const value = ids(odd);
+      const value$1 = ids(v);
+      console.log(`odd [${value.join(", ")}] kept [${value$1.join(", ")}]`);
     } finally {
       for (const item of odd) {
         loudDrop_drop(item);
@@ -52,15 +50,17 @@ function stoppedEarly() {
   try {
     const e = Iterator.from($extractIf(w, 1, undefined, () => true));
     const first = $next(e);
-    const value = (l) => {
-      const result = l[0];
-      loudDrop_drop(l);
-      return result;
-    };
-    const mapOr = first != null ? value(first) : 0;
-    const tmp = w;
-    const tmp$1 = ids(tmp);
-    console.log(`first ${mapOr} left [${tmp$1.join(", ")}]`);
+    console.log(
+      `first ${
+        first != null
+          ? ((l) => {
+              const result = l[0];
+              loudDrop_drop(l);
+              return result;
+            })(first)
+          : 0
+      } left [${ids(w).join(", ")}]`,
+    );
   } finally {
     for (const item of w) {
       loudDrop_drop(item);
@@ -106,14 +106,13 @@ function fromMaps() {
         false,
       ),
     );
-    let tmp;
     while (true) {
-      tmp = $next(iter);
-      if (!tmp) {
+      const value = $next(iter);
+      if (!value) {
         break;
       }
-      const k = tmp[0];
-      const l = tmp[1];
+      const k = value[0];
+      const l = value[1];
       try {
         console.log(`map took ${k} ${l[0]}`);
       } finally {
@@ -127,8 +126,7 @@ function fromMaps() {
         loudDrop_drop(item[1]);
         return n + 1;
       }, 0);
-      const size = h.size;
-      console.log(`hash ${gone} ${size} ${m.size}`);
+      console.log(`hash ${gone} ${h.size} ${m.size}`);
     } finally {
       for (const item of h.values()) {
         loudDrop_drop(item);

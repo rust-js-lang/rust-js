@@ -60,9 +60,8 @@ function climb(d) {
 function first(d) {
   let result;
   try {
-    const tmp = step(d);
-    if (tmp) {
-      const e = tmp;
+    const e = step(d);
+    if (e) {
       result = (e[0] + d[0]) >>> 0;
       dDrop_drop(e);
       return result;
@@ -92,14 +91,12 @@ function fallible(d) {
 function go(d) {
   let result;
   try {
-    const tmp = fallible(d);
-    if (tmp.TAG !== "Err") {
-      const e = tmp._0;
+    const value = fallible(d);
+    if (value.TAG !== "Err") {
+      const e = value._0;
       try {
-        if (tmp.TAG === "Err") {
-          if (tmp.TAG === "Err") {
-            dDrop_drop(tmp._0);
-          }
+        if (value.TAG === "Err") {
+          dDrop_drop(value._0);
         }
         result = { TAG: "Ok", _0: e[0] };
       } finally {
@@ -107,7 +104,7 @@ function go(d) {
       }
       return result;
     }
-    result = tmp;
+    result = value;
   } finally {
     dDrop_drop(d);
   }

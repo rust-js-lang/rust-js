@@ -93,16 +93,15 @@ const Mapped = {
 };
 
 function first(k) {
-  let tmp$0$live = false;
+  let l$0$live = false;
   let result;
   if (k != null) {
     const held = ["held"];
     try {
-      const tmp = make(k, true);
-      tmp$0$live = true;
-      if (tmp) {
-        tmp$0$live = false;
-        const l = tmp;
+      const l = make(k, true);
+      l$0$live = true;
+      if (l) {
+        l$0$live = false;
         try {
           console.log(`got ${l[0]} with ${held[0]}`);
           result = $byteLen(l[0]);
@@ -112,12 +111,12 @@ function first(k) {
       } else {
         result = 0;
       }
-      if (tmp) {
-        if (tmp$0$live) {
-          loudDrop_drop(tmp);
+      if (l) {
+        if (l$0$live) {
+          loudDrop_drop(l);
         }
       }
-      tmp$0$live = false;
+      l$0$live = false;
     } finally {
       loudDrop_drop(held);
     }

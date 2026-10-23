@@ -68,8 +68,8 @@ function main() {
   try {
     console.log(`b ${!b}`);
     let c = { TAG: "Ok", _0: [4] };
-    let kept;
     const f$1 = { TAG: "Ok", _0: [5] };
+    let kept;
     if (c.TAG === "Err") {
       kept = c;
     } else {
@@ -91,8 +91,8 @@ function main() {
       loudDrop_drop(l);
       return result;
     };
-    let mapped;
     const fallback = 0;
+    let mapped;
     if (c.TAG === "Ok") {
       mapped = value$1(c._0);
     } else {
@@ -101,8 +101,8 @@ function main() {
     }
     console.log(`c ${mapped}`);
     let d = { TAG: "Err", _0: [6] };
-    let kept$1;
     const f$2 = { TAG: "Ok", _0: [7] };
+    let kept$1;
     if (d.TAG === "Err") {
       kept$1 = d;
     } else {

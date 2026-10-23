@@ -218,8 +218,7 @@ function main() {
     }
     const held = [{ ...props, f }, holder];
     try {
-      const tmp = $index(held, 0).f();
-      console.log(`${tmp} count ${shared.strong}`);
+      console.log(`${$index(held, 0).f()} count ${shared.strong}`);
     } finally {
       for (const item of held) {
         $dispose(item.f);

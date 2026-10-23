@@ -604,7 +604,7 @@ pub fn guarded(n: u32) -> String {
   expect(js.match(/finally/g)?.length).toBe(1);
   expect(js).toContain(`  } finally {
     reentry = false;
-    globalThis.restored(_restore.previous);
+    globalThis.restored(previous);
   }
   return "none";`);
   const lib = await import(join(dir, "lib.js"));
@@ -622,6 +622,179 @@ pub fn guarded(n: u32) -> String {
   expect(lib.guarded(2)).toBe("none");
   delete g.restored;
   delete g.work;
+});
+
+// React's describeNativeComponentFrame, and its fallback's `finally`, as
+// the port's guards write them (ADR 0706): each guard's fields the
+// variables it was made of, read in the `finally`; and what each
+// statement's `try` held apart, read in place once the scope is one
+// `finally`, `if (lines[s].includes(..))`, `return \`..\`;`.
+test("a guard's fields are its variables, its scope read in place", async () => {
+  const { js, dir } = compiled("unwind-guard-fields", `use std::cell::Cell;
+
+thread_local! {
+    static REENTRY: Cell<bool> = const { Cell::new(false) };
+}
+
+struct Restore {
+    previous: u32,
+    dispatcher: Option<u32>,
+}
+
+impl Drop for Restore {
+    fn drop(&mut self) {
+        REENTRY.set(false);
+        restored(self.previous, self.dispatcher);
+    }
+}
+
+struct RestoreProps {
+    prototype: u32,
+    prev_props: Option<u32>,
+}
+
+impl Drop for RestoreProps {
+    fn drop(&mut self) {
+        match self.prev_props {
+            Some(prev_props) => define(self.prototype, prev_props),
+            None => delete(self.prototype),
+        }
+    }
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "globalThis.work")]
+fn work(n: u32) -> u32 {
+    n
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "globalThis.lines")]
+fn lines() -> Vec<String> {
+    Vec::new()
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "globalThis.restored")]
+fn restored(_: u32, _: Option<u32>) {}
+
+#[cfg_attr(rust_js, rust_js::link_name = "globalThis.define")]
+fn define(_: u32, _: u32) {}
+
+#[cfg_attr(rust_js, rust_js::link_name = "globalThis.del")]
+fn delete(_: u32) {}
+
+pub fn frame(dev: bool) -> String {
+    if REENTRY.get() {
+        return String::new();
+    }
+    {
+        REENTRY.set(true);
+        let previous = work(0);
+        let mut dispatcher = None;
+        if dev {
+            dispatcher = Some(work(1));
+        }
+        let _restore = Restore {
+            previous,
+            dispatcher,
+        };
+        let lines = lines();
+        let mut s = 0;
+        while s < lines.len() {
+            if lines[s].contains("Root") {
+                let frame = format!("\\n{}", lines[s]);
+                return frame;
+            }
+            s += 1;
+        }
+    }
+    String::new()
+}
+
+pub fn props(prototype: u32) -> u32 {
+    let prev_props = if prototype > 5 { Some(prototype * 2) } else { None };
+    let _restore_props = RestoreProps {
+        prototype,
+        prev_props,
+    };
+    work(prototype)
+}
+
+struct Doubled {
+    previous: u32,
+}
+
+impl Drop for Doubled {
+    fn drop(&mut self) {
+        if self.previous > 0 {
+            let previous = self.previous * 2;
+            restored(previous, None);
+        }
+    }
+}
+
+pub fn doubled(previous: u32) -> u32 {
+    let _doubled = Doubled { previous };
+    work(previous)
+}
+
+pub fn changed(mut previous: u32) -> u32 {
+    let _restore = Restore {
+        previous,
+        dispatcher: Some(previous),
+    };
+    previous += 1;
+    work(previous)
+}
+`);
+  expect(js).not.toContain("_restoreProps");
+  expect(js).toContain(`  try {
+    const lines = globalThis.lines();
+    let s = 0;
+    while (s < lines.length) {
+      if (lines[s].includes("Root")) {
+        const frame = \`\\n\${lines[s]}\`;
+        return frame;
+      }
+      s++;
+    }
+  } finally {
+    reentry = false;
+    globalThis.restored(previous, dispatcher);
+  }`);
+  expect(js).toContain(`  try {
+    return globalThis.work(prototype);
+  } finally {
+    if (prevProps != null) {`);
+  // A variable set once the guard's made isn't what the guard holds.
+  expect(js).toContain("const _restore = { previous, dispatcher: previous };");
+  expect(js).toContain("globalThis.restored(_restore.previous, _restore.dispatcher);");
+  const lib = await import(join(dir, "lib.js"));
+  const g = globalThis as Record<string, unknown>;
+  const calls: unknown[][] = [];
+  g.work = (n: number) => {
+    if (n === 9) throw new RangeError("nine");
+    return n + 40;
+  };
+  g.lines = () => ["Error", "at Root", "at x"];
+  g.restored = (...args: unknown[]) => calls.push(["restored", ...args]);
+  g.define = (...args: unknown[]) => calls.push(["define", ...args]);
+  g.del = (...args: unknown[]) => calls.push(["delete", ...args]);
+  expect([lib.frame(true), lib.frame(false)]).toEqual(["\nat Root", "\nat Root"]);
+  g.lines = () => ["Error"];
+  expect(lib.frame(true)).toBe("");
+  expect(lib.props(2)).toBe(42);
+  expect(() => lib.props(9)).toThrow("nine");
+  expect(lib.changed(3)).toBe(44);
+  expect(lib.doubled(5)).toBe(45);
+  expect(calls).toEqual([
+    ["restored", 40, 41],
+    ["restored", 40, undefined],
+    ["restored", 40, 41],
+    ["delete", 2],
+    ["define", 9, 18],
+    ["restored", 3, 3],
+    ["restored", 10, undefined],
+  ]);
+  for (const name of ["work", "lines", "restored", "define", "del"]) delete g[name];
 });
 
 // rust-js's panics unwind (ADR 0090); where the crate asked them to abort,

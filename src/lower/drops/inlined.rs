@@ -1,7 +1,7 @@
 //! A `Drop` impl's body where it's dropped (ADRs 0589, 0608).
 
 use crate::js::{self, Expr, ExprKind, Item, Pattern, Prop, Stmt, StmtKind};
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 /// Of `items`, a module's, each function `drops` names, a `Drop` impl's
 /// `drop`, which isn't exported and that no other module calls: where each
@@ -170,7 +170,9 @@ fn argument(stmt: &Stmt) -> Option<String> {
 /// `const guard = { a: x, b: y };` of `body`, each of whose reads is of a
 /// field, `guard.a`: `const a = x; const b = y;`, read as `a`, a `let` of
 /// one written, `let hasMoreWork = true;`, where no other name of the
-/// function is a field's.
+/// function is a field's; and a field of a variable that nothing sets
+/// once the guard's made, `{ prototype, prevProps }`'s, read as that
+/// variable, `prototype` (ADR 0705).
 fn fields_of(body: &mut Vec<Stmt>, params: &[Pattern], guard: &str) {
     let mut made = None;
     js::each_block_mut(body, &mut |stmts| {
@@ -221,32 +223,101 @@ fn fields_of(body: &mut Vec<Stmt>, params: &[Pattern], guard: &str) {
     let mut names = HashSet::new();
     js::names_in(body, &mut names);
     names.extend(params.iter().flat_map(|p| p.names()).map(str::to_string));
+    // What each field reads as: the variable it was made of, where nothing
+    // sets that once the guard's made and it's the one of its name; else a
+    // `const` of its own, its key, where that names nothing else.
+    let kept = kept_variables(body, params, guard, &fields);
+    let read_as = |(key, value): &(String, Expr)| match &value.kind {
+        ExprKind::Var(v) if !written.contains(key) && kept.contains(v) => Some(v.clone()),
+        _ => None,
+    };
     if fields
         .iter()
-        .any(|(key, _)| names.contains(key) || !crate::names::is_identifier(key))
+        .any(|field| read_as(field).is_none() && (names.contains(&field.0) || !crate::names::is_identifier(&field.0)))
     {
         return;
     }
     js::each_expr_mut(body, &mut |e| {
         if let ExprKind::Member(of, key) = &e.kind
             && matches!(&of.kind, ExprKind::Var(v) if v == guard)
+            && let Some(field) = fields.iter().find(|(k, _)| k == key)
         {
-            *e = Expr::var(key).or_at(e.span);
+            *e = Expr::var(&read_as(field).unwrap_or_else(|| key.clone())).or_at(e.span);
         }
     });
     js::each_block_mut(body, &mut |stmts| {
+        // A copy of a field the variable it reads as, `const prevProps =
+        // prevProps;`, is that variable.
+        stmts.retain(
+            |s| !matches!(&s.kind, StmtKind::Const(n, value) if matches!(&value.kind, ExprKind::Var(v) if v == n)),
+        );
         if let Some(k) = stmts
             .iter()
             .position(|s| matches!(&s.kind, StmtKind::Const(n, _) if n == guard))
         {
             let span = stmts[k].span;
-            let consts = (fields.iter()).map(|(key, value)| match written.contains(key) {
-                true => StmtKind::Let(key.clone(), Some(value.clone())).at(span),
-                false => StmtKind::Const(key.clone(), value.clone()).at(span),
-            });
+            let consts = (fields.iter())
+                .filter(|field| read_as(field).is_none())
+                .map(|(key, value)| match written.contains(key) {
+                    true => StmtKind::Let(key.clone(), Some(value.clone())).at(span),
+                    false => StmtKind::Const(key.clone(), value.clone()).at(span),
+                });
             stmts.splice(k..=k, consts.collect::<Vec<_>>());
         }
     });
+}
+
+/// The variables `body` declares once, or `params` do, that nothing sets
+/// once `const guard = ..;` is made: later where it's made, by a closure,
+/// or through a handle; what the guard's field of one holds is that
+/// variable, wherever the guard is read. A copy of the field into one of
+/// its name, `const prevProps = guard.prevProps;`, a `match`'s binding in
+/// its `Drop`, declares no other.
+fn kept_variables(body: &[Stmt], params: &[Pattern], guard: &str, fields: &[(String, Expr)]) -> HashSet<String> {
+    let mut declared: HashMap<String, usize> = HashMap::new();
+    js::each_declared(body, &mut |name| *declared.entry(name.to_string()).or_default() += 1);
+    let mut copies = body.to_vec();
+    js::each_block_mut(&mut copies, &mut |list| {
+        for s in list.iter() {
+            if let StmtKind::Const(name, value) = &s.kind
+                && let ExprKind::Member(of, key) = &value.kind
+                && matches!(&of.kind, ExprKind::Var(g) if g == guard)
+                && fields
+                    .iter()
+                    .any(|(k, v)| k == key && matches!(&v.kind, ExprKind::Var(v) if v == name))
+                && let Some(count) = declared.get_mut(name)
+            {
+                *count -= 1;
+            }
+        }
+    });
+    for name in params.iter().flat_map(|p| p.names()) {
+        *declared.entry(name.to_string()).or_default() += 1;
+    }
+    let whole = js::Writes::of(body);
+    let mut later = None;
+    let mut stmts = body.to_vec();
+    js::each_block_mut(&mut stmts, &mut |list| {
+        if later.is_none()
+            && let Some(k) = list
+                .iter()
+                .position(|s| matches!(&s.kind, StmtKind::Const(n, _) if n == guard))
+        {
+            later = Some(js::Writes::of(&list[k + 1..]));
+        }
+    });
+    let Some(later) = later else {
+        return HashSet::new();
+    };
+    (declared.into_iter())
+        .filter(|(name, count)| {
+            *count == 1
+                && !later.may_replace(name)
+                && !whole.replaced_in_closures.contains(name)
+                && !whole.handled.contains(name)
+        })
+        .map(|(name, _)| name)
+        .collect()
 }
 
 /// `const guard = [x];`, a one-field tuple struct's guard, each of whose

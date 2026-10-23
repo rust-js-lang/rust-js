@@ -25,12 +25,13 @@ function main() {
   let firstBig;
   try {
     const find = $findDropping($lent(value), (item) => value$1(item), loudDrop_drop, false);
-    const tmp = (l) => {
-      const result = l[0];
-      loudDrop_drop(l);
-      return result;
-    };
-    firstBig = find ? tmp(find) : undefined;
+    firstBig = find
+      ? ((l) => {
+          const result = l[0];
+          loudDrop_drop(l);
+          return result;
+        })(find)
+      : undefined;
   } finally {
     value.return();
   }

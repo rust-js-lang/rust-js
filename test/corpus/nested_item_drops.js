@@ -176,13 +176,15 @@ function groupsFirstOfNext_firstOfNext(
     const inner = $someValue(next);
     const value$1 = $intoIter(inner);
     try {
-      const tmp = $nextSome(value$1);
-      const tmp$1 = (_2) => {
-        dropIItemItem?.(_2);
-        return 1;
-      };
-      const value = $someValue(tmp);
-      result = tmp != null ? tmp$1(value) : 0;
+      const value$2 = $nextSome(value$1);
+      const value = $someValue(value$2);
+      result =
+        value$2 != null
+          ? ((_2) => {
+              dropIItemItem?.(_2);
+              return 1;
+            })(value)
+          : 0;
     } finally {
       dropIItemIntoIter?.(value$1);
     }

@@ -40,24 +40,36 @@ pub(super) struct Named {
     pub(super) text: HashSet<String>,
 }
 
-/// A body tidied, once its parameters are taken apart: its temporaries
-/// named, its drop flags too, and then, its temporaries named alike, each
-/// run of statements a value's drop ends one `try { .. } finally { .. }`
-/// (ADR 0437), what a `try` declared before it, `let x;`, where it's made;
-/// a shadow of a binding the program names read no more, that binding
-/// (ADR 0650); and a `String` appended to twice, once (ADR 0652).
+/// A body tidied, once its parameters are taken apart: each run of
+/// statements a value's drop ends one `try { .. } finally { .. }` (ADR
+/// 0437), and what each statement's own `try` held apart, `let tmp; try {
+/// tmp = f(); } catch ..`, read as tidy reads any body, its stages that
+/// read temporaries in place run again (`stages::UNWOUND`, ADR 0705);
+/// then its temporaries named, its drop flags too; a shadow of a binding
+/// the program names read no more, that binding (ADR 0650); and a
+/// `String` appended to twice, once (ADR 0652).
 pub(super) fn named(
     params: &[js::Pattern],
     body: &mut Vec<Stmt>,
-    flags: &HashSet<String>,
     suggested: &HashMap<String, Vec<String>>,
     locals: &Named,
+    hints: &Hints,
 ) {
-    bindings::readable_temporaries(params, body, suggested);
-    flags::named_flags(body, flags);
-    js::statement_lists(body, &mut unwinds::scoped_drops);
-    bindings::declarations(body);
+    let mut scoped = false;
+    js::statement_lists(body, &mut |stmts| scoped |= unwinds::scoped_drops(stmts));
     js::statement_lists(body, &mut unwinds::returned_through_finally);
+    if scoped {
+        for stage in stages::STAGES
+            .iter()
+            .filter(|stage| stages::UNWOUND.contains(&stage.name))
+        {
+            for pass in stage.passes {
+                (pass.run)(body, hints);
+            }
+        }
+    }
+    bindings::readable_temporaries(params, body, suggested);
+    flags::named_flags(body, hints.flags);
     bindings::shadowed(params, body, &locals.user);
     crate::lower::std_types::text::appended(body, &locals.text);
 }

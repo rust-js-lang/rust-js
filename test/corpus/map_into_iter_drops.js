@@ -133,12 +133,13 @@ function main() {
   let found;
   try {
     const find = $findDropping($lent(value$2), (item) => value$3(item), loudDrop_drop, false);
-    const tmp = (l) => {
-      const result = l[0];
-      loudDrop_drop(l);
-      return result;
-    };
-    found = find ? tmp(find) : undefined;
+    found = find
+      ? ((l) => {
+          const result = l[0];
+          loudDrop_drop(l);
+          return result;
+        })(find)
+      : undefined;
   } finally {
     for (const item of value$2) {
       loudDrop_drop(item);

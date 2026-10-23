@@ -22,14 +22,10 @@ function main() {
   const [tx, rx] = $channel();
   try {
     try {
-      const send = $send(tx, ["a"]);
-      $unwrapOk(send, undefined, (e) => "SendError { .. }");
-      const tmp = $send(tx, ["b"]);
-      $unwrapOk(tmp, undefined, (e) => "SendError { .. }");
-      const tmp$1 = $send(tx, ["c"]);
-      $unwrapOk(tmp$1, undefined, (e) => "SendError { .. }");
-      const recv = $recv(rx);
-      const first = $unwrapOk(recv, undefined, (e) => "RecvError");
+      $unwrapOk($send(tx, ["a"]), undefined, (e) => "SendError { .. }");
+      $unwrapOk($send(tx, ["b"]), undefined, (e) => "SendError { .. }");
+      $unwrapOk($send(tx, ["c"]), undefined, (e) => "SendError { .. }");
+      const first = $unwrapOk($recv(rx), undefined, (e) => "RecvError");
       try {
         console.log(`got ${first[0]}`);
       } finally {
@@ -39,14 +35,14 @@ function main() {
       $dropReceiver(rx, loudDrop_drop);
     }
     console.log("receiver gone");
-    const tmp = $send(tx, ["d"]);
-    if (tmp.TAG === "Ok") {
+    const send = $send(tx, ["d"]);
+    if (send.TAG === "Ok") {
       console.log("sent");
     } else {
       try {
-        console.log(`back ${tmp._0[0][0]}`);
+        console.log(`back ${send._0[0][0]}`);
       } finally {
-        loudDrop_drop(tmp._0[0]);
+        loudDrop_drop(send._0[0]);
       }
     }
 

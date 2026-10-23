@@ -25,6 +25,11 @@ const fn pass(name: &'static str, run: fn(&mut Vec<Stmt>, &Hints)) -> Pass {
     Pass { name, run }
 }
 
+/// The stages run again once each run of statements a value's drop ends
+/// is one `try { .. } finally { .. }` (ADR 0705): what each statement's own
+/// `try` held apart, `let tmp; try { tmp = f(); } catch ..`, read in place.
+pub(super) const UNWOUND: &[&str] = &["names", "in place", "chains"];
+
 /// Each stage, in order.
 pub(super) const STAGES: &[Stage] = &[
     Stage {

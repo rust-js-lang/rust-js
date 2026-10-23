@@ -13,8 +13,7 @@ function take(value, dropT) {
 
 function length(items, DDeref, dropD) {
   try {
-    const tmp = DDeref.deref(items);
-    return tmp.length;
+    return DDeref.deref(items).length;
   } finally {
     dropD?.(items);
   }
@@ -22,8 +21,7 @@ function length(items, DDeref, dropD) {
 
 function shown(items, DDeref, dropD) {
   try {
-    const tmp = DDeref.deref(items);
-    console.log(`${tmp.length} items`);
+    console.log(`${DDeref.deref(items).length} items`);
   } finally {
     dropD?.(items);
   }

@@ -31,8 +31,7 @@ function mapped() {
     return result;
   });
   try {
-    const tmp = c.map((l) => l[0]);
-    console.log(`[${tmp.join(", ")}]`);
+    console.log(`[${c.map((l) => l[0]).join(", ")}]`);
   } finally {
     for (const item of c) {
       loudDrop_drop(item);
@@ -84,15 +83,15 @@ function popped() {
   const value = (l) => l[0] === 8;
   try {
     const popped = $popIf(v, value);
-    const value$1 = (l) => {
-      const result = l[0];
-      loudDrop_drop(l);
-      return result;
-    };
-    const tmp = popped ? value$1(popped) : undefined;
-    console.log(`popped ${tmp == null ? "None" : `Some(${tmp})`}`);
-    const value$2 = (l) => l[0] === 0;
-    const none = $popIf(v, value$2);
+    const value$1 = popped
+      ? ((l) => {
+          const result = l[0];
+          loudDrop_drop(l);
+          return result;
+        })(popped)
+      : undefined;
+    console.log(`popped ${value$1 == null ? "None" : `Some(${value$1})`}`);
+    const none = $popIf(v, (l) => l[0] === 0);
     try {
       console.log(`none ${!none}`);
       const q = [[9], [10]];

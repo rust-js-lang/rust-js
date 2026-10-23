@@ -521,7 +521,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0586 `#[rust_js::nullable]` is of a field that's an `Option`](decisions/0586-a-nullable-field-is-an-option.md)
 - [0587 A function given to `with_borrow` is asked what it borrows](decisions/0587-a-function-given-to-with-borrow-is-asked-as-a-closure.md)
 - [0588 A binding may throw by the result it's declared with](decisions/0588-a-binding-throws-by-its-declared-result.md)
-- [0589 A `Drop` dropped in one place is its body there](decisions/0589-a-drop-dropped-once-is-its-body-there.md)
+- [0589 A `Drop` dropped in one place is its body there](decisions/0589-a-drop-dropped-once-is-its-body-there.md) *(amended by 0705: a guard's field of a variable is that variable)*
 - [0590 A `match` of constants tests each by its name, its comments in its arms](decisions/0590-a-match-of-constants-names-them.md)
 - [0591 `is_some_and` of an equality with its `Some` is the equality](decisions/0591-is-some-and-of-an-equality-is-the-equality.md)
 - [0592 An impl's dictionary is its module's `const`](decisions/0592-a-dictionary-is-its-modules-const.md)
@@ -617,7 +617,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0690 An iterator given as it is folds by its own `fold`, and drops once](decisions/0690-an-iterator-given-as-it-is-folds-by-its-own-fold.md)
 - [0691 A `dyn Any` drops where the crate makes one of what drops](decisions/0691-a-dyn-any-drops-where-the-crate-makes-one-that-does.md)
 - [0692 A thrown `Error` is a panic's message and what JS threw, both](decisions/0692-a-thrown-error-is-a-panic-and-what-js-threw.md)
-- [0693 A guard's scope is one `finally`, its `if`s, loops and `return`s in it](decisions/0693-a-guards-scope-is-one-finally-its-returns-in-it.md)
+- [0693 A guard's scope is one `finally`, its `if`s, loops and `return`s in it](decisions/0693-a-guards-scope-is-one-finally-its-returns-in-it.md) *(amended by 0705: read as any body, its guard's fields its variables)*
 - [0694 `ManuallyDrop::drop`, `extend` of what holds nothing, a matched call's value and `{}` of an `impl Display`](decisions/0694-four-refusals-of-drops-and-displays-lifted.md)
 - [0695 `new` of a function value is JS's `new`, `js::new`](decisions/0695-new-of-a-function-value-is-jss-new.md)
 - [0696 A constructor is a `fn` item, declared where it's written](decisions/0696-a-constructor-is-a-fn-item-where-its-written.md)
@@ -625,6 +625,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0698 A `catch` handler gives a value or a promise, as TypeScript's](decisions/0698-a-catch-handler-gives-a-value-or-a-promise.md)
 - [0699 A `Map` of what a `WeakMap` keys is a `WeakMap`, for a fallback](decisions/0699-a-map-of-objects-is-a-weak-map.md)
 - [0700 TypeScript's `Function` gives any value, `&dyn Fn() -> Option<&'static Unknown>`](decisions/0700-typescripts-function-gives-any-value.md)
+- [0705 A guard's scope reads as any body, its fields the variables it was made of](decisions/0705-a-guards-scope-reads-as-any-body.md)
 - [0436 Every `dyn` that's a pair keeps its value's drop, `dyn Send` too](decisions/0436-every-dyn-keeps-its-drop.md) *(amended by 0691: a `dyn Any` drops where the crate makes one of what drops)*
 - [0437 A scope's drops on a panic are one `try { .. } finally { .. }`](decisions/0437-a-scopes-drops-are-one-finally.md) *(amended by 0693: its `if`s, loops and `return`s in it)*
 - [0438 An optional prop is given `Some(..)`, or left out](decisions/0438-an-optional-prop-is-given-some.md)

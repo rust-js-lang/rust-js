@@ -20,9 +20,7 @@ function main() {
   };
   try {
     $fillWith(items, value, loudDrop_drop);
-    const collect = items.map((l) => String(l[0]));
-    const tmp = collect.join(" ");
-    console.log(`${tmp}`);
+    console.log(`${items.map((l) => String(l[0])).join(" ")}`);
     $fillWith($view(items, 0, 2), () => [0], loudDrop_drop);
     console.log("end");
   } finally {

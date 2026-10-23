@@ -206,12 +206,9 @@ function main() {
                 }
               }
 
-              const tmp = name({ TAG: "Triple", _0: ["x1"], _1: ["x2"], _2: ["x3"] });
-              console.log(`name ${tmp}`);
-              const tmp$1 = name({ TAG: "Pair", _0: ["y1"], _1: ["y2"] });
-              console.log(`name ${tmp$1}`);
-              const tmp$2 = name("Empty");
-              console.log(`name ${tmp$2}`);
+              console.log(`name ${name({ TAG: "Triple", _0: ["x1"], _1: ["x2"], _2: ["x3"] })}`);
+              console.log(`name ${name({ TAG: "Pair", _0: ["y1"], _1: ["y2"] })}`);
+              console.log(`name ${name("Empty")}`);
               console.log("end");
             } finally {
               if (p != null) {

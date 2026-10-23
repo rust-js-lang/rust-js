@@ -38,25 +38,23 @@ function main() {
   let v = [[3], [1], [2]];
   try {
     $insertAt(v, 1, [4]);
-    const tmp = ids(v);
-    console.log(`[${tmp.join(", ")}]`);
+    console.log(`[${ids(v).join(", ")}]`);
     const removed = $removeAt(v, 0);
     try {
-      const tmp = ids(v);
-      console.log(`removed ${removed[0]} [${tmp.join(", ")}]`);
+      console.log(`removed ${removed[0]} [${ids(v).join(", ")}]`);
     } finally {
       noisyDrop_drop(removed);
     }
     const swapped = $swapRemove(v, 0);
-    let tmp$1;
+    let tmp;
     try {
-      tmp$1 = ids(v);
+      tmp = ids(v);
     } catch (error) {
       noisyDrop_drop(swapped);
       throw error;
     }
     try {
-      console.log(`swapped ${swapped[0]} [${tmp$1.join(", ")}]`);
+      console.log(`swapped ${swapped[0]} [${tmp.join(", ")}]`);
     } catch (error) {
       noisyDrop_drop(swapped);
       throw error;
@@ -79,6 +77,26 @@ function main() {
       noisyDrop_drop(swapped);
       throw error;
     }
+    let tmp$1;
+    try {
+      tmp$1 = ids(v);
+    } catch (error) {
+      noisyDrop_drop(swapped);
+      throw error;
+    }
+    try {
+      console.log(`[${tmp$1.join(", ")}]`);
+    } catch (error) {
+      noisyDrop_drop(swapped);
+      throw error;
+    }
+    const value = (n) => n[0];
+    try {
+      v.sort((a, b) => $cmp(value(a), value(b)));
+    } catch (error) {
+      noisyDrop_drop(swapped);
+      throw error;
+    }
     let tmp$2;
     try {
       tmp$2 = ids(v);
@@ -92,9 +110,9 @@ function main() {
       noisyDrop_drop(swapped);
       throw error;
     }
-    const value = (n) => n[0];
+    const value$1 = (a, b) => $cmp(b[0], a[0]);
     try {
-      v.sort((a, b) => $cmp(value(a), value(b)));
+      v.sort(value$1);
     } catch (error) {
       noisyDrop_drop(swapped);
       throw error;
@@ -112,9 +130,15 @@ function main() {
       noisyDrop_drop(swapped);
       throw error;
     }
-    const value$1 = (a, b) => $cmp(b[0], a[0]);
+    const value$2 = (n) => n[0];
     try {
-      v.sort(value$1);
+      $sortUnstable(v, (a, b) => value$2(a) < value$2(b), "general8");
+    } catch (error) {
+      noisyDrop_drop(swapped);
+      throw error;
+    }
+    try {
+      $rotateLeft(v, 1, "mid");
     } catch (error) {
       noisyDrop_drop(swapped);
       throw error;
@@ -132,15 +156,9 @@ function main() {
       noisyDrop_drop(swapped);
       throw error;
     }
-    const value$2 = (n) => n[0];
+    let tail;
     try {
-      $sortUnstable(v, (a, b) => value$2(a) < value$2(b), "general8");
-    } catch (error) {
-      noisyDrop_drop(swapped);
-      throw error;
-    }
-    try {
-      $rotateLeft(v, 1, "mid");
+      tail = $splitOff(v, 2);
     } catch (error) {
       noisyDrop_drop(swapped);
       throw error;
@@ -149,35 +167,15 @@ function main() {
     try {
       tmp$5 = ids(v);
     } catch (error) {
-      noisyDrop_drop(swapped);
-      throw error;
-    }
-    try {
-      console.log(`[${tmp$5.join(", ")}]`);
-    } catch (error) {
-      noisyDrop_drop(swapped);
-      throw error;
-    }
-    let tail;
-    try {
-      tail = $splitOff(v, 2);
-    } catch (error) {
+      for (const item of tail) {
+        noisyDrop_drop(item);
+      }
       noisyDrop_drop(swapped);
       throw error;
     }
     let tmp$6;
     try {
-      tmp$6 = ids(v);
-    } catch (error) {
-      for (const item of tail) {
-        noisyDrop_drop(item);
-      }
-      noisyDrop_drop(swapped);
-      throw error;
-    }
-    let tmp$7;
-    try {
-      tmp$7 = ids(tail);
+      tmp$6 = ids(tail);
     } catch (error) {
       for (const item of tail) {
         noisyDrop_drop(item);
@@ -186,7 +184,7 @@ function main() {
       throw error;
     }
     try {
-      console.log(`[${tmp$6.join(", ")}] [${tmp$7.join(", ")}]`);
+      console.log(`[${tmp$5.join(", ")}] [${tmp$6.join(", ")}]`);
     } catch (error) {
       for (const item of tail) {
         noisyDrop_drop(item);
@@ -207,11 +205,11 @@ function main() {
       noisyDrop_drop(swapped);
       throw error;
     }
+    let tmp$7;
     let tmp$8;
-    let tmp$9;
     try {
-      tmp$8 = ids(v);
-      tmp$9 = more;
+      tmp$7 = ids(v);
+      tmp$8 = more;
     } catch (error) {
       for (const item of more) {
         noisyDrop_drop(item);
@@ -222,9 +220,8 @@ function main() {
       noisyDrop_drop(swapped);
       throw error;
     }
-    const length = tmp$9.length;
     try {
-      console.log(`[${tmp$8.join(", ")}] ${length}`);
+      console.log(`[${tmp$7.join(", ")}] ${tmp$8.length}`);
     } catch (error) {
       for (const item of more) {
         noisyDrop_drop(item);
@@ -248,11 +245,11 @@ function main() {
     }
     const taken = v;
     v = [];
+    let tmp$9;
     let tmp$10;
-    let tmp$11;
     try {
-      tmp$10 = ids(taken);
-      tmp$11 = v;
+      tmp$9 = ids(taken);
+      tmp$10 = v;
     } catch (error) {
       for (const item of taken) {
         noisyDrop_drop(item);
@@ -263,9 +260,8 @@ function main() {
       noisyDrop_drop(swapped);
       throw error;
     }
-    const value$3 = tmp$11.length;
     try {
-      console.log(`taken [${tmp$10.join(", ")}] left ${value$3}`);
+      console.log(`taken [${tmp$9.join(", ")}] left ${tmp$10.length}`);
     } catch (error) {
       for (const item of taken) {
         noisyDrop_drop(item);
@@ -287,25 +283,20 @@ function main() {
         };
         try {
           $retain(w, value, noisyDrop_drop);
-          const tmp = ids(w);
-          console.log(`[${tmp.join(", ")}]`);
+          console.log(`[${ids(w).join(", ")}]`);
           const value$1 = (n) => {
             console.log(`key ${n[0]}`);
             return (n[0] / 4) >>> 0;
           };
           $dedupBy(w, (a, b) => value$1(a) === value$1(b), noisyDrop_drop);
-          const tmp$1 = ids(w);
-          console.log(`[${tmp$1.join(", ")}]`);
+          console.log(`[${ids(w).join(", ")}]`);
           $truncate(w, 3, noisyDrop_drop);
-          const tmp$2 = ids(w);
-          console.log(`[${tmp$2.join(", ")}]`);
+          console.log(`[${ids(w).join(", ")}]`);
           $resizeWith(w, 5, () => [30], noisyDrop_drop);
           $resizeWith(w, 2, () => [31], noisyDrop_drop);
-          const tmp$3 = ids(w);
-          console.log(`[${tmp$3.join(", ")}]`);
+          console.log(`[${ids(w).join(", ")}]`);
           $truncate(w, 0, noisyDrop_drop);
-          const value$2 = w.length;
-          console.log(`cleared ${value$2}`);
+          console.log(`cleared ${w.length}`);
 
           const deque = [];
           try {
@@ -355,17 +346,14 @@ function main() {
               if (front != null) {
                 noisyDrop_drop(front);
               }
-              const value = (n) => n[0] !== 41;
-              $retain(deque, value, noisyDrop_drop);
+              $retain(deque, (n) => n[0] !== 41, noisyDrop_drop);
               $truncate(deque, 1, noisyDrop_drop);
-              const value$1 = deque.length;
-              console.log(`deque ${value$1}`);
+              console.log(`deque ${deque.length}`);
               $truncate(deque, 0, noisyDrop_drop);
 
               // `last()`: each item before it dropped as the next comes.
               const items = $range(50, 53).map((value) => [value]);
-              const tmp = $iter(items);
-              const tmp$1 = (n) => {
+              const value = (n) => {
                 try {
                   console.log(`pass ${n[0]}`);
                 } catch (error) {
@@ -374,11 +362,13 @@ function main() {
                 }
                 return n;
               };
-              const tmp$2 = $closing(tmp, $dropEach(noisyDrop_drop)).map((item) => tmp$1(item));
-              const last = $lastDropping(tmp$2, noisyDrop_drop);
-              const value$2 = (n) => n[0];
+              const last = $lastDropping(
+                $closing($iter(items), $dropEach(noisyDrop_drop)).map((item) => value(item)),
+                noisyDrop_drop,
+              );
+              const value$1 = (n) => n[0];
               try {
-                const value = last ? value$2(last) : undefined;
+                const value = last ? value$1(last) : undefined;
                 console.log(`last ${value == null ? "None" : `Some(${value})`}`);
               } finally {
                 if (last != null) {

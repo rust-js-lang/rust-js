@@ -352,6 +352,9 @@ aborts.
 A scope's `if`s, loops and `return`s from inside them are in its `try`,
 whose `finally` drops what it holds however it's left: a guard whose
 `Drop` restores state is a `finally` ([ADR 0693](../../decisions/0693-a-guards-scope-is-one-finally-its-returns-in-it.md)).
+The scope reads as it would without the guard, and the guard's fields
+are the variables it was made of, `name` above, where nothing sets them
+once it's made ([ADR 0705](../../decisions/0705-a-guards-scope-reads-as-any-body.md)).
 
 ## `RefCell` borrows
 
