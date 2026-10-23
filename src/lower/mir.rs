@@ -612,7 +612,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         def_span: Span,
     ) -> R<()> {
         for local in mir_body.args_iter().skip(skip).filter(|&l| Some(l) != formatter) {
-            self.check_value_ty(mir_body.local_decls[local].ty, def_span)?;
+            let ty = mir_body.local_decls[local].ty;
+            // Rest arguments as a value are a binding's, which a `fn`
+            // pointer's call spreads (ADR 0667): a Rust function given them
+            // would be given only the first.
+            if super::bindings::is_rest_value(self.tcx, ty) {
+                return Err(self.unsupported(
+                    def_span,
+                    "a `&dyn js::Rest<T>` parameter, rest arguments as a value, of a Rust function or closure",
+                ));
+            }
+            self.check_value_ty(ty, def_span)?;
         }
         if mir_body.coroutine.is_none() && formatter.is_none() {
             self.check_value_ty(mir_body.return_ty(), def_span)?;

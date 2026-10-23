@@ -1,7 +1,7 @@
 //! A call of a binding, of its arguments' values (ADR 0364): JS's
 //! function, method, property or operator it names (ADRs 0019, 0020).
 
-use super::bindings::{JsForm, is_binding, is_method, is_optional_param, is_variadic, js_form};
+use super::bindings::{JsForm, is_binding, is_method, is_optional_param, is_rest_value, is_variadic, js_form};
 use super::calls::{given_to_js, spread_rest};
 use super::recognition::StdItem;
 use super::{FnCx, R};
@@ -66,10 +66,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     .unwrap_or(ty)
             });
             let tuple = last.is_some_and(|ty| matches!(ty.kind(), ty::Tuple(_)));
-            if !last.is_some_and(collection) && !tuple {
+            // Rest arguments as a value, `&dyn js::Rest<T>`, spread (ADR 0667).
+            let rest = last.is_some_and(|ty| is_rest_value(self.tcx, ty));
+            if !last.is_some_and(collection) && !tuple && !rest {
                 return Err(self.unsupported(
                     span,
-                    "a `#[rust_js::variadic]` binding whose last parameter isn't rest arguments: a tuple, a slice or a `Vec`",
+                    "a `#[rust_js::variadic]` binding whose last parameter isn't rest arguments: a tuple, a slice, a `Vec` or a `&dyn js::Rest<T>`",
                 ));
             }
             spread_rest(&mut args);

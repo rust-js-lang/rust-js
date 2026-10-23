@@ -7,9 +7,7 @@
 // A binding's parameters are its JS function's: its body never runs.
 #![allow(unused_variables)]
 
-use core::marker::PhantomData;
-
-use super::{JsObject, PropertyKey, Unknown};
+use super::{Dict, IntoUnknown, PropertyKey, Unknown};
 
 /// [`Reflect.apply(f, this, args)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Reflect/apply):
 /// what `f` gives, called with `this` and `arguments`.
@@ -29,7 +27,7 @@ pub fn construct(target: &dyn Fn(), arguments: &[Option<&Unknown>], new_target: 
 /// [`Reflect.defineProperty(o, key, attributes)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Reflect/defineProperty):
 /// whether the property is now as `attributes` say.
 #[cfg_attr(rust_js, rust_js::link_name = "Reflect.defineProperty")]
-pub fn define_property<K: PropertyKey + ?Sized>(target: &Unknown, key: &K, attributes: &PropertyDescriptor) -> bool {
+pub fn define_property<K: PropertyKey + ?Sized>(target: &Unknown, key: &K, attributes: &PropertyDescriptor<'_>) -> bool {
     unreachable!()
 }
 
@@ -51,7 +49,7 @@ pub fn get<K: PropertyKey + ?Sized>(target: &Unknown, key: &K, receiver: Option<
 /// [`Reflect.getOwnPropertyDescriptor(o, key)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Reflect/getOwnPropertyDescriptor):
 /// what an own property is, `None` where there's none.
 #[cfg_attr(rust_js, rust_js::link_name = "Reflect.getOwnPropertyDescriptor")]
-pub fn get_own_property_descriptor<K: PropertyKey + ?Sized>(target: &Unknown, key: &K) -> Option<&'static PropertyDescriptor> {
+pub fn get_own_property_descriptor<K: PropertyKey + ?Sized>(target: &Unknown, key: &K) -> Option<PropertyDescriptor<'static>> {
     unreachable!()
 }
 
@@ -106,85 +104,39 @@ pub fn set_prototype_of(target: &Unknown, prototype: Option<&Unknown>) -> bool {
     unreachable!()
 }
 
-/// [What a property is](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object/defineProperty#description):
-/// its value and whether it's `writable`, or its getter and setter, and
-/// whether it's `enumerable` and `configurable`, TypeScript's
-/// `PropertyDescriptor`. One `define_property` takes has what it's given,
-/// [`property_descriptor::new`] and its setters, `d.set_writable(false)`:
-/// what it isn't given stays as it is, and one of both a value and a
-/// getter JS throws a `TypeError` of.
-pub struct PropertyDescriptor(PhantomData<JsObject>);
-
-impl PropertyDescriptor {
-    #[cfg_attr(rust_js, rust_js::link_name = "get value")]
-    pub fn value(&self) -> Option<&'static Unknown> {
-        unreachable!()
-    }
-
-    #[cfg_attr(rust_js, rust_js::link_name = "set value")]
-    pub fn set_value(&self, value: Option<&Unknown>) {
-        unreachable!()
-    }
-
-    #[cfg_attr(rust_js, rust_js::link_name = "get writable")]
-    pub fn writable(&self) -> Option<bool> {
-        unreachable!()
-    }
-
-    #[cfg_attr(rust_js, rust_js::link_name = "set writable")]
-    pub fn set_writable(&self, writable: bool) {
-        unreachable!()
-    }
-
-    #[cfg_attr(rust_js, rust_js::link_name = "get enumerable")]
-    pub fn enumerable(&self) -> Option<bool> {
-        unreachable!()
-    }
-
-    #[cfg_attr(rust_js, rust_js::link_name = "set enumerable")]
-    pub fn set_enumerable(&self, enumerable: bool) {
-        unreachable!()
-    }
-
-    #[cfg_attr(rust_js, rust_js::link_name = "get configurable")]
-    pub fn configurable(&self) -> Option<bool> {
-        unreachable!()
-    }
-
-    #[cfg_attr(rust_js, rust_js::link_name = "set configurable")]
-    pub fn set_configurable(&self, configurable: bool) {
-        unreachable!()
-    }
-
-    /// Its getter, `get`.
-    #[cfg_attr(rust_js, rust_js::link_name = "get get")]
-    pub fn get(&self) -> Option<&'static dyn Fn() -> Option<&'static Unknown>> {
-        unreachable!()
-    }
-
-    #[cfg_attr(rust_js, rust_js::link_name = "set get")]
-    pub fn set_get(&self, getter: Box<dyn Fn() -> Option<&'static Unknown>>) {
-        unreachable!()
-    }
-
-    /// Its setter, `set`.
-    #[cfg_attr(rust_js, rust_js::link_name = "get set")]
-    pub fn set(&self) -> Option<&'static dyn Fn(Option<&Unknown>)> {
-        unreachable!()
-    }
-
-    #[cfg_attr(rust_js, rust_js::link_name = "set set")]
-    pub fn set_set(&self, setter: Box<dyn Fn(Option<&Unknown>)>) {
-        unreachable!()
-    }
+/// [What a property is](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object/defineProperty#description),
+/// TypeScript's `PropertyDescriptor`: its value and whether it's
+/// `writable`, or its getter and setter, and whether it's `enumerable` and
+/// `configurable`. A dictionary, as webapi's are (ADR 0666): a struct of
+/// `Option`s, each `None` left out, the rest `..Default::default()`, or
+/// another descriptor's, `PropertyDescriptor { value: Some(&prev), ..props
+/// }`, which is `{ ...props, value: prev }`. What one `define_property` is
+/// given leaves out stays as it was; one of both a value and a getter JS
+/// throws a `TypeError` of. Its `value` is any value, as a dictionary's
+/// member of `any` is (ADR 0654).
+#[derive(Clone, Copy, Default)]
+pub struct PropertyDescriptor<'a> {
+    pub configurable: Option<bool>,
+    pub enumerable: Option<bool>,
+    pub value: Option<&'a dyn IntoUnknown>,
+    pub writable: Option<bool>,
+    /// Its getter: what reading the property gives.
+    pub get: Option<&'a dyn Fn() -> Option<&'static Unknown>>,
+    /// Its setter: given what's written.
+    pub set: Option<&'a dyn Fn(Option<&Unknown>)>,
 }
 
-pub mod property_descriptor {
-    use super::PropertyDescriptor;
+/// TypeScript's `PropertyDescriptorMap`: a JS object of a
+/// [`PropertyDescriptor`] by each property's name, which
+/// `Object.defineProperties` and `Object.create` take. A `Dict` of them is
+/// one, and a struct of them, as its `impl` vouches, as a `JsonText` one
+/// does: `unsafe impl PropertyDescriptorMap for Logs<'_> {}` of `struct
+/// Logs<'a> { log: PropertyDescriptor<'a>, .. }`, `{ log: .. }`.
+///
+/// # Safety
+///
+/// Each of its fields is a `PropertyDescriptor`, as JS throws a
+/// `TypeError` of any other.
+pub unsafe trait PropertyDescriptorMap {}
 
-    /// `{}`: a descriptor of nothing yet, its setters' to give.
-    #[cfg_attr(rust_js, rust_js::link_name = "{}")]
-    pub fn new() -> &'static PropertyDescriptor {
-        unreachable!()
-    }
-}
+unsafe impl PropertyDescriptorMap for Dict<PropertyDescriptor<'_>> {}

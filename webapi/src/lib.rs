@@ -29,6 +29,9 @@ unsafe extern "Rust" {
 
     /// The `history` global.
     pub safe static history: &'static History;
+
+    /// The `console` global.
+    pub safe static console: &'static Console;
 }
 
 /// [`EventTarget`](https://developer.mozilla.org/docs/Web/API/EventTarget)
@@ -87478,6 +87481,10 @@ pub mod web_assembly {
         unreachable!()
     }
 }
+
+/// The `console` namespace as a value, the `console` global's: its functions are the `console` module's.
+#[cfg_attr(rust_js, rust_js::types = "Console")]
+pub struct Console(PhantomData<JsObject>);
 
 /// The [`console`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/console) namespace.
 

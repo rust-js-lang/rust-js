@@ -3,14 +3,6 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
-    name: "dyn-node-unsupported",
-    breaks: "`Box<dyn ReactNode>` is refused, though it's the node itself, and a list of text and elements has no type",
-    file: "src/lower/support.rs",
-    find: "                    .is_some_and(|t| super::bindings::is_jsx_node(self.tcx, t)) =>",
-    replace: "                    .is_some_and(|t| false && super::bindings::is_jsx_node(self.tcx, t)) =>",
-    tests: ["test/jsx-types.test.ts", "-t", "dyn ReactNode is the node"],
-  },
-  {
     name: "never-unsupported",
     breaks: "a function that never returns, `-> !`, is refused",
     file: "src/lower/support.rs",
@@ -92,10 +84,18 @@ export const mutations: Mutation[] = [
   },
   {
     name: "binding-dyn-refused",
-    breaks: "a binding crate's `dyn IntoUnknown`, an `ErrorEventInit`'s `error`, is refused as a value, so `..Default::default()` of one is",
+    breaks: "a binding crate's `dyn IntoUnknown`, an `ErrorEventInit`'s `error`, is refused as a value, so `..Default::default()` of one is; and `Box<dyn ReactNode>`, the node itself",
     file: "src/lower/support.rs",
     find: "                    !self.recognition().is_pair_trait(t) && !super::recognition::is_std_crate(self.tcx, t)\n",
     replace: "                    false\n",
-    tests: ["test/bindings.test.ts", "-t", "member of any value"],
+    tests: ["test/bindings.test.ts", "test/jsx-types.test.ts", "-t", "member of any value|dyn ReactNode is the node"],
+  },
+  {
+    name: "rest-value-dyn-fn-allowed",
+    breaks: "a `dyn Fn` of rest arguments is a value, whose call gives them as one array",
+    file: "src/lower/support.rs",
+    find: "                return rest.then_some(ty);\n",
+    replace: "                return None;\n",
+    tests: ["test/js-object.test.ts", "-t", "rest arguments as a value are refused"],
   },
 ];

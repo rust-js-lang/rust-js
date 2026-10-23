@@ -678,9 +678,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// Whether `operand`, an `Option`, is `null` or a value already, as a
-    /// `#[rust_js::nullable]` field is (ADR 0275): such a field, moved where
-    /// it's read, or bound to a variable, or a `Some(..)`.
-    fn nulled(&self, state: &State<'_, 'tcx>, operand: &Operand<'tcx>) -> bool {
+    /// `#[rust_js::nullable]` field or binding parameter takes it as it is
+    /// (ADR 0275): such a field, moved where it's read, or bound to a
+    /// variable, or a `Some(..)`.
+    pub(super) fn nulled(&self, state: &State<'_, 'tcx>, operand: &Operand<'tcx>) -> bool {
         let Some(place) = operand.place() else {
             return false;
         };

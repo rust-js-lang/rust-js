@@ -134,7 +134,7 @@ export const mutations: Mutation[] = [
     name: "mir-param-type-unchecked",
     breaks: "MIR's parameter of a `&mut &mut [i32]` compiles, given a copy its `*s = ..` never reaches the caller",
     file: "src/lower/mir.rs",
-    find: "            self.check_value_ty(mir_body.local_decls[local].ty, def_span)?;\n",
+    find: "            self.check_value_ty(ty, def_span)?;\n",
     replace: "",
     tests: ["test/lowering.test.ts", "-t", "slice reference is refused from MIR"],
   },
@@ -265,6 +265,14 @@ export const mutations: Mutation[] = [
     find: "                noinline: super::recognition::is_noinline(self.tcx, def_id),\n",
     replace: "                noinline: false,\n",
     tests: ["test/emission.test.ts", "-t", "inline\\(never\\)"],
+  },
+  {
+    name: "rest-value-parameter-allowed",
+    breaks: "a Rust function taking rest arguments as a value is compiled, which a `fn` pointer's call would give only the first of",
+    file: "src/lower/mir.rs",
+    find: "            if super::bindings::is_rest_value(self.tcx, ty) {\n",
+    replace: "            if false && super::bindings::is_rest_value(self.tcx, ty) {\n",
+    tests: ["test/js-object.test.ts", "-t", "rest arguments as a value are refused"],
   },
   {
     name: "rest-not-gathered",

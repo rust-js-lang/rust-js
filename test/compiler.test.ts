@@ -689,7 +689,8 @@ test("string methods are JS's, and format! is a template literal", async () => {
   expect(js).toContain('  const last = path.split("/").at(-1) ?? "";');
   expect(js).toContain('  return pieces.join(" > ");');
   // A string that grows gets a new one each time: JS strings don't change.
-  expect(js).toContain('    s += String(i);\n    s += ",";');
+  // Consecutive appends are one `+=` (ADR 0652).
+  expect(js).toContain('    s += String(i) + ",";\n  }\n  s += "!";');
   // A `char` is a one-character string.
   expect(js).toContain('  const c = windows ? "\\\\" : "/";');
   // A match of string literals is a switch of them (ADR 0629).

@@ -2,8 +2,10 @@
 // type of its own for it: each built-in TypeScript's ES2024 libs declare
 // (TypeScript 5.9's `lib.es*.d.ts`, pinned as `typescript-es`), its members,
 // statics and constructor, against what src binds by each function's link
-// name. `Array`, `String`, `Number`, `Math`, `Map`, `Set` and `Object` are
-// Rust's own types' (`Vec`, `str`, `f64`, `HashMap`): not counted.
+// name. `Array`, `String`, `Number`, `Math`, `Map` and `Set` are Rust's own
+// types' (`Vec`, `str`, `f64`, `HashMap`): not counted. Of `Object`, its
+// constructor's statics are (ADR 0666): its own members, `toString` and
+// `hasOwnProperty`, are every value's, and `new Object()` a struct's.
 // See docs/decisions/0283-js-crate-covers-typescripts-es-library.md.
 
 import { readdirSync, readFileSync } from "node:fs";
@@ -18,10 +20,13 @@ export const SCOPE = [
   "Int8Array", "Uint8Array", "Uint8ClampedArray", "Int16Array", "Uint16Array", "Int32Array", "Uint32Array",
   "Float32Array", "Float64Array", "BigInt64Array", "BigUint64Array",
   "WeakMap", "WeakSet", "WeakRef", "FinalizationRegistry",
-  "Proxy", "Reflect", "Atomics", "JSON", "Intl",
+  "Object", "Proxy", "Reflect", "Atomics", "JSON", "Intl",
   "Intl.Collator", "Intl.DateTimeFormat", "Intl.DisplayNames", "Intl.ListFormat", "Intl.Locale",
   "Intl.NumberFormat", "Intl.PluralRules", "Intl.RelativeTimeFormat", "Intl.Segmenter",
 ];
+
+/** The built-ins of which only their constructor's statics are measured. */
+const STATICS_ONLY = new Set(["Object"]);
 
 /** The global functions measured, `globalThis.parseInt`. */
 export const GLOBALS = ["parseInt", "parseFloat", "isNaN", "isFinite", "encodeURI", "encodeURIComponent", "decodeURI", "decodeURIComponent"];
@@ -116,7 +121,7 @@ async function typescript(): Promise<Map<string, Set<string>>> {
     }
     // A namespace's functions are its statics: `Reflect.apply`, `Intl.getCanonicalLocales`.
     for (const f of functions) if (f.startsWith(`${name}.`) && !f.slice(name.length + 1).includes(".")) members.add(`static:${f.slice(name.length + 1)}`);
-    out.set(name, members);
+    out.set(name, STATICS_ONLY.has(name) ? new Set([...members].filter((m) => m.startsWith("static:"))) : members);
   }
   out.set("globalThis", new Set(GLOBALS.filter((g) => functions.has(g))));
   return out;
