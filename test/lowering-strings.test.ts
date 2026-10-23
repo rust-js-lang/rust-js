@@ -111,7 +111,7 @@ pub const OMITTED_PROP_ERROR: &str = concat!(
 );
 
 pub fn warn() {
-    console::error(concat!("a ", "b"));
+    console::error((concat!("a ", "b"),));
 }
 
 pub fn kinds() -> &'static str {
