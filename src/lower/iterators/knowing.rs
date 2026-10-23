@@ -65,6 +65,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Some(source) = crate::lower::recognition::back_stepped_source(self.tcx, ty) {
             return self.knows_its_back(source) || self.stepped_from_its_back(ty);
         }
+        // A flatten the crate steps from its back, made knowing it,
+        // `$flattenEnds`.
+        if crate::lower::recognition::flattened_source(self.tcx, ty).is_some() {
+            return self.stepped_from_its_back(ty);
+        }
         // An enumeration of one that knows its length too, `$enumerate`,
         // whose index from the back is where it is (ADR 0528).
         if let Some(source) = crate::lower::recognition::enumerated_source(self.tcx, ty) {
@@ -249,6 +254,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // was made; of one made knowing them, an array's or a range's, itself.
         if let Some(knowing) = self.knowing_held(value.clone(), ty, span)? {
             return Ok(knowing);
+        }
+        // A flatten made here, `src.flatMap(each)`, of items that are arrays,
+        // which know their backs: `$flattenEnds` of its source made knowing
+        // its back, as std's `Flatten` steps from either end.
+        if let Some((source, made)) = crate::lower::recognition::flattened_source(self.tcx, ty)
+            && let js::ExprKind::Call(callee, args) = &value.kind
+            && let js::ExprKind::Member(source_value, method) = &callee.kind
+            && method == "flatMap"
+            && let [each] = args.as_slice()
+            && let Some(inner) = made.or_else(|| self.iterator_item(source.peel_refs()))
+            && {
+                let inner = inner.peel_refs();
+                inner.is_array() || inner.is_slice() || self.is_vec_like(inner)
+            }
+        {
+            let source_value = self.as_double_ended((**source_value).clone(), source.peel_refs(), span)?;
+            return Ok(Expr::call_helper("$flattenEnds", vec![source_value, each.clone()]));
         }
         if self.knows_its_back(ty) || self.held_knows_its_back(ty) {
             return Ok(value);

@@ -1736,6 +1736,38 @@ export function $enumerate(iter, count = 0) {
   return enumerated;
 }
 
+// A flatten of a JS iterator that knows its back, `it.flatMap(each)`, each
+// of whose items `each` makes what knows its back too, an array's `$iter`:
+// which knows its own, as Rust's `Flatten` and `FlatMap` are double-ended
+// where their source and its items are. From the front, the front inner's
+// items, then the next of the source's, then, its source done, the back
+// inner's; from the back, the same the other way, as std's `FlattenCompat`
+// steps them. Closing it closes its source.
+export function $flattenEnds(it, each) {
+  const done = { done: true, value: undefined };
+  const inner = { next: undefined, back: undefined };
+  const step = (by, own, other) => () => {
+    for (;;) {
+      if (inner[own] !== undefined) {
+        const at = inner[own][by]();
+        if (!at.done) return at;
+        inner[own] = undefined;
+      }
+      const outer = it[by]();
+      if (outer.done) {
+        if (inner[other] === undefined) return done;
+        const at = inner[other][by]();
+        if (at.done) inner[other] = undefined;
+        return at;
+      }
+      inner[own] = $iter(each(outer.value));
+    }
+  };
+  const flat = new $Steps(step("next", "next", "back"), () => $closed(it));
+  flat.back = step("back", "back", "next");
+  return flat;
+}
+
 // How many numbers an exclusive range, `a..b`, has left: an
 // `ExactSizeIterator`'s `len()`, of its state (ADR 0456), and `count()`'s,
 // without stepping each, as std's is.

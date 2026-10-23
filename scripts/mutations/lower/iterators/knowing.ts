@@ -94,8 +94,8 @@ export const mutations: Mutation[] = [
     name: "held-enumerate-not-knowing",
     breaks: "a held `Enumerate` of a source given as it is isn't given this use's back and length, and its back is refused",
     file: "src/lower/iterators/knowing.rs",
-    find: "        if let Some(knowing) = self.knowing_held(value.clone(), ty, span)? {\n            return Ok(knowing);\n        }\n        if self.knows_its_back(ty)",
-    replace: "        if let Some(knowing) = self.knowing_held(value.clone(), ty, span)?.filter(|_| false) {\n            return Ok(knowing);\n        }\n        if self.knows_its_back(ty)",
+    find: "        // was made; of one made knowing them, an array's or a range's, itself.\n        if let Some(knowing) = self.knowing_held(value.clone(), ty, span)? {\n",
+    replace: "        // was made; of one made knowing them, an array's or a range's, itself.\n        if let Some(knowing) = self.knowing_held(value.clone(), ty, span)?.filter(|_| false) {\n",
     tests: ["test/corpus.test.ts", "-t", "^held_enumerate.rs$"],
   },
   {
@@ -241,5 +241,13 @@ export const mutations: Mutation[] = [
     find: "            && let Some(step) = crate::lower::std_types::range::every_nth(f)\n",
     replace: "            && let Some(step) = crate::lower::std_types::range::every_nth(f).filter(|_| false)\n",
     tests: ["test/corpus.test.ts", "-t", "^rev_step_by.rs$"],
+  },
+  {
+    name: "flatten-not-double-ended",
+    breaks: "a flatten stepped from its back is refused, not made `$flattenEnds`",
+    file: "src/lower/iterators/knowing.rs",
+    find: "            && method == \"flatMap\"\n",
+    replace: "            && method == \"never\"\n",
+    tests: ["test/corpus.test.ts", "-t", "^flatten_from_its_back.rs$"],
   },
 ];

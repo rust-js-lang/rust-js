@@ -7,7 +7,9 @@
 //! one owner, before lowering: so one held in a variable before it's
 //! stepped, as a library's drop flags make one, still steps from its back.
 
-use crate::lower::recognition::{Recognition, filtered_source, is_double_ended, is_iter_adapter_def, mapped_source};
+use crate::lower::recognition::{
+    Recognition, filtered_source, flattened_source, is_double_ended, is_iter_adapter_def, mapped_source,
+};
 use crate::lower::{Body, fn_def};
 use rustc_middle::thir::ExprKind;
 use rustc_middle::ty::{self, Ty, TyCtxt};
@@ -75,6 +77,10 @@ fn back_stepped_adapter<'tcx>(
     adapter: Ty<'tcx>,
     drops: impl Fn(Ty<'tcx>) -> bool,
 ) -> Option<Ty<'tcx>> {
+    // A flatten, of whatever source: its own forms never step from the back.
+    if flattened_source(tcx, adapter).is_some() {
+        return Some(tcx.erase_and_anonymize_regions(adapter));
+    }
     let source = mapped_source(tcx, adapter)
         .or_else(|| filtered_source(tcx, adapter))?
         .peel_refs();
