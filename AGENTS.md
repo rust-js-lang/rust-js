@@ -16,9 +16,35 @@ size of a change is never a reason to settle for less; only the vision and
 the promises are. Make it as safe as it is bold: a failing test first, the
 corpus and mutations as the net, an ADR that says why.
 
+## Correctness comes first
+
+**The JavaScript does what the Rust does. That is the promise rust-js lives
+or dies by.** Readable JavaScript is what sets rust-js apart, its selling
+point; correctness is what makes it worth anything at all. A compiler whose
+output reads beautifully and answers wrong is worse than no compiler: it
+breaks the trust every user puts in it, and it deserves to fail. Every rule
+below serves this one, and none outranks it.
+
+- **When in doubt, correct wins.** Never trade a right answer for nicer
+  output. Where the readable form can't keep Rust's meaning, write the form
+  that does, however it reads, or refuse at compile time. Then look for the
+  readable form that is also right; never the other way round.
+- **A wrong answer is the worst bug there is**: worse than a refusal, noisy
+  output, a slow build or a missing feature. A refusal says what rust-js
+  can't do; a wrong answer lies. Fix one before anything else, or file it
+  at once and say so.
+- **Proved, not assumed.** Each behavior is checked against native Rust:
+  the corpus, rustc's tests, generated programs, mutations. "It reads right"
+  and "it should work" prove nothing; a run against rustc's answer does.
+- **Every corner counts.** An edge case, an iterator that gives `None` then
+  more, a panic's message, a drop's order: if a program can observe it, it
+  is the program's meaning, and rust-js keeps it. The one exception is ADR
+  0262's rare and harmless case, a difference decided, documented in the
+  guide and tested; never a default, and never decided alone.
+
 ## Exactly one way to do each job
 
-**This rule comes before every other.** For any job there is exactly one
+**This rule comes before every other but correctness.** For any job there is exactly one
 way to do it. Two ways to do the same job is a red flag: stop, and resolve
 it before going on with anything else.
 
