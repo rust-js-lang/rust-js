@@ -202,4 +202,20 @@ export const mutations: Mutation[] = [
     "replace": ".is_some_and(|_| false)",
     "tests": ["test/lowering-structs-enums.test.ts", "-t", "dictionary is told apart"]
   },
+  {
+    name: "union-keeps-whole-exclusions",
+    breaks: "`Kind::Object(_) | Kind::Array(_)` tests an object that's no array or an array, `Array.isArray(v) || (typeof v === \"object\" && !Array.isArray(v))`, not `typeof v === \"object\"`",
+    file: "src/lower/untagged.rs",
+    find: "            .map(|(own, narrower)| (own, narrower.into_iter().filter(|kind| !whole.contains(kind)).collect()))\n",
+    replace: "            .map(|(own, narrower)| (own, narrower.into_iter().filter(|kind| !whole.contains(kind) || true).collect()))\n",
+    tests: ["test/lowering-switches.test.ts", "-t", "a test of an object or an array is typeof object"],
+  },
+  {
+    name: "union-keeps-arrays",
+    breaks: "`Kind::Object(_) | Kind::Array(_)` tests an array too, `Array.isArray(v) || typeof v === \"object\"`, which an object is anyway",
+    file: "src/lower/untagged.rs",
+    find: "            .filter(|(own, _)| !(objects && *own == Kind::Array))\n",
+    replace: "            .filter(|(own, _)| !(objects && *own == Kind::Array && false))\n",
+    tests: ["test/lowering-switches.test.ts", "-t", "a test of an object or an array is typeof object"],
+  },
 ];

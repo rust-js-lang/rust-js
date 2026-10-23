@@ -352,6 +352,83 @@ console.log(JSON.stringify([defined.map(objects), defined.map(listed)]));
   );
 });
 
+// ADR 0668, amended: a test that a value is one of an or-pattern's
+// variants is what they are together, as their owner, `untagged.rs`, tells:
+// `Kind::Object(_) | Kind::Array(_)`, an object no array is or an array, is
+// `typeof value === "object"`, as React's `getIODescription` tests
+// `typeof value.request === "object" && value.request !== null`, where it
+// was `Array.isArray(v) || (typeof v === "object" && !Array.isArray(v))`.
+// An or-pattern that leaves out what one of its variants' tests does keeps
+// that test: `Object | String` is an object no array is, or a string.
+test("a test of an object or an array is typeof object", () => {
+  const dir = fixture("typeof-unions");
+  writeFileSync(join(dir, "lib.rs"), `use js::{Kind, Unknown};
+
+pub fn requested(value: &Unknown) -> bool {
+    if let Some(request) = js::get(value, "request")
+        && let Kind::Object(_) | Kind::Array(_) = js::classify(request)
+    {
+        return true;
+    }
+    false
+}
+
+pub fn objects(value: &Unknown) -> u32 {
+    match js::classify(value) {
+        Kind::Object(_) | Kind::Array(_) => 1,
+        _ => 0,
+    }
+}
+
+pub fn callable_or_object(value: &Unknown) -> bool {
+    matches!(js::classify(value), Kind::Function(_) | Kind::Object(_) | Kind::Array(_))
+}
+
+pub fn plain_or_text(value: &Unknown) -> bool {
+    matches!(js::classify(value), Kind::Object(_) | Kind::String(_))
+}
+
+pub fn listed_or_text(value: &Unknown) -> bool {
+    matches!(js::classify(value), Kind::Array(_) | Kind::String(_))
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs()]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain(`export function requested(value) {
+  const request = value.request;
+  if (request != null && typeof request === "object") {
+    return true;
+  }
+  return false;
+}`);
+  expect(js).toContain(`export function objects(value) {
+  if (typeof value === "object") {
+    return 1;
+  }
+  return 0;
+}`);
+  expect(js).toContain(`return typeof value === "function" || typeof value === "object";`);
+  expect(js).toContain(`return typeof value === "string" || (typeof value === "object" && !Array.isArray(value));`);
+  expect(js).toContain(`return typeof value === "string" || Array.isArray(value);`);
+  expect(js).not.toContain(`Array.isArray(value) || (typeof value === "object"`);
+  writeFileSync(join(dir, "run.mjs"), `import { requested, objects, callableOrObject, plainOrText, listedOrText } from "./lib.js";
+function fetchUser() {}
+const values = [{}, ["a"], "text", fetchUser, 42, 7n, true, Symbol("s"), new Map()];
+console.log(JSON.stringify([
+  [{ request: {} }, { request: [] }, { request: null }, {}, { request: "x" }, { request: fetchUser }].map(requested),
+  values.map(objects),
+  values.map(callableOrObject),
+  values.map(plainOrText),
+  values.map(listedOrText),
+]));
+`);
+  const ran = runSync([node!, join(dir, "run.mjs")], root, 30_000);
+  expect(ran.stderr).toBe("");
+  expect(ran.stdout).toBe(
+    `[[true,true,false,false,false,false],[1,1,0,0,0,0,0,0,1],[true,true,false,true,false,false,false,false,true],[true,false,true,false,false,false,false,false,true],[false,true,true,false,false,false,false,false,false]]\n`,
+  );
+});
+
 // ADR 0668, amended: an arm that returns early, `if text.len() < 5 { return
 // String::new(); }`, is still its case. MIR tests `Kind::String` first, and
 // what's written before it, the `Function` and `Object` arms, was put first

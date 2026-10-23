@@ -168,10 +168,10 @@ switch (typeof value) {
   else tests it so.
 - Four of the guide's pages write a `match` of `js::Kind` as a `switch`;
   the corpus and the snapshots have none.
-- An arm of `Kind::Object | Kind::Array` in an `if` chain is
+- An arm of `Kind::Object | Kind::Array` in an `if` chain was
   `Array.isArray(value) || (typeof value === "object" &&
   !Array.isArray(value))`, which says `typeof value === "object"` in more
-  words.
+  words. (Amended below: it's `typeof value === "object"`.)
 
 ## What holds it
 
@@ -227,3 +227,48 @@ cases, is put in its written order as before.
 - Held by `test/lowering-switches.test.ts`, "an arm that returns early is
   still its case of a switch of a typeof", run in Node, and the mutation
   `written-first-of-a-switch`.
+
+## Amendment: an object or an array is `typeof value === "object"`
+
+The port's `getIODescription` tests a property that's an object, as
+upstream's `typeof value.request === "object" && value.request !==
+null` does, with `if let Some(request) = js::get(value, "request") &&
+let Kind::Object(_) | Kind::Array(_) = js::classify(request)`. It read
+
+```js
+request != null &&
+  (Array.isArray(request) || (typeof request === "object" && !Array.isArray(request)))
+```
+
+each variant's test, `||`: MIR sends both to one block, and its lowering
+joined their tests, where each holds of its own values only. Together they
+are an object, any.
+
+**The test that a value is one of an or-pattern's variants is what they
+are together**, as their owner, `untagged.rs`'s `union_parts`, tells: of
+each variant, what its test leaves out but what another of them is whole,
+which the two take in together; and an array beside an object, any, none,
+as `typeof` says an array is an object. So `Kind::Object(_) |
+Kind::Array(_)` is `typeof request === "object"`:
+
+```js
+request != null && typeof request === "object"
+```
+
+- **One owner, of a test and of a case.** MIR's lowering asks
+  `variants_test` of the variants it sends to one block, which asks
+  `untagged_test`, of each of them; a `switch`'s hints ask
+  `untagged_cases` of an or-pattern's, which reads the same parts. So `case
+  "object":` of `Object | Array` is the test it reads, one `typeof`, where
+  it was two tests, the array's an `if` it found to leave out.
+- **What's left out stays where another of them isn't it**: `Object |
+  String` is `typeof value === "string" || (typeof value === "object" &&
+  !Array.isArray(value))`, and `Array | String` keeps `Array.isArray`.
+- Case: N. `Array.isArray(v)` holds of a value only where `typeof v ===
+  "object"` does, so the two tests hold of the same values.
+- The corpus and the snapshots don't change; the guide's `interop/types.md`
+  says it.
+- Held by `test/lowering-switches.test.ts`, "a test of an object or an
+  array is typeof object", run in Node, with "a match of what a value is is
+  a switch of its typeof"; and the mutations `union-keeps-whole-exclusions`,
+  `union-keeps-arrays`, `or-pattern-tests-each` and `or-pattern-cases-each`.

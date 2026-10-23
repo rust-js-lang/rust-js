@@ -830,7 +830,8 @@ never `undefined` or `null`: an `Option<&Unknown>` is `None` of those.
 kind `typeof` tells, `String`, `Number`, `BigInt`, `Bool`, `Symbol`,
 `Function` and `Object`, an object no array is, and `Array`, which
 `Array.isArray` does. A `match` of them is a `switch (typeof value)`, an
-array an `if` before it
+array an `if` before it, and `Kind::Object(_) | Kind::Array(_)`, in a
+`match` or an `if let`, is an object, any, `typeof value === "object"`
 ([ADR 0668](../../decisions/0668-a-match-of-what-a-value-is-is-a-switch-of-its-typeof.md)).
 
 ```rust

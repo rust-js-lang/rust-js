@@ -270,33 +270,76 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         found
     }
 
-    /// `variant`'s test of `value`: its payload's kind, leaving out
-    /// what another variant's more exactly is, so each test holds of its
-    /// own values only, whatever order they're tried in. A class's leaves out
-    /// its subclasses in the enum; an object's every array and class.
+    /// The test that `value` is one of `variants`, an or-pattern's, or the
+    /// one: each one's payload's kind, leaving out what another variant's
+    /// more exactly is, so each test holds of its own values only, whatever
+    /// order they're tried in. A class's leaves out its subclasses in the
+    /// enum; an object's every array and class. Of more than one, what they
+    /// are together (`union_parts`): `Object | Array`'s `typeof value ===
+    /// "object"` (ADR 0668).
     pub(super) fn untagged_test(
         &self,
         adt: AdtDef<'tcx>,
         args: GenericArgsRef<'tcx>,
-        variant: &VariantDef,
+        variants: &[&VariantDef],
         value: &Expr,
         class: &dyn Fn(&str) -> Expr,
     ) -> Expr {
         let otherwise = |v: &VariantDef| bindings::is_otherwise(self.tcx, v.def_id);
         // What the others aren't: none of their tests, but where that's one
         // kind, as it is of `js::Kind`'s `Object`.
-        if otherwise(variant) && self.otherwise_kind(adt, args).is_none() {
+        if let Some(&variant) = (variants.iter()).find(|v| otherwise(v) && self.otherwise_kind(adt, args).is_none()) {
             let none = (adt.variants().iter().filter(|v| !otherwise(v)))
-                .map(|v| Expr::unary(UnaryOp::Not, self.untagged_test(adt, args, v, value, class)));
-            return none
+                .map(|v| Expr::unary(UnaryOp::Not, self.untagged_test(adt, args, &[v], value, class)));
+            let none = none
                 .reduce(|all, test| Expr::bin(Op::And, all, test))
                 .unwrap_or(Expr::bool(true));
+            let others: Vec<&VariantDef> = (variants.iter().copied())
+                .filter(|v| v.def_id != variant.def_id)
+                .collect();
+            return match others.is_empty() {
+                true => none,
+                false => Expr::bin(Op::Or, self.untagged_test(adt, args, &others, value, class), none),
+            };
         }
-        let (own, narrower) = self.untagged_parts(adt, args, variant);
         let test = |kind: &Kind| self.kind_test(kind, value, class);
-        narrower.iter().fold(test(&own), |all, kind| {
-            Expr::bin(Op::And, all, Expr::unary(UnaryOp::Not, test(kind)))
-        })
+        (self.union_parts(adt, args, variants).iter())
+            .map(|(own, narrower)| {
+                narrower.iter().fold(test(own), |all, kind| {
+                    Expr::bin(Op::And, all, Expr::unary(UnaryOp::Not, test(kind)))
+                })
+            })
+            .reduce(|either, test| Expr::bin(Op::Or, either, test))
+            .expect("a variant to test")
+    }
+
+    /// What a value is that's one of `variants`, an or-pattern's: each
+    /// one's kind and what its test leaves out (`untagged_parts`), but what
+    /// another of them is whole, which they take in together; and of an
+    /// array where an object, any, is one of them, nothing, as `typeof`
+    /// says an array is an object. So `Object | Array` is an object,
+    /// `typeof value === "object"`, as JS tests one, where each alone is
+    /// `Array.isArray(value) || (typeof value === "object" &&
+    /// !Array.isArray(value))` (ADR 0668). The one answer, of a test and of
+    /// a `switch`'s case.
+    fn union_parts(
+        &self,
+        adt: AdtDef<'tcx>,
+        args: GenericArgsRef<'tcx>,
+        variants: &[&VariantDef],
+    ) -> Vec<(Kind, Vec<Kind>)> {
+        let parts: Vec<(Kind, Vec<Kind>)> = (variants.iter()).map(|v| self.untagged_parts(adt, args, v)).collect();
+        let whole: Vec<Kind> = (parts.iter())
+            .filter(|(_, narrower)| narrower.is_empty())
+            .map(|(own, _)| own.clone())
+            .collect();
+        let parts: Vec<(Kind, Vec<Kind>)> = (parts.into_iter())
+            .map(|(own, narrower)| (own, narrower.into_iter().filter(|kind| !whole.contains(kind)).collect()))
+            .collect();
+        let objects = (parts.iter()).any(|(own, narrower)| *own == Kind::Object && narrower.is_empty());
+        (parts.into_iter())
+            .filter(|(own, _)| !(objects && *own == Kind::Array))
+            .collect()
     }
 
     /// What `typeof` says is the value of an `otherwise` variant of `adt`,
@@ -375,37 +418,42 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         }
     }
 
-    /// `variant`'s case in a `switch (typeof value)` (ADR 0668), of a kind
-    /// `typeof` tells, or an array, whose test is an `if` before it; none
-    /// of a class, a test function's or a literal, which it doesn't, nor of
-    /// an `otherwise` that's none of more kinds.
-    pub(super) fn untagged_case(
+    /// The cases in a `switch (typeof value)` (ADR 0668) of `variants`, an
+    /// or-pattern's, or the one, as their test has them (`union_parts`):
+    /// of each a kind `typeof` tells, or an array, whose test is an `if`
+    /// before it; none of a class, a test function's or a literal, which it
+    /// doesn't, nor of an `otherwise` that's none of more kinds.
+    pub(super) fn untagged_cases(
         &self,
         adt: AdtDef<'tcx>,
         args: GenericArgsRef<'tcx>,
-        variant: &VariantDef,
+        variants: &[&VariantDef],
         value: &Expr,
-    ) -> Option<TypeofCase> {
-        if bindings::is_otherwise(self.tcx, variant.def_id) && self.otherwise_kind(adt, args).is_none() {
-            return None;
-        }
-        let (own, narrower) = self.untagged_parts(adt, args, variant);
-        // What it leaves out is an array, or it's no case: an object no
-        // `Error` is, say, isn't one.
-        if narrower.iter().any(|kind| *kind != Kind::Array) {
+    ) -> Option<Vec<TypeofCase>> {
+        let otherwise = |v: &VariantDef| bindings::is_otherwise(self.tcx, v.def_id);
+        if variants.iter().any(|v| otherwise(v)) && self.otherwise_kind(adt, args).is_none() {
             return None;
         }
         let no_class = |_: &str| unreachable!("a `typeof` kind's test names no class");
-        match (&own, own.type_of()) {
-            (Kind::Array, _) => Some(TypeofCase::Tested(self.kind_test(&own, value, &no_class))),
-            (_, None) => None,
-            (_, Some(case)) => Some(TypeofCase::Typeof(
-                case,
-                (narrower.iter())
-                    .map(|kind| self.kind_test(kind, value, &no_class))
-                    .collect(),
-            )),
-        }
+        (self.union_parts(adt, args, variants).into_iter())
+            .map(|(own, narrower)| {
+                // What it leaves out is an array, or it's no case: an object
+                // no `Error` is, say, isn't one.
+                if narrower.iter().any(|kind| *kind != Kind::Array) {
+                    return None;
+                }
+                match (&own, own.type_of()) {
+                    (Kind::Array, _) => Some(TypeofCase::Tested(self.kind_test(&own, value, &no_class))),
+                    (_, None) => None,
+                    (_, Some(case)) => Some(TypeofCase::Typeof(
+                        case,
+                        (narrower.iter())
+                            .map(|kind| self.kind_test(kind, value, &no_class))
+                            .collect(),
+                    )),
+                }
+            })
+            .collect()
     }
 }
 
@@ -415,11 +463,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         untagged_adt(self.tcx, ty)
     }
 
-    /// `variant` of the untagged enum `ty`'s test of `value`.
-    pub(super) fn untagged_variant_test(&self, ty: Ty<'tcx>, variant: &VariantDef, value: &Expr) -> Expr {
+    /// The test that `value` is one of `variants` of the untagged enum
+    /// `ty`, an or-pattern's, or the one (`untagged_test`).
+    pub(super) fn untagged_variant_test(&self, ty: Ty<'tcx>, variants: &[&VariantDef], value: &Expr) -> Expr {
         let (adt, args) = self.untagged(ty).expect("an untagged enum");
         self.recognition()
-            .untagged_test(adt, args, variant, value, &|name| self.js_ref(name))
+            .untagged_test(adt, args, variants, value, &|name| self.js_ref(name))
     }
 }
 

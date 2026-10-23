@@ -133,7 +133,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             if !self.contains_mutated(t) {
                                 continue;
                             }
-                            let test = self.untagged_variant_test(ty, variant, &e);
+                            let test = self.untagged_variant_test(ty, &[variant], &e);
                             value = Expr::cond(test, self.copy(e.clone(), t), value);
                         }
                         value

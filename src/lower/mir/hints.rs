@@ -397,6 +397,45 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             if self.thir[block].stmts.is_empty() && self.thir[block].expr.is_none())
     }
 
+    /// The variants of an untagged enum `pattern` is, each of a field that's
+    /// its value, bound or not: one's, or an or-pattern's of one enum.
+    fn untagged_variants(
+        &self,
+        pattern: &thir::Pat<'tcx>,
+    ) -> Option<(ty::AdtDef<'tcx>, ty::GenericArgsRef<'tcx>, Vec<&'tcx ty::VariantDef>)> {
+        match &pattern.kind {
+            thir::PatKind::Variant {
+                adt_def,
+                args,
+                variant_index,
+                subpatterns,
+            } if crate::lower::bindings::is_untagged(self.tcx, adt_def.did())
+                && !adt_def.variant(*variant_index).fields.is_empty()
+                && (subpatterns.iter()).all(|field| {
+                    matches!(
+                        field.pattern.kind,
+                        thir::PatKind::Wild | thir::PatKind::Binding { subpattern: None, .. }
+                    )
+                }) =>
+            {
+                Some((*adt_def, args, vec![adt_def.variant(*variant_index)]))
+            }
+            thir::PatKind::Or { pats } => {
+                let mut each = pats.iter().map(|p| self.untagged_variants(p));
+                let (adt, args, mut variants) = each.next()??;
+                for other in each {
+                    let (other, _, more) = other?;
+                    if other != adt {
+                        return None;
+                    }
+                    variants.extend(more);
+                }
+                Some((adt, args, variants))
+            }
+            _ => None,
+        }
+    }
+
     /// Each constant `pattern` names, if it names constants alone: a literal,
     /// a `const` (ADR 0590), a variant of no field that JS tests as a value
     /// it's equal to, `k === "Function"` (ADR 0013), each of an or-pattern.
@@ -426,25 +465,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 self.constants_of(&some.pattern)
             }
             // A variant of an untagged enum, by what `typeof` says of it, its
-            // value bound or not, which is the value itself (ADR 0668).
-            thir::PatKind::Variant {
-                adt_def,
-                args,
-                variant_index,
-                subpatterns,
-            } if crate::lower::bindings::is_untagged(self.tcx, adt_def.did())
-                && !adt_def.variant(*variant_index).fields.is_empty()
-                && (subpatterns.iter()).all(|field| {
-                    matches!(
-                        field.pattern.kind,
-                        thir::PatKind::Wild | thir::PatKind::Binding { subpattern: None, .. }
-                    )
-                }) =>
+            // value bound or not, which is the value itself (ADR 0668); or
+            // an or-pattern of them, by what they are together, `Object |
+            // Array`'s `"object"`, as their test is.
+            thir::PatKind::Variant { .. } | thir::PatKind::Or { .. }
+                if let Some((adt, args, variants)) = self.untagged_variants(pattern) =>
             {
                 let subject = js::Expr::var(SUBJECT);
-                let variant = adt_def.variant(*variant_index);
-                let case = self.recognition().untagged_case(*adt_def, args, variant, &subject)?;
-                Some(vec![Constant::Kind(case)])
+                let cases = self.recognition().untagged_cases(adt, args, &variants, &subject)?;
+                Some(cases.into_iter().map(Constant::Kind).collect())
             }
             thir::PatKind::Variant {
                 adt_def,

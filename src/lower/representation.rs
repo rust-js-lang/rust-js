@@ -21,6 +21,27 @@ use rustc_span::def_id::{DefId, LocalDefId};
 use rustc_span::{Span, Symbol};
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// That `subject` is one of `variants` of its enum, an or-pattern's,
+    /// which MIR sends to one block: each one's test, `||`; of an untagged
+    /// enum's, what they are together, `Object | Array`'s `typeof subject
+    /// === "object"` (ADR 0668).
+    pub(in crate::lower) fn variants_test(
+        &self,
+        subject: Expr,
+        ty: Ty<'tcx>,
+        adt: ty::AdtDef<'tcx>,
+        variants: &[VariantIdx],
+    ) -> Expr {
+        if bindings::is_untagged(self.tcx, adt.did()) {
+            let variants: Vec<&ty::VariantDef> = variants.iter().map(|&v| adt.variant(v)).collect();
+            return self.untagged_variant_test(ty, &variants, &subject);
+        }
+        (variants.iter())
+            .map(|&variant| self.variant_test(subject.clone(), ty, adt, variant))
+            .reduce(|either, test| Expr::bin(Op::Or, either, test))
+            .expect("a variant to test")
+    }
+
     /// That `subject` is `variant` of its enum: the one test of it, what a
     /// pattern, a clone, `==`, a drop and a codec ask. An `Option`'s
     /// presence, an untagged one's kind (ADR 0214), a discriminated union's
@@ -48,7 +69,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // An untagged enum's variant, told by its value's kind (ADR 0214).
         if bindings::is_untagged(self.tcx, adt.did()) {
-            return self.untagged_variant_test(ty, def, &subject);
+            return self.untagged_variant_test(ty, &[def], &subject);
         }
         // A discriminated union's `otherwise`: an object whose tag is none
         // of the others' (ADR 0284).

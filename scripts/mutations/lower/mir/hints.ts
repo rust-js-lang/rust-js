@@ -238,4 +238,12 @@ export const mutations: Mutation[] = [
     replace: "                        .chain(patterns.take(0))\n",
     tests: ["test/lowering-numbers.test.ts", "-t", "a range pattern's bounds are one test"],
   },
+  {
+    name: "or-pattern-cases-each",
+    breaks: "an arm of `Kind::Object(_) | Kind::Array(_)` has the cases of each, which its test, `typeof value === \"object\"`, isn't, so the `match` is no `switch`",
+    file: "src/lower/mir/hints.rs",
+    find: "                let (adt, args, mut variants) = each.next()??;\n",
+    replace: "                let (adt, args, mut variants) = each.next()??;\n                return None;\n",
+    tests: ["test/lowering-switches.test.ts", "-t", "a match of what a value is is a switch"],
+  },
 ];

@@ -235,7 +235,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     let value = std::mem::replace(made, Expr::undefined());
                     *made = self.spill("_$", value, &mut out);
                 }
-                let mut cases: Vec<(Expr, BasicBlock)> = Vec::new();
+                let mut cases: Vec<(Expr, BasicBlock, u128)> = Vec::new();
                 let mut always = None;
                 for (value, target) in targets.iter() {
                     if reached(target) {
@@ -244,7 +244,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         match test.kind {
                             js::ExprKind::Bool(false) => {}
                             js::ExprKind::Bool(true) => always = always.or(Some(target)),
-                            _ => cases.push((test, target)),
+                            _ => cases.push((test, target, value)),
                         }
                     }
                 }
@@ -255,16 +255,32 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let mut otherwise = Some(targets.otherwise()).filter(|&b| reached(b));
                 // Values that go to one block, an or-pattern's `'+' | '-'`:
                 // one test of either, the block once, as the program wrote it.
-                let mut grouped: Vec<(Expr, BasicBlock)> = Vec::new();
-                for (test, target) in cases {
-                    match grouped.iter_mut().find(|(_, t)| *t == target) {
-                        Some((either, _)) => {
+                let mut grouped: Vec<(Expr, BasicBlock, Vec<u128>)> = Vec::new();
+                for (test, target, value) in cases {
+                    match grouped.iter_mut().find(|(_, t, _)| *t == target) {
+                        Some((either, _, values)) => {
                             *either = Expr::bin(Op::Or, std::mem::replace(either, Expr::undefined()), test);
+                            values.push(value);
                         }
-                        None => grouped.push((test, target)),
+                        None => grouped.push((test, target, vec![value])),
                     }
                 }
-                let mut cases = grouped;
+                // Of an enum's variants, the test that it's one of them, as
+                // its owner tells: an untagged one's, what they are together,
+                // `Object | Array`'s `typeof value === "object"` (ADR 0668).
+                if let Value::Discriminant(enum_value, enum_ty) = &subject
+                    && let ty::Adt(adt, _) = enum_ty.kind()
+                {
+                    for (test, _, values) in grouped.iter_mut().filter(|(.., values)| values.len() > 1) {
+                        let variants: Vec<VariantIdx> = (values.iter())
+                            .filter_map(|&value| adt.discriminants(self.tcx).find(|(_, d)| d.val == value))
+                            .map(|(variant, _)| variant)
+                            .collect();
+                        *test = self.mir_variant_test(enum_value.clone(), *enum_ty, *adt, &variants);
+                    }
+                }
+                let mut cases: Vec<(Expr, BasicBlock)> =
+                    grouped.into_iter().map(|(test, target, _)| (test, target)).collect();
                 // Each case tested, an enum's `match`'s: its arms in the order
                 // the program wrote them, not its variants'.
                 if otherwise.is_none()
@@ -498,7 +514,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     );
                     return Err(self.tcx.dcx().span_err(span, message));
                 }
-                Ok(self.mir_variant_test(enum_value.clone(), *enum_ty, *adt, variant))
+                Ok(self.mir_variant_test(enum_value.clone(), *enum_ty, *adt, &[variant]))
             }
             _ => {
                 let subject = self.value_expr(subject.clone(), span)?;
@@ -544,8 +560,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
-    /// That `subject` is `variant` of its enum, as a pattern tests it
-    /// (`variant_test`): a test function an untagged one's calls,
+    /// That `subject` is one of `variants` of its enum, as a pattern tests
+    /// it (`variants_test`): a test function an untagged one's calls,
     /// `isValidElement(child)`, gives a `bool`, which tidy writes a test of
     /// as one.
     pub(in crate::lower) fn mir_variant_test(
@@ -553,9 +569,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         subject: Expr,
         ty: Ty<'tcx>,
         adt: ty::AdtDef<'tcx>,
-        variant: VariantIdx,
+        variants: &[VariantIdx],
     ) -> Expr {
-        let test = self.variant_test(subject, ty, adt, variant);
+        let test = self.variants_test(subject, ty, adt, variants);
         if bindings::is_untagged(self.tcx, adt.did()) {
             test.clone().each_mut(&mut |e| {
                 if let Some(path) = tidy::call_path(e) {
