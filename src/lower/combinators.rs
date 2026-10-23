@@ -763,21 +763,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let item = self
                     .slice_item(subject_ty)
                     .ok_or_else(|| self.unsupported(span, "`binary_search` of this"))?;
-                // Strings and `char`s by code point, `$cmp` (ADR 0183).
-                if self.is_text_ord(item) {
-                    let x = once(self, x, "item", out);
-                    let order = self.text_order(Expr::var("each"), x);
-                    let f = Expr::arrow(
-                        vec!["each".into()],
-                        vec![StmtKind::Return(Some(order)).at(js::Span::NONE)],
-                    );
-                    return Ok(helper("$binarySearchBy", vec![subject, f]));
-                }
                 // What `<` orders as `Ord` does, `is_primitive_ord`'s.
-                if !self.is_primitive_ord(item) {
-                    return Err(self.unsupported(span, &format!("`binary_search` of `{item}`s")));
+                if self.is_primitive_ord(item) {
+                    return Ok(helper("$binarySearch", vec![subject, x]));
                 }
-                helper("$binarySearch", vec![subject, x])
+                // Any other by its `Ord`, as `sort()` orders it: strings and
+                // `char`s by code point (ADR 0183), a derived one by its
+                // variants and fields.
+                let x = once(self, x, "item", out);
+                let mut body = Vec::new();
+                let order = self.cmp_value(Expr::var("each"), x, item, false, span, &mut body)?;
+                body.push(StmtKind::Return(Some(order)).at(js::Span::NONE));
+                helper("$binarySearchBy", vec![subject, Expr::arrow(vec!["each".into()], body)])
             }
             Comb::Contains => {
                 let x = next();
@@ -847,25 +844,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let name = self.by_cells(subject_ty, "$dedupBy", "$dedupByCells");
                 helper(name, self.dropping(vec![subject, next()], subject_ty, span)?)
             }
-            // Its key's `==`, of what `===` compares, each item's key made once a
-            // comparison, the later item's first, as std's are.
+            // Its key's `==`, each item's key made once a comparison, the later
+            // item's first, as std's are: named first where `==` reads it more
+            // than once, of what `===` doesn't compare.
             Comb::DedupByKey => {
                 let key_ty = generic_args.type_at(generic_args.len() - 1);
-                if !self.eq_is_identity(key_ty) {
-                    return Err(self.unsupported(span, "`dedup_by_key` of keys `===` doesn't compare"));
-                }
                 let key = next();
                 let key = once(self, key, "key", out);
                 let (a, b) = (self.fresh("a"), self.fresh("b"));
-                let same = Expr::bin(
-                    Op::Eq,
-                    Expr::call(key.clone(), vec![Expr::var(&a)]),
-                    Expr::call(key, vec![Expr::var(&b)]),
-                );
-                let same = Expr::arrow(
-                    vec![a.into(), b.into()],
-                    vec![StmtKind::Return(Some(same)).at(js::Span::NONE)],
-                );
+                let mut body = Vec::new();
+                let mut keyed = |item: &str, named: &str, body: &mut Vec<Stmt>| {
+                    let made = Expr::call(key.clone(), vec![Expr::var(item)]);
+                    match self.eq_is_identity(key_ty) {
+                        true => made,
+                        false => self.spill(named, made, body),
+                    }
+                };
+                let (ka, kb) = (keyed(&a, "aKey", &mut body), keyed(&b, "bKey", &mut body));
+                let same = self.eq_value(ka, kb, key_ty, span, &mut body)?;
+                body.push(StmtKind::Return(Some(same)).at(js::Span::NONE));
+                let same = Expr::arrow(vec![a.into(), b.into()], body);
                 let name = self.by_cells(subject_ty, "$dedupBy", "$dedupByCells");
                 helper(name, self.dropping(vec![subject, same], subject_ty, span)?)
             }

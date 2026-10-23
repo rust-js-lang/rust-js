@@ -93,3 +93,16 @@ percent-encoding's `bytes[..n].to_owned()`, which was refused. And
 where its items need no clone; whether it's made here is
 `iterators::made_array`'s answer, which collecting asks too. A literal's
 items are made with it, so it's itself whatever they are.
+
+## Amendment: `binary_search` and `dedup_by_key` of any item
+
+`binary_search` of items `<` doesn't order as `Ord` does, a derived enum's
+or a struct's, was refused (#151), and strings went their own way.
+`binary_search` is `$binarySearch(s, x)` where `<` orders them, and
+`$binarySearchBy(s, (each) => ..)` of their `Ord`, as `sort()` orders them,
+for any other: strings, `char`s, a derived or a hand-written `Ord`.
+`dedup_by_key` of keys `===` doesn't compare, an `Option`, a tuple, was
+refused (ADR 0315's `k(a) === k(b)`); its keys are compared by their `==`,
+each named first where that reads it more than once: `const aKey = k(a)`.
+Held by `test/corpus/search_by_ord.rs` and the mutations
+`binary-search-by-lt` and `dedup-key-by-identity`.

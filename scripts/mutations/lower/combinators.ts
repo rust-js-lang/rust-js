@@ -123,14 +123,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "option_combinator_drops"],
   },
   {
-    name: "string-binary-search-refused",
-    breaks: "`binary_search` of strings is refused",
-    file: "src/lower/combinators.rs",
-    find: "                if self.is_text_ord(item) {",
-    replace: "                if false && self.is_text_ord(item) {",
-    tests: ["test/corpus.test.ts", "-t", "code_point_order"],
-  },
-  {
     name: "concat-of-parts-flattened",
     breaks: "`[path, &[last]].concat()` is `[path, [last]].flat()` of an array kept first, where JS writes `[...path, last]`",
     file: "src/lower/combinators.rs",
@@ -260,11 +252,12 @@ export const mutations: Mutation[] = [
   },
   {
     name: "binary-search-own-order",
-    breaks: "`binary_search` asks its own way what `<` orders, and refuses a slice of `&i32`s and one of `Ordering`s",
+    breaks: "`binary_search` asks its own way what `<` orders, and searches a slice of `&i32`s and one of `Ordering`s by their `Ord`, not `<`",
     file: "src/lower/combinators.rs",
-    find: "                if !self.is_primitive_ord(item) {\n",
-    replace: "                if !(Num::of(item).is_some_and(|n| !n.float()) || item.is_bool()) {\n",
+    find: "                if self.is_primitive_ord(item) {\n",
+    replace: "                if Num::of(item).is_some_and(|n| !n.float()) || item.is_bool() {\n",
     tests: ["test/corpus.test.ts", "-t", "^ordered_searches.rs$"],
+    snapshots: true,
   },
   {
     name: "truncate-given-no-drop",
@@ -532,5 +525,21 @@ export const mutations: Mutation[] = [
     find: "            args.push(Expr::bool(true));\n        }\n        args\n",
     replace: "        }\n        args\n",
     tests: ["test/corpus.test.ts", "-t", "^deque_swap_out_of_bounds.rs$"],
+  },
+  {
+    name: "binary-search-by-lt",
+    breaks: "`binary_search` of a derived `Ord` enum compares by `<`, which orders objects as strings",
+    file: "src/lower/combinators.rs",
+    find: "                if self.is_primitive_ord(item) {\n                    return Ok(helper(\"$binarySearch\", vec![subject, x]));\n",
+    replace: "                if true || self.is_primitive_ord(item) {\n                    return Ok(helper(\"$binarySearch\", vec![subject, x]));\n",
+    tests: ["test/corpus.test.ts", "-t", "^search_by_ord.rs$"],
+  },
+  {
+    name: "dedup-key-by-identity",
+    breaks: "`dedup_by_key` compares its keys by `===`, so a tuple key is never equal to another",
+    file: "src/lower/combinators.rs",
+    find: "                let same = self.eq_value(ka, kb, key_ty, span, &mut body)?;\n",
+    replace: "                let same = Expr::bin(Op::Eq, ka, kb);\n",
+    tests: ["test/corpus.test.ts", "-t", "^search_by_ord.rs$"],
   },
 ];
