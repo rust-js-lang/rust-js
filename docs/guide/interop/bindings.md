@@ -542,6 +542,9 @@ A parameter a caller may leave out, TypeScript's `x?`, is an `Option`. A
 trailing `None` is no argument, as a person leaves it out:
 `chart.update(None)` is `chart.update()`
 ([ADR 0443](../../decisions/0443-a-value-a-caller-may-leave-out-is-an-option.md)).
+A setter's value is never left out: a `set x` binding's `None` is `x =
+undefined`, `Error.prepareStackTrace = undefined`
+([ADR 0648](../../decisions/0648-v8s-stack-trace-api-is-the-node-crates.md)).
 
 There's one Rust function for each JS function. Don't write a second one
 for fewer arguments, `update_with_mode`: give the parameter an `Option`.

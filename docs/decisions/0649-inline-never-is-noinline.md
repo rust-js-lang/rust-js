@@ -56,7 +56,7 @@ annotation for either, and a JS engine inlines what it finds hot.
   function stays a function, `return get(n);`, where it was the variable.
 - The corpus's `drop_guard_given_whole.rs`, whose `#[inline(never)]` keeps
   a guard's drop in its own frame, prints `/** @noinline */` too:
-  `docs/readability.txt`'s JS is a line longer, 89,344 to 89,345.
+  `docs/readability.txt`'s JS is a line longer, 89,402 to 89,403.
 
 ## What holds it
 

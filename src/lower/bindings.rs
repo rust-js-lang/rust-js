@@ -967,8 +967,13 @@ pub(super) fn nullable_result(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
 
 /// Whether a binding's `index`th parameter, `this` too, is optional,
 /// TypeScript's `x?`: an `Option`, whose `None` is left out where it's
-/// last (ADR 0443). Not one whose `None` is `null`, `#[rust_js::nullable]`.
+/// last (ADR 0443). Not one whose `None` is `null`, `#[rust_js::nullable]`,
+/// nor a setter's value, which JS is given as it is, `undefined` too:
+/// `Error.prepareStackTrace = undefined` (ADR 0648).
 pub(super) fn is_optional_param(tcx: TyCtxt<'_>, def_id: DefId, index: usize) -> bool {
+    if matches!(js_form(tcx, def_id), JsForm::Set(_)) {
+        return false;
+    }
     let sig = tcx.fn_sig(def_id).instantiate_identity().skip_normalization();
     let Some(param) = sig.skip_binder().inputs().get(index) else {
         return false;

@@ -1234,6 +1234,19 @@ export function $remEuclid(a, b, min) {
   return r < 0 ? (b < 0 ? r - b : r + b) : r;
 }
 
+// `a.wrapping_rem_euclid(b)` and `wrapping_div_euclid`, a number's or a
+// BigInt's: `MIN` by `-1`, which would overflow, is 0 and `MIN`; else the
+// Euclidean remainder or quotient, a zero `b` panicking as `%` does.
+export function $wrappingRemEuclid(a, b, min) {
+  if (a === min && b == -1) return typeof a === "bigint" ? 0n : 0;
+  return typeof a === "bigint" ? $bigRemEuclid(a, b, min) : $remEuclid(a, b, min);
+}
+
+export function $wrappingDivEuclid(a, b, min) {
+  if (a === min && b == -1) return a;
+  return typeof a === "bigint" ? $bigDivEuclid(a, b, min) : $divEuclid(a, b, min);
+}
+
 export function $divEuclid(a, b, min) {
   const q = Math.trunc($div(a, b, min)) + 0;
   return a % b < 0 ? (b > 0 ? q - 1 : q + 1) : q;
@@ -4300,6 +4313,25 @@ export function $saturatingDiv(a, b, min, max) {
 // divides it, of a zero `b` whether it's zero, as std's is.
 export function $isMultipleOf(a, b) {
   return b == 0 ? a == 0 : a % b == 0;
+}
+
+// `a.checked_next_multiple_of(b)` of an unsigned number or BigInt: the
+// least multiple of `b` at least `a`, none of a zero `b` or past `max`.
+export function $checkedNextMultipleOf(a, b, max) {
+  if (b == 0) return undefined;
+  const r = a % b;
+  const next = r == 0 ? a : a + (b - r);
+  return next > max ? undefined : next;
+}
+
+// `a.next_multiple_of(b)` of an unsigned number or BigInt: the least
+// multiple of `b` at least `a`, wrapped past `max` as overflow wraps; a
+// zero `b` panics as `%` does.
+export function $nextMultipleOf(a, b, max) {
+  if (b == 0) throw new Error("attempt to calculate the remainder with a divisor of zero");
+  const r = a % b;
+  const next = r == 0 ? a : a + (b - r);
+  return next > max ? next - max - (typeof next === "bigint" ? 1n : 1) : next;
 }
 
 // `a.wrapping_rem(b)`, a number's or a BigInt's: `MIN % -1` is 0, where it

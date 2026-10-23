@@ -1,7 +1,9 @@
 # 0351. The node crate is measured against @types/node, and only grows
 
 Status: Accepted. Extends [0346](0346-next-coverage.md)'s and
-[0347](0347-react-coverage.md)'s ratchet to [0272](0272-node.md)'s crate.
+[0347](0347-react-coverage.md)'s ratchet to [0272](0272-node.md)'s crate. Extended by
+[0648](0648-v8s-stack-trace-api-is-the-node-crates.md): `Error`'s members
+`globals.d.ts` adds are counted too, as `process`'s are.
 
 Case: N ([0262](0262-when-rust-and-js-disagree.md)).
 

@@ -186,4 +186,20 @@ export const mutations: Mutation[] = [
     replace: "                self.cast(a, ty, ty, span)?\n",
     tests: ["test/corpus.test.ts", "-t", "^int_div_sign_methods.rs$"],
   },
+  {
+    name: "unbounded-shr-unsigned-fill",
+    breaks: "`unbounded_shr` past the width of a negative is 0, not -1",
+    file: "src/lower/std_types/number.rs",
+    find: "                    true => Expr::cond(Expr::bin(Op::Lt, a, num.literal(0)), num.literal(-1), num.literal(0)),\n",
+    replace: "                    true => num.literal(0),\n",
+    tests: ["test/corpus.test.ts", "-t", "^int_shift_multiple_methods.rs$"],
+  },
+  {
+    name: "unbounded-shift-masked",
+    breaks: "`unbounded_shl` past the width shifts by the amount masked, as `wrapping_shl` does, not 0",
+    file: "src/lower/std_types/number.rs",
+    find: "                Expr::cond(past, filled, shifted)\n",
+    replace: "                shifted\n",
+    tests: ["test/corpus.test.ts", "-t", "^int_shift_multiple_methods.rs$"],
+  },
 ];
