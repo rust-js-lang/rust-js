@@ -633,3 +633,34 @@ pub fn counted(key: &str) -> f64 {
   expect(js).toContain("return counts[key] ?? 0;");
   expect([lib.counted("a"), lib.counted("b")]).toEqual([1, 0]);
 });
+
+// ADR 0229: `encodeURIComponent(uriComponent: string | number | boolean)`
+// takes each member as TypeScript's does, the value as it is.
+test("encodeURIComponent takes a string, a number or a boolean", async () => {
+  const withJs = ["--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const dir = fixture("js-encode-uri-component");
+  const source = `use js::encode_uri_component;
+pub fn parts(text: &str, owned: &String, n: f64, flag: bool) -> Vec<String> {
+    vec![
+        encode_uri_component(text),
+        encode_uri_component(owned),
+        encode_uri_component(n),
+        encode_uri_component(flag),
+    ]
+}
+pub fn each(texts: &[&str]) -> Vec<String> {
+    texts.iter().copied().map(encode_uri_component).collect()
+}
+`;
+  writeFileSync(join(dir, "lib.rs"), source);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("encodeURIComponent(text),\n    encodeURIComponent(owned),\n    encodeURIComponent(n),\n    encodeURIComponent(flag),\n");
+  expect(js).toContain("return texts.map((component) => encodeURIComponent(component));");
+  const lib = await import(join(dir, "lib.js"));
+  expect(lib.parts("a b", "&", 1.5, true)).toEqual(["a%20b", "%26", "1.5", "true"]);
+  expect(lib.each(["?", "#"])).toEqual(["%3F", "%23"]);
+  writeFileSync(join(dir, "lib.rs"), source.replace("encode_uri_component(n)", "encode_uri_component(1_i32)"));
+  const wrong = Bun.spawnSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "wrong.js"), ...withJs], { cwd: dir });
+  expect([wrong.exitCode === 0, wrong.stderr.toString().includes("is not a `string | number | boolean`")], wrong.stderr.toString()).toEqual([false, true]);
+});

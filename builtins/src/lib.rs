@@ -717,10 +717,29 @@ pub fn spawn(this: Box<dyn core::future::Future<Output = ()>>) {
 }
 
 /// [`encodeURIComponent`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/encodeURIComponent):
-/// `text` for a part of a URL, a query's value say.
+/// `component`, text, a number or a `bool`, for a part of a URL, a query's
+/// value say.
 #[cfg_attr(rust_js, rust_js::link_name = "encodeURIComponent")]
-pub fn encode_uri_component(text: &str) -> String {
+pub fn encode_uri_component(component: impl IntoStrOrNumberOrBool) -> String {
     unreachable!()
+}
+
+/// What a `string | number | boolean` parameter takes, `encodeURIComponent`'s:
+/// each as it is (ADR 0229).
+#[diagnostic::on_unimplemented(message = "`{Self}` is not a `string | number | boolean`")]
+#[cfg_attr(rust_js, rust_js::types = "string | number | boolean")]
+pub trait IntoStrOrNumberOrBool: sealed::Sealed {}
+impl IntoStrOrNumberOrBool for &str {}
+impl IntoStrOrNumberOrBool for &String {}
+impl IntoStrOrNumberOrBool for f64 {}
+impl IntoStrOrNumberOrBool for bool {}
+
+mod sealed {
+    pub trait Sealed {}
+    impl Sealed for &str {}
+    impl Sealed for &String {}
+    impl Sealed for f64 {}
+    impl Sealed for bool {}
 }
 
 /// [`encodeURI`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/encodeURI):

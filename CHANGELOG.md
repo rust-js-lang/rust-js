@@ -780,6 +780,11 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### Changed
 
+- **`js::encode_uri_component` takes a number or a `bool` too**, as
+  TypeScript's `encodeURIComponent(uriComponent: string | number |
+  boolean)` does (ADR 0229): `encode_uri_component(418.0)` is
+  `encodeURIComponent(418)`, where it took only a `&str`. Text is a
+  `&str` or a `&String`, the value as it is.
 - **Consecutive appends to a `String` are one `+=`** (ADR 0652): React's
   `prepareStackTrace` is `stack += "\n    at " + callSite.toString();`,
   where `stack += "\n    at "; stack += &call_site.to_string();` was two;

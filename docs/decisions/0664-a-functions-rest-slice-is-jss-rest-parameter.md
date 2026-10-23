@@ -132,10 +132,10 @@ export default function formatProdErrorMessage(code, ...args) {
 
 - A JS caller that gives an array as the last argument gives one item:
   the rest is what it's given, as JS's is.
-- `encodeURIComponent` is bound of a `&str`, narrower than TypeScript's
-  `string | number | boolean` and than React's JS, which gives it any
-  value: the port writes `js::string(*arg)`, `String(arg)`, where
-  upstream has `arg`: a gap of its own, not this decision's.
+- `encodeURIComponent` takes what TypeScript's does, `string | number |
+  boolean` (ADR 0229), and React's JS gives it any value, which neither
+  takes: the port's `unknown` is `js::string(*arg)`, `String(arg)`, where
+  upstream has `arg`, as a TypeScript port's would be.
 - An `f64`'s `{code}` is `$displayF64(code)`, Rust's text of it (ADR
   0312's amendment), where React's integers read the same as JS's
   `${code}`; `js::shown(code)` is how a program asks for JS's text.
