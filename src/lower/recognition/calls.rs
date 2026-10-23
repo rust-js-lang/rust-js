@@ -138,6 +138,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             }
             "std::mem::zeroed" => return Some(Some(Std::Uninit(UninitOp::Zeroed))),
             "std::array::from_fn" => return Some(Some(Std::Slice(SliceOp::FromFn))),
+            "std::slice::from_ref" | "std::array::from_ref" => return Some(Some(Std::Slice(SliceOp::FromRef))),
             _ => {}
         }
         // A `NonNull` of a reference, `NonNull::from(&mut x)`: a pointer to

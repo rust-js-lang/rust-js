@@ -70,3 +70,11 @@ made here, as `chunks_exact`'s is, so it was stepped as a JS iterator of
 it, `Iterator.from(..)`, which has no `items`, and its `remainder()`
 threw (#164). It's an array made here, stepped as a `$iter`, and so is
 `rchunks_exact_mut`'s. Held by `test/corpus/rchunks_remainder.rs`.
+
+## Amendment: `slice::from_ref` and `array::from_ref`
+
+`std::slice::from_ref(&x)` and `std::array::from_ref(&x)` were refused
+(#165). Each is `[x]`, an array of the one item it shares: an object, a
+cell too, is the same object in it. `slice::from_mut(&mut x)` is refused
+still: a slice that writes `x` as it's written isn't an array of it.
+Held by `test/corpus/slice_from_ref.rs`.
