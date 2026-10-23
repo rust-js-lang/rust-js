@@ -1996,6 +1996,14 @@ export function $matches(s, p) {
   return found;
 }
 
+// `s.matches(p)` of a predicate of a `char`: each `char` it holds of, from
+// the start, or of `s.rmatches(p)`, `rev`, from the end, as Rust asks it.
+export function $matchesBy(s, matches, rev = false) {
+  const chars = Array.from(s);
+  if (rev) chars.reverse();
+  return chars.filter((c) => matches(c));
+}
+
 // `s.trim_matches(p)`, or `trim_start_matches` and `trim_end_matches`: `p`
 // taken off as often as it matches there, a `char` or a string, or each
 // `char` a closure says.
