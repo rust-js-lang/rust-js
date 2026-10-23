@@ -1,6 +1,8 @@
 # 0632. A JS string's `length` is below `u32::MAX`, and a counter below it doesn't wrap
 
-Status: Accepted. Extends [0576](0576-what-a-bodys-integers-can-be.md).
+Status: Accepted. Extends [0576](0576-what-a-bodys-integers-can-be.md);
+amended by [0682](0682-a-js-strings-length-is-at-most-int32-max.md): the
+bound is `2^31 - 1`, JavaScriptCore's, so two lengths add without a wrap.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): the program can't
 observe it: no engine holds a string as long as `2^32 - 1` units.
