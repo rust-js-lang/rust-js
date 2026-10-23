@@ -542,7 +542,7 @@ fn range_step(e: &Expr) -> Option<Expr> {
 }
 
 /// `n` of `(_, i) => i % n === 0`, `step_by(n)`'s filter of what it keeps.
-fn every_nth(f: &Expr) -> Option<Expr> {
+pub(in crate::lower) fn every_nth(f: &Expr) -> Option<Expr> {
     let js::ExprKind::Arrow(params, body) = &f.kind else {
         return None;
     };

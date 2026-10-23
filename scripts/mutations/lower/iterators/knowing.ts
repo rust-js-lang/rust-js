@@ -62,8 +62,8 @@ export const mutations: Mutation[] = [
     name: "filter-made-here-backless",
     breaks: "a filter made where it's stepped from its back, `xs.iter().filter(p).rfold(..)`, is refused",
     file: "src/lower/iterators/knowing.rs",
-    find: "            && method == \"filter\"\n",
-    replace: "            && method == \"filtered\"\n",
+    find: "            && method == \"filter\"\n            && let [p] = args.as_slice()\n",
+    replace: "            && method == \"filtered\"\n            && let [p] = args.as_slice()\n",
     tests: ["test/corpus.test.ts", "-t", "^filter_ends.rs$"],
   },
   {
@@ -225,5 +225,21 @@ export const mutations: Mutation[] = [
     find: "            Some(crate::lower::std_types::range::RangeKind::Inclusive) => Some(\"$rangeInclusiveLen\"),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^rev_counted.rs$"],
+  },
+  {
+    name: "chain-made-unstepped",
+    breaks: "`rev()` of a chain made in place is refused",
+    file: "src/lower/iterators/knowing.rs",
+    find: "            && callee.helper_name() == Some(\"$lazyChain\")\n",
+    replace: "            && callee.helper_name() == Some(\"$unchained\")\n",
+    tests: ["test/corpus.test.ts", "-t", "^rev_chain.rs$"],
+  },
+  {
+    name: "step-by-made-unstepped",
+    breaks: "`rev()` of a `step_by` made in place is refused",
+    file: "src/lower/iterators/knowing.rs",
+    find: "            && let Some(step) = crate::lower::std_types::range::every_nth(f)\n",
+    replace: "            && let Some(step) = crate::lower::std_types::range::every_nth(f).filter(|_| false)\n",
+    tests: ["test/corpus.test.ts", "-t", "^rev_step_by.rs$"],
   },
 ];

@@ -127,3 +127,18 @@ counts an inclusive range, `$rangeInclusiveLen`, and a map made in place,
 `$mapEnds`, too. Of items with a destructor, which std drops as a `Vec`'s
 tail slice where `take` steps past them from the back, it's refused. Held
 by `test/corpus/rev_counted.rs`.
+
+A `chain` made in place, `$lazyChain(a, b)`, is `$chainEnds` of its two
+sides made knowing their backs: `a`'s then `b`'s from the front, `b`'s
+then `a`'s from the back, each let go of once it's done, as std's `Chain`
+does. An `Option`'s `into_iter()`, `[]` or `[x]`, steps an array as its
+`iter()` does, so it's a side too. A chain held in a variable and stepped
+by `next_back`, or lent to `rfind`, is still refused. Held by
+`test/corpus/rev_chain.rs`.
+
+A `step_by(n)` made in place, `src.filter((_, i) => i % n === 0)`, is
+`$stepByEnds` of its source made knowing its back and its length: from the
+back, the last item it keeps, found by the source's length as std's
+`next_back_index` finds it. A `skip` or a `take` made in place is counted
+by `as_exact_size` too, so one can be such a source. Held by
+`test/corpus/rev_step_by.rs`.

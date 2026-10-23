@@ -204,6 +204,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if self.steps_an_array(ty) {
             return Ok(self.std_iterator(value, ty));
         }
+        // `skip(n)` or `take(n)` made here, `src.drop(n)`: `$skipping` or
+        // `$taking` of its source, made knowing its back and its length,
+        // which they step from the back by, as std's `Skip` and `Take` of an
+        // `ExactSizeIterator` do, and know their length (ADR 0542). Of items with a destructor,
+        // which std drops as a `Vec`'s tail slice, refused below.
+        if let Some((source, skip)) = crate::lower::recognition::counted_source(self.tcx, ty)
+            && let Some((source_value, n)) = counted_parts(&value, skip)
+            && (self.iterator_item(ty)).is_some_and(|item| self.drops(item) == crate::lower::drops::Drops::Nothing)
+        {
+            let source_value = stepped_value(&source_value).unwrap_or(source_value);
+            let source_value = self.as_exact_size(source_value, source.peel_refs(), true, span)?;
+            let name = if skip { "$skipping" } else { "$taking" };
+            return Ok(Expr::call_helper(name, vec![source_value, n]));
+        }
         // A map made here, `src.map(f)`: its source's, each `f`'s, as
         // `as_double_ended` makes it (ADR 0455).
         if let Some(source) = crate::lower::recognition::mapped_source(self.tcx, ty)
@@ -251,19 +265,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             return Ok(stepped(value, Expr::helper(next), false, Some(Expr::helper(back))));
         }
-        // `skip(n)` or `take(n)` made here, `src.drop(n)`: `$skipping` or
-        // `$taking` of its source, made knowing its back and its length,
-        // which they step from the back by, as std's `Skip` and `Take` of an
-        // `ExactSizeIterator` do (ADR 0542). Of items with a destructor,
-        // which std drops as a `Vec`'s tail slice, refused below.
-        if let Some((source, skip)) = crate::lower::recognition::counted_source(self.tcx, ty)
-            && let Some((source_value, n)) = counted_parts(&value, skip)
-            && (self.iterator_item(ty)).is_some_and(|item| self.drops(item) == crate::lower::drops::Drops::Nothing)
+        // `skip(n)` or `take(n)` made here, exact-sized as std's `Skip` and
+        // `Take` must be to step from the back: `as_exact_size`'s.
+        if let Some((_, skip)) = crate::lower::recognition::counted_source(self.tcx, ty)
+            && counted_parts(&value, skip).is_some()
         {
-            let source_value = stepped_value(&source_value).unwrap_or(source_value);
-            let source_value = self.as_exact_size(source_value, source.peel_refs(), true, span)?;
-            let name = if skip { "$skipping" } else { "$taking" };
-            return Ok(Expr::call_helper(name, vec![source_value, n]));
+            return self.as_exact_size(value, ty, true, span);
         }
         if self.steps_an_array(ty) {
             return Ok(self.std_iterator(value, ty));
@@ -279,6 +286,34 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             let source_value = self.as_double_ended((**source_value).clone(), source.peel_refs(), span)?;
             return Ok(Expr::call_helper("$mapEnds", vec![source_value, f.clone()]));
+        }
+        // A `step_by(n)` made here, `src.filter((_, i) => i % n === 0)`:
+        // `$stepByEnds` of its source made knowing its back and its length,
+        // which it finds its last by, as std's `StepBy` does.
+        if let Some(source) = crate::lower::recognition::stepped_by_source(self.tcx, ty)
+            && let js::ExprKind::Call(callee, args) = &value.kind
+            && let js::ExprKind::Member(source_value, method) = &callee.kind
+            && method == "filter"
+            && let [f] = args.as_slice()
+            && let Some(step) = crate::lower::std_types::range::every_nth(f)
+        {
+            let source_value = stepped_value(source_value).unwrap_or_else(|| (**source_value).clone());
+            let source_value = self.as_exact_size(source_value, source.peel_refs(), true, span)?;
+            return Ok(Expr::call_helper("$stepByEnds", vec![source_value, step]));
+        }
+        // A chain made here, `$lazyChain(a, b)`: each made knowing its back,
+        // `$chainEnds` of them, which steps `b`'s then `a`'s from the back, as
+        // std's `Chain` does.
+        if let Some((first, second)) = crate::lower::recognition::chained_sources(self.tcx, ty)
+            && let js::ExprKind::Call(callee, args) = &value.kind
+            && callee.helper_name() == Some("$lazyChain")
+            && let [a, b] = args.as_slice()
+        {
+            let a = stepped_value(a).unwrap_or_else(|| a.clone());
+            let b = stepped_value(b).unwrap_or_else(|| b.clone());
+            let a = self.as_double_ended(a, first.peel_refs(), span)?;
+            let b = self.as_double_ended(b, second, span)?;
+            return Ok(Expr::call_helper("$chainEnds", vec![a, b]));
         }
         // A filter made here, `src.filter(p)`: its source's items `p` keeps,
         // from either end, as Rust's `Filter` steps them (ADR 0526).
