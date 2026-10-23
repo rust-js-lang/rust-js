@@ -376,16 +376,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // a call gives, `$strPart(..)`'s, the one it gives, there.
             // So is one a call gives in what it gives, a store's
             // `lm_get_mut(i).unwrap().1`, made there once.
-            Value::Ref(ref place)
-                if let js::ExprKind::Member(holder, field) = &place.kind
-                    && field == js::HELD
-                    && match &call_part(holder).kind {
-                        js::ExprKind::Call(..) | js::ExprKind::Object(_) => true,
-                        _ => self.locals.mir.cells.iter().any(|cell| cell.written_alike(holder)),
-                    } =>
-            {
-                (**holder).clone()
-            }
+            Value::Ref(ref place) if let Some(cell) = self.held_cell(place) => cell,
             Value::Ref(place) if fixed_place(&place) => Expr::handle(place),
             // Of what a generic `Option`'s `Some` holds, `$someValue(o)`: a
             // handle that reads it so and writes `o` a `Some`, given a handle
@@ -404,4 +395,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     // ── Statements ──────────────────────────────────────────────────────
+}
+
+impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// The cell, box or handle whose `value` `place`, a `&mut`'s, is: one a
+    /// call gives, `$strPart(..)`'s, one made there, or one a place holds,
+    /// a reborrow's, `&mut **u` (`locals.mir.cells`). What a `&mut` to the
+    /// place is given as, the cell, read and written through it.
+    pub(super) fn held_cell(&self, place: &Expr) -> Option<Expr> {
+        let js::ExprKind::Member(holder, field) = &place.kind else {
+            return None;
+        };
+        let held = field == js::HELD
+            && match &call_part(holder).kind {
+                js::ExprKind::Call(..) | js::ExprKind::Object(_) => true,
+                _ => self.locals.mir.cells.iter().any(|cell| cell.written_alike(holder)),
+            };
+        held.then(|| (**holder).clone())
+    }
 }

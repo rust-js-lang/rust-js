@@ -96,27 +96,27 @@ function bumpedByRef(v, first) {
   let y = 2;
   const b = v.pop();
   const a = x;
-  const value = first
-    ? {
-        get value() {
-          return x;
-        },
-        set value(value) {
-          x = value;
-        },
-      }
-    : {
-        get value() {
-          return y;
-        },
-        set value(value) {
-          y = value;
-        },
-      };
-  const n = { value: value.value };
-  const value$1 = bump(n);
-  value.value = n.value;
-  if (!value$1) {
+  if (
+    !bump(
+      first
+        ? {
+            get value() {
+              return x;
+            },
+            set value(value) {
+              x = value;
+            },
+          }
+        : {
+            get value() {
+              return y;
+            },
+            set value(value) {
+              y = value;
+            },
+          },
+    )
+  ) {
     if (b != null) {
       return (((((((a * 100) >>> 0) + b) >>> 0) + x) >>> 0) + y) >>> 0;
     }

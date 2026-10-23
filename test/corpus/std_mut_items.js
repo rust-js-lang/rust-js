@@ -101,9 +101,7 @@ function main() {
   bump($unwrap($mutAt(row, 0)));
   const x = $mutAt(row, 1);
   if (x != null) {
-    const n = { value: x.value };
-    bump(n);
-    x.value = n.value;
+    bump(x);
   }
   console.log(
     `{${Array.from(counts)

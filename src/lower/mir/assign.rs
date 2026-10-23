@@ -707,13 +707,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 exprs.push(place);
                 continue;
             }
-            // A box this function was given, given on as it is.
+            // A box this function was given, given on as it is, and a cell a
+            // place holds, a reborrow's, `&mut **self` of an impl's for
+            // `&mut T`: the cell, not a box of a copy.
             if let js::ExprKind::Member(boxed, field) = &place.kind
                 && field == js::HELD
                 && let js::ExprKind::Var(name) = &boxed.kind
                 && state.boxes.contains(name)
             {
                 exprs.push((**boxed).clone());
+                continue;
+            }
+            if let Some(cell) = self.held_cell(&place) {
+                exprs.push(cell);
                 continue;
             }
             let param = self

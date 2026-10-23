@@ -44,12 +44,10 @@ function main() {
   const noisy = undefined;
   console.log(`${noisyDebug_fmt(noisy)} kept`);
 
-  let r = 5;
-  r = (r + 1) | 0;
-  const n = { value: r };
-  bump(n);
-  r = n.value;
-  console.log(`${r}`);
+  const r = { value: 5 };
+  r.value = (r.value + 1) | 0;
+  bump(r);
+  console.log(`${r.value}`);
   const counts = [{ value: 1 }];
   for (const count of counts) {
     count.value = (count.value + 1) | 0;

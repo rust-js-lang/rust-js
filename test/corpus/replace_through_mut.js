@@ -173,9 +173,7 @@ function main() {
   console.log(`${lightDebug_fmt(l)} ${arg}`);
   const lights = ["Off", { TAG: "On", level: 1 }];
   for (const light of $mutItems(lights)) {
-    const self = { value: light.value };
-    Light.toggle(self);
-    light.value = self.value;
+    Light.toggle(light);
   }
   $index(lights, 0);
   const l$3 = { value: lights[0] };
