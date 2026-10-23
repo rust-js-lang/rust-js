@@ -6,3 +6,9 @@ function $wrappingRem(a, b, min) {
   const rem = a % b;
   return typeof rem === "bigint" ? rem : rem + 0;
 }
+
+// `a.overflowing_rem(b)`: what `wrapping_rem` gives, and whether it wrapped,
+// `MIN % -1`'s.
+function $overflowingRem(a, b, min) {
+  return [$wrappingRem(a, b, min), a === min && b == -1];
+}

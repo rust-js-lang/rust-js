@@ -173,6 +173,18 @@ pub(in crate::lower) enum NumOp {
         abs: bool,
     },
     WrappingDiv,
+    /// `a.overflowing_div(b)`, or `overflowing_rem`, `rem`: what
+    /// `wrapping_div` gives and whether it wrapped.
+    OverflowingDiv {
+        rem: bool,
+    },
+    /// `a.saturating_div(b)`: `MIN / -1` is `MAX`.
+    SaturatingDiv,
+    /// `a.is_multiple_of(b)` of an unsigned integer.
+    IsMultipleOf,
+    /// `x.cast_unsigned()` or `x.cast_signed()`: `as` the other type of its
+    /// width.
+    CastSign,
     WrappingRem,
     /// `overflowing_add`, `_sub` and `_mul`, and `overflowing_neg()`.
     Overflowing(BinOp),
@@ -310,6 +322,45 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.binary(op, a, rhs, None, inner, span)
     }
 
+    /// A number's method written the same of a number and of a BigInt: a
+    /// runtime helper of both, or a cast. `Err` of the values of another.
+    fn either_width_call(
+        &mut self,
+        op: NumOp,
+        values: Vec<Expr>,
+        ty: Ty<'tcx>,
+        num: Num,
+        span: Span,
+    ) -> R<Result<Expr, Vec<Expr>>> {
+        let (lo, hi) = num.range();
+        let min = match num.signed() {
+            true => num.literal(lo),
+            false => Expr::undefined(),
+        };
+        let helper = |name: &'static str, list: Vec<Expr>| Expr::call(Expr::helper(name), list);
+        let [a, rest @ ..] = values.as_slice() else {
+            return Ok(Err(values));
+        };
+        let (a, b) = (a.clone(), rest.first().cloned());
+        Ok(Ok(match (op, b) {
+            (NumOp::OverflowingDiv { rem }, Some(b)) => {
+                let name = if rem { "$overflowingRem" } else { "$overflowingDiv" };
+                helper(name, vec![a, b, min])
+            }
+            (NumOp::SaturatingDiv, Some(b)) => helper("$saturatingDiv", vec![a, b, min, num.literal(hi as i128)]),
+            (NumOp::IsMultipleOf, Some(b)) => helper("$isMultipleOf", vec![a, b]),
+            (NumOp::CastSign, None) => {
+                let other = match ty.kind() {
+                    ty::Int(int) => Ty::new_uint(self.tcx, int.to_unsigned()),
+                    ty::Uint(uint) => Ty::new_int(self.tcx, uint.to_signed()),
+                    _ => return Ok(Err(values)),
+                };
+                self.cast(a, ty, other, span)?
+            }
+            _ => return Ok(Err(values)),
+        }))
+    }
+
     /// A number's method, of its arguments' values.
     pub(in crate::lower) fn number_call(
         &mut self,
@@ -321,6 +372,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> R<Expr> {
         let num = Num::of(ty).expect("a number's method");
         let values = match self.bits_call(op, values, num)? {
+            Ok(value) => return Ok(value),
+            Err(values) => values,
+        };
+        let values = match self.either_width_call(op, values, ty, num, span)? {
             Ok(value) => return Ok(value),
             Err(values) => values,
         };
@@ -345,6 +400,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // already (ADR 0122).
         let rounded = |e: Expr| if num == Num::F32 { num.wrap(e) } else { e };
         Ok(match op {
+            NumOp::OverflowingDiv { .. } | NumOp::SaturatingDiv | NumOp::IsMultipleOf | NumOp::CastSign => {
+                unreachable!("lowered by either_width_call")
+            }
             NumOp::Math(name @ ("floor" | "ceil" | "trunc" | "abs")) => {
                 let list = values.collect();
                 math(name, list)

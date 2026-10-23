@@ -4285,6 +4285,23 @@ export function $wrappingDiv(a, b, min) {
   return typeof a === "bigint" ? a / b : Math.trunc(a / b) + 0;
 }
 
+// `a.overflowing_div(b)`: what `wrapping_div` gives, and whether it wrapped,
+// `MIN / -1`'s.
+export function $overflowingDiv(a, b, min) {
+  return [$wrappingDiv(a, b, min), a === min && b == -1];
+}
+
+// `a.saturating_div(b)`: `MIN / -1` is `MAX`, where it would overflow.
+export function $saturatingDiv(a, b, min, max) {
+  return a === min && b == -1 ? max : $wrappingDiv(a, b, min);
+}
+
+// `a.is_multiple_of(b)` of an unsigned number or BigInt: whether `b`
+// divides it, of a zero `b` whether it's zero, as std's is.
+export function $isMultipleOf(a, b) {
+  return b == 0 ? a == 0 : a % b == 0;
+}
+
 // `a.wrapping_rem(b)`, a number's or a BigInt's: `MIN % -1` is 0, where it
 // would overflow; a zero `b` panics as `%` does.
 export function $wrappingRem(a, b, min) {
@@ -4292,6 +4309,12 @@ export function $wrappingRem(a, b, min) {
   if (a === min && b == -1) return typeof a === "bigint" ? 0n : 0;
   const rem = a % b;
   return typeof rem === "bigint" ? rem : rem + 0;
+}
+
+// `a.overflowing_rem(b)`: what `wrapping_rem` gives, and whether it wrapped,
+// `MIN % -1`'s.
+export function $overflowingRem(a, b, min) {
+  return [$wrappingRem(a, b, min), a === min && b == -1];
 }
 
 // An integer's `overflowing_*`: what wrapping gives, and whether the exact

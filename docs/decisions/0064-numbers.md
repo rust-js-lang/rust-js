@@ -133,3 +133,13 @@ under Consequences: neither JS's `Math` nor the C library Rust calls is
 correctly rounded, so either may differ in the last bit. The corpus case
 `float_methods_more` prints them rounded, and the rest exactly, against
 native Rust.
+
+## Amendment: division's overflowing and saturating forms, `is_multiple_of`, and casts of sign
+
+`overflowing_div`, `overflowing_rem`, `saturating_div`, `is_multiple_of`,
+`cast_unsigned` and `cast_signed` were refused (#119). Each is written the
+same of a number and a BigInt, `either_width_call`: `$overflowingDiv(a, b,
+min)`, `wrapping_div`'s and whether `MIN / -1` wrapped; `$saturatingDiv`,
+`MAX` of it; `$isMultipleOf`, of a zero divisor whether it's zero, as
+std's; and a cast `as` the other type of its width. A zero divisor panics
+as `/` does. Held by `test/corpus/int_div_sign_methods.rs`.

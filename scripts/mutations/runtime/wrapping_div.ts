@@ -10,4 +10,20 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "integer_families"],
   },
+  {
+    name: "saturating-div-wraps",
+    breaks: "`MIN.saturating_div(-1)` wraps to `MIN`, not `MAX`",
+    file: "src/runtime/wrapping_div.js",
+    find: "  return a === min && b == -1 ? max : $wrappingDiv(a, b, min);\n",
+    replace: "  return $wrappingDiv(a, b, min);\n",
+    tests: ["test/corpus.test.ts", "-t", "^int_div_sign_methods.rs$"],
+  },
+  {
+    name: "is-multiple-of-zero-true",
+    breaks: "`x.is_multiple_of(0)` is true of any `x`",
+    file: "src/runtime/wrapping_div.js",
+    find: "  return b == 0 ? a == 0 : a % b == 0;\n",
+    replace: "  return b == 0 ? true : a % b == 0;\n",
+    tests: ["test/corpus.test.ts", "-t", "^int_div_sign_methods.rs$"],
+  },
 ];

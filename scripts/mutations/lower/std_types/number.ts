@@ -178,4 +178,12 @@ export const mutations: Mutation[] = [
     replace: "                saturated\n",
     tests: ["test/corpus.test.ts", "-t", "^product_sign.rs$"],
   },
+  {
+    name: "cast-sign-same-type",
+    breaks: "`cast_unsigned()` casts to its own type, so `-1i8` stays `-1`",
+    file: "src/lower/std_types/number.rs",
+    find: "                self.cast(a, ty, other, span)?\n",
+    replace: "                self.cast(a, ty, ty, span)?\n",
+    tests: ["test/corpus.test.ts", "-t", "^int_div_sign_methods.rs$"],
+  },
 ];
