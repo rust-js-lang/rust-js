@@ -48,3 +48,12 @@ import * as ContextMenu from "@radix-ui/react-context-menu";
 ## Amended by
 
 - [0373](0373-one-binding-form.md): A binding of a JS function is an ordinary function, and a JS type a struct
+
+## Amendment: camelCase, as every Rust name is (2026-10-23)
+
+The module's name is camelCase in JS, as ADR 0573 has every Rust name:
+`mod side_menu` holding `./side.js#*` is `import * as sideMenu`, where it
+was `side_menu`; `mod ContextMenu` is `ContextMenu` still. Found porting
+React's `shared/ReactSharedInternals`, whose `react#*` binding its module
+`react_shared_internals` holds: `reactSharedInternals`.
+

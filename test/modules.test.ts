@@ -427,16 +427,26 @@ mod ContextMenu {
     }
 }
 
+mod side_menu {
+    #[cfg_attr(rust_js, rust_js::link_name = "./side.js#*.open")]
+    pub fn open() -> u32 {
+        unreachable!()
+    }
+}
+
 pub fn both() -> u32 {
-    ContextMenu::Root() + ContextMenu::Item()
+    ContextMenu::Root() + ContextMenu::Item() + side_menu::open()
 }
 `);
+  writeFileSync(join(dir, "side.js"), "export function open() { return 4; }\n");
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain('import * as ContextMenu from "./menu.js";');
   expect(js).toContain("ContextMenu.Root() + ContextMenu.Item()");
+  // A module's name as every Rust name is, camelCase (ADR 0573).
+  expect(js).toContain('import * as sideMenu from "./side.js";');
   const lib = await import(join(dir, "lib.js"));
-  expect(lib.both()).toBe(3);
+  expect(lib.both()).toBe(7);
 });
 
 // A default import used only for its statics, a class's in a module named

@@ -202,7 +202,9 @@ pub(super) fn name_imports(
                 _ if uses.named.contains_key(export_key) => uses.named[export_key].clone(),
                 ("default", Some(name), _) => name,
                 ("default", None, Some(module)) if statics => crate::lower::upper_first(&camel_case(&module)),
-                ("*", _, Some(module)) => module,
+                // As every Rust name is, camelCase, `side_menu` as `sideMenu`
+                // (ADR 0256, amended for ADR 0573).
+                ("*", _, Some(module)) => camel_case(&module),
                 ("default" | "*", _, _) => module_binding(from),
                 _ => export.clone(),
             };

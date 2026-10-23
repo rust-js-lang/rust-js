@@ -112,7 +112,7 @@ export const mutations: Mutation[] = [
     name: "namespace-named-by-file",
     breaks: "a namespace whose bindings `mod ContextMenu` holds is named by its file, `import * as menu`",
     file: "src/lower/analysis/naming.rs",
-    find: "                (\"*\", _, Some(module)) => module,\n",
+    find: "                (\"*\", _, Some(module)) => camel_case(&module),\n",
     replace: "\n",
     tests: ["test/modules.test.ts", "-t", "namespace import is named"],
   },
@@ -195,5 +195,13 @@ export const mutations: Mutation[] = [
     find: "                    && tcx\n                        .trait_of_assoc(tcx.typeck_root_def_id(tcx.local_parent(local).to_def_id()))\n                        .is_none()\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^default_inner_fn.rs$"],
+  },
+  {
+    name: "namespace-module-as-written",
+    breaks: "a namespace import a snake_case module holds is named `side_menu`, not camelCase `sideMenu`",
+    file: "src/lower/analysis/naming.rs",
+    find: "                (\"*\", _, Some(module)) => camel_case(&module),\n",
+    replace: "                (\"*\", _, Some(module)) => module,\n",
+    tests: ["test/modules.test.ts", "-t", "a namespace import is named as the module of its bindings"],
   },
 ];
