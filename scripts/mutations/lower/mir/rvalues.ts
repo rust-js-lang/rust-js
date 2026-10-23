@@ -123,14 +123,6 @@ export const mutations: Mutation[] = [
     "tests": ["test/lowering-matches.test.ts", "-t", "a range pattern's tests from MIR"]
   },
   {
-    "name": "mir-range-unsigned-floor-tested",
-    "breaks": "`0..=4` of a `u8` from MIR tests `k >= 0`, which always holds",
-    "file": "src/lower/mir/rvalues.rs",
-    "find": ".is_some_and(|n| n.is_null())",
-    "replace": ".is_some_and(|n| n.is_null() && false)",
-    "tests": ["test/lowering-matches.test.ts", "-t", "a range pattern's tests from MIR"]
-  },
-  {
     "name": "mir-enum-cast-refused",
     "breaks": "`ordering as i32` from MIR is refused, its discriminant read as a value",
     "file": "src/lower/mir/rvalues.rs",

@@ -115,7 +115,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_types/number/operators.rs",
     find: "        if comparison.is_some() && bounds(ty).is_some_and(|(min, max)| at_bound(op, &l, &r, min, max)) {\n",
     replace: "        if false && comparison.is_some() && bounds(ty).is_some_and(|(min, max)| at_bound(op, &l, &r, min, max)) {\n",
-    tests: ["test/lowering-numbers.test.ts", "-t", "a range pattern tests no bound its type has"],
+    tests: ["test/lowering-numbers.test.ts", "test/lowering-matches.test.ts", "-t", "a range pattern tests no bound its type has|a range pattern's tests from MIR"],
   },
   {
     name: "range-bound-drops-effects",

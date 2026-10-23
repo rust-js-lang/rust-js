@@ -198,24 +198,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     }));
                 }
                 // A range pattern's test, `2 <= k`: the value first, `k >= 2`;
-                // of a bound the type has anyway, `0 <= k` of a `u8`, none.
+                // of a bound the type has anyway, `0 <= k` of a `u8`, none,
+                // as `binary` answers of every comparison (`at_bound`).
                 let flipped = match op {
                     BinOp::Le => Some(BinOp::Ge),
                     BinOp::Lt => Some(BinOp::Gt),
                     _ => None,
                 };
                 if let Some(flipped) = flipped
-                    && let Operand::Constant(bound) = l
+                    && let Operand::Constant(_) = l
                     && !matches!(r, Operand::Constant(_))
                     && state.ranges.iter().any(|range| range.contains(span))
                 {
-                    if *op == BinOp::Le
-                        && ty.is_integral()
-                        && !ty.is_signed()
-                        && bound.const_.try_to_scalar_int().is_some_and(|n| n.is_null())
-                    {
-                        return Ok(Value::Expr(Expr::bool(true)));
-                    }
                     let [r, l]: [Value<'tcx>; 2] =
                         self.take_operands(state, &[r, l], out)?.try_into().ok().expect("two");
                     let (r, l) = (self.value_expr(r, span)?, self.value_expr(l, span)?);
