@@ -123,3 +123,11 @@ order is a function, `const cmpTree = (a, b) => ..`, which calls itself
 for the ones inside, as a recursive type's clone is (`clone_value`); each
 place that orders one makes its own, as each clone does. Held by
 `test/corpus/recursive_order.rs`.
+
+## Amendment: a B-tree's order
+
+Comparing B-trees, `a < b` of two `BTreeSet`s or `BTreeMap::cmp`, was
+refused (#165). A B-tree compares as its items in its order, as a
+sequence does (`$cmpItems`), a map's its entries, key then value; its
+keys' own `Ord` orders them, and `f64` values make it partial. Held by
+`test/corpus/btree_compare.rs`.
