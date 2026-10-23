@@ -398,7 +398,7 @@ pub fn hosts(error: Option<&'static Unknown>) {
   try {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
     const js = readFileSync(join(dir, "lib.js"), "utf8");
-    expect(js).toContain('let reportGlobalError;\nif (typeof reportError !== "undefined") {\n  reportGlobalError = reportError;\n} else {');
+    expect(js).toContain('const reportGlobalError =\n  typeof reportError !== "undefined"\n    ? reportError\n    : (error) => {\n');
     expect(js).toContain("const hostReportError = reportError;");
     expect(js).toContain("export default reportGlobalError;");
     const lib = await import(join(dir, "lib.js"));

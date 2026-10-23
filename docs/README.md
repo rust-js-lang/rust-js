@@ -533,7 +533,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0598 A temporary is no part of a named variable's pattern](decisions/0598-a-temporary-is-no-part-of-a-names-pattern.md)
 - [0599 A result its branches make before it's coerced is returned where made](decisions/0599-a-coerced-result-is-returned-where-made.md)
 - [0600 The guide is the site on GitHub Pages](decisions/0600-the-guide-is-the-site.md)
-- [0601 A module's variable an `if` makes is a `let` each branch assigns](decisions/0601-a-module-variable-an-if-makes-is-a-let.md)
+- [0601 A module's variable an `if` makes is a `let` each branch assigns](decisions/0601-a-module-variable-an-if-makes-is-a-let.md) *(amended by 0657: one value each is a conditional)*
 - [0602 A binding taken as a `fn` is its JS function, read where it's taken](decisions/0602-a-binding-taken-as-a-fn-is-its-function.md)
 - [0603 A comment before a `let` with no JS is the next statement's](decisions/0603-a-comment-before-an-unprinted-let.md)
 - [0604 A binding as a value gives its arguments as its call does](decisions/0604-a-bindings-value-gives-what-its-call-gives.md)
@@ -585,6 +585,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0654 A dictionary's member of any value is a `dyn IntoUnknown`](decisions/0654-a-dictionary-member-of-any-value-is-a-dyn-into-unknown.md)
 - [0655 A binding of `any` as a value is a `fn` of `Option<&'static Unknown>`](decisions/0655-an-any-binding-as-a-value-is-a-fn-of-a-static-unknown.md)
 - [0656 An event's `emit` arguments are what TypeScript's `emit` takes](decisions/0656-an-events-emit-arguments-are-typescripts-emits.md)
+- [0657 An `if` of one value each, a function's too, is a conditional](decisions/0657-an-if-of-one-value-each-is-a-conditional.md)
 - [0623 A copy std makes of a `Copy` value is a copy](decisions/0623-a-copy-std-makes-is-a-copy.md)
 - [0436 Every `dyn` that's a pair keeps its value's drop, `dyn Send` too](decisions/0436-every-dyn-keeps-its-drop.md)
 - [0437 A scope's drops on a panic are one `try { .. } finally { .. }`](decisions/0437-a-scopes-drops-are-one-finally.md)

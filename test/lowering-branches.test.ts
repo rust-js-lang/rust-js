@@ -1376,3 +1376,60 @@ pub fn first_big(items: &[u32]) -> u32 {
   const heap = [5, 1, 2, 3];
   expect([lib.siftDown(heap, 0), heap, lib.firstBig([1, 20, 30]), lib.firstBig([1])]).toEqual([3, [1, 3, 2, 5], 20, 0]);
 });
+
+// ADR 0657: a value an `if` gives, each branch one expression, a function
+// too, is `c ? a : b`, of a module's variable as of a function's `let`, as
+// React's `reportGlobalError` is `typeof reportError === 'function' ?
+// reportError : error => { .. }`; a branch that does something before its
+// value, or a chain of more, stays an `if`.
+test("an if of one value each, a function's too, is a conditional", async () => {
+  const dir = fixture("conditional-functions");
+  writeFileSync(join(dir, "lib.rs"), `#[cfg_attr(rust_js, rust_js::link_name = "rustJsFast")]
+fn fast(n: u32) -> u32 {
+    unreachable!()
+}
+
+thread_local! {
+    static PICK: fn(u32) -> u32 = if js::is_defined(fast) { fast } else { |n| n * 2 };
+}
+
+pub fn picked(n: u32) -> u32 {
+    PICK.with(|pick| pick(n))
+}
+
+pub fn local(flag: bool, n: u32) -> u32 {
+    let f: fn(u32) -> u32 = if flag { |n| n + 1 } else { |n| n * 3 };
+    f(n) + f(1)
+}
+
+pub fn done(flag: bool, n: u32) -> u32 {
+    let f: fn(u32) -> u32 = if flag {
+        println!("one");
+        |n| n + 1
+    } else {
+        |n| n * 3
+    };
+    f(n)
+}
+
+pub fn chained(n: u32) -> fn(u32) -> u32 {
+    if n == 0 {
+        |n| n + 1
+    } else if n == 1 {
+        |n| n + 2
+    } else {
+        |n| n + 3
+    }
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('const pick = typeof rustJsFast !== "undefined" ? rustJsFast : (n) => (n * 2) >>> 0;');
+  expect(js).toContain("  const f = flag ? (n) => (n + 1) >>> 0 : (n) => (n * 3) >>> 0;\n");
+  expect(js).toContain('  let f;\n  if (flag) {\n    console.log("one");\n');
+  expect(js).toContain("  if (n === 0) {\n    return (n) => (n + 1) >>> 0;\n  }\n");
+  const globals = globalThis as { rustJsFast?: (n: number) => number };
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.picked(4), lib.local(true, 2), lib.local(false, 2), lib.chained(1)(1)]).toEqual([8, 5, 9, 3]);
+  expect(globals.rustJsFast).toBeUndefined();
+});

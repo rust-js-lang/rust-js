@@ -1,7 +1,8 @@
 # 0601. A module's variable an `if` makes is a `let` each branch assigns
 
 Status: Accepted. Extends [0270](0270-module-variables.md)'s
-thread-locals.
+thread-locals. Amended by [0657](0657-an-if-of-one-value-each-is-a-conditional.md):
+an `if` of one value each, a function too, is a `const` of a conditional.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): A: the same value, made
 once when the module loads.

@@ -329,7 +329,12 @@ A thread-local an `if` makes is a `let` each branch assigns, as JS picks
 what it uses where it loads; and a function that only calls a thread-local
 of a closure is that variable, by the function's name
 ([ADR 0601](../../decisions/0601-a-module-variable-an-if-makes-is-a-let.md),
-[ADR 0610](../../decisions/0610-a-forwarding-function-is-its-variable.md)):
+[ADR 0610](../../decisions/0610-a-forwarding-function-is-its-variable.md)).
+Where each branch is one value, a function too, it's a `const` of `c ? a :
+b`, as a function's `let` is: `const pick = typeof fast !== "undefined" ?
+fast : (n) => ..`; a branch that does something first, as the `else` below
+does, keeps the `if`
+([ADR 0657](../../decisions/0657-an-if-of-one-value-each-is-a-conditional.md)):
 
 ```rust
 thread_local! {

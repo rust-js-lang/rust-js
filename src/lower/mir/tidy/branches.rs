@@ -507,7 +507,9 @@ pub(super) fn folds_into_return(yes: &Expr, no: &Expr) -> bool {
 
 /// Whether `e` reads well as a branch of `c ? a : b`: not a conditional
 /// itself, of more branches, nor an element, which reads best returned or
-/// assigned as it is, nor a function.
+/// assigned as it is. A function is one value, `c ? f : (x) => { .. }`, as
+/// React writes one: what a branch does before its value is what keeps it
+/// a statement (ADR 0657).
 pub(super) fn small(e: &Expr) -> bool {
     // An element of two levels at most, `<b>Save</b>`, a value; one of more
     // reads best as a branch of its own.
@@ -519,10 +521,7 @@ pub(super) fn small(e: &Expr) -> bool {
     }
     match &e.kind {
         ExprKind::Jsx(_) => levels(e) <= 2,
-        _ => !matches!(
-            e.kind,
-            ExprKind::Cond(..) | ExprKind::Arrow(..) | ExprKind::AsyncArrow(..) | ExprKind::Function(_)
-        ),
+        _ => !matches!(e.kind, ExprKind::Cond(..)),
     }
 }
 

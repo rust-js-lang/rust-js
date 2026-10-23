@@ -119,14 +119,12 @@ pub fn report(error: Option<&'static Unknown>) {
 ```
 
 ```js
-let reportGlobalError;
-if (typeof reportError !== "undefined") {
-  reportGlobalError = reportError;
-} else {
-  reportGlobalError = (error) => {
-    console.error(error);
-  };
-}
+const reportGlobalError =
+  typeof reportError !== "undefined"
+    ? reportError
+    : (error) => {
+        console.error(error);
+      };
 
 export function report(error) {
   reportGlobalError(error);

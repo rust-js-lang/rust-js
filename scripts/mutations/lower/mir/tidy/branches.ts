@@ -446,4 +446,12 @@ export const mutations: Mutation[] = [
     replace: "                    =>\n",
     tests: ["test/lowering-matches.test.ts", "-t", "a match of constants is a switch"],
   },
+  {
+    name: "function-not-small",
+    breaks: "a function isn't a conditional's branch, so `const pick = c ? f : (n) => ..` is a `let` each branch sets",
+    file: "src/lower/mir/tidy/branches.rs",
+    find: "        _ => !matches!(e.kind, ExprKind::Cond(..)),\n",
+    replace: "        _ => !matches!(e.kind, ExprKind::Cond(..) | ExprKind::Arrow(..)),\n",
+    tests: ["test/lowering-branches.test.ts", "-t", "a function.s too, is a conditional"],
+  },
 ];
