@@ -328,6 +328,7 @@ helpers! {
     SplitOnce,
     RsplitOnce,
     Try,
+    Unwind,
     Settle,
     UnwrapOk,
     Range,
@@ -706,6 +707,8 @@ impl Helper {
             Helper::Position => include_str!("runtime/position.js"),
             Helper::Try => include_str!("runtime/try.js"),
             Helper::Settle => include_str!("runtime/settle.js"),
+            // `catch_unwind` and `resume_unwind` (ADR 0660).
+            Helper::Unwind => include_str!("runtime/unwind.js"),
             // `print!` and `eprint!` of text that may not end a line: written as
             // it is where JS can (Node, Bun, Deno), else each line as it ends,
             // as a browser's `console` only writes lines, and what's left when

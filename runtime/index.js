@@ -382,13 +382,14 @@ export function $assertFailed(kind, left, right, message) {
 
 // `#[should_panic]` (ADR 0026): the test passes only if it panics, and if
 // `expected` is given, only if the panic message contains it, as with
-// libtest. A panic is a plain `Error` (ADR 0012); anything else thrown, a
-// `TypeError` say, is the JS going wrong, and fails the test as it is.
+// libtest. A panic is what `$isPanic` says is one (ADR 0660); anything else
+// thrown, a `TypeError` say, is the JS going wrong, and fails the test as it
+// is.
 export function $shouldPanic(f, expected) {
   try {
     f();
   } catch (e) {
-    if (!(e instanceof Error && e.constructor === Error)) {
+    if (!$isPanic(e)) {
       throw e;
     }
     const message = e.message;
@@ -10201,6 +10202,68 @@ export function $try(f) {
     return { TAG: "Ok", _0: f() };
   } catch (e) {
     return { TAG: "Err", _0: e };
+  }
+}
+
+// Unwinding (ADR 0660): what JS throws, a panic's `Error` or anything else,
+// unwinds Rust's frames; `catch_unwind` catches it, its payload a `Box<dyn
+// Any + Send>`, the pair `{ value, impl }` (ADR 0331), and `resume_unwind`
+// throws one.
+
+// Whether `e`, thrown, is a panic: an `Error` of JS's own constructor, as
+// `panic!` throws (ADR 0012), whoever threw it; or a payload that isn't
+// text, which `resume_unwind` throws in a `$Unwinding`.
+export function $isPanic(e) {
+  return e instanceof $Unwinding || (e instanceof Error && e.constructor === Error);
+}
+
+// A panic's message as a `dyn Any`'s `Any`: a `&str`, which a downcast to a
+// `String` finds too, as JS doesn't keep which a panic's was.
+export const $panicMessage = { typeId: () => "&str" };
+
+// What JS threw, as a `dyn Any`'s `Any`: a `&'static JsError`.
+export const $jsThrown = { typeId: () => "&js::JsError" };
+
+// A payload that's neither text nor what JS threw, `resume_unwind(Box::new(5))`,
+// thrown: an `Error`, so its host shows where, as Rust's hook shows it.
+export class $Unwinding extends Error {
+  constructor(payload) {
+    super("Box<dyn Any>");
+    this.payload = payload;
+  }
+}
+
+// What unwound, of `e`, thrown: a payload thrown as it is, a panic's
+// message, or what JS threw.
+export function $unwound(e) {
+  if (e instanceof $Unwinding) {
+    return e.payload;
+  }
+  if ($isPanic(e)) {
+    return { value: e.message, impl: $panicMessage };
+  }
+  return { value: e, impl: $jsThrown };
+}
+
+// What's thrown to unwind with `payload`: what JS threw, itself; a panic of
+// text, its `Error`; any other, in a `$Unwinding`.
+export function $unwinding(payload) {
+  const id = payload.impl.typeId();
+  if (id === "&js::JsError") {
+    return payload.value;
+  }
+  if (id === "&str" || id === "alloc::string::String") {
+    return new Error(payload.value);
+  }
+  return new $Unwinding(payload);
+}
+
+// `catch_unwind(f)`: `Ok` of what `f()` gives, or `Err` of what unwound.
+export function $catchUnwind(f) {
+  try {
+    return { TAG: "Ok", _0: f() };
+  } catch (e) {
+    return { TAG: "Err", _0: $unwound(e) };
   }
 }
 

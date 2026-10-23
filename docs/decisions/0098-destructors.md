@@ -1,6 +1,9 @@
 # 0098. A destructor runs where rustc runs it, in a `finally`
 
 Status: Accepted. Extends [0020](0020-structs-and-tuples.md) and [0052](0052-std-trait-impls.md).
+Amended by [0660](0660-catch-unwind-catches-what-js-throws.md): what a panic
+unwinds through is dropped before `catch_unwind` returns, and a `drop` that
+panics as another unwinds replaces it there too.
 Amended: an iterator of the crate's with a destructor consumed by value,
 `collect()`, `count()`, is dropped after, as the method's end drops it,
 arrayvec's `Drain`; one an adapter holds, `map(f)`, is an error still

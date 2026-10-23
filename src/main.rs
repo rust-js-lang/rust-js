@@ -121,6 +121,9 @@ struct RustJs {
     std_bodies: bool,
     /// Cargo's build (ADR 0101), which is told what `RUST_JS_APP` was.
     cargo: bool,
+    /// `-C panic=abort`, which rust-js unwinds (ADR 0090): unwinding is
+    /// refused of it (ADR 0660).
+    panics_abort: bool,
 }
 
 /// `rust_js` is a tool rustc knows, as it knows `rustfmt`: a program
@@ -174,7 +177,9 @@ impl Callbacks for RustJs {
         config.opts.cg.overflow_checks = Some(false);
         // Panics unwind, as a JS exception does, what's held dropped in its
         // `catch`: wasm32's abort would lay out a future, and answer
-        // `cfg(panic)`, for another program (ADR 0090).
+        // `cfg(panic)`, for another program (ADR 0090). One that asked to
+        // abort is told it can't unwind (ADR 0660).
+        self.panics_abort = config.opts.cg.panic == Some(rustc_target::spec::PanicStrategy::Abort);
         config.opts.cg.panic = Some(rustc_target::spec::PanicStrategy::Unwind);
     }
 
@@ -227,8 +232,11 @@ impl Callbacks for RustJs {
                 &initializers,
                 &serde_attrs,
                 &self.dependencies,
-                self.export_library,
-                self.std_bodies,
+                lower::Built {
+                    library: self.export_library,
+                    std_bodies: self.std_bodies,
+                    panics_abort: self.panics_abort,
+                },
             )
             && tcx.dcx().has_errors().is_none()
         {
@@ -416,6 +424,7 @@ fn compile(build: command::Build) -> Result<ExitCode, String> {
         std_coverage,
         std_bodies,
         cargo,
+        panics_abort: false,
     };
     let exit = rustc_driver::catch_with_exit_code(|| rustc_driver::run_compiler(&rustc_args, &mut callbacks));
     // Once rustc has written the metadata: if it couldn't, nothing is published.

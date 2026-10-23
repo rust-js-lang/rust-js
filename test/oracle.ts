@@ -4,9 +4,12 @@
 //   native Rust ── JSON line ──► decode ──► { value } | { panic: message } ─┐
 //   generated JS ─── observe ──► { value } | { panic } | { error } ─────────┴─► same?
 //
-// A Rust panic is a plain `Error` with Rust's message (ADR 0012). Any other
-// exception, a `TypeError` say, is the generated JS going wrong, so it's an
-// `error`, which no native outcome is.
+// A Rust panic is what the runtime's `$isPanic` says is one, a plain `Error`
+// with Rust's message (ADRs 0012, 0660). Any other exception, a `TypeError`
+// say, is the generated JS going wrong, so it's an `error`, which no native
+// outcome is.
+
+import { $isPanic } from "@rust-js/runtime";
 
 export type Outcome = { value: unknown } | { panic: string } | { error: string };
 
@@ -53,7 +56,7 @@ export function observe(run: () => unknown): Outcome {
   try {
     return { value: normalize(run()) };
   } catch (e) {
-    if (e instanceof Error && e.constructor === Error) return { panic: e.message };
+    if ($isPanic(e)) return { panic: (e as Error).message };
     return { error: e instanceof Error ? `${e.name}: ${e.message}` : `a thrown ${typeof e}: ${String(e)}` };
   }
 }

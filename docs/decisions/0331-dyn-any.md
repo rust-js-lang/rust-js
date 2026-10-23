@@ -2,7 +2,9 @@
 
 Status: Accepted. Extends [0141](0141-std-trait-objects.md) and
 [0145](0145-type-facts.md); counted by
-[0314](0314-std-data-structures.md).
+[0314](0314-std-data-structures.md). Amended by
+[0660](0660-catch-unwind-catches-what-js-throws.md): what unwound is a
+`dyn Any`, a panic's message a `String` to a downcast as well as a `&str`.
 
 Case: A ([0262](0262-when-rust-and-js-disagree.md)), but D for what JS
 can't keep: a `TypeId`'s hash, a closure's type, and an order of types.

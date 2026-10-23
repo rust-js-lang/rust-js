@@ -170,6 +170,43 @@ pub fn shared(n: f64) -> f64 {
   for (const f of [lib.returned, lib.tail, lib.named, lib.errFirst, lib.shared]) expect(() => f(101)).toThrow("too big");
 });
 
+// ADR 0660: its `unwrap_or(d)` returned, `r.TAG === "Ok" ? r._0 : d`, is
+// the `if` of its arms, each returned: `try { return f(); } catch {
+// return d; }`. Held, it's `$try`'s.
+test("a returned unwrap_or of a throwing call is try and catch", async () => {
+  const dir = fixture("unwrap-or-try");
+  writeFileSync(join(dir, "lib.rs"), `use js::Unknown;
+
+pub fn text(value: Option<&Unknown>) -> String {
+    js::concat_text(value).unwrap_or_default()
+}
+
+pub fn or(value: Option<&Unknown>) -> String {
+    js::concat_text(value).unwrap_or("none".to_string())
+}
+
+pub fn ok(value: Option<&Unknown>) -> Option<String> {
+    js::concat_text(value).ok()
+}
+
+pub fn held(value: Option<&Unknown>) -> String {
+    let text = js::concat_text(value);
+    let len = text.as_ref().map_or(0, |t| t.len());
+    format!("{}{len}", text.unwrap_or_default())
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('export function text(value) {\n  try {\n    return "" + value;\n  } catch {\n    return "";\n  }\n}');
+  expect(js).toContain('export function or(value) {\n  try {\n    return "" + value;\n  } catch {\n    return "none";\n  }\n}');
+  expect(js).toContain('export function ok(value) {\n  try {\n    return "" + value;\n  } catch {\n    return;\n  }\n}');
+  expect(js).toContain("const text = $try(");
+  const lib = await import(join(dir, "lib.js"));
+  const symbol = Symbol("s");
+  expect([lib.text(5), lib.text(symbol), lib.or(symbol), lib.ok("a"), lib.ok(symbol)]).toEqual(["5", "", "none", "a", undefined]);
+  expect([lib.held("ab"), lib.held(symbol)]).toEqual(["ab2", "0"]);
+});
+
 // `set X.y` of a function without a receiver writes a global's property,
 // `process.exitCode = 1`, as `get X.y` reads one.
 test("a binding sets a static property", async () => {

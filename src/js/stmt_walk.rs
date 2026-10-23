@@ -380,6 +380,12 @@ pub fn ends(stmt: &Stmt) -> bool {
     match &stmt.kind {
         StmtKind::Return(_) | StmtKind::Throw(_) | StmtKind::Break(_) | StmtKind::Continue(_) => true,
         StmtKind::If(_, then, Some(otherwise)) => then.last().is_some_and(ends) && otherwise.last().is_some_and(ends),
+        // A `switch` with a `default`, each of whose cases leaves (ADR 0660).
+        StmtKind::Switch {
+            cases,
+            default: default @ Some(_),
+            ..
+        } => case_lists(cases, default).all(|body| body.last().is_some_and(ends)),
         StmtKind::While { label, cond, body } => {
             matches!(cond.kind, ExprKind::Bool(true)) && !breaks(body, label.as_deref())
         }

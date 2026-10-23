@@ -5,7 +5,10 @@ Status: Accepted. Amends [0035](0035-results-and-throwing-js.md), whose
 arm that only gives the value. Amended by
 [0639](0639-concat-text-of-any-value-may-throw.md): whether the call
 threw, returned, `is_err()` or a `match` of `true` and `false`, is `try {
-f(); return false; } catch { return true; }`.
+f(); return false; } catch { return true; }`. Amended by
+[0660](0660-catch-unwind-catches-what-js-throws.md): `catch_unwind`'s
+`Result` is `try` and `catch` by the same rule, and a throwing call's
+`unwrap_or(d)` returned, `try { return f(); } catch { return d; }`.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N, nothing the program
 can observe: the call is caught where Rust catches it and nothing else

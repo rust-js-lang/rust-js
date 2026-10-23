@@ -422,6 +422,8 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                 "std::io::_print" => return Some(Some(Std::Print { error: false })),
                 "std::io::_eprint" => return Some(Some(Std::Print { error: true })),
                 "std::rt::begin_panic" => return Some(Some(Std::BeginPanic)),
+                "std::panic::catch_unwind" => return Some(Some(Std::Unwind(UnwindOp::Catch))),
+                "std::panic::resume_unwind" => return Some(Some(Std::Unwind(UnwindOp::Resume))),
                 _ => {}
             }
         }
