@@ -1,7 +1,10 @@
 # 0225. A JS value of unknown shape is a `js::Unknown`
 
 Status: Accepted. Extends [0102](0102-js-and-webapi.md), [0214](0214-untagged-enums.md)
-and [0024](0024-web-crate.md).
+and [0024](0024-web-crate.md). Amended by
+[0668](0668-a-match-of-what-a-value-is-is-a-switch-of-its-typeof.md): `Kind`
+has a `Symbol`, and its `Object` is an object no array is, `typeof value
+=== "object"`; a `match` of it is a `switch (typeof value)`.
 
 Case: N, C, D ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -65,7 +68,9 @@ value.name = "new";
   `BigInt(i64)`, `Bool(bool)`, `Array(&[Option<&Unknown>])`, and
   `Object(&Unknown)`, its `otherwise`: an object, a function, a symbol.
   `classify(value)` is a binding whose JS is the value itself, so a `match`
-  of it is a `typeof` chain.
+  of it is a `typeof` chain. (Amended by 0668: a `Symbol(&Symbol)` too, and
+  `Object` an object no array is; a `match` of three cases or more is a
+  `switch (typeof value)`.)
 - **`get(value, key)` is `value[key]`** and `set(value, key, to)` is
   `value[key] = to`, by two new link-name forms, `"get []"` and `"set []"`,
   as ReScript's `@get_index` and `@set_index`. A key written that's a name

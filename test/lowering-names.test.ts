@@ -164,9 +164,22 @@ pub fn unit(code: f64, log: &mut Vec<u32>) {
     }
     log.push(0);
 }
+
+pub const A: u32 = 1;
+pub const B: u32 = 2;
+
+pub fn named(n: u32) -> u32 {
+    match n {
+        A /* first */ | B /* second */ => 1,
+        7 /* seven */ => 3,
+        _ => 2,
+    }
+}
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
+  // Each case's constant where its pattern's is, its comment after it.
+  expect(js).toContain('    case A /* first */:\n    case B /* second */:\n      return 1;\n    case 7 /* seven */:\n      return 3;\n');
   // A switch is where its `match` is, not its first case's constant.
   expect(js).toContain('  switch (half(code)) {\n    case 79 /* "O" */:\n    case 99 /* "c" */:\n    case 100 /* "d" */:\n      log.push(1);\n');
   expect(js).toContain('if (code !== 37 /* "%" */) {');

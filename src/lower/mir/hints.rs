@@ -32,6 +32,10 @@ pub(super) struct Written {
 /// `no-small-switch` asks; of one arm of seven constants, a switch.
 const SWITCH_CASES: usize = 3;
 
+/// What a variant's test of a value tests, as a constant's names it: a
+/// name no JS the program writes has.
+pub(super) const SUBJECT: &str = "$subject";
+
 /// A `match` of constants (`Written::switches`): where it's written, its
 /// `switch`'s, and its arms (ADR 0629).
 pub(super) struct Switch {
@@ -49,14 +53,34 @@ pub(super) struct SwitchArm {
     pub constants: Vec<Constant>,
 }
 
+impl SwitchArm {
+    /// How many cases it is: a `_`'s `default`, else a case of each
+    /// constant but an array's, which `typeof` says is an object: `Object |
+    /// Array`'s `"object"` is one, and an array's alone none, an `if`
+    /// before the `switch` (ADR 0668).
+    fn cases(&self) -> usize {
+        use crate::lower::untagged::TypeofCase;
+        match self.constants.is_empty() {
+            true => 1,
+            false => (self.constants.iter())
+                .filter(|c| !matches!(c, Constant::Kind(TypeofCase::Tested(_))))
+                .count(),
+        }
+    }
+}
+
 /// A constant an arm of a `match` of constants names: a variant, by the
 /// value JS has of it, `"Function"`, which a last arm, untested, is a case
 /// of; or a literal or a `const`, `n === 1`, where it's written, which its
 /// `case` is, its comment after it (ADR 0630).
+/// Or a variant of an untagged enum, by what `typeof` says of it, its
+/// `case` of a `switch (typeof value)`, the value being `SUBJECT` (ADR
+/// 0668).
 #[derive(Clone)]
 pub(super) enum Constant {
     Variant(js::Expr),
     Value(js::Span),
+    Kind(crate::lower::untagged::TypeofCase),
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
@@ -279,7 +303,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // Of three cases or more, each constant one and a `_` one: two
                 // are the `if` and `else`, or the `?:`, a person writes of two
                 // ways. Decided with the user.
-                let cases: usize = arms.iter().map(|arm| arm.constants.len().max(1)).sum();
+                let cases: usize = arms.iter().map(SwitchArm::cases).sum();
                 (cases >= SWITCH_CASES).then(|| Switch {
                     span: self.js_span(e.span),
                     arms,
@@ -401,13 +425,34 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             {
                 self.constants_of(&some.pattern)
             }
+            // A variant of an untagged enum, by what `typeof` says of it, its
+            // value bound or not, which is the value itself (ADR 0668).
+            thir::PatKind::Variant {
+                adt_def,
+                args,
+                variant_index,
+                subpatterns,
+            } if crate::lower::bindings::is_untagged(self.tcx, adt_def.did())
+                && !adt_def.variant(*variant_index).fields.is_empty()
+                && (subpatterns.iter()).all(|field| {
+                    matches!(
+                        field.pattern.kind,
+                        thir::PatKind::Wild | thir::PatKind::Binding { subpattern: None, .. }
+                    )
+                }) =>
+            {
+                let subject = js::Expr::var(SUBJECT);
+                let variant = adt_def.variant(*variant_index);
+                let case = self.recognition().untagged_case(*adt_def, args, variant, &subject)?;
+                Some(vec![Constant::Kind(case)])
+            }
             thir::PatKind::Variant {
                 adt_def,
                 variant_index,
                 subpatterns,
                 ..
             } if subpatterns.is_empty() && adt_def.variant(*variant_index).fields.is_empty() => {
-                let subject = js::Expr::var("subject");
+                let subject = js::Expr::var(SUBJECT);
                 let test = self.variant_test(subject.clone(), pattern.ty, *adt_def, *variant_index);
                 match test.kind {
                     js::ExprKind::Binary(js::Op::Eq, s, value) if *s == subject => {

@@ -184,9 +184,10 @@ impl PartialEq for Unknown {
 }
 
 /// What an [`Unknown`] is, as JS's `typeof` and `Array.isArray` tell it:
-/// each variant's value is the value itself (ADR 0214). An array's items
-/// may be `undefined` or `null`; a function is a `Function`; anything else,
-/// an object or a symbol, is an `Object`, whose properties [`get`] reads.
+/// each variant's value is the value itself (ADR 0214), a `match` of them
+/// a `switch (typeof value)` (ADR 0668). An array's items may be
+/// `undefined` or `null`; a function is a `Function`; what's left, an
+/// object no array is, an `Object`, whose properties [`get`] reads.
 #[cfg_attr(rust_js, rust_js::untagged)]
 pub enum Kind<'a> {
     String(&'a str),
@@ -194,9 +195,13 @@ pub enum Kind<'a> {
     /// A `bigint`, as an `i64` is one (ADR 0086): one wider isn't wrapped.
     BigInt(i64),
     Bool(bool),
+    /// A symbol, `typeof value === "symbol"`.
+    Symbol(&'a Symbol),
     /// A function, `typeof value === "function"`, of whatever it takes.
     Function(&'a dyn Fn()),
     Array(&'a [Option<&'a Unknown>]),
+    /// What the others aren't: `typeof value === "object"`, not an array,
+    /// as an `Unknown` is never `null` (ADR 0668).
     #[cfg_attr(rust_js, rust_js::otherwise)]
     Object(&'a Unknown),
 }

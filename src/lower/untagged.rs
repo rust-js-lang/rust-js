@@ -21,6 +21,7 @@ pub(super) enum Kind {
     Number,
     BigInt,
     Boolean,
+    Symbol,
     Array,
     Function,
     Object,
@@ -51,11 +52,20 @@ impl Kind {
             Kind::Number => Some("number"),
             Kind::BigInt => Some("bigint"),
             Kind::Boolean => Some("boolean"),
+            Kind::Symbol => Some("symbol"),
             Kind::Function => Some("function"),
             Kind::Object => Some("object"),
             Kind::Literal(_) => Some("string"),
             Kind::Array | Kind::Class(..) | Kind::Test(_) => None,
         }
+    }
+
+    /// The kind of a JS type TypeScript names as `typeof` does one, a
+    /// primitive's, `symbol`.
+    fn of_types(types: &str) -> Option<Kind> {
+        TYPE_OF
+            .into_iter()
+            .find(|kind| kind.type_of() == Some(types) && *kind != Kind::Object)
     }
 
     /// What it is in an error: TS's name for it.
@@ -69,6 +79,29 @@ impl Kind {
             _ => format!("a `{}`", self.type_of().expect("a `typeof` kind")),
         }
     }
+}
+
+/// The kinds `typeof` tells of a value that's neither `undefined` nor
+/// `null`, as an untagged enum's never is: each it can say (ADR 0668).
+const TYPE_OF: [Kind; 7] = [
+    Kind::String,
+    Kind::Number,
+    Kind::BigInt,
+    Kind::Boolean,
+    Kind::Symbol,
+    Kind::Function,
+    Kind::Object,
+];
+
+/// What a `switch (typeof value)` has of a variant of an untagged enum
+/// (ADR 0668): its `case`, what `typeof` says of it, and the variants'
+/// tests it isn't, `!Array.isArray(value)` of `Kind::Object`'s; or, of one
+/// `typeof` says is another's, an array's `"object"`, its test, an `if`
+/// before the `switch`.
+#[derive(Clone)]
+pub(super) enum TypeofCase {
+    Typeof(&'static str, Vec<Expr>),
+    Tested(Expr),
 }
 
 /// The functions `variant`'s test calls, of its enum's payloads' types'
@@ -142,6 +175,14 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             || matches!(ty.kind(), ty::Tuple(items) if !items.is_empty())
         {
             return Some(Kind::Array);
+        }
+        // One TypeScript types as `typeof` names a primitive, `js::Symbol`'s
+        // `symbol`, is that kind.
+        if let ty::Adt(adt, _) = ty.kind()
+            && self.is_js_object(ty)
+            && let Some(kind) = super::declarations::written_types(self.tcx, adt.did()).and_then(|t| Kind::of_types(&t))
+        {
+            return Some(kind);
         }
         if let ty::Adt(adt, _) = ty.kind()
             && self.is_js_object(ty)
@@ -242,33 +283,61 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         class: &dyn Fn(&str) -> Expr,
     ) -> Expr {
         let otherwise = |v: &VariantDef| bindings::is_otherwise(self.tcx, v.def_id);
-        // What the others aren't: none of their tests.
-        if otherwise(variant) {
+        // What the others aren't: none of their tests, but where that's one
+        // kind, as it is of `js::Kind`'s `Object`.
+        if otherwise(variant) && self.otherwise_kind(adt, args).is_none() {
             let none = (adt.variants().iter().filter(|v| !otherwise(v)))
                 .map(|v| Expr::unary(UnaryOp::Not, self.untagged_test(adt, args, v, value, class)));
             return none
                 .reduce(|all, test| Expr::bin(Op::And, all, test))
                 .unwrap_or(Expr::bool(true));
         }
+        let (own, narrower) = self.untagged_parts(adt, args, variant);
+        let test = |kind: &Kind| self.kind_test(kind, value, class);
+        narrower.iter().fold(test(&own), |all, kind| {
+            Expr::bin(Op::And, all, Expr::unary(UnaryOp::Not, test(kind)))
+        })
+    }
+
+    /// What `typeof` says is the value of an `otherwise` variant of `adt`,
+    /// what the others aren't (ADR 0668): of the kinds it tells of a value,
+    /// the one the others aren't, where one is left, `js::Kind`'s `Object`'s
+    /// `"object"` beside its `String` to `Function`; of more, as of `Json`'s,
+    /// none. A literal, `"auto"`, is one string, not every one.
+    fn otherwise_kind(&self, adt: AdtDef<'tcx>, args: GenericArgsRef<'tcx>) -> Option<Kind> {
+        let told: Vec<&'static str> = (adt.variants().iter())
+            .filter(|v| !bindings::is_otherwise(self.tcx, v.def_id))
+            .filter_map(|v| self.untagged_variant_kind(v, args))
+            .filter(|kind| !matches!(kind, Kind::Literal(_)))
+            .filter_map(|kind| kind.type_of())
+            .collect();
+        let left: Vec<Kind> = TYPE_OF
+            .into_iter()
+            .filter(|kind| !kind.type_of().is_some_and(|t| told.contains(&t)))
+            .collect();
+        match <[Kind; 1]>::try_from(left) {
+            Ok([only]) => Some(only),
+            Err(_) => None,
+        }
+    }
+
+    /// `variant`'s kind and the kinds of the others its test leaves out, as
+    /// more exactly theirs: a class's its subclasses in the enum; an
+    /// object's every array and class. Of an `otherwise` variant, the kind
+    /// left (`otherwise_kind`).
+    fn untagged_parts(&self, adt: AdtDef<'tcx>, args: GenericArgsRef<'tcx>, variant: &VariantDef) -> (Kind, Vec<Kind>) {
+        let otherwise = |v: &VariantDef| bindings::is_otherwise(self.tcx, v.def_id);
         let kinds: Vec<Kind> = adt
             .variants()
             .iter()
             .filter(|v| !otherwise(v))
             .filter_map(|v| self.untagged_variant_kind(v, args))
             .collect();
-        let own = (self.untagged_variant_kind(variant, args))
-            .expect("an untagged enum's variant has a kind, as its declaration was checked");
-        let test = |kind: &Kind| match kind {
-            Kind::Array => Expr::call(Expr::member(Expr::var("Array"), "isArray"), vec![value.clone()]),
-            Kind::Class(name, _) => Expr::bin(Op::InstanceOf, value.clone(), class(name)),
-            Kind::Test(test) => Expr::call(class(test), vec![value.clone()]),
-            Kind::Literal(name) => Expr::bin(Op::Eq, value.clone(), Expr::str(name)),
-            other => Expr::bin(
-                Op::Eq,
-                Expr::unary(UnaryOp::Typeof, value.clone()),
-                Expr::str(other.type_of().expect("a `typeof` kind")),
-            ),
+        let own = match otherwise(variant) {
+            true => self.otherwise_kind(adt, args),
+            false => self.untagged_variant_kind(variant, args),
         };
+        let own = own.expect("an untagged enum's variant has a kind, as its declaration was checked");
         let narrower: Vec<&Kind> = kinds
             .iter()
             .filter(|kind| match (&own, kind) {
@@ -283,14 +352,60 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             (Kind::Class(_, Some(sub)), Kind::Class(_, Some(base))) => self.superclasses(*sub).contains(base),
             _ => false,
         };
-        let narrower: Vec<&Kind> = narrower
+        let narrower: Vec<Kind> = narrower
             .iter()
             .filter(|kind| !narrower.iter().any(|base| extends(kind, base)))
-            .copied()
+            .map(|&kind| kind.clone())
             .collect();
-        narrower.into_iter().fold(test(&own), |all, kind| {
-            Expr::bin(Op::And, all, Expr::unary(UnaryOp::Not, test(kind)))
-        })
+        (own, narrower)
+    }
+
+    /// The test that `value` is of `kind`.
+    fn kind_test(&self, kind: &Kind, value: &Expr, class: &dyn Fn(&str) -> Expr) -> Expr {
+        match kind {
+            Kind::Array => Expr::call(Expr::member(Expr::var("Array"), "isArray"), vec![value.clone()]),
+            Kind::Class(name, _) => Expr::bin(Op::InstanceOf, value.clone(), class(name)),
+            Kind::Test(test) => Expr::call(class(test), vec![value.clone()]),
+            Kind::Literal(name) => Expr::bin(Op::Eq, value.clone(), Expr::str(name)),
+            other => Expr::bin(
+                Op::Eq,
+                Expr::unary(UnaryOp::Typeof, value.clone()),
+                Expr::str(other.type_of().expect("a `typeof` kind")),
+            ),
+        }
+    }
+
+    /// `variant`'s case in a `switch (typeof value)` (ADR 0668), of a kind
+    /// `typeof` tells, or an array, whose test is an `if` before it; none
+    /// of a class, a test function's or a literal, which it doesn't, nor of
+    /// an `otherwise` that's none of more kinds.
+    pub(super) fn untagged_case(
+        &self,
+        adt: AdtDef<'tcx>,
+        args: GenericArgsRef<'tcx>,
+        variant: &VariantDef,
+        value: &Expr,
+    ) -> Option<TypeofCase> {
+        if bindings::is_otherwise(self.tcx, variant.def_id) && self.otherwise_kind(adt, args).is_none() {
+            return None;
+        }
+        let (own, narrower) = self.untagged_parts(adt, args, variant);
+        // What it leaves out is an array, or it's no case: an object no
+        // `Error` is, say, isn't one.
+        if narrower.iter().any(|kind| *kind != Kind::Array) {
+            return None;
+        }
+        let no_class = |_: &str| unreachable!("a `typeof` kind's test names no class");
+        match (&own, own.type_of()) {
+            (Kind::Array, _) => Some(TypeofCase::Tested(self.kind_test(&own, value, &no_class))),
+            (_, None) => None,
+            (_, Some(case)) => Some(TypeofCase::Typeof(
+                case,
+                (narrower.iter())
+                    .map(|kind| self.kind_test(kind, value, &no_class))
+                    .collect(),
+            )),
+        }
     }
 }
 

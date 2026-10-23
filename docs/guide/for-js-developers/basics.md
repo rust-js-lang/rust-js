@@ -1348,19 +1348,19 @@ pub fn describe(value: &Unknown) -> String {
 import { $displayF64 } from "@rust-js/runtime";
 
 export function describe(value) {
-  if (typeof value === "string") {
-    return `text ${value}`;
-  }
-  if (typeof value === "number") {
-    return `number ${$displayF64(value)}`;
-  }
-  if (typeof value === "boolean") {
-    return `flag ${value}`;
-  }
   if (Array.isArray(value)) {
     return `${value.length} items`;
   }
-  return "something else";
+  switch (typeof value) {
+    case "string":
+      return `text ${value}`;
+    case "number":
+      return `number ${$displayF64(value)}`;
+    case "boolean":
+      return `flag ${value}`;
+    default:
+      return "something else";
+  }
 }
 ```
 
