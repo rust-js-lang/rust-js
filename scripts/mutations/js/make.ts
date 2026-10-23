@@ -77,11 +77,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "truthy-tested-for-null",
-    breaks: "`code != null && !!code` is kept, not `!!code`, `code ? ..` of text",
+    breaks: "`s != null && !!s` is kept, not `!!s`, `s.is_some_and(|s| !s.is_empty())`'s",
     file: "src/js/make.rs",
     find: "            && let ExprKind::Unary(UnaryOp::Not, of) = &inner.kind\n            && same_path(tested, of)\n",
     replace: "            && let ExprKind::Unary(UnaryOp::Not, of) = &inner.kind\n            && same_path(tested, of)\n            && false\n",
-    tests: ["test/jsx-children.test.ts", "-t", "filtered child, in place"],
+    tests: ["test/lowering-options.test.ts", "-t", "is_some_and of the truth of what it holds"],
   },
   {
     name: "handle-value-kept",

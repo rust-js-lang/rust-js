@@ -41,6 +41,30 @@ pub fn given(items: &[u32], keys: Option<&[&str]>) -> String {
 // An Option compared to a literal is only that comparison, which none fails
 // anyway: `segments.at(-1) === "index"`, as react.dev's page route drops a
 // path's last `index`.
+// `is_some_and` of what it holds' truth, text's `!s.is_empty()` or
+// `js::truthy`, is that truth: `s != null && !!s` is `!!s`, as neither
+// `null` nor `undefined` is truthy.
+test("is_some_and of the truth of what it holds is that truth", async () => {
+  const dir = fixture("some-and-truth");
+  writeFileSync(join(dir, "lib.rs"), `use js::Unknown;
+
+pub fn texted(s: Option<&str>) -> bool {
+    s.is_some_and(|s| !s.is_empty())
+}
+
+pub fn truthy(v: Option<&Unknown>) -> bool {
+    v.is_some_and(|v| js::truthy(Some(v)))
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("export function texted(s) {\n  return !!s;\n}");
+  expect(js).toContain("export function truthy(v) {\n  return !!v;\n}");
+  const lib = await import(join(dir, "lib.js"));
+  expect(["", "a", undefined].map(lib.texted)).toEqual([false, true, false]);
+  expect([0, 1, null, undefined, {}].map(lib.truthy)).toEqual([false, true, false, false, true]);
+});
+
 test("an Option compared to a literal needs no test that it's there", async () => {
   const dir = fixture("option-literal");
   writeFileSync(join(dir, "lib.rs"), `pub fn trimmed(mut segments: Vec<String>) -> Vec<String> {
