@@ -476,4 +476,12 @@ export const mutations: Mutation[] = [
     replace: "        if false {\n            crate::lower::binding_calls::given_as_rest(&mut exprs);\n",
     tests: ["test/js-object.test.ts", "-t", "console is a value"],
   },
+  {
+    name: "nullable-param-nulled-unasked",
+    breaks: "what a binding with a nullable parameter is given isn't asked whether it's `null` or a value already: `Object.create(Object.prototype ?? null)`",
+    file: "src/lower/mir/dispatch.rs",
+    find: "            false => operands.iter().map(|o| self.nulled(state, o)).collect(),\n",
+    replace: "            false => Vec::new(),\n",
+    tests: ["test/js-object.test.ts", "-t", "Object's statics are JS's"],
+  },
 ];

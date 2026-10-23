@@ -115,12 +115,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "generic_trait_methods"],
   },
   {
-    name: "mir-nullable-made-coalesced",
-    breaks: "MIR's `Some` of a function given a nullable parameter is `(e) => .. ?? null`",
+    name: "nullable-param-some-coalesced",
+    breaks: "a `Some(..)` given to a binding's nullable parameter is `value ?? null`, `Object.create(Object.prototype ?? null)`, a function's `(e) => .. ?? null`",
     file: "src/lower/mir/calls.rs",
-    find: "                _ if value.is_constant() || value.is_made_here() => value,\n",
+    find: "                _ if nulled || value.is_constant() => value,\n",
     replace: "                _ if value.is_constant() => value,\n",
-    tests: ["test/compiler.test.ts","-t","the webapi crate's bindings become plain JS"],
+    tests: ["test/lowering-options.test.ts", "-t", "a binding's nullable parameter's None is null"],
   },
   {
     name: "mir-assign-shift-amount-bigint",

@@ -511,6 +511,7 @@ export function ratio(a, b) {
   `#[rust_js::nullable(range)]`
   ([ADR 0275](../../decisions/0275-nullable-writes-null.md),
   [ADR 0578](../../decisions/0578-a-nullable-result-where-its-written.md)).
+  A `Some(..)` given to one is its value, `Object.create(Object.prototype)`.
   A result is `?? null` of an `Option` that may be `undefined`, and a
   nullable function's call as it is, `null` for `None` already, `return
   last(b);` ([ADR 0638](../../decisions/0638-a-nullable-functions-call-is-null-already.md)).

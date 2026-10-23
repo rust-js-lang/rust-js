@@ -150,7 +150,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // Each given as its call gives it (ADR 0604): a nullable one's
         // `None`, `null`.
         let values: Vec<Expr> = (params.iter().zip(&inputs).enumerate())
-            .map(|(i, (name, &ty))| self.binding_arg(def_id, i, Expr::var(name), ty))
+            .map(|(i, (name, &ty))| self.binding_arg(def_id, (i, false), Expr::var(name), ty))
             .collect();
         let mut made = Vec::new();
         let body = self.binding_values((def_id, args), values, (self.js_span(span), named), span, &mut made)?;

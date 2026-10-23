@@ -344,7 +344,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0272 Node's modules are a crate of their own, typed as @types/node](decisions/0272-node.md)
 - [0273 A `#[path]` module's JS is beside its file](decisions/0273-path-modules.md)
 - [0274 Next.js's getStaticProps and getStaticPaths, typed as next types them](decisions/0274-next-data-fetching.md)
-- [0275 A nullable field's `None` is `null`](decisions/0275-nullable-writes-null.md)
+- [0275 A nullable field's `None` is `null`](decisions/0275-nullable-writes-null.md) *(amended: a nullable parameter's `Some(..)` is its value)*
 - [0276 A Pages Router route gets no declarations beside it](decisions/0276-no-declarations-in-routes.md)
 - [0277 A variable shadowed by its own value is the variable](decisions/0277-shadow-aliases.md)
 - [0278 A variable nothing sets again is a `const`](decisions/0278-unset-lets-are-consts.md)

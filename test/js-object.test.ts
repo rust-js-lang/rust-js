@@ -78,7 +78,8 @@ pub fn symbols(o: &Unknown) -> usize {
   expect(js).toContain("Object.defineProperties(o, { hidden, shown });");
   expect(js).toContain('Object.defineProperty(o, "got", { get: () => "read" });');
   expect(js).toContain("const bare = Object.create(null);");
-  expect(js).toContain("Object.create(Object.prototype");
+  // A nullable parameter's `Some(..)` is its value (ADR 0275).
+  expect(js).toContain("Object.create(Object.prototype, ");
   expect(js).toContain("Object.setPrototypeOf(bare, made");
   expect(js).toContain("Object.isFrozen(Object.prototype)");
   expect(js).toContain("Object.groupBy(words, (word) =>");

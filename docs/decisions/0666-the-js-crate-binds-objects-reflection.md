@@ -112,9 +112,9 @@ property descriptor is one dictionary, a struct, shared by `Object` and
   `writable`. `reflect::get` reads the property itself.
 - **`Object.defineProperty`'s throw is a panic**, as a binding's that
   doesn't say it throws is; `reflect::define_property` gives `false`.
-- **`Object.create`'s `Some(object::prototype)` is written
-  `Object.prototype ?? null`**, as a nullable parameter's `Some` of a
-  value rust-js can't tell is never `null` is; `None` is `null`.
+- **`Object.create`'s `Some(object::prototype)` is
+  `Object.prototype`**, as a nullable parameter's `Some(..)` is its value
+  (ADR 0275's amendment); `None` is `null`.
 - A key `group_by`'s closure gives is a `PropertyKey` by value, a
   `String` or a number: no `&str` a closure could borrow.
 

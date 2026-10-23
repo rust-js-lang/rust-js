@@ -6,7 +6,7 @@ export const mutations: Mutation[] = [
     name: "binding-value-args-raw",
     breaks: "a nullable binding as a value is given `undefined`, `(to) => rustJsReset(to)`, where its call gives `null`",
     file: "src/lower/items.rs",
-    find: "            .map(|(i, (name, &ty))| self.binding_arg(def_id, i, Expr::var(name), ty))\n",
+    find: "            .map(|(i, (name, &ty))| self.binding_arg(def_id, (i, false), Expr::var(name), ty))\n",
     replace: "            .map(|(_, (name, _))| Expr::var(name))\n",
     tests: ["test/lowering-functions.test.ts", "-t", "a binding taken as a fn"],
   },

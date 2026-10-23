@@ -132,12 +132,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// A binding called: the JS function, method, property or operator it
-    /// names (ADRs 0019, 0020), given its arguments.
+    /// names (ADRs 0019, 0020), given its arguments, each whether it's an
+    /// `Option` `null` or a value already (`nulled`).
     pub(super) fn mir_binding_call(
         &mut self,
         (def_id, generic_args): (rustc_span::def_id::DefId, ty::GenericArgsRef<'tcx>),
-        values: Vec<Value<'tcx>>,
-        arg_tys: &[Ty<'tcx>],
+        (values, arg_tys, nulled): (Vec<Value<'tcx>>, &[Ty<'tcx>], &[bool]),
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<Value<'tcx>> {
@@ -216,7 +216,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let mut exprs = Vec::new();
         for (i, (value, &ty)) in values.into_iter().zip(arg_tys).enumerate() {
             let value = self.value_expr(value, span)?;
-            exprs.push(self.binding_arg(def_id, i, value, ty));
+            exprs.push(self.binding_arg(def_id, (i, nulled.get(i) == Some(&true)), value, ty));
         }
         // Where its path names it, which says where it's read (ADR 0633),
         // looked for where any path is read through a module.
@@ -257,11 +257,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// What binding `def_id` is given as its `i`th argument, `value` of
     /// `ty`, as JS takes it: of its call and of its arrow as a value alike
-    /// (ADR 0604).
+    /// (ADR 0604); `nulled` where it's an `Option` `null` or a value
+    /// already, a `Some(..)` (`nulled`'s).
     pub(in crate::lower) fn binding_arg(
         &self,
         def_id: rustc_span::def_id::DefId,
-        i: usize,
+        (i, nulled): (usize, bool),
         value: Expr,
         ty: Ty<'tcx>,
     ) -> Expr {
@@ -273,10 +274,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // `()` given to JS is what a tuple is, an array (ADR 0020).
             () if ty.is_unit() => Expr::array(Vec::new()),
             // A parameter it names `#[rust_js::nullable(..)]`: its
-            // `None` is `null` (ADR 0275).
+            // `None` is `null`, and a `Some(..)` its value (ADR 0275).
             () if named(bindings::nullable_params(tcx, def_id)) => match value.kind {
                 js::ExprKind::Undefined => Expr::null(),
-                _ if value.is_constant() || value.is_made_here() => value,
+                _ if nulled || value.is_constant() => value,
                 _ => Expr::bin(Op::Coalesce, value, Expr::null()),
             },
             // A parameter it names `#[rust_js::lazy(..)]`, a function JS

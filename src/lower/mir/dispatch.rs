@@ -210,7 +210,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let made = self
                 .tcx
                 .normalize_erasing_regions(self.typing_env, ty::Unnormalized::new_wip(made));
-            awaited = self.mir_call_values(state, (def_id, generic_args), (vec![awaited], &[ty]), made, span, out)?;
+            awaited = self.mir_call_values(
+                state,
+                (def_id, generic_args),
+                (vec![awaited], &[ty], &[]),
+                made,
+                span,
+                out,
+            )?;
             ty = made;
         }
         // A pinned `&mut` to a future, `pin!(f).await`, is the promise it
@@ -261,7 +268,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let (pending, unwind) = (std::mem::take(&mut state.pending), state.unwind.take());
         let outer_copy_backs = std::mem::take(&mut state.copy_backs);
         let mut body = Vec::new();
-        let called = self.mir_call_values(state, (def_id, args), (values, &inputs), sig.output(), span, &mut body);
+        let called = self.mir_call_values(
+            state,
+            (def_id, args),
+            (values, &inputs, &[]),
+            sig.output(),
+            span,
+            &mut body,
+        );
         let value = called.and_then(|value| self.value_expr(value, span));
         let flushed = self.flush(state, &mut body);
         (state.pending, state.unwind) = (pending, unwind);
@@ -298,8 +312,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         out: &mut Vec<Stmt>,
     ) -> R<Value<'tcx>> {
         let strict = self.strictly_equal(state, callee.0, operands);
+        // Of a binding with a nullable parameter, each `Option` that's
+        // `null` or a value already, which it takes as it is (ADR 0275).
+        let nulled: Vec<bool> = match bindings::nullable_params(self.tcx, callee.0).is_empty() {
+            true => Vec::new(),
+            false => operands.iter().map(|o| self.nulled(state, o)).collect(),
+        };
         let values = self.take_operands(state, operands, out)?;
-        match self.mir_call_values(state, callee, (values, arg_tys), output, span, out)? {
+        match self.mir_call_values(state, callee, (values, arg_tys, &nulled), output, span, out)? {
             Value::Expr(e) if strict => Ok(Value::Expr(js::strict_equality(e))),
             value => Ok(value),
         }
@@ -335,7 +355,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         &mut self,
         state: &mut State<'_, 'tcx>,
         (def_id, generic_args): (rustc_span::def_id::DefId, ty::GenericArgsRef<'tcx>),
-        (mut values, arg_tys): (Vec<Value<'tcx>>, &[Ty<'tcx>]),
+        (mut values, arg_tys, nulled): (Vec<Value<'tcx>>, &[Ty<'tcx>], &[bool]),
         output: Ty<'tcx>,
         span: Span,
         out: &mut Vec<Stmt>,
@@ -351,7 +371,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
         };
         if given.is_empty() {
-            return self.mir_call_values_of(state, (def_id, generic_args), (values, arg_tys), output, span, out);
+            return self.mir_call_values_of(
+                state,
+                (def_id, generic_args),
+                (values, arg_tys, nulled),
+                output,
+                span,
+                out,
+            );
         }
         let subject = match given.iter().find_map(|&(_, when)| when) {
             Some(when) => Some(self.held_value(&mut values, 0, when.subject(), span, out)?),
@@ -362,7 +389,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let f = self.held_value(&mut values, at, "f", span, out)?;
             held.push((when, f, arg_tys[at]));
         }
-        let value = self.mir_call_values_of(state, (def_id, generic_args), (values, arg_tys), output, span, out)?;
+        let value = self.mir_call_values_of(
+            state,
+            (def_id, generic_args),
+            (values, arg_tys, nulled),
+            output,
+            span,
+            out,
+        )?;
         // What it gives, before what's dropped after it.
         let value = match value {
             Value::Expr(e) => Value::Expr(self.spill("value", e, out)),
@@ -392,7 +426,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         &mut self,
         state: &mut State<'_, 'tcx>,
         (def_id, generic_args): (rustc_span::def_id::DefId, ty::GenericArgsRef<'tcx>),
-        (values, arg_tys): (Vec<Value<'tcx>>, &[Ty<'tcx>]),
+        (values, arg_tys, nulled): (Vec<Value<'tcx>>, &[Ty<'tcx>], &[bool]),
         output: Ty<'tcx>,
         span: Span,
         out: &mut Vec<Stmt>,
@@ -446,7 +480,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 given.push(value);
                 tys.push(ty);
             }
-            return self.mir_call_values_of(state, (def_id, peeled), (given, &tys), output, span, out);
+            return self.mir_call_values_of(state, (def_id, peeled), (given, &tys, nulled), output, span, out);
         }
         // A constructor called, `f(Shape::Rect)`'s: the arrow making what it
         // makes (ADR 0125), applied.
@@ -619,7 +653,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // A binding: the JS function, method, property or operator it names
         // (ADRs 0019, 0020), given its arguments; the registry's symbol's read too (ADR 0634).
         if bindings::is_binding(tcx, def_id) || crate::lower::recognition::is_symbol_for_read(tcx, def_id) {
-            return self.mir_binding_call((def_id, generic_args), values, &arg_tys, span, out);
+            return self.mir_binding_call((def_id, generic_args), (values, &arg_tys, nulled), span, out);
         }
         // A function giving each variant its own name gives what it's given,
         // `section.as_str()` is `section` (ADR 0264).
