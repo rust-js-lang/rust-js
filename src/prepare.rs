@@ -648,6 +648,38 @@ fn mark_tested(test: &mut Expr, name: &str) {
     }
 }
 
+/// `chain ?? y`, of a chain of `||`, `x || z`: `x` where it's truthy, never
+/// `null` or `undefined`, else `z ?? y`. Of one that ends in `undefined`, a
+/// `filter` by truth's, or `null`, `x || y`; of one that ends in another
+/// literal, which `??` keeps, the chain, `a || "Memo"` (ADR 0635). Each
+/// `||` after the one before, `a || b || y`, as JS reads them.
+fn fallen_to(chain: &Expr, y: &Expr) -> Option<Expr> {
+    fn parts(e: &Expr, out: &mut Vec<Expr>) {
+        match &e.kind {
+            ExprKind::Binary(js::Op::Or, a, b) => {
+                parts(a, out);
+                parts(b, out);
+            }
+            _ => out.push(e.clone()),
+        }
+    }
+    let mut chained = Vec::new();
+    parts(chain, &mut chained);
+    match chained.pop()? {
+        _ if chained.is_empty() => return None,
+        last if matches!(
+            last.kind,
+            ExprKind::Undefined | ExprKind::GivenUndefined | ExprKind::Null
+        ) =>
+        {
+            parts(y, &mut chained)
+        }
+        last if last.is_constant() => chained.push(last),
+        _ => return None,
+    }
+    chained.into_iter().reduce(|a, b| Expr::bin(js::Op::Or, a, b))
+}
+
 fn try_catches(body: &mut Vec<Stmt>) {
     // `$try(() => f())` whose result is ignored, `let _ = f();`, is `try {
     // f(); } catch {}`: the call, what it threw dropped.
@@ -1123,6 +1155,13 @@ fn expr(e: &mut Expr) {
         | ExprKind::Stringed(a)
         | ExprKind::Handle(a)
         | ExprKind::DropArgument(_, _, a) => expr(a),
+        ExprKind::Binary(js::Op::Coalesce, a, b) => {
+            expr(a);
+            expr(b);
+            if let Some(chain) = fallen_to(a, b) {
+                *e = Expr { span: e.span, ..chain };
+            }
+        }
         ExprKind::Index(a, b) | ExprKind::OptionalIndex(a, b) | ExprKind::Binary(_, a, b) | ExprKind::Pair(a, b) => {
             expr(a);
             expr(b);
@@ -1138,8 +1177,10 @@ fn expr(e: &mut Expr) {
             expr(a);
             expr(b);
             expr(c);
-            // `a ? a : b` is `a || b`: `a` where it's truthy, else `b`.
-            if js::same_path(a, b) && !matches!(c.kind, ExprKind::Undefined) {
+            // `a ? a : b` is `a || b`: `a` where it's truthy, else `b`; and
+            // `a ? a : undefined`, `a || undefined`, which a fallback after
+            // makes `a || y` (`fallen_to`).
+            if js::same_path(a, b) {
                 let (then, els) = (
                     std::mem::replace(&mut **b, Expr::undefined()),
                     std::mem::replace(&mut **c, Expr::undefined()),

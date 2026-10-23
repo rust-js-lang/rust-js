@@ -416,17 +416,6 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
             };
         }
     });
-    // What `filter` keeps, then `or` or `unwrap_or`: `x || y`.
-    js::each_expr_mut(body, &mut |e| {
-        if let ExprKind::Binary(Op::Coalesce, kept, _) = &e.kind
-            && truthy_or_undefined(kept)
-        {
-            let ExprKind::Binary(_, kept, otherwise) = std::mem::replace(&mut e.kind, ExprKind::Undefined) else {
-                unreachable!("matched")
-            };
-            e.kind = ExprKind::Binary(Op::Or, Box::new(truth_of(*kept)), otherwise);
-        }
-    });
     js::statement_lists(body, &mut forwarded_values);
     unread_maps(body);
     // An array's `$iter` an adapter alone steps, left lazy, as what its

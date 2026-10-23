@@ -1046,6 +1046,45 @@ export function isAdult(p) {
 - rustc won't let you use an `Option<u32>` as a `u32`: you can't forget the
   missing case.
 
+JS's `||` falls back on any falsy value, `""` and `0` too, where `??` falls
+back on `null` and `undefined` alone. In Rust, say which values you keep,
+those that are truthy, `filter(|v| js::truthy(Some(*v)))`, then the
+fallback, `or_else`, `or` or `unwrap_or`: that's `||`.
+
+```js
+const nameOf = (type) => type.displayName || type.name || null;
+```
+
+```rust
+use js::Unknown;
+
+#[rust_js::nullable]
+pub fn name_of(ty: &Unknown) -> Option<&'static Unknown> {
+    js::get(ty, "displayName")
+        .filter(|v| js::truthy(Some(*v)))
+        .or_else(|| js::get(ty, "name"))
+        .filter(|v| js::truthy(Some(*v)))
+}
+
+pub fn label(text: Option<&str>) -> &str {
+    text.filter(|t| !t.is_empty()).unwrap_or("untitled")
+}
+```
+
+```js
+export function nameOf(ty) {
+  return ty.displayName || ty.name || null;
+}
+
+export function label(text) {
+  return text || "untitled";
+}
+```
+
+- Only a `filter` by the truth of what it holds is `||`: any other test,
+  `filter(|n| *n > 0)`, is a conditional, `n != null && n > 0 ? n : 1`.
+- Text is falsy only where it's empty, so `!t.is_empty()` is its truth.
+
 A value JS gives you that may be `null` is an `Option` too:
 [JavaScript types](../interop/types.md).
 

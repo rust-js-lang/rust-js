@@ -154,10 +154,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 if self.boxed_payload(generic_args.type_at(0)) {
                     let default = self.some(default);
                     self.some_value(Expr::bin(Op::Coalesce, option, default))
-                } else if let Some((kept, value)) = filtered(&option) {
-                    Expr::cond(kept, value, default)
                 } else {
-                    Expr::bin(Op::Coalesce, option, default)
+                    or_fallback(option, default)
                 }
             }
             // `o.map(|x| value)` is `o != null ? value : undefined`, with the
@@ -206,8 +204,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     false => filtered(&option),
                     true => None,
                 };
-                let (option, present) = match fused {
-                    Some((kept, value)) => (value, kept),
+                // A `filter`'s test is what it keeps, never its presence alone:
+                // `!!s` fails an empty string.
+                let (option, present, presence) = match fused {
+                    Some((kept, value)) => (value, kept, false),
                     None => {
                         // A property of what's in it, `o.map(|e| e.id)`, is `o?.id`,
                         // which reads `o` once, as a `const` of it would.
@@ -228,7 +228,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             _ => self.spill(&base, option, out),
                         };
                         let present = self.present(option.clone(), generic_args.type_at(0));
-                        (option, present)
+                        (option, present, true)
                     }
                 };
                 // Of a generic `T`, the closure gets what's inside (ADR 0051).
@@ -272,7 +272,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 };
                 // Of an `Option` never falsy, `!!o`, as of `o != null`: `o?.m(x)`
                 // (ADR 0298); else its test as it is.
-                let tested = js::presence_of(&present).map(|o| Expr::bin(Op::LooseNe, o.clone(), Expr::null()));
+                let tested = (js::presence_of(&present).filter(|_| presence))
+                    .map(|o| Expr::bin(Op::LooseNe, o.clone(), Expr::null()));
                 match Expr::cond(tested.unwrap_or_else(|| present.clone()), value, Expr::undefined()) {
                     Expr {
                         kind: js::ExprKind::Cond(_, value, none),
@@ -546,6 +547,14 @@ fn truthy_of(test: &Expr) -> Option<&Expr> {
 /// conditional of another `Option`, `c ? maybe() : undefined`, isn't one:
 /// its `maybe()` may be `None`.
 pub(in crate::lower) fn filtered(option: &Expr) -> Option<(Expr, Expr)> {
+    // A `filter` by its truth's, `x || undefined` (ADR 0635): `x`, where
+    // `!!x`, a `bool`, as what's skipped where it's `false` reads it.
+    if let js::ExprKind::Binary(Op::Or, value, none) = &option.kind
+        && let (js::ExprKind::Var(_), js::ExprKind::Undefined) = (&value.kind, &none.kind)
+    {
+        let truth = Expr::unary(js::UnaryOp::Not, Expr::unary(js::UnaryOp::Not, (**value).clone()));
+        return Some((truth, (**value).clone()));
+    }
     let js::ExprKind::Cond(test, value, none) = &option.kind else {
         return None;
     };
@@ -563,6 +572,17 @@ pub(in crate::lower) fn filtered(option: &Expr) -> Option<(Expr, Expr)> {
     };
     let tests_it = matches!(&tested.kind, js::ExprKind::Var(v) if v == name);
     tests_it.then(|| ((**test).clone(), (**value).clone()))
+}
+
+/// What `option`'s fallback gives, `unwrap_or`'s, `or`'s and the rest's,
+/// where it's `None`: `option ?? fallback`; of a `filter`'s, its test and
+/// value in place of a `const` of it, `x != null && keep ? x : d`
+/// (`filtered`). A `Some` not boxed, or one of the same box.
+pub(in crate::lower) fn or_fallback(option: Expr, fallback: Expr) -> Expr {
+    match filtered(&option) {
+        Some((kept, value)) => Expr::cond(kept, value, fallback),
+        None => Expr::bin(Op::Coalesce, option, fallback),
+    }
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {

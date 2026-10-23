@@ -1033,3 +1033,138 @@ pub fn labeled(label: Option<Label>) -> bool {
   const lib = await import(join(dir, "mir.js"));
   expect([lib.width([{ w: 3 }]), lib.width({ w: 4 }), lib.width(undefined), lib.labeled(""), lib.labeled(undefined)]).toEqual([3, 4, 0, true, false]);
 });
+
+// ADR 0635: an `Option` filtered by the truth of what it holds, then a
+// fallback, is JS's `||` of values, as React writes its names: `x || y`
+// gives `x` where it's truthy, else `y`, and the filtered `Option` gives `x`
+// where `js::truthy(x)`, else what's after. A predicate that's anything
+// else is its own test.
+test("a filter by truth then a fallback is JS's `||`", async () => {
+  const dir = fixture("truthy-or");
+  writeFileSync(join(dir, "lib.rs"), `use js::Unknown;
+
+#[rust_js::nullable]
+pub fn display_name(t: &Unknown) -> Option<&'static Unknown> {
+    js::get(t, "displayName")
+        .filter(|v| js::truthy(Some(*v)))
+        .or_else(|| js::get(t, "name"))
+        .filter(|v| js::truthy(Some(*v)))
+}
+
+pub fn function_name(inner: &Unknown) -> String {
+    js::get(inner, "displayName")
+        .filter(|v| js::truthy(Some(*v)))
+        .or_else(|| js::get(inner, "name"))
+        .filter(|v| js::truthy(Some(*v)))
+        .map(|v| unsafe { js::cast::<String>(Some(v)) })
+        .unwrap_or_default()
+}
+
+pub fn component_name(t: Option<&Unknown>) -> Option<String> {
+    t.and_then(|t| js::get(t, "displayName")).map(|v| unsafe { js::cast::<String>(Some(v)) })
+}
+
+pub fn memo_name(t: &Unknown) -> String {
+    component_name(js::get(t, "type"))
+        .filter(|name| js::truthy(Some(name)))
+        .unwrap_or_else(|| "Memo".to_string())
+}
+
+pub fn either(a: Option<&'static Unknown>, b: Option<&'static Unknown>) -> Option<&'static Unknown> {
+    a.filter(|v| js::truthy(Some(*v))).or(b)
+}
+
+pub fn either_or(
+    a: Option<&'static Unknown>,
+    b: Option<&'static Unknown>,
+    c: Option<&'static Unknown>,
+) -> Option<&'static Unknown> {
+    a.filter(|v| js::truthy(Some(*v))).or(b).or(c)
+}
+
+pub fn given(a: Option<&'static Unknown>, b: &'static Unknown) -> &'static Unknown {
+    a.filter(|&v| js::truthy(Some(v))).unwrap_or(b)
+}
+
+pub fn first(
+    a: Option<&'static Unknown>,
+    b: Option<&'static Unknown>,
+    c: Option<&'static Unknown>,
+) -> Option<&'static Unknown> {
+    a.filter(|v| js::truthy(Some(*v)))
+        .or_else(|| b.filter(|v| js::truthy(Some(*v))))
+        .or_else(|| c)
+}
+
+pub fn falsy_or(a: Option<&'static Unknown>, b: Option<&'static Unknown>) -> Option<&'static Unknown> {
+    a.filter(|v| !js::truthy(Some(*v))).or(b)
+}
+
+#[rust_js::nullable]
+pub fn kept(a: Option<&'static Unknown>) -> Option<&'static Unknown> {
+    a.filter(|v| js::truthy(Some(*v)))
+}
+
+pub fn shout(a: Option<&'static str>) -> Option<String> {
+    a.filter(|s| js::truthy(Some(*s))).map(|s| s.to_uppercase())
+}
+
+pub fn named(a: Option<&'static Unknown>) -> Option<&'static Unknown> {
+    a.filter(|v| js::truthy(js::get(v, "name")))
+}
+
+#[rust_js::nullable]
+pub fn label(a: Option<&'static str>) -> Option<&'static str> {
+    a.filter(|s| js::truthy(Some(*s))).or(Some("Memo"))
+}
+
+fn logged(log: &mut Vec<u32>, n: u32) -> Option<u32> {
+    log.push(n);
+    if n > 1 { Some(n) } else { None }
+}
+
+pub fn ordered() -> Vec<u32> {
+    let mut log = Vec::new();
+    let found = logged(&mut log, 1).or(logged(&mut log, 2));
+    log.push(found.unwrap_or(0));
+    log
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("export function displayName(t) {\n  return t.displayName || t.name || null;\n}");
+  expect(js).toContain('export function functionName(inner) {\n  return inner.displayName || inner.name || "";\n}');
+  expect(js).toContain('export function memoName(t) {\n  return componentName(t.type) || "Memo";\n}');
+  expect(js).toContain("export function either(a, b) {\n  return a || b;\n}");
+  expect(js).toContain("export function eitherOr(a, b, c) {\n  return (a || b) ?? c;\n}");
+  expect(js).toContain("export function given(a, b) {\n  return a || b;\n}");
+  expect(js).toContain("export function first(a, b, c) {\n  return a || b || c;\n}");
+  expect(js).toContain("export function kept(a) {\n  return a || null;\n}");
+  expect(js).toContain('export function label(a) {\n  return a || "Memo";\n}');
+  expect(js).toContain("export function shout(a) {\n  return a ? a.toUpperCase() : undefined;\n}");
+  // A predicate that isn't the truth of what it holds is its own test.
+  expect(js).toContain("export function falsyOr(a, b) {\n  return a != null && !a ? a : b;\n}");
+  expect(js).toContain("export function named(a) {\n  return a != null && a.name ? a : undefined;\n}");
+  const lib = await import(join(dir, "lib.js"));
+  const object = { name: "object" };
+  const values = ["", 0, undefined, null, "n", object];
+  for (const x of values) {
+    for (const y of values) {
+      expect(lib.displayName({ displayName: x, name: y })).toEqual(x || y || null);
+      expect(lib.functionName({ displayName: x, name: y })).toEqual(x || y || "");
+      expect(lib.memoName({ type: { displayName: x } })).toEqual(x || "Memo");
+      expect(lib.either(x ?? undefined, y ?? undefined)).toEqual(x || (y ?? undefined));
+      expect(lib.eitherOr(x ?? undefined, y ?? undefined, object)).toEqual(x || (y ?? object));
+      expect(lib.given(x ?? undefined, y)).toEqual(x || y);
+      expect(lib.first(x ?? undefined, y ?? undefined, object)).toEqual(x || y || object);
+      expect(lib.falsyOr(x ?? undefined, y ?? undefined)).toEqual(x != null && !x ? x : (y ?? undefined));
+      expect(lib.kept(x ?? undefined)).toEqual(x || null);
+      expect(lib.named(x ?? undefined)).toEqual(x != null && (x as { name?: string }).name ? x : undefined);
+    }
+  }
+  expect(lib.memoName({})).toEqual("Memo");
+  expect(["", "ab", undefined].map(lib.shout)).toEqual([undefined, "AB", undefined]);
+  expect([lib.label(""), lib.label("x"), lib.label(undefined)]).toEqual(["Memo", "x", "Memo"]);
+  // `or`'s `b` is worked out after its `Option`, as Rust does both first.
+  expect(lib.ordered()).toEqual([1, 2, 2]);
+});

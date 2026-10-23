@@ -335,7 +335,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0263 next/router's withRouter, and a flattened struct taken apart](decisions/0263-with-router.md)
 - [0264 A variant's own name is the variant](decisions/0264-enum-own-names.md)
 - [0265 A component a thread_local! holds takes props of any lifetime](decisions/0265-held-component-lifetimes.md)
-- [0266 Text kept where it isn't empty, or another, is ||](decisions/0266-text-or.md)
+- [0266 Text kept where it isn't empty, or another, is ||](decisions/0266-text-or.md) *(amended by 0635: preparation writes the `||`, of every fallback)*
 - [0267 js::on_load! is what a module runs when it's loaded](decisions/0267-on-load.md)
 - [0268 An element's type, key and props may be JS values of any shape](decisions/0268-unknown-elements.md)
 - [0269 What every global scope has is called bare](decisions/0269-global-scope.md)
@@ -566,6 +566,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0632 A JS string's `length` is below `u32::MAX`, and a counter below it doesn't wrap](decisions/0632-a-js-strings-length-is-below-u32-max.md)
 - [0633 A binding named through a module is read through it](decisions/0633-a-binding-named-through-a-module-is-read-through-it.md)
 - [0634 A registered symbol is a `const`, and a `match` of them a `switch`](decisions/0634-a-registered-symbol-is-a-const.md)
+- [0635 A `filter` by truth, then a fallback, is `||`](decisions/0635-a-filter-by-truth-then-a-fallback-is-or.md)
 - [0623 A copy std makes of a `Copy` value is a copy](decisions/0623-a-copy-std-makes-is-a-copy.md)
 - [0436 Every `dyn` that's a pair keeps its value's drop, `dyn Send` too](decisions/0436-every-dyn-keeps-its-drop.md)
 - [0437 A scope's drops on a panic are one `try { .. } finally { .. }`](decisions/0437-a-scopes-drops-are-one-finally.md)

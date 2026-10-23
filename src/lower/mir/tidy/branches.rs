@@ -933,34 +933,6 @@ pub(super) fn guarded_chain(stmt: &Stmt, guard: &Expr) -> bool {
     }
 }
 
-/// Whether `e` is truthy or `undefined`, no other falsy value: `x ? x :
-/// undefined`, what `filter` keeps of `x`, and `a || b` and `a ?? b` of
-/// such.
-pub(super) fn truthy_or_undefined(e: &Expr) -> bool {
-    match &e.kind {
-        ExprKind::Cond(test, yes, no) => matches!(no.kind, ExprKind::Undefined) && js::same_path(&test.tested(), yes),
-        ExprKind::Binary(Op::Or, _, b) => truthy_or_undefined(b),
-        ExprKind::Binary(Op::Coalesce, a, b) => truthy_or_undefined(a) && truthy_or_undefined(b),
-        _ => false,
-    }
-}
-
-/// `e`, `truthy_or_undefined`, where only its truthy values are read, as
-/// `||`'s first operand: `x ? x : undefined` is `x`, and `a ?? b` `a || b`.
-pub(super) fn truth_of(e: Expr) -> Expr {
-    let span = e.span;
-    match e.kind {
-        ExprKind::Cond(_, yes, _) => *yes,
-        ExprKind::Binary(Op::Or, a, b) => Expr::bin(Op::Or, *a, truth_of(*b)),
-        ExprKind::Binary(Op::Coalesce, a, b) => Expr::bin(Op::Or, truth_of(*a), truth_of(*b)),
-        kind => Expr {
-            reads: false,
-            kind,
-            span,
-        },
-    }
-}
-
 /// JS's own methods, of an array, an iterator, a map, a set or a string,
 /// whose answer is a `bool`, as rust-js writes them of std's.
 const BOOLEAN_METHODS: &[&str] = &["some", "every", "includes", "has", "startsWith", "endsWith"];
@@ -1064,7 +1036,20 @@ pub(super) fn returned_in_branches(stmts: &mut Vec<Stmt>, result: &str) {
     }
 }
 
-/// `const h = x ? x : undefined; if (h == null) { exit }`, a `let … else`
+/// What a `filter` by truth keeps, of `x`: `x || undefined`, as lowering
+/// writes it (ADR 0635), or `x ? x : undefined`, a test tidied to `x`'s
+/// truth, `x != null && x !== ""` of text's.
+fn kept_by_truth(e: &Expr) -> Option<&Expr> {
+    match &e.kind {
+        ExprKind::Binary(Op::Or, x, no) if matches!(no.kind, ExprKind::Undefined) => Some(x),
+        ExprKind::Cond(test, x, no) if matches!(no.kind, ExprKind::Undefined) && js::same_path(&test.tested(), x) => {
+            Some(x)
+        }
+        _ => None,
+    }
+}
+
+/// `const h = x || undefined; if (h == null) { exit }`, a `let … else`
 /// of what `filter` keeps: `if (!x) { exit }`, `h` and
 /// what binds it then `x`, which it is; and `if (h != null) { s }`, `h`
 /// read there alone, `if (x) { s }`.
@@ -1076,17 +1061,10 @@ pub(super) fn filtered_guards(stmts: &mut Vec<Stmt>, changing: &HashSet<String>)
         let StmtKind::Const(h, value) = &made.kind else {
             continue;
         };
-        let ExprKind::Cond(test, yes, no) = &value.kind else {
+        let Some(ExprKind::Var(x)) = kept_by_truth(value).map(|x| &x.kind) else {
             continue;
         };
-        let test = test.tested();
-        let ExprKind::Var(x) = &test.kind else {
-            continue;
-        };
-        if changing.contains(x)
-            || !matches!(&yes.kind, ExprKind::Var(y) if y == x)
-            || !matches!(no.kind, ExprKind::Undefined)
-        {
+        if changing.contains(x) {
             continue;
         }
         let StmtKind::If(guard, then, otherwise) = &checked.kind else {

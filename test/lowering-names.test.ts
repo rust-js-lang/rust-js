@@ -1286,7 +1286,7 @@ pub fn shown(infos: &[Info]) -> Vec<String> {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
   const js = readFileSync(join(dir, "mir.js"), "utf8");
-  expect(js).toContain("const caption = info.caption ? info.caption : undefined;");
+  expect(js).toContain("const caption = info.caption || undefined;");
   const lib = await import(join(dir, "mir.js"));
   expect(lib.shown([{ caption: "a" }, { caption: "" }, {}])).toEqual(["<a>", "", ""]);
 });

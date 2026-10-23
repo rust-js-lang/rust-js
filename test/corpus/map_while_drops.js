@@ -40,7 +40,7 @@ function mapped() {
   console.log(`[${nested.map((item) => (item == null ? "None" : `Some(${item})`)).join(", ")}]`);
   const words = $lazyMapWhile(
     $iter("a b  c".split(" ")),
-    (w) => (w ? w : undefined),
+    (w) => w || undefined,
     (item) => item != null,
   ).toArray();
   console.log(`[${words.map((item) => $debugStr(item)).join(", ")}]`);

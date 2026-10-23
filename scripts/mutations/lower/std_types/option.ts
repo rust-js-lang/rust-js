@@ -45,6 +45,22 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
+    name: "filter-truth-map-unfused",
+    breaks: "`a.filter(|s| js::truthy(Some(*s))).map(f)` keeps `a || undefined` in a `const option`, not `a ? f(a) : undefined`",
+    file: "src/lower/std_types/option.rs",
+    find: "        return Some((truth, (**value).clone()));\n",
+    replace: "        return None;\n",
+    tests: ["test/lowering-options.test.ts", "-t", "filter by truth then a fallback"],
+  },
+  {
+    name: "filter-truth-map-chained",
+    breaks: "`a.filter(|s| js::truthy(Some(*s))).map(|s| s.to_uppercase())` is `a?.toUpperCase()`, its test read as `a`'s presence, which gives `\"\"` of an empty string",
+    file: "src/lower/std_types/option.rs",
+    find: "                let tested = (js::presence_of(&present).filter(|_| presence))\n",
+    replace: "                let tested = (js::presence_of(&present).filter(|_| presence || true))\n",
+    tests: ["test/lowering-options.test.ts", "-t", "filter by truth then a fallback"],
+  },
+  {
     name: "filter-map-unfused",
     breaks: "`excerpt.filter(..).map(..)` keeps the filter's `Option` in a `const`, which pulls what JSX reads before it out of the JSX",
     file: "src/lower/std_types/option.rs",
@@ -56,8 +72,8 @@ export const mutations: Mutation[] = [
     name: "filter-unwrap-or-unfused",
     breaks: "`n.filter(|n| *n > 0).unwrap_or(1)` is `(n != null && n > 0 ? n : undefined) ?? 1`, not `n != null && n > 0 ? n : 1`",
     file: "src/lower/std_types/option.rs",
-    find: "                } else if let Some((kept, value)) = filtered(&option) {\n",
-    replace: "                } else if let Some((kept, value)) = None::<(Expr, Expr)> {\n",
+    find: "    match filtered(&option) {\n        Some((kept, value)) => Expr::cond(kept, value, fallback),\n",
+    replace: "    match None::<(Expr, Expr)> {\n        Some((kept, value)) => Expr::cond(kept, value, fallback),\n",
     tests: ["test/jsx-children.test.ts", "-t", "filtered child, in place"],
   },
   {
@@ -192,7 +208,7 @@ export const mutations: Mutation[] = [
     "name": "truthy-option-map-unchained",
     "breaks": "`map` of an `Option` never falsy is `o ? o.test(x) : undefined`, not `o?.test(x)`",
     "file": "src/lower/std_types/option.rs",
-    "find": "                let tested = js::presence_of(&present).map(|o| Expr::bin(Op::LooseNe, o.clone(), Expr::null()));\n",
+    "find": "                let tested = (js::presence_of(&present).filter(|_| presence))\n                    .map(|o| Expr::bin(Op::LooseNe, o.clone(), Expr::null()));\n",
     "replace": "                let tested: Option<Expr> = None;\n",
     "tests": ["test/lowering-options.test.ts", "-t", "an option's method call ends where it's None"]
   },

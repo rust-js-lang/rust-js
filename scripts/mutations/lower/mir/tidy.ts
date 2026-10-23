@@ -85,14 +85,6 @@ export const mutations: Mutation[] = [
     tests: ["test/bindings.test.ts", "-t", "skips what's falsy"],
   },
   {
-    name: "mir-tidy-filter-or-kept",
-    breaks: "`(x ? x : undefined) ?? y` stays, not `x || y`",
-    file: "src/lower/mir/tidy.rs",
-    find: "            && truthy_or_undefined(kept)\n",
-    replace: "            && false\n",
-    tests: ["test/lowering-branches.test.ts", "-t", "De Morgan"],
-  },
-  {
     name: "mir-tidy-lets-first",
     breaks: "each `let` stays declared first, not where it's first named",
     file: "src/lower/mir/tidy.rs",
