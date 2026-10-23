@@ -197,3 +197,13 @@ What's appended to a text reads no text: `v4.push_str(v4.clone())` in
 nested loops, seed 1311's, doubled a string 64 times, and the program ran
 until its runner ran out of memory, a fuzz job killed with nothing said,
 twice. A test holds it of 2000 seeds' programs.
+
+## Amended (2026-10-23)
+
+A chain's source may be the crate's own iterator, `Count`, whose `fold`
+and `nth` its impl writes and which print they're called. Its end may be
+`max_by_key` or `min_by_key`, whose key may `note`. Each found a wrong
+answer by hand that the generator's chains couldn't reach (#162, #179):
+what std's consumers call of an iterator, and when a consumer's closure
+runs between its steps.
+
