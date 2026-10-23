@@ -1163,6 +1163,21 @@ pub fn same(value: &Unknown, other: &Unknown) -> bool {
     }
     false
 }
+
+pub fn text_of(value: &Unknown) -> String {
+    let text: String;
+    if let Kind::String(own) = js::classify(value) {
+        text = own.to_string();
+    } else if let Kind::Object(object) = js::classify(value)
+        && let Some(inner) = js::get(object, "url")
+        && let Kind::String(url) = js::classify(inner)
+    {
+        text = url.to_string();
+    } else {
+        panic!("no text");
+    }
+    text
+}
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
@@ -1204,4 +1219,17 @@ pub fn same(value: &Unknown, other: &Unknown) -> bool {
   expect(lib.hasUrl(counted("c", "/api"))).toBe(true);
   expect(lib.same(counted("d", "/x"), counted("e", "/x"))).toBe(true);
   expect(reads).toEqual(["a.request", "a.url", "b.request", "b.url", "c.request", "c.url", "d.url", "e.url"]);
+  // Where what fails either test goes on alike, the read first, where the
+  // first holds, and one test of it: no label to reach the `else`.
+  expect(js).toContain(`  } else {
+    const inner = typeof value === "object" && !Array.isArray(value) ? value.url : undefined;
+    if (typeof inner === "string") {
+      text = inner;
+    } else {`);
+  expect(js).not.toContain("break");
+  reads.length = 0;
+  expect([lib.textOf("own"), lib.textOf(counted("f", "/f"))]).toEqual(["own", "/f"]);
+  expect(() => lib.textOf(counted("g", 7))).toThrow("no text");
+  expect(() => lib.textOf(["x"])).toThrow("no text");
+  expect(reads).toEqual(["f.url", "g.url"]);
 });

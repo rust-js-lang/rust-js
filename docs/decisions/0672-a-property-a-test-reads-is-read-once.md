@@ -113,16 +113,38 @@ nothing, `let Some(Kind::String(_)) = js::get(request, "url")..`, is still
   them binds a binding's read in a chain whose later test and body both
   read it. The guide's `interop/bindings.md` says it.
 - React's `getIODescription` reads `request.url` and `response.url` once.
-- **A chain whose failures share an `else` reaches it by a label** where
-  its read is bound: react.dev's `TerminalBlock`, `else if let
-  ReactNodeKind::Element(element) = kind_of(&children) && let Some(inner)
-  = js::get(element.props(), "children") && let Kind::String(text) = ..`,
-  was `else if (isValidElement(children) && typeof children.props.children
-  === "string") { const inner = children.props.children; ..}`, two reads,
-  and is `if (isValidElement(children)) { const inner =
-  children.props.children; if (typeof inner === "string") { ..; break bb27;
-  } } throw ..` in a block, one. React's own reads the property twice; the
-  port's Rust reads it once. `test/jsx-types.test.ts` holds it.
+- **A chain whose failures share an `else` reads it first**, where its
+  `if` would otherwise leave for a label: `if (a) { const x = e; if (b) {
+  s; break l; } }`, `b` a test of `x` alone that holds only of a value,
+  is `const x = a ? e : undefined; if (b) { s; break l; }`, one test, whose
+  failures are one `else` (`logicals::read_once_first`). `e` is read once,
+  where `a` holds, as it was, and `b` of `undefined` fails, as the chain
+  did. react.dev's `TerminalBlock`, `else if let ReactNodeKind::Element(element)
+  = kind_of(&children) && let Some(inner) = js::get(element.props(),
+  "children") && let Kind::String(text) = ..`, was `else if
+  (isValidElement(children) && typeof children.props.children === "string")
+  { const inner = children.props.children; ..}`, two reads, and is
+
+  ```js
+  } else {
+    const inner = isValidElement(children) ? children.props.children : undefined;
+    if (typeof inner === "string") {
+      message = inner;
+    } else {
+      throw new Error("Expected plain text.");
+    }
+  }
+  ```
+
+  one read, no label. Chosen over `typeof (inner = children.props.children)`
+  in the `else if`, which reads as Rust's let chain does but is an
+  assignment in a test, which ESLint's `no-cond-assign` refuses and a reader
+  takes for a typo; and over a label, `bb27: { .. break bb27; }`, which no
+  person writes. A chain that returns, `getIODescription`'s, has no label
+  to reach, and stays two `if`s. React's own reads the property twice;
+  the port's Rust reads it once. `test/jsx-types.test.ts` and
+  `test/lowering-bindings.test.ts` hold it, with the mutations
+  `read-once-not-first` and `read-once-first-of-any-chain`.
 
 ## What holds it
 

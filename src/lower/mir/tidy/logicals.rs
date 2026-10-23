@@ -152,13 +152,7 @@ pub(super) fn bound_into(
     getters: &[js::Span],
     again: &dyn Fn(usize, &str) -> usize,
 ) -> Option<Expr> {
-    let getter = |e: &Expr| {
-        matches!(
-            e.kind,
-            ExprKind::Member(..) | ExprKind::OptionalMember(..) | ExprKind::Index(..)
-        ) && !e.span.is_none()
-            && (getters.iter()).any(|at| at.lo <= e.span.lo && e.span.hi <= at.hi)
-    };
+    let getter = |e: &Expr| reads_a_getter(e, getters);
     (bound.iter().enumerate().rev()).try_fold(test.clone(), |test, (at, stmt)| match &stmt.kind {
         StmtKind::Const(name, value) if value.reads_same() => {
             let tested = js::mentions_in(&[StmtKind::Expr(test.clone()).at(js::Span::NONE)], name);
@@ -171,16 +165,28 @@ pub(super) fn bound_into(
     })
 }
 
+/// Whether `e` is a binding's read of a property, of `getters`, where the
+/// program calls one, which a getter may be (ADR 0672).
+fn reads_a_getter(e: &Expr, getters: &[js::Span]) -> bool {
+    matches!(
+        e.kind,
+        ExprKind::Member(..) | ExprKind::OptionalMember(..) | ExprKind::Index(..)
+    ) && !e.span.is_none()
+        && (getters.iter()).any(|at| at.lo <= e.span.lo && e.span.hi <= at.hi)
+}
+
 /// `if (a) { if (b) { s } }`, the tests of one condition the program wrote,
 /// `a && b`'s: `if (a && b) { s }`. What's bound between them, a read that
 /// does nothing, comes first in `s`, and `b` reads its value, as
 /// `if let`s chained with `&&` read; one only `b` read, `const captured =
 /// child.type` a closure took, is gone: `b` reads it, once. Not where that
 /// would read a property twice (`bound_into`): `const url = request.url;
-/// if (typeof url === "string") { return url; }` stays.
-pub(super) fn and_tests(stmts: &mut [Stmt], conditions: &[(js::Span, js::Span)], getters: &[js::Span]) {
+/// if (typeof url === "string") { return url; }` stays, but where its `s`
+/// breaks out to a label (`read_once_first`).
+pub(super) fn and_tests(stmts: &mut Vec<Stmt>, conditions: &[(js::Span, js::Span)], getters: &[js::Span]) {
     let within = |c: &js::Span, s: js::Span| !s.is_none() && c.lo <= s.lo && s.hi <= c.hi;
-    for stmt in stmts.iter_mut() {
+    let mut first_reads = Vec::new();
+    for (i, stmt) in stmts.iter_mut().enumerate() {
         let span = stmt.span;
         let StmtKind::If(test, then, None) = &mut stmt.kind else {
             continue;
@@ -195,6 +201,7 @@ pub(super) fn and_tests(stmts: &mut [Stmt], conditions: &[(js::Span, js::Span)],
         }
         let again = |at: usize, name: &str| js::mentions_in(body, name) + js::mentions_in(&bound[at + 1..], name);
         let Some(second) = bound_into(second, bound, getters, &again) else {
+            first_reads.extend(read_once_first(stmt, getters).map(|read| (i, read)));
             continue;
         };
         let bound = bound.len();
@@ -215,6 +222,54 @@ pub(super) fn and_tests(stmts: &mut [Stmt], conditions: &[(js::Span, js::Span)],
                 then.remove(at);
             }
         }
+    }
+    // Its name is its own in the function, as each MIR local's is, so in
+    // this list too (`contracts::DECLARED_ONCE`).
+    for (i, read) in first_reads.into_iter().rev() {
+        stmts.insert(i, read);
+    }
+}
+
+/// Of `if (a) { const x = e; if (b) { s; break l; } }`, a chain whose `e`
+/// is a property a getter may be, read once (`bound_into`), and whose `s`
+/// leaves for a label, where what fails either test goes on alike: `e` read
+/// first where `a` holds, `const x = a ? e : undefined;`, and the `if` left
+/// `if (b) { s; break l; }`, one test, so its failures are one `else`, no
+/// label to reach it, as a person reads a value once to test it. Where `b`
+/// tests `x` alone, does nothing, and holds only of a value, `typeof x ===
+/// "string"`, so of `undefined`, where `a` doesn't hold, it fails, as the
+/// chain did (ADR 0672). The `const` to put before `stmt`, now that `if`.
+fn read_once_first(stmt: &mut Stmt, getters: &[js::Span]) -> Option<Stmt> {
+    let StmtKind::If(test, then, None) = &stmt.kind else {
+        return None;
+    };
+    let [read, inner] = then.as_slice() else { return None };
+    let (StmtKind::Const(name, value), StmtKind::If(second, body, None)) = (&read.kind, &inner.kind) else {
+        return None;
+    };
+    let mut others = false;
+    second.visit_vars(&mut |v| others |= v != name);
+    let defined = Expr::bin(Op::LooseNe, Expr::var(name), Expr::null());
+    let mut tests = Vec::new();
+    and_parts(second, &mut tests);
+    let breaks = matches!(body.last().map(|s| &s.kind), Some(StmtKind::Break(Some(_))));
+    let getter = reads_a_getter(value, getters);
+    if !getter || others || second.has_effects() || !breaks || !tests.iter().any(|t| implies(t, &defined)) {
+        return None;
+    }
+    let first = StmtKind::Const(name.clone(), Expr::cond(test.clone(), value.clone(), Expr::undefined())).at(read.span);
+    stmt.kind = inner.kind.clone();
+    Some(first)
+}
+
+/// Each test `a && b && c` is of, in order.
+fn and_parts<'e>(test: &'e Expr, parts: &mut Vec<&'e Expr>) {
+    match &test.kind {
+        ExprKind::Binary(Op::And, a, b) => {
+            and_parts(a, parts);
+            and_parts(b, parts);
+        }
+        _ => parts.push(test),
     }
 }
 

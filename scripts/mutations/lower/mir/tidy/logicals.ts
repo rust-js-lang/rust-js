@@ -62,9 +62,35 @@ export const mutations: Mutation[] = [
     name: "bound-rust-data-a-getter",
     breaks: "Rust's data a chain binds and tests, a field, `const c = node.count`, or a tuple's item, `value[0]`, isn't read in the test, `node.count != null && node.count > 1`, as if a getter could read it",
     file: "src/lower/mir/tidy/logicals.rs",
-    find: "            && (getters.iter()).any(|at| at.lo <= e.span.lo && e.span.hi <= at.hi)\n",
-    replace: "            || true\n",
+    find: "        && (getters.iter()).any(|at| at.lo <= e.span.lo && e.span.hi <= at.hi)\n",
+    replace: "        || true\n",
     tests: ["test/lowering-loops.test.ts", "-t", "if-let chains and loops from MIR read as written"],
   },
 
+  {
+    name: "read-once-not-first",
+    breaks: "a chain whose property is read once, its failures alike, reaches its `else` by a label, `bb27: { .. break bb27; }`, not `const inner = isValidElement(children) ? children.props.children : undefined;`",
+    file: "src/lower/mir/tidy/logicals.rs",
+    find: "            first_reads.extend(read_once_first(stmt, getters).map(|read| (i, read)));\n",
+    replace: "            first_reads.extend(read_once_first(stmt, getters).map(|read| (i, read)).filter(|_| false));\n",
+    tests: ["test/lowering-bindings.test.ts", "test/jsx-types.test.ts", "-t", "a property a let chain tests and binds is read once|let chain as a person"],
+  },
+  {
+    name: "read-once-first-of-any-chain",
+    breaks: "a chain whose property is read once and that returns, with no label to reach, reads it first anyway, `const url = request != null && .. ? request.url : undefined`",
+    file: "src/lower/mir/tidy/logicals.rs",
+    find: "    if !getter || others || second.has_effects() || !breaks || !tests.iter().any(|t| implies(t, &defined)) {\n",
+    replace: "    if !getter || others || second.has_effects() || !tests.iter().any(|t| implies(t, &defined)) {\n",
+    tests: ["test/lowering-switches.test.ts", "-t", "React's getIODescription"],
+  },
+
+  {
+    name: "read-once-first-of-a-call",
+    breaks: "a call a chain binds, `const q = counted(h)`, is made first as a conditional, `const q = h != null ? .. counted(h) : undefined`, though nothing reads it twice",
+    file: "src/lower/mir/tidy/logicals.rs",
+    find: "    let getter = reads_a_getter(value, getters);\n",
+    replace: "    let getter = true;\n",
+    tests: ["test/snapshots.test.ts", "-t", "options"],
+    snapshots: true,
+  },
 ];
