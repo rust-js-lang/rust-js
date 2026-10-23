@@ -131,3 +131,13 @@ in place what `branch values` and `declarations` make a `const` of, which
 its row says and `inlined-in-values-off` holds; `tables in values` changed
 no JS of the corpus, the examples or the lowering and JSX tests, and is
 gone.
+
+## Amended
+
+The fourth review (2026-10-23) asked that a chain of passes whose
+repetition looks avoidable be measured before anything is removed. Of
+`inlined`, `branch values`, `declarations` and `inlined in values`, each
+was taken out alone and the corpus compiled. Taking out any one of them
+made the JS read worse in 2 to 10 files. Each is held by a mutation of its
+own, and `stages.rs` says what each takes and leaves.
+

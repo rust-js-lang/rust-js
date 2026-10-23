@@ -197,12 +197,17 @@ pub(super) const STAGES: &[Stage] = &[
             pass("guarded lets", |b, h| {
                 js::statement_lists(b, &mut |s| guarded_lets(s, h.captured))
             }),
+            // A chain, each step of which the next needs (ADR 0659): `inlined`
+            // reads MIR's temporaries in place, which leaves an `if` each of
+            // whose branches writes one variable, `let v; if (c) { v = i; }
+            // else { v = 99; }`, and a `let` written once; `branch values`
+            // makes a `const` of the one, `const v = c ? i : 99;`, and
+            // `declarations` of the other; `inlined in values` reads those
+            // in place, `const pair = [c ? i : 99, 2]`. Without any one of
+            // them, the corpus reads worse (`mir-tidy-late-consts-kept`,
+            // `values-chain-branch-values-off`, `values-chain-declarations-off`,
+            // `inlined-in-values-off`).
             pass("inlined", inlined_of),
-            // What those reads leave makes more of what `inlined` reads, a
-            // `const`: `branch values` makes one of an `if` each of whose
-            // branches writes it, `const pair = [i != null ? i : 99, 2]`,
-            // and `declarations` one of a `let` written once. `inlined`
-            // again reads those in place, its one dependency on them.
             pass("branch values", branch_values_of),
             pass("declarations", |b, _| declarations(b)),
             pass("inlined in values", inlined_of),
