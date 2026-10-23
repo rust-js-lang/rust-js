@@ -735,4 +735,12 @@ export const mutations: Mutation[] = [
     replace: "StepOp::AsStr if false => {",
     tests: ["test/corpus.test.ts", "-t", "str_odds"],
   },
+  {
+    name: "given-chain-unmade",
+    breaks: "a chain stepped from its back is made $chainEnds where it's made",
+    file: "src/lower/mir/std_calls.rs",
+    find: "IterComb::Flatten | IterComb::FlatMap | IterComb::Chain)",
+    replace: "IterComb::Flatten | IterComb::FlatMap)",
+    tests: ["test/corpus.test.ts", "-t", "^returned_impl_ends.rs$"],
+  },
 ];

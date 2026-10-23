@@ -290,4 +290,20 @@ export const mutations: Mutation[] = [
     replace: "            return Ok(value);\n",
     tests: ["test/corpus.test.ts", "-t", "^(user_iterator_ends|rposition_of_lazy).rs$"],
   },
+  {
+    name: "knows-back-of-impl-hidden",
+    breaks: "knows_its_back reveals what an impl hides",
+    file: "src/lower/iterators/knowing.rs",
+    find: "        let ty = self.reveal(ty.peel_refs());\n        // A map of one, made one",
+    replace: "        let ty = ty.peel_refs();\n        // A map of one, made one",
+    tests: ["test/corpus.test.ts", "-t", "^returned_impl_ends.rs$"],
+  },
+  {
+    name: "mapped-array-length-unknown",
+    breaks: "a map of an array's items made knowing its back knows its length",
+    file: "src/lower/iterators/knowing.rs",
+    find: "                || self.steps_an_array(source) && self.knows_its_back(ty);",
+    replace: "                ;",
+    tests: ["test/corpus.test.ts", "-t", "^returned_impl_ends.rs$"],
+  },
 ];

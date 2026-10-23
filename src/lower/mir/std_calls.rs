@@ -865,8 +865,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 let made = self.iter_comb(comb, it, exprs.into_iter(), generic_args, iter_ty, span, out)?;
                 // A flatten the crate steps from its back, made knowing it
-                // (ADR 0545): `$flattenEnds`.
-                match matches!(comb, IterComb::Flatten | IterComb::FlatMap) && self.stepped_from_its_back(output) {
+                // (ADR 0545): `$flattenEnds`; a chain a function gives
+                // behind an `impl`, `$chainEnds`.
+                let output = self.reveal(output);
+                match matches!(comb, IterComb::Flatten | IterComb::FlatMap | IterComb::Chain)
+                    && self.stepped_from_its_back(output)
+                {
                     true => self.as_double_ended(made, output, span)?,
                     false => made,
                 }
