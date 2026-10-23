@@ -4,11 +4,11 @@ import type { Mutation } from "../../mutations";
 export const mutations: Mutation[] = [
   {
     name: "optional-member-not-a-path",
-    breaks: "`route?.title` isn't one path, `route?.title != null && !!route?.title` kept",
+    breaks: "`value?.constructor` isn't one path, so `and_then` of it is `value?.constructor != null ? value?.constructor.name : undefined`, not `value?.constructor?.name`",
     file: "src/js/stmt_walk.rs",
     find: "        (ExprKind::OptionalMember(x, f), ExprKind::OptionalMember(y, g)) => f == g && same_path(x, y),\n",
     replace: "",
-    tests: ["test/lowering-options.test.ts", "-t", "text kept where it isn't empty"],
+    tests: ["test/lowering-options.test.ts", "-t", "React's typeName"],
   },
   {
     name: "returned-call-blocked",
@@ -91,14 +91,6 @@ export const mutations: Mutation[] = [
     find: "        same_path(i, j)\n            || matches!((&i.kind, &j.kind), (ExprKind::Str(i)",
     replace: "        false\n            || matches!((&i.kind, &j.kind), (ExprKind::Str(i)",
     tests: ["test/lowering-options.test.ts", "-t", "property read of what may be None"],
-  },
-  {
-    name: "mir-tidy-optional-member-not-same",
-    breaks: "`a?.b` isn't the same as `a?.b`, its `filter` kept, `a?.b ? a?.b : undefined`",
-    file: "src/js/stmt_walk.rs",
-    find: "        (ExprKind::OptionalMember(x, f), ExprKind::OptionalMember(y, g)) => f == g && same_path(x, y),\n",
-    replace: "",
-    tests: ["test/lowering-branches.test.ts", "-t", "De Morgan"],
   },
   {
     name: "same-path-item-number-unseen",

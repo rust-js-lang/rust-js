@@ -1304,6 +1304,9 @@ pub fn counted_name(value: Option<&Unknown>) -> (String, u32) {
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain('  const hasToStringTag = typeof Symbol !== "undefined" && typeof Symbol.toStringTag !== "undefined";\n  const type =\n    (hasToStringTag && value?.[Symbol.toStringTag]) || value?.constructor?.name || "Object";\n  return type;\n');
   expect(js).not.toContain("const toStringTag");
+  // \`and_then\` of what \`value?.constructor\` gives is one chain: the
+  // same path tested and read (\`same_path\` of an optional member).
+  expect(js).toContain("value?.constructor?.name");
   expect(js).toContain("return value != null && c ? value.name : undefined;");
   expect(js).toContain("return value?.[Symbol.toStringTag];");
   expect(js).toContain("return c ? value?.name : undefined;");
