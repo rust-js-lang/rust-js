@@ -21,6 +21,15 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **A function's last slice marked `#[rust_js::rest]` is JS's rest
+  parameter** (ADR 0664): React's `formatProdErrorMessage(code, ...args)`,
+  which its build calls with each message's values, is `fn
+  format_prod_error_message(code: f64, #[cfg_attr(rust_js, rust_js::rest)]
+  args: &[Option<&Unknown>])`. A call from Rust spreads its slice,
+  `total(...prices)`, or gives an array's items written out, `total(1, 2)`;
+  its `.d.ts` is `...args: T[]`, and a library's manifest says so to its
+  consumers. Not the last parameter, not a shared slice, a closure's, a
+  trait method's or a component's, it's an error that says so.
 - **A multiply by a small constant is JS's own `*`** (ADR 0011 amended):
   `n * 2` of an `i32` is `(n * 2) | 0`, where it was `Math.imul(n, 2)`. A
   product of two variables, or by a constant past 2^21, is still
@@ -771,6 +780,11 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### Changed
 
+- **`js::encode_uri_component` takes a number or a `bool` too**, as
+  TypeScript's `encodeURIComponent(uriComponent: string | number |
+  boolean)` does (ADR 0229): `encode_uri_component(418.0)` is
+  `encodeURIComponent(418)`, where it took only a `&str`. Text is a
+  `&str` or a `&String`, the value as it is.
 - **Consecutive appends to a `String` are one `+=`** (ADR 0652): React's
   `prepareStackTrace` is `stack += "\n    at " + callSite.toString();`,
   where `stack += "\n    at "; stack += &call_site.to_string();` was two;

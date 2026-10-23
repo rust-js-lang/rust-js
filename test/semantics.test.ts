@@ -51,7 +51,9 @@ for (const [index, [name, , arg]] of cases.entries()) {
   });
 }
 
-for (const collection of ["BTreeMap", "BTreeSet", "HashMap", "HashSet"]) {
+// A hashed map finds a key by its fields, which a hand-written `Eq` may not
+// follow: refused. A B-tree finds one by its `cmp`, as std's does (ADR 0404).
+for (const collection of ["HashMap", "HashSet"]) {
   test(`${collection} rejects enum keys with custom equality`, () => {
     const dir = fixture("key-equality");
     const source = `
@@ -75,16 +77,20 @@ for (const collection of ["BTreeMap", "BTreeSet", "HashMap", "HashSet"]) {
   });
 }
 
-test("BTreeMap rejects custom ordering even when equality is derived", () => {
-  const dir = fixture("key-ordering");
-  const input = join(dir, "keys.rs"), output = join(dir, "keys.js");
-  writeFileSync(input, `
-    #[derive(Clone, Copy, Eq, PartialEq)] enum Key { A, B }
-    impl Ord for Key { fn cmp(&self, other: &Self) -> std::cmp::Ordering { (*other as u8).cmp(&(*self as u8)) } }
-    impl PartialOrd for Key { fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> { Some(self.cmp(other)) } }
-    pub fn size() -> usize { let m = std::collections::BTreeMap::from([(Key::A, 1), (Key::B, 2)]); m.len() }
-  `);
-  const result = Bun.spawnSync([compiler, input, "-o", output]);
-  expect(result.exitCode).not.toBe(0);
-  expect(result.stderr.toString()).toContain("does not support values of type `Key`");
-});
+for (const collection of ["BTreeMap", "BTreeSet"]) {
+  test(`${collection} finds enum keys by their own Ord`, async () => {
+    const dir = fixture(`key-order-${collection}`);
+    writeFileSync(join(dir, "keys.rs"), `
+      #[derive(Clone, Copy, Debug, Eq, PartialEq)] enum Key { A, B }
+      impl Ord for Key { fn cmp(&self, _: &Self) -> std::cmp::Ordering { std::cmp::Ordering::Equal } }
+      impl PartialOrd for Key { fn partial_cmp(&self, rhs: &Self) -> Option<std::cmp::Ordering> { Some(self.cmp(rhs)) } }
+      pub fn size() -> usize {
+        let mut keys = std::collections::${collection}::new();
+        keys.insert(Key::A${collection.endsWith("Map") ? ", 1" : ""});
+        keys.insert(Key::B${collection.endsWith("Map") ? ", 2" : ""});
+        keys.len()
+      }`);
+    run([compiler, join(dir, "keys.rs"), "-o", join(dir, "keys.js")]);
+    expect((await import(join(dir, "keys.js"))).size()).toBe(1);
+  });
+}

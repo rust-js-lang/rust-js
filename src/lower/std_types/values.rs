@@ -104,7 +104,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             | MapOp::Has
                             | MapOp::Iter(_)
                             | MapOp::Entry
-                            | MapOp::OrInsertWith
+                            | MapOp::OrInsertWith { .. }
                             | MapOp::OrDefault
                             | MapOp::Len
                             | MapOp::IsEmpty

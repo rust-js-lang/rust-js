@@ -100,6 +100,7 @@ pub(super) fn exports(
                 by.sort();
                 by
             },
+            rest: super::bindings::takes_rest(tcx, id),
         })
         .collect();
     items.sort_by(|a, b| a.rust_path.cmp(&b.rust_path).then_with(|| a.key.cmp(&b.key)));
@@ -263,6 +264,12 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
     /// Does a library's `id` take its caller's location (ADR 0427)?
     pub(super) fn takes_location(&self, id: DefId) -> bool {
         self.item(id).is_some_and(|item| item.takes_location)
+    }
+
+    /// Does a library's `id` take JS's rest arguments, its last parameter
+    /// `#[rust_js::rest]` (ADR 0664)?
+    pub(super) fn takes_rest(&self, id: DefId) -> bool {
+        self.item(id).is_some_and(|item| item.rest)
     }
 
     /// Does any of the libraries keep a `Vec`'s capacity (ADR 0419)?

@@ -246,6 +246,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> R<Value<'tcx>> {
         let mut exprs = self.boxed_args(state, (def_id, generic_args), values, span, out)?;
         self.given_iterators(def_id, &mut exprs, arg_tys, span)?;
+        // Its rest arguments, the slice spread (ADR 0664), which nothing
+        // comes after.
+        self.rest_given(def_id, &mut exprs);
         exprs.extend(self.evidence_args(def_id, generic_args, span)?);
         let called = Expr::call(self.fn_ref(def_id), exprs);
         // A generic `&mut T`'s box, of an object `T` here: what's in it.
@@ -253,6 +256,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let called = self.fmt_result_value(def_id, generic_args, called);
         // A throwing function's call is a throwing call (ADR 0644).
         Ok(Value::Expr(self.catching(def_id, generic_args, called)))
+    }
+
+    /// Whether a variable holding the crate's function `def_id`, of `count`
+    /// parameters, is called as that variable: one given no dictionaries,
+    /// boxes or rest arguments (ADR 0664).
+    pub(super) fn called_as_held(&self, def_id: rustc_span::def_id::DefId, count: usize) -> bool {
+        self.krate.fns.contains_key(&def_id)
+            && !self.takes_rest(def_id)
+            && self.tcx.generics_of(def_id).count() == 0
+            && (0..count).all(|i| !self.param_is_box(def_id, i))
     }
 
     /// What binding `def_id` is given as its `i`th argument, `value` of

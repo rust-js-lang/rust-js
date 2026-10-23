@@ -786,6 +786,28 @@ pub(super) fn is_variadic(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
     tcx.get_attrs_by_path(def_id, &path).next().is_some()
 }
 
+/// Each parameter of the crate's function or closure `owner` marked
+/// `#[rust_js::rest]`, JS's rest parameter (ADR 0664), by its index: read
+/// from its body, as a parameter's attributes are kept nowhere else.
+pub(super) fn marked_rest<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    owner: LocalDefId,
+) -> impl Iterator<Item = (usize, &'tcx rustc_hir::Param<'tcx>)> {
+    let path = [Symbol::intern("rust_js"), Symbol::intern("rest")];
+    let params = tcx.hir_maybe_body_owned_by(owner).map_or(&[][..], |body| body.params);
+    (params.iter().enumerate())
+        .filter(move |(_, param)| tcx.hir_attrs(param.hir_id).iter().any(|attr| attr.path_matches(&path)))
+}
+
+/// Whether the crate's function `def_id` takes JS's rest arguments, its last
+/// parameter, a slice, marked `#[rust_js::rest]` (ADR 0664), which
+/// analysis allows nowhere else. A library's says so in its manifest.
+pub(super) fn takes_rest(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
+    def_id
+        .as_local()
+        .is_some_and(|local| marked_rest(tcx, local).next().is_some())
+}
+
 /// Whether an untagged enum's variant is what its others aren't,
 /// `#[rust_js::otherwise]` (ADR 0214).
 pub(super) fn is_otherwise(tcx: TyCtxt<'_>, def_id: DefId) -> bool {

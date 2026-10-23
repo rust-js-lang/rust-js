@@ -10,4 +10,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^unrun_function_drops.rs$"],
   },
+  {
+    name: "or-insert-with-key-unkeyed",
+    breaks: "`or_insert_with_key`'s function is given no key",
+    file: "src/runtime/or_insert_with.js",
+    find: "() => make(key)",
+    replace: "() => make()",
+    tests: ["test/corpus.test.ts", "-t", "^entry_or_insert_with_key.rs$"],
+  },
 ];

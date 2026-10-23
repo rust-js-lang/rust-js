@@ -421,4 +421,13 @@ export const mutations: Mutation[] = [
     replace: "                Some(StmtKind::Assign(target, _)) if false && target.kind == value.kind)\n",
     tests: ["test/lowering-cells.test.ts", "-t", "written by replace and take"],
   },
+  {
+    name: "sunk-let-at-shadowing-closure",
+    breaks: "a `let` sinks only as far as a closure whose parameter shadows it, `(a, b) => ..`, and isn't merged with the write after",
+    file: "src/lower/mir/tidy/bindings.rs",
+    find: " && reads_past_shadows(&stmts[j], &name))",
+    replace: ")",
+    tests: ["test/corpus.test.ts", "-t", "^entry_or_insert_with_key.rs$"],
+    snapshots: true,
+  },
 ];

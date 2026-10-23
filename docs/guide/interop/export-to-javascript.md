@@ -14,6 +14,7 @@ it writes, without its header comment and source-map line.
 - [Names](#names)
 - [Parameters and results](#parameters-and-results)
 - [Optional parameters](#optional-parameters)
+- [Rest parameters](#rest-parameters)
 - [Structs, enums and their methods](#structs-enums-and-their-methods)
 - [Constants, statics and thread-locals](#constants-statics-and-thread-locals)
 - [Modules and `pub use`](#modules-and-pub-use)
@@ -245,6 +246,103 @@ each `None`. An `Option` before a parameter that isn't one is declared
 `T | null | undefined` and isn't optional: the caller gives it, as
 `undefined` if it's `None`.
 
+## Rest parameters
+
+A function's last parameter, a slice marked
+`#[cfg_attr(rust_js, rust_js::rest)]`, is JS's rest parameter: a JS
+caller gives it any number of arguments, and the function is given the
+slice of them ([ADR 0664](../../decisions/0664-a-functions-rest-slice-is-jss-rest-parameter.md)).
+React's `formatProdErrorMessage`, which React's build calls with each
+message's values:
+
+```rust
+use js::Unknown;
+
+js::export_default! {
+    fn format_prod_error_message(
+        code: f64,
+        #[cfg_attr(rust_js, rust_js::rest)] args: &[Option<&Unknown>],
+    ) -> String {
+        let mut url = format!("https://react.dev/errors/{code}");
+        for (i, arg) in args.iter().enumerate() {
+            url += if i == 0 { "?args[]=" } else { "&args[]=" };
+            url += &js::encode_uri_component(&js::string(*arg));
+        }
+        format!(
+            "Minified React error #{code}; visit {url} for the full message or \
+             use the non-minified dev environment for full errors and additional \
+             helpful warnings."
+        )
+    }
+}
+
+pub fn total(#[cfg_attr(rust_js, rust_js::rest)] prices: &[f64]) -> f64 {
+    prices.iter().sum()
+}
+
+pub fn order(prices: &[f64]) -> f64 {
+    total(&[1.5, 2.0]) + total(prices)
+}
+```
+
+```js
+import { $displayF64 } from "@rust-js/runtime";
+
+export default function formatProdErrorMessage(code, ...args) {
+  let url = `https://react.dev/errors/${$displayF64(code)}`;
+  for (const [i, arg] of args.entries()) {
+    url += i === 0 ? "?args[]=" : "&args[]=";
+    url += encodeURIComponent(String(arg));
+  }
+  return `Minified React error #${$displayF64(code)}; visit ${url} for the full message or use the non-minified dev environment for full errors and additional helpful warnings.`;
+}
+
+export function total(...prices) {
+  return prices.reduce((a, b) => a + b, -0);
+}
+
+export function order(prices) {
+  return total(1.5, 2) + total(...prices);
+}
+```
+
+```ts
+export function total(...prices: number[]): number;
+
+export function order(prices: number[]): number;
+
+export default function formatProdErrorMessage(code: number, ...args: (unknown | null | undefined)[]): string;
+```
+
+- **A JS caller gives its items**, `formatProdErrorMessage(418)`,
+  `formatProdErrorMessage(31, "object with keys {a}")`, `total(1, 2, 3)`.
+- **A Rust caller gives a slice, as anywhere**: one held is spread,
+  `total(...prices)`, and an array written out is its items,
+  `total(1.5, 2)`; `&[]` is none.
+- **As a value it's the arrow of its call**, `(x) => total(...x)`, which
+  a caller through a `fn` pointer or an `impl Fn` gives the slice.
+- **It's the last parameter's, and a shared slice's, `args: &[T]`**, of
+  a function or an inherent method. Anywhere else it's an error that says
+  so: not the last, a `Vec<T>` or a `&mut [T]`, a pattern, a closure's, a
+  trait method's, a component's props, or a function given a dictionary,
+  whose dictionaries a rest can't come before:
+
+```rust
+pub fn count(#[cfg_attr(rust_js, rust_js::rest)] items: Vec<f64>) -> usize {
+    items.len()
+}
+```
+
+```
+error: rust-js: `#[rust_js::rest]` is a slice's, `items: &[T]`, not a `Vec<f64>`'s
+ --> src/lib.rs:1:14
+  |
+1 | pub fn count(#[cfg_attr(rust_js, rust_js::rest)] items: Vec<f64>) -> usize {
+  |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error: aborting due to 1 previous error
+```
+
 ## Structs, enums and their methods
 
 ```rust
@@ -444,6 +542,7 @@ export function parseURL(url: string): number | null | undefined;
 | `bool`, a number, a 64-bit one | `boolean`, `number`, `bigint` |
 | `&str`, `String`, `char` | `string` |
 | `Option<T>` | `T \| null \| undefined`; a trailing parameter `x?:`, a field `x?: T \| undefined` |
+| a `#[rust_js::rest]` slice `&[T]` | a rest parameter, `...args: T[]` |
 | `Vec<T>`, a slice, a tuple | `T[]`, `[A, B]` |
 | a struct with named fields | an `interface` of its fields |
 | an enum without fields | the union of its names, `"Red" \| "Green"` |

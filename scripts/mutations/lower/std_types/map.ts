@@ -397,4 +397,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^set_operators.rs$"],
   },
+  {
+    name: "or-insert-with-key-refused",
+    breaks: "an entry's `or_insert_with_key` is refused",
+    file: "src/lower/std_types/map.rs",
+    find: "        \"or_insert_with_key\" if entry => MapOp::OrInsertWith { keyed: true },\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^entry_or_insert_with_key.rs$"],
+  },
 ];

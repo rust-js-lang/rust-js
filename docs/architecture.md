@@ -203,7 +203,11 @@ assumptions; rustc lang items remain available through rustc's identity API.
 MIR determines execution order. `mir/cfg.rs` structures blocks;
 `mir/temporaries.rs` folds temporary reads only when intervening effects allow
 it. `mir/hints.rs` supplies source facts and `mir/offsets.rs` analyzes string
-offsets without emission. `mir/tidy.rs` coordinates body rewrites. Type-specific
+offsets without emission. `mir/tidy/stages.rs` lists the body rewrites, in
+stages that each say what they leave a body with; `mir/tidy.rs` runs them and,
+in a debug build, checks each stage's contracts (`mir/tidy/contracts.rs`).
+`rust-js --tidy-until <stage/pass>` and `scripts/tidy-trace.ts` show what each
+pass does to a crate's JS ([ADR 0659](decisions/0659-tidy-is-a-list-of-stages-with-contracts.md)). Type-specific
 rewrites remain with their type's owner; downstream `src/prepare.rs` works
 only on the completed JS tree. The printer owns spelling and layout, including
 expression forms determined while converting to oxc; Rust decisions stay upstream.
@@ -249,6 +253,7 @@ In this table, `lower.rs`, `names.rs` and `runtime.rs` are at the `src/` root.
 | A shadow that is the binding it shadows | `mir/tidy/bindings.rs` | `shadowed` |
 | A `String` appended to twice | `std_types/text.rs` | `appended` |
 | Runtime helper identity and properties | `runtime.rs` | `exports`, `helper_of`, `is_pure`, `names_a_place` |
+| A function's rest parameter and its calls' rest arguments | `bindings.rs`; `calls.rs` | `marked_rest`, `takes_rest`; `rest_given`, `spread_rest` |
 
 **Calls.** `mir/dispatch.rs::mir_call` handles special calls and sends evaluated
 arguments to `mir_call_values`. Calls then go to iterator, trait, binding or

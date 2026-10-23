@@ -266,4 +266,12 @@ export const mutations: Mutation[] = [
     replace: "    words_joined(name, |word| word.to_string())\n",
     tests: ["test/lowering-names.test.ts", "-t", "thread-local's SCREAMING_SNAKE"],
   },
+  {
+    name: "rest-value-unspread",
+    breaks: "a function whose last parameter is `#[rust_js::rest]`, as a value, is itself, which a call through it gives the slice whole",
+    file: "src/lower.rs",
+    find: "            if self.takes_rest(def_id) {\n                return Ok(None);\n",
+    replace: "            if false {\n                return Ok(None);\n",
+    tests: ["test/rest-parameters.test.ts", "-t", "rest slice is JS's rest parameter"],
+  },
 ];

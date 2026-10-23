@@ -350,6 +350,19 @@ test("tidying asks neither rustc nor the function being lowered", () => {
   }
 });
 
+// Tidy's passes are one list, `stages::STAGES`, in stages that each say what
+// they leave a body with (ADR 0659): `tidy` runs the list and checks it, and
+// calls no pass itself, so the order, and why, are read in one place. A pass
+// is a `fn`, which captures nothing: what it reads of the body, it works out
+// as the body is when it runs, never a fact an earlier pass left.
+test("tidy runs its passes from one list", () => {
+  const tidy = read("src/lower/mir/tidy.rs");
+  const body = tidy.slice(tidy.indexOf("pub(super) fn tidy("), tidy.indexOf("\n}\n", tidy.indexOf("pub(super) fn tidy(")));
+  expect(body).toContain("stages::STAGES");
+  expect(body).not.toMatch(/statement_lists|bottom_up|each_expr_mut|declarations\(/);
+  expect(read("src/lower/mir/tidy/stages.rs")).toContain("pub(super) run: fn(&mut Vec<Stmt>, &Hints),");
+});
+
 // What the front end keeps as it lowers a function is grouped by concern,
 // each group read and written by the module that owns it, which the rest
 // ask: `self.is_boxed(var)`, not `self.locals.mut_refs.boxes`. Six modules
@@ -614,7 +627,7 @@ test("shortcuts to recognition are in shortcuts.rs, and only shorten", () => {
 // which the test holds exactly, so a split says so here.
 const dispatchers: [string, string, number][] = [
   ["src/lower/recognition/calls.rs", "    pub(in crate::lower) fn classify(", 8],
-  ["src/lower/mir/dispatch.rs", "    pub(super) fn mir_call(", 110],
+  ["src/lower/mir/dispatch.rs", "    pub(super) fn mir_call(", 106],
   ["src/lower/mir/dispatch.rs", "    fn mir_call_values_of(", 247],
   ["src/lower/mir/dispatch.rs", "    fn mir_std_call(", 147],
   ["src/lower/mir.rs", "    fn mir_function(", 362],
@@ -934,7 +947,7 @@ test("a std call's `&mut` handle is handles_mut's alone", () => {
 test("an arrow that passes on what it's given is passed_on's alone", () => {
   const asking = files("src/lower").filter((file) => file.endsWith(".rs"))
     .flatMap((file) => read(file).split("\n").filter((line) => /\bpassed_on\(/.test(line) && !/fn passed_on\(/.test(line)).map(() => file));
-  expect([...new Set(asking)].sort()).toEqual(["src/lower/jsx.rs", "src/lower/mir/tidy.rs", "src/lower/mir/tidy/values.rs"]);
+  expect([...new Set(asking)].sort()).toEqual(["src/lower/jsx.rs", "src/lower/mir/tidy/stages.rs", "src/lower/mir/tidy/values.rs"]);
   const own = files("src/lower").filter((file) => file.endsWith(".rs") && /fn passed_on\(f: &Expr/.test(read(file)));
   expect(own).toEqual(["src/lower/iterators/eager.rs"]);
 });

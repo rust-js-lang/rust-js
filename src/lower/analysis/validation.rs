@@ -312,3 +312,48 @@ pub(super) fn reject_flatten_misuse<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&Body
     }
     valid
 }
+
+/// Report each `#[rust_js::rest]` that isn't JS's rest parameter (ADR
+/// 0664): one of a closure, given what its type says, of a trait's method,
+/// which each impl's call gives alike, or of a component, which React gives
+/// its props; one not the last parameter, not a shared slice's, or not a
+/// name. Each says what to write. False if there was one.
+pub(super) fn reject_rest_misuse(tcx: TyCtxt<'_>) -> bool {
+    let mut valid = true;
+    for owner in tcx.hir_body_owners() {
+        let def_id = owner.to_def_id();
+        let count = tcx.hir_body_owned_by(owner).params.len();
+        for (index, param) in bindings::marked_rest(tcx, owner) {
+            let ty = tcx.typeck(owner).node_type(param.hir_id);
+            let name = match param.pat.kind {
+                rustc_hir::PatKind::Binding(_, _, ident, None) => Some(ident),
+                _ => None,
+            };
+            let refused = if tcx.is_closure_like(def_id) {
+                "a function's last parameter, not a closure's: a closure is given what its type says".to_string()
+            } else if tcx.trait_of_assoc(def_id).is_some() || tcx.trait_impl_of_assoc(def_id).is_some() {
+                "a function's last parameter, not a trait method's, which each impl's call gives alike".to_string()
+            } else if bindings::is_component(tcx, def_id) {
+                "a function's last parameter, not a component's, which React gives its props".to_string()
+            } else if index + 1 != count {
+                "a function's last parameter, as JS's rest parameter is".to_string()
+            } else if !matches!(ty.kind(), ty::Ref(_, slice, rustc_hir::Mutability::Not) if slice.is_slice()) {
+                let name = name.map_or_else(|| "args".to_string(), |ident| ident.to_string());
+                // As it's written, `Vec<f64>`.
+                let written = tcx.sess.source_map().span_to_snippet(param.ty_span);
+                format!(
+                    "a slice's, `{name}: &[T]`, not a `{}`'s",
+                    written.unwrap_or_else(|_| ty.to_string())
+                )
+            } else if name.is_none() {
+                "a parameter's name, `args: &[T]`, not a pattern's: JS's rest parameter is an array".to_string()
+            } else {
+                continue;
+            };
+            tcx.dcx()
+                .span_err(param.span, format!("rust-js: `#[rust_js::rest]` is {refused}"));
+            valid = false;
+        }
+    }
+    valid
+}

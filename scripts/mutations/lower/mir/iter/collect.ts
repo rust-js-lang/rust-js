@@ -210,4 +210,12 @@ export const mutations: Mutation[] = [
     replace: "        if let Some(num) = option.or(result).and_then(Num::of).filter(|_| false) {\n",
     tests: ["test/corpus.test.ts", "-t", "^sum_fallible.rs$"],
   },
+  {
+    name: "from-iter-of-a-map-refused",
+    breaks: "`Vec::from_iter(set)`, of a map's or a set's items, is refused",
+    file: "src/lower/mir/iter/collect.rs",
+    find: "        if self.is_map(iter_ty)\n            && let ty::Adt(_, args) = iter_ty.kind()\n",
+    replace: "        if false\n            && let ty::Adt(_, args) = iter_ty.kind()\n",
+    tests: ["test/corpus.test.ts", "-t", "^from_iter_of_maps.rs$"],
+  },
 ];

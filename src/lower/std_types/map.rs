@@ -42,7 +42,11 @@ pub(in crate::lower) enum MapOp {
     /// `m.entry(k)`: `[m, k]`, for `or_insert` and the rest.
     Entry,
     OrInsert,
-    OrInsertWith,
+    /// `or_insert_with(f)`, and `or_insert_with_key(f)`, whose `f` is given
+    /// the key (`keyed`).
+    OrInsertWith {
+        keyed: bool,
+    },
     OrDefault,
     /// `collect()` or `from` pairs: `new Map(pairs)`, or `new Set(items)`.
     From {
@@ -225,7 +229,8 @@ pub(in crate::lower) fn map_method(name: &str, of: MapOwner) -> Option<MapOp> {
         },
         "and_modify" if entry => MapOp::AndModify,
         "or_insert" if entry => MapOp::OrInsert,
-        "or_insert_with" if entry => MapOp::OrInsertWith,
+        "or_insert_with" if entry => MapOp::OrInsertWith { keyed: false },
+        "or_insert_with_key" if entry => MapOp::OrInsertWith { keyed: true },
         "or_default" if entry => MapOp::OrDefault,
         _ => return None,
     })
@@ -592,36 +597,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             },
             MapOp::Len => Expr::member(arg(), "size"),
             MapOp::IsEmpty => Expr::bin(Op::Eq, Expr::member(arg(), "size"), Expr::int(0)),
-            MapOp::Iter(part) => {
-                let m = arg();
-                let map_ty = tys[0];
-                // A B-tree's in its keys' order.
-                if self.is_sorted(map_ty) {
-                    let entries = self.in_order_of(m, map_ty, span)?;
-                    if self.is_set(map_ty) {
-                        return Ok(entries);
-                    }
-                    let index = match part {
-                        Part::Entries => return Ok(entries),
-                        Part::Keys => 0,
-                        Part::Values => 1,
-                    };
-                    let pick = Expr::arrow(
-                        vec!["entry".into()],
-                        vec![
-                            StmtKind::Return(Some(Expr::index(Expr::var("entry"), Expr::int(index))))
-                                .at(crate::js::Span::NONE),
-                        ],
-                    );
-                    return Ok(method(entries, "map", vec![pick]));
-                }
-                let items = match part {
-                    Part::Entries => m,
-                    Part::Keys => method(m, "keys", Vec::new()),
-                    Part::Values => method(m, "values", Vec::new()),
-                };
-                Expr::call(Expr::member(Expr::var("Array"), "from"), vec![items])
-            }
+            MapOp::Iter(part) => self.map_items(arg(), tys[0], part, span)?,
             // Kept or matched: `Occupied` or `Vacant` of `[m, key]`, as std's
             // enum is (ADR 0345).
             MapOp::Entry => map_ops("$entry", with_drops(vec![arg(), arg()], vec![keys_drop])),
@@ -656,10 +632,42 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 map_ops("$entryRemove", list)
             }
-            MapOp::OrInsert | MapOp::OrInsertWith | MapOp::OrDefault => {
+            MapOp::OrInsert | MapOp::OrInsertWith { .. } | MapOp::OrDefault => {
                 return Err(self.unsupported(span, "an entry's value, of its value alone"));
             }
         })
+    }
+
+    /// A map's or a set's `part`, an array of them in its order: a B-tree's
+    /// its keys', `$sortedEntries(m, cmp)`'s, another's as it holds them,
+    /// `Array.from(m.keys())`.
+    pub(in crate::lower) fn map_items(&mut self, m: Expr, map_ty: Ty<'tcx>, part: Part, span: Span) -> R<Expr> {
+        let method = |object: Expr, name: &str, list: Vec<Expr>| Expr::call(Expr::member(object, name), list);
+        // A B-tree's in its keys' order.
+        if self.is_sorted(map_ty) {
+            let entries = self.in_order_of(m, map_ty, span)?;
+            if self.is_set(map_ty) {
+                return Ok(entries);
+            }
+            let index = match part {
+                Part::Entries => return Ok(entries),
+                Part::Keys => 0,
+                Part::Values => 1,
+            };
+            let pick = Expr::arrow(
+                vec!["entry".into()],
+                vec![
+                    StmtKind::Return(Some(Expr::index(Expr::var("entry"), Expr::int(index)))).at(crate::js::Span::NONE),
+                ],
+            );
+            return Ok(method(entries, "map", vec![pick]));
+        }
+        let items = match part {
+            Part::Entries => m,
+            Part::Keys => method(m, "keys", Vec::new()),
+            Part::Values => method(m, "values", Vec::new()),
+        };
+        Ok(Expr::call(Expr::member(Expr::var("Array"), "from"), vec![items]))
     }
 
     /// What a map or a set is made of, or extended by: a range's items, as a

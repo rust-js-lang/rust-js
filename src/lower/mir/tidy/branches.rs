@@ -570,7 +570,7 @@ pub(super) fn chain(body: &[Stmt], label: &str) -> Option<(Vec<Expr>, String, Ex
 pub(super) fn or_chain(body: &[Stmt], label: &str) -> Option<(Vec<Expr>, Vec<Stmt>, Vec<Stmt>)> {
     let [first, then @ ..] = body else { return None };
     let (tests, otherwise) = broken_chain(std::slice::from_ref(first), label)?;
-    if tests.is_empty() || targets(then, label) || targets(&otherwise, label) {
+    if tests.is_empty() || js::names_jump(then, label) || js::names_jump(&otherwise, label) {
         return None;
     }
     Some((tests, otherwise, then.to_vec()))
@@ -608,33 +608,6 @@ pub(super) fn negated(test: &Expr) -> bool {
         ExprKind::Binary(Op::Or, a, b) => negated(a) && negated(b),
         _ => false,
     }
-}
-
-/// `a && x != null && typeof x === "string"`, an `Option`'s test before a
-/// classification's: `a && typeof x === "string"`, of a type no `null` is.
-pub(super) fn typeof_tests(e: &mut Expr) {
-    let ExprKind::Binary(Op::And, left, right) = &e.kind else {
-        return;
-    };
-    let ExprKind::Binary(Op::Eq, kind, name) = &right.kind else {
-        return;
-    };
-    let (ExprKind::Unary(UnaryOp::Typeof, x), ExprKind::Str(name)) = (&kind.kind, &name.kind) else {
-        return;
-    };
-    if matches!(name.as_str(), "object" | "undefined") {
-        return;
-    }
-    let set = |e: &Expr| {
-        matches!(&e.kind, ExprKind::Binary(Op::LooseNe, y, null)
-            if matches!(null.kind, ExprKind::Null | ExprKind::Undefined) && js::same_path(x, y))
-    };
-    let tested = (**right).clone();
-    *e = match &left.kind {
-        _ if set(left) => tested,
-        ExprKind::Binary(Op::And, first, last) if set(last) => Expr::bin(Op::And, (**first).clone(), tested),
-        _ => return,
-    };
 }
 
 /// `!e` of a chain of tests, part by part, `!!a || b !== c` of `!a && b ===

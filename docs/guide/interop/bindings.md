@@ -752,6 +752,11 @@ See [Components and props](../react/components.md).
 | `#[rust_js::returns_undefined]` | it gives `undefined`, whatever its TypeScript type says |
 | `#[rust_js::test = "react#isValidElement"]` | of a type: the function that tells one, where no class does |
 
+A function of yours that JS calls with rest arguments is the other side
+of `#[rust_js::variadic]`: its last parameter, a slice, is marked
+`#[cfg_attr(rust_js, rust_js::rest)]`, `function f(code, ...args)`
+([Rest parameters](export-to-javascript.md#rest-parameters)).
+
 ## How much the crates bind
 
 Each crate lists what it binds against TypeScript's own declarations, member

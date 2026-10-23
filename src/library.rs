@@ -53,6 +53,12 @@ pub struct Item {
     /// trait's key (ADRs 0411, 0548), which its consumers' calls give it.
     #[serde(default)]
     pub stepped: Vec<(u32, String)>,
+    /// Whether its last parameter, a slice, is JS's rest parameter,
+    /// `#[rust_js::rest]` (ADR 0664), which its consumers' calls spread.
+    /// rustc's metadata keeps no parameter's attributes. A library a
+    /// compiler wrote before had none, as none was one.
+    #[serde(default)]
+    pub rest: bool,
 }
 
 /// A binding a module of the library holds as a value of its own, its
@@ -120,6 +126,7 @@ pub struct Imported {
     pub type_facts: Vec<(u32, String)>,
     pub takes_location: bool,
     pub stepped: Vec<(u32, String)>,
+    pub rest: bool,
 }
 
 /// A binding a library's module holds as a consumer imports it: from a JS
@@ -220,6 +227,7 @@ impl Dependencies {
                     type_facts: item.type_facts,
                     takes_location: item.takes_location,
                     stepped: item.stepped,
+                    rest: item.rest,
                 };
                 if exports.items.insert(item.key, imported).is_some() {
                     return Err("duplicate dependency export".into());
@@ -290,6 +298,7 @@ impl Dependencies {
                 type_facts: item.type_facts,
                 takes_location: item.takes_location,
                 stepped: item.stepped,
+                rest: item.rest,
             };
             if exports.items.insert(item.key, imported).is_some() {
                 return Err("duplicate std export".into());

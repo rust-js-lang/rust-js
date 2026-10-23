@@ -579,7 +579,12 @@ impl<'tcx> Declarations<'_, 'tcx> {
         // JS caller leaves them out (ADR 0443).
         let is_option =
             |ty: Ty<'tcx>| matches!(ty.kind(), ty::Adt(adt, _) if self.tcx.is_lang_item(adt.did(), LangItem::Option));
-        let optional_from = sig.inputs().len() - sig.inputs().iter().rev().take_while(|&&ty| is_option(ty)).count();
+        // Its last, a slice marked `#[rust_js::rest]`, is a rest parameter,
+        // `...args: T[]`, which those before it may still be left out before
+        // (ADR 0664).
+        let rest = super::bindings::takes_rest(self.tcx, def_id).then(|| sig.inputs().len() - 1);
+        let before = &sig.inputs()[..rest.unwrap_or(sig.inputs().len())];
+        let optional_from = before.len() - before.iter().rev().take_while(|&&ty| is_option(ty)).count();
         let params: Vec<Value> = (sig.inputs().iter().enumerate())
             .map(|(i, &ty)| {
                 // As its JS spells it, a word JS keeps given apart, `new$`.
@@ -589,7 +594,8 @@ impl<'tcx> Declarations<'_, 'tcx> {
                     None => "props".to_string(),
                 };
                 let ty = self.as_written(decl.and_then(|decl| decl.inputs.get(i)), |out| out.ts(ty));
-                json!({ "name": name, "optional": i >= optional_from, "rest": false, "type": ty })
+                let rest = rest == Some(i);
+                json!({ "name": name, "optional": i >= optional_from && !rest, "rest": rest, "type": ty })
             })
             .collect();
         let output = sig.output();

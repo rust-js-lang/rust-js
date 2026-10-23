@@ -84,6 +84,11 @@ pub use analysis::{collect_bodies, collect_initializers, collect_mir, collect_ra
 pub use bindings::given_names_differ;
 use bindings::{Export, is_binding};
 pub use pipeline::{Built, lower_crate};
+
+/// Each of tidy's passes, `stage/pass`, in the order they run (ADR 0659).
+pub fn tidy_pass_names() -> Vec<String> {
+    mir::tidy_pass_names()
+}
 use recognition::{Std, TypeFact};
 use representation::{Num, const_js, eval_const, f32_literal, static_value};
 pub use serde::{SerdeAttributes, attributes as serde_attributes};
@@ -351,6 +356,8 @@ struct CrateFacts<'a, 'tcx> {
     /// Whether the crate asks `{:x?}` of anything: then an integer a writer
     /// shows is in hex where its options say (ADR 0559).
     debug_hex: bool,
+    /// The pass tidy stops after, `--tidy-until`'s (ADR 0659).
+    tidy_until: Option<&'a str>,
     /// The `RefCell`s a field holds as their value, never counted (ADR
     /// 0362), found once the first is asked of.
     plain_ref_cells: &'a std::cell::OnceCell<HashSet<Ty<'tcx>>>,
@@ -656,7 +663,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// its JS name, given its dictionaries; a std one's, `.map(str::trim)`,
     /// `(s) => s.trim()`; a binding's. `None` for any other, a library's
     /// among them, which the arrow of its call as MIR's is, its import by
-    /// name where that's all it is (ADR 0100).
+    /// name where that's all it is (ADR 0100), and one of the crate's that
+    /// takes rest arguments, whose arrow spreads them (ADR 0664).
     fn fn_item_value(
         &mut self,
         def_id: DefId,
@@ -721,6 +729,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     patterns,
                     vec![StmtKind::Return(Some(call)).at(js_span)],
                 )));
+            }
+            // One that takes rest arguments, given a slice by what calls it
+            // as a value: the arrow of its call, which spreads it (ADR 0664).
+            if self.takes_rest(def_id) {
+                return Ok(None);
             }
             let callee = self.fn_ref(def_id);
             // One given its caller's location is called where it's defined,

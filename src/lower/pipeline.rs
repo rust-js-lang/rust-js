@@ -42,7 +42,7 @@ struct Pass {
 }
 
 /// How the crate is built, as its command asks.
-pub struct Built {
+pub struct Built<'a> {
     /// For others to use, a library (ADR 0100).
     pub library: bool,
     /// Given std's bodies to lower (ADR 0561).
@@ -50,6 +50,8 @@ pub struct Built {
     /// Asked to abort on a panic, `-C panic=abort`, which rust-js unwinds
     /// (ADR 0090): unwinding is refused of it (ADR 0660).
     pub panics_abort: bool,
+    /// `--tidy-until <stage/pass>`: tidy stops after that pass (ADR 0659).
+    pub tidy_until: Option<&'a str>,
 }
 
 /// Lower every function, grouped by module. Reports all unsupported
@@ -60,12 +62,13 @@ pub fn lower_crate<'tcx>(
     initializers: &[Body<'tcx>],
     serde_attrs: &super::SerdeAttributes,
     dependencies: &crate::library::Dependencies,
-    built: Built,
+    built: Built<'_>,
 ) -> Option<Unlinked> {
     let Built {
         library: export_library,
         std_bodies,
         panics_abort,
+        tidy_until,
     } = built;
     let sources = super::sources::CapturedSources::new(tcx);
     let AnalyzedCrate {
@@ -268,6 +271,7 @@ pub fn lower_crate<'tcx>(
         pretty_debug,
         format_options,
         debug_hex,
+        tidy_until,
         plain_ref_cells: &plain_ref_cells,
         named_expressions: &named_expressions,
         local_functions: &local_functions,

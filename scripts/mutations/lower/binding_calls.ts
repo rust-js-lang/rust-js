@@ -19,22 +19,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-bindings.test.ts", "-t", "unknown JS value"],
   },
   {
-    name: "variadic-array-not-spread-out",
-    breaks: "a variadic binding's slice written out is one array argument, `Math.max([a, b, 1])`",
-    file: "src/lower/binding_calls.rs",
-    find: "                }) => args.extend(items),\n",
-    replace: "                }) => args.push(Expr::array(items)),\n",
-    tests: ["test/bindings.test.ts", "-t", "variadic binding"],
-  },
-  {
-    name: "variadic-slice-given-whole",
-    breaks: "a variadic binding's slice in a variable is one argument, `Math.max(values)`, not spread",
-    file: "src/lower/binding_calls.rs",
-    find: "                Some(last) => args.push(Expr::spread(last)),\n",
-    replace: "                Some(last) => args.push(last),\n",
-    tests: ["test/bindings.test.ts", "-t", "variadic binding"],
-  },
-  {
     name: "variadic-of-no-slice",
     breaks: "a variadic binding whose last parameter isn't a slice spreads it anyway, `Math.max(1, ...2)`",
     file: "src/lower/binding_calls.rs",
@@ -209,5 +193,13 @@ export const mutations: Mutation[] = [
     find: "            .is_some_and(|last| matches!(last.kind, js::ExprKind::Undefined))\n            && is_optional_param(",
     replace: "            .is_some_and(|last| matches!(last.kind, js::ExprKind::Undefined))\n            && !is_variadic(self.tcx, def_id)\n            && is_optional_param(",
     tests: ["test/webapi-bindings.test.ts", "-t", "a rest parameter is a tuple"],
+  },
+  {
+    name: "rest-imported",
+    breaks: "a function whose last parameter is `#[rust_js::rest]` is imported by `js::import!`, which its holder calls with the slice whole",
+    file: "src/lower/binding_calls.rs",
+    find: "        if self.takes_rest(id) {\n",
+    replace: "        if false {\n",
+    tests: ["test/rest-parameters.test.ts", "-t", "refused: imported"],
   },
 ];

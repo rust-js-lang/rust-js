@@ -476,8 +476,8 @@ export const mutations: Mutation[] = [
     name: "trailing-option-param-required",
     breaks: "a Rust function's trailing `Option` parameter is declared required, `shown(name: string | null | undefined)`, so a TypeScript caller must give it",
     file: "src/lower/declarations.rs",
-    find: "                json!({ \"name\": name, \"optional\": i >= optional_from, \"rest\": false, \"type\": ty })\n",
-    replace: "                json!({ \"name\": name, \"optional\": (false && i >= optional_from), \"rest\": false, \"type\": ty })\n",
+    find: "                json!({ \"name\": name, \"optional\": i >= optional_from && !rest, \"rest\": rest, \"type\": ty })\n",
+    replace: "                json!({ \"name\": name, \"optional\": false, \"rest\": rest, \"type\": ty })\n",
     tests: ["test/declarations.test.ts", "-t", "declarations take JS's null for an Option"],
   },
   {
@@ -599,5 +599,13 @@ export const mutations: Mutation[] = [
     find: "        let default_declared = default_declared && tcx.def_kind(def_id) == DefKind::Fn;\n",
     replace: "",
     tests: ["test/modules.test.ts", "-t", "the constant's value where the macro holds it"],
+  },
+  {
+    name: "rest-declared-array",
+    breaks: "a `.d.ts` declares a rest parameter an array argument, `xs: number[]`, which TypeScript callers give whole",
+    file: "src/lower/declarations.rs",
+    find: "                let rest = rest == Some(i);\n",
+    replace: "                let rest = rest == Some(i) && false;\n",
+    tests: ["test/rest-parameters.test.ts", "-t", "rest slice is JS's rest parameter"],
   },
 ];
