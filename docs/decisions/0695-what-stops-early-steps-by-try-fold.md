@@ -69,7 +69,9 @@ it, and each adapter passes it on as std's does.**
   `nth` that's the crate's own, `folds_by_its_own_nth` (a `skip`'s and a
   `step_by`'s, through each adapter whose fold is its source's), as where
   it reaches the crate's own `fold`: `last`, and `collect` into a `String`
-  or a set. Both questions walk one list, `folded_sources`.
+  or a set. Of a type parameter's, which may be the crate's own, too:
+  `$folded` of a JS iterator with no `fold`, an array's, is itself. Both
+  questions walk one list, `folded_sources`.
 
 ## Consequences
 

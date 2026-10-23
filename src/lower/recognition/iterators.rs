@@ -353,9 +353,10 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     }
 
     /// Whether std's `fold` of a `ty`, an iterator, asks an `nth` that
-    /// reaches the crate's own (#182): a `skip`'s, its source's `nth(n -
-    /// 1)`, and a `step_by`'s, each step its source's `nth`; and each
-    /// adapter's whose `fold` is its source's, of its sources.
+    /// reaches the crate's own (#182), or may, of a type parameter: a
+    /// `skip`'s, its source's `nth(n - 1)`, and a `step_by`'s, each step its
+    /// source's `nth`; and each adapter's whose `fold` is its source's, of
+    /// its sources.
     pub(in crate::lower) fn folds_by_its_own_nth(&self, ty: Ty<'tcx>) -> bool {
         let ty = self.reveal(ty);
         if let ty::Adt(adt, args) = ty.kind()
@@ -363,7 +364,10 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                 std_path(self.tcx, adt.did()).as_str(),
                 "std::iter::Skip" | "std::iter::StepBy"
             )
-            && args.types().next().is_some_and(|source| self.nths_its_own(source))
+            && args
+                .types()
+                .next()
+                .is_some_and(|source| self.nths_its_own(source) || matches!(source.kind(), ty::Param(_)))
         {
             return true;
         }

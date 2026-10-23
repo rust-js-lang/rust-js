@@ -2,6 +2,7 @@
 
 import {
   $folded,
+  $iter,
   $iterator,
   $lazyRange,
   $lent,
@@ -45,8 +46,31 @@ function maybeIterator_nth(maybe, n) {
   return maybeIterator_next(maybe);
 }
 
+// In generic code, of what it's given: the crate's own, an array's.
+function lastSkipped(it) {
+  return $folded(Iterator.from(it).drop(3)).toArray().at(-1);
+}
+
 function main() {
-  const value = $nth(
+  const value = lastSkipped(
+    $iterator(
+      c(),
+      countIterator_next,
+      false,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      countIterator_nth,
+    ),
+  );
+  console.log(`generic ${value == null ? "None" : `Some(${value})`}`);
+  const value$1 = lastSkipped($iter([1, 2, 3, 4, 5]));
+  const value$2 = lastSkipped($lazyRange(1, 3));
+  console.log(
+    `generic ${value$1 == null ? "None" : `Some(${value$1})`} ${value$2 == null ? "None" : `Some(${value$2})`}`,
+  );
+  const value$3 = $nth(
     $lent(
       $iterator(
         c(),
@@ -61,8 +85,8 @@ function main() {
     ),
     3,
   );
-  console.log(`take ${value == null ? "None" : `Some(${value})`}`);
-  const value$1 = $nth(
+  console.log(`take ${value$3 == null ? "None" : `Some(${value$3})`}`);
+  const value$4 = $nth(
     $lent(
       $iterator(
         c(),
@@ -77,7 +101,7 @@ function main() {
     ),
     5,
   );
-  console.log(`take ${value$1 == null ? "None" : `Some(${value$1})`}`);
+  console.log(`take ${value$4 == null ? "None" : `Some(${value$4})`}`);
   const t = $iterator(
     c(),
     countIterator_next,
@@ -89,12 +113,12 @@ function main() {
     countIterator_nth,
   ).take(4);
   const nth = $nth($lent(t), 1);
-  const value$2 = $nth($lent(t), 1);
-  const value$3 = $next(t);
+  const value$5 = $nth($lent(t), 1);
+  const value$6 = $next(t);
   console.log(
-    `take ${nth == null ? "None" : `Some(${nth})`} ${value$2 == null ? "None" : `Some(${value$2})`} ${value$3 == null ? "None" : `Some(${value$3})`}`,
+    `take ${nth == null ? "None" : `Some(${nth})`} ${value$5 == null ? "None" : `Some(${value$5})`} ${value$6 == null ? "None" : `Some(${value$6})`}`,
   );
-  const value$4 = $nth(
+  const value$7 = $nth(
     $lent(
       $stepBy(
         $iterator(
@@ -112,8 +136,8 @@ function main() {
     ),
     1,
   );
-  console.log(`step ${value$4 == null ? "None" : `Some(${value$4})`}`);
-  const value$5 = $nth(
+  console.log(`step ${value$7 == null ? "None" : `Some(${value$7})`}`);
+  const value$8 = $nth(
     $lent(
       $stepBy(
         $iterator(
@@ -131,7 +155,7 @@ function main() {
     ),
     0,
   );
-  console.log(`step ${value$5 == null ? "None" : `Some(${value$5})`}`);
+  console.log(`step ${value$8 == null ? "None" : `Some(${value$8})`}`);
   console.log(
     `step ${$lent($stepBy($iterator(c(), countIterator_next, false, undefined, undefined, undefined, undefined, countIterator_nth), 4)).some((x) => x > 6)}`,
   );
@@ -169,12 +193,12 @@ function main() {
     5,
   );
   const next = $next(s);
-  const value$6 = $nth($lent(s), 1);
-  const value$7 = $next(s);
+  const value$9 = $nth($lent(s), 1);
+  const value$10 = $next(s);
   console.log(
-    `step ${next == null ? "None" : `Some(${next})`} ${value$6 == null ? "None" : `Some(${value$6})`} ${value$7 == null ? "None" : `Some(${value$7})`}`,
+    `step ${next == null ? "None" : `Some(${next})`} ${value$9 == null ? "None" : `Some(${value$9})`} ${value$10 == null ? "None" : `Some(${value$10})`}`,
   );
-  const value$8 = $folded(
+  const value$11 = $folded(
     $iterator(
       c(),
       countIterator_next,
@@ -188,8 +212,8 @@ function main() {
   )
     .toArray()
     .at(-1);
-  console.log(`last ${value$8 == null ? "None" : `Some(${value$8})`}`);
-  const value$9 = $folded(
+  console.log(`last ${value$11 == null ? "None" : `Some(${value$11})`}`);
+  const value$12 = $folded(
     $stepBy(
       $iterator(
         c(),
@@ -206,8 +230,8 @@ function main() {
   )
     .toArray()
     .at(-1);
-  console.log(`last ${value$9 == null ? "None" : `Some(${value$9})`}`);
-  const value$10 = $iterator(
+  console.log(`last ${value$12 == null ? "None" : `Some(${value$12})`}`);
+  const value$13 = $iterator(
     c(),
     countIterator_next,
     false,
@@ -220,7 +244,7 @@ function main() {
     .take(5)
     .toArray()
     .at(-1);
-  console.log(`last ${value$10 == null ? "None" : `Some(${value$10})`}`);
+  console.log(`last ${value$13 == null ? "None" : `Some(${value$13})`}`);
   const text = $folded(
     $iterator(
       c(),
@@ -238,7 +262,7 @@ function main() {
     .toArray()
     .join("");
   console.log(`${text}`);
-  const value$11 = $nth(
+  const value$14 = $nth(
     $lent(
       $lent(
         $iterator(
@@ -255,9 +279,9 @@ function main() {
     ),
     0,
   );
-  console.log(`${value$11 == null ? "None" : `Some(${value$11})`}`);
+  console.log(`${value$14 == null ? "None" : `Some(${value$14})`}`);
   const held = c();
-  const value$12 = $nth(
+  const value$15 = $nth(
     $lent(
       $lent(
         $iterator(
@@ -274,11 +298,11 @@ function main() {
     ),
     0,
   );
-  const value$13 = countIterator_next(held);
+  const value$16 = countIterator_next(held);
   console.log(
-    `${value$12 == null ? "None" : `Some(${value$12})`} ${value$13 == null ? "None" : `Some(${value$13})`}`,
+    `${value$15 == null ? "None" : `Some(${value$15})`} ${value$16 == null ? "None" : `Some(${value$16})`}`,
   );
-  const value$14 = $nthSome(
+  const value$17 = $nthSome(
     $lent(
       $iterator(
         [0],
@@ -293,7 +317,7 @@ function main() {
     ),
     0,
   );
-  const value$15 = $nthSome(
+  const value$18 = $nthSome(
     $lent(
       $iterator(
         [0],
@@ -309,7 +333,7 @@ function main() {
     0,
   );
   console.log(
-    `${value$14 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$14))})`} ${value$15 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$15))})`}`,
+    `${value$17 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$17))})`} ${value$18 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$18))})`}`,
   );
   console.log(
     `${$lazyRange(1, 10, 4)

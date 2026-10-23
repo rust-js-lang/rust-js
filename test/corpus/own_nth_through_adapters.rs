@@ -50,7 +50,18 @@ impl Iterator for Maybe {
     }
 }
 
+// In generic code, of what it's given: the crate's own, an array's.
+fn last_skipped<I: Iterator<Item = i32>>(it: I) -> Option<i32> {
+    it.skip(3).last()
+}
+
 fn main() {
+    println!("generic {:?}", last_skipped(c()));
+    println!(
+        "generic {:?} {:?}",
+        last_skipped(vec![1, 2, 3, 4, 5].into_iter()),
+        last_skipped(1..3)
+    );
     println!("take {:?}", c().take(10).nth(3));
     println!("take {:?}", c().take(3).nth(5));
     let mut t = c().take(4);

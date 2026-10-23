@@ -606,4 +606,12 @@ export const mutations: Mutation[] = [
     replace: "        false",
     tests: ["test/corpus.test.ts", "-t", "^own_nth_through_adapters.rs$"],
   },
+  {
+    name: "folds-by-own-nth-not-generic",
+    breaks: "a skip of a type parameter folds as it may ask the crate's own nth",
+    file: "src/lower/recognition/iterators.rs",
+    find: ".is_some_and(|source| self.nths_its_own(source) || matches!(source.kind(), ty::Param(_)))",
+    replace: ".is_some_and(|source| self.nths_its_own(source))",
+    tests: ["test/corpus.test.ts", "-t", "^own_nth_through_adapters.rs$"],
+  },
 ];

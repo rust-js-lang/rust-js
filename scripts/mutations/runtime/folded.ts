@@ -10,4 +10,12 @@ export const mutations: Mutation[] = [
     replace: "  return it.toArray().values();\n",
     tests: ["test/corpus.test.ts", "-t", "^own_fold_and_nth.rs$"],
   },
+  {
+    name: "folded-of-no-fold-throws",
+    breaks: "$folded of a JS iterator with no fold is itself",
+    file: "src/runtime/folded.js",
+    find: "  if (it.fold === undefined) return it;\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^own_nth_through_adapters.rs$"],
+  },
 ];
