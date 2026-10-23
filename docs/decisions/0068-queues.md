@@ -92,3 +92,11 @@ item, `undefined` for `None`, which is refused as any such `Option` is
 a `Some` that would look like it, as a slice's `first` does, so a heap of
 `()` is pushed, counted and peeked as any is. Its items, all `Equal`,
 compare as `()` does (ADR 0057).
+
+## Amendment: a `Vec` of a slice, of a deque and of text
+
+`Vec::from(&v[..])`, a deque's `into()` a `Vec`, and `Vec::<u8>::from(s)`
+of text were refused (#116). A `Vec` of a slice is its items cloned, of a
+deque its items, as `VecDeque::from(v)` is, `Std::ToVec`; of text its
+bytes, as `into_bytes()` gives them. Held by
+`test/corpus/vec_from_items.rs`.
