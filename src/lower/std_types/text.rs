@@ -71,6 +71,9 @@ pub(in crate::lower) enum TextOp {
     /// `find(p)` or `rfind(p)`, `starts_with(p)` or `ends_with(p)`, of a
     /// predicate of a `char` (ADR 0157).
     FindBy(bool),
+    /// `s.matches(p)` of a predicate of a `char`, or `rmatches`, `true`:
+    /// each `char` it holds of.
+    MatchesBy(bool),
     StartsBy {
         end: bool,
     },
@@ -326,6 +329,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 | TextOp::SplitNBy
                 | TextOp::ContainsBy
                 | TextOp::FindBy(_)
+                | TextOp::MatchesBy(_)
                 | TextOp::StartsBy { .. }
                 | TextOp::TrimMatches { .. }
         ) && let Some(pattern) = tys.get(at)
@@ -387,6 +391,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Expr::call(Expr::member(Expr::var("Array"), "from"), vec![mapped])
             }
             TextOp::SplitBy => Expr::call(Expr::helper("$splitBy"), vec![arg(), arg()]),
+            TextOp::MatchesBy(rev) => {
+                let mut list = vec![arg(), arg()];
+                if rev {
+                    list.push(Expr::bool(true));
+                }
+                Expr::call(Expr::helper("$matchesBy"), list)
+            }
             TextOp::SplitNBy => {
                 let (s, n, matches) = (arg(), arg(), arg());
                 Expr::call(Expr::helper("$splitBy"), vec![s, matches, n])

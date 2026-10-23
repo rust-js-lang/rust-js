@@ -71,3 +71,11 @@ count: at most `n` pieces, the last what's left whole, a set of `char`s
 made the predicate of being one, as `split`'s is. The `splitn_by` corpus
 case splits by a set and a closure, of none and of more than there are,
 against native Rust.
+
+## Amendment: `matches` and `rmatches` of a predicate
+
+`matches(p)` and `rmatches(p)` of a closure, a function or a set of
+`char`s were refused (#118). They're `$matchesBy(s, p)`, each `char` the
+predicate holds of, `rmatches` asking it from the end as Rust's does; a
+set is the predicate of being one of it, as for `split`. Held by
+`test/corpus/matches_by_predicate.rs`.
