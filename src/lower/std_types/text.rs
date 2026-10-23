@@ -215,6 +215,19 @@ pub(in crate::lower) enum TextOp {
     },
 }
 
+/// How many UTF-16 units `units` is, a string's `encode_utf16()` made in
+/// place, `$encodeUtf16(s)`, a JS iterator of it or not, counted:
+/// `s.length`, which counts them, as JS reads a string's length (ADR
+/// 0632). `None` of what's held, which a `next()` may have stepped.
+pub(in crate::lower) fn utf16_length(units: &Expr) -> Option<Expr> {
+    let units = crate::lower::iterators::from_iterator(units.clone()).unwrap_or_else(|units| units);
+    let ExprKind::Call(callee, args) = &units.kind else {
+        return None;
+    };
+    let [text] = args.as_slice() else { return None };
+    (callee.helper_name() == Some("$encodeUtf16")).then(|| Expr::member(text.clone(), "length"))
+}
+
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `s.trim()`, `trim_start()` or `trim_end()`, by Unicode's White_Space, as
     /// Rust's `char::is_whitespace` has it: `$trim(s)`, which trims U+0085

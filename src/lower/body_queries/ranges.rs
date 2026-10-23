@@ -7,7 +7,7 @@
 
 use super::*;
 use crate::lower::bindings::reads_string_length;
-use crate::lower::recognition::{VecView, vec_view};
+use crate::lower::recognition::{VecView, counts_utf16_units, makes_utf16_units, vec_view};
 use rustc_middle::middle::region;
 
 /// A `Vec` or a slice, by the variable it's in and the fields to it.
@@ -468,6 +468,12 @@ fn type_range(ty: ty::Ty<'_>) -> Option<(i128, i128)> {
     })
 }
 
+/// Whether a call of `def_id` of `generic_args` counts a string's UTF-16
+/// units, its JS `length`, `counts_utf16_units`'s, of its `Self`.
+fn reads_utf16_length<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId, generic_args: ty::GenericArgsRef<'tcx>) -> bool {
+    (generic_args.types().next()).is_some_and(|iter_ty| counts_utf16_units(tcx, def_id, iter_ty))
+}
+
 /// Whether `e` reads without changing anything, so its value where a
 /// condition is tested is its value after: `i < xs.len()`.
 fn pure<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>, e: ExprId) -> bool {
@@ -495,6 +501,10 @@ fn pure<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>, e: ExprId) -> bool {
                     slice_length(tcx, def_id, generic_args),
                     Some(SliceLength::Len | SliceLength::IsEmpty)
                 ) || reads_string_length(tcx, def_id)
+                    // A string's `encode_utf16()`, std's, which reads it, and
+                    // its `count()`, its `length` (ADR 0632).
+                    || makes_utf16_units(tcx, def_id, thir[e].ty)
+                    || reads_utf16_length(tcx, def_id, generic_args)
             }) && args.iter().all(|&arg| pure(tcx, thir, arg))
         }
         _ => false,
@@ -848,9 +858,12 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
                     below: Some((slice, Below::LENGTH)),
                 }
             }),
-            // A JS string's `length`, a binding's.
+            // A JS string's `length`, a binding's, or its count of UTF-16
+            // units, `s.encode_utf16().count()` (ADR 0632).
             _ => fn_def(thir[strip(thir, fun)].ty)
-                .filter(|&(def_id, _)| reads_string_length(self.tcx, def_id))
+                .filter(|&(def_id, generic_args)| {
+                    reads_string_length(self.tcx, def_id) || reads_utf16_length(self.tcx, def_id, generic_args)
+                })
                 .map(|_| Range::of(0, STRING_LENGTH_MOST)),
         }
     }

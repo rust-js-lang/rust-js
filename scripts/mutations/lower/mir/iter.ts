@@ -333,4 +333,12 @@ export const mutations: Mutation[] = [
     replace: "            || crate::lower::recognition::cloned_source(self.tcx, ty).is_some())\n            && (crate::lower::recognition::copied_source(self.tcx, ty).is_some() || item())",
     tests: ["test/corpus.test.ts", "-t", "^copied_structs_apart.rs$"],
   },
+  {
+    name: "utf16-count-reduced",
+    breaks: "`s.encode_utf16().count()` counts each unit, `Iterator.from($encodeUtf16(s)).reduce((n) => n + 1, 0)`, not `s.length`",
+    file: "src/lower/mir/iter.rs",
+    find: "            && let Some(length) = crate::lower::std_types::text::utf16_length(&it)\n",
+    replace: "            && let Some(length) = crate::lower::std_types::text::utf16_length(&it).filter(|_| false)\n",
+    tests: ["test/lowering-strings.test.ts", "-t", "a string's count of UTF-16 units is its length"],
+  },
 ];

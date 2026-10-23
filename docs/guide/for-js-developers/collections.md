@@ -783,11 +783,13 @@ More on JS's own values: [JavaScript types](../interop/types.md).
 ## Strings
 
 A `String` and a `&str` are JS strings, but Rust counts in UTF-8 bytes,
-where JS counts UTF-16 code units. `"héllo".len()` is `6`, not `5`.
+where JS counts UTF-16 code units. `"héllo".len()` is `6`, not `5`;
+`s.encode_utf16().count()` counts what JS does, and is `s.length`
+([ADR 0632](../../decisions/0632-a-js-strings-length-is-below-u32-max.md)).
 
 ```rust
-pub fn lengths(s: &str) -> (usize, usize) {
-    (s.len(), s.chars().count())
+pub fn lengths(s: &str) -> (usize, usize, usize) {
+    (s.len(), s.chars().count(), s.encode_utf16().count())
 }
 
 pub fn words(line: &str) -> Vec<&str> {
@@ -873,7 +875,7 @@ import {
 } from "@rust-js/runtime";
 
 export function lengths(s) {
-  return [$byteLen(s), Array.from(s).length];
+  return [$byteLen(s), Array.from(s).length, s.length];
 }
 
 export function words(line) {
@@ -951,7 +953,7 @@ export function toNumber(s) {
 
 | JS | Rust |
 |---|---|
-| `s.length` | `s.len()` in bytes; `s.chars().count()` in characters |
+| `s.length` | `s.encode_utf16().count()` in UTF-16 units; `s.len()` in bytes; `s.chars().count()` in characters |
 | `[...s]` | `s.chars()`, each a `char`, a one-character string in JS |
 | `s.split(",")` | `s.split(',')`, an iterator |
 | `s.trim()` | `s.trim()` |

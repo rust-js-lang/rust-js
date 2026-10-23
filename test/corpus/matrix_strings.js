@@ -76,7 +76,7 @@ function main() {
     const asciiUppercase = $asciiCase(a, true);
     const arg = $asciiCase(a);
     console.log(
-      `${$debugStr(a)}: len ${$byteLen(a)} ${!a} ${length} chars ${nth == null ? "None" : `Some(${$debugStr(nth, "'")})`} rev ${$debugStr(collect)} case ${$debugStr(uppercase)} ${$debugStr(lowercase)} ${$debugStr(asciiUppercase)} ${$debugStr(arg)}`,
+      `${$debugStr(a)}: len ${$byteLen(a)} ${!a} ${length} ${a.length} chars ${nth == null ? "None" : `Some(${$debugStr(nth, "'")})`} rev ${$debugStr(collect)} case ${$debugStr(uppercase)} ${$debugStr(lowercase)} ${$debugStr(asciiUppercase)} ${$debugStr(arg)}`,
     );
     const trim = $trim(a);
     const trimStart = $trimStart(a);

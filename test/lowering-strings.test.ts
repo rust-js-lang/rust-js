@@ -6,7 +6,7 @@
 import { beforeAll, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { buildNode, buildReact, compiler, fixture, run, target } from "./support";
+import { buildNode, buildReact, compiler, fixture, installRuntime, run, target } from "./support";
 
 beforeAll(buildReact, 600_000);
 
@@ -807,4 +807,76 @@ console.log(JSON.stringify({ named: named[0], at: named[1].startsWith("    at ")
   const p = Bun.spawnSync(["node", "run.js"], { cwd: dir, stderr: "pipe" });
   expect([p.exitCode, p.stderr.toString()]).toEqual([0, ""]);
   expect(JSON.parse(p.stdout.toString())).toEqual({ named: "TypeError: boom", at: true, unnamed: "Error: plain" });
+});
+
+// ADR 0632, amended: a string's count of UTF-16 units, `s.encode_utf16()
+// .count()`, is its `length`, which counts them, as React's
+// `getIODescription` tests `value.length < 5`; it was
+// `Iterator.from($encodeUtf16(s)).reduce((n) => n + 1, 0)`. And it's a JS
+// string's length to the ranges, as `js::string::length` is, so a counter
+// below it doesn't wrap. `chars().count()` counts code points, which
+// `length` doesn't, and `len()` bytes.
+test("a string's count of UTF-16 units is its length", async () => {
+  const dir = fixture("utf16-count");
+  writeFileSync(join(dir, "lib.rs"), `pub fn units(s: &str) -> usize {
+    s.encode_utf16().count()
+}
+
+pub fn points(s: &str) -> usize {
+    s.chars().count()
+}
+
+pub fn bytes(s: &str) -> usize {
+    s.len()
+}
+
+pub fn useful(text: &str) -> bool {
+    !(text.encode_utf16().count() < 5 || text.encode_utf16().count() > 500)
+}
+
+pub fn owned(text: String) -> usize {
+    text.encode_utf16().count()
+}
+
+pub fn pairs(s: &str) -> u32 {
+    let mut n = 0;
+    let mut i = 0;
+    while i + 1 < s.encode_utf16().count() {
+        if i % 3 != 0 {
+            i += 1;
+            continue;
+        }
+        i += 1;
+        n += 1;
+        i += 1;
+    }
+    n
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("export function units(s) {\n  return s.length;\n}");
+  expect(js).toContain("export function points(s) {\n  return Array.from(s).length;\n}");
+  expect(js).toContain("export function bytes(s) {\n  return $byteLen(s);\n}");
+  expect(js).toContain("return !(text.length < 5 || text.length > 500);");
+  expect(js).toContain("export function owned(text) {\n  return text.length;\n}");
+  expect(js).toContain("  while (i + 1 < s.length) {\n");
+  expect(js).toContain("    i++;\n");
+  expect(js).not.toContain("$encodeUtf16");
+  writeFileSync(join(dir, "run.mjs"), `import { units, points, bytes, useful, owned, pairs } from "./lib.js";
+const texts = ["", "hi", "hello", "h\\u00e9llo", "\\u{1F600}\\u{1F600}\\u{1F600}", "ab\\u{1F600}", "x".repeat(501)];
+console.log(JSON.stringify(texts.map((t) => [units(t), points(t), bytes(t), useful(t), owned(t), pairs(t)])));
+`);
+  installRuntime(dir);
+  const p = Bun.spawnSync(["node", "run.mjs"], { cwd: dir, stderr: "pipe" });
+  expect([p.exitCode, p.stderr.toString()]).toEqual([0, ""]);
+  expect(JSON.parse(p.stdout.toString())).toEqual([
+    [0, 0, 0, false, 0, 0],
+    [2, 2, 2, false, 2, 1],
+    [5, 5, 5, true, 5, 2],
+    [5, 5, 6, true, 5, 2],
+    [6, 3, 12, true, 6, 2],
+    [4, 3, 6, false, 4, 1],
+    [501, 501, 501, false, 501, 167],
+  ]);
 });

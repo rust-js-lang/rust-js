@@ -827,6 +827,30 @@ pub(in crate::lower) fn slice_length<'tcx>(
     }
 }
 
+/// Whether `def_id`, of an iterator of type `iter_ty`, counts a string's
+/// UTF-16 units: `Iterator::count` of `str::EncodeUtf16`, what
+/// `s.encode_utf16().count()` calls, which is its JS `length` (ADR 0632).
+/// The one answer, of what it's written as and of what the integer ranges
+/// know of it.
+pub(in crate::lower) fn counts_utf16_units<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId, iter_ty: Ty<'tcx>) -> bool {
+    tcx.trait_of_assoc(def_id)
+        .is_some_and(|trait_| tcx.is_diagnostic_item(sym::Iterator, trait_))
+        && tcx.item_name(def_id).as_str() == "count"
+        && is_str_utf16(tcx, iter_ty)
+}
+
+/// Whether a call of `def_id` that gives a `made` makes a string's
+/// `encode_utf16()`, std's, which reads the string and changes nothing.
+pub(in crate::lower) fn makes_utf16_units<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId, made: Ty<'tcx>) -> bool {
+    tcx.crate_name(def_id.krate) == sym::core && is_str_utf16(tcx, made)
+}
+
+/// `std::str::EncodeUtf16`, what a string's `encode_utf16()` gives.
+fn is_str_utf16<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
+    matches!(ty.kind(), ty::Adt(adt, _) if tcx.crate_name(adt.did().krate) == sym::core
+        && tcx.item_name(adt.did()).as_str() == "EncodeUtf16")
+}
+
 /// What a `Vec`'s `Deref`, `DerefMut` or `IndexMut` makes of it, as long
 /// as it is: its slice, `deref` and `deref_mut`, or an item, `index_mut`
 /// (ADR 0576).

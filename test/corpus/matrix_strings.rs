@@ -39,10 +39,11 @@ const STRINGS: &[&str] = &[
 fn main() {
     for &a in STRINGS {
         println!(
-            "{a:?}: len {} {} {} chars {:?} rev {:?} case {:?} {:?} {:?} {:?}",
+            "{a:?}: len {} {} {} {} chars {:?} rev {:?} case {:?} {:?} {:?} {:?}",
             a.len(),
             a.is_empty(),
             a.chars().count(),
+            a.encode_utf16().count(),
             a.chars().nth(1),
             a.chars().rev().collect::<String>(),
             a.to_uppercase(),

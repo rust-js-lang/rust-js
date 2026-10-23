@@ -242,4 +242,20 @@ export const mutations: Mutation[] = [
     replace: "        false\n",
     tests: ["test/corpus.test.ts", "-t", "^product_sign.rs$"],
   },
+  {
+    name: "utf16-count-any-usize",
+    breaks: "`s.encode_utf16().count()` is any `usize` to the ranges, so a counter below it keeps its wrap, `(i + 1) >>> 0 < s.length`",
+    file: "src/lower/body_queries/ranges.rs",
+    find: "                    reads_string_length(self.tcx, def_id) || reads_utf16_length(self.tcx, def_id, generic_args)\n",
+    replace: "                    reads_string_length(self.tcx, def_id)\n",
+    tests: ["test/lowering-strings.test.ts", "-t", "a string's count of UTF-16 units is its length"],
+  },
+  {
+    name: "utf16-count-impure",
+    breaks: "a test of `s.encode_utf16().count()` narrows nothing, as if it changed what it reads, so a counter below it keeps its wrap",
+    file: "src/lower/body_queries/ranges.rs",
+    find: "                    || makes_utf16_units(tcx, def_id, thir[e].ty)\n",
+    replace: "",
+    tests: ["test/lowering-strings.test.ts", "-t", "a string's count of UTF-16 units is its length"],
+  },
 ];

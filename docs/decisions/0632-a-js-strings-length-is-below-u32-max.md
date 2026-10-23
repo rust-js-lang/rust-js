@@ -89,3 +89,42 @@ xs.length` and `i++` too.
 - Mutations `string-length-any-u32`, `string-length-impure`,
   `sum-narrowed-wrapped`, `sum-narrowed-unshifted`,
   `growing-counter-forgotten`, `any-length-a-strings`.
+
+## Amendment: a count of UTF-16 units is the string's `length`
+
+React's `getIODescription` tests a string's length as JS counts it,
+`value.length < 5 || value.length > 500`, UTF-16 units. Its port writes
+the one Rust that counts them, `text.encode_utf16().count()`, which read
+
+```js
+Iterator.from($encodeUtf16(text)).reduce((n) => n + 1, 0) < 5
+```
+
+an array of each unit made, then stepped and counted.
+
+**`s.encode_utf16().count()` is `s.length`**, which counts the same units.
+`recognition::counts_utf16_units`, `Iterator::count` of a
+`str::EncodeUtf16`, answers which call it is, for what's written and for
+the ranges both; `std_types/text.rs`'s `utf16_length` writes it, of the
+`$encodeUtf16(s)` the call counts, made in place. One held, `let mut
+units = s.encode_utf16(); units.next(); units.count()`, is counted as
+before: what's left of it isn't the string's length.
+
+- **It's a JS string's length to the ranges**, as `js::string::length`
+  is, at most `2^32 - 2`, and a test of it narrows what it's compared
+  with: `encode_utf16()` and the `count()` of it read and change nothing.
+  So `while i + 1 < s.encode_utf16().count()` and the steps below it read
+  as below `js::string::length(s)`.
+- **`chars().count()` is still `Array.from(s).length`**: it counts code
+  points, where `length` counts a character beyond U+FFFF, `"😀"`, twice.
+  **`len()` is still `$byteLen(s)`**, UTF-8 bytes.
+- Case: N. The same number, of every string: `length` is how many UTF-16
+  units a JS string is, and `encode_utf16()` is each of them.
+- The string matrix (ADR 0182) counts each of its strings' units, natively
+  and in JS; its corpus case reads `a.length`. The guide's
+  `for-js-developers/collections.md` says it, and its example counts all
+  three.
+- Held by `test/lowering-strings.test.ts`, "a string's count of UTF-16
+  units is its length", run in Node with a character beyond U+FFFF, and
+  the mutations `utf16-count-reduced`, `utf16-count-any-usize` and
+  `utf16-count-impure`.

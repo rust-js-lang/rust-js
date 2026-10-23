@@ -490,7 +490,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Some(IterMethod::Fold) => self.folded(it, (Some(arg()), arg()), (arg_tys, item)),
             Some(IterMethod::Reduce) => self.folded(it, (None, arg()), (arg_tys, item)),
             Some(m) if m.tries() => self.try_folded(it, m, &mut arg, (own, output), span)?,
-            Some(IterMethod::Count) => self.counted(it, item, span)?,
+            Some(IterMethod::Count) => self.counted(it, item, (def_id, iter_ty), span)?,
             Some(IterMethod::Sum | IterMethod::Product) => {
                 let sum = std_method == Some(IterMethod::Sum);
                 self.accumulated((it, def_id), (output, item), sum, span)?
@@ -526,8 +526,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }))
     }
 
-    /// `it.count()`: each item counted, and dropped as `count` drops it.
-    fn counted(&mut self, it: Expr, item: Option<Ty<'tcx>>, span: Span) -> R<Expr> {
+    /// `it.count()`, of `def_id` of an iterator of type `iter_ty`: each item
+    /// counted, and dropped as `count` drops it; of a string's UTF-16 units,
+    /// its `length` (ADR 0632).
+    fn counted(
+        &mut self,
+        it: Expr,
+        item: Option<Ty<'tcx>>,
+        (def_id, iter_ty): (DefId, Ty<'tcx>),
+        span: Span,
+    ) -> R<Expr> {
+        if crate::lower::recognition::counts_utf16_units(self.tcx, def_id, iter_ty)
+            && let Some(length) = crate::lower::std_types::text::utf16_length(&it)
+        {
+            return Ok(length);
+        }
         let n = self.fresh("n");
         let x = self.fresh("item");
         let mut body = Vec::new();

@@ -20,7 +20,7 @@ export const excluded: Record<string, string> = {
   "isize, usize": "rust-js's are wasm32's, 32 bits, where the native run's are 64",
   "checked_ilog2, checked_ilog10, checked_next_power_of_two": "refused yet",
   "a float's copysign, round_ties_even, mul_add, rem_euclid, div_euclid, midpoint": "refused yet",
-  "a string's escape_debug, escape_default, escape_unicode, split_at_checked, encode_utf16": "refused yet",
+  "a string's escape_debug, escape_default, escape_unicode, split_at_checked, and encode_utf16 but its count()": "refused yet",
   "a char's escape_debug, escape_default, escape_unicode, encode_utf8": "refused yet",
   "a float's powf of a power with a fraction, exp, ln, sin and the like": "their last bit is the platform's libm's natively, JS's Math's here, which differ, as two platforms' do",
 };
@@ -391,10 +391,11 @@ const STRINGS: &[&str] = &[
 fn main() {
     for &a in STRINGS {
         println!(
-            "{a:?}: len {} {} {} chars {:?} rev {:?} case {:?} {:?} {:?} {:?}",
+            "{a:?}: len {} {} {} {} chars {:?} rev {:?} case {:?} {:?} {:?} {:?}",
             a.len(),
             a.is_empty(),
             a.chars().count(),
+            a.encode_utf16().count(),
             a.chars().nth(1),
             a.chars().rev().collect::<String>(),
             a.to_uppercase(),
