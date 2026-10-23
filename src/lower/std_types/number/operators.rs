@@ -31,6 +31,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             BinOp::Ge => Some(Op::Ge),
             _ => None,
         };
+        if comparison.is_some() && bounds(ty).is_some_and(|(min, max)| at_bound(op, &l, &r, min, max)) {
+            return Ok(Expr::bool(true));
+        }
         // `char`s by code point, as Rust orders them (ADR 0183).
         if let Some(js_op) = comparison
             && ty.is_char()
@@ -39,9 +42,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(self.text_compare(js_op, l, r));
         }
         if let Some(js_op) = comparison {
-            if Num::of(ty).is_some_and(|num| at_bound(op, &l, &r, num)) {
-                return Ok(Expr::bool(true));
-            }
             return Ok(Expr::bin(js_op, without_zero_sign(l), without_zero_sign(r)));
         }
 
@@ -421,28 +421,41 @@ pub(in crate::lower) fn masked(e: &Expr) -> Option<i128> {
     }
 }
 
-/// Whether `l op r` of an integer is true of every value of its type, its
-/// other side read for nothing else: a range pattern's test of the bound
-/// the type has anyway, `i32::MIN..=-1`'s `i32::MIN <= n`, or
-/// `200..=u8::MAX`'s `n <= u8::MAX`, which isn't written (ADR 0262: it
-/// can't be observed).
-fn at_bound(op: BinOp, l: &Expr, r: &Expr, num: Num) -> bool {
-    if num.float() || num.bits() == 128 {
-        return false;
+/// The least and the greatest value of an integer or a `char`, its code
+/// point, of one `at_bound` can read: not a float's, nor a 128-bit one's.
+fn bounds(ty: Ty<'_>) -> Option<(i128, i128)> {
+    if ty.is_char() {
+        return Some((0, char::MAX as i128));
     }
+    let num = Num::of(ty).filter(|num| !num.float() && num.bits() < 128)?;
     let bits = num.bits();
-    let (min, max) = match num.signed() {
+    Some(match num.signed() {
         true => (-(1i128 << (bits - 1)), (1i128 << (bits - 1)) - 1),
         false => (0, (1i128 << bits) - 1),
+    })
+}
+
+/// Whether `l op r` is true of every value of its type, between `min` and
+/// `max`, its other side read for nothing else: a range pattern's test of
+/// the bound the type has anyway, `i32::MIN..=-1`'s `i32::MIN <= n`, or
+/// `'\u{80}'..=char::MAX`'s `c <= char::MAX`, which isn't written (ADR
+/// 0262: it can't be observed).
+fn at_bound(op: BinOp, l: &Expr, r: &Expr, min: i128, max: i128) -> bool {
+    // A number, or a `char`, a string of one.
+    let value = |e: &Expr| match &e.kind {
+        js::ExprKind::Str(s) => match s.chars().collect::<Vec<_>>()[..] {
+            [c] => Some(c as i128),
+            _ => None,
+        },
+        _ => e.as_int().or_else(|| e.as_bigint()),
     };
-    let int = |e: &Expr| e.as_int().or_else(|| e.as_bigint());
     let (bound, other) = match op {
-        BinOp::Le => match (int(l), int(r)) {
+        BinOp::Le => match (value(l), value(r)) {
             (Some(lo), _) if lo == min => (true, r),
             (_, Some(hi)) if hi == max => (true, l),
             _ => (false, l),
         },
-        BinOp::Ge => match (int(l), int(r)) {
+        BinOp::Ge => match (value(l), value(r)) {
             (_, Some(lo)) if lo == min => (true, l),
             (Some(hi), _) if hi == max => (true, r),
             _ => (false, l),

@@ -113,8 +113,8 @@ export const mutations: Mutation[] = [
     name: "range-bound-tested",
     breaks: "a range pattern's bound its type has anyway is tested, `n >= -2147483648` of `i32::MIN..=-1`",
     file: "src/lower/std_types/number/operators.rs",
-    find: "            if Num::of(ty).is_some_and(|num| at_bound(op, &l, &r, num)) {\n",
-    replace: "            if Num::of(ty).is_some_and(|num| false && at_bound(op, &l, &r, num)) {\n",
+    find: "        if comparison.is_some() && bounds(ty).is_some_and(|(min, max)| at_bound(op, &l, &r, min, max)) {\n",
+    replace: "        if false && comparison.is_some() && bounds(ty).is_some_and(|(min, max)| at_bound(op, &l, &r, min, max)) {\n",
     tests: ["test/lowering-numbers.test.ts", "-t", "a range pattern tests no bound its type has"],
   },
   {
@@ -123,6 +123,14 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_types/number/operators.rs",
     find: "    bound && !other.has_effects()\n",
     replace: "    bound\n",
+    tests: ["test/lowering-numbers.test.ts", "-t", "a range pattern tests no bound its type has"],
+  },
+  {
+    name: "char-bound-tested",
+    breaks: "a `char` range's bound every `char` passes is tested, `c >= \"\\0\"` of `'\\0'..='/'`",
+    file: "src/lower/std_types/number/operators.rs",
+    find: "    if ty.is_char() {\n        return Some((0, char::MAX as i128));\n    }\n",
+    replace: "",
     tests: ["test/lowering-numbers.test.ts", "-t", "a range pattern tests no bound its type has"],
   },
 ];

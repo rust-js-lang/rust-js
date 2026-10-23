@@ -71,3 +71,7 @@ evaluated where it does something, a call inlined into it. The case is
 `test/lowering-numbers.test.ts`, "a range pattern tests no bound its type
 has", and the mutations `range-bound-tested` and
 `range-bound-drops-effects`.
+
+A `char`'s are its code points': `'\0'..='/'` is `c <= "/"`, and
+`'\u{80}'..=char::MAX` is `c >= "\x80"`, with no `$cmp` of the greatest
+`char`. Held by the same test, and the mutation `char-bound-tested`.
