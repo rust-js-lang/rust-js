@@ -549,3 +549,13 @@ is dropped, as std's `try_process` drops them, `$collectResults` and
 (#120). It's `$repeat(x, n, clone, drop)`, as std's `from_elem` makes it:
 `n - 1` clones, then `x` itself, each slot its own value, and of `n` 0,
 `x` dropped. Held by `test/corpus/vec_repeat_drops.rs`.
+
+## Amendment: a closure made as a block's value
+
+A closure that holds a value with a destructor, made as a block's value
+for a `let`, `let c = { let r = r.clone(); move || *r };`, was refused
+(#120), only one made for the `let` itself or a call being placed. The
+block's variables it took are the function's in the JS, seen where the
+`let` is, so it's placed too, through scopes, and drops what it took as a
+closure made for the `let` does. Held by
+`test/corpus/closure_block_value.rs`.

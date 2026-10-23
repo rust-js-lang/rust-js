@@ -98,4 +98,12 @@ export const mutations: Mutation[] = [
     replace: "                    if !placed {\n",
     tests: ["test/corpus.test.ts", "-t", "^returned_closure_drops.rs$"],
   },
+  {
+    name: "closure-block-value-refused",
+    breaks: "a closure holding an `Rc` made as a block's value for a `let` is refused",
+    file: "src/lower/drops/facts.rs",
+    find: "                            self.block_for_let(parent.expect(\"a block\"))\n",
+    replace: "                            false\n",
+    tests: ["test/corpus.test.ts", "-t", "^closure_block_value.rs$"],
+  },
 ];
