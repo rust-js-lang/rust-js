@@ -219,14 +219,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^from_iter_of_maps.rs$"],
   },
   {
-    name: "rposition-of-user-refused",
-    breaks: "`rposition` of the crate's double-ended, exact-sized iterator is refused",
-    file: "src/lower/mir/iter/collect.rs",
-    find: "            let back = made || self.knows_its_back(iter_ty) || self.user_double_ended(iter_ty);\n",
-    replace: "            let back = made || self.knows_its_back(iter_ty);\n",
-    tests: ["test/corpus.test.ts", "-t", "^user_iterator_ends.rs$"],
-  },
-  {
     name: "collects-by-fold-not-strings",
     breaks: "`collect` into a `String` of the crate's iterator steps it by `next`, not by its own `fold`",
     file: "src/lower/mir/iter/collect.rs",
@@ -249,5 +241,13 @@ export const mutations: Mutation[] = [
     find: "        match recognition.folds_its_own(iter_ty) || recognition.folds_by_its_own_nth(iter_ty) {",
     replace: "        match recognition.folds_its_own(iter_ty) {",
     tests: ["test/corpus.test.ts", "-t", "^own_nth_through_adapters.rs$"],
+  },
+  {
+    name: "rposition-of-lazy-refused",
+    breaks: "`rposition` of a lazy exact-sized, double-ended iterator is made so by `as_exact_size`",
+    file: "src/lower/mir/iter/collect.rs",
+    find: "            // What a `&mut` lends, which it's stepped from its back as it is.\n",
+    replace: "            if self.knows_its_back(iter_ty) == self.knows_its_back(iter_ty) { return Err(self.unsupported(span, \"`rposition`\")); }\n",
+    tests: ["test/corpus.test.ts", "-t", "^rposition_of_lazy.rs$"],
   },
 ];

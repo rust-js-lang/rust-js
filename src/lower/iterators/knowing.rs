@@ -231,6 +231,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let name = if skip { "$skipping" } else { "$taking" };
             return Ok(Expr::call_helper(name, vec![source_value, n]));
         }
+        // An enumeration made here of an array's items, `$enumerate` of their
+        // `$iter`, as `as_double_ended` makes it.
+        if let Some(source) = crate::lower::recognition::enumerated_source(self.tcx, ty)
+            && self.steps_an_array(source.peel_refs())
+            && let Some(source_value) = crate::lower::iterators::enumeration_source(&value)
+        {
+            let items = self.std_iterator(source_value.clone(), source.peel_refs());
+            return Ok(Expr::call_helper("$enumerate", vec![items]));
+        }
         // A map made here, `src.map(f)`: its source's, each `f`'s, as
         // `as_double_ended` makes it (ADR 0455).
         if let Some(source) = crate::lower::recognition::mapped_source(self.tcx, ty)

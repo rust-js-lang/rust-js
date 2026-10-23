@@ -640,7 +640,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0453 `{:?}` of a slice's iterator is what's left of it](decisions/0453-a-slice-iterators-debug.md)
 - [0454 A `&mut` given as a type parameter's value is a box](decisions/0454-a-mut-given-as-a-type-parameter.md)
 - [0455 `nth_back`, `rfold` and `rfind` step from the back](decisions/0455-stepping-from-the-back.md)
-- [0456 A generic `ExactSizeIterator` knows its length](decisions/0456-a-generic-exact-size-iterator.md)
+- [0456 A generic `ExactSizeIterator` knows its length](decisions/0456-a-generic-exact-size-iterator.md) *(amended: `rposition` of what `as_exact_size` makes knowing both)*
 - [0457 An `IntoIterator` bound on a reference is given its dictionary](decisions/0457-an-into-iterator-bound-on-a-reference.md)
 - [0458 `try_fold` stops at the first `None` or `Err`, leaving the rest to step](decisions/0458-try-fold.md)
 - [0459 A hand-written `Serialize` or `Deserialize` is its body, over the JSON codec](decisions/0459-hand-written-serde-impls.md)

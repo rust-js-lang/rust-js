@@ -62,3 +62,18 @@ back or its length is asked, it's made knowing them,
 Where nothing asks, it's made as it was, and given as it was to generic
 code. A `map` of one whose `len()` is asked is refused still. Held by
 `test/corpus/user_iterator_ends.rs`.
+
+## Amendment: `rposition` of what `as_exact_size` makes knowing both
+
+`rposition` of a lazy iterator asked its type alone whether it knew its
+back and its length, and refused `v.iter().map(f).rposition(p)`, though
+`as_exact_size` makes a map made in place `$mapEnds` of the array's
+`$iter`. `rposition` now asks `as_exact_size` alone, which makes it
+knowing both or refuses: a map, a copy, a `rev`, a string's bytes, the
+crate's own, and an `enumerate` of an array's items made in place,
+`$enumerate` of their `$iter`, as `as_double_ended` makes it. A map held in
+a variable, a `skip`, a `take`, a map of a range or of the crate's
+iterator stay refused. ADR 0262's case: C, an error where Rust is fine.
+Held by `test/corpus/rposition_of_lazy.rs` and the mutations
+`rposition-of-lazy-refused`, `exact-size-enumerate-unmade` and
+`rposition-of-user-refused`.
