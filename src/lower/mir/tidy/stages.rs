@@ -352,7 +352,7 @@ pub(super) const STAGES: &[Stage] = &[
             // it's made: `const _$1 = f(); .. _$1.TAG ..`, not `((r) =>
             // ..)(f())`.
             pass("applied values", |b, h| {
-                let set = closures_set(b);
+                let set = js::Writes::of(b).by_closures();
                 let mut taken = HashSet::new();
                 js::names_in(b, &mut taken);
                 js::statement_lists(b, &mut |s| applied_values(s, &set, h.plain, &mut taken))
@@ -453,7 +453,7 @@ fn decided_tests_of(body: &mut Vec<Stmt>, _: &Hints) {
 /// What's read once, in place, of what the body sets as it is now.
 fn inlined_of(body: &mut Vec<Stmt>, hints: &Hints) {
     let changed = changing(body);
-    let set = closures_set(body);
+    let set = js::Writes::of(body).by_closures();
     let paired = paired_temporaries(body);
     js::statement_lists(body, &mut |s| {
         inlined(s, &changed, &set, hints.plain, hints.captured, &paired)

@@ -609,7 +609,7 @@ fn fallen_declared(body: &mut Vec<Stmt>) {
                 span: value.span,
                 ..Expr::bin(op, value.clone(), fallback)
             };
-            body[i].kind = match set_in(&body[i + 2..], &name) {
+            body[i].kind = match js::Writes::of(&body[i + 2..]).may_replace(&name) {
                 true => StmtKind::Let(name, Some(value)),
                 false => StmtKind::Const(name, value),
             };
@@ -641,25 +641,6 @@ fn fallback_of(stmt: &Stmt, name: &str) -> Option<(Op, Expr)> {
         },
         _ => None,
     }
-}
-
-/// Whether `stmts` set the variable `name`, in a closure too: assign it, or
-/// make a `&mut`'s handle on it.
-fn set_in(stmts: &[Stmt], name: &str) -> bool {
-    let is = |e: &Expr| matches!(&e.kind, ExprKind::Var(v) if v == name);
-    let mut stmts = stmts.to_vec();
-    let mut set = false;
-    js::each_block_mut(&mut stmts, &mut |list| {
-        set |= list
-            .iter()
-            .any(|s| matches!(&s.kind, StmtKind::Assign(target, _) | StmtKind::Compound(_, target, _) if is(target)));
-    });
-    js::each_expr_mut(&mut stmts, &mut |e| {
-        if let ExprKind::Handle(place) | ExprKind::Pair(place, _) = &e.kind {
-            set |= is(place);
-        }
-    });
-    set
 }
 
 /// `const type = a || b || undefined; return type ?? "Object";` is `const
@@ -1123,20 +1104,10 @@ fn shadows(body: &mut Vec<Stmt>, own: Option<&HashSet<String>>) {
 fn shadow(body: &[Stmt], own: Option<&HashSet<String>>) -> Option<(String, String)> {
     // What closures set, and what their parameters are named, which a
     // name read in them would mean instead.
-    let mut in_closures = HashSet::new();
-    let mut copy = body.to_vec();
-    js::each_expr_mut(&mut copy, &mut |e| {
-        if let ExprKind::Arrow(params, stmts) | ExprKind::AsyncArrow(params, stmts) = &mut e.kind {
+    let mut in_closures = js::Writes::of(body).replaced_in_closures;
+    js::each_expr(body, &mut |e| {
+        if let ExprKind::Arrow(params, _) | ExprKind::AsyncArrow(params, _) = &e.kind {
             in_closures.extend(params.iter().flat_map(|p| p.names()).map(str::to_string));
-            js::statement_lists(stmts, &mut |list| {
-                in_closures.extend(list.iter().filter_map(|s| match &s.kind {
-                    StmtKind::Assign(target, _) => match &target.kind {
-                        ExprKind::Var(name) => Some(name.clone()),
-                        _ => None,
-                    },
-                    _ => None,
-                }));
-            });
         }
     });
     let mut walk = Walk::default();

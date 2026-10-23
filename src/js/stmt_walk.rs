@@ -167,36 +167,16 @@ pub(crate) fn strict_equality(e: Expr) -> Expr {
 /// `const list = [];`, as JS writes it (ADR 0278). A variable a `&mut`'s
 /// handle sets is set.
 pub(crate) fn constants(body: &mut Vec<Stmt>) {
-    let mut set = HashSet::new();
-    each_block_mut(body, &mut |stmts| {
-        for stmt in stmts.iter() {
-            if let StmtKind::Assign(target, _) = &stmt.kind {
-                set.extend(var_of(target));
-            }
-        }
-    });
-    each_expr_mut(body, &mut |e| {
-        if let ExprKind::Handle(place) | ExprKind::Pair(place, _) = &e.kind {
-            set.extend(var_of(place));
-        }
-    });
+    let writes = Writes::of(body);
     each_block_mut(body, &mut |stmts| {
         for stmt in stmts.iter_mut() {
             if let StmtKind::Let(name, Some(value)) = &stmt.kind
-                && !set.contains(name)
+                && !writes.may_replace(name)
             {
                 stmt.kind = StmtKind::Const(name.clone(), value.clone());
             }
         }
     });
-}
-
-/// The variable `place` is, if it's one.
-fn var_of(place: &Expr) -> Option<String> {
-    match &place.kind {
-        ExprKind::Var(name) => Some(name.clone()),
-        _ => None,
-    }
 }
 
 /// How many times `stmts` name the variable `name`, read or written.

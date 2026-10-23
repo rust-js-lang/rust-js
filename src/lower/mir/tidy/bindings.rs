@@ -159,7 +159,7 @@ pub(super) fn alias_variables(body: &mut Vec<Stmt>) {
                     .rev()
                     .find(|&j| js::mentions_in(&stmts[j..=j], alias) > 0);
                 // What it's of set nowhere from it to its last read.
-                let kept = last.is_some_and(|last| assigned(&mut stmts[i + 1..=last].to_vec()).contains(of));
+                let kept = last.is_some_and(|last| js::Writes::of(&stmts[i + 1..=last]).may_replace(of));
                 if !kept {
                     let (alias, of) = (alias.clone(), Expr::var(of));
                     stmts.remove(i);
@@ -528,25 +528,6 @@ pub(super) fn rebinds(stmts: &[Stmt], name: &str) -> bool {
         }
     });
     found
-}
-
-/// Whether `stmts` set something of `name`'s, `name[0] = ..`, a closure's
-/// in them too.
-pub(super) fn sets_through(stmts: &[Stmt], name: &str) -> bool {
-    let mut set = false;
-    js::each_list(stmts, &mut |list| {
-        for stmt in list.iter() {
-            if let StmtKind::Assign(target, _) = &stmt.kind {
-                target.visit_vars(&mut |v| set |= v == name);
-            }
-        }
-    });
-    js::each_expr(stmts, &mut |e| {
-        if let ExprKind::Arrow(_, body) | ExprKind::AsyncArrow(_, body) = &e.kind {
-            set |= sets_through(body, name);
-        }
-    });
-    set
 }
 
 /// Whether a closure in `stmts` reads `name`.
@@ -1086,23 +1067,6 @@ pub(super) fn declarations(body: &mut Vec<Stmt>) {
         }
     });
     js::constants(body);
-}
-
-/// The variables `body` assigns, and each a handle is on, which its
-/// setter assigns (ADR 0099).
-pub(super) fn assigned(body: &mut Vec<Stmt>) -> HashSet<String> {
-    let mut assigned = HashSet::new();
-    js::each_block_mut(body, &mut |stmts| {
-        for stmt in stmts.iter() {
-            if let StmtKind::Assign(target, _) = &stmt.kind
-                && let ExprKind::Var(name) = &target.kind
-            {
-                assigned.insert(name.clone());
-            }
-        }
-    });
-    assigned.extend(handled(body));
-    assigned
 }
 
 /// The names `stmts` declare, a destructuring's too, not in blocks inside

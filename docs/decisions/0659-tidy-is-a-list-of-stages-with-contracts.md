@@ -116,3 +116,9 @@ The review's other three, as rust-js takes them, each a change of its own:
   (`scripts/mutations/lower/mir/tidy/stages.ts`).
 - A broken contract is a panic in a debug build: a test that ran fine may
   fail where tidy was wrong all along, and should.
+
+## Extended: what a pass reads has one owner
+
+What a tree writes of its variables, which several passes read, is
+`js::Writes`'s alone, and a tree's walks are written once
+([ADR 0670](0670-a-trees-writes-have-one-owner.md)).

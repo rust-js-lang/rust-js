@@ -393,29 +393,6 @@ fn read_past_calls(e: &Expr, set: &HashSet<String>, plain: &HashSet<String>) -> 
     }
 }
 
-/// The variables a closure in `body` sets, `x = ..` in an arrow's body.
-fn closures_set(body: &[Stmt]) -> HashSet<String> {
-    let mut set = HashSet::new();
-    js::each_expr(body, &mut |e| {
-        if let ExprKind::Arrow(_, body) | ExprKind::AsyncArrow(_, body) = &e.kind {
-            js::each_list(body, &mut |list| {
-                for stmt in list.iter() {
-                    if let StmtKind::Assign(target, _) = &stmt.kind {
-                        let mut root = target;
-                        while let ExprKind::Member(of, _) | ExprKind::Index(of, _) = &root.kind {
-                            root = of;
-                        }
-                        if let ExprKind::Var(v) = &root.kind {
-                            set.insert(v.clone());
-                        }
-                    }
-                }
-            });
-        }
-    });
-    set
-}
-
 /// Whether making `e` reads only what no call changes: an element, array or
 /// object of constants, of variables nothing sets again, of imports and of
 /// arrows, which capture what they read, and of such elements.
@@ -447,28 +424,18 @@ fn inert_element(e: &Expr, changing: &HashSet<String>) -> bool {
 /// The variables what's called may set: a closure's, and a getter's and
 /// setter's handle's, `{ get value() { return n; }, set value(v) { n = v; } }`.
 fn set_elsewhere(body: &[Stmt]) -> HashSet<String> {
-    let mut set = closures_set(body);
-    set.extend(handled(body));
+    let writes = js::Writes::of(body);
+    let mut set = writes.by_closures();
+    set.extend(writes.handled);
     set
 }
 
-/// The variables a getter's and setter's handle is made of, which what it's
-/// given may set.
-fn handled(body: &[Stmt]) -> HashSet<String> {
-    let mut handled = HashSet::new();
-    js::each_expr(body, &mut |e| {
-        if let ExprKind::Handle(place) | ExprKind::Pair(place, _) = &e.kind
-            && let ExprKind::Var(name) = &place.kind
-        {
-            handled.insert(name.clone());
-        }
-    });
-    handled
-}
-
-/// The variables something may change: each `let`'s, and each assigned.
+/// The variables something may change: each `let`'s, each assigned, and
+/// each a handle's made on.
 fn changing(body: &mut Vec<Stmt>) -> HashSet<String> {
-    let mut changing = assigned(body);
+    let writes = js::Writes::of(body);
+    let mut changing = writes.replaced;
+    changing.extend(writes.handled);
     js::each_block_mut(body, &mut |stmts| {
         for stmt in stmts.iter() {
             if let StmtKind::Let(name, _) = &stmt.kind {
