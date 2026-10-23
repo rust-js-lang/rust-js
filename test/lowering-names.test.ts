@@ -135,7 +135,7 @@ test("a match that's an if chain has its comments in its arms", () => {
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("  if (n === 0) {\n    // Zero itself\n    return \"zero\";\n");
-  expect(js).toContain("      // Below zero\n      return \"negative\";\n");
+  expect(js).toContain("  if (n <= -1) {\n    // Below zero\n    return \"negative\";\n");
 });
 
 // ADR 0630: a block comment with code after it on its line, inside an
