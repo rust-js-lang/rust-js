@@ -22,6 +22,9 @@ pub(crate) enum Command {
     Checks(Checks),
     /// A crate, compiled.
     Build(Build),
+    /// `--tidy-passes`: each of tidy's passes, a line each, in the order
+    /// they run, what `--tidy-until` may name (ADR 0659).
+    TidyPasses,
 }
 
 /// A crate's checks: its root, whose `Cargo.toml` names them, and the JS
@@ -53,6 +56,9 @@ pub(crate) struct Build {
     /// `--std-bodies`: the crate is `@rust-js/std`, given std's bodies to
     /// lower, each from the MIR the toolchain ships (ADR 0561).
     pub std_bodies: bool,
+    /// `--tidy-until <stage/pass>`: each body's JS as tidy leaves it after
+    /// that pass, to see what each pass does (ADR 0659).
+    pub tidy_until: Option<String>,
     /// What's after `--`, rustc's as-is, e.g. `-- --sysroot /sysroot`.
     pub rustc: Vec<String>,
 }
@@ -65,6 +71,7 @@ pub(crate) fn parse(args: Vec<String>) -> Result<Command, String> {
         Some("--runtime-module") if args.len() == 1 => return Ok(Command::RuntimeModule),
         Some("--version-json") if args.len() == 1 => return Ok(Command::VersionJson),
         Some("--version") if args.len() == 1 => return Ok(Command::Version),
+        Some("--tidy-passes") if args.len() == 1 => return Ok(Command::TidyPasses),
         Some("--rustc") => return Ok(Command::Rustc(args[1..].to_vec())),
         Some("--checks") => {
             let [input, files @ ..] = &args[1..] else {
@@ -99,6 +106,14 @@ pub(crate) fn parse(args: Vec<String>) -> Result<Command, String> {
     }
     let manifest = valued(&mut ours, "--manifest", "a path")?.map(PathBuf::from);
     let std_coverage = valued(&mut ours, "--std-coverage", "a path")?.map(PathBuf::from);
+    let tidy_until = valued(&mut ours, "--tidy-until", "a pass, `stage/pass`")?;
+    if let Some(pass) = &tidy_until
+        && !crate::lower::tidy_pass_names().contains(pass)
+    {
+        return Err(format!(
+            "--tidy-until: no pass `{pass}`; `rust-js --tidy-passes` lists them"
+        ));
+    }
     let test = ours.first().is_some_and(|a| a == "--test");
     let (input, output) = match &ours[usize::from(test)..] {
         [input] => (PathBuf::from(input), PathBuf::from(input).with_extension("js")),
@@ -122,6 +137,7 @@ pub(crate) fn parse(args: Vec<String>) -> Result<Command, String> {
         manifest,
         std_coverage,
         std_bodies,
+        tidy_until,
         rustc: rustc.to_vec(),
     }))
 }

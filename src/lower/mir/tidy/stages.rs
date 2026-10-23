@@ -1,0 +1,484 @@
+//! Tidy's passes, in the order they run, in stages, each with what it
+//! leaves a body with (ADR 0659): the one list of them, which `tidy` runs
+//! and `--tidy-until` stops in. A pass reads what it needs of the body as
+//! the body is when it runs, never a fact an earlier pass worked out.
+
+use super::contracts::{self, Contract};
+use super::*;
+
+/// One of tidy's rewrites: what it does to a body, by what `hints` say.
+pub(super) struct Pass {
+    pub(super) name: &'static str,
+    pub(super) run: fn(&mut Vec<Stmt>, &Hints),
+}
+
+/// A run of passes for one job, and what holds of a body once it's done,
+/// checked in a debug build, past what holds of every body
+/// (`contracts::ALWAYS`).
+pub(super) struct Stage {
+    pub(super) name: &'static str,
+    pub(super) passes: &'static [Pass],
+    pub(super) ensures: &'static [Contract],
+}
+
+const fn pass(name: &'static str, run: fn(&mut Vec<Stmt>, &Hints)) -> Pass {
+    Pass { name, run }
+}
+
+/// Each stage, in order.
+pub(super) const STAGES: &[Stage] = &[
+    Stage {
+        name: "flags",
+        passes: &[
+            // A guard of a handle made for it alone: the place it's a handle on.
+            pass("unguarded", |b, _| crate::lower::std_types::cell::unguarded(b)),
+            // Where a drop's flag is known, no test of it, nor a `try` for it.
+            pass("settled flags", |b, h| flags::settled_flags(b, h.flags)),
+        ],
+        ensures: &[],
+    },
+    // Twice: what a block's statements, in its place, are followed by, and
+    // a loop's label nothing names then.
+    Stage {
+        name: "jumps",
+        passes: JUMPS,
+        ensures: &[],
+    },
+    Stage {
+        name: "jumps again",
+        passes: JUMPS,
+        ensures: &[],
+    },
+    Stage {
+        name: "values",
+        passes: &[
+            // What a label's block, gone, left past a jump.
+            pass("unreachable", |b, _| js::statement_lists(b, &mut unreachable_after)),
+            pass("or tests", |b, _| bottom_up(b, &mut or_tests)),
+            pass("branch values", branch_values_of),
+            pass("unread result", |b, h| unread_result(b, h.result)),
+            pass("guarded", |b, _| js::statement_lists(b, &mut guarded)),
+            pass("declarations", |b, _| declarations(b)),
+            pass("aliases", |b, h| aliases(b, h.captured)),
+            // A test an earlier one decided, `if (x != null) { return x; } ..
+            // if (x != null)`, where nothing between changes what it reads:
+            // its branch; and a tail MIR wrote into both branches, once,
+            // after them.
+            pass("decided tests", decided_tests_of),
+            // A flag whose only test was such a drop's, read nowhere now,
+            // goes with its writes.
+            pass("settled flags", |b, h| flags::settled_flags(b, h.flags)),
+            pass("shared tails", |b, _| js::statement_lists(b, &mut shared_tails)),
+        ],
+        ensures: &[],
+    },
+    Stage {
+        name: "loops",
+        passes: &[
+            // The innermost first: what a loop ends with may be another,
+            // recovered. An iterator a loop inside another makes, a `let`
+            // assigned each time, read by nothing else.
+            pass("loops", |b, h| {
+                let mut taken = mentions(b);
+                bottom_up(b, &mut |stmts| loops(stmts, &mut taken, h.numbers));
+            }),
+            // A match's tree of tests, its arms reached through a block MIR
+            // made: the chain of its arms, now that the loops are made.
+            pass("decisions", |b, _| bottom_up(b, &mut decisions::decisions)),
+            // What the program wrote after a loop, MIR moved into its way out.
+            pass("exits after", |b, _| js::statement_lists(b, &mut exits_after)),
+            pass("early returns", |b, _| js::statement_lists(b, &mut early_returns)),
+            pass("early breaks", |b, _| {
+                js::statement_lists(b, &mut |s| early_breaks(s, false))
+            }),
+            pass("settle jumps", |b, _| settle_jumps(b)),
+            // A `let` declared first, its one write now beside it, what a
+            // loop held: a `const` there.
+            pass("declarations", |b, _| declarations(b)),
+            pass("continued", |b, h| {
+                js::statement_lists(b, &mut |s| continued(s, &h.written.continues))
+            }),
+            pass("tail jumps", |b, _| js::statement_lists(b, &mut |s| tail_jumps(s))),
+            pass("innermost jumps", |b, _| {
+                js::statement_lists(b, &mut |s| innermost_jumps(s))
+            }),
+            // A chain of tests a loop ended, its body now ending where the
+            // chain's does.
+            pass("branch values", branch_values_of),
+            pass("unlabeled", |b, _| js::statement_lists(b, &mut unlabeled)),
+        ],
+        ensures: &[],
+    },
+    Stage {
+        name: "logicals",
+        passes: &[
+            pass("logical blocks", |b, h| {
+                let (logicals, returns, booleans) = (&h.written.logicals, h.returns, h.booleans);
+                js::statement_lists(b, &mut |s| logical_blocks(s, logicals, returns, booleans))
+            }),
+            pass("logical returns", |b, h| {
+                let (logicals, returns, booleans) = (&h.written.logicals, h.returns, h.booleans);
+                js::statement_lists(b, &mut |s| logical_returns(s, logicals, returns, booleans))
+            }),
+            pass("falsy values", |b, h| falsy_values(b, h.falsy, h.tested)),
+            pass("filtered guards", |b, _| {
+                let changing = changing(b);
+                js::statement_lists(b, &mut |s| filtered_guards(s, &changing))
+            }),
+        ],
+        ensures: &[],
+    },
+    Stage {
+        name: "names",
+        passes: &[
+            pass("alias variables", |b, _| alias_variables(b)),
+            pass("read handles", |b, _| read_handles(b)),
+            pass("plain reads", |b, h| {
+                js::statement_lists(b, &mut |s| plain_reads(s, h.plain, h.captured))
+            }),
+            pass("destructured", |b, h| {
+                js::statement_lists(b, &mut |s| destructured(s, h.patterns))
+            }),
+            pass("rest parts", |b, _| js::statement_lists(b, &mut rest_parts)),
+            // What an array made for its parts left, `const _5 = 6;`, too.
+            pass("parts' aliases", |b, _| alias_variables(b)),
+            pass("named temporaries", |b, _| named_temporaries(b)),
+            pass("consumed into iterators", |b, h| {
+                iterators::consumed_into_iters(b, h.fuse)
+            }),
+            pass("range items", |b, _| {
+                js::each_expr_mut(b, &mut crate::lower::std_types::range::range_items)
+            }),
+            pass("range steps", |b, _| {
+                js::each_expr_mut(b, &mut crate::lower::std_types::range::range_steps)
+            }),
+            pass("eager chains", |b, _| eager_chains(b)),
+            pass("eager spreads", |b, _| {
+                js::statement_lists(b, &mut |s| eager_spreads(s))
+            }),
+            // A block, or branches, a function's body or a loop's ends in,
+            // the function's value made in them, `?`'s.
+            pass("returned in branches", |b, h| {
+                js::statement_lists(b, &mut |s| returned_in_branches(s, h.result))
+            }),
+            pass("shared tails", |b, _| js::statement_lists(b, &mut shared_tails)),
+            // Each `let` where it's first named, a `const` where it's
+            // written once.
+            pass("sunk lets", |b, _| js::statement_lists(b, &mut sunk_lets)),
+            pass("declarations", |b, _| declarations(b)),
+            // A pattern's copy of a variable, `const error = raw;`: the variable.
+            pass("copied bindings", |b, _| {
+                js::statement_lists(b, &mut |s| copied_bindings(s))
+            }),
+            // A tuple read item by item, `children[0]`: its items.
+            pass("tuple reads", |b, h| {
+                let changing = changing(b);
+                let set_elsewhere = set_elsewhere(b);
+                js::statement_lists(b, &mut |s| tuple_reads(s, &changing, &set_elsewhere, h.captured))
+            }),
+            // `dyn` values given to JS, `[{ value, impl }].map((item) =>
+            // item.value)`: the values.
+            pass("unwrapped values", |b, _| {
+                js::statement_lists(b, &mut |s| unwrapped_values(s))
+            }),
+        ],
+        ensures: &[],
+    },
+    Stage {
+        name: "in place",
+        passes: &[
+            // A match's table read, `TITLES[kind]`, where it's written,
+            // before what it's given to reads it in place.
+            pass("table reads", |b, h| {
+                js::statement_lists(b, &mut |s| table_reads(s, &h.written.tables))
+            }),
+            // What an element MIR made only where a test holds reads, as one
+            // value, read in place below, where the test holds.
+            pass("guarded lets", |b, h| {
+                js::statement_lists(b, &mut |s| guarded_lets(s, h.captured))
+            }),
+            pass("inlined", inlined_of),
+            pass("branch values", branch_values_of),
+            pass("tables in values", |b, h| {
+                js::statement_lists(b, &mut |s| table_reads(s, &h.written.tables))
+            }),
+            pass("declarations", |b, _| declarations(b)),
+            pass("inlined in values", inlined_of),
+            // A tuple's part held, `const _3$0 = v.pop();`, which an arm's
+            // binding takes, by that name.
+            pass("named temporaries", |b, _| named_temporaries(b)),
+            pass("implied tests", |b, _| {
+                let changing = changing(b);
+                js::each_expr_mut(b, &mut |e| implied_tests(e, &changing))
+            }),
+            // A chain read in place now, `$lent($iter(xs)).some(f)` of `const
+            // _7 = $iter(xs);`: the array's; and a range made there, its
+            // numbers made as they're stepped.
+            pass("consumed into iterators", |b, h| {
+                iterators::consumed_into_iters(b, h.fuse)
+            }),
+            pass("range items", |b, _| {
+                js::each_expr_mut(b, &mut crate::lower::std_types::range::range_items)
+            }),
+            pass("range steps", |b, _| {
+                js::each_expr_mut(b, &mut crate::lower::std_types::range::range_steps)
+            }),
+            pass("eager chains", |b, _| eager_chains(b)),
+            // Of each, a callback that passes what it's given on to Rust's
+            // function, `(x, i) => f(x, i)`: `f` itself.
+            pass("passed on", |b, h| {
+                js::each_expr_mut(b, &mut |e| passed_on(e, h.forwarding))
+            }),
+            // A closure read in place, called where it's made, of what reads
+            // the same: its value of what it's given, `r._0.data`, as a call
+            // of one made in place is (ADR 0449).
+            pass("applied arrows", |b, _| js::each_expr_mut(b, &mut applied_arrows)),
+            // An element's place checked, then set: the place the check gives.
+            pass("checked sets", |b, _| js::statement_lists(b, &mut checked_sets)),
+            // A copy made of what's spread, read in place, `{ ...a, ...{ ...b
+            // } }`: what it's a copy of.
+            pass("spread spreads", |b, _| js::each_expr_mut(b, &mut spread_spreads)),
+        ],
+        ensures: &[],
+    },
+    Stage {
+        name: "chains",
+        passes: &[
+            // Decided tests and shared tails again, of what's read in place now.
+            pass("decided tests", decided_tests_of),
+            pass("shared tails", |b, _| js::statement_lists(b, &mut shared_tails)),
+            // A chain's tests, where each is read in place now: `if (a) { if
+            // (f(a)) { .. } }`, `if (a && f(a))`.
+            pass("and tests", |b, h| {
+                bottom_up(b, &mut |s| and_tests(s, &h.written.conditions))
+            }),
+            // An `if` the program wrote with an `else`, as it wrote it, its
+            // tests one now; and the `continue`s its branches end with, which
+            // it didn't write, gone where the loop's body ends anyway.
+            pass("written elses", |b, h| {
+                js::statement_lists(b, &mut |s| written_elses(s, &h.written.elses))
+            }),
+            pass("tail continues", |b, h| {
+                js::statement_lists(b, &mut |s| tail_continues(s, &h.written.continues))
+            }),
+            // What a block ends after, its tests read in place now: its `else`.
+            pass("tail elses", |b, _| js::statement_lists(b, &mut |s| tail_elses(s))),
+            // A check MIR wrote first in a chain's last `else`: the chain's arm.
+            pass("chained checks", |b, _| {
+                js::statement_lists(b, &mut |s| chained_checks(s))
+            }),
+            pass("unlabeled", |b, _| js::statement_lists(b, &mut unlabeled)),
+            // A value a block MIR made gives where nothing else does: given
+            // first, and the block's `break`s that go where it ends anyway,
+            // gone.
+            pass("default values", |b, _| {
+                js::statement_lists(b, &mut |s| decisions::default_values(s))
+            }),
+            // Once each block's `else` is made of its `break`s, a block's
+            // jumps to one after it, that one.
+            pass("jumps past blocks", |b, _| {
+                js::statement_lists(b, &mut |s| jumps_past_blocks(s))
+            }),
+            pass("settle jumps", |b, _| settle_jumps(b)),
+            pass("declarations", |b, _| declarations(b)),
+            // `x != null && typeof x === "string"`: the `typeof` test, which
+            // says it.
+            pass("typeof tests", |b, _| js::each_expr_mut(b, &mut typeof_tests)),
+            // A loop's early `break`s, its tests read in place now, and its test.
+            pass("early breaks", |b, _| {
+                js::statement_lists(b, &mut |s| early_breaks(s, true))
+            }),
+            // A loop's test those read in place now, `while (true) { if
+            // (!(m.length > n)) { .. } }`'s of `const _7 = m.length;`.
+            pass("while tests", |b, h| {
+                js::statement_lists(b, &mut |s| while_tests(s, &h.written.loops))
+            }),
+            // What those leave at the end, a `return;` the program didn't write.
+            pass("tail returns", |b, h| tail_returns(b, h.returns)),
+            // A loop's early exits again, of what's taken its shape since.
+            pass("early returns", |b, _| js::statement_lists(b, &mut early_returns)),
+            // A chain's arms, as statements, in the order written.
+            pass("written chains", |b, _| {
+                js::statement_lists(b, &mut |s| written_chains(s))
+            }),
+            // `const result = e; return result;` of what the function gives:
+            // `return e;`.
+            pass("returned consts", |b, h| {
+                js::statement_lists(b, &mut |s| returned_consts(s, h.result))
+            }),
+            // An `if`'s value of two small ones, `return t ? a : b`, its
+            // temporaries declared where they're read by now.
+            pass("returned values", |b, h| {
+                let (elses, returns, booleans) = (&h.written.elses, h.returns, h.booleans);
+                js::statement_lists(b, &mut |s| returned_values(s, elses, returns, booleans))
+            }),
+        ],
+        ensures: &[],
+    },
+    Stage {
+        name: "written",
+        passes: &[
+            // A cell a pointer's taken to, made where its value's first set.
+            pass("first cell values", |b, _| {
+                js::statement_lists(b, &mut first_cell_values)
+            }),
+            // A cell only its `value` is read and set of, by name: its variable.
+            pass("plain cells", |b, _| plain_cells(b)),
+            pass("named callbacks", |b, h| {
+                js::statement_lists(b, &mut |s| named_callbacks(s, h.callbacks))
+            }),
+            pass("shown children", |b, h| {
+                js::each_expr_mut(b, &mut |e| shown_children(e, h.booleans))
+            }),
+            pass("concise handlers", |b, h| {
+                js::each_expr_mut(b, &mut |e| concise_handlers(e, h.concise))
+            }),
+            pass("named labels", |b, h| {
+                js::statement_lists(b, &mut |s| named_labels(s, &h.written.loops))
+            }),
+            pass("counted entries", |b, _| {
+                js::statement_lists(b, &mut crate::lower::std_types::map::counted_entries)
+            }),
+            pass("negations", |b, _| js::each_expr_mut(b, &mut negations)),
+            pass("pairs' fields", |b, _| js::each_expr_mut(b, &mut pairs_fields)),
+            pass("forwarded values", |b, _| js::statement_lists(b, &mut forwarded_values)),
+            pass("unread maps", |b, _| unread_maps(b)),
+            // An array's `$iter` an adapter alone steps, left lazy, as what
+            // its closures do is in Rust's order: the array's own iterator.
+            // A closure's, by the function it's in, which sees what takes
+            // what it gives, `xs.flatMap((x) => $iter(x).map(f))`'s, first.
+            pass("array values", |b, h| {
+                if !h.closure {
+                    js::each_expr_mut(b, &mut array_values);
+                }
+            }),
+            pass("handles in place", |b, _| handles_in_place(b)),
+            // A value a function given it reads more than once, held where
+            // it's made: `const _$1 = f(); .. _$1.TAG ..`, not `((r) =>
+            // ..)(f())`.
+            pass("applied values", |b, h| {
+                let set = closures_set(b);
+                let mut taken = HashSet::new();
+                js::names_in(b, &mut taken);
+                js::statement_lists(b, &mut |s| applied_values(s, &set, h.plain, &mut taken))
+            }),
+            // A `let` declared first, in the body or a block of it, that
+            // nothing's left to assign or read.
+            pass("unused lets", |b, _| {
+                let mentions = mentions(b);
+                js::statement_lists(b, &mut |s| {
+                    s.retain(|stmt| !matches!(&stmt.kind, StmtKind::Let(name, None) if !mentions.contains_key(name)))
+                })
+            }),
+            // A `const` nothing reads, of a value made only to be dropped,
+            // `drop(vec![..])`'s: what making it does.
+            pass("unread made", |b, _| {
+                let mentions = mentions(b);
+                js::statement_lists(b, &mut |s| unread_made(s, &mentions))
+            }),
+            pass("while heads", |b, _| js::statement_lists(b, &mut while_heads)),
+            pass("written order steps", |b, _| {
+                js::statement_lists(b, &mut |s| written_order_steps(s))
+            }),
+            pass("let else first", |b, _| js::statement_lists(b, &mut let_else_first)),
+            pass("tried first", |b, _| js::statement_lists(b, &mut tried_first)),
+        ],
+        ensures: &[],
+    },
+    Stage {
+        name: "settled",
+        passes: &[
+            // A loop's jumps to the end of the loop it ends, once what's after
+            // each loop is placed by them: its own, where the program names
+            // it no label; and the early exits those `break`s now make.
+            pass("outer continues", |b, h| {
+                js::statement_lists(b, &mut |s| outer_continues(s, &h.written.loops))
+            }),
+            pass("early breaks", |b, _| {
+                js::statement_lists(b, &mut |s| early_breaks(s, false))
+            }),
+            // Their jumps then, of the loop they're now in, unnamed.
+            pass("innermost jumps", |b, _| {
+                js::statement_lists(b, &mut |s| innermost_jumps(s))
+            }),
+            pass("settle jumps", |b, _| settle_jumps(b)),
+            // `!(b >= 48)` of what's never `NaN`: `b < 48`.
+            pass("turned", |b, h| js::each_expr_mut(b, &mut |e| turned(e, h.numbers))),
+            // An `if` of `false`, a check that can't fail once what it reads
+            // is in place: its `else`, if any.
+            pass("never taken", |b, _| js::statement_lists(b, &mut never_taken)),
+            // What those leave past a jump: none, as `nothing after a jump`
+            // ensures.
+            pass("unreachable", |b, _| js::statement_lists(b, &mut unreachable_after)),
+            pass("holed lists", |b, _| holed_lists(b)),
+            // A `match` of constants, its chain settled: a `switch` (ADR 0629).
+            pass("switches", |b, h| {
+                switches::switches(b, &h.written.switches, &h.written.loops)
+            }),
+            pass("source spans", |b, _| js::statement_lists(b, &mut |s| source_spans(s))),
+        ],
+        ensures: &[contracts::NOTHING_AFTER_A_JUMP, contracts::LABELS_NAMED],
+    },
+];
+
+/// `jumps`, run twice.
+const JUMPS: &[Pass] = &[
+    // `?` of an `Ok` made here: the branch it takes, before what's past a
+    // jump goes.
+    pass("made ok tried", |b, _| js::statement_lists(b, &mut made_ok_tried)),
+    pass("returned", |b, h| {
+        js::statement_lists(b, &mut |s| {
+            returned(s, h.result);
+            unreachable_after(s);
+        })
+    }),
+    // An arm MIR made the block's fall-through, written first: first.
+    pass("written first", |b, _| {
+        js::statement_lists(b, &mut |s| written_first(s))
+    }),
+    pass("branch ends", |b, _| js::statement_lists(b, &mut |s| branch_ends(s))),
+    pass("tail jumps", |b, _| js::statement_lists(b, &mut |s| tail_jumps(s))),
+    pass("branch values", branch_values_of),
+    pass("unlabeled", |b, _| js::statement_lists(b, &mut unlabeled)),
+];
+
+/// What branches make a value of, the function's too; and the arms of a
+/// `match` of constants, a `switch` (ADR 0629), which make none of what the
+/// program names.
+fn branch_values_of(body: &mut Vec<Stmt>, hints: &Hints) {
+    let made = (hints.result, hints.written.switches.as_slice());
+    bottom_up(body, &mut |s| branch_values(s, hints.returns, hints.booleans, made));
+}
+
+fn decided_tests_of(body: &mut Vec<Stmt>, _: &Hints) {
+    let changing = changing(body);
+    js::statement_lists(body, &mut |s| decided_tests(s, &changing));
+}
+
+/// What's read once, in place, of what the body sets as it is now.
+fn inlined_of(body: &mut Vec<Stmt>, hints: &Hints) {
+    let changed = changing(body);
+    let set = closures_set(body);
+    let paired = paired_temporaries(body);
+    js::statement_lists(body, &mut |s| {
+        inlined(s, &changed, &set, hints.plain, hints.captured, &paired)
+    });
+}
+
+/// How many times each name is mentioned.
+fn mentions(body: &[Stmt]) -> HashMap<String, usize> {
+    let mut mentions: HashMap<String, usize> = HashMap::new();
+    js::visit_stmts(body, &mut |name| *mentions.entry(name.to_string()).or_default() += 1);
+    mentions
+}
+
+#[cfg(test)]
+mod tests {
+    /// Each pass's name, `stage/pass`, is its own, as `--tidy-until` names it.
+    #[test]
+    fn each_pass_is_named_apart() {
+        let names = super::super::pass_names();
+        let unique: std::collections::HashSet<_> = names.iter().collect();
+        assert_eq!(unique.len(), names.len());
+    }
+}

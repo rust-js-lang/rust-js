@@ -178,3 +178,9 @@ Each rule below changes no meaning:
 `writer_callables.rs`, hold each, against native Rust; a mutation of each
 is caught.
 
+## Amendment: tidy's passes are one list
+
+Tidy's rewrites, which a body's JS goes through in order, are one list of
+stages, each a run of named passes and what it leaves a body with, checked
+in a debug build; `--tidy-until` shows what each does
+([ADR 0659](0659-tidy-is-a-list-of-stages-with-contracts.md)).

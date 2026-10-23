@@ -16,23 +16,8 @@ pub(in crate::lower::mir::tidy) fn own_jumps(stmts: &[Stmt], label: Option<&str>
         StmtKind::Try(a, b) | StmtKind::TryCatch(a, _, b) => own_jumps(a, label) || own_jumps(b, label),
         // In a loop of its own, one that names it.
         StmtKind::While { body, .. } | StmtKind::ForOf { body, .. } | StmtKind::For { body, .. } => {
-            label.is_some_and(|l| names_jump(body, l))
+            label.is_some_and(|l| js::names_jump(body, l))
         }
-        _ => false,
-    })
-}
-
-/// Whether a `break` or a `continue` in `stmts`, however deep, names `label`.
-pub(in crate::lower::mir::tidy) fn names_jump(stmts: &[Stmt], label: &str) -> bool {
-    stmts.iter().any(|stmt| match &stmt.kind {
-        StmtKind::Break(Some(l)) | StmtKind::Continue(Some(l)) => l == label,
-        StmtKind::If(_, a, b) => names_jump(a, label) || b.as_deref().is_some_and(|b| names_jump(b, label)),
-        StmtKind::While { body, .. }
-        | StmtKind::ForOf { body, .. }
-        | StmtKind::For { body, .. }
-        | StmtKind::Labeled(_, body) => names_jump(body, label),
-        StmtKind::Switch { cases, default, .. } => js::case_lists(cases, default).any(|body| names_jump(body, label)),
-        StmtKind::Try(a, b) | StmtKind::TryCatch(a, _, b) => names_jump(a, label) || names_jump(b, label),
         _ => false,
     })
 }
@@ -115,14 +100,14 @@ pub(in crate::lower::mir::tidy) fn returned_from_block(stmts: &mut Vec<Stmt>, re
     let mut threaded = body.clone();
     threaded_jumps(&mut threaded, &label, true);
     returned_where_made(&mut threaded, &label, result);
-    if !targets(&threaded, &label) {
+    if !js::names_jump(&threaded, &label) {
         *body = threaded;
     } else {
         threaded_jumps(body, &label, false);
         returned_where_made(body, &label, result);
     }
     let mut jumps = !body.last().is_some_and(ends);
-    js::statement_lists(body, &mut |list| jumps |= targets(list, &label));
+    js::statement_lists(body, &mut |list| jumps |= js::names_jump(list, &label));
     // Where nothing goes on to its end, and its statements fit in its place.
     let at = stmts.len() - 2;
     if jumps || !matches!(&stmts[at].kind, StmtKind::Labeled(_, body) if fits_in_place(stmts, at, body)) {
