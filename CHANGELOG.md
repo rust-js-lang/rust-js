@@ -956,6 +956,10 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### Fixed
 
+- **A writer that fails having written nothing** (ADR 0187 amended), `fn
+  fmt(&self, _: &mut fmt::Formatter) -> fmt::Result { Err(fmt::Error) }`,
+  threw a `ReferenceError` of the string tidy had taken; it's `throw
+  $fmtWritten(error, "")`.
 - **rustc crashed** on a const argument in a signature of a trait nothing
   implements, `FixedOutput<'_, 10>`, which the analysis of what calls
   reach a function typechecked too early (ADR 0577 amended).

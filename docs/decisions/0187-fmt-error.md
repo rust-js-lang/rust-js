@@ -98,3 +98,16 @@ writeable's `write_to(sink).map(Ok)`: its function given `()`,
 place, `{ TAG: "Ok", _0: { TAG: "Ok" } }`. Where no writer fails, its
 answer is constant; else what `$fmtTry` caught is tested, as `map_err`'s
 is.
+
+## Amendment: a writer that writes nothing
+
+A writer that fails having written nothing, its `Formatter` unread, `fn
+fmt(&self, _: &mut fmt::Formatter) -> fmt::Result { Err(fmt::Error) }`,
+read a string it never declared: tidy gives its string `""` where it's
+returned, `return "";`, and takes its `let`, and the end this decision
+writes, `catch (error) { throw $fmtWritten(error, f); } return f;`, named
+it still, a `ReferenceError` where the writer ran. Where nothing in the
+body names its string, what it wrote before failing is `""`, `throw
+$fmtWritten(error, "")`, and its body gives what it gives, with no `return
+f` after. Held by `test/corpus/fmt_error_unwritten.rs`, run as native
+Rust, and a mutation in `scripts/mutations/lower/mir/writer.ts`.
