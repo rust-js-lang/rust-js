@@ -803,6 +803,19 @@ pub(crate) fn mapped_source<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Ty<
     }
 }
 
+/// Of std's `Flatten<I>` or `FlatMap<I, U, F>` of type `ty`, its source,
+/// and, of a `FlatMap`, what its function makes, `U`: a `Flatten`'s is its
+/// source's item.
+pub(crate) fn flattened_source<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<(Ty<'tcx>, Option<Ty<'tcx>>)> {
+    match ty.kind() {
+        ty::Adt(adt, args) if std_path(tcx, adt.did()) == "std::iter::Flatten" => Some((args.type_at(0), None)),
+        ty::Adt(adt, args) if std_path(tcx, adt.did()) == "std::iter::FlatMap" => {
+            Some((args.type_at(0), Some(args.type_at(1))))
+        }
+        _ => None,
+    }
+}
+
 /// Of std's `StepBy<I>` of type `ty`, its source.
 pub(crate) fn stepped_by_source<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
     match ty.kind() {

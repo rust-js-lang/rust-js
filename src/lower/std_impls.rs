@@ -267,6 +267,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ty::Adt(_, args) if ty.is_box() || self.recognition().pinned(ty).is_some() => {
                 return self.clone_value(place, args.type_at(0), span, out);
             }
+            // A `ManuallyDrop`'s, its value's (ADR 0584).
+            ty::Adt(..) if let Some(held) = self.recognition().std_wrapped(ty) => {
+                return self.clone_value(place, held, span, out);
+            }
             // A `RefCell`'s, while it's borrowed (ADR 0328): checked free to,
             // and held where its value's clone may ask.
             ty::Adt(_, args) if std(StdItem::RefCell) && !self.recognition().std_alone(args.type_at(0)) => {
@@ -854,6 +858,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // A `Cow` what it borrows (ADR 0400).
                 ty::Adt(..) if let Some((x, borrowed)) = self.cow_deref(&a, ty) => {
                     (a, b, ty) = (x, self.cow_deref(&b, ty).expect("a `Cow`").0, borrowed);
+                }
+                // A wrapper of std's that's what it holds, a `ManuallyDrop`, or
+                // a transparent one that derives `==`: what it holds, which it
+                // is in JS (ADR 0584).
+                ty::Adt(..) if let Some(held) = self.recognition().std_wrapped(ty) => ty = held,
+                ty::Adt(..)
+                    if let Some(held) = self.transparent(ty)
+                        && self.recognition().derives(self.partial_eq_trait(), ty) =>
+                {
+                    ty = held;
                 }
                 _ => break,
             }

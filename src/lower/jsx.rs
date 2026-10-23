@@ -272,31 +272,24 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             _ => return Ok((vec![Prop::Spread(value)], Vec::new())),
         };
         // As written, as JSX's are, its children last; then what a base
-        // gives, in the struct's order (ADR 0203). Rust makes them in that
-        // order too.
+        // gives, in the struct's order (ADR 0203), as the struct's object
+        // lists them (ADR 0674). Each where it's written, which MIR's value
+        // doesn't say: a `key` written before it goes before it.
         if let Some(props) = props
             && let ExprKind::Adt(adt) = &self.thir[super::body_queries::strip(self.thir, props)].kind
-            && adt.adt_def.is_struct()
-            && fields.len() == adt.adt_def.non_enum_variant().fields.len()
+            && let Shape::Object(types) = self.shape(ty)
         {
-            let mut declared: Vec<Option<Prop>> = fields.into_iter().map(Some).collect();
-            let mut written: Vec<Prop> = adt
-                .fields
-                .iter()
-                .filter_map(|f| {
-                    let mut prop = declared[f.name.as_usize()].take()?;
-                    // Where it's written, which MIR's value doesn't say: a
-                    // `key` written before it goes before it.
-                    if let Prop::Field(_, value) | Prop::Getter(_, value) | Prop::Setter(_, value) = &mut prop
+            for f in adt.fields.iter() {
+                let name = &types[f.name.as_usize()].0;
+                for prop in &mut fields {
+                    if let Prop::Field(key, value) | Prop::Getter(key, value) | Prop::Setter(key, value) = prop
+                        && key == name
                         && value.span.is_none()
                     {
                         value.span = self.js_span(self.thir[f.expr].span);
                     }
-                    Some(prop)
-                })
-                .collect();
-            written.extend(declared.into_iter().flatten());
-            fields = written;
+                }
+            }
         }
         // Read before the children, where a prop after them, a base's, is
         // made after them, as Rust makes it, and the order shows: it does
@@ -311,6 +304,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && fields[i + 1..].iter().any(|p| {
                 let (Prop::Field(_, value) | Prop::Getter(_, value) | Prop::Setter(_, value) | Prop::Spread(value)) = p;
                 value.has_effects() && !self.reads_unchanging(children, out)
+                    || children.has_effects() && !value.is_constant() && !self.reads_unchanging(value, out)
             })
         {
             for prop in &mut fields {
@@ -564,9 +558,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // rest: that rest spread, `{...props}`, before what the update gives,
         // as it holds no key its pattern named, which the props' own may be.
         let mut rest = None;
-        for (i, prop) in props.into_iter().enumerate() {
+        // Each field by its name, as its object lists them as written (ADR 0674).
+        let tcx = self.tcx;
+        let flattened = |name: &str| {
+            (types.iter().position(|(n, _)| n == name)).filter(|&i| super::bindings::is_flatten_field(tcx, ty, i))
+        };
+        for prop in props {
             match prop {
-                Prop::Field(_, value) if super::bindings::is_flatten_field(self.tcx, ty, i) => {
+                Prop::Field(name, value) if let Some(i) = flattened(&name) => {
                     for attr in self.flattened_attrs(types[i].1, value, &shadowing, span)? {
                         match attr {
                             Prop::Spread(value) if matches!(&value.kind, js::ExprKind::Var(v) if self.locals.rests.contains_key(v)) => {

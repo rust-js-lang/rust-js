@@ -66,3 +66,15 @@ closed, and the `Rev` of it is closed as it's dropped
 drops it. `test/corpus/rev_lazy_drops.rs` against native Rust; mutations
 `rev-of-dropping-map-unasked`, `map-ends-source-unclosed`,
 `map-ends-unclosed` and `rev-of-closing-unclosed`.
+
+## Amendment: a flatten from its back
+
+`rev()`, `next_back()` and the like of a `flatten()`, or of a `flat_map(f)`
+whose `f` gives an array or a `Vec`, were refused (#165, the bug hunt). A
+flatten the crate steps from its back is made knowing it where it's made,
+as a map is: `$flattenEnds(src, each)`, which keeps a front and a back
+inner list, steps the source from the end it's stepped from, and, the
+source done, gives the other end's, as std's `FlattenCompat` does; `f` is
+run as each item is reached. A `flat_map` whose `f` gives a lazy iterator
+is refused still: its items would have to be made knowing their backs.
+Held by `test/corpus/flatten_from_its_back.rs`.

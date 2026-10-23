@@ -52,3 +52,13 @@ walks it as it is; the architecture test refuses a copy made to walk it.
 - Held by `writes.rs`' unit tests (a binding replaced is not its object
   changed, a closure's writes, a handle's) and by the corpus, whose JS
   is byte for byte what it was.
+
+## Amendment: each closure walked once
+
+`Writes::of` walked a closure's body where `each_expr` found it, and
+`each_expr` went on into it too, so a closure nested `d` deep was walked
+`2^d` times: correct facts, at a cost no nesting should have. Each closure's
+own lists are walked once now, where the one `each_expr` that finds every
+closure, however deep, finds it; tidy's `rebinds` asked closures the same
+way and does the same. Held by unit tests of 64 closures nested, which
+would never finish walked the other way.

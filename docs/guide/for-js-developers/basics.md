@@ -257,9 +257,11 @@ export function parseAge(s) {
   integer's keeps its wrap, `n = (n + 1) >>> 0`, unless what comes before
   shows it can't wrap: below a length, `i < xs.len()` or `i + 1 <
   js::string::length(s)`, `i += 1` is `i++`. A JS string's `length` is
-  below `2^32 - 1`, as every engine's is, so two steps below it don't
-  wrap either
-  ([ADR 0632](../../decisions/0632-a-js-strings-length-is-below-u32-max.md)):
+  at most `2^31 - 1`, as every engine's is, so two steps below it don't
+  wrap either, nor does the sum of two lengths; a third, or a `- 1`,
+  keeps its wrap
+  ([ADR 0632](../../decisions/0632-a-js-strings-length-is-below-u32-max.md),
+  [ADR 0682](../../decisions/0682-a-js-strings-length-is-at-most-int32-max.md)):
 
 ```rust
 pub fn count_below(xs: &[u32], limit: u32) -> usize {
@@ -281,6 +283,10 @@ pub fn placeholders(format: &str) -> u32 {
         i += 1;
     }
     n
+}
+
+pub fn fits(str: &str, substr: &str) -> bool {
+    js::string::length(substr) < 10 && js::string::length(str) + js::string::length(substr) < 40
 }
 ```
 
@@ -304,6 +310,10 @@ export function placeholders(format) {
     i++;
   }
   return n;
+}
+
+export function fits(str, substr) {
+  return substr.length < 10 && str.length + substr.length < 40;
 }
 ```
 - **A literal keeps its base and its exponent**, `0xff`, `0b1010`, `1e4`,
@@ -622,6 +632,12 @@ export function moved(p, dx) {
   object too; rustc won't let you change it.
 - `..p.clone()` is Rust's spread, `{ ...p, x }`; the rest of the fields
   come from `p`.
+- The object lists the fields in the order you write them, which is the
+  order Rust evaluates them in: `Point { y: f(), x: g() }` is `{ y: f(),
+  x: g() }`. What `..base` fills comes after them, or is spread before
+  them, `{ ...p, y, x }`
+  ([ADR 0674](../../decisions/0674-a-struct-literals-fields-are-in-the-order-written.md)).
+  `{:?}` still shows them as the struct declares them.
 - Methods go in an `impl` block: [Advanced: classes](advanced.md#classes).
 - An object used as a dictionary, with keys only known at run time, is a
   `HashMap`: [Collections: maps](collections.md#map-and-set).

@@ -900,6 +900,30 @@ export function describe(value) {
   `js::object::has_own_property.call(value, key)` is
   `Object.prototype.hasOwnProperty.call(value, key)`, a property of its own
   ([ADR 0615](../../decisions/0615-has-own-property-the-function.md)).
+- **A function is a value of any shape too**, a function item, a closure,
+  a `fn` pointer or a `dyn Fn`: `js::unknown(&f)` is `f`, whose
+  property `js::set` writes, here when its module loads, right after it
+  ([ADR 0673](../../decisions/0673-a-function-is-a-value-of-any-shape.md)):
+
+```rust
+fn disabled_log() {}
+js::on_load! {
+    js::set(js::unknown(&disabled_log), "__reactDisabledLog", true);
+}
+
+pub fn is_marked(log: fn()) -> bool {
+    js::get(js::unknown(&log), "__reactDisabledLog").is_some()
+}
+```
+
+```js
+function disabledLog() {}
+disabledLog.__reactDisabledLog = true;
+
+export function isMarked(log) {
+  return log.__reactDisabledLog != null;
+}
+```
 - **`==` of two is JS's `===`**, of two `Option<&Unknown>` too, where a
   `null` isn't an `undefined`, unlike std's `Option`
   ([ADR 0612](../../decisions/0612-unknown-equality-is-strict.md)):

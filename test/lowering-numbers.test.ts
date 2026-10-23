@@ -703,6 +703,42 @@ pub fn hops(mut i: u32, n: u32) -> (u32, u32) {
   expect(lib.hops(0xffffffff, 5)).toEqual([3, 5]);
 });
 
+// ADR 0682: a JS string's `length` is at most 2^31 - 1, as every engine's
+// is, so the sum of two is at most 2^32 - 2 and can't wrap: React's
+// ReactSerializationErrors' `str.length + substr.length < 40` is written as
+// upstream's. A third may pass `u32`'s most, so it keeps its wrap, and so
+// does a `length - 1`, which is `u32::MAX` of an empty string.
+test("two JS string lengths add without a wrap", async () => {
+  const dir = fixture("string-length-sum");
+  writeFileSync(join(dir, "lib.rs"), `use js::string::length;
+
+pub fn short(str: &str, substr: &str) -> bool {
+    length(substr) < 10 && length(str) + length(substr) < 40
+}
+
+pub fn total(a: &str, b: &str) -> u32 {
+    length(a) + length(b)
+}
+
+pub fn three(a: &str, b: &str, c: &str) -> u32 {
+    length(a) + length(b) + length(c)
+}
+
+pub fn last(s: &str) -> u32 {
+    length(s) - 1
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("  return substr.length < 10 && str.length + substr.length < 40;\n");
+  expect(js).toContain("  return a.length + b.length;\n");
+  expect(js).toContain("  return (a.length + b.length + c.length) >>> 0;\n");
+  expect(js).toContain("  return (s.length - 1) >>> 0;\n");
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.short("hello", "lo"), lib.short("x".repeat(36), "four"), lib.short("", "ten units!")]).toEqual([true, false, false]);
+  expect([lib.total("😀", "é"), lib.three("a", "bc", "def"), lib.last("abc"), lib.last("")]).toEqual([3, 6, 2, 0xffffffff]);
+});
+
 test("a whole float's cast is the float from MIR too", async () => {
   const dir = fixture("whole-cast");
   writeFileSync(join(dir, "lib.rs"), `use js::string;

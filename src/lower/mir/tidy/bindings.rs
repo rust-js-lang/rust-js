@@ -506,25 +506,31 @@ pub(super) fn copied_bindings(stmts: &mut Vec<Stmt>) {
     }
 }
 
-/// Whether `stmts` set `name` again, or declare it, a closure's in them too.
+/// Whether `stmts` set `name` again, or declare it, a closure's in them too:
+/// their own lists, then each closure's, each found once by `each_expr`,
+/// however deep.
 pub(super) fn rebinds(stmts: &[Stmt], name: &str) -> bool {
-    let mut found = false;
-    js::each_list(stmts, &mut |list| {
-        for stmt in list.iter() {
-            found |= match &stmt.kind {
-                StmtKind::Const(n, _) | StmtKind::Let(n, _) => n == name,
-                StmtKind::Destructure { pattern, .. } | StmtKind::ForOf { pattern, .. } => {
-                    pattern.names().contains(&name)
-                }
-                StmtKind::For { name: n, .. } => n == name,
-                StmtKind::Assign(target, _) => matches!(&target.kind, ExprKind::Var(v) if v == name),
-                _ => false,
-            };
-        }
-    });
+    let own = |stmts: &[Stmt]| {
+        let mut found = false;
+        js::each_list(stmts, &mut |list| {
+            for stmt in list.iter() {
+                found |= match &stmt.kind {
+                    StmtKind::Const(n, _) | StmtKind::Let(n, _) => n == name,
+                    StmtKind::Destructure { pattern, .. } | StmtKind::ForOf { pattern, .. } => {
+                        pattern.names().contains(&name)
+                    }
+                    StmtKind::For { name: n, .. } => n == name,
+                    StmtKind::Assign(target, _) => matches!(&target.kind, ExprKind::Var(v) if v == name),
+                    _ => false,
+                };
+            }
+        });
+        found
+    };
+    let mut found = own(stmts);
     js::each_expr(stmts, &mut |e| {
         if let ExprKind::Arrow(params, body) | ExprKind::AsyncArrow(params, body) = &e.kind {
-            found |= params.iter().any(|p| p.names().contains(&name)) || rebinds(body, name);
+            found |= params.iter().any(|p| p.names().contains(&name)) || own(body);
         }
     });
     found

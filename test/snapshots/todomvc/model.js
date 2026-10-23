@@ -12,21 +12,21 @@ export function reduce(todos, action) {
   if (action.TAG === "Toggle") {
     const captured = action._0;
     return todos.map((todo) => ({
+      completed: todo.completed !== (todo.id === captured),
       id: todo.id,
       title: todo.title,
-      completed: todo.completed !== (todo.id === captured),
     }));
   }
   if (action.TAG === "ToggleAll") {
     const captured = action._0;
-    return todos.map((todo) => ({ id: todo.id, title: todo.title, completed: captured }));
+    return todos.map((todo) => ({ completed: captured, id: todo.id, title: todo.title }));
   }
   if (action.TAG === "Edit") {
     const value = $iter(todos);
     const { _0: captured, _1: captured$1 } = action;
     return value
       .map((todo) =>
-        todo.id === captured ? { id: todo.id, title: captured$1, completed: todo.completed } : todo,
+        todo.id === captured ? { title: captured$1, id: todo.id, completed: todo.completed } : todo,
       )
       .toArray();
   }

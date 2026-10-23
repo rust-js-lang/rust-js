@@ -100,3 +100,9 @@ A `dyn Debug` is the string it shows, made where a `&dyn Debug` is; but
 counted, each its value (ADR 0023); a counted one, a library's, whose
 value would be the string where its count is kept, is refused. Held by
 `test/corpus/boxed_dyn_debug.rs`.
+
+## Amendment: a `Weak`'s
+
+`{:?}` of an `rc::Weak` or a `sync::Weak`, a field's too, was refused. It's
+`(Weak)`, as std's shows one, of none of what it points at. Held by
+`test/corpus/weak_debug.rs`.

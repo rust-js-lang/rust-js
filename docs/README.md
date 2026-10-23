@@ -85,7 +85,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0013 Fieldless enum variants are strings](decisions/0013-fieldless-enums.md)
 - [0033 Enums with fields are ReScript's tagged objects](decisions/0033-enums-with-fields.md)
 - [0035 JS that throws is a `Result`; `?` returns early](decisions/0035-results-and-throwing-js.md) *(amended by 0637: a `match` of its `Result` is `try` and `catch`; 0643: its `unwrap()` is the call)*
-- [0020 Structs are objects, tuples are arrays](decisions/0020-structs-and-tuples.md)
+- [0020 Structs are objects, tuples are arrays](decisions/0020-structs-and-tuples.md) *(amended by 0674: a literal's fields are listed as written)*
 - [0049 Trait dictionaries, generics, and read-only trait objects](decisions/0049-traits-and-generics.md)
 - [0047 Methods are an object of functions named after their type](decisions/0047-methods.md)
 - [0014 `match` becomes an `if`/`else if` chain](decisions/0014-match-lowering.md) *(amended by 0629: a `match` of constants is a `switch`)*
@@ -272,8 +272,8 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0200 A binding's props borrow their text, and take `aria-label` and the rest](decisions/0200-binding-props-borrow.md)
 - [0201 A component takes no dictionary, and an update makes no default it replaces](decisions/0201-components-take-no-dictionaries.md)
 - [0202 An import is named in each file that imports it](decisions/0202-imports-named-around-importers.md)
-- [0203 A component's props are as written](decisions/0203-component-props-as-written.md)
-- [0204 A flattened field's struct is its parent's props](decisions/0204-flattened-props.md)
+- [0203 A component's props are as written](decisions/0203-component-props-as-written.md) *(amended by 0674: the order is the object's)*
+- [0204 A flattened field's struct is its parent's props](decisions/0204-flattened-props.md) *(amended by 0674: found by its name)*
 - [0205 Flattened structs chain, and the props' own name is theirs](decisions/0205-flattened-chains.md)
 - [0206 TypeScript, read and written by TypeScript's own parser and printer](decisions/0206-typescript-module.md)
 - [0207 A crate's `.d.ts` is printed by TypeScript](decisions/0207-declarations-printed-by-typescript.md)
@@ -294,7 +294,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0222 An editor checks the app through rust-js](decisions/0222-editor-check.md)
 - [0223 The webapi crate knows each event's type and each tag's element](decisions/0223-webapi-event-and-tag-maps.md)
 - [0224 A tag's element reaches its handlers and its `ref`](decisions/0224-typed-intrinsic-elements.md)
-- [0225 A JS value of unknown shape is a `js::Unknown`](decisions/0225-unknown-values.md) *(amended by 0668: `Kind::Symbol`, and a `match` of `Kind` a `switch (typeof value)`; by 0676: `classify` takes an `Option<&Unknown>`, and `Kind` has `Undefined` and `Null`)*
+- [0225 A JS value of unknown shape is a `js::Unknown`](decisions/0225-unknown-values.md) *(amended by 0668: `Kind::Symbol`, and a `match` of `Kind` a `switch (typeof value)`; by 0673: `js::unknown` of a function; by 0676: `classify` takes an `Option<&Unknown>`, and `Kind` has `Undefined` and `Null`)*
 - [0226 A component looks inside its children as React's `Children` does](decisions/0226-react-children.md)
 - [0227 The react crate's types have @types/react's names](decisions/0227-react-type-names.md)
 - [0228 A tag takes the attributes @types/react gives it](decisions/0228-per-tag-attributes.md)
@@ -319,7 +319,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0247 JS's string methods are the builtins crate's `string`](decisions/0247-js-string-methods.md) *(amended by 0642: for JS's own indexes, std's methods for a place found)*
 - [0248 A `thread_local!` is a module's default export too](decisions/0248-thread-local-default-export.md)
 - [0249 An element's key may be none](decisions/0249-optional-keys.md)
-- [0250 Props updated from a reference are a spread](decisions/0250-reference-base-spread.md)
+- [0250 Props updated from a reference are a spread](decisions/0250-reference-base-spread.md) *(amended by 0674: the fields after it as written)*
 - [0251 A module's default export is imported as its default](decisions/0251-default-imports.md)
 - [0252 A one-armed match's value is its body's](decisions/0252-one-arm-match-value.md)
 - [0253 next/link takes a ref and passHref](decisions/0253-next-link-ref.md)
@@ -563,7 +563,8 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0629 A `match` of constants is a `switch`](decisions/0629-a-match-of-constants-is-a-switch.md) *(amended by 0634: a `Some`'s constants and the registry's symbols are cases; by 0636: a guarded arm is a case; by 0668: a `match` of what a value is is a `switch (typeof value)`)*
 - [0630 A comment inside an expression is after the code before it](decisions/0630-a-comment-inside-an-expression.md)
 - [0631 A step of one is `++`](decisions/0631-a-step-of-one-is-plus-plus.md)
-- [0632 A JS string's `length` is below `u32::MAX`, and a counter below it doesn't wrap](decisions/0632-a-js-strings-length-is-below-u32-max.md)
+- [0632 A JS string's `length` is below `u32::MAX`, and a counter below it doesn't wrap](decisions/0632-a-js-strings-length-is-below-u32-max.md) *(amended by 0682: at most `2^31 - 1`, so two add without a wrap)*
+- [0682 A JS string's `length` is at most `2^31 - 1`, so two add without a wrap](decisions/0682-a-js-strings-length-is-at-most-int32-max.md)
 - [0633 A binding named through a module is read through it](decisions/0633-a-binding-named-through-a-module-is-read-through-it.md)
 - [0634 A registered symbol is a `const`, and a `match` of them a `switch`](decisions/0634-a-registered-symbol-is-a-const.md)
 - [0635 A `filter` by truth, then a fallback, is `||`](decisions/0635-a-filter-by-truth-then-a-fallback-is-or.md) *(extended by 0646: a chain held, then its fallback; 0651: a `let`, then its fallback)*
@@ -596,9 +597,12 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0666 The js crate binds `Object`'s reflection, a descriptor a dictionary](decisions/0666-the-js-crate-binds-objects-reflection.md)
 - [0667 `console` is a value, and a `fn` of rest arguments is the JS function](decisions/0667-console-is-a-value-and-rest-arguments-are-one.md)
 - [0668 A `match` of what a value is is a `switch` of its `typeof`](decisions/0668-a-match-of-what-a-value-is-is-a-switch-of-its-typeof.md) *(amended by 0676: `undefined` is `case "undefined"`, and `null` in `case "object"`)*
+- [0673 A function is a JS value of any shape, whose property `js::set` writes](decisions/0673-a-function-is-a-value-of-any-shape.md)
+- [0674 A struct literal's object lists its fields in the order written](decisions/0674-a-struct-literals-fields-are-in-the-order-written.md)
 - [0623 A copy std makes of a `Copy` value is a copy](decisions/0623-a-copy-std-makes-is-a-copy.md)
 - [0669 An adapter steps its source as std's does](decisions/0669-an-adapter-steps-its-source-as-stds-does.md)
 - [0670 A tree's writes have one owner, and its walks one definition](decisions/0670-a-trees-writes-have-one-owner.md)
+- [0671 A nested body is lowered in one call](decisions/0671-a-nested-body-is-lowered-in-one-call.md)
 - [0676 `js::Kind` tells `undefined` and `null`](decisions/0676-kind-tells-undefined-and-null.md)
 - [0436 Every `dyn` that's a pair keeps its value's drop, `dyn Send` too](decisions/0436-every-dyn-keeps-its-drop.md)
 - [0437 A scope's drops on a panic are one `try { .. } finally { .. }`](decisions/0437-a-scopes-drops-are-one-finally.md)

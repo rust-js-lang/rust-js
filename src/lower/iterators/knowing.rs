@@ -65,10 +65,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Some(source) = crate::lower::recognition::back_stepped_source(self.tcx, ty) {
             return self.knows_its_back(source) || self.stepped_from_its_back(ty);
         }
+        // A flatten the crate steps from its back, made knowing it,
+        // `$flattenEnds`.
+        if crate::lower::recognition::flattened_source(self.tcx, ty).is_some() {
+            return self.stepped_from_its_back(ty);
+        }
         // An enumeration of one that knows its length too, `$enumerate`,
         // whose index from the back is where it is (ADR 0528).
+        // Of the crate's, made knowing both (`user_iterator_knowing`).
         if let Some(source) = crate::lower::recognition::enumerated_source(self.tcx, ty) {
-            return self.knows_its_back(source) && self.knows_its_length(source);
+            return (self.knows_its_back(source) || self.user_double_ended(source))
+                && (self.knows_its_length(source) || self.user_exact_size(source));
         }
         if let Some(id) = crate::lower::recognition::dyn_iter_trait(self.tcx, ty) {
             return crate::lower::recognition::is_double_ended(self.tcx, id);
@@ -171,6 +178,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Some(knowing) = self.knowing_held(value.clone(), ty, span)? {
             return Ok(knowing);
         }
+        // The crate's, made knowing its length, and its back where asked.
+        if self.is_user_iterator(ty) {
+            let value = stepped_value(&value).unwrap_or(value);
+            return self.user_iterator_knowing(value, ty, (back, true), span);
+        }
         if self.knows_its_length(ty) && (!back || self.knows_its_back(ty)) {
             return Ok(value);
         }
@@ -249,6 +261,27 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // was made; of one made knowing them, an array's or a range's, itself.
         if let Some(knowing) = self.knowing_held(value.clone(), ty, span)? {
             return Ok(knowing);
+        }
+        // A flatten made here, `src.flatMap(each)`, of items that are arrays,
+        // which know their backs: `$flattenEnds` of its source made knowing
+        // its back, as std's `Flatten` steps from either end.
+        if let Some((source, made)) = crate::lower::recognition::flattened_source(self.tcx, ty)
+            && let js::ExprKind::Call(callee, args) = &value.kind
+            && let js::ExprKind::Member(source_value, method) = &callee.kind
+            && method == "flatMap"
+            && let [each] = args.as_slice()
+            && let Some(inner) = made.or_else(|| self.iterator_item(source.peel_refs()))
+            && {
+                let inner = inner.peel_refs();
+                inner.is_array() || inner.is_slice() || self.is_vec_like(inner)
+            }
+        {
+            let source_value = self.as_double_ended((**source_value).clone(), source.peel_refs(), span)?;
+            return Ok(Expr::call_helper("$flattenEnds", vec![source_value, each.clone()]));
+        }
+        // The crate's, made knowing its back.
+        if self.is_user_iterator(ty) {
+            return self.user_iterator_knowing(value, ty, (true, false), span);
         }
         if self.knows_its_back(ty) || self.held_knows_its_back(ty) {
             return Ok(value);
@@ -386,6 +419,38 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let (next, boxed) = self.user_next(ty, trait_id, method, span)?;
         let hint = self.own_size_hint(ty, span)?;
         Ok(stepped_ends(value, next, boxed, None, None, hint))
+    }
+
+    /// An iterator of the crate's as a JS one stepped from its front that
+    /// knows what's asked of it: its back, `back`, its `next_back`, where
+    /// it's double-ended, and its length, `len`, its hint's, which std's
+    /// `len()` checks is exact (`$exactLen`, ADR 0456), where it's exact-sized.
+    pub(in crate::lower) fn user_iterator_knowing(
+        &mut self,
+        value: Expr,
+        ty: ty::Ty<'tcx>,
+        (back, len): (bool, bool),
+        span: Span,
+    ) -> R<Expr> {
+        let iterator = std_item(self.tcx, StdItem::Iterator);
+        let (next, boxed) = self.user_next(ty, iterator, "next", span)?;
+        let hint = self.own_size_hint(ty, span)?;
+        let back = match self.own_next_back(ty)? {
+            Some(double_ended) if back => Some(self.user_next(ty, double_ended, "next_back", span)?.0),
+            _ => None,
+        };
+        let len = (len && self.user_exact_size(ty)).then(|| {
+            let hint_of = match &hint {
+                Some(hint) => Expr::call(hint.clone(), vec![Expr::var("it")]),
+                None => Expr::array(vec![Expr::int(0), Expr::undefined()]),
+            };
+            let exact = Expr::call_helper("$exactLen", vec![hint_of]);
+            Expr::arrow(
+                vec!["it".into()],
+                vec![StmtKind::Return(Some(exact)).at(js::Span::NONE)],
+            )
+        });
+        Ok(stepped_ends(value, next, boxed, back, len, hint))
     }
 
     /// The `size_hint` of the crate's iterator `ty`, where its impl has one

@@ -338,4 +338,12 @@ export const mutations: Mutation[] = [
     replace: "            let mut list = vec![value, Expr::str(name.as_str())];\n            if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^format_options_reached.rs$"],
   },
+  {
+    name: "weak-debug-refused",
+    breaks: "`{:?}` of a `Weak`, a struct's field's too, is refused, where std shows `(Weak)`",
+    file: "src/lower/display/debug.rs",
+    find: "            return Ok(Expr::str(\"(Weak)\"));\n",
+    replace: "            return Err(self.unsupported(span, \"\"));\n",
+    tests: ["test/corpus.test.ts", "-t", "^weak_debug.rs$"],
+  },
 ];

@@ -616,4 +616,20 @@ export const mutations: Mutation[] = [
     replace: "            || self.is_string_like(ty)\n",
     tests: ["test/lowering-symbols.test.ts", "-t", "Symbol.for its key"],
   },
+  {
+    name: "manually-drop-eq-refused",
+    breaks: "`==` of two `ManuallyDrop`s is refused, where it's their values'",
+    file: "src/lower/std_impls.rs",
+    find: "                ty::Adt(..) if let Some(held) = self.recognition().std_wrapped(ty) => ty = held,\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^manually_drop_values.rs$"],
+  },
+  {
+    name: "manually-drop-clone-refused",
+    breaks: "a `ManuallyDrop`'s clone is refused, where it's its value's",
+    file: "src/lower/std_impls.rs",
+    find: "            ty::Adt(..) if let Some(held) = self.recognition().std_wrapped(ty) => {\n                return self.clone_value(place, held, span, out);\n",
+    replace: "            ty::Adt(..) if false => {\n                return Err(self.unsupported(span, \"\"));\n",
+    tests: ["test/corpus.test.ts", "-t", "^manually_drop_values.rs$"],
+  },
 ];

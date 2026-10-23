@@ -24,10 +24,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let js::ExprKind::Object(props) = made.kind else {
             return made;
         };
+        let Shape::Object(names) = self.shape(ty) else {
+            unreachable!("an object of a struct's fields")
+        };
+        // Each field by its name, as the object lists them as written.
+        let flattened = |name: &str| {
+            (names.iter().position(|(n, _)| n == name)).is_some_and(|i| bindings::is_flatten_field(self.tcx, ty, i))
+        };
         let mut flat = Vec::new();
-        for (i, prop) in props.into_iter().enumerate() {
+        for prop in props {
             match prop {
-                Prop::Field(_, value) if bindings::is_flatten_field(self.tcx, ty, i) => match value.kind {
+                Prop::Field(name, value) if flattened(&name) => match value.kind {
                     js::ExprKind::Object(inner) => flat.extend(inner),
                     js::ExprKind::Undefined => {}
                     _ => flat.push(Prop::Spread(value)),
@@ -42,15 +49,48 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
+    /// The order the fields of a struct or a variant made at `span` are
+    /// given in, each an index of its declared fields: as written, then
+    /// those its `..base` fills, as declared, the order Rust evaluates them
+    /// in, which its object lists them in (ADR 0674). `P { c, a, ..base }`
+    /// of `struct P { a, b, c }` is `[2, 0, 1]`. As declared, of a tuple
+    /// struct's or variant's, an array of them in place, and where THIR
+    /// says nothing of it.
+    pub(super) fn written_order(&self, adt: &ty::AdtDef<'tcx>, variant_index: VariantIdx, span: Span) -> Vec<usize> {
+        let variant = adt.variant(variant_index);
+        let declared: Vec<usize> = (0..variant.fields.len()).collect();
+        if variant.ctor_kind().is_some() || declared.len() < 2 {
+            return declared;
+        }
+        let mut orders = (self.thir.exprs.iter()).filter_map(|e| match &e.kind {
+            thir::ExprKind::Adt(made)
+                if e.span == span && made.adt_def == *adt && made.variant_index == variant_index =>
+            {
+                let written: Vec<usize> = made.fields.iter().map(|f| f.name.as_usize()).collect();
+                let filled = declared.iter().filter(|i| !written.contains(i));
+                Some(written.iter().chain(filled).copied().collect::<Vec<usize>>())
+            }
+            _ => None,
+        });
+        match (orders.next(), orders.next()) {
+            (Some(order), None) if order.len() == declared.len() => order,
+            // Two at one place, of a macro, may be written two ways.
+            _ => declared,
+        }
+    }
+
     /// A struct's or a variant's value, of its fields' values in the order
     /// they're declared: as `adt` makes a literal without a base, which is
-    /// how MIR makes each (ADR 0364).
+    /// how MIR makes each (ADR 0364). An object of them lists them in
+    /// `order`, each a declared field's index, as written
+    /// (`written_order`), or as declared where it's `None`.
     pub(super) fn adt_value(
         &mut self,
         ty: Ty<'tcx>,
         variant_index: VariantIdx,
         fields: Vec<Expr>,
         nulled: &[bool],
+        order: Option<&[usize]>,
         span: Span,
     ) -> R<Expr> {
         let ty::Adt(adt_def, args) = *ty.kind() else {
@@ -130,12 +170,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Some(_) => Shape::Object(self.variant_fields(variant, args)),
             None => self.shape(ty),
         };
-        let items = match &shape {
+        let (shape, items) = match shape {
             // A `Cell` in an object's field is what it holds (ADR 0288).
-            Shape::Object(names) => (names.iter().zip(fields))
-                .map(|(&(_, field_ty), value)| self.holding(value, field_ty))
-                .collect(),
-            Shape::Array(_) => fields,
+            Shape::Object(names) => {
+                let mut items: Vec<Option<Expr>> = (names.iter().zip(fields))
+                    .map(|(&(_, field_ty), value)| Some(self.holding(value, field_ty)))
+                    .collect();
+                let declared: Vec<usize> = (0..names.len()).collect();
+                let order = order.unwrap_or(&declared);
+                let names = order.iter().map(|&i| names[i].clone()).collect();
+                let items = (order.iter())
+                    .map(|&i| items[i].take().expect("each field once"))
+                    .collect();
+                (Shape::Object(names), items)
+            }
+            Shape::Array(_) => (shape, fields),
             Shape::Other => return Err(self.unsupported(span, &format!("a `{ty}`"))),
         };
         Ok(assembled(shape, tag, items))

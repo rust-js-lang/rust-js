@@ -1065,7 +1065,8 @@ pub fn named(name: String, size: u32) -> String {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
   const js = readFileSync(join(dir, "mir.js"), "utf8");
-  expect(js).toContain('return { name: "", size, tags: [] };');
+  // What's written, then what the base fills, as Rust evaluates them (ADR 0674).
+  expect(js).toContain('return { size, name: "", tags: [] };');
   expect(js).toContain("const o = { name, size, tags: [] };");
   const lib = await import(join(dir, "mir.js"));
   expect([lib.sized(3), lib.named("a", 2)]).toEqual([{ name: "", size: 3, tags: [] }, "a 2 0"]);
@@ -1096,4 +1097,53 @@ pub fn sized(n: usize) -> usize {
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--crate-type", "lib", "--crate-name", "aliased"]);
   const lib = await import(join(dir, "lib.js"));
   expect([lib.made(4), lib.sized(16)]).toEqual([4, 16]);
+});
+
+// ADR 0674: a struct expression's object lists its fields as they're
+// written, the order Rust evaluates them in, then those `..base` fills, as
+// declared; a spread of the base before them, whose fields JS's after it
+// override; a flattened field's own where it's written. The keys JS reads,
+// `Object.keys`, are in that order, as React's `ConsolePatchingDev` writes
+// the descriptors it gives `Object.defineProperties`.
+test("a struct literal's keys are in the order written", async () => {
+  const dir = fixture("fields-as-written");
+  writeFileSync(join(dir, "lib.rs"), `#[derive(Clone, Copy, Default)]
+pub struct Logs {
+    pub info: Option<u32>,
+    pub log: Option<u32>,
+    pub warn: Option<u32>,
+}
+pub fn reenabled(prev: u32) -> Logs {
+    Logs { log: Some(prev), info: Some(prev + 1), warn: Some(prev + 2) }
+}
+pub fn updated(logs: Logs) -> Logs {
+    Logs { warn: Some(1), log: Some(2), ..logs }
+}
+pub fn filled(warn: u32) -> Logs {
+    Logs { warn: Some(warn), ..Default::default() }
+}
+pub struct Inner {
+    pub a: u32,
+    pub b: u32,
+}
+pub struct Outer<'a> {
+    pub first: u32,
+    #[cfg_attr(rust_js, rust_js::flatten)]
+    pub inner: &'a Inner,
+    pub last: u32,
+}
+pub fn flat(inner: &Inner) -> Outer<'_> {
+    Outer { inner, last: 3, first: 1 }
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("return { log: prev, info: (prev + 1) >>> 0, warn: (prev + 2) >>> 0 };");
+  expect(js).toContain("return { ...logs, warn: 1, log: 2 };");
+  expect(js).toContain("return { warn };");
+  expect(js).toContain("return { ...inner, last: 3, first: 1 };");
+  const lib = await import(join(dir, "lib.js"));
+  expect(Object.keys(lib.reenabled(1))).toEqual(["log", "info", "warn"]);
+  expect(lib.updated({ info: 7, log: 8, warn: 9 })).toEqual({ info: 7, log: 2, warn: 1 });
+  expect(Object.keys(lib.flat({ a: 1, b: 2 }))).toEqual(["a", "b", "last", "first"]);
 });

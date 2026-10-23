@@ -126,13 +126,12 @@ export function withX(x, y) {
 }
 
 /**
- * Fields run in the order written, though the object lists them in
- * declaration order. Here `y` is written first, so its division by zero
- * panics before `x`'s remainder does.
+ * Fields run in the order written, and the object lists them so. Here `y`
+ * is written first, so its division by zero panics before `x`'s
+ * remainder does.
  */
 export function writtenOrder(a, b) {
-  const value = $div(100, a, -2147483648) | 0;
-  return { x: $rem(100, b, -2147483648) | 0, y: value };
+  return { y: $div(100, a, -2147483648) | 0, x: $rem(100, b, -2147483648) | 0 };
 }
 
 /** Tuples: built, returned and taken apart. */

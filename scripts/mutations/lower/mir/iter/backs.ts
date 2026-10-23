@@ -259,8 +259,8 @@ export const mutations: Mutation[] = [
     name: "back-stepped-source-raw",
     breaks: "a range a map the crate steps from its back maps is given as it is, not knowing its back",
     file: "src/lower/mir/iter/backs.rs",
-    find: "                    None if self.stepped_from_its_back(output) && self.range_kind(iter_ty).is_some() => {\n                        self.as_double_ended(receiver.clone(), iter_ty, span)?\n                    }\n                    None => receiver.clone(),\n                };\n                // An owning source",
-    replace: "                    None => receiver.clone(),\n                };\n                // An owning source",
+    find: "                    None if self.stepped_from_its_back(output) && self.range_kind(iter_ty).is_some() => {\n                        self.as_double_ended(receiver.clone(), iter_ty, span)?\n                    }\n                    None if self.is_user_iterator(iter_ty) => {\n                        self.user_iterator_knowing(receiver.clone(), iter_ty, (back, len), span)?\n                    }\n                    None => receiver.clone(),\n                };\n                // An owning source",
+    replace: "                    None if self.is_user_iterator(iter_ty) => {\n                        self.user_iterator_knowing(receiver.clone(), iter_ty, (back, len), span)?\n                    }\n                    None => receiver.clone(),\n                };\n                // An owning source",
     tests: ["test/corpus.test.ts", "-t", "^map_stepped_from_its_back.rs$"],
   },
   {
@@ -278,5 +278,13 @@ export const mutations: Mutation[] = [
     find: "            Some(IterMethod::ByRef) if self.range_kind(iter_ty).is_some() => receiver.clone(),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^by_ref_steps.rs$"],
+  },
+  {
+    name: "enumerate-of-user-lengthless",
+    breaks: "an enumeration of the crate's exact-sized iterator is made without its length, so its index from the back throws",
+    file: "src/lower/mir/iter/backs.rs",
+    find: "                let len = self.knows_its_length(iter_ty) || self.user_exact_size(iter_ty);\n",
+    replace: "                let len = self.knows_its_length(iter_ty);\n",
+    tests: ["test/corpus.test.ts", "-t", "^user_iterator_ends.rs$"],
   },
 ];

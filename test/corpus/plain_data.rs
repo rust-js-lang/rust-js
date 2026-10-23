@@ -57,6 +57,14 @@ fn longest<'a>(words: &'a [&'a str]) -> &'static str {
     best
 }
 
+fn first_len<'a>(words: &'a [&'a str]) -> usize {
+    let p: *const [&'a str] = words;
+    // A pointer to a slice whose items' lifetime alone changes: the pointer.
+    let q = unsafe { mem::transmute::<*const [&'a str], *const [&'static str]>(p) };
+    let all: &[&str] = unsafe { &*q };
+    all[0].len()
+}
+
 fn main() {
     unsafe {
         // The part at the same offset, of the same size.
@@ -102,4 +110,5 @@ fn main() {
         println!("{halves:?}");
     }
     println!("{}", longest(&["a", "abc", "ab"]));
+    println!("{}", first_len(&["four", "x"]));
 }
