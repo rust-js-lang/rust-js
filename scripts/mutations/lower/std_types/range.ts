@@ -137,4 +137,28 @@ export const mutations: Mutation[] = [
     snapshots: true,
     tests: ["test/corpus.test.ts", "-t", "^btree_range_bounds.rs$"],
   },
+  {
+    name: "range-step-by-filtered",
+    breaks: "`step_by(n)` of a range filters every number it has, `(0..u32::MAX).step_by(1 << 30)` four billion of them",
+    file: "src/lower/std_types/range.rs",
+    find: "        (\"filter\", [f]) if step.is_none() => every_nth(f).map(|n| made(start, Some(n))),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^range_steps_known.rs$"],
+  },
+  {
+    name: "range-skip-stepped",
+    breaks: "`skip(n)` of a range steps over each of the `n` numbers",
+    file: "src/lower/std_types/range.rs",
+    find: "        (\"drop\", [n]) if n.reads_same() => {\n",
+    replace: "        (\"drop\", [n]) if false && n.reads_same() => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^range_steps_known.rs$"],
+  },
+  {
+    name: "range-own-nth-stepped",
+    breaks: "a range's own `nth(n)` steps each of `n` numbers, `(0..u64::MAX).nth(1 << 31)` never ending",
+    file: "src/lower/std_types/range.rs",
+    find: "            IterMethod::Nth => \"$rangeNth\",\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^range_own_steps.rs$"],
+  },
 ];

@@ -4,6 +4,7 @@
 
 use crate::js::{self, Expr, Op, Prop, Stmt, StmtKind, UnaryOp};
 use crate::lower::display::{Pretty, join};
+use crate::lower::recognition::IterMethod;
 use crate::lower::representation::Num;
 use crate::lower::{FnCx, R};
 use rustc_middle::ty::{self, Ty};
@@ -89,6 +90,29 @@ pub(in crate::lower) enum RangeOp {
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// A range's own `nth(n)`, `last()` and `count()`, of `a..b`, `values`
+    /// it and `n`: of its bounds, without stepping each number, as std's
+    /// `Range`'s are (#163), `$rangeNth`, `$rangeLast` and, of numbers that
+    /// aren't BigInts, `$rangeLen`. `None` of another method or range.
+    pub(in crate::lower) fn range_own_step(
+        &self,
+        method: Option<IterMethod>,
+        range: Ty<'tcx>,
+        values: &[Expr],
+    ) -> Option<Expr> {
+        if self.range_kind(range) != Some(RangeKind::Exclusive) {
+            return None;
+        }
+        let numbers = self.range_index(range).and_then(Num::of).is_some_and(|num| !num.big());
+        let name = match method? {
+            IterMethod::Nth => "$rangeNth",
+            IterMethod::Last => "$rangeLast",
+            IterMethod::Count if numbers => "$rangeLen",
+            _ => return None,
+        };
+        Some(Expr::call_helper(name, values.to_vec()))
+    }
+
     /// A range's `len()`, `range_count` of its bounds, where it's a range
     /// of numbers that aren't BigInts, `a..b` or `a..=b`, that `it` reads.
     pub(in crate::lower) fn range_len(&self, it: &Expr, range: Ty<'tcx>, kind: RangeKind) -> Option<Expr> {
@@ -389,6 +413,91 @@ pub(in crate::lower) fn range_items(e: &mut Expr) {
     if let Some(made) = lazy_range(crate::lower::iterators::unlent(e)) {
         *e = made;
     }
+}
+
+/// A lazy range's own steps, of numbers it knows without stepping them, as
+/// std's range does (#163): `step_by(n)`, `.filter((_, i) => i % n ===
+/// 0)`, is `$lazyRange(a, b, n)`, and `skip(n)`, `.drop(n)`, starts it `n`
+/// steps on; a range's own `count()` and `last()` are `range_own_step`'s.
+/// Run after `range_items`, each of its source first.
+pub(in crate::lower) fn range_steps(e: &mut Expr) {
+    while let Some(folded) = range_step(e) {
+        *e = folded;
+    }
+}
+
+/// `$lazyRange(a, b, s)`'s bounds and step, each read once where it's used.
+fn lazy_range_parts(e: &Expr) -> Option<(Expr, Option<Expr>, Option<Expr>)> {
+    let js::ExprKind::Call(callee, args) = &e.kind else {
+        return None;
+    };
+    if callee.helper_name() != Some(LAZY_RANGE) || !args.iter().all(Expr::reads_same) {
+        return None;
+    }
+    match &args[..] {
+        [start] => Some((start.clone(), None, None)),
+        [start, end] => Some((start.clone(), Some(end.clone()), None)),
+        [start, end, step] => Some((start.clone(), Some(end.clone()), Some(step.clone()))),
+        _ => None,
+    }
+}
+
+fn range_step(e: &Expr) -> Option<Expr> {
+    let js::ExprKind::Call(callee, args) = &e.kind else {
+        return None;
+    };
+    let js::ExprKind::Member(source, method) = &callee.kind else {
+        return None;
+    };
+    let (start, end, step) = lazy_range_parts(source)?;
+    let made = |start: Expr, step: Option<Expr>| {
+        let mut list = vec![start];
+        list.extend(end.clone().or_else(|| step.is_some().then(|| Expr::var("Infinity"))));
+        list.extend(step);
+        Expr::call_helper(LAZY_RANGE, list)
+    };
+    match (method.as_str(), &args[..]) {
+        ("filter", [f]) if step.is_none() => every_nth(f).map(|n| made(start, Some(n))),
+        ("drop", [n]) if n.reads_same() => {
+            let skipped = match &step {
+                Some(step) => Expr::bin(Op::Mul, n.clone(), step.clone()),
+                None => n.clone(),
+            };
+            let start = match (start.as_int(), skipped.as_int()) {
+                (Some(a), Some(k)) => Expr::int(a + k),
+                _ => Expr::bin(Op::Add, start, skipped),
+            };
+            Some(made(start, step))
+        }
+        _ => None,
+    }
+}
+
+/// `n` of `(_, i) => i % n === 0`, `step_by(n)`'s filter of what it keeps.
+fn every_nth(f: &Expr) -> Option<Expr> {
+    let js::ExprKind::Arrow(params, body) = &f.kind else {
+        return None;
+    };
+    let [js::Pattern::Name(_), js::Pattern::Name(i)] = params.as_slice() else {
+        return None;
+    };
+    let [
+        js::Stmt {
+            kind: js::StmtKind::Return(Some(test)),
+            ..
+        },
+    ] = body.as_slice()
+    else {
+        return None;
+    };
+    let js::ExprKind::Binary(Op::Eq, rem, zero) = &test.kind else {
+        return None;
+    };
+    let js::ExprKind::Binary(Op::Rem, index, n) = &rem.kind else {
+        return None;
+    };
+    (zero.as_int() == Some(0) && matches!(&index.kind, js::ExprKind::Var(v) if v == i) && n.reads_same())
+        .then(|| (**n).clone())
 }
 
 /// `$lazyRange(a, b)` of `$iterator({ start: a, end: b }, $rangeNext)`, `a` a

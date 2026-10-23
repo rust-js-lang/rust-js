@@ -557,8 +557,8 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-eager-chains-off",
     breaks: "`$iter(xs).map(f).toArray()` stays, not `xs.map(f)`",
     file: "src/lower/mir/tidy.rs",
-    find: "    js::each_expr_mut(body, &mut crate::lower::std_types::range::range_items);\n    eager_chains(body);\n    js::statement_lists(body, &mut |stmts| eager_spreads(stmts));\n",
-    replace: "    js::each_expr_mut(body, &mut crate::lower::std_types::range::range_items);\n    js::statement_lists(body, &mut |stmts| eager_spreads(stmts));\n",
+    find: "    js::each_expr_mut(body, &mut crate::lower::std_types::range::range_steps);\n    eager_chains(body);\n    js::statement_lists(body, &mut |stmts| eager_spreads(stmts));\n",
+    replace: "    js::each_expr_mut(body, &mut crate::lower::std_types::range::range_steps);\n    js::statement_lists(body, &mut |stmts| eager_spreads(stmts));\n",
     tests: ["test/lowering-iterators.test.ts", "-t", "iterator chains from MIR|a lazy chain from MIR spread once"],
   },
   {
@@ -573,8 +573,8 @@ export const mutations: Mutation[] = [
     name: "late-eager-chains-off",
     breaks: "an array's iterator read in place late stays `$lent($iter(xs)).some(f)`",
     file: "src/lower/mir/tidy.rs",
-    find: "    iterators::consumed_into_iters(body, fuse);\n    js::each_expr_mut(body, &mut crate::lower::std_types::range::range_items);\n    eager_chains(body);\n    // Of each, a callback",
-    replace: "    iterators::consumed_into_iters(body, fuse);\n    js::each_expr_mut(body, &mut crate::lower::std_types::range::range_items);\n    // Of each, a callback",
+    find: "    js::each_expr_mut(body, &mut crate::lower::std_types::range::range_steps);\n    eager_chains(body);\n    // Of each, a callback",
+    replace: "    js::each_expr_mut(body, &mut crate::lower::std_types::range::range_steps);\n    // Of each, a callback",
     tests: ["test/lowering-iterators.test.ts", "-t", "an array's iterator read in place late"],
   },
   {

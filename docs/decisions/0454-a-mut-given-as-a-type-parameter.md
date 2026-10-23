@@ -132,3 +132,13 @@ generic code reads through its `value`. Each such site in `slice.rs` and
 `map.rs` asks it, held by the architecture test, and so does a guard of
 a type parameter (ADR 0328). Held by `test/corpus/generic_retain_handles.rs`
 and the mutation `type-parameter-mut-not-handle`.
+
+## Amendment: a reborrow's cell given on
+
+`impl<T: Trait + ?Sized> Trait for &mut T` forwards with `(**self).m()`,
+a `&mut T` of the cell the `&mut T` is; a call of the crate's boxed it
+again, a box of a copy, `{ value: self.value.value }`, so what `m` wrote
+of a number or a `String` was lost (#167). The cell a place's `&mut` is
+the `value` of, a call's, one made there, or one a place holds, is
+`held_cell`'s answer, which a call's arguments and a value's handle both
+ask: it's given on as it is. Held by `test/corpus/forwarding_mut_impl.rs`.

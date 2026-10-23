@@ -450,4 +450,12 @@ export const mutations: Mutation[] = [
     replace: "            _ => value?,\n",
     tests: ["test/lowering-options.test.ts", "-t", "nullable result is written"],
   },
+  {
+    name: "held-cell-boxed-again",
+    breaks: "`(**self).inc()` of an impl for `&mut T` gives a box of a copy of the number, so what it writes is lost",
+    file: "src/lower/mir/assign.rs",
+    find: "            if let Some(cell) = self.held_cell(&place) {\n                exprs.push(cell);\n                continue;\n            }\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^forwarding_mut_impl.rs$"],
+  },
 ];

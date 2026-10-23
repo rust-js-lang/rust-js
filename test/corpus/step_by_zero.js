@@ -13,12 +13,7 @@ function every(items, step) {
 
 function main() {
   console.log(`[${every([1, 2, 3, 4, 5], 2).join(", ")}]`);
-  console.log(
-    `[${$lazyRange(0, 10)
-      .filter((_, i) => i % 3 === 0)
-      .toArray()
-      .join(", ")}]`,
-  );
+  console.log(`[${$lazyRange(0, 10, 3).toArray().join(", ")}]`);
   const empty = { start: 0, end: 0 };
   const step = $step(0);
   const stepped = $iterator(empty, $rangeNext).filter((_, i) => i % step === 0);

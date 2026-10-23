@@ -723,24 +723,8 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         {
             return Some(Std::Pointee);
         }
-        // A range is an iterator already, and its `len` and `next_back`
-        // are its bounds' (ADR 0129).
-        if let Some(kind) = self.range_kind(ty) {
-            let stepped = matches!(kind, RangeKind::Exclusive | RangeKind::Inclusive);
-            let name = tcx.item_name(def_id);
-            match name.as_str() {
-                "into_iter" if tcx.is_diagnostic_item(sym::IntoIterator, trait_) => return Some(Std::Same),
-                "len" if stepped && std_path(tcx, trait_) == "std::iter::ExactSizeIterator" => {
-                    return Some(Std::Range(RangeOp::Len));
-                }
-                "next_back"
-                    if kind == RangeKind::Exclusive
-                        && tcx.get_diagnostic_item(Symbol::intern("DoubleEndedIterator")) == Some(trait_) =>
-                {
-                    return Some(Std::Range(RangeOp::NextBack));
-                }
-                _ => {}
-            }
+        if let Some(op) = self.range_iterator_method(def_id, trait_, ty) {
+            return Some(op);
         }
         if tcx.is_diagnostic_item(sym::IntoIterator, trait_)
             && tcx.item_name(def_id).as_str() == "into_iter"
@@ -818,6 +802,25 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         (to_owned && ty.is_str())
             .then_some(Std::Same)
             .or((to_owned && ty.is_slice()).then_some(Std::ToVec))
+    }
+
+    /// A range's own iterator method: a range is an iterator already, and
+    /// its `len` and `next_back` are its bounds' (ADR 0129).
+    fn range_iterator_method(&self, def_id: DefId, trait_: DefId, ty: Ty<'tcx>) -> Option<Std> {
+        let tcx = self.tcx;
+        let kind = self.range_kind(ty)?;
+        let stepped = matches!(kind, RangeKind::Exclusive | RangeKind::Inclusive);
+        Some(Std::Range(match tcx.item_name(def_id).as_str() {
+            "into_iter" if tcx.is_diagnostic_item(sym::IntoIterator, trait_) => return Some(Std::Same),
+            "len" if stepped && std_path(tcx, trait_) == "std::iter::ExactSizeIterator" => RangeOp::Len,
+            "next_back"
+                if kind == RangeKind::Exclusive
+                    && tcx.get_diagnostic_item(Symbol::intern("DoubleEndedIterator")) == Some(trait_) =>
+            {
+                RangeOp::NextBack
+            }
+            _ => return None,
+        }))
     }
 
     /// `into_iter` of an `Option` or a `Result`, or of a reference to one:
