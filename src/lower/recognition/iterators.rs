@@ -457,13 +457,13 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
 
     /// `VecDeque::iter()`'s, over the array a `VecDeque` is.
     /// A std iterator of what's an array already, or made one where it's
-    /// made, `$iter` of it: an `Option`'s or a `Result`'s `iter()`, `[]` or
-    /// `[x]`, a `LinkedList`'s, and a string's `char_indices()`, its pairs
+    /// made, `$iter` of it: an `Option`'s or a `Result`'s `iter()`, and an
+    /// `Option`'s `into_iter()`, `[]` or `[x]`, a `LinkedList`'s, and a string's `char_indices()`, its pairs
     /// (ADR 0530).
     pub(in crate::lower) fn iterates_items(&self, ty: Ty<'tcx>) -> bool {
         let ty = self.reveal(ty);
         matches!(ty.kind(), ty::Adt(adt, _) if matches!(std_path(self.tcx, adt.did()).as_str(),
-            "std::option::Iter" | "std::result::Iter" | "std::collections::linked_list::Iter" | "std::str::CharIndices"))
+            "std::option::Iter" | "std::option::IntoIter" | "std::result::Iter" | "std::collections::linked_list::Iter" | "std::str::CharIndices"))
             // A byte's escape, its bytes (ADR 0558).
             || is_byte_escape(self.tcx, ty)
     }
@@ -799,6 +799,16 @@ pub(crate) fn cloned_source<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Ty<
 pub(crate) fn mapped_source<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
     match ty.kind() {
         ty::Adt(adt, args) if std_path(tcx, adt.did()) == "std::iter::Map" => Some(args.type_at(0)),
+        _ => None,
+    }
+}
+
+/// Of std's `Chain<A, B>` of type `ty`, its two sources.
+pub(crate) fn chained_sources<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<(Ty<'tcx>, Ty<'tcx>)> {
+    match ty.kind() {
+        ty::Adt(adt, args) if std_path(tcx, adt.did()) == "std::iter::Chain" => {
+            Some((args.type_at(0), args.type_at(1)))
+        }
         _ => None,
     }
 }

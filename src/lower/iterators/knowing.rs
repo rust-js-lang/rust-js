@@ -280,6 +280,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let source_value = self.as_double_ended((**source_value).clone(), source.peel_refs(), span)?;
             return Ok(Expr::call_helper("$mapEnds", vec![source_value, f.clone()]));
         }
+        // A chain made here, `$lazyChain(a, b)`: each made knowing its back,
+        // `$chainEnds` of them, which steps `b`'s then `a`'s from the back, as
+        // std's `Chain` does.
+        if let Some((first, second)) = crate::lower::recognition::chained_sources(self.tcx, ty)
+            && let js::ExprKind::Call(callee, args) = &value.kind
+            && callee.helper_name() == Some("$lazyChain")
+            && let [a, b] = args.as_slice()
+        {
+            let a = stepped_value(a).unwrap_or_else(|| a.clone());
+            let b = stepped_value(b).unwrap_or_else(|| b.clone());
+            let a = self.as_double_ended(a, first.peel_refs(), span)?;
+            let b = self.as_double_ended(b, second, span)?;
+            return Ok(Expr::call_helper("$chainEnds", vec![a, b]));
+        }
         // A filter made here, `src.filter(p)`: its source's items `p` keeps,
         // from either end, as Rust's `Filter` steps them (ADR 0526).
         if let Some(source) = crate::lower::recognition::filtered_source(self.tcx, ty)

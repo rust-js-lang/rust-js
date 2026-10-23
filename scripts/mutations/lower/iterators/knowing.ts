@@ -226,4 +226,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^rev_counted.rs$"],
   },
+  {
+    name: "chain-made-unstepped",
+    breaks: "`rev()` of a chain made in place is refused",
+    file: "src/lower/iterators/knowing.rs",
+    find: "            && callee.helper_name() == Some(\"$lazyChain\")\n",
+    replace: "            && callee.helper_name() == Some(\"$unchained\")\n",
+    tests: ["test/corpus.test.ts", "-t", "^rev_chain.rs$"],
+  },
 ];

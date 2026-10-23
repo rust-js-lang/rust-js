@@ -1376,6 +1376,34 @@ export function $mapEnds(it, f) {
   return map;
 }
 
+// A chain of two JS iterators that know their backs, `a.chain(b)`, which
+// knows its own, as Rust's `Chain` is double-ended where both are: `a`'s
+// then `b`'s from the front, `b`'s then `a`'s from the back, each let go of
+// once it's done, as std's clears it. Closing it closes both (ADR 0465).
+export function $chainEnds(a, b) {
+  const done = { done: true, value: undefined };
+  const sides = { a, b };
+  const step = (first, second, by) => () => {
+    for (const side of [first, second]) {
+      if (sides[side] === undefined) continue;
+      const at = sides[side][by]();
+      if (!at.done) return at;
+      sides[side] = undefined;
+    }
+    return done;
+  };
+  const chain = Iterator.from({
+    next: step("a", "b", "next"),
+    return: () => {
+      sides.a?.return?.();
+      sides.b?.return?.();
+      return done;
+    },
+  });
+  chain.back = step("b", "a", "back");
+  return chain;
+}
+
 // A filter of a JS iterator that knows its back, `it.filter(p)`, which
 // knows it too, as Rust's `Filter` is double-ended where its source is:
 // each of its source's items `p` keeps, from either end, `p` asked of each

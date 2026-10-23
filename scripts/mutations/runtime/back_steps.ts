@@ -98,4 +98,12 @@ export const mutations: Mutation[] = [
     replace: "  enumerated.count = 0;\n",
     tests: ["test/corpus.test.ts", "-t", "^cloned_counted_adapters.rs$"],
   },
+  {
+    name: "chain-back-a-first",
+    breaks: "a chain's back steps `a`'s back before `b`'s, so `rev()` gives `a`'s last first",
+    file: "src/runtime/back_steps.js",
+    find: "  chain.back = step(\"b\", \"a\", \"back\");\n",
+    replace: "  chain.back = step(\"a\", \"b\", \"back\");\n",
+    tests: ["test/corpus.test.ts", "-t", "^rev_chain.rs$"],
+  },
 ];
