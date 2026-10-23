@@ -123,6 +123,108 @@ pub fn held(text: &str, first: bool) -> Option<&'static Unknown> {
   expect(() => lib.held("{", false)).toThrow("called `Result::unwrap()` on an `Err` value: SyntaxError");
 });
 
+// ADR 0644: a function whose result is a throwing call's `Result`, each
+// return, is a throwing function, as React's `testStringCoercion` is: its
+// JS returns the call's value, and its calls are throwing calls, a `try` of
+// `is_err()`, the call of `unwrap()`, `$try` of `?`. A `pub` one keeps its
+// `Result`, which JS reads; one that returns its own call keeps `$try`.
+test("a function whose result is a throwing call's is a throwing function", async () => {
+  const withJs = ["--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const dir = fixture("throwing-functions");
+  writeFileSync(join(dir, "lib.rs"), `use js::{JsError, Unknown, json};
+
+fn test_string_coercion(value: Option<&Unknown>) -> Result<String, &'static JsError> {
+    // For whoever follows the stack here.
+    js::concat_text(value)
+}
+
+fn will_coercion_throw(value: Option<&Unknown>) -> bool {
+    test_string_coercion(value).is_err()
+}
+
+pub fn check_key_string_coercion(value: Option<&Unknown>) -> Option<String> {
+    if will_coercion_throw(value) {
+        eprintln!("unsupported");
+        return Some(test_string_coercion(value).unwrap());
+    }
+    None
+}
+
+fn parsed(text: &str) -> Result<Option<&'static Unknown>, &'static JsError> {
+    json::parse(text)
+}
+
+pub fn valid(text: &str) -> bool {
+    match parsed(text) {
+        Ok(_) => true,
+        Err(_) => false,
+    }
+}
+
+pub fn present(text: &str) -> Result<bool, &'static JsError> {
+    let value = parsed(text)?;
+    Ok(value.is_some())
+}
+
+pub fn coerced(value: Option<&Unknown>) -> Result<String, &'static JsError> {
+    js::concat_text(value)
+}
+
+fn nested(value: Option<&Unknown>, depth: u32) -> Result<String, &'static JsError> {
+    if depth == 0 {
+        js::concat_text(value)
+    } else {
+        nested(value, depth - 1)
+    }
+}
+
+pub fn deep(value: Option<&Unknown>) -> bool {
+    nested(value, 2).is_err()
+}
+
+fn or_none(text: &str) -> Result<Option<&'static Unknown>, &'static JsError> {
+    if text.is_empty() {
+        return Ok(None);
+    }
+    json::parse(text)
+}
+
+pub fn parses(text: &str) -> bool {
+    or_none(text).is_ok()
+}
+
+fn number(text: &str) -> Result<u32, std::num::ParseIntError> {
+    text.parse()
+}
+
+pub fn numeric(text: &str) -> bool {
+    number(text).is_ok()
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('function testStringCoercion(value) {\n  // For whoever follows the stack here.\n  return "" + value;\n}');
+  expect(js).toContain("function willCoercionThrow(value) {\n  try {\n    testStringCoercion(value);\n    return false;\n  } catch {\n    return true;\n  }\n}");
+  expect(js).toContain("    return testStringCoercion(value);\n");
+  expect(js).toContain("function valid(text) {\n  try {\n    parsed(text);\n    return true;\n  } catch {\n    return false;\n  }\n}");
+  expect(js).toContain("$try(() => parsed(text))");
+  expect(js).toContain('function coerced(value) {\n  return $try(() => "" + value);\n}');
+  expect(js).toContain('$try(() => "" + value)');
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.checkKeyStringCoercion("a"), lib.checkKeyStringCoercion(1)]).toEqual([undefined, undefined]);
+  expect(() => lib.checkKeyStringCoercion(Symbol("s"))).toThrow(TypeError);
+  expect([lib.valid("[1]"), lib.valid("{")]).toEqual([true, false]);
+  expect([lib.present("1"), lib.present("null")]).toEqual([{ TAG: "Ok", _0: true }, { TAG: "Ok", _0: false }]);
+  expect(lib.present("{").TAG).toBe("Err");
+  expect([lib.coerced(1), lib.coerced(Symbol("s")).TAG]).toEqual([{ TAG: "Ok", _0: "1" }, "Err"]);
+  expect([lib.deep(1), lib.deep(Symbol("s"))]).toEqual([false, true]);
+  // One that makes its own \`Ok\` too keeps its \`Result\`.
+  expect(js).toContain("  return $try(() => JSON.parse(text));\n}");
+  expect([lib.parses(""), lib.parses("1"), lib.parses("{")]).toEqual([true, true, false]);
+  // One of a Rust \`Result\`, no JS call's, is no throwing function.
+  expect([lib.numeric("12"), lib.numeric("x")]).toEqual([true, false]);
+});
+
 // ADR 0283: a regular expression's match, an `Error`'s parts, symbols, the
 // global functions and the weak collections are the js crate's, each a
 // method or a function of the JS it names; a weak key is an object.

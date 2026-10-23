@@ -771,6 +771,12 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### Changed
 
+- **A function whose result is a throwing call's `Result` throws** (ADR
+  0644): React's `testStringCoercion`, `js::concat_text(value)`, is
+  `return "" + value;`, and its calls are throwing calls,
+  `try { testStringCoercion(value); return false; } catch { return true; }`
+  of its `is_err()`, `testStringCoercion(value)` of its `unwrap()`. Not a
+  `pub` one, whose JS callers read its `Result`.
 - **`unwrap()` of a throwing JS call is the call** (ADR 0643):
   `json::parse(text).unwrap()` is `JSON.parse(text)`, its `SyntaxError`
   thrown as JS threw it, where it was `$unwrapOk($try(..))` and Rust's

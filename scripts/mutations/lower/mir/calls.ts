@@ -219,4 +219,12 @@ export const mutations: Mutation[] = [
     replace: "                match false {\n",
     tests: ["test/lowering-symbols.test.ts", "-t", "a match of the registry's symbols"],
   },
+  {
+    name: "throwing-fn-called-plain",
+    breaks: "a throwing function's call is its value, `testStringCoercion(value).TAG`, not a throwing call",
+    file: "src/lower/mir/calls.rs",
+    find: "        Ok(Value::Expr(self.catching(def_id, generic_args, called)))\n",
+    replace: "        Ok(Value::Expr(called))\n",
+    tests: ["test/js-builtins.test.ts", "-t", "is a throwing function"],
+  },
 ];

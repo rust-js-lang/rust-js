@@ -250,7 +250,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let called = Expr::call(self.fn_ref(def_id), exprs);
         // A generic `&mut T`'s box, of an object `T` here: what's in it.
         let called = self.generic_result_values((def_id, generic_args), called, span)?;
-        Ok(Value::Expr(self.fmt_result_value(def_id, generic_args, called)))
+        let called = self.fmt_result_value(def_id, generic_args, called);
+        // A throwing function's call is a throwing call (ADR 0644).
+        Ok(Value::Expr(self.catching(def_id, generic_args, called)))
     }
 
     /// What binding `def_id` is given as its `i`th argument, `value` of

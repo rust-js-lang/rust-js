@@ -170,6 +170,14 @@ pub fn loaded(path: &str) -> String {
     load_config(path).unwrap()
 }
 
+fn read_config(path: &str) -> Result<String, &'static JsError> {
+    load_config(path)
+}
+
+pub fn readable(path: &str) -> bool {
+    read_config(path).is_ok()
+}
+
 pub fn decoded(text: &str) -> String {
     match js::decode_uri_component(text) {
         Ok(decoded) => decoded,
@@ -208,6 +216,19 @@ export function config(path) {
 
 export function loaded(path) {
   return loadConfig(path);
+}
+
+function readConfig(path) {
+  return loadConfig(path);
+}
+
+export function readable(path) {
+  try {
+    readConfig(path);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export function decoded(text) {
@@ -251,6 +272,11 @@ export function hasConfig(path) {
 - **`unwrap()` of the call is the call**, `loadConfig(path)`: what JS
   threw goes on as itself, not as Rust's panic of it. `expect(msg)` keeps
   its message ([ADR 0643](../../decisions/0643-unwrap-of-a-throwing-call-is-the-call.md)).
+- **A function whose result is the call's `Result` throws too**,
+  `readConfig(path)`, which returns `loadConfig(path)`: its calls are
+  throwing calls, by each rule above. Not a `pub` one, whose JS callers
+  read its `Result`, nor a trait's method or a generic one
+  ([ADR 0644](../../decisions/0644-a-function-of-a-throwing-calls-result-throws.md)).
 - **`&JsError` is whatever was thrown**: `message()`, `name()`,
   `cause()` and `stack()` read an `Error`'s; `is_error()` says whether it
   is one, since JS may throw anything. Its `{:?}` is `String(error)`,

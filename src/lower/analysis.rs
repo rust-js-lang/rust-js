@@ -16,6 +16,9 @@ mod naming;
 mod only_called;
 mod plain_locals;
 mod rc_counts;
+mod throwing;
+
+pub(super) use throwing::call_throws;
 
 pub(super) use naming::renamed_in;
 mod caller_locations;
@@ -488,6 +491,8 @@ pub(super) struct AnalyzedCrate<'a, 'tcx> {
     pub type_facts: HashMap<DefId, Vec<(u32, TypeFact)>>,
     /// The functions that may return `Err(fmt::Error)` (ADR 0187).
     pub failing: HashSet<DefId>,
+    /// The throwing functions, whose result is a throwing JS call's (ADR 0644).
+    pub throwing: HashSet<DefId>,
     /// The functions that take their caller's location (ADR 0427).
     pub caller_locations: HashSet<DefId>,
     /// Whether the crate asks a `Vec` its capacity (ADR 0419).
@@ -864,6 +869,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     };
     let type_facts = type_fact_params(tcx, all_bodies, &fns, &foreign, given);
     let failing = fmt_failures::failing_fns(tcx, all_bodies, &foreign);
+    let throwing = throwing::throwing_fns(tcx, &recognition, all_bodies);
     let caller_locations = caller_locations::caller_location_fns(tcx, all_bodies, &foreign);
     let asks_capacity = asks_capacity(tcx, all_bodies);
     let generic_consts = generic_consts(tcx, all_bodies);
@@ -904,6 +910,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         stepped,
         type_facts,
         failing,
+        throwing,
         caller_locations,
         asks_capacity,
         generic_consts,

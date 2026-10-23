@@ -187,4 +187,20 @@ export const mutations: Mutation[] = [
     replace: ".and(None);\n",
     tests: ["test/lowering-options.test.ts", "-t", "nullable function's call is the call"],
   },
+  {
+    name: "throwing-fn-returns-caught",
+    breaks: "a throwing function's result is `return $try(() => \"\" + value);`, not the call, though its callers catch it",
+    file: "src/lower/mir/structure.rs",
+    find: "                            && self.krate.throwing.contains(&state.body.source.def_id()) =>\n",
+    replace: "                            && false =>\n",
+    tests: ["test/js-builtins.test.ts", "-t", "is a throwing function"],
+  },
+  {
+    name: "throwing-fn-returns-any-uncaught",
+    breaks: "every function's result of a throwing call is the bare call, a `pub` one's too, whose JS callers read a `Result`",
+    file: "src/lower/mir/structure.rs",
+    find: "                            && self.krate.throwing.contains(&state.body.source.def_id()) =>\n",
+    replace: "                            && true =>\n",
+    tests: ["test/js-builtins.test.ts", "-t", "is a throwing function"],
+  },
 ];

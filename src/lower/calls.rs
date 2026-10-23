@@ -52,11 +52,13 @@ pub(super) fn units_left_out(args: &mut Vec<Expr>, tys: &[ty::Ty<'_>]) {
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
-    /// A JS call that says, in Rust, that it may throw (ADR 0035): one
+    /// A call that says, in Rust, that it may throw (ADR 0035): one
     /// returning a `Result` runs in a `try`, `$try(() => f(x))`, and one
-    /// returning a `Promise<Result<..>>` settles either way, `$settle(p)`.
+    /// returning a `Promise<Result<..>>` settles either way, `$settle(p)`;
+    /// a binding by its declared result, and a throwing function of the
+    /// crate's, as `analysis::call_throws` says (ADR 0644).
     pub(super) fn catching(&mut self, def_id: DefId, args: ty::GenericArgsRef<'tcx>, value: Expr) -> Expr {
-        match self.recognition().catching(def_id, args) {
+        match super::analysis::call_throws(&self.recognition(), self.krate.throwing, def_id, args) {
             Catching::Result => Expr::tried(value),
             Catching::PromiseResult => Expr::call(Expr::helper("$settle"), vec![value]),
             Catching::Direct => value,
