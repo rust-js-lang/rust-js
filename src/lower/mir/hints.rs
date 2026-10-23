@@ -17,8 +17,10 @@ pub(super) struct Written {
     pub elses: Vec<(js::Span, js::Span, js::Span)>,
     /// Each `&&` or `||` the program wrote.
     pub logicals: Vec<js::Span>,
-    /// Each `if` of a `continue`, alone or ending what it does.
-    pub continues: Vec<js::Span>,
+    /// Each `if` of a `continue`, alone or ending what it does: where its
+    /// condition is, and where the `continue` is, which its comment is
+    /// before (ADR 0684).
+    pub continues: Vec<(js::Span, js::Span)>,
     /// Each loop, whether as a `while`, and its label.
     pub loops: Vec<(js::Span, bool, Option<String>)>,
     /// Each `match` the program wrote whose every arm tests constants, a
@@ -170,7 +172,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .collect();
         // Where each `if` the program wrote of a `continue` tests: one alone,
         // or one that ends what it does.
-        let continues: Vec<js::Span> = (self.thir.exprs.iter())
+        let continues: Vec<(js::Span, js::Span)> = (self.thir.exprs.iter())
             .filter_map(|e| match e.kind {
                 thir::ExprKind::If { cond, then, .. } => {
                     let mut then = then;
@@ -198,7 +200,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         only = inner;
                     }
                     matches!(self.thir[only].kind, thir::ExprKind::Continue { .. })
-                        .then(|| self.js_span(self.thir[cond].span))
+                        .then(|| (self.js_span(self.thir[cond].span), self.js_span(self.thir[only].span)))
                 }
                 _ => None,
             })
@@ -471,7 +473,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// Where each `let … else { continue; }` the program wrote is, which MIR
     /// tests as an `if` of the `continue` in its place.
-    fn let_else_continues(&self) -> Vec<js::Span> {
+    fn let_else_continues(&self) -> Vec<(js::Span, js::Span)> {
         (self.thir.stmts.iter())
             .filter_map(|stmt| match stmt.kind {
                 thir::StmtKind::Let {
@@ -493,7 +495,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     {
                         only = inner;
                     }
-                    matches!(self.thir[only].kind, thir::ExprKind::Continue { .. }).then(|| self.js_span(span))
+                    matches!(self.thir[only].kind, thir::ExprKind::Continue { .. })
+                        .then(|| (self.js_span(span), self.js_span(self.thir[only].span)))
                 }
                 _ => None,
             })

@@ -454,4 +454,12 @@ export const mutations: Mutation[] = [
     replace: "                    (false, true) => StmtKind::If(test.negated_test(), then, Some(otherwise)),\n",
     tests: ["test/lowering-written-branches.test.ts", "-t", "an if of an && keeps its test"],
   },
+  {
+    name: "written-continue-guarded",
+    breaks: "`if a && b { continue; } return false;` is a `let … else`'s guard, `if (!a || !b) { return false; }`, its `continue` and comment gone",
+    file: "src/lower/mir/tidy/branches.rs",
+    find: "        && !tests_continue(continues, last_if.span)\n",
+    replace: "",
+    tests: ["test/lowering-written-branches.test.ts", "-t", "a continue the program wrote"],
+  },
 ];

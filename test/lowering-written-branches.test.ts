@@ -110,3 +110,58 @@ pub fn guarded(key: u32) -> u32 {
   expect([1, 2, 3].map((key) => lib.guarded(key as never))).toEqual([10, 20, 3]);
 });
 
+// React's isSimpleObject: `if (!descriptor.enumerable) { if ((name ===
+// 'key' || name === 'ref') && typeof descriptor.get === 'function') { //
+// ..\n continue; } return false; }`. The `continue` the program wrote is
+// where it wrote it, its comment before it, and its `if`'s test as written;
+// not `if ((name !== "key" && name !== "ref") || ..) { return false; }`, a
+// `let … else`'s guard, with the comment gone.
+test("a continue the program wrote keeps its if, its test and its comment", async () => {
+  const { js, lib } = await compiled("written-continues", `use std::collections::HashMap;
+
+pub struct Descriptor {
+    pub enumerable: Option<bool>,
+    pub get: Option<u32>,
+}
+
+pub fn is_simple(names: &[String], descriptors: &HashMap<String, Descriptor>) -> bool {
+    for name in names {
+        let Some(descriptor) = descriptors.get(name) else {
+            return false;
+        };
+        if !descriptor.enumerable.unwrap_or_default() {
+            if (name == "key" || name == "ref") && descriptor.get.is_some() {
+                // React adds key and ref getters to props objects to issue warnings.
+                // Those getters will not be transferred to the client, but that's ok,
+                // so we'll special case them.
+                continue;
+            }
+            return false;
+        }
+    }
+    true
+}
+
+pub fn simple(names: Vec<String>, enumerable: Vec<bool>, getters: Vec<bool>) -> bool {
+    let descriptors = (names.iter().cloned())
+        .zip(enumerable.into_iter().zip(getters))
+        .map(|(name, (enumerable, getter))| {
+            let descriptor = Descriptor { enumerable: Some(enumerable), get: getter.then_some(1) };
+            (name, descriptor)
+        })
+        .collect();
+    is_simple(&names, &descriptors)
+}
+`);
+  expect(js).toContain(
+    '      if ((name === "key" || name === "ref") && descriptor.get != null) {\n        // React adds key and ref getters to props objects to issue warnings.\n',
+  );
+  expect(js).toContain("        // so we'll special case them.\n        continue;\n      }\n      return false;\n    }\n");
+  const simple = (names: string[], enumerable: boolean[], getters: boolean[]) => lib.simple(names as never, enumerable as never, getters as never);
+  expect([
+    simple(["a", "key"], [true, false], [false, true]),
+    simple(["a", "key"], [true, false], [false, false]),
+    simple(["ref", "b"], [false, false], [true, true]),
+    simple(["a"], [true], [false]),
+  ]).toEqual([true, false, false, true]);
+});

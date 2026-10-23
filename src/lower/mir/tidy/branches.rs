@@ -222,6 +222,7 @@ pub(super) fn branch_values(
     returns: &[js::Span],
     booleans: &HashSet<String>,
     (result, switches): (&str, &[Switch]),
+    continues: &[(js::Span, js::Span)],
 ) {
     stmts.retain_mut(|stmt| {
         let span = stmt.span;
@@ -388,8 +389,11 @@ pub(super) fn branch_values(
         && written(returns, last.span)
         && let Some((tests, body)) = returning_chain(std::slice::from_ref(last_if))
         // Not `if c { return a; } else { return b; }`'s: a `let … else`'s
-        // rest ends where it goes on, not at a `return` the program wrote.
+        // rest ends where it goes on, not at a `return` the program wrote;
+        // nor `if c { continue; } return b;`'s, an `if` the program wrote
+        // of a `continue` (ADR 0684).
         && !body.last().is_some_and(|s| matches!(s.kind, StmtKind::Return(_)) && written(returns, s.span))
+        && !tests_continue(continues, last_if.span)
         && !declared(&body).any(|name| declared(before).any(|n| n == name))
     {
         // `f` the program wrote, a `let … else`'s else: `if (!(a && b)) {
