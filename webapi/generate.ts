@@ -443,7 +443,7 @@ function rustType(t: IdlType, at: Position): string | { skip: string } {
   }
   // A function JS gives is a `dyn Fn` of its signature, `Function`'s, which
   // says none, `dyn Fn() -> Option<&'static Unknown>`, called of nothing
-  // for any value, as `js::Kind::Function` is (ADRs 0653, 0694). What's
+  // for any value, as `js::Kind::Function` is (ADRs 0653, 0700). What's
   // no function isn't one: a callback interface, `walker.filter`, a
   // function or an object of `acceptNode`; and a constructor,
   // `customElements.get(name)`'s, which `new` calls.

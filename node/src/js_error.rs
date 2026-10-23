@@ -31,7 +31,7 @@ pub type PrepareStackTrace<R> = dyn Fn(&JsError, &[&CallSite]) -> R;
 /// [`Error.captureStackTrace(targetObject, constructorOpt)`](https://nodejs.org/api/errors.html#errorcapturestacktracetargetobject-constructoropt):
 /// a `stack` on `target_object`, of where it's called, without the frames
 /// of `constructor_opt` and those it called, a function, TypeScript's
-/// `Function`, which gives any value (ADRs 0653, 0694).
+/// `Function`, which gives any value (ADRs 0653, 0700).
 #[cfg_attr(rust_js, rust_js::link_name = "Error.captureStackTrace")]
 pub fn capture_stack_trace(target_object: &dyn core::any::Any, constructor_opt: Option<&dyn Fn() -> Option<&'static Unknown>>) {
     unreachable!()

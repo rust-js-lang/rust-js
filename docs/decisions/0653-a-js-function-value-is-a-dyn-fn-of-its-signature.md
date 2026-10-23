@@ -1,6 +1,6 @@
 # 0653. A JS function value is a `dyn Fn` of its signature
 
-Status: Accepted; amended by [0694](0694-typescripts-function-gives-any-value.md):
+Status: Accepted; amended by [0700](0700-typescripts-function-gives-any-value.md):
 TypeScript's `Function` is `&dyn Fn() -> Option<&'static Unknown>`. Amends [0024](0024-web-crate.md)'s and
 [0260](0260-webapi-callbacks.md)'s webapi generator, whose
 function JS gives was a `&'static JsObject`, and

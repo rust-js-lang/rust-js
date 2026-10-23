@@ -639,7 +639,7 @@ export async function open(other) {
   TypeScript's `Function`, of whatever it takes, is `&dyn Fn() ->
   Option<&'static Unknown>`, called of nothing for any value, as
   `js::Kind::Function` holds it
-  ([ADR 0694](../../decisions/0694-typescripts-function-gives-any-value.md)).
+  ([ADR 0700](../../decisions/0700-typescripts-function-gives-any-value.md)).
 - **`#[rust_js::nullable]` makes the result's `None` `null`** for a caller
   that tests `!== null`; `#[rust_js::nullable(range)]` passes the parameter
   `range`'s `None` as `null`. Reading a result, `None` is `undefined` or

@@ -448,7 +448,7 @@ pub fn had(o: &Unknown) -> (bool, bool) {
   expect(() => lib.deleted(Object.freeze({ props: 1 }), "x")).toThrow(TypeError);
 });
 
-// ADR 0694: TypeScript's `Function` is `&dyn Fn() -> Option<&'static
+// ADR 0700: TypeScript's `Function` is `&dyn Fn() -> Option<&'static
 // Unknown>`, one form everywhere: called of nothing, what it gives is any
 // value, as `js::Kind::Function` holds it and `Reflect` takes it.
 test("TypeScript's Function gives any value", async () => {
@@ -482,7 +482,7 @@ pub fn given() -> Option<&'static Unknown> {
   expect(lib.given()).toBe(1);
 });
 
-// ADRs 0694 to 0699: React's `shared/ReactComponentStackFrame.js` as a port writes
+// ADRs 0695 to 0700: React's `shared/ReactComponentStackFrame.js` as a port writes
 // it, each shape upstream's: `Fake` a function declaration where it's
 // written, `new fn()`, `delete fn.prototype.props`, `fn()` for what it
 // gives, `maybePromise.catch(() => {})`, and its cache a `WeakMap` or, of a

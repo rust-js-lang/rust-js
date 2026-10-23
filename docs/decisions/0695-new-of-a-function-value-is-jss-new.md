@@ -58,7 +58,7 @@ new class$(...rest);
 ## Alternatives
 
 - **`js::new` of a `&dyn Fn() -> Option<&Unknown>`**, TypeScript's
-  `Function` (ADR 0694): TypeScript refuses `new` of one, and a function
+  `Function` (ADR 0700): TypeScript refuses `new` of one, and a function
   of other arguments, `dyn Fn(&Props)`, isn't one.
 - **A slice of arguments, `&[Option<&Unknown>]`**, as `Reflect.construct`
   takes: `new fn(...[])`, an array where JS writes none.

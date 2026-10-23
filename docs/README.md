@@ -585,7 +585,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0650 A `let` that shadows a binding read no more is that binding, assigned](decisions/0650-a-shadow-of-a-binding-read-no-more-is-that-binding.md)
 - [0651 A `let`, then its fallback where it's falsy, is `||`](decisions/0651-a-let-then-its-fallback-is-or.md)
 - [0652 Consecutive appends to a `String` are one `+=`](decisions/0652-consecutive-appends-are-one.md)
-- [0653 A JS function value is a `dyn Fn` of its signature](decisions/0653-a-js-function-value-is-a-dyn-fn-of-its-signature.md) *(amended by 0694: TypeScript's `Function` gives any value)*
+- [0653 A JS function value is a `dyn Fn` of its signature](decisions/0653-a-js-function-value-is-a-dyn-fn-of-its-signature.md) *(amended by 0700: TypeScript's `Function` gives any value)*
 - [0654 A dictionary's member of any value is a `dyn IntoUnknown`](decisions/0654-a-dictionary-member-of-any-value-is-a-dyn-into-unknown.md)
 - [0655 A binding of `any` as a value is a `fn` of `Option<&'static Unknown>`](decisions/0655-an-any-binding-as-a-value-is-a-fn-of-a-static-unknown.md)
 - [0656 An event's `emit` arguments are what TypeScript's `emit` takes](decisions/0656-an-events-emit-arguments-are-typescripts-emits.md)
@@ -618,12 +618,12 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0691 A `dyn Any` drops where the crate makes one of what drops](decisions/0691-a-dyn-any-drops-where-the-crate-makes-one-that-does.md)
 - [0692 A thrown `Error` is a panic's message and what JS threw, both](decisions/0692-a-thrown-error-is-a-panic-and-what-js-threw.md)
 - [0693 A guard's scope is one `finally`, its `if`s, loops and `return`s in it](decisions/0693-a-guards-scope-is-one-finally-its-returns-in-it.md)
-- [0694 TypeScript's `Function` gives any value, `&dyn Fn() -> Option<&'static Unknown>`](decisions/0694-typescripts-function-gives-any-value.md)
 - [0695 `new` of a function value is JS's `new`, `js::new`](decisions/0695-new-of-a-function-value-is-jss-new.md)
 - [0696 A constructor is a `fn` item, declared where it's written](decisions/0696-a-constructor-is-a-fn-item-where-its-written.md)
 - [0697 `delete` of a property is JS's `delete`, `js::delete`](decisions/0697-delete-is-jss-delete.md)
 - [0698 A `catch` handler gives a value or a promise, as TypeScript's](decisions/0698-a-catch-handler-gives-a-value-or-a-promise.md)
 - [0699 A `Map` of what a `WeakMap` keys is a `WeakMap`, for a fallback](decisions/0699-a-map-of-objects-is-a-weak-map.md)
+- [0700 TypeScript's `Function` gives any value, `&dyn Fn() -> Option<&'static Unknown>`](decisions/0700-typescripts-function-gives-any-value.md)
 - [0436 Every `dyn` that's a pair keeps its value's drop, `dyn Send` too](decisions/0436-every-dyn-keeps-its-drop.md) *(amended by 0691: a `dyn Any` drops where the crate makes one of what drops)*
 - [0437 A scope's drops on a panic are one `try { .. } finally { .. }`](decisions/0437-a-scopes-drops-are-one-finally.md) *(amended by 0693: its `if`s, loops and `return`s in it)*
 - [0438 An optional prop is given `Some(..)`, or left out](decisions/0438-an-optional-prop-is-given-some.md)

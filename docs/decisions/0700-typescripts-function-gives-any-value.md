@@ -1,4 +1,4 @@
-# 0694. TypeScript's `Function` gives any value
+# 0700. TypeScript's `Function` gives any value
 
 Status: Accepted. Amends [0653](0653-a-js-function-value-is-a-dyn-fn-of-its-signature.md),
 whose TypeScript `Function` was `&dyn Fn()`, which gives nothing.
