@@ -99,19 +99,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 return None;
             }
             // A binding crate's `dyn`, `dyn IntoUnknown`, is the value it's
-            // of, as JS is given it: a dictionary's member of `any` (ADR 0654).
+            // of, as JS is given it: a dictionary's member of `any` (ADR
+            // 0654); `dyn ReactNode` the node itself, any of them (ADR 0242).
             ty::Dynamic(traits, ..)
                 if traits.principal_def_id().is_some_and(|t| {
                     !self.recognition().is_pair_trait(t) && !super::recognition::is_std_crate(self.tcx, t)
                 }) =>
-            {
-                return None;
-            }
-            // `dyn ReactNode` is the node itself, any of them (ADR 0242).
-            ty::Dynamic(traits, ..)
-                if traits
-                    .principal_def_id()
-                    .is_some_and(|t| super::bindings::is_jsx_node(self.tcx, t)) =>
             {
                 return None;
             }
@@ -157,7 +150,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     .principal_def_id()
                     .is_some_and(|t| self.tcx.fn_trait_kind_from_def_id(t).is_some()) =>
             {
-                return None;
+                // Of rest arguments as a value, which a `fn` pointer's call
+                // spreads and a `dyn Fn`'s would give as one array (ADR 0663).
+                let inputs = traits.principal().and_then(|p| p.skip_binder().args.types().next());
+                let rest = inputs.is_some_and(|args| match args.kind() {
+                    ty::Tuple(items) => items.iter().any(|t| super::bindings::is_rest_value(self.tcx, t)),
+                    _ => false,
+                });
+                return rest.then_some(ty);
             }
             ty::Ref(_, inner, Mutability::Not) => return self.unsupported_in(*inner, seen),
             // A raw pointer, a handle on its place, of what it points to

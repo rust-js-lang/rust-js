@@ -23,9 +23,9 @@ pub mod intl;
 pub mod promise;
 pub use promise::{PromiseSettledResult, PromiseWithResolvers};
 pub mod proxy;
-pub use proxy::{ProxyHandler, RevocableProxy, proxy_handler};
+pub use proxy::{ProxyHandler, RevocableProxy};
 pub mod reflect;
-pub use reflect::{PropertyDescriptor, property_descriptor};
+pub use reflect::{PropertyDescriptor, PropertyDescriptorMap};
 pub mod symbol;
 pub use symbol::{Symbol, SymbolFor};
 mod typed_arrays;
@@ -435,6 +435,7 @@ impl<T: ?Sized> IntoUnknown for T {}
 /// `Math.max(...values)`. `T` is `dyn IntoUnknown` of TypeScript's `any`, a
 /// union's `dyn Into..` trait, the type an argument is a reference to,
 /// `str`, or a number's own type, `f64`.
+#[cfg_attr(rust_js, rust_js::rest)]
 #[diagnostic::on_unimplemented(
     message = "`{Self}` is not rest arguments",
     note = "a rest parameter is given a tuple of its arguments, `(a, b)`, `(a,)` of one and `()` of none, or a slice or a `Vec` to spread, `&values`"
@@ -467,6 +468,12 @@ impl<'a, T: ?Sized + Takes<A>, A> Rest<T> for &'a [A] {}
 
 /// A `Vec` of them, spread.
 impl<'a, T: ?Sized + Takes<A>, A> Rest<T> for &'a Vec<A> {}
+
+/// Rest arguments as a value, spread: what a `fn` whose rest parameter is
+/// one is given, so a binding taken as one, `fn(&'static dyn Rest<dyn
+/// IntoUnknown>)` of `console::log`, is its JS function itself, `prev =
+/// console.log` (ADR 0663).
+impl<'a, T: ?Sized> Rest<T> for &'a dyn Rest<T> {}
 
 /// A tuple of up to 12, each item one `T` takes.
 macro_rules! rest {
@@ -652,6 +659,14 @@ pub mod dict {
     #[cfg_attr(rust_js, rust_js::link_name = "Object.entries")]
     #[allow(unused_variables)]
     pub fn entries<T>(dict: &Dict<T>) -> Vec<(String, T)> {
+        unreachable!()
+    }
+
+    /// [`Object.values(dict)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object/values):
+    /// its values, in order.
+    #[cfg_attr(rust_js, rust_js::link_name = "Object.values")]
+    #[allow(unused_variables)]
+    pub fn values<T>(dict: &Dict<T>) -> Vec<T> {
         unreachable!()
     }
 
@@ -1399,6 +1414,131 @@ pub mod object {
     #[cfg_attr(rust_js, rust_js::link_name = "Object.is")]
     #[allow(unused_variables)]
     pub fn is<A: ?Sized, B: ?Sized>(a: &A, b: &B) -> bool {
+        unreachable!()
+    }
+
+    unsafe extern "Rust" {
+        /// [`Object.prototype`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object/prototype):
+        /// what a plain object inherits from, as a value, `object ==
+        /// object::prototype` being `object === Object.prototype`.
+        #[link_name = "Object.prototype"]
+        pub safe static prototype: &'static Unknown;
+    }
+
+    /// [`Object.defineProperty(o, key, attributes)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object/defineProperty):
+    /// `o`, its property now as `attributes` say; what JS throws of one it
+    /// can't define, `Reflect.defineProperty`'s `false`, as a panic.
+    #[cfg_attr(rust_js, rust_js::link_name = "Object.defineProperty")]
+    pub fn define_property<'a, T: ?Sized, K: PropertyKey + ?Sized>(o: &'a T, key: &K, attributes: &PropertyDescriptor<'_>) -> &'a T {
+        unreachable!()
+    }
+
+    /// [`Object.defineProperties(o, properties)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object/defineProperties):
+    /// `o`, each property as its descriptor says, `{ log: props, .. }`.
+    #[cfg_attr(rust_js, rust_js::link_name = "Object.defineProperties")]
+    pub fn define_properties<'a, T: ?Sized>(o: &'a T, properties: &dyn PropertyDescriptorMap) -> &'a T {
+        unreachable!()
+    }
+
+    /// [`Object.getOwnPropertyDescriptor(o, key)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object/getOwnPropertyDescriptor):
+    /// what an own property of `o` is, `None` where it has none.
+    #[cfg_attr(rust_js, rust_js::link_name = "Object.getOwnPropertyDescriptor")]
+    pub fn get_own_property_descriptor<K: PropertyKey + ?Sized>(o: &Unknown, key: &K) -> Option<PropertyDescriptor<'static>> {
+        unreachable!()
+    }
+
+    /// [`Object.getOwnPropertyDescriptors(o)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object/getOwnPropertyDescriptors):
+    /// each own property's descriptor, by its name.
+    #[cfg_attr(rust_js, rust_js::link_name = "Object.getOwnPropertyDescriptors")]
+    pub fn get_own_property_descriptors(o: &Unknown) -> &'static Dict<PropertyDescriptor<'static>> {
+        unreachable!()
+    }
+
+    /// [`Object.getOwnPropertyNames(o)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object/getOwnPropertyNames):
+    /// the names of `o`'s own properties, enumerable or not, which
+    /// [`keys`] gives of the enumerable ones; not its symbols'.
+    #[cfg_attr(rust_js, rust_js::link_name = "Object.getOwnPropertyNames")]
+    pub fn get_own_property_names(o: &Unknown) -> Vec<String> {
+        unreachable!()
+    }
+
+    /// [`Object.getOwnPropertySymbols(o)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object/getOwnPropertySymbols):
+    /// the symbols `o`'s own properties are keyed by.
+    #[cfg_attr(rust_js, rust_js::link_name = "Object.getOwnPropertySymbols")]
+    pub fn get_own_property_symbols(o: &Unknown) -> Vec<&'static Symbol> {
+        unreachable!()
+    }
+
+    /// [`Object.create(prototype, properties)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object/create):
+    /// an object inheriting from `prototype`, from none of `None`, `null`,
+    /// of these properties, where they're given.
+    #[cfg_attr(rust_js, rust_js::link_name = "Object.create")]
+    #[cfg_attr(rust_js, rust_js::nullable(o))]
+    pub fn create(o: Option<&Unknown>, properties: Option<&dyn PropertyDescriptorMap>) -> &'static Unknown {
+        unreachable!()
+    }
+
+    /// [`Object.setPrototypeOf(o, prototype)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object/setPrototypeOf):
+    /// `o`, now inheriting from `prototype`, from none of `None`, `null`.
+    #[cfg_attr(rust_js, rust_js::link_name = "Object.setPrototypeOf")]
+    #[cfg_attr(rust_js, rust_js::nullable(proto))]
+    pub fn set_prototype_of<'a>(o: &'a Unknown, proto: Option<&Unknown>) -> &'a Unknown {
+        unreachable!()
+    }
+
+    /// [`Object.freeze(o)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object/freeze):
+    /// `o`, none of its properties changed, added or removed from now on.
+    #[cfg_attr(rust_js, rust_js::link_name = "Object.freeze")]
+    pub fn freeze<T: ?Sized>(o: &T) -> &T {
+        unreachable!()
+    }
+
+    /// [`Object.isFrozen(o)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object/isFrozen).
+    #[cfg_attr(rust_js, rust_js::link_name = "Object.isFrozen")]
+    pub fn is_frozen(o: &Unknown) -> bool {
+        unreachable!()
+    }
+
+    /// [`Object.seal(o)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object/seal):
+    /// `o`, none of its properties added or removed from now on.
+    #[cfg_attr(rust_js, rust_js::link_name = "Object.seal")]
+    pub fn seal<T: ?Sized>(o: &T) -> &T {
+        unreachable!()
+    }
+
+    /// [`Object.isSealed(o)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object/isSealed).
+    #[cfg_attr(rust_js, rust_js::link_name = "Object.isSealed")]
+    pub fn is_sealed(o: &Unknown) -> bool {
+        unreachable!()
+    }
+
+    /// [`Object.preventExtensions(o)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object/preventExtensions):
+    /// `o`, no property added to it from now on.
+    #[cfg_attr(rust_js, rust_js::link_name = "Object.preventExtensions")]
+    pub fn prevent_extensions<T: ?Sized>(o: &T) -> &T {
+        unreachable!()
+    }
+
+    /// [`Object.isExtensible(o)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object/isExtensible):
+    /// whether a property may be added to it.
+    #[cfg_attr(rust_js, rust_js::link_name = "Object.isExtensible")]
+    pub fn is_extensible(o: &Unknown) -> bool {
+        unreachable!()
+    }
+
+    /// [`Object.hasOwn(o, key)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object/hasOwn):
+    /// whether `o` has a property of that name of its own, not its
+    /// prototype's, which `key in o`, [`has`], asks of either.
+    #[cfg_attr(rust_js, rust_js::link_name = "Object.hasOwn")]
+    pub fn has_own<K: PropertyKey + ?Sized>(o: &Unknown, key: &K) -> bool {
+        unreachable!()
+    }
+
+    /// [`Object.groupBy(items, keySelector)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object/groupBy):
+    /// `items` by the key `key_selector` gives each, with its index, in
+    /// order; a key none has is `None`.
+    #[cfg_attr(rust_js, rust_js::link_name = "Object.groupBy")]
+    pub fn group_by<K: PropertyKey, T>(items: Vec<T>, key_selector: impl FnMut(&T, u32) -> K + 'static) -> &'static Dict<Vec<T>> {
         unreachable!()
     }
 }

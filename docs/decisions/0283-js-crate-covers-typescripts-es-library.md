@@ -1,6 +1,9 @@
 # 0283. The js crate covers TypeScript's ES library, and a test holds it
 
 Status: Accepted. Extends [0102](0102-js-and-webapi.md) and [0281](0281-webapi-covers-typescripts-dom.md).
+Amended by [0662](0662-the-js-crate-binds-objects-reflection.md): a
+`PropertyDescriptor` and a `ProxyHandler` are dictionaries, structs, and
+`Object`'s statics are measured and bound.
 
 Case: N ([0262](0262-when-rust-and-js-disagree.md)).
 

@@ -14,9 +14,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<Value<'tcx>> {
-        if !matches!(func.ty(&state.body.local_decls, self.tcx).kind(), ty::FnPtr(..)) {
+        let ty::FnPtr(sig, _) = func.ty(&state.body.local_decls, self.tcx).kind() else {
             return Err(self.unsupported(span, "calling a function value, from its MIR"));
-        }
+        };
+        // Rest arguments as a value, its last parameter, spread (ADR 0663):
+        // the pointer is a variadic binding's JS function.
+        let rest = (sig.skip_binder().inputs().last()).is_some_and(|&ty| bindings::is_rest_value(self.tcx, ty));
         let mut operands: Vec<&Operand<'tcx>> = vec![func];
         operands.extend(args.iter().map(|a| &a.node));
         let values = self.take_operands(state, &operands, out)?;
@@ -25,6 +28,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .map(|v| self.value_expr(v, span))
             .collect::<R<Vec<_>>>()?;
         let callee = exprs.remove(0);
+        if rest {
+            crate::lower::binding_calls::given_as_rest(&mut exprs);
+        }
         crate::lower::calls::given_to_js(&mut exprs);
         Ok(Value::Expr(Expr::call(callee, exprs)))
     }

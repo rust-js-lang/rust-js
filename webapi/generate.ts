@@ -174,8 +174,12 @@ function throwing(i: Interface, f: Fn): Fn {
 const FIELD_TYPES: Record<string, string> = { "RequestInit.headers": "&'a Headers", "PromiseRejectionEventInit.promise": "&'a dyn IntoUnknown" };
 
 // The globals at the crate root: `document`, `window`, `performance`, which
-// a worker has too, `navigator`, and `history`, the page's.
-const GLOBALS: [string, string][] = [["document", "Document"], ["window", "Window"], ["performance", "Performance"], ["navigator", "Navigator"], ["history", "History"]];
+// a worker has too, `navigator`, and `history`, the page's; and `console`,
+// a namespace's value (ADR 0663).
+const GLOBALS: [string, string][] = [
+  ["document", "Document"], ["window", "Window"], ["performance", "Performance"], ["navigator", "Navigator"], ["history", "History"],
+  ["console", "Console"],
+];
 
 // ── Reading the IDL ─────────────────────────────────────────────────────
 
@@ -1418,6 +1422,17 @@ for (const name of INTERFACES) {
 }
 
 for (const name of NAMESPACES) {
+  // A namespace that's a global value too, TypeScript's `declare var
+  // console: Console`: the value's type, of no members of its own, as the
+  // namespace's are its module's functions, read as values as any
+  // binding is (ADR 0663).
+  const value = GLOBALS.find(([global]) => global === name)?.[1];
+  if (value) {
+    line();
+    line(`/// The \`${name}\` namespace as a value, the \`${name}\` global's: its functions are the \`${snake(name)}\` module's.`);
+    line(`#[cfg_attr(rust_js, rust_js::types = "${value}")]`);
+    line(`pub struct ${value}(PhantomData<JsObject>);`);
+  }
   line();
   line(`/// The [\`${name}\`](${mdn(name)}) namespace.`);
   module(snake(name), functionsOf(namespaces.get(name)!));

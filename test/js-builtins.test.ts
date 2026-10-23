@@ -323,23 +323,23 @@ pub async fn resolvers() -> u32 {
 test("Reflect and Proxy are JS's", async () => {
   const withJs = ["--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
   const dir = fixture("js-reflect");
-  writeFileSync(join(dir, "lib.rs"), `use js::{Unknown, property_descriptor, proxy, proxy_handler, reflect, string, unknown};
+  writeFileSync(join(dir, "lib.rs"), `use js::{PropertyDescriptor, ProxyHandler, Unknown, proxy, reflect, string, unknown};
 pub fn reflected(o: &Unknown) -> (bool, String, usize, bool, bool) {
-    let d = property_descriptor::new();
-    d.set_value(Some(unknown("fixed")));
-    d.set_writable(false);
-    let defined = reflect::define_property(o, "id", d);
+    let d = PropertyDescriptor { value: Some(&"fixed"), writable: Some(false), ..Default::default() };
+    let defined = reflect::define_property(o, "id", &d);
     let written = reflect::set(o, "id", "other", None);
-    let own = reflect::get_own_property_descriptor(o, "id").and_then(|d| d.writable()) == Some(false);
+    let own = reflect::get_own_property_descriptor(o, "id").and_then(|d| d.writable) == Some(false);
     (defined, string(reflect::get(o, "id", None)), reflect::own_keys(o).len(), written, own || !reflect::set_prototype_of(o, None))
 }
 pub fn proxied(o: &'static Unknown) -> (String, String, bool) {
-    let handler = proxy_handler::new();
-    handler.set_get(Box::new(|target, key, _| match reflect::get(target, key, None) {
-        Some(value) => Some(value),
-        None => Some(unknown("missing")),
-    }));
-    let p = proxy::revocable(o, handler);
+    let handler = ProxyHandler {
+        get: Some(Box::new(|target, key, _| match reflect::get(target, key, None) {
+            Some(value) => Some(value),
+            None => Some(unknown("missing")),
+        })),
+        ..Default::default()
+    };
+    let p = proxy::revocable(o, &handler);
     let seen = (string(reflect::get(p.proxy(), "a", None)), string(reflect::get(p.proxy(), "b", None)));
     p.revoke();
     (seen.0, seen.1, reflect::get_prototype_of(o).is_none())
@@ -347,8 +347,9 @@ pub fn proxied(o: &'static Unknown) -> (String, String, bool) {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain("const d = {};");
-  expect(js).toContain("d.writable = false;");
+  // A descriptor and a handler are dictionaries (ADR 0662).
+  expect(js).toContain('const d = { value: "fixed", writable: false };');
+  expect(js).toContain("const handler = {\n    get: (target, key) => {");
   expect(js).toContain("Reflect.setPrototypeOf(o, null)");
   expect(js).toContain("const p = Proxy.revocable(o, handler);");
   const lib = await import(join(dir, "lib.js"));

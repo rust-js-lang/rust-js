@@ -131,6 +131,69 @@ export function report(error) {
 }
 ```
 
+A variadic binding, of a TypeScript rest parameter, is a `fn` of rest
+arguments as a value, `&'static dyn js::Rest<T>`, so it's the function
+itself, and a call of it spreads them, as a variadic binding's call does.
+A Rust function or closure that takes one is refused: it takes a slice
+([ADR 0663](../../decisions/0663-console-is-a-value-and-rest-arguments-are-one.md)).
+`console` itself is `webapi::console`:
+
+```rust
+use std::cell::Cell;
+
+use js::{IntoUnknown, PropertyDescriptor, Rest, object};
+
+type ConsoleFn = fn(&'static dyn Rest<dyn IntoUnknown>);
+
+thread_local! {
+    static SAVED_LOG: Cell<Option<ConsoleFn>> = const { Cell::new(None) };
+}
+
+fn quiet() {}
+
+pub fn silence() {
+    SAVED_LOG.set(Some(webapi::console::log));
+    let quieted = PropertyDescriptor {
+        value: Some(&quiet),
+        ..Default::default()
+    };
+    object::define_property(webapi::console, "log", &quieted);
+}
+
+pub fn restore() {
+    let saved = SAVED_LOG.get();
+    let restored = PropertyDescriptor {
+        value: Some(&saved),
+        ..Default::default()
+    };
+    object::define_property(webapi::console, "log", &restored);
+    if let Some(log) = saved {
+        log(&("restored", 1));
+    }
+}
+```
+
+```js
+let savedLog;
+
+function quiet() {}
+
+export function silence() {
+  savedLog = console.log;
+  const quieted = { value: quiet };
+  Object.defineProperty(console, "log", quieted);
+}
+
+export function restore() {
+  const saved = savedLog;
+  const restored = { value: saved };
+  Object.defineProperty(console, "log", restored);
+  if (saved) {
+    saved("restored", 1);
+  }
+}
+```
+
 ## Where it comes from
 
 What's before a `#` is the module, written into the `import` as it is.
@@ -577,7 +640,9 @@ export async function open(other) {
   given a tuple, its arguments, each of its own type that a `T` takes,
   `dyn IntoUnknown` of `any`, `str` of `string`, `f64` of `number`, `(x,)`
   one and `()` none; given a slice or a `Vec` by reference, spread,
-  `log(&values)` being `log(...values)`. A slice declared is refused.
+  `log(&values)` being `log(...values)`, and so is rest arguments as a
+  value, a `&dyn js::Rest<T>` ([above](#a-binding-as-a-value)). A slice
+  declared is refused.
 - **A cast is `this`, unchecked, so it's an `unsafe fn`**; check first with
   `instanceof`. webapi has one for each interface,
   `html_input_element::unchecked_from(target)`.

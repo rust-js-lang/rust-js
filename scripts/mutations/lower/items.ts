@@ -122,4 +122,20 @@ export const mutations: Mutation[] = [
     replace: "            return Ok(false && self.is_rust_fn(spec.selected.0) && self.is_rust_fn(spec.fused));\n",
     tests: ["test/std-package.test.ts"],
   },
+  {
+    name: "rest-value-arrow-unspread",
+    breaks: "a variadic binding's arrow takes rest arguments as one, `(data) => console.log(...data)`, so `prevLog = console.log` is that arrow",
+    file: "src/lower/items.rs",
+    find: "                true => Pattern::Rest(name),\n",
+    replace: "                true => name.into(),\n",
+    tests: ["test/js-object.test.ts", "-t", "console is a value"],
+  },
+  {
+    name: "rest-value-passed-on-unseen",
+    breaks: "an arrow that spreads its rest on, `(...data) => console.log(...data)`, isn't taken for the function itself",
+    file: "src/lower/items.rs",
+    find: "            (ExprKind::Spread(spread), true) => matches!(&spread.kind, ExprKind::Var(v) if v == name),\n",
+    replace: "            (ExprKind::Spread(_), true) => false,\n",
+    tests: ["test/js-object.test.ts", "-t", "console is a value"],
+  },
 ];

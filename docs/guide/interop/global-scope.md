@@ -81,8 +81,10 @@ export function title() {
 ```
 
 The crates declare the globals every host has: `webapi::window`,
-`webapi::document`, `webapi::navigator`, `webapi::history` and
-`webapi::performance`.
+`webapi::document`, `webapi::navigator`, `webapi::history`,
+`webapi::performance` and `webapi::console`, the `console` namespace as a
+value, whose functions are the `webapi::console` module's,
+`console::log((..))` ([ADR 0663](../../decisions/0663-console-is-a-value-and-rest-arguments-are-one.md)).
 
 ## Global functions
 

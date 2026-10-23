@@ -159,8 +159,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let what = format!("`{}` as a value", self.tcx.def_path_str(def_id));
             return Err(self.unsupported(span, &what));
         }
+        // Rest arguments as a value, its last, gathered as they're spread,
+        // `(...data) => console.log(...data)` (ADR 0663).
+        let rest = super::bindings::is_variadic(self.tcx, def_id)
+            && inputs
+                .last()
+                .is_some_and(|&ty| super::bindings::is_rest_value(self.tcx, ty));
+        let count = params.len();
+        let params = (params.into_iter().enumerate())
+            .map(|(i, name)| match rest && i + 1 == count {
+                true => Pattern::Rest(name),
+                false => name.into(),
+            })
+            .collect();
         Ok(Expr::arrow(
-            params.into_iter().map(Into::into).collect(),
+            params,
             vec![StmtKind::Return(Some(body)).at(self.js_span(span))],
         ))
     }
@@ -182,20 +195,24 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let ExprKind::Arrow(params, body) = &arrow.kind else {
             return Ok(arrow);
         };
-        let names: Option<Vec<&str>> = (params.iter())
+        // Each parameter, and whether it's rest arguments, spread on.
+        let names: Option<Vec<(&str, bool)>> = (params.iter())
             .map(|p| match p {
-                Pattern::Name(name) => Some(name.as_str()),
+                Pattern::Name(name) => Some((name.as_str(), false)),
+                Pattern::Rest(name) => Some((name.as_str(), true)),
                 _ => None,
             })
             .collect();
+        let passed = |given: &Expr, (name, rest): (&str, bool)| match (&given.kind, rest) {
+            (ExprKind::Var(v), false) => v == name,
+            (ExprKind::Spread(spread), true) => matches!(&spread.kind, ExprKind::Var(v) if v == name),
+            _ => false,
+        };
         if let (Some(names), [stmt]) = (names, body.as_slice())
             && let StmtKind::Return(Some(call)) = &stmt.kind
             && let ExprKind::Call(callee, given) = &call.kind
             && given.len() == names.len()
-            && given
-                .iter()
-                .zip(&names)
-                .all(|(g, n)| matches!(&g.kind, ExprKind::Var(v) if v == n))
+            && given.iter().zip(names).all(|(g, n)| passed(g, n))
         {
             return Ok((**callee).clone());
         }

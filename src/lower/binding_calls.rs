@@ -1,7 +1,7 @@
 //! A call of a binding, of its arguments' values (ADR 0364): JS's
 //! function, method, property or operator it names (ADRs 0019, 0020).
 
-use super::bindings::{JsForm, is_binding, is_method, is_optional_param, is_variadic, js_form};
+use super::bindings::{JsForm, is_binding, is_method, is_optional_param, is_rest_value, is_variadic, js_form};
 use super::calls::given_to_js;
 use super::recognition::StdItem;
 use super::{FnCx, R};
@@ -66,20 +66,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     .unwrap_or(ty)
             });
             let tuple = last.is_some_and(|ty| matches!(ty.kind(), ty::Tuple(_)));
-            if !last.is_some_and(collection) && !tuple {
+            // Rest arguments as a value, `&dyn js::Rest<T>`, spread (ADR 0663).
+            let rest = last.is_some_and(|ty| is_rest_value(self.tcx, ty));
+            if !last.is_some_and(collection) && !tuple && !rest {
                 return Err(self.unsupported(
                     span,
-                    "a `#[rust_js::variadic]` binding whose last parameter isn't rest arguments: a tuple, a slice or a `Vec`",
+                    "a `#[rust_js::variadic]` binding whose last parameter isn't rest arguments: a tuple, a slice, a `Vec` or a `&dyn js::Rest<T>`",
                 ));
             }
-            match args.pop() {
-                Some(Expr {
-                    kind: js::ExprKind::Array(items),
-                    ..
-                }) => args.extend(items),
-                Some(last) => args.push(Expr::spread(last)),
-                None => {}
-            }
+            given_as_rest(&mut args);
         }
         // What skips what's falsy is given `test && value` for `test ?
         // value : undefined`: `false` is skipped as `undefined` is, and
@@ -222,6 +217,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             vec![StmtKind::Return(Some(Expr::member(Expr::var(&m), export))).at(js::Span::NONE)],
         );
         Ok(Expr::call(Expr::member(Expr::import(from), "then"), vec![read]))
+    }
+}
+
+/// The last of `args`, rest arguments, as JS is given them (ADRs 0221,
+/// 0640, 0663): an array written out, a tuple's, its items, `log("a", 1)`;
+/// any other, spread, `log(...values)`. A variadic binding's call and a
+/// call of a `fn` pointer whose last parameter is a `&dyn js::Rest<T>`.
+pub(in crate::lower) fn given_as_rest(args: &mut Vec<Expr>) {
+    match args.pop() {
+        Some(Expr {
+            kind: js::ExprKind::Array(items),
+            ..
+        }) => args.extend(items),
+        Some(last) => args.push(Expr::spread(last)),
+        None => {}
     }
 }
 

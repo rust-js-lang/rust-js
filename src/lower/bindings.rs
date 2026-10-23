@@ -786,6 +786,22 @@ pub(super) fn is_variadic(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
     tcx.get_attrs_by_path(def_id, &path).next().is_some()
 }
 
+/// Whether `ty` is rest arguments as a value, `&dyn js::Rest<T>`, of the
+/// trait marked `#[rust_js::rest]` (ADR 0663): spread where it's given, to
+/// a variadic binding or to a `fn` pointer whose last parameter it is.
+pub(super) fn is_rest_value(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
+    let path = [Symbol::intern("rust_js"), Symbol::intern("rest")];
+    match ty.kind() {
+        ty::Ref(_, inner, _) => match inner.kind() {
+            ty::Dynamic(traits, ..) => traits
+                .principal_def_id()
+                .is_some_and(|t| tcx.get_attrs_by_path(t, &path).next().is_some()),
+            _ => false,
+        },
+        _ => false,
+    }
+}
+
 /// Whether an untagged enum's variant is what its others aren't,
 /// `#[rust_js::otherwise]` (ADR 0214).
 pub(super) fn is_otherwise(tcx: TyCtxt<'_>, def_id: DefId) -> bool {

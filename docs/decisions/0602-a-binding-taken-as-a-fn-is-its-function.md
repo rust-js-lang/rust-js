@@ -1,7 +1,9 @@
 # 0602. A binding taken as a `fn` is its JS function, read where it's taken
 
 Status: Accepted. Amends [0039](0039-generic-bindings.md)'s binding as a
-value.
+value. Amended by [0663](0663-console-is-a-value-and-rest-arguments-are-one.md):
+a variadic binding taken as a `fn` of rest arguments as a value,
+`&dyn js::Rest<T>`, is its function too, which its call spreads them to.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): C, results would change:
 Rust's, a `fn` fixed once it's taken.

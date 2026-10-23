@@ -104,6 +104,16 @@ What it has:
   `value[key]` and `key in value`; `object::keys` is `Object.keys`
   ([ADR 0225](../../decisions/0225-unknown-values.md)). A `Json` is a JSON
   value to `match`, and a `Dict<T>` a plain object of `T`s by name.
+- **`object` is `Object`'s statics,** each as TypeScript types it:
+  `define_property`, `define_properties`, `get_own_property_descriptor`,
+  `get_own_property_names`, `create`, `freeze`, `has_own`, `group_by` and
+  the rest, and `object::prototype` is `Object.prototype`. A
+  `PropertyDescriptor` is a dictionary, a struct of `Option`s:
+  `PropertyDescriptor { value: Some(&prev), ..props }` is `{ ...props,
+  value: prev }`. What `define_properties` and `create` take is a
+  `PropertyDescriptorMap`, a `Dict` of descriptors or a struct of them,
+  `unsafe impl PropertyDescriptorMap for Logs<'_> {}`
+  ([ADR 0662](../../decisions/0662-the-js-crate-binds-objects-reflection.md)).
 - **Whether the host has a global is `is_defined(binding)`,** `typeof X
   !== "undefined"`: `is_defined(set_immediate)`, which a browser hasn't
   ([Access to the global scope](../interop/global-scope.md#a-global-some-hosts-lack)).

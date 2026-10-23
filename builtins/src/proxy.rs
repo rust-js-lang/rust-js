@@ -42,94 +42,34 @@ impl RevocableProxy {
 }
 
 /// [A proxy's traps](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Proxy/Proxy/handler),
-/// TypeScript's `ProxyHandler`: [`proxy_handler::new`], then a setter of
-/// each, `handler.set_get(Box::new(|target, key, receiver| ..))`; an
+/// TypeScript's `ProxyHandler`: a dictionary, as a `PropertyDescriptor` is
+/// (ADR 0662), of a closure JS keeps for each trap, `ProxyHandler { get:
+/// Some(Box::new(|target, key, receiver| ..)), ..Default::default() }`; an
 /// operation without one is its target's. Each takes the target, and a
 /// key is a string or a symbol.
-pub struct ProxyHandler(PhantomData<JsObject>);
-
-impl ProxyHandler {
+#[derive(Default)]
+#[allow(clippy::type_complexity)]
+pub struct ProxyHandler {
     /// `apply(target, this, args)`: a call of the proxy.
-    #[cfg_attr(rust_js, rust_js::link_name = "set apply")]
-    pub fn set_apply(&self, trap: Box<dyn Fn(&Unknown, Option<&Unknown>, &[Option<&Unknown>]) -> Option<&'static Unknown>>) {
-        unreachable!()
-    }
-
+    pub apply: Option<Box<dyn Fn(&Unknown, Option<&Unknown>, &[Option<&Unknown>]) -> Option<&'static Unknown>>>,
     /// `construct(target, args, newTarget)`: `new` of the proxy, an object.
-    #[cfg_attr(rust_js, rust_js::link_name = "set construct")]
-    pub fn set_construct(&self, trap: Box<dyn Fn(&Unknown, &[Option<&Unknown>], &Unknown) -> &'static Unknown>) {
-        unreachable!()
-    }
-
-    #[cfg_attr(rust_js, rust_js::link_name = "set defineProperty")]
-    pub fn set_define_property(&self, trap: Box<dyn Fn(&Unknown, &Unknown, &PropertyDescriptor) -> bool>) {
-        unreachable!()
-    }
-
-    #[cfg_attr(rust_js, rust_js::link_name = "set deleteProperty")]
-    pub fn set_delete_property(&self, trap: Box<dyn Fn(&Unknown, &Unknown) -> bool>) {
-        unreachable!()
-    }
-
+    pub construct: Option<Box<dyn Fn(&Unknown, &[Option<&Unknown>], &Unknown) -> &'static Unknown>>,
+    pub define_property: Option<Box<dyn Fn(&Unknown, &Unknown, &PropertyDescriptor<'_>) -> bool>>,
+    pub delete_property: Option<Box<dyn Fn(&Unknown, &Unknown) -> bool>>,
     /// `get(target, key, receiver)`: `proxy[key]`.
-    #[cfg_attr(rust_js, rust_js::link_name = "set get")]
-    pub fn set_get(&self, trap: Box<dyn Fn(&Unknown, &Unknown, &Unknown) -> Option<&'static Unknown>>) {
-        unreachable!()
-    }
-
-    #[cfg_attr(rust_js, rust_js::link_name = "set getOwnPropertyDescriptor")]
-    pub fn set_get_own_property_descriptor(&self, trap: Box<dyn Fn(&Unknown, &Unknown) -> Option<&'static PropertyDescriptor>>) {
-        unreachable!()
-    }
-
+    pub get: Option<Box<dyn Fn(&Unknown, &Unknown, &Unknown) -> Option<&'static Unknown>>>,
+    pub get_own_property_descriptor: Option<Box<dyn Fn(&Unknown, &Unknown) -> Option<PropertyDescriptor<'static>>>>,
     /// `getPrototypeOf(target)`: an object; a trap's `None` would be
     /// `undefined`, which JS throws a `TypeError` of, where `null` isn't.
-    #[cfg_attr(rust_js, rust_js::link_name = "set getPrototypeOf")]
-    pub fn set_get_prototype_of(&self, trap: Box<dyn Fn(&Unknown) -> &'static Unknown>) {
-        unreachable!()
-    }
-
+    pub get_prototype_of: Option<Box<dyn Fn(&Unknown) -> &'static Unknown>>,
     /// `has(target, key)`: `key in proxy`.
-    #[cfg_attr(rust_js, rust_js::link_name = "set has")]
-    pub fn set_has(&self, trap: Box<dyn Fn(&Unknown, &Unknown) -> bool>) {
-        unreachable!()
-    }
-
-    #[cfg_attr(rust_js, rust_js::link_name = "set isExtensible")]
-    pub fn set_is_extensible(&self, trap: Box<dyn Fn(&Unknown) -> bool>) {
-        unreachable!()
-    }
-
-    #[cfg_attr(rust_js, rust_js::link_name = "set ownKeys")]
-    pub fn set_own_keys(&self, trap: Box<dyn Fn(&Unknown) -> Vec<&'static Unknown>>) {
-        unreachable!()
-    }
-
-    #[cfg_attr(rust_js, rust_js::link_name = "set preventExtensions")]
-    pub fn set_prevent_extensions(&self, trap: Box<dyn Fn(&Unknown) -> bool>) {
-        unreachable!()
-    }
-
+    pub has: Option<Box<dyn Fn(&Unknown, &Unknown) -> bool>>,
+    pub is_extensible: Option<Box<dyn Fn(&Unknown) -> bool>>,
+    pub own_keys: Option<Box<dyn Fn(&Unknown) -> Vec<&'static Unknown>>>,
+    pub prevent_extensions: Option<Box<dyn Fn(&Unknown) -> bool>>,
     /// `set(target, key, value, receiver)`: `proxy[key] = value`, whether
     /// it was.
-    #[cfg_attr(rust_js, rust_js::link_name = "set set")]
-    pub fn set_set(&self, trap: Box<dyn Fn(&Unknown, &Unknown, Option<&Unknown>, &Unknown) -> bool>) {
-        unreachable!()
-    }
-
+    pub set: Option<Box<dyn Fn(&Unknown, &Unknown, Option<&Unknown>, &Unknown) -> bool>>,
     /// `setPrototypeOf(target, prototype)`, `None` of `null`.
-    #[cfg_attr(rust_js, rust_js::link_name = "set setPrototypeOf")]
-    pub fn set_set_prototype_of(&self, trap: Box<dyn Fn(&Unknown, Option<&Unknown>) -> bool>) {
-        unreachable!()
-    }
-}
-
-pub mod proxy_handler {
-    use super::ProxyHandler;
-
-    /// `{}`: a handler of no traps yet, its setters' to give.
-    #[cfg_attr(rust_js, rust_js::link_name = "{}")]
-    pub fn new() -> &'static ProxyHandler {
-        unreachable!()
-    }
+    pub set_prototype_of: Option<Box<dyn Fn(&Unknown, Option<&Unknown>) -> bool>>,
 }

@@ -164,11 +164,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "empty-object-binding-refused",
-    breaks: "a `{}` binding of no arguments, `property_descriptor::new()`, has one empty key, and rust-js refuses it",
+    breaks: "a `{}` binding of no arguments, `dict::new()`, has one empty key, and rust-js refuses it",
     file: "src/lower/bindings.rs",
     find: "        let keys = keys.split(',').map(str::trim).filter(|k| !k.is_empty());",
     replace: "        let keys = keys.split(',').map(str::trim);",
-    tests: ["test/js-builtins.test.ts", "-t", "Reflect and Proxy are JS's"],
+    tests: ["test/node-bindings.test.ts", "-t", "querystring module is bound whole"],
   },
   {
     name: "given-variant-name-ignored",
@@ -425,5 +425,13 @@ export const mutations: Mutation[] = [
     find: "    if matches!(js_form(tcx, def_id), JsForm::Set(_)) {\n",
     replace: "    if false {\n",
     tests: ["test/node-bindings.test.ts", "-t", "stack trace hook is saved"],
+  },
+  {
+    name: "rest-value-unrecognized",
+    breaks: "a `&dyn js::Rest<T>` isn't rest arguments: `console::log` taken as a `fn` of one is refused",
+    file: "src/lower/bindings.rs",
+    find: "                .is_some_and(|t| tcx.get_attrs_by_path(t, &path).next().is_some()),\n",
+    replace: "                .is_some_and(|t| tcx.get_attrs_by_path(t, &path).next().is_some() && false),\n",
+    tests: ["test/js-object.test.ts", "-t", "console is a value"],
   },
 ];

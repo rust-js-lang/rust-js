@@ -28,6 +28,8 @@ Estimated difficulty, hardest first; this is not implementation order:
    panic identity, typed payload ownership, and an unresolved abort gate.
 5. [A library rust-js can't compile whole is compiled item by item](per-item-library-refusal.md):
    amends ADR 0415; what keeps aho-corasick, so regex, from compiling.
+6. [A property of a function is set as an object's is](a-property-of-a-function.md):
+   extends ADRs 0225 and 0267; React's `disabledLog.__reactDisabledLog = true`.
 
 
 Suggested order: iterators, panic support once its abort gate is
