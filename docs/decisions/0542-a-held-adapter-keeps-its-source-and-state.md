@@ -116,3 +116,14 @@ end, counted and shown, against native Rust. Mutations
 `counted-length-unknown`, `held-steps-enumerate-only`,
 `take-debug-as-enumerate`, `enumerate-clone-count-ignored`, and
 `taking.ts`'s and `skipping.ts`'s.
+
+## Amendment: `rev()` of a `skip` or a `take` made in place
+
+`(1..10).skip(2).rev()` and `v.iter().take(4).rev()` were refused (#117):
+only a `skip` or a `take` a struct held was made knowing its back. One made
+in place, of an `ExactSizeIterator`, is `$skipping` or `$taking` of its
+source, made knowing its back and its length by `as_exact_size`, which
+counts an inclusive range, `$rangeInclusiveLen`, and a map made in place,
+`$mapEnds`, too. Of items with a destructor, which std drops as a `Vec`'s
+tail slice where `take` steps past them from the back, it's refused. Held
+by `test/corpus/rev_counted.rs`.

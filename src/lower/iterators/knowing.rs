@@ -181,8 +181,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Some(source) = crate::lower::recognition::copied_source(self.tcx, ty) {
             return self.as_exact_size(value, source, back, span);
         }
-        if let Some(kind) = self.range_kind(ty)
-            && kind == crate::lower::std_types::range::RangeKind::Exclusive
+        // A range's, `$rangeLen` of `a..b`, `$rangeInclusiveLen` of `a..=b`,
+        // which std counts of small numbers alone.
+        let len = match self.range_kind(ty) {
+            Some(crate::lower::std_types::range::RangeKind::Exclusive) => Some("$rangeLen"),
+            Some(crate::lower::std_types::range::RangeKind::Inclusive) => Some("$rangeInclusiveLen"),
+            _ => None,
+        };
+        if let (Some(kind), Some(len)) = (self.range_kind(ty), len)
             && let (Some(next), Some(from_back)) = (kind.step(false), kind.step(true))
         {
             let from_back = back.then(|| Expr::helper(from_back));
@@ -191,12 +197,24 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Expr::helper(next),
                 false,
                 from_back,
-                Some(Expr::helper("$rangeLen")),
+                Some(Expr::helper(len)),
                 None,
             ));
         }
         if self.steps_an_array(ty) {
             return Ok(self.std_iterator(value, ty));
+        }
+        // A map made here, `src.map(f)`: its source's, each `f`'s, as
+        // `as_double_ended` makes it (ADR 0455).
+        if let Some(source) = crate::lower::recognition::mapped_source(self.tcx, ty)
+            && let js::ExprKind::Call(callee, args) = &value.kind
+            && let js::ExprKind::Member(source_value, method) = &callee.kind
+            && method == "map"
+            && let [f] = args.as_slice()
+        {
+            let source_value = stepped_value(source_value).unwrap_or_else(|| (**source_value).clone());
+            let source_value = self.as_exact_size(source_value, source.peel_refs(), back, span)?;
+            return Ok(Expr::call_helper("$mapEnds", vec![source_value, f.clone()]));
         }
         Err(self.unsupported(
             span,
@@ -232,6 +250,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && let (Some(next), Some(back)) = (kind.step(false), kind.step(true))
         {
             return Ok(stepped(value, Expr::helper(next), false, Some(Expr::helper(back))));
+        }
+        // `skip(n)` or `take(n)` made here, `src.drop(n)`: `$skipping` or
+        // `$taking` of its source, made knowing its back and its length,
+        // which they step from the back by, as std's `Skip` and `Take` of an
+        // `ExactSizeIterator` do (ADR 0542). Of items with a destructor,
+        // which std drops as a `Vec`'s tail slice, refused below.
+        if let Some((source, skip)) = crate::lower::recognition::counted_source(self.tcx, ty)
+            && let Some((source_value, n)) = counted_parts(&value, skip)
+            && (self.iterator_item(ty)).is_some_and(|item| self.drops(item) == crate::lower::drops::Drops::Nothing)
+        {
+            let source_value = stepped_value(&source_value).unwrap_or(source_value);
+            let source_value = self.as_exact_size(source_value, source.peel_refs(), true, span)?;
+            let name = if skip { "$skipping" } else { "$taking" };
+            return Ok(Expr::call_helper(name, vec![source_value, n]));
         }
         if self.steps_an_array(ty) {
             return Ok(self.std_iterator(value, ty));
@@ -512,5 +544,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         let [back, len] = [back, len].map(|entry| entry.unwrap_or_else(Expr::undefined));
         Ok(Some(Expr::call_helper("$knowing", vec![it, back, len])))
+    }
+}
+
+/// What a `skip(n)` or a `take(n)` made here steps, and `n`: of
+/// `src.drop(n)` or `src.take(n)`.
+fn counted_parts(value: &Expr, skip: bool) -> Option<(Expr, Expr)> {
+    let js::ExprKind::Call(callee, args) = &value.kind else {
+        return None;
+    };
+    let method = if skip { "drop" } else { "take" };
+    match (&callee.kind, args.as_slice()) {
+        (js::ExprKind::Member(source, name), [n]) if name == method => Some(((**source).clone(), n.clone())),
+        _ => None,
     }
 }
