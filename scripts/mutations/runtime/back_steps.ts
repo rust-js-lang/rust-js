@@ -86,8 +86,8 @@ export const mutations: Mutation[] = [
     name: "map-ends-unclosed",
     breaks: "closing a map made knowing its back doesn't close its source",
     file: "src/runtime/back_steps.js",
-    find: "return: () => $closed(it) });",
-    replace: "});",
+    find: "    () => mapped(it.next()),\n    () => $closed(it),\n",
+    replace: "    () => mapped(it.next()),\n",
     tests: ["test/corpus.test.ts", "-t", "^rev_lazy_drops.rs$"],
   },
   {
@@ -110,8 +110,8 @@ export const mutations: Mutation[] = [
     name: "step-by-back-from-end",
     breaks: "`step_by(n).rev()` starts at its source's last item, not the last it keeps",
     file: "src/runtime/back_steps.js",
-    find: "    return skip(first ? (rem === 0 ? step - 1 : rem - 1) : rem, \"back\");\n",
-    replace: "    return skip(0, \"back\");\n",
+    find: "    return stepped.skip(stepped.first ? (rem === 0 ? step - 1 : rem - 1) : rem, \"back\");\n",
+    replace: "    return stepped.skip(0, \"back\");\n",
     tests: ["test/corpus.test.ts", "-t", "^rev_step_by.rs$"],
   },
 ];

@@ -400,27 +400,32 @@ pub(in crate::lower::mir::tidy) fn exits_after(stmts: &mut Vec<Stmt>) {
 /// `exit` is its `then`, and `if (!t) { rest } else { exit }` where it's its
 /// `else`. MIR's structure makes a guard of it where `exit` never goes on,
 /// a `return`, a `continue` or a `break`; `rest`, the statements after it,
-/// each of the `if`'s other branch, end the list, as the `if` did.
+/// each of the `if`'s other branch, end the list, as the `if` did. A
+/// binding its condition makes, a let chain's `let Some(x) = e`, is its
+/// `then`'s, where it's in scope.
 pub(in crate::lower::mir::tidy) fn written_elses(stmts: &mut Vec<Stmt>, elses: &[(js::Span, js::Span, js::Span)]) {
     let within = |c: &js::Span, s: js::Span| !s.is_none() && c.lo <= s.lo && s.hi <= c.hi;
-    // Each statement written in `branch`, one at least.
-    let of = |branch: &js::Span, stmts: &[Stmt]| {
-        stmts.iter().any(|s| !s.span.is_none()) && stmts.iter().all(|s| s.span.is_none() || within(branch, s.span))
+    // Each statement written in `branch`, one at least, or in `made`, the
+    // condition of the branch it's a `then` of: a binding the condition makes.
+    let of = |branch: &js::Span, made: Option<&js::Span>, stmts: &[Stmt]| {
+        stmts.iter().any(|s| within(branch, s.span))
+            && (stmts.iter())
+                .all(|s| s.span.is_none() || within(branch, s.span) || made.is_some_and(|c| within(c, s.span)))
     };
     let mut at = 0;
     while at < stmts.len() {
         if let StmtKind::If(_, exit, None) = &stmts[at].kind
             && exit.last().is_some_and(ends)
-            && let Some((_, then, otherwise)) = elses.iter().find(|(cond, ..)| within(cond, stmts[at].span))
+            && let Some((cond, then, otherwise)) = elses.iter().find(|(cond, ..)| within(cond, stmts[at].span))
         {
             let rest = &stmts[at + 1..];
             // A jump alone each way, `if (t) { return a; } return;`, reads as
             // it is.
             let jump = |s: &Stmt| matches!(s.kind, StmtKind::Return(_) | StmtKind::Break(_) | StmtKind::Continue(_));
-            let turned = match (of(then, exit), of(otherwise, exit)) {
+            let turned = match (of(then, Some(cond), exit), of(otherwise, None, exit)) {
                 _ if matches!(rest, [s] if jump(s)) && matches!(exit.as_slice(), [s] if jump(s)) => None,
-                (true, false) if of(otherwise, rest) => Some(false),
-                (false, true) if of(then, rest) => Some(true),
+                (true, false) if of(otherwise, None, rest) => Some(false),
+                (false, true) if of(then, Some(cond), rest) => Some(true),
                 _ => None,
             };
             if let Some(turned) = turned {

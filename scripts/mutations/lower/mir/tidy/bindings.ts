@@ -19,14 +19,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts","-t","declarations_assigned_later"],
   },
   {
-    name: "tidy-closure-assign-unseen",
-    breaks: "a variable assigned again, a parameter, is taken for one nothing changes: a tuple's part of it is read after a guard set it",
-    file: "src/lower/mir/tidy/bindings.rs",
-    find: "            {\n                assigned.insert(name.clone());\n            }\n        }\n",
-    replace: "            {\n                let _ = name;\n            }\n        }\n",
-    tests: ["test/corpus.test.ts", "-t", "tuple_scrutinee_calls|declarations_assigned_later"],
-  },
-  {
     name: "mir-tidy-alias-kept",
     breaks: "a `const` read once, by another `const` of it, stays a name for a name",
     file: "src/lower/mir/tidy/bindings.rs",
@@ -273,7 +265,7 @@ export const mutations: Mutation[] = [
     name: "alias-of-changing-set-between",
     breaks: "an alias of a variable set before it's read is the variable, `pair(n, { n += 1; n })` given the new `n` twice",
     file: "src/lower/mir/tidy/bindings.rs",
-    find: "                let kept = last.is_some_and(|last| assigned(&mut stmts[i + 1..=last].to_vec()).contains(of));\n",
+    find: "                let kept = last.is_some_and(|last| js::Writes::of(&stmts[i + 1..=last]).may_replace(of));\n",
     replace: "                let kept = false;\n",
     tests: ["test/corpus.test.ts", "-t", "^alias_reads.rs$"],
   },

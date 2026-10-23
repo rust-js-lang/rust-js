@@ -125,7 +125,7 @@ fn read(body: &[Stmt], flag: &str) -> bool {
     let mut mentions = 0;
     js::visit_stmts(body, &mut |name| mentions += usize::from(name == flag));
     let mut written = 0;
-    js::statement_lists(&mut body.to_vec(), &mut |list| {
+    js::each_list(body, &mut |list| {
         for stmt in list.iter() {
             if let StmtKind::Assign(target, _) = &stmt.kind
                 && matches!(&target.kind, ExprKind::Var(v) if v == flag)
@@ -141,7 +141,7 @@ fn read(body: &[Stmt], flag: &str) -> bool {
 /// assigned both, or what isn't `true` or `false`.
 fn assigned(stmts: &[Stmt], flags: &HashSet<String>) -> HashMap<String, Option<bool>> {
     let mut found: HashMap<String, Option<bool>> = HashMap::new();
-    js::statement_lists(&mut stmts.to_vec(), &mut |list| {
+    js::each_list(stmts, &mut |list| {
         for stmt in list.iter() {
             if let StmtKind::Assign(target, value) = &stmt.kind
                 && let Some(flag) = flag_of(target, flags)

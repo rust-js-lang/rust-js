@@ -153,109 +153,6 @@ fn closure_blocks(e: &mut Expr, f: &mut dyn FnMut(&mut Vec<Stmt>)) {
     }
 }
 
-/// `stmts`, and each list nested in its statements, not in its closures.
-pub fn statement_lists(stmts: &mut Vec<Stmt>, f: &mut dyn FnMut(&mut Vec<Stmt>)) {
-    f(stmts);
-    for stmt in stmts.iter_mut() {
-        match &mut stmt.kind {
-            StmtKind::If(_, a, b) => {
-                statement_lists(a, f);
-                if let Some(b) = b {
-                    statement_lists(b, f);
-                }
-            }
-            StmtKind::While { body, .. }
-            | StmtKind::ForOf { body, .. }
-            | StmtKind::For { body, .. }
-            | StmtKind::Labeled(_, body) => statement_lists(body, f),
-            StmtKind::Switch { cases, default, .. } => {
-                case_lists_mut(cases, default).for_each(|body| statement_lists(body, f));
-            }
-            StmtKind::Try(a, b) | StmtKind::TryCatch(a, _, b) => {
-                statement_lists(a, f);
-                statement_lists(b, f);
-            }
-            // A function's, as a closure's, are its own.
-            StmtKind::Const(..)
-            | StmtKind::Let(..)
-            | StmtKind::Destructure { .. }
-            | StmtKind::Assign(..)
-            | StmtKind::Compound(..)
-            | StmtKind::Expr(_)
-            | StmtKind::Break(_)
-            | StmtKind::Continue(_)
-            | StmtKind::Directive(_)
-            | StmtKind::Return(_)
-            | StmtKind::Throw(_)
-            | StmtKind::Function(_) => {}
-        }
-    }
-}
-
-/// Each expression in `stmts`, outermost first, nested ones too, in
-/// closures' bodies, JSX and templates: for a pass that changes them.
-pub fn each_expr_mut(stmts: &mut [Stmt], f: &mut dyn FnMut(&mut Expr)) {
-    for stmt in stmts {
-        match &mut stmt.kind {
-            StmtKind::Const(_, e)
-            | StmtKind::Let(_, Some(e))
-            | StmtKind::Destructure { value: e, .. }
-            | StmtKind::Expr(e)
-            | StmtKind::Return(Some(e))
-            | StmtKind::Throw(e) => e.each_mut(f),
-            StmtKind::Assign(a, b) | StmtKind::Compound(_, a, b) => {
-                a.each_mut(f);
-                b.each_mut(f);
-            }
-            StmtKind::If(test, a, b) => {
-                test.each_mut(f);
-                each_expr_mut(a, f);
-                if let Some(b) = b {
-                    each_expr_mut(b, f);
-                }
-            }
-            StmtKind::While { cond, body, .. } => {
-                cond.each_mut(f);
-                each_expr_mut(body, f);
-            }
-            StmtKind::ForOf { iterable, body, .. } => {
-                iterable.each_mut(f);
-                each_expr_mut(body, f);
-            }
-            StmtKind::For { start, test, body, .. } => {
-                start.each_mut(f);
-                test.each_mut(f);
-                each_expr_mut(body, f);
-            }
-            StmtKind::Labeled(_, body) => each_expr_mut(body, f),
-            StmtKind::Switch {
-                discriminant,
-                cases,
-                default,
-            } => {
-                discriminant.each_mut(f);
-                for (values, body) in cases.iter_mut() {
-                    values.iter_mut().for_each(|value| value.each_mut(f));
-                    each_expr_mut(body, f);
-                }
-                if let Some(default) = default {
-                    each_expr_mut(default, f);
-                }
-            }
-            StmtKind::Try(a, b) | StmtKind::TryCatch(a, _, b) => {
-                each_expr_mut(a, f);
-                each_expr_mut(b, f);
-            }
-            StmtKind::Function(function) => each_expr_mut(&mut function.body, f),
-            StmtKind::Let(_, None)
-            | StmtKind::Break(_)
-            | StmtKind::Continue(_)
-            | StmtKind::Return(None)
-            | StmtKind::Directive(_) => {}
-        }
-    }
-}
-
 /// `a == b`, or `a != b`, as `a === b` and `a !== b`: of what either
 /// answers the same, one side never `null` or `undefined`.
 pub(crate) fn strict_equality(e: Expr) -> Expr {
@@ -270,36 +167,16 @@ pub(crate) fn strict_equality(e: Expr) -> Expr {
 /// `const list = [];`, as JS writes it (ADR 0278). A variable a `&mut`'s
 /// handle sets is set.
 pub(crate) fn constants(body: &mut Vec<Stmt>) {
-    let mut set = HashSet::new();
-    each_block_mut(body, &mut |stmts| {
-        for stmt in stmts.iter() {
-            if let StmtKind::Assign(target, _) = &stmt.kind {
-                set.extend(var_of(target));
-            }
-        }
-    });
-    each_expr_mut(body, &mut |e| {
-        if let ExprKind::Handle(place) | ExprKind::Pair(place, _) = &e.kind {
-            set.extend(var_of(place));
-        }
-    });
+    let writes = Writes::of(body);
     each_block_mut(body, &mut |stmts| {
         for stmt in stmts.iter_mut() {
             if let StmtKind::Let(name, Some(value)) = &stmt.kind
-                && !set.contains(name)
+                && !writes.may_replace(name)
             {
                 stmt.kind = StmtKind::Const(name.clone(), value.clone());
             }
         }
     });
-}
-
-/// The variable `place` is, if it's one.
-fn var_of(place: &Expr) -> Option<String> {
-    match &place.kind {
-        ExprKind::Var(name) => Some(name.clone()),
-        _ => None,
-    }
 }
 
 /// How many times `stmts` name the variable `name`, read or written.

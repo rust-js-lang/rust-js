@@ -195,4 +195,12 @@ export const mutations: Mutation[] = [
     replace: "            let Some(op) = operator.filter(|_| self.is_user_impl(tr)) else {\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_other_type_compare.rs$"],
   },
+  {
+    name: "btree-compare-refused",
+    breaks: "comparing B-trees, `a < b` of two `BTreeSet`s, is refused",
+    file: "src/lower/ordering.rs",
+    find: "            ty::Adt(_, args) if self.is_sorted(ty) => {\n",
+    replace: "            ty::Adt(_, args) if false && self.is_sorted(ty) => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^btree_compare.rs$"],
+  },
 ];

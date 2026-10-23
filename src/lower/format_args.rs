@@ -13,48 +13,115 @@ use crate::js::StmtKind;
 use crate::js::{Expr, Stmt};
 
 use rustc_hir::attrs::lang_items::LangItem;
-use rustc_middle::ty::{self};
+use rustc_middle::ty::{self, TyCtxt};
 use rustc_span::Span;
 
 /// A piece of a `format_args!` template.
+#[derive(Clone)]
 pub(super) enum Piece {
     Text(String),
     /// A placeholder: which of the arguments goes there, and its options.
     Argument(usize, Spec),
 }
 
-impl<'a, 'tcx> FnCx<'a, 'tcx> {
-    /// Whether the format string of the macro call `span` is part of was
-    /// written across lines: a line break in it, not one a `\` ends, as a
-    /// string literal's (`written_across_lines`). rustc keeps no span of the
-    /// format string's own, so it's the call's first string literal,
-    /// `format!("..", ..)`'s and `write!(f, "..", ..)`'s, by Rust's lexer.
-    pub(super) fn format_string_across_lines(&self, span: Span) -> bool {
-        let Ok(code) = self.tcx.sess.source_map().span_to_snippet(span.source_callsite()) else {
-            return false;
-        };
-        let mut at = 0;
-        for token in rustc_lexer::tokenize(&code, rustc_lexer::FrontmatterAllowed::No) {
-            let text = &code[at..at + token.len as usize];
-            at += token.len as usize;
-            match token.kind {
-                rustc_lexer::TokenKind::Literal {
-                    kind: rustc_lexer::LiteralKind::Str { .. },
-                    ..
-                } => {
-                    return text.match_indices('\n').any(|(i, _)| !text[..i].ends_with('\\'));
+/// The template rustc made of the format string of the macro call at
+/// `span`, as its source writes it: each of its pieces' part of the
+/// template, and whether it's written across lines. A `concat!`'s pieces
+/// where each placeholder and each `{{` or `}}` is in one of them, and
+/// their text is the template's (ADR 0641); otherwise one, the whole, as
+/// a placeholder across pieces, `concat!("{", "}")`, is only one of the
+/// string they make, and a value rustc writes in the template, a literal's
+/// or a nested `format_args!`'s, is in none.
+pub(super) fn written_pieces(tcx: TyCtxt<'_>, span: Span, template: Vec<Piece>) -> Vec<(Vec<Piece>, bool)> {
+    let written = super::literals::format_string(tcx, span).unwrap_or_default();
+    let segments: Option<Vec<Vec<Segment>>> = written.iter().map(|piece| segments(&piece.text)).collect();
+    if written.len() > 1
+        && let Some(split) = segments.and_then(|segments| split(template.clone(), &segments))
+    {
+        return split
+            .into_iter()
+            .zip(written)
+            .map(|(split, piece)| (split, piece.lines))
+            .collect();
+    }
+    // Written across lines, its line breaks as they are (ADR 0066).
+    let breaks = template
+        .iter()
+        .any(|piece| matches!(piece, Piece::Text(text) if text.contains('\n')));
+    let lines = breaks && written.first().is_some_and(|piece| piece.lines);
+    vec![(template, lines)]
+}
+
+/// A part of a format string, as its source writes it.
+enum Segment {
+    Text(String),
+    Placeholder,
+}
+
+/// The parts of `text`, one of a format string's pieces, `{{` and `}}` each
+/// the brace it is: `None` where a placeholder doesn't end in it. A `{{`
+/// or `}}` that doesn't, a brace of each piece, is two where the template
+/// has one, which `split` finds.
+fn segments(text: &str) -> Option<Vec<Segment>> {
+    let (mut segments, mut literal) = (Vec::new(), String::new());
+    let mut chars = text.char_indices().peekable();
+    while let Some((at, c)) = chars.next() {
+        match c {
+            '{' | '}' if chars.next_if(|&(_, next)| next == c).is_some() => literal.push(c),
+            '{' => {
+                let end = at + text[at..].find('}')?;
+                while chars.next_if(|&(i, _)| i <= end).is_some() {}
+                segments.push(Segment::Text(std::mem::take(&mut literal)));
+                segments.push(Segment::Placeholder);
+            }
+            c => literal.push(c),
+        }
+    }
+    segments.push(Segment::Text(literal));
+    Some(segments)
+}
+
+/// `template` split as `written`, each piece's parts in turn: `None` where
+/// they aren't its text and placeholders. `println!`'s line break, which
+/// it writes after them, is the last piece's.
+fn split(template: Vec<Piece>, written: &[Vec<Segment>]) -> Option<Vec<Vec<Piece>>> {
+    let mut rest = std::collections::VecDeque::from(template);
+    let mut split = Vec::new();
+    for segments in written {
+        let mut pieces = Vec::new();
+        for segment in segments {
+            match segment {
+                Segment::Text(text) => {
+                    let mut text = text.as_str();
+                    while !text.is_empty() {
+                        let Some(Piece::Text(head)) = rest.front_mut() else {
+                            return None;
+                        };
+                        if let Some(after) = text.strip_prefix(head.as_str()) {
+                            text = after;
+                            pieces.extend(rest.pop_front());
+                        } else {
+                            // The template's text goes on into the next piece.
+                            let after = head.strip_prefix(text)?;
+                            pieces.push(Piece::Text(std::mem::take(&mut text).to_owned()));
+                            *head = after.to_owned();
+                        }
+                    }
                 }
-                rustc_lexer::TokenKind::Literal {
-                    kind: rustc_lexer::LiteralKind::RawStr { .. },
-                    ..
-                } => {
-                    return text.contains('\n');
-                }
-                _ => {}
+                Segment::Placeholder => match rest.pop_front() {
+                    Some(argument @ Piece::Argument(..)) => pieces.push(argument),
+                    _ => return None,
+                },
             }
         }
-        false
+        split.push(pieces);
     }
+    match rest.pop_front() {
+        None => {}
+        Some(Piece::Text(text)) if text == "\n" && rest.is_empty() => split.last_mut()?.push(Piece::Text(text)),
+        Some(_) => return None,
+    }
+    Some(split)
 }
 
 /// A `format_args!` template, decoded (its encoding is documented in core's
@@ -274,16 +341,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 }
 
-/// `"a\n"` or `` `a ${x}\n` ``: the line, `"a"`, without the newline
-/// `println!` ends it with. Anything else is given back.
-pub(super) fn without_newline(text: Expr) -> Result<Expr, Expr> {
-    match &text.kind {
-        js::ExprKind::Str(s) if s.ends_with('\n') => Ok(Expr::str(&s[..s.len() - 1])),
-        js::ExprKind::Template(texts, values, lines) if texts.last().is_some_and(|last| last.ends_with('\n')) => {
-            let mut texts = texts.clone();
-            texts.last_mut().expect("a template has a last text").pop();
-            Ok(Expr::template(texts, values.clone()).with_lines(*lines))
+/// `"a\n"`, `` `a ${x}\n` `` or `"a" + "b\n"`: the line, `"a"`, without the
+/// newline `println!` ends it with. Anything else is given back.
+pub(super) fn without_newline(mut text: Expr) -> Result<Expr, Expr> {
+    let last = match &mut text.kind {
+        js::ExprKind::Str(s) => s,
+        js::ExprKind::Template(texts, ..) => texts.last_mut().expect("a template has a last text"),
+        js::ExprKind::Written(pieces) => &mut pieces.last_mut().expect("a written string's pieces").text,
+        _ => return Err(text),
+    };
+    match last.ends_with('\n') {
+        true => {
+            last.pop();
+            Ok(text)
         }
-        _ => Err(text),
+        false => Err(text),
     }
 }

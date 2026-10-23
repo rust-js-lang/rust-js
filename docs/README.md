@@ -599,6 +599,8 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0673 A function is a JS value of any shape, whose property `js::set` writes](decisions/0673-a-function-is-a-value-of-any-shape.md)
 - [0674 A struct literal's object lists its fields in the order written](decisions/0674-a-struct-literals-fields-are-in-the-order-written.md)
 - [0623 A copy std makes of a `Copy` value is a copy](decisions/0623-a-copy-std-makes-is-a-copy.md)
+- [0669 An adapter steps its source as std's does](decisions/0669-an-adapter-steps-its-source-as-stds-does.md)
+- [0670 A tree's writes have one owner, and its walks one definition](decisions/0670-a-trees-writes-have-one-owner.md)
 - [0436 Every `dyn` that's a pair keeps its value's drop, `dyn Send` too](decisions/0436-every-dyn-keeps-its-drop.md)
 - [0437 A scope's drops on a panic are one `try { .. } finally { .. }`](decisions/0437-a-scopes-drops-are-one-finally.md)
 - [0438 An optional prop is given `Some(..)`, or left out](decisions/0438-an-optional-prop-is-given-some.md)
@@ -680,7 +682,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0514 A `Peekable` of what has a destructor](decisions/0514-a-peekable-of-what-has-a-destructor.md) *(superseded in part by 0561)*
 - [0515 `map_while`, and the `Some`s an iterator keeps](decisions/0515-map-while-and-kept-somes.md)
 - [0516 `rev()` steps what it holds from its back](decisions/0516-rev-steps-what-it-holds-from-its-back.md)
-- [0517 `scan` is lazy, and an iterator's combinators one way](decisions/0517-scan-is-lazy-and-iterator-combinators-one-way.md)
+- [0517 `scan` is lazy, and an iterator's combinators one way](decisions/0517-scan-is-lazy-and-iterator-combinators-one-way.md) *(amended by 0669: every adapter steps its source as std's does)*
 - [0518 A held `filter_map`, and `$closing` a JS iterator](decisions/0518-filter-map-held-and-closing-iterators.md)
 - [0519 A `Cell` or a `OnceCell` of what has a destructor](decisions/0519-a-cell-of-what-has-a-destructor.md)
 - [0520 A counted `Rc<dyn T>` is its pair](decisions/0520-a-counted-rc-of-a-dyn-is-its-pair.md)

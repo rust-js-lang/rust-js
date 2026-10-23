@@ -4,14 +4,14 @@
 // `drop` where items have a destructor, as Rust's `next_back` steps its
 // source's `nth_back`; its length the fewer of its source's and `n`.
 function $taking(iter, n, drop) {
-  const taking = Iterator.from({
-    next() {
+  const taking = new $Steps(
+    () => {
       if (taking.n === 0) return { done: true, value: undefined };
       taking.n--;
       return taking.iter.next();
     },
-    return: () => $closed(taking.iter),
-  });
+    () => $closed(taking.iter),
+  );
   taking.iter = iter;
   taking.n = n;
   taking.hint = () => {

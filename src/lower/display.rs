@@ -606,6 +606,39 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 /// literal, \`Some(${x})\`, and values alone `a + b`. A part that's itself
 /// strings joined is taken apart, so templates don't nest needlessly.
 pub(super) fn join(parts: Vec<Expr>) -> Expr {
+    let pieces = merged(parts);
+    let is_text = |p: &Expr| matches!(p.kind, js::ExprKind::Str(_));
+    if pieces.iter().all(is_text) || !pieces.iter().any(is_text) {
+        return pieces
+            .into_iter()
+            .reduce(|a, b| Expr::bin(Op::Add, a, b))
+            .unwrap_or_else(|| Expr::str(""));
+    }
+    let (texts, values) = texts_and_values(pieces);
+    Expr::template(texts, values)
+}
+
+/// Strings joined as their format string is written, `pieces` of it, each
+/// its parts and whether it's written across lines: one, as `join` joins
+/// it; `concat!`'s, each a template where it holds a value and otherwise
+/// a string, joined by `+` (ADR 0641).
+pub(super) fn join_written(mut pieces: Vec<(Vec<Expr>, bool)>) -> Expr {
+    if pieces.len() == 1 {
+        let (parts, lines) = pieces.pop().expect("a piece");
+        return join(parts).with_lines(lines);
+    }
+    let pieces = (pieces.into_iter())
+        .map(|(parts, lines)| {
+            let (texts, values) = texts_and_values(merged(parts));
+            (texts, values, lines)
+        })
+        .collect();
+    Expr::template_pieces(pieces)
+}
+
+/// `parts`, each strings joined taken apart, and texts next to each other
+/// one.
+fn merged(parts: Vec<Expr>) -> Vec<Expr> {
     let mut pieces: Vec<Expr> = Vec::new();
     for piece in parts.into_iter().flat_map(joined_pieces) {
         match (pieces.last_mut(), &piece.kind) {
@@ -619,13 +652,11 @@ pub(super) fn join(parts: Vec<Expr>) -> Expr {
             _ => pieces.push(piece),
         }
     }
-    let is_text = |p: &Expr| matches!(p.kind, js::ExprKind::Str(_));
-    if pieces.iter().all(is_text) || !pieces.iter().any(is_text) {
-        return pieces
-            .into_iter()
-            .reduce(|a, b| Expr::bin(Op::Add, a, b))
-            .unwrap_or_else(|| Expr::str(""));
-    }
+    pieces
+}
+
+/// A template's texts and values of `pieces`, its text and values in turn.
+fn texts_and_values(pieces: Vec<Expr>) -> (Vec<String>, Vec<Expr>) {
     let (mut texts, mut values) = (vec![String::new()], Vec::new());
     for piece in pieces {
         match piece.kind {
@@ -636,7 +667,7 @@ pub(super) fn join(parts: Vec<Expr>) -> Expr {
             }
         }
     }
-    Expr::template(texts, values)
+    (texts, values)
 }
 
 /// `String(n)` of a Rust number is `n` in a template, which makes it a

@@ -4,69 +4,6 @@
 use super::*;
 
 impl Expr {
-    /// This, then each expression in it, as `each_expr_mut` goes.
-    pub fn each_mut(&mut self, f: &mut dyn FnMut(&mut Expr)) {
-        f(self);
-        let props = |props: &mut [Prop], f: &mut dyn FnMut(&mut Expr)| {
-            for prop in props {
-                let (Prop::Field(_, value) | Prop::Spread(value) | Prop::Getter(_, value) | Prop::Setter(_, value)) =
-                    prop;
-                value.each_mut(f);
-            }
-        };
-        match &mut self.kind {
-            ExprKind::Member(a, _)
-            | ExprKind::OptionalMember(a, _)
-            | ExprKind::Unary(_, a)
-            | ExprKind::Await(a)
-            | ExprKind::Spread(a)
-            | ExprKind::Stringed(a)
-            | ExprKind::Handle(a)
-            | ExprKind::DropArgument(_, _, a) => a.each_mut(f),
-            ExprKind::Index(a, b)
-            | ExprKind::OptionalIndex(a, b)
-            | ExprKind::Binary(_, a, b)
-            | ExprKind::Pair(a, b) => {
-                a.each_mut(f);
-                b.each_mut(f);
-            }
-            ExprKind::Cond(a, b, c) => {
-                a.each_mut(f);
-                b.each_mut(f);
-                c.each_mut(f);
-            }
-            ExprKind::Call(callee, args) | ExprKind::OptionalCall(callee, args) | ExprKind::New(callee, args) => {
-                callee.each_mut(f);
-                args.iter_mut().for_each(|a| a.each_mut(f));
-            }
-            ExprKind::Array(items) | ExprKind::Template(_, items, _) => items.iter_mut().for_each(|a| a.each_mut(f)),
-            ExprKind::Object(fields) => props(fields, f),
-            ExprKind::Arrow(_, body) | ExprKind::AsyncArrow(_, body) => each_expr_mut(body, f),
-            ExprKind::Function(function) => each_expr_mut(&mut function.body, f),
-            ExprKind::Jsx(jsx) => {
-                if let JsxTag::Component(tag) = &mut jsx.tag {
-                    tag.each_mut(f);
-                }
-                props(&mut jsx.props, f);
-                jsx.children.iter_mut().for_each(|c| c.each_mut(f));
-            }
-            ExprKind::Var(_)
-            | ExprKind::Num(_)
-            | ExprKind::BigInt(_)
-            | ExprKind::BigUint(_)
-            | ExprKind::Bool(_)
-            | ExprKind::Str(_)
-            | ExprKind::Written(_)
-            | ExprKind::Undefined
-            | ExprKind::GivenUndefined
-            | ExprKind::Null
-            | ExprKind::Symbol(_)
-            | ExprKind::FunctionHole(_)
-            | ExprKind::Import(_)
-            | ExprKind::Regex(_) => {}
-        }
-    }
-
     /// Each variable this reads, closures' bodies too, but not a string's
     /// or a regular expression's text, nor a property's name.
     pub fn visit_vars<'a>(&'a self, read: &mut dyn FnMut(&'a str)) {
@@ -225,7 +162,9 @@ impl Expr {
             ExprKind::Await(a) => ExprKind::Await(one(a)?),
             ExprKind::Spread(a) => ExprKind::Spread(one(a)?),
             ExprKind::Stringed(a) => ExprKind::Stringed(one(a)?),
-            ExprKind::Template(texts, values, lines) => ExprKind::Template(texts.clone(), all(values)?, *lines),
+            ExprKind::Template(texts, values, layout) => {
+                ExprKind::Template(texts.clone(), all(values)?, layout.clone())
+            }
             ExprKind::Jsx(jsx) => ExprKind::Jsx(Box::new(Jsx {
                 tag: match &jsx.tag {
                     JsxTag::Component(c) => JsxTag::Component(c.replace(with, callbacks)?),

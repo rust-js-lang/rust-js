@@ -159,7 +159,7 @@ pub(super) fn alias_variables(body: &mut Vec<Stmt>) {
                     .rev()
                     .find(|&j| js::mentions_in(&stmts[j..=j], alias) > 0);
                 // What it's of set nowhere from it to its last read.
-                let kept = last.is_some_and(|last| assigned(&mut stmts[i + 1..=last].to_vec()).contains(of));
+                let kept = last.is_some_and(|last| js::Writes::of(&stmts[i + 1..=last]).may_replace(of));
                 if !kept {
                     let (alias, of) = (alias.clone(), Expr::var(of));
                     stmts.remove(i);
@@ -281,7 +281,7 @@ pub(super) fn plain_reads(stmts: &mut Vec<Stmt>, plain: &HashSet<String>, captur
 pub(super) fn named_temporaries(body: &mut Vec<Stmt>) {
     // How often each name is declared, and read, in the whole body.
     let mut declared: HashMap<String, usize> = HashMap::new();
-    js::statement_lists(&mut body.clone(), &mut |stmts| {
+    js::each_list(body, &mut |stmts| {
         for stmt in stmts.iter() {
             let names = match &stmt.kind {
                 StmtKind::Const(name, _) | StmtKind::Let(name, _) => vec![name.as_str()],
@@ -509,7 +509,7 @@ pub(super) fn copied_bindings(stmts: &mut Vec<Stmt>) {
 /// Whether `stmts` set `name` again, or declare it, a closure's in them too.
 pub(super) fn rebinds(stmts: &[Stmt], name: &str) -> bool {
     let mut found = false;
-    js::statement_lists(&mut stmts.to_vec(), &mut |list| {
+    js::each_list(stmts, &mut |list| {
         for stmt in list.iter() {
             found |= match &stmt.kind {
                 StmtKind::Const(n, _) | StmtKind::Let(n, _) => n == name,
@@ -522,7 +522,7 @@ pub(super) fn rebinds(stmts: &[Stmt], name: &str) -> bool {
             };
         }
     });
-    js::each_expr_mut(&mut stmts.to_vec(), &mut |e| {
+    js::each_expr(stmts, &mut |e| {
         if let ExprKind::Arrow(params, body) | ExprKind::AsyncArrow(params, body) = &e.kind {
             found |= params.iter().any(|p| p.names().contains(&name)) || rebinds(body, name);
         }
@@ -530,29 +530,10 @@ pub(super) fn rebinds(stmts: &[Stmt], name: &str) -> bool {
     found
 }
 
-/// Whether `stmts` set something of `name`'s, `name[0] = ..`, a closure's
-/// in them too.
-pub(super) fn sets_through(stmts: &[Stmt], name: &str) -> bool {
-    let mut set = false;
-    js::statement_lists(&mut stmts.to_vec(), &mut |list| {
-        for stmt in list.iter() {
-            if let StmtKind::Assign(target, _) = &stmt.kind {
-                target.visit_vars(&mut |v| set |= v == name);
-            }
-        }
-    });
-    js::each_expr_mut(&mut stmts.to_vec(), &mut |e| {
-        if let ExprKind::Arrow(_, body) | ExprKind::AsyncArrow(_, body) = &e.kind {
-            set |= sets_through(body, name);
-        }
-    });
-    set
-}
-
 /// Whether a closure in `stmts` reads `name`.
 pub(super) fn in_closure(stmts: &[Stmt], name: &str) -> bool {
     let mut found = false;
-    js::each_expr_mut(&mut stmts.to_vec(), &mut |e| {
+    js::each_expr(stmts, &mut |e| {
         if let ExprKind::Arrow(_, body) | ExprKind::AsyncArrow(_, body) = &e.kind {
             found |= js::mentions_in(body, name) > 0;
         }
@@ -586,7 +567,7 @@ pub(super) fn readable_temporaries(
     // What an element is given each as, `href={_5}` or a child, `{_6}`: the
     // prop's name, `href`, or `children`.
     let mut given: HashMap<String, String> = HashMap::new();
-    js::each_expr_mut(&mut body.clone(), &mut |e| {
+    js::each_expr(body, &mut |e| {
         // A trait object's, `_5.impl.add(_5.value)`: its `receiver`.
         if let ExprKind::Call(callee, _) = &e.kind
             && let ExprKind::Member(of, _) = &callee.kind
@@ -1088,23 +1069,6 @@ pub(super) fn declarations(body: &mut Vec<Stmt>) {
     js::constants(body);
 }
 
-/// The variables `body` assigns, and each a handle is on, which its
-/// setter assigns (ADR 0099).
-pub(super) fn assigned(body: &mut Vec<Stmt>) -> HashSet<String> {
-    let mut assigned = HashSet::new();
-    js::each_block_mut(body, &mut |stmts| {
-        for stmt in stmts.iter() {
-            if let StmtKind::Assign(target, _) = &stmt.kind
-                && let ExprKind::Var(name) = &target.kind
-            {
-                assigned.insert(name.clone());
-            }
-        }
-    });
-    assigned.extend(handled(body));
-    assigned
-}
-
 /// The names `stmts` declare, a destructuring's too, not in blocks inside
 /// them.
 pub(super) fn declared(stmts: &[Stmt]) -> impl Iterator<Item = &str> {
@@ -1126,7 +1090,7 @@ pub(super) fn paired_temporaries(body: &[Stmt]) -> HashSet<String> {
     let mut lets = HashSet::new();
     let mut pairs: HashMap<String, usize> = HashMap::new();
     let mut unpaired = HashSet::new();
-    js::statement_lists(&mut body.to_vec(), &mut |list| {
+    js::each_list(body, &mut |list| {
         for (k, stmt) in list.iter().enumerate() {
             match &stmt.kind {
                 StmtKind::Let(name, None) if is_temporary(name) => {
