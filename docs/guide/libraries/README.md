@@ -243,7 +243,8 @@ Node's modules, typed as `@types/node` types them, for the Rust of a
 program that runs in Node, a Next.js page's data, a build script's
 ([ADR 0272](../../decisions/0272-node.md)). It binds what ports have
 needed so far: all of `path`, `buffer` and `querystring`, most of
-`process`, `url` and `events`, and parts of `fs`, `http` and `util`.
+`process`, `url` and `events`, parts of `fs`, `http` and `util`, and
+V8's stack trace API.
 
 ```rust
 use node::{BufferEncoding, fs, process};
@@ -263,6 +264,72 @@ export function readPage(name) {
   return $try(() => readFileSync(`${root}/${name}.md`, "utf8"));
 }
 ```
+
+V8's stack trace API, which Chrome has too, is the node crate's, as
+`@types/node` declares it ([ADR 0648](../../decisions/0648-v8s-stack-trace-api-is-the-node-crates.md)):
+`js_error::prepare_stack_trace()` is `Error.prepareStackTrace`, the hook
+that writes an error's `stack`, and `js_error::stack_trace_limit()`
+`Error.stackTraceLimit`; a hook is given each frame, a `CallSite`.
+
+```rust
+use js::JsError;
+use node::{CallSite, js_error};
+
+fn prepare_stack_trace(error: &JsError, structured_stack_trace: &[&CallSite]) -> String {
+    let mut stack = error.name() + ": " + &error.message();
+    for call_site in structured_stack_trace {
+        stack += "\n    at ";
+        stack += &call_site.to_string();
+    }
+    stack
+}
+
+pub fn v8_stack(error: &JsError) -> Option<String> {
+    let prev_prepare_stack_trace = js_error::prepare_stack_trace();
+    js_error::set_prepare_stack_trace(Some(&prepare_stack_trace));
+    let stack = error.stack();
+    js_error::set_prepare_stack_trace(prev_prepare_stack_trace);
+    stack
+}
+
+pub fn unhooked() {
+    js_error::set_prepare_stack_trace::<String>(None);
+}
+```
+
+```js
+function prepareStackTrace(error, structuredStackTrace) {
+  let stack = error.name + ": " + error.message;
+  for (const callSite of structuredStackTrace) {
+    stack += "\n    at ";
+    stack += callSite.toString();
+  }
+  return stack;
+}
+
+export function v8Stack(error) {
+  const prevPrepareStackTrace = Error.prepareStackTrace;
+  Error.prepareStackTrace = prepareStackTrace;
+  const stack = error.stack;
+  Error.prepareStackTrace = prevPrepareStackTrace;
+  return stack;
+}
+
+export function unhooked() {
+  Error.prepareStackTrace = undefined;
+}
+```
+
+- **The hook is a JS function**, `Option<&'static dyn Fn(&JsError,
+  &[&CallSite]) -> R>`, `None` of `undefined`: what was read is set back
+  as it is, and a Rust function by reference, `Some(&prepare_stack_trace)`.
+  What it gives is TypeScript's `any`: a hook JS set gives an `Unknown`,
+  and one Rust sets gives any `R`, which a bare `None` names.
+- **A module's default of no hook** is a `const` of its type, as React's
+  `DefaultPrepareStackTrace` is in a browser's build: `js::export_default!
+  { pub const DEFAULT_PREPARE_STACK_TRACE: Option<&'static dyn
+  Fn(&JsError, &[&CallSite]) -> String> = None; }` is `export default
+  undefined;`.
 
 ## `react` and `next`
 

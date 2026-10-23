@@ -281,6 +281,8 @@ export function hasConfig(path) {
   `cause()` and `stack()` read an `Error`'s; `is_error()` says whether it
   is one, since JS may throw anything. Its `{:?}` is `String(error)`,
   `TypeError: no file missing`, what an `expect` shows.
+  How V8 writes a `stack` is a hook of the node crate's,
+  `Error.prepareStackTrace` ([`node`](../libraries/README.md#node-nodejs)).
 - **The crates say which JS calls may throw.** The `js` crate's
   `decode_uri_component` and `Json::parse` return a `Result`, and
   `concat_text`, `"" + value`, of a value of any shape. webapi's

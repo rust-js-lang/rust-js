@@ -19,4 +19,6 @@ const text = readFileSync(root + "/index.md", "utf8");
 ```
 
 What it has is what ports have needed: `fs::read_file_sync` and
-`process::cwd`.
+`process::cwd`. And what `@types/node` adds to `Error`, V8's stack trace API,
+`js_error::prepare_stack_trace()`, `Error.prepareStackTrace`, which
+Chrome has too ([ADR 0648](../docs/decisions/0648-v8s-stack-trace-api-is-the-node-crates.md)).

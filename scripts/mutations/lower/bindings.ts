@@ -418,4 +418,12 @@ export const mutations: Mutation[] = [
     replace: "        DefKind::Const { .. } => false,\n",
     tests: ["test/modules.test.ts", "-t", "the constant's value where the macro holds it"],
   },
+  {
+    name: "setter-value-optional",
+    breaks: "a setter's `None` is taken for an optional argument left out, so `Error.prepareStackTrace = undefined` is refused",
+    file: "src/lower/bindings.rs",
+    find: "    if matches!(js_form(tcx, def_id), JsForm::Set(_)) {\n",
+    replace: "    if false {\n",
+    tests: ["test/node-bindings.test.ts", "-t", "stack trace hook is saved"],
+  },
 ];
