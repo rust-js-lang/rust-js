@@ -24,7 +24,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_types/map.rs",
     find: "            && (!ordered || !self.has_user_impl(self.ord_trait(), peeled));",
     replace: ";",
-    tests: ["test/semantics.test.ts", "-t", "BTreeMap rejects custom ordering even when equality is derived"],
+    tests: ["test/semantics.test.ts", "-t", "finds enum keys by their own Ord"],
   },
   {
     name: "retain-map-no-handles",

@@ -476,4 +476,13 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^subscriptions.rs$"],
     snapshots: true,
   },
+  {
+    name: "inlined-in-values-off",
+    breaks: "what `branch values` and `declarations` make a `const` of stays held, `const value = i != null ? i : 99; const pair = [value, 2];`",
+    file: "src/lower/mir/tidy/stages.rs",
+    find: "            pass(\"inlined in values\", inlined_of),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^(expression_values|duration).rs$"],
+    snapshots: true,
+  },
 ];

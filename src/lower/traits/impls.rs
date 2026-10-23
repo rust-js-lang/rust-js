@@ -743,29 +743,27 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 false => consts.push((index, value)),
             }
         }
-        let outer_consts = std::mem::replace(&mut self.given.const_params, consts);
         // The facts its caller gives of its own type parameters, `KMap`,
         // after its dictionaries (ADR 0466).
-        let fact_mark = self.given.type_facts.len();
+        let mut facts: Vec<(Ty<'tcx>, TypeFact, Expr)> = Vec::new();
         let mut fact_names = Vec::new();
         for &(index, fact) in self.krate.type_facts.get(&id).into_iter().flatten() {
             if index < generics.parent_count as u32 {
                 continue;
             }
             let of = drop_slot(self.tcx, self.krate.foreign, id, index);
-            if self.given.type_facts.iter().any(|&(at, _, _)| at == of) {
-                self.given.const_params = outer_consts;
+            if self.given.type_facts.iter().chain(&facts).any(|&(at, _, _)| at == of) {
                 return Err(self.unsupported(span, "a trait default's type parameter's fact here"));
             }
             let name = self.fresh(&format!("{}{}", drop_word(self.tcx, of), fact.word()));
-            self.given.type_facts.push((of, fact, Expr::var(&name)));
+            facts.push((of, fact, Expr::var(&name)));
             // And in the impl's terms, as the body asks: `T::Item` of the
             // trait's `Self::Item`.
             let concrete = ty::EarlyBinder::bind(self.tcx, of)
                 .instantiate(self.tcx, args)
                 .skip_normalization();
             if concrete != of {
-                self.given.type_facts.push((concrete, fact, Expr::var(&name)));
+                facts.push((concrete, fact, Expr::var(&name)));
             }
             fact_names.push(name);
         }
@@ -775,49 +773,41 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             None => (self.krate.closures.get(&id).copied())
                 .ok_or_else(|| self.unsupported(span, "a trait's default of another crate"))?,
         };
+        // Where it's called, after its arguments, of one that takes it, which
+        // `Location::caller()` in it reads (ADR 0427).
+        let location = self.takes_caller_location(id).then(|| self.fresh("location"));
         let nested = crate::lower::Nested::Default {
-            evidence: specialized,
-            self_args: args,
+            given: Box::new(super::DefaultGiven {
+                evidence: specialized,
+                self_args: args,
+                const_params: consts,
+                caller_location: location.as_ref().map(|name| (id, Expr::var(name))),
+                type_facts: facts,
+            }),
             typing_env: ty::TypingEnv::post_analysis(self.tcx, id),
             drops,
             unsupported,
             items,
             slots,
         };
-        // Where it's called, after its arguments, of one that takes it, which
-        // `Location::caller()` in it reads (ADR 0427).
-        let location = self.takes_caller_location(id).then(|| self.fresh("location"));
-        let outer_location = std::mem::replace(
-            &mut self.given.caller_location,
-            location.as_ref().map(|name| (id, Expr::var(name))),
-        );
-        let enclosing = match self.enter_body(body, id, nested) {
-            Ok(enclosing) => enclosing,
-            Err(error) => {
-                self.given.caller_location = outer_location;
-                return Err(error);
-            }
-        };
         let mut rest = Vec::new();
         // From its MIR (ADR 0364), a constant's initializer of nothing, its
-        // value given back.
-        // From its MIR, as the trait has it, `Self` the impl's type where
-        // it's asked (ADR 0364).
-        let signature = match &body.mir {
-            Some(mir) => self.mir_signature(body, mir, &mut rest),
-            None => Err(self.unsupported(span, "this default, without its MIR")),
-        };
-        self.given.const_params = outer_consts;
-        self.given.caller_location = outer_location;
-        self.given.type_facts.truncate(fact_mark);
-        let (mut params, is_async) = signature?;
+        // value given back. From its MIR, as the trait has it, `Self` the
+        // impl's type where it's asked (ADR 0364). Only the drops it uses:
+        // most defaults drop nothing of their `Self`.
+        let ((signature, used), hoisted) = self.lowered_in(body, id, nested, |cx| {
+            let signature = match &body.mir {
+                Some(mir) => cx.mir_signature(body, mir, &mut rest)?,
+                None => return Err(cx.unsupported(span, "this default, without its MIR")),
+            };
+            Ok((signature, cx.used_drops()))
+        })?;
+        let (mut params, is_async) = signature;
         params.extend(location.map(Into::into));
         params.extend(const_names.into_iter().map(Into::into));
         params.extend(own_params.into_iter().map(Into::into));
         params.extend(fact_names.into_iter().map(Into::into));
-        // Only the drops it uses: most defaults drop nothing of their `Self`.
-        let used = self.used_drops();
-        rest.splice(0..0, self.leave_body(enclosing));
+        rest.splice(0..0, hoisted);
         let mut out: Vec<_> = made
             .into_iter()
             .filter(|(index, _)| used.contains(index))

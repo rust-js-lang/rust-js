@@ -4,11 +4,27 @@
 use super::*;
 
 /// What a copied default body replaced of the given of the item it's
-/// lowered in, its evidence and arguments, to put back when it's done.
+/// lowered in, its evidence, arguments, const parameters and caller's
+/// location, and how many facts it had, to put back when it's done.
 pub(in crate::lower) struct GivenScope<'tcx> {
     evidence: Vec<(ty::TraitRef<'tcx>, Expr)>,
     self_args: Option<ty::GenericArgsRef<'tcx>>,
     self_env: Option<ty::TypingEnv<'tcx>>,
+    const_params: Vec<(u32, Expr)>,
+    caller_location: Option<(DefId, Expr)>,
+    facts: usize,
+}
+
+/// What a copied default body is given (ADRs 0049, 0135, 0427, 0466): the
+/// impl's evidence and arguments for its trait's parameters, its const
+/// parameters, the location its caller gives, and the facts of its own
+/// type parameters, after the item's.
+pub(in crate::lower) struct DefaultGiven<'tcx> {
+    pub(in crate::lower) evidence: Vec<(ty::TraitRef<'tcx>, Expr)>,
+    pub(in crate::lower) self_args: ty::GenericArgsRef<'tcx>,
+    pub(in crate::lower) const_params: Vec<(u32, Expr)>,
+    pub(in crate::lower) caller_location: Option<(DefId, Expr)>,
+    pub(in crate::lower) type_facts: Vec<(Ty<'tcx>, TypeFact, Expr)>,
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
@@ -16,15 +32,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// given `evidence`, and the impl's arguments for its trait's
     /// parameters, `self_args`, which resolve in the typing environment
     /// of the item it's lowered in, the impl's.
-    pub(in crate::lower) fn enter_default(
-        &mut self,
-        evidence: Vec<(ty::TraitRef<'tcx>, Expr)>,
-        self_args: ty::GenericArgsRef<'tcx>,
-    ) -> GivenScope<'tcx> {
+    pub(in crate::lower) fn enter_default(&mut self, given: DefaultGiven<'tcx>) -> GivenScope<'tcx> {
+        let DefaultGiven {
+            evidence,
+            self_args,
+            const_params,
+            caller_location,
+            type_facts,
+        } = given;
+        let facts = self.given.type_facts.len();
+        self.given.type_facts.extend(type_facts);
         GivenScope {
             evidence: std::mem::replace(&mut self.given.evidence, evidence),
             self_args: self.given.self_args.replace(self_args),
             self_env: self.given.self_env.replace(self.typing_env),
+            const_params: std::mem::replace(&mut self.given.const_params, const_params),
+            caller_location: std::mem::replace(&mut self.given.caller_location, caller_location),
+            facts,
         }
     }
 
@@ -33,6 +57,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.given.evidence = scope.evidence;
         self.given.self_args = scope.self_args;
         self.given.self_env = scope.self_env;
+        self.given.const_params = scope.const_params;
+        self.given.caller_location = scope.caller_location;
+        self.given.type_facts.truncate(scope.facts);
     }
 
     /// `value` in the impl's terms, in a copied default: its trait's

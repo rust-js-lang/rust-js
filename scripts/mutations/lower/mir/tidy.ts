@@ -161,7 +161,8 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy.rs",
     find: "\"Number\" | \"String\" | \"console\"))",
     replace: "\"Number\" | \"String\"))",
-    tests: ["test/corpus.test.ts", "-t", "^option_result_methods.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(sales_report|map_eq).rs$"],
+    snapshots: true,
     snapshots: true,
   },
   {

@@ -100,4 +100,21 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-structs-enums.test.ts", "-t", "a dictionary that takes nothing"],
   },
 
+  {
+    name: "default-facts-kept",
+    breaks: "a copied default's facts of its own type parameters stay given past it, so the next default's fact is refused as given twice",
+    file: "src/lower/traits/given.rs",
+    find: "        self.given.type_facts.truncate(scope.facts);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^(generic_maps|item_keyed_map).rs$"],
+  },
+  {
+    name: "default-consts-kept",
+    breaks: "a copied default's const parameters stay given past it, read by what's lowered after it",
+    file: "src/lower/traits/given.rs",
+    find: "        self.given.const_params = scope.const_params;\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^(const_generic_traits|copied_default_own_params).rs$"],
+    snapshots: true,
+  },
 ];
