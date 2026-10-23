@@ -189,7 +189,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // knowing its back, a generic one's given it where it's asked
             // (ADR 0542).
             Some(IterMethod::Enumerate)
-                if self.knows_its_back(output) || self.knows_its_length(output) || self.explicit_adapter(output) =>
+                if self.knows_its_back(output)
+                    || self.knows_its_length(output)
+                    || self.explicit_adapter(output)
+                    || self.recognition().nths_its_own(output) =>
             {
                 // Of the crate's, what it can be made to know.
                 let back = self.knows_its_back(iter_ty) || self.user_double_ended(iter_ty);

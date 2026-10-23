@@ -162,4 +162,28 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^own_nth_through_adapters.rs$"],
   },
+  {
+    name: "enumerate-nth-by-next",
+    breaks: "$enumerate's nth is its source's",
+    file: "src/runtime/back_steps.js",
+    find: "    enumerated.nth = (k) => {",
+    replace: "    enumerated.nthUnused = (k) => {",
+    tests: ["test/corpus.test.ts", "-t", "^own_nth_through_adapters.rs$"],
+  },
+  {
+    name: "enumerate-fold-by-next",
+    breaks: "$enumerate's fold is its source's",
+    file: "src/runtime/back_steps.js",
+    find: "    enumerated.fold = (init, f) =>",
+    replace: "    enumerated.foldUnused = (init, f) =>",
+    tests: ["test/corpus.test.ts", "-t", "^own_fold_and_nth.rs$"],
+  },
+  {
+    name: "enumerate-try-fold-by-next",
+    breaks: "$enumerate's try_fold is its source's",
+    file: "src/runtime/back_steps.js",
+    find: "  enumerated.tryFold = (init, f, broke) =>",
+    replace: "  enumerated.tryFoldUnused = (init, f, broke) =>",
+    tests: ["test/corpus.test.ts", "-t", "^own_nth_through_adapters.rs$"],
+  },
 ];

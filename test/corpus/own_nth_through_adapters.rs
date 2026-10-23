@@ -83,4 +83,8 @@ fn main() {
     println!("{:?} {:?}", (&mut held).take(3).nth(0), held.next());
     println!("{:?} {:?}", Maybe(0).take(4).nth(0), Maybe(0).skip(1).nth(0));
     println!("{:?}", (1..10).step_by(4).map(|x| x * 2).fold(0, |a, x| a + x));
+    println!("enumerate {:?}", c().enumerate().nth(3));
+    let mut e = c().enumerate();
+    println!("enumerate {:?} {:?} {:?}", e.next(), e.nth(2), e.next());
+    println!("enumerate {:?}", c().skip(2).enumerate().any(|(i, x)| i as i32 + x > 8));
 }

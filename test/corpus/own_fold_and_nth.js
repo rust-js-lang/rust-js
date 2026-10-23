@@ -2,6 +2,7 @@
 
 import {
   $cmp,
+  $enumerate,
   $extend,
   $extendMap,
   $folded,
@@ -129,18 +130,7 @@ function main() {
       .reduce((a, b) => (a + b) >>> 0, 0)}`,
   );
   console.log(
-    `enumerate ${$iterator(
-      up(),
-      upIterator_next,
-      false,
-      undefined,
-      undefined,
-      undefined,
-      upIterator_fold,
-      upIterator_nth,
-    )
-      .map((x, i) => [i, x])
-      .reduce((a, [i, x]) => (a + (Math.imul(i, x) >>> 0)) >>> 0, 0)}`,
+    `enumerate ${$enumerate($iterator(up(), upIterator_next, false, undefined, undefined, undefined, upIterator_fold, upIterator_nth)).reduce((a, [i, x]) => (a + (Math.imul(i, x) >>> 0)) >>> 0, 0)}`,
   );
   const value$1 = $max(
     $iterator(

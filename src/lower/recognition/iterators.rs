@@ -397,7 +397,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// Whether std's `nth` of a `ty`, an iterator, reaches the `nth` the
     /// impl of a crate's iterator writes (#182): of that iterator, through a
     /// `&mut` of it, and of each adapter whose `nth` is its source's and
-    /// whose `$Steps` has it, `skip`'s, `take`'s and `step_by`'s.
+    /// whose JS has it, `skip`'s, `take`'s, `step_by`'s and `$enumerate`'s.
     pub(in crate::lower) fn nths_its_own(&self, ty: Ty<'tcx>) -> bool {
         let ty = self.reveal(ty);
         if let ty::Ref(_, inner, ty::Mutability::Mut) = ty.kind() {
@@ -409,7 +409,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         let ty::Adt(adt, args) = ty.kind() else { return false };
         matches!(
             std_path(self.tcx, adt.did()).strip_prefix("std::iter::"),
-            Some("Skip" | "Take" | "StepBy")
+            Some("Skip" | "Take" | "StepBy" | "Enumerate")
         ) && args.types().next().is_some_and(|source| self.nths_its_own(source))
     }
 

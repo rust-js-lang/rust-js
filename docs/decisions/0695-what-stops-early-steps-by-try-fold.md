@@ -64,7 +64,10 @@ it, and each adapter passes it on as std's does.**
   `nth`. Where std's `nth` reaches the crate's own,
   `Recognition::nths_its_own` (of it, through a `&mut`, a `skip`, a `take`
   and a `step_by`), `it.nth(k)` is `$nth(it, k)`, as `it.next()` is
-  `$next(it)`, where it was `it.drop(k).take(1)`, a `skip`'s `next`.
+  `$next(it)`, where it was `it.drop(k).take(1)`, a `skip`'s `next`. An
+  `enumerate` of what reaches it is `$enumerate`, whose `nth(k)` is its
+  source's, counted `k` more, and whose `fold` and `try_fold` are its
+  source's, where it was `map((x, i) => [i, x])`.
 - **What takes by `fold`** is given `$folded(it)` where its fold asks an
   `nth` that's the crate's own, `folds_by_its_own_nth` (a `skip`'s and a
   `step_by`'s, through each adapter whose fold is its source's), as where
@@ -83,7 +86,7 @@ it, and each adapter passes it on as std's does.**
     dictionary has no `try_fold`;
   - `flatten` and a `flat_map` of what isn't a `$Steps`, which are JS's
     own `flatMap`;
-  - and std's `nth` of an `enumerate`, a `fuse` and a `peekable`, which
-    pass it to their source.
+  - and std's `nth` of a `fuse` and a `peekable`, which pass it to their
+    source.
 
   Each differs only where an iterator writes its own `nth`.

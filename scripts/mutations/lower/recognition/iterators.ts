@@ -578,8 +578,8 @@ export const mutations: Mutation[] = [
     name: "nths-its-own-no-take",
     breaks: "take's nth is its source's",
     file: "src/lower/recognition/iterators.rs",
-    find: "            Some(\"Skip\" | \"Take\" | \"StepBy\")",
-    replace: "            Some(\"Skip\" | \"StepBy\")",
+    find: "            Some(\"Skip\" | \"Take\" | \"StepBy\" | \"Enumerate\")",
+    replace: "            Some(\"Skip\" | \"StepBy\" | \"Enumerate\")",
     tests: ["test/corpus.test.ts", "-t", "^own_nth_through_adapters.rs$"],
   },
   {
@@ -612,6 +612,14 @@ export const mutations: Mutation[] = [
     file: "src/lower/recognition/iterators.rs",
     find: ".is_some_and(|source| self.nths_its_own(source) || matches!(source.kind(), ty::Param(_)))",
     replace: ".is_some_and(|source| self.nths_its_own(source))",
+    tests: ["test/corpus.test.ts", "-t", "^own_nth_through_adapters.rs$"],
+  },
+  {
+    name: "nths-its-own-no-enumerate",
+    breaks: "enumerate's nth is its source's",
+    file: "src/lower/recognition/iterators.rs",
+    find: "Some(\"Skip\" | \"Take\" | \"StepBy\" | \"Enumerate\")",
+    replace: "Some(\"Skip\" | \"Take\" | \"StepBy\")",
     tests: ["test/corpus.test.ts", "-t", "^own_nth_through_adapters.rs$"],
   },
 ];

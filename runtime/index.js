@@ -1996,6 +1996,23 @@ export function $enumerate(iter, count = 0) {
     return pair(enumerated.iter.back(), enumerated.count + left - 1);
   };
   enumerated.len = () => enumerated.iter.len();
+  // Std's `fold` and `try_fold`: its source's, each item counted.
+  if (iter.fold !== undefined) {
+    enumerated.fold = (init, f) => enumerated.iter.fold(init, (a, x) => f(a, [enumerated.count++, x]));
+  }
+  enumerated.tryFold = (init, f, broke) =>
+    $lent(enumerated.iter).tryFold(init, (a, x) => f(a, [enumerated.count++, x]), broke);
+  // Std's `nth(k)`: its source's, counted `k` more, the crate's own where
+  // it writes one (#182).
+  if (iter.nth !== undefined) {
+    enumerated.nth = (k) => {
+      const step = enumerated.iter.nth(k);
+      if (step.done) return step;
+      const at = enumerated.count + k;
+      enumerated.count = at + 1;
+      return { done: false, value: [at, step.value] };
+    };
+  }
   return enumerated;
 }
 
