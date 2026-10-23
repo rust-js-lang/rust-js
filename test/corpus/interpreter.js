@@ -549,7 +549,6 @@ const Interp = {
             TAG: "Err",
             _0: `cannot ${op} ${valueDisplay_fmt(a)} and ${valueDisplay_fmt(b)}`,
           };
-          break bb195;
         }
         if (e.TAG !== "Lambda") {
           const result = Interp.eval(interp, e._0, env);
@@ -588,7 +587,6 @@ const Interp = {
             return result$1;
           }
           value = result$1._0;
-          break bb195;
           break bb195;
         }
         value = { TAG: "Closure", _0: e._0, _1: e._1, _2: env };

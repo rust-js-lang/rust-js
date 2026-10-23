@@ -11,12 +11,14 @@ use crate::lower::iterators::{self, eager_chains, eager_spreads, iterated};
 
 mod bindings;
 mod branches;
+mod contracts;
 mod decisions;
 mod destructuring;
 mod flags;
 mod jumps;
 mod logicals;
 mod loops;
+mod stages;
 mod switches;
 mod unwinds;
 mod values;
@@ -99,74 +101,45 @@ pub(super) struct Hints<'h> {
     /// where the module imports it: a `Fuse` stepped till it ends is its
     /// source (ADR 0561).
     pub(super) fuse: Option<&'h str>,
+    /// The pass to stop after, `--tidy-until`'s, `stage/pass`.
+    pub(super) until: Option<&'h str>,
 }
 
-/// `body`, tidied, by what `hints` say of it.
+/// `body`, tidied, by what `hints` say of it: each stage's passes in turn
+/// (`stages::STAGES`), up to `hints.until`'s where it names one, and in a
+/// debug build, what each stage leaves checked (ADR 0659).
 pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
-    let Hints {
-        result,
-        falsy,
-        tested,
-        written,
-        callbacks,
-        patterns,
-        closure,
-        returns,
-        captured,
-        booleans,
-        numbers,
-        plain,
-        forwarding,
-        concise,
-        flags,
-        fuse,
-    } = *hints;
-    let super::hints::Written {
-        tables,
-        conditions,
-        elses,
-        logicals,
-        continues,
-        loops: written,
-        switches,
-    } = written;
-    let (tables, conditions, elses, logicals, continues, written) = (
-        &tables[..],
-        &conditions[..],
-        &elses[..],
-        &logicals[..],
-        &continues[..],
-        &written[..],
-    );
-    // What branches make a value of: the function's too; and the arms of a
-    // `match` of constants, a `switch` (ADR 0629), which make none of what
-    // the program names.
-    let made = (result, switches.as_slice());
-    // A guard of a handle made for it alone: the place it's a handle on.
-    crate::lower::std_types::cell::unguarded(body);
-    // Where a drop's flag is known, no test of it, nor a `try` for it.
-    flags::settled_flags(body, flags);
-    // Twice: what a block's statements, in its place, are followed by, and
-    // a loop's label nothing names then.
-    for _ in 0..2 {
-        // `?` of an `Ok` made here: the branch it takes, before what's past
-        // a jump goes.
-        js::statement_lists(body, &mut made_ok_tried);
-        js::statement_lists(body, &mut |stmts| {
-            returned(stmts, result);
-            unreachable_after(stmts);
-        });
-        // An arm MIR made the block's fall-through, written first: first.
-        js::statement_lists(body, &mut |stmts| written_first(stmts));
-        js::statement_lists(body, &mut |stmts| branch_ends(stmts));
-        js::statement_lists(body, &mut |stmts| tail_jumps(stmts));
-        bottom_up(body, &mut |stmts| branch_values(stmts, returns, booleans, made));
-        js::statement_lists(body, &mut unlabeled);
+    for stage in stages::STAGES {
+        for pass in stage.passes {
+            (pass.run)(body, hints);
+            if hints.until == Some(&*pass_name(stage, pass)) {
+                return;
+            }
+        }
+        if cfg!(debug_assertions) {
+            for contract in contracts::ALWAYS.iter().chain(stage.ensures) {
+                if let Some(why) = (contract.broken)(body) {
+                    panic!("tidy's `{}` stage broke \"{}\": {why}", stage.name, contract.name);
+                }
+            }
+        }
     }
-    // What a label's block, gone, left past a jump.
-    js::statement_lists(body, &mut unreachable_after);
-    bottom_up(body, &mut or_tests);
-    bottom_up(body, &mut |stmts| branch_values(stmts, returns, booleans, made));
+}
+
+/// What `--tidy-until` names a pass by: `stage/pass`.
+fn pass_name(stage: &stages::Stage, pass: &stages::Pass) -> String {
+    format!("{}/{}", stage.name, pass.name)
+}
+
+/// Each pass's name, in the order they run: what `--tidy-until` may name.
+pub(crate) fn pass_names() -> Vec<String> {
+    (stages::STAGES.iter())
+        .flat_map(|stage| stage.passes.iter().map(move |pass| pass_name(stage, pass)))
+        .collect()
+}
+
+/// The function's return place, `let` first, where nothing reads it now.
+fn unread_result(body: &mut Vec<Stmt>, result: &str) {
     let mut read = HashSet::new();
     js::visit_stmts(body, &mut |name| {
         read.insert(name.to_string());
@@ -174,52 +147,14 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     if !read.contains(result) {
         body.retain(|s| !matches!(&s.kind, StmtKind::Let(name, None) if name == result));
     }
-    js::statement_lists(body, &mut guarded);
-    declarations(body);
-    aliases(body, captured);
-    // A test an earlier one decided, `if (x != null) { return x; } .. if (x
-    // != null)`, where nothing between changes what it reads: its branch;
-    // and a tail MIR wrote into both branches, once, after them.
-    let changing = self::changing(body);
-    js::statement_lists(body, &mut |stmts| decided_tests(stmts, &changing));
-    // A flag whose only test was such a drop's, read nowhere now, goes
-    // with its writes.
-    flags::settled_flags(body, flags);
-    js::statement_lists(body, &mut shared_tails);
-    // Of `const`s now, the iterator's too; and what a loop made so ends with,
-    // a `continue` and its label, goes.
-    // An iterator a loop inside another makes, a `let` assigned each time,
-    // read by nothing else.
-    let mut mentions: HashMap<String, usize> = HashMap::new();
-    js::visit_stmts(body, &mut |name| *mentions.entry(name.to_string()).or_default() += 1);
-    // The innermost first: what a loop ends with may be another, recovered.
-    let mut taken = mentions.clone();
-    bottom_up(body, &mut |stmts| loops(stmts, &mut taken, numbers));
-    // A match's tree of tests, its arms reached through a block MIR made:
-    // the chain of its arms, now that the loops are made.
-    bottom_up(body, &mut decisions::decisions);
-    // What the program wrote after a loop, MIR moved into its way out.
-    js::statement_lists(body, &mut exits_after);
-    js::statement_lists(body, &mut early_returns);
-    js::statement_lists(body, &mut |stmts| early_breaks(stmts, false));
-    settle_jumps(body);
-    // A `let` declared first, its one write now beside it, what a loop
-    // held: a `const` there.
-    declarations(body);
-    js::statement_lists(body, &mut |stmts| continued(stmts, continues));
-    js::statement_lists(body, &mut |stmts| tail_jumps(stmts));
-    js::statement_lists(body, &mut |stmts| innermost_jumps(stmts));
-    // A chain of tests a loop ended, its body now ending where the chain's does.
-    bottom_up(body, &mut |stmts| branch_values(stmts, returns, booleans, made));
-    js::statement_lists(body, &mut unlabeled);
-    js::statement_lists(body, &mut |stmts| logical_blocks(stmts, logicals, returns, booleans));
-    js::statement_lists(body, &mut |stmts| logical_returns(stmts, logicals, returns, booleans));
-    // What's given where `false` is skipped as `undefined` is, `test &&
-    // value`: one read there alone, which nothing else tells from
-    // `undefined`.
+}
+
+/// What's given where `false` is skipped as `undefined` is, `test &&
+/// value`: one read there alone, which nothing else tells from
+/// `undefined`. A test of one read there alone is read for its truth:
+/// `!!a || b`'s, `a || b`.
+fn falsy_values(body: &mut Vec<Stmt>, falsy: &HashSet<String>, tested: &HashSet<String>) {
     let falsy: HashSet<&String> = falsy.iter().filter(|name| js::mentions_in(body, name) == 1).collect();
-    // A test of one read there alone is read for its truth: `!!a || b`'s,
-    // `a || b`.
     let tested: HashSet<&String> = tested.iter().filter(|name| js::mentions_in(body, name) == 1).collect();
     js::statement_lists(body, &mut |stmts| {
         for stmt in stmts.iter_mut() {
@@ -237,250 +172,83 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
             }
         }
     });
-    let changing = self::changing(body);
-    js::statement_lists(body, &mut |stmts| filtered_guards(stmts, &changing));
-    alias_variables(body);
-    read_handles(body);
-    js::statement_lists(body, &mut |stmts| plain_reads(stmts, plain, captured));
-    js::statement_lists(body, &mut |stmts| destructured(stmts, patterns));
-    js::statement_lists(body, &mut rest_parts);
-    // What an array made for its parts left, `const _5 = 6;`, too.
-    alias_variables(body);
-    named_temporaries(body);
-    iterators::consumed_into_iters(body, fuse);
-    js::each_expr_mut(body, &mut crate::lower::std_types::range::range_items);
-    js::each_expr_mut(body, &mut crate::lower::std_types::range::range_steps);
-    eager_chains(body);
-    js::statement_lists(body, &mut |stmts| eager_spreads(stmts));
-    // A block, or branches, a function's body or a loop's ends in, the function's value made
-    // in them, `?`'s.
-    js::statement_lists(body, &mut |stmts| returned_in_branches(stmts, result));
-    js::statement_lists(body, &mut shared_tails);
-    // Each `let` where it's first named, a `const` where it's written once.
-    js::statement_lists(body, &mut sunk_lets);
-    declarations(body);
-    // What those `const`s now read once, where it's read, and the values
-    // of branches that leaves.
-    // A pattern's copy of a variable, `const error = raw;`: the variable.
-    js::statement_lists(body, &mut |stmts| copied_bindings(stmts));
-    // A tuple read item by item, `children[0]`: its items.
-    let changing = self::changing(body);
-    let set_elsewhere = set_elsewhere(body);
-    js::statement_lists(body, &mut |stmts| {
-        tuple_reads(stmts, &changing, &set_elsewhere, captured)
-    });
-    // `dyn` values given to JS, `[{ value, impl }].map((item) => item.value)`: the values.
-    js::statement_lists(body, &mut |stmts| unwrapped_values(stmts));
-    let changed = self::changing(body);
-    let set = closures_set(body);
-    let paired = paired_temporaries(body);
-    // What an element MIR made only where a test holds reads, as one value,
-    // read in place below, where the test holds.
-    // A match's table read, `TITLES[kind]`, where it's written, before
-    // what it's given to reads it in place.
-    js::statement_lists(body, &mut |stmts| table_reads(stmts, tables));
-    js::statement_lists(body, &mut |stmts| guarded_lets(stmts, captured));
-    js::statement_lists(body, &mut |stmts| {
-        inlined(stmts, &changed, &set, plain, captured, &paired)
-    });
-    bottom_up(body, &mut |stmts| branch_values(stmts, returns, booleans, made));
-    js::statement_lists(body, &mut |stmts| table_reads(stmts, tables));
-    declarations(body);
-    js::statement_lists(body, &mut |stmts| {
-        inlined(stmts, &changed, &set, plain, captured, &paired)
-    });
-    // A tuple's part held, `const _3$0 = v.pop();`, which an arm's binding
-    // takes, by that name.
-    named_temporaries(body);
-    js::each_expr_mut(body, &mut |e| implied_tests(e, &changed));
-    // A chain read in place now, `$lent($iter(xs)).some(f)` of `const _7 =
-    // $iter(xs);`: the array's; and a range made there, its numbers made as
-    // they're stepped.
-    iterators::consumed_into_iters(body, fuse);
-    js::each_expr_mut(body, &mut crate::lower::std_types::range::range_items);
-    js::each_expr_mut(body, &mut crate::lower::std_types::range::range_steps);
-    eager_chains(body);
-    // Of each, a callback that passes what it's given on to Rust's function,
-    // `(x, i) => f(x, i)`: `f` itself.
-    js::each_expr_mut(body, &mut |e| passed_on(e, forwarding));
-    // A closure read in place, called where it's made, of what reads the
-    // same: its value of what it's given, `r._0.data`, as a call of one
-    // made in place is (ADR 0449).
-    js::each_expr_mut(body, &mut applied_arrows);
-    // An element's place checked, then set: the place the check gives.
-    js::statement_lists(body, &mut checked_sets);
-    // A copy made of what's spread, read in place, `{ ...a, ...{ ...b } }`:
-    // what it's a copy of.
-    js::each_expr_mut(body, &mut spread_spreads);
-    // Decided tests and shared tails again, of what's read in place now.
-    let changing = self::changing(body);
-    js::statement_lists(body, &mut |stmts| decided_tests(stmts, &changing));
-    js::statement_lists(body, &mut shared_tails);
-    // A chain's tests, where each is read in place now: `if (a) { if (f(a))
-    // { .. } }`, `if (a && f(a))`.
-    bottom_up(body, &mut |stmts| and_tests(stmts, conditions));
-    // An `if` the program wrote with an `else`, as it wrote it, its tests
-    // one now; and the `continue`s its branches end with, which it didn't
-    // write, gone where the loop's body ends anyway.
-    js::statement_lists(body, &mut |stmts| written_elses(stmts, elses));
-    js::statement_lists(body, &mut |stmts| tail_continues(stmts, continues));
-    // What a block ends after, its tests read in place now: its `else`.
-    js::statement_lists(body, &mut |stmts| tail_elses(stmts));
-    // A check MIR wrote first in a chain's last `else`: the chain's arm.
-    js::statement_lists(body, &mut |stmts| chained_checks(stmts));
-    js::statement_lists(body, &mut unlabeled);
-    // A value a block MIR made gives where nothing else does: given first,
-    // and the block's `break`s that go where it ends anyway, gone.
-    js::statement_lists(body, &mut |stmts| decisions::default_values(stmts));
-    // What jumps left past them; and, once each block's `else` is made of
-    // its `break`s, a block's jumps to one after it, that one.
-    js::statement_lists(body, &mut unreachable_after);
-    js::statement_lists(body, &mut |stmts| jumps_past_blocks(stmts));
-    settle_jumps(body);
-    declarations(body);
-    // `x != null && typeof x === "string"`: the `typeof` test, which says it.
-    js::each_expr_mut(body, &mut typeof_tests);
-    // A loop's early `break`s, its tests read in place now, and its test.
-    js::statement_lists(body, &mut |stmts| early_breaks(stmts, true));
-    // A loop's test those read in place now, `while (true) { if (!(m.length
-    // > n)) { .. } }`'s of `const _7 = m.length;`.
-    js::statement_lists(body, &mut |stmts| while_tests(stmts, written));
-    // What those leave at the end, a `return;` the program didn't write.
-    tail_returns(body, returns);
-    // A loop's early exits again, of what's taken its shape since.
-    js::statement_lists(body, &mut early_returns);
-    // A chain's arms, as statements, in the order written.
-    js::statement_lists(body, &mut |stmts| written_chains(stmts));
-    // `const result = e; return result;` of what the function gives: `return e;`.
-    js::statement_lists(body, &mut |stmts| returned_consts(stmts, result));
-    // An `if`'s value of two small ones, `return t ? a : b`, its temporaries
-    // declared where they're read by now.
-    js::statement_lists(body, &mut |stmts| returned_values(stmts, elses, returns, booleans));
-    // And their arms that do nothing.
-    // A cell a pointer's taken to, made where its value's first set.
-    js::statement_lists(body, &mut first_cell_values);
-    // A cell only its `value` is read and set of, by name: its variable.
-    plain_cells(body);
-    js::statement_lists(body, &mut |stmts| named_callbacks(stmts, callbacks));
-    // A child shown only where a test holds, `c ? <b /> : undefined`: `c &&
-    // <b />`, as JSX writes it (ADR 0235), of a boolean test, whose `false`
-    // renders nothing as `undefined` does; of another, its truth, `!!href
-    // && <a />`, as `""` or `0` would render.
-    js::each_expr_mut(body, &mut |e| {
-        if let ExprKind::Jsx(jsx) = &mut e.kind {
-            for child in jsx.children.iter_mut() {
-                if let ExprKind::Cond(test, shown, none) = &child.kind
-                    && matches!(none.kind, ExprKind::Undefined)
-                {
-                    let test = match is_boolean(test, booleans) {
-                        true => (**test).clone(),
-                        false => Expr::unary(UnaryOp::Not, Expr::unary(UnaryOp::Not, (**test).clone())),
-                    };
-                    *child = Expr {
-                        reads: false,
-                        span: child.span,
-                        kind: ExprKind::Binary(Op::And, Box::new(test), shown.clone()),
-                    };
-                }
+}
+
+/// A child shown only where a test holds, `c ? <b /> : undefined`: `c &&
+/// <b />`, as JSX writes it (ADR 0235), of a boolean test, whose `false`
+/// renders nothing as `undefined` does; of another, its truth, `!!href &&
+/// <a />`, as `""` or `0` would render.
+fn shown_children(e: &mut Expr, booleans: &HashSet<String>) {
+    if let ExprKind::Jsx(jsx) = &mut e.kind {
+        for child in jsx.children.iter_mut() {
+            if let ExprKind::Cond(test, shown, none) = &child.kind
+                && matches!(none.kind, ExprKind::Undefined)
+            {
+                let test = match is_boolean(test, booleans) {
+                    true => (**test).clone(),
+                    false => Expr::unary(UnaryOp::Not, Expr::unary(UnaryOp::Not, (**test).clone())),
+                };
+                *child = Expr {
+                    reads: false,
+                    span: child.span,
+                    kind: ExprKind::Binary(Op::And, Box::new(test), shown.clone()),
+                };
             }
         }
-    });
-    // A handler of one call a component's given, `() => { f(); }`, held then
-    // read in place: `() => f()`.
-    js::each_expr_mut(body, &mut |e| {
-        if let ExprKind::Jsx(jsx) = &mut e.kind {
-            for prop in &mut jsx.props {
-                if let js::Prop::Field(name, value) = prop
-                    && js::is_handler_name(name)
-                    && concise.contains(&value.span)
-                {
-                    js::returning_its_call(value);
-                }
-            }
-        }
-    });
-    js::statement_lists(body, &mut |stmts| named_labels(stmts, written));
-    js::statement_lists(body, &mut crate::lower::std_types::map::counted_entries);
-    // `!` of what's read in place now, `!(t === "pre")` of `!_5`: as
-    // `Expr::unary` makes it, `t !== "pre"`.
-    js::each_expr_mut(body, &mut |e| {
-        if let ExprKind::Unary(op, arg) = &e.kind {
-            *e = Expr {
-                span: e.span,
-                ..Expr::unary(*op, (**arg).clone())
-            };
-        }
-    });
-    // A field of a `dyn` field's pair read in place now, `{ value: f.last,
-    // impl: f.impl }.impl`: as `Expr::member` makes it.
-    js::each_expr_mut(body, &mut |e| {
-        if let ExprKind::Member(object, field) = &e.kind
-            && let ExprKind::Object(props) = &object.kind
-            && js::is_read_pair(props)
-        {
-            *e = Expr {
-                span: e.span,
-                ..Expr::member((**object).clone(), field.clone())
-            };
-        }
-    });
-    js::statement_lists(body, &mut forwarded_values);
-    unread_maps(body);
-    // An array's `$iter` an adapter alone steps, left lazy, as what its
-    // closures do is in Rust's order: the array's own iterator.
-    // A closure's, by the function it's in, which sees what takes what it
-    // gives, `xs.flatMap((x) => $iter(x).map(f))`'s, first.
-    if !closure {
-        js::each_expr_mut(body, &mut array_values);
     }
-    handles_in_place(body);
-    // A value a function given it reads more than once, held where it's
-    // made: `const _$1 = f(); .. _$1.TAG ..`, not `((r) => ..)(f())`.
-    let mut taken = HashSet::new();
-    js::names_in(body, &mut taken);
-    js::statement_lists(body, &mut |stmts| applied_values(stmts, &set, plain, &mut taken));
-    // A `let` declared first, in the body or a block of it, that nothing's
-    // left to assign or read.
-    let mut mentions: HashMap<String, usize> = HashMap::new();
-    js::visit_stmts(body, &mut |name| *mentions.entry(name.to_string()).or_default() += 1);
-    js::statement_lists(body, &mut |stmts| {
-        stmts.retain(|stmt| !matches!(&stmt.kind, StmtKind::Let(name, None) if !mentions.contains_key(name)));
-    });
-    // A `const` nothing reads, of a value made only to be dropped, `drop(vec![..])`'s:
-    // what making it does.
-    js::statement_lists(body, &mut |stmts| unread_made(stmts, &mentions));
-    js::statement_lists(body, &mut while_heads);
-    js::statement_lists(body, &mut |stmts| written_order_steps(stmts));
-    js::statement_lists(body, &mut let_else_first);
-    js::statement_lists(body, &mut tried_first);
-    // A loop's jumps to the end of the loop it ends, once what's after each
-    // loop is placed by them: its own, where the program names it no label;
-    // and the early exits those `break`s now make.
-    js::statement_lists(body, &mut |stmts| outer_continues(stmts, written));
-    js::statement_lists(body, &mut |stmts| early_breaks(stmts, false));
-    // Their jumps then, of the loop they're now in, unnamed.
-    js::statement_lists(body, &mut |stmts| innermost_jumps(stmts));
-    settle_jumps(body);
-    // `!(b >= 48)` of what's never `NaN`: `b < 48`.
-    js::each_expr_mut(body, &mut |e| turned(e, numbers));
-    // An `if` of `false`, a check that can't fail once what it reads is
-    // in place: its `else`, if any.
-    js::statement_lists(body, &mut never_taken);
-    holed_lists(body);
-    // A `match` of constants, its chain settled: a `switch` (ADR 0629).
-    switches::switches(body, switches, written);
-    // For the source map: a `return` given the value it returns, at MIR's
-    // end of the body, which the map has nothing of, where that value was
-    // written; an `if`, where its test says, `if c` or its arm's pattern.
-    js::statement_lists(body, &mut |stmts| {
-        for stmt in stmts.iter_mut() {
-            match &stmt.kind {
-                StmtKind::Return(Some(value)) if stmt.span.is_none() => stmt.span = value.span,
-                StmtKind::If(test, ..) if !test.span.is_none() => stmt.span = test.span,
-                _ => {}
+}
+
+/// A handler of one call a component's given, `() => { f(); }`, held then
+/// read in place: `() => f()`.
+fn concise_handlers(e: &mut Expr, concise: &[js::Span]) {
+    if let ExprKind::Jsx(jsx) = &mut e.kind {
+        for prop in &mut jsx.props {
+            if let js::Prop::Field(name, value) = prop
+                && js::is_handler_name(name)
+                && concise.contains(&value.span)
+            {
+                js::returning_its_call(value);
             }
         }
-    });
+    }
+}
+
+/// `!` of what's read in place now, `!(t === "pre")` of `!_5`: as
+/// `Expr::unary` makes it, `t !== "pre"`.
+fn negations(e: &mut Expr) {
+    if let ExprKind::Unary(op, arg) = &e.kind {
+        *e = Expr {
+            span: e.span,
+            ..Expr::unary(*op, (**arg).clone())
+        };
+    }
+}
+
+/// A field of a `dyn` field's pair read in place now, `{ value: f.last,
+/// impl: f.impl }.impl`: as `Expr::member` makes it.
+fn pairs_fields(e: &mut Expr) {
+    if let ExprKind::Member(object, field) = &e.kind
+        && let ExprKind::Object(props) = &object.kind
+        && js::is_read_pair(props)
+    {
+        *e = Expr {
+            span: e.span,
+            ..Expr::member((**object).clone(), field.clone())
+        };
+    }
+}
+
+/// For the source map: a `return` given the value it returns, at MIR's end
+/// of the body, which the map has nothing of, where that value was written;
+/// an `if`, where its test says, `if c` or its arm's pattern.
+fn source_spans(stmts: &mut [Stmt]) {
+    for stmt in stmts.iter_mut() {
+        match &stmt.kind {
+            StmtKind::Return(Some(value)) if stmt.span.is_none() => stmt.span = value.span,
+            StmtKind::If(test, ..) if !test.span.is_none() => stmt.span = test.span,
+            _ => {}
+        }
+    }
 }
 
 /// Each list of statements in `stmts`, the nested ones first, not in its

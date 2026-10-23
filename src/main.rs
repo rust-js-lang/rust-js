@@ -119,6 +119,8 @@ struct RustJs {
     /// `--std-bodies`: the crate is given std's bodies to lower, from the MIR
     /// the toolchain ships (ADR 0561).
     std_bodies: bool,
+    /// `--tidy-until <stage/pass>` (ADR 0659).
+    tidy_until: Option<String>,
     /// Cargo's build (ADR 0101), which is told what `RUST_JS_APP` was.
     cargo: bool,
     /// `-C panic=abort`, which rust-js unwinds (ADR 0090): unwinding is
@@ -236,6 +238,7 @@ impl Callbacks for RustJs {
                     library: self.export_library,
                     std_bodies: self.std_bodies,
                     panics_abort: self.panics_abort,
+                    tidy_until: self.tidy_until.as_deref(),
                 },
             )
             && tcx.dcx().has_errors().is_none()
@@ -286,6 +289,12 @@ fn main() -> ExitCode {
     };
     let build = match command::parse(args) {
         Ok(command::Command::Build(build)) => build,
+        Ok(command::Command::TidyPasses) => {
+            for pass in lower::tidy_pass_names() {
+                println!("{pass}");
+            }
+            return ExitCode::SUCCESS;
+        }
         Ok(command::Command::RuntimeModule) => {
             print!("{}", runtime::package_module());
             return ExitCode::SUCCESS;
@@ -404,6 +413,7 @@ fn compile(build: command::Build) -> Result<ExitCode, String> {
         manifest,
         std_coverage,
         std_bodies,
+        tidy_until,
         ..
     } = build;
     let command::Staged { metadata, dep_info, .. } = staged;
@@ -423,6 +433,7 @@ fn compile(build: command::Build) -> Result<ExitCode, String> {
         lowered: None,
         std_coverage,
         std_bodies,
+        tidy_until,
         cargo,
         panics_abort: false,
     };

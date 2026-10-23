@@ -208,7 +208,7 @@ pub(in crate::lower::mir::tidy) fn unlabeled(stmts: &mut Vec<Stmt>) {
     let mut i = 0;
     while i < stmts.len() {
         let splice = matches!(&stmts[i].kind, StmtKind::Labeled(label, body)
-            if !targets(body, label) && fits_in_place(stmts, i, body));
+            if !js::names_jump(body, label) && fits_in_place(stmts, i, body));
         if splice {
             let StmtKind::Labeled(_, body) = stmts.remove(i).kind else {
                 unreachable!("matched")
@@ -220,27 +220,12 @@ pub(in crate::lower::mir::tidy) fn unlabeled(stmts: &mut Vec<Stmt>) {
         if let StmtKind::While { label, body, .. }
         | StmtKind::ForOf { label, body, .. }
         | StmtKind::For { label, body, .. } = &mut stmts[i].kind
-            && label.as_deref().is_some_and(|l| !targets(body, l))
+            && label.as_deref().is_some_and(|l| !js::names_jump(body, l))
         {
             *label = None;
         }
         i += 1;
     }
-}
-
-/// Whether a `break` or a `continue` in `stmts` names `label`.
-pub(in crate::lower::mir::tidy) fn targets(stmts: &[Stmt], label: &str) -> bool {
-    stmts.iter().any(|stmt| match &stmt.kind {
-        StmtKind::Break(Some(l)) | StmtKind::Continue(Some(l)) => l == label,
-        StmtKind::If(_, a, b) => targets(a, label) || b.as_deref().is_some_and(|b| targets(b, label)),
-        StmtKind::While { body, .. }
-        | StmtKind::ForOf { body, .. }
-        | StmtKind::For { body, .. }
-        | StmtKind::Labeled(_, body) => targets(body, label),
-        StmtKind::Switch { cases, default, .. } => js::case_lists(cases, default).any(|body| targets(body, label)),
-        StmtKind::Try(a, b) | StmtKind::TryCatch(a, _, b) => targets(a, label) || targets(b, label),
-        _ => false,
-    })
 }
 
 /// Of `stmts`, run while `name` is still `""`: `f += s; return f` is

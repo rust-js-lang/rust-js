@@ -203,7 +203,11 @@ assumptions; rustc lang items remain available through rustc's identity API.
 MIR determines execution order. `mir/cfg.rs` structures blocks;
 `mir/temporaries.rs` folds temporary reads only when intervening effects allow
 it. `mir/hints.rs` supplies source facts and `mir/offsets.rs` analyzes string
-offsets without emission. `mir/tidy.rs` coordinates body rewrites. Type-specific
+offsets without emission. `mir/tidy/stages.rs` lists the body rewrites, in
+stages that each say what they leave a body with; `mir/tidy.rs` runs them and,
+in a debug build, checks each stage's contracts (`mir/tidy/contracts.rs`).
+`rust-js --tidy-until <stage/pass>` and `scripts/tidy-trace.ts` show what each
+pass does to a crate's JS ([ADR 0659](decisions/0659-tidy-is-a-list-of-stages-with-contracts.md)). Type-specific
 rewrites remain with their type's owner; downstream `src/prepare.rs` works
 only on the completed JS tree. The printer owns spelling and layout, including
 expression forms determined while converting to oxc; Rust decisions stay upstream.

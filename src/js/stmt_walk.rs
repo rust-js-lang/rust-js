@@ -584,6 +584,21 @@ pub fn names_break(stmts: &[Stmt], label: &str) -> bool {
     })
 }
 
+/// Whether a `break` or a `continue` in `stmts`, however deep, names `label`.
+pub fn names_jump(stmts: &[Stmt], label: &str) -> bool {
+    stmts.iter().any(|stmt| match &stmt.kind {
+        StmtKind::Break(Some(l)) | StmtKind::Continue(Some(l)) => l == label,
+        StmtKind::If(_, a, b) => names_jump(a, label) || b.as_deref().is_some_and(|b| names_jump(b, label)),
+        StmtKind::While { body, .. }
+        | StmtKind::ForOf { body, .. }
+        | StmtKind::For { body, .. }
+        | StmtKind::Labeled(_, body) => names_jump(body, label),
+        StmtKind::Switch { cases, default, .. } => case_lists(cases, default).any(|body| names_jump(body, label)),
+        StmtKind::Try(a, b) | StmtKind::TryCatch(a, _, b) => names_jump(a, label) || names_jump(b, label),
+        _ => false,
+    })
+}
+
 /// `items` where their Rust has them, each made when its module loads
 /// after the `const`s and types it reads, the functions' it calls read
 /// too, closures' too: JS throws on a `const` read before it's made, where

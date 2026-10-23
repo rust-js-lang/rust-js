@@ -84,6 +84,11 @@ pub use analysis::{collect_bodies, collect_initializers, collect_mir, collect_ra
 pub use bindings::given_names_differ;
 use bindings::{Export, is_binding};
 pub use pipeline::{Built, lower_crate};
+
+/// Each of tidy's passes, `stage/pass`, in the order they run (ADR 0659).
+pub fn tidy_pass_names() -> Vec<String> {
+    mir::tidy_pass_names()
+}
 use recognition::{Std, TypeFact};
 use representation::{Num, const_js, eval_const, f32_literal, static_value};
 pub use serde::{SerdeAttributes, attributes as serde_attributes};
@@ -351,6 +356,8 @@ struct CrateFacts<'a, 'tcx> {
     /// Whether the crate asks `{:x?}` of anything: then an integer a writer
     /// shows is in hex where its options say (ADR 0559).
     debug_hex: bool,
+    /// The pass tidy stops after, `--tidy-until`'s (ADR 0659).
+    tidy_until: Option<&'a str>,
     /// The `RefCell`s a field holds as their value, never counted (ADR
     /// 0362), found once the first is asked of.
     plain_ref_cells: &'a std::cell::OnceCell<HashSet<Ty<'tcx>>>,

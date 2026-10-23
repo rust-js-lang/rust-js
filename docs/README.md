@@ -433,7 +433,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0361 Node's events are names of their own, typed by their emitters](decisions/0361-node-events.md) *(amended by 0656: `emit` takes what TypeScript's does)*
 - [0362 A field's `RefCell` never counted is the value it holds](decisions/0362-refcell-fields-never-counted.md)
 - [0363 Children of any node are given by reference](decisions/0363-children-of-any-node.md)
-- [0364 Bodies are lowered from their MIR](decisions/0364-mir-lowering.md)
+- [0364 Bodies are lowered from their MIR](decisions/0364-mir-lowering.md) *(amended by 0659: tidy's passes are one list of stages, each checked)*
 - [0365 JS's Math where Rust's methods differ: `js::math`](decisions/0365-js-math-where-rust-differs.md)
 - [0366 A `NodeList` of its items' type, as TypeScript's `NodeListOf`](decisions/0366-nodelist-of-its-items.md)
 - [0367 A state's setter is the function it is](decisions/0367-state-setter-is-a-function.md)
@@ -590,6 +590,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0656 An event's `emit` arguments are what TypeScript's `emit` takes](decisions/0656-an-events-emit-arguments-are-typescripts-emits.md)
 - [0657 An `if` of one value each, a function's too, is a conditional](decisions/0657-an-if-of-one-value-each-is-a-conditional.md) *(amended by 0658: a branch with a comment too)*
 - [0658 A comment before a branch's value is before it in the conditional](decisions/0658-a-comment-before-a-branchs-value-is-before-it-in-the-conditional.md)
+- [0659 Tidy is a list of stages, each with what it leaves a body with](decisions/0659-tidy-is-a-list-of-stages-with-contracts.md)
 - [0660 `catch_unwind` catches what JS throws, a panic among it](decisions/0660-catch-unwind-catches-what-js-throws.md)
 - [0664 A function's last slice marked `#[rust_js::rest]` is JS's rest parameter](decisions/0664-a-functions-rest-slice-is-jss-rest-parameter.md)
 - [0623 A copy std makes of a `Copy` value is a copy](decisions/0623-a-copy-std-makes-is-a-copy.md)
