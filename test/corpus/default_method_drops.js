@@ -60,19 +60,17 @@ const personGreet = {
     };
     const first = { item: [6] };
     let result;
-    if (long) {
-      const second = { item: [7], next: { item: [8] } };
-      result = second.item[0];
-      try {
+    try {
+      if (long) {
+        const second = { item: [7], next: { item: [8] } };
+        result = second.item[0];
         dropList(second);
-      } catch (error) {
-        dropList(first);
-        throw error;
+      } else {
+        result = first.item[0];
       }
-    } else {
-      result = first.item[0];
+    } finally {
+      dropList(first);
     }
-    dropList(first);
     return result;
   },
 };

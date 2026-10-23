@@ -1,7 +1,10 @@
 # 0437. A scope's drops on a panic are one `try { .. } finally { .. }`
 
 Status: Accepted. Extends [0098](0098-destructors.md) and
-[0372](0372-a-check-that-drops.md).
+[0372](0372-a-check-that-drops.md). Amended by
+[0693](0693-a-guards-scope-is-one-finally-its-returns-in-it.md): a run
+holds `if`s, loops and labeled blocks, and leaves from inside them where
+each way out drops the value first.
 
 Case: A ([0262](0262-when-rust-and-js-disagree.md)): the same drops run, in
 the same order, on every path; only how the JS reads changes.

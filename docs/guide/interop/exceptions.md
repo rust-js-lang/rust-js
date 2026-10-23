@@ -329,17 +329,14 @@ pub fn work(fail: bool) -> u32 {
 export function work(fail) {
   const _outer = { name: "outer" };
   const name = "inner";
-  if (fail) {
-    try {
-      throw new Error("failed");
-    } catch (error) {
-      console.log(`closing ${name}`);
-      console.log(`closing ${_outer.name}`);
-      throw error;
-    }
-  }
   try {
-    console.log(`closing ${name}`);
+    try {
+      if (fail) {
+        throw new Error("failed");
+      }
+    } finally {
+      console.log(`closing ${name}`);
+    }
   } finally {
     console.log(`closing ${_outer.name}`);
   }
@@ -351,6 +348,10 @@ export function work(fail) {
 A JS exception thrown through Rust code unwinds it the same way. A `drop`
 that panics while another panic unwinds replaces that panic, where Rust
 aborts.
+
+A scope's `if`s, loops and `return`s from inside them are in its `try`,
+whose `finally` drops what it holds however it's left: a guard whose
+`Drop` restores state is a `finally` ([ADR 0693](../../decisions/0693-a-guards-scope-is-one-finally-its-returns-in-it.md)).
 
 ## `RefCell` borrows
 

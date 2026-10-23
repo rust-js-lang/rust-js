@@ -548,6 +548,82 @@ pub fn lazy(kind: u32, payload: u32) -> String {
   expect([lib.lazy(3, 2), lib.lazy(3, 0), lib.lazy(1, 2)]).toEqual(["<2>", "", ""]);
 });
 
+// React's describeNativeComponentFrame restores what it changed in one
+// `finally`; its port's guard, whose `Drop` restores it, is that `finally`
+// (ADR 0693): its scope's `if`, loop and `return` from inside them in the
+// `try`, not a `try` and `catch` of the drop for each statement.
+test("a guard's scope is one finally, its returns in it", async () => {
+  const { js, dir } = compiled("unwind-guard-scope", `use std::cell::Cell;
+
+thread_local! {
+    static REENTRY: Cell<bool> = const { Cell::new(false) };
+}
+
+struct Restore {
+    previous: u32,
+}
+
+impl Drop for Restore {
+    fn drop(&mut self) {
+        REENTRY.set(false);
+        restored(self.previous);
+    }
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "globalThis.work")]
+fn work(n: u32) -> u32 {
+    n
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "globalThis.restored")]
+fn restored(_: u32) {}
+
+pub fn guarded(n: u32) -> String {
+    if REENTRY.get() {
+        return String::new();
+    }
+    {
+        REENTRY.set(true);
+        let previous = work(0);
+        let _restore = Restore { previous };
+        let first = work(n);
+        if first > 3 {
+            let mut i = 0;
+            while i < first {
+                if work(i) == 7 {
+                    return format!("found {i}");
+                }
+                i += 1;
+            }
+        }
+    }
+    String::from("none")
+}
+`);
+  expect(js).not.toContain("catch (error)");
+  expect(js.match(/finally/g)?.length).toBe(1);
+  expect(js).toContain(`  } finally {
+    reentry = false;
+    globalThis.restored(_restore.previous);
+  }
+  return "none";`);
+  const lib = await import(join(dir, "lib.js"));
+  const g = globalThis as Record<string, unknown>;
+  const restores: number[] = [];
+  g.restored = (n: number) => restores.push(n);
+  g.work = (n: number) => {
+    if (n === 30) throw new RangeError("thirty");
+    return n === 0 ? 40 : n;
+  };
+  expect([lib.guarded(2), lib.guarded(8)]).toEqual(["none", "found 7"]);
+  expect(() => lib.guarded(30)).toThrow("thirty");
+  expect(restores).toEqual([40, 40, 40]);
+  // Restored each time, so the next call isn't a reentry.
+  expect(lib.guarded(2)).toBe("none");
+  delete g.restored;
+  delete g.work;
+});
+
 // rust-js's panics unwind (ADR 0090); where the crate asked them to abort,
 // `catch_unwind` would catch what ends Rust's process.
 test("unwinding is refused where panics abort", () => {

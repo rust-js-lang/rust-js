@@ -495,17 +495,14 @@ pub fn work(fail: bool) -> u32 {
 export function work(fail) {
   const _outer = { name: "outer" };
   const name = "inner";
-  if (fail) {
-    try {
-      throw new Error("failed");
-    } catch (error) {
-      console.log(`closing ${name}`);
-      console.log(`closing ${_outer.name}`);
-      throw error;
-    }
-  }
   try {
-    console.log(`closing ${name}`);
+    try {
+      if (fail) {
+        throw new Error("failed");
+      }
+    } finally {
+      console.log(`closing ${name}`);
+    }
   } finally {
     console.log(`closing ${_outer.name}`);
   }

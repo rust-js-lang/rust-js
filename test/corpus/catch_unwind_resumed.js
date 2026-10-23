@@ -17,28 +17,15 @@ function main() {
       throw error;
     }
   };
-  let result;
   try {
-    result = $catchUnwind(value);
-  } catch (error) {
-    console.log(`drop ${outer}`);
-    throw error;
-  }
-  try {
+    const result = $catchUnwind(value);
     console.log("caught");
-  } catch (error) {
-    console.log(`drop ${outer}`);
-    throw error;
-  }
-  if (result.TAG === "Err") {
-    const payload = result._0;
-    try {
+    if (result.TAG === "Err") {
+      const payload = result._0;
       throw $unwinding(payload);
-    } catch (error) {
-      console.log(`drop ${outer}`);
-      throw error;
     }
+  } finally {
+    console.log(`drop ${outer}`);
   }
-  console.log(`drop ${outer}`);
 }
 //# sourceMappingURL=case.js.map

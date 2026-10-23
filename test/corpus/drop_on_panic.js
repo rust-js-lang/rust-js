@@ -13,37 +13,23 @@ function keep(n) {
 function count(to) {
   const outer = 100;
   const iter = { start: 1, end: to };
-  while (true) {
-    let tmp;
-    try {
-      tmp = $rangeInclusiveNext(iter);
-    } catch (error) {
-      console.log(`drop ${outer}`);
-      throw error;
-    }
-    if (tmp == null) {
-      break;
-    }
-    const i = tmp;
-    const step = i;
-    if (i === 3) {
+  try {
+    while (true) {
+      const tmp = $rangeInclusiveNext(iter);
+      if (tmp == null) {
+        break;
+      }
+      const i = tmp;
+      const step = i;
       try {
-        throw new Error(`gave up at ${i}`);
-      } catch (error) {
+        if (i === 3) {
+          throw new Error(`gave up at ${i}`);
+        }
+      } finally {
         console.log(`drop ${step}`);
-        console.log(`drop ${outer}`);
-        throw error;
       }
     }
-    try {
-      console.log(`drop ${step}`);
-    } catch (error) {
-      console.log(`drop ${outer}`);
-      throw error;
-    }
-  }
-  const never = 200;
-  try {
+    const never = 200;
     console.log(`drop ${never}`);
   } finally {
     console.log(`drop ${outer}`);

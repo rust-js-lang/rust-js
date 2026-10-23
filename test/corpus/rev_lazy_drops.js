@@ -35,39 +35,18 @@ function main() {
   const scaled = $rev(
     $mapEnds($closing($iter([[4], [5], [6]]), $dropEach(loudDrop_drop)), (item) => value(item)),
   );
-  let next;
   try {
-    next = $next(scaled);
-  } catch (error) {
-    scaled.return();
-    throw error;
-  }
-  if (next) {
-    const l = next;
-    try {
-      console.log(`scaled ${l[0]}`);
-    } catch (error) {
-      loudDrop_drop(l);
-      scaled.return();
-      throw error;
-    }
-    try {
-      loudDrop_drop(l);
-    } catch (error) {
-      scaled.return();
-      throw error;
-    }
-  } else {
-    try {
-      if (next) {
-        loudDrop_drop(next);
+    const next = $next(scaled);
+    if (next) {
+      const l = next;
+      try {
+        console.log(`scaled ${l[0]}`);
+      } finally {
+        loudDrop_drop(l);
       }
-    } catch (error) {
-      scaled.return();
-      throw error;
+    } else if (next) {
+      loudDrop_drop(next);
     }
-  }
-  try {
     console.log("--");
 
     const value = [[7], [8], [9]];

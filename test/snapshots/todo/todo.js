@@ -96,47 +96,27 @@ function render(state, view) {
   const s = $borrow(state, true);
   view.list.textContent = "";
   let left = 0;
-  let iter;
   try {
-    iter = $iter(s.value.todos);
-  } catch (error) {
-    $unborrow(s);
-    throw error;
-  }
-  while (true) {
-    let tmp;
-    try {
-      tmp = $next(iter);
-    } catch (error) {
-      $unborrow(s);
-      throw error;
-    }
-    if (!tmp) {
-      break;
-    }
-    const todo = tmp;
-    if (!todo.done) {
-      left = (left + 1) | 0;
-    }
-    let tmp$1;
-    try {
-      tmp$1 = shown(s.value.filter, todo);
-    } catch (error) {
-      $unborrow(s);
-      throw error;
-    }
-    if (tmp$1) {
-      try {
+    const iter = $iter(s.value.todos);
+    while (true) {
+      const tmp = $next(iter);
+      if (!tmp) {
+        break;
+      }
+      const todo = tmp;
+      if (!todo.done) {
+        left = (left + 1) | 0;
+      }
+      const tmp$1 = shown(s.value.filter, todo);
+      if (tmp$1) {
         view.list.append(item(state, view, todo));
-      } catch (error) {
-        $unborrow(s);
-        throw error;
       }
     }
+    const noun = left === 1 ? " item left" : " items left";
+    view.left.textContent = String(left) + noun;
+  } finally {
+    $unborrow(s);
   }
-  const noun = left === 1 ? " item left" : " items left";
-  view.left.textContent = String(left) + noun;
-  $unborrow(s);
 }
 
 export function main() {
