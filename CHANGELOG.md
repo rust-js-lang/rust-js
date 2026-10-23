@@ -771,6 +771,11 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### Changed
 
+- **`unwrap()` of a throwing JS call is the call** (ADR 0643):
+  `json::parse(text).unwrap()` is `JSON.parse(text)`, its `SyntaxError`
+  thrown as JS threw it, where it was `$unwrapOk($try(..))` and Rust's
+  panic of it; `js::settle(p).await.unwrap()` is `await p`. `expect(msg)`
+  keeps its message.
 - **A TypeScript rest parameter is a tuple** (ADR 0640): webapi's 53
   bindings of one, `console.error(...data)`, `el.append(...nodes)`,
   `classList.add(...tokens)`, take `impl js::Rest<T>`, a tuple, each

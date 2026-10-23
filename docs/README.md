@@ -84,7 +84,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0012 Panics throw, via runtime helpers emitted on demand](decisions/0012-panics-and-runtime-helpers.md) *(helpers' place replaced by 0103)*
 - [0013 Fieldless enum variants are strings](decisions/0013-fieldless-enums.md)
 - [0033 Enums with fields are ReScript's tagged objects](decisions/0033-enums-with-fields.md)
-- [0035 JS that throws is a `Result`; `?` returns early](decisions/0035-results-and-throwing-js.md) *(amended by 0637: a `match` of its `Result` is `try` and `catch`)*
+- [0035 JS that throws is a `Result`; `?` returns early](decisions/0035-results-and-throwing-js.md) *(amended by 0637: a `match` of its `Result` is `try` and `catch`; 0643: its `unwrap()` is the call)*
 - [0020 Structs are objects, tuples are arrays](decisions/0020-structs-and-tuples.md)
 - [0049 Trait dictionaries, generics, and read-only trait objects](decisions/0049-traits-and-generics.md)
 - [0047 Methods are an object of functions named after their type](decisions/0047-methods.md)
@@ -573,6 +573,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0639 `concat_text` of any value is what may throw; whether a call threw is `try`](decisions/0639-concat-text-of-any-value-may-throw.md)
 - [0640 A TypeScript rest parameter is a variadic binding of a tuple](decisions/0640-a-rest-parameter-is-a-tuple.md)
 - [0641 A `concat!` of literals is its pieces joined by `+`](decisions/0641-concat-is-its-pieces-joined-by-plus.md)
+- [0643 `unwrap()` of a throwing JS call is the call](decisions/0643-unwrap-of-a-throwing-call-is-the-call.md)
 - [0623 A copy std makes of a `Copy` value is a copy](decisions/0623-a-copy-std-makes-is-a-copy.md)
 - [0436 Every `dyn` that's a pair keeps its value's drop, `dyn Send` too](decisions/0436-every-dyn-keeps-its-drop.md)
 - [0437 A scope's drops on a panic are one `try { .. } finally { .. }`](decisions/0437-a-scopes-drops-are-one-finally.md)

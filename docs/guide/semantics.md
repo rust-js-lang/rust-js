@@ -451,6 +451,11 @@ Differences:
   `main` that returns `Err` returns it to its caller.
 - **JS can catch a panic,** an ordinary `Error`; Rust code can't
   (`catch_unwind` is refused).
+- **`unwrap()` of a throwing JS call's `Result` is the call:** what JS
+  threw goes on as itself, `JSON.parse(text)` throwing its `SyntaxError`,
+  where Rust's panic says ``called `Result::unwrap()` on an `Err` value``.
+  Only JS that catches it sees the difference. `expect(msg)` keeps its
+  message ([0643](../decisions/0643-unwrap-of-a-throwing-call-is-the-call.md)).
 - **Recursion is as deep as the JS engine's stack allows,** about 10,000
   calls in Node and in browsers, where Rust's main thread has 8 MB:
   deeper, JS throws `RangeError: Maximum call stack size exceeded`, which
@@ -663,3 +668,5 @@ React and JSX are [their own pages](README.md#react).
 18. A consumer of the crate's iterator steps its `next`: where its impl
     writes its own `fold` or `nth`, `sum()`, `count()`, `for_each`,
     `skip(n)` and `step_by(n)` don't call them, as std's would.
+19. `unwrap()` of a throwing JS call's `Result` throws what JS threw, not
+    Rust's ``called `Result::unwrap()` on an `Err` value`` panic.

@@ -914,6 +914,8 @@ pub fn formatStr(inputArgs: Vec<Option<&'static Unknown>>) -> Vec<Option<&'stati
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js"), ...withJs]);
   const js = readFileSync(join(dir, "mir.js"), "utf8");
   expect(js).toContain("    formatted = formatted.replace(REGEXP, (match, escaped, ptn, flag) => {\n");
+  // react.dev's `arg = arg + ''`, a symbol's throw its own (ADR 0643).
+  expect(js).toContain('arg = "" + arg;');
   const lib = await import(join(dir, "mir.js"));
   expect(lib.formatStr(["a %s b %d", "x", "4.2", "y"])).toEqual(["a x b 4 y"]);
 });

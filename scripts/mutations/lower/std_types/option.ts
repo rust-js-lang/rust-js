@@ -328,4 +328,20 @@ export const mutations: Mutation[] = [
     tests: ["test/snapshots.test.ts"],
     snapshots: true,
   },
+  {
+    name: "unwrap-of-throwing-call-caught",
+    breaks: "`json::parse(text).unwrap()` is `$unwrapOk($try(() => JSON.parse(text)))`, not the call, whose throw goes on as JS threw it",
+    file: "src/lower/std_types/option.rs",
+    find: "                    && let Some(call) = result.uncaught()\n",
+    replace: "                    && let Some(call) = result.uncaught().filter(|_| false)\n",
+    tests: ["test/js-builtins.test.ts", "-t", "unwrap of a throwing JS call"],
+  },
+  {
+    name: "expect-of-throwing-call-unsaid",
+    breaks: "`.expect(\"valid JSON\")` of a throwing call is the call, its message dropped",
+    file: "src/lower/std_types/option.rs",
+    find: "                if let [result] = list.as_slice()\n",
+    replace: "                if let [result, ..] = list.as_slice()\n",
+    tests: ["test/js-builtins.test.ts", "-t", "unwrap of a throwing JS call"],
+  },
 ];

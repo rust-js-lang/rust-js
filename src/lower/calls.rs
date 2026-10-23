@@ -57,11 +57,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// returning a `Promise<Result<..>>` settles either way, `$settle(p)`.
     pub(super) fn catching(&mut self, def_id: DefId, args: ty::GenericArgsRef<'tcx>, value: Expr) -> Expr {
         match self.recognition().catching(def_id, args) {
-            Catching::Result => {
-                let span = value.span;
-                let thunk = Expr::arrow(Vec::new(), vec![StmtKind::Return(Some(value)).at(span)]);
-                Expr::call(Expr::helper("$try"), vec![thunk])
-            }
+            Catching::Result => Expr::tried(value),
             Catching::PromiseResult => Expr::call(Expr::helper("$settle"), vec![value]),
             Catching::Direct => value,
         }

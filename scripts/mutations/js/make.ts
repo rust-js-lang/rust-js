@@ -251,4 +251,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^cycled_iterators.rs$"],
     snapshots: true,
   },
+  {
+    name: "uncaught-settle-kept",
+    breaks: "`js::settle(p).await.unwrap()` is `$unwrapOk(await $settle(p))`, not `await p`",
+    file: "src/js/make.rs",
+    find: "            (Some(\"$settle\"), [promise]) => Some(Expr {\n",
+    replace: "            (Some(\"$settled\"), [promise]) => Some(Expr {\n",
+    tests: ["test/js-builtins.test.ts", "-t", "unwrap of a throwing JS call"],
+  },
 ];

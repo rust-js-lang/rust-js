@@ -166,6 +166,10 @@ pub fn config(path: &str) -> String {
     load_config(path).expect("the config loads")
 }
 
+pub fn loaded(path: &str) -> String {
+    load_config(path).unwrap()
+}
+
 pub fn decoded(text: &str) -> String {
     match js::decode_uri_component(text) {
         Ok(decoded) => decoded,
@@ -200,6 +204,10 @@ export function config(path) {
     "the config loads",
     String,
   );
+}
+
+export function loaded(path) {
+  return loadConfig(path);
 }
 
 export function decoded(text) {
@@ -240,6 +248,9 @@ export function hasConfig(path) {
   `false`, is `try { f(); return true; } catch { return false; }`
   ([ADR 0639](../../decisions/0639-concat-text-of-any-value-may-throw.md)).
   Any other use of the `Result` is `$try`'s `{ TAG, _0 }`.
+- **`unwrap()` of the call is the call**, `loadConfig(path)`: what JS
+  threw goes on as itself, not as Rust's panic of it. `expect(msg)` keeps
+  its message ([ADR 0643](../../decisions/0643-unwrap-of-a-throwing-call-is-the-call.md)).
 - **`&JsError` is whatever was thrown**: `message()`, `name()`,
   `cause()` and `stack()` read an `Error`'s; `is_error()` says whether it
   is one, since JS may throw anything. Its `{:?}` is `String(error)`,

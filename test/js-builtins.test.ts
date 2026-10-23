@@ -11,7 +11,7 @@ import { buildReact, compiler, fixture, run, target } from "./support";
 beforeAll(buildReact, 600_000);
 
 // ADR 0035: what a JS function threw is shown as JS shows it, `String(error)`,
-// `SyntaxError: ..`, by `{:?}` and by an `unwrap`'s panic.
+// `SyntaxError: ..`, by `{:?}` and by an `expect`'s panic.
 test("a JS error is shown as JS shows it", async () => {
   const withJs = ["--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
   const dir = fixture("js-error");
@@ -72,8 +72,55 @@ pub fn shown(text: &str) -> String {
   expect([lib.keptOrTold("[1]"), lib.keptOrTold("{")]).toEqual([[1], undefined]);
   expect([lib.told("1"), lib.told("{").startsWith("SyntaxError")]).toEqual(["", true]);
   expect([lib.valid("[1]"), lib.valid("{")]).toEqual([true, false]);
-  expect(() => lib.parsed("{")).toThrow("called `Result::unwrap()` on an `Err` value: SyntaxError");
+  // Its `unwrap()` is the call, which throws what JS threw (ADR 0643).
+  expect(() => lib.parsed("{")).toThrow(SyntaxError);
   expect([lib.shown("{").startsWith("SyntaxError: "), lib.shown("1")]).toEqual([true, "parsed"]);
+});
+
+// ADR 0643: `.unwrap()` of a throwing JS call is the call itself, its throw
+// what JS threw: `JSON.parse(text)`, `"" + value`, `await p`. An
+// `.expect(msg)` keeps its message, `$unwrapOk`'s; and a `Result` held,
+// unwrapped later, is `$try`'s.
+test("unwrap of a throwing JS call is the call", async () => {
+  const withJs = ["--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const dir = fixture("unwrap-throwing");
+  writeFileSync(join(dir, "lib.rs"), `use js::{Promise, Unknown, json};
+pub fn parsed(text: &str) -> Option<&'static Unknown> {
+    json::parse(text).unwrap()
+}
+pub fn coerced(value: Option<&Unknown>) -> String {
+    js::concat_text(value).unwrap()
+}
+pub async fn awaited(p: Promise<f64>) -> f64 {
+    js::settle(p).await.unwrap()
+}
+pub fn expected(text: &str) -> Option<&'static Unknown> {
+    json::parse(text).expect("valid JSON")
+}
+pub fn held(text: &str, first: bool) -> Option<&'static Unknown> {
+    let parsed = json::parse(text);
+    if first {
+        println!("parsing");
+    }
+    parsed.unwrap()
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("function parsed(text) {\n  return JSON.parse(text);\n}");
+  expect(js).toContain('function coerced(value) {\n  return "" + value;\n}');
+  expect(js).toContain("async function awaited(p) {\n  return await p;\n}");
+  expect(js).toContain('$unwrapOk(\n    $try(() => JSON.parse(text)),\n    "valid JSON",');
+  expect(js).toContain("const parsed = $try(() => JSON.parse(text));");
+  const lib = await import(join(dir, "lib.js"));
+  expect(lib.parsed("[1]")).toEqual([1]);
+  expect(() => lib.parsed("{")).toThrow(SyntaxError);
+  expect(() => lib.coerced(Symbol("s"))).toThrow(TypeError);
+  expect(lib.coerced(1)).toBe("1");
+  expect(await lib.awaited(Promise.resolve(2))).toBe(2);
+  expect(lib.awaited(Promise.reject(new RangeError("no")))).rejects.toThrow(RangeError);
+  expect(() => lib.expected("{")).toThrow("valid JSON: SyntaxError");
+  expect(() => lib.held("{", false)).toThrow("called `Result::unwrap()` on an `Err` value: SyntaxError");
 });
 
 // ADR 0283: a regular expression's match, an `Error`'s parts, symbols, the
