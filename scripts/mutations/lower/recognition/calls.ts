@@ -683,4 +683,12 @@ export const mutations: Mutation[] = [
     replace: "                \"std::panic::catch_unwind\" => return Some(Some(Std::Unwind(UnwindOp::Resume))),\n",
     tests: ["test/lowering-unwinds.test.ts", "-t", "getIODescription"],
   },
+  {
+    name: "heap-vec-refused",
+    breaks: "`Vec::from(heap)` and `heap.into()` are refused",
+    file: "src/lower/recognition/calls.rs",
+    find: "        if vec && self.is_std_type(from_ty, StdItem::BinaryHeap) {\n            return Some(Std::Same);\n",
+    replace: "        if false {\n            return Some(Std::Same);\n",
+    tests: ["test/corpus.test.ts", "-t", "^heap_methods.rs$"],
+  },
 ];

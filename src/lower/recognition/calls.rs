@@ -926,6 +926,10 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         {
             return Some(Std::ToVec);
         }
+        // A heap's `Vec` is the array it is, as `into_vec()` gives it.
+        if vec && self.is_std_type(from_ty, StdItem::BinaryHeap) {
+            return Some(Std::Same);
+        }
         // A `Vec<u8>` of text, its bytes, as `into_bytes()` gives them.
         if vec && (from_ty.peel_refs().is_str() || self.is_lang_adt(from_ty, LangItem::String)) {
             return Some(Std::Text(TextOp::Bytes));

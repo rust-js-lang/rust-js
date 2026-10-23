@@ -1,4 +1,4 @@
-// A `BinaryHeap`'s `append`, `retain`, `drain` and `as_slice`, each leaving
+// A `BinaryHeap`'s `append`, `retain`, `drain`, `as_slice` and its `Vec`, each leaving
 // its items in the order std's heap keeps them, which `{:?}` shows.
 
 use std::collections::BinaryHeap;
@@ -35,4 +35,8 @@ fn main() {
     println!("{drained:?} {}", small.is_empty());
     let words: BinaryHeap<&str> = ["pear", "fig", "apple"].into_iter().collect();
     println!("{:?} {:?}", words.as_slice(), words.peek());
+    // Its `Vec`, `From`'s or `Into`'s, is its items in that order.
+    let from = Vec::from(late);
+    let into: Vec<&str> = words.into();
+    println!("{from:?} {into:?}");
 }
