@@ -253,7 +253,8 @@ pub fn called(name: &'static str) {
   expect(js).toContain("const props = { configurable: true, enumerable: true, value: disabledLog, writable: true };");
   expect(js).toContain("Object.defineProperties(console, {\n      info: props,\n      log: props,");
   expect(js).toContain("const props = { configurable: true, enumerable: true, writable: true };");
-  expect(js).toContain("log: { ...props, value: prevLog },");
+  // Each object's keys as written, upstream's: `log` first here (ADR 0674).
+  expect(js).toContain("Object.defineProperties(console, {\n      log: { ...props, value: prevLog },\n      info: { ...props, value: prevInfo },");
   expect(js).toContain("groupCollapsed: { ...props, value: prevGroupCollapsed },");
   // A `fn` of rest arguments is called with them spread.
   expect(js).toContain('  const log = console.log;\n  log("named", 1);\n  console.warn(name);');

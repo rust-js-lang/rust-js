@@ -22,8 +22,7 @@ function main() {
   console.log(`sum ${sum}`);
   const args = three(note(log, "x", 1), note(log, "y", 2), note(log, "z", 3));
   console.log(`args ${args}`);
-  const value = note(log, "right", 2);
-  const pair = { left: note(log, "left", 1), right: value };
+  const pair = { right: note(log, "right", 2), left: note(log, "left", 1) };
   console.log(`pair ${pair.left} ${pair.right}`);
   console.log(`[${log.map((item) => $debugStr(item)).join(", ")}]`);
   const zero = ((log.length | 0) - 8) | 0;

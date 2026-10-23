@@ -29,7 +29,7 @@ export const Project = {
   /** An example's files, with its root open. */
   of(root, texts) {
     const files = texts.map(([path, text]) => ({ path, state: sourceState(text) }));
-    return { root, files, current: root };
+    return { current: root, root, files };
   },
 
   has(project, path) {

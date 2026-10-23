@@ -86,7 +86,7 @@ function main() {
     throw error;
   }
   const partial = { x: [7], y: [8], n: 3 };
-  const fromTemp = { x: partial.x, y: [6], n: partial.n };
+  const fromTemp = { y: [6], x: partial.x, n: partial.n };
   try {
     noisyDrop_drop(partial.y);
   } catch (error) {

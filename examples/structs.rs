@@ -133,9 +133,9 @@ pub fn with_x(x: i32, y: i32) -> Point {
     Point { x, ..base }
 }
 
-/// Fields run in the order written, though the object lists them in
-/// declaration order. Here `y` is written first, so its division by zero
-/// panics before `x`'s remainder does.
+/// Fields run in the order written, and the object lists them so. Here `y`
+/// is written first, so its division by zero panics before `x`'s
+/// remainder does.
 pub fn written_order(a: i32, b: i32) -> Point {
     Point { y: 100 / a, x: 100 % b }
 }

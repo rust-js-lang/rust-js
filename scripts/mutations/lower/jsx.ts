@@ -3,6 +3,22 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "base-prop-read-after-children",
+    breaks: "a prop `{..base}` gives after children that change it, `n={base.n}` of `{bump(&mut base)}`, is read before them, as JSX's attributes are",
+    file: "src/lower/jsx.rs",
+    find: "                    || children.has_effects() && !value.is_constant() && !self.reads_unchanging(value, out)\n",
+    replace: "",
+    tests: ["test/jsx-props.test.ts", "-t", "children that change the base first"],
+  },
+  {
+    name: "jsx-flattened-attrs-by-place",
+    breaks: "a flattened struct's attributes are found by their place in its object, which lists them as written, so a field written before the flattened one is spread",
+    file: "src/lower/jsx.rs",
+    find: "        for prop in props {\n            match prop {\n                Prop::Field(name, value) if let Some(i) = flattened(&name) => {\n",
+    replace: "        for (i, prop) in props.into_iter().enumerate() {\n            match prop {\n                Prop::Field(_, value) if { let _ = &flattened; super::bindings::is_flatten_field(self.tcx, ty, i) } => {\n",
+    tests: ["test/jsx-props.test.ts", "-t", "flattened props with a field of them set"],
+  },
+  {
     name: "undefined-children-written",
     breaks: "\`<Frame {..Default::default()} />\` is \`<Frame>{undefined}</Frame>\`",
     file: "src/lower/jsx.rs",
@@ -27,11 +43,11 @@ export const mutations: Mutation[] = [
     tests: ["test/jsx-events.test.ts", "-t", "optional event handler on as it is"],
   },
   {
-    name: "component-props-in-struct-order",
-    breaks: "a component's props are in its struct's order, not as written: `<Frame title={title} tags={..}>` of `tags=.. title=..`",
+    name: "component-props-unplaced",
+    breaks: "a component's prop MIR's value says no place of is given none, so a `key` written after it goes before it",
     file: "src/lower/jsx.rs",
-    find: "            && adt.adt_def.is_struct()\n            && fields.len() == adt.adt_def.non_enum_variant().fields.len()",
-    replace: "            && false\n            && fields.len() == adt.adt_def.non_enum_variant().fields.len()",
+    find: "                        value.span = self.js_span(self.thir[f.expr].span);\n",
+    replace: "",
     tests: ["test/jsx-evaluation-order.test.ts", "-t", "a shared capture of a let reads alike, past an element.s key"],
   },
   {
