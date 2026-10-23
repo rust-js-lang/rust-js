@@ -336,6 +336,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // not yet. A `dyn Debug`'s would be the string it shows, which the
         // field isn't. One ending in a slice, or a `dyn FnMut`, the JS
         // function, is the same value either way.
+        // A counted `Rc` of a `dyn Debug`: its value would be the string
+        // shown, which its count isn't (ADR 0320).
+        if self.counted_rc(target).is_some() && self.is_dyn_debug(self.pointee(target)) {
+            return Err(self.unsupported(span, &format!("a counted `{target}`")));
+        }
         let pointee = self.pointee(target);
         let tail = self.tcx.struct_tail_for_codegen(pointee, self.typing_env);
         if pointee.is_adt()

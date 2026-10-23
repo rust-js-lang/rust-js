@@ -465,10 +465,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// Is `ty` `dyn Debug`, which rust-js holds as the string it shows
-    /// (ADR 0060)? A derived `Debug` hands its fields to the formatter so.
+    /// (ADR 0060), behind a reference, a `Box` or an uncounted `Rc`, each
+    /// its value (ADR 0023)? A derived `Debug` hands its fields to the
+    /// formatter so.
     pub(super) fn is_dyn_debug(&self, ty: Ty<'tcx>) -> bool {
-        matches!(ty.peel_refs().kind(), ty::Dynamic(traits, ..)
-            if traits.principal_def_id() == Some(self.debug_trait()))
+        let mut ty = ty.peel_refs();
+        while let ty::Adt(_, args) = ty.kind()
+            && (ty.is_box() || self.is_rc(ty) && self.counted_rc(ty).is_none())
+        {
+            ty = args.type_at(0).peel_refs();
+        }
+        matches!(ty.kind(), ty::Dynamic(traits, ..) if traits.principal_def_id() == Some(self.debug_trait()))
     }
 
     /// How pretty what this writer shows is (ADR 0137): as its `alternate`
