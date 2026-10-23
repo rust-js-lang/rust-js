@@ -60,3 +60,22 @@ it; the dictionary stays `{ next: $rangeNext }`, as nothing else asks
 it. ADR 0262's case: `len()` panicked, so Rust's. Held by
 `test/corpus/peekable_range_len.rs` and the mutation
 `size-hint-of-range-unknown`.
+
+## Amendment: a `map` of the crate's iterator passes its hint on
+
+`size_hint()` of a `map` of the crate's iterator was refused: a `map`'s
+hint was known only of an array's `$iter` under it. Std's `Map` passes
+its source's on, so it is now, made in place or held:
+
+- `size_hint_of` peels each `Map` off the type as it peels each `map`
+  off the JS, and asks the crate's `$iterator` under them, which has its
+  impl's own `size_hint`, or gives std's `(0, None)`.
+- A `$Steps`'s `map` has a `hint`, its source's, so one held in a
+  variable is asked it too (`maps_the_crates_own`).
+- The `$iterator` a `map` steps keeps its `size_hint`, which
+  `consumed_into_iters` dropped as unasked.
+
+ADR 0262's case: an error where Rust is fine, so Rust's. Held by
+`test/corpus/adapter_size_hints.rs` and the mutations
+`map-hint-of-own-refused`, `held-map-hint-refused`, `map-hint-lost` and
+`map-source-hint-trimmed`.

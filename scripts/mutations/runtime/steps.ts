@@ -187,4 +187,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^own_nth_through_adapters.rs$"],
   },
+  {
+    name: "map-hint-lost",
+    breaks: "a $Steps map's hint is its source's",
+    file: "src/runtime/steps.js",
+    find: "    mapped.hint = () => $sizeHint(this);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^adapter_size_hints.rs$"],
+  },
 ];

@@ -66,8 +66,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     fn size_hint_of(&mut self, receiver: Expr, iter_ty: Ty<'tcx>, span: Span) -> R<Expr> {
         let mut it = receiver;
         // A `map`'s is its source's, as Rust's `Map` passes it on; its
-        // closure, unrun, is made for nothing.
+        // closure, unrun, is made for nothing. Its source's type, peeled
+        // as each `map` is, where each is a `Map`.
         let mut mapped = false;
+        let mut source_ty = Some(iter_ty.peel_refs());
         while let js::ExprKind::Call(callee, args) = &it.kind
             && let js::ExprKind::Member(source, method) = &callee.kind
             && method == "map"
@@ -75,9 +77,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             it = (**source).clone();
             mapped = true;
+            source_ty = source_ty.and_then(|ty| crate::lower::recognition::mapped_source(self.tcx, ty));
         }
+        // Of the crate's own, its `$iterator`'s, which has its impl's
+        // `size_hint` where it writes one, else std's `(0, None)`.
         let known = match mapped {
-            true => crate::lower::iterators::is_stepped_items(&it),
+            true => {
+                crate::lower::iterators::is_stepped_items(&it)
+                    || source_ty.is_some_and(|ty| self.is_user_iterator(ty) || self.maps_the_crates_own(ty))
+            }
             false => self.hints_its_size(iter_ty),
         };
         if !known {
@@ -664,6 +672,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             || self.is_unknown(iter_ty)
             || self.explicit_adapter(iter_ty)
             || self.struct_hint_known(iter_ty)
+            || self.maps_the_crates_own(iter_ty)
+    }
+
+    /// Whether `iter_ty` is a `map` of the crate's own iterator, or of one
+    /// of those: a `$Steps`'s `map`, whose hint is its source's, as std's
+    /// `Map` passes it on.
+    fn maps_the_crates_own(&self, iter_ty: Ty<'tcx>) -> bool {
+        crate::lower::recognition::mapped_source(self.tcx, iter_ty.peel_refs())
+            .is_some_and(|source| self.is_user_iterator(source) || self.maps_the_crates_own(source))
     }
 }
 

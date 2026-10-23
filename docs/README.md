@@ -239,7 +239,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0167 `Borrow`: a dictionary, the value itself for std's](decisions/0167-borrow.md)
 - [0168 A type's own `Hash` is allowed, and never lowered](decisions/0168-user-hash.md)
 - [0169 A type's own `AsMut` and `BorrowMut`, called on the type](decisions/0169-user-as-mut.md)
-- [0170 `size_hint()` where its answer is known](decisions/0170-size-hint.md)
+- [0170 `size_hint()` where its answer is known](decisions/0170-size-hint.md) *(amended: a `map` of the crate's iterator passes its hint on)*
 - [0171 An `i128` or a `u128` is a BigInt, wrapped to 128 bits](decisions/0171-128-bit-integers.md)
 - [0172 Bytes to text, as Rust validates UTF-8](decisions/0172-utf8-decoding.md)
 - [0173 A path is its text](decisions/0173-paths-as-text.md)

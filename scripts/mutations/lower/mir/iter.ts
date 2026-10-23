@@ -365,4 +365,20 @@ export const mutations: Mutation[] = [
     replace: "                (items, stored)\n",
     tests: ["test/corpus.test.ts", "-t", "^cloned_chains_and_cycles.rs$"],
   },
+  {
+    name: "map-hint-of-own-refused",
+    breaks: "a map of the crate's iterator has its size_hint",
+    file: "src/lower/mir/iter.rs",
+    find: "                    || source_ty.is_some_and(|ty| self.is_user_iterator(ty) || self.maps_the_crates_own(ty))",
+    replace: "                    || false",
+    tests: ["test/corpus.test.ts", "-t", "^adapter_size_hints.rs$"],
+  },
+  {
+    name: "held-map-hint-refused",
+    breaks: "a held map of the crate's iterator has its size_hint",
+    file: "src/lower/mir/iter.rs",
+    find: "            || self.maps_the_crates_own(iter_ty)\n",
+    replace: "\n",
+    tests: ["test/corpus.test.ts", "-t", "^adapter_size_hints.rs$"],
+  },
 ];

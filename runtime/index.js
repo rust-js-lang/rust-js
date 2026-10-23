@@ -1177,6 +1177,8 @@ export class $Steps extends Iterator {
     // Std's `Map::fold`, its source's of each mapped.
     mapped.fold = (init, g) => this.fold(init, (a, x) => g(a, f(x, i++)));
     mapped.tryFold = (init, g, broke) => this.tryFold(init, (a, x) => g(a, f(x, i++)), broke);
+    // Std's `Map::size_hint`, its source's.
+    mapped.hint = () => $sizeHint(this);
     return mapped;
   }
   filter(keep) {

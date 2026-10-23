@@ -541,6 +541,11 @@ pub(in crate::lower) fn consumed_into_iters(body: &mut Vec<Stmt>, fuse: Option<&
         if let js::ExprKind::Member(object, method) = &mut callee.kind
             && STEPPED_TILL_DONE.contains(&method.as_str())
         {
+            // The crate's iterator a `map` steps keeps its `size_hint`,
+            // which the `map`'s is, as std's `Map` passes it on.
+            if method == "map" && crate::lower::iterators::stepped_value(object).is_some() {
+                return;
+            }
             stepped_in_place(object, false, fuse);
         } else if callee
             .helper_name()

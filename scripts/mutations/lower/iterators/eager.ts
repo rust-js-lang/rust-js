@@ -325,4 +325,12 @@ export const mutations: Mutation[] = [
     snapshots: true,
     tests: ["test/corpus.test.ts", "-t", "^user_iterator_ends.rs$"],
   },
+  {
+    name: "map-source-hint-trimmed",
+    breaks: "the crate's iterator a map steps keeps its size_hint",
+    file: "src/lower/iterators/eager.rs",
+    find: "            if method == \"map\" && crate::lower::iterators::stepped_value(object).is_some() {",
+    replace: "            if false {",
+    tests: ["test/corpus.test.ts", "-t", "^adapter_size_hints.rs$"],
+  },
 ];
