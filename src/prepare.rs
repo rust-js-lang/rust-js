@@ -28,7 +28,8 @@ pub fn module(module: &mut js::Module) {
             js::Item::Namespace(_) | js::Item::Function(_) => {}
         }
     }
-    js::each_item_block_mut(&mut module.items, &mut unelsed);
+    let mut chained = HashSet::new();
+    js::each_item_block_mut(&mut module.items, &mut |stmts| unelsed(stmts, &mut chained));
     reclaim::module(module);
     compound(module);
     read_together(module);
@@ -252,17 +253,36 @@ fn assigned(stmts: &[Stmt], name: &str) -> Option<Vec<Stmt>> {
 /// An `if` whose branch never goes on, `js::ends`', by a `return`, a
 /// `throw`, a `break` or a `continue`, has no `else`: what was in it
 /// follows, as JS writes it, `if (c) { return a; } return b;` (ADR 0237). Before its
-/// locals are named, which then see the block they're in.
-fn unelsed(stmts: &mut Vec<Stmt>) {
+/// locals are named, which then see the block they're in. An `else if` of
+/// an arm that goes on stays one, `if (a) { x = 1; } else if (b) { return;
+/// } else { .. }`: what's in its `else` would be the outer `else`'s, the
+/// chain broken, as ESLint's `no-else-return` allows it (ADR 0237,
+/// amended). `chained` holds each such `else`, as the lists are walked
+/// from the outside in: the `else` lists of the `if`s seen, by where they
+/// are, which nothing moves until they're walked.
+fn unelsed(stmts: &mut Vec<Stmt>, chained: &mut HashSet<*const Vec<Stmt>>) {
+    let link = chained.remove(&(stmts as *const Vec<Stmt>));
     let mut i = 0;
     while i < stmts.len() {
         if let StmtKind::If(_, then, els @ Some(_)) = &mut stmts[i].kind
+            && !link
             && then.last().is_some_and(js::ends)
         {
             let els = els.take().expect("matched");
             stmts.splice(i + 1..i + 1, els);
         }
         i += 1;
+    }
+    for stmt in stmts.iter() {
+        if let StmtKind::If(_, _, Some(els)) = &stmt.kind
+            && let [
+                Stmt {
+                    kind: StmtKind::If(..), ..
+                },
+            ] = els.as_slice()
+        {
+            chained.insert(els as *const Vec<Stmt>);
+        }
     }
 }
 

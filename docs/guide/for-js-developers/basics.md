@@ -751,6 +751,41 @@ export function fee(member, amount) {
 An `if` condition must be a `bool`. There's no truthiness: write
 `!s.is_empty()`, `n != 0`, `opt.is_some()`.
 
+An `if` statement is the one you wrote: its test as written and its
+branches in their order. A branch that returns needs no `else` after it,
+as ESLint's `no-else-return` has it, but an `else if` after an arm that
+goes on stays one chain:
+
+```rust
+pub fn describe(kind: u32, ready: bool, dev: bool) -> String {
+    let label;
+    if kind == 1 {
+        label = "element".to_string();
+    } else if kind == 2 {
+        return "client".to_string();
+    } else if dev && ready {
+        label = "<jsx>".to_string();
+    } else {
+        label = "{...}".to_string();
+    }
+    label
+}
+```
+
+```js
+export function describe(kind, ready, dev) {
+  let label;
+  if (kind === 1) {
+    label = "element";
+  } else if (kind === 2) {
+    return "client";
+  } else {
+    label = dev && ready ? "<jsx>" : "{...}";
+  }
+  return label;
+}
+```
+
 ## `switch` and `match`
 
 `match` is `switch` that can't fall through, can't forget a case, and has a

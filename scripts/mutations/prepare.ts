@@ -653,4 +653,20 @@ export const mutations: Mutation[] = [
     replace: "            if payload == THROWN {\n",
     tests: ["test/lowering-unwinds.test.ts", "-t", "a payload is a panic's message"],
   },
+  {
+    name: "else-if-unelsed",
+    breaks: "`if (a) { x } else if (b) { return; } else { y }` is `else { if (b) { return; } y }`, its chain broken",
+    file: "src/prepare.rs",
+    find: "            && !link\n",
+    replace: "",
+    tests: ["test/lowering-written-branches.test.ts", "-t", "an else-if chain keeps its else"],
+  },
+  {
+    name: "else-if-links-unheld",
+    breaks: "an `else if` of an arm that goes on isn't held a link, so its `else` goes past a `return`",
+    file: "src/prepare.rs",
+    find: "            chained.insert(els as *const Vec<Stmt>);\n",
+    replace: "            let _ = els;\n",
+    tests: ["test/lowering-written-branches.test.ts", "-t", "an else-if chain keeps its else"],
+  },
 ];

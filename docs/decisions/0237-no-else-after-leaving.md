@@ -65,3 +65,7 @@ return child;
   `js::ends`' answer, the one MIR's tidy pass asks too; preparation had
   its own, which knew only `return` and `throw` (the second architecture
   review).
+- **An `else if` of an arm that goes on stays one** (ADR 0683): `if (a) {
+  x = 1; } else if (b) { return; } else { .. }` keeps its chain, as
+  ESLint's `no-else-return` allows; an `else` goes only where each arm
+  before it leaves too.

@@ -306,7 +306,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0234 A component of an element's props is an `ElementType`, rendered as a tag](decisions/0234-element-type.md)
 - [0235 A child shown only if a test holds is `test && child`, where the test can't render](decisions/0235-children-shown-if.md)
 - [0236 What JSX makes is `JSX::Element`, TypeScript's `JSX.Element`](decisions/0236-jsx-element.md)
-- [0237 An `if` whose branch leaves has no `else`](decisions/0237-no-else-after-leaving.md)
+- [0237 An `if` whose branch leaves has no `else`](decisions/0237-no-else-after-leaving.md) *(amended by 0683: an `else if` of an arm that goes on stays one)*
 - [0238 A value kept for good is the value; children are kept as JS values](decisions/0238-kept-values-and-children.md)
 - [0239 A local of a component's function type is that component as a tag](decisions/0239-local-components.md)
 - [0240 A `pub use` of another module's function is re-exported from it](decisions/0240-reexports.md)
@@ -599,6 +599,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0623 A copy std makes of a `Copy` value is a copy](decisions/0623-a-copy-std-makes-is-a-copy.md)
 - [0669 An adapter steps its source as std's does](decisions/0669-an-adapter-steps-its-source-as-stds-does.md)
 - [0670 A tree's writes have one owner, and its walks one definition](decisions/0670-a-trees-writes-have-one-owner.md)
+- [0683 An `if` keeps its test and branches as written, and an `else if` stays a chain](decisions/0683-an-if-is-as-written-and-an-else-if-stays-a-chain.md)
 - [0436 Every `dyn` that's a pair keeps its value's drop, `dyn Send` too](decisions/0436-every-dyn-keeps-its-drop.md)
 - [0437 A scope's drops on a panic are one `try { .. } finally { .. }`](decisions/0437-a-scopes-drops-are-one-finally.md)
 - [0438 An optional prop is given `Some(..)`, or left out](decisions/0438-an-optional-prop-is-given-some.md)

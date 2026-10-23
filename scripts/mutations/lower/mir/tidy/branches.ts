@@ -446,4 +446,12 @@ export const mutations: Mutation[] = [
     replace: "        _ => !matches!(e.kind, ExprKind::Cond(..) | ExprKind::Arrow(..)),\n",
     tests: ["test/lowering-branches.test.ts", "-t", "a function.s too, is a conditional"],
   },
+  {
+    name: "mir-tidy-and-chain-turned",
+    breaks: "`if a && b { s } else { t }` from MIR is `if (!a || !b) { t } else { s }`, its branches turned",
+    file: "src/lower/mir/tidy/branches.rs",
+    find: "                    (false, true) => StmtKind::If(test, otherwise, Some(then)),\n",
+    replace: "                    (false, true) => StmtKind::If(test.negated_test(), then, Some(otherwise)),\n",
+    tests: ["test/lowering-written-branches.test.ts", "-t", "an if of an && keeps its test"],
+  },
 ];

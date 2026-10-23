@@ -314,17 +314,21 @@ pub(super) fn branch_values(
                 StmtKind::Assign(Expr::var(x), value)
             }
             // `l: { if (!a) { if (!b) { s; break l; } } t }`, `||`'s: `if (a ||
-            // b) { t } else { s }`, where nothing else breaks to `l`; of tests
-            // not all negated, `if (a && b) { s } else { t }` once later passes
-            // write its branches as the program did.
+            // b) { t } else { s }`, where nothing else breaks to `l`; and `l:
+            // { if (a) { if (b) { s; break l; } } t }`, `&&`'s, `if (a && b) {
+            // s } else { t }`: the branch the program wrote first, first, its
+            // test as written (ADR 0683).
             StmtKind::Labeled(label, body) if let Some((tests, otherwise, then)) = or_chain(&body, &label) => {
                 let test = (tests.into_iter())
                     .rev()
                     .reduce(|b, a| Expr::bin(Op::And, a, b))
                     .expect("one");
-                match then.is_empty() {
-                    true => StmtKind::If(test, otherwise, None),
-                    false => StmtKind::If(test.negated_test(), then, Some(otherwise)),
+                let chain_first =
+                    matches!((first_written(&otherwise), first_written(&then)), (Some(s), Some(t)) if s < t);
+                match (then.is_empty(), chain_first) {
+                    (true, _) => StmtKind::If(test, otherwise, None),
+                    (false, true) => StmtKind::If(test, otherwise, Some(then)),
+                    (false, false) => StmtKind::If(test.negated_test(), then, Some(otherwise)),
                 }
             }
             StmtKind::Labeled(label, body) => match chain(&body, &label) {
