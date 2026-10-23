@@ -2,7 +2,9 @@
 
 Status: Accepted. Amends [0574](0574-what-reacts-scheduler-heap-asks.md),
 whose `value ?? null` was written at the `return`, and extends
-[0576](0576-what-a-bodys-integers-can-be.md) to `index_mut`.
+[0576](0576-what-a-bodys-integers-can-be.md) to `index_mut`. Amended
+by [0638](0638-a-nullable-functions-call-is-null-already.md): a nullable
+function's call is the result as it is, `null` for `None` already.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): A for each. What a
 caller gets doesn't change, and an index left unchecked is one Rust's

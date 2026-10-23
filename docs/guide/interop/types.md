@@ -443,6 +443,14 @@ pub fn last(items: &[u32]) -> Option<u32> {
     items.last().copied()
 }
 
+#[cfg_attr(rust_js, rust_js::nullable)]
+pub fn last_of(a: &[u32], b: &[u32]) -> Option<u32> {
+    if b.is_empty() {
+        return last(a);
+    }
+    last(b)
+}
+
 pub fn found(flag: bool) -> Option<Option<u32>> {
     if flag { Some(None) } else { None }
 }
@@ -474,6 +482,13 @@ export function last(items) {
   return items.at(-1) ?? null;
 }
 
+export function lastOf(a, b) {
+  if (b.length === 0) {
+    return last(a);
+  }
+  return last(b);
+}
+
 export function found(flag) {
   if (flag) {
     return $some(undefined);
@@ -496,6 +511,9 @@ export function ratio(a, b) {
   `#[rust_js::nullable(range)]`
   ([ADR 0275](../../decisions/0275-nullable-writes-null.md),
   [ADR 0578](../../decisions/0578-a-nullable-result-where-its-written.md)).
+  A result is `?? null` of an `Option` that may be `undefined`, and a
+  nullable function's call as it is, `null` for `None` already, `return
+  last(b);` ([ADR 0638](../../decisions/0638-a-nullable-functions-call-is-null-already.md)).
   It's of an `Option` only; on anything else it's an error
   ([ADR 0586](../../decisions/0586-a-nullable-field-is-an-option.md)):
 

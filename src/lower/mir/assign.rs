@@ -167,26 +167,30 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         state.binding_var = false;
         let value = match rvalue {
             Rvalue::Aggregate(..) => value?,
-            _ => self.nullable_written(state, *place, value?, span)?,
+            _ => self.nullable_written(state, *place, value?, None, span)?,
         };
         self.mir_store(state, *place, value, span, out)
     }
 
     /// What's written to a `#[rust_js::nullable]` function's result, where
     /// it's written (ADR 0578): a `None` it makes is `null` already, and a
-    /// `Some(x)` is `x` (`null_nones`); another `Option`, a call's or a
-    /// variable's, is `null` for `undefined`, `heap[0] ?? null`. Each
-    /// `return` gives what was written, so it's written where it's made.
+    /// `Some(x)` is `x` (`null_nones`); a call of a nullable function,
+    /// `made_by`, this one or another, a binding too, is `null` for `None`
+    /// as it is (ADR 0638); another `Option`, a call's or a variable's, is
+    /// `null` for `undefined`, `heap[0] ?? null`. Each `return` gives what
+    /// was written, so it's written where it's made.
     pub(super) fn nullable_written(
         &mut self,
         state: &mut State<'_, 'tcx>,
         place: Place<'tcx>,
         value: Value<'tcx>,
+        made_by: Option<rustc_span::def_id::DefId>,
         span: Span,
     ) -> R<Value<'tcx>> {
         if place != Place::from(mir::RETURN_PLACE)
             || state.writer.is_some()
             || !bindings::nullable_result(self.tcx, state.body.source.def_id())
+            || made_by.is_some_and(|made_by| bindings::nullable_result(self.tcx, made_by))
         {
             return Ok(value);
         }

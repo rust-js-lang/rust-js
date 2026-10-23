@@ -179,4 +179,12 @@ export const mutations: Mutation[] = [
     replace: "                    .get(&crate::lower::body_queries::PatternValue::Bits(ty, value + 1000))\n",
     tests: ["test/lowering-matches.test.ts", "-t", "a match of constants cases each"],
   },
+  {
+    name: "nullable-call-unknown",
+    breaks: "a nullable result of a call isn't told the function called, so a nullable function's call is `?? null` too",
+    file: "src/lower/mir/structure.rs",
+    find: ".map(|(def_id, _)| def_id);\n",
+    replace: ".and(None);\n",
+    tests: ["test/lowering-options.test.ts", "-t", "nullable function's call is the call"],
+  },
 ];

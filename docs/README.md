@@ -510,7 +510,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0575 An `if` keeps the `else` it's written with, and a tail `if` of two values is a conditional](decisions/0575-an-if-keeps-its-else-and-a-tail-if-is-a-conditional.md)
 - [0576 What a body's integers can be: an index in bounds, an operator that can't wrap, a swap JS's own](decisions/0576-what-a-bodys-integers-can-be.md)
 - [0577 A function only calls reach is what its calls give it; a `push` and a `pop` change a length by one](decisions/0577-a-function-only-calls-reach.md)
-- [0578 A nullable result is `null` where it's written; an item's place known in bounds is unchecked](decisions/0578-a-nullable-result-where-its-written.md)
+- [0578 A nullable result is `null` where it's written; an item's place known in bounds is unchecked](decisions/0578-a-nullable-result-where-its-written.md) *(amended by 0638: a nullable function's call is `null` already)*
 - [0579 A thread-local is named as its module's variable](decisions/0579-a-thread-local-is-named-as-a-variable.md)
 - [0580 A call asks of a cell only what it may borrow](decisions/0580-a-call-asks-of-a-cell-only-what-it-may-borrow.md)
 - [0581 A closure called as a statement where it's made is its body](decisions/0581-a-closure-called-as-a-statement-is-its-body.md)
@@ -569,6 +569,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0635 A `filter` by truth, then a fallback, is `||`](decisions/0635-a-filter-by-truth-then-a-fallback-is-or.md)
 - [0636 A guarded arm of a `match` of constants is a case](decisions/0636-a-guarded-arm-is-a-case.md)
 - [0637 A `match` of a throwing call's `Result` is `try` and `catch`](decisions/0637-a-match-of-a-throwing-call-is-try-catch.md)
+- [0638 A nullable function's call is `null` already](decisions/0638-a-nullable-functions-call-is-null-already.md)
 - [0623 A copy std makes of a `Copy` value is a copy](decisions/0623-a-copy-std-makes-is-a-copy.md)
 - [0436 Every `dyn` that's a pair keeps its value's drop, `dyn Send` too](decisions/0436-every-dyn-keeps-its-drop.md)
 - [0437 A scope's drops on a panic are one `try { .. } finally { .. }`](decisions/0437-a-scopes-drops-are-one-finally.md)

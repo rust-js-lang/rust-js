@@ -406,7 +406,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 match target {
                     Some(target) => {
-                        let value = self.nullable_written(state, *destination, value, span)?;
+                        let made_by = fn_def(func.ty(&state.body.local_decls, self.tcx)).map(|(def_id, _)| def_id);
+                        let value = self.nullable_written(state, *destination, value, made_by, span)?;
                         self.mir_store(state, *destination, value, span, &mut called)?;
                         // Each box given, copied back once the call returns.
                         if !state.copy_backs.is_empty() {

@@ -427,6 +427,12 @@ pub fn found(items: &[u32], flag: bool) -> Option<&u32> {
     items.last()
 }
 
+#[rust_js::nullable]
+pub fn kept(items: &[u32]) -> Option<&u32> {
+    let first = items.first();
+    first
+}
+
 pub fn replaced(items: &mut Vec<u32>, i: usize, x: u32) -> u32 {
     if i < items.len() { std::mem::replace(&mut items[i], x) } else { x }
 }
@@ -444,10 +450,66 @@ pub fn replaced_any(items: &mut Vec<u32>, i: usize, x: u32) -> u32 {
   expect(js).toContain("export function replacedAny(items, i, x) {\n  $index(items, i);\n");
   const lib = await import(join(dir, "lib.js"));
   const heap = [1, 2, 3];
-  expect([lib.pop(heap), heap, lib.pop([4]), lib.pop([]), lib.first([]), lib.first([5])]).toEqual([1, [3, 2], 4, null, null, 5]);
+  expect([lib.pop(heap), heap, lib.pop([4]), lib.pop([]), lib.first([]), lib.first([5]), lib.kept([])]).toEqual([1, [3, 2], 4, null, null, 5, null]);
   const items = [1, 2];
   expect([lib.replaced(items, 1, 7), lib.replaced(items, 5, 8), items]).toEqual([2, 8, [1, 7]]);
   expect(() => lib.replacedAny([1], 2, 0)).toThrow("index out of bounds");
+});
+
+// ADR 0638: a call of a `#[rust_js::nullable]` function, itself or
+// another, a binding too, is `null` where it's `None` already, so a nullable
+// result of it is the call, `return getComponentNameFromType(resolved);`,
+// with no `?? null`; a call of any other function's `Option` keeps it.
+test("a nullable result of a nullable function's call is the call", async () => {
+  const dir = fixture("nullable-call");
+  writeFileSync(join(dir, "lib.rs"), `#[cfg_attr(rust_js, rust_js::nullable)]
+pub fn named(n: u32) -> Option<String> {
+    if n == 0 {
+        return None;
+    }
+    if n > 5 {
+        return named(n - 1);
+    }
+    Some(format!("n{n}"))
+}
+
+#[cfg_attr(rust_js, rust_js::nullable)]
+pub fn other(n: u32) -> Option<String> {
+    named(n * 2)
+}
+
+#[cfg_attr(rust_js, rust_js::nullable)]
+#[cfg_attr(rust_js, rust_js::link_name = "globalThis.lookup")]
+#[allow(unused_variables)]
+fn lookup(key: &str) -> Option<String> {
+    unreachable!()
+}
+
+#[cfg_attr(rust_js, rust_js::nullable)]
+pub fn looked(key: &str) -> Option<String> {
+    lookup(key)
+}
+
+fn plain(n: u32) -> Option<u32> {
+    if n > 1 { Some(n) } else { None }
+}
+
+#[cfg_attr(rust_js, rust_js::nullable)]
+pub fn unnamed(n: u32) -> Option<u32> {
+    plain(n)
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("    return named(n - 1);\n");
+  expect(js).toContain("export function other(n) {\n  return named((n * 2) >>> 0);\n}");
+  expect(js).toContain("export function looked(key) {\n  return globalThis.lookup(key);\n}");
+  // Of a function whose `None` is `undefined`, `null` for it.
+  expect(js).toContain("export function unnamed(n) {\n  return plain(n) ?? null;\n}");
+  const lib = await import(join(dir, "lib.js"));
+  (globalThis as any).lookup = (key: string) => (key === "a" ? "A" : null);
+  expect([lib.named(0), lib.named(3), lib.named(7), lib.other(0), lib.other(2), lib.other(4)]).toEqual([null, "n3", "n5", null, "n4", "n5"]);
+  expect([lib.looked("a"), lib.looked("b"), lib.unnamed(0), lib.unnamed(2)]).toEqual(["A", null, null, 2]);
 });
 
 // ADR 0620: a nullable result of an `Option` a test it's under says is
