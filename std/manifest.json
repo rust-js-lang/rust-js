@@ -8,7 +8,7 @@
   "library": {
     "version": 4,
     "name": "rust_js_std",
-    "crate_hash": "d33287a31bd617d96e03aefedf33034a",
+    "crate_hash": "d92be82517b6ce72316b12dcb79a486f",
     "items": [
       {
         "key": "608f92abc48d28dae88ef68b00d41a68",
@@ -23,7 +23,8 @@
         "no_drops": [],
         "type_facts": [],
         "takes_location": false,
-        "stepped": []
+        "stepped": [],
+        "rest": false
       },
       {
         "key": "608f92abc48d28da2fa080d07a4764b",
@@ -38,7 +39,8 @@
         "no_drops": [],
         "type_facts": [],
         "takes_location": false,
-        "stepped": []
+        "stepped": [],
+        "rest": false
       },
       {
         "key": "608f92abc48d28dad7c6b45e359c3dfc",
@@ -53,7 +55,8 @@
         "no_drops": [],
         "type_facts": [],
         "takes_location": false,
-        "stepped": []
+        "stepped": [],
+        "rest": false
       },
       {
         "key": "608f92abc48d28dab18f1298f700408e",
@@ -68,7 +71,8 @@
         "no_drops": [],
         "type_facts": [],
         "takes_location": false,
-        "stepped": []
+        "stepped": [],
+        "rest": false
       },
       {
         "key": "608f92abc48d28dab3aa1f47239e2c7e",
@@ -96,7 +100,8 @@
             0,
             "608f92abc48d28da5bb321f20939e045"
           ]
-        ]
+        ],
+        "rest": false
       },
       {
         "key": "608f92abc48d28da4f480206661c12b6",
@@ -125,7 +130,8 @@
             0,
             "608f92abc48d28daf245e2f3fcaec68a"
           ]
-        ]
+        ],
+        "rest": false
       },
       {
         "key": "608f92abc48d28da76ebb43050b899ce",
@@ -148,7 +154,8 @@
             0,
             "608f92abc48d28da50b3843aa530f08e"
           ]
-        ]
+        ],
+        "rest": false
       },
       {
         "key": "608f92abc48d28da1e0eddc5451450c4",
@@ -176,7 +183,8 @@
             0,
             "608f92abc48d28daf245e2f3fcaec68a"
           ]
-        ]
+        ],
+        "rest": false
       },
       {
         "key": "608f92abc48d28da3e925d12815bdb08",
@@ -199,7 +207,8 @@
             0,
             "608f92abc48d28daf245e2f3fcaec68a"
           ]
-        ]
+        ],
+        "rest": false
       },
       {
         "key": "608f92abc48d28da39a37bb37378e0ee",
@@ -222,7 +231,8 @@
             0,
             "608f92abc48d28daf245e2f3fcaec68a"
           ]
-        ]
+        ],
+        "rest": false
       },
       {
         "key": "608f92abc48d28da57eb1719f7feb9c2",
@@ -245,7 +255,8 @@
             0,
             "608f92abc48d28daf245e2f3fcaec68a"
           ]
-        ]
+        ],
+        "rest": false
       },
       {
         "key": "608f92abc48d28da5ccd9950fd144a16",
@@ -268,7 +279,8 @@
             0,
             "608f92abc48d28da5bb321f20939e045"
           ]
-        ]
+        ],
+        "rest": false
       },
       {
         "key": "608f92abc48d28daa341f1f271c7982b",
@@ -291,7 +303,8 @@
             0,
             "608f92abc48d28da5bb321f20939e045"
           ]
-        ]
+        ],
+        "rest": false
       },
       {
         "key": "608f92abc48d28da7243376338849ce",
@@ -311,7 +324,8 @@
             0,
             "608f92abc48d28daf245e2f3fcaec68a"
           ]
-        ]
+        ],
+        "rest": false
       },
       {
         "key": "608f92abc48d28da38cab17ab1fac150",
@@ -331,7 +345,8 @@
             0,
             "608f92abc48d28daf245e2f3fcaec68a"
           ]
-        ]
+        ],
+        "rest": false
       },
       {
         "key": "608f92abc48d28daa79dd9d70cde8ae6",
@@ -346,7 +361,8 @@
         "no_drops": [],
         "type_facts": [],
         "takes_location": false,
-        "stepped": []
+        "stepped": [],
+        "rest": false
       },
       {
         "key": "608f92abc48d28dac5a3ee4a5aa565e2",
@@ -361,7 +377,8 @@
         "no_drops": [],
         "type_facts": [],
         "takes_location": false,
-        "stepped": []
+        "stepped": [],
+        "rest": false
       },
       {
         "key": "608f92abc48d28da1d6e948359746f0c",
@@ -384,7 +401,8 @@
             0,
             "608f92abc48d28da5bb321f20939e045"
           ]
-        ]
+        ],
+        "rest": false
       },
       {
         "key": "608f92abc48d28daea76782e41ad439b",
@@ -413,7 +431,8 @@
             0,
             "608f92abc48d28daf245e2f3fcaec68a"
           ]
-        ]
+        ],
+        "rest": false
       },
       {
         "key": "608f92abc48d28da70aa29bfeee429e4",
@@ -436,7 +455,8 @@
             0,
             "608f92abc48d28daf245e2f3fcaec68a"
           ]
-        ]
+        ],
+        "rest": false
       },
       {
         "key": "608f92abc48d28daef865f7868e6ce0a",
@@ -464,7 +484,8 @@
             0,
             "608f92abc48d28daf245e2f3fcaec68a"
           ]
-        ]
+        ],
+        "rest": false
       },
       {
         "key": "608f92abc48d28dac64ab3a680f6d81c",
@@ -487,7 +508,8 @@
             0,
             "608f92abc48d28daf245e2f3fcaec68a"
           ]
-        ]
+        ],
+        "rest": false
       },
       {
         "key": "608f92abc48d28da1aaf1bcbaee06fe8",
@@ -506,7 +528,8 @@
         "no_drops": [],
         "type_facts": [],
         "takes_location": false,
-        "stepped": []
+        "stepped": [],
+        "rest": false
       }
     ],
     "impls": [

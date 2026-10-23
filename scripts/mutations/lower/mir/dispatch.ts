@@ -472,8 +472,8 @@ export const mutations: Mutation[] = [
     name: "rest-value-pointer-call-unspread",
     breaks: "a `fn` of rest arguments is called with them as one array, `log([\"named\", 1])`",
     file: "src/lower/mir/dispatch.rs",
-    find: "        if rest {\n            crate::lower::binding_calls::given_as_rest(&mut exprs);\n",
-    replace: "        if false {\n            crate::lower::binding_calls::given_as_rest(&mut exprs);\n",
+    find: "        if rest {\n            crate::lower::calls::spread_rest(&mut exprs);\n",
+    replace: "        if false {\n            crate::lower::calls::spread_rest(&mut exprs);\n",
     tests: ["test/js-object.test.ts", "-t", "console is a value"],
   },
   {

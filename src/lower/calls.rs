@@ -64,6 +64,38 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Catching::Direct => value,
         }
     }
+
+    /// Whether `def_id`, the crate's or a library's, takes JS's rest
+    /// arguments: its last parameter a slice marked `#[rust_js::rest]`
+    /// (ADR 0664), which its calls spread (`spread_rest`).
+    pub(super) fn takes_rest(&self, def_id: DefId) -> bool {
+        super::bindings::takes_rest(self.tcx, def_id) || self.krate.foreign.takes_rest(def_id)
+    }
+
+    /// A call of `def_id`'s arguments, its rest's spread where it takes
+    /// one: `f(code, ...args)` (ADR 0664).
+    pub(super) fn rest_given(&self, def_id: DefId, args: &mut Vec<Expr>) {
+        if self.takes_rest(def_id) {
+            spread_rest(args);
+        }
+    }
+}
+
+/// A call's last argument given as JS's rest arguments (ADRs 0221, 0640,
+/// 0664, 0667): an array written out, a slice's or a tuple's, its items,
+/// `f(a, b)` of `&[a, b]`, `log("a", 1)` of `&("a", 1)`, and none of `&[]`;
+/// any other value, an array held, spread, `f(...items)`. Of a call of a
+/// function taking a rest, a variadic binding, and a `fn` pointer whose
+/// last parameter is a `&dyn js::Rest<T>`.
+pub(super) fn spread_rest(args: &mut Vec<Expr>) {
+    match args.pop() {
+        Some(Expr {
+            kind: js::ExprKind::Array(items),
+            ..
+        }) => args.extend(items),
+        Some(last) => args.push(Expr::spread(last)),
+        None => {}
+    }
 }
 
 /// `f(args)`, with a closure that only returns put in place, its parameters

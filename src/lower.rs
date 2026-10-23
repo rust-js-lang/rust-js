@@ -663,7 +663,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// its JS name, given its dictionaries; a std one's, `.map(str::trim)`,
     /// `(s) => s.trim()`; a binding's. `None` for any other, a library's
     /// among them, which the arrow of its call as MIR's is, its import by
-    /// name where that's all it is (ADR 0100).
+    /// name where that's all it is (ADR 0100), and one of the crate's that
+    /// takes rest arguments, whose arrow spreads them (ADR 0664).
     fn fn_item_value(
         &mut self,
         def_id: DefId,
@@ -728,6 +729,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     patterns,
                     vec![StmtKind::Return(Some(call)).at(js_span)],
                 )));
+            }
+            // One that takes rest arguments, given a slice by what calls it
+            // as a value: the arrow of its call, which spreads it (ADR 0664).
+            if self.takes_rest(def_id) {
+                return Ok(None);
             }
             let callee = self.fn_ref(def_id);
             // One given its caller's location is called where it's defined,

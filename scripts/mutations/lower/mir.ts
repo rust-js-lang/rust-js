@@ -274,4 +274,20 @@ export const mutations: Mutation[] = [
     replace: "            if false && super::bindings::is_rest_value(self.tcx, ty) {\n",
     tests: ["test/js-object.test.ts", "-t", "rest arguments as a value are refused"],
   },
+  {
+    name: "rest-not-gathered",
+    breaks: "a function whose last parameter is `#[rust_js::rest]` takes the array whole, `function total(xs)`, where JS gives it its items",
+    file: "src/lower/mir.rs",
+    find: "        if (super::recognition::is_c_variadic(self.tcx, def_id) || self.takes_rest(def_id))\n",
+    replace: "        if super::recognition::is_c_variadic(self.tcx, def_id)\n",
+    tests: ["test/rest-parameters.test.ts", "-t", "rest slice is JS's rest parameter"],
+  },
+  {
+    name: "rest-before-dictionary",
+    breaks: "a function whose last parameter is `#[rust_js::rest]` is given its dictionaries after the rest, which gathers them",
+    file: "src/lower/mir.rs",
+    find: "        if self.takes_rest(def_id) && !evidence.is_empty() {\n",
+    replace: "        if false {\n",
+    tests: ["test/rest-parameters.test.ts", "-t", "refused: a function given a dictionary"],
+  },
 ];

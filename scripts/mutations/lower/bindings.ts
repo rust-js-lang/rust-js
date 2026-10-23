@@ -434,4 +434,12 @@ export const mutations: Mutation[] = [
     replace: "                .is_some_and(|t| tcx.get_attrs_by_path(t, &path).next().is_some() && false),\n",
     tests: ["test/js-object.test.ts", "-t", "console is a value"],
   },
+  {
+    name: "rest-marked-anywhere",
+    breaks: "`#[rust_js::rest]` is read of no parameter, and a function marked so takes the array whole",
+    file: "src/lower/bindings.rs",
+    find: "        .filter(move |(_, param)| tcx.hir_attrs(param.hir_id).iter().any(|attr| attr.path_matches(&path)))\n",
+    replace: "        .filter(move |(_, param)| tcx.hir_attrs(param.hir_id).iter().all(|attr| attr.path_matches(&path)) && false)\n",
+    tests: ["test/rest-parameters.test.ts", "-t", "rest slice is JS's rest parameter"],
+  },
 ];

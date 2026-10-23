@@ -72,3 +72,13 @@ if (first) {
   `insert` of text written through, and `into_key`. Mutations make every
   entry `Vacant` or untagged, put nothing in, give text for a handle, and
   refuse each.
+
+## Amendment: `or_insert_with_key`
+
+An entry's `or_insert_with_key(f)` was refused (#165). It's
+`or_insert_with`'s, its function given the key where it inserts:
+`$orInsertWithKey(m, k, f)`, which is `$orInsertWith`'s of `() => f(k)`,
+and drops `f`, unrun, as that does (ADR 0469). Held by
+`test/corpus/entry_or_insert_with_key.rs`. `or_insert_with` gives its
+function nothing still: a JS function bound as one may read an argument
+it's given, which Rust's never gives it.

@@ -70,15 +70,28 @@ log("named", 1);
   passes its parameters on, so it's the function itself. A call of a `fn`
   pointer whose last parameter is one gives it as a variadic binding's
   call gives its rest: a tuple written out as its items, `log("named",
-  1)`, any other spread. One place, `given_as_rest`, says how for both.
+  1)`, any other spread. One place, `calls::spread_rest`, says how for
+  each, as it does for a function's rest slice (ADR 0664).
 - **What a call wouldn't spread to is refused**: a Rust function or
   closure taking `&dyn js::Rest<T>`, which a `fn` pointer of its type
   would be given only the first item, and a `dyn Fn` of one, whose call
   gives them as one array. "rust-js does not support a `&dyn
   js::Rest<T>` parameter, rest arguments as a value, of a Rust function
-  or closure yet"; a Rust function takes a slice.
+  or closure yet"; a Rust function takes a last slice marked
+  `#[rust_js::rest]` (ADR 0664).
 - **`groupEnd(): void` is a `fn()`**: a binding's `fn` is of its own
   signature, TypeScript's.
+
+## With ADR 0664
+
+ADR 0664, made beside this one, gives a crate's function a rest parameter,
+its last slice marked `#[rust_js::rest]`, and spreads a slice into it at
+each call. This decision's `given_as_rest`, spreading rest arguments into a
+variadic binding's call and a `fn` pointer's, was the same rule, written
+twice. It's one now, `calls::spread_rest`, which every call that gives a
+rest asks. And `#[rust_js::rest]` is one attribute of one meaning, rest
+arguments: on a function's last slice, JS's rest parameter; on the js
+crate's `Rest` trait, rest arguments as a value (`bindings::rest_attr`).
 
 ## Why
 

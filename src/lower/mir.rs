@@ -493,6 +493,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if super::recognition::is_c_variadic(self.tcx, def_id) && !evidence.is_empty() {
             return Err(self.unsupported(span, "a C-variadic function given a dictionary, a fact or a drop"));
         }
+        // So does one's marked `#[rust_js::rest]` (ADR 0664).
+        if self.takes_rest(def_id) && !evidence.is_empty() {
+            return Err(self.tcx.dcx().span_err(
+                span,
+                "rust-js: a function whose last parameter is `#[rust_js::rest]` given a dictionary, a fact, \
+                 a drop or its caller's location, which JS's rest parameter can't come before",
+            ));
+        }
         params.extend(evidence);
         // The drops it used, which its callers give it (ADR 0300).
         self.note_drop_uses(def_id);
@@ -623,9 +631,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// A C-variadic function's last parameter, its `VaList`, gathers what it's
-    /// given past the rest, `...args`: the array of them (ADR 0428).
+    /// given past the rest, `...args`: the array of them (ADR 0428); and so
+    /// does a function's slice marked `#[rust_js::rest]`, the array of what
+    /// JS gives it (ADR 0664).
     fn gather_rest(&self, mir_body: &mir::Body<'tcx>, params: &mut Vec<js::Pattern>) {
-        if super::recognition::is_c_variadic(self.tcx, mir_body.source.def_id())
+        let def_id = mir_body.source.def_id();
+        if (super::recognition::is_c_variadic(self.tcx, def_id) || self.takes_rest(def_id))
             && let Some(js::Pattern::Name(name)) = params.pop()
         {
             params.push(js::Pattern::Rest(name));

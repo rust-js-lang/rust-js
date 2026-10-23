@@ -626,7 +626,7 @@ test("shortcuts to recognition are in shortcuts.rs, and only shorten", () => {
 // which the test holds exactly, so a split says so here.
 const dispatchers: [string, string, number][] = [
   ["src/lower/recognition/calls.rs", "    pub(in crate::lower) fn classify(", 8],
-  ["src/lower/mir/dispatch.rs", "    pub(super) fn mir_call(", 110],
+  ["src/lower/mir/dispatch.rs", "    pub(super) fn mir_call(", 106],
   ["src/lower/mir/dispatch.rs", "    fn mir_call_values_of(", 247],
   ["src/lower/mir/dispatch.rs", "    fn mir_std_call(", 147],
   ["src/lower/mir.rs", "    fn mir_function(", 362],

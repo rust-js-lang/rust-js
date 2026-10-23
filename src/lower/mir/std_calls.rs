@@ -548,7 +548,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 if !matches!(
                     op,
                     MapOp::OrInsert
-                        | MapOp::OrInsertWith
+                        | MapOp::OrInsertWith { .. }
                         | MapOp::OrDefault
                         | MapOp::TreeRange { .. }
                         | MapOp::ExtractIf

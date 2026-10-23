@@ -93,6 +93,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> R<Expr> {
         let name = match op {
             MapOp::OrInsert => "$orInsert",
+            MapOp::OrInsertWith { keyed: true } => "$orInsertWithKey",
             _ => "$orInsertWith",
         };
         // Of `or_insert`, the value's drop; then of each, the key's, which
@@ -108,7 +109,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // And of `or_insert_with`, its function's, its own type parameter,
         // which drops it where it's left unrun, there (ADR 0469).
         let make_drop = match (op, generic_args.types().last()) {
-            (MapOp::OrInsertWith, Some(make)) if self.drops_unrun(make) => self.std_drop_function(make, span)?,
+            (MapOp::OrInsertWith { .. }, Some(make)) if self.drops_unrun(make) => self.std_drop_function(make, span)?,
             _ => None,
         };
         if op == MapOp::OrInsert && (value_drop.is_some() || key_drop.is_some()) {

@@ -114,4 +114,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/crates.test.ts", "-t", "three crates: rc_generic"],
   },
+  {
+    name: "library-rest-unlisted",
+    breaks: "a library's manifest says no function takes rest arguments, so a consumer gives its slice whole",
+    file: "src/lower/library.rs",
+    find: "            rest: super::bindings::takes_rest(tcx, id),\n",
+    replace: "            rest: false,\n",
+    tests: ["test/rest-parameters.test.ts", "-t", "library's rest function"],
+  },
 ];
