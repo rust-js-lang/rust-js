@@ -27,9 +27,6 @@ function main() {
   try {
     console.log("caught");
   } catch (error) {
-    if (result.TAG === "Err") {
-      result._0.impl.$drop?.(result._0.value);
-    }
     console.log(`drop ${outer}`);
     throw error;
   }
@@ -42,12 +39,6 @@ function main() {
       throw error;
     }
   }
-  try {
-    if (result.TAG === "Err") {
-      result._0.impl.$drop?.(result._0.value);
-    }
-  } finally {
-    console.log(`drop ${outer}`);
-  }
+  console.log(`drop ${outer}`);
 }
 //# sourceMappingURL=case.js.map

@@ -1,7 +1,9 @@
 # 0436. Every `dyn` that's a pair keeps its value's drop, `dyn Send` too
 
 Status: Accepted. Extends [0049](0049-traits-and-generics.md),
-[0098](0098-destructors.md) and [0141](0141-std-trait-objects.md).
+[0098](0098-destructors.md) and [0141](0141-std-trait-objects.md). Amended
+by [0691](0691-a-dyn-any-drops-where-the-crate-makes-one-that-does.md): a
+`dyn Any` drops where the crate makes one of a value that drops.
 
 Case: C ([0262](0262-when-rust-and-js-disagree.md)): when a value's
 destructor runs is what a program prints; and least surprise (AGENTS.md).

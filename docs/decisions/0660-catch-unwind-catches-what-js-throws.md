@@ -9,6 +9,10 @@ whose `dyn Any` holds what unwound; and
 `catch_unwind`'s too, and a throwing call's `unwrap_or(d)` returned.
 Replaces the draft "`catch_unwind` catches a Rust panic", which caught
 panics alone, by the user's decision of 2026-10-23.
+Amended by [0691](0691-a-dyn-any-drops-where-the-crate-makes-one-that-does.md):
+a payload drops nothing where the crate makes no `dyn Any` of what drops,
+so a crate with destructors catches as JS's `try` too, and a `match`
+whose `Err` arm sets its binding again is `try` and `catch (thrown)`.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N where a panic is
 caught, as Rust catches it: the same closure runs once, the same drops

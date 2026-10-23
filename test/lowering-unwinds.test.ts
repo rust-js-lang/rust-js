@@ -118,6 +118,90 @@ console.log(JSON.stringify([throwing, trapped, { url: "u" }].map(getUrl)));
   );
 });
 
+// A crate with destructors whose `dyn Any`s hold none of them catches as
+// one without (ADR 0691): what unwound, a panic's message or what JS threw,
+// drops nothing, so `unwrap_or_default()` is still `try { return ..; }
+// catch { return ""; }`, not `$catchUnwind` and a `kept` that drops it. And
+// a `match` whose `Ok` arm is the closure's value and whose `Err` arm reads
+// the payload, ReactComponentInfoStack's, is `try { ..; return info; }
+// catch (thrown) { .. }`, its `let` the shadow its arm sets again.
+test("a crate's destructors leave catch_unwind JS's try", async () => {
+  const { js, dir } = compiled("unwind-destructors", `use js::{JsError, Kind, Unknown};
+use std::panic::catch_unwind;
+
+pub struct Restore(pub u32);
+
+impl Drop for Restore {
+    fn drop(&mut self) {
+        self.0 = 0;
+    }
+}
+
+pub fn describe(value: &Unknown) -> String {
+    catch_unwind(|| match js::classify(js::get(value, "url")) {
+        Kind::String(url) => url.to_string(),
+        _ => String::new(),
+    })
+    .unwrap_or_default()
+}
+
+pub struct Info {
+    pub name: String,
+    pub owner: Option<&'static Info>,
+    pub debug_stack: Option<&'static JsError>,
+}
+
+pub fn owner_stack(info: &Info) -> String {
+    match catch_unwind(|| {
+        let mut stack = String::new();
+        if info.owner.is_none() {
+            return info.name.clone();
+        }
+        let mut owner = info.owner;
+        while let Some(current) = owner {
+            stack += "\\n";
+            if let Some(debug_stack) = current.debug_stack {
+                stack += &debug_stack.message();
+            }
+            owner = current.owner;
+        }
+        stack
+    }) {
+        Ok(stack) => stack,
+        Err(x) => match x.downcast_ref::<&'static JsError>() {
+            Some(x) => format!("\\nError generating stack: {}", x.message()),
+            None => String::from("\\nError generating stack"),
+        },
+    }
+}
+`);
+  expect(js).not.toContain("$catchUnwind");
+  expect(js).not.toContain("kept");
+  expect(js).toContain(`export function describe(value) {
+  try {`);
+  expect(js).toContain(`  } catch {
+    return "";
+  }
+}`);
+  expect(js).toContain(`export function ownerStack(info) {
+  try {
+    let stack = "";`);
+  expect(js).toContain(`    return stack;
+  } catch (thrown) {
+    let x = $unwound(thrown);`);
+  const lib = await import(join(dir, "lib.js"));
+  const throwing = { get url() { throw new TypeError("no url"); } };
+  expect([lib.describe({ url: "u" }), lib.describe(throwing), lib.describe({})]).toEqual(["u", "", ""]);
+  const root = { name: "Root", owner: undefined, debugStack: { message: "at Root" } };
+  const child = { name: "Child", owner: root, debugStack: { message: "at Child" } };
+  const broken = { name: "Broken", owner: { debugStack: { get message() { throw new RangeError("lost"); } } } };
+  expect([lib.ownerStack(root), lib.ownerStack(child), lib.ownerStack(broken)]).toEqual([
+    "Root",
+    "\nat Root",
+    "\nError generating stack: lost",
+  ]);
+});
+
 // A panic's payload is its message, as Rust's is; JS doesn't keep whether
 // it was a literal's `&str` or a formatted `String`, so it downcasts as
 // either. What JS threw is a `&'static JsError`, itself.

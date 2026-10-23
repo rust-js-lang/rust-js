@@ -614,7 +614,10 @@ export function text(value) {
   panic's message, its panic; any other payload, an `Error` that a
   `catch_unwind` gives back as it was.
 - **What it unwinds through is dropped** before `catch_unwind` returns,
-  as [above](#unwinding-runs-drop). rustc checks `UnwindSafe`;
+  as [above](#unwinding-runs-drop). The payload drops nothing, a panic's
+  message or what JS threw, unless the crate makes a `dyn Any` of a value
+  with a destructor, so a crate with destructors catches as JS's `try`
+  too ([ADR 0691](../../decisions/0691-a-dyn-any-drops-where-the-crate-makes-one-that-does.md)). rustc checks `UnwindSafe`;
   `AssertUnwindSafe(|| ..)` is the closure it holds.
 - **A future's panic is its promise's**: `catch_unwind` of a closure that
   makes one is `Ok` of it, and the panic is thrown where it's awaited.
