@@ -53,25 +53,27 @@ test.skipIf(!existsSync(wasm))("the playground loads, compiles, runs tests and s
     // React rendered the page, and the old code found its parts in it.
     await page.locator("#app > h1", { hasText: "rust-js playground" }).waitFor();
     const status = page.locator("#status");
-    await status.filter({ hasText: "Ready." }).waitFor({ timeout: 60_000 });
+    // Each wait for what the status says, and where it doesn't, what the
+    // page says instead: the compiler's error is in its output.
+    const shows = (text: string) =>
+      status
+        .filter({ hasText: text })
+        .waitFor({ timeout: 60_000 })
+        .catch(async (error) => {
+          const output = await page.locator(".cm-content[aria-label='Generated JavaScript']").innerText();
+          throw new Error(`${error}\nstatus: ${await status.innerText()}\noutput:\n${output.slice(0, 4000)}`);
+        });
+    await shows("Ready.");
     expect(await page.locator(".cm-editor").count()).toBe(2);
     // Cancel immediately after worker creation, then compile successfully again.
     const started = page.waitForEvent("worker");
     await page.locator("#compile").click();
     await started;
     await page.locator("#cancel-compile").evaluate((button: HTMLButtonElement) => button.click());
-    await status.filter({ hasText: "Failed" }).waitFor({ timeout: 60_000 });
+    await shows("Failed");
     await page.locator(".cm-content[aria-label='Generated JavaScript']", { hasText: "Compilation cancelled" }).waitFor();
     await page.locator("#test").click();
-    // Where they don't pass, what the page says instead: the compiler's
-    // error is in its output.
-    await status
-      .filter({ hasText: "Tests: 5 passed, 0 failed." })
-      .waitFor({ timeout: 60_000 })
-      .catch(async (error) => {
-        const output = await page.locator(".cm-content[aria-label='Generated JavaScript']").innerText();
-        throw new Error(`${error}\nstatus: ${await status.innerText()}\noutput:\n${output.slice(0, 4000)}`);
-      });
+    await shows("Tests: 5 passed, 0 failed.");
     expect(workers.some(url => url.includes("compiler-worker"))).toBe(true);
     expect(await page.locator("#result").getAttribute("sandbox")).toBe("allow-scripts");
     const preview = await page.locator("#result").elementHandle();
@@ -82,7 +84,7 @@ test.skipIf(!existsSync(wasm))("the playground loads, compiles, runs tests and s
     await page.locator("#example").selectOption("modules");
     await page.locator("#source-files li", { hasText: "stats.rs" }).waitFor();
     await page.locator("#compile").click();
-    await status.filter({ hasText: "Compiled: 5 JS files." }).waitFor({ timeout: 60_000 });
+    await shows("Compiled: 5 JS files.");
     // Another output file, from the JavaScript side's FileTree.
     await page.locator("#output-files button", { hasText: "stats.js" }).click();
     await page.locator("#output-files button[aria-current=true]", { hasText: "stats.js" }).waitFor();
@@ -104,7 +106,7 @@ mod right { pub fn step(n: u32) -> u32 { if n == 0 { 2 } else { super::left::ste
 #[test] fn independent() { assert_eq!(a::next(), 1); assert_eq!(a::next(), 2); assert_eq!(b::next(), 1); }
 `);
     await page.locator("#test").click();
-    await status.filter({ hasText: "Tests: 3 passed, 0 failed." }).waitFor({ timeout: 60_000 });
+    await shows("Tests: 3 passed, 0 failed.");
     // React metadata and the same JSX parser are available inside WASM.
     await page.locator(".cm-content[aria-label='Rust source']").click();
     await page.keyboard.press("ControlOrMeta+a");
@@ -128,14 +130,14 @@ pub fn App() -> JSX::Element { jsx! { <Tile text="Hello JSX" /> } }
     await page.waitForFunction(() => (window as any).lastResult !== undefined, undefined, { timeout: 60_000 });
     const jsxResult: { ok: boolean; stderr: string } = await page.evaluate(() => ({ ok: (window as any).lastResult.ok, stderr: (window as any).lastResult.stderr }));
     expect(jsxResult.ok, jsxResult.stderr).toBe(true);
-    await status.filter({ hasText: "Compiled: 1 JS file." }).waitFor({ timeout: 60_000 });
+    await shows("Compiled: 1 JS file.");
     await page.locator(".cm-content[aria-label='Generated JavaScript']", { hasText: "Hello JSX" }).waitFor();
     expect(await page.locator("#output-files li").textContent()).toContain(".jsx");
     // A React app runs in the Result frame: its JSX transformed there, and
     // React's modules linked beside the program's.
     await page.locator("#example").selectOption("react_counter");
     await page.locator("#compile").click();
-    await status.filter({ hasText: "Compiled: 1 JS file." }).waitFor({ timeout: 60_000 });
+    await shows("Compiled: 1 JS file.");
     const app = page.frameLocator("#result");
     await app.locator("output", { hasText: "0" }).waitFor({ timeout: 60_000 });
     await app.getByRole("button", { name: "+" }).click();
@@ -147,7 +149,7 @@ pub fn App() -> JSX::Element { jsx! { <Tile text="Hello JSX" /> } }
     await page.locator("#example").selectOption("todomvc");
     await page.locator("#source-files li", { hasText: "model.rs" }).waitFor();
     await page.locator("#compile").click();
-    await status.filter({ hasText: "Compiled: 3 JS files." }).waitFor({ timeout: 60_000 });
+    await shows("Compiled: 3 JS files.");
     const todo = page.frameLocator("#result");
     const input = todo.locator(".new-todo");
     await input.waitFor({ timeout: 60_000 });
@@ -214,7 +216,7 @@ pub fn App() -> JSX::Element { jsx! { <Tile text="Hello JSX" /> } }
     await page.keyboard.press("ControlOrMeta+a");
     await page.keyboard.type('pub fn main() { let x: i32 = "no"; }');
     await page.keyboard.press("ControlOrMeta+Enter");
-    await status.filter({ hasText: "Failed" }).waitFor({ timeout: 60_000 });
+    await shows("Failed");
     await page.locator(".cm-content[aria-label='Generated JavaScript']", { hasText: "mismatched types" }).waitFor();
     expect(await page.locator("#output-files li").textContent()).toBe("(none)");
     expect(errors).toEqual([]);
