@@ -90,7 +90,7 @@ function main() {
   console.log(`[${maybeItems(4).join(", ")}] [${maybeItems(undefined).join(", ")}]`);
   const total =
     ((3 == null ? [] : [3]).reduce((a, b) => (a + b) | 0, 0) +
-      (undefined == null ? [] : [undefined]).reduce((a, b) => (a + b) | 0, 0)) |
+      [].reduce((a, b) => (a + b) | 0, 0)) |
     0;
   console.log(`${total}`);
   const [left, right] = $unzip([

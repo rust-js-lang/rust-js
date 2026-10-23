@@ -481,6 +481,16 @@ impl Expr {
                 _ => {}
             }
         }
+        // And of `undefined` or `null` both, `None == null`, a test of an
+        // `Option` written out: `==` holds of them, `!=` doesn't.
+        let nothing = |e: &Expr| matches!(e.kind, ExprKind::Undefined | ExprKind::GivenUndefined | ExprKind::Null);
+        if nothing(&lhs) && nothing(&rhs) {
+            match op {
+                Op::LooseEq => return Expr::bool(true),
+                Op::LooseNe => return Expr::bool(false),
+                _ => {}
+            }
+        }
         // `0 || x` is `x`: `||` gives what's after a falsy number, an
         // ordering's `Equal` before the next part's. And of `true` or
         // `false` first, `&&` and `||` are what JS gives, never running
@@ -493,6 +503,25 @@ impl Expr {
                 (Op::And, true) | (Op::Or, false) => rhs,
                 _ => lhs,
             };
+        }
+        // And of `true` or `false` after a comparison, which is a `bool`:
+        // `a != null && true` is the comparison; `a != null && false` is
+        // `false`, where the comparison does nothing.
+        let compared = matches!(
+            lhs.kind,
+            ExprKind::Binary(
+                Op::Eq | Op::Ne | Op::LooseEq | Op::LooseNe | Op::Lt | Op::Le | Op::Gt | Op::Ge,
+                ..
+            ) | ExprKind::Unary(UnaryOp::Not, _)
+        );
+        if let (Op::And | Op::Or, ExprKind::Bool(second)) = (op, &rhs.kind)
+            && compared
+        {
+            match (op, *second) {
+                (Op::And, true) | (Op::Or, false) => return lhs,
+                _ if !lhs.has_effects() => return rhs,
+                _ => {}
+            }
         }
         // `a != null && !!a` is `!!a`: neither is truthy.
         if op == Op::And

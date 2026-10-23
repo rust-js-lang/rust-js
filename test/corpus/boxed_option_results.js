@@ -18,7 +18,7 @@ function main() {
   );
 
   const u = $some(undefined);
-  const value$3 = u != null ? (undefined == null ? u : undefined) : undefined;
+  const value$3 = u != null ? u : undefined;
   const value$4 = u != null ? (u == null ? u : undefined) : u;
   console.log(`${value$3 == null ? "None" : "Some(())"} ${value$4 == null ? "None" : "Some(())"}`);
 

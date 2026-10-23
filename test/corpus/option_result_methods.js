@@ -26,23 +26,18 @@ function main() {
     `${value$3 == null ? "None" : `Some(${value$3})`} ${value$4 == null ? "None" : `Some((${value$4[0]}, ${$debugStr(value$4[1], "'")}))`} ${value$5 == null ? "None" : `Some((${value$5[0]}, ${value$5[1]}))`}`,
   );
   const option = [1, "a"];
-  const unzip = option != null ? [option[0], option[1]] : [undefined, undefined];
-  const value$6 = undefined != null ? [undefined[0], undefined[1]] : [undefined, undefined];
+  const value$6 = option != null ? [option[0], option[1]] : [undefined, undefined];
+  const value$7 = [undefined, undefined];
   console.log(
-    `(${unzip[0] == null ? "None" : `Some(${unzip[0]})`}, ${unzip[1] == null ? "None" : `Some(${$debugStr(unzip[1])})`}) (${value$6[0] == null ? "None" : `Some(${value$6[0]})`}, ${value$6[1] == null ? "None" : `Some(${$debugStr(value$6[1])})`})`,
+    `(${value$6[0] == null ? "None" : `Some(${value$6[0]})`}, ${value$6[1] == null ? "None" : `Some(${$debugStr(value$6[1])})`}) (${value$7[0] == null ? "None" : `Some(${value$7[0]})`}, ${value$7[1] == null ? "None" : `Some(${$debugStr(value$7[1])})`})`,
   );
   const ok = { TAG: "Ok", _0: 4 };
   const err = { TAG: "Err", _0: "bad" };
   const transpose = ok == null ? { TAG: "Ok" } : ok.TAG === "Ok" ? { TAG: "Ok", _0: ok._0 } : ok;
-  const value$7 = err == null ? { TAG: "Ok" } : err.TAG === "Ok" ? { TAG: "Ok", _0: err._0 } : err;
-  const value$8 =
-    undefined == null
-      ? { TAG: "Ok" }
-      : undefined.TAG === "Ok"
-        ? { TAG: "Ok", _0: undefined._0 }
-        : undefined;
+  const value$8 = err == null ? { TAG: "Ok" } : err.TAG === "Ok" ? { TAG: "Ok", _0: err._0 } : err;
+  const value$9 = { TAG: "Ok" };
   console.log(
-    `${transpose.TAG === "Ok" ? `Ok(${transpose._0 == null ? "None" : `Some(${transpose._0})`})` : `Err(${$debugStr(transpose._0)})`} ${value$7.TAG === "Ok" ? `Ok(${value$7._0 == null ? "None" : `Some(${value$7._0})`})` : `Err(${$debugStr(value$7._0)})`} ${value$8.TAG === "Ok" ? `Ok(${value$8._0 == null ? "None" : `Some(${value$8._0})`})` : `Err(${$debugStr(value$8._0)})`}`,
+    `${transpose.TAG === "Ok" ? `Ok(${transpose._0 == null ? "None" : `Some(${transpose._0})`})` : `Err(${$debugStr(transpose._0)})`} ${value$8.TAG === "Ok" ? `Ok(${value$8._0 == null ? "None" : `Some(${value$8._0})`})` : `Err(${$debugStr(value$8._0)})`} ${value$9.TAG === "Ok" ? `Ok(${value$9._0 == null ? "None" : `Some(${value$9._0})`})` : `Err(${$debugStr(value$9._0)})`}`,
   );
   const seen = [];
   if (some != null) {
@@ -65,8 +60,8 @@ function main() {
     `[${(some != null ? [some] : []).join(", ")}] [${(none != null ? [none] : []).join(", ")}]`,
   );
   const name = "ann";
-  const value$9 = name != null ? $byteLen(name) : undefined;
-  console.log(`${value$9 == null ? "None" : `Some(${value$9})`}`);
+  const value$10 = name != null ? $byteLen(name) : undefined;
+  console.log(`${value$10 == null ? "None" : `Some(${value$10})`}`);
 
   let count;
   count ??= 5;
@@ -80,7 +75,7 @@ function main() {
   };
   getOrInsert.value = (getOrInsert.value + 1) | 0;
   count ??= 9;
-  const value$10 = {
+  const value$11 = {
     get value() {
       return count;
     },
@@ -88,7 +83,7 @@ function main() {
       count = value;
     },
   };
-  value$10.value = (value$10.value + 1) | 0;
+  value$11.value = (value$11.value + 1) | 0;
   console.log(`${count == null ? "None" : `Some(${count})`}`);
   let total;
   total ??= 10;
@@ -158,24 +153,24 @@ function main() {
   const good = { TAG: "Ok", _0: 1 };
   const bad = { TAG: "Err", _0: "no" };
   const and = good.TAG === "Err" ? good : { TAG: "Ok", _0: "y" };
-  const value$11 = bad.TAG === "Err" ? bad : { TAG: "Ok", _0: "y" };
+  const value$12 = bad.TAG === "Err" ? bad : { TAG: "Ok", _0: "y" };
   console.log(
-    `${and.TAG === "Ok" ? `Ok(${$debugStr(and._0)})` : `Err(${$debugStr(and._0)})`} ${value$11.TAG === "Ok" ? `Ok(${$debugStr(value$11._0)})` : `Err(${$debugStr(value$11._0)})`}`,
+    `${and.TAG === "Ok" ? `Ok(${$debugStr(and._0)})` : `Err(${$debugStr(and._0)})`} ${value$12.TAG === "Ok" ? `Ok(${$debugStr(value$12._0)})` : `Err(${$debugStr(value$12._0)})`}`,
   );
   const or = good.TAG === "Ok" ? good : { TAG: "Ok", _0: 7 };
-  const value$12 = bad.TAG === "Ok" ? bad : { TAG: "Ok", _0: 7 };
+  const value$13 = bad.TAG === "Ok" ? bad : { TAG: "Ok", _0: 7 };
   console.log(
-    `${or.TAG === "Ok" ? `Ok(${or._0})` : `Err(${or._0})`} ${value$12.TAG === "Ok" ? `Ok(${value$12._0})` : `Err(${value$12._0})`}`,
+    `${or.TAG === "Ok" ? `Ok(${or._0})` : `Err(${or._0})`} ${value$13.TAG === "Ok" ? `Ok(${value$13._0})` : `Err(${value$13._0})`}`,
   );
-  const value$13 =
+  const value$14 =
     bad.TAG === "Ok" ? bad : bad._0 === "no" ? { TAG: "Ok", _0: 0 } : { TAG: "Err", _0: 1 };
-  console.log(`${value$13.TAG === "Ok" ? `Ok(${value$13._0})` : `Err(${value$13._0})`}`);
+  console.log(`${value$14.TAG === "Ok" ? `Ok(${value$14._0})` : `Err(${value$14._0})`}`);
   const nested = { TAG: "Ok", _0: { TAG: "Err", _0: "inner" } };
   const result = { TAG: "Ok", _0: { TAG: "Ok", _0: 3 } };
   const flatten = nested.TAG === "Ok" ? nested._0 : nested;
-  const value$14 = result.TAG === "Ok" ? result._0 : result;
+  const value$15 = result.TAG === "Ok" ? result._0 : result;
   console.log(
-    `${flatten.TAG === "Ok" ? `Ok(${flatten._0})` : `Err(${$debugStr(flatten._0)})`} ${value$14.TAG === "Ok" ? `Ok(${value$14._0})` : `Err(${$debugStr(value$14._0)})`}`,
+    `${flatten.TAG === "Ok" ? `Ok(${flatten._0})` : `Err(${$debugStr(flatten._0)})`} ${value$15.TAG === "Ok" ? `Ok(${value$15._0})` : `Err(${$debugStr(value$15._0)})`}`,
   );
   const log = [];
   if (good.TAG === "Ok") {
@@ -211,16 +206,16 @@ function main() {
   );
   const listed = { TAG: "Ok", _0: 5 };
   const result$1 = { TAG: "Ok" };
-  const value$15 =
-    listed.TAG === "Ok" ? (listed._0 == null ? undefined : { TAG: "Ok", _0: listed._0 }) : listed;
   const value$16 =
+    listed.TAG === "Ok" ? (listed._0 == null ? undefined : { TAG: "Ok", _0: listed._0 }) : listed;
+  const value$17 =
     result$1.TAG === "Ok"
       ? result$1._0 == null
         ? undefined
         : { TAG: "Ok", _0: result$1._0 }
       : result$1;
   console.log(
-    `${value$15 == null ? "None" : `Some(${value$15.TAG === "Ok" ? `Ok(${value$15._0})` : `Err(${$debugStr(value$15._0)})`})`} ${value$16 == null ? "None" : `Some(${value$16.TAG === "Ok" ? `Ok(${value$16._0})` : `Err(${$debugStr(value$16._0)})`})`}`,
+    `${value$16 == null ? "None" : `Some(${value$16.TAG === "Ok" ? `Ok(${value$16._0})` : `Err(${$debugStr(value$16._0)})`})`} ${value$17 == null ? "None" : `Some(${value$17.TAG === "Ok" ? `Ok(${value$17._0})` : `Err(${$debugStr(value$17._0)})`})`}`,
   );
   const pointRef = { TAG: "Ok", _0: { x: 1 } };
   const owned = $unwrapOk(pointRef.TAG === "Ok" ? { TAG: "Ok", _0: { ...pointRef._0 } } : pointRef);

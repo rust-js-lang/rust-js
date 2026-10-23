@@ -64,20 +64,6 @@ function main() {
   try {
     tmp = many(10);
   } catch (error) {
-    const dropMany = (many) => {
-      noisyDrop_drop(many.a);
-      noisyDrop_drop(many.b);
-      noisyDrop_drop(many.c);
-      noisyDrop_drop(many.d);
-      noisyDrop_drop(many.e);
-      noisyDrop_drop(many.f);
-      noisyDrop_drop(many.g);
-      noisyDrop_drop(many.h);
-      noisyDrop_drop(many.i);
-    };
-    if (undefined != null) {
-      dropMany(undefined);
-    }
     throw error;
   }
   const _two = [undefined, tmp];

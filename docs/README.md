@@ -100,7 +100,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0058 Format options, where Rust applies them](decisions/0058-format-options.md)
 - [0059 `HashMap` is a JS `Map`, `HashSet` a `Set`, keyed by value](decisions/0059-hashmap.md)
 - [0060 `{:?}` by the type, and a derived `Debug` is a function](decisions/0060-debug.md)
-- [0061 `impl Iterator` is the type it hides; a generic iterator is any JS iterable](decisions/0061-generic-iterators.md)
+- [0061 `impl Iterator` is the type it hides; a generic iterator is any JS iterable](decisions/0061-generic-iterators.md) *(amended by 0699: what an `IntoIterator` bound is given is its items)*
 - [0062 Combinators and adapters: the closure's body in place](decisions/0062-combinators.md)
 - [0063 `char`'s questions are Unicode regular expressions; `parse` is a `Result` of Rust's message](decisions/0063-text.md)
 - [0064 Numbers' methods are `Math`'s, where JS agrees; operators call their impl](decisions/0064-numbers.md)
@@ -623,6 +623,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0696 What lowering a function finds of drops is returned with it](decisions/0696-what-lowering-finds-of-drops-is-returned-with-it.md)
 - [0697 Lowering's hidden contracts, held where they're relied on](decisions/0697-lowerings-hidden-contracts-held.md)
 - [0698 A reference given to generic code is what it refers to](decisions/0698-a-reference-given-to-generic-code.md)
+- [0699 What an `IntoIterator` bound is given is its items, as JS steps them](decisions/0699-what-an-into-iterator-bound-is-given.md)
 - [0436 Every `dyn` that's a pair keeps its value's drop, `dyn Send` too](decisions/0436-every-dyn-keeps-its-drop.md) *(amended by 0691: a `dyn Any` drops where the crate makes one of what drops)*
 - [0437 A scope's drops on a panic are one `try { .. } finally { .. }`](decisions/0437-a-scopes-drops-are-one-finally.md) *(amended by 0693: its `if`s, loops and `return`s in it)*
 - [0438 An optional prop is given `Some(..)`, or left out](decisions/0438-an-optional-prop-is-given-some.md)
@@ -715,7 +716,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0525 A cloned `map` or `filter` is made again](decisions/0525-a-cloned-map-is-made-again.md)
 - [0526 A `filter` steps from its back](decisions/0526-a-filter-steps-from-its-back.md)
 - [0527 An associated iterator steps its impl's parameter](decisions/0527-an-associated-iterator-steps-its-impls-parameter.md)
-- [0528 A `fuse` and an `enumerate` from either end, and what an `IntoIterator` gives](decisions/0528-fuse-and-enumerate-from-either-end.md) *(superseded in part by 0566; amended: an `enumerate` of an array's items, held or given, from its back)*
+- [0528 A `fuse` and an `enumerate` from either end, and what an `IntoIterator` gives](decisions/0528-fuse-and-enumerate-from-either-end.md) *(superseded in part by 0566; amended: an `enumerate` of an array's items, held or given, from its back; amended by 0699: a `&mut` range stepped where it is)*
 - [0529 A shipped crate is qualified, and memchr's searches are JS's](decisions/0529-a-shipped-memchr-searches-bytes.md)
 - [0530 std's iterators of arrays, and a `rev`, clone where they are](decisions/0530-std-iterators-of-arrays-clone-where-they-are.md)
 - [0531 `try_rfold` is `try_fold` from the back](decisions/0531-try-rfold.md)

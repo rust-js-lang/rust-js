@@ -251,14 +251,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^into_iter_of_ref_param.rs$"],
   },
   {
-    name: "into-iter-items-unhandled",
-    breaks: "std's `IntoIterator` of a `&mut Vec` gives its items, not a handle on each, and what's written through one is lost",
-    file: "src/lower/traits/dictionaries.rs",
-    find: "                Mutability::Mut => self.item_handles_of(known, vec![given.clone()], pointee, span, &mut body)?,\n",
-    replace: "                Mutability::Mut => None,\n",
-    tests: ["test/corpus.test.ts", "-t", "^into_iter_of_ref_param.rs$"],
-  },
-  {
     name: "std-error-dictionary-not-found",
     breaks: "`e.source()` of a concrete `io::Error` asks for evidence of its `Error`, which nothing gives",
     file: "src/lower/traits/dictionaries.rs",

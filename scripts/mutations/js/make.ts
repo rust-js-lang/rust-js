@@ -301,4 +301,22 @@ export const mutations: Mutation[] = [
     replace: "                ] => Expr::call(f.clone(), Vec::new()),\n                _ => Expr::call(f.clone(), Vec::new()),\n",
     tests: ["test/lowering-unwinds.test.ts", "-t", "a payload is a panic's message"],
   },
+  {
+    name: "none-test-unfolded",
+    breaks: "`undefined == null` is `true` where it's made",
+    file: "src/js/make.rs",
+    find: "                Op::LooseEq => return Expr::bool(true),\n                Op::LooseNe => return Expr::bool(false),\n",
+    replace: "",
+    snapshots: true,
+    tests: ["test/corpus.test.ts", "-t", "^(unpaired_option_drops|iterables_given_to_generics).rs$"],
+  },
+  {
+    name: "compared-and-bool-unfolded",
+    breaks: "`a != null && false` is `false` where the test does nothing",
+    file: "src/js/make.rs",
+    find: "                (Op::And, true) | (Op::Or, false) => return lhs,\n                _ if !lhs.has_effects() => return rhs,\n",
+    replace: "",
+    snapshots: true,
+    tests: ["test/corpus.test.ts", "-t", "^unpaired_option_drops.rs$"],
+  },
 ];

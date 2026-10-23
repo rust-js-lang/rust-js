@@ -360,7 +360,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .skip_binder()
                 .inputs()
                 .to_vec();
-            self.given_iterators(id, &mut values, &given, span)?;
+            self.given_iterators(id, &mut values, &given, span, out)?;
             values.extend(self.evidence_args(id, generic_args, span)?);
             let called = Expr::call(self.fn_ref(id), values);
             return Ok(Some(self.fmt_result_value(id, generic_args, called)));
@@ -412,7 +412,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .skip_binder()
                 .inputs()
                 .to_vec();
-            self.given_iterators(instance.def_id(), &mut values, &given, span)?;
+            self.given_iterators(instance.def_id(), &mut values, &given, span, out)?;
             // Its arguments in the impl's terms, a copied default's, asked of
             // the impl's drops (ADR 0495).
             values.extend(self.with_impl_drops(|cx| cx.evidence_args(instance.def_id(), instance.args, span))?);
@@ -516,7 +516,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .skip_binder()
                 .inputs()
                 .to_vec();
-            self.given_iterators(id, &mut values, &given, span)?;
+            self.given_iterators(id, &mut values, &given, span, out)?;
             let location = self.caller_location(span);
             values.extend(self.with_impl_drops(|cx| cx.own_evidence(id, generic_args, Some(location), span))?);
             return Ok(Some(Expr::call(

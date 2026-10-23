@@ -362,15 +362,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && !self.has_user_impl(tr.def_id, ty)
         {
             let into_iter = crate::lower::recognition::trait_method(self.tcx, tr.def_id, "into_iter");
-            let known = self
-                .recognition()
-                .classify(into_iter, tr.args)
-                .ok_or_else(|| self.no_evidence(span, tr))?;
-            let into_iter_ty = crate::lower::recognition::trait_method(self.tcx, tr.def_id, "IntoIter");
-            let output = Ty::new_projection(self.tcx, ty::IsRigid::No, into_iter_ty, tr.args);
-            let output = (self.tcx)
-                .try_normalize_erasing_regions(self.typing_env, ty::Unnormalized::new_wip(output))
-                .unwrap_or(output);
             // A `&mut`'s, the cell generic code has, a box of an object's.
             let name = match mutability {
                 Mutability::Mut => "cell",
@@ -381,15 +372,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 false => Expr::var(name),
             };
             let mut body = Vec::new();
-            let handles = match mutability {
-                Mutability::Mut => self.item_handles_of(known, vec![given.clone()], pointee, span, &mut body)?,
-                Mutability::Not => None,
-            };
-            let items = match handles {
-                Some(handles) => handles,
-                None => self.std_by_values(known, into_iter, tr.args, &[ty], vec![given], output, span, &mut body)?,
-            };
-            body.push(StmtKind::Return(Some(self.std_iterator(items, output))).at(js::Span::NONE));
+            let items = (self.ref_into_iter(given, ty, span, &mut body)?).ok_or_else(|| self.no_evidence(span, tr))?;
+            body.push(StmtKind::Return(Some(items)).at(js::Span::NONE));
             let f = Expr::arrow(vec![name.into()], body);
             return Ok(Expr::object(vec![Prop::Field(
                 bindings::fn_name(self.tcx, into_iter),

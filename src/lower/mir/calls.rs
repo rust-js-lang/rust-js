@@ -245,7 +245,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         out: &mut Vec<Stmt>,
     ) -> R<Value<'tcx>> {
         let mut exprs = self.boxed_args(state, (def_id, generic_args), values, span, out)?;
-        self.given_iterators(def_id, &mut exprs, arg_tys, span)?;
+        self.given_iterators(def_id, &mut exprs, arg_tys, span, out)?;
         // Its rest arguments, the slice spread (ADR 0664), which nothing
         // comes after.
         self.rest_given(def_id, &mut exprs);
