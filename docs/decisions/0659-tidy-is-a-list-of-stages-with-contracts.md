@@ -122,3 +122,12 @@ The review's other three, as rust-js takes them, each a change of its own:
 What a tree writes of its variables, which several passes read, is
 `js::Writes`'s alone, and a tree's walks are written once
 ([ADR 0670](0670-a-trees-writes-have-one-owner.md)).
+
+## Extended: a dependency between passes is said where it is
+
+Of the `in place` stage's chain, `inlined`, `branch values`, `tables in
+values`, `declarations`, `inlined in values`: the second `inlined` reads
+in place what `branch values` and `declarations` make a `const` of, which
+its row says and `inlined-in-values-off` holds; `tables in values` changed
+no JS of the corpus, the examples or the lowering and JSX tests, and is
+gone.
