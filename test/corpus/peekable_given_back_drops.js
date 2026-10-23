@@ -65,7 +65,7 @@ function main() {
     throw error;
   }
   try {
-    console.log(`${(d ? d[0] : undefined) ?? 0}`);
+    console.log(`${d?.[0] ?? 0}`);
   } catch (error) {
     for (const item of p.iter) {
       dDrop_drop(item);

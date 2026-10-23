@@ -293,7 +293,8 @@ pub fn alike(code: &str) -> (bool, usize, String) {
 // is `file?.visible`, and of a dictionary's, `files["/styles.css"]?.visible`,
 // as react.dev's SandpackRoot reads it, and one of a variable's key,
 // `files[name]?.active`: a key that's a name. Set where it's none, it's
-// `counts[name] ??= ..`, as react.dev's CustomPreset counts lines. Another stays a test, `file != null ? file["a-b"] : undefined`.
+// `counts[name] ??= ..`, as react.dev's CustomPreset counts lines. Another
+// key is an index of the chain, `file?.["a-b"]` (ADR 0647).
 test("a property read of what may be None is an optional chain", async () => {
   const withJs = ["--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
   const dir = fixture("optional-property");
@@ -326,7 +327,7 @@ pub fn dashed(file: Option<&Unknown>) -> bool {
   expect(js).toContain('return !files["/styles.css"]?.visible;');
   expect(js).toContain("return !!files[name]?.active;");
   expect(js).toContain('counts[name] ??= code.split("\\n").length;');
-  expect(js).toContain('file != null ? file["a-b"] : undefined');
+  expect(js).toContain('return !!file?.["a-b"];');
   const { visible, dashed, styled, active, counted } = await import(join(dir, "lib.js"));
   expect([counted({}, "a", "x\ny"), counted({ a: 7 }, "a", "x"), active({ a: { active: true } }, "a"), active({}, "a"), styled({}), styled({ "/styles.css": { visible: true } }), visible(undefined), visible({}), visible({ visible: 1 }), dashed({ "a-b": 1 }), dashed(undefined)]).toEqual([2, 7, true, false, true, false, true, true, false, true, false]);
 });
@@ -1249,4 +1250,82 @@ pub fn tag_shown(value: &Unknown) -> (String, bool) {
   expect([lib.label(""), lib.label("x"), lib.label(undefined)]).toEqual(["Memo", "x", "Memo"]);
   // `or`'s `b` is worked out after its `Option`, as Rust does both first.
   expect(lib.ordered()).toEqual([1, 2, 2]);
+});
+
+// ADR 0647: React's typeName, as upstream writes it: `js::is_defined` of a
+// static reads nothing before it tests, so a host without `Symbol` gets
+// the constructor's name; a `filter` by a test that ignores the value, then
+// an `and_then`, kept by its truth, is `c && value?.[k]`; and `flatten()` of
+// `bool::then` of an `Option` is `c ? x : undefined`.
+test("React's typeName reads as upstream and asks before it reads", async () => {
+  const dir = fixture("type-name");
+  writeFileSync(join(dir, "lib.rs"), `use js::Unknown;
+
+pub fn type_name(value: Option<&Unknown>) -> String {
+    // toStringTag is needed for namespaced types like Temporal.Instant
+    let has_to_string_tag = js::is_defined(js::symbol::to_string_tag);
+    let r#type = value
+        .filter(|_| has_to_string_tag)
+        .and_then(|value| js::get(value, js::symbol::to_string_tag))
+        .filter(|tag| js::truthy(Some(*tag)))
+        .or_else(|| value.and_then(|value| js::get(value, "constructor")).and_then(|c| js::get(c, "name")))
+        .filter(|name| js::truthy(Some(*name)));
+    unsafe { js::cast::<Option<String>>(r#type) }.unwrap_or_else(|| "Object".to_string())
+}
+
+pub fn named(value: Option<&Unknown>, c: bool) -> Option<&'static Unknown> {
+    value.filter(|_| c).and_then(|value| js::get(value, "name"))
+}
+
+pub fn tag(value: Option<&Unknown>) -> Option<&'static Unknown> {
+    value.and_then(|value| js::get(value, js::symbol::to_string_tag))
+}
+
+pub fn flattened(value: Option<&Unknown>, c: bool) -> Option<&'static Unknown> {
+    c.then(|| value.and_then(|value| js::get(value, "name"))).flatten()
+}
+
+fn counted(calls: &std::cell::Cell<u32>) -> bool {
+    calls.set(calls.get() + 1);
+    true
+}
+
+// A test that does something runs only where there's a value, as Rust's.
+pub fn counted_name(value: Option<&Unknown>) -> (String, u32) {
+    let calls = std::cell::Cell::new(0);
+    let name = value
+        .filter(|_| counted(&calls))
+        .and_then(|value| js::get(value, "name"))
+        .filter(|name| js::truthy(Some(*name)));
+    (unsafe { js::cast::<Option<String>>(name) }.unwrap_or_else(|| "none".to_string()), calls.get())
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('  const hasToStringTag = typeof Symbol !== "undefined" && typeof Symbol.toStringTag !== "undefined";\n  const type =\n    (hasToStringTag && value?.[Symbol.toStringTag]) || value?.constructor?.name || "Object";\n  return type;\n');
+  expect(js).not.toContain("const toStringTag");
+  expect(js).toContain("return value != null && c ? value.name : undefined;");
+  expect(js).toContain("return value?.[Symbol.toStringTag];");
+  expect(js).toContain("return c ? value?.name : undefined;");
+  const lib = await import(join(dir, "lib.js"));
+  class Instant {
+    get [Symbol.toStringTag]() {
+      return "Temporal.Instant";
+    }
+  }
+  expect([lib.typeName(new Instant()), lib.typeName(new Map()), lib.typeName({}), lib.typeName(Object.create(null)), lib.typeName(undefined)]).toEqual(["Temporal.Instant", "Map", "Object", "Object", "Object"]);
+  expect([lib.named({ name: "n" }, true), lib.named({ name: "n" }, false), lib.named(undefined, true)]).toEqual(["n", undefined, undefined]);
+  expect([lib.flattened({ name: "n" }, true), lib.flattened({ name: "n" }, false), lib.flattened(undefined, true)]).toEqual(["n", undefined, undefined]);
+  expect([lib.countedName({ name: "n" }), lib.countedName({ name: "" }), lib.countedName(undefined)]).toEqual([["n", 1], ["none", 1], ["none", 0]]);
+  // A host with no `Symbol`: asked first, never read.
+  const symbol = globalThis.Symbol;
+  let named: unknown;
+  try {
+    // @ts-expect-error: a host without it.
+    delete globalThis.Symbol;
+    named = lib.typeName(new Map());
+  } finally {
+    globalThis.Symbol = symbol;
+  }
+  expect(named).toBe("Map");
 });

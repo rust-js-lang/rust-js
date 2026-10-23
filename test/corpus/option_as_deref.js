@@ -9,7 +9,7 @@ function pathIs(path, want) {
 }
 
 function first(items) {
-  return items != null ? items[0] : undefined;
+  return items?.[0];
 }
 
 function main() {

@@ -435,6 +435,25 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// What's in an `Option` of a generic `T` (ADR 0051): `$someValue(option)`.
     pub(in crate::lower) fn some_value(&mut self, option: Expr) -> Expr {
+        // What a `Some` just made holds, `$some(x)`'s `x`; and of `t ?
+        // $some(x) : undefined`, a `then`'s, `flatten()` say, `t ? x :
+        // undefined`, as `None` is `undefined` either way (ADR 0647).
+        let made = |e: &Expr| match &e.kind {
+            js::ExprKind::Call(callee, args) if callee.helper_name() == Some("$some") => match args.as_slice() {
+                [x] => Some(x.clone()),
+                _ => None,
+            },
+            _ => None,
+        };
+        if let Some(x) = made(&option) {
+            return x;
+        }
+        if let js::ExprKind::Cond(test, then, none) = &option.kind
+            && matches!(none.kind, js::ExprKind::Undefined)
+            && let Some(x) = made(then)
+        {
+            return Expr::cond((**test).clone(), x, Expr::undefined());
+        }
         Expr::call(Expr::helper("$someValue"), vec![option])
     }
 }

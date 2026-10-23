@@ -49,7 +49,7 @@ function main() {
           const tmp = loud ? value(loud) : undefined;
           console.log(`again ${tmp == null ? "None" : `Some(${tmp})`}`);
           const l = o.value;
-          const value$2 = l ? l[0] : undefined;
+          const value$2 = l?.[0];
           console.log(`got ${value$2 == null ? "None" : `Some(${value$2})`}`);
           const lazy = {};
           try {

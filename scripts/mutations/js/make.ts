@@ -259,4 +259,12 @@ export const mutations: Mutation[] = [
     replace: "            (Some(\"$settled\"), [promise]) => Some(Expr {\n",
     tests: ["test/js-builtins.test.ts", "-t", "unwrap of a throwing JS call"],
   },
+  {
+    name: "optional-index-spelled-out",
+    breaks: "`a != null ? a[k] : undefined` stays, not `a?.[k]`",
+    file: "src/js/make.rs",
+    find: "            && let ExprKind::Index(object, key) = &then.kind\n",
+    replace: "            && let ExprKind::Index(object, key) = &then.kind\n            && false\n",
+    tests: ["test/lowering-options.test.ts", "-t", "React's typeName"],
+  },
 ];

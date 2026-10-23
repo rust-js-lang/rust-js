@@ -66,7 +66,7 @@ function main() {
         try {
           $heapRetain(r, value$1, (a, b) => $cmp(a[0], b[0]), oDrop_drop);
           const o = r[0];
-          const value = o ? o[0] : undefined;
+          const value = o?.[0];
           console.log(`retained ${value == null ? "None" : `Some(${value})`}`);
         } finally {
           for (const item of r) {

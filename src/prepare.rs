@@ -688,6 +688,51 @@ fn mark_tested(test: &mut Expr, name: &str) {
     }
 }
 
+/// `a` of `a || b`, whose value is kept only where it's truthy, as one
+/// that's the same where it is and falsy where it isn't (ADR 0647): `t ? x :
+/// undefined` is `t && x`, and of a chain `x != null && .. && x[k]`, whose
+/// other tests do nothing, `.. && x?.[k]`, as React writes
+/// `(hasToStringTag && value[Symbol.toStringTag]) || ..`.
+fn kept_by_truth(a: &Expr) -> Option<Expr> {
+    let ExprKind::Cond(test, x, none) = &a.kind else {
+        return None;
+    };
+    if !matches!(none.kind, ExprKind::Undefined) {
+        return None;
+    }
+    let mut parts = Vec::new();
+    fn conjuncts(e: &Expr, out: &mut Vec<Expr>) {
+        match &e.kind {
+            ExprKind::Binary(js::Op::And, a, b) => {
+                conjuncts(a, out);
+                conjuncts(b, out);
+            }
+            _ => out.push(e.clone()),
+        }
+    }
+    conjuncts(test, &mut parts);
+    let mut kept = (**x).clone();
+    // The first test, `x != null`, of what the value reads a part of.
+    if let Some(present) = js::null_test(&parts[0], true)
+        && parts[1..].iter().all(|p| !p.has_effects())
+        && let Some(chained) = optional_first(&kept, present)
+    {
+        parts.remove(0);
+        kept = chained;
+    }
+    parts.push(kept);
+    parts.into_iter().reduce(|a, b| Expr::bin(js::Op::And, a, b))
+}
+
+/// `x[k]` or `x.p` of `x`, its first part optional: `x?.[k]`, `x?.p`.
+fn optional_first(part: &Expr, x: &Expr) -> Option<Expr> {
+    match &part.kind {
+        ExprKind::Index(of, key) if js::same_path(of, x) => Some(Expr::optional_index((**of).clone(), (**key).clone())),
+        ExprKind::Member(of, name) if js::same_path(of, x) => Some(Expr::optional_member((**of).clone(), name.clone())),
+        _ => None,
+    }
+}
+
 /// `chain ?? y`, of a chain of `||`, `x || z`: `x` where it's truthy, never
 /// `null` or `undefined`, else `z ?? y`. Of one that ends in `undefined`, a
 /// `filter` by truth's, or `null`, `x || y`; of one that ends in another
@@ -1252,6 +1297,13 @@ fn expr(e: &mut Expr) {
             expr(b);
             if let Some(chain) = fallen_to(a, b) {
                 *e = Expr { span: e.span, ..chain };
+            }
+        }
+        ExprKind::Binary(js::Op::Or, a, b) => {
+            expr(a);
+            expr(b);
+            if let Some(truth) = kept_by_truth(a) {
+                **a = Expr { span: a.span, ..truth };
             }
         }
         ExprKind::Index(a, b) | ExprKind::OptionalIndex(a, b) | ExprKind::Binary(_, a, b) | ExprKind::Pair(a, b) => {

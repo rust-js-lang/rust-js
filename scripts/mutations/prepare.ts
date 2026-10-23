@@ -565,4 +565,20 @@ export const mutations: Mutation[] = [
     replace: "        [k, ..] => Some(k),\n",
     tests: ["test/jsx-props.test.ts", "-t", "a chain of flattened structs as props"],
   },
+  {
+    name: "kept-by-truth-unfolded",
+    breaks: "`(c ? x : undefined) || y` stays, not `(c && x) || y`",
+    file: "src/prepare.rs",
+    find: "            if let Some(truth) = kept_by_truth(a) {\n",
+    replace: "            if let Some(truth) = kept_by_truth(a).filter(|_| false) {\n",
+    tests: ["test/lowering-options.test.ts", "-t", "React's typeName"],
+  },
+  {
+    name: "kept-by-truth-effects-skipped",
+    breaks: "`x != null && f() && x[k]` of `||` is `f() && x?.[k]`, which calls `f` where `x` is `None`",
+    file: "src/prepare.rs",
+    find: "        && parts[1..].iter().all(|p| !p.has_effects())\n",
+    replace: "",
+    tests: ["test/lowering-options.test.ts", "-t", "React's typeName"],
+  },
 ];

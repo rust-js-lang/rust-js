@@ -186,7 +186,8 @@ export function later(task) {
   `js::is_defined(webapi::performance)`: a variable between asks of the
   same one. A static of a path asks each part,
   `js::is_defined(js::symbol::to_string_tag)` being `typeof Symbol !==
-  "undefined" && typeof Symbol.toStringTag !== "undefined"`; a reference
+  "undefined" && typeof Symbol.toStringTag !== "undefined"`, nothing of it
+  read before ([ADR 0647](../../decisions/0647-type-name-as-react-writes-it.md)); a reference
   to a static, `&webapi::performance`, is refused
   ([ADR 0645](../../decisions/0645-is-defined-of-a-static-is-of-the-static.md)).
 - **Each part of a path is asked**, `js::is_defined(webapi::Performance::now)`

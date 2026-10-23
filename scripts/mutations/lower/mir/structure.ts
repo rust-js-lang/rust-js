@@ -203,4 +203,12 @@ export const mutations: Mutation[] = [
     replace: "                            && true =>\n",
     tests: ["test/js-builtins.test.ts", "-t", "is a throwing function"],
   },
+  {
+    name: "defined-static-read-first",
+    breaks: "`js::is_defined(js::symbol::to_string_tag)` reads `Symbol.toStringTag` before it tests, which throws where `Symbol` is undeclared",
+    file: "src/lower/mir/structure.rs",
+    find: "                self.unread_defined_operands(state, func, args);\n",
+    replace: "",
+    tests: ["test/lowering-options.test.ts", "-t", "React's typeName"],
+  },
 ];

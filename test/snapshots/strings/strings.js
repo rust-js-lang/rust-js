@@ -128,7 +128,7 @@ export function kind(s) {
 /** String literals inside other patterns: an option, a tuple. */
 export function tagged(s) {
   const option = $splitOnce(s, "/");
-  const top = option ? option[0] : undefined;
+  const top = option?.[0];
   const value = s.endsWith("/");
   let n = 4;
   if (top == null) {

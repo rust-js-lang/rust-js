@@ -525,4 +525,12 @@ export const mutations: Mutation[] = [
     replace: "                let same = Expr::bin(Op::Eq, ka, kb);\n",
     tests: ["test/corpus.test.ts", "-t", "^search_by_ord.rs$"],
   },
+  {
+    name: "and-then-of-filter-held",
+    breaks: "`value.filter(..).and_then(f)` holds the filter's `Option` in a `const option`",
+    file: "src/lower/combinators.rs",
+    find: "            && let Some((kept, value)) = super::std_types::option::filtered(subject)\n",
+    replace: "            && let Some((kept, value)) = super::std_types::option::filtered(subject).filter(|_| false)\n",
+    tests: ["test/lowering-options.test.ts", "-t", "React's typeName"],
+  },
 ];

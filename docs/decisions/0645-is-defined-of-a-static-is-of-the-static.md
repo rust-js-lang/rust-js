@@ -3,7 +3,8 @@
 Status: Accepted. Amends [0597](0597-whether-the-host-has-a-global-is-is-defined.md),
 whose static was given by reference, `js::is_defined(&webapi::performance)`,
 and [0624](0624-is-defined-of-a-path-of-bindings.md), whose path is asked of
-a static too.
+a static too. Amended by [0647](0647-type-name-as-react-writes-it.md): the
+static's value isn't read before the test.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): A: what's asked of the
 host, part by part, as JS asks it.

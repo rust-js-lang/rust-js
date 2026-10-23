@@ -477,6 +477,20 @@ impl Expr {
                 ..chain
             };
         }
+        // `a != null ? a[k] : undefined` is `a?.[k]`, of a key too, a
+        // symbol's: `?.` skips the key where `a` is, as the test does (ADR
+        // 0647).
+        if let Some(tested) = null_test(&test, true)
+            && matches!(els.kind, ExprKind::Undefined)
+            && let ExprKind::Index(object, key) = &then.kind
+            && same_path(tested, object)
+        {
+            let chain = Expr::optional_index((**object).clone(), (**key).clone());
+            return Expr {
+                span: then.span,
+                ..chain
+            };
+        }
         // `a != null ? a.m(x) : undefined` is `a?.m(x)`: `?.` skips the call,
         // its arguments too, where `a` is, as the test does.
         if let Some(tested) = null_test(&test, true)

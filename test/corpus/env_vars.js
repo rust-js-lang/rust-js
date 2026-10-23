@@ -23,7 +23,7 @@ function main() {
   );
   console.log(`${$vars().some(([key]) => key === "PATH")}`);
   const option = $vars().find(([key]) => key === "PATH");
-  const path = option ? option[1] : undefined;
+  const path = option?.[1];
   const result = $var("PATH");
   console.log(`${path == (result.TAG === "Ok" ? result._0 : undefined)}`);
   const all = $vars();

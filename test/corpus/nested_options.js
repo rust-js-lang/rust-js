@@ -155,8 +155,8 @@ function main() {
       .map((item) => (item == null ? "None" : `Some(${item})`))
       .join(", ")}]`,
   );
-  const flatten = $someValue($some($some(undefined)));
-  const value$14 = $someValue($some($some($some(undefined))));
+  const flatten = $some(undefined);
+  const value$14 = $some($some(undefined));
   console.log(
     `${flatten == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(flatten))})`} ${value$14 == null ? "None" : `Some(${((value) => (value == null ? "None" : "Some(())"))($someValue(value$14))})`}`,
   );

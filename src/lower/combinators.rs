@@ -940,6 +940,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Some(fallback) = fallback {
             return Ok(Some(super::std_types::option::or_fallback(subject.clone(), fallback)));
         }
+        // `and_then` of what `filter` kept, `x != null && keep ? x :
+        // undefined`: its `f` of `x` where the test holds, with no `const` of
+        // the whole, as `map`'s is (ADR 0647).
+        if comb == Comb::AndThen
+            && !boxed
+            && let Some((kept, value)) = super::std_types::option::filtered(subject)
+        {
+            let then = self.call_with(values.remove(0), vec![value], "then", out);
+            return Ok(Some(Expr::cond(kept, then, Expr::undefined())));
+        }
         // `filter` by the truth of what it holds, `|v| js::truthy(Some(*v))`:
         // what JS's `||` keeps of it, `o || undefined`, read once, which a
         // fallback after makes `o || b` (ADR 0635). A `Some` boxed is a box,
