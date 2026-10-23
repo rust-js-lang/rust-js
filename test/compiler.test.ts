@@ -781,8 +781,8 @@ test("structs and tuples are plain objects and arrays", async () => {
   expect(js).toContain("return p;");
   // The tuple `(u32, u32)` is never changed in place, so it is taken apart as it is.
   expect(js).toContain("const [q, r] = divmod(a, b);");
-  // Fields are listed in declaration order, but the calls run in the order written.
-  expect(js).toMatch(/const value = \$div\(100, a, -2147483648\) \| 0;\s+return \{ x: \$rem/);
+  // Fields are listed, and run, in the order written (ADR 0674).
+  expect(js).toContain("return { y: $div(100, a, -2147483648) | 0, x: $rem(100, b, -2147483648) | 0 };");
   // A tuple parameter is taken apart where it is, and `match (a, b)` tests its
   // parts directly, without building an array.
   expect(js).toContain("export function classify([a, b]) {\n  if (a === 0) {\n    if (b === 0) {");
@@ -1175,7 +1175,7 @@ test("values' JS: boxes for &mut to primitives, and recursive clones", async () 
 test("versions' JS: struct update in Rust's order, scan, drain and total_cmp", async () => {
   const js = await Bun.file(join(target, "versions.js")).text();
   expect(js).toContain("{ major: 0, minor: 9, patch: 0 }");
-  expect(js).toContain("const value = tick(order, 1);\n  const v = { major: tick(order, 2), minor: made(order).minor, patch: value };");
+  expect(js).toContain("const v = { patch: tick(order, 1), major: tick(order, 2), minor: made(order).minor };");
   expect(js).toContain("const value = $nextSome(it);");
   expect(js).toContain("fs.sort((a, b) => $totalCmp(a, b));");
   expect(js).toContain("const tail = $splitOff(v, 5);");
