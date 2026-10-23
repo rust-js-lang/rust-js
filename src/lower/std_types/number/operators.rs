@@ -39,6 +39,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(self.text_compare(js_op, l, r));
         }
         if let Some(js_op) = comparison {
+            if Num::of(ty).is_some_and(|num| at_bound(op, &l, &r, num)) {
+                return Ok(Expr::bool(true));
+            }
             return Ok(Expr::bin(js_op, without_zero_sign(l), without_zero_sign(r)));
         }
 
@@ -416,4 +419,35 @@ pub(in crate::lower) fn masked(e: &Expr) -> Option<i128> {
         js::ExprKind::Binary(Op::BitAnd, a, b) => b.as_bigint().or_else(|| a.as_bigint()),
         _ => None,
     }
+}
+
+/// Whether `l op r` of an integer is true of every value of its type, its
+/// other side read for nothing else: a range pattern's test of the bound
+/// the type has anyway, `i32::MIN..=-1`'s `i32::MIN <= n`, or
+/// `200..=u8::MAX`'s `n <= u8::MAX`, which isn't written (ADR 0262: it
+/// can't be observed).
+fn at_bound(op: BinOp, l: &Expr, r: &Expr, num: Num) -> bool {
+    if num.float() || num.bits() == 128 {
+        return false;
+    }
+    let bits = num.bits();
+    let (min, max) = match num.signed() {
+        true => (-(1i128 << (bits - 1)), (1i128 << (bits - 1)) - 1),
+        false => (0, (1i128 << bits) - 1),
+    };
+    let int = |e: &Expr| e.as_int().or_else(|| e.as_bigint());
+    let (bound, other) = match op {
+        BinOp::Le => match (int(l), int(r)) {
+            (Some(lo), _) if lo == min => (true, r),
+            (_, Some(hi)) if hi == max => (true, l),
+            _ => (false, l),
+        },
+        BinOp::Ge => match (int(l), int(r)) {
+            (_, Some(lo)) if lo == min => (true, l),
+            (Some(hi), _) if hi == max => (true, r),
+            _ => (false, l),
+        },
+        _ => (false, l),
+    };
+    bound && !other.has_effects()
 }

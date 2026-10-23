@@ -96,10 +96,8 @@ function discount(pct) {
 }
 
 function classify(n) {
-  if (n >= -2147483648) {
-    if (n <= -1) {
-      return "negative";
-    }
+  if (n <= -1) {
+    return "negative";
   }
   if (n === 0) {
     return "zero";

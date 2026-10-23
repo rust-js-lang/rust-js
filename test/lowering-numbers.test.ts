@@ -735,3 +735,44 @@ test("a slice to a computed end from MIR reads the end where it's used", async (
   const lib = await import(join(dir, "mir.js"));
   expect([lib.crumbs(["a", "b", "c"]), lib.crumbs([])]).toEqual([["a", "b"], []]);
 });
+
+// ADR 0067: a range pattern's bound its type has anyway, \`i32::MIN..=-1\`'s
+// lower one or \`200..=u8::MAX\`'s upper one, is no test: what's left is
+// what the program says. A side that does something is still done.
+test("a range pattern tests no bound its type has", async () => {
+  const dir = fixture("range-bounds");
+  writeFileSync(join(dir, "lib.rs"), `pub fn sign(n: i32) -> &'static str {
+    match n {
+        i32::MIN..=-1 => "negative",
+        0 => "zero",
+        _ => "positive",
+    }
+}
+
+pub fn top(n: u8) -> bool {
+    matches!(n, 200..=u8::MAX)
+}
+
+pub fn wide(n: i64) -> bool {
+    matches!(n, i64::MIN..=-10)
+}
+
+// Its other side still runs.
+#[allow(clippy::absurd_extreme_comparisons)]
+pub fn popped(v: &mut Vec<u8>) -> bool {
+    v.pop().unwrap_or(0) <= u8::MAX
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('  if (n <= -1) {\n    return "negative";\n  }\n');
+  expect(js).toContain("return n >= 200;");
+  expect(js).toContain("return n <= -10n;");
+  const lib = await import(join(dir, "lib.js"));
+  expect([-2147483648, -1, 0, 7].map(lib.sign)).toEqual(["negative", "negative", "zero", "positive"]);
+  expect([0, 199, 200, 255].map(lib.top)).toEqual([false, false, true, true]);
+  expect([-(2n ** 63n), -10n, -9n].map(lib.wide)).toEqual([true, true, false]);
+  const v = [1, 2];
+  expect([lib.popped(v), v]).toEqual([true, [1]]);
+});
+
