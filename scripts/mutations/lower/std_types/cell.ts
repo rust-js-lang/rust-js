@@ -27,22 +27,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "collection_methods"],
   },
   {
-    name: "local-with-closure-called",
-    breaks: "`with` of a closure of one statement calls it, not its statement in place",
-    file: "src/lower/std_types/cell.rs",
-    find: "                crate::lower::calls::apply_in(f, vec![key], out)\n",
-    replace: "                crate::lower::calls::apply(f, vec![key])\n",
-    tests: ["test/lowering-cells.test.ts", "-t", "with of a one-statement closure"],
-  },
-  {
-    name: "with-statement-called",
-    breaks: "a thread-local's `with` of a one-statement closure calls it in place, `((it) => { .. })(LOGGER)`",
-    file: "src/lower/std_types/cell.rs",
-    find: "                crate::lower::calls::apply_in(f, vec![key], out)\n",
-    replace: "                apply(f, vec![key])\n",
-    tests: ["test/lowering-cells.test.ts", "-t", "with of a one-statement closure"],
-  },
-  {
     name: "cell-get-mut-copy",
     breaks: "a number `Cell`'s `get_mut` gives the number, so a write through it is lost",
     file: "src/lower/std_types/cell.rs",

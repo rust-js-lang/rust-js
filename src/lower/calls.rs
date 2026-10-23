@@ -8,7 +8,7 @@ use super::recognition::Catching;
 
 use super::FnCx;
 use crate::js;
-use crate::js::{Expr, Stmt, StmtKind};
+use crate::js::{Expr, StmtKind};
 
 use rustc_middle::ty::{self, Ty};
 use rustc_span::Span;
@@ -114,25 +114,6 @@ pub(super) fn apply(f: Expr, args: Vec<Expr>) -> Expr {
         return inlined;
     }
     Expr::call(f, args)
-}
-
-/// `f(args)` as a statement, in `out`: a closure of one statement put in
-/// place, `((it) => { it.f(); })(linter)` being `linter.f();`, or
-/// `apply`'s. What it gives, `undefined` of one put in place.
-pub(super) fn apply_in(f: Expr, args: Vec<Expr>, out: &mut Vec<Stmt>) -> Expr {
-    if let js::ExprKind::Arrow(params, body) = &f.kind
-        && let [
-            js::Stmt {
-                kind: StmtKind::Expr(value),
-                span,
-            },
-        ] = body.as_slice()
-        && let Some(inlined) = inlined(params, &args, value)
-    {
-        out.push(StmtKind::Expr(inlined).at(*span));
-        return Expr::undefined();
-    }
-    apply(f, args)
 }
 
 /// `value`, of a closure of `params`, with each the part of `args` it

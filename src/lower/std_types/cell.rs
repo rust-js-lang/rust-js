@@ -255,7 +255,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             Std::LocalWith => {
                 let (key, f) = (arg(), arg());
-                crate::lower::calls::apply_in(f, vec![key], out)
+                crate::lower::calls::apply(f, vec![key])
             }
             Std::LocalBorrow { mutable } => {
                 let mut given = vec![arg(), arg()];
