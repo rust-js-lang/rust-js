@@ -160,4 +160,12 @@ export const mutations: Mutation[] = [
     replace: "        } => false,\n",
     tests: ["test/lowering-unwinds.test.ts", "-t", "a payload is a panic's message"],
   },
+  {
+    name: "tried-case-broken",
+    breaks: "a `try` each of whose arms returns is taken to go on, so a `switch` case of one ends in a dead `break;`",
+    file: "src/js/stmt_walk.rs",
+    find: "        StmtKind::TryCatch(body, _, caught) => body.last().is_some_and(ends) && caught.last().is_some_and(ends),\n",
+    replace: "",
+    tests: ["test/lowering-switch-ends.test.ts", "-t", "a case needs no break"],
+  },
 ];

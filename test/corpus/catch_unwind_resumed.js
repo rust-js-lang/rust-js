@@ -33,15 +33,7 @@ function main() {
     console.log(`drop ${outer}`);
     throw error;
   }
-  if (result.TAG !== "Err") {
-    try {
-      if (result.TAG === "Err") {
-        result._0.impl.$drop?.(result._0.value);
-      }
-    } finally {
-      console.log(`drop ${outer}`);
-    }
-  } else {
+  if (result.TAG === "Err") {
     const payload = result._0;
     try {
       throw $unwinding(payload);
@@ -49,6 +41,13 @@ function main() {
       console.log(`drop ${outer}`);
       throw error;
     }
+  }
+  try {
+    if (result.TAG === "Err") {
+      result._0.impl.$drop?.(result._0.value);
+    }
+  } finally {
+    console.log(`drop ${outer}`);
   }
 }
 //# sourceMappingURL=case.js.map

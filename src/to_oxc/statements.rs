@@ -230,9 +230,11 @@ impl<'a> Cx<'a> {
     /// on, as a case falls through to the next where nothing ends it, and in
     /// a block of their own, `case 1: { const s = ..; }`, where they
     /// declare, which the cases' one scope would share (ADR 0629).
-    fn case_body(&self, body: &[js::Stmt]) -> ArenaVec<'a, Statement<'a>> {
+    /// A case's statements, a `break` last where it goes on to another,
+    /// not where it's the last, `falls_out`.
+    fn case_body(&self, body: &[js::Stmt], falls_out: bool) -> ArenaVec<'a, Statement<'a>> {
         let mut stmts = self.stmts(body);
-        if !body.last().is_some_and(js::ends) {
+        if !falls_out && !body.last().is_some_and(js::ends) {
             stmts.push(Statement::new_break_statement(SPAN, None, &self.b));
         }
         let declares = body.iter().any(|s| {
@@ -346,18 +348,28 @@ impl<'a> Cx<'a> {
                 default,
             } => {
                 let mut clauses = ArenaVec::new_in(b);
-                for (values, body) in cases {
+                // A `default` that does nothing, `_ => {}`'s, left out.
+                let default = default.as_ref().filter(|default| !default.is_empty());
+                // The last clause, which JS falls out of, needs no `break`
+                // (ADR 0629, amended).
+                let last_case = cases.iter().rposition(|(values, _)| !values.is_empty());
+                for (k, (values, body)) in cases.iter().enumerate() {
                     let Some((last, stacked)) = values.split_last() else {
                         continue;
                     };
                     for value in stacked {
                         clauses.push(SwitchCase::new(SPAN, Some(self.expr(value)), ArenaVec::new_in(b), b));
                     }
-                    clauses.push(SwitchCase::new(SPAN, Some(self.expr(last)), self.case_body(body), b));
+                    let falls_out = default.is_none() && Some(k) == last_case;
+                    clauses.push(SwitchCase::new(
+                        SPAN,
+                        Some(self.expr(last)),
+                        self.case_body(body, falls_out),
+                        b,
+                    ));
                 }
-                // A `default` that does nothing, `_ => {}`'s, left out.
-                if let Some(default) = default.as_ref().filter(|default| !default.is_empty()) {
-                    clauses.push(SwitchCase::new(SPAN, None, self.case_body(default), b));
+                if let Some(default) = default {
+                    clauses.push(SwitchCase::new(SPAN, None, self.case_body(default, true), b));
                 }
                 Statement::new_switch_statement(sp, self.expr(discriminant), clauses, b)
             }

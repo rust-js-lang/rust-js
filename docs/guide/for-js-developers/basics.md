@@ -973,7 +973,6 @@ export function name(kind, tracing) {
       if (tracing) {
         return "TracingMarker";
       }
-      break;
   }
 }
 ```

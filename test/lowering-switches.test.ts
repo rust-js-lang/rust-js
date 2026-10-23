@@ -116,11 +116,11 @@ pub fn again(n: u32, on: bool, log: &mut Vec<u32>) {
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs()]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain(
-    '  switch (ty) {\n    case REACT_FRAGMENT_TYPE:\n      return "Fragment";\n    case REACT_PROFILER_TYPE:\n      return "Profiler";\n    case REACT_TRACING_MARKER_TYPE:\n      if (tracing) {\n        return "TracingMarker";\n      }\n      break;\n  }\n',
+    '  switch (ty) {\n    case REACT_FRAGMENT_TYPE:\n      return "Fragment";\n    case REACT_PROFILER_TYPE:\n      return "Profiler";\n    case REACT_TRACING_MARKER_TYPE:\n      if (tracing) {\n        return "TracingMarker";\n      }\n  }\n',
   );
   expect(js).toContain('    case C:\n      if (on) {\n        return "c";\n      }\n      break;\n    case B:\n      return "b";\n  }\n  return "none";\n');
-  expect(js).toContain("    case C:\n      if (on) {\n        log.push(3);\n      }\n      break;\n  }\n  log.push(0);\n");
-  expect(js).toContain("        break loop;\n      case C:\n        if (on) {\n          continue;\n        }\n        break;\n    }\n");
+  expect(js).toContain("    case C:\n      if (on) {\n        log.push(3);\n      }\n  }\n  log.push(0);\n");
+  expect(js).toContain("        break loop;\n      case C:\n        if (on) {\n          continue;\n        }\n    }\n");
   expect(js).toContain('    case "Class":\n      if (on) {\n        return 2;\n      }\n      break;\n    case "Host":\n      return 3;\n  }\n');
   // A later arm that could take the constant, `_ => 0`, `C => ..`: an `if` chain.
   expect(js).toMatch(/export function taken\(n, on\) \{\n  if \(n === A\)/);
@@ -300,7 +300,6 @@ pub fn named(value: &Unknown) -> String {
           break;
         default:
           others = (others + 1) >>> 0;
-          break;
       }
     }`);
   // An or-pattern's cases as it names them; a guarded arm's, its guard in
@@ -317,7 +316,6 @@ pub fn named(value: &Unknown) -> String {
       if (on) {
         n += 3;
       }
-      break;
   }`);
   // An \`Object\` arm whose arrays are \`_\`'s: \`case "object"\` would take
   // them, so an \`if\` chain, \`Object\` tested as an object not an array.

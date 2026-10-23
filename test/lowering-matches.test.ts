@@ -474,7 +474,6 @@ pub fn nested(flag: Option<&str>, v: &mut Vec<u32>) {
       break;
     case "f":
       arg = arg.toUpperCase();
-      break;
   }
   return arg;
 }`);
@@ -488,7 +487,6 @@ pub fn nested(flag: Option<&str>, v: &mut Vec<u32>) {
       break;
     default:
       v.push(3);
-      break;
   }
 }`);
   expect(js).toContain(`export function nested(flag, v) {
@@ -1450,7 +1448,7 @@ pub fn specifier(code: u8, log: &mut Vec<u8>) {
     '  loop: for (const c of s) {\n    switch (c) {\n      case "a":\n      case "e":\n        n = (n + 1) >>> 0;\n        break;\n      case "x":\n        break loop;\n      case "y":\n        continue;\n    }\n',
   );
   // The program's label, and one of its own for the inner loop.
-  expect(js).toContain('        case "#":\n          break rows;\n        case ".":\n          break loop;\n        default:\n          n = (n + 1) >>> 0;\n          break;\n');
+  expect(js).toContain('        case "#":\n          break rows;\n        case ".":\n          break loop;\n        default:\n          n = (n + 1) >>> 0;\n      }\n');
   expect(js).toContain("    loop: for (const c of row) {\n");
   expect(js).toContain("    case 1: {\n      const s = `one${n}`;\n      log.push(s);\n      break;\n    }\n");
   expect(js).not.toMatch(/default:\n *break;/);

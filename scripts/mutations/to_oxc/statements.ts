@@ -126,8 +126,8 @@ export const mutations: Mutation[] = [
     name: "switch-empty-default-kept",
     breaks: "a `_ => {}` is `default: break;`, which does nothing",
     file: "src/to_oxc/statements.rs",
-    find: "                if let Some(default) = default.as_ref().filter(|default| !default.is_empty()) {\n",
-    replace: "                if let Some(default) = default {\n",
+    find: "                let default = default.as_ref().filter(|default| !default.is_empty());\n",
+    replace: "                let default = default.as_ref();\n",
     tests: ["test/lowering-matches.test.ts", "-t", "a match of constants is a switch"],
   },
   {
@@ -153,5 +153,13 @@ export const mutations: Mutation[] = [
     find: "                    for value in stacked {\n",
     replace: "                    for value in stacked.iter().take(0) {\n",
     tests: ["test/lowering-matches.test.ts", "-t", "a match of constants is a switch"],
+  },
+  {
+    name: "last-case-broken",
+    breaks: "a `switch`'s last case, which JS falls out of, ends in a dead `break;`",
+    file: "src/to_oxc/statements.rs",
+    find: "                    let falls_out = default.is_none() && Some(k) == last_case;\n",
+    replace: "                    let falls_out = default.is_none() && Some(k) == last_case && false;\n",
+    tests: ["test/lowering-switch-ends.test.ts", "-t", "a case needs no break"],
   },
 ];

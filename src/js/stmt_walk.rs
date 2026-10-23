@@ -266,6 +266,9 @@ pub fn ends(stmt: &Stmt) -> bool {
         StmtKind::While { label, cond, body } => {
             matches!(cond.kind, ExprKind::Bool(true)) && !breaks(body, label.as_deref())
         }
+        // A `try` each of whose arms leaves, `try { return f(); } catch {
+        // return ""; }` (ADR 0629, amended).
+        StmtKind::TryCatch(body, _, caught) => body.last().is_some_and(ends) && caught.last().is_some_and(ends),
         _ => false,
     }
 }

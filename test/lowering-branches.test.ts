@@ -368,7 +368,7 @@ pub fn dropped() -> &'static str {
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain('(kind ?? "Primary") === "Primary" ? "bg-link" : "text-primary"');
   // Of three cases, `0 | 1`'s two and `_`, a switch (ADR 0629).
-  expect(js).toContain('  let size;\n  switch (x % 3) {\n    case 0:\n    case 1:\n      size = "low";\n      break;\n    default:\n      size = "high";\n      break;\n  }\n');
+  expect(js).toContain('  let size;\n  switch (x % 3) {\n    case 0:\n    case 1:\n      size = "low";\n      break;\n    default:\n      size = "high";\n  }\n');
   expect(js).toContain('const label = n === 0 && flag ? "flagged zero" : "other";');
   expect(js).toContain('const label = n.value === 0 ? "zero" : "other";');
   expect(js).toContain('const label = xs.length === 0 ? "empty" : "some";');
