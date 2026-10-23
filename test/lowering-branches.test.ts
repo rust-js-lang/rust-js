@@ -1003,8 +1003,8 @@ test("a let chain from MIR is one test, past what held its parts", async () => {
 
 pub fn revive(val: Option<&'static Unknown>) -> Option<&'static Unknown> {
     if let Some(val) = val
-        && matches!(classify(val), Kind::Array(_))
-        && matches!(js::get(val, &0).map(classify), Some(Kind::String("$r")))
+        && matches!(classify(Some(val)), Kind::Array(_))
+        && matches!(classify(js::get(val, &0)), Kind::String("$r"))
     {
         return js::get(val, &1);
     }

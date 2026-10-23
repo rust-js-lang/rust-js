@@ -761,7 +761,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Some(rest) => {
                     // As a pattern tests it, of any representation (ADR 0284).
                     let index = adt.variant_index_with_id(variant.def_id);
-                    let test = self.variant_test(value.clone(), Ty::new_adt(self.tcx, adt, args), adt, index);
+                    let test = self.variant_test(value.clone(), Ty::new_adt(self.tcx, adt, args), adt, index, false);
                     vec![StmtKind::If(test, body, Some(rest)).at(js::Span::NONE)]
                 }
             });

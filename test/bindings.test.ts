@@ -935,7 +935,7 @@ pub fn tag_of(value: Option<&Unknown>) -> Result<String, &'static JsError> {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain('text.replace(pattern, (matched, escaped, _ptn, flag) =>\n    escaped ? matched : `<${flag ?? ""}>`,\n  );');
+  expect(js).toContain('text.replace(pattern, (matched, escaped, ptn, flag) =>\n    escaped ? matched : `<${flag ?? ""}>`,\n  );');
   expect(js).toContain('return text.replace(/%{2,2}/g, "%");');
   expect(js).toContain('return $try(() => "" + value);');
   // Text joined to it already makes it text, as react.dev writes `right - left + 'px'`.

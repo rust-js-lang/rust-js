@@ -242,7 +242,7 @@ pub async fn countdown() {
 import { $iterator, $rangeInclusiveNextBack } from "@rust-js/runtime";
 
 export function delay(ms) {
-  return new Promise((resolve, _reject) => {
+  return new Promise((resolve, reject) => {
     setTimeout(() => {
       resolve();
     }, ms);

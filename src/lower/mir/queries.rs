@@ -97,7 +97,7 @@ pub(super) fn called_async_body(stmts: &mut Vec<Stmt>) -> Option<Vec<Stmt>> {
 pub(super) fn movable(state: &State<'_, '_>, value: &Value<'_>) -> bool {
     match value {
         Value::Fmt(_, _, e) if e.reads_same() => true,
-        Value::Expr(e) | Value::Fmt(_, _, e) | Value::Discriminant(e, _) | Value::Branch(e, _) | Value::Tested(e) => {
+        Value::Expr(e) | Value::Fmt(_, _, e) | Value::Discriminant(e, ..) | Value::Branch(e, _) | Value::Tested(e) => {
             let mut stable = true;
             e.visit_vars(&mut |name| {
                 stable &= !state.borrowed_names.contains(name) && state.own_names.contains(name);

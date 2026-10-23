@@ -131,17 +131,17 @@ test("matches! of a kind's literal tests the value alone, where it's read", asyn
   const dir = fixture("matches-literal");
   writeFileSync(join(dir, "lib.rs"), `use js::{Kind, Unknown, classify};
 pub fn is_code(value: &Unknown) -> bool {
-    matches!(js::get(value, "mdxName").map(classify), Some(Kind::String("inlineCode")))
+    matches!(classify(js::get(value, "mdxName")), Kind::String("inlineCode"))
 }
 pub fn is_text(value: Option<&Unknown>) -> bool {
-    matches!(value.map(classify), Some(Kind::String("inlineCode")))
+    matches!(classify(value), Kind::String("inlineCode"))
 }
 pub fn kind_is(value: &Unknown) -> bool {
-    matches!(classify(value), Kind::String("inlineCode"))
+    matches!(classify(Some(value)), Kind::String("inlineCode"))
 }
 pub fn listed(value: Option<&Unknown>) -> u32 {
     if let Some(value) = value
-        && matches!(classify(value), Kind::Array(_))
+        && matches!(classify(Some(value)), Kind::Array(_))
     {
         1
     } else {
@@ -149,7 +149,7 @@ pub fn listed(value: Option<&Unknown>) -> u32 {
     }
 }
 pub fn is_string(value: &Unknown) -> bool {
-    matches!(js::get(value, "mdxName").map(classify), Some(Kind::String(_)))
+    matches!(classify(js::get(value, "mdxName")), Kind::String(_))
 }
 pub struct Loud(pub u32);
 impl Drop for Loud {
@@ -406,8 +406,8 @@ test("a match arm's pattern of parts is one test of each", async () => {
 }
 
 pub fn numbers(x: Option<&js::Unknown>, y: Option<&js::Unknown>) -> f64 {
-    match (x.map(js::classify), y.map(js::classify)) {
-        (Some(js::Kind::Number(x)), Some(js::Kind::Number(y))) => x + y,
+    match (js::classify(x), js::classify(y)) {
+        (js::Kind::Number(x), js::Kind::Number(y)) => x + y,
         _ => 0.0,
     }
 }

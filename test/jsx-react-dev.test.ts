@@ -113,7 +113,7 @@ pub struct SidebarLinkProps<'a> {
 // Chrome's and Safari's, not every browser's.
 #[cfg_attr(rust_js, rust_js::link_name = "get scrollIntoViewIfNeeded")]
 #[allow(unused_variables)]
-fn scroll_into_view_if_needed_of(this: &HTMLAnchorElement) -> &'static Unknown {
+fn scroll_into_view_if_needed_of(this: &HTMLAnchorElement) -> Option<&'static Unknown> {
     unreachable!()
 }
 

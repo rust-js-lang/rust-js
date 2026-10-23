@@ -6,8 +6,8 @@ export function entry() {
   main();
 }
 
-function discard(_u, dropU) {
-  dropU?.(_u);
+function discard(u, dropU) {
+  dropU?.(u);
 }
 
 const $wrapPeek = new WeakMap();

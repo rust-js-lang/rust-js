@@ -8,7 +8,7 @@ export function entry() {
 
 export const oddPartialEq = { eq: oddPartialEq_eq };
 
-function oddPartialEq_eq(odd, _other) {
+function oddPartialEq_eq(odd, other) {
   console.log("asked");
   return true;
 }

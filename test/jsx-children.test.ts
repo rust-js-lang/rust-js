@@ -246,7 +246,7 @@ pub fn kinds(children: &'static Unknown) -> Vec<String> {
     let mut out = Vec::new();
     for child in children::to_array(children) {
         if let Child::Element(element) = child
-            && let Kind::String(r#type) = classify(element.r#type())
+            && let Kind::String(r#type) = classify(Some(element.r#type()))
             && TYPES.with(|types| types.contains(r#type))
         {
             out.push(if r#type == "Recap" { "recap".to_string() } else { r#type.to_uppercase() });

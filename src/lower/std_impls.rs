@@ -372,7 +372,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         continue;
                     }
                     let copy = self.clone_value(place.clone(), payload, span, out)?;
-                    let test = self.untagged_variant_test(ty, variant, &place);
+                    let test = self.untagged_variant_test(ty, variant, &place, false);
                     value = Expr::cond(test, copy, value);
                 }
                 Ok(value)
@@ -405,7 +405,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     }
                     let copy = self.clone_fields(place.clone(), fields, span, out)?;
                     let index = adt.variant_index_with_id(variant.def_id);
-                    let test = self.variant_test(place.clone(), ty, *adt, index);
+                    let test = self.variant_test(place.clone(), ty, *adt, index, false);
                     value = Expr::cond(test, copy, value);
                 }
                 Ok(value)
@@ -954,9 +954,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(Expr::bin(Op::Eq, Expr::member(a, &key), Expr::member(b, &key)));
         }
         // A constant, like a fieldless variant's `"Nothing"`, is a JS
-        // primitive: only itself is equal to it. `None` is also `null`.
+        // primitive: only itself is equal to it. `None` is also `null`; an
+        // untagged enum's `undefined` isn't its `null` (ADR 0676).
         if a.is_constant() || b.is_constant() {
-            let none = [&a, &b].iter().any(|x| matches!(x.kind, js::ExprKind::Undefined));
+            let nullish =
+                matches!(ty.peel_refs().kind(), ty::Adt(adt, _) if super::untagged::holds_nullish(self.tcx, *adt));
+            let none = !nullish && [&a, &b].iter().any(|x| matches!(x.kind, js::ExprKind::Undefined));
             let op = if none { Op::LooseEq } else { Op::Eq };
             return Ok(Expr::bin(op, a, b));
         }
@@ -1098,14 +1101,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 for variant in adt.variants().iter().rev() {
                     // One without fields, its name's string, is `b`'s the same.
                     let Some(field) = variant.fields.iter().next() else {
-                        let both = self.untagged_variant_test(ty, variant, &b);
-                        value = Expr::cond(self.untagged_variant_test(ty, variant, &a), both, value);
+                        let both = self.untagged_variant_test(ty, variant, &b, false);
+                        value = Expr::cond(self.untagged_variant_test(ty, variant, &a, false), both, value);
                         continue;
                     };
                     let payload = self.field_ty(field, args);
                     let same = self.eq_value(a.clone(), b.clone(), payload, span, out)?;
-                    let both = Expr::bin(Op::And, self.untagged_variant_test(ty, variant, &b), same);
-                    value = Expr::cond(self.untagged_variant_test(ty, variant, &a), both, value);
+                    let both = Expr::bin(Op::And, self.untagged_variant_test(ty, variant, &b, false), same);
+                    value = Expr::cond(self.untagged_variant_test(ty, variant, &a, false), both, value);
                 }
                 Ok(value)
             }
@@ -1119,7 +1122,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         continue;
                     }
                     let index = adt.variant_index_with_id(variant.def_id);
-                    let tag = |cx: &Self, x: &Expr| cx.variant_test(x.clone(), ty, *adt, index);
+                    let tag = |cx: &Self, x: &Expr| cx.variant_test(x.clone(), ty, *adt, index, false);
                     let mut same = tag(self, &b);
                     for (field, t) in fields {
                         let field = self.eq_value(

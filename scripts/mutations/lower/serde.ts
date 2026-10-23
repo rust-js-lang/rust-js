@@ -41,7 +41,7 @@ export const mutations: Mutation[] = [
     name: "serde-variant-by-its-own-test",
     breaks: "a codec tests an enum's variant by `TAG` and its Rust name, not as a pattern does: a tagged one's, `{ kind: \"On\" }`, is none of them",
     file: "src/lower/serde.rs",
-    find: "                    let test = self.variant_test(value.clone(), Ty::new_adt(self.tcx, adt, args), adt, index);\n",
+    find: "                    let test = self.variant_test(value.clone(), Ty::new_adt(self.tcx, adt, args), adt, index, false);\n",
     replace: "                    let _ = index;\n                    let test = Expr::bin(Op::Eq, Expr::member(value.clone(), \"TAG\"), Expr::str(variant.name.to_string()));\n",
     tests: ["test/serde.test.ts", "-t", "discriminated union"],
   },

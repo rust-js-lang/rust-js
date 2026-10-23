@@ -229,7 +229,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // program's, seed 50147). One that only reads, `i % 3`, is
                 // read by each.
                 if targets.iter().filter(|&(_, target)| reached(target)).count() > 1
-                    && let Value::Expr(made) | Value::Discriminant(made, _) = &mut subject
+                    && let Value::Expr(made) | Value::Discriminant(made, ..) = &mut subject
                     && made.has_effects()
                 {
                     let value = std::mem::replace(made, Expr::undefined());
@@ -479,7 +479,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     _ => failed,
                 })
             }
-            Value::Discriminant(enum_value, enum_ty) => {
+            Value::Discriminant(enum_value, enum_ty, present) => {
                 let ty::Adt(adt, _) = enum_ty.kind() else {
                     return Err(self.unsupported(span, "a discriminant of this type, from its MIR"));
                 };
@@ -498,7 +498,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     );
                     return Err(self.tcx.dcx().span_err(span, message));
                 }
-                Ok(self.mir_variant_test(enum_value.clone(), *enum_ty, *adt, variant))
+                Ok(self.mir_variant_test(enum_value.clone(), *enum_ty, *adt, variant, *present))
             }
             _ => {
                 let subject = self.value_expr(subject.clone(), span)?;
@@ -547,15 +547,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// That `subject` is `variant` of its enum, as a pattern tests it
     /// (`variant_test`): a test function an untagged one's calls,
     /// `isValidElement(child)`, gives a `bool`, which tidy writes a test of
-    /// as one.
+    /// as one. `present`, as `variant_test` has it.
     pub(in crate::lower) fn mir_variant_test(
         &mut self,
         subject: Expr,
         ty: Ty<'tcx>,
         adt: ty::AdtDef<'tcx>,
         variant: VariantIdx,
+        present: bool,
     ) -> Expr {
-        let test = self.variant_test(subject, ty, adt, variant);
+        let test = self.variant_test(subject, ty, adt, variant, present);
         if bindings::is_untagged(self.tcx, adt.did()) {
             test.clone().each_mut(&mut |e| {
                 if let Some(path) = tidy::call_path(e) {

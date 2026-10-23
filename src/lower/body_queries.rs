@@ -592,6 +592,45 @@ pub(super) fn constant_patterns<'tcx>(
     found
 }
 
+/// Where `e` is a call of a binding that's its argument, `this`, giving an
+/// untagged enum of a `Some(..)`, `js::classify(Some(value))`: its
+/// `fn_span`. What it gives is there, never `undefined` nor `null`, so no
+/// variant's test leaves those out (ADR 0676).
+pub(super) fn given_present<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>, mut e: ExprId) -> Option<Span> {
+    let through = |mut e: ExprId| {
+        while let ExprKind::Scope { value: inner, .. } | ExprKind::Use { source: inner } = thir[e].kind {
+            e = inner;
+        }
+        e
+    };
+    e = through(e);
+    let ExprKind::Call {
+        fun, ref args, fn_span, ..
+    } = thir[e].kind
+    else {
+        return None;
+    };
+    let ty::FnDef(def_id, _) = *thir[fun].ty.kind() else {
+        return None;
+    };
+    let identity = super::bindings::is_binding(tcx, def_id)
+        && matches!(super::bindings::js_form(tcx, def_id), super::bindings::JsForm::This);
+    let some = |arg: ExprId| {
+        matches!(&thir[through(arg)].kind, ExprKind::Adt(adt)
+            if tcx.is_lang_item(adt.adt_def.did(), LangItem::Option)
+                && tcx.is_lang_item(adt.adt_def.variant(adt.variant_index).def_id, LangItem::OptionSome))
+    };
+    let untagged = super::untagged::untagged_adt(tcx, thir[e].ty).is_some();
+    (identity && untagged && matches!(&args[..], [arg] if some(*arg))).then_some(fn_span)
+}
+
+/// Each call `given_present` says is of what's there: its `fn_span`.
+pub(super) fn present_calls<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> HashSet<Span> {
+    (thir.exprs.indices())
+        .filter_map(|e| given_present(tcx, thir, e))
+        .collect()
+}
+
 /// Where each `js::SymbolFor::from_value(value)` is called, its `fn_span`,
 /// whose value the body only tests against the registry's symbols: what a
 /// `match`, a `matches!` or an `if let` compares, of patterns each `_` or a

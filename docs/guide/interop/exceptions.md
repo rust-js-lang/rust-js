@@ -512,8 +512,8 @@ use js::{JsError, Kind, Unknown};
 use std::panic;
 
 pub fn url(value: &Unknown) -> String {
-    panic::catch_unwind(|| match js::get(value, "url").map(js::classify) {
-        Some(Kind::String(url)) => url.to_string(),
+    panic::catch_unwind(|| match js::classify(js::get(value, "url")) {
+        Kind::String(url) => url.to_string(),
         _ => String::new(),
     })
     .unwrap_or_default()

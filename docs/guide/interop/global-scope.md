@@ -220,9 +220,19 @@ value)`: each variant its `typeof`'s case, a symbol's `case "symbol"`, an
 or-pattern's stacked, `_` the `default`
 ([ADR 0668](../../decisions/0668-a-match-of-what-a-value-is-is-a-switch-of-its-typeof.md)).
 
-- **`Kind::Object` is `case "object"`**, an object no array is: an
-  `Unknown` is never `null`. `Kind::Object(_) | Kind::Array(_)` is one
-  `case "object"`.
+- **`js::classify` takes an `Option<&Unknown>`**, whose `None` is
+  `Kind::Undefined` or `Kind::Null`; of a value that's there,
+  `classify(Some(value))`
+  ([ADR 0676](../../decisions/0676-kind-tells-undefined-and-null.md)).
+  `Kind::Undefined` is `case "undefined"`.
+- **`Kind::Object` is `case "object"`**, an object neither `null` nor an
+  array. `Kind::Object(_) | Kind::Array(_)` is one `case "object"`, and
+  `Kind::Null | Kind::Object(_) | Kind::Array(_)` takes `null` too. An arm
+  of `Kind::Null` alone is an `if (value === null)` first in the case of
+  the arm that takes the objects, as React writes it, or before the
+  `switch` where none does; `Kind::Undefined | Kind::Null` is an `if
+  (value == null)` before it. Where `null` is `_`'s and an arm is
+  `Kind::Object`'s, an `if` chain: `case "object"` would take `null`.
 - **An arm of `Kind::Array` alone is an `if` before the `switch`**,
   `if (Array.isArray(value))`, as `typeof` says an array is an object.
   Where arrays are `_`'s and an arm is `Kind::Object`'s, it's an `if`
@@ -237,11 +247,22 @@ pub fn kind(value: Option<&Unknown>) -> String {
     format!("got {}", js::type_of(value))
 }
 
-pub fn width(value: &Unknown) -> f64 {
+pub fn width(value: Option<&Unknown>) -> f64 {
     match js::classify(value) {
         Kind::Number(n) => n,
         Kind::String(text) => js::parse_float(text),
         _ => 0.0,
+    }
+}
+
+pub fn label(value: Option<&Unknown>) -> String {
+    match js::classify(value) {
+        Kind::Null => "null".to_string(),
+        Kind::Array(items) => format!("{} items", items.len()),
+        Kind::Object(object) => js::string(js::get(object, "label")),
+        Kind::String(text) => text.to_string(),
+        Kind::Undefined => "none".to_string(),
+        _ => String::new(),
     }
 }
 ```
@@ -259,6 +280,25 @@ export function width(value) {
       return parseFloat(value);
     default:
       return 0;
+  }
+}
+
+export function label(value) {
+  if (Array.isArray(value)) {
+    return `${value.length} items`;
+  }
+  switch (typeof value) {
+    case "object":
+      if (value === null) {
+        return "null";
+      }
+      return String(value.label);
+    case "string":
+      return value;
+    case "undefined":
+      return "none";
+    default:
+      return "";
   }
 }
 ```

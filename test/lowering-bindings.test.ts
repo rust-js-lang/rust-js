@@ -264,21 +264,19 @@ test("an unknown JS value is classified, and its properties read by name", async
   const dir = fixture("unknown");
   writeFileSync(join(dir, "lib.rs"), `use js::{Kind, Promise, Unknown, classify, json, object};
 fn show(value: Option<&Unknown>) -> String {
-    match value {
-        None => "null".to_string(),
-        Some(value) => match classify(value) {
-            Kind::String(text) => format!("'{text}'"),
-            Kind::Number(n) => n.to_string(),
-            Kind::BigInt(n) => format!("{n}n"),
-            Kind::Bool(b) => b.to_string(),
-            Kind::Symbol(symbol) => symbol.to_string(),
-            Kind::Function(_) => "fn".to_string(),
-            Kind::Array(items) => format!("[{}]", items.iter().map(|item| show(*item)).collect::<Vec<_>>().join(",")),
-            Kind::Object(fields) => format!(
-                "{{{}}}",
-                object::keys(fields).iter().map(|key| format!("{key}:{}", show(js::get(fields, key)))).collect::<Vec<_>>().join(",")
-            ),
-        },
+    match classify(value) {
+        Kind::Undefined | Kind::Null => "null".to_string(),
+        Kind::String(text) => format!("'{text}'"),
+        Kind::Number(n) => n.to_string(),
+        Kind::BigInt(n) => format!("{n}n"),
+        Kind::Bool(b) => b.to_string(),
+        Kind::Symbol(symbol) => symbol.to_string(),
+        Kind::Function(_) => "fn".to_string(),
+        Kind::Array(items) => format!("[{}]", items.iter().map(|item| show(*item)).collect::<Vec<_>>().join(",")),
+        Kind::Object(fields) => format!(
+            "{{{}}}",
+            object::keys(fields).iter().map(|key| format!("{key}:{}", show(js::get(fields, key)))).collect::<Vec<_>>().join(",")
+        ),
     }
 }
 pub fn parsed(text: &str) -> String {

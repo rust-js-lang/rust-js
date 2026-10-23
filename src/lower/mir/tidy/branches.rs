@@ -740,7 +740,11 @@ pub(super) fn same_test(a: &Expr, b: &Expr) -> bool {
         (ExprKind::Binary(p, x, k), ExprKind::Binary(q, y, l)) if p == q => {
             js::same_path(x, y)
                 && match (&k.kind, &l.kind) {
-                    (ExprKind::Null | ExprKind::Undefined, ExprKind::Null | ExprKind::Undefined) => true,
+                    // `== null` is `== undefined`; `=== null` isn't
+                    // `=== undefined` (ADR 0676).
+                    (ExprKind::Null | ExprKind::Undefined, ExprKind::Null | ExprKind::Undefined) => {
+                        matches!(p, Op::LooseEq | Op::LooseNe) || k.kind == l.kind
+                    }
                     (ExprKind::Str(k), ExprKind::Str(l)) => k == l,
                     _ => k.as_int().is_some() && k.as_int() == l.as_int(),
                 }

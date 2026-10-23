@@ -128,7 +128,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             null_nones: self.mir_null_nones(body, locals),
             made_some: self.mir_made_some(body, locals),
             registered: self.mir_registered(body),
+            present: self.mir_present(body),
         }
+    }
+
+    /// The locals `OptionWrites::present` says: each a call
+    /// `body_queries::present_calls` says gives what's there.
+    fn mir_present(&self, body: &mir::Body<'tcx>) -> std::collections::HashSet<Local> {
+        let calls = crate::lower::body_queries::present_calls(self.tcx, self.thir);
+        (body.basic_blocks.iter())
+            .filter_map(|data| match &data.terminator().kind {
+                TerminatorKind::Call {
+                    destination, fn_span, ..
+                } if destination.projection.is_empty() && calls.contains(fn_span) => Some(destination.local),
+                _ => None,
+            })
+            .collect()
     }
 
     /// The locals `OptionWrites::registered` says: each a call of

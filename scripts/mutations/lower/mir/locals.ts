@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "parameter-named-as-a-variable",
+    breaks: "a parameter is named as any variable, its `_` kept, where its declaration drops it",
+    file: "src/lower/mir/locals.rs",
+    find: "                    LocalKind::Arg => crate::lower::parameter_name(self.tcx, body.source.def_id(), &name),\n",
+    replace: "",
+    tests: ["test/lowering-names.test.ts", "-t", "leading underscore"],
+  },
+  {
     name: "mir-mut-borrowed-unchanged",
     breaks: "`e += inc()` reads `e` before the closure that changes it runs",
     file: "src/lower/mir/locals.rs",

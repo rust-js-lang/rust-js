@@ -247,6 +247,7 @@ In this table, `lower.rs`, `names.rs` and `runtime.rs` are at the `src/` root.
 | Generic IntoIterator representation | `iterators.rs` | `into_iter_held_as_it_is`, `into_iter_as_it_is` |
 | Function-value mutable arguments | `mut_refs.rs` | `unboxed_by_function` |
 | Body module placement | `lower.rs` | `body_module` |
+| A parameter's JS name, its body's and its declaration's | `lower.rs` | `parameter_name` |
 | Std body capture | `analysis.rs` | `collect_std_bodies` |
 | Dictionary cache names | `names.rs` | `dictionary_cache` |
 | String offsets in JS units | `mir/offsets.rs`; `std_types/text.rs` | `in_units`, `call_in_units`, `step`, `cut`, `seed`; `found`, `sliced_in_units` |
@@ -255,6 +256,7 @@ In this table, `lower.rs`, `names.rs` and `runtime.rs` are at the `src/` root.
 | Runtime helper identity and properties | `runtime.rs` | `exports`, `helper_of`, `is_pure`, `names_a_place` |
 | A function's rest parameter and its calls' rest arguments | `bindings.rs`; `calls.rs` | `marked_rest`, `takes_rest`; `rest_given`, `spread_rest` |
 | The order a struct literal's object lists its fields, and reads them, in | `aggregates.rs` | `written_order` |
+| An untagged enum's `undefined` and `null`, and what's there of `classify(Some(v))` | `untagged.rs`; `body_queries.rs` | `unit_value`, `holds_nullish`, `told_by_kind`; `given_present`, `present_calls` |
 
 **Calls.** `mir/dispatch.rs::mir_call` handles special calls and sends evaluated
 arguments to `mir_call_values`. Calls then go to iterator, trait, binding or

@@ -1412,13 +1412,15 @@ export function describe(v) {
 `String(n)` for very large and very small numbers.
 
 A value from JavaScript whose type you don't know, what an `any` API
-returns, is a `js::Unknown`, and `js::classify` is `typeof`:
+returns, is a `js::Unknown`, or `None` where it's `undefined` or `null`,
+and `js::classify` is `typeof`, of those too:
 
 ```rust
 use js::{Kind, Unknown, classify};
 
-pub fn describe(value: &Unknown) -> String {
+pub fn describe(value: Option<&Unknown>) -> String {
     match classify(value) {
+        Kind::Undefined => "nothing".to_string(),
         Kind::String(s) => format!("text {s}"),
         Kind::Number(n) => format!("number {n}"),
         Kind::Bool(b) => format!("flag {b}"),
@@ -1436,6 +1438,8 @@ export function describe(value) {
     return `${value.length} items`;
   }
   switch (typeof value) {
+    case "undefined":
+      return "nothing";
     case "string":
       return `text ${value}`;
     case "number":

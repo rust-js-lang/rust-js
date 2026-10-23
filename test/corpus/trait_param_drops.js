@@ -19,17 +19,17 @@ function sinkTakeA(dropA) {
   }));
 }
 
-function sinkTakeA_take(sink, _a, dropA) {
+function sinkTakeA_take(sink, a, dropA) {
   try {
     console.log("sink");
   } finally {
-    dropA?.(_a);
+    dropA?.(a);
   }
   return 1;
 }
 
-function sinkTakeA_make(_a, dropA) {
-  dropA?.(_a);
+function sinkTakeA_make(a, dropA) {
+  dropA?.(a);
 }
 
 const $relayTakeA = new WeakMap();
@@ -99,8 +99,8 @@ function keepTakeA_take(keep, a, dropA) {
   return 2;
 }
 
-function keepTakeA_make(_a, dropA) {
-  dropA?.(_a);
+function keepTakeA_make(a, dropA) {
+  dropA?.(a);
 }
 
 function via(t, a, TTakeA) {

@@ -4,7 +4,7 @@ export function entry() {
   main();
 }
 
-async function test(_arg) {}
+async function test(arg) {}
 
 async function useFuture(fut) {
   await fut;

@@ -1347,3 +1347,57 @@ test("a let each turn assigns from MIR is the loop body's", async () => {
   expect(readFileSync(join(dir, "mir.js"), "utf8")).toContain("  for (const x of v) {\n    let y;\n");
   expect((await import(join(dir, "mir.js"))).named([0, 1, 7])).toEqual(["one", "7"]);
 });
+
+// ADR 0678: a parameter's leading `_` is Rust's mark of one unused, so its
+// JS name, and its declaration's, is without it, as React's
+// `describeClientReference(ref)` is; but where what's left is a word JS
+// keeps, `_new`, or another binding of the function's, `_x` beside an `x`
+// or a closure's beside what it captures, it's as Rust writes it.
+test("a parameter's leading underscore isn't in its JS name", async () => {
+  const dir = fixture("unused-parameters");
+  writeFileSync(join(dir, "lib.rs"), `pub fn describe_client_reference(_ref: &str) -> String {
+    "client".to_string()
+}
+
+pub fn keeps_new(_new: u32) -> u32 {
+    1
+}
+
+pub fn beside(_x: u32, x: u32) -> u32 {
+    x
+}
+
+pub fn shadowing(_count: u32) -> u32 {
+    let count = 2;
+    count
+}
+
+pub fn captured(total: u32) -> Box<dyn Fn(u32) -> u32> {
+    Box::new(move |_total| total)
+}
+
+pub fn shadowed(_base: u32) -> Box<dyn Fn(u32) -> u32> {
+    Box::new(move |base| base + _base)
+}
+
+pub fn handler() -> Box<dyn Fn(u32, u32) -> u32> {
+    Box::new(|_event, count| count + 1)
+}
+`);
+  run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("export function describeClientReference(ref) {");
+  expect(js).toContain("export function keepsNew(_new) {");
+  expect(js).toContain("export function beside(_x, x) {");
+  expect(js).toContain("export function shadowing(_count) {");
+  expect(js).toContain("(_total) => total");
+  expect(js).toContain("export function shadowed(_base) {");
+  expect(js).toContain("(event, count) => (count + 1) >>> 0");
+  const declarations = readFileSync(join(dir, "lib.d.ts"), "utf8");
+  expect(declarations).toContain("export function describeClientReference(ref: string): string;");
+  expect(declarations).toContain("export function keepsNew(_new: number): number;");
+  expect(declarations).toContain("export function beside(_x: number, x: number): number;");
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.describeClientReference("a"), lib.keepsNew(5), lib.beside(1, 2), lib.shadowing(9), lib.captured(3)(4), lib.handler()(1, 2), lib.shadowed(1)(2)])
+    .toEqual(["client", 1, 2, 2, 3, 3, 3]);
+});

@@ -831,6 +831,26 @@ pub(super) fn is_otherwise(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
     tcx.get_attrs_by_path(def_id, &path).next().is_some()
 }
 
+/// What JS value an untagged enum's variant without fields is, where it's
+/// none of a string: `null`, `#[rust_js::null]`, or `undefined`,
+/// `#[rust_js::undefined]`, `js::Kind`'s `Null` and `Undefined` (ADR 0676).
+#[derive(Clone, Copy, PartialEq, Debug)]
+pub(super) enum Nullish {
+    Null,
+    Undefined,
+}
+
+/// `def_id`'s `#[rust_js::null]` or `#[rust_js::undefined]`, if it has one.
+pub(super) fn given_nullish(tcx: TyCtxt<'_>, def_id: DefId) -> Option<Nullish> {
+    let marked = |name: &str| {
+        let path = [Symbol::intern("rust_js"), Symbol::intern(name)];
+        tcx.get_attrs_by_path(def_id, &path).next().is_some()
+    };
+    [("null", Nullish::Null), ("undefined", Nullish::Undefined)]
+        .into_iter()
+        .find_map(|(name, nullish)| marked(name).then_some(nullish))
+}
+
 /// A JS object type's test, `#[rust_js::test = "react#isValidElement"]`:
 /// the function that says a value is one, where no class does (ADR 0214).
 pub(super) fn test_of(tcx: TyCtxt<'_>, def_id: DefId) -> Option<String> {
