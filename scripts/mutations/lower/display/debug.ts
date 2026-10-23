@@ -346,4 +346,12 @@ export const mutations: Mutation[] = [
     replace: "            return Err(self.unsupported(span, \"\"));\n",
     tests: ["test/corpus.test.ts", "-t", "^weak_debug.rs$"],
   },
+  {
+    name: "chars-debug-unnamed",
+    breaks: "Chars' Debug names it",
+    file: "src/lower/display/debug.rs",
+    find: "Expr::str(\"Chars(\"), shown,",
+    replace: "Expr::str(\"(\"), shown,",
+    tests: ["test/corpus.test.ts", "-t", "str_odds"],
+  },
 ];

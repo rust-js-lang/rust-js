@@ -280,6 +280,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 ),
             });
         }
+        // A string's `chars()`, `Chars(['b', 'c'])`: the `char`s it has
+        // left, as a slice's iterator shows what it has (#118).
+        if self.recognition().is_str_chars(ty) {
+            if pretty.known() != Some(false) {
+                return Err(self.unsupported(span, "`{:#?}` of a string's `chars()`"));
+            }
+            let left = Expr::call(
+                Expr::member(Expr::var("Array"), "from"),
+                vec![Expr::call_helper("$restStr", vec![value])],
+            );
+            let shown = self.debug_string_with(left, Ty::new_slice(self.tcx, self.tcx.types.char), span, pretty)?;
+            return Ok(join(vec![Expr::str("Chars("), shown, Expr::str(")")]));
+        }
         // A path shows its text as a string does (ADR 0173).
         if self.recognition().is_path_like(ty) {
             return Ok(Expr::call(Expr::helper("$debugStr"), vec![value]));

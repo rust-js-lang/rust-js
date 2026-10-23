@@ -506,6 +506,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 self.flush(state, out)?;
                 let (edited, taken) = self.string_edit_values(edit, place.clone(), given, out);
                 out.push(StmtKind::Assign(place, edited).at(self.js_span(span)));
+                // A drain, the `char`s it took out, stepped where it knows
+                // where it is, which its `as_str()` reads (#118).
+                let taken = match edit {
+                    StringEdit::Drain => taken.map(|chars| self.stepped_items(chars)),
+                    _ => taken,
+                };
                 taken.unwrap_or_else(Expr::undefined)
             }
             // Its capacity is the engine's: what it's given runs, for what it does.
@@ -928,8 +934,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             // A slice's or string's iterator's own: of a `$iter`, which knows
             // where it is (ADR 0071).
-            Std::Step(op @ (StepOp::AsSlice | StepOp::AsStr | StepOp::Cycle))
-                if op == StepOp::AsStr
+            Std::Step(op @ (StepOp::AsSlice | StepOp::AsStr | StepOp::Offset | StepOp::Cycle))
+                if matches!(op, StepOp::AsStr | StepOp::Offset)
                     || arg_tys
                         .first()
                         .is_some_and(|t| self.array_source(t.peel_refs()).is_some()) =>
@@ -942,6 +948,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 match op {
                     // A string's `chars()`' rest, as a string.
                     StepOp::AsStr => Expr::call_helper("$restStr", vec![it]),
+                    StepOp::Offset => Expr::call_helper("$charIndicesOffset", vec![it]),
                     StepOp::Cycle => {
                         let iter_ty = arg_tys[0].peel_refs();
                         let owns = self.array_source(iter_ty).expect("matched");

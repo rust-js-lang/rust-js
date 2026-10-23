@@ -10,4 +10,12 @@ export const mutations: Mutation[] = [
     replace: "    at += c.length;",
     tests: ["test/corpus.test.ts", "-t", "string_bytes"],
   },
+  {
+    name: "char-indices-offset-end-short",
+    breaks: "offset past the last char is the string's length",
+    file: "src/runtime/char_indices.js",
+    find: "last[0] + $byteLen(last[1])",
+    replace: "last[0]",
+    tests: ["test/corpus.test.ts", "-t", "str_odds"],
+  },
 ];

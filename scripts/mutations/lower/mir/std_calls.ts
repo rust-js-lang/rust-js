@@ -719,4 +719,12 @@ export const mutations: Mutation[] = [
     replace: "                    true => self.slice_range_values(op, items, (range, arg_tys[1]), span, out)?,",
     tests: ["test/lowering-string-places.test.ts", "-t", "stepped past"],
   },
+  {
+    name: "drain-taken-unstepped",
+    breaks: "a string Drain steps where it knows where it is",
+    file: "src/lower/mir/std_calls.rs",
+    find: "StringEdit::Drain => taken.map(|chars| self.stepped_items(chars)),",
+    replace: "StringEdit::Drain => taken,",
+    tests: ["test/corpus.test.ts", "-t", "str_odds"],
+  },
 ];

@@ -433,6 +433,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 _ => Err(self.unsupported(span, &format!("the `Display` of a `{ty}`, which std has none of"))),
             };
         }
+        // A `fmt::Error`'s, std's text (#118).
+        if self.recognition().is_fmt_error(ty) {
+            return Ok(Expr::str("an error occurred when formatting an argument"));
+        }
         if crate::lower::recognition::is_from_utf16_error(self.tcx, ty) {
             return Ok(Expr::str("invalid utf-16: lone surrogate found"));
         }

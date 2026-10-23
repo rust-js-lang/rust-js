@@ -77,7 +77,11 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         // Theirs first: `push` and `pop` keep a heap's order, and a deque's
         // `remove` is an `Option` (ADR 0068).
         let peekable = self.is_peekable(owner);
-        let chars = self.is_str_chars(owner);
+        // A string's `chars()`, or its `drain(range)`, the `char`s it took
+        // out, an array's `$iter` too (#118).
+        let chars = self.is_str_chars(owner)
+            || matches!(owner.kind(), ty::Adt(it, _) if std_path(tcx, it.did()) == "std::string::Drain");
+        let char_indices = matches!(owner.kind(), ty::Adt(it, _) if std_path(tcx, it.did()) == "std::str::CharIndices");
         let slice_iter = adt(StdItem::SliceIter)
             || matches!(owner.kind(), ty::Adt(it, _) if std_path(tcx, it.did()) == "std::vec::IntoIter");
         let own = match name.as_str() {
@@ -88,6 +92,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             }
             name if peekable && let Some(step) = peekable_step(name) => Some(Std::Step(step)),
             "as_str" if chars => Some(Std::Step(StepOp::AsStr)),
+            "offset" if char_indices => Some(Std::Step(StepOp::Offset)),
             "as_slice" if slice_iter => Some(Std::Step(StepOp::AsSlice)),
             "push" if heap => Some(Std::Heap(HeapOp::Push)),
             "pop" if heap => Some(Std::Heap(HeapOp::Pop)),
@@ -282,6 +287,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                 })
             }
             "encode_utf8" if owner.is_char() => Std::Text(TextOp::EncodeUtf8),
+            "encode_utf16" if owner.is_char() => Std::Text(TextOp::CharEncodeUtf16),
             "decode_utf16" if owner.is_char() => Std::Text(TextOp::DecodeUtf16),
             "unpaired_surrogate" if is_decode_utf16_error(tcx, owner) => Std::Same,
             "make_ascii_uppercase" | "make_ascii_lowercase" if owner.is_char() || owner.is_str() => {

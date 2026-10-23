@@ -262,6 +262,9 @@ pub(super) enum StepOp {
     NextIfEq,
     /// `Chars::as_str`: the rest, as a string.
     AsStr,
+    /// `offset()` of a string's `char_indices()`: where its next `char`
+    /// starts, in UTF-8 bytes (#118).
+    Offset,
     /// A slice's or a `Vec`'s iterator's `as_slice`: the rest.
     AsSlice,
     /// `cycle()` of std's iterator over an array: the rest, gone over

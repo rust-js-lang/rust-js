@@ -632,4 +632,12 @@ export const mutations: Mutation[] = [
     replace: "            ty::Adt(..) if false => {\n                return Err(self.unsupported(span, \"\"));\n",
     tests: ["test/corpus.test.ts", "-t", "^manually_drop_values.rs$"],
   },
+  {
+    name: "parse-error-clone-refused",
+    breaks: "a ParseIntError's clone is cloned as itself",
+    file: "src/lower/std_impls.rs",
+    find: "                    || self.is_parse_error(ty) =>",
+    replace: "                    =>",
+    tests: ["test/corpus.test.ts", "-t", "str_odds"],
+  },
 ];
