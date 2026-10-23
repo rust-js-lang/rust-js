@@ -1095,5 +1095,5 @@ test("zip takes its first side's item before its second's", () => {
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("$lazyZip(");
   const zip = readFileSync(join(root, "src/runtime/lazy_zip.js"), "utf8");
-  expect(zip).toContain("for (const item of a) {\n      const other = right.next();");
+  expect(zip).toContain("const item = left.next();\n    if (item.done) return item;\n    const other = right.next();");
 });

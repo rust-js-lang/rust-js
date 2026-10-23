@@ -525,11 +525,7 @@ export function $shift(items) {
 // an `ExactSizeIterator`'s (ADR 0456).
 export function $iterator(iterator, next, boxed = false, nextBack, len, hint) {
   const step = (item) => (item == null ? { done: true, value: undefined } : { done: false, value: boxed ? $someValue(item) : item });
-  const it = Iterator.from({
-    next() {
-      return step(next(iterator));
-    }
-  });
+  const it = new $Steps(() => step(next(iterator)));
   it.of = iterator;
   // Another of a value of its type, stepped as it is: a clone's (ADR 0473).
   it.with = (value) => $iterator(value, next, boxed, nextBack, len, hint);
@@ -1067,6 +1063,73 @@ export function $ordSet(cmp) {
   };
 }
 
+// An iterator rust-js makes, stepped as Rust's is: each `next` steps on, so
+// one that gave `None` may give more, as the crate's own or `from_fn`'s may,
+// and its `map`, `filter`, `take` and `drop` are std's adapters, which pass
+// that on, where JS's iterator helpers stay ended at their first `done`
+// (#161, ADR 0669). Of a source that never gives more, each is JS's. `close`
+// is what its `return()` closes.
+export class $Steps extends Iterator {
+  constructor(next, close) {
+    super();
+    this.next = next;
+    this.return = () => {
+      close?.();
+      return { done: true, value: undefined };
+    };
+  }
+  map(f) {
+    let i = 0;
+    return new $Steps(
+      () => {
+        const step = this.next();
+        return step.done ? step : { done: false, value: f(step.value, i++) };
+      },
+      () => this.return(),
+    );
+  }
+  filter(keep) {
+    let i = 0;
+    return new $Steps(
+      () => {
+        for (;;) {
+          const step = this.next();
+          if (step.done || keep(step.value, i++)) return step;
+        }
+      },
+      () => this.return(),
+    );
+  }
+  // Std's `Take`: each of its `n` steps steps its source, a `None` too.
+  take(n) {
+    return new $Steps(
+      () => {
+        if (n === 0) return this.return();
+        n--;
+        return this.next();
+      },
+      () => this.return(),
+    );
+  }
+  // Std's `Skip`: its first step passes `n`, or stops at a `None`, which it
+  // gives; each after is its source's.
+  drop(n) {
+    return new $Steps(
+      () => {
+        for (; n > 0; n--) {
+          const step = this.next();
+          if (step.done) {
+            n = 0;
+            return step;
+          }
+        }
+        return this.next();
+      },
+      () => this.return(),
+    );
+  }
+}
+
 export function $sortedEntries(map, cmp) {
   return Array.from(map).sort((a, b) => cmp(a[0], b[0]));
 }
@@ -1315,8 +1378,8 @@ export function $closing(it, drop) {
 // 0465). Its back and length are its source's less what it skips, as
 // Rust's `next_back` and `len` are.
 export function $skipping(iter, n, drop) {
-  const skipping = Iterator.from({
-    next() {
+  const skipping = new $Steps(
+    () => {
       for (; skipping.n > 0; skipping.n--) {
         const step = skipping.iter.next();
         if (step.done) {
@@ -1327,8 +1390,8 @@ export function $skipping(iter, n, drop) {
       }
       return skipping.iter.next();
     },
-    return: () => $closed(skipping.iter),
-  });
+    () => $closed(skipping.iter),
+  );
   skipping.iter = iter;
   skipping.n = n;
   skipping.hint = () => {
@@ -1346,14 +1409,14 @@ export function $skipping(iter, n, drop) {
 // `drop` where items have a destructor, as Rust's `next_back` steps its
 // source's `nth_back`; its length the fewer of its source's and `n`.
 export function $taking(iter, n, drop) {
-  const taking = Iterator.from({
-    next() {
+  const taking = new $Steps(
+    () => {
       if (taking.n === 0) return { done: true, value: undefined };
       taking.n--;
       return taking.iter.next();
     },
-    return: () => $closed(taking.iter),
-  });
+    () => $closed(taking.iter),
+  );
   taking.iter = iter;
   taking.n = n;
   taking.hint = () => {
@@ -1557,7 +1620,10 @@ export function $closed(it) {
 // (ADRs 0455, 0456). Closing it closes its source (ADR 0465).
 export function $mapEnds(it, f) {
   const mapped = (step) => (step.done ? step : { done: false, value: f(step.value) });
-  const map = Iterator.from({ next: () => mapped(it.next()), return: () => $closed(it) });
+  const map = new $Steps(
+    () => mapped(it.next()),
+    () => $closed(it),
+  );
   if (it.back !== undefined) map.back = () => mapped(it.back());
   if (it.len !== undefined) map.len = () => it.len();
   return map;
@@ -1570,52 +1636,60 @@ export function $mapEnds(it, f) {
 export function $chainEnds(a, b) {
   const done = { done: true, value: undefined };
   const sides = { a, b };
+  // The first side let go of once it's done, as std's clears it; the
+  // second stepped on, as std's is.
   const step = (first, second, by) => () => {
-    for (const side of [first, second]) {
-      if (sides[side] === undefined) continue;
-      const at = sides[side][by]();
+    if (sides[first] !== undefined) {
+      const at = sides[first][by]();
       if (!at.done) return at;
-      sides[side] = undefined;
+      sides[first] = undefined;
     }
-    return done;
+    return sides[second] === undefined ? done : sides[second][by]();
   };
-  const chain = Iterator.from({
-    next: step("a", "b", "next"),
-    return: () => {
-      sides.a?.return?.();
-      sides.b?.return?.();
-      return done;
-    },
+  const chain = new $Steps(step("a", "b", "next"), () => {
+    sides.a?.return?.();
+    sides.b?.return?.();
   });
   chain.back = step("b", "a", "back");
   return chain;
 }
 
-// `it.step_by(step)` of a JS iterator that knows its back and its length,
-// which knows its back too, as Rust's `StepBy` is double-ended where its
-// source is exact-sized: the first item, then each `step`th, from the
-// front; from the back, the last of those, found by the source's length,
-// as std's `next_back_index` finds it. Closing it closes its source.
-export function $stepByEnds(it, step) {
-  let first = true;
+// `it.step_by(step)`, as Rust's `StepBy` steps: its first item, then
+// each `step`th, a skip stopped by a `None`, which it gives, and stepped on
+// after, as std's `nth` is; each passed over dropped, `drop`, where items
+// have a destructor (ADR 0465). Closing it closes its source.
+export function $stepBy(it, step, drop) {
   const skip = (k, by) => {
     for (; k > 0; k--) {
       const at = it[by]();
       if (at.done) return at;
+      drop?.(at.value);
     }
     return it[by]();
   };
-  const stepped = Iterator.from({
-    next() {
-      const at = skip(first ? 0 : step - 1, "next");
-      first = false;
+  const stepped = new $Steps(
+    () => {
+      const at = skip(stepped.first ? 0 : step - 1, "next");
+      stepped.first = false;
       return at;
     },
-    return: () => $closed(it),
-  });
+    () => $closed(it),
+  );
+  stepped.first = true;
+  stepped.skip = skip;
+  return stepped;
+}
+
+// `it.step_by(step)` of a JS iterator that knows its back and its length,
+// which knows its back too, as Rust's `StepBy` is double-ended where its
+// source is exact-sized: `$stepBy`'s from the front; from the back, the
+// last of those, found by the source's length, as std's `next_back_index`
+// finds it.
+export function $stepByEnds(it, step) {
+  const stepped = $stepBy(it, step);
   stepped.back = () => {
     const rem = it.len() % step;
-    return skip(first ? (rem === 0 ? step - 1 : rem - 1) : rem, "back");
+    return stepped.skip(stepped.first ? (rem === 0 ? step - 1 : rem - 1) : rem, "back");
   };
   return stepped;
 }
@@ -1629,7 +1703,7 @@ export function $filterEnds(it, p) {
     for (let at = step(); !at.done; at = step()) if (p(at.value)) return at;
     return { done: true, value: undefined };
   };
-  const filter = Iterator.from({ next: kept(() => it.next()) });
+  const filter = new $Steps(kept(() => it.next()));
   if (it.back !== undefined) filter.back = kept(() => it.back());
   return filter;
 }
@@ -1644,13 +1718,13 @@ export function $filterEnds(it, p) {
 // at the `count` it's given; closing it closes what it steps.
 export function $enumerate(iter, count = 0) {
   const pair = (step, at) => (step.done ? step : { done: false, value: [at, step.value] });
-  const enumerated = Iterator.from({
-    next: () => {
+  const enumerated = new $Steps(
+    () => {
       const step = enumerated.iter.next();
       return step.done ? step : pair(step, enumerated.count++);
     },
-    return: () => $closed(enumerated.iter),
-  });
+    () => $closed(enumerated.iter),
+  );
   enumerated.iter = iter;
   enumerated.count = count;
   enumerated.hint = () => $sizeHint(enumerated.iter);
@@ -1760,19 +1834,16 @@ export function $nextBackSome(it) {
 export function $lazyScan(items, init, f, handle = true) {
   const state = handle ? { value: init } : init;
   const source = items[Symbol.iterator]();
-  const it = Object.create(Iterator.prototype);
-  it.next = () => {
-    const step = source.next();
-    const next = step.done ? undefined : f(state, step.value);
-    if (next !== undefined) return { done: false, value: next };
-    source.return?.();
-    return { done: true, value: undefined };
-  };
-  it.return = () => {
-    source.return?.();
-    return { done: true, value: undefined };
-  };
-  return it;
+  return new $Steps(
+    () => {
+      const step = source.next();
+      const next = step.done ? undefined : f(state, step.value);
+      if (next !== undefined) return { done: false, value: next };
+      source.return?.();
+      return { done: true, value: undefined };
+    },
+    () => source.return?.(),
+  );
 }
 
 export class $JsonError extends Error {
@@ -9862,35 +9933,53 @@ export function $zip(a, b) {
   return Array.from({ length: Math.min(a.length, b.length) }, (_, i) => [a[i], b[i]]);
 }
 
-// `a.chain(b)`, lazy: each of `a`'s, then each of `b`'s; both closed as it
-// ends, which drops what each holds (ADR 0465).
-export function* $lazyChain(a, b) {
-  try {
-    yield* a;
-    yield* b;
-  } finally {
-    a.return?.();
-    b.return?.();
-  }
+// `a.chain(b)`, lazy: each of `a`'s, then each of `b`'s; `a` closed once
+// it's done, as std's lets it go, and `b` stepped on after a `None`, as
+// std's is; each closed as it ends, which drops what each holds (ADR 0465).
+export function $lazyChain(a, b) {
+  let first = a[Symbol.iterator]();
+  const second = b[Symbol.iterator]();
+  return new $Steps(
+    () => {
+      if (first !== undefined) {
+        const step = first.next();
+        if (!step.done) return step;
+        first.return?.();
+        first = undefined;
+      }
+      const step = second.next();
+      if (step.done) second.return?.();
+      return step;
+    },
+    () => {
+      first?.return?.();
+      second.return?.();
+    },
+  );
 }
 
 // `a.zip(b)`, lazy: a pair of each's next, till either ends; an item of
-// `a`'s stepped where `b`'s run out given to `dropA`, as Rust drops it, and
-// `b` closed as it ends, which drops what it holds (ADR 0465).
-export function* $lazyZip(a, b, dropA) {
+// `a`'s stepped where `b`'s run out given to `dropA`, as Rust drops it;
+// both closed as it's closed, which drops what they hold (ADR 0465). A
+// step after its end steps each on, as Rust's `Zip`, which isn't fused,
+// does.
+export function $lazyZip(a, b, dropA) {
+  const left = a[Symbol.iterator]();
   const right = b[Symbol.iterator]();
-  try {
-    for (const item of a) {
-      const other = right.next();
-      if (other.done) {
-        dropA?.(item);
-        return;
-      }
-      yield [item, other.value];
-    }
-  } finally {
+  const close = () => {
+    left.return?.();
     right.return?.();
-  }
+  };
+  return new $Steps(() => {
+    const item = left.next();
+    if (item.done) return item;
+    const other = right.next();
+    if (other.done) {
+      dropA?.(item.value);
+      return other;
+    }
+    return { done: false, value: [item.value, other.value] };
+  }, close);
 }
 
 // `a.zip(b).rev()` of two iterators that know their backs and lengths,
@@ -9962,13 +10051,23 @@ export function $rev(it) {
   return rev;
 }
 
-export function* $lazyTakeWhile(items, keep) {
-  for (const item of items) {
-    if (!keep(item)) {
-      return;
-    }
-    yield item;
-  }
+// `it.take_while(keep)`: each item `keep` holds of; the first it doesn't
+// ends it for good, closing what it steps, as Rust's flag does, and a
+// `None` of its source ends what's stepped now, as Rust's passes it on.
+export function $lazyTakeWhile(items, keep) {
+  const source = items[Symbol.iterator]();
+  let ended = false;
+  return new $Steps(
+    () => {
+      if (ended) return { done: true, value: undefined };
+      const step = source.next();
+      if (step.done || keep(step.value)) return step;
+      ended = true;
+      source.return?.();
+      return { done: true, value: undefined };
+    },
+    () => source.return?.(),
+  );
 }
 
 // `it.map_while(f)`: each of what `f` gives that `present` keeps; one it
@@ -9977,30 +10076,36 @@ export function* $lazyTakeWhile(items, keep) {
 // isn't fused, does, where `take_while` stays ended.
 export function $lazyMapWhile(items, f, present) {
   const source = items[Symbol.iterator]();
-  const it = Object.create(Iterator.prototype);
-  it.next = () => {
-    const step = source.next();
-    const value = step.done ? undefined : f(step.value);
-    if (!step.done && present(value)) return { done: false, value };
-    source.return?.();
-    return { done: true, value: undefined };
-  };
-  it.return = () => {
-    source.return?.();
-    return { done: true, value: undefined };
-  };
-  return it;
+  return new $Steps(
+    () => {
+      const step = source.next();
+      const value = step.done ? undefined : f(step.value);
+      if (!step.done && present(value)) return { done: false, value };
+      source.return?.();
+      return { done: true, value: undefined };
+    },
+    () => source.return?.(),
+  );
 }
 
-export function* $lazySkipWhile(items, skip) {
+// `it.skip_while(skip)`: its items from the first `skip` doesn't hold of;
+// a `None` of its source while it skips ends what's stepped now, as Rust's
+// `find` gives it.
+export function $lazySkipWhile(items, skip) {
+  const source = items[Symbol.iterator]();
   let skipping = true;
-  for (const item of items) {
-    if (skipping && skip(item)) {
-      continue;
-    }
-    skipping = false;
-    yield item;
-  }
+  return new $Steps(
+    () => {
+      for (;;) {
+        const step = source.next();
+        if (step.done || !skipping || !skip(step.value)) {
+          if (!step.done) skipping = false;
+          return step;
+        }
+      }
+    },
+    () => source.return?.(),
+  );
 }
 
 // `iter::repeat(value)`: a clone of `value` each step, and `value` dropped,
@@ -10131,14 +10236,12 @@ export function $successors(first, successor, boxed = false, drop) {
 }
 
 export function $fromFn(f, boxed = false) {
-  return Iterator.from({
-    next() {
-      const item = f();
-      if (item == null) {
-        return { done: true, value: undefined };
-      }
-      return { done: false, value: boxed ? $someValue(item) : item };
+  return new $Steps(() => {
+    const item = f();
+    if (item == null) {
+      return { done: true, value: undefined };
     }
+    return { done: false, value: boxed ? $someValue(item) : item };
   });
 }
 
@@ -10414,7 +10517,7 @@ export function $formatFloat(value, options, show) {
 // from it and stops early, as `take` or a loop that breaks does, closes
 // this, not `it`, which its lender goes on stepping.
 export function $lent(it) {
-  return Iterator.from({ next: () => it.next() });
+  return new $Steps(() => it.next());
 }
 
 // `collect()` into a `Result`: the first `Err`, where it stops, as Rust's

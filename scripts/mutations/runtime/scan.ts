@@ -6,8 +6,8 @@ export const mutations: Mutation[] = [
     name: "scan-past-none",
     breaks: "`scan` goes on past its first `None`",
     file: "src/runtime/scan.js",
-    find: "    source.return?.();\n    return { done: true, value: undefined };\n  };\n  it.return = () => {",
-    replace: "    return it.next();\n  };\n  it.return = () => {",
+    find: "      if (next !== undefined) return { done: false, value: next };\n      source.return?.();\n",
+    replace: "      if (next !== undefined) return { done: false, value: next };\n",
     tests: ["test/corpus.test.ts", "-t", "^scan_lazy_drops.rs$"],
   },
   {

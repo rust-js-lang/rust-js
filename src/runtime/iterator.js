@@ -8,11 +8,7 @@
 // an `ExactSizeIterator`'s (ADR 0456).
 function $iterator(iterator, next, boxed = false, nextBack, len, hint) {
   const step = (item) => (item == null ? { done: true, value: undefined } : { done: false, value: boxed ? $someValue(item) : item });
-  const it = Iterator.from({
-    next() {
-      return step(next(iterator));
-    }
-  });
+  const it = new $Steps(() => step(next(iterator)));
   it.of = iterator;
   // Another of a value of its type, stepped as it is: a clone's (ADR 0473).
   it.with = (value) => $iterator(value, next, boxed, nextBack, len, hint);

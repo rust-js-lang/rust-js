@@ -65,6 +65,7 @@ helpers! {
     KeyMap,
     KeySet,
     OrdMap,
+    Steps,
     SortedEntries,
     ToDigit,
     Lines,
@@ -752,6 +753,9 @@ impl Helper {
             // A B-tree of keys found by their own `Ord` (ADR 0404): its entries
             // kept sorted, each found by a binary search of `cmp`.
             Helper::OrdMap => include_str!("runtime/ord_map.js"),
+            // An iterator stepped as Rust's is, its adapters std's, which pass
+            // on a `None` its source gives before more (#161).
+            Helper::Steps => include_str!("runtime/steps.js"),
             // A map's `insert` for its value: the one it replaced, or `None`.
             Helper::Insert => include_str!("runtime/insert.js"),
             // A set's `insert` for its value: whether it wasn't there yet.

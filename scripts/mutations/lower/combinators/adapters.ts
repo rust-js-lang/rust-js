@@ -266,4 +266,12 @@ export const mutations: Mutation[] = [
     replace: "                if !sides.iter().all(|&side| self.is_vec_like(side)) {\n",
     tests: ["test/corpus.test.ts", "-t", "^unzip_into_maps.rs$"],
   },
+  {
+    name: "step-by-unfused-filtered",
+    breaks: "`step_by` of an iterator that gives `None` then more counts on past it, a filter of each `n`th, not std's `nth`",
+    file: "src/lower/combinators/adapters.rs",
+    find: "                if !self.recognition().is_fused_iterator(receiver_ty.peel_refs()) {\n",
+    replace: "                if false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^restarting_iterators.rs$"],
+  },
 ];
