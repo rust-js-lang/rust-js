@@ -933,7 +933,10 @@ fn try_catch(made: &Stmt, tested: &Stmt, before: &[Stmt], rest: &[Stmt]) -> Opti
     };
     // Each arm's statements, and how many of `rest` are one's: an `if`'s
     // and its `else`'s; or, after an arm that leaves, the other's, `rest`,
-    // which leaves too, where it's the `Err`'s, the `catch`'s.
+    // which leaves too, where it's the `Err`'s, the `catch`'s; or, after an
+    // `Ok` arm that leaves where `rest` goes on, none, the `catch`'s, what
+    // follows the `try` run where the call threw, as it ran after the `if`
+    // (ADR 0637, amended).
     let leaves = |stmts: &[Stmt]| stmts.last().is_some_and(js::ends);
     let (ok, err, taken): (&[Stmt], &[Stmt], usize) = match (of_ok, otherwise) {
         (true, Some(otherwise)) => (then, otherwise, 0),
@@ -942,7 +945,7 @@ fn try_catch(made: &Stmt, tested: &Stmt, before: &[Stmt], rest: &[Stmt]) -> Opti
         (true, None) if leaves(rest) => (then, rest, rest.len()),
         (false, None) if leaves(then) => (rest, then, rest.len()),
         (false, None) => (&[], then, 0),
-        (true, None) => return None,
+        (true, None) => (then, &[], 0),
     };
     let after = &rest[taken..];
     // Each arm's binding, `const v = result._0;`: the `Ok`'s value, and the

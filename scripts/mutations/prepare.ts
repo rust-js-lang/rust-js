@@ -669,4 +669,12 @@ export const mutations: Mutation[] = [
     replace: "            let _ = els;\n",
     tests: ["test/lowering-written-branches.test.ts", "-t", "an else-if chain keeps its else"],
   },
+  {
+    name: "ok-arm-leaving-alone-kept",
+    breaks: "`if let Ok(v) = catch_unwind(..) { return v; }`, nothing after it in its block, is the `Result` made and its `TAG` tested, not `try { return ..; } catch {}`",
+    file: "src/prepare.rs",
+    find: "        (true, None) => (then, &[], 0),\n",
+    replace: "        (true, None) => return None,\n",
+    tests: ["test/lowering-unwinds.test.ts", "-t", "an if let Ok of catch_unwind"],
+  },
 ];
