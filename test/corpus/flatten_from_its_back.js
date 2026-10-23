@@ -78,16 +78,16 @@ function main() {
 
 function flakyIterator_next(flaky) {
   flaky.n = (flaky.n + 1) >>> 0;
-  if (flaky.n !== 1) {
-    if (flaky.n === 2) {
+  switch (flaky.n) {
+    case 1:
+      return [1];
+    case 2:
       return;
-    }
-    if (flaky.n === 3) {
+    case 3:
       return [2, 3];
-    }
-    return;
+    default:
+      return;
   }
-  return [1];
 }
 
 function flakyDoubleEndedIterator_nextBack(flaky) {

@@ -221,9 +221,11 @@ cases, is put in its written order as before.
 
 - Case: N, as the Decision's: the same tests in another order, of kinds no
   two of which a value is.
-- The corpus, the snapshots and the guide don't change: none has a `match`
-  of `js::Kind` whose arm MIR tests first is written after one that
-  leaves.
+- It holds of every `switch`, ADR 0629's of constants too: the corpus's
+  `flatten_from_its_back.rs`, `match self.n { 1 => Some(vec![1]), 2 =>
+  None, 3 => .., _ => None }`, was `if (flaky.n !== 1) { .. } return [1];`,
+  `1`'s arm put last, and is `switch (flaky.n) { case 1: return [1]; ..
+  }`. The snapshots and the guide don't change.
 - Held by `test/lowering-switches.test.ts`, "an arm that returns early is
   still its case of a switch of a typeof", run in Node, and "React's
   getIODescription is upstream's switch of a typeof", the port whole, run
