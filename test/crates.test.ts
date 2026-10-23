@@ -198,7 +198,7 @@ test("a library's generic function takes the drops its body uses", () => {
   const signatures = js.split("\n").filter((line) => line.startsWith("export function"));
   expect(signatures).toEqual([
     "export function keep(value) {",
-    "export function pick(a, _b, dropB) {",
+    "export function pick(a, b, dropB) {",
     "export function relay(value) {",
     "export function discard(value, dropT) {",
     "export function apply(f, a) {",

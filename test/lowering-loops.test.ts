@@ -1423,7 +1423,7 @@ pub fn joined(items: &[Option<&Unknown>], expanded: Option<&str>) -> (String, Op
             str += ", ";
         }
         let substr = if let Some(object) = value
-            && let Kind::Object(_) | Kind::Array(_) = js::classify(object)
+            && let Kind::Object(_) | Kind::Array(_) = js::classify(Some(object))
         {
             "{...}".to_string()
         } else {
