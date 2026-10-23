@@ -1112,6 +1112,42 @@ pub fn first() -> Option<u32> {
   expect([lib.remember(4), lib.remember(5), lib.first()]).toEqual([1, 2, 1]);
 });
 
+// ADR 0704, of React's componentFrameCache as its port writes it: `if
+// __DEV__ { Some(..) } else { None }` of a build global, its `Some` an `if`
+// of its own, is upstream's `if (__DEV__) { componentFrameCache = ..; }`,
+// as written, not `if (!__DEV__) { .. = undefined; } else { .. }`.
+test("a thread-local of a build global's if is assigned under the if as written", () => {
+  const dir = fixture("assigned-dev");
+  writeFileSync(join(dir, "lib.rs"), `use js::{JsObject, WeakMap};
+
+unsafe extern "Rust" {
+    pub safe static __DEV__: bool;
+}
+
+thread_local! {
+    static COMPONENT_FRAME_CACHE: Option<&'static WeakMap<JsObject, String>> =
+        if __DEV__ {
+            Some(if js::is_defined(js::weak_map::new::<JsObject, String>) {
+                js::weak_map::new()
+            } else {
+                js::map::new()
+            })
+        } else {
+            None
+        };
+}
+
+pub fn cached(key: &JsObject) -> Option<String> {
+    COMPONENT_FRAME_CACHE.with(|cache| *cache).and_then(|cache| cache.get(key))
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain(
+    'let componentFrameCache;\nif (__DEV__) {\n  componentFrameCache = typeof WeakMap !== "undefined" ? new WeakMap() : new Map();\n}\n',
+  );
+});
+
 // ADR 0703: a thread-local's `.with(|c| *c)` is its variable (ADR 0270)
 // where something's there to drop as a panic unwinds too, React's
 // `COMPONENT_FRAME_CACHE.with(|cache| *cache)` under its `finally`'s guard:

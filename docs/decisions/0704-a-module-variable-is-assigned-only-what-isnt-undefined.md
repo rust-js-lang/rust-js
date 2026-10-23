@@ -48,4 +48,9 @@ nothing is the `else`'s, under the test negated, `if (!(t)) { x = v; }`.
 
 - `test/lowering-cells.test.ts`, "a thread-local an if makes None of is
   assigned only where it's something", run in JS.
+- `test/lowering-cells.test.ts`, "a thread-local of a build global's if
+  is assigned under the if as written": the port's componentFrameCache,
+  `if __DEV__ { Some(if js::is_defined(..) { .. } else { .. }) } else {
+  None }` of an `extern` static, is `if (__DEV__) { componentFrameCache
+  = typeof WeakMap !== "undefined" ? new WeakMap() : new Map(); }`.
 - Mutations `assigned-undefined-written`, `assigned-empty-then-kept`.
