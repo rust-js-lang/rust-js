@@ -60,3 +60,13 @@ the function. A `lazy` that names no parameter is an error.
 - `test/diagnostics.test.ts`, "a lazy parameter that isn't there".
 - Mutations: the closure kept, a call unwrapped, a function unwrapped, the
   attribute unchecked.
+
+## Amendment: `use_state`'s initializer may borrow
+
+`use_state` took `impl FnOnce() -> T + 'static`, so TodoMVC's
+`use_state(|| todo.title.clone())`, of the component's own props, was
+E0373, and the playground's browser test, the only one that compiled the
+example, timed out on it. React calls the initializer during `useState`,
+if at all, and keeps nothing of it: the bound is gone. The playground's
+React examples, `react_counter` and `todomvc`, are native snapshots too,
+`test/snapshots.test.ts`, which fails with E0373 under the old bound.

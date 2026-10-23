@@ -54,6 +54,10 @@ const cases: [string, string, Crate[]][] = [
   ["async", "test/async.rs", ["web"]],
   ["imports", "test/imports/lib.rs", ["web"]],
   ["components", "test/components.rs", ["react"]],
+  // The playground's React examples, compiled natively too: its browser
+  // test is the only other that reads them.
+  ["react_counter", "examples/react_counter.rs", ["web", "react"]],
+  ["todomvc", "examples/todomvc/lib.rs", ["web", "react"]],
   ["apis", "test/apis.rs", ["react"]],
   // The playground's own Rust (ADR 0044). test/playground.test.ts checks that
   // rust-js.wasm, which compiles it for the site, writes the same.
