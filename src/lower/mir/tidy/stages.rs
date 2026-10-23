@@ -261,8 +261,6 @@ pub(super) const STAGES: &[Stage] = &[
             pass("tail continues", |b, h| {
                 js::statement_lists(b, &mut |s| tail_continues(s, &h.written.continues))
             }),
-            // What a block ends after, its tests read in place now: its `else`.
-            pass("tail elses", |b, _| js::statement_lists(b, &mut |s| tail_elses(s))),
             // A check MIR wrote first in a chain's last `else`: the chain's arm.
             pass("chained checks", |b, _| {
                 js::statement_lists(b, &mut |s| chained_checks(s))
@@ -281,9 +279,6 @@ pub(super) const STAGES: &[Stage] = &[
             }),
             pass("settle jumps", |b, _| settle_jumps(b)),
             pass("declarations", |b, _| declarations(b)),
-            // `x != null && typeof x === "string"`: the `typeof` test, which
-            // says it.
-            pass("typeof tests", |b, _| js::each_expr_mut(b, &mut typeof_tests)),
             // A loop's early `break`s, its tests read in place now, and its test.
             pass("early breaks", |b, _| {
                 js::statement_lists(b, &mut |s| early_breaks(s, true))

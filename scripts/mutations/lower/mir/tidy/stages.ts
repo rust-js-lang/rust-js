@@ -131,24 +131,11 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/tidy/stages.rs",
     "find": "    pass(\"written first\", |b, _| {\n        js::statement_lists(b, &mut |s| written_first(s))\n    }),\n",
     "replace": "",
-    "tests": ["test/lowering-branches.test.ts", "-t", "if-let chain ending in a panic"]
+    "tests": ["test/corpus.test.ts", "-t", "^(returns_in_place|untagged_enums).rs$"],
+    "snapshots": true
   },
-  {
-    "name": "mir-tidy-tail-elses-kept",
-    "breaks": "an else-if chain's arm from MIR breaks its block, `if (c) { s; break bb19; } throw ..`",
-    "file": "src/lower/mir/tidy/stages.rs",
-    "find": "            pass(\"tail elses\", |b, _| js::statement_lists(b, &mut |s| tail_elses(s))),\n",
-    "replace": "",
-    "tests": ["test/lowering-branches.test.ts", "-t", "if-let chain ending in a panic"]
-  },
-  {
-    "name": "mir-tidy-typeof-null-kept",
-    "breaks": "a typeof test from MIR keeps the null check before it, `given != null && typeof given === \"string\"`",
-    "file": "src/lower/mir/tidy/stages.rs",
-    "find": "            pass(\"typeof tests\", |b, _| js::each_expr_mut(b, &mut typeof_tests)),\n",
-    "replace": "",
-    "tests": ["test/lowering-options.test.ts", "-t", "typeof test after a null check"]
-  },
+
+
   {
     "name": "mir-tidy-chained-checks-kept",
     "breaks": "an else-if chain's arm before a panic from MIR is a check in its else, `if (t._0 !== \"/\") throw ..`",
@@ -283,7 +270,8 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/tidy/stages.rs",
     "find": "            pass(\"handles in place\", |b, _| handles_in_place(b)),\n",
     "replace": "",
-    tests: ["test/lowering-cells.test.ts", "-t", "a handle used in place from MIR is its place"],
+    tests: ["test/corpus.test.ts", "-t", "^unrun_function_drops.rs$"],
+    snapshots: true,
   },
   {
     name: "mir-tidy-unread-map-kept",
