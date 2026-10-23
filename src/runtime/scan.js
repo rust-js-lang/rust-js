@@ -7,17 +7,14 @@
 function $lazyScan(items, init, f, handle = true) {
   const state = handle ? { value: init } : init;
   const source = items[Symbol.iterator]();
-  const it = Object.create(Iterator.prototype);
-  it.next = () => {
-    const step = source.next();
-    const next = step.done ? undefined : f(state, step.value);
-    if (next !== undefined) return { done: false, value: next };
-    source.return?.();
-    return { done: true, value: undefined };
-  };
-  it.return = () => {
-    source.return?.();
-    return { done: true, value: undefined };
-  };
-  return it;
+  return new $Steps(
+    () => {
+      const step = source.next();
+      const next = step.done ? undefined : f(state, step.value);
+      if (next !== undefined) return { done: false, value: next };
+      source.return?.();
+      return { done: true, value: undefined };
+    },
+    () => source.return?.(),
+  );
 }

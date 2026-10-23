@@ -1,11 +1,24 @@
-// `a.chain(b)`, lazy: each of `a`'s, then each of `b`'s; both closed as it
-// ends, which drops what each holds (ADR 0465).
-function* $lazyChain(a, b) {
-  try {
-    yield* a;
-    yield* b;
-  } finally {
-    a.return?.();
-    b.return?.();
-  }
+// `a.chain(b)`, lazy: each of `a`'s, then each of `b`'s; `a` closed once
+// it's done, as std's lets it go, and `b` stepped on after a `None`, as
+// std's is; each closed as it ends, which drops what each holds (ADR 0465).
+function $lazyChain(a, b) {
+  let first = a[Symbol.iterator]();
+  const second = b[Symbol.iterator]();
+  return new $Steps(
+    () => {
+      if (first !== undefined) {
+        const step = first.next();
+        if (!step.done) return step;
+        first.return?.();
+        first = undefined;
+      }
+      const step = second.next();
+      if (step.done) second.return?.();
+      return step;
+    },
+    () => {
+      first?.return?.();
+      second.return?.();
+    },
+  );
 }

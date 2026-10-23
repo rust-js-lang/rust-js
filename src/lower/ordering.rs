@@ -199,6 +199,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 self.cmp_value(inside(a), inside(b), args.type_at(0), partial, span, out)
             }
             ty::Adt(_, args) if self.is_vec_like(ty) => self.cmp_items(a, b, args.type_at(0), partial, span),
+            // A B-tree: its items in its order, as a sequence's, a map's its
+            // entries, key then value.
+            ty::Adt(_, args) if self.is_sorted(ty) => {
+                let item = match self.is_set(ty) {
+                    true => args.type_at(0),
+                    false => Ty::new_tup(self.tcx, &[args.type_at(0), args.type_at(1)]),
+                };
+                let (a, b) = (self.in_order_of(a, ty, span)?, self.in_order_of(b, ty, span)?);
+                self.cmp_items(a, b, item, partial, span)
+            }
             ty::Array(item, _) | ty::Slice(item) => self.cmp_items(a, b, *item, partial, span),
             // A fieldless enum: by its discriminants, as the derive compares
             // them, `Low = 1` before `High = 2` however they're declared.

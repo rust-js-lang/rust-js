@@ -681,13 +681,14 @@ React and JSX are [their own pages](README.md#react).
     `count()` alike.
 16. Recursion deeper than about 10,000 calls throws a `RangeError`, the JS
     engine's stack's limit.
-17. A std adapter, `map` or `filter`, of an iterator that isn't fused, the
-    crate's iterator that gives `None` then `Some`, ends at its first
-    `None`, as a JS iterator helper does.
-18. A consumer of the crate's iterator steps its `next`: where its impl
+17. A consumer of the crate's iterator steps its `next`: where its impl
     writes its own `fold` or `nth`, `sum()`, `count()`, `for_each`,
     `skip(n)` and `step_by(n)` don't call them, as std's would.
-19. A `VecDeque`'s `as_slices()` gives all its items first and none second,
+18. A `VecDeque`'s `as_slices()` gives all its items first and none second,
     where std's split is its ring buffer's.
-20. `unwrap()` of a throwing JS call's `Result` throws what JS threw, not
+19. `unwrap()` of a throwing JS call's `Result` throws what JS threw, not
     Rust's ``called `Result::unwrap()` on an `Err` value`` panic.
+20. An adapter of an iterator that gives `None` and then more, of items
+    with a destructor, drops what it holds at that first `None`, where std
+    drops it with the adapter; what the iterator gives after is stepped as
+    std's is (ADR 0669).

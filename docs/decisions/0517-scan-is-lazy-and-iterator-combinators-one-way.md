@@ -99,3 +99,10 @@ reversed one's `nth` is its `nth_back`, `$rangeNthBack` of its
 a number end, that end `n` before; its `step_by`, its numbers from its
 end, `$lazyRangeBack(a, b, n)`, of BigInts too (#163). Held by
 `test/corpus/range_own_steps.rs` and `test/corpus/range_steps_known.rs`.
+
+## Amendment: every adapter steps its source as std's does
+
+An adapter over a source that gives `None` and then more is std's now,
+not the difference this amendment left: every iterator the runtime makes
+of Rust's is a `$Steps`, whose `map`, `filter`, `take` and `drop` pass a
+`None` on ([ADR 0669](0669-an-adapter-steps-its-source-as-stds-does.md)).

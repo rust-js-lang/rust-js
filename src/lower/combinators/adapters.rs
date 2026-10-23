@@ -348,6 +348,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     Some(step) if step != 0 => n,
                     _ => self.spill("step", Expr::call(Expr::helper("$step"), vec![n]), out),
                 };
+                // Of a source that may give more after a `None`, as std's
+                // steps it, by `nth`, which a `None` stops (#161).
+                if !self.recognition().is_fused_iterator(receiver_ty.peel_refs()) {
+                    let mut list = vec![items, n];
+                    list.extend(self.item_drop_of(receiver_ty, span)?);
+                    return Ok(Expr::call(Expr::helper("$stepBy"), list));
+                }
                 let keep = Expr::bin(Op::Eq, Expr::bin(Op::Rem, Expr::var("i"), n), Expr::int(0));
                 let body = match self.item_drop_of(receiver_ty, span)? {
                     Some(drop) => vec![

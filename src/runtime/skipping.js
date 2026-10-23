@@ -6,8 +6,8 @@
 // 0465). Its back and length are its source's less what it skips, as
 // Rust's `next_back` and `len` are.
 function $skipping(iter, n, drop) {
-  const skipping = Iterator.from({
-    next() {
+  const skipping = new $Steps(
+    () => {
       for (; skipping.n > 0; skipping.n--) {
         const step = skipping.iter.next();
         if (step.done) {
@@ -18,8 +18,8 @@ function $skipping(iter, n, drop) {
       }
       return skipping.iter.next();
     },
-    return: () => $closed(skipping.iter),
-  });
+    () => $closed(skipping.iter),
+  );
   skipping.iter = iter;
   skipping.n = n;
   skipping.hint = () => {
