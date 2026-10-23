@@ -188,6 +188,9 @@ ${methods.map((m) => `    static PREV_${upper(m)}: Cell<Option<${m === "group_en
 }
 
 fn disabled_log() {}
+js::on_load! {
+    js::set(js::unknown(&disabled_log), "__reactDisabledLog", true);
+}
 
 struct Logs<'a> {
 ${["info", "log", "warn", "error", "group", "group_collapsed", "group_end"].map((m) => `    ${m}: PropertyDescriptor<'a>,`).join("\n")}
@@ -244,6 +247,7 @@ pub fn called(name: &'static str) {
 }
 `);
   expect(js).toContain("let prevLog;\nlet prevInfo;");
+  expect(js).toContain("function disabledLog() {}\ndisabledLog.__reactDisabledLog = true;\n\nexport function disableLogs() {");
   expect(js).toContain("    prevLog = console.log;\n    prevInfo = console.info;");
   expect(js).toContain("prevGroupCollapsed = console.groupCollapsed;");
   expect(js).toContain("const props = { configurable: true, enumerable: true, value: disabledLog, writable: true };");
@@ -258,6 +262,8 @@ pub fn called(name: &'static str) {
     lib.disableLogs();
     lib.disableLogs();
     expect((console.log as any).name).toBe("disabledLog");
+    // What React DevTools reads to tell React's stand-in from the console's.
+    expect((console.log as any).__reactDisabledLog).toBe(true);
     expect(console.groupEnd).toBe(console.info);
     lib.reenableLogs();
     expect((console.warn as any).name).toBe("disabledLog");
@@ -266,6 +272,62 @@ pub fn called(name: &'static str) {
   } finally {
     Object.assign(console, saved);
   }
+});
+
+// ADR 0673: a function is a JS value of any shape, `js::unknown(&f)`,
+// whose property `js::set` writes, as React's `ConsolePatchingDev` marks
+// its `disabledLog` when its module loads, right after it, for DevTools to
+// read; a function item, a closure, a `fn` pointer and a `dyn Fn` alike.
+test("a function's property is set where its module loads it", async () => {
+  const { js, lib } = await compiled("js-object-function-property", `use js::{IntoUnknown, PropertyDescriptor, Rest, object};
+use webapi::console;
+
+type ConsoleFn = fn(&'static dyn Rest<dyn IntoUnknown>);
+
+fn disabled_log() {}
+js::on_load! {
+    js::set(js::unknown(&disabled_log), "__reactDisabledLog", true);
+}
+
+pub fn disable_log() {
+    let props = PropertyDescriptor {
+        configurable: Some(true),
+        value: Some(&disabled_log),
+        writable: Some(true),
+        ..Default::default()
+    };
+    object::define_property(webapi::console, "log", &props);
+}
+
+pub fn is_disabled() -> bool {
+    let log: ConsoleFn = console::log;
+    js::get(js::unknown(&log), "__reactDisabledLog").is_some()
+}
+
+pub fn marked(by: &str) -> Vec<String> {
+    let add = |n: f64| n + 1.0;
+    let pointer: fn(f64) -> f64 = add;
+    let held: &dyn Fn(f64) -> f64 = &add;
+    js::set(js::unknown(&add), "by", by);
+    js::set(js::unknown(&pointer), "kind", "pointer");
+    js::set(js::unknown(held), "held", true);
+    object::keys(js::unknown_of(add))
+}
+`);
+  expect(js).toContain('function disabledLog() {}\ndisabledLog.__reactDisabledLog = true;\n');
+  expect(js).toContain("const log = console.log;\n  return log.__reactDisabledLog != null;");
+  expect(js).toContain('add.by = by;\n  pointer.kind = "pointer";\n  held.held = true;');
+  const log = console.log;
+  try {
+    expect(lib.isDisabled()).toBe(false);
+    lib.disableLog();
+    // What React DevTools reads of the console's `log`.
+    expect((console.log as any).__reactDisabledLog).toBe(true);
+    expect(lib.isDisabled()).toBe(true);
+  } finally {
+    console.log = log;
+  }
+  expect(lib.marked("me")).toEqual(["by", "kind", "held"]);
 });
 
 // ADR 0667: rest arguments as a value are a binding's, which a `fn`
