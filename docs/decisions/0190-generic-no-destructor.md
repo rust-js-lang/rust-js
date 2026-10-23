@@ -88,3 +88,6 @@ it stops at. So a generic function given, by value, an iterator with a
 destructor that it steps by `nth` takes that iterator's drop, where it was
 refused.
 
+## Amended by
+
+[ADR 0696](0696-what-lowering-finds-of-drops-is-returned-with-it.md): what a function's lowering finds of drops is returned with it, `DropsObserved`, and gathered by the pipeline, not written into the crate's facts.

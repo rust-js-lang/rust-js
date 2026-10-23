@@ -432,4 +432,12 @@ export const mutations: Mutation[] = [
     replace: "                value\n",
     tests: ["test/lowering-numbers.test.ts", "-t", "a number literal keeps its base and its exponent"],
   },
+  {
+    name: "drops-observed-dropped",
+    breaks: "what a function's lowering found of drops is gathered",
+    file: "src/lower/pipeline.rs",
+    find: "        drops_observed.gather(cx.drops_observed.take());\n",
+    replace: "        let _ = cx.drops_observed.take();\n",
+    tests: ["test/crates.test.ts", "-t", "drops_by_need"],
+  },
 ];

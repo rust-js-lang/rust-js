@@ -408,6 +408,10 @@ const owners: Record<string, string[]> = {
     "src/lower/mir/structure.rs",
     "src/lower/mir/temporaries.rs",
   ],
+  // What lowering a function found of drops, which the pipeline gathers
+  // and resolves: the drops module's to write, where `CrateFacts` held it
+  // in cells every function wrote (the fourth review).
+  "self.drops_observed": ["src/lower/drops.rs", "src/lower/drops/uses.rs"],
   "self.writing": ["src/lower/display.rs", "src/lower/display/debug.rs", "src/lower/display/written.rs"],
   "self.cloning": ["src/lower/std_impls.rs"],
   "self.ordering": ["src/lower/ordering.rs"],

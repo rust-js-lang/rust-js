@@ -153,7 +153,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let given = self.drops_taken(id);
         // One that takes only the drops it uses is given each as an argument
         // the pipeline keeps or leaves out (ADR 0300).
-        let takes_used = self.krate.drop_uses.borrow().takes_used(id);
+        let takes_used = self.krate.takes_used_drops.contains(id);
         for &index in given {
             let ty = self.drop_slot_of(id, index, args);
             let iterated = self.iterated_slot(id, index, args, ty);

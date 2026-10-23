@@ -11,7 +11,6 @@ use rustc_hir::find_attr;
 use rustc_middle::ty::{self, TyCtxt};
 use rustc_span::Symbol;
 use rustc_span::def_id::{CRATE_MOD_ID, DefId, LocalModId};
-use std::cell::RefCell;
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::sync::Arc;
 
@@ -228,9 +227,10 @@ pub fn lower_crate<'tcx>(
     // A `Vec`'s capacity is kept where the crate or a library it uses asks
     // it, as what it gives that library may be asked (ADR 0419).
     let keeps_capacity = asks_capacity || foreign.keeps_capacity();
-    let no_drops = RefCell::new(HashMap::new());
-    let drop_checks = RefCell::new(Vec::new());
-    let drop_uses = RefCell::new(super::drops::DropUses::new(tcx, &drop_params));
+    let takes_used_drops = super::drops::TakesUsed::new(tcx, &drop_params);
+    // What each function's lowering found of drops, gathered in the order
+    // they're lowered, lowered or not, then resolved (ADRs 0190, 0300).
+    let mut drops_observed = super::drops::DropsObserved::default();
     let plain_ref_cells = std::cell::OnceCell::new();
     let crate_facts = CrateFacts {
         foreign: &foreign,
@@ -257,9 +257,7 @@ pub fn lower_crate<'tcx>(
         caller_locations: &caller_locations,
         any_failing: !failing.is_empty() || foreign.any_fails(),
         keeps_capacity,
-        no_drops: &no_drops,
-        drop_checks: &drop_checks,
-        drop_uses: &drop_uses,
+        takes_used_drops: &takes_used_drops,
         closures: &closures,
         bodies: &function_bodies,
         fns: &fns,
@@ -343,6 +341,7 @@ pub fn lower_crate<'tcx>(
             codecs: Vec::new(),
             krate: &crate_facts,
             dependencies: Default::default(),
+            drops_observed: Default::default(),
             frame: super::BodyFrame {
                 thir: body.map_or(&no_body, |body| &body.thir),
                 facts: body.map_or(&no_facts, |body| &body.facts),
@@ -382,6 +381,8 @@ pub fn lower_crate<'tcx>(
                     }
                 }),
         };
+        // Of one that failed too, whose calls are checked as each other's.
+        drops_observed.gather(cx.drops_observed.take());
         match result {
             Ok(lowered) => {
                 used.extend(lowered.dependencies.uses.iter().map(|&(_, to)| to));
@@ -391,12 +392,14 @@ pub fn lower_crate<'tcx>(
         }
     }
     // What a function takes no destructor of, each call of it checked (ADR 0190).
-    failed |= super::drops::check_no_drops(tcx, &no_drops, &drop_checks.borrow());
+    let checks = std::mem::take(&mut drops_observed.checks);
+    failed |= super::drops::check_no_drops(tcx, &mut drops_observed.no_drops, &checks);
     if failed {
         return None;
     }
+    let no_drops = std::mem::take(&mut drops_observed.no_drops);
     // Only the drops each function uses (ADR 0300).
-    drop_uses.into_inner().keep(&mut drop_params, &mut lowered_items);
+    drops_observed.keep(&takes_used_drops, &mut drop_params, &mut lowered_items);
 
     // What's written only where it's reached: derived Debug implementations,
     // a marker trait's dictionaries, which only a `dyn` reads (ADR 0307),
@@ -927,7 +930,7 @@ pub fn lower_crate<'tcx>(
                 &super::library::Contracts {
                     drop_params: &drop_params,
                     failing: &failing,
-                    no_drops: &no_drops.borrow(),
+                    no_drops: &no_drops,
                     type_facts: &type_facts,
                     caller_locations: &caller_locations,
                     stepped: &stepped,

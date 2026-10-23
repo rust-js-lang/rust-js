@@ -57,3 +57,7 @@ export function discard(value, dropT) { pick(undefined, value, dropT); }
 
 - A function that may panic before it moves its value still drops it, and
   takes a drop for it: `useEvent` reads its ref before it calls.
+
+## Amended by
+
+[ADR 0696](0696-what-lowering-finds-of-drops-is-returned-with-it.md): what a function's lowering finds of drops is returned with it, `DropsObserved`, and gathered by the pipeline, not written into the crate's facts.

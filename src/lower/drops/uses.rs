@@ -19,9 +19,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let before = std::mem::take(&mut self.drop_state.used_drops);
         let drop = self.held_drop_function(ty, iterated, span);
         let through = std::mem::replace(&mut self.drop_state.used_drops, before);
-        if !self.in_copied_default() && self.krate.drop_uses.borrow().takes_used(self.item) {
-            let mut uses = self.krate.drop_uses.borrow_mut();
-            uses.passed
+        if !self.in_copied_default() && self.krate.takes_used_drops.contains(self.item) {
+            let mut observed = self.drops_observed.borrow_mut();
+            observed
+                .passed
                 .extend(through.into_iter().map(|param| ((self.item, param), (callee, index))));
         } else {
             self.drop_state.used_drops.extend(through);
@@ -33,18 +34,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Note which drops `id`, which takes only those it uses, used, and the
     /// names it took them by (ADR 0300).
     pub(in crate::lower) fn note_drop_uses(&self, id: DefId) {
-        let mut uses = self.krate.drop_uses.borrow_mut();
-        if !uses.takes_used(id) {
+        if !self.krate.takes_used_drops.contains(id) {
             return;
         }
-        uses.used
+        let mut observed = self.drops_observed.borrow_mut();
+        observed
+            .used
             .extend(self.drop_state.used_drops.iter().map(|&param| (id, param)));
         let names = self
             .drop_state
             .param_drops
             .iter()
             .map(|(&index, name)| (index, name.clone()));
-        uses.names.insert(id, names.collect());
+        observed.names.insert(id, names.collect());
     }
 }
 
@@ -66,40 +68,60 @@ pub(super) fn owned_params<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Vec<u32> {
     params
 }
 
-/// What the crate's functions that take only the drops they use did with
-/// them, as each was lowered (ADR 0300): those they used, those they passed
-/// on as another's, and the names they took them by.
+/// The functions given drops that take only those they use (ADR 0300):
+/// what the crate knows before it lowers any, which lowering asks.
+pub(in crate::lower) struct TakesUsed(HashSet<DefId>);
+
+impl TakesUsed {
+    /// Each function given drops that's called where it's named, whose
+    /// callers are all seen or told by its manifest: not a trait's method,
+    /// which a dictionary's callers call, nor an impl's.
+    pub(in crate::lower) fn new(tcx: TyCtxt<'_>, drop_params: &HashMap<DefId, Vec<u32>>) -> TakesUsed {
+        TakesUsed(
+            drop_params
+                .keys()
+                .copied()
+                .filter(|&id| {
+                    id.is_local()
+                        && tcx.trait_of_assoc(id).is_none()
+                        && tcx.trait_impl_of_assoc(id).is_none()
+                        && !matches!(tcx.def_kind(id), DefKind::Impl { .. })
+                })
+                .collect(),
+        )
+    }
+
+    pub(in crate::lower) fn contains(&self, id: DefId) -> bool {
+        self.0.contains(&id)
+    }
+}
+
+/// What lowering a function found of drops (ADRs 0190, 0300), returned
+/// with it, lowered or not, and gathered by the pipeline, which resolves
+/// them once all are: the type parameters each takes no destructor of, the
+/// calls of the crate's functions to check, and of those that take only
+/// the drops they use, those they used, those they passed on as another's,
+/// and the names they took them by.
 #[derive(Default)]
-pub(in crate::lower) struct DropUses {
-    takes_used: HashSet<DefId>,
+pub(in crate::lower) struct DropsObserved {
+    pub(in crate::lower) no_drops: HashMap<DefId, BTreeSet<u32>>,
+    pub(in crate::lower) checks: Vec<DropCheck>,
     used: HashSet<(DefId, u32)>,
     passed: Vec<((DefId, u32), (DefId, u32))>,
     names: HashMap<DefId, Vec<(u32, String)>>,
 }
 
-impl DropUses {
-    /// Each function given drops that's called where it's named, whose
-    /// callers are all seen or told by its manifest: not a trait's method,
-    /// which a dictionary's callers call, nor an impl's.
-    pub(in crate::lower) fn new(tcx: TyCtxt<'_>, drop_params: &HashMap<DefId, Vec<u32>>) -> DropUses {
-        let takes_used = drop_params
-            .keys()
-            .copied()
-            .filter(|&id| {
-                id.is_local()
-                    && tcx.trait_of_assoc(id).is_none()
-                    && tcx.trait_impl_of_assoc(id).is_none()
-                    && !matches!(tcx.def_kind(id), DefKind::Impl { .. })
-            })
-            .collect();
-        DropUses {
-            takes_used,
-            ..DropUses::default()
+impl DropsObserved {
+    /// `other`'s too, a function's after those before it, in the order
+    /// they're lowered.
+    pub(in crate::lower) fn gather(&mut self, other: DropsObserved) {
+        for (id, params) in other.no_drops {
+            self.no_drops.entry(id).or_default().extend(params);
         }
-    }
-
-    pub(in crate::lower) fn takes_used(&self, id: DefId) -> bool {
-        self.takes_used.contains(&id)
+        self.checks.extend(other.checks);
+        self.used.extend(other.used);
+        self.passed.extend(other.passed);
+        self.names.extend(other.names);
     }
 
     /// The drops each function keeps, those it uses or passes on to one
@@ -107,6 +129,7 @@ impl DropUses {
     /// those, as parameters and arguments.
     pub(in crate::lower) fn keep(
         self,
+        takes_used: &TakesUsed,
         drop_params: &mut HashMap<DefId, Vec<u32>>,
         items: &mut [(DefId, crate::lower::LoweredFn)],
     ) {
@@ -120,7 +143,7 @@ impl DropUses {
                 }
             }
         }
-        for id in &self.takes_used {
+        for id in &takes_used.0 {
             if let Some(indices) = drop_params.get_mut(id) {
                 indices.retain(|&index| kept.contains(&(*id, index)));
             }

@@ -259,7 +259,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0187 A writer's `Err(fmt::Error)` is thrown, with what it wrote, and each consumer takes it as std's does](decisions/0187-fmt-error.md)
 - [0188 A `Duration` is its nanoseconds, a BigInt](decisions/0188-duration.md)
 - [0189 `panic!("{}", x)`, a slice into an array, and `into_iter()` of the crate's iterator](decisions/0189-panic-display-slice-arrays.md)
-- [0190 Generic code may take no destructor of a type parameter, and its callers are checked](decisions/0190-generic-no-destructor.md)
+- [0190 Generic code may take no destructor of a type parameter, and its callers are checked](decisions/0190-generic-no-destructor.md) *(amended by 0696: what a function finds is returned with it)*
 - [0191 An or-pattern's moves, an arm's temporaries, and `Box::from` of a `&str`](decisions/0191-or-patterns-arm-temporaries-boxed-str.md)
 - [0192 A Next.js app's routes and components in Rust, beside its JS](decisions/0192-next.md)
 - [0193 `Some` of a unit variant is tested as the variant](decisions/0193-some-of-a-unit-variant.md)
@@ -369,7 +369,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0297 A closure a `let` names for a hook is the hook's named function](decisions/0297-named-hook-functions.md)
 - [0298 An Option of a value never falsy is tested by its truth](decisions/0298-truthy-options.md)
 - [0299 A return of `undefined` is a bare `return;`](decisions/0299-bare-return.md)
-- [0300 A function takes the drops its body uses](decisions/0300-drops-by-need.md)
+- [0300 A function takes the drops its body uses](decisions/0300-drops-by-need.md) *(amended by 0696: what a function finds is returned with it)*
 - [0301 A read that can't throw comes before a move](decisions/0301-reads-that-cannot-throw.md)
 - [0302 An `f64` known to be a whole number in range is cast as it is](decisions/0302-whole-number-casts.md)
 - [0303 Top-level statements that span lines are set apart](decisions/0303-blank-lines.md)
@@ -620,6 +620,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0693 A guard's scope is one `finally`, its `if`s, loops and `return`s in it](decisions/0693-a-guards-scope-is-one-finally-its-returns-in-it.md)
 - [0694 `ManuallyDrop::drop`, `extend` of what holds nothing, a matched call's value and `{}` of an `impl Display`](decisions/0694-four-refusals-of-drops-and-displays-lifted.md)
 - [0695 What stops early steps by `try_fold`, and `nth` is passed on, as std's adapters route them](decisions/0695-what-stops-early-steps-by-try-fold.md)
+- [0696 What lowering a function finds of drops is returned with it](decisions/0696-what-lowering-finds-of-drops-is-returned-with-it.md)
 - [0436 Every `dyn` that's a pair keeps its value's drop, `dyn Send` too](decisions/0436-every-dyn-keeps-its-drop.md) *(amended by 0691: a `dyn Any` drops where the crate makes one of what drops)*
 - [0437 A scope's drops on a panic are one `try { .. } finally { .. }`](decisions/0437-a-scopes-drops-are-one-finally.md) *(amended by 0693: its `if`s, loops and `return`s in it)*
 - [0438 An optional prop is given `Some(..)`, or left out](decisions/0438-an-optional-prop-is-given-some.md)
