@@ -102,6 +102,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .collect()
     }
 
+    /// Each variable a `let` binds: where the `let` is written, which its
+    /// declaration maps to (`State::let_spans`).
+    pub(super) fn mir_let_spans(&self, body: &mir::Body<'tcx>) -> HashMap<Local, js::Span> {
+        let lets: Vec<(Span, Span)> = (self.thir.stmts.iter())
+            .filter_map(|s| match &s.kind {
+                thir::StmtKind::Let { pattern, span, .. } => Some((pattern.span, *span)),
+                _ => None,
+            })
+            .collect();
+        (body.var_debug_info.iter())
+            .filter_map(|info| match info.value {
+                mir::VarDebugInfoContents::Place(place) if place.projection.is_empty() => lets
+                    .iter()
+                    .find(|(pattern, _)| pattern.contains(info.source_info.span))
+                    .map(|(_, at)| (place.local, self.js_span(*at))),
+                _ => None,
+            })
+            .collect()
+    }
+
     /// What `body`'s writes say of its `Option`s.
     pub(super) fn mir_option_writes(&self, body: &mir::Body<'tcx>, locals: &Locals) -> OptionWrites {
         OptionWrites {

@@ -7,9 +7,9 @@ export function entry() {
 }
 
 function firstWord(s) {
-  const at = $find(s, " ");
-  if (at != null) {
-    return $strSlice(s, 0, at);
+  const at = s.indexOf(" ");
+  if (at !== -1) {
+    return s.slice(0, at);
   }
   return s;
 }
@@ -52,10 +52,10 @@ function main() {
   console.log(`${text} ${$byteLen(text)}`);
   const range = { start: 3, end: 5 };
   console.log(`${$strSlice(s, range.start, range.end)}`);
-  const at = $find(s, "w");
-  if (at != null) {
-    const left = $strSlice(s, 0, at);
-    const right = $strSlice(s, at);
+  const at = s.indexOf("w");
+  if (at !== -1) {
+    const left = s.slice(0, at);
+    const right = s.slice(at);
     console.log(`${left}|${right} ${($byteLen(left) + $byteLen(right)) >>> 0}`);
   }
 }

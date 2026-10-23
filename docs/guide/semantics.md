@@ -105,7 +105,10 @@ sharing one is copying it: `clone()` is the string itself, and `push_str` is
   are in bytes; a slice inside a character panics with Rust's message,
   `byte index 2 is not a char boundary; it is inside 'é' (bytes 1..3 of
   string)` ([0138](../decisions/0138-string-byte-counts.md)). Each counts from
-  the start of the string.
+  the start of the string. Where an offset is only a place in the string it
+  was found in, cut there, never seen as a number, it's JS's, `indexOf` and
+  `slice`, which cut the same text
+  ([0642](../decisions/0642-a-place-found-in-a-string-is-js-units.md)).
 - **A `String` is edited by its bytes too:** `pop`, `insert`, `remove`,
   `truncate`, `retain` and `clear` give its place the new string, and panic
   where Rust's do ([0149](../decisions/0149-string-editing.md)).

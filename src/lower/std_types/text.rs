@@ -655,6 +655,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Expr::call(Expr::helper("$splice"), list)
     }
 
+    /// `&s[range]` of places of `s` in JS's units, `range` a `range_ty`:
+    /// `s.slice(a, b)`, which can't panic, as each is in bounds and on a
+    /// boundary, and the range's end isn't before its start (ADR 0642).
+    pub(in crate::lower) fn sliced_in_units(
+        &mut self,
+        s: Expr,
+        (range, range_ty): (Expr, Ty<'tcx>),
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Expr> {
+        let (start, end) = self.range_value_bounds(range, range_ty, span, out)?;
+        if start.as_int() == Some(0) && end.is_none() {
+            return Ok(s);
+        }
+        Ok(Expr::call(
+            Expr::member(s, "slice"),
+            std::iter::once(start).chain(end).collect(),
+        ))
+    }
+
     /// `items` in `range`, a `range_ty`, as `op` takes them, of their
     /// values (ADR 0364).
     pub(in crate::lower) fn slice_range_values(
@@ -828,6 +848,49 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             _ => return Ok(None),
         }))
     }
+}
+
+/// `s.find(p)` and `s.rfind(p)`, `s.len()` and `c.len_utf8()`, of places
+/// in JS's units (ADR 0642): JS's own, `s.indexOf(p)`, `s.lastIndexOf(p)`
+/// and `length`, an `Option` found `-1` where it's `None` (`found`).
+/// `None` of another `op`.
+pub(in crate::lower) fn of_places(op: TextOp, mut values: Vec<Expr>) -> Option<Expr> {
+    let of = values.remove(0);
+    Some(match op {
+        TextOp::Find(last) => Expr::call(Expr::member(of, if last { "lastIndexOf" } else { "indexOf" }), values),
+        TextOp::ByteLen | TextOp::CharLen { utf16: false } => Expr::member(of, "length"),
+        _ => return None,
+    })
+}
+
+/// That `at`, a place found in units, is one, its `Option`'s `Some`: `at
+/// !== -1`, as `indexOf` says none (ADR 0642).
+pub(in crate::lower) fn found(at: Expr) -> Expr {
+    Expr::bin(Op::Ne, at, Expr::int(-1))
+}
+
+/// `s.strip_prefix(p)`, or `strip_suffix` (`!prefix`), read as a test and
+/// a cut (ADR 0642): `s.startsWith(p)`, and where it holds, `s.slice(n)`,
+/// `n` the pattern's length in units, a literal's, or `p.length`; of a
+/// suffix, `s.endsWith(p)` and `s.slice(0, -n)`. Neither counts anything
+/// a program can see.
+pub(in crate::lower) fn cut(s: Expr, p: Expr, units: Option<usize>, prefix: bool) -> (Expr, Expr) {
+    let test = Expr::call(
+        Expr::member(s.clone(), if prefix { "startsWith" } else { "endsWith" }),
+        vec![p.clone()],
+    );
+    let slice = |list: Vec<Expr>| Expr::call(Expr::member(s.clone(), "slice"), list);
+    let cut = match (units, prefix) {
+        (Some(0), _) => s.clone(),
+        (Some(n), true) => slice(vec![Expr::int(n as i128)]),
+        (Some(n), false) => slice(vec![Expr::int(0), Expr::int(-(n as i128))]),
+        (None, true) => slice(vec![Expr::member(p, "length")]),
+        (None, false) => {
+            let rest = Expr::bin(Op::Sub, Expr::member(s.clone(), "length"), Expr::member(p, "length"));
+            slice(vec![Expr::int(0), rest])
+        }
+    };
+    (test, cut)
 }
 
 /// A replacement as the text it is, as Rust's is: JS reads `$&` and `$1` in

@@ -251,4 +251,20 @@ export const mutations: Mutation[] = [
     replace: "            Some(_) => items,\n",
     tests: ["test/corpus.test.ts", "-t", "^btree_given_in_order.rs$"],
   },
+  {
+    name: "found-tested-against-null",
+    breaks: "a place found in units is tested `at != null`, so `indexOf`'s `-1` is found",
+    file: "src/lower/std_types/text.rs",
+    find: "    Expr::bin(Op::Ne, at, Expr::int(-1))",
+    replace: "    Expr::bin(Op::LooseNe, at, Expr::null())",
+    tests: ["test/lowering-string-places.test.ts", "-t", "owner stack"],
+  },
+  {
+    name: "cut-suffix-from-the-front",
+    breaks: "`strip_suffix(p)`'s cut is `s.slice(n)`, what's after the suffix's length, not before it",
+    file: "src/lower/std_types/text.rs",
+    find: "        (Some(n), false) => slice(vec![Expr::int(0), Expr::int(-(n as i128))]),",
+    replace: "        (Some(n), false) => slice(vec![Expr::int(n as i128)]),",
+    tests: ["test/lowering-string-places.test.ts", "-t", "strip tested"],
+  },
 ];

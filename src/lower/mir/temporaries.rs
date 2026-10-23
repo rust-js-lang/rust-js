@@ -19,6 +19,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 kept.push((local, value));
                 continue;
             }
+            // And an `Option`'s whose test is known, which reads what its
+            // switch reads it with, unchanged meanwhile (ADR 0642).
+            if let Value::Tested(_) = &value {
+                kept.push((local, value));
+                continue;
+            }
             let mut expr = self.value_expr(value, Span::default())?;
             let named = state.named.contains(&local);
             if self.reads_same_anywhere(&expr, state.body.local_decls[local].ty) && !named {
@@ -369,6 +375,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Value::Discriminant(..) => return Err(self.unsupported(span, "an enum's discriminant read as a value")),
             Value::Place(e) => e,
             Value::Branch(..) => return Err(self.unsupported(span, "what `?` made, read as a value, from its MIR")),
+            Value::Tested(..) | Value::Cut(..) => {
+                return Err(self.unsupported(span, "an `Option` read as a test, as a value, from its MIR"));
+            }
             // Kept or given: a handle on its place, which reads and writes it
             // (ADR 0099), where the place is always the same one.
             // A handle on the `value` of what a variable holds, a box, a handle

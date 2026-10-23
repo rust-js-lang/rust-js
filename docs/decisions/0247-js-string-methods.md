@@ -1,6 +1,8 @@
 # 0247. JS's string methods are the builtins crate's `string`
 
-Status: Accepted. Extends [0102](0102-js-and-webapi.md).
+Status: Accepted. Extends [0102](0102-js-and-webapi.md); amended by
+[0642](0642-a-place-found-in-a-string-is-js-units.md): its search and slice
+are for JS's own indexes, std's for a place found in a string.
 
 Case: N ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -59,3 +61,13 @@ what's found is `+ 1`, `path.slice(path.lastIndexOf("/") + 1)`, as react.dev's
 NavigationBar takes a file's name, where an `i32`'s was `(i + 1) | 0`. A
 count, `length`, and what a loop indexes by, `char_at`'s and `substring`'s,
 stay `u32`: `for i in 0..string::length(text)` is how Rust counts.
+
+## Amendment: JS's indexes, not a place found
+
+std's `find` and slicing are JS's `indexOf` and `slice` wherever the
+program can't tell bytes from units
+([0642](0642-a-place-found-in-a-string-is-js-units.md)), so searching a
+Rust string and cutting it at what's found is std's, one way. `index_of`,
+`last_index_of` and `slice` stay the binding of JS's own API, for an index
+a JS API gives or takes, `selectionStart` or `setSelectionRange`'s, or one
+counted from the end, `slice(0, -1)`.

@@ -30,7 +30,6 @@ import {
   $extend,
   $rsplitOnce,
   $stripPrefix,
-  $stripSuffix,
   $try,
   $unborrow,
   $unwrap,
@@ -233,8 +232,9 @@ export async function compile(loaded, sources, rootFile, test) {
       new Map(loaded.crates.values().map(([name, file]) => [`lib${name}.rmeta`, file])),
     ),
   ];
-  const stem = $stripSuffix(rootFile, ".rs");
-  const outFile = stem != null ? `/out/${stem}.js` : `/out/${rootFile}`;
+  const outFile = rootFile.endsWith(".rs")
+    ? `/out/${rootFile.slice(0, -3)}.js`
+    : `/out/${rootFile}`;
   // `--test`: the `#[test]` functions too, and `<root>.test.js` to run them
   // (ADR 0026). This is a real browser, so tests marked `#[cfg(browser)]` run
   // too (ADR 0027). Every program may use the webapi and js crates; rustc

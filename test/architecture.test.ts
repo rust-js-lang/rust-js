@@ -307,6 +307,17 @@ test("library recognition cannot access function emission state", () => {
   expect(read("src/lower/recognition.rs")).toContain("pub(super) struct Recognition");
 });
 
+// Which of a body's string offsets are places in JS's units is a question
+// of its MIR (ADR 0642): it reads the body and answers, and writes no JS.
+test("a body's string offsets are found without emitting", () => {
+  const source = read("src/lower/mir/offsets.rs");
+  expect(source).not.toMatch(/crate::js|\bjs::|\bExpr\b|\bStmt\b|runtime::|\bState\b/);
+  // It reads the function's context, and changes only what it finds.
+  const asked = source.split(/\nimpl/).filter((block) => /^<'a, 'tcx> FnCx</.test(block)).map((block) => block.split("\n}\n")[0]);
+  expect(asked.length).toBeGreaterThan(0);
+  for (const block of asked) expect(block).not.toMatch(/&mut\s+self/);
+});
+
 test("body queries cannot access emission state", () => {
   const source = read("src/lower/body_queries.rs");
   expect(source).not.toMatch(/\b(?:FnCx|Dependencies|Evaluation)\b|\bRefCell\s*<|crate::js|runtime::/);
@@ -435,18 +446,18 @@ const mirState: Record<string, string[]> = {
   "src/lower/mir/drops.rs": ["body", "drops", "flags", "branches", "pending", "locals"],
   "src/lower/mir/writer.rs": ["body", "writer", "writes_captured", "builders", "built", "thrown_writes"],
   "src/lower/mir/hints.rs": ["locals", "captures"],
-  "src/lower/mir/std_calls.rs": ["body", "locals"],
-  "src/lower/mir/assign.rs": ["binding_var", "body", "boxes", "branches", "builders", "copy_backs", "in_place", "jsx_props", "let_spans", "locals", "maps", "named", "options", "parts", "payloads", "pending", "places", "pointed", "refs", "rests", "writer"],
-  "src/lower/mir/closures.rs": ["at", "body", "locals"],
+  "src/lower/mir/std_calls.rs": ["at", "body", "locals", "offsets"],
+  "src/lower/mir/assign.rs": ["binding_var", "body", "boxes", "branches", "builders", "copy_backs", "cuts", "in_place", "offsets", "jsx_props", "let_spans", "locals", "maps", "named", "options", "parts", "payloads", "pending", "places", "pointed", "refs", "rests", "writer"],
+  "src/lower/mir/closures.rs": ["at", "body", "locals", "offsets"],
   "src/lower/mir/dispatch.rs": ["body", "copy_backs", "defaults", "flattened", "locals", "maps", "options", "pending", "unwind"],
   "src/lower/mir/entries.rs": ["body", "captures", "locals", "thrown_writes"],
   "src/lower/mir/jsx_props.rs": ["body"],
   "src/lower/mir/locals.rs": ["body", "locals", "patterned"],
   "src/lower/mir/operands.rs": ["body", "locals", "pending", "promoted", "taken"],
-  "src/lower/mir/places.rs": ["binding_var", "body", "branches", "captures", "defaults", "deferred", "in_place", "locals", "named", "pointed"],
+  "src/lower/mir/places.rs": ["binding_var", "body", "branches", "captures", "cuts", "defaults", "deferred", "in_place", "locals", "named", "pointed"],
   "src/lower/mir/queries.rs": ["body", "borrowed_names", "locals", "own_names"],
-  "src/lower/mir/rvalues.rs": ["body", "branches", "locals", "options", "pending", "pointed", "ranges", "writer"],
-  "src/lower/mir/structure.rs": ["at", "awaits", "body", "copy_backs", "deferred", "drops", "graph", "labels", "locals", "pending", "returns", "unwind", "writer", "writes_captured"],
+  "src/lower/mir/rvalues.rs": ["at", "body", "branches", "cuts", "locals", "offsets", "options", "pending", "pointed", "ranges", "statement", "writer"],
+  "src/lower/mir/structure.rs": ["at", "awaits", "body", "copy_backs", "deferred", "drops", "graph", "labels", "locals", "pending", "returns", "statement", "unwind", "writer", "writes_captured"],
   "src/lower/mir/temporaries.rs": ["body", "in_place", "locals", "named", "own_names", "pending", "places", "pointed", "refs", "settled", "unwind"],
 };
 test("each module of mir/ reads only the fields of mir.rs's state it's listed for", () => {
@@ -605,7 +616,7 @@ const dispatchers: [string, string, number][] = [
   ["src/lower/mir/dispatch.rs", "    pub(super) fn mir_call(", 110],
   ["src/lower/mir/dispatch.rs", "    fn mir_call_values_of(", 247],
   ["src/lower/mir/dispatch.rs", "    fn mir_std_call(", 147],
-  ["src/lower/mir.rs", "    fn mir_function(", 372],
+  ["src/lower/mir.rs", "    fn mir_function(", 362],
   ["src/lower/recognition/inherent.rs", "    pub(super) fn classify_inherent(", 761],
   ["src/lower/recognition/calls.rs", "    fn classify_trait_method(", 251],
   ["src/lower/combinators.rs", "    pub(in crate::lower) fn comb_values(", 605],

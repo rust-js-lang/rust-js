@@ -757,6 +757,27 @@ pub fn index_of(s: &str, needle: &str) -> Option<usize> {
     s.find(needle)
 }
 
+pub fn first_word(s: &str) -> &str {
+    match s.find(' ') {
+        Some(at) => &s[..at],
+        None => s,
+    }
+}
+
+pub fn after<'a>(s: &'a str, key: &str) -> &'a str {
+    match s.find(key) {
+        Some(at) => &s[at + key.len()..],
+        None => "",
+    }
+}
+
+pub fn without_scheme(url: &str) -> &str {
+    if let Some(rest) = url.strip_prefix("https://") {
+        return rest;
+    }
+    url
+}
+
 pub fn to_number(s: &str) -> Option<f64> {
     s.parse().ok()
 }
@@ -822,6 +843,29 @@ export function indexOf(s, needle) {
   return $find(s, needle);
 }
 
+export function firstWord(s) {
+  const at = s.indexOf(" ");
+  if (at !== -1) {
+    return s.slice(0, at);
+  }
+  return s;
+}
+
+export function after(s, key) {
+  const at = s.indexOf(key);
+  if (at !== -1) {
+    return s.slice(at + key.length);
+  }
+  return "";
+}
+
+export function withoutScheme(url) {
+  if (url.startsWith("https://")) {
+    return url.slice(8);
+  }
+  return url;
+}
+
 export function toNumber(s) {
   const result = $parseF64(s);
   return result.TAG === "Ok" ? result._0 : undefined;
@@ -835,20 +879,34 @@ export function toNumber(s) {
 | `s.split(",")` | `s.split(',')`, an iterator |
 | `s.trim()` | `s.trim()` |
 | `s.replaceAll(a, b)` | `s.replace(a, b)`: Rust's replaces every one |
-| `s.indexOf(t)` | `s.find(t)`, a byte offset in an `Option` |
-| `s.slice(a, b)` | `&s[a..b]`, in bytes; `s.get(a..b)` for an `Option` |
+| `s.indexOf(t)` | `s.find(t)`, an `Option`: `s.indexOf(t)` where it's only a place to cut `s` at |
+| `s.slice(a, b)` | `&s[a..b]`: `s.slice(a, b)` at places found in `s`; `s.get(a..b)` for an `Option` |
+| `s.startsWith(p) ? s.slice(n) : ..` | `s.strip_prefix(p)`, an `Option`; `strip_suffix` of `endsWith` |
 | `s += t` | `s.push_str(t)` on a `String` |
 | `Number(s)` | `s.parse::<f64>()`, a `Result` |
 
 - **Offsets are bytes,** so `&s[..3]` of `"héllo"` is `"hé"`. A slice
   that cuts a character in two panics, with Rust's message; `s.get(..3)`
   is `None` instead.
+- **A place found is JS's own.** An offset `find` gives that's only a
+  place to cut the string it was found in, stepped past what was found by
+  its length, is `indexOf`'s, `-1` where there's none, and the slice at it
+  `slice`: bytes and UTF-16 units cut the same text there, and nothing sees
+  the number. One the program sees, returned, printed, compared with a
+  number, or used on another string, counts bytes, by `$find` and
+  `$strSlice`, as `index_of` above
+  ([ADR 0642](../../decisions/0642-a-place-found-in-a-string-is-js-units.md)).
+- **JS's own indexes are `js::string`'s:** `string::slice(text, start,
+  end)` and `string::index_of` count UTF-16 units, for an index a JS API
+  gives or takes, an input's `selectionStart` say, or one from the end,
+  `slice(0, -1)`. To search a Rust string and cut it at what's found,
+  write std's, which is JS's there.
 - `trim` removes Unicode's white space, as Rust's does, which isn't quite
   JS's set: that's `$trim`.
 - `&str` is a borrowed string, `String` an owned one. In JS both are just a
   string; `to_string()` and `clone()` cost nothing.
 
-([ADR 0034](../../decisions/0034-strings-and-chars.md), [ADR 0138](../../decisions/0138-string-byte-counts.md).)
+([ADR 0034](../../decisions/0034-strings-and-chars.md), [ADR 0138](../../decisions/0138-string-byte-counts.md), [ADR 0642](../../decisions/0642-a-place-found-in-a-string-is-js-units.md).)
 
 ## JSON
 

@@ -140,6 +140,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 block,
                 statement_index: index,
             };
+            state.statement = index;
             self.flag_sets(state, at, &mut made)?;
             match &statement.kind {
                 StatementKind::Assign(assign) => {
@@ -185,6 +186,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     fn mir_terminator(&mut self, state: &mut State<'_, 'tcx>, block: BasicBlock) -> R<Vec<Stmt>> {
         let mut out = Vec::new();
         let terminator = state.body.basic_blocks[block].terminator();
+        state.at = block;
+        state.statement = state.body.basic_blocks[block].statements.len();
         // What's made that may panic runs before a branch, in its own `try`.
         if state.unwind.is_some() && !matches!(terminator.kind, TerminatorKind::Call { .. }) {
             self.flush(state, &mut out)?;
@@ -463,6 +466,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// discriminant, its variant.
     pub(super) fn switch_test(&mut self, subject: &Value<'tcx>, ty: Ty<'tcx>, value: u128, span: Span) -> R<Expr> {
         match subject {
+            // Of an `Option` whose test is known: it, of its `Some` (ADR 0642).
+            Value::Tested(test) => Ok(match value {
+                0 => test.clone().negated_test(),
+                _ => test.clone(),
+            }),
             Value::Branch(tried, tried_ty) => {
                 let failed = self.branch_failed(tried.clone(), *tried_ty);
                 Ok(match value {

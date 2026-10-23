@@ -695,4 +695,28 @@ export const mutations: Mutation[] = [
     replace: "\"$nextIf\"",
     tests: ["test/corpus.test.ts", "-t", "^boxed_option_results.rs$"],
   },
+  {
+    name: "found-and-then-none-undefined",
+    breaks: "`and_then` of a place found gives `undefined` where it's `None`, which isn't `-1`, so it's taken for a place",
+    file: "src/lower/mir/std_calls.rs",
+    find: "                let none = if mapped { Expr::undefined() } else { Expr::int(-1) };",
+    replace: "                let none = if mapped { Expr::undefined() } else { Expr::undefined() };",
+    tests: ["test/lowering-string-places.test.ts", "-t", "owner stack"],
+  },
+  {
+    name: "cut-string-reread-after-change",
+    breaks: "a strip's string is read again where it's tested and cut, after its variable is given another",
+    file: "src/lower/mir/std_calls.rs",
+    find: "                            if holders.iter().any(|&held| state.locals.names[held] == *name));",
+    replace: "                            if holders.len() < usize::MAX || name.is_empty());",
+    tests: ["test/lowering-string-places.test.ts", "-t", "string changes"],
+  },
+  {
+    name: "places-sliced-in-bytes",
+    breaks: "a slice at places in units is `$strSlice`, which counts them as bytes",
+    file: "src/lower/mir/std_calls.rs",
+    find: "                    true => self.sliced_in_units(items, (range, arg_tys[1]), span, out)?,",
+    replace: "                    true => self.slice_range_values(op, items, (range, arg_tys[1]), span, out)?,",
+    tests: ["test/lowering-string-places.test.ts", "-t", "stepped past"],
+  },
 ];

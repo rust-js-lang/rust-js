@@ -333,6 +333,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             out.push(StmtKind::Expr(written).at(self.js_span(span)));
             return Ok(());
         }
+        // What a strip made, read as its test and its cut where it's read
+        // (ADR 0642).
+        if place.projection.is_empty()
+            && let Value::Cut(test, cut) = value
+        {
+            state.cuts.insert(place.local, (test, cut));
+            return Ok(());
+        }
+        // A strip's cut given to a local read once: read there, `stack =
+        // stack.slice(29)`.
+        if place.projection.is_empty()
+            && state.offsets.taken_in_place(place.local)
+            && let Value::Expr(cut) = &value
+        {
+            state.in_place.insert(place.local, cut.clone());
+            return Ok(());
+        }
         let local = place.local;
         let place = match self.whole(state.body, &place) {
             true => Place::from(local),
