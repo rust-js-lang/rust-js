@@ -162,9 +162,24 @@ macro_rules! camel_case {
 /// it, which is how rust-js knows it's a JS object, and so may a program's
 /// own: `pub struct EditorView(PhantomData<JsObject>);` (ADR 0111). A program
 /// never has one by value, only a reference a binding gives: its field is
-/// private, so nothing makes one, and it's neither `Send` nor `Sync`.
+/// private, so nothing makes one, and it's neither `Send` nor `Sync`. As a
+/// value, TypeScript's `object`, what `Kind::Object` holds: a key of a weak
+/// collection, and an [`Unknown`] it derefs to, whose properties [`get`]
+/// reads (ADR 0677).
 #[cfg_attr(rust_js, rust_js::js_object)]
+#[cfg_attr(rust_js, rust_js::types = "object")]
 pub struct JsObject(PhantomData<*mut ()>);
+
+/// An object is a value of any shape, as TypeScript's `object` is an
+/// `unknown`: the object itself.
+impl core::ops::Deref for JsObject {
+    type Target = Unknown;
+
+    fn deref(&self) -> &Unknown {
+        // Never runs: rust-js compiles this `Deref` to the object itself.
+        unsafe { &*(self as *const Self as *const Unknown) }
+    }
+}
 
 /// A JS value of unknown shape (ADR 0225), as TypeScript's `unknown` and
 /// ReScript's are: what `JSON.parse` gives, or a binding's of `any`. Never
@@ -209,9 +224,10 @@ pub enum Kind<'a> {
     #[cfg_attr(rust_js, rust_js::null)]
     Null,
     /// What the others aren't: `typeof value === "object"`, neither `null`
-    /// nor an array (ADR 0668).
+    /// nor an array (ADR 0668); TypeScript's `object`, a weak collection's
+    /// key, which reads as the `Unknown` it is (ADR 0677).
     #[cfg_attr(rust_js, rust_js::otherwise)]
-    Object(&'a Unknown),
+    Object(&'a JsObject),
 }
 
 /// JS's [`Array`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Array)
@@ -336,6 +352,9 @@ impl ToText for String {
     type Text = String;
 }
 impl ToText for &Unknown {
+    type Text = Result<String, &'static JsError>;
+}
+impl ToText for &JsObject {
     type Text = Result<String, &'static JsError>;
 }
 impl ToText for Option<&Unknown> {
@@ -570,6 +589,9 @@ macro_rules! cloned {
 
 cloned!(bool, i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize, f32, f64, char, str, String);
 cloned!(Unknown, ArrayBuffer, Json<'_>);
+// An object, never nullish, though not one a clone copies, which a function
+// in it isn't (ADR 0677).
+unsafe impl Defined for JsObject {}
 
 unsafe impl<T: StructuredClone + ?Sized> StructuredClone for &T {}
 unsafe impl<T: Defined + ?Sized> Defined for &T {}

@@ -430,7 +430,7 @@ pub fn fail(message: &str) -> ! {
     // A tag may be `true` or `false`.
     "export type Status = {\n    pending: true;\n    data: string;\n} | {\n    pending: false;\n};",
     // An `otherwise`, any other object, is the object it holds (ADR 0284).
-    'export type Open = {\n    kind: "on";\n} | any;',
+    'export type Open = {\n    kind: "on";\n} | object;',
     // A `Cell` in a field is what it holds; one lent is `{ value }` (ADR 0288).
     "export interface Tally {\n    count: number;\n}",
     // So is a `RefCell` only ever borrowed for a moment (ADR 0362).

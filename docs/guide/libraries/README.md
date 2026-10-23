@@ -144,7 +144,11 @@ What it has:
 - **The rest of the ES library:** `Date`, `Intl`'s formatters, typed arrays
   and `ArrayBuffer`, `Atomics`, `Symbol`, `WeakMap`, `WeakRef`,
   `FinalizationRegistry`, `Proxy`, `Reflect`, `encode_uri_component` and
-  the other global functions.
+  the other global functions. A weak collection is typed as TypeScript
+  types it, `WeakMap<K, V>`, its key a `js::WeakKey`: an object, what
+  `js::Kind` holds of an object (a `&JsObject`, TypeScript's `object`), an
+  array or a function, or a symbol; of any of them, `dyn WeakKey`
+  ([ADR 0677](../../decisions/0677-a-weak-key-is-what-kind-holds.md)).
 - **The module's own JS:** `js::import!` imports a file for its effects or
   an item lazily, `js::import_module!` a module, `js::export_default!` a
   module's default export, `js::directive!("use client")` its directive,

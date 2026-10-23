@@ -3,7 +3,9 @@
 Status: Accepted. Extends [0102](0102-js-and-webapi.md) and [0281](0281-webapi-covers-typescripts-dom.md).
 Amended by [0666](0666-the-js-crate-binds-objects-reflection.md): a
 `PropertyDescriptor` and a `ProxyHandler` are dictionaries, structs, and
-`Object`'s statics are measured and bound.
+`Object`'s statics are measured and bound. Amended by
+[0677](0677-a-weak-key-is-what-kind-holds.md): a weak collection is typed as
+TypeScript types it, and what `js::Kind` holds is a `WeakKey`.
 
 Case: N ([0262](0262-when-rust-and-js-disagree.md)).
 

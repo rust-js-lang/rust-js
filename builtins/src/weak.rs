@@ -10,10 +10,17 @@ use core::marker::PhantomData;
 /// What JS holds weakly: an object, or a symbol not the registry's, never a
 /// string or a number, which a weak collection throws on. A struct is an
 /// object, so one is a key as its `impl` says, `unsafe impl WeakKey for State {}`.
+/// TypeScript's `WeakKey`, a `dyn WeakKey` (ADR 0677).
+#[cfg_attr(rust_js, rust_js::types = "WeakKey")]
 pub unsafe trait WeakKey {}
+
+// What `js::Kind` holds of an array and a function, each an object (ADR 0677).
+unsafe impl<T> WeakKey for [T] {}
+unsafe impl WeakKey for dyn Fn() + '_ {}
 
 /// [`WeakMap`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/WeakMap):
 /// a value of each key it holds, the key held weakly.
+#[cfg_attr(rust_js, rust_js::types = "WeakMap<K, V>")]
 pub struct WeakMap<K: WeakKey + ?Sized, V: Defined>(PhantomData<JsObject>, PhantomData<(*const K, V)>);
 
 impl<K: WeakKey + ?Sized, V: Defined> WeakMap<K, V> {
@@ -59,6 +66,7 @@ pub mod weak_map {
 
 /// [`WeakSet`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/WeakSet):
 /// the values it holds, each held weakly.
+#[cfg_attr(rust_js, rust_js::types = "WeakSet<T>")]
 pub struct WeakSet<T: WeakKey + ?Sized>(PhantomData<JsObject>, PhantomData<*const T>);
 
 impl<T: WeakKey + ?Sized> WeakSet<T> {
@@ -97,6 +105,7 @@ pub mod weak_set {
 
 /// [`WeakRef`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/WeakRef):
 /// what it refers to, while something else keeps it alive.
+#[cfg_attr(rust_js, rust_js::types = "WeakRef<T>")]
 pub struct WeakRef<T: WeakKey + ?Sized + 'static>(PhantomData<JsObject>, PhantomData<&'static T>);
 
 impl<T: WeakKey + ?Sized + 'static> WeakRef<T> {
@@ -121,6 +130,7 @@ pub mod weak_ref {
 
 /// [`FinalizationRegistry`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/FinalizationRegistry):
 /// a callback given each target's held value once the target is collected.
+#[cfg_attr(rust_js, rust_js::types = "FinalizationRegistry<T>")]
 pub struct FinalizationRegistry<T>(PhantomData<JsObject>, PhantomData<T>);
 
 impl<T> FinalizationRegistry<T> {

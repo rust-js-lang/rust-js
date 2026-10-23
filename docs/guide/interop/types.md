@@ -833,7 +833,10 @@ never `undefined` or `null`: an `Option<&Unknown>` is `None` of those.
 `match` ([ADR 0225](../../decisions/0225-unknown-values.md)): a variant
 for each kind `typeof` tells, `Undefined`, `String`, `Number`, `BigInt`,
 `Bool`, `Symbol`, `Function` and `Object`, an object neither `null` nor
-an array; `Null`, which `=== null` does, and `Array`, which
+an array, a `&JsObject`, TypeScript's `object`, which reads as the
+`Unknown` it is and keys a weak collection
+([ADR 0677](../../decisions/0677-a-weak-key-is-what-kind-holds.md));
+`Null`, which `=== null` does, and `Array`, which
 `Array.isArray` does ([ADR 0676](../../decisions/0676-kind-tells-undefined-and-null.md));
 of one that's there, `classify(Some(value))`. A `match` of them is a
 `switch (typeof value)`, an array an `if` before it, `null` one in `case
