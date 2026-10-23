@@ -123,12 +123,12 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-matches.test.ts", "-t", "what .filter. keeps"],
   },
   {
-    name: "mir-tidy-filter-or-chain",
-    breaks: "`(x ? x : undefined) ?? (y ? y : undefined) ?? z` isn't known as one, `x || y || z`",
+    name: "mir-tidy-filtered-or-unkept",
+    breaks: "a let-else of what `filter` by truth keeps, `const h = x || undefined`, tests `h == null`, not `!x`",
     file: "src/lower/mir/tidy/branches.rs",
-    find: "        ExprKind::Binary(Op::Coalesce, a, b) => truthy_or_undefined(a) && truthy_or_undefined(b),\n",
+    find: "        ExprKind::Binary(Op::Or, x, no) if matches!(no.kind, ExprKind::Undefined) => Some(x),\n",
     replace: "",
-    tests: ["test/lowering-branches.test.ts", "-t", "De Morgan"],
+    tests: ["test/lowering-branches.test.ts", "-t", "branches assign is returned from each"],
   },
   {
     name: "mir-tidy-filtered-some-kept",

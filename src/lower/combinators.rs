@@ -325,18 +325,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let items = parts.iter().map(|part| Expr::spread(part.clone())).collect();
             return self.concat_copies(Expr::array(items), subject_ty, span);
         }
-        // A `Some` not boxed is read once by `??`, and the default made only
-        // where it's `None`, as Rust makes it: `get(n) ?? ""`.
-        if comb == Comb::UnwrapOrDefault && !boxed {
-            let inner = self.option_of(subject_ty).expect("an `Option`");
-            let fallback = self.default_value(inner, span)?;
-            return Ok(Expr::bin(Op::Coalesce, subject, fallback));
-        }
-        // And `f` called only where it's `None`: `get(n) ?? root`. A closure
-        // of statements is its arrow, made first, which does nothing.
-        if comb == Comb::UnwrapOrElse && !boxed {
-            let fallback = self.call_with(values.remove(0), Vec::new(), "fallback", out);
-            return Ok(Expr::bin(Op::Coalesce, subject, fallback));
+        if let Some(value) = self.read_once(comb, boxed, subject_ty, &subject, &mut values, span, out)? {
+            return Ok(value);
         }
         // The subject is read more than once.
         let spilled_at = (!subject.reads_same()).then_some(out.len());
@@ -378,7 +368,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         let helper = |name: &'static str, list: Vec<Expr>| Expr::call(Expr::helper(name), list);
         Ok(match comb {
-            Comb::Then | Comb::ThenSome => unreachable!("handled above"),
+            Comb::Then | Comb::ThenSome | Comb::OrElse => unreachable!("handled above"),
             // `??` would give a box for the value in it.
             Comb::UnwrapOrElse => {
                 let f = next();
@@ -541,11 +531,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             Comb::Or => {
                 let other = eager(self, next(), out);
-                Expr::bin(Op::Coalesce, subject, other)
-            }
-            Comb::OrElse => {
-                let f = next();
-                let other = self.call_with(f, Vec::new(), "fallback", out);
                 Expr::bin(Op::Coalesce, subject, other)
             }
             Comb::IsSomeAnd => {
@@ -933,6 +918,54 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         None
     }
+
+    /// What `comb` gives of `subject`, of type `subject_ty`, read once where
+    /// it is, `None` where it's read more than once: a fallback's, `o ?? b`,
+    /// and a `filter`'s by truth, `o || undefined`.
+    #[allow(clippy::too_many_arguments)]
+    fn read_once(
+        &mut self,
+        comb: Comb,
+        boxed: bool,
+        subject_ty: Ty<'tcx>,
+        subject: &Expr,
+        values: &mut Vec<Expr>,
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Option<Expr>> {
+        // A `Some` not boxed is read once by `??`, and the default made only
+        // where it's `None`, as Rust makes it: `get(n) ?? ""`; and `f` called
+        // only there, `get(n) ?? root`, a closure of statements its arrow,
+        // made first, which does nothing. `or_else`'s and `or`'s, of a box
+        // too, which they give as it is: `or`'s `b`, which Rust works out
+        // first, where it does nothing. Of what `filter` kept, its test
+        // (`or_fallback`).
+        let fallback = match comb {
+            Comb::UnwrapOrDefault if !boxed => {
+                let inner = self.option_of(subject_ty).expect("an `Option`");
+                Some(self.default_value(inner, span)?)
+            }
+            Comb::UnwrapOrElse if !boxed => Some(self.call_with(values.remove(0), Vec::new(), "fallback", out)),
+            Comb::OrElse => Some(self.call_with(values.remove(0), Vec::new(), "fallback", out)),
+            Comb::Or if !values[0].has_effects() => Some(values.remove(0)),
+            _ => None,
+        };
+        if let Some(fallback) = fallback {
+            return Ok(Some(super::std_types::option::or_fallback(subject.clone(), fallback)));
+        }
+        // `filter` by the truth of what it holds, `|v| js::truthy(Some(*v))`:
+        // what JS's `||` keeps of it, `o || undefined`, read once, which a
+        // fallback after makes `o || b` (ADR 0635). A `Some` boxed is a box,
+        // whose truth isn't its value's.
+        if comb == Comb::Filter
+            && !boxed
+            && self.drops(self.option_of(subject_ty).expect("an `Option`")) == Drops::Nothing
+            && tests_its_truth(&values[0])
+        {
+            return Ok(Some(Expr::bin(Op::Or, subject.clone(), Expr::undefined())));
+        }
+        Ok(None)
+    }
 }
 
 /// What `p`, an `is_some_and`'s predicate, is of its argument where it's a
@@ -948,8 +981,16 @@ fn compared_with(p: &Expr) -> Option<Expr> {
     ((held(a) || held(b)) && mentions == 1).then_some(applied)
 }
 
-/// The argument `compared_with` gives a predicate: a name no Rust variable
-/// has.
+/// Whether `p`, a `filter`'s predicate, is the truth of its argument itself,
+/// `!!$some`, `js::truthy`'s of it, or a `bool`'s own: as JS's `||` tests
+/// what it's given (ADR 0635).
+fn tests_its_truth(p: &Expr) -> bool {
+    let applied = crate::lower::calls::apply(p.clone(), vec![Expr::var(HELD_SOME)]);
+    matches!(&applied.tested().kind, js::ExprKind::Var(v) if v == HELD_SOME)
+}
+
+/// The argument `compared_with` and `tests_its_truth` give a predicate: a
+/// name no Rust variable has.
 const HELD_SOME: &str = "$some";
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {

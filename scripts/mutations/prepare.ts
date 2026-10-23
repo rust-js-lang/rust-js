@@ -3,6 +3,30 @@ import type { Mutation } from "../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "truth-kept-unfallen",
+    breaks: "`(a || undefined) ?? b`, a `filter` by truth's then `or(b)`, stays, not `a || b`",
+    file: "src/prepare.rs",
+    find: "            parts(y, &mut chained)\n",
+    replace: "            return None\n",
+    tests: ["test/lowering-options.test.ts", "-t", "filter by truth then a fallback"],
+  },
+  {
+    name: "literal-chain-coalesced",
+    breaks: "`(a || \"Memo\") ?? null`, of a nullable result, keeps its `?? null`, which a literal never needs",
+    file: "src/prepare.rs",
+    find: "        last if last.is_constant() => chained.push(last),\n",
+    replace: "        last if last.is_constant() => return None,\n",
+    tests: ["test/lowering-options.test.ts", "-t", "filter by truth then a fallback"],
+  },
+  {
+    name: "fallen-chain-any-last",
+    breaks: "`(a || b) ?? c` is `a || b`, the `?? c` of a `b` that may be `undefined` dropped",
+    file: "src/prepare.rs",
+    find: "        last if last.is_constant() => chained.push(last),\n",
+    replace: "        last if true => chained.push(last),\n",
+    tests: ["test/lowering-options.test.ts", "-t", "filter by truth then a fallback"],
+  },
+  {
     name: "forwarding-function-loaded",
     breaks: "a function the module's load calls is a variable set after, read before it's set",
     file: "src/prepare.rs",
@@ -384,8 +408,8 @@ export const mutations: Mutation[] = [
     "name": "same-test-and-value-conditional",
     "breaks": "`code ? code : null`, not `code || null`",
     "file": "src/prepare.rs",
-    "find": "            if js::same_path(a, b) && !matches!(c.kind, ExprKind::Undefined) {\n",
-    "replace": "            if false && js::same_path(a, b) && !matches!(c.kind, ExprKind::Undefined) {\n",
+    "find": "            if js::same_path(a, b) {\n",
+    "replace": "            if false && js::same_path(a, b) {\n",
     "tests": ["test/lowering-options.test.ts", "-t", "nullable field's None is null"]
   },
   {

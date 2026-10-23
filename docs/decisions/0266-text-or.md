@@ -1,7 +1,9 @@
 # 0266. Text kept where it isn't empty, or another, is ||
 
 Status: Accepted. Extends [0030](0030-option.md) and
-[0062](0062-combinators.md).
+[0062](0062-combinators.md). Amended by
+[0635](0635-a-filter-by-truth-then-a-fallback-is-or.md): preparation
+writes the `||`, of every fallback.
 
 Case: A ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -70,3 +72,10 @@ const title = meta.title || route?.title || "";
   d` is `x || d` of every type. An array's emptiness, `length !== 0`,
   isn't that test, so it never was `||`; the check that the value is
   text, which kept arrays out, kept nothing out, and went.
+- **Preparation writes it, of every fallback** (ADR 0635): a `filter` by
+  the truth of what it holds is `x || undefined`, and `(x || undefined) ??
+  y` is `x || y` where it's printed, so `or` and `or_else`, which read their
+  `Option` once now, a chain, and a nullable result's `|| null` are `||`
+  too. Tidy's fold of `(x ? x : undefined) ?? y` went: preparation writes
+  `x ? x : undefined` as `x || undefined`. (Amended: tidy folded it only
+  where the conditional was read in place.)
