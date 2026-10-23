@@ -1,6 +1,8 @@
 # 0624. `js::is_defined` of a path of bindings asks each part
 
 Status: Accepted. Extends [0597](0597-whether-the-host-has-a-global-is-is-defined.md).
+Amended by [0645](0645-is-defined-of-a-static-is-of-the-static.md): a
+static of a path, `js::symbol::to_string_tag`, asks each part too.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): A: what's asked of the
 host, part by part, as JS asks it.

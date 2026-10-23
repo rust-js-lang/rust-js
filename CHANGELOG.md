@@ -771,6 +771,11 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### Changed
 
+- **`js::is_defined` of a static is given the static itself** (ADR 0645):
+  `js::is_defined(js::symbol::to_string_tag)` is `typeof Symbol !==
+  "undefined" && typeof Symbol.toStringTag !== "undefined"`;
+  `js::is_defined(&webapi::performance)`, a reference, is refused, written
+  `js::is_defined(webapi::performance)`.
 - **A function whose result is a throwing call's `Result` throws** (ADR
   0644): React's `testStringCoercion`, `js::concat_text(value)`, is
   `return "" + value;`, and its calls are throwing calls,

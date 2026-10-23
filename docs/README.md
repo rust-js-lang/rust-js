@@ -529,7 +529,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0594 An overload whose arguments an options dictionary holds is that one](decisions/0594-an-overload-an-options-dictionary-holds-is-it.md)
 - [0595 A thread-local `Cell`'s `take` and `replace` are its cell's](decisions/0595-a-thread-local-cells-take-is-its-cells.md)
 - [0596 A `pub use` of a module's own item exports it by that name](decisions/0596-a-pub-use-of-a-modules-own-item-exports-it.md)
-- [0597 Whether the host has a global is `js::is_defined`'s](decisions/0597-whether-the-host-has-a-global-is-is-defined.md)
+- [0597 Whether the host has a global is `js::is_defined`'s](decisions/0597-whether-the-host-has-a-global-is-is-defined.md) *(amended by 0645: a static is given as itself)*
 - [0598 A temporary is no part of a named variable's pattern](decisions/0598-a-temporary-is-no-part-of-a-names-pattern.md)
 - [0599 A result its branches make before it's coerced is returned where made](decisions/0599-a-coerced-result-is-returned-where-made.md)
 - [0600 The guide is the site on GitHub Pages](decisions/0600-the-guide-is-the-site.md)
@@ -555,7 +555,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0620 An `Option` a test says is there is written as it is](decisions/0620-an-option-a-test-says-is-there.md)
 - [0621 A comment before a macro's opening is its code's; one after a module's last code ends its JS](decisions/0621-comments-around-macros-and-at-a-modules-end.md)
 - [0622 A global binding a module names is its `const`](decisions/0622-a-global-binding-a-module-names-is-its-const.md)
-- [0624 `js::is_defined` of a path of bindings asks each part](decisions/0624-is-defined-of-a-path-of-bindings.md)
+- [0624 `js::is_defined` of a path of bindings asks each part](decisions/0624-is-defined-of-a-path-of-bindings.md) *(amended by 0645: a static of a path too)*
 - [0625 A default constant is its value; a comment right above the first code is its](decisions/0625-a-default-constant-is-its-value.md)
 - [0626 What a library hands a crate is what its items reach](decisions/0626-what-a-library-hands-a-crate.md)
 - [0627 A number literal keeps its base and its exponent](decisions/0627-a-number-literal-keeps-its-base-and-exponent.md)
@@ -575,6 +575,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0641 A `concat!` of literals is its pieces joined by `+`](decisions/0641-concat-is-its-pieces-joined-by-plus.md)
 - [0643 `unwrap()` of a throwing JS call is the call](decisions/0643-unwrap-of-a-throwing-call-is-the-call.md)
 - [0644 A function whose result is a throwing call's `Result` is a throwing function](decisions/0644-a-function-of-a-throwing-calls-result-throws.md)
+- [0645 `js::is_defined` of a static is given the static itself](decisions/0645-is-defined-of-a-static-is-of-the-static.md)
 - [0623 A copy std makes of a `Copy` value is a copy](decisions/0623-a-copy-std-makes-is-a-copy.md)
 - [0436 Every `dyn` that's a pair keeps its value's drop, `dyn Send` too](decisions/0436-every-dyn-keeps-its-drop.md)
 - [0437 A scope's drops on a panic are one `try { .. } finally { .. }`](decisions/0437-a-scopes-drops-are-one-finally.md)

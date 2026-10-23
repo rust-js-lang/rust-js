@@ -1,6 +1,8 @@
 # 0597. Whether the host has a global is `js::is_defined`'s
 
 Status: Accepted. Supersedes [0583](0583-a-global-some-hosts-lack-is-an-option.md).
+Amended by [0645](0645-is-defined-of-a-static-is-of-the-static.md): a
+static is given as itself.
 Extends [0021](0021-js-interop.md)'s globals.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): A. A global the host
@@ -103,7 +105,9 @@ An `Option` static is now what its type says of the value, `undefined` or
 - A global's value is asked of by its static, `js::is_defined(&webapi::performance)`:
   the static the argument refers to, followed through MIR's temporaries,
   `typeof performance !== "undefined"`. A variable's, or the crate's own
-  static's, is refused.
+  static's, is refused. (Amended by ADR 0645: the static is given as
+  itself, `js::is_defined(webapi::performance)`, a reference to it
+  refused.)
 
 ## What holds it
 
