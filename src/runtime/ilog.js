@@ -6,6 +6,10 @@ function $ilog(x, base, checked = false) {
     if (checked) return undefined;
     throw new Error("argument of integer logarithm must be positive");
   }
+  if (base < 2) {
+    if (checked) return undefined;
+    throw new Error("base of integer logarithm must be at least 2");
+  }
   let log = 0;
   if (typeof x === "bigint") {
     for (const b = BigInt(base); x >= b; x /= b) log++;

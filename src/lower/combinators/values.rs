@@ -30,21 +30,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<Expr> {
-        if !self.needs_clone(item_ty) {
+        // A value with a destructor is owned once each, and dropped of none.
+        let drop = self.std_drop_function(item_ty, span)?;
+        if !self.needs_clone(item_ty) && drop.is_none() {
             let array = Expr::new_(Expr::var("Array"), vec![n]);
             return Ok(Expr::call(Expr::member(array, "fill"), vec![item]));
         }
         // A hand-written Clone (including one in a field) can change values
-        // and run effects. Clone n - 1 times, then move the original item.
-        if !self.structural_clone(item_ty) {
+        // and run effects: clone n - 1 times, then move the original item.
+        if !self.structural_clone(item_ty) || drop.is_some() {
             let name = self.fresh("item");
             let mut body = Vec::new();
             let copy = self.clone_value(Expr::var(&name), item_ty, span, &mut body)?;
             body.push(StmtKind::Return(Some(copy)).at(js::Span::NONE));
-            return Ok(Expr::call(
-                Expr::helper("$repeat"),
-                vec![item, n, Expr::arrow(vec![name.into()], body)],
-            ));
+            let mut list = vec![item, n, Expr::arrow(vec![name.into()], body)];
+            list.extend(drop);
+            return Ok(Expr::call(Expr::helper("$repeat"), list));
         }
         let item = if item.reads_same() {
             item

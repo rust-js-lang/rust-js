@@ -493,6 +493,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     && (self.tcx.def_kind(def_id) != rustc_hir::def::DefKind::AssocFn
                         || self.tcx.inherent_impl_of_assoc(def_id).is_some()),
                 is_async,
+                noinline: super::recognition::is_noinline(self.tcx, def_id),
                 // A body of the crate's maps to where it's written; a std one,
                 // read from its MIR, nowhere (ADR 0364, 0561).
                 span: match body.def_id.as_local() {

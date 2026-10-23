@@ -26,4 +26,12 @@ export const mutations: Mutation[] = [
     replace: "  return b == 0 ? true : a % b == 0;\n",
     tests: ["test/corpus.test.ts", "-t", "^int_div_sign_methods.rs$"],
   },
+  {
+    name: "next-multiple-unwrapped",
+    breaks: "`next_multiple_of` past its range isn't wrapped",
+    file: "src/runtime/wrapping_div.js",
+    find: "  return next > max ? next - max - (typeof next === \"bigint\" ? 1n : 1) : next;\n",
+    replace: "  return next;\n",
+    tests: ["test/corpus.test.ts", "-t", "^int_shift_multiple_methods.rs$"],
+  },
 ];

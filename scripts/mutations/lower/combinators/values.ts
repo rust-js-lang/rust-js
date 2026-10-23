@@ -6,8 +6,8 @@ export const mutations: Mutation[] = [
     name: "vec-repeat-rows-shared",
     breaks: "`vec![vec![0; n]; n]` is one row `n` times, `new Array(n).fill(row)`, so a write to one row is a write to all",
     file: "src/lower/combinators/values.rs",
-    find: "        if !self.needs_clone(item_ty) {\n            let array = Expr::new_(Expr::var(\"Array\"), vec![n]);",
-    replace: "        if true || !self.needs_clone(item_ty) {\n            let array = Expr::new_(Expr::var(\"Array\"), vec![n]);",
+    find: "        if !self.needs_clone(item_ty) && drop.is_none() {\n            let array = Expr::new_(Expr::var(\"Array\"), vec![n]);",
+    replace: "        if true || !self.needs_clone(item_ty) && drop.is_none() {\n            let array = Expr::new_(Expr::var(\"Array\"), vec![n]);",
     tests: ["test/compiler.test.ts", "-t", "numbers are Math's, operators call their impl, and vec!\\[x; n\\] fills"],
   },
   {
@@ -89,5 +89,13 @@ export const mutations: Mutation[] = [
     find: "        let mut dropped = vec![StmtKind::Assign(Expr::var(&name), otherwise).at(js_span)];\n        self.drop_value(given_up.0, given_up.1, span, &mut dropped)?;\n",
     replace: "        let mut dropped = Vec::new();\n        self.drop_value(given_up.0, given_up.1, span, &mut dropped)?;\n        dropped.push(StmtKind::Assign(Expr::var(&name), otherwise).at(js_span));\n",
     tests: ["test/corpus.test.ts", "-t", "^default_and_pop_if_drops.rs$"],
+  },
+  {
+    name: "repeat-drop-shared",
+    breaks: "`vec![x; n]` of a value with a destructor fills one value into each slot, dropped once each",
+    file: "src/lower/combinators/values.rs",
+    find: "        if !self.needs_clone(item_ty) && drop.is_none() {\n            let array",
+    replace: "        if !self.needs_clone(item_ty) {\n            let array",
+    tests: ["test/corpus.test.ts", "-t", "^vec_repeat_drops.rs$"],
   },
 ];

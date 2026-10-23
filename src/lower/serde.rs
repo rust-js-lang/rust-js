@@ -384,6 +384,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             body,
             export: false,
             is_async: false,
+            noinline: false,
             span: js_span,
             name_span: js_span,
         })

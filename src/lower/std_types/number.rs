@@ -45,6 +45,16 @@ pub(in crate::lower) enum DurationOp {
     },
 }
 
+/// How an operation past its type's range answers: none, wrapped, kept to
+/// the range, or wrapped and whether it was past.
+#[derive(Clone, Copy, PartialEq)]
+pub(in crate::lower) enum SignMode {
+    Checked,
+    Wrapping,
+    Saturating,
+    Overflowing,
+}
+
 #[derive(Clone, Copy, PartialEq)]
 pub(in crate::lower) enum NumOp {
     /// The same in JS: `Math.floor(x)`, `Math.atan2(y, x)`.
@@ -185,6 +195,44 @@ pub(in crate::lower) enum NumOp {
     /// `x.cast_unsigned()` or `x.cast_signed()`: `as` the other type of its
     /// width.
     CastSign,
+    /// `a.wrapping_rem_euclid(b)`, or `wrapping_div_euclid`, `div`.
+    WrappingEuclid {
+        div: bool,
+    },
+    /// `a.checked_next_multiple_of(b)` of an unsigned integer, or
+    /// `next_multiple_of`, which wraps past its range, `checked: false`.
+    NextMultipleOf {
+        checked: bool,
+    },
+    /// `x.ilog(base)`, or `checked_ilog`: how many times `base` divides it.
+    IlogBase {
+        checked: bool,
+    },
+    /// `x.checked_isqrt()` of a signed integer: none of a negative.
+    CheckedIsqrt,
+    /// `a.overflowing_shl(n)` or `overflowing_shr`, `right`: the wrapping
+    /// shift, and whether `n` is past the width.
+    OverflowingShift {
+        right: bool,
+    },
+    /// `x.overflowing_abs()`: the wrapping one, and whether it's `MIN`.
+    OverflowingAbs,
+    /// `x.overflowing_pow(n)`: the wrapping power, and whether it wrapped.
+    OverflowingPow,
+    /// `a.checked_add_signed(b)` of an unsigned integer and a signed one, or
+    /// `a.checked_add_unsigned(b)` of a signed and an unsigned one, and
+    /// their wrapping, saturating and overflowing forms.
+    AddOtherSign(SignMode),
+    /// `a.checked_signed_diff(b)` of unsigned integers: `a - b` if a signed
+    /// one of their width holds it.
+    CheckedSignedDiff,
+    /// `a.eq_ignore_ascii_case(&b)` of two bytes.
+    BytesEqIgnoreAsciiCase,
+    /// `a.unbounded_shl(n)` or `unbounded_shr`, `right`: as `<<` or `>>`
+    /// below the width, past it 0, or a negative's `-1` shifted right.
+    UnboundedShift {
+        right: bool,
+    },
     WrappingRem,
     /// `overflowing_add`, `_sub` and `_mul`, and `overflowing_neg()`.
     Overflowing(BinOp),
@@ -331,6 +379,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         ty: Ty<'tcx>,
         num: Num,
         span: Span,
+        out: &mut Vec<Stmt>,
     ) -> R<Result<Expr, Vec<Expr>>> {
         let (lo, hi) = num.range();
         let min = match num.signed() {
@@ -349,6 +398,83 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             (NumOp::SaturatingDiv, Some(b)) => helper("$saturatingDiv", vec![a, b, min, num.literal(hi as i128)]),
             (NumOp::IsMultipleOf, Some(b)) => helper("$isMultipleOf", vec![a, b]),
+            (NumOp::WrappingEuclid { div }, Some(b)) => {
+                let name = if div {
+                    "$wrappingDivEuclid"
+                } else {
+                    "$wrappingRemEuclid"
+                };
+                helper(name, vec![a, b, min])
+            }
+            (NumOp::NextMultipleOf { checked }, Some(b)) => {
+                let name = if checked {
+                    "$checkedNextMultipleOf"
+                } else {
+                    "$nextMultipleOf"
+                };
+                helper(name, vec![a, b, num.literal(hi as i128)])
+            }
+            (NumOp::IlogBase { checked }, Some(base)) => helper("$ilog", vec![a, base, Expr::bool(checked)]),
+            (NumOp::CheckedIsqrt, None) => helper("$checkedIsqrt", vec![a]),
+            (NumOp::OverflowingShift { right }, Some(n)) => {
+                let n = if n.reads_same() { n } else { self.spill("by", n, out) };
+                let past = Expr::bin(Op::Ge, n.clone(), Expr::int(i128::from(num.bits())));
+                let op = if right { BinOp::Shr } else { BinOp::Shl };
+                Expr::array(vec![self.binary(op, a, n, None, ty, span)?, past])
+            }
+            (NumOp::OverflowingAbs, None) => {
+                let a = if a.reads_same() { a } else { self.spill("value", a, out) };
+                let at_min = Expr::bin(Op::Eq, a.clone(), num.literal(lo));
+                let negated = Expr::unary(UnaryOp::Neg, a.clone());
+                let abs = Expr::cond(Expr::bin(Op::Lt, a.clone(), num.literal(0)), negated, a.clone());
+                let wrapped = Expr::cond(at_min.clone(), num.literal(lo), abs);
+                Expr::array(vec![wrapped, at_min])
+            }
+            (NumOp::OverflowingPow, Some(n)) => {
+                let a = if a.reads_same() { a } else { self.spill("base", a, out) };
+                let n = if n.reads_same() { n } else { self.spill("exp", n, out) };
+                let exact = helper("$powExact", vec![a.clone(), n.clone()]);
+                let wrapped = self.number_call(NumOp::Pow, vec![a, n], ty, span, out)?;
+                helper(
+                    "$overflowing",
+                    vec![wrapped, exact, num.literal(lo), num.literal(hi as i128)],
+                )
+            }
+            (NumOp::AddOtherSign(mode), Some(b)) => {
+                let exact = Expr::bin(Op::Add, a, b);
+                let (lo, hi) = (num.literal(lo), num.literal(hi as i128));
+                match mode {
+                    SignMode::Checked if num.big() => helper("$bigChecked", vec![exact, lo, hi]),
+                    SignMode::Checked => helper("$checked", vec![exact, lo, hi]),
+                    SignMode::Wrapping => num.wrap(exact),
+                    SignMode::Saturating => helper("$saturate", vec![exact, lo, hi]),
+                    SignMode::Overflowing => {
+                        let exact = self.spill("exact", exact, out);
+                        helper("$overflowing", vec![num.wrap(exact.clone()), exact, lo, hi])
+                    }
+                }
+            }
+            (NumOp::CheckedSignedDiff, Some(b)) => {
+                let half = 1i128 << (num.bits() - 1);
+                let checked = if num.big() { "$bigChecked" } else { "$checked" };
+                helper(
+                    checked,
+                    vec![Expr::bin(Op::Sub, a, b), num.literal(-half), num.literal(half - 1)],
+                )
+            }
+            (NumOp::BytesEqIgnoreAsciiCase, Some(b)) => helper("$bytesEqIgnoreAsciiCase", vec![a, b]),
+            (NumOp::UnboundedShift { right }, Some(n)) => {
+                let a = if a.reads_same() { a } else { self.spill("value", a, out) };
+                let n = if n.reads_same() { n } else { self.spill("by", n, out) };
+                let past = Expr::bin(Op::Ge, n.clone(), Expr::int(i128::from(num.bits())));
+                let op = if right { BinOp::Shr } else { BinOp::Shl };
+                let shifted = self.binary(op, a.clone(), n, None, ty, span)?;
+                let filled = match right && num.signed() {
+                    true => Expr::cond(Expr::bin(Op::Lt, a, num.literal(0)), num.literal(-1), num.literal(0)),
+                    false => num.literal(0),
+                };
+                Expr::cond(past, filled, shifted)
+            }
             (NumOp::CastSign, None) => {
                 let other = match ty.kind() {
                     ty::Int(int) => Ty::new_uint(self.tcx, int.to_unsigned()),
@@ -375,7 +501,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Ok(value) => return Ok(value),
             Err(values) => values,
         };
-        let values = match self.either_width_call(op, values, ty, num, span)? {
+        let values = match self.either_width_call(op, values, ty, num, span, out)? {
             Ok(value) => return Ok(value),
             Err(values) => values,
         };
@@ -400,7 +526,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // already (ADR 0122).
         let rounded = |e: Expr| if num == Num::F32 { num.wrap(e) } else { e };
         Ok(match op {
-            NumOp::OverflowingDiv { .. } | NumOp::SaturatingDiv | NumOp::IsMultipleOf | NumOp::CastSign => {
+            NumOp::OverflowingDiv { .. }
+            | NumOp::SaturatingDiv
+            | NumOp::IsMultipleOf
+            | NumOp::CastSign
+            | NumOp::WrappingEuclid { .. }
+            | NumOp::NextMultipleOf { .. }
+            | NumOp::UnboundedShift { .. }
+            | NumOp::IlogBase { .. }
+            | NumOp::CheckedIsqrt
+            | NumOp::OverflowingShift { .. }
+            | NumOp::OverflowingAbs
+            | NumOp::OverflowingPow
+            | NumOp::AddOtherSign(_)
+            | NumOp::CheckedSignedDiff
+            | NumOp::BytesEqIgnoreAsciiCase => {
                 unreachable!("lowered by either_width_call")
             }
             NumOp::Math(name @ ("floor" | "ceil" | "trunc" | "abs")) => {

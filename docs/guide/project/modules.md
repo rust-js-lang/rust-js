@@ -597,6 +597,42 @@ export function nextCount() {
 // Keep this file's counts in step with the server's.
 ```
 
+A function marked `#[inline(never)]` is Closure Compiler's `@noinline`, its
+JSDoc's last line where it has one, and rust-js keeps it a function of its
+own, as React keeps `testStringCoercion` out of line for its stack trace.
+`#[inline]` and `#[inline(always)]` say nothing: a JS engine decides
+([ADR 0649](../../decisions/0649-inline-never-is-noinline.md)):
+
+```rust
+#[inline(never)]
+fn test_string_coercion(value: f64) -> String {
+    format!("{value}")
+}
+
+/// The value's text.
+#[inline(never)]
+pub fn coerced(value: f64) -> String {
+    test_string_coercion(value)
+}
+```
+
+```js
+import { $displayF64 } from "@rust-js/runtime";
+
+/** @noinline */
+function testStringCoercion(value) {
+  return $displayF64(value);
+}
+
+/**
+ * The value's text.
+ * @noinline
+ */
+export function coerced(value) {
+  return testStringCoercion(value);
+}
+```
+
 ## Libraries
 
 A library is a crate others depend on, a workspace's `models` or a package

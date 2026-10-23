@@ -725,11 +725,16 @@ export function $remove(map, key, dropKey) {
   return had ? $some(old) : undefined;
 }
 
-export function $repeat(item, count, clone) {
+// `vec![item; count]`: `count - 1` clones of `item`, then `item` itself, as
+// std's `from_elem` makes them; of none, `item` dropped by `drop`, where it
+// has a destructor.
+export function $repeat(item, count, clone, drop) {
   const result = [];
   if (count > 0) {
     for (let i = 1; i < count; i++) result.push(clone(item));
     result.push(item);
+  } else {
+    drop?.(item);
   }
   return result;
 }
@@ -1232,6 +1237,19 @@ export function $checkedDiv(a, b, min) {
 export function $remEuclid(a, b, min) {
   const r = $rem(a, b, min) + 0;
   return r < 0 ? (b < 0 ? r - b : r + b) : r;
+}
+
+// `a.wrapping_rem_euclid(b)` and `wrapping_div_euclid`, a number's or a
+// BigInt's: `MIN` by `-1`, which would overflow, is 0 and `MIN`; else the
+// Euclidean remainder or quotient, a zero `b` panicking as `%` does.
+export function $wrappingRemEuclid(a, b, min) {
+  if (a === min && b == -1) return typeof a === "bigint" ? 0n : 0;
+  return typeof a === "bigint" ? $bigRemEuclid(a, b, min) : $remEuclid(a, b, min);
+}
+
+export function $wrappingDivEuclid(a, b, min) {
+  if (a === min && b == -1) return a;
+  return typeof a === "bigint" ? $bigDivEuclid(a, b, min) : $divEuclid(a, b, min);
 }
 
 export function $divEuclid(a, b, min) {
@@ -4249,6 +4267,10 @@ export function $ilog(x, base, checked = false) {
     if (checked) return undefined;
     throw new Error("argument of integer logarithm must be positive");
   }
+  if (base < 2) {
+    if (checked) return undefined;
+    throw new Error("base of integer logarithm must be at least 2");
+  }
   let log = 0;
   if (typeof x === "bigint") {
     for (const b = BigInt(base); x >= b; x /= b) log++;
@@ -4260,6 +4282,11 @@ export function $ilog(x, base, checked = false) {
 
 // `x.isqrt()` of an integer, a number or a BigInt: its square root, rounded
 // down. A BigInt's starts from a float's guess, which it corrects.
+// `x.checked_isqrt()` of a signed integer: none of a negative.
+export function $checkedIsqrt(x) {
+  return x < 0 ? undefined : $isqrt(x);
+}
+
 export function $isqrt(x) {
   if (x < 0) throw new Error("argument of integer square root cannot be negative");
   if (typeof x !== "bigint") return Math.floor(Math.sqrt(x));
@@ -4302,6 +4329,25 @@ export function $isMultipleOf(a, b) {
   return b == 0 ? a == 0 : a % b == 0;
 }
 
+// `a.checked_next_multiple_of(b)` of an unsigned number or BigInt: the
+// least multiple of `b` at least `a`, none of a zero `b` or past `max`.
+export function $checkedNextMultipleOf(a, b, max) {
+  if (b == 0) return undefined;
+  const r = a % b;
+  const next = r == 0 ? a : a + (b - r);
+  return next > max ? undefined : next;
+}
+
+// `a.next_multiple_of(b)` of an unsigned number or BigInt: the least
+// multiple of `b` at least `a`, wrapped past `max` as overflow wraps; a
+// zero `b` panics as `%` does.
+export function $nextMultipleOf(a, b, max) {
+  if (b == 0) throw new Error("attempt to calculate the remainder with a divisor of zero");
+  const r = a % b;
+  const next = r == 0 ? a : a + (b - r);
+  return next > max ? next - max - (typeof next === "bigint" ? 1n : 1) : next;
+}
+
 // `a.wrapping_rem(b)`, a number's or a BigInt's: `MIN % -1` is 0, where it
 // would overflow; a zero `b` panics as `%` does.
 export function $wrappingRem(a, b, min) {
@@ -4321,6 +4367,24 @@ export function $overflowingRem(a, b, min) {
 // result was out of range.
 export function $overflowing(wrapped, exact, lo, hi) {
   return [wrapped, exact < lo || exact > hi];
+}
+
+// `a.pow(n)` exact, a number's or a BigInt's, the `exact` `$overflowing`
+// compares: past 2^53 a number's is rounded, but it's out of range anyway.
+export function $powExact(a, n) {
+  return typeof a === "bigint" ? a ** BigInt(n) : a ** n;
+}
+
+// An exact result kept in `lo` to `hi`, a `saturating_*`'s.
+export function $saturate(exact, lo, hi) {
+  return exact < lo ? lo : exact > hi ? hi : exact;
+}
+
+// `a.eq_ignore_ascii_case(&b)` of two bytes: equal once each ASCII
+// uppercase letter is its lowercase one.
+export function $bytesEqIgnoreAsciiCase(a, b) {
+  const lower = (c) => (c >= 65 && c <= 90 ? c + 32 : c);
+  return lower(a) === lower(b);
 }
 
 // `x.saturating_pow(exp)`: the power, or the bound it overflows past, `lo`

@@ -93,10 +93,15 @@ fn assigned_in_place(items: &mut [js::Item]) {
 fn forwarding_functions(module: &mut js::Module) {
     let mut i = 0;
     while i < module.items.len() {
+        // One kept out of line, `#[inline(never)]`, stays itself (ADR 0649).
         let js::Item::Function(function) = &module.items[i] else {
             i += 1;
             continue;
         };
+        if function.noinline {
+            i += 1;
+            continue;
+        }
         let names: Option<Vec<&str>> = (function.params.iter())
             .map(|p| match p {
                 js::Pattern::Name(name) => Some(name.as_str()),
