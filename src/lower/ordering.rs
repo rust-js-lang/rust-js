@@ -42,11 +42,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         !self.has_cell_layer(ty) && self.is_string_like(ty.peel_refs())
     }
 
-    /// `$cmp(a, b)`, of strings or `char`s: their `Ordering` by code point.
-    pub(super) fn text_order(&mut self, a: Expr, b: Expr) -> Expr {
-        Expr::call(Expr::helper("$cmp"), vec![a, b])
-    }
-
     /// `a < b` and the rest, of strings or `char`s, by code point, as Rust
     /// orders them (ADR 0183): JS's own operator where one is a literal whose
     /// characters are all below U+D800, which it orders the same, `c >=
