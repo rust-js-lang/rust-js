@@ -84,3 +84,17 @@ gives, `$rangeLast` and `$rangeLen`. A stepped range's `count()` steps
 `n / step` numbers, as std's `StepBy` does; a reversed range's `nth`,
 its own `nth_back`, still steps each. Held by
 `test/corpus/range_steps_known.rs` and `test/corpus/range_own_steps.rs`.
+
+## Amendment: an inclusive range's, a reversed one's, and none of a `char`'s
+
+`range_own_step` took any range's `nth` and `last`, a range of `char`s
+too, whose `$rangeNth` added a number to a string: `('a'..'z').nth(2)` was
+`"a2"`, and `last()` threw. A range of numbers alone is its bounds'; a
+`char`'s steps by code point. `a..=b`'s `nth`, `last` and `count` are its
+bounds' as `a..b`'s are, `$rangeInclusiveNth`, `$rangeInclusiveLast`,
+`$rangeInclusiveLen`, where they built every number into an array. A
+reversed one's `nth` is its `nth_back`, `$rangeNthBack` of its
+`$iterator`'s bounds, `.of`, which tidy reads from where it's made; its
+`last()` its start, `$rangeFirst`; and its `skip(n)`, where it's made with
+a number end, that end `n` before. A reversed range's `step_by` still
+steps each (#163). Held by `test/corpus/range_own_steps.rs`.

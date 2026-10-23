@@ -1445,6 +1445,63 @@ export function $rangeLast(range) {
   return typeof range.end === "bigint" ? range.end - 1n : range.end - 1;
 }
 
+// `r.nth_back(n)` of `a..b`, which `r.rev().nth(n)` is: the number `n` back
+// from its end, which its end moves to, or none, its end moved to its start.
+export function $rangeNthBack(range, n) {
+  const at = typeof range.end === "bigint" ? range.end - 1n - BigInt(n) : range.end - 1 - n;
+  if (at >= range.start) {
+    range.end = at;
+    return at;
+  }
+  range.end = range.start;
+  return undefined;
+}
+
+// `r.nth(n)` of `a..=b`: as `$rangeNth`'s, its end the last number, and its
+// start past its end once it's given all.
+export function $rangeInclusiveNth(range, n) {
+  const big = typeof range.start === "bigint";
+  const at = big ? range.start + BigInt(n) : range.start + n;
+  if (at <= range.end) {
+    range.start = big ? at + 1n : at + 1;
+    return at;
+  }
+  range.start = big ? range.end + 1n : range.end + 1;
+  return undefined;
+}
+
+// `r.nth_back(n)` of `a..=b`, which `r.rev().nth(n)` is.
+export function $rangeInclusiveNthBack(range, n) {
+  const big = typeof range.end === "bigint";
+  const at = big ? range.end - BigInt(n) : range.end - n;
+  if (at >= range.start) {
+    range.end = big ? at - 1n : at - 1;
+    return at;
+  }
+  range.end = big ? range.start - 1n : range.start - 1;
+  return undefined;
+}
+
+// `r.last()` of `a..=b`: its end, or none.
+export function $rangeInclusiveLast(range) {
+  return range.start <= range.end ? range.end : undefined;
+}
+
+// `r.rev().last()` of `a..b`: its start, or none.
+export function $rangeFirst(range) {
+  return range.start < range.end ? range.start : undefined;
+}
+
+// `r.rev().last()` of `a..=b`: its start, or none.
+export function $rangeInclusiveFirst(range) {
+  return range.start <= range.end ? range.start : undefined;
+}
+
+// How many numbers `a..=b` has left, as `$rangeLen` of `a..b`.
+export function $rangeInclusiveLen(range) {
+  return range.start <= range.end ? range.end - range.start + 1 : 0;
+}
+
 export function $nextBackSome(it) {
   const step = it.back();
   return step.done ? undefined : $some(step.value);
