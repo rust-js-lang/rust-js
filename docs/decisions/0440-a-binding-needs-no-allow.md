@@ -72,3 +72,26 @@ argument, `ConstU32<{ identity::<3>() }>`, with its owner's type-check
 results, which have no type for it: rustc's `const_fn_in_generics.rs`
 crashed. Each body owner is walked on its own, with its own results; the
 binding test holds a call inside a const argument.
+
+## Amendment: a descriptor map, a default export, and a plain clippy
+
+React's port, under a plain `cargo clippy -- -D warnings`, was refused
+twice where rust-js's check is clean: `ConsolePatchingDev`'s `Logs`, a
+struct of `PropertyDescriptor`s given `Object.defineProperties` as a
+`&dyn PropertyDescriptorMap` (ADR 0666), "multiple fields are never
+read"; and `DefaultPrepareStackTraceV8`'s hook, a function only
+`js::export_default!(prepare_stack_trace)` names (ADR 0611), "never
+used". Each is this decision's: the liveness counts `Logs`'s fields, the
+type of what a body gives a binding before it's coerced to the trait
+object, and the `jsx!` pass allows `dead_code` on a function the naming
+form names, generic ones too. Neither gets a second mechanism, a derive
+reading each field or a macro's own use of the function: a plain
+`cargo clippy`, which runs neither, is a plain `cargo check` here, the
+Consequences' first. The editor's check is rust-js's (ADR 0222), and
+clippy's lints run through rust-js's liveness only where a driver links
+both, which none does yet.
+
+Held by `test/js-object.test.ts`, "console is a value, its functions
+read as values", React's `disableLogs` compiled with no warning, and
+`test/modules.test.ts`, "a function only js::export_default! names is no
+dead code", which warns of a function nothing names still.
