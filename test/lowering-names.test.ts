@@ -476,6 +476,18 @@ pub fn early(a: bool, k: u32) -> u32 {
     }
 }
 
+// And one a closure made before reads: its own name, beside the other.
+pub fn seen(a: bool, k: u32) -> u32 {
+    let n = k + 1;
+    let f = move || n;
+    if a {
+        n
+    } else {
+        let n = 2;
+        n * 3 + f()
+    }
+}
+
 // Two of one name in one block: JS refuses a second const n there.
 #[allow(unused_variables)]
 pub fn again(mut items: Vec<u32>) -> usize {
@@ -490,8 +502,9 @@ pub fn again(mut items: Vec<u32>) -> usize {
   expect(js).toContain("    const m = n;\n    const n$1 = 1;");
   expect(js).toContain("  items.pop();\n  const n = items.length;");
   expect(js).toContain("  let n = (k + 1) >>> 0;\n  if (a) {\n    return n;\n  }\n  n = 2;\n  return n * 3;");
+  expect(js).toContain("  const n$1 = 2;\n");
   const lib = await import(join(dir, "lib.js"));
-  expect([lib.twice(true), lib.twice(false), lib.both(true), lib.both(false), lib.again([1, 2]), lib.early(true, 4), lib.early(false, 4)]).toEqual([2, 6, 11, 10, 1, 5, 6]);
+  expect([lib.twice(true), lib.twice(false), lib.both(true), lib.both(false), lib.again([1, 2]), lib.early(true, 4), lib.early(false, 4), lib.seen(true, 4), lib.seen(false, 4)]).toEqual([2, 6, 11, 10, 1, 5, 6, 5, 11]);
 });
 
 // A guard's binding, which the guard reads in place, gets no `const` its arm
