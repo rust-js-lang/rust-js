@@ -29,9 +29,9 @@ wrong one, and a second thing to keep correct. The rule holds everywhere:
 - **What a program writes:** one attribute, one macro, one API, one way to
   declare a binding, one option, one flag, one config key for each thing.
 - **What rust-js writes:** one form of output for each construct.
-- **Inside rust-js:** one module, pass, helper, constant or code path for
-  each concept; one way a host builds; one list of each set of things; and
-  one place that answers each question (the next rule).
+- **Inside rust-js:** one authoritative owner for each rule, shared by
+  the modules and passes that need it; one way a host builds; one catalog
+  of each set of things. Ownership follows the next rule.
 
 When you meet two ways, whatever you were doing:
 
@@ -50,13 +50,23 @@ answer. Before adding a form, find the one that does the job and extend
 it. If removing the second way seems out of proportion, stop and ask the
 user; never leave both standing.
 
-## One place answers each question
+## Single semantic authority
 
-Every question the code asks has exactly one place that answers it: what a
-value is in JS, whether a function is a binding, whether a check is written,
-where a module's file goes, which old files a build may remove, which crates
-rust-js ships. Every code path that needs the answer asks that place. None
-works it out again, copies its condition, or keeps its own list.
+**Define each semantic rule once; consume its decisions everywhere.**
+One question, one authority; many consumers.
+
+For every semantic question, rust-js has one authoritative owner of the
+answer. Other components consult that owner or consume its explicit result;
+they never independently reconstruct the rule. This is Single Source of
+Truth applied to compiler decisions, and DRY applied to knowledge, not just
+repeated code. Two functions can look entirely different and still duplicate
+the same rule. Similar-looking code for different rules need not be combined.
+
+This covers what a value is in JS, when it needs copying, whether a function
+is a binding, and whether a check is written. It also covers build decisions:
+where a module's file goes, which old files a build may remove, and which
+crates rust-js ships. rustc remains the authority on Rust's types, traits,
+ownership, borrowing and validity; rust-js owns how valid Rust becomes JS.
 
 Two answers to one question drift apart, and then two code paths behave
 differently without anyone knowing: each is right alone, and the bug lives
@@ -66,18 +76,38 @@ but never made; where a module's JS goes in source was the compiler's rule
 and the hosts' copy of it; a Vite build looked for committed JS where Next's
 didn't.
 
-- **Name the question, give it one owner**: a function whose name is the
-  question, in the module whose concept it is, and route every path through
-  it. The [architecture test](test/architecture.test.ts) holds who may ask.
-- **Across a boundary**, the compiler and a JS host, Rust and TypeScript:
-  the owner reports the answer (a manifest field, a flag, a catalog), and
-  the other side reads it. Where it truly can't, one side's copy is held
-  equal to the other by a test that runs both.
-- **Spot the red flag**: the same condition in two `if`s, a list written
-  twice, a comment that says "as X does" or "mirrors", a value derived in
-  one place and derived again in another. Treat it as two ways to do one
-  job: stop, give the question its one place, route every path through it,
-  hold it with a test, then go on.
+- **Find the owner before adding a rule.** Consult
+  [the architecture](docs/architecture.md) and its table of owners. Extend
+  the existing owner when the question is already answered. For a new
+  question, name it and give it an API in the module responsible for that
+  concept. One authority per question does not mean one giant module:
+  owners may consult other owners for the facts their decision needs.
+- **Carry answers across phases.** Analysis, lowering, linking and printing
+  consume the responsible owner's API or explicit facts in a phase output.
+  For example, `copies.rs` owns when a value needs copying; consumers use
+  its decision rather than inventing their own copy conditions. A later
+  phase must not recover an earlier decision from generated names or JS
+  shapes outside the API that owns that representation.
+- **Carry answers across hosts and languages.** The compiler reports its
+  decisions through the manifest; native and browser hosts consume them.
+  Shared catalogs supply build and packaging facts. If a boundary truly
+  prevents sharing an answer, document why, identify the authoritative
+  side, and test the necessary mirror against it by running both. A mirror
+  is never independently maintained policy.
+- **Derived data is not another authority.** Caches, indexes and serialized
+  facts are allowed when derived from the owner's answer. Make their source,
+  input keys and invalidation or version checks explicit, so stale data
+  cannot silently replace the answer. Do not maintain a second editable
+  list or a fallback that decides the rule again.
+- **Hold ownership and behavior.** Use types and visibility for contracts,
+  [architecture tests](test/architecture.test.ts) for who may access or
+  decide a concept, and behavior tests for what consumers observe. When
+  ownership changes, update the architecture and record why in an ADR.
+- **Spot the red flag**: two places that must change when one rule changes,
+  even if their code differs; a repeated condition or catalog; a comment
+  that says "as X does" or "mirrors"; a decision inferred again downstream.
+  Follow the stop-and-resolve procedure above: choose the owner, route all
+  consumers through it, remove the competing rule, and hold it with a test.
 
 ## Least surprise
 
