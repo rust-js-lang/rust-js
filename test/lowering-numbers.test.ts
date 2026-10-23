@@ -52,6 +52,53 @@ pub fn flags(n: u8) -> u8 {
   expect([lib.OWNER_STACK_LIMIT, lib.SEED, lib.masked(0x1234), lib.small(), lib.whole(), lib.below(), lib.flags(1)]).toEqual([10000, 0x811c9dc5, 0x34, 0.0025, 5000, -10000, 11]);
 });
 
+// ADR 0631: a statement `x += 1` is `x++`, and `x -= 1` is `x--`, of a
+// variable, a field or an item: a step of 1, a number literal, is only a
+// number's. Any other step, a string's text, `2`, is as it's written.
+test("a statement stepping by one is ++ or --", async () => {
+  const dir = fixture("step-by-one");
+  writeFileSync(join(dir, "lib.rs"), `pub struct Counter {
+    pub hits: f64,
+}
+
+pub fn steps(items: &[u32], counter: &mut Counter, counts: &mut [f64], i: usize) -> (usize, f64, String) {
+    let mut j = 0;
+    while j < items.len() {
+        j += 1;
+    }
+    let mut t = 2.5;
+    t += 1.0;
+    t -= 1.0;
+    let mut s = String::from("a");
+    s += "1";
+    counter.hits += 1.0;
+    if i < counts.len() {
+        counts[i] -= 1.0;
+    }
+    if j < 2 {
+        j += 2;
+    }
+    (j, t, s)
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("    j++;\n");
+  expect(js).toContain("  t++;\n  t--;\n");
+  expect(js).toContain("  counter.hits++;\n");
+  expect(js).toContain("    counts[i]--;\n");
+  expect(js).toContain('s += "1";');
+  expect(js).toContain("j += 2;");
+  expect(js).not.toMatch(/[+-]= 1;/);
+  const lib = await import(join(dir, "lib.js"));
+  const counter = { hits: 4 };
+  const counts = [1, 5];
+  expect(lib.steps([7, 8, 9], counter, counts, 1)).toEqual([3, 2.5, "a1"]);
+  expect([counter, counts]).toEqual([{ hits: 5 }, [1, 4]]);
+  expect(lib.steps([7], counter, counts, 2)[0]).toBe(3);
+  expect([counter, counts]).toEqual([{ hits: 6 }, [1, 4]]);
+});
+
 // std's `From<bool>` of each number and `From<char>` of `u32`, `u64` and
 // `u128` are what `as` makes of them: `flag ? 1 : 0`, `c.codePointAt(0)`,
 // a BigInt of 64 bits and more (ADR 0086), as a function too.
@@ -357,7 +404,7 @@ pub fn later(items: &mut Vec<u32>) -> u32 {
   expect(js).toContain("n < 10 ? n * 3 + 1 : 0");
   expect(js).toContain("k > 0 ? 0 - k : 1");
   expect(js).toContain("m < 255 ? m + 1 : 0");
-  expect(js).toContain("  while (i < n) {\n    i += 1;\n  }\n");
+  expect(js).toContain("  while (i < n) {\n    i++;\n  }\n");
   expect(js).toContain("steps = (steps + 1) >>> 0;");
   expect(js).toContain("return (k + 1) >>> 0;");
   expect(js).toContain("i <= items.length ? $index(items, i) : 0");

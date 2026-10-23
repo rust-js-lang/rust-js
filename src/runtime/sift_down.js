@@ -4,7 +4,7 @@ function $siftDown(heap, pos, end, cmp) {
   let child = 2 * pos + 1;
   while (child <= end - 2) {
     if (cmp(heap[child], heap[child + 1]) <= 0) {
-      child += 1;
+      child++;
     }
     if (cmp(item, heap[child]) >= 0) {
       heap[pos] = item;

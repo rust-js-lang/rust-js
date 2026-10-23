@@ -214,6 +214,31 @@ export function parseAge(s) {
   is an `Err`, so trim first.
 - **Dividing an integer by zero panics,** with Rust's message. An `f64`
   divided by zero is `Infinity`, as in JS.
+- **A step of one is `++`:** a statement `n += 1` is `n++`, and `n -= 1`
+  is `n--`
+  ([ADR 0631](../../decisions/0631-a-step-of-one-is-plus-plus.md)). An
+  integer's keeps its wrap, `n = (n + 1) >>> 0`, unless what comes before
+  shows it can't wrap: below a length, `i < xs.len()`, `i += 1` is `i++`:
+
+```rust
+pub fn count_below(xs: &[u32], limit: u32) -> usize {
+    let mut i = 0;
+    while i < xs.len() && xs[i] < limit {
+        i += 1;
+    }
+    i
+}
+```
+
+```js
+export function countBelow(xs, limit) {
+  let i = 0;
+  while (i < xs.length && xs[i] < limit) {
+    i++;
+  }
+  return i;
+}
+```
 - **A literal keeps its base and its exponent**, `0xff`, `0b1010`, `1e4`,
   without Rust's type suffix and separators; any other is JS's digits,
   `5000` of `5000.0`
@@ -890,7 +915,7 @@ export function numbered(names) {
 export function countdown(n) {
   while (n > 0) {
     console.log(`${n}`);
-    n -= 1;
+    n--;
   }
 }
 

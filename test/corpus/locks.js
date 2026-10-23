@@ -103,7 +103,7 @@ function main() {
   }
   const cell = { value: 1.5 };
   const v = $borrowMut(cell, true);
-  v.value += 1;
+  v.value++;
   const r = v.value;
   try {
     console.log(`${$displayF64(r)} ${$displayF64(v.value)}`);
@@ -118,7 +118,7 @@ function main() {
   const slots = [{ value: 1 }, { value: 2 }];
   let i = 0;
   const first = $lock($index(slots, i), true);
-  i += 1;
+  i++;
   first.value = (first.value + 10) | 0;
   try {
     console.log(`${first.value} ${i}`);

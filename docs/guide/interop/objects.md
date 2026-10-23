@@ -449,7 +449,7 @@ function pointDisplay_fmt(point) {
 
 export function moved(p) {
   const q = { ...p };
-  q.x += 1;
+  q.x++;
   return pointAdd_add({ ...q }, { x: 0, y: 0 });
 }
 

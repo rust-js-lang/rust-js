@@ -75,7 +75,7 @@ function once(v) {
       continue;
     }
     if (x > 5) {
-      n += 1;
+      n++;
     }
     return n;
   }

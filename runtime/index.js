@@ -7955,12 +7955,12 @@ export function $tryRecv(channel) {
 }
 
 export function $cloneSender(channel) {
-  channel.senders += 1;
+  channel.senders++;
   return channel;
 }
 
 export function $dropSender(channel) {
-  channel.senders -= 1;
+  channel.senders--;
 }
 
 // What's still in its queue is dropped with it, `drop` of each, as Rust's
@@ -8196,7 +8196,7 @@ export function $siftDown(heap, pos, end, cmp) {
   let child = 2 * pos + 1;
   while (child <= end - 2) {
     if (cmp(heap[child], heap[child + 1]) <= 0) {
-      child += 1;
+      child++;
     }
     if (cmp(item, heap[child]) >= 0) {
       heap[pos] = item;
@@ -8232,7 +8232,7 @@ export function $heapPop(heap, cmp) {
     let child = 1;
     while (child <= end - 2) {
       if (cmp(heap[child], heap[child + 1]) <= 0) {
-        child += 1;
+        child++;
       }
       heap[pos] = heap[child];
       pos = child;
@@ -8252,7 +8252,7 @@ export function $heapSorted(items, cmp) {
   const heap = items.slice();
   let end = heap.length;
   while (end > 1) {
-    end -= 1;
+    end--;
     [heap[0], heap[end]] = [heap[end], heap[0]];
     $siftDown(heap, 0, end, cmp);
   }
@@ -8263,7 +8263,7 @@ export function $heapFrom(items, cmp) {
   const heap = items.slice();
   let n = heap.length >>> 1;
   while (n > 0) {
-    n -= 1;
+    n--;
     $siftDown(heap, n, heap.length, cmp);
   }
   return heap;
@@ -8478,7 +8478,7 @@ export function $utf8Check(bytes, from = 0) {
   for (let i = from; i < bytes.length; ) {
     const first = bytes[i];
     if (first < 0x80) {
-      i += 1;
+      i++;
       continue;
     }
     const width = first >= 0xc2 && first <= 0xdf ? 2 : first >= 0xe0 && first <= 0xef ? 3 : first >= 0xf0 && first <= 0xf4 ? 4 : 0;
@@ -9097,7 +9097,7 @@ export function $byteLen(s) {
   let bytes = 0;
   for (let i = 0; i < s.length; i++) {
     const unit = s.charCodeAt(i);
-    if (unit < 0x80) bytes += 1;
+    if (unit < 0x80) bytes++;
     else if (unit < 0x800) bytes += 2;
     else if (unit >= 0xd800 && unit < 0xdc00) {
       bytes += 4;

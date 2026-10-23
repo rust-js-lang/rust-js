@@ -283,6 +283,25 @@ impl<'a> Cx<'a> {
                 );
                 Statement::new_expression_statement(sp, assign, b)
             }
+            // A step of one, `x++` and `x--`, as JS writes a counter's: the
+            // number literal 1 is only a number's, a BigInt's is `1n`, a
+            // string's text (ADR 0631).
+            StmtKind::Compound(
+                op @ (Op::Add | Op::Sub),
+                target,
+                js::Expr {
+                    kind: ExprKind::Num(1.0),
+                    ..
+                },
+            ) => {
+                let operator = match op {
+                    Op::Add => UpdateOperator::Increment,
+                    _ => UpdateOperator::Decrement,
+                };
+                let target = self.assignment_target(target).into_simple_assignment_target();
+                let update = Expression::new_update_expression(sp, operator, false, target, b);
+                Statement::new_expression_statement(sp, update, b)
+            }
             StmtKind::Compound(op, target, value) => {
                 let operator = match op {
                     Op::Add => AssignmentOperator::Addition,

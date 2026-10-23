@@ -26,12 +26,12 @@ function $tryRecv(channel) {
 }
 
 function $cloneSender(channel) {
-  channel.senders += 1;
+  channel.senders++;
   return channel;
 }
 
 function $dropSender(channel) {
-  channel.senders -= 1;
+  channel.senders--;
 }
 
 // What's still in its queue is dropped with it, `drop` of each, as Rust's

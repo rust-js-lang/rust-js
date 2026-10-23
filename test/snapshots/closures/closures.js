@@ -49,7 +49,7 @@ export function freshCopyEachTime(times) {
       return n$1;
     };
     total = (total + ((((bump() * 10) | 0) + bump()) | 0)) | 0;
-    i += 1;
+    i++;
   }
   return total;
 }

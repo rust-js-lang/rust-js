@@ -11,7 +11,7 @@ function guarded(limit) {
   let n = 0;
   while (true) {
     const g = "round";
-    n += 1;
+    n++;
     if (n < limit) {
       try {
         console.log(`round ${n}`);

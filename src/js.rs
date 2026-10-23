@@ -319,7 +319,8 @@ pub enum StmtKind {
     /// `target = value`, where `target` is a variable, `a.b` or `a[0]`.
     Assign(Expr, Expr),
     /// `target op= value`, `s += t`: what preparation makes of
-    /// `target = target op value`, as JS writes a string built up.
+    /// `target = target op value`, as JS writes a string built up. A step
+    /// of one is printed `x++` and `x--` (ADR 0631).
     Compound(Op, Expr, Expr),
     Expr(Expr),
     If(Expr, Vec<Stmt>, Option<Vec<Stmt>>),

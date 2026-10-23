@@ -15,7 +15,7 @@ function pick(x) {
 function main() {
   let n = 0;
   while (true) {
-    n += 1;
+    n++;
     if (n === 3) {
       const doubled = n * 2;
       while (true) {
@@ -24,7 +24,7 @@ function main() {
             const found = i;
             let m = 0;
             while (true) {
-              m += 1;
+              m++;
               if (m > 2) {
                 const given = pick(m);
                 console.log(`${doubled} ${found} ${given}`);

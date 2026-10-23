@@ -5,7 +5,7 @@ function $utf8Check(bytes, from = 0) {
   for (let i = from; i < bytes.length; ) {
     const first = bytes[i];
     if (first < 0x80) {
-      i += 1;
+      i++;
       continue;
     }
     const width = first >= 0xc2 && first <= 0xdf ? 2 : first >= 0xe0 && first <= 0xef ? 3 : first >= 0xf0 && first <= 0xf4 ? 4 : 0;

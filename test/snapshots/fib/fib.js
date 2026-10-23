@@ -30,7 +30,7 @@ export function fibIter(n) {
     const next = (a + b) >>> 0;
     a = b;
     b = next;
-    i += 1;
+    i++;
   }
   return a;
 }

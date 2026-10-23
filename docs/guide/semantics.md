@@ -216,7 +216,7 @@ What's refused of formatting is in [the limitations](limitations.md#formatting).
 - **`&T` is the value. `&mut` to an object is the object**, changed in place
   ([0025](../decisions/0025-vec-loops-refcell-mut.md)). A `&mut` to a number, a
   string or an `Option` names its place when it's in a variable, `*r += 1`
-  being `x += 1`; given to a function, it's a box `{ value }` the caller
+  being `x++`; given to a function, it's a box `{ value }` the caller
   reads back; kept elsewhere, a handle with a getter and a setter
   ([0074](../decisions/0074-mut-boxes.md),
   [0099](../decisions/0099-mut-references.md)).

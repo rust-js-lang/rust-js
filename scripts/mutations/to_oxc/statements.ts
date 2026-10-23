@@ -3,6 +3,22 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "step-of-any-number-incremented",
+    breaks: "a statement `j += 2` is `j++`, a step of one",
+    file: "src/to_oxc/statements.rs",
+    find: "                kind: ExprKind::Num(1.0),\n",
+    replace: "                kind: ExprKind::Num(_),\n",
+    tests: ["test/lowering-numbers.test.ts", "-t", "stepping by one"],
+  },
+  {
+    name: "step-down-incremented",
+    breaks: "a statement `t -= 1.0` is `t++`",
+    file: "src/to_oxc/statements.rs",
+    find: "                    _ => UpdateOperator::Decrement,\n",
+    replace: "                    _ => UpdateOperator::Increment,\n",
+    tests: ["test/lowering-numbers.test.ts", "-t", "stepping by one"],
+  },
+  {
     name: "body-directives-unprinted",
     breaks: "a body's directives aren't in its prologue",
     file: "src/to_oxc/statements.rs",

@@ -24,13 +24,13 @@ export function tokenize(src) {
   while (i < chars.length) {
     const c = chars[i];
     if (/^\p{White_Space}$/u.test(c)) {
-      i += 1;
+      i++;
       continue;
     }
     if (/^[0-9]$/.test(c) || c === ".") {
       const start = i;
       while (i < chars.length && (/^[0-9]$/.test(chars[i]) || chars[i] === ".")) {
-        i += 1;
+        i++;
       }
       const text = $slice(chars, start, i).join("");
       const result = $parseF64(text);
@@ -57,7 +57,7 @@ export function tokenize(src) {
       default:
         return { TAG: "Err", _0: `unexpected ${$debugStr(c, "'")} at ${i}` };
     }
-    i += 1;
+    i++;
   }
   return { TAG: "Ok", _0: out };
 }

@@ -240,7 +240,7 @@ function both(items, first) {
       noisyDrop_drop(items[1]);
       throw error;
     }
-    dropped += 1;
+    dropped++;
   } else {
     c$live = false;
     try {

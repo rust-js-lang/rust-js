@@ -408,7 +408,7 @@ pub fn Count() -> JSX::Element {
   const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
   const heading = jsx.slice(0, jsx.indexOf("export function Count"));
   expect(heading).not.toContain("const condition");
-  expect(jsx).toContain("const condition = n === 0;\n  n += 1;");
+  expect(jsx).toContain("const condition = n === 0;\n  n++;");
   expect(jsx).toContain('{version === "Canary" && <i>canary</i>}');
   expect(jsx).toContain('{version !== "Rc" && <b>stable</b>}');
   expect(jsx).toContain("{!done && <s>todo</s>}");

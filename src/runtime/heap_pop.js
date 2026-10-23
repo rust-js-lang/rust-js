@@ -12,7 +12,7 @@ function $heapPop(heap, cmp) {
     let child = 1;
     while (child <= end - 2) {
       if (cmp(heap[child], heap[child + 1]) <= 0) {
-        child += 1;
+        child++;
       }
       heap[pos] = heap[child];
       pos = child;

@@ -72,7 +72,7 @@ function main() {
             break bb49;
           }
         }
-        n += 1;
+        n++;
         continue;
       }
     }

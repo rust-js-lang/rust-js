@@ -297,7 +297,7 @@ pub fn handled() -> u32 {
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("  const list = [];\n  list.push(1);");
-  expect(js).toContain("  let n = 0;\n  n += 1;");
+  expect(js).toContain("  let n = 0;\n  n++;");
   expect(js).toContain("  const n = flag ? 1 : 2;");
   expect(js).toContain("  let n = 0;\n  const n$1 = { value: n };");
   const lib = await import(join(dir, "lib.js"));

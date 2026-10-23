@@ -7,7 +7,7 @@ export function entry() {
 function main() {
   let i = 0;
   while (i < 3) {
-    i += 1;
+    i++;
     console.log(`${i}`);
   }
 }

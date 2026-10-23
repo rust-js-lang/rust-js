@@ -50,7 +50,7 @@ function countdown(from) {
       if (n === 0) {
         return;
       }
-      n -= 1;
+      n--;
       return n + 1;
     }),
   ).toArray();

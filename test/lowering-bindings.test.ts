@@ -92,7 +92,7 @@ pub fn bump() -> f64 {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  expect(readFileSync(join(dir, "lib.js"), "utf8")).toContain("globalThis.counter += 1;");
+  expect(readFileSync(join(dir, "lib.js"), "utf8")).toContain("globalThis.counter++;");
   const lib = await import(join(dir, "lib.js"));
   (globalThis as any).counter = 1;
   expect(lib.bump()).toBe(2);

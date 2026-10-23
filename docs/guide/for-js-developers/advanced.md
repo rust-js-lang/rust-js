@@ -1007,7 +1007,7 @@ export function countdown(from) {
       if (n$1 === 0) {
         return;
       }
-      n$1 -= 1;
+      n$1--;
       return n$1 + 1;
     }),
   );
