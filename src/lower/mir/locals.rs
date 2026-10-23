@@ -81,7 +81,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     }
                     _ => info.name.to_string(),
                 };
-                user[place.local] = Some(crate::lower::camel_case(&name));
+                // A parameter's without the `_` that marks it unused (ADR 0678).
+                user[place.local] = Some(match body.local_kind(place.local) {
+                    LocalKind::Arg => crate::lower::parameter_name(self.tcx, body.source.def_id(), &name),
+                    _ => crate::lower::camel_case(&name),
+                });
                 locals.user[place.local] = true;
             }
         }

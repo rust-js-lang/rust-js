@@ -958,6 +958,59 @@ fn camel_case(name: &str) -> String {
     words_joined(name, |word| word.to_string())
 }
 
+/// A parameter's name as JS writes it (ADR 0678): camelCase, without the
+/// leading `_` that tells Rust it's unused, `_ref`'s `ref`; but as Rust
+/// writes it where what's left is a word JS keeps, `_new`, or another
+/// binding's of its function, of a closure in it or around it too, `_x`
+/// beside an `x`. The one place a parameter's JS name is made, the name
+/// its declaration says too.
+fn parameter_name(tcx: TyCtxt<'_>, function: DefId, name: &str) -> String {
+    let named = camel_case(name);
+    let Some(unmarked) = named.strip_prefix('_').filter(|n| !n.is_empty() && !n.starts_with('_')) else {
+        return named;
+    };
+    let Some(root) = tcx.typeck_root_def_id(function).as_local() else {
+        return named;
+    };
+    let taken = || {
+        binding_names(tcx, root)
+            .iter()
+            .any(|other| camel_case(other.as_str()) == unmarked)
+    };
+    match crate::names::js_ident(unmarked) == unmarked && !taken() {
+        true => unmarked.to_string(),
+        false => named,
+    }
+}
+
+/// The name of each binding of `root`'s body, its closures' among them.
+fn binding_names(tcx: TyCtxt<'_>, root: rustc_span::def_id::LocalDefId) -> Vec<rustc_span::Symbol> {
+    use rustc_hir::intravisit::{self, Visitor};
+    struct Names<'tcx> {
+        tcx: TyCtxt<'tcx>,
+        names: Vec<rustc_span::Symbol>,
+    }
+    impl<'tcx> Visitor<'tcx> for Names<'tcx> {
+        fn visit_pat(&mut self, pat: &'tcx rustc_hir::Pat<'tcx>) {
+            if let rustc_hir::PatKind::Binding(_, _, ident, _) = pat.kind {
+                self.names.push(ident.name);
+            }
+            intravisit::walk_pat(self, pat);
+        }
+        fn visit_expr(&mut self, expr: &'tcx rustc_hir::Expr<'tcx>) {
+            if let rustc_hir::ExprKind::Closure(closure) = expr.kind {
+                intravisit::walk_body(self, self.tcx.hir_body(closure.body));
+            }
+            intravisit::walk_expr(self, expr);
+        }
+    }
+    let mut names = Names { tcx, names: Vec::new() };
+    if let Some(body) = tcx.hir_maybe_body_owned_by(root) {
+        intravisit::walk_body(&mut names, body);
+    }
+    names.names
+}
+
 /// A thread-local's name as JS writes its module's variable (ADR 0573):
 /// its `SCREAMING_SNAKE` words lowercase, then camelCase, `TASK_QUEUE` as
 /// `taskQueue`; another, as `camel_case` writes it.

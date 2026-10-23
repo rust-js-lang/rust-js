@@ -1055,6 +1055,11 @@ export function delete$(tasks, at) {
 
 - **A name JS reserves gets a `$`**: `delete$`
   ([ADR 0038](../../decisions/0038-js-names-and-destructuring.md)).
+- **A parameter's leading `_`**, Rust's mark of one unused, isn't in its
+  JS name, nor its declaration's: `_ref` is `ref`. Where what's left is a
+  word JS keeps, `_new`, or another binding's of the function, `_x` beside
+  an `x`, it stays
+  ([ADR 0678](../../decisions/0678-a-parameters-underscore-isnt-its-js-name.md)).
 - **A `const` keeps its name**, `MAX_SIZE`, as JS writes a constant.
 - **A `thread_local!` is named as a module variable**, `CLICK_COUNT` as
   `clickCount` ([ADR 0579](../../decisions/0579-a-thread-local-is-named-as-a-variable.md)).

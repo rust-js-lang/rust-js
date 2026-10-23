@@ -21,6 +21,14 @@ export const mutations: Mutation[] = [
     tests: ["test/declarations.test.ts"],
   },
   {
+    name: "parameter-declared-underscored",
+    breaks: "a parameter's declaration keeps the `_` its JS name drops, `ref` declared `_ref`",
+    file: "src/lower/declarations.rs",
+    find: "                        let named = super::parameter_name(self.tcx, def_id, ident.name.as_str());\n",
+    replace: "                        let named = super::camel_case(ident.name.as_str());\n",
+    tests: ["test/lowering-names.test.ts", "-t", "leading underscore"],
+  },
+  {
     name: "untagged-null-declared-literal",
     breaks: "an untagged enum's `#[rust_js::null]` variant is declared its name's string, not `null`",
     file: "src/lower/declarations.rs",
@@ -436,8 +444,8 @@ export const mutations: Mutation[] = [
     name: "declared-param-rust-name",
     breaks: "a parameter named `new` is declared `new`, which TypeScript doesn't read, where the JS names it `new$`",
     file: "src/lower/declarations.rs",
-    find: "                    Some(ident) => crate::names::js_ident(&super::camel_case(ident.name.as_str())),\n",
-    replace: "                    Some(ident) => super::camel_case(ident.name.as_str()),\n",
+    find: "                        crate::names::js_ident(&named)\n",
+    replace: "                        named\n",
     tests: ["test/declarations.test.ts", "-t", "as its JS does"],
   },
   {

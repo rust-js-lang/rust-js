@@ -113,7 +113,7 @@ pub fn ByCallback() -> JSX::Element {
   const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
   expect(jsx).toContain("export function ExternalLink({ target, children, ...props }) {");
   expect(jsx).toContain('<ExternalLink ref={anchor} href="/a">');
-  expect(jsx).toContain('<ExternalLink ref={(_anchor) => {}} href="/b">');
+  expect(jsx).toContain('<ExternalLink ref={(anchor) => {}} href="/b">');
   const { ByObject, ByCallback } = await import(join(dir, "lib.jsx"));
   expect(renderToStaticMarkup(createElement(ByObject))).toBe('<a target="_blank" rel="noopener" href="/a">A</a>');
   expect(renderToStaticMarkup(createElement(ByCallback))).toBe('<a target="_blank" rel="noopener" href="/b">B</a>');

@@ -589,7 +589,11 @@ impl<'tcx> Declarations<'_, 'tcx> {
             .map(|(i, &ty)| {
                 // As its JS spells it, a word JS keeps given apart, `new$`.
                 let name = match idents.get(i).copied().flatten() {
-                    Some(ident) => crate::names::js_ident(&super::camel_case(ident.name.as_str())),
+                    // Its JS name's, without a `_` of one unused (ADR 0678).
+                    Some(ident) => {
+                        let named = super::parameter_name(self.tcx, def_id, ident.name.as_str());
+                        crate::names::js_ident(&named)
+                    }
                     // A pattern, `TagProps { variant, .. }`: its props'.
                     None => "props".to_string(),
                 };
