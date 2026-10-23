@@ -54,3 +54,14 @@ literal of another value, is JS's digits.
   isn't.
 - Mutations `number-as-written-unread`, `constant-number-unplaced`,
   `const-number-unplaced`.
+
+## Amendment: a decimal's leading zeros
+
+Rust reads `00e+10` as 0; a JS module refuses it, as it does `01e5`, a
+legacy octal's start, so rust-js wrote a module it couldn't read (rustc's
+`lexer/floating-point-0e10-issue-40408.rs`). A decimal literal's leading
+zeros are dropped, one kept before its point or its exponent: `0e10`,
+`7.5e2` of `007.5E2`. The case is "results would change" (ADR 0262):
+JavaScript has no spelling of it, so it's rewritten. Held by
+`test/lowering-numbers.test.ts`, "a number literal keeps its base and its
+exponent", and the mutation `literal-leading-zeros-kept`.

@@ -3,7 +3,7 @@
 
 import { expect, test } from "bun:test";
 import { checkedSince, latestRuns, mutationShards, timingsRun } from "../scripts/ci";
-import { changedLines, changedMutations, enclosingFunction, testBlocks } from "../scripts/mutations";
+import { type Change, changedLines, changedMutations, enclosingFunction, testBlocks } from "../scripts/mutations";
 import { shard } from "../scripts/shard";
 
 const files = ["a", "b", "c", "d", "e", "f", "g"].map((name) => `test/${name}.test.ts`);
@@ -52,10 +52,12 @@ test.skipIf(false)("multiplies", () => {
 `;
 
 // A change's mutations (ADR 0093): those it adds or edits, those in a
-// function it changes, and those whose test, or corpus case, it changes.
+// function it changes, and those whose test, or corpus case, it changes, as
+// the test is or was: one renamed or moved away is where it was.
 test("the changed mutations are of the functions and tests a change touches", () => {
   const files: Record<string, string> = { "src/a.rs": source, "test/x.test.ts": tests };
   const read = (file: string) => files[file];
+  const readBase = (file: string) => (file === "test/x.test.ts" ? tests.replace('("multiplies"', '("times"') : files[file]);
   const base = [
     mutation("in-first", "src/a.rs", "a + 1"),
     mutation("in-second", "src/a.rs", "b * 2"),
@@ -63,18 +65,28 @@ test("the changed mutations are of the functions and tests a change touches", ()
     mutation("adds-test", "src/b.rs", "x", "y", ["test/x.test.ts", "-t", "adds"]),
     mutation("multiplies-test", "src/b.rs", "x", "y", ["test/x.test.ts", "-t", "multiplies"]),
     mutation("case", "src/b.rs", "x", "y", ["test/corpus.test.ts", "-t", "array_map"]),
+    mutation("times-test", "src/b.rs", "x", "y", ["test/x.test.ts", "-t", "times"]),
     mutation("gone", "src/a.rs", "no longer here"),
   ];
   const now = [...base.slice(0, 2), mutation("edited", "src/a.rs", "let a = 1;", "let a = 3;"), ...base.slice(3), mutation("added", "src/c.rs")];
-  const names = (changes: { file: string; lines: [number, number][] }[]) => changedMutations(now, base, changes, read).map((m) => m.name);
+  const names = (changes: Change[]) => changedMutations(now, base, changes, read, readBase).map((m) => m.name);
   // A line of \`second\`'s: its mutation, the edited and added ones, and one
   // that no longer applies, to say so.
   expect(names([{ file: "src/a.rs", lines: [[10, 10]] }])).toEqual(["in-second", "edited", "gone", "added"]);
   // The second test's comment, then what both tests share.
   expect(names([{ file: "test/x.test.ts", lines: [[11, 11]] }])).toEqual(["edited", "multiplies-test", "added"]);
-  expect(names([{ file: "test/x.test.ts", lines: [[3, 3]] }])).toEqual(["edited", "adds-test", "multiplies-test", "added"]);
+  expect(names([{ file: "test/x.test.ts", lines: [[3, 3]] }])).toEqual(["edited", "adds-test", "multiplies-test", "times-test", "added"]);
   expect(names([{ file: "test/corpus/array_map.rs", lines: [[1, 1]] }, { file: "docs/x.md", lines: [[1, 1]] }])).toEqual(["edited", "case", "added"]);
-  expect(changedMutations(now, now, [], read)).toEqual([]);
+  // \`times\` renamed \`multiplies\`: a mutation of either name runs.
+  expect(names([{ file: "test/x.test.ts", lines: [[12, 12]] }, { file: "test/x.test.ts", lines: [[12, 12]], base: true }])).toEqual([
+    "edited",
+    "multiplies-test",
+    "times-test",
+    "added",
+  ]);
+  // A corpus case deleted.
+  expect(names([{ file: "test/corpus/array_map.rs", lines: [[1, 1]], base: true }])).toEqual(["edited", "case", "added"]);
+  expect(changedMutations(now, now, [], read, readBase)).toEqual([]);
 });
 
 test("a function is where rustfmt and Prettier lay it out", () => {
@@ -92,7 +104,7 @@ test("a test file's tests are their comments and bodies", () => {
   ]);
 });
 
-test("a diff's changed lines are where the file is changed now", () => {
+test("a diff's changed lines are where the file is changed now, and was", () => {
   const diff = [
     "diff --git a/src/a.rs b/src/a.rs",
     "--- a/src/a.rs",
@@ -109,7 +121,11 @@ test("a diff's changed lines are where the file is changed now", () => {
     "+++ /dev/null",
     "@@ -1 +0,0 @@",
   ].join("\n");
-  expect(changedLines(diff)).toEqual([{ file: "src/a.rs", lines: [[4, 5], [11, 11], [21, 22]] }]);
+  expect(changedLines(diff)).toEqual([
+    { file: "src/a.rs", lines: [[3, 4], [9, 9], [20, 21]], base: true },
+    { file: "src/a.rs", lines: [[4, 5], [11, 11], [21, 22]] },
+    { file: "gone.rs", lines: [[1, 1]], base: true },
+  ]);
 });
 
 // A check's mutations on as many machines as keeps each near twenty, about

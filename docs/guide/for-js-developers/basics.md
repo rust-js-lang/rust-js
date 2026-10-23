@@ -270,7 +270,8 @@ export function placeholders(format) {
 }
 ```
 - **A literal keeps its base and its exponent**, `0xff`, `0b1010`, `1e4`,
-  without Rust's type suffix and separators; any other is JS's digits,
+  without Rust's type suffix, separators and a decimal's leading zeros;
+  any other is JS's digits,
   `5000` of `5000.0`
   ([ADR 0627](../../decisions/0627-a-number-literal-keeps-its-base-and-exponent.md)):
 

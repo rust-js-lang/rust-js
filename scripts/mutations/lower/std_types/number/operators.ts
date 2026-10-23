@@ -109,4 +109,20 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^multiply_by_a_constant.rs$"],
     snapshots: true,
   },
+  {
+    name: "range-bound-tested",
+    breaks: "a range pattern's bound its type has anyway is tested, `n >= -2147483648` of `i32::MIN..=-1`",
+    file: "src/lower/std_types/number/operators.rs",
+    find: "            if Num::of(ty).is_some_and(|num| at_bound(op, &l, &r, num)) {\n",
+    replace: "            if Num::of(ty).is_some_and(|num| false && at_bound(op, &l, &r, num)) {\n",
+    tests: ["test/lowering-numbers.test.ts", "-t", "a range pattern tests no bound its type has"],
+  },
+  {
+    name: "range-bound-drops-effects",
+    breaks: "a comparison with its type's bound is true even where its other side calls a function, which isn't called",
+    file: "src/lower/std_types/number/operators.rs",
+    find: "    bound && !other.has_effects()\n",
+    replace: "    bound\n",
+    tests: ["test/lowering-numbers.test.ts", "-t", "a range pattern tests no bound its type has"],
+  },
 ];

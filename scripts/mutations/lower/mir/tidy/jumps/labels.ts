@@ -88,8 +88,16 @@ export const mutations: Mutation[] = [
     name: "unbroken-loop-goes-on",
     breaks: "a loop's way out that ends in the program's next loop, which nothing `break`s, is taken to go on, and that loop stays inside the first",
     file: "src/lower/mir/tidy/jumps/labels.rs",
-    find: "            matches!(cond.kind, ExprKind::Bool(true)) && !breaks(body, label.as_deref())\n",
-    replace: "            false && !breaks(body, label.as_deref())\n",
+    find: "            matches!(cond.kind, ExprKind::Bool(true)) && !breaks(body, label.as_deref()) && stays(s)\n",
+    replace: "            false && !breaks(body, label.as_deref()) && stays(s)\n",
     tests: ["test/lowering-loops.test.ts", "-t", "a loop after a loop is after it"],
+  },
+  {
+    name: "leaving-loop-jumps-inside",
+    breaks: "a loop that breaks to a block inside the loop it's in is taken as leaving it, moved out, and its `break bb22` names no label",
+    file: "src/lower/mir/tidy/jumps/labels.rs",
+    find: " && !breaks(body, label.as_deref()) && stays(s)\n",
+    replace: " && !breaks(body, label.as_deref())\n",
+    tests: ["test/corpus.test.ts", "-t", "^loop_value_after_loop\\.rs$"],
   },
 ];

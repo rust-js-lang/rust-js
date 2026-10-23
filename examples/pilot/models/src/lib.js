@@ -172,11 +172,11 @@ export function isEmail(text) {
 
 /** Does `contact` match a search: its name or email, ignoring case. */
 export function matches(contact, query) {
-  const query$1 = $trim(query).toLowerCase();
+  query = $trim(query).toLowerCase();
   return (
-    !query$1 ||
-    contact.name.toLowerCase().includes(query$1) ||
-    contact.email.toLowerCase().includes(query$1)
+    !query ||
+    contact.name.toLowerCase().includes(query) ||
+    contact.email.toLowerCase().includes(query)
   );
 }
 //# sourceMappingURL=lib.js.map

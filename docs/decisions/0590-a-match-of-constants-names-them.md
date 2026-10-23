@@ -66,3 +66,12 @@ if (priorityLevel === ImmediatePriority) {
   comment, and a value written two ways a number.
 - Mutations: a value written two ways named, the names left out, the
   comment kept at the test.
+
+## Amendment: a trait's constant is its value
+
+A pattern of a trait's constant, `<u8 as Level>::HIGH`, was named by the
+trait's item, of no type, and resolving it crashed rustc (rustc's
+`associated-consts/associated-const-const-eval.rs`, in the nightly). A
+value is named only by a constant of no generics; a trait's is its value,
+`case 250:`. Held by `test/corpus/match_trait_const.rs` and the mutation
+`pattern-trait-const-named`.

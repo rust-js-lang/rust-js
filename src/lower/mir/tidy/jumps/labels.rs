@@ -32,16 +32,6 @@ pub(super) fn exit_after(stmts: &mut [Stmt], i: usize) -> Option<Vec<Stmt>> {
         }
     });
     let end = span.hi;
-    // A loop nothing `break`s, the program's next one, never goes on
-    // either: it leaves as its `return` does.
-    let leaves = |s: &Stmt| match &s.kind {
-        StmtKind::Return(_) | StmtKind::Throw(_) => true,
-        StmtKind::Break(Some(l)) | StmtKind::Continue(Some(l)) => !inner.contains(l),
-        StmtKind::While { label, cond, body } => {
-            matches!(cond.kind, ExprKind::Bool(true)) && !breaks(body, label.as_deref())
-        }
-        _ => false,
-    };
     let after = |s: &Stmt| s.span.is_none() || s.span.lo >= end;
     // What goes on where it's put: no jump to the loop, nor to a label
     // inside it, but one of its own.
@@ -65,6 +55,17 @@ pub(super) fn exit_after(stmts: &mut [Stmt], i: usize) -> Option<Vec<Stmt>> {
         // One of no label it can't hold: the loop has no `break`, and a
         // `continue` of it isn't written after it.
         !jumps.iter().any(|l| inner.contains(l) && !own.contains(l))
+    };
+    // A loop nothing `break`s, the program's next one, never goes on
+    // either: it leaves as its `return` does, where none of its jumps is to
+    // a label in this one, `break bb22` of a block it's in.
+    let leaves = |s: &Stmt| match &s.kind {
+        StmtKind::Return(_) | StmtKind::Throw(_) => true,
+        StmtKind::Break(Some(l)) | StmtKind::Continue(Some(l)) => !inner.contains(l),
+        StmtKind::While { label, cond, body } => {
+            matches!(cond.kind, ExprKind::Bool(true)) && !breaks(body, label.as_deref()) && stays(s)
+        }
+        _ => false,
     };
     // Each way out, where what it does from `k` on was written after the
     // loop: its list's path, and `k`.

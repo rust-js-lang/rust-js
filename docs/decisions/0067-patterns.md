@@ -58,3 +58,16 @@ A program that applies events to a store hit, in turn:
 - **A `&mut` to a map's value as an object, `{ get, set }`.** It would work
   wherever the reference goes, but every read would be a call, for a case
   where the reference rarely leaves the block.
+
+## Amendment: a bound its type has is no test
+
+`i32::MIN..=-1` was `if (n >= -2147483648) { if (n <= -1) .. }`: MIR
+tests both bounds, and the lower one is true of every `i32`. A comparison
+of an integer with its type's bound that every value passes, `MIN <= n`
+or `n <= MAX`, is `true`, and what's left reads as the program does,
+`if (n <= -1)`, `n >= 200` of `200..=u8::MAX`. Its other side is still
+evaluated where it does something, a call inlined into it. The case is
+"it can't be observed" (ADR 0262). Held by
+`test/lowering-numbers.test.ts`, "a range pattern tests no bound its type
+has", and the mutations `range-bound-tested` and
+`range-bound-drops-effects`.

@@ -62,3 +62,14 @@ return out;
 
 - `test/lowering-loops.test.ts`, "a loop after a loop is after it".
 - Mutations `unbroken-loop-goes-on`, `loop-test-of-else-unread`.
+
+## Amendment: a loop that jumps inside the first goes on
+
+A loop that breaks to a block inside the loop being tidied, `break bb22`
+of a block its `else` is in, was taken as leaving, as one nothing breaks
+is: what it was in moved out, and its `break` named no label, a syntax
+error (fuzz seeds 12448939, 12449092 and 12449165 in the nightly). A loop
+leaves only where none of its jumps is to a label inside the first, as a
+statement moved before it already had to. Held by
+`test/corpus/loop_value_after_loop.rs` and the mutation
+`leaving-loop-jumps-inside`.

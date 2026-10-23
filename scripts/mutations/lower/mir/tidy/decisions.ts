@@ -1,7 +1,7 @@
 // Mutations of src/lower/mir/tidy/decisions.rs (ADR 0364).
 import type { Mutation } from "../../../../mutations";
 
-const chain = ["test/lowering.test.ts", "-t", "arms of more than one pattern"];
+const chain = ["test/lowering-matches.test.ts", "-t", "arms of more than one pattern"];
 
 export const mutations: Mutation[] = [
   {

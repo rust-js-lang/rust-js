@@ -117,6 +117,27 @@ pub mod inner {
   expect(outer).toMatch(/\n}\n\n\/\/ The file's end,\n\/\/ in two lines\.\n\/\/# sourceMappingURL/);
 });
 
+// ADR 0590: a match that's an if chain, not a switch, has each arm's comment
+// in its body too, not before the test of its pattern.
+test("a match that's an if chain has its comments in its arms", () => {
+  const dir = fixture("arm-comments");
+  writeFileSync(join(dir, "lib.rs"), `pub fn sign(n: i32) -> &'static str {
+    match n {
+        // Below zero
+        i32::MIN..=-1 => "negative",
+        // Zero itself
+        0 => "zero",
+        // Above zero
+        _ => "positive",
+    }
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("  if (n === 0) {\n    // Zero itself\n    return \"zero\";\n");
+  expect(js).toContain("      // Below zero\n      return \"negative\";\n");
+});
+
 // ADR 0630: a block comment with code after it on its line, inside an
 // expression, is after the JS of the code right before it, as React's
 // normalizeConsoleFormat has its `case 79 /* "O" */:`.

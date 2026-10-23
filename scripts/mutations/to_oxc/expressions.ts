@@ -154,4 +154,12 @@ export const mutations: Mutation[] = [
     replace: "        let digits = written.filter(|_| false).unwrap_or_else(|| js_number(n.abs()));\n",
     tests: ["test/lowering-numbers.test.ts", "-t", "a number literal keeps its base and its exponent"],
   },
+  {
+    name: "literal-leading-zeros-kept",
+    breaks: "a decimal literal's leading zeros are kept, `00e+10`, which JS reads as no number",
+    file: "src/to_oxc/expressions.rs",
+    find: "            let digits = body.trim_start_matches('0');\n",
+    replace: "            let digits = body;\n",
+    tests: ["test/lowering-numbers.test.ts", "-t", "a number literal keeps its base and its exponent"],
+  },
 ];
