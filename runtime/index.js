@@ -9841,26 +9841,41 @@ export function $lent(it) {
 
 // `collect()` into a `Result`: the first `Err`, where it stops, as Rust's
 // does, or `Ok` of all the values, made `into` the collection where it's
-// one but an array.
-export function $collectResults(items, into) {
+// one but an array. Stopped, what it steps is closed, dropping what's left
+// of it, then each value collected is dropped by `drop`, as std's are.
+export function $collectResults(items, into, drop) {
   const values = [];
+  let failed;
   for (const item of items) {
-    if (item.TAG === "Err") return item;
+    if (item.TAG === "Err") {
+      failed = item;
+      break;
+    }
     values.push(item._0);
   }
-  return { TAG: "Ok", _0: into ? into(values) : values };
+  if (failed === undefined) return { TAG: "Ok", _0: into ? into(values) : values };
+  if (drop) values.forEach((value) => drop(value));
+  return failed;
 }
 
 // `collect()` into an `Option`: `None` at the first `None`, where it stops,
 // as Rust's does, or all the values, each out of its box where it has one
 // (ADR 0051), made `into` the collection where it's one but an array.
-export function $collectOptions(items, boxed = false, into) {
+// Stopped, what it steps is closed, dropping what's left of it, then each
+// value collected is dropped by `drop`, as std's are.
+export function $collectOptions(items, boxed = false, into, drop) {
   const values = [];
+  let failed = false;
   for (const item of items) {
-    if (item == null) return undefined;
+    if (item == null) {
+      failed = true;
+      break;
+    }
     values.push(boxed ? $someValue(item) : item);
   }
-  return into ? into(values) : values;
+  if (!failed) return into ? into(values) : values;
+  if (drop) values.forEach((value) => drop(value));
+  return undefined;
 }
 
 export function $cmpIn(names, a, b) {

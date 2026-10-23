@@ -122,6 +122,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         } else if self.is_lang_adt(output, LangItem::String) {
             method("join", items(it), vec![Expr::str("")])
         } else if self.option_of(output).is_some() || self.recognition().is_result(output) {
+            // What's left of what it steps, dropped where it stops: closed.
+            let it = match iter_ty {
+                Some(iter_ty) => self.closing(it, iter_ty, span)?,
+                None => it,
+            };
             self.collect_fallible(it, output, item, span)?
         } else if self.is_map(output) {
             let set = self.is_set(output);
