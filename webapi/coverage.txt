@@ -1,6 +1,6 @@
 # The webapi crate against TypeScript's DOM (@types/web): bun test test/webapi-coverage.test.ts
 # classes: 699 of 701 (99.7%)
-# members: 8372 of 8419 (99.4%)
+# members: 8373 of 8419 (99.5%)
 AbortController.abort
 AbortController.constructor
 AbortController.signal
@@ -3744,6 +3744,7 @@ Navigation.onnavigatesuccess
 Navigation.reload
 Navigation.transition
 Navigation.traverseTo
+Navigation.updateCurrentEntry
 NavigationActivation.entry
 NavigationActivation.from
 NavigationActivation.navigationType

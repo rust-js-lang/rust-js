@@ -512,7 +512,10 @@ export async function open(other) {
 - **Values are as [JavaScript types](types.md) has them**: a `&str` is a
   string, a tuple an array, a struct an object.
 - **An options object is a struct of `Option` fields**, the rest
-  `..Default::default()`. A `None` field is left out.
+  `..Default::default()`. A `None` field is left out. One of any value,
+  TypeScript's `any`, is an `Option<&dyn IntoUnknown>`, given as it is:
+  `ErrorEventInit { error: Some(&error), .. }` is `{ error }`
+  ([ADR 0654](../../decisions/0654-a-dictionary-member-of-any-value-is-a-dyn-into-unknown.md)).
 - **What may throw returns `Result<T, &JsError>`**: the call runs in a `try`,
   and what JS threw is the `Err`. A binding that doesn't say so lets a throw
   through, as a panic ([Errors, panics and exceptions](exceptions.md)).

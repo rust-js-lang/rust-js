@@ -582,6 +582,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0648 V8's stack trace API is the node crate's, as @types/node types it](decisions/0648-v8s-stack-trace-api-is-the-node-crates.md) *(amended by 0653: captureStackTrace bound)*
 - [0649 `#[inline(never)]` is `/** @noinline */`](decisions/0649-inline-never-is-noinline.md)
 - [0653 A JS function value is a `dyn Fn` of its signature](decisions/0653-a-js-function-value-is-a-dyn-fn-of-its-signature.md)
+- [0654 A dictionary's member of any value is a `dyn IntoUnknown`](decisions/0654-a-dictionary-member-of-any-value-is-a-dyn-into-unknown.md)
 - [0623 A copy std makes of a `Copy` value is a copy](decisions/0623-a-copy-std-makes-is-a-copy.md)
 - [0436 Every `dyn` that's a pair keeps its value's drop, `dyn Send` too](decisions/0436-every-dyn-keeps-its-drop.md)
 - [0437 A scope's drops on a panic are one `try { .. } finally { .. }`](decisions/0437-a-scopes-drops-are-one-finally.md)

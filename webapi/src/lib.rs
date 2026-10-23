@@ -21859,7 +21859,7 @@ impl Performance {
     #[cfg_attr(rust_js, rust_js::link_name = "mark")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn mark(&self, mark_name: &str, mark_options: Option<PerformanceMarkOptions>) -> &'static PerformanceMark {
+    pub fn mark(&self, mark_name: &str, mark_options: Option<PerformanceMarkOptions<'_>>) -> &'static PerformanceMark {
         unreachable!()
     }
 
@@ -50466,7 +50466,7 @@ pub mod custom_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new CustomEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new(r#type: &str, event_init_dict: Option<CustomEventInit>) -> &'static CustomEvent {
+    pub fn new(r#type: &str, event_init_dict: Option<CustomEventInit<'_>>) -> &'static CustomEvent {
         unreachable!()
     }
 
@@ -65450,6 +65450,14 @@ impl Navigation {
         unreachable!()
     }
 
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Navigation/updateCurrentEntry)
+    #[cfg_attr(rust_js, rust_js::link_name = "updateCurrentEntry")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn update_current_entry(&self, options: NavigationUpdateCurrentEntryOptions<'_>) {
+        unreachable!()
+    }
+
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Navigation/transition)
     #[cfg_attr(rust_js, rust_js::link_name = "get transition")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
@@ -65494,7 +65502,7 @@ impl Navigation {
     #[cfg_attr(rust_js, rust_js::link_name = "reload")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn reload(&self) -> NavigationResult {
+    pub fn reload(&self, options: Option<NavigationReloadOptions<'_>>) -> NavigationResult {
         unreachable!()
     }
 
@@ -65502,7 +65510,7 @@ impl Navigation {
     #[cfg_attr(rust_js, rust_js::link_name = "traverseTo")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn traverse_to(&self, key: &str) -> NavigationResult {
+    pub fn traverse_to(&self, key: &str, options: Option<NavigationOptions<'_>>) -> NavigationResult {
         unreachable!()
     }
 
@@ -65510,7 +65518,7 @@ impl Navigation {
     #[cfg_attr(rust_js, rust_js::link_name = "back")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn back(&self) -> NavigationResult {
+    pub fn back(&self, options: Option<NavigationOptions<'_>>) -> NavigationResult {
         unreachable!()
     }
 
@@ -65518,7 +65526,7 @@ impl Navigation {
     #[cfg_attr(rust_js, rust_js::link_name = "forward")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn forward(&self) -> NavigationResult {
+    pub fn forward(&self, options: Option<NavigationOptions<'_>>) -> NavigationResult {
         unreachable!()
     }
 
@@ -68474,7 +68482,7 @@ pub mod performance_mark {
     #[cfg_attr(rust_js, rust_js::link_name = "new PerformanceMark")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new(mark_name: &str, mark_options: Option<PerformanceMarkOptions>) -> &'static PerformanceMark {
+    pub fn new(mark_name: &str, mark_options: Option<PerformanceMarkOptions<'_>>) -> &'static PerformanceMark {
         unreachable!()
     }
 
@@ -69583,7 +69591,7 @@ pub mod pop_state_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new PopStateEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new(r#type: &str, event_init_dict: Option<PopStateEventInit>) -> &'static PopStateEvent {
+    pub fn new(r#type: &str, event_init_dict: Option<PopStateEventInit<'_>>) -> &'static PopStateEvent {
         unreachable!()
     }
 
@@ -69803,7 +69811,7 @@ pub mod promise_rejection_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new PromiseRejectionEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new(r#type: &str, event_init_dict: PromiseRejectionEventInit) -> &'static PromiseRejectionEvent {
+    pub fn new(r#type: &str, event_init_dict: PromiseRejectionEventInit<'_>) -> &'static PromiseRejectionEvent {
         unreachable!()
     }
 
@@ -89372,10 +89380,11 @@ pub struct CurrentUserDetailsOptions<'a> {
 
 /// The [`CustomEventInit`](https://developer.mozilla.org/docs/Web/API/CustomEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
-pub struct CustomEventInit {
+pub struct CustomEventInit<'a> {
     pub bubbles: Option<bool>,
     pub cancelable: Option<bool>,
     pub composed: Option<bool>,
+    pub detail: Option<&'a dyn IntoUnknown>,
 }
 
 /// The [`DelayOptions`](https://developer.mozilla.org/docs/Web/API/DelayOptions) dictionary: a JS object of these fields, a `None` one not given.
@@ -89636,6 +89645,7 @@ pub struct ErrorEventInit<'a> {
     pub filename: Option<&'a str>,
     pub lineno: Option<u32>,
     pub colno: Option<u32>,
+    pub error: Option<&'a dyn IntoUnknown>,
 }
 
 /// The [`EventInit`](https://developer.mozilla.org/docs/Web/API/EventInit) dictionary: a JS object of these fields, a `None` one not given.
@@ -90586,8 +90596,9 @@ pub struct MediaStreamTrackEventInit<'a> {
 }
 
 /// The [`MemoryDescriptor`](https://developer.mozilla.org/docs/Web/API/MemoryDescriptor) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
 pub struct MemoryDescriptor<'a> {
+    pub initial: &'a dyn IntoUnknown,
+    pub maximum: Option<&'a dyn IntoUnknown>,
     pub address: Option<&'a str>,
 }
 
@@ -90597,6 +90608,7 @@ pub struct MessageEventInit<'a> {
     pub bubbles: Option<bool>,
     pub cancelable: Option<bool>,
     pub composed: Option<bool>,
+    pub data: Option<&'a dyn IntoUnknown>,
     pub origin: Option<&'a str>,
     pub last_event_id: Option<&'a str>,
     pub source: Option<MessageEventSource<'a>>,
@@ -90693,6 +90705,7 @@ pub struct NavigateEventInit<'a> {
     pub signal: &'a AbortSignal,
     pub form_data: Option<&'a FormData>,
     pub download_request: Option<&'a str>,
+    pub info: Option<&'a dyn IntoUnknown>,
     #[cfg_attr(rust_js, rust_js::name = "hasUAVisualTransition")]
     pub has_ua_visual_transition: Option<bool>,
     pub source_element: Option<&'a Element>,
@@ -90719,7 +90732,27 @@ pub struct NavigationInterceptOptions<'a> {
 /// The [`NavigationNavigateOptions`](https://developer.mozilla.org/docs/Web/API/NavigationNavigateOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct NavigationNavigateOptions<'a> {
+    pub info: Option<&'a dyn IntoUnknown>,
+    pub state: Option<&'a dyn IntoUnknown>,
     pub history: Option<&'a str>,
+}
+
+/// The [`NavigationOptions`](https://developer.mozilla.org/docs/Web/API/NavigationOptions) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Default)]
+pub struct NavigationOptions<'a> {
+    pub info: Option<&'a dyn IntoUnknown>,
+}
+
+/// The [`NavigationReloadOptions`](https://developer.mozilla.org/docs/Web/API/NavigationReloadOptions) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Default)]
+pub struct NavigationReloadOptions<'a> {
+    pub info: Option<&'a dyn IntoUnknown>,
+    pub state: Option<&'a dyn IntoUnknown>,
+}
+
+/// The [`NavigationUpdateCurrentEntryOptions`](https://developer.mozilla.org/docs/Web/API/NavigationUpdateCurrentEntryOptions) dictionary: a JS object of these fields, a `None` one not given.
+pub struct NavigationUpdateCurrentEntryOptions<'a> {
+    pub state: &'a dyn IntoUnknown,
 }
 
 /// The [`NotificationOptions`](https://developer.mozilla.org/docs/Web/API/NotificationOptions) dictionary: a JS object of these fields, a `None` one not given.
@@ -90738,6 +90771,7 @@ pub struct NotificationOptions<'a> {
     pub renotify: Option<bool>,
     pub silent: Option<bool>,
     pub require_interaction: Option<bool>,
+    pub data: Option<&'a dyn IntoUnknown>,
     pub actions: Option<&'a [NotificationAction]>,
 }
 
@@ -90918,13 +90952,15 @@ pub struct PaymentValidationErrors<'a> {
 
 /// The [`PerformanceMarkOptions`](https://developer.mozilla.org/docs/Web/API/PerformanceMarkOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
-pub struct PerformanceMarkOptions {
+pub struct PerformanceMarkOptions<'a> {
+    pub detail: Option<&'a dyn IntoUnknown>,
     pub start_time: Option<f64>,
 }
 
 /// The [`PerformanceMeasureOptions`](https://developer.mozilla.org/docs/Web/API/PerformanceMeasureOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct PerformanceMeasureOptions<'a> {
+    pub detail: Option<&'a dyn IntoUnknown>,
     pub start: Option<StrOrNumber<'a>>,
     pub duration: Option<f64>,
     pub end: Option<StrOrNumber<'a>>,
@@ -91020,10 +91056,11 @@ pub struct PointerLockOptions {
 
 /// The [`PopStateEventInit`](https://developer.mozilla.org/docs/Web/API/PopStateEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
-pub struct PopStateEventInit {
+pub struct PopStateEventInit<'a> {
     pub bubbles: Option<bool>,
     pub cancelable: Option<bool>,
     pub composed: Option<bool>,
+    pub state: Option<&'a dyn IntoUnknown>,
     #[cfg_attr(rust_js, rust_js::name = "hasUAVisualTransition")]
     pub has_ua_visual_transition: Option<bool>,
 }
@@ -91048,11 +91085,12 @@ pub struct ProgressEventInit {
 }
 
 /// The [`PromiseRejectionEventInit`](https://developer.mozilla.org/docs/Web/API/PromiseRejectionEventInit) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
-pub struct PromiseRejectionEventInit {
+pub struct PromiseRejectionEventInit<'a> {
     pub bubbles: Option<bool>,
     pub cancelable: Option<bool>,
     pub composed: Option<bool>,
+    pub promise: &'a dyn IntoUnknown,
+    pub reason: Option<&'a dyn IntoUnknown>,
 }
 
 /// The [`PublicKeyCredentialCreationOptionsJSON`](https://developer.mozilla.org/docs/Web/API/PublicKeyCredentialCreationOptionsJSON) dictionary: a JS object of these fields, a `None` one not given.
@@ -91161,6 +91199,7 @@ pub struct RequestInit<'a> {
     pub signal: Option<&'a AbortSignal>,
     pub duplex: Option<&'a str>,
     pub priority: Option<&'a str>,
+    pub window: Option<&'a dyn IntoUnknown>,
 }
 
 /// The [`ResizeObserverOptions`](https://developer.mozilla.org/docs/Web/API/ResizeObserverOptions) dictionary: a JS object of these fields, a `None` one not given.

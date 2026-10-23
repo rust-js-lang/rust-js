@@ -169,7 +169,9 @@ function throwing(i: Interface, f: Fn): Fn {
 
 // A dictionary field's type, where WebIDL's is one Rust can't take: a
 // `HeadersInit` is a sequence or a record, and `fetch` takes a `Headers` too.
-const FIELD_TYPES: Record<string, string> = { "RequestInit.headers": "&'a Headers" };
+// `PromiseRejectionEventInit`'s `promise` is WebIDL's `object`, TypeScript's
+// `Promise<any>`: a promise of any value, `dyn IntoUnknown` (ADR 0654).
+const FIELD_TYPES: Record<string, string> = { "RequestInit.headers": "&'a Headers", "PromiseRejectionEventInit.promise": "&'a dyn IntoUnknown" };
 
 // The globals at the crate root: `document`, `window`, `performance`, which
 // a worker has too, `navigator`, and `history`, the page's.
@@ -514,11 +516,15 @@ function paramDictionary(d: Def): string | { skip: string } {
   if (!known) {
     const fields: Field[] = [];
     for (const m of dictionaryMembers(d)) {
-      const chosen = FIELD_TYPES[`${d.name}.${m.name}`] ?? paramType(m.idlType!);
-      // A field typed `any` is left out, as a struct field can't be generic;
-      // not a list of objects, `transfer`'s, a slice of them.
-      const anyValue = chosen?.includes("dyn core::any::Any") && !chosen.startsWith("&[");
-      if (!chosen || anyValue || chosen.includes(ANY)) continue;
+      const given = FIELD_TYPES[`${d.name}.${m.name}`] ?? paramType(m.idlType!);
+      // A field of any value, `any`'s, can't be generic, as a parameter is:
+      // it's a `dyn IntoUnknown`, as a rest parameter's item is, `error:
+      // Some(&error)` (ADR 0654). Not yet one of any object, `object`'s,
+      // whose `dyn Any` only a parameter gives as its value, nor a list of
+      // `any`s.
+      const chosen = given === ANY ? "&dyn IntoUnknown" : given;
+      const object = chosen?.includes("dyn core::any::Any") && !chosen.startsWith("&[");
+      if (!chosen || object || chosen.includes(ANY)) continue;
       // A borrow in a field lives as long as the struct's: `&'a str`.
       const type = chosen.replace(/&(?!')/g, "&'a ").replace(/<'_>/g, "<'a>");
       fields.push({ rust: snake(m.name!), js: m.name!, type, optional: !m.required });
