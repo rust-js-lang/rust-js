@@ -142,3 +142,12 @@ refused, std's `Sum` impls having no dictionary here (#117). They're
 which the numbers' sum is what's made of them:
 `$collectOptions(it, false, (values) => values.reduce(..))`. Held by
 `test/corpus/sum_fallible.rs`.
+
+## Amendment: `is_sorted()`
+
+`is_sorted()` of a slice or an iterator was refused (#117). It's
+`$isSorted(items)`, each item at most the next by `<=` where that's their
+`PartialOrd`'s, a number's, a float's, which NaN fails, or a `bool`'s;
+else given their `partial_cmp`, a `char`'s by code point, a derived one's.
+It stops at the first pair out of order, so an iterator's later items
+aren't made. Held by `test/corpus/is_sorted_items.rs`.

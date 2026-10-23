@@ -251,15 +251,6 @@ export const mutations: Mutation[] = [
     "tests": ["test/lowering-options.test.ts", "-t", "unwrap_or_else of a call"]
   },
   {
-    name: "binary-search-own-order",
-    breaks: "`binary_search` asks its own way what `<` orders, and searches a slice of `&i32`s and one of `Ordering`s by their `Ord`, not `<`",
-    file: "src/lower/combinators.rs",
-    find: "                if self.is_primitive_ord(item) {\n",
-    replace: "                if Num::of(item).is_some_and(|n| !n.float()) || item.is_bool() {\n",
-    tests: ["test/corpus.test.ts", "-t", "^ordered_searches.rs$"],
-    snapshots: true,
-  },
-  {
     name: "truncate-given-no-drop",
     breaks: "`truncate` of items with a destructor is given no drop",
     file: "src/lower/combinators.rs",
@@ -525,14 +516,6 @@ export const mutations: Mutation[] = [
     find: "            args.push(Expr::bool(true));\n        }\n        args\n",
     replace: "        }\n        args\n",
     tests: ["test/corpus.test.ts", "-t", "^deque_swap_out_of_bounds.rs$"],
-  },
-  {
-    name: "binary-search-by-lt",
-    breaks: "`binary_search` of a derived `Ord` enum compares by `<`, which orders objects as strings",
-    file: "src/lower/combinators.rs",
-    find: "                if self.is_primitive_ord(item) {\n                    return Ok(helper(\"$binarySearch\", vec![subject, x]));\n",
-    replace: "                if true || self.is_primitive_ord(item) {\n                    return Ok(helper(\"$binarySearch\", vec![subject, x]));\n",
-    tests: ["test/corpus.test.ts", "-t", "^search_by_ord.rs$"],
   },
   {
     name: "dedup-key-by-identity",

@@ -443,6 +443,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "last" => IterMethod::Last,
             "nth" => IterMethod::Nth,
             "partition" => IterMethod::Partition,
+            "is_sorted" => IterMethod::IsSorted,
             "collect" => IterMethod::Collect,
             _ => return None,
         })
@@ -957,6 +958,8 @@ pub(crate) fn zipped_sources<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<(T
 /// own (ADRs 0036, 0139, 0364): `iterator_method`'s answer.
 #[derive(Clone, Copy, PartialEq)]
 pub(crate) enum IterMethod {
+    /// `is_sorted()`: each item at most the next, by its `PartialOrd`.
+    IsSorted,
     IntoIter,
     FromIter,
     Next,

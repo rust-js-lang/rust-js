@@ -327,6 +327,47 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(Expr::call(Expr::helper("$cmpItems"), vec![a, b, compare]))
     }
 
+    /// `binary_search(&x)` of a slice `items` of `item`s: `$binarySearch`
+    /// where `<` orders them as `Ord` does, `is_primitive_ord`'s; any other
+    /// by its `Ord`, as `sort()` orders it, strings and `char`s by code
+    /// point (ADR 0183), a derived one by its variants and fields.
+    pub(in crate::lower) fn binary_searched(
+        &mut self,
+        items: Expr,
+        x: Expr,
+        item: Ty<'tcx>,
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Expr> {
+        if self.is_primitive_ord(item) {
+            return Ok(Expr::call_helper("$binarySearch", vec![items, x]));
+        }
+        let x = match x.reads_same() {
+            true => x,
+            false => self.spill("item", x, out),
+        };
+        let mut body = Vec::new();
+        let order = self.cmp_value(Expr::var("each"), x, item, false, span, &mut body)?;
+        body.push(StmtKind::Return(Some(order)).at(js::Span::NONE));
+        Ok(Expr::call_helper(
+            "$binarySearchBy",
+            vec![items, Expr::arrow(vec!["each".into()], body)],
+        ))
+    }
+
+    /// `is_sorted()` of `items`, an array or an iterator of `item`s:
+    /// `$isSorted(items)` where `<=` is their `PartialOrd`'s, a number's,
+    /// a float's, whose NaN it orders as `partial_cmp` doesn't, or a
+    /// `bool`'s; else given their `partial_cmp`, a `char`'s by code point.
+    pub(in crate::lower) fn is_sorted_call(&mut self, items: Expr, item: Ty<'tcx>, span: Span) -> R<Expr> {
+        let item = item.peel_refs();
+        if super::representation::Num::of(item).is_some() || item.is_bool() {
+            return Ok(Expr::call_helper("$isSorted", vec![items]));
+        }
+        let compare = self.cmp_fn(item, true, span)?;
+        Ok(Expr::call_helper("$isSorted", vec![items, compare]))
+    }
+
     /// `(a, b) => <their Ordering>`, or the function itself: `$cmp`,
     /// `wordOrd_cmp`, or a dictionary's, `TOrd.cmp`, which needs no `this`.
     pub(super) fn cmp_fn(&mut self, ty: Ty<'tcx>, partial: bool, span: Span) -> R<Expr> {
