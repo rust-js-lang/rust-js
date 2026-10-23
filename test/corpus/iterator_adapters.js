@@ -2,6 +2,7 @@
 
 import {
   $debugStr,
+  $given,
   $iter,
   $iterator,
   $lazyRange,
@@ -25,7 +26,7 @@ const Doubled = {
     return { inner };
   },
   rest(doubled, IIterator) {
-    return $iterator(doubled.inner, IIterator.next).reduce((a, b) => (a + b) | 0, 0);
+    return $given(doubled.inner, IIterator).reduce((a, b) => (a + b) | 0, 0);
   },
 };
 
@@ -47,7 +48,7 @@ function skipOne(d, IIterator) {
 
 function takeTwo(it, IIterator) {
   let n = 0;
-  for (const x of $lent($iterator(it, IIterator.next)).take(2)) {
+  for (const x of $lent($given(it, IIterator)).take(2)) {
     n = (n + x) | 0;
   }
   return [n, it];
@@ -55,7 +56,7 @@ function takeTwo(it, IIterator) {
 
 const Pass = {
   all(pass, IIterator) {
-    return $iterator(pass[0], IIterator.next, true).toArray();
+    return $given(pass[0], IIterator, true).toArray();
   },
   shown(pass, IIterator, IItemDebug) {
     const out = [];

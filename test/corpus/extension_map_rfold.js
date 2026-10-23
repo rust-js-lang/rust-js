@@ -3,8 +3,8 @@
 import {
   $debugStr,
   $foldBack,
+  $given,
   $iter,
-  $iterator,
   $mapEnds,
   $next,
   $nextBack,
@@ -23,10 +23,9 @@ function tagDebug_fmt(tag, TDebug) {
 const Ends = {
   taggedBack(ends, init, f, IIterator, IDoubleEndedIterator) {
     return $foldBack(
-      $mapEnds(
-        $iterator(ends.inner, IIterator.next, true, IDoubleEndedIterator.next_back),
-        (value) => [value],
-      ),
+      $mapEnds($given(ends.inner, IIterator, true, IDoubleEndedIterator.next_back), (value) => [
+        value,
+      ]),
       init,
       f,
     );
@@ -34,7 +33,7 @@ const Ends = {
 
   heldBack(ends, IIterator, IDoubleEndedIterator) {
     const tagged = $mapEnds(
-      $iterator(ends.inner, IIterator.next, true, IDoubleEndedIterator.next_back),
+      $given(ends.inner, IIterator, true, IDoubleEndedIterator.next_back),
       (value) => [value],
     );
     return $nextBack(tagged);

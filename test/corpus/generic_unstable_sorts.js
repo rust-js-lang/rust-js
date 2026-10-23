@@ -3,8 +3,8 @@
 import {
   $cmp,
   $debugStr,
+  $given,
   $iter,
-  $iterator,
   $next,
   $range,
   $selectNthUnstable,
@@ -36,7 +36,7 @@ const $iSorted = new WeakMap();
 function iSorted(IIterator) {
   return $traitImpl($iSorted, [IIterator], () => ({
     sortedUnstable: (self, SelfItemOrd, SelfItemSort) => {
-      const v = $iterator(self, IIterator.next, true).toArray();
+      const v = $given(self, IIterator, true).toArray();
       $sortUnstable(v, (a, b) => SelfItemOrd.cmp(a, b) < 0, SelfItemSort);
       return v;
     },

@@ -681,12 +681,10 @@ React and JSX are [their own pages](README.md#react).
     `count()` alike.
 16. Recursion deeper than about 10,000 calls throws a `RangeError`, the JS
     engine's stack's limit.
-17. Where the crate's iterator's impl writes its own `fold` or `nth`,
-    std's consumers call them (ADR 0687), except in generic code given the
-    iterator as it is, by its dictionary (ADR 0411), a `Peekable` of it
-    among them, which steps its `next`. In a library, that `fold` is given
-    no drops: an accumulator with a destructor that it drops, or that a
-    panic in it unwinds, isn't dropped.
+17. Where the crate's iterator's impl writes its own `fold`, std's
+    consumers call it (ADRs 0687, 0690); in a library, it's given no drops:
+    an accumulator with a destructor that it drops, or that a panic in it
+    unwinds, isn't dropped.
 18. A `VecDeque`'s `as_slices()` gives all its items first and none second,
     where std's split is its ring buffer's.
 19. `unwrap()` of a throwing JS call's `Result` throws what JS threw, not

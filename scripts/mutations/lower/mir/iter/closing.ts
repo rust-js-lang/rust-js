@@ -86,7 +86,7 @@ export const mutations: Mutation[] = [
     name: "crate-iterator-unclosed",
     breaks: "a crate's iterator with a destructor an adapter holds isn't closed by its own drop",
     file: "src/lower/mir/iter/closing.rs",
-    find: "                    || self.is_user_iterator(ty) && self.drops(ty) != crate::lower::drops::Drops::Nothing\n",
+    find: "                    || (self.is_user_iterator(ty) || compiled) && self.drops(ty) != crate::lower::drops::Drops::Nothing",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^adapter_drops.rs$"],
   },
@@ -153,5 +153,13 @@ export const mutations: Mutation[] = [
     find: "            IterMethod::Lt => Op::Lt,\n",
     replace: "            IterMethod::Lt => Op::Le,\n",
     tests: ["test/corpus.test.ts", "-t", "^iter_compare.rs$"],
+  },
+  {
+    name: "compiled-std-source-unclosed",
+    breaks: "a `map` of a `peekable()` of an iterator with a destructor never drops it",
+    file: "src/lower/mir/iter/closing.rs",
+    find: "                let compiled = crate::lower::recognition::is_compiled_std_iterator(self.tcx, ty);\n",
+    replace: "                let compiled = false;\n",
+    tests: ["test/corpus.test.ts", "-t", "^own_fold_through_adapters.rs$"],
   },
 ];

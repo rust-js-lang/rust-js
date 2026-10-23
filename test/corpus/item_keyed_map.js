@@ -4,9 +4,9 @@ import {
   $KeyMap,
   $dropEach,
   $eq,
+  $given,
   $hashSlice,
   $iter,
-  $iterator,
   $mutGet,
   $next,
   $orInsert,
@@ -38,8 +38,10 @@ function tCounting(TIterator, dropT, dropTItem) {
       let result;
       try {
         iter = self;
-        result = $iterator(iter, TIterator.next, true).forEach((item) => value(item));
-        dropT?.(iter);
+        result = $given(iter, TIterator, true).forEach((item) => value(item));
+        if (TIterator.fold === undefined) {
+          dropT?.(iter);
+        }
       } catch (error) {
         for (const item of counts.keys()) {
           dropTItem?.(item);

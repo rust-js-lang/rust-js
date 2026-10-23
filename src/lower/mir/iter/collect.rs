@@ -128,6 +128,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             || output.is_unit()
     }
 
+    /// Whether std's `method` of an iterator, giving `output`, takes its
+    /// items by `fold`, `for_each` or `reduce`: what calls the crate's own
+    /// `fold`, which takes the iterator and drops it (#162).
+    pub(in crate::lower) fn consumes_by_fold(&self, method: DefId, output: Ty<'tcx>) -> bool {
+        let recognition = self.recognition();
+        recognition.folds_what_it_consumes(method)
+            || recognition.iterator_method(method) == Some(IterMethod::Collect) && self.collects_by_fold(output)
+    }
+
     /// `it`, an iterator of type `iter_ty`, as a consumer std routes through
     /// `fold` takes it: where that reaches the crate's own, `$folded(it)`,
     /// its items as that gives them (#162); else `it`.
