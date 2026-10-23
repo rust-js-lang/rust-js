@@ -3,6 +3,16 @@
 
 use super::*;
 
+/// One kind of std call's lowering, `std_calls`': its value, or `None`, a
+/// call it doesn't know, of which it's taken no argument and written nothing.
+type StdHandler<'a, 'tcx> = for<'s, 'c> fn(
+    &mut FnCx<'a, 'tcx>,
+    &mut State<'s, 'tcx>,
+    std_calls::StdCall<'c, 'tcx>,
+    &mut std::vec::IntoIter<Value<'tcx>>,
+    &mut Vec<Stmt>,
+) -> R<Option<Value<'tcx>>>;
+
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A call of a function pointer, which may be JS's (ADR 0330): called
     /// with its arguments given to JS.
@@ -261,23 +271,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // What's made for the call is the arrow's, not what's around it: the
         // boxes it gives a `&mut` too, copied back in it once the call returns,
         // as a call's are after it (ADR 0099).
-        let (pending, unwind) = (std::mem::take(&mut state.pending), state.unwind.take());
-        let outer_copy_backs = std::mem::take(&mut state.copy_backs);
         let mut body = Vec::new();
-        let called = self.mir_call_values(
-            state,
-            (def_id, args),
-            (values, &inputs, &[]),
-            sig.output(),
-            span,
-            &mut body,
-        );
-        let value = called.and_then(|value| self.value_expr(value, span));
-        let flushed = self.flush(state, &mut body);
-        (state.pending, state.unwind) = (pending, unwind);
-        let copy_backs = std::mem::replace(&mut state.copy_backs, outer_copy_backs);
+        let (value, copy_backs) = self.in_fresh_evaluation(state, |cx, state| {
+            let called = cx.mir_call_values(
+                state,
+                (def_id, args),
+                (values, &inputs, &[]),
+                sig.output(),
+                span,
+                &mut body,
+            );
+            let value = called.and_then(|value| cx.value_expr(value, span));
+            let flushed = cx.flush(state, &mut body);
+            value.and_then(|value| flushed.map(|()| value))
+        });
         let mut value = value?;
-        flushed?;
         if !copy_backs.is_empty() {
             value = self.spill("value", value, &mut body);
             for (place, boxed, object) in copy_backs {
@@ -897,26 +905,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             output,
             span,
         };
-        if let Some(value) = self.mir_fmt_call(state, call, &mut values, out)? {
-            return Ok(value);
-        }
-        if let Some(value) = self.mir_text_call(state, call, &mut values, out)? {
-            return Ok(value);
-        }
-        if let Some(value) = self.mir_map_call(state, call, &mut values, out)? {
-            return Ok(value);
-        }
-        if let Some(value) = self.mir_vec_call(state, call, &mut values, out)? {
-            return Ok(value);
-        }
-        if let Some(value) = self.mir_iter_std_call(state, call, &mut values, out)? {
-            return Ok(value);
-        }
-        if let Some(value) = self.mir_place_call(state, call, &mut values, out)? {
-            return Ok(value);
-        }
-        if let Some(value) = self.mir_value_call(state, call, &mut values, out)? {
-            return Ok(value);
+        // A kind that says `None` has taken no argument and written nothing,
+        // so the next is given the call as it was: held where each is called.
+        let handlers: [(&str, StdHandler<'a, 'tcx>); 7] = [
+            ("mir_fmt_call", Self::mir_fmt_call),
+            ("mir_text_call", Self::mir_text_call),
+            ("mir_map_call", Self::mir_map_call),
+            ("mir_vec_call", Self::mir_vec_call),
+            ("mir_iter_std_call", Self::mir_iter_std_call),
+            ("mir_place_call", Self::mir_place_call),
+            ("mir_value_call", Self::mir_value_call),
+        ];
+        for (name, handler) in handlers {
+            let (args, written, pending) = (values.len(), out.len(), state.pending.len());
+            if let Some(value) = handler(self, state, call, &mut values, out)? {
+                return Ok(value);
+            }
+            assert!(
+                (values.len(), out.len(), state.pending.len()) == (args, written, pending),
+                "`{name}` declined a call it took an argument of, or wrote for"
+            );
         }
         Ok(Value::Expr(match known {
             // Panics end what runs: what's made before is made first.

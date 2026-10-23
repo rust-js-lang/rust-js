@@ -475,7 +475,7 @@ const mirState: Record<string, string[]> = {
   "src/lower/mir/std_calls.rs": ["at", "body", "locals", "offsets"],
   "src/lower/mir/assign.rs": ["binding_var", "body", "boxes", "branches", "builders", "copy_backs", "cuts", "in_place", "offsets", "jsx_props", "let_spans", "locals", "maps", "named", "options", "parts", "payloads", "pending", "places", "pointed", "refs", "rests", "writer"],
   "src/lower/mir/closures.rs": ["at", "body", "locals", "offsets"],
-  "src/lower/mir/dispatch.rs": ["body", "copy_backs", "defaults", "flattened", "locals", "maps", "options", "pending", "unwind"],
+  "src/lower/mir/dispatch.rs": ["body", "defaults", "flattened", "locals", "maps", "options", "pending"],
   "src/lower/mir/entries.rs": ["body", "captures", "locals", "thrown_writes"],
   "src/lower/mir/jsx_props.rs": ["body"],
   "src/lower/mir/locals.rs": ["body", "locals", "patterned"],
@@ -484,7 +484,7 @@ const mirState: Record<string, string[]> = {
   "src/lower/mir/queries.rs": ["body", "borrowed_names", "locals", "own_names"],
   "src/lower/mir/rvalues.rs": ["at", "body", "branches", "cuts", "locals", "offsets", "options", "pending", "pointed", "ranges", "statement", "writer"],
   "src/lower/mir/structure.rs": ["at", "awaits", "body", "copy_backs", "deferred", "drops", "graph", "labels", "locals", "pending", "returns", "statement", "unwind", "writer", "writes_captured"],
-  "src/lower/mir/temporaries.rs": ["body", "in_place", "locals", "named", "own_names", "pending", "places", "pointed", "refs", "settled", "unwind"],
+  "src/lower/mir/temporaries.rs": ["body", "copy_backs", "in_place", "locals", "named", "own_names", "pending", "places", "pointed", "refs", "settled", "unwind"],
 };
 test("each module of mir/ reads only the fields of mir.rs's state it's listed for", () => {
   const mir = read("src/lower/mir.rs");

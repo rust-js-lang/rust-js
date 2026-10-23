@@ -4,6 +4,25 @@
 use super::*;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// `lower` in an evaluation of its own: none of what's around it made and
+    /// not yet used, nor the cleanup that unwinds to, nor the copies back a
+    /// call around it owes, which are the enclosing evaluation's again once
+    /// it's done, however `lower` ends. What it gives, and the copies back
+    /// its own calls owe, which its caller writes where they're owed.
+    pub(super) fn in_fresh_evaluation<T>(
+        &mut self,
+        state: &mut State<'_, 'tcx>,
+        lower: impl FnOnce(&mut Self, &mut State<'_, 'tcx>) -> T,
+    ) -> (T, Vec<(Expr, String, bool)>) {
+        let pending = std::mem::take(&mut state.pending);
+        let unwind = state.unwind.take();
+        let copy_backs = std::mem::take(&mut state.copy_backs);
+        let lowered = lower(self, state);
+        state.pending = pending;
+        state.unwind = unwind;
+        (lowered, std::mem::replace(&mut state.copy_backs, copy_backs))
+    }
+
     /// What `js::is_defined` is given isn't read: it names what's asked of,
     /// `typeof` of its path, so a static's value MIR copies into its
     /// argument, `Symbol.toStringTag`, is no read before the test, which

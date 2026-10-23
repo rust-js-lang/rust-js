@@ -621,6 +621,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0694 `ManuallyDrop::drop`, `extend` of what holds nothing, a matched call's value and `{}` of an `impl Display`](decisions/0694-four-refusals-of-drops-and-displays-lifted.md)
 - [0695 What stops early steps by `try_fold`, and `nth` is passed on, as std's adapters route them](decisions/0695-what-stops-early-steps-by-try-fold.md)
 - [0696 What lowering a function finds of drops is returned with it](decisions/0696-what-lowering-finds-of-drops-is-returned-with-it.md)
+- [0697 Lowering's hidden contracts, held where they're relied on](decisions/0697-lowerings-hidden-contracts-held.md)
 - [0436 Every `dyn` that's a pair keeps its value's drop, `dyn Send` too](decisions/0436-every-dyn-keeps-its-drop.md) *(amended by 0691: a `dyn Any` drops where the crate makes one of what drops)*
 - [0437 A scope's drops on a panic are one `try { .. } finally { .. }`](decisions/0437-a-scopes-drops-are-one-finally.md) *(amended by 0693: its `if`s, loops and `return`s in it)*
 - [0438 An optional prop is given `Some(..)`, or left out](decisions/0438-an-optional-prop-is-given-some.md)

@@ -18,7 +18,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let outer = self.swap_drops(default);
             self.drop_state.outer.push(outer);
         }
-        self.drop_facts()?;
+        // One that fails to start leaves the enclosing body's drops as they were.
+        if let Err(refused) = self.drop_facts() {
+            if swapped {
+                let outer = self.drop_state.outer.pop().expect("the function's drops");
+                self.restore_drops(outer);
+            }
+            return Err(refused);
+        }
         Ok(EnclosingDrops {
             swapped,
             hoisted: self.begin_hoisting(),
