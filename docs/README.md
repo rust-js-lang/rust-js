@@ -712,7 +712,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0525 A cloned `map` or `filter` is made again](decisions/0525-a-cloned-map-is-made-again.md)
 - [0526 A `filter` steps from its back](decisions/0526-a-filter-steps-from-its-back.md)
 - [0527 An associated iterator steps its impl's parameter](decisions/0527-an-associated-iterator-steps-its-impls-parameter.md)
-- [0528 A `fuse` and an `enumerate` from either end, and what an `IntoIterator` gives](decisions/0528-fuse-and-enumerate-from-either-end.md) *(superseded in part by 0566)*
+- [0528 A `fuse` and an `enumerate` from either end, and what an `IntoIterator` gives](decisions/0528-fuse-and-enumerate-from-either-end.md) *(superseded in part by 0566; amended: an `enumerate` of an array's items, held or given, from its back)*
 - [0529 A shipped crate is qualified, and memchr's searches are JS's](decisions/0529-a-shipped-memchr-searches-bytes.md)
 - [0530 std's iterators of arrays, and a `rev`, clone where they are](decisions/0530-std-iterators-of-arrays-clone-where-they-are.md)
 - [0531 `try_rfold` is `try_fold` from the back](decisions/0531-try-rfold.md)

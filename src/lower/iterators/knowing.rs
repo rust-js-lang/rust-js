@@ -321,6 +321,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let source_value = self.as_double_ended((**source_value).clone(), source.peel_refs(), span)?;
             return Ok(Expr::call_helper("$mapEnds", vec![source_value, f.clone()]));
         }
+        // An enumeration made here of an array's items, `src.map((x, i) =>
+        // [i, x])`: `$enumerate` of their `$iter`, which knows its back and
+        // its length, whose index from the back is where it is (ADR 0528).
+        if let Some(source) = crate::lower::recognition::enumerated_source(self.tcx, ty)
+            && self.steps_an_array(source.peel_refs())
+            && let Some(source_value) = crate::lower::iterators::enumeration_source(&value)
+        {
+            let items = self.std_iterator(source_value.clone(), source.peel_refs());
+            return Ok(Expr::call_helper("$enumerate", vec![items]));
+        }
         // A `step_by(n)` made here, `src.filter((_, i) => i % n === 0)`:
         // `$stepByEnds` of its source made knowing its back and its length,
         // which it finds its last by, as std's `StepBy` does.

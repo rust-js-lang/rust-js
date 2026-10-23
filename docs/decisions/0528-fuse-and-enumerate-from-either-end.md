@@ -63,3 +63,26 @@ it; `into_iter_arguments` extends, chains, zips and lists as `Debug` entries
 - Mutations drop a `fuse`'s back or length, count from the back one past,
   stop seeing an `enumerate`'s length or back, make it a JS helper, and
   take an `Option` or a range as it is.
+
+## Amendment: an `enumerate` of an array's items, held or given, from its back
+
+`it.enumerate().rev()` of a slice's iterator a variable held, or a
+function of the crate's gave, was refused: an `enumerate` of an array's
+items is `src.map((x, i) => [i, x])`, which has no back, and only one
+made in place was reversed, as an array. And `rev()` of such an iterator
+a function gave threw: it was taken for the array, where it's its `$iter`
+or the array.
+
+- **`as_double_ended` makes one `$enumerate` of their `$iter`**, which
+  knows its back and its length, where it meets the form
+  (`iterators::enumeration_source`, the one reader of `enumerated`'s).
+  One made in place stays the array's `map`, reversed.
+- **`rev()` of what a function gives is what's left of it**, `$rest(it)`,
+  as of one a variable holds: either its `$iter` or its array
+  (`given_by_a_call`).
+- A held `enumerate` stepped by `next_back` stays refused.
+
+ADR 0262's case: C, an error where Rust is fine, and a throw. Held by
+`test/corpus/returned_slice_iters.rs` and the mutations
+`rev-of-returned-iter-unwrapped`, `enumerate-of-array-no-back` and
+`enumeration-source-unread`.

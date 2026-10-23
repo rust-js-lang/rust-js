@@ -39,8 +39,8 @@ export const mutations: Mutation[] = [
     name: "mir-rev-of-kept-iterator-wrapped",
     breaks: "`rev()` of an iterator a variable holds wraps its `$iter` again, `it.toReversed()`, which throws",
     file: "src/lower/mir/iter/backs.rs",
-    find: "            Some(_) if matches!(receiver.kind, js::ExprKind::Var(_) | js::ExprKind::Member(..)) => {\n                Expr::call_helper(\"$rest\", vec![receiver])\n",
-    replace: "            Some(_) if false => {\n                Expr::call_helper(\"$rest\", vec![receiver])\n",
+    find: "                if matches!(receiver.kind, js::ExprKind::Var(_) | js::ExprKind::Member(..))\n",
+    replace: "                if false\n",
     tests: ["test/lowering-iterators.test.ts", "-t", "char ranges step by code point"]
   },
   {
@@ -286,5 +286,13 @@ export const mutations: Mutation[] = [
     find: "                let len = self.knows_its_length(iter_ty) || self.user_exact_size(iter_ty);\n",
     replace: "                let len = self.knows_its_length(iter_ty);\n",
     tests: ["test/corpus.test.ts", "-t", "^user_iterator_ends.rs$"],
+  },
+  {
+    name: "rev-of-returned-iter-unwrapped",
+    breaks: "what a function gives is reversed by what's left of it",
+    file: "src/lower/mir/iter/backs.rs",
+    find: "    matches!(&e.kind, js::ExprKind::Call(callee, _) if callee.helper_name().is_none())\n",
+    replace: "    false\n",
+    tests: ["test/corpus.test.ts", "-t", "^returned_slice_iters.rs$"],
   },
 ];

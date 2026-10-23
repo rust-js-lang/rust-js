@@ -266,4 +266,12 @@ export const mutations: Mutation[] = [
     replace: "            let _ = fold;\n",
     tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std's bodies"],
   },
+  {
+    name: "enumerate-of-array-no-back",
+    breaks: "an enumerate of an array's items made here steps from its back",
+    file: "src/lower/iterators/knowing.rs",
+    find: "            && let Some(source_value) = crate::lower::iterators::enumeration_source(&value)\n",
+    replace: "            && let Some(source_value) = None::<&Expr>\n",
+    tests: ["test/corpus.test.ts", "-t", "^returned_slice_iters.rs$"],
+  },
 ];
