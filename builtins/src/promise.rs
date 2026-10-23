@@ -17,9 +17,11 @@ impl<T> Promise<T> {
     }
 
     /// [`promise.catch(f)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Promise/catch):
-    /// of a rejection, the promise `f` makes of its reason.
+    /// of a rejection, what `f` gives of its reason, a value or a promise
+    /// of one ([`Fulfils`]), TypeScript's `TResult | PromiseLike<TResult>`:
+    /// `promise.catch(|_| {})` is `promise.catch(() => {})` (ADR 0698).
     #[cfg_attr(rust_js, rust_js::link_name = "catch")]
-    pub fn catch(self, f: impl FnOnce(&'static JsError) -> Promise<T> + 'static) -> Promise<T> {
+    pub fn catch<R: Fulfils<T>>(self, f: impl FnOnce(&'static JsError) -> R + 'static) -> Promise<T> {
         unreachable!()
     }
 
@@ -30,6 +32,20 @@ impl<T> Promise<T> {
         unreachable!()
     }
 }
+
+/// What a handler gives that fulfils a promise of `T`, TypeScript's
+/// `TResult | PromiseLike<TResult>`: a `T`, or a promise of one, which JS
+/// waits for; of an `Option`'s, nothing too, `()`, which is `undefined`,
+/// its `None` (ADR 0698).
+#[diagnostic::on_unimplemented(
+    message = "`{Self}` doesn't fulfil a promise of `{T}`",
+    note = "a handler gives a `{T}`, or a `Promise<{T}>`; of an `Option`'s, nothing"
+)]
+pub trait Fulfils<T> {}
+
+impl<T> Fulfils<T> for T {}
+impl<T> Fulfils<T> for Promise<T> {}
+impl<T> Fulfils<Option<T>> for () {}
 
 /// [What `allSettled` gives](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Promise/allSettled#return_value)
 /// of each promise, told apart by its `status`, TypeScript's

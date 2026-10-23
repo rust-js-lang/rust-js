@@ -428,6 +428,8 @@ pub fn circle(radius: f64) -> &'static Circle {
 | `"this"` | `this` | a cast, unchecked |
 | `"instanceof X"` | `this instanceof X` | a cast's test |
 | `"this()"` | `this(..)` | calling a JS function value |
+| `"new this()"` | `new this(..)` | `js::new` |
+| `"delete []"` | `delete this[key]` | `js::delete` |
 | `"typeof"` | `typeof this` | `js::type_of` |
 | `"!!"` | `!!this` | `js::truthy` |
 | `"\"\" +"` | `"" + this` | `js::concat_text` |
@@ -632,9 +634,12 @@ export async function open(other) {
 - **A function JS gives is a `&'static dyn Fn` of its signature**, its
   `any` an `Option<&Unknown>`: `button.onclick()` is an
   `Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>>`, to
-  call, keep, or compare by `std::ptr::eq`, which is `===`. TypeScript's
-  `Function`, of whatever it takes, is `&dyn Fn()`, as `js::Kind::Function`
-  is ([ADR 0653](../../decisions/0653-a-js-function-value-is-a-dyn-fn-of-its-signature.md)).
+  call, keep, or compare by `std::ptr::eq`, which is `===`
+  ([ADR 0653](../../decisions/0653-a-js-function-value-is-a-dyn-fn-of-its-signature.md)).
+  TypeScript's `Function`, of whatever it takes, is `&dyn Fn() ->
+  Option<&'static Unknown>`, called of nothing for any value, as
+  `js::Kind::Function` holds it
+  ([ADR 0700](../../decisions/0700-typescripts-function-gives-any-value.md)).
 - **`#[rust_js::nullable]` makes the result's `None` `null`** for a caller
   that tests `!== null`; `#[rust_js::nullable(range)]` passes the parameter
   `range`'s `None` as `null`. Reading a result, `None` is `undefined` or

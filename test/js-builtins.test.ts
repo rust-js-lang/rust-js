@@ -321,7 +321,7 @@ pub fn name(value: Option<&'static Unknown>) -> String {
     }
 }
 
-pub fn function_seen(value: Option<&'static Unknown>, seen: &'static WeakMap<dyn Fn(), bool>) -> bool {
+pub fn function_seen(value: Option<&'static Unknown>, seen: &'static WeakMap<dyn Fn() -> Option<&'static Unknown>, bool>) -> bool {
     match js::classify(value) {
         Kind::Function(function) => {
             let before = seen.has(function);
@@ -758,4 +758,98 @@ pub fn each(texts: &[&str]) -> Vec<String> {
   writeFileSync(join(dir, "lib.rs"), source.replace("encode_uri_component(n)", "encode_uri_component(1_i32)"));
   const wrong = Bun.spawnSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "wrong.js"), ...withJs], { cwd: dir });
   expect([wrong.exitCode === 0, wrong.stderr.toString().includes("is not a `string | number | boolean`")], wrong.stderr.toString()).toEqual([false, true]);
+});
+
+// ADR 0698: a promise's `catch` handler gives what TypeScript's
+// `onrejected` may, `TResult | PromiseLike<TResult>`: a value, a promise of
+// one, or, of an `Option`'s, nothing. A `catch` whose promise nothing
+// reads is a statement, which rustc warns nothing of.
+test("a promise's catch handler gives a value or a promise", async () => {
+  const dir = fixture("js-promise-catch");
+  writeFileSync(join(dir, "lib.rs"), `use js::{Promise, Unknown, js_error, promise};
+pub fn silenced(maybe_promise: &'static Unknown) {
+    unsafe { js::cast::<Promise<Option<&'static Unknown>>>(Some(maybe_promise)) }.catch(|_| {});
+}
+pub async fn valued() -> u32 {
+    promise::reject::<u32>(&js_error::new("no")).catch(|_| 7).await
+}
+pub async fn promised() -> String {
+    promise::reject::<String>(&js_error::new("no")).catch(|e| promise::resolve(e.message())).await
+}
+pub async fn nothing() -> Option<u32> {
+    promise::reject::<Option<u32>>(&js_error::new("no")).catch(|_| {}).await
+}
+`);
+  const built = runSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target], root, 600_000);
+  expect(built.code, built.stderr).toBe(0);
+  expect(built.stderr).not.toContain("warning");
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("maybePromise.catch(() => {});");
+  expect(js).toContain('return await Promise.reject(new Error("no")).catch(() => 7);');
+  expect(js).toContain("catch(() => {})");
+  writeFileSync(join(dir, "run.mjs"), `import * as lib from "./lib.js";
+let unhandled = 0;
+process.on("unhandledRejection", () => unhandled++);
+lib.silenced(Promise.reject(new Error("async component")));
+console.log(JSON.stringify([await lib.valued(), await lib.promised(), (await lib.nothing()) ?? null]));
+await new Promise((resolve) => setTimeout(resolve, 10));
+console.log(unhandled);
+`);
+  const ran = runSync([node!, join(dir, "run.mjs")], root, 30_000);
+  expect(ran.stderr).toBe("");
+  expect(ran.stdout).toBe('[7,"no",null]\n0\n');
+});
+
+// ADR 0699: a program keeps upstream's fallback where the host has no
+// `WeakMap`, `typeof WeakMap === 'function' ? WeakMap : Map`: a `js::Map`
+// of what a `WeakMap` keys is a `WeakMap`, as TypeScript's `Map<K, V>` is,
+// so the one value holds either.
+test("a Map is a WeakMap where the host has none", async () => {
+  const dir = fixture("js-possibly-weak-map");
+  writeFileSync(join(dir, "lib.rs"), `use js::{JsObject, Map, Unknown, WeakMap};
+
+thread_local! {
+    pub static CACHE: &'static WeakMap<dyn Fn() -> Option<&'static Unknown>, String> =
+        if js::is_defined(js::weak_map::new::<JsObject, String>) {
+            js::weak_map::new()
+        } else {
+            js::map::new()
+        };
+}
+
+pub fn cached(f: &dyn Fn() -> Option<&'static Unknown>, frame: String) -> Option<String> {
+    CACHE.with(|cache| {
+        let before = cache.get(f);
+        cache.set(f, frame);
+        before
+    })
+}
+
+pub fn strong(object: &JsObject) -> (u32, bool, u32) {
+    let map: &Map<JsObject, u32> = js::map::new();
+    map.set(object, 1);
+    let size = map.size();
+    let had = map.delete(object);
+    map.clear();
+    (size, had, map.size())
+}
+`);
+  run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('export const cache = typeof WeakMap !== "undefined" ? new WeakMap() : new Map();');
+  expect(js).toContain("const before = cache.get(f);");
+  expect(js).toContain("const map = new Map();");
+  expect(js).toContain("const size = map.size;");
+  expect(readFileSync(join(dir, "lib.d.ts"), "utf8")).toContain("export const cache: WeakMap<() => unknown | null | undefined, string>;");
+  writeFileSync(join(dir, "run.mjs"), `const weak = process.argv[2] === "weak";
+if (!weak) delete globalThis.WeakMap;
+const lib = await import("./lib.js");
+const f = () => 1;
+console.log(JSON.stringify([lib.cache.constructor.name, lib.cached(f, "a") ?? null, lib.cached(f, "b"), lib.strong({})]));
+`);
+  for (const [host, made] of [["weak", "WeakMap"], ["none", "Map"]]) {
+    const ran = runSync([node!, join(dir, "run.mjs"), host], root, 30_000);
+    expect(ran.stderr).toBe("");
+    expect(ran.stdout).toBe(`["${made}",null,"a",[1,true,0]]\n`);
+  }
 });

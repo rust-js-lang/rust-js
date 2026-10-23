@@ -154,4 +154,12 @@ export const mutations: Mutation[] = [
     replace: "                            && state.locals.writes[l] > 1\n",
     tests: ["test/corpus.test.ts", "-t", "^mut_param_moved_out.rs$"],
   },
+  {
+    name: "written-fn-in-its-body-list",
+    breaks: "a function written in a block is declared in its body's own list, not the innermost block that holds each use of it",
+    file: "src/lower/mir/closures.rs",
+    find: "            if let Some(innermost) = innermost {\n",
+    replace: "            if let Some(innermost) = innermost.filter(|_| false) {\n",
+    tests: ["test/js-object.test.ts", "-t", "a constructor is a fn item"],
+  },
 ];

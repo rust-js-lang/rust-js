@@ -153,7 +153,7 @@ The `js` crate has the rest of JS's `Promise`:
 | `Promise.all([a, b])` | `js::promise::all(vec![a, b])`; of two of different types, `all2((a, b))`, up to `all4` |
 | `Promise.allSettled`, `race`, `any` | `js::promise::all_settled`, `race`, `any` |
 | `Promise.withResolvers()` | `js::promise::with_resolvers()` |
-| `p.then(f)`, `p.catch(f)`, `p.finally(f)` | `p.then(f)` (`f` gives a promise), `p.then_resolve(f)` (`f` gives a value), `p.catch(f)`, `p.finally(f)` |
+| `p.then(f)`, `p.catch(f)`, `p.finally(f)` | `p.then(f)` (`f` gives a promise), `p.then_resolve(f)` (`f` gives a value), `p.catch(f)` (`f` gives a value, a promise, or of an `Option`'s nothing, `p.catch(\|_\| {})`, [ADR 0698](../../decisions/0698-a-catch-handler-gives-a-value-or-a-promise.md)), `p.finally(f)` |
 | an `async` call handed on, not awaited | `js::promise(future)`: the future as the `Promise` it is |
 
 ## Rejections

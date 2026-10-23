@@ -775,7 +775,7 @@ pub fn captured(target: &JsError) {
     js_error::capture_stack_trace(target, None);
 }
 
-pub fn trimmed(target: &JsError, above: &'static dyn Fn()) {
+pub fn trimmed(target: &JsError, above: &'static dyn Fn() -> Option<&'static js::Unknown>) {
     js_error::capture_stack_trace(target, Some(above));
 }
 
