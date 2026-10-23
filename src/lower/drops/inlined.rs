@@ -19,88 +19,110 @@ use std::collections::HashSet;
 /// }
 /// ```
 pub(in crate::lower) fn inlined_drops(items: &mut Vec<Item>, drops: &HashSet<String>) {
-    for name in drops {
-        let Some(at) = items.iter().position(|item| {
-            matches!(item, Item::Function(f) if &f.name == name && matches!(f.params.as_slice(), [Pattern::Name(_)]))
-        }) else {
-            continue;
-        };
-        let Item::Function(drop) = &items[at] else {
-            unreachable!("found")
-        };
-        let (params, body) = (drop.params.clone(), drop.body.clone());
-        let mentions: usize = (items.iter().enumerate())
-            .map(|(i, item)| match i == at {
-                true => js::mentions_in(&body, name),
-                false => mentions_in_item(item, name),
+    // Each in turn, one no other drop left calls first, so a `Drop` impl's
+    // body is where its value's dropped before the drops it calls are, each
+    // guard taken apart where it's made; among those, in the module's order,
+    // never a set's, which would change the JS from one build to the next.
+    let mut left: Vec<String> = (items.iter())
+        .filter_map(|item| match item {
+            Item::Function(f) if drops.contains(&f.name) => Some(f.name.clone()),
+            _ => None,
+        })
+        .collect();
+    while !left.is_empty() {
+        let called = |name: &String| {
+            (left.iter()).any(|other| {
+                other != name
+                    && (items.iter()).any(
+                        |item| matches!(item, Item::Function(f) if f.name == *other && js::mentions_in(&f.body, name) > 0),
+                    )
             })
-            .sum();
-        // Each drop its body, where each is a call as a statement (ADR
-        // 0589): each function's body made so, then, where every mention is
-        // one, set.
-        let mut bodies = Vec::new();
-        let mut inlined = 0;
-        let mut each = true;
-        for (i, item) in items.iter_mut().enumerate() {
-            if i == at {
-                continue;
-            }
-            each_function(item, &mut |function| {
-                if js::mentions_in(&function.body, name) == 0 {
-                    return;
-                }
-                let mut made = function.body.clone();
-                let mut given = Vec::new();
-                loop {
-                    let whole = made.clone();
-                    let mut done = false;
-                    js::each_block_mut(&mut made, &mut |stmts| {
-                        if done {
-                            return;
-                        }
-                        let Some(k) = stmts.iter().position(|s| calls(s, name)) else {
-                            return;
-                        };
-                        match js::applied_call(&stmts[k], &whole, &params, &body) {
-                            Some(block) => {
-                                given.extend(argument(&stmts[k]));
-                                stmts.splice(k..=k, block);
-                                inlined += 1;
-                            }
-                            None => each = false,
-                        }
-                        done = true;
-                    });
-                    if !done || !each {
-                        break;
-                    }
-                }
-                for guard in given {
-                    fields_of(&mut made, &function.params, &guard);
-                    one_field_of(&mut made, &guard);
-                }
-                bodies.push(made);
-            });
-        }
-        if !each || inlined == 0 || inlined != mentions {
+        };
+        let next = left.iter().position(|name| !called(name)).unwrap_or(0);
+        let name = left.remove(next);
+        inline_drop(items, &name);
+    }
+}
+
+/// `inlined_drops`' of the drop `name`.
+fn inline_drop(items: &mut Vec<Item>, name: &str) {
+    let Some(at) = items.iter().position(|item| {
+        matches!(item, Item::Function(f) if &f.name == name && matches!(f.params.as_slice(), [Pattern::Name(_)]))
+    }) else {
+        return;
+    };
+    let Item::Function(drop) = &items[at] else {
+        unreachable!("found")
+    };
+    let (params, body) = (drop.params.clone(), drop.body.clone());
+    let mentions: usize = (items.iter().enumerate())
+        .map(|(i, item)| match i == at {
+            true => js::mentions_in(&body, name),
+            false => mentions_in_item(item, name),
+        })
+        .sum();
+    // Each drop its body, where each is a call as a statement (ADR
+    // 0589): each function's body made so, then, where every mention is
+    // one, set.
+    let mut bodies = Vec::new();
+    let mut inlined = 0;
+    let mut each = true;
+    for (i, item) in items.iter_mut().enumerate() {
+        if i == at {
             continue;
         }
-        let mut bodies = bodies.into_iter();
-        for (i, item) in items.iter_mut().enumerate() {
-            if i == at {
-                continue;
+        each_function(item, &mut |function| {
+            if js::mentions_in(&function.body, name) == 0 {
+                return;
             }
-            each_function(item, &mut |function| {
-                if js::mentions_in(&function.body, name) > 0 {
-                    function.body = bodies.next().expect("one made of each");
+            let mut made = function.body.clone();
+            let mut given = Vec::new();
+            loop {
+                let whole = made.clone();
+                let mut done = false;
+                js::each_block_mut(&mut made, &mut |stmts| {
+                    if done {
+                        return;
+                    }
+                    let Some(k) = stmts.iter().position(|s| calls(s, name)) else {
+                        return;
+                    };
+                    match js::applied_call(&stmts[k], &whole, &params, &body) {
+                        Some(block) => {
+                            given.extend(argument(&stmts[k]));
+                            stmts.splice(k..=k, block);
+                            inlined += 1;
+                        }
+                        None => each = false,
+                    }
+                    done = true;
+                });
+                if !done || !each {
+                    break;
                 }
-            });
-        }
-        let inlined = true;
-        if inlined {
-            items.remove(at);
-        }
+            }
+            for guard in given {
+                fields_of(&mut made, &function.params, &guard);
+                one_field_of(&mut made, &guard);
+            }
+            bodies.push(made);
+        });
     }
+    if !each || inlined == 0 || inlined != mentions {
+        return;
+    }
+    let mut bodies = bodies.into_iter();
+    for (i, item) in items.iter_mut().enumerate() {
+        if i == at {
+            continue;
+        }
+        each_function(item, &mut |function| {
+            if js::mentions_in(&function.body, name) > 0 {
+                function.body = bodies.next().expect("one made of each");
+            }
+        });
+    }
+    items.remove(at);
 }
 
 /// How often `item` names `name`.
