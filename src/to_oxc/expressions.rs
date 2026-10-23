@@ -503,8 +503,8 @@ fn binary_op(op: Op) -> Result<BinaryOperator, LogicalOperator> {
 /// A positive finite number as JS's `Number.prototype.toString` writes it:
 /// its shortest digits, with an exponent only past 1e21 or below 1e-6.
 /// A Rust number literal, `text`, of a base or an exponent, `0xffu32` or
-/// `1e4`, as JS writes it, `0xff`, `1e4`: its type's suffix and its
-/// separators aren't JS's. Only where JS reads it as `n`, and it's written
+/// `1e4`, as JS writes it, `0xff`, `1e4`: its type's suffix, its
+/// separators and a decimal's leading zeros aren't JS's. Only where JS reads it as `n`, and it's written
 /// so: a literal of neither is JS's own digits (ADR 0627).
 fn as_written(text: &str, n: f64) -> Option<String> {
     let text = text.trim().trim_start_matches('-').replace('_', "");
@@ -530,7 +530,15 @@ fn as_written(text: &str, n: f64) -> Option<String> {
             if !body.contains(['e', 'E']) {
                 return None;
             }
-            (body.to_ascii_lowercase(), body.parse::<f64>().ok()?)
+            // A decimal's leading zeros, `00e+10`, aren't JS's: one before its
+            // point or its exponent.
+            let digits = body.trim_start_matches('0');
+            let digits = if digits.starts_with(|c: char| c.is_ascii_digit()) {
+                digits.to_string()
+            } else {
+                format!("0{digits}")
+            };
+            (digits.to_ascii_lowercase(), body.parse::<f64>().ok()?)
         }
     };
     (value == n
