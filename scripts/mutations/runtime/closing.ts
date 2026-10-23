@@ -12,11 +12,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "closing-twice",
-    breaks: "an iterator closed twice, by `chain`'s `yield*` and its end, is dropped twice",
+    breaks: "what's closed is dropped again, as the crate's own fold dropped it before it's closed",
     file: "src/runtime/closing.js",
     find: "    if (!closed) {\n",
     replace: "    if (true) {\n",
-    tests: ["test/corpus.test.ts", "-t", "^adapter_drops.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(adapter_drops|own_fold_through_adapters).rs$"],
   },
   {
     name: "closing-not-dropped-when-done",
