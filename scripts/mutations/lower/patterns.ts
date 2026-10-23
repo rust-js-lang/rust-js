@@ -98,4 +98,12 @@ export const mutations: Mutation[] = [
     replace: "                _ if false => {\n                    None\n",
     tests: ["test/lowering-matches.test.ts", "-t", "struct taken apart through a reference"],
   },
+  {
+    name: "noinline-own-name-called",
+    breaks: "a function giving each variant its name, marked `#[inline(never)]`, is its argument, uncalled",
+    file: "src/lower/patterns.rs",
+    find: " || super::recognition::is_noinline(self.tcx, def_id) {\n",
+    replace: " {\n",
+    tests: ["test/emission.test.ts", "-t", "inline\\(never\\)"],
+  },
 ];

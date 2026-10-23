@@ -581,4 +581,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/lowering-options.test.ts", "-t", "React's typeName"],
   },
+  {
+    name: "noinline-forwarded",
+    breaks: "a forwarding function marked `#[inline(never)]` is its variable, out of the stack",
+    file: "src/prepare.rs",
+    find: "        if function.noinline {\n",
+    replace: "        if false {\n",
+    tests: ["test/emission.test.ts", "-t", "inline\\(never\\)"],
+  },
 ];

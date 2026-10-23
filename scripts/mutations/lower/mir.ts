@@ -258,4 +258,12 @@ export const mutations: Mutation[] = [
     replace: "                        if matches!(**intrinsic, mir::NonDivergingIntrinsic::Assume(_)) && false)\n",
     tests: ["test/std-package.test.ts"],
   },
+  {
+    name: "noinline-unmarked",
+    breaks: "a function marked `#[inline(never)]` isn't `@noinline`",
+    file: "src/lower/mir.rs",
+    find: "                noinline: super::recognition::is_noinline(self.tcx, def_id),\n",
+    replace: "                noinline: false,\n",
+    tests: ["test/emission.test.ts", "-t", "inline\\(never\\)"],
+  },
 ];

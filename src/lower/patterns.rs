@@ -199,7 +199,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let Some(body) = self.krate.bodies.get(&def_id) else {
             return false;
         };
-        if self.tcx.generics_of(def_id).count() != 0 {
+        // Not one kept out of line, `#[inline(never)]` (ADR 0649): its call
+        // is its call.
+        if self.tcx.generics_of(def_id).count() != 0 || super::recognition::is_noinline(self.tcx, def_id) {
             return false;
         }
         let thir = &body.thir;
