@@ -3,8 +3,8 @@
 import {
   $debugStr,
   $exactLen,
+  $given,
   $iter,
-  $iterator,
   $next,
   $nextBack,
   $nthBack,
@@ -51,13 +51,13 @@ const Ends = {
 };
 
 function outer(iter, IIterator, IDoubleEndedIterator, IClone) {
-  const count = $iterator(IClone.clone(iter), IIterator.next, true).reduce((n) => n + 1, 0);
+  const count = $given(IClone.clone(iter), IIterator, true).reduce((n) => n + 1, 0);
   return [IIterator.next(iter), IDoubleEndedIterator.next_back(iter), count];
 }
 
 function secondLast(iter, IIterator, IDoubleEndedIterator, IClone) {
   return $nthBack(
-    $iterator(IClone.clone(iter), IIterator.next, true, IDoubleEndedIterator.next_back),
+    $given(IClone.clone(iter), IIterator, true, IDoubleEndedIterator.next_back),
     1,
     $some,
   );

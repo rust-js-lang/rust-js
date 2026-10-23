@@ -30,6 +30,39 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             && self.tcx.item_name(adt.did()).as_str() == "Peekable")
     }
 
+    /// Whether std's `Iterator` method `method` takes its items by `fold`,
+    /// `for_each` or `reduce`, whatever it's given: `sum`, `count`, `max_by`
+    /// and the rest; `collect`'s depends on what it makes (#162).
+    pub(in crate::lower) fn folds_what_it_consumes(&self, method: DefId) -> bool {
+        self.tcx
+            .trait_of_assoc(method)
+            .is_some_and(|tr| is_std_def(self.tcx, tr, StdItem::Iterator))
+            && matches!(
+                self.tcx.item_name(method).as_str(),
+                "sum"
+                    | "product"
+                    | "count"
+                    | "fold"
+                    | "for_each"
+                    | "last"
+                    | "max"
+                    | "min"
+                    | "max_by"
+                    | "min_by"
+                    | "max_by_key"
+                    | "min_by_key"
+                    | "reduce"
+                    | "partition"
+                    | "unzip"
+            )
+    }
+
+    /// std's `Fuse`, which std's own body steps (ADR 0561).
+    pub(in crate::lower) fn is_fuse(&self, ty: Ty<'tcx>) -> bool {
+        matches!(ty.peel_refs().kind(), ty::Adt(adt, _) if self.tcx.crate_name(adt.did().krate) == rustc_span::sym::core
+            && self.tcx.item_name(adt.did()).as_str() == "Fuse")
+    }
+
     /// What a `Rev`, std's, steps from its end: the `Range<u32>` of a
     /// `Rev<Range<u32>>`.
     pub(in crate::lower) fn reversed(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
@@ -265,7 +298,8 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// What closing an adapter's `source` drops: `Some` of what it holds, an
     /// owning iterator's items or what one closed to drop holds, a generic
     /// one itself, closed by its caller's drop, or the crate's, by its own,
-    /// `Some(None)`
+    /// or a compiled std iterator's struct, a `Peekable`'s, by its fields'
+    /// (ADR 0561), `Some(None)`
     /// of one that holds nothing, a slice's or a range's, `None` of another.
     fn closing_source(&self, source: Ty<'tcx>) -> Option<Option<Ty<'tcx>>> {
         if let Some(held) = self.owned_items(source).or_else(|| self.closed_on_drop(source)) {
@@ -284,7 +318,10 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                     }
                 )
         );
-        if generic || matches!(source.kind(), ty::Adt(adt, _) if !self.is_std(adt.did())) {
+        if generic
+            || matches!(source.kind(), ty::Adt(adt, _) if !self.is_std(adt.did()))
+            || is_compiled_std_iterator(self.tcx, source)
+        {
             return Some(Some(source));
         }
         (self.array_source(source) == Some(false) || self.range_kind(source).is_some()).then_some(None)

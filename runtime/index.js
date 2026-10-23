@@ -529,7 +529,11 @@ export function $iterator(iterator, next, boxed = false, nextBack, len, hint, fo
   const it = new $Steps(() => step(next(iterator)));
   // The crate's own `fold` and `nth`, where its impl writes them, which
   // what std routes through them calls (#162).
-  if (fold !== undefined) it.fold = (init, f) => fold(iterator, init, f);
+  // That `fold` takes what it steps and drops it, which `ownFold` says.
+  if (fold !== undefined) {
+    it.fold = (init, f) => fold(iterator, init, f);
+    it.ownFold = true;
+  }
   if (nth !== undefined) it.nth = (k) => step(nth(iterator, k));
   it.of = iterator;
   // Another of a value of its type, stepped as it is: a clone's (ADR 0473).
@@ -563,6 +567,14 @@ export function $knowing(it, back, len) {
   while (source.knowing === undefined && source.iter !== undefined) source = source.iter;
   source.knowing?.(back, len);
   return it;
+}
+
+// A value of a type parameter given as it is (ADR 0411), as a JS iterator
+// stepped by its `Iterator` dictionary, `iterator`: its `next`, and its own
+// `fold`, `nth` and `size_hint` where the crate's impl writes them (#162);
+// `boxed`, its back and its length as `$iterator`'s.
+export function $given(value, iterator, boxed = false, nextBack, len) {
+  return $iterator(value, iterator.next, boxed, nextBack, len, iterator.sizeHint, iterator.fold, iterator.nth);
 }
 
 // A map's `insert(k, v)`: `Some` of the value it had, boxed where it looks
@@ -1439,24 +1451,30 @@ export function $findDropping(it, test, drop, boxed) {
 // An iterator an adapter holds, closed when the adapter ends early, is
 // dropped, or is done: `drop`, its own drop, given what it hasn't given,
 // once, as Rust drops it with the adapter (ADRs 0422, 0465, 0570); its back
-// still its own, where it has one (ADR 0514).
+// still its own, where it has one (ADR 0514). It's a `$Steps` (ADR 0669):
+// its fold is its iterator's, after which it's done with; the crate's own
+// fold takes it and drops it itself (#162).
 export function $closing(it, drop) {
   let closed = false;
-  const closing = Object.create(Iterator.prototype);
-  // Stepped to its end, it's done with, as a chain consumed to its end
-  // drops what it holds where the statement or the loop ends (ADR 0570).
-  closing.next = () => {
-    const step = it.next();
-    if (step.done) closing.return();
-    return step;
-  };
-  closing.back = () => it.back();
-  closing.return = () => {
+  const close = () => {
     if (!closed) {
       closed = true;
       drop?.(it);
     }
-    return { done: true, value: undefined };
+  };
+  // Stepped to its end, it's done with, as a chain consumed to its end
+  // drops what it holds where the statement or the loop ends (ADR 0570).
+  const closing = new $Steps(() => {
+    const step = it.next();
+    if (step.done) close();
+    return step;
+  }, close);
+  closing.back = () => it.back();
+  closing.fold = (init, f) => {
+    const folded = it.fold !== undefined ? it.fold(init, f) : it.reduce((a, x) => f(a, x), init);
+    if (it.ownFold) closed = true;
+    close();
+    return folded;
   };
   return closing;
 }
@@ -8797,12 +8815,18 @@ export function $nextIfSome(peekable, f) {
 // whose body reaches memory, `$peekableHint`. It keeps `steps` as `$steps`,
 // a name no field has, for its clone to step as it does. Its back and its
 // length a use site gives, of its compiled `next_back` and `len` with that
-// use's dictionaries, `$knowing`'s.
+// use's dictionaries, `$knowing`'s. It's a `$Steps` (ADR 0669), whose fold,
+// a peekable's or a fuse's, is std's, `steps.fold`, its source's (#162);
+// closing it closes nothing, as before.
 export function $stdIterator(struct, steps) {
-  const it = Object.assign(Object.create(Iterator.prototype), struct);
+  const it = Object.assign(Object.create($Steps.prototype), struct);
   const step = (item) => (item === undefined ? { done: true, value: undefined } : { done: false, value: $someValue(item) });
   it.$steps = steps;
   it.next = () => step(steps.next(it));
+  it.return = () => ({ done: true, value: undefined });
+  if (steps.fold !== undefined) {
+    it.fold = (init, f) => steps.fold(it, init, f);
+  }
   if (steps.hint !== undefined) {
     it.hint = () => steps.hint(it);
   }
@@ -10674,6 +10698,49 @@ export function $folded(it) {
       return items;
     })
     .values();
+}
+
+// `fold` of `it`, by its `Iterator` dictionary, `iterator` (ADR 0411): the
+// crate's own, where its impl writes one (#162), which takes `it` and drops
+// it; a JS iterator's, its `reduce`, which a `$Steps` folds by its source's;
+// else each `next`, its `Some` unboxed (ADR 0051). Std's `fold` takes `it`:
+// stepped to its end here, it's dropped by `drop` after, of one with a
+// destructor.
+export function $foldBy(it, init, f, iterator, drop) {
+  if (iterator?.fold !== undefined) return iterator.fold(it, init, f);
+  let folded = init;
+  if (iterator === undefined || iterator.next === $next || iterator.next === $nextSome) {
+    folded = it.reduce((folded, item) => f(folded, item), init);
+  } else {
+    for (let item = iterator.next(it); item != null; item = iterator.next(it)) folded = f(folded, $someValue(item));
+  }
+  drop?.(it);
+  return folded;
+}
+
+// A `Peekable`'s fold, std's: what it peeked at, unless that was its end,
+// then its source's. Its source is dropped with it, as a struct's fields
+// are, where it's consumed; but the crate's own fold took it and dropped
+// it, which `ownFold` says, as `$iterator`'s does.
+export function $peekableFold(peekable, init, f, iterator) {
+  if (iterator?.fold !== undefined) peekable.ownFold = true;
+  let folded = init;
+  if (peekable.peeked !== undefined) {
+    const peeked = $someValue(peekable.peeked);
+    peekable.peeked = undefined;
+    if (peeked == null) return init;
+    folded = f(folded, $someValue(peeked));
+  }
+  return $foldBy(peekable.iter, folded, f, iterator);
+}
+
+// A `Fuse`'s fold, std's: its source's, while it has one, which it lets go
+// of, dropped by `drop`, as its `next` does at its end.
+export function $fuseFold(fuse, init, f, iterator, drop) {
+  if (fuse.iter == null) return init;
+  const iter = $someValue(fuse.iter);
+  fuse.iter = undefined;
+  return $foldBy(iter, init, f, iterator, drop);
 }
 
 // `collect()` into a `Result`: the first `Err`, where it stops, as Rust's

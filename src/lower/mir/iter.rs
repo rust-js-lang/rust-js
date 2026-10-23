@@ -53,7 +53,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 return Ok(None);
             };
             let result = self.spill("result", result, made);
-            self.drop_value(held, receiver_ty, span, made)?;
+            self.dropped_consumed(held, (receiver_ty, def_id, output), span, made)?;
             return Ok(Some(result));
         }
         self.cloned_apart_call(def_id, (trait_id, arg_tys), values, output, span, made)
@@ -163,6 +163,33 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         )))
     }
 
+    /// `held`, an iterator of type `receiver` its std method `method` took
+    /// by value, dropped after it, as `dropped_after` says: of a type
+    /// parameter given as it is, consumed by `fold`, where its dictionary
+    /// has the crate's own, which took it and dropped it, not again (#162).
+    fn dropped_consumed(
+        &mut self,
+        held: Expr,
+        (receiver, method, output): (Ty<'tcx>, DefId, Ty<'tcx>),
+        span: Span,
+        made: &mut Vec<Stmt>,
+    ) -> R<()> {
+        let iterator = std_item(self.tcx, StdItem::Iterator);
+        let Some(dictionary) =
+            (self.iterator_evidence(receiver, iterator)).filter(|_| self.consumes_by_fold(method, output))
+        else {
+            return self.drop_value(held, receiver, span, made);
+        };
+        let mut dropped = Vec::new();
+        self.drop_value(held, receiver, span, &mut dropped)?;
+        if !dropped.is_empty() {
+            let fold = crate::lower::bindings::trait_method_name(self.tcx, iterator, "fold");
+            let unfolded = Expr::bin(Op::Eq, Expr::member(dictionary, fold), Expr::undefined());
+            made.push(StmtKind::If(unfolded, dropped, None).at(self.js_span(span)));
+        }
+        Ok(())
+    }
+
     /// Whether an iterator taken by value, `items.fold(..)`'s, of a
     /// `receiver` with something to drop, is dropped after its method, as
     /// the method's end drops it and JS doesn't: consumed, `collect()`, then
@@ -180,6 +207,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
     ) -> R<bool> {
         if self.drops(receiver) == crate::lower::drops::Drops::Nothing {
+            return Ok(false);
+        }
+        // What the crate's own `fold` is called by: it takes the iterator
+        // and drops it, so nothing's dropped after (#162). Not of an adapter
+        // that holds a function with a destructor, which it doesn't drop.
+        if self.consumes_by_fold(def_id, output) && self.recognition().folds_its_own(receiver) {
+            if (self.recognition().held_function(receiver))
+                .is_some_and(|function| self.drops(function) != crate::lower::drops::Drops::Nothing)
+            {
+                return Err(self.unsupported(
+                    span,
+                    "an adapter holding a closure with a destructor, over an iterator whose impl writes its own `fold`",
+                ));
+            }
             return Ok(false);
         }
         let params_only = self.drop_query().drops_but_params(receiver) == crate::lower::drops::Drops::Nothing;

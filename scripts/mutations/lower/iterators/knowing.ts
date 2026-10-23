@@ -258,4 +258,12 @@ export const mutations: Mutation[] = [
     replace: "            Some(_) if back => None,\n",
     tests: ["test/corpus.test.ts", "-t", "^user_iterator_ends.rs$"],
   },
+  {
+    name: "std-struct-fold-left-out",
+    breaks: "a peekable's or a fuse's fold steps its source by `next`, not its own `fold`",
+    file: "src/lower/iterators/knowing.rs",
+    find: "            props.push(crate::js::Prop::Field(\"fold\".into(), fold));\n",
+    replace: "            let _ = fold;\n",
+    tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std's bodies"],
+  },
 ];

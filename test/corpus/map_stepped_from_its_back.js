@@ -7,6 +7,7 @@ import {
 } from "@rust-js/std/iter.js";
 import {
   $foldBack,
+  $given,
   $iter,
   $iterator,
   $mapEnds,
@@ -46,13 +47,7 @@ const PadUsing = {
 const Counted = {
   doubledLen(counted, IIterator, IExactSizeIterator, IClone) {
     return $mapEnds(
-      $iterator(
-        IClone.clone(counted.inner),
-        IIterator.next,
-        false,
-        undefined,
-        IExactSizeIterator.len,
-      ),
+      $given(IClone.clone(counted.inner), IIterator, false, undefined, IExactSizeIterator.len),
       (x) => (x * 2) >>> 0,
     ).len();
   },

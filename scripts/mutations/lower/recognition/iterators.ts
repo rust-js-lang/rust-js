@@ -191,8 +191,8 @@ export const mutations: Mutation[] = [
     name: "generic-source-unclosed",
     breaks: "an adapter of a generic iterator, generic code's `zip`, is refused, not closed by its caller's drop",
     file: "src/lower/recognition/iterators.rs",
-    find: "        if generic || matches!(source.kind(), ty::Adt(adt, _) if !self.is_std(adt.did())) {\n",
-    replace: "        if matches!(source.kind(), ty::Adt(adt, _) if !self.is_std(adt.did())) {\n",
+    find: "        if generic\n            || matches!",
+    replace: "        if false\n            || matches!",
     tests: ["test/corpus.test.ts", "-t", "^adapter_drops.rs$"],
   },
   {
@@ -541,5 +541,13 @@ export const mutations: Mutation[] = [
     find: "            return !ty.is_ref() && self.own_iterator_method(ty, \"fold\").is_some();\n",
     replace: "            return false;\n",
     tests: ["test/corpus.test.ts", "-t", "^own_fold_and_nth.rs$"],
+  },
+  {
+    name: "folds-what-it-consumes-not-sum",
+    breaks: "`sum()` of an iterator whose own fold drops it drops it again",
+    file: "src/lower/recognition/iterators.rs",
+    find: "                \"sum\"\n                    | \"product\"",
+    replace: "                \"product\"",
+    tests: ["test/corpus.test.ts", "-t", "^own_fold_through_adapters.rs$"],
   },
 ];

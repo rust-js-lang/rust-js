@@ -3,6 +3,7 @@
 import {
   $debugStr,
   $exactLen,
+  $given,
   $iter,
   $iterator,
   $lazyRange,
@@ -37,17 +38,11 @@ function countdownDoubleEndedIterator_nextBack(countdown) {
 
 function twice(iter, IIterator, IClone, IExactSizeIterator) {
   const len = IExactSizeIterator.len(iter);
-  return [
-    len,
-    [
-      ...$iterator(IClone.clone(iter), IIterator.next, true),
-      ...$iterator(iter, IIterator.next, true),
-    ],
-  ];
+  return [len, [...$given(IClone.clone(iter), IIterator, true), ...$given(iter, IIterator, true)]];
 }
 
 function ends(iter, IIterator, IClone, IDoubleEndedIterator) {
-  const count = $iterator(IClone.clone(iter), IIterator.next, true).reduce((n) => n + 1, 0);
+  const count = $given(IClone.clone(iter), IIterator, true).reduce((n) => n + 1, 0);
   return [IDoubleEndedIterator.next_back(iter), IIterator.next(iter), count];
 }
 
@@ -61,8 +56,8 @@ function size(k) {
 
 function passedOn(iter, IIterator, IClone, IDoubleEndedIterator, IExactSizeIterator) {
   return [
-    last($iterator(IClone.clone(iter), IIterator.next, true, IDoubleEndedIterator.next_back)),
-    size($iterator(IClone.clone(iter), IIterator.next, true, undefined, IExactSizeIterator.len)),
+    last($given(IClone.clone(iter), IIterator, true, IDoubleEndedIterator.next_back)),
+    size($given(IClone.clone(iter), IIterator, true, undefined, IExactSizeIterator.len)),
     $iterator(iter, IDoubleEndedIterator.next_back, true).toArray(),
   ];
 }
@@ -72,7 +67,7 @@ function first(k) {
 }
 
 function handedOn(iter, IIterator, IClone, IDoubleEndedIterator) {
-  return first($iterator(iter, IIterator.next, true, IDoubleEndedIterator.next_back));
+  return first($given(iter, IIterator, true, IDoubleEndedIterator.next_back));
 }
 
 function backwards(iter, IIterator, IClone, IDoubleEndedIterator) {
@@ -80,7 +75,7 @@ function backwards(iter, IIterator, IClone, IDoubleEndedIterator) {
 }
 
 function after(iter, IIterator, IClone) {
-  return [...$lazyRange(10, 12), ...$iterator(iter, IIterator.next)];
+  return [...$lazyRange(10, 12), ...$given(iter, IIterator)];
 }
 
 function main() {

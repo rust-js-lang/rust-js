@@ -5,8 +5,9 @@ use super::*;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `value`, of `ty`, a type parameter given as it is, as a JS iterator
-    /// stepped by its dictionaries (ADRs 0411, 0487): `$iterator(it,
-    /// IIterator.next, boxed)`, given its back, `IDoubleEndedIterator.next_back`,
+    /// stepped by its dictionaries (ADRs 0411, 0487): `$given(it, IIterator,
+    /// boxed)`, its `next`, and its own `fold`, `nth` and `size_hint` where
+    /// its impl writes them (#162), given its back, `IDoubleEndedIterator.next_back`,
     /// and its length, `IExactSizeIterator.len`, where `back` and `len` ask
     /// them. `None` of another, or of one not given what's asked.
     pub(in crate::lower) fn given_js_iterator(&self, value: Expr, ty: Ty<'tcx>, back: bool, len: bool) -> Option<Expr> {
@@ -22,15 +23,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let back = entry(back, self.recognition().double_ended_iterator())?;
         let len = entry(len, self.recognition().exact_size_iterator())?;
         let boxed = self.iterator_item(ty).is_none_or(|item| self.boxed_payload(item));
-        Some(stepped_ends(
-            value,
-            Expr::member(dictionary, "next"),
-            boxed,
-            back,
-            len,
-            None,
-            (None, None),
-        ))
+        // Each given, and each before it, `undefined` where it isn't.
+        let given = [boxed.then(|| Expr::bool(true)), back, len];
+        let last = given.iter().rposition(Option::is_some).map_or(0, |at| at + 1);
+        let mut list = vec![value, dictionary];
+        for (at, arg) in given.into_iter().enumerate().take(last) {
+            list.push(arg.unwrap_or_else(|| match at {
+                0 => Expr::bool(false),
+                _ => Expr::undefined(),
+            }));
+        }
+        Some(Expr::call_helper("$given", list))
     }
 
     /// `ty`'s dictionary of an iterator's extension trait, `trait_id`, given
@@ -150,6 +153,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let iterator = std_item(self.tcx, StdItem::Iterator);
             let size_hint = crate::lower::bindings::trait_method_name(self.tcx, iterator, "size_hint");
             props.push(js::Prop::Field(size_hint, hint));
+        }
+        // And its own `fold` and `nth`, which std's consumers of it call,
+        // `$foldBy`'s (#162).
+        let (fold, nth) = self.own_fold_and_nth(ty, span)?;
+        let iterator = std_item(self.tcx, StdItem::Iterator);
+        for (name, own) in [("fold", fold), ("nth", nth)] {
+            if let Some(own) = own {
+                props.push(js::Prop::Field(
+                    crate::lower::bindings::trait_method_name(self.tcx, iterator, name),
+                    own,
+                ));
+            }
         }
         Ok(Expr::object(props))
     }

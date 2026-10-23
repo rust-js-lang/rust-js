@@ -20,6 +20,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `noisyDrop_drop`, or an arrow; a type parameter's is the one this
     /// function was given. None for a type with nothing to drop.
     pub(in crate::lower) fn drop_function(&mut self, ty: Ty<'tcx>, span: Span) -> R<Option<Expr>> {
+        self.drop_function_of(ty, None, span)
+    }
+
+    /// `drop_function`'s, its parameter `param` where it's given one, else
+    /// named for its type, `(noisy) => ..`.
+    pub(in crate::lower) fn drop_function_of(
+        &mut self,
+        ty: Ty<'tcx>,
+        param: Option<&str>,
+        span: Span,
+    ) -> R<Option<Expr>> {
         if let ty::Param(_) = ty.kind() {
             let index = self.given_drop(ty);
             if let Some(index) = index {
@@ -39,9 +50,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Some(drop) = self.item_drop(ty) {
             return Ok(Some(drop));
         }
-        let base = match ty.kind() {
-            ty::Adt(adt, _) => lower_first(self.tcx.item_name(adt.did()).as_str()),
-            _ => "value".to_string(),
+        let base = match (param, ty.kind()) {
+            (Some(param), _) => param.to_string(),
+            (None, ty::Adt(adt, _)) => lower_first(self.tcx.item_name(adt.did()).as_str()),
+            (None, _) => "value".to_string(),
         };
         let param = self.fresh(&base);
         let mut body = Vec::new();

@@ -97,7 +97,7 @@ pub(in crate::lower) fn stepped_value(e: &Expr) -> Option<Expr> {
     let js::ExprKind::Call(callee, args) = &e.kind else {
         return None;
     };
-    (callee.helper_name() == Some("$iterator")).then(|| args.first().cloned())?
+    matches!(callee.helper_name(), Some("$iterator" | "$given")).then(|| args.first().cloned())?
 }
 
 /// Whether a bound of `tr` reads its value as its own type, `Clone`'s or
@@ -339,14 +339,14 @@ pub(super) fn is_stepped_items(e: &Expr) -> bool {
     fresh_iter_source(e).is_some()
 }
 
-/// The runtime's helpers that make a JS iterator: `$iterator`, `$intoIter`, `$cycleOf`, `$repeating` and `$repeatingN` (ADR 0513),
+/// The runtime's helpers that make a JS iterator: `$iterator`, `$given`, `$intoIter`, `$cycleOf`, `$repeating` and `$repeatingN` (ADR 0513),
 /// `$rev` (ADR 0516), `$closing` (ADR 0518), `$mapEnds` (ADR 0455),
 /// `$filterEnds` (ADR 0526), `$enumerate` (ADR 0528), `$taking` and
 /// `$skipping` (ADR 0542), `$memchrIter` (ADR 0529), `$stdIterator` (ADR
 /// 0561), `$lazyScan` (ADR 0517) and `$lazyMapWhile`, not fused, and each of
 /// its generators,
 /// which the runtime package's test holds this list to; a range's, its own.
-pub(crate) const ITERATOR_HELPERS: [&str; 29] = [
+pub(crate) const ITERATOR_HELPERS: [&str; 30] = [
     "$stdIterator",
     "$memchrIter",
     "$mapEnds",
@@ -357,6 +357,7 @@ pub(crate) const ITERATOR_HELPERS: [&str; 29] = [
     "$taking",
     "$skipping",
     "$iterator",
+    "$given",
     "$intoIter",
     "$cycle",
     "$cycleOf",

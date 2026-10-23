@@ -2,7 +2,9 @@
 
 import {
   $foldBack,
-  $iterator,
+  $fuseFold,
+  $given,
+  $peekableFold,
   $peekableHint,
   $pretty,
   $sizeHint,
@@ -77,7 +79,7 @@ export function peekableDoubleEndedIterator_rfold(
     }
     const v = $someValue($someValue(peekable.peeked));
     const acc = $foldBack(
-      $iterator(peekable.iter, IIterator.next, true, IDoubleEndedIterator.next_back),
+      $given(peekable.iter, IIterator, true, IDoubleEndedIterator.next_back),
       init,
       fold,
     );
@@ -86,7 +88,7 @@ export function peekableDoubleEndedIterator_rfold(
     return result;
   }
   const value = $foldBack(
-    $iterator(peekable.iter, IIterator.next, true, IDoubleEndedIterator.next_back),
+    $given(peekable.iter, IIterator, true, IDoubleEndedIterator.next_back),
     init,
     fold,
   );
@@ -172,7 +174,7 @@ export function fuseDoubleEndedIterator_rfold(
   if (fuse.iter != null) {
     const iter = $someValue(fuse.iter);
     const value = $foldBack(
-      $iterator(iter, IIterator.next, true, IDoubleEndedIterator.next_back),
+      $given(iter, IIterator, true, IDoubleEndedIterator.next_back),
       acc,
       fold,
     );
@@ -263,6 +265,7 @@ export function iterator_peekable(self, SelfIterator, dropSelf, dropSelfItem) {
     {
       next: (iterator) => peekableIterator_next(iterator, SelfIterator, dropSelf, dropSelfItem),
       hint: (peekable) => $peekableHint(peekable, SelfIterator),
+      fold: (it, init, f) => $peekableFold(it, init, f, SelfIterator),
     },
   );
 }
@@ -274,6 +277,7 @@ export function iterator_fuse(self, SelfIterator, SelfFused, dropSelf, dropSelfI
       next: (iterator) =>
         fuseIterator_next(iterator, SelfIterator, SelfFused, dropSelf, dropSelfItem),
       hint: (iterator) => fuseIterator_sizeHint(iterator, SelfIterator, dropSelf, dropSelfItem),
+      fold: (it, init, f) => $fuseFold(it, init, f, SelfIterator, dropSelf),
     },
   );
 }

@@ -2,8 +2,8 @@
 
 import {
   $assertFailed,
+  $given,
   $iter,
-  $iterator,
   $lazyZip,
   $mutItems,
   $next,
@@ -34,10 +34,7 @@ function iCollectSlice_innerArray(self, N, IIterator) {
   const result = Array.from({ length: N });
 
   let count = 0;
-  for (const [dest, item] of $lazyZip(
-    $iter($mutItems(result)),
-    $iterator(self, IIterator.next, true),
-  )) {
+  for (const [dest, item] of $lazyZip($iter($mutItems(result)), $given(self, IIterator, true))) {
     dest.value = item;
     count = (count + 1) >>> 0;
   }
