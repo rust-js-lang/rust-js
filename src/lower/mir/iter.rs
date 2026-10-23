@@ -20,7 +20,7 @@ use rustc_span::def_id::DefId;
 
 use crate::js::{self, Expr, Op, Stmt, StmtKind};
 use crate::lower::iterators::{collected, from_iterator, is_js_iterator, made_array, stepped_range};
-use crate::lower::recognition::{IterMethod, StdItem, is_std_def, std_item};
+use crate::lower::recognition::{IterMethod, Parted, StdItem, is_std_def, std_item};
 use crate::lower::representation::Num;
 use crate::lower::std_types::heap::HeapOp;
 use crate::lower::std_types::range::RangeKind;
@@ -105,25 +105,64 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
         made: &mut Vec<Stmt>,
     ) -> R<Option<Expr>> {
-        let std_method = self.recognition().iterator_method(def_id);
-        if !(matches!(std_method, Some(IterMethod::Map | IterMethod::Filter)) && self.iterator_cloned_apart(output)) {
+        let parted = crate::lower::recognition::cloned_parts(self.tcx, self.reveal(output));
+        let (Some((parted, _, stored)), [receiver_ty, other_ty, ..]) = (parted, arg_tys) else {
+            return self.holding_function(def_id, (trait_id, arg_tys), values, output, span, made);
+        };
+        if values.len() != 2 || !self.iterator_cloned_apart(output) {
             return self.holding_function(def_id, (trait_id, arg_tys), values, output, span, made);
         }
+        let (receiver_ty, other_ty) = (*receiver_ty, *other_ty);
         let name = self.tcx.item_name(def_id);
-        let receiver_ty = arg_tys[0];
         let mut values = values.into_iter();
-        let (receiver, f) = (
+        let (receiver, other) = (
             values.next().expect("the receiver"),
-            values.next().expect("the function"),
+            values.next().expect("its other part"),
         );
-        let own = arg_tys.get(1).is_some_and(|ty| self.is_crate_fn_item(*ty));
+        // A chain's or a zip's other side given as what makes an iterator,
+        // a `Vec`, an array or a slice: made the array's iterator here, and
+        // cloned as the iterator the adapter keeps, where it is (#181). One
+        // given as an iterator is as the receiver is, its JS value where it
+        // is; any other, refused.
+        let iterates = matches!(parted, Parted::Map | Parted::Filter) || self.implements_iterator(other_ty);
+        let (other, other_ty) = match iterates {
+            true => (other, other_ty),
+            false if self.array_source(stored).is_some() => {
+                let items = self.iterable_items(other, other_ty, span, made)?;
+                (self.stepped_items(items), stored)
+            }
+            false => {
+                return Err(self.unsupported(
+                    span,
+                    &format!("cloning a `{output}` of a `{other_ty}` it makes an iterator of"),
+                ));
+            }
+        };
+        let parts = [receiver, other];
         let lent = matches!(receiver_ty.kind(), ty::Ref(_, _, Mutability::Mut));
+        let names = match parted {
+            Parted::Map | Parted::Filter => ["it", "f"],
+            Parted::Chain | Parted::Zip => ["a", "b"],
+        };
+        let own = self.is_crate_fn_item(other_ty);
         let adapter = self.cloned_apart_adapter(
-            (name.as_str(), receiver, f),
-            (receiver_ty, arg_tys[1], output),
-            (lent, own),
+            (name.as_str(), parts, names),
+            ([receiver_ty, other_ty], output),
+            lent,
             span,
             made,
+            |cx, a, b| {
+                let a = cx.as_js_iterator(a, receiver_ty, span)?;
+                Ok(match parted {
+                    // Its source given its function, `it.map(f)`.
+                    Parted::Map | Parted::Filter => {
+                        let callback = cx.unary_callback(b, own);
+                        Expr::call(Expr::member(a, name.as_str()), vec![callback])
+                    }
+                    Parted::Chain => Expr::call_helper("$lazyChain", vec![a, cx.as_js_iterator(b, other_ty, span)?]),
+                    Parted::Zip => Expr::call_helper("$lazyZip", vec![a, cx.as_js_iterator(b, other_ty, span)?]),
+                })
+            },
         )?;
         Ok(Some(adapter))
     }

@@ -550,4 +550,20 @@ export const mutations: Mutation[] = [
     replace: "                \"product\"",
     tests: ["test/corpus.test.ts", "-t", "^own_fold_through_adapters.rs$"],
   },
+  {
+    name: "chain-not-cloned-apart",
+    breaks: "cloning a `chain` of what's cloned is refused",
+    file: "src/lower/recognition/iterators.rs",
+    find: "        \"std::iter::Chain\" => Parted::Chain,\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^cloned_chains_and_cycles.rs$"],
+  },
+  {
+    name: "zip-not-cloned-apart",
+    breaks: "cloning a `zip` of what's cloned is refused",
+    file: "src/lower/recognition/iterators.rs",
+    find: "        \"std::iter::Zip\" => Parted::Zip,\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^cloned_chains_and_cycles.rs$"],
+  },
 ];
