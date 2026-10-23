@@ -16,6 +16,6 @@ export const mutations: Mutation[] = [
     file: "src/runtime/lazy_chain.js",
     find: "  chained.fold = (init, f) => {\n",
     replace: "  chained.unused = (init, f) => {\n",
-    tests: ["test/corpus.test.ts",  "-t",  "^own_fold_and_nth.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^own_fold_and_nth.rs$"],
   },
 ];

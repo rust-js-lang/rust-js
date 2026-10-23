@@ -323,6 +323,6 @@ export const mutations: Mutation[] = [
     find: "            && let Some(first) = args.first_mut()\n        {\n            stepped_in_place(first, false, fuse);\n",
     replace: "            && let Some(first) = args.first_mut()\n        {\n            let _ = (first, fuse);\n",
     snapshots: true,
-    tests: ["test/corpus.test.ts",  "-t",  "^user_iterator_ends.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^user_iterator_ends.rs$"],
   },
 ];

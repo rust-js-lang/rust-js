@@ -44,13 +44,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// checked for what it drops (ADR 0098). A body that fails to start
     /// leaves the state as it is: its whole item fails with it.
     fn enter_body(&mut self, body: &'a Body<'tcx>, owner: DefId, nested: Nested<'tcx>) -> R<Enclosing<'a, 'tcx>> {
-        let thir = std::mem::replace(&mut self.thir, &body.thir);
-        let body_facts = std::mem::replace(&mut self.body_facts, &body.facts);
-        let body_owner = std::mem::replace(&mut self.body_owner, owner);
+        let frame = super::BodyFrame {
+            thir: &body.thir,
+            facts: &body.facts,
+            owner,
+        };
+        let frame = std::mem::replace(&mut self.frame, frame);
         let mut default_drops = None;
-        // A closure and a copied default are JS functions of their own, which
-        // declare their own drop functions.
-        let frame = true;
         let kind = match nested {
             Nested::Closure { names } => EnclosingKind::Closure {
                 names: std::mem::replace(&mut self.names, names),
@@ -73,10 +73,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
         };
         Ok(Enclosing {
-            thir,
-            body_facts,
-            body_owner,
-            drops: self.enter_body_drops(default_drops, frame)?,
+            frame,
+            drops: self.enter_body_drops(default_drops)?,
             kind,
         })
     }
@@ -85,9 +83,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// the drop functions it declares, for its top.
     fn leave_body(&mut self, enclosing: Enclosing<'a, 'tcx>) -> Vec<Stmt> {
         let hoisted = self.leave_body_drops(enclosing.drops);
-        self.thir = enclosing.thir;
-        self.body_facts = enclosing.body_facts;
-        self.body_owner = enclosing.body_owner;
+        self.frame = enclosing.frame;
         match enclosing.kind {
             EnclosingKind::Closure { names } => {
                 self.names = names;
@@ -118,7 +114,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// have none, but where they're passed on as given or read of a field
     /// with none.
     pub(super) fn check_props_taken_apart(&self, ty: ty::Ty<'tcx>, pat: Option<&Pat<'tcx>>, span: Span) -> R<()> {
-        if super::bindings::is_component(self.tcx, self.body_owner)
+        if super::bindings::is_component(self.tcx, self.frame.owner)
             && let ty::Adt(adt, _) = ty.kind()
             && adt.is_struct()
             && (adt.non_enum_variant().fields.iter()).any(|f| super::bindings::field_default(self.tcx, f).is_some())
@@ -137,10 +133,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let PatKind::Binding { var, .. } = pat.kind else {
             return false;
         };
-        let names = |e: ExprId| matches!(self.thir[e].kind, ExprKind::VarRef { id } if id == var);
-        let (given, bases) = super::body_queries::jsx_given_props(self.tcx, self.thir);
+        let names = |e: ExprId| matches!(self.frame.thir[e].kind, ExprKind::VarRef { id } if id == var);
+        let (given, bases) = super::body_queries::jsx_given_props(self.tcx, self.frame.thir);
         let mut allowed: HashSet<ExprId> = given.union(&bases).copied().collect();
-        for expr in self.thir.exprs.iter() {
+        for expr in self.frame.thir.exprs.iter() {
             if let ExprKind::Field { lhs, name, .. } = expr.kind
                 && names(self.strip(lhs))
                 && super::bindings::field_default(self.tcx, &adt.non_enum_variant().fields[name]).is_none()
@@ -148,7 +144,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 allowed.insert(self.strip(lhs));
             }
         }
-        self.thir
+        self.frame
+            .thir
             .exprs
             .iter_enumerated()
             .all(|(e, _)| !names(e) || allowed.contains(&e))

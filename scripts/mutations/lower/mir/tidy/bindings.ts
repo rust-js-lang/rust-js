@@ -43,44 +43,12 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-names.test.ts", "-t", "if-let's binding from MIR keeps"],
   },
   {
-    name: "mir-tidy-captured-kept",
-    breaks: "what an element made before a branch reads stays a `const className = cn(…)`, not read where it's written",
-    file: "src/lower/mir/tidy/bindings.rs",
-    find: "        let temporary = is_temporary(name) || captured.contains(name);\n",
-    replace: "        let temporary = is_temporary(name);\n",
-    tests: ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"],
-  },
-  {
     name: "mir-tidy-let-not-into-branch",
     breaks: "a `let` one branch alone names is declared before the `if`, not in the branch",
     file: "src/lower/mir/tidy/bindings.rs",
     find: "            if let Some(branch) = branch {\n",
     replace: "            if let Some(branch) = branch.filter(|_| false) {\n",
     tests: ["test/lowering-names.test.ts", "-t", "declared where it.s first named"],
-  },
-  {
-    name: "mir-tidy-element-read-held",
-    breaks: "what an element made ahead of a branch reads stays a `const` where elements before it come first, `className$1`",
-    file: "src/lower/mir/tidy/bindings.rs",
-    find: "            true if element => {\n",
-    replace: "            true if false && element => {\n",
-    tests: ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"],
-  },
-  {
-    name: "mir-tidy-inlined-no-backtrack",
-    breaks: "of temporaries one after another, only the last is read where it's read, `cn(_8, _14, x)`",
-    file: "src/lower/mir/tidy/bindings.rs",
-    find: "        i = i.saturating_sub(1);\n",
-    replace: "",
-    tests: ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"],
-  },
-  {
-    name: "mir-tidy-inlined-not-past",
-    breaks: "a temporary is read in place only by the statement right after it, `const _34 = formatted; const args$1 = args;` kept",
-    file: "src/lower/mir/tidy/bindings.rs",
-    find: "        let past = |at: usize| {\n",
-    replace: "        let past = |at: usize| at == 0 && {\n",
-    tests: ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"],
   },
   {
     name: "mir-tidy-loop-let-outside",
@@ -98,38 +66,6 @@ export const mutations: Mutation[] = [
     replace: "        if false && alone && let StmtKind::Labeled(_, body) = &mut stmts[first].kind {\n",
     tests: ["test/corpus.test.ts", "-t", "^or_bindings.rs$"],
     snapshots: true,
-  },
-  {
-    "name": "target-root-not-inlined",
-    "breaks": "`const _25 = ref.current; _25[k] = v` stays, not `ref.current[k] = v` (and no `??=` of it)",
-    "file": "src/lower/mir/tidy/bindings.rs",
-    "find": "                    (true, true) => Some(target),\n",
-    "replace": "                    (true, true) => None,\n",
-    "tests": ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"]
-  },
-  {
-    "name": "mir-tidy-past-borrow-blocks",
-    "breaks": "a chain stays a `const _4` ahead of a callback's borrow, `const list$1 = list;`, not the array's own `forEach`",
-    "file": "src/lower/mir/tidy/bindings.rs",
-    "find": "        let past = |at: usize| {\n",
-    "replace": "        let past = |at: usize| (!acts || at == 0) && {\n",
-    "tests": ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"]
-  },
-  {
-    "name": "mir-tidy-guarded-read-blocked",
-    "breaks": "a value made where its test holds isn't read where that test holds, `const className$2 = error != null ? cn(..) : undefined` kept",
-    "file": "src/lower/mir/tidy/bindings.rs",
-    "find": "            if guard.is_some_and(|g| same_test(a, g))",
-    "replace": "            if false && guard.is_some_and(|g| same_test(a, g))",
-    "tests": ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"]
-  },
-  {
-    "name": "mir-pure-value-held-past-calls",
-    "breaks": "what does nothing, of a `let` no closure sets, `showToc && toc.length !== 0`, is held ahead of the calls before its read",
-    "file": "src/lower/mir/tidy/bindings.rs",
-    "find": "unchanged_by_calls || !e.has_effects()",
-    "replace": "!e.has_effects()",
-    "tests": ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"]
   },
   {
     "name": "loop-let-branch-assigned-not-sunk",
@@ -164,27 +100,11 @@ export const mutations: Mutation[] = [
     "tests": ["test/lowering-functions.test.ts", "-t", "a value a try makes in each branch is the variable's there"]
   },
   {
-    "name": "inlined-pure-not-past-statements",
-    "breaks": "what does nothing, of variables no statement between assigns, `version === \"Canary\"`, stays held before a loop",
-    "file": "src/lower/mir/tidy/bindings.rs",
-    "find": "                || (unchanged_by_calls && reads.iter().all(|v| !assigns(&rest[..at], v)))\n",
-    "replace": "",
-    "tests": ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"]
-  },
-  {
     "name": "held-prop-named-value",
     "breaks": "what MIR holds for a prop is named `value`, not after the prop, `const href = made(\"h\")`",
     "file": "src/lower/mir/tidy/bindings.rs",
     "find": "                        (Some(prop), _) => vec![prop.clone()],\n",
     "replace": "                        (Some(_), _) => Vec::new(),\n",
-    "tests": ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"]
-  },
-  {
-    "name": "jsx-key-read-in-written-order",
-    "breaks": "a `key` that does something is read in place, made after the children by JS's JSX runtime, `[1, 3, 2]`",
-    "file": "src/lower/mir/tidy/bindings.rs",
-    "find": "                && let Some(found) = leads(key, name, guard, passes)\n",
-    "replace": "                && false\n                && let Some(found) = leads(key, name, guard, passes)\n",
     "tests": ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"]
   },
   {

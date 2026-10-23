@@ -8,6 +8,6 @@ export const mutations: Mutation[] = [
     file: "src/runtime/folded.js",
     find: "  return it\n    .fold([], (items, item) => {\n      items.push(item);\n      return items;\n    })\n    .values();\n",
     replace: "  return it.toArray().values();\n",
-    tests: ["test/corpus.test.ts",  "-t",  "^own_fold_and_nth.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^own_fold_and_nth.rs$"],
   },
 ];

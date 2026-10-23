@@ -133,8 +133,10 @@ pub(super) struct EnclosingDrops<'tcx> {
     /// Whether a copied default's drops were put in place of the function's,
     /// which `outer` keeps.
     swapped: bool,
-    /// The enclosing body's drop functions, where this body declares its own.
-    hoisted: Option<Option<Hoisted<'tcx>>>,
+    /// The enclosing body's drop functions: a nested body, a closure's or
+    /// a copied default's, is a JS function of its own, which declares its
+    /// own.
+    hoisted: Option<Hoisted<'tcx>>,
 }
 
 /// A function's drops while a copied default body has its own.
@@ -229,7 +231,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// destructor of, checked, a library's now, from its manifest, the
     /// crate's once each is lowered (ADR 0190).
     pub(in crate::lower) fn check_drops_given(&self, callee: DefId, args: GenericArgsRef<'tcx>, span: Span) -> R<()> {
-        let owner = self.tcx.typeck_root_def_id(self.body_owner);
+        let owner = self.tcx.typeck_root_def_id(self.frame.owner);
         let given: Vec<(u32, Option<Vec<u32>>)> = args
             .iter()
             .enumerate()
@@ -281,7 +283,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if self.in_copied_default() || self.drop_query().drops_but_params(ty) != Drops::Nothing {
             return false;
         }
-        let owner = self.tcx.typeck_root_def_id(self.body_owner);
+        let owner = self.tcx.typeck_root_def_id(self.frame.owner);
         let params = owned_params(self.tcx, ty);
         self.krate
             .no_drops
@@ -309,14 +311,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// A closure, at `closure`, made here: the places its drop drops.
     pub(super) fn closure_made(&mut self, closure: DefId, places: Vec<(Expr, Ty<'tcx>)>) {
-        self.drop_state.closures.insert(closure, (self.body_owner, places));
+        self.drop_state.closures.insert(closure, (self.frame.owner, places));
     }
 
     /// Drop what the closure `closure` took: the variables it took, where it
     /// was made. Only there, or in a closure made inside it, can JS see them.
     fn drop_taken(&mut self, closure: DefId, span: Span, made: &mut Made<'tcx>, out: &mut Vec<Stmt>) -> R<()> {
         let made_here = self.drop_state.closures.get(&closure).cloned().filter(|(made_in, _)| {
-            std::iter::successors(Some(self.body_owner), |&d| self.tcx.opt_parent(d)).any(|d| d == *made_in)
+            std::iter::successors(Some(self.frame.owner), |&d| self.tcx.opt_parent(d)).any(|d| d == *made_in)
         });
         let Some((_, places)) = made_here else {
             return Err(self.unsupported(span, "dropping a closure that holds a value with a destructor here"));

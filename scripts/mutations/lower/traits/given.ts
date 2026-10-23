@@ -22,7 +22,7 @@ export const mutations: Mutation[] = [
     name: "closure-reads-given-location",
     breaks: "`Location::caller()` in a closure in a tracked function is the function's caller's, not where it's written",
     file: "src/lower/traits/given.rs",
-    find: "        (*owner == self.body_owner).then(|| location.clone())\n",
+    find: "        (*owner == self.frame.owner).then(|| location.clone())\n",
     replace: "        let _ = owner;\n        Some(location.clone())\n",
     tests: ["test/corpus.test.ts", "-t", "^track_caller.rs$"],
   },

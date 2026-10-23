@@ -280,6 +280,6 @@ export const mutations: Mutation[] = [
     file: "src/lower/combinators/adapters.rs",
     find: "                // Its items as they come, which the helper steps (#179).\n                let f = next();\n",
     replace: "                let items = method(items, \"toArray\", Vec::new());\n                let f = next();\n",
-    tests: ["test/corpus.test.ts",  "-t",  "^consumers_step_each.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^consumers_step_each.rs$"],
   },
 ];

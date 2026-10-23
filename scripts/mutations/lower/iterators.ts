@@ -183,6 +183,6 @@ export const mutations: Mutation[] = [
     file: "src/lower/iterators.rs",
     find: "        given[6] = Expr::undefined();\n",
     replace: "",
-    tests: ["test/corpus.test.ts",  "-t",  "^own_fold_and_nth.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^own_fold_and_nth.rs$"],
   },
 ];

@@ -253,7 +253,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `impl Fn`'s too, whose JS takes the arguments Rust gives it alone? And,
     /// `dyn_fn`, a `dyn Fn`, a prop's, a JS caller's function as its type says.
     pub(in crate::lower) fn calls_rust(&self, e: ExprId, dyn_fn: bool) -> bool {
-        let ExprKind::Closure(ref closure) = self.thir[self.strip(e)].kind else {
+        let ExprKind::Closure(ref closure) = self.frame.thir[self.strip(e)].kind else {
             return false;
         };
         self.closure_calls_rust(self.krate.closures[&closure.closure_id.to_def_id()], dyn_fn)

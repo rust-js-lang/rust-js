@@ -46,7 +46,7 @@ export const mutations: Mutation[] = [
     name: "component-props-unplaced",
     breaks: "a component's prop MIR's value says no place of is given none, so a `key` written after it goes before it",
     file: "src/lower/jsx.rs",
-    find: "                        value.span = self.js_span(self.thir[f.expr].span);\n",
+    find: "                        value.span = self.js_span(self.frame.thir[f.expr].span);\n",
     replace: "",
     tests: ["test/jsx-evaluation-order.test.ts", "-t", "a shared capture of a let reads alike, past an element.s key"],
   },
@@ -102,8 +102,8 @@ export const mutations: Mutation[] = [
     name: "prop-written-in-macro",
     breaks: "a prop made by a macro, `vec![..]`, is placed by where that macro is defined",
     file: "src/lower/jsx.rs",
-    find: "                .or_insert(self.thir[field.expr].span.source_callsite().lo());",
-    replace: "                .or_insert(self.thir[field.expr].span.lo());",
+    find: "                .or_insert(self.frame.thir[field.expr].span.source_callsite().lo());",
+    replace: "                .or_insert(self.frame.thir[field.expr].span.lo());",
     tests: ["test/jsx-props.test.ts", "-t", "no dictionary"],
   },
   {
@@ -326,7 +326,7 @@ export const mutations: Mutation[] = [
     "name": "jsx-mir-field-unplaced",
     "breaks": "a component's `key` from MIR goes last, `<Tag variant={tag} key={tag} />`, its fields' values placed nowhere",
     "file": "src/lower/jsx.rs",
-    "find": "                        value.span = self.js_span(self.thir[f.expr].span);\n",
+    "find": "                        value.span = self.js_span(self.frame.thir[f.expr].span);\n",
     "replace": "",
     "tests": ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"]
   },

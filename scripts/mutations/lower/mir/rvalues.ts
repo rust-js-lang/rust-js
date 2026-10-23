@@ -426,6 +426,6 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/rvalues.rs",
     find: "                            return Ok(Value::Expr(crate::lower::iterators::behind_a_dyn(it)));\n",
     replace: "                            return Ok(Value::Expr(it));\n",
-    tests: ["test/corpus.test.ts",  "-t",  "^own_fold_and_nth.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^own_fold_and_nth.rs$"],
   },
 ];

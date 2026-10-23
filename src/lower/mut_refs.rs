@@ -70,16 +70,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let ExprKind::Borrow {
             borrow_kind: rustc_middle::mir::BorrowKind::Mut { .. },
             arg: place,
-        } = self.thir[self.strip(arg)].kind
+        } = self.frame.thir[self.strip(arg)].kind
         else {
             return None;
         };
         let mut place = place;
-        while let ExprKind::Deref { arg: inner } = self.thir[self.strip(place)].kind
+        while let ExprKind::Deref { arg: inner } = self.frame.thir[self.strip(place)].kind
             && let ExprKind::Borrow {
                 borrow_kind: rustc_middle::mir::BorrowKind::Mut { .. },
                 arg: reborrowed,
-            } = self.thir[self.strip(inner)].kind
+            } = self.frame.thir[self.strip(inner)].kind
         {
             place = reborrowed;
         }

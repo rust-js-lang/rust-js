@@ -18,6 +18,7 @@ mod flags;
 mod jumps;
 mod logicals;
 mod loops;
+mod moves;
 mod stages;
 mod switches;
 mod unwinds;
@@ -27,7 +28,8 @@ pub(super) use self::bindings::{HELD_ARG, is_temporary, temporary, unsuffixed_pa
 pub(super) use self::destructuring::{copied_params, destructured_params};
 pub(super) use self::values::{call_path, field_path, writer_body};
 use self::{
-    bindings::*, branches::*, destructuring::*, jumps::*, logicals::*, loops::*, switches::switched, values::*,
+    bindings::*, branches::*, destructuring::*, jumps::*, logicals::*, loops::*, moves::*, switches::switched,
+    values::*,
 };
 use super::hints::Switch;
 
@@ -457,8 +459,8 @@ mod tests {
     use std::collections::HashSet;
 
     use super::{
-        decided_tests, inlined, is_temporary, paired_temporaries, settle_jumps, shared_tails, spread_spreads,
-        temporary, turned, user_name,
+        MoveFacts, decided_tests, inlined, is_temporary, paired_temporaries, settle_jumps, shared_tails,
+        spread_spreads, temporary, turned, user_name,
     };
     use crate::js::{self, Expr, ExprKind, Op, Prop, Stmt, StmtKind, UnaryOp};
 
@@ -605,14 +607,15 @@ mod tests {
         let paired = paired_temporaries(&body);
         assert_eq!(paired, [t5.clone(), t6.clone()].into());
         let changing: HashSet<String> = [t5.clone(), t6.clone()].into();
-        inlined(
-            &mut body,
-            &changing,
-            &HashSet::new(),
-            &HashSet::new(),
-            &HashSet::new(),
-            &paired,
-        );
+        let none = HashSet::new();
+        let facts = MoveFacts {
+            changing: &changing,
+            set: &none,
+            plain: &none,
+            captured: &none,
+            paired: &paired,
+        };
+        inlined(&mut body, &facts);
         let [
             _,
             _,

@@ -62,7 +62,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if variant.ctor_kind().is_some() || declared.len() < 2 {
             return declared;
         }
-        let mut orders = (self.thir.exprs.iter()).filter_map(|e| match &e.kind {
+        let mut orders = (self.frame.thir.exprs.iter()).filter_map(|e| match &e.kind {
             thir::ExprKind::Adt(made)
                 if e.span == span && made.adt_def == *adt && made.variant_index == variant_index =>
             {
@@ -198,12 +198,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// The fields of `ty`, a struct whose `Default` is derived, when `base`
     /// is its `Default::default()`: what an update's base is made of.
     pub(super) fn derived_default_fields(&self, base: ExprId, ty: Ty<'tcx>) -> Option<Vec<(String, Ty<'tcx>)>> {
-        let thir::ExprKind::Call { fun, args, .. } = &self.thir[super::body_queries::strip(self.thir, base)].kind
+        let thir::ExprKind::Call { fun, args, .. } =
+            &self.frame.thir[super::body_queries::strip(self.frame.thir, base)].kind
         else {
             return None;
         };
         let default = std_item(self.tcx, StdItem::Default);
-        let (id, _) = fn_def(self.thir[*fun].ty)?;
+        let (id, _) = fn_def(self.frame.thir[*fun].ty)?;
         let ty::Adt(adt, _) = ty.kind() else { return None };
         if !args.is_empty()
             || self.tcx.trait_of_assoc(id) != Some(default)

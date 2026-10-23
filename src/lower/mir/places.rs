@@ -339,15 +339,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
             })
         };
-        for arm in self.thir.arms.iter() {
+        for arm in self.frame.thir.arms.iter() {
             find(&arm.pattern);
         }
-        for expr in self.thir.exprs.iter() {
+        for expr in self.frame.thir.exprs.iter() {
             if let thir::ExprKind::Let { pat, .. } = &expr.kind {
                 find(pat);
             }
         }
-        for stmt in self.thir.stmts.iter() {
+        for stmt in self.frame.thir.stmts.iter() {
             if let thir::StmtKind::Let { pattern, .. } = &stmt.kind {
                 find(pattern);
             }

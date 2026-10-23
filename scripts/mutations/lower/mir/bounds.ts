@@ -14,7 +14,7 @@ export const mutations: Mutation[] = [
     name: "mir-in-bounds-checked",
     breaks: "a call whose indexes the body's ranges show in bounds is checked, `$index(heap, leftIndex)` and `$swap`",
     file: "src/lower/mir/bounds.rs",
-    find: "(self.thir_call(def_id, span)).is_some_and(|(fun, _)| self.body_facts.in_bounds.contains(&fun))",
+    find: "(self.thir_call(def_id, span)).is_some_and(|(fun, _)| self.frame.facts.in_bounds.contains(&fun))",
     replace: "(self.thir_call(def_id, span)).is_some_and(|_| false)",
     tests: ["test/lowering-numbers.test.ts", "-t", "integer ranges show"],
   },

@@ -403,7 +403,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_types/map.rs",
     find: "                let items = self.iterable_items(items, tys[1], span, out)?;\n",
     replace: "",
-    tests: ["test/corpus.test.ts",  "-t",  "^own_fold_and_nth.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^own_fold_and_nth.rs$"],
   },
   {
     name: "map-extend-steps",
@@ -411,6 +411,6 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_types/map.rs",
     find: "                let items = self.by_its_fold(items, tys[1]);\n",
     replace: "",
-    tests: ["test/corpus.test.ts",  "-t",  "^own_fold_and_nth.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^own_fold_and_nth.rs$"],
   },
 ];

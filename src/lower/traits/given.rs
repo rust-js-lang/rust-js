@@ -166,7 +166,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// one, in its own body, not a closure in it (ADR 0427).
     pub(in crate::lower) fn given_location(&self) -> Option<Expr> {
         let (owner, location) = self.given.caller_location.as_ref()?;
-        (*owner == self.body_owner).then(|| location.clone())
+        (*owner == self.frame.owner).then(|| location.clone())
     }
 
     /// Whether an impl's dictionary takes any of `evidence_params`': a const

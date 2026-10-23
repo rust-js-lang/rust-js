@@ -159,9 +159,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Where the `if` whose condition MIR's switch is was written, `if c`, its
     /// `if` first, for the source map: the switch is where its condition is.
     pub(super) fn if_span(&self, span: Span) -> Span {
-        (self.thir.exprs.iter())
+        (self.frame.thir.exprs.iter())
             .find_map(|e| match e.kind {
-                thir::ExprKind::If { cond, .. } if self.thir[self.strip(cond)].span == span => {
+                thir::ExprKind::If { cond, .. } if self.frame.thir[self.strip(cond)].span == span => {
                     Some(e.span.with_hi(span.hi()))
                 }
                 _ => None,
@@ -172,13 +172,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// The pattern of the arm written at `at` of the `match` whose switch MIR's
     /// at `span`, its `match x`, is, for the source map.
     pub(super) fn arm_span(&self, span: Span, at: rustc_span::BytePos) -> Option<Span> {
-        let arms = (self.thir.exprs.iter()).find_map(|e| match &e.kind {
+        let arms = (self.frame.thir.exprs.iter()).find_map(|e| match &e.kind {
             thir::ExprKind::Match { arms, .. } if e.span.lo() == span.lo() && e.span.contains(span) => Some(arms),
             _ => None,
         })?;
         let arm = arms
             .iter()
-            .map(|&arm| &self.thir[arm])
+            .map(|&arm| &self.frame.thir[arm])
             .find(|arm| arm.span.lo() <= at && at < arm.span.hi())?;
         Some(arm.pattern.span)
     }

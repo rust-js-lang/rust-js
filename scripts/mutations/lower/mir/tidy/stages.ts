@@ -486,4 +486,22 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^(expression_values|duration).rs$"],
     snapshots: true,
   },
+  {
+    name: "values-chain-branch-values-off",
+    breaks: "an `if` each of whose branches writes a value `inlined` left stays `let value; if (c) { value = a; } else { value = b; }`, not `const value = c ? a : b`, which `inlined in values` reads in place",
+    file: "src/lower/mir/tidy/stages.rs",
+    find: "            pass(\"branch values\", branch_values_of),\n            pass(\"declarations\", |b, _| declarations(b)),\n            pass(\"inlined in values\", inlined_of),\n",
+    replace: "            pass(\"declarations\", |b, _| declarations(b)),\n            pass(\"inlined in values\", inlined_of),\n",
+    snapshots: true,
+    tests: ["test/corpus.test.ts", "-t", "^(expression_values|char_from_code).rs$"],
+  },
+  {
+    name: "values-chain-declarations-off",
+    breaks: "a `let` `inlined` left written once stays a `let`, not the `const` `inlined in values` reads in place",
+    file: "src/lower/mir/tidy/stages.rs",
+    find: "            pass(\"branch values\", branch_values_of),\n            pass(\"declarations\", |b, _| declarations(b)),\n            pass(\"inlined in values\", inlined_of),\n",
+    replace: "            pass(\"branch values\", branch_values_of),\n            pass(\"inlined in values\", inlined_of),\n",
+    snapshots: true,
+    tests: ["test/corpus.test.ts", "-t", "^(matrix_integers|sales_report).rs$"],
+  },
 ];

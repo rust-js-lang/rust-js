@@ -96,16 +96,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // Where each `match` is written whose arms are each a variant of its
         // own, with no field, guard or binding: one that may read a table by
         // what's matched (ADR 0233), as tidy's `table_reads` tells.
-        let tables: Vec<(js::Span, Vec<String>)> = (self.thir.exprs.iter())
+        let tables: Vec<(js::Span, Vec<String>)> = (self.frame.thir.exprs.iter())
             .filter_map(|e| {
                 let thir::ExprKind::Match { scrutinee, ref arms, .. } = e.kind else {
                     return None;
                 };
-                let ty::Adt(adt, _) = self.thir[scrutinee].ty.peel_refs().kind() else {
+                let ty::Adt(adt, _) = self.frame.thir[scrutinee].ty.peel_refs().kind() else {
                     return None;
                 };
                 let each = (arms.iter()).all(|&arm| {
-                    let arm = &self.thir[arm];
+                    let arm = &self.frame.thir[arm];
                     arm.guard.is_none()
                         && matches!(&arm.pattern.kind, thir::PatKind::Variant { subpatterns, .. } if subpatterns.is_empty())
                 });
@@ -117,10 +117,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // Where each `if`'s condition is written, of the body THIR has:
         // tests in one are `&&`'s; and a `match` and the guard of an arm of
         // it, whose pattern's test and the guard are.
-        let conditions: Vec<(js::Span, js::Span)> = (self.thir.exprs.iter())
+        let conditions: Vec<(js::Span, js::Span)> = (self.frame.thir.exprs.iter())
             .flat_map(|e| match e.kind {
                 thir::ExprKind::If { cond, .. } => {
-                    let cond = self.js_span(self.thir[cond].span);
+                    let cond = self.js_span(self.frame.thir[cond].span);
                     vec![(cond, cond)]
                 }
                 // From `match` to its scrutinee's end, where MIR tests it:
@@ -132,16 +132,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 } => {
                     let tested = js::Span {
                         lo: self.js_span(e.span).lo,
-                        hi: self.js_span(self.thir[scrutinee].span).hi,
+                        hi: self.js_span(self.frame.thir[scrutinee].span).hi,
                     };
                     let guards = (arms.iter()).filter_map(|&arm| {
-                        let guard = self.thir[arm].guard?;
-                        Some((tested, self.js_span(self.thir[guard].span)))
+                        let guard = self.frame.thir[arm].guard?;
+                        Some((tested, self.js_span(self.frame.thir[guard].span)))
                     });
                     // And an arm's pattern, where MIR tests a range's two
                     // bounds, `90..=100`'s `score >= 90 && score <= 100`.
                     let patterns = (arms.iter()).map(|&arm| {
-                        let pattern = self.js_span(self.thir[arm].pattern.span);
+                        let pattern = self.js_span(self.frame.thir[arm].pattern.span);
                         (pattern, pattern)
                     });
                     std::iter::once((tested, tested))
@@ -154,7 +154,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .collect();
         // Where each `if` with an `else` is written, its condition and each
         // branch.
-        let elses: Vec<(js::Span, js::Span, js::Span)> = (self.thir.exprs.iter())
+        let elses: Vec<(js::Span, js::Span, js::Span)> = (self.frame.thir.exprs.iter())
             .filter_map(|e| match e.kind {
                 thir::ExprKind::If {
                     cond,
@@ -162,15 +162,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     else_opt: Some(otherwise),
                     ..
                 } => Some((
-                    self.js_span(self.thir[cond].span),
-                    self.js_span(self.thir[then].span),
-                    self.js_span(self.thir[otherwise].span),
+                    self.js_span(self.frame.thir[cond].span),
+                    self.js_span(self.frame.thir[then].span),
+                    self.js_span(self.frame.thir[otherwise].span),
                 )),
                 _ => None,
             })
             .collect();
         // Where each `&&` or `||` the program wrote is.
-        let logicals: Vec<js::Span> = (self.thir.exprs.iter())
+        let logicals: Vec<js::Span> = (self.frame.thir.exprs.iter())
             .filter(|e| matches!(e.kind, thir::ExprKind::LogicalOp { .. }))
             .map(|e| self.js_span(e.span))
             .collect();
@@ -184,22 +184,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .collect();
         // Where each `if` the program wrote of a `continue` tests: one alone,
         // or one that ends what it does.
-        let continues: Vec<(js::Span, js::Span)> = (self.thir.exprs.iter())
+        let continues: Vec<(js::Span, js::Span)> = (self.frame.thir.exprs.iter())
             .filter_map(|e| match e.kind {
                 thir::ExprKind::If { cond, then, .. } => {
                     let mut then = then;
                     while let thir::ExprKind::Scope { value: inner, .. }
-                    | thir::ExprKind::NeverToAny { source: inner } = self.thir[then].kind
+                    | thir::ExprKind::NeverToAny { source: inner } = self.frame.thir[then].kind
                     {
                         then = inner;
                     }
-                    let thir::ExprKind::Block { block } = self.thir[then].kind else {
+                    let thir::ExprKind::Block { block } = self.frame.thir[then].kind else {
                         return None;
                     };
-                    let block = &self.thir[block];
+                    let block = &self.frame.thir[block];
                     let only = match (block.stmts.last(), block.expr) {
                         (_, Some(e)) => Some(e),
-                        (Some(s), None) => match self.thir[*s].kind {
+                        (Some(s), None) => match self.frame.thir[*s].kind {
                             thir::StmtKind::Expr { expr, .. } => Some(expr),
                             _ => None,
                         },
@@ -207,12 +207,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     }?;
                     let mut only = only;
                     while let thir::ExprKind::Scope { value: inner, .. }
-                    | thir::ExprKind::NeverToAny { source: inner } = self.thir[only].kind
+                    | thir::ExprKind::NeverToAny { source: inner } = self.frame.thir[only].kind
                     {
                         only = inner;
                     }
-                    matches!(self.thir[only].kind, thir::ExprKind::Continue { .. })
-                        .then(|| (self.js_span(self.thir[cond].span), self.js_span(self.thir[only].span)))
+                    matches!(self.frame.thir[only].kind, thir::ExprKind::Continue { .. }).then(|| {
+                        (
+                            self.js_span(self.frame.thir[cond].span),
+                            self.js_span(self.frame.thir[only].span),
+                        )
+                    })
                 }
                 _ => None,
             })
@@ -220,7 +224,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .collect();
         // Where each loop is written, and whether as a `while`.
         // Each loop's label the program wrote, `'rows`, by the loop.
-        let labels: std::collections::HashMap<thir::ExprId, String> = (self.thir.exprs.iter())
+        let labels: std::collections::HashMap<thir::ExprId, String> = (self.frame.thir.exprs.iter())
             .filter_map(|e| match e.kind {
                 thir::ExprKind::Scope { value, hir_id, .. } => match self.tcx.hir_expect_expr(hir_id).kind {
                     // The loop it scopes, in scopes of its own too.
@@ -233,13 +237,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 _ => None,
             })
             .collect();
-        let loops: Vec<(js::Span, bool, Option<String>)> = (self.thir.exprs.iter_enumerated())
+        let loops: Vec<(js::Span, bool, Option<String>)> = (self.frame.thir.exprs.iter_enumerated())
             .filter_map(|(id, e)| match e.kind {
                 thir::ExprKind::Loop { .. } => {
                     let written = e.span.source_callsite();
                     // Where it's written, not the body it's in, which a closure's
                     // span holds too.
-                    let whiles = (self.thir.exprs.iter()).any(|w| {
+                    let whiles = (self.frame.thir.exprs.iter()).any(|w| {
                         w.span.is_desugaring(rustc_span::DesugaringKind::WhileLoop)
                             && w.span.source_callsite().source_equal(written)
                     });
@@ -270,7 +274,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     fn written_switches(&self) -> Vec<Switch> {
         // Each once, of the scopes THIR has of it.
         let mut seen = std::collections::HashSet::new();
-        (self.thir.exprs.iter())
+        (self.frame.thir.exprs.iter())
             .filter_map(|e| {
                 let thir::ExprKind::Scope { mut value, hir_id, .. } = e.kind else {
                     return None;
@@ -280,11 +284,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 | thir::ExprKind::Borrow { arg: inner, .. }
                 | thir::ExprKind::NeverToAny { source: inner }
                 | thir::ExprKind::PointerCoercion { source: inner, .. }
-                | thir::ExprKind::Use { source: inner } = self.thir[value].kind
+                | thir::ExprKind::Use { source: inner } = self.frame.thir[value].kind
                 {
                     value = inner;
                 }
-                let e = &self.thir[value];
+                let e = &self.frame.thir[value];
                 let thir::ExprKind::Match {
                     scrutinee,
                     ref arms,
@@ -295,7 +299,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     return None;
                 };
                 // What's matched is there, `classify(Some(value))`'s (ADR 0676).
-                let present = crate::lower::body_queries::given_present(self.tcx, self.thir, scrutinee).is_some();
+                let present = crate::lower::body_queries::given_present(self.tcx, self.frame.thir, scrutinee).is_some();
                 if match_source != rustc_hir::MatchSource::Normal
                     || e.span.from_expansion()
                     || self.read_in_place(hir_id)
@@ -304,7 +308,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     return None;
                 }
                 let last = arms.len().checked_sub(1)?;
-                let arms: Vec<&thir::Arm<'tcx>> = arms.iter().map(|&arm| &self.thir[arm]).collect();
+                let arms: Vec<&thir::Arm<'tcx>> = arms.iter().map(|&arm| &self.frame.thir[arm]).collect();
                 let arms: Vec<SwitchArm> = (arms.iter().enumerate())
                     .map(|(i, arm)| {
                         let constants = match &arm.pattern.kind {
@@ -315,7 +319,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         Some(SwitchArm {
                             span: self.js_span(arm.span),
                             pattern: self.js_span(arm.pattern.span),
-                            guard: arm.guard.map(|guard| self.js_span(self.thir[guard].span)),
+                            guard: arm.guard.map(|guard| self.js_span(self.frame.thir[guard].span)),
                             constants,
                         })
                     })
@@ -410,11 +414,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// Whether `body`, an arm's, is `{}`.
     fn does_nothing(&self, mut body: thir::ExprId) -> bool {
-        while let thir::ExprKind::Scope { value: inner, .. } = self.thir[body].kind {
+        while let thir::ExprKind::Scope { value: inner, .. } = self.frame.thir[body].kind {
             body = inner;
         }
-        matches!(self.thir[body].kind, thir::ExprKind::Block { block }
-            if self.thir[block].stmts.is_empty() && self.thir[block].expr.is_none())
+        matches!(self.frame.thir[body].kind, thir::ExprKind::Block { block }
+            if self.frame.thir[block].stmts.is_empty() && self.frame.thir[block].expr.is_none())
     }
 
     /// The variants of an untagged enum `pattern` is, each of a field that's
@@ -524,29 +528,29 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Where each `let … else { continue; }` the program wrote is, which MIR
     /// tests as an `if` of the `continue` in its place.
     fn let_else_continues(&self) -> Vec<(js::Span, js::Span)> {
-        (self.thir.stmts.iter())
+        (self.frame.thir.stmts.iter())
             .filter_map(|stmt| match stmt.kind {
                 thir::StmtKind::Let {
                     else_block: Some(block),
                     span,
                     ..
                 } => {
-                    let block = &self.thir[block];
+                    let block = &self.frame.thir[block];
                     let mut only = match (block.stmts.last(), block.expr) {
                         (_, Some(e)) => e,
-                        (Some(s), None) => match self.thir[*s].kind {
+                        (Some(s), None) => match self.frame.thir[*s].kind {
                             thir::StmtKind::Expr { expr, .. } => expr,
                             _ => return None,
                         },
                         _ => return None,
                     };
                     while let thir::ExprKind::Scope { value: inner, .. }
-                    | thir::ExprKind::NeverToAny { source: inner } = self.thir[only].kind
+                    | thir::ExprKind::NeverToAny { source: inner } = self.frame.thir[only].kind
                     {
                         only = inner;
                     }
-                    matches!(self.thir[only].kind, thir::ExprKind::Continue { .. })
-                        .then(|| (self.js_span(span), self.js_span(self.thir[only].span)))
+                    matches!(self.frame.thir[only].kind, thir::ExprKind::Continue { .. })
+                        .then(|| (self.js_span(span), self.js_span(self.frame.thir[only].span)))
                 }
                 _ => None,
             })
