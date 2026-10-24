@@ -21,6 +21,7 @@ import {
   $powi,
   $rem,
   $remEuclid,
+  $roomFor,
   $round,
   $toFixed,
   $trailingZeros,
@@ -111,7 +112,9 @@ function cell2Debug_fmt(cell2) {
 }
 
 export function grids(n) {
+  $roomFor(n, 4);
   const item = new Array(n).fill(0);
+  $roomFor(n, 12);
   const m = Array.from({ length: n }, () => item.slice());
   for (let i = 0; i < n; i++) {
     for (let j = 0; j < n; j++) {
@@ -120,7 +123,9 @@ export function grids(n) {
       items[$at(items, j)] = value;
     }
   }
+  $roomFor(n, 4);
   const item$1 = new Array(n).fill(0);
+  $roomFor(n, 12);
   const t = Array.from({ length: n }, () => item$1.slice());
   for (const [i, row] of m.entries()) {
     for (const [j, v] of row.entries()) {
@@ -133,6 +138,7 @@ export function grids(n) {
   const cells = Array.from({ length: 3 }, () => ({ ...cell }));
   const cell2 = $index(cells, 1);
   cell2.hits = (cell2.hits + 5) >>> 0;
+  $roomFor(n, 4);
   const flags = new Array(n).fill(1);
   return [t, flags, `[${cells.map((item) => cell2Debug_fmt(item)).join(", ")}]`];
 }

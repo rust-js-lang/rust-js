@@ -6,6 +6,7 @@ import {
   $cmp,
   $index,
   $range,
+  $roomFor,
   $selectNthUnstable,
   $slice,
   $sortUnstable,
@@ -19,6 +20,7 @@ export function entry() {
 function adversary(n, select) {
   const gas = n;
   // Two above the rest, out of order, so it isn't one run std just reverses.
+  $roomFor(n, 4);
   const start = new Array(n).fill(gas);
   start[$at(start, 0)] = (gas + 2) >>> 0;
   start[$at(start, 1)] = (gas + 1) >>> 0;

@@ -12,6 +12,7 @@ import {
   $rangeNext,
   $rangeNextBack,
   $rev,
+  $roomFor,
 } from "@rust-js/runtime";
 
 export function entry() {
@@ -38,7 +39,9 @@ function main() {
     $iterator({ start: 1, end: 4 }, $rangeNext, false, $rangeNextBack),
     (n) => {
       console.log(`make ${n}`);
-      return new Array(n >>> 0).fill(n);
+      const n$1 = n >>> 0;
+      $roomFor(n$1, 4);
+      return new Array(n$1).fill(n);
     },
   );
   const value$2 = $nextBack(fm);

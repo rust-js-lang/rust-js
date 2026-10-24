@@ -7,6 +7,7 @@ import {
   $heapPush,
   $keepCapacity,
   $reserve,
+  $roomFor,
   $shrinkTo,
   $someAt,
   $withCapacity,
@@ -21,6 +22,7 @@ function main() {
   console.log(`${$capacity(heap) >= 10} ${heap.length}`);
   $heapPush(heap, 3, $cmp);
   $heapPush(heap, 7, $cmp);
+  $roomFor(heap.length + 20, 4);
   $reserve(heap, 20);
   const value = $capacity(heap) >= 22;
   $keepCapacity(heap);

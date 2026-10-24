@@ -30,3 +30,17 @@ function $shrinkTo(v, min) {
 function $keepCapacity(v) {
   $capacities.set(v, $capacity(v));
 }
+
+// Room for `count` items of `size` bytes each, which std checks wherever a
+// capacity is asked (ADR 0774): past `isize::MAX` bytes, or past
+// `usize::MAX` items, of no size too, a `capacity overflow` panic.
+function $roomFor(count, size) {
+  if (count > 2 ** 32 - 1 || count * size > 2 ** 31 - 1) throw new Error("capacity overflow");
+}
+
+// `s.reserve(additional)` of a `String`: room for its bytes and as many
+// more, its bytes counted only where they may not fit, as each of its
+// UTF-16 units is at most three.
+function $textRoomFor(s, additional) {
+  if (additional > 2 ** 31 - 1 - 3 * s.length) $roomFor($byteLen(s) + additional, 1);
+}

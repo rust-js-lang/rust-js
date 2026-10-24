@@ -266,4 +266,12 @@ export const mutations: Mutation[] = [
     replace: "    if (!first && !f(last, item)) first = first;\n",
     tests: ["test/corpus.test.ts", "-t", "^is_sorted_items.rs$"],
   },
+  {
+    name: "slice-repeat-room-unchecked",
+    breaks: "a slice's `repeat(n)` past `isize::MAX` bytes is no panic",
+    file: "src/runtime/slice_ops.js",
+    find: "  $roomFor(v.length * n, size);\n",
+    replace: "",
+    tests: ["test/runtime-package.test.ts", "-t", "room past"],
+  },
 ];

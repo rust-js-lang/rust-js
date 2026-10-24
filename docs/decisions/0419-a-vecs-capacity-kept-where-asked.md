@@ -1,7 +1,9 @@
 # 0419. A `Vec`'s capacity is kept where it's asked
 
 Status: Accepted. Amends [0315](0315-vec-capacity-and-edits.md), which
-refused `capacity()`.
+refused `capacity()`. Amended by
+[0774](0774-room-past-isize-max-bytes-panics.md): the room asked is checked
+first.
 
 Case: C ([0262](0262-when-rust-and-js-disagree.md)) for what std promises
 of a capacity; B for its number, which native Rust's growth decides and

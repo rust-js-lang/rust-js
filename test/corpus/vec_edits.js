@@ -9,6 +9,7 @@ import {
   $popIfCell,
   $resize,
   $resizeWith,
+  $roomFor,
   $splice,
   $swapRemove,
 } from "@rust-js/runtime";
@@ -19,6 +20,8 @@ export function entry() {
 
 function main() {
   const v = [];
+  $roomFor(v.length + 4, 4);
+  $roomFor(v.length + 2, 4);
   v.push(5, 1, 4, 1, 3);
   // What it's given still runs.
   let asked = 0;
@@ -26,8 +29,10 @@ function main() {
     asked = (asked + 1) >>> 0;
     return asked;
   };
-  ask();
-  ask();
+  const n$1 = ask();
+  $roomFor(v.length + n$1, 4);
+  const n$2 = ask();
+  $roomFor(n$2, 4);
   const w = [];
   console.log(`[${v.join(", ")}] [${w.join(", ")}] ${asked}`);
   const gone = $swapRemove(v, 1);
@@ -87,6 +92,7 @@ function main() {
   $index(points, 1).push(2);
   console.log(`[${points.map((item) => `[${item.join(", ")}]`).join(", ")}]`);
   const q = [];
+  $roomFor(q.length + 2, 4);
   q.push(1);
   $resize(q, 3, 7);
   console.log(`[${q.join(", ")}]`);

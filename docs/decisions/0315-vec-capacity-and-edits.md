@@ -2,7 +2,9 @@
 
 Status: Accepted. Extends [0025](0025-vec-loops-refcell-mut.md) and
 [0153](0153-collection-and-cell-methods.md); counted by
-[0314](0314-std-data-structures.md).
+[0314](0314-std-data-structures.md). Amended by
+[0774](0774-room-past-isize-max-bytes-panics.md): the room asked is checked,
+a `capacity overflow` panic past `isize::MAX` bytes.
 
 Case: A ([0262](0262-when-rust-and-js-disagree.md)), but for `capacity()`,
 D: refused.

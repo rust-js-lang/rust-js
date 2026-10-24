@@ -384,14 +384,14 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0312 `js::shown` is any value as a template shows it](decisions/0312-shown.md)
 - [0313 Loops, spreads and calls as a person writes them](decisions/0313-console-forms.md) *(amended by 0640: `console` takes a tuple)*
 - [0314 Each std data structure works or is refused, and coverage only grows](decisions/0314-std-data-structures.md)
-- [0315 A `Vec`'s capacity does nothing, and its edits are std's](decisions/0315-vec-capacity-and-edits.md)
+- [0315 A `Vec`'s capacity does nothing, and its edits are std's](decisions/0315-vec-capacity-and-edits.md) *(amended by 0774: the room asked is checked)*
 - [0316 A `LinkedList` is an array, as a `VecDeque` is](decisions/0316-linked-list.md)
 - [0317 A `OnceCell` is a `{ value }` of an `Option`, set once](decisions/0317-once-cells.md)
 - [0318 A `LazyCell` makes its value when it's first used, as Rust's does](decisions/0318-lazy-cells.md)
 - [0319 A `Cow` is its enum, made owned by a clone of what it borrowed](decisions/0319-cows.md)
 - [0320 An `Rc` whose counts are read is counted, as Rust counts it](decisions/0320-counted-rcs.md)
 - [0321 A map drops its values as Rust's does](decisions/0321-map-drops.md)
-- [0322 Text's and slices' methods by their other names, and a join of lists](decisions/0322-text-and-slice-names.md)
+- [0322 Text's and slices' methods by their other names, and a join of lists](decisions/0322-text-and-slice-names.md) *(amended by 0774: a `String`'s room asked is checked)*
 - [0323 A `String`'s byte-range edits, and `str`'s searches from the end](decisions/0323-text-byte-ranges.md)
 - [0324 A slice's fills, copies, order checks, chunks and splits](decisions/0324-slice-methods.md)
 - [0325 Maps' and sets' own methods, a B-tree's in its keys' order](decisions/0325-map-and-set-methods.md)
@@ -488,7 +488,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0416 `RangeBounds` in generic code: a dictionary of the range's bounds](decisions/0416-range-bounds-in-generic-code.md)
 - [0417 An allocation is an array of slots](decisions/0417-an-allocation-is-an-array-of-slots.md)
 - [0418 A slice's index of a type parameter's is a dictionary](decisions/0418-a-generic-slice-index-is-a-dictionary.md)
-- [0419 A `Vec`'s capacity is kept where it's asked](decisions/0419-a-vecs-capacity-kept-where-asked.md)
+- [0419 A `Vec`'s capacity is kept where it's asked](decisions/0419-a-vecs-capacity-kept-where-asked.md) *(amended by 0774: the room asked is checked first)*
 - [0420 What `Vec::set_len` leaves past a vector's length stays where it was](decisions/0420-what-set-len-leaves-stays.md)
 - [0421 A std trait's associated type's drop is its caller's to give](decisions/0421-std-associated-type-drops-are-given.md)
 - [0422 An iterator that holds a value is closed to drop it](decisions/0422-an-iterator-holding-a-value-is-closed-to-drop-it.md)
@@ -670,6 +670,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0771 An `==` of a value read as the registry's symbol is its `matches!`](decisions/0771-an-equality-of-a-registered-symbol-is-its-match.md)
 - [0772 A nullable `Cell` field's `None` is `null`, made and written](decisions/0772-a-nullable-cell-field-writes-null.md)
 - [0773 A binding a module's default names is exported as the default alone](decisions/0773-a-held-default-is-exported-once.md)
+- [0774 Room asked past `isize::MAX` bytes is a `capacity overflow` panic](decisions/0774-room-past-isize-max-bytes-panics.md)
 - [0720 A labeled block's `break` and a named constant, in a body's ranges](decisions/0720-a-labeled-block-and-a-named-constant-in-a-bodys-ranges.md)
 - [0721 `js::strict_equals(a, b)` is JS's `===`](decisions/0721-strict-equals-is-jss-triple-equals.md)
 - [0722 A `#[repr(..)]` enum's variant is its number](decisions/0722-a-repr-enums-variant-is-its-number.md)
