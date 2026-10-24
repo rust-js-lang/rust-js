@@ -287,7 +287,7 @@ impl<T: Defined + ?Sized> AnyShape<()> for T {}
 
 /// Any function, of whatever it takes and gives, as each is TypeScript's
 /// `Function`: a function item, a closure, a `fn` pointer or a `dyn Fn` of
-/// any signature, a JS function of JS's or of the program's (ADR 0716).
+/// any signature, a JS function of JS's or of the program's (ADR 0740).
 /// What [`function`]'s members, `Function.prototype`'s, are read of. `M`
 /// is which one, rustc's to infer, as [`AnyShape`]'s is.
 pub trait AnyFunction<M: ?Sized> {}
@@ -305,7 +305,7 @@ macro_rules! functions {
 
 /// What every JS function has, `Function.prototype`'s, of a function of
 /// any signature, [`AnyFunction`], as TypeScript's `Function` types them
-/// (ADR 0716): `function::name(f)` is `f.name`.
+/// (ADR 0740): `function::name(f)` is `f.name`.
 pub mod function {
     use super::AnyFunction;
 

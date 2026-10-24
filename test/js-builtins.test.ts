@@ -580,7 +580,7 @@ pub fn bigs() -> (i64, bool) {
   expect(lib.bigs()).toEqual([2n, true]);
 });
 
-// ADR 0717: TypeScript's `ArrayBufferView`, what each typed array and a
+// ADR 0741: TypeScript's `ArrayBufferView`, what each typed array and a
 // `DataView` deref to, of its `buffer`, `byteOffset` and `byteLength`; and
 // `ArrayBuffer.isView` of any value, as React's
 // `shared/ReactPerformanceTrackProperties.js` asks it.

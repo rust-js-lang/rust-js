@@ -674,7 +674,7 @@ const dispatchers: [string, string, number][] = [
   ["src/lower/mir/dispatch.rs", "    fn mir_std_call(", 147],
   ["src/lower/mir.rs", "    fn mir_function(", 364], // The parameters handed to tidy's `finish` stage in a cell (ADR 0659, amended).
   ["src/lower/recognition/inherent.rs", "    pub(super) fn classify_inherent(", 754],
-  ["src/lower/recognition/calls.rs", "    fn classify_trait_method(", 246],
+  ["src/lower/recognition/calls.rs", "    fn classify_trait_method(", 245],
   ["src/lower/combinators.rs", "    pub(in crate::lower) fn comb_values(", 602],
   ["src/lower/mir/iter.rs", "    pub(in crate::lower) fn mir_iter_call(", 28],
   ["src/lower/mir/iter.rs", "    fn mir_iter_method(", 282],

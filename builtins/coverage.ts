@@ -192,7 +192,7 @@ function bindings(): Set<string> {
     }
   }
   // A member of what a type derefs to is one of its own: a typed array's
-  // `buffer`, its `ArrayBufferView`'s (ADR 0717).
+  // `buffer`, its `ArrayBufferView`'s (ADR 0741).
   for (const f of files) {
     const text = readFileSync(join(src, f), "utf8");
     for (const [, type, target] of text.matchAll(/^impl(?:<[^>]*>)? Deref for (\w+)(?:<[^>]*>)? \{\n\s+type Target = (\w+)/gm)) {

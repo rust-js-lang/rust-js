@@ -421,7 +421,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             tys,
             ..
         } = call;
-        let mut values = values.into_iter();
+        let mut values = match known {
+            // What a path's method is given as a path; a component's
+            // `as_os_str()` is given the component.
+            Std::Path(op) if op != super::path::PathOp::ComponentText => (values.into_iter().zip(tys))
+                .map(|(value, &ty)| self.path_given(value, ty))
+                .collect::<Vec<_>>()
+                .into_iter(),
+            _ => values.into_iter(),
+        };
         // A counted `Rc` (ADR 0320): `Rc::new` makes its `{ value, .. }`, and
         // what it points at is its `value`.
         if known == Std::Same && self.counted_same_by(def_id, generic_args).is_some() {

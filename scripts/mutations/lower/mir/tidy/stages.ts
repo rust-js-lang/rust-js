@@ -466,7 +466,8 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/stages.rs",
     find: "            pass(\"holed lists\", |b, _| holed_lists(b)),\n",
     replace: "",
-    tests: ["test/lowering-iterators.test.ts", "-t", "a list of one item left is the item"],
+    tests: ["test/corpus.test.ts", "-t", "^vec_destructors.rs$"],
+    snapshots: true,
   },
   {
     name: "unread-flag-kept-after-decided-tests",

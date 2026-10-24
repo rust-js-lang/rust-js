@@ -18,4 +18,12 @@ export const mutations: Mutation[] = [
     replace: "            PathOp::Iter => \"$pathAncestors\",\n",
     tests: ["test/corpus.test.ts", "-t", "^path_methods.rs$"],
   },
+  {
+    name: "path-given-component-raw",
+    breaks: "a `Component` given as a path is its object, which `$pathJoin` throws on",
+    file: "src/lower/std_types/path.rs",
+    find: "match self.recognition().is_path_component(ty) {",
+    replace: "match false {",
+    tests: ["test/corpus.test.ts", "-t", "^path_components.rs$"],
+  },
 ];

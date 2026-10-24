@@ -35,6 +35,14 @@ pub(in crate::lower) enum PathOp {
     /// its parent and theirs, to the last.
     Iter,
     Ancestors,
+    /// `p.components()`: its components, each a `Component`, std's enum
+    /// as any enum is (ADR 0033), `"RootDir"` or `{ TAG: "Normal", _0: "usr" }`;
+    /// and a component's `as_os_str()`, its text.
+    Components,
+    ComponentText,
+    /// `Path::new(s)` and `OsStr::new(s)`: what it's given, as a path
+    /// (`path_given`).
+    New,
 }
 
 impl PathOp {
@@ -54,12 +62,27 @@ impl PathOp {
             PathOp::StripPrefix => "$pathStripPrefix",
             PathOp::Iter => "$pathParts",
             PathOp::Ancestors => "$pathAncestors",
-            PathOp::IsAbsolute | PathOp::IsRelative => return None,
+            PathOp::Components => "$pathComponents",
+            PathOp::ComponentText => "$componentText",
+            PathOp::IsAbsolute | PathOp::IsRelative | PathOp::New => return None,
         })
     }
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// What a path's method is given of type `ty`, as an `AsRef<Path>` or
+    /// an `AsRef<OsStr>`: its text, which a path, a string or an `OsStr`
+    /// is (ADR 0173), and a `Component`'s `as_os_str()`.
+    pub(in crate::lower) fn path_given(&self, value: Expr, ty: rustc_middle::ty::Ty<'tcx>) -> Expr {
+        match self.recognition().is_path_component(ty) {
+            true => Expr::call(
+                Expr::helper(PathOp::ComponentText.helper().expect("a helper")),
+                vec![value],
+            ),
+            false => value,
+        }
+    }
+
     /// A path's call: its helper, given what it's given, or `p.startsWith("/")`.
     /// `None` if `known` is another.
     pub(in crate::lower) fn path_call(&mut self, known: Std, values: &mut std::vec::IntoIter<Expr>) -> Option<Expr> {
@@ -68,6 +91,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         Some(match op.helper() {
             Some(helper) => Expr::call(Expr::helper(helper), values.collect()),
+            None if op == PathOp::New => values.next().expect("what it's given"),
             None => {
                 let rooted = Expr::call(
                     Expr::member(values.next().expect("the path"), "startsWith"),

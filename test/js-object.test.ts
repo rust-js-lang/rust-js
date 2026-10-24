@@ -595,7 +595,7 @@ pub fn all(object: &Unknown) -> Vec<String> {
   expect(lib.twice({ a: 1, b: 2 })).toBe("1b0a1b2");
 });
 
-// ADR 0716: a function's `name`, `length` and source, `Function.prototype`'s
+// ADR 0740: a function's `name`, `length` and source, `Function.prototype`'s
 // members, of any function, as React's `shared/ReactPerformanceTrackProperties.js`
 // reads them: `f.name`, `f.length`, `Function.prototype.toString.call(f)`.
 test("a function's name, length and source are read of any function", async () => {

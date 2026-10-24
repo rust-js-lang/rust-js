@@ -589,4 +589,13 @@ export const mutations: Mutation[] = [
     replace: "            return base;\n",
     tests: ["test/lowering-symbols.test.ts", "-t", "Symbol.for its key"],
   },
+  {
+    name: "unit-literal-tag-tested",
+    breaks: "a unit variant written in place is tested for a tag, `\"RootDir\".TAG === \"Normal\"`",
+    file: "src/lower/representation.rs",
+    find: "            false if matches!(subject.kind, js::ExprKind::Str(_)) => Expr::bool(false),\n",
+    replace: "",
+    snapshots: true,
+    tests: ["test/corpus.test.ts", "-t", "^path_components.rs$"],
+  },
 ];

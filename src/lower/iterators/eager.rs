@@ -147,7 +147,6 @@ pub(super) fn fresh(items: &Expr) -> bool {
                 "$windows",
                 "$chunks",
                 "$chunksExact",
-                "$chunksExactMut",
                 "$rchunks",
                 "$rchunksMut",
                 "$splitBy",
@@ -163,6 +162,7 @@ pub(super) fn fresh(items: &Expr) -> bool {
                 "$vars",
                 "$pathParts",
                 "$pathAncestors",
+                "$pathComponents",
             ]
             .contains(&name.as_str()),
             _ => false,

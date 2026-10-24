@@ -1,4 +1,4 @@
-# 0717. An `ArrayBufferView` is what each view derefs to, and `isView` takes any value
+# 0741. An `ArrayBufferView` is what each view derefs to, and `isView` takes any value
 
 Status: Accepted. Amends [0283](0283-js-crate-covers-typescripts-es-library.md)'s
 typed arrays, whose `buffer`, `byteOffset` and `byteLength` each bound

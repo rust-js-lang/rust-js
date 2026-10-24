@@ -1,4 +1,4 @@
-# 0716. A function's members are read of any function, `js::function`
+# 0740. A function's members are read of any function, `js::function`
 
 Status: Accepted. Extends [0653](0653-a-js-function-value-is-a-dyn-fn-of-its-signature.md)
 and [0700](0700-typescripts-function-gives-any-value.md): what a JS

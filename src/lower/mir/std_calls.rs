@@ -495,6 +495,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     _ => return Err(self.unsupported(span, "changing this string, from its MIR")),
                 };
                 let mut given = values.map(|v| self.value_expr(v, span)).collect::<R<Vec<_>>>()?;
+                // A path's, given as an `AsRef<Path>` or `AsRef<OsStr>`.
+                if matches!(
+                    edit,
+                    StringEdit::PathPush | StringEdit::SetFileName | StringEdit::SetExtension
+                ) {
+                    given = (given.into_iter().zip(&arg_tys[1..]))
+                        .map(|(value, &ty)| self.path_given(value, ty))
+                        .collect();
+                }
                 if matches!(
                     edit,
                     StringEdit::Drain | StringEdit::ReplaceRange | StringEdit::ExtendFromWithin

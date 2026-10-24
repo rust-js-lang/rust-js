@@ -153,7 +153,7 @@ What it has:
   TypeScript's, of its `buffer()`, `byte_offset()` and `byte_length()`:
   what a function of any view takes, `view: &ArrayBufferView`; and
   `array_buffer::is_view(value)` takes any value, `Option<&Unknown>`
-  ([ADR 0717](../../decisions/0717-an-array-buffer-view-is-what-each-view-derefs-to.md)).
+  ([ADR 0741](../../decisions/0741-an-array-buffer-view-is-what-each-view-derefs-to.md)).
 - **The module's own JS:** `js::import!` imports a file for its effects or
   an item lazily, `js::import_module!` a module, `js::export_default!` a
   module's default export, `js::directive!("use client")` its directive,

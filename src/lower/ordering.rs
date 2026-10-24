@@ -84,7 +84,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if self.recognition().is_path(ty) {
             return Ok(Expr::call(Expr::helper("$pathCmp"), vec![a, b]));
         }
-        if self.is_primitive_ord(ty) || self.is_text_ord(ty) {
+        if self.is_primitive_ord(ty) || self.is_text_ord(ty) || self.recognition().is_os_text(ty) {
             return Ok(Expr::call(Expr::helper("$cmp"), vec![a, b]));
         }
         // A raw pointer, by its address (ADR 0562).
@@ -218,16 +218,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let names = variants.into_iter().map(|(name, _)| Expr::str(name)).collect();
                 Ok(Expr::call(Expr::helper("$cmpIn"), vec![Expr::array(names), a, b]))
             }
-            // One with fields, the crate's, tagged, or std's `Result`: by its
-            // variant, as the derive orders them, `Ok` before `Err`, then, of
-            // the same, its fields in turn.
+            // One with fields, the crate's, tagged, or std's whose order is
+            // derived, `Result`'s or a path's `Component`'s: by its variant, as
+            // the derive orders them, `Ok` before `Err`, then, of the same, its
+            // fields in turn.
             ty::Adt(adt, args)
                 if adt.is_enum()
                     && (adt.did().is_local() && !bindings::is_untagged(self.tcx, adt.did())
-                        || self.is_std_type(ty, StdItem::Result)) =>
+                        || !adt.did().is_local()
+                            && !self.krate.foreign.in_library(adt.did())
+                            && self.recognition().derives(if partial { partial_ord } else { ord }, ty)) =>
             {
-                let mut variants: Vec<(VariantIdx, u128)> =
-                    adt.discriminants(self.tcx).map(|(v, d)| (v, d.val)).collect();
+                // Of those a value can be.
+                let mut variants: Vec<(VariantIdx, u128)> = (adt.discriminants(self.tcx))
+                    .filter(|&(v, _)| !crate::lower::recognition::never_made(self.tcx, adt.variant(v)))
+                    .map(|(v, d)| (v, d.val))
+                    .collect();
                 variants.sort_by_key(|&(_, value)| value);
                 // Where each is among them, `a.TAG === "Rect" ? 1 : ..`.
                 let place = |cx: &mut Self, x: &Expr| {

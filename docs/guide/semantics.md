@@ -142,7 +142,10 @@ sharing one is copying it: `clone()` is the string itself, and `push_str` is
 
 - **A `Path` or a `PathBuf` is its text,** made from text and shown by
   `display()`; its `==` compares components, as Rust's does
-  ([0173](../decisions/0173-paths-as-text.md)). A parse error's `kind()` is
+  ([0173](../decisions/0173-paths-as-text.md)). Its `components()` are
+  std's `Component`, as any enum is: `"RootDir"`, or `{ TAG: "Normal", _0:
+  "usr" }`, compared, ordered and given as a path as Rust's are
+  ([0716](../decisions/0716-a-paths-components.md)). A parse error's `kind()` is
   its kind, and `{:?}` of std's `IntErrorKind` its name.
 - **Bytes become text as Rust checks UTF-8:** `str::from_utf8`'s
   `Utf8Error` says where the first bad sequence starts and how long it is,

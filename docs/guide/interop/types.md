@@ -1027,7 +1027,7 @@ export function isMarked(log) {
   `f.length`, `function::to_string(f)` its source,
   `Function.prototype.toString.call(f)`, and `function::call(f, this_arg,
   args)` `f.call(thisArg, ...args)`
-  ([ADR 0716](../../decisions/0716-a-functions-members-are-read-of-any-function.md)):
+  ([ADR 0740](../../decisions/0740-a-functions-members-are-read-of-any-function.md)):
 
 ```rust
 use js::{Kind, Unknown, function};

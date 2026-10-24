@@ -83,7 +83,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0011 Integers are JS numbers, wrapped like release Rust](decisions/0011-numbers.md)
 - [0012 Panics throw, via runtime helpers emitted on demand](decisions/0012-panics-and-runtime-helpers.md) *(helpers' place replaced by 0103; amended by 0660: `catch_unwind` catches one; 0706: a panic of no message is an `Error` of none)*
 - [0013 Fieldless enum variants are strings](decisions/0013-fieldless-enums.md)
-- [0033 Enums with fields are ReScript's tagged objects](decisions/0033-enums-with-fields.md)
+- [0033 Enums with fields are ReScript's tagged objects](decisions/0033-enums-with-fields.md) *(extended by 0716: std's enums whose `PartialEq` or order is derived)*
 - [0035 JS that throws is a `Result`; `?` returns early](decisions/0035-results-and-throwing-js.md) *(amended by 0637: a `match` of its `Result` is `try` and `catch`; 0643: its `unwrap()` is the call)*
 - [0020 Structs are objects, tuples are arrays](decisions/0020-structs-and-tuples.md) *(amended by 0674: a literal's fields are listed as written)*
 - [0049 Trait dictionaries, generics, and read-only trait objects](decisions/0049-traits-and-generics.md)
@@ -352,7 +352,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0280 A field that's `undefined` is no key](decisions/0280-undefined-fields-left-out.md)
 - [0281 The webapi crate covers TypeScript's DOM, and a test holds it](decisions/0281-webapi-covers-typescripts-dom.md)
 - [0282 One method API for event listeners](decisions/0282-event-listener-methods.md)
-- [0283 The js crate covers TypeScript's ES library, and a test holds it](decisions/0283-js-crate-covers-typescripts-es-library.md) *(amended by 0666: descriptors and handlers are dictionaries, `Object` measured; by 0677: a weak collection is typed as TypeScript's; by 0698: `catch`'s handler gives a value or a promise; by 0699: `js::Map` of weak keys; by 0717: an `ArrayBufferView` each view derefs to)*
+- [0283 The js crate covers TypeScript's ES library, and a test holds it](decisions/0283-js-crate-covers-typescripts-es-library.md) *(amended by 0666: descriptors and handlers are dictionaries, `Object` measured; by 0677: a weak collection is typed as TypeScript's; by 0698: `catch`'s handler gives a value or a promise; by 0699: `js::Map` of weak keys; by 0741: an `ArrayBufferView` each view derefs to)*
 - [0284 An enum tagged by a property of its own is a discriminated union](decisions/0284-discriminated-unions.md)
 - [0285 `std::ptr::eq` of JS objects is whether they're one](decisions/0285-ptr-eq.md)
 - [0286 A component that sometimes renders nothing returns an `Option`](decisions/0286-components-that-render-nothing.md)
@@ -474,7 +474,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0402 A `Cow` keys a map by what it borrows](decisions/0402-a-cow-keys-a-map-by-what-it-borrows.md)
 - [0403 A map's value that could look like `None` is given back boxed](decisions/0403-a-map-value-that-looks-like-none.md)
 - [0404 A B-tree keyed by value, whose `Ord` is derived](decisions/0404-a-b-tree-keyed-by-value.md)
-- [0405 A path's methods go over its components, as Rust's do on Unix](decisions/0405-a-paths-methods.md)
+- [0405 A path's methods go over its components, as Rust's do on Unix](decisions/0405-a-paths-methods.md) *(extended by 0716: `components()`, std's `Component`)*
 - [0406 A union is the object of the field it holds](decisions/0406-a-union-is-the-field-it-holds.md) *(amended by 0694: `ManuallyDrop::drop`)*
 - [0407 A raw pointer is a handle on its place](decisions/0407-a-raw-pointer-is-a-handle-on-its-place.md)
 - [0408 Plain data is its bytes](decisions/0408-plain-data-is-its-bytes.md)
@@ -585,7 +585,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0650 A `let` that shadows a binding read no more is that binding, assigned](decisions/0650-a-shadow-of-a-binding-read-no-more-is-that-binding.md)
 - [0651 A `let`, then its fallback where it's falsy, is `||`](decisions/0651-a-let-then-its-fallback-is-or.md)
 - [0652 Consecutive appends to a `String` are one `+=`](decisions/0652-consecutive-appends-are-one.md)
-- [0653 A JS function value is a `dyn Fn` of its signature](decisions/0653-a-js-function-value-is-a-dyn-fn-of-its-signature.md) *(amended by 0700: TypeScript's `Function` gives any value; extended by 0716: its members, `js::function`)*
+- [0653 A JS function value is a `dyn Fn` of its signature](decisions/0653-a-js-function-value-is-a-dyn-fn-of-its-signature.md) *(amended by 0700: TypeScript's `Function` gives any value; extended by 0740: its members, `js::function`)*
 - [0654 A dictionary's member of any value is a `dyn IntoUnknown`](decisions/0654-a-dictionary-member-of-any-value-is-a-dyn-into-unknown.md)
 - [0655 A binding of `any` as a value is a `fn` of `Option<&'static Unknown>`](decisions/0655-an-any-binding-as-a-value-is-a-fn-of-a-static-unknown.md)
 - [0656 An event's `emit` arguments are what TypeScript's `emit` takes](decisions/0656-an-events-emit-arguments-are-typescripts-emits.md)
@@ -639,10 +639,12 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0713 Lowering's hidden contracts, held where they're relied on](decisions/0713-lowerings-hidden-contracts-held.md)
 - [0714 A reference given to generic code is what it refers to](decisions/0714-a-reference-given-to-generic-code.md)
 - [0715 What an `IntoIterator` bound is given is its items, as JS steps them](decisions/0715-what-an-into-iterator-bound-is-given.md)
-- [0716 A function's members are read of any function, `js::function`](decisions/0716-a-functions-members-are-read-of-any-function.md)
-- [0717 An `ArrayBufferView` is what each view derefs to, and `isView` takes any value](decisions/0717-an-array-buffer-view-is-what-each-view-derefs-to.md)
+- [0716 A path's components are std's `Component`, as any enum is](decisions/0716-a-paths-components.md)
+- [0717 `rev()` of what's made knowing its back steps it from there](decisions/0717-rev-of-what-knows-its-back-steps-it.md)
 - [0718 A typed array is rest arguments, spread, and a rest of `number` takes any JS number](decisions/0718-a-typed-array-is-rest-arguments-spread.md)
 - [0719 `for…in` is a `for` loop of `js::keys_in`, and its `enumerate()` a counter](decisions/0719-for-in-is-a-for-loop-of-keys-in.md)
+- [0740 A function's members are read of any function, `js::function`](decisions/0740-a-functions-members-are-read-of-any-function.md)
+- [0741 An `ArrayBufferView` is what each view derefs to, and `isView` takes any value](decisions/0741-an-array-buffer-view-is-what-each-view-derefs-to.md)
 - [0436 Every `dyn` that's a pair keeps its value's drop, `dyn Send` too](decisions/0436-every-dyn-keeps-its-drop.md) *(amended by 0691: a `dyn Any` drops where the crate makes one of what drops)*
 - [0437 A scope's drops on a panic are one `try { .. } finally { .. }`](decisions/0437-a-scopes-drops-are-one-finally.md) *(amended by 0693: its `if`s, loops and `return`s in it)*
 - [0438 An optional prop is given `Some(..)`, or left out](decisions/0438-an-optional-prop-is-given-some.md)
@@ -742,7 +744,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0532 A `Debug` builder held in a variable](decisions/0532-a-debug-builder-held-in-a-variable.md)
 - [0533 An associated type's `as_mut()` is its dictionary's](decisions/0533-an-associated-types-as-mut-is-its-dictionarys.md)
 - [0534 A bound of a sequence's `Index<J>` is its `J: SliceIndex<[T]>`](decisions/0534-a-sequences-index-bound-is-its-slice-index.md)
-- [0535 A lazy `map` steps from its back, its source as it is](decisions/0535-a-lazy-map-steps-from-its-back.md)
+- [0535 A lazy `map` steps from its back, its source as it is](decisions/0535-a-lazy-map-steps-from-its-back.md) *(amended by 0717: and of what JS iterates as it is)*
 - [0536 A blanket impl over `?Sized` types keeps its trait's defaults](decisions/0536-a-blanket-unsized-impl-keeps-its-defaults.md)
 - [0537 A `Cell` gives an `Option` back as it's kept](decisions/0537-a-cell-gives-its-option-as-its-kept.md)
 - [0538 A writer called through a `fn` pointer](decisions/0538-a-writer-called-through-a-fn-pointer.md)

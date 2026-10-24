@@ -2944,6 +2944,20 @@ export function $pathParts(path) {
   return parts;
 }
 
+// A path's components, each std's `Component`: `RootDir`, `CurDir`,
+// `ParentDir` or `{ TAG: "Normal", _0: name }`.
+export function $pathComponents(path) {
+  return $pathParts(path).map((part) =>
+    part === "/" ? "RootDir" : part === "." ? "CurDir" : part === ".." ? "ParentDir" : { TAG: "Normal", _0: part },
+  );
+}
+
+// A component's `as_os_str()`: its text.
+export function $componentText(component) {
+  if (typeof component !== "string") return component._0;
+  return component === "RootDir" ? "/" : component === "CurDir" ? "." : "..";
+}
+
 // What tells paths apart, their components, `a/b` and `a//b/.` alike: one
 // string each, which no other components make, as none but the first is
 // empty, `/` or `.`.

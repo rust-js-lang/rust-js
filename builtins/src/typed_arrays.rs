@@ -76,7 +76,7 @@ pub mod array_buffer {
         unreachable!()
     }
 
-    /// [`ArrayBuffer.isView(value)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/ArrayBuffer/isView): whether `value`, any value, as TypeScript's `any`, is an [`ArrayBufferView`], a typed array or a `DataView` (ADR 0717).
+    /// [`ArrayBuffer.isView(value)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/ArrayBuffer/isView): whether `value`, any value, as TypeScript's `any`, is an [`ArrayBufferView`], a typed array or a `DataView` (ADR 0741).
     #[cfg_attr(rust_js, rust_js::link_name = "ArrayBuffer.isView")]
     pub fn is_view(value: Option<&Unknown>) -> bool {
         unreachable!()
@@ -143,7 +143,7 @@ unsafe impl ArrayBufferLike for SharedArrayBuffer {}
 
 /// TypeScript's [`ArrayBufferView`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray):
 /// a typed array or a `DataView`, each of which derefs to it, a view of
-/// `B`'s bytes, of an `ArrayBuffer` unless said (ADR 0717). What a function
+/// `B`'s bytes, of an `ArrayBuffer` unless said (ADR 0741). What a function
 /// of any view takes, `fn f(view: &ArrayBufferView)`, given a `&Uint8Array`.
 pub struct ArrayBufferView<B = ArrayBuffer>(PhantomData<JsObject>, PhantomData<B>);
 

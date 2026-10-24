@@ -370,4 +370,12 @@ export const mutations: Mutation[] = [
     replace: "        if let Some(referent) = None::<ty::TraitRef<'tcx>> {",
     tests: ["test/corpus.test.ts", "-t", "^references_given_to_generics.rs$"],
   },
+  {
+    name: "component-as-ref-dictionary-refused",
+    breaks: "a `Component` given to a `P: AsRef<Path>` has no dictionary",
+    file: "src/lower/traits/dictionaries.rs",
+    find: "            && self.recognition().as_ref_is_component_text(ty, tr.args.type_at(1))\n",
+    replace: "            && false\n",
+    tests: ["test/corpus.test.ts", "-t", "^path_components.rs$"],
+  },
 ];

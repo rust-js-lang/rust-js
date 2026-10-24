@@ -75,7 +75,7 @@ more**, each a plain JS value or member:
   node crate, of its `id`, `filename`, `loaded` and `require`: in an ES
   module, which has none, reading it throws a `ReferenceError`, a panic.
 - **`js::function::call(f, this_arg, args)`, `f.call(thisArg, ...args)`**,
-  `Function.prototype.call`, a member of `js::function` (ADR 0716).
+  `Function.prototype.call`, a member of `js::function` (ADR 0740).
 - The rest is what's there: `js::get` of a name the program makes,
   `module[requireString]`, an `unsafe { js::cast(..) }` of what TypeScript
   types `any` there (Flow's `$FlowFixMe`), and `catch_unwind`, whose

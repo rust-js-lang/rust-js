@@ -152,7 +152,7 @@ export const mutations: Mutation[] = [
     file: "src/to_oxc.rs",
     find: "            .find(|&&(lo, _)| lo >= start && (lo < end || lo == start))",
     replace: "            .find(|&&(lo, _)| lo == start && false)",
-    tests: ["test/corpus.test.ts", "-t", "^channels.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(channels|copy_mutation).rs$"],
     snapshots: true,
   },
   {
