@@ -19,6 +19,9 @@ resumed is the same `Error`.
 Amended by [0706](0706-panic-is-the-one-way-a-port-throws-an-error.md):
 what a `catch` reads of what it caught is what was thrown, where it is,
 `throw payload` of a payload resumed.
+Amended by [0830](0830-what-follows-a-let-err-of-a-closure-that-never-returns-is-its-catch.md):
+the `catch` of a `let Err(x)` of a closure that never returns holds what
+follows that reads `x`, or what that declares.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N where a panic is
 caught, as Rust catches it: the same closure runs once, the same drops
