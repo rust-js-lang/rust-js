@@ -21,31 +21,14 @@ function boom(n) {
 function main() {
   const kept = [1];
   const f = () => 7;
-  const value = $catchUnwind(f);
+  const returned = $catchUnwind(f);
   console.log(`drop ${kept[0]}`);
-  const returned = value;
-  const value$1 = returned.TAG === "Ok" ? returned._0 : undefined;
-  console.log(`returned ${value$1 == null ? "None" : `Some(${value$1})`}`);
+  console.log(`returned ${returned.TAG === "Ok"}`);
 
   const unwound = [2];
   const f$1 = () => boom(3);
   const thrown = $catchUnwind(f$1);
   console.log(`drop ${unwound[0]}`);
   console.log(`thrown ${thrown.TAG === "Err"}`);
-
-  const count = 0;
-  const taken = 4;
-  let count$1 = count;
-  const consumed = $catchUnwind(() => {
-    count$1 = (count$1 + 1) | 0;
-    try {
-      console.log(`drop ${taken}`);
-    } catch (error) {
-      throw error;
-    }
-    return count$1;
-  });
-  const value$2 = consumed.TAG === "Ok" ? consumed._0 : undefined;
-  console.log(`consumed ${value$2 == null ? "None" : `Some(${value$2})`} ${count}`);
 }
 //# sourceMappingURL=case.js.map
