@@ -40,10 +40,12 @@ of two that aren't; nor what lowering knows isn't, `Known::Defined`.
 Anything else, a variable or a call, may be.
 
 - **Lowering says what it knows**: what MIR's `nulled` says is `null` or
-  a value already is marked `Known::Defined` where it's written, so a
-  handle's write tidy asks again keeps it, `context.Consumer =
-  consumerOf(context);`; and an `Option`'s `map` marks its `Some`, not
-  boxed, its value, which can't be `undefined` (ADR 0051).
+  a value already, set through a variable holding a cell's handle, is
+  marked `Known::Defined`, so the write tidy makes of it to the place,
+  as the handle's storage stores (`read_handles`), keeps it,
+  `context.Consumer = consumerOf(context);`; and an `Option`'s `map`
+  marks its `Some`, not boxed, its value, which can't be `undefined`
+  (ADR 0051).
 - **A test's branches each as they're stored**: `c ? f(c) : undefined` is
   `c ? f(c) : null` where `f(c)` is never `undefined`; else the whole is
   `?? null`.
@@ -89,8 +91,8 @@ Anything else, a variable or a call, may be.
   handle's write, an `Option` given still coalesced, run with and
   without `console.createTask`.
 - Mutations in `scripts/mutations/js/make.ts` (`null-for-none-objects-coalesced`,
-  `null-for-none-branches-coalesced`, `nulled-unmarked`,
-  `defined-may-be-undefined`), `scripts/mutations/lower/std_types/option.ts`
+  `null-for-none-branches-coalesced`, `defined-may-be-undefined`),
+  `scripts/mutations/lower/std_types/cell.ts` (`cell-variable-nulled-unmarked`), `scripts/mutations/lower/std_types/option.ts`
   (`map-some-undefined`), `scripts/mutations/lower/mir/patterns.ts`
   (`null-nones-calls-unwritten`, `null-nones-clones-written`) and
   `scripts/mutations/lower/mir/assign.ts` (`call-option-written-as-given`).

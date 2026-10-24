@@ -123,6 +123,9 @@ Not, so the call stays:
   names them.
 - The guide's `click()` (Export Rust APIs) is `clickCount.value = ..;
   return clickCount.value;`.
+- The readability baseline's `return;` is 89 where it was 88, 9.3 in
+  10,000 lines: `thread_local_with_in_place`'s closure whose `return;`
+  isn't its end, which stays one, as it must.
 
 ## What holds it
 

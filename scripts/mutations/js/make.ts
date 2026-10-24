@@ -376,14 +376,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-nullable.test.ts", "-t", "what's never undefined as it is"],
   },
   {
-    name: "nulled-unmarked",
-    breaks: "what MIR says is a value already isn't marked so, so a handle's write of it is `?? null` again where tidy writes its place, `context.Consumer = consumerOf(context) ?? null`",
-    file: "src/js/make.rs",
-    find: "                made.defined()\n            }\n            Storage::NullForNone => match",
-    replace: "                made\n            }\n            Storage::NullForNone => match",
-    tests: ["test/lowering-nullable.test.ts", "-t", "what's never undefined as it is"],
-  },
-  {
     name: "defined-may-be-undefined",
     breaks: "what lowering knows is never `undefined` is asked of its form alone, `createTask(..)` a call that may be",
     file: "src/js/make.rs",

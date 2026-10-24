@@ -899,10 +899,8 @@ impl Storage {
     pub fn written(self, made: Expr, nulled: bool) -> Expr {
         match self {
             Storage::AsGiven => made,
-            // What MIR tells is, marked so, as a handle's write is asked again
-            // where tidy writes its place in its stead (`Known::Defined`).
             Storage::NullForNone if nulled && !matches!(made.kind, ExprKind::Undefined | ExprKind::GivenUndefined) => {
-                made.defined()
+                made
             }
             Storage::NullForNone => match null_for_none(&made) {
                 Some(stored) => stored,

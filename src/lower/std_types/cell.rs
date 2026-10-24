@@ -43,10 +43,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let js_span = self.js_span(span);
         // What a `Cell` is written, as its storage, the handle on it, says
         // (ADR 0772): a `#[rust_js::nullable]` field's, its `None` `null`,
-        // what's given that's `null` or a value already as it is.
+        // what's given that's `null` or a value already as it is. Through a
+        // variable holding the handle, which tidy writes as its storage
+        // stores (ADR 0791), what MIR says so is marked so (ADR 0841).
         let given_nulled = call.nulled.get(1) == Some(&true);
         let written = |cell: &Expr, value: Expr| match cell.kind {
             js::ExprKind::Handle(_, storage) => storage.written(value, given_nulled),
+            _ if given_nulled && !matches!(value.kind, js::ExprKind::Undefined) => value.defined(),
             _ => value,
         };
         Ok(Some(match known {

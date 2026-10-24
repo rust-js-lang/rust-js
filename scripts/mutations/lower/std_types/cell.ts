@@ -212,4 +212,12 @@ export const mutations: Mutation[] = [
     replace: "            js::applied_blocks(stmts, true);\n",
     tests: ["test/lowering-cells.test.ts", "-t", "with is its closure's body"],
   },
+  {
+    name: "cell-variable-nulled-unmarked",
+    breaks: "a `Some(..)` set through a variable holding a nullable field's handle is `?? null` where tidy writes the field, `context.Consumer = consumerOf(context) ?? null`",
+    file: "src/lower/std_types/cell.rs",
+    find: "            _ if given_nulled && !matches!(value.kind, js::ExprKind::Undefined) => value.defined(),\n",
+    replace: "",
+    tests: ["test/lowering-nullable.test.ts", "-t", "what's never undefined as it is"],
+  },
 ];
