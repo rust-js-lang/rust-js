@@ -671,12 +671,14 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0772 A nullable `Cell` field's `None` is `null`, made and written](decisions/0772-a-nullable-cell-field-writes-null.md) *(amended by 0791: through a reference or a helper too)*
 - [0773 A binding a module's default names is exported as the default alone](decisions/0773-a-held-default-is-exported-once.md)
 - [0774 Room asked past `isize::MAX` bytes is a `capacity overflow` panic](decisions/0774-room-past-isize-max-bytes-panics.md) *(amended: a string's `repeat` is JS's own, unchecked)*
-- [0790 A `break` the program wrote is where it's written, a case's `break;` where its block ends a case](decisions/0790-a-break-the-program-wrote-is-where-it-is-written.md)
+- [0790 A `break` the program wrote is where it's written, a case's `break;` where its block ends a case](decisions/0790-a-break-the-program-wrote-is-where-it-is-written.md) *(amended by 0805: its `||` whatever the rest ends with, and a case's `if` with no `else` written none)*
 - [0780 An or-pattern's tests are in the order written, of a field read in place](decisions/0780-an-or-patterns-tests-are-as-written-of-a-field-read-in-place.md)
 - [0781 A `None` only nullables read is `null` where it's made](decisions/0781-a-none-only-nullables-read-is-null-where-its-made.md)
 - [0782 A promise's executor may borrow, and `then` takes two handlers](decisions/0782-a-promises-executor-borrows-and-then-takes-two-handlers.md)
 - [0791 A `Cell`'s storage says what it stores, however it's reached](decisions/0791-a-cells-storage-says-what-it-stores.md)
 - [0800 A drop of what JS drops nothing of never unwinds](decisions/0800-a-drop-of-nothing-never-unwinds.md)
+- [0805 A case's `if` is as written, whatever its other branch ends with](decisions/0805-a-cases-if-is-as-written-whatever-ends-it.md)
+- [0806 A slice's range in bounds is JS's `slice`, and a test held in a `bool` shows what it tests](decisions/0806-a-slices-range-in-bounds-is-js-slice.md)
 - [0720 A labeled block's `break` and a named constant, in a body's ranges](decisions/0720-a-labeled-block-and-a-named-constant-in-a-bodys-ranges.md)
 - [0721 `js::strict_equals(a, b)` is JS's `===`](decisions/0721-strict-equals-is-jss-triple-equals.md)
 - [0722 A `#[repr(..)]` enum's variant is its number](decisions/0722-a-repr-enums-variant-is-its-number.md)

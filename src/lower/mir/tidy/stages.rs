@@ -478,8 +478,8 @@ pub(super) const STAGES: &[Stage] = &[
                 js::statement_lists(b, &mut switches::breaks_past_switches)
             }),
             // A block a case ends with: its `break`s the case's (ADR 0790).
-            pass("blocks ending cases", |b, _| {
-                js::statement_lists(b, &mut |s| switches::blocks_ending_cases(s))
+            pass("blocks ending cases", |b, h| {
+                js::statement_lists(b, &mut |s| switches::blocks_ending_cases(s, &h.written.elses))
             }),
             pass("source spans", |b, _| js::statement_lists(b, &mut |s| source_spans(s))),
             // A `continue` the program wrote, where it wrote it, which its
