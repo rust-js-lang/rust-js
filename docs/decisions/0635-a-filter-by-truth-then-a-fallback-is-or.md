@@ -127,3 +127,11 @@ reads. Which a predicate is decides it, never what it's of.
   program named, and the `||` would wait on the inlining of each.
 - **A `filter` by truth as `x ? x : undefined`**: it reads `x` twice, a
   call's in a `const` first.
+
+## Amendment: no `!!x` filter left to read
+
+A text's `filter` by its truth is `x || undefined`, and one with more to
+test, `filter(|e| !e.is_empty() && e.len() > n)`, is `x && keep ? x :
+..`: nothing writes `!!x && keep ? x : undefined` any more, so `filtered`
+no longer reads it (`truthy_of`, and its mutation
+`filtered-of-truthy-unseen`, which nothing caught, are gone, #194).

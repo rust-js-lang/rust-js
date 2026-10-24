@@ -584,17 +584,6 @@ pub(in crate::lower) fn optional_chain(option: &Expr, body: &Expr, param: &str) 
     }
 }
 
-/// `x` of `!!x`.
-fn truthy_of(test: &Expr) -> Option<&Expr> {
-    let js::ExprKind::Unary(js::UnaryOp::Not, inner) = &test.kind else {
-        return None;
-    };
-    match &inner.kind {
-        js::ExprKind::Unary(js::UnaryOp::Not, of) => Some(of),
-        _ => None,
-    }
-}
-
 /// A `filter`'s `Option`, `x != null && keep ? x : undefined` of a
 /// variable `x`: its test, which holds only where `x` isn't `None`, and
 /// `x`. What takes the `Option` next takes them in place of a `const` of
@@ -620,10 +609,11 @@ pub(in crate::lower) fn filtered(option: &Expr) -> Option<(Expr, Expr)> {
         js::ExprKind::Binary(Op::And, first, _) => first,
         _ => test,
     };
-    // `x != null`, or text's `!!x`, which holds only where it isn't.
+    // `x != null`, which holds only where it isn't. Text's filter by its
+    // truth is `x || undefined`, above (ADR 0635).
     let tested = match &present.kind {
         js::ExprKind::Binary(Op::LooseNe, tested, null) if matches!(null.kind, js::ExprKind::Null) => tested,
-        _ => truthy_of(present)?,
+        _ => return None,
     };
     let tests_it = matches!(&tested.kind, js::ExprKind::Var(v) if v == name);
     tests_it.then(|| ((**test).clone(), (**value).clone()))
