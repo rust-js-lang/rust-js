@@ -178,6 +178,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Rvalue::Aggregate(..) => value?,
             _ => self.nullable_written(state, *place, value?, None, span)?,
         };
+        // A `#[rust_js::nullable]` field assigned, `p.title = None`: its
+        // `None` `null`, as its cell's `set` writes it (ADRs 0772, 0810); a
+        // `Some(..)`, or what's `null` or a value already, as it is. MIR
+        // assigns what it makes through a temporary, which `nulled` follows.
+        let value = match self.place_field(state, *place) {
+            Some(field) if bindings::is_nullable(self.tcx, field) => {
+                let nulled = match rvalue {
+                    Rvalue::Use(operand, _) => self.nulled(state, operand),
+                    _ => false,
+                };
+                Value::Expr(bindings::nullable_written(self.value_expr(value, span)?, nulled))
+            }
+            _ => value,
+        };
         self.mir_store(state, *place, value, span, out)
     }
 
