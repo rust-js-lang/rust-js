@@ -207,35 +207,41 @@ test("what another crate's derive writes is compiled as the crate's own code", a
   expect(printed(js)).toBe(run(cargo(manifest, "run", "-p", "check")));
 }, 600_000);
 
-// The app, the package the tooling builds, is compiled as a program: no
-// other crate uses it, so an `Rc` whose counts nothing reads is the value it
-// points at. Built as another's dependency it's a library again, Cargo told
-// by what rust-js records of `RUST_JS_APP`, whose every `Rc` is counted, as
-// the crates sharing it count it (ADR 0523).
-test("the app's crate is a program, and a library once another uses it", async () => {
+// The app, the package the tooling builds, is compiled as a program where
+// no crate of the workspace uses it: an `Rc` whose counts nothing reads is
+// the value it points at. One another crate of the workspace uses is a
+// library whichever package is built, its every `Rc` counted, as the
+// crates sharing it count it (ADR 0523): a crate's JS is the same however
+// it's reached, alone or through a dependent, its `dyn Fn` dropped as a
+// library's is (ADR 0521), as React's `shared` is (ADR 0360, amended).
+test("the app's crate is a program where no crate uses it, and a library, the same bytes, where one does", async () => {
   const dir = fixture("crates-app-program");
   writeFileSync(join(dir, "Cargo.toml"), '[workspace]\nmembers = ["app", "user"]\nresolver = "2"\n');
-  for (const [name, uses] of [["app", ""], ["user", 'app = { path = "../app" }\n']]) {
+  const counts = "use std::rc::Rc;\n\npub struct Shared(pub Rc<u32>);\n\npub fn enqueue(task: Box<dyn Fn()>) {\n    task();\n}\n\npub fn main() {\n    let a = Rc::new(5);\n    let b = Rc::clone(&a);\n    println!(\"{} {}\", *a, *b);\n}\n";
+  for (const [name, uses, source] of [
+    ["app", "", counts],
+    ["user", 'app = { path = "../app" }\n', counts.replace("println!", "app::main();\n    println!")],
+  ]) {
     mkdirSync(join(dir, name, "src"), { recursive: true });
     writeFileSync(join(dir, name, "Cargo.toml"), `[package]\nname = "${name}"\nversion = "0.1.0"\nedition = "2024"\n\n[dependencies]\n${uses}`);
+    writeFileSync(join(dir, name, "src", "lib.rs"), source);
   }
-  writeFileSync(join(dir, "app", "src", "lib.rs"), "use std::rc::Rc;\n\npub struct Shared(pub Rc<u32>);\n\npub fn main() {\n    let a = Rc::new(5);\n    let b = Rc::clone(&a);\n    println!(\"{} {}\", *a, *b);\n}\n");
-  writeFileSync(join(dir, "user", "src", "lib.rs"), "pub fn main() {\n    app::main();\n}\n");
   const manifest = join(dir, "Cargo.toml");
   run(cargo(manifest, "generate-lockfile"));
   const counted = (js: string) => readFileSync(js, "utf8").includes("strong: 1");
   const app = await check(manifest, { packageName: "app" });
-  expect([printed(app.js), counted(app.js)]).toEqual(["5 5\n", false]);
+  const alone = readFileSync(app.js, "utf8");
+  expect([printed(app.js), counted(app.js)]).toEqual(["5 5\n", true]);
   const user = await check(manifest, { packageName: "user" });
-  expect([printed(user.js), counted(user.crates.get("app")!.js)]).toEqual(["5 5\n", true]);
+  expect([printed(user.js), counted(user.js)]).toEqual(["5 5\n5 5\n", false]);
+  expect(readFileSync(user.crates.get("app")!.js, "utf8")).toBe(alone);
   const again = await check(manifest, { packageName: "app" });
-  expect([printed(again.js), counted(again.js)]).toEqual(["5 5\n", false]);
+  expect(readFileSync(again.js, "utf8")).toBe(alone);
   // The whole workspace, each member a package Cargo was asked for: no app,
-  // so the app's crate is a library, its `Rc`s counted, though no crate of
-  // it is the one asked for.
+  // so every crate is a library, its `Rc`s counted.
   await expect(check(manifest, { packageName: undefined })).rejects.toThrow("compiled no library");
   const deps = join(dir, "target", "wasm32-unknown-unknown", "debug", "deps");
-  const marker = join(deps, readdirSync(deps).find((f) => f.startsWith("libapp-") && f.endsWith(".rust-js"))!);
+  const marker = join(deps, readdirSync(deps).find((f) => f.startsWith("libuser-") && f.endsWith(".rust-js"))!);
   const built = JSON.parse(readFileSync(readFileSync(marker, "utf8").split("\n")[0], "utf8"));
   const root = built.modules.find((m: { module: string[] }) => m.module.length === 0).file;
   expect(counted(root)).toBe(true);

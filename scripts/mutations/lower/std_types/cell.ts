@@ -172,4 +172,12 @@ export const mutations: Mutation[] = [
     replace: "                let _ = (value, held);\n",
     tests: ["test/corpus.test.ts", "-t", "^refused_drops_and_displays.rs$"],
   },
+  {
+    name: "nullable-cell-set-undefined",
+    breaks: "a nullable `Cell` field's `set(None)`, `take()` and `replace(..)` write `undefined`, where it's made `null`",
+    file: "src/lower/std_types/cell.rs",
+    find: "            Some(nulled) => crate::lower::bindings::nullable_written(value, nulled),\n",
+    replace: "            Some(_) => value,\n",
+    tests: ["test/lowering-nullable.test.ts", "-t", "nullable Cell field's None is null"],
+  },
 ];

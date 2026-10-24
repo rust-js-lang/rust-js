@@ -412,8 +412,10 @@ re-exported, `export { keys } from "./keys.js";`; across crates, a
 library's manifest says what each of its modules holds, which a crate
 that names a binding through one imports from the library's JS. A
 library's module is named by a crate that uses it only where it's `pub`,
-so its `pub use` of a binding exports it by its name as well as the
-default, as a `pub` function the macro names is.
+`pub use js::object::assign; js::export_default!(assign);`, and what's
+its default is exported as the default alone, as every caller reads it,
+`import assign from "shared/assign.js"`
+([ADR 0773](../../decisions/0773-a-held-default-is-exported-once.md)).
 
 ## Import a module for its effect
 

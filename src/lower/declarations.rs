@@ -97,8 +97,8 @@ pub(super) fn module<'tcx>(
             _ => json!({ "kind": "const", "type": { "kind": "typeof", "name": held.path } }),
         };
         declared["name"] = json!(held.name);
-        declared["exported"] = json!(held.export);
-        declared["declare"] = json!(!held.export);
+        declared["exported"] = json!(held.exported_by_name());
+        declared["declare"] = json!(!held.exported_by_name());
         items.push(declared);
     }
     if let Some(def_id) = default_export {
@@ -713,7 +713,12 @@ impl<'tcx> Declarations<'_, 'tcx> {
                 hir::Node::Field(field) => Some(field.ty),
                 _ => None,
             });
-            let (optional, ty) = match self.option(ty) {
+            // A nullable `Cell`'s, the `Option` it holds, the field (ADR 0772).
+            let option = match is_nullable(self.tcx, field) {
+                true => super::bindings::nullable_option(self.tcx, ty).and_then(|option| self.option(option)),
+                false => self.option(ty),
+            };
+            let (optional, ty) = match option {
                 Some(inner) => {
                     let inner = self.as_written(written.and_then(|w| self.written_option(w)), |out| out.ts(inner));
                     match is_nullable(self.tcx, field) {

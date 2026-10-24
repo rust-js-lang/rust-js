@@ -321,6 +321,16 @@ pub(super) const STAGES: &[Stage] = &[
             pass("jumps into branches", |b, _| {
                 js::statement_lists(b, &mut jumps_into_branches)
             }),
+            // A block's `return` of one value that some of the paths of the
+            // `if` before it go on to, and the rest leave past: in each that
+            // goes on, once the others' `break`s end them (ADR 0754).
+            pass("returns into branches", |b, _| {
+                js::statement_lists(b, &mut |s| returns_into_branches(s))
+            }),
+            // A chain those leave guarded by what each of its tests says,
+            // `typeof s === "string"` of `s === "a"`'s: the chain alone (ADR
+            // 0755).
+            pass("guarded chains", |b, _| js::statement_lists(b, &mut guarded_chains)),
             pass("settle branches", |b, _| settle_jumps(b)),
             pass("declarations", |b, _| declarations(b)),
             // A loop's early `break`s, its tests read in place now, and its test.
@@ -453,9 +463,6 @@ pub(super) const STAGES: &[Stage] = &[
             // An `if` of `false`, a check that can't fail once what it reads
             // is in place: its `else`, if any.
             pass("never taken", |b, _| js::statement_lists(b, &mut never_taken)),
-            // What those leave past a jump: none, as `nothing after a jump`
-            // ensures.
-            pass("unreachable", |b, _| js::statement_lists(b, &mut unreachable_after)),
             pass("holed lists", |b, _| holed_lists(b)),
             // A `match` of constants, its chain settled: a `switch` (ADR 0629).
             pass("switches", |b, h| {

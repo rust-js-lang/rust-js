@@ -436,7 +436,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Some(given) = self.mir_thrown_given(state, callee, operands, output, span, out)? {
             return Ok(given);
         }
-        let strict = self.strictly_equal(state, callee.0, operands);
+        let strict = self.strictly_equal(state, callee.0, operands, span);
         // Of a binding with a nullable parameter, each `Option` that's
         // `null` or a value already, which it takes as it is (ADR 0275).
         let nulled: Vec<bool> = match bindings::nullable_params(self.tcx, callee.0).is_empty() {
@@ -488,23 +488,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Whether an `==` of an `Option` is `===`: of one side only ever
     /// `Some(..)`, `p == Some(s)`, never `None`, so either answers the same
     /// where `==` is written, of a payload that's its `Some` (`eq_value`),
-    /// and `===` is what a person writes (ADR 0030).
+    /// and `===` is what a person writes (ADR 0030); and one of a value
+    /// read as the registry's symbol, itself, which only `===` tells from
+    /// what turns into one (ADR 0771).
     fn strictly_equal(
         &self,
         state: &State<'_, 'tcx>,
         def_id: rustc_span::def_id::DefId,
         operands: &[&Operand<'tcx>],
+        span: Span,
     ) -> bool {
         self.tcx.trait_of_assoc(def_id).is_some_and(|trait_id| {
             matches!(
                 self.recognition().trait_call(def_id, trait_id),
                 Some(TraitCall::Equality { .. })
             )
-        }) && operands.iter().any(|operand| {
+        }) && (operands.iter().any(|operand| {
             operand
                 .place()
                 .is_some_and(|place| place.projection.is_empty() && state.options.made_some.contains(&place.local))
-        })
+        }) || crate::lower::body_queries::registered_equalities(self.tcx, self.frame.thir).contains(&span))
     }
 
     /// A call, `mir_call_values_of`'s; of std's, each function or value it's

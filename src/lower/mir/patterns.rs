@@ -123,10 +123,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// What `body`'s writes say of its `Option`s.
-    pub(super) fn mir_option_writes(&self, body: &mir::Body<'tcx>, locals: &Locals) -> OptionWrites {
+    pub(super) fn mir_option_writes(
+        &self,
+        body: &mir::Body<'tcx>,
+        promoted: &IndexVec<Promoted, mir::Body<'tcx>>,
+        locals: &Locals,
+    ) -> OptionWrites {
         OptionWrites {
             null_nones: self.mir_null_nones(body, locals),
-            made_some: self.mir_made_some(body, locals),
+            made_some: self.mir_made_some(body, promoted, locals),
             registered: self.mir_registered(body),
             thrown: self.mir_thrown(body, locals),
             present: self.mir_present(body),
@@ -225,8 +230,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// The locals `OptionWrites::made_some` says: each write a `Some(..)`, or a
-    /// shared reference to one of those, written once.
-    fn mir_made_some(&self, body: &mir::Body<'tcx>, locals: &Locals) -> std::collections::HashSet<Local> {
+    /// shared reference to one of those, written once; a promoted
+    /// `&Some(C)` is one too (ADR 0771).
+    fn mir_made_some(
+        &self,
+        body: &mir::Body<'tcx>,
+        promoted: &IndexVec<Promoted, mir::Body<'tcx>>,
+        locals: &Locals,
+    ) -> std::collections::HashSet<Local> {
         let mut somes: std::collections::HashMap<Local, usize> = Default::default();
         let mut refs = Vec::new();
         for statement in body.basic_blocks.iter().flat_map(|b| &b.statements) {
@@ -244,8 +255,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 {
                     *somes.entry(assign.0.local).or_default() += 1;
                 }
-                Rvalue::Ref(_, BorrowKind::Shared, of) if of.projection.is_empty() => {
+                // Or a reborrow of a reference to one, `&*r`.
+                Rvalue::Ref(_, BorrowKind::Shared, of)
+                    if of.projection.is_empty() || of.projection[..] == [mir::ProjectionElem::Deref] =>
+                {
                     refs.push((assign.0.local, of.local));
+                }
+                Rvalue::Use(Operand::Constant(c), ..)
+                    if let mir::Const::Unevaluated(uv, _) = c.const_
+                        && let Some(at) = uv.promoted
+                        && super::queries::promoted_some(self.tcx, &promoted[at]).is_some() =>
+                {
+                    *somes.entry(assign.0.local).or_default() += 1;
                 }
                 _ => {}
             }

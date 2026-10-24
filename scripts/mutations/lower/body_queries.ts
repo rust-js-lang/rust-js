@@ -138,4 +138,20 @@ export const mutations: Mutation[] = [
     replace: ";\n",
     tests: ["test/corpus.test.ts", "-t", "^match_trait_const\\.rs$"],
   },
+  {
+    name: "registered-equality-unread",
+    breaks: "`from_value(x) == Some(C)` reads `$symbolFor(x)`, where `matches!(from_value(x), Some(C))` is `x === C`: two outputs for one comparison",
+    file: "src/lower/body_queries.rs",
+    find: "            _ => registered_equality(tcx, thir, e).map(|(read, _)| read),\n",
+    replace: "            _ => None,\n",
+    tests: ["test/lowering-symbols.test.ts", "-t", "an == of a value read as the registry's symbol"],
+  },
+  {
+    name: "nullable-cell-some-coalesced",
+    breaks: "a nullable `Cell` field's `set(Some(r))` is `r ?? null`, of a value that's never `undefined`",
+    file: "src/lower/body_queries.rs",
+    find: "                Some((fn_span, args.get(1).is_some_and(|&given| is_some(tcx, thir, given))))\n",
+    replace: "                Some((fn_span, false))\n",
+    tests: ["test/lowering-nullable.test.ts", "-t", "nullable Cell field's None is null"],
+  },
 ];

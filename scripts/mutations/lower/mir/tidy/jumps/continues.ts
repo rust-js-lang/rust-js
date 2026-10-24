@@ -133,4 +133,28 @@ export const mutations: Mutation[] = [
     replace: "        && false\n",
     tests: ["test/js-object.test.ts", "-t", "a for loop of keys_in is JS"],
   },
+  {
+    name: "jumps-past-blocks-returns-kept",
+    breaks: "a block MIR made followed by `return;`, past a drop MIR shares, stays a block, `bb104: { .. break bb104; .. } return;`",
+    file: "src/lower/mir/tidy/jumps/continues.rs",
+    find: "            jump @ StmtKind::Return(_) if returns_one_value(&stmts[i + 1]) => jump.clone(),\n",
+    replace: "            jump @ StmtKind::Return(_) if false && returns_one_value(&stmts[i + 1]) => jump.clone(),\n",
+    tests: ["test/lowering-labels.test.ts", "-t", "a block MIR made followed by a return"],
+  },
+  {
+    name: "jumps-past-blocks-return-at-tails",
+    breaks: "a block's `break` where it ends anyway, before the `return` after it, is that `return`, written again in the arm, `message = kind._0; return message;`",
+    file: "src/lower/mir/tidy/jumps/continues.rs",
+    find: "            if matches!(jump, StmtKind::Return(_)) {\n                drop_tail(body, &StmtKind::Break(Some(label.clone())));\n            }\n",
+    replace: "",
+    tests: ["test/lowering-branches.test.ts", "-t", "an if-let chain ending in a panic keeps its arms in written order"],
+  },
+  {
+    name: "jumps-past-blocks-return-into-loops",
+    breaks: "a loop's `break` of a block followed by `return` is that `return`, and the loop that ends the block a `while (true)`, not `while (s >= 1)`",
+    file: "src/lower/mir/tidy/jumps/continues.rs",
+    find: "            StmtKind::Continue(None) | StmtKind::Break(None) | StmtKind::Return(_)\n",
+    replace: "            StmtKind::Continue(None) | StmtKind::Break(None)\n",
+    tests: ["test/lowering-written-loops.test.ts", "-t", "a loop that ends a block breaks as a loop"],
+  },
 ];

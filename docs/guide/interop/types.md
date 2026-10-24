@@ -570,11 +570,15 @@ export function ratio(a, b) {
   A result is `?? null` of an `Option` that may be `undefined`, and a
   nullable function's call as it is, `null` for `None` already, `return
   last(b);` ([ADR 0638](../../decisions/0638-a-nullable-functions-call-is-null-already.md)).
-  It's of an `Option` only; on anything else it's an error
+  A field's is of an `Option`, or of a `Cell` of one, whose `None` is
+  `null` where it's made and where it's `set`, `replace`d or `take`n,
+  `context.renderer = null`
+  ([ADR 0772](../../decisions/0772-a-nullable-cell-field-writes-null.md));
+  on anything else it's an error
   ([ADR 0586](../../decisions/0586-a-nullable-field-is-an-option.md)):
 
   ```
-  rust-js: `#[rust_js::nullable]` is of a field that's an `Option`, whose `None` is `null`; this one isn't
+  rust-js: `#[rust_js::nullable]` is of a field that's an `Option`, or a `Cell` of one, whose `None` is `null`; this one isn't
   ```
 
 - **A `Some` of what looks like `None` is boxed**: `Some(None)`, `Some(())`
@@ -1178,7 +1182,8 @@ its own, `js::symbol::new("id")`, or a well-known one,
 `None` of any other value. Matched against the registry's symbols, its
 patterns each a `Some` of them or `_`, it's the value itself, as no other
 value is one of them, and a `match` of three cases or more is a `switch`
-of it:
+of it. An `==` or `!=` of it and a `Some` is that `matches!`, `===` and
+`!==` ([ADR 0771](../../decisions/0771-an-equality-of-a-registered-symbol-is-its-match.md)):
 
 ```rust
 use js::{SymbolFor, Unknown};
@@ -1198,6 +1203,10 @@ pub fn name(ty: Option<&Unknown>) -> Option<&'static str> {
 
 pub fn is_lazy(ty: &Unknown) -> bool {
     matches!(SymbolFor::from_value(js::get(ty, "$$typeof")), Some(REACT_LAZY_TYPE))
+}
+
+pub fn is_memo(ty: &Unknown) -> bool {
+    SymbolFor::from_value(js::get(ty, "$$typeof")) == Some(REACT_MEMO_TYPE)
 }
 
 pub fn key(value: Option<&Unknown>) -> Option<&'static str> {
@@ -1226,6 +1235,10 @@ export function name(ty) {
 
 export function isLazy(ty) {
   return ty.$$typeof === REACT_LAZY_TYPE;
+}
+
+export function isMemo(ty) {
+  return ty.$$typeof === REACT_MEMO_TYPE;
 }
 
 export function key(value) {

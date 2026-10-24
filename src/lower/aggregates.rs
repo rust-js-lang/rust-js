@@ -155,13 +155,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let mut fields = fields;
         // A `#[rust_js::nullable]` field's `None` is `null` (ADR 0275);
         // what's `nulled`, `null` or a value already, is as it is.
+        // A `Cell`'s, what it holds, which the field is (ADR 0772).
         for (i, (field, value)) in variant.fields.iter().zip(&mut fields).enumerate() {
             if bindings::is_nullable(self.tcx, field) {
                 let made = std::mem::replace(value, Expr::undefined());
-                *value = match made.kind {
-                    js::ExprKind::Undefined => Expr::null(),
-                    _ if made.is_constant() || nulled.get(i) == Some(&true) => made,
-                    _ => Expr::bin(js::Op::Coalesce, made, Expr::null()),
+                let nulled = nulled.get(i) == Some(&true);
+                *value = match self.is_std_type(field.ty(self.tcx, args).skip_normalization(), StdItem::Cell) {
+                    true => {
+                        let held = bindings::nullable_written(Expr::held(made), nulled);
+                        Expr::object(vec![Prop::Field(js::HELD.into(), held)])
+                    }
+                    false => bindings::nullable_written(made, nulled),
                 };
             }
         }

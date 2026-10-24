@@ -1,7 +1,9 @@
 # 0633. A binding named through a module is read through it
 
 Status: Accepted. Amends [0622](0622-a-global-binding-a-module-names-is-its-const.md);
-extends [0100](0100-separate-crates.md) and [0240](0240-reexports.md).
+extends [0100](0100-separate-crates.md) and [0240](0240-reexports.md). Amended by
+[0773](0773-a-held-default-is-exported-once.md): a binding the default names is
+exported as the default alone.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): the program can't
 observe it: the module's `const` is the JS value the binding reads, read
@@ -156,10 +158,10 @@ wrote before has none, read as holding nothing.
   upstream's `React`: no rule names a package's namespace as its users
   capitalize it, `React` but `path`, without a list of packages.
 - A library's module a consumer names must be `pub` to Rust, so its
-  `pub use` of a binding exports it by its name as well as its default,
+  `pub use` of a binding exported it by its name as well as its default,
   `export const assign = Object.assign; export default assign;`, as a
   `pub` function the macro names is (ADR 0611); upstream's has the
-  default alone.
+  default alone, as ADR 0773 now has it.
 - A static only `js::export_default!` names, private and in a crate whose
   modules aren't `pub`, is dead to a plain rustc, as a private function
   the naming form names is (ADR 0611).

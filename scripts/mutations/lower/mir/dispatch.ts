@@ -549,4 +549,12 @@ export const mutations: Mutation[] = [
     replace: "                true\n",
     tests: ["test/lowering-iterators.test.ts", "-t", "flatten of a read of items"],
   },
+  {
+    name: "registered-equality-loose",
+    breaks: "`from_value(x) == Some(SymbolFor(\"k\"))` is `x == Symbol.for(\"k\")`, true of an object that turns into the symbol, which isn't one",
+    file: "src/lower/mir/dispatch.rs",
+    find: "        }) || crate::lower::body_queries::registered_equalities(self.tcx, self.frame.thir).contains(&span))\n",
+    replace: "        }) || false)\n",
+    tests: ["test/lowering-symbols.test.ts", "-t", "an == of a value read as the registry's symbol"],
+  },
 ];

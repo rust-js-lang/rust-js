@@ -297,9 +297,9 @@ fn compile(flags: &[String]) -> Result<Vec<String>, String> {
         "--declarations".into(),
     ];
     // Each is a library, but the app, the package `RUST_JS_APP` names, which
-    // the tooling builds and no crate of its build uses (ADR 0360). What
-    // `RUST_JS_APP` is, rust-js records for Cargo, which builds it again as
-    // a library once another build uses it.
+    // the tooling builds and no crate of its workspace uses (ADR 0360). What
+    // `RUST_JS_APP` is, rust-js records for Cargo, which builds it again
+    // where it changes.
     if std::env::var(APP)
         .ok()
         .is_none_or(|app| std::env::var("CARGO_PKG_NAME").ok() != Some(app))

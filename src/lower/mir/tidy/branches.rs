@@ -324,22 +324,7 @@ pub(super) fn branch_values(
         true
     });
     stmts.retain(|stmt| !matches!(&stmt.kind, StmtKind::Expr(e) if matches!(e.kind, ExprKind::Undefined)));
-    // `if (x != null) { if (x === "a") { s } else if (x === "b") { t } }`:
-    // the chains alone, which say it.
-    let mut i = 0;
-    while i < stmts.len() {
-        match &stmts[i].kind {
-            StmtKind::If(test, then, None) if !then.is_empty() && then.iter().all(|s| guarded_chain(s, test)) => {
-                let StmtKind::If(_, then, _) = stmts.remove(i).kind else {
-                    unreachable!("matched")
-                };
-                let n = then.len();
-                stmts.splice(i..i, then);
-                i += n;
-            }
-            _ => i += 1,
-        }
-    }
+    guarded_chains(stmts);
     // `if (a) { if (b) { return t; } } return f;`, last: `return a && b ? t : f;`.
     if let [.., last_if, last] = stmts.as_slice()
         && let StmtKind::Return(Some(no)) = &last.kind
@@ -899,6 +884,26 @@ pub(super) fn implies(by: &Expr, test: &Expr) -> bool {
                 }
         }
         _ => false,
+    }
+}
+
+/// `if (x != null) { if (x === "a") { s } else if (x === "b") { t } }`,
+/// and `if (typeof x === "string") { .. }` of the same chain, which no
+/// string literal's `===` needs: the chains alone, which say it (ADR 0755).
+pub(super) fn guarded_chains(stmts: &mut Vec<Stmt>) {
+    let mut i = 0;
+    while i < stmts.len() {
+        match &stmts[i].kind {
+            StmtKind::If(test, then, None) if !then.is_empty() && then.iter().all(|s| guarded_chain(s, test)) => {
+                let StmtKind::If(_, then, _) = stmts.remove(i).kind else {
+                    unreachable!("matched")
+                };
+                let n = then.len();
+                stmts.splice(i..i, then);
+                i += n;
+            }
+            _ => i += 1,
+        }
     }
 }
 

@@ -413,3 +413,21 @@ back through it; kept or returned, it's `$handleOn(object, key)`, the
 object reached once, where it's borrowed, the same while the borrow
 lasts, so an index past the end panics there, as Rust's does. Held by
 `test/corpus/mut_field_given.rs`.
+
+## Amendment: a handle a call made is a place reached another way
+
+Once a field or an item reached another way is named where it's borrowed,
+a handle's `value` a call made, `*first_mut().unwrap()`'s, is one of
+them: its object, the handle, named there, so the place is fixed. The
+branch that gave such a handle on as it was, `h.value`'s `h`, was then
+never reached: no place is still a member or an item that isn't fixed
+once that's done. It's gone, and a `&mut` of a place that still isn't
+fixed, one neither named nor a member or an item, is refused as before.
+Its mutation, `mir-handle-boxed-by-value`, went with it. `bump(
+row.first_mut().unwrap())` is still `bump($unwrap($mutAt(row, 0)))`:
+what MIR moves, the handle, is given as it is before any place is asked.
+
+The `&mut` nothing reads, `let _ = &mut p.y` through `deref_mut`, would
+now be made too, `$handleOn(derefMut(p).value, "y")`, where only
+`derefMut(p)` is needed; that it isn't is how it reads, so its mutation,
+`mir-unread-ref-handled`, is checked by `unread_mut_through_deref`'s JS.

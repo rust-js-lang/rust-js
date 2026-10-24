@@ -148,6 +148,66 @@ pub fn named(value: Option<&Unknown>) -> &'static str {
   expect(values.map((v) => lib.named(v))).toEqual(["memo", "react.lazy", "none", "none", "none", "none"]);
 });
 
+// ADR 0771: `from_value(x) == Some(C)` says what `matches!(from_value(x),
+// Some(C))` does, and is what it is, `x === C`, `!==` of `!=`, `C` by its
+// name; a value read as one and kept is still checked, and its `==` of a
+// `Some` strict. An object that turns into the symbol isn't it.
+test("an == of a value read as the registry's symbol and a Some is the matches! form", async () => {
+  const dir = fixture("registered-symbols-equal");
+  writeFileSync(join(dir, "lib.rs"), `use js::{SymbolFor, Unknown};
+
+pub const REACT_MEMO_TYPE: SymbolFor = SymbolFor("react.memo");
+pub const REACT_LAZY_TYPE: SymbolFor = SymbolFor("react.lazy");
+
+pub fn eq(x: Option<&Unknown>) -> bool {
+    SymbolFor::from_value(x) == Some(REACT_MEMO_TYPE)
+}
+
+pub fn ne(x: Option<&Unknown>) -> bool {
+    SymbolFor::from_value(x) != Some(REACT_MEMO_TYPE)
+}
+
+pub fn flipped(x: Option<&Unknown>) -> bool {
+    Some(REACT_LAZY_TYPE) == SymbolFor::from_value(x)
+}
+
+pub fn matched(x: Option<&Unknown>) -> bool {
+    matches!(SymbolFor::from_value(x), Some(REACT_MEMO_TYPE))
+}
+
+pub fn literal(x: Option<&Unknown>) -> bool {
+    SymbolFor::from_value(x) == Some(SymbolFor("react.lazy"))
+}
+
+pub fn kept(x: Option<&Unknown>) -> Option<SymbolFor<'static>> {
+    let s = SymbolFor::from_value(x);
+    if s == Some(REACT_MEMO_TYPE) {
+        return None;
+    }
+    s
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs()]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("export function eq(x) {\n  return x === REACT_MEMO_TYPE;\n}");
+  expect(js).toContain("export function ne(x) {\n  return x !== REACT_MEMO_TYPE;\n}");
+  expect(js).toContain("export function flipped(x) {\n  return REACT_LAZY_TYPE === x;\n}");
+  expect(js).toContain("export function matched(x) {\n  return x === REACT_MEMO_TYPE;\n}");
+  expect(js).toContain('export function literal(x) {\n  return x === Symbol.for("react.lazy");\n}');
+  expect(js).toContain("  const s = $symbolFor(x);\n  if (s === REACT_MEMO_TYPE) {\n");
+  const lib = await import(join(dir, "lib.js"));
+  const memo = Symbol.for("react.memo");
+  const values = [memo, Symbol.for("react.lazy"), Symbol("react.memo"), "react.memo", { [Symbol.toPrimitive]: () => memo }, undefined];
+  expect(values.map((v) => [lib.eq(v), lib.ne(v), lib.flipped(v), lib.matched(v), lib.literal(v), lib.kept(v)])).toEqual([
+    [true, false, false, true, false, undefined],
+    [false, true, true, false, true, Symbol.for("react.lazy")],
+    [false, true, false, false, false, undefined],
+    [false, true, false, false, false, undefined],
+    [false, true, false, false, false, undefined],
+    [false, true, false, false, false, undefined],
+  ]);
+});
+
 // ADR 0634: the registry's symbol is made one way, `js::SymbolFor(key)`;
 // `js::symbol::r#for` is gone, an error that says so.
 // ADR 0634, amended: a guarded arm's pattern, which MIR reads the key of

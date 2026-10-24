@@ -653,32 +653,135 @@ pub(super) fn present_calls<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> HashS
 /// nothing. There, no other value is one of them, so the value itself
 /// answers each as its `Some` would (ADR 0634).
 pub(super) fn registered_reads<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> HashSet<Span> {
-    let read = |mut e: ExprId| {
-        while let ExprKind::Scope { value: inner, .. } | ExprKind::Use { source: inner } = thir[e].kind {
-            e = inner;
-        }
-        match thir[e].kind {
-            ExprKind::Call { fun, fn_span, .. } => match *thir[fun].ty.kind() {
-                ty::FnDef(def_id, _) if super::recognition::is_symbol_for_read(tcx, def_id) => Some(fn_span),
-                _ => None,
-            },
-            _ => None,
-        }
-    };
-    (thir.exprs.iter())
-        .filter_map(|e| match e.kind {
+    (thir.exprs.indices())
+        .filter_map(|e| match thir[e].kind {
             ExprKind::Match {
                 scrutinee, ref arms, ..
             } => {
-                let span = read(scrutinee)?;
+                let span = registered_read(tcx, thir, scrutinee)?;
                 (arms.iter())
                     .all(|&arm| tests_registered(tcx, &thir[arm].pattern))
                     .then_some(span)
             }
-            ExprKind::Let { expr, ref pat } => tests_registered(tcx, pat).then_some(read(expr)?),
+            ExprKind::Let { expr, ref pat } => tests_registered(tcx, pat).then_some(registered_read(tcx, thir, expr)?),
+            _ => registered_equality(tcx, thir, e).map(|(read, _)| read),
+        })
+        .collect()
+}
+
+/// Where each `==` or `!=` `registered_reads` reads one for is, its
+/// `fn_span`: compared by `===`, whatever the `Some` is (ADR 0771).
+pub(super) fn registered_equalities<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> HashSet<Span> {
+    (thir.exprs.indices())
+        .filter_map(|e| registered_equality(tcx, thir, e).map(|(_, equality)| equality))
+        .collect()
+}
+
+/// The `fn_span` of `e`, a call of `js::SymbolFor::from_value`, in what
+/// holds no more than its value.
+fn registered_read<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>, mut e: ExprId) -> Option<Span> {
+    while let ExprKind::Scope { value: inner, .. } | ExprKind::Use { source: inner } = thir[e].kind {
+        e = inner;
+    }
+    match thir[e].kind {
+        ExprKind::Call { fun, fn_span, .. } => match *thir[fun].ty.kind() {
+            ty::FnDef(def_id, _) if super::recognition::is_symbol_for_read(tcx, def_id) => Some(fn_span),
+            _ => None,
+        },
+        _ => None,
+    }
+}
+
+/// Of `e`, an `==` or `!=` of a `from_value` read and a `Some(..)`, either
+/// way round, which says what `matches!(.., Some(s))` does, the value the
+/// symbol `s` is: the read's `fn_span` and the comparison's (ADR 0771).
+fn registered_equality<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>, e: ExprId) -> Option<(Span, Span)> {
+    let ExprKind::Call {
+        fun, ref args, fn_span, ..
+    } = thir[e].kind
+    else {
+        return None;
+    };
+    let &[a, b] = &args[..] else {
+        return None;
+    };
+    if !is_partial_eq(tcx, thir[fun].ty) {
+        return None;
+    }
+    let (a, b) = (borrowed(thir, a)?, borrowed(thir, b)?);
+    let read = match (registered_read(tcx, thir, a), registered_read(tcx, thir, b)) {
+        (Some(read), None) if is_some(tcx, thir, b) => read,
+        (None, Some(read)) if is_some(tcx, thir, a) => read,
+        _ => return None,
+    };
+    Some((read, fn_span))
+}
+
+/// Where each call of a method of a `#[rust_js::nullable]` field's `Cell`
+/// is, its `fn_span`, `context.renderer.set(None)`'s, whose `None` it writes
+/// is `null` (ADR 0772); each whether what it writes is a `Some(..)` made
+/// there, a value already, `null` never.
+pub(super) fn nullable_cell_calls<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> HashMap<Span, bool> {
+    let nullable_cell = |mut e: ExprId| {
+        while let ExprKind::Scope { value: inner, .. } = thir[e].kind {
+            e = inner;
+        }
+        let ExprKind::Field {
+            lhs,
+            variant_index,
+            name,
+        } = thir[e].kind
+        else {
+            return false;
+        };
+        let ty::Adt(adt, _) = thir[lhs].ty.kind() else {
+            return false;
+        };
+        let field = &adt.variant(variant_index).fields[name];
+        super::bindings::is_nullable(tcx, field)
+            && super::bindings::nullable_option(tcx, thir[e].ty).is_some_and(|option| option != thir[e].ty)
+    };
+    (thir.exprs.iter())
+        .filter_map(|e| match e.kind {
+            ExprKind::Call { ref args, fn_span, .. }
+                if (args.first())
+                    .and_then(|&receiver| borrowed(thir, receiver))
+                    .is_some_and(nullable_cell) =>
+            {
+                Some((fn_span, args.get(1).is_some_and(|&given| is_some(tcx, thir, given))))
+            }
             _ => None,
         })
         .collect()
+}
+
+/// Whether `fun` is `PartialEq`'s `eq` or `ne`, an `==`'s or a `!=`'s.
+fn is_partial_eq<'tcx>(tcx: TyCtxt<'tcx>, fun: ty::Ty<'tcx>) -> bool {
+    matches!(*fun.kind(), ty::FnDef(def_id, _)
+        if tcx.trait_of_assoc(def_id).is_some_and(|id| tcx.is_lang_item(id, LangItem::PartialEq)))
+}
+
+/// What `e`, a shared borrow, `==`'s of each side, borrows.
+fn borrowed(thir: &Thir<'_>, mut e: ExprId) -> Option<ExprId> {
+    while let ExprKind::Scope { value: inner, .. } = thir[e].kind {
+        e = inner;
+    }
+    match thir[e].kind {
+        ExprKind::Borrow {
+            borrow_kind: BorrowKind::Shared,
+            arg,
+        } => Some(arg),
+        _ => None,
+    }
+}
+
+/// Whether `e` makes a `Some(..)`.
+fn is_some(tcx: TyCtxt<'_>, thir: &Thir<'_>, mut e: ExprId) -> bool {
+    while let ExprKind::Scope { value: inner, .. } | ExprKind::Use { source: inner } = thir[e].kind {
+        e = inner;
+    }
+    matches!(&thir[e].kind, ExprKind::Adt(adt)
+        if tcx.is_lang_item(adt.adt_def.did(), LangItem::Option) && adt.variant_index.as_u32() == 1)
 }
 
 /// Whether `pattern`, of an `Option<js::SymbolFor>`, is `_` or a `Some` of

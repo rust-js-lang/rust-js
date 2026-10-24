@@ -306,4 +306,12 @@ export const mutations: Mutation[] = [
     replace: "            if false {\n                return Ok(None);\n",
     tests: ["test/rest-parameters.test.ts", "-t", "rest slice is JS's rest parameter"],
   },
+  {
+    name: "library-const-inlined",
+    breaks: "a library's `const` is its value, written in place, where its own crate reads it by its name",
+    file: "src/lower.rs",
+    find: "        if self.is_rust_fn(def_id) && ty.is_freeze(self.tcx, self.typing_env) {\n",
+    replace: "        if self.krate.fns.contains_key(&def_id) && ty.is_freeze(self.tcx, self.typing_env) {\n",
+    tests: ["test/cross-crate-items.test.ts", "-t", "library's const is imported"],
+  },
 ];

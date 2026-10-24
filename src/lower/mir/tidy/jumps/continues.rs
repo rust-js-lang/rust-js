@@ -159,10 +159,17 @@ fn ends_going_on(stmts: &mut Vec<Stmt>, looped: &Option<String>, continues: &[(j
 /// `unlabeled` then leaves the block, which nothing names. A jump of no
 /// label, `continue;` once `innermost jumps` has it so, only where it goes
 /// to the same loop: not in a loop inside the block, or a `switch` for a
-/// `break` (ADR 0745).
+/// `break` (ADR 0745). Or a `return` of one value, `l: { .. break l; .. }
+/// return;`, the `return` past a drop MIR shares, as it's written (ADR
+/// 0755).
 pub(in crate::lower::mir::tidy) fn jumps_past_blocks(stmts: &mut [Stmt]) {
     fn rejump(stmts: &mut [Stmt], label: &str, jump: &StmtKind) {
-        let unnamed = matches!(jump, StmtKind::Continue(None) | StmtKind::Break(None));
+        // Nor a `return` in a loop, whose `break` of the block the loop's
+        // own way out may be (`blocks loops end`).
+        let unnamed = matches!(
+            jump,
+            StmtKind::Continue(None) | StmtKind::Break(None) | StmtKind::Return(_)
+        );
         for stmt in stmts {
             match &mut stmt.kind {
                 StmtKind::Break(Some(l)) if l == label => stmt.kind = jump.clone(),
@@ -189,6 +196,9 @@ pub(in crate::lower::mir::tidy) fn jumps_past_blocks(stmts: &mut [Stmt]) {
     for i in 0..stmts.len().saturating_sub(1) {
         let jump = match &stmts[i + 1].kind {
             jump @ (StmtKind::Continue(_) | StmtKind::Break(_)) => jump.clone(),
+            // A `return` past a drop MIR shares, the block's end then its
+            // way out (ADR 0755): of one value, as each reads as written.
+            jump @ StmtKind::Return(_) if returns_one_value(&stmts[i + 1]) => jump.clone(),
             _ => continue,
         };
         // Not one the program labeled, `'sum: { .. }`, written by its name
@@ -199,6 +209,11 @@ pub(in crate::lower::mir::tidy) fn jumps_past_blocks(stmts: &mut [Stmt]) {
             && !written
         {
             let label = label.clone();
+            // A `return` where the block ends anyway is written once, after
+            // it: the `break`s that end it, gone first.
+            if matches!(jump, StmtKind::Return(_)) {
+                drop_tail(body, &StmtKind::Break(Some(label.clone())));
+            }
             rejump(body, &label, &jump);
         }
     }

@@ -46,3 +46,32 @@ seven counted `Rc`s another crate may share (ADR 0320), and two values
 with destructors. A trait's default constant a library computed where no
 consumer reads it, an error rustc never gave, is now its initializer
 (ADR 0176).
+
+## Amendment: a crate another uses is a library, whichever is built
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): A, the same program
+run either way; only which JS a crate is written as changes.
+
+React's port built `--package shared` wrote `shared/enqueueTask.js` as a
+program's, then `--package react-isomorphic`, which uses `shared`, wrote
+it again as a library's: its `Box<dyn Fn()>` parameter dropped what it
+held (ADR 0521), `$catchUnwind`, `$dispose` and `$dropping` in a `try`
+React has none of. A crate's JS is written once, beside its Rust, so which
+of its two forms is there was which package was built last: two answers
+to whether a crate is a library, the package asked for and the crates
+built.
+
+**The app is the package the tooling builds, or its manifest's own, where
+no crate of the workspace uses it**, as Cargo's metadata resolves the
+workspace; one another crate uses is a library whichever package is
+built, so its JS is the same built alone as through what uses it.
+`cargoBuild` answers it, for the build and the editor's check alike.
+
+- The workspace test's app, used by a crate, is a library built alone,
+  through the crate that uses it, and alone again, the same bytes each
+  time; the crate that uses it, which nothing does, is a program.
+- A crate a native oracle of the workspace uses, as the workspace test's
+  `check` calls `frontend::main`, is a library, and prints what native
+  Rust does as one.
+- Cargo builds a used crate again where `RUST_JS_APP` changes, which it
+  records; the JS it writes is the same.
