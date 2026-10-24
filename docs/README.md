@@ -575,7 +575,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0640 A TypeScript rest parameter is a variadic binding of a tuple](decisions/0640-a-rest-parameter-is-a-tuple.md) *(extended by 0667: rest arguments as a value; by 0718: a typed array spread, and a rest of `number` of any JS number)*
 - [0641 A `concat!` of literals is its pieces joined by `+`](decisions/0641-concat-is-its-pieces-joined-by-plus.md)
 - [0642 A place found in a string is JS's: `indexOf`, `slice`, `startsWith`](decisions/0642-a-place-found-in-a-string-is-js-units.md)
-- [0643 `unwrap()` of a throwing JS call is the call](decisions/0643-unwrap-of-a-throwing-call-is-the-call.md)
+- [0643 `unwrap()` of a throwing JS call is the call](decisions/0643-unwrap-of-a-throwing-call-is-the-call.md) *(extended by 0747: of the call each branch makes)*
 - [0644 A function whose result is a throwing call's `Result` is a throwing function](decisions/0644-a-function-of-a-throwing-calls-result-throws.md)
 - [0645 `js::is_defined` of a static is given the static itself](decisions/0645-is-defined-of-a-static-is-of-the-static.md) *(amended by 0647: the static isn't read)*
 - [0646 A chain held, then its fallback, is one `||`](decisions/0646-a-held-chain-and-its-fallback-is-one-or.md)
@@ -656,6 +656,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0744 A value or what it falls back to is `||`](decisions/0744-a-value-or-its-fallback-is-or.md)
 - [0745 A `continue` in a chain of `if`s is where it's written](decisions/0745-a-continue-in-a-chain-is-where-it-is-written.md)
 - [0746 A length held in a variable shows the slice at least so long, and a `push` makes one long](decisions/0746-a-length-held-in-a-variable-shows-the-slice-so-long.md)
+- [0747 `unwrap()` of a throwing call each branch makes is each call](decisions/0747-unwrap-of-a-throwing-call-each-branch-makes.md)
 - [0720 A labeled block's `break` and a named constant, in a body's ranges](decisions/0720-a-labeled-block-and-a-named-constant-in-a-bodys-ranges.md)
 - [0721 `js::strict_equals(a, b)` is JS's `===`](decisions/0721-strict-equals-is-jss-triple-equals.md)
 - [0722 A `#[repr(..)]` enum's variant is its number](decisions/0722-a-repr-enums-variant-is-its-number.md)

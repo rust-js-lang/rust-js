@@ -276,6 +276,10 @@ export function hasConfig(path) {
 - **`unwrap()` of the call is the call**, `loadConfig(path)`: what JS
   threw goes on as itself, not as Rust's panic of it. `expect(msg)` keeps
   its message ([ADR 0643](../../decisions/0643-unwrap-of-a-throwing-call-is-the-call.md)).
+  So is each branch's call of an `if` or a `match` unwrapped where it's
+  made, `if c { f(a) } else { f(b) }.unwrap()`, `c ? f(a) : f(b)`; a
+  `Result` held while something else runs keeps `$try`'s
+  ([ADR 0747](../../decisions/0747-unwrap-of-a-throwing-call-each-branch-makes.md)).
 - **A function whose result is the call's `Result` throws too**,
   `readConfig(path)`, which returns `loadConfig(path)`: its calls are
   throwing calls, by each rule above. Not a `pub` one, whose JS callers

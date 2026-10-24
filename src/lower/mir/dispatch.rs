@@ -141,16 +141,38 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 known, values,
             )));
         }
-        // `flatten()` of it, and a copy that's the item itself: the read.
-        if matches!(known, Some(Std::OptionFlatten | Std::OptionCloned))
-            && let [Operand::Move(read)] = operands[..]
-            && read.projection.is_empty()
-            && state.flattened.contains(&read.local)
-        {
-            state.flattened.insert(destination.local);
+        if self.reads_through(state, known, &operands, destination) {
             return Ok(self.take_operands(state, &operands, out)?.remove(0));
         }
         self.mir_call_operands(state, (def_id, generic_args), (&operands, &arg_tys), output, span, out)
+    }
+
+    /// Whether a call's value is its one argument, as it's read: `flatten()`
+    /// of a read that's flattened, and a copy that's the item itself, which
+    /// is then flattened too (ADR 0311); and `unwrap()` of a throwing call's
+    /// `Result` made where it's read, of each branch, each call itself (ADR
+    /// 0747).
+    fn reads_through(
+        &self,
+        state: &mut State<'_, 'tcx>,
+        known: Option<Std>,
+        operands: &[&Operand<'tcx>],
+        destination: Place<'tcx>,
+    ) -> bool {
+        let [Operand::Move(read)] = operands else {
+            return false;
+        };
+        if !read.projection.is_empty() {
+            return false;
+        }
+        match known {
+            Some(Std::OptionFlatten | Std::OptionCloned) if state.flattened.contains(&read.local) => {
+                state.flattened.insert(destination.local);
+                true
+            }
+            Some(Std::UnwrapOk) => self.unwrapped_where_made(state, read.local),
+            _ => false,
+        }
     }
 
     /// Whether what a call makes, `destination`, is read only by `.flatten()`,
@@ -187,6 +209,102 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     _ => false,
                 }
         })
+    }
+
+    /// Whether `local` holds a throwing JS call's `Result` that's unwrapped
+    /// where it's made, of each branch that gives it, `if c { f() } else {
+    /// g() }.unwrap()` (ADR 0747): its one read an `unwrap()`, and each
+    /// write of it a call that throws (`call_throws`), which goes on to
+    /// that read past nothing that runs. Each call is then the call itself,
+    /// its throw JS's, and the `unwrap()` its value, as of one call
+    /// unwrapped (ADR 0643).
+    pub(super) fn unwrapped_where_made(&self, state: &State<'_, 'tcx>, local: Local) -> bool {
+        let body = state.body;
+        let decls = &body.local_decls;
+        if state.locals.reads[local] != 1 {
+            return false;
+        }
+        let known = |func: &Operand<'tcx>| {
+            fn_def(func.ty(decls, self.tcx))
+                .and_then(|(def_id, generic_args)| self.recognition().classify(def_id, generic_args))
+        };
+        let unwrap = body.basic_blocks.iter_enumerated().find_map(|(block, data)| {
+            let TerminatorKind::Call { func, args, .. } = &data.terminator().kind else {
+                return None;
+            };
+            let reads = matches!(&args[..], [arg]
+                if matches!(&arg.node, Operand::Move(read) if *read == Place::from(local)));
+            (reads && known(func) == Some(Std::UnwrapOk)).then_some(block)
+        });
+        let Some(unwrap) = unwrap else { return false };
+        // From `block` on to the `unwrap()`, nothing runs: no statement does
+        // anything, and each block goes on, or drops what drops nothing.
+        let reaches = |mut block: BasicBlock| {
+            for _ in 0..body.basic_blocks.len() {
+                let data = &body.basic_blocks[block];
+                let idle = |s: &mir::Statement<'_>| {
+                    matches!(
+                        s.kind,
+                        StatementKind::StorageLive(_)
+                            | StatementKind::StorageDead(_)
+                            | StatementKind::FakeRead(_)
+                            | StatementKind::AscribeUserType(..)
+                            | StatementKind::PlaceMention(_)
+                            | StatementKind::Nop
+                    )
+                };
+                if !data.statements.iter().all(idle) {
+                    return false;
+                }
+                if block == unwrap {
+                    return true;
+                }
+                match &data.terminator().kind {
+                    TerminatorKind::Goto { target } => block = *target,
+                    TerminatorKind::Drop { place, target, .. }
+                        if self.drops(place.ty(decls, self.tcx).ty) == crate::lower::drops::Drops::Nothing =>
+                    {
+                        block = *target
+                    }
+                    _ => return false,
+                }
+            }
+            false
+        };
+        let mut made = false;
+        for data in body.basic_blocks.iter() {
+            if (data.statements.iter())
+                .any(|s| matches!(&s.kind, StatementKind::Assign(assign) if assign.0.local == local))
+            {
+                return false;
+            }
+            if let TerminatorKind::Call {
+                func,
+                destination,
+                target,
+                ..
+            } = &data.terminator().kind
+                && destination.local == local
+            {
+                let throws = destination.projection.is_empty()
+                    && fn_def(func.ty(decls, self.tcx)).is_some_and(|(def_id, generic_args)| {
+                        matches!(
+                            crate::lower::analysis::call_throws(
+                                &self.recognition(),
+                                self.krate.throwing,
+                                def_id,
+                                generic_args
+                            ),
+                            crate::lower::recognition::Catching::Result
+                        )
+                    });
+                if !throws || !target.is_some_and(reaches) {
+                    return false;
+                }
+                made = true;
+            }
+        }
+        made
     }
 
     /// `.await` of what's given, `into_future(x)`'s (`awaits.rs`): of an

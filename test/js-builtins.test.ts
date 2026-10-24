@@ -8,7 +8,7 @@ import { join } from "node:path";
 
 import { runSync } from "./child";
 import { node } from "./programs";
-import { buildReact, compiler, fixture, root, run, target } from "./support";
+import { buildReact, compiler, fixture, performanceTrack, root, run, target } from "./support";
 
 beforeAll(buildReact, 600_000);
 
@@ -123,6 +123,85 @@ pub fn held(text: &str, first: bool) -> Option<&'static Unknown> {
   expect(lib.awaited(Promise.reject(new RangeError("no")))).rejects.toThrow(RangeError);
   expect(() => lib.expected("{")).toThrow("valid JSON: SyntaxError");
   expect(() => lib.held("{", false)).toThrow("called `Result::unwrap()` on an `Err` value: SyntaxError");
+});
+
+// ADR 0747: a throwing call's `Result` made in each branch of an `if`, and
+// unwrapped where it's made, is each call itself, as React's ported
+// addValueToProperties' `if did_truncate { stringify_with(..) } else {
+// stringify_with(value, ..) }.unwrap()` is. A branch that isn't a
+// throwing call, or one that runs something past its call, keeps `$try`'s.
+test("unwrap of a throwing call each branch makes is each call", async () => {
+  const withJs = ["--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const dir = fixture("unwrap-branches");
+  writeFileSync(join(dir, "lib.rs"), `use js::{Unknown, json};
+pub fn either(text: &str, other: &str, first: bool) -> Option<&'static Unknown> {
+    if first { json::parse(text) } else { json::parse(other) }.unwrap()
+}
+pub fn shown(value: &Unknown, short: bool) -> Option<String> {
+    if short {
+        json::stringify_with(js::unknown("…"), None, 0)
+    } else {
+        json::stringify_with(value, None, 0)
+    }
+    .unwrap()
+}
+pub fn or_none(text: &str, first: bool) -> Option<&'static Unknown> {
+    if first { json::parse(text) } else { Ok(None) }.unwrap()
+}
+fn nothing() -> Result<Option<&'static Unknown>, &'static js::JsError> {
+    Ok(None)
+}
+pub fn or_nothing(text: &str, first: bool) -> Option<&'static Unknown> {
+    if first { json::parse(text) } else { nothing() }.unwrap()
+}
+pub fn logged(text: &str, first: bool) -> Option<&'static Unknown> {
+    if first {
+        let parsed = json::parse(text);
+        println!("parsed");
+        parsed
+    } else {
+        json::parse("null")
+    }
+    .unwrap()
+}
+struct Loud;
+impl Drop for Loud {
+    fn drop(&mut self) {
+        println!("dropped");
+    }
+}
+impl Loud {
+    fn text(&self) -> &'static str {
+        "{"
+    }
+}
+pub fn dropped(first: bool) -> Option<&'static Unknown> {
+    if first { json::parse(Loud.text()) } else { json::parse("null") }.unwrap()
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("return first ? JSON.parse(text) : JSON.parse(other);");
+  expect(js).toContain('return short ? JSON.stringify("…", null, 0) : JSON.stringify(value, null, 0);');
+  expect(js.match(/\$unwrapOk\(/g)?.length).toBe(4);
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.either("[1]", "{", true), lib.either("{", "2", false)]).toEqual([[1], 2]);
+  expect(() => lib.either("{", "2", true)).toThrow(SyntaxError);
+  expect(lib.shown(() => {}, false)).toBeUndefined();
+  expect(lib.shown(1n, true)).toBe('"…"');
+  expect(() => lib.shown(1n, false)).toThrow(TypeError);
+  expect(() => lib.orNone("{", true)).toThrow("called `Result::unwrap()` on an `Err` value: SyntaxError");
+  expect(lib.orNone("{", false)).toBeUndefined();
+  expect(() => lib.orNothing("{", true)).toThrow("called `Result::unwrap()` on an `Err` value: SyntaxError");
+  expect(lib.orNothing("{", false)).toBeUndefined();
+  expect(() => lib.logged("{", true)).toThrow("called `Result::unwrap()` on an `Err` value: SyntaxError");
+  // What a branch drops runs past its call: the call's throw is caught.
+  expect(() => lib.dropped(true)).toThrow("called `Result::unwrap()` on an `Err` value: SyntaxError");
+  // React's: what may be `undefined` keeps its `unwrap()`, `$unwrap`.
+  const described = performanceTrack()("addValueToProperties");
+  expect(described).toContain("desc = $unwrap(\n                  didTruncate\n                    ? JSON.stringify(");
+  expect(described).toContain("                    : JSON.stringify(value, null, 0),\n");
+  expect(described).not.toContain("$try");
 });
 
 // ADR 0644: a function whose result is a throwing call's `Result`, each
