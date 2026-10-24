@@ -1,8 +1,10 @@
 # rust-js: north star
 
-**Rust in. Readable JavaScript out.**
+**Idiomatic Rust in. Readable JavaScript out.**
 
-A compiler that turns Rust into JavaScript people would have written by hand.
+A compiler that turns the Rust engineers naturally write into correct,
+readable JavaScript people would have written by hand.
+
 The longer-term goal is Rust across the stack: native Rust on the server,
 rust-js on the frontend, shared types between them, with Scala.js-level
 correctness, library support and interop. The first production app is a
@@ -44,16 +46,21 @@ below serves this one, and none outranks it.
 
 ## Exactly one way to do each job
 
-**This rule comes before every other but correctness.** For any job there is exactly one
-way to do it. Two ways to do the same job is a red flag: stop, and resolve
-it before going on with anything else.
+**This rule comes before every other but correctness, within the choices
+rust-js owns.** For any such job there is exactly one way to do it. Two
+ways to do the same job is a red flag: stop, and resolve it before going
+on with anything else.
+
+This governs rust-js's choices, not Rust's established idioms. Both loops
+and iterator chains belong; ease of lowering must not dictate the source.
 
 rust-js is a tool AI coding agents write against. An agent needs one answer
 it can't get wrong, not a choice; every second way is a chance to pick the
 wrong one, and a second thing to keep correct. The rule holds everywhere:
 
-- **What a program writes:** one attribute, one macro, one API, one way to
-  declare a binding, one option, one flag, one config key for each thing.
+- **What rust-js adds for a program to write:** one attribute, one macro,
+  one API, one way to declare a binding, one option, one flag, one config
+  key for each thing.
 - **What rust-js writes:** one form of output for each construct.
 - **Inside rust-js:** one authoritative owner for each rule, shared by
   the modules and passes that need it; one way a host builds; one catalog
@@ -160,11 +167,11 @@ same, and what works in one place works the same way in the next.
 
 ## Idiomatic Rust in
 
-The Rust a rust-js app is written in is the Rust people write everywhere
-else: what a Rust developer would write for a server, a CLI or a library,
-written the way the Rust book, std's docs and clippy teach it. Learning
-Rust on the frontend is learning Rust; moving to the backend, everything
-carries over.
+**Write the Rust an experienced Rust engineer would naturally write.**
+Use familiar, widely used types, APIs and patterns, as taught by the Rust
+book, std's docs and clippy. rust-js compiles that Rust; developers should
+not need a different style for the frontend. The compiler adapts to
+idiomatic Rust, not the other way around.
 
 - **No dialect.** A program uses std's types, traits and idioms (`Vec`,
   `HashMap`, `Option`, `?`, iterators, `impl Trait`, ownership and
