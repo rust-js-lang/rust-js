@@ -85,7 +85,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0013 Fieldless enum variants are strings](decisions/0013-fieldless-enums.md) *(extended by 0722: a `#[repr(..)]` one's are numbers)*
 - [0033 Enums with fields are ReScript's tagged objects](decisions/0033-enums-with-fields.md) *(extended by 0716: std's enums whose `PartialEq` or order is derived)*
 - [0035 JS that throws is a `Result`; `?` returns early](decisions/0035-results-and-throwing-js.md) *(amended by 0637: a `match` of its `Result` is `try` and `catch`; 0643: its `unwrap()` is the call)*
-- [0020 Structs are objects, tuples are arrays](decisions/0020-structs-and-tuples.md) *(amended by 0674: a literal's fields are listed as written)*
+- [0020 Structs are objects, tuples are arrays](decisions/0020-structs-and-tuples.md) *(amended by 0674: a literal's fields are listed as written; 0775: a `()` given to JS is `undefined`)*
 - [0049 Trait dictionaries, generics, and read-only trait objects](decisions/0049-traits-and-generics.md)
 - [0047 Methods are an object of functions named after their type](decisions/0047-methods.md) *(extended by 0761: a `#[rust_js::class]`'s are its prototype's)*
 - [0014 `match` becomes an `if`/`else if` chain](decisions/0014-match-lowering.md) *(amended by 0629: a `match` of constants is a `switch`)*
@@ -294,7 +294,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0222 An editor checks the app through rust-js](decisions/0222-editor-check.md)
 - [0223 The webapi crate knows each event's type and each tag's element](decisions/0223-webapi-event-and-tag-maps.md)
 - [0224 A tag's element reaches its handlers and its `ref`](decisions/0224-typed-intrinsic-elements.md)
-- [0225 A JS value of unknown shape is a `js::Unknown`](decisions/0225-unknown-values.md) *(amended by 0668: `Kind::Symbol`, and a `match` of `Kind` a `switch (typeof value)`; by 0673: `js::unknown` of a function; by 0676: `classify` takes an `Option<&Unknown>`, and `Kind` has `Undefined` and `Null`; by 0677: `Kind::Object` holds a `&JsObject`; by 0695: `js::new`; by 0697: `js::delete`; amended: `()` is a clone's `undefined`, and `Kind::Array`'s slice is the array)*
+- [0225 A JS value of unknown shape is a `js::Unknown`](decisions/0225-unknown-values.md) *(amended by 0668: `Kind::Symbol`, and a `match` of `Kind` a `switch (typeof value)`; by 0673: `js::unknown` of a function; by 0676: `classify` takes an `Option<&Unknown>`, and `Kind` has `Undefined` and `Null`; by 0677: `Kind::Object` holds a `&JsObject`; by 0695: `js::new`; by 0697: `js::delete`; amended: `()` is a clone's `undefined`, and `Kind::Array`'s slice is the array; by 0775: any `()` given to JS is `undefined`)*
 - [0226 A component looks inside its children as React's `Children` does](decisions/0226-react-children.md)
 - [0227 The react crate's types have @types/react's names](decisions/0227-react-type-names.md)
 - [0228 A tag takes the attributes @types/react gives it](decisions/0228-per-tag-attributes.md)
@@ -670,8 +670,9 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0771 An `==` of a value read as the registry's symbol is its `matches!`](decisions/0771-an-equality-of-a-registered-symbol-is-its-match.md)
 - [0772 A nullable `Cell` field's `None` is `null`, made and written](decisions/0772-a-nullable-cell-field-writes-null.md)
 - [0773 A binding a module's default names is exported as the default alone](decisions/0773-a-held-default-is-exported-once.md)
+- [0775 A `()` given to JS is `undefined`; a list of none is `[]`](decisions/0775-a-unit-given-to-js-is-undefined.md)
 - [0720 A labeled block's `break` and a named constant, in a body's ranges](decisions/0720-a-labeled-block-and-a-named-constant-in-a-bodys-ranges.md)
-- [0721 `js::strict_equals(a, b)` is JS's `===`](decisions/0721-strict-equals-is-jss-triple-equals.md)
+- [0721 `js::strict_equals(a, b)` is JS's `===`](decisions/0721-strict-equals-is-jss-triple-equals.md) *(fixed by 0775: a `()` compared is `undefined`)*
 - [0722 A `#[repr(..)]` enum's variant is its number](decisions/0722-a-repr-enums-variant-is-its-number.md)
 - [0436 Every `dyn` that's a pair keeps its value's drop, `dyn Send` too](decisions/0436-every-dyn-keeps-its-drop.md) *(amended by 0691: a `dyn Any` drops where the crate makes one of what drops)*
 - [0437 A scope's drops on a panic are one `try { .. } finally { .. }`](decisions/0437-a-scopes-drops-are-one-finally.md) *(amended by 0693: its `if`s, loops and `return`s in it)*
@@ -680,7 +681,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0440 A binding needs no `#[allow]`](decisions/0440-a-binding-needs-no-allow.md) *(amended: a descriptor map's fields and a default export's function are used; a plain clippy warns of them)*
 - [0441 A `()` given a function value is no argument](decisions/0441-a-unit-is-no-argument.md)
 - [0442 A web API that throws for what a program can't prevent is a `Result`](decisions/0442-a-web-api-that-may-throw-is-a-result.md)
-- [0443 A value a caller may leave out is an `Option`, in each direction](decisions/0443-a-value-a-caller-may-leave-out-is-an-option.md) *(amended by 0640: a `None` before a rest of none is no argument; 0648: a setter's `None` is written)*
+- [0443 A value a caller may leave out is an `Option`, in each direction](decisions/0443-a-value-a-caller-may-leave-out-is-an-option.md) *(amended by 0640: a `None` before a rest of none is no argument; 0648: a setter's `None` is written; 0775: a `()` as a `dyn` is `undefined` but of a list)*
 - [0444 A comment is in the JS where its code is, and so is a blank line](decisions/0444-a-comment-is-where-its-code-is.md) *(amended by 0658: a branch's comment is before its value; 0708: an argument's and a field's; 0733: a line comment ends the line of its code; extended by 0753: a branch of only comments keeps them)*
 - [0445 Generic code extends and collects into what it's given](decisions/0445-extend-and-collect-in-generic-code.md)
 - [0446 A `dyn fmt::Write` is a pair, and `fmt::write` is `write_fmt`](decisions/0446-a-dyn-fmt-write.md)

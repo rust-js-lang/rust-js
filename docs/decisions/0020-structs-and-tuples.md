@@ -4,6 +4,9 @@ Status: Accepted. Extends [0013](0013-fieldless-enums.md) to types with fields.
 (Amended: an array of what's changed in place contains it too.)
 Amended by [0443](0443-a-value-a-caller-may-leave-out-is-an-option.md): a `()`
 as a `dyn` JS is given the value of is an array too, `useEffect(f, [])`.
+Amended by [0775](0775-a-unit-given-to-js-is-undefined.md): a `()` given to
+JS is `undefined`, as everywhere, and `[]` only where it's a list of none,
+rest arguments' or a hook's dependencies'.
 Amended by [0674](0674-a-struct-literals-fields-are-in-the-order-written.md): a
 struct expression's object lists its fields as written, then what `..base`
 fills, the order Rust evaluates them in, so none is set aside to keep it.

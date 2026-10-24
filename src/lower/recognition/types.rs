@@ -977,10 +977,11 @@ const VEC_LIKE: &[StdItem] = &[
     StdItem::LinkedList,
 ];
 
-/// Whether `did` is `js::StructuredClone`, what a structured clone copies
-/// as it is, whose `()` is `undefined` (ADR 0225).
-pub(in crate::lower) fn is_structured_clone(tcx: TyCtxt<'_>, did: DefId) -> bool {
-    tcx.crate_name(did.krate).as_str() == "js" && tcx.item_name(did).as_str() == "StructuredClone"
+/// Whether `did` is `react::DependencyList`, a hook's dependencies, a
+/// tuple of them its array, `(count, name)`'s `[count, name]`, whose `()`
+/// is none, `[]` (ADR 0775).
+pub(in crate::lower) fn is_dependency_list(tcx: TyCtxt<'_>, did: DefId) -> bool {
+    tcx.crate_name(did.krate).as_str() == "react" && tcx.item_name(did).as_str() == "DependencyList"
 }
 
 /// Whether `did` is `js::SymbolFor`, the registry's symbol of a key, its JS

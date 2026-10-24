@@ -164,6 +164,15 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
+    name: "unit-given-binding-array",
+    breaks: "a `()` given a binding as any value is its tuple's `[]`, never `===` anything: `x === []` of `js::strict_equals(x, ())` (ADR 0775)",
+    file: "src/lower/mir/calls.rs",
+    find: "                    .unwrap_or(value)\n            }\n",
+    replace: "                    .unwrap_or(Expr::array(Vec::new()))\n            }\n",
+    tests: ["test/corpus.test.ts", "-t", "^unit_given_to_js.rs$"],
+    snapshots: true,
+  },
+  {
     name: "duration-assign-number",
     breaks: "a `Duration`'s `-=` is its number's `-`, which doesn't panic past zero as std's does",
     file: "src/lower/mir/calls.rs",
