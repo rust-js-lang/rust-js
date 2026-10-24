@@ -29,6 +29,22 @@ test("what's appended to a text reads no text", () => {
   }
 });
 
+// A NaN's sign isn't kept (the guide's differences, 4; ADR 0154), and a
+// NaN an operation makes has its sign set on x86: seed 12449569's
+// `(-id(f64::NAN)).is_sign_negative()` was `true` natively, `false` as JS.
+test("a float's sign is asked only of a number", () => {
+  let asked = 0;
+  for (let seed = 0; seed < 2000; seed++) {
+    const text = print(generate(seed), seed);
+    const all = text.match(/\.is_sign_negative\(\)/g) ?? [];
+    const ofNumbers = text.match(/!f\.is_nan\(\) && f\.is_sign_negative\(\)/g) ?? [];
+    expect([seed, ofNumbers.length]).toEqual([seed, all.length]);
+    asked += all.length;
+  }
+  expect(asked).toBeGreaterThan(20);
+  expect(print(generate(12449569), 12449569)).toContain("!f.is_nan() && f.is_sign_negative() }");
+});
+
 test("a program is `main` and `id`, which hides each literal from rustc", () => {
   const text = print(generate(1), 1);
   expect(text).toStartWith("// Generated from seed 1.\nfn id<T>(x: T) -> T {");
