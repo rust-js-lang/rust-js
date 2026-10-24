@@ -3,6 +3,38 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "labeled-block-not-a-target",
+    breaks: "a labeled block's `break 'desc` is a jump the walk can't follow, so nothing its body's ranges show holds, and `indent + 1` of `indent < 3` is `(indent + 1) >>> 0`",
+    file: "src/lower/body_queries/ranges.rs",
+    find: "        if !block.targeted_by_break {\n            return walk(self, known);\n",
+    replace: "        if true {\n            return walk(self, known);\n",
+    tests: ["test/lowering-numbers.test.ts", "-t", "a labeled block and a named constant"],
+  },
+  {
+    name: "labeled-block-breaks-unjoined",
+    breaks: "what a `break` knows doesn't go past the scope it leaves, a labeled block's, so after one of `indent >= 3`, `indent + 1` is taken as below 3's, unwrapped, and 4294967295's is 4294967296",
+    file: "src/lower/body_queries/ranges.rs",
+    find: "            Some(broken) => {\n                *known = either(known.take(), Some(broken));\n                top\n            }\n",
+    replace: "            Some(_) => top,\n",
+    tests: ["test/lowering-numbers.test.ts", "-t", "a labeled block and a named constant"],
+  },
+  {
+    name: "named-constant-unknown",
+    breaks: "a `const` of an integer is any value its type holds, so a counter tested `> LIMIT` adds one with a wrap, `(seen + 1) >>> 0`, where one tested `> 100` is `seen++`",
+    file: "src/lower/body_queries/ranges.rs",
+    find: "            ExprKind::NamedConst { def_id, args, .. } if ty_range.is_some() => constant_integer(self.tcx, def_id, args)\n",
+    replace: "            ExprKind::NamedConst { def_id, args, .. } if ty_range.is_some() => None::<i128>.filter(|_| constant_integer(self.tcx, def_id, args).is_some())\n",
+    tests: ["test/lowering-numbers.test.ts", "-t", "a labeled block and a named constant"],
+  },
+  {
+    name: "named-constants-judged",
+    breaks: "an operator of constants alone, one named, is judged exact, so `usize::BITS - 1` is written `32 - 1`, where its wrap folds it to `31`",
+    file: "src/lower/body_queries/ranges.rs",
+    find: "        if matches!(op, BinOp::Add | BinOp::Sub | BinOp::Mul) && !constant {\n",
+    replace: "        if matches!(op, BinOp::Add | BinOp::Sub | BinOp::Mul) {\n",
+    tests: ["test/lowering-numbers.test.ts", "-t", "a labeled block and a named constant"],
+  },
+  {
     name: "cast-kept-out-of-range",
     breaks: "an `as` of an integer that may be outside its target's range is taken as its operand, so `-1 as usize` reads `items[-1]`, `undefined`, where Rust panics",
     file: "src/lower/body_queries/ranges.rs",
@@ -302,8 +334,8 @@ export const mutations: Mutation[] = [
     name: "ranges-break-dropped",
     breaks: "what's known at a `break` isn't known past its loop, so `n + 100` after a loop left by one wraps",
     file: "src/lower/body_queries/ranges.rs",
-    find: "                        *known = either(known.take(), Some(broken));",
-    replace: "                        *known = {\n                            let _ = broken;\n                            known.take()\n                        };",
+    find: "                *known = either(known.take(), Some(broken));",
+    replace: "                *known = {\n                    let _ = broken;\n                    known.take()\n                };",
     tests: ["test/lowering-loops.test.ts", "-t", "while. loop from MIR tests"],
   },
   {

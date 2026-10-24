@@ -625,6 +625,20 @@ pub(super) fn given_present<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>, mut e: E
     (identity && untagged && matches!(&args[..], [arg] if some(*arg))).then_some(fn_span)
 }
 
+/// The value of an integer `const` of no generic arguments, rustc's own,
+/// which a body's ranges read as its literal's (ADR 0720).
+pub(super) fn constant_integer<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId, args: ty::GenericArgsRef<'tcx>) -> Option<i128> {
+    if !args.is_empty() {
+        return None;
+    }
+    let scalar = tcx.const_eval_poly(def_id).ok()?.try_to_scalar_int()?;
+    let ty = tcx.type_of(def_id).instantiate_identity().skip_normalization();
+    match ty.is_signed() {
+        true => Some(scalar.to_int(scalar.size())),
+        false => i128::try_from(scalar.to_uint(scalar.size())).ok(),
+    }
+}
+
 /// Each call `given_present` says is of what's there: its `fn_span`.
 pub(super) fn present_calls<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> HashSet<Span> {
     (thir.exprs.indices())

@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "named-constant-signed-as-unsigned",
+    breaks: "a negative `const` is read as its bits, `-1` as 2^64 - 1, so a test against it narrows what can't be",
+    file: "src/lower/body_queries.rs",
+    find: "        true => Some(scalar.to_int(scalar.size())),\n        false => i128::try_from(scalar.to_uint(scalar.size())).ok(),\n    }\n}\n\n/// Each call `given_present`",
+    replace: "        _ => i128::try_from(scalar.to_uint(scalar.size())).ok(),\n    }\n}\n\n/// Each call `given_present`",
+    tests: ["test/lowering-numbers.test.ts", "-t", "a labeled block and a named constant"],
+  },
+  {
     name: "classify-some-not-present",
     breaks: "`classify(Some(value))` may be `null`, so its object's test leaves `null` out, `value !== null`",
     file: "src/lower/body_queries.rs",

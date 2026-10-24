@@ -631,22 +631,7 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
         match thir[e].kind {
             ExprKind::Scope {
                 region_scope, value, ..
-            } => {
-                self.targets.push(Target {
-                    scope: region_scope,
-                    breaks: None,
-                    continues: None,
-                });
-                let value = self.expr(value, known);
-                let target = self.targets.pop().expect("pushed");
-                match target.breaks {
-                    Some(broken) => {
-                        *known = either(known.take(), Some(broken));
-                        top()
-                    }
-                    None => value,
-                }
-            }
+            } => self.scoped(region_scope, top(), known, |walk, known| walk.expr(value, known)),
             ExprKind::Use { source }
             | ExprKind::NeverToAny { source }
             | ExprKind::ValueTypeAscription { source, .. }
@@ -834,6 +819,10 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
                 }
                 None
             }
+            // A `const` of an integer is its value, as a literal (ADR 0720).
+            ExprKind::NamedConst { def_id, args, .. } if ty_range.is_some() => constant_integer(self.tcx, def_id, args)
+                .map(|n| Range::of(n, n))
+                .or_else(top),
             ExprKind::NonHirLiteral { .. }
             | ExprKind::ZstLiteral { .. }
             | ExprKind::NamedConst { .. }
@@ -1007,12 +996,47 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
         }
     }
 
+    /// What `walk` finds in `scope`, which a `break` to it leaves: what's
+    /// known where each is joined in where it ends, and its value any of
+    /// its type's, `top`, where one gives it.
+    fn scoped(
+        &mut self,
+        scope: region::Scope,
+        top: Option<Range>,
+        known: &mut Option<Known>,
+        walk: impl FnOnce(&mut Self, &mut Option<Known>) -> Option<Range>,
+    ) -> Option<Range> {
+        self.targets.push(Target {
+            scope,
+            breaks: None,
+            continues: None,
+        });
+        let value = walk(self, known);
+        let target = self.targets.pop().expect("pushed");
+        match target.breaks {
+            Some(broken) => {
+                *known = either(known.take(), Some(broken));
+                top
+            }
+            None => value,
+        }
+    }
+
+    /// A block's statements and value; of a labeled one, `'desc: { .. }`,
+    /// a scope its `break 'desc` leaves, the block's own (ADR 0720).
     fn block(&mut self, block: thir::BlockId, known: &mut Option<Known>) -> Option<Range> {
         let block = &self.thir[block];
-        for &stmt in &block.stmts {
-            self.stmt(stmt, known);
+        let walk = |walk: &mut Self, known: &mut Option<Known>| {
+            for &stmt in &block.stmts {
+                walk.stmt(stmt, known);
+            }
+            block.expr.and_then(|value| walk.expr(value, known))
+        };
+        if !block.targeted_by_break {
+            return walk(self, known);
         }
-        block.expr.and_then(|value| self.expr(value, known))
+        let top = (block.expr.and_then(|e| type_range(self.thir[e].ty))).map(|(lo, hi)| Range::of(lo, hi));
+        self.scoped(block.region_scope, top, known, walk)
     }
 
     fn stmt(&mut self, stmt: thir::StmtId, known: &mut Option<Known>) {
@@ -1445,7 +1469,16 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
             _ => None,
         };
         let within = made.filter(|m| m.lo >= lo && m.hi <= hi);
-        if matches!(op, BinOp::Add | BinOp::Sub | BinOp::Mul) {
+        // Of constants alone, one of them named, `usize::BITS - 1`: a
+        // constant, whose wrap is folded where it's written, `31`, not
+        // judged (ADR 0720).
+        let thir = self.thir;
+        let named = |e: ExprId| matches!(thir[strip(thir, e)].kind, ExprKind::NamedConst { .. });
+        let constant = l.constant().is_some()
+            && r.constant().is_some()
+            && matches!(thir[site].kind, ExprKind::Binary { lhs, rhs, .. } | ExprKind::AssignOp { lhs, rhs, .. }
+                if named(lhs) || named(rhs));
+        if matches!(op, BinOp::Add | BinOp::Sub | BinOp::Mul) && !constant {
             *self.ops.entry(site).or_insert(true) &=
                 within.is_some() && !(op == BinOp::Mul && l.may_make_negative_zero(r));
         }
