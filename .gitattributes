@@ -1,0 +1,3 @@
+# The index of decisions is a list two changes may each add to at once:
+# merged by keeping both sides' lines (docs/decisions/README.md).
+docs/decisions/README.md merge=union

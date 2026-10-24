@@ -3,7 +3,7 @@
 The current map of rust-js: responsibilities, contracts, and where a change
 belongs. [AGENTS.md](../AGENTS.md) defines the principles;
 [the guide](guide/README.md) explains the supported language and APIs;
-[design decisions](README.md) record why. This page describes the code,
+[design decisions](decisions/README.md) record why. This page describes the code,
 not a proposed architecture.
 
 [Architecture tests](../test/architecture.test.ts) enforce layer dependencies,
