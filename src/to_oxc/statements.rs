@@ -104,6 +104,45 @@ impl<'a> Cx<'a> {
         }
     }
 
+    /// A JS class (ADR 0761), as JS wrote one before `class`: its
+    /// constructor function, `export function Component(props) { this.props
+    /// = props; }`; then its prototype's constants and methods, each a
+    /// `function` reading `this`, `Component.prototype.setState = function
+    /// (partialState) { .. };`; and its statics, `Component.from =
+    /// function (..) { .. };`.
+    pub(super) fn class(&self, n: &js::Namespace, class: &js::Class) -> Vec<Statement<'a>> {
+        let mut out = Vec::new();
+        if let Some(constructor) = n.methods.iter().find(|f| f.name == class.constructor) {
+            let mut constructor = constructor.clone();
+            constructor.name = n.name.clone();
+            constructor.export = n.export;
+            out.push(self.function(&constructor, false));
+        }
+        let prototype = || js::Expr::member(js::Expr::var(&n.name), "prototype");
+        let mut assigned = Vec::new();
+        for c in &n.constants {
+            let to = js::Expr::member(prototype(), c.name.clone());
+            assigned.push(js::StmtKind::Assign(to, c.value.clone()).at(c.span));
+        }
+        for f in n.methods.iter().filter(|f| f.name != class.constructor) {
+            let of = match class.prototype.contains(&f.name) {
+                true => prototype(),
+                false => js::Expr::var(&n.name),
+            };
+            let mut function = f.clone();
+            function.name = String::new();
+            function.export = false;
+            let value = js::Expr {
+                kind: js::ExprKind::Function(Box::new(function)),
+                span: f.span,
+                known: js::Known::Nothing,
+            };
+            assigned.push(js::StmtKind::Assign(js::Expr::member(of, f.name.clone()), value).at(f.span));
+        }
+        out.extend(self.stmts(&assigned));
+        out
+    }
+
     /// `export const Counter = { new(step) { .. }, .. };`: each method in
     /// shorthand, as a hand-written object of functions has them.
     pub(super) fn namespace(&self, n: &js::Namespace) -> Statement<'a> {

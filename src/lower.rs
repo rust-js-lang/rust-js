@@ -38,6 +38,7 @@ mod bindings;
 mod bodies;
 mod body_queries;
 mod calls;
+mod classes;
 mod combinators;
 mod copies;
 mod declarations;
@@ -739,8 +740,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 )));
             }
             // One that takes rest arguments, given a slice by what calls it
-            // as a value: the arrow of its call, which spreads it (ADR 0664).
-            if self.takes_rest(def_id) {
+            // as a value: the arrow of its call, which spreads it (ADR 0664);
+            // a class's constructor or method, `(props) => new
+            // Component(props)` (ADR 0761).
+            if self.takes_rest(def_id)
+                || matches!(
+                    classes::member(self.tcx, def_id),
+                    Some(classes::Member::Constructor | classes::Member::Method)
+                )
+            {
                 return Ok(None);
             }
             let callee = self.fn_ref(def_id);

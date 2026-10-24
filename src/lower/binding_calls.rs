@@ -201,6 +201,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             (JsForm::CallThis, Some(this)) => Expr::call(this, args),
             (JsForm::KeysIn, Some(this)) if args.is_empty() => super::iterators::keys_in(this),
             (JsForm::NewThis, Some(this)) => Expr::new_(this, args),
+            (JsForm::Class, None) if args.is_empty() => {
+                let class = generic_args.types().next().and_then(|ty| match ty.kind() {
+                    ty::Adt(adt, _) => super::classes::constructor_of(self.tcx, adt.did()),
+                    _ => None,
+                });
+                let Some(constructor) = class else {
+                    let what = "`js::class::<T>()` of a `T` that's no `#[rust_js::class]` struct";
+                    return Err(self.unsupported(span, what));
+                };
+                match self.fn_ref(constructor).kind {
+                    js::ExprKind::Member(class, _) => *class,
+                    _ => unreachable!("a class's constructor is a member of its class"),
+                }
+            }
             (JsForm::Throw, Some(this)) if args.is_empty() => {
                 out.push(StmtKind::Throw(this).at(self.js_span(span)));
                 Expr::undefined()

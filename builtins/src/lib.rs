@@ -553,6 +553,38 @@ pub fn throw(this: Option<&Unknown>) -> ! {
     unreachable!()
 }
 
+/// A JS class's constructor function, `Component`, which [`class`] gives
+/// of a struct marked `#[rust_js::class]`: its `prototype`, which a port
+/// sets as JS does, `ComponentDummy.prototype = Component.prototype` (ADR
+/// 0761).
+pub struct Class(PhantomData<JsObject>);
+
+unsafe impl Defined for Class {}
+
+impl Class {
+    /// [`C.prototype`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Function/prototype):
+    /// what each instance `new C(..)` makes inherits from.
+    #[cfg_attr(rust_js, rust_js::link_name = "get prototype")]
+    pub fn prototype(&self) -> &'static Unknown {
+        unreachable!()
+    }
+
+    /// `C.prototype = prototype`: what each instance made after inherits from.
+    #[cfg_attr(rust_js, rust_js::link_name = "set prototype")]
+    #[allow(unused_variables)]
+    pub fn set_prototype(&self, prototype: &Unknown) {
+        unreachable!()
+    }
+}
+
+/// The constructor function of `T`, a struct marked `#[rust_js::class]`:
+/// `js::class::<Component>()` is `Component` (ADR 0761). Of any other type,
+/// a compile error.
+#[cfg_attr(rust_js, rust_js::link_name = "class")]
+pub fn class<T>() -> &'static Class {
+    unreachable!()
+}
+
 /// `key in value`: whether an object has a property of that name, its own
 /// or its prototype's, as JS's `in` asks.
 #[cfg_attr(rust_js, rust_js::link_name = "in []")]

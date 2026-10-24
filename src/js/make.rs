@@ -12,6 +12,11 @@ impl Expr {
         }
     }
 
+    /// `this`, a class's own (ADR 0761).
+    pub fn this() -> Expr {
+        Expr::new(ExprKind::This)
+    }
+
     /// `of.method(args)`, of a `str` or a slice `of` as Rust's types tell.
     pub fn read(of: Expr, method: &str, args: Vec<Expr>) -> Expr {
         Expr {

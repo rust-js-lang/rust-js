@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "js-class-of-the-constructor-call",
+    breaks: "`js::class::<Component>()` is `Component.new`, no function, not the constructor `Component` (ADR 0761)",
+    file: "src/lower/binding_calls.rs",
+    find: "                    js::ExprKind::Member(class, _) => *class,\n",
+    replace: "                    js::ExprKind::Member(class, name) => Expr::member(*class, name),\n",
+    tests: ["test/classes.test.ts", "-t", "React's Component is a constructor function"],
+  },
+  {
     name: "js-throw-made-an-error",
     breaks: "`js::throw(value)` throws `new Error(value)`, an `Error` made of it, not the value itself, so a thenable React's Suspense waits on is lost",
     file: "src/lower/binding_calls.rs",

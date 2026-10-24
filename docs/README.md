@@ -87,7 +87,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0035 JS that throws is a `Result`; `?` returns early](decisions/0035-results-and-throwing-js.md) *(amended by 0637: a `match` of its `Result` is `try` and `catch`; 0643: its `unwrap()` is the call)*
 - [0020 Structs are objects, tuples are arrays](decisions/0020-structs-and-tuples.md) *(amended by 0674: a literal's fields are listed as written)*
 - [0049 Trait dictionaries, generics, and read-only trait objects](decisions/0049-traits-and-generics.md)
-- [0047 Methods are an object of functions named after their type](decisions/0047-methods.md)
+- [0047 Methods are an object of functions named after their type](decisions/0047-methods.md) *(extended by 0761: a `#[rust_js::class]`'s are its prototype's)*
 - [0014 `match` becomes an `if`/`else if` chain](decisions/0014-match-lowering.md) *(amended by 0629: a `match` of constants is a `switch`)*
 - [0048 Let chains: each part runs only once the ones before it held](decisions/0048-let-chains.md)
 - [0051 `Option<T>` in generic code: boxed only when it looks like `None`](decisions/0051-generic-options.md)
@@ -665,6 +665,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0754 A `return` some arms go on to is in each, not a block's end](decisions/0754-a-return-arms-go-on-to-is-in-each.md)
 - [0755 A `return` a block MIR made leads to is each of its `break`s](decisions/0755-a-shared-return-is-each-breaks.md)
 - [0760 `js::throw(value)` is `throw value`, the one way to throw a JS value](decisions/0760-js-throw-is-throw-of-a-js-value.md)
+- [0761 A `#[rust_js::class]` is a constructor function and its prototype](decisions/0761-a-rust-js-class-is-a-constructor-function-and-its-prototype.md)
 - [0770 A library's `const` is imported by its name, as its crate reads it](decisions/0770-a-librarys-const-is-imported-by-its-name.md)
 - [0771 An `==` of a value read as the registry's symbol is its `matches!`](decisions/0771-an-equality-of-a-registered-symbol-is-its-match.md)
 - [0772 A nullable `Cell` field's `None` is `null`, made and written](decisions/0772-a-nullable-cell-field-writes-null.md)

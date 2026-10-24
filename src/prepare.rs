@@ -1275,6 +1275,7 @@ fn expr(e: &mut Expr) {
         | ExprKind::Undefined
         | ExprKind::GivenUndefined
         | ExprKind::Null
+        | ExprKind::This
         | ExprKind::Var(_)
         | ExprKind::Symbol(_)
         | ExprKind::FunctionHole(_)

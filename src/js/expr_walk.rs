@@ -62,6 +62,7 @@ impl Expr {
             | ExprKind::Undefined
             | ExprKind::GivenUndefined
             | ExprKind::Null
+            | ExprKind::This
             | ExprKind::Symbol(_)
             | ExprKind::FunctionHole(_)
             | ExprKind::Import(_)
@@ -182,6 +183,7 @@ impl Expr {
             | ExprKind::Undefined
             | ExprKind::GivenUndefined
             | ExprKind::Null
+            | ExprKind::This
             | ExprKind::Symbol(_)
             | ExprKind::FunctionHole(_)
             | ExprKind::Import(_)
@@ -469,6 +471,7 @@ impl Expr {
             | ExprKind::Undefined
             | ExprKind::GivenUndefined
             | ExprKind::Null
+            | ExprKind::This
             | ExprKind::Var(_)
             | ExprKind::Symbol(_)
             | ExprKind::Regex(_)

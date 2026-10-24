@@ -300,6 +300,9 @@ pub(super) enum JsForm {
     /// `throw`: `throw this`, a JS value thrown as it is, `js::throw`'s
     /// (ADR 0760).
     Throw,
+    /// `class`: the constructor function of the class its type argument
+    /// is, `Component`, `js::class::<Component>()`'s (ADR 0761).
+    Class,
 }
 
 pub(super) fn js_form(tcx: TyCtxt<'_>, def_id: DefId) -> JsForm {
@@ -322,6 +325,7 @@ pub(super) fn js_form(tcx: TyCtxt<'_>, def_id: DefId) -> JsForm {
         "import(*)" => return JsForm::Import { module: true },
         "for in" => return JsForm::KeysIn,
         "throw" => return JsForm::Throw,
+        "class" => return JsForm::Class,
         _ => {}
     }
     if let Some(tag) = name.strip_prefix('<').and_then(|t| t.strip_suffix('>')) {
@@ -1430,7 +1434,7 @@ pub fn given_names_differ(tcx: TyCtxt<'_>) -> bool {
 }
 
 /// A function's or `const`'s JS name.
-pub(super) fn fn_name(tcx: TyCtxt<'_>, def_id: DefId) -> String {
+pub(crate) fn fn_name(tcx: TyCtxt<'_>, def_id: DefId) -> String {
     name_in_js(tcx, def_id)
 }
 
@@ -1442,7 +1446,7 @@ pub(super) fn trait_method_name(tcx: TyCtxt<'_>, trait_id: DefId, name: &str) ->
 }
 
 /// A struct's or a variant's field, as a JS property.
-pub(super) fn field_key(tcx: TyCtxt<'_>, field: &FieldDef) -> String {
+pub(crate) fn field_key(tcx: TyCtxt<'_>, field: &FieldDef) -> String {
     name_in_js(tcx, field.did)
 }
 

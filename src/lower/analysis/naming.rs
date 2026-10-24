@@ -286,6 +286,10 @@ pub(super) fn item_js_name(tcx: TyCtxt<'_>, def_id: DefId, trait_impls: &[DefId]
         };
         return format!("{prefix}_{}", bindings::fn_name(tcx, def_id));
     }
+    // A class's `const`, its prototype's property (ADR 0761).
+    if let Some(name) = crate::lower::classes::const_name(tcx, def_id) {
+        return name;
+    }
     bindings::fn_name(tcx, def_id)
 }
 
