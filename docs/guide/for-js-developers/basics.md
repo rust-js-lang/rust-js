@@ -1332,6 +1332,11 @@ export function isAdult(p) {
 - `if let Some(age) = p.age` is "if it's there, call it `age`".
 - rustc won't let you use an `Option<u32>` as a `u32`: you can't forget the
   missing case.
+- An `Option<bool>` that's `Some(true)`, `flag.is_some_and(|&on| on)`,
+  `flag == Some(true)` or `flag.unwrap_or(false)`, is tested by its truth,
+  as JS tests a flag that may be missing: `if (warned[key])`. As a value
+  it's a `bool`, `!!flag`
+  ([ADR 0298](../../decisions/0298-truthy-options.md)).
 
 JS's `||` falls back on any falsy value, `""` and `0` too, where `??` falls
 back on `null` and `undefined` alone. In Rust, say which values you keep,

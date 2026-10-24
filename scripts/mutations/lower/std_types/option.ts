@@ -369,4 +369,12 @@ export const mutations: Mutation[] = [
     replace: "    match None::<Expr> {\n        Some(chain) => {",
     tests: ["test/snapshots.test.ts", "-t", "^web_forms"],
   },
+  {
+    name: "map-some-undefined",
+    breaks: "a `map`'s `Some` isn't known never `undefined`, so a nullable field given it is `(c ? c(..) : undefined) ?? null`",
+    file: "src/lower/std_types/option.rs",
+    find: "                    value.defined()\n",
+    replace: "                    value\n",
+    tests: ["test/lowering-nullable.test.ts", "-t", "what's never undefined as it is"],
+  },
 ];

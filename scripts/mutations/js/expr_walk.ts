@@ -157,4 +157,13 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/lowering-moves.test.ts", "-t", "a getter's Option a combinator reads more than once is read once"],
   },
+  {
+    name: "tested-coalesce-kept",
+    breaks: "a test of `x ?? false` keeps its fallback, `if (d[k] ?? false)`, which reads as `x`",
+    file: "src/js/expr_walk.rs",
+    find: "            ExprKind::Binary(Op::Coalesce, x, fallback) if fallback.is_falsy_constant() => {\n",
+    replace: "            ExprKind::Binary(Op::Coalesce, x, fallback) if false && fallback.is_falsy_constant() => {\n",
+    tests: ["test/corpus.test.ts", "-t", "option_bool_tested"],
+    snapshots: true,
+  },
 ];
