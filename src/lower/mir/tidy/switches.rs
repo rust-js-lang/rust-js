@@ -9,7 +9,7 @@ use crate::js::{self, Expr, ExprKind, Op, Stmt, StmtKind, UnaryOp};
 use crate::lower::mir::hints::{Constant, SUBJECT, Switch, SwitchArm};
 use crate::lower::untagged::TypeofCase;
 
-use super::{first_written, is_temporary, relabeled, written_loop};
+use super::{first_written, is_temporary, relabeled, unlabeled, written_loop};
 
 /// What a readable label a loop's given is, where a `break` of it in a
 /// `switch` names it and the program named it none: `loop`, as ADR 0015
@@ -836,6 +836,59 @@ fn labels_in(stmts: &[Stmt], labels: &mut HashSet<String>) {
             StmtKind::Switch { cases, default, .. } => {
                 js::case_lists(cases, default).for_each(|body| labels_in(body, labels));
             }
+            _ => {}
+        }
+    }
+}
+
+/// A block's `break` in a `switch` its statements end with, `l: { if (c) {
+/// .. } else { switch (k) { case 1: .. break l; } } }`, which goes where
+/// the `switch`'s own `break` does, nothing between: that `break`, as a
+/// person writes a case's end (ADR 0731); and the block's label, which
+/// nothing names now, gone.
+pub(super) fn breaks_past_switches(stmts: &mut Vec<Stmt>) {
+    for stmt in stmts.iter_mut() {
+        if let StmtKind::Labeled(label, body) = &mut stmt.kind {
+            let label = label.clone();
+            ending_switches(body, &mut |case| case_breaks(case, &label));
+        }
+    }
+    unlabeled(stmts);
+}
+
+/// Each `switch` `stmts` end with, through the branches of an `if` they
+/// end with and a block's statements, each of its cases given to `f`.
+fn ending_switches(stmts: &mut [Stmt], f: &mut dyn FnMut(&mut Vec<Stmt>)) {
+    match stmts.last_mut().map(|s| &mut s.kind) {
+        Some(StmtKind::If(_, a, b)) => {
+            ending_switches(a, f);
+            if let Some(b) = b {
+                ending_switches(b, f);
+            }
+        }
+        Some(StmtKind::Labeled(_, body)) => ending_switches(body, f),
+        Some(StmtKind::Switch { cases, default, .. }) => {
+            for case in js::case_lists_mut(cases, default) {
+                f(case);
+            }
+        }
+        _ => {}
+    }
+}
+
+/// Each `break label` of a case's `stmts`, outside a loop or `switch` of
+/// its own, which a bare `break` would leave instead: a bare `break`.
+fn case_breaks(stmts: &mut [Stmt], label: &str) {
+    for stmt in stmts.iter_mut() {
+        match &mut stmt.kind {
+            StmtKind::Break(Some(l)) if l == label => stmt.kind = StmtKind::Break(None),
+            StmtKind::If(_, a, b) => {
+                case_breaks(a, label);
+                if let Some(b) = b {
+                    case_breaks(b, label);
+                }
+            }
+            StmtKind::Labeled(_, body) => case_breaks(body, label),
             _ => {}
         }
     }

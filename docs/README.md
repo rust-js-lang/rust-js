@@ -560,7 +560,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0626 What a library hands a crate is what its items reach](decisions/0626-what-a-library-hands-a-crate.md)
 - [0627 A number literal keeps its base and its exponent](decisions/0627-a-number-literal-keeps-its-base-and-exponent.md)
 - [0628 A loop after a loop is after it](decisions/0628-a-loop-after-a-loop-is-after-it.md)
-- [0629 A `match` of constants is a `switch`](decisions/0629-a-match-of-constants-is-a-switch.md) *(amended by 0634: a `Some`'s constants and the registry's symbols are cases; by 0636: a guarded arm is a case; by 0668: a `match` of what a value is is a `switch (typeof value)`; amended: a `break` only where a case goes on to another)*
+- [0629 A `match` of constants is a `switch`](decisions/0629-a-match-of-constants-is-a-switch.md) *(amended by 0634: a `Some`'s constants and the registry's symbols are cases; by 0636: a guarded arm is a case; by 0668: a `match` of what a value is is a `switch (typeof value)`; amended: a `break` only where a case goes on to another; by 0731: a case's `break` past the `switch` is its own)*
 - [0630 A comment inside an expression is after the code before it](decisions/0630-a-comment-inside-an-expression.md)
 - [0631 A step of one is `++`](decisions/0631-a-step-of-one-is-plus-plus.md)
 - [0632 A JS string's `length` is below `u32::MAX`, and a counter below it doesn't wrap](decisions/0632-a-js-strings-length-is-below-u32-max.md) *(amended by 0682: at most `2^31 - 1`, so two add without a wrap)*
@@ -640,6 +640,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0714 A reference given to generic code is what it refers to](decisions/0714-a-reference-given-to-generic-code.md)
 - [0715 What an `IntoIterator` bound is given is its items, as JS steps them](decisions/0715-what-an-into-iterator-bound-is-given.md)
 - [0730 A loop's early `break` is in the `if` it was written in](decisions/0730-a-loops-early-break-is-in-the-if-it-was-written-in.md)
+- [0731 A case's `break` past the `switch` is the case's own](decisions/0731-a-cases-break-past-the-switch-is-its-own.md)
 - [0436 Every `dyn` that's a pair keeps its value's drop, `dyn Send` too](decisions/0436-every-dyn-keeps-its-drop.md) *(amended by 0691: a `dyn Any` drops where the crate makes one of what drops)*
 - [0437 A scope's drops on a panic are one `try { .. } finally { .. }`](decisions/0437-a-scopes-drops-are-one-finally.md) *(amended by 0693: its `if`s, loops and `return`s in it)*
 - [0438 An optional prop is given `Some(..)`, or left out](decisions/0438-an-optional-prop-is-given-some.md)

@@ -436,6 +436,10 @@ pub(super) const STAGES: &[Stage] = &[
             pass("switches", |b, h| {
                 switches::switches(b, &h.written.switches, &h.written.loops)
             }),
+            // A block's `break` in a `switch` it ends with: the case's own.
+            pass("breaks past switches", |b, _| {
+                js::statement_lists(b, &mut switches::breaks_past_switches)
+            }),
             pass("source spans", |b, _| js::statement_lists(b, &mut |s| source_spans(s))),
             // A `continue` the program wrote, where it wrote it, which its
             // comment is before (ADR 0684).

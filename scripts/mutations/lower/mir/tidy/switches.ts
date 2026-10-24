@@ -160,4 +160,20 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: typeofs,
   },
+  {
+    name: "break-past-switch-kept",
+    breaks: "a block's `break` in a case of a `switch` it ends with stays, `break bb374;`, its label around the `if`",
+    file: "src/lower/mir/tidy/switches.rs",
+    find: "            StmtKind::Break(Some(l)) if l == label => stmt.kind = StmtKind::Break(None),\n",
+    replace: "",
+    tests: ["test/lowering-switch-ends.test.ts", "-t", "past the switch"],
+  },
+  {
+    name: "break-past-switch-in-a-loop",
+    breaks: "a block's `break` in a loop in a case is the loop's bare `break`, leaving the loop, not the block",
+    file: "src/lower/mir/tidy/switches.rs",
+    find: "            StmtKind::Labeled(_, body) => case_breaks(body, label),\n            _ => {}\n",
+    replace: "            StmtKind::Labeled(_, body) => case_breaks(body, label),\n            StmtKind::While { body, .. } | StmtKind::ForOf { body, .. } | StmtKind::For { body, .. } => case_breaks(body, label),\n            _ => {}\n",
+    tests: ["test/lowering-switch-ends.test.ts", "-t", "past the switch"],
+  },
 ];

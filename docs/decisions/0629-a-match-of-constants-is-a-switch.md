@@ -2,6 +2,8 @@
 
 Status: Accepted. Amends [ADR 0014](0014-match-lowering.md), which made
 every `match` an `if` chain. Amended by
+[0731](0731-a-cases-break-past-the-switch-is-its-own.md): a case's `break`
+past the `switch` is its own; by
 [0634](0634-a-registered-symbol-is-a-const.md): a `Some` of constants,
 where it's the value itself, is those constants, and the registry's
 symbol, `js::SymbolFor`, is one; by

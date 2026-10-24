@@ -896,7 +896,9 @@ symbol, or a `Some` of them, [ADR
 0634](../../decisions/0634-a-registered-symbol-is-a-const.md)), and at most
 a last `_`, is a `switch`: `|`'s constants are stacked `case`s, `_` is the
 `default`, left out where it does nothing, and each case ends in `break;`
-where it'd go on, in a block `{ .. }` where it declares a name. An arm with
+where it'd go on, the case's own where it's left for what follows the
+`switch` ([ADR 0731](../../decisions/0731-a-cases-break-past-the-switch-is-its-own.md)),
+in a block `{ .. }` where it declares a name. An arm with
 a guard is a case that tests it, where what Rust tries when the guard
 fails does nothing: each later arm that could match its constants is a
 `_ => {}`, as below. Any other `match`, of a range, a binding, a guard a
