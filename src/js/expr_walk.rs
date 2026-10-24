@@ -509,6 +509,9 @@ impl Expr {
                         // A registered symbol of its key, and the key of one,
                         // `js::SymbolFor`'s, whose type says it is one (ADR 0634).
                         "Symbol" => matches!(name.as_str(), "for" | "keyFor"),
+                        // What a value is, `Array.isArray(v)`, which a test of
+                        // a `Kind::Array` or `Kind::Object` reads (ADR 0743).
+                        "Array" => name == "isArray",
                         _ => false,
                     } =>
             {

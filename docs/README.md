@@ -652,6 +652,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0740 A function's members are read of any function, `js::function`](decisions/0740-a-functions-members-are-read-of-any-function.md)
 - [0741 An `ArrayBufferView` is what each view derefs to, and `isView` takes any value](decisions/0741-an-array-buffer-view-is-what-each-view-derefs-to.md)
 - [0742 A block's label the program wrote is its name in JS](decisions/0742-a-label-the-program-wrote-is-its-name.md)
+- [0743 A part of a chain of tests an earlier test decides is left out](decisions/0743-a-part-of-a-chain-a-test-decides-is-left-out.md)
 - [0436 Every `dyn` that's a pair keeps its value's drop, `dyn Send` too](decisions/0436-every-dyn-keeps-its-drop.md) *(amended by 0691: a `dyn Any` drops where the crate makes one of what drops)*
 - [0437 A scope's drops on a panic are one `try { .. } finally { .. }`](decisions/0437-a-scopes-drops-are-one-finally.md) *(amended by 0693: its `if`s, loops and `return`s in it)*
 - [0438 An optional prop is given `Some(..)`, or left out](decisions/0438-an-optional-prop-is-given-some.md)
@@ -780,7 +781,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0561 std's bodies are std's own; a recognizer is a proved rewrite to an idiom](decisions/0561-std-bodies.md)
 - [0562 A pointer is a place and an address; bytes are plain data's](decisions/0562-a-pointer-is-a-place-and-an-address.md)
 - [0563 What's found once of a crate is keyed by the crate's own files](decisions/0563-found-once-is-keyed-by-the-crates-own-files.md) *(superseded by 0573)*
-- [0564 A std body's JS is tidied as the app's is: decided tests, once-read temporaries, shared tails](decisions/0564-a-std-body-is-tidied-as-the-apps-are.md)
+- [0564 A std body's JS is tidied as the app's is: decided tests, once-read temporaries, shared tails](decisions/0564-a-std-body-is-tidied-as-the-apps-are.md) *(extended by 0743: a part of a chain a test decides)*
 - [0565 How the generated JS reads is a gate, as what it computes is](decisions/0565-readability-is-a-gate.md)
 - [0566 `Fuse` is std's; a specialization is picked by its caller's fact](decisions/0566-fuse-is-stds.md)
 - [0567 A corpus case's runs are kept by what they ran](decisions/0567-a-corpus-cases-runs-are-kept-by-what-they-ran.md)

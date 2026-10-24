@@ -651,7 +651,10 @@ export function hasSetImmediate() {
   propagate, as a panic. Declare `Option` where JS may give `null`.
 - **A value of unknown shape is a `js::Unknown`**, which `js::classify`
   tells by `typeof` and `js::get` reads a property of by name, `value[key]`
-  ([0225](../decisions/0225-unknown-values.md)).
+  ([0225](../decisions/0225-unknown-values.md)). Its test of an array,
+  `Array.isArray(x)`, is taken to do nothing, which it does but for a
+  revoked `Proxy`, where it throws
+  ([0743](../decisions/0743-a-part-of-a-chain-a-test-decides-is-left-out.md)).
 
 JSON through serde_json writes and reads as serde_json does, a 64-bit
 integer to the digit; `rename`, `tag`, `untagged`, `flatten`, `default`,
@@ -706,3 +709,6 @@ React and JSX are [their own pages](README.md#react).
     `nth(n - 1)`, through a `peekable`, a `fuse` and a `flatten`, which
     rust-js steps by `next` (#182); elsewhere it's asked as std asks it
     (ADR 0711).
+22. `Array.isArray(x)` of a revoked `Proxy`, which throws a `TypeError`,
+    is taken to do nothing: a test of it that an earlier one decides is
+    left out (ADR 0743).

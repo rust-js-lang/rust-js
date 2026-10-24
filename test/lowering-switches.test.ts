@@ -887,3 +887,35 @@ console.log(JSON.stringify([values.map(getIoDescription), reads]));
     ["request", "url"],
   ]);
 });
+
+// ADR 0743: a part of a chain of tests that an earlier test decides is
+// left out of it: an arm of `Kind::Array(..)` whose pattern fails, then one
+// of `Kind::Object(_)`, is `if (Array.isArray(value)) { .. } else if
+// (typeof value !== "object" || value === null)`, not `.. ||
+// Array.isArray(value)` again. React's `getArrayKind`
+// (shared/ReactPerformanceTrackProperties.js).
+test("a part of a chain an earlier test decides is left out", async () => {
+  const dir = fixture("decided-parts");
+  writeFileSync(join(dir, "lib.rs"), `use js::{Kind, Unknown};
+
+pub fn kind(values: &[Option<&Unknown>]) -> u32 {
+    let mut n = 0;
+    for &value in values {
+        match js::classify(value) {
+            Kind::Array(&[first, _]) if matches!(js::classify(first), Kind::String(_)) => n += 1,
+            Kind::Object(_) | Kind::Array(_) => return 100,
+            Kind::Function(_) => return 200,
+            _ => n += 10,
+        }
+    }
+    n
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs()]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("Array.isArray(value)");
+  expect(js.match(/Array\.isArray\(value\)/g)?.length).toBe(1);
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.kind([["a", 1], 3, "x"]), lib.kind([[1, 2]]), lib.kind([{}]), lib.kind([() => {}]), lib.kind([null, undefined])])
+    .toEqual([21, 100, 100, 200, 20]);
+});

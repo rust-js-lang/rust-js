@@ -470,4 +470,20 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/lowering-written-branches.test.ts", "-t", "a read a test takes in place"],
   },
+  {
+    name: "mir-tidy-decided-part-kept",
+    breaks: "a part of a chain an earlier test decides is tested again, `.. || Array.isArray(value)` in its `else` (ADR 0743)",
+    file: "src/lower/mir/tidy/branches.rs",
+    find: "    changed.then_some(folded)\n",
+    replace: "    changed.then_some(folded).filter(|_| false)\n",
+    tests: ["test/lowering-switches.test.ts", "-t", "a part of a chain an earlier test decides is left out"],
+  },
+  {
+    name: "mir-tidy-decided-part-past-the-if",
+    breaks: "a part of a chain is left out past the `if` that decides it, where a `switch` of a `match`'s arms reads each test whole (ADR 0743)",
+    file: "src/lower/mir/tidy/branches.rs",
+    find: "            StmtKind::If(t, ..) if parts && let Some(folded) = decided_part(t, test, holds) => {\n",
+    replace: "            StmtKind::If(t, ..) if let Some(folded) = decided_part(t, test, holds) => {\n",
+    tests: ["test/lowering-switches.test.ts", "-t", "a match of what a value is tells undefined and null"],
+  },
 ];

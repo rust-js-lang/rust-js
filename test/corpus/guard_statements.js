@@ -16,7 +16,7 @@ function size(s) {
 
 function describe(s, seen) {
   if (s.TAG === "Square") {
-    if (s.TAG === "Square" && s._0 > 2) {
+    if (s._0 > 2) {
       return "big square";
     }
     seen.value = (seen.value + 1) | 0;

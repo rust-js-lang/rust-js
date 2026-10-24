@@ -1180,13 +1180,13 @@ pub(super) fn decided_tests(stmts: &mut Vec<Stmt>, changing: &HashSet<String>) {
         let StmtKind::If(_, then, otherwise) = &mut stmts[i].kind else {
             unreachable!("matched")
         };
-        decided_in(then, 0, &test, true);
+        decided_in(then, 0, &test, true, true);
         if let Some(otherwise) = otherwise {
-            decided_in(otherwise, 0, &test, false);
+            decided_in(otherwise, 0, &test, false, true);
         }
         match (then_leaves, else_leaves) {
-            (true, false) => decided_in(stmts, i + 1, &test, false),
-            (false, true) => decided_in(stmts, i + 1, &test, true),
+            (true, false) => decided_in(stmts, i + 1, &test, false, false),
+            (false, true) => decided_in(stmts, i + 1, &test, true, false),
             _ => {}
         }
         i += 1;
@@ -1203,8 +1203,11 @@ fn decidable(test: &Expr, changing: &HashSet<String>) -> bool {
 
 /// `stmts` from `from` on, where `test` is known to hold, or to fail: each
 /// `if` of it, or of its negation, its branch taken, up to what may change
-/// what `test` reads.
-fn decided_in(stmts: &mut Vec<Stmt>, from: usize, test: &Expr, holds: bool) {
+/// what `test` reads; and, in a branch of the `if` of `test`, its `parts`,
+/// each part of a chain it decides left out (ADR 0743). Not past the `if`,
+/// where a `match`'s arms are tested one after another, each test whole,
+/// which a `switch` of them reads (ADR 0668).
+fn decided_in(stmts: &mut Vec<Stmt>, from: usize, test: &Expr, holds: bool, parts: bool) {
     let mut j = from;
     while j < stmts.len() {
         match &mut stmts[j].kind {
@@ -1220,11 +1223,19 @@ fn decided_in(stmts: &mut Vec<Stmt>, from: usize, test: &Expr, holds: bool) {
                 stmts.splice(j..j, branch);
                 // What the branch had is where it was, known the same there.
             }
+            StmtKind::If(t, ..) if parts && let Some(folded) = decided_part(t, test, holds) => {
+                // A part of its chain decided, `a || x` where `x` fails: `a`,
+                // looked at again (ADR 0743).
+                let StmtKind::If(t, ..) = &mut stmts[j].kind else {
+                    unreachable!("matched")
+                };
+                *t = folded;
+            }
             StmtKind::If(_, then, otherwise) => {
-                decided_in(then, 0, test, holds);
+                decided_in(then, 0, test, holds, parts);
                 let mut disturbed = disturbs_any(then, test);
                 if let Some(otherwise) = otherwise {
-                    decided_in(otherwise, 0, test, holds);
+                    decided_in(otherwise, 0, test, holds, parts);
                     disturbed |= disturbs_any(otherwise, test);
                 }
                 if disturbed {
@@ -1233,7 +1244,7 @@ fn decided_in(stmts: &mut Vec<Stmt>, from: usize, test: &Expr, holds: bool) {
                 j += 1;
             }
             StmtKind::Labeled(_, body) => {
-                decided_in(body, 0, test, holds);
+                decided_in(body, 0, test, holds, parts);
                 if disturbs_any(body, test) {
                     return;
                 }
@@ -1266,6 +1277,46 @@ fn present_in(stmt: &mut Stmt, test: &Expr, holds: bool) {
             *e = (**x).clone().or_at(e.span);
         }
     });
+}
+
+/// Of `t`, a chain of `&&` and `||`, where `test` is known to hold, or to
+/// fail: the chain without the parts of it `test` decides, `a ||
+/// Array.isArray(v)` in an `else` of `Array.isArray(v)` its `a`; none where
+/// no part of it is (ADR 0743). A part whose value is known is left out of
+/// its chain only where it does nothing, as a test that's decided does not.
+fn decided_part(t: &Expr, test: &Expr, holds: bool) -> Option<Expr> {
+    fn fold(e: &Expr, test: &Expr, holds: bool, changed: &mut bool) -> Expr {
+        let ExprKind::Binary(op @ (Op::And | Op::Or), a, b) = &e.kind else {
+            return match decided(e, test) {
+                Some(taken) => {
+                    *changed = true;
+                    Expr::bool(taken == holds).or_at(e.span)
+                }
+                None => e.clone(),
+            };
+        };
+        let (a, b) = (fold(a, test, holds, changed), fold(b, test, holds, changed));
+        // What `a op b` is where one side is known: `true || b` is `true`,
+        // `false || b` is `b`, `a || false` is `a`; `&&` the other way.
+        let known = |x: &Expr| match x.kind {
+            ExprKind::Bool(v) => Some(v),
+            _ => None,
+        };
+        let short = matches!(op, Op::Or);
+        match (known(&a), known(&b)) {
+            (Some(v), _) if v == short => a,
+            (Some(_), _) => b,
+            (_, Some(v)) if v != short => a,
+            (_, Some(_)) if !a.has_effects() => b,
+            _ => Expr::bin(*op, a, b).or_at(e.span),
+        }
+    }
+    if !matches!(t.kind, ExprKind::Binary(Op::And | Op::Or, ..)) {
+        return None;
+    }
+    let mut changed = false;
+    let folded = fold(t, test, holds, &mut changed);
+    changed.then_some(folded)
 }
 
 /// Whether `t` is `test`, `Some(true)`, or its negation, `Some(false)`.
