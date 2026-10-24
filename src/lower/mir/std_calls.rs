@@ -420,6 +420,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 self.str_part_values(op, cell, given)
             }
+            // A `String`'s room asked, which std checks (ADR 0774), of its
+            // text where it is.
+            Std::Text(TextOp::Reserve) => {
+                let text = match values.next().expect("the string") {
+                    Value::Ref(place) => place,
+                    cell => Expr::held(self.value_expr(cell, span)?),
+                };
+                let n = self.value_expr(values.next().expect("the room"), span)?;
+                Expr::call(Expr::helper("$textRoomFor"), vec![text, n])
+            }
             // A string's or a slice's method, but one of a range or a part of
             // it, which is lowered from its place.
             Std::Text(op)
@@ -517,15 +527,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 out.push(StmtKind::Assign(place, edited).at(self.js_span(span)));
                 taken.unwrap_or_else(Expr::undefined)
             }
-            // Its capacity is the engine's: what it's given runs, for what it does.
+            // Its capacity is the engine's, but std checks the room it's
+            // asked, of bytes (ADR 0774).
             Std::StringWithCapacity => {
-                for value in values {
-                    let value = self.value_expr(value, span)?;
-                    if value.has_effects() {
-                        self.flush(state, out)?;
-                        out.push(StmtKind::Expr(value).at(self.js_span(span)));
-                    }
+                let mut n = self.value_expr(values.next().expect("the capacity"), span)?;
+                self.flush(state, out)?;
+                if !n.reads_same() {
+                    n = self.spill("n", n, out);
                 }
+                self.room_for((None, n), Expr::int(1), span, out);
                 Expr::str("")
             }
             _ => return Ok(None),

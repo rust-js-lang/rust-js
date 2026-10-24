@@ -119,14 +119,14 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "front" | "front_mut" if deque => Some(Std::First),
             "back" | "back_mut" if deque => Some(Std::SliceLast),
             "as_slices" | "as_mut_slices" if deque => Some(Std::Slice(SliceOp::DequeSlices)),
-            // A JS array has no capacity: asking for some does nothing (ADR
-            // 0315). A `Vec`'s is `capacity_op`'s (ADR 0419).
-            "reserve" | "reserve_exact" | "shrink_to" | "shrink_to_fit" if deque || heap || of.map || of.set => {
+            // A JS map or string has no capacity: asking for some does nothing
+            // (ADRs 0315, 0322), but a `String`'s room is checked (ADR 0774).
+            // An array collection's is `capacity_op`'s (ADR 0419).
+            "reserve" | "reserve_exact" if string => Some(Std::Text(TextOp::Reserve)),
+            "reserve" | "reserve_exact" | "shrink_to" | "shrink_to_fit" if of.map || of.set || string => {
                 Some(Std::Nothing)
             }
             "into_boxed_slice" if adt(StdItem::Vec) => Some(Std::Same),
-            // A JS string has no capacity either (ADR 0322).
-            "reserve" | "reserve_exact" | "shrink_to" | "shrink_to_fit" if string => Some(Std::Nothing),
             // A `Box<str>` is its string, and a `Box<[T]>` its array.
             "into_boxed_str" if string => Some(Std::Same),
             // A `String`'s bytes, a new array, as a `str`'s are.
@@ -489,7 +489,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                 start: false,
                 end: true,
             },
-            "repeat" if owner.is_str() => Std::Method("repeat"),
+            "repeat" if owner.is_str() => Std::Text(TextOp::Repeat),
             // Of text, JS's `join`; of lists, their items with the separator's
             // between (ADR 0322). `connect`, deprecated, is `join`.
             "join" | "connect"

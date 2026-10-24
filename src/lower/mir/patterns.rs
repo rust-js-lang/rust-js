@@ -175,6 +175,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             registered: self.mir_registered(body),
             thrown: self.mir_thrown(body, locals),
             present: self.mir_present(body),
+            held: crate::lower::body_queries::held_guards(self.tcx, self.frame.thir),
         }
     }
 
@@ -229,6 +230,114 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .collect();
         thrown.extend(tried);
         thrown
+    }
+
+    /// Of each guard that holds (`OptionWrites::held`): what it binds read
+    /// as the value it's the `Some` of, `value`, not a variable of its own;
+    /// and its arm's alternatives going on to the arm, past the guard's
+    /// test, as an arm's with no guard do: one case, `Object | Array`'s.
+    pub(super) fn mir_held_guards(&self, state: &mut State<'_, 'tcx>) {
+        let bindings = self.mir_held_bindings(state.body, &state.options.held);
+        for &(bound, of) in &bindings {
+            let read = Expr::var(&state.locals.names[of]);
+            state.in_place.insert(bound, read);
+            state.locals.names[bound] = String::new();
+            state.locals.declared[bound] = true;
+        }
+        let bound: std::collections::HashSet<Local> = bindings.iter().map(|&(bound, _)| bound).collect();
+        state.held_arms = self.mir_held_arms(state.body, &state.options.held, &bound);
+        if !state.held_arms.is_empty() {
+            state.graph = cfg::Graph::of(state.body, &state.held_arms);
+        }
+    }
+
+    /// Each variable a guard that holds binds (`OptionWrites::held`), `v` of
+    /// `if let Some(v) = value`, and the local it's the `Some` of: `value`,
+    /// which it is wherever it's read, as a `Some(x)` of a reference is `x`
+    /// (ADR 0030) and `value` never changes.
+    fn mir_held_bindings(&self, body: &mir::Body<'tcx>, held: &std::collections::HashSet<Span>) -> Vec<(Local, Local)> {
+        let user: std::collections::HashSet<Local> = (body.var_debug_info.iter())
+            .filter_map(|info| match info.value {
+                mir::VarDebugInfoContents::Place(place) if place.projection.is_empty() => Some(place.local),
+                _ => None,
+            })
+            .collect();
+        (body.basic_blocks.iter())
+            .flat_map(|data| &data.statements)
+            .filter(|statement| held.iter().any(|guard| guard.contains(statement.source_info.span)))
+            .filter_map(|statement| {
+                let mir::StatementKind::Assign(assign) = &statement.kind else {
+                    return None;
+                };
+                let (bound, Rvalue::Use(Operand::Copy(from) | Operand::Move(from), _)) = &**assign else {
+                    return None;
+                };
+                let some = matches!(from.projection.as_slice(), [mir::ProjectionElem::Downcast(_, v), mir::ProjectionElem::Field(f, _)]
+                    if v.as_u32() == 1 && f.as_u32() == 0);
+                (bound.projection.is_empty() && user.contains(&bound.local) && some).then_some((bound.local, from.local))
+            })
+            .collect()
+    }
+
+    /// Each block on the way to an arm past a guard that holds
+    /// (`OptionWrites::held`), and the arm's first block: of what does
+    /// nothing in JS, a fake borrow, the guard's test of a `Some` and what
+    /// it binds (`bound`, read as the value it's of), and false edges.
+    fn mir_held_arms(
+        &self,
+        body: &mir::Body<'tcx>,
+        held: &std::collections::HashSet<Span>,
+        bound: &std::collections::HashSet<Local>,
+    ) -> HashMap<BasicBlock, BasicBlock> {
+        let in_held = |span: Span| held.iter().any(|guard| guard.contains(span));
+        let nothing = |statement: &mir::Statement<'tcx>| match &statement.kind {
+            StatementKind::StorageLive(_)
+            | StatementKind::StorageDead(_)
+            | StatementKind::Nop
+            | StatementKind::PlaceMention(_)
+            | StatementKind::FakeRead(_)
+            | StatementKind::AscribeUserType(..) => true,
+            StatementKind::Assign(assign) => match &assign.1 {
+                Rvalue::Ref(_, BorrowKind::Fake(_), _) => true,
+                Rvalue::Discriminant(_) => in_held(statement.source_info.span),
+                _ => assign.0.projection.is_empty() && bound.contains(&assign.0.local),
+            },
+            _ => false,
+        };
+        let mut arms = HashMap::new();
+        if held.is_empty() {
+            return arms;
+        }
+        for start in body.basic_blocks.indices() {
+            let (mut at, mut past_guard) = (start, false);
+            let mut seen = std::collections::HashSet::new();
+            while seen.insert(at) {
+                let data = &body.basic_blocks[at];
+                if !data.statements.iter().all(nothing) {
+                    break;
+                }
+                at = match &data.terminator().kind {
+                    TerminatorKind::Goto { target } | TerminatorKind::FalseEdge { real_target: target, .. } => *target,
+                    // The guard's test, of a discriminant read here: its `Some`.
+                    TerminatorKind::SwitchInt {
+                        discr: Operand::Copy(d) | Operand::Move(d),
+                        targets,
+                    } if (data.statements.iter()).any(|s| {
+                        matches!(&s.kind, StatementKind::Assign(a) if a.0 == *d && matches!(a.1, Rvalue::Discriminant(_)))
+                            && in_held(s.source_info.span)
+                    }) =>
+                    {
+                        past_guard = true;
+                        targets.target_for_value(1)
+                    }
+                    _ => break,
+                };
+            }
+            if past_guard {
+                arms.insert(start, at);
+            }
+        }
+        arms
     }
 
     /// The locals `OptionWrites::present` says: each a call

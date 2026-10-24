@@ -54,11 +54,17 @@ function main() {
   // As a statement, leaving it without a value, and one inside another.
   const log = [];
   log.push("start");
-  if (log.length !== 1) {
+  inner: {
+    if (log.length === 1) {
+      break inner;
+    }
     log.push("not reached");
   }
   log.push("after inner");
-  if (log.length === 0) {
+  outer: {
+    if (log.length !== 0) {
+      break outer;
+    }
     log.push("not reached either");
   }
   console.log(`[${log.map((item) => $debugStr(item)).join(", ")}]`);

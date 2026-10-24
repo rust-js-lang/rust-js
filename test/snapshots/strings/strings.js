@@ -4,9 +4,11 @@
 // `char` is a string of one character. Their methods are JS's.
 
 import {
+  $byteLen,
   $debugF64,
   $pad,
   $plus,
+  $roomFor,
   $rsplitOnce,
   $splitOnce,
   $stripSuffix,
@@ -102,6 +104,7 @@ export function folderAndFile(path) {
 }
 
 export function repeated(s, n) {
+  $roomFor(n, $byteLen(s));
   return s.repeat(n);
 }
 

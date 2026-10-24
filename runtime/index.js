@@ -760,9 +760,16 @@ export function $remove(map, key, dropKey) {
 }
 
 // `vec![item; count]`: `count - 1` clones of `item`, then `item` itself, as
-// std's `from_elem` makes them; of none, `item` dropped by `drop`, where it
-// has a destructor.
-export function $repeat(item, count, clone, drop) {
+// std's `from_elem` makes them, room for them of `size` bytes each asked
+// first (ADR 0774); of none, or of no room, `item` dropped by `drop`, where
+// it has a destructor.
+export function $repeat(item, count, size, clone, drop) {
+  try {
+    $roomFor(count, size);
+  } catch (panic) {
+    drop?.(item);
+    throw panic;
+  }
   const result = [];
   if (count > 0) {
     for (let i = 1; i < count; i++) result.push(clone(item));
@@ -4312,8 +4319,10 @@ export function $sliceStripCircumfix(v, prefix, suffix, eq) {
   return rest === undefined ? undefined : $sliceStrip(rest, suffix, true, eq);
 }
 
-// `v.repeat(n)`: its items `n` times over, of `Copy` items.
-export function $repeatItems(v, n, copy) {
+// `v.repeat(n)`: its items `n` times over, of `Copy` items, room for them
+// of `size` bytes each asked first (ADR 0774).
+export function $repeatItems(v, n, size, copy) {
+  $roomFor(v.length * n, size);
   const out = [];
   for (let i = 0; i < n; i++) out.push(...(copy === undefined ? v : v.map(copy)));
   return out;
@@ -6472,6 +6481,20 @@ export function $shrinkTo(v, min) {
 // Before it's shortened, `clear()`, `pop()` and the rest: what it has, kept.
 export function $keepCapacity(v) {
   $capacities.set(v, $capacity(v));
+}
+
+// Room for `count` items of `size` bytes each, which std checks wherever a
+// capacity is asked (ADR 0774): past `isize::MAX` bytes, or past
+// `usize::MAX` items, of no size too, a `capacity overflow` panic.
+export function $roomFor(count, size) {
+  if (count > 2 ** 32 - 1 || count * size > 2 ** 31 - 1) throw new Error("capacity overflow");
+}
+
+// `s.reserve(additional)` of a `String`: room for its bytes and as many
+// more, its bytes counted only where they may not fit, as each of its
+// UTF-16 units is at most three.
+export function $textRoomFor(s, additional) {
+  if (additional > 2 ** 31 - 1 - 3 * s.length) $roomFor($byteLen(s) + additional, 1);
 }
 
 // indexmap's `IndexMap` and `IndexSet`: a `Map` and a `Set`, which keep

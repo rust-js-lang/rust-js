@@ -577,13 +577,17 @@ pub fn repeat(text: &str, times: Option<usize>) -> String {
 ```
 
 ```js
+import { $byteLen, $roomFor } from "@rust-js/runtime";
+
 export function greeting(name) {
   name ??= "stranger";
   return `Hello, ${name}`;
 }
 
 export function repeat(text, times) {
-  return text.repeat(times ?? 1);
+  const n = times ?? 1;
+  $roomFor(n, $byteLen(text));
+  return text.repeat(n);
 }
 ```
 

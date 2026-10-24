@@ -100,19 +100,80 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // A `break` the program wrote of a block it labeled: that block
             // ends at `to`, or at a block after it, past the drops at its
             // end, whose label is the one around it (ADR 0742).
-            let left = (self.jumped_from(state, from).into_iter()).find_map(|s| {
-                (state.jumps.blocks.iter())
-                    .position(|b| b.breaks.iter().any(|w| !s.is_none() && w.lo <= s.lo && s.hi <= w.hi))
-            });
-            if let Some(block) = left {
+            // Where it's written, which tells tidy it's the program's. Not a
+            // jump to where the arms of its value meet, which goes on to it.
+            let left = (self.written_break(state, from, &mut Vec::new()))
+                .filter(|&found| !self.goes_on_to_break(state, to, found));
+            if let Some((block, _)) = left {
                 state.jumps.left.entry(to).or_insert(block);
             }
             let mut out = Vec::new();
             self.flush(state, &mut out)?;
-            out.push(StmtKind::Break(Some(label(to))).at(js::Span::NONE));
+            let written = left.map_or(js::Span::NONE, |(_, w)| w);
+            out.push(StmtKind::Break(Some(label(to))).at(written));
             return Ok(out);
         }
         self.mir_tree(state, to)
+    }
+
+    /// The `break` the program wrote of a block it labeled that jumps from
+    /// `from`, if it's one: the block's, and where it's written. Of a jump
+    /// from where the arms of its value meet, `break 'desc match .. { .. }`,
+    /// the one each arm's way there is.
+    fn written_break(
+        &self,
+        state: &State<'_, 'tcx>,
+        from: BasicBlock,
+        seen: &mut Vec<BasicBlock>,
+    ) -> Option<(usize, js::Span)> {
+        let of = |s: js::Span| {
+            (state.jumps.blocks.iter().enumerate()).find_map(|(i, b)| {
+                (b.breaks.iter())
+                    .find(|w| !s.is_none() && w.lo <= s.lo && s.hi <= w.hi)
+                    .map(|&w| (i, w))
+            })
+        };
+        if let Some(found) = self.jumped_from(state, from).into_iter().find_map(of) {
+            return Some(found);
+        }
+        // Back through the drops on the way, to where more than one way
+        // meets: each the same `break`'s.
+        let preds = state.body.basic_blocks.predecessors();
+        let mut block = from;
+        while let [only] = preds[block].as_slice()
+            && !seen.contains(only)
+        {
+            seen.push(block);
+            block = *only;
+        }
+        if preds[block].len() < 2 || seen.contains(&block) {
+            return None;
+        }
+        seen.push(block);
+        let mut each = preds[block]
+            .clone()
+            .into_iter()
+            .map(|p| self.written_break(state, p, seen));
+        let first = each.next()??;
+        each.all(|other| other == Some(first)).then_some(first)
+    }
+
+    /// Whether `to`, a block where ways meet, goes on, through the drops on
+    /// its way, to a jump that's the `break` `found` is, inside whose value
+    /// it is: `break 'desc match .. { .. }`'s arms meet there.
+    fn goes_on_to_break(&self, state: &State<'_, 'tcx>, to: BasicBlock, found: (usize, js::Span)) -> bool {
+        let mut block = to;
+        for _ in 0..state.body.basic_blocks.len() {
+            let next = match &state.body.basic_blocks[block].terminator().kind {
+                TerminatorKind::Goto { target } | TerminatorKind::Drop { target, .. } => *target,
+                _ => return false,
+            };
+            if state.graph.merges.contains(&next) {
+                return self.written_break(state, block, &mut Vec::new()) == Some(found);
+            }
+            block = next;
+        }
+        false
     }
 
     /// Where what jumps from `from` is written: of what `from` does, and
@@ -254,7 +315,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 let mut cases: Vec<(Expr, BasicBlock, u128)> = Vec::new();
                 let mut always = None;
-                for (value, target) in targets.iter() {
+                // Past a guard that holds, to its arm (`held_arms`).
+                let past = |b: BasicBlock| state.held_arms.get(&b).copied().unwrap_or(b);
+                for (value, target) in targets.iter().map(|(value, target)| (value, past(target))) {
                     if reached(target) {
                         let test = self.switch_test(&subject, ty, value, span)?;
                         // A test that's a constant: its branch alone, or none.
@@ -269,7 +332,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     out.extend(self.mir_branch(state, block, target)?);
                     return Ok(out);
                 }
-                let mut otherwise = Some(targets.otherwise()).filter(|&b| reached(b));
+                let mut otherwise = Some(past(targets.otherwise())).filter(|&b| reached(b));
                 // Values that go to one block, an or-pattern's `'+' | '-'`:
                 // one test of either, the block once, as the program wrote it.
                 let mut grouped: Vec<(Expr, BasicBlock, Vec<u128>)> = Vec::new();

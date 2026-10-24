@@ -154,7 +154,7 @@ export const mutations: Mutation[] = [
     name: "switch-of-a-guard",
     breaks: "a guarded arm is a case where a later arm does something, `1 if n > 0 => 1, .., _ => 3`, which a failed guard leaves for after the `switch`, not the arms after it",
     file: "src/lower/mir/hints.rs",
-    find: "                                .filter(|_| arm.guard.is_none() || self.fails_to_nothing(&arm.pattern, &arms[i + 1..])),\n",
+    find: "                                .filter(|_| guard.is_none() || self.fails_to_nothing(&arm.pattern, &arms[i + 1..])),\n",
     replace: "                                ,\n",
     tests: ["test/lowering-matches.test.ts", "-t", "a match of constants is a switch"],
   },
@@ -162,8 +162,8 @@ export const mutations: Mutation[] = [
     name: "switch-guard-refused",
     breaks: "a guarded arm after which only `_ => {}` comes isn't a case, so React's `match` of seven constants is an `if` chain",
     file: "src/lower/mir/hints.rs",
-    find: "                                .filter(|_| arm.guard.is_none() || self.fails_to_nothing(&arm.pattern, &arms[i + 1..])),\n",
-    replace: "                                .filter(|_| arm.guard.is_none()),\n",
+    find: "                                .filter(|_| guard.is_none() || self.fails_to_nothing(&arm.pattern, &arms[i + 1..])),\n",
+    replace: "                                .filter(|_| guard.is_none()),\n",
     tests: ["test/lowering-switches.test.ts", "-t", "a guarded arm of a match of constants"],
   },
   {
@@ -269,5 +269,13 @@ export const mutations: Mutation[] = [
     find: "                block.breaks.push(self.js_span(e.span));\n",
     replace: "",
     tests: ["test/lowering-labels.test.ts", "-t", "a block the program labeled keeps its label"],
+  },
+  {
+    name: "held-guard-not-a-case",
+    breaks: "a `match js::classify(value)` whose object arm's guard holds stays an `if` chain, not a `switch` (ADR 0790)",
+    file: "src/lower/mir/hints.rs",
+    find: "                            !held.contains(\n",
+    replace: "                            true || !held.contains(\n",
+    tests: ["test/lowering-labels.test.ts", "-t", "a block the program labeled that ends a case"],
   },
 ];

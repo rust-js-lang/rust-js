@@ -327,6 +327,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     fn written_switches(&self) -> Vec<Switch> {
         // Each once, of the scopes THIR has of it.
         let mut seen = std::collections::HashSet::new();
+        let held = crate::lower::body_queries::held_guards(self.tcx, self.frame.thir);
         (self.frame.thir.exprs.iter())
             .filter_map(|e| {
                 let thir::ExprKind::Scope { mut value, hir_id, .. } = e.kind else {
@@ -364,15 +365,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let arms: Vec<&thir::Arm<'tcx>> = arms.iter().map(|&arm| &self.frame.thir[arm]).collect();
                 let arms: Vec<SwitchArm> = (arms.iter().enumerate())
                     .map(|(i, arm)| {
+                        // A guard that holds where the arm's pattern matches
+                        // tests nothing: the arm is as one without it.
+                        let guard = (arm.guard).filter(|&guard| {
+                            !held.contains(
+                                &self.frame.thir[crate::lower::body_queries::strip(self.frame.thir, guard)].span,
+                            )
+                        });
                         let constants = match &arm.pattern.kind {
-                            thir::PatKind::Wild if i == last && arm.guard.is_none() => Some(Vec::new()),
+                            thir::PatKind::Wild if i == last && guard.is_none() => Some(Vec::new()),
                             _ => (self.constants_of(&arm.pattern, present))
-                                .filter(|_| arm.guard.is_none() || self.fails_to_nothing(&arm.pattern, &arms[i + 1..])),
+                                .filter(|_| guard.is_none() || self.fails_to_nothing(&arm.pattern, &arms[i + 1..])),
                         }?;
                         Some(SwitchArm {
                             span: self.js_span(arm.span),
                             pattern: self.js_span(arm.pattern.span),
-                            guard: arm.guard.map(|guard| self.js_span(self.frame.thir[guard].span)),
+                            guard: guard.map(|guard| self.js_span(self.frame.thir[guard].span)),
                             constants,
                         })
                     })

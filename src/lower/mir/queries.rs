@@ -795,11 +795,14 @@ pub(super) fn early_exit(
     panics: [bool; 2],
     span: js::Span,
 ) -> Vec<Stmt> {
-    let exits = |stmts: &[Stmt]| {
-        matches!(
-            stmts.last().map(|s| &s.kind),
-            Some(StmtKind::Return(_) | StmtKind::Throw(_))
-        )
+    // Or a `break` the program wrote, of a block it labeled: where it's
+    // written, the span it has (ADR 0790).
+    let exits = |stmts: &[Stmt]| match stmts.last() {
+        Some(Stmt {
+            kind: StmtKind::Break(Some(_)),
+            span,
+        }) => !span.is_none(),
+        last => matches!(last.map(|s| &s.kind), Some(StmtKind::Return(_) | StmtKind::Throw(_))),
     };
     match otherwise {
         Some(otherwise) if panics == [false, true] => {

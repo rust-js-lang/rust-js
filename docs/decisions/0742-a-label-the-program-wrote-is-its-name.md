@@ -1,7 +1,11 @@
 # 0742. A block's label the program wrote is its name in JS
 
 Status: Accepted. Keeps [0158](0158-labeled-blocks.md), a labeled block
-is JS's labeled block, under MIR's lowering.
+is JS's labeled block, under MIR's lowering. Amended by
+[0790](0790-a-break-the-program-wrote-is-where-it-is-written.md): the
+block is named first, its `break`s are where they're written, never an
+`else` or a `return` tidy makes of them, and a block that ends a case is
+the case's `break;`s, no label.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): it can't be observed:
 a label's name is how the JS reads, not what it does.

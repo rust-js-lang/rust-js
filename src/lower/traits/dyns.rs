@@ -572,6 +572,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && self.is_pair_dyn(pointee)
             && let (Some(from), Some(to)) = (self.dyn_trait_ref(source, pointee), self.dyn_trait_ref(target, pointee))
         {
+            // Of its own trait, an auto trait left out, `dyn Sub + Send` as
+            // `dyn Sub`: itself.
+            if from == to {
+                return Ok(value);
+            }
             // Read twice, its dictionary and itself.
             let rc = if value.reads_same() {
                 value
@@ -586,7 +591,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         let what = format!("a counted `{source}` made elsewhere as a `{target}`");
         let made_here = match (self.counted_rc(source), value.kind) {
-            (Some(pointee), js::ExprKind::Object(props)) if !self.is_pair_dyn(pointee) => Some((pointee, props)),
+            (Some(pointee), js::ExprKind::Object(props)) => Some((pointee, props)),
             _ => None,
         };
         let Some((pointee, mut props)) = made_here else {

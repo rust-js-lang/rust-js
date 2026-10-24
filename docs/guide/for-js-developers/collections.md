@@ -47,11 +47,14 @@ pub fn zeros(n: usize) -> Vec<f64> {
 ```
 
 ```js
+import { $roomFor } from "@rust-js/runtime";
+
 export function primes() {
   return [2, 3, 5, 7];
 }
 
 export function zeros(n) {
+  $roomFor(n, 8);
   return new Array(n).fill(0);
 }
 ```
