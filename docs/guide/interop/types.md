@@ -570,11 +570,15 @@ export function ratio(a, b) {
   A result is `?? null` of an `Option` that may be `undefined`, and a
   nullable function's call as it is, `null` for `None` already, `return
   last(b);` ([ADR 0638](../../decisions/0638-a-nullable-functions-call-is-null-already.md)).
-  It's of an `Option` only; on anything else it's an error
+  A field's is of an `Option`, or of a `Cell` of one, whose `None` is
+  `null` where it's made and where it's `set`, `replace`d or `take`n,
+  `context.renderer = null`
+  ([ADR 0772](../../decisions/0772-a-nullable-cell-field-writes-null.md));
+  on anything else it's an error
   ([ADR 0586](../../decisions/0586-a-nullable-field-is-an-option.md)):
 
   ```
-  rust-js: `#[rust_js::nullable]` is of a field that's an `Option`, whose `None` is `null`; this one isn't
+  rust-js: `#[rust_js::nullable]` is of a field that's an `Option`, or a `Cell` of one, whose `None` is `null`; this one isn't
   ```
 
 - **A `Some` of what looks like `None` is boxed**: `Some(None)`, `Some(())`

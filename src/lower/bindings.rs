@@ -88,14 +88,13 @@ pub(super) fn validate(tcx: TyCtxt<'_>) -> bool {
             }
         }
         // A `#[rust_js::nullable]` field is an `Option` whose `None` is `null`
-        // (ADR 0196): of one that isn't, a cell of one say, it's nothing to do.
+        // (ADR 0196), or a `Cell` of one (ADR 0772): of one that isn't, it's
+        // nothing to do.
         if matches!(tcx.def_kind(def), DefKind::Struct | DefKind::Enum | DefKind::Union) {
             for field in tcx.adt_def(def).all_fields() {
                 let ty = tcx.type_of(field.did).instantiate_identity().skip_normalization();
-                if is_nullable(tcx, field)
-                    && !matches!(ty.kind(), ty::Adt(adt, _) if tcx.is_lang_item(adt.did(), LangItem::Option))
-                {
-                    let message = "rust-js: `#[rust_js::nullable]` is of a field that's an `Option`, whose `None` is `null`; this one isn't";
+                if is_nullable(tcx, field) && nullable_option(tcx, ty).is_none() {
+                    let message = "rust-js: `#[rust_js::nullable]` is of a field that's an `Option`, or a `Cell` of one, whose `None` is `null`; this one isn't";
                     tcx.dcx().span_err(tcx.def_span(field.did), message);
                     valid = false;
                 }
@@ -1036,6 +1035,35 @@ pub(super) fn is_omitted(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
 pub(super) fn is_nullable(tcx: TyCtxt<'_>, field: &FieldDef) -> bool {
     let path = [Symbol::intern("rust_js"), Symbol::intern("nullable")];
     tcx.get_attrs_by_path(field.did, &path).next().is_some()
+}
+
+/// The `Option` a `#[rust_js::nullable]` field of type `ty` holds: itself,
+/// or a `Cell`'s, whose `None` is `null` in JS (ADRs 0196, 0772). `None` of
+/// any other type.
+pub(super) fn nullable_option<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
+    let option = |ty: Ty<'tcx>| matches!(ty.kind(), ty::Adt(adt, _) if tcx.is_lang_item(adt.did(), LangItem::Option));
+    match ty.kind() {
+        _ if option(ty) => Some(ty),
+        ty::Adt(adt, args)
+            if adt.did() == super::recognition::std_item(tcx, super::recognition::StdItem::Cell)
+                && option(args.type_at(0)) =>
+        {
+            Some(args.type_at(0))
+        }
+        _ => None,
+    }
+}
+
+/// What a `#[rust_js::nullable]` field is written, of `made`, its
+/// `Option`'s JS: a `None` is `null`, a constant itself, and what's
+/// `nulled`, `null` or a value already, as it is; else `made ?? null`
+/// (ADRs 0275, 0772).
+pub(super) fn nullable_written(made: js::Expr, nulled: bool) -> js::Expr {
+    match made.kind {
+        js::ExprKind::Undefined => js::Expr::null().or_at(made.span),
+        _ if made.is_constant() || nulled => made,
+        _ => js::Expr::bin(js::Op::Coalesce, made, js::Expr::null()),
+    }
 }
 
 /// The parameters a binding names `#[rust_js::lazy(..)]`, each a function

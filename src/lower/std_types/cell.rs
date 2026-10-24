@@ -41,6 +41,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         } = call;
         let mut arg = || values.next().expect("rustc checked the arguments");
         let js_span = self.js_span(span);
+        // What a `#[rust_js::nullable]` field's `Cell` is written: its
+        // `None`, `null` (ADR 0772).
+        let nullable = match matches!(known, Std::CellSet | Std::CellReplace | Std::CellTake) {
+            true => (crate::lower::body_queries::nullable_cell_calls(self.tcx, self.frame.thir).get(&span)).copied(),
+            false => None,
+        };
+        let written = |value: Expr| match nullable {
+            Some(nulled) => crate::lower::bindings::nullable_written(value, nulled),
+            None => value,
+        };
         Ok(Some(match known {
             // A `Cell` or `RefCell` is `{ value }`, so everyone sharing it sees a change.
             Std::CellNew => Expr::object(vec![Prop::Field(js::HELD.into(), arg())]),
@@ -48,7 +58,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // Of a value with a destructor, the old dropped once the new is
             // in its place, as std's `replace` and drop (ADR 0519).
             Std::CellSet => {
-                let (cell, value) = (arg(), arg());
+                let (cell, value) = (arg(), written(arg()));
                 let item = generic_args.type_at(0);
                 if self.drops(item) != crate::lower::drops::Drops::Nothing {
                     let cell = self.spill("cell", cell, out);
@@ -79,10 +89,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Std::CellReplace | Std::CellTake => {
                 let item = generic_args.type_at(0);
                 let cell = arg();
-                let next = match known {
+                let next = written(match known {
                     Std::CellReplace => arg(),
                     _ => self.default_value(item, span)?,
-                };
+                });
                 let held = tys[0].peel_refs();
                 if self.is_std_type(held, StdItem::RefCell) && !self.plain_ref_cell(held) {
                     let cell = Expr::call(Expr::helper("$borrowMut"), vec![cell]);

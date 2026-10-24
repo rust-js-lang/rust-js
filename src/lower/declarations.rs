@@ -713,7 +713,12 @@ impl<'tcx> Declarations<'_, 'tcx> {
                 hir::Node::Field(field) => Some(field.ty),
                 _ => None,
             });
-            let (optional, ty) = match self.option(ty) {
+            // A nullable `Cell`'s, the `Option` it holds, the field (ADR 0772).
+            let option = match is_nullable(self.tcx, field) {
+                true => super::bindings::nullable_option(self.tcx, ty).and_then(|option| self.option(option)),
+                false => self.option(ty),
+            };
+            let (optional, ty) = match option {
                 Some(inner) => {
                     let inner = self.as_written(written.and_then(|w| self.written_option(w)), |out| out.ts(inner));
                     match is_nullable(self.tcx, field) {

@@ -458,4 +458,20 @@ export const mutations: Mutation[] = [
     replace: "        .filter(move |(_, param)| tcx.hir_attrs(param.hir_id).iter().all(|attr| attr.path_matches(&path)) && false)\n",
     tests: ["test/rest-parameters.test.ts", "-t", "rest slice is JS's rest parameter"],
   },
+  {
+    name: "nullable-cell-refused",
+    breaks: "`#[rust_js::nullable]` of a `Cell<Option<T>>` field, React's shared internals', is refused, where its `None` can be `null`",
+    file: "src/lower/bindings.rs",
+    find: "                if is_nullable(tcx, field) && nullable_option(tcx, ty).is_none() {\n",
+    replace: "                if is_nullable(tcx, field) && nullable_option(tcx, ty) != Some(ty) {\n",
+    tests: ["test/lowering-nullable.test.ts", "-t", "nullable Cell field's None is null"],
+  },
+  {
+    name: "nullable-null-unplaced",
+    breaks: "a nullable field's `null` is where nothing is, so the comment before the field goes after it",
+    file: "src/lower/bindings.rs",
+    find: "        js::ExprKind::Undefined => js::Expr::null().or_at(made.span),\n",
+    replace: "        js::ExprKind::Undefined => js::Expr::null(),\n",
+    tests: ["test/lowering-nullable.test.ts", "-t", "nullable Cell field's None is null"],
+  },
 ];

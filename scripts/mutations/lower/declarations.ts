@@ -648,4 +648,12 @@ export const mutations: Mutation[] = [
     replace: "                let rest = rest == Some(i) && false;\n",
     tests: ["test/rest-parameters.test.ts", "-t", "rest slice is JS's rest parameter"],
   },
+  {
+    name: "nullable-cell-declared-undefined",
+    breaks: "a nullable `Cell` field is declared `T | undefined`, where JS has its `None` `null`",
+    file: "src/lower/declarations.rs",
+    find: "                true => super::bindings::nullable_option(self.tcx, ty).and_then(|option| self.option(option)),\n",
+    replace: "                true => self.option(ty),\n",
+    tests: ["test/lowering-nullable.test.ts", "-t", "nullable Cell field's None is null"],
+  },
 ];

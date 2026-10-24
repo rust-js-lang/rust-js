@@ -1,6 +1,7 @@
 # 0275. A nullable field's `None` is `null`
 
-Status: Accepted. Extends [0196](0196-typescript-declarations.md).
+Status: Accepted. Extends [0196](0196-typescript-declarations.md). Amended by
+[0772](0772-a-nullable-cell-field-writes-null.md): a nullable `Cell`'s writes.
 
 Case: A ([0262](0262-when-rust-and-js-disagree.md)).
 

@@ -717,6 +717,44 @@ fn registered_equality<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>, e: ExprId) ->
     Some((read, fn_span))
 }
 
+/// Where each call of a method of a `#[rust_js::nullable]` field's `Cell`
+/// is, its `fn_span`, `context.renderer.set(None)`'s, whose `None` it writes
+/// is `null` (ADR 0772); each whether what it writes is a `Some(..)` made
+/// there, a value already, `null` never.
+pub(super) fn nullable_cell_calls<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> HashMap<Span, bool> {
+    let nullable_cell = |mut e: ExprId| {
+        while let ExprKind::Scope { value: inner, .. } = thir[e].kind {
+            e = inner;
+        }
+        let ExprKind::Field {
+            lhs,
+            variant_index,
+            name,
+        } = thir[e].kind
+        else {
+            return false;
+        };
+        let ty::Adt(adt, _) = thir[lhs].ty.kind() else {
+            return false;
+        };
+        let field = &adt.variant(variant_index).fields[name];
+        super::bindings::is_nullable(tcx, field)
+            && super::bindings::nullable_option(tcx, thir[e].ty).is_some_and(|option| option != thir[e].ty)
+    };
+    (thir.exprs.iter())
+        .filter_map(|e| match e.kind {
+            ExprKind::Call { ref args, fn_span, .. }
+                if (args.first())
+                    .and_then(|&receiver| borrowed(thir, receiver))
+                    .is_some_and(nullable_cell) =>
+            {
+                Some((fn_span, args.get(1).is_some_and(|&given| is_some(tcx, thir, given))))
+            }
+            _ => None,
+        })
+        .collect()
+}
+
 /// Whether `fun` is `PartialEq`'s `eq` or `ne`, an `==`'s or a `!=`'s.
 fn is_partial_eq<'tcx>(tcx: TyCtxt<'tcx>, fun: ty::Ty<'tcx>) -> bool {
     matches!(*fun.kind(), ty::FnDef(def_id, _)

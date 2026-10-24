@@ -1,7 +1,8 @@
 # 0586. `#[rust_js::nullable]` is of a field that's an `Option`
 
 Status: Accepted. Extends [0196](0196-typescript-declarations.md)'s
-nullable fields and [0275](0275-nullable-writes-null.md).
+nullable fields and [0275](0275-nullable-writes-null.md). Amended by
+[0772](0772-a-nullable-cell-field-writes-null.md): or a `Cell` of one.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): none; a program rustc
 accepts that rust-js can't give its meaning is refused.
