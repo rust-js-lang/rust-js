@@ -108,4 +108,12 @@ export const mutations: Mutation[] = [
     replace: "        StmtKind::Labeled(_, body) if false && js::mentions_in(after, name) == 0 => entered(stmt, body, facts),\n",
     tests: ["test/lowering-moves.test.ts", "-t", "block after it"],
   },
+  {
+    name: "binding-method-lookup-passed",
+    breaks: "a call's value is read past a binding's method of a JS value, which a getter may answer, looked up before it runs",
+    file: "src/lower/mir/tidy/moves.rs",
+    find: "                && f.known == js::Known::Getter =>\n",
+    replace: "                && false =>\n",
+    tests: ["test/lowering-moves.test.ts", "-t", "a binding's method is looked up after its arguments run"],
+  },
 ];

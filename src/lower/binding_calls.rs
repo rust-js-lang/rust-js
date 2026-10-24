@@ -140,8 +140,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         given_to_js(&mut args);
         let value = match (js_form(self.tcx, def_id), this) {
             // A method or a property is on `this`: it can't be an import.
+            // Its method, looked up when it's called, which a getter may
+            // answer (ADR 0750).
             (JsForm::Call(name), Some(this)) if !name.contains('#') => {
-                Expr::call(Expr::member(this, name).or_at(fun_span), args)
+                Expr::call(Expr::member(this, name).answered_by_a_getter().or_at(fun_span), args)
             }
             (JsForm::Call(name), None) => Expr::call(self.binding_ref(&name, named).or_at(fun_span), args),
             (JsForm::New(name), None) => Expr::new_(self.js_ref(&name).or_at(fun_span), args),

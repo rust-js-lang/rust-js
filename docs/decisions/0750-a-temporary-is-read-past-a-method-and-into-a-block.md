@@ -68,3 +68,30 @@ the statement that reads it was a block, which `read_of` reads nothing of.
 ## Consequences
 
 - The port has neither `const`; `test/lowering-moves.test.ts` holds both.
+
+## Amendment: not past a binding's method of a JS value (#187)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): R, results change.
+
+"What JS looks up of the receiver is the method its type has" holds of
+the methods rust-js writes, `out.push`, but not of a binding's method of
+a JS value, `send(obj, effect(), ..)`'s `obj.send(..)`: JS looks it up
+before the arguments run, where Rust runs them first, and a getter may
+answer the lookup, or an argument replace the method. Read in place,
+`obj.send(globalThis.effect(), ..)` looked up the method first, and
+called the one an argument had replaced.
+
+- **The binding's lowering says it**: a binding's method of a JS value is
+  `js::Known::Getter`, as a binding's property read is (ADR 0672), where
+  `binding_calls.rs` writes it.
+- **`leads` reads nothing past it**: of a call of such a method, a
+  temporary is read in place only where it's the receiver's; a call's
+  value made before is held, `const effect = globalThis.effect();
+  obj.send(effect, flag ? 1 : 2);`, and what does nothing is read in place
+  still. The methods rust-js writes, of its types, are read past as
+  before.
+- Held by `test/lowering-moves.test.ts`'s "a binding's method is looked up
+  after its arguments run", a getter's lookup and a method an argument
+  replaces, and the mutations `binding-method-lookup-passed` and
+  `binding-method-not-a-getter`. The corpus, the React ports and the
+  bindings' tests write the same JS.

@@ -282,4 +282,12 @@ export const mutations: Mutation[] = [
     replace: "            let object = false;\n",
     tests: ["test/js-builtins.test.ts", "-t", "String.fromCharCode takes its codes"],
   },
+  {
+    name: "binding-method-not-a-getter",
+    breaks: "a binding's method of a JS value isn't said to be one a getter may answer, so a call's value is read past it",
+    file: "src/lower/binding_calls.rs",
+    find: "Expr::call(Expr::member(this, name).answered_by_a_getter().or_at(fun_span), args)",
+    replace: "Expr::call(Expr::member(this, name).or_at(fun_span), args)",
+    tests: ["test/lowering-moves.test.ts", "-t", "a binding's method is looked up after its arguments run"],
+  },
 ];
