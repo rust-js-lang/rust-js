@@ -46,7 +46,7 @@ export const mutations: Mutation[] = [
     name: "mir-rc-call-refused",
     breaks: "an `Rc`'s function from MIR is refused",
     file: "src/lower/mir/std_calls.rs",
-    find: "                this.rc_values(op, (exprs, arg_tys), span, out)?\n",
+    find: "                this.rc_values(op, (exprs, arg_tys, output), span, out)?\n",
     replace: "                return Err(this.unsupported(span, \"an Rc's\"));\n",
     tests: ["test/corpus.test.ts","-t","as_deref_counted"],
   },

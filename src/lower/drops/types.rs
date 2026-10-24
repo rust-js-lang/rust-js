@@ -102,11 +102,11 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
             }
     }
 
-    /// `traits::may_have_destructors`, of this crate: a library's, whose
-    /// `Rc`s are all counted (ADR 0523), always may, as its consumers' types
-    /// may have one (ADR 0163).
+    /// `traits::may_have_destructors`, of this crate: a library's always
+    /// may, as its consumers' types may have one (ADR 0163); and one that
+    /// counts an `Rc`, whose drop runs (ADR 0098).
     fn may_have_destructors(&self) -> bool {
-        self.counted.any() || may_have_destructors(self.recognition.tcx, self.recognition.foreign)
+        self.counted.any() || may_have_destructors(self.recognition.tcx, (self.recognition.foreign, self.library))
     }
 
     /// An associated type's trait and item, `<Z as Zone>::Offset`'s

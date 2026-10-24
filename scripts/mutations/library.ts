@@ -3,6 +3,14 @@ import type { Mutation } from "../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "contract-counts-unread",
+    breaks: "a library's contract read as counting every `Rc` whatever it says, so its consumer counts what it hands as a box (ADR 0844)",
+    file: "src/library.rs",
+    find: "                counts_rcs: library.counts_rcs,\n                impls:",
+    replace: "                counts_rcs: true,\n                impls:",
+    tests: ["test/crates.test.ts", "-t", "reads no count"],
+  },
+  {
     name: "library-libraries-unchecked",
     breaks: "a consumer given a library but not the libraries that one was compiled against is compiled anyway",
     file: "src/library.rs",

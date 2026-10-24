@@ -1,6 +1,8 @@
 # 0523. Libraries share one counted `Rc` representation
 
-Status: Accepted. Amends [0320](0320-counted-rcs.md) and
+Status: Accepted; amended by [0844](0844-a-library-that-reads-no-count-counts-no-rc.md):
+a library counts every `Rc` or none, none where it reads no count, and
+says which. Amends [0320](0320-counted-rcs.md) and
 [0494](0494-a-generic-rc-is-counted-where-it-may-drop.md), whose
 representation analysis was local to a crate; extends
 [0100](0100-separate-crates.md) and

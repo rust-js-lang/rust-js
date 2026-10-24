@@ -465,10 +465,14 @@ pub(crate) fn weak_pointee<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Ty<'
 /// counted one can answer. `downgrade` asks none (ADR 0843). `ptr_eq` of a
 /// struct with fields, a JS object whose `===` is its identity, needs none
 /// (ADR 0582); not of a transparent one, which is its field, of a number
-/// whose `===` is its value (ADR 0582, amended).
+/// whose `===` is its value (ADR 0582, amended). Of the crate's, or a
+/// library's, whose struct is the object its consumers share (ADR 0844);
+/// not std's, a `String`'s text, nor a binding's, of markers alone, whose
+/// value may be any JS value.
 pub(crate) fn reads_rc_count<'tcx>(tcx: TyCtxt<'tcx>, id: DefId, pointee: Option<Ty<'tcx>>) -> bool {
     let object = matches!(pointee.map(|pointee| *pointee.kind()), Some(ty::Adt(adt, _))
-        if adt.is_struct() && adt.did().is_local()
+        if adt.is_struct()
+            && (adt.did().is_local() || !super::std_items::is_std_item(tcx, adt.did()) && holds_data(tcx, adt))
             && !adt.non_enum_variant().fields.is_empty()
             && transparent_field(tcx, adt).is_none());
     if object && tcx.item_name(id).as_str() == "ptr_eq" {
@@ -533,12 +537,26 @@ pub(in crate::lower) fn is_assert_unwind_safe(tcx: TyCtxt<'_>, id: DefId) -> boo
 /// Of a `#[repr(transparent)]` struct of the crate's or a dependency's, the
 /// index of the field it is in JS (ADR 0584): Rust lays it out as that
 /// field, its others of no size, a `PhantomData` or a `()`.
+/// Whether a struct has a field that isn't a marker, as a binding's are.
+fn holds_data(tcx: TyCtxt<'_>, adt: ty::AdtDef<'_>) -> bool {
+    adt.non_enum_variant()
+        .fields
+        .iter()
+        .any(|field| holds_value(tcx, field))
+}
+
+/// Whether a field holds a value: isn't a marker, `()` or a `PhantomData`.
+fn holds_value(tcx: TyCtxt<'_>, field: &ty::FieldDef) -> bool {
+    let ty = tcx.type_of(field.did).instantiate_identity().skip_normalization();
+    !ty.is_unit() && !matches!(ty.kind(), ty::Adt(held, _) if tcx.is_lang_item(held.did(), LangItem::PhantomData))
+}
+
 pub(in crate::lower) fn transparent_field(tcx: TyCtxt<'_>, adt: ty::AdtDef<'_>) -> Option<usize> {
     if !adt.is_struct() || !adt.repr().transparent() || super::std_items::is_std_item(tcx, adt.did()) {
         return None;
     }
-    adt.non_enum_variant().fields.iter().position(|field| {
-        let ty = tcx.type_of(field.did).instantiate_identity().skip_normalization();
-        !ty.is_unit() && !matches!(ty.kind(), ty::Adt(held, _) if tcx.is_lang_item(held.did(), LangItem::PhantomData))
-    })
+    adt.non_enum_variant()
+        .fields
+        .iter()
+        .position(|field| holds_value(tcx, field))
 }

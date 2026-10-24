@@ -138,8 +138,8 @@ const triples = join(root, "test", "crates", "triples");
 
 /** `crates` of `cases/name`, each a library of the ones before it but the
  * last, the app, compiled natively and by rust-js: the app's JS prints what
- * the native program does. */
-function chain(cases: string, name: string, crates: string[]) {
+ * the native program does; where each crate's JS is. */
+function chain(cases: string, name: string, crates: string[]): string {
   const dir = fixture(`${crates.length === 2 ? "pair" : "triple"}-${name}`);
   const native = join(dir, "native"), out = join(dir, "js");
   mkdirSync(native, { recursive: true });
@@ -163,14 +163,41 @@ function chain(cases: string, name: string, crates: string[]) {
       ...used.flatMap((u) => ["--extern", `${u}=${join(out, u, `lib${u}.rmeta`)}`, "-L", `dependency=${join(out, u)}`])]);
   });
   expect(printed(join(out, app, "lib.js"))).toBe(run([join(native, "program")]));
+  return out;
 }
 
 for (const name of readdirSync(pairs).sort()) {
-  test(`two crates: ${name}`, () => chain(pairs, name, ["dep", "app"]), 300_000);
+  test(`two crates: ${name}`, () => {
+    chain(pairs, name, ["dep", "app"]);
+  }, 300_000);
 }
 for (const name of readdirSync(triples).sort()) {
-  test(`three crates: ${name}`, () => chain(triples, name, ["dep", "mid", "app"]), 300_000);
+  test(`three crates: ${name}`, () => {
+    chain(triples, name, ["dep", "mid", "app"]);
+  }, 300_000);
 }
+
+// ADR 0844: a library that reads no count of its `Rc`s counts none, and its
+// contract says so: its JS is the value itself, a context's
+// create-then-assign, as is its consumer's. A consumer that counts one it
+// hands is refused, naming it; one given a library's generic `Rc` of what
+// may have a destructor counts, as that library does (`rc_generic_holder`).
+test("a library that reads no count counts no Rc, and a crate counting one it hands is refused", () => {
+  const out = chain(pairs, "rc_uncounted", ["dep", "app"]);
+  const dep = readFileSync(join(out, "dep", "lib.js"), "utf8");
+  expect(dep).toContain("  context.provider = context;\n  context.consumer = {\n    context,\n  };\n  return context;\n");
+  expect(dep).toContain("export function sharedCell(value, TCopy) {\n  return { value: TCopy.copy(value) };\n}");
+  expect(dep).not.toContain("strong");
+  expect(readFileSync(join(out, "app", "lib.js"), "utf8")).not.toContain("strong");
+  expect(JSON.parse(readFileSync(join(out, "dep", "lib.manifest.json"), "utf8")).library.counts_rcs).toBe(false);
+  const counting = join(out, "counting.rs");
+  writeFileSync(counting, "pub fn main() {\n    let context = dep::create_context(1);\n    println!(\"{}\", std::rc::Rc::strong_count(&context));\n}\n");
+  expect(() => run([compiler, counting, "-o", join(out, "counting", "lib.js"), "--dependency", join(out, "dep", "lib.manifest.json"),
+    "--", "--crate-name", "counting", "--extern", `dep=${join(out, "dep", "libdep.rmeta")}`, "-L", `dependency=${join(out, "dep")}`]))
+    .toThrow("but `dep`, a rust-js library that counts none, hands it `Rc`s");
+  const holder = chain(pairs, "rc_generic_holder", ["dep", "app"]);
+  expect(JSON.parse(readFileSync(join(holder, "dep", "lib.manifest.json"), "utf8")).library.counts_rcs).toBe(true);
+}, 300_000);
 
 // A library edited to read an `Rc`'s count, its API the same: rebuilt with
 // its consumers, they share its counted `Rc`s as before, and print what

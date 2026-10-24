@@ -174,15 +174,16 @@ pub(in crate::lower) fn alias_of(ty: Ty<'_>) -> Option<ty::AliasTy<'_>> {
     }
 }
 
-/// Might any value have a destructor: has the crate a `Drop` impl of its own,
-/// or a library, whose types might? Where it hasn't, what a caller gives
+/// Might any value have a destructor: is the crate a library, whose
+/// consumers' types might (ADR 0163), has it a `Drop` impl of its own, or
+/// does it use a library, whose types might? Where none, what a caller gives
 /// generic code without a drop function has nothing to drop (ADR 0106).
 pub(in crate::lower) fn may_have_destructors(
     tcx: TyCtxt<'_>,
-    foreign: &crate::lower::library::Foreign<'_, '_>,
+    (foreign, library): (&crate::lower::library::Foreign<'_, '_>, bool),
 ) -> bool {
     let drop_trait = tcx.lang_items().drop_trait();
-    drop_trait.is_some_and(|id| tcx.all_local_trait_impls(()).contains_key(&id)) || foreign.any()
+    library || drop_trait.is_some_and(|id| tcx.all_local_trait_impls(()).contains_key(&id)) || foreign.any()
 }
 
 /// An associated type's drop in its impl's dictionary, `$dropOffset`: a

@@ -1,6 +1,9 @@
 # 0494. An `Rc` of a type parameter's value is counted where it may drop
 
-Status: Accepted. Extends [0320](0320-counted-rcs.md).
+Status: Accepted. Extends [0320](0320-counted-rcs.md). Amended by
+[0844](0844-a-library-that-reads-no-count-counts-no-rc.md): of a parameter
+that may have a destructor, not a `T: Copy`, where a body holds it, through
+the fields of what it holds.
 
 Case: C ([0262](0262-when-rust-and-js-disagree.md)): what's dropped, and
 when, as std's, by the last clone of an `Rc`.

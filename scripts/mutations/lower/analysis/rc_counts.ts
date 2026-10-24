@@ -3,6 +3,38 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "library-counts-every-rc",
+    breaks: "a library that reads no count counts every `Rc`, React's context `{ value, strong, weak }` (ADR 0844)",
+    file: "src/lower/analysis/rc_counts.rs",
+    find: "    counted.all |= shared.library && counted.any();\n",
+    replace: "    counted.all |= shared.library;\n",
+    tests: ["test/crates.test.ts", "-t", "reads no count"],
+  },
+  {
+    name: "library-counts-some-rcs",
+    breaks: "a library counts the `Rc`s it reads a count of alone, which its consumers share uncounted (ADR 0844)",
+    file: "src/lower/analysis/rc_counts.rs",
+    find: "    counted.all |= shared.library && counted.any();\n",
+    replace: "",
+    tests: ["test/crates.test.ts", "-t", "three crates"],
+  },
+  {
+    name: "copy-param-dropping",
+    breaks: "an `Rc` of a `T: Copy`'s value is taken to drop it, so a library holding one counts every `Rc` (ADR 0844)",
+    file: "src/lower/analysis/rc_counts.rs",
+    find: "            Some(t) if known_by_bounds(t) && t.needs_drop(tcx, env) => return true,\n",
+    replace: "            Some(t) if known_by_bounds(t) => return true,\n",
+    tests: ["test/crates.test.ts", "-t", "reads no count"],
+  },
+  {
+    name: "held-fields-unseen",
+    breaks: "a generic `Rc` in a library's struct a body drops isn't seen, so it counts none, and its consumer, given a value with a destructor, is refused (ADR 0844)",
+    file: "src/lower/analysis/rc_counts.rs",
+    find: "                if env.is_some()\n                    && let ty::Adt(adt, args) = *part.kind()\n",
+    replace: "                if false\n                    && let ty::Adt(adt, args) = *part.kind()\n",
+    tests: ["test/crates.test.ts", "-t", "reads no count"],
+  },
+  {
     name: "rc-generic-uncounted",
     breaks: "a generic function's `Rc<T>` isn't counted where its caller's is",
     file: "src/lower/analysis/rc_counts.rs",
@@ -50,7 +82,7 @@ export const mutations: Mutation[] = [
     name: "generic-rc-of-reference-counted",
     breaks: "an `Rc` of a reference to a type parameter's value is counted, though it drops nothing it points at",
     file: "src/lower/analysis/rc_counts.rs",
-    find: "            Some(rustc_middle::ty::Ref(..)) => walk.skip_current_subtree(),\n",
+    find: "            Some(t) if matches!(t.kind(), ty::Ref(..)) => walk.skip_current_subtree(),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^rc_of_borrowed_param.rs$"],
     snapshots: true,

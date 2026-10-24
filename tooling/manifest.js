@@ -40,6 +40,8 @@ export function parseManifest(text) {
         || typeof library.crate_hash !== "string" || !library.crate_hash
         || !Array.isArray(library.inputs) || !library.inputs.every(fingerprint)
         || !strings(library.impls) || !strings(library.libraries)
+        // ADR 0844: whether it counts its `Rc`s; one written before counted every one.
+        || !(library.counts_rcs === undefined || typeof library.counts_rcs === "boolean")
         || !Array.isArray(library.items) || !library.items.every(item => object(item)
           && typeof item.key === "string" && typeof item.rust_path === "string" && strings(item.module)
           && typeof item.export === "string" && (item.member === null || typeof item.member === "string")

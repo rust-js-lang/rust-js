@@ -8,7 +8,7 @@
   "library": {
     "version": 4,
     "name": "rust_js_std",
-    "crate_hash": "0c85ac2ebd9408ec7d2fa0951b5b9fbc",
+    "crate_hash": "7152204553f6c445897c78f6eddef66a",
     "items": [
       {
         "key": "608f92abc48d28dae88ef68b00d41a68",
@@ -706,7 +706,8 @@
       }
     ],
     "keeps_capacity": false,
-    "writers_take_options": true
+    "writers_take_options": true,
+    "counts_rcs": false
   },
   "input": "lib.rs",
   "output": "index.js",

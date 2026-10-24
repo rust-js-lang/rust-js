@@ -638,6 +638,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0841 A nullable place stores what's never `undefined` as it is](0841-a-nullable-place-stores-what-is-never-undefined-as-it-is.md)
 - [0842 A parameter's clone that is the same JS value is read by the parameter's name](0842-a-parameters-clone-is-read-by-its-name.md)
 - [0843 A `Weak` nothing upgrades is the value itself](0843-a-weak-nothing-upgrades-is-the-value-itself.md)
+- [0844 A library that reads no count counts no `Rc`](0844-a-library-that-reads-no-count-counts-no-rc.md)
 - [0720 A labeled block's `break` and a named constant, in a body's ranges](0720-a-labeled-block-and-a-named-constant-in-a-bodys-ranges.md)
 - [0721 `js::strict_equals(a, b)` is JS's `===`](0721-strict-equals-is-jss-triple-equals.md) *(fixed by 0775: a `()` compared is `undefined`)*
 - [0722 A `#[repr(..)]` enum's variant is its number](0722-a-repr-enums-variant-is-its-number.md)
@@ -699,7 +700,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0491 `cycle()` keeps a clone of its iterator](0491-cycle-clones-its-iterator.md)
 - [0492 A kept default steps its impl's iterator as the impl does](0492-a-kept-default-steps-its-impls-iterator.md)
 - [0493 A zip of arrays' iterators steps from its back](0493-a-zip-steps-from-its-back.md)
-- [0494 An `Rc` of a type parameter's value is counted where it may drop](0494-a-generic-rc-is-counted-where-it-may-drop.md)
+- [0494 An `Rc` of a type parameter's value is counted where it may drop](0494-a-generic-rc-is-counted-where-it-may-drop.md) *(amended by 0844: of a parameter that may have a destructor where a body holds it)*
 - [0495 A copied default asks its impl's drops in its impl's terms](0495-a-copied-default-asks-its-impls-drops-in-its-impls-terms.md)
 - [0496 `and` drops what it gives up](0496-and-drops-what-it-gives-up.md)
 - [0497 A std trait's dictionary drops its associated type](0497-a-std-traits-dictionary-drops-its-associated-type.md)
@@ -728,7 +729,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0520 A counted `Rc<dyn T>` is its pair](0520-a-counted-rc-of-a-dyn-is-its-pair.md) *(amended: an upcast of a counted `Rc<dyn Sub>` shares its count)*
 - [0521 A `dyn Fn` carries its drop](0521-a-dyn-fn-carries-its-drop.md)
 - [0522 A closure cloned apart is made again](0522-a-closure-cloned-apart-is-made-again.md)
-- [0523 Libraries share one counted `Rc` representation](0523-libraries-share-one-counted-rc.md)
+- [0523 Libraries share one counted `Rc` representation](0523-libraries-share-one-counted-rc.md) *(amended by 0844: a library that reads no count counts none)*
 - [0524 A library's `dyn` in its consumer](0524-a-librarys-dyn-in-its-consumer.md)
 - [0525 A cloned `map` or `filter` is made again](0525-a-cloned-map-is-made-again.md)
 - [0526 A `filter` steps from its back](0526-a-filter-steps-from-its-back.md)

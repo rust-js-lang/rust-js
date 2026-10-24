@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "library-params-never-drop",
+    breaks: "a library with no destructor of its own takes its consumers' types as dropping nothing, so a value of an associated type it holds is never dropped (ADRs 0163, 0844)",
+    file: "src/lower/traits/drop_params.rs",
+    find: "    library || drop_trait.is_some_and(",
+    replace: "    drop_trait.is_some_and(",
+    tests: ["test/crates.test.ts", "-t", "two crates: assoc_drop"],
+  },
+  {
     name: "copy-param-given-a-drop",
     breaks: "a `Copy` type parameter is given a drop function too, which its callers pass for nothing",
     file: "src/lower/traits/drop_params.rs",

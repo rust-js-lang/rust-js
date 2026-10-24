@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "ptr-eq-of-library-struct-counts",
+    breaks: "`Rc::ptr_eq` of a library's struct counts it, so a crate an uncounting library hands it is refused (ADR 0844)",
+    file: "src/lower/recognition/wrappers.rs",
+    find: "            && (adt.did().is_local() || !super::std_items::is_std_item(tcx, adt.did()) && holds_data(tcx, adt))\n",
+    replace: "            && adt.did().is_local()\n",
+    tests: ["test/crates.test.ts", "-t", "reads no count"],
+  },
+  {
     name: "ptr-eq-of-transparent-uncounted",
     breaks: "`Rc::ptr_eq` of a transparent struct, its number, is `1 === 1`, `true`, of two `Rc`s (ADR 0582, amended)",
     file: "src/lower/recognition/wrappers.rs",
@@ -231,8 +239,8 @@ export const mutations: Mutation[] = [
     name: "transparent-marker-its-field",
     breaks: "a `#[repr(transparent)]` struct whose `PhantomData` comes first is the marker",
     file: "src/lower/recognition/wrappers.rs",
-    find: "        !ty.is_unit() && !matches!(ty.kind(), ty::Adt(held, _) if tcx.is_lang_item(held.did(), LangItem::PhantomData))\n",
-    replace: "        !ty.is_unit()\n",
+    find: "    !ty.is_unit() && !matches!(ty.kind(), ty::Adt(held, _) if tcx.is_lang_item(held.did(), LangItem::PhantomData))\n",
+    replace: "    !ty.is_unit()\n",
     tests: ["test/corpus.test.ts", "-t", "^transparent_transmute.rs$"],
   },
   {

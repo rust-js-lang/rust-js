@@ -816,12 +816,18 @@ export function share(doc) {
 - **`Rc::ptr_eq` of a struct with fields counts nothing**, but a
   `#[repr(transparent)]` one's, which is its field: it's `a === b`
   ([ADR 0582](../../decisions/0582-ptr-eq-of-an-object-is-its-identity.md)).
-- **A crate that is a rust-js library, or uses one that hands it an
-  `Rc`, counts every `Rc`**, so one handle crosses crates
-  ([ADR 0523](../../decisions/0523-libraries-share-one-counted-rc.md)): a
-  library hands what the items of its the crate uses reach, an `Rc` in
-  a function's parameters or result or a type's fields, not one of a
-  `bool` static's
+- **A rust-js library counts every `Rc`, or none**, so one handle crosses
+  crates ([ADR 0523](../../decisions/0523-libraries-share-one-counted-rc.md)):
+  every one where it, or a counting library that hands it an `Rc`, reads
+  a count, has an `Rc` of a value with a destructor, or holds a generic
+  one of what may have one, as its consumers' types may; else none, each
+  the value itself, as React's `createContext` is, and its contract says
+  so ([ADR 0844](../../decisions/0844-a-library-that-reads-no-count-counts-no-rc.md)).
+  A crate a counting library hands an `Rc` counts every one; one an
+  uncounting library hands an `Rc` of its own items counts none, and is
+  refused where it would count one. A library hands what the items of
+  its the crate uses reach, an `Rc` in a function's parameters or result
+  or a type's fields, not one of a `bool` static's
   ([ADR 0626](../../decisions/0626-what-a-library-hands-a-crate.md)).
 
 ## Cell and RefCell
