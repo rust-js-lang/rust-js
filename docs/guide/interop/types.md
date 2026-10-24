@@ -1012,8 +1012,12 @@ export function sample(construct) {
   }
 }
 ```
-- **`==` of two is JS's `===`**, of two `Option<&Unknown>` too, where a
-  `null` isn't an `undefined`, unlike std's `Option`
+- **`==` of two is JS's `===`**; of two `Option<&Unknown>`, std's
+  `Option`'s: both `None`, whichever of `null` and `undefined` each is,
+  or `Some`s `===` finds equal, `(a ?? null) === (b ?? null)`, and `a ===
+  b` where one is a `Some`; `js::classify` tells a `null` from an
+  `undefined`. A struct, a tuple or a slice holding one compares it so,
+  never by what's in it
   ([ADR 0612](../../decisions/0612-unknown-equality-is-strict.md)):
 
 ```rust
@@ -1024,7 +1028,7 @@ pub fn same(a: Option<&js::Unknown>, b: Option<&js::Unknown>) -> bool {
 
 ```js
 export function same(a, b) {
-  return a === b;
+  return (a ?? null) === (b ?? null);
 }
 ```
 - `js::Json` is a JSON value, and `js::Dict<T>` a plain object of `T`s by
