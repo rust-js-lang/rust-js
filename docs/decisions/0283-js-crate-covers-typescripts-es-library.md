@@ -9,7 +9,9 @@ is JS's `Map` of weak keys. Amended by [0666](0666-the-js-crate-binds-objects-re
 `PropertyDescriptor` and a `ProxyHandler` are dictionaries, structs, and
 `Object`'s statics are measured and bound. Amended by
 [0677](0677-a-weak-key-is-what-kind-holds.md): a weak collection is typed as
-TypeScript types it, and what `js::Kind` holds is a `WeakKey`.
+TypeScript types it, and what `js::Kind` holds is a `WeakKey`. Amended by
+[0782](0782-a-promises-executor-borrows-and-then-takes-two-handlers.md):
+`promise::new`'s executor may borrow, and `then_with` is `then(f, g)`.
 
 Case: N ([0262](0262-when-rust-and-js-disagree.md)).
 

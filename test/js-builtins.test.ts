@@ -199,8 +199,8 @@ pub fn dropped(first: bool) -> Option<&'static Unknown> {
   expect(() => lib.dropped(true)).toThrow("called `Result::unwrap()` on an `Err` value: SyntaxError");
   // React's: what may be `undefined` keeps its `unwrap()`, `$unwrap`.
   const described = performanceTrack()("addValueToProperties");
-  expect(described).toContain("desc = $unwrap(\n                didTruncate\n                  ? JSON.stringify(");
-  expect(described).toContain("                  : JSON.stringify(value, null, 0),\n");
+  expect(described).toContain("desc = $unwrap(\n              didTruncate\n                ? JSON.stringify(");
+  expect(described).toContain("                : JSON.stringify(value, null, 0),\n");
   expect(described).not.toContain("$try");
 });
 
