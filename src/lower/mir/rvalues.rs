@@ -167,14 +167,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // A handle on a place a call reaches, `&get(c).value`'s: what
                 // holds it made once, first, as the handle reads its place
                 // each time it's used.
-                if let js::ExprKind::Handle(on, stored) = &place_expr.kind
+                if let js::ExprKind::Handle(on, storage) = &place_expr.kind
                     && !fixed_place(on)
                 {
-                    let stored = stored.as_deref().cloned();
-                    let on = (**on).clone();
+                    let (on, storage) = ((**on).clone(), *storage);
                     self.flush(state, out)?;
                     let on = self.fixed_place_of(on, out);
-                    place_expr = Expr::stored_handle(on, stored);
+                    place_expr = Expr::stored_handle(on, storage);
                 }
                 if matches!(kind, BorrowKind::Shared) {
                     let read = self.with_default(state, *place, place_expr.clone(), span);

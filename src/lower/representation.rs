@@ -573,7 +573,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A handle on `place`, a `nullable_cell_field`'s, that stores what's
     /// written to it as the field does: its `None`, `null` (ADR 0772).
     pub(super) fn nullable_cell_handle(&self, place: Expr) -> Expr {
-        Expr::stored_handle(place, Some(bindings::nullable_written(Expr::var(js::WRITTEN), false)))
+        Expr::stored_handle(place, js::Storage::NullForNone)
     }
 
     /// What a field of type `ty` is, read where it's `field`: itself, or of

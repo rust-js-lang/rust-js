@@ -176,8 +176,8 @@ export const mutations: Mutation[] = [
     name: "nullable-cell-set-undefined",
     breaks: "a nullable `Cell` field's `set(None)`, `take()` and `replace(..)` write `undefined`, where it's made `null`",
     file: "src/lower/std_types/cell.rs",
-    find: "            js::ExprKind::Handle(_, Some(_)) => crate::lower::bindings::nullable_written(value, given_nulled),\n",
-    replace: "            js::ExprKind::Handle(_, Some(_)) => value,\n",
+    find: "            js::ExprKind::Handle(_, storage) => storage.written(value, given_nulled),\n",
+    replace: "            js::ExprKind::Handle(_, _) => value,\n",
     tests: ["test/lowering-nullable.test.ts", "-t", "nullable Cell field's None is null"],
   },
   {

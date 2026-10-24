@@ -147,7 +147,7 @@ impl Expr {
             ExprKind::Arrow(..) | ExprKind::AsyncArrow(..) | ExprKind::Function(_) => return None,
             ExprKind::Member(a, field) => ExprKind::Member(one(a)?, field.clone()),
             ExprKind::OptionalMember(a, field) => ExprKind::OptionalMember(one(a)?, field.clone()),
-            ExprKind::Handle(place, stored) => ExprKind::Handle(one(place)?, stored.clone()),
+            ExprKind::Handle(place, storage) => ExprKind::Handle(one(place)?, *storage),
             ExprKind::DropArgument(item, index, drop) => ExprKind::DropArgument(*item, *index, one(drop)?),
             ExprKind::Pair(place, dictionary) => ExprKind::Pair(one(place)?, one(dictionary)?),
             ExprKind::Index(a, b) => ExprKind::Index(one(a)?, one(b)?),

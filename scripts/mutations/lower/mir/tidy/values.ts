@@ -110,8 +110,8 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-handle-read-early",
     breaks: "MIR's handle on a `Cell` field is read where it's made, though set before it's read",
     file: "src/lower/mir/tidy/values.rs",
-    find: "                handles.push((name.clone(), (**place).clone(), read_at_once(stmts, k, name)));\n",
-    replace: "                handles.push((name.clone(), (**place).clone(), true));\n",
+    find: "                handles.push((name.clone(), (**place).clone(), read_at_once(stmts, k, name), *storage));\n",
+    replace: "                handles.push((name.clone(), (**place).clone(), true, *storage));\n",
     tests: ["test/lowering-cells.test.ts", "-t", "a Cell a let takes apart"],
   },
   {
@@ -173,5 +173,21 @@ export const mutations: Mutation[] = [
     find: "            let at = [vec![items.clone(), index.clone()], failure.to_vec()].concat();",
     replace: "            let at = vec![items.clone(), index.clone()];",
     tests: ["test/corpus.test.ts", "-t", "^deque_write_out_of_bounds.rs$"],
+  },
+  {
+    name: "read-handle-written-at-once",
+    breaks: "a handle written through in a closure, `r.set(5)` of `let r = &context.value`, is read where it's made, `const r = context.value; .. r = 5`",
+    file: "src/lower/mir/tidy/values.rs",
+    find: "        *at_once &= !changed.contains(name);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^cell_alias_in_a_closure.rs$"],
+  },
+  {
+    name: "read-handle-write-unstored",
+    breaks: "a nullable field's `Cell` set in a closure through a variable writes `undefined`, the handle's storage left out",
+    file: "src/lower/mir/tidy/values.rs",
+    find: "                    *value = storage.written(std::mem::replace(value, Expr::undefined()), false);\n",
+    replace: "                    let _ = storage;\n",
+    tests: ["test/lowering-nullable.test.ts", "-t", "through a reference and a helper"],
   },
 ];

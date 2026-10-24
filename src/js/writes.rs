@@ -162,7 +162,7 @@ mod tests {
     #[test]
     fn a_handle_may_replace_what_its_on() {
         let handle = Expr {
-            kind: ExprKind::Handle(Box::new(Expr::var("h")), None),
+            kind: ExprKind::Handle(Box::new(Expr::var("h")), Storage::AsGiven),
             ..Expr::var("h")
         };
         let writes = Writes::of(&[stmt(StmtKind::Expr(Expr::call(Expr::var("g"), vec![handle])))]);

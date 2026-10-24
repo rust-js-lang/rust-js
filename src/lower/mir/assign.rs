@@ -204,11 +204,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(value);
         }
         let value = self.value_expr(value, span)?;
-        Ok(Value::Expr(match value.kind {
-            js::ExprKind::Undefined => Expr::null(),
-            js::ExprKind::Null => value,
-            _ => Expr::bin(Op::Coalesce, value, Expr::null()),
-        }))
+        Ok(Value::Expr(js::Storage::NullForNone.written(value, false)))
     }
 
     /// `rest = p.rest` of a `let`'s pattern, `let P { href, rest, .. } = p`:

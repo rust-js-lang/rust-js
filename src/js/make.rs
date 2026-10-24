@@ -345,13 +345,12 @@ impl Expr {
     }
 
     pub fn handle(place: Expr) -> Expr {
-        Expr::new(ExprKind::Handle(Box::new(place), None))
+        Expr::stored_handle(place, Storage::AsGiven)
     }
 
-    /// A handle on `place` whose writes store `stored` of what's written,
-    /// `WRITTEN`, where it's given (`ExprKind::Handle`).
-    pub fn stored_handle(place: Expr, stored: Option<Expr>) -> Expr {
-        Expr::new(ExprKind::Handle(Box::new(place), stored.map(Box::new)))
+    /// A handle on `place`, which stores what's written as `storage` says.
+    pub fn stored_handle(place: Expr, storage: Storage) -> Expr {
+        Expr::new(ExprKind::Handle(Box::new(place), storage))
     }
 
     pub fn pair(place: Expr, dictionary: Expr) -> Expr {
@@ -770,6 +769,22 @@ impl Expr {
                 (props.iter()).all(|prop| matches!(prop, Prop::Field(_, value) if value.is_made_of_constants()))
             }
             _ => self.is_constant(),
+        }
+    }
+}
+
+impl Storage {
+    /// What a place stored so holds, of `made`, an `Option`'s JS where it's
+    /// `NullForNone`: a `None` is `null`, a constant itself, and what's
+    /// `nulled`, `null` or a value already, as it is; else `made ?? null`
+    /// (ADRs 0275, 0772). The one answer, where a struct is made, a `Cell`
+    /// set, and a handle's setter printed.
+    pub fn written(self, made: Expr, nulled: bool) -> Expr {
+        match (self, &made.kind) {
+            (Storage::AsGiven, _) => made,
+            (Storage::NullForNone, ExprKind::Undefined) => Expr::null().or_at(made.span),
+            (Storage::NullForNone, _) if made.is_constant() || nulled => made,
+            (Storage::NullForNone, _) => Expr::bin(Op::Coalesce, made, Expr::null()),
         }
     }
 }

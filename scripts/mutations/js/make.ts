@@ -335,4 +335,28 @@ export const mutations: Mutation[] = [
     replace: "            ExprKind::Member(pair, field) if false && field == THROWN_VALUE => Some(pair),\n",
     tests: ["test/lowering-unwinds.test.ts", "-t", "every unwind"],
   },
+  {
+    name: "nullable-null-unplaced",
+    breaks: "a nullable field's `null` is where nothing is, so the comment before the field goes after it",
+    file: "src/js/make.rs",
+    find: "            (Storage::NullForNone, ExprKind::Undefined) => Expr::null().or_at(made.span),\n",
+    replace: "            (Storage::NullForNone, ExprKind::Undefined) => Expr::null(),\n",
+    tests: ["test/lowering-nullable.test.ts", "-t", "nullable Cell field's None is null"],
+  },
+  {
+    name: "nulled-field-coalesced",
+    breaks: "what MIR says is `null` or a value already is `?? null` given to a `#[rust_js::nullable]` field",
+    file: "src/js/make.rs",
+    find: "            (Storage::NullForNone, _) if made.is_constant() || nulled => made,\n",
+    replace: "            (Storage::NullForNone, _) if made.is_constant() => made,\n",
+    tests: ["test/lowering-options.test.ts", "-t", "a nullable field's None is null"],
+  },
+  {
+    name: "null-for-none-uncoalesced",
+    breaks: "what a nullable field is given that may be `undefined` is stored as it is, `undefined`, not `?? null`",
+    file: "src/js/make.rs",
+    find: "            (Storage::NullForNone, _) => Expr::bin(Op::Coalesce, made, Expr::null()),\n",
+    replace: "            (Storage::NullForNone, _) => made,\n",
+    tests: ["test/lowering-nullable.test.ts", "-t", "where it's made and where it's written"],
+  },
 ];

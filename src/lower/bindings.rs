@@ -1070,18 +1070,6 @@ pub(super) fn nullable_option<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<T
     }
 }
 
-/// What a `#[rust_js::nullable]` field is written, of `made`, its
-/// `Option`'s JS: a `None` is `null`, a constant itself, and what's
-/// `nulled`, `null` or a value already, as it is; else `made ?? null`
-/// (ADRs 0275, 0772).
-pub(super) fn nullable_written(made: js::Expr, nulled: bool) -> js::Expr {
-    match made.kind {
-        js::ExprKind::Undefined => js::Expr::null().or_at(made.span),
-        _ if made.is_constant() || nulled => made,
-        _ => js::Expr::bin(js::Op::Coalesce, made, js::Expr::null()),
-    }
-}
-
 /// The parameters a binding names `#[rust_js::lazy(..)]`, each a function
 /// JS calls once for the value, React's `useState(init)`: given a closure
 /// whose body does nothing and gives no function, its value (ADR 0593).
