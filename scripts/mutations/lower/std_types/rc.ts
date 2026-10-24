@@ -33,7 +33,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_types/rc.rs",
     find: "            Some(_) => Expr::helper(\"$weakNone\"),\n",
     replace: "            Some(_) => Expr::object(vec![Prop::Field(\"strong\".into(), Expr::int(0)), Prop::Field(\"weak\".into(), Expr::int(0))]),\n",
-    tests: ["test/corpus.test.ts", "-t", "^weak_cycle_set_after.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^weak_debug.rs$"],
   },
   {
     name: "rc-get-mut-shared",

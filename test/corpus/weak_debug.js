@@ -64,6 +64,12 @@ function main() {
     } finally {
       $rcDrop(value);
     }
+    // Of a counted `Rc`'s, two to nothing are one (ADR 0843).
+    try {
+      console.log(`${w === $weakNone}`);
+    } finally {
+      $weakDrop($weakNone);
+    }
     const s = { value: 3, strong: 1, weak: 0 };
     try {
       const value = $downgrade(s);
