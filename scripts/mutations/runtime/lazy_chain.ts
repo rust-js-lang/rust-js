@@ -26,4 +26,12 @@ export const mutations: Mutation[] = [
     replace: "  chained.tryFoldUnused = (init, f, broke) => {",
     tests: ["test/corpus.test.ts", "-t", "skip_try_fold"],
   },
+  {
+    name: "chain-last-first-unasked",
+    breaks: "a chain's `last` asks only its second side's `last`, not its first's",
+    file: "src/runtime/lazy_chain.js",
+    find: "    const a = first !== undefined ? last(first) : { done: true, value: undefined };\n",
+    replace: "    const a = { done: true, value: undefined };\n",
+    tests: ["test/corpus.test.ts", "-t", "^own_last_and_nth_passed_on.rs$"],
+  },
 ];

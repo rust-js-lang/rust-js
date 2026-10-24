@@ -22,12 +22,17 @@ import * as f from "typescript/ast/factory";
  *   | { kind: "export-default", name: string }
  *   | { kind: "export", from?: string, names: [string, string][] }
  *   | { kind: "namespace", name: string, exported: boolean, declare: boolean, declarations: Declaration[] }
+ *   | { kind: "class", name: string, exported: boolean, declare: boolean, members: ClassMember[], docs?: string }
  *   | { kind: "other", text: string }} Declaration
  *
  * @typedef {{ kind: "property", name: string, optional: boolean, readonly: boolean, type: Type, docs?: string }
  *   | { kind: "method", name: string, optional: boolean, typeParameters: TypeParameter[], params: Param[], returns: Type }
  *   | { kind: "index", parameter: string, key: Type, type: Type }
  *   | { kind: "other", text: string }} Member
+ *
+ * @typedef {{ kind: "constructor", params: Param[] }
+ *   | { kind: "property", name: string, static: boolean, optional: boolean, type: Type, docs?: string }
+ *   | { kind: "method", name: string, static: boolean, typeParameters: TypeParameter[], params: Param[], returns: Type, docs?: string }} ClassMember
  *
  * @typedef {{ name: string, optional: boolean, rest: boolean, type: Type }} Param
  *
@@ -128,11 +133,13 @@ export async function open(files = []) {
  * @param {(node: any) => Promise<string>} printNode
  */
 async function documented(declaration, text, printNode) {
-  if (declaration.kind === "interface") {
+  // A class's methods' too (ADR 0761).
+  if (declaration.kind === "interface" || declaration.kind === "class") {
+    const printed = declaration.kind === "class" ? classMember : member;
     let at = text.indexOf("{");
     for (const m of declaration.members) {
-      if (m.kind !== "property" || !m.docs) continue;
-      const [first] = (await printNode(member(m))).split("\n");
+      if (m.kind === "constructor" || m.kind === "index" || !m.docs) continue;
+      const [first] = (await printNode(printed(m))).split("\n");
       const found = text.indexOf(first, at);
       if (found < 0) continue;
       const start = text.lastIndexOf("\n", found) + 1;
@@ -505,6 +512,16 @@ function statement(declaration) {
         ),
         declaration.from === undefined ? undefined : string(declaration.from),
       );
+    // `export declare class Component { constructor(props?: unknown);
+    // setState(..): void; }`, a JS class's (ADR 0761).
+    case "class":
+      return f.createClassDeclaration(
+        modifiers(declaration),
+        id(declaration.name),
+        undefined,
+        undefined,
+        declaration.members.map(classMember),
+      );
     case "namespace":
       // What it prints is erasable syntax only, TypeScript's
       // `erasableSyntaxOnly`: a namespace that holds values is JS, but a
@@ -570,6 +587,34 @@ function member(m) {
       );
     default:
       throw new Error(`a ${m.kind} member isn't one TypeScript is given`);
+  }
+}
+
+/** @param {ClassMember} m */
+function classMember(m) {
+  const modifiers = "static" in m && m.static ? [f.createToken(SyntaxKind.StaticKeyword)] : undefined;
+  switch (m.kind) {
+    case "constructor":
+      return f.createConstructorDeclaration(undefined, undefined, m.params.map(param));
+    case "property":
+      return f.createPropertyDeclaration(
+        modifiers,
+        propertyName(m.name),
+        m.optional ? f.createToken(SyntaxKind.QuestionToken) : undefined,
+        typeNode(m.type),
+      );
+    case "method":
+      return f.createMethodDeclaration(
+        modifiers,
+        undefined,
+        propertyName(m.name),
+        undefined,
+        typeParameterNodes(m.typeParameters),
+        m.params.map(param),
+        typeNode(m.returns),
+      );
+    default:
+      throw new Error(`a ${m.kind} class member isn't one TypeScript is given`);
   }
 }
 

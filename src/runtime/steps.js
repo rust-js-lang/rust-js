@@ -32,6 +32,18 @@ class $Steps extends Iterator {
     for (let step = this.next(); !step.done; step = this.next()) folded = f(folded, step.value);
     return folded;
   }
+  // Std's `last`: the last item its `fold` gives, a step, done where there's
+  // none; an adapter whose `last` is its source's, `skip`'s, a chain's, a
+  // fuse's or a peekable's, passes it on to the crate's own (#182).
+  last() {
+    let found = false;
+    let value;
+    this.fold(undefined, (_, x) => {
+      found = true;
+      value = x;
+    });
+    return found ? { done: false, value } : { done: true, value: undefined };
+  }
   // Std's `nth`: `k` stepped past, a `None` among them ending it, then the next.
   nth(k) {
     for (; k > 0; k--) {
@@ -248,6 +260,15 @@ class $Steps extends Iterator {
       const skip = n;
       n = 0;
       return this.nth(skip + k);
+    };
+    // Std's `Skip::last`: its source's `nth(n - 1)`, then its source's `last`.
+    skipped.last = () => {
+      if (n > 0) {
+        const k = n;
+        n = 0;
+        if (this.nth(k - 1).done) return { done: true, value: undefined };
+      }
+      return this.last();
     };
     return skipped;
   }

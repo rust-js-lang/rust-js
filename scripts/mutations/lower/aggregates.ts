@@ -91,14 +91,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts","-t","write_to_string"],
   },
   {
-    "name": "nulled-field-coalesced",
-    "breaks": "what MIR says is `null` or a value already is `?? null` given to a `#[rust_js::nullable]` field",
-    "file": "src/lower/aggregates.rs",
-    "find": " || nulled.get(i) == Some(&true) => made,\n",
-    "replace": " => made,\n",
-    "tests": ["test/lowering-options.test.ts", "-t", "a nullable field's None is null"]
-  },
-  {
     name: "io-unit-err-not-thrown",
     breaks: "an `io::Result<()>`'s `Err` is `undefined`, `Ok`",
     file: "src/lower/aggregates.rs",
@@ -146,4 +138,13 @@ export const mutations: Mutation[] = [
     replace: "            Expr::array(vec![key])\n",
     tests: ["test/lowering-symbols.test.ts", "-t", "Symbol.for its key"],
   },
+  {
+    name: "nullable-cell-made-undefined",
+    breaks: "a nullable `Cell` field made `Cell::new(None)` is `{ value: undefined } ?? null`'s, its cell, not `null`",
+    file: "src/lower/aggregates.rs",
+    find: "                *value = match self.is_std_type(field.ty(self.tcx, args).skip_normalization(), StdItem::Cell) {\n",
+    replace: "                *value = match false {\n",
+    tests: ["test/lowering-nullable.test.ts", "-t", "nullable Cell field's None is null"],
+  },
+
 ];

@@ -250,12 +250,30 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // comes after.
         self.rest_given(def_id, &mut exprs);
         exprs.extend(self.evidence_args(def_id, generic_args, span)?);
-        let called = Expr::call(self.fn_ref(def_id), exprs);
+        let called = self.crate_called(def_id, exprs);
         // A generic `&mut T`'s box, of an object `T` here: what's in it.
         let called = self.generic_result_values((def_id, generic_args), called, span)?;
         let called = self.fmt_result_value(def_id, generic_args, called);
         // A throwing function's call is a throwing call (ADR 0644).
         Ok(Value::Expr(self.catching(def_id, generic_args, called)))
+    }
+
+    /// The call of the crate's function `def_id`, given `args`: of a class's
+    /// constructor, `new Component(..)`, and of its method, a call of the
+    /// prototype's, `component.setState(..)` (ADR 0761); of any other,
+    /// `f(..)`.
+    fn crate_called(&self, def_id: rustc_span::def_id::DefId, mut args: Vec<Expr>) -> Expr {
+        let callee = self.fn_ref(def_id);
+        match (crate::lower::classes::member(self.tcx, def_id), callee.kind) {
+            (Some(crate::lower::classes::Member::Constructor), js::ExprKind::Member(class, _)) => {
+                Expr::new_(*class, args)
+            }
+            (Some(crate::lower::classes::Member::Method), js::ExprKind::Member(_, name)) if !args.is_empty() => {
+                let this = args.remove(0);
+                Expr::call(Expr::member(this, name), args)
+            }
+            (_, kind) => Expr::call(Expr { kind, ..callee }, args),
+        }
     }
 
     /// Whether a variable holding the crate's function `def_id`, of `count`

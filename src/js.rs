@@ -170,6 +170,18 @@ pub struct Namespace {
     /// Its methods, as functions: the object's properties.
     pub methods: Vec<Function>,
     pub export: bool,
+    /// A JS class's (ADR 0761), not an object's: the constructor function
+    /// and its prototype.
+    pub class: Option<Class>,
+}
+
+/// A JS class's methods (ADR 0761): which is its constructor, `function
+/// Component(props) { this.props = props; }`, and which its prototype's,
+/// `Component.prototype.setState = function (..) { .. }`; the rest are
+/// the constructor's own, its statics. Its constants are its prototype's.
+pub struct Class {
+    pub constructor: String,
+    pub prototype: Vec<String>,
 }
 
 /// `const SIZE = 4096;`, maybe exported.
@@ -519,6 +531,9 @@ pub enum ExprKind {
     /// Only to test against: `o != null` (ADR 0030).
     Null,
     Var(String),
+    /// `this`: a class's own, its constructor's and its prototype's
+    /// methods', Rust's `self` (ADR 0761).
+    This,
     Symbol(Symbol),
     /// `object.property`, e.g. `Math.imul` or `math.add`.
     Member(Box<Expr>, String),

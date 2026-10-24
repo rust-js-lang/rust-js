@@ -196,12 +196,16 @@ unsafe extern "Rust" {
   writeFileSync(join(dir, "shared/assign.rs"), "pub use js::object::assign;\n\njs::export_default!(assign);\n");
   writeFileSync(join(dir, "shared/internals.rs"), "pub use crate::REACT_SHARED_INTERNALS;\n\njs::export_default!(REACT_SHARED_INTERNALS);\n");
   const libraryManifest = join(dir, "shared/manifest.json"), metadata = join(dir, "shared/libshared.rmeta");
-  run([compiler, join(dir, "shared/lib.rs"), "-o", join(dir, "shared/lib.js"), "--library", "--manifest", libraryManifest, "--", "--crate-name", "shared", `--emit=metadata=${metadata}`, ...extern]);
+  run([compiler, "--declarations", join(dir, "shared/lib.rs"), "-o", join(dir, "shared/lib.js"), "--library", "--manifest", libraryManifest, "--", "--crate-name", "shared", `--emit=metadata=${metadata}`, ...extern]);
   const contract = JSON.parse(readFileSync(libraryManifest, "utf8")).library;
   expect(contract.held.map((held: any) => [held.module, held.rust_name, held.export])).toEqual([
     [["assign"], "assign", "default"],
     [["internals"], "REACT_SHARED_INTERNALS", "default"],
   ]);
+  // Its default alone, as upstream's `shared/assign` is, and every caller
+  // reads it (ADR 0773): `pub` is how another crate names it.
+  expect(readFileSync(join(dir, "shared/assign.js"), "utf8")).toContain("\nconst assign = Object.assign;\n\nexport default assign;\n");
+  expect(readFileSync(join(dir, "shared/assign.d.ts"), "utf8")).not.toContain("export const assign");
   mkdirSync(join(dir, "app"), { recursive: true });
   writeFileSync(join(dir, "app/lib.rs"), `use js::Unknown;
 use shared::assign::assign;

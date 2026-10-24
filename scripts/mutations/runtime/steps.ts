@@ -195,4 +195,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^adapter_size_hints.rs$"],
   },
+  {
+    name: "skip-last-not-nth",
+    breaks: "`skip(n).last()` asks its source's `last` without its `nth(n - 1)` first",
+    file: "src/runtime/steps.js",
+    find: "        if (this.nth(k - 1).done) return { done: true, value: undefined };\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^own_last_and_nth_passed_on.rs$"],
+  },
 ];

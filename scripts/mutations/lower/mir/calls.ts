@@ -3,6 +3,22 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "class-constructor-called",
+    breaks: "a class's `Component::new(..)` is `Component(..)`, called, not constructed, so its `this` is `undefined` (ADR 0761)",
+    file: "src/lower/mir/calls.rs",
+    find: "                Expr::new_(*class, args)\n",
+    replace: "                Expr::call(*class, args)\n",
+    tests: ["test/classes.test.ts", "-t", "React's Component is a constructor function"],
+  },
+  {
+    name: "class-method-called-as-a-function",
+    breaks: "a class's `component.force_update(..)` is `Component.forceUpdate(component, ..)`, of a method the constructor doesn't have (ADR 0761)",
+    file: "src/lower/mir/calls.rs",
+    find: "            (Some(crate::lower::classes::Member::Method), js::ExprKind::Member(_, name)) if !args.is_empty() => {\n",
+    replace: "            (Some(crate::lower::classes::Member::Method), js::ExprKind::Member(_, name)) if false => {\n",
+    tests: ["test/classes.test.ts", "-t", "React's Component is a constructor function"],
+  },
+  {
     name: "held-call-named-at-call",
     breaks: "a binding's call is asked where it's read by the call's span, not its path's, so one named through the module that holds it is read in place",
     file: "src/lower/mir/calls.rs",

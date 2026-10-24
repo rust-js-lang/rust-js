@@ -219,6 +219,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `last()` of `it`, of items of type `item`: of ones with a destructor,
     /// `$lastDropping`, each before the last dropped as the next comes, as
     /// std's are (ADR 0098); else the last of its array.
+    /// `it.last()` of an iterator of type `iter_ty`: of one whose `last`
+    /// reaches the crate's own, its `last`, as `nth` is `$nth` (#182), its
+    /// `Some` boxed where the item looks like `None` (ADR 0051); else its
+    /// last item, `last_value`, of what steps it by its `fold`.
+    pub(super) fn last_called(
+        &mut self,
+        it: Expr,
+        iter_ty: Ty<'tcx>,
+        item: Option<Ty<'tcx>>,
+        span: Span,
+        made: &mut Vec<Stmt>,
+    ) -> R<Expr> {
+        if self.recognition().lasts_its_own(iter_ty) {
+            let boxed = item.is_some_and(|item| self.boxed_payload(item));
+            return Ok(Expr::call_helper(if boxed { "$lastSome" } else { "$last" }, vec![it]));
+        }
+        let it = self.by_its_fold(it, iter_ty);
+        self.last_value(it, item, span, made)
+    }
+
     pub(super) fn last_value(&mut self, it: Expr, item: Option<Ty<'tcx>>, span: Span, made: &mut Vec<Stmt>) -> R<Expr> {
         match item
             .map(|item| self.std_drop_function(item, span))

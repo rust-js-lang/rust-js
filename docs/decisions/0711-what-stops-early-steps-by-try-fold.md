@@ -90,3 +90,36 @@ it, and each adapter passes it on as std's does.**
     source.
 
   Each differs only where an iterator writes its own `nth`.
+
+## Amendment: `nth` through a `fuse` and a `peekable`, and `last` passed on
+
+The rest of #182: a `fuse()` and a `peekable()` stepped the crate's
+iterator by `next` where std's `nth` asks its own, and so did a `skip`
+behind them, by its `nth(n - 1)`; and std passes `last` on, which
+rust-js folded: a `skip`'s, after its `nth(n - 1)`, a `fuse`'s, a
+`peekable`'s, a `copied`'s, a `cloned`'s, and a chain's, each side's.
+
+- **`Fuse` and `Peekable` compile std's `nth` and `last`** (ADR 0561),
+  which their JS iterator has, `$stdIterator`'s `nth` and `last`, made by
+  `user_method`, the iterator's function of what else the method takes.
+- **The crate's own `last` is `$iterator`'s too**, as its `fold` and
+  `nth` are (`OwnMethods`), and its dictionary's; `$Steps` has std's
+  default, of its `fold`; a `skip`'s asks its source's `nth(n - 1)`, then
+  its `last`; a chain's asks both sides', and gives the second's where it
+  has one. `lasts_its_own` answers where `it.last()` is `$last(it)`.
+- **What passes items with a destructor uses an own method only where
+  it's one**: `ownNth` and `ownLast`, which `$iterator` and `$stdIterator`
+  set, say an `nth` or a `last` drops what it passes itself;
+  `$nthDropping` and `$lastDropping` ask it then, and step and drop each
+  otherwise, where std's defaults of a `$Steps` would drop none.
+- **Still apart**: `collect()` into a `Vec` doesn't ask the crate's own
+  `size_hint`, which std's asks as its capacity runs out, how often its
+  growth decides, which no program is written for; listed as the guide's
+  difference 21.
+- Held by `test/corpus/own_last_and_nth_passed_on.rs` and
+  `test/corpus/own_nth_last_dropping.rs` against native Rust, and the
+  mutations `nths-its-own-no-fuse`, `lasts-its-own-not-through-skip`,
+  `lasts-its-own-not-through-chain`, `skip-last-not-nth`,
+  `chain-last-first-unasked`, `std-iterator-nth-unhooked`,
+  `std-iterator-last-not-own`, `nth-dropping-default-nth`,
+  `last-dropping-own-unused` and `compiled-last-unhooked`.

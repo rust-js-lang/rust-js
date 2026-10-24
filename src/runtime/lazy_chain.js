@@ -34,6 +34,15 @@ function $lazyChain(a, b) {
     second.return?.();
     return folded;
   };
+  // Std's `Chain::last`: `a`'s `last`, then `b`'s, both asked, `b`'s where
+  // it has one.
+  chained.last = () => {
+    const last = (it) => (it.last !== undefined ? it.last() : $lent(it).last());
+    const a = first !== undefined ? last(first) : { done: true, value: undefined };
+    first = undefined;
+    const b = last(second);
+    return b.done ? a : b;
+  };
   chained.tryFold = (init, f, broke) => {
     let folded = init;
     if (first !== undefined) {

@@ -62,6 +62,7 @@ impl Expr {
             | ExprKind::Undefined
             | ExprKind::GivenUndefined
             | ExprKind::Null
+            | ExprKind::This
             | ExprKind::Symbol(_)
             | ExprKind::FunctionHole(_)
             | ExprKind::Import(_)
@@ -182,6 +183,7 @@ impl Expr {
             | ExprKind::Undefined
             | ExprKind::GivenUndefined
             | ExprKind::Null
+            | ExprKind::This
             | ExprKind::Symbol(_)
             | ExprKind::FunctionHole(_)
             | ExprKind::Import(_)
@@ -323,6 +325,11 @@ impl Expr {
     }
 
     pub fn reads_same(&self) -> bool {
+        // A read a getter may answer, which may give another value each time
+        // (ADR 0672).
+        if self.known == Known::Getter {
+            return false;
+        }
         match &self.kind {
             ExprKind::Var(_) | ExprKind::Symbol(_) => true,
             ExprKind::Member(object, _) | ExprKind::OptionalMember(object, _) => object.reads_same(),
@@ -459,6 +466,10 @@ impl Expr {
     }
 
     pub fn has_effects(&self) -> bool {
+        // A read a getter may answer, which may do anything (ADRs 0672, 0750).
+        if self.known == Known::Getter {
+            return true;
+        }
         match &self.kind {
             ExprKind::Num(_)
             | ExprKind::BigInt(_)
@@ -469,6 +480,7 @@ impl Expr {
             | ExprKind::Undefined
             | ExprKind::GivenUndefined
             | ExprKind::Null
+            | ExprKind::This
             | ExprKind::Var(_)
             | ExprKind::Symbol(_)
             | ExprKind::Regex(_)

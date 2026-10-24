@@ -30,6 +30,7 @@ impl<'a> Cx<'a> {
             ExprKind::Str(s) => self.string_literal(sp, s),
             ExprKind::Undefined | ExprKind::GivenUndefined => Expression::new_identifier(sp, "undefined", b),
             ExprKind::Null => Expression::new_null_literal(sp, b),
+            ExprKind::This => Expression::new_this_expression(sp, b),
             ExprKind::Symbol(_) => unreachable!("linking resolves every module symbol before emission"),
             ExprKind::OptionalMember(..) | ExprKind::OptionalIndex(..) | ExprKind::OptionalCall(..) => {
                 unreachable!("a chain is printed whole, above")
@@ -165,10 +166,14 @@ impl<'a> Cx<'a> {
             ExprKind::Function(f) => {
                 let params = self.params(FormalParameterKind::FormalParameter, &f.params);
                 let body = self.function_body(&f.body);
+                // One of no name is anonymous, a class's method's, `function
+                // (partialState) { .. }` (ADR 0761).
+                let name =
+                    (!f.name.is_empty()).then(|| BindingIdentifier::new(span(f.name_span), self.name(&f.name), b));
                 Expression::new_function_expression(
                     span(f.span),
                     FunctionType::FunctionExpression,
-                    Some(BindingIdentifier::new(span(f.name_span), self.name(&f.name), b)),
+                    name,
                     false, // generator
                     f.is_async,
                     false, // declare

@@ -38,6 +38,7 @@ mod bindings;
 mod bodies;
 mod body_queries;
 mod calls;
+mod classes;
 mod combinators;
 mod copies;
 mod declarations;
@@ -615,9 +616,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         name
     }
 
-    /// A `const` (ADR 0031). One of ours is its name, `SIZE` or `util.SIZE`,
-    /// copied where a use might change it: each use is a value of its own.
-    /// Anyone else's, like `u32::MAX`, is its value, written in place. A
+    /// A `const` (ADR 0031). One rust-js compiled, the crate's or a
+    /// library's, is its name, `SIZE` or `util.SIZE`, imported from its
+    /// module, copied where a use might change it: each use is a value of
+    /// its own (ADR 0770). Anyone else's, like `u32::MAX`, is its value,
+    /// written in place. A
     /// trait's in generic code, `S::SIDES`, is its impl's dictionary's (ADR 0106).
     fn named_const(&mut self, def_id: DefId, args: ty::GenericArgsRef<'tcx>, ty: Ty<'tcx>, span: Span) -> R<Expr> {
         // A trait's, of a type: its impl's (ADR 0410), of one generic code
@@ -631,7 +634,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         // One holding a `Cell`, which changes through a shared reference, is
         // its value, written in place: `{ value: 5 }` each time it's used.
-        if self.krate.fns.contains_key(&def_id) && ty.is_freeze(self.tcx, self.typing_env) {
+        if self.is_rust_fn(def_id) && ty.is_freeze(self.tcx, self.typing_env) {
             // `fn_ref` also records the use, which is what imports its module.
             let place = self.fn_ref(def_id);
             let copied = self.const_use_copied(ty)
@@ -737,8 +740,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 )));
             }
             // One that takes rest arguments, given a slice by what calls it
-            // as a value: the arrow of its call, which spreads it (ADR 0664).
-            if self.takes_rest(def_id) {
+            // as a value: the arrow of its call, which spreads it (ADR 0664);
+            // a class's constructor or method, `(props) => new
+            // Component(props)` (ADR 0761).
+            if self.takes_rest(def_id)
+                || matches!(
+                    classes::member(self.tcx, def_id),
+                    Some(classes::Member::Constructor | classes::Member::Method)
+                )
+            {
                 return Ok(None);
             }
             let callee = self.fn_ref(def_id);

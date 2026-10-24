@@ -51,3 +51,18 @@ owners hold it as what it is (ADR 0320).
   a library, until the draft is accepted.
 - Mutations read the `dyn`'s `value`, take the downcast for what it points
   at, give the last drop the value, and refuse the downcasts.
+
+## Amendment: an upcast of a counted `Rc<dyn Sub>` shares its count (#186)
+
+A counted `Rc<dyn Animal>` made an `Rc<dyn Named>`, `let n: Rc<dyn Named>
+= a.clone();`, was refused: the pair is one object of the `Rc`'s count and
+its trait's dictionary, and the upcast needs another dictionary but the
+same count, which every clone shares. **It's `$rcUpcast(rc, "Named",
+rc.impl.Named())`, a pair of the supertrait's dictionary whose value and
+counts are the `Rc`'s own, read and written through to it**, so a clone,
+a drop, `strong_count`, a `Weak` and `try_unwrap` through either are the
+one allocation's, as Rust's upcast shares it. One for each supertrait,
+kept on the `Rc`, so two upcasts of it are the same box, as `Rc::ptr_eq`
+finds them. Held by `test/corpus/rc_dyn_upcast_counted.rs` against native
+Rust, two levels of supertraits too, and the mutations
+`counted-rc-upcast-refused` and `rc-upcast-view-uncached`.

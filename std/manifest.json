@@ -158,12 +158,67 @@
         "rest": false
       },
       {
+        "key": "608f92abc48d28dad558a147cde0ee20",
+        "rust_path": "rust_js_std::<core::iter::Fuse<I> as core::iter::Iterator>::last",
+        "module": [
+          "iter"
+        ],
+        "export": "fuseIterator_last",
+        "member": null,
+        "drops": [
+          0,
+          1
+        ],
+        "fails": false,
+        "no_drops": [
+          0
+        ],
+        "type_facts": [],
+        "takes_location": false,
+        "stepped": [
+          [
+            0,
+            "608f92abc48d28daf245e2f3fcaec68a"
+          ]
+        ],
+        "rest": false
+      },
+      {
         "key": "608f92abc48d28da1e0eddc5451450c4",
         "rust_path": "rust_js_std::<core::iter::Fuse<I> as core::iter::Iterator>::next",
         "module": [
           "iter"
         ],
         "export": "fuseIterator_next",
+        "member": null,
+        "drops": [
+          0,
+          1
+        ],
+        "fails": false,
+        "no_drops": [],
+        "type_facts": [
+          [
+            0,
+            "Fused"
+          ]
+        ],
+        "takes_location": false,
+        "stepped": [
+          [
+            0,
+            "608f92abc48d28daf245e2f3fcaec68a"
+          ]
+        ],
+        "rest": false
+      },
+      {
+        "key": "608f92abc48d28daf7d278225c7a98c0",
+        "rust_path": "rust_js_std::<core::iter::Fuse<I> as core::iter::Iterator>::nth",
+        "module": [
+          "iter"
+        ],
+        "export": "fuseIterator_nth",
         "member": null,
         "drops": [
           0,
@@ -307,6 +362,54 @@
         "rest": false
       },
       {
+        "key": "608f92abc48d28da658620448efcb6e1",
+        "rust_path": "rust_js_std::<core::iter::Fuse<I> as core::iter::adapters::fuse::FuseImpl<I>>::nth",
+        "module": [
+          "iter"
+        ],
+        "export": "fuseFuseImplI_nth",
+        "member": null,
+        "drops": [
+          0,
+          1
+        ],
+        "fails": false,
+        "no_drops": [],
+        "type_facts": [],
+        "takes_location": false,
+        "stepped": [
+          [
+            0,
+            "608f92abc48d28daf245e2f3fcaec68a"
+          ]
+        ],
+        "rest": false
+      },
+      {
+        "key": "608f92abc48d28daf81bc16213999363",
+        "rust_path": "rust_js_std::<core::iter::Fuse<I> as core::iter::adapters::fuse::FuseImpl<I>>::nth",
+        "module": [
+          "iter"
+        ],
+        "export": "fuseFuseImplIFusedIterator_nth",
+        "member": null,
+        "drops": [
+          0,
+          1
+        ],
+        "fails": false,
+        "no_drops": [],
+        "type_facts": [],
+        "takes_location": false,
+        "stepped": [
+          [
+            0,
+            "608f92abc48d28daf245e2f3fcaec68a"
+          ]
+        ],
+        "rest": false
+      },
+      {
         "key": "608f92abc48d28da7243376338849ce",
         "rust_path": "rust_js_std::<core::iter::Peekable<I> as core::clone::Clone>",
         "module": [
@@ -435,12 +538,62 @@
         "rest": false
       },
       {
+        "key": "608f92abc48d28dacce619e70f8723ad",
+        "rust_path": "rust_js_std::<core::iter::Peekable<I> as core::iter::Iterator>::last",
+        "module": [
+          "iter"
+        ],
+        "export": "peekableIterator_last",
+        "member": null,
+        "drops": [
+          0,
+          1
+        ],
+        "fails": false,
+        "no_drops": [
+          0
+        ],
+        "type_facts": [],
+        "takes_location": false,
+        "stepped": [
+          [
+            0,
+            "608f92abc48d28daf245e2f3fcaec68a"
+          ]
+        ],
+        "rest": false
+      },
+      {
         "key": "608f92abc48d28da70aa29bfeee429e4",
         "rust_path": "rust_js_std::<core::iter::Peekable<I> as core::iter::Iterator>::next",
         "module": [
           "iter"
         ],
         "export": "peekableIterator_next",
+        "member": null,
+        "drops": [
+          0,
+          1
+        ],
+        "fails": false,
+        "no_drops": [],
+        "type_facts": [],
+        "takes_location": false,
+        "stepped": [
+          [
+            0,
+            "608f92abc48d28daf245e2f3fcaec68a"
+          ]
+        ],
+        "rest": false
+      },
+      {
+        "key": "608f92abc48d28da2d140cabef561ebf",
+        "rust_path": "rust_js_std::<core::iter::Peekable<I> as core::iter::Iterator>::nth",
+        "module": [
+          "iter"
+        ],
+        "export": "peekableIterator_nth",
         "member": null,
         "drops": [
           0,
@@ -572,6 +725,8 @@
       "imports": [],
       "exports": [
         "peekableIterator_next",
+        "peekableIterator_nth",
+        "peekableIterator_last",
         "peekableDoubleEndedIterator_nextBack",
         "peekableDoubleEndedIterator_rfold",
         "peekableClone_clone",
@@ -583,6 +738,10 @@
         "fuseExactSizeIterator_len",
         "fuseFuseImplI_next",
         "fuseFuseImplIFusedIterator_next",
+        "fuseIterator_nth",
+        "fuseIterator_last",
+        "fuseFuseImplI_nth",
+        "fuseFuseImplIFusedIterator_nth",
         "fuseFuseImplI_nextBack",
         "fuseFuseImplIFusedIterator_nextBack",
         "fuseClone_clone",
@@ -602,7 +761,7 @@
   "artifacts": [
     {
       "file": "iter.js",
-      "hash": "c8f7dc8e5cab818c"
+      "hash": "7ecea17be72cb070"
     },
     {
       "file": "iter.js.map",

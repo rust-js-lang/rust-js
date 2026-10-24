@@ -114,4 +114,20 @@ export const mutations: Mutation[] = [
     replace: "            if past_guard && false {\n                arms.insert(start, at);",
     tests: ["test/lowering-labels.test.ts", "-t", "a block the program labeled that ends a case"],
   },
+  {
+    name: "promoted-some-maybe-none",
+    breaks: "an `==` of an `Option` and a promoted `&Some(C)`, never `None`, is `==`, not the `===` a person writes",
+    file: "src/lower/mir/patterns.rs",
+    find: "                        && super::queries::promoted_some(self.tcx, &promoted[at]).is_some() =>\n",
+    replace: "                        && false =>\n",
+    tests: ["test/lowering-symbols.test.ts", "-t", "an == of a value read as the registry's symbol"],
+  },
+  {
+    name: "reborrowed-some-maybe-none",
+    breaks: "a reborrow of a reference to a `Some`, `&*r`, isn't known a `Some`, so its `==` is `==`",
+    file: "src/lower/mir/patterns.rs",
+    find: "                    if of.projection.is_empty() || of.projection[..] == [mir::ProjectionElem::Deref] =>\n",
+    replace: "                    if of.projection.is_empty() =>\n",
+    tests: ["test/lowering-symbols.test.ts", "-t", "an == of a value read as the registry's symbol"],
+  },
 ];

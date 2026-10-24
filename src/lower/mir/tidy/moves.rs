@@ -188,7 +188,7 @@ fn moved(stmt: &Stmt, rest: &[Stmt], facts: &MoveFacts) -> Option<(Moved, Why)> 
     if !once || js::mentions_in(&rest[at..=at], name) != 1 {
         return None;
     }
-    let read = read_of(&rest[at], name, value)?;
+    let read = read_of(&rest[at], name)?;
     let expr = read.of(&rest[at]);
     // Not an arrow into a call of it it'd be left called where it's made
     // in, `((l) => { .. })(take)`: it's held, `const map = (l) => ..;`, as
@@ -223,11 +223,12 @@ fn moved(stmt: &Stmt, rest: &[Stmt], facts: &MoveFacts) -> Option<(Moved, Why)> 
     Some((Moved { at, read, replaced }, why))
 }
 
-/// Which of `stmt`'s expressions reads `name`, a temporary of `value`, where
+/// Which of `stmt`'s expressions reads `name`, a temporary, where
 /// it may be moved: its value, an `if`'s test, or an assignment's target
-/// whose object it is, `_25[k] = v`, where `value` does nothing, as JS
-/// reads a target's object first, as it was read.
-fn read_of(stmt: &Stmt, name: &str, value: &Expr) -> Option<Read> {
+/// whose object it is, `_25[k] = v`: JS reads a target's object first,
+/// then its key, then the value, so the temporary runs where it ran, whatever it
+/// does, `window.document.title = t` (#188).
+fn read_of(stmt: &Stmt, name: &str) -> Option<Read> {
     match &stmt.kind {
         StmtKind::Const(..)
         | StmtKind::Let(_, Some(_))
@@ -242,7 +243,7 @@ fn read_of(stmt: &Stmt, name: &str, value: &Expr) -> Option<Read> {
             while let ExprKind::Index(of, _) | ExprKind::Member(of, _) = &root.kind {
                 root = of;
             }
-            let set_of = matches!(&root.kind, ExprKind::Var(v) if v == name) && !value.has_effects();
+            let set_of = matches!(&root.kind, ExprKind::Var(v) if v == name);
             match (in_target, set_of) {
                 (false, _) => Some(Read::Value),
                 (true, true) => Some(Read::Target),

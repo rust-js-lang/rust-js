@@ -286,6 +286,7 @@ fn expr(e: &mut Expr, visitor: &mut Visitor<'_>) {
         | ExprKind::Undefined
         | ExprKind::GivenUndefined
         | ExprKind::Null
+        | ExprKind::This
         | ExprKind::Regex(_) => {}
     }
 }

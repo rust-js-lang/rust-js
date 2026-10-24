@@ -3,6 +3,22 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "class-method-on-the-constructor",
+    breaks: "a class's method is written `Component.setState = function ..`, the constructor's, so an instance's `this.setState` is `undefined` (ADR 0761)",
+    file: "src/to_oxc/statements.rs",
+    find: "                true => prototype(),\n",
+    replace: "                true => js::Expr::var(&n.name),\n",
+    tests: ["test/classes.test.ts", "-t", "React's Component is a constructor function"],
+  },
+  {
+    name: "class-constructor-unexported",
+    breaks: "a class's constructor function isn't exported, so `import { Component }` finds none (ADR 0761)",
+    file: "src/to_oxc/statements.rs",
+    find: "            constructor.export = n.export;\n",
+    replace: "            constructor.export = false;\n",
+    tests: ["test/classes.test.ts", "-t", "React's Component is a constructor function"],
+  },
+  {
     name: "step-of-any-number-incremented",
     breaks: "a statement `j += 2` is `j++`, a step of one",
     file: "src/to_oxc/statements.rs",

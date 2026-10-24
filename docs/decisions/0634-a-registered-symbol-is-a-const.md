@@ -5,7 +5,8 @@ whose symbols of the registry are `const`s now, and
 [0629](0629-a-match-of-constants-is-a-switch.md), whose constants are a
 `Some`'s too and the registry's symbols. Extends [0590](0590-a-match-of-constants-names-them.md)'s
 names and [0283](0283-js-crate-covers-typescripts-es-library.md)'s
-`Symbol`.
+`Symbol`. Amended by [0771](0771-an-equality-of-a-registered-symbol-is-its-match.md):
+an `==` of a read and a `Some` is the `matches!` form.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)), each below: N, the
 program can't tell, of a symbol's `===` and of a read only tested

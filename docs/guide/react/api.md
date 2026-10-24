@@ -455,10 +455,10 @@ import { renderToString } from "react-dom/server";
 import { App } from "./app.jsx";
 
 export function Modal({ children }) {
-  if (!window.document.body) {
+  const body = window.document.body;
+  if (!body) {
     return;
   }
-  const body = window.document.body;
   const content = <div className="modal">{children}</div>;
   return createPortal(content, body);
 }

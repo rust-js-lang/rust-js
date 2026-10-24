@@ -225,13 +225,21 @@ rust-js: /path/to/app/Cargo.toml is a workspace's: name the app's package, `rust
 ```
 
 Every crate of the workspace that `frontend` uses gets its JS beside its
-Rust too, and `frontend` imports it there:
+Rust too, and `frontend` imports it there, a function or a `const` alike
+([ADR 0770](../../decisions/0770-a-librarys-const-is-imported-by-its-name.md)):
 
 ```
 models/src/lib.rs     pub fn valid_email(email: &str) -> bool
+models/src/lib.rs     pub const MAX_LENGTH: usize = 254;
 models/src/lib.js     export function validEmail(email) { .. }
-frontend/src/lib.js   import { validEmail } from "../../models/src/lib.js";
+models/src/lib.js     export const MAX_LENGTH = 254;
+frontend/src/lib.js   import { MAX_LENGTH, validEmail } from "../../models/src/lib.js";
 ```
+
+The package built is compiled as a program only where no crate of the
+workspace uses it; one another crate uses is a library, whichever package
+is built, so its JS is the same built alone as through what uses it
+([ADR 0360](../../decisions/0360-the-app-is-a-program.md)).
 
 The same `models` crate builds natively for a Rust server. See
 [Testing](testing.md#test-shared-logic-natively).

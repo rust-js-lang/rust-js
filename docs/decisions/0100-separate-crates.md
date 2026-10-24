@@ -1,6 +1,6 @@
 # 0100. Each crate is compiled once, to JS of its own, with a manifest of what crosses
 
-Status: Accepted. Extends [0085](0085-scalar-library-linkage.md), [0049](0049-traits-and-generics.md) and [0098](0098-destructors.md). Cargo runs these compilations as [0101](0101-cargo-workspace-wrapper.md) says.
+Status: Accepted. Extends [0085](0085-scalar-library-linkage.md), [0049](0049-traits-and-generics.md) and [0098](0098-destructors.md). Cargo runs these compilations as [0101](0101-cargo-workspace-wrapper.md) says. Amended by [0770](0770-a-librarys-const-is-imported-by-its-name.md): a library's `const` is imported by its name.
 
 Case: N, C, D ([0262](0262-when-rust-and-js-disagree.md)).
 

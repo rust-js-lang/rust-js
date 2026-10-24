@@ -19,7 +19,7 @@ const execute = promisify(execFile);
 /** Cargo's environment of a check through rust-js: rust-js as the wrapper
  * of every crate, compiling those `crates` names, the app's own, and
  * rustc's shim, the React the react crate is built for, the app,
- * `RUST_JS_APP`, a program no crate of the build uses (ADR 0360), and
+ * `RUST_JS_APP`, a program no crate of the workspace uses (ADR 0360), and
  * where `@rust-js/typescript` is, `@rust-js/build`'s own, which prints each
  * module's `.d.ts` (ADRs 0207, 0412).
  * @param {string} compiler
@@ -44,8 +44,8 @@ export function cargoEnv(compiler, react, { app, crates, dependencies = [] }) {
 
 /** What a check builds: the app, the package it's asked for, or else its
  * manifest's own, as Cargo says, a workspace's root without one having
- * none; and the crates rust-js compiles, the app's own, each of Cargo's
- * packages of a path, not a registry's or git's: the workspace's members,
+ * none, nor one another crate of the workspace uses; and the crates
+ * rust-js compiles, the app's own, each of Cargo's packages of a path, not a registry's or git's: the workspace's members,
  * a path dependency, and a crate an npm package has, which the patch names
  * (ADR 0414), by its directory. A binding crate, one whose
  * `[package.metadata.rust-js]` says `bindings = true`, is rustc's: what it
@@ -61,8 +61,15 @@ export async function cargoBuild({ manifestPath, packageName, toolchain, offline
   const { stdout } = await execute("cargo", args, { cwd: dirname(manifest), maxBuffer: 64 * 1024 * 1024 }).catch((error) => {
     throw new Error(`cargo metadata failed:\n${error.stderr ?? error.message}`);
   });
-  const { packages } = JSON.parse(stdout);
-  const app = packageName ?? packages.find((pkg) => realpathSync(pkg.manifest_path) === realpathSync(manifest))?.name;
+  const { packages, resolve: graph } = JSON.parse(stdout);
+  const asked = packageName
+    ? packages.find((pkg) => pkg.name === packageName)
+    : packages.find((pkg) => realpathSync(pkg.manifest_path) === realpathSync(manifest));
+  // A crate another of the workspace uses is a library whichever package
+  // is built: its JS, written once beside its Rust, is the same built alone
+  // as through the crate that uses it (ADR 0360, amended).
+  const used = new Set((graph?.nodes ?? []).flatMap((node) => node.deps.map((dep) => dep.pkg)));
+  const app = asked && !used.has(asked.id) ? asked.name : undefined;
   const compiled = packages.filter((pkg) => pkg.metadata?.["rust-js"]?.bindings !== true);
   const crates = compiled
     .filter((pkg) => pkg.source === null)

@@ -549,4 +549,20 @@ export const mutations: Mutation[] = [
     replace: "                true\n",
     tests: ["test/lowering-iterators.test.ts", "-t", "flatten of a read of items"],
   },
+  {
+    name: "registered-equality-loose",
+    breaks: "`from_value(x) == Some(SymbolFor(\"k\"))` is `x == Symbol.for(\"k\")`, true of an object that turns into the symbol, which isn't one",
+    file: "src/lower/mir/dispatch.rs",
+    find: "        }) || crate::lower::body_queries::registered_equalities(self.tcx, self.frame.thir).contains(&span))\n",
+    replace: "        }) || false)\n",
+    tests: ["test/lowering-symbols.test.ts", "-t", "an == of a value read as the registry's symbol"],
+  },
+  {
+    name: "getter-pending-past-lookup",
+    breaks: "a getter's read MIR holds is read inside a binding's method call, after the method's lookup",
+    file: "src/lower/mir/dispatch.rs",
+    find: "        if crate::lower::binding_calls::method_may_be_a_getters(self.tcx, callee.0)\n            && operands",
+    replace: "        if false\n            && operands",
+    tests: ["test/lowering-moves.test.ts", "-t", "a getter's read given to a binding's method runs before its lookup"],
+  },
 ];

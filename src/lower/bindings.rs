@@ -88,14 +88,13 @@ pub(super) fn validate(tcx: TyCtxt<'_>) -> bool {
             }
         }
         // A `#[rust_js::nullable]` field is an `Option` whose `None` is `null`
-        // (ADR 0196): of one that isn't, a cell of one say, it's nothing to do.
+        // (ADR 0196), or a `Cell` of one (ADR 0772): of one that isn't, it's
+        // nothing to do.
         if matches!(tcx.def_kind(def), DefKind::Struct | DefKind::Enum | DefKind::Union) {
             for field in tcx.adt_def(def).all_fields() {
                 let ty = tcx.type_of(field.did).instantiate_identity().skip_normalization();
-                if is_nullable(tcx, field)
-                    && !matches!(ty.kind(), ty::Adt(adt, _) if tcx.is_lang_item(adt.did(), LangItem::Option))
-                {
-                    let message = "rust-js: `#[rust_js::nullable]` is of a field that's an `Option`, whose `None` is `null`; this one isn't";
+                if is_nullable(tcx, field) && nullable_option(tcx, ty).is_none() {
+                    let message = "rust-js: `#[rust_js::nullable]` is of a field that's an `Option`, or a `Cell` of one, whose `None` is `null`; this one isn't";
                     tcx.dcx().span_err(tcx.def_span(field.did), message);
                     valid = false;
                 }
@@ -298,6 +297,12 @@ pub(super) enum JsForm {
     /// a JS iterator, `$keysIn(this)`, which a `for` loop of it is that
     /// loop (ADR 0719).
     KeysIn,
+    /// `throw`: `throw this`, a JS value thrown as it is, `js::throw`'s
+    /// (ADR 0760).
+    Throw,
+    /// `class`: the constructor function of the class its type argument
+    /// is, `Component`, `js::class::<Component>()`'s (ADR 0761).
+    Class,
 }
 
 pub(super) fn js_form(tcx: TyCtxt<'_>, def_id: DefId) -> JsForm {
@@ -319,6 +324,8 @@ pub(super) fn js_form(tcx: TyCtxt<'_>, def_id: DefId) -> JsForm {
         "import()" => return JsForm::Import { module: false },
         "import(*)" => return JsForm::Import { module: true },
         "for in" => return JsForm::KeysIn,
+        "throw" => return JsForm::Throw,
+        "class" => return JsForm::Class,
         _ => {}
     }
     if let Some(tag) = name.strip_prefix('<').and_then(|t| t.strip_suffix('>')) {
@@ -372,6 +379,14 @@ pub(super) struct HeldBinding {
 }
 
 impl HeldBinding {
+    /// Whether the module exports it by its name: a `pub use` names it,
+    /// and it isn't the module's default, which is how every caller reads
+    /// it, in the crate and in another, as upstream's `shared/assign` has
+    /// it alone (ADR 0773).
+    pub(super) fn exported_by_name(&self) -> bool {
+        self.export && !self.default
+    }
+
     /// What a caller that names it through its module imports: the
     /// module's default, as a function's (ADR 0240), else its name.
     pub(super) fn import(&self) -> Option<&str> {
@@ -1038,6 +1053,35 @@ pub(super) fn is_nullable(tcx: TyCtxt<'_>, field: &FieldDef) -> bool {
     tcx.get_attrs_by_path(field.did, &path).next().is_some()
 }
 
+/// The `Option` a `#[rust_js::nullable]` field of type `ty` holds: itself,
+/// or a `Cell`'s, whose `None` is `null` in JS (ADRs 0196, 0772). `None` of
+/// any other type.
+pub(super) fn nullable_option<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
+    let option = |ty: Ty<'tcx>| matches!(ty.kind(), ty::Adt(adt, _) if tcx.is_lang_item(adt.did(), LangItem::Option));
+    match ty.kind() {
+        _ if option(ty) => Some(ty),
+        ty::Adt(adt, args)
+            if adt.did() == super::recognition::std_item(tcx, super::recognition::StdItem::Cell)
+                && option(args.type_at(0)) =>
+        {
+            Some(args.type_at(0))
+        }
+        _ => None,
+    }
+}
+
+/// What a `#[rust_js::nullable]` field is written, of `made`, its
+/// `Option`'s JS: a `None` is `null`, a constant itself, and what's
+/// `nulled`, `null` or a value already, as it is; else `made ?? null`
+/// (ADRs 0275, 0772).
+pub(super) fn nullable_written(made: js::Expr, nulled: bool) -> js::Expr {
+    match made.kind {
+        js::ExprKind::Undefined => js::Expr::null().or_at(made.span),
+        _ if made.is_constant() || nulled => made,
+        _ => js::Expr::bin(js::Op::Coalesce, made, js::Expr::null()),
+    }
+}
+
 /// The parameters a binding names `#[rust_js::lazy(..)]`, each a function
 /// JS calls once for the value, React's `useState(init)`: given a closure
 /// whose body does nothing and gives no function, its value (ADR 0593).
@@ -1390,7 +1434,7 @@ pub fn given_names_differ(tcx: TyCtxt<'_>) -> bool {
 }
 
 /// A function's or `const`'s JS name.
-pub(super) fn fn_name(tcx: TyCtxt<'_>, def_id: DefId) -> String {
+pub(crate) fn fn_name(tcx: TyCtxt<'_>, def_id: DefId) -> String {
     name_in_js(tcx, def_id)
 }
 
@@ -1402,7 +1446,7 @@ pub(super) fn trait_method_name(tcx: TyCtxt<'_>, trait_id: DefId, name: &str) ->
 }
 
 /// A struct's or a variant's field, as a JS property.
-pub(super) fn field_key(tcx: TyCtxt<'_>, field: &FieldDef) -> String {
+pub(crate) fn field_key(tcx: TyCtxt<'_>, field: &FieldDef) -> String {
     name_in_js(tcx, field.did)
 }
 

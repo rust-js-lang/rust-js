@@ -555,20 +555,45 @@ pub fn lower_crate<'tcx>(
                 match &fns[&def_id].owner {
                     // Its type's object is exported if any of its methods is.
                     Some(owner) => {
-                        let module_namespaces = pass.namespaces.entry(module).or_default();
-                        let export = lowered.function.export;
-                        match module_namespaces.iter_mut().find(|n| n.name == *owner) {
-                            Some(namespace) => {
-                                namespace.export |= export;
-                                namespace.methods.push(lowered.function);
-                            }
-                            None => module_namespaces.push(js::Namespace {
-                                name: owner.clone(),
-                                constants: Vec::new(),
-                                methods: vec![lowered.function],
-                                export,
-                            }),
+                        // A class's, its constructor or its prototype's
+                        // (ADR 0761).
+                        let member = super::classes::member(tcx, def_id);
+                        if let Some(member) = member
+                            && let Err(what) = super::classes::as_member(member, &mut lowered.function)
+                        {
+                            super::refusal::refuse(tcx, tcx.def_span(def_id), super::refusal::Refused::Feature(what));
+                            failed = true;
+                            continue;
                         }
+                        let module_namespaces = pass.namespaces.entry(module).or_default();
+                        let namespace = match module_namespaces.iter().position(|n| n.name == *owner) {
+                            Some(at) => &mut module_namespaces[at],
+                            None => {
+                                module_namespaces.push(js::Namespace {
+                                    name: owner.clone(),
+                                    constants: Vec::new(),
+                                    methods: Vec::new(),
+                                    export: false,
+                                    class: None,
+                                });
+                                module_namespaces.last_mut().expect("just pushed")
+                            }
+                        };
+                        namespace.export |= lowered.function.export;
+                        if let Some(member) = member {
+                            let class = namespace.class.get_or_insert_with(|| js::Class {
+                                constructor: String::new(),
+                                prototype: Vec::new(),
+                            });
+                            match member {
+                                super::classes::Member::Constructor => {
+                                    class.constructor = lowered.function.name.clone()
+                                }
+                                super::classes::Member::Method => class.prototype.push(lowered.function.name.clone()),
+                                super::classes::Member::Static | super::classes::Member::Const => {}
+                            }
+                        }
+                        namespace.methods.push(lowered.function);
                     }
                     None if super::bindings::is_on_load(tcx, def_id) => {
                         pass.statements.entry(module).or_default().push(lowered.function.body)
@@ -596,6 +621,9 @@ pub fn lower_crate<'tcx>(
             }
         }
     }
+    if failed {
+        return None;
+    }
     for (module, consts) in pass.local_consts.drain() {
         const_items.entry(module).or_default().extend(consts);
     }
@@ -622,6 +650,7 @@ pub fn lower_crate<'tcx>(
                 export: constant.export,
                 constants: vec![constant],
                 methods: Vec::new(),
+                class: None,
             }),
         }
     }
@@ -817,7 +846,7 @@ pub fn lower_crate<'tcx>(
                         value: super::path_read(&held.path, &required, |export| {
                             names.expect("its imports")[export].clone()
                         }),
-                        export: held.export,
+                        export: held.exported_by_name(),
                         mutable: false,
                         span: held.span.map_or(js::Span::NONE, |span| sources.span(span)),
                     }),

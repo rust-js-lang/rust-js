@@ -54,7 +54,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         } else {
             Expr::var(export)
         };
-        if target.owner.is_some() {
+        // A class's constant, its prototype's (ADR 0761).
+        if super::classes::member(self.tcx, def_id) == Some(super::classes::Member::Const) {
+            Expr::member(Expr::member(reference, "prototype"), target.name.clone())
+        } else if target.owner.is_some() {
             Expr::member(reference, target.name.clone())
         } else {
             reference
@@ -231,8 +234,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// A function or its type's method object, imported by name when it lives
     /// in another module. The linker resolves collisions after lowering.
-    /// Is `def_id` a Rust function rust-js compiled: the crate's own, or one a
-    /// library exports (ADR 0100)?
+    /// Is `def_id` a Rust function, `const` or `static` rust-js compiled, read
+    /// by its name: the crate's own, or one a library exports (ADRs 0100,
+    /// 0770)?
     pub(super) fn is_rust_fn(&self, def_id: DefId) -> bool {
         self.krate.fns.contains_key(&def_id) || self.krate.foreign.item(def_id).is_some()
     }
