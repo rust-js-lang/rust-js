@@ -518,7 +518,6 @@ const Interp = {
         } else if (e._0 === "/") {
           if (l.TAG === "Num" && r.TAG === "Num") {
             if (r._0 === 0) {
-              const b = r._0;
               return { TAG: "Err", _0: "division by zero" };
             }
             const a = l._0;

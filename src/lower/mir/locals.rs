@@ -229,3 +229,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     // ── Structure ───────────────────────────────────────────────────────
 }
+
+/// Whether `local` is what a guarded arm's pattern binds for the arm's
+/// body, `first` of `Kind::Array(&[first, _]) if f(first) => ..`, which the
+/// guard reads through a reference of its own (ADR 0751).
+pub(super) fn bound_for_a_guarded_arm(body: &mir::Body<'_>, local: Local) -> bool {
+    (body.local_decls.iter()).any(|decl| {
+        matches!(&decl.local_info, mir::ClearCrossCrate::Set(info)
+            if matches!(**info, mir::LocalInfo::User(mir::BindingForm::RefForGuard(arm)) if arm == local))
+    })
+}

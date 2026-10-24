@@ -371,7 +371,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let bool = state.body.local_decls[local].ty.is_bool();
             *self.locals.mir.paths.entry(path).or_insert(bool) &= bool;
         }
-        let unread = !state.locals.user[local] && state.locals.reads[local] == 0 && !state.locals.borrowed[local];
+        // Of a binding, one a guarded arm's pattern makes that only the
+        // guard reads, `first` of `Kind::Array(&[first, _]) if f(first) =>
+        // ..`: the arm's body, which reads none (ADR 0751).
+        let user = state.locals.user[local] && !locals::bound_for_a_guarded_arm(state.body, local);
+        let unread = !user && state.locals.reads[local] == 0 && !state.locals.borrowed[local];
         if place.projection.is_empty() && (state.locals.names[local].is_empty() || unread) {
             // Of `()`, or a temporary nothing reads: what made it runs. Of
             // a reference, `let _ = &mut p.y` through `deref_mut`: what makes

@@ -35,7 +35,7 @@ function describe(shape) {
   } else if (shape.TAG === "Rect") {
     const { w, h } = shape;
     if (w === h) {
-      const { w, h } = shape;
+      const w = shape.w;
       text = `square ${w}`;
     } else {
       const { w, h } = shape;

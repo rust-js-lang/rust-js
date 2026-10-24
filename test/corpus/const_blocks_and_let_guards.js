@@ -20,7 +20,6 @@ function classify(input) {
     const parse = $parseInt(splitOnce[1], -2147483648, 2147483647);
     if (parse.TAG === "Ok") {
       const key = splitOnce[0];
-      const value = splitOnce[1];
       return `${key} is the number ${parse._0}`;
     }
     if (splitOnce[1].startsWith('"')) {
@@ -29,7 +28,6 @@ function classify(input) {
         const inner = rest.slice(0, -1);
         if (inner) {
           const key = splitOnce[0];
-          const value = splitOnce[1];
           return `${key} is the string ${inner}`;
         }
       }

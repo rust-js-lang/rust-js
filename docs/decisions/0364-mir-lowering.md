@@ -7,7 +7,9 @@ iterator traits' still: `implements_iterator`, which `for _ in &mut it`
 asks (`test/corpus/iterator_of_projection.rs`). Amended by
 [0569](0569-a-temporary-is-named-as-rust-analyzer-suggests.md): a
 temporary tidy keeps is named as rust-analyzer suggests, after its call or
-its type, before `value`.
+its type, before `value`. Extended by
+[0751](0751-a-binding-only-a-guard-reads-isnt-written.md): a binding only
+a guarded arm's guard reads isn't written in the arm.
 
 Case: N ([0262](0262-when-rust-and-js-disagree.md)).
 

@@ -127,8 +127,8 @@ export const mutations: Mutation[] = [
     "name": "mir-stored-paths-unknown",
     "breaks": "a getter's `bool` stored in a local isn't known as one, `!!(element.isContentEditable || ..)`",
     "file": "src/lower/mir/assign.rs",
-    "find": "            let bool = state.body.local_decls[local].ty.is_bool();\n            *self.locals.mir.paths.entry(path).or_insert(bool) &= bool;\n        }\n        let unread",
-    "replace": "        }\n        let unread",
+    "find": "            let bool = state.body.local_decls[local].ty.is_bool();\n            *self.locals.mir.paths.entry(path).or_insert(bool) &= bool;\n        }\n        // Of a binding",
+    "replace": "        }\n        // Of a binding",
     "tests": ["test/lowering-branches.test.ts", "-t", "or chain of a getter's bool"]
   },
   {
@@ -481,5 +481,13 @@ export const mutations: Mutation[] = [
     find: "                js::ExprKind::Member(..) | js::ExprKind::Index(..) if !fixed_place(&place) && !one_value => {\n",
     replace: "                js::ExprKind::Member(..) | js::ExprKind::Index(..) if false => {\n",
     tests: ["test/corpus.test.ts", "-t", "^mut_field_given.rs$"],
+  },
+  {
+    name: "guard-only-binding-written",
+    breaks: "a binding only a guarded arm's guard reads is written in the arm, `const first = value[0];`, which nothing reads",
+    file: "src/lower/mir/assign.rs",
+    find: "        let user = state.locals.user[local] && !locals::bound_for_a_guarded_arm(state.body, local);\n",
+    replace: "        let user = state.locals.user[local];\n",
+    tests: ["test/lowering-guards.test.ts"],
   },
 ];

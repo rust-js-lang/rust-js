@@ -173,14 +173,11 @@ export function quadrant(x, y) {
     let y$1 = value.y;
     if (x > 0) {
       if (y$1 > 0) {
-        const x = value.x;
-        const y$1 = value.y;
         return 1;
       }
     }
     x = value.x;
     if (x < 0) {
-      const x = value.x;
       return (2 + (y < 0 ? 1 : 0)) | 0;
     }
     y$1 = value.y;

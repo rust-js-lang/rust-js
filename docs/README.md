@@ -433,7 +433,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0361 Node's events are names of their own, typed by their emitters](decisions/0361-node-events.md) *(amended by 0656: `emit` takes what TypeScript's does)*
 - [0362 A field's `RefCell` never counted is the value it holds](decisions/0362-refcell-fields-never-counted.md)
 - [0363 Children of any node are given by reference](decisions/0363-children-of-any-node.md)
-- [0364 Bodies are lowered from their MIR](decisions/0364-mir-lowering.md) *(amended by 0659: tidy's passes are one list of stages, each checked; extended by 0745: a `continue` in a chain)*
+- [0364 Bodies are lowered from their MIR](decisions/0364-mir-lowering.md) *(amended by 0659: tidy's passes are one list of stages, each checked; extended by 0745: a `continue` in a chain; by 0751: a binding only a guard reads)*
 - [0365 JS's Math where Rust's methods differ: `js::math`](decisions/0365-js-math-where-rust-differs.md)
 - [0366 A `NodeList` of its items' type, as TypeScript's `NodeListOf`](decisions/0366-nodelist-of-its-items.md)
 - [0367 A state's setter is the function it is](decisions/0367-state-setter-is-a-function.md)
@@ -655,6 +655,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0743 A part of a chain of tests an earlier test decides is left out](decisions/0743-a-part-of-a-chain-a-test-decides-is-left-out.md)
 - [0744 A value or what it falls back to is `||`](decisions/0744-a-value-or-its-fallback-is-or.md)
 - [0745 A `continue` in a chain of `if`s is where it's written](decisions/0745-a-continue-in-a-chain-is-where-it-is-written.md)
+- [0751 A binding only an arm's guard reads isn't written in the arm](decisions/0751-a-binding-only-a-guard-reads-isnt-written.md)
 - [0720 A labeled block's `break` and a named constant, in a body's ranges](decisions/0720-a-labeled-block-and-a-named-constant-in-a-bodys-ranges.md)
 - [0721 `js::strict_equals(a, b)` is JS's `===`](decisions/0721-strict-equals-is-jss-triple-equals.md)
 - [0722 A `#[repr(..)]` enum's variant is its number](decisions/0722-a-repr-enums-variant-is-its-number.md)
