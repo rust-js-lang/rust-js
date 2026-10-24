@@ -146,6 +146,20 @@ function start(payload) {
   its name. `as i32` is the value it casts, `status` of a variable; of
   a variant written, `Status::Pending as i32`, rustc's number, `0`,
   which it computed.
+- **What a module's load makes reads another module's as its value**
+  (case C, ADR 0262: a throw where Rust runs is a result changed):
+  a thread-local's value, a static's or a constant's initializer lowered
+  as code, and a `js::on_load!` run where their module loads
+  (`CrateFacts::loads`). Where they read another of the crate's modules'
+  variant or `const`, the two may import each other, and the one loaded
+  first runs its load before the other has made its `const`s: `export
+  const state = { value: Pending };` threw `Cannot access 'Pending' before
+  initialization`. There each is its value, `{ value: 3 }`, as a module's
+  constants are; of its own module's, made before it (`js::in_load_order`),
+  or a library's, made before the crate loads, its name: `let phase =
+  Early;`. `FnCx::reads_by_name` is the one answer, which `unit_variant`
+  and `named_const` ask; it fixes the `const`s' too, ADR 0031's, whose
+  thread-local `{ value: LIMIT }` threw so before this amendment.
 
 ### Why
 
@@ -174,6 +188,12 @@ function start(payload) {
   isn't a literal the comparison knows is no `null`; the same answer.
 - A `{:?}` of a variant written, `Counted::Second`, is its table's read
   of it, `["First", "Second"][Second]`, where the number's was folded.
+- A function another module's load calls, in an import cycle, still
+  reads its own module's variants and `const`s by their names, as a
+  function reads a `const` (ADR 0031): if that module hasn't loaded yet,
+  it throws. Load-time code calling into a cycle is the open case, a
+  `const` item's as much as a variant's, for one decision of what a
+  cycle's load may run (ADR 0592 refuses a dictionary's).
 - A binding's import, a JS module's export, whose only read tidy took
   out isn't written either; a package nothing reads isn't loaded. Nor is
   a compiled std body's, `fused_iterator`'s `fuseDoubleEndedIterator_nextBack`,
@@ -185,7 +205,8 @@ function start(payload) {
   number" and "a repr enum's variants are its module's consts, each read
   by its name"; `test/cross-crate-items.test.ts`, "a library's repr
   enum's variant is imported by its name"; `test/corpus/repr_enum_numbers.rs`
-  against native Rust; the serde case "a repr enum serializes and
+  against native Rust; `test/corpus/load_cycle_values.rs`, two modules
+  in an import cycle, against native Rust; the serde case "a repr enum serializes and
   deserializes by its variants' names".
 - Mutations: `numbered-enum-named`, `numbered-enum-wide`,
   `numbered-discriminant-tested`, `numbered-debug-table`,
@@ -196,4 +217,6 @@ function start(payload) {
   `numbered-variant-const-unexported`, `numbered-variant-written-as-number`,
   `numbered-variant-tested-as-number`, `numbered-constant-as-number`,
   `numbered-variant-consts-undeclared`, `unread-module-imported`,
-  `unread-library-item-imported`.
+  `unread-library-item-imported`, `load-reads-by-name`,
+  `load-reads-own-module-by-value`, `load-reads-const-by-name`,
+  `load-reads-variant-by-name`.
