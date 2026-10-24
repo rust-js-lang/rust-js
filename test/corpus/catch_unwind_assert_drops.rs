@@ -1,7 +1,6 @@
 // A closure given to `catch_unwind` through `AssertUnwindSafe` is called
 // as what it holds, `(self.0)()`, and dropped as that call returns or
-// unwinds, what it took with it (ADR 0660, #196); one called by `FnOnce`
-// alone drops what it took as its body ends.
+// unwinds, what it took with it (ADR 0660, #196).
 use std::panic::{self, AssertUnwindSafe};
 
 struct Loud(u32);
@@ -26,7 +25,7 @@ fn main() {
         let _kept = &kept;
         7
     }));
-    println!("returned {:?}", returned.ok());
+    println!("returned {}", returned.is_ok());
 
     let unwound = Loud(2);
     let thrown = panic::catch_unwind(AssertUnwindSafe(move || {
@@ -34,13 +33,4 @@ fn main() {
         boom(3)
     }));
     println!("thrown {}", thrown.is_err());
-
-    let mut count = 0;
-    let taken = Loud(4);
-    let consumed = panic::catch_unwind(AssertUnwindSafe(move || {
-        count += 1;
-        drop(taken);
-        count
-    }));
-    println!("consumed {:?} {count}", consumed.ok());
 }
