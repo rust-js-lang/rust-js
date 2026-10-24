@@ -656,4 +656,20 @@ export const mutations: Mutation[] = [
     replace: "                    =>",
     tests: ["test/corpus.test.ts", "-t", "str_odds"],
   },
+  {
+    name: "std-enum-eq-refused",
+    breaks: "`==` of std's `Bound` and `Component`, derived, is refused",
+    file: "src/lower/std_impls.rs",
+    find: "            || self.std_enum_derives_eq(ty);",
+    replace: ";",
+    tests: ["test/corpus.test.ts", "-t", "^path_components.rs$"],
+  },
+  {
+    name: "os-text-not-js-eq",
+    breaks: "an `OsStr` isn't a key a map finds by value, so a set of `Component`s is refused",
+    file: "src/lower/std_impls.rs",
+    find: "            || self.recognition().is_os_text(ty)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^path_components.rs$"],
+  },
 ];

@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/back_stepped.rs",
     find: "                            stepped.extend(back_stepped_adapter(tcx, recognition, held, given, &drops));\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^filters_held_double_ended.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(filters_held_double_ended|returned_impl_ends).rs$"],
   },
   {
     name: "held-adapter-opaque",

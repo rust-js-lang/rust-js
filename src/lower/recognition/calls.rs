@@ -226,13 +226,13 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         }
         // A path is its text (ADR 0173): what reads it as text is itself.
         match std_path(tcx, def_id).as_str() {
-            "std::path::Path::new"
-            | "std::path::Path::display"
+            "std::path::Path::display"
             | "std::path::Path::to_str"
             | "std::path::Path::as_os_str"
             | "std::ffi::OsStr::to_str"
             | "std::path::PathBuf::as_path" => return Some(Some(Std::Same)),
             "std::path::PathBuf::new" => return Some(Some(Std::StringNew)),
+            "std::path::Path::new" | "std::ffi::OsStr::new" => return Some(Some(Std::Path(PathOp::New))),
             // Its methods, over its components (ADR 0405).
             "std::path::Path::join" => return Some(Some(Std::Path(PathOp::Join))),
             "std::path::Path::parent" => return Some(Some(Std::Path(PathOp::Parent))),
@@ -250,6 +250,8 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "std::path::Path::is_relative" => return Some(Some(Std::Path(PathOp::IsRelative))),
             "std::path::Path::iter" => return Some(Some(Std::Path(PathOp::Iter))),
             "std::path::Path::ancestors" => return Some(Some(Std::Path(PathOp::Ancestors))),
+            "std::path::Path::components" => return Some(Some(Std::Path(PathOp::Components))),
+            "std::path::Component::<'a>::as_os_str" => return Some(Some(Std::Path(PathOp::ComponentText))),
             "std::path::Path::to_path_buf" => return Some(Some(Std::Same)),
             "std::path::PathBuf::push" => return Some(Some(Std::StringEdit(StringEdit::PathPush))),
             "std::path::PathBuf::pop" => return Some(Some(Std::StringEdit(StringEdit::PathPop))),
@@ -568,13 +570,12 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         if self.views_itself(trait_, def_id, ty, args) {
             return Some(Std::Same);
         }
-        // `b.as_ref()` of std's `AsRef` where it's the same JS value, a `Box`'s,
-        // an `Rc`'s, or text's as a `Path` (ADRs 0331, 0505, 0173).
+        // `b.as_ref()` of std's `AsRef`, as its dictionary's (`as_ref_of`).
         if is_std_def(tcx, trait_, StdItem::AsRef)
             && tcx.item_name(def_id).as_str() == "as_ref"
-            && self.as_ref_is_itself(ty, args.type_at(1))
+            && let Some(known) = self.as_ref_of(ty, args.type_at(1))
         {
-            return Some(Std::Same);
+            return Some(known);
         }
         // `std::num::Wrapping`'s: its number's, wrapped as release Rust wraps
         // them (ADR 0175).

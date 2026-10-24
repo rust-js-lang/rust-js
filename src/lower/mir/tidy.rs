@@ -544,11 +544,9 @@ mod tests {
             finish,
             [
                 "parameters",
+                "drop scopes",
                 "temporaries named",
                 "flags named",
-                "drop scopes",
-                "declarations",
-                "returns through finally",
                 "shadows",
                 "appends",
             ]

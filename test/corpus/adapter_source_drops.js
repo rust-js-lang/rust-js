@@ -46,6 +46,8 @@ function main() {
     }
     if (tmp == null) {
       iter.return();
+      // A chain's first part, done with before its second is stepped, as
+      // Rust's `Chain` drops it.
       break;
     }
     const x = tmp;
@@ -56,6 +58,26 @@ function main() {
       throw error;
     }
   }
+  const map = $closing($iterator({ n: 1, name: "first" }, counterIterator_next), (it) => {
+    console.log(`drop ${it.of.name}`);
+  }).map((x) => (x + 1) >>> 0);
+  const inspect = (x) => {
+    console.log(`second ${x}`);
+  };
+  let tmp;
+  try {
+    tmp = $closing($iterator({ n: 1, name: "second" }, counterIterator_next), (it) => {
+      console.log(`drop ${it.of.name}`);
+    }).map((item) => {
+      inspect(item);
+      return item;
+    });
+  } catch (error) {
+    map.return();
+    throw error;
+  }
+  const both = [...map, ...tmp];
+  console.log(`both [${both.join(", ")}]`);
   console.log("end");
 }
 //# sourceMappingURL=case.js.map

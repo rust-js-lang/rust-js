@@ -154,4 +154,20 @@ export const mutations: Mutation[] = [
     replace: "  while (false) {\n",
     tests: ["test/corpus.test.ts", "-t", "^path_methods.rs$"],
   },
+  {
+    name: "component-root-a-name",
+    breaks: "a path's root is a `Normal` component, not `RootDir`",
+    file: "src/runtime/path.js",
+    find: "part === \"/\" ? \"RootDir\" : part",
+    replace: "part === \"//\" ? \"RootDir\" : part",
+    tests: ["test/corpus.test.ts", "-t", "^path_components.rs$"],
+  },
+  {
+    name: "component-text-of-parent",
+    breaks: "`ParentDir`'s text is `.`, not `..`",
+    file: "src/runtime/path.js",
+    find: "return component === \"RootDir\" ? \"/\" : component === \"CurDir\" ? \".\" : \"..\";",
+    replace: "return component === \"RootDir\" ? \"/\" : \".\";",
+    tests: ["test/corpus.test.ts", "-t", "^path_components.rs$"],
+  },
 ];

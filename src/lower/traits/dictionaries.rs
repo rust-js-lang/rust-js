@@ -490,6 +490,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 same,
             )]));
         }
+        // A path's `Component`'s, as a `Path` or an `OsStr`: its text (ADR 0716).
+        if is_std_def(self.tcx, tr.def_id, StdItem::AsRef)
+            && self.recognition().as_ref_is_component_text(ty, tr.args.type_at(1))
+        {
+            return Ok(Expr::object(vec![Prop::Field(
+                bindings::trait_method_name(self.tcx, tr.def_id, "as_ref"),
+                Expr::helper("$componentText"),
+            )]));
+        }
         // std's `AsRef<[u8]>` of text: its UTF-8 bytes, as `as_bytes()` gives
         // them (ADR 0162).
         if is_std_def(self.tcx, tr.def_id, StdItem::AsRef)

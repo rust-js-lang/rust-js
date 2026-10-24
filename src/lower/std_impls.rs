@@ -128,6 +128,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             || self.recognition().wrapping_of(ty).is_some()
     }
 
+    /// Another of std's enums whose `PartialEq` is derived, `Bound`'s and a
+    /// path's `Component`'s: the same variant, its fields equal, as any
+    /// enum's (ADR 0033), as its derived `{:?}` is shown.
+    pub(in crate::lower) fn std_enum_derives_eq(&self, ty: Ty<'tcx>) -> bool {
+        matches!(ty.kind(), ty::Adt(adt, _) if adt.is_enum()
+            && !adt.did().is_local()
+            && !self.krate.foreign.in_library(adt.did()))
+            && self
+                .tcx
+                .lang_items()
+                .eq_trait()
+                .is_some_and(|eq| self.recognition().derives(eq, ty))
+    }
+
     /// `Clone::clone` of the `ty` at `place`: the place itself when nothing
     /// could tell a clone from it, and otherwise a copy of the parts that
     /// could, calling each hand-written `clone` on the way.
@@ -729,6 +743,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // The registry's symbols, the same where their keys are (ADR 0634).
             || self.recognition().is_symbol_for(ty)
             || self.is_string_like(ty)
+            || self.recognition().is_os_text(ty)
             || self.is_parse_error(ty)
             || self.recognition().is_type_id(ty)
             || self.recognition().is_discriminant(ty)
@@ -1041,7 +1056,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         let structural = matches!(ty.kind(), ty::Tuple(_) | ty::Array(..) | ty::Slice(_))
             || self.is_std_wrapper(ty)
-            || matches!(ty.kind(), ty::Adt(adt, _) if !self.is_std(adt.did()) || self.is_known_std(ty));
+            || matches!(ty.kind(), ty::Adt(adt, _) if !self.is_std(adt.did()) || self.is_known_std(ty))
+            || self.std_enum_derives_eq(ty);
         if !structural || self.is_js_object(ty) || self.is_lang_adt(ty, LangItem::String) {
             return Err(self.unsupported(span, &format!("`==` on `{ty}`")));
         }

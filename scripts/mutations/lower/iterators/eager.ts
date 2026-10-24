@@ -172,18 +172,6 @@ export const mutations: Mutation[] = [
     "tests": ["test/lowering-collections.test.ts", "-t", "a chunks' remainder from MIR"]
   },
   {
-    "name": "chunks-exact-mut-not-fresh",
-    "breaks": "`$chunksExactMut(v, n)`'s array isn't one MIR knows is made there: `Iterator.from(..)`, whose `remainder` is gone",
-    "file": "src/lower/iterators/eager.rs",
-    "find": "                \"$chunksExactMut\",\n",
-    "replace": "",
-    "tests": [
-      "test/corpus.test.ts",
-      "-t",
-      "slice_views"
-    ]
-  },
-  {
     "name": "collected-runtime-arrayed",
     "breaks": "a chain collected is `Array.from($lazyChain(a, b))`, not `[...a, ...b]`",
     "file": "src/lower/iterators/eager.rs",

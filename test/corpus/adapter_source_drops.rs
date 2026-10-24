@@ -33,5 +33,12 @@ fn main() {
     for x in tens {
         println!("for {x}");
     }
+    // A chain's first part, done with before its second is stepped, as
+    // Rust's `Chain` drops it.
+    let both: Vec<u32> = Counter { n: 1, name: "first" }
+        .map(|x| x + 1)
+        .chain(Counter { n: 1, name: "second" }.inspect(|x| println!("second {x}")))
+        .collect();
+    println!("both {both:?}");
     println!("end");
 }

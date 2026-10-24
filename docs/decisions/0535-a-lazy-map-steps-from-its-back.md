@@ -54,3 +54,9 @@ parameter's from its back, against native Rust.
 - Mutations step the JS iterator again, and refuse a lazy `rev()`.
 - `len()` of a lazy `map`'s `rev()` is still refused: the map isn't made
   knowing its length, which the iterators draft's analysis answers.
+
+## Amended by
+
+[ADR 0717](0717-rev-of-what-knows-its-back-steps-it.md): `rev()` of what JS
+iterates as it is, made knowing its back, steps it from there, not its
+items from the front reversed.

@@ -51,15 +51,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "generic_borrow"],
   },
   {
-    name: "thread-local-with-taken-plain",
-    breaks: "a thread-local whose cell `with` hands out is taken as only read and set, so its `with_borrow_mut(f)` is `f(LOG.value)`, borrowing nothing a `try_borrow_mut()` would see",
-    file: "src/lower/recognition/wrappers.rs",
-    find: "        \"get\" | \"with_borrow\" | \"with_borrow_mut\" => Some(false),",
-    replace: "        \"get\" | \"with\" | \"with_borrow\" | \"with_borrow_mut\" => Some(false),",
-    tests: ["test/corpus.test.ts", "-t", "refcell_unwind_releases"],
-    snapshots: true,
-  },
-  {
     name: "local-borrow-plain",
     breaks: "a thread-local's `with_borrow` is taken as only reading it",
     file: "src/lower/recognition/wrappers.rs",

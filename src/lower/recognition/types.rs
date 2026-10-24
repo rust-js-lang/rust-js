@@ -287,6 +287,18 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         ))
     }
 
+    /// A path's `Component`, std's enum as any enum is (ADR 0033).
+    pub(in crate::lower) fn is_path_component(&self, ty: Ty<'tcx>) -> bool {
+        matches!(ty.peel_refs().kind(), ty::Adt(adt, _) if std_path(self.tcx, adt.did()) == "std::path::Component")
+    }
+
+    /// An `OsStr` or an `OsString`, the text of a path's component: a JS
+    /// string, equal and ordered by its bytes, as text is by code point.
+    pub(in crate::lower) fn is_os_text(&self, ty: Ty<'tcx>) -> bool {
+        matches!(ty.peel_refs().kind(), ty::Adt(adt, _)
+            if matches!(std_path(self.tcx, adt.did()).as_str(), "std::ffi::OsStr" | "std::ffi::OsString"))
+    }
+
     /// A slice's `chunks_exact(n)` or `rchunks_exact(n)`, whose `remainder()`
     /// is what's left (ADR 0324).
     pub(in crate::lower) fn is_exact_chunks(&self, ty: Ty<'tcx>) -> bool {
@@ -335,6 +347,15 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// its length (ADR 0391).
     pub(in crate::lower) fn is_process_items(&self, ty: Ty<'tcx>) -> bool {
         matches!(ty.kind(), ty::Adt(adt, _) if std_path(self.tcx, adt.did()) == "std::env::Args")
+    }
+
+    /// A path's iterators, `Path::iter()`'s, `components()`'s and
+    /// `ancestors()`'s: an array of what they give (ADR 0405).
+    pub(in crate::lower) fn is_path_items(&self, ty: Ty<'tcx>) -> bool {
+        matches!(ty.kind(), ty::Adt(adt, _) if matches!(
+            std_path(self.tcx, adt.did()).as_str(),
+            "std::path::Iter" | "std::path::Components" | "std::path::Ancestors"
+        ))
     }
 
     /// `env::VarError`, what `env::var` gives of a variable it hasn't:
@@ -556,6 +577,17 @@ pub(crate) fn clock_type_of(ty: Ty<'_>) -> Option<ClockType> {
         ty::Adt(adt, _) => clock_type(adt.did()),
         _ => None,
     }
+}
+
+/// Whether no value of `variant` is ever made: `Component::Prefix`, of a
+/// `PrefixComponent`, a Windows path's prefix, which a Unix path, the only
+/// one rust-js has, never has (ADR 0405). What shows or orders its enum's
+/// values has nothing to do of it.
+pub(in crate::lower) fn never_made(tcx: TyCtxt<'_>, variant: &ty::VariantDef) -> bool {
+    variant.fields.iter().any(|field| {
+        matches!(tcx.type_of(field.did).skip_binder().kind(),
+            ty::Adt(adt, _) if std_path(tcx, adt.did()) == "std::path::PrefixComponent")
+    })
 }
 
 /// core's `TryFromSliceError` (ADR 0189).

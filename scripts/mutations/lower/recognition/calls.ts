@@ -102,8 +102,8 @@ export const mutations: Mutation[] = [
     name: "path-display-unknown",
     breaks: "`p.display()` of a path is an error",
     file: "src/lower/recognition/calls.rs",
-    find: "            | \"std::path::Path::display\"\n",
-    replace: "\n",
+    find: "            \"std::path::Path::display\"\n            | \"std::path::Path::to_str\"\n",
+    replace: "            \"std::path::Path::to_str\"\n",
     tests: ["test/corpus.test.ts", "-t", "path_text"],
   },
   {
