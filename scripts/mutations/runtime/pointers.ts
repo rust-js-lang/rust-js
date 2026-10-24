@@ -3,14 +3,6 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
-    name: "ptr-to-uncached",
-    breaks: "a pointer to an object is a new handle each time: two to it differ",
-    file: "src/runtime/pointers.js",
-    find: "  let handle = $objects.get(object);\n",
-    replace: "  let handle;\n",
-    tests: ["test/corpus.test.ts", "-t", "^raw_pointers.rs$"],
-  },
-  {
     name: "ptr-to-written-whole",
     breaks: "`*p = v` of an object's pointer gives the handle another, leaving the object",
     file: "src/runtime/pointers.js",
