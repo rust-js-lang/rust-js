@@ -247,7 +247,7 @@ What's refused of formatting is in [the limitations](limitations.md#formatting).
   it's made, cloned and dropped, and the last drop runs what it points at's
   destructor ([0320](../decisions/0320-counted-rcs.md)). `Rc::ptr_eq` of
   an `Rc` of a struct with fields is `a === b` of the objects, and counts
-  nothing ([0582](../decisions/0582-ptr-eq-of-an-object-is-its-identity.md)).
+  nothing; a `#[repr(transparent)]` one is its field, and counts ([0582](../decisions/0582-ptr-eq-of-an-object-is-its-identity.md)).
   A `Weak` nothing upgrades or counts is what it points at, `Rc::downgrade`
   the object and `Weak::new()` `null`: what's alive is asked of no `Weak`,
   so none needs a count ([0843](../decisions/0843-a-weak-nothing-upgrades-is-the-value-itself.md)).

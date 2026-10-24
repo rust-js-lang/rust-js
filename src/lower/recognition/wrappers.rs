@@ -462,12 +462,15 @@ pub(crate) fn weak_pointee<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Ty<'
 
 /// Is `id`, of an `Rc` of `pointee`, a function that reads an `Rc`'s or
 /// `Arc`'s counts, or a `Weak`'s, or upgrades one (ADR 0320): what only a
-/// counted one can answer. `downgrade` asks none (ADR 0843). `ptr_eq` of a struct with fields, a JS object
-/// whose `===` is its identity, needs none (ADR 0582).
+/// counted one can answer. `downgrade` asks none (ADR 0843). `ptr_eq` of a
+/// struct with fields, a JS object whose `===` is its identity, needs none
+/// (ADR 0582); not of a transparent one, which is its field, of a number
+/// whose `===` is its value (ADR 0582, amended).
 pub(crate) fn reads_rc_count<'tcx>(tcx: TyCtxt<'tcx>, id: DefId, pointee: Option<Ty<'tcx>>) -> bool {
     let object = matches!(pointee.map(|pointee| *pointee.kind()), Some(ty::Adt(adt, _))
         if adt.is_struct() && adt.did().is_local()
-            && !adt.non_enum_variant().fields.is_empty());
+            && !adt.non_enum_variant().fields.is_empty()
+            && transparent_field(tcx, adt).is_none());
     if object && tcx.item_name(id).as_str() == "ptr_eq" {
         return false;
     }

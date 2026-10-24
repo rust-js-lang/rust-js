@@ -1,7 +1,8 @@
 # 0582. `Rc::ptr_eq` of an object is its identity, uncounted
 
 Status: Accepted. Amends [0320](0320-counted-rcs.md), which counted every
-`Rc` that `ptr_eq` asks of.
+`Rc` that `ptr_eq` asks of. Amended: not of a `#[repr(transparent)]`
+struct, which is its field (ADR 0584), a number's `===` its value.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N. Two `Rc`s point at
 one value exactly when their JS objects are one.
@@ -29,6 +30,11 @@ whose `===` is its identity, counts nothing** (`reads_rc_count`): it's
 `a === b` of the objects. Of anything else, a number, a string, a unit
 struct, it counts as before.
 
+(Amended: nor of a `#[repr(transparent)]` struct, which ADR 0584 made its
+field, `Meters(1.0)` the number `1`: two `Rc`s of equal ones were `1 ===
+1`, `true`, where Rust's point at two allocations. Found writing ADR 0844;
+it counts as a number's does.)
+
 ## Why
 
 - **It's what JS compares**: an object made by `Rc::new` is one object,
@@ -43,6 +49,9 @@ struct, it counts as before.
 
 ## What holds it
 
-- `test/lowering.test.ts`, "ptr_eq of an Rc of a struct is === of its
-  object, uncounted": a task's `a === b`, a number's still counted, run.
-- Mutations: an object's counted, a number's not.
+- `test/lowering-cells.test.ts`, "ptr_eq of an Rc of a struct is === of its
+  object, uncounted": a task's `a === b`, a number's and a transparent
+  struct's still counted, run.
+- Mutations: an object's counted, a number's not, a transparent struct's
+  not (`scripts/mutations/lower/recognition/wrappers.ts`,
+  `ptr-eq-of-transparent-uncounted`).
