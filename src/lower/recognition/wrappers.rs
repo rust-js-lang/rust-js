@@ -266,6 +266,15 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         self.is_path_component(from) && self.is_path_like(to)
     }
 
+    /// Whether std's `AsMut<to>` of a `from` is the `&mut` it's given: text
+    /// as a `str`, a sequence as a slice (ADR 0454), and what a `Box` holds,
+    /// which the `Box` is in JS (ADR 0023). The one answer, of a call of
+    /// `as_mut` and of the dictionary generic code is given.
+    pub(in crate::lower) fn as_mut_is_itself(&self, from: Ty<'tcx>, to: Ty<'tcx>) -> bool {
+        let boxed = from.peel_refs();
+        self.views_as_itself(from, to) || (boxed.is_box() && boxed.boxed_ty() == Some(to))
+    }
+
     pub(in crate::lower) fn views_as_itself(&self, from: Ty<'tcx>, to: Ty<'tcx>) -> bool {
         let from = from.peel_refs();
         let sequence = from.is_array() || from.is_slice() || self.is_vec_like(from);
@@ -291,7 +300,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             && self.borrows_as_itself(ty, args.type_at(1)))
             || (is_std_def(tcx, trait_, StdItem::AsMut)
                 && !known_by_bounds(ty.peel_refs())
-                && self.views_as_itself(ty, args.type_at(1)))
+                && self.as_mut_is_itself(ty, args.type_at(1)))
     }
 
     /// Is std's `Borrow<to>` of a `from` the same JS value (ADR 0167): a
