@@ -298,6 +298,9 @@ pub(super) enum JsForm {
     /// a JS iterator, `$keysIn(this)`, which a `for` loop of it is that
     /// loop (ADR 0719).
     KeysIn,
+    /// `throw`: `throw this`, a JS value thrown as it is, `js::throw`'s
+    /// (ADR 0760).
+    Throw,
 }
 
 pub(super) fn js_form(tcx: TyCtxt<'_>, def_id: DefId) -> JsForm {
@@ -319,6 +322,7 @@ pub(super) fn js_form(tcx: TyCtxt<'_>, def_id: DefId) -> JsForm {
         "import()" => return JsForm::Import { module: false },
         "import(*)" => return JsForm::Import { module: true },
         "for in" => return JsForm::KeysIn,
+        "throw" => return JsForm::Throw,
         _ => {}
     }
     if let Some(tag) = name.strip_prefix('<').and_then(|t| t.strip_suffix('>')) {

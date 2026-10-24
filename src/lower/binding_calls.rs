@@ -199,6 +199,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             (JsForm::CallThis, Some(this)) => Expr::call(this, args),
             (JsForm::KeysIn, Some(this)) if args.is_empty() => super::iterators::keys_in(this),
             (JsForm::NewThis, Some(this)) => Expr::new_(this, args),
+            (JsForm::Throw, Some(this)) if args.is_empty() => {
+                out.push(StmtKind::Throw(this).at(self.js_span(span)));
+                Expr::undefined()
+            }
             (JsForm::Delete, Some(this)) if args.len() == 1 => {
                 Expr::unary(UnaryOp::Delete, keyed(this, args.remove(0)))
             }

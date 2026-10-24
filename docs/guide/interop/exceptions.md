@@ -18,6 +18,7 @@ it writes, without its header comment and source-map line.
 - [Arithmetic and indexing](#arithmetic-and-indexing)
 - [Assertions, `unreachable!` and `todo!`](#assertions-unreachable-and-todo)
 - [Catch an unwind: `catch_unwind`](#catch-an-unwind-catch_unwind)
+- [Throw a JS value: `js::throw`](#throw-a-js-value-jsthrow)
 - [Exiting the process](#exiting-the-process)
 
 ## A panic is a thrown `Error`
@@ -631,9 +632,10 @@ export function text(value) {
   JS threw, itself; text, its panic; any other payload, an `Error` that a
   `catch_unwind` gives back as it was. Of a payload only read, it's
   `throw` of what was caught, the same object, `throw thrown` above.
-- **`panic!` is the one way to throw an `Error`**, `panic!("")` a `new
+- **`panic!` is the one way to throw a new `Error`**, `panic!("")` a `new
   Error()`: a JS value isn't `Send`, so rustc refuses `resume_unwind`
-  and `panic_any` of a `&JsError`. Caught, its `&JsError` is that
+  and `panic_any` of a `&JsError`; a value JS already has is thrown by
+  [`js::throw`](#throw-a-js-value-jsthrow). Caught, its `&JsError` is that
   `Error`, its `stack` where it was thrown, and the `catch` is of the
   `Err`'s binding ([ADR 0706](../../decisions/0706-panic-is-the-one-way-a-port-throws-an-error.md)).
   An `if let Err(e) = catch_unwind(f)` that heads a chain, `&& c`, is a
@@ -734,6 +736,58 @@ error: rust-js does not support unwinding where a panic aborts, `panic = "abort"
 ```
 
 Return a `Result` for a failure the caller handles.
+
+## Throw a JS value: `js::throw`
+
+`js::throw(value)` is JS's `throw value`: a value JS already has, thrown
+as it is, an `Error` it gave you, a promise, a string, `undefined` of
+`None` ([ADR 0760](../../decisions/0760-js-throw-is-throw-of-a-js-value.md)).
+React's `lazyInitializer` throws what its loader rejected with, or the
+thenable it's waiting on, which Suspense catches:
+
+```rust
+use std::cell::Cell;
+
+use js::Unknown;
+
+#[derive(Clone, Copy, PartialEq)]
+pub enum Status {
+    Pending,
+    Resolved,
+}
+
+pub struct Payload {
+    #[cfg_attr(rust_js, rust_js::name = "_status")]
+    pub status: Cell<Status>,
+    #[cfg_attr(rust_js, rust_js::name = "_result")]
+    pub result: Cell<Option<&'static Unknown>>,
+}
+
+pub fn lazy_initializer(payload: &Payload) -> Option<&'static Unknown> {
+    if payload.status.get() == Status::Resolved {
+        payload.result.get()
+    } else {
+        js::throw(payload.result.get())
+    }
+}
+```
+
+```js
+export function lazyInitializer(payload) {
+  if (payload._status !== "Resolved") {
+    throw payload._result;
+  }
+  return payload._result;
+}
+```
+
+- **It's the one way to throw a JS value.** `panic!` is the one way to
+  throw a new `Error`; `resume_unwind` of what `catch_unwind` caught
+  throws it again, as it was thrown.
+- **It returns `!`**, as `panic!` does, so it ends a branch of any type.
+- **What it throws unwinds as any JS throw**: `catch_unwind` catches it,
+  and its payload's `downcast_ref::<&JsError>()` is the value thrown, a
+  string's or a promise's too, as [above](#catch-an-unwind-catch_unwind).
 
 ## Exiting the process
 

@@ -540,6 +540,19 @@ pub fn new(this: &Unknown, arguments: impl Rest<dyn IntoUnknown>) -> &'static Un
     unreachable!()
 }
 
+/// `throw value`: JS's `throw` of a value JS has, an `Error`, a promise,
+/// any value, or `undefined` of `None`, as React's `throw
+/// payload._result;` (ADR 0760). The one way to throw what's already a
+/// JS value; a new `Error` is `panic!`'s (ADR 0706), and what
+/// `catch_unwind` caught is thrown again by `resume_unwind`. What it throws
+/// unwinds as any JS throw: `catch_unwind` catches it, its payload's
+/// `downcast_ref::<&JsError>()` the value thrown (ADR 0710).
+#[cfg_attr(rust_js, rust_js::link_name = "throw")]
+#[allow(unused_variables)]
+pub fn throw(this: Option<&Unknown>) -> ! {
+    unreachable!()
+}
+
 /// `key in value`: whether an object has a property of that name, its own
 /// or its prototype's, as JS's `in` asks.
 #[cfg_attr(rust_js, rust_js::link_name = "in []")]

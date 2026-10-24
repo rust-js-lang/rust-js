@@ -3,6 +3,22 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "js-throw-made-an-error",
+    breaks: "`js::throw(value)` throws `new Error(value)`, an `Error` made of it, not the value itself, so a thenable React's Suspense waits on is lost",
+    file: "src/lower/binding_calls.rs",
+    find: "                out.push(StmtKind::Throw(this).at(self.js_span(span)));\n",
+    replace: "                out.push(StmtKind::Throw(Expr::new_(Expr::var(\"Error\"), vec![this])).at(self.js_span(span)));\n",
+    tests: ["test/lowering-throws.test.ts"],
+  },
+  {
+    name: "js-throw-unthrown",
+    breaks: "`js::throw(value)` throws nothing, so the function goes on past it, its value `undefined`",
+    file: "src/lower/binding_calls.rs",
+    find: "            (JsForm::Throw, Some(this)) if args.is_empty() => {\n                out.push(StmtKind::Throw(this).at(self.js_span(span)));\n",
+    replace: "            (JsForm::Throw, Some(this)) if args.is_empty() => {\n                out.push(StmtKind::Expr(this).at(self.js_span(span)));\n",
+    tests: ["test/lowering-throws.test.ts"],
+  },
+  {
     name: "strict-equals-loose",
     breaks: "`js::strict_equals(a, b)` is `a == b`, so a `null` is an `undefined` and `1` is `\"1\"`, where JS's `===` says neither is",
     file: "src/lower/binding_calls.rs",
