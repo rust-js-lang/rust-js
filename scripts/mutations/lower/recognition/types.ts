@@ -251,4 +251,12 @@ export const mutations: Mutation[] = [
     replace: "                if traits.auto_traits().all(|id| self.tcx.is_diagnostic_item(Symbol::intern(\"Send\"), id)))\n",
     tests: ["test/lowering-unwinds.test.ts", "-t", "every unwind"],
   },
+  {
+    name: "path-components-not-items",
+    breaks: "`next_back()` of a path's `components()` is refused, not an array's",
+    file: "src/lower/recognition/types.rs",
+    find: "\"std::path::Iter\" | \"std::path::Components\" | \"std::path::Ancestors\"",
+    replace: "\"std::path::Iter\" | \"std::path::Ancestors\"",
+    tests: ["test/corpus.test.ts", "-t", "^path_components.rs$"],
+  },
 ];

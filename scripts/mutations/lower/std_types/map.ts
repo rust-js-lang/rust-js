@@ -413,4 +413,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^own_fold_and_nth.rs$"],
   },
+  {
+    name: "std-enum-key-refused",
+    breaks: "a set of std's `Component`s, compared by value, is refused",
+    file: "src/lower/std_types/map.rs",
+    find: "(self.is_rust_adt(adt.did()) || self.std_enum_derives_eq(ty))",
+    replace: "self.is_rust_adt(adt.did())",
+    tests: ["test/corpus.test.ts", "-t", "^path_components.rs$"],
+  },
 ];

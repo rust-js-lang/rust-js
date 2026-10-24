@@ -100,6 +100,7 @@ fn main() {
     println!("{:?} {:?}", last_doubled(&mut rest), rest.next());
     let mut numbered = Numbered { iter: (5..8).enumerate() };
     println!("{:?} {:?}", numbered.iter.next_back(), numbered.iter.next());
+    println!("{:?}", numbered.iter.next());
     let mut wrap = Wrap { inner: vec![4u32, 5].into_iter() };
     println!("{:?} {:?}", wrap.last_tripled(), wrap.inner.next());
     // Of a range, stepped as it is by its dictionaries.

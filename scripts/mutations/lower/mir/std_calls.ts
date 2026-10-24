@@ -743,4 +743,12 @@ export const mutations: Mutation[] = [
     replace: "IterComb::Flatten | IterComb::FlatMap)",
     tests: ["test/corpus.test.ts", "-t", "^returned_impl_ends.rs$"],
   },
+  {
+    name: "pushed-component-raw",
+    breaks: "`buf.push(c)` of a `Component` pushes its object",
+    file: "src/lower/mir/std_calls.rs",
+    find: "                    StringEdit::PathPush | StringEdit::SetFileName | StringEdit::SetExtension\n",
+    replace: "                    StringEdit::Clear\n",
+    tests: ["test/corpus.test.ts", "-t", "^path_components.rs$"],
+  },
 ];

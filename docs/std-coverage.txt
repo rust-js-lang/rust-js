@@ -818,9 +818,9 @@
 + array::each_mut	memory
 + array::each_ref	memory
 + array::map	memory
-# char 37 of 38; bodies: 21 safe, 0 spec, 5 opaque, 12 memory, 0 none
+# char 38 of 38; bodies: 21 safe, 0 spec, 5 opaque, 12 memory, 0 none
 + char::decode_utf16	safe
-- char::encode_utf16	memory
++ char::encode_utf16	memory
 + char::encode_utf8	memory
 + char::eq_ignore_ascii_case	safe
 + char::escape_debug	memory

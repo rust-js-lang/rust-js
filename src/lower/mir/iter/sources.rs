@@ -7,8 +7,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `value`, an iterator of type `ty`, as a JS iterator: a range stepped
     /// by its `next`, the crate's by its impl's, a JS one as it is.
     pub(in crate::lower) fn as_js_iterator(&mut self, value: Expr, ty: Ty<'tcx>, span: Span) -> R<Expr> {
-        // The crate's own behind an `impl Iterator` too.
-        let ty = self.reveal(ty);
         // A `&mut` to a range, `take2(&mut it)`'s: the range, stepped where
         // it is, as its lender goes on from where it's left.
         let ranged = match ty.kind() {
@@ -76,6 +74,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             || self.recognition().is_slice_iter_mut(ty)
             || self.recognition().is_tree_iter(ty)
             || self.recognition().is_process_items(ty)
+            || self.recognition().is_path_items(ty)
     }
 
     /// A std iterator of type `ty` made of `value`, an array or a text, as

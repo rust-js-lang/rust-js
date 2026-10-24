@@ -676,6 +676,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let tag = Expr::member(Expr::var("value"), bindings::tag_key(self.tcx, adt.did()));
         let mut shown: Option<Expr> = None;
         for variant in adt.variants().iter().rev() {
+            if crate::lower::recognition::never_made(self.tcx, variant) {
+                continue;
+            }
             let name = variant.name.to_string();
             let js_name = bindings::variant_name(self.tcx, variant);
             let (test, this) = match variant.fields.is_empty() {

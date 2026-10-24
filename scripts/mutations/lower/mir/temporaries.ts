@@ -3,14 +3,6 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
-    name: "mir-fold-out-of-order",
-    breaks: "temporaries that do something are folded where they're read, not in the order they were made",
-    file: "src/lower/mir/temporaries.rs",
-    find: "        let ordered = acting.windows(2).all(|w| w[0] < w[1]);\n",
-    replace: "        let ordered = true;\n",
-    tests: ["test/corpus.test.ts", "-t", "order"],
-  },
-  {
     name: "mir-changed-operand-stable",
     breaks: "an operand a call may change is read before the call",
     file: "src/lower/mir/temporaries.rs",
@@ -121,6 +113,7 @@ export const mutations: Mutation[] = [
     find: "                js::ExprKind::Call(..) | js::ExprKind::Object(_) => true,\n",
     replace: "                js::ExprKind::Call(..) => true,\n",
     tests: ["test/corpus.test.ts", "-t", "leaked_string_written"],
+    snapshots: true,
   },
   {
     name: "mir-field-value-collapsed",
@@ -226,7 +219,8 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/temporaries.rs",
     find: "                    Value::Expr(e) => e.may_throw(),\n",
     replace: "                    Value::Expr(_) => true,\n",
-    tests: ["test/lowering-cells.test.ts", "-t", "with is its variable under a guard"],
+    tests: ["test/corpus.test.ts", "-t", "^drop_scopes.rs$"],
+    snapshots: true,
   },
   {
     name: "throwing-made-not-first",

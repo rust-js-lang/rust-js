@@ -281,6 +281,7 @@ export const mutations: Mutation[] = [
     find: "        if !matches!(known, Some(Std::Any(_) | Std::Same | Std::FmtTo(_)))\n",
     replace: "        if !matches!(known, Some(Std::Any(_) | Std::FmtTo(_)))\n",
     tests: ["test/corpus.test.ts", "-t", "dyn_any"],
+    snapshots: true,
   },
   {
     name: "mir-call-takes-unchecked",
