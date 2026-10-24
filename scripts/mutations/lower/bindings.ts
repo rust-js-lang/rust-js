@@ -3,6 +3,22 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "numbered-enum-named",
+    breaks: "a `#[repr(u8)]` enum's variant is its name, `\"Empty\"`, where it's its number, `0`, as React's `EMPTY_ARRAY` is",
+    file: "src/lower/bindings.rs",
+    find: "    narrow\n        && adt.is_enum()\n",
+    replace: "    false\n        && narrow\n        && adt.is_enum()\n",
+    tests: ["test/lowering-structs-enums.test.ts", "-t", "a repr enum's variant is its number"],
+  },
+  {
+    name: "numbered-enum-wide",
+    breaks: "a `#[repr(u64)]` enum's variant is a JS number, where a 64-bit integer is a BigInt, so a caller's name of one is shown as nothing",
+    file: "src/lower/bindings.rs",
+    find: "        Some(IntegerType::Fixed(int, _)) => int.size().bits() <= 32,\n",
+    replace: "        Some(IntegerType::Fixed(int, _)) => int.size().bits() <= 64,\n",
+    tests: ["test/lowering-structs-enums.test.ts", "-t", "a repr enum's variant is its number"],
+  },
+  {
     name: "any-length-a-strings",
     breaks: "an array's `get length` is taken for a JS string's, below `2^32 - 1`, so two steps below it lose their wrap",
     file: "src/lower/bindings.rs",

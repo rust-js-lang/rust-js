@@ -41,6 +41,19 @@ pub enum Light { On, Off, Dim { level: u8 } }`,
     value: '(Light::On, Light::Off, Light::Dim { level: 3 })',
   },
   {
+    // A numbered enum is its number in JS (ADR 0722), and serde's name in
+    // JSON, written and read.
+    name: "a repr enum serializes and deserializes by its variants' names",
+    definitions: `#[derive(serde::Serialize, serde::Deserialize, Debug, PartialEq, Clone, Copy)]
+#[repr(u8)]
+pub enum Kind { Empty = 0, Entries = 3 }
+pub fn read(text: &str) -> String {
+    let kinds: Vec<Kind> = serde_json::from_str(text).unwrap();
+    format!("{kinds:?} {}", kinds[1] == Kind::Entries)
+}`,
+    value: '(vec![Kind::Entries, Kind::Empty], read("[\\"Empty\\", \\"Entries\\"]"))',
+  },
+  {
     name: "a serde_json error given by ? to a Box<dyn Error> shows as serde_json's",
     definitions: `fn load(text: &str) -> Result<u64, Box<dyn std::error::Error>> {
     let value: serde_json::Value = serde_json::from_str(text)?;

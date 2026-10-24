@@ -168,6 +168,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         big: bool,
     ) -> Result<Expr, Expr> {
         let tcx = self.tcx;
+        // A numbered enum's value is its discriminant (ADR 0722).
+        if bindings::numbered(tcx, adt) {
+            return Ok(match big {
+                true => super::std_types::number::to_bigint(subject),
+                false => subject,
+            });
+        }
         let name = if is_string_enum(tcx, adt) {
             subject
         } else if is_fieldless_enum(adt)
@@ -757,7 +764,7 @@ pub(super) fn is_fieldless_enum(adt: ty::AdtDef<'_>) -> bool {
 /// objects, `{ kind: "on" }`. What `===`, `includes` and a `Map`'s keys
 /// compare by: the one answer each asks.
 pub(super) fn is_string_enum(tcx: TyCtxt<'_>, adt: ty::AdtDef<'_>) -> bool {
-    is_fieldless_enum(adt) && super::bindings::declared_tag(tcx, adt.did()).is_none()
+    is_fieldless_enum(adt) && super::bindings::declared_tag(tcx, adt.did()).is_none() && !bindings::numbered(tcx, adt)
 }
 
 /// What rustc computes for constant `def_id` of `args`, or its `promoted`

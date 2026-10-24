@@ -12,11 +12,7 @@ function main() {
       $cmpIn(["Below", "Low", "High"], "Low", "Below") > 0
     } ${$cmpIn(["Below", "Low", "High"], "High", "Below") > 0}`,
   );
-  console.log(
-    `${$cmpIn(["One", "Two", "Max"], "Two", "Max") < 0} ${
-      $cmpIn(["One", "Two", "Max"], "One", "Two") < 0
-    }`,
-  );
+  console.log("true true");
   const levels = ["High", "Below", "Low"];
   levels.sort((a, b) => $cmpIn(["Below", "Low", "High"], a, b));
   const max = $maxBy(levels, (a, b) => $cmpIn(["Below", "Low", "High"], a, b));

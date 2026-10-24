@@ -1,6 +1,7 @@
 # 0013. Fieldless enum variants are strings
 
-Status: Accepted. Extended by [0033](0033-enums-with-fields.md): variants
+Status: Accepted. Extended by [0722](0722-a-repr-enums-variant-is-its-number.md): a
+`#[repr(..)]` one's variants are its numbers; by [0033](0033-enums-with-fields.md): variants
 with fields are objects tagged with their names; and by
 [0223](0223-webapi-event-and-tag-maps.md): a unit struct named
 `#[rust_js::name]` is that string, as a variant is.

@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "numbered-ordered-by-name",
+    breaks: "a numbered enum's derived order is by its names' places, of numbers no name is, so each is equal and a sort leaves them as they were",
+    file: "src/lower/ordering.rs",
+    find: "LangItem::OrderingEnum) || numbered\n",
+    replace: "LangItem::OrderingEnum)\n",
+    tests: ["test/corpus.test.ts", "-t", "^repr_enum_numbers.rs$"],
+  },
+  {
     name: "cmp-without-cells",
     breaks: "`refs.sort()` of a `Vec<&mut i32>` orders the cells, not what they point at",
     file: "src/lower/ordering.rs",

@@ -752,8 +752,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             || Num::of(ty).is_some()
             || ty.is_bool()
             || ty.is_unit()
-            || matches!(ty.kind(), ty::Adt(adt, _) if super::representation::is_string_enum(self.tcx, *adt)
-                && !self.has_user_impl(self.partial_eq_trait(), ty));
+            || matches!(ty.kind(), ty::Adt(adt, _)
+                if (super::representation::is_string_enum(self.tcx, *adt) || super::bindings::numbered(self.tcx, *adt))
+                    && !self.has_user_impl(self.partial_eq_trait(), ty));
         primitive.then(|| match Num::of(ty).is_some_and(Num::float) || any {
             true => JsEq::Strict,
             false => JsEq::SameValue,

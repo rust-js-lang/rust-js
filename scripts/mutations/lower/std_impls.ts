@@ -3,6 +3,15 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "numbered-eq-structural",
+    breaks: "`==` of two numbered enums is `$eq(a, b)`, where they're numbers JS's `===` compares",
+    file: "src/lower/std_impls.rs",
+    find: " || super::bindings::numbered(self.tcx, *adt))\n",
+    replace: ")\n",
+    tests: ["test/corpus.test.ts", "-t", "^repr_enum_numbers.rs$"],
+    snapshots: true,
+  },
+  {
     name: "untagged-undefined-loosely-null",
     breaks: "an untagged enum's `undefined` is `==` its `null`, as an `Option`'s `None` is",
     file: "src/lower/std_impls.rs",

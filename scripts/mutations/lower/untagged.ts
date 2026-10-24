@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "numbered-payload-untold",
+    breaks: "an untagged enum's numbered payload has no kind JS tells, so its enum is refused",
+    file: "src/lower/untagged.rs",
+    find: "            ty::Adt(adt, _) if bindings::numbered(self.tcx, *adt) => Some(Kind::Number),\n",
+    replace: "",
+    tests: ["test/lowering-structs-enums.test.ts", "-t", "a repr enum's variant is its number"],
+  },
+  {
     name: "untagged-literal-any",
     breaks: "a variant without fields is matched by any value, `matches!(false, Blocking)`",
     file: "src/lower/untagged.rs",

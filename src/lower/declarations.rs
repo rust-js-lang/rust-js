@@ -18,8 +18,8 @@ use rustc_span::def_id::{DefId, LocalModId};
 use serde_json::{Value, json};
 
 use super::bindings::{
-    declared_tag, field_default, field_key, fn_name, given_bool, is_binding, is_flatten, is_mark, is_nullable,
-    is_otherwise, is_rest, is_untagged, tag_key, variant_name,
+    declared_tag, field_default, field_key, fn_name, is_binding, is_flatten, is_mark, is_nullable, is_otherwise,
+    is_rest, is_untagged, tag_key, variant_name,
 };
 use super::recognition::{StdItem, is_std_def};
 use super::representation::Num;
@@ -804,7 +804,11 @@ impl<'tcx> Declarations<'_, 'tcx> {
                         {
                             return self.ts(field.ty(self.tcx, args).skip_normalization());
                         }
-                        let value = given_bool(self.tcx, v.def_id).map_or_else(|| json!(variant_name(self.tcx, v)), |b| json!(b));
+                        let value = match super::bindings::variant_tag(self.tcx, v).kind {
+                            crate::js::ExprKind::Bool(b) => json!(b),
+                            crate::js::ExprKind::Num(n) => json!(n as i64),
+                            _ => json!(variant_name(self.tcx, v)),
+                        };
                         let name = json!({ "kind": "literal", "value": value });
                         if v.fields.is_empty() && !tagged {
                             return name;

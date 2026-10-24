@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "numbered-gives-own-name",
+    breaks: "a `match` giving each numbered variant its name is taken as the value itself, so `name(0)` is `0`, not `\"Empty\"`",
+    file: "src/lower/patterns.rs",
+    find: "        if !super::representation::is_string_enum(self.tcx, *adt) {\n",
+    replace: "        if !adt.is_enum() || adt.variants().iter().any(|variant| !variant.fields.is_empty()) {\n",
+    tests: ["test/lowering-structs-enums.test.ts", "-t", "a repr enum's variant is its number"],
+  },
+  {
     name: "rest-props-as-field",
     breaks: "`LinkProps { href, rest }` is `{ href, rest }`, where JS's props have no `rest`, not `...rest`",
     file: "src/lower/patterns.rs",

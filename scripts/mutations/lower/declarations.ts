@@ -5,6 +5,14 @@ const tests = ["test/declarations.test.ts"];
 
 export const mutations: Mutation[] = [
   {
+    name: "numbered-declared-names",
+    breaks: "a numbered enum is declared `\"Empty\" | ..`, its names, where its JS is its numbers",
+    file: "src/lower/declarations.rs",
+    find: "                            crate::js::ExprKind::Num(n) => json!(n as i64),\n",
+    replace: "",
+    tests: ["test/lowering-structs-enums.test.ts", "-t", "a repr enum's variant is its number"],
+  },
+  {
     name: "alias-undeclared",
     breaks: "a `.d.ts` has no `export { currentTime as unstable_now };`, so TypeScript finds no `unstable_now`",
     file: "src/lower/declarations.rs",
@@ -400,8 +408,8 @@ export const mutations: Mutation[] = [
     "name": "bool-tag-declared-string",
     "breaks": "a boolean tag is declared the string `\"true\"`",
     "file": "src/lower/declarations.rs",
-    "find": "|b| json!(b));",
-    "replace": "|b| json!(b.to_string()));",
+    "find": "                            crate::js::ExprKind::Bool(b) => json!(b),\n",
+    "replace": "                            crate::js::ExprKind::Bool(b) => json!(b.to_string()),\n",
     "tests": [
       "test/declarations.test.ts"
     ]

@@ -213,7 +213,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return false;
         };
         let ty::Adt(adt, _) = param.ty.kind() else { return false };
-        if !adt.is_enum() || adt.variants().iter().any(|variant| !variant.fields.is_empty()) {
+        if !super::representation::is_string_enum(self.tcx, *adt) {
             return false;
         }
         let strip = |e| super::body_queries::strip(thir, e);

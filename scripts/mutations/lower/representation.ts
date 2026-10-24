@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "numbered-discriminant-tested",
+    breaks: "a numbered enum's `as u8` tests each variant in turn, `kind === 0 ? 0 : ..`, where its value is its discriminant",
+    file: "src/lower/representation.rs",
+    find: "        if bindings::numbered(tcx, adt) {\n",
+    replace: "        if false && bindings::numbered(tcx, adt) {\n",
+    tests: ["test/lowering-structs-enums.test.ts", "-t", "a repr enum's variant is its number"],
+  },
+  {
     name: "tagged-constant-tag",
     breaks: "a constant of a discriminated union's variant is `{ TAG: \"Fulfilled\", value }`, its Rust name under `TAG`",
     file: "src/lower/representation.rs",
@@ -303,8 +311,8 @@ export const mutations: Mutation[] = [
     name: "tagged-enum-a-string",
     breaks: "a tagged enum's fieldless variant, an object, is taken for its name, and compared, looked for and kept as a key by JS's identity",
     file: "src/lower/representation.rs",
-    find: "    is_fieldless_enum(adt) && super::bindings::declared_tag(tcx, adt.did()).is_none()\n",
-    replace: "    let _ = tcx;\n    is_fieldless_enum(adt)\n",
+    find: "    is_fieldless_enum(adt) && super::bindings::declared_tag(tcx, adt.did()).is_none() && !bindings::numbered(tcx, adt)\n",
+    replace: "    is_fieldless_enum(adt) && !bindings::numbered(tcx, adt)\n",
     tests: ["test/corpus.test.ts", "-t", "tagged_enum_values"],
   },
   {

@@ -368,6 +368,32 @@ export function area(shape) {
 - **A variant without fields is its name**, `"Red"`, or its
   `#[rust_js::name]`, `"dark-green"`
   ([ADR 0013](../../decisions/0013-fieldless-enums.md)).
+- **A variant of an enum under a `#[repr(..)]` of an integer is its
+  number**, as rustc numbers it, `ArrayKind::Empty` `0`, where JS keeps a
+  kind as a number, React's `const EMPTY_ARRAY = 0;`; its `as u8` is the
+  value, its `{:?}` its name, its `.d.ts` `0 | 1 | 2 | 3`, and serde
+  still writes its name. A 64-bit `repr`, or a variant named by
+  `#[rust_js::name]`, keeps the names
+  ([ADR 0722](../../decisions/0722-a-repr-enums-variant-is-its-number.md)):
+
+```rust
+#[derive(Clone, Copy, PartialEq)]
+#[repr(u8)]
+pub enum ArrayKind {
+    Empty = 0,
+    Complex = 1,
+}
+
+pub fn kind(complex: bool) -> ArrayKind {
+    if complex { ArrayKind::Complex } else { ArrayKind::Empty }
+}
+```
+
+```js
+export function kind(complex) {
+  return complex ? 1 : 0;
+}
+```
 - **A variant with fields is an object of its `TAG`** and its fields: a
   tuple variant's are `_0`, `_1` ([ADR 0033](../../decisions/0033-enums-with-fields.md)).
 

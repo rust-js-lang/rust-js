@@ -82,7 +82,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 
 - [0011 Integers are JS numbers, wrapped like release Rust](decisions/0011-numbers.md)
 - [0012 Panics throw, via runtime helpers emitted on demand](decisions/0012-panics-and-runtime-helpers.md) *(helpers' place replaced by 0103; amended by 0660: `catch_unwind` catches one; 0706: a panic of no message is an `Error` of none)*
-- [0013 Fieldless enum variants are strings](decisions/0013-fieldless-enums.md)
+- [0013 Fieldless enum variants are strings](decisions/0013-fieldless-enums.md) *(extended by 0722: a `#[repr(..)]` one's are numbers)*
 - [0033 Enums with fields are ReScript's tagged objects](decisions/0033-enums-with-fields.md) *(extended by 0716: std's enums whose `PartialEq` or order is derived)*
 - [0035 JS that throws is a `Result`; `?` returns early](decisions/0035-results-and-throwing-js.md) *(amended by 0637: a `match` of its `Result` is `try` and `catch`; 0643: its `unwrap()` is the call)*
 - [0020 Structs are objects, tuples are arrays](decisions/0020-structs-and-tuples.md) *(amended by 0674: a literal's fields are listed as written)*
@@ -643,6 +643,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0717 `rev()` of what's made knowing its back steps it from there](decisions/0717-rev-of-what-knows-its-back-steps-it.md)
 - [0720 A labeled block's `break` and a named constant, in a body's ranges](decisions/0720-a-labeled-block-and-a-named-constant-in-a-bodys-ranges.md)
 - [0721 `js::strict_equals(a, b)` is JS's `===`](decisions/0721-strict-equals-is-jss-triple-equals.md)
+- [0722 A `#[repr(..)]` enum's variant is its number](decisions/0722-a-repr-enums-variant-is-its-number.md)
 - [0436 Every `dyn` that's a pair keeps its value's drop, `dyn Send` too](decisions/0436-every-dyn-keeps-its-drop.md) *(amended by 0691: a `dyn Any` drops where the crate makes one of what drops)*
 - [0437 A scope's drops on a panic are one `try { .. } finally { .. }`](decisions/0437-a-scopes-drops-are-one-finally.md) *(amended by 0693: its `if`s, loops and `return`s in it)*
 - [0438 An optional prop is given `Some(..)`, or left out](decisions/0438-an-optional-prop-is-given-some.md)
