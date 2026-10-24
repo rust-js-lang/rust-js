@@ -678,6 +678,41 @@ export function same(a, b) {
 }
 ```
 
+A clone of a parameter's `Rc` moved into a closure is the same object, so
+the closure reads it by the parameter's name
+([ADR 0842](../../decisions/0842-a-parameters-clone-is-read-by-its-name.md)):
+
+```rust
+use std::cell::Cell;
+use std::rc::Rc;
+
+pub struct Payload {
+    pub status: Cell<i32>,
+}
+
+pub fn handlers(payload: &Rc<Payload>) -> (Box<dyn Fn()>, Box<dyn Fn()>) {
+    let resolved = Rc::clone(payload);
+    let rejected = Rc::clone(payload);
+    (
+        Box::new(move || resolved.status.set(1)),
+        Box::new(move || rejected.status.set(2)),
+    )
+}
+```
+
+```js
+export function handlers(payload) {
+  return [
+    () => {
+      payload.status = 1;
+    },
+    () => {
+      payload.status = 2;
+    },
+  ];
+}
+```
+
 An `Rc` whose counts the crate reads, `strong_count`, `weak_count` or a
 `Weak`, is counted as Rust counts it: `{ value, strong, weak }`
 ([ADR 0320](../../decisions/0320-counted-rcs.md)).

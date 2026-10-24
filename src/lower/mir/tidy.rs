@@ -62,6 +62,8 @@ pub(super) struct Hints<'h> {
     /// of a branch reads (`capture_jsx`): as its temporaries, read where
     /// they're used where nothing between tells.
     pub(super) captured: &'h HashSet<String>,
+    /// The variables a `clone()` made (`hints.rs::clone_names`).
+    pub(super) clones: &'h HashSet<String>,
     /// The variables of Rust's `bool`: JS's `true` and `false` alone.
     pub(super) booleans: &'h HashSet<String>,
     /// The variables of Rust's integers: JS's numbers, which `++` steps.

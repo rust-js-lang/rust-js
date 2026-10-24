@@ -3,6 +3,32 @@ import type { Mutation } from "../../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "clone-alias-kept",
+    breaks: "an `Rc`'s clone of a parameter is a variable of its own, `const resolved = payload`, where it's the same object, read by its name (ADR 0842)",
+    file: "src/lower/mir/tidy/bindings.rs",
+    find: "                && clones.contains(b)\n",
+    replace: "                && clones.contains(b)\n                && false\n",
+    tests: ["test/corpus.test.ts", "-t", "^rc_shared_by_closures.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "clone-alias-of-a-reassigned-parameter",
+    breaks: "a clone of a parameter given another value after is read by the parameter's name, the other value: `payload.status = 9` of `first.status.set(9)`",
+    file: "src/lower/mir/tidy/bindings.rs",
+    find: "        .filter(|name| !rebinds(body, name))\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^rc_shared_by_closures.rs$"],
+  },
+  {
+    name: "clone-alias-of-any-const",
+    breaks: "any `const b = a` of a parameter is read as `a`, the name the program gave `b` lost: `const gas = n`'s `gas`",
+    file: "src/lower/mir/tidy/bindings.rs",
+    find: "                && clones.contains(b)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^sort_unstable_adversary.rs$"],
+    snapshots: true,
+  },
+  {
     name: "tidy-effectful-init-dropped",
     breaks: "`let a = made(1); a = 2;` is `let a = 2;`, and `made(1)` never runs",
     file: "src/lower/mir/tidy/bindings.rs",

@@ -3,6 +3,15 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "clone-names-unfound",
+    breaks: "no local is told as a `clone()`'s, so an `Rc`'s clone stays `const resolved = payload` (ADR 0842)",
+    file: "src/lower/mir/hints.rs",
+    find: "self.tcx.is_lang_item(def_id, LangItem::CloneFn)",
+    replace: "self.tcx.is_lang_item(def_id, LangItem::Clone)",
+    tests: ["test/corpus.test.ts", "-t", "^rc_shared_by_closures.rs$"],
+    snapshots: true,
+  },
+  {
     name: "typeof-nullish-no-case",
     breaks: "`Kind::Undefined` and `Kind::Null`, which have no fields, aren't cases of a `switch (typeof value)`",
     file: "src/lower/mir/hints.rs",

@@ -636,6 +636,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0835 An object is across lines where its struct literal is](0835-an-object-is-across-lines-where-its-literal-is.md)
 - [0840 A thread-local's `with` is its closure's body, wherever it's called](0840-a-thread-locals-with-is-its-closures-body.md)
 - [0841 A nullable place stores what's never `undefined` as it is](0841-a-nullable-place-stores-what-is-never-undefined-as-it-is.md)
+- [0842 A parameter's clone that is the same JS value is read by the parameter's name](0842-a-parameters-clone-is-read-by-its-name.md)
 - [0720 A labeled block's `break` and a named constant, in a body's ranges](0720-a-labeled-block-and-a-named-constant-in-a-bodys-ranges.md)
 - [0721 `js::strict_equals(a, b)` is JS's `===`](0721-strict-equals-is-jss-triple-equals.md) *(fixed by 0775: a `()` compared is `undefined`)*
 - [0722 A `#[repr(..)]` enum's variant is its number](0722-a-repr-enums-variant-is-its-number.md)
