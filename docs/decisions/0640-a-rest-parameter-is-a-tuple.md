@@ -5,7 +5,9 @@ was an emitter's arguments; amends [0313](0313-console-forms.md), whose
 `console` took one value per call, and [0443](0443-a-value-a-caller-may-leave-out-is-an-option.md),
 whose trailing `None` of a variadic binding was always given.
 Extended by [0667](0667-console-is-a-value-and-rest-arguments-are-one.md):
-rest arguments as a value, `&dyn js::Rest<T>`, spread.
+rest arguments as a value, `&dyn js::Rest<T>`, spread. Extended by
+[0718](0718-a-typed-array-is-rest-arguments-spread.md): a typed array is
+rest arguments, spread, and a rest of `f64` takes any JS number.
 
 Amended below: a slice or a `Vec` is spread, and every rest parameter is
 `impl js::Rest<T>`, the js and node crates' too.

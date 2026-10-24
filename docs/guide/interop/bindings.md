@@ -245,7 +245,14 @@ export function celebrate() {
   ([ADR 0304](../../decisions/0304-dynamic-import.md)).
 - **`#[rust_js::require]` reads it through `require(module)`**, where a
   module must be read that way, an ESLint plugin's
-  ([ADR 0305](../../decisions/0305-require.md)).
+  ([ADR 0305](../../decisions/0305-require.md)). One a bundler mustn't
+  see, Node's own `timers` past fake ones, is read off Node's `module`,
+  `node::module`, by a name the program makes, `js::get(js::unknown(node::module),
+  &require_string)`, `module[requireString]`, and called with
+  `js::function::call(node_require, Some(&node::module), ("timers",))`,
+  `nodeRequire.call(module, "timers")`; in an ES module, which has no
+  `module`, the read throws, which `catch_unwind` catches, a `try`
+  ([ADR 0305, amended](../../decisions/0305-require.md#amendment-a-require-no-bundler-sees)).
 - **Named through a module that holds it, it's read through that
   module**: where `assign.rs` holds `Object.assign` as its default, a
   call of `crate::assign::assign` imports it, `import assign from
@@ -430,6 +437,7 @@ pub fn circle(radius: f64) -> &'static Circle {
 | `"this()"` | `this(..)` | calling a JS function value |
 | `"new this()"` | `new this(..)` | `js::new` |
 | `"delete []"` | `delete this[key]` | `js::delete` |
+| `"for in"` | the keys `for (const key in this)` visits | `js::keys_in` |
 | `"typeof"` | `typeof this` | `js::type_of` |
 | `"!!"` | `!!this` | `js::truthy` |
 | `"\"\" +"` | `"" + this` | `js::concat_text` |
@@ -649,11 +657,14 @@ export async function open(other) {
   TypeScript rest parameter, `log(...data: any[])`, is `impl js::Rest<T>`
   ([ADR 0640](../../decisions/0640-a-rest-parameter-is-a-tuple.md)):
   given a tuple, its arguments, each of its own type that a `T` takes,
-  `dyn IntoUnknown` of `any`, `str` of `string`, `f64` of `number`, `(x,)`
-  one and `()` none; given a slice or a `Vec` by reference, spread,
-  `log(&values)` being `log(...values)`, and so is rest arguments as a
-  value, a `&dyn js::Rest<T>` ([above](#a-binding-as-a-value)). A slice
-  declared is refused.
+  `dyn IntoUnknown` of `any`, `str` of `string`, `f64` of `number`, which
+  takes any number JS has as one, each `f64::from` takes, `(x,)` one and
+  `()` none; given a slice, a `Vec` or a typed array by reference, spread,
+  `log(&values)` being `log(...values)` and `string::from_char_code(bytes)`
+  `String.fromCharCode(...bytes)`
+  ([ADR 0718](../../decisions/0718-a-typed-array-is-rest-arguments-spread.md)),
+  and so is rest arguments as a value, a `&dyn js::Rest<T>`
+  ([above](#a-binding-as-a-value)). A slice declared is refused.
 - **A cast is `this`, unchecked, so it's an `unsafe fn`**; check first with
   `instanceof`. webapi has one for each interface,
   `html_input_element::unchecked_from(target)`.
@@ -738,7 +749,7 @@ A parameter of TypeScript's `any` or `unknown` is generic:
 |---|---|
 | any value that's never `undefined` or `null` | `value: &T`, `T: js::Defined + ?Sized` |
 | any value, left out or not | `value: Option<&dyn js::IntoUnknown>` |
-| a value the structured clone copies, `postMessage`'s | `value: T`, `T: js::StructuredClone` |
+| a value the structured clone copies, `postMessage`'s, `()` its `undefined` | `value: T`, `T: js::StructuredClone` |
 | a value whose type you don't know | `&js::Unknown`, or `Option<&js::Unknown>` |
 
 ```rust

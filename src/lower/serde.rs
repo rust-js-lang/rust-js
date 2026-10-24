@@ -585,6 +585,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         mutable: false,
                         iterable: entries,
                         body,
+                        keys: false,
                     }
                     .at(js::Span::NONE),
                 );
@@ -627,6 +628,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 mutable: false,
                 iterable: items,
                 body,
+                keys: false,
             }
             .at(js::Span::NONE),
         );

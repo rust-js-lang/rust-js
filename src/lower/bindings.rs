@@ -292,6 +292,10 @@ pub(super) enum JsForm {
     /// `import()`: the item given, of its module loaded when it's asked
     /// for; `import(*)`, the module whose default export it is (ADR 0304).
     Import { module: bool },
+    /// `for in`: the keys `for (const key in this)` visits, `js::keys_in`'s,
+    /// a JS iterator, `$keysIn(this)`, which a `for` loop of it is that
+    /// loop (ADR 0719).
+    KeysIn,
 }
 
 pub(super) fn js_form(tcx: TyCtxt<'_>, def_id: DefId) -> JsForm {
@@ -311,6 +315,7 @@ pub(super) fn js_form(tcx: TyCtxt<'_>, def_id: DefId) -> JsForm {
         "set []" => return JsForm::SetIndex,
         "import()" => return JsForm::Import { module: false },
         "import(*)" => return JsForm::Import { module: true },
+        "for in" => return JsForm::KeysIn,
         _ => {}
     }
     if let Some(tag) = name.strip_prefix('<').and_then(|t| t.strip_suffix('>')) {

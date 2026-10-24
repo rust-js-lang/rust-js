@@ -355,12 +355,15 @@ pub enum StmtKind {
     },
     /// `for (const name of iterable) { .. }`: a `for` over a sequence (ADR 0025),
     /// and `for (const [i, x] of ..)` for a tuple's parts. `let` if one's `mut`.
+    /// Of `keys`, `for (const key in iterable)`, the keys JS's `for…in`
+    /// visits of it (ADR 0719): a loop as the other is, its object read once.
     ForOf {
         label: Option<String>,
         pattern: Pattern,
         mutable: bool,
         iterable: Expr,
         body: Vec<Stmt>,
+        keys: bool,
     },
     /// `for (let name = start; test; name++) { .. }`: a `for` over a range.
     For {
