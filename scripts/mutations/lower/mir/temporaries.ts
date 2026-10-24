@@ -108,10 +108,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "mir-call-cell-refused",
-    breaks: "MIR's `&mut` a call gives the cell of, `&mut s[7..]` returned, is refused",
+    breaks: "MIR's `&mut` a call gives the cell of, `&mut s[7..]` returned, isn't the call's cell",
     file: "src/lower/mir/temporaries.rs",
     find: "                js::ExprKind::Call(..) | js::ExprKind::Object(..) => true,\n",
     replace: "                js::ExprKind::Object(..) => true,\n",
+    snapshots: true,
     tests: ["test/corpus.test.ts", "-t", "str_mut"],
   },
   {
