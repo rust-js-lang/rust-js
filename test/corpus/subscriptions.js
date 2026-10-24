@@ -47,7 +47,10 @@ function subscribe(bus, f) {
   } finally {
     $unborrow(b);
   }
-  return { id, bus: bus$1 };
+  return {
+    id,
+    bus: bus$1,
+  };
 }
 
 function publish(bus, msg) {
@@ -87,12 +90,24 @@ const Component = {
       $weakDrop(first.bus);
       throw error;
     }
-    return { name, subs: [first, second] };
+    return {
+      name,
+      subs: [first, second],
+    };
   },
 };
 
 function main() {
-  const bus = { value: { value: { next: 1, handlers: new Map() } }, strong: 1, weak: 0 };
+  const bus = {
+    value: {
+      value: {
+        next: 1,
+        handlers: new Map(),
+      },
+    },
+    strong: 1,
+    weak: 0,
+  };
   try {
     const a = Component.new("a", bus);
     let b;

@@ -96,10 +96,22 @@ export function tour() {
   }
   out += `${tLabeled_label(42, { fmt: String })} ${tLabeled_label("hi", { fmt: (value) => value })} ${tLabeled_label(2.5, { fmt: $displayF64 })}\n`;
   const vs = [
-    { major: 1, minor: 2, patch: 3 },
-    { major: 1, minor: 0, patch: 9 },
+    {
+      major: 1,
+      minor: 2,
+      patch: 3,
+    },
+    {
+      major: 1,
+      minor: 0,
+      patch: 9,
+    },
     { major: 0, minor: 0, patch: 0 },
-    { major: 0, minor: 9, patch: 0 },
+    {
+      major: 0,
+      minor: 9,
+      patch: 0,
+    },
   ];
   vs.sort((a, b) => $cmp(a.major, b.major) || $cmp(a.minor, b.minor) || $cmp(a.patch, b.patch));
   out += `[${vs
@@ -117,7 +129,12 @@ export function tour() {
       $cmp(version.minor, right.minor) ||
       $cmp(version.patch, right.patch)) < 0;
   out += `${max == null ? "None" : `Some(${versionDebug_fmt(max)})`} ${value}\n`;
-  const c = { name: "svc", retries: 3, verbose: false, ratio: 0 };
+  const c = {
+    name: "svc",
+    retries: 3,
+    verbose: false,
+    ratio: 0,
+  };
   out += `${configDebug_fmt(c)}\n`;
   const value$1 = largest([3, 9, 2], { partialCmp: $cmp });
   const value$2 = largest([1.5, -2], { partialCmp: $partialCmp });
@@ -148,13 +165,21 @@ function tick(c, tag) {
 
 function made(c) {
   tick(c, 9);
-  return { major: 7, minor: 7, patch: 7 };
+  return {
+    major: 7,
+    minor: 7,
+    patch: 7,
+  };
 }
 
 export function edges() {
   const order = { value: 0 };
   // Rust works out the fields, then the base.
-  const v = { patch: tick(order, 1), major: tick(order, 2), minor: made(order).minor };
+  const v = {
+    patch: tick(order, 1),
+    major: tick(order, 2),
+    minor: made(order).minor,
+  };
   const upto = $lazyScan($iter([5, 3, 8, 1]), 1, (acc, x) => {
     acc.value = Math.imul(acc.value, x) >>> 0;
     if (acc.value > 100) {

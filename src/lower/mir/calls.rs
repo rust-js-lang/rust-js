@@ -183,7 +183,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let value = given.next().expect("the value");
                 let mut element = element.value;
                 // `style.color("red")` on an object being built: one more field.
-                if let js::ExprKind::Object(fields) = &mut element.kind {
+                if let js::ExprKind::Object(fields, ..) = &mut element.kind {
                     fields.push(match name.as_str() {
                         "..." => Prop::Spread(value.value),
                         _ => Prop::Field(name, value.value),

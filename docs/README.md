@@ -107,7 +107,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0086 An `i64` or a `u64` is a BigInt, wrapped as release Rust wraps it](decisions/0086-64-bit-integers.md)
 - [0087 `println!` is `console.log`; `print!` writes as it is where JS can](decisions/0087-printing.md)
 - [0090 rustc checks programs for `wasm32-unknown-unknown`, whose `usize` is rust-js's](decisions/0090-wasm32-front-end.md)
-- [0065 The JS is formatted as oxfmt formats it, and the source map follows](decisions/0065-format-with-oxfmt.md)
+- [0065 The JS is formatted as oxfmt formats it, and the source map follows](decisions/0065-format-with-oxfmt.md) *(amended by 0835: an object is across lines where its struct literal is)*
 - [0066 Text with values in it is a template literal](decisions/0066-template-literals.md) *(amended by 0641: a `concat!` of literals is its pieces joined by `+`)*
 - [0067 Range patterns, `@`, `let ... else`, and a `&mut` into a map](decisions/0067-patterns.md)
 - [0069 Preserve effects before simplifying; lower once and link afterwards](decisions/0069-lowering-effects-and-linking.md)
@@ -683,6 +683,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0806 A slice's range in bounds is JS's `slice`, and a test held in a `bool` shows what it tests](decisions/0806-a-slices-range-in-bounds-is-js-slice.md)
 - [0810 An optional nullable field is absent until it's set](decisions/0810-an-optional-nullable-field-is-absent-until-set.md)
 - [0811 `console.createTask` is a property the host may lack](decisions/0811-console-create-task-may-be-absent.md)
+- [0835 An object is across lines where its struct literal is](decisions/0835-an-object-is-across-lines-where-its-literal-is.md)
 - [0720 A labeled block's `break` and a named constant, in a body's ranges](decisions/0720-a-labeled-block-and-a-named-constant-in-a-bodys-ranges.md)
 - [0721 `js::strict_equals(a, b)` is JS's `===`](decisions/0721-strict-equals-is-jss-triple-equals.md) *(fixed by 0775: a `()` compared is `undefined`)*
 - [0722 A `#[repr(..)]` enum's variant is its number](decisions/0722-a-repr-enums-variant-is-its-number.md)
@@ -694,7 +695,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0441 A `()` given a function value is no argument](decisions/0441-a-unit-is-no-argument.md)
 - [0442 A web API that throws for what a program can't prevent is a `Result`](decisions/0442-a-web-api-that-may-throw-is-a-result.md)
 - [0443 A value a caller may leave out is an `Option`, in each direction](decisions/0443-a-value-a-caller-may-leave-out-is-an-option.md) *(amended by 0640: a `None` before a rest of none is no argument; 0648: a setter's `None` is written; 0775: a `()` as a `dyn` is `undefined` but of a list)*
-- [0444 A comment is in the JS where its code is, and so is a blank line](decisions/0444-a-comment-is-where-its-code-is.md) *(amended by 0658: a branch's comment is before its value; 0708: an argument's and a field's; 0733: a line comment ends the line of its code; extended by 0753: a branch of only comments keeps them)*
+- [0444 A comment is in the JS where its code is, and so is a blank line](decisions/0444-a-comment-is-where-its-code-is.md) *(amended by 0658: a branch's comment is before its value; 0708: an argument's and a field's; 0733: a line comment ends the line of its code; extended by 0753: a branch of only comments keeps them; 0835: an object is across lines where its struct literal is)*
 - [0445 Generic code extends and collects into what it's given](decisions/0445-extend-and-collect-in-generic-code.md)
 - [0446 A `dyn fmt::Write` is a pair, and `fmt::write` is `write_fmt`](decisions/0446-a-dyn-fmt-write.md)
 - [0447 The clock: a `SystemTime` and an `Instant` are their nanoseconds](decisions/0447-the-clock.md)

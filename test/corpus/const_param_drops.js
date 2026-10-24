@@ -8,7 +8,10 @@ export function entry() {
 
 const Buffer = {
   new(SIZE) {
-    return { bytes: new Array(SIZE).fill(0), len: 0 };
+    return {
+      bytes: new Array(SIZE).fill(0),
+      len: 0,
+    };
   },
 };
 

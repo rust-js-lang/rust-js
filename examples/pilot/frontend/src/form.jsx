@@ -23,11 +23,18 @@ export function NewContactForm() {
     // Every field's error at once: an age that isn't a number is one.
     const result = $parseInt($trim(age), 0, 4294967295);
     const parsed = result.TAG === "Ok" ? result._0 : undefined;
-    const new$ = { name, email, age: parsed ?? 0 };
+    const new$ = {
+      name,
+      email,
+      age: parsed ?? 0,
+    };
     const found = validate(new$);
     if (parsed == null) {
       $retain(found, (error) => error.field !== "age");
-      found.push({ field: "age", message: `${$debugStr(age)} isn't a whole number` });
+      found.push({
+        field: "age",
+        message: `${$debugStr(age)} isn't a whole number`,
+      });
     }
     if (found.length !== 0) {
       setErrors(found);

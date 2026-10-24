@@ -40,7 +40,10 @@ function main() {
   let r$1 = bump(total, { ...five }, refMutMoneyAddAssignMoney).value;
   $assign(r, total.value);
   r$1.cents = BigInt.asIntN(64, r$1.cents + 1n);
-  const other = { cents: 100n, note: [0, 0] };
+  const other = {
+    cents: 100n,
+    note: [0, 0],
+  };
   r$1 = other;
   moneyAddAssign_addAssign(r$1, { ...five });
   console.log(`${moneyDebug_fmt(m)} ${moneyDebug_fmt(other)} ${m.note.length}`);

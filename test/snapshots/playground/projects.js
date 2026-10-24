@@ -9,7 +9,10 @@
 import { sourceState, textOf } from "./codemirror.js";
 
 function copy(files) {
-  return files.map((f) => ({ path: f.path, state: f.state }));
+  return files.map((f) => ({
+    path: f.path,
+    state: f.state,
+  }));
 }
 
 /** The file that becomes the root module's JS, `lib.rs` → `lib.js`. */
@@ -23,13 +26,24 @@ export function jsName(path) {
 export const Project = {
   /** Before an example has loaded. */
   empty() {
-    return { root: "lib.rs", files: [], current: "" };
+    return {
+      root: "lib.rs",
+      files: [],
+      current: "",
+    };
   },
 
   /** An example's files, with its root open. */
   of(root, texts) {
-    const files = texts.map(([path, text]) => ({ path, state: sourceState(text) }));
-    return { current: root, root, files };
+    const files = texts.map(([path, text]) => ({
+      path,
+      state: sourceState(text),
+    }));
+    return {
+      current: root,
+      root,
+      files,
+    };
   },
 
   has(project, path) {
@@ -63,23 +77,41 @@ export const Project = {
 
   /** `path` open instead. */
   opening(project, path, live) {
-    return { root: project.root, files: Project.keeping(project, live), current: path };
+    return {
+      root: project.root,
+      files: Project.keeping(project, live),
+      current: path,
+    };
   },
 
   /** With a new, empty file at `path`, open. */
   adding(project, path, live) {
     const files = Project.keeping(project, live);
-    files.push({ path, state: sourceState("") });
-    return { root: project.root, files, current: path };
+    files.push({
+      path,
+      state: sourceState(""),
+    });
+    return {
+      root: project.root,
+      files,
+      current: path,
+    };
   },
 
   /** Without `path`; if it was open, the root is. */
   removing(project, path) {
     const files = project.files
       .filter((f) => f.path !== path)
-      .map((f) => ({ path: f.path, state: f.state }));
+      .map((f) => ({
+        path: f.path,
+        state: f.state,
+      }));
     const current = project.current === path ? project.root : project.current;
-    return { root: project.root, files, current };
+    return {
+      root: project.root,
+      files,
+      current,
+    };
   },
 
   /** The crate as text, `path → text`, with the open file's `live` edits. */

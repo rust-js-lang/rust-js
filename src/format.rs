@@ -22,7 +22,7 @@ use oxc_ast::AstKind;
 use oxc_ast::ast::{Declaration, Statement};
 use oxc_ast::ast_kind::AstType;
 use oxc_ast_visit::Visit;
-use oxc_formatter::{Expand, JsFormatOptions, format, parse_for_format};
+use oxc_formatter::{JsFormatOptions, format, parse_for_format};
 use oxc_parser::Parser;
 use oxc_sourcemap::{OwnedSourceMap, SourceMap, SourceMapBuilder};
 use oxc_span::{GetSpan, SourceType};
@@ -37,17 +37,15 @@ fn source_type(js_file_name: &str) -> SourceType {
     }
 }
 
-/// `code` as oxfmt formats it, with `options`, and `map`'s mappings moved
-/// to match. `None` if the formatter fails, and the caller keeps what it has.
-pub fn formatted(
-    code: &str,
-    map: &SourceMap<'_>,
-    js_file_name: &str,
-    options: &JsFormatOptions,
-) -> Option<(String, String)> {
+/// `code` as oxfmt formats it, each of its objects, in the order a visit
+/// meets them, on lines of its own where `across_lines` says its source
+/// writes it so (ADR 0835), and `map`'s mappings moved to match. `None` if
+/// the formatter fails, and the caller keeps what it has.
+fn formatted(code: &str, map: &SourceMap<'_>, js_file_name: &str, across_lines: &[bool]) -> Option<(String, String)> {
     let source_type = source_type(js_file_name);
     let allocator = Allocator::default();
-    let text = format(&allocator, code, source_type, options.clone())
+    let written = as_written(&allocator, code, source_type, across_lines)?;
+    let text = format(&allocator, &written, source_type, options())
         .ok()?
         .print()
         .ok()?
@@ -192,14 +190,60 @@ fn moved(
     out.into_sourcemap().to_json_string()
 }
 
-/// oxfmt's defaults, but an object is on one line when it fits: Prettier's
-/// `objectWrap: "collapse"`. Keeping one on several lines, as oxfmt does by
-/// default, keeps a layout a person chose; here, the printer chose it.
+/// oxfmt's defaults, Prettier's `objectWrap: "preserve"` among them: an
+/// object a line ends in after its `{` stays on lines of its own, as a
+/// person wrote it, which `as_written` makes of the source's (ADR 0835).
 fn options() -> JsFormatOptions {
-    JsFormatOptions {
-        expand: Expand::Never,
-        ..JsFormatOptions::default()
+    JsFormatOptions::default()
+}
+
+/// `code`, the printer's, with a line ending after each of its objects' `{`
+/// where `across_lines` says its source writes it across lines, and none
+/// there otherwise, which the printer writes of every object of two
+/// fields: what oxfmt, and the app's Prettier after it, keep or join
+/// (ADR 0835). `across_lines` is of its objects in the order a visit meets
+/// them; one of another count is none's. `None` if `code` doesn't parse.
+fn as_written(allocator: &Allocator, code: &str, source_type: SourceType, across_lines: &[bool]) -> Option<String> {
+    struct Objects {
+        // Where each starts, and its first property.
+        found: Vec<(u32, Option<u32>)>,
     }
+    impl<'a> Visit<'a> for Objects {
+        fn visit_object_expression(&mut self, it: &oxc_ast::ast::ObjectExpression<'a>) {
+            self.found
+                .push((it.span.start, it.properties.first().map(|p| p.span().start)));
+            oxc_ast_visit::walk::walk_object_expression(self, it);
+        }
+    }
+    let parsed = parse_for_format(allocator, allocator.alloc_str(code), source_type);
+    if parsed.diagnostics.errors().next().is_some() {
+        return None;
+    }
+    let mut objects = Objects { found: Vec::new() };
+    objects.visit_program(&parsed.program);
+    let none = vec![false; objects.found.len()];
+    let across_lines = match across_lines.len() == objects.found.len() {
+        true => across_lines,
+        false => &none,
+    };
+    let mut written = String::with_capacity(code.len() + objects.found.len());
+    let mut past = 0;
+    for (&(start, first), &lines) in objects.found.iter().zip(across_lines) {
+        let Some(first) = first else { continue };
+        let (open, first) = (start as usize + 1, first as usize);
+        let between = &code[open..first];
+        let replaced = match (lines, between.contains('\n')) {
+            (true, false) => "\n",
+            // A comment there is kept, and where it is.
+            (false, true) if between.trim().is_empty() => " ",
+            _ => continue,
+        };
+        written.push_str(&code[past..open]);
+        written.push_str(replaced);
+        past = first;
+    }
+    written.push_str(&code[past..]);
+    Some(written)
 }
 
 /// A written file's source map, for finding where its JS came from.
@@ -346,10 +390,9 @@ impl<'t> Lines<'t> {
 /// top-level statements apart as a person separates them (`spaced`); `map`
 /// moved to match. The app's Prettier lays it out after, where it has a
 /// config (ADR 0381).
-pub(crate) fn laid_out(code: String, map: String, js_file_name: &str) -> (String, String) {
-    let options = options();
+pub(crate) fn laid_out(code: String, map: String, js_file_name: &str, across_lines: &[bool]) -> (String, String) {
     let unformatted = SourceMap::from_json_string(&map).expect("the map just built");
-    let (code, map) = formatted(&code, &unformatted, js_file_name, &options).unwrap_or((code, map));
+    let (code, map) = formatted(&code, &unformatted, js_file_name, across_lines).unwrap_or((code, map));
     spaced(code, map, js_file_name)
 }
 

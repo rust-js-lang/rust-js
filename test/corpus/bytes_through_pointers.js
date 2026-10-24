@@ -106,7 +106,11 @@ function main() {
   );
 
   // Plain data's bytes, read and written through a pointer to them.
-  const pair = { low: 0x1122, high: 0x3344, tag: 9 };
+  const pair = {
+    low: 0x1122,
+    high: 0x3344,
+    tag: 9,
+  };
   const q = $ptrBytes(
     $ptrTo(pair),
     6,

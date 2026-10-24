@@ -53,7 +53,9 @@ async function call(url, init, ok) {
 }
 
 function get(signal) {
-  return { signal };
+  return {
+    signal,
+  };
 }
 
 /** The contacts matching `query`. */
@@ -97,7 +99,11 @@ export async function create(new$) {
     "JSON of a model",
     $debugJsonError,
   );
-  const init = { method: "POST", headers: json, body };
+  const init = {
+    method: "POST",
+    headers: json,
+    body,
+  };
   const result = await call("/api/contacts", init, 201);
   if (result.TAG === "Err") {
     return result;

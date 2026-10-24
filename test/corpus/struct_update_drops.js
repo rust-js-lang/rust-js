@@ -48,7 +48,10 @@ function keep(n) {
 function rebuild(p, stop) {
   let result;
   if (!stop) {
-    result = { ...p, y: [9] };
+    result = {
+      ...p,
+      y: [9],
+    };
     noisyDrop_drop(p.y);
     return result;
   }

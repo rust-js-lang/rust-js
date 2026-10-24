@@ -258,9 +258,10 @@ pub fn called(name: &'static str) {
   expect(js).toContain("function disabledLog() {}\ndisabledLog.__reactDisabledLog = true;\n\nexport function disableLogs() {");
   expect(js).toContain("    prevLog = console.log;\n    prevInfo = console.info;");
   expect(js).toContain("prevGroupCollapsed = console.groupCollapsed;");
-  expect(js).toContain("const props = { configurable: true, enumerable: true, value: disabledLog, writable: true };");
+  // Across lines, as its literal is, and React's (ADR 0835).
+  expect(js).toContain("const props = {\n      configurable: true,\n      enumerable: true,\n      value: disabledLog,\n      writable: true,\n    };");
   expect(js).toContain("Object.defineProperties(console, {\n      info: props,\n      log: props,");
-  expect(js).toContain("const props = { configurable: true, enumerable: true, writable: true };");
+  expect(js).toContain("const props = {\n      configurable: true,\n      enumerable: true,\n      writable: true,\n    };");
   // Each object's keys as written, upstream's: `log` first here (ADR 0674).
   expect(js).toContain("Object.defineProperties(console, {\n      log: { ...props, value: prevLog },\n      info: { ...props, value: prevInfo },");
   expect(js).toContain("groupCollapsed: { ...props, value: prevGroupCollapsed },");

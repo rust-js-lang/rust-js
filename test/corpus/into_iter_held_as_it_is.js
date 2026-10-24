@@ -8,7 +8,10 @@ export function entry() {
 
 function twice(items, TIntoIterator, TIntoIterClone) {
   const iter = TIntoIterator.intoIter(items);
-  return { iter: TIntoIterClone.clone(iter), orig: iter };
+  return {
+    iter: TIntoIterClone.clone(iter),
+    orig: iter,
+  };
 }
 
 function twiceIterator_next(twice, IIterator, IClone) {
@@ -26,7 +29,10 @@ function twices(all, HItemIntoIterator, HItemIntoIterClone) {
   return Iterator.from(all)
     .map((items) => {
       const iter = HItemIntoIterator.intoIter(items);
-      return { iter: HItemIntoIterClone.clone(iter), orig: iter };
+      return {
+        iter: HItemIntoIterClone.clone(iter),
+        orig: iter,
+      };
     })
     .toArray();
 }

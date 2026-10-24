@@ -153,7 +153,14 @@ export function heaps() {
   let out = "";
   const h = [];
   for (const [i, pri] of [3, 1, 3, 5, 1, 3, 2, 5, 0].entries()) {
-    $heapPush(h, { pri, name: String.fromCharCode((97 + (i & 255)) & 255) }, taskOrd_cmp);
+    $heapPush(
+      h,
+      {
+        pri,
+        name: String.fromCharCode((97 + (i & 255)) & 255),
+      },
+      taskOrd_cmp,
+    );
     out += `${$debugStr(
       Iterator.from(h)
         .map((t) => t.name)
@@ -231,14 +238,25 @@ export function report() {
   const pop = Stack.pop(s, { clone: (value) => value }, { fmt: (value) => $debugStr(value) });
   const peek = Stack.peek(s, { clone: (value) => value }, { fmt: (value) => $debugStr(value) });
   out += `${pop == null ? "None" : `Some(${$debugStr(pop)})`} ${peek == null ? "None" : `Some(${$debugStr(peek)})`} ${Stack.len(s, { clone: (value) => value }, { fmt: (value) => $debugStr(value) })}\n`;
-  const g = { w: 3, cells: $range(0, 9) };
+  const g = {
+    w: 3,
+    cells: $range(0, 9),
+  };
   out += `${gridIndex_usize__usize__index(g, [1, 2])} ${gridIndex_usize__usize__index(g, [2, 0])}\n`;
-  const l = { label: "pi", value: 3.25 };
+  const l = {
+    label: "pi",
+    value: 3.25,
+  };
   out += `${labeledDisplay_fmt(l, { fmt: $displayF64 })} ${labeledDisplay_fmt(
-    { label: "n", value: 7 },
+    {
+      label: "n",
+      value: 7,
+    },
     { fmt: String },
   )}\n`;
-  const p = { steps: [(x) => (x + 1) | 0, (x) => (x * 10) | 0, (x) => (x - 3) | 0] };
+  const p = {
+    steps: [(x) => (x + 1) | 0, (x) => (x * 10) | 0, (x) => (x - 3) | 0],
+  };
   const run = Pipeline.run(p, 4);
   const value = firstEvenSquare([3, 5, 6, 8]);
   const value$1 = firstEvenSquare([1]);

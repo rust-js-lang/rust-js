@@ -14,7 +14,9 @@ function useFilter() {
   const [current, setCurrent] = useState(() => hash());
   useEffect(() => {
     const controller = new AbortController();
-    const options = { signal: controller.signal };
+    const options = {
+      signal: controller.signal,
+    };
     window.addEventListener(
       "hashchange",
       () => {
