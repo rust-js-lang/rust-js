@@ -440,7 +440,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // `null` or a value already, which it takes as it is (ADRs 0275, 0772).
         let writes_a_cell = matches!(
             self.recognition().classify(callee.0, callee.1),
-            Some(Std::CellSet | Std::CellReplace | Std::CellTake)
+            Some(Std::CellSet | Std::CellReplace)
         );
         let nulled: Vec<bool> = match writes_a_cell || !bindings::nullable_params(self.tcx, callee.0).is_empty() {
             false => Vec::new(),
@@ -454,13 +454,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             self.flush(state, out)?;
         }
-        let mut values = self.take_operands(state, operands, out)?;
-        // A `Cell` written that MIR shows is a nullable field's, through a
-        // variable too: a handle that stores as it does (ADR 0772).
-        if writes_a_cell && self.stores_null(state, operands[0]) {
-            let cell = self.value_expr(values.remove(0), span)?;
-            values.insert(0, Value::Expr(self.nullable_cell_handle(Expr::held(cell))));
-        }
+        let values = self.take_operands(state, operands, out)?;
         match self.mir_call_values(state, callee, (values, arg_tys, &nulled), output, span, out)? {
             Value::Expr(e) if strict => Ok(Value::Expr(js::strict_equality(e))),
             value => Ok(value),

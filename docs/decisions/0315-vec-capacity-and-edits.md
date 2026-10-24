@@ -52,3 +52,14 @@ has none.**
   `with_capacity`, drop the argument, share copies, give text where cells
   are, and break each helper.
 - `docs/std-coverage.txt`: `Vec` 33 of 48, `VecDeque` 34 of 55.
+
+## Amendment: a map's and a set's `with_capacity`
+
+What a `HashMap`'s or a `HashSet`'s `with_capacity` is given runs too, for
+what it does: `HashMap::with_capacity(room(4))` was `new Map()`, `room`
+never called (#195). Its value does nothing else, as a `Vec`'s doesn't,
+where it fits; past `isize::MAX` bytes it's #190's. `map_capacity_effects`
+holds it, and `map-capacity-args-dropped`. The `Vec`'s, its own
+`$roomFor` since 0774, no longer reaches the arguments `Std::Nothing`
+runs, so `capacity-args-dropped` is held by `assert_unchecked`'s, whose
+condition prints (#194).
