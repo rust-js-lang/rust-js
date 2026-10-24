@@ -3,14 +3,6 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
-    name: "mir-enumerate-swapped",
-    breaks: "`enumerate` gives `(item, index)`, not `(index, item)`",
-    file: "src/lower/mir/iter.rs",
-    find: "    let pair = Expr::array(vec![Expr::var(\"i\"), Expr::var(\"x\")]);\n",
-    replace: "    let pair = Expr::array(vec![Expr::var(\"x\"), Expr::var(\"i\")]);\n",
-    tests: ["test/corpus.test.ts", "-t", "labeled_blocks"],
-  },
-  {
     name: "mir-max-is-min",
     breaks: "`max()` of an iterator from MIR is its least item",
     file: "src/lower/mir/iter.rs",
@@ -364,5 +356,21 @@ export const mutations: Mutation[] = [
     find: "                (self.stepped_items(items), stored)\n",
     replace: "                (items, stored)\n",
     tests: ["test/corpus.test.ts", "-t", "^cloned_chains_and_cycles.rs$"],
+  },
+  {
+    name: "map-hint-of-own-refused",
+    breaks: "a map of the crate's iterator has its size_hint",
+    file: "src/lower/mir/iter.rs",
+    find: "                    || source_ty.is_some_and(|ty| self.is_user_iterator(ty) || self.maps_the_crates_own(ty))",
+    replace: "                    || false",
+    tests: ["test/corpus.test.ts", "-t", "^adapter_size_hints.rs$"],
+  },
+  {
+    name: "held-map-hint-refused",
+    breaks: "a held map of the crate's iterator has its size_hint",
+    file: "src/lower/mir/iter.rs",
+    find: "            || self.maps_the_crates_own(iter_ty)\n",
+    replace: "\n",
+    tests: ["test/corpus.test.ts", "-t", "^adapter_size_hints.rs$"],
   },
 ];

@@ -415,6 +415,10 @@ const owners: Record<string, string[]> = {
     "src/lower/mir/structure.rs",
     "src/lower/mir/temporaries.rs",
   ],
+  // What lowering a function found of drops, which the pipeline gathers
+  // and resolves: the drops module's to write, where `CrateFacts` held it
+  // in cells every function wrote (the fourth review).
+  "self.drops_observed": ["src/lower/drops.rs", "src/lower/drops/uses.rs"],
   "self.writing": ["src/lower/display.rs", "src/lower/display/debug.rs", "src/lower/display/written.rs"],
   "self.cloning": ["src/lower/std_impls.rs"],
   "self.ordering": ["src/lower/ordering.rs"],
@@ -478,7 +482,7 @@ const mirState: Record<string, string[]> = {
   "src/lower/mir/std_calls.rs": ["at", "body", "locals", "offsets"],
   "src/lower/mir/assign.rs": ["binding_var", "body", "boxes", "branches", "builders", "copy_backs", "cuts", "in_place", "offsets", "jsx_props", "let_spans", "locals", "maps", "named", "options", "parts", "payloads", "pending", "places", "pointed", "refs", "rests", "writer"],
   "src/lower/mir/closures.rs": ["at", "body", "locals", "offsets"],
-  "src/lower/mir/dispatch.rs": ["body", "copy_backs", "defaults", "flattened", "locals", "maps", "options", "pending", "unwind"],
+  "src/lower/mir/dispatch.rs": ["body", "defaults", "flattened", "locals", "maps", "options", "pending"],
   "src/lower/mir/entries.rs": ["body", "captures", "locals", "thrown_writes"],
   "src/lower/mir/jsx_props.rs": ["body"],
   "src/lower/mir/locals.rs": ["body", "locals", "patterned"],
@@ -487,7 +491,7 @@ const mirState: Record<string, string[]> = {
   "src/lower/mir/queries.rs": ["body", "borrowed_names", "locals", "own_names"],
   "src/lower/mir/rvalues.rs": ["at", "body", "branches", "cuts", "locals", "offsets", "options", "pending", "pointed", "ranges", "statement", "writer"],
   "src/lower/mir/structure.rs": ["at", "awaits", "body", "copy_backs", "deferred", "drops", "graph", "labels", "locals", "pending", "returns", "statement", "unwind", "writer", "writes_captured"],
-  "src/lower/mir/temporaries.rs": ["body", "in_place", "locals", "named", "own_names", "pending", "places", "pointed", "refs", "settled", "unwind"],
+  "src/lower/mir/temporaries.rs": ["body", "copy_backs", "in_place", "locals", "named", "own_names", "pending", "places", "pointed", "refs", "settled", "unwind"],
 };
 test("each module of mir/ reads only the fields of mir.rs's state it's listed for", () => {
   const mir = read("src/lower/mir.rs");
@@ -668,9 +672,9 @@ const dispatchers: [string, string, number][] = [
   ["src/lower/mir/dispatch.rs", "    pub(super) fn mir_call(", 106],
   ["src/lower/mir/dispatch.rs", "    fn mir_call_values_of(", 247],
   ["src/lower/mir/dispatch.rs", "    fn mir_std_call(", 147],
-  ["src/lower/mir.rs", "    fn mir_function(", 361],
-  ["src/lower/recognition/inherent.rs", "    pub(super) fn classify_inherent(", 752],
-  ["src/lower/recognition/calls.rs", "    fn classify_trait_method(", 247],
+  ["src/lower/mir.rs", "    fn mir_function(", 364], // The parameters handed to tidy's `finish` stage in a cell (ADR 0659, amended).
+  ["src/lower/recognition/inherent.rs", "    pub(super) fn classify_inherent(", 754],
+  ["src/lower/recognition/calls.rs", "    fn classify_trait_method(", 246],
   ["src/lower/combinators.rs", "    pub(in crate::lower) fn comb_values(", 602],
   ["src/lower/mir/iter.rs", "    pub(in crate::lower) fn mir_iter_call(", 28],
   ["src/lower/mir/iter.rs", "    fn mir_iter_method(", 282],

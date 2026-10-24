@@ -55,7 +55,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// The one answer, of what generic code steps from its back and of what
     /// its callers give it.
     pub(in crate::lower) fn knows_its_back(&self, ty: ty::Ty<'tcx>) -> bool {
-        let ty = ty.peel_refs();
+        // What an `impl` hides, as it's made.
+        let ty = self.reveal(ty.peel_refs());
         // A map of one, made one that knows its back too, `$mapEnds` (ADR
         // 0455), a filter or a `filter_map`, `$filterEnds` (ADR 0526); a
         // copy of one, which it is (ADR 0480); of a type parameter given as
@@ -66,8 +67,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return self.knows_its_back(source) || self.stepped_from_its_back(ty);
         }
         // A flatten the crate steps from its back, made knowing it,
-        // `$flattenEnds`.
-        if crate::lower::recognition::flattened_source(self.tcx, ty).is_some() {
+        // `$flattenEnds`, and a chain a function gives behind an `impl`,
+        // `$chainEnds`.
+        if crate::lower::recognition::flattened_source(self.tcx, ty).is_some()
+            || crate::lower::recognition::chained_sources(self.tcx, ty).is_some() && self.stepped_from_its_back(ty)
+        {
             return self.stepped_from_its_back(ty);
         }
         // An enumeration of one that knows its length too, `$enumerate`,
@@ -146,10 +150,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// a `dyn`'s, or a map of one. The one answer, of what generic code asks
     /// the length of and what its callers give it.
     pub(in crate::lower) fn knows_its_length(&self, ty: ty::Ty<'tcx>) -> bool {
-        let ty = ty.peel_refs();
+        let ty = self.reveal(ty.peel_refs());
+        // Of an array's items made knowing its back, `$mapEnds` of their
+        // `$iter`, which knows its length too.
         if let Some(source) = crate::lower::recognition::length_kept_source(self.tcx, ty) {
             return self.knows_its_length(source)
-                || self.made_knowing(source, self.recognition().exact_size_iterator());
+                || self.made_knowing(source, self.recognition().exact_size_iterator())
+                || self.steps_an_array(source) && self.knows_its_back(ty);
         }
         // An explicit `Take` or `Skip`, which counts from its source, made as
         // capable as its type is, an array's iterator or an exclusive range's
@@ -231,6 +238,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let name = if skip { "$skipping" } else { "$taking" };
             return Ok(Expr::call_helper(name, vec![source_value, n]));
         }
+        // An enumeration made here of an array's items, `$enumerate` of their
+        // `$iter`, as `as_double_ended` makes it.
+        if let Some(source) = crate::lower::recognition::enumerated_source(self.tcx, ty)
+            && self.steps_an_array(source.peel_refs())
+            && let Some(source_value) = crate::lower::iterators::enumeration_source(&value)
+        {
+            let items = self.std_iterator(source_value.clone(), source.peel_refs());
+            return Ok(Expr::call_helper("$enumerate", vec![items]));
+        }
         // A map made here, `src.map(f)`: its source's, each `f`'s, as
         // `as_double_ended` makes it (ADR 0455).
         if let Some(source) = crate::lower::recognition::mapped_source(self.tcx, ty)
@@ -280,6 +296,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let source_value = self.as_double_ended((**source_value).clone(), source.peel_refs(), span)?;
             return Ok(Expr::call_helper("$flattenEnds", vec![source_value, each.clone()]));
         }
+        // A chain made here, `$lazyChain(a, b)`: each made knowing its back,
+        // `$chainEnds` of them, which steps `b`'s then `a`'s from the back, as
+        // std's `Chain` does.
+        if let Some((first, second)) = crate::lower::recognition::chained_sources(self.tcx, ty)
+            && let js::ExprKind::Call(callee, args) = &value.kind
+            && callee.helper_name() == Some("$lazyChain")
+            && let [a, b] = args.as_slice()
+        {
+            let a = stepped_value(a).unwrap_or_else(|| a.clone());
+            let b = stepped_value(b).unwrap_or_else(|| b.clone());
+            let a = self.as_double_ended(a, first.peel_refs(), span)?;
+            let b = self.as_double_ended(b, second, span)?;
+            return Ok(Expr::call_helper("$chainEnds", vec![a, b]));
+        }
         // The crate's, made knowing its back.
         if self.is_user_iterator(ty) {
             return self.user_iterator_knowing(value, ty, (true, false), span);
@@ -321,6 +351,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let source_value = self.as_double_ended((**source_value).clone(), source.peel_refs(), span)?;
             return Ok(Expr::call_helper("$mapEnds", vec![source_value, f.clone()]));
         }
+        // An enumeration made here of an array's items, `src.map((x, i) =>
+        // [i, x])`: `$enumerate` of their `$iter`, which knows its back and
+        // its length, whose index from the back is where it is (ADR 0528).
+        if let Some(source) = crate::lower::recognition::enumerated_source(self.tcx, ty)
+            && self.steps_an_array(source.peel_refs())
+            && let Some(source_value) = crate::lower::iterators::enumeration_source(&value)
+        {
+            let items = self.std_iterator(source_value.clone(), source.peel_refs());
+            return Ok(Expr::call_helper("$enumerate", vec![items]));
+        }
         // A `step_by(n)` made here, `src.filter((_, i) => i % n === 0)`:
         // `$stepByEnds` of its source made knowing its back and its length,
         // which it finds its last by, as std's `StepBy` does.
@@ -334,20 +374,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let source_value = stepped_value(source_value).unwrap_or_else(|| (**source_value).clone());
             let source_value = self.as_exact_size(source_value, source.peel_refs(), true, span)?;
             return Ok(Expr::call_helper("$stepByEnds", vec![source_value, step]));
-        }
-        // A chain made here, `$lazyChain(a, b)`: each made knowing its back,
-        // `$chainEnds` of them, which steps `b`'s then `a`'s from the back, as
-        // std's `Chain` does.
-        if let Some((first, second)) = crate::lower::recognition::chained_sources(self.tcx, ty)
-            && let js::ExprKind::Call(callee, args) = &value.kind
-            && callee.helper_name() == Some("$lazyChain")
-            && let [a, b] = args.as_slice()
-        {
-            let a = stepped_value(a).unwrap_or_else(|| a.clone());
-            let b = stepped_value(b).unwrap_or_else(|| b.clone());
-            let a = self.as_double_ended(a, first.peel_refs(), span)?;
-            let b = self.as_double_ended(b, second, span)?;
-            return Ok(Expr::call_helper("$chainEnds", vec![a, b]));
         }
         // A filter made here, `src.filter(p)`: its source's items `p` keeps,
         // from either end, as Rust's `Filter` steps them (ADR 0526).

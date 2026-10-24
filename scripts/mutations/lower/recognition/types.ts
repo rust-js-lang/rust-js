@@ -236,6 +236,14 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-functions.test.ts", "-t", "an async block or closure drops what it took"],
   },
   {
+    name: "string-drain-unrecognised",
+    breaks: "a string Drain steps as chars() do",
+    file: "src/lower/recognition/types.rs",
+    find: "== \"std::string::Drain\")",
+    replace: "== \"std::string::Drained\")",
+    tests: ["test/corpus.test.ts", "-t", "str_odds"],
+  },
+  {
     name: "dyn-any-send-of-any",
     breaks: "a `dyn Any` without `Send` is an unwind's payload's, so its own `&JsError` isn't found",
     file: "src/lower/recognition/types.rs",

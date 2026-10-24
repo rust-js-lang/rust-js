@@ -72,6 +72,17 @@ function $encodeUtf8(c, buf) {
   return $utf8Mut(buf, bytes.length);
 }
 
+// `c.encode_utf16(&mut buf)`: its UTF-16 units at the start of `buf`, and
+// the `&mut [u16]` of them; a `buf` too short panics, as std's does (#118).
+function $encodeCharUtf16(c, buf) {
+  if (c.length > buf.length) {
+    const code = c.codePointAt(0).toString(16).toUpperCase().padStart(4, "0");
+    throw new Error(`encode_utf16: need ${c.length} bytes to encode U+${code} but buffer has just ${buf.length}`);
+  }
+  for (let i = 0; i < c.length; i++) buf[i] = c.charCodeAt(i);
+  return $view(buf, 0, c.length);
+}
+
 // `String::from_utf8_lossy(bytes)`: a `Cow`, borrowed where the bytes are
 // valid, else owned, with a U+FFFD for each bad sequence, which
 // `TextDecoder` replaces as Rust's `Utf8Chunks` does, by its maximal subpart.

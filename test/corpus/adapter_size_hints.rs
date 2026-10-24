@@ -53,4 +53,10 @@ fn main() {
     println!("{:?} {:?}", peek.size_hint(), hint(&peek));
     peek.peek();
     println!("{:?} {:?}", peek.size_hint(), hint(&Blink(0).fuse()));
+    // Through a `map`, its source's, as std's `Map` passes it on.
+    println!("{:?}", Countdown(3).map(|x| x + 1).map(|x| x * 2).size_hint());
+    println!("{:?}", Blink(0).map(|x| x + 1).size_hint());
+    let mut mapped = Countdown(4).map(|x| x + 1);
+    mapped.next();
+    println!("{:?}", mapped.size_hint());
 }

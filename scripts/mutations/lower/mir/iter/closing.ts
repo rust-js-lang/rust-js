@@ -162,4 +162,12 @@ export const mutations: Mutation[] = [
     replace: "                let compiled = false;\n",
     tests: ["test/corpus.test.ts", "-t", "^own_fold_through_adapters.rs$"],
   },
+  {
+    name: "eq-other-raw",
+    breaks: "eq's other side is a JS iterator",
+    file: "src/lower/mir/iter/closing.rs",
+    find: "        // A range's, or the crate's, stepped as one, as `chain`'s and `zip`'s are.\n        let other = self.as_js_iterator(other, other_ty, span)?;\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "skip_try_fold"],
+  },
 ];

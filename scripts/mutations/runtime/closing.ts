@@ -50,4 +50,20 @@ export const mutations: Mutation[] = [
     replace: "  closing.unused = (init, f) => {\n",
     tests: ["test/corpus.test.ts", "-t", "^own_fold_through_adapters.rs$"],
   },
+  {
+    name: "closing-try-fold-by-next",
+    breaks: "a closing's tryFold is its iterator's",
+    file: "src/runtime/closing.js",
+    find: "  closing.tryFold = (init, f, broke) => {",
+    replace: "  closing.tryFoldUnused = (init, f, broke) => {",
+    tests: ["test/corpus.test.ts", "-t", "skip_try_fold"],
+  },
+  {
+    name: "closing-nth-by-next",
+    breaks: "a closing's nth is its iterator's",
+    file: "src/runtime/closing.js",
+    find: "  if (it.nth !== undefined) closing.nth",
+    replace: "  if (false) closing.nth",
+    tests: ["test/corpus.test.ts", "-t", "skip_try_fold"],
+  },
 ];

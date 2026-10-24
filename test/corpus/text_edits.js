@@ -33,11 +33,11 @@ function main() {
   let long = "aé-bc-déf";
   const drained = $strDrain(long, 0, 4);
   long = drained[0];
-  const taken = Iterator.from(drained[1]).toArray().join("");
+  const taken = drained[1].slice().join("");
   console.log(`[${taken}] [${long}]`);
   const drained$1 = $strDrain(long, 2, 4);
   long = drained$1[0];
-  const removed = Array.from(drained$1[1]);
+  const removed = drained$1[1].slice();
   console.log(`[${removed.map((item) => $debugStr(item, "'")).join(", ")}] [${long}]`);
   long = $strExtendWithin(long, 0, 2);
   long = $strExtendWithin(long, 1);

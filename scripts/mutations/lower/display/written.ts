@@ -202,4 +202,12 @@ export const mutations: Mutation[] = [
     replace: "        if false {",
     tests: ["test/corpus.test.ts", "-t", "^byte_escape.rs$"],
   },
+  {
+    name: "fmt-error-display-lost",
+    breaks: "fmt::Error displays std's text",
+    file: "src/lower/display/written.rs",
+    find: "return Ok(Expr::str(\"an error occurred when formatting an argument\"));",
+    replace: "return Ok(Expr::str(\"an error\"));",
+    tests: ["test/corpus.test.ts", "-t", "str_odds"],
+  },
 ];

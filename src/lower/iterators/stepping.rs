@@ -5,9 +5,9 @@ use super::*;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `Iterator.from(value)`: a JS iterator of an array or of one, which
-    /// steps either (ADR 0061).
+    /// steps either (ADR 0061); one already, as it is.
     pub(in crate::lower) fn js_iterator(&self, value: Expr) -> Expr {
-        if is_lent(&value) {
+        if is_lent(&value) || is_js_iterator(&value) {
             return value;
         }
         Expr::call(Expr::member(Expr::var("Iterator"), "from"), vec![value])
@@ -152,6 +152,58 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .any(|id| std_item(self.tcx, StdItem::Iterator) == id || std_item(self.tcx, StdItem::IntoIterator) == id)
     }
 
+    /// What std's `IntoIterator` of `ty`, a `&C` or a `&mut C`, gives of
+    /// `value` in JS (ADR 0457): a handle on each item of a `&mut`, as `for x
+    /// in &mut v` makes, or std's own of what it's given; `None` of what std
+    /// has none of here. The one answer, of a dictionary generic code is
+    /// given and of what a caller gives it.
+    pub(in crate::lower) fn ref_into_iter(
+        &mut self,
+        value: Expr,
+        ty: ty::Ty<'tcx>,
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Option<Expr>> {
+        let ty::Ref(_, pointee, mutability) = *ty.kind() else {
+            return Ok(None);
+        };
+        let into_iter_trait = std_item(self.tcx, StdItem::IntoIterator);
+        let args = self.tcx.mk_args(&[ty.into()]);
+        let into_iter = crate::lower::recognition::trait_method(self.tcx, into_iter_trait, "into_iter");
+        let Some(known) = self.recognition().classify(into_iter, args) else {
+            return Ok(None);
+        };
+        let into_iter_ty = crate::lower::recognition::trait_method(self.tcx, into_iter_trait, "IntoIter");
+        let output = ty::Ty::new_projection(self.tcx, ty::IsRigid::No, into_iter_ty, args);
+        let output = (self.tcx)
+            .try_normalize_erasing_regions(self.typing_env, ty::Unnormalized::new_wip(output))
+            .unwrap_or(output);
+        let handles = match mutability {
+            ty::Mutability::Mut => self.item_handles_of(known, vec![value.clone()], pointee, span, out)?,
+            ty::Mutability::Not => None,
+        };
+        let items = match handles {
+            Some(handles) => handles,
+            None => self.std_by_values(known, into_iter, args, &[ty], vec![value], output, span, out)?,
+        };
+        Ok(Some(self.std_iterator(items, output)))
+    }
+
+    /// Whether `callee` takes `input`, a type parameter of its own, by an
+    /// `IntoIterator` bound it's given no dictionary of, as its `bounds`
+    /// say: iterated as JS has it.
+    fn given_iterable(&self, callee: DefId, input: ty::Ty<'tcx>) -> bool {
+        if !matches!(input.kind(), ty::Param(_)) {
+            return false;
+        }
+        let env = ty::TypingEnv::post_analysis(self.tcx, callee);
+        let into_iter = std_item(self.tcx, StdItem::IntoIterator);
+        let given_one = crate::lower::traits::bounds(self.tcx, self.krate.foreign, self.krate.given, callee)
+            .iter()
+            .any(|tr| tr.def_id == into_iter && tr.self_ty() == input);
+        (self.declared_bounds(input, env.param_env).into_iter()).any(|id| id == into_iter) && !given_one
+    }
+
     /// The arguments of a call of the crate's `callee`, of types `given`:
     /// each iterator of the crate's, or range, where a generic iterator goes
     /// a JS iterator (ADR 0061), a function's and a trait impl's method's
@@ -162,6 +214,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         values: &mut [Expr],
         given: &[ty::Ty<'tcx>],
         span: Span,
+        out: &mut Vec<Stmt>,
     ) -> R<()> {
         let inputs = self.tcx.fn_sig(callee).instantiate_identity().skip_binder().inputs();
         for ((value, &input), &given) in values.iter_mut().zip(inputs).zip(given) {
@@ -183,6 +236,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             } else if matches!(input.kind(), ty::Param(_)) && self.given_as_iterator(callee, input, given) {
                 let held = std::mem::replace(value, Expr::undefined());
                 *value = self.as_js_iterator(held, given, span)?;
+            // One an `IntoIterator` bound takes, given the JS iterator of
+            // its items (ADR 0061): a `&mut` collection's handles, an
+            // `Option`'s, a B-tree's in order, `iterable_items`'.
+            } else if matches!(input.kind(), ty::Param(_)) && self.given_iterable(callee, input) {
+                let held = std::mem::replace(value, Expr::undefined());
+                *value = self.iterable_items(held, given, span, out)?;
             }
         }
         Ok(())
@@ -230,11 +289,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         out: &mut Vec<Stmt>,
     ) -> R<Expr> {
         let ty = self.reveal(ty);
-        // A `&mut` range is stepped through as it's taken from.
-        if let ty::Ref(_, inner, _) = ty.kind()
+        // A `&mut` range is stepped where it is, as it's taken from.
+        if let ty::Ref(_, inner, ty::Mutability::Mut) = ty.kind()
             && self.range_kind(*inner).is_some()
         {
-            return Err(self.unsupported(span, &format!("iterating over a `{ty}`, which steps it")));
+            return self.as_js_iterator(value, ty, span);
+        }
+        // A `&mut` collection's, a handle on each item, as `for x in &mut v`
+        // makes (`ref_into_iter`); not a type parameter's, an iterator its
+        // dictionary steps.
+        if let ty::Ref(_, inner, ty::Mutability::Mut) = ty.kind()
+            && !matches!(inner.kind(), ty::Param(_))
+            && self.option_of(*inner).is_none()
+            && !self.is_sorted(*inner)
+            && let Some(items) = self.ref_into_iter(value.clone(), ty, span, out)?
+        {
+            return Ok(items);
         }
         let ty = ty.peel_refs();
         if let Some(item) = self.option_of(ty) {

@@ -153,7 +153,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let given = self.drops_taken(id);
         // One that takes only the drops it uses is given each as an argument
         // the pipeline keeps or leaves out (ADR 0300).
-        let takes_used = self.krate.drop_uses.borrow().takes_used(id);
+        let takes_used = self.krate.takes_used_drops.contains(id);
         for &index in given {
             let ty = self.drop_slot_of(id, index, args);
             let iterated = self.iterated_slot(id, index, args, ty);
@@ -360,7 +360,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .skip_binder()
                 .inputs()
                 .to_vec();
-            self.given_iterators(id, &mut values, &given, span)?;
+            self.given_iterators(id, &mut values, &given, span, out)?;
             values.extend(self.evidence_args(id, generic_args, span)?);
             let called = Expr::call(self.fn_ref(id), values);
             return Ok(Some(self.fmt_result_value(id, generic_args, called)));
@@ -412,7 +412,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .skip_binder()
                 .inputs()
                 .to_vec();
-            self.given_iterators(instance.def_id(), &mut values, &given, span)?;
+            self.given_iterators(instance.def_id(), &mut values, &given, span, out)?;
             // Its arguments in the impl's terms, a copied default's, asked of
             // the impl's drops (ADR 0495).
             values.extend(self.with_impl_drops(|cx| cx.evidence_args(instance.def_id(), instance.args, span))?);
@@ -516,7 +516,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .skip_binder()
                 .inputs()
                 .to_vec();
-            self.given_iterators(id, &mut values, &given, span)?;
+            self.given_iterators(id, &mut values, &given, span, out)?;
             let location = self.caller_location(span);
             values.extend(self.with_impl_drops(|cx| cx.own_evidence(id, generic_args, Some(location), span))?);
             return Ok(Some(Expr::call(

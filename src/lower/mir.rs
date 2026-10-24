@@ -985,33 +985,36 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .map(|(path, _)| path.clone()),
         );
         let flags = state.flag_names();
-        let fuse = self.fuse_import();
-        let hints = tidy::Hints {
-            result: &state.locals.names[mir::RETURN_PLACE],
-            falsy: &falsy,
-            tested: &tested,
-            written: &written,
-            callbacks: &callbacks,
-            closure: (mir_body.args_iter().next())
-                .is_some_and(|local| matches!(mir_body.local_decls[local].ty.peel_refs().kind(), ty::Closure(..))),
-            patterns: &(self.let_pattern_bindings(mir_body).into_iter())
-                .map(|(l, _)| state.locals.names[l].clone())
-                .collect(),
-            returns: &state.returns,
-            captured: &captured,
-            booleans: &booleans,
-            numbers: &numbers,
-            plain: &self.plain_names(),
-            forwarding: &self.locals.mir.forwarding.clone(),
-            concise: &self.locals.mir.concise.clone(),
-            flags: &flags,
-            fuse: fuse.as_deref(),
-            until: self.krate.tidy_until,
-        };
-        tidy::tidy(&mut out, &hints);
-        tidy::destructured_params(&mut params, &mut out);
-        let suggested = self.temporaries_names(mir_body, &state);
-        tidy::named(&params, &mut out, &suggested, &state.locals.named(), &hints);
+        let params = std::cell::RefCell::new(params);
+        tidy::tidy(
+            &mut out,
+            &tidy::Hints {
+                result: &state.locals.names[mir::RETURN_PLACE],
+                falsy: &falsy,
+                tested: &tested,
+                written: &written,
+                callbacks: &callbacks,
+                closure: (mir_body.args_iter().next())
+                    .is_some_and(|local| matches!(mir_body.local_decls[local].ty.peel_refs().kind(), ty::Closure(..))),
+                patterns: &(self.let_pattern_bindings(mir_body).into_iter())
+                    .map(|(l, _)| state.locals.names[l].clone())
+                    .collect(),
+                returns: &state.returns,
+                captured: &captured,
+                booleans: &booleans,
+                numbers: &numbers,
+                plain: &self.plain_names(),
+                forwarding: &self.locals.mir.forwarding.clone(),
+                concise: &self.locals.mir.concise.clone(),
+                flags: &flags,
+                fuse: self.fuse_import().as_deref(),
+                until: self.krate.tidy_until,
+                params: &params,
+                suggested: &self.temporaries_names(mir_body, &state),
+                named: &state.locals.named(),
+            },
+        );
+        let params = params.into_inner();
         self.body_epilogue(&mut state, &mut out);
         Ok((params, out))
     }

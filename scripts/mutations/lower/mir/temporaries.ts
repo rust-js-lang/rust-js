@@ -245,4 +245,12 @@ export const mutations: Mutation[] = [
     replace: "                if subject.reads_same() {\n                    kept.push((local, value));\n                    continue;\n                }\n",
     tests: ["test/corpus.test.ts", "-t", "^refused_drops_and_displays.rs$"],
   },
+  {
+    name: "fresh-evaluation-pending-lost",
+    breaks: "what's made around a function as a value is the enclosing evaluation's again",
+    file: "src/lower/mir/temporaries.rs",
+    find: "        state.pending = pending;\n        state.unwind = unwind;\n",
+    replace: "        state.unwind = unwind;\n",
+    tests: ["test/corpus.test.ts", "-t", "^(mut_method_pointer|function_values_in_calls|as_deref|as_ref_path|deque_range_mut|expression_values|dyn_pointers|generic_guard_deref|escape_iterators|leaked_string_written|matrix_strings|option_result_methods|path_keys|poison_error|rc_counted_uses|option_sort|set_operators|rc_count_fn_value|sort_unstable_wasm32|std_function_values|text_predicates|std_function_value_panic|stock_orders|str_circumfix|vec_edits).rs$"],
+  },
 ];

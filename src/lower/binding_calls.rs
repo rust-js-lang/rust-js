@@ -114,9 +114,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             (JsForm::Call(name), None) => Expr::call(self.binding_ref(&name, named).or_at(fun_span), args),
             (JsForm::New(name), None) => Expr::new_(self.js_ref(&name).or_at(fun_span), args),
-            (JsForm::Get(name), Some(this)) if args.is_empty() && !name.contains('#') => Expr::member(this, name),
+            // A property's read, which a getter may answer (ADR 0672).
+            (JsForm::Get(name), Some(this)) if args.is_empty() && !name.contains('#') => {
+                Expr::member(this, name).answered_by_a_getter()
+            }
             // A class's static property, read at each call: `Notification.permission`.
-            (JsForm::Get(name), None) if args.is_empty() => self.js_ref(&name).or_at(fun_span),
+            (JsForm::Get(name), None) if args.is_empty() => self.js_ref(&name).or_at(fun_span).answered_by_a_getter(),
             (JsForm::Set(name), Some(this)) if args.len() == 1 && !name.contains('#') => {
                 let value = args.remove(0);
                 out.push(StmtKind::Assign(Expr::member(this, name), value).at(self.js_span(span)));
@@ -149,7 +152,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             {
                 Expr::call(Expr::helper("$dictGet"), vec![this, args.remove(0)])
             }
-            (JsForm::GetIndex, Some(this)) if args.len() == 1 => keyed(this, args.remove(0)),
+            (JsForm::GetIndex, Some(this)) if args.len() == 1 => keyed(this, args.remove(0)).answered_by_a_getter(),
             (JsForm::In, Some(this)) if args.len() == 1 => Expr::bin(Op::In, args.remove(0), this),
             (JsForm::Truthy, Some(this)) if args.is_empty() => {
                 Expr::unary(UnaryOp::Not, Expr::unary(UnaryOp::Not, this))

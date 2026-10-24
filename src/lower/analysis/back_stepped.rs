@@ -8,7 +8,8 @@
 //! stepped, as a library's drop flags make one, still steps from its back.
 
 use crate::lower::recognition::{
-    Recognition, filtered_source, flattened_source, is_double_ended, is_iter_adapter_def, mapped_source,
+    Recognition, chained_sources, filtered_source, flattened_source, is_double_ended, is_iter_adapter_def,
+    mapped_source,
 };
 use crate::lower::{Body, fn_def};
 use rustc_middle::thir::ExprKind;
@@ -39,7 +40,11 @@ pub(super) fn back_stepped<'tcx>(
                 if !is_double_ended(tcx, asked.def_id()) {
                     continue;
                 }
-                let asked = recognition.reveal(asked.self_ty().skip_binder().peel_refs());
+                let hidden = asked.self_ty().skip_binder().peel_refs();
+                let asked = recognition.reveal(hidden);
+                // One a function gives behind an `impl`, which its caller
+                // can't make knowing its back: made so where it's made.
+                let given = hidden != asked;
                 // Not through a std adapter, whose own call steps what it
                 // holds: `filter(p).map(f).rev()`'s is `rev()`'s.
                 let mut walk = asked.walk();
@@ -49,20 +54,34 @@ pub(super) fn back_stepped<'tcx>(
                         // The type asked itself too where it's of an array's
                         // items with a destructor, which `rev()` can't step
                         // from its back once it's held in a variable.
-                        if held != asked || dropping_items(recognition, held, &drops) {
-                            stepped.extend(back_stepped_adapter(tcx, recognition, held, &drops));
+                        if held != asked || given || dropping_items(recognition, held, &drops) {
+                            stepped.extend(back_stepped_adapter(tcx, recognition, held, given, &drops));
                         }
-                        walk.skip_current_subtree();
+                        // Given behind an `impl`, each it holds too, made
+                        // where it's made, which no call of the caller's
+                        // steps.
+                        if !given {
+                            walk.skip_current_subtree();
+                        }
                     }
                 }
             }
             if !tcx.trait_of_assoc(callee).is_some_and(|tr| is_double_ended(tcx, tr)) {
                 continue;
             }
-            let Some(adapter) = args.types().next().map(|ty| ty.peel_refs()) else {
+            let Some(hidden) = args.types().next().map(|ty| ty.peel_refs()) else {
                 continue;
             };
-            stepped.extend(back_stepped_adapter(tcx, recognition, adapter, &drops));
+            let adapter = recognition.reveal(hidden);
+            match hidden != adapter {
+                // Given behind an `impl`: each adapter in it.
+                true => stepped.extend(adapter.walk().filter_map(|part| part.as_type()).filter_map(|held| {
+                    matches!(held.kind(), ty::Adt(a, _) if is_iter_adapter_def(tcx, a.did()))
+                        .then(|| back_stepped_adapter(tcx, recognition, held, true, &drops))
+                        .flatten()
+                })),
+                false => stepped.extend(back_stepped_adapter(tcx, recognition, adapter, false, &drops)),
+            }
         }
     }
     stepped
@@ -70,21 +89,25 @@ pub(super) fn back_stepped<'tcx>(
 
 /// `adapter`, regions erased, where it's a map or a filter of a source not
 /// an array's, which its own forms step from their back, or of an array's
-/// items whose drop runs, `drops`'s.
+/// items whose drop runs, `drops`'s, or that a function gives behind an
+/// `impl`, `given`, which no form of its caller's steps.
 fn back_stepped_adapter<'tcx>(
     tcx: TyCtxt<'tcx>,
     recognition: Recognition<'_, 'tcx>,
     adapter: Ty<'tcx>,
+    given: bool,
     drops: impl Fn(Ty<'tcx>) -> bool,
 ) -> Option<Ty<'tcx>> {
-    // A flatten, of whatever source: its own forms never step from the back.
-    if flattened_source(tcx, adapter).is_some() {
+    // A flatten, of whatever source: its own forms never step from the back;
+    // and a chain a function gives behind an `impl`, whose caller can't
+    // make it knowing its back.
+    if flattened_source(tcx, adapter).is_some() || given && chained_sources(tcx, adapter).is_some() {
         return Some(tcx.erase_and_anonymize_regions(adapter));
     }
     let source = mapped_source(tcx, adapter)
         .or_else(|| filtered_source(tcx, adapter))?
         .peel_refs();
-    let native = recognition.array_source(source).is_some() && !dropping_items(recognition, adapter, &drops);
+    let native = !given && recognition.array_source(source).is_some() && !dropping_items(recognition, adapter, &drops);
     (!native).then(|| tcx.erase_and_anonymize_regions(adapter))
 }
 

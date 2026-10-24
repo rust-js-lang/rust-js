@@ -74,5 +74,6 @@ const gone = delete o[key];
   a key, a statement and a value, run, before a read of what it deletes,
   and of a frozen object, which throws.
 - `test/js-object.test.ts`, "React's component stack frame is found as
-  upstream finds it": `delete _restoreProps.prototype.props;`.
+  upstream finds it": `delete prototype.props;`, its guard's field its
+  variable (ADR 0705).
 - Mutations `js-delete-read`, `delete-has-no-effects`.

@@ -89,3 +89,6 @@ generic iterator's value of an associated type, stay as they are: a JS
 iterator already, as `into_iter` or a dictionary gave it.
 `test/corpus/associated_into_iter.rs` steps them against native Rust.
 
+## Amended by
+
+[ADR 0715](0715-what-an-into-iterator-bound-is-given.md): what a type parameter bounded by `IntoIterator` is given is `iterable_items` of its argument, a `&mut` collection's handles among them, and a `&mut` range is stepped where it is.

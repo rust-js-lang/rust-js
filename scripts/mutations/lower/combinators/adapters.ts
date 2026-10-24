@@ -282,4 +282,20 @@ export const mutations: Mutation[] = [
     replace: "                let items = method(items, \"toArray\", Vec::new());\n                let f = next();\n",
     tests: ["test/corpus.test.ts", "-t", "^consumers_step_each.rs$"],
   },
+  {
+    name: "nth-own-by-drop",
+    breaks: "nth of what reaches the crate's own nth is its nth",
+    file: "src/lower/combinators/adapters.rs",
+    find: "            IterComb::Nth if self.recognition().nths_its_own(receiver_ty) => {",
+    replace: "            IterComb::Nth if false => {",
+    tests: ["test/corpus.test.ts", "-t", "^own_nth_through_adapters.rs$"],
+  },
+  {
+    name: "nth-own-unboxed",
+    breaks: "nth's Some(None) is boxed",
+    file: "src/lower/combinators/adapters.rs",
+    find: "Expr::call_helper(if boxed { \"$nthSome\" } else { \"$nth\" }, vec![items, next()])",
+    replace: "Expr::call_helper(\"$nth\", vec![items, next()])",
+    tests: ["test/corpus.test.ts", "-t", "^own_nth_through_adapters.rs$"],
+  },
 ];

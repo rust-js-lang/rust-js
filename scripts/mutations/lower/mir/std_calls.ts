@@ -174,7 +174,7 @@ export const mutations: Mutation[] = [
     "name": "mir-chars-as-str-refused",
     "breaks": "`c.as_str()` of a string's `chars()` from MIR is refused",
     "file": "src/lower/mir/std_calls.rs",
-    "find": "                if op == StepOp::AsStr\n",
+    "find": "                if matches!(op, StepOp::AsStr | StepOp::Offset)\n",
     "replace": "                if false\n",
     "tests": ["test/lowering-strings.test.ts", "-t", "the rest of a string's chars from MIR"]
   },
@@ -718,5 +718,29 @@ export const mutations: Mutation[] = [
     find: "                    true => self.sliced_in_units(items, (range, arg_tys[1]), span, out)?,",
     replace: "                    true => self.slice_range_values(op, items, (range, arg_tys[1]), span, out)?,",
     tests: ["test/lowering-string-places.test.ts", "-t", "stepped past"],
+  },
+  {
+    name: "drain-taken-unstepped",
+    breaks: "a string Drain steps where it knows where it is",
+    file: "src/lower/mir/std_calls.rs",
+    find: "StringEdit::Drain => taken.map(|chars| self.stepped_items(chars)),",
+    replace: "StringEdit::Drain => taken,",
+    tests: ["test/corpus.test.ts", "-t", "str_odds"],
+  },
+  {
+    name: "char-indices-as-str-pairs",
+    breaks: "CharIndices::as_str reads its [byte, char]s",
+    file: "src/lower/mir/std_calls.rs",
+    find: "StepOp::AsStr if self.recognition().is_char_indices(arg_tys[0].peel_refs()) => {",
+    replace: "StepOp::AsStr if false => {",
+    tests: ["test/corpus.test.ts", "-t", "str_odds"],
+  },
+  {
+    name: "given-chain-unmade",
+    breaks: "a chain stepped from its back is made $chainEnds where it's made",
+    file: "src/lower/mir/std_calls.rs",
+    find: "IterComb::Flatten | IterComb::FlatMap | IterComb::Chain)",
+    replace: "IterComb::Flatten | IterComb::FlatMap)",
+    tests: ["test/corpus.test.ts", "-t", "^returned_impl_ends.rs$"],
   },
 ];

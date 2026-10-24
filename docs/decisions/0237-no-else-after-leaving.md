@@ -69,3 +69,15 @@ return child;
   x = 1; } else if (b) { return; } else { .. }` keeps its chain, as
   ESLint's `no-else-return` allows; an `else` goes only where each arm
   before it leaves too.
+
+## Amendment: which `else` is a link is the walk's to say
+
+`unelsed` held the `else` lists of an `else if` chain as a set of their
+addresses, filled as the walk went from the outside in, and asked of each
+list as it came: right only while the walk visits a parent before its
+children and leaves each list where it is till then (a review,
+2026-10-24). The walk now says where each list is, `js::Slot`, an `if`'s
+`else` or another block (`statement_lists_in`,
+`each_item_slotted_block_mut`), and a link is an `else` whose one
+statement is an `if`. The JS is the same, byte for byte. Held by the
+mutations `else-if-links-unheld` and `else-slot-unsaid`.

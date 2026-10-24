@@ -41,8 +41,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// Start lowering `body`, as `nested` says it starts. Each body is
-    /// checked for what it drops (ADR 0098). A body that fails to start
-    /// leaves the state as it is: its whole item fails with it.
+    /// checked for what it drops (ADR 0098). One that fails to start leaves
+    /// the enclosing body's context as it was.
     fn enter_body(&mut self, body: &'a Body<'tcx>, owner: DefId, nested: Nested<'tcx>) -> R<Enclosing<'a, 'tcx>> {
         let frame = super::BodyFrame {
             thir: &body.thir,
@@ -72,19 +72,28 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }))
             }
         };
-        Ok(Enclosing {
-            frame,
-            drops: self.enter_body_drops(default_drops)?,
-            kind,
-        })
+        match self.enter_body_drops(default_drops) {
+            Ok(drops) => Ok(Enclosing { frame, drops, kind }),
+            Err(refused) => {
+                self.restore_enclosing(frame, kind);
+                Err(refused)
+            }
+        }
     }
 
     /// Finish the body `enter_body` started, and go back to the enclosing one:
     /// the drop functions it declares, for its top.
     fn leave_body(&mut self, enclosing: Enclosing<'a, 'tcx>) -> Vec<Stmt> {
         let hoisted = self.leave_body_drops(enclosing.drops);
-        self.frame = enclosing.frame;
-        match enclosing.kind {
+        self.restore_enclosing(enclosing.frame, enclosing.kind);
+        hoisted
+    }
+
+    /// The enclosing body's frame and context back, where `enter_body`
+    /// changed them: on leaving the body, or failing to start it.
+    fn restore_enclosing(&mut self, frame: super::BodyFrame<'a, 'tcx>, kind: EnclosingKind<'tcx>) {
+        self.frame = frame;
+        match kind {
             EnclosingKind::Closure { names } => {
                 self.names = names;
             }
@@ -101,7 +110,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 self.typing_env = typing_env;
             }
         }
-        hoisted
     }
 }
 

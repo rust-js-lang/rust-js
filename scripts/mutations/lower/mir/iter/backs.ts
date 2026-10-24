@@ -39,8 +39,8 @@ export const mutations: Mutation[] = [
     name: "mir-rev-of-kept-iterator-wrapped",
     breaks: "`rev()` of an iterator a variable holds wraps its `$iter` again, `it.toReversed()`, which throws",
     file: "src/lower/mir/iter/backs.rs",
-    find: "            Some(_) if matches!(receiver.kind, js::ExprKind::Var(_) | js::ExprKind::Member(..)) => {\n                Expr::call_helper(\"$rest\", vec![receiver])\n",
-    replace: "            Some(_) if false => {\n                Expr::call_helper(\"$rest\", vec![receiver])\n",
+    find: "                if matches!(receiver.kind, js::ExprKind::Var(_) | js::ExprKind::Member(..))\n",
+    replace: "                if false\n",
     tests: ["test/lowering-iterators.test.ts", "-t", "char ranges step by code point"]
   },
   {
@@ -202,8 +202,8 @@ export const mutations: Mutation[] = [
     name: "enumerate-ends-native",
     breaks: "generic code's `enumerate` of what knows its back is a JS helper, which doesn't",
     file: "src/lower/mir/iter/backs.rs",
-    find: "                if self.knows_its_back(output) || self.knows_its_length(output) || self.explicit_adapter(output) =>\n",
-    replace: "                if false =>\n",
+    find: "                if self.knows_its_back(output)\n                    || self.knows_its_length(output)\n",
+    replace: "                if false\n                    || false\n",
     tests: ["test/corpus.test.ts", "-t", "^fuse_enumerate_ends.rs$"],
   },
   {
@@ -235,8 +235,8 @@ export const mutations: Mutation[] = [
     name: "held-enumerate-native",
     breaks: "an `Enumerate` a struct holds is JS's `map((x, i) => [i, x])`, which keeps no source nor count",
     file: "src/lower/mir/iter/backs.rs",
-    find: "                if self.knows_its_back(output) || self.knows_its_length(output) || self.explicit_adapter(output) =>\n",
-    replace: "                if self.knows_its_back(output) || self.knows_its_length(output) =>\n",
+    find: "                    || self.explicit_adapter(output)\n                    || self.recognition().nths_its_own(output) =>",
+    replace: "                    || self.recognition().nths_its_own(output) =>",
     tests: ["test/corpus.test.ts", "-t", "^held_enumerate.rs$"],
   },
   {
@@ -286,5 +286,21 @@ export const mutations: Mutation[] = [
     find: "                let len = self.knows_its_length(iter_ty) || self.user_exact_size(iter_ty);\n",
     replace: "                let len = self.knows_its_length(iter_ty);\n",
     tests: ["test/corpus.test.ts", "-t", "^user_iterator_ends.rs$"],
+  },
+  {
+    name: "rev-of-returned-iter-unwrapped",
+    breaks: "what a function gives is reversed by what's left of it",
+    file: "src/lower/mir/iter/backs.rs",
+    find: "    matches!(&e.kind, js::ExprKind::Call(callee, _) if callee.helper_name().is_none())\n",
+    replace: "    false\n",
+    tests: ["test/corpus.test.ts", "-t", "^returned_slice_iters.rs$"],
+  },
+  {
+    name: "enumerate-of-own-nth-mapped",
+    breaks: "an enumerate of what reaches the crate's own nth is $enumerate",
+    file: "src/lower/mir/iter/backs.rs",
+    find: "                    || self.recognition().nths_its_own(output) =>",
+    replace: "                    || false =>",
+    tests: ["test/corpus.test.ts", "-t", "^own_nth_through_adapters.rs$"],
   },
 ];

@@ -40,40 +40,6 @@ pub(super) struct Named {
     pub(super) text: HashSet<String>,
 }
 
-/// A body tidied, once its parameters are taken apart: each run of
-/// statements a value's drop ends one `try { .. } finally { .. }` (ADR
-/// 0437), and what each statement's own `try` held apart, `let tmp; try {
-/// tmp = f(); } catch ..`, read as tidy reads any body, its stages that
-/// read temporaries in place run again (`stages::UNWOUND`, ADR 0705);
-/// then its temporaries named, its drop flags too; a shadow of a binding
-/// the program names read no more, that binding (ADR 0650); and a
-/// `String` appended to twice, once (ADR 0652).
-pub(super) fn named(
-    params: &[js::Pattern],
-    body: &mut Vec<Stmt>,
-    suggested: &HashMap<String, Vec<String>>,
-    locals: &Named,
-    hints: &Hints,
-) {
-    let mut scoped = false;
-    js::statement_lists(body, &mut |stmts| scoped |= unwinds::scoped_drops(stmts));
-    js::statement_lists(body, &mut unwinds::returned_through_finally);
-    if scoped {
-        for stage in stages::STAGES
-            .iter()
-            .filter(|stage| stages::UNWOUND.contains(&stage.name))
-        {
-            for pass in stage.passes {
-                (pass.run)(body, hints);
-            }
-        }
-    }
-    bindings::readable_temporaries(params, body, suggested);
-    flags::named_flags(body, hints.flags);
-    bindings::shadowed(params, body, &locals.user);
-    crate::lower::std_types::text::appended(body, &locals.text);
-}
-
 /// What MIR's lowering, and THIR, say of a body for tidying it.
 pub(super) struct Hints<'h> {
     /// The name of the function's return place.
@@ -117,6 +83,12 @@ pub(super) struct Hints<'h> {
     pub(super) fuse: Option<&'h str>,
     /// The pass to stop after, `--tidy-until`'s, `stage/pass`.
     pub(super) until: Option<&'h str>,
+    /// The function's parameters, which the `finish` stage takes apart.
+    pub(super) params: &'h std::cell::RefCell<Vec<js::Pattern>>,
+    /// The names MIR suggests of its temporaries, for `finish` to give.
+    pub(super) suggested: &'h HashMap<String, Vec<String>>,
+    /// The locals the program names, and its `String`s, by name.
+    pub(super) named: &'h Named,
 }
 
 /// `body`, tidied, by what `hints` say of it: each stage's passes in turn
@@ -203,7 +175,7 @@ fn shown_children(e: &mut Expr, booleans: &HashSet<String>) {
                     false => Expr::unary(UnaryOp::Not, Expr::unary(UnaryOp::Not, (**test).clone())),
                 };
                 *child = Expr {
-                    reads: false,
+                    known: js::Known::Nothing,
                     span: child.span,
                     kind: ExprKind::Binary(Op::And, Box::new(test), shown.clone()),
                 };
@@ -478,6 +450,110 @@ mod tests {
 
     fn call(f: &str) -> js::Stmt {
         StmtKind::Expr(Expr::call(Expr::var(f), Vec::new())).at(js::Span::NONE)
+    }
+
+    fn assign(x: &str, value: Expr) -> Stmt {
+        StmtKind::Assign(Expr::var(x), value).at(js::Span::NONE)
+    }
+
+    /// Two arms that assign one variable are one assignment of a
+    /// conditional; each reason they aren't, beside the case it refuses
+    /// (`branches::one_assignment`).
+    #[test]
+    fn one_assignment_of_two_arms() {
+        use super::branches::one_assignment;
+        let none = js::Span::NONE;
+        let one = |then: Vec<Stmt>, otherwise: Vec<Stmt>, test: &Expr| {
+            one_assignment(test, (&then, &otherwise), none, ("_0", &[])).map(|one| one.target)
+        };
+        let c = Expr::var("c");
+        // Accepted: one variable, each arm a value.
+        assert_eq!(
+            one(vec![assign("x", Expr::num(1))], vec![assign("x", Expr::num(2))], &c),
+            Some("x".into())
+        );
+        // A test that does something is evaluated once either way.
+        let called = Expr::call(Expr::var("ready"), Vec::new());
+        assert!(
+            one(
+                vec![assign("x", Expr::num(1))],
+                vec![assign("x", Expr::num(2))],
+                &called
+            )
+            .is_some()
+        );
+        // Refused: two variables.
+        assert_eq!(
+            one(vec![assign("x", Expr::num(1))], vec![assign("y", Expr::num(2))], &c),
+            None
+        );
+        // Refused: an arm that does more than assign.
+        assert_eq!(
+            one(
+                vec![call("f"), assign("x", Expr::num(1))],
+                vec![assign("x", Expr::num(2))],
+                &c
+            ),
+            None
+        );
+        // Refused: each adding to it, as written, `x = x + 1`.
+        let add = |n| Expr::bin(Op::Add, Expr::var("x"), Expr::num(n));
+        assert_eq!(one(vec![assign("x", add(1))], vec![assign("x", add(2))], &c), None);
+        // Refused: an arm that's a conditional, of more branches, but of a temporary.
+        let cond = Expr::cond(Expr::var("d"), Expr::num(1), Expr::num(2));
+        assert_eq!(
+            one(vec![assign("x", cond.clone())], vec![assign("x", Expr::num(3))], &c),
+            None
+        );
+        assert!(one(vec![assign("_4", cond)], vec![assign("_4", Expr::num(3))], &c).is_some());
+        // Refused: the function's result where an arm gives nothing.
+        assert_eq!(
+            one(
+                vec![assign("_0", Expr::num(1))],
+                vec![assign("_0", Expr::undefined())],
+                &c
+            ),
+            None
+        );
+        // Refused: a `switch`'s arms, where the test is one's pattern (ADR 0629).
+        let at = js::Span { lo: 10, hi: 20 };
+        let switches = [super::super::hints::Switch {
+            span: js::Span { lo: 0, hi: 100 },
+            arms: vec![super::super::hints::SwitchArm {
+                span: at,
+                pattern: at,
+                guard: None,
+                constants: Vec::new(),
+            }],
+        }];
+        let then = [assign("x", Expr::num(1))];
+        let otherwise = [assign("x", Expr::num(2))];
+        assert!(one_assignment(&c, (&then, &otherwise), at, ("_0", &switches)).is_none());
+        assert!(one_assignment(&c, (&then, &otherwise), none, ("_0", &switches)).is_some());
+    }
+
+    /// What finishes a body, after the stages that tidy it, in the order it
+    /// ran when it was a function of its own, `named`: the last passes
+    /// `--tidy-until` may stop after, and the contracts checked after them
+    /// (ADR 0659, amended).
+    #[test]
+    fn finish_is_the_last_stage_in_its_order() {
+        let names = super::pass_names();
+        let finish: Vec<&str> = names.iter().filter_map(|n| n.strip_prefix("finish/")).collect();
+        assert_eq!(
+            finish,
+            [
+                "parameters",
+                "temporaries named",
+                "flags named",
+                "drop scopes",
+                "declarations",
+                "returns through finally",
+                "shadows",
+                "appends",
+            ]
+        );
+        assert!(names.last().is_some_and(|n| n == "finish/appends"));
     }
 
     fn present(x: &str) -> Expr {

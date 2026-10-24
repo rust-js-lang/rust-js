@@ -128,6 +128,17 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             && self.tcx.item_name(adt.did()).as_str() == "Chars")
     }
 
+    /// A string's `drain(range)`, the `char`s it took out, which steps as
+    /// `chars()`' do, an array of them (#118).
+    pub(in crate::lower) fn is_string_drain(&self, ty: Ty<'tcx>) -> bool {
+        matches!(ty.kind(), ty::Adt(adt, _) if std_path(self.tcx, adt.did()) == "std::string::Drain")
+    }
+
+    /// A string's `char_indices()`, an array of `[byte, char]` (#118).
+    pub(in crate::lower) fn is_char_indices(&self, ty: Ty<'tcx>) -> bool {
+        matches!(ty.kind(), ty::Adt(adt, _) if std_path(self.tcx, adt.did()) == "std::str::CharIndices")
+    }
+
     /// A string's `bytes()`, an array of its UTF-8 bytes (ADR 0034).
     pub(in crate::lower) fn is_str_bytes(&self, ty: Ty<'tcx>) -> bool {
         matches!(ty.kind(), ty::Adt(adt, _) if self.tcx.crate_name(adt.did().krate) == sym::core

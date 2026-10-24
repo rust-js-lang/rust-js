@@ -10,6 +10,13 @@
 // through them does too, `reduce` (`sum`, `count`, `fold`), `forEach`, a
 // `map`'s, a `filter`'s or a `flatMap`'s fold, and `drop`'s (`skip`'s)
 // first step (#162).
+//
+// Its `tryFold` is std's `try_fold`, which no crate's iterator writes (its
+// `Try` is unstable), but std's adapters do: what stops early, `some`
+// (`any`), `every` (`all`), `find`, `$position` and `try_fold`'s helpers,
+// asks it, and a `map`, a `take` and a `flatMap` pass it to their source,
+// and a `filter` steps its source's `find`, as std's do, so a `drop`'s is
+// std's `Skip`'s: its source's `nth(n - 1)`, then its source's `tryFold`.
 class $Steps extends Iterator {
   constructor(next, close) {
     super();
@@ -32,6 +39,35 @@ class $Steps extends Iterator {
       if (step.done) return step;
     }
     return this.next();
+  }
+  // Std's `try_fold`: `f` of each item, given what it gave, until `broke`
+  // says what it gave stops it, as `?` would, which it gives back.
+  tryFold(init, f, broke) {
+    let folded = init;
+    for (let step = this.next(); !step.done; step = this.next()) {
+      folded = f(folded, step.value);
+      if (broke(folded)) return folded;
+    }
+    return folded;
+  }
+  some(found) {
+    let i = 0;
+    const some = this.tryFold(false, (_, x) => found(x, i++), (hit) => hit);
+    if (some) this.return();
+    return some;
+  }
+  every(holds) {
+    let i = 0;
+    const every = this.tryFold(true, (_, x) => holds(x, i++), (held) => !held);
+    if (!every) this.return();
+    return every;
+  }
+  find(found) {
+    let i = 0;
+    let item;
+    const hit = this.tryFold(false, (_, x) => found(x, i++) && ((item = x), true), (hit) => hit);
+    if (hit) this.return();
+    return item;
   }
   reduce(f, ...init) {
     let i = 0;
@@ -58,16 +94,19 @@ class $Steps extends Iterator {
     );
     // Std's `Map::fold`, its source's of each mapped.
     mapped.fold = (init, g) => this.fold(init, (a, x) => g(a, f(x, i++)));
+    mapped.tryFold = (init, g, broke) => this.tryFold(init, (a, x) => g(a, f(x, i++)), broke);
+    // Std's `Map::size_hint`, its source's.
+    mapped.hint = () => $sizeHint(this);
     return mapped;
   }
   filter(keep) {
     let i = 0;
+    // Each step, std's `Filter::next`, its source's `find`, a `try_fold`.
     const kept = new $Steps(
       () => {
-        for (;;) {
-          const step = this.next();
-          if (step.done || keep(step.value, i++)) return step;
-        }
+        let item;
+        const found = this.tryFold(false, (_, x) => keep(x, i++) && ((item = x), true), (found) => found);
+        return found ? { done: false, value: item } : { done: true, value: undefined };
       },
       () => this.return(),
     );
@@ -113,11 +152,34 @@ class $Steps extends Iterator {
       ended = true;
       return this.fold(folded, (a, x) => Iterator.from(f(x, i++)).reduce(g, a));
     };
+    // Its `try_fold`, std's: the rest of the one it's in, then its source's
+    // of each one's, the one it stops in kept for its next step.
+    flat.tryFold = (init, g, broke) => {
+      let folded = init;
+      if (inner !== undefined) {
+        folded = $lent(inner).tryFold(folded, g, broke);
+        if (broke(folded)) return folded;
+        inner = undefined;
+      }
+      if (ended) return folded;
+      folded = this.tryFold(
+        folded,
+        (a, x) => {
+          inner = Iterator.from(f(x, i++));
+          const made = $lent(inner).tryFold(a, g, broke);
+          if (!broke(made)) inner = undefined;
+          return made;
+        },
+        broke,
+      );
+      if (!broke(folded)) ended = true;
+      return folded;
+    };
     return flat;
   }
   // Std's `Take`: each of its `n` steps steps its source, a `None` too.
   take(n) {
-    return new $Steps(
+    const taken = new $Steps(
       () => {
         if (n === 0) return this.return();
         n--;
@@ -125,10 +187,37 @@ class $Steps extends Iterator {
       },
       () => this.return(),
     );
+    // Its `nth(k)`, std's: its source's, where it has more than `k` left;
+    // else its source's past what it has left, and done.
+    taken.nth = (k) => {
+      if (n > k) {
+        n -= k + 1;
+        return this.nth(k);
+      }
+      if (n > 0) this.nth(n - 1);
+      n = 0;
+      return this.return();
+    };
+    // Its `try_fold`, std's: its source's, stopped once it's taken `n`.
+    taken.tryFold = (init, g, broke) => {
+      if (n === 0) return init;
+      let full = false;
+      return this.tryFold(
+        init,
+        (a, x) => {
+          n--;
+          full = n === 0;
+          return g(a, x);
+        },
+        (a) => full || broke(a),
+      );
+    };
+    return taken;
   }
   // Std's `Skip`: its first step is its source's `nth(n)`, which stops at a
-  // `None`, and gives it; each after is its source's. Its fold, the source's
-  // after its `nth(n - 1)`.
+  // `None`, and gives it; each after is its source's. Its fold and its
+  // `try_fold`, the source's after its `nth(n - 1)`; its `nth(k)`, its
+  // source's `nth(n + k)`.
   drop(n) {
     const skipped = new $Steps(
       () => {
@@ -146,6 +235,19 @@ class $Steps extends Iterator {
         if (this.nth(k - 1).done) return init;
       }
       return this.fold(init, g);
+    };
+    skipped.tryFold = (init, g, broke) => {
+      if (n > 0) {
+        const k = n;
+        n = 0;
+        if (this.nth(k - 1).done) return init;
+      }
+      return this.tryFold(init, g, broke);
+    };
+    skipped.nth = (k) => {
+      const skip = n;
+      n = 0;
+      return this.nth(skip + k);
     };
     return skipped;
   }

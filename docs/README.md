@@ -99,8 +99,8 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0057 `PartialOrd` and `Ord`: an `Ordering`, and the parts in turn](decisions/0057-ordering.md) *(amended by 0687: `max()` and the rest step their iterator as each comes)*
 - [0058 Format options, where Rust applies them](decisions/0058-format-options.md)
 - [0059 `HashMap` is a JS `Map`, `HashSet` a `Set`, keyed by value](decisions/0059-hashmap.md)
-- [0060 `{:?}` by the type, and a derived `Debug` is a function](decisions/0060-debug.md)
-- [0061 `impl Iterator` is the type it hides; a generic iterator is any JS iterable](decisions/0061-generic-iterators.md)
+- [0060 `{:?}` by the type, and a derived `Debug` is a function](decisions/0060-debug.md) *(amended: a pair upcast where it's made by a call, held once)*
+- [0061 `impl Iterator` is the type it hides; a generic iterator is any JS iterable](decisions/0061-generic-iterators.md) *(amended by 0715: what an `IntoIterator` bound is given is its items)*
 - [0062 Combinators and adapters: the closure's body in place](decisions/0062-combinators.md)
 - [0063 `char`'s questions are Unicode regular expressions; `parse` is a `Result` of Rust's message](decisions/0063-text.md)
 - [0064 Numbers' methods are `Math`'s, where JS agrees; operators call their impl](decisions/0064-numbers.md)
@@ -231,7 +231,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0159 A type's own `FromStr` is what `parse` calls](decisions/0159-user-from-str.md)
 - [0160 A collection of the crate's: its own `IntoIterator`, `FromIterator`, `Extend`, `Sum` and `Product`](decisions/0160-user-collections.md)
 - [0161 `T: FromStr` in generic code: a dictionary, std's or the crate's](decisions/0161-generic-from-str.md)
-- [0162 `AsRef` and `AsMut` in generic code: a dictionary, the value itself for std's](decisions/0162-generic-as-ref.md)
+- [0162 `AsRef` and `AsMut` in generic code: a dictionary, the value itself for std's](decisions/0162-generic-as-ref.md) *(amended by 0714: a reference's, and a path's as a `Path`)*
 - [0163 A trait's generic method is given drops for its own type parameters, as its trait declares them](decisions/0163-trait-method-drops.md)
 - [0164 An iterator of the crate's from both ends, and of a known length](decisions/0164-double-ended-iterators.md)
 - [0165 `{:x}`, `{:e}` and `{:p}` of the crate's types call its own impls](decisions/0165-other-fmt-traits.md)
@@ -239,7 +239,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0167 `Borrow`: a dictionary, the value itself for std's](decisions/0167-borrow.md)
 - [0168 A type's own `Hash` is allowed, and never lowered](decisions/0168-user-hash.md)
 - [0169 A type's own `AsMut` and `BorrowMut`, called on the type](decisions/0169-user-as-mut.md)
-- [0170 `size_hint()` where its answer is known](decisions/0170-size-hint.md)
+- [0170 `size_hint()` where its answer is known](decisions/0170-size-hint.md) *(amended: a `map` of the crate's iterator passes its hint on)*
 - [0171 An `i128` or a `u128` is a BigInt, wrapped to 128 bits](decisions/0171-128-bit-integers.md)
 - [0172 Bytes to text, as Rust validates UTF-8](decisions/0172-utf8-decoding.md)
 - [0173 A path is its text](decisions/0173-paths-as-text.md)
@@ -259,7 +259,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0187 A writer's `Err(fmt::Error)` is thrown, with what it wrote, and each consumer takes it as std's does](decisions/0187-fmt-error.md)
 - [0188 A `Duration` is its nanoseconds, a BigInt](decisions/0188-duration.md)
 - [0189 `panic!("{}", x)`, a slice into an array, and `into_iter()` of the crate's iterator](decisions/0189-panic-display-slice-arrays.md)
-- [0190 Generic code may take no destructor of a type parameter, and its callers are checked](decisions/0190-generic-no-destructor.md)
+- [0190 Generic code may take no destructor of a type parameter, and its callers are checked](decisions/0190-generic-no-destructor.md) *(amended by 0712: what a function finds is returned with it)*
 - [0191 An or-pattern's moves, an arm's temporaries, and `Box::from` of a `&str`](decisions/0191-or-patterns-arm-temporaries-boxed-str.md)
 - [0192 A Next.js app's routes and components in Rust, beside its JS](decisions/0192-next.md)
 - [0193 `Some` of a unit variant is tested as the variant](decisions/0193-some-of-a-unit-variant.md)
@@ -306,7 +306,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0234 A component of an element's props is an `ElementType`, rendered as a tag](decisions/0234-element-type.md)
 - [0235 A child shown only if a test holds is `test && child`, where the test can't render](decisions/0235-children-shown-if.md)
 - [0236 What JSX makes is `JSX::Element`, TypeScript's `JSX.Element`](decisions/0236-jsx-element.md)
-- [0237 An `if` whose branch leaves has no `else`](decisions/0237-no-else-after-leaving.md) *(amended by 0683: an `else if` of an arm that goes on stays one)*
+- [0237 An `if` whose branch leaves has no `else`](decisions/0237-no-else-after-leaving.md) *(amended by 0683: an `else if` of an arm that goes on stays one; amended: which `else` is a link is the walk's to say)*
 - [0238 A value kept for good is the value; children are kept as JS values](decisions/0238-kept-values-and-children.md)
 - [0239 A local of a component's function type is that component as a tag](decisions/0239-local-components.md)
 - [0240 A `pub use` of another module's function is re-exported from it](decisions/0240-reexports.md)
@@ -369,7 +369,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0297 A closure a `let` names for a hook is the hook's named function](decisions/0297-named-hook-functions.md)
 - [0298 An Option of a value never falsy is tested by its truth](decisions/0298-truthy-options.md)
 - [0299 A return of `undefined` is a bare `return;`](decisions/0299-bare-return.md)
-- [0300 A function takes the drops its body uses](decisions/0300-drops-by-need.md)
+- [0300 A function takes the drops its body uses](decisions/0300-drops-by-need.md) *(amended by 0712: what a function finds is returned with it)*
 - [0301 A read that can't throw comes before a move](decisions/0301-reads-that-cannot-throw.md)
 - [0302 An `f64` known to be a whole number in range is cast as it is](decisions/0302-whole-number-casts.md)
 - [0303 Top-level statements that span lines are set apart](decisions/0303-blank-lines.md)
@@ -591,7 +591,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0656 An event's `emit` arguments are what TypeScript's `emit` takes](decisions/0656-an-events-emit-arguments-are-typescripts-emits.md)
 - [0657 An `if` of one value each, a function's too, is a conditional](decisions/0657-an-if-of-one-value-each-is-a-conditional.md) *(amended by 0658: a branch with a comment too)*
 - [0658 A comment before a branch's value is before it in the conditional](decisions/0658-a-comment-before-a-branchs-value-is-before-it-in-the-conditional.md)
-- [0659 Tidy is a list of stages, each with what it leaves a body with](decisions/0659-tidy-is-a-list-of-stages-with-contracts.md)
+- [0659 Tidy is a list of stages, each with what it leaves a body with](decisions/0659-tidy-is-a-list-of-stages-with-contracts.md) *(amended: what finishes a body is a stage too)*
 - [0660 `catch_unwind` catches what JS throws, a panic among it](decisions/0660-catch-unwind-catches-what-js-throws.md) *(amended by 0691: a payload drops nothing where no `dyn Any` does; 0692: a thrown `Error` is a `&JsError` too; 0706: what's caught read as it was thrown)*
 - [0664 A function's last slice marked `#[rust_js::rest]` is JS's rest parameter](decisions/0664-a-functions-rest-slice-is-jss-rest-parameter.md)
 - [0666 The js crate binds `Object`'s reflection, a descriptor a dictionary](decisions/0666-the-js-crate-binds-objects-reflection.md)
@@ -603,7 +603,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0669 An adapter steps its source as std's does](decisions/0669-an-adapter-steps-its-source-as-stds-does.md) *(amended by 0687: and gives the crate's own `fold` and `nth` on)*
 - [0670 A tree's writes have one owner, and its walks one definition](decisions/0670-a-trees-writes-have-one-owner.md)
 - [0671 A nested body is lowered in one call](decisions/0671-a-nested-body-is-lowered-in-one-call.md)
-- [0672 A property a chain tests and binds is read once](decisions/0672-a-property-a-test-reads-is-read-once.md) *(amended by 0701: a read nothing after reads is gone)*
+- [0672 A property a chain tests and binds is read once](decisions/0672-a-property-a-test-reads-is-read-once.md) *(amended by 0701: a read nothing after reads is gone; amended: the read says it's a getter's, `js::Known`)*
 - [0676 `js::Kind` tells `undefined` and `null`](decisions/0676-kind-tells-undefined-and-null.md)
 - [0677 A weak collection's key is what `js::Kind` holds](decisions/0677-a-weak-key-is-what-kind-holds.md)
 - [0678 A parameter's leading `_` isn't in its JS name](decisions/0678-a-parameters-underscore-isnt-its-js-name.md)
@@ -611,10 +611,10 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0684 A `continue` the program wrote is where it wrote it, with its comment](decisions/0684-a-continue-the-program-wrote-is-where-it-wrote-it.md)
 - [0685 A `let` a loop's body declares is in it, set in a block MIR made](decisions/0685-a-let-a-loops-body-declares-is-in-it.md)
 - [0686 The stack trace hook's type is named, `js_error::PrepareStackTrace<R>`](decisions/0686-the-stack-trace-hooks-type-is-named.md)
-- [0687 A consumer steps its iterator as std's does, through the crate's own `fold` and `nth`](decisions/0687-a-consumer-steps-its-iterator-as-std-does.md) *(amended by 0690: and one given as it is, by its dictionary)*
+- [0687 A consumer steps its iterator as std's does, through the crate's own `fold` and `nth`](decisions/0687-a-consumer-steps-its-iterator-as-std-does.md) *(amended by 0690: and one given as it is, by its dictionary; amended by 0711: and what stops early, by `try_fold`)*
 - [0688 A `Result`'s JS, and an enum's, has one owner, `js::result` and `js`](decisions/0688-a-results-js-has-one-owner.md)
-- [0689 A move's decision is apart from the move: `moved` says where and why, `inlined` applies it](decisions/0689-a-moves-decision-is-apart-from-the-move.md)
-- [0690 An iterator given as it is folds by its own `fold`, and drops once](decisions/0690-an-iterator-given-as-it-is-folds-by-its-own-fold.md)
+- [0689 A move's decision is apart from the move: `moved` says where and why, `inlined` applies it](decisions/0689-a-moves-decision-is-apart-from-the-move.md) *(amended: two arms as one assignment, decided apart too, `one_assignment`)*
+- [0690 An iterator given as it is folds by its own `fold`, and drops once](decisions/0690-an-iterator-given-as-it-is-folds-by-its-own-fold.md) *(amended by 0711: `try_fold` passed on as its `fold` is)*
 - [0691 A `dyn Any` drops where the crate makes one of what drops](decisions/0691-a-dyn-any-drops-where-the-crate-makes-one-that-does.md)
 - [0692 A thrown `Error` is a panic's message and what JS threw, both](decisions/0692-a-thrown-error-is-a-panic-and-what-js-threw.md) *(amended by 0706: its `&JsError` of a `try` of panics alone is the `Error`, and resumed is `throw` of it; 0710: every payload's `&JsError` is what was thrown)*
 - [0693 A guard's scope is one `finally`, its `if`s, loops and `return`s in it](decisions/0693-a-guards-scope-is-one-finally-its-returns-in-it.md) *(amended by 0705: read as any body, its guard's fields its variables)*
@@ -634,6 +634,11 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0708 A comment before an argument, or a field, is before it](decisions/0708-a-comment-before-an-argument-is-before-it.md)
 - [0709 A signed counter below a length stays below it, past its loop and through its `as`](decisions/0709-a-signed-counter-below-a-length-stays-below-it.md)
 - [0710 Every unwind's payload downcasts as the `&JsError` thrown](decisions/0710-every-unwinds-payload-is-the-js-error-thrown.md) *(amended: what's given its `Some`'s value, `and_then`'s closure, is given it)*
+- [0711 What stops early steps by `try_fold`, and `nth` is passed on, as std's adapters route them](decisions/0711-what-stops-early-steps-by-try-fold.md)
+- [0712 What lowering a function finds of drops is returned with it](decisions/0712-what-lowering-finds-of-drops-is-returned-with-it.md)
+- [0713 Lowering's hidden contracts, held where they're relied on](decisions/0713-lowerings-hidden-contracts-held.md)
+- [0714 A reference given to generic code is what it refers to](decisions/0714-a-reference-given-to-generic-code.md)
+- [0715 What an `IntoIterator` bound is given is its items, as JS steps them](decisions/0715-what-an-into-iterator-bound-is-given.md)
 - [0436 Every `dyn` that's a pair keeps its value's drop, `dyn Send` too](decisions/0436-every-dyn-keeps-its-drop.md) *(amended by 0691: a `dyn Any` drops where the crate makes one of what drops)*
 - [0437 A scope's drops on a panic are one `try { .. } finally { .. }`](decisions/0437-a-scopes-drops-are-one-finally.md) *(amended by 0693: its `if`s, loops and `return`s in it)*
 - [0438 An optional prop is given `Some(..)`, or left out](decisions/0438-an-optional-prop-is-given-some.md)
@@ -654,7 +659,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0453 `{:?}` of a slice's iterator is what's left of it](decisions/0453-a-slice-iterators-debug.md)
 - [0454 A `&mut` given as a type parameter's value is a box](decisions/0454-a-mut-given-as-a-type-parameter.md)
 - [0455 `nth_back`, `rfold` and `rfind` step from the back](decisions/0455-stepping-from-the-back.md)
-- [0456 A generic `ExactSizeIterator` knows its length](decisions/0456-a-generic-exact-size-iterator.md)
+- [0456 A generic `ExactSizeIterator` knows its length](decisions/0456-a-generic-exact-size-iterator.md) *(amended: `rposition` of what `as_exact_size` makes knowing both)*
 - [0457 An `IntoIterator` bound on a reference is given its dictionary](decisions/0457-an-into-iterator-bound-on-a-reference.md)
 - [0458 `try_fold` stops at the first `None` or `Err`, leaving the rest to step](decisions/0458-try-fold.md)
 - [0459 A hand-written `Serialize` or `Deserialize` is its body, over the JSON codec](decisions/0459-hand-written-serde-impls.md)
@@ -726,7 +731,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0525 A cloned `map` or `filter` is made again](decisions/0525-a-cloned-map-is-made-again.md)
 - [0526 A `filter` steps from its back](decisions/0526-a-filter-steps-from-its-back.md)
 - [0527 An associated iterator steps its impl's parameter](decisions/0527-an-associated-iterator-steps-its-impls-parameter.md)
-- [0528 A `fuse` and an `enumerate` from either end, and what an `IntoIterator` gives](decisions/0528-fuse-and-enumerate-from-either-end.md) *(superseded in part by 0566)*
+- [0528 A `fuse` and an `enumerate` from either end, and what an `IntoIterator` gives](decisions/0528-fuse-and-enumerate-from-either-end.md) *(superseded in part by 0566; amended: an `enumerate` of an array's items, held or given, from its back; amended by 0715: a `&mut` range stepped where it is)*
 - [0529 A shipped crate is qualified, and memchr's searches are JS's](decisions/0529-a-shipped-memchr-searches-bytes.md)
 - [0530 std's iterators of arrays, and a `rev`, clone where they are](decisions/0530-std-iterators-of-arrays-clone-where-they-are.md)
 - [0531 `try_rfold` is `try_fold` from the back](decisions/0531-try-rfold.md)
@@ -743,7 +748,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0542 An adapter a struct holds keeps its source and its state](decisions/0542-a-held-adapter-keeps-its-source-and-state.md)
 - [0543 A `Peekable` a struct holds keeps what it peeked at](decisions/0543-a-held-peekable-keeps-what-it-peeked-at.md) *(superseded in part by 0561)*
 - [0544 A `Cycle` a struct holds keeps both it cycles](decisions/0544-a-held-cycle-keeps-both-it-cycles.md)
-- [0545 A map the crate steps from its back is made knowing it](decisions/0545-a-map-stepped-from-its-back-is-made-knowing-it.md)
+- [0545 A map the crate steps from its back is made knowing it](decisions/0545-a-map-stepped-from-its-back-is-made-knowing-it.md) *(amended: what a function gives behind an `impl DoubleEndedIterator`)*
 - [0546 A declaration names a function as its JS does](decisions/0546-a-declaration-names-a-function-as-its-js-does.md)
 - [0547 A `copied()` of an iterator with a destructor drops it](decisions/0547-a-copied-iterator-with-a-destructor-is-closed.md)
 - [0548 A library's manifest says which type parameters it steps](decisions/0548-a-librarys-manifest-says-which-parameters-it-steps.md)

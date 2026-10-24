@@ -9,6 +9,7 @@ import {
   $iterator,
   $parseBig,
   $rangeInclusiveNext,
+  $some,
   $tryFoldOk,
   $tryFoldSome,
 } from "@rust-js/runtime";
@@ -83,5 +84,8 @@ function main() {
   const louds = [[1], [2], [10], [3]];
   const value$4 = sumBelow($iter(louds), 5, $dropEach(loudDrop_drop));
   console.log(`${value$4 == null ? "None" : `Some(${value$4})`}`);
+  const none = [];
+  const value$5 = $tryFoldSome($iter(none), undefined, (_, x) => $some(undefined));
+  console.log(`${value$5 == null ? "None" : "Some(())"}`);
 }
 //# sourceMappingURL=case.js.map

@@ -146,4 +146,12 @@ export const mutations: Mutation[] = [
     replace: "  const n = (number) => String(number);\n",
     tests: ["test/corpus.test.ts", "-t", "^format_options_reached.rs$"],
   },
+  {
+    name: "encode-char-utf16-unwritten",
+    breaks: "encode_utf16 writes its units into buf",
+    file: "src/runtime/utf8.js",
+    find: "for (let i = 0; i < c.length; i++) buf[i] = c.charCodeAt(i);",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "str_odds"],
+  },
 ];

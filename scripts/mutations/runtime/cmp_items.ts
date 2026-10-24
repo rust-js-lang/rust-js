@@ -18,4 +18,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^adapter_drops.rs$"],
   },
+  {
+    name: "iter-eq-by-next",
+    breaks: "eq steps its left side by tryFold",
+    file: "src/runtime/cmp_items.js",
+    find: "    const stopped = $lent(x).tryFold(",
+    replace: "    const stopped = new $Steps(() => x.next()).tryFold(",
+    tests: ["test/corpus.test.ts", "-t", "skip_try_fold"],
+  },
 ];

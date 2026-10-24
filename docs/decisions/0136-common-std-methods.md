@@ -73,3 +73,29 @@ by its `Ord`'s `cmp`. Bounds the wrong way round panic as `Ord`'s default
 does, `assertion failed: min <= max`, and of a `char`, as its own `clamp`
 does, showing them: `min > max. min = 'k', max = 'a'`. Held by
 `test/corpus/clamp_ord.rs` and `test/corpus/clamp_char_bounds.rs`.
+
+## Amendment (2026-10-24): strings' odds and ends
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): R, results change; each
+was refused (#118).
+
+- **`fmt::Error`'s `{}`** is std's text, "an error occurred when formatting
+  an argument".
+- **A `ParseIntError`'s `clone()`** is itself: what it's made of never
+  changes, as a path's text doesn't.
+- **`Chars`' `{:?}`** is `Chars(['b', 'c'])`, the `char`s it has left, as
+  std shows it. Its `{:#?}` stays refused.
+- **`CharIndices::offset()`** is where its next `char` starts, in UTF-8
+  bytes, or the string's length past its last: `$charIndicesOffset`. Its
+  `as_str()` is the text of the `char`s it has left: `$charIndicesStr`.
+- **`c.encode_utf16(&mut buf)`** writes its units at `buf`'s start and
+  gives the `&mut [u16]` of them, panicking with std's text where `buf` is
+  too short: `$encodeCharUtf16`.
+- **A string `Drain`** steps as `chars()` does: the `char`s it took out
+  are an `$iter`, so its `as_str()` is `$restStr` of what it has left, its
+  `next_back()` and `rev()` an array's, and its `{:?}` std's,
+  `Drain("bc")`. Its `{:#?}` stays refused, as `Chars`'.
+
+Held by `test/corpus/str_odds.rs` against native Rust, and the mutations
+of each file changed. `String::capacity` stays refused: what it gives is
+the allocator's.

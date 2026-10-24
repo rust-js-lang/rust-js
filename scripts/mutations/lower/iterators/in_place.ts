@@ -14,7 +14,7 @@ export const mutations: Mutation[] = [
     "name": "reads-by-name-alone",
     "breaks": "a call is judged to only read by its method's name alone: the crate's own `at`, `P.at(p)`, which prints, runs for every item before the next stage",
     "file": "src/lower/iterators/in_place.rs",
-    "find": "js::ExprKind::Member(_, name) => part.reads && READS.contains(&name.as_str()),",
+    "find": "js::ExprKind::Member(_, name) => part.known == js::Known::Read && READS.contains(&name.as_str()),",
     "replace": "js::ExprKind::Member(_, name) => READS.contains(&name.as_str()),",
     "tests": ["test/lowering-iterators.test.ts", "-t", "named as a slice's reader"]
   },

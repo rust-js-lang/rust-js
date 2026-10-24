@@ -414,7 +414,7 @@ pub(super) fn from_iterator(e: Expr) -> Result<Expr, Expr> {
             Ok(args.pop().expect("one"))
         }
         kind => Err(Expr {
-            reads: false,
+            known: js::Known::Nothing,
             kind,
             span: e.span,
         }),
@@ -479,7 +479,7 @@ pub(super) fn iterated(e: Expr) -> Expr {
             args.pop().expect("one")
         }
         kind => Expr {
-            reads: false,
+            known: js::Known::Nothing,
             kind,
             span: e.span,
         },
@@ -498,4 +498,36 @@ pub(super) fn fresh_iter_source(it: &Expr) -> Option<&Expr> {
 /// `$iter(items)`, `stepped_items`'s, where no `FnCx` is.
 pub(super) fn array_stepped(items: Expr) -> Expr {
     Expr::call(Expr::helper("$iter"), vec![items])
+}
+
+/// `it.enumerate()`: each item and its index, `(x, i) => [i, x]`, in
+/// place of which a callback that takes the pair apart is given each item
+/// and its index, of an array (`eager_chains`).
+pub(in crate::lower) fn enumerated(it: Expr) -> Expr {
+    Expr::call(Expr::member(it, "map"), vec![enumerating()])
+}
+
+/// `(x, i) => [i, x]`, what `enumerated` maps each item by.
+fn enumerating() -> Expr {
+    let pair = Expr::array(vec![Expr::var("i"), Expr::var("x")]);
+    Expr::arrow(
+        vec!["x".into(), "i".into()],
+        vec![StmtKind::Return(Some(pair)).at(js::Span::NONE)],
+    )
+}
+
+/// What `e`, an `enumerated` one, enumerates: `src` of `src.map((x, i) =>
+/// [i, x])`. The one reader of its form.
+pub(in crate::lower) fn enumeration_source(e: &Expr) -> Option<&Expr> {
+    match &e.kind {
+        js::ExprKind::Call(callee, args)
+            if let js::ExprKind::Member(source, method) = &callee.kind
+                && method == "map"
+                && args.len() == 1
+                && args[0] == enumerating() =>
+        {
+            Some(source)
+        }
+        _ => None,
+    }
 }

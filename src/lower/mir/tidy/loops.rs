@@ -273,7 +273,7 @@ pub(super) fn unarrayed(e: Expr) -> Expr {
             args.pop().expect("one")
         }
         kind => Expr {
-            reads: false,
+            known: js::Known::Nothing,
             kind,
             span: e.span,
         },

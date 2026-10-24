@@ -26,4 +26,12 @@ export const mutations: Mutation[] = [
       "rposition"
     ]
   },
+  {
+    name: "position-by-next",
+    breaks: "position is its iterator's tryFold",
+    file: "src/runtime/position.js",
+    find: "  const hit = $lent(items[Symbol.iterator]()).tryFold(",
+    replace: "  const hit = new $Steps((it => () => it.next())(items[Symbol.iterator]())).tryFold(",
+    tests: ["test/corpus.test.ts", "-t", "skip_try_fold"],
+  },
 ];

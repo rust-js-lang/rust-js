@@ -81,7 +81,9 @@ function $chainEnds(a, b) {
 // `it.step_by(step)`, as Rust's `StepBy` steps: its first item, then
 // each `step`th, a skip stopped by a `None`, which it gives, and stepped on
 // after, as std's `nth` is; each passed over dropped, `drop`, where items
-// have a destructor (ADR 0465). Closing it closes its source.
+// have a destructor (ADR 0465). Closing it closes its source. Its `nth`,
+// `fold` and `tryFold` are std's: its first item its source's `next`, then
+// each its source's `nth` (#182).
 function $stepBy(it, step, drop) {
   const skip = (k, by) => {
     // From the front, its source's `nth`, as std's `StepBy` steps it, the
@@ -104,6 +106,32 @@ function $stepBy(it, step, drop) {
   );
   stepped.first = true;
   stepped.skip = skip;
+  stepped.nth = (n) => {
+    if (stepped.first) {
+      stepped.first = false;
+      const head = it.next();
+      if (n === 0) return head;
+      if (!head.done) drop?.(head.value);
+      n -= 1;
+    }
+    return skip((n + 1) * step - 1, "next");
+  };
+  stepped.tryFold = (init, f, broke) => {
+    let folded = init;
+    if (stepped.first) {
+      stepped.first = false;
+      const head = it.next();
+      if (head.done) return folded;
+      folded = f(folded, head.value);
+      if (broke(folded)) return folded;
+    }
+    for (let at = skip(step - 1, "next"); !at.done; at = skip(step - 1, "next")) {
+      folded = f(folded, at.value);
+      if (broke(folded)) return folded;
+    }
+    return folded;
+  };
+  stepped.fold = (init, f) => stepped.tryFold(init, f, () => false);
   return stepped;
 }
 
@@ -160,6 +188,23 @@ function $enumerate(iter, count = 0) {
     return pair(enumerated.iter.back(), enumerated.count + left - 1);
   };
   enumerated.len = () => enumerated.iter.len();
+  // Std's `fold` and `try_fold`: its source's, each item counted.
+  if (iter.fold !== undefined) {
+    enumerated.fold = (init, f) => enumerated.iter.fold(init, (a, x) => f(a, [enumerated.count++, x]));
+  }
+  enumerated.tryFold = (init, f, broke) =>
+    $lent(enumerated.iter).tryFold(init, (a, x) => f(a, [enumerated.count++, x]), broke);
+  // Std's `nth(k)`: its source's, counted `k` more, the crate's own where
+  // it writes one (#182).
+  if (iter.nth !== undefined) {
+    enumerated.nth = (k) => {
+      const step = enumerated.iter.nth(k);
+      if (step.done) return step;
+      const at = enumerated.count + k;
+      enumerated.count = at + 1;
+      return { done: false, value: [at, step.value] };
+    };
+  }
   return enumerated;
 }
 

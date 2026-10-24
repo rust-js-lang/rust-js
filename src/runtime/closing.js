@@ -20,10 +20,18 @@ function $closing(it, drop) {
     return step;
   }, close);
   closing.back = () => it.back();
+  // Its `nth`, its iterator's, the crate's own where it writes one.
+  if (it.nth !== undefined) closing.nth = (k) => it.nth(k);
   closing.fold = (init, f) => {
     const folded = it.fold !== undefined ? it.fold(init, f) : it.reduce((a, x) => f(a, x), init);
     if (it.ownFold) closed = true;
     close();
+    return folded;
+  };
+  // Its `try_fold`, its iterator's, done with where it isn't stopped.
+  closing.tryFold = (init, f, broke) => {
+    const folded = $lent(it).tryFold(init, f, broke);
+    if (!broke(folded)) close();
     return folded;
   };
   return closing;

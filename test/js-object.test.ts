@@ -605,7 +605,7 @@ pub fn cached(r#fn: &dyn Fn() -> Option<&'static Unknown>, frame: String) -> Opt
   expect(js).toContain("Reflect.construct(Fake, []);");
   expect(js).toContain("Reflect.construct(fn, [], Fake);");
   expect(js).toContain("new fn();");
-  expect(js).toContain('delete _restoreProps.prototype.props;');
+  expect(js).toContain("delete prototype.props;");
   expect(js).toContain("const maybePromise = fn();");
   expect(js).toContain("maybePromise.catch(() => {});");
   // A class's constructor sets its props, which the setter throws of:

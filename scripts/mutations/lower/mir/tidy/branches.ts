@@ -62,8 +62,8 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-temporary-ternary-kept",
     breaks: "an `if` the program wrote as a value, of an element, stays a `let` assigned in branches, not a conditional child",
     file: "src/lower/mir/tidy/branches.rs",
-    find: "                    && ((small(yes) && small(no)) || is_temporary(x))\n",
-    replace: "                    && small(yes) && small(no)\n",
+    find: "        && ((small(yes) && small(no)) || is_temporary(x))\n",
+    replace: "        && small(yes) && small(no)\n",
     tests: ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"],
   },
   {
@@ -78,8 +78,8 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-let-else-return-nested",
     breaks: "a `let … else { return f }` stays `if (a) { if (b) { return t; } } return f;`, not a guard",
     file: "src/lower/mir/tidy/branches.rs",
-    find: "        && let Some((tests, body)) = returning_chain(std::slice::from_ref(last_if), getters)\n",
-    replace: "        && let Some((tests, body)) = returning_chain(std::slice::from_ref(last_if), getters).filter(|_| false)\n",
+    find: "        && let Some((tests, body)) = returning_chain(std::slice::from_ref(last_if))\n",
+    replace: "        && let Some((tests, body)) = returning_chain(std::slice::from_ref(last_if)).filter(|_| false)\n",
     tests: ["test/lowering-matches.test.ts", "-t", "let-else from MIR is a guard"],
   },
   {
@@ -231,8 +231,8 @@ export const mutations: Mutation[] = [
     "name": "or-branches-reversed",
     "breaks": "`if a || b { x } else { y }` from MIR is `!a && !b ? y : x`",
     "file": "src/lower/mir/tidy/branches.rs",
-    "find": "                    true => conditional(test.clone().negated_test(), no, yes, booleans),\n",
-    "replace": "                    true => conditional(test.clone(), yes.clone(), no.clone(), booleans),\n",
+    "find": "                    true => conditional(test.negated_test(), one.no, one.yes, booleans),\n",
+    "replace": "                    true => conditional(test, one.yes, one.no, booleans),\n",
     "tests": ["test/lowering-branches.test.ts", "-t", "an if of an or from MIR keeps its branches"]
   },
   {
@@ -255,8 +255,8 @@ export const mutations: Mutation[] = [
     "name": "mir-tidy-chain-first",
     "breaks": "a match's arms as values from MIR chain with the rest first, `variant !== \"foundation\" ? .. : [\"Foundation\", ..]`",
     "file": "src/lower/mir/tidy/branches.rs",
-    "find": "                    (false, true) => false,\n",
-    "replace": "                    (false, true) => true,\n",
+    "find": "        (false, true) => false,\n",
+    "replace": "        (false, true) => true,\n",
     "tests": ["test/lowering-matches.test.ts", "-t", "arms as values chain in written order"]
   },
   {
@@ -327,8 +327,8 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-updates-folded",
     breaks: "MIR's branches each adding to a variable are `x = c ? x + a : x + b`",
     file: "src/lower/mir/tidy/branches.rs",
-    find: "                    && !(updates(x, yes) && updates(x, no))\n",
-    replace: "                    && !(updates(x, yes) && updates(x, no) && false)\n",
+    find: "        && !(updates(x, yes) && updates(x, no))\n",
+    replace: "        && !(updates(x, yes) && updates(x, no) && false)\n",
     tests: ["test/lowering-branches.test.ts", "-t", "branches that each add"],
   },
   {
@@ -442,8 +442,8 @@ export const mutations: Mutation[] = [
     name: "switch-arms-folded",
     breaks: "a `match` of constants' arms of a value are folded into a `?:`, `const label = len === 0 ? 10 : ..`, not a `switch`",
     file: "src/lower/mir/tidy/branches.rs",
-    find: "                    && !switched(&test, span, switches) =>\n",
-    replace: "                    =>\n",
+    find: "        && !switched(test, span, switches);\n",
+    replace: "        ;\n",
     tests: ["test/lowering-matches.test.ts", "-t", "a match of constants is a switch"],
   },
   {

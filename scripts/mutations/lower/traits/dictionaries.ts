@@ -54,7 +54,7 @@ export const mutations: Mutation[] = [
     name: "std-as-ref-dictionary-missing",
     breaks: "`shout(\"hi\")` of an `S: AsRef<str>` has no dictionary for a `&str`'s",
     file: "src/lower/traits/dictionaries.rs",
-    find: "            && self.recognition().views_as_itself(ty, tr.args.type_at(1))\n        {\n            let same",
+    find: "            && self.recognition().as_ref_is_itself(ty, tr.args.type_at(1))\n        {\n            let same",
     replace: "            && false\n        {\n            let same",
     tests: ["test/corpus.test.ts", "-t", "generic_as_ref"],
   },
@@ -251,14 +251,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^into_iter_of_ref_param.rs$"],
   },
   {
-    name: "into-iter-items-unhandled",
-    breaks: "std's `IntoIterator` of a `&mut Vec` gives its items, not a handle on each, and what's written through one is lost",
-    file: "src/lower/traits/dictionaries.rs",
-    find: "                Mutability::Mut => self.item_handles_of(known, vec![given.clone()], pointee, span, &mut body)?,\n",
-    replace: "                Mutability::Mut => None,\n",
-    tests: ["test/corpus.test.ts", "-t", "^into_iter_of_ref_param.rs$"],
-  },
-  {
     name: "std-error-dictionary-not-found",
     breaks: "`e.source()` of a concrete `io::Error` asks for evidence of its `Error`, which nothing gives",
     file: "src/lower/traits/dictionaries.rs",
@@ -369,5 +361,13 @@ export const mutations: Mutation[] = [
     find: "            && !of_other\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^generic_other_type_compare.rs$"],
+  },
+  {
+    name: "reference-dictionary-unforwarded",
+    breaks: "a reference's dictionary through std's forwarding impl is its referent's",
+    file: "src/lower/traits/dictionaries.rs",
+    find: "        if let Some(referent) = self.forwarded_to_referent(tr, typing_env) {",
+    replace: "        if let Some(referent) = None::<ty::TraitRef<'tcx>> {",
+    tests: ["test/corpus.test.ts", "-t", "^references_given_to_generics.rs$"],
   },
 ];

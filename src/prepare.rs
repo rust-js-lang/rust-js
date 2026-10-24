@@ -29,8 +29,7 @@ pub fn module(module: &mut js::Module) {
             js::Item::Namespace(_) | js::Item::Function(_) => {}
         }
     }
-    let mut chained = HashSet::new();
-    js::each_item_block_mut(&mut module.items, &mut |stmts| unelsed(stmts, &mut chained));
+    js::each_item_slotted_block_mut(&mut module.items, &mut |stmts, slot| unelsed(stmts, slot));
     reclaim::module(module);
     compound(module);
     read_together(module);
@@ -269,11 +268,17 @@ fn assigned(stmts: &[Stmt], name: &str) -> Option<Vec<Stmt>> {
 /// an arm that goes on stays one, `if (a) { x = 1; } else if (b) { return;
 /// } else { .. }`: what's in its `else` would be the outer `else`'s, the
 /// chain broken, as ESLint's `no-else-return` allows it (ADR 0237,
-/// amended). `chained` holds each such `else`, as the lists are walked
-/// from the outside in: the `else` lists of the `if`s seen, by where they
-/// are, which nothing moves until they're walked.
-fn unelsed(stmts: &mut Vec<Stmt>, chained: &mut HashSet<*const Vec<Stmt>>) {
-    let link = chained.remove(&(stmts as *const Vec<Stmt>));
+/// amended). Which `else` that is the walk says, `slot`: an `else` whose
+/// one statement is an `if`, a link of a chain.
+fn unelsed(stmts: &mut Vec<Stmt>, slot: js::Slot) {
+    let link = slot == js::Slot::Else
+        && matches!(
+            stmts.as_slice(),
+            [Stmt {
+                kind: StmtKind::If(..),
+                ..
+            }]
+        );
     let mut i = 0;
     while i < stmts.len() {
         if let StmtKind::If(_, then, els @ Some(_)) = &mut stmts[i].kind
@@ -284,17 +289,6 @@ fn unelsed(stmts: &mut Vec<Stmt>, chained: &mut HashSet<*const Vec<Stmt>>) {
             stmts.splice(i + 1..i + 1, els);
         }
         i += 1;
-    }
-    for stmt in stmts.iter() {
-        if let StmtKind::If(_, _, Some(els)) = &stmt.kind
-            && let [
-                Stmt {
-                    kind: StmtKind::If(..), ..
-                },
-            ] = els.as_slice()
-        {
-            chained.insert(els as *const Vec<Stmt>);
-        }
     }
 }
 
@@ -432,7 +426,7 @@ fn imported(stmts: &mut [Stmt]) {
         stmt.kind = StmtKind::Destructure {
             pattern: js::Pattern::Object(vec![(export.clone(), js::Pattern::Name(name.clone()), None)], None),
             value: Expr {
-                reads: false,
+                known: js::Known::Nothing,
                 kind: ExprKind::Await(import.clone()),
                 span: value.span,
             },
@@ -1044,7 +1038,7 @@ fn entries_written_out(e: &Expr) -> Option<Expr> {
         fields.push(Prop::Field(key.clone(), value.clone()));
     }
     Some(Expr {
-        reads: false,
+        known: js::Known::Nothing,
         kind: ExprKind::Object(fields),
         span: e.span,
     })
@@ -1099,7 +1093,7 @@ fn expr(e: &mut Expr) {
         && matches!(&tested.kind, ExprKind::Var(name) if name == param)
     {
         *e = Expr {
-            reads: false,
+            known: js::Known::Nothing,
             kind: ExprKind::Var("Boolean".into()),
             span: e.span,
         };

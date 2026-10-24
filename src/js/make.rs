@@ -8,15 +8,24 @@ impl Expr {
         Expr {
             kind,
             span: Span::NONE,
-            reads: false,
+            known: Known::Nothing,
         }
     }
 
     /// `of.method(args)`, of a `str` or a slice `of` as Rust's types tell.
     pub fn read(of: Expr, method: &str, args: Vec<Expr>) -> Expr {
         Expr {
-            reads: true,
+            known: Known::Read,
             ..Expr::call(Expr::member(of, method), args)
+        }
+    }
+
+    /// This, a binding's read of a property, which a getter may answer
+    /// (`Known::Getter`).
+    pub fn answered_by_a_getter(self) -> Expr {
+        Expr {
+            known: Known::Getter,
+            ..self
         }
     }
 
@@ -441,7 +450,7 @@ impl Expr {
             kind => Expr::unary(
                 UnaryOp::Not,
                 Expr {
-                    reads: false,
+                    known: self.known,
                     kind,
                     span: self.span,
                 },
@@ -471,7 +480,7 @@ impl Expr {
                 _ => Op::LooseEq,
             };
             return Expr {
-                reads: false,
+                known: Known::Nothing,
                 kind: ExprKind::Binary(ne, a.clone(), b.clone()),
                 span: arg.span,
             };
@@ -505,6 +514,16 @@ impl Expr {
                 _ => {}
             }
         }
+        // And of `undefined` or `null` both, `None == null`, a test of an
+        // `Option` written out: `==` holds of them, `!=` doesn't.
+        let nothing = |e: &Expr| matches!(e.kind, ExprKind::Undefined | ExprKind::GivenUndefined | ExprKind::Null);
+        if nothing(&lhs) && nothing(&rhs) {
+            match op {
+                Op::LooseEq => return Expr::bool(true),
+                Op::LooseNe => return Expr::bool(false),
+                _ => {}
+            }
+        }
         // `0 || x` is `x`: `||` gives what's after a falsy number, an
         // ordering's `Equal` before the next part's. And of `true` or
         // `false` first, `&&` and `||` are what JS gives, never running
@@ -517,6 +536,25 @@ impl Expr {
                 (Op::And, true) | (Op::Or, false) => rhs,
                 _ => lhs,
             };
+        }
+        // And of `true` or `false` after a comparison, which is a `bool`:
+        // `a != null && true` is the comparison; `a != null && false` is
+        // `false`, where the comparison does nothing.
+        let compared = matches!(
+            lhs.kind,
+            ExprKind::Binary(
+                Op::Eq | Op::Ne | Op::LooseEq | Op::LooseNe | Op::Lt | Op::Le | Op::Gt | Op::Ge,
+                ..
+            ) | ExprKind::Unary(UnaryOp::Not, _)
+        );
+        if let (Op::And | Op::Or, ExprKind::Bool(second)) = (op, &rhs.kind)
+            && compared
+        {
+            match (op, *second) {
+                (Op::And, true) | (Op::Or, false) => return lhs,
+                _ if !lhs.has_effects() => return rhs,
+                _ => {}
+            }
         }
         // `a != null && !!a` is `!!a`: neither is truthy.
         if op == Op::And

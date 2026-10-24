@@ -201,14 +201,6 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
-    "name": "mir-temporaries-unnamed",
-    "breaks": "a temporary MIR holds is named `_4`, not after the call that made it",
-    "file": "src/lower/mir/tidy.rs",
-    "find": "    bindings::readable_temporaries(params, body, suggested);\n",
-    "replace": "",
-    "tests": ["test/lowering-names.test.ts", "-t", "held temporary is named"]
-  },
-  {
     name: "member-of-any-object-read-in-place",
     breaks: "a field of any object read in place is folded, a temporary's box on the left of `=` too, `42 = ..`, which the printer can't write",
     file: "src/lower/mir/tidy.rs",

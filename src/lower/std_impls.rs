@@ -74,12 +74,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ty::Adt(..) if self.is_map(ty) => true,
             // A counted `Rc`'s clone counts one more, and a `Weak`'s (ADR 0320).
             ty::Adt(..) if self.counted_rc(ty).is_some() || self.weak_of(ty).is_some() => true,
-            // A path is its text, which JS never changes in place (ADR 0173).
+            // A path is its text, which JS never changes in place (ADR 0173),
+            // and a parse error its message, or what it's made of, which
+            // nothing changes (#118).
             ty::Adt(..)
                 if self.is_rc(ty)
                     || self.is_lang_adt(ty, LangItem::String)
                     || self.recognition().is_path_like(ty)
-                    || self.is_js_object(ty) =>
+                    || self.is_js_object(ty)
+                    || self.is_parse_error(ty) =>
             {
                 false
             }

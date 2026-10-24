@@ -57,7 +57,9 @@ pub(crate) struct Build {
     /// lower, each from the MIR the toolchain ships (ADR 0561).
     pub std_bodies: bool,
     /// `--tidy-until <stage/pass>`: each body's JS as tidy leaves it after
-    /// that pass, to see what each pass does (ADR 0659).
+    /// that pass, to see what each pass does (ADR 0659): no pass after it
+    /// runs, `finish`'s naming and taking apart its parameters among them,
+    /// so what's printed is what that pass made.
     pub tidy_until: Option<String>,
     /// What's after `--`, rustc's as-is, e.g. `-- --sysroot /sysroot`.
     pub rustc: Vec<String>,

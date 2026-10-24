@@ -23,48 +23,28 @@ function main() {
   try {
     console.log(`a ${!a}`);
     const option = [3];
-    const value = option != null ? (undefined == null ? option : undefined) : undefined;
-    if (option != null && undefined != null) {
-      try {
-        loudDrop_drop(option);
-      } finally {
-        loudDrop_drop(undefined);
-      }
-    }
+    const value = option != null ? option : undefined;
     const b = value;
     try {
       const value = b?.[0];
       console.log(`b ${value == null ? "None" : `Some(${value})`}`);
       const other = [4];
-      const value$1 = undefined != null ? (other == null ? undefined : undefined) : other;
-      if (undefined != null && other != null) {
-        try {
-          loudDrop_drop(undefined);
-        } finally {
-          loudDrop_drop(other);
-        }
-      }
+      const value$1 = other;
       const c = value$1;
       try {
         const value = c?.[0];
         console.log(`c ${value == null ? "None" : `Some(${value})`}`);
         const option = [5];
-        const value$1 = option != null && undefined != null ? [option, undefined] : undefined;
-        if (option != null && undefined == null) {
+        const value$1 = undefined;
+        if (option != null) {
           loudDrop_drop(option);
-        }
-        if (option == null && undefined != null) {
-          loudDrop_drop(undefined);
         }
         const d = value$1;
         try {
           console.log(`d ${!d}`);
           const other = [6];
-          const value = undefined != null && other != null ? [undefined, other] : undefined;
-          if (undefined != null && other == null) {
-            loudDrop_drop(undefined);
-          }
-          if (undefined == null && other != null) {
+          const value = undefined;
+          if (other != null) {
             loudDrop_drop(other);
           }
           const e = value;

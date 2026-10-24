@@ -33,9 +33,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // A `$iter` of an array, `steps_an_array`'s, the one list (ADR 0530).
         let items = match self.steps_an_array(iter_ty).then_some(()) {
-            // One a variable or a field holds, its `$iter`, stepped or
-            // not: what's left of it.
-            Some(_) if matches!(receiver.kind, js::ExprKind::Var(_) | js::ExprKind::Member(..)) => {
+            // One a variable or a field holds, or a function gives, its
+            // `$iter` or its array, stepped or not: what's left of it.
+            Some(_)
+                if matches!(receiver.kind, js::ExprKind::Var(_) | js::ExprKind::Member(..))
+                    || given_by_a_call(&receiver) =>
+            {
                 Expr::call_helper("$rest", vec![receiver])
             }
             Some(_) => match self.std_iterator(receiver, iter_ty) {
@@ -186,7 +189,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // knowing its back, a generic one's given it where it's asked
             // (ADR 0542).
             Some(IterMethod::Enumerate)
-                if self.knows_its_back(output) || self.knows_its_length(output) || self.explicit_adapter(output) =>
+                if self.knows_its_back(output)
+                    || self.knows_its_length(output)
+                    || self.explicit_adapter(output)
+                    || self.recognition().nths_its_own(output) =>
             {
                 // Of the crate's, what it can be made to know.
                 let back = self.knows_its_back(iter_ty) || self.user_double_ended(iter_ty);
@@ -406,4 +412,13 @@ fn reversed_inward(e: &Expr) -> Option<Expr> {
         }
         _ => None,
     }
+}
+
+/// Whether `e` is what a function gives, the crate's own or a library's,
+/// not a helper's or an array made here: of a `slice::Iter`'s type, its
+/// `$iter` or an array, as it made it.
+fn given_by_a_call(e: &Expr) -> bool {
+    matches!(&e.kind, js::ExprKind::Call(callee, _) if callee.helper_name().is_none())
+        && !crate::lower::iterators::made_array(e)
+        && !crate::lower::iterators::is_js_iterator(e)
 }

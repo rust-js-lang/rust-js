@@ -138,10 +138,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// `it`, an iterator of type `iter_ty`, as a consumer std routes through
-    /// `fold` takes it: where that reaches the crate's own, `$folded(it)`,
-    /// its items as that gives them (#162); else `it`.
+    /// `fold` takes it: where that reaches the crate's own `fold` (#162), or
+    /// asks its `nth`, as a `skip`'s and a `step_by`'s does (#182),
+    /// `$folded(it)`, its items as that gives them; else `it`.
     pub(in crate::lower) fn by_its_fold(&self, it: Expr, iter_ty: Ty<'tcx>) -> Expr {
-        match self.recognition().folds_its_own(iter_ty) {
+        let recognition = self.recognition();
+        match recognition.folds_its_own(iter_ty) || recognition.folds_by_its_own_nth(iter_ty) {
             true => Expr::call_helper("$folded", vec![it]),
             false => it,
         }
@@ -253,14 +255,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if method == IterMethod::Position {
             return Ok(Expr::call_helper("$position", vec![it, found]));
         }
-        // Of one that knows its back and its length, stepped from its back.
+        // Of one that knows its back and its length, stepped from its back,
+        // made so as `as_exact_size` makes it, a map made here of an
+        // array's items its `$mapEnds`, or refused there.
         if self.array_source(iter_ty).is_none() {
-            // An array made where it's made, a `$iter` of it, knows both.
-            let made = self.steps_an_array(iter_ty);
-            let back = made || self.knows_its_back(iter_ty) || self.user_double_ended(iter_ty);
-            if !(back && (made || self.knows_its_length(iter_ty) || self.user_exact_size(iter_ty))) {
-                return Err(self.unsupported(span, "`rposition` of a lazy iterator, from its MIR"));
-            }
             // What a `&mut` lends, which it's stepped from its back as it is.
             let it = crate::lower::iterators::unlent(&it).clone();
             let it = self.as_exact_size(it, iter_ty, true, span)?;

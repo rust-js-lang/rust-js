@@ -16,7 +16,7 @@
 //! to `Body`.
 
 use std::cell::{Cell, RefCell};
-use std::collections::{BTreeSet, HashMap, HashSet};
+use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
 use std::sync::Arc;
 
@@ -320,12 +320,8 @@ struct CrateFacts<'a, 'tcx> {
     /// Whether a `Vec`'s capacity is kept, as the crate or a library it uses
     /// asks it (ADR 0419).
     keeps_capacity: bool,
-    /// The type parameters each of the crate's functions takes no destructor
-    /// of, and the calls of them to check once all are lowered (ADR 0190).
-    no_drops: &'a RefCell<HashMap<DefId, BTreeSet<u32>>>,
-    drop_checks: &'a RefCell<Vec<drops::DropCheck>>,
-    /// What the functions that take only the drops they use did with them (ADR 0300).
-    drop_uses: &'a RefCell<drops::DropUses>,
+    /// The functions that take only the drops they use (ADR 0300).
+    takes_used_drops: &'a drops::TakesUsed,
     closures: &'a HashMap<DefId, &'a Body<'tcx>>,
     bodies: &'a HashMap<DefId, &'a Body<'tcx>>,
     fns: &'a HashMap<DefId, FnInfo>,
@@ -390,6 +386,10 @@ struct Dependencies {
 struct FnCx<'a, 'tcx> {
     krate: &'a CrateFacts<'a, 'tcx>,
     dependencies: RefCell<Dependencies>,
+    /// What lowering this function found of drops, which the pipeline
+    /// gathers, of each function lowered or not, and resolves (ADRs 0190,
+    /// 0300).
+    drops_observed: RefCell<drops::DropsObserved>,
     tcx: TyCtxt<'tcx>,
     typing_env: ty::TypingEnv<'tcx>,
     /// What the generic item being lowered is given, besides its arguments.

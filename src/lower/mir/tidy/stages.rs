@@ -269,7 +269,7 @@ pub(super) const STAGES: &[Stage] = &[
             // A chain's tests, where each is read in place now: `if (a) { if
             // (f(a)) { .. } }`, `if (a && f(a))`.
             pass("and tests", |b, h| {
-                bottom_up(b, &mut |s| and_tests(s, &h.written.conditions, &h.written.getters))
+                bottom_up(b, &mut |s| and_tests(s, &h.written.conditions))
             }),
             // An `if` the program wrote with an `else`, as it wrote it, its
             // tests one now; and the `continue`s its branches end with, which
@@ -445,6 +445,48 @@ pub(super) const STAGES: &[Stage] = &[
         ],
         ensures: &[contracts::NOTHING_AFTER_A_JUMP, contracts::LABELS_NAMED],
     },
+    // The body as it's written, its parameters taken apart: each run of
+    // statements a value's drop ends one `try { .. } finally { .. }` (ADR
+    // 0437), read again where it held any apart (ADR 0705); then its
+    // temporaries named, its drop flags too; a shadow of a binding the
+    // program names read no more, that binding (ADR 0650); and a `String`
+    // appended to twice, once (ADR 0652).
+    Stage {
+        name: "finish",
+        passes: &[
+            pass("parameters", |b, h| destructured_params(&mut h.params.borrow_mut(), b)),
+            // Each run of statements a value's drop ends one `try { .. }
+            // finally { .. }` (ADR 0437), a `return` through its `finally`;
+            // and what each statement's own `try` held apart, `let tmp; try
+            // { tmp = f(); } catch ..`, read as tidy reads any body: its
+            // stages that read temporaries in place run again (`UNWOUND`,
+            // ADR 0705).
+            pass("drop scopes", |b, h| {
+                let mut scoped = false;
+                js::statement_lists(b, &mut |stmts| scoped |= unwinds::scoped_drops(stmts));
+                js::statement_lists(b, &mut unwinds::returned_through_finally);
+                if scoped {
+                    for stage in STAGES.iter().filter(|stage| UNWOUND.contains(&stage.name)) {
+                        for pass in stage.passes {
+                            (pass.run)(b, h);
+                        }
+                    }
+                }
+            }),
+            pass("temporaries named", |b, h| {
+                bindings::readable_temporaries(&h.params.borrow(), b, h.suggested)
+            }),
+            pass("flags named", |b, h| flags::named_flags(b, h.flags)),
+            pass("shadows", |b, h| {
+                bindings::shadowed(&h.params.borrow(), b, &h.named.user)
+            }),
+            pass("appends", |b, h| {
+                crate::lower::std_types::text::appended(b, &h.named.text)
+            }),
+        ],
+        // What `settled` ensured, kept: what's printed is checked as it is.
+        ensures: &[contracts::NOTHING_AFTER_A_JUMP, contracts::LABELS_NAMED],
+    },
 ];
 
 /// `jumps`, run twice.
@@ -474,13 +516,7 @@ const JUMPS: &[Pass] = &[
 fn branch_values_of(body: &mut Vec<Stmt>, hints: &Hints) {
     let made = (hints.result, hints.written.switches.as_slice());
     bottom_up(body, &mut |s| {
-        branch_values(
-            s,
-            (hints.returns, &hints.written.getters),
-            hints.booleans,
-            made,
-            &hints.written.continues,
-        )
+        branch_values(s, hints.returns, hints.booleans, made, &hints.written.continues)
     });
 }
 

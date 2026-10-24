@@ -421,10 +421,25 @@ impl StmtKind {
 pub struct Expr {
     pub kind: ExprKind,
     pub span: Span,
+    /// What its owner knows of it that its kind doesn't say, `Known`'s,
+    /// kept where it's rebuilt of new parts.
+    pub known: Known,
+}
+
+/// What the lowering knows of an expression that its kind doesn't say:
+/// the one place a later pass reads it from, not from where it's written.
+#[derive(Clone, Copy, PartialEq, Eq, Default)]
+pub enum Known {
+    #[default]
+    Nothing,
     /// A call of a method of a `str` or a slice, as Rust's types tell,
     /// `s.startsWith(t)`: never a crate's or a binding's of the same
     /// name, `P.at(p)`, which may do anything.
-    pub reads: bool,
+    Read,
+    /// A binding's read of a property, `get x`, `get X.y` or `get []`,
+    /// `js::get`'s: a getter may answer it, which may do anything, and may
+    /// give another value read again (ADR 0672).
+    Getter,
 }
 
 /// A cross-module reference, resolved before preparation or printing.

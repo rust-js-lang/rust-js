@@ -667,7 +667,7 @@ pub(super) fn named_callbacks(stmts: &mut Vec<Stmt>, callbacks: &HashSet<String>
                     && let Some(function) = function.take()
                 {
                     *e = Expr {
-                        reads: false,
+                        known: js::Known::Nothing,
                         kind: ExprKind::Function(Box::new(function)),
                         span: e.span,
                     };

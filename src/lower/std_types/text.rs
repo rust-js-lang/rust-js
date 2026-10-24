@@ -215,6 +215,9 @@ pub(in crate::lower) enum TextOp {
         str: bool,
     },
     EncodeUtf8,
+    /// `c.encode_utf16(&mut buf)`: its UTF-16 units at the start of `buf`,
+    /// and the `&mut [u16]` of them (#118).
+    CharEncodeUtf16,
     DecodeUtf16,
     /// `s.split_at(at)`: by a UTF-8 byte offset.
     SplitAt,
@@ -511,6 +514,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // Its `&mut str`, read and written through `buf`'s bytes, as
             // `from_utf8_mut`'s (ADR 0334).
             TextOp::EncodeUtf8 => call("$encodeUtf8", vec![arg(), arg()]),
+            TextOp::CharEncodeUtf16 => call("$encodeCharUtf16", vec![arg(), arg()]),
             TextOp::DecodeUtf16 => call("$decodeUtf16", vec![arg()]),
             TextOp::FromUtf16 { lossy: false } => call("$fromUtf16", vec![arg()]),
             TextOp::FromUtf16 { lossy: true } => call("$fromUtf16Lossy", vec![arg()]),
@@ -717,7 +721,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Expr {
                     kind,
                     span: range.span,
-                    reads: false,
+                    known: js::Known::Nothing,
                 },
                 Expr::int(0),
             ],

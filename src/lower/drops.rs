@@ -254,9 +254,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         &format!("giving `{path}`'s `{name}` a type with a destructor, where it takes none"),
                     ));
                 };
-                self.krate
-                    .no_drops
+                self.drops_observed
                     .borrow_mut()
+                    .no_drops
                     .entry(owner)
                     .or_default()
                     .extend(params);
@@ -264,7 +264,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(());
         }
         if callee.is_local() {
-            self.krate.drop_checks.borrow_mut().push(DropCheck {
+            self.drops_observed.borrow_mut().checks.push(DropCheck {
                 caller: owner,
                 callee,
                 span,
@@ -285,9 +285,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         let owner = self.tcx.typeck_root_def_id(self.frame.owner);
         let params = owned_params(self.tcx, ty);
-        self.krate
-            .no_drops
+        self.drops_observed
             .borrow_mut()
+            .no_drops
             .entry(owner)
             .or_default()
             .extend(params);
@@ -486,7 +486,7 @@ pub(super) struct DropCheck {
 /// any was an error.
 pub(super) fn check_no_drops(
     tcx: TyCtxt<'_>,
-    no_drops: &RefCell<HashMap<DefId, BTreeSet<u32>>>,
+    no_drops: &mut HashMap<DefId, BTreeSet<u32>>,
     checks: &[DropCheck],
 ) -> bool {
     let mut reported = HashSet::new();
@@ -494,7 +494,7 @@ pub(super) fn check_no_drops(
     while changed {
         changed = false;
         for check in checks {
-            let required = no_drops.borrow().get(&check.callee).cloned().unwrap_or_default();
+            let required = no_drops.get(&check.callee).cloned().unwrap_or_default();
             for (index, params) in check.given.iter().filter(|(index, _)| required.contains(index)) {
                 match params {
                     None if reported.insert(check.span) => {
@@ -504,7 +504,6 @@ pub(super) fn check_no_drops(
                     }
                     None => {}
                     Some(params) => {
-                        let mut no_drops = no_drops.borrow_mut();
                         let caller = no_drops.entry(check.caller).or_default();
                         for &param in params {
                             changed |= caller.insert(param);

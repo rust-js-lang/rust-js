@@ -419,7 +419,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 );
                 method(items, "reduce", vec![f, num.literal(1)])
             }
-            // Its `Some` boxed where the item looks like `None` (ADR 0051).
+            // Of one whose `nth` reaches the crate's own, its `nth`, as
+            // `next()` is `$next(it)` (#182); its `Some` boxed where the item
+            // looks like `None` (ADR 0051).
+            IterComb::Nth if self.recognition().nths_its_own(receiver_ty) => {
+                let boxed = item_ty().is_some_and(|item| self.boxed_payload(item));
+                Expr::call_helper(if boxed { "$nthSome" } else { "$nth" }, vec![items, next()])
+            }
             IterComb::Nth => {
                 let n = next();
                 let mut first = method(method(items, "drop", vec![n]), "take", vec![Expr::int(1)]);

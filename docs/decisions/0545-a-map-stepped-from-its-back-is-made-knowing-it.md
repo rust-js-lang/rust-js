@@ -78,3 +78,31 @@ source done, gives the other end's, as std's `FlattenCompat` does; `f` is
 run as each item is reached. A `flat_map` whose `f` gives a lazy iterator
 is refused still: its items would have to be made knowing their backs.
 Held by `test/corpus/flatten_from_its_back.rs`.
+
+## Amendment: what a function gives behind an `impl DoubleEndedIterator`
+
+A map, a filter or a chain of a slice's items a function gave behind an
+`impl DoubleEndedIterator` was refused where its caller stepped it from
+its back (#184). The analysis left out a map or a filter of an array's
+items, whose own forms step it in place, but the caller has only the
+call: no form of its own steps it.
+
+- **The analysis records each adapter a type given behind an `impl` is
+  made of** (`given`, where the type asked isn't the one it reveals), an
+  array's items' too, and a chain of them, from a call that asks it to be
+  double-ended or of a `DoubleEndedIterator` method. A closure's type is
+  its body's alone, so what's made in place elsewhere is as it was.
+- **Where it's made, it's made knowing its back**: a map `$mapEnds`, a
+  filter `$filterEnds`, a chain `$chainEnds`, asked by `knows_its_back`,
+  which asks what an `impl` hides, and by `knows_its_length`, which knows a
+  map of an array's items made so knows its length too.
+- **What drops is decided of the type as it's written**: revealing a
+  call's output where it's lowered dropped a consumed iterator early,
+  `drops_of_consumed_iterators`'s, so only `knows_its_back` and
+  `knows_its_length` reveal it.
+
+ADR 0262's case: C, an error where Rust is fine. Held by
+`test/corpus/returned_impl_ends.rs` and the mutations
+`given-impl-not-back-stepped`, `given-chain-not-back-stepped`,
+`knows-back-of-impl-hidden`, `mapped-array-length-unknown` and
+`given-chain-unmade`.

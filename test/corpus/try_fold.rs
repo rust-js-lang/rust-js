@@ -42,4 +42,6 @@ fn main() {
     println!("{product:?}");
     let louds = vec![Loud(1), Loud(2), Loud(10), Loud(3)];
     println!("{:?}", sum_below(louds.into_iter(), 5));
+    let none: [u8; 0] = [];
+    println!("{:?}", none.iter().try_for_each(|_| Some(())));
 }

@@ -1,11 +1,8 @@
 
 function $position(items, found) {
   let i = 0;
-  for (const item of items) {
-    if (found(item)) return i;
-    i++;
-  }
-  return undefined;
+  const hit = $lent(items[Symbol.iterator]()).tryFold(false, (_, item) => found(item) || (i++, false), (hit) => hit);
+  return hit ? i : undefined;
 }
 
 // `rposition(f)` of a slice's items, or a `$iter` of them stepped from its
