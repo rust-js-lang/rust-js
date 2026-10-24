@@ -20,3 +20,14 @@ too, as of any value: `through_boxes` peels them after the `Rc`'s
 
 - **It's std's**: `counted_rc_borrow` shows a counted `Rc<&i32>` and its
   clone, with native Rust.
+
+## Amendment: a `Box`'s and an uncounted `Rc`'s too
+
+A `Box` or an `Rc` nothing counts is what it holds in JS (ADR 0023), and
+`shown_type` showed it as that type, its references peeled, but its value
+stayed the `&mut`'s handle: `{}` and `{:?}` of a `Box<&mut u32>` or an
+`Rc<&mut u32>` were `[object Object]` (#197). `through_boxes`, the one
+that takes a value and its type through what holds it, goes through
+these too, then through the references they hold, as it does a counted
+`Rc`'s: `boxed.value`. `boxed_mut_ref_shown` holds both, a counted `Rc`'s
+too, with `box-of-mut-ref-shown-as-handle` and `rc-of-ref-unpeeled`.

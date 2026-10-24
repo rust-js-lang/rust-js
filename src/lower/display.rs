@@ -561,7 +561,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// `Box<T>` and `Rc<T>`: shown as their `T`, which is the value they are
     /// in JS (ADR 0023).
-    fn shows_inside(&self, ty: Ty<'tcx>) -> bool {
+    pub(in crate::lower) fn shows_inside(&self, ty: Ty<'tcx>) -> bool {
         ty.is_box() || self.is_rc(ty)
     }
 
