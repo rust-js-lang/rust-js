@@ -273,10 +273,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     }
                     None => Expr::call(f, vec![option.clone()]),
                 };
+                // A `Some` not boxed is its value, never `undefined`, which a
+                // nullable place stores as it is (`Known::Defined`).
                 let value = if self.boxed_payload(mapped) {
                     self.some(value)
                 } else {
-                    value
+                    value.defined()
                 };
                 // Of an `Option` never falsy, `!!o`, as of `o != null`: `o?.m(x)`
                 // (ADR 0298); else its test as it is.

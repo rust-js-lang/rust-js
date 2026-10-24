@@ -1,5 +1,7 @@
-//! A closure called as a statement where it's made, `((q) => { .. })(q);`,
-//! whose value nothing reads: its body in its place (ADR 0581).
+//! A closure called where it's made, `((q) => { .. })(q);`: its body in
+//! its place, as a statement whose value nothing reads (ADR 0581), and as
+//! what a statement evaluates first, its value where the call was (ADR
+//! 0840).
 
 use super::*;
 use std::collections::HashSet;
@@ -9,12 +11,17 @@ use std::collections::HashSet;
 /// parameter the variable it's given, as a plain thread-local's
 /// `with_borrow_mut(|task_queue| ..)` reads its variable (ADR 0581). A
 /// `return;` in it leaves the closure, so it's in place only where the
-/// call ends the function's body; and what its body declares, where no
-/// other name of the function is the same.
-pub fn applied_blocks(body: &mut Vec<Stmt>) {
+/// call ends the function's body, a function's, never a module's, which
+/// `ends_function` says; and what its body declares, where no other name
+/// of the function is the same. And one that's what a statement evaluates
+/// first, `if (((d) => { .. return v; })(warned))` of a thread-local's
+/// `with(|d| ..)`, that returns only at its end: its body before the
+/// statement, and `v` in the call's place (`value_of`, ADR 0840).
+pub fn applied_blocks(body: &mut Vec<Stmt>, ends_function: bool) {
     loop {
         let whole = body.clone();
-        if let Some(last) = body.len().checked_sub(1)
+        if ends_function
+            && let Some(last) = body.len().checked_sub(1)
             && let Some(inlined) = block_of(&body[last], &whole, true)
         {
             body.splice(last..=last, inlined);
@@ -25,8 +32,8 @@ pub fn applied_blocks(body: &mut Vec<Stmt>) {
             if done {
                 return;
             }
-            if let Some(i) = (0..stmts.len()).find(|&i| block_of(&stmts[i], &whole, false).is_some()) {
-                let inlined = block_of(&stmts[i], &whole, false).expect("found");
+            let inlined = |stmt: &Stmt| block_of(stmt, &whole, false).or_else(|| value_of(stmt, &whole));
+            if let Some((i, inlined)) = (0..stmts.len()).find_map(|i| Some((i, inlined(&stmts[i])?))) {
                 stmts.splice(i..=i, inlined);
                 done = true;
             }
@@ -60,7 +67,108 @@ fn block_of(stmt: &Stmt, whole: &[Stmt], tail: bool) -> Option<Vec<Stmt>> {
     let ExprKind::Arrow(params, body) = &callee.kind else {
         return None;
     };
-    let ([Pattern::Name(param)], [arg]) = (params.as_slice(), args.as_slice()) else {
+    // The closure's `return`s are its own, the function's only at its end,
+    // and of no value, which nothing read; elsewhere, each in the loop its
+    // body ends with, that loop's `break`.
+    let (any, valued) = returns(body);
+    let mut body = body.clone();
+    if valued || any && !tail && !returns_broken(&mut body) {
+        return None;
+    }
+    in_place(stmt, whole, &[], (params, args), body)
+}
+
+/// The statements `stmt` is, in `whole`, the function's body, where what
+/// it evaluates first is a call of a closure made there whose body
+/// returns only at its end, `return v;`: the body before it, and `stmt`
+/// with `v` in the call's place, as running the body there and reading
+/// `v` is what the call does, before anything else of `stmt` runs. Of a
+/// statement whose value it is, its test, a `const`'s or a variable's
+/// value, what it returns or throws, or a `switch`'s discriminant; `v;`
+/// left out where it does nothing.
+fn value_of(stmt: &Stmt, whole: &[Stmt]) -> Option<Vec<Stmt>> {
+    let mut with_value = stmt.clone();
+    let call = first_call(&mut with_value)?;
+    let ExprKind::Call(callee, args) = &call.kind else {
+        return None;
+    };
+    let ExprKind::Arrow(params, body) = &callee.kind else {
+        return None;
+    };
+    let (last, before) = body.split_last()?;
+    if !matches!(last.kind, StmtKind::Return(Some(_))) || returns(before).0 {
+        return None;
+    }
+    // What else the statement reads or declares, which what the body
+    // declares beside it mustn't be either: `const x` of `const x = v`.
+    let mut beside = stmt.clone();
+    if let Some(call) = first_call(&mut beside) {
+        *call = Expr::undefined();
+    }
+    let mut inlined = in_place(stmt, whole, &[beside], (params, args), body.clone())?;
+    let Some(Stmt {
+        kind: StmtKind::Return(Some(value)),
+        ..
+    }) = inlined.pop()
+    else {
+        unreachable!("the body's last `return`");
+    };
+    *call = Expr {
+        span: call.span,
+        ..value
+    };
+    if !matches!(&with_value.kind, StmtKind::Expr(e) if !e.has_effects()) {
+        inlined.push(with_value);
+    }
+    Some(inlined)
+}
+
+/// The call of a closure made where it's called that `e` evaluates before
+/// anything else of it: itself, or what an operator, a test, or a
+/// property's read evaluates first.
+fn evaluated_first(e: &mut Expr) -> Option<&mut Expr> {
+    if matches!(&e.kind, ExprKind::Call(callee, _) if matches!(callee.kind, ExprKind::Arrow(..))) {
+        return Some(e);
+    }
+    match &mut e.kind {
+        ExprKind::Unary(op, a) if !op.writes() => evaluated_first(a),
+        ExprKind::Binary(_, a, _) | ExprKind::Cond(a, ..) | ExprKind::Member(a, _) | ExprKind::Index(a, _) => {
+            evaluated_first(a)
+        }
+        _ => None,
+    }
+}
+
+/// The call `value_of` takes of `stmt`, where it's one.
+fn first_call(stmt: &mut Stmt) -> Option<&mut Expr> {
+    match &mut stmt.kind {
+        StmtKind::Expr(e)
+        | StmtKind::Const(_, e)
+        | StmtKind::Let(_, Some(e))
+        | StmtKind::Return(Some(e))
+        | StmtKind::Throw(e)
+        | StmtKind::If(e, ..)
+        | StmtKind::Switch { discriminant: e, .. } => evaluated_first(e),
+        // A variable's, which nothing's read of before its value.
+        StmtKind::Assign(target, e) if matches!(target.kind, ExprKind::Var(_)) => evaluated_first(e),
+        _ => None,
+    }
+}
+
+/// `body`, of a closure of `params` called with `args` where `stmt` is in
+/// `whole`, the function's body, in the call's place: its parameter read
+/// as what it's given, a variable or a path of one that reads the same;
+/// `None` where what it declares at its top is another name of the
+/// function's, or of what's `beside` it in `stmt`, or the variable given,
+/// or the parameter can't be read so.
+fn in_place(
+    stmt: &Stmt,
+    whole: &[Stmt],
+    beside: &[Stmt],
+    (params, args): (&[Pattern], &[Expr]),
+    mut body: Vec<Stmt>,
+) -> Option<Vec<Stmt>> {
+    let ([Pattern::Name(param)], [arg]) = (params, args) else {
         return None;
     };
     // What it's given, read the same wherever it's read: a variable, or a
@@ -75,14 +183,6 @@ fn block_of(stmt: &Stmt, whole: &[Stmt], tail: bool) -> Option<Vec<Stmt>> {
         }
         _ => return None,
     };
-    // The closure's `return`s are its own, the function's only at its end,
-    // and of no value, which nothing read; elsewhere, each in the loop its
-    // body ends with, that loop's `break`.
-    let (any, valued) = returns(body);
-    let mut body = body.clone();
-    if valued || any && !tail && !returns_broken(&mut body) {
-        return None;
-    }
     // What the body declares at its top is declared beside `stmt`: no other
     // name of the function may be it, nor the variable it's given.
     let mut declared = HashSet::new();
@@ -99,6 +199,7 @@ fn block_of(stmt: &Stmt, whole: &[Stmt], tail: bool) -> Option<Vec<Stmt>> {
         statement_lists(&mut others, &mut |stmts| stmts.retain(|s| s != stmt));
         let mut names = HashSet::new();
         names_in(&others, &mut names);
+        names_in(beside, &mut names);
         if declared.contains(given) || declared.iter().any(|name| names.contains(name)) {
             return None;
         }
