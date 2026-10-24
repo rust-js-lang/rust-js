@@ -95,3 +95,57 @@ called the one an argument had replaced.
   replaces, and the mutations `binding-method-lookup-passed` and
   `binding-method-not-a-getter`. The corpus, the React ports and the
   bindings' tests write the same JS.
+
+## Amendment: what a getter answers does something; a declared type's method is its class's (#188)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): R, results change, for
+a value of any shape; rare and harmless, for a declared type's method,
+listed among the guide's differences (`semantics.md`, 23).
+
+#187's rule held a call given to a binding's method, but not a getter's
+read, `send(obj, value(source), ..)`: `obj.send(source.value, ..)` looked
+`send` up before the getter ran, so the method saw the state before it.
+Two places let it through: `Expr::has_effects`, the one answer to whether
+an expression does something, took a getter's read for one that does
+nothing, so tidy moved it as it moves a variable; and MIR, which writes
+what it holds where it's read, put the read inside the call.
+
+- **A read a getter may answer does something, and may give another value
+  each time** (`js::Known::Getter`): `has_effects` says so, and
+  `reads_same` says it isn't the same however often it's read, nested in
+  a larger expression too, and MIR's `reads_same_anywhere` agrees: a
+  getter's read a pattern binds is held once, not written at each use.
+  What asks them, every pass, holds it so.
+- **One answer of which method a getter may be**,
+  `binding_calls::method_may_be_a_getters`: a binding's method of a
+  `js::Unknown`, a value of any shape (`declarations::any_shape`). Its
+  lookup is `Known::Getter`, and MIR makes what does something among its
+  arguments before the call, `const value = source.value;
+  obj.send(value, flag ? 1 : 2);`.
+- **A declared type's method is its class's.** `app.append(stepper(..),
+  ..)` of webapi's `Element` looks `append` up on the prototype, which
+  nothing a program does is expected to change: holding every argument
+  call before it, `const value = [..]; app.append(...value)`, would make
+  most DOM code read unlike what anyone writes. That a getter or a
+  replaced method there would be told apart is the guide's difference 23
+  (the user chose this scope, 2026-10-24).
+- **Read once still reads well:** `o.and_then(|l| l.item(0))` of a getter's
+  read is `input.labels?.item(0)`, as `map`'s `o?.id` is
+  (`optional_chain`, through method calls now). A let chain's tuple of reads,
+  `(report.height, frame.current())`, reads each once, before its test,
+  as Rust does, where it read `frame.current` only after the test, and
+  both again.
+- **An assignment target's object is read first**, then its key, then the
+  value, so what makes it is read there whatever it does:
+  `window.document.title = t`, `pick(items, log).count = v`, where `read_of`
+  held what did something.
+- Held by `test/lowering-moves.test.ts`'s "a getter's read given to a
+  binding's method runs before its lookup" (the changed result, a getter
+  that replaces the method, one nested in an argument), "a getter's
+  Option a combinator reads more than once is read once",
+  `test/jsx-children.test.ts`'s "a capture of an inlined closure leaves no
+  const behind", and the
+  mutations `getter-read-has-no-effects`, `getter-read-reads-same`,
+  `getter-pending-past-lookup`, `typed-receiver-method-a-getters`,
+  `and-then-chain-held`, `getter-read-in-place` and
+  `target-root-acting-held`.

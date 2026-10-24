@@ -258,6 +258,9 @@ pub fn kinds(children: &'static Unknown) -> Vec<String> {
   run(args);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).not.toContain("captured");
+  // The type a pattern binds, a getter's read, read once there, not at
+  // each use (ADR 0750).
+  expect(js).toContain('out.push(type === "Recap" ? "recap" : type.toUpperCase());');
   const { kinds } = await import(join(dir, "lib.js"));
   const { createElement } = await import("react");
   expect(kinds([createElement("h1", { key: "a" }), createElement("Recap", { key: "b" }), "text"])).toEqual(["H1", "recap"]);

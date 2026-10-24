@@ -29,17 +29,16 @@ function main() {
   const value$1 = $unwrap(items[1]);
   value$1.count = (value$1.count + 1) >>> 0;
   const log = [];
-  const value$3 = value(log);
-  const value$2 = pick(items, log);
-  value$2.count = value$3;
+  const value$2 = value(log);
+  pick(items, log).count = value$2;
   console.log(
     `[${items.map((item) => itemDebug_fmt(item)).join(", ")}] [${log.map((item) => $debugStr(item)).join(", ")}]`,
   );
 
   const stock = new Map();
   stock.set("pen", { name: "pen", count: 3 });
-  const value$4 = $unwrap(stock.get("pen"));
-  value$4.count = (value$4.count * 4) >>> 0;
+  const value$3 = $unwrap(stock.get("pen"));
+  value$3.count = (value$3.count * 4) >>> 0;
   console.log(`${$unwrap(stock.get("pen"), "no entry found for key").count}`);
 }
 //# sourceMappingURL=case.js.map

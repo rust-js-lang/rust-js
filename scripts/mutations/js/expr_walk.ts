@@ -140,4 +140,20 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/lowering-switches.test.ts", "-t", "a part of a chain an earlier test decides is left out"],
   },
+  {
+    name: "getter-read-has-no-effects",
+    breaks: "a read a getter may answer counts as doing nothing, so it's read past a binding's method lookup",
+    file: "src/js/expr_walk.rs",
+    find: "        // A read a getter may answer, which may do anything (ADRs 0672, 0750).\n        if self.known == Known::Getter {\n            return true;\n        }\n",
+    replace: "",
+    tests: ["test/lowering-moves.test.ts", "-t", "a getter's read given to a binding's method runs before its lookup"],
+  },
+  {
+    name: "getter-read-reads-same",
+    breaks: "a read a getter may answer counts as the same value however often it's read, so it's written twice",
+    file: "src/js/expr_walk.rs",
+    find: "        // (ADR 0672).\n        if self.known == Known::Getter {\n            return false;\n        }\n",
+    replace: "",
+    tests: ["test/lowering-moves.test.ts", "-t", "a getter's Option a combinator reads more than once is read once"],
+  },
 ];

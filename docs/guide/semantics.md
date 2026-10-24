@@ -712,3 +712,9 @@ React and JSX are [their own pages](README.md#react).
 22. `Array.isArray(x)` of a revoked `Proxy`, which throws a `TypeError`,
     is taken to do nothing: a test of it that an earlier one decides is
     left out (ADR 0743).
+23. A binding's method of a declared JS type, webapi's `Element` say, is
+    taken to be its class's: `app.append(stepper(..), ..)` looks
+    `append` up before its arguments run, where Rust runs them first, so a
+    method that's a getter, or one an argument replaces, is told apart
+    from Rust's only there. Of a `js::Unknown`, any value, the arguments
+    run first, as Rust runs them (ADR 0750).

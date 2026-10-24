@@ -294,8 +294,16 @@ export const mutations: Mutation[] = [
     name: "binding-method-not-a-getter",
     breaks: "a binding's method of a JS value isn't said to be one a getter may answer, so a call's value is read past it",
     file: "src/lower/binding_calls.rs",
-    find: "Expr::call(Expr::member(this, name).answered_by_a_getter().or_at(fun_span), args)",
-    replace: "Expr::call(Expr::member(this, name).or_at(fun_span), args)",
+    find: "                    true => method.answered_by_a_getter(),\n",
+    replace: "                    true => method,\n",
     tests: ["test/lowering-moves.test.ts", "-t", "a binding's method is looked up after its arguments run"],
+  },
+  {
+    name: "typed-receiver-method-a-getters",
+    breaks: "a binding's method of a declared type, webapi's Element, is taken for one a getter may answer, so DOM calls hold their arguments",
+    file: "src/lower/binding_calls.rs",
+    find: "            |ty| matches!(ty.peel_refs().kind(), ty::Adt(adt, _) if super::declarations::any_shape(tcx, adt.did())),",
+    replace: "            |_| true,",
+    tests: ["test/snapshots.test.ts", "-t", "^counter"],
   },
 ];

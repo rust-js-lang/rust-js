@@ -443,6 +443,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             true => Vec::new(),
             false => operands.iter().map(|o| self.nulled(state, o)).collect(),
         };
+        // A binding's method looked up on a JS value of any shape before its
+        // other arguments run, where Rust runs them first: what they take
+        // that does something, a getter's read say, made before it (#188).
+        if crate::lower::binding_calls::method_may_be_a_getters(self.tcx, callee.0)
+            && operands.iter().skip(1).any(|operand| self.acts_pending(state, operand))
+        {
+            self.flush(state, out)?;
+        }
         let values = self.take_operands(state, operands, out)?;
         match self.mir_call_values(state, callee, (values, arg_tys, &nulled), output, span, out)? {
             Value::Expr(e) if strict => Ok(Value::Expr(js::strict_equality(e))),
