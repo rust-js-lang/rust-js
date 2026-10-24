@@ -460,6 +460,10 @@ pub enum Known {
     /// `obj.send` of `obj.send(a)`: a getter may answer it, which may do
     /// anything, and may give another value read again (ADRs 0672, 0750).
     Getter,
+    /// A slice's items in a range the body's ranges show in bounds,
+    /// `items.slice(a, b)`: an array made here, which nothing else holds,
+    /// as `$slice(..)` is (ADR 0806).
+    Sliced,
 }
 
 /// A cross-module reference, resolved before preparation or printing.

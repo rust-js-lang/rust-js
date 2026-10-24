@@ -352,7 +352,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // At places of the string in JS's units: `s.slice(a, b)` (ADR 0642).
                 match state.offsets.call_in_units(state.at) {
                     true => self.sliced_in_units(items, (range, arg_tys[1]), span, out)?,
-                    false => self.slice_range_values(op, items, (range, arg_tys[1]), span, out)?,
+                    false => {
+                        let in_bounds = self.indexes_in_bounds(def_id, span);
+                        self.slice_range_values((op, in_bounds), items, (range, arg_tys[1]), span, out)?
+                    }
                 }
             }
             // An `Option` of a place found given to a closure that takes it as
@@ -463,7 +466,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let mut exprs = values.map(|v| self.value_expr(v, span)).collect::<R<Vec<_>>>()?;
                 let rest = exprs.split_off(2);
                 let [items, range]: [Expr; 2] = exprs.try_into().ok().expect("the items and a range");
-                let range = self.slice_range_values(range_read(op), items, (range, arg_tys[1]), span, out)?;
+                let range = self.slice_range_values((range_read(op), false), items, (range, arg_tys[1]), span, out)?;
                 let clone = match self.slice_item(arg_tys[0]) {
                     Some(item) if op == TextOp::ExtendFromWithin && self.needs_clone(item) => {
                         Some(self.clone_arg(item, span)?)

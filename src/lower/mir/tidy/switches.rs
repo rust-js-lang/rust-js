@@ -863,31 +863,67 @@ pub(super) fn breaks_past_switches(stmts: &mut Vec<Stmt>) {
 /// early, and its label, which nothing names now, gone (ADR 0790). A block
 /// the program labeled, `'desc: { .. }`, Rust's way to leave a `match`'s
 /// arm early, reads as JS leaves a case.
-pub(super) fn blocks_ending_cases(stmts: &mut [Stmt]) {
-    fn ending(stmts: &mut Vec<Stmt>) {
+///
+/// An `if` the program wrote with no `else`, `if (c) { ..; return; } t`,
+/// to whose `then` MIR gave one, `t`, as both went on to the block's end,
+/// has none once the `then` leaves where the case does: `t` after it, as
+/// written (ADR 0805), not the `else` of an `else if` it reads as, of the
+/// arm before it, where the block was all that arm's `else` held.
+pub(super) fn blocks_ending_cases(stmts: &mut [Stmt], elses: &[(js::Span, js::Span, js::Span)]) {
+    fn ending(stmts: &mut Vec<Stmt>, elses: &[(js::Span, js::Span, js::Span)]) {
         match stmts.last_mut().map(|s| &mut s.kind) {
             Some(StmtKind::If(_, a, b)) => {
-                ending(a);
+                ending(a, elses);
                 if let Some(b) = b {
-                    ending(b);
+                    ending(b, elses);
                 }
             }
             Some(StmtKind::Labeled(label, body)) => {
                 let label = label.clone();
                 case_breaks(body, &label);
-                ending(body);
+                ending(body, elses);
             }
             _ => {}
         }
         unlabeled(stmts);
+        unwritten_else(stmts, elses);
     }
     for stmt in stmts.iter_mut() {
         if let StmtKind::Switch { cases, default, .. } = &mut stmt.kind {
             for case in js::case_lists_mut(cases, default) {
-                ending(case);
+                ending(case, elses);
             }
         }
     }
+}
+
+/// `stmts`' last `if`, `if (c) { a } else { b }`, as `blocks_ending_cases`
+/// has it: of an `if` written with no `else` (`Written::elses`) whose `a`
+/// leaves, `if (c) { a } b`. What `b` declares is a body's name of its
+/// own, given apart from the rest, `name$1`, which preparation names
+/// `name` again only where JS's scopes let it (ADR 0352).
+fn unwritten_else(stmts: &mut Vec<Stmt>, elses: &[(js::Span, js::Span, js::Span)]) {
+    let Some(last) = stmts.last() else {
+        return;
+    };
+    let StmtKind::If(_, a, Some(_)) = &last.kind else {
+        return;
+    };
+    let written = |span: js::Span| {
+        span.is_none() || elses.iter().any(|(cond, ..)| cond.lo <= span.lo && span.hi <= cond.hi)
+    };
+    if written(last.span) || !a.last().is_some_and(js::ends) {
+        return;
+    }
+    let Some(Stmt {
+        kind: StmtKind::If(_, _, b),
+        ..
+    }) = stmts.last_mut()
+    else {
+        unreachable!("matched")
+    };
+    let b = b.take().expect("matched");
+    stmts.extend(b);
 }
 
 /// Each `switch` `stmts` end with, through the branches of an `if` they

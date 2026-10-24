@@ -245,7 +245,10 @@ or-pattern's stacked, `_` the `default`
   itself. And a block the arm is, `'desc: { .. }`, leaves the case where
   it's written, each `break 'desc v` a `desc = v; break;`, as a `switch`'s
   case is left early
-  ([ADR 0790](../../decisions/0790-a-break-the-program-wrote-is-where-it-is-written.md)).
+  ([ADR 0790](../../decisions/0790-a-break-the-program-wrote-is-where-it-is-written.md)),
+  and each `if` in it as written: one with no `else` has none, and an
+  `||` whose branch is such a `break` is that `||`
+  ([ADR 0805](../../decisions/0805-a-cases-if-is-as-written-whatever-ends-it.md)).
 
 ```rust
 use js::{Kind, Unknown};
@@ -330,10 +333,11 @@ export function describe(value) {
     case "object":
       if (value === null) {
         desc = "null";
-      } else if ("name" in value) {
-        desc = String(value.name);
-        break;
       } else {
+        if ("name" in value) {
+          desc = String(value.name);
+          break;
+        }
         desc = "object";
       }
       break;

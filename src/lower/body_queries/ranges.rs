@@ -330,38 +330,50 @@ fn reads_utf16_length<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId, generic_args: ty::
 /// Whether `e` reads without changing anything, so its value where a
 /// condition is tested is its value after: `i < xs.len()`.
 fn pure<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>, e: ExprId) -> bool {
-    match thir[e].kind {
-        ExprKind::Scope { value: inner, .. }
-        | ExprKind::Use { source: inner }
-        | ExprKind::Deref { arg: inner }
-        | ExprKind::Field { lhs: inner, .. }
-        | ExprKind::Unary { arg: inner, .. }
-        | ExprKind::Cast { source: inner }
-        | ExprKind::Borrow {
-            borrow_kind: BorrowKind::Shared,
-            arg: inner,
-        } => pure(tcx, thir, inner),
-        ExprKind::Binary { lhs, rhs, .. } => pure(tcx, thir, lhs) && pure(tcx, thir, rhs),
-        ExprKind::VarRef { .. }
-        | ExprKind::UpvarRef { .. }
-        | ExprKind::Literal { .. }
-        | ExprKind::NonHirLiteral { .. }
-        | ExprKind::NamedConst { .. }
-        | ExprKind::ConstParam { .. } => true,
-        ExprKind::Call { fun, ref args, .. } => {
-            fn_def(thir[strip(thir, fun)].ty).is_some_and(|(def_id, generic_args)| {
-                matches!(
-                    slice_length(tcx, def_id, generic_args),
-                    Some(SliceLength::Len | SliceLength::IsEmpty)
-                ) || reads_string_length(tcx, def_id)
-                    // A string's `encode_utf16()`, std's, which reads it, and
-                    // its `count()`, its `length` (ADR 0632).
-                    || makes_utf16_units(tcx, def_id, thir[e].ty)
-                    || reads_utf16_length(tcx, def_id, generic_args)
-            }) && args.iter().all(|&arg| pure(tcx, thir, arg))
+    read_vars(tcx, thir, e).is_some()
+}
+
+/// The variables `e` reads, where it reads without changing anything
+/// (`pure`): `i` and `xs` of `i < xs.len()`.
+fn read_vars<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>, e: ExprId) -> Option<Vec<LocalVarId>> {
+    fn reads<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>, e: ExprId, vars: &mut Vec<LocalVarId>) -> bool {
+        match thir[e].kind {
+            ExprKind::Scope { value: inner, .. }
+            | ExprKind::Use { source: inner }
+            | ExprKind::Deref { arg: inner }
+            | ExprKind::Field { lhs: inner, .. }
+            | ExprKind::Unary { arg: inner, .. }
+            | ExprKind::Cast { source: inner }
+            | ExprKind::Borrow {
+                borrow_kind: BorrowKind::Shared,
+                arg: inner,
+            } => reads(tcx, thir, inner, vars),
+            ExprKind::Binary { lhs, rhs, .. } => reads(tcx, thir, lhs, vars) && reads(tcx, thir, rhs, vars),
+            ExprKind::VarRef { id } | ExprKind::UpvarRef { var_hir_id: id, .. } => {
+                vars.push(id);
+                true
+            }
+            ExprKind::Literal { .. }
+            | ExprKind::NonHirLiteral { .. }
+            | ExprKind::NamedConst { .. }
+            | ExprKind::ConstParam { .. } => true,
+            ExprKind::Call { fun, ref args, .. } => {
+                fn_def(thir[strip(thir, fun)].ty).is_some_and(|(def_id, generic_args)| {
+                    matches!(
+                        slice_length(tcx, def_id, generic_args),
+                        Some(SliceLength::Len | SliceLength::IsEmpty)
+                    ) || reads_string_length(tcx, def_id)
+                        // A string's `encode_utf16()`, std's, which reads it, and
+                        // its `count()`, its `length` (ADR 0632).
+                        || makes_utf16_units(tcx, def_id, thir[e].ty)
+                        || reads_utf16_length(tcx, def_id, generic_args)
+                }) && args.iter().all(|&arg| reads(tcx, thir, arg, vars))
+            }
+            _ => false,
         }
-        _ => false,
     }
+    let mut vars = Vec::new();
+    reads(tcx, thir, e, &mut vars).then_some(vars)
 }
 
 impl<'a, 'tcx> Walk<'a, 'tcx> {
@@ -422,6 +434,17 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
             true => SIZED_SLICE_LENGTH_MOST,
             false => u32::MAX as i128,
         }
+    }
+
+    /// Of `test`, a `let`'s, a `bool` that reads without changing anything,
+    /// `xs.len() > 3`: the variables it reads, none a raw pointer may
+    /// change (ADR 0806).
+    fn held_test(&self, test: ExprId) -> Option<Vec<LocalVarId>> {
+        let thir = self.thir;
+        if !thir[test].ty.is_bool() {
+            return None;
+        }
+        read_vars(self.tcx, thir, test).filter(|reads| reads.iter().all(|var| !self.volatile.contains(var)))
     }
 
     /// What's known after `var` is changed.
@@ -696,7 +719,8 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
             if let Some(place) = lent(arg)
                 && let (Some(var), Some(k)) = (root_var(thir, place), known.as_mut())
             {
-                // A slice's `&mut` can't change its length.
+                // A slice's `&mut` can't change its length, nor what a test
+                // of it reads.
                 let slice = matches!(thir[strip(thir, arg)].ty.kind(), ty::Ref(_, inner, _) if inner.is_slice());
                 match slice || keeps {
                     true => _ = k.vars.remove(&var),
@@ -713,6 +737,10 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
                 for index in ranges.into_iter().skip(1) {
                     self.judge_index(fun, items, index, &before);
                 }
+                None
+            }
+            Some((SliceLength::Range, items)) => {
+                self.judge_range(fun, items, args[1], &before);
                 None
             }
             Some((SliceLength::Len, items)) => self.slice(items).map(|slice| {
@@ -875,10 +903,18 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
                     subpattern: None,
                     ..
                 } = pattern.kind
-                    && let (Some(value), Some(k)) = (value, known.as_mut())
+                    && let Some(k) = known.as_mut()
                     && !self.volatile.contains(&var)
                 {
-                    k.vars.insert(var, value);
+                    if let Some(value) = value {
+                        k.vars.insert(var, value);
+                    }
+                    // A test held, `let truncated = xs.len() > 3;` (ADR 0806).
+                    if let Some(test) = initializer
+                        && let Some(reads) = self.held_test(test)
+                    {
+                        k.tests.insert(var, (test, reads));
+                    }
                 }
             }
         }
@@ -1027,6 +1063,12 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
         let e = strip(thir, cond);
         match thir[e].kind {
             ExprKind::Unary { op: UnOp::Not, arg } => self.refine(arg, !holds, known),
+            // A variable that holds a test, the test's (ADR 0806).
+            ExprKind::VarRef { id } | ExprKind::UpvarRef { var_hir_id: id, .. }
+                if let Some((test, _)) = known.as_ref().and_then(|k| k.tests.get(&id)) =>
+            {
+                self.refine(*test, holds, known)
+            }
             ExprKind::LogicalOp { op, lhs, rhs } if matches!(op, LogicalOp::And) == holds => {
                 self.refine(lhs, holds, known);
                 self.refine(rhs, holds, known);
@@ -1059,16 +1101,9 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
                     op => op,
                 };
                 // Each side's value, which the condition's own walk judged.
-                let judged = (
-                    std::mem::take(&mut self.indexes),
-                    std::mem::take(&mut self.ops),
-                    std::mem::take(&mut self.casts),
-                );
-                let mut quiet = known.clone();
-                let l = self.expr(lhs, &mut quiet);
-                let r = self.expr(rhs, &mut quiet);
-                (self.indexes, self.ops, self.casts) = judged;
-                let (Some(l), Some(r)) = (l, r) else { return };
+                let (Some(l), Some(r)) = (self.value_of(lhs, known), self.value_of(rhs, known)) else {
+                    return;
+                };
                 self.narrow(lhs, op, &r, known);
                 self.narrow(rhs, flipped, &l, known);
                 if op == BinOp::Ne {
@@ -1299,6 +1334,67 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
         }
         // What wraps is anything in its type.
         within.unwrap_or(Range::of(lo, hi))
+    }
+
+    /// `items[range]` at `site`, of a `range` written `start..end`,
+    /// `..end`, `start..` or `..`: in bounds where `start ≤ end ≤` the
+    /// slice's length each time it's reached, so it can't panic (ADR 0806).
+    fn judge_range(&mut self, site: ExprId, items: ExprId, range: ExprId, known: &Option<Known>) {
+        let Some(k) = known else { return };
+        let thir = self.thir;
+        let ok = match (self.slice(items), &thir[strip(thir, range)].kind) {
+            (Some(slice), ExprKind::Adt(adt)) => {
+                let variant = adt.adt_def.non_enum_variant();
+                let part = |name: &str| {
+                    (adt.fields.iter())
+                        .find(|field| variant.fields[field.name].name.as_str() == name)
+                        .map(|field| field.expr)
+                };
+                // An array's, which its type says.
+                let fixed = match thir[items].ty.peel_refs().kind() {
+                    ty::Array(_, n) => n.try_to_target_usize(self.tcx).map(i128::from),
+                    _ => None,
+                };
+                // At most the length: by its bound, or below its least.
+                let up_to = |r: &Range| {
+                    r.lo >= 0
+                        && (r.below.as_ref().is_some_and(|(s, b)| *s == slice && b.up_to())
+                            || k.lengths.get(&slice).is_some_and(|&least| r.hi <= least)
+                            || fixed.is_some_and(|n| r.hi <= n))
+                };
+                let start = match part("start") {
+                    Some(start) => self.value_of(start, known),
+                    None => Some(Range::of(0, 0)),
+                };
+                match (start, part("end")) {
+                    (Some(start), Some(end)) => self
+                        .value_of(end, known)
+                        .is_some_and(|end| up_to(&end) && start.lo >= 0 && start.hi <= end.lo),
+                    (Some(start), None) => up_to(&start),
+                    (None, _) => false,
+                }
+            }
+            _ => false,
+        };
+        *self.indexes.entry(site).or_insert(true) &= ok;
+    }
+
+    /// The range of `e`, which reads without changing anything, where
+    /// `known` is: walked again, as a condition's sides are, judging
+    /// nothing.
+    fn value_of(&mut self, e: ExprId, known: &Option<Known>) -> Option<Range> {
+        if !pure(self.tcx, self.thir, e) {
+            return None;
+        }
+        let judged = (
+            std::mem::take(&mut self.indexes),
+            std::mem::take(&mut self.ops),
+            std::mem::take(&mut self.casts),
+        );
+        let mut quiet = known.clone();
+        let value = self.expr(e, &mut quiet);
+        (self.indexes, self.ops, self.casts) = judged;
+        value
     }
 
     /// `items[index]` at `site`: in bounds where the index is below the

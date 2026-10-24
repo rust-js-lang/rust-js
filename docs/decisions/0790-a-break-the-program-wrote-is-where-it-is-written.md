@@ -4,7 +4,11 @@ Status: Accepted. Amends [0742](0742-a-label-the-program-wrote-is-its-name.md),
 whose labeled block tidy could make something else, and extends
 [0636](0636-a-guarded-arm-is-a-case.md)'s guarded case and
 [0668](0668-a-match-of-what-a-value-is-is-a-switch-of-its-typeof.md)'s
-`switch (typeof value)` to a guard that holds.
+`switch (typeof value)` to a guard that holds. Amended by
+[0805](0805-a-cases-if-is-as-written-whatever-ends-it.md): an `||` of
+such a `break` is as written whatever the rest ends with, a loop nothing
+leaves too, and a case's `if` the program wrote with no `else` has none
+once its `then` leaves.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): it can't be observed:
 where a `break` is written, whether a block has a label, and a test that
@@ -139,16 +143,14 @@ if (log.length === 1) { break inner; } .. }`, as written, not the negated
 
 - The port's `addValueToProperties` is a `switch` with no label; the
   `labeled_blocks` corpus case keeps its `break`s where written.
-- Not yet upstream's: the JSX branch's second test, `indent < 3 ||
-  (propsLength === 1 && propsKeys[0] === 'children' && key == null)`, of
-  three parts, still reads negated, `if (indent >= 3 && (..)) { ..;
-  return; } desc = ..; break;`, as `or_blocks` reads an `||` of two parts;
-  and upstream's `if (value === null) { desc = 'null'; break; } else {`
-  is `if (value === null) { desc = "null"; } else if (..)`. A chain the
-  case's `if (value === null)` begins takes the `if` after it as an `else
-  if`, so a `break;` ending its branch is followed by an `else`, `} else
-  if ("name" in value) { ..; break; } else { .. }` (the guide's
-  `describe`), where none is needed.
+- Not yet upstream's, as this decision left it: the JSX branch's second
+  test, `indent < 3 || (propsLength === 1 && propsKeys[0] === 'children'
+  && key == null)`, read negated, `if (indent >= 3 && (..)) { ..;
+  return; } desc = ..; break;`, as the rest ended in a loop; and
+  upstream's `if (value === null) { desc = 'null'; break; } else { if
+  (..) {` was `if (value === null) { desc = "null"; } else if (..)`, an
+  `else` no one wrote after a branch that leaves. ADR 0805 writes both as
+  the port does.
 - Held by `test/lowering-labels.test.ts`'s "a block the program labeled
   that ends a case is the case's breaks" and "a guard of what a kind says
   is there is tested where it may fail", and

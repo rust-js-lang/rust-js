@@ -264,6 +264,7 @@ In this table, `lower.rs`, `names.rs` and `runtime.rs` are at the `src/` root.
 | A string's count of UTF-16 units, its `length` | `recognition/types.rs` | `counts_utf16_units` |
 | Whether a type is a JS class, and what each item of its impl is of it | `classes.rs` | `is_class`, `member`, `constructor_of` |
 | A guard `if let Some(v) = value` that holds where its arm of `match js::classify(value)` matched | `body_queries.rs` | `held_guards` |
+| An index or a slice's range in bounds, and the test a `bool` variable holds | `body_queries/ranges.rs`; `mir/bounds.rs` | `judge_index`, `judge_range`, `held_test`; `indexes_in_bounds` |
 | A binding's read of a property, which a getter may be, and a chain's test of one | `binding_calls.rs`; `mir/tidy/logicals.rs` | `answered_by_a_getter`, `Known`; `bound_into` |
 
 **Calls.** `mir/dispatch.rs::mir_call` handles special calls and sends evaluated
