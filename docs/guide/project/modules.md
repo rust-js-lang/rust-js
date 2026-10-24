@@ -291,7 +291,9 @@ export default function noop() {}
 ```
 
 Of a `const` itself, its value is the default, JS having no declaration
-of a constant as one, and another module reads it as its default
+of a constant as one, and another module reads it as its default; one its
+own module reads is declared, then exported, `const REACT_VERSION =
+"19.3.0"; export default REACT_VERSION;`
 ([ADR 0625](../../decisions/0625-a-default-constant-is-its-value.md)):
 
 ```rust
