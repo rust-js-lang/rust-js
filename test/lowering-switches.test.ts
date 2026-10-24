@@ -582,8 +582,9 @@ pub fn any_object(value: Option<&Unknown>) -> bool {
   return 0;
 }`);
   expect(js).toContain(`return typeof value === "function" || typeof value === "object";`);
-  expect(js).toContain(`return typeof value === "string" || (typeof value === "object" && !Array.isArray(value));`);
-  expect(js).toContain(`return typeof value === "string" || Array.isArray(value);`);
+  // In the order the pattern names them (ADR 0780).
+  expect(js).toContain(`return (typeof value === "object" && !Array.isArray(value)) || typeof value === "string";`);
+  expect(js).toContain(`return Array.isArray(value) || typeof value === "string";`);
   // Of what may be `null`, an object that's not, and of `null` too, what
   // `typeof` says (ADR 0676).
   expect(js).toContain(`return typeof value === "object" && value !== null;`);

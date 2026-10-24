@@ -69,6 +69,13 @@ pub(crate) fn member(tcx: TyCtxt<'_>, def_id: DefId) -> Option<Member> {
     })
 }
 
+/// The class `def_id`, an item of a class's inherent impl, is of; `None`
+/// of any other item.
+pub(crate) fn class_of(tcx: TyCtxt<'_>, def_id: DefId) -> Option<DefId> {
+    member(tcx, def_id)?;
+    class_of_impl(tcx, tcx.inherent_impl_of_assoc(def_id)?)
+}
+
 /// The constructor of `adt`, a class: its `fn new(..) -> Self`; `None` of
 /// what's no class.
 pub(crate) fn constructor_of(tcx: TyCtxt<'_>, adt: DefId) -> Option<DefId> {

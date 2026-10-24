@@ -347,7 +347,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // `concat!`'s pieces (ADR 0641); a number is where its literal is,
         // which it's written as (ADR 0627).
         Ok(match &value.kind {
-            js::ExprKind::Str(text) => crate::lower::literals::string_literal(tcx, text, c.span).or_at(value.span),
+            js::ExprKind::Str(text) => {
+                crate::lower::literals::string_literal(tcx, text, c.span, &|span| self.js_span(span)).or_at(value.span)
+            }
             js::ExprKind::Num(_) => value.or_at(self.js_span(c.span)),
             _ => value,
         })

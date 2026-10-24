@@ -184,6 +184,9 @@ pub struct Namespace {
 pub struct Class {
     pub constructor: String,
     pub prototype: Vec<String>,
+    /// Where its struct is declared: the comments before it, its `///`
+    /// doc, are the constructor function's (ADR 0761).
+    pub declared: Span,
 }
 
 /// `const SIZE = 4096;`, maybe exported.
@@ -471,12 +474,14 @@ pub struct Symbol {
     pub export: String,
 }
 
-/// A piece of a string as its source writes it: its text, and whether it's
-/// written across lines, a template literal of them.
+/// A piece of a string as its source writes it: its text, whether it's
+/// written across lines, a template literal of them, and where it's
+/// written, which a comment before it is before (ADR 0641).
 #[derive(Clone, PartialEq)]
 pub struct StrPiece {
     pub text: String,
     pub lines: bool,
+    pub span: Span,
 }
 
 /// How a template's format string is written in its source, which its JS

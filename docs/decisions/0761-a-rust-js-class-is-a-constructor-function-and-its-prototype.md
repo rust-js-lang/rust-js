@@ -2,7 +2,8 @@
 
 Status: Accepted, by the user's decision of 2026-10-24. Extends
 [0047](0047-methods.md), whose object of functions stays every other
-struct's impl.
+struct's impl. Amended: its struct's comments, its `///` doc, are its
+constructor function's (below).
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): A for what's kept, a
 value's fields and its methods' meaning; and a compile error where Rust's
@@ -66,6 +67,25 @@ prototype (`classes.rs`, `js::Namespace::class`, printed by
 - **Its declaration is a class's**, `export declare class Component {
   constructor(..); props?: unknown; setState(..): void; }`, each `pub`
   member's, so a TypeScript `class X extends Component` type-checks.
+
+### Its struct's doc is its constructor function's
+
+*Amendment.* The struct's `///` doc was its `.d.ts` class's alone, and
+gone from the JS: a struct is a type, which has no JS, and the
+constructor function is `new`'s, in the impl. **The comments before the
+struct, its doc, are before the constructor function**, then `new`'s
+own, each as written (`js::Class::declared`, from the lowering's
+`classes::class_of`; attached by `to_oxc::declared_class`), as React has
+`/** Base class helpers .. */` above `function Component`:
+
+```js
+/** Base class helpers for the updating state of a component. */
+export function Component(props, context, updater) {
+```
+
+A comment inside the struct, a field's, has no JS still: no field is
+declared but by the constructor's assignments, which are `new`'s
+statements.
 
 ### PureComponent's prototype chain
 
@@ -178,6 +198,11 @@ where Rust meets JS, so it's an attribute, as a binding's
 - Corpus case `class_methods`, against native Rust: a constructor's early
   `return`, `&self` and `&mut self` methods, a constant, a static, a
   method as a value.
+- `test/classes.test.ts`, "a class struct's doc is its constructor
+  function's": the struct's doc, then `new`'s, before `function
+  Component`; a field's comment and a plain struct's doc nowhere.
+- Mutations `class-doc-unattached`, `class-doc-unstarted`
+  (`to_oxc.rs`), `class-declared-nowhere` (`lower/pipeline.rs`).
 - Mutations `class-unmarked`, `class-method-a-static`,
   `class-self-not-this`, `class-constructor-returns`,
   `class-const-screaming`, `class-trait-allowed`, `class-literal-allowed`,

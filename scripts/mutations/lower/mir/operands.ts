@@ -118,7 +118,7 @@ export const mutations: Mutation[] = [
     name: "mir-literal-unwritten",
     breaks: "a string MIR's constant has is one literal, though its source writes it across lines or as `concat!`'s pieces",
     file: "src/lower/mir/operands.rs",
-    find: "            js::ExprKind::Str(text) => crate::lower::literals::string_literal(tcx, text, c.span).or_at(value.span),\n",
+    find: "            js::ExprKind::Str(text) => {\n                crate::lower::literals::string_literal(tcx, text, c.span, &|span| self.js_span(span)).or_at(value.span)\n            }\n",
     replace: "",
     tests: ["test/lowering-strings.test.ts", "-t", "a string written across lines keeps its lines|a concat! of literals is its pieces joined by"],
   },

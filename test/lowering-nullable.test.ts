@@ -81,6 +81,78 @@ pub fn has(context: &Context) -> bool {
   expect(context.renderer).toBe(null);
 });
 
+// React's lazy(): `const owner = null; .. owner: owner`. A `None` bound to a
+// variable that only nullable fields and binding parameters read is
+// `null` where it's made, and read as it is (ADR 0781).
+test("a None only nullable fields and parameters read is null where it's made", async () => {
+  const dir = fixture("nullable-none-made");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::Cell;
+
+use js::Unknown;
+
+pub struct Info {
+    pub name: Cell<&'static str>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub owner: Option<&'static Unknown>,
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "Object.is")]
+#[cfg_attr(rust_js, rust_js::nullable(a))]
+#[allow(unused_variables)]
+fn same(a: Option<&Unknown>, b: f64) -> bool {
+    unreachable!()
+}
+
+pub fn leaked() -> &'static Info {
+    let owner = None;
+    let info: &'static Info = Box::leak(Box::new(Info {
+        name: Cell::new("lazy"),
+        owner,
+    }));
+    info
+}
+
+pub fn twice() -> (Info, Info) {
+    let owner = None;
+    (
+        Info { name: Cell::new("a"), owner },
+        Info { name: Cell::new("b"), owner },
+    )
+}
+
+pub fn given() -> bool {
+    let owner = None;
+    same(owner, 1.0)
+}
+
+pub fn also_tested() -> (Info, bool) {
+    let owner = None;
+    (Info { name: Cell::new("c"), owner }, owner.is_none())
+}
+
+pub fn copied() -> (Info, Option<&'static Unknown>) {
+    let owner = None;
+    let other = owner;
+    (Info { name: Cell::new("d"), owner }, other)
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain(`export function leaked() {
+  const owner = null;
+  const info = { name: "lazy", owner };`);
+  expect(js).toContain(`export function twice() {
+  const owner = null;`);
+  expect(js).toContain(`export function given() {
+  const owner = null;
+  return Object.is(owner, 1);`);
+  // Read otherwise, it's \`undefined\`, as every \`None\` is, and \`?? null\` where a field takes it.
+  expect(js).toContain(`owner: owner ?? null`);
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.leaked().owner, lib.twice()[1].owner, lib.given(), lib.alsoTested()[0].owner, lib.alsoTested()[1]]).toEqual([null, null, false, null, true]);
+  expect(lib.copied()[1]).toBeUndefined();
+});
+
 // Each body's calls are its own facts, read once (#191): a closure's
 // `set(None)` writes `null` as its function's does, two calls in one body
 // are each theirs, and a cell that isn't nullable beside them keeps
