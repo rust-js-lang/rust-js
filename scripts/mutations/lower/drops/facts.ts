@@ -24,7 +24,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/drops/facts.rs",
     find: "                    if !placed && !carried {",
     replace: "                    if false && !placed && !carried {",
-    tests: ["test/traits.test.ts", "-t", "closure made in a block"],
+    tests: ["test/traits.test.ts", "-t", "closure made in a struct"],
   },
   {
     name: "fn-closure-given-away",
@@ -104,7 +104,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/drops/facts.rs",
     find: "                ExprKind::Adt(..) if self.cx.recognition.transparent(self.thir[parent].ty).is_some() => child = parent,\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "catch_unwind_payloads"],
+    tests: ["test/corpus.test.ts", "-t", "^catch_unwind_assert_drops.rs$"],
   },
   {
     name: "closure-block-value-refused",
