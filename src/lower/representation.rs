@@ -257,6 +257,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             || self.option_of(ty).is_some()
             // `undefined` before it's written (ADR 0332).
             || self.recognition().uninit_of(ty).is_some()
+            // An uncounted `Weak::new()`, `null` (ADR 0843).
+            || self.uncounted_weak(ty).is_some()
             || matches!(ty.kind(), ty::Adt(adt, _) if adt.is_struct() && adt.non_enum_variant().fields.is_empty())
             // An untagged enum of `undefined` or `null`, `js::Kind` (ADR 0676).
             || matches!(ty.kind(), ty::Adt(adt, _) if super::untagged::holds_nullish(self.tcx, *adt))
@@ -305,9 +307,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 && !self.is_generic_iter(inner);
             return self.is_cell_pointee(inner) || plain_object;
         }
-        // A counted `Rc` or a `Weak` is an object its owners share: a `&mut`
+        // A counted `Rc` or its `Weak` is an object its owners share: a `&mut`
         // to one is a cell, so `*r = v` gives the place another (ADR 0523).
-        let shared = self.counted_rc(ty).is_some() || self.weak_of(ty).is_some();
+        let shared = self.counted_rc(ty).is_some() || self.counted_weak(ty).is_some();
         !self.is_unknown(ty)
             && (!self.is_object(ty) || shared)
             // A `&mut dyn FnMut()` is the function (ADR 0099).
@@ -440,9 +442,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             || [StdItem::Cell, StdItem::RefCell, StdItem::Atomic, StdItem::OnceCell, StdItem::LazyCell]
                 .into_iter()
                 .any(|item| self.is_std_type(ty, item))
-            // A counted `Rc`, and a `Weak`, are `{ value, strong, weak }` (ADR 0320).
+            // A counted `Rc`, and its `Weak`, are `{ value, strong, weak }` (ADR 0320).
             || self.counted_rc(ty).is_some()
-            || self.weak_of(ty).is_some()
+            || self.counted_weak(ty).is_some()
             // A lock, and a guard, which is its cell (ADR 0328).
             || self.recognition().is_borrowed_cell(ty)
             || self.is_guard(ty)

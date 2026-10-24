@@ -16,6 +16,7 @@ import {
   $upgrade,
   $weakCount,
   $weakDrop,
+  $weakNone,
 } from "@rust-js/runtime";
 
 export function entry() {
@@ -240,7 +241,7 @@ function main() {
     const leaf = {
       value: {
         name: "leaf",
-        parent: { value: { strong: 0, weak: 0 } },
+        parent: { value: $weakNone },
         children: { value: [] },
       },
       strong: 1,
@@ -324,7 +325,7 @@ function main() {
       $rcDrop(leaf, dropNode);
       throw error;
     }
-    const value$2 = { value: { strong: 0, weak: 0 } };
+    const value$2 = { value: $weakNone };
     let tmp$3;
     try {
       tmp$3 = [$rcClone(leaf)];

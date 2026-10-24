@@ -10,6 +10,7 @@ import {
   $upgrade,
   $weakClone,
   $weakDrop,
+  $weakNone,
   $withBorrow,
 } from "@rust-js/runtime";
 
@@ -94,7 +95,7 @@ export const nodeClone = {
 
 function nodeClone_clone(node) {
   console.log(`node clone sees it borrowed: ${Node.asks(node)}`);
-  return { me: { strong: 0, weak: 0 } };
+  return { me: $weakNone };
 }
 
 export const nodePartialEq = {

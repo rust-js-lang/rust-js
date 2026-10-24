@@ -397,7 +397,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             let dictionary = self.dictionary(tr, span)?;
             // A `Weak`'s of one, whose `dyn` is a pair around it: not yet.
-            if self.weak_of(target).is_some() {
+            if self.counted_weak(target).is_some() {
                 return Err(self.unsupported(span, &format!("a counted `{target}`")));
             }
             // A counted `Rc`'s (ADR 0320): its cell given the `impl`, as
@@ -477,7 +477,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // A counted `Rc` as an `Rc<dyn T>` is its pair, `{ value, impl,
         // strong, weak }` (ADRs 0320, 0520): of one made here; of one made
         // elsewhere, which its other owners share as what it is, not yet.
-        if self.counted_rc(source).is_some() || self.weak_of(source).is_some() {
+        if self.counted_rc(source).is_some() || self.counted_weak(source).is_some() {
             return self.counted_unsized(source, target, value, span, out);
         }
         if self.is_pair_dyn(source) {

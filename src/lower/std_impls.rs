@@ -35,6 +35,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     fn needs_clone_in(&self, ty: Ty<'tcx>, seen: &mut Vec<Ty<'tcx>>) -> bool {
+        // An uncounted `Weak` is shared, as what its `Rc` is, whatever's
+        // changed of what it points at (ADR 0843).
+        if self.uncounted_weak(ty).is_some() {
+            return false;
+        }
         if self.contains_mutated(ty) {
             return true;
         }
@@ -73,7 +78,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // A map or a set changes in place (ADR 0059).
             ty::Adt(..) if self.is_map(ty) => true,
             // A counted `Rc`'s clone counts one more, and a `Weak`'s (ADR 0320).
-            ty::Adt(..) if self.counted_rc(ty).is_some() || self.weak_of(ty).is_some() => true,
+            ty::Adt(..) if self.counted_rc(ty).is_some() || self.counted_weak(ty).is_some() => true,
             // A path is its text, which JS never changes in place (ADR 0173),
             // and a parse error its message, or what it's made of, which
             // nothing changes (#118).
@@ -175,8 +180,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(Expr::call(Expr::helper("$cloneSender"), vec![place]));
         }
         // A counted `Rc`, or a `Weak`: one more, of the same value (ADR 0320).
-        if self.counted_rc(ty).is_some() || self.weak_of(ty).is_some() {
-            let clone = if self.weak_of(ty).is_some() {
+        if self.counted_rc(ty).is_some() || self.counted_weak(ty).is_some() {
+            let clone = if self.counted_weak(ty).is_some() {
                 "$weakClone"
             } else {
                 "$rcClone"
@@ -674,6 +679,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Self::new_rc(self.default_value(args.type_at(0), span)?)
             }
             ty::Adt(_, args) if ty.is_box() || self.is_rc(ty) => self.default_value(args.type_at(0), span)?,
+            ty::Adt(..) if crate::lower::recognition::weak_pointee(self.tcx, ty).is_some() => self.weak_to_nothing(ty),
             ty::Adt(..) if std(StdItem::OnceCell) => {
                 Expr::object(vec![Prop::Field(js::HELD.into(), Expr::undefined())])
             }

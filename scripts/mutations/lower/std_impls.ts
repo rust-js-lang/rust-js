@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "uncounted-weak-cloned",
+    breaks: "a clone of an uncounted `Weak` copies what it points at, or is refused, where it's the same object (ADR 0843)",
+    file: "src/lower/std_impls.rs",
+    find: "        if self.uncounted_weak(ty).is_some() {\n            return false;\n        }\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^weak_uncounted_uses.rs$"],
+  },
+  {
     name: "numbered-eq-structural",
     breaks: "`==` of two numbered enums is `$eq(a, b)`, where they're numbers JS's `===` compares",
     file: "src/lower/std_impls.rs",

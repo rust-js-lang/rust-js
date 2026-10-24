@@ -866,7 +866,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             // A counted `Rc`'s or `Weak`'s counts change through
                             // what shares it (ADR 0320).
                             && self.counted_rc(t).is_none()
-                            && self.weak_of(t).is_none()
+                            && self.counted_weak(t).is_none()
                     }
                     _ => true,
                 })

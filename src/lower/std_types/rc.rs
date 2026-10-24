@@ -35,9 +35,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         rc_pointee(self.tcx, ty).filter(|&pointee| self.krate.counted.counts(self.tcx, pointee))
     }
 
-    /// What a `Weak` points at, if `ty` is one: always counted.
-    pub(in crate::lower) fn weak_of(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
-        weak_pointee(self.tcx, ty)
+    /// What a counted `Weak` points at, if `ty` is one: a `Weak` of a
+    /// counted `Rc`'s. Every other is what its `Rc` is, the value itself,
+    /// or `null` of a `Weak::new()` (ADR 0843).
+    pub(in crate::lower) fn counted_weak(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
+        weak_pointee(self.tcx, ty).filter(|&pointee| self.krate.counted.counts(self.tcx, pointee))
+    }
+
+    /// What an uncounted `Weak` points at, if `ty` is one (ADR 0843).
+    pub(in crate::lower) fn uncounted_weak(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
+        weak_pointee(self.tcx, ty).filter(|&pointee| !self.krate.counted.counts(self.tcx, pointee))
+    }
+
+    /// `Weak::new()`, and `Weak`'s `Default`, of a `Weak` type `weak`: a
+    /// counted one's, `$weakNone`, the one each is, so two are `ptr_eq`;
+    /// or an uncounted one's `null` (ADR 0843).
+    pub(in crate::lower) fn weak_to_nothing(&self, weak: Ty<'tcx>) -> Expr {
+        match self.counted_weak(weak) {
+            Some(_) => Expr::helper("$weakNone"),
+            None => Expr::null(),
+        }
     }
 
     /// `Rc::new(value)` of a counted one: `{ value, strong: 1, weak: 0 }`.
@@ -66,25 +83,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// An `Rc`'s or a `Weak`'s function, of its arguments' values, `tys`
-    /// their types (ADR 0364).
+    /// their types, giving an `output` (ADR 0364).
     pub(in crate::lower) fn rc_values(
         &mut self,
         op: RcOp,
-        (values, tys): (Vec<Expr>, &[Ty<'tcx>]),
+        (values, tys, output): (Vec<Expr>, &[Ty<'tcx>], Ty<'tcx>),
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<Expr> {
         let pointee = tys.first().and_then(|first| {
             let first = first.peel_refs();
-            self.counted_rc(first).or(self.weak_of(first))
+            self.counted_rc(first).or(self.counted_weak(first))
         });
         let mut values = values.into_iter();
         let helper = |name: &'static str, args: Vec<Expr>| Expr::call_helper(name, args);
         Ok(match op {
-            RcOp::WeakNew => Expr::object(vec![
-                Prop::Field("strong".into(), Expr::int(0)),
-                Prop::Field("weak".into(), Expr::int(0)),
-            ]),
+            // An uncounted `Weak` is what its `Rc` is, the value itself, and
+            // one to nothing `null`: nothing asks whether it's alive, so it
+            // needs no count; `Weak::ptr_eq` is `===` of either (ADR 0843).
+            RcOp::Downgrade if self.uncounted_weak(output).is_some() => values.next().expect("an `Rc`"),
+            RcOp::WeakNew => self.weak_to_nothing(output),
             RcOp::NewCyclic => {
                 let f = values.next().expect("a function");
                 helper("$newCyclic", vec![f])

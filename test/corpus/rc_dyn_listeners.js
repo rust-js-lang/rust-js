@@ -10,6 +10,7 @@ import {
   $unborrow,
   $upgrade,
   $weakDrop,
+  $weakNone,
 } from "@rust-js/runtime";
 
 export function entry() {
@@ -38,16 +39,8 @@ function main() {
   } finally {
     $unborrow(receiver);
   }
-  const root = {
-    value: { name: "root", parent: { value: { strong: 0, weak: 0 } } },
-    strong: 1,
-    weak: 0,
-  };
-  const leaf = {
-    value: { name: "leaf", parent: { value: { strong: 0, weak: 0 } } },
-    strong: 1,
-    weak: 0,
-  };
+  const root = { value: { name: "root", parent: { value: $weakNone } }, strong: 1, weak: 0 };
+  const leaf = { value: { name: "leaf", parent: { value: $weakNone } }, strong: 1, weak: 0 };
   try {
     try {
       const value = $downgrade(root);

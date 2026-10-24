@@ -713,8 +713,60 @@ export function handlers(payload) {
 }
 ```
 
+A `Weak` that nothing upgrades or counts is what its `Rc` is, the object
+itself, and `Weak::new()` is `null`: the `Weak`s a self-referring object
+holds, as React's context is its own `Provider` and its `Consumer`'s
+`_context`, are that object, set after it's made
+([ADR 0843](../../decisions/0843-a-weak-nothing-upgrades-is-the-value-itself.md)).
+
+```rust
+use std::cell::Cell;
+use std::rc::{Rc, Weak};
+
+pub struct Context {
+    pub value: Cell<f64>,
+    pub provider: Cell<Weak<Context>>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub consumer: Cell<Option<Rc<Consumer>>>,
+}
+
+pub struct Consumer {
+    pub context: Weak<Context>,
+}
+
+pub fn create_context(value: f64) -> Rc<Context> {
+    let context = Rc::new(Context {
+        value: Cell::new(value),
+        // These are circular
+        provider: Cell::new(Weak::new()),
+        consumer: Cell::new(None),
+    });
+    context.provider.set(Rc::downgrade(&context));
+    context.consumer.set(Some(Rc::new(Consumer {
+        context: Rc::downgrade(&context),
+    })));
+    context
+}
+```
+
+```js
+export function createContext(value) {
+  const context = {
+    value,
+    // These are circular
+    provider: null,
+    consumer: null,
+  };
+  context.provider = context;
+  context.consumer = {
+    context,
+  };
+  return context;
+}
+```
+
 An `Rc` whose counts the crate reads, `strong_count`, `weak_count` or a
-`Weak`, is counted as Rust counts it: `{ value, strong, weak }`
+`Weak`'s `upgrade`, is counted as Rust counts it: `{ value, strong, weak }`
 ([ADR 0320](../../decisions/0320-counted-rcs.md)).
 
 ```rust

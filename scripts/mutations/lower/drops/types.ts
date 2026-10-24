@@ -3,6 +3,15 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "uncounted-weak-drops",
+    breaks: "an uncounted `Weak`'s drop is `$weakDrop` of the object itself, or of `null`, which throws (ADR 0843)",
+    file: "src/lower/drops/types.rs",
+    find: "            ty::Adt(..) if weak_pointee(tcx, ty).is_some() => Drops::Nothing,\n",
+    replace: "            ty::Adt(..) if weak_pointee(tcx, ty).is_some() => Drops::Runs,\n",
+    tests: ["test/corpus.test.ts", "-t", "^weak_cycle_set_after.rs$"],
+    snapshots: true,
+  },
+  {
     name: "drops-walk-uncached",
     breaks: "what a type drops is found again for each path to it, which takes exponential time",
     file: "src/lower/drops/types.rs",
