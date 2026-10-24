@@ -106,6 +106,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/jumps.rs",
     find: "        if broken_in_then(body, &continues) {\n",
     replace: "        if false {\n",
-    tests: ["test/lowering-early-exits.test.ts", "-t", "a loop's early break"],
+    tests: ["test/corpus.test.ts", "-t", "^(signed_counter|signed_index).rs$"],
+    snapshots: true,
   },
 ];

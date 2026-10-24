@@ -249,8 +249,8 @@ gh run view <id> --log-failed            # why
 bun run ci:bless                         # apply its bless patches, review, commit, push
 ```
 
-`bun run ci:check` checks another branch, or `main` again; `--shards=4`
-splits the suite across four machines.
+`bun run ci:check` checks another branch, or `main` again, its suite on
+the workflow's 2 machines; `--shards=4` splits it across four.
 
 ## For agents
 
