@@ -525,7 +525,8 @@ pub fn lazy(n: Option<f64>) -> Lazy {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "-L", target]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain("  context.Provider = context;\n  context.Consumer = { $$typeof: REACT_CONSUMER_TYPE, _context: context };\n");
+  // Across lines, as its literal is, and React's (ADR 0835).
+  expect(js).toContain("  context.Provider = context;\n  context.Consumer = {\n    $$typeof: REACT_CONSUMER_TYPE,\n    _context: context,\n  };\n");
   expect(js).toContain("  context.Consumer = consumerOf(context);\n");
   expect(js).toContain("  context.Consumer = consumer ?? null;\n");
   expect(js).toContain('_debugTask: createTask ? createTask("lazy()") : null');
