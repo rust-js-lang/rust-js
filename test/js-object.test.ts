@@ -482,6 +482,67 @@ pub fn given() -> Option<&'static Unknown> {
   expect(lib.given()).toBe(1);
 });
 
+// ADR 0716: a function's `name`, `length` and source, `Function.prototype`'s
+// members, of any function, as React's `shared/ReactPerformanceTrackProperties.js`
+// reads them: `f.name`, `f.length`, `Function.prototype.toString.call(f)`.
+test("a function's name, length and source are read of any function", async () => {
+  const { js, lib, warnings } = await compiled("js-object-function-members", `use js::{Kind, Unknown, function};
+
+pub fn described(value: Option<&Unknown>) -> String {
+    match js::classify(value) {
+        Kind::Function(f) => {
+            let function_name = function::name(f);
+            if function_name.is_empty() {
+                "() => {}".to_string()
+            } else {
+                function_name + "() {}"
+            }
+        }
+        _ => String::new(),
+    }
+}
+
+pub fn same_source(prev_value: Option<&Unknown>, next_value: Option<&Unknown>) -> bool {
+    if let Kind::Function(prev_value) = js::classify(prev_value)
+        && let Kind::Function(next_value) = js::classify(next_value)
+        && function::name(prev_value) == function::name(next_value)
+        && function::length(prev_value) == function::length(next_value)
+    {
+        let prev_src = function::to_string(prev_value);
+        let next_src = function::to_string(next_value);
+        return prev_src == next_src;
+    }
+    false
+}
+
+pub fn of_signature(f: &dyn Fn(&str) -> u32) -> (String, u32) {
+    (function::name(f), function::length(f))
+}
+
+pub fn own() -> (String, u32) {
+    fn add(a: u32, b: u32) -> u32 {
+        a + b
+    }
+    (function::name(&add), function::length(&add))
+}
+`);
+  expect(warnings).toEqual([]);
+  expect(js).toContain("const functionName = value.name;");
+  expect(js).toContain("prevValue.name === nextValue.name &&");
+  expect(js).toContain("prevValue.length === nextValue.length");
+  expect(js).toContain("const prevSrc = Function.prototype.toString.call(prevValue);");
+  expect(js).toContain("return [f.name, f.length];");
+  expect(js).toContain("return [add.name, add.length];");
+  expect(lib.described(function named() {})).toBe("named() {}");
+  expect(lib.described(() => {})).toBe("() => {}");
+  const made = () => (n: number) => n + 1;
+  expect(lib.sameSource(made(), made())).toBe(true);
+  expect(lib.sameSource(made(), (n: number) => n + 2)).toBe(false);
+  expect(lib.sameSource(function a(x: number) {}, function a(x: number, y: number) {})).toBe(false);
+  expect(lib.ofSignature(function measure(text: string) { return text.length; })).toEqual(["measure", 1]);
+  expect(lib.own()).toEqual(["add", 2]);
+});
+
 // ADRs 0695 to 0700: React's `shared/ReactComponentStackFrame.js` as a port writes
 // it, each shape upstream's: `Fake` a function declaration where it's
 // written, `new fn()`, `delete fn.prototype.props`, `fn()` for what it

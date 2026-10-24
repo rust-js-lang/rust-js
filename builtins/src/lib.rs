@@ -285,14 +285,52 @@ pub trait AnyShape<M: ?Sized> {}
 
 impl<T: Defined + ?Sized> AnyShape<()> for T {}
 
+/// Any function, of whatever it takes and gives, as each is TypeScript's
+/// `Function`: a function item, a closure, a `fn` pointer or a `dyn Fn` of
+/// any signature, a JS function of JS's or of the program's (ADR 0716).
+/// What [`function`]'s members, `Function.prototype`'s, are read of. `M`
+/// is which one, rustc's to infer, as [`AnyShape`]'s is.
+pub trait AnyFunction<M: ?Sized> {}
+
 /// A function of each arity up to 12, its marker the `fn` pointer of its
-/// signature.
+/// signature: of any shape, and any function.
 macro_rules! functions {
     ($(($($a:ident),*))*) => {
         $(
             impl<F: FnOnce($($a),*) -> R + ?Sized, R, $($a),*> AnyShape<fn($($a),*) -> R> for F {}
+            impl<F: FnOnce($($a),*) -> R + ?Sized, R, $($a),*> AnyFunction<fn($($a),*) -> R> for F {}
         )*
     };
+}
+
+/// What every JS function has, `Function.prototype`'s, of a function of
+/// any signature, [`AnyFunction`], as TypeScript's `Function` types them
+/// (ADR 0716): `function::name(f)` is `f.name`.
+pub mod function {
+    use super::AnyFunction;
+
+    /// [`f.name`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Function/name):
+    /// its name, `""` of an anonymous one, as TypeScript's `string` has it.
+    #[cfg_attr(rust_js, rust_js::link_name = "get name")]
+    pub fn name<F: AnyFunction<M> + ?Sized, M>(this: &F) -> String {
+        unreachable!()
+    }
+
+    /// [`f.length`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Function/length):
+    /// how many parameters it declares before its first with a default
+    /// or its rest.
+    #[cfg_attr(rust_js, rust_js::link_name = "get length")]
+    pub fn length<F: AnyFunction<M> + ?Sized, M>(this: &F) -> u32 {
+        unreachable!()
+    }
+
+    /// [`Function.prototype.toString.call(f)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Function/toString):
+    /// its source, as JS keeps it, `function () { [native code] }` of a
+    /// host's own; what no function of its own `toString` changes.
+    #[cfg_attr(rust_js, rust_js::link_name = "Function.prototype.toString.call")]
+    pub fn to_string<F: AnyFunction<M> + ?Sized, M>(f: &F) -> String {
+        unreachable!()
+    }
 }
 
 functions! {

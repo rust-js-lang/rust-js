@@ -981,6 +981,51 @@ export function isMarked(log) {
   return log.__reactDisabledLog != null;
 }
 ```
+- **What every function has, `Function.prototype`'s, is `js::function`'s**,
+  of a function of any signature, `js::AnyFunction`, as TypeScript types
+  each: `function::name(f)` is `f.name`, a `String`, `function::length(f)`
+  `f.length`, and `function::to_string(f)` its source,
+  `Function.prototype.toString.call(f)`
+  ([ADR 0716](../../decisions/0716-a-functions-members-are-read-of-any-function.md)):
+
+```rust
+use js::{Kind, Unknown, function};
+
+pub fn described(value: Option<&Unknown>) -> String {
+    match js::classify(value) {
+        Kind::Function(f) => {
+            let function_name = function::name(f);
+            if function_name.is_empty() {
+                "() => {}".to_string()
+            } else {
+                function_name + "() {}"
+            }
+        }
+        _ => String::new(),
+    }
+}
+
+pub fn same_source(prev: &dyn Fn(&str), next: &dyn Fn(&str)) -> bool {
+    function::length(prev) == function::length(next) && function::to_string(prev) == function::to_string(next)
+}
+```
+
+```js
+export function described(value) {
+  if (typeof value === "function") {
+    const functionName = value.name;
+    return !functionName ? "() => {}" : functionName + "() {}";
+  }
+  return "";
+}
+
+export function sameSource(prev, next) {
+  return (
+    prev.length === next.length &&
+    Function.prototype.toString.call(prev) === Function.prototype.toString.call(next)
+  );
+}
+```
 - **A constructor is a `fn` item**, a function declaration, which `new`
   constructs and which has a `prototype`, declared where it's written, in
   the block it's written in; a closure is an arrow
