@@ -82,13 +82,14 @@ on:
 permissions:
   contents: read
 
-# Started by hand, one run at a time with check.yml's of the same branch,
-# a new one cancelling the one running. Called by check.yml, which is that
-# run, a group of its own: in the caller's, it would wait for the caller,
-# or cancel it. Of nightly.yml, its rustc tests, mutations and generated
-# programs each one.
+# Started by hand, one run at a time of the same branch, a new one
+# cancelling the one running: a group of its own, apart from check.yml's,
+# so a run started here never cancels a check (check.yml). Called by
+# check.yml, a group of its own too: in the caller's, it would wait for
+# the caller, or cancel it. Of nightly.yml, its rustc tests, mutations and
+# generated programs each one.
 concurrency:
-  group: ${{ github.workflow == 'rustc tests' && format('ci-{0}', github.ref) || format('ci-{0}-{1}-{2}', github.workflow, inputs.mutations, inputs.fuzz_seeds) }}
+  group: ${{ github.workflow == 'rustc tests' && format('rustc-{0}', github.ref) || format('ci-{0}-{1}-{2}', github.workflow, inputs.mutations, inputs.fuzz_seeds) }}
   cancel-in-progress: true
 
 jobs:

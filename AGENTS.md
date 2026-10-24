@@ -182,7 +182,10 @@ belong in CI.
 
 Before pushing, run `bun run typecheck`, `bun run fmt:check`,
 `cargo clippy --locked -- -D warnings`, and the change's tests and mutations.
-After pushing, run `bun run ci:check`. Workflows are
+A push to `main` starts its own check, which runs to its end: read it
+with `bun run ci:status`, and don't start another after pushing, which
+only waits behind it. `bun run ci:check` is for another branch, or a
+run with other settings. Other workflows are
 [started by hand](DEVELOPMENT.md#workflows).
 
 Keep [TESTS.md](TESTS.md) accurate in the same commit when suites, test files,

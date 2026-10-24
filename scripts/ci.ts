@@ -1,7 +1,7 @@
 // The checks CI runs of each push to `main` (DEVELOPMENT.md), read from
 // here, and of another branch started from here, by GitHub's CLI:
 //
-//   bun run ci:check [branch] [--shards=4] [--since=<rev>]  # check it as it's pushed, again
+//   bun run ci:check [branch] [--shards=4] [--since=<rev>]  # check a branch as it's pushed; main's push checks it already
 //   bun run ci:status                       # each branch's latest run, and what failed, and the nightly's
 //   bun run ci:bless [branch]               # apply its latest run's bless patches
 //   bun scripts/ci.ts timings               # in CI: the last run's shards' timings, for this run's to balance by
@@ -92,10 +92,6 @@ function status() {
   }
 }
 
-/** Start the check of `branch`, as it's pushed: the local one, if it's
- * ahead, isn't what would be checked. Its mutations are of what changed
- * since `since`: of `main`, by default, since its last finished check, or
- * the commit before; of another branch, since it left `main`. */
 /** The machines mutations may be split across: the workflows' choices
  * and matrix are these, as `test/ci.test.ts` holds them. The nightly takes
  * the most, its every mutation on each of the Free plan's 20 at once
@@ -109,6 +105,12 @@ export function mutationShards(count: number): string {
   return String(MUTATION_SHARDS.find((n) => n >= wanted) ?? MUTATION_SHARDS.at(-1));
 }
 
+/** Start the check of `branch`, as it's pushed: the local one, if it's
+ * ahead, isn't what would be checked. Its mutations are of what changed
+ * since `since`: of `main`, by default, since its last finished check, or
+ * the commit before; of another branch, since it left `main`. A check of
+ * `main` is its push's already: one started here waits behind the one
+ * running, and cancels none (check.yml). */
 async function check(branch: string, shards: string | undefined, since?: string) {
   const git = (args: string[]) => Bun.spawnSync(["git", ...args], { cwd: root }).stdout.toString().trim();
   git(["fetch", "--quiet", "origin", branch]);
