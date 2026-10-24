@@ -6,7 +6,7 @@
 import { beforeAll, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { buildReact, compiler, fixture, run, target } from "./support";
+import { buildReact, compiler, fixture, performanceTrack, run, target } from "./support";
 
 beforeAll(buildReact, 600_000);
 
@@ -1078,4 +1078,55 @@ pub fn deep(indent: usize) -> usize {
   // What a \`break\` knows goes past the block: there it may be the most.
   expect([lib.joined(1), lib.joined(4294967295)]).toEqual([2, 0]);
   expect([lib.lower(-4), lib.lower(-5), lib.lower(2147483647)]).toEqual([-5, -5, 2147483646]);
+});
+
+// ADR 0746: a `push` makes a `Vec` at least one long, whatever was known
+// of it, and a variable at least `n` that's at most a slice's length shows
+// the slice at least `n` long. So React's ported addObjectDiffToProperties
+// reads `properties[prevLength - 1]`, its `prevLength` read after a push,
+// and addValueToProperties `propsKeys[0]` past `propsLength === 1`.
+test("a length held in a variable shows the slice at least so long", async () => {
+  const dir = fixture("held-length");
+  writeFileSync(join(dir, "lib.rs"), `fn nested(properties: &mut Vec<(String, String)>, more: bool) {
+    if more {
+        properties.push(("x".to_string(), String::new()));
+    }
+}
+
+pub fn diff(properties: &mut Vec<(String, String)>, more: bool) {
+    properties.push(("key".to_string(), String::new()));
+    let prev_length = properties.len();
+    nested(properties, more);
+    if prev_length == properties.len() {
+        properties[prev_length - 1].1 = "unchanged".to_string();
+    }
+}
+
+pub fn only_children(keys: &[String]) -> bool {
+    let length = keys.len();
+    length == 1 && keys[0] == "children"
+}
+
+pub fn first_of_some(keys: &[String]) -> String {
+    let length = keys.len();
+    if length >= 2 { keys[1].clone() } else { keys[0].clone() }
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('properties[prevLength - 1][1] = "unchanged";');
+  expect(js).toContain('return length === 1 && keys[0] === "children";');
+  expect(js).toContain("length >= 2 ? keys[1] : $index(keys, 0)");
+  const lib = await import(join(dir, "lib.js"));
+  const properties: [string, string][] = [];
+  lib.diff(properties, false);
+  lib.diff(properties, true);
+  expect(properties).toEqual([["key", "unchanged"], ["key", ""], ["x", ""]]);
+  expect([lib.onlyChildren(["children"]), lib.onlyChildren(["a"]), lib.onlyChildren([])]).toEqual([true, false, false]);
+  // Where the length may be 0, its index is checked.
+  expect(lib.firstOfSome(["ab", "c"])).toBe("c");
+  expect(() => lib.firstOfSome([])).toThrow("index out of bounds");
+  const of = performanceTrack();
+  expect(of("addObjectDiffToProperties")).toContain("properties[prevLength - 1][1] =");
+  expect(of("addValueToProperties")).toContain('(propsLength !== 1 || propsKeys[0] !== "children" || key != null)');
 });

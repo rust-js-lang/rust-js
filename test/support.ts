@@ -386,6 +386,26 @@ export function buildNode(): string {
   return node;
 }
 
+let performanceTrackJs: string | undefined;
+/** React's shared/ReactPerformanceTrackProperties, as react-in-rust ports
+ * it (`test/ports/performance-track-properties`, copied with the modules it
+ * uses): its JS, a function of it at a time, compiled once a run. */
+export function performanceTrack(): (name: string) => string {
+  if (performanceTrackJs === undefined) {
+    const node = buildNode();
+    const out = fixture("performance-track-properties");
+    const crates = ["js", "node", "webapi"].flatMap((lib) => ["--extern", `${lib}=${join(node, `lib${lib}.rmeta`)}`]);
+    run([compiler, join(root, "test/ports/performance-track-properties/lib.rs"), "-o", join(out, "lib.js"), "--", ...crates, "-L", node]);
+    performanceTrackJs = readFileSync(join(out, "ReactPerformanceTrackProperties.js"), "utf8");
+  }
+  const js = performanceTrackJs;
+  return (name) => {
+    const at = js.indexOf(`function ${name}(`);
+    const ends = ["\nfunction ", "\nexport function ", "\nconst "].map((e) => js.indexOf(e, at + 1)).filter((e) => e > 0);
+    return js.slice(at, Math.min(js.length, ...ends));
+  };
+}
+
 /** The generated JS files under `dir`, by their paths from there: no maps. */
 function generated(dir: string): string[] {
   if (!existsSync(dir)) return [];

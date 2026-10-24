@@ -183,7 +183,7 @@ assumptions; rustc lang items remain available through rustc's identity API.
 | Responsibility | Modules |
 | --- | --- |
 | Crate facts and validation | `analysis.rs`, `analysis/` |
-| Body facts and integer ranges | `body_queries.rs`, `body_queries/` |
+| Body facts and integer ranges | `body_queries.rs`, `body_queries/`, `body_queries/ranges/` |
 | std recognition and coverage | `recognition.rs`, `recognition/`, `shortcuts.rs`, `std_coverage.rs` |
 | Function contexts, assembly and source capture | `bodies.rs`, `pipeline.rs`, `sources.rs`, `library.rs` |
 | MIR lowering, control flow, calls, places, temporaries and drops | `mir.rs`, `mir/`, `mir/iter/` |

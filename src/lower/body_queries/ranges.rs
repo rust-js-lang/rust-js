@@ -11,6 +11,10 @@ use crate::lower::recognition::{VecView, counts_utf16_units, makes_utf16_units, 
 use rustc_middle::middle::region;
 use rustc_middle::ty::TypeVisitableExt;
 
+mod known;
+
+use known::{Below, Known, Range, either};
+
 /// A `Vec` or a slice, by the variable it's in and the fields to it.
 type Slice = (Vec<usize>, LocalVarId);
 
@@ -24,198 +28,6 @@ const STRING_LENGTH_MOST: i128 = (1 << 31) - 1;
 /// most, as no Rust allocation is larger in bytes (ADR 0701). Of items of
 /// no size, or of a size not known, `u32`'s most.
 const SIZED_SLICE_LENGTH_MOST: i128 = i32::MAX as i128;
-
-/// An upper bound of an integer by a slice's length `L`, `⌊(c·L + b) /
-/// 2^s⌋`: `L - 1` of an index `i < xs.len()`, `L / 2 - 1` of one below its
-/// half.
-#[derive(Clone, Copy, PartialEq, Debug)]
-struct Below {
-    c: i128,
-    b: i128,
-    s: u32,
-}
-
-impl Below {
-    /// The length itself.
-    const LENGTH: Below = Below { c: 1, b: 0, s: 0 };
-
-    /// The same bound over its least denominator: `⌊(4·L - 4) / 4⌋` is
-    /// `L - 1`. Each bound is made so, or a loop that halves an index, as
-    /// `siftUp`'s does, never settles on one.
-    fn lowest(mut self) -> Below {
-        while self.s > 0 && self.c % 2 == 0 && self.b % 2 == 0 {
-            self = Below {
-                c: self.c / 2,
-                b: self.b / 2,
-                s: self.s - 1,
-            };
-        }
-        self
-    }
-
-    /// This bound and `other` over one denominator.
-    fn aligned(self, other: Below) -> (Below, Below) {
-        let s = self.s.max(other.s);
-        let up = |x: Below| Below {
-            c: x.c << (s - x.s),
-            b: x.b << (s - x.s),
-            s,
-        };
-        (up(self), up(other))
-    }
-
-    fn plus(self, other: Below) -> Below {
-        let (x, y) = self.aligned(other);
-        Below {
-            c: x.c + y.c,
-            b: x.b + y.b,
-            s: x.s,
-        }
-        .lowest()
-    }
-
-    fn offset(self, k: i128) -> Below {
-        Below {
-            b: self.b + (k << self.s),
-            ..self
-        }
-        .lowest()
-    }
-
-    fn times(self, k: i128) -> Below {
-        Below {
-            c: self.c * k,
-            b: self.b * k,
-            ..self
-        }
-        .lowest()
-    }
-
-    /// Whether it's below the length, `≤ L - 1`, whatever `L` is.
-    fn within(self) -> bool {
-        self.c <= 1 << self.s && self.b <= -(1 << self.s)
-    }
-
-    /// The most it is where the length is at most `length`.
-    fn most(self, length: i128) -> i128 {
-        (self.c * length + self.b) >> self.s
-    }
-
-    /// A bound at least either is.
-    fn join(self, other: Below) -> Below {
-        let (x, y) = self.aligned(other);
-        Below {
-            c: x.c.max(y.c),
-            b: x.b.max(y.b),
-            s: x.s,
-        }
-        .lowest()
-    }
-}
-
-/// What an integer can be: from `lo` to `hi`, and at most `below` by a
-/// slice's length.
-#[derive(Clone, PartialEq, Debug)]
-struct Range {
-    lo: i128,
-    hi: i128,
-    below: Option<(Slice, Below)>,
-}
-
-impl Range {
-    fn of(lo: i128, hi: i128) -> Self {
-        Range { lo, hi, below: None }
-    }
-
-    fn constant(&self) -> Option<i128> {
-        (self.lo == self.hi).then_some(self.lo)
-    }
-
-    /// Whether a product of this and `other` can be JS's `-0`: one of them
-    /// 0, the other below it, `-4 * 0`, which an integer never is.
-    fn may_make_negative_zero(&self, other: &Range) -> bool {
-        let zero = |r: &Range| r.lo <= 0 && 0 <= r.hi;
-        zero(self) && other.lo < 0 || zero(other) && self.lo < 0
-    }
-
-    /// Its bound by `slice`'s length: its own, or of one without, its
-    /// most, `⌊(0·L + hi) / 1⌋`, which it is whatever the length.
-    fn below_of(&self, slice: &Slice) -> Option<Below> {
-        match &self.below {
-            Some((s, x)) => (s == slice).then_some(*x),
-            None => Some(Below { c: 0, b: self.hi, s: 0 }),
-        }
-    }
-
-    /// A range either is in: of `0` and of an index below `xs.len()`, one
-    /// still at most the length.
-    fn join(&self, other: &Range) -> Range {
-        let slice = (self.below.as_ref()).or(other.below.as_ref()).map(|(s, _)| s);
-        Range {
-            lo: self.lo.min(other.lo),
-            hi: self.hi.max(other.hi),
-            below: slice.and_then(|slice| Some((slice.clone(), self.below_of(slice)?.join(other.below_of(slice)?)))),
-        }
-    }
-}
-
-/// What's known where the body is: each integer variable's range, and the
-/// least length of each slice.
-#[derive(Clone, PartialEq, Default, Debug)]
-struct Known {
-    vars: HashMap<LocalVarId, Range>,
-    lengths: HashMap<Slice, i128>,
-}
-
-impl Known {
-    fn join(&self, other: &Known) -> Known {
-        let vars = (self.vars.iter())
-            .filter_map(|(v, r)| other.vars.get(v).map(|o| (*v, r.join(o))))
-            .collect();
-        let lengths = (self.lengths.iter())
-            .filter_map(|(s, &n)| other.lengths.get(s).map(|&m| (s.clone(), n.min(m))))
-            .collect();
-        Known { vars, lengths }
-    }
-
-    /// What's known after `slice` grows `by` items, one more of a `push`,
-    /// one fewer of a `pop`: a bound `⌊(c·L + b) / 2^s⌋` by its length is
-    /// `⌊(c·L' + b - c·by) / 2^s⌋` by the new one, and of a `pop` of none,
-    /// which leaves it, larger still.
-    fn grown(&mut self, slice: &Slice, by: i128) {
-        if let Some(least) = self.lengths.get_mut(slice) {
-            *least = (*least + by).max(0);
-        }
-        for range in self.vars.values_mut() {
-            if let Some((at, bound)) = &mut range.below
-                && at == slice
-            {
-                bound.b -= bound.c * by;
-                *bound = bound.lowest();
-            }
-        }
-    }
-
-    /// What's known after `var` may have changed, as an integer or as what
-    /// holds a slice: nothing of it.
-    fn changed(&mut self, var: LocalVarId) {
-        self.vars.remove(&var);
-        self.lengths.retain(|(_, v), _| *v != var);
-        for range in self.vars.values_mut() {
-            if range.below.as_ref().is_some_and(|((_, v), _)| *v == var) {
-                range.below = None;
-            }
-        }
-    }
-}
-
-/// Either of two places the body goes on from, or the one it does.
-fn either(a: Option<Known>, b: Option<Known>) -> Option<Known> {
-    match (a, b) {
-        (Some(a), Some(b)) => Some(a.join(&b)),
-        (a, b) => a.or(b),
-    }
-}
 
 /// Where a `break` or a `continue` of a scope goes, and what's known where
 /// each is.
@@ -1275,8 +1087,7 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
                             BinOp::Ne if other.constant() == Some(0) => 1,
                             _ => continue,
                         };
-                        let at = k.lengths.entry(slice).or_insert(0);
-                        *at = (*at).max(least);
+                        k.at_least(&(slice, Below::LENGTH), least);
                     }
                 }
             }
@@ -1420,6 +1231,10 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
         if narrowed.lo > narrowed.hi {
             *known = None;
             return;
+        }
+        // At least so much, and at most a length: the slice at least so long.
+        if let Some(below) = &narrowed.below {
+            k.at_least(below, narrowed.lo);
         }
         k.vars.insert(var, narrowed);
     }
