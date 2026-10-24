@@ -118,9 +118,13 @@ impl Radix {
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// What std's `Display` of `value` hands its options to, and its type:
     /// a `Wrapping`'s number, a `Cow<str>`'s or a path's text, a parse
-    /// error's message, each of which `fmt`s it as its own; else `value`.
+    /// error's message, each of which `fmt`s it as its own; `js::shown`'s
+    /// text, `${value}`, which is padded as text is (ADR 0312); else `value`.
     fn display_handed_on(&self, value: Expr, ty: Ty<'tcx>) -> (Expr, Ty<'tcx>) {
         let text = self.tcx.types.str_;
+        if self.displays_itself(ty) {
+            return (super::display::shown_text(value), text);
+        }
         if let Some(inner) = self.recognition().wrapping_of(ty) {
             return (Expr::index(value, Expr::int(0)), inner);
         }
@@ -137,18 +141,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// One placeholder's string: `value` shown as `kind` says, with `spec`'s
     /// options, and its `width` and `precision`: numbers, or other arguments.
-    /// Whether `ty`'s `Display::fmt` is a binding of the value itself,
-    /// `#[link_name = "this"]` (ADR 0312).
-    fn displays_itself(&self, ty: Ty<'tcx>) -> bool {
-        let Some(fmt) = self.recognition().display_fmt() else {
-            return false;
-        };
-        let args = self.tcx.mk_args(&[self.tcx.erase_and_anonymize_regions(ty).into()]);
-        matches!(self.resolve_instance(fmt, args), Ok(Some(instance))
-            if super::bindings::is_binding(self.tcx, instance.def_id())
-                && matches!(super::bindings::js_form(self.tcx, instance.def_id()), super::bindings::JsForm::This))
-    }
-
     pub(super) fn format_value(
         &mut self,
         value: Expr,
@@ -157,11 +149,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         (width, precision): (Option<Expr>, Option<Expr>),
         span: Span,
     ) -> R<Expr> {
-        // A value whose `Display` is itself, `js::shown`'s: `${value}`, as
-        // JS's template shows any value (ADR 0312).
-        if kind == Std::FmtDisplay && self.displays_itself(ty) {
-            return Ok(value);
-        }
         // A `Box` or an `Rc` is what it holds in JS, and its `fmt` hands the
         // placeholder's options to what it holds: `{:>4}` of `Box::new("s")`
         // pads the string.
@@ -251,7 +238,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 };
                 let digits = radix.digits(value, num);
                 match spec.alternate {
-                    true => Expr::bin(Op::Add, Expr::str(radix.prefix()), digits),
+                    true => super::display::join(vec![Expr::str(radix.prefix()), digits]),
                     false => digits,
                 }
             }

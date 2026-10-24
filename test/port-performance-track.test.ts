@@ -68,10 +68,38 @@ test("addValueToProperties is a switch whose case breaks where it's written", ()
   expect(add).not.toMatch(/^\s*\w+: \{$/m);
   expect(add).not.toMatch(/break \w+;/);
   expect(add).toContain('  switch (typeof value) {\n    case "object":\n      if (value === null) {\n        desc = "null";\n');
-  expect(add).toContain('        if (key == null && propsLength === 0) {\n          desc = "<" + typeName + " />";\n          break;\n        }\n');
+  expect(add).toContain('          if (key == null && propsLength === 0) {\n            desc = "<" + typeName + " />";\n            break;\n          }\n');
   expect(add).toContain(
     '          desc = typeof length === "number" ? `${objectName}(${length})` : objectName;\n          break;\n        }\n',
   );
+});
+
+// ADR 0805: upstream's `if (value === null) { .. } else { if
+// (readReactElementTypeof(value) === REACT_ELEMENT_TYPE) { .. return; } ..
+// }`, an `if` with no `else`, as the port writes it; and its JSX test,
+// `indent < 3 || (propsLength === 1 && propsKeys[0] === 'children' && key
+// == null)`, as written, its branch `desc = ..; break;`.
+test("addValueToProperties' JSX branch is as written", () => {
+  const js = of("ReactPerformanceTrackProperties.js");
+  const add = js.slice(js.indexOf("export function addValueToProperties("), js.indexOf("const REMOVED"));
+  expect(add).not.toContain("} else if (readReactElementTypeof(value)");
+  expect(add).toContain(
+    '        desc = "null";\n      } else {\n        if (readReactElementTypeof(value) === REACT_ELEMENT_TYPE) {\n',
+  );
+  expect(add).toContain(
+    '          if (indent < 3 || (propsLength === 1 && propsKeys[0] === "children" && key == null)) {\n            desc = "<" + typeName + " … />";\n            break;\n          }\n',
+  );
+  expect(add).toContain('          return;\n        }\n        // $FlowFixMe[method-unbinding]\n');
+});
+
+// ADR 0806: upstream's `array.slice(0, OBJECT_WIDTH_LIMIT)` where
+// `didTruncate`, `array.length > OBJECT_WIDTH_LIMIT`, holds: the port's
+// `&array[..OBJECT_WIDTH_LIMIT]`, which can't panic there, JS's own slice.
+test("addValueToProperties slices a truncated array as JS does", () => {
+  const js = of("ReactPerformanceTrackProperties.js");
+  const add = js.slice(js.indexOf("export function addValueToProperties("), js.indexOf("const REMOVED"));
+  expect(add).not.toContain("$slice");
+  expect(add).toContain('[...value.slice(0, OBJECT_WIDTH_LIMIT), "…"]');
 });
 
 // ADR 0753: upstream's `if (indent >= 3) { // .. } else if (..)`, the

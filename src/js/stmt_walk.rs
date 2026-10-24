@@ -21,7 +21,7 @@ impl Module {
                 ExprKind::Symbol(_) => "a module's symbol",
                 ExprKind::FunctionHole(_) => "a function's hole",
                 ExprKind::DropArgument(..) => "a drop's argument",
-                ExprKind::Handle(_) | ExprKind::Pair(..) => "a `&mut`'s handle",
+                ExprKind::Handle(_, _) | ExprKind::Pair(..) => "a `&mut`'s handle",
                 ExprKind::Import(ImportFrom::Module(_)) => "an `import()` of a module without its specifier",
                 _ => return,
             };

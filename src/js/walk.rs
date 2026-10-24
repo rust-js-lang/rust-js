@@ -145,7 +145,7 @@ macro_rules! walks {
                     | ExprKind::Await(a)
                     | ExprKind::Spread(a)
                     | ExprKind::Stringed(a)
-                    | ExprKind::Handle(a)
+                    | ExprKind::Handle(a, _)
                     | ExprKind::DropArgument(_, _, a) => a.$expr(f),
                     ExprKind::Index(a, b)
                     | ExprKind::OptionalIndex(a, b)
@@ -168,7 +168,7 @@ macro_rules! walks {
                     ExprKind::Array(items) | ExprKind::Template(_, items, _) => {
                         items.$iter().for_each(|a| a.$expr(f))
                     }
-                    ExprKind::Object(fields) => props(fields, f),
+                    ExprKind::Object(fields, ..) => props(fields, f),
                     ExprKind::Arrow(_, body) | ExprKind::AsyncArrow(_, body) => $exprs(body, f),
                     ExprKind::Function($function) => $exprs($function_body, f),
                     ExprKind::Jsx(jsx) => {

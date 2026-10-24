@@ -79,9 +79,17 @@ export const mutations: Mutation[] = [
     "name": "mir-nullable-field-coalesced",
     "breaks": "a `#[rust_js::nullable]` field moved into another, `p.code`, is `p.code ?? null`",
     "file": "src/lower/mir/rvalues.rs",
-    "find": "                    bindings::is_nullable(self.tcx, &variant.fields[*field])\n",
-    "replace": "                    false\n",
+    "find": "                .is_some_and(|field| bindings::null_where_made(self.tcx, field));\n",
+    "replace": "                .is_some_and(|_| false);\n",
     "tests": ["test/lowering-options.test.ts", "-t", "a nullable field's None is null"]
+  },
+  {
+    name: "optional-field-read-nulled",
+    breaks: "an optional nullable field's value, `undefined` where it's absent, is given to a nullable field as it is, not `null` (ADR 0810)",
+    file: "src/lower/mir/rvalues.rs",
+    find: "                .is_some_and(|field| bindings::null_where_made(self.tcx, field));\n",
+    replace: "                .is_some_and(|field| bindings::is_nullable(self.tcx, field));\n",
+    tests: ["test/lowering-nullable.test.ts", "-t", "an optional nullable field"],
   },
   {
     "name": "mir-nullable-moved-through-unseen",
@@ -443,5 +451,13 @@ export const mutations: Mutation[] = [
     find: "                    && let Some(&discriminant) = state.options.thrown.get(&place.local) =>\n",
     replace: "                    && let Some(&discriminant) = state.options.thrown.get(&place.local).filter(|_| false) =>\n",
     tests: ["test/lowering-unwinds.test.ts", "-t", "every unwind"],
+  },
+  {
+    name: "cell-handle-place-reread",
+    breaks: "a handle on `get(&c).value` calls `get` each time it's read or written",
+    file: "src/lower/mir/rvalues.rs",
+    find: "                    && !fixed_place(on)\n",
+    replace: "                    && false\n",
+    tests: ["test/corpus.test.ts", "-t", "^cell_reached_through_a_call.rs$"],
   },
 ];

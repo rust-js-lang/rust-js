@@ -567,6 +567,8 @@ fn block(body: &mut Vec<Stmt>) {
                 }
             }
             StmtKind::While { cond, body, .. } => {
+                // Its test as a test, as an `if`'s.
+                *cond = cond.tested();
                 expr(cond);
                 block(body);
             }
@@ -1041,7 +1043,7 @@ fn entries_written_out(e: &Expr) -> Option<Expr> {
     }
     Some(Expr {
         known: js::Known::Nothing,
-        kind: ExprKind::Object(fields),
+        kind: ExprKind::Object(fields, js::ObjectLayout::default()),
         span: e.span,
     })
 }
@@ -1050,8 +1052,9 @@ fn expr(e: &mut Expr) {
     // A `&mut`'s handle on a place (ADR 0099), and a `dyn`'s of one with its
     // dictionary, as JS writes it: `{ get value() { return n; }, set
     // value(value) { n = value; } }`, its parameter a name the place
-    // doesn't read.
-    if let ExprKind::Handle(place) | ExprKind::Pair(place, _) = &e.kind {
+    // doesn't read; what it stores where its storage says, `value ?? null`
+    // (ADR 0772).
+    if let ExprKind::Handle(place, _) | ExprKind::Pair(place, _) = &e.kind {
         let mut param = "value".to_string();
         if place.mentions_var(&param) {
             param = "newValue".to_string();
@@ -1063,9 +1066,13 @@ fn expr(e: &mut Expr) {
             Vec::new(),
             vec![StmtKind::Return(Some((**place).clone())).at(place.span)],
         );
+        let written = match &e.kind {
+            ExprKind::Handle(_, storage) => storage.written(Expr::var(&param), false),
+            _ => Expr::var(&param),
+        };
         let set = Expr::arrow(
             vec![param.as_str().into()],
-            vec![StmtKind::Assign((**place).clone(), Expr::var(&param)).at(place.span)],
+            vec![StmtKind::Assign((**place).clone(), written).at(place.span)],
         );
         let dictionary = match &e.kind {
             ExprKind::Pair(_, dictionary) => Some(Prop::Field(js::DICTIONARY.into(), (**dictionary).clone())),
@@ -1185,13 +1192,18 @@ fn expr(e: &mut Expr) {
                 expr(child);
             }
         }
+        // What `!` turns it reads as a test, wherever it is.
+        ExprKind::Unary(js::UnaryOp::Not, a) => {
+            **a = a.tested();
+            expr(a);
+        }
         ExprKind::Member(a, _)
         | ExprKind::OptionalMember(a, _)
         | ExprKind::Unary(_, a)
         | ExprKind::Await(a)
         | ExprKind::Spread(a)
         | ExprKind::Stringed(a)
-        | ExprKind::Handle(a)
+        | ExprKind::Handle(a, _)
         | ExprKind::DropArgument(_, _, a) => expr(a),
         ExprKind::Binary(js::Op::Coalesce, a, b) => {
             expr(a);
@@ -1211,7 +1223,12 @@ fn expr(e: &mut Expr) {
             expr(a);
             expr(b);
         }
-        ExprKind::Template(_, values, _) => values.iter_mut().for_each(expr),
+        // A template in a template, a value's text, \`${`${x}`}\`, is spliced
+        // into it: \`${x}\` (ADR 0066).
+        ExprKind::Template(_, values, _) => {
+            values.iter_mut().for_each(expr);
+            e.splice_templates();
+        }
         ExprKind::OptionalCall(f, args) => {
             expr(f);
             args.iter_mut().for_each(expr);
@@ -1251,7 +1268,7 @@ fn expr(e: &mut Expr) {
             }
         }
         ExprKind::Array(items) => items.iter_mut().for_each(expr),
-        ExprKind::Object(props) => {
+        ExprKind::Object(props, ..) => {
             // A field that's `undefined`, a `None` say, is no key, `{ code }`,
             // as JS leaves it out: what reads it reads `undefined` either way
             // (ADR 0280). Not after a spread, whose field it would then be.

@@ -25,7 +25,11 @@ function nodeDebug_fmt(node, options) {
 
 function main() {
   const root = {
-    value: { val: 1, parent: { value: { strong: 0, weak: 0 } }, kids: [] },
+    value: {
+      val: 1,
+      parent: { value: { strong: 0, weak: 0 } },
+      kids: [],
+    },
     strong: 1,
     weak: 0,
   };
@@ -42,7 +46,15 @@ function main() {
     $rcDrop(root, dropNode);
     throw error;
   }
-  const kid = { value: { val: 2, parent: { value: tmp }, kids: [] }, strong: 1, weak: 0 };
+  const kid = {
+    value: {
+      val: 2,
+      parent: { value: tmp },
+      kids: [],
+    },
+    strong: 1,
+    weak: 0,
+  };
   try {
     console.log(`${nodeDebug_fmt(kid.value)}`);
   } catch (error) {

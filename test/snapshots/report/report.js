@@ -60,7 +60,15 @@ function parseRow(line) {
     const result$1 = $parseInt(parts[3], 0, 4294967295);
     if (result$1.TAG !== "Err") {
       const age = result$1._0;
-      return { TAG: "Ok", _0: { name: parts[0], team: parts[1], score, age } };
+      return {
+        TAG: "Ok",
+        _0: {
+          name: parts[0],
+          team: parts[1],
+          score,
+          age,
+        },
+      };
     }
     return { TAG: "Err", _0: rowErrorFromParseIntError_from(result$1._0) };
   }

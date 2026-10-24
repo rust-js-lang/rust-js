@@ -537,6 +537,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
 ) -> Option<AnalyzedCrate<'a, 'tcx>> {
     let foreign = super::library::Foreign::new(tcx, dependencies);
     if !bindings::validate(tcx)
+        || !super::declarations::validate_types(tcx)
         || !traits::validate(tcx, &foreign)
         || !super::jsx_api::validate(tcx)
         || !super::untagged::validate(tcx, &foreign)

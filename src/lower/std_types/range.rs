@@ -165,7 +165,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let Some((start, end)) = crate::lower::recognition::range_bounds(self.tcx, ty) else {
             return Ok(None);
         };
-        let literal = matches!(range.kind, js::ExprKind::Object(_) | js::ExprKind::Array(_))
+        let literal = matches!(range.kind, js::ExprKind::Object(..) | js::ExprKind::Array(_))
             && (range.reads_same() || !range.has_effects());
         let range = match literal || range.reads_same() {
             true => range,
@@ -183,7 +183,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 RangeBound::Field(kind, field) => {
                     let index = variant(kind).ok_or_else(|| this.unsupported(span, "this range's bounds"))?;
                     let held = match &range.kind {
-                        js::ExprKind::Object(props) => props.iter().find_map(|prop| match prop {
+                        js::ExprKind::Object(props, ..) => props.iter().find_map(|prop| match prop {
                             Prop::Field(name, value) if name == field => Some(value.clone()),
                             _ => None,
                         }),
@@ -207,7 +207,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// wherever it's read, or does nothing, `i + 1`: what it reads, nothing
     /// changes between.
     pub(in crate::lower) fn range_literal_parts(&self, range: &Expr, kind: RangeKind) -> Option<Vec<Expr>> {
-        let js::ExprKind::Object(props) = &range.kind else {
+        let js::ExprKind::Object(props, ..) = &range.kind else {
             return None;
         };
         if props.len() != kind.bounds().len() {
@@ -551,7 +551,7 @@ fn lazy_range(e: &Expr) -> Option<Expr> {
 /// `a` and `b`, or of one that reads the same, `r.start` and `r.end`.
 pub(in crate::lower) fn range_bounds(range: &Expr) -> Option<(Expr, Expr)> {
     match &range.kind {
-        js::ExprKind::Object(props) => match &props[..] {
+        js::ExprKind::Object(props, ..) => match &props[..] {
             [js::Prop::Field(s, start), js::Prop::Field(e, end)] if s == "start" && e == "end" => {
                 Some((start.clone(), end.clone()))
             }

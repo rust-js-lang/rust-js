@@ -1069,7 +1069,7 @@ pub fn extractGroupedRoutes(routes: &[RouteItem], baseUrl: &str) -> Vec<SubGroup
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
   const js = readFileSync(join(dir, "mir.js"), "utf8");
-  expect(js).toContain("        groups.push({ heading: route.title, pages });\n      }\n    } else if (route.title != null && route.path != null) {\n");
+  expect(js).toContain("        groups.push({\n          heading: route.title,\n          pages,\n        });\n      }\n    } else if (route.title != null && route.path != null) {\n");
   expect(js).not.toContain("\n    if (route.title != null && route.path != null) {");
   const lib = await import(join(dir, "mir.js"));
   const routes = [

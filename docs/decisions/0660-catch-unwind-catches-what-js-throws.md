@@ -19,6 +19,9 @@ resumed is the same `Error`.
 Amended by [0706](0706-panic-is-the-one-way-a-port-throws-an-error.md):
 what a `catch` reads of what it caught is what was thrown, where it is,
 `throw payload` of a payload resumed.
+Amended by [0830](0830-what-follows-a-let-err-of-a-closure-that-never-returns-is-its-catch.md):
+the `catch` of a `let Err(x)` of a closure that never returns holds what
+follows that reads `x`, or what that declares.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N where a panic is
 caught, as Rust catches it: the same closure runs once, the same drops
@@ -224,3 +227,15 @@ export function getIoDescription(value) {
   `scripts/mutations/lower/std_types/unwind.ts`, and in the lists of
   `any.rs`, `values.rs`, `wrappers.rs`, `drops/facts.rs`, `main.rs`,
   `recognition/calls.rs`, `prepare.rs`, `js/make.rs` and `js/applied.rs`.
+
+## Amendment: a closure through `AssertUnwindSafe` is dropped
+
+An `AssertUnwindSafe` is called as what it holds: its `call_once` calls
+`(self.0)()`, then drops it as that returns or unwinds. A closure it holds
+that's called by `&`, whose kind rustc infers from its body alone, as
+`AssertUnwindSafe(..)` asks for no `Fn`, dropped nothing of what it took:
+`catch_unwind(AssertUnwindSafe(move || { let _k = &kept; 7 }))` never
+dropped `kept` (#196). `function_kind` answers for it as for the closure it
+holds, so the call drops it as it returns, as std's does
+(`catch_unwind_assert_drops`, `assert-unwind-safe-uncalled`). One called
+by `FnOnce` alone drops what it took as its body ends, as before.

@@ -8,7 +8,6 @@ import {
   $repeatItems,
   $roomFor,
   $textRoomFor,
-  $trim,
 } from "@rust-js/runtime";
 
 export function entry() {
@@ -54,11 +53,6 @@ function check(what, f) {
 function made() {
   console.log("made");
   return 7;
-}
-
-function madeText() {
-  console.log("made text");
-  return "ab";
 }
 
 // Past half of `usize::MAX`: more than `isize::MAX` of bytes, whatever
@@ -163,22 +157,6 @@ function main() {
   });
   check("vec![(); n]", () => new Array(0).fill(undefined).length);
 
-  check("str::repeat", () => {
-    const n = pastHalf();
-    $roomFor(n, 2);
-    return $byteLen("ab".repeat(n));
-  });
-  check("made repeat", () => {
-    const text = $trim(madeText());
-    const n = pastHalf();
-    $roomFor(n, $byteLen(text));
-    return $byteLen(text.repeat(n));
-  });
-  const text = "é";
-  check("String repeat", () => {
-    $roomFor(4294967295, $byteLen(text));
-    return $byteLen(text.repeat(4294967295));
-  });
   check("empty repeat", () => $byteLen("".repeat(4294967295)));
   check("repeat(3)", () => "ab".repeat(3));
   check("slice repeat", () => $repeatItems([1, 2], pastHalf(), 1).length);

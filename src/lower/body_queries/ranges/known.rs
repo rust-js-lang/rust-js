@@ -3,7 +3,7 @@
 //! joined where two paths meet.
 
 use super::Slice;
-use rustc_middle::thir::LocalVarId;
+use rustc_middle::thir::{ExprId, LocalVarId};
 use std::collections::HashMap;
 
 /// An upper bound of an integer by a slice's length `L`, `⌊(c·L + b) /
@@ -77,6 +77,12 @@ impl Below {
         self.c <= 1 << self.s && self.b <= -(1 << self.s)
     }
 
+    /// Whether it's at most the length, `≤ L`, whatever `L` is: where a
+    /// range of the slice may end (ADR 0806).
+    pub(super) fn up_to(self) -> bool {
+        self.c <= 1 << self.s && self.b <= 0
+    }
+
     /// The most it is where the length is at most `length`.
     pub(super) fn most(self, length: i128) -> i128 {
         (self.c * length + self.b) >> self.s
@@ -140,12 +146,17 @@ impl Range {
     }
 }
 
-/// What's known where the body is: each integer variable's range, and the
-/// least length of each slice.
+/// What's known where the body is: each integer variable's range, the
+/// least length of each slice, and the test each `bool` variable holds.
 #[derive(Clone, PartialEq, Default, Debug)]
 pub(super) struct Known {
     pub(super) vars: HashMap<LocalVarId, Range>,
     pub(super) lengths: HashMap<Slice, i128>,
+    /// Each `bool` variable made of a test that reads without changing
+    /// anything, `let truncated = xs.len() > 3`: the test, and the
+    /// variables it reads, while neither it nor they change, so a branch
+    /// on it shows what the test does where it's taken (ADR 0806).
+    pub(super) tests: HashMap<LocalVarId, (ExprId, Vec<LocalVarId>)>,
 }
 
 impl Known {
@@ -156,7 +167,11 @@ impl Known {
         let lengths = (self.lengths.iter())
             .filter_map(|(s, &n)| other.lengths.get(s).map(|&m| (s.clone(), n.min(m))))
             .collect();
-        Known { vars, lengths }
+        let tests = (self.tests.iter())
+            .filter(|&(v, t)| other.tests.get(v) == Some(t))
+            .map(|(v, t)| (*v, t.clone()))
+            .collect();
+        Known { vars, lengths, tests }
     }
 
     /// What's known after `slice` grows `by` items, one more of a `push`,
@@ -165,6 +180,8 @@ impl Known {
     /// which leaves it, larger still. Of a slice whose length isn't known,
     /// at least none, a `push` makes it at least one long (ADR 0746).
     pub(super) fn grown(&mut self, slice: &Slice, by: i128) {
+        // A test of the length it had isn't one of the length it has.
+        self.tests.retain(|_, (_, reads)| !reads.contains(&slice.1));
         match self.lengths.get_mut(slice) {
             Some(least) => *least = (*least + by).max(0),
             None if by > 0 => _ = self.lengths.insert(slice.clone(), by),
@@ -200,6 +217,8 @@ impl Known {
     pub(super) fn changed(&mut self, var: LocalVarId) {
         self.vars.remove(&var);
         self.lengths.retain(|(_, v), _| *v != var);
+        self.tests
+            .retain(|held, (_, reads)| *held != var && !reads.contains(&var));
         for range in self.vars.values_mut() {
             if range.below.as_ref().is_some_and(|((_, v), _)| *v == var) {
                 range.below = None;

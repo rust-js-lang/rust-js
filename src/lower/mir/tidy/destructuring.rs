@@ -41,10 +41,7 @@ pub(super) fn destructured(stmts: &mut Vec<Stmt>, patterns: &HashSet<String>) {
         let count = parts.len();
         let indexed = parts.iter().all(|(p, ..)| p.is_ok());
         let bound = parts.iter().all(|(_, name, ..)| patterns.contains(name));
-        // One part of a temporary into a temporary is no pattern a person
-        // writes, `const [_28] = f();`: it's read in place, `f()[0]`.
-        let temporaries = count == 1 && parts.iter().all(|(_, name, ..)| is_temporary(name));
-        let enough = !temporaries && count >= if made || bound { 1 } else { 2 };
+        let enough = count >= if made || bound { 1 } else { 2 };
         let pattern = pattern_of(&parts);
         if !enough || pattern.is_none() || (made && js::mentions_in(&stmts[first + count..], &name) > 0) {
             i += 1;
@@ -515,10 +512,10 @@ pub(super) fn tuple_reads(
                             | ExprKind::Index(..)
                             | ExprKind::OptionalIndex(..)
                             | ExprKind::OptionalCall(..)
-                            | ExprKind::Handle(_)
+                            | ExprKind::Handle(_, _)
                             | ExprKind::New(..)
                             | ExprKind::Array(_)
-                            | ExprKind::Object(_)
+                            | ExprKind::Object(..)
                             | ExprKind::Jsx(_)
                             | ExprKind::Arrow(..)
                             | ExprKind::AsyncArrow(..)
@@ -560,7 +557,7 @@ pub(super) fn projected(e: &Expr) -> Option<Expr> {
     };
     let field = field_of(f)?;
     let values = items.iter().map(|item| match &item.kind {
-        ExprKind::Object(props) => {
+        ExprKind::Object(props, ..) => {
             let mut value = None;
             for prop in props {
                 match prop {

@@ -9,12 +9,16 @@ import { buildReact, compiler, fixture, run, target } from "./support";
 
 beforeAll(buildReact, 600_000);
 
-/** `rust` compiled in a fixture of `name`, against the js crate: its JS,
- * and its module. */
-async function compiled(name: string, rust: string): Promise<{ js: string; lib: Record<string, (...args: never[]) => unknown> }> {
+/** `rust` compiled in a fixture of `name`, against the js crate, with
+ * `flags`: its JS, and its module. */
+async function compiled(
+  name: string,
+  rust: string,
+  flags: string[] = [],
+): Promise<{ js: string; lib: Record<string, (...args: never[]) => unknown> }> {
   const dir = fixture(name);
   writeFileSync(join(dir, "lib.rs"), rust);
-  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...flags, "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
   return { js: readFileSync(join(dir, "lib.js"), "utf8"), lib: await import(join(dir, "lib.js")) };
 }
 
@@ -232,4 +236,68 @@ pub fn counted(values: &[&Unknown], out: &mut Vec<String>) -> usize {
   const values = [{ tag: element }, { tag: element, skip: 1 }, [], {}];
   expect(lib.counted(values as never, out as never)).toBe(2);
   expect(out).toEqual(["skipped", "[object Array]"]);
+});
+
+// React's enqueueTask (shared/enqueueTask.js) sets `channel.port1.onmessage
+// = () => { callback(); }`. In a library, a `Box<dyn FnMut>` may hold what
+// a consumer's destructor drops, so its MIR's drops are elaborated: the
+// drop of the `Box<closure>` it's made of, which drops nothing in JS,
+// never unwinds to the cleanup that drops the `Box<dyn FnMut>`, so that
+// isn't held, `const value = () => ..` (ADR 0800). Of every callback the
+// closure holds, the same.
+test("a closure given to a setter of a getter's object is written where it's given", async () => {
+  const { js, lib } = await compiled(
+    "closure-to-a-setter",
+    `use js::Unknown;
+
+#[cfg_attr(rust_js, rust_js::link_name = "get port1")]
+fn port1(this: &Unknown) -> &'static Unknown {
+    unreachable!()
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "set onmessage")]
+#[cfg_attr(rust_js, rust_js::nullable(value))]
+fn set_onmessage(this: &Unknown, value: Option<Box<dyn FnMut(&Unknown)>>) {
+    unreachable!()
+}
+
+pub fn by_ref(channel: &Unknown, callback: &'static dyn Fn()) {
+    set_onmessage(port1(channel), Some(Box::new(move |_| callback())));
+}
+
+pub fn by_fn(channel: &Unknown, callback: fn()) {
+    set_onmessage(port1(channel), Some(Box::new(move |_| callback())));
+}
+
+pub fn by_number(channel: &Unknown, n: u32) {
+    set_onmessage(port1(channel), Some(Box::new(move |_| println!("{n}"))));
+}
+
+pub fn by_nothing(channel: &Unknown) {
+    set_onmessage(port1(channel), Some(Box::new(|_| println!("none"))));
+}
+`,
+    ["--library", "--manifest", join(fixture("closure-to-a-setter-manifest"), "manifest.json")],
+  );
+  for (const [name, body] of [
+    ["byRef(channel, callback)", "callback();"],
+    ["byFn(channel, callback)", "callback();"],
+    ["byNumber(channel, n)", "console.log(`${n}`);"],
+    ["byNothing(channel)", 'console.log("none");'],
+  ]) {
+    expect(js).toContain(`export function ${name} {\n  channel.port1.onmessage = () => {\n    ${body}\n  };\n}\n`);
+  }
+  expect(js).not.toMatch(/const (value|_\d+)/);
+  // The getter runs, then the closure is given, as Rust runs them.
+  const events: string[] = [];
+  const port: { onmessage?: () => void } = {};
+  const channel = {
+    get port1() {
+      events.push("port1");
+      return port;
+    },
+  };
+  lib.byRef(channel as never, (() => events.push("callback")) as never);
+  port.onmessage?.();
+  expect(events).toEqual(["port1", "callback"]);
 });

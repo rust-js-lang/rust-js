@@ -82,7 +82,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `CSSProperties::new().opacity(..)`: what it's made of read now, as an
     /// element's is (`capture_jsx`), the object made where it's used.
     pub(super) fn capture_object(&mut self, value: &mut Expr, out: &mut Vec<Stmt>) -> bool {
-        let js::ExprKind::Object(props) = &mut value.kind else {
+        let js::ExprKind::Object(props, ..) = &mut value.kind else {
             return false;
         };
         if props.iter().any(|p| matches!(p, Prop::Getter(..) | Prop::Setter(..))) {
@@ -268,7 +268,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         } = props;
         let mut fields = match value.kind {
             js::ExprKind::Undefined => return Ok((Vec::new(), Vec::new())),
-            js::ExprKind::Object(fields) => fields,
+            js::ExprKind::Object(fields, ..) => fields,
             _ => return Ok((vec![Prop::Spread(value)], Vec::new())),
         };
         // As written, as JSX's are, its children last; then what a base
@@ -538,7 +538,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// name the props have, `own`, which theirs is (ADR 0205); another
     /// value, `{...value}`.
     fn flattened_attrs(&mut self, ty: Ty<'tcx>, value: Expr, own: &[String], span: Span) -> R<Vec<Prop>> {
-        let js::ExprKind::Object(props) = value.kind else {
+        let js::ExprKind::Object(props, ..) = value.kind else {
             return Ok(match value.kind {
                 js::ExprKind::Undefined => Vec::new(),
                 _ => vec![Prop::Spread(value)],

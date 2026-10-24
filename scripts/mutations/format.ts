@@ -97,8 +97,8 @@ export const mutations: Mutation[] = [
     name: "formatted-map-unmoved",
     breaks: "JS laid out by the formatter is written with the map of the JS before it, so its positions point at other lines and columns of the Rust",
     file: "src/format.rs",
-    find: "    let (code, map) = formatted(&code, &unformatted, js_file_name, &options).unwrap_or((code, map));\n",
-    replace: "    let (code, map) = formatted(&code, &unformatted, js_file_name, &options)\n        .map(|(formatted, _)| (formatted, map.clone()))\n        .unwrap_or((code, map));\n",
+    find: "    let (code, map) = formatted(&code, &unformatted, js_file_name, across_lines).unwrap_or((code, map));\n",
+    replace: "    let (code, map) = formatted(&code, &unformatted, js_file_name, across_lines)\n        .map(|(formatted, _)| (formatted, map.clone()))\n        .unwrap_or((code, map));\n",
     tests: ["test/traits.test.ts", "test/format.test.ts", "-t", "trait method expressions keep their Rust source locations|maps handlers to the formatted source"],
   },
   {
@@ -116,5 +116,21 @@ export const mutations: Mutation[] = [
     find: "    placed.sort_by_key(|&(at, _)| at);\n",
     replace: "",
     tests: ["test/serde.test.ts", "-t", "hand-written Deserialize"],
+  },
+  {
+    name: "object-of-one-field-not-broken",
+    breaks: "an object of one field written across lines is on one line, as the printer writes it, where its struct literal is across lines (ADR 0835)",
+    file: "src/format.rs",
+    find: "            (true, false) => \"\\n\",\n",
+    replace: "            (true, false) => continue,\n",
+    tests: ["test/lowering-structs-enums.test.ts", "-t", "across lines where"],
+  },
+  {
+    name: "objects-kept-as-printed",
+    breaks: "every object of two fields is across lines, as the printer writes it, where its struct literal is on one line (ADR 0835)",
+    file: "src/format.rs",
+    find: "            (false, true) if between.trim().is_empty() => \" \",\n",
+    replace: "            (false, true) if false => \" \",\n",
+    tests: ["test/lowering-structs-enums.test.ts", "-t", "across lines where"],
   },
 ];

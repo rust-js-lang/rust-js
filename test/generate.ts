@@ -1041,6 +1041,9 @@ function show(e: Expr): string {
     case "shift":
       return `(${show(e.a)} ${e.op} ${show(e.b)})`;
     case "method":
+      // A NaN's sign isn't kept (the guide's differences, 4), so a float's
+      // sign is asked only of a number, -0.0's still.
+      if (e.name === "is_sign_negative") return `{ let f: ${e.a.ty} = ${show(e.a)}; !f.is_nan() && f.is_sign_negative() }`;
       return e.b ? `${show(e.a)}.${e.name}(${show(e.b)})` : `${show(e.a)}.${e.name}()`;
     case "cast":
       return `(${show(e.a)} as ${e.ty})`;

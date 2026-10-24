@@ -1,6 +1,8 @@
 # 0721. `js::strict_equals(a, b)` is JS's `===`
 
 Status: Accepted. Extends [0612](0612-unknown-equality-is-strict.md).
+Fixed by [0775](0775-a-unit-given-to-js-is-undefined.md): a `()` compared
+was `[]`, `x === []`, never true; it's `undefined`, `x === undefined`.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): A: a binding of JS's own
 operator, which is what the program asks for; nothing of Rust's `==`

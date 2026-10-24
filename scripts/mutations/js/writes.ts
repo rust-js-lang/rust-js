@@ -7,8 +7,8 @@ export const mutations: Mutation[] = [
     name: "writes-handle-unseen",
     breaks: "a variable a handle's setter assigns is taken for one nothing sets after a tuple holds it, and read after the setter ran",
     file: "src/js/writes.rs",
-    find: "            ExprKind::Handle(place) | ExprKind::Pair(place, _) => {\n",
-    replace: "            ExprKind::Handle(place) | ExprKind::Pair(place, _) if false => {\n",
+    find: "            ExprKind::Handle(place, _) | ExprKind::Pair(place, _) => {\n",
+    replace: "            ExprKind::Handle(place, _) | ExprKind::Pair(place, _) if false => {\n",
     tests: ["test/corpus.test.ts", "-t", "tuple_scrutinee_calls"],
   },
   {

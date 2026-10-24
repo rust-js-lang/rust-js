@@ -118,7 +118,11 @@ export function prepare(files, modules, styles, rootFile, main, tests, test, run
     .map(([path, code]) => [path, code])
     .map(([path, code]) => {
       if (path.endsWith(".jsx")) {
-        const options = { transforms: ["jsx"], jsxRuntime: "automatic", production: true };
+        const options = {
+          transforms: ["jsx"],
+          jsxRuntime: "automatic",
+          production: true,
+        };
         const code$1 = transform(code, options).code;
         return [path, code$1];
       }

@@ -14,7 +14,7 @@ export const mutations: Mutation[] = [
     name: "location-shown-made-refused",
     breaks: "`{}` of a `Location` a call gives is refused",
     file: "src/lower/std_types/location.rs",
-    find: "        if !value.reads_same() && !matches!(value.kind, ExprKind::Object(_)) {\n",
+    find: "        if !value.reads_same() && !matches!(value.kind, ExprKind::Object(..)) {\n",
     replace: "        if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^track_caller_traits.rs$"],
   },

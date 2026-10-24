@@ -25,6 +25,19 @@ impl Expr {
         }
     }
 
+    /// This, which lowering knows is never `undefined`, a `Some`'s value
+    /// (`Known::Defined`); one it knows otherwise of, a getter's read say,
+    /// as it is.
+    pub fn defined(self) -> Expr {
+        match self.known {
+            Known::Nothing => Expr {
+                known: Known::Defined,
+                ..self
+            },
+            _ => self,
+        }
+    }
+
     /// This, a binding's read of a property, which a getter may answer
     /// (`Known::Getter`).
     pub fn answered_by_a_getter(self) -> Expr {
@@ -162,6 +175,60 @@ impl Expr {
             true => Expr::written(strings),
             false => Expr::new(ExprKind::Template(texts, values, layout)),
         }
+    }
+
+    /// A template's value that's a template itself, a function's body put
+    /// in place of its call, `${`(${a}, ${b})`}`, or a value's text in one,
+    /// `${`${x}`}`: its text and values in the outer's, `(${a}, ${b})`, as
+    /// a template makes each value's text the same either way. Of an inner
+    /// of one piece on one line, and not of one with text into a piece
+    /// written across lines, whose line breaks are as they are where the
+    /// inner's are `\n`; one of values alone has none (ADR 0066).
+    pub fn splice_templates(&mut self) {
+        let ExprKind::Template(texts, values, layout) = &mut self.kind else {
+            return;
+        };
+        let outer_lines = layout.lines || layout.breaks.iter().any(|at| at.lines);
+        let splices = |v: &Expr| {
+            matches!(&v.kind, ExprKind::Template(inner_texts, _, inner)
+                if inner.is_plain() && (!outer_lines || inner_texts.iter().all(String::is_empty)))
+        };
+        if !values.iter().any(splices) {
+            return;
+        }
+        // Where each of the outer's texts is now, its index and how far into
+        // it: so `concat!`'s pieces break where they did (ADR 0641).
+        let mut moved = vec![(0, 0)];
+        let (mut spliced_texts, mut spliced_values) = (vec![texts[0].clone()], Vec::new());
+        for (value, after) in std::mem::take(values).into_iter().zip(texts.iter().skip(1)) {
+            let spliced = splices(&value);
+            match value.kind {
+                ExprKind::Template(inner_texts, inner_values, _) if spliced => {
+                    let mut inner = inner_texts.into_iter();
+                    spliced_texts
+                        .last_mut()
+                        .expect("a text")
+                        .push_str(&inner.next().unwrap_or_default());
+                    for (inner_value, inner_text) in inner_values.into_iter().zip(inner) {
+                        spliced_values.push(inner_value);
+                        spliced_texts.push(inner_text);
+                    }
+                }
+                _ => {
+                    spliced_values.push(value);
+                    spliced_texts.push(String::new());
+                }
+            }
+            let last = spliced_texts.last_mut().expect("a text");
+            moved.push((spliced_values.len(), last.len()));
+            last.push_str(after);
+        }
+        for at in &mut layout.breaks {
+            let (text, shift) = moved[at.text];
+            (at.text, at.at) = (text, shift + at.at);
+        }
+        *texts = spliced_texts;
+        *values = spliced_values;
     }
 
     pub fn undefined() -> Expr {
@@ -345,7 +412,12 @@ impl Expr {
     }
 
     pub fn handle(place: Expr) -> Expr {
-        Expr::new(ExprKind::Handle(Box::new(place)))
+        Expr::stored_handle(place, Storage::AsGiven)
+    }
+
+    /// A handle on `place`, which stores what's written as `storage` says.
+    pub fn stored_handle(place: Expr, storage: Storage) -> Expr {
+        Expr::new(ExprKind::Handle(Box::new(place), storage))
     }
 
     pub fn pair(place: Expr, dictionary: Expr) -> Expr {
@@ -362,7 +434,7 @@ impl Expr {
         // `{ x: 0, y: 0 }.y`, a constant's field (`V::ZERO.y`), is `0`; and a
         // `dyn`'s pair made of what does nothing, `{ value: f.last, impl:
         // f.impl }.impl`, a shared reference nothing assigns through (ADR 0409).
-        if let ExprKind::Object(props) = &object.kind
+        if let ExprKind::Object(props, ..) = &object.kind
             && (props
                 .iter()
                 .all(|p| matches!(p, Prop::Field(_, value) if value.is_constant()))
@@ -377,7 +449,9 @@ impl Expr {
         // made here, `{ value: x }`, holds `x`: a cell in a field is the
         // property itself (ADR 0288).
         if property == HELD {
-            if let ExprKind::Handle(place) = object.kind {
+            // Read or written as the place: a write's storage is its
+            // writer's to keep, `cell_call`'s (ADR 0772).
+            if let ExprKind::Handle(place, _) = object.kind {
                 return *place;
             }
             // And of a handle through an `Option`'s box, `$someMut`, what
@@ -386,14 +460,14 @@ impl Expr {
                 && callee.helper_name() == Some("$someMut")
                 && let [
                     Expr {
-                        kind: ExprKind::Handle(place),
+                        kind: ExprKind::Handle(place, _),
                         ..
                     },
                 ] = args.as_slice()
             {
                 return Expr::call_helper("$someValue", vec![(**place).clone()]);
             }
-            if let ExprKind::Object(props) = &object.kind
+            if let ExprKind::Object(props, ..) = &object.kind
                 && let [Prop::Field(name, value)] = props.as_slice()
                 && name == HELD
             {
@@ -440,7 +514,7 @@ impl Expr {
     }
 
     pub fn object(props: Vec<Prop>) -> Expr {
-        Expr::new(ExprKind::Object(props))
+        Expr::new(ExprKind::Object(props, ObjectLayout::default()))
     }
 
     /// The test that holds where this one doesn't, read only for its truth:
@@ -754,14 +828,104 @@ impl Expr {
         )
     }
 
+    /// Whether this may be `undefined`, as its form tells. A constant but
+    /// `undefined`, `null` among them, and what's made here, an object, an
+    /// array, a function, a `new`, a template, a regex or JSX, never is; nor
+    /// what an operator gives but `&&`, `||` and `??`, which may give an
+    /// operand that may be; nor what lowering knows is `Known::Defined`.
+    /// Anything else, a variable or a call, may be. The one answer of
+    /// whether a JS value may be `undefined`, which a nullable place's
+    /// storage asks (`Storage::written`).
+    pub fn may_be_undefined(&self) -> bool {
+        match &self.kind {
+            _ if self.known == Known::Defined => false,
+            ExprKind::Undefined | ExprKind::GivenUndefined => true,
+            _ if self.is_constant() => false,
+            ExprKind::Array(_)
+            | ExprKind::Object(..)
+            | ExprKind::Arrow(..)
+            | ExprKind::AsyncArrow(..)
+            | ExprKind::Function(_)
+            | ExprKind::New(..)
+            | ExprKind::Template(..)
+            | ExprKind::Regex(_)
+            | ExprKind::Jsx(_)
+            | ExprKind::Unary(..) => false,
+            // `a ?? b` and `a || b` give `b` or what's not `undefined`; `a &&
+            // b`, either.
+            ExprKind::Binary(Op::Coalesce | Op::Or, _, b) => b.may_be_undefined(),
+            ExprKind::Binary(Op::And, a, b) => a.may_be_undefined() || b.may_be_undefined(),
+            ExprKind::Binary(..) => false,
+            ExprKind::Cond(_, a, b) => a.may_be_undefined() || b.may_be_undefined(),
+            _ => true,
+        }
+    }
+
+    /// A constant JS tests as false: `false`, `0`, `""`, `undefined` or
+    /// `null`.
+    pub fn is_falsy_constant(&self) -> bool {
+        match &self.kind {
+            ExprKind::Bool(b) => !b,
+            ExprKind::Num(n) => *n == 0.0 || n.is_nan(),
+            ExprKind::BigInt(n) => *n == 0,
+            ExprKind::BigUint(n) => *n == 0,
+            ExprKind::Str(s) => s.is_empty(),
+            ExprKind::Undefined | ExprKind::GivenUndefined | ExprKind::Null => true,
+            _ => false,
+        }
+    }
+
     /// A constant, or an object made here of them, which nothing made
     /// before it or after can change.
     pub fn is_made_of_constants(&self) -> bool {
         match &self.kind {
-            ExprKind::Object(props) => {
+            ExprKind::Object(props, ..) => {
                 (props.iter()).all(|prop| matches!(prop, Prop::Field(_, value) if value.is_made_of_constants()))
             }
             _ => self.is_constant(),
         }
+    }
+}
+
+impl Storage {
+    /// What a place stored so holds, of `made`, an `Option`'s JS where it's
+    /// `NullForNone`: a `None` is `null`; what's `nulled`, `null` or a
+    /// value already, as MIR tells, and what's never `undefined`
+    /// (`may_be_undefined`), a constant, an object made here or a `Some`'s
+    /// value, as it is; a test's branches each so, `c ? f(c) : null` of `c ?
+    /// f(c) : undefined`; else `made ?? null` (ADRs 0275, 0772, 0791). The
+    /// one answer, where a struct is made, a `Cell` set, a nullable
+    /// parameter given, and a handle's setter printed.
+    pub fn written(self, made: Expr, nulled: bool) -> Expr {
+        match self {
+            Storage::AsGiven => made,
+            Storage::NullForNone if nulled && !matches!(made.kind, ExprKind::Undefined | ExprKind::GivenUndefined) => {
+                made
+            }
+            Storage::NullForNone => match null_for_none(&made) {
+                Some(stored) => stored,
+                None => Expr::bin(Op::Coalesce, made, Expr::null()),
+            },
+        }
+    }
+}
+
+/// `made` stored with its `None` `null`, where that's what it is, or each
+/// branch of its test is: `undefined` is `null`, and what's never
+/// `undefined` is itself; `None` where it may be `undefined` otherwise.
+fn null_for_none(made: &Expr) -> Option<Expr> {
+    match &made.kind {
+        ExprKind::Undefined | ExprKind::GivenUndefined => Some(Expr::null().or_at(made.span)),
+        _ if !made.may_be_undefined() => Some(made.clone()),
+        ExprKind::Cond(test, yes, no) => Some(Expr {
+            known: made.known,
+            kind: ExprKind::Cond(
+                test.clone(),
+                Box::new(null_for_none(yes)?),
+                Box::new(null_for_none(no)?),
+            ),
+            span: made.span,
+        }),
+        _ => None,
     }
 }

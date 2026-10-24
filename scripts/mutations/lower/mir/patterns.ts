@@ -11,6 +11,14 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-nullable.test.ts", "-t", "a None only nullable fields and parameters read"],
   },
   {
+    name: "null-none-given-optional",
+    breaks: "`let label = None;` given to an optional nullable field is `null` where it's made, and the field's key there (ADR 0810)",
+    file: "src/lower/mir/patterns.rs",
+    find: "                    && bindings::null_where_made(self.tcx, &fields[field])\n",
+    replace: "                    && bindings::is_nullable(self.tcx, &fields[field])\n",
+    tests: ["test/lowering-nullable.test.ts", "-t", "an optional nullable field"],
+  },
+  {
     name: "null-none-param-ungiven",
     breaks: "`let owner = None;` given to a binding's nullable parameter is `undefined` where it's made (ADR 0781)",
     file: "src/lower/mir/patterns.rs",
@@ -153,5 +161,21 @@ export const mutations: Mutation[] = [
     find: "                    if of.projection.is_empty() || of.projection[..] == [mir::ProjectionElem::Deref] =>\n",
     replace: "                    if of.projection.is_empty() =>\n",
     tests: ["test/lowering-symbols.test.ts", "-t", "an == of a value read as the registry's symbol"],
+  },
+  {
+    name: "null-nones-calls-unwritten",
+    breaks: "a call's `Option` only a nullable field reads is `?? null` where it's read, not `null` where it's made",
+    file: "src/lower/mir/patterns.rs",
+    find: "                *none = true;\n",
+    replace: "                *none = true;\n                *writes += 1;\n",
+    tests: ["test/lowering-nullable.test.ts", "-t", "what's never undefined as it is"],
+  },
+  {
+    name: "null-nones-clones-written",
+    breaks: "a nullable field's clone given to one is written `?? null` where it's made, `message.id ?? null`",
+    file: "src/lower/mir/patterns.rs",
+    find: "            if !cloned\n",
+    replace: "            if true\n",
+    tests: ["test/lowering-options.test.ts", "-t", "a nullable field given a nullable field's copy"],
   },
 ];

@@ -80,7 +80,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     match self.read_local_value(state, place.local, out)? {
                         Value::Expr(cell) => {
                             let place = match cell.kind {
-                                js::ExprKind::Object(_) => {
+                                js::ExprKind::Object(..) => {
                                     let kind = js::ExprKind::Member(Box::new(cell), "value".into());
                                     Expr {
                                         kind,
@@ -163,7 +163,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         (_, value) => value,
                     });
                 }
-                let place_expr = self.mir_place(state, *place, span, out)?;
+                let mut place_expr = self.mir_place(state, *place, span, out)?;
+                // A handle on a place a call reaches, `&get(c).value`'s: what
+                // holds it made once, first, as the handle reads its place
+                // each time it's used.
+                if let js::ExprKind::Handle(on, storage) = &place_expr.kind
+                    && !fixed_place(on)
+                {
+                    let (on, storage) = ((**on).clone(), *storage);
+                    self.flush(state, out)?;
+                    let on = self.fixed_place_of(on, out);
+                    place_expr = Expr::stored_handle(on, storage);
+                }
                 if matches!(kind, BorrowKind::Shared) {
                     let read = self.with_default(state, *place, place_expr.clone(), span);
                     if !matches!(read.kind, js::ExprKind::Cond(..)) && place_expr.reads_same() {
@@ -639,7 +650,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let value = self.value_expr(value, span)?;
                 props.push(Prop::Field(names[i].0.clone(), self.holding(value, names[i].1)));
             }
-            return Ok(Value::Expr(Expr::object(props)));
+            let mut made = Expr::object(props);
+            if let js::ExprKind::Object(_, layout) = &mut made.kind {
+                *layout = self.object_layout(&self.tcx.adt_def(did), VariantIdx::ZERO, span);
+            }
+            return Ok(Value::Expr(made));
         }
         // A struct's or a variant's fields, read in the order its object
         // lists them, as written (ADR 0674).
@@ -709,6 +724,25 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
+    /// The struct's field `place` is, `p.code`, if it's one: of a struct,
+    /// or of an enum's variant it's read as.
+    pub(super) fn place_field(&self, state: &State<'_, 'tcx>, place: Place<'tcx>) -> Option<&'tcx ty::FieldDef> {
+        let (PlaceElem::Field(field, _), parent) = place.projection.split_last()? else {
+            return None;
+        };
+        let parent = mir::PlaceRef {
+            local: place.local,
+            projection: parent,
+        };
+        let mir::PlaceTy { ty, variant_index } = parent.ty(state.body, self.tcx);
+        match ty.kind() {
+            ty::Adt(adt, _) if !adt.is_enum() || variant_index.is_some() => {
+                Some(&adt.variant(variant_index.unwrap_or(VariantIdx::ZERO)).fields[*field])
+            }
+            _ => None,
+        }
+    }
+
     /// Whether `operand`, an `Option`, is `null` or a value already, as a
     /// `#[rust_js::nullable]` field or binding parameter takes it as it is
     /// (ADR 0275): such a field, moved where it's read, or bound to a
@@ -717,19 +751,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let Some(place) = operand.place() else {
             return false;
         };
-        if let Some((PlaceElem::Field(field, _), parent)) = place.projection.split_last() {
-            let parent = mir::PlaceRef {
-                local: place.local,
-                projection: parent,
-            };
-            let mir::PlaceTy { ty, variant_index } = parent.ty(state.body, self.tcx);
-            return match ty.kind() {
-                ty::Adt(adt, _) if !adt.is_enum() || variant_index.is_some() => {
-                    let variant = adt.variant(variant_index.unwrap_or(VariantIdx::ZERO));
-                    bindings::is_nullable(self.tcx, &variant.fields[*field])
-                }
-                _ => false,
-            };
+        if let Some((PlaceElem::Field(..), _)) = place.projection.split_last() {
+            return self
+                .place_field(state, place)
+                .is_some_and(|field| bindings::null_where_made(self.tcx, field));
         }
         if !place.projection.is_empty() {
             return false;

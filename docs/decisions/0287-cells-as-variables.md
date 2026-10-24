@@ -1,7 +1,10 @@
 # 0287. A cell only its function reads and sets is a `let`
 
 Status: Accepted. Extends [0023](0023-strings-references-shared-state.md)
-and [0270](0270-module-variables.md).
+and [0270](0270-module-variables.md). Amended by
+[0791](0791-a-cells-storage-says-what-it-stores.md): a handle on a field's
+`Cell` written through, a closure's `r.set(5)`, is its place where it's
+used, never read where it's made (#192).
 
 Case: A ([0262](0262-when-rust-and-js-disagree.md)).
 

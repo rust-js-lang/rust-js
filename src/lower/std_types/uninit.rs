@@ -94,7 +94,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let slot = arg();
                 // A handle on a place is the place itself, written as it is.
                 let place = match slot.kind {
-                    js::ExprKind::Handle(place) => *place,
+                    js::ExprKind::Handle(place, _) => *place,
                     kind => {
                         let slot = Expr { kind, ..slot };
                         let slot = if slot.reads_same() {

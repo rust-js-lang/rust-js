@@ -210,6 +210,41 @@ export function later(task) {
   a `ReferenceError` where the host hasn't it, as JS does. Ask where the
   program may run without it.
 
+A member no TypeScript lib declares, which some hosts have, is declared as
+an optional property: an `Option` of its value, `None` where the host
+hasn't it, as reading a missing property gives `undefined` and throws
+nothing. V8's `console.createTask` is `webapi::console::create_task()`,
+typed as React's Flow declares it, and the `ConsoleTask` it makes runs
+what it's given, `task.run(f)`, declared as Flow's interface is, the
+object type `{ run<T>(f: () => T): T }`
+([ADR 0811](../../decisions/0811-console-create-task-may-be-absent.md)):
+
+```rust
+use webapi::{ConsoleTask, console};
+
+pub fn debug_task(name: &str) -> Option<&'static ConsoleTask> {
+    console::create_task().map(|create_task| create_task(name))
+}
+
+pub fn render_in(task: Option<&ConsoleTask>, render: impl FnOnce() -> u32) -> u32 {
+    match task {
+        Some(task) => task.run(render),
+        None => render(),
+    }
+}
+```
+
+```js
+export function debugTask(name) {
+  const createTask = console.createTask;
+  return createTask ? createTask(name) : undefined;
+}
+
+export function renderIn(task, render) {
+  return task ? task.run(render) : render();
+}
+```
+
 ## What a value is: `typeof`
 
 `js::type_of(value)` is `typeof value`, as text: for a message. To branch on
@@ -245,7 +280,10 @@ or-pattern's stacked, `_` the `default`
   itself. And a block the arm is, `'desc: { .. }`, leaves the case where
   it's written, each `break 'desc v` a `desc = v; break;`, as a `switch`'s
   case is left early
-  ([ADR 0790](../../decisions/0790-a-break-the-program-wrote-is-where-it-is-written.md)).
+  ([ADR 0790](../../decisions/0790-a-break-the-program-wrote-is-where-it-is-written.md)),
+  and each `if` in it as written: one with no `else` has none, and an
+  `||` whose branch is such a `break` is that `||`
+  ([ADR 0805](../../decisions/0805-a-cases-if-is-as-written-whatever-ends-it.md)).
 
 ```rust
 use js::{Kind, Unknown};
@@ -330,10 +368,11 @@ export function describe(value) {
     case "object":
       if (value === null) {
         desc = "null";
-      } else if ("name" in value) {
-        desc = String(value.name);
-        break;
       } else {
+        if ("name" in value) {
+          desc = String(value.name);
+          break;
+        }
         desc = "object";
       }
       break;

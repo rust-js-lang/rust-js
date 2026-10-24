@@ -202,4 +202,13 @@ export const mutations: Mutation[] = [
     replace: "    let pair = Expr::array(vec![Expr::var(\"x\"), Expr::var(\"i\")]);\n",
     tests: ["test/corpus.test.ts", "-t", "labeled_blocks"],
   },
+  {
+    name: "sliced-not-made",
+    breaks: "a slice's range in bounds, `items.slice(0, 3)`, isn't an array made here, so its `to_vec()` copies it again, `.slice(0, 3).slice()` (ADR 0806)",
+    file: "src/lower/iterators.rs",
+    find: "        _ if e.known == js::Known::Sliced => true,\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "slice_ranges_known"],
+    snapshots: true,
+  },
 ];

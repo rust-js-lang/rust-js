@@ -28,11 +28,12 @@ export const mutations: Mutation[] = [
   },
   {
     name: "from-end-place-not-fixed",
-    breaks: "an item counted from the end, given through a `&mut`, `zero(last)`, is refused",
+    breaks: "an item counted from the end, given through a `&mut`, `zero(last)`, is `const at = v.length - 1` and `v[at]`, not its place, `v[v.length - 1]`",
     file: "src/lower/mir/queries.rs",
     find: "                && (index.is_constant() || matches!(index.kind, js::ExprKind::Var(_)) || from_end(object, index))\n",
     replace: "                && (index.is_constant() || matches!(index.kind, js::ExprKind::Var(_)))\n",
     tests: ["test/corpus.test.ts","-t","^slice_pattern_mut_rest.rs$"],
+    snapshots: true,
   },
   {
     name: "from-end-place-not-same",
@@ -158,15 +159,6 @@ export const mutations: Mutation[] = [
     find: "            TerminatorKind::Goto { target } => block = *target,\n            _ => return false,\n",
     replace: "            TerminatorKind::Goto { target } => block = *target,\n            _ => return true,\n",
     tests: ["test/corpus.test.ts", "-t", "division_check_order"],
-  },
-  {
-    name: "read-from-past-assignment",
-    breaks: "a local assigned again before it's read is taken as read past a drop, its old value read there for nothing",
-    file: "src/lower/mir/queries.rs",
-    find: "                Some(false) => continue 'blocks,\n",
-    replace: "                Some(false) => {}\n",
-    tests: ["test/corpus.test.ts", "-t", "^kept_read_past_branch.rs$"],
-    snapshots: true,
   },
   {
     name: "pin-borrow-a-write",

@@ -115,6 +115,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     def_id,
                     generic_args,
                     tys: &tys,
+                    nulled: &[],
                     span,
                 };
                 self.std_values(known, call, vec![place.clone(), rhs], false, ty, out)?
@@ -150,12 +151,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // itself where it's one, `undefined` where not, `$symbolFor(value)`.
         if crate::lower::recognition::is_symbol_for_read(tcx, def_id) {
             let value = values.into_iter().next().expect("the value read");
-            return Ok(
-                match crate::lower::body_queries::registered_reads(tcx, self.frame.thir).contains(&span) {
-                    true => value,
-                    false => Value::Expr(Expr::call_helper("$symbolFor", vec![self.value_expr(value, span)?])),
-                },
-            );
+            return Ok(match self.frame.facts.registered_reads.contains(&span) {
+                true => value,
+                false => Value::Expr(Expr::call_helper("$symbolFor", vec![self.value_expr(value, span)?])),
+            });
         }
         match bindings::js_form(tcx, def_id) {
             bindings::JsForm::Jsx(tag) => {
@@ -184,7 +183,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let value = given.next().expect("the value");
                 let mut element = element.value;
                 // `style.color("red")` on an object being built: one more field.
-                if let js::ExprKind::Object(fields) = &mut element.kind {
+                if let js::ExprKind::Object(fields, ..) = &mut element.kind {
                     fields.push(match name.as_str() {
                         "..." => Prop::Spread(value.value),
                         _ => Prop::Field(name, value.value),
@@ -302,15 +301,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             (tcx.fn_arg_idents(def_id).get(i).copied().flatten()).is_some_and(|ident| names.contains(&ident.name))
         };
         match () {
-            // `()` given to JS is what a tuple is, an array (ADR 0020).
-            () if ty.is_unit() => Expr::array(Vec::new()),
+            // A `()` is `undefined`, given as it is, or a list of none,
+            // `[]`, where it's a list's (ADR 0775).
+            () if ty.is_unit() => {
+                crate::lower::representation::unit_given(tcx, crate::lower::representation::UnitTo::Param(def_id, i))
+                    .unwrap_or(value)
+            }
             // A parameter it names `#[rust_js::nullable(..)]`: its
             // `None` is `null`, and a `Some(..)` its value (ADR 0275).
-            () if named(bindings::nullable_params(tcx, def_id)) => match value.kind {
-                js::ExprKind::Undefined => Expr::null(),
-                _ if nulled || value.is_constant() => value,
-                _ => Expr::bin(Op::Coalesce, value, Expr::null()),
-            },
+            () if named(bindings::nullable_params(tcx, def_id)) => js::Storage::NullForNone.written(value, nulled),
             // A parameter it names `#[rust_js::lazy(..)]`, a function JS
             // calls once for the value: a closure whose body does nothing
             // and gives no function is its value, `useState(0)` (ADR 0593).

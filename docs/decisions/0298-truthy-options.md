@@ -1,6 +1,9 @@
 # 0298. An Option of a value never falsy is tested by its truth
 
 Status: Accepted. Amends [0030](0030-option.md): how an `Option` is tested.
+Amended: an `Option<bool>`'s `is_some_and` of its truth is `!!o`, and a
+test reads `x ?? false` as `x`, and what `!` turns or a `while` tests as
+an `if`'s test.
 
 Case: A ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -59,3 +62,31 @@ its truth too, and a callback that only tests its argument's truth,
 `.map(f).filter(Boolean)`, as react.dev's runESLint and TeamMember write
 it. A number's or a string's `Option` keeps `(item) => item != null`. And `?` of one is
 `if (!o) return;`, as react.dev's runESLint writes `if (!error)`.
+
+## Amendment: an `Option<bool>` that's `Some(true)`, tested
+
+React's `ReactNoopUpdateQueue` asks whether it warned of a key,
+`js::dict::get(did_warn, &key).is_some_and(|&warned| warned)`, which was
+`const option = didWarn[key]; option != null && option`, read twice, where
+upstream writes `if (didWarnStateUpdateForUnmountedComponent[warningKey])`.
+And `flag.unwrap_or(false)` in a test was `if (flag ?? false)`.
+
+- **`is_some_and` of the truth of what it holds** (`tests_its_truth`, an
+  `Option<bool>`'s `|&w| w` or `|v| js::truthy(Some(*v))`), its `Some`
+  not boxed, nothing to drop, is `!!o`: `o != null && o` read once, as
+  what's not there is falsy too. A test reads it as `o`, as it does `o ==
+  Some(true)`'s `!!o`.
+- **A test reads `x ?? f` as `x`, `f` a falsy constant** (`Expr::tested`,
+  the one answer to what a test reads): `undefined` and `null` are falsy,
+  as `false`, `0` and `""` are. `if (flag)` of `flag.unwrap_or(false)`.
+- **What `!` turns is read as a test**, wherever it is, `const off =
+  !flag`, and so is a `while`'s test, `while (flags[i])`, as an `if`'s
+  is.
+
+Case: A, as before: each reads true where the other does, for any value.
+
+Held by `test/corpus/option_bool_tested.rs` against native Rust, and
+the mutations `is-some-and-truth-twice` (`scripts/mutations/lower/combinators.ts`),
+`tested-coalesce-kept` (`js/expr_walk.ts`), `falsy-constant-false-truthy`
+(`js/make.ts`), `not-operand-untested` and `while-test-untested`
+(`prepare.ts`).

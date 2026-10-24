@@ -4,11 +4,9 @@
 // `char` is a string of one character. Their methods are JS's.
 
 import {
-  $byteLen,
   $debugF64,
   $pad,
   $plus,
-  $roomFor,
   $rsplitOnce,
   $splitOnce,
   $stripSuffix,
@@ -104,7 +102,6 @@ export function folderAndFile(path) {
 }
 
 export function repeated(s, n) {
-  $roomFor(n, $byteLen(s));
   return s.repeat(n);
 }
 
@@ -163,7 +160,7 @@ export function formatOrder(start) {
  * precision, and other bases, as Rust applies them.
  */
 export function padded(n, name) {
-  return `[${String(n).padStart(6)}] [${String(n).padEnd(6)}] [${$pad(name, 9, "^")}] [${$pad(name, 9, ">", "*")}] [${$zeroPad(String(n), 6)}] [${$plus(String(n))}] [0x${(n >>> 0).toString(16)}] [${$zeroPad("0b" + (n >>> 0).toString(2), 10)}] [${(n >>> 0).toString(16).toUpperCase()}] [${$toFixed(n / 8, 2)}] [${Array.from(name).slice(0, 3).join("")}]`;
+  return `[${String(n).padStart(6)}] [${String(n).padEnd(6)}] [${$pad(name, 9, "^")}] [${$pad(name, 9, ">", "*")}] [${$zeroPad(String(n), 6)}] [${$plus(String(n))}] [0x${(n >>> 0).toString(16)}] [${$zeroPad(`0b${(n >>> 0).toString(2)}`, 10)}] [${(n >>> 0).toString(16).toUpperCase()}] [${$toFixed(n / 8, 2)}] [${Array.from(name).slice(0, 3).join("")}]`;
 }
 
 /**

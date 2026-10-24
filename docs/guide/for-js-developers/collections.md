@@ -248,6 +248,11 @@ pub fn middle(v: &[i32]) -> &[i32] {
     &v[1..v.len() - 1]
 }
 
+pub fn head(v: &[i32]) -> &[i32] {
+    let truncated = v.len() > 3;
+    if truncated { &v[..3] } else { v }
+}
+
 pub fn get(v: &[i32], i: usize) -> Option<i32> {
     v.get(i).copied()
 }
@@ -294,6 +299,11 @@ export function middle(v) {
   return $slice(v, 1, (v.length - 1) >>> 0);
 }
 
+export function head(v) {
+  const truncated = v.length > 3;
+  return truncated ? v.slice(0, 3) : v;
+}
+
 export function get(v, i) {
   return v[i];
 }
@@ -317,6 +327,11 @@ export function at(v, i) {
   `[a, b].concat()`.
 - `&v[a..b]` is a copy of that part, as `slice(a, b)` is: nothing can
   change `v` while the slice is borrowed, so no one can tell.
+- **A range the code before it shows in bounds is JS's own `slice`,**
+  `v.slice(0, 3)`: one that ends at most at a length tested, `v.len() >
+  3`, or held in a `bool`, `let truncated = v.len() > 3;`, while nothing
+  the test reads has changed. Any other is `$slice`, which panics as
+  Rust's does ([ADR 0806](../../decisions/0806-a-slices-range-in-bounds-is-js-slice.md)).
 
 ## Sorting
 

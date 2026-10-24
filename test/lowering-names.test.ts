@@ -1427,6 +1427,23 @@ pub fn shadowed(_base: u32) -> Box<dyn Fn(u32) -> u32> {
 pub fn handler() -> Box<dyn Fn(u32, u32) -> u32> {
     Box::new(|_event, count| count + 1)
 }
+
+pub fn nested() -> Box<dyn Fn(u32) -> u32> {
+    Box::new(|_v| {
+        let g = |v: u32| v + 1;
+        g(2)
+    })
+}
+
+pub struct Updater {
+    pub is_mounted: fn(u32) -> bool,
+    pub update: fn(u32, u32) -> u32,
+}
+
+pub static UPDATER: Updater = Updater {
+    is_mounted: |_instance| false,
+    update: |instance, _callback| instance,
+};
 `);
   run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
@@ -1437,11 +1454,15 @@ pub fn handler() -> Box<dyn Fn(u32, u32) -> u32> {
   expect(js).toContain("(_total) => total");
   expect(js).toContain("export function shadowed(_base) {");
   expect(js).toContain("(event, count) => (count + 1) >>> 0");
+  // A closure's binding is seen by a closure it's in, not by one beside it.
+  expect(js).toContain("(_v) => {");
+  expect(js).toContain("isMounted: (instance) => false");
+  expect(js).toContain("update: (instance, callback) => instance");
   const declarations = readFileSync(join(dir, "lib.d.ts"), "utf8");
   expect(declarations).toContain("export function describeClientReference(ref: string): string;");
   expect(declarations).toContain("export function keepsNew(_new: number): number;");
   expect(declarations).toContain("export function beside(_x: number, x: number): number;");
   const lib = await import(join(dir, "lib.js"));
-  expect([lib.describeClientReference("a"), lib.keepsNew(5), lib.beside(1, 2), lib.shadowing(9), lib.captured(3)(4), lib.handler()(1, 2), lib.shadowed(1)(2)])
-    .toEqual(["client", 1, 2, 2, 3, 3, 3]);
+  expect([lib.describeClientReference("a"), lib.keepsNew(5), lib.beside(1, 2), lib.shadowing(9), lib.captured(3)(4), lib.handler()(1, 2), lib.shadowed(1)(2), lib.nested()(7), lib.UPDATER.isMounted(1), lib.UPDATER.update(4, 5)])
+    .toEqual(["client", 1, 2, 2, 3, 3, 3, 3, false, 4]);
 });

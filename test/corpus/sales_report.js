@@ -36,7 +36,12 @@ function sales() {
     ["east", "pad", 7, 2],
     ["south", "pen", 5, 1.25],
   ];
-  return raw.map(([r, item, units, price]) => ({ region: r, item, units, price }));
+  return raw.map(([r, item, units, price]) => ({
+    region: r,
+    item,
+    units,
+    price,
+  }));
 }
 
 function main() {

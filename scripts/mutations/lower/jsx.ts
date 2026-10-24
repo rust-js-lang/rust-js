@@ -62,8 +62,8 @@ export const mutations: Mutation[] = [
     name: "flattened-literal-spread",
     breaks: "a flattened struct made in JSX is spread, `{...{ href: \"/learn\" }}`, not its fields as attributes",
     file: "src/lower/jsx.rs",
-    find: "        let js::ExprKind::Object(props) = value.kind else {\n",
-    replace: "        if matches!(value.kind, js::ExprKind::Object(_)) {\n            return Ok(vec![Prop::Spread(value)]);\n        }\n        let js::ExprKind::Object(props) = value.kind else {\n",
+    find: "        let js::ExprKind::Object(props, ..) = value.kind else {\n",
+    replace: "        if matches!(value.kind, js::ExprKind::Object(..)) {\n            return Ok(vec![Prop::Spread(value)]);\n        }\n        let js::ExprKind::Object(props, ..) = value.kind else {\n",
     tests: ["test/jsx-props.test.ts", "-t", "flattened struct"],
   },
   {

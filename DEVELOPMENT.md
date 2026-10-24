@@ -272,8 +272,13 @@ the workflow's 2 machines; `--shards=4` splits it across four.
 
 Each push to `main`, its suite on 2 machines; or `workflow_dispatch` of a
 branch, by `bun run ci:check`, with `test_shards`, 1, 2 or 4, and
-`since`, the commit the mutations are of what changed since. A push's run
-waits for the branch's one in progress; one started by hand cancels it.
+`since`, the commit the mutations are of what changed since. A run waits
+for the branch's one in progress, a push's and one started by hand alike,
+and never cancels it: of several waiting, the newest runs, its mutations
+of everything since `main`'s last finished check. A push to `main` checks
+it already; start one by hand only of another branch, or with other
+settings. `rustc-tests.yml`'s runs are a group of their own, so one never
+cancels a check.
 Its jobs run at once:
 
 | Job | What | Time, about |

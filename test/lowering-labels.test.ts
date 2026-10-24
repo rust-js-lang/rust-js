@@ -298,10 +298,14 @@ pub fn describe(value: Option<&Unknown>, indent: usize, out: &mut Vec<String>) -
   expect(js).not.toMatch(/^\s*\w+: \{$/m);
   expect(js).not.toMatch(/break \w+;/);
   expect(js).not.toContain("value$1");
-  expect(js).toContain('  switch (typeof value) {\n    case "object":\n      if (value === null) {\n');
-  expect(js).toContain('        if (keys.length === 1) {\n          desc = "<" + typeName + " />";\n          break;\n        }\n');
+  // The object arm's `if` the program wrote with no `else`, as written
+  // (ADR 0805): not `} else if ("type" in value) { .. } else { .. }`.
   expect(js).toContain(
-    '        if (indent < 3 || (keys.length === 2 && keys[0] === "children")) {\n          desc = "<" + typeName + " … />";\n          break;\n        }\n        out.push("<" + typeName);\n        return "";\n',
+    '  switch (typeof value) {\n    case "object":\n      if (value === null) {\n        desc = "null";\n      } else {\n        if ("type" in value) {\n',
+  );
+  expect(js).toContain('          if (keys.length === 1) {\n            desc = "<" + typeName + " />";\n            break;\n          }\n');
+  expect(js).toContain(
+    '          if (indent < 3 || (keys.length === 2 && keys[0] === "children")) {\n            desc = "<" + typeName + " … />";\n            break;\n          }\n          out.push("<" + typeName);\n          return "";\n        }\n        const name = String(value);\n',
   );
   expect(js).toMatch(/\n\s+if \("length" in value\) \{\n\s+const length = value.length;\n\s+desc = typeof length === "number" \? `\$\{name\}\(\$\{length\}\)` : name;\n\s+break;\n/);
   const lib = await import(join(dir, "lib.js"));
@@ -320,6 +324,151 @@ pub fn describe(value: Option<&Unknown>, indent: usize, out: &mut Vec<String>) -
   expect(of([1, 2])).toEqual(["1,2(2)"]);
   expect(of({ length: "x" })).toEqual(["[object Object]"]);
   expect(of({ b: 1 })).toEqual(["", "[object Object]"]);
+});
+
+// ADR 0805: React's JSX branch, `if (indent < 3 || (propsLength === 1 &&
+// propsKeys[0] === 'children' && key == null)) { desc = ..; break; }`, then
+// a loop: the `||` the program wrote whose branch is a `break` as written,
+// however many parts it has and whatever its other branch ends with; and
+// the arm's `if`, written with no `else`, none, its `then` leaving.
+test("an || before a loop whose branch leaves a case is as written", async () => {
+  const dir = fixture("labeled-block-or-loops");
+  writeFileSync(join(dir, "lib.rs"), `use js::{Kind, Unknown};
+
+pub fn describe(value: Option<&Unknown>, indent: usize, out: &mut Vec<String>) -> String {
+    let desc = match js::classify(value) {
+        Kind::Null => "null".to_string(),
+        Kind::Object(_) | Kind::Array(_) if let Some(value) = value => 'desc: {
+            if js::has(value, "type") {
+                let type_name = js::string(js::get(value, "type"));
+                let keys = js::object::keys(value);
+                if keys.is_empty() {
+                    break 'desc "<".to_string() + &type_name + " />";
+                }
+                if indent < 3 || (keys.len() == 2 && keys[0] == "children" && keys[1] == "type") {
+                    break 'desc "<".to_string() + &type_name + " \\u{2026} />";
+                }
+                out.push("<".to_string() + &type_name);
+                for key in keys {
+                    out.push(key);
+                }
+                out.push("/>".to_string());
+                return String::new();
+            }
+            let name = js::string(Some(value));
+            if js::has(value, "length") {
+                break 'desc name + "[]";
+            }
+            out.push(name);
+            return String::new();
+        }
+        Kind::Undefined => "undefined".to_string(),
+        _ => js::string(value),
+    };
+    desc
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs()]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).not.toMatch(/^\s*\w+: \{$/m);
+  expect(js).toContain('        desc = "null";\n      } else {\n        if ("type" in value) {\n');
+  expect(js).toContain(
+    '          if (indent < 3 || (keys.length === 2 && keys[0] === "children" && keys[1] === "type")) {\n            desc = "<" + typeName + " … />";\n            break;\n          }\n          out.push("<" + typeName);\n          for (const key of keys) {\n',
+  );
+  expect(js).toContain('          out.push("/>");\n          return "";\n        }\n        const name = String(value);\n');
+  const lib = await import(join(dir, "lib.js"));
+  const of = (value: unknown, indent = 0) => {
+    const out: string[] = [];
+    return [lib.describe(value, indent, out), ...out];
+  };
+  expect(of(null)).toEqual(["null"]);
+  expect(of(undefined)).toEqual(["undefined"]);
+  expect(of(5)).toEqual(["5"]);
+  expect(of({ type: "a" })).toEqual(["<a … />"]);
+  expect(of({ type: "a" }, 3)).toEqual(["", "<a", "type", "/>"]);
+  expect(of({ children: 1, type: "a" }, 3)).toEqual(["<a … />"]);
+  expect(of({ type: "a", children: 1 }, 3)).toEqual(["", "<a", "type", "children", "/>"]);
+  expect(of([1, 2])).toEqual(["1,2[]"]);
+  expect(of({ b: 1 })).toEqual(["", "[object Object]"]);
+});
+
+// ADR 0805: an `else` the program wrote stays where the block it's in ends
+// a case, its `else if` a chain (ADR 0683); and one whose `then` goes on,
+// a `match`'s, stays, or both its branches would run.
+test("an else the program wrote in a case, or after a branch that goes on, stays", async () => {
+  const dir = fixture("labeled-block-written-elses");
+  writeFileSync(join(dir, "lib.rs"), `use js::{Kind, Unknown};
+
+pub fn written(value: Option<&Unknown>, out: &mut Vec<String>) -> String {
+    let desc = match js::classify(value) {
+        Kind::Null => "null".to_string(),
+        Kind::Object(_) | Kind::Array(_) if let Some(value) = value => 'desc: {
+            if js::has(value, "type") {
+                let name = js::string(js::get(value, "type"));
+                if name.is_empty() {
+                    break 'desc "<>".to_string();
+                }
+                out.push(name);
+                return String::new();
+            } else {
+                let name = js::string(Some(value));
+                if js::has(value, "length") {
+                    break 'desc name + "[]";
+                }
+                out.push(name);
+                return String::new();
+            }
+        }
+        Kind::Undefined => "none".to_string(),
+        _ => js::string(value),
+    };
+    desc
+}
+
+pub fn tail_match(value: Option<&Unknown>, out: &mut Vec<String>) -> String {
+    let desc = match js::classify(value) {
+        Kind::Null => "null".to_string(),
+        Kind::Object(_) | Kind::Array(_) if let Some(value) = value => 'desc: {
+            if js::has(value, "type") {
+                break 'desc "typed".to_string();
+            }
+            match js::classify(js::get(value, "kind")) {
+                Kind::Number(_) => {
+                    out.push("number".to_string());
+                    "n".to_string()
+                }
+                _ => {
+                    out.push("other".to_string());
+                    "o".to_string()
+                }
+            }
+        }
+        Kind::Undefined => "none".to_string(),
+        _ => js::string(value),
+    };
+    desc
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs()]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('        desc = "null";\n      } else if ("type" in value) {\n');
+  expect(js).toContain(
+    '        if (typeof value.kind === "number") {\n          out.push("number");\n          desc = "n";\n        } else {\n          out.push("other");\n          desc = "o";\n        }\n',
+  );
+  const lib = await import(join(dir, "lib.js"));
+  const of = (f: (value: unknown, out: string[]) => string, value: unknown) => {
+    const out: string[] = [];
+    return [f(value, out), ...out];
+  };
+  expect(of(lib.written, null)).toEqual(["null"]);
+  expect(of(lib.written, { type: "" })).toEqual(["<>"]);
+  expect(of(lib.written, { type: "a" })).toEqual(["", "a"]);
+  expect(of(lib.written, [1])).toEqual(["1[]"]);
+  expect(of(lib.written, {})).toEqual(["", "[object Object]"]);
+  expect(of(lib.tailMatch, { type: 1 })).toEqual(["typed"]);
+  expect(of(lib.tailMatch, { kind: 1 })).toEqual(["n", "number"]);
+  expect(of(lib.tailMatch, { kind: "x" })).toEqual(["o", "other"]);
+  expect(of(lib.tailMatch, undefined)).toEqual(["none"]);
 });
 
 // ADR 0790: a guard `if let Some(v) = value` holds where the arm's kind

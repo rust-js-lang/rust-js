@@ -496,6 +496,96 @@ pub fn last() {
   expect(lib.drained(5)).toBe(0);
 });
 
+// ADR 0840: a thread-local's `with(|x| ..)` is its closure's body where
+// it's called, its parameter the thread-local: React's
+// `ReactSharedInternalsClient`, which sets its internals' fields when it's
+// loaded, and `ReactNoopUpdateQueue`'s test of what it warned of. One that
+// returns early, or in what the module runs when it's loaded, which no
+// `return` may end, stays a closure.
+test("a thread-local's with is its closure's body where it's called", async () => {
+  const dir = fixture("applied-with");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::Cell;
+
+use js::Dict;
+
+pub struct Internals {
+    #[cfg_attr(rust_js, rust_js::name = "G")]
+    #[cfg_attr(rust_js, rust_js::nullable, rust_js::optional)]
+    pub g: Cell<Option<&'static js::Unknown>>,
+    pub count: Cell<f64>,
+}
+
+thread_local! {
+    static ENABLED: bool = const { true };
+    #[cfg_attr(rust_js, rust_js::name = "Internals")]
+    static INTERNALS: Internals = Internals {
+        g: Cell::new(None),
+        count: Cell::new(0.0),
+    };
+    static DID_WARN: &'static Dict<bool> = js::dict::new();
+}
+
+js::on_load! {
+    INTERNALS.with(|internals| {
+        if ENABLED.with(|&enabled| enabled) {
+            internals.g.set(None);
+        }
+        internals.count.set(1.0);
+    });
+    INTERNALS.with(|internals| {
+        if internals.count.get() > 5.0 {
+            return;
+        }
+        internals.count.set(internals.count.get() + 1.0);
+    });
+}
+
+pub fn warn(key: &str) -> u32 {
+    if DID_WARN.with(|did_warn| js::dict::get(did_warn, key).is_some_and(|&warned| warned)) {
+        return 1;
+    }
+    DID_WARN.with(|did_warn| js::dict::set(did_warn, key, true));
+    0
+}
+
+pub fn counted() -> f64 {
+    let n = INTERNALS.with(|internals| {
+        let before = internals.count.get();
+        internals.count.set(before + 1.0);
+        before
+    });
+    n * 2.0
+}
+
+pub fn capped(limit: f64) -> f64 {
+    INTERNALS.with(|internals| {
+        if internals.count.get() > limit {
+            return limit;
+        }
+        internals.count.get()
+    })
+}
+
+pub fn read() -> f64 {
+    INTERNALS.with(|internals| internals.count.get())
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("\nif (ENABLED) {\n  Internals.G = null;\n}\n");
+  expect(js).toContain("\nInternals.count = 1;\n");
+  expect(js).toContain("((internals) => {\n  if (internals.count > 5) {\n    return;\n  }\n");
+  expect(js).toContain("export function warn(key) {\n  if (didWarn[key]) {\n    return 1;\n  }\n");
+  expect(js).toContain("  const before = Internals.count;\n  Internals.count = before + 1;\n  const n = before;\n  return n * 2;\n");
+  expect(js).toContain("export function capped(limit) {\n  return ((internals) => {\n");
+  expect(js).toContain("export function read() {\n  return Internals.count;\n}");
+  const lib = await import(join(dir, "lib.js"));
+  expect(lib.read()).toBe(2);
+  expect([lib.counted(), lib.read()]).toEqual([4, 3]);
+  expect([lib.capped(1), lib.capped(5)]).toEqual([1, 3]);
+  expect([lib.warn("a"), lib.warn("a"), lib.warn("b")]).toEqual([0, 1, 0]);
+});
+
 // ADR 0582: `Rc::ptr_eq` of an `Rc` of a struct with fields, a JS object,
 // is `===` of the objects, whose identity it is: React's scheduler asks
 // whether the task it ran is still the first, `peek(taskQueue) ===

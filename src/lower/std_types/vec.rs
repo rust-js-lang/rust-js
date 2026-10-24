@@ -216,7 +216,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// bytes each, wherever a capacity is asked (ADR 0774): `$roomFor(..)`,
     /// a `capacity overflow` panic past `isize::MAX` bytes or `usize::MAX`
     /// items. Left out where it can't fail: of none more, of a count alone
-    /// of items of no size, or of one known to fit.
+    /// of items of no size, or of one known to fit. Not asked of a string
+    /// `repeat` makes, which is JS's own: a JS string is less than
+    /// `isize::MAX` bytes, so the engine refuses it first (ADR 0774,
+    /// amended).
     pub(in crate::lower) fn room_for(
         &mut self,
         (len, count): (Option<Expr>, Expr),

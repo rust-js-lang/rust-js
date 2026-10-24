@@ -244,21 +244,21 @@ pub(super) fn spread_spreads(e: &mut Expr) {
         return;
     }
     let props = match &mut e.kind {
-        ExprKind::Object(props) => props,
+        ExprKind::Object(props, ..) => props,
         ExprKind::Jsx(jsx) => &mut jsx.props,
         _ => return,
     };
     // Down to what's spread, `{...{ ...{ ...b } }}`'s `b`, a copy made of a
     // copy, as an element captured twice spills its props.
     let flat = |prop: &js::Prop| {
-        matches!(prop, js::Prop::Spread(Expr { kind: ExprKind::Object(inner), .. })
+        matches!(prop, js::Prop::Spread(Expr { kind: ExprKind::Object(inner, ..), .. })
             if inner.iter().all(|p| matches!(p, js::Prop::Spread(_))))
     };
     while props.iter().any(flat) {
         *props = (std::mem::take(props).into_iter())
             .flat_map(|prop| match prop {
                 js::Prop::Spread(Expr {
-                    kind: ExprKind::Object(inner),
+                    kind: ExprKind::Object(inner, ..),
                     ..
                 }) if inner.iter().all(|p| matches!(p, js::Prop::Spread(_))) => inner,
                 prop => vec![prop],
@@ -366,7 +366,7 @@ pub(super) fn handles_in_place(body: &mut [Stmt]) {
     js::each_expr_mut(body, &mut |e| {
         if let ExprKind::Member(of, key) = &e.kind
             && key == js::HELD
-            && let ExprKind::Handle(place) = &of.kind
+            && let ExprKind::Handle(place, _) = &of.kind
             && place.reads_same()
         {
             *e = Expr {
@@ -381,20 +381,27 @@ pub(super) fn handles_in_place(body: &mut [Stmt]) {
 /// field, whose `value` alone is used, the handle never given: read before
 /// anything could set `o.f`, `const h = o.f`, `h` where its `value` is
 /// read (ADR 0287); else `o.f` where its `value` is, the `o` it was made
-/// of, as MIR holds a reference written again before it's made.
+/// of, as MIR holds a reference written again before it's made, and where
+/// it's written through, a closure's `h.value = 5` too (#192).
 pub(super) fn read_handles(body: &mut Vec<Stmt>) {
-    let mut handles: Vec<(String, Expr, bool)> = Vec::new();
+    let mut handles: Vec<(String, Expr, bool, js::Storage)> = Vec::new();
     js::each_list(body, &mut |stmts| {
         for (k, stmt) in stmts.iter().enumerate() {
             if let StmtKind::Const(name, value) = &stmt.kind
-                && let ExprKind::Handle(place) = &value.kind
+                && let ExprKind::Handle(place, storage) = &value.kind
                 && matches!(place.kind, ExprKind::Member(..))
             {
-                handles.push((name.clone(), (**place).clone(), read_at_once(stmts, k, name)));
+                handles.push((name.clone(), (**place).clone(), read_at_once(stmts, k, name), *storage));
             }
         }
     });
-    handles.retain(|(name, place, at_once)| {
+    // Written through, `h.value = 5`, a closure's too (#192): its place
+    // where its `value` is, read and written there, never read at once.
+    let changed = js::Writes::of(body).changed;
+    for (name, _, at_once, _) in &mut handles {
+        *at_once &= !changed.contains(name);
+    }
+    handles.retain(|(name, place, at_once, _)| {
         // Each use of it one of its `value`: none left once those are.
         let mut rest = body.clone();
         js::each_expr_mut(&mut rest, &mut |e| {
@@ -415,14 +422,36 @@ pub(super) fn read_handles(body: &mut Vec<Stmt>) {
         return;
     }
     let read = |name: &str| (handles.iter()).find(|(h, ..)| h == name);
+    // What's written through one, as its storage stores it: a nullable
+    // field's `None`, `null` (ADR 0791).
+    let stored = |list: &mut Vec<Stmt>| {
+        js::statement_lists(list, &mut |stmts| {
+            for stmt in stmts.iter_mut() {
+                if let StmtKind::Assign(target, value) = &mut stmt.kind
+                    && let ExprKind::Member(of, key) = &target.kind
+                    && key == js::HELD
+                    && let ExprKind::Var(v) = &of.kind
+                    && let Some((.., storage)) = read(v)
+                {
+                    *value = storage.written(std::mem::replace(value, Expr::undefined()), false);
+                }
+            }
+        })
+    };
+    stored(body);
+    js::each_expr_mut(body, &mut |e| match &mut e.kind {
+        ExprKind::Arrow(_, inner) | ExprKind::AsyncArrow(_, inner) => stored(inner),
+        ExprKind::Function(function) => stored(&mut function.body),
+        _ => {}
+    });
     js::statement_lists(body, &mut |stmts| {
         stmts.retain(
-            |stmt| !matches!(&stmt.kind, StmtKind::Const(name, _) if read(name).is_some_and(|(.., at_once)| !at_once)),
+            |stmt| !matches!(&stmt.kind, StmtKind::Const(name, _) if read(name).is_some_and(|(_, _, at_once, _)| !at_once)),
         );
         for stmt in stmts.iter_mut() {
             if let StmtKind::Const(name, value) = &mut stmt.kind
                 && read(name).is_some()
-                && let ExprKind::Handle(place) = &value.kind
+                && let ExprKind::Handle(place, _) = &value.kind
             {
                 *value = (**place).clone();
             }
@@ -432,7 +461,7 @@ pub(super) fn read_handles(body: &mut Vec<Stmt>) {
         if let ExprKind::Member(of, key) = &e.kind
             && key == js::HELD
             && let ExprKind::Var(v) = &of.kind
-            && let Some((_, place, at_once)) = read(v)
+            && let Some((_, place, at_once, _)) = read(v)
         {
             let read = match at_once {
                 true => Expr::var(v),
@@ -476,7 +505,7 @@ pub(super) fn first_cell_values(stmts: &mut Vec<Stmt>) {
             i += 1;
             continue;
         };
-        let empty = matches!(&value.kind, ExprKind::Object(props)
+        let empty = matches!(&value.kind, ExprKind::Object(props, ..)
             if matches!(props.as_slice(), [js::Prop::Field(key, held)] if key == js::HELD && matches!(held.kind, ExprKind::Undefined)));
         let name = name.clone();
         let first = (i + 1..stmts.len()).find(|&j| js::mentions_in(&stmts[j..=j], &name) > 0);
@@ -512,7 +541,7 @@ pub(super) fn plain_cells(body: &mut Vec<Stmt>) {
         for stmt in stmts.iter() {
             match &stmt.kind {
                 StmtKind::Const(name, value)
-                    if matches!(&value.kind, ExprKind::Object(props)
+                    if matches!(&value.kind, ExprKind::Object(props, ..)
                         if matches!(props.as_slice(), [js::Prop::Field(key, _)] if key == js::HELD)) =>
                 {
                     cells.push(name.clone());
@@ -602,7 +631,7 @@ pub(super) fn plain_cells(body: &mut Vec<Stmt>) {
         for stmt in stmts.iter_mut() {
             if let StmtKind::Const(name, value) = &mut stmt.kind
                 && plain.contains(name)
-                && let ExprKind::Object(props) = &mut value.kind
+                && let ExprKind::Object(props, ..) = &mut value.kind
                 && let Some(js::Prop::Field(_, init)) = props.pop()
             {
                 stmt.kind = StmtKind::Let(name.clone(), Some(init));
@@ -755,7 +784,6 @@ pub(super) fn applied_values(
         };
         // Taken out, and the statement looked at again, for the next.
         if let Some(value) = first_applied(root, &mut before, &name, set, plain) {
-            root.each_mut(&mut spliced_templates);
             let span = stmts[i].span;
             stmts.insert(i, StmtKind::Const(name.clone(), value).at(span));
             taken.insert(name);
@@ -829,56 +857,4 @@ fn first_applied(
 pub(super) struct Before {
     past: bool,
     reads: bool,
-}
-
-/// A template's value that's a template itself, a function's body put in
-/// place of its call, `${`(${a}, ${b})`}`: its text and values in the
-/// outer's, `(${a}, ${b})`. Of an inner of one piece on one line, and not
-/// into a piece written across lines, whose line breaks are as they are
-/// where the inner's are `\n`.
-fn spliced_templates(e: &mut Expr) {
-    let ExprKind::Template(texts, values, layout) = &mut e.kind else {
-        return;
-    };
-    if layout.lines || layout.breaks.iter().any(|at| at.lines) {
-        return;
-    }
-    if !values
-        .iter()
-        .any(|v| matches!(&v.kind, ExprKind::Template(_, _, inner) if inner.is_plain()))
-    {
-        return;
-    }
-    // Where each of the outer's texts is now, its index and how far into
-    // it: so `concat!`'s pieces break where they did (ADR 0641).
-    let mut moved = vec![(0, 0)];
-    let (mut spliced_texts, mut spliced_values) = (vec![texts[0].clone()], Vec::new());
-    for (value, after) in std::mem::take(values).into_iter().zip(texts.iter().skip(1)) {
-        match value.kind {
-            ExprKind::Template(inner_texts, inner_values, inner) if inner.is_plain() => {
-                let mut inner = inner_texts.into_iter();
-                spliced_texts
-                    .last_mut()
-                    .expect("a text")
-                    .push_str(&inner.next().unwrap_or_default());
-                for (inner_value, inner_text) in inner_values.into_iter().zip(inner) {
-                    spliced_values.push(inner_value);
-                    spliced_texts.push(inner_text);
-                }
-            }
-            _ => {
-                spliced_values.push(value);
-                spliced_texts.push(String::new());
-            }
-        }
-        let last = spliced_texts.last_mut().expect("a text");
-        moved.push((spliced_values.len(), last.len()));
-        last.push_str(after);
-    }
-    for at in &mut layout.breaks {
-        let (text, shift) = moved[at.text];
-        (at.text, at.at) = (text, shift + at.at);
-    }
-    *texts = spliced_texts;
-    *values = spliced_values;
 }

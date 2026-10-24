@@ -490,7 +490,7 @@ const mirState: Record<string, string[]> = {
   "src/lower/mir/std_calls.rs": ["at", "body", "locals", "offsets"],
   "src/lower/mir/assign.rs": ["binding_var", "body", "boxes", "branches", "builders", "copy_backs", "cuts", "in_place", "offsets", "jsx_props", "let_spans", "locals", "maps", "named", "options", "parts", "payloads", "pending", "places", "pointed", "refs", "rests", "writer"],
   "src/lower/mir/closures.rs": ["at", "body", "locals", "offsets"],
-  "src/lower/mir/dispatch.rs": ["body", "defaults", "flattened", "locals", "maps", "options", "pending"],
+  "src/lower/mir/dispatch.rs": ["body", "defaults", "flattened", "locals", "maps", "options"],
   "src/lower/mir/entries.rs": ["body", "captures", "locals", "thrown_writes"],
   "src/lower/mir/jsx_props.rs": ["body"],
   "src/lower/mir/locals.rs": ["body", "locals", "patterned"],
@@ -685,7 +685,7 @@ const dispatchers: [string, string, number][] = [
   ["src/lower/recognition/calls.rs", "    pub(in crate::lower) fn classify(", 8],
   ["src/lower/mir/dispatch.rs", "    pub(super) fn mir_call(", 100], // What reads its argument through, `flatten()` and `unwrap()`, in `reads_through` (ADR 0747).
   ["src/lower/mir/dispatch.rs", "    fn mir_call_values_of(", 247],
-  ["src/lower/mir/dispatch.rs", "    fn mir_std_call(", 146],
+  ["src/lower/mir/dispatch.rs", "    fn mir_std_call(", 140],
   ["src/lower/mir.rs", "    fn mir_function(", 364], // The parameters handed to tidy's `scopes` stage in a cell, and whether it asks its stages again (ADR 0659, amended); the jumps the program wrote in one field (ADR 0742); the guards that hold (ADR 0790).
   ["src/lower/recognition/inherent.rs", "    pub(super) fn classify_inherent(", 754],
   ["src/lower/recognition/calls.rs", "    fn classify_trait_method(", 245],
@@ -963,6 +963,32 @@ test("a type known by its bounds is one by known_by_bounds alone", () => {
   const asking = files("src/lower").filter((file) => file.endsWith(".rs"))
     .flatMap((file) => read(file).split("\n").filter((line) => /matches!\(.*ty::Param\(_\) \| ty::Alias\(\.\.\)/.test(line)).map((line) => `${file}: ${line.trim()}`));
   expect(asking).toEqual(["src/lower/recognition/traits.rs: matches!(ty.kind(), ty::Param(_) | ty::Alias(..))"]);
+});
+
+// A whole body's facts, each a reading of its THIR, are its `BodyFacts`,
+// collected once before it's lowered: a call lowering one looks its
+// answer up, and never reads the body again for it, as four did, each
+// call building a set of the whole body (#191, ADR 0791). So
+// `body_queries` gives no whole body's set or map but through `BodyFacts`.
+test("a whole body's facts are its BodyFacts, read once", () => {
+  const source = read("src/lower/body_queries.rs");
+  const signature = /^(pub(?:\([^)]*\))? )?fn (\w+)<'tcx>\([^)]*thir: &Thir<'tcx>[^)]*\)\s*->\s*\(?Hash(?:Set|Map)/gm;
+  const queries = [...source.matchAll(signature)];
+  expect(queries.length).toBeGreaterThan(5);
+  expect(queries.filter((query) => query[1]).map((query) => query[2])).toEqual([]);
+});
+
+// A std call's kind is chosen of what it reads alone: each kind's handler
+// takes `&self` and `&State` and gives the lowering of a call it takes,
+// so none can change what's lowered before the one that takes it is
+// chosen, and it's the one (#191, ADR 0791). A speculative handler given
+// `&mut` access, which a decline had to be checked against, can't return.
+test("a std call's kind is chosen of what it reads alone", () => {
+  const source = read("src/lower/mir/std_calls.rs");
+  const selecting = [...source.matchAll(/fn (mir_\w+_call)<'c>\(\s*&self,\s*_?state: &State<'_, 'tcx>,\s*call: StdCall<'c, 'tcx>,?\s*\) -> Option<StdLowering<'c, 'a, 'tcx>>/g)];
+  expect(selecting.map((m) => m[1]).sort()).toEqual(["mir_fmt_call", "mir_iter_std_call", "mir_map_call", "mir_place_call", "mir_text_call", "mir_value_call", "mir_vec_call"]);
+  const mutable = [...source.matchAll(/fn (\w+)(?:<[^>]*>)?\(\s*&mut self,[^)]*\bStdCall\b/g)].map((m) => m[1]);
+  expect(mutable).toEqual([]);
 });
 
 // Where a copied default's types are known, the impl's environment with the

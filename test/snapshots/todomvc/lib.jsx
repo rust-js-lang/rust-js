@@ -14,7 +14,9 @@ function useFilter() {
   const [current, setCurrent] = useState(() => hash());
   useEffect(() => {
     const controller = new AbortController();
-    const options = { signal: controller.signal };
+    const options = {
+      signal: controller.signal,
+    };
     window.addEventListener(
       "hashchange",
       () => {
@@ -30,7 +32,7 @@ function useFilter() {
 }
 
 export function App() {
-  const [todos, dispatch] = useReducer(reduce, [], () => load());
+  const [todos, dispatch] = useReducer(reduce, undefined, () => load());
   const filter = useFilter();
   const [draft, setDraft] = useState("");
   useEffect(() => {

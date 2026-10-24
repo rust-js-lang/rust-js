@@ -1371,7 +1371,7 @@ pub fn getSyntaxHighlight(theme: &Theme) -> &'static HighlightStyle {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
-  expect(readFileSync(join(dir, "mir.js"), "utf8")).toContain('    { tag: tags.keyword, class: classNameToken("keyword") },\n');
+  expect(readFileSync(join(dir, "mir.js"), "utf8")).toContain('    {\n      tag: tags.keyword,\n      class: classNameToken("keyword"),\n    },\n');
 });
 
 // What rustc promotes in generic code it can't evaluate, `&size_of::<T>()`,

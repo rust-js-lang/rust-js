@@ -100,3 +100,15 @@ does something its `next` doesn't, a side effect or another answer, which
 std's contract doesn't forbid but no iterator is written for: listed
 among the guide's differences (`semantics.md`, 18), the issue open for
 whether it's kept.
+
+## Amendment: a string's `repeat` past the engine's length
+
+A `str`'s `repeat(n)` is JS's own, unchecked
+([0774](0774-room-past-isize-max-bytes-panics.md), amended), as the user
+decided: a repeat past `isize::MAX` bytes, where std panics `capacity
+overflow`, throws the engine's `RangeError`, in V8 before any string std
+would refuse is made; in JavaScriptCore, whose strings are longer, a
+string of text not all ASCII past a billion units may be made where std
+panics. Results change only for a program that asks a string that long,
+which runs out either way but in that corner: the second case, listed
+among the guide's differences (`semantics.md`, 25).

@@ -7,15 +7,13 @@ export function entry() {
 }
 
 /** A counter. */
-const count = { value: 0 };
+let count = 0;
 const names = { value: [] };
 const LIMIT = 3;
 
 function bump() {
-  return ((c) => {
-    c.value = (c.value + 1) >>> 0;
-    return c.value;
-  })(count);
+  count = (count + 1) >>> 0;
+  return count;
 }
 
 function main() {
@@ -29,7 +27,7 @@ function main() {
     $unborrow(borrowMut);
   }
   console.log(
-    `${count.value} [${((n) => {
+    `${count} [${((n) => {
       const borrow = $borrow(n, true);
       try {
         return borrow.value.slice();

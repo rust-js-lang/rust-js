@@ -95,7 +95,7 @@ export function words(text) {
 
 export function slices(v) {
   const a = [10, 20, 30];
-  const tail = $slice(a, 1).reduce((a, b) => (a + b) >>> 0, 0);
+  const tail = a.slice(1).reduce((a, b) => (a + b) >>> 0, 0);
   return [$slice(v, 1, 3), $slice(v, 2), $slice(v, 0, 1), v.slice(), tail];
 }
 

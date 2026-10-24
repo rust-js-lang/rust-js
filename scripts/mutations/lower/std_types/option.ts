@@ -93,14 +93,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-structs-enums.test.ts", "-t", "enum's own names"],
   },
   {
-    name: "filtered-of-truthy-unseen",
-    breaks: "a `filter` of text's emptiness isn't fused: `const option` of it, then its test",
-    file: "src/lower/std_types/option.rs",
-    find: "        _ => truthy_of(present)?,\n",
-    replace: "        _ => None?,\n",
-    tests: ["test/jsx-children.test.ts", "-t", "filtered child, in place"],
-  },
-  {
     name: "getter-option-chain-spilled",
     breaks: "`first_element_child(p).map(|c| id(c))` is `const child = ..; child?.id`, not `p.firstElementChild?.id`",
     file: "src/lower/std_types/option.rs",
@@ -368,5 +360,13 @@ export const mutations: Mutation[] = [
     find: "    match chained {\n        Some(chain) => {",
     replace: "    match None::<Expr> {\n        Some(chain) => {",
     tests: ["test/snapshots.test.ts", "-t", "^web_forms"],
+  },
+  {
+    name: "map-some-undefined",
+    breaks: "a `map`'s `Some` isn't known never `undefined`, so a nullable field given it is `(c ? c(..) : undefined) ?? null`",
+    file: "src/lower/std_types/option.rs",
+    find: "                    value.defined()\n",
+    replace: "                    value\n",
+    tests: ["test/lowering-nullable.test.ts", "-t", "what's never undefined as it is"],
   },
 ];

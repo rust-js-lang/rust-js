@@ -273,10 +273,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     }
                     None => Expr::call(f, vec![option.clone()]),
                 };
+                // A `Some` not boxed is its value, never `undefined`, which a
+                // nullable place stores as it is (`Known::Defined`).
                 let value = if self.boxed_payload(mapped) {
                     self.some(value)
                 } else {
-                    value
+                    value.defined()
                 };
                 // Of an `Option` never falsy, `!!o`, as of `o != null`: `o?.m(x)`
                 // (ADR 0298); else its test as it is.
@@ -369,7 +371,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let nullish = matches!(value.kind, js::ExprKind::Undefined | js::ExprKind::Null);
         let literal = matches!(
             value.kind,
-            js::ExprKind::Array(_) | js::ExprKind::Object(_) | js::ExprKind::Template(..)
+            js::ExprKind::Array(_) | js::ExprKind::Object(..) | js::ExprKind::Template(..)
         );
         if (value.is_constant() && !nullish) || literal {
             return value;
@@ -418,7 +420,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Err(self.unsupported(span, "a `&mut` to what's in an `Option` of an `Option`"));
         }
         let (place, cell) = match option.kind {
-            js::ExprKind::Handle(place) => (*place.clone(), Expr::handle(*place)),
+            js::ExprKind::Handle(place, storage) => (*place.clone(), Expr::stored_handle(*place, storage)),
             // A name, which reads the same each time: itself.
             js::ExprKind::Var(_) => (Expr::held(option.clone()), option),
             _ => {
@@ -479,7 +481,7 @@ const SOME_NONE: &str = "$someNone";
 pub(in crate::lower) fn some_literal(inner: Expr) -> Expr {
     let depth = match &inner.kind {
         js::ExprKind::Undefined | js::ExprKind::Null => 0,
-        js::ExprKind::Object(props) => match props.as_slice() {
+        js::ExprKind::Object(props, ..) => match props.as_slice() {
             [Prop::Field(name, depth)] if name == SOME_NONE => match depth.as_int() {
                 Some(n) => n + 1,
                 None => return inner,
@@ -584,17 +586,6 @@ pub(in crate::lower) fn optional_chain(option: &Expr, body: &Expr, param: &str) 
     }
 }
 
-/// `x` of `!!x`.
-fn truthy_of(test: &Expr) -> Option<&Expr> {
-    let js::ExprKind::Unary(js::UnaryOp::Not, inner) = &test.kind else {
-        return None;
-    };
-    match &inner.kind {
-        js::ExprKind::Unary(js::UnaryOp::Not, of) => Some(of),
-        _ => None,
-    }
-}
-
 /// A `filter`'s `Option`, `x != null && keep ? x : undefined` of a
 /// variable `x`: its test, which holds only where `x` isn't `None`, and
 /// `x`. What takes the `Option` next takes them in place of a `const` of
@@ -620,10 +611,11 @@ pub(in crate::lower) fn filtered(option: &Expr) -> Option<(Expr, Expr)> {
         js::ExprKind::Binary(Op::And, first, _) => first,
         _ => test,
     };
-    // `x != null`, or text's `!!x`, which holds only where it isn't.
+    // `x != null`, which holds only where it isn't. Text's filter by its
+    // truth is `x || undefined`, above (ADR 0635).
     let tested = match &present.kind {
         js::ExprKind::Binary(Op::LooseNe, tested, null) if matches!(null.kind, js::ExprKind::Null) => tested,
-        _ => truthy_of(present)?,
+        _ => return None,
     };
     let tests_it = matches!(&tested.kind, js::ExprKind::Var(v) if v == name);
     tests_it.then(|| ((**test).clone(), (**value).clone()))

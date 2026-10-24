@@ -473,3 +473,11 @@ their `==` does, `pointers_equal`: `$ptrEq`, by place, or of two objects'
 `test/corpus/ptr_eq_through_refs.rs` and the mutations
 `ptr-eq-of-handles-identity`, `pointer-of-slot-reference-slot` and
 `pointers-of-objects-by-handle`.
+
+## Amendment: a handle's identity isn't read
+
+`p == q` is the same place, by its allocation and where it is in it, and
+a `$ptrTo` handle's allocation is the object it's to, so two handles to
+one object are equal whether or not they're one: `$ptrTo` keeps one per
+object to make none twice, not for `==`. Its mutation,
+`ptr-to-uncached`, which nothing caught, is removed (#194).

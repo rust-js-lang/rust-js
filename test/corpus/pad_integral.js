@@ -13,8 +13,14 @@ function fixedDisplay_fmt(fixed, options) {
 }
 
 function main() {
-  const up = { negative: false, digits: "12.50" };
-  const down = { negative: true, digits: "3.25" };
+  const up = {
+    negative: false,
+    digits: "12.50",
+  };
+  const down = {
+    negative: true,
+    digits: "3.25",
+  };
   console.log(
     `[${fixedDisplay_fmt(up)}] [${fixedDisplay_fmt(down)}] [${fixedDisplay_fmt(up, { plus: true })}] [${fixedDisplay_fmt(down, { plus: true })}]`,
   );

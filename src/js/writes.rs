@@ -53,7 +53,7 @@ impl Writes {
         // never what's nested in them, which this finds in turn.
         self.lists(stmts, in_closure);
         each_expr(stmts, &mut |e| match &e.kind {
-            ExprKind::Handle(place) | ExprKind::Pair(place, _) => {
+            ExprKind::Handle(place, _) | ExprKind::Pair(place, _) => {
                 if let ExprKind::Var(name) = &place.kind {
                     self.handled.insert(name.clone());
                 }
@@ -162,7 +162,7 @@ mod tests {
     #[test]
     fn a_handle_may_replace_what_its_on() {
         let handle = Expr {
-            kind: ExprKind::Handle(Box::new(Expr::var("h"))),
+            kind: ExprKind::Handle(Box::new(Expr::var("h")), Storage::AsGiven),
             ..Expr::var("h")
         };
         let writes = Writes::of(&[stmt(StmtKind::Expr(Expr::call(Expr::var("g"), vec![handle])))]);

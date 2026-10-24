@@ -77,11 +77,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     .ok_or_else(|| self.unsupported(span, "an array of a generic length here"))?;
                 let slice = arg();
                 // An array of its own, `[T; N]`, is a copy, as a write to the
-                // slice's after doesn't change it; of a part, `$slice`'s copy
-                // already. A `&[T; N]` is the slice's.
-                let fresh = matches!(&slice.kind, js::ExprKind::Array(_))
-                    || matches!(&slice.kind, js::ExprKind::Call(callee, _)
-                        if callee.helper_name() == Some("$slice"));
+                // slice's after doesn't change it; of an array made here, a
+                // part's, `$slice`'s or `slice`'s copy already (ADR 0806). A
+                // `&[T; N]` is the slice's.
+                let fresh = crate::lower::iterators::made_array(&slice);
                 let slice = if slice.reads_same() {
                     slice
                 } else {
