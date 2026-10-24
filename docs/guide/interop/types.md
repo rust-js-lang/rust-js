@@ -952,7 +952,13 @@ export function describe(value) {
 ```
 
 - `js::get(value, key)` is `value[key]`, `js::set(value, key, to)` is
-  `value[key] = to`, and `js::has(value, key)` is `key in value`;
+  `value[key] = to`, `js::has(value, key)` is `key in value` and
+  `js::delete(value, key)` `delete value[key]`, each of any value, as
+  TypeScript's `any` is, an `Option<&Unknown>` too: of `None`, `undefined`,
+  each throws JS's `TypeError`, a panic, as upstream's `'default' in
+  moduleObject` does ([ADR 0776](../../decisions/0776-get-has-set-take-any-value.md)).
+  Where a value may be missing and that's no error, Rust says so,
+  `value.and_then(|v| js::get(v, key))`;
   `js::object::has_own_property.call(value, key)` is
   `Object.prototype.hasOwnProperty.call(value, key)`, a property of its own
   ([ADR 0615](../../decisions/0615-has-own-property-the-function.md)).

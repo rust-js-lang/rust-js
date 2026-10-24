@@ -4,6 +4,8 @@ Status: Accepted. Extends [0102](0102-js-and-webapi.md), [0214](0214-untagged-en
 and [0024](0024-web-crate.md). Amended by
 [0775](0775-a-unit-given-to-js-is-undefined.md): a `()` given to JS of any
 type is `undefined`, not of a structured clone's alone. Amended by
+[0776](0776-get-has-set-take-any-value.md): `js::get`, `js::has` and
+`js::set` take any value, `undefined` too, which JS's `TypeError` is of. Amended by
 [0668](0668-a-match-of-what-a-value-is-is-a-switch-of-its-typeof.md): `Kind`
 has a `Symbol`, and its `Object` is an object no array is, `typeof value
 === "object"`; a `match` of it is a `switch (typeof value)`. Amended by
