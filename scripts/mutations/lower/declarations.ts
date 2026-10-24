@@ -150,10 +150,10 @@ export const mutations: Mutation[] = [
   },
   {
     name: "generic-type-imported-whole",
-    breaks: "`AnchorHTMLAttributes<HTMLAnchorElement>` is imported by that whole text",
+    breaks: "a namespace's member is imported by its whole name, `JSX.Element`, not as its namespace, `JSX`",
     file: "src/lower/declarations.rs",
-    find: "        if let Some(from) = from {\n            self.imports.insert((from.to_string(), imported(name)));",
-    replace: "        if let Some(from) = from {\n            self.imports.insert((from.to_string(), imported(named)));",
+    find: "            self.imports.insert((from.to_string(), imported(name)));\n",
+    replace: "            self.imports.insert((from.to_string(), name.to_string()));\n",
     tests: tests,
   },
   {
