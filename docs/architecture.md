@@ -272,7 +272,9 @@ In this table, `lower.rs`, `names.rs` and `runtime.rs` are at the `src/` root.
 **Calls.** `mir/dispatch.rs::mir_call` handles special calls and sends evaluated
 arguments to `mir_call_values`. Calls then go to iterator, trait, binding or
 crate-function lowering. Recognized std calls go through `mir_std_call` in
-the same dispatcher, delegating place-sensitive behavior to `mir/std_calls.rs`
+the same dispatcher, which asks each kind in `mir/std_calls.rs` of what it
+reads alone and runs the lowering of the one that takes the call
+(ADR 0791), delegating place-sensitive behavior to `mir/std_calls.rs`
 and value-only behavior to `std_types/values.rs` and the owning type.
 `std_values` exhaustively matches `Std`. New behavior belongs in its domain
 module, not in a growing dispatcher;
