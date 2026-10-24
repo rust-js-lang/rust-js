@@ -22,6 +22,18 @@ function $stdIterator(struct, steps) {
   if (steps.hint !== undefined) {
     it.hint = () => steps.hint(it);
   }
+  // Its `nth`, the compiled one, which passes it on to its source's (#182).
+  // Each std's body, which drops what it passes itself, as `$iterator`'s
+  // own do: `ownNth`, `ownLast`.
+  if (steps.nth !== undefined) {
+    it.nth = (k) => step(steps.nth(it, k));
+    it.ownNth = true;
+  }
+  // And its `last`, the compiled one, its source's (#182).
+  if (steps.last !== undefined) {
+    it.last = () => step(steps.last(it));
+    it.ownLast = true;
+  }
   it.knowing = (back, len) => {
     if (back !== undefined) it.back = () => step(back(it));
     if (len !== undefined) it.len = () => len(it);

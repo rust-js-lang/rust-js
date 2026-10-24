@@ -10,4 +10,12 @@ export const mutations: Mutation[] = [
     replace: "    n--;\n",
     tests: ["test/corpus.test.ts", "-t", "^picked_items_drop.rs$"],
   },
+  {
+    name: "nth-dropping-default-nth",
+    breaks: "`nth` of items with a destructor uses any `nth`, std's default of a `$Steps` too, which drops none it skips",
+    file: "src/runtime/nth_dropping.js",
+    find: "  if (it.ownNth) {\n",
+    replace: "  if (it.nth !== undefined) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^own_nth_last_dropping.rs$"],
+  },
 ];

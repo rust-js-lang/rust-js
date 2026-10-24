@@ -109,10 +109,10 @@ export const mutations: Mutation[] = [
   },
   {
     name: "dictionary-own-fold-left-out",
-    breaks: "the crate's iterator's dictionary leaves out its own `fold` and `nth`",
+    breaks: "the crate's iterator's dictionary leaves out its own `fold`, `nth` and `last`",
     file: "src/lower/iterators/dictionaries.rs",
-    find: "        for (name, own) in [(\"fold\", fold), (\"nth\", nth)] {\n",
-    replace: "        for (name, own) in [(\"fold\", fold), (\"nth\", nth)].into_iter().filter(|_| false) {\n",
+    find: "        for (name, own) in [(\"fold\", fold), (\"nth\", nth), (\"last\", last)] {\n",
+    replace: "        for (name, own) in [(\"fold\", fold), (\"nth\", nth), (\"last\", last)].into_iter().filter(|_| false) {\n",
     tests: ["test/corpus.test.ts", "-t", "^own_fold_through_adapters.rs$"],
   },
   {
