@@ -56,7 +56,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_types/rc.rs",
     find: "            (value, ty) = self.through_refs(held, inside);\n",
     replace: "            (value, ty) = (held, inside);\n",
-    tests: ["test/corpus.test.ts", "-t", "^counted_rc_borrow.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^boxed_mut_ref_shown.rs$"],
   },
   {
     name: "counted-dyn-pointee-held",
@@ -81,5 +81,13 @@ export const mutations: Mutation[] = [
     find: "        let (value, ty) = self.through_refs(value, ty);\n        self.through_boxes(value, ty)\n",
     replace: "        let ty = ty.peel_refs();\n        self.through_boxes(value, ty)\n",
     tests: ["test/corpus.test.ts", "-t", "mut_ref_local"],
+  },
+  {
+    name: "box-of-mut-ref-shown-as-handle",
+    breaks: "`{}` of a `Box<&mut u32>` or an `Rc<&mut u32>` is its handle, `[object Object]`, not what it borrows (#197)",
+    file: "src/lower/std_types/rc.rs",
+    find: "                    None if self.shows_inside(ty) => {\n",
+    replace: "                    None if false && self.shows_inside(ty) => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^boxed_mut_ref_shown.rs$"],
   },
 ];

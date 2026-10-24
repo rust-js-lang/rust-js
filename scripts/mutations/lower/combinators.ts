@@ -22,8 +22,8 @@ export const mutations: Mutation[] = [
     name: "filter-truth-unread",
     breaks: "`o.filter(|v| js::truthy(Some(*v)))` keeps `o` in a `const option`, `option ? option : undefined`, not `o || undefined`, read once",
     file: "src/lower/combinators.rs",
-    find: "            && tests_its_truth(&values[0])\n",
-    replace: "            && false\n",
+    find: "            && tests_its_truth(&values[0])\n        {\n            return Ok(Some(Expr::bin(Op::Or,",
+    replace: "            && false\n        {\n            return Ok(Some(Expr::bin(Op::Or,",
     tests: ["test/lowering-options.test.ts", "-t", "filter by truth then a fallback"],
   },
   {
@@ -572,5 +572,14 @@ export const mutations: Mutation[] = [
     find: "        if self.is_std_type(into.peel_refs(), crate::lower::recognition::StdItem::Vec)\n            && matches!",
     replace: "        if true\n            && matches!",
     tests: ["test/lowering-collections.test.ts", "-t", "extend of an array written in place"],
+  },
+  {
+    name: "is-some-and-truth-twice",
+    breaks: "`is_some_and(|&w| w)` of an `Option<bool>` reads it twice, `const option = d[k]; option != null && option`, where it's `!!d[k]`",
+    file: "src/lower/combinators.rs",
+    find: "        if comb == Comb::IsSomeAnd\n            && !boxed\n            && self.drops(",
+    replace: "        if comb == Comb::IsSomeAnd\n            && false\n            && self.drops(",
+    tests: ["test/corpus.test.ts", "-t", "option_bool_tested"],
+    snapshots: true,
   },
 ];

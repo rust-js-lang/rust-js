@@ -134,8 +134,8 @@ export const mutations: Mutation[] = [
     name: "nullable-param-some-coalesced",
     breaks: "a `Some(..)` given to a binding's nullable parameter is `value ?? null`, `Object.create(Object.prototype ?? null)`, a function's `(e) => .. ?? null`",
     file: "src/lower/mir/calls.rs",
-    find: "                _ if nulled || value.is_constant() => value,\n",
-    replace: "                _ if value.is_constant() => value,\n",
+    find: "            () if named(bindings::nullable_params(tcx, def_id)) => js::Storage::NullForNone.written(value, nulled),\n",
+    replace: "            () if named(bindings::nullable_params(tcx, def_id)) => js::Storage::NullForNone.written(value, false),\n",
     tests: ["test/lowering-options.test.ts", "-t", "a binding's nullable parameter's None is null"],
   },
   {

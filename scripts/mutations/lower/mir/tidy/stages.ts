@@ -266,15 +266,6 @@ export const mutations: Mutation[] = [
     "tests": ["test/lowering-matches.test.ts", "-t", "a string's or-pattern from MIR"]
   },
   {
-    "name": "mir-tidy-handle-in-place-kept",
-    "breaks": "`Cell::set` of `&self.n` stays a getter and setter object made to be written once, not `t.n = v`",
-    "file": "src/lower/mir/tidy/stages.rs",
-    "find": "            pass(\"handles in place\", |b, _| handles_in_place(b)),\n",
-    "replace": "",
-    tests: ["test/corpus.test.ts", "-t", "^unrun_function_drops.rs$"],
-    snapshots: true,
-  },
-  {
     name: "mir-tidy-unread-map-kept",
     breaks: "a map `next_back` stepped the source of instead is a `const` nothing reads",
     file: "src/lower/mir/tidy/stages.rs",

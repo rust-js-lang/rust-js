@@ -367,7 +367,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0295 A module's imports are one block, packages first](decisions/0295-import-order.md)
 - [0296 A function a block makes and gives is a named function expression](decisions/0296-named-function-expressions.md)
 - [0297 A closure a `let` names for a hook is the hook's named function](decisions/0297-named-hook-functions.md)
-- [0298 An Option of a value never falsy is tested by its truth](decisions/0298-truthy-options.md)
+- [0298 An Option of a value never falsy is tested by its truth](decisions/0298-truthy-options.md) *(amended: an `Option<bool>`'s `Some(true)` is tested by its truth, `x ?? false` as `x`)*
 - [0299 A return of `undefined` is a bare `return;`](decisions/0299-bare-return.md)
 - [0300 A function takes the drops its body uses](decisions/0300-drops-by-need.md) *(amended by 0712: what a function finds is returned with it)*
 - [0301 A read that can't throw comes before a move](decisions/0301-reads-that-cannot-throw.md)
@@ -513,7 +513,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0578 A nullable result is `null` where it's written; an item's place known in bounds is unchecked](decisions/0578-a-nullable-result-where-its-written.md) *(amended by 0638: a nullable function's call is `null` already)*
 - [0579 A thread-local is named as its module's variable](decisions/0579-a-thread-local-is-named-as-a-variable.md)
 - [0580 A call asks of a cell only what it may borrow](decisions/0580-a-call-asks-of-a-cell-only-what-it-may-borrow.md)
-- [0581 A closure called as a statement where it's made is its body](decisions/0581-a-closure-called-as-a-statement-is-its-body.md)
+- [0581 A closure called as a statement where it's made is its body](decisions/0581-a-closure-called-as-a-statement-is-its-body.md) *(extended by 0840: where a module's loaded, and as what a statement evaluates first)*
 - [0582 `Rc::ptr_eq` of an object is its identity, uncounted](decisions/0582-ptr-eq-of-an-object-is-its-identity.md)
 - [0583 A global some hosts lack is an `Option`](decisions/0583-a-global-some-hosts-lack-is-an-option.md) *(superseded by 0597)*
 - [0584 A `#[repr(transparent)]` struct is its field](decisions/0584-a-transparent-struct-is-its-field.md)
@@ -606,7 +606,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0672 A property a chain tests and binds is read once](decisions/0672-a-property-a-test-reads-is-read-once.md) *(amended by 0701: a read nothing after reads is gone; amended: the read says it's a getter's, `js::Known`; a getter's read held by MIR isn't written at each use)*
 - [0676 `js::Kind` tells `undefined` and `null`](decisions/0676-kind-tells-undefined-and-null.md)
 - [0677 A weak collection's key is what `js::Kind` holds](decisions/0677-a-weak-key-is-what-kind-holds.md)
-- [0678 A parameter's leading `_` isn't in its JS name](decisions/0678-a-parameters-underscore-isnt-its-js-name.md)
+- [0678 A parameter's leading `_` isn't in its JS name](decisions/0678-a-parameters-underscore-isnt-its-js-name.md) *(amended: a closure beside it is no binding of its function)*
 - [0683 An `if` keeps its test and branches as written, and an `else if` stays a chain](decisions/0683-an-if-is-as-written-and-an-else-if-stays-a-chain.md)
 - [0684 A `continue` the program wrote is where it wrote it, with its comment](decisions/0684-a-continue-the-program-wrote-is-where-it-wrote-it.md) *(amended by 0730: an early `continue` only where the program wrote one)*
 - [0685 A `let` a loop's body declares is in it, set in a block MIR made](decisions/0685-a-let-a-loops-body-declares-is-in-it.md)
@@ -675,9 +675,9 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0776 `js::get`, `js::has`, `js::set` and `js::delete` take any value](decisions/0776-get-has-set-take-any-value.md)
 - [0790 A `break` the program wrote is where it's written, a case's `break;` where its block ends a case](decisions/0790-a-break-the-program-wrote-is-where-it-is-written.md) *(amended by 0805: its `||` whatever the rest ends with, and a case's `if` with no `else` written none)*
 - [0780 An or-pattern's tests are in the order written, of a field read in place](decisions/0780-an-or-patterns-tests-are-as-written-of-a-field-read-in-place.md)
-- [0781 A `None` only nullables read is `null` where it's made](decisions/0781-a-none-only-nullables-read-is-null-where-its-made.md)
+- [0781 A `None` only nullables read is `null` where it's made](decisions/0781-a-none-only-nullables-read-is-null-where-its-made.md) *(amended by 0841: a call's `Option` too)*
 - [0782 A promise's executor may borrow, and `then` takes two handlers](decisions/0782-a-promises-executor-borrows-and-then-takes-two-handlers.md)
-- [0791 A `Cell`'s storage says what it stores, however it's reached](decisions/0791-a-cells-storage-says-what-it-stores.md)
+- [0791 A `Cell`'s storage says what it stores, however it's reached](decisions/0791-a-cells-storage-says-what-it-stores.md) *(amended by 0841: what's never `undefined` is stored as it is)*
 - [0800 A drop of what JS drops nothing of never unwinds](decisions/0800-a-drop-of-nothing-never-unwinds.md)
 - [0805 A case's `if` is as written, whatever its other branch ends with](decisions/0805-a-cases-if-is-as-written-whatever-ends-it.md)
 - [0806 A slice's range in bounds is JS's `slice`, and a test held in a `bool` shows what it tests](decisions/0806-a-slices-range-in-bounds-is-js-slice.md)
@@ -685,6 +685,8 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0811 `console.createTask` is a property the host may lack](decisions/0811-console-create-task-may-be-absent.md) *(amended: `#[rust_js::types]` is a TypeScript type, read into the declaration model, one it can't read an error)*
 - [0830 What follows a `let Err(x)` of a closure that never returns is its `catch`](decisions/0830-what-follows-a-let-err-of-a-closure-that-never-returns-is-its-catch.md)
 - [0835 An object is across lines where its struct literal is](decisions/0835-an-object-is-across-lines-where-its-literal-is.md)
+- [0840 A thread-local's `with` is its closure's body, wherever it's called](decisions/0840-a-thread-locals-with-is-its-closures-body.md)
+- [0841 A nullable place stores what's never `undefined` as it is](decisions/0841-a-nullable-place-stores-what-is-never-undefined-as-it-is.md)
 - [0720 A labeled block's `break` and a named constant, in a body's ranges](decisions/0720-a-labeled-block-and-a-named-constant-in-a-bodys-ranges.md)
 - [0721 `js::strict_equals(a, b)` is JS's `===`](decisions/0721-strict-equals-is-jss-triple-equals.md) *(fixed by 0775: a `()` compared is `undefined`)*
 - [0722 A `#[repr(..)]` enum's variant is its number](decisions/0722-a-repr-enums-variant-is-its-number.md)

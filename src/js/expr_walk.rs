@@ -220,7 +220,8 @@ impl Expr {
     /// This as a test: `!!a` is `a`, in the parts of `&&` and `||` too,
     /// whose value the test only asks the truth of. `x != null && x` is `x`,
     /// of a path, `props.meta`, too, wherever in an `&&` it is: what's
-    /// truthy is set.
+    /// truthy is set. `x ?? false` is `x`, as `undefined` and `null` are
+    /// falsy too, of any falsy constant's fallback.
     pub fn tested(&self) -> Expr {
         self.as_test(&mut false)
     }
@@ -273,6 +274,10 @@ impl Expr {
                 kind: ExprKind::Binary(*op, Box::new(a.as_test(changed)), Box::new(b.as_test(changed))),
                 span: self.span,
             },
+            ExprKind::Binary(Op::Coalesce, x, fallback) if fallback.is_falsy_constant() => {
+                *changed = true;
+                x.as_test(changed)
+            }
             _ => self.clone(),
         }
     }

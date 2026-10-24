@@ -20,14 +20,12 @@ export function entry() {
 const shared = { value: [1] };
 
 function asksShared() {
-  return ((s) => {
-    const tryBorrowMut = $tryBorrow(s, true);
-    const result = tryBorrowMut.TAG === "Err";
-    if (tryBorrowMut.TAG === "Ok") {
-      $unborrow(tryBorrowMut._0);
-    }
-    return result;
-  })(shared);
+  const tryBorrowMut = $tryBorrow(shared, true);
+  const result = tryBorrowMut.TAG === "Err";
+  if (tryBorrowMut.TAG === "Ok") {
+    $unborrow(tryBorrowMut._0);
+  }
+  return result;
 }
 
 function probeDrop_drop(probe) {

@@ -194,7 +194,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// What a counted `Rc` points at, or a guard guards, through any others:
     /// its `value`, as `{}` and `{:?}` show it (ADRs 0320, 0328), and what a
-    /// `Pin`'s pointer does (ADR 0329). Any other value is itself.
+    /// `Pin`'s pointer does (ADR 0329); a `Box`'s or another `Rc`'s, which is
+    /// it in JS (ADR 0023), through the references it holds, an `Rc<&mut
+    /// T>`'s handle (#197). Any other value is itself.
     pub(in crate::lower) fn through_boxes(&self, mut value: Expr, mut ty: Ty<'tcx>) -> (Expr, Ty<'tcx>) {
         loop {
             if let Some(pointer) = self.recognition().pinned(ty) {
@@ -203,10 +205,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             let inside = match ty.kind() {
                 ty::Adt(_, args) if self.is_guard(ty) => args.types().next().expect("what it guards"),
-                _ => match self.counted_rc(ty) {
+                ty::Adt(_, args) => match self.counted_rc(ty) {
                     Some(pointee) => pointee,
+                    None if self.shows_inside(ty) => {
+                        (value, ty) = self.through_refs(value, args.type_at(0));
+                        continue;
+                    }
                     None => return (value, ty),
                 },
+                _ => return (value, ty),
             };
             // And the references it holds, an `Rc<&T>`'s (ADR 0504); a
             // guard's `value`, an `Rc`'s what it points at (ADR 0520).

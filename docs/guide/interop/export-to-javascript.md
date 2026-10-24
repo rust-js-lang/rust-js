@@ -645,10 +645,8 @@ export const GREETING = "hello";
 export const clickCount = { value: 0 };
 
 export function click() {
-  return ((count) => {
-    count.value = (count.value + 1) >>> 0;
-    return count.value;
-  })(clickCount);
+  clickCount.value = (clickCount.value + 1) >>> 0;
+  return clickCount.value;
 }
 ```
 

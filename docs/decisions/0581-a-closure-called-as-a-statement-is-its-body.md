@@ -2,7 +2,9 @@
 
 Status: Accepted. Extends [0270](0270-module-variables.md), whose plain
 thread-local's `with_borrow` is its closure given the variable, and
-[0444](0444-a-comment-is-where-its-code-is.md)'s comments.
+[0444](0444-a-comment-is-where-its-code-is.md)'s comments. Extended by
+[0840](0840-a-thread-locals-with-is-its-closures-body.md): in what a
+module runs when it's loaded too, and as what a statement evaluates first.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): A. Each rewrite
 changes nothing that runs.
