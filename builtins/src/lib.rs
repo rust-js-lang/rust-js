@@ -924,6 +924,19 @@ pub mod dict {
 /// panic. See ADR 0029.
 pub struct Promise<T>(PhantomData<JsObject>, PhantomData<T>);
 
+/// A promise is a handle JS shares: `p.then(f)` leaves `p` as it was, so
+/// one of a value that's `Copy` is `Copy` too, read again where it's kept,
+/// `info.value.get().unwrap().then_with(..)` of a `Cell<Option<Promise<..>>>`.
+/// Of any other value it's consumed, as Rust's: two handlers given the one
+/// `Vec` it fulfils with would change one array (ADR 0782).
+impl<T: Copy> Clone for Promise<T> {
+    fn clone(&self) -> Self {
+        *self
+    }
+}
+
+impl<T: Copy> Copy for Promise<T> {}
+
 impl<T> Promise<T> {
     /// [`promise.then(f)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Promise/then):
     /// a promise of what `f` makes of what it fulfils, as ReScript's
