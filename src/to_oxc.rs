@@ -157,7 +157,7 @@ pub fn emit(
         let offset = |line: u32, column: u32| line_starts.get(line as usize).map(|start| start + column);
         for (lo, hi, texts) in &arms {
             // The branch's first JS the map places, and back from it, on its
-            // line, to the `?` or `:` it's after: an arrow's `(` isn't placed.
+            // line, to the `?`, `:` or `+` it's after: an arrow's `(` isn't placed.
             let first = (map.get_tokens())
                 .filter(|t| offset(t.get_src_line(), t.get_src_col()).is_some_and(|at| *lo <= at && at < *hi))
                 .map(|t| (t.get_dst_line(), t.get_dst_col()))
@@ -172,7 +172,9 @@ pub fn emit(
                 } else {
                     written
                 };
-                before.rfind(['?', ':']).map(|operator| (at, written, operator + 1))
+                before
+                    .rfind(['?', ':', '+'])
+                    .map(|operator| (at, written, operator + 1))
             });
             if let Some((line, written, after)) = operator {
                 let start = after + written[after..].len() - written[after..].trim_start().len();
@@ -694,19 +696,19 @@ fn comments_of(
 }
 
 /// Where each conditional's branch is, `c ? a : b`'s `a` and `b`, of those
-/// that say, by where it starts: what a comment before one is before (ADR 0658).
+/// that say, by where it starts: what a comment before one is before (ADR
+/// 0658); and each of a `concat!`'s pieces past its first, after its `+`
+/// (ADR 0641).
 fn arm_starts(module: &Module) -> std::collections::HashMap<u32, u32> {
     let mut starts = std::collections::HashMap::new();
     let mut of = |mut stmts: Vec<js::Stmt>| {
         js::each_expr_mut(&mut stmts, &mut |e| {
-            if let ExprKind::Cond(_, yes, no) = &e.kind {
-                starts.extend(
-                    [yes.span, no.span]
-                        .into_iter()
-                        .filter(|s| !s.is_none())
-                        .map(|s| (s.lo, s.hi)),
-                );
-            }
+            let spans: Vec<js::Span> = match &e.kind {
+                ExprKind::Cond(_, yes, no) => vec![yes.span, no.span],
+                ExprKind::Written(pieces) => pieces.iter().skip(1).map(|piece| piece.span).collect(),
+                _ => Vec::new(),
+            };
+            starts.extend(spans.into_iter().filter(|s| !s.is_none()).map(|s| (s.lo, s.hi)));
         });
     };
     for item in &module.items {

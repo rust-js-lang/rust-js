@@ -7,11 +7,19 @@ const format = ["test/lowering-strings.test.ts", "-t", "a format string of a con
 
 export const mutations: Mutation[] = [
   {
+    name: "concat-piece-unplaced",
+    breaks: "a `concat!`'s pieces have no place, so a comment between them goes after the strings, or nowhere (ADR 0641)",
+    file: "src/lower/literals.rs",
+    find: "            true => js::Span::NONE,\n            false => at(call\n",
+    replace: "            _ if true => js::Span::NONE,\n            _ => at(call\n",
+    tests: ["test/lowering-strings.test.ts", "-t", "a comment inside a concat!"],
+  },
+  {
     name: "format-string-concat-unseen",
     breaks: "a format string of a `concat!` is one template, as if its pieces weren't in the source",
     file: "src/lower/literals.rs",
-    find: "                return concat_arguments(&tokens[i..=i + close]);",
-    replace: "                return None;",
+    find: "                let mut pieces = concat_arguments(code, &tokens[i..=i + close])?;",
+    replace: "                let mut pieces: Vec<StrPiece> = None?;",
     tests: format,
   },
   {
@@ -114,7 +122,7 @@ export const mutations: Mutation[] = [
     name: "const-string-unwritten",
     breaks: "a `const` of a string is one literal, though its source writes it across lines or as `concat!`'s pieces",
     file: "src/lower/literals.rs",
-    find: "            string_literal(tcx, text, lit.span).or_at(value.span)\n",
+    find: "            string_literal(tcx, text, lit.span, at).or_at(value.span)\n",
     replace: "            value.clone()\n",
     tests: ["test/lowering-strings.test.ts", "-t", "a concat! of literals is its pieces joined by|const of a string written across lines"],
   },

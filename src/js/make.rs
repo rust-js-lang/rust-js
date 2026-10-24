@@ -151,6 +151,7 @@ impl Expr {
             strings.push(StrPiece {
                 text: piece_texts.concat(),
                 lines,
+                span: Span::NONE,
             });
             let mut piece_texts = piece_texts.into_iter();
             last.push_str(&piece_texts.next().expect("a text"));

@@ -545,7 +545,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             LitKind::Bool(b) => Ok(Expr::bool(b)),
             // As it's written: across lines, a template literal of them, or
             // `concat!`'s pieces joined by `+` (ADR 0641).
-            LitKind::Str(s, _) => Ok(literals::string_literal(self.tcx, s.as_str(), span)),
+            LitKind::Str(s, _) => Ok(literals::string_literal(self.tcx, s.as_str(), span, &|at| {
+                self.js_span(at)
+            })),
             // A `char` is a string of one character (ADR 0034).
             LitKind::Char(c) => Ok(Expr::str(c.to_string())),
             LitKind::Int(n, _) => {

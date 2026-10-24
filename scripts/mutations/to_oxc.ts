@@ -3,6 +3,22 @@ import type { Mutation } from "../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "concat-piece-no-start",
+    breaks: "a `concat!`'s piece is no start a comment is before, so the comment goes after the strings (ADR 0641)",
+    file: "src/to_oxc.rs",
+    find: "                ExprKind::Written(pieces) => pieces.iter().skip(1).map(|piece| piece.span).collect(),\n",
+    replace: "",
+    tests: ["test/lowering-strings.test.ts", "-t", "a comment inside a concat!"],
+  },
+  {
+    name: "concat-split-not-at-plus",
+    breaks: "a comment before a `concat!`'s piece isn't split after its `+`, so it's lost (ADR 0641)",
+    file: "src/to_oxc.rs",
+    find: "                    .rfind(['?', ':', '+'])\n",
+    replace: "                    .rfind(['?', ':'])\n",
+    tests: ["test/lowering-strings.test.ts", "-t", "a comment inside a concat!"],
+  },
+  {
     name: "class-doc-unattached",
     breaks: "a class struct's `///` doc isn't before its constructor function, `/** Base class helpers .. */ function Component` (ADR 0761)",
     file: "src/to_oxc.rs",
@@ -279,8 +295,8 @@ export const mutations: Mutation[] = [
     name: "arm-comment-after-question-only",
     breaks: "a comment before a conditional's second branch is split at its `?`, before the first",
     file: "src/to_oxc.rs",
-    find: "                before.rfind(['?', ':']).map(|operator| (at, written, operator + 1))\n",
-    replace: "                before.rfind('?').map(|operator| (at, written, operator + 1))\n",
+    find: "                    .rfind(['?', ':', '+'])\n",
+    replace: "                    .rfind(['?', '+'])\n",
     tests: ["test/lowering-names.test.ts", "-t", "a comment is in the JS where it.s in the Rust"],
   },
   {
