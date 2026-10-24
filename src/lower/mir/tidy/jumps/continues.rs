@@ -103,14 +103,16 @@ pub(in crate::lower::mir::tidy) fn written_continues(stmts: &mut [Stmt], continu
 /// end it: none, as a block returned in place leaves them (ADR 0432). One
 /// the program wrote there, `if (c) { a; continue; }` last, does nothing
 /// either; one it wrote before more, `if (c) { continue; } return b;`, is
-/// kept, as written (ADR 0684).
-pub(in crate::lower::mir::tidy) fn tail_continues(stmts: &mut [Stmt]) {
+/// kept, as written (ADR 0684): of `if (c) { a; continue; } else { b }`
+/// last, where `jumps into branches` made the rest its `else`, `if (c) {
+/// a; continue; } b` (ADR 0745).
+pub(in crate::lower::mir::tidy) fn tail_continues(stmts: &mut [Stmt], continues: &[(js::Span, js::Span)]) {
     for stmt in stmts.iter_mut() {
         if let StmtKind::While { label, body, .. }
         | StmtKind::ForOf { label, body, .. }
         | StmtKind::For { label, body, .. } = &mut stmt.kind
         {
-            ends_going_on(body, label);
+            ends_going_on(body, label, continues);
         }
     }
 }
@@ -118,20 +120,33 @@ pub(in crate::lower::mir::tidy) fn tail_continues(stmts: &mut [Stmt]) {
 /// A `continue` where the body of loop `looped` ends anyway, in the
 /// branches that end it: none. Of an `else` that's only one, `if (c) {
 /// ..; return; } else { continue; }`, no `else` (ADR 0684).
-fn ends_going_on(stmts: &mut Vec<Stmt>, looped: &Option<String>) {
+fn ends_going_on(stmts: &mut Vec<Stmt>, looped: &Option<String>, continues: &[(js::Span, js::Span)]) {
+    // The `if` of a `continue` the program wrote, what goes on after it its
+    // `else`: that after it, as written, its `continue` kept.
+    let going_on = |l: &Option<String>| l.is_none() || l == looped;
+    if let Some(Stmt {
+        kind: StmtKind::If(_, then, otherwise @ Some(_)),
+        span,
+    }) = stmts.last_mut()
+        && tests_continue(continues, *span)
+        && matches!(then.last(), Some(Stmt { kind: StmtKind::Continue(l), .. }) if going_on(l))
+    {
+        let rest = otherwise.take().expect("matched");
+        stmts.extend(rest);
+        return ends_going_on(stmts, looped, continues);
+    }
     let more = stmts.len() > 1;
     match stmts.last_mut().map(|s| &mut s.kind) {
         Some(StmtKind::Continue(l)) if (l.is_none() || l == looped) && more => {
             stmts.pop();
         }
         Some(StmtKind::If(_, then, otherwise)) => {
-            ends_going_on(then, looped);
+            ends_going_on(then, looped, continues);
             if let Some(branch) = otherwise {
-                if matches!(branch.as_slice(), [Stmt { kind: StmtKind::Continue(l), .. }] if l.is_none() || l == looped)
-                {
+                if matches!(branch.as_slice(), [Stmt { kind: StmtKind::Continue(l), .. }] if going_on(l)) {
                     *otherwise = None;
                 } else {
-                    ends_going_on(branch, looped);
+                    ends_going_on(branch, looped, continues);
                 }
             }
         }

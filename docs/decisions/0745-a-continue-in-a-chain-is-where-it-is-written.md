@@ -77,3 +77,15 @@ had made the loop's `continue bb3` a `continue`.
 - A block's `break` in a loop inside it, followed by a jump of no label,
   stays: no program the corpus or the tests have makes one, so no mutation
   holds that guard; it's what JS's `continue;` there would mean.
+
+## Amendment: a written `continue` its rest made an `else` stays
+
+`jumps into branches` puts what goes on after `if (c) { a; continue; }`
+in its `else` where the `if`'s other branch leaves, so the `if` is the
+loop body's last, and `tail continues` took its `continue`, the program's,
+for one where the body ends anyway: `if (key in next) { checked++; } else
+{ .. }`, where it wrote `if (key in next) { continue; }` (`test/js-object.test.ts`'s
+"a for loop of keys_in"). **The `if` of a `continue` the program wrote,
+`tests_continue`'s, has what goes on after it after it again**, its
+`continue` kept: `if (c) { a; continue; } b`, as written. `mut_ref_loop.rs`
+reads as its Rust does too. Held by the mutation `written-continue-elsed`.
