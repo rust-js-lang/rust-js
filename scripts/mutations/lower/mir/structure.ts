@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "or-pattern-declared-order",
+    breaks: "an or-pattern's variants are tested in the order the enum declares them, not the program's, `Uninitialized || Pending` of `Pending | Uninitialized` (ADR 0780)",
+    file: "src/lower/mir/structure.rs",
+    find: "                            variants.sort_by_key(|v| written.iter().position(|w| w == v).unwrap_or(usize::MAX));\n",
+    replace: "",
+    tests: ["test/lowering-or-patterns.test.ts", "-t", "tested in the order written"],
+  },
+  {
     name: "mir-assert-inverted",
     breaks: "a MIR `Assert` throws when its condition holds, not when it fails",
     file: "src/lower/mir/structure.rs",
