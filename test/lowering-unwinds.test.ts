@@ -1148,6 +1148,107 @@ pub fn of_any_boxed(own: bool) -> String {
   delete g.render;
 });
 
+// React's DetermineComponentFrameRoot catches its sample, then tests the
+// control its `try` set: `try { .. } catch (sample) { if (sample &&
+// control && ..) { return [..]; } }`. Its port's `if let Err(sample) =
+// catch_unwind(..) && let Some(control) = control && ..` is that `try`,
+// the rest of its chain the `catch`'s `if` (ADR 0706, amended); an
+// `else` where its arm returns is what follows, and a closure whose value
+// nothing reads is its body.
+test("a catch_unwind that heads an if let chain is a try", async () => {
+  const { js, dir } = compiled("unwind-chained", `use js::JsError;
+use std::panic::{AssertUnwindSafe, catch_unwind};
+
+#[cfg_attr(rust_js, rust_js::link_name = "globalThis.render")]
+fn render() -> u32 {
+    unreachable!()
+}
+
+pub fn root(construct: bool) -> (Option<String>, Option<String>) {
+    let mut control: Option<&'static JsError> = None;
+    if let Err(sample) = catch_unwind(AssertUnwindSafe(|| {
+        if construct {
+            render();
+        } else {
+            let Err(x) = catch_unwind(|| panic!(""));
+            control = x.downcast_ref::<&'static JsError>().copied();
+            render();
+        }
+    }))
+    // This is inlined manually because closure doesn't do it for us.
+        && let Some(sample) = sample.downcast_ref::<&'static JsError>()
+        && let Some(control) = control
+        && let Some(sample_stack) = sample.stack()
+    {
+        return (Some(sample_stack), control.stack());
+    }
+    (None, None)
+}
+
+pub fn otherwise(wanted: bool) -> &'static str {
+    if let Err(_) = catch_unwind(render)
+        && wanted
+    {
+        "caught"
+    } else {
+        "not"
+    }
+}
+
+pub fn counted(limit: u32) -> u32 {
+    let mut seen = 0;
+    let mut count = 0;
+    if let Err(_) = catch_unwind(AssertUnwindSafe(|| {
+        seen += 1;
+        render()
+    })) && seen <= limit
+    {
+        count += 100;
+    }
+    count + seen
+}
+`);
+  expect(js).toContain(`  } catch (sample) {
+    // This is inlined manually because closure doesn't do it for us.
+    if (control) {
+      const sampleStack = sample.stack;
+      if (sampleStack != null) {
+        return [sampleStack, control.stack];
+      }
+    }
+  }
+  return [undefined, undefined];
+}`);
+  expect(js).toContain(`  try {
+    globalThis.render();
+  } catch {
+    if (wanted) {
+      return "caught";
+    }
+  }
+  return "not";`);
+  expect(js).toContain(`  try {
+    seen = (seen + 1) >>> 0;
+    globalThis.render();
+  } catch {
+    if (seen <= limit) {`);
+  expect(js).not.toContain("$catchUnwind");
+  const lib = await import(join(dir, "lib.js"));
+  const g = globalThis as Record<string, unknown>;
+  const thrown = new TypeError("no props");
+  g.render = () => {
+    throw thrown;
+  };
+  const [sample, control] = lib.root(false);
+  expect(sample).toBe(thrown.stack);
+  expect(control).toStartWith("Error");
+  expect(lib.root(true)).toEqual([undefined, undefined]);
+  expect([lib.otherwise(true), lib.otherwise(false), lib.counted(0), lib.counted(1)]).toEqual(["caught", "not", 1, 101]);
+  g.render = () => 1;
+  expect([lib.root(false), lib.otherwise(true), lib.counted(1)]).toEqual([[undefined, undefined], "not", 1]);
+  delete g.render;
+});
+
 // rust-js's panics unwind (ADR 0090); where the crate asked them to abort,
 // `catch_unwind` would catch what ends Rust's process.
 test("unwinding is refused where panics abort", () => {

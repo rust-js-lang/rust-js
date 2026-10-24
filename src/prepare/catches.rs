@@ -37,7 +37,17 @@ pub(super) fn try_catches(body: &mut Vec<Stmt>) {
         }
     }
     let mut i = 0;
-    while i + 1 < body.len() {
+    while i < body.len() {
+        // A `Result` tested where it's made, `if ($catchUnwind(f).TAG ===
+        // "Err" && c)`, is one made first, then tested (ADR 0706, amended).
+        if let Some((made, tested)) = made_where_tested(&body[i])
+            && let Some((caught, taken)) = chained_try_catch(&made, &tested, &body[..i], &body[i + 1..])
+        {
+            body.splice(i..i + 1 + taken, caught);
+        }
+        if i + 1 >= body.len() {
+            break;
+        }
         // Past what's declared for it to set, `let text;`, as MIR's lowering
         // declares a variable where the program does.
         let declared = (body[i + 1..].iter())
@@ -45,13 +55,143 @@ pub(super) fn try_catches(body: &mut Vec<Stmt>) {
             .count();
         let at = i + 1 + declared;
         if at < body.len()
-            && let Some((caught, taken)) = try_catch(&body[i], &body[at], &body[..i], &body[at + 1..])
+            && let Some((caught, taken)) = chained_try_catch(&body[i], &body[at], &body[..i], &body[at + 1..])
         {
             body.splice(at..at + 1 + taken, caught);
             body.remove(i);
         }
         i += 1;
     }
+}
+
+/// The name a `Result` tested where it's made is given,
+/// `made_where_tested`'s: no JS identifier, so none of the program's, and
+/// never written, as the `try` made of it reads it nowhere, or none is.
+const TESTED: &str = "<tested>";
+
+/// `if ($catchUnwind(f).TAG === "Err" && c) { .. }`, or a `?:` of it
+/// returned: the `Result`, `const <tested> = $catchUnwind(f);`, and the
+/// `if` of it, `if (<tested>.TAG === "Err" && c)` (ADR 0706, amended).
+fn made_where_tested(stmt: &Stmt) -> Option<(Stmt, Stmt)> {
+    let test = match &stmt.kind {
+        StmtKind::If(test, ..) => test,
+        StmtKind::Return(Some(Expr {
+            kind: ExprKind::Cond(test, ..),
+            ..
+        })) => &**test,
+        _ => return None,
+    };
+    let (head, rest) = split_chain(test);
+    let (call, ok, eq) = js::result::tested(&head)?;
+    let (call, _) = (call.clone(), call.caught()?);
+    let head = js::result::is(Expr::var(TESTED), ok == eq).or_at(head.span);
+    let test = match rest {
+        Some(rest) => Expr::bin(js::Op::And, head, rest).or_at(test.span),
+        None => head,
+    };
+    let mut tested = stmt.clone();
+    match &mut tested.kind {
+        StmtKind::If(at, ..) => *at = test,
+        StmtKind::Return(Some(Expr {
+            kind: ExprKind::Cond(at, ..),
+            ..
+        })) => **at = test,
+        _ => unreachable!("matched above"),
+    }
+    Some((StmtKind::Const(TESTED.to_string(), call).at(stmt.span), tested))
+}
+
+/// A test's first part and the rest of its `&&`s, in order: `a && b &&
+/// c`'s `a`, and `b && c`.
+fn split_chain(test: &Expr) -> (Expr, Option<Expr>) {
+    match &test.kind {
+        ExprKind::Binary(js::Op::And, a, b) => {
+            let (head, rest) = split_chain(a);
+            let rest = match rest {
+                Some(rest) => Expr::bin(js::Op::And, rest, (**b).clone()),
+                None => (**b).clone(),
+            };
+            (head, Some(rest))
+        }
+        _ => (test.clone(), None),
+    }
+}
+
+/// `try_catch`, of `tested` as it is, or of a chain an `if let Err(e) =
+/// catch_unwind(f)` heads (ADR 0706, amended): `if (r.TAG === "Err" && c) { .. }`
+/// is the `if` of its `Err` alone, `c`'s `if` inside it, so the `catch`'s,
+/// `try { .. } catch (e) { if (c) { .. } }`; its `else`, where its arm
+/// leaves, after it, as what runs where the arm doesn't.
+fn chained_try_catch(made: &Stmt, tested: &Stmt, before: &[Stmt], rest: &[Stmt]) -> Option<(Vec<Stmt>, usize)> {
+    if let Some(caught) = try_catch(made, tested, before, rest) {
+        return Some(caught);
+    }
+    let StmtKind::Const(result, _) = &made.kind else {
+        return None;
+    };
+    let (tested, otherwise) = unchained(result, tested)?;
+    let rest: Vec<Stmt> = otherwise.iter().chain(rest).cloned().collect();
+    let (mut caught, taken) = try_catch(made, &tested, before, &rest)?;
+    // What it took of the `else` first, then of what followed the `if`.
+    let kept = otherwise.len().saturating_sub(taken);
+    caught.extend(otherwise[otherwise.len() - kept..].iter().cloned());
+    Some((caught, taken.saturating_sub(otherwise.len())))
+}
+
+/// `tested`, `if (result.TAG === "Err" && c) { .. }`, as the `if` of the
+/// `Err` alone, `c`'s inside it, and what its `else` runs, after it; what
+/// the arm sets the payload's binding to first, `let e = result._0; e =
+/// e.error;`, before `c`, which reads neither. `None` where it's no such
+/// chain, or its `else` runs where its arm doesn't leave.
+fn unchained(result: &str, tested: &Stmt) -> Option<(Stmt, Vec<Stmt>)> {
+    let span = tested.span;
+    let (test, then, otherwise) = match &tested.kind {
+        StmtKind::If(test, then, otherwise) => (test, then.clone(), otherwise.clone()),
+        StmtKind::Return(Some(Expr {
+            kind: ExprKind::Cond(test, then, otherwise),
+            ..
+        })) => (
+            &**test,
+            vec![StmtKind::Return(Some((**then).clone())).at(span)],
+            Some(vec![StmtKind::Return(Some((**otherwise).clone())).at(span)]),
+        ),
+        _ => return None,
+    };
+    let (head, Some(chained)) = split_chain(test) else {
+        return None;
+    };
+    let (of, ok, eq) = js::result::tested(&head)?;
+    let leaves = then.last().is_some_and(js::ends);
+    if ok == eq || !matches!(&of.kind, ExprKind::Var(v) if v == result) || (otherwise.is_some() && !leaves) {
+        return None;
+    }
+    let bound = match then.first().map(|s| &s.kind) {
+        Some(StmtKind::Const(name, value) | StmtKind::Let(name, Some(value)))
+            if js::result::reads_held(value, result) =>
+        {
+            Some(name.clone())
+        }
+        _ => None,
+    };
+    // What `c` reads is as it was where it's read: what's moved before it
+    // sets none of it.
+    let hoisted = match &bound {
+        Some(name) if js::mentions_in(&[StmtKind::Expr(chained.clone()).at(span)], name) == 0 => {
+            1 + (then[1..].iter())
+                .take_while(|s| {
+                    matches!(&s.kind, StmtKind::Assign(to, _) if matches!(&to.kind, ExprKind::Var(v) if v == name))
+                        && s.only_makes_values()
+                })
+                .count()
+        }
+        Some(_) => return None,
+        None => 0,
+    };
+    // `c`'s `if` is where `c` is written, after what's said before it.
+    let at = if chained.span.is_none() { span } else { chained.span };
+    let mut arm = then[..hoisted].to_vec();
+    arm.push(StmtKind::If(chained, then[hoisted..].to_vec(), None).at(at));
+    Some((StmtKind::If(head, arm, None).at(span), otherwise.unwrap_or_default()))
 }
 
 /// A `match` of a JS call's `Result` (ADR 0035), `made`, its `$try`, then

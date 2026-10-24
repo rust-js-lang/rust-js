@@ -7,7 +7,8 @@ and [0692](0692-a-thrown-error-is-a-panic-and-what-js-threw.md), whose
 `catch` read what it caught through `$unwound`, and whose `resume_unwind`
 of it was `$unwinding(payload)`. Amended by
 [0710](0710-every-unwinds-payload-is-the-js-error-thrown.md): a downcast to
-a `&JsError` is what was thrown of any `try`, not only one of panics.
+a `&JsError` is what was thrown of any `try`, not only one of panics; and
+below: a `catch_unwind` that heads an `if let` chain is a `try`.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): A where what's read is
 the same value, `$unwinding($unwound(e))` being `e`; for `new Error()`,
@@ -129,3 +130,61 @@ try {
   `thrown-error-read-as-payload`),
   `catch-unnamed`, `unwound-let-kept`, `unwound-let-declared-inside`
   (`prepare/catches.rs`), `panic-of-nothing-written` (`js/make.rs`).
+
+## Amendment: a `catch_unwind` that heads an `if let` chain is a `try`
+
+React's `DetermineComponentFrameRoot` catches its sample, then tests the
+control its `try` set:
+
+```js
+try { .. } catch (sample) {
+  // This is inlined manually because closure doesn't do it for us.
+  if (sample && control && typeof sample.stack === 'string') {
+    return [sample.stack, control.stack];
+  }
+}
+return [null, null];
+```
+
+Its port writes `if let Err(sample) = catch_unwind(AssertUnwindSafe(|| {
+.. })) && let Some(sample) = sample.downcast_ref::<&'static JsError>() &&
+let Some(control) = control && let Some(sample_stack) = sample.stack() {
+return ..; }`, and rust-js wrote `const value = $catchUnwind(() => {..});
+if (value.TAG === "Err" && control) { let sample = value._0; sample =
+sample.error; .. }`: the downcast is always `Some` (0710), so its test
+left the chain, and the `if`'s test was the `Result`'s `TAG` and the
+rest, which `try_catch` didn't know.
+
+**An `if let Err(e) = catch_unwind(f) && c` chain is `try { f's body }
+catch (e) { if (c) { .. } }`**: the `if` of its `Err` alone, `c`'s inside
+it (`unchained`, `prepare/catches.rs`), which is then the `match` of a
+`Result` this ADR and 0660 make a `try`.
+
+- **`c` is tested in the `catch`**, once the body threw, as Rust tests it
+  once `catch_unwind` returned: what the closure set, `control`, is what
+  `c` reads, the closure's body in the `try`.
+- **What the arm sets the payload's binding to first, `e = e.error;`, is
+  before `c`**, which reads neither, so the `catch` is of what was thrown,
+  `catch (sample)`; `c`'s `if` is where `c` is written, after a comment
+  before it.
+- **An `else`, where the arm leaves, is after the `try`**, as it's what
+  runs where the arm doesn't: `try { f(); } catch { if (wanted) { return
+  "caught"; } } return "not";`. One where the arm goes on keeps
+  `$catchUnwind`, as its `else` runs where `c` is false and not where the
+  arm ran.
+- **A `Result` tested where it's made**, `if ($catchUnwind(f).TAG ===
+  "Err" && c)`, is one made, then tested (`made_where_tested`).
+- **A closure's body whose value nothing reads, `(() => { ..; return
+  step(n); })();`, is its body**, `..; step(n);`, the `return`'s value a
+  statement where it does something (`js::applied_tried`).
+- A chain an `Ok` heads, and one whose `Ok` is read after it, keep
+  `$catchUnwind`, as before.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): A, the same tests in
+the same order. Held by `test/lowering-unwinds.test.ts`, "a catch_unwind
+that heads an if let chain is a try", run in Node; corpus case
+`catch_unwind_chained` against native Rust; and mutations
+`chain-not-unchained`, `chain-tested-where-made-kept`,
+`chain-else-of-going-on-after`, `chain-else-dropped`,
+`chain-shadow-left-in-if`, `chain-if-before-its-comment`
+(`prepare/catches.rs`), `tried-last-return-dropped` (`js/applied.rs`).

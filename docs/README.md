@@ -630,7 +630,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0703 A closure made before a call a guard unwinds is made where it's read](decisions/0703-a-closure-made-before-a-guarded-call-is-made-where-its-read.md)
 - [0704 A module variable an `if` makes is assigned only where it's something](decisions/0704-a-module-variable-is-assigned-only-what-isnt-undefined.md)
 - [0705 A guard's scope reads as any body, its fields the variables it was made of](decisions/0705-a-guards-scope-reads-as-any-body.md)
-- [0706 `panic!` is the one way a port throws an `Error`, and what's caught is read as it was thrown](decisions/0706-panic-is-the-one-way-a-port-throws-an-error.md) *(amended by 0710: of any `try`)*
+- [0706 `panic!` is the one way a port throws an `Error`, and what's caught is read as it was thrown](decisions/0706-panic-is-the-one-way-a-port-throws-an-error.md) *(amended by 0710: of any `try`; amended: a `catch_unwind` that heads an `if let` chain is a `try`)*
 - [0708 A comment before an argument, or a field, is before it](decisions/0708-a-comment-before-an-argument-is-before-it.md)
 - [0709 A signed counter below a length stays below it, past its loop and through its `as`](decisions/0709-a-signed-counter-below-a-length-stays-below-it.md)
 - [0710 Every unwind's payload downcasts as the `&JsError` thrown](decisions/0710-every-unwinds-payload-is-the-js-error-thrown.md)
