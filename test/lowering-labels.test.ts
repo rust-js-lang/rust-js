@@ -5,7 +5,7 @@
 import { beforeAll, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { buildNode, buildReact, compiler, fixture, root, run, target } from "./support";
+import { buildReact, compiler, fixture, ported, run, target } from "./support";
 
 beforeAll(buildReact, 600_000);
 
@@ -63,14 +63,9 @@ pub fn describe(value: Option<&Unknown>, indent: usize, out: &mut Vec<String>) -
 });
 
 /** React's shared/ReactPerformanceTrackProperties, as react-in-rust ports
- * it (`test/ports/performance-track-properties`, copied with the modules it
- * uses): its JS, a function of it at a time. */
+ * it: its JS, a function of it at a time. */
 function performanceTrack(): (name: string) => string {
-  const node = buildNode();
-  const out = fixture("performance-track-properties");
-  const crates = ["js", "node", "webapi"].flatMap((lib) => ["--extern", `${lib}=${join(node, `lib${lib}.rmeta`)}`]);
-  run([compiler, join(root, "test/ports/performance-track-properties/lib.rs"), "-o", join(out, "lib.js"), "--", ...crates, "-L", node]);
-  const js = readFileSync(join(out, "ReactPerformanceTrackProperties.js"), "utf8");
+  const js = ported("performance-track-properties")("ReactPerformanceTrackProperties.js");
   return (name) => {
     const at = js.indexOf(`function ${name}(`);
     const ends = ["\nfunction ", "\nexport function ", "\nconst "].map((e) => js.indexOf(e, at + 1)).filter((e) => e > 0);

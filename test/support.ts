@@ -386,6 +386,17 @@ export function buildNode(): string {
   return node;
 }
 
+/** A port in `test/ports/<port>` (React's, as react-in-rust ports it, copied
+ * with the modules it uses), compiled against the js, node and webapi crates:
+ * the JS of each of its modules, by file. */
+export function ported(port: string): (file: string) => string {
+  const node = buildNode();
+  const out = fixture(port);
+  const crates = ["js", "node", "webapi"].flatMap((lib) => ["--extern", `${lib}=${join(node, `lib${lib}.rmeta`)}`]);
+  run([compiler, join(root, "test/ports", port, "lib.rs"), "-o", join(out, "lib.js"), "--", ...crates, "-L", node]);
+  return (file) => readFileSync(join(out, file), "utf8");
+}
+
 /** The generated JS files under `dir`, by their paths from there: no maps. */
 function generated(dir: string): string[] {
   if (!existsSync(dir)) return [];

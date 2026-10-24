@@ -64,8 +64,6 @@ js::export_default! {
                 channel.port2().post_message((), None);
             }));
         }
-        if let Some(enqueue_task_impl) = ENQUEUE_TASK_IMPL.get() {
-            enqueue_task_impl(task);
-        }
+        ENQUEUE_TASK_IMPL.get().unwrap()(task)
     }
 }
