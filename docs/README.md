@@ -331,7 +331,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0259 A module's constant element, and an image's title](decisions/0259-constant-elements.md)
 - [0260 A binding's callback parameter, and IntersectionObserver](decisions/0260-webapi-callbacks.md) *(amended by 0653: a function JS gives is a `dyn Fn`)*
 - [0261 Defaults that do nothing don't move what's made beside them](decisions/0261-defaults-made-in-place.md)
-- [0262 When Rust and JS disagree, what the program can observe decides](decisions/0262-when-rust-and-js-disagree.md)
+- [0262 When Rust and JS disagree, what the program can observe decides](decisions/0262-when-rust-and-js-disagree.md) *(amended: a string's `repeat` past the engine's length is its `RangeError`)*
 - [0263 next/router's withRouter, and a flattened struct taken apart](decisions/0263-with-router.md)
 - [0264 A variant's own name is the variant](decisions/0264-enum-own-names.md)
 - [0265 A component a thread_local! holds takes props of any lifetime](decisions/0265-held-component-lifetimes.md)
@@ -670,7 +670,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0771 An `==` of a value read as the registry's symbol is its `matches!`](decisions/0771-an-equality-of-a-registered-symbol-is-its-match.md)
 - [0772 A nullable `Cell` field's `None` is `null`, made and written](decisions/0772-a-nullable-cell-field-writes-null.md)
 - [0773 A binding a module's default names is exported as the default alone](decisions/0773-a-held-default-is-exported-once.md)
-- [0774 Room asked past `isize::MAX` bytes is a `capacity overflow` panic](decisions/0774-room-past-isize-max-bytes-panics.md)
+- [0774 Room asked past `isize::MAX` bytes is a `capacity overflow` panic](decisions/0774-room-past-isize-max-bytes-panics.md) *(amended: a string's `repeat` is JS's own, unchecked)*
 - [0790 A `break` the program wrote is where it's written, a case's `break;` where its block ends a case](decisions/0790-a-break-the-program-wrote-is-where-it-is-written.md)
 - [0720 A labeled block's `break` and a named constant, in a body's ranges](decisions/0720-a-labeled-block-and-a-named-constant-in-a-bodys-ranges.md)
 - [0721 `js::strict_equals(a, b)` is JS's `===`](decisions/0721-strict-equals-is-jss-triple-equals.md)

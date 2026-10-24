@@ -173,9 +173,6 @@ pub(in crate::lower) enum TextOp {
     StrSlice,
     /// `s.len()`: its UTF-8 bytes.
     ByteLen,
-    /// `s.repeat(n)`: room for its bytes `n` times over asked first (ADR
-    /// 0774).
-    Repeat,
     /// `s.reserve(n)`, `reserve_exact(n)` of a `String`: room for its bytes
     /// and `n` more asked (ADR 0774).
     Reserve,
@@ -620,22 +617,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 self.parse_as(arg(), target, span, out)?
             }
             TextOp::ByteLen => Expr::call(Expr::helper("$byteLen"), vec![arg()]),
-            TextOp::Repeat => {
-                let (mut text, mut n) = (arg(), arg());
-                if !text.reads_same() {
-                    text = self.spill("text", text, out);
-                }
-                if !n.reads_same() {
-                    n = self.spill("n", n, out);
-                }
-                // A literal's bytes are known here.
-                let bytes = match &text.kind {
-                    js::ExprKind::Str(literal) => Expr::int(literal.len() as i128),
-                    _ => Expr::call(Expr::helper("$byteLen"), vec![text.clone()]),
-                };
-                self.room_for((None, n.clone()), bytes, span, out);
-                Expr::read(text, "repeat", vec![n])
-            }
             TextOp::FindBy(last) => call("$findBy", vec![arg(), arg(), Expr::bool(last)]),
             TextOp::StartsBy { end } => call("$startsBy", vec![arg(), arg(), Expr::bool(end)]),
             // Rust's ASCII whitespace: space, tab, line feed, form feed and
