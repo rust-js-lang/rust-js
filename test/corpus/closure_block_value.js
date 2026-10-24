@@ -12,8 +12,7 @@ function main() {
     const r$1 = $rcClone(r);
     const c = () => r$1.value;
     try {
-      const tmp = c();
-      console.log(`${tmp} ${r.strong}`);
+      console.log(`${c()} ${r.strong}`);
     } finally {
       $rcDrop(r$1);
     }

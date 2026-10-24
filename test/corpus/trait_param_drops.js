@@ -132,14 +132,13 @@ function main() {
   try {
     const iter = all.entries();
     while (true) {
-      const tmp = $next(iter);
-      if (!tmp) {
+      const value = $next(iter);
+      if (!value) {
         break;
       }
-      const i = tmp[0];
-      const t = tmp[1];
-      const tmp$1 = t.impl.take(t.value, [(10 + (i & 255)) & 255]);
-      console.log(`${tmp$1}`);
+      const i = value[0];
+      const t = value[1];
+      console.log(`${t.impl.take(t.value, [(10 + (i & 255)) & 255])}`);
     }
     console.log("end");
   } finally {

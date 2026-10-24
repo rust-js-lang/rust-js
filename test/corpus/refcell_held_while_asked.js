@@ -32,9 +32,8 @@ function asksShared() {
 
 function probeDrop_drop(probe) {
   const tryBorrowMut = $tryBorrow(probe[0], true);
-  const value = tryBorrowMut.TAG === "Err";
   try {
-    console.log(`drop sees it borrowed: ${value}`);
+    console.log(`drop sees it borrowed: ${tryBorrowMut.TAG === "Err"}`);
   } finally {
     if (tryBorrowMut.TAG === "Ok") {
       $unborrow(tryBorrowMut._0);
@@ -46,9 +45,8 @@ export const peekClone = { clone: peekClone_clone };
 
 function peekClone_clone(peek) {
   const tryBorrowMut = $tryBorrow(peek[0], true);
-  const value = tryBorrowMut.TAG === "Err";
   try {
-    console.log(`clone sees it borrowed: ${value}`);
+    console.log(`clone sees it borrowed: ${tryBorrowMut.TAG === "Err"}`);
   } finally {
     if (tryBorrowMut.TAG === "Ok") {
       $unborrow(tryBorrowMut._0);
@@ -128,14 +126,13 @@ function main() {
   const cell = { value: [1, 2] };
   const value = $borrow(cell, true);
   try {
-    const tmp = $tryBorrow(cell, true);
-    const length = value.value.length;
-    const value$1 = tmp.TAG === "Err";
+    const value$1 = $tryBorrow(cell, true);
+    const value$2 = value$1.TAG === "Err";
     try {
-      console.log(`${length} ${value$1}`);
+      console.log(`${value.value.length} ${value$2}`);
     } finally {
-      if (tmp.TAG === "Ok") {
-        $unborrow(tmp._0);
+      if (value$1.TAG === "Ok") {
+        $unborrow(value$1._0);
       }
     }
   } finally {
@@ -154,8 +151,7 @@ function main() {
   const value$2 = $borrow(cell, true);
   let m;
   try {
-    const tmp = peeks.map((item) => peekClone_clone(item));
-    m = (value$2.value.length + tmp.length) >>> 0;
+    m = (value$2.value.length + peeks.map((item) => peekClone_clone(item)).length) >>> 0;
   } finally {
     $unborrow(value$2);
   }
@@ -164,8 +160,10 @@ function main() {
   const value$3 = $borrow(cell, true);
   let k;
   try {
-    const tmp = options.map((item) => (item == null ? item : peekClone_clone(item)));
-    k = (value$3.value.length + tmp.length) >>> 0;
+    k =
+      (value$3.value.length +
+        options.map((item) => (item == null ? item : peekClone_clone(item))).length) >>>
+      0;
   } finally {
     $unborrow(value$3);
   }
@@ -202,11 +200,11 @@ function main() {
       console.log(
         `${$withBorrow(node.value, (x) => $withBorrow(copy, (y) => nodePartialEq_eq(x, y)))} RefCell { value: ${$showBorrowed(node.value, (value) => nodeDebug_fmt(value))} }`,
       );
-      const tmp = $borrow(node.value, true);
+      const value = $borrow(node.value, true);
       try {
-        console.log(`${Node.asks(tmp.value)}`);
+        console.log(`${Node.asks(value.value)}`);
       } finally {
-        $unborrow(tmp);
+        $unborrow(value);
       }
     } finally {
       $weakDrop(copy.value.me);

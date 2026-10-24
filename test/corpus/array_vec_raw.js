@@ -213,7 +213,7 @@ function main() {
   );
   // Storage held as one `MaybeUninit<[T; N]>`, as heapless holds it: a
   // pointer to it cast to a `T`'s is its first item's.
-  const storage = [0, 0, 0];
+  let storage = [0, 0, 0];
   const slot = $ptr(storage, 0);
   slot.value = 5;
   $ptrAdd(slot, 1).value = 6;

@@ -16,6 +16,9 @@ whose `Err` arm sets its binding again is `try` and `catch (thrown)`. Amended by
 [0692](0692-a-thrown-error-is-a-panic-and-what-js-threw.md): a thrown
 `Error` of JS's own constructor is what JS threw too, a `&JsError`, and
 resumed is the same `Error`.
+Amended by [0706](0706-panic-is-the-one-way-a-port-throws-an-error.md):
+what a `catch` reads of what it caught is what was thrown, where it is,
+`throw payload` of a payload resumed.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N where a panic is
 caught, as Rust catches it: the same closure runs once, the same drops

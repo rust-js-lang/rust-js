@@ -8,7 +8,7 @@ export function entry() {
 
 function main() {
   const v = [1, 2];
-  const at = (v.length + 1) >>> 0;
+  const at = v.length + 1;
   const [before] = $sliceSplitAt(v, at);
   console.log(`${before.length}`);
 }

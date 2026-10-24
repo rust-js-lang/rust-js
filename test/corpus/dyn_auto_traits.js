@@ -34,9 +34,8 @@ function main() {
     { value: 5, impl: {} },
     { value: ["second"], impl: { $drop: noisyDrop_drop } },
   ];
-  const length = many.length;
   try {
-    console.log(`${length} held`);
+    console.log(`${many.length} held`);
   } finally {
     for (const item of many) {
       item.impl.$drop?.(item.value);

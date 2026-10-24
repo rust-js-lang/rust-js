@@ -27,27 +27,25 @@ function noisyDrop_drop(noisy) {
 function main() {
   const named = { value: ["first"], impl: noisyNamed };
   try {
-    const borrowMut = $borrowMut(named, true);
+    const receiver = $borrowMut(named, true);
     try {
-      borrowMut.impl.rename(borrowMut, "renamed");
+      receiver.impl.rename(receiver, "renamed");
     } finally {
-      $unborrow(borrowMut);
+      $unborrow(receiver);
     }
-    const borrow = $borrow(named, true);
+    const value = $borrow(named, true);
     try {
-      const tmp = borrow.impl.name(borrow.value);
-      console.log(`${tmp}`);
+      console.log(`${value.impl.name(value.value)}`);
     } finally {
-      $unborrow(borrow);
+      $unborrow(value);
     }
     const inner = { value: ["inner"], impl: noisyNamed };
     try {
-      const tmp = $borrow(inner, true);
+      const value = $borrow(inner, true);
       try {
-        const tmp$1 = tmp.impl.name(tmp.value);
-        console.log(`${tmp$1}`);
+        console.log(`${value.impl.name(value.value)}`);
       } finally {
-        $unborrow(tmp);
+        $unborrow(value);
       }
     } finally {
       inner.impl.$drop?.(inner.value);

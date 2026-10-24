@@ -51,9 +51,8 @@ function heldIterator_nth(held, n) {
 
 function anyAbove(it, n, dropI) {
   const map = $closing(Iterator.from(it), dropI).map((x) => (x + 1) | 0);
-  const value = (x) => x > n;
   try {
-    return $lent(map).some((item) => value(item));
+    return $lent(map).some((x) => x > n);
   } finally {
     map.return();
   }
@@ -407,9 +406,8 @@ function main() {
   )
     .drop(2)
     .map((x) => (x + 1) | 0);
-  const value$9 = (x) => x > 5;
   try {
-    console.log(`held ${$lent(map).some((item) => value$9(item))}`);
+    console.log(`held ${$lent(map).some((x) => x > 5)}`);
   } finally {
     map.return();
   }
@@ -431,13 +429,12 @@ function main() {
     ).drop(2),
     $lazyRange(0, 3),
   );
-  const value$10 = (x) => x < 30;
   try {
-    console.log(`held ${$lent(chain).every((item) => value$10(item))}`);
+    console.log(`held ${$lent(chain).every((x) => x < 30)}`);
   } finally {
     chain.return();
   }
-  const value$11 = $tryFoldOk(
+  const value$9 = $tryFoldOk(
     $iterator(
       c(),
       countIterator_next,
@@ -451,7 +448,7 @@ function main() {
     0,
     (a, x) => (x > 6 ? { TAG: "Err", _0: a } : { TAG: "Ok", _0: (a + x) | 0 }),
   );
-  console.log(`${value$11.TAG === "Ok" ? `Ok(${value$11._0})` : `Err(${value$11._0})`}`);
+  console.log(`${value$9.TAG === "Ok" ? `Ok(${value$9._0})` : `Err(${value$9._0})`}`);
   console.log(
     `${$iterEq($iterator(c(), countIterator_next, false, undefined, undefined, undefined, undefined, countIterator_nth).drop(17), $lazyRange(18, 21))} ${$iterEq($lazyRange(18, 21), $iterator(c(), countIterator_next, false, undefined, undefined, undefined, undefined, countIterator_nth).drop(17))}`,
   );
@@ -488,9 +485,9 @@ function main() {
       ),
     )}`,
   );
-  const value$12 = $position($lazyRange(1, 5), (x) => x === 3);
-  console.log(`${value$12 == null ? "None" : `Some(${value$12})`}`);
-  const value$13 = $position([1, 2, 3], (x) => x === 9);
-  console.log(`${value$13 == null ? "None" : `Some(${value$13})`}`);
+  const value$10 = $position($lazyRange(1, 5), (x) => x === 3);
+  console.log(`${value$10 == null ? "None" : `Some(${value$10})`}`);
+  const value$11 = $position([1, 2, 3], (x) => x === 9);
+  console.log(`${value$11 == null ? "None" : `Some(${value$11})`}`);
 }
 //# sourceMappingURL=case.js.map

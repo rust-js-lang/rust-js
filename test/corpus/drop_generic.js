@@ -98,9 +98,7 @@ function main() {
       const wrapper = { inner: ["w1"] };
       try {
         Wrapper.replace(wrapper, ["w2"], noisyDrop_drop);
-        const tmp = shown(["s"], noisyDisplay, noisyDrop_drop);
-        const tmp$1 = shown(7, { fmt: String });
-        console.log(`${tmp} ${tmp$1}`);
+        console.log(`${shown(["s"], noisyDisplay, noisyDrop_drop)} ${shown(7, { fmt: String })}`);
         console.log(`${kept[0]} ${copy[0]} ${wrapper.inner[0]} end`);
       } finally {
         noisyDrop_drop(wrapper.inner);

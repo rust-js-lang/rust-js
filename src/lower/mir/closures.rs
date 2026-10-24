@@ -240,15 +240,56 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .collect();
         written.sort_by_key(|&(at, _)| at);
         for (at, id) in written {
-            let after = out.iter().position(|s| !s.span.is_none() && s.span.lo > at);
-            let ends = matches!(out.last(), Some(s) if matches!(s.kind, StmtKind::Return(_)));
-            let i = after.unwrap_or(out.len() - usize::from(ends));
             let hole = Expr {
                 known: js::Known::Nothing,
                 kind: js::ExprKind::FunctionHole(id.index.as_u32()),
                 span: js::Span::NONE,
             };
-            out.insert(i, StmtKind::Expr(hole).at(js::Span::NONE));
+            let hole = StmtKind::Expr(hole).at(js::Span::NONE);
+            // In the block it's written in, a JS function declaration
+            // being its block's alone (ADR 0696): `if (construct) {
+            // function Fake() {..} .. }`; one written at its body's top is
+            // there, not in the `if` that uses it.
+            let name = &self.krate.fns[&id].name;
+            let uses = js::mentions_in(out, name);
+            let block = self.js_span(self.krate.local_functions[&id]);
+            // The lists holding them all nest, each in the one before,
+            // walked outermost first: the first of them with a statement
+            // written after it in its block is the block's.
+            let (mut index, mut written_in) = (0, None);
+            js::statement_lists(out, &mut |list| {
+                if written_in.is_none()
+                    && uses > 0
+                    && js::mentions_in(list, name) == uses
+                    && list
+                        .iter()
+                        .any(|s| !s.span.is_none() && s.span.lo > at && s.span.lo < block.hi)
+                {
+                    written_in = Some(index);
+                }
+                index += 1;
+            });
+            if let Some(written_in) = written_in {
+                let mut index = 0;
+                js::statement_lists(out, &mut |list| {
+                    if index == written_in
+                        && let Some(i) = written_before(list, at)
+                    {
+                        list.insert(i, hole.clone());
+                    }
+                    index += 1;
+                });
+                continue;
+            }
+            let ends = matches!(out.last(), Some(s) if matches!(s.kind, StmtKind::Return(_)));
+            let i = written_before(out, at).unwrap_or(out.len() - usize::from(ends));
+            out.insert(i, hole);
         }
     }
+}
+
+/// Where in `list` a function written at `at` goes: before its first
+/// statement written after it.
+fn written_before(list: &[Stmt], at: u32) -> Option<usize> {
+    list.iter().position(|s| !s.span.is_none() && s.span.lo > at)
 }

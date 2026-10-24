@@ -1,4 +1,4 @@
-# 0697. Lowering's hidden contracts, held where they're relied on
+# 0713. Lowering's hidden contracts, held where they're relied on
 
 Status: Accepted.
 

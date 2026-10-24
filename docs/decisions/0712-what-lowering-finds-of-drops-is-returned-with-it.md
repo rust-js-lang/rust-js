@@ -1,4 +1,4 @@
-# 0696. What lowering a function finds of drops is returned with it
+# 0712. What lowering a function finds of drops is returned with it
 
 Status: Accepted. Amends [0190](0190-generic-no-destructor.md) and
 [0300](0300-drops-by-need.md), whose findings each function wrote into

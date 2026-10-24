@@ -91,9 +91,8 @@ function main() {
     }
     throw error;
   }
-  const value$1 = (l) => l[0];
   try {
-    console.log(`took ${last != null ? value$1(last) : "none"}`);
+    console.log(`took ${last?.[0] ?? "none"}`);
   } catch (error) {
     if (last != null) {
       loudDrop_drop(last);
@@ -107,10 +106,11 @@ function main() {
   try {
     try {
       wrapIndexMutI_indexMut(w, 0, $sliceIndexes.item, loudDrop_drop).value[0] = "z";
-      const tmp = wrapIndexI_index(w, { start: 0, end: 2 }, $sliceIndexes.range, loudDrop_drop)
-        .map((l) => l[0])
-        .join("");
-      console.log(`${tmp}`);
+      console.log(
+        `${wrapIndexI_index(w, { start: 0, end: 2 }, $sliceIndexes.range, loudDrop_drop)
+          .map((l) => l[0])
+          .join("")}`,
+      );
     } finally {
       for (const item of w[0]) {
         loudDrop_drop(item);

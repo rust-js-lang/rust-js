@@ -14,7 +14,9 @@ use crate::js::{self, Expr, ExprKind, Stmt, StmtKind};
 /// `stmts`, each run of statements a value's drop ends, which a panic in
 /// any of them drops too, one `try { .. } finally { .. }`. The values
 /// made inside it, nested in turn, as `statement_lists` goes on into it.
-pub(super) fn scoped_drops(stmts: &mut Vec<Stmt>) {
+/// Whether it made one.
+pub(super) fn scoped_drops(stmts: &mut Vec<Stmt>) -> bool {
+    let mut scoped = false;
     let mut i = 0;
     while i < stmts.len() {
         if let Some(end) = scope_end(stmts, i) {
@@ -39,10 +41,12 @@ pub(super) fn scoped_drops(stmts: &mut Vec<Stmt>) {
             i = stmts.len();
             stmts.push(StmtKind::Try(body, vec![drop]).at(span));
             stmts.extend(rest);
+            scoped = true;
             continue;
         }
         i += 1;
     }
+    scoped
 }
 
 /// `let result; try { ..; result = e; } finally { .. } return result;`, what

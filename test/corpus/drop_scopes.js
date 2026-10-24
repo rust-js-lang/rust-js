@@ -49,10 +49,9 @@ function find(items, wanted) {
     noisyDrop_drop(_guard);
     throw error;
   }
-  const value = (x) => x === wanted;
   let at;
   try {
-    at = $position($lent(tmp), (item) => value(item));
+    at = $position($lent(tmp), (x) => x === wanted);
   } catch (error) {
     noisyDrop_drop(_guard);
     throw error;

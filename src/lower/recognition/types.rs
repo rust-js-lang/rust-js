@@ -381,6 +381,14 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             if traits.principal_def_id().is_some_and(|id| self.tcx.is_diagnostic_item(Symbol::intern("Any"), id)))
     }
 
+    /// A `dyn Any + Send`, an unwind's payload's: a `dyn Any` that holds no
+    /// `&JsError` of its own, as one isn't `Send` (ADR 0710).
+    pub(in crate::lower) fn is_dyn_any_send(&self, ty: Ty<'tcx>) -> bool {
+        self.is_dyn_any(ty)
+            && matches!(ty.kind(), ty::Dynamic(traits, ..)
+                if traits.auto_traits().any(|id| self.tcx.is_diagnostic_item(Symbol::intern("Send"), id)))
+    }
+
     /// A `PeekMut<T>`'s `T`, a guard of a heap's top (ADR 0333).
     pub(in crate::lower) fn peek_mut_of(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
         match ty.kind() {

@@ -319,4 +319,20 @@ export const mutations: Mutation[] = [
     snapshots: true,
     tests: ["test/corpus.test.ts", "-t", "^unpaired_option_drops.rs$"],
   },
+  {
+    name: "panic-of-nothing-written",
+    breaks: "`panic!(\"\")` is `new Error(\"\")`, not `new Error()`",
+    file: "src/js/make.rs",
+    find: "            ExprKind::Str(text) if text.is_empty() => Vec::new(),\n",
+    replace: "",
+    tests: ["test/lowering-unwinds.test.ts", "-t", "a port throws an Error by panic!"],
+  },
+  {
+    name: "thrown-error-unrecognized",
+    breaks: "a downcast of an unwind's payload to `&JsError`, `payload.error`, isn't known as what was thrown",
+    file: "src/js/make.rs",
+    find: "            ExprKind::Member(pair, field) if field == THROWN_VALUE => Some(pair),\n",
+    replace: "            ExprKind::Member(pair, field) if false && field == THROWN_VALUE => Some(pair),\n",
+    tests: ["test/lowering-unwinds.test.ts", "-t", "every unwind"],
+  },
 ];

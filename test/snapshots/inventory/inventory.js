@@ -160,15 +160,15 @@ export function report() {
     bump(n);
     out += `${classify(n)} `;
   }
-  const borrow = $borrow(counter, true);
-  let tmp;
+  const value = $borrow(counter, true);
+  let borrow;
   try {
-    tmp = $borrow(counter, true);
-    $unborrow(tmp);
-  } finally {
+    borrow = $borrow(counter, true);
     $unborrow(borrow);
+  } finally {
+    $unborrow(value);
   }
-  out += `total=${borrow.value} again=${tmp.value}\n`;
+  out += `total=${value.value} again=${borrow.value}\n`;
   const stack = [1, 2, 3];
   const popped = [];
   while (true) {

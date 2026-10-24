@@ -127,7 +127,7 @@ export const mutations: Mutation[] = [
     "name": "mir-whole-cast-wrapped",
     "breaks": "a float THIR knows whole and in range, cast, is `$f64ToInt(index, ..)` from MIR, not `index`",
     "file": "src/lower/mir/rvalues.rs",
-    "find": "                } else if self.whole_cast_at(span) {",
+    "find": "                } else if self.kept_cast_at(span) {",
     "replace": "                } else if false {",
     "tests": ["test/lowering-numbers.test.ts", "-t", "a whole float's cast is the float from MIR too"]
   },
@@ -435,5 +435,13 @@ export const mutations: Mutation[] = [
     find: "                            let value = match self.is_pair_dyn(from) && !value.parts_read_same() {",
     replace: "                            let value = match false {",
     tests: ["test/corpus.test.ts", "-t", "^dyn_shapes_shared.rs$"],
+  },
+  {
+    name: "thrown-tested-none",
+    breaks: "a downcast of an unwind's payload to `&JsError` is `None` where what was thrown is falsy",
+    file: "src/lower/mir/rvalues.rs",
+    find: "                    && let Some(&discriminant) = state.options.thrown.get(&place.local) =>\n",
+    replace: "                    && let Some(&discriminant) = state.options.thrown.get(&place.local).filter(|_| false) =>\n",
+    tests: ["test/lowering-unwinds.test.ts", "-t", "every unwind"],
   },
 ];

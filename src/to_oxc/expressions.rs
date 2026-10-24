@@ -131,6 +131,7 @@ impl<'a> Cx<'a> {
                     UnaryOp::Not => UnaryOperator::LogicalNot,
                     UnaryOp::BitNot => UnaryOperator::BitwiseNot,
                     UnaryOp::Typeof => UnaryOperator::Typeof,
+                    UnaryOp::Delete => UnaryOperator::Delete,
                 };
                 Expression::new_unary_expression(sp, op, self.expr(arg), b)
             }
@@ -391,6 +392,9 @@ impl<'a> Cx<'a> {
                 ),
             },
             Prop::Field(name, value) => {
+                // Where its value starts, which a comment before the field
+                // is attached to (ADR 0708).
+                let at = Span::new(value.span.lo, value.span.lo);
                 let value = self.expr(value);
                 // `{ x: x }` reads better as `{ x }`.
                 let shorthand = matches!(&value, Expression::Identifier(id) if id.name == name.as_str());
@@ -405,7 +409,7 @@ impl<'a> Cx<'a> {
                     PropertyKey::new_static_identifier(SPAN, self.name(name), b)
                 };
                 ObjectPropertyKind::new_object_property(
-                    SPAN,
+                    at,
                     PropertyKind::Init,
                     key,
                     value,

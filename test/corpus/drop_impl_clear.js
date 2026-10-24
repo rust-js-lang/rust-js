@@ -38,8 +38,8 @@ function main() {
       loudDrop_drop({ value: loud });
     });
     const again = [[undefined, undefined]];
+    const e = { value: again };
     try {
-      const e = { value: again };
       emptied(
         e,
         wrapEmpty((loud) => {

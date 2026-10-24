@@ -71,6 +71,6 @@ once: by its own `fold`, which takes it, or after its consumer.**
 
 ## Amended by
 
-[ADR 0695](0695-what-stops-early-steps-by-try-fold.md): `$closing` and
+[ADR 0711](0711-what-stops-early-steps-by-try-fold.md): `$closing` and
 `$lent` pass on their iterator's `try_fold` and `nth` as they do its
 `fold`.

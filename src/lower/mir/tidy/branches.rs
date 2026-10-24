@@ -412,6 +412,7 @@ pub(super) fn returning_chain(stmts: &[Stmt]) -> Option<(Vec<Expr>, Vec<Stmt>)> 
     }
     let mut all = bound.to_vec();
     all.extend(body);
+    unread_bound(&mut all, bound.len());
     Some((tests, all))
 }
 

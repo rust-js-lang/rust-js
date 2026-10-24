@@ -15,11 +15,10 @@ function count(to) {
   const iter = { start: 1, end: to };
   try {
     while (true) {
-      const tmp = $rangeInclusiveNext(iter);
-      if (tmp == null) {
+      const i = $rangeInclusiveNext(iter);
+      if (i == null) {
         break;
       }
-      const i = tmp;
       const step = i;
       try {
         if (i === 3) {

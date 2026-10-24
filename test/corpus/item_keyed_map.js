@@ -29,16 +29,14 @@ function tCounting(TIterator, dropT, dropTItem) {
         dropT?.(self);
         throw error;
       }
-      const value = (item) => {
-        $orInsert(counts, item, 0, undefined, dropTItem);
-        const orInsert = $mutGet(counts, item);
-        orInsert.value = (orInsert.value + 1) >>> 0;
-      };
-      let iter;
+      const iter = self;
       let result;
       try {
-        iter = self;
-        result = $given(iter, TIterator, true).forEach((item) => value(item));
+        result = $given(iter, TIterator, true).forEach((item) => {
+          $orInsert(counts, item, 0, undefined, dropTItem);
+          const orInsert = $mutGet(counts, item);
+          orInsert.value = (orInsert.value + 1) >>> 0;
+        });
         if (TIterator.fold === undefined) {
           dropT?.(iter);
         }

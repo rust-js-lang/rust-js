@@ -65,26 +65,23 @@ function main() {
   try {
     try {
       const iter = $iter(sinks);
-      let borrowMut;
       while (true) {
-        const tmp = $next(iter);
-        if (!tmp) {
+        const sink = $next(iter);
+        if (!sink) {
           break;
         }
-        const sink = tmp;
-        borrowMut = $borrowMut(sink.value, true);
+        const receiver = $borrowMut(sink.value, true);
         try {
-          borrowMut.impl.take(borrowMut, 2);
+          receiver.impl.take(receiver, 2);
         } finally {
-          $unborrow(borrowMut);
+          $unborrow(receiver);
         }
       }
-      const borrow = $borrow($index(sinks, 0).value, true);
+      const value = $borrow($index(sinks, 0).value, true);
       try {
-        const total = borrow.impl.total(borrow.value);
-        console.log(`${total} ${$index(sinks, 0).strong}`);
+        console.log(`${value.impl.total(value.value)} ${$index(sinks, 0).strong}`);
       } finally {
-        $unborrow(borrow);
+        $unborrow(value);
       }
     } finally {
       for (const item of sinks) {
@@ -93,11 +90,11 @@ function main() {
         });
       }
     }
-    const tmp = $borrow(counter.value, true);
+    const borrow = $borrow(counter.value, true);
     try {
-      console.log(`${counterSink_total(tmp.value)}`);
+      console.log(`${counterSink_total(borrow.value)}`);
     } finally {
-      $unborrow(tmp);
+      $unborrow(borrow);
     }
   } finally {
     $rcDrop(counter);

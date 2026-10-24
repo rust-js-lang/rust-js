@@ -202,4 +202,12 @@ export const mutations: Mutation[] = [
     replace: "            let digits = body;\n",
     tests: ["test/lowering-numbers.test.ts", "-t", "a number literal keeps its base and its exponent"],
   },
+  {
+    name: "field-comment-unplaced",
+    breaks: "a comment before an object literal's field is attached where no property starts, and lost",
+    file: "src/to_oxc/expressions.rs",
+    find: "                    at,\n                    PropertyKind::Init,\n",
+    replace: "                    SPAN,\n                    PropertyKind::Init,\n",
+    tests: ["test/lowering-names.test.ts", "-t", "a comment before an argument or a field"],
+  },
 ];

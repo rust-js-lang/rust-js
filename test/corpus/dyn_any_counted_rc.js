@@ -22,9 +22,8 @@ function main() {
   }
   const downcast =
     shared.impl.typeId() === "u8" ? { TAG: "Ok", _0: shared } : { TAG: "Err", _0: shared };
-  const value = downcast.TAG === "Ok";
   try {
-    console.log(`${value}`);
+    console.log(`${downcast.TAG === "Ok"}`);
   } catch (error) {
     if (downcast.TAG === "Ok") {
       $rcDrop(downcast._0);
@@ -90,18 +89,18 @@ function main() {
         });
         throw error;
       }
-      const tmp$1 =
+      const value =
         back.impl.typeId() === "lib::Loud" ? { TAG: "Ok", _0: back } : { TAG: "Err", _0: back };
-      let value;
-      if (tmp$1.TAG === "Ok") {
-        value = tmp$1._0;
+      let value$1;
+      if (value.TAG === "Ok") {
+        value$1 = value._0;
       } else {
-        value = undefined;
-        $rcDrop(tmp$1._0, (value) => {
+        value$1 = undefined;
+        $rcDrop(value._0, (value) => {
           value.impl.$drop?.(value.value);
         });
       }
-      const found = $unwrap(value);
+      const found = $unwrap(value$1);
       try {
         console.log(`${found.value[0]} ${found.strong}`);
       } finally {

@@ -17,7 +17,7 @@ test("a list of one item left is the item", () => {
   writeFileSync(join(dir, "lib.rs"), readFileSync(join(root, "test/corpus/extract_if_drops.rs"), "utf8").replace("fn main()", "pub fn main()"));
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain("console.log(`odd [${tmp.join(\", \")}] kept [${tmp$2.join(\", \")}]`);");
+  expect(js).toContain("console.log(`odd [${value.join(\", \")}] kept [${value$1.join(\", \")}]`);");
   expect(js).not.toContain("[undefined, ids(");
 });
 

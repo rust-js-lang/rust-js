@@ -175,11 +175,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// unreachable code's or `hint::unreachable_unchecked()`'s: Rust's is
     /// undefined, so JS's, a throw, which says where it went wrong.
     pub(in crate::lower) fn unreachable_code(&self, span: Span) -> Stmt {
-        StmtKind::Throw(Expr::new_(
-            Expr::var("Error"),
-            vec![Expr::str("internal error: entered unreachable code")],
-        ))
-        .at(self.js_span(span))
+        StmtKind::Throw(Expr::panic(Expr::str("internal error: entered unreachable code"))).at(self.js_span(span))
     }
 
     /// Where a block goes.
@@ -357,7 +353,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let js_span = self.js_span(span);
                 // The panic drops what's there as it unwinds, then is thrown.
                 let mut panic = self.mir_unwind(state, *unwind)?;
-                panic.push(StmtKind::Throw(Expr::new_(Expr::var("Error"), vec![message])).at(js_span));
+                panic.push(StmtKind::Throw(Expr::panic(message)).at(js_span));
                 out.push(StmtKind::If(failed, panic, None).at(js_span));
                 out.extend(self.mir_branch(state, block, *target)?);
             }
@@ -393,7 +389,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // that unwinds elsewhere runs first.
                 let unwind = drops::cleans_up(state.body, state.drops.as_ref(), *unwind);
                 self.unread_defined_operands(state, func, args);
-                if state.unwind != unwind && !self.acting(state).is_empty() {
+                if state.unwind != unwind && self.may_throw_first(state) {
                     self.flush(state, &mut out)?;
                 }
                 state.unwind = None;

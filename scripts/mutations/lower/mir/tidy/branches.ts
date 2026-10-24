@@ -470,4 +470,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/lowering-written-branches.test.ts", "-t", "a continue the program wrote"],
   },
+  {
+    name: "returning-chain-keeps-unread-bound",
+    breaks: "a read a chain's test takes in place stays after it where nothing reads it, `const value = v[i];`",
+    file: "src/lower/mir/tidy/branches.rs",
+    find: "    unread_bound(&mut all, bound.len());\n",
+    replace: "",
+    tests: ["test/lowering-written-branches.test.ts", "-t", "a read a test takes in place"],
+  },
 ];

@@ -22,9 +22,8 @@ function mutexSequence(CSequence) {
 
 function mutexSequence_nextValue(mutex, CSequence) {
   const value = $lock(mutex, true);
-  const value$1 = value.value;
   try {
-    return CSequence.nextValue(value$1);
+    return CSequence.nextValue(value.value);
   } finally {
     $unborrow(value);
   }

@@ -45,9 +45,8 @@ function main() {
   const value$1 = second($iter([1, 2, 3]));
   console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
   const got = secondOf($iter([[1], [2], [3]]), $dropEach(loudDrop_drop), loudDrop_drop);
-  const value$2 = (l) => l[0];
   try {
-    const value = got ? value$2(got) : undefined;
+    const value = got?.[0];
     console.log(`got ${value == null ? "None" : `Some(${value})`}`);
   } finally {
     if (got != null) {

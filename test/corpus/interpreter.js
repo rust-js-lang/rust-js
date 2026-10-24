@@ -418,9 +418,8 @@ const Env = {
     const scope = $borrow(env[0], true);
     let result;
     try {
-      const get = scope.value.vars.get(name);
-      if (get) {
-        const v = get;
+      const v = scope.value.vars.get(name);
+      if (v) {
         result = v;
       } else {
         result = scope.value.parent != null ? Env.get(scope.value.parent, name) : undefined;

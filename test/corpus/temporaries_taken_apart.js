@@ -251,39 +251,39 @@ function main() {
   }
   try {
     try {
-      const tmp = make(5);
-      let tmp$1;
+      const value = make(5);
+      let tmp;
       try {
-        tmp$1 = [tmp, make(6)];
+        tmp = [value, make(6)];
       } catch (error) {
-        loudDrop_drop(tmp);
+        loudDrop_drop(value);
         throw error;
       }
-      const p = tmp$1[0];
+      const p = tmp[0];
       try {
         console.log("arm");
       } catch (error) {
         loudDrop_drop(p);
-        loudDrop_drop(tmp$1[1]);
+        loudDrop_drop(tmp[1]);
         throw error;
       }
       const y = p;
       try {
-        loudDrop_drop(tmp$1[1]);
+        loudDrop_drop(tmp[1]);
         console.log(`after y ${y[0]}`);
-        const tmp = make(7);
+        const value = make(7);
 
-        let tmp$2;
+        let tmp$1;
         try {
-          tmp$2 = [tmp, make(8)];
+          tmp$1 = [value, make(8)];
         } catch (error) {
-          if (tmp != null) {
-            loudDrop_drop(tmp);
+          if (value != null) {
+            loudDrop_drop(value);
           }
           throw error;
         }
-        if (tmp$2[0]) {
-          const z = tmp$2[0];
+        if (tmp$1[0]) {
+          const z = tmp$1[0];
           try {
             try {
               console.log(`if ${z[0]}`);
@@ -291,52 +291,52 @@ function main() {
               loudDrop_drop(z);
             }
           } finally {
-            loudDrop_drop(tmp$2[1]);
+            loudDrop_drop(tmp$1[1]);
           }
         } else {
-          if (tmp$2[0]) {
-            loudDrop_drop(tmp$2[0]);
+          if (tmp$1[0]) {
+            loudDrop_drop(tmp$1[0]);
           }
-          loudDrop_drop(tmp$2[1]);
+          loudDrop_drop(tmp$1[1]);
         }
         // `ref b` keeps the temporary for the block, less what `a` moves out.
         const before = make(1);
         try {
-          const tmp = make(40);
-          let tmp$1;
+          const value = make(40);
+          let tmp;
           try {
-            tmp$1 = [tmp, make(41)];
+            tmp = [value, make(41)];
           } catch (error) {
-            loudDrop_drop(tmp);
+            loudDrop_drop(value);
             throw error;
           }
-          const a = tmp$1[0];
-          const b = tmp$1[1];
+          const a = tmp[0];
+          const b = tmp[1];
           try {
             try {
-              const tmp = make(42);
-              let tmp$1;
+              const value = make(42);
+              let tmp;
               try {
-                tmp$1 = [tmp, make(43)];
+                tmp = [value, make(43)];
               } catch (error) {
-                loudDrop_drop(tmp);
+                loudDrop_drop(value);
                 throw error;
               }
-              const c = tmp$1[0];
+              const c = tmp[0];
               try {
                 console.log(`in ${before[0]} ${a[0]} ${b[0]} ${c[0]}`);
               } catch (error) {
-                loudDrop_drop(tmp$1[0]);
-                loudDrop_drop(tmp$1[1]);
+                loudDrop_drop(tmp[0]);
+                loudDrop_drop(tmp[1]);
                 throw error;
               }
-              loudDrop_drop(tmp$1[0]);
-              loudDrop_drop(tmp$1[1]);
+              loudDrop_drop(tmp[0]);
+              loudDrop_drop(tmp[1]);
             } finally {
               loudDrop_drop(a);
             }
           } finally {
-            loudDrop_drop(tmp$1[1]);
+            loudDrop_drop(tmp[1]);
           }
         } finally {
           loudDrop_drop(before);
@@ -344,33 +344,33 @@ function main() {
         const kept = make(9);
         const whole = kept[0];
         loudDrop_drop(kept);
-        const tmp$3 = make(50);
+        const value$1 = make(50);
+        let tmp$2;
+        try {
+          tmp$2 = [value$1, make(51)];
+        } catch (error) {
+          loudDrop_drop(value$1);
+          throw error;
+        }
+        someBorrowed(tmp$2);
+        const value$2 = make(52);
+        let tmp$3;
+        try {
+          tmp$3 = [value$2, make(53)];
+        } catch (error) {
+          loudDrop_drop(value$2);
+          throw error;
+        }
+        allBorrowed(tmp$3);
+        const value$3 = make(54);
         let tmp$4;
         try {
-          tmp$4 = [tmp$3, make(51)];
+          tmp$4 = [value$3, make(55)];
         } catch (error) {
-          loudDrop_drop(tmp$3);
+          loudDrop_drop(value$3);
           throw error;
         }
-        someBorrowed(tmp$4);
-        const tmp$5 = make(52);
-        let tmp$6;
-        try {
-          tmp$6 = [tmp$5, make(53)];
-        } catch (error) {
-          loudDrop_drop(tmp$5);
-          throw error;
-        }
-        allBorrowed(tmp$6);
-        const tmp$7 = make(54);
-        let tmp$8;
-        try {
-          tmp$8 = [tmp$7, make(55)];
-        } catch (error) {
-          loudDrop_drop(tmp$7);
-          throw error;
-        }
-        allMoved(tmp$8);
+        allMoved(tmp$4);
         const closure = (_2) => {
           const a = _2[0];
           const b = _2[1];
@@ -384,15 +384,15 @@ function main() {
             loudDrop_drop(_2[1]);
           }
         };
-        const tmp$9 = make(56);
-        let tmp$10;
+        const value$4 = make(56);
+        let tmp$5;
         try {
-          tmp$10 = [tmp$9, make(57)];
+          tmp$5 = [value$4, make(57)];
         } catch (error) {
-          loudDrop_drop(tmp$9);
+          loudDrop_drop(value$4);
           throw error;
         }
-        closure(tmp$10);
+        closure(tmp$5);
         console.log(`end ${whole}`);
       } finally {
         loudDrop_drop(y);

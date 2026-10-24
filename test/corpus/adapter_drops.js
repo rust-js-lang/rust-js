@@ -123,10 +123,9 @@ function main() {
   let pair$live;
   try {
     pair = $next(zipped);
-    const value = ([a, b]) => [a[0], b[0]];
     try {
-      const value$1 = pair ? value(pair) : undefined;
-      console.log(`zip ${value$1 == null ? "None" : `Some((${value$1[0]}, ${value$1[1]}))`}`);
+      const value = pair ? [pair[0][0], pair[1][0]] : undefined;
+      console.log(`zip ${value == null ? "None" : `Some((${value[0]}, ${value[1]}))`}`);
       pair$live = false;
     } finally {
       if (pair != null) {
@@ -135,7 +134,7 @@ function main() {
       }
     }
     const next = $next(zipped);
-    const tmp = ([a, b]) => {
+    const value = ([a, b]) => {
       const result = [a[0], b[0]];
       try {
         loudDrop_drop(b);
@@ -144,10 +143,10 @@ function main() {
       }
       return result;
     };
-    const tmp$1 = next ? tmp(next) : undefined;
-    console.log(`zip ${tmp$1 == null ? "None" : `Some((${tmp$1[0]}, ${tmp$1[1]}))`}`);
-    const tmp$2 = $next(zipped);
-    const tmp$3 = ([a, b]) => {
+    const value$1 = next ? value(next) : undefined;
+    console.log(`zip ${value$1 == null ? "None" : `Some((${value$1[0]}, ${value$1[1]}))`}`);
+    const value$2 = $next(zipped);
+    const value$3 = ([a, b]) => {
       const result = [a[0], b[0]];
       try {
         loudDrop_drop(b);
@@ -156,8 +155,8 @@ function main() {
       }
       return result;
     };
-    const tmp$4 = tmp$2 ? tmp$3(tmp$2) : undefined;
-    console.log(`zip ${tmp$4 == null ? "None" : `Some((${tmp$4[0]}, ${tmp$4[1]}))`}`);
+    const value$4 = value$2 ? value$3(value$2) : undefined;
+    console.log(`zip ${value$4 == null ? "None" : `Some((${value$4[0]}, ${value$4[1]}))`}`);
   } finally {
     zipped.return();
   }
@@ -179,13 +178,13 @@ function main() {
   let chained$live;
   try {
     const loud = $next(chained);
-    const tmp = (l) => {
+    const value = (l) => {
       const result = l[0];
       loudDrop_drop(l);
       return result;
     };
-    const tmp$1 = loud ? tmp(loud) : undefined;
-    console.log(`chain ${tmp$1 == null ? "None" : `Some(${tmp$1})`}`);
+    const value$1 = loud ? value(loud) : undefined;
+    console.log(`chain ${value$1 == null ? "None" : `Some(${value$1})`}`);
     chained$live = false;
   } finally {
     chained.return();
@@ -212,14 +211,14 @@ function main() {
   });
   let kept$live;
   try {
-    const tmp = $next(kept);
-    const tmp$1 = (l) => {
+    const value = $next(kept);
+    const value$1 = (l) => {
       const result = l[0];
       loudDrop_drop(l);
       return result;
     };
-    const tmp$2 = tmp ? tmp$1(tmp) : undefined;
-    console.log(`filter ${tmp$2 == null ? "None" : `Some(${tmp$2})`}`);
+    const value$2 = value ? value$1(value) : undefined;
+    console.log(`filter ${value$2 == null ? "None" : `Some(${value$2})`}`);
     kept$live = false;
   } finally {
     kept.return();
@@ -228,14 +227,14 @@ function main() {
   const numbered = $closing($iter(louds(70, 3)), $dropEach(loudDrop_drop)).map((x, i) => [i, x]);
   let numbered$live;
   try {
-    const tmp = $next(numbered);
-    const tmp$1 = ([i, l]) => {
+    const value = $next(numbered);
+    const value$1 = ([i, l]) => {
       const result = [i, l[0]];
       loudDrop_drop(l);
       return result;
     };
-    const tmp$2 = tmp ? tmp$1(tmp) : undefined;
-    console.log(`enumerate ${tmp$2 == null ? "None" : `Some((${tmp$2[0]}, ${tmp$2[1]}))`}`);
+    const value$2 = value ? value$1(value) : undefined;
+    console.log(`enumerate ${value$2 == null ? "None" : `Some((${value$2[0]}, ${value$2[1]}))`}`);
     numbered$live = false;
   } finally {
     numbered.return();
@@ -254,14 +253,14 @@ function main() {
   );
   let skipping$live;
   try {
-    const tmp = $next(skipping);
-    const tmp$1 = (l) => {
+    const value = $next(skipping);
+    const value$1 = (l) => {
       const result = l[0];
       loudDrop_drop(l);
       return result;
     };
-    const tmp$2 = tmp ? tmp$1(tmp) : undefined;
-    console.log(`skip_while ${tmp$2 == null ? "None" : `Some(${tmp$2})`}`);
+    const value$2 = value ? value$1(value) : undefined;
+    console.log(`skip_while ${value$2 == null ? "None" : `Some(${value$2})`}`);
     skipping$live = false;
   } finally {
     skipping.return();
@@ -278,18 +277,18 @@ function main() {
   let ended;
   let taking$live;
   try {
-    const tmp = $next(taking);
-    const tmp$1 = (l) => {
+    const value = $next(taking);
+    const value$1 = (l) => {
       const result = l[0];
       loudDrop_drop(l);
       return result;
     };
-    const tmp$2 = tmp ? tmp$1(tmp) : undefined;
-    console.log(`take_while ${tmp$2 == null ? "None" : `Some(${tmp$2})`}`);
-    const tmp$3 = $next(taking);
-    ended = !tmp$3;
-    if (tmp$3 != null) {
-      loudDrop_drop(tmp$3);
+    const value$2 = value ? value$1(value) : undefined;
+    console.log(`take_while ${value$2 == null ? "None" : `Some(${value$2})`}`);
+    const value$3 = $next(taking);
+    ended = !value$3;
+    if (value$3 != null) {
+      loudDrop_drop(value$3);
     }
     taking$live = false;
   } finally {
@@ -306,22 +305,22 @@ function main() {
   });
   let stepped$live;
   try {
-    const tmp = $next(stepped);
-    const tmp$1 = (l) => {
+    const value = $next(stepped);
+    const value$1 = (l) => {
       const result = l[0];
       loudDrop_drop(l);
       return result;
     };
-    const tmp$2 = tmp ? tmp$1(tmp) : undefined;
-    console.log(`step_by ${tmp$2 == null ? "None" : `Some(${tmp$2})`}`);
-    const tmp$3 = $next(stepped);
-    const tmp$4 = (l) => {
+    const value$2 = value ? value$1(value) : undefined;
+    console.log(`step_by ${value$2 == null ? "None" : `Some(${value$2})`}`);
+    const value$3 = $next(stepped);
+    const value$4 = (l) => {
       const result = l[0];
       loudDrop_drop(l);
       return result;
     };
-    const tmp$5 = tmp$3 ? tmp$4(tmp$3) : undefined;
-    console.log(`step_by ${tmp$5 == null ? "None" : `Some(${tmp$5})`}`);
+    const value$5 = value$3 ? value$4(value$3) : undefined;
+    console.log(`step_by ${value$5 == null ? "None" : `Some(${value$5})`}`);
     stepped$live = false;
   } finally {
     stepped.return();
@@ -353,14 +352,14 @@ function main() {
   );
   let fused$live;
   try {
-    const tmp = $next(fused);
-    const tmp$1 = (l) => {
+    const value = $next(fused);
+    const value$1 = (l) => {
       const result = l[0];
       loudDrop_drop(l);
       return result;
     };
-    const tmp$2 = tmp ? tmp$1(tmp) : undefined;
-    console.log(`fuse ${tmp$2 == null ? "None" : `Some(${tmp$2})`}`);
+    const value$2 = value ? value$1(value) : undefined;
+    console.log(`fuse ${value$2 == null ? "None" : `Some(${value$2})`}`);
     fused$live = false;
   } finally {
     if (fused.iter != null) {

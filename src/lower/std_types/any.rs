@@ -77,11 +77,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             false => is,
         };
         let inside = Expr::held(pair.clone());
+        // Of an unwind's payload, what was thrown, always (ADR 0710).
+        if op != AnyOp::DowncastMut && self.finds_thrown(self.pointee_of(any), of) {
+            let error = Expr::thrown_error(pair);
+            return Ok(Some(match op {
+                AnyOp::Is => Expr::bool(true),
+                AnyOp::DowncastRef => error,
+                _ => result::ok(error),
+            }));
+        }
         // A panic's `Error` is what JS threw too, its payload's `error`
         // (ADR 0692): a `&JsError` is that where it isn't the payload itself.
         let thrown = matches!(of.kind(), ty::Ref(_, inner, _) if self.recognition().is_js_error(*inner));
         if thrown && op != AnyOp::DowncastMut {
-            let error = Expr::member(pair.clone(), js::PANIC_ERROR);
+            let error = Expr::thrown_error(pair.clone());
             let panicked = Expr::bin(Op::Ne, error.clone(), Expr::undefined());
             return Ok(Some(match op {
                 AnyOp::Is => Expr::bin(Op::Or, is, panicked),
@@ -187,6 +196,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             _ => value,
         }
+    }
+
+    /// Whether a downcast of `any`, a `dyn Any`, to `of` finds what was
+    /// thrown, always `Some` (ADR 0710): to a `&JsError`, of a `dyn Any +
+    /// Send`, which holds no `&JsError` of its own, so an unwind's payload,
+    /// each of which is one, `$Unwinding` a typed payload's.
+    pub(in crate::lower) fn finds_thrown(&self, any: Ty<'tcx>, of: Ty<'tcx>) -> bool {
+        matches!(of.kind(), ty::Ref(_, inner, _) if self.recognition().is_js_error(*inner))
+            && self.recognition().is_dyn_any_send(any)
     }
 
     /// What a `Box`, an `Rc` or a reference points at.

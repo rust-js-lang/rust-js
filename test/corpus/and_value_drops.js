@@ -68,8 +68,8 @@ function main() {
   try {
     console.log(`b ${!b}`);
     let c = { TAG: "Ok", _0: [4] };
-    let kept;
     const f$1 = { TAG: "Ok", _0: [5] };
+    let kept;
     if (c.TAG === "Err") {
       kept = c;
     } else {
@@ -86,30 +86,30 @@ function main() {
       }
     }
     c = value;
-    const value$1 = (l) => {
-      const result = l[0];
-      loudDrop_drop(l);
-      return result;
-    };
-    let mapped;
     const fallback = 0;
+    let mapped;
     if (c.TAG === "Ok") {
-      mapped = value$1(c._0);
+      const map = (l) => {
+        const result = l[0];
+        loudDrop_drop(l);
+        return result;
+      };
+      mapped = map(c._0);
     } else {
       mapped = fallback;
       loudDrop_drop(c._0);
     }
     console.log(`c ${mapped}`);
     let d = { TAG: "Err", _0: [6] };
-    let kept$1;
     const f$2 = { TAG: "Ok", _0: [7] };
+    let kept$1;
     if (d.TAG === "Err") {
       kept$1 = d;
     } else {
       kept$1 = f$2;
       loudDrop_drop(d._0);
     }
-    const value$2 = kept$1;
+    const value$1 = kept$1;
     if (d.TAG === "Err") {
       if (f$2.TAG === "Ok") {
         loudDrop_drop(f$2._0);
@@ -118,10 +118,9 @@ function main() {
         loudDrop_drop(f$2._0);
       }
     }
-    d = value$2;
-    const value$3 = d.TAG === "Err";
+    d = value$1;
     try {
-      console.log(`d ${value$3}`);
+      console.log(`d ${d.TAG === "Err"}`);
     } catch (error) {
       if (d.TAG === "Ok") {
         loudDrop_drop(d._0);
@@ -143,14 +142,14 @@ function main() {
       }
       throw error;
     }
-    const value$4 = (l) => {
+    const map = (l) => {
       const result = l[0];
       loudDrop_drop(l);
       return result;
     };
     let tmp;
     try {
-      tmp = e != null ? value$4(e) : 0;
+      tmp = e != null ? map(e) : 0;
     } catch (error) {
       if (d.TAG === "Ok") {
         loudDrop_drop(d._0);
@@ -198,8 +197,8 @@ function main() {
       throw error;
     }
     try {
-      const value = 1 == null ? undefined : 2;
-      console.log(`${value == null ? "None" : `Some(${value})`}`);
+      const value$1 = 1 == null ? undefined : 2;
+      console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
     } catch (error) {
       if (f != null) {
         loudDrop_drop(f);

@@ -51,10 +51,11 @@ pub const HELD: &str = "value";
 /// 0049), beside its `value`.
 pub const DICTIONARY: &str = "impl";
 
-/// The field a panic's payload holds the `Error` it was thrown as in,
-/// `payload.error`, beside its message, `value` (ADR 0692): what JS threw
-/// too, which a downcast to a `&JsError` finds.
-pub const PANIC_ERROR: &str = "error";
+/// The field an unwind's payload holds what was thrown in, `payload.error`:
+/// a panic's `Error`, beside its message, `value` (ADR 0692); what JS threw
+/// of any other; or the `$Unwinding` a typed payload was thrown in. A
+/// downcast to a `&JsError` finds it (ADR 0710).
+pub const THROWN_VALUE: &str = "error";
 
 /// The function of a `dyn`'s dictionary that drops what it holds, `$drop`,
 /// if that has a destructor.
@@ -614,6 +615,16 @@ pub enum UnaryOp {
     BitNot,
     /// `typeof x`: what an untagged enum's variant is told by (ADR 0214).
     Typeof,
+    /// `delete x.key`: the property gone, `js::delete`'s (ADR 0697).
+    Delete,
+}
+
+impl UnaryOp {
+    /// Whether it changes what it's of, as `delete` does: an expression of
+    /// it is never pure, whatever it's of.
+    pub fn writes(self) -> bool {
+        matches!(self, UnaryOp::Delete)
+    }
 }
 
 #[derive(Clone, Copy, PartialEq)]

@@ -18,25 +18,25 @@ function value(name, x) {
 
 function main() {
   const v = [0, 0];
-  const value$3 = value("first", 7);
-  const value$4 = value("first", 4);
-  if (value$4 === 0) {
+  const value$4 = value("first", 7);
+  const value$3 = value("first", 4);
+  if (value$3 === 0) {
     throw new Error("attempt to calculate the remainder with a divisor of zero");
   }
   const index$1 = index("first", 0);
   $index(v, index$1);
-  const value$1 = $rem(value$3, value$4) & 65535;
+  const value$1 = $rem(value$4, value$3) & 65535;
   v[index$1] = value$1;
   const quotient = $div(value("second", 9), value("second", 2)) & 65535;
   console.log(`[${v.join(", ")}] ${quotient}`);
-  const value$5 = value("third", 7);
-  const value$6 = value("third", 0);
-  if (value$6 === 0) {
+  const value$6 = value("third", 7);
+  const value$5 = value("third", 0);
+  if (value$5 === 0) {
     throw new Error("attempt to calculate the remainder with a divisor of zero");
   }
   const index$2 = index("third", 1);
   $index(v, index$2);
-  const value$2 = $rem(value$5, value$6) & 65535;
+  const value$2 = $rem(value$6, value$5) & 65535;
   v[index$2] = value$2;
   console.log(`unreachable [${v.join(", ")}]`);
 }

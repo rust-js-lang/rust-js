@@ -11,8 +11,7 @@ function main() {
     if (popFront != null) {
       console.log(`drop ${popFront[0]}`);
     }
-    const length = d.length;
-    console.log(`${length}`);
+    console.log(`${d.length}`);
     const v = [[3], [4]];
     try {
       console.log(`${v.length}`);

@@ -22,14 +22,10 @@ function main() {
   const [tx, rx] = $channel();
   try {
     try {
-      const send = $send(tx, ["a"]);
-      $unwrapOk(send, undefined, (e) => "SendError { .. }");
-      const tmp = $send(tx, ["b"]);
-      $unwrapOk(tmp, undefined, (e) => "SendError { .. }");
-      const tmp$1 = $send(tx, ["c"]);
-      $unwrapOk(tmp$1, undefined, (e) => "SendError { .. }");
-      const recv = $recv(rx);
-      const first = $unwrapOk(recv, undefined, (e) => "RecvError");
+      $unwrapOk($send(tx, ["a"]), undefined, (e) => "SendError { .. }");
+      $unwrapOk($send(tx, ["b"]), undefined, (e) => "SendError { .. }");
+      $unwrapOk($send(tx, ["c"]), undefined, (e) => "SendError { .. }");
+      const first = $unwrapOk($recv(rx), undefined, (e) => "RecvError");
       try {
         console.log(`got ${first[0]}`);
       } finally {
@@ -39,40 +35,38 @@ function main() {
       $dropReceiver(rx, loudDrop_drop);
     }
     console.log("receiver gone");
-    const tmp = $send(tx, ["d"]);
-    if (tmp.TAG === "Ok") {
+    const send = $send(tx, ["d"]);
+    if (send.TAG === "Ok") {
       console.log("sent");
     } else {
       try {
-        console.log(`back ${tmp._0[0][0]}`);
+        console.log(`back ${send._0[0][0]}`);
       } finally {
-        loudDrop_drop(tmp._0[0]);
+        loudDrop_drop(send._0[0]);
       }
     }
 
-    const channel = $channel();
-    const outerTx = channel[0];
-    const outerRx = channel[1];
+    const [outerTx, outerRx] = $channel();
     try {
-      let tmp;
+      let channel;
       try {
-        tmp = $channel();
+        channel = $channel();
       } catch (error) {
         $dropReceiver(outerRx, $dropSender);
         throw error;
       }
-      const innerTx = tmp[0];
-      const innerRx = tmp[1];
-      let tmp$1;
+      const innerTx = channel[0];
+      const innerRx = channel[1];
+      let tmp;
       try {
-        tmp$1 = $send(outerTx, innerTx);
+        tmp = $send(outerTx, innerTx);
       } catch (error) {
         $dropReceiver(innerRx);
         $dropReceiver(outerRx, $dropSender);
         throw error;
       }
       try {
-        $unwrapOk(tmp$1, undefined, (e) => "SendError { .. }");
+        $unwrapOk(tmp, undefined, (e) => "SendError { .. }");
       } catch (error) {
         $dropReceiver(innerRx);
         $dropReceiver(outerRx, $dropSender);

@@ -117,16 +117,17 @@ pub(super) struct BodyFacts {
     /// The closures a `let` names that a hook's function is, each written
     /// there, named (`named_callbacks`).
     pub(super) named_callbacks: HashSet<LocalVarId>,
-    /// The casts of an `f64` known to be a whole number in the integer's
-    /// range, each the value as it is (`whole_casts`).
-    pub(super) whole_casts: HashSet<ExprId>,
+    /// The casts whose value is what they cast as it is: of an `f64` known
+    /// to be a whole number in the integer's range (`whole_casts`), and of
+    /// an integer the body's ranges show in its target's (`ranges`).
+    pub(super) kept_casts: HashSet<ExprId>,
 }
 
 impl BodyFacts {
     /// Its facts but its ranges, which are the crate's (`ranges`).
     pub(super) fn collect<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> Self {
         let mut facts = Self {
-            whole_casts: whole_casts(tcx, thir),
+            kept_casts: whole_casts(tcx, thir),
             ..Self::default()
         };
         facts.named_callbacks = named_callbacks(tcx, thir);

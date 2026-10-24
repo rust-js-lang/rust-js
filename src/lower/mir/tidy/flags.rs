@@ -175,15 +175,14 @@ fn forget(known: &mut Known, stmts: &[Stmt], flags: &HashSet<String>) {
 /// Whether a panic, `new Error(..)`, is made of strings and variables
 /// alone: what a drop, run before it, can't change.
 fn made_of_values(panic: &Expr) -> bool {
-    let ExprKind::New(class, args) = &panic.kind else {
+    let Some(args) = panic.panic_message() else {
         return false;
     };
-    matches!(&class.kind, ExprKind::Var(name) if name == "Error")
-        && args.iter().all(|arg| match &arg.kind {
-            ExprKind::Str(_) => true,
-            ExprKind::Template(_, parts, _) => parts.iter().all(|part| matches!(part.kind, ExprKind::Var(_))),
-            _ => false,
-        })
+    args.iter().all(|arg| match &arg.kind {
+        ExprKind::Str(_) => true,
+        ExprKind::Template(_, parts, _) => parts.iter().all(|part| matches!(part.kind, ExprKind::Var(_))),
+        _ => false,
+    })
 }
 
 /// `true` or `false`, of a literal.

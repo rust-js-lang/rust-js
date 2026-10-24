@@ -37,15 +37,13 @@ function main() {
   }
   const value$1 = $borrow(named, true);
   try {
-    const tmp = value$1.impl.name(value$1.value);
-    console.log(`${tmp}`);
+    console.log(`${value$1.impl.name(value$1.value)}`);
   } finally {
     $unborrow(value$1);
   }
   const value$2 = $borrow(counter, true);
   try {
-    const tmp = value$2.impl.Named().name(value$2.value);
-    console.log(`${tmp}`);
+    console.log(`${value$2.impl.Named().name(value$2.value)}`);
   } finally {
     $unborrow(value$2);
   }

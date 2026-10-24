@@ -74,7 +74,7 @@ function main() {
   console.log("after a");
 
   const h = { value: { name: ["h"], items: [["i1"], ["i2"]] }, strong: 1, weak: 0 };
-  let tmp;
+  let tmp$1;
   let holder;
   try {
     holder = $rcClone(h);
@@ -88,11 +88,11 @@ function main() {
     throw error;
   }
   let item$live = true;
-  let tmp$1;
+  let tmp;
   try {
-    tmp$1 = $rcClone(h);
+    tmp = $rcClone(h);
     item$live = false;
-    tmp = [holder, tmp$1];
+    tmp$1 = [holder, tmp];
   } catch (error) {
     if (item$live) {
       $rcDrop(holder, (value) => {
@@ -110,7 +110,7 @@ function main() {
     });
     throw error;
   }
-  const v = tmp;
+  const v = tmp$1;
   try {
     $rcDrop(h, (value) => {
       noisyDrop_drop(value.name);
@@ -118,8 +118,7 @@ function main() {
         noisyDrop_drop(item);
       }
     });
-    const length = v.length;
-    console.log(`${length} ${$index(v, 0).value.name[0]}`);
+    console.log(`${v.length} ${$index(v, 0).value.name[0]}`);
   } finally {
     for (const item of v) {
       $rcDrop(item, (value) => {
@@ -188,16 +187,16 @@ function main() {
     } finally {
       $unborrow(borrow);
     }
-    const tmp = $borrowMut(other.value, true);
+    const value = $borrowMut(other.value, true);
     let last;
     try {
-      last = tmp.value.pop();
+      last = value.value.pop();
     } catch (error) {
-      $unborrow(tmp);
+      $unborrow(value);
       throw error;
     }
     try {
-      $unborrow(tmp);
+      $unborrow(value);
       console.log(`popped ${!!last}`);
     } finally {
       if (last != null) {

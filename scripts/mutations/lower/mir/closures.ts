@@ -154,4 +154,20 @@ export const mutations: Mutation[] = [
     replace: "                            && state.locals.writes[l] > 1\n",
     tests: ["test/corpus.test.ts", "-t", "^mut_param_moved_out.rs$"],
   },
+  {
+    name: "written-fn-in-its-body-list",
+    breaks: "a function written in a block is declared in its body's own list, not the innermost block that holds each use of it",
+    file: "src/lower/mir/closures.rs",
+    find: "            if let Some(written_in) = written_in {\n",
+    replace: "            if let Some(written_in) = written_in.filter(|_| false) {\n",
+    tests: ["test/js-object.test.ts", "-t", "a constructor is a fn item"],
+  },
+  {
+    name: "written-fn-in-the-block-using-it",
+    breaks: "a function written at a body's top is declared in the innermost block that uses it, an `if`'s, not the block it's written in",
+    file: "src/lower/mir/closures.rs",
+    find: "                if written_in.is_none()\n",
+    replace: "                if true\n",
+    tests: ["test/lowering-functions.test.ts", "-t", "a function written in a body is declared in it"],
+  },
 ];

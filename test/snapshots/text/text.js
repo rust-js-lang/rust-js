@@ -51,7 +51,7 @@ export function casts(c) {
     code,
     c.codePointAt(0) & 255,
     String.fromCharCode(65),
-    String.fromCharCode((97 + ((code % 26) & 255)) & 255),
+    String.fromCharCode((97 + (code % 26)) & 255),
     x,
   ];
 }

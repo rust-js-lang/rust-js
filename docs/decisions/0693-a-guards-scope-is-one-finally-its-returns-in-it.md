@@ -3,6 +3,9 @@
 Status: Accepted. Amends [0437](0437-a-scopes-drops-are-one-finally.md),
 whose run of statements a drop ends was flat: an `if` or a loop in it, or
 a `return` from inside it, ended the run.
+Amended by [0705](0705-a-guards-scope-reads-as-any-body.md): what each
+statement's `try` held apart is read in place, and a guard's field of a
+variable is that variable.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): A, the same drops in the
 same order on every path; only how the JS reads changes.

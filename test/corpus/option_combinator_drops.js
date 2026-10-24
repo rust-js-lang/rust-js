@@ -150,9 +150,9 @@ function parsePair(a, b, both, BNamed, dropB) {
 }
 
 function main() {
-  let tmp$0$live = false;
-  let tmp$0$0$live = false;
-  let tmp$0$1$live = false;
+  let value$0$live = false;
+  let value$0$0$live = false;
+  let value$0$1$live = false;
   const option = make(2);
   let kept$1;
   try {
@@ -181,15 +181,15 @@ function main() {
     const dropped = kept$1;
     try {
       console.log(`dropped ${!dropped}`);
-      const tmp = make(0);
+      const value = make(0);
       let kept;
       try {
-        if (tmp != null && even(tmp)) {
-          kept = tmp;
+        if (value != null && even(value)) {
+          kept = value;
         }
       } finally {
-        if (tmp != null && kept === undefined) {
-          dDrop_drop(tmp);
+        if (value != null && kept === undefined) {
+          dDrop_drop(value);
         }
       }
       const filter = kept;
@@ -200,55 +200,50 @@ function main() {
           dDrop_drop(filter);
         }
       }
-      const tmp$1 = make(5);
-      const tmp$2 = (d) => d[0] > 4;
+      const value$1 = make(5);
+      const value$2 = (d) => d[0] > 4;
       let kept$1;
       try {
-        if (tmp$1 != null && tmp$2(tmp$1)) {
-          kept$1 = tmp$1;
+        if (value$1 != null && value$2(value$1)) {
+          kept$1 = value$1;
         }
       } finally {
-        if (tmp$1 != null && kept$1 === undefined) {
-          dDrop_drop(tmp$1);
+        if (value$1 != null && kept$1 === undefined) {
+          dDrop_drop(value$1);
         }
       }
       const closure = kept$1;
-      const value = (d) => d[0];
       try {
-        console.log(`closure ${closure != null ? value(closure) : 0}`);
-        const tmp = make(6);
-        const tmp$1 = (d) => d[0] > 9;
-        const tmp$2 = keep(tmp, tmp$1, dDrop_drop);
+        console.log(`closure ${closure?.[0] ?? 0}`);
+        const value = keep(make(6), (d) => d[0] > 9, dDrop_drop);
         try {
-          console.log(`generic ${!tmp$2}`);
+          console.log(`generic ${!value}`);
         } finally {
-          if (tmp$2 != null) {
-            dDrop_drop(tmp$2);
+          if (value != null) {
+            dDrop_drop(value);
           }
         }
-        const tmp$3 = $some(make(7));
-        const value$1 = Boolean;
-        const tmp$4 = keep(tmp$3, value$1, (option) => {
+        const value$1 = keep($some(make(7)), Boolean, (option) => {
           if (option != null) {
             dDrop_drop(option);
           }
         });
         try {
-          console.log(`generic ${tmp$4 != null}`);
+          console.log(`generic ${value$1 != null}`);
         } finally {
-          if (tmp$4 != null) {
-            if ($someValue(tmp$4) != null) {
-              dDrop_drop($someValue(tmp$4));
+          if (value$1 != null) {
+            if ($someValue(value$1) != null) {
+              dDrop_drop($someValue(value$1));
             }
           }
         }
 
-        const tmp$5 = make(8);
-        let mapped;
+        const value$2 = make(8);
         const fallback = "Nothing";
-        if (tmp$5 != null) {
+        let mapped;
+        if (value$2 != null) {
           try {
-            mapped = { TAG: "One", _0: tmp$5 };
+            mapped = { TAG: "One", _0: value$2 };
           } finally {
             if (fallback.TAG === "One") {
               dDrop_drop(fallback._0);
@@ -262,13 +257,12 @@ function main() {
           if (one.TAG === "One") {
             console.log(`one ${one._0[0]}`);
           }
-          const tmp = make(0);
-          const tmp$1 = [9];
+          const value = make(0);
+          const fallback = { TAG: "One", _0: [9] };
           let mapped;
-          const fallback = { TAG: "One", _0: tmp$1 };
-          if (tmp != null) {
+          if (value != null) {
             try {
-              mapped = { TAG: "One", _0: tmp };
+              mapped = { TAG: "One", _0: value };
             } finally {
               if (fallback.TAG === "One") {
                 dDrop_drop(fallback._0);
@@ -278,194 +272,184 @@ function main() {
             mapped = fallback;
           }
           const nothing = mapped;
-          const value = nothing.TAG === "One";
+          const value$1 = nothing.TAG === "One";
           try {
-            console.log(`nothing ${value}`);
-            const tmp = make(10);
-            const tmp$1 = [11];
-            const tmp$2 = (d) => {
+            console.log(`nothing ${value$1}`);
+            const value = make(10);
+            const value$2 = [11];
+            const value$3 = (d) => {
               const result = [(d[0] + 100) >>> 0];
               dDrop_drop(d);
               return result;
             };
             let mapped;
-            if (tmp != null) {
+            if (value != null) {
               try {
-                mapped = tmp$2(tmp);
+                mapped = value$3(value);
               } finally {
-                dDrop_drop(tmp$1);
+                dDrop_drop(value$2);
               }
             } else {
-              mapped = tmp$1;
+              mapped = value$2;
             }
             const read = mapped;
             try {
               console.log(`read ${read[0]}`);
-              const tmp = make(12);
-              const tmp$1 = [13];
-              const tmp$2 = found(tmp, tmp$1, dDrop_drop);
+              const value = found(make(12), [13], dDrop_drop);
               try {
-                console.log(`found ${tmp$2[0]}`);
+                console.log(`found ${value[0]}`);
               } finally {
-                dDrop_drop(tmp$2);
+                dDrop_drop(value);
               }
-              const tmp$3 = found(undefined, [14], dDrop_drop);
+              const value$1 = found(undefined, [14], dDrop_drop);
               try {
-                console.log(`found ${tmp$3[0]}`);
+                console.log(`found ${value$1[0]}`);
               } finally {
-                dDrop_drop(tmp$3);
+                dDrop_drop(value$1);
               }
 
-              const tmp$4 = make(15);
-              const tmp$5 = () => "none";
-              const ok = tmp$4 != null ? { TAG: "Ok", _0: tmp$4 } : { TAG: "Err", _0: tmp$5() };
-              const value = (d) => d[0];
+              const value$2 = make(15);
+              const ok = value$2 != null ? { TAG: "Ok", _0: value$2 } : { TAG: "Err", _0: "none" };
               try {
-                console.log(`ok ${ok.TAG === "Ok" ? value(ok._0) : 0}`);
-                const tmp = make(0);
-                const tmp$1 = () => "none";
-                const err = tmp != null ? { TAG: "Ok", _0: tmp } : { TAG: "Err", _0: tmp$1() };
-                const value$1 = err.TAG === "Err";
+                console.log(`ok ${ok.TAG === "Ok" ? ok._0[0] : 0}`);
+                const value = make(0);
+                const err = value != null ? { TAG: "Ok", _0: value } : { TAG: "Err", _0: "none" };
                 try {
-                  console.log(`err ${value$1}`);
-                  const tmp = parse("16", dNamed);
-                  let tmp$0$live$1 = true;
-                  if (tmp.TAG === "Ok") {
-                    tmp$0$live$1 = false;
+                  console.log(`err ${err.TAG === "Err"}`);
+                  const value = parse("16", dNamed);
+                  let value$0$live$1 = true;
+                  if (value.TAG === "Ok") {
+                    value$0$live$1 = false;
                     try {
-                      console.log(`parsed ${tmp._0[0]}`);
+                      console.log(`parsed ${value._0[0]}`);
                     } finally {
-                      dDrop_drop(tmp._0);
+                      dDrop_drop(value._0);
                     }
                   } else {
                     try {
-                      console.log(`${tmp._0}`);
+                      console.log(`${value._0}`);
                     } catch (error) {
-                      if (tmp.TAG === "Ok") {
-                        dDrop_drop(tmp._0);
+                      if (value.TAG === "Ok") {
+                        dDrop_drop(value._0);
                       }
                       throw error;
                     }
                   }
-                  if (tmp.TAG === "Ok") {
-                    if (tmp$0$live$1) {
-                      dDrop_drop(tmp._0);
+                  if (value.TAG === "Ok") {
+                    if (value$0$live$1) {
+                      dDrop_drop(value._0);
                     }
                   }
-                  tmp$0$live$1 = false;
-                  const tmp$1 = parse("x", dNamed);
-                  let tmp$0$live$2 = true;
-                  if (tmp$1.TAG === "Ok") {
-                    tmp$0$live$2 = false;
+                  value$0$live$1 = false;
+                  const value$1 = parse("x", dNamed);
+                  let value$0$live$2 = true;
+                  if (value$1.TAG === "Ok") {
+                    value$0$live$2 = false;
                     try {
-                      console.log(`parsed ${tmp$1._0[0]}`);
+                      console.log(`parsed ${value$1._0[0]}`);
                     } finally {
-                      dDrop_drop(tmp$1._0);
+                      dDrop_drop(value$1._0);
                     }
                   } else {
                     try {
-                      console.log(`${tmp$1._0}`);
+                      console.log(`${value$1._0}`);
                     } catch (error) {
-                      if (tmp$1.TAG === "Ok") {
-                        dDrop_drop(tmp$1._0);
+                      if (value$1.TAG === "Ok") {
+                        dDrop_drop(value$1._0);
                       }
                       throw error;
                     }
                   }
-                  if (tmp$1.TAG === "Ok") {
-                    if (tmp$0$live$2) {
-                      dDrop_drop(tmp$1._0);
+                  if (value$1.TAG === "Ok") {
+                    if (value$0$live$2) {
+                      dDrop_drop(value$1._0);
                     }
                   }
-                  tmp$0$live$2 = false;
+                  value$0$live$2 = false;
                   let iter = $iter(["0x17", "18", "0xy", "z"]);
-                  let tmp$2;
                   while (true) {
-                    const tmp = $next(iter);
-                    if (tmp == null) {
+                    const flag = $next(iter);
+                    if (flag == null) {
                       break;
                     }
-                    const flag = tmp;
-                    tmp$2 = parseFlag(flag, dNamed);
-                    tmp$0$live = true;
-                    if (tmp$2.TAG === "Ok") {
-                      tmp$0$live = false;
+                    const value = parseFlag(flag, dNamed);
+                    value$0$live = true;
+                    if (value.TAG === "Ok") {
+                      value$0$live = false;
                       try {
-                        console.log(`flag ${tmp$2._0[0]}`);
+                        console.log(`flag ${value._0[0]}`);
                       } finally {
-                        dDrop_drop(tmp$2._0);
+                        dDrop_drop(value._0);
                       }
                     } else {
                       try {
-                        console.log(`${tmp$2._0}`);
+                        console.log(`${value._0}`);
                       } catch (error) {
-                        if (tmp$2.TAG === "Ok") {
-                          dDrop_drop(tmp$2._0);
+                        if (value.TAG === "Ok") {
+                          dDrop_drop(value._0);
                         }
                         throw error;
                       }
                     }
-                    if (tmp$2.TAG === "Ok" && tmp$0$live) {
-                      dDrop_drop(tmp$2._0);
+                    if (value.TAG === "Ok" && value$0$live) {
+                      dDrop_drop(value._0);
                     }
-                    tmp$0$live = false;
+                    value$0$live = false;
                   }
                   iter = $iter([
                     ["19", "20", true],
                     ["21", "x", true],
                     ["22", "", false],
                   ]);
-                  let tmp$3;
                   while (true) {
-                    const tmp = $next(iter);
-                    if (!tmp) {
+                    const value = $next(iter);
+                    if (!value) {
                       break;
                     }
-                    const a = tmp[0];
-                    const b = tmp[1];
-                    const both = tmp[2];
-                    tmp$3 = parsePair(a, b, both, dNamed, dDrop_drop);
-                    tmp$0$1$live = true;
-                    tmp$0$0$live = true;
-                    if (tmp$3.TAG === "Ok") {
-                      tmp$0$0$live = false;
-                      const d = tmp$3._0[0];
-                      tmp$0$1$live = false;
-                      const e = tmp$3._0[1];
-                      const value = (e) => {
+                    const a = value[0];
+                    const b = value[1];
+                    const both = value[2];
+                    const value$1 = parsePair(a, b, both, dNamed, dDrop_drop);
+                    value$0$1$live = true;
+                    value$0$0$live = true;
+                    if (value$1.TAG === "Ok") {
+                      value$0$0$live = false;
+                      const d = value$1._0[0];
+                      value$0$1$live = false;
+                      const e = value$1._0[1];
+                      const map = (e) => {
                         const result = e[0];
                         dDrop_drop(e);
                         return result;
                       };
                       try {
-                        const tmp = e != null ? value(e) : 0;
-                        console.log(`pair ${d[0]} ${tmp}`);
+                        console.log(`pair ${d[0]} ${e != null ? map(e) : 0}`);
                       } finally {
                         dDrop_drop(d);
                       }
                     } else {
                       try {
-                        console.log(`${tmp$3._0}`);
+                        console.log(`${value$1._0}`);
                       } catch (error) {
-                        if (tmp$3.TAG === "Ok") {
-                          dDrop_drop(tmp$3._0[0]);
-                          if (tmp$3._0[1] != null) {
-                            dDrop_drop(tmp$3._0[1]);
+                        if (value$1.TAG === "Ok") {
+                          dDrop_drop(value$1._0[0]);
+                          if (value$1._0[1] != null) {
+                            dDrop_drop(value$1._0[1]);
                           }
                         }
                         throw error;
                       }
                     }
-                    if (tmp$3.TAG === "Ok") {
-                      if (tmp$0$0$live) {
-                        dDrop_drop(tmp$3._0[0]);
+                    if (value$1.TAG === "Ok") {
+                      if (value$0$0$live) {
+                        dDrop_drop(value$1._0[0]);
                       }
-                      if (tmp$0$1$live && tmp$3._0[1] != null) {
-                        dDrop_drop(tmp$3._0[1]);
+                      if (value$0$1$live && value$1._0[1] != null) {
+                        dDrop_drop(value$1._0[1]);
                       }
                     }
-                    tmp$0$1$live = false;
-                    tmp$0$0$live = false;
+                    value$0$1$live = false;
+                    value$0$0$live = false;
                   }
                   console.log("end");
                 } finally {

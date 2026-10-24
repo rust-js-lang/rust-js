@@ -243,4 +243,12 @@ export const mutations: Mutation[] = [
     replace: "== \"std::string::Drained\")",
     tests: ["test/corpus.test.ts", "-t", "str_odds"],
   },
+  {
+    name: "dyn-any-send-of-any",
+    breaks: "a `dyn Any` without `Send` is an unwind's payload's, so its own `&JsError` isn't found",
+    file: "src/lower/recognition/types.rs",
+    find: "                if traits.auto_traits().any(|id| self.tcx.is_diagnostic_item(Symbol::intern(\"Send\"), id)))\n",
+    replace: "                if traits.auto_traits().all(|id| self.tcx.is_diagnostic_item(Symbol::intern(\"Send\"), id)))\n",
+    tests: ["test/lowering-unwinds.test.ts", "-t", "every unwind"],
+  },
 ];

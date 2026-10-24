@@ -70,8 +70,7 @@ function fill() {
   const v = [[1], [2], [3]];
   try {
     $fill(v, [4], (value) => [value[0]], undefined, loudDrop_drop);
-    const tmp = ids(v);
-    console.log(`filled [${tmp.join(", ")}]`);
+    console.log(`filled [${ids(v).join(", ")}]`);
     const none = [];
     try {
       $fill(none, [5], (value) => [value[0]], undefined, loudDrop_drop);
@@ -111,11 +110,9 @@ function resize() {
   const v = [[1], [2], [3]];
   try {
     $resize(v, 1, [6], (item) => [item[0]], loudDrop_drop);
-    const tmp = ids(v);
-    console.log(`shrunk [${tmp.join(", ")}]`);
+    console.log(`shrunk [${ids(v).join(", ")}]`);
     $resize(v, 3, [7], (item) => [item[0]], loudDrop_drop);
-    const tmp$1 = ids(v);
-    console.log(`grown [${tmp$1.join(", ")}]`);
+    console.log(`grown [${ids(v).join(", ")}]`);
     const value = [[8], [9], [10]];
     try {
       $cloneFromSlice(v, value, (value) => [value[0]], undefined, loudDrop_drop);
@@ -124,8 +121,7 @@ function resize() {
         loudDrop_drop(item);
       }
     }
-    const tmp$2 = ids(v);
-    console.log(`cloned [${tmp$2.join(", ")}]`);
+    console.log(`cloned [${ids(v).join(", ")}]`);
   } finally {
     for (const item of v) {
       loudDrop_drop(item);
@@ -137,8 +133,7 @@ function dedup() {
   const d = [[11], [11], [12], [12], [11]];
   try {
     $dedupBy(d, $eq, loudDrop_drop);
-    const tmp = ids(d);
-    console.log(`deduped [${tmp.join(", ")}]`);
+    console.log(`deduped [${ids(d).join(", ")}]`);
     const p = [
       [1, 2],
       [1, 2],
@@ -257,15 +252,13 @@ function lend() {
     }
     const iter = $iter($chunksMut(d, 2));
     while (true) {
-      const tmp = $next(iter);
-      if (!tmp) {
+      const chunk = $next(iter);
+      if (!chunk) {
         break;
       }
-      const chunk = tmp;
       chunk.reverse();
     }
-    const tmp = ids(d);
-    console.log(`edited [${tmp.join(", ")}]`);
+    console.log(`edited [${ids(d).join(", ")}]`);
   } finally {
     for (const item of d) {
       loudDrop_drop(item);

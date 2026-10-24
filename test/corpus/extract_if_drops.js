@@ -26,15 +26,12 @@ function ids(v) {
 
 function collected() {
   const v = [[1], [2], [3], [4], [5]];
-  const value = (l) => l[0] % 2 === 1;
   try {
-    const extractIf = Iterator.from($extractIf(v, 0, undefined, value));
-    const odd = extractIf.toArray();
+    const odd = Iterator.from($extractIf(v, 0, undefined, (l) => l[0] % 2 === 1)).toArray();
     try {
-      const tmp = ids(odd);
-      const tmp$1 = v;
-      const tmp$2 = ids(tmp$1);
-      console.log(`odd [${tmp.join(", ")}] kept [${tmp$2.join(", ")}]`);
+      const value = ids(odd);
+      const value$1 = ids(v);
+      console.log(`odd [${value.join(", ")}] kept [${value$1.join(", ")}]`);
     } finally {
       for (const item of odd) {
         loudDrop_drop(item);
@@ -52,15 +49,12 @@ function stoppedEarly() {
   try {
     const e = Iterator.from($extractIf(w, 1, undefined, () => true));
     const first = $next(e);
-    const value = (l) => {
+    const map = (l) => {
       const result = l[0];
       loudDrop_drop(l);
       return result;
     };
-    const mapOr = first != null ? value(first) : 0;
-    const tmp = w;
-    const tmp$1 = ids(tmp);
-    console.log(`first ${mapOr} left [${tmp$1.join(", ")}]`);
+    console.log(`first ${first != null ? map(first) : 0} left [${ids(w).join(", ")}]`);
   } finally {
     for (const item of w) {
       loudDrop_drop(item);
@@ -70,12 +64,14 @@ function stoppedEarly() {
 
 function counted() {
   const list = [[20], [21]];
-  const value = (l) => l[0] === 20;
   try {
-    const n = Iterator.from($extractIf(list, 0, undefined, value)).reduce((n, item) => {
-      loudDrop_drop(item);
-      return n + 1;
-    }, 0);
+    const n = Iterator.from($extractIf(list, 0, undefined, (l) => l[0] === 20)).reduce(
+      (n, item) => {
+        loudDrop_drop(item);
+        return n + 1;
+      },
+      0,
+    );
     console.log(`counted ${n} left ${list.length}`);
   } finally {
     for (const item of list) {
@@ -95,25 +91,23 @@ function fromMaps() {
     $cmp,
     loudDrop_drop,
   );
-  const value = (k) => k === 2;
   try {
     const iter = Iterator.from(
       $mapExtractIf(
         m,
-        value,
+        (k) => k === 2,
         $treeRange(m, $cmp, false, "BTreeMap", "Unbounded", "Unbounded", false),
         false,
         false,
       ),
     );
-    let tmp;
     while (true) {
-      tmp = $next(iter);
-      if (!tmp) {
+      const value = $next(iter);
+      if (!value) {
         break;
       }
-      const k = tmp[0];
-      const l = tmp[1];
+      const k = value[0];
+      const l = value[1];
       try {
         console.log(`map took ${k} ${l[0]}`);
       } finally {
@@ -121,14 +115,15 @@ function fromMaps() {
       }
     }
     const h = $extendMap(new Map(), [[1, [40]]], false, loudDrop_drop);
-    const value$1 = (_, l) => l[0] === 40;
     try {
-      const gone = Iterator.from($mapExtractIf(h, value$1, h, false, false)).reduce((n, item) => {
-        loudDrop_drop(item[1]);
-        return n + 1;
-      }, 0);
-      const size = h.size;
-      console.log(`hash ${gone} ${size} ${m.size}`);
+      const gone = Iterator.from($mapExtractIf(h, (_, l) => l[0] === 40, h, false, false)).reduce(
+        (n, item) => {
+          loudDrop_drop(item[1]);
+          return n + 1;
+        },
+        0,
+      );
+      console.log(`hash ${gone} ${h.size} ${m.size}`);
     } finally {
       for (const item of h.values()) {
         loudDrop_drop(item);

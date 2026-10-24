@@ -1,4 +1,4 @@
-# 0698. A reference given to generic code is what it refers to
+# 0714. A reference given to generic code is what it refers to
 
 Status: Accepted. Amends [0162](0162-generic-as-ref.md), whose `AsRef`
 dictionaries were of text and sequences alone.

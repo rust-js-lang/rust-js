@@ -88,4 +88,4 @@ them, `utf8_bytes`, the one place both are made.
 
 ## Amended by
 
-[ADR 0698](0698-a-reference-given-to-generic-code.md): a reference's `AsRef` is what it refers to's, and whether std's `AsRef` is the value is `as_ref_is_itself`'s, a path's as a `Path` too.
+[ADR 0714](0714-a-reference-given-to-generic-code.md): a reference's `AsRef` is what it refers to's, and whether std's `AsRef` is the value is `as_ref_is_itself`'s, a path's as a `Path` too.

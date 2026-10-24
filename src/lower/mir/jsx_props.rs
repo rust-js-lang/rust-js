@@ -239,12 +239,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok((!kept).then_some(props))
     }
 
-    /// Whether THIR's cast at `span`, MIR's there, is of a float it knows whole
-    /// and in the target's range: the value as it is (`whole_casts`).
-    pub(super) fn whole_cast_at(&self, span: Span) -> bool {
+    /// Whether THIR's cast at `span`, MIR's there, is one whose value is
+    /// what it casts as it is (`kept_casts`): of a float it knows whole and
+    /// in the target's range, or of an integer in it.
+    pub(super) fn kept_cast_at(&self, span: Span) -> bool {
         let mut casts = (self.frame.thir.exprs.iter_enumerated())
             .filter(|(_, e)| matches!(e.kind, thir::ExprKind::Cast { .. }) && e.span.source_equal(span));
-        matches!((casts.next(), casts.next()), (Some((id, _)), None) if self.frame.facts.whole_casts.contains(&id))
+        matches!((casts.next(), casts.next()), (Some((id, _)), None) if self.frame.facts.kept_casts.contains(&id))
     }
 
     /// THIR's call of `def_id` at `fn_span`, MIR's call there, where it's

@@ -70,4 +70,12 @@ export const mutations: Mutation[] = [
     replace: "        if found && false {\n            stmts.remove(i + 2);\n",
     tests: ["test/lowering.test.ts", "-t", "a Drop dropped once"],
   },
+  {
+    name: "scoped-drops-unread-in-place",
+    breaks: "what a statement's `try` held apart stays apart once its scope is one `finally`, `const tmp = lines[s].includes(..); if (tmp)`",
+    file: "src/lower/mir/tidy/unwinds.rs",
+    find: "            stmts.extend(rest);\n            scoped = true;\n",
+    replace: "            stmts.extend(rest);\n",
+    tests: ["test/lowering-unwinds.test.ts", "-t", "a guard's fields are its variables"],
+  },
 ];

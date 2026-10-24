@@ -57,6 +57,113 @@ pub fn made() {
   expect(js).toContain("export function made() {\n  loud(1);\n  loud(3);\n  loud(4);\n}");
 });
 
+// ADR 0705: a tuple `let` is a destructuring in a guard's `try` too, as
+// React's describeNativeComponentFrame has `const [sampleStack,
+// controlStack] = RunInRootFrame.DetermineComponentFrameRoot();` where its
+// port's `Restore` is dropped in a `finally`: not the tuple held by its
+// function's name and read `[0]`, `[1]`.
+test("a tuple let in a guard's try is a destructuring", async () => {
+  const dir = fixture("guarded-tuple-let");
+  writeFileSync(join(dir, "lib.rs"), `fn determine_component_frame_root(n: u32) -> (Option<String>, Option<String>) {
+    if n > 0 {
+        return (Some(n.to_string()), Some("control".to_string()));
+    }
+    (None, None)
+}
+
+struct Restore;
+
+impl Drop for Restore {
+    fn drop(&mut self) {
+        println!("restored");
+    }
+}
+
+pub fn describe(n: u32) -> String {
+    {
+        let _restore = Restore;
+        let (sample_stack, control_stack) = determine_component_frame_root(n);
+        if let Some(sample_stack) = sample_stack
+            && let Some(control_stack) = control_stack
+        {
+            return format!("{sample_stack} {control_stack}");
+        }
+    }
+    String::new()
+}
+
+pub fn sample(n: u32) -> String {
+    let _restore = Restore;
+    let (sample, _) = determine_component_frame_root(n);
+    println!("{sample:?}");
+    sample.unwrap_or_default()
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("  try {\n    const [sampleStack, controlStack] = determineComponentFrameRoot(n);\n    if (");
+  // One part, the program's: `const [sample] = ..`, as where no guard is.
+  expect(js).toContain("  try {\n    const [sample] = determineComponentFrameRoot(n);\n");
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.describe(0), lib.describe(2), lib.sample(3)]).toEqual(["", "2 control", "3"]);
+});
+
+// ADR 0705: a `&&` in a guard's `try` is one test, and what it calls read
+// in place, as React's describeNativeComponentFrame has `if
+// (fn.displayName && frame.includes('<anonymous>')) { frame =
+// frame.replace('<anonymous>', fn.displayName); }`: not an `if` in an
+// `if`, `const contains = frame.includes(..)` between, nor `const tmp =
+// frame.replace(..); frame = tmp;`. `js::get` is called twice, so
+// `displayName` is read twice, as upstream reads it.
+test("a && in a guard's try is one test", async () => {
+  const dir = fixture("guarded-and");
+  writeFileSync(join(dir, "lib.rs"), `use js::Unknown;
+
+struct Restore;
+
+impl Drop for Restore {
+    fn drop(&mut self) {
+        println!("restored");
+    }
+}
+
+pub fn frame_of(r#fn: &dyn Fn() -> Option<&'static Unknown>, line: &str) -> String {
+    let _restore = Restore;
+    // V8 adds a "new" prefix for native classes. Let's remove it to make it prettier.
+    let mut frame = format!("\\n{}", line.replacen(" at new ", " at ", 1));
+
+    // If our component frame is labeled "<anonymous>"
+    // but we have a user-provided "displayName"
+    // splice it in to make the stack more readable.
+    if js::truthy(js::get(js::unknown(r#fn), "displayName")) && frame.contains("<anonymous>") {
+        frame = js::string::replace(&frame, "<anonymous>", unsafe {
+            js::cast(js::get(js::unknown(r#fn), "displayName"))
+        });
+    }
+    frame
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain(
+    '    let frame = `\\n${line.replace(" at new ", " at ")}`;\n\n' +
+      "    // If our component frame is labeled \"<anonymous>\"\n" +
+      "    // but we have a user-provided \"displayName\"\n" +
+      "    // splice it in to make the stack more readable.\n" +
+      '    if (fn.displayName && frame.includes("<anonymous>")) {\n' +
+      '      frame = frame.replace("<anonymous>", fn.displayName);\n' +
+      "    }\n" +
+      "    return frame;\n" +
+      "  } finally {\n",
+  );
+  const lib = await import(join(dir, "lib.js"));
+  const named = Object.assign(() => undefined, { displayName: "Named" });
+  expect([lib.frameOf(named, "    at new <anonymous> (a.js)"), lib.frameOf(() => undefined, "at <anonymous>")]).toEqual([
+    "\n    at Named (a.js)",
+    "\nat <anonymous>",
+  ]);
+});
+
 // A value with a destructor moved before anything in its scope can leave,
 // `hold(l)`'s into what it returns, is never the scope's to drop: no flag,
 // no `try` (ADR 0197), as react.dev's ExternalLink moves its children. One

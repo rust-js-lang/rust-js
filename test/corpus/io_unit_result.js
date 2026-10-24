@@ -133,10 +133,10 @@ function main() {
       console.log(`err ${$ioErrorDisplay(e)} ${e.kind}`);
     }
     const result = doubled(s);
-    const value = result.TAG === "Err" ? { TAG: "Err", _0: result._0.kind } : result;
+    const mapErr = result.TAG === "Err" ? { TAG: "Err", _0: result._0.kind } : result;
     const result$1 = $writeTry(() => run(s));
     console.log(
-      `${value.TAG === "Ok" ? `Ok(${value._0})` : `Err(${value._0})`} ${result$1 === undefined}`,
+      `${mapErr.TAG === "Ok" ? `Ok(${mapErr._0})` : `Err(${mapErr._0})`} ${result$1 === undefined}`,
     );
   }
   const w = { room: 5, out: [] };
@@ -145,19 +145,19 @@ function main() {
   const arg = $utf8Lossy(w.out);
   console.log(`${$ioResultDebug(a)} ${$ioResultDebug(b)} ${$debugStr(arg._0)}`);
   const result = $writeTry(() => parsedOnly("x"));
-  const mapErr = result === undefined ? { TAG: "Ok" } : { TAG: "Err", _0: result.kind };
+  const value = result === undefined ? { TAG: "Ok" } : { TAG: "Err", _0: result.kind };
   const result$1 = $writeTry(() => parsedOnly("4"));
-  console.log(`${mapErr.TAG === "Ok" ? "Ok(())" : `Err(${mapErr._0})`} ${result$1 === undefined}`);
+  console.log(`${value.TAG === "Ok" ? "Ok(())" : `Err(${value._0})`} ${result$1 === undefined}`);
   const full = { room: 0, out: [] };
   console.log(`${$ioResultDebug($writeTry(() => put(full)))}`);
   const room = { room: 4, out: [] };
   console.log(
     `${$ioResultDebug($writeTry(() => putTwice(room)))} ${$debugStr($utf8Lossy(room.out)._0)}`,
   );
-  const value = $writeTry(() => written({ TAG: "Ok", _0: 3 }));
+  const value$1 = $writeTry(() => written({ TAG: "Ok", _0: 3 }));
   const result$2 = $writeTry(() => writtenTwice(4));
   console.log(
-    `${$ioResultDebug(value)} ${((result) =>
+    `${$ioResultDebug(value$1)} ${((result) =>
       result.TAG === "Ok" ? "Ok(())" : `Err(${$debugStr(result._0)})`)(
       result$2 === undefined ? { TAG: "Ok" } : { TAG: "Err", _0: $ioErrorDisplay(result$2) },
     )}`,
@@ -168,10 +168,10 @@ function main() {
   }
   const result$3 = $writeTry(() => check(1));
   const result$4 = $writeTry(() => check(8));
-  const value$1 =
+  const value$2 =
     result$4 === undefined ? { TAG: "Ok" } : { TAG: "Err", _0: $ioErrorDisplay(result$4) };
   console.log(
-    `${result$3 === undefined} ${value$1.TAG === "Ok" ? "Ok(())" : `Err(${$debugStr(value$1._0)})`}`,
+    `${result$3 === undefined} ${value$2.TAG === "Ok" ? "Ok(())" : `Err(${$debugStr(value$2._0)})`}`,
   );
 }
 //# sourceMappingURL=case.js.map

@@ -21,16 +21,15 @@ function main() {
   }, 0);
   console.log(`count ${count}`);
   const value = $successors([2], tripled, false, loudDrop_drop);
-  const value$1 = (l) => l[0] > 5;
   let firstBig;
   try {
-    const find = $findDropping($lent(value), (item) => value$1(item), loudDrop_drop, false);
-    const tmp = (l) => {
+    const find = $findDropping($lent(value), (l) => l[0] > 5, loudDrop_drop, false);
+    const value$1 = (l) => {
       const result = l[0];
       loudDrop_drop(l);
       return result;
     };
-    firstBig = find ? tmp(find) : undefined;
+    firstBig = find ? value$1(find) : undefined;
   } finally {
     value.return();
   }

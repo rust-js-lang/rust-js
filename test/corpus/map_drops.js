@@ -26,18 +26,17 @@ function main() {
     if (noisy != null) {
       console.log(`drop ${noisy[0]}`);
     }
-    const tmp = $insert(sorted, 2, ["b"]);
-    if (tmp != null) {
-      console.log(`drop ${tmp[0]}`);
+    const value = $insert(sorted, 2, ["b"]);
+    if (value != null) {
+      console.log(`drop ${value[0]}`);
     }
     const old = $insert(sorted, 2, ["b2"]);
-    const value = (n) => {
+    const map = (n) => {
       const result = n[0];
       console.log(`drop ${n[0]}`);
       return result;
     };
-    const map = old ? value(old) : undefined;
-    console.log(`replaced ${map ?? "none"}`);
+    console.log(`replaced ${(old ? map(old) : undefined) ?? "none"}`);
     const taken = $remove(sorted, 1);
     const value$1 = !!taken;
     try {
@@ -47,9 +46,8 @@ function main() {
         console.log(`drop ${taken[0]}`);
       }
     }
-    const get = sorted.get(3);
-    if (get) {
-      const n = get;
+    const n = sorted.get(3);
+    if (n) {
       console.log(`has ${n[0]}`);
     }
   } finally {
@@ -61,15 +59,13 @@ function main() {
 
   const byName = new Map();
   try {
-    const tmp = $insert(byName, "x", ["x"]);
-    if (tmp != null) {
-      console.log(`drop ${tmp[0]}`);
+    const value = $insert(byName, "x", ["x"]);
+    if (value != null) {
+      console.log(`drop ${value[0]}`);
     }
     const entry = $entry(byName, "y");
-    const tmp$1 = () => ["y"];
-    $orInsertWith(entry._0[0], entry._0[1], tmp$1);
-    const size = byName.size;
-    console.log(`${size} ${byName.has("y")}`);
+    $orInsertWith(entry._0[0], entry._0[1], () => ["y"]);
+    console.log(`${byName.size} ${byName.has("y")}`);
     const x = $remove(byName, "x");
     try {
       console.log(`${!!x}`);
@@ -78,17 +74,13 @@ function main() {
       try {
         const handles = new Map();
         try {
-          const tmp = handles;
-          const tmp$1 = $rcClone(shared);
-          const tmp$2 = $insert(tmp, "a", tmp$1);
-          if (tmp$2 != null) {
-            $rcDrop(tmp$2);
+          const value = $insert(handles, "a", $rcClone(shared));
+          if (value != null) {
+            $rcDrop(value);
           }
-          const tmp$3 = handles;
-          const tmp$4 = $rcClone(shared);
-          const tmp$5 = $insert(tmp$3, "b", tmp$4);
-          if (tmp$5 != null) {
-            $rcDrop(tmp$5);
+          const value$1 = $insert(handles, "b", $rcClone(shared));
+          if (value$1 != null) {
+            $rcDrop(value$1);
           }
           console.log(`${shared.strong}`);
           const remove = $remove(handles, "a");

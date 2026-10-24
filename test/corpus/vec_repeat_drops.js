@@ -13,8 +13,7 @@ function dDrop_drop(d) {
 function main() {
   const r = { value: 5, strong: 1, weak: 0 };
   try {
-    const tmp = $rcClone(r);
-    const v = $repeat(tmp, 3, (item) => $rcClone(item), $rcDrop);
+    const v = $repeat($rcClone(r), 3, (item) => $rcClone(item), $rcDrop);
     const length = v.length;
     try {
       console.log(`${length} ${r.strong}`);
@@ -24,8 +23,7 @@ function main() {
       }
     }
     console.log(`${r.strong}`);
-    const tmp$1 = $rcClone(r);
-    const none = $repeat(tmp$1, 0, (item) => $rcClone(item), $rcDrop);
+    const none = $repeat($rcClone(r), 0, (item) => $rcClone(item), $rcDrop);
     const value = none.length;
     try {
       console.log(`${value} ${r.strong}`);
@@ -36,8 +34,12 @@ function main() {
         try {
           console.log(`zero ${zero.length}`);
           const n = 3;
-          const tmp = $repeat([1], 1, (item) => item, dDrop_drop);
-          const grid = $repeat(tmp, n, (item) => item, $dropEach(dDrop_drop));
+          const grid = $repeat(
+            $repeat([1], 1, (item) => item, dDrop_drop),
+            n,
+            (item) => item,
+            $dropEach(dDrop_drop),
+          );
           try {
             console.log(`grid ${grid.length}`);
           } finally {

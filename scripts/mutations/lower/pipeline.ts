@@ -440,4 +440,12 @@ export const mutations: Mutation[] = [
     replace: "        let _ = cx.drops_observed.take();\n",
     tests: ["test/crates.test.ts", "-t", "drops_by_need"],
   },
+  {
+    name: "written-fn-comment-lost",
+    breaks: "a function written in a body is declared with no span, so the comment before it is lost",
+    file: "src/lower/pipeline.rs",
+    find: "                stmt.span = function.span;\n",
+    replace: "",
+    tests: ["test/js-object.test.ts", "-t", "a constructor is a fn item"],
+  },
 ];

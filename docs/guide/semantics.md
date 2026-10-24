@@ -459,7 +459,9 @@ Differences:
   `&str` and as a `String` both, where Rust's is one; what JS threw is a
   `&'static JsError`; and a thrown `Error` of JS's own constructor is a
   panic, whoever threw it, and a `&JsError` too, where Rust's panic is
-  none ([0692](../decisions/0692-a-thrown-error-is-a-panic-and-what-js-threw.md)). A caught panic writes nothing, where Rust's
+  none ([0692](../decisions/0692-a-thrown-error-is-a-panic-and-what-js-threw.md)); every payload downcasts as the `&JsError` thrown,
+  a payload of another type's too, `resume_unwind(Box::new(5))`'s, where
+  Rust's is `None` ([0710](../decisions/0710-every-unwinds-payload-is-the-js-error-thrown.md)). A caught panic writes nothing, where Rust's
   hook writes its message; `set_hook` is refused, and so is unwinding where
   the crate's panics abort ([0660](../decisions/0660-catch-unwind-catches-what-js-throws.md)).
 - **`unwrap()` of a throwing JS call's `Result` is the call:** what JS
@@ -672,7 +674,7 @@ React and JSX are [their own pages](README.md#react).
 10. Nothing calls `main`; an uncaught panic is the host's error, exit code 1.
 11. A panic is an `Error`, which JS catches, and `catch_unwind` catches what
     JS throws; a panic's message downcasts as a `&str` and a `String`, and
-    its `Error` as a `&JsError`; a
+    every payload, a typed one's too, as the `&JsError` thrown; a
     `drop` panicking during a panic replaces it.
 12. A value with a destructor that JS holds is never dropped.
 13. A writer of the crate's is given each `write!`'s text in one `write_str`.
@@ -700,4 +702,4 @@ React and JSX are [their own pages](README.md#react).
     through a `fuse` and a `peekable`, and `try_fold`, a `skip`'s
     `nth(n - 1)`, through a `peekable`, a `fuse` and a `flatten`, which
     rust-js steps by `next` (#182); elsewhere it's asked as std asks it
-    (ADR 0695).
+    (ADR 0711).

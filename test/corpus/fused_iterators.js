@@ -97,13 +97,13 @@ function main() {
   const loud = iterator_fuse(["loud", 3], { next: loudIterator_next }, false, loudDrop_drop);
   let loud$live;
   try {
-    const tmp = $next(loud);
     const value = $next(loud);
-    console.log(
-      `${tmp == null ? "None" : `Some(${tmp})`} ${value == null ? "None" : `Some(${value})`}`,
-    );
     const value$1 = $next(loud);
-    console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
+    console.log(
+      `${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`}`,
+    );
+    const value$2 = $next(loud);
+    console.log(`${value$2 == null ? "None" : `Some(${value$2})`}`);
     console.log("ended");
     loud$live = false;
   } finally {
@@ -114,10 +114,10 @@ function main() {
   const steady = iterator_fuse([2], { next: steadyIterator_next }, true, steadyDrop_drop);
   let steady$live;
   try {
-    const tmp = $next(steady);
     const value = $next(steady);
+    const value$1 = $next(steady);
     console.log(
-      `${tmp == null ? "None" : `Some(${tmp})`} ${value == null ? "None" : `Some(${value})`}`,
+      `${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`}`,
     );
     console.log("ended steady");
     steady$live = false;

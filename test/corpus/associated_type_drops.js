@@ -37,35 +37,30 @@ function stamp(zone, at, name, ZZone) {
 function describe(zone, ZZone) {
   const first = ZZone.offset(zone, "first");
   try {
-    const tmp = ZZone.show(first);
-    console.log(`made ${tmp}`);
+    console.log(`made ${ZZone.show(first)}`);
     const second = stamp(zone, 7n, "second", ZZone);
     try {
-      const tmp = ZZone.show(second.offset);
-      const tmp$1 = second.at;
-      console.log(`stamp ${tmp$1} ${tmp}`);
+      const value = ZZone.show(second.offset);
+      console.log(`stamp ${second.at} ${value}`);
       const maybe = $some(ZZone.offset(zone, "maybe"));
       try {
         console.log(`some ${maybe != null}`);
         const inner = ZZone.offset(zone, "inner");
         try {
-          const tmp = ZZone.show(inner);
-          console.log(`inner ${tmp}`);
+          console.log(`inner ${ZZone.show(inner)}`);
         } finally {
           ZZone.$dropOffset?.(inner);
         }
         let replaced = ZZone.offset(zone, "old");
         try {
-          const tmp = ZZone.show(replaced);
-          console.log(`was ${tmp}`);
+          console.log(`was ${ZZone.show(replaced)}`);
           const offset = ZZone.offset(zone, "new");
           try {
             ZZone.$dropOffset?.(replaced);
           } finally {
             replaced = offset;
           }
-          const tmp$1 = ZZone.show(replaced);
-          console.log(`replaced ${tmp$1}`);
+          console.log(`replaced ${ZZone.show(replaced)}`);
           console.log("end");
         } finally {
           ZZone.$dropOffset?.(replaced);

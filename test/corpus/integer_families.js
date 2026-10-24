@@ -35,13 +35,13 @@ function main() {
       `${value == null ? "None" : `Some(${value})`} ${-x & 255} (${value$1[0]}, ${value$1[1]})`,
     );
   }
-  const value$1 = $bigChecked(
+  const value = $bigChecked(
     $bigAbs(-9223372036854775808n),
     -9223372036854775808n,
     9223372036854775807n,
   );
   console.log(
-    `${-9223372036854775808n} ${18446744073709551609n} ${value$1 == null ? "None" : `Some(${value$1})`}`,
+    `${-9223372036854775808n} ${18446744073709551609n} ${value == null ? "None" : `Some(${value})`}`,
   );
   console.log(
     `${Math.abs(-2147483648) | 0} ${(Math.abs(-7) << 24) >> 24} ${(Math.abs(-128) << 24) >> 24}`,
@@ -50,9 +50,9 @@ function main() {
   // Overflowing arithmetic: what wrapping gives, and whether it wrapped.
   const overflowingAdd = $overflowing(4, 250 + 10, 0, 255);
   const overflowingSub = $overflowing(4294967295, 5 - 6, 0, 4294967295);
-  const value = $overflowing(-2, 2147483647 * 2, -2147483648, 2147483647);
+  const value$1 = $overflowing(-2, 2147483647 * 2, -2147483648, 2147483647);
   console.log(
-    `(${overflowingAdd[0]}, ${overflowingAdd[1]}) (${overflowingSub[0]}, ${overflowingSub[1]}) (${value[0]}, ${value[1]})`,
+    `(${overflowingAdd[0]}, ${overflowingAdd[1]}) (${overflowingSub[0]}, ${overflowingSub[1]}) (${value$1[0]}, ${value$1[1]})`,
   );
   const value$2 = $overflowing(7, 3 + 4, -2147483648, 2147483647);
   const value$3 = $overflowing(127, -128 - 1, -128, 127);

@@ -14,9 +14,8 @@ function main() {
   const same = $rev($mapEnds($closing($iter([[1], [2], [3]]), $dropEach(loudDrop_drop)), (l) => l));
   try {
     const last = $next(same);
-    const value = (l) => l[0];
     try {
-      console.log(`same ${last != null ? value(last) : 0}`);
+      console.log(`same ${last?.[0] ?? 0}`);
     } finally {
       if (last != null) {
         loudDrop_drop(last);
@@ -36,29 +35,24 @@ function main() {
     $mapEnds($closing($iter([[4], [5], [6]]), $dropEach(loudDrop_drop)), (item) => value(item)),
   );
   try {
-    const next = $next(scaled);
-    if (next) {
-      const l = next;
+    const l = $next(scaled);
+    if (l) {
       try {
         console.log(`scaled ${l[0]}`);
       } finally {
         loudDrop_drop(l);
       }
-    } else if (next) {
-      loudDrop_drop(next);
     }
     console.log("--");
 
-    const value = [[7], [8], [9]];
-    const tmp = $iter(value);
-    const rev = $rev($closing(tmp, $dropEach(loudDrop_drop)));
-    const tmp$1 = (l) => {
+    const value = (l) => {
       const result = l[0];
       loudDrop_drop(l);
       return result;
     };
-    const map = rev.map((item) => tmp$1(item));
-    const kept = map.toArray();
+    const kept = $rev($closing($iter([[7], [8], [9]]), $dropEach(loudDrop_drop)))
+      .map((item) => value(item))
+      .toArray();
     console.log(`[${kept.join(", ")}]`);
   } finally {
     scaled.return();

@@ -93,16 +93,15 @@ const Mapped = {
 };
 
 function first(k) {
-  let tmp$0$live = false;
+  let l$0$live = false;
   let result;
   if (k != null) {
     const held = ["held"];
     try {
-      const tmp = make(k, true);
-      tmp$0$live = true;
-      if (tmp) {
-        tmp$0$live = false;
-        const l = tmp;
+      const l = make(k, true);
+      l$0$live = true;
+      if (l) {
+        l$0$live = false;
         try {
           console.log(`got ${l[0]} with ${held[0]}`);
           result = $byteLen(l[0]);
@@ -112,12 +111,12 @@ function first(k) {
       } else {
         result = 0;
       }
-      if (tmp) {
-        if (tmp$0$live) {
-          loudDrop_drop(tmp);
+      if (l) {
+        if (l$0$live) {
+          loudDrop_drop(l);
         }
       }
-      tmp$0$live = false;
+      l$0$live = false;
     } finally {
       loudDrop_drop(held);
     }
@@ -147,10 +146,13 @@ function main() {
     }
     throw error;
   }
-  const value = (n) => make(n, n === "c");
   let one;
   try {
-    one = Mapped.andThen({ TAG: "Ambiguous", _0: "c", _1: "d" }, value, loudDrop_drop);
+    one = Mapped.andThen(
+      { TAG: "Ambiguous", _0: "c", _1: "d" },
+      (n) => make(n, n === "c"),
+      loudDrop_drop,
+    );
   } catch (error) {
     if (both.TAG === "Single") {
       loudDrop_drop(both._0);
@@ -180,10 +182,9 @@ function main() {
     }
     throw error;
   }
-  const value$1 = (n) => make(n, true);
   let single;
   try {
-    single = Mapped.andThen({ TAG: "Single", _0: "e" }, value$1, loudDrop_drop);
+    single = Mapped.andThen({ TAG: "Single", _0: "e" }, (n) => make(n, true), loudDrop_drop);
   } catch (error) {
     if (one.TAG === "Single") {
       loudDrop_drop(one._0);
@@ -227,10 +228,9 @@ function main() {
     }
     throw error;
   }
-  const value$2 = (n) => make(n, false);
   let none;
   try {
-    none = Mapped.andThen({ TAG: "Single", _0: "f" }, value$2, loudDrop_drop);
+    none = Mapped.andThen({ TAG: "Single", _0: "f" }, (n) => make(n, false), loudDrop_drop);
   } catch (error) {
     if (single.TAG === "Single") {
       loudDrop_drop(single._0);

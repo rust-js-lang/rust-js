@@ -25,6 +25,11 @@ const fn pass(name: &'static str, run: fn(&mut Vec<Stmt>, &Hints)) -> Pass {
     Pass { name, run }
 }
 
+/// The stages run again once each run of statements a value's drop ends
+/// is one `try { .. } finally { .. }` (ADR 0705): what each statement's own
+/// `try` held apart, `let tmp; try { tmp = f(); } catch ..`, read in place.
+pub(super) const UNWOUND: &[&str] = &["names", "in place", "chains"];
+
 /// Each stage, in order.
 pub(super) const STAGES: &[Stage] = &[
     Stage {
@@ -166,6 +171,13 @@ pub(super) const STAGES: &[Stage] = &[
             // written once.
             pass("sunk lets", |b, _| js::statement_lists(b, &mut sunk_lets)),
             pass("declarations", |b, _| declarations(b)),
+            // What a `let` declared first holds now taken apart, a guard's
+            // `try` too: a temporary's parts, `const [a, b] = f();`. Not a
+            // pattern's one part of what the program names, `const front =
+            // d[0];`, which the first pass left as it is (ADR 0705).
+            pass("destructured declared", |b, _| {
+                js::statement_lists(b, &mut |s| destructured(s, &HashSet::new()))
+            }),
             // A pattern's copy of a variable, `const error = raw;`: the variable.
             pass("copied bindings", |b, _| {
                 js::statement_lists(b, &mut |s| copied_bindings(s))
@@ -426,25 +438,38 @@ pub(super) const STAGES: &[Stage] = &[
         ],
         ensures: &[contracts::NOTHING_AFTER_A_JUMP, contracts::LABELS_NAMED],
     },
-    // The body as it's written, its parameters taken apart: its temporaries
-    // named, its drop flags too, and then, its temporaries named alike, each
-    // run of statements a value's drop ends one `try { .. } finally { .. }`
-    // (ADR 0437), what a `try` declared before it, `let x;`, where it's
-    // made; a shadow of a binding the program names read no more, that
-    // binding (ADR 0650); and a `String` appended to twice, once (ADR 0652).
+    // The body as it's written, its parameters taken apart: each run of
+    // statements a value's drop ends one `try { .. } finally { .. }` (ADR
+    // 0437), read again where it held any apart (ADR 0705); then its
+    // temporaries named, its drop flags too; a shadow of a binding the
+    // program names read no more, that binding (ADR 0650); and a `String`
+    // appended to twice, once (ADR 0652).
     Stage {
         name: "finish",
         passes: &[
             pass("parameters", |b, h| destructured_params(&mut h.params.borrow_mut(), b)),
+            // Each run of statements a value's drop ends one `try { .. }
+            // finally { .. }` (ADR 0437), a `return` through its `finally`;
+            // and what each statement's own `try` held apart, `let tmp; try
+            // { tmp = f(); } catch ..`, read as tidy reads any body: its
+            // stages that read temporaries in place run again (`UNWOUND`,
+            // ADR 0705).
+            pass("drop scopes", |b, h| {
+                let mut scoped = false;
+                js::statement_lists(b, &mut |stmts| scoped |= unwinds::scoped_drops(stmts));
+                js::statement_lists(b, &mut unwinds::returned_through_finally);
+                if scoped {
+                    for stage in STAGES.iter().filter(|stage| UNWOUND.contains(&stage.name)) {
+                        for pass in stage.passes {
+                            (pass.run)(b, h);
+                        }
+                    }
+                }
+            }),
             pass("temporaries named", |b, h| {
                 bindings::readable_temporaries(&h.params.borrow(), b, h.suggested)
             }),
             pass("flags named", |b, h| flags::named_flags(b, h.flags)),
-            pass("drop scopes", |b, _| js::statement_lists(b, &mut unwinds::scoped_drops)),
-            pass("declarations", |b, _| bindings::declarations(b)),
-            pass("returns through finally", |b, _| {
-                js::statement_lists(b, &mut unwinds::returned_through_finally)
-            }),
             pass("shadows", |b, h| {
                 bindings::shadowed(&h.params.borrow(), b, &h.named.user)
             }),

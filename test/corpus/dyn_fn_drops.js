@@ -57,21 +57,16 @@ function main() {
     }
     const named = new Map();
     try {
-      const tmp = named;
-      const tmp$1 = adder("a1", 1);
-      const insert = $insert(tmp, "a", tmp$1);
+      const insert = $insert(named, "a", adder("a1", 1));
       if (insert != null) {
         $dispose(insert);
       }
-      const tmp$2 = named;
-      const tmp$3 = adder("a2", 2);
-      const tmp$4 = $insert(tmp$2, "a", tmp$3);
-      if (tmp$4 != null) {
-        $dispose(tmp$4);
+      const value = $insert(named, "a", adder("a2", 2));
+      if (value != null) {
+        $dispose(value);
       }
       console.log("replaced");
-      const remove = $removeAt(handlers, 0);
-      $dispose(remove);
+      $dispose($removeAt(handlers, 0));
       console.log("end");
     } finally {
       for (const item of named.values()) {

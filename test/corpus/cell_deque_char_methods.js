@@ -42,11 +42,11 @@ function main() {
   $refCellSwap(list, more);
   const borrow = $borrow(list, true);
   try {
-    const tmp = $borrow(more, true);
+    const value = $borrow(more, true);
     try {
-      console.log(`[${borrow.value.join(", ")}] [${tmp.value.join(", ")}]`);
+      console.log(`[${borrow.value.join(", ")}] [${value.value.join(", ")}]`);
     } finally {
-      $unborrow(tmp);
+      $unborrow(value);
     }
   } finally {
     $unborrow(borrow);

@@ -82,4 +82,20 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/lowering-symbols.test.ts", "-t", "a read of one it tells is checked"],
   },
+  {
+    name: "thrown-written-again",
+    breaks: "a variable a downcast of an unwind's payload sets, then sets to `None`, is a `Some` wherever it's tested",
+    file: "src/lower/mir/patterns.rs",
+    find: "                } if destination.projection.is_empty() && locals.writes[destination.local] == 1 => {\n                    let (def_id, generic_args) = fn_def(func.ty(&body.local_decls, tcx))?;\n",
+    replace: "                } if destination.projection.is_empty() => {\n                    let (def_id, generic_args) = fn_def(func.ty(&body.local_decls, tcx))?;\n",
+    tests: ["test/lowering-unwinds.test.ts", "-t", "every unwind"],
+  },
+  {
+    name: "thrown-tried-breaks",
+    breaks: "`?` of what an unwind's payload's `&JsError` is returns where what was thrown is falsy",
+    file: "src/lower/mir/patterns.rs",
+    find: "        thrown.extend(tried);\n",
+    replace: "",
+    tests: ["test/lowering-unwinds.test.ts", "-t", "every unwind"],
+  },
 ];

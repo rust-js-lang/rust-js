@@ -1,30 +1,30 @@
-// Mutations of src/lower/std_types/any.rs (ADRs 0331, 0692).
+// Mutations of src/lower/std_types/any.rs (ADRs 0331, 0692, 0710).
 import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
     name: "js-error-downcast-of-panic-unseen",
-    breaks: "a downcast to `&JsError` of a thrown `Error`'s payload finds none, its `stack` lost",
+    breaks: "a downcast to `&JsError` of a `dyn Any` an unwind's payload was widened to finds none",
     file: "src/lower/std_types/any.rs",
     find: "        if thrown && op != AnyOp::DowncastMut {\n",
     replace: "        if false && thrown && op != AnyOp::DowncastMut {\n",
-    tests: ["test/lowering-unwinds.test.ts", "-t", "a thrown Error answers both downcasts"],
+    tests: ["test/lowering-unwinds.test.ts", "-t", "every unwind"],
   },
   {
     name: "js-error-is-of-panic-unseen",
-    breaks: "`is::<&JsError>()` of a thrown `Error`'s payload is `false`, where its downcast finds it",
+    breaks: "`is::<&JsError>()` of a `dyn Any` an unwind's payload was widened to is `false`, where its downcast finds it",
     file: "src/lower/std_types/any.rs",
     find: "                AnyOp::Is => Expr::bin(Op::Or, is, panicked),\n",
     replace: "                AnyOp::Is => is,\n",
-    tests: ["test/lowering-unwinds.test.ts", "-t", "a thrown Error answers both downcasts"],
+    tests: ["test/lowering-unwinds.test.ts", "-t", "every unwind"],
   },
   {
     name: "js-error-box-downcast-of-panic-unseen",
-    breaks: "`Box::downcast::<&JsError>()` of a thrown `Error`'s payload is its `Err`, where its `downcast_ref` finds it",
+    breaks: "`Box::downcast::<&JsError>()` of a `dyn Any` an unwind's payload was widened to is its `Err`, where its `downcast_ref` finds it",
     file: "src/lower/std_types/any.rs",
     find: "                    Expr::cond(panicked, result::ok(error), result::err(pair)),\n",
     replace: "                    result::err(pair),\n",
-    tests: ["test/lowering-unwinds.test.ts", "-t", "a thrown Error answers both downcasts"],
+    tests: ["test/lowering-unwinds.test.ts", "-t", "every unwind"],
   },
   {
     name: "downcast-ref-unboxed",
@@ -114,5 +114,37 @@ export const mutations: Mutation[] = [
     find: "        let is = match self.is_lang_adt(of, rustc_hir::attrs::lang_items::LangItem::String) {\n",
     replace: "        let is = match false {\n",
     tests: ["test/lowering-unwinds.test.ts", "-t", "a payload is a panic's message"],
+  },
+  {
+    name: "thrown-of-any-send-unseen",
+    breaks: "a downcast of an unwind's payload to `&JsError` tests its type, so its `catch` isn't of what was thrown",
+    file: "src/lower/std_types/any.rs",
+    find: "        if op != AnyOp::DowncastMut && self.finds_thrown(self.pointee_of(any), of) {\n",
+    replace: "        if false && op != AnyOp::DowncastMut && self.finds_thrown(self.pointee_of(any), of) {\n",
+    tests: ["test/lowering-unwinds.test.ts", "-t", "every unwind"],
+  },
+  {
+    name: "thrown-is-false",
+    breaks: "`is::<&JsError>()` of an unwind's payload is `false`, where its downcast finds what was thrown",
+    file: "src/lower/std_types/any.rs",
+    find: "                AnyOp::Is => Expr::bool(true),\n",
+    replace: "                AnyOp::Is => Expr::bool(false),\n",
+    tests: ["test/lowering-unwinds.test.ts", "-t", "every unwind"],
+  },
+  {
+    name: "thrown-box-downcast-err",
+    breaks: "`Box::downcast::<&JsError>()` of an unwind's payload is its `Err`",
+    file: "src/lower/std_types/any.rs",
+    find: "                _ => result::ok(error),\n",
+    replace: "                _ => result::err(error),\n",
+    tests: ["test/lowering-unwinds.test.ts", "-t", "every unwind"],
+  },
+  {
+    name: "thrown-of-any-dyn",
+    breaks: "a `dyn Any`'s `&JsError` is what was thrown, so one of the program's own isn't found",
+    file: "src/lower/std_types/any.rs",
+    find: "            && self.recognition().is_dyn_any_send(any)\n",
+    replace: "            && self.recognition().is_dyn_any(any)\n",
+    tests: ["test/lowering-unwinds.test.ts", "-t", "every unwind"],
   },
 ];

@@ -51,8 +51,8 @@ function main() {
     console.log(`drop ${a$1[0]}`);
     throw error;
   }
-  const value = (x) => x < Loud.get(a$1);
-  const all = $lent(tmp).every((item) => value(item));
+  const f = (x) => x < Loud.get(a$1);
+  const all = $lent(tmp).every((item) => f(item));
   console.log(`drop ${a$1[0]}`);
   console.log(`all ${all}`);
   const a$2 = [3];
@@ -76,13 +76,14 @@ function main() {
     }
     throw error;
   }
-  const value$1 = (sum, x) => (((sum + x) >>> 0) + Loud.get(a$3)) >>> 0;
-  const total = tmp$1.reduce((a, b) => value$1(a, b), 0);
+  const f$1 = (sum, x) => (((sum + x) >>> 0) + Loud.get(a$3)) >>> 0;
+  const total = tmp$1.reduce((a, b) => f$1(a, b), 0);
   console.log(`drop ${a$3[0]}`);
   console.log(`fold ${total}`);
   const a$4 = [5];
   const v = [3, 1, 2];
-  v.sort((x, y) => $cmp($rem(x, Loud.get(a$4)) >>> 0, $rem(y, Loud.get(a$4)) >>> 0));
+  const f$2 = (x, y) => $cmp($rem(x, Loud.get(a$4)) >>> 0, $rem(y, Loud.get(a$4)) >>> 0);
+  v.sort(f$2);
   console.log(`drop ${a$4[0]}`);
   console.log(`sorted [${v.join(", ")}]`);
   const a$5 = [6];

@@ -58,8 +58,7 @@ function consume(shape) {
 function main() {
   const one = { value: ["one"], impl: noisyShape };
   try {
-    const tmp = one.impl.name(one.value);
-    console.log(`${tmp}`);
+    console.log(`${one.impl.name(one.value)}`);
   } finally {
     one.impl.$drop?.(one.value);
   }
@@ -127,15 +126,15 @@ function main() {
 
   const lent = ["lent"];
   const borrowed = { value: lent, impl: noisyShape };
-  let tmp$1;
+  let tmp;
   try {
-    tmp$1 = borrowed.impl.name(borrowed.value);
+    tmp = borrowed.impl.name(borrowed.value);
   } catch (error) {
     noisyDrop_drop(lent);
     throw error;
   }
   try {
-    console.log(`${tmp$1}`);
+    console.log(`${tmp}`);
   } catch (error) {
     noisyDrop_drop(lent);
     throw error;
@@ -148,28 +147,21 @@ function main() {
 
       const holder = { shape: { value: ["held"], impl: noisyShape } };
       try {
-        const tmp = holder.shape.impl.name(holder.shape.value);
-        console.log(`${tmp}`);
-        const value = ["given"];
-        const impl = noisyShape;
-        const tmp$1 = consume({ value, impl });
-        console.log(`${tmp$1}`);
+        console.log(`${holder.shape.impl.name(holder.shape.value)}`);
+        console.log(`${consume({ value: ["given"], impl: noisyShape })}`);
         const kept = ["kept"];
         try {
-          const tmp = noisyShape_name(kept);
-          console.log(`${tmp}`);
+          console.log(`${noisyShape_name(kept)}`);
         } finally {
           noisyDrop_drop(kept);
         }
         let boxed = ["boxed"];
-        const tmp$2 = noisyShape_name(boxed);
-        console.log(`${tmp$2}`);
+        console.log(`${noisyShape_name(boxed)}`);
         const unboxed = boxed;
         try {
           console.log(`moved ${unboxed[0]}`);
           boxed = ["refilled"];
-          const tmp = noisyShape_name(boxed);
-          console.log(`${tmp}`);
+          console.log(`${noisyShape_name(boxed)}`);
           console.log("end");
         } finally {
           noisyDrop_drop(unboxed);

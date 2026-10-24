@@ -1072,3 +1072,132 @@ pub fn pair() -> String {
   expect((await import(join(dir, "mir.js"))).run()).toBe(2);
   expect((await import(join(dir, "mir.js"))).pair()).toBe("11 22");
 });
+
+// ADR 0704: a thread-local an `if` makes `None` of where it doesn't, as
+// React's componentFrameCache is `let componentFrameCache; if (__DEV__) {
+// componentFrameCache = new WeakMap(); }`, is assigned only where it's
+// something: `let` leaves it `undefined` already, and an `else` of nothing
+// is gone. A branch left with nothing to do is the other's test.
+test("a thread-local an if makes None of is assigned only where it's something", async () => {
+  const dir = fixture("assigned-none");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::RefCell;
+
+thread_local! {
+    static CACHE: Option<&'static RefCell<Vec<u32>>> = if js::math::random() < 2.0 {
+        Some(Box::leak(Box::new(RefCell::new(Vec::new()))))
+    } else {
+        None
+    };
+    static NONE_FIRST: Option<u32> = if js::math::random() > 2.0 { None } else { Some(1) };
+}
+
+pub fn remember(n: u32) -> usize {
+    if let Some(cache) = CACHE.with(|cache| *cache) {
+        cache.borrow_mut().push(n);
+        return cache.borrow().len();
+    }
+    0
+}
+
+pub fn first() -> Option<u32> {
+    NONE_FIRST.with(|n| *n)
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("let cache;\nif (Math.random() < 2) {\n  cache = { value: [] };\n}\n");
+  expect(js).toContain("let noneFirst;\nif (!(Math.random() > 2)) {\n  noneFirst = 1;\n}\n");
+  expect(js).not.toContain("= undefined;");
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.remember(4), lib.remember(5), lib.first()]).toEqual([1, 2, 1]);
+});
+
+// ADR 0704, of React's componentFrameCache as its port writes it: `if
+// __DEV__ { Some(..) } else { None }` of a build global, its `Some` an `if`
+// of its own, is upstream's `if (__DEV__) { componentFrameCache = ..; }`,
+// as written, not `if (!__DEV__) { .. = undefined; } else { .. }`.
+test("a thread-local of a build global's if is assigned under the if as written", () => {
+  const dir = fixture("assigned-dev");
+  writeFileSync(join(dir, "lib.rs"), `use js::{JsObject, WeakMap};
+
+unsafe extern "Rust" {
+    pub safe static __DEV__: bool;
+}
+
+thread_local! {
+    static COMPONENT_FRAME_CACHE: Option<&'static WeakMap<JsObject, String>> =
+        if __DEV__ {
+            Some(if js::is_defined(js::weak_map::new::<JsObject, String>) {
+                js::weak_map::new()
+            } else {
+                js::map::new()
+            })
+        } else {
+            None
+        };
+}
+
+pub fn cached(key: &JsObject) -> Option<String> {
+    COMPONENT_FRAME_CACHE.with(|cache| *cache).and_then(|cache| cache.get(key))
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain(
+    'let componentFrameCache;\nif (__DEV__) {\n  componentFrameCache = typeof WeakMap !== "undefined" ? new WeakMap() : new Map();\n}\n',
+  );
+});
+
+// ADR 0703: a thread-local's `.with(|c| *c)` is its variable (ADR 0270)
+// where something's there to drop as a panic unwinds too, React's
+// `COMPONENT_FRAME_CACHE.with(|cache| *cache)` under its `finally`'s guard:
+// the closure made where it's applied, so nothing's called and nothing's
+// tried, not `const value = (cache) => cache; try { tmp = value(cache); }`.
+test("a thread-local's with is its variable under a guard", async () => {
+  const dir = fixture("with-under-guard");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::{Cell, RefCell};
+
+thread_local! {
+    static BUSY: Cell<bool> = const { Cell::new(false) };
+    static CACHE: Option<&'static RefCell<Vec<String>>> = Some(Box::leak(Box::new(RefCell::new(Vec::new()))));
+}
+
+struct Restore;
+
+impl Drop for Restore {
+    fn drop(&mut self) {
+        BUSY.set(false);
+    }
+}
+
+fn checked(name: &str) -> String {
+    if name.is_empty() {
+        panic!("empty");
+    }
+    name.to_string()
+}
+
+pub fn describe(name: &str) -> usize {
+    BUSY.set(true);
+    let _restore = Restore;
+    let frame = checked(name);
+    if let Some(cache) = CACHE.with(|cache| *cache) {
+        cache.borrow_mut().push(frame);
+        return cache.borrow().len();
+    }
+    0
+}
+
+pub fn busy() -> bool {
+    BUSY.get()
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("  if (cache) {\n");
+  expect(js).not.toContain("=> cache");
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.describe("a"), lib.describe("b"), lib.busy()]).toEqual([1, 2, false]);
+  expect(() => lib.describe("")).toThrow("empty");
+  expect(lib.busy()).toBe(false);
+});

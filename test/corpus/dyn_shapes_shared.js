@@ -94,9 +94,8 @@ function main() {
     }
     throw error;
   }
-  const value$1 = (a, b) => $unwrap($partialCmp(a.impl.area(a.value), b.impl.area(b.value)));
   try {
-    sorted.sort(value$1);
+    sorted.sort((a, b) => $unwrap($partialCmp(a.impl.area(a.value), b.impl.area(b.value))));
   } catch (error) {
     for (const item of sorted) {
       $rcDrop(item);
@@ -403,13 +402,13 @@ function main() {
     }
     throw error;
   }
-  const value$2 = [
+  const value$1 = [
     ["add", (a, b) => a + b],
     ["pow", (a, b) => $powf(a, b)],
   ];
   let ops;
   try {
-    ops = new Map(value$2);
+    ops = new Map(value$1);
   } catch (error) {
     for (const item of byKind.values()) {
       for (const item$1 of item) {
@@ -494,9 +493,7 @@ function main() {
   try {
     try {
       try {
-        const tmp = show(d);
-        const value = $byteLen(tmp);
-        console.log(`${value}`);
+        console.log(`${$byteLen(show(d))}`);
       } finally {
         for (const item of byKind.values()) {
           for (const item$1 of item) {

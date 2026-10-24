@@ -623,6 +623,38 @@ export function limit(fast) {
 }
 ```
 
+So is a comment before a call's argument, or before an object literal's
+field: before it, on lines of their own
+([ADR 0708](../../decisions/0708-a-comment-before-an-argument-is-before-it.md)):
+
+```rust
+fn at_least(value: f64, low: f64) -> f64 {
+    if value < low { low } else { value }
+}
+
+pub fn area(width: f64, height: f64) -> f64 {
+    at_least(
+        width * height,
+        // Never below zero.
+        0.0,
+    )
+}
+```
+
+```js
+function atLeast(value, low) {
+  return value < low ? low : value;
+}
+
+export function area(width, height) {
+  return atLeast(
+    width * height,
+    // Never below zero.
+    0,
+  );
+}
+```
+
 A function marked `#[inline(never)]` is Closure Compiler's `@noinline`, its
 JSDoc's last line where it has one, and rust-js keeps it a function of its
 own, as React keeps `testStringCoercion` out of line for its stack trace.

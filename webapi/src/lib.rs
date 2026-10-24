@@ -44430,7 +44430,7 @@ impl ByteLengthQueuingStrategy {
     #[cfg_attr(rust_js, rust_js::link_name = "get size")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn size(&self) -> &'static dyn Fn() {
+    pub fn size(&self) -> &'static dyn Fn() -> Option<&'static Unknown> {
         unreachable!()
     }
 
@@ -50240,7 +50240,7 @@ impl CountQueuingStrategy {
     #[cfg_attr(rust_js, rust_js::link_name = "get size")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn size(&self) -> &'static dyn Fn() {
+    pub fn size(&self) -> &'static dyn Fn() -> Option<&'static Unknown> {
         unreachable!()
     }
 

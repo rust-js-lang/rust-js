@@ -259,4 +259,21 @@ export const mutations: Mutation[] = [
     replace: "                before.rfind('?').map(|operator| (at, written, operator + 1))\n",
     tests: ["test/lowering-names.test.ts", "-t", "a comment is in the JS where it.s in the Rust"],
   },
+  {
+    name: "argument-comment-unplaced",
+    breaks: "a comment before a call's argument, `// $FlowFixMe[cannot-write]` above `'name'`, is lost: no start is after it before the call's `;`",
+    file: "src/to_oxc.rs",
+    find: "    starts.extend(parts.keys().copied());\n",
+    replace: "",
+    tests: ["test/lowering-names.test.ts", "-t", "a comment before an argument or a field"],
+  },
+  {
+    name: "statement-comment-in-its-arguments",
+    breaks: "a comment before a statement whose JS starts at its call's argument, `// A character split ..` above `io::stdout().write_all(&[0xC3])`, is put inside `$printBytes(` before `[195]`",
+    file: "src/to_oxc.rs",
+    find: "                    && parts.get(at).is_some_and(|&whole| whole > c.lo)\n",
+    replace: "                    && false\n",
+    tests: ["test/corpus.test.ts", "-t", "^io_writers.rs$"],
+    snapshots: true,
+  },
 ];

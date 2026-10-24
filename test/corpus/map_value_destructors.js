@@ -30,39 +30,48 @@ function main() {
     $cmp,
     noisyDrop_drop,
   );
-  const value = (k, v) => {
-    console.log(`keep ${k}? ${v[0]}`);
-    return k % 2 === 0;
-  };
   try {
-    $retainMap(tree, value, $sortedEntries(tree, $cmp), false, noisyDrop_drop);
-    const tmp = $sortedEntries(tree, $cmp).map((entry) => entry[0]);
-    console.log(`[${tmp.join(", ")}]`);
-    const value$1 = [
-      [2, [21]],
-      [7, [70]],
-    ];
-    $extendMap(tree, value$1, false, noisyDrop_drop);
-    const tmp$1 = $sortedEntries(tree, $cmp)
-      .map((entry) => entry[1])
-      .map((v) => v[0]);
-    console.log(`[${tmp$1.join(", ")}]`);
-    const tmp$2 = $entry(tree, 4);
-    const noisy = [41];
-    const entry = tmp$2;
-    const got = $orInsert(entry._0[0], entry._0[1], noisy, noisyDrop_drop);
+    $retainMap(
+      tree,
+      (k, v) => {
+        console.log(`keep ${k}? ${v[0]}`);
+        return k % 2 === 0;
+      },
+      $sortedEntries(tree, $cmp),
+      false,
+      noisyDrop_drop,
+    );
+    console.log(
+      `[${$sortedEntries(tree, $cmp)
+        .map((entry) => entry[0])
+        .join(", ")}]`,
+    );
+    $extendMap(
+      tree,
+      [
+        [2, [21]],
+        [7, [70]],
+      ],
+      false,
+      noisyDrop_drop,
+    );
+    console.log(
+      `[${$sortedEntries(tree, $cmp)
+        .map((entry) => entry[1])
+        .map((v) => v[0])
+        .join(", ")}]`,
+    );
+    const entry = $entry(tree, 4);
+    const got = $orInsert(entry._0[0], entry._0[1], [41], noisyDrop_drop);
     console.log(`got ${got[0]}`);
-    const tmp$3 = $entry(tree, 8);
-    const tmp$4 = [80];
-    const entry$1 = tmp$3;
-    const new$ = $orInsert(entry$1._0[0], entry$1._0[1], tmp$4, noisyDrop_drop);
+    const entry$1 = $entry(tree, 8);
+    const new$ = $orInsert(entry$1._0[0], entry$1._0[1], [80], noisyDrop_drop);
     console.log(`new ${new$[0]}`);
     for (const [, value] of $sortedEntries(tree, $cmp)) {
       noisyDrop_drop(value);
     }
     tree.clear();
-    const size = tree.size;
-    console.log(`cleared ${size}`);
+    console.log(`cleared ${tree.size}`);
 
     const hash = new Map();
     try {
@@ -70,18 +79,14 @@ function main() {
       if (insert != null) {
         noisyDrop_drop(insert);
       }
-      const tmp = $entry(hash, "a");
-      const tmp$1 = [2];
-      const entry = tmp;
-      $orInsert(entry._0[0], entry._0[1], tmp$1, noisyDrop_drop);
+      const entry = $entry(hash, "a");
+      $orInsert(entry._0[0], entry._0[1], [2], noisyDrop_drop);
       $extendMap(hash, [["a", [3]]], false, noisyDrop_drop);
-      const value = (_, v) => v[0] > 5;
-      $retainMap(hash, value, hash, false, noisyDrop_drop);
-      const value$1 = hash.size;
-      console.log(`hash ${value$1}`);
-      const tmp$2 = $insert(hash, "b", [4]);
-      if (tmp$2 != null) {
-        noisyDrop_drop(tmp$2);
+      $retainMap(hash, (_, v) => v[0] > 5, hash, false, noisyDrop_drop);
+      console.log(`hash ${hash.size}`);
+      const noisy = $insert(hash, "b", [4]);
+      if (noisy != null) {
+        noisyDrop_drop(noisy);
       }
       for (const item of hash.values()) {
         noisyDrop_drop(item);
@@ -92,27 +97,25 @@ function main() {
       // it hasn't given.
       const drained = new Map();
       try {
-        const tmp = $insert(drained, 1, [5]);
-        if (tmp != null) {
-          noisyDrop_drop(tmp);
+        const value = $insert(drained, 1, [5]);
+        if (value != null) {
+          noisyDrop_drop(value);
         }
-        const drain = $iter($drainAll(drained));
-        const taken = drain.toArray();
-        const length = taken.length;
-        const value = drained.size;
+        const taken = $drainAll(drained).slice();
+        const size = drained.size;
         try {
-          console.log(`taken ${length} left ${value}`);
+          console.log(`taken ${taken.length} left ${size}`);
         } finally {
           for (const item of taken) {
             noisyDrop_drop(item[1]);
           }
         }
-        const tmp$1 = $insert(drained, 2, [6]);
-        if (tmp$1 != null) {
-          noisyDrop_drop(tmp$1);
+        const value$1 = $insert(drained, 2, [6]);
+        if (value$1 != null) {
+          noisyDrop_drop(value$1);
         }
-        const tmp$2 = $iter($drainAll(drained));
-        for (const item of tmp$2) {
+        const drain = $iter($drainAll(drained));
+        for (const item of drain) {
           noisyDrop_drop(item[1]);
         }
         console.log("end");

@@ -9,6 +9,7 @@ use super::*;
 use crate::lower::bindings::reads_string_length;
 use crate::lower::recognition::{VecView, counts_utf16_units, makes_utf16_units, vec_view};
 use rustc_middle::middle::region;
+use rustc_middle::ty::TypeVisitableExt;
 
 /// A `Vec` or a slice, by the variable it's in and the fields to it.
 type Slice = (Vec<usize>, LocalVarId);
@@ -16,8 +17,13 @@ type Slice = (Vec<usize>, LocalVarId);
 /// The most a JS string's `length` is: `2^31 - 1`, as every engine's
 /// string is at most, V8's below 2^29, SpiderMonkey's 2^30 - 2,
 /// JavaScriptCore's 2^31 - 1, so two add without passing `u32`'s most
-/// (ADRs 0632, 0682). An array's may be `2^32 - 1`, `u32`'s most.
+/// (ADRs 0632, 0682).
 const STRING_LENGTH_MOST: i128 = (1 << 31) - 1;
+
+/// The most a slice's length is of items that take up room: `isize`'s
+/// most, as no Rust allocation is larger in bytes (ADR 0701). Of items of
+/// no size, or of a size not known, `u32`'s most.
+const SIZED_SLICE_LENGTH_MOST: i128 = i32::MAX as i128;
 
 /// An upper bound of an integer by a slice's length `L`, `⌊(c·L + b) /
 /// 2^s⌋`: `L - 1` of an index `i < xs.len()`, `L / 2 - 1` of one below its
@@ -90,6 +96,11 @@ impl Below {
         self.c <= 1 << self.s && self.b <= -(1 << self.s)
     }
 
+    /// The most it is where the length is at most `length`.
+    fn most(self, length: i128) -> i128 {
+        (self.c * length + self.b) >> self.s
+    }
+
     /// A bound at least either is.
     fn join(self, other: Below) -> Below {
         let (x, y) = self.aligned(other);
@@ -127,14 +138,23 @@ impl Range {
         zero(self) && other.lo < 0 || zero(other) && self.lo < 0
     }
 
+    /// Its bound by `slice`'s length: its own, or of one without, its
+    /// most, `⌊(0·L + hi) / 1⌋`, which it is whatever the length.
+    fn below_of(&self, slice: &Slice) -> Option<Below> {
+        match &self.below {
+            Some((s, x)) => (s == slice).then_some(*x),
+            None => Some(Below { c: 0, b: self.hi, s: 0 }),
+        }
+    }
+
+    /// A range either is in: of `0` and of an index below `xs.len()`, one
+    /// still at most the length.
     fn join(&self, other: &Range) -> Range {
+        let slice = (self.below.as_ref()).or(other.below.as_ref()).map(|(s, _)| s);
         Range {
             lo: self.lo.min(other.lo),
             hi: self.hi.max(other.hi),
-            below: match (&self.below, &other.below) {
-                (Some((s, x)), Some((t, y))) if s == t => Some((s.clone(), x.join(*y))),
-                _ => None,
-            },
+            below: slice.and_then(|slice| Some((slice.clone(), self.below_of(slice)?.join(other.below_of(slice)?)))),
         }
     }
 }
@@ -207,11 +227,13 @@ struct Target {
 
 /// What a body's integer ranges show: each index known in bounds, its
 /// `a[i]` or its `Index::index`'s function, and where each `+`, `-` and `*`
-/// known to stay in its type's range is written.
+/// known to stay in its type's range is written, and each `as` of an
+/// integer already in its target's range, its value as it is.
 #[derive(Default)]
 pub(in crate::lower) struct Ranges {
     pub(in crate::lower) in_bounds: HashSet<ExprId>,
     pub(in crate::lower) exact: HashSet<Span>,
+    pub(in crate::lower) kept_casts: HashSet<ExprId>,
 }
 
 /// A parameter of a function only calls reach, a variable its pattern
@@ -225,9 +247,14 @@ struct Param {
 struct Walk<'a, 'tcx> {
     tcx: TyCtxt<'tcx>,
     thir: &'a Thir<'tcx>,
-    /// Each site's judgement: in bounds, or exact, each time it's reached.
+    /// Each site's judgement: in bounds, exact, or a cast that keeps its
+    /// value, each time it's reached.
     indexes: HashMap<ExprId, bool>,
     ops: HashMap<ExprId, bool>,
+    casts: HashMap<ExprId, bool>,
+    /// The most each slice's length is whose `len()` the body asks, by
+    /// what its items are (`SIZED_SLICE_LENGTH_MOST`).
+    length_most: HashMap<Slice, i128>,
     /// Variables changed where the walk doesn't see it, by a raw pointer:
     /// never known.
     volatile: HashSet<LocalVarId>,
@@ -305,6 +332,8 @@ pub(in crate::lower) fn ranges<'tcx>(
             thir,
             indexes: HashMap::new(),
             ops: HashMap::new(),
+            casts: HashMap::new(),
+            length_most: HashMap::new(),
             volatile: volatile(thir),
             changes: changes(thir),
             most: most(thir),
@@ -382,10 +411,20 @@ impl Walk<'_, '_> {
         }
         // One span may be of more than one operator, a macro's: exact where
         // each is.
+        // MIR writes the operator an assignment is of, `s = n - 1`'s, where
+        // the assignment is.
+        let thir = self.thir;
+        let assigned: HashMap<ExprId, Span> = (thir.exprs.iter())
+            .filter_map(|e| match e.kind {
+                ExprKind::Assign { rhs, .. } => Some((strip(thir, rhs), e.span)),
+                _ => None,
+            })
+            .collect();
         let mut exact: HashMap<Span, bool> = HashMap::new();
         for (&id, &ok) in &self.ops {
-            let span = self.thir[id].span;
-            *exact.entry(span).or_insert(true) &= ok && !span.from_expansion();
+            for span in [Some(thir[id].span), assigned.get(&id).copied()].into_iter().flatten() {
+                *exact.entry(span).or_insert(true) &= ok && !span.from_expansion();
+            }
         }
         Ranges {
             in_bounds: (self.indexes.iter())
@@ -396,6 +435,7 @@ impl Walk<'_, '_> {
                 .filter(|&(_, ok)| ok)
                 .map(|(span, _)| span)
                 .collect(),
+            kept_casts: (self.casts.iter()).filter(|&(_, &ok)| ok).map(|(&id, _)| id).collect(),
         }
     }
 }
@@ -553,6 +593,23 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
     fn vec_view(&self, fun: ExprId) -> Option<VecView> {
         let (def_id, generic_args) = fn_def(self.thir[strip(self.thir, fun)].ty)?;
         vec_view(self.tcx, def_id, generic_args)
+    }
+
+    /// The most the length `fun`, a slice's `len()`, reads is: below
+    /// `isize`'s most of items that take up room (ADR 0701), `u32`'s of
+    /// the rest.
+    fn length_most_of(&self, fun: ExprId) -> i128 {
+        let item = fn_def(self.thir[strip(self.thir, fun)].ty).and_then(|(_, args)| args.types().next());
+        let sized = item.filter(|item| !item.has_param()).is_some_and(|item| {
+            (self
+                .tcx
+                .layout_of(ty::TypingEnv::fully_monomorphized().as_query_input(item)))
+            .is_ok_and(|layout| !layout.is_zst())
+        });
+        match sized {
+            true => SIZED_SLICE_LENGTH_MOST,
+            false => u32::MAX as i128,
+        }
     }
 
     /// What's known after `var` is changed.
@@ -730,6 +787,14 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
                 }
                 None
             }
+            // An integer `as` another whose range it's already in is the
+            // same number, `s as usize` of an `s >= 0` (ADR 0701).
+            ExprKind::Cast { source } if ty_range.is_some() && type_range(thir[source].ty).is_some() => {
+                let value = self.expr(source, known);
+                let kept = value.filter(|v| ty_range.is_some_and(|(lo, hi)| lo <= v.lo && v.hi <= hi));
+                *self.casts.entry(e).or_insert(true) &= kept.is_some();
+                kept.or_else(top)
+            }
             ExprKind::Deref { arg }
             | ExprKind::Unary { arg, .. }
             | ExprKind::Cast { source: arg }
@@ -853,9 +918,11 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
                 let least = (known.as_ref())
                     .and_then(|k| k.lengths.get(&slice).copied())
                     .unwrap_or(0);
+                let most = self.length_most_of(fun);
+                self.length_most.insert(slice.clone(), most);
                 Range {
                     lo: least,
-                    hi: u32::MAX as i128,
+                    hi: most,
                     below: Some((slice, Below::LENGTH)),
                 }
             }),
@@ -1030,6 +1097,7 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
                 && let (Some(next), Some(head)) = (next.as_mut(), &head)
             {
                 let most = &self.most;
+                let length_most = &self.length_most;
                 let vars = std::mem::take(&mut next.vars);
                 next.vars = (vars.into_iter())
                     .filter_map(|(v, r)| {
@@ -1037,13 +1105,23 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
                         if was.join(&r) == *was {
                             return Some((v, was.clone()));
                         }
-                        let below_most = most.get(&v)? - 1;
-                        (was.hi < below_most && r.hi <= below_most && r.lo >= was.lo).then(|| {
-                            let widened = Range {
-                                lo: was.lo,
-                                hi: below_most,
-                                below: None,
-                            };
+                        // Still at most what it was by a length, a counter
+                        // below `xs.len()`: at most that, where the length
+                        // is its most (ADR 0701).
+                        let below = match (&was.below, &r.below) {
+                            (Some((s, x)), Some((t, y))) if s == t && x.join(*y) == *x => Some((s.clone(), *x)),
+                            _ => None,
+                        };
+                        // One bound by a length is at most what that bound
+                        // is, up to its type's most: the length holds it,
+                        // not a `+ 1` that can't wrap (ADR 0709).
+                        let type_most = *most.get(&v)?;
+                        let hi = match &below {
+                            Some((s, x)) => type_most.min(x.most(*length_most.get(s).unwrap_or(&(u32::MAX as i128)))),
+                            None => type_most - 1,
+                        };
+                        (was.hi < hi && r.hi <= hi && r.lo >= was.lo).then(|| {
+                            let widened = Range { lo: was.lo, hi, below };
                             (v, widened)
                         })
                     })
@@ -1145,14 +1223,22 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
                     op => op,
                 };
                 // Each side's value, which the condition's own walk judged.
-                let judged = (std::mem::take(&mut self.indexes), std::mem::take(&mut self.ops));
+                let judged = (
+                    std::mem::take(&mut self.indexes),
+                    std::mem::take(&mut self.ops),
+                    std::mem::take(&mut self.casts),
+                );
                 let mut quiet = known.clone();
                 let l = self.expr(lhs, &mut quiet);
                 let r = self.expr(rhs, &mut quiet);
-                (self.indexes, self.ops) = judged;
+                (self.indexes, self.ops, self.casts) = judged;
                 let (Some(l), Some(r)) = (l, r) else { return };
                 self.narrow(lhs, op, &r, known);
                 self.narrow(rhs, flipped, &l, known);
+                if op == BinOp::Ne {
+                    self.below_length(lhs, rhs, known);
+                    self.below_length(rhs, lhs, known);
+                }
                 // `xs.len() > k`: it's at least so long.
                 for (side, op, other) in [(lhs, op, &r), (rhs, flipped, &l)] {
                     if let Some((SliceLength::Len, items)) = self.asks(side)
@@ -1171,6 +1257,60 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
                 }
             }
             _ => {}
+        }
+    }
+
+    /// The integer `e` is through each `as` that keeps it, `s` of `s as
+    /// usize` where `s >= 0`, and `xs.len()` of `xs.len() as isize` of
+    /// sized items (ADR 0701): what it is, the integer it's of is.
+    fn uncast(&self, mut e: ExprId, known: &Option<Known>) -> ExprId {
+        let thir = self.thir;
+        loop {
+            e = strip(thir, e);
+            let ExprKind::Cast { source } = thir[e].kind else {
+                return e;
+            };
+            let (Some((lo, hi)), Some(of)) = (type_range(thir[e].ty), self.cast_of(source, known)) else {
+                return e;
+            };
+            if !(lo <= of.0 && of.1 <= hi) {
+                return e;
+            }
+            e = source;
+        }
+    }
+
+    /// What `source`, an `as`'s, is without walking it: a variable's range
+    /// as known, or of its type; a slice's `len()`, from 0 to its most
+    /// (ADR 0709).
+    fn cast_of(&self, source: ExprId, known: &Option<Known>) -> Option<(i128, i128)> {
+        let thir = self.thir;
+        if let Some(var) = var_of(thir, source) {
+            return (known.as_ref())
+                .and_then(|k| k.vars.get(&var).map(|r| (r.lo, r.hi)))
+                .or_else(|| type_range(thir[source].ty));
+        }
+        match thir[strip(thir, source)].kind {
+            ExprKind::Call { fun, .. } if matches!(self.asks(source), Some((SliceLength::Len, _))) => {
+                Some((0, self.length_most_of(fun)))
+            }
+            _ => None,
+        }
+    }
+
+    /// `side != xs.len()` of a `side` at most the length: below it, and
+    /// so through each `as` that keeps either, `s != xs.len() as isize`.
+    fn below_length(&self, side: ExprId, length: ExprId, known: &mut Option<Known>) {
+        let Some((SliceLength::Len, items)) = self.asks(self.uncast(length, known)) else {
+            return;
+        };
+        let (Some(slice), Some(var)) = (self.slice(items), var_of(self.thir, self.uncast(side, known))) else {
+            return;
+        };
+        if let Some(range) = known.as_mut().and_then(|k| k.vars.get_mut(&var))
+            && range.below == Some((slice.clone(), Below::LENGTH))
+        {
+            range.below = Some((slice, Below::LENGTH.offset(-1)));
         }
     }
 
@@ -1204,6 +1344,7 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
             }
             return;
         }
+        let side = self.uncast(side, known);
         let Some(var) = var_of(thir, side) else { return };
         let Some((lo, hi)) = type_range(thir[side].ty) else {
             return;

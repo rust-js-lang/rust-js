@@ -52,21 +52,19 @@ function extended() {
     }
     throw error;
   }
-  const length = v.length;
   try {
-    console.log(`${length}`);
+    console.log(`${v.length}`);
   } catch (error) {
     for (const item of v) {
       console.log(`drop ${item[0]}`);
     }
     throw error;
   }
-  const value = (x) => x % 2 === 1;
   try {
     $extend(
       v,
       $lazyRange(5, 8)
-        .filter((item) => value(item))
+        .filter((x) => x % 2 === 1)
         .map((x) => [(x * 10) >>> 0]),
     );
   } catch (error) {
@@ -104,9 +102,8 @@ function extended() {
     }
     throw error;
   }
-  const value$1 = w.length;
   try {
-    console.log(`${value$1}`);
+    console.log(`${w.length}`);
   } catch (error) {
     for (const item of w) {
       console.log(`drop ${item[0]}`);
@@ -259,33 +256,33 @@ function matched() {
     }
   }
   for (let n = 0; n < 3; n++) {
-    let tmp;
+    let e;
     try {
-      tmp = pick(n);
+      e = pick(n);
     } catch (error) {
       if (w[0] != null) {
         ddDrop_drop(w[0]);
       }
       throw error;
     }
-    if (tmp.TAG === "A") {
+    if (e.TAG === "A") {
       try {
         console.log("a");
       } catch (error) {
-        if (tmp.TAG === "A") {
-          ddDrop_drop(tmp._0);
+        if (e.TAG === "A") {
+          ddDrop_drop(e._0);
         }
         if (w[0] != null) {
           ddDrop_drop(w[0]);
         }
         throw error;
       }
-    } else if (tmp === "B") {
+    } else if (e === "B") {
       try {
         console.log("b");
       } catch (error) {
-        if (tmp.TAG === "A") {
-          ddDrop_drop(tmp._0);
+        if (e.TAG === "A") {
+          ddDrop_drop(e._0);
         }
         if (w[0] != null) {
           ddDrop_drop(w[0]);
@@ -296,8 +293,8 @@ function matched() {
       try {
         console.log("c");
       } catch (error) {
-        if (tmp.TAG === "A") {
-          ddDrop_drop(tmp._0);
+        if (e.TAG === "A") {
+          ddDrop_drop(e._0);
         }
         if (w[0] != null) {
           ddDrop_drop(w[0]);
@@ -306,8 +303,8 @@ function matched() {
       }
     }
     try {
-      if (tmp.TAG === "A") {
-        ddDrop_drop(tmp._0);
+      if (e.TAG === "A") {
+        ddDrop_drop(e._0);
       }
     } catch (error) {
       if (w[0] != null) {
@@ -317,10 +314,10 @@ function matched() {
     }
   }
   try {
-    const e = pick(0);
-    const label = e.TAG === "A" ? "a" : "other";
-    if (e.TAG === "A") {
-      ddDrop_drop(e._0);
+    const value = pick(0);
+    const label = value.TAG === "A" ? "a" : "other";
+    if (value.TAG === "A") {
+      ddDrop_drop(value._0);
     }
     console.log(`${label} ${w[1]}`);
   } finally {

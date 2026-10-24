@@ -41,19 +41,17 @@ export function f(p) {
 
 function main() {
   let r = f([[1], [2]]);
-  const value = (d) => d[0];
   try {
-    const value$1 = r ? value(r) : undefined;
-    console.log(`got ${value$1 == null ? "None" : `Some(${value$1})`}`);
+    const value = r?.[0];
+    console.log(`got ${value == null ? "None" : `Some(${value})`}`);
   } finally {
     if (r != null) {
       dDrop_drop(r);
     }
   }
   r = f([undefined, [3]]);
-  const value$1 = (d) => d[0];
   try {
-    const value = r ? value$1(r) : undefined;
+    const value = r?.[0];
     console.log(`got ${value == null ? "None" : `Some(${value})`}`);
   } finally {
     if (r != null) {
@@ -61,9 +59,8 @@ function main() {
     }
   }
   r = f([undefined, undefined]);
-  const value$2 = (d) => d[0];
   try {
-    const value = r ? value$2(r) : undefined;
+    const value = r?.[0];
     console.log(`got ${value == null ? "None" : `Some(${value})`}`);
   } finally {
     if (r != null) {

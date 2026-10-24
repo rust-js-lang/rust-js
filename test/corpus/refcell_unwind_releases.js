@@ -10,9 +10,8 @@ const log = { value: [] };
 
 function asksDrop_drop(asks) {
   const tryBorrowMut = $tryBorrow(log, true);
-  const value = tryBorrowMut.TAG === "Ok";
   try {
-    console.log(`free as it unwinds: ${value}`);
+    console.log(`free as it unwinds: ${tryBorrowMut.TAG === "Ok"}`);
   } finally {
     if (tryBorrowMut.TAG === "Ok") {
       $unborrow(tryBorrowMut._0);
@@ -22,14 +21,13 @@ function asksDrop_drop(asks) {
 
 function main() {
   const _asks = undefined;
-  const value = (log) => {
-    log.push(1);
-    if (log.length === 1) {
-      throw new Error("boom");
-    }
-  };
   try {
-    $withBorrowMut(log, value);
+    $withBorrowMut(log, (log) => {
+      log.push(1);
+      if (log.length === 1) {
+        throw new Error("boom");
+      }
+    });
   } finally {
     asksDrop_drop({ value: _asks });
   }

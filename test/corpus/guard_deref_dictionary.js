@@ -71,9 +71,8 @@ function main() {
   console.log(`${total([5, 6], rcStableDeref())}`);
   console.log(`${length("ada", stringStableDeref)} ${length("lovelace", rcStableDeref())}`);
   const tryBorrowMut = $tryBorrow(cell, true);
-  const value = tryBorrowMut.TAG === "Ok";
   try {
-    console.log(`${value}`);
+    console.log(`${tryBorrowMut.TAG === "Ok"}`);
   } finally {
     if (tryBorrowMut.TAG === "Ok") {
       $unborrow(tryBorrowMut._0);

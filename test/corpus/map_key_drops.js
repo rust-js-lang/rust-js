@@ -34,49 +34,46 @@ function main() {
   const m = new $KeyMap();
   try {
     $insert(m, [1], 10, keyDrop_drop);
-    const tmp = $insert(m, [1], 11, keyDrop_drop);
-    console.log(`insert ${tmp == null ? "None" : `Some(${tmp})`}`);
+    const value = $insert(m, [1], 11, keyDrop_drop);
+    console.log(`insert ${value == null ? "None" : `Some(${value})`}`);
     const entry = $entry(m, [1], keyDrop_drop);
     $orInsert(entry._0[0], entry._0[1], 0);
     const orInsert = $mutGet(entry._0[0], entry._0[1]);
     orInsert.value = (orInsert.value + 1) | 0;
-    const tmp$1 = $entry(m, [2], keyDrop_drop);
-    const entry$1 = tmp$1;
+    const entry$1 = $entry(m, [2], keyDrop_drop);
     $orInsert(entry$1._0[0], entry$1._0[1], 0);
-    const tmp$2 = $mutGet(entry$1._0[0], entry$1._0[1]);
-    tmp$2.value = (tmp$2.value + 1) | 0;
-    const tmp$3 = $entry(m, [2], keyDrop_drop);
-    const tmp$4 = () => 5;
-    const entry$2 = tmp$3;
-    $orInsertWith(entry$2._0[0], entry$2._0[1], tmp$4);
+    const value$1 = $mutGet(entry$1._0[0], entry$1._0[1]);
+    value$1.value = (value$1.value + 1) | 0;
+    const entry$2 = $entry(m, [2], keyDrop_drop);
+    $orInsertWith(entry$2._0[0], entry$2._0[1], () => 5);
     const orInsertWith = $mutGet(entry$2._0[0], entry$2._0[1]);
     orInsertWith.value = (orInsertWith.value + 1) | 0;
-    const value = [2];
+    const value$2 = [2];
     try {
-      const value$1 = $remove(m, value, keyDrop_drop);
-      console.log(`remove ${value$1 == null ? "None" : `Some(${value$1})`}`);
+      const value = $remove(m, value$2, keyDrop_drop);
+      console.log(`remove ${value == null ? "None" : `Some(${value})`}`);
     } finally {
-      keyDrop_drop(value);
+      keyDrop_drop(value$2);
     }
-    const value$1 = [1];
+    const value$3 = [1];
     try {
-      const value = m.get(value$1);
+      const value = m.get(value$3);
       console.log(`get ${value == null ? "None" : `Some(${value})`}`);
     } finally {
-      keyDrop_drop(value$1);
+      keyDrop_drop(value$3);
     }
-    const value$2 = [1];
+    const value$4 = [1];
     try {
-      const removeEntry = $removeEntry(m, value$2);
-      const tmp = ([k, v]) => {
+      const removeEntry = $removeEntry(m, value$4);
+      const value = ([k, v]) => {
         const result = [k[0], v];
         keyDrop_drop(k);
         return result;
       };
-      const tmp$1 = removeEntry ? tmp(removeEntry) : undefined;
-      console.log(`removed ${tmp$1 == null ? "None" : `Some((${tmp$1[0]}, ${tmp$1[1]}))`}`);
+      const value$1 = removeEntry ? value(removeEntry) : undefined;
+      console.log(`removed ${value$1 == null ? "None" : `Some((${value$1[0]}, ${value$1[1]}))`}`);
     } finally {
-      keyDrop_drop(value$2);
+      keyDrop_drop(value$4);
     }
     $extendMap(
       m,
@@ -89,8 +86,7 @@ function main() {
       keyDrop_drop,
     );
     $insert(m, [6], 6, keyDrop_drop);
-    const value$3 = (k) => k[0] !== 6;
-    $retainMap(m, value$3, m, true, undefined, keyDrop_drop);
+    $retainMap(m, (k) => k[0] !== 6, m, true, undefined, keyDrop_drop);
     console.log("--");
   } finally {
     for (const item of m.keys()) {
@@ -99,10 +95,8 @@ function main() {
   }
   const s = new $KeySet();
   try {
-    const tmp = $add(s, [3], keyDrop_drop);
-    console.log(`add ${tmp}`);
-    const tmp$1 = $add(s, [3], keyDrop_drop);
-    console.log(`add ${tmp$1}`);
+    console.log(`add ${$add(s, [3], keyDrop_drop)}`);
+    console.log(`add ${$add(s, [3], keyDrop_drop)}`);
     const value = [3];
     try {
       console.log(`del ${$removeItem(s, value, keyDrop_drop)}`);
@@ -111,29 +105,28 @@ function main() {
     }
     $add(s, [4], keyDrop_drop);
     const replace = $setReplace(s, [4]);
-    const tmp$2 = (k) => {
+    const value$1 = (k) => {
       const result = k[0];
       keyDrop_drop(k);
       return result;
     };
-    const tmp$3 = replace ? tmp$2(replace) : undefined;
-    console.log(`replace ${tmp$3 == null ? "None" : `Some(${tmp$3})`}`);
-    const value$1 = [4];
+    const value$2 = replace ? value$1(replace) : undefined;
+    console.log(`replace ${value$2 == null ? "None" : `Some(${value$2})`}`);
+    const value$3 = [4];
     try {
-      const take = s.delete(value$1) ? value$1 : undefined;
-      const tmp = (k) => {
+      const take = s.delete(value$3) ? value$3 : undefined;
+      const value = (k) => {
         const result = k[0];
         keyDrop_drop(k);
         return result;
       };
-      const tmp$1 = take ? tmp(take) : undefined;
-      console.log(`take ${tmp$1 == null ? "None" : `Some(${tmp$1})`}`);
+      const value$1 = take ? value(take) : undefined;
+      console.log(`take ${value$1 == null ? "None" : `Some(${value$1})`}`);
     } finally {
-      keyDrop_drop(value$1);
+      keyDrop_drop(value$3);
     }
     $add(s, [7], keyDrop_drop);
-    const value$2 = (k) => k[0] !== 7;
-    $retainSet(s, value$2, s, keyDrop_drop);
+    $retainSet(s, (k) => k[0] !== 7, s, keyDrop_drop);
     $add(s, [8], keyDrop_drop);
   } finally {
     for (const item of s) {
@@ -153,8 +146,7 @@ function main() {
     try {
       $add(sorted, [11], keyDrop_drop);
       $add(sorted, [10], keyDrop_drop);
-      const tmp = $add(sorted, [11], keyDrop_drop);
-      console.log(`sorted add ${tmp}`);
+      console.log(`sorted add ${$add(sorted, [11], keyDrop_drop)}`);
     } finally {
       for (const key of $sortedKeys(sorted, (a, b) => $cmp(a[0], b[0]))) {
         keyDrop_drop(key);
@@ -164,8 +156,7 @@ function main() {
     const asked = [1];
     const ids = new $KeyMap();
     ids.set([1], "x");
-    const tmp = $unwrap($removeEntry(ids, asked), "there");
-    const key = tmp[0];
+    const [key] = $unwrap($removeEntry(ids, asked), "there");
     console.log(`removed is asked ${key === asked}`);
     console.log("end");
   } finally {

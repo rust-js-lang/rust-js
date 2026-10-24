@@ -144,9 +144,9 @@ export const mutations: Mutation[] = [
     name: "applied-arrow-kept",
     breaks: "a closure read in place is called where it's made, `((e) => e.data)(r._0)`, not its value",
     file: "src/lower/mir/tidy/values.rs",
-    find: "            *e = Expr {\n                span: e.span,\n                ..applied\n            };\n",
-    replace: "            let _ = applied;\n",
-    tests: ["test/corpus.test.ts", "-t", "^poison_error.rs$"],
+    find: "        *e = Expr {\n            span: e.span,\n            ..applied\n        };\n",
+    replace: "        let _ = applied;\n",
+    tests: ["test/corpus.test.ts", "-t", "^(poison_error|is_sorted_items|option_combinator_drops).rs$"],
     snapshots: true,
   },
   {

@@ -443,11 +443,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     v
                 } else if to.is_char() {
                     Expr::call(Expr::member(Expr::var("String"), "fromCharCode"), vec![v])
-                } else if self.whole_cast_at(span) {
+                } else if self.kept_cast_at(span) {
                     v
                 } else {
                     self.cast(v, from, *to, span)?
                 }
+            }
+            // What an unwind's payload's `&JsError` is, what was thrown, is a
+            // `Some`, and `?` of it goes on (ADR 0710).
+            Rvalue::Discriminant(place)
+                if place.projection.is_empty()
+                    && let Some(&discriminant) = state.options.thrown.get(&place.local) =>
+            {
+                Expr::int(discriminant as i128)
             }
             Rvalue::Discriminant(place)
                 if place.projection.is_empty()

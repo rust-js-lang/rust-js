@@ -229,6 +229,39 @@ impl Expr {
         }
     }
 
+    /// `new Error(message)`: a panic, of Rust's or a port's (ADR 0012), the
+    /// one way rust-js makes one; `new Error()` of an empty message,
+    /// `panic!("")`'s, as `message` is `""` either way (ADR 0706).
+    pub fn panic(message: Expr) -> Expr {
+        let args = match &message.kind {
+            ExprKind::Str(text) if text.is_empty() => Vec::new(),
+            _ => vec![message],
+        };
+        Expr::new_(Expr::var("Error"), args)
+    }
+
+    /// Of `new Error(..)`, a panic: what it's made of.
+    pub fn panic_message(&self) -> Option<&[Expr]> {
+        match &self.kind {
+            ExprKind::New(class, args) if matches!(&class.kind, ExprKind::Var(name) if name == "Error") => Some(args),
+            _ => None,
+        }
+    }
+
+    /// What was thrown of an unwind's payload `pair`, `pair.error`, which
+    /// its downcast to a `&JsError` finds (ADR 0710).
+    pub fn thrown_error(pair: Expr) -> Expr {
+        Expr::member(pair, THROWN_VALUE)
+    }
+
+    /// Of `Expr::thrown_error`'s, the payload.
+    pub fn thrown_error_of(&self) -> Option<&Expr> {
+        match &self.kind {
+            ExprKind::Member(pair, field) if field == THROWN_VALUE => Some(pair),
+            _ => None,
+        }
+    }
+
     /// `$catchUnwind(f)`: `catch_unwind(f)`'s `Result`, `f()`'s value, or
     /// what unwound, `$unwound(e)` of what was thrown (ADR 0660).
     pub fn caught_unwind(f: Expr) -> Expr {

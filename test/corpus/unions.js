@@ -113,9 +113,9 @@ function main() {
   const boxed = 5;
   console.log(`${(boxed + 1) | 0}`);
   const held = { noisy: ["inside"] };
-  const value$1 = $unionField(held, "noisy")[0];
+  const value$1 = $unionField(held, "noisy");
   try {
-    console.log(`${value$1}`);
+    console.log(`${value$1[0]}`);
   } finally {
     console.log("drop holder");
   }

@@ -159,9 +159,8 @@ function main() {
   }
   shape$a$live = false;
   const again = pair("ra", "rb", 4);
-  const a = again.a;
   try {
-    consume(a);
+    consume(again.a);
   } catch (error) {
     noisyDrop_drop(again.b);
     throw error;

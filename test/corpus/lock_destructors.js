@@ -44,18 +44,17 @@ function main() {
   }
   const l = { value: [["a"], ["b"]] };
   try {
-    const tmp = $lock(l, true);
+    const value = $lock(l, true);
     try {
-      tmp.value.push(["c"]);
+      value.value.push(["c"]);
     } finally {
-      $unborrow(tmp);
+      $unborrow(value);
     }
-    const tmp$1 = $lockRead(l, true);
-    const value = tmp$1.value;
+    const value$1 = $lockRead(l, true);
     try {
-      console.log(`${value.length} held`);
+      console.log(`${value$1.value.length} held`);
     } finally {
-      $unborrow(tmp$1);
+      $unborrow(value$1);
     }
   } finally {
     for (const item of l.value) {

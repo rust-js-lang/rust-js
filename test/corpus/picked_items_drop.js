@@ -27,9 +27,8 @@ function third(it, dropI) {
 }
 
 function named(it, name, dropI) {
-  const value = (n) => n[0] === name;
   try {
-    return $findDropping($lent(Iterator.from(it)), (item) => value(item), noisyDrop_drop, false);
+    return $findDropping($lent(Iterator.from(it)), (n) => n[0] === name, noisyDrop_drop, false);
   } finally {
     dropI?.(it);
   }
@@ -40,55 +39,38 @@ function main() {
   const it = $iter(v);
   try {
     const x = $nthDropping($lent(it), 1, noisyDrop_drop, false);
-    const value = (n) => n[0];
     try {
-      console.log(`got ${(x ? value(x) : undefined) ?? "none"}`);
+      console.log(`got ${x?.[0] ?? "none"}`);
     } finally {
       if (x != null) {
         noisyDrop_drop(x);
       }
     }
-    const value$1 = [["p"], ["q"], ["r"]];
-    const tmp = $iter(value$1);
-    const y = third(tmp, $dropEach(noisyDrop_drop));
-    const value$2 = (n) => n[0];
+    const y = third($iter([["p"], ["q"], ["r"]]), $dropEach(noisyDrop_drop));
     try {
-      console.log(`got ${(y ? value$2(y) : undefined) ?? "none"}`);
-      const value = [["s"]];
-      const tmp = $iter(value);
-      const z = third(tmp, $dropEach(noisyDrop_drop));
+      console.log(`got ${y?.[0] ?? "none"}`);
+      const z = third($iter([["s"]]), $dropEach(noisyDrop_drop));
       try {
         console.log(`none ${!z}`);
-        const value = [["e"], ["f"], ["g"]];
-        const tmp = $iter(value);
-        const value$1 = (n) => n[0] === "f";
+        const value = $iter([["e"], ["f"], ["g"]]);
         let f;
         try {
-          f = $findDropping($lent(tmp), (item) => value$1(item), noisyDrop_drop, false);
+          f = $findDropping($lent(value), (n) => n[0] === "f", noisyDrop_drop, false);
         } catch (error) {
-          for (const item of tmp) {
+          for (const item of value) {
             noisyDrop_drop(item);
           }
           throw error;
         }
         try {
-          for (const item of tmp) {
+          for (const item of value) {
             noisyDrop_drop(item);
           }
-          const value = (n) => n[0];
-          console.log(`found ${(f ? value(f) : undefined) ?? "none"}`);
-          const value$1 = [["h"], ["i"]];
-          const tmp$1 = $iter(value$1);
-          const g = named(tmp$1, "i", $dropEach(noisyDrop_drop));
-          const value$2 = (n) => n[0];
+          console.log(`found ${f?.[0] ?? "none"}`);
+          const g = named($iter([["h"], ["i"]]), "i", $dropEach(noisyDrop_drop));
           try {
-            console.log(`found ${(g ? value$2(g) : undefined) ?? "none"}`);
-            const value = [["j"], ["kk"], ["l"]];
-            const tmp = $iter(value);
-            const tmp$1 = (n) => $byteLen(n[0]) === 1;
-            const partition = $partition(tmp, tmp$1);
-            const kept = partition[0];
-            const rest = partition[1];
+            console.log(`found ${g?.[0] ?? "none"}`);
+            const [kept, rest] = $partition([["j"], ["kk"], ["l"]], (n) => $byteLen(n[0]) === 1);
             try {
               try {
                 console.log(`${kept.length} ${rest.length}`);

@@ -172,6 +172,22 @@ fn moved(stmt: &Stmt, rest: &[Stmt], facts: &MoveFacts) -> Option<(Moved, Why)> 
     }
     let read = read_of(&rest[at], name, value)?;
     let expr = read.of(&rest[at]);
+    // Not an arrow into a call of it it'd be left called where it's made
+    // in, `((l) => { .. })(take)`: it's held, `const map = (l) => ..;`, as
+    // where no guard's `try` is (ADR 0705).
+    if let ExprKind::Arrow(..) = value.kind {
+        let mut left_called = false;
+        expr.each(&mut |e| {
+            if let ExprKind::Call(callee, args) = &e.kind
+                && matches!(&callee.kind, ExprKind::Var(v) if v == name)
+            {
+                left_called |= applied_in_place(value, args).is_none();
+            }
+        });
+        if left_called {
+            return None;
+        }
+    }
     let mut stable = !value.has_effects();
     value.visit_vars(&mut |v| stable &= !facts.changing.contains(v));
     // One made where a test holds, `t ? e : undefined`, may be read where

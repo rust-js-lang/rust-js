@@ -1,4 +1,4 @@
-# 0695. What stops early steps by `try_fold`, and `nth` is passed on, as std's adapters route them
+# 0711. What stops early steps by `try_fold`, and `nth` is passed on, as std's adapters route them
 
 Status: Accepted. Amends [0687](0687-a-consumer-steps-its-iterator-as-std-does.md)
 and [0690](0690-an-iterator-given-as-it-is-folds-by-its-own-fold.md), whose

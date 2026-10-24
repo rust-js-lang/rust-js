@@ -291,11 +291,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     true => join(vec![Expr::str("internal error: entered unreachable code: "), shown]),
                     false => shown,
                 };
-                out.push(StmtKind::Throw(Expr::new_(Expr::var("Error"), vec![shown])).at(js_span));
+                out.push(StmtKind::Throw(Expr::panic(shown)).at(js_span));
                 Expr::undefined()
             }
             Std::Panic | Std::PanicFmt => {
-                out.push(StmtKind::Throw(Expr::new_(Expr::var("Error"), vec![arg()])).at(js_span));
+                out.push(StmtKind::Throw(Expr::panic(arg())).at(js_span));
                 Expr::undefined()
             }
             Std::Unreachable => {
@@ -311,7 +311,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 if !text {
                     return Err(self.unsupported(span, "a panic whose payload isn't text"));
                 }
-                out.push(StmtKind::Throw(Expr::new_(Expr::var("Error"), vec![arg()])).at(js_span));
+                out.push(StmtKind::Throw(Expr::panic(arg())).at(js_span));
                 Expr::undefined()
             }
             // A whole line is `console.log`'s, which ends it; text that may

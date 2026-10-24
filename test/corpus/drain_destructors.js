@@ -17,29 +17,25 @@ function main() {
     for (const item of drain) {
       console.log(`drop ${item[0]}`);
     }
-    const tmp = ids(v);
-    console.log(`after statement [${tmp.join(", ")}]`);
-    const tmp$1 = $iter($drain(v, 0, 2));
-    const taken = tmp$1.toArray();
+    console.log(`after statement [${ids(v).join(", ")}]`);
+    const taken = $drain(v, 0, 2);
     try {
-      const tmp = ids(taken);
-      const tmp$1 = v;
-      const tmp$2 = ids(tmp$1);
-      console.log(`taken [${tmp.join(", ")}] left [${tmp$2.join(", ")}]`);
-      const tmp$3 = $iter($drain(v, 1));
-      const iter = tmp$3;
-      let tmp$4;
+      const value = ids(taken);
+      const value$1 = ids(v);
+      console.log(`taken [${value.join(", ")}] left [${value$1.join(", ")}]`);
+      const iter = $iter($drain(v, 1));
+      let tmp;
       while (true) {
         try {
-          tmp$4 = $next(iter);
+          tmp = $next(iter);
         } catch (error) {
           for (const item of iter) {
             console.log(`drop ${item[0]}`);
           }
           throw error;
         }
-        if (tmp$4) {
-          const n = tmp$4;
+        if (tmp) {
+          const n = tmp;
           try {
             console.log(`got ${n[0]}`);
           } catch (error) {
@@ -75,8 +71,7 @@ function main() {
         }
         break;
       }
-      const tmp$5 = ids(v);
-      console.log(`after loop [${tmp$5.join(", ")}]`);
+      console.log(`after loop [${ids(v).join(", ")}]`);
       const w = $range(10, 14).map((value) => [value]);
       try {
         const d = $iter($drain(w, 0));
@@ -89,10 +84,9 @@ function main() {
           }
           throw error;
         }
-        const value = (n) => n[0];
         try {
-          const value$1 = first ? value(first) : undefined;
-          console.log(`first ${value$1 == null ? "None" : `Some(${value$1})`}`);
+          const value = first?.[0];
+          console.log(`first ${value == null ? "None" : `Some(${value})`}`);
         } catch (error) {
           if (first != null) {
             console.log(`drop ${first[0]}`);
@@ -106,8 +100,7 @@ function main() {
           for (const item of d) {
             console.log(`drop ${item[0]}`);
           }
-          const length = w.length;
-          console.log(`after drain ${length}`);
+          console.log(`after drain ${w.length}`);
         } finally {
           if (first != null) {
             console.log(`drop ${first[0]}`);

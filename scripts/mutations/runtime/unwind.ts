@@ -1,4 +1,4 @@
-// Mutations of src/runtime/unwind.js (ADRs 0660, 0692).
+// Mutations of src/runtime/unwind.js (ADRs 0660, 0692, 0710).
 import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
@@ -8,22 +8,22 @@ export const mutations: Mutation[] = [
     file: "src/runtime/unwind.js",
     find: "    return { value: e.message, impl: $panicMessage, error: e };\n",
     replace: "    return { value: e.message, impl: $panicMessage };\n",
-    tests: ["test/lowering-unwinds.test.ts", "-t", "a thrown Error answers both downcasts"],
+    tests: ["test/lowering-unwinds.test.ts", "-t", "every unwind"],
   },
   {
     name: "resumed-panic-made-again",
     breaks: "`resume_unwind` of a thrown `Error`'s payload throws a new `Error` of its message, not the same one",
     file: "src/runtime/unwind.js",
-    find: "  if (payload.error && payload.value === payload.error.message) {\n",
+    find: "  if (payload.impl === $panicMessage && payload.value === payload.error.message) {\n",
     replace: "  if (false) {\n",
-    tests: ["test/lowering-unwinds.test.ts", "-t", "a thrown Error answers both downcasts"],
+    tests: ["test/lowering-unwinds.test.ts", "-t", "every unwind"],
   },
   {
     name: "resumed-panic-message-unchanged",
     breaks: "`resume_unwind` of a panic's payload whose message was changed through `downcast_mut` throws the `Error` of its old message",
     file: "src/runtime/unwind.js",
-    find: "  if (payload.error && payload.value === payload.error.message) {\n",
-    replace: "  if (payload.error) {\n",
+    find: "  if (payload.impl === $panicMessage && payload.value === payload.error.message) {\n",
+    replace: "  if (payload.impl === $panicMessage) {\n",
     tests: ["test/corpus.test.ts", "-t", "^catch_unwind_message_changed.rs$"],
   },
   {
@@ -32,15 +32,15 @@ export const mutations: Mutation[] = [
     file: "src/runtime/unwind.js",
     find: "  return e instanceof $Unwinding || (e instanceof Error && e.constructor === Error);\n",
     replace: "  return e instanceof $Unwinding || e instanceof Error;\n",
-    tests: ["test/lowering-unwinds.test.ts", "-t", "a payload is a panic's message"],
+    tests: ["test/lowering-unwinds.test.ts", "-t", "every unwind"],
   },
   {
     name: "js-throw-a-message",
     breaks: "what JS threw unwinds as a panic's message, so a downcast to `&JsError` finds none",
     file: "src/runtime/unwind.js",
-    find: "  return { value: e, impl: $jsThrown };\n",
+    find: "  return { value: e, impl: $jsThrown, error: e };\n",
     replace: "  return { value: String(e), impl: $panicMessage };\n",
-    tests: ["test/lowering-unwinds.test.ts", "-t", "a payload is a panic's message"],
+    tests: ["test/lowering-unwinds.test.ts", "-t", "every unwind"],
   },
   {
     name: "resumed-js-throw-wrapped",
@@ -48,7 +48,7 @@ export const mutations: Mutation[] = [
     file: "src/runtime/unwind.js",
     find: "  if (id === \"&js::JsError\") {\n    return payload.value;\n",
     replace: "  if (id === \"&js::JsError\") {\n    return new Error(String(payload.value));\n",
-    tests: ["test/lowering-unwinds.test.ts", "-t", "a payload is a panic's message"],
+    tests: ["test/lowering-unwinds.test.ts", "-t", "every unwind"],
   },
   {
     name: "resumed-text-not-a-panic",
@@ -81,5 +81,29 @@ export const mutations: Mutation[] = [
     find: "const $panicMessage = { typeId: () => \"&str\" };\n",
     replace: "const $panicMessage = { typeId: () => \"str\" };\n",
     tests: ["test/lowering-unwinds.test.ts", "-t", "a payload is a panic's message"],
+  },
+  {
+    name: "js-throw-error-lost",
+    breaks: "what JS threw isn't its payload's `error`, so a downcast to `&JsError` of it passed on finds none",
+    file: "src/runtime/unwind.js",
+    find: "  return { value: e, impl: $jsThrown, error: e };\n",
+    replace: "  return { value: e, impl: $jsThrown };\n",
+    tests: ["test/lowering-unwinds.test.ts", "-t", "every unwind"],
+  },
+  {
+    name: "unwinding-error-unset",
+    breaks: "a typed payload's `error` isn't the `$Unwinding` it was thrown in, so its downcast to `&JsError` finds none",
+    file: "src/runtime/unwind.js",
+    find: "    payload.error = this;\n",
+    replace: "",
+    tests: ["test/lowering-unwinds.test.ts", "-t", "every unwind"],
+  },
+  {
+    name: "resumed-unwinding-made-again",
+    breaks: "`resume_unwind` of a typed payload throws a new `$Unwinding`, not the one it was thrown in",
+    file: "src/runtime/unwind.js",
+    find: "  if (payload.error instanceof $Unwinding) {\n",
+    replace: "  if (false) {\n",
+    tests: ["test/lowering-unwinds.test.ts", "-t", "every unwind"],
   },
 ];

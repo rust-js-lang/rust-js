@@ -76,27 +76,26 @@ function main() {
         $unborrow(tryLock._0._0.data);
       }
     }
-    const tmp = $tryLock(m, true);
-    const value = tmp.TAG === "Err";
+    const value = $tryLock(m, true);
     try {
-      console.log(`${value}`);
+      console.log(`${value.TAG === "Err"}`);
     } catch (error) {
-      if (tmp.TAG === "Ok") {
-        $unborrow(tmp._0);
+      if (value.TAG === "Ok") {
+        $unborrow(value._0);
       }
-      if (tmp.TAG === "Err") {
-        if (tmp._0.TAG === "Poisoned") {
-          $unborrow(tmp._0._0.data);
+      if (value.TAG === "Err") {
+        if (value._0.TAG === "Poisoned") {
+          $unborrow(value._0._0.data);
         }
       }
       throw error;
     }
-    if (tmp.TAG === "Ok") {
-      $unborrow(tmp._0);
+    if (value.TAG === "Ok") {
+      $unborrow(value._0);
     }
-    if (tmp.TAG === "Err") {
-      if (tmp._0.TAG === "Poisoned") {
-        $unborrow(tmp._0._0.data);
+    if (value.TAG === "Err") {
+      if (value._0.TAG === "Poisoned") {
+        $unborrow(value._0._0.data);
       }
     }
   } finally {
@@ -130,17 +129,14 @@ function main() {
     e === "WouldBlock" ? '"WouldBlock"' : '"Poisoned(..)"',
   );
   try {
-    const tryRead = $tryLock(l);
-    const r2 = $unwrapOk(tryRead, undefined, (e) =>
+    const r2 = $unwrapOk($tryLock(l), undefined, (e) =>
       e === "WouldBlock" ? '"WouldBlock"' : '"Poisoned(..)"',
     );
     try {
       const tryWrite = $tryLock(l, true);
-      const value = r1.value;
-      const value$1 = r2.value;
-      const value$2 = tryWrite.TAG === "Err";
+      const value = tryWrite.TAG === "Err";
       try {
-        console.log(`${value} ${value$1} ${value$2}`);
+        console.log(`${r1.value} ${r2.value} ${value}`);
       } catch (error) {
         if (tryWrite.TAG === "Ok") {
           $unborrow(tryWrite._0);
@@ -173,8 +169,7 @@ function main() {
   $unborrow(value$1);
   const w = $lock(l, true);
   try {
-    const tmp = $tryLock(l);
-    const e = $unwrapErr(tmp, undefined, (e) => $debugStr(e.value));
+    const e = $unwrapErr($tryLock(l), undefined, (e) => $debugStr(e.value));
     try {
       console.log(
         `${e === "WouldBlock" ? "try_lock failed because the operation would block" : "poisoned lock: another task failed inside"} ${e === "WouldBlock" ? '"WouldBlock"' : '"Poisoned(..)"'} ${$byteLen(w.value)}`,

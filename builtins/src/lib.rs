@@ -21,7 +21,7 @@ pub mod date;
 pub use date::Date;
 pub mod intl;
 pub mod promise;
-pub use promise::{PromiseSettledResult, PromiseWithResolvers};
+pub use promise::{Fulfils, PromiseSettledResult, PromiseWithResolvers};
 pub mod proxy;
 pub use proxy::{ProxyHandler, RevocableProxy};
 pub mod reflect;
@@ -214,8 +214,9 @@ pub enum Kind<'a> {
     Bool(bool),
     /// A symbol, `typeof value === "symbol"`.
     Symbol(&'a Symbol),
-    /// A function, `typeof value === "function"`, of whatever it takes.
-    Function(&'a dyn Fn()),
+    /// A function, `typeof value === "function"`, TypeScript's `Function`:
+    /// called of nothing, what it gives is any value (ADR 0700).
+    Function(&'a dyn Fn() -> Option<&'static Unknown>),
     Array(&'a [Option<&'a Unknown>]),
     /// `undefined`: `value === undefined`.
     #[cfg_attr(rust_js, rust_js::undefined)]
@@ -448,6 +449,30 @@ pub fn string(value: Option<&Unknown>) -> String {
 #[cfg_attr(rust_js, rust_js::link_name = "get []")]
 #[allow(unused_variables)]
 pub fn get<K: PropertyKey + ?Sized>(this: &Unknown, key: &K) -> Option<&'static Unknown> {
+    unreachable!()
+}
+
+/// `delete value[key]`: the object's own property of that name gone, as
+/// JS's `delete` makes it, and whether it is, `false` of one that can't
+/// be, which JS's strict mode throws a `TypeError` of, a panic (ADR 0697).
+/// Of a value of any shape, as TypeScript's `delete` is of an `any`'s.
+#[cfg_attr(rust_js, rust_js::link_name = "delete []")]
+#[allow(unused_variables)]
+pub fn delete<K: PropertyKey + ?Sized>(this: &Unknown, key: &K) -> bool {
+    unreachable!()
+}
+
+/// `new value(...arguments)`: what JS's `new` makes of a function, of a
+/// value of any shape, as TypeScript's `new` is of an `any`'s: a `fn` item,
+/// `js::new(js::unknown(&fake), ())`, or a function JS gives,
+/// `js::new(js::unknown(r#fn), (a, b))`; a closure is an arrow function,
+/// which JS throws a `TypeError` of, a panic, as of what's no constructor
+/// (ADR 0695). Its arguments are a rest parameter's, a tuple of them, `()`
+/// of none, or a slice spread.
+#[cfg_attr(rust_js, rust_js::link_name = "new this()")]
+#[cfg_attr(rust_js, rust_js::variadic)]
+#[allow(unused_variables)]
+pub fn new(this: &Unknown, arguments: impl Rest<dyn IntoUnknown>) -> &'static Unknown {
     unreachable!()
 }
 

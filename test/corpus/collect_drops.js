@@ -24,16 +24,14 @@ function main() {
     console.log(`kept ${long.length}`);
 
     const w = [["x"], ["y"], ["z"]];
-    const tmp = $iter(w);
-    const tmp$1 = (n) => n[0] !== "y";
-    const skipWhile = $lazySkipWhile($closing(tmp, $dropEach(noisyDrop_drop)), (item) => {
-      if (tmp$1(item)) {
+    const value = (n) => n[0] !== "y";
+    const rest = $lazySkipWhile($closing($iter(w), $dropEach(noisyDrop_drop)), (item) => {
+      if (value(item)) {
         noisyDrop_drop(item);
         return true;
       }
       return false;
-    });
-    const rest = skipWhile.toArray();
+    }).toArray();
     try {
       console.log(`rest ${rest.length}`);
 
@@ -41,44 +39,29 @@ function main() {
       const old = fragments;
       fragments = [];
       try {
-        const tmp = $iter(old);
-        const tmp$1 = () => true;
-        const tmp$2 = $lazySkipWhile($closing(tmp, $dropEach(noisyDrop_drop)), (item) => {
-          if (tmp$1(item)) {
+        const value = () => true;
+        const none = $lazySkipWhile($closing($iter(old), $dropEach(noisyDrop_drop)), (item) => {
+          if (value(item)) {
             noisyDrop_drop(item);
             return true;
           }
           return false;
-        });
-        const none = tmp$2.toArray();
-        const length = none.length;
-        const value = fragments.length;
+        }).toArray();
+        const length = fragments.length;
         try {
-          console.log(`none ${length} ${value}`);
+          console.log(`none ${none.length} ${length}`);
 
-          const value$1 = [["m1"], ["m2"]];
-          const tmp = $iter(value$1);
-          const tmp$1 = (n) => {
+          const value = (n) => {
             const result = n[0];
             noisyDrop_drop(n);
             return result;
           };
-          const map = $closing(tmp, $dropEach(noisyDrop_drop)).map((item) => tmp$1(item));
-          const names = map.toArray();
+          const names = [["m1"], ["m2"]].map((item) => value(item));
           console.log(`[${names.map((item) => $debugStr(item)).join(", ")}]`);
 
-          const value$2 = [["p1"], ["p2"], ["p3"]];
-          const tmp$2 = $iter(value$2);
-          const tmp$3 = (n) => n[0] !== "p2";
-          const keep = (item) => tmp$3(item);
-          const filter = $closing(tmp$2, $dropEach(noisyDrop_drop)).filter((item) => {
-            if (keep(item)) {
-              return true;
-            }
-            noisyDrop_drop(item);
-            return false;
-          });
-          const tmp$4 = (n) => {
+          const value$1 = (n) => n[0] !== "p2";
+          const keep = (item) => value$1(item);
+          const value$2 = (n) => {
             try {
               console.log(`map ${n[0]}`);
             } catch (error) {
@@ -87,8 +70,16 @@ function main() {
             }
             return n;
           };
-          const tmp$5 = filter.map((item) => tmp$4(item));
-          const checked = tmp$5.toArray();
+          const checked = $closing($iter([["p1"], ["p2"], ["p3"]]), $dropEach(noisyDrop_drop))
+            .filter((item) => {
+              if (keep(item)) {
+                return true;
+              }
+              noisyDrop_drop(item);
+              return false;
+            })
+            .map((item) => value$2(item))
+            .toArray();
           try {
             console.log(`checked ${checked.length}`);
             console.log("end");

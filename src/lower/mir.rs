@@ -324,6 +324,11 @@ struct OptionWrites {
     /// value read itself, a `Some` wherever it's tested, as each case
     /// compares it by `===` (ADR 0634).
     registered: std::collections::HashSet<Local>,
+    /// The locals a downcast of an unwind's payload to a `&JsError` gives,
+    /// written once, and `?` of one: what was thrown, a `Some` wherever it's
+    /// tested, a falsy one's too (`FnCx::finds_thrown`, ADR 0710); each its
+    /// discriminant, `Some`'s, or `?`'s `Continue`'s.
+    thrown: HashMap<Local, u128>,
     /// The untagged enums a call gives of a `Some(..)`, `js::classify(Some(value))`'s
     /// (`body_queries::present_calls`): never `undefined` nor `null` (ADR 0676).
     present: std::collections::HashSet<Local>,

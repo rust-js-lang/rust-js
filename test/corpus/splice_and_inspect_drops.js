@@ -76,51 +76,49 @@ function main() {
     const it = $iter($splice(v, 0, 1, []));
     try {
       const next = $next(it);
-      const tmp = (l) => {
+      const value = (l) => {
         const result = l[0];
         console.log(`drop ${l[0]}`);
         return result;
       };
-      const tmp$1 = next ? tmp(next) : undefined;
-      console.log(`${tmp$1 == null ? "None" : `Some(${tmp$1})`}`);
+      const value$1 = next ? value(next) : undefined;
+      console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
     } finally {
       for (const item of it) {
         console.log(`drop ${item[0]}`);
       }
     }
-    const tmp = v.map((l) => l[0]);
-    console.log(`[${tmp.join(", ")}]`);
-    const loud = [7];
-    const value = (l) => {
-      console.log(`saw ${l[0]}`);
-    };
-    if (loud != null) {
-      value(loud);
+    console.log(`[${v.map((l) => l[0]).join(", ")}]`);
+    const option = [7];
+    if (option != null) {
+      const inspected = (l) => {
+        console.log(`saw ${l[0]}`);
+      };
+      inspected(option);
     }
-    const o = loud;
-    const value$1 = (l) => {
+    const o = option;
+    const map = (l) => {
       const result = l[0];
       console.log(`drop ${l[0]}`);
       return result;
     };
-    const tmp$1 = o ? value$1(o) : undefined;
-    console.log(`${tmp$1 == null ? "None" : `Some(${tmp$1})`}`);
+    const value = o ? map(o) : undefined;
+    console.log(`${value == null ? "None" : `Some(${value})`}`);
     const r = { TAG: "Ok", _0: [8] };
-    const value$2 = (l) => {
-      console.log(`ok ${l[0]}`);
-    };
     if (r.TAG === "Ok") {
-      value$2(r._0);
+      const inspected = (l) => {
+        console.log(`ok ${l[0]}`);
+      };
+      inspected(r._0);
     }
-    const value$3 = (e) => {
-      console.log(`err ${e}`);
-    };
     if (r.TAG === "Err") {
-      value$3(r._0);
+      const inspected = (e) => {
+        console.log(`err ${e}`);
+      };
+      inspected(r._0);
     }
-    const value$4 = r.TAG === "Ok";
     try {
-      console.log(`${value$4}`);
+      console.log(`${r.TAG === "Ok"}`);
     } finally {
       if (r.TAG === "Ok") {
         console.log(`drop ${r._0[0]}`);

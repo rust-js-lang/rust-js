@@ -492,7 +492,7 @@ impl Expr {
                     value.has_effects()
                 }
             }),
-            ExprKind::Unary(_, a) => a.has_effects(),
+            ExprKind::Unary(op, a) => op.writes() || a.has_effects(),
             ExprKind::Binary(_, a, b) => a.has_effects() || b.has_effects(),
             ExprKind::Cond(a, b, c) => a.has_effects() || b.has_effects() || c.has_effects(),
             // A number wrapped to its width, `BigInt.asIntN(64, n)`, a
@@ -542,33 +542,36 @@ pub fn names_in(stmts: &[Stmt], names: &mut HashSet<String>) {
     visit_stmts(stmts, &mut |name| {
         names.insert(name.to_string());
     });
+    each_declared(stmts, &mut |name| {
+        names.insert(name.to_string());
+    });
+}
+
+/// Each name `stmts` declare, once for each declaration: a `let`, a
+/// `const`, a pattern's, a `catch`'s, a function and its closures' and
+/// functions' parameters.
+pub fn each_declared(stmts: &[Stmt], f: &mut dyn FnMut(&str)) {
     let mut stmts = stmts.to_vec();
-    let params = |params: &[Pattern], names: &mut HashSet<String>| {
-        names.extend(params.iter().flat_map(|p| p.names()).map(str::to_string));
-    };
+    let params = |params: &[Pattern], f: &mut dyn FnMut(&str)| params.iter().flat_map(|p| p.names()).for_each(&mut *f);
     each_block_mut(&mut stmts, &mut |list| {
         for stmt in list.iter() {
             match &stmt.kind {
-                StmtKind::Const(name, _) | StmtKind::Let(name, _) | StmtKind::For { name, .. } => {
-                    names.insert(name.clone());
-                }
+                StmtKind::Const(name, _) | StmtKind::Let(name, _) | StmtKind::For { name, .. } => f(name),
                 StmtKind::Destructure { pattern, .. } | StmtKind::ForOf { pattern, .. } => {
-                    names.extend(pattern.names().into_iter().map(str::to_string));
+                    pattern.names().into_iter().for_each(&mut *f)
                 }
-                StmtKind::TryCatch(_, Some(name), _) => {
-                    names.insert(name.clone());
-                }
+                StmtKind::TryCatch(_, Some(name), _) => f(name),
                 StmtKind::Function(function) => {
-                    names.insert(function.name.clone());
-                    params(&function.params, names);
+                    f(&function.name);
+                    params(&function.params, f);
                 }
                 _ => {}
             }
         }
     });
     each_expr_mut(&mut stmts, &mut |e| match &e.kind {
-        ExprKind::Arrow(ps, _) | ExprKind::AsyncArrow(ps, _) => params(ps, names),
-        ExprKind::Function(function) => params(&function.params, names),
+        ExprKind::Arrow(ps, _) | ExprKind::AsyncArrow(ps, _) => params(ps, f),
+        ExprKind::Function(function) => params(&function.params, f),
         _ => {}
     });
 }

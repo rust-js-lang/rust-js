@@ -97,10 +97,8 @@ function main() {
       break;
     }
     const w = tmp;
-    let buf;
     let uppercase;
     try {
-      buf = b;
       uppercase = w.toUpperCase();
     } catch (error) {
       if (b$live) {
@@ -109,7 +107,7 @@ function main() {
       throw error;
     }
     try {
-      Buf.push(buf, uppercase, 12, 4);
+      Buf.push(b, uppercase, 12, 4);
     } catch (error) {
       if (b$live) {
         bufDrop_drop(b, 12, 4);

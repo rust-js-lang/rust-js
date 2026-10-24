@@ -22,8 +22,7 @@ function holderShow_show(holder, TCopy, TDisplay) {
 function main() {
   const loud = "a";
   try {
-    const tmp = holderShow_show([3], { copy: (value) => value }, { fmt: String });
-    console.log(`${tmp}`);
+    console.log(`${holderShow_show([3], { copy: (value) => value }, { fmt: String })}`);
   } finally {
     console.log(`drop ${loud}`);
   }

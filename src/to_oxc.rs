@@ -356,7 +356,14 @@ fn comments_of(
     // A conditional's branch is a start too, its value's, that a comment
     // before it in Rust is before (ADR 0658).
     let arms = arm_starts(module);
+    // And a call's argument, and an object literal's field, whose comments
+    // oxc writes before it, on lines of their own (ADR 0708).
+    let parts = part_starts(module);
     let mut starts: Vec<u32> = spans.iter().map(|&(lo, _)| lo).chain(arms.keys().copied()).collect();
+    // What's first on its line is of these alone.
+    let mut statement_starts = starts.clone();
+    statement_starts.sort_unstable();
+    starts.extend(parts.keys().copied());
     starts.sort_unstable();
     starts.dedup();
     // What's before the Rust statement at `start` is before the first JS
@@ -425,6 +432,14 @@ fn comments_of(
                     && let Some(pattern) = sources.text.get(at as usize..after as usize)
                     && pattern.trim_end().ends_with("=>")
                     && !pattern.contains([';', '{', '}', '\n'])
+                {
+                    next += 1;
+                }
+                // Not a part of what starts after it, a call the comment
+                // is before, not inside: `// c\n f(x);`'s is the statement's.
+                while let Some(at) = starts.get(next)
+                    && parts.get(at).is_some_and(|&whole| whole > c.lo)
+                    && !spans.iter().any(|&(lo, _)| lo == *at)
                 {
                     next += 1;
                 }
@@ -520,6 +535,9 @@ fn comments_of(
                 }
                 continue;
             }
+            // A part's, each as written, no blank line: Prettier keeps none
+            // between a call's arguments, nor before an object's first field.
+            let part = parts.contains_key(&at) && !spans.iter().any(|&(lo, _)| lo == at);
             let mut pieces: Vec<(u32, u32)> = Vec::new();
             // A function kept out of line, `#[inline(never)]`, says so in its
             // JSDoc, the last line of its own, or one of its own (ADR 0649).
@@ -528,7 +546,7 @@ fn comments_of(
             let mut i = 0;
             while i < own.len() {
                 let comment = own[i];
-                if blank_before(comment.lo) {
+                if blank_before(comment.lo) && !part {
                     pieces.push(blank(&text));
                 }
                 let is_doc_line =
@@ -559,8 +577,9 @@ fn comments_of(
             // Of the first statement on its line only: not a closure's in
             // the `let` it's written in.
             let line_start = sources.text[..at as usize].rfind('\n').map_or(0, |i| i + 1) as u32;
-            let first_on_line = !starts.iter().any(|&s| s >= line_start && s < at);
-            if (own.is_empty() && first_on_line && blank_before(at))
+            let first_on_line = !statement_starts.iter().any(|&s| s >= line_start && s < at);
+            if part {
+            } else if (own.is_empty() && first_on_line && blank_before(at))
                 || (!own.is_empty() && {
                     // A line of nothing between: not a closure's opening's.
                     let gap: Vec<&str> = sources.text[last as usize..at as usize].split('\n').collect();
@@ -606,6 +625,40 @@ fn arm_starts(module: &Module) -> std::collections::HashMap<u32, u32> {
                         .filter(|s| !s.is_none())
                         .map(|s| (s.lo, s.hi)),
                 );
+            }
+        });
+    };
+    for item in &module.items {
+        match item {
+            js::Item::Const(c) => of(vec![StmtKind::Expr(c.value.clone()).at(js::Span::NONE)]),
+            js::Item::Statements(stmts) => of(stmts.clone()),
+            js::Item::Function(f) => of(f.body.clone()),
+            js::Item::Namespace(n) => n.methods.iter().for_each(|method| of(method.body.clone())),
+        }
+    }
+    starts
+}
+
+/// Where each call's and `new`'s argument starts, and each object literal's
+/// field's value, of those that say, and where what they're parts of
+/// starts: what a comment before one in the Rust, inside what it's part
+/// of, is before in the JS, as oxc writes it (ADR 0708).
+fn part_starts(module: &Module) -> std::collections::HashMap<u32, u32> {
+    let mut starts = std::collections::HashMap::new();
+    let mut of = |mut stmts: Vec<js::Stmt>| {
+        js::each_expr_mut(&mut stmts, &mut |e| {
+            let spans: Vec<js::Span> = match &e.kind {
+                ExprKind::Call(_, args) | ExprKind::New(_, args) => args.iter().map(|arg| arg.span).collect(),
+                ExprKind::Object(props) => (props.iter())
+                    .filter_map(|prop| match prop {
+                        js::Prop::Field(_, value) => Some(value.span),
+                        _ => None,
+                    })
+                    .collect(),
+                _ => Vec::new(),
+            };
+            if !e.span.is_none() {
+                starts.extend(spans.into_iter().filter(|s| !s.is_none()).map(|s| (s.lo, e.span.lo)));
             }
         });
     };

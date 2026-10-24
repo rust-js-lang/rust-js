@@ -24,13 +24,13 @@ function main() {
     .filter(Boolean);
   try {
     const next = $next(it);
-    const tmp = (l) => {
+    const value = (l) => {
       const result = l[0];
       loudDrop_drop(l);
       return result;
     };
-    const tmp$1 = next ? tmp(next) : undefined;
-    console.log(`${tmp$1 == null ? "None" : `Some(${tmp$1})`}`);
+    const value$1 = next ? value(next) : undefined;
+    console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
   } finally {
     it.return();
   }

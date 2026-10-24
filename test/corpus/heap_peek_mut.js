@@ -50,8 +50,8 @@ function main() {
   console.log(`[${heap.join(", ")}]`);
   top = $unwrap($peekMut(heap, $cmp));
   try {
-    const tmp = $peekMutTop(top, true);
-    tmp.value = (tmp.value - 10) | 0;
+    const value = $peekMutTop(top, true);
+    value.value = (value.value - 10) | 0;
     console.log(`${top.heap[0]} PeekMut(${top.heap[0]})`);
   } finally {
     $peekMutDrop(top);

@@ -627,6 +627,16 @@ pub(super) fn readable_temporaries(
             }
         }
     });
+    // In the order they're first read, as the program reads: one made in a
+    // `try` is named before a `let` the function declares first and sets
+    // later, `let next; .. next = $next(z);` (ADR 0705).
+    let mut first = HashMap::new();
+    let mut at = 0;
+    js::visit_stmts(body, &mut |name| {
+        first.entry(name.to_string()).or_insert(at);
+        at += 1;
+    });
+    renames.sort_by_key(|(from, ..)| first.get(from).copied().unwrap_or(usize::MAX));
     for (from, names, any) in renames {
         // The first name of what it holds no other has, else what any is
         // named, `value`, `arg` or `tmp`, given apart where it must be.

@@ -49,17 +49,18 @@ function main() {
       loudDrop_drop,
     );
     try {
-      const tmp = $sortedEntries(b, $cmp)
-        .map((entry) => entry[1])
-        .map((l) => l[0]);
-      console.log(`b [${tmp.join(", ")}]`);
-      const value = (i) => {
-        console.log(`make ${i}`);
-        return [i % 2, [(10 + i) & 255]];
-      };
+      console.log(
+        `b [${$sortedEntries(b, $cmp)
+          .map((entry) => entry[1])
+          .map((l) => l[0])
+          .join(", ")}]`,
+      );
       const c = $treeFrom(
         new Map(),
-        $lazyRange(0, 4).map((item) => value(item)),
+        $lazyRange(0, 4).map((i) => {
+          console.log(`make ${i}`);
+          return [i % 2, [(10 + i) & 255]];
+        }),
         false,
         $cmp,
         loudDrop_drop,
@@ -78,22 +79,19 @@ function main() {
           keyDrop_drop,
         );
         try {
-          const tmp = $iter([
+          const value = $iter([
             [2, 0],
             [2, 0],
           ]);
-          const hs = $extendMap(new $KeySet(), tmp, true, undefined, keyDrop_drop);
+          const hs = $extendMap(new $KeySet(), value, true, undefined, keyDrop_drop);
           try {
-            const tmp = $iter([
+            const value = $iter([
               [[3, 0], [20]],
               [[3, 0], [21]],
             ]);
-            const km = $extendMap(new $KeyMap(), tmp, false, loudDrop_drop, keyDrop_drop);
-            const size = s.size;
-            const value = hs.size;
-            const value$1 = km.size;
+            const km = $extendMap(new $KeyMap(), value, false, loudDrop_drop, keyDrop_drop);
             try {
-              console.log(`${size} ${value} ${value$1}`);
+              console.log(`${s.size} ${hs.size} ${km.size}`);
             } finally {
               for (const [key, value] of km) {
                 keyDrop_drop(key);

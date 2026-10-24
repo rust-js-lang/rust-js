@@ -69,27 +69,27 @@ function main() {
     { value: { seen: [] }, impl: loggerListener },
   ];
   for (const listener of listeners) {
-    const value = $borrowMut(listener, true);
+    const receiver = $borrowMut(listener, true);
     try {
-      value.impl.notify(value, "start");
+      receiver.impl.notify(receiver, "start");
     } finally {
-      $unborrow(value);
+      $unborrow(receiver);
     }
   }
-  const receiver = $borrowMut($index(listeners, 0), true);
+  const value = $borrowMut($index(listeners, 0), true);
   try {
-    receiver.impl.notify(receiver, "stop");
+    value.impl.notify(value, "stop");
   } finally {
-    $unborrow(receiver);
+    $unborrow(value);
   }
   const borrow = $borrow(logger, true);
   try {
     const count = loggerListener_count(borrow.value);
-    const tmp = $borrow($index(listeners, 1), true);
+    const value = $borrow($index(listeners, 1), true);
     try {
-      console.log(`${count} ${tmp.impl.count(tmp.value)}`);
+      console.log(`${count} ${value.impl.count(value.value)}`);
     } finally {
-      $unborrow(tmp);
+      $unborrow(value);
     }
   } finally {
     $unborrow(borrow);
@@ -248,28 +248,27 @@ function main() {
       try {
         try {
           const iter = sinks.entries();
-          let tmp;
           while (true) {
-            const tmp$1 = $next(iter);
-            if (!tmp$1) {
+            const value = $next(iter);
+            if (!value) {
               break;
             }
-            const i = tmp$1[0];
-            const sink = tmp$1[1];
-            tmp = $borrowMut(sink.value, true);
+            const i = value[0];
+            const sink = value[1];
+            const value$1 = $borrowMut(sink.value, true);
             try {
-              tmp.impl.take(tmp, (i + 1) >>> 0);
+              value$1.impl.take(value$1, (i + 1) >>> 0);
             } finally {
-              $unborrow(tmp);
+              $unborrow(value$1);
             }
           }
-          const tmp$1 = $borrow($index(sinks, 0).value, true);
+          const value = $borrow($index(sinks, 0).value, true);
           try {
-            const total = tmp$1.impl.total(tmp$1.value);
-            const tmp = $index(sinks, 0).strong;
-            console.log(`${total} ${tmp} ${counter.strong}`);
+            console.log(
+              `${value.impl.total(value.value)} ${$index(sinks, 0).strong} ${counter.strong}`,
+            );
           } finally {
-            $unborrow(tmp$1);
+            $unborrow(value);
           }
         } finally {
           for (const item of sinks) {
@@ -278,12 +277,11 @@ function main() {
             });
           }
         }
-        const tmp = $borrow(counter.value, true);
+        const value = $borrow(counter.value, true);
         try {
-          const tmp$1 = counterSink_total(tmp.value);
-          console.log(`${tmp$1} ${counter.strong}`);
+          console.log(`${counterSink_total(value.value)} ${counter.strong}`);
         } finally {
-          $unborrow(tmp);
+          $unborrow(value);
         }
       } finally {
         $rcDrop(counter);

@@ -7,7 +7,7 @@ export function entry() {
 function pick(a) {
   const x = (a + 1) >>> 0;
   const z = (x * 3) >>> 0;
-  const y = x > 3 ? (x * 2) >>> 0 : (x + 1) >>> 0;
+  const y = x > 3 ? (x * 2) >>> 0 : x + 1;
   return (((y + z) >>> 0) + x) >>> 0;
 }
 

@@ -124,13 +124,13 @@ function main() {
   // `None`s in a `Stack`: generic code tells a taken `None` from none left.
   const value$4 = { list: [undefined, undefined, 1] };
   const x$3 = { value: value$4 };
-  const value$5 = count(x$3, stackTakeT);
+  const value$6 = count(x$3, stackTakeT);
   $assign(value$4, x$3.value);
-  const value$6 = { list: [7, 8] };
-  const x$4 = { value: value$6 };
+  const value$5 = { list: [7, 8] };
+  const x$4 = { value: value$5 };
   const value$7 = count(x$4, numsTakeU32);
-  $assign(value$6, x$4.value);
-  console.log(`${value$5} ${value$7}`);
+  $assign(value$5, x$4.value);
+  console.log(`${value$6} ${value$7}`);
 
   const d = { value: m, impl: metersConvertString };
   console.log(`${d.impl.convert(d.value)}`);

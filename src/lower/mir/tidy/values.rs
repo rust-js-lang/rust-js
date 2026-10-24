@@ -153,15 +153,22 @@ pub(in crate::lower::mir) fn field_path(e: &Expr) -> Option<String> {
 pub(super) fn applied_arrows(e: &mut Expr) {
     if let ExprKind::Call(callee, args) = &e.kind
         && matches!(callee.kind, ExprKind::Arrow(..))
+        && let Some(applied) = applied_in_place(callee, args)
     {
-        let applied = crate::lower::calls::apply((**callee).clone(), args.clone());
-        if !matches!(&applied.kind, ExprKind::Call(f, _) if matches!(f.kind, ExprKind::Arrow(..))) {
-            *e = Expr {
-                span: e.span,
-                ..applied
-            };
-        }
+        *e = Expr {
+            span: e.span,
+            ..applied
+        };
     }
+}
+
+/// `f`, an arrow, called with `args` where it's made, as `calls::apply`
+/// makes a value of it: none where it's left an arrow called, `((l) => {
+/// .. })(take)`, which no person writes.
+pub(super) fn applied_in_place(f: &Expr, args: &[Expr]) -> Option<Expr> {
+    let applied = crate::lower::calls::apply(f.clone(), args.to_vec());
+    let called = matches!(&applied.kind, ExprKind::Call(g, _) if matches!(g.kind, ExprKind::Arrow(..)));
+    (!called).then_some(applied)
 }
 
 /// `xs.map(f)` of `xs.map((x, i) => f(x, i))`, a closure MIR says passes on

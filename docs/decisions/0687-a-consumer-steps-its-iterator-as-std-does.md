@@ -104,6 +104,6 @@ iterator given as it is, by its dictionary, `Peekable`'s and `Fuse`'s
 sources among them, folds by its own `fold` too, and an iterator that
 fold takes is dropped once.
 
-[ADR 0695](0695-what-stops-early-steps-by-try-fold.md): what stops early,
+[ADR 0711](0711-what-stops-early-steps-by-try-fold.md): what stops early,
 `any`, `all`, `find`, `position`, `try_fold` and `eq`, steps by std's
 `try_fold`, which `skip` makes its source's `nth(n - 1)`.

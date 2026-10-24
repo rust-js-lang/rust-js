@@ -20,8 +20,8 @@ function u32Account_deposit(self, n) {
 
 function pay(c, AAccount) {
   const borrowMut = $borrowMut(c, true);
+  const self = { value: borrowMut.value };
   try {
-    const self = { value: borrowMut.value };
     AAccount.deposit(self, 5);
     borrowMut.value = self.value;
   } finally {
@@ -31,8 +31,8 @@ function pay(c, AAccount) {
 
 function payThrough(c, AAccount) {
   const guard = $borrowMut(c, true);
+  const self = { value: guard.value };
   try {
-    const self = { value: guard.value };
     AAccount.deposit(self, 7);
     guard.value = self.value;
   } finally {
@@ -46,8 +46,8 @@ function give(a, AAccount) {
 
 function payGiven(c, AAccount) {
   const borrowMut = $borrowMut(c, true);
+  const a = { value: borrowMut.value };
   try {
-    const a = { value: borrowMut.value };
     give(a, AAccount);
     borrowMut.value = a.value;
   } finally {

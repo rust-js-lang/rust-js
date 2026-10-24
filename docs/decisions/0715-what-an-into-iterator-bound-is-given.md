@@ -1,4 +1,4 @@
-# 0699. What an `IntoIterator` bound is given is its items, as JS steps them
+# 0715. What an `IntoIterator` bound is given is its items, as JS steps them
 
 Status: Accepted. Amends [0061](0061-generic-iterators.md), whose
 `IntoIterator` on a type parameter is given the JS iterator itself, and
@@ -22,7 +22,7 @@ JS does, `Iterator.from(i)`. A caller gave it the value as it was, so:
 
 `iterable_items`, "what a function takes as an `IntoIterator`" (ADR 0528),
 answered each, but only `extend`, `chain`, `zip` and `entries` asked it.
-It refused a `&mut` range, which ADR 0698 now steps where it is.
+It refused a `&mut` range, which ADR 0714 now steps where it is.
 
 ## Decision
 

@@ -26,24 +26,19 @@ function main() {
     $heapPush(h, [9], (a, b) => $cmp(a[0], b[0]));
     $heapPush(h, [5], (a, b) => $cmp(a[0], b[0]));
     const top = $heapPop(h, (a, b) => $cmp(a[0], b[0]));
-    const value = (o) => o[0];
     try {
-      const value$1 = top ? value(top) : undefined;
-      console.log(`top ${value$1 == null ? "None" : `Some(${value$1})`}`);
+      const value = top?.[0];
+      console.log(`top ${value == null ? "None" : `Some(${value})`}`);
     } finally {
       if (top != null) {
         oDrop_drop(top);
       }
     }
-    const value$1 = [[1], [7]];
-    const other = $heapFrom(value$1, (a, b) => $cmp(a[0], b[0]));
+    const other = $heapFrom([[1], [7]], (a, b) => $cmp(a[0], b[0]));
     try {
       $heapAppend(h, other, (a, b) => $cmp(a[0], b[0]));
-      const length = h.length;
-      const value = other.length;
-      console.log(`len ${length} ${value}`);
-      const drain = $iter(h.splice(0));
-      const drained = drain.toArray();
+      console.log(`len ${h.length} ${other.length}`);
+      const drained = h.splice(0);
       try {
         console.log(`drained ${drained.length}`);
       } finally {
@@ -51,20 +46,23 @@ function main() {
           oDrop_drop(item);
         }
       }
-      const value$1 = [[4], [2], [6]];
-      const tmp = $heapFrom(value$1, (a, b) => $cmp(a[0], b[0]));
-      const sorted = $heapSorted(tmp, (a, b) => $cmp(a[0], b[0]));
+      const sorted = $heapSorted(
+        $heapFrom([[4], [2], [6]], (a, b) => $cmp(a[0], b[0])),
+        (a, b) => $cmp(a[0], b[0]),
+      );
       try {
-        const tmp = sorted.map((o) => o[0]);
-        console.log(`[${tmp.join(", ")}]`);
-        const value = [[20], [25], [21], [30]];
-        const r = $heapFrom(value, (a, b) => $cmp(a[0], b[0]));
-        const value$1 = (o) => {
-          console.log(`keep ${o[0]}?`);
-          return o[0] % 5 === 0;
-        };
+        console.log(`[${sorted.map((o) => o[0]).join(", ")}]`);
+        const r = $heapFrom([[20], [25], [21], [30]], (a, b) => $cmp(a[0], b[0]));
         try {
-          $heapRetain(r, value$1, (a, b) => $cmp(a[0], b[0]), oDrop_drop);
+          $heapRetain(
+            r,
+            (o) => {
+              console.log(`keep ${o[0]}?`);
+              return o[0] % 5 === 0;
+            },
+            (a, b) => $cmp(a[0], b[0]),
+            oDrop_drop,
+          );
           const o = r[0];
           const value = o?.[0];
           console.log(`retained ${value == null ? "None" : `Some(${value})`}`);
@@ -73,15 +71,13 @@ function main() {
             oDrop_drop(item);
           }
         }
-        const value$2 = [[11], [12]];
-        const k = $heapFrom(value$2, (a, b) => $cmp(a[0], b[0]));
+        const k = $heapFrom([[11], [12]], (a, b) => $cmp(a[0], b[0]));
         try {
-          const tmp = $iter(k.splice(0));
-          for (const item of tmp) {
+          const drain = $iter(k.splice(0));
+          for (const item of drain) {
             oDrop_drop(item);
           }
-          const value = k.length;
-          console.log(`end ${value}`);
+          console.log(`end ${k.length}`);
         } finally {
           for (const item of k) {
             oDrop_drop(item);

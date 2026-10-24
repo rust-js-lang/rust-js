@@ -22,8 +22,8 @@ export const mutations: Mutation[] = [
     "name": "and-test-bound-kept",
     "breaks": "a test merged into `a && b` leaves its bound read, `const captured = child.type`, read again and unread",
     "file": "src/lower/mir/tidy/logicals.rs",
-    "find": "                && js::mentions_in(&then[at + 1..], name) == 0\n",
-    "replace": "                && false\n",
+    "find": "            && js::mentions_in(&stmts[at + 1..], name) == 0\n",
+    "replace": "            && false\n",
     "tests": ["test/jsx-children.test.ts", "-t", "capture of an inlined closure"]
   },
   {

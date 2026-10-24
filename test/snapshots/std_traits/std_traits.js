@@ -550,21 +550,21 @@ export function debugs(n) {
   const p = { x: n, y: -2.5 };
   const r = n > 1 ? { TAG: "Ok", _0: n } : { TAG: "Err", _0: "small" };
   const value = posDebug_fmt(p);
-  const value$1 = `${dimsDebug_fmt([n, 2])} ${nothingDebug_fmt(undefined)} ${glyphDebug_fmt("Dot")}`;
-  const value$2 = `${glyphDebug_fmt({ TAG: "Ring", _0: 1.5 })} ${glyphDebug_fmt({
+  const value$5 = `${dimsDebug_fmt([n, 2])} ${nothingDebug_fmt(undefined)} ${glyphDebug_fmt("Dot")}`;
+  const value$6 = `${glyphDebug_fmt({ TAG: "Ring", _0: 1.5 })} ${glyphDebug_fmt({
     TAG: "Box",
     w: n,
     h: 3,
   })}`;
-  const value$3 = sixDebug_fmt({ a: 1, b: 2, c: 3, d: 4, e: 5, f: "x" });
-  const value$4 = `${boxedDebug_fmt({ item: p }, posDebug)} ${boxedDebug_fmt({ item: "s" }, { fmt: (value) => (value == null ? "None" : `Some(${$debugStr(value)})`) })}`;
-  const value$5 = [n, "a", "'"];
-  const value$6 = [5];
-  const value$7 = `Some(${$debugF64(1)}) None (${value$5[0]}, ${$debugStr(value$5[1])}, ${$debugStr(value$5[2], "'")}) (${value$6[0]},)`;
-  const value$8 = [p, p];
-  const value$9 = $cmp(n, 1);
-  const value$10 = `[${value$8.map((item) => posDebug_fmt(item)).join(", ")}] ${r.TAG === "Ok" ? `Ok(${r._0})` : `Err(${$debugStr(r._0)})`} ${
-    ["Less", "Equal", "Greater"][value$9 + 1]
+  const value$7 = sixDebug_fmt({ a: 1, b: 2, c: 3, d: 4, e: 5, f: "x" });
+  const value$8 = `${boxedDebug_fmt({ item: p }, posDebug)} ${boxedDebug_fmt({ item: "s" }, { fmt: (value) => (value == null ? "None" : `Some(${$debugStr(value)})`) })}`;
+  const value$1 = [n, "a", "'"];
+  const value$2 = [5];
+  const value$9 = `Some(${$debugF64(1)}) None (${value$1[0]}, ${$debugStr(value$1[1])}, ${$debugStr(value$1[2], "'")}) (${value$2[0]},)`;
+  const value$3 = [p, p];
+  const value$4 = $cmp(n, 1);
+  const value$10 = `[${value$3.map((item) => posDebug_fmt(item)).join(", ")}] ${r.TAG === "Ok" ? `Ok(${r._0})` : `Err(${$debugStr(r._0)})`} ${
+    ["Less", "Equal", "Greater"][value$4 + 1]
   }`;
   const value$11 = debugged([[3, 4]], {
     fmt: (value) =>
@@ -572,11 +572,11 @@ export function debugs(n) {
   });
   return [
     value,
-    value$1,
-    value$2,
-    value$3,
-    value$4,
+    value$5,
+    value$6,
     value$7,
+    value$8,
+    value$9,
     value$10,
     `${hiddenDebug_fmt(undefined)} ${value$11}`,
   ];
