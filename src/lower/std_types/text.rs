@@ -823,7 +823,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return items;
         }
         if name == "$slice" && in_bounds {
-            let sliced = Expr::call(Expr::member(items, "slice"), std::iter::once(start).chain(end).collect());
+            let sliced = Expr::call(
+                Expr::member(items, "slice"),
+                std::iter::once(start).chain(end).collect(),
+            );
             return Expr {
                 known: js::Known::Sliced,
                 ..sliced

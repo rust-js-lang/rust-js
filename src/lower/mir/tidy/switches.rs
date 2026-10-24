@@ -909,9 +909,8 @@ fn unwritten_else(stmts: &mut Vec<Stmt>, elses: &[(js::Span, js::Span, js::Span)
     let StmtKind::If(_, a, Some(_)) = &last.kind else {
         return;
     };
-    let written = |span: js::Span| {
-        span.is_none() || elses.iter().any(|(cond, ..)| cond.lo <= span.lo && span.hi <= cond.hi)
-    };
+    let written =
+        |span: js::Span| span.is_none() || elses.iter().any(|(cond, ..)| cond.lo <= span.lo && span.hi <= cond.hi);
     if written(last.span) || !a.last().is_some_and(js::ends) {
         return;
     }

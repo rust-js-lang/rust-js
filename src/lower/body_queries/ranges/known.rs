@@ -217,7 +217,8 @@ impl Known {
     pub(super) fn changed(&mut self, var: LocalVarId) {
         self.vars.remove(&var);
         self.lengths.retain(|(_, v), _| *v != var);
-        self.tests.retain(|held, (_, reads)| *held != var && !reads.contains(&var));
+        self.tests
+            .retain(|held, (_, reads)| *held != var && !reads.contains(&var));
         for range in self.vars.values_mut() {
             if range.below.as_ref().is_some_and(|((_, v), _)| *v == var) {
                 range.below = None;
