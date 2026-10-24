@@ -135,7 +135,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             registered: self.mir_registered(body),
             thrown: self.mir_thrown(body, locals),
             present: self.mir_present(body),
-            held: crate::lower::body_queries::held_guards(self.tcx, self.frame.thir),
+            held: self.frame.facts.held_guards.clone(),
         }
     }
 
@@ -303,7 +303,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// The locals `OptionWrites::present` says: each a call
     /// `body_queries::present_calls` says gives what's there.
     fn mir_present(&self, body: &mir::Body<'tcx>) -> std::collections::HashSet<Local> {
-        let calls = crate::lower::body_queries::present_calls(self.tcx, self.frame.thir);
+        let calls = &self.frame.facts.present_calls;
         (body.basic_blocks.iter())
             .filter_map(|data| match &data.terminator().kind {
                 TerminatorKind::Call {

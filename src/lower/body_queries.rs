@@ -106,7 +106,7 @@ impl<'a, 'tcx> BodyQuery<'a, 'tcx> {
 /// Context-independent facts collected once, before borrowck steals the body.
 /// Type/representation facts depend on the current instantiation and stay elsewhere.
 #[derive(Default)]
-pub(super) struct BodyFacts {
+pub(super) struct BodyFacts<'tcx> {
     /// The items of a `Vec` or a slice whose index the body's ranges show
     /// in bounds (`ranges`): each `a[i]`, and the function of each
     /// `Index::index(&v, i)`.
@@ -127,18 +127,36 @@ pub(super) struct BodyFacts {
     /// Where each `==` or `!=` of such a read and a `Some(..)` is,
     /// `registered_equalities`'s (ADR 0771).
     pub(super) registered_equalities: HashSet<Span>,
+    /// Where each guard is that holds where its arm matched,
+    /// `held_guards`'s.
+    pub(super) held_guards: HashSet<Span>,
+    /// Where each call is whose value is told present, `present_calls`'s.
+    pub(super) present_calls: HashSet<Span>,
+    /// Each value the body's patterns test and the `const` they name it by,
+    /// `constant_patterns`'s (ADRs 0590, 0634).
+    pub(super) constant_patterns: HashMap<PatternValue<'tcx>, Option<DefId>>,
+    /// The props given to the crate's components, and what's a base of
+    /// them, `jsx_given_props`'s.
+    pub(super) jsx_given: HashSet<ExprId>,
+    pub(super) jsx_bases: HashSet<ExprId>,
 }
 
-impl BodyFacts {
+impl<'tcx> BodyFacts<'tcx> {
     /// Its facts but its ranges, which are the crate's (`ranges`): each
     /// read of its own THIR once, before it's lowered, so a call it lowers
     /// looks its answer up, and a closure's are its own body's.
-    pub(super) fn collect<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> Self {
+    pub(super) fn collect(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> Self {
+        let (jsx_given, jsx_bases) = jsx_given_props(tcx, thir);
         Self {
             kept_casts: whole_casts(tcx, thir),
             named_callbacks: named_callbacks(tcx, thir),
             registered_reads: registered_reads(tcx, thir),
             registered_equalities: registered_equalities(tcx, thir),
+            held_guards: held_guards(tcx, thir),
+            present_calls: present_calls(tcx, thir),
+            constant_patterns: constant_patterns(tcx, thir),
+            jsx_given,
+            jsx_bases,
             ..Self::default()
         }
     }
@@ -269,7 +287,7 @@ struct Compared {
 /// integer `as f64`, or what a `#[rust_js::position]` binding gives, a
 /// position or -1; narrowed where a test of it holds, if nothing sets it
 /// after the test.
-pub(super) fn whole_casts<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> HashSet<ExprId> {
+fn whole_casts<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> HashSet<ExprId> {
     let at = |span: Span| span.source_callsite();
     let pointer_bits = tcx.data_layout.pointer_size().bits();
     // The whole numbers an integer type holds, of 32 bits or fewer: a JS
@@ -527,7 +545,7 @@ pub(super) fn whole_casts<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> HashSet
 /// made there as structs or defaults: JSX takes them apart (ADR 0213); and
 /// what's a base of them, `..props.html`, where a flattened field read
 /// whole is the object its parent is, `{...props}`.
-pub(crate) fn jsx_given_props<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> (HashSet<ExprId>, HashSet<ExprId>) {
+fn jsx_given_props<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> (HashSet<ExprId>, HashSet<ExprId>) {
     let mut made = Vec::new();
     for expr in thir.exprs.iter() {
         if let ExprKind::Call { fun, ref args, .. } = expr.kind
@@ -570,10 +588,7 @@ pub(super) enum PatternValue<'tcx> {
 /// `Some(IMMEDIATE_PRIORITY)` where every pattern of it is that constant,
 /// `None` where one is written another way, a literal, another constant or
 /// a trait's (ADRs 0590, 0634).
-pub(super) fn constant_patterns<'tcx>(
-    tcx: TyCtxt<'tcx>,
-    thir: &Thir<'tcx>,
-) -> HashMap<PatternValue<'tcx>, Option<DefId>> {
+fn constant_patterns<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> HashMap<PatternValue<'tcx>, Option<DefId>> {
     let mut found: HashMap<PatternValue<'tcx>, Option<DefId>> = HashMap::new();
     let mut of = |pattern: &Pat<'tcx>| {
         pattern.walk_always(|pat| {
@@ -649,7 +664,7 @@ pub(super) fn constant_integer<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId, args: ty:
 }
 
 /// Each call `given_present` says is of what's there: its `fn_span`.
-pub(super) fn present_calls<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> HashSet<Span> {
+fn present_calls<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> HashSet<Span> {
     (thir.exprs.indices())
         .filter_map(|e| given_present(tcx, thir, e))
         .collect()
@@ -663,7 +678,7 @@ pub(super) fn present_calls<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> HashS
 /// arm's matched, `value` is a `Some`, and the guard holds: it tests
 /// nothing, and the arm is as one without it. Of a `value` the body never
 /// changes, so what the guard binds is `value` itself wherever it's read.
-pub(super) fn held_guards<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> HashSet<Span> {
+fn held_guards<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> HashSet<Span> {
     let changed = changes(thir);
     // The variable a call of a binding that's its argument, giving an
     // untagged enum, reads: `classify(value)`'s `value`, an `Option` of a

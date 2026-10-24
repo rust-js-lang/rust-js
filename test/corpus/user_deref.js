@@ -54,12 +54,13 @@ function main() {
   console.log(`${pointDebug_fmt(copied)} ${pointDebug_fmt(t.point)} ${t.reads}`);
 
   const outer = [{ point: { x: 4, y: 5 }, reads: 0 }];
-  console.log(
-    `${Point.sum(trackedDeref_deref(outerDeref_deref(outer)))} ${trackedDeref_deref(outerDeref_deref(outer)).x} ${outerDeref_deref(outer).reads}`,
-  );
+  const sum = Point.sum(trackedDeref_deref(outerDeref_deref(outer)));
+  const x = trackedDeref_deref(outerDeref_deref(outer)).x;
+  const item = outerDeref_deref(outer);
+  console.log(`${sum} ${x} ${item.reads}`);
 
-  const item = { x: 0, y: 0 };
-  const grid = { cells: Array.from({ length: 4 }, () => ({ ...item })), width: 2 };
+  const item$1 = { x: 0, y: 0 };
+  const grid = { cells: Array.from({ length: 4 }, () => ({ ...item$1 })), width: 2 };
   gridIndexMut_usize__usize__indexMut(grid, [1, 0]).x = 7;
   Point.shift(gridIndexMut_usize__usize__indexMut(grid, [0, 1]), 3);
   const point = gridIndex_usize__usize__index(grid, [1, 0]);

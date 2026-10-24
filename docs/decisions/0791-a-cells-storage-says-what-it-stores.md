@@ -17,7 +17,9 @@ Review #191 found three things.
 - **Facts read again at each call.** Whether a call is a nullable field's
   `Cell`, or a registered symbol's read or `==`, was answered by scanning
   the body's THIR at each call that asked, `registered_equalities(thir)
-  .contains(&span)`: four call sites, each building a whole-body set.
+  .contains(&span)`: four call sites, each building a whole-body set; so
+  were a pattern's named `const` at each `switch` case, a component's
+  given props at each pattern, and a held guard twice a body.
 - **The storage told by the syntax.** ADR 0772 wrote `null` where the
   call's receiver was written as the field, `context.renderer.set(None)`;
   `let r = &context.renderer; r.set(None)`, or a helper given
@@ -32,10 +34,13 @@ Review #191 found three things.
 ## Decision
 
 **A body's facts are its `BodyFacts`, collected once from its own THIR
-before it's lowered**: `registered_reads`, `registered_equalities`, beside
-`named_callbacks` and `kept_casts`. A closure's are its own body's, as
-each body's frame is. The queries are private to `body_queries.rs`, so a
-call site can't build them again: it looks its answer up.
+before it's lowered**: `registered_reads`, `registered_equalities`,
+`held_guards`, `present_calls`, `constant_patterns` and the props
+`jsx_given_props` finds, beside `named_callbacks` and `kept_casts`. A
+closure's are its own body's, as each body's frame is. The queries are
+private to `body_queries.rs`, so a call site can't build them again: it
+looks its answer up; the architecture test, "a whole body's facts are its
+BodyFacts, read once", fails where one's made public again.
 
 **What a `Cell` stores is its storage's, carried by the handle on it.**
 A handle is a place and, where its storage says, what a write through it

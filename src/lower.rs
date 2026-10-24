@@ -104,7 +104,7 @@ pub struct Body<'tcx> {
     def_id: DefId,
     thir: Thir<'tcx>,
     expr: ExprId,
-    facts: body_queries::BodyFacts,
+    facts: body_queries::BodyFacts<'tcx>,
     /// Its MIR, which the body is lowered from where it's read (ADR 0364).
     mir: Option<mir::Mir<'tcx>>,
 }
@@ -435,7 +435,7 @@ struct FnCx<'a, 'tcx> {
 /// field every body has of its own goes here, and is swapped with it.
 struct BodyFrame<'a, 'tcx> {
     thir: &'a Thir<'tcx>,
-    facts: &'a body_queries::BodyFacts,
+    facts: &'a body_queries::BodyFacts<'tcx>,
     /// Whose body `thir` is: its scope tree says where temporaries end.
     owner: DefId,
 }

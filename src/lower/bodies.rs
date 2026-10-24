@@ -142,8 +142,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return false;
         };
         let names = |e: ExprId| matches!(self.frame.thir[e].kind, ExprKind::VarRef { id } if id == var);
-        let (given, bases) = super::body_queries::jsx_given_props(self.tcx, self.frame.thir);
-        let mut allowed: HashSet<ExprId> = given.union(&bases).copied().collect();
+        let facts = self.frame.facts;
+        let mut allowed: HashSet<ExprId> = facts.jsx_given.union(&facts.jsx_bases).copied().collect();
         for expr in self.frame.thir.exprs.iter() {
             if let ExprKind::Field { lhs, name, .. } = expr.kind
                 && names(self.strip(lhs))

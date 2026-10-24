@@ -1010,7 +1010,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .collect::<R<Vec<_>>>()?;
             let value = match known {
                 Std::ToString => {
-                    self.std_by_values(known, def_id, generic_args, (arg_tys, nulled), exprs, output, span, out)?
+                    self.std_by_values(known, def_id, generic_args, (arg_tys, &[]), exprs, output, span, out)?
                 }
                 _ => exprs.into_iter().next().expect("the text"),
             };
