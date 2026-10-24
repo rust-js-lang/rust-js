@@ -105,7 +105,7 @@ export function slicePanics(start, end) {
 }
 
 export function escapes() {
-  return `${$debugStr('a"b\\c\n	\r\0\x1Bé　\xA0​\u2028́x􏿿')} ${$debugStr("a", "'")} ${$debugStr("'", "'")} ${$debugStr('"', "'")} ${$debugStr("it's")}`;
+  return `${$debugStr('a"b\\c\n	\r\0\x1Bé\u3000\xA0\u200B\u2028́x􏿿')} ${$debugStr("a", "'")} ${$debugStr("'", "'")} ${$debugStr('"', "'")} ${$debugStr("it's")}`;
 }
 
 // A template literal's own characters, in the text around the values.
@@ -115,7 +115,7 @@ export function templates(n) {
 
 export function report() {
   let out = "";
-  for (const c of ["a", "Z", "7", " ", "\n", "　", "é", "ß", "٣", "Ⅻ", "!", "﻿", ""]) {
+  for (const c of ["a", "Z", "7", " ", "\n", "\u3000", "é", "ß", "٣", "Ⅻ", "!", "\uFEFF", ""]) {
     const value = chars(c);
     const value$1 = ascii(c);
     const arg = casts(c);
@@ -146,7 +146,7 @@ export function report() {
   }
   for (const text of [
     "1 2	3",
-    "a　b  c﻿d",
+    "a\u3000b  c\uFEFFd",
     "x\r\ny\n\nz\n",
     "  ",
     "4\n-5\r\n",

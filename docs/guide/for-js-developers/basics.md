@@ -479,6 +479,11 @@ export function formatProdErrorMessage(code, url) {
   `char`'s, a number's or a `bool`'s too, as `concat!` writes it, `"2"`.
 - A `\` ending a line continues one literal, as it does in Rust: one JS
   string.
+- A space one can't tell from `' '`, `\u{2007}` or `\u{a0}`, and a mark
+  one can't see, `\u{200b}`, are written as their escapes, `"\u2007\xA0"`,
+  in a string and a template; what joins or varies an emoji, `\u{200d}`
+  and `\u{fe0f}`, is as it is ([ADR
+  0732](../../decisions/0732-a-space-one-cant-see-is-its-escape.md)).
 - A `concat!` of another macro, `concat!("v", env!("VERSION"))`, is the
   one string rustc makes of it.
 - A format string of a `concat!`, `format!(concat!(..), ..)` or

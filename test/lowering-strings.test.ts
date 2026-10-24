@@ -69,6 +69,36 @@ test("a string written across lines keeps its lines", async () => {
   expect([lib.page(), lib.cooked(), lib.escaped(), lib.continued()]).toEqual(['<div>\n  `${x}` \\ "q"\n</div>', "a\nb", "a\nb", "a\nb"]);
 });
 
+// React's ReactPerformanceTrackProperties writes `const UNCHANGED =
+// ' \xa0';`, a figure space one can't tell from a space: a space but
+// `' '`, and a mark one can't see, is written as its escape, in a string
+// and a template, as oxc writes `\xA0` (ADR 0732). What joins an emoji's
+// parts, or varies one, is as it is; and a U+FFFD is itself.
+test("a space one can't tell from ' ' is written as its escape", async () => {
+  const dir = fixture("unseen-escapes");
+  writeFileSync(join(dir, "lib.rs"), `pub const UNCHANGED: &str = "\\u{2007}\\u{a0}";
+pub const MARKS: &str = "a\\u{200b}b\\u{feff}c\\u{fffd}d";
+pub const FAMILY: &str = "👨\\u{200d}👩 ❤\\u{fe0f}";
+
+pub fn line(indent: usize, key: &str) -> String {
+    format!("{UNCHANGED}{}{key}\\u{2007}\\u{3000}", "\\u{a0}".repeat(indent))
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('export const UNCHANGED = "\\u2007\\xA0";');
+  expect(js).toContain('export const MARKS = "a\\u200Bb\\uFEFFc�d";');
+  expect(js).toContain('export const FAMILY = "👨‍👩 ❤️";');
+  expect(js).toContain("${key}\\u2007\\u3000`;");
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.UNCHANGED, lib.MARKS, lib.FAMILY, lib.line(1, "k")]).toEqual([
+    " \xa0",
+    "a​b﻿c�d",
+    "👨‍👩 ❤️",
+    " \xa0\xa0k 　",
+  ]);
+});
+
 // A `const` of a string written across lines, a raw string's, is a template
 // literal of them, as an inline one is and as react.dev's
 // SandpackWithHTMLOutput writes its sandbox's files; one of `\n`s stays a
