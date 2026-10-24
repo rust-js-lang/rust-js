@@ -244,21 +244,21 @@ pub(super) fn spread_spreads(e: &mut Expr) {
         return;
     }
     let props = match &mut e.kind {
-        ExprKind::Object(props) => props,
+        ExprKind::Object(props, ..) => props,
         ExprKind::Jsx(jsx) => &mut jsx.props,
         _ => return,
     };
     // Down to what's spread, `{...{ ...{ ...b } }}`'s `b`, a copy made of a
     // copy, as an element captured twice spills its props.
     let flat = |prop: &js::Prop| {
-        matches!(prop, js::Prop::Spread(Expr { kind: ExprKind::Object(inner), .. })
+        matches!(prop, js::Prop::Spread(Expr { kind: ExprKind::Object(inner, ..), .. })
             if inner.iter().all(|p| matches!(p, js::Prop::Spread(_))))
     };
     while props.iter().any(flat) {
         *props = (std::mem::take(props).into_iter())
             .flat_map(|prop| match prop {
                 js::Prop::Spread(Expr {
-                    kind: ExprKind::Object(inner),
+                    kind: ExprKind::Object(inner, ..),
                     ..
                 }) if inner.iter().all(|p| matches!(p, js::Prop::Spread(_))) => inner,
                 prop => vec![prop],
@@ -505,7 +505,7 @@ pub(super) fn first_cell_values(stmts: &mut Vec<Stmt>) {
             i += 1;
             continue;
         };
-        let empty = matches!(&value.kind, ExprKind::Object(props)
+        let empty = matches!(&value.kind, ExprKind::Object(props, ..)
             if matches!(props.as_slice(), [js::Prop::Field(key, held)] if key == js::HELD && matches!(held.kind, ExprKind::Undefined)));
         let name = name.clone();
         let first = (i + 1..stmts.len()).find(|&j| js::mentions_in(&stmts[j..=j], &name) > 0);
@@ -541,7 +541,7 @@ pub(super) fn plain_cells(body: &mut Vec<Stmt>) {
         for stmt in stmts.iter() {
             match &stmt.kind {
                 StmtKind::Const(name, value)
-                    if matches!(&value.kind, ExprKind::Object(props)
+                    if matches!(&value.kind, ExprKind::Object(props, ..)
                         if matches!(props.as_slice(), [js::Prop::Field(key, _)] if key == js::HELD)) =>
                 {
                     cells.push(name.clone());
@@ -631,7 +631,7 @@ pub(super) fn plain_cells(body: &mut Vec<Stmt>) {
         for stmt in stmts.iter_mut() {
             if let StmtKind::Const(name, value) = &mut stmt.kind
                 && plain.contains(name)
-                && let ExprKind::Object(props) = &mut value.kind
+                && let ExprKind::Object(props, ..) = &mut value.kind
                 && let Some(js::Prop::Field(_, init)) = props.pop()
             {
                 stmt.kind = StmtKind::Let(name.clone(), Some(init));

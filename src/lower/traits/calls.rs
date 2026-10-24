@@ -301,7 +301,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // A pair made here of parts read the same, a struct's last field's
             // `{ value: x.ptr, impl: x.impl }` (ADR 0409), is its parts.
             let parts = match &receiver.kind {
-                js::ExprKind::Object(props) if !by_mut => match props.as_slice() {
+                js::ExprKind::Object(props, ..) if !by_mut => match props.as_slice() {
                     [Prop::Field(held, value), Prop::Field(dictionary, of)]
                         if held == js::HELD
                             && dictionary == js::DICTIONARY

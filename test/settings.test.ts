@@ -166,6 +166,17 @@ test("Prettier lays a file out by its config's overrides for where the file goes
   expect(out.types).toContain("\n    x: number\n");
 }, 300_000);
 
+// An object of a struct literal written across lines is on lines of its
+// own, a line ending after its `{`, which Prettier keeps, as it keeps an
+// object a person wrote so; one written on one line, Prettier joins
+// (ADR 0835).
+test("Prettier keeps an object across lines where its struct literal is written so", async () => {
+  const source = "pub struct Point {\n    pub x: f64,\n    pub y: f64,\n}\n\npub fn origin() -> Point {\n    Point {\n        x: 0.0,\n        y: 0.0,\n    }\n}\n\npub fn unit() -> Point {\n    Point { x: 1.0, y: 1.0 }\n}\n";
+  const out = await cargoBuilt(source, { bracketSpacing: false });
+  expect(out.js).toContain("\n  return {\n    x: 0,\n    y: 0,\n  };\n");
+  expect(out.js).toContain("\n  return {x: 1, y: 1};\n");
+}, 300_000);
+
 // A config, not Prettier installed, decides: this checkout's Prettier is
 // found from the fixture, and no config is, so the layout is rust-js's,
 // 100 columns, not Prettier's defaults' 80.

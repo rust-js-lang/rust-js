@@ -74,9 +74,14 @@ impl<'a> Cx<'a> {
                 });
                 Expression::new_array_expression(sp, ArenaVec::from_iter_in(items, b), b)
             }
-            ExprKind::Object(props) => {
+            ExprKind::Object(props, layout) => {
                 let props = props.iter().map(|prop| self.property(prop));
-                Expression::new_object_expression(sp, ArenaVec::from_iter_in(props, b), b)
+                let object = Expression::new_object_expression(sp, ArenaVec::from_iter_in(props, b), b);
+                // Across lines as its source is, which the formatter's told.
+                if let (true, Expression::ObjectExpression(made)) = (layout.lines, &object) {
+                    self.across_lines.borrow_mut().insert(&**made as *const _);
+                }
+                object
             }
             ExprKind::Jsx(jsx) => self.jsx(sp, jsx),
             // Printed as written, as `number` prints an integer.

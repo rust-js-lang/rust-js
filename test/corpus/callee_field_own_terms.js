@@ -7,7 +7,10 @@ export function entry() {
 }
 
 function pairsFromI_from(rest, IIterator, IClone) {
-  return { first: IIterator.next(rest), rest };
+  return {
+    first: IIterator.next(rest),
+    rest,
+  };
 }
 
 function pairsIterator_next(pairs, IIterator, IClone, AClone) {

@@ -126,7 +126,10 @@ export function problemDeserialize_deserialize(json) {
 
 export const Problem = {
   new(message) {
-    return { message, errors: [] };
+    return {
+      message,
+      errors: [],
+    };
   },
 };
 
@@ -139,7 +142,10 @@ export const MAX_NAME = 40;
 export function validate(contact) {
   const errors = [];
   const fail = (field, message) => {
-    errors.push({ field, message });
+    errors.push({
+      field,
+      message,
+    });
   };
   const name = $trim(contact.name);
   if (!name) {

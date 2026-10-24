@@ -177,6 +177,11 @@ path, `{ files: "packages/*/src/**/*.js", options: { .. } }`, is the
 file's. Without one, rust-js lays it out its own way ([ADR 0381](../../decisions/0381-the-apps-prettier-lays-it-out.md)). There's no rust-js setting
 for layout.
 
+Either way, an object is on lines of its own where its struct literal is
+written across lines, as rustfmt writes one too long for a line, and on
+one line where it's written on one and fits, as Prettier keeps an object
+a person wrote ([ADR 0835](../../decisions/0835-an-object-is-across-lines-where-its-literal-is.md)).
+
 ## Commit the JS, not the maps
 
 Commit each `.js`, `.jsx` and `.d.ts` rust-js writes. A diff shows what a

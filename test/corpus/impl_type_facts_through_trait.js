@@ -77,7 +77,13 @@ export function stackFromStr(TSize) {
 }
 
 function stackFromStr_fromStr(text, TSize) {
-  return { TAG: "Ok", _0: { items: [], sized: Math.imul($byteLen(text), TSize) >>> 0 } };
+  return {
+    TAG: "Ok",
+    _0: {
+      items: [],
+      sized: Math.imul($byteLen(text), TSize) >>> 0,
+    },
+  };
 }
 
 function copied(items, TClone, TSize) {

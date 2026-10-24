@@ -315,7 +315,7 @@ pub(in crate::lower) fn plain_statics(items: &mut [js::Item], quiet: &std::colle
         .filter_map(|item| match item {
             js::Item::Const(c)
                 if !c.export
-                    && matches!(&c.value.kind, js::ExprKind::Object(props)
+                    && matches!(&c.value.kind, js::ExprKind::Object(props, ..)
                         if matches!(props.as_slice(), [js::Prop::Field(key, _)] if key == js::HELD)) =>
             {
                 Some(c.name.clone())
@@ -395,7 +395,7 @@ pub(in crate::lower) fn plain_statics(items: &mut [js::Item], quiet: &std::colle
         for item in items.iter_mut() {
             if let js::Item::Const(c) = item
                 && c.name == name
-                && let js::ExprKind::Object(props) = &mut c.value.kind
+                && let js::ExprKind::Object(props, ..) = &mut c.value.kind
                 && let Some(js::Prop::Field(_, init)) = props.pop()
             {
                 c.value = init;

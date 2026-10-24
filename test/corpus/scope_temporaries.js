@@ -45,7 +45,10 @@ function early(stop) {
     console.log(`drop ${noisy[0]}`);
     return result;
   }
-  return { a: noisy, b: 1 };
+  return {
+    a: noisy,
+    b: 1,
+  };
 }
 
 function keptEarly(stop) {
@@ -59,7 +62,10 @@ function keptEarly(stop) {
   }
   let result;
   if (!stop) {
-    result = { a: noisy, b: 3 };
+    result = {
+      a: noisy,
+      b: 3,
+    };
     console.log(`drop ${kept}`);
     return result;
   }
@@ -194,7 +200,10 @@ function main() {
       console.log(`drop ${noisy[0]}`);
       return result;
     }
-    return { a: noisy, b: 2 };
+    return {
+      a: noisy,
+      b: 2,
+    };
   };
   const value$5 = pair(true);
   try {

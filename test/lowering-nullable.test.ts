@@ -140,7 +140,10 @@ pub fn copied() -> (Info, Option<&'static Unknown>) {
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain(`export function leaked() {
   const owner = null;
-  const info = { name: "lazy", owner };`);
+  const info = {
+    name: "lazy",
+    owner,
+  };`);
   expect(js).toContain(`export function twice() {
   const owner = null;`);
   expect(js).toContain(`export function given() {
@@ -418,9 +421,9 @@ pub fn label(context: &mut Context, label: &'static str) {
 `);
   run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain("const context = { value, provider: null };\n  if (dev) {\n    context.renderer = null;\n  }");
+  expect(js).toContain("const context = {\n    value,\n    provider: null,\n  };\n  if (dev) {\n    context.renderer = null;\n  }");
   // Given an \`Option\` that may be \`None\`, as it is: \`undefined\`, as a key that isn't there reads.
-  expect(js).toContain("return { value: 0, provider: null, label };");
+  expect(js).toContain("return {\n    value: 0,\n    provider: null,\n    label,\n  };");
   // A nullable field given one's value, which may be \`undefined\`, makes it \`null\`.
   expect(js).toContain("return { name: context.label ?? null };");
   expect(readFileSync(join(dir, "lib.d.ts"), "utf8")).toContain("    renderer?: unknown | null | undefined;\n    label?: string | null | undefined;\n");

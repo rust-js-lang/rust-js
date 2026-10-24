@@ -253,7 +253,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         target: Ty<'tcx>,
         span: Span,
     ) -> R<Expr> {
-        if let js::ExprKind::Object(props) = &holder.kind
+        if let js::ExprKind::Object(props, ..) = &holder.kind
             && matches!(props.as_slice(), [Prop::Field(name, _)] if name == js::HELD)
         {
             let mut props = props.clone();
@@ -518,7 +518,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if self.is_cell(source) {
             return Ok(match value.kind {
                 js::ExprKind::Handle(place, _) => Expr::pair(*place, dictionary),
-                js::ExprKind::Object(mut props) if matches!(props.as_slice(), [Prop::Field(name, _)] if name == js::HELD) =>
+                js::ExprKind::Object(mut props, ..) if matches!(props.as_slice(), [Prop::Field(name, _)] if name == js::HELD) =>
                 {
                     props.push(Prop::Field(js::DICTIONARY.into(), dictionary));
                     Expr::object(props)
@@ -592,7 +592,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         let what = format!("a counted `{source}` made elsewhere as a `{target}`");
         let made_here = match (self.counted_rc(source), value.kind) {
-            (Some(pointee), js::ExprKind::Object(props)) => Some((pointee, props)),
+            (Some(pointee), js::ExprKind::Object(props, ..)) => Some((pointee, props)),
             _ => None,
         };
         let Some((pointee, mut props)) = made_here else {

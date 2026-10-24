@@ -126,7 +126,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let reads_reference = |e: &Expr| {
             // Not an element or an object made where it's used, which reads
             // what a branch after sets (`capture_jsx`).
-            if matches!(e.kind, js::ExprKind::Jsx(_) | js::ExprKind::Object(_)) {
+            if matches!(e.kind, js::ExprKind::Jsx(_) | js::ExprKind::Object(..)) {
                 return false;
             }
             let mut found = false;
@@ -534,7 +534,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         let held = field == js::HELD
             && match &call_part(holder).kind {
-                js::ExprKind::Call(..) | js::ExprKind::Object(_) => true,
+                js::ExprKind::Call(..) | js::ExprKind::Object(..) => true,
                 _ => self.locals.mir.cells.iter().any(|cell| cell.written_alike(holder)),
             };
         held.then(|| (**holder).clone())

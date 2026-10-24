@@ -16,7 +16,9 @@ export function entry() {
 }
 
 export function putBack(iterable, IIntoIterator) {
-  return { iter: IIntoIterator.intoIter(iterable) };
+  return {
+    iter: IIntoIterator.intoIter(iterable),
+  };
 }
 
 export const PutBack = {
@@ -51,7 +53,9 @@ export function rest(j) {
 }
 
 function pairFrom_A__B__from([a, b], AIntoIterator, BIntoIterator) {
-  return { t: [AIntoIterator.intoIter(a), BIntoIterator.intoIter(b)] };
+  return {
+    t: [AIntoIterator.intoIter(a), BIntoIterator.intoIter(b)],
+  };
 }
 
 function pairIterator_next(pair, AIterator, BIterator) {

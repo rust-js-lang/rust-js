@@ -36,7 +36,10 @@ function bump(cell) {
 }
 
 function main() {
-  const c = { value: 1, other: 7 };
+  const c = {
+    value: 1,
+    other: 7,
+  };
   const item = get(c);
   const bumped = bump({
     get value() {

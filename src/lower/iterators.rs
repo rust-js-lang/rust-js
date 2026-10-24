@@ -452,7 +452,7 @@ pub(super) fn stepped_range(e: &Expr) -> Option<SteppedRange<'_>> {
     let (Some(iterator), [range, next]) = (callee.helper_name(), &args[..]) else {
         return None;
     };
-    let (js::ExprKind::Object(bounds), Some(next)) = (&range.kind, next.helper_name()) else {
+    let (js::ExprKind::Object(bounds, ..), Some(next)) = (&range.kind, next.helper_name()) else {
         return None;
     };
     let [js::Prop::Field(s, start), js::Prop::Field(f, end)] = &bounds[..] else {
