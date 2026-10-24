@@ -12,7 +12,7 @@ As of 2026-10-24, `main` at `2466f604`; times are CI's, check run 40068253808.
 | rustc's suite | 3,762 run-pass tests, 1,493 of them out of scope | rustc's own programs run the same as JS | a check runs a sample in 1 min; all of them take ~2 h 45 min |
 | Generated programs | 600 random programs a night | Programs no one wrote | in the nightly |
 
-- **A check** (each push, or `bun run ci:check`) runs everything except the full rustc suite and fuzz, in parallel: about **15 min**.
+- **A check** (each push to `main`, which runs to its end; `bun run ci:check` of another branch) runs everything except the full rustc suite and fuzz, in parallel: about **15 min**.
 - **The nightly** runs every mutation and the 600 programs: **~2–3.5 h**.
 - **On the Mac**, each command is capped at 5 minutes: run one file, or `-t <name>` (AGENTS.md).
 
