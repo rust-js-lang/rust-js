@@ -6,7 +6,7 @@ export const mutations: Mutation[] = [
     name: "numbered-read-as-name",
     breaks: "a numbered enum read from JSON is its name, `\"Entries\"`, so `==` of it to `Kind::Entries`, `3`, is false",
     file: "src/lower/serde/de.rs",
-    find: "                return super::super::bindings::variant_tag(self.tcx, variant);\n",
+    find: "                return self.unit_variant(adt.did(), variant);\n",
     replace: "                return Expr::str(name);\n",
     tests: ["test/serde.test.ts", "-t", "a repr enum serializes"],
   },

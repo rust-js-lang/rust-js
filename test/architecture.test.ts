@@ -540,6 +540,11 @@ const idioms: [string, RegExp, string[]][] = [
   ["a map's entry", /"\$orInsert"|"\$mutGet"/, ["src/lower/std_types/map.rs", "src/lower/mir/entries.rs", "src/lower/mut_refs.rs"]],
   ["a range made as stepped", /"\$lazyRange"/, ["src/lower/std_types/range.rs"]],
   ["a cell's borrow", /"\$borrow(Mut)?"|"\$unborrow"/, ["src/lower/std_types/cell.rs", "src/lower/std_impls.rs", "src/lower/drops/parts.rs"]],
+  // A variant without fields as a body writes it, a numbered enum's by its
+  // module's `const` (ADR 0722, amended), is `FnCx::unit_variant`'s: its
+  // value, `bindings::unit_variant`, asked there alone, as a body's would
+  // be the number where the name is written.
+  ["a variant without fields as its value", /bindings::unit_variant\(/, ["src/lower/representation.rs"]],
 ];
 test("a JS form of a concept is written by the concept's owner", () => {
   const strays: string[] = [];
@@ -1028,6 +1033,23 @@ test("a local written again is written_again's alone", () => {
 test("a std call's `&mut` handle is handles_mut's alone", () => {
   const asking = ["src/lower/std_types/slice.rs", "src/lower/std_types/map.rs"].filter((file) => /\bis_boxable\(/.test(read(file)));
   expect(asking).toEqual([]);
+});
+
+// What a module exports an item of its own as, its default or its name, is
+// `default_exports::exported_as`'s, which a module of its crate, another
+// crate through its library's manifest, a `pub use` re-exporting it and a
+// `js::import!` of it all ask (ADR 0773, amended). Its crate imported a
+// block form's `export default function noop() {}` as its default while
+// the library's manifest listed it by its name, so another crate's
+// `import { noop }` found nothing.
+test("what a module exports an item as is exported_as's alone", () => {
+  const lowering = files("src/lower").filter((file) => file.endsWith(".rs") && file !== "src/lower/default_exports.rs");
+  expect(lowering.filter((file) => /Symbol::intern\("export_default"\)/.test(read(file)))).toEqual([]);
+  // Of the rest, what's a module's default asks it for whether a module
+  // has one, the binding it holds, and the module's own made.
+  const asking = lowering.filter((file) => /default_exports::default_exports\(/.test(read(file)));
+  expect(asking.sort()).toEqual(["src/lower/analysis.rs", "src/lower/bindings.rs", "src/lower/pipeline.rs"]);
+  expect(read("src/lower/library.rs")).toContain("default: super::default_exports::is_own_default(tcx, id),");
 });
 
 // Whether an arrow is only the function it passes its arguments on to,

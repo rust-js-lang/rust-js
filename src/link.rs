@@ -46,16 +46,22 @@ pub(crate) fn link(unlinked: Unlinked) -> Linked {
 }
 
 fn resolve(module: &mut LoweredModule, imports: &[ImportRequest], mut names: HashSet<String>) {
+    let mut read = HashSet::new();
     visit(
         module,
         &mut Visitor {
             names: &mut names,
             replacements: None,
+            read: &mut read,
         },
     );
     let mut grouped: BTreeMap<Vec<String>, Vec<(String, String)>> = BTreeMap::new();
+    // An import of what the module reads: one its lowering asked for whose
+    // read tidy took out, a test of a numbered enum's variant an
+    // exhaustive `match` needn't write, `Dark` (ADR 0722), isn't written.
     let replacements: HashMap<_, _> = imports
         .iter()
+        .filter(|request| read.contains(&request.symbol))
         .map(|request| {
             let alias = fresh_in(&mut names, &request.local);
             grouped
@@ -74,6 +80,7 @@ fn resolve(module: &mut LoweredModule, imports: &[ImportRequest], mut names: Has
         &mut Visitor {
             names: &mut names,
             replacements: Some(&replacements),
+            read: &mut HashSet::new(),
         },
     );
 }
@@ -81,6 +88,8 @@ fn resolve(module: &mut LoweredModule, imports: &[ImportRequest], mut names: Has
 struct Visitor<'a> {
     names: &'a mut HashSet<String>,
     replacements: Option<&'a HashMap<crate::js::Symbol, String>>,
+    /// The other modules' items the module reads, by their symbols.
+    read: &'a mut HashSet<crate::js::Symbol>,
 }
 
 impl Visitor<'_> {
@@ -229,7 +238,9 @@ fn expr(e: &mut Expr, visitor: &mut Visitor<'_>) {
         );
     }
     match &mut e.kind {
-        ExprKind::Symbol(_) => {}
+        ExprKind::Symbol(symbol) => {
+            visitor.read.insert(symbol.clone());
+        }
         ExprKind::Var(n) => visitor.name(n),
         ExprKind::Member(a, _)
         | ExprKind::OptionalMember(a, _)

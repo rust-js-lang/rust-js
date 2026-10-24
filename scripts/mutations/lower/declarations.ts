@@ -24,7 +24,15 @@ export const mutations: Mutation[] = [
     name: "numbered-declared-names",
     breaks: "a numbered enum is declared `\"Empty\" | ..`, its names, where its JS is its numbers",
     file: "src/lower/declarations.rs",
-    find: "                            crate::js::ExprKind::Num(n) => json!(n as i64),\n",
+    find: "            crate::js::ExprKind::Num(n) => json!(n as i64),\n",
+    replace: "",
+    tests: ["test/lowering-structs-enums.test.ts", "-t", "a repr enum's variant is its number"],
+  },
+  {
+    name: "numbered-variant-consts-undeclared",
+    breaks: "a numbered enum's `.d.ts` has no `export const Empty: 0;`, so TypeScript finds no `Empty` its JS exports",
+    file: "src/lower/declarations.rs",
+    find: "            items.extend(out.variant_constants(def_id));\n",
     replace: "",
     tests: ["test/lowering-structs-enums.test.ts", "-t", "a repr enum's variant is its number"],
   },
@@ -440,8 +448,8 @@ export const mutations: Mutation[] = [
     "name": "bool-tag-declared-string",
     "breaks": "a boolean tag is declared the string `\"true\"`",
     "file": "src/lower/declarations.rs",
-    "find": "                            crate::js::ExprKind::Bool(b) => json!(b),\n",
-    "replace": "                            crate::js::ExprKind::Bool(b) => json!(b.to_string()),\n",
+    "find": "            crate::js::ExprKind::Bool(b) => json!(b),\n",
+    "replace": "            crate::js::ExprKind::Bool(b) => json!(b.to_string()),\n",
     "tests": [
       "test/declarations.test.ts"
     ]

@@ -97,6 +97,12 @@ export function banner(count) {
 }
 ```
 
+- What a module makes where it loads, a `thread_local!`'s or a `static`'s
+  value, reads another module's `const` as its value, `{ value: 100 }`:
+  two modules may import each other, and the one loaded first runs before
+  the other has made its `const`s. A function reads it by its name
+  ([ADR 0722](../../decisions/0722-a-repr-enums-variant-is-its-number.md)).
+
 Rust lets you shadow a name with a new `let`, `let input = input.trim();`.
 Where nothing reads the old one after it, the new one is the same JS
 variable, assigned, a `let` now. Where something still can, a closure made
@@ -1341,6 +1347,11 @@ export function isAdult(p) {
   an `Option` returns `None` from the function early, as `?.` stops a
   chain.
 - `if let Some(age) = p.age` is "if it's there, call it `age`".
+- A let chain after a test of its own, `if debug && let Some(value) =
+  info.value.get()`, which clippy asks for over two `if`s, reads the place
+  once, as a person writes it: `if (debug) { const value = info.value; if
+  (value != null) { .. } }`
+  ([ADR 0842](../../decisions/0842-a-let-chain-after-a-test-of-its-own-reads-its-place-once.md)).
 - rustc won't let you use an `Option<u32>` as a `u32`: you can't forget the
   missing case.
 - An `Option<bool>` that's `Some(true)`, `flag.is_some_and(|&on| on)`,

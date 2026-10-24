@@ -452,6 +452,9 @@ pub(super) struct AnalyzedCrate<'a, 'tcx> {
     pub required: HashSet<Export>,
     pub thread_local_inits: HashMap<LocalDefId, LocalDefId>,
     pub consts: Vec<LocalDefId>,
+    /// Each variant of a numbered enum, its module's `const` of its number,
+    /// read by its name (ADR 0722, amended).
+    pub variants: Vec<LocalDefId>,
     pub codecs: Vec<DefId>,
     pub modules: Vec<LocalModId>,
     pub taken: HashMap<LocalModId, HashSet<String>>,
@@ -627,11 +630,14 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     let held = bindings::held(tcx, &foreign);
     let mut uses = js_uses(tcx, all_bodies, &held);
     // What the crate's libraries export (ADR 0100) is named before lowering,
-    // and imported by the modules that turn out to use it.
+    // after its name there, a module's default too, `import noop from
+    // "../shared/noop.js"` (ADR 0773), and imported by the modules that turn
+    // out to use it.
     for imported in foreign.all() {
         let export = (imported.from.clone(), imported.export.clone());
         uses.bound_to.entry(export.clone()).or_default();
-        uses.imported.entry(export).or_default();
+        uses.imported.entry(export.clone()).or_default();
+        uses.named.insert(export, imported.name.clone());
     }
     // A binding a library's module holds, named after its `const` there.
     for held in foreign.all_held() {
@@ -665,6 +671,14 @@ pub(super) fn analyze_crate<'a, 'tcx>(
             _ => false,
         })
         .chain(coded_inline_consts(tcx, all_bodies))
+        .collect();
+    // Each variant of a numbered enum, `Status::Pending`, its module's
+    // `const Pending = 0;`, read by its name (ADR 0722, amended).
+    let variants: Vec<LocalDefId> = tcx
+        .hir_crate_items(())
+        .definitions()
+        .filter(|&d| tcx.def_kind(d) == DefKind::Enum && bindings::numbered(tcx, tcx.adt_def(d)))
+        .flat_map(|d| tcx.adt_def(d).variants().iter().filter_map(|v| v.def_id.as_local()))
         .collect();
 
     // Each thread-local's `init` function: lowered like any function, its
@@ -822,12 +836,13 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         .filter(|&&id| serde_impl(tcx, id).is_some() && serde_derived(tcx, id))
         .map(|&id| tcx.associated_item_def_ids(id)[0])
         .collect();
-    // What gets a JS name: functions and methods, `const`s, dictionaries,
-    // and codecs.
+    // What gets a JS name: functions and methods, `const`s, a numbered
+    // enum's variants, dictionaries, and codecs.
     let items: Vec<DefId> = bodies
         .iter()
         .map(|body| body.def_id)
         .chain(consts.iter().map(|id| id.to_def_id()))
+        .chain(variants.iter().map(|id| id.to_def_id()))
         .chain(dictionaries.iter().copied())
         .chain(codecs.iter().copied())
         .collect();
@@ -855,7 +870,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
             .hir_module_free_items(module)
             .any(|id| is_reexport(tcx, tcx.hir_item(id)));
         // Or a default that's another module's function (ADR 0240).
-        let defaulted = || !bindings::default_exports(tcx, module).is_empty();
+        let defaulted = || !super::default_exports::default_exports(tcx, module).is_empty();
         if (reexports || defaulted()) && seen_modules.insert(module) {
             modules.push(module);
         }
@@ -927,6 +942,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         required,
         thread_local_inits,
         consts,
+        variants,
         codecs,
         modules,
         taken,

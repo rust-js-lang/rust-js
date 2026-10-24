@@ -306,6 +306,15 @@ js::export_default! {
 export default "19.3.0";
 ```
 
+Whichever form makes it, a module's default is imported as its default
+wherever it's named, in its crate and in another: `use
+shared::noop::noop;` is `import noop from "../../shared/noop.js";`, and a
+`pub use` of it re-exports the default, `export { default as noop } from
+"./noop.js";`
+([ADR 0773](../../decisions/0773-a-held-default-is-exported-once.md)).
+A constant the default holds that a `pub use` of its module renames is
+declared, then exported, as one the module reads is.
+
 Another module's function as the default is re-exported:
 `js::export_default!(super::page::page);` is
 `export { page as default } from "./page.js";`. A binding the module

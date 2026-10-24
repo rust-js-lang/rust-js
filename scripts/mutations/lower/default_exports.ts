@@ -1,0 +1,53 @@
+// Mutations of src/lower/default_exports.rs (ADR 0093).
+import type { Mutation } from "../../mutations";
+
+export const mutations: Mutation[] = [
+  {
+    name: "default-never-declared",
+    breaks: "`js::export_default! { fn noop() {} }` is `function noop() {} export default noop;`",
+    file: "src/lower/default_exports.rs",
+    find: "    held_by_default(tcx, function) && tcx.get_attrs_by_path(function, &path).next().is_some()\n",
+    replace: "    false && tcx.get_attrs_by_path(function, &path).next().is_some()\n",
+    tests: ["test/modules.test.ts", "-t", "a default export is the (function's declaration|constant's value)"],
+  },
+  {
+    name: "default-of-the-function-unseen",
+    breaks: "`js::export_default! { fn noop() {} }` exports nothing",
+    file: "src/lower/default_exports.rs",
+    find: "            if held_by_default(tcx, def.to_def_id()) {\n                return (Some(def.to_def_id()), tcx.def_span(def));\n",
+    replace: "            if false {\n                return (Some(def.to_def_id()), tcx.def_span(def));\n",
+    tests: ["test/modules.test.ts", "-t", "a default export is the function's declaration"],
+  },
+  {
+    name: "default-export-function-only",
+    breaks: "`js::export_default!(Memoized)` of a `thread_local!` memo'd component is an error, not `export default Memoized;`",
+    file: "src/lower/default_exports.rs",
+    find: "Some(Res::Def(DefKind::Fn | DefKind::Const { .. } | DefKind::Static { .. }, function)) => {",
+    replace: "Some(Res::Def(DefKind::Fn | DefKind::Static { .. }, function)) => {",
+    tests: ["test/declarations.test.ts","-t","thread-local default"],
+  },
+  {
+    name: "default-constant-unheld",
+    breaks: "a `const` the macro holds isn't the default itself, so it's refused as no function of its module",
+    file: "src/lower/default_exports.rs",
+    find: "        DefKind::Const { .. } => tcx.item_name(def) != kw::Underscore,\n",
+    replace: "        DefKind::Const { .. } => false,\n",
+    tests: ["test/modules.test.ts", "-t", "the constant's value where the macro holds it"],
+  },
+  {
+    name: "default-exported-as-name",
+    breaks: "a `pub use` of a module's default re-exports it by its name, `export { noop } from \"./noop.js\"`, which that module doesn't export",
+    file: "src/lower/default_exports.rs",
+    find: "        true => \"default\".to_string(),\n",
+    replace: "        true => name.to_string(),\n",
+    tests: ["test/cross-crate-items.test.ts", "-t", "default export is imported as its default"],
+  },
+  {
+    name: "own-default-of-another-module",
+    breaks: "another module's function a module's default re-exports is imported as its own module's default, which it isn't",
+    file: "src/lower/default_exports.rs",
+    find: "    default.filter(|item| (item.as_local()).is_some_and(|local| tcx.parent_module_from_def_id(local) == module))\n",
+    replace: "    default\n",
+    tests: ["test/cross-crate-items.test.ts", "-t", "default export is imported as its default"],
+  },
+];

@@ -3,7 +3,10 @@
 Status: Accepted. Amended: a constant whose value rustc can't say is its
 initializer's, each use a copy where it may change (below). Amended by
 [0770](0770-a-librarys-const-is-imported-by-its-name.md): a library's is
-imported by its name.
+imported by its name. Extended by
+[0722](0722-a-repr-enums-variant-is-its-number.md): a numbered enum's
+variant is its module's `const` too, and what a module's load makes reads
+another module's `const` as its value, as an import cycle may load it first.
 
 Case: A, C, D ([0262](0262-when-rust-and-js-disagree.md)).
 

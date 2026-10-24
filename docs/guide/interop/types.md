@@ -25,7 +25,7 @@ from your crate and what a binding must be given.
 | tuple struct | array `[a, b]` | [Structs](#structs) |
 | unit struct | `undefined`, or its `#[rust_js::name]` string | [Structs](#structs) |
 | `#[repr(transparent)]` struct | its field | [Structs](#structs) |
-| fieldless enum variant | its name, `"Red"` | [Enums](#enums) |
+| fieldless enum variant | its name, `"Red"`; under a `#[repr(u8)]`, its number, its module's `const`, `Empty` | [Enums](#enums) |
 | enum variant with fields | `{ TAG: "Circle", radius }`, `{ TAG: "Square", _0 }` | [Enums](#enums) |
 | `#[rust_js::tag = "status"]` enum | `{ status: "done", value }` | [Enums](#enums) |
 | `#[rust_js::untagged]` enum | its payload itself | [Enums](#enums) |
@@ -371,9 +371,12 @@ export function area(shape) {
   ([ADR 0013](../../decisions/0013-fieldless-enums.md)).
 - **A variant of an enum under a `#[repr(..)]` of an integer is its
   number**, as rustc numbers it, `ArrayKind::Empty` `0`, where JS keeps a
-  kind as a number, React's `const EMPTY_ARRAY = 0;`; its `as u8` is the
-  value, its `{:?}` its name, its `.d.ts` `0 | 1 | 2 | 3`, and serde
-  still writes its name. A 64-bit `repr`, or a variant named by
+  kind as a number, React's `const Pending = 0;`: each variant is its
+  module's `const`, named as the variant is, `const Empty = 0;`, and read
+  by that name, imported where another module or crate reads it, as a
+  `const` is. Its `as u8` is the value, its `{:?}` its name, its
+  `.d.ts` `0 | 1 | 2 | 3` and `export const Empty: 0;`, and serde still
+  writes its name. A 64-bit `repr`, or a variant named by
   `#[rust_js::name]`, keeps the names
   ([ADR 0722](../../decisions/0722-a-repr-enums-variant-is-its-number.md)):
 
@@ -391,8 +394,11 @@ pub fn kind(complex: bool) -> ArrayKind {
 ```
 
 ```js
+export const Empty = 0;
+export const Complex = 1;
+
 export function kind(complex) {
-  return complex ? 1 : 0;
+  return complex ? Complex : Empty;
 }
 ```
 - **A variant with fields is an object of its `TAG`** and its fields: a

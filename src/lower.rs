@@ -42,6 +42,7 @@ mod classes;
 mod combinators;
 mod copies;
 mod declarations;
+mod default_exports;
 mod display;
 mod drops;
 mod format_args;
@@ -364,6 +365,10 @@ struct CrateFacts<'a, 'tcx> {
     /// The functions written in a function's body, by the block they're
     /// in, each a function declaration there (ADR 0308).
     local_functions: &'a HashMap<DefId, rustc_span::Span>,
+    /// The bodies run where their module loads: a thread-local's value, a
+    /// static's or constant's initializer lowered as code, a `js::on_load!`
+    /// (`FnCx::reads_by_name`).
+    loads: &'a HashSet<DefId>,
 }
 
 impl CrateFacts<'_, '_> {
@@ -639,6 +644,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         // One holding a `Cell`, which changes through a shared reference, is
         // its value, written in place: `{ value: 5 }` each time it's used.
+        // One made where another module loads, read where this one does, is
+        // its value, which rustc computed, where it has one (`reads_by_name`).
+        let by_value = || {
+            (!self.reads_by_name(def_id))
+                .then(|| representation::const_value_js(self.tcx, self.typing_env, def_id, args, span))
+                .flatten()
+        };
+        if let Some(value) = self.is_rust_fn(def_id).then(by_value).flatten() {
+            return Ok(value);
+        }
         if self.is_rust_fn(def_id) && ty.is_freeze(self.tcx, self.typing_env) {
             // `fn_ref` also records the use, which is what imports its module.
             let place = self.fn_ref(def_id);

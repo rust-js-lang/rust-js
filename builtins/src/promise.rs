@@ -1,12 +1,13 @@
 //! JS's [`Promise`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Promise)'s
 //! methods and statics (ADR 0283), as ReScript's Stdlib and TypeScript's lib
 //! have them; `.await` is the way to wait for one (ADR 0029). A rejection's
-//! reason is a `JsError`, as `settle` has it.
+//! reason a handler reads is a `JsError`, as `settle` has it; what rejects
+//! one takes any value, as TypeScript's `reason?: any` (ADR 0782).
 
 // A binding's parameters are its JS function's: its body never runs.
 #![allow(unused_variables)]
 
-use super::{JsError, Promise};
+use super::{IntoUnknown, JsError, Promise, Unknown};
 
 impl<T> Promise<T> {
     /// [`promise.then(f)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Promise/then):
@@ -72,19 +73,22 @@ pub enum PromiseSettledResult<T> {
 }
 
 /// [What `withResolvers` gives](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Promise/withResolvers):
-/// a promise and the functions that settle it.
+/// a promise and the functions that settle it, `reject` of any value, as
+/// a JS function's `any` is (ADR 0653).
 pub struct PromiseWithResolvers<T: 'static> {
     pub promise: Promise<T>,
     pub resolve: &'static dyn Fn(T),
-    pub reject: &'static dyn Fn(&JsError),
+    pub reject: &'static dyn Fn(Option<&Unknown>),
 }
 
 /// [`new Promise(executor)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Promise/Promise):
-/// a promise `executor` settles, given the functions that fulfil it and reject it.
+/// a promise `executor` settles, given the functions that fulfil it and reject it,
+/// `reject` of any value, TypeScript's `reason?: any`, as a JS function's
+/// `any` is, `reject(Some(js::unknown(error)))` of a `&JsError` (ADR 0653).
 /// JS runs it before `new Promise` returns, so it may borrow what's around
 /// it, and set it, `resolve_debug_value = Some(resolve)` (ADR 0782).
 #[cfg_attr(rust_js, rust_js::link_name = "new Promise")]
-pub fn new<T: 'static>(executor: impl FnOnce(&'static dyn Fn(T), &'static dyn Fn(&JsError))) -> Promise<T> {
+pub fn new<T: 'static>(executor: impl FnOnce(&'static dyn Fn(T), &'static dyn Fn(Option<&Unknown>))) -> Promise<T> {
     unreachable!()
 }
 
@@ -96,9 +100,10 @@ pub fn resolve<T>(value: T) -> Promise<T> {
 }
 
 /// [`Promise.reject(reason)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Promise/reject):
-/// a promise rejected with `reason`.
+/// a promise rejected with `reason`, any value, TypeScript's `reason?:
+/// any`, left out or not: `reject(Some(&error))`.
 #[cfg_attr(rust_js, rust_js::link_name = "Promise.reject")]
-pub fn reject<T>(reason: &JsError) -> Promise<T> {
+pub fn reject<T>(reason: Option<&dyn IntoUnknown>) -> Promise<T> {
     unreachable!()
 }
 

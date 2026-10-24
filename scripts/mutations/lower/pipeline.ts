@@ -3,6 +3,30 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "unread-library-item-imported",
+    breaks: "a module imports a library's item it doesn't read, a numbered enum's variant whose test an exhaustive `match` needn't write, `import { Pending, Resolved, Uninitialized }`",
+    file: "src/lower/pipeline.rs",
+    find: "                (package.named).retain(|(export, local)| read.contains(local) || analyzed(&package.from, export));\n",
+    replace: "",
+    tests: ["test/cross-crate-items.test.ts", "-t", "a library's repr enum's variant is imported by its name"],
+  },
+  {
+    name: "numbered-variant-const-undeclared",
+    breaks: "a numbered enum's variant read in its own module has no `const Pending = 0;`, so the read is of a name JS hasn't, a `ReferenceError`",
+    file: "src/lower/pipeline.rs",
+    find: "        if !export && !reached.contains(&id) {\n",
+    replace: "        if !export {\n",
+    tests: ["test/lowering-structs-enums.test.ts", "-t", "a repr enum's variants are its module's consts"],
+  },
+  {
+    name: "numbered-variant-const-unexported",
+    breaks: "a numbered enum's variant another module reads isn't exported, so its import, `import { Dark } from \"./theme.js\"`, finds nothing",
+    file: "src/lower/pipeline.rs",
+    find: "            tcx.visibility(id).is_public() || called_from_elsewhere.contains(&id) || read_elsewhere.contains(&id);\n",
+    replace: "            tcx.visibility(id).is_public() || called_from_elsewhere.contains(&id);\n",
+    tests: ["test/lowering-structs-enums.test.ts", "-t", "a repr enum's variants are its module's consts"],
+  },
+  {
     name: "class-declared-nowhere",
     breaks: "a class's struct isn't where it's declared, so its `///` doc isn't its constructor function's (ADR 0761)",
     file: "src/lower/pipeline.rs",
@@ -198,7 +222,7 @@ export const mutations: Mutation[] = [
     name: "default-of-another-unexported",
     breaks: "another module's function named the default isn't re-exported as it",
     file: "src/lower/pipeline.rs",
-    find: "            .push((info.name.clone(), \"default\".to_string()));\n",
+    find: "            .push((exported(function, info), \"default\".to_string()));\n",
     replace: "            .truncate(0);\n",
     tests: ["test/modules.test.ts", "-t", "default of another module"],
   },
@@ -471,5 +495,21 @@ export const mutations: Mutation[] = [
     find: "                stmt.span = function.span;\n",
     replace: "",
     tests: ["test/js-object.test.ts", "-t", "a constructor is a fn item"],
+  },
+  {
+    name: "aliased-default-undeclared",
+    breaks: "a default constant its module's `pub use` names by another name isn't declared, so `export { VERSION as RELEASE }` names nothing",
+    file: "src/lower/pipeline.rs",
+    find: " && (read_at_home.contains(&held) || aliased(held))",
+    replace: " && read_at_home.contains(&held)",
+    tests: ["test/cross-crate-items.test.ts", "-t", "default export is imported as its default"],
+  },
+  {
+    name: "reexported-default-by-name",
+    breaks: "a `pub use` of another module's default re-exports it by its name, which that module doesn't export",
+    file: "src/lower/pipeline.rs",
+    find: "            .push((exported(def_id, info), alias));\n",
+    replace: "            .push((info.name.clone(), alias));\n",
+    tests: ["test/cross-crate-items.test.ts", "-t", "default export is imported as its default"],
   },
 ];

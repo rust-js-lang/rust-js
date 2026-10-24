@@ -241,6 +241,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.krate.fns.contains_key(&def_id) || self.krate.foreign.item(def_id).is_some()
     }
 
+    /// Does this body read `def_id`, an item rust-js compiled that's made
+    /// where its module loads, a `const` or a numbered enum's variant (ADRs
+    /// 0031, 0722), by its name? Each body does but one run where its own
+    /// module loads (`CrateFacts::loads`), of another of the crate's
+    /// modules: an import cycle may load this one first, before that one
+    /// has made it, so it reads the value. A library's is made before the
+    /// crate loads, and its own module's before what reads it
+    /// (`js::in_load_order`).
+    pub(super) fn reads_by_name(&self, def_id: DefId) -> bool {
+        let module = self.krate.fns.get(&def_id).map(|info| info.module);
+        !self.krate.loads.contains(&self.item) || module.is_none_or(|module| module == self.module)
+    }
+
     /// Is `def_id` a trait's function that a call of runs through the trait:
     /// one of a trait the crate's own impls are called through, or that
     /// resolves to a function rust-js compiled.
