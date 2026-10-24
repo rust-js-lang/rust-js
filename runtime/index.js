@@ -533,7 +533,7 @@ export function $shift(items) {
 // it knows its back, which `$nextBack` steps; given its `len`, its length,
 // an `ExactSizeIterator`'s (ADR 0456). Given its own `fold` and `nth`, the
 // crate's impl's, std's consumers call them (#162).
-export function $iterator(iterator, next, boxed = false, nextBack, len, hint, fold, nth) {
+export function $iterator(iterator, next, boxed = false, nextBack, len, hint, fold, nth, last) {
   const step = (item) => (item == null ? { done: true, value: undefined } : { done: false, value: boxed ? $someValue(item) : item });
   const it = new $Steps(() => step(next(iterator)));
   // The crate's own `fold` and `nth`, where its impl writes them, which
@@ -543,10 +543,21 @@ export function $iterator(iterator, next, boxed = false, nextBack, len, hint, fo
     it.fold = (init, f) => fold(iterator, init, f);
     it.ownFold = true;
   }
-  if (nth !== undefined) it.nth = (k) => step(nth(iterator, k));
+  // `ownNth` and `ownLast` say they're the crate's own, which drop what
+  // they pass themselves, where std's defaults of a `$Steps` don't.
+  if (nth !== undefined) {
+    it.nth = (k) => step(nth(iterator, k));
+    it.ownNth = true;
+  }
+  // And its own `last`, which std's `last`, and a `skip`'s, a chain's, a
+  // fuse's and a peekable's, call (#182).
+  if (last !== undefined) {
+    it.last = () => step(last(iterator));
+    it.ownLast = true;
+  }
   it.of = iterator;
   // Another of a value of its type, stepped as it is: a clone's (ADR 0473).
-  it.with = (value) => $iterator(value, next, boxed, nextBack, len, hint, fold, nth);
+  it.with = (value) => $iterator(value, next, boxed, nextBack, len, hint, fold, nth, last);
   if (nextBack !== undefined) {
     it.back = () => step(nextBack(iterator));
   }
@@ -583,7 +594,7 @@ export function $knowing(it, back, len) {
 // `fold`, `nth` and `size_hint` where the crate's impl writes them (#162);
 // `boxed`, its back and its length as `$iterator`'s.
 export function $given(value, iterator, boxed = false, nextBack, len) {
-  return $iterator(value, iterator.next, boxed, nextBack, len, iterator.sizeHint, iterator.fold, iterator.nth);
+  return $iterator(value, iterator.next, boxed, nextBack, len, iterator.sizeHint, iterator.fold, iterator.nth, iterator.last);
 }
 
 // A map's `insert(k, v)`: `Some` of the value it had, boxed where it looks
@@ -749,9 +760,16 @@ export function $remove(map, key, dropKey) {
 }
 
 // `vec![item; count]`: `count - 1` clones of `item`, then `item` itself, as
-// std's `from_elem` makes them; of none, `item` dropped by `drop`, where it
-// has a destructor.
-export function $repeat(item, count, clone, drop) {
+// std's `from_elem` makes them, room for them of `size` bytes each asked
+// first (ADR 0774); of none, or of no room, `item` dropped by `drop`, where
+// it has a destructor.
+export function $repeat(item, count, size, clone, drop) {
+  try {
+    $roomFor(count, size);
+  } catch (panic) {
+    drop?.(item);
+    throw panic;
+  }
   const result = [];
   if (count > 0) {
     for (let i = 1; i < count; i++) result.push(clone(item));
@@ -1123,6 +1141,18 @@ export class $Steps extends Iterator {
     for (let step = this.next(); !step.done; step = this.next()) folded = f(folded, step.value);
     return folded;
   }
+  // Std's `last`: the last item its `fold` gives, a step, done where there's
+  // none; an adapter whose `last` is its source's, `skip`'s, a chain's, a
+  // fuse's or a peekable's, passes it on to the crate's own (#182).
+  last() {
+    let found = false;
+    let value;
+    this.fold(undefined, (_, x) => {
+      found = true;
+      value = x;
+    });
+    return found ? { done: false, value } : { done: true, value: undefined };
+  }
   // Std's `nth`: `k` stepped past, a `None` among them ending it, then the next.
   nth(k) {
     for (; k > 0; k--) {
@@ -1340,6 +1370,15 @@ export class $Steps extends Iterator {
       n = 0;
       return this.nth(skip + k);
     };
+    // Std's `Skip::last`: its source's `nth(n - 1)`, then its source's `last`.
+    skipped.last = () => {
+      if (n > 0) {
+        const k = n;
+        n = 0;
+        if (this.nth(k - 1).done) return { done: true, value: undefined };
+      }
+      return this.last();
+    };
     return skipped;
   }
 }
@@ -1492,8 +1531,13 @@ export function $mulAddF32(a, b, c) {
 
 // `it.last()` of items with a destructor: its last item, each before it
 // dropped by `drop` as the next comes, as std's `last` drops each it passes
-// (ADR 0098).
+// (ADR 0098). Of one given the crate's own `last`, `ownLast`, that one,
+// which drops what it passes itself (#182).
 export function $lastDropping(it, drop) {
+  if (it.ownLast) {
+    const step = it.last();
+    return step.done ? undefined : step.value;
+  }
   let last;
   let seen = false;
   for (const item of it) {
@@ -1506,8 +1550,14 @@ export function $lastDropping(it, drop) {
 
 // `it.nth(n)` of items with a destructor: its `n`th item, each before it
 // dropped by `drop` as it's passed, as std's `nth` drops each it skips (ADR
-// 0098); boxed where it may look like `None` (ADR 0051).
+// 0098); boxed where it may look like `None` (ADR 0051). Of one given the
+// crate's own `nth`, `ownNth`, that one, which drops what it skips itself
+// (#182).
 export function $nthDropping(it, n, drop, boxed) {
+  if (it.ownNth) {
+    const step = it.nth(n);
+    return step.done ? undefined : boxed ? $some(step.value) : step.value;
+  }
   for (const item of it) {
     if (n === 0) return boxed ? $some(item) : item;
     drop?.(item);
@@ -1805,6 +1855,19 @@ export function $nth(it, k) {
 // `it.nth(k)` of items that look like `None`: its `Some` boxed (ADR 0051).
 export function $nthSome(it, k) {
   const step = it.nth(k);
+  return step.done ? undefined : $some(step.value);
+}
+
+// `it.last()` of an iterator whose `last` is the crate's own, or std's
+// adapter's passing it on (#182): its item, or `undefined` for `None`.
+export function $last(it) {
+  const step = it.last();
+  return step.done ? undefined : step.value;
+}
+
+// `it.last()` of items that look like `None`: its `Some` boxed (ADR 0051).
+export function $lastSome(it) {
+  const step = it.last();
   return step.done ? undefined : $some(step.value);
 }
 
@@ -3793,6 +3856,41 @@ export function $newCyclic(f) {
   return rc;
 }
 
+// A counted `Rc<dyn Sub>` as an `Rc<dyn Super>` (#186): its pair of the
+// supertrait's dictionary, `dictionary`, whose value and counts are the
+// `Rc`'s own, shared, as Rust's upcast shares its allocation. One for each
+// supertrait, `key`, so two of the same `Rc` are the same box, as
+// `Rc::ptr_eq` finds them.
+export function $rcUpcast(rc, key, dictionary) {
+  rc.$views ??= new Map();
+  let view = rc.$views.get(key);
+  if (view === undefined) {
+    view = {
+      impl: dictionary,
+      get value() {
+        return rc.value;
+      },
+      set value(value) {
+        rc.value = value;
+      },
+      get strong() {
+        return rc.strong;
+      },
+      set strong(strong) {
+        rc.strong = strong;
+      },
+      get weak() {
+        return rc.weak;
+      },
+      set weak(weak) {
+        rc.weak = weak;
+      },
+    };
+    rc.$views.set(key, view);
+  }
+  return view;
+}
+
 // `lists.join(&sep)` of a slice of lists (ADR 0322): their items in one
 // array, with `sep` between each two, or `sep`'s items where it's a slice,
 // each cloned by `clone` where a clone is more than the item.
@@ -4221,8 +4319,10 @@ export function $sliceStripCircumfix(v, prefix, suffix, eq) {
   return rest === undefined ? undefined : $sliceStrip(rest, suffix, true, eq);
 }
 
-// `v.repeat(n)`: its items `n` times over, of `Copy` items.
-export function $repeatItems(v, n, copy) {
+// `v.repeat(n)`: its items `n` times over, of `Copy` items, room for them
+// of `size` bytes each asked first (ADR 0774).
+export function $repeatItems(v, n, size, copy) {
+  $roomFor(v.length * n, size);
   const out = [];
   for (let i = 0; i < n; i++) out.push(...(copy === undefined ? v : v.map(copy)));
   return out;
@@ -6381,6 +6481,20 @@ export function $shrinkTo(v, min) {
 // Before it's shortened, `clear()`, `pop()` and the rest: what it has, kept.
 export function $keepCapacity(v) {
   $capacities.set(v, $capacity(v));
+}
+
+// Room for `count` items of `size` bytes each, which std checks wherever a
+// capacity is asked (ADR 0774): past `isize::MAX` bytes, or past
+// `usize::MAX` items, of no size too, a `capacity overflow` panic.
+export function $roomFor(count, size) {
+  if (count > 2 ** 32 - 1 || count * size > 2 ** 31 - 1) throw new Error("capacity overflow");
+}
+
+// `s.reserve(additional)` of a `String`: room for its bytes and as many
+// more, its bytes counted only where they may not fit, as each of its
+// UTF-16 units is at most three.
+export function $textRoomFor(s, additional) {
+  if (additional > 2 ** 31 - 1 - 3 * s.length) $roomFor($byteLen(s) + additional, 1);
 }
 
 // indexmap's `IndexMap` and `IndexSet`: a `Map` and a `Set`, which keep
@@ -9034,6 +9148,18 @@ export function $stdIterator(struct, steps) {
   if (steps.hint !== undefined) {
     it.hint = () => steps.hint(it);
   }
+  // Its `nth`, the compiled one, which passes it on to its source's (#182).
+  // Each std's body, which drops what it passes itself, as `$iterator`'s
+  // own do: `ownNth`, `ownLast`.
+  if (steps.nth !== undefined) {
+    it.nth = (k) => step(steps.nth(it, k));
+    it.ownNth = true;
+  }
+  // And its `last`, the compiled one, its source's (#182).
+  if (steps.last !== undefined) {
+    it.last = () => step(steps.last(it));
+    it.ownLast = true;
+  }
   it.knowing = (back, len) => {
     if (back !== undefined) it.back = () => step(back(it));
     if (len !== undefined) it.len = () => len(it);
@@ -10336,6 +10462,15 @@ export function $lazyChain(a, b) {
     second.return?.();
     return folded;
   };
+  // Std's `Chain::last`: `a`'s `last`, then `b`'s, both asked, `b`'s where
+  // it has one.
+  chained.last = () => {
+    const last = (it) => (it.last !== undefined ? it.last() : $lent(it).last());
+    const a = first !== undefined ? last(first) : { done: true, value: undefined };
+    first = undefined;
+    const b = last(second);
+    return b.done ? a : b;
+  };
   chained.tryFold = (init, f, broke) => {
     let folded = init;
     if (first !== undefined) {
@@ -10975,6 +11110,7 @@ export function $formatFloat(value, options, show) {
 export function $lent(it) {
   const lent = new $Steps(() => it.next());
   if (it.nth !== undefined) lent.nth = (k) => it.nth(k);
+  if (it.ownNth) lent.ownNth = true;
   if (it.tryFold !== undefined) lent.tryFold = (init, f, broke) => it.tryFold(init, f, broke);
   return lent;
 }

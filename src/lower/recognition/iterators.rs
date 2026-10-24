@@ -397,7 +397,9 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// Whether std's `nth` of a `ty`, an iterator, reaches the `nth` the
     /// impl of a crate's iterator writes (#182): of that iterator, through a
     /// `&mut` of it, and of each adapter whose `nth` is its source's and
-    /// whose JS has it, `skip`'s, `take`'s, `step_by`'s and `$enumerate`'s.
+    /// whose JS has it, `skip`'s, `take`'s, `step_by`'s and `$enumerate`'s,
+    /// and a `fuse`'s and a `peekable`'s, std's compiled `nth` (ADR 0561):
+    /// `$nth(it, k)`, as `next()` is `$next(it)`.
     pub(in crate::lower) fn nths_its_own(&self, ty: Ty<'tcx>) -> bool {
         let ty = self.reveal(ty);
         if let ty::Ref(_, inner, ty::Mutability::Mut) = ty.kind() {
@@ -409,8 +411,28 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         let ty::Adt(adt, args) = ty.kind() else { return false };
         matches!(
             std_path(self.tcx, adt.did()).strip_prefix("std::iter::"),
-            Some("Skip" | "Take" | "StepBy" | "Enumerate")
+            Some("Skip" | "Take" | "StepBy" | "Enumerate" | "Fuse" | "Peekable")
         ) && args.types().next().is_some_and(|source| self.nths_its_own(source))
+    }
+
+    /// Whether std's `last` of a `ty`, an iterator, reaches the `last` the
+    /// impl of a crate's iterator writes (#182): of that iterator, and of
+    /// each adapter whose `last` is its source's, `skip`'s (after its
+    /// `nth(n - 1)`), `fuse`'s, `peekable`'s, `copied`'s and `cloned`'s, and
+    /// a chain's, of either side. Not through a `&mut`, whose `last` is
+    /// std's, of `fold`.
+    pub(in crate::lower) fn lasts_its_own(&self, ty: Ty<'tcx>) -> bool {
+        let ty = self.reveal(ty);
+        if self.is_user_iterator(ty) {
+            return !ty.is_ref() && self.own_iterator_method(ty, "last").is_some();
+        }
+        let ty::Adt(adt, args) = ty.kind() else { return false };
+        let sources = match std_path(self.tcx, adt.did()).strip_prefix("std::iter::") {
+            Some("Skip" | "Fuse" | "Peekable" | "Copied" | "Cloned") => 1,
+            Some("Chain") => 2,
+            _ => return false,
+        };
+        args.types().take(sources).any(|source| self.lasts_its_own(source))
     }
 
     /// What an iterator of type `iterator` gives, its `Item`, normalized:

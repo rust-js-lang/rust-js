@@ -157,11 +157,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let size_hint = crate::lower::bindings::trait_method_name(self.tcx, iterator, "size_hint");
             props.push(js::Prop::Field(size_hint, hint));
         }
-        // And its own `fold` and `nth`, which std's consumers of it call,
-        // `$foldBy`'s (#162).
-        let (fold, nth) = self.own_fold_and_nth(ty, span)?;
+        // And its own `fold`, `nth` and `last`, which std's consumers of it
+        // call, `$foldBy`'s (#162, #182).
+        let crate::lower::iterators::OwnMethods { fold, nth, last } = self.own_methods(ty, span)?;
         let iterator = std_item(self.tcx, StdItem::Iterator);
-        for (name, own) in [("fold", fold), ("nth", nth)] {
+        for (name, own) in [("fold", fold), ("nth", nth), ("last", last)] {
             if let Some(own) = own {
                 props.push(js::Prop::Field(
                     crate::lower::bindings::trait_method_name(self.tcx, iterator, name),

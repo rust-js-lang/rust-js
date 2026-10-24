@@ -391,6 +391,11 @@ What's refused is in [the limitations](limitations.md).
   its `len()` is its `size_hint()`, checked ([0164](../decisions/0164-double-ended-iterators.md)).
   `size_hint()` is Rust's where it's known: std's `(0, None)` of one of the
   crate's, a std `ExactSizeIterator`'s length ([0170](../decisions/0170-size-hint.md)).
+- **Room asked past `isize::MAX` bytes panics `capacity overflow`, as
+  std's does:** `Vec::with_capacity(n)` is `$roomFor(n, 4); []`, of the
+  items' size, and `reserve`, `vec![x; n]` and `repeat` are checked too;
+  a JS array has no capacity, so what fits is nothing more
+  ([0774](../decisions/0774-room-past-isize-max-bytes-panics.md)).
 - **A function passed where a closure goes is the arrow that calls it,**
   `.map(str::len)` being `.map((s) => $byteLen(s))` and `fold(0, i32::max)`
   being `reduce((a, b) => Math.max(a, b), 0)`; a constructor's makes what
@@ -402,6 +407,10 @@ Differences:
 
 - **A `HashMap` or a `HashSet` iterates in insertion order,** where Rust's
   order is unspecified; serde_json writes one in that order too.
+- **Room for a type parameter's items is checked by their count alone,**
+  `Vec::<T>::with_capacity(n)` in generic code, as if they had no size:
+  their size isn't known where the call is
+  ([0774](../decisions/0774-room-past-isize-max-bytes-panics.md)).
 
 What's refused of collections and iterators is in
 [the limitations](limitations.md#iterators-and-collections).
@@ -449,6 +458,9 @@ missing key, `unreachable!`, `todo!` ([0012](../decisions/0012-panics-and-runtim
   [0141](../decisions/0141-std-trait-objects.md)).
 - **Control flow is Rust's:** `loop` with a value, labeled `break` and
   `continue`, labeled blocks ([0158](../decisions/0158-labeled-blocks.md)),
+  each `break` where it's written, a case's `break;` where the block ends
+  a `match`'s arm that's a case
+  ([0790](../decisions/0790-a-break-the-program-wrote-is-where-it-is-written.md)),
   `let`-`else`, `if let` chains, match guards, `let` guards.
 
 Differences:
@@ -704,11 +716,21 @@ React and JSX are [their own pages](README.md#react).
     with a destructor, drops what it holds at that first `None`, where std
     drops it with the adapter; what the iterator gives after is stepped as
     std's is (ADR 0669).
-21. Where the crate's iterator's impl writes its own `nth`, std passes it
-    through a `fuse` and a `peekable`, and `try_fold`, a `skip`'s
-    `nth(n - 1)`, through a `peekable`, a `fuse` and a `flatten`, which
-    rust-js steps by `next` (#182); elsewhere it's asked as std asks it
-    (ADR 0711).
+21. Where the crate's iterator's impl writes its own `size_hint`,
+    `collect()` into a `Vec` doesn't ask it, where std's asks it as its
+    capacity runs out, which its growth decides; its own `nth`, `fold` and
+    `last` are asked as std asks them, through each adapter that passes
+    them on (ADR 0711).
 22. `Array.isArray(x)` of a revoked `Proxy`, which throws a `TypeError`,
     is taken to do nothing: a test of it that an earlier one decides is
     left out (ADR 0743).
+23. A binding's method of a declared JS type, webapi's `Element` say, is
+    taken to be its class's: `app.append(stepper(..), ..)` looks
+    `append` up before its arguments run, where Rust runs them first, so a
+    method that's a getter, or one an argument replaces, is told apart
+    from Rust's only there. Of a `js::Unknown`, any value, the arguments
+    run first, as Rust runs them (ADR 0750).
+24. Room asked for items whose size a type parameter gives, a generic
+    function's `Vec::<T>::with_capacity(n)`, is checked by their count
+    alone, as if they had none, where std checks their bytes against
+    `isize::MAX` (ADR 0774).

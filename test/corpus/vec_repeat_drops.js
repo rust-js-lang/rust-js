@@ -13,7 +13,7 @@ function dDrop_drop(d) {
 function main() {
   const r = { value: 5, strong: 1, weak: 0 };
   try {
-    const v = $repeat($rcClone(r), 3, (item) => $rcClone(item), $rcDrop);
+    const v = $repeat($rcClone(r), 3, 4, (item) => $rcClone(item), $rcDrop);
     const length = v.length;
     try {
       console.log(`${length} ${r.strong}`);
@@ -23,20 +23,21 @@ function main() {
       }
     }
     console.log(`${r.strong}`);
-    const none = $repeat($rcClone(r), 0, (item) => $rcClone(item), $rcDrop);
+    const none = $repeat($rcClone(r), 0, 4, (item) => $rcClone(item), $rcDrop);
     const value = none.length;
     try {
       console.log(`${value} ${r.strong}`);
-      const ds = $repeat([7], 2, (item) => item, dDrop_drop);
+      const ds = $repeat([7], 2, 1, (item) => item, dDrop_drop);
       try {
         console.log(`made ${ds.length}`);
-        const zero = $repeat([9], 0, (item) => item, dDrop_drop);
+        const zero = $repeat([9], 0, 1, (item) => item, dDrop_drop);
         try {
           console.log(`zero ${zero.length}`);
           const n = 3;
           const grid = $repeat(
-            $repeat([1], 1, (item) => item, dDrop_drop),
+            $repeat([1], 1, 1, (item) => item, dDrop_drop),
             n,
+            12,
             (item) => item,
             $dropEach(dDrop_drop),
           );

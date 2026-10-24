@@ -2,7 +2,9 @@
 
 Status: Accepted. Extends [0063](0063-text.md) and
 [0315](0315-vec-capacity-and-edits.md); counted by
-[0314](0314-std-data-structures.md).
+[0314](0314-std-data-structures.md). Amended by
+[0774](0774-room-past-isize-max-bytes-panics.md): a `String`'s room asked is
+checked.
 
 Case: A ([0262](0262-when-rust-and-js-disagree.md)), and C for a join of
 lists.

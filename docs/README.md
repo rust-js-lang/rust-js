@@ -384,14 +384,14 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0312 `js::shown` is any value as a template shows it](decisions/0312-shown.md)
 - [0313 Loops, spreads and calls as a person writes them](decisions/0313-console-forms.md) *(amended by 0640: `console` takes a tuple)*
 - [0314 Each std data structure works or is refused, and coverage only grows](decisions/0314-std-data-structures.md)
-- [0315 A `Vec`'s capacity does nothing, and its edits are std's](decisions/0315-vec-capacity-and-edits.md)
+- [0315 A `Vec`'s capacity does nothing, and its edits are std's](decisions/0315-vec-capacity-and-edits.md) *(amended by 0774: the room asked is checked)*
 - [0316 A `LinkedList` is an array, as a `VecDeque` is](decisions/0316-linked-list.md)
 - [0317 A `OnceCell` is a `{ value }` of an `Option`, set once](decisions/0317-once-cells.md)
 - [0318 A `LazyCell` makes its value when it's first used, as Rust's does](decisions/0318-lazy-cells.md)
 - [0319 A `Cow` is its enum, made owned by a clone of what it borrowed](decisions/0319-cows.md)
 - [0320 An `Rc` whose counts are read is counted, as Rust counts it](decisions/0320-counted-rcs.md)
 - [0321 A map drops its values as Rust's does](decisions/0321-map-drops.md)
-- [0322 Text's and slices' methods by their other names, and a join of lists](decisions/0322-text-and-slice-names.md)
+- [0322 Text's and slices' methods by their other names, and a join of lists](decisions/0322-text-and-slice-names.md) *(amended by 0774: a `String`'s room asked is checked)*
 - [0323 A `String`'s byte-range edits, and `str`'s searches from the end](decisions/0323-text-byte-ranges.md)
 - [0324 A slice's fills, copies, order checks, chunks and splits](decisions/0324-slice-methods.md)
 - [0325 Maps' and sets' own methods, a B-tree's in its keys' order](decisions/0325-map-and-set-methods.md)
@@ -488,7 +488,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0416 `RangeBounds` in generic code: a dictionary of the range's bounds](decisions/0416-range-bounds-in-generic-code.md)
 - [0417 An allocation is an array of slots](decisions/0417-an-allocation-is-an-array-of-slots.md)
 - [0418 A slice's index of a type parameter's is a dictionary](decisions/0418-a-generic-slice-index-is-a-dictionary.md)
-- [0419 A `Vec`'s capacity is kept where it's asked](decisions/0419-a-vecs-capacity-kept-where-asked.md)
+- [0419 A `Vec`'s capacity is kept where it's asked](decisions/0419-a-vecs-capacity-kept-where-asked.md) *(amended by 0774: the room asked is checked first)*
 - [0420 What `Vec::set_len` leaves past a vector's length stays where it was](decisions/0420-what-set-len-leaves-stays.md)
 - [0421 A std trait's associated type's drop is its caller's to give](decisions/0421-std-associated-type-drops-are-given.md)
 - [0422 An iterator that holds a value is closed to drop it](decisions/0422-an-iterator-holding-a-value-is-closed-to-drop-it.md)
@@ -603,7 +603,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0669 An adapter steps its source as std's does](decisions/0669-an-adapter-steps-its-source-as-stds-does.md) *(amended by 0687: and gives the crate's own `fold` and `nth` on)*
 - [0670 A tree's writes have one owner, and its walks one definition](decisions/0670-a-trees-writes-have-one-owner.md)
 - [0671 A nested body is lowered in one call](decisions/0671-a-nested-body-is-lowered-in-one-call.md)
-- [0672 A property a chain tests and binds is read once](decisions/0672-a-property-a-test-reads-is-read-once.md) *(amended by 0701: a read nothing after reads is gone; amended: the read says it's a getter's, `js::Known`)*
+- [0672 A property a chain tests and binds is read once](decisions/0672-a-property-a-test-reads-is-read-once.md) *(amended by 0701: a read nothing after reads is gone; amended: the read says it's a getter's, `js::Known`; a getter's read held by MIR isn't written at each use)*
 - [0676 `js::Kind` tells `undefined` and `null`](decisions/0676-kind-tells-undefined-and-null.md)
 - [0677 A weak collection's key is what `js::Kind` holds](decisions/0677-a-weak-key-is-what-kind-holds.md)
 - [0678 A parameter's leading `_` isn't in its JS name](decisions/0678-a-parameters-underscore-isnt-its-js-name.md)
@@ -634,7 +634,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0708 A comment before an argument, or a field, is before it](decisions/0708-a-comment-before-an-argument-is-before-it.md)
 - [0709 A signed counter below a length stays below it, past its loop and through its `as`](decisions/0709-a-signed-counter-below-a-length-stays-below-it.md) *(extended by 0746: a length held in a variable, and a `push`)*
 - [0710 Every unwind's payload downcasts as the `&JsError` thrown](decisions/0710-every-unwinds-payload-is-the-js-error-thrown.md) *(amended: what's given its `Some`'s value, `and_then`'s closure, is given it)*
-- [0711 What stops early steps by `try_fold`, and `nth` is passed on, as std's adapters route them](decisions/0711-what-stops-early-steps-by-try-fold.md)
+- [0711 What stops early steps by `try_fold`, and `nth` is passed on, as std's adapters route them](decisions/0711-what-stops-early-steps-by-try-fold.md) *(amended: `nth` through a `fuse` and a `peekable`, and `last` passed on)*
 - [0712 What lowering a function finds of drops is returned with it](decisions/0712-what-lowering-finds-of-drops-is-returned-with-it.md)
 - [0713 Lowering's hidden contracts, held where they're relied on](decisions/0713-lowerings-hidden-contracts-held.md) *(amended: a declining kind writes apart)*
 - [0714 A reference given to generic code is what it refers to](decisions/0714-a-reference-given-to-generic-code.md)
@@ -651,14 +651,14 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0719 `for…in` is a `for` loop of `js::keys_in`, and its `enumerate()` a counter](decisions/0719-for-in-is-a-for-loop-of-keys-in.md)
 - [0740 A function's members are read of any function, `js::function`](decisions/0740-a-functions-members-are-read-of-any-function.md)
 - [0741 An `ArrayBufferView` is what each view derefs to, and `isView` takes any value](decisions/0741-an-array-buffer-view-is-what-each-view-derefs-to.md)
-- [0742 A block's label the program wrote is its name in JS](decisions/0742-a-label-the-program-wrote-is-its-name.md)
+- [0742 A block's label the program wrote is its name in JS](decisions/0742-a-label-the-program-wrote-is-its-name.md) *(amended by 0790: its `break`s are where they're written, a case's `break;` where it ends a case)*
 - [0743 A part of a chain of tests an earlier test decides is left out](decisions/0743-a-part-of-a-chain-a-test-decides-is-left-out.md)
 - [0744 A value or what it falls back to is `||`](decisions/0744-a-value-or-its-fallback-is-or.md)
 - [0745 A `continue` in a chain of `if`s is where it's written](decisions/0745-a-continue-in-a-chain-is-where-it-is-written.md) *(amended: a written `continue` its rest made an `else` stays; extended by 0754: a `return` some arms go on to is in each; 0755: a `return` after a block is each of its `break`s)*
 - [0746 A length held in a variable shows the slice at least so long, and a `push` makes one long](decisions/0746-a-length-held-in-a-variable-shows-the-slice-so-long.md)
 - [0747 `unwrap()` of a throwing call each branch makes is each call](decisions/0747-unwrap-of-a-throwing-call-each-branch-makes.md)
 - [0748 A `for` of a slice's first items is of its part, `xs.slice(0, n)`](decisions/0748-a-for-of-a-slices-first-items-is-of-its-part.md)
-- [0750 A temporary is read past a method, and in the block after it](decisions/0750-a-temporary-is-read-past-a-method-and-into-a-block.md) *(amended: not past a binding's method of a JS value)*
+- [0750 A temporary is read past a method, and in the block after it](decisions/0750-a-temporary-is-read-past-a-method-and-into-a-block.md) *(amended: not past a binding's method of a JS value; a getter's read does something, a declared type's method its class's)*
 - [0751 A binding only an arm's guard reads isn't written in the arm](decisions/0751-a-binding-only-a-guard-reads-isnt-written.md)
 - [0752 An `Option`'s function unwrapped and called panics before the call](decisions/0752-an-unwrapped-function-called-panics-first.md)
 - [0753 A branch of only comments keeps them](decisions/0753-a-branch-of-only-comments-keeps-them.md)
@@ -670,7 +670,9 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0771 An `==` of a value read as the registry's symbol is its `matches!`](decisions/0771-an-equality-of-a-registered-symbol-is-its-match.md)
 - [0772 A nullable `Cell` field's `None` is `null`, made and written](decisions/0772-a-nullable-cell-field-writes-null.md)
 - [0773 A binding a module's default names is exported as the default alone](decisions/0773-a-held-default-is-exported-once.md)
+- [0774 Room asked past `isize::MAX` bytes is a `capacity overflow` panic](decisions/0774-room-past-isize-max-bytes-panics.md)
 - [0775 A `()` given to JS is `undefined`; a list of none is `[]`](decisions/0775-a-unit-given-to-js-is-undefined.md)
+- [0790 A `break` the program wrote is where it's written, a case's `break;` where its block ends a case](decisions/0790-a-break-the-program-wrote-is-where-it-is-written.md)
 - [0720 A labeled block's `break` and a named constant, in a body's ranges](decisions/0720-a-labeled-block-and-a-named-constant-in-a-bodys-ranges.md)
 - [0721 `js::strict_equals(a, b)` is JS's `===`](decisions/0721-strict-equals-is-jss-triple-equals.md) *(fixed by 0775: a `()` compared is `undefined`)*
 - [0722 A `#[repr(..)]` enum's variant is its number](decisions/0722-a-repr-enums-variant-is-its-number.md)
@@ -758,7 +760,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0517 `scan` is lazy, and an iterator's combinators one way](decisions/0517-scan-is-lazy-and-iterator-combinators-one-way.md) *(amended by 0669: every adapter steps its source as std's does)*
 - [0518 A held `filter_map`, and `$closing` a JS iterator](decisions/0518-filter-map-held-and-closing-iterators.md)
 - [0519 A `Cell` or a `OnceCell` of what has a destructor](decisions/0519-a-cell-of-what-has-a-destructor.md)
-- [0520 A counted `Rc<dyn T>` is its pair](decisions/0520-a-counted-rc-of-a-dyn-is-its-pair.md)
+- [0520 A counted `Rc<dyn T>` is its pair](decisions/0520-a-counted-rc-of-a-dyn-is-its-pair.md) *(amended: an upcast of a counted `Rc<dyn Sub>` shares its count)*
 - [0521 A `dyn Fn` carries its drop](decisions/0521-a-dyn-fn-carries-its-drop.md)
 - [0522 A closure cloned apart is made again](decisions/0522-a-closure-cloned-apart-is-made-again.md)
 - [0523 Libraries share one counted `Rc` representation](decisions/0523-libraries-share-one-counted-rc.md)

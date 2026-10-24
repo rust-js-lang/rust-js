@@ -320,11 +320,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(value)
     }
 
-    /// The crate's iterator `ty`'s own `fold` and `nth`, where its impl
-    /// writes them: the functions what std routes through them calls,
-    /// `$iterator`'s (#162). One that takes evidence besides its drops, a
-    /// bound's dictionary, can't be given what each caller would: refused.
-    pub(in crate::lower) fn own_fold_and_nth(&self, ty: ty::Ty<'tcx>, span: Span) -> R<(Option<Expr>, Option<Expr>)> {
+    /// The crate's iterator `ty`'s own `fold`, `nth` and `last`, where its
+    /// impl writes them: the functions what std routes through them calls,
+    /// `$iterator`'s (#162, #182). One that takes evidence besides its
+    /// drops, a bound's dictionary, can't be given what each caller would:
+    /// refused.
+    pub(in crate::lower) fn own_methods(&self, ty: ty::Ty<'tcx>, span: Span) -> R<crate::lower::iterators::OwnMethods> {
         let own = |name: &str| -> R<Option<Expr>> {
             let Some(written) = self.recognition().own_iterator_method(ty, name) else {
                 return Ok(None);
@@ -336,7 +337,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             Ok(Some(self.fn_ref(written)))
         };
-        Ok((own("fold")?, own("nth")?))
+        Ok(crate::lower::iterators::OwnMethods {
+            fold: own("fold")?,
+            nth: own("nth")?,
+            last: own("last")?,
+        })
     }
 
     /// Whether `ty` is an iterator of the crate's that's double-ended, by

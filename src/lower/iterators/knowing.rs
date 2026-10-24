@@ -218,7 +218,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 from_back,
                 Some(Expr::helper(len)),
                 None,
-                (None, None),
+                crate::lower::iterators::OwnMethods::default(),
             ));
         }
         if self.steps_an_array(ty) {
@@ -439,7 +439,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> R<Expr> {
         let (next, boxed) = self.user_next(ty, trait_id, method, span)?;
         let hint = self.own_size_hint(ty, span)?;
-        let own = self.own_fold_and_nth(ty, span)?;
+        let own = self.own_methods(ty, span)?;
         Ok(stepped_ends(value, next, boxed, None, None, hint, own))
     }
 
@@ -472,7 +472,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 vec![StmtKind::Return(Some(exact)).at(js::Span::NONE)],
             )
         });
-        let own = self.own_fold_and_nth(ty, span)?;
+        let own = self.own_methods(ty, span)?;
         Ok(stepped_ends(value, next, boxed, back, len, hint, own))
     }
 
@@ -527,6 +527,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             false => None,
         };
         props.extend(hint.map(|hint| crate::js::Prop::Field("hint".into(), hint)));
+        // Its `nth`, the compiled impl's, which passes it on as std's does
+        // (#182).
+        if self.compiled_step(ty, iterator, "nth") {
+            let (nth, _) = self.user_method(ty, iterator, "nth", &["n"], span)?;
+            props.push(crate::js::Prop::Field("nth".into(), nth));
+        }
+        // And its `last`, its source's.
+        if self.compiled_step(ty, iterator, "last") {
+            let (last, _) = self.user_next(ty, iterator, "last", span)?;
+            props.push(crate::js::Prop::Field("last".into(), last));
+        }
         // Its fold, std's: a peekable's what it peeked at then its source's,
         // a fuse's its source's while it has one, by the source's
         // dictionary, which has that impl's own `fold` (#162); a fuse's
@@ -588,6 +599,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         method: &str,
         span: Span,
     ) -> R<(Expr, bool)> {
+        self.user_method(ty, trait_id, method, &[], span)
+    }
+
+    /// `user_next` of a method that takes more than the iterator, `nth`'s
+    /// `n`, `params`: a function of the iterator and them, in order.
+    pub(in crate::lower) fn user_method(
+        &mut self,
+        ty: ty::Ty<'tcx>,
+        trait_id: DefId,
+        method: &str,
+        params: &[&str],
+        span: Span,
+    ) -> R<(Expr, bool)> {
         let next = trait_method(self.tcx, trait_id, method);
         let args = self.args_of(trait_id, ty.peel_refs());
         // A generic `next` boxes a `Some` that looks like `None` (ADR 0051).
@@ -609,9 +633,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .unwrap_or(output);
             self.option_of(output).is_some_and(|item| self.boxed_payload(item))
         });
-        let call = self.impl_call(next, args, vec![Expr::var("iterator")], span)?;
+        let given: Vec<Expr> = std::iter::once("iterator")
+            .chain(params.iter().copied())
+            .map(Expr::var)
+            .collect();
+        let call = self.impl_call(next, args, given, span)?;
         let next = Expr::arrow(
-            vec!["iterator".into()],
+            std::iter::once("iterator")
+                .chain(params.iter().copied())
+                .map(Into::into)
+                .collect(),
             vec![StmtKind::Return(Some(call)).at(js::Span::NONE)],
         );
         Ok((next.called_alone(), boxed))

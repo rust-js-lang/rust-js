@@ -90,4 +90,12 @@ export const mutations: Mutation[] = [
     replace: "    const value = rc.value;\n",
     tests: ["test/corpus.test.ts", "-t", "^(dyn_any_counted_rc|rc_dyn_destructors).rs$"],
   },
+  {
+    name: "rc-upcast-view-uncached",
+    breaks: "two upcasts of one counted `Rc` are two boxes, so `Rc::ptr_eq` of them is false",
+    file: "src/runtime/rc.js",
+    find: "  let view = rc.$views.get(key);\n",
+    replace: "  let view = undefined;\n",
+    tests: ["test/corpus.test.ts", "-t", "^rc_dyn_upcast_counted.rs$"],
+  },
 ];

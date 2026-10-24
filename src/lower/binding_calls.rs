@@ -7,7 +7,7 @@ use super::recognition::StdItem;
 use super::{FnCx, R};
 use crate::js;
 use crate::js::{Expr, Op, StmtKind, UnaryOp};
-use rustc_middle::ty;
+use rustc_middle::ty::{self, TyCtxt};
 use rustc_span::Span;
 use rustc_span::def_id::DefId;
 
@@ -112,10 +112,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         given_to_js(&mut args);
         let value = match (js_form(self.tcx, def_id), this) {
             // A method or a property is on `this`: it can't be an import.
-            // Its method, looked up when it's called, which a getter may
-            // answer (ADR 0750).
+            // Its method, looked up when it's called: of a JS value of any
+            // shape, one a getter may answer (ADR 0750).
             (JsForm::Call(name), Some(this)) if !name.contains('#') => {
-                Expr::call(Expr::member(this, name).answered_by_a_getter().or_at(fun_span), args)
+                let method = Expr::member(this, name);
+                let method = match method_may_be_a_getters(self.tcx, def_id) {
+                    true => method.answered_by_a_getter(),
+                    false => method,
+                };
+                Expr::call(method.or_at(fun_span), args)
             }
             (JsForm::Call(name), None) => Expr::call(self.binding_ref(&name, named).or_at(fun_span), args),
             (JsForm::New(name), None) => Expr::new_(self.js_ref(&name).or_at(fun_span), args),
@@ -269,4 +274,24 @@ pub(super) fn keyed(this: Expr, key: Expr) -> Expr {
         }
         _ => Expr::index(this, key),
     }
+}
+
+/// Whether a call of binding `def_id` looks its method up on a JS value of
+/// any shape, `js::Unknown`, `obj.send(a, b)`: once the receiver is read,
+/// before its other arguments run, where Rust runs them first, and a
+/// getter may answer the lookup, or an argument replace the method (#187,
+/// #188). A receiver of a declared type, webapi's `Element` say, has its
+/// class's method, which nothing the program does changes (ADR 0750). The
+/// one answer, of the lookup's `js::Known` and of what's read past it.
+pub(in crate::lower) fn method_may_be_a_getters(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
+    let receiver = || {
+        let inputs = tcx.fn_sig(def_id).instantiate_identity().skip_normalization();
+        inputs.skip_binder().inputs().first().copied()
+    };
+    is_binding(tcx, def_id)
+        && is_method(tcx, def_id)
+        && matches!(js_form(tcx, def_id), JsForm::Call(name) if !name.contains('#'))
+        && receiver().is_some_and(
+            |ty| matches!(ty.peel_refs().kind(), ty::Adt(adt, _) if super::declarations::any_shape(tcx, adt.did())),
+        )
 }

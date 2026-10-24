@@ -5,6 +5,7 @@ import {
   $debugStr,
   $joinWith,
   $lines,
+  $textRoomFor,
   $trimEnd,
   $trimMatches,
   $trimStart,
@@ -28,7 +29,9 @@ function main() {
   );
 
   let owned = "";
+  $textRoomFor(owned, 10);
   owned += "héllo";
+  $textRoomFor(owned, 1);
   console.log(
     `[${Array.from(new TextEncoder().encode(owned)).join(", ")}] [${Array.from(new TextEncoder().encode(owned)).join(", ")}]`,
   );

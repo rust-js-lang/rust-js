@@ -494,7 +494,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Comb::AndThen => {
                 let f = next();
                 let then = self.call_with(f, vec![value], "then", out);
-                Expr::cond(some, then, Expr::undefined())
+                super::std_types::option::and_then_of(out, spilled_at.filter(|_| !boxed), some, then)
             }
             // A value with a destructor its test doesn't keep is dropped once
             // the test says so, or throws (ADR 0179).

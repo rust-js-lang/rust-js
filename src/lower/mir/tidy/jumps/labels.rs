@@ -2,6 +2,7 @@
 //! and those never taken.
 
 use super::*;
+use std::collections::HashMap;
 
 /// Of `exits_after`, the loop at `i` of `stmts`: what it does after it, its
 /// way out made a `break`.
@@ -166,21 +167,10 @@ pub(in crate::lower::mir::tidy) fn written_loop(
         .min_by_key(|(l, ..)| l.hi - l.lo)
 }
 
-/// A label MIR gives by its block, `bb2`, of what the program labeled: its
-/// label, where nothing around it has that one. A loop's, `rows: for (…)`;
-/// and a block's whose end a `break` the program wrote of it goes to,
-/// `desc: { .. }` (ADR 0742).
-pub(in crate::lower::mir::tidy) fn named_labels(
-    stmts: &mut [Stmt],
-    loops: &[(js::Span, bool, Option<String>)],
-    blocks: &[LabeledBlock],
-) {
-    fn walk(
-        stmts: &mut [Stmt],
-        loops: &[(js::Span, bool, Option<String>)],
-        blocks: &[LabeledBlock],
-        around: &mut Vec<String>,
-    ) {
+/// A label MIR gives by its block, `bb2`, of a loop the program labeled:
+/// its label, where nothing around it has that one, `rows: for (…)`.
+pub(in crate::lower::mir::tidy) fn named_labels(stmts: &mut [Stmt], loops: &[(js::Span, bool, Option<String>)]) {
+    fn walk(stmts: &mut [Stmt], loops: &[(js::Span, bool, Option<String>)], around: &mut Vec<String>) {
         for stmt in stmts.iter_mut() {
             let span = stmt.span;
             let (label, body, written) = match &mut stmt.kind {
@@ -188,15 +178,12 @@ pub(in crate::lower::mir::tidy) fn named_labels(
                 | StmtKind::ForOf { label, body, .. }
                 | StmtKind::For { label, body, .. } => {
                     let Some(label) = label else {
-                        walk(body, loops, blocks, around);
+                        walk(body, loops, around);
                         continue;
                     };
                     (label, body, written_loop(loops, span).and_then(|(_, _, l)| l.as_ref()))
                 }
-                StmtKind::Labeled(label, body) => {
-                    let written = (blocks.iter()).find(|b| !span.is_none() && b.span == span);
-                    (label, body, written.map(|b| &b.label))
-                }
+                StmtKind::Labeled(label, body) => (label, body, None),
                 _ => continue,
             };
             if crate::lower::mir::is_block_label(label)
@@ -207,11 +194,100 @@ pub(in crate::lower::mir::tidy) fn named_labels(
                 *label = to.clone();
             }
             around.push(label.clone());
-            walk(body, loops, blocks, around);
+            walk(body, loops, around);
             around.pop();
         }
     }
-    walk(stmts, loops, blocks, &mut Vec::new());
+    walk(stmts, loops, &mut Vec::new());
+}
+
+/// A block the program labeled, `'desc: { .. }`, by its name before
+/// anything else reads the body: the JS block MIR's breaks leave whose end
+/// a `break` the program wrote of it goes to, `desc: { .. }` (ADR 0742),
+/// where no label around it has that name. A `break` written of it that MIR
+/// sends to a block inside it first, one past the drops at its end, which
+/// JS has none of, goes to it: a block followed by `break desc`, or that
+/// ends it, leaves it as `break desc` does. Named so, it's the program's
+/// from the first, and no pass that reads a block MIR made
+/// (`is_block_label`) makes its `break`s something else: each is where it's
+/// written (ADR 0790).
+pub(in crate::lower::mir::tidy) fn written_blocks(body: &mut Vec<Stmt>, blocks: &[LabeledBlock]) {
+    let written = |span: js::Span| (blocks.iter()).find(|b| !span.is_none() && b.span == span);
+    // Where each JS block is written, by its label.
+    let mut spans: HashMap<String, js::Span> = HashMap::new();
+    js::each_list(body, &mut |list| {
+        for stmt in list {
+            if let StmtKind::Labeled(l, _) = &stmt.kind {
+                spans.insert(l.clone(), stmt.span);
+            }
+        }
+    });
+    // The blocks of a labeled block's, past its end's drops: each one's
+    // `break`s, its end's.
+    js::statement_lists(body, &mut |stmts| {
+        for i in 0..stmts.len() {
+            let to = match (stmts.get(i + 1).map(|s| &s.kind), i + 1 == stmts.len()) {
+                (Some(StmtKind::Break(Some(to))), _) => Some(to.clone()),
+                _ => None,
+            };
+            if let Some(to) = to
+                && written(stmts[i].span).is_some()
+                && spans.get(&to) == Some(&stmts[i].span)
+                && let StmtKind::Labeled(label, inner) = &mut stmts[i].kind
+                && crate::lower::mir::is_block_label(label)
+            {
+                let from = label.clone();
+                relabeled(inner, &from, &to);
+            }
+        }
+        // A block of one that ends it, where it ends too.
+        for stmt in stmts.iter_mut() {
+            if written(stmt.span).is_some()
+                && let StmtKind::Labeled(outer, inner) = &mut stmt.kind
+                && let Some(Stmt {
+                    kind: StmtKind::Labeled(last, last_body),
+                    span,
+                }) = inner.last_mut()
+                && written(*span).is_some()
+                && crate::lower::mir::is_block_label(last)
+            {
+                let from = last.clone();
+                relabeled(last_body, &from, outer);
+            }
+        }
+    });
+    // Its name, where no other label has it: no loop's, nor another block's
+    // the program labeled so.
+    let mut taken: HashMap<String, usize> = HashMap::new();
+    js::each_list(body, &mut |list| {
+        for stmt in list {
+            if let StmtKind::Labeled(l, _)
+            | StmtKind::While { label: Some(l), .. }
+            | StmtKind::ForOf { label: Some(l), .. }
+            | StmtKind::For { label: Some(l), .. } = &stmt.kind
+            {
+                *taken.entry(l.clone()).or_default() += 1;
+            }
+        }
+    });
+    for block in blocks {
+        *taken.entry(block.label.clone()).or_default() += 1;
+    }
+    js::statement_lists(body, &mut |stmts| {
+        for stmt in stmts.iter_mut() {
+            let name = written(stmt.span).map(|b| b.label.clone());
+            if let StmtKind::Labeled(label, inner) = &mut stmt.kind
+                && let Some(to) = name
+                && crate::lower::mir::is_block_label(label)
+                && taken.get(&to) == Some(&1)
+                && js::names_jump(inner, label)
+            {
+                relabeled(inner, label, &to);
+                taken.insert(to.clone(), 2);
+                *label = to;
+            }
+        }
+    });
 }
 
 /// Whether `inner`, in place of the statement at `i` of `stmts`, declares

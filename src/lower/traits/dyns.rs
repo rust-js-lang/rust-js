@@ -478,7 +478,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // strong, weak }` (ADRs 0320, 0520): of one made here; of one made
         // elsewhere, which its other owners share as what it is, not yet.
         if self.counted_rc(source).is_some() || self.weak_of(source).is_some() {
-            return self.counted_unsized(source, target, value, span);
+            return self.counted_unsized(source, target, value, span, out);
         }
         if self.is_pair_dyn(source) {
             let self_ty = self.pointee(source);
@@ -553,16 +553,46 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `Rc<dyn T>`: the pair itself, `{ value: x, impl, strong: 1, weak: 0
     /// }`, as `counted_pointee` reads it (ADRs 0320, 0520); one of the same
     /// `dyn` already, itself.
-    /// One made elsewhere, of another `dyn`, or a `Weak`, is refused: its
-    /// other owners share it as the type it is.
-    fn counted_unsized(&mut self, source: Ty<'tcx>, target: Ty<'tcx>, value: Expr, span: Span) -> R<Expr> {
+    /// One of a `dyn Sub` as an `Rc<dyn Super>`: `$rcUpcast` of it, its
+    /// pair of the supertrait's dictionary whose value and counts are its
+    /// own, shared (#186). Another made elsewhere, of another `dyn`, or a
+    /// `Weak`, is refused: its other owners share it as the type it is.
+    fn counted_unsized(
+        &mut self,
+        source: Ty<'tcx>,
+        target: Ty<'tcx>,
+        value: Expr,
+        span: Span,
+        out: &mut Vec<js::Stmt>,
+    ) -> R<Expr> {
         // Of the same `dyn` already, a slice's unsized: itself.
         if self.tcx.erase_and_anonymize_regions(source) == self.tcx.erase_and_anonymize_regions(target) {
             return Ok(value);
         }
+        if let Some(pointee) = self.counted_rc(source)
+            && self.is_pair_dyn(pointee)
+            && let (Some(from), Some(to)) = (self.dyn_trait_ref(source, pointee), self.dyn_trait_ref(target, pointee))
+        {
+            // Of its own trait, an auto trait left out, `dyn Sub + Send` as
+            // `dyn Sub`: itself.
+            if from == to {
+                return Ok(value);
+            }
+            // Read twice, its dictionary and itself.
+            let rc = if value.reads_same() {
+                value
+            } else {
+                self.spill("rc", value, out)
+            };
+            let dictionary = self
+                .super_evidence(from, to, Expr::member(rc.clone(), js::DICTIONARY))
+                .ok_or_else(|| self.unsupported(span, "this trait upcast"))?;
+            let key = Expr::str(self.tcx.def_path_str(to.def_id));
+            return Ok(Expr::call_helper("$rcUpcast", vec![rc, key, dictionary]));
+        }
         let what = format!("a counted `{source}` made elsewhere as a `{target}`");
         let made_here = match (self.counted_rc(source), value.kind) {
-            (Some(pointee), js::ExprKind::Object(props)) if !self.is_pair_dyn(pointee) => Some((pointee, props)),
+            (Some(pointee), js::ExprKind::Object(props)) => Some((pointee, props)),
             _ => None,
         };
         let Some((pointee, mut props)) = made_here else {

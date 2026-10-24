@@ -743,4 +743,20 @@ export const mutations: Mutation[] = [
     replace: "                    StringEdit::Clear\n",
     tests: ["test/corpus.test.ts", "-t", "^path_components.rs$"],
   },
+  {
+    name: "string-with-capacity-of-no-size",
+    breaks: "`String::with_capacity(usize::MAX)` is no panic",
+    file: "src/lower/mir/std_calls.rs",
+    find: "                self.room_for((None, n), Expr::int(1), span, out);\n",
+    replace: "                self.room_for((None, n), Expr::int(0), span, out);\n",
+    tests: ["test/corpus.test.ts", "-t", "^capacity_overflow.rs$"],
+  },
+  {
+    name: "string-reserve-of-its-cell",
+    breaks: "`s.reserve(n)` reads the room of its `&mut`'s cell, not its text",
+    file: "src/lower/mir/std_calls.rs",
+    find: "                    Value::Ref(place) => place,\n                    cell => Expr::held(self.value_expr(cell, span)?),\n",
+    replace: "                    Value::Ref(place) => Expr::held(place),\n                    cell => Expr::held(self.value_expr(cell, span)?),\n",
+    tests: ["test/corpus.test.ts", "-t", "^capacity_overflow.rs$"],
+  },
 ];

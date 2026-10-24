@@ -24,7 +24,8 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/tidy/logicals.rs",
     "find": "            && js::mentions_in(&stmts[at + 1..], name) == 0\n",
     "replace": "            && false\n",
-    "tests": ["test/jsx-children.test.ts", "-t", "capture of an inlined closure"]
+    "tests": ["test/corpus.test.ts", "-t", "^(signed_index|signed_counter).rs$"],
+    "snapshots": true
   },
   {
     name: "logical-block-kept",
@@ -92,5 +93,13 @@ export const mutations: Mutation[] = [
     replace: "    let getter = true;\n",
     tests: ["test/snapshots.test.ts", "-t", "options"],
     snapshots: true,
+  },
+  {
+    name: "or-block-negated",
+    breaks: "an `||` the program wrote whose branch is a `break` is negated, `if (!a && !b) { r } s`, its `break` after (ADR 0790)",
+    file: "src/lower/mir/tidy/logicals.rs",
+    find: "        if let Some((test, span, rest)) = made {",
+    replace: "        if let Some((test, span, rest)) = made.filter(|_| false) {",
+    tests: ["test/lowering-labels.test.ts", "-t", "a block the program labeled that ends a case"],
   },
 ];

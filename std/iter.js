@@ -4,6 +4,9 @@ import {
   $foldBack,
   $fuseFold,
   $given,
+  $lastDropping,
+  $lent,
+  $nthDropping,
   $peekableFold,
   $peekableHint,
   $pretty,
@@ -27,6 +30,73 @@ export function peekableIterator_next(peekable, IIterator, dropI, dropIItem) {
     return $someValue(peeked);
   }
   return IIterator.next(peekable.iter);
+}
+
+export function peekableIterator_nth(peekable, n, IIterator, dropI, dropIItem) {
+  const peeked = peekable.peeked;
+  peekable.peeked = undefined;
+  let v;
+  if (peeked != null) {
+    if ($someValue(peeked) == null) {
+      v = undefined;
+    } else {
+      if (n === 0) {
+        return $someValue(peeked);
+      }
+      v = $nthDropping(
+        $lent($given(peekable.iter, IIterator, true)),
+        (n - 1) >>> 0,
+        dropIItem,
+        true,
+      );
+    }
+  } else {
+    v = $nthDropping($lent($given(peekable.iter, IIterator, true)), n, dropIItem, true);
+  }
+  if (peeked != null) {
+    if ($someValue(peeked) != null) {
+      dropIItem?.($someValue($someValue(peeked)));
+    }
+  }
+  return v;
+}
+
+export function peekableIterator_last(peekable, IIterator, dropI, dropIItem) {
+  const peeked = peekable.peeked;
+  peekable.peeked = undefined;
+  let x;
+  let peekOpt;
+  if (peeked != null) {
+    if ($someValue(peeked) == null) {
+      x = undefined;
+      dropI?.(peekable.iter);
+      if (peekable.peeked != null) {
+        if ($someValue(peekable.peeked) != null) {
+          dropIItem?.($someValue($someValue(peekable.peeked)));
+        }
+      }
+      return x;
+    }
+    peekOpt = $someValue(peeked);
+  } else {
+    peekOpt = undefined;
+  }
+  const option = $lastDropping($given(peekable.iter, IIterator, true), dropIItem);
+  const optb = peekOpt;
+  if (option != null) {
+    x = option;
+    if (optb != null) {
+      dropIItem?.($someValue(optb));
+    }
+  } else {
+    x = optb;
+  }
+  if (peekable.peeked != null) {
+    if ($someValue(peekable.peeked) != null) {
+      dropIItem?.($someValue($someValue(peekable.peeked)));
+    }
+  }
+  return x;
 }
 
 export function peekableDoubleEndedIterator_nextBack(
@@ -213,6 +283,47 @@ export function fuseFuseImplIFusedIterator_next(fuse, IIterator, dropI, dropIIte
   option = undefined;
 }
 
+export function fuseIterator_nth(fuse, n, IIterator, IFused, dropI, dropIItem) {
+  return IFused
+    ? fuseFuseImplIFusedIterator_nth(fuse, n, IIterator, dropI, dropIItem)
+    : fuseFuseImplI_nth(fuse, n, IIterator, dropI, dropIItem);
+}
+
+export function fuseIterator_last(fuse, IIterator, dropI, dropIItem) {
+  if (fuse.iter != null) {
+    const iter = $someValue(fuse.iter);
+    return $lastDropping($given(iter, IIterator, true), dropIItem);
+  }
+}
+
+export function fuseFuseImplI_nth(fuse, n, IIterator, dropI, dropIItem) {
+  const opt = { value: fuse.iter };
+  const result = andThenOrClear(
+    opt,
+    (x0) => $nthDropping($lent($given(x0.value, IIterator, true)), n, dropIItem, true),
+    dropI,
+    dropIItem,
+  );
+  fuse.iter = opt.value;
+  return result;
+}
+
+export function fuseFuseImplIFusedIterator_nth(fuse, n, IIterator, dropI, dropIItem) {
+  let option;
+  if (fuse.iter != null) {
+    const x = $someValue(fuse.iter);
+    option = $some(x);
+    const v = $someValue(option);
+    return $nthDropping(
+      $lent($given({ TAG: "Continue", _0: v }._0, IIterator, true)),
+      n,
+      dropIItem,
+      true,
+    );
+  }
+  option = undefined;
+}
+
 export function fuseFuseImplI_nextBack(fuse, IDoubleEndedIterator, dropI, dropIItem) {
   const opt = { value: fuse.iter };
   const result = andThenOrClear(
@@ -265,6 +376,8 @@ export function iterator_peekable(self, SelfIterator, dropSelf, dropSelfItem) {
     {
       next: (iterator) => peekableIterator_next(iterator, SelfIterator, dropSelf, dropSelfItem),
       hint: (peekable) => $peekableHint(peekable, SelfIterator),
+      nth: (iterator, n) => peekableIterator_nth(iterator, n, SelfIterator, dropSelf, dropSelfItem),
+      last: (iterator) => peekableIterator_last(iterator, SelfIterator, dropSelf, dropSelfItem),
       fold: (it, init, f) => $peekableFold(it, init, f, SelfIterator),
     },
   );
@@ -277,6 +390,9 @@ export function iterator_fuse(self, SelfIterator, SelfFused, dropSelf, dropSelfI
       next: (iterator) =>
         fuseIterator_next(iterator, SelfIterator, SelfFused, dropSelf, dropSelfItem),
       hint: (iterator) => fuseIterator_sizeHint(iterator, SelfIterator, dropSelf, dropSelfItem),
+      nth: (iterator, n) =>
+        fuseIterator_nth(iterator, n, SelfIterator, SelfFused, dropSelf, dropSelfItem),
+      last: (iterator) => fuseIterator_last(iterator, SelfIterator, dropSelf, dropSelfItem),
       fold: (it, init, f) => $fuseFold(it, init, f, SelfIterator, dropSelf),
     },
   );

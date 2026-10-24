@@ -189,3 +189,46 @@ pub fn diff(prev: &Unknown, next: &Unknown, out: &mut Vec<String>, indent: usize
     [false, ["o changed"]],
   ]);
 });
+
+// React's enqueueTask (shared/enqueueTask.js), as react-in-rust ports it:
+// its last statement an `if let` with no `else`, in the function
+// `js::export_default!` holds. MIR's `return` a macro's function ends with
+// is where the macro is called, before its arm, so the arm is made the
+// `if`'s `else` and a `return;` its `then`: once each branch's `return;`
+// the program didn't write is gone, the emptied `then` is no branch, `if
+// (enqueueTaskImpl) { .. }`, not `if (!enqueueTaskImpl) {} else { .. }`.
+test("an if let a macro's function ends with is no empty then and an else", async () => {
+  const { js, lib } = await compiled("macro-tail-if-let", `use std::cell::Cell;
+
+type EnqueueTask = fn(&'static dyn Fn());
+
+thread_local! {
+    static ENQUEUE_TASK_IMPL: Cell<Option<EnqueueTask>> = const { Cell::new(None) };
+}
+
+pub fn set_enqueue_task_impl(f: EnqueueTask) {
+    ENQUEUE_TASK_IMPL.set(Some(f));
+}
+
+js::export_default! {
+    fn enqueue_task(task: &'static dyn Fn()) {
+        if let Some(enqueue_task_impl) = ENQUEUE_TASK_IMPL.get() {
+            enqueue_task_impl(task);
+        }
+    }
+}
+`);
+  expect(js).toContain("  if (enqueueTaskImpl) {\n    enqueueTaskImpl(task);\n  }\n}\n");
+  expect(js).not.toMatch(/\{\n\s*\} else \{/);
+  const enqueueTask = lib.default as (task: () => void) => void;
+  const ran: string[] = [];
+  const task = () => ran.push("task");
+  enqueueTask(task);
+  expect(ran).toEqual([]);
+  lib.setEnqueueTaskImpl(((t: () => void) => {
+    ran.push("enqueued");
+    t();
+  }) as never);
+  enqueueTask(task);
+  expect(ran).toEqual(["enqueued", "task"]);
+});

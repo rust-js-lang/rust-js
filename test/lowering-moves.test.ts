@@ -95,6 +95,102 @@ pub fn run(obj: &Unknown, flag: bool) {
   expect(got).toEqual([[7, 1]]);
 });
 
+// A getter's read given to a binding's method, `send(obj, value(source))`,
+// runs before the method's looked up, as Rust runs it, nested in an
+// argument too, `value(source) + 1`: a read a getter may answer does
+// something, `has_effects` (#188).
+test("a getter's read given to a binding's method runs before its lookup", async () => {
+  const { js, lib } = await compiled("getter-past-a-binding-method", `use js::Unknown;
+
+#[cfg_attr(rust_js, rust_js::link_name = "get value")]
+fn value(this: &Unknown) -> i32 {
+    unreachable!()
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "send")]
+fn send(this: &Unknown, a: i32, b: i32) {
+    unreachable!()
+}
+
+pub fn run(obj: &Unknown, source: &Unknown, flag: bool) {
+    send(obj, value(source), if flag { 1 } else { 2 });
+}
+
+pub fn nested(obj: &Unknown, source: &Unknown) {
+    send(obj, value(source) + 1, 2);
+}
+`);
+  expect(js).toContain("  const value = source.value;\n  obj.send(value, flag ? 1 : 2);\n");
+  expect(js).toContain("  const value = (source.value + 1) | 0;\n  obj.send(value, 2);\n");
+  for (const name of ["run", "nested"] as const) {
+    // What the getter does, the method's lookup sees.
+    const events: string[] = [];
+    let n = 0;
+    const source = {
+      get value() {
+        events.push("argument getter");
+        n = 7;
+        return n;
+      },
+    };
+    const obj = {
+      get send() {
+        events.push("method lookup");
+        const seen = n;
+        return () => events.push(`call saw ${seen}`);
+      },
+    };
+    lib[name](obj as never, source as never, true as never);
+    expect(events).toEqual(["argument getter", "method lookup", "call saw 7"]);
+    // A getter that replaces the method: the new one is called.
+    const called: string[] = [];
+    const target: Record<string, () => void> = { send: () => called.push("old") };
+    const replacing = {
+      get value() {
+        target.send = () => called.push("new");
+        return 1;
+      },
+    };
+    lib[name](target as never, replacing as never, false as never);
+    expect(called).toEqual(["new"]);
+  }
+});
+
+// An `Option` a getter gives, tested and kept, `filter` and `is_some_and`'s
+// `o != null && o > 1 ? o : undefined`: read once, in a `const`, as Rust
+// reads it, not at each use: a getter may give another value, or count
+// its reads (`Expr::reads_same`, #188).
+test("a getter's Option a combinator reads more than once is read once", async () => {
+  const { js, lib } = await compiled("getter-option-read-once", `use js::Unknown;
+
+#[cfg_attr(rust_js, rust_js::link_name = "get count")]
+fn count(this: &Unknown) -> Option<u32> {
+    unreachable!()
+}
+
+pub fn big(source: &Unknown) -> Option<u32> {
+    count(source).filter(|n| *n > 1)
+}
+
+pub fn has_big(source: &Unknown) -> bool {
+    count(source).is_some_and(|n| n > 1)
+}
+`);
+  expect(js).toContain("  const option = source.count;\n  return option != null && option > 1 ? option : undefined;\n");
+  let reads = 0;
+  const source = {
+    get count() {
+      reads++;
+      return reads;
+    },
+  };
+  // Rust reads 1, which `filter` drops; read again, it would see 2 and keep 3.
+  expect(lib.big(source as never)).toBeUndefined();
+  expect(reads).toBe(1);
+  expect(lib.hasBig(source as never)).toBe(true);
+  expect(reads).toBe(2);
+});
+
 // React's addObjectDiffToProperties: `if (readReactElementTypeof(nextValue)
 // === REACT_ELEMENT_TYPE) { .. continue; } else { .. }`, a test MIR holds
 // before the blocks its arms' jumps leave, `const _183 = ..; bb200: {

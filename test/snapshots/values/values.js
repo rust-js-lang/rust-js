@@ -13,6 +13,7 @@ import {
   $index,
   $max,
   $next,
+  $roomFor,
   $sortedEntries,
 } from "@rust-js/runtime";
 
@@ -58,6 +59,7 @@ export const Value = {
     return 0;
   },
   pretty(value, indent, out) {
+    $roomFor(indent, 1);
     const pad = " ".repeat(indent);
     if (value.TAG === "List") {
       if (value._0.length !== 0) {

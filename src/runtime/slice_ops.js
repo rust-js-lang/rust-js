@@ -272,8 +272,10 @@ function $sliceStripCircumfix(v, prefix, suffix, eq) {
   return rest === undefined ? undefined : $sliceStrip(rest, suffix, true, eq);
 }
 
-// `v.repeat(n)`: its items `n` times over, of `Copy` items.
-function $repeatItems(v, n, copy) {
+// `v.repeat(n)`: its items `n` times over, of `Copy` items, room for them
+// of `size` bytes each asked first (ADR 0774).
+function $repeatItems(v, n, size, copy) {
+  $roomFor(v.length * n, size);
   const out = [];
   for (let i = 0; i < n; i++) out.push(...(copy === undefined ? v : v.map(copy)));
   return out;

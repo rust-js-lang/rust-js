@@ -1088,8 +1088,11 @@ test("numbers are Math's, operators call their impl, and vec![x; n] fills", asyn
   expect(js).toContain("  const floor = Math.floor(x);\n  const ceil = Math.ceil(x);\n  const round = $round(x);");
   expect(js).toContain("$checked(b - 10, 0, 4294967295)");
   expect(js).toContain("${Math.max(b - 100, 0)}");
-  // Each row made again; a struct cloned, since one is changed later.
-  expect(js).toContain("  const item = new Array(n).fill(0);\n  const m = Array.from({ length: n }, () => item.slice());");
+  // Each row made again, room for each checked first (ADR 0774); a struct
+  // cloned, since one is changed later.
+  expect(js).toContain(
+    "  $roomFor(n, 4);\n  const item = new Array(n).fill(0);\n  $roomFor(n, 12);\n  const m = Array.from({ length: n }, () => item.slice());",
+  );
   expect(js).toContain("Array.from({ length: 3 }, () => ({ ...cell }))");
   expect(js).toContain("for (const [j, v] of row.entries()) {");
   // Numbers as JS writes them, and constants shown as their text.

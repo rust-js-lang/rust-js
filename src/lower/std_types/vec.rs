@@ -42,7 +42,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         boxed: bool,
         out: &mut Vec<Stmt>,
     ) -> R<Option<Expr>> {
-        let Call { tys, span, .. } = call;
+        let Call {
+            tys,
+            span,
+            generic_args,
+            ..
+        } = call;
         let mut arg = || values.next().expect("rustc checked the arguments");
         let js_span = self.js_span(span);
         Ok(Some(match known {
@@ -51,6 +56,30 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // and asking for room nothing (ADR 0315).
             Std::Capacity(op) => {
                 use crate::lower::recognition::CapacityOp;
+                let mut given: Vec<Expr> = values.by_ref().collect();
+                // The room it's asked, which std checks (ADR 0774): what it's
+                // given is read again, as it is or a `const`.
+                let size = self.room_item_size(generic_args.type_at(0));
+                let mut once = |this: &mut Self, at: usize, base: &str| {
+                    if !given[at].reads_same() {
+                        given[at] = this.spill(base, given[at].clone(), out);
+                    }
+                    given[at].clone()
+                };
+                match op {
+                    CapacityOp::WithCapacity => {
+                        let n = once(self, 0, "n");
+                        self.room_for((None, n), size, span, out);
+                    }
+                    CapacityOp::Reserve => {
+                        let len = Expr::member(once(self, 0, "items"), "length");
+                        let n = once(self, 1, "n");
+                        self.room_for((Some(len), n), size, span, out);
+                    }
+                    CapacityOp::Of | CapacityOp::ShrinkTo { .. } => {}
+                }
+                let values = &mut given.into_iter();
+                let mut arg = || values.next().expect("rustc checked the arguments");
                 let helper = |name: &'static str, list: Vec<Expr>| Expr::call(Expr::helper(name), list);
                 match (op, self.krate.keeps_capacity) {
                     (CapacityOp::Of, _) => helper("$capacity", vec![arg()]),
@@ -176,6 +205,46 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// The size of each of `item`s, by which std checks the room asked for
+    /// them (ADR 0774): rustc's for wasm32, or, of one a type parameter's
+    /// size makes, `0`, checked by its count alone.
+    pub(in crate::lower) fn room_item_size(&self, item: ty::Ty<'tcx>) -> Expr {
+        Expr::int(self.layout(item).map_or(0, |layout| i128::from(layout.size.bytes())))
+    }
+
+    /// std's check of room for `len + count` items, or `count`, of `size`
+    /// bytes each, wherever a capacity is asked (ADR 0774): `$roomFor(..)`,
+    /// a `capacity overflow` panic past `isize::MAX` bytes or `usize::MAX`
+    /// items. Left out where it can't fail: of none more, of a count alone
+    /// of items of no size, or of one known to fit.
+    pub(in crate::lower) fn room_for(
+        &mut self,
+        (len, count): (Option<Expr>, Expr),
+        size: Expr,
+        span: rustc_span::Span,
+        out: &mut Vec<Stmt>,
+    ) {
+        // rust-js's `isize::MAX` (ADR 0011), less than `usize::MAX` items
+        // of a size.
+        const BYTES: i128 = i32::MAX as i128;
+        let fits = match (count.as_int(), size.as_int()) {
+            // No more than it has, which fit.
+            (Some(0), _) => true,
+            (_, Some(0)) => len.is_none(),
+            (Some(n), Some(size)) => len.is_none() && n * size <= BYTES,
+            _ => false,
+        };
+        if fits {
+            return;
+        }
+        let count = match len {
+            Some(len) => Expr::bin(Op::Add, len, count),
+            None => count,
+        };
+        let check = Expr::call(Expr::helper("$roomFor"), vec![count, size]);
+        out.push(StmtKind::Expr(check).at(self.js_span(span)));
+    }
+
     /// `items[index]` of a `Vec`, a slice or a `VecDeque` of type `items_ty`,
     /// checked: `$index(items, index)`, which panics as a slice's index does,
     /// and of a `VecDeque`, with its own message, `out of bounds access`.

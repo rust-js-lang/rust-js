@@ -185,3 +185,16 @@ protected, a fact carried by where code came from (a review,
   "a get binding's property a let chain tests and binds is read once"
   holds `get x`'s, with the mutation `get-getter-unseen`; `getters-unseen`
   holds `js::get`'s.
+
+## Amendment: a getter's read held by MIR isn't written at each use (#189)
+
+`plain_reads`, tidy's, writes a temporary MIR held of plain data, `const t
+= q.title;`, as `q.title` where it's read, each time, and took a
+binding's read a getter may answer for one: React's `child.type`, which
+Rust read once, `classify(Some(element.r#type()))`, was read for the
+test of its kind, `typeof child.type === "string"`, and again for what
+its pattern binds. It asks `Expr::reads_same` now, which no read a getter
+may answer is (ADR 0750): one read, before the test, as Rust's,
+`const type = child.type; if (typeof type === "string" && ..)`. Held by
+`test/jsx-children.test.ts`'s "a capture of an inlined closure leaves no
+const behind" and the mutation `plain-read-of-a-getter`.

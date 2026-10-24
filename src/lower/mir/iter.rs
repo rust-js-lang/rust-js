@@ -598,7 +598,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Some(IterMethod::Max | IterMethod::Min) => {
                 self.extreme_of(std_method == Some(IterMethod::Max), it, item, span)?
             }
-            Some(IterMethod::Last) => self.last_value(self.by_its_fold(it, iter_ty), item, span, made)?,
+            Some(IterMethod::Last) => self.last_called(it, iter_ty, item, span, made)?,
             Some(IterMethod::IsSorted) => match item {
                 Some(item) => self.is_sorted_call(it, item, span)?,
                 None => return Ok(None),

@@ -116,4 +116,13 @@ export const mutations: Mutation[] = [
     replace: "                && false =>\n",
     tests: ["test/lowering-moves.test.ts", "-t", "a binding's method is looked up after its arguments run"],
   },
+  {
+    name: "target-root-acting-held",
+    breaks: "a temporary that does something, an assignment target's object, is held, `const document = window.document; document.title = t`",
+    file: "src/lower/mir/tidy/moves.rs",
+    find: "            let set_of = matches!(&root.kind, ExprKind::Var(v) if v == name);\n",
+    replace: "            let set_of = matches!(&root.kind, ExprKind::Var(v) if v == name) && false;\n",
+    snapshots: true,
+    tests: ["test/corpus.test.ts", "-t", "^returned_references.rs$"],
+  },
 ];

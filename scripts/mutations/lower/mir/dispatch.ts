@@ -557,4 +557,12 @@ export const mutations: Mutation[] = [
     replace: "        }) || false)\n",
     tests: ["test/lowering-symbols.test.ts", "-t", "an == of a value read as the registry's symbol"],
   },
+  {
+    name: "getter-pending-past-lookup",
+    breaks: "a getter's read MIR holds is read inside a binding's method call, after the method's lookup",
+    file: "src/lower/mir/dispatch.rs",
+    find: "        if crate::lower::binding_calls::method_may_be_a_getters(self.tcx, callee.0)\n            && operands",
+    replace: "        if false\n            && operands",
+    tests: ["test/lowering-moves.test.ts", "-t", "a getter's read given to a binding's method runs before its lookup"],
+  },
 ];

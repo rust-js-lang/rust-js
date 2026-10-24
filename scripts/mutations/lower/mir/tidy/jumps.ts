@@ -35,6 +35,14 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-matches.test.ts", "-t", "strings from MIR is the"],
   },
   {
+    name: "mir-tidy-tail-return-emptied-then-kept",
+    breaks: "`if (!c) { return; } else { s; return; }`, a macro's function's `if let`, is `if (!c) {} else { s }`, not `if (c) { s }`",
+    file: "src/lower/mir/tidy/jumps.rs",
+    find: "            if let Some(kind) = emptied_branch(last.kind) {\n                stmts.push(kind.at(last.span));\n            }\n",
+    replace: "            stmts.push(last);\n",
+    tests: ["test/lowering-early-exits.test.ts", "-t", "an if let a macro's function ends with"],
+  },
+  {
     name: "mir-tidy-inner-let-else-kept",
     breaks: "`if (c) { s } else { return; }`, a let-else's, stays, not the guard `if (!c) { return; } s`",
     file: "src/lower/mir/tidy/jumps.rs",
