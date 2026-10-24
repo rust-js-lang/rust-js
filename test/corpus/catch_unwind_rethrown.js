@@ -48,13 +48,12 @@ function main() {
       }
     }
   }
-  let value;
   try {
     throw new Error();
   } catch (thrown) {
     const empty = $unwound(thrown);
-    value = empty.impl.typeId() === "&str" ? empty.value : undefined;
+    const value = empty.impl.typeId() === "&str" ? empty.value : undefined;
+    console.log(`empty ${value == null ? "None" : `Some(${$debugStr(value)})`}`);
   }
-  console.log(`empty ${value == null ? "None" : `Some(${$debugStr(value)})`}`);
 }
 //# sourceMappingURL=case.js.map
