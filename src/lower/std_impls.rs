@@ -1231,11 +1231,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(Expr::bin(Op::And, lengths, every))
     }
 
-    /// `(a, b) => <a == b>` for a dictionary's `eq`, of a `ty` and a `rhs`,
-    /// `PartialEq<Rhs>`'s, or `$eq` itself.
-    pub(super) fn eq_fn(&mut self, (ty, rhs): (Ty<'tcx>, Ty<'tcx>), span: Span) -> R<Expr> {
+    /// `(a, b) => <a == b>` for a dictionary's `eq`, of two `ty`s, or `$eq`
+    /// itself. A `PartialEq<Rhs>` of another type than itself is its impl's
+    /// dictionary, never one made here (`of_other`), so its `Rhs` is `ty`,
+    /// but for references, which JS doesn't have.
+    pub(super) fn eq_fn(&mut self, ty: Ty<'tcx>, span: Span) -> R<Expr> {
         let mut body = Vec::new();
-        let same = self.eq_values(Expr::var("a"), Expr::var("b"), (ty, rhs), span, &mut body)?;
+        let same = self.eq_value(Expr::var("a"), Expr::var("b"), ty, span, &mut body)?;
         // A function of both, as they're given, `$eq` or an impl's `eq`: it.
         if body.is_empty()
             && let js::ExprKind::Call(callee, args) = &same.kind

@@ -1,6 +1,6 @@
 # 0147. Replacing a value whole through a `&mut`: an object in place, an enum by its place
 
-Status: Accepted. Extends [0025](0025-vec-loops-refcell-mut.md),
+Status: Accepted; amended (std's enums too, below). Extends [0025](0025-vec-loops-refcell-mut.md),
 [0033](0033-enums-with-fields.md) and [0099](0099-mut-references.md).
 
 Case: C ([0262](0262-when-rust-and-js-disagree.md)).
@@ -142,3 +142,19 @@ y.borrow_mut())` swapped what `x` and `y` held, where Rust swaps the
 guards (#150). A guard isn't written in place (`written_in_place`):
 two variables of guards swap as variables do, and a guard that isn't a
 variable's is refused. Held by `test/corpus/guard_swap_refused.rs`.
+
+## Amended: std's enums with a fieldless variant are by their place too
+
+One of std's enums with a fieldless variant stayed its object, "its
+methods' object", where the crate's was its place: `*r = Bound::Unbounded`
+through a `&mut Bound<u32>` was `$assign(bound, "Unbounded")`, a
+`TypeError`, as an object can't become a string. Found by the mutation
+audit of this rule (`std-mixed-enum-place` survived: its test, of
+serde_json's `Value`, had its own rule since, ADR 0083). **An enum with a
+fieldless variant is by its place, std's as the crate's**
+(`representation.rs`, `is_object`); one each of whose variants has fields
+is its object, as before. `test/corpus/std_mixed_enum_mut.rs` runs it
+against native Rust; the mutation `mixed-enum-object` holds both. Its JS
+is the place's box, `const bound$1 = { value: bound }`, as the crate's is,
+which the readability counts' renamed names and `return;`s grow by: the
+price of the right answer (ADR 0262's case C).

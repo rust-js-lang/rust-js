@@ -618,14 +618,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^partial_eq_other_type.rs$"],
   },
   {
-    name: "eq-dictionary-of-self",
-    breaks: "a dictionary of `PartialEq<Other>` given to generic code compares the type with itself, `{ eq: $eq }`",
-    file: "src/lower/std_impls.rs",
-    find: "        let same = self.eq_values(Expr::var(\"a\"), Expr::var(\"b\"), (ty, rhs), span, &mut body)?;",
-    replace: "        let same = self.eq_values(Expr::var(\"a\"), Expr::var(\"b\"), (ty, ty), span, &mut body)?;",
-    tests: ["test/corpus.test.ts", "-t", "^partial_eq_other_type.rs$"],
-  },
-  {
     name: "registered-symbol-key-tested",
     breaks: "a pattern of the registry's symbol tests its key, `Symbol.keyFor(ty) === \"react.fragment\"`, which throws of a value not a symbol",
     file: "src/lower/std_impls.rs",

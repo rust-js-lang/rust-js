@@ -188,6 +188,14 @@ pub fn wide(n: u32) -> u64 {
     let x = n as f64;
     x as u64
 }
+fn halve(x: &mut f64) {
+    *x /= 2.0;
+}
+pub fn lent(n: u8) -> u8 {
+    let mut x = n as f64;
+    halve(&mut x);
+    x as u8
+}
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
@@ -196,7 +204,7 @@ pub fn wide(n: u32) -> u64 {
   expect(js).toContain("  index = -1;\n  return $f64ToInt(index, 0, 4294967295);\n}");
   expect(js).toContain("export function byte(n) {\n  const x = n;\n  return x;\n}");
   const lib = await import(join(dir, "lib.js"));
-  expect([lib.found("abc", "c"), lib.unchecked("abc", "z"), lib.setAgain("abc", "a"), lib.byte(7), lib.shifted("abc", "z"), lib.wide(7)]).toEqual([2, 0, 0, 7, 0, 7n]);
+  expect([lib.found("abc", "c"), lib.unchecked("abc", "z"), lib.setAgain("abc", "a"), lib.byte(7), lib.shifted("abc", "z"), lib.wide(7), lib.lent(3)]).toEqual([2, 0, 0, 7, 0, 7n, 1]);
 });
 
 // ADR 0292: an index a condition shows is in bounds is JS's own: react.dev's
@@ -266,18 +274,29 @@ pub fn wrong(items: &[u32]) -> u32 {
 pub fn other(items: &[u32]) -> u32 {
     if items.len() != 5 { items[0] } else { 0 }
 }
+
+pub fn shrunk(mut items: Vec<u32>) -> u32 {
+    let mut sum = 0;
+    for i in 0..items.len() {
+        items.truncate(1);
+        sum += items[i];
+    }
+    sum
+}
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   for (const read of ["items[0]", "items[1]", "items[i]", "items[i] + items[0]"]) expect(js).toContain(read);
   expect(js).toContain("$index(items, 2)");
   expect(js).toContain("$index(items, 0)");
-  expect(js.match(/\$index/g)?.length).toBe(8);
+  // A loop below a length its body changes, `truncate`'s `&mut`, checks.
+  expect(js).toContain("$index(items, i)");
+  expect(js.match(/\$index/g)?.length).toBe(9);
   const lib = await import(join(dir, "lib.js"));
   expect([lib.first([]), lib.first([4]), lib.second([1, 2]), lib.second([1]), lib.total([1, 2, 3]), lib.below([5, 6], 1), lib.below([5], 3)]).toEqual([undefined, 4, 2, 0, 6, 11, 0]);
   expect(() => lib.unchecked([1, 2])).toThrow();
   expect(() => lib.changed([1])).toThrow();
-  for (const unknown of [() => lib.either([1]), () => lib.third([1, 2]), () => lib.after([]), () => lib.wrong([]), () => lib.other([])]) {
+  for (const unknown of [() => lib.either([1]), () => lib.third([1, 2]), () => lib.after([]), () => lib.wrong([]), () => lib.other([]), () => lib.shrunk([1, 2])]) {
     expect(unknown).toThrow();
   }
 });

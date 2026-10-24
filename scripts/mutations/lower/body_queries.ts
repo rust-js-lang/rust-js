@@ -44,11 +44,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "steady-ignores-mut-borrows",
-    breaks: "a variable lent as `&mut` isn't changed, so `raw.take()` before reading what was bound of it reads `undefined`",
+    breaks: "a variable lent as `&mut` isn't changed, so an `f64` a call halves is taken as the whole number it was, and `x as u8` is `1.5`",
     file: "src/lower/body_queries.rs",
     find: "            ExprKind::Borrow {\n                borrow_kind: BorrowKind::Mut { .. },\n                arg,\n            }\n            | ExprKind::RawBorrow {",
     replace: "            ExprKind::RawBorrow {",
-    tests: ["test/lowering-names.test.ts", "test/lowering-numbers.test.ts", "-t", "a binding names a variable set again|an index a condition shows"],
+    tests: ["test/lowering-numbers.test.ts", "-t", "an f64 known to be a whole number"],
   },
   {
     name: "whole-bits-unbounded",
