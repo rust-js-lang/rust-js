@@ -198,7 +198,7 @@ export const mutations: Mutation[] = [
     name: "untagged-symbol-a-class",
     breaks: "a `js::Symbol` payload is `instanceof Symbol`, which no symbol is, not `typeof value === \"symbol\"`",
     file: "src/lower/untagged.rs",
-    find: "            && let Some(kind) = super::declarations::written_types(self.tcx, adt.did()).and_then(|t| Kind::of_types(&t))\n",
+    find: "            && let Some(kind) = written_types(self.tcx, adt.did())\n                .as_ref()\n                .and_then(Written::keyword)\n                .and_then(Kind::of_types)\n",
     replace: "            && let Some(kind) = None::<Kind>\n",
     tests: ["test/lowering-switches.test.ts", "-t", "a match of what a value is"],
   },
@@ -278,8 +278,8 @@ export const mutations: Mutation[] = [
     "name": "untagged-dict-a-class",
     "breaks": "an untagged enum's `Dict` is tested `instanceof Dict`, a class JS hasn't",
     "file": "src/lower/untagged.rs",
-    "find": ".is_some_and(|t| t.trim_start().starts_with('{'))",
-    "replace": ".is_some_and(|_| false)",
+    "find": "            && matches!(written_types(self.tcx, adt.did()), Some(Written::Object(_)))",
+    "replace": "            && false",
     "tests": ["test/lowering-structs-enums.test.ts", "-t", "dictionary is told apart"]
   },
   {

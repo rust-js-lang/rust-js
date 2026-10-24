@@ -38,7 +38,7 @@ export const mutations: Mutation[] = [
     name: "symbol-not-primitive",
     breaks: "a symbol isn't taken for a primitive, `reactElementType`",
     file: "src/lower/bindings.rs",
-    find: "                || super::declarations::written_types(tcx, adt.did()).as_deref() == Some(\"symbol\"))\n",
+    find: "                || written_types(tcx, adt.did()).as_ref().and_then(Written::keyword) == Some(\"symbol\"))\n",
     replace: "                || false)\n",
     tests: ["test/lowering-names.test.ts", "-t", "a thread-local of a primitive is named"],
   },

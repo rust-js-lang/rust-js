@@ -1223,7 +1223,12 @@ fn expr(e: &mut Expr) {
             expr(a);
             expr(b);
         }
-        ExprKind::Template(_, values, _) => values.iter_mut().for_each(expr),
+        // A template in a template, a value's text, \`${`${x}`}\`, is spliced
+        // into it: \`${x}\` (ADR 0066).
+        ExprKind::Template(_, values, _) => {
+            values.iter_mut().for_each(expr);
+            e.splice_templates();
+        }
         ExprKind::OptionalCall(f, args) => {
             expr(f);
             args.iter_mut().for_each(expr);

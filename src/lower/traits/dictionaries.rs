@@ -452,7 +452,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             return Ok(Expr::helper(writer));
         }
-        // std's `AsMut` of text as a `str`, or of a sequence as a slice, given
+        // std's `AsMut` of text as a `str`, of a sequence as a slice, or of a
+        // `Box` as what it holds (`as_mut_is_itself`), given
         // the cell generic code's `&mut self` is, and giving the one its `&mut
         // T` is (ADR 0454): that cell, as a `&mut str` is its text's (ADR
         // 0334) and a `&mut [T]`'s holds its array. Of a `&mut` to one, std's
@@ -465,7 +466,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 cell = Expr::held(cell);
                 at = inner;
             }
-            if self.recognition().views_as_itself(ty, tr.args.type_at(1)) {
+            if self.recognition().as_mut_is_itself(ty, tr.args.type_at(1)) {
                 let f = Expr::arrow(
                     vec!["cell".into()],
                     vec![StmtKind::Return(Some(cell)).at(js::Span::NONE)],

@@ -39,9 +39,8 @@ function iCollectSlice_innerArray(self, N, IIterator) {
     count = (count + 1) >>> 0;
   }
 
-  const value = count;
-  if (N !== value) {
-    $assertFailed("Eq", String(N), String(value));
+  if (N !== count) {
+    $assertFailed("Eq", String(N), String(count));
   }
 
   const tempPtr = $ptrTo(result);
