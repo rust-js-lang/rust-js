@@ -716,7 +716,7 @@ export const mutations: Mutation[] = [
     breaks: "a slice at places in units is `$strSlice`, which counts them as bytes",
     file: "src/lower/mir/std_calls.rs",
     find: "                    true => this.sliced_in_units(items, (range, arg_tys[1]), span, out)?,",
-    replace: "                    true => this.slice_range_values(op, items, (range, arg_tys[1]), span, out)?,",
+    replace: "                    true => this.slice_range_values((op, false), items, (range, arg_tys[1]), span, out)?,",
     tests: ["test/lowering-string-places.test.ts", "-t", "stepped past"],
   },
   {

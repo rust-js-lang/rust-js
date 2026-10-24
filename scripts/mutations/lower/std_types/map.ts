@@ -421,4 +421,12 @@ export const mutations: Mutation[] = [
     replace: "self.is_rust_adt(adt.did())",
     tests: ["test/corpus.test.ts", "-t", "^path_components.rs$"],
   },
+  {
+    name: "map-capacity-args-dropped",
+    breaks: "what a `HashMap`'s or a `HashSet`'s `with_capacity` is given doesn't run, a call's effects lost (#195)",
+    file: "src/lower/std_types/map.rs",
+    find: "                for value in values.by_ref() {\n                    if value.has_effects() {\n",
+    replace: "                for value in values.by_ref() {\n                    if false && value.has_effects() {\n",
+    tests: ["test/corpus.test.ts", "-t", "^map_capacity_effects.rs$"],
+  },
 ];

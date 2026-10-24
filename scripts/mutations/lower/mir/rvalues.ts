@@ -453,22 +453,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-unwinds.test.ts", "-t", "every unwind"],
   },
   {
-    name: "nullable-cell-reborrow-plain",
-    breaks: "a nullable field's `Cell` reborrowed as a method's receiver, `r.set(None)`, isn't known as one",
-    file: "src/lower/mir/rvalues.rs",
-    find: "                Some((parent, PlaceElem::Deref)) if parent.projection.is_empty() => {\n                    self.stores_null",
-    replace: "                Some((parent, PlaceElem::Deref)) if false && parent.projection.is_empty() => {\n                    self.stores_null",
-    tests: ["test/lowering-nullable.test.ts", "-t", "through a reference and a helper"],
-  },
-  {
-    name: "nullable-cell-copy-plain",
-    breaks: "a reference to a nullable field's `Cell` copied, `let copied = renderer;`, isn't known as one",
-    file: "src/lower/mir/rvalues.rs",
-    find: "            Some(Rvalue::Use(operand, _)) => self.stores_null(state, operand),\n",
-    replace: "            Some(Rvalue::Use(_, _)) => false,\n",
-    tests: ["test/lowering-nullable.test.ts", "-t", "through a reference and a helper"],
-  },
-  {
     name: "cell-handle-place-reread",
     breaks: "a handle on `get(&c).value` calls `get` each time it's read or written",
     file: "src/lower/mir/rvalues.rs",
