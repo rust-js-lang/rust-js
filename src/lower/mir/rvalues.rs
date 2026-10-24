@@ -743,37 +743,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
-    /// Whether `operand`, a `&Cell`, is a `nullable_cell_field`'s, which
-    /// stores its `None` as `null` (ADR 0772): a reference to that field,
-    /// or another such reborrowed or copied, held where it's written once,
-    /// `let r = &context.renderer;`.
-    pub(super) fn stores_null(&self, state: &State<'_, 'tcx>, operand: &Operand<'tcx>) -> bool {
-        let Some(place) = operand.place() else {
-            return false;
-        };
-        if !place.projection.is_empty() || state.locals.writes[place.local] != 1 {
-            return false;
-        }
-        let assigned = (state.body.basic_blocks.iter().flat_map(|b| &b.statements)).find_map(|s| match &s.kind {
-            mir::StatementKind::Assign(assign) if assign.0 == place.local.into() => Some(&assign.1),
-            _ => None,
-        });
-        match assigned {
-            Some(Rvalue::Ref(_, _, borrowed)) => match borrowed.as_ref().last_projection() {
-                Some((parent, PlaceElem::Field(field, field_ty))) => {
-                    self.nullable_cell_field(parent.ty(state.body, self.tcx).ty, (field.index(), field_ty))
-                }
-                // A reborrow, `&*r`, as a method's receiver is.
-                Some((parent, PlaceElem::Deref)) if parent.projection.is_empty() => {
-                    self.stores_null(state, &Operand::Copy(parent.local.into()))
-                }
-                _ => false,
-            },
-            Some(Rvalue::Use(operand, _)) => self.stores_null(state, operand),
-            _ => false,
-        }
-    }
-
     /// Whether `operand`, an `Option`, is `null` or a value already, as a
     /// `#[rust_js::nullable]` field or binding parameter takes it as it is
     /// (ADR 0275): such a field, moved where it's read, or bound to a

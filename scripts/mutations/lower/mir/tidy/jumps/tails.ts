@@ -158,7 +158,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/jumps/tails.rs",
     find: "    }) = stmts.last_mut()\n        && span.is_none()\n",
     replace: "    }) = stmts.last_mut()\n        && (span.is_none() || true)\n",
-    tests: ["test/lowering-labels.test.ts", "-t", "React's addObjectDiffToProperties has no block MIR made"],
+    tests: ["test/port-performance-track.test.ts", "-t", "addValueToProperties is a switch whose case breaks where it's written"],
   },
   {
     name: "branch-ends-left-inside-kept",

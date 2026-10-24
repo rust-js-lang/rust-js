@@ -158,11 +158,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "counted-rc-same-dyn-refused",
-    breaks: "an `Rc<dyn T>` unsized to itself, a slice's, is refused",
+    breaks: "an `Rc<dyn T>` or a `Weak<dyn T>` unsized to itself, a slice's, is refused",
     file: "src/lower/traits/dyns.rs",
     find: "        if self.tcx.erase_and_anonymize_regions(source) == self.tcx.erase_and_anonymize_regions(target) {\n            return Ok(value);\n        }\n        if let Some(pointee) = self.counted_rc(source)",
     replace: "        if let Some(pointee) = self.counted_rc(source)",
-    tests: ["test/corpus.test.ts", "-t", "^rc_dyn_destructors.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^rc_dyn_upcast_counted.rs$"],
     snapshots: true,
   },
   {

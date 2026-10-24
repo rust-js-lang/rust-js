@@ -61,7 +61,7 @@ function toWriter(bits, writer, Write) {
   Write.writeChar(self$1, "=");
   writer = self$1.value;
   const self$2 = { value: writer };
-  const result = Write.writeFmt(self$2, $zeroPad("0x" + bits.toString(16), 4));
+  const result = Write.writeFmt(self$2, $zeroPad(`0x${bits.toString(16)}`, 4));
   writer = self$2.value;
   return result;
 }

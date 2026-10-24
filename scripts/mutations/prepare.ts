@@ -192,7 +192,8 @@ export const mutations: Mutation[] = [
     file: "src/prepare.rs",
     find: "    shadows(&mut function.body, None);\n",
     replace: "",
-    tests: ["test/lowering-names.test.ts", "-t", "shadowed by its own value"],
+    tests: ["test/corpus.test.ts", "-t", "^take_destructors.rs$"],
+    snapshots: true,
   },
   {
     name: "alias-of-another-name",
@@ -240,14 +241,14 @@ export const mutations: Mutation[] = [
     file: "src/prepare.rs",
     find: "            shadows(body, Some(&own));\n",
     replace: "",
-    tests: ["test/lowering-names.test.ts", "-t", "shadowed by its own value"],
+    tests: ["test/compiler.test.ts", "-t", "async code becomes async functions and await"],
   },
   {
     name: "template-values-unprepared",
     breaks: "an object in a `format!`'s template keeps its `undefined` field, `{ value: undefined }`, which a callback's `\"value\" in options` sees",
     file: "src/prepare.rs",
-    find: "        ExprKind::Template(_, values, _) => values.iter_mut().for_each(expr),\n",
-    replace: "        ExprKind::Template(..) => {}\n",
+    find: "            values.iter_mut().for_each(expr);\n            e.splice_templates();\n",
+    replace: "            e.splice_templates();\n",
     tests: ["test/lowering-options.test.ts", "-t", "undefined field is no key in"],
   },
   {
@@ -564,5 +565,13 @@ export const mutations: Mutation[] = [
     find: "            ExprKind::Handle(_, storage) => storage.written(Expr::var(&param), false),\n",
     replace: "            ExprKind::Handle(_, _) => Expr::var(&param),\n",
     tests: ["test/lowering-nullable.test.ts", "-t", "through a reference and a helper"],
+  },
+  {
+    name: "template-in-template-kept",
+    breaks: "`format!(\"{}-{index}\", js::shown(msg))` is `${`${msg}`}-${index}`, a template in a template",
+    file: "src/prepare.rs",
+    find: "            e.splice_templates();\n",
+    replace: "",
+    tests: ["test/bindings.test.ts", "-t", "js::shown is shown as a template"],
   },
 ];

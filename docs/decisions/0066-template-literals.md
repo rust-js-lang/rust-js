@@ -93,3 +93,39 @@ mutations unwrap any `String`, and keep a number's `fmt` an arrow.
   string written across lines and one in pieces are one kind of the JS
   tree, `Written`, which `src/lower/literals.rs` makes, and a `static`'s
   string is written as a `const`'s.
+
+## Amendment: strings alone are joined by `+`, and only strings
+
+Case: R ([0262](0262-when-rust-and-js-disagree.md)): results change, so
+Rust's are kept.
+
+"Values only: `a + b`, or the value alone" took each value for a string.
+`js::shown(n)`'s `Display` wrote the value itself, so `format!("{}",
+js::shown(n))` was `n`, a number: its `.len()` was `$byteLen(n)`, `0`
+where Rust's is 1, a `Vec<String>` was pushed a number, `==` with a
+`String` was `n === s`, a map was keyed by the number, and `format!("{}{}",
+js::shown(a), js::shown(b))` was `a + b`, their sum. Each part `join`
+is given is now a string, and stays one:
+
+- **`js::shown`'s text is `` `${value}` ``**, a template of the value
+  alone, which `display_string` makes, so `format!`, `to_string()`, a
+  generic `T: Display`'s dictionary and a `dyn Display` all have it, and a
+  width or a precision pads or cuts it as text (ADR 0312).
+- **A template of values alone is one part, never taken apart**: its
+  values are text only as a template makes them. Alone it's itself; with
+  other strings alone, the template holds them all, `` `${a}${b}` ``.
+  Inside a template it stays one until preparation splices it in, so a
+  write that may fail, `+=` piece by piece (ADR 0187), appends `` `${v}` ``,
+  an object's `toString`, not `v`, its `valueOf`.
+- **A `+` of a string is one part**, no longer taken apart: `"" + value`,
+  `js::concat_text`'s, is text by `+`, an object's `valueOf` first, which a
+  template's `${value}` isn't. `{:#x}`'s prefix is joined to its digits as
+  text and values are, `` `0x${n.toString(16)}` ``.
+- **A write that may fail, of strings alone, is a template**, `` `${a}${b}`
+  ``, whose pieces it appends one at a time, so what came before the one
+  that fails is written; `a + b` was appended whole, and lost it.
+
+A corpus case, `format_values_alone`, holds each against native Rust; a
+bindings test shows `js::shown`'s text alone, two of it, padded, by
+`to_string()`, generic, in a map, in JSON, and an object's `toString` in a
+write that fails part way. Mutations take each back.

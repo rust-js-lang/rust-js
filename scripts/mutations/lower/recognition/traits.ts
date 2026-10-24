@@ -483,4 +483,12 @@ export const mutations: Mutation[] = [
     replace: "                && inner.types().next().is_some_and(|_| false))\n",
     tests: ["test/lowering-bindings.test.ts", "-t", "generic binding given a Result"],
   },
+  {
+    name: "assert-unwind-safe-uncalled",
+    breaks: "a closure given to `catch_unwind` through `AssertUnwindSafe` isn't called as what it holds, and never drops what it took (#196)",
+    file: "src/lower/recognition/traits.rs",
+    find: "        ty::Adt(adt, args) if super::wrappers::is_assert_unwind_safe(tcx, adt.did()) => {\n",
+    replace: "        ty::Adt(adt, args) if false && super::wrappers::is_assert_unwind_safe(tcx, adt.did()) => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^catch_unwind_assert_drops.rs$"],
+  },
 ];
