@@ -64,7 +64,8 @@ export const mutations: Mutation[] = [
     file: "src/js/expr_walk.rs",
     find: " && (index.is_constant() || index.reads_same()),",
     replace: " && index.is_constant(),",
-    tests: ["test/lowering-options.test.ts", "-t", "property read of what may be None"],
+    tests: ["test/corpus.test.ts", "-t", "^(compound_assignment_order|nested_element_writes).rs$"],
+    snapshots: true,
   },
   {
     "name": "tested-null-check-kept",
