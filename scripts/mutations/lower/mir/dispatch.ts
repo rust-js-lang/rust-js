@@ -502,11 +502,11 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-unwinds.test.ts", "-t", "what's given the thrown downcast is given it as it is"],
   },
   {
-    name: "std-kind-writes-lost",
-    breaks: "what a std call's kind writes, apart, isn't kept once it takes the call",
+    name: "std-kind-lowering-dropped",
+    breaks: "the std call's kind that takes it isn't what lowers it: its call goes on to the values' fallback",
     file: "src/lower/mir/dispatch.rs",
-    find: "                out.extend(written);\n",
-    replace: "",
+    find: "            return lowering(self, state, &mut values, out);\n",
+    replace: "            let _ = lowering;\n",
     tests: ["test/corpus.test.ts", "-t", "^(vec_destructors|drop_scopes).rs$"],
   },
   {

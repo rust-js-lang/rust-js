@@ -75,6 +75,19 @@ throws. Now one written through, `js::Writes`' `changed`, is its place at
 each use, read and written there, as its storage stores it: `context.value
 = 5;` in the closure, `context.renderer = null;` of a nullable field's.
 
+**A std call's kind is chosen of what it reads alone.** Seven kinds of
+std call, `std_calls.rs`' handlers, were tried in turn, each given `&mut`
+access and the arguments, and one that declined was checked to have
+written nothing and taken nothing, by counts that don't prove its state
+the same (ADR 0713). Now each handler is `fn(&self, &State, StdCall) ->
+Option<StdLowering>`: its `match`, patterns and guards as they were, reads
+alone, and an arm that takes the call gives a closure of its work, given
+`&mut` access only once it's chosen. The dispatcher asks each, asserts
+one took it, and runs it. An arm two kinds both took, `and_then` of a
+place found in JS's units, is the iterator kind's, before its other
+combinators'. The architecture test, "a std call's kind is chosen of what
+it reads alone", fails where a handler takes `&mut` access again.
+
 **A handle reaches its place once.** Where a reference is made of a place
 that isn't fixed, `&get(&c).value`, what holds it is named first, `const
 item = get(c);`, and the handle is on `item.value`; `replace` and `take`
