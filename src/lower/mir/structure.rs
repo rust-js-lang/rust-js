@@ -443,6 +443,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     {
                         Value::Expr(e.uncaught().unwrap_or(e))
                     }
+                    // A throwing call's `Result` unwrapped where it's made, of
+                    // each branch, the call itself (ADR 0747).
+                    Value::Expr(e) if self.unwrapped_where_made(state, destination.local) => {
+                        Value::Expr(e.uncaught().unwrap_or(e))
+                    }
                     value => value,
                 };
                 // What the call writes, a setter's `n.textContent = "x"` or a

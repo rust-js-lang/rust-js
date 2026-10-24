@@ -338,8 +338,8 @@ pub(super) const STAGES: &[Stage] = &[
             pass("early returns", |b, _| js::statement_lists(b, &mut early_returns)),
             // The `continue`s a loop's body ends with anyway, which the
             // program didn't write, once those have each loop's shape.
-            pass("tail continues", |b, _| {
-                js::statement_lists(b, &mut |s| tail_continues(s))
+            pass("tail continues", |b, h| {
+                js::statement_lists(b, &mut |s| tail_continues(s, &h.written.continues))
             }),
             // A chain's arms, as statements, in the order written.
             pass("written chains", |b, _| {

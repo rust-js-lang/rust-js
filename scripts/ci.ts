@@ -109,7 +109,7 @@ export function mutationShards(count: number): string {
   return String(MUTATION_SHARDS.find((n) => n >= wanted) ?? MUTATION_SHARDS.at(-1));
 }
 
-async function check(branch: string, shards: string, since?: string) {
+async function check(branch: string, shards: string | undefined, since?: string) {
   const git = (args: string[]) => Bun.spawnSync(["git", ...args], { cwd: root }).stdout.toString().trim();
   git(["fetch", "--quiet", "origin", branch]);
   const local = git(["rev-parse", branch]);
@@ -120,8 +120,11 @@ async function check(branch: string, shards: string, since?: string) {
   // checkout's, as it's pushed.
   const count = (await changedSince(base)).length;
   const machines = mutationShards(count);
-  gh(["workflow", "run", workflow, `--ref=${branch}`, "-f", `test_shards=${shards}`, "-f", `since=${base}`, "-f", `mutation_shards=${machines}`]);
-  console.log(`started ${workflow} of ${branch} at ${local.slice(0, 10)}, the suite on ${shards} machine${shards === "1" ? "" : "s"}, the ${count} mutations of what changed since ${base.slice(0, 10)} on ${machines}: bun run ci:status`);
+  // The suite's machines are the workflow's own, unless `--shards=` says.
+  const suite = shards === undefined ? [] : ["-f", `test_shards=${shards}`];
+  gh(["workflow", "run", workflow, `--ref=${branch}`, ...suite, "-f", `since=${base}`, "-f", `mutation_shards=${machines}`]);
+  const on = shards === undefined ? "the workflow's machines" : `${shards} machine${shards === "1" ? "" : "s"}`;
+  console.log(`started ${workflow} of ${branch} at ${local.slice(0, 10)}, the suite on ${on}, the ${count} mutations of what changed since ${base.slice(0, 10)} on ${machines}: bun run ci:status`);
 }
 
 /** Of a push, in CI: what its mutations are of, what changed since `main`'s
@@ -201,7 +204,7 @@ if (import.meta.main) {
   const [command, ...rest] = process.argv.slice(2);
   const branch = rest.find((arg) => !arg.startsWith("--"))
     ?? Bun.spawnSync(["git", "branch", "--show-current"], { cwd: root }).stdout.toString().trim();
-  const shards = rest.find((arg) => arg.startsWith("--shards="))?.slice("--shards=".length) ?? "1";
+  const shards = rest.find((arg) => arg.startsWith("--shards="))?.slice("--shards=".length);
   const since = rest.find((arg) => arg.startsWith("--since="))?.slice("--since=".length);
   try {
     if (command === "status") status();

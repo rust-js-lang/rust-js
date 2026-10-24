@@ -227,4 +227,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/lowering-labels.test.ts", "-t", "a block the program labeled keeps its label"],
   },
+  {
+    name: "unwrapped-where-made-call-caught",
+    breaks: "a throwing call whose `Result` is unwrapped where it's made is still `$try`'s, while its `unwrap()` is its value: the `Result` object, not the call's",
+    file: "src/lower/mir/structure.rs",
+    find: "                    Value::Expr(e) if self.unwrapped_where_made(state, destination.local) => {\n                        Value::Expr(e.uncaught().unwrap_or(e))\n",
+    replace: "                    Value::Expr(e) if self.unwrapped_where_made(state, destination.local) => {\n                        Value::Expr(e)\n",
+    tests: ["test/js-builtins.test.ts", "-t", "unwrap of a throwing call each branch"],
+  },
 ];

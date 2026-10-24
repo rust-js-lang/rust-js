@@ -386,15 +386,32 @@ export function buildNode(): string {
   return node;
 }
 
+const portsJs = new Map<string, string>();
 /** A port in `test/ports/<port>` (React's, as react-in-rust ports it, copied
- * with the modules it uses), compiled against the js, node and webapi crates:
- * the JS of each of its modules, by file. */
+ * with the modules it uses), compiled once a run against the js, node and
+ * webapi crates: the JS of each of its modules, by file. */
 export function ported(port: string): (file: string) => string {
-  const node = buildNode();
-  const out = fixture(port);
-  const crates = ["js", "node", "webapi"].flatMap((lib) => ["--extern", `${lib}=${join(node, `lib${lib}.rmeta`)}`]);
-  run([compiler, join(root, "test/ports", port, "lib.rs"), "-o", join(out, "lib.js"), "--", ...crates, "-L", node]);
-  return (file) => readFileSync(join(out, file), "utf8");
+  if (!portsJs.has(port)) {
+    const out = fixture(port);
+    const node = buildNode();
+    const crates = ["js", "node", "webapi"].flatMap((lib) => ["--extern", `${lib}=${join(node, `lib${lib}.rmeta`)}`]);
+    run([compiler, join(root, "test/ports", port, "lib.rs"), "-o", join(out, "lib.js"), "--", ...crates, "-L", node]);
+    portsJs.set(port, out);
+  }
+  const dir = portsJs.get(port)!;
+  return (file) => readFileSync(join(dir, file), "utf8");
+}
+
+/** React's shared/ReactPerformanceTrackProperties, as react-in-rust ports
+ * it (`test/ports/performance-track-properties`): its JS, a function of it
+ * at a time. */
+export function performanceTrack(): (name: string) => string {
+  const js = ported("performance-track-properties")("ReactPerformanceTrackProperties.js");
+  return (name) => {
+    const at = js.indexOf(`function ${name}(`);
+    const ends = ["\nfunction ", "\nexport function ", "\nconst "].map((e) => js.indexOf(e, at + 1)).filter((e) => e > 0);
+    return js.slice(at, Math.min(js.length, ...ends));
+  };
 }
 
 /** The generated JS files under `dir`, by their paths from there: no maps. */

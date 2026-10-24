@@ -125,4 +125,12 @@ export const mutations: Mutation[] = [
     replace: "                (a != b).then_some(a)\n",
     tests: ["test/lowering-early-exits.test.ts", "-t", "a continue the program wrote in a chain"],
   },
+  {
+    name: "written-continue-elsed",
+    breaks: "a `continue` the program wrote, its rest made an `else` by `jumps into branches`, is dropped as a tail one, `if (c) { a } else { b }`",
+    file: "src/lower/mir/tidy/jumps/continues.rs",
+    find: "        && tests_continue(continues, *span)\n",
+    replace: "        && false\n",
+    tests: ["test/js-object.test.ts", "-t", "a for loop of keys_in is JS"],
+  },
 ];

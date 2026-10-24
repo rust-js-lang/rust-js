@@ -51,10 +51,9 @@ function main() {
       continue;
     }
     n.value = (n.value * 10) | 0;
-    if (!(n.value > 20)) {
-      continue;
+    if (n.value > 20) {
+      break;
     }
-    break;
   }
   console.log(`[${v.join(", ")}]`);
 

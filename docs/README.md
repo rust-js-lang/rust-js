@@ -126,7 +126,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0024 The `webapi` crate: DOM bindings generated from WebIDL](decisions/0024-web-crate.md)
 - [0025 `Vec`, `for` loops, `RefCell` and `&mut` to objects](decisions/0025-vec-loops-refcell-mut.md)
 - [0034 String methods are JS's; a `char` is a one-character string; `format!` is `+`](decisions/0034-strings-and-chars.md)
-- [0036 An iterator is a JS array; `Ordering` is -1, 0 or 1](decisions/0036-iterators-and-sorting.md)
+- [0036 An iterator is a JS array; `Ordering` is -1, 0 or 1](decisions/0036-iterators-and-sorting.md) *(extended by 0748: a `for` of a slice's first items)*
 - [0037 `thread_local!` is a variable of its module](decisions/0037-thread-locals.md)
 - [0028 Imports from JS modules: `#[link_name = "module#path"]`](decisions/0028-js-module-imports.md)
 - [0029 `async`/`.await` are JS's `async`/`await`; a future is a promise](decisions/0029-async-await.md)
@@ -575,7 +575,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0640 A TypeScript rest parameter is a variadic binding of a tuple](decisions/0640-a-rest-parameter-is-a-tuple.md) *(extended by 0667: rest arguments as a value; by 0718: a typed array spread, and a rest of `number` of any JS number)*
 - [0641 A `concat!` of literals is its pieces joined by `+`](decisions/0641-concat-is-its-pieces-joined-by-plus.md)
 - [0642 A place found in a string is JS's: `indexOf`, `slice`, `startsWith`](decisions/0642-a-place-found-in-a-string-is-js-units.md)
-- [0643 `unwrap()` of a throwing JS call is the call](decisions/0643-unwrap-of-a-throwing-call-is-the-call.md)
+- [0643 `unwrap()` of a throwing JS call is the call](decisions/0643-unwrap-of-a-throwing-call-is-the-call.md) *(extended by 0747: of the call each branch makes)*
 - [0644 A function whose result is a throwing call's `Result` is a throwing function](decisions/0644-a-function-of-a-throwing-calls-result-throws.md)
 - [0645 `js::is_defined` of a static is given the static itself](decisions/0645-is-defined-of-a-static-is-of-the-static.md) *(amended by 0647: the static isn't read)*
 - [0646 A chain held, then its fallback, is one `||`](decisions/0646-a-held-chain-and-its-fallback-is-one-or.md)
@@ -632,7 +632,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0705 A guard's scope reads as any body, its fields the variables it was made of](decisions/0705-a-guards-scope-reads-as-any-body.md) *(amended: a `while`'s test is whole, and a loop that ends a block breaks as a loop)*
 - [0706 `panic!` is the one way a port throws an `Error`, and what's caught is read as it was thrown](decisions/0706-panic-is-the-one-way-a-port-throws-an-error.md) *(amended by 0710: of any `try`; amended: a `catch_unwind` that heads an `if let` chain is a `try`)*
 - [0708 A comment before an argument, or a field, is before it](decisions/0708-a-comment-before-an-argument-is-before-it.md)
-- [0709 A signed counter below a length stays below it, past its loop and through its `as`](decisions/0709-a-signed-counter-below-a-length-stays-below-it.md)
+- [0709 A signed counter below a length stays below it, past its loop and through its `as`](decisions/0709-a-signed-counter-below-a-length-stays-below-it.md) *(extended by 0746: a length held in a variable, and a `push`)*
 - [0710 Every unwind's payload downcasts as the `&JsError` thrown](decisions/0710-every-unwinds-payload-is-the-js-error-thrown.md) *(amended: what's given its `Some`'s value, `and_then`'s closure, is given it)*
 - [0711 What stops early steps by `try_fold`, and `nth` is passed on, as std's adapters route them](decisions/0711-what-stops-early-steps-by-try-fold.md)
 - [0712 What lowering a function finds of drops is returned with it](decisions/0712-what-lowering-finds-of-drops-is-returned-with-it.md)
@@ -654,7 +654,10 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0742 A block's label the program wrote is its name in JS](decisions/0742-a-label-the-program-wrote-is-its-name.md)
 - [0743 A part of a chain of tests an earlier test decides is left out](decisions/0743-a-part-of-a-chain-a-test-decides-is-left-out.md)
 - [0744 A value or what it falls back to is `||`](decisions/0744-a-value-or-its-fallback-is-or.md)
-- [0745 A `continue` in a chain of `if`s is where it's written](decisions/0745-a-continue-in-a-chain-is-where-it-is-written.md)
+- [0745 A `continue` in a chain of `if`s is where it's written](decisions/0745-a-continue-in-a-chain-is-where-it-is-written.md) *(amended: a written `continue` its rest made an `else` stays)*
+- [0746 A length held in a variable shows the slice at least so long, and a `push` makes one long](decisions/0746-a-length-held-in-a-variable-shows-the-slice-so-long.md)
+- [0747 `unwrap()` of a throwing call each branch makes is each call](decisions/0747-unwrap-of-a-throwing-call-each-branch-makes.md)
+- [0748 A `for` of a slice's first items is of its part, `xs.slice(0, n)`](decisions/0748-a-for-of-a-slices-first-items-is-of-its-part.md)
 - [0750 A temporary is read past a method, and in the block after it](decisions/0750-a-temporary-is-read-past-a-method-and-into-a-block.md)
 - [0751 A binding only an arm's guard reads isn't written in the arm](decisions/0751-a-binding-only-a-guard-reads-isnt-written.md)
 - [0752 An `Option`'s function unwrapped and called panics before the call](decisions/0752-an-unwrapped-function-called-panics-first.md)

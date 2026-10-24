@@ -5,7 +5,7 @@
 import { beforeAll, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { buildReact, compiler, fixture, ported, run, target } from "./support";
+import { buildReact, compiler, fixture, performanceTrack, run, target } from "./support";
 
 beforeAll(buildReact, 600_000);
 
@@ -61,17 +61,6 @@ pub fn describe(value: Option<&Unknown>, indent: usize, out: &mut Vec<String>) -
   expect(got).toEqual(["empty", "abcdef,ghijkl", "deep", "", "other"]);
   expect(out).toEqual(["c"]);
 });
-
-/** React's shared/ReactPerformanceTrackProperties, as react-in-rust ports
- * it: its JS, a function of it at a time. */
-function performanceTrack(): (name: string) => string {
-  const js = ported("performance-track-properties")("ReactPerformanceTrackProperties.js");
-  return (name) => {
-    const at = js.indexOf(`function ${name}(`);
-    const ends = ["\nfunction ", "\nexport function ", "\nconst "].map((e) => js.indexOf(e, at + 1)).filter((e) => e > 0);
-    return js.slice(at, Math.min(js.length, ...ends));
-  };
-}
 
 // ADR 0745: React's addObjectDiffToProperties is upstream's chain of `if`s,
 // each arm's `continue` where it's written, with no block MIR made; and

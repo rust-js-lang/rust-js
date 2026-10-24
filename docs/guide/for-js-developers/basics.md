@@ -1225,6 +1225,13 @@ export function findPair(grid, target) {
 
 - A counting loop, `for (let i = 0; i < n; i++)`, is `for i in 0..n`; `0..=n`
   includes `n`.
+- A loop of an array's first items, `for x in xs.iter().take(LIMIT)`, is
+  of that part of it, `for (const x of xs.slice(0, LIMIT))`, and of those
+  past some, `xs.iter().skip(1)`, `xs.slice(1)`; with their indices,
+  `enumerate().take(LIMIT)`, `xs.slice(0, LIMIT).entries()`
+  ([ADR 0748](../../decisions/0748-a-for-of-a-slices-first-items-is-of-its-part.md)).
+  Write the iterator, not a counter: clippy's `needless_range_loop` asks
+  for it.
 - `break` and `continue` work as in JS, labels too: `'outer: for ...`,
   `break 'outer;`.
 - A `break` or `continue` is where the program wrote it: `if checked >

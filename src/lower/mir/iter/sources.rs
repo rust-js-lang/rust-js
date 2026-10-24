@@ -246,8 +246,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 }
 
 /// `counted_chain`'s `$iter(xs).drop(1).take(2)`: the array it steps,
-/// `xs.slice(1).slice(0, 2)`.
-pub(super) fn sliced(e: &Expr) -> Expr {
+/// `xs.slice(1).slice(0, 2)`; a `for…of`'s too (ADR 0748).
+pub(in crate::lower::mir) fn sliced(e: &Expr) -> Expr {
     match &e.kind {
         js::ExprKind::Call(callee, args)
             if let js::ExprKind::Member(source, name) = &callee.kind
@@ -265,7 +265,7 @@ pub(super) fn sliced(e: &Expr) -> Expr {
 
 /// Whether `e` is an array's items made there, `$iter(xs)`, skipped or taken
 /// from, `.drop(1)`, by a count that does nothing (`len()`'s).
-pub(super) fn counted_chain(e: &Expr) -> bool {
+pub(in crate::lower::mir) fn counted_chain(e: &Expr) -> bool {
     let mut at = e;
     let mut stages = 0;
     while let js::ExprKind::Call(callee, args) = &at.kind

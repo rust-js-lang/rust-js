@@ -471,7 +471,7 @@ Differences:
   threw goes on as itself, `JSON.parse(text)` throwing its `SyntaxError`,
   where Rust's panic says ``called `Result::unwrap()` on an `Err` value``.
   Only what catches it sees the difference, JS or a `catch_unwind`, whose
-  payload is the `&JsError`. `expect(msg)` keeps its message ([0643](../decisions/0643-unwrap-of-a-throwing-call-is-the-call.md)).
+  payload is the `&JsError`. `expect(msg)` keeps its message ([0643](../decisions/0643-unwrap-of-a-throwing-call-is-the-call.md)). So is each call of the branches of an `if` unwrapped where it's made ([0747](../decisions/0747-unwrap-of-a-throwing-call-each-branch-makes.md)).
 - **Recursion is as deep as the JS engine's stack allows,** about 10,000
   calls in Node and in browsers, where Rust's main thread has 8 MB:
   deeper, JS throws `RangeError: Maximum call stack size exceeded`, which

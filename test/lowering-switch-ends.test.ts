@@ -113,6 +113,27 @@ pub fn described(value: Option<&Unknown>, log: &mut Vec<String>) {
     log.push(desc);
 }
 
+// A match of three arms in a case, a switch's own: its block's break past
+// it, the case's own.
+pub fn numbered(value: Option<&Unknown>, log: &mut Vec<String>) {
+    let desc = if let Some(value) = value
+        && let Kind::Object(_) = js::classify(Some(value))
+    {
+        "object".to_string()
+    } else {
+        match js::classify(value) {
+            Kind::Function(function) => match js::classify(js::get(js::unknown(function), "name")) {
+                Kind::String(name) if !name.is_empty() => name.to_string() + "() {}",
+                Kind::Number(_) => "numbered() {}".to_string(),
+                _ => "() => {}".to_string(),
+            },
+            Kind::Undefined => "undefined".to_string(),
+            _ => js::string(value),
+        }
+    };
+    log.push(desc);
+}
+
 // A loop's in a case is the loop's: the block's own, still.
 pub fn scanned(value: Option<&Unknown>, log: &mut Vec<String>) {
     let desc = 'desc: {
@@ -143,6 +164,10 @@ pub fn scanned(value: Option<&Unknown>, log: &mut Vec<String>) {
   const log: string[] = [];
   for (const value of [{}, null, function named() {}, () => {}, undefined, true, 5]) lib.described(value, log);
   expect(log).toEqual(["object", "null", "named() {}", "() => {}", "undefined", "true", "5"]);
+  const numbered: string[] = [];
+  const counted = Object.defineProperty(function () {}, "name", { value: 3 });
+  for (const value of [function named() {}, counted, () => {}, undefined, 5]) lib.numbered(value, numbered);
+  expect(numbered).toEqual(["named() {}", "numbered() {}", "() => {}", "undefined", "5"]);
   const scanned: string[] = [];
   for (const value of ["a!b", "ab", null]) lib.scanned(value, scanned);
   expect(scanned).toEqual(["a", "bang", "a", "b", "plain", "null"]);

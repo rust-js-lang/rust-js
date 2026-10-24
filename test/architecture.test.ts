@@ -677,7 +677,7 @@ test("shortcuts to recognition are in shortcuts.rs, and only shorten", () => {
 // which the test holds exactly, so a split says so here.
 const dispatchers: [string, string, number][] = [
   ["src/lower/recognition/calls.rs", "    pub(in crate::lower) fn classify(", 8],
-  ["src/lower/mir/dispatch.rs", "    pub(super) fn mir_call(", 106],
+  ["src/lower/mir/dispatch.rs", "    pub(super) fn mir_call(", 100], // What reads its argument through, `flatten()` and `unwrap()`, in `reads_through` (ADR 0747).
   ["src/lower/mir/dispatch.rs", "    fn mir_call_values_of(", 247],
   ["src/lower/mir/dispatch.rs", "    fn mir_std_call(", 146],
   ["src/lower/mir.rs", "    fn mir_function(", 362], // The parameters handed to tidy's `scopes` stage in a cell, and whether it asks its stages again (ADR 0659, amended); the jumps the program wrote in one field (ADR 0742).

@@ -9,7 +9,7 @@
 mod backs;
 mod closing;
 mod collect;
-mod sources;
+pub(in crate::lower::mir) mod sources;
 
 use self::sources::*;
 

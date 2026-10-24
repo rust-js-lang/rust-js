@@ -59,6 +59,37 @@ export function zeros(n) {
 Every item has the same type. An array of mixed values is a `Vec` of an
 `enum` ([Basics: `match`](basics.md#switch-and-match)).
 
+An index out of bounds panics, as Rust's does, `$index(keys, 0)`. One the
+code before it shows in bounds is JS's own, `keys[0]`: below a length
+tested, `i < xs.len()`, past a test of the length, `!xs.is_empty()` or
+`n == 1` of an `n` that's `xs.len()`, or after a `push`
+([ADR 0292](../../decisions/0292-known-bounds.md),
+[ADR 0746](../../decisions/0746-a-length-held-in-a-variable-shows-the-slice-so-long.md)):
+
+```rust
+pub fn only_children(keys: &[String]) -> bool {
+    let length = keys.len();
+    length == 1 && keys[0] == "children"
+}
+
+pub fn first(keys: &[String]) -> String {
+    keys[0].clone()
+}
+```
+
+```js
+import { $index } from "@rust-js/runtime";
+
+export function onlyChildren(keys) {
+  const length = keys.length;
+  return length === 1 && keys[0] === "children";
+}
+
+export function first(keys) {
+  return $index(keys, 0);
+}
+```
+
 ## Array methods
 
 JS's array methods are an iterator chain in Rust: `iter()`, then the
