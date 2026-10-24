@@ -44,6 +44,8 @@ found it, and what the merge left no program reaches.
     the early breaks write in `a` (ADR 0730);
   - `continued`'s `ending` of a loop's last block, which no body MIR makes
     needs now.
+  - `for_of`'s test that a body falling out to its exit doesn't leave
+    already before its `break`: `unreachable` drops what's after a leave.
 - The other survivors were tests that no longer reach what they hold:
   each widened (`held_enumerate.rs`'s `next`, `adapter_source_drops.rs`'s
   chain, whose first part is dropped before its second is stepped, as

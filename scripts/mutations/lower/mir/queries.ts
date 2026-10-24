@@ -81,7 +81,8 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/queries.rs",
     find: "        | Rvalue::Ref(_, BorrowKind::Shared, read)\n",
     replace: "",
-    tests: ["test/lowering-numbers.test.ts", "-t", "nothing proves in bounds"],
+    tests: ["test/corpus.test.ts", "-t", "^(leak|loop_drops).rs$"],
+    snapshots: true,
   },
   {
     name: "mir-capture-copied-never",

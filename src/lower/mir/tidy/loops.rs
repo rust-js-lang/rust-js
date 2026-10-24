@@ -132,9 +132,9 @@ pub(super) fn for_of(
     if !exit.last().is_some_and(ends) || breaks(&inner, label.as_deref()) {
         return None;
     }
-    // Going on to the exit where it ends, unless it leaves already, a
-    // `continue` say: a `break`.
-    if falls_out && !inner.last().is_some_and(ends) {
+    // Going on to the exit where it ends: a `break`, which `unreachable`
+    // drops after what leaves already, a `continue` say.
+    if falls_out {
         inner.push(StmtKind::Break(None).at(js::Span::NONE));
     }
     let label = match (label, block) {
