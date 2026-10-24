@@ -842,7 +842,7 @@ impl Expr {
             ExprKind::Undefined | ExprKind::GivenUndefined => true,
             _ if self.is_constant() => false,
             ExprKind::Array(_)
-            | ExprKind::Object(_)
+            | ExprKind::Object(..)
             | ExprKind::Arrow(..)
             | ExprKind::AsyncArrow(..)
             | ExprKind::Function(_)
