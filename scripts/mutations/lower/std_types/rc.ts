@@ -3,6 +3,39 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "weak-every-counted",
+    breaks: "a `Weak` nothing upgrades is lowered counted, `$downgrade`, while its `Rc` is the object itself (ADR 0843)",
+    file: "src/lower/std_types/rc.rs",
+    find: "        weak_pointee(self.tcx, ty).filter(|&pointee| self.krate.counted.counts(self.tcx, pointee))\n",
+    replace: "        weak_pointee(self.tcx, ty)\n",
+    tests: ["test/corpus.test.ts", "-t", "^weak_cycle_set_after.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "downgrade-uncounted-unknown",
+    breaks: "`Rc::downgrade` of an uncounted `Rc` isn't the `Rc` itself, and fails to compile (ADR 0843)",
+    file: "src/lower/std_types/rc.rs",
+    find: "            RcOp::Downgrade if self.uncounted_weak(output).is_some() => values.next().expect(\"an `Rc`\"),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^weak_cycle_set_after.rs$"],
+  },
+  {
+    name: "weak-new-uncounted-fresh",
+    breaks: "an uncounted `Weak::new()` is a new object, so two aren't `Weak::ptr_eq` (ADR 0843)",
+    file: "src/lower/std_types/rc.rs",
+    find: "            None => Expr::null(),\n",
+    replace: "            None => Expr::object(Vec::new()),\n",
+    tests: ["test/corpus.test.ts", "-t", "^weak_cycle_set_after.rs$"],
+  },
+  {
+    name: "weak-new-counted-fresh",
+    breaks: "a counted `Weak::new()` is a new `{ strong: 0, weak: 0 }`, so two aren't `Weak::ptr_eq`, as std's are (ADR 0843)",
+    file: "src/lower/std_types/rc.rs",
+    find: "            Some(_) => Expr::helper(\"$weakNone\"),\n",
+    replace: "            Some(_) => Expr::object(vec![Prop::Field(\"strong\".into(), Expr::int(0)), Prop::Field(\"weak\".into(), Expr::int(0))]),\n",
+    tests: ["test/corpus.test.ts", "-t", "^weak_cycle_set_after.rs$"],
+  },
+  {
     name: "rc-get-mut-shared",
     breaks: "`get_mut` gives a `&mut` while others point at it",
     file: "src/lower/std_types/rc.rs",

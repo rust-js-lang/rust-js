@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "uncounted-weak-never-nullish",
+    breaks: "`Some(Weak::new())` is `null`, the same as `None` (ADR 0843)",
+    file: "src/lower/representation.rs",
+    find: "            || self.uncounted_weak(ty).is_some()\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^weak_uncounted_uses.rs$"],
+  },
+  {
     name: "unit-given-rest-not-a-list",
     breaks: "a variadic binding's rest of none, `()`, is `undefined`, spread, `called(\"a\", ...undefined)`, which throws, not no argument (ADR 0775)",
     file: "src/lower/representation.rs",

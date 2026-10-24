@@ -1,7 +1,9 @@
 # 0320. An `Rc` whose counts are read is counted, as Rust counts it
 
 Status: Accepted; amended by [0582](0582-ptr-eq-of-an-object-is-its-identity.md),
-whose `ptr_eq` of an object counts nothing. Extends [0023](0023-strings-references-shared-state.md)
+whose `ptr_eq` of an object counts nothing; and by
+[0843](0843-a-weak-nothing-upgrades-is-the-value-itself.md): a `Weak` nothing
+upgrades or counts counts nothing, and is the value itself. Extends [0023](0023-strings-references-shared-state.md)
 and [0098](0098-destructors.md); counted by
 [0314](0314-std-data-structures.md). Amended: a shared `Rc<RefCell<dyn T>>`
 is counted as the `Rc` it's made of (below); and by

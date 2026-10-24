@@ -158,7 +158,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ty::Adt(..) if self.is_guard(ty) => {
                 out.push(StmtKind::Expr(Expr::call(Expr::helper("$unborrow"), vec![value])).at(js_span));
             }
-            ty::Adt(..) if self.weak_of(ty).is_some() => {
+            ty::Adt(..) if self.counted_weak(ty).is_some() => {
                 out.push(StmtKind::Expr(Expr::call(Expr::helper("$weakDrop"), vec![value])).at(js_span));
             }
             // One that carries its drop, its own, which its clones don't share

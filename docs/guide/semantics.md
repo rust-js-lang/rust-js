@@ -217,7 +217,8 @@ What's refused of formatting is in [the limitations](limitations.md#formatting).
 | `Option` | the value, or `undefined` for `None` ([0030](../decisions/0030-option.md)); `null` for `None` of a `#[rust_js::nullable]` field or function ([0275](../decisions/0275-nullable-writes-null.md), [0574](../decisions/0574-what-reacts-scheduler-heap-asks.md)), and left out until set of one that's `#[rust_js::optional]` too ([0810](../decisions/0810-an-optional-nullable-field-is-absent-until-set.md)); a `Some` of what could look like `None`, `Option<()>` or `Option<Option<T>>`, is boxed, `{ $someNone: n }` ([0051](../decisions/0051-generic-options.md)) |
 | `#[repr(transparent)]` struct | its field: `Meters(x)` is `x`, `m.0` is `m` ([0584](../decisions/0584-a-transparent-struct-is-its-field.md)) |
 | `Box<T>`, `Arc<T>` | the value itself; a `Box`'s `as_ref()` and `as_mut()` too, `b.as_mut().push(2)` is `b.push(2)` ([0550](../decisions/0550-a-known-as-mut-is-the-value.md)) |
-| `Rc<T>` | the value itself; `{ value, strong, weak }` where the crate reads its counts, `strong_count` or `Weak` ([0320](../decisions/0320-counted-rcs.md)) |
+| `Rc<T>` | the value itself; `{ value, strong, weak }` where the crate reads its counts, `strong_count` or a `Weak`'s `upgrade` ([0320](../decisions/0320-counted-rcs.md)) |
+| `Weak<T>` | what its `Rc` is, the value itself, and `null` of `Weak::new()`, where nothing asks whether it's alive; its counted `Rc`'s box where the crate counts it ([0843](../decisions/0843-a-weak-nothing-upgrades-is-the-value-itself.md)) |
 | `Cell`, `RefCell`, `Mutex`, `RwLock`, an atomic, `static mut` | `{ value }`; a `Cell`, or a `RefCell` only borrowed for a moment, in a struct's field or a variable, is its value ([0144](../decisions/0144-locks.md), [0287](../decisions/0287-cells-as-variables.md), [0288](../decisions/0288-cell-fields.md), [0362](../decisions/0362-refcell-fields-never-counted.md)) |
 | `thread_local!` | a variable of its module, `let taskCount`, or a `{ value }` cell (below) ([0270](../decisions/0270-module-variables.md)) |
 | `Vec`, slice, array | array |
@@ -247,6 +248,9 @@ What's refused of formatting is in [the limitations](limitations.md#formatting).
   destructor ([0320](../decisions/0320-counted-rcs.md)). `Rc::ptr_eq` of
   an `Rc` of a struct with fields is `a === b` of the objects, and counts
   nothing ([0582](../decisions/0582-ptr-eq-of-an-object-is-its-identity.md)).
+  A `Weak` nothing upgrades or counts is what it points at, `Rc::downgrade`
+  the object and `Weak::new()` `null`: what's alive is asked of no `Weak`,
+  so none needs a count ([0843](../decisions/0843-a-weak-nothing-upgrades-is-the-value-itself.md)).
 - **A `&mut` std gives to a number or a string in a collection is a
   handle on it,** where it's used as a value: `iter_mut()`, `values_mut()`,
   `get_mut`, `last_mut()` and a `for` over `&mut m`, each writing the slot

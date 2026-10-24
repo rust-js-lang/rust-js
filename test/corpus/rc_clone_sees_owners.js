@@ -8,6 +8,7 @@ import {
   $unwrapOrClone,
   $weakClone,
   $weakDrop,
+  $weakNone,
   $withBorrowMut,
 } from "@rust-js/runtime";
 
@@ -49,7 +50,7 @@ export const probeClone = {
 
 function probeClone_clone(probe) {
   console.log(`owners while cloning: ${probe.me.strong}`);
-  return { me: { strong: 0, weak: 0 } };
+  return { me: $weakNone };
 }
 
 function main() {

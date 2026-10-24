@@ -3,6 +3,23 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "downgrade-counts",
+    breaks: "`Rc::downgrade` counts its `Rc`, so React's context is `{ value, strong, weak }` where nothing asks a count (ADR 0843)",
+    file: "src/lower/recognition/wrappers.rs",
+    find: "                    | \"unwrap_or_clone\"\n                    | \"new_cyclic\"\n",
+    replace: "                    | \"unwrap_or_clone\"\n                    | \"downgrade\"\n                    | \"new_cyclic\"\n",
+    tests: ["test/corpus.test.ts", "-t", "^weak_cycle_set_after.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "weak-upgrade-uncounted",
+    breaks: "a `Weak`'s `upgrade` doesn't count its `Rc`, which can't answer it (ADR 0843)",
+    file: "src/lower/recognition/wrappers.rs",
+    find: "    weak_pointee(tcx, owner).is_some() && tcx.item_name(id).as_str() != \"new\"\n",
+    replace: "    weak_pointee(tcx, owner).is_some() && !matches!(tcx.item_name(id).as_str(), \"new\" | \"upgrade\")\n",
+    tests: ["test/corpus.test.ts", "-t", "^weak_debug.rs$"],
+  },
+  {
     name: "arc-not-rc",
     breaks: "an `Arc` is an error where an `Rc` is shared",
     file: "src/lower/recognition/wrappers.rs",

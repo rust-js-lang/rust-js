@@ -440,7 +440,8 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
                 }
             }
             // A counted `Rc`: one count fewer, and the last drops what it points
-            // at. A `Weak`: one weak count fewer (ADR 0320).
+            // at. A `Weak`: one weak count fewer (ADR 0320); an uncounted
+            // one, the value itself, nothing (ADR 0843).
             ty::Adt(..)
                 if let Some(pointee) = rc_pointee(tcx, ty)
                     && self.counted.counts(tcx, pointee) =>
@@ -450,7 +451,13 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
                     _ => Drops::Runs,
                 }
             }
-            ty::Adt(..) if weak_pointee(tcx, ty).is_some() => Drops::Runs,
+            ty::Adt(..)
+                if let Some(pointee) = weak_pointee(tcx, ty)
+                    && self.counted.counts(tcx, pointee) =>
+            {
+                Drops::Runs
+            }
+            ty::Adt(..) if weak_pointee(tcx, ty).is_some() => Drops::Nothing,
             // A guard: its cell borrowed once fewer (ADR 0328). What it guards
             // is its cell's to drop.
             ty::Adt(..) if self.recognition.is_guard(ty) && walk.guards_none => Drops::Nothing,

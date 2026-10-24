@@ -379,13 +379,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ty::Adt(_, args) if self.is_vec_like(ty) => self.drop_size(args.type_at(0), stack),
             ty::Array(item, _) | ty::Slice(item) => self.drop_size(*item, stack),
             // A `RefCell`'s value, and what a counted `Rc` points at, after its
-            // count (ADR 0320); a `Weak` drops only a count.
+            // count (ADR 0320); a counted `Weak` drops only a count, an
+            // uncounted one nothing (ADR 0843).
             ty::Adt(_, args) if self.is_std_type(ty, StdItem::RefCell) => self.drop_size(args.type_at(0), stack),
             ty::Adt(..) if let Some(pointee) = self.counted_rc(ty) => {
                 let (size, recursive) = self.drop_size(pointee, stack);
                 (size + 1, recursive)
             }
-            ty::Adt(..) if self.weak_of(ty).is_some() => (1, false),
+            ty::Adt(..) if self.counted_weak(ty).is_some() => (1, false),
+            ty::Adt(..) if self.uncounted_weak(ty).is_some() => (0, false),
             ty::Tuple(items) => sum(self, &mut items.iter(), stack),
             ty::Adt(adt, args) => {
                 let own = usize::from(

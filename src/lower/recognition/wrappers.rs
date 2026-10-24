@@ -461,8 +461,8 @@ pub(crate) fn weak_pointee<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Ty<'
 }
 
 /// Is `id`, of an `Rc` of `pointee`, a function that reads an `Rc`'s or
-/// `Arc`'s counts, or makes or reads a `Weak` (ADR 0320): what only a
-/// counted one can answer. `ptr_eq` of a struct with fields, a JS object
+/// `Arc`'s counts, or a `Weak`'s, or upgrades one (ADR 0320): what only a
+/// counted one can answer. `downgrade` asks none (ADR 0843). `ptr_eq` of a struct with fields, a JS object
 /// whose `===` is its identity, needs none (ADR 0582).
 pub(crate) fn reads_rc_count<'tcx>(tcx: TyCtxt<'tcx>, id: DefId, pointee: Option<Ty<'tcx>>) -> bool {
     let object = matches!(pointee.map(|pointee| *pointee.kind()), Some(ty::Adt(adt, _))
@@ -475,7 +475,9 @@ pub(crate) fn reads_rc_count<'tcx>(tcx: TyCtxt<'tcx>, id: DefId, pointee: Option
         return false;
     };
     let owner = tcx.type_of(imp).instantiate_identity().skip_normalization();
-    weak_pointee(tcx, owner).is_some()
+    // A `Weak`'s `new` and `ptr_eq` of an object ask nothing of a count: one
+    // to nothing is `null`, one to a value the value (ADR 0843).
+    weak_pointee(tcx, owner).is_some() && tcx.item_name(id).as_str() != "new"
         || rc_pointee(tcx, owner).is_some()
             && matches!(
                 tcx.item_name(id).as_str(),
@@ -486,7 +488,6 @@ pub(crate) fn reads_rc_count<'tcx>(tcx: TyCtxt<'tcx>, id: DefId, pointee: Option
                     | "try_unwrap"
                     | "into_inner"
                     | "unwrap_or_clone"
-                    | "downgrade"
                     | "new_cyclic"
                     | "ptr_eq"
             )

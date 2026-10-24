@@ -338,7 +338,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0317 A `OnceCell` is a `{ value }` of an `Option`, set once](0317-once-cells.md)
 - [0318 A `LazyCell` makes its value when it's first used, as Rust's does](0318-lazy-cells.md)
 - [0319 A `Cow` is its enum, made owned by a clone of what it borrowed](0319-cows.md)
-- [0320 An `Rc` whose counts are read is counted, as Rust counts it](0320-counted-rcs.md)
+- [0320 An `Rc` whose counts are read is counted, as Rust counts it](0320-counted-rcs.md) *(amended by 0843: a `Weak` nothing upgrades counts nothing)*
 - [0321 A map drops its values as Rust's does](0321-map-drops.md)
 - [0322 Text's and slices' methods by their other names, and a join of lists](0322-text-and-slice-names.md) *(amended by 0774: a `String`'s room asked is checked)*
 - [0323 A `String`'s byte-range edits, and `str`'s searches from the end](0323-text-byte-ranges.md)
@@ -637,6 +637,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0840 A thread-local's `with` is its closure's body, wherever it's called](0840-a-thread-locals-with-is-its-closures-body.md)
 - [0841 A nullable place stores what's never `undefined` as it is](0841-a-nullable-place-stores-what-is-never-undefined-as-it-is.md)
 - [0842 A parameter's clone that is the same JS value is read by the parameter's name](0842-a-parameters-clone-is-read-by-its-name.md)
+- [0843 A `Weak` nothing upgrades is the value itself](0843-a-weak-nothing-upgrades-is-the-value-itself.md)
 - [0720 A labeled block's `break` and a named constant, in a body's ranges](0720-a-labeled-block-and-a-named-constant-in-a-bodys-ranges.md)
 - [0721 `js::strict_equals(a, b)` is JS's `===`](0721-strict-equals-is-jss-triple-equals.md) *(fixed by 0775: a `()` compared is `undefined`)*
 - [0722 A `#[repr(..)]` enum's variant is its number](0722-a-repr-enums-variant-is-its-number.md)

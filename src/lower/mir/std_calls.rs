@@ -1201,7 +1201,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Std::Rc(op) if op != RcOp::MakeMut => lower(move |this, _, values, out| {
                 Ok(Value::Expr({
                     let exprs = values.map(|v| this.value_expr(v, span)).collect::<R<Vec<_>>>()?;
-                    this.rc_values(op, (exprs, arg_tys), span, out)?
+                    this.rc_values(op, (exprs, arg_tys, output), span, out)?
                 }))
             }),
             // A `Cow`'s `into_owned()`, its deref, and its `to_mut()` of what's

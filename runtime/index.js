@@ -3788,6 +3788,10 @@ export function $weakDrop(weak) {
   weak.weak--;
 }
 
+// `Weak::new()` of a counted `Rc`'s: one to nothing, which never upgrades,
+// the one each is, so two are `Weak::ptr_eq`, as std's are (ADR 0843).
+export const $weakNone = { strong: 0, weak: 0 };
+
 // A `Weak`'s `weak_count()`: none once nothing strong is left.
 export function $weakCount(weak) {
   return weak.strong === 0 ? 0 : weak.weak;

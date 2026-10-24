@@ -2,7 +2,7 @@
 //! destructor, which the last of them drops (ADR 0320): only those are
 //! `{ value, strong, weak }`; every other is the value it points at (ADR 0023).
 
-use crate::lower::recognition::{rc_pointee, reads_rc_count, weak_pointee};
+use crate::lower::recognition::{rc_pointee, reads_rc_count};
 use crate::lower::{Body, fn_def};
 use rustc_hir::def::DefKind;
 use rustc_middle::thir::ExprKind;
@@ -31,7 +31,8 @@ impl<'tcx> Counted<'tcx> {
 }
 
 /// The types whose `Rc`s the crate reads a count of, `strong_count`,
-/// `get_mut`, `try_unwrap` and the rest, or makes a `Weak` of, and those
+/// `get_mut`, `try_unwrap` and the rest, or asks a `Weak` of whether it's
+/// alive, `upgrade` or a count (ADR 0843), and those
 /// whose drop runs a destructor, `runs`, which the last of them drops: one of
 /// those is counted as Rust counts it, where it's made, cloned and dropped.
 /// What a type drops depends on which `Rc`s are counted, so the second to a
@@ -54,11 +55,8 @@ pub(super) fn counted_rcs<'tcx>(
     let mut holds_param = false;
     // What each `Rc` of a known type points at.
     let mut pointees: HashSet<Ty<'tcx>> = HashSet::new();
-    let mut found = |ty: Ty<'tcx>, types: &mut HashSet<Ty<'tcx>>, generic_rc: &mut bool| {
+    let mut found = |ty: Ty<'tcx>, generic_rc: &mut bool| {
         for part in ty.walk().filter_map(|part| part.as_type()) {
-            if let Some(pointee) = weak_pointee(tcx, part) {
-                types.insert(tcx.erase_and_anonymize_regions(pointee));
-            }
             match rc_pointee(tcx, part) {
                 Some(pointee) if pointee.has_non_region_param() => {
                     *generic_rc = true;
@@ -76,7 +74,7 @@ pub(super) fn counted_rcs<'tcx>(
     let mut made_others: HashSet<(Ty<'tcx>, Ty<'tcx>)> = HashSet::new();
     for body in all_bodies {
         for expr in body.thir.exprs.iter() {
-            found(expr.ty, &mut types, &mut generic_rc);
+            found(expr.ty, &mut generic_rc);
             if let ExprKind::PointerCoercion { source, .. } = expr.kind
                 && let (Some(from), Some(to)) = (rc_pointee(tcx, body.thir[source].ty), rc_pointee(tcx, expr.ty))
             {
@@ -94,13 +92,13 @@ pub(super) fn counted_rcs<'tcx>(
             }
         }
     }
-    // A field's `Weak`, which may be made where no expression names it.
+    // A field's `Rc`, which a body may hold where no expression names it,
+    // in the value of a generic type it's a field of.
     for id in tcx.hir_crate_items(()).definitions() {
         if matches!(tcx.def_kind(id), DefKind::Struct | DefKind::Enum | DefKind::Union) {
             for field in tcx.adt_def(id).all_fields() {
                 found(
                     tcx.type_of(field.did).instantiate_identity().skip_normalization(),
-                    &mut types,
                     &mut generic_rc,
                 );
             }
