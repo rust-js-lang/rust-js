@@ -3849,6 +3849,41 @@ export function $newCyclic(f) {
   return rc;
 }
 
+// A counted `Rc<dyn Sub>` as an `Rc<dyn Super>` (#186): its pair of the
+// supertrait's dictionary, `dictionary`, whose value and counts are the
+// `Rc`'s own, shared, as Rust's upcast shares its allocation. One for each
+// supertrait, `key`, so two of the same `Rc` are the same box, as
+// `Rc::ptr_eq` finds them.
+export function $rcUpcast(rc, key, dictionary) {
+  rc.$views ??= new Map();
+  let view = rc.$views.get(key);
+  if (view === undefined) {
+    view = {
+      impl: dictionary,
+      get value() {
+        return rc.value;
+      },
+      set value(value) {
+        rc.value = value;
+      },
+      get strong() {
+        return rc.strong;
+      },
+      set strong(strong) {
+        rc.strong = strong;
+      },
+      get weak() {
+        return rc.weak;
+      },
+      set weak(weak) {
+        rc.weak = weak;
+      },
+    };
+    rc.$views.set(key, view);
+  }
+  return view;
+}
+
 // `lists.join(&sep)` of a slice of lists (ADR 0322): their items in one
 // array, with `sep` between each two, or `sep`'s items where it's a slice,
 // each cloned by `clone` where a clone is more than the item.
