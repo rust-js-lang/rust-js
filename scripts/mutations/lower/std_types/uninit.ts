@@ -22,7 +22,7 @@ export const mutations: Mutation[] = [
     name: "uninit-handle-kept",
     breaks: "`point.write(v)` writes through a getter and setter, not the place",
     file: "src/lower/std_types/uninit.rs",
-    find: "                    js::ExprKind::Handle(place) => *place,\n",
+    find: "                    js::ExprKind::Handle(place, _) => *place,\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "box_uninit"],
     snapshots: true,

@@ -573,7 +573,10 @@ export function ratio(a, b) {
   A field's is of an `Option`, or of a `Cell` of one, whose `None` is
   `null` where it's made and where it's `set`, `replace`d or `take`n,
   `context.renderer = null`
-  ([ADR 0772](../../decisions/0772-a-nullable-cell-field-writes-null.md));
+  ([ADR 0772](../../decisions/0772-a-nullable-cell-field-writes-null.md)),
+  through a `let r = &context.renderer;` or a helper given `&Cell` too: a
+  handle on it stores `value ?? null`
+  ([ADR 0791](../../decisions/0791-a-cells-storage-says-what-it-stores.md));
   on anything else it's an error
   ([ADR 0586](../../decisions/0586-a-nullable-field-is-an-option.md)):
 

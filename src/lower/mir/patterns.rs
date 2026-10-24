@@ -209,7 +209,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `js::SymbolFor::from_value` gives, whose value the body only tests
     /// against the registry's symbols (`registered_reads`, ADR 0634).
     fn mir_registered(&self, body: &mir::Body<'tcx>) -> std::collections::HashSet<Local> {
-        let reads = crate::lower::body_queries::registered_reads(self.tcx, self.frame.thir);
+        let reads = &self.frame.facts.registered_reads;
         (body.basic_blocks.iter())
             .filter_map(|data| match &data.terminator().kind {
                 TerminatorKind::Call {

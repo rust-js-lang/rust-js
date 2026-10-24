@@ -115,6 +115,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     def_id,
                     generic_args,
                     tys: &tys,
+                    nulled: &[],
                     span,
                 };
                 self.std_values(known, call, vec![place.clone(), rhs], false, ty, out)?
@@ -150,12 +151,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // itself where it's one, `undefined` where not, `$symbolFor(value)`.
         if crate::lower::recognition::is_symbol_for_read(tcx, def_id) {
             let value = values.into_iter().next().expect("the value read");
-            return Ok(
-                match crate::lower::body_queries::registered_reads(tcx, self.frame.thir).contains(&span) {
-                    true => value,
-                    false => Value::Expr(Expr::call_helper("$symbolFor", vec![self.value_expr(value, span)?])),
-                },
-            );
+            return Ok(match self.frame.facts.registered_reads.contains(&span) {
+                true => value,
+                false => Value::Expr(Expr::call_helper("$symbolFor", vec![self.value_expr(value, span)?])),
+            });
         }
         match bindings::js_form(tcx, def_id) {
             bindings::JsForm::Jsx(tag) => {

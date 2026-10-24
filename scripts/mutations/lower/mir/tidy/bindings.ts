@@ -304,7 +304,7 @@ export const mutations: Mutation[] = [
     name: "shadow-of-what-a-handle-sets",
     breaks: "a binding a `&mut`'s handle sets after the shadow is assigned, so the handle sets the new one",
     file: "src/lower/mir/tidy/bindings.rs",
-    find: "        ExprKind::Handle(place) | ExprKind::Pair(place, _) => place.visit_vars(&mut insert),\n",
+    find: "        ExprKind::Handle(place, _) | ExprKind::Pair(place, _) => place.visit_vars(&mut insert),\n",
     replace: "",
     tests: ["test/lowering-shadows.test.ts", "-t", "something still sees"],
   },

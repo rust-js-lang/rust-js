@@ -121,17 +121,26 @@ pub(super) struct BodyFacts {
     /// to be a whole number in the integer's range (`whole_casts`), and of
     /// an integer the body's ranges show in its target's (`ranges`).
     pub(super) kept_casts: HashSet<ExprId>,
+    /// Where each read of a registered symbol is that's only tested against
+    /// the registry's, `registered_reads`'s (ADR 0634).
+    pub(super) registered_reads: HashSet<Span>,
+    /// Where each `==` or `!=` of such a read and a `Some(..)` is,
+    /// `registered_equalities`'s (ADR 0771).
+    pub(super) registered_equalities: HashSet<Span>,
 }
 
 impl BodyFacts {
-    /// Its facts but its ranges, which are the crate's (`ranges`).
+    /// Its facts but its ranges, which are the crate's (`ranges`): each
+    /// read of its own THIR once, before it's lowered, so a call it lowers
+    /// looks its answer up, and a closure's are its own body's.
     pub(super) fn collect<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> Self {
-        let mut facts = Self {
+        Self {
             kept_casts: whole_casts(tcx, thir),
+            named_callbacks: named_callbacks(tcx, thir),
+            registered_reads: registered_reads(tcx, thir),
+            registered_equalities: registered_equalities(tcx, thir),
             ..Self::default()
-        };
-        facts.named_callbacks = named_callbacks(tcx, thir);
-        facts
+        }
     }
 }
 
@@ -652,7 +661,7 @@ pub(super) fn present_calls<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> HashS
 /// `Some` of them, `Some(REACT_MEMO_TYPE | REACT_LAZY_TYPE)`, binding
 /// nothing. There, no other value is one of them, so the value itself
 /// answers each as its `Some` would (ADR 0634).
-pub(super) fn registered_reads<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> HashSet<Span> {
+fn registered_reads<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> HashSet<Span> {
     (thir.exprs.indices())
         .filter_map(|e| match thir[e].kind {
             ExprKind::Match {
@@ -671,7 +680,7 @@ pub(super) fn registered_reads<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> Ha
 
 /// Where each `==` or `!=` `registered_reads` reads one for is, its
 /// `fn_span`: compared by `===`, whatever the `Some` is (ADR 0771).
-pub(super) fn registered_equalities<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> HashSet<Span> {
+fn registered_equalities<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> HashSet<Span> {
     (thir.exprs.indices())
         .filter_map(|e| registered_equality(tcx, thir, e).map(|(_, equality)| equality))
         .collect()
@@ -715,44 +724,6 @@ fn registered_equality<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>, e: ExprId) ->
         _ => return None,
     };
     Some((read, fn_span))
-}
-
-/// Where each call of a method of a `#[rust_js::nullable]` field's `Cell`
-/// is, its `fn_span`, `context.renderer.set(None)`'s, whose `None` it writes
-/// is `null` (ADR 0772); each whether what it writes is a `Some(..)` made
-/// there, a value already, `null` never.
-pub(super) fn nullable_cell_calls<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> HashMap<Span, bool> {
-    let nullable_cell = |mut e: ExprId| {
-        while let ExprKind::Scope { value: inner, .. } = thir[e].kind {
-            e = inner;
-        }
-        let ExprKind::Field {
-            lhs,
-            variant_index,
-            name,
-        } = thir[e].kind
-        else {
-            return false;
-        };
-        let ty::Adt(adt, _) = thir[lhs].ty.kind() else {
-            return false;
-        };
-        let field = &adt.variant(variant_index).fields[name];
-        super::bindings::is_nullable(tcx, field)
-            && super::bindings::nullable_option(tcx, thir[e].ty).is_some_and(|option| option != thir[e].ty)
-    };
-    (thir.exprs.iter())
-        .filter_map(|e| match e.kind {
-            ExprKind::Call { ref args, fn_span, .. }
-                if (args.first())
-                    .and_then(|&receiver| borrowed(thir, receiver))
-                    .is_some_and(nullable_cell) =>
-            {
-                Some((fn_span, args.get(1).is_some_and(|&given| is_some(tcx, thir, given))))
-            }
-            _ => None,
-        })
-        .collect()
 }
 
 /// Whether `fun` is `PartialEq`'s `eq` or `ne`, an `==`'s or a `!=`'s.

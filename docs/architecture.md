@@ -263,6 +263,7 @@ In this table, `lower.rs`, `names.rs` and `runtime.rs` are at the `src/` root.
 | What an untagged enum's variants are together, a test's and a `switch`'s case | `untagged.rs` | `untagged_test`, `untagged_cases` |
 | A string's count of UTF-16 units, its `length` | `recognition/types.rs` | `counts_utf16_units` |
 | Whether a type is a JS class, and what each item of its impl is of it | `classes.rs` | `is_class`, `member`, `constructor_of` |
+| What a `Cell` stores, as its storage says, however it's reached: a nullable field's `None`, `null` | `representation.rs`; `mir/rvalues.rs` | `nullable_cell_field`, `nullable_cell_handle`; `stores_null` |
 | A binding's read of a property, which a getter may be, and a chain's test of one | `binding_calls.rs`; `mir/tidy/logicals.rs` | `answered_by_a_getter`, `Known`; `bound_into` |
 
 **Calls.** `mir/dispatch.rs::mir_call` handles special calls and sends evaluated

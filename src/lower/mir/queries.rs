@@ -872,7 +872,7 @@ pub(super) fn str_part_of(place: &Expr) -> Option<(Expr, Vec<Expr>)> {
     let (js::ExprKind::Var(name), "value") = (&f.kind, field.as_str()) else {
         return None;
     };
-    let (js::ExprKind::Handle(whole), "$strPart") = (&args.first()?.kind, name.as_str()) else {
+    let (js::ExprKind::Handle(whole, _), "$strPart") = (&args.first()?.kind, name.as_str()) else {
         return None;
     };
     let bounds = args[1..].to_vec();

@@ -344,7 +344,13 @@ impl Expr {
     }
 
     pub fn handle(place: Expr) -> Expr {
-        Expr::new(ExprKind::Handle(Box::new(place)))
+        Expr::new(ExprKind::Handle(Box::new(place), None))
+    }
+
+    /// A handle on `place` whose writes store `stored` of what's written,
+    /// `WRITTEN`, where it's given (`ExprKind::Handle`).
+    pub fn stored_handle(place: Expr, stored: Option<Expr>) -> Expr {
+        Expr::new(ExprKind::Handle(Box::new(place), stored.map(Box::new)))
     }
 
     pub fn pair(place: Expr, dictionary: Expr) -> Expr {
@@ -376,7 +382,9 @@ impl Expr {
         // made here, `{ value: x }`, holds `x`: a cell in a field is the
         // property itself (ADR 0288).
         if property == HELD {
-            if let ExprKind::Handle(place) = object.kind {
+            // Read or written as the place: a write's storage is its
+            // writer's to keep, `cell_call`'s (ADR 0772).
+            if let ExprKind::Handle(place, _) = object.kind {
                 return *place;
             }
             // And of a handle through an `Option`'s box, `$someMut`, what
@@ -385,7 +393,7 @@ impl Expr {
                 && callee.helper_name() == Some("$someMut")
                 && let [
                     Expr {
-                        kind: ExprKind::Handle(place),
+                        kind: ExprKind::Handle(place, _),
                         ..
                     },
                 ] = args.as_slice()

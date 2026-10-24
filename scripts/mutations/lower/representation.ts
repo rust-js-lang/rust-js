@@ -583,4 +583,12 @@ export const mutations: Mutation[] = [
     snapshots: true,
     tests: ["test/corpus.test.ts", "-t", "^path_components.rs$"],
   },
+  {
+    name: "nullable-cell-handle-plain",
+    breaks: "a handle on a nullable field's `Cell` given to a helper stores its `None` as `undefined`",
+    file: "src/lower/representation.rs",
+    find: "                    true => self.nullable_cell_handle(field),\n",
+    replace: "                    true => self.held(field, fields[i].1),\n",
+    tests: ["test/lowering-nullable.test.ts", "-t", "through a reference and a helper"],
+  },
 ];

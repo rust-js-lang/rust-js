@@ -437,11 +437,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(given);
         }
         let strict = self.strictly_equal(state, callee.0, operands, span);
-        // Of a binding with a nullable parameter, each `Option` that's
-        // `null` or a value already, which it takes as it is (ADR 0275).
-        let nulled: Vec<bool> = match bindings::nullable_params(self.tcx, callee.0).is_empty() {
-            true => Vec::new(),
-            false => operands.iter().map(|o| self.nulled(state, o)).collect(),
+        // Of a binding with a nullable parameter, or of what a `Cell` is
+        // written, which a nullable field's stores so, each `Option` that's
+        // `null` or a value already, which it takes as it is (ADRs 0275, 0772).
+        let writes_a_cell = matches!(
+            self.recognition().classify(callee.0, callee.1),
+            Some(Std::CellSet | Std::CellReplace | Std::CellTake)
+        );
+        let nulled: Vec<bool> = match writes_a_cell || !bindings::nullable_params(self.tcx, callee.0).is_empty() {
+            false => Vec::new(),
+            true => operands.iter().map(|o| self.nulled(state, o)).collect(),
         };
         // A binding's method looked up on a JS value of any shape before its
         // other arguments run, where Rust runs them first: what they take
@@ -451,7 +456,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             self.flush(state, out)?;
         }
-        let values = self.take_operands(state, operands, out)?;
+        let mut values = self.take_operands(state, operands, out)?;
+        // A `Cell` written that MIR shows is a nullable field's, through a
+        // variable too: a handle that stores as it does (ADR 0772).
+        if writes_a_cell && self.stores_null(state, operands[0]) {
+            let cell = self.value_expr(values.remove(0), span)?;
+            values.insert(0, Value::Expr(self.nullable_cell_handle(Expr::held(cell))));
+        }
         match self.mir_call_values(state, callee, (values, arg_tys, &nulled), output, span, out)? {
             Value::Expr(e) if strict => Ok(Value::Expr(js::strict_equality(e))),
             value => Ok(value),
@@ -515,7 +526,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             operand
                 .place()
                 .is_some_and(|place| place.projection.is_empty() && state.options.made_some.contains(&place.local))
-        }) || crate::lower::body_queries::registered_equalities(self.tcx, self.frame.thir).contains(&span))
+        }) || self.frame.facts.registered_equalities.contains(&span))
     }
 
     /// A call, `mir_call_values_of`'s; of std's, each function or value it's
@@ -837,7 +848,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         if let Some(known) = known {
             let call = (known, def_id, generic_args);
-            return self.mir_std_value(state, call, (&arg_tys, values, output), span, out);
+            return self.mir_std_value(state, call, ((&arg_tys, nulled), values, output), span, out);
         }
         Err(refuse(self.tcx, span, Refused::Call(def_id)))
     }
@@ -867,11 +878,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         &mut self,
         state: &mut State<'_, 'tcx>,
         (known, def_id, generic_args): (Std, rustc_span::def_id::DefId, ty::GenericArgsRef<'tcx>),
-        (arg_tys, values, output): (&[Ty<'tcx>], Vec<Value<'tcx>>, Ty<'tcx>),
+        ((arg_tys, nulled), values, output): ((&[Ty<'tcx>], &[bool]), Vec<Value<'tcx>>, Ty<'tcx>),
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<Value<'tcx>> {
-        let value = self.mir_std_call(state, (known, def_id), generic_args, arg_tys, values, output, span, out)?;
+        let value = self.mir_std_call(
+            state,
+            (known, def_id),
+            generic_args,
+            (arg_tys, nulled),
+            values,
+            output,
+            span,
+            out,
+        )?;
         Ok(self.std_value_as(value, output, arg_tys))
     }
 
@@ -916,7 +936,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         known: Std,
         def_id: rustc_span::def_id::DefId,
         generic_args: ty::GenericArgsRef<'tcx>,
-        arg_tys: &[Ty<'tcx>],
+        (arg_tys, nulled): (&[Ty<'tcx>], &[bool]),
         values: Vec<Expr>,
         output: Ty<'tcx>,
         span: Span,
@@ -927,6 +947,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             def_id,
             generic_args,
             tys: arg_tys,
+            nulled,
             span,
         };
         self.std_values(known, call, values, boxed, output, out)
@@ -967,7 +988,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         state: &mut State<'_, 'tcx>,
         (known, def_id): (Std, rustc_span::def_id::DefId),
         generic_args: ty::GenericArgsRef<'tcx>,
-        arg_tys: &[Ty<'tcx>],
+        (arg_tys, nulled): (&[Ty<'tcx>], &[bool]),
         mut values: Vec<Value<'tcx>>,
         output: Ty<'tcx>,
         span: Span,
@@ -988,7 +1009,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .map(|v| self.value_expr(v, span))
                 .collect::<R<Vec<_>>>()?;
             let value = match known {
-                Std::ToString => self.std_by_values(known, def_id, generic_args, arg_tys, exprs, output, span, out)?,
+                Std::ToString => {
+                    self.std_by_values(known, def_id, generic_args, (arg_tys, nulled), exprs, output, span, out)?
+                }
                 _ => exprs.into_iter().next().expect("the text"),
             };
             if matches!(known, Std::Print { .. }) {
@@ -1097,11 +1120,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Std::Panic | Std::PanicFmt | Std::PanicDisplay { .. } | Std::BeginPanic => {
                 self.flush(state, out)?;
                 let exprs = values.map(|v| self.value_expr(v, span)).collect::<R<Vec<_>>>()?;
-                self.std_by_values(known, def_id, generic_args, arg_tys, exprs, output, span, out)?
+                self.std_by_values(known, def_id, generic_args, (arg_tys, nulled), exprs, output, span, out)?
             }
             _ if lowered_from_values(known) => {
                 let exprs = values.map(|v| self.value_expr(v, span)).collect::<R<Vec<_>>>()?;
-                self.std_by_values(known, def_id, generic_args, arg_tys, exprs, output, span, out)?
+                self.std_by_values(known, def_id, generic_args, (arg_tys, nulled), exprs, output, span, out)?
             }
             _ => {
                 let name = self.tcx.def_path_str(def_id);

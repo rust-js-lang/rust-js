@@ -14,7 +14,7 @@ impl<'a> Cx<'a> {
             return Expression::new_chain_expression(sp, self.chain_element(e), b);
         }
         match &e.kind {
-            ExprKind::Handle(_) | ExprKind::Pair(..) => unreachable!("written by preparation"),
+            ExprKind::Handle(..) | ExprKind::Pair(..) => unreachable!("written by preparation"),
             ExprKind::Num(n) => self.number(sp, *n),
             // `5n`, and `-5n` as `-` of it, as a number is written.
             ExprKind::BigInt(n) => {

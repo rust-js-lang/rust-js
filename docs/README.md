@@ -168,7 +168,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0096 A `static` is its module's value, and a `static mut` its `{ value }`](decisions/0096-statics.md)
 - [0097 A user `Deref` or `IndexMut` is its method, and an auto trait's impl is nothing](decisions/0097-deref-and-marker-impls.md)
 - [0098 A destructor runs where rustc runs it, in a `finally`](decisions/0098-destructors.md) *(amended by 0660: a panic's drops run before `catch_unwind` returns; amended by 0694: `extend` of what holds nothing)*
-- [0099 A `&mut` held in a variable names its place; one kept elsewhere is a handle](decisions/0099-mut-references.md)
+- [0099 A `&mut` held in a variable names its place; one kept elsewhere is a handle](decisions/0099-mut-references.md) *(amended by 0791: a handle reaches its place once, and stores as its storage says)*
 - [0100 Each crate is compiled once, to JS of its own, with a manifest of what crosses](decisions/0100-separate-crates.md) *(amended by 0770: a library's `const` is imported by its name)*
 - [0101 Cargo builds a workspace with rust-js as its workspace wrapper](decisions/0101-cargo-workspace-wrapper.md)
 - [0102 Two binding crates, `js` and `webapi`, named as ReScript's](decisions/0102-js-and-webapi.md)
@@ -668,9 +668,10 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0761 A `#[rust_js::class]` is a constructor function and its prototype](decisions/0761-a-rust-js-class-is-a-constructor-function-and-its-prototype.md)
 - [0770 A library's `const` is imported by its name, as its crate reads it](decisions/0770-a-librarys-const-is-imported-by-its-name.md)
 - [0771 An `==` of a value read as the registry's symbol is its `matches!`](decisions/0771-an-equality-of-a-registered-symbol-is-its-match.md)
-- [0772 A nullable `Cell` field's `None` is `null`, made and written](decisions/0772-a-nullable-cell-field-writes-null.md)
+- [0772 A nullable `Cell` field's `None` is `null`, made and written](decisions/0772-a-nullable-cell-field-writes-null.md) *(amended by 0791: through a reference or a helper too)*
 - [0773 A binding a module's default names is exported as the default alone](decisions/0773-a-held-default-is-exported-once.md)
 - [0774 Room asked past `isize::MAX` bytes is a `capacity overflow` panic](decisions/0774-room-past-isize-max-bytes-panics.md)
+- [0791 A `Cell`'s storage says what it stores, however it's reached](decisions/0791-a-cells-storage-says-what-it-stores.md)
 - [0720 A labeled block's `break` and a named constant, in a body's ranges](decisions/0720-a-labeled-block-and-a-named-constant-in-a-bodys-ranges.md)
 - [0721 `js::strict_equals(a, b)` is JS's `===`](decisions/0721-strict-equals-is-jss-triple-equals.md)
 - [0722 A `#[repr(..)]` enum's variant is its number](decisions/0722-a-repr-enums-variant-is-its-number.md)
