@@ -522,6 +522,18 @@ pub fn has<K: PropertyKey + ?Sized>(this: &Unknown, key: &K) -> bool {
     unreachable!()
 }
 
+/// The keys [`for (const key in object)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Statements/for...in)
+/// visits, each as the loop reaches it: its own enumerable ones and its
+/// prototypes', which [`object::keys`] leaves out, not one a prototype's
+/// key of the same name hides, nor one deleted before it's reached (ADR
+/// 0719). A `for` loop of it is that loop, `for key in js::keys_in(o)`
+/// `for (const key in o)`; any other use of it, a JS iterator of them.
+#[cfg_attr(rust_js, rust_js::link_name = "for in")]
+#[allow(unused_variables)]
+pub fn keys_in(this: &Unknown) -> Box<dyn Iterator<Item = String>> {
+    unreachable!()
+}
+
 /// What names a property, as `key in value` and `value[key]` take it: text,
 /// a number, or a JS value of any shape, whose text JS makes the name, or
 /// none, `undefined`, named `"undefined"`.

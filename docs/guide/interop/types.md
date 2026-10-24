@@ -926,6 +926,46 @@ export function describe(value) {
   `js::object::has_own_property.call(value, key)` is
   `Object.prototype.hasOwnProperty.call(value, key)`, a property of its own
   ([ADR 0615](../../decisions/0615-has-own-property-the-function.md)).
+- `js::object::keys(value)` is `Object.keys(value)`, its own enumerable
+  keys; `js::keys_in(value)` the keys `for…in` visits, its prototypes'
+  too, each as the loop reaches it. A `for` loop of it is `for (const key
+  in value)`, and of its `enumerate()` a counter each turn ends with,
+  where no closure in it reads the count; anywhere else it's a JS iterator
+  of them ([ADR 0719](../../decisions/0719-for-in-is-a-for-loop-of-keys-in.md)):
+
+```rust
+use js::Unknown;
+
+pub fn removed(prev: &Unknown, next: &Unknown) -> Vec<String> {
+    let mut gone = Vec::new();
+    for (checked, key) in js::keys_in(prev).enumerate() {
+        if checked > 100 {
+            break;
+        }
+        if !js::has(next, &key) {
+            gone.push(key);
+        }
+    }
+    gone
+}
+```
+
+```js
+export function removed(prev, next) {
+  const gone = [];
+  let checked = 0;
+  for (const key in prev) {
+    if (checked > 100) {
+      break;
+    }
+    if (!(key in next)) {
+      gone.push(key);
+    }
+    checked++;
+  }
+  return gone;
+}
+```
 - `js::new(value, arguments)` is `new value(..)`, its arguments a tuple,
   `()` of none, or a slice spread, as a rest parameter's
   ([ADR 0695](../../decisions/0695-new-of-a-function-value-is-jss-new.md)):

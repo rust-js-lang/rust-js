@@ -404,6 +404,7 @@ impl<'a> Cx<'a> {
                 mutable,
                 iterable,
                 body,
+                keys,
             } => {
                 let id = self.pattern(pattern);
                 let declarator = VariableDeclarator::new(SPAN, id, None, None, false, b);
@@ -419,7 +420,11 @@ impl<'a> Cx<'a> {
                     false,
                     b,
                 );
-                let l = Statement::new_for_of_statement(sp, false, left, self.expr(iterable), self.block(body), b);
+                let l = if *keys {
+                    Statement::new_for_in_statement(sp, left, self.expr(iterable), self.block(body), b)
+                } else {
+                    Statement::new_for_of_statement(sp, false, left, self.expr(iterable), self.block(body), b)
+                };
                 self.labeled(sp, label.as_deref(), l)
             }
             StmtKind::For {

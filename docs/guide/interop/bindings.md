@@ -430,6 +430,7 @@ pub fn circle(radius: f64) -> &'static Circle {
 | `"this()"` | `this(..)` | calling a JS function value |
 | `"new this()"` | `new this(..)` | `js::new` |
 | `"delete []"` | `delete this[key]` | `js::delete` |
+| `"for in"` | the keys `for (const key in this)` visits | `js::keys_in` |
 | `"typeof"` | `typeof this` | `js::type_of` |
 | `"!!"` | `!!this` | `js::truthy` |
 | `"\"\" +"` | `"" + this` | `js::concat_text` |

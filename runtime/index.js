@@ -505,6 +505,15 @@ export function $dictGet(dict, key) {
   return Object.hasOwn(dict, key) ? $some(dict[key]) : undefined;
 }
 
+// The keys `for (const key in object)` visits, its own enumerable ones and
+// its prototypes', each as the loop reaches it (ADR 0719): what
+// `js::keys_in(object)` is where no `for` loop is written of it.
+export function* $keysIn(object) {
+  for (const key in object) {
+    yield key;
+  }
+}
+
 // `Vec::pop` of a generic `T`: `None` for an empty one, else `Some` of the last.
 export function $pop(items) {
   return items.length === 0 ? undefined : $some(items.pop());

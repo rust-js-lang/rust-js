@@ -529,7 +529,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 pub(in crate::lower) fn consumed_into_iters(body: &mut Vec<Stmt>, fuse: Option<&str>) {
     js::statement_lists(body, &mut |stmts| {
         for stmt in stmts.iter_mut() {
-            if let StmtKind::ForOf { iterable, .. } = &mut stmt.kind {
+            if let StmtKind::ForOf {
+                iterable, keys: false, ..
+            } = &mut stmt.kind
+            {
                 stepped_in_place(iterable, true, fuse);
             }
         }

@@ -486,6 +486,22 @@ pub(super) fn iterated(e: Expr) -> Expr {
     }
 }
 
+/// The keys `for (const key in object)` visits, `js::keys_in(object)`'s:
+/// `$keysIn(object)`, a JS iterator of them, which a `for` loop of it is
+/// that loop (ADR 0719).
+pub(in crate::lower) fn keys_in(object: Expr) -> Expr {
+    Expr::call(Expr::helper("$keysIn"), vec![object])
+}
+
+/// What `e`, a `keys_in` one, steps the keys of: `object` of
+/// `$keysIn(object)`. The one reader of its form.
+pub(in crate::lower) fn keys_in_source(e: &Expr) -> Option<&Expr> {
+    match &e.kind {
+        js::ExprKind::Call(callee, args) if callee.helper_name() == Some("$keysIn") && args.len() == 1 => args.first(),
+        _ => None,
+    }
+}
+
 /// What `it`, an iterator made here of an array, `$iter(v)`, steps: `v`,
 /// all of it left.
 pub(super) fn fresh_iter_source(it: &Expr) -> Option<&Expr> {

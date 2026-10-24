@@ -594,7 +594,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0659 Tidy is a list of stages, each with what it leaves a body with](decisions/0659-tidy-is-a-list-of-stages-with-contracts.md) *(amended: what finishes a body is a stage too)*
 - [0660 `catch_unwind` catches what JS throws, a panic among it](decisions/0660-catch-unwind-catches-what-js-throws.md) *(amended by 0691: a payload drops nothing where no `dyn Any` does; 0692: a thrown `Error` is a `&JsError` too; 0706: what's caught read as it was thrown)*
 - [0664 A function's last slice marked `#[rust_js::rest]` is JS's rest parameter](decisions/0664-a-functions-rest-slice-is-jss-rest-parameter.md)
-- [0666 The js crate binds `Object`'s reflection, a descriptor a dictionary](decisions/0666-the-js-crate-binds-objects-reflection.md)
+- [0666 The js crate binds `Object`'s reflection, a descriptor a dictionary](decisions/0666-the-js-crate-binds-objects-reflection.md) *(extended by 0719: `js::keys_in`, `for…in`'s keys)*
 - [0667 `console` is a value, and a `fn` of rest arguments is the JS function](decisions/0667-console-is-a-value-and-rest-arguments-are-one.md)
 - [0668 A `match` of what a value is is a `switch` of its `typeof`](decisions/0668-a-match-of-what-a-value-is-is-a-switch-of-its-typeof.md) *(amended by 0676: `undefined` is `case "undefined"`, and `null` in `case "object"`)*
 - [0673 A function is a JS value of any shape, whose property `js::set` writes](decisions/0673-a-function-is-a-value-of-any-shape.md)
@@ -642,6 +642,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0716 A function's members are read of any function, `js::function`](decisions/0716-a-functions-members-are-read-of-any-function.md)
 - [0717 An `ArrayBufferView` is what each view derefs to, and `isView` takes any value](decisions/0717-an-array-buffer-view-is-what-each-view-derefs-to.md)
 - [0718 A typed array is rest arguments, spread, and a rest of `number` takes any JS number](decisions/0718-a-typed-array-is-rest-arguments-spread.md)
+- [0719 `for…in` is a `for` loop of `js::keys_in`, and its `enumerate()` a counter](decisions/0719-for-in-is-a-for-loop-of-keys-in.md)
 - [0436 Every `dyn` that's a pair keeps its value's drop, `dyn Send` too](decisions/0436-every-dyn-keeps-its-drop.md) *(amended by 0691: a `dyn Any` drops where the crate makes one of what drops)*
 - [0437 A scope's drops on a panic are one `try { .. } finally { .. }`](decisions/0437-a-scopes-drops-are-one-finally.md) *(amended by 0693: its `if`s, loops and `return`s in it)*
 - [0438 An optional prop is given `Some(..)`, or left out](decisions/0438-an-optional-prop-is-given-some.md)

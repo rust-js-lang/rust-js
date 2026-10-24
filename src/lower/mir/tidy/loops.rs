@@ -184,14 +184,51 @@ pub(super) fn for_of(
             mutable,
             iterable: crate::lower::iterators::stepped(source.clone(), (**callee).clone(), boxed, None),
             body,
+            keys: false,
         },
-        "$next" | "$nextSome" => StmtKind::ForOf {
-            label: label.clone(),
-            pattern,
-            mutable,
-            iterable: unarrayed(iterated(source.clone())),
-            body,
-        },
+        "$next" | "$nextSome" => {
+            let iterable = unarrayed(iterated(source.clone()));
+            // The keys `for…in` visits, `js::keys_in(o)`'s: `for (const key
+            // in o)` (ADR 0719).
+            if let Some(object) = crate::lower::iterators::keys_in_source(&iterable) {
+                StmtKind::ForOf {
+                    label: label.clone(),
+                    pattern,
+                    mutable,
+                    iterable: object.clone(),
+                    body,
+                    keys: true,
+                }
+            } else if let Some((counter, key, object)) = counted_keys(&iterable, &pattern, &body) {
+                // Of their `enumerate()`, `[n, key]`: `let n = 0;` before the
+                // `for…in`, each turn of which ends `n++`, as a person counts.
+                let mut body = body;
+                counted(&mut body, &counter, label.as_deref());
+                let mut out = vec![StmtKind::Let(counter.clone(), Some(Expr::int(0))).at(js::Span::NONE)];
+                out.push(
+                    StmtKind::ForOf {
+                        label: label.clone(),
+                        pattern: js::Pattern::Name(key),
+                        mutable,
+                        iterable: object,
+                        body,
+                        keys: true,
+                    }
+                    .at(span),
+                );
+                out.extend(exit);
+                return Some(out);
+            } else {
+                StmtKind::ForOf {
+                    label: label.clone(),
+                    pattern,
+                    mutable,
+                    iterable,
+                    body,
+                    keys: false,
+                }
+            }
+        }
         // A range's end, read once by Rust, is read each step by JS's `for`:
         // one that reads the same then, a constant or a variable the body
         // doesn't assign; else a `const end` of it first.
@@ -258,6 +295,90 @@ pub(super) fn for_of(
     let mut out = vec![looped.at(span)];
     out.extend(exit);
     Some(out)
+}
+
+/// Of a loop of `[n, key]` of the keys `for…in` visits, enumerated,
+/// `$keysIn(o).map((x, i) => [i, x])`: `n`, `key` and `o`, where a counter
+/// is the same `n` each turn: no closure in the body reads it, which would
+/// see it change, where each turn's `const` is its own (ADR 0719). A name
+/// is the function's one variable of it here, as the `i` a range's loop
+/// takes is; preparation names the counter apart from another's.
+fn counted_keys(iterable: &Expr, pattern: &js::Pattern, body: &[Stmt]) -> Option<(String, String, Expr)> {
+    let object = crate::lower::iterators::keys_in_source(crate::lower::iterators::enumeration_source(iterable)?)?;
+    let js::Pattern::Array(parts) = pattern else {
+        return None;
+    };
+    let [Some(js::Pattern::Name(counter)), Some(js::Pattern::Name(key))] = parts.as_slice() else {
+        return None;
+    };
+    let mut closed_over = false;
+    js::each_expr(body, &mut |e| {
+        if let ExprKind::Arrow(_, inner) | ExprKind::AsyncArrow(_, inner) = &e.kind {
+            closed_over |= js::mentions_in(inner, counter) > 0;
+        }
+        if let ExprKind::Function(function) = &e.kind {
+            closed_over |= js::mentions_in(&function.body, counter) > 0;
+        }
+    });
+    let declared = |stmts: &[Stmt]| {
+        let mut found = false;
+        js::each_list(stmts, &mut |list| {
+            found |= list
+                .iter()
+                .any(|s| matches!(&s.kind, StmtKind::Function(f) if js::mentions_in(&f.body, counter) > 0));
+        });
+        found
+    };
+    (!closed_over && !declared(body)).then(|| (counter.clone(), key.clone(), object.clone()))
+}
+
+/// `body`, a loop's, each turn of which ends `counter++`: where it goes on
+/// to the next turn, at its end and before each `continue` of the loop's,
+/// one of no label not in a loop of its own, or of `label`.
+fn counted(body: &mut Vec<Stmt>, counter: &str, label: Option<&str>) {
+    let step = || StmtKind::Compound(Op::Add, Expr::var(counter), Expr::int(1)).at(js::Span::NONE);
+    fn before_continues(stmts: &mut Vec<Stmt>, step: &dyn Fn() -> Stmt, label: Option<&str>, nested: bool) {
+        let mut i = 0;
+        while i < stmts.len() {
+            let ours = match &stmts[i].kind {
+                StmtKind::Continue(None) => !nested,
+                StmtKind::Continue(Some(l)) => Some(l.as_str()) == label,
+                _ => false,
+            };
+            if ours {
+                stmts.insert(i, step());
+                i += 2;
+                continue;
+            }
+            match &mut stmts[i].kind {
+                StmtKind::If(_, a, b) => {
+                    before_continues(a, step, label, nested);
+                    if let Some(b) = b {
+                        before_continues(b, step, label, nested);
+                    }
+                }
+                StmtKind::Labeled(_, body) => before_continues(body, step, label, nested),
+                StmtKind::While { body, .. } | StmtKind::ForOf { body, .. } | StmtKind::For { body, .. } => {
+                    before_continues(body, step, label, true)
+                }
+                StmtKind::Switch { cases, default, .. } => {
+                    for body in js::case_lists_mut(cases, default) {
+                        before_continues(body, step, label, nested);
+                    }
+                }
+                StmtKind::Try(a, b) | StmtKind::TryCatch(a, _, b) => {
+                    before_continues(a, step, label, nested);
+                    before_continues(b, step, label, nested);
+                }
+                _ => {}
+            }
+            i += 1;
+        }
+    }
+    before_continues(body, &step, label, false);
+    if !body.last().is_some_and(ends) {
+        body.push(step());
+    }
 }
 
 /// What a `for…of` iterates, of `Array.from(xs)`, a string's `chars()`:
