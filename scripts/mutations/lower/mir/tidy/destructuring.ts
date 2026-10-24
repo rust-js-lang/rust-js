@@ -14,7 +14,7 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-destructured-kept",
     breaks: "`const _5 = e; const a = _5[0]; const b = _5[1];` stays, not `const [a, b] = e;`",
     file: "src/lower/mir/tidy/destructuring.rs",
-    find: "        let enough = !temporaries && count >= if made || bound { 1 } else { 2 };\n",
+    find: "        let enough = count >= if made || bound { 1 } else { 2 };\n",
     replace: "        let enough = !made && false;\n",
     tests: ["test/lowering-matches.test.ts", "-t", "bindings from MIR are destructured"],
   },
@@ -70,8 +70,8 @@ export const mutations: Mutation[] = [
     "name": "one-field-pattern-kept-apart",
     "breaks": "a `let` pattern of one field of a named variable is `const message = error.message;`",
     "file": "src/lower/mir/tidy/destructuring.rs",
-    "find": "let enough = !temporaries && count >= if made || bound { 1 } else { 2 };",
-    "replace": "let enough = !temporaries && count >= if made { 1 } else { 2 };",
+    "find": "let enough = count >= if made || bound { 1 } else { 2 };",
+    "replace": "let enough = count >= if made { 1 } else { 2 };",
     "tests": ["test/lowering-matches.test.ts", "-t", "a let pattern of a named variable takes it apart"]
   },
   {
@@ -192,15 +192,6 @@ export const mutations: Mutation[] = [
     find: "    while constants.last().map(|&k| k + 1) == Some(end) {\n",
     replace: "    while false {\n",
     tests: ["test/corpus.test.ts", "-t", "^array_partial_moves.rs$"],
-    snapshots: true,
-  },
-  {
-    name: "temporary-part-patterned",
-    breaks: "a temporary's one part into a temporary is a pattern, `const [_28] = f();`, its name kept",
-    file: "src/lower/mir/tidy/destructuring.rs",
-    find: "        let enough = !temporaries && count >= if made || bound { 1 } else { 2 };\n",
-    replace: "        let enough = count >= if made || bound { 1 } else { 2 };\n",
-    tests: ["test/corpus.test.ts", "-t", "^unions.rs$"],
     snapshots: true,
   },
 ];
