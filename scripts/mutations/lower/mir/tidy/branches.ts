@@ -308,14 +308,6 @@ export const mutations: Mutation[] = [
     "tests": ["test/lowering-branches.test.ts", "-t", "a variable's value of three arms from MIR"]
   },
   {
-    "name": "mir-tidy-truth-read-negated",
-    "breaks": "a loop's last `if (size)` of an `Option` never falsy, `!!size`, is read as negated and becomes `if (!size) { continue; }`, the rest dedented",
-    "file": "src/lower/mir/tidy/branches.rs",
-    "find": "        ExprKind::Unary(UnaryOp::Not, c) => !matches!(c.kind, ExprKind::Unary(UnaryOp::Not, _)),\n",
-    "replace": "        ExprKind::Unary(UnaryOp::Not, _c) => true,\n",
-    "tests": ["test/lowering-names.test.ts", "-t", "a let a loop's branch makes is declared in the loop"]
-  },
-  {
     "name": "mir-tidy-table-taken-apart-unread",
     "breaks": "a `match` reading a table, taken apart, `let Look { name, classes } = match ..`, stays a conditional of every variant from MIR, not `LOOKS[kind]`",
     "file": "src/lower/mir/tidy/branches.rs",
@@ -477,5 +469,29 @@ export const mutations: Mutation[] = [
     find: "    unread_bound(&mut all, bound.len());\n",
     replace: "",
     tests: ["test/lowering-written-branches.test.ts", "-t", "a read a test takes in place"],
+  },
+  {
+    name: "mir-tidy-decided-part-kept",
+    breaks: "a part of a chain an earlier test decides is tested again, `.. || Array.isArray(value)` in its `else` (ADR 0743)",
+    file: "src/lower/mir/tidy/branches.rs",
+    find: "    changed.then_some(folded)\n",
+    replace: "    changed.then_some(folded).filter(|_| false)\n",
+    tests: ["test/lowering-switches.test.ts", "-t", "a part of a chain an earlier test decides is left out"],
+  },
+  {
+    name: "mir-tidy-decided-part-past-the-if",
+    breaks: "a part of a chain is left out past the `if` that decides it, where a `switch` of a `match`'s arms reads each test whole (ADR 0743)",
+    file: "src/lower/mir/tidy/branches.rs",
+    find: "            StmtKind::If(t, ..) if parts && let Some(folded) = decided_part(t, test, holds) => {\n",
+    replace: "            StmtKind::If(t, ..) if let Some(folded) = decided_part(t, test, holds) => {\n",
+    tests: ["test/lowering-switches.test.ts", "-t", "a match of what a value is tells undefined and null"],
+  },
+  {
+    name: "mir-tidy-value-or-fallback-conditional",
+    breaks: "`if s.is_empty() { d } else { &s }` is `!s ? d : s`, not `s || d` (ADR 0744)",
+    file: "src/lower/mir/tidy/branches.rs",
+    find: "            return Expr::bin(Op::Or, no, yes);\n",
+    replace: "            return Expr::cond(test.clone(), yes, no);\n",
+    tests: ["test/lowering-written-branches.test.ts", "-t", "a value or what it falls back to is"],
   },
 ];

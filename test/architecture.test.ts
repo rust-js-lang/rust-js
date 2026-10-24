@@ -305,6 +305,14 @@ test("a panic's Error is made in one place", () => {
   expect(sources.filter(file => made.test(read(file)))).toEqual(["src/js/make.rs"]);
 });
 
+// Whether a label is MIR's, `bb12`, or one the program wrote, `'desc`, is
+// answered by `is_block_label` alone (ADR 0742): tidy's decisions had a
+// copy of its test.
+test("whether a label is MIR's is asked of is_block_label", () => {
+  const tests = /strip_prefix\("bb"\)/;
+  expect(sources.filter(file => tests.test(read(file)))).toEqual(["src/lower/mir/queries.rs"]);
+});
+
 test("library recognition cannot access function emission state", () => {
   for (const file of ["src/lower/recognition.rs", ...files("src/lower/recognition")]) {
     expect(read(file), file).not.toMatch(/\b(?:FnCx|ExprId|Stmt)\b|\bRefCell\s*<|crate::js|runtime::/);
@@ -490,7 +498,7 @@ const mirState: Record<string, string[]> = {
   "src/lower/mir/places.rs": ["binding_var", "body", "branches", "captures", "cuts", "defaults", "deferred", "in_place", "locals", "named", "pointed"],
   "src/lower/mir/queries.rs": ["body", "borrowed_names", "locals", "own_names"],
   "src/lower/mir/rvalues.rs": ["at", "body", "branches", "cuts", "locals", "offsets", "options", "pending", "pointed", "ranges", "statement", "writer"],
-  "src/lower/mir/structure.rs": ["at", "awaits", "body", "copy_backs", "deferred", "drops", "graph", "labels", "locals", "pending", "returns", "statement", "unwind", "writer", "writes_captured"],
+  "src/lower/mir/structure.rs": ["at", "awaits", "body", "copy_backs", "deferred", "drops", "graph", "labels", "jumps", "locals", "pending", "statement", "unwind", "writer", "writes_captured"],
   "src/lower/mir/temporaries.rs": ["body", "copy_backs", "in_place", "locals", "named", "own_names", "pending", "places", "pointed", "refs", "settled", "unwind"],
 };
 test("each module of mir/ reads only the fields of mir.rs's state it's listed for", () => {
@@ -671,8 +679,8 @@ const dispatchers: [string, string, number][] = [
   ["src/lower/recognition/calls.rs", "    pub(in crate::lower) fn classify(", 8],
   ["src/lower/mir/dispatch.rs", "    pub(super) fn mir_call(", 106],
   ["src/lower/mir/dispatch.rs", "    fn mir_call_values_of(", 247],
-  ["src/lower/mir/dispatch.rs", "    fn mir_std_call(", 147],
-  ["src/lower/mir.rs", "    fn mir_function(", 364], // The parameters handed to tidy's `finish` stage in a cell (ADR 0659, amended).
+  ["src/lower/mir/dispatch.rs", "    fn mir_std_call(", 146],
+  ["src/lower/mir.rs", "    fn mir_function(", 362], // The parameters handed to tidy's `scopes` stage in a cell, and whether it asks its stages again (ADR 0659, amended); the jumps the program wrote in one field (ADR 0742).
   ["src/lower/recognition/inherent.rs", "    pub(super) fn classify_inherent(", 754],
   ["src/lower/recognition/calls.rs", "    fn classify_trait_method(", 245],
   ["src/lower/combinators.rs", "    pub(in crate::lower) fn comb_values(", 602],

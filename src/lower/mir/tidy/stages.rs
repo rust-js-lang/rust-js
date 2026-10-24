@@ -19,6 +19,9 @@ pub(super) struct Stage {
     pub(super) name: &'static str,
     pub(super) passes: &'static [Pass],
     pub(super) ensures: &'static [Contract],
+    /// The stages run again once it's done, where its passes find they
+    /// must (`Hints::again`), each by `tidy` as any stage is.
+    pub(super) again: &'static [&'static str],
 }
 
 const fn pass(name: &'static str, run: fn(&mut Vec<Stmt>, &Hints)) -> Pass {
@@ -28,7 +31,7 @@ const fn pass(name: &'static str, run: fn(&mut Vec<Stmt>, &Hints)) -> Pass {
 /// The stages run again once each run of statements a value's drop ends
 /// is one `try { .. } finally { .. }` (ADR 0705): what each statement's own
 /// `try` held apart, `let tmp; try { tmp = f(); } catch ..`, read in place.
-pub(super) const UNWOUND: &[&str] = &["names", "in place", "chains"];
+const UNWOUND: &[&str] = &["names", "in place", "chains"];
 
 /// Each stage, in order.
 pub(super) const STAGES: &[Stage] = &[
@@ -41,6 +44,7 @@ pub(super) const STAGES: &[Stage] = &[
             pass("settled flags", |b, h| flags::settled_flags(b, h.flags)),
         ],
         ensures: &[],
+        again: &[],
     },
     // Twice: what a block's statements, in its place, are followed by, and
     // a loop's label nothing names then.
@@ -48,11 +52,13 @@ pub(super) const STAGES: &[Stage] = &[
         name: "jumps",
         passes: JUMPS,
         ensures: &[],
+        again: &[],
     },
     Stage {
         name: "jumps again",
         passes: JUMPS,
         ensures: &[],
+        again: &[],
     },
     Stage {
         name: "values",
@@ -76,6 +82,7 @@ pub(super) const STAGES: &[Stage] = &[
             pass("shared tails", |b, _| js::statement_lists(b, &mut shared_tails)),
         ],
         ensures: &[],
+        again: &[],
     },
     Stage {
         name: "loops",
@@ -113,6 +120,7 @@ pub(super) const STAGES: &[Stage] = &[
             pass("unlabeled", |b, _| js::statement_lists(b, &mut unlabeled)),
         ],
         ensures: &[],
+        again: &[],
     },
     Stage {
         name: "logicals",
@@ -132,6 +140,7 @@ pub(super) const STAGES: &[Stage] = &[
             }),
         ],
         ensures: &[],
+        again: &[],
     },
     Stage {
         name: "names",
@@ -195,6 +204,7 @@ pub(super) const STAGES: &[Stage] = &[
             }),
         ],
         ensures: &[],
+        again: &[],
     },
     Stage {
         name: "in place",
@@ -259,6 +269,7 @@ pub(super) const STAGES: &[Stage] = &[
             pass("spread spreads", |b, _| js::each_expr_mut(b, &mut spread_spreads)),
         ],
         ensures: &[],
+        again: &[],
     },
     Stage {
         name: "chains",
@@ -335,6 +346,7 @@ pub(super) const STAGES: &[Stage] = &[
             }),
         ],
         ensures: &[],
+        again: &[],
     },
     Stage {
         name: "written",
@@ -355,7 +367,7 @@ pub(super) const STAGES: &[Stage] = &[
                 js::each_expr_mut(b, &mut |e| concise_handlers(e, h.concise))
             }),
             pass("named labels", |b, h| {
-                js::statement_lists(b, &mut |s| named_labels(s, &h.written.loops))
+                js::statement_lists(b, &mut |s| named_labels(s, &h.written.loops, &h.written.blocks))
             }),
             pass("counted entries", |b, _| {
                 js::statement_lists(b, &mut crate::lower::std_types::map::counted_entries)
@@ -405,6 +417,7 @@ pub(super) const STAGES: &[Stage] = &[
             pass("tried first", |b, _| js::statement_lists(b, &mut tried_first)),
         ],
         ensures: &[],
+        again: &[],
     },
     Stage {
         name: "settled",
@@ -436,6 +449,10 @@ pub(super) const STAGES: &[Stage] = &[
             pass("switches", |b, h| {
                 switches::switches(b, &h.written.switches, &h.written.loops)
             }),
+            // A block's `break` in a `switch` it ends with: the case's own.
+            pass("breaks past switches", |b, _| {
+                js::statement_lists(b, &mut switches::breaks_past_switches)
+            }),
             pass("source spans", |b, _| js::statement_lists(b, &mut |s| source_spans(s))),
             // A `continue` the program wrote, where it wrote it, which its
             // comment is before (ADR 0684).
@@ -444,35 +461,36 @@ pub(super) const STAGES: &[Stage] = &[
             }),
         ],
         ensures: &[contracts::NOTHING_AFTER_A_JUMP, contracts::LABELS_NAMED],
+        again: &[],
     },
-    // The body as it's written, its parameters taken apart: each run of
+    // The body as it's written, its parameters taken apart, and each run of
     // statements a value's drop ends one `try { .. } finally { .. }` (ADR
-    // 0437), read again where it held any apart (ADR 0705); then its
-    // temporaries named, its drop flags too; a shadow of a binding the
-    // program names read no more, that binding (ADR 0650); and a `String`
-    // appended to twice, once (ADR 0652).
+    // 0437), a `return` through its `finally`. Where it made any, what each
+    // statement's own `try` held apart, `let tmp; try { tmp = f(); } catch
+    // ..`, is read as tidy reads any body: its stages that read temporaries
+    // in place run again (`UNWOUND`, ADR 0705).
     Stage {
-        name: "finish",
+        name: "scopes",
         passes: &[
             pass("parameters", |b, h| destructured_params(&mut h.params.borrow_mut(), b)),
-            // Each run of statements a value's drop ends one `try { .. }
-            // finally { .. }` (ADR 0437), a `return` through its `finally`;
-            // and what each statement's own `try` held apart, `let tmp; try
-            // { tmp = f(); } catch ..`, read as tidy reads any body: its
-            // stages that read temporaries in place run again (`UNWOUND`,
-            // ADR 0705).
             pass("drop scopes", |b, h| {
                 let mut scoped = false;
                 js::statement_lists(b, &mut |stmts| scoped |= unwinds::scoped_drops(stmts));
-                js::statement_lists(b, &mut unwinds::returned_through_finally);
-                if scoped {
-                    for stage in STAGES.iter().filter(|stage| UNWOUND.contains(&stage.name)) {
-                        for pass in stage.passes {
-                            (pass.run)(b, h);
-                        }
-                    }
-                }
+                h.again.set(scoped);
             }),
+            pass("returns through finally", |b, _| {
+                js::statement_lists(b, &mut unwinds::returned_through_finally)
+            }),
+        ],
+        ensures: &[contracts::NOTHING_AFTER_A_JUMP, contracts::LABELS_NAMED],
+        again: UNWOUND,
+    },
+    // Then its temporaries named, its drop flags too; a shadow of a binding
+    // the program names read no more, that binding (ADR 0650); and a
+    // `String` appended to twice, once (ADR 0652).
+    Stage {
+        name: "finish",
+        passes: &[
             pass("temporaries named", |b, h| {
                 bindings::readable_temporaries(&h.params.borrow(), b, h.suggested)
             }),
@@ -486,6 +504,7 @@ pub(super) const STAGES: &[Stage] = &[
         ],
         // What `settled` ensured, kept: what's printed is checked as it is.
         ensures: &[contracts::NOTHING_AFTER_A_JUMP, contracts::LABELS_NAMED],
+        again: &[],
     },
 ];
 

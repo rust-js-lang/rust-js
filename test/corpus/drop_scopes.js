@@ -224,22 +224,20 @@ function main() {
         }
         throw error;
       }
-    } else {
-      try {
-        noisyDrop_drop(_each);
-      } catch (error) {
-        noisyDrop_drop(slot);
-        if (kept$live) {
-          noisyDrop_drop(kept);
-        }
-        if (maybe$live) {
-          noisyDrop_drop(maybe);
-        }
-        throw error;
-      }
-      continue;
+      break;
     }
-    break;
+    try {
+      noisyDrop_drop(_each);
+    } catch (error) {
+      noisyDrop_drop(slot);
+      if (kept$live) {
+        noisyDrop_drop(kept);
+      }
+      if (maybe$live) {
+        noisyDrop_drop(maybe);
+      }
+      throw error;
+    }
   }
   const first = ["first"];
   const second = ["second"];

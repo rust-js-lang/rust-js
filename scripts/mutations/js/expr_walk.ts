@@ -132,4 +132,12 @@ export const mutations: Mutation[] = [
     replace: "            ExprKind::Unary(_, a) => a.has_effects(),\n",
     tests: ["test/js-object.test.ts", "-t", "delete is JS's operator"],
   },
+  {
+    name: "js-is-array-has-effects",
+    breaks: "`Array.isArray(v)` is taken to do something, so no later test of it is decided (ADR 0743)",
+    file: "src/js/expr_walk.rs",
+    find: "                        \"Array\" => name == \"isArray\",\n",
+    replace: "",
+    tests: ["test/lowering-switches.test.ts", "-t", "a part of a chain an earlier test decides is left out"],
+  },
 ];

@@ -209,4 +209,12 @@ export const mutations: Mutation[] = [
     "replace": "        && !(!is_parameter(state, local) && once_each_way(state.body, local))\n",
     "tests": ["test/lowering-functions.test.ts", "-t", "a vec.s specs from MIR stay in place"]
   },
+  {
+    name: "macro-fn-starts-at-the-macro",
+    breaks: "a function a macro writes starts where the macro does, so a comment in it before the `fn` is dropped",
+    file: "src/lower/mir/queries.rs",
+    find: "        Some(name) if whole.from_expansion() && !name.from_expansion() => {\n",
+    replace: "        Some(name) if false => {\n",
+    tests: ["test/lowering-comments.test.ts", "-t", "a comment in a macro before its fn"],
+  },
 ];

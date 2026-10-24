@@ -46,6 +46,7 @@ helpers! {
     SomeMut,
     SomeAt,
     DictGet,
+    KeysIn,
     Pop,
     Iterator,
     Insert,
@@ -741,6 +742,7 @@ impl Helper {
             Helper::SomeMut => include_str!("runtime/some_mut.js"),
             Helper::SomeAt => include_str!("runtime/some_at.js"),
             Helper::DictGet => include_str!("runtime/dict_get.js"),
+            Helper::KeysIn => include_str!("runtime/keys_in.js"),
             Helper::Pop => include_str!("runtime/pop.js"),
             Helper::Iterator => include_str!("runtime/iterator.js"),
             // A key as a string of its value (ADR 0121): the same for two keys

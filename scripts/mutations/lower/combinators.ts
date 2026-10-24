@@ -557,4 +557,20 @@ export const mutations: Mutation[] = [
     replace: " | IterComb::MaxByKey(_)\n",
     tests: ["test/corpus.test.ts", "-t", "^nth_through_generics.rs$"],
   },
+  {
+    name: "extend-written-helper",
+    breaks: "a `Vec`'s `extend` of an array written in place is the runtime's `$extend(v, [a, b])`, not `v.push(a, b)`",
+    file: "src/lower/combinators.rs",
+    find: "            && matches!(items.kind, js::ExprKind::Array(_))\n",
+    replace: "            && matches!(items.kind, js::ExprKind::Array(_)) && false\n",
+    tests: ["test/lowering-collections.test.ts", "-t", "extend of an array written in place"],
+  },
+  {
+    name: "extend-written-of-any",
+    breaks: "an `extend` of an array written in place onto a deque is `queue.push(1, 2)`, not its own `$extend`",
+    file: "src/lower/combinators.rs",
+    find: "        if self.is_std_type(into.peel_refs(), crate::lower::recognition::StdItem::Vec)\n            && matches!",
+    replace: "        if true\n            && matches!",
+    tests: ["test/lowering-collections.test.ts", "-t", "extend of an array written in place"],
+  },
 ];

@@ -262,4 +262,12 @@ export const mutations: Mutation[] = [
     replace: "                let (adt, args, mut variants) = each.next()??;\n                return None;\n",
     tests: ["test/lowering-switches.test.ts", "-t", "a match of what a value is is a switch"],
   },
+  {
+    name: "mir-labeled-block-breaks-unfound",
+    breaks: "no `break` the program wrote is known of the block it labeled, which is MIR's `bb41` (ADR 0742)",
+    file: "src/lower/mir/hints.rs",
+    find: "                block.breaks.push(self.js_span(e.span));\n",
+    replace: "",
+    tests: ["test/lowering-labels.test.ts", "-t", "a block the program labeled keeps its label"],
+  },
 ];

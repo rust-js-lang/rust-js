@@ -166,32 +166,52 @@ pub(in crate::lower::mir::tidy) fn written_loop(
         .min_by_key(|(l, ..)| l.hi - l.lo)
 }
 
-/// A loop MIR labels by its block, `bb2: for (…)`, the program labeled:
-/// its label, `rows: for (…)`, where no loop around it has that one.
-pub(in crate::lower::mir::tidy) fn named_labels(stmts: &mut [Stmt], loops: &[(js::Span, bool, Option<String>)]) {
-    fn walk(stmts: &mut [Stmt], loops: &[(js::Span, bool, Option<String>)], around: &mut Vec<String>) {
+/// A label MIR gives by its block, `bb2`, of what the program labeled: its
+/// label, where nothing around it has that one. A loop's, `rows: for (…)`;
+/// and a block's whose end a `break` the program wrote of it goes to,
+/// `desc: { .. }` (ADR 0742).
+pub(in crate::lower::mir::tidy) fn named_labels(
+    stmts: &mut [Stmt],
+    loops: &[(js::Span, bool, Option<String>)],
+    blocks: &[LabeledBlock],
+) {
+    fn walk(
+        stmts: &mut [Stmt],
+        loops: &[(js::Span, bool, Option<String>)],
+        blocks: &[LabeledBlock],
+        around: &mut Vec<String>,
+    ) {
         for stmt in stmts.iter_mut() {
             let span = stmt.span;
-            let (label, body) = match &mut stmt.kind {
+            let (label, body, written) = match &mut stmt.kind {
                 StmtKind::While { label, body, .. }
                 | StmtKind::ForOf { label, body, .. }
-                | StmtKind::For { label, body, .. } => (label, body),
+                | StmtKind::For { label, body, .. } => {
+                    let Some(label) = label else {
+                        walk(body, loops, blocks, around);
+                        continue;
+                    };
+                    (label, body, written_loop(loops, span).and_then(|(_, _, l)| l.as_ref()))
+                }
+                StmtKind::Labeled(label, body) => {
+                    let written = (blocks.iter()).find(|b| !span.is_none() && b.span == span);
+                    (label, body, written.map(|b| &b.label))
+                }
                 _ => continue,
             };
-            if let Some(from) = label.clone()
-                && crate::lower::mir::is_block_label(&from)
-                && let Some((_, _, Some(to))) = written_loop(loops, span)
+            if crate::lower::mir::is_block_label(label)
+                && let Some(to) = written
                 && !around.contains(to)
             {
-                relabeled(body, &from, to);
-                *label = Some(to.clone());
+                relabeled(body, label, to);
+                *label = to.clone();
             }
-            around.push(label.clone().unwrap_or_default());
-            walk(body, loops, around);
+            around.push(label.clone());
+            walk(body, loops, blocks, around);
             around.pop();
         }
     }
-    walk(stmts, loops, &mut Vec::new());
+    walk(stmts, loops, blocks, &mut Vec::new());
 }
 
 /// Whether `inner`, in place of the statement at `i` of `stmts`, declares

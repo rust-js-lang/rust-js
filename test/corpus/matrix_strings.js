@@ -55,11 +55,11 @@ const STRINGS = [
   "🦀",
   "",
   "􏿿",
-  "hello",
-  "﻿hello﻿",
+  "\u0085hello\u0085",
+  "\uFEFFhello\uFEFF",
   "\u2028\u2029",
-  "​",
-  "\xA0 hello 　",
+  "\u200B",
+  "\xA0 hello \u3000",
   "",
   "-12",
   "+3.5e2",

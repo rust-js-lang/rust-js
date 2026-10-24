@@ -3,7 +3,9 @@
 Status: Accepted. Extends [0444](0444-a-comment-is-where-its-code-is.md),
 whose comments are before the statement whose code follows them, and
 [0575](0575-an-if-keeps-its-else-and-a-tail-if-is-a-conditional.md)'s
-`Written::continues`.
+`Written::continues`. Amended by
+[0730](0730-a-loops-early-break-is-in-the-if-it-was-written-in.md): a loop
+body's last `if` is an early `continue` only where the program wrote one.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N. How the JS reads, and
 a comment, which nothing runs.

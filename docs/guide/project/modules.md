@@ -553,6 +553,9 @@ One in an `async` block, which is no function, is an error ([ADR 0349](../../dec
 Every comment you write is in the JS where its code is, and so is each
 blank line between statements: one on its own lines is before the
 statement after it, one after code on its line is after that code's JS,
+its line ended there where JS has the next line's code on it, `? "…" //
+ellipsis` of a conditional ([ADR
+0733](../../decisions/0733-a-line-comment-ends-the-line-of-its-code.md)),
 one inside an expression after the code right before it, `37 /* "%" */`
 ([ADR 0630](../../decisions/0630-a-comment-inside-an-expression.md)),
 and a `///` doc comment is a JSDoc an editor shows a JS caller. A file's
@@ -561,7 +564,9 @@ leading comments, a license's, are its JS's first
 [ADR 0444](../../decisions/0444-a-comment-is-where-its-code-is.md)).
 
 A comment before a macro's opening, `thread_local! {`, is its code's,
-its first item's, and one after a module's last code, at its file's end
+its first item's, as one in it before the `fn` it writes, `js::export_default! {
+// .. fn f() {} }`, is ([ADR
+0735](../../decisions/0735-a-comment-in-a-macro-before-its-fn-is-the-fns.md)), and one after a module's last code, at its file's end
 or before an inline module's `}`, ends its JS
 ([ADR 0621](../../decisions/0621-comments-around-macros-and-at-a-modules-end.md)):
 

@@ -216,7 +216,7 @@ function main() {
       throw error;
     }
     try {
-      $extend(v, [["h"]]);
+      v.push(["h"]);
     } catch (error) {
       if (first != null) {
         loudDrop_drop(first);

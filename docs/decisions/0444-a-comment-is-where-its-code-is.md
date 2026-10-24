@@ -4,7 +4,9 @@ Status: Accepted. Extends [0383](0383-a-files-leading-comments-are-its-jss.md),
 whose rules for what JS can hold are now every comment's, and
 [0018](0018-print-with-oxc.md). Its amendment, a branch's comment keeps it a statement, is
 superseded by [0658](0658-a-comment-before-a-branchs-value-is-before-it-in-the-conditional.md):
-the comment is before the branch's value in the conditional. Extended by
+the comment is before the branch's value in the conditional. Amended by
+[0733](0733-a-line-comment-ends-the-line-of-its-code.md): a line comment
+after code a later line's JS follows ends the line of its code. Extended by
 [0708](0708-a-comment-before-an-argument-is-before-it.md): a call's
 argument and an object literal's field are starts too.
 

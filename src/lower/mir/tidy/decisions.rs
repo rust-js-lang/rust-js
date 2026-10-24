@@ -30,7 +30,7 @@ pub(super) fn decisions(stmts: &mut Vec<Stmt>) {
         let StmtKind::Labeled(label, body) = &stmts[i].kind else {
             continue;
         };
-        if !made_by_mir(label) {
+        if !crate::lower::mir::is_block_label(label) {
             continue;
         }
         let Some((chain, takes_rest)) = chain(label, body, &stmts[i + 1..]) else {
@@ -43,13 +43,6 @@ pub(super) fn decisions(stmts: &mut Vec<Stmt>) {
             stmts.splice(i..i + 1, chain);
         }
     }
-}
-
-/// A block MIR names for its basic block, `bb12`: not one the program wrote.
-fn made_by_mir(label: &str) -> bool {
-    label
-        .strip_prefix("bb")
-        .is_some_and(|n| !n.is_empty() && n.bytes().all(|b| b.is_ascii_digit()))
 }
 
 /// A leaf of the tree: the tests that hold on the way to it, in the order
@@ -862,7 +855,7 @@ pub(super) fn default_values(stmts: &mut Vec<Stmt>) {
     let mut i = 0;
     while i < stmts.len() {
         if let StmtKind::Labeled(label, body) = &stmts[i].kind
-            && made_by_mir(label)
+            && crate::lower::mir::is_block_label(label)
             && let Some((last, rest)) = body.split_last()
             && let StmtKind::Assign(target, value) = &last.kind
             && let ExprKind::Var(x) = &target.kind

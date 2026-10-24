@@ -28,10 +28,38 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Err(self.tcx.dcx().span_err(span, refused));
         }
         let this = is_method(self.tcx, def_id).then(|| args.remove(0));
+        // A `()` a structured clone is given is `undefined` (ADR 0441),
+        // where it was its tuple's array, `[]`: `postMessage(undefined)` of
+        // `post_message((), None)` (ADR 0225 amended). Of a parameter of a
+        // type bounded by `js::StructuredClone` alone: a tuple of hooks'
+        // dependencies, `()` of none, is still `[]`.
+        let declared = self.tcx.fn_sig(def_id).instantiate_identity().skip_normalization();
+        let declared = declared.skip_binder().inputs();
+        let cloned = |ty: ty::Ty<'tcx>| {
+            matches!(ty.kind(), ty::Param(_))
+                && self.tcx.param_env(def_id).caller_bounds().iter().any(|clause| {
+                    clause.as_trait_clause().is_some_and(|bound| {
+                        bound.self_ty().skip_binder() == ty
+                            && super::recognition::is_structured_clone(self.tcx, bound.def_id())
+                    })
+                })
+        };
+        let inputs = self
+            .tcx
+            .fn_sig(def_id)
+            .instantiate(self.tcx, generic_args)
+            .skip_normalization();
+        let inputs = inputs.skip_binder().inputs();
+        let at = usize::from(this.is_some());
+        for ((arg, ty), declared) in args.iter_mut().zip(&inputs[at..]).zip(&declared[at..]) {
+            if ty.is_unit() && cloned(*declared) && !arg.has_effects() {
+                *arg = Expr::undefined();
+            }
+        }
         // Its last argument is JS's rest arguments (ADRs 0221, 0640): a
         // tuple, `impl js::Rest<T>`'s or an emitter's event's, its items,
-        // `()` none; a slice or a `Vec` of them, spread, or what an array
-        // written out holds.
+        // `()` none; a slice, a `Vec` or a typed array of them, spread, or
+        // what an array written out holds.
         if is_variadic(self.tcx, def_id) {
             let sig = self.tcx.fn_sig(def_id);
             let collection = |ty: ty::Ty<'tcx>| {
@@ -68,10 +96,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let tuple = last.is_some_and(|ty| matches!(ty.kind(), ty::Tuple(_)));
             // Rest arguments as a value, `&dyn js::Rest<T>`, spread (ADR 0667).
             let rest = last.is_some_and(|ty| is_rest_value(self.tcx, ty));
-            if !last.is_some_and(collection) && !tuple && !rest {
+            // A JS object the js crate makes rest arguments of, a typed
+            // array, which is iterable: spread (ADR 0718).
+            let object = last.is_some_and(|ty| self.is_js_object(ty.peel_refs()));
+            if !last.is_some_and(collection) && !tuple && !rest && !object {
                 return Err(self.unsupported(
                     span,
-                    "a `#[rust_js::variadic]` binding whose last parameter isn't rest arguments: a tuple, a slice, a `Vec` or a `&dyn js::Rest<T>`",
+                    "a `#[rust_js::variadic]` binding whose last parameter isn't rest arguments: a tuple, a slice, a `Vec`, a typed array or a `&dyn js::Rest<T>`",
                 ));
             }
             spread_rest(&mut args);
@@ -166,6 +197,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Expr::undefined()
             }
             (JsForm::CallThis, Some(this)) => Expr::call(this, args),
+            (JsForm::KeysIn, Some(this)) if args.is_empty() => super::iterators::keys_in(this),
             (JsForm::NewThis, Some(this)) => Expr::new_(this, args),
             (JsForm::Delete, Some(this)) if args.len() == 1 => {
                 Expr::unary(UnaryOp::Delete, keyed(this, args.remove(0)))

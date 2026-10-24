@@ -720,14 +720,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-string-places.test.ts", "-t", "stepped past"],
   },
   {
-    name: "drain-taken-unstepped",
-    breaks: "a string Drain steps where it knows where it is",
-    file: "src/lower/mir/std_calls.rs",
-    find: "StringEdit::Drain => taken.map(|chars| self.stepped_items(chars)),",
-    replace: "StringEdit::Drain => taken,",
-    tests: ["test/corpus.test.ts", "-t", "str_odds"],
-  },
-  {
     name: "char-indices-as-str-pairs",
     breaks: "CharIndices::as_str reads its [byte, char]s",
     file: "src/lower/mir/std_calls.rs",

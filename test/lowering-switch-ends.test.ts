@@ -6,7 +6,7 @@
 import { beforeAll, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { buildReact, compiler, fixture, run } from "./support";
+import { buildReact, compiler, fixture, run, target } from "./support";
 
 beforeAll(buildReact, 600_000);
 
@@ -82,4 +82,67 @@ pub fn counted(kind: u32, on: bool, log: &mut Vec<u32>) {
     "Memo",
     [[1, 0], [2, 0], [3, 0], [0]],
   ]);
+});
+
+// React's addValueToProperties (shared/ReactPerformanceTrackProperties.js):
+// `let desc; if (..) { .. } else { switch (typeof value) { case
+// "function": .. } } properties.push(..)`. A case's arm whose inner match
+// gives `desc` jumps where the `switch` ends, nothing between: its own
+// `break`, not a label around the `if` (ADR 0731).
+test("a case's break past the switch is the case's own", async () => {
+  const dir = fixture("switch-ends-past");
+  writeFileSync(join(dir, "lib.rs"), `use js::{Kind, Unknown};
+
+pub fn described(value: Option<&Unknown>, log: &mut Vec<String>) {
+    let desc = if let Some(value) = value
+        && let Kind::Object(_) | Kind::Array(_) = js::classify(Some(value))
+    {
+        "object".to_string()
+    } else {
+        match js::classify(value) {
+            Kind::Null => "null".to_string(),
+            Kind::Function(function) => match js::classify(js::get(js::unknown(function), "name")) {
+                Kind::String(name) if !name.is_empty() => name.to_string() + "() {}",
+                _ => "() => {}".to_string(),
+            },
+            Kind::Undefined => "undefined".to_string(),
+            Kind::Bool(value) => if value { "true" } else { "false" }.to_string(),
+            _ => js::string(value),
+        }
+    };
+    log.push(desc);
+}
+
+// A loop's in a case is the loop's: the block's own, still.
+pub fn scanned(value: Option<&Unknown>, log: &mut Vec<String>) {
+    let desc = 'desc: {
+        match js::classify(value) {
+            Kind::Null => "null".to_string(),
+            Kind::String(text) => {
+                for c in text.chars() {
+                    if c == '!' {
+                        break 'desc "bang".to_string();
+                    }
+                    log.push(c.to_string());
+                }
+                "plain".to_string()
+            }
+            Kind::Undefined => "undefined".to_string(),
+            _ => js::string(value),
+        }
+    };
+    log.push(desc);
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('        if (typeof name === "string" && name) {\n          desc = name + "() {}";\n          break;\n        }\n');
+  expect(js.slice(0, js.indexOf("function scanned"))).not.toMatch(/bb\d+/);
+  const lib = await import(join(dir, "lib.js"));
+  const log: string[] = [];
+  for (const value of [{}, null, function named() {}, () => {}, undefined, true, 5]) lib.described(value, log);
+  expect(log).toEqual(["object", "null", "named() {}", "() => {}", "undefined", "true", "5"]);
+  const scanned: string[] = [];
+  for (const value of ["a!b", "ab", null]) lib.scanned(value, scanned);
+  expect(scanned).toEqual(["a", "bang", "a", "b", "plain", "null"]);
 });

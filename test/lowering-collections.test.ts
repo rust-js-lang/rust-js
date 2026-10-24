@@ -406,3 +406,43 @@ pub fn replaced(mut v: Vec<u32>) -> (Vec<u32>, Vec<u32>) {
   const lib = await import(join(dir, "mir.js"));
   expect([lib.doubled([1, 2]), lib.tailAgain([1, 2, 3]), lib.replaced([1, 2, 3])]).toEqual([[1, 2, 1, 2], [1, 2, 3, 2, 3], [[9, 8], [1, 2, 3]]]);
 });
+
+// React's addObjectDiffToProperties pushes two rows at once,
+// `properties.push([REMOVED + line, desc], [ADDED + line, desc])`: a
+// `Vec`'s `extend` of an array written in place is JS's own `push` of its
+// items, made first, in order, as the array's are (ADR 0734). Of anything
+// else, of a set or a deque, it's what it was.
+test("extend of an array written in place is push of its items", async () => {
+  const dir = fixture("extend-written");
+  writeFileSync(join(dir, "lib.rs"), `use std::collections::{HashSet, VecDeque};
+
+pub fn rows(properties: &mut Vec<(String, String)>, line: &str, desc: &str) {
+    properties.extend([
+        ("-".to_string() + line, desc.to_string()),
+        ("+".to_string() + line, desc.to_string()),
+    ]);
+}
+
+pub fn more(xs: &mut Vec<u32>, ys: &[u32], seen: &mut HashSet<u32>) {
+    xs.extend(ys.iter().copied());
+    seen.extend([1, 2]);
+}
+
+pub fn queued(queue: &mut VecDeque<u32>) {
+    queue.extend([1, 2]);
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('  properties.push(["-" + line, desc], ["+" + line, desc]);');
+  expect(js).toContain("$extend(xs, ys)");
+  expect(js).toContain("$extendMap(seen, [1, 2], true)");
+  expect(js).toContain("$extend(queue, [1, 2])");
+  const lib = await import(join(dir, "lib.js"));
+  const rows: string[][] = [["a", "b"]];
+  lib.rows(rows, "k", "v");
+  const xs = [1];
+  const seen = new Set([2]);
+  lib.more(xs, [5, 6], seen);
+  expect([rows, xs, [...seen]]).toEqual([[["a", "b"], ["-k", "v"], ["+k", "v"]], [1, 5, 6], [2, 1]]);
+});

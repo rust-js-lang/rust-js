@@ -31,7 +31,7 @@ use self::{
     bindings::*, branches::*, destructuring::*, jumps::*, logicals::*, loops::*, moves::*, switches::switched,
     values::*,
 };
-use super::hints::Switch;
+use super::hints::{LabeledBlock, Switch};
 
 /// What a body's last passes ask of its locals, by name: those the program
 /// names, and its `String`s.
@@ -89,6 +89,10 @@ pub(super) struct Hints<'h> {
     pub(super) suggested: &'h HashMap<String, Vec<String>>,
     /// The locals the program names, and its `String`s, by name.
     pub(super) named: &'h Named,
+    /// Whether the stage running found its `again` stages must run once
+    /// it's done (`stages::Stage::again`): set by its passes, taken by
+    /// `tidy`.
+    pub(super) again: &'h std::cell::Cell<bool>,
 }
 
 /// `body`, tidied, by what `hints` say of it: each stage's passes in turn
@@ -96,32 +100,61 @@ pub(super) struct Hints<'h> {
 /// debug build, what each stage leaves checked (ADR 0659).
 pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     for stage in stages::STAGES {
-        for pass in stage.passes {
-            (pass.run)(body, hints);
-            if hints.until == Some(&*pass_name(stage, pass)) {
-                return;
-            }
+        if run_stage(body, hints, stage, stage.name) {
+            return;
         }
-        if cfg!(debug_assertions) {
-            for contract in contracts::ALWAYS.iter().chain(stage.ensures) {
-                if let Some(why) = (contract.broken)(body) {
-                    panic!("tidy's `{}` stage broke \"{}\": {why}", stage.name, contract.name);
+        // Its stages run again where its passes found they must, each
+        // through this runner, named `again/<stage>`.
+        if !stage.again.is_empty() && hints.again.take() {
+            for again in stages::STAGES.iter().filter(|s| stage.again.contains(&s.name)) {
+                if run_stage(body, hints, again, &again_name(again)) {
+                    return;
                 }
             }
         }
     }
 }
 
-/// What `--tidy-until` names a pass by: `stage/pass`.
-fn pass_name(stage: &stages::Stage, pass: &stages::Pass) -> String {
-    format!("{}/{}", stage.name, pass.name)
+/// `stage`'s passes in turn, named under `name`, then in a debug build,
+/// what it ensures, checked. Whether `hints.until` stopped it.
+fn run_stage(body: &mut Vec<Stmt>, hints: &Hints, stage: &stages::Stage, name: &str) -> bool {
+    for pass in stage.passes {
+        (pass.run)(body, hints);
+        if hints.until == Some(&*pass_name(name, pass)) {
+            return true;
+        }
+    }
+    if cfg!(debug_assertions) {
+        for contract in contracts::ALWAYS.iter().chain(stage.ensures) {
+            if let Some(why) = (contract.broken)(body) {
+                panic!("tidy's `{name}` stage broke \"{}\": {why}", contract.name);
+            }
+        }
+    }
+    false
 }
 
-/// Each pass's name, in the order they run: what `--tidy-until` may name.
+/// What a stage run again is named, `again/names`.
+fn again_name(stage: &stages::Stage) -> String {
+    format!("again/{}", stage.name)
+}
+
+/// What `--tidy-until` names a pass by: `stage/pass`.
+fn pass_name(stage: &str, pass: &stages::Pass) -> String {
+    format!("{stage}/{}", pass.name)
+}
+
+/// Each pass's name, in the order they run, a stage's run again after it
+/// where it is: what `--tidy-until` may name.
 pub(crate) fn pass_names() -> Vec<String> {
-    (stages::STAGES.iter())
-        .flat_map(|stage| stage.passes.iter().map(move |pass| pass_name(stage, pass)))
-        .collect()
+    let mut names = Vec::new();
+    for stage in stages::STAGES {
+        names.extend(stage.passes.iter().map(|pass| pass_name(stage.name, pass)));
+        for again in stages::STAGES.iter().filter(|s| stage.again.contains(&s.name)) {
+            names.extend(again.passes.iter().map(|pass| pass_name(&again_name(again), pass)));
+        }
+    }
+    names
 }
 
 /// The function's return place, `let` first, where nothing reads it now.
@@ -539,17 +572,26 @@ mod tests {
     #[test]
     fn finish_is_the_last_stage_in_its_order() {
         let names = super::pass_names();
-        let finish: Vec<&str> = names.iter().filter_map(|n| n.strip_prefix("finish/")).collect();
+        let after: Vec<&str> = names
+            .iter()
+            .skip_while(|n| !n.starts_with("scopes/"))
+            .map(|n| &**n)
+            .collect();
+        let stages: Vec<&str> = after.iter().map(|n| &n[..n.rfind('/').expect("stage/pass")]).collect();
+        let mut stages_in_order = stages.clone();
+        stages_in_order.dedup();
+        // The body's scopes made, the stages that read temporaries in place
+        // again, then its names given.
         assert_eq!(
-            finish,
-            [
-                "parameters",
-                "drop scopes",
-                "temporaries named",
-                "flags named",
-                "shadows",
-                "appends",
-            ]
+            stages_in_order,
+            ["scopes", "again/names", "again/in place", "again/chains", "finish"]
+        );
+        assert_eq!(
+            after
+                .iter()
+                .filter_map(|n| n.strip_prefix("finish/"))
+                .collect::<Vec<_>>(),
+            ["temporaries named", "flags named", "shadows", "appends"]
         );
         assert!(names.last().is_some_and(|n| n == "finish/appends"));
     }

@@ -216,4 +216,20 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/lowering-switches.test.ts", "-t", "an arm that returns early is still its case"],
   },
+  {
+    name: "again-stages-not-run",
+    breaks: "the stages a stage asks to run again, `scopes`'s, don't, so what a guard's `try` held apart stays apart",
+    file: "src/lower/mir/tidy.rs",
+    find: "        if !stage.again.is_empty() && hints.again.take() {\n",
+    replace: "        if false {\n",
+    tests: ["test/lowering-unwinds.test.ts", "-t", "a guard's fields are its variables"],
+  },
+  {
+    name: "again-stages-unchecked",
+    breaks: "a stage run again stops nowhere `--tidy-until` names it",
+    file: "src/lower/mir/tidy.rs",
+    find: "                if run_stage(body, hints, again, &again_name(again)) {\n",
+    replace: "                if run_stage(body, hints, again, again.name) {\n",
+    tests: ["test/lowering-unwinds.test.ts", "-t", "a stage read again is its own"],
+  },
 ];

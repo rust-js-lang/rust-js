@@ -27,7 +27,7 @@ impl<'a> Cx<'a> {
             }
             ExprKind::BigUint(n) => Expression::new_identifier(sp, self.name(&format!("{n}n")), b),
             ExprKind::Bool(v) => Expression::new_boolean_literal(sp, *v, b),
-            ExprKind::Str(s) => Expression::new_string_literal(sp, self.allocator.alloc_str(s), None, b),
+            ExprKind::Str(s) => self.string_literal(sp, s),
             ExprKind::Undefined | ExprKind::GivenUndefined => Expression::new_identifier(sp, "undefined", b),
             ExprKind::Null => Expression::new_null_literal(sp, b),
             ExprKind::Symbol(_) => unreachable!("linking resolves every module symbol before emission"),
@@ -85,7 +85,7 @@ impl<'a> Cx<'a> {
             ExprKind::Written(pieces) => {
                 let piece = |piece: &js::StrPiece| match piece.lines {
                     true => self.template_literal(sp, &[&piece.text], &[], true),
-                    false => Expression::new_string_literal(sp, self.allocator.alloc_str(&piece.text), None, b),
+                    false => self.string_literal(sp, &piece.text),
                 };
                 let mut pieces = pieces.iter().map(piece);
                 let first = pieces.next().expect("a written string's pieces");
@@ -114,9 +114,7 @@ impl<'a> Cx<'a> {
                             .collect(),
                     };
                     match (from == to, lines) {
-                        (true, false) => {
-                            Expression::new_string_literal(sp, self.allocator.alloc_str(piece_texts[0]), None, b)
-                        }
+                        (true, false) => self.string_literal(sp, piece_texts[0]),
                         _ => self.template_literal(sp, &piece_texts, &values[from..to], lines),
                     }
                 });
@@ -205,6 +203,27 @@ impl<'a> Cx<'a> {
                 Expression::new_new_expression(sp, self.expr(callee), None, ArenaVec::from_iter_in(args, b), b)
             }
         }
+    }
+
+    /// `"text"`, each code point `unseen` gives as its escape, `"\u2007"`
+    /// (ADR 0732): as oxc writes a lone surrogate's, `\u{FFFD}` and its
+    /// four digits, and a U+FFFD so its own `fffd`. What oxc escapes
+    /// itself, a control's and U+00A0's `\xA0`, it escapes.
+    fn string_literal(&self, sp: Span, text: &str) -> Expression<'a> {
+        let b = &self.b;
+        let escaped = |c: char| unseen(c) && !c.is_ascii_control() && c != '\u{A0}';
+        if !text.chars().any(escaped) {
+            return Expression::new_string_literal(sp, self.allocator.alloc_str(text), None, b);
+        }
+        let mut value = String::with_capacity(text.len() + 8);
+        for c in text.chars() {
+            match c {
+                '\u{FFFD}' => value.push_str("\u{FFFD}fffd"),
+                c if escaped(c) => value.push_str(&format!("\u{FFFD}{:04X}", c as u32)),
+                c => value.push(c),
+            }
+        }
+        Expression::new_string_literal_with_lone_surrogates(sp, self.allocator.alloc_str(&value), None, true, b)
     }
 
     /// A JSX element (ADR 0040), laid out by the formatter.
@@ -620,6 +639,28 @@ fn js_number(n: f64) -> String {
     }
 }
 
+/// Whether `c` is written as its escape in a string's or a template's JS,
+/// `"\u2007\xA0"`, as a reader can't tell it from a space or see it at all
+/// (ADR 0732): a space but `' '` and a line's end, which are written as
+/// they are, and a mark that takes no room. Not one that joins or varies
+/// what's seen, an emoji's U+200D or U+FE0F.
+fn unseen(c: char) -> bool {
+    (c.is_whitespace() && !matches!(c, ' ' | '\n' | '\r' | '\u{2028}' | '\u{2029}'))
+        || matches!(
+            c,
+            '\u{AD}'
+                | '\u{61C}'
+                | '\u{180E}'
+                | '\u{200B}'
+                | '\u{200E}'
+                | '\u{200F}'
+                | '\u{202A}'..='\u{202E}'
+                | '\u{2060}'..='\u{2064}'
+                | '\u{2066}'..='\u{2069}'
+                | '\u{FEFF}'
+        )
+}
+
 /// `text` as a template literal writes it: what would end the text or start
 /// a value is escaped, and so are controls, as in a string, but a line
 /// break where it keeps its `lines`.
@@ -638,6 +679,10 @@ fn template_raw(text: &str, lines: bool) -> String {
             '\u{2028}' => raw.push_str("\\u2028"),
             '\u{2029}' => raw.push_str("\\u2029"),
             c if c.is_control() => raw.push_str(&format!("\\u{:04x}", c as u32)),
+            c if unseen(c) => raw.push_str(&match c as u32 {
+                n @ ..=0xFF => format!("\\x{n:02X}"),
+                n => format!("\\u{n:04X}"),
+            }),
             c => raw.push(c),
         }
     }

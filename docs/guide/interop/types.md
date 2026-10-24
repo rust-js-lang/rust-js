@@ -952,6 +952,46 @@ export function describe(value) {
   `js::object::has_own_property.call(value, key)` is
   `Object.prototype.hasOwnProperty.call(value, key)`, a property of its own
   ([ADR 0615](../../decisions/0615-has-own-property-the-function.md)).
+- `js::object::keys(value)` is `Object.keys(value)`, its own enumerable
+  keys; `js::keys_in(value)` the keys `for…in` visits, its prototypes'
+  too, each as the loop reaches it. A `for` loop of it is `for (const key
+  in value)`, and of its `enumerate()` a counter each turn ends with,
+  where no closure in it reads the count; anywhere else it's a JS iterator
+  of them ([ADR 0719](../../decisions/0719-for-in-is-a-for-loop-of-keys-in.md)):
+
+```rust
+use js::Unknown;
+
+pub fn removed(prev: &Unknown, next: &Unknown) -> Vec<String> {
+    let mut gone = Vec::new();
+    for (checked, key) in js::keys_in(prev).enumerate() {
+        if checked > 100 {
+            break;
+        }
+        if !js::has(next, &key) {
+            gone.push(key);
+        }
+    }
+    gone
+}
+```
+
+```js
+export function removed(prev, next) {
+  const gone = [];
+  let checked = 0;
+  for (const key in prev) {
+    if (checked > 100) {
+      break;
+    }
+    if (!(key in next)) {
+      gone.push(key);
+    }
+    checked++;
+  }
+  return gone;
+}
+```
 - `js::new(value, arguments)` is `new value(..)`, its arguments a tuple,
   `()` of none, or a slice spread, as a rest parameter's
   ([ADR 0695](../../decisions/0695-new-of-a-function-value-is-jss-new.md)):
@@ -1005,6 +1045,52 @@ disabledLog.__reactDisabledLog = true;
 
 export function isMarked(log) {
   return log.__reactDisabledLog != null;
+}
+```
+- **What every function has, `Function.prototype`'s, is `js::function`'s**,
+  of a function of any signature, `js::AnyFunction`, as TypeScript types
+  each: `function::name(f)` is `f.name`, a `String`, `function::length(f)`
+  `f.length`, `function::to_string(f)` its source,
+  `Function.prototype.toString.call(f)`, and `function::call(f, this_arg,
+  args)` `f.call(thisArg, ...args)`
+  ([ADR 0740](../../decisions/0740-a-functions-members-are-read-of-any-function.md)):
+
+```rust
+use js::{Kind, Unknown, function};
+
+pub fn described(value: Option<&Unknown>) -> String {
+    match js::classify(value) {
+        Kind::Function(f) => {
+            let function_name = function::name(f);
+            if function_name.is_empty() {
+                "() => {}".to_string()
+            } else {
+                function_name + "() {}"
+            }
+        }
+        _ => String::new(),
+    }
+}
+
+pub fn same_source(prev: &dyn Fn(&str), next: &dyn Fn(&str)) -> bool {
+    function::length(prev) == function::length(next) && function::to_string(prev) == function::to_string(next)
+}
+```
+
+```js
+export function described(value) {
+  if (typeof value === "function") {
+    const functionName = value.name;
+    return !functionName ? "() => {}" : functionName + "() {}";
+  }
+  return "";
+}
+
+export function sameSource(prev, next) {
+  return (
+    prev.length === next.length &&
+    Function.prototype.toString.call(prev) === Function.prototype.toString.call(next)
+  );
 }
 ```
 - **A constructor is a `fn` item**, a function declaration, which `new`

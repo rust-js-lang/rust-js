@@ -285,14 +285,67 @@ pub trait AnyShape<M: ?Sized> {}
 
 impl<T: Defined + ?Sized> AnyShape<()> for T {}
 
+/// Any function, of whatever it takes and gives, as each is TypeScript's
+/// `Function`: a function item, a closure, a `fn` pointer or a `dyn Fn` of
+/// any signature, a JS function of JS's or of the program's (ADR 0740).
+/// What [`function`]'s members, `Function.prototype`'s, are read of. `M`
+/// is which one, rustc's to infer, as [`AnyShape`]'s is.
+pub trait AnyFunction<M: ?Sized> {}
+
 /// A function of each arity up to 12, its marker the `fn` pointer of its
-/// signature.
+/// signature: of any shape, and any function.
 macro_rules! functions {
     ($(($($a:ident),*))*) => {
         $(
             impl<F: FnOnce($($a),*) -> R + ?Sized, R, $($a),*> AnyShape<fn($($a),*) -> R> for F {}
+            impl<F: FnOnce($($a),*) -> R + ?Sized, R, $($a),*> AnyFunction<fn($($a),*) -> R> for F {}
         )*
     };
+}
+
+/// What every JS function has, `Function.prototype`'s, of a function of
+/// any signature, [`AnyFunction`], as TypeScript's `Function` types them
+/// (ADR 0740): `function::name(f)` is `f.name`.
+pub mod function {
+    use super::AnyFunction;
+
+    /// [`f.name`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Function/name):
+    /// its name, `""` of an anonymous one, as TypeScript's `string` has it.
+    #[cfg_attr(rust_js, rust_js::link_name = "get name")]
+    pub fn name<F: AnyFunction<M> + ?Sized, M>(this: &F) -> String {
+        unreachable!()
+    }
+
+    /// [`f.length`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Function/length):
+    /// how many parameters it declares before its first with a default
+    /// or its rest.
+    #[cfg_attr(rust_js, rust_js::link_name = "get length")]
+    pub fn length<F: AnyFunction<M> + ?Sized, M>(this: &F) -> u32 {
+        unreachable!()
+    }
+
+    /// [`Function.prototype.toString.call(f)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Function/toString):
+    /// its source, as JS keeps it, `function () { [native code] }` of a
+    /// host's own; what no function of its own `toString` changes.
+    #[cfg_attr(rust_js, rust_js::link_name = "Function.prototype.toString.call")]
+    pub fn to_string<F: AnyFunction<M> + ?Sized, M>(f: &F) -> String {
+        unreachable!()
+    }
+
+    /// [`f.call(thisArg, ..args)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Function/call):
+    /// `f` called with `this_arg` as its `this`, any value, `None` of
+    /// `undefined`, and `args`, a rest parameter of any values, as
+    /// TypeScript types it: what it gives, any value. `nodeRequire.call(module,
+    /// "timers")` of `function::call(node_require, Some(&module), ("timers",))`.
+    #[cfg_attr(rust_js, rust_js::link_name = "call")]
+    #[cfg_attr(rust_js, rust_js::variadic)]
+    pub fn call<F: AnyFunction<M> + ?Sized, M>(
+        this: &F,
+        this_arg: Option<&dyn super::IntoUnknown>,
+        args: impl super::Rest<dyn super::IntoUnknown>,
+    ) -> Option<&'static super::Unknown> {
+        unreachable!()
+    }
 }
 
 functions! {
@@ -495,6 +548,18 @@ pub fn has<K: PropertyKey + ?Sized>(this: &Unknown, key: &K) -> bool {
     unreachable!()
 }
 
+/// The keys [`for (const key in object)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Statements/for...in)
+/// visits, each as the loop reaches it: its own enumerable ones and its
+/// prototypes', which [`object::keys`] leaves out, not one a prototype's
+/// key of the same name hides, nor one deleted before it's reached (ADR
+/// 0719). A `for` loop of it is that loop, `for key in js::keys_in(o)`
+/// `for (const key in o)`; any other use of it, a JS iterator of them.
+#[cfg_attr(rust_js, rust_js::link_name = "for in")]
+#[allow(unused_variables)]
+pub fn keys_in(this: &Unknown) -> Box<dyn Iterator<Item = String>> {
+    unreachable!()
+}
+
 /// What names a property, as `key in value` and `value[key]` take it: text,
 /// a number, or a JS value of any shape, whose text JS makes the name, or
 /// none, `undefined`, named `"undefined"`.
@@ -523,7 +588,7 @@ pub fn set<T>(this: &Unknown, key: &str, to: T) {
 /// `Some(None)`, whose box would arrive as an object. Numbers, strings and
 /// `bool`s are, and arrays, tuples and `Vec`s of them, an `Option` of a
 /// [`Defined`] one, `Json`, `Dict`, `Unknown`, and what WebIDL marks
-/// `[Serializable]`, a `Blob`. A struct is one as its fields are: unsafe to
+/// `[Serializable]`, a `Blob`; `()`, `undefined`. A struct is one as its fields are: unsafe to
 /// implement, as its `impl` vouches they are, `unsafe impl StructuredClone for Saved {}`.
 pub unsafe trait StructuredClone {}
 
@@ -569,7 +634,17 @@ macro_rules! takes_itself {
     };
 }
 
-takes_itself!(i8, u8, i16, u16, i32, u32, i64, u64, f32, f64);
+takes_itself!(i8, u8, i16, u16, i32, u32, i64, u64, f32);
+
+/// TypeScript's `number` itself, an `f64`: any number JS has as one, each
+/// that `f64::from` takes, a `u8` of a `Uint8Array` spread too (ADR 0718).
+macro_rules! takes_number {
+    ($($t:ty),*) => {
+        $(impl Takes<$t> for f64 {})*
+    };
+}
+
+takes_number!(i8, u8, i16, u16, i32, u32, f32, f64);
 
 /// A slice of them, spread.
 impl<'a, T: ?Sized + Takes<A>, A> Rest<T> for &'a [A] {}
@@ -625,6 +700,9 @@ macro_rules! cloned {
 
 cloned!(bool, i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize, f32, f64, char, str, String);
 cloned!(Unknown, ArrayBuffer, Json<'_>);
+// `()`, `undefined`, which a clone copies as it is, `postMessage(undefined)`:
+// never `Defined`, so `Some(())` isn't one, as `None` is it too (ADR 0225).
+unsafe impl StructuredClone for () {}
 // An object, never nullish, though not one a clone copies, which a function
 // in it isn't (ADR 0677).
 unsafe impl Defined for JsObject {}
@@ -1161,6 +1239,17 @@ pub mod string {
         unreachable!()
     }
 
+    /// [`String.fromCharCode(..codes)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String/fromCharCode):
+    /// the text of these UTF-16 code units, each a number, TypeScript's
+    /// `number`, as JS makes one of it: its low 16 bits. A rest parameter,
+    /// given a tuple, `from_char_code((72, 105))`, or a slice, a `Vec` or a
+    /// typed array spread, `String.fromCharCode(...bytes)` (ADR 0718).
+    #[cfg_attr(rust_js, rust_js::link_name = "String.fromCharCode")]
+    #[cfg_attr(rust_js, rust_js::variadic)]
+    pub fn from_char_code(codes: impl super::Rest<f64>) -> String {
+        unreachable!()
+    }
+
     /// [`text.charAt(index)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String/charAt):
     /// its UTF-16 code unit at `index`, half of an emoji, or `""` past its end.
     #[cfg_attr(rust_js, rust_js::link_name = "charAt")]
@@ -1681,6 +1770,7 @@ unsafe impl WeakKey for Date {}
 unsafe impl WeakKey for Symbol {}
 unsafe impl WeakKey for ArrayBuffer {}
 unsafe impl WeakKey for SharedArrayBuffer {}
+unsafe impl<B> WeakKey for ArrayBufferView<B> {}
 unsafe impl<B> WeakKey for DataView<B> {}
 unsafe impl<B> WeakKey for Int8Array<B> {}
 unsafe impl<B> WeakKey for Uint8Array<B> {}

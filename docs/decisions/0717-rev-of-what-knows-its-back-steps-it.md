@@ -38,6 +38,12 @@ found it, and what the merge left no program reaches.
     in the order they're made; and `thread-local-with-taken-plain`,
     whose `with` taken as a read changes no program, a closure given it
     being `quiet` or not as a `with_borrow`'s is.
+  - the `$iter` a string's `drain` was given where it's taken, which its
+    type, a `Drain`, makes it anyway (`steps_an_array`);
+  - `broken_after`'s `if (t) { a } else { b; continue; }`, whose `break`
+    the early breaks write in `a` (ADR 0730);
+  - `continued`'s `ending` of a loop's last block, which no body MIR makes
+    needs now.
 - The other survivors were tests that no longer reach what they hold:
   each widened (`held_enumerate.rs`'s `next`, `adapter_source_drops.rs`'s
   chain, whose first part is dropped before its second is stepped, as

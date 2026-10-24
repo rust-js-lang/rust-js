@@ -224,7 +224,7 @@ pub fn at(v: &[i32], i: usize) -> i32 {
 ```
 
 ```js
-import { $drain, $extend, $index, $removeAt, $slice, $splice, $truncate } from "@rust-js/runtime";
+import { $drain, $index, $removeAt, $slice, $splice, $truncate } from "@rust-js/runtime";
 
 export function stack() {
   const v = [1, 2, 3];
@@ -233,7 +233,7 @@ export function stack() {
   console.log(`${last == null ? "None" : `Some(${last})`}`);
   v.unshift(0);
   $removeAt(v, 1);
-  $extend(v, [7, 8]);
+  v.push(7, 8);
   $truncate(v, 4);
   return v;
 }
@@ -272,6 +272,9 @@ export function at(v, i) {
 - A `Vec` you change is `let mut`, or a `&mut Vec<T>` parameter: rustc
   won't let anything else change it.
 - `pop()` is an `Option`: `None` of an empty `Vec`.
+- `v.extend([a, b])`, an array written in place, is `v.push(a, b)`; of
+  anything else it's the runtime's `$extend`, which pushes each as it's
+  stepped ([ADR 0734](../../decisions/0734-extend-of-an-array-written-in-place-is-push.md)).
 - **`v[i]` panics past the end,** with Rust's message, where JS gives
   `undefined`; that's the `$index`. `v.get(i)` is the `Option`, and is
   `v[i]` in JS. `remove`, `insert`, `truncate`, `splice` and slicing check

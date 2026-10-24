@@ -31,6 +31,7 @@ pub mod events;
 pub mod fs;
 pub mod http;
 pub mod js_error;
+pub mod module;
 pub mod path;
 pub mod process;
 pub mod querystring;
@@ -43,6 +44,16 @@ pub use webapi;
 use core::marker::PhantomData;
 
 use js::{JsObject, Unknown};
+
+unsafe extern "Rust" {
+    /// [`module`](https://nodejs.org/api/modules.html#the-module-object): the
+    /// CommonJS module the code is in, a variable of each one Node, or a
+    /// test runner, wraps as a function; an ES module has none, so reading it
+    /// there throws a `ReferenceError`, a panic, which `catch_unwind` catches,
+    /// and `js::is_defined(&module)` asks of (ADR 0305 amended).
+    #[link_name = "module"]
+    pub safe static module: &'static module::Module;
+}
 
 /// [A frame of a stack](https://v8.dev/docs/stack-trace-api#customizing-stack-traces),
 /// `NodeJS.CallSite`: what [`js_error::prepare_stack_trace`]'s hook is

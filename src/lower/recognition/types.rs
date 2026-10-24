@@ -977,6 +977,12 @@ const VEC_LIKE: &[StdItem] = &[
     StdItem::LinkedList,
 ];
 
+/// Whether `did` is `js::StructuredClone`, what a structured clone copies
+/// as it is, whose `()` is `undefined` (ADR 0225).
+pub(in crate::lower) fn is_structured_clone(tcx: TyCtxt<'_>, did: DefId) -> bool {
+    tcx.crate_name(did.krate).as_str() == "js" && tcx.item_name(did).as_str() == "StructuredClone"
+}
+
 /// Whether `did` is `js::SymbolFor`, the registry's symbol of a key, its JS
 /// `Symbol.for(key)` (ADR 0634): the builtins crate's. The one answer, which
 /// a constant's value asks too.

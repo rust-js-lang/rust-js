@@ -482,6 +482,11 @@ export function formatProdErrorMessage(code, url) {
   `char`'s, a number's or a `bool`'s too, as `concat!` writes it, `"2"`.
 - A `\` ending a line continues one literal, as it does in Rust: one JS
   string.
+- A space one can't tell from `' '`, `\u{2007}` or `\u{a0}`, and a mark
+  one can't see, `\u{200b}`, are written as their escapes, `"\u2007\xA0"`,
+  in a string and a template; what joins or varies an emoji, `\u{200d}`
+  and `\u{fe0f}`, is as it is ([ADR
+  0732](../../decisions/0732-a-space-one-cant-see-is-its-escape.md)).
 - A `concat!` of another macro, `concat!("v", env!("VERSION"))`, is the
   one string rustc makes of it.
 - A format string of a `concat!`, `format!(concat!(..), ..)` or
@@ -899,7 +904,9 @@ symbol, or a `Some` of them, [ADR
 0634](../../decisions/0634-a-registered-symbol-is-a-const.md)), and at most
 a last `_`, is a `switch`: `|`'s constants are stacked `case`s, `_` is the
 `default`, left out where it does nothing, and each case ends in `break;`
-where it'd go on, in a block `{ .. }` where it declares a name. An arm with
+where it'd go on, the case's own where it's left for what follows the
+`switch` ([ADR 0731](../../decisions/0731-a-cases-break-past-the-switch-is-its-own.md)),
+in a block `{ .. }` where it declares a name. An arm with
 a guard is a case that tests it, where what Rust tries when the guard
 fails does nothing: each later arm that could match its constants is a
 `_ => {}`, as below. Any other `match`, of a range, a binding, a guard a
@@ -1196,6 +1203,13 @@ export function findPair(grid, target) {
   includes `n`.
 - `break` and `continue` work as in JS, labels too: `'outer: for ...`,
   `break 'outer;`.
+- A `break` or `continue` is where the program wrote it: `if checked >
+  limit { ..; break; }` is `if (checked > limit) { ..; break; }`, the rest
+  of the body after it, not an `else` ([ADR
+  0730](../../decisions/0730-a-loops-early-break-is-in-the-if-it-was-written-in.md)).
+- A labeled block, `'desc: { .. break 'desc v; .. }`, is a labeled block
+  where its JS keeps one, by its label, `desc: { desc = v; break desc; }`
+  ([ADR 0742](../../decisions/0742-a-label-the-program-wrote-is-its-name.md)).
 
 ## `null` and `undefined`: `Option`
 
@@ -1316,6 +1330,9 @@ export function label(text) {
   `const name = error.name || "Error";`, as React writes it, and set again
   where it's `None`, `is_none()`, `??`
   ([ADR 0651](../../decisions/0651-a-let-then-its-fallback-is-or.md)).
+- An `if` of a value or its fallback is `||`: `if s.is_empty() { "Object"
+  } else { &s }` is `s || "Object"`
+  ([ADR 0744](../../decisions/0744-a-value-or-its-fallback-is-or.md)).
 
 A value JS gives you that may be `null` is an `Option` too:
 [JavaScript types](../interop/types.md).

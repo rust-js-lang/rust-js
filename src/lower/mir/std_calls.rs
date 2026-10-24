@@ -515,12 +515,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 self.flush(state, out)?;
                 let (edited, taken) = self.string_edit_values(edit, place.clone(), given, out);
                 out.push(StmtKind::Assign(place, edited).at(self.js_span(span)));
-                // A drain, the `char`s it took out, stepped where it knows
-                // where it is, which its `as_str()` reads (#118).
-                let taken = match edit {
-                    StringEdit::Drain => taken.map(|chars| self.stepped_items(chars)),
-                    _ => taken,
-                };
                 taken.unwrap_or_else(Expr::undefined)
             }
             // Its capacity is the engine's: what it's given runs, for what it does.

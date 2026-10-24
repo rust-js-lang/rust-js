@@ -231,8 +231,8 @@ export const mutations: Mutation[] = [
     name: "inside-comment-at-line-end",
     breaks: "`code != 37 /* \"%\" */` has its comment at its line's end, or inside the block after it",
     file: "src/to_oxc.rs",
-    find: "                let column = inside.then(|| (c.lo as usize - line_start) as u32);\n",
-    replace: "                let column = inside.then(|| (c.lo as usize - line_start) as u32).filter(|_| false);\n",
+    find: "                    inside,\n                    text: written.to_string(),\n",
+    replace: "                    inside: false,\n                    text: written.to_string(),\n",
     tests: ["test/lowering-names.test.ts", "-t", "a comment inside an expression is after the code before it"],
   },
   {
@@ -275,5 +275,21 @@ export const mutations: Mutation[] = [
     replace: "                    && false\n",
     tests: ["test/corpus.test.ts", "-t", "^io_writers.rs$"],
     snapshots: true,
+  },
+  {
+    name: "line-comment-after-the-line",
+    breaks: "a line comment a later line's JS follows on its JS line is after all of it, `// ellipsis // ellipsis`",
+    file: "src/to_oxc.rs",
+    find: "                (_, Some((line, end))) => ends.entry(line).or_default().push((end, &comment.text)),\n",
+    replace: "",
+    tests: ["test/lowering-comments.test.ts", "-t", "a line comment is after its code"],
+  },
+  {
+    name: "line-comment-cut-before-operator",
+    breaks: "a line comment's line is cut before the next line's code, after its `:`, `? \"…\" : // ellipsis`",
+    file: "src/to_oxc.rs",
+    find: "                    .trim_end_matches(|c: char| c.is_whitespace() || \"([{?:,\".contains(c))\n",
+    replace: "                    .trim_end_matches(char::is_whitespace)\n",
+    tests: ["test/lowering-comments.test.ts", "-t", "a line comment is after its code"],
   },
 ];

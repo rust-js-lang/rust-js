@@ -180,12 +180,17 @@ pub fn emit(
     for list in splits.values_mut() {
         list.sort_by_key(|&(column, _)| column);
     }
+    // A line comment after code of its line that JS has before the code of
+    // a line after it, `? "…" // ellipsis` of a conditional on one line:
+    // after the code right before it, the rest of the JS's line on the next
+    // (ADR 0733), so it's that code's, not all of it after the line's end.
+    let mut ends: std::collections::HashMap<u32, Vec<(u32, &str)>> = std::collections::HashMap::new();
     if let Some(map) = &generated.map {
         for comment in &trailing {
             // The nearest before it whose JS is a name, a number or a string.
-            let before = comment.column.and_then(|column| {
+            let before = {
                 let mut tokens: Vec<_> = (map.get_tokens())
-                    .filter(|t| t.get_src_line() == comment.line && t.get_src_col() < column)
+                    .filter(|t| t.get_src_line() == comment.line && t.get_src_col() < comment.column)
                     .collect();
                 tokens.sort_by_key(|t| std::cmp::Reverse(t.get_src_col()));
                 tokens
@@ -194,10 +199,28 @@ pub fn emit(
                     .find(|&(line, column)| {
                         (generated_lines.get(line as usize)).is_some_and(|text| word_end(text, column).is_some())
                     })
+            };
+            // Where its JS ends, of a line comment, when a later line's JS
+            // follows it on its line: before that, and the `(`, `?`, `:` or
+            // `,` it's after.
+            let end = before.filter(|_| !comment.inside).and_then(|(line, column)| {
+                let text = generated_lines.get(line as usize)?;
+                let later = (map.get_tokens())
+                    .filter(|t| t.get_dst_line() == line && t.get_dst_col() > column && t.get_src_line() > comment.line)
+                    .map(|t| t.get_dst_col())
+                    .min()?;
+                let head = &text[..in_bytes(text, later)];
+                let cut = head
+                    .trim_end_matches(|c: char| c.is_whitespace() || "([{?:,".contains(c))
+                    .len();
+                (cut > in_bytes(text, column)).then_some((line, cut as u32))
             });
-            match before {
-                Some((line, column)) => inside.entry(line).or_default().push((column, &comment.text)),
-                None => {
+            match (before, end) {
+                (Some((line, column)), _) if comment.inside => {
+                    inside.entry(line).or_default().push((column, &comment.text))
+                }
+                (_, Some((line, end))) => ends.entry(line).or_default().push((end, &comment.text)),
+                _ => {
                     let last = (map.get_tokens())
                         .filter(|t| t.get_src_line() == comment.line)
                         .map(|t| t.get_dst_line())
@@ -224,11 +247,22 @@ pub fn emit(
                 .collect();
             comments
         };
-        for &(column, texts) in splits.get(&i).into_iter().flatten() {
+        // Where it's split: before a branch's comments, on lines of their
+        // own, or after a line comment, which ends its line.
+        let mut cuts: Vec<(u32, &[String], Option<&str>)> = (splits.get(&i).into_iter().flatten())
+            .map(|&(column, texts)| (column, texts, None))
+            .chain((ends.get(&i).into_iter().flatten()).map(|&(column, text)| (column, &[][..], Some(text))))
+            .collect();
+        cuts.sort_by_key(|&(column, ..)| column);
+        for (column, texts, end) in cuts {
             let Some(head) = line.get(at as usize..column as usize).filter(|_| column > at) else {
                 continue;
             };
             code.push_str(&with_inside_comments(head.trim_end(), &inside_of(at, column)));
+            if let Some(end) = end {
+                code.push(' ');
+                code.push_str(end);
+            }
             for text in texts {
                 code.push('\n');
                 code.push_str(text);
@@ -296,12 +330,26 @@ pub fn emit(
     Output { code, map }
 }
 
-/// A comment after code on its line (ADR 0444): its line, its column where
-/// code follows it there, inside an expression (ADR 0630), and its text.
+/// A comment after code on its line (ADR 0444): its line, its column,
+/// whether code follows it there, inside an expression (ADR 0630), and its
+/// text.
 struct Trailing {
     line: u32,
-    column: Option<u32>,
+    column: u32,
+    inside: bool,
     text: String,
+}
+
+/// Where a map's `column` of `line`, in UTF-16 units, is in its bytes.
+fn in_bytes(line: &str, column: u32) -> usize {
+    let mut units = 0;
+    for (at, c) in line.char_indices() {
+        if units >= column {
+            return at;
+        }
+        units += c.len_utf16() as u32;
+    }
+    line.len()
 }
 
 /// Where the name, number or string at `column` of `line` ends: none of
@@ -409,10 +457,10 @@ fn comments_of(
                 // A block comment with code after it on its line is inside
                 // an expression: after the code right before it (ADR 0630).
                 let inside = written.starts_with("/*") && !sources.text[c.hi as usize..line_end].trim().is_empty();
-                let column = inside.then(|| (c.lo as usize - line_start) as u32);
                 trailing.push(Trailing {
                     line,
-                    column,
+                    column: (c.lo as usize - line_start) as u32,
+                    inside,
                     text: written.to_string(),
                 });
             }
