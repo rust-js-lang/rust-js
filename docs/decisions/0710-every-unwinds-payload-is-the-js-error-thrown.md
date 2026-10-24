@@ -5,7 +5,8 @@ Status: Accepted, by the user's decision of 2026-10-24. Amends
 `&JsError` of a payload was what JS threw or a panic's `Error` alone, and
 [0706](0706-panic-is-the-one-way-a-port-throws-an-error.md), whose
 `catch` read its `&JsError` as what was thrown only where the `try`
-threw nothing but its own panics.
+threw nothing but its own panics. Amended below: what's given its
+`Some`'s value, `and_then`'s closure, is given it, `x.stack`.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): B, a payload of
 another type than text, `resume_unwind(Box::new(5))`'s, that downcasts as
@@ -116,7 +117,8 @@ try {
   as a `&JsError` too, `undefined`, where Rust's is `None`: one can't hold
   a `&JsError`, so nothing has a reason to ask.
 - **A falsy throw's `Option` carried on as a value**, `.copied()`,
-  `.is_some()`, `.unwrap()`, is `None`, as an `Option<&JsError>`'s `None`
+  `.is_some()`, `.unwrap()`, is `None` (given to a closure, it's given
+  it: the amendment below), as an `Option<&JsError>`'s `None`
   is `undefined` and JS's `if (x)` reads it so; only where it's tested is
   it known to be `Some`.
 - `panic_any` stays refused, as before; `resume_unwind(Box::new(v))` is
@@ -143,3 +145,31 @@ try {
   `thrown-shadow-unwound` (`prepare/catches.rs`),
   `thrown-error-unrecognized` (`js/make.rs`), `dyn-any-send-of-any`
   (`recognition/types.rs`).
+
+## Amendment: what's given its `Some`'s value is given it
+
+React's `describeBuiltInComponentFrame` reads the stack of what it threw,
+`catch (x) { const match = x.stack.trim().match(..); }`. Its port writes
+`x.downcast_ref::<&'static JsError>().and_then(|x| x.stack())`, and
+rust-js wrote `x?.stack`: the downcast's `Some` was known where it was
+tested, a `match`, an `if let`, a `?`, but `and_then` tested it again.
+
+**What's given an unwind's payload's `&JsError`, the closure of
+`and_then`, `map` or `is_some_and` of its downcast, is given it**, as Rust
+gives a `Some`'s value to it (`mir_thrown_given`, `mir/dispatch.rs`, of
+a local `OptionWrites::thrown` says): `and_then(|x| x.stack())` is
+`x.stack`,
+`map(|e| e.message())` `x.message`, `is_some_and(p)` `p(x)`; `map`'s
+value boxed where it looks like `None`, `map(|_| None)`'s `Some(None)`
+(ADR 0051). `.copied()` of it was `x` already, as it gives what it's
+given.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): A for every payload
+Rust has, whose `&JsError` is always `Some`; a falsy throw, which has no
+Rust counterpart, is given to the closure too, so `throw null`'s
+`x.stack` throws a `TypeError` from the `catch`, as React's does, where
+`x?.stack` was `None`.
+
+Held by `test/lowering-unwinds.test.ts`, "what's given the thrown
+downcast is given it as it is", run in Node, and mutations
+`thrown-given-tested` and `thrown-mapped-unboxed` (`mir/dispatch.rs`).

@@ -872,8 +872,9 @@ pub fn of_any() -> Option<String> {
   }`);
   // Read otherwise, the payload is kept, and thrown again as it was.
   expect(js).toContain("    throw thrown;\n");
-  // What a call throws may be any value: its downcast's is what was thrown.
-  expect(js).toContain("  } catch (payload) {\n    return payload?.message;\n  }");
+  // What a call throws may be any value: its downcast is what was thrown,
+  // and `map` gives it to its closure (ADR 0710, amended).
+  expect(js).toContain("  } catch (payload) {\n    return payload.message;\n  }");
   const lib = await import(join(dir, "lib.js"));
   const g = globalThis as Record<string, unknown>;
   expect(lib.control()).toContain("Error");
@@ -1145,6 +1146,83 @@ pub fn of_any_boxed(own: bool) -> String {
   }
   expect(caught).toBeInstanceOf(Error);
   expect(caught).toBe(first);
+  delete g.render;
+});
+
+// React's describeBuiltInComponentFrame reads the stack of what it threw,
+// `catch (x) { const match = x.stack.trim().match(..); }`. The downcast
+// of what's caught is always `Some` (ADR 0710), so what's given its value,
+// `and_then(|x| x.stack())`'s closure, `map`'s and `is_some_and`'s, is
+// given it, as Rust gives a `Some`'s: `x.stack`, never `x?.stack` (ADR
+// 0710, amended).
+test("what's given the thrown downcast is given it as it is", async () => {
+  const { js, dir } = compiled("unwind-given-thrown", `use js::JsError;
+use std::panic::catch_unwind;
+
+#[cfg_attr(rust_js, rust_js::link_name = "globalThis.render")]
+fn render() -> u32 {
+    unreachable!()
+}
+
+pub fn prefix() -> String {
+    let Err(x) = catch_unwind(|| panic!(""));
+    let stack = x
+        .downcast_ref::<&'static JsError>()
+        .and_then(|x| x.stack())
+        .unwrap_or_default();
+    stack.trim().to_string()
+}
+
+pub fn control() -> Option<&'static JsError> {
+    let Err(x) = catch_unwind(|| panic!(""));
+    x.downcast_ref::<&'static JsError>().copied()
+}
+
+pub fn message() -> Option<String> {
+    match catch_unwind(render) {
+        Ok(_) => None,
+        Err(payload) => payload.downcast_ref::<&'static JsError>().map(|e| e.message()),
+    }
+}
+
+pub fn nested() -> Option<Option<u32>> {
+    match catch_unwind(render) {
+        Ok(_) => None,
+        Err(payload) => payload.downcast_ref::<&'static JsError>().map(|_| None),
+    }
+}
+
+pub fn named(name: &str) -> bool {
+    match catch_unwind(render) {
+        Ok(_) => false,
+        Err(payload) => payload
+            .downcast_ref::<&'static JsError>()
+            .is_some_and(|e| e.message() == name),
+    }
+}
+`);
+  expect(js).toContain(`  } catch (x) {
+    stack = x.stack ?? "";
+  }`);
+  expect(js).toContain("  } catch (x) {\n    return x;\n  }");
+  expect(js).toContain("  } catch (payload) {\n    return payload.message;\n  }");
+  expect(js).toContain("  } catch (payload) {\n    return payload.message === name;\n  }");
+  expect(js).not.toContain("?.");
+  const lib = await import(join(dir, "lib.js"));
+  const g = globalThis as Record<string, unknown>;
+  expect(lib.prefix()).toStartWith("Error");
+  expect(lib.control()).toBeInstanceOf(Error);
+  g.render = () => {
+    throw new TypeError("no props");
+  };
+  expect([lib.message(), lib.named("no props"), lib.named("other")]).toEqual(["no props", true, false]);
+  // `map`'s `Some` of a `None` is boxed, as an `Option` of what looks
+  // like `None` is (ADR 0051).
+  expect(lib.nested()).not.toBe(undefined);
+  g.render = () => {
+    throw 5;
+  };
+  expect([lib.message(), lib.named("5")]).toEqual([undefined, false]);
   delete g.render;
 });
 

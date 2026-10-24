@@ -484,4 +484,20 @@ export const mutations: Mutation[] = [
     replace: "            false => Vec::new(),\n",
     tests: ["test/js-object.test.ts", "-t", "Object's statics are JS's"],
   },
+  {
+    name: "thrown-given-tested",
+    breaks: "what's given the thrown downcast tests it first, `x?.stack`, as though it may be `None`",
+    file: "src/lower/mir/dispatch.rs",
+    find: "        if !subject.projection.is_empty() || !state.options.thrown.contains_key(&subject.local) {\n",
+    replace: "        if true {\n",
+    tests: ["test/lowering-unwinds.test.ts", "-t", "what's given the thrown downcast is given it as it is"],
+  },
+  {
+    name: "thrown-mapped-unboxed",
+    breaks: "`map` of the thrown downcast to what looks like `None` gives it unboxed, `None` where it's `Some(None)`",
+    file: "src/lower/mir/dispatch.rs",
+    find: "        let boxed = known == Std::OptionMap && self.option_of(output)",
+    replace: "        let boxed = false && self.option_of(output)",
+    tests: ["test/lowering-unwinds.test.ts", "-t", "what's given the thrown downcast is given it as it is"],
+  },
 ];

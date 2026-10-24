@@ -599,7 +599,7 @@ export function text(value) {
   try {
     return "" + value;
   } catch (payload) {
-    if (payload != null && payload.name === "TypeError") {
+    if (payload.name === "TypeError") {
       return "";
     }
     throw payload;
@@ -619,8 +619,10 @@ export function text(value) {
   is thrown in, which still downcasts to its own type. So the `Some` of
   `downcast_ref::<&JsError>()` is what's matched, its `None` arm never
   taken and left out, and the `catch` is of what was thrown ([ADR 0710](../../decisions/0710-every-unwinds-payload-is-the-js-error-thrown.md)).
-  A falsy one's `Option` carried on as a value, `.copied()`, `.is_some()`,
-  is `None`, as JS's `if (x)` reads it.
+  What's given its value, the closure of `and_then`, `map` or
+  `is_some_and`, is given it, as a `Some`'s: `x.stack`, `payload.name`
+  above, a falsy one's too. A falsy one's `Option` carried on as a value,
+  `.copied()`, `.is_some()`, is `None`, as JS's `if (x)` reads it.
 - **`resume_unwind(payload)` throws it again**: a thrown `Error` or what
   JS threw, itself; text, its panic; any other payload, an `Error` that a
   `catch_unwind` gives back as it was. Of a payload only read, it's
