@@ -221,25 +221,19 @@ const Parser = {
         if (Parser.peek(parser) === "LParen") {
           Parser.next(parser);
           const args = [];
-          bb69: {
-            if (Parser.peek(parser) !== "RParen") {
+          if (Parser.peek(parser) !== "RParen") {
+            const result = Parser.expr(parser);
+            if (result.TAG === "Err") {
+              return result;
+            }
+            args.push(result._0);
+            while (Parser.peek(parser) === "Comma") {
+              Parser.next(parser);
               const result = Parser.expr(parser);
               if (result.TAG === "Err") {
                 return result;
               }
               args.push(result._0);
-              while (true) {
-                if (Parser.peek(parser) === "Comma") {
-                  Parser.next(parser);
-                  const result = Parser.expr(parser);
-                  if (result.TAG === "Err") {
-                    return result;
-                  }
-                  args.push(result._0);
-                  continue;
-                }
-                break bb69;
-              }
             }
           }
           const result = Parser.expect(parser, "RParen", "')'");

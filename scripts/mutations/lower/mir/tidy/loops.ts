@@ -203,4 +203,20 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/lowering-written-loops.test.ts"],
   },
+  {
+    name: "while-test-of-true-only",
+    breaks: "a guard's `while (a) { if (t) { rest } else { break; } }`, the rest of its test read in place, stays so, not `while (a && t) { rest }`",
+    file: "src/lower/mir/tidy/loops.rs",
+    find: "        if let StmtKind::While { cond, body, .. } = &mut stmts[i].kind\n            && let (\n",
+    replace: "        if let StmtKind::While { cond, body, .. } = &mut stmts[i].kind\n            && matches!(cond.kind, ExprKind::Bool(true))\n            && let (\n",
+    tests: ["test/lowering-written-loops.test.ts", "-t", "a while in a guard's scope is its test"],
+  },
+  {
+    name: "while-test-joined-dropped",
+    breaks: "a `while (a)`'s test, joined by the rest of it, `while (t)`, which reads past the length",
+    file: "src/lower/mir/tidy/loops.rs",
+    find: "                _ => Expr::bin(Op::And, std::mem::replace(cond, Expr::undefined()), test),\n",
+    replace: "                _ => test,\n",
+    tests: ["test/lowering-written-loops.test.ts", "-t", "a while in a guard's scope is its test"],
+  },
 ];

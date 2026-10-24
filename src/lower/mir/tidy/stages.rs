@@ -277,9 +277,6 @@ pub(super) const STAGES: &[Stage] = &[
             pass("written elses", |b, h| {
                 js::statement_lists(b, &mut |s| written_elses(s, &h.written.elses))
             }),
-            pass("tail continues", |b, _| {
-                js::statement_lists(b, &mut |s| tail_continues(s))
-            }),
             // A check MIR wrote first in a chain's last `else`: the chain's arm.
             pass("chained checks", |b, _| {
                 js::statement_lists(b, &mut |s| chained_checks(s))
@@ -296,6 +293,11 @@ pub(super) const STAGES: &[Stage] = &[
             pass("jumps past blocks", |b, _| {
                 js::statement_lists(b, &mut |s| jumps_past_blocks(s))
             }),
+            // A block's `break` a loop that ends it ends with, where `exits
+            // after` put the loop: the loop's own.
+            pass("blocks loops end", |b, _| {
+                js::statement_lists(b, &mut |s| blocks_loops_end(s))
+            }),
             pass("settle jumps", |b, _| settle_jumps(b)),
             pass("declarations", |b, _| declarations(b)),
             // A loop's early `break`s, its tests read in place now, and its test.
@@ -311,6 +313,11 @@ pub(super) const STAGES: &[Stage] = &[
             pass("tail returns", |b, h| tail_returns(b, h.returns)),
             // A loop's early exits again, of what's taken its shape since.
             pass("early returns", |b, _| js::statement_lists(b, &mut early_returns)),
+            // The `continue`s a loop's body ends with anyway, which the
+            // program didn't write, once those have each loop's shape.
+            pass("tail continues", |b, _| {
+                js::statement_lists(b, &mut |s| tail_continues(s))
+            }),
             // A chain's arms, as statements, in the order written.
             pass("written chains", |b, _| {
                 js::statement_lists(b, &mut |s| written_chains(s))

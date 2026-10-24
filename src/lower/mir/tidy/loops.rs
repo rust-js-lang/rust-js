@@ -356,11 +356,12 @@ pub(super) fn while_tests(stmts: &mut Vec<Stmt>, loops: &[(js::Span, bool, Optio
         }
         // `while (true) { if (t) { rest } else { break; } }`, the `while`
         // itself as Rust writes it, its test as written (ADR 0683): `while
-        // (t) { rest }` (ADR 0702). A `break` of no label, in the loop's
-        // body and no loop in it, is the loop's own.
+        // (t) { rest }` (ADR 0702); of a `while (a)`, `while (a && t) {
+        // rest }`, as a guard's scope's loop is once what its first tidy
+        // left apart is read in place (ADR 0705). A `break` of no label, in
+        // the loop's body and no loop in it, is the loop's own.
         let own_break = |s: &Stmt| matches!(s.kind, StmtKind::Break(None));
         if let StmtKind::While { cond, body, .. } = &mut stmts[i].kind
-            && matches!(cond.kind, ExprKind::Bool(true))
             && let (
                 Some(Stmt {
                     kind: StmtKind::If(_, _, otherwise),
@@ -389,7 +390,10 @@ pub(super) fn while_tests(stmts: &mut Vec<Stmt>, loops: &[(js::Span, bool, Optio
             if ended {
                 broken_after(&mut rest);
             }
-            *cond = test;
+            *cond = match cond.kind {
+                ExprKind::Bool(true) => test,
+                _ => Expr::bin(Op::And, std::mem::replace(cond, Expr::undefined()), test),
+            };
             *body = rest;
             i += 1;
             continue;

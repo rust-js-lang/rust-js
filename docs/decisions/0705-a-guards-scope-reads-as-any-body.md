@@ -4,7 +4,9 @@ Status: Accepted. Amends [0693](0693-a-guards-scope-is-one-finally-its-returns-i
 whose `try` kept the temporaries each statement's own `try` had held
 apart, and whose guard stayed an object where a field's name was taken;
 and [0589](0589-a-drop-dropped-once-is-its-body-there.md), whose guard
-was its fields only where no name of the function was a field's.
+was its fields only where no name of the function was a field's. Amended
+below: a `while`'s test the scope held apart joins the loop's, and a loop
+that ends a block MIR made breaks as a loop.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): A, the same drops in the
 same order, and what's read the same value; only how the JS reads changes.
@@ -77,10 +79,7 @@ try {
 try {
   const [sampleStack, controlStack] = DetermineComponentFrameRoot(fn, construct);
   ..
-  while (c < controlLines.length) {
-    if (controlLines[c].includes('DetermineComponentFrameRoot')) {
-      break;
-    }
+  while (c < controlLines.length && !controlLines[c].includes('DetermineComponentFrameRoot')) {
     c++;
   }
   ..
@@ -140,3 +139,99 @@ try {
   `unwound-stages-none` (`mir/tidy/stages.rs`), `guard-field-variable-kept`,
   `guard-field-variable-set-later`, `guard-field-copy-declares`,
   `guard-field-self-copy-kept`, `guard-field-shadowed` (`drops/inlined.rs`).
+
+## Amendment: a `while`'s test is whole, and a loop that ends a block breaks as a loop
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, how the JS reads;
+nothing that runs changes.
+
+React's ported `describeNativeComponentFrame` still read, in its guard's
+`finally`:
+
+```js
+bb166: {
+  if (sampleStack != null && controlStack != null) {
+    ..
+    while (s < sampleLines.length) {
+      if (!sampleLines[s].includes('DetermineComponentFrameRoot')) {
+        s++;
+      } else {
+        break;
+      }
+    }
+    ..
+    while (true) {
+      if (s >= 1 && c >= 0) {
+        ..
+      }
+      break bb166;
+    }
+  }
+}
+```
+
+where upstream writes `while (s < sampleLines.length &&
+!sampleLines[s].includes('DetermineComponentFrameRoot')) { s++; }` and
+`while (s >= 1 && c >= 0) { .. }`, with no label. Neither was new between
+ADR 0705's commit and ADR 0710's, as the port reads now: each was there
+before ADR 0709 took `$index` out of the first.
+
+- **The `while`'s test.** Its first tidy left `contains` apart, `let
+  contains; try { contains = .. } catch ..`, so `while_tests` took only
+  `s < sampleLines.length` for the loop's test. Read in place once the
+  scope is one `finally`, the rest is `if (t) { s++; } else { break; }`,
+  which `while_tests` took only of a `while (true)`. **`while (a) { if (t)
+  { rest } else { break; } }` is now `while (a && t) { rest }`**, as
+  `while (true)`'s is `while (t) { rest }`, one rule for the `if` first in
+  a `while`'s body whose `else` is its `break` alone, wherever its test
+  came from (ADR 0702).
+- **The label.** MIR puts each loop in the way out of the one before;
+  `exits after` puts each after it, so the last ends the `if`, and the
+  block MIR made round it, whose end its `break bb166` went to. **A loop
+  that ends a labeled block MIR made, through the `if`s and blocks that
+  end with it, and whose body ends `break bb166;`, ends with `break;`**
+  (`blocks_loops_end`, in `chains`), which goes where the block ends too,
+  and which `while_tests` reads the loop's test by; `unlabeled` then
+  leaves the block where nothing else names it. Only the body's last
+  jump: a `break bb45` in an `if` of the body is what later passes read
+  a loop's way out by, `while (t) { i++; } rest` of a `rest` that leaves
+  the loop. This isn't a guard's alone: `loop_value_after_loop.rs`,
+  `calculator.rs` and `returns_in_place.rs` lose their `bb22:`, `bb69:`
+  and `bb61:` too, and the last two a `while (true)`, `while
+  (Parser.peek(parser) === "Comma") { .. }`; `tail continues` runs after
+  `early returns` now, not before `chained checks`: `early returns` makes
+  `if (r.TAG === "Err") { return r; } args.push(r._0); continue;` of a
+  loop this leaves `while (true)` no more, whose `continue` goes round
+  anyway, and nothing between the two places reads one.
+
+The corpus reads shorter: three labeled blocks and two `while (true)`
+fewer, fourteen lines; `renamed x$1` is as many as it was, its share of
+fewer lines a tenth higher (`docs/readability.txt`).
+
+Both loops now read as upstream's, and the third is `while (s >= 1 && c
+>= 0) { if (..) { ..; break; } s--; c--; }` (ADR 0702).
+
+### Alternatives
+
+- **Running `loops` and `settled` again after the scopes are made**:
+  ADR 0705 rejected the whole of tidy for `loops`'s MIR shapes; `settled`
+  alone left both, as neither is a jump it settles.
+- **Taking an `if` into the test only where the program wrote it in the
+  `while`'s condition**: the `while (true)` rule takes any, and a `while`
+  whose body is an `if` and an `else` of a `break` is already written so
+  where nothing's guarded. One rule, not one per where the `if` came from.
+
+### What holds it
+
+- `test/lowering-written-loops.test.ts`: "a while in a guard's scope is
+  its test", "a loop that ends a block breaks as a loop", run in JS, and
+  "React's describeNativeComponentFrame's loops are upstream's", of the
+  port as react-in-rust writes it (`test/ports/component-stack-frame`).
+- Corpus `loop_value_after_loop.rs`, `calculator.rs`, `returns_in_place.rs`,
+  against native Rust.
+- Mutations `while-test-of-true-only`, `while-test-joined-dropped`
+  (`mir/tidy/loops.rs`), `loop-ending-block-kept`,
+  `loop-ending-block-not-last` (`mir/tidy/jumps/continues.rs`); and
+  `tail-continues-unwritten-kept` (`mir/tidy/stages.rs`), of the pass
+  where it runs now, held by "a loop that ends a block breaks as a loop"
+  too.

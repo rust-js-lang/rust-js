@@ -18,19 +18,17 @@ function main() {
     }
     v22 = v22;
     let tmp;
-    bb22: {
-      if (id(false)) {
-        tmp = id(0n);
-      } else {
-        let c421536 = 0;
-        while (true) {
-          c421536 = (c421536 + 1) >>> 0;
-          if (!(c421536 > id(2)) && !id(true)) {
-            continue;
-          }
-          tmp = id(0n);
-          break bb22;
+    if (id(false)) {
+      tmp = id(0n);
+    } else {
+      let c421536 = 0;
+      while (true) {
+        c421536 = (c421536 + 1) >>> 0;
+        if (!(c421536 > id(2)) && !id(true)) {
+          continue;
         }
+        tmp = id(0n);
+        break;
       }
     }
     console.log(`${String(tmp).padEnd(4)}|`);

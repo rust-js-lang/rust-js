@@ -141,31 +141,25 @@ function callArgs(tokens) {
   if (t != null) {
     if (t === "(") {
       const args = [];
-      bb61: {
-        if ($peek(it) !== ")") {
+      if ($peek(it) !== ")") {
+        const result = parse($next(it) ?? "");
+        if (result.TAG === "Err") {
+          return result;
+        }
+        args.push(result._0);
+        while ($peek(it) === ",") {
+          $next(it);
+          for (let i = 0; i < 2; i++) {
+            if ($peek(it) !== "_") {
+              break;
+            }
+            $next(it);
+          }
           const result = parse($next(it) ?? "");
           if (result.TAG === "Err") {
             return result;
           }
           args.push(result._0);
-          while (true) {
-            if ($peek(it) === ",") {
-              $next(it);
-              for (let i = 0; i < 2; i++) {
-                if ($peek(it) !== "_") {
-                  break;
-                }
-                $next(it);
-              }
-              const result = parse($next(it) ?? "");
-              if (result.TAG === "Err") {
-                return result;
-              }
-              args.push(result._0);
-              continue;
-            }
-            break bb61;
-          }
         }
       }
       if ($next(it) !== ")") {

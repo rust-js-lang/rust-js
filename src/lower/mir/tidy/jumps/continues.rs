@@ -186,6 +186,50 @@ pub(in crate::lower::mir::tidy) fn jumps_past_blocks(stmts: &mut [Stmt]) {
     }
 }
 
+/// A labeled block MIR made that a loop ends, `l: { .. if (t) { .. while
+/// (true) { ..; break l; } } }`, as the last of loops each in the one
+/// before's way out is once `exits after` puts each after it: the `break
+/// l` the loop's body ends with, the loop's `break`, which goes where the
+/// block ends too, and which `while_tests` reads the loop's test by;
+/// `unlabeled` then leaves the block, where nothing else names it.
+pub(in crate::lower::mir::tidy) fn blocks_loops_end(stmts: &mut [Stmt]) {
+    // Each loop `stmts` end with, through the `if`s and blocks they end
+    // with: where it ends, they do.
+    fn ending(stmts: &mut [Stmt], label: &str) {
+        let Some(last) = stmts.last_mut() else {
+            return;
+        };
+        match &mut last.kind {
+            StmtKind::While { body, .. } | StmtKind::ForOf { body, .. } | StmtKind::For { body, .. } => {
+                if let Some(Stmt {
+                    kind: StmtKind::Break(broken),
+                    ..
+                }) = body.last_mut()
+                    && broken.as_deref() == Some(label)
+                {
+                    *broken = None;
+                }
+            }
+            StmtKind::If(_, a, b) => {
+                ending(a, label);
+                if let Some(b) = b {
+                    ending(b, label);
+                }
+            }
+            StmtKind::Labeled(_, body) => ending(body, label),
+            _ => {}
+        }
+    }
+    for stmt in stmts {
+        if let StmtKind::Labeled(label, body) = &mut stmt.kind
+            && crate::lower::mir::is_block_label(label)
+        {
+            let label = label.clone();
+            ending(body, &label);
+        }
+    }
+}
+
 /// A loop that ends the body of loop `l` around it, one the program names
 /// no label, as `loops` say, not `'rows`, whose `continue 'rows` it wrote:
 /// each `continue l` of its own, not a loop's inside it, its `break`, which

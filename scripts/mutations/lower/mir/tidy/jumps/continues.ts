@@ -84,4 +84,20 @@ export const mutations: Mutation[] = [
     replace: "                    let _ = otherwise;\n",
     tests: ["test/lowering-written-branches.test.ts", "-t", "has no continue after it"],
   },
+  {
+    name: "loop-ending-block-kept",
+    breaks: "a loop that ends a block MIR made keeps its `break bb97`, and the block its label",
+    file: "src/lower/mir/tidy/jumps/continues.rs",
+    find: "                    *broken = None;\n",
+    replace: "                    let _ = broken;\n",
+    tests: ["test/lowering-written-loops.test.ts", "-t", "a loop that ends a block breaks as a loop"],
+  },
+  {
+    name: "loop-ending-block-not-last",
+    breaks: "a block's first statement taken for what it ends with, its loop's `break bb97` kept",
+    file: "src/lower/mir/tidy/jumps/continues.rs",
+    find: "        let Some(last) = stmts.last_mut() else {\n            return;\n        };\n        match &mut last.kind {\n            StmtKind::While { body, .. } | StmtKind::ForOf { body, .. } | StmtKind::For { body, .. } => {\n                if let Some(Stmt {\n",
+    replace: "        let Some(last) = stmts.first_mut() else {\n            return;\n        };\n        match &mut last.kind {\n            StmtKind::While { body, .. } | StmtKind::ForOf { body, .. } | StmtKind::For { body, .. } => {\n                if let Some(Stmt {\n",
+    tests: ["test/lowering-written-loops.test.ts", "-t", "a loop that ends a block breaks as a loop"],
+  },
 ];
