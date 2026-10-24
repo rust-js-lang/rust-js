@@ -4,7 +4,7 @@ import type { Mutation } from "../../../mutations";
 export const mutations: Mutation[] = [
   {
     name: "clone-names-unfound",
-    breaks: "no local is told as a `clone()`'s, so an `Rc`'s clone stays `const resolved = payload` (ADR 0842)",
+    breaks: "no local is told as a `clone()`'s, so an `Rc`'s clone stays `const resolved = payload` (ADR 0846)",
     file: "src/lower/mir/hints.rs",
     find: "self.tcx.is_lang_item(def_id, LangItem::CloneFn)",
     replace: "self.tcx.is_lang_item(def_id, LangItem::Clone)",

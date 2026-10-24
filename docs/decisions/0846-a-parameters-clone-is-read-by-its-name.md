@@ -1,4 +1,4 @@
-# 0842. A parameter's clone that is the same JS value is read by the parameter's name
+# 0846. A parameter's clone that is the same JS value is read by the parameter's name
 
 Status: Accepted. Extends tidy's `aliases`, of
 [0320](0320-counted-rcs.md)'s uncounted `Rc`, which is the value itself.

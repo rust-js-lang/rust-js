@@ -13,7 +13,7 @@ crate would count an `Rc` a library that counts none hands it.
 
 ## Context
 
-ADRs 0842 and 0843 let React's port write `Rc`s and `Weak`s where it had
+ADRs 0843 and 0846 let React's port write `Rc`s and `Weak`s where it had
 leaked `Box`es: a context whose `Weak`s are itself, set after it's made,
 and a lazy's payload shared by its callbacks. A program printed them as
 upstream does. But Cargo builds every crate as a library, React's

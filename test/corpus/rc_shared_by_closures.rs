@@ -1,7 +1,7 @@
 // One object two closures share, as React's `lazy` shares its payload with
 // the callbacks its thenable settles: an `Rc` of `Cell`s, a clone moved
 // into each, which is the same JS object, so each reads it by its name,
-// `payload.status = 1`, with no `const resolved = payload` (ADR 0842):
+// `payload.status = 1`, with no `const resolved = payload` (ADR 0846):
 // where nothing gives the parameter another value.
 
 use std::cell::Cell;
