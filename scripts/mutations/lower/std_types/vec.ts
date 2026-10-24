@@ -20,11 +20,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "capacity-args-dropped",
-    breaks: "what `reserve` or `with_capacity` is given doesn't run, a call's effects lost",
+    breaks: "what a call JS has nothing of is given doesn't run, `assert_unchecked(loud(value) <= 9)`'s, a call's effects lost",
     file: "src/lower/std_types/vec.rs",
     find: "                    if value.has_effects() {\n",
     replace: "                    if false && value.has_effects() {\n",
-    tests: ["test/corpus.test.ts","-t","vec_edits"],
+    tests: ["test/corpus.test.ts", "-t", "^assert_unchecked.rs$"],
   },
   {
     name: "with-capacity-untracked",

@@ -541,7 +541,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             MapOp::TreeRange { .. } | MapOp::ExtractIf => {
                 return Err(self.unsupported(span, "a map's range, of its value alone"));
             }
-            MapOp::New { set, sorted } => Expr::new_(self.made(set, sorted, generic_args, span)?, Vec::new()),
+            // What `with_capacity` is given does what it does (ADR 0315).
+            MapOp::New { set, sorted } => {
+                for value in values.by_ref() {
+                    if value.has_effects() {
+                        out.push(StmtKind::Expr(value).at(self.js_span(span)));
+                    }
+                }
+                Expr::new_(self.made(set, sorted, generic_args, span)?, Vec::new())
+            }
             MapOp::From { set } => {
                 let items = arg();
                 self.made_of(set, generic_args, items, span)?
