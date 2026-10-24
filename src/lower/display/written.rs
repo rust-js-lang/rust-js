@@ -402,6 +402,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> R<Expr> {
         let (value, ty) = self.shown_through(value, ty);
         let ty = self.shown_type(ty);
+        // `js::shown`'s: the text JS's template makes of the value,
+        // `${value}`, a string, which the value itself may not be (ADR 0312).
+        if self.displays_itself(ty) {
+            return Ok(shown_text(value));
+        }
         if let Some(shown) = self.formatted(value.clone(), (Std::FmtDisplay, ty), pretty) {
             return Ok(shown);
         }
