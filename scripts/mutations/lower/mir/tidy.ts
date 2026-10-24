@@ -112,7 +112,8 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/tidy.rs",
     "find": "        ExprKind::Cond(a, b, c) => [a, b, c].iter().all(|e| inert_element(e, changing)),\n",
     "replace": "",
-    "tests": ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"]
+    "tests": ["test/snapshots.test.ts", "-t", "^apis"],
+    "snapshots": true
   },
   {
     "name": "spread-items-not-read-past-calls",

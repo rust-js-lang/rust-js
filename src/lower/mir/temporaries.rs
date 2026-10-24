@@ -255,6 +255,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
+    /// Whether `operand` takes a temporary not yet written whose value does
+    /// something, which can't be read past what runs before it.
+    pub(super) fn acts_pending(&self, state: &State<'_, 'tcx>, operand: &Operand<'tcx>) -> bool {
+        matches!(operand, Operand::Copy(place) | Operand::Move(place)
+            if self.through_values(state.body, place, true)
+                && state.pending.iter().any(|(l, value)| *l == place.local && !movable(state, value)))
+    }
+
     /// Operands read in this order, `f(a, b)`'s: the temporaries they take
     /// written in place where they're the latest made, in the order they
     /// were made, and what's read before the last of them can't change
@@ -362,9 +370,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let alike = |e: &Expr| match &e.kind {
             js::ExprKind::Var(name) => self.module_names.contains(name) || self.locals.mir.alike.contains(name),
             js::ExprKind::Symbol(_) => true,
+            // Of a plain variable, but not a read a getter may answer, which
+            // may give another value each time (`Expr::reads_same`).
             js::ExprKind::Member(..) => {
                 let mut root = e;
                 while let js::ExprKind::Member(object, _) = &root.kind {
+                    if root.known == js::Known::Getter {
+                        return false;
+                    }
                     root = object;
                 }
                 matches!(&root.kind, js::ExprKind::Var(name) if self.locals.mir.plain.contains(name))

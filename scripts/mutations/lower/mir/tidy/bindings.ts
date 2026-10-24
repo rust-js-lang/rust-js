@@ -385,4 +385,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^adapter_drops.rs$"],
     snapshots: true,
   },
+  {
+    name: "plain-read-of-a-getter",
+    breaks: "a getter's read held by MIR is written where it's read, each time, `typeof child.type` then `const type = child.type`",
+    file: "src/lower/mir/tidy/bindings.rs",
+    find: "                    && value.reads_same()\n",
+    replace: "",
+    tests: ["test/jsx-children.test.ts", "-t", "a capture of an inlined closure leaves no const behind"],
+  },
 ];

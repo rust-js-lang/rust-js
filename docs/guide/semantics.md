@@ -704,11 +704,17 @@ React and JSX are [their own pages](README.md#react).
     with a destructor, drops what it holds at that first `None`, where std
     drops it with the adapter; what the iterator gives after is stepped as
     std's is (ADR 0669).
-21. Where the crate's iterator's impl writes its own `nth`, std passes it
-    through a `fuse` and a `peekable`, and `try_fold`, a `skip`'s
-    `nth(n - 1)`, through a `peekable`, a `fuse` and a `flatten`, which
-    rust-js steps by `next` (#182); elsewhere it's asked as std asks it
-    (ADR 0711).
+21. Where the crate's iterator's impl writes its own `size_hint`,
+    `collect()` into a `Vec` doesn't ask it, where std's asks it as its
+    capacity runs out, which its growth decides; its own `nth`, `fold` and
+    `last` are asked as std asks them, through each adapter that passes
+    them on (ADR 0711).
 22. `Array.isArray(x)` of a revoked `Proxy`, which throws a `TypeError`,
     is taken to do nothing: a test of it that an earlier one decides is
     left out (ADR 0743).
+23. A binding's method of a declared JS type, webapi's `Element` say, is
+    taken to be its class's: `app.append(stepper(..), ..)` looks
+    `append` up before its arguments run, where Rust runs them first, so a
+    method that's a getter, or one an argument replaces, is told apart
+    from Rust's only there. Of a `js::Unknown`, any value, the arguments
+    run first, as Rust runs them (ADR 0750).

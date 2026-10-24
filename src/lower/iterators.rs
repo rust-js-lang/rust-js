@@ -32,7 +32,7 @@ use rustc_span::def_id::DefId;
 /// that knows its back, which `$nextBack` steps (ADR 0429). The one JS form
 /// of it.
 pub(in crate::lower) fn stepped(value: Expr, next: Expr, boxed: bool, back: Option<Expr>) -> Expr {
-    stepped_ends(value, next, boxed, back, None, None, (None, None))
+    stepped_ends(value, next, boxed, back, None, None, OwnMethods::default())
 }
 
 /// `it`, an iterator of the crate's made a JS one, behind a `dyn Iterator`:
@@ -60,6 +60,16 @@ pub(in crate::lower) fn fewest_iterator_args(given: &mut Vec<Expr>) {
     }
 }
 
+/// The methods the impl of a crate's iterator writes itself that std
+/// routes other calls through, each where it writes it: what `$iterator`
+/// is given, and its dictionary (#162, #182).
+#[derive(Default)]
+pub(in crate::lower) struct OwnMethods {
+    pub(in crate::lower) fold: Option<Expr>,
+    pub(in crate::lower) nth: Option<Expr>,
+    pub(in crate::lower) last: Option<Expr>,
+}
+
 /// `stepped`'s, given `len` too, its length, one that knows it, an
 /// `ExactSizeIterator`'s (ADR 0456), `hint`, its own `size_hint`, an
 /// iterator of the crate's whose impl has one: what `size_hint()` of it
@@ -72,10 +82,11 @@ pub(in crate::lower) fn stepped_ends(
     back: Option<Expr>,
     len: Option<Expr>,
     hint: Option<Expr>,
-    (fold, nth): (Option<Expr>, Option<Expr>),
+    own: OwnMethods,
 ) -> Expr {
     // Each given, and each before it, `undefined` where it isn't.
-    let given = [boxed.then(|| Expr::bool(true)), back, len, hint, fold, nth];
+    let OwnMethods { fold, nth, last } = own;
+    let given = [boxed.then(|| Expr::bool(true)), back, len, hint, fold, nth, last];
     let Some(last) = given.iter().rposition(Option::is_some) else {
         return Expr::call(Expr::helper("$iterator"), vec![value, next]);
     };
