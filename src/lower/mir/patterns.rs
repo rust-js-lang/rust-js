@@ -57,15 +57,25 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// The locals `OptionWrites::null_nones` says: each write a `Some(..)` or a
-    /// `None`, one at least, and each read a nullable field's, or a
+    /// `None`, one at least, and each read a nullable field's or binding
+    /// parameter's, or a copy's only they read (ADR 0781); or a
     /// `#[rust_js::nullable]` function's result, by its return.
     fn mir_null_nones(&self, body: &mir::Body<'tcx>, locals: &Locals) -> std::collections::HashSet<Local> {
         let mut made: std::collections::HashMap<Local, (usize, bool)> = Default::default();
         let mut given: std::collections::HashMap<Local, usize> = Default::default();
+        // Each copy of a variable, `_2 = copy _1`, MIR's of `owner` in `Info
+        // { owner }`: the variable's read, given where the copy is.
+        let mut copies: Vec<(Local, Local)> = Vec::new();
         for statement in body.basic_blocks.iter().flat_map(|b| &b.statements) {
             let mir::StatementKind::Assign(assign) = &statement.kind else {
                 continue;
             };
+            if let Rvalue::Use(mir::Operand::Copy(read) | mir::Operand::Move(read), _) = &assign.1
+                && read.projection.is_empty()
+                && assign.0.projection.is_empty()
+            {
+                copies.push((assign.0.local, read.local));
+            }
             let Rvalue::Aggregate(kind, operands) = &assign.1 else {
                 continue;
             };
@@ -85,6 +95,36 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 {
                     *given.entry(read.local).or_default() += 1;
                 }
+            }
+        }
+        // And a binding's parameter it names `#[rust_js::nullable(..)]`.
+        for block in body.basic_blocks.iter() {
+            let mir::TerminatorKind::Call { func, args, .. } = &block.terminator().kind else {
+                continue;
+            };
+            let Some((def_id, _)) = func.const_fn_def() else {
+                continue;
+            };
+            let nullable = bindings::nullable_params(self.tcx, def_id);
+            if nullable.is_empty() {
+                continue;
+            }
+            let idents = self.tcx.fn_arg_idents(def_id);
+            for (i, arg) in args.iter().enumerate() {
+                if let Some(read) = arg.node.place()
+                    && read.projection.is_empty()
+                    && (idents.get(i).copied().flatten()).is_some_and(|ident| nullable.contains(&ident.name))
+                {
+                    *given.entry(read.local).or_default() += 1;
+                }
+            }
+        }
+        // A copy made once and only given to nullable fields or parameters
+        // gives what it's a copy of to them: `let owner = None;`'s `None` is `null` where
+        // it's made (ADR 0781).
+        for (copy, of) in copies {
+            if locals.writes[copy] == 1 && given.get(&copy).is_some_and(|&n| n == locals.reads[copy]) {
+                *given.entry(of).or_default() += 1;
             }
         }
         // A `#[rust_js::nullable]` function's result is read by its return.

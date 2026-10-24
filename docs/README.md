@@ -671,6 +671,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0772 A nullable `Cell` field's `None` is `null`, made and written](decisions/0772-a-nullable-cell-field-writes-null.md)
 - [0773 A binding a module's default names is exported as the default alone](decisions/0773-a-held-default-is-exported-once.md)
 - [0780 An or-pattern's tests are in the order written, of a field read in place](decisions/0780-an-or-patterns-tests-are-as-written-of-a-field-read-in-place.md)
+- [0781 A `None` only nullables read is `null` where it's made](decisions/0781-a-none-only-nullables-read-is-null-where-its-made.md)
 - [0720 A labeled block's `break` and a named constant, in a body's ranges](decisions/0720-a-labeled-block-and-a-named-constant-in-a-bodys-ranges.md)
 - [0721 `js::strict_equals(a, b)` is JS's `===`](decisions/0721-strict-equals-is-jss-triple-equals.md)
 - [0722 A `#[repr(..)]` enum's variant is its number](decisions/0722-a-repr-enums-variant-is-its-number.md)

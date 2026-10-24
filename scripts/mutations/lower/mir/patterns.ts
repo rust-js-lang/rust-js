@@ -3,6 +3,30 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "null-none-copy-ungiven",
+    breaks: "`let owner = None;` given to a nullable field is `undefined` where it's made, and `owner ?? null` where it's given (ADR 0781)",
+    file: "src/lower/mir/patterns.rs",
+    find: "                *given.entry(of).or_default() += 1;\n",
+    replace: "",
+    tests: ["test/lowering-nullable.test.ts", "-t", "a None only nullable fields and parameters read"],
+  },
+  {
+    name: "null-none-param-ungiven",
+    breaks: "`let owner = None;` given to a binding's nullable parameter is `undefined` where it's made (ADR 0781)",
+    file: "src/lower/mir/patterns.rs",
+    find: ".is_some_and(|ident| nullable.contains(&ident.name))\n",
+    replace: ".is_some_and(|ident| nullable.contains(&ident.name) && false)\n",
+    tests: ["test/lowering-nullable.test.ts", "-t", "a None only nullable fields and parameters read"],
+  },
+  {
+    name: "null-none-copy-read-elsewhere",
+    breaks: "a `None` copied to a variable read elsewhere is `null`, so `let other = owner;` returns `null`, not `undefined` (ADR 0781)",
+    file: "src/lower/mir/patterns.rs",
+    find: "            if locals.writes[copy] == 1 && given.get(&copy).is_some_and(|&n| n == locals.reads[copy]) {\n",
+    replace: "            if locals.writes[copy] == 1 {\n",
+    tests: ["test/lowering-nullable.test.ts", "-t", "a None only nullable fields and parameters read"],
+  },
+  {
     name: "classify-some-local-unknown",
     breaks: "what `classify(Some(value))` gives isn't known to be there, so a test of its object leaves out `null`",
     file: "src/lower/mir/patterns.rs",
