@@ -27,14 +27,32 @@ pub(super) struct MoveFacts<'a> {
 pub(super) fn inlined(stmts: &mut Vec<Stmt>, facts: &MoveFacts) {
     let mut i = 0;
     while i + 1 < stmts.len() {
-        let Some((Moved { at, read, replaced }, _)) = moved(&stmts[i], &stmts[i + 1..], facts) else {
+        let (made, rest) = stmts.split_at_mut(i + 1);
+        if !entered(&made[i], rest, facts) {
             i += 1;
             continue;
-        };
-        *read.of_mut(&mut stmts[i + 1 + at]) = replaced;
+        }
         stmts.remove(i);
         // The one before it may now be read by the statement after it too.
         i = i.saturating_sub(1);
+    }
+}
+
+/// `stmt`'s temporary read in its place in `rest`, where `moved` says it
+/// may be; or in a block that `rest` starts with and reads it in alone,
+/// `const _183 = f(); bb200: { if (_183) .. }`, which entering runs
+/// nothing before (ADR 0750). Whether it was.
+fn entered(stmt: &Stmt, rest: &mut [Stmt], facts: &MoveFacts) -> bool {
+    if let Some((Moved { at, read, replaced }, _)) = moved(stmt, rest, facts) {
+        *read.of_mut(&mut rest[at]) = replaced;
+        return true;
+    }
+    let (StmtKind::Const(name, _), [first, after @ ..]) = (&stmt.kind, rest) else {
+        return false;
+    };
+    match &mut first.kind {
+        StmtKind::Labeled(_, body) if js::mentions_in(after, name) == 0 => entered(stmt, body, facts),
+        _ => false,
     }
 }
 
@@ -281,6 +299,13 @@ fn leads(e: &Expr, name: &str, guard: Option<&Expr>, passes: &dyn Fn(&Expr) -> b
         }
         ExprKind::Binary(_, a, b) => in_order(&mut [&**a, &**b].into_iter()),
         ExprKind::Array(items) | ExprKind::Template(_, items, _) => in_order(&mut items.iter()),
+        // A method's call, `out.push(_20, ..)`: its receiver, then its
+        // arguments. What JS looks up of the receiver is the method its
+        // type has, which nothing the program does changes; a call MIR
+        // makes is written so, its receiver read first (ADR 0750).
+        ExprKind::Call(f, args) if let ExprKind::Member(receiver, _) = &f.kind => {
+            in_order(&mut std::iter::once(&**receiver).chain(args))
+        }
         ExprKind::Call(f, args) | ExprKind::New(f, args) => in_order(&mut std::iter::once(&**f).chain(args)),
         ExprKind::Object(props) => in_order(&mut props.iter().map(|p| {
             let (js::Prop::Field(_, v) | js::Prop::Getter(_, v) | js::Prop::Setter(_, v) | js::Prop::Spread(v)) = p;

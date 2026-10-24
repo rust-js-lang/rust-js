@@ -92,4 +92,20 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^(adapter_drops|tuple_scrutinee_calls).rs$"],
     snapshots: true,
   },
+  {
+    name: "inlined-not-past-a-method",
+    breaks: "a call's value MIR holds before a branch stays a `const value$1 = ..`, not read in `out.push(..)`'s arguments past the method",
+    file: "src/lower/mir/tidy/moves.rs",
+    find: "        ExprKind::Call(f, args) if let ExprKind::Member(receiver, _) = &f.kind => {\n",
+    replace: "        ExprKind::Call(f, args) if false && let ExprKind::Member(receiver, _) = &f.kind => {\n",
+    tests: ["test/lowering-moves.test.ts", "-t", "past the method"],
+  },
+  {
+    name: "inlined-not-into-blocks",
+    breaks: "a test MIR holds before the blocks its arms leave stays a `const value = ..`, not read where it's tested",
+    file: "src/lower/mir/tidy/moves.rs",
+    find: "        StmtKind::Labeled(_, body) if js::mentions_in(after, name) == 0 => entered(stmt, body, facts),\n",
+    replace: "        StmtKind::Labeled(_, body) if false && js::mentions_in(after, name) == 0 => entered(stmt, body, facts),\n",
+    tests: ["test/lowering-moves.test.ts", "-t", "block after it"],
+  },
 ];

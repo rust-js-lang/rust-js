@@ -76,10 +76,8 @@ function stockErrorDisplay_fmt(stockError, options) {
 const linePriced = {
   unitCents: linePriced_unitCents,
   quantity: linePriced_quantity,
-  totalCents: (self) => {
-    const value = BigInt(linePriced_unitCents(self));
-    return BigInt.asUintN(64, value * BigInt(linePriced_quantity(self)));
-  },
+  totalCents: (self) =>
+    BigInt.asUintN(64, BigInt(linePriced_unitCents(self)) * BigInt(linePriced_quantity(self))),
 };
 
 function linePriced_unitCents(line) {
@@ -165,10 +163,7 @@ const Inventory = {
 
   valueCents(inventory) {
     return Array.from(inventory.items.values())
-      .map((item) => {
-        const value = BigInt(item.priceCents);
-        return BigInt.asUintN(64, value * BigInt(item.stock));
-      })
+      .map((item) => BigInt.asUintN(64, BigInt(item.priceCents) * BigInt(item.stock)))
       .reduce((a, b) => BigInt.asUintN(64, a + b), 0n);
   },
 };

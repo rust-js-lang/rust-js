@@ -58,10 +58,9 @@ function main() {
   items.sort($cmp);
   console.log(`[${items.map((item) => $debugStr(item)).join(", ")}]`);
   const units = all.map((s) => s.units);
-  const diffs = $windows(units, 2).map((w) => {
-    const value = BigInt($index(w, 1));
-    return BigInt.asIntN(64, value - BigInt($index(w, 0)));
-  });
+  const diffs = $windows(units, 2).map((w) =>
+    BigInt.asIntN(64, BigInt($index(w, 1)) - BigInt($index(w, 0))),
+  );
   console.log(`[${diffs.join(", ")}]`);
   const running = $lazyScan($iter(units), 0, (acc, u) => {
     acc.value = (acc.value + u) >>> 0;

@@ -15,8 +15,7 @@ function lengths(iters) {
 function firsts(iters) {
   const out = [];
   for (const i of iters) {
-    const value = $intoIter(i);
-    out.push($nextSome(value));
+    out.push($nextSome($intoIter(i)));
   }
   return out;
 }

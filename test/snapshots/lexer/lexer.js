@@ -143,8 +143,7 @@ export function capitalize(s) {
 export function report() {
   let out = "";
   for (const src of ['let x_1 = 42 + y;\n// note\nprint("hi there") 7', 'a "open', "  "]) {
-    const lexer = Lexer.new(src);
-    const value = Lexer.tokens(lexer);
+    const value = Lexer.tokens(Lexer.new(src));
     out += `${value.TAG === "Ok" ? `Ok([${value._0.map((item) => tokDebug_fmt(item)).join(", ")}])` : `Err(${$debugStr(value._0)})`}\n`;
   }
   const value = pairs([1, 2, 3, 4, 5]);

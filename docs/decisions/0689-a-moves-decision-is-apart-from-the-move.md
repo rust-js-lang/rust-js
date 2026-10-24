@@ -1,6 +1,6 @@
 # 0689. A move's decision is apart from the move
 
-Status: Accepted.
+Status: Accepted. Extended by [0750](0750-a-temporary-is-read-past-a-method-and-into-a-block.md): past a method, and into a block.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): none; the JS is the
 same, byte for byte, across the corpus.

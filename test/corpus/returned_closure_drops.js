@@ -18,10 +18,7 @@ export function entry() {
 
 function keyToCmp(key, KOrd, dropF) {
   return $dropping(
-    (a, b) => {
-      const value = key(a);
-      return KOrd.cmp(value, key(b));
-    },
+    (a, b) => KOrd.cmp(key(a), key(b)),
     () => {
       dropF?.(key);
     },
@@ -83,8 +80,7 @@ function main() {
   const cmp = keyToCmp(
     (x) => {
       const w = weights;
-      const value = BigInt(x);
-      return BigInt.asIntN(64, $bigAbs(BigInt.asIntN(64, value - BigInt(w[0]))));
+      return BigInt.asIntN(64, $bigAbs(BigInt.asIntN(64, BigInt(x) - BigInt(w[0]))));
     },
     { cmp: $cmp },
     (value) => {

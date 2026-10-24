@@ -649,11 +649,12 @@ function main() {
     lexErrorDebug_fmt,
   );
   console.log(`[${tokens.map((item) => tokenDebug_fmt(item)).join(", ")}]`);
-  const parser = {
-    tokens: $unwrapOk(Lexer.tokens(Lexer.new('f(1, "s") + 2')), undefined, lexErrorDebug_fmt),
-    at: 0,
-  };
-  const e = $unwrapOk(Parser.expr(parser));
+  const e = $unwrapOk(
+    Parser.expr({
+      tokens: $unwrapOk(Lexer.tokens(Lexer.new('f(1, "s") + 2')), undefined, lexErrorDebug_fmt),
+      at: 0,
+    }),
+  );
   console.log(`${exprDebug_fmt(e)}`);
 }
 //# sourceMappingURL=case.js.map

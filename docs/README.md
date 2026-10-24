@@ -613,7 +613,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0686 The stack trace hook's type is named, `js_error::PrepareStackTrace<R>`](decisions/0686-the-stack-trace-hooks-type-is-named.md)
 - [0687 A consumer steps its iterator as std's does, through the crate's own `fold` and `nth`](decisions/0687-a-consumer-steps-its-iterator-as-std-does.md) *(amended by 0690: and one given as it is, by its dictionary; amended by 0711: and what stops early, by `try_fold`)*
 - [0688 A `Result`'s JS, and an enum's, has one owner, `js::result` and `js`](decisions/0688-a-results-js-has-one-owner.md)
-- [0689 A move's decision is apart from the move: `moved` says where and why, `inlined` applies it](decisions/0689-a-moves-decision-is-apart-from-the-move.md) *(amended: two arms as one assignment, decided apart too, `one_assignment`)*
+- [0689 A move's decision is apart from the move: `moved` says where and why, `inlined` applies it](decisions/0689-a-moves-decision-is-apart-from-the-move.md) *(amended: two arms as one assignment, decided apart too, `one_assignment`; extended by 0750: past a method, and into a block)*
 - [0690 An iterator given as it is folds by its own `fold`, and drops once](decisions/0690-an-iterator-given-as-it-is-folds-by-its-own-fold.md) *(amended by 0711: `try_fold` passed on as its `fold` is)*
 - [0691 A `dyn Any` drops where the crate makes one of what drops](decisions/0691-a-dyn-any-drops-where-the-crate-makes-one-that-does.md)
 - [0692 A thrown `Error` is a panic's message and what JS threw, both](decisions/0692-a-thrown-error-is-a-panic-and-what-js-threw.md) *(amended by 0706: its `&JsError` of a `try` of panics alone is the `Error`, and resumed is `throw` of it; 0710: every payload's `&JsError` is what was thrown)*
@@ -655,6 +655,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0743 A part of a chain of tests an earlier test decides is left out](decisions/0743-a-part-of-a-chain-a-test-decides-is-left-out.md)
 - [0744 A value or what it falls back to is `||`](decisions/0744-a-value-or-its-fallback-is-or.md)
 - [0745 A `continue` in a chain of `if`s is where it's written](decisions/0745-a-continue-in-a-chain-is-where-it-is-written.md)
+- [0750 A temporary is read past a method, and in the block after it](decisions/0750-a-temporary-is-read-past-a-method-and-into-a-block.md)
 - [0751 A binding only an arm's guard reads isn't written in the arm](decisions/0751-a-binding-only-a-guard-reads-isnt-written.md)
 - [0720 A labeled block's `break` and a named constant, in a body's ranges](decisions/0720-a-labeled-block-and-a-named-constant-in-a-bodys-ranges.md)
 - [0721 `js::strict_equals(a, b)` is JS's `===`](decisions/0721-strict-equals-is-jss-triple-equals.md)
