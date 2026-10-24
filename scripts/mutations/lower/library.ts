@@ -111,7 +111,7 @@ export const mutations: Mutation[] = [
     breaks: "a crate using a library of plain items, a `bool`'s, takes each `dyn Fn` to drop and each `Rc` to be counted, and refuses React's scheduler",
     file: "src/lower/library.rs",
     find: "        let mut reached = Reached::default();\n        if !self.any() {\n            return reached;\n        }\n",
-    replace: "        let mut reached = Reached::default();\n        if self.any() {\n            return Reached { functions: true, fn_dyns: true, rcs: true };\n        }\n",
+    replace: "        let mut reached = Reached::default();\n        if self.any() {\n            return Reached { functions: true, fn_dyns: true, rcs: true, uncounted_rcs: BTreeSet::new() };\n        }\n",
     tests: ["test/cargo-link.test.ts", "-t", "a library gives a crate's dyn Fns a drop only through its own functions"],
   },
   {

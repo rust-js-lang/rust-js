@@ -68,7 +68,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "cargo-app-a-library",
-    breaks: "the app, `RUST_JS_APP`'s package, is compiled as a library, and refuses what only a library can't do, a counted `Rc`",
+    breaks: "the app, `RUST_JS_APP`'s package, is compiled as a library, and copies a `Copy` struct only a library's consumers could change (ADR 0844)",
     file: "src/cargo.rs",
     find: "    if std::env::var(APP)\n        .ok()\n        .is_none_or(|app| std::env::var(\"CARGO_PKG_NAME\").ok() != Some(app))\n    {\n",
     replace: "    if true {\n",

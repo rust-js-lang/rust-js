@@ -150,6 +150,12 @@ context.Consumer = { $$typeof: REACT_CONSUMER_TYPE, _context: context };
   associated type.
 - Every corpus case compiled as a library, counting none where it reads
   none, against native Rust.
+- `test/corpus/rc_of_param_unnamed.rs`: a generic function's `Rc` of its
+  parameter's value, which its caller's expressions don't name, counted,
+  dropping a `Loud` with the last clone, with native Rust; ADR 0494's
+  `generic-rc-uncounted` holds it, as `generic_rc_drops`' `Tee`, its
+  `Rc` in a field its caller's values reach, is now counted by its
+  `Loud`.
 - Mutations in `scripts/mutations/lower/analysis/rc_counts.ts`
   (`library-counts-every-rc`, `library-counts-some-rcs`,
   `copy-param-dropping`, `held-fields-unseen`),
