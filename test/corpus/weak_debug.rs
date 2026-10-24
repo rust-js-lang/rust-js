@@ -23,6 +23,8 @@ fn main() {
     println!("{:#?}", kid);
     let w: Weak<i32> = Weak::new();
     println!("{:?} {:?}", w, Rc::downgrade(&Rc::new(5)).upgrade());
+    // Of a counted `Rc`'s, two to nothing are one (ADR 0843).
+    println!("{}", Weak::ptr_eq(&w, &Weak::new()));
     let s = std::sync::Arc::new(3);
     println!("{:?}", std::sync::Arc::downgrade(&s));
 }

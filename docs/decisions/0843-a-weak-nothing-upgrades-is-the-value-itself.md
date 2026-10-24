@@ -83,6 +83,8 @@ context.consumer = { context };
   `0`, since nothing's strong (`$weakCount`).
 - **A library, and a crate using one, counts every `Rc` and `Weak`**, as
   before (ADR 0523): its `Rc`s are shared with crates it can't see.
+  (Amended by [0844](0844-a-library-that-reads-no-count-counts-no-rc.md):
+  one that reads no count counts none.)
 
 ## Why
 
@@ -122,7 +124,9 @@ context.consumer = { context };
 
 - `test/corpus/weak_cycle_set_after.rs`: React's context's cycle, with
   `Weak::new()`, `take`, `ptr_eq` of two to nothing and of two
-  allocations, and `{:?}`, with native Rust, and as a library, counted.
+  allocations, and `{:?}`, with native Rust, and as a library.
+- `test/corpus/weak_debug.rs`: two counted `Weak::new()`s are
+  `Weak::ptr_eq`, with native Rust.
 - `test/corpus/weak_uncounted_uses.rs`: an `Option` of one, a derived
   clone of a struct holding one, one written through a `&mut`, replaced,
   taken, and `vec![weak; 3]`, with native Rust.
