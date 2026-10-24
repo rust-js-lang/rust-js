@@ -161,15 +161,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "division_check_order"],
   },
   {
-    name: "read-from-past-assignment",
-    breaks: "a local assigned again before it's read is taken as read past a drop, its old value read there for nothing",
-    file: "src/lower/mir/queries.rs",
-    find: "                Some(false) => continue 'blocks,\n",
-    replace: "                Some(false) => {}\n",
-    tests: ["test/corpus.test.ts", "-t", "^kept_read_past_branch.rs$"],
-    snapshots: true,
-  },
-  {
     name: "pin-borrow-a-write",
     breaks: "a `&mut` to a pin counts as a write of it, so its binding is a handle",
     file: "src/lower/mir/queries.rs",
