@@ -299,7 +299,16 @@ fn leads(e: &Expr, name: &str, guard: Option<&Expr>, passes: &dyn Fn(&Expr) -> b
         }
         ExprKind::Binary(_, a, b) => in_order(&mut [&**a, &**b].into_iter()),
         ExprKind::Array(items) | ExprKind::Template(_, items, _) => in_order(&mut items.iter()),
-        // A method's call, `out.push(_20, ..)`: its receiver, then its
+        // A binding's method of a JS value, `obj.send(_5, ..)`: looked up
+        // before its arguments run, by a getter it may be, where Rust runs
+        // them first: nothing moves past its receiver (ADR 0750).
+        ExprKind::Call(f, _)
+            if let ExprKind::Member(receiver, _) = &f.kind
+                && f.known == js::Known::Getter =>
+        {
+            leads(receiver, name, guard, passes).or(Some(false))
+        }
+        // Another method's call, `out.push(_20, ..)`: its receiver, then its
         // arguments. What JS looks up of the receiver is the method its
         // type has, which nothing the program does changes; a call MIR
         // makes is written so, its receiver read first (ADR 0750).
