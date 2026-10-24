@@ -188,7 +188,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     Rvalue::Use(operand, _) => self.nulled(state, operand),
                     _ => false,
                 };
-                Value::Expr(bindings::nullable_written(self.value_expr(value, span)?, nulled))
+                Value::Expr(js::Storage::NullForNone.written(self.value_expr(value, span)?, nulled))
             }
             _ => value,
         };

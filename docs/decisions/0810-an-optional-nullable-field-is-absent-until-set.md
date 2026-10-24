@@ -108,7 +108,7 @@ if (__DEV__) {
   `nullable` alone always there, `null` or a value.
 - **One owner**: whether a field's `None` is `null` where it's made is
   `null_where_made`'s; its writes, a cell's and an assignment's alike,
-  `is_nullable`'s, each through `nullable_written`.
+  `is_nullable`'s, each through `js::Storage::NullForNone.written` (ADR 0791).
 
 ## Alternatives
 
