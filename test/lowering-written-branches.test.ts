@@ -223,3 +223,27 @@ test("a read a test takes in place is gone where nothing else reads it", async (
   const differs = lib.differs as unknown as (v: number[], w: number[], i: number, j: number) => number;
   expect([differs([1, 2], [1, 2], 1, 1), differs([1, 2], [1, 3], 1, 1), differs([1], [1], 0, 0), differs([], [1], 0, 0)]).toEqual([0, 1, 1, 0]);
 });
+
+// ADR 0744: an `if` of two values, the second the value the first tests,
+// `if s.is_empty() { "Object" } else { &s }`, is `s || "Object"`, not `!s ?
+// "Object" : s`, reading `s` once. React's `addValueToProperties`
+// (shared/ReactPerformanceTrackProperties.js) writes `insertedEntry[1] ||
+// 'Object'`.
+test("a value or what it falls back to is ||", async () => {
+  const { js, lib } = await compiled("value-or-fallback", `pub fn wrapped(properties: &mut [(String, String)], idx: usize) {
+    let inserted_entry = &mut properties[idx];
+    inserted_entry.1 = "Promise<".to_string()
+        + if inserted_entry.1.is_empty() {
+            "Object"
+        } else {
+            &inserted_entry.1
+        }
+        + ">";
+}
+`);
+  expect(js).toContain('insertedEntry[1] = "Promise<" + (insertedEntry[1] || "Object") + ">";');
+  const properties: [string, string][] = [["a", ""], ["b", "x"]];
+  (lib.wrapped as (p: [string, string][], i: number) => void)(properties, 0);
+  (lib.wrapped as (p: [string, string][], i: number) => void)(properties, 1);
+  expect(properties).toEqual([["a", "Promise<Object>"], ["b", "Promise<x>"]]);
+});

@@ -486,4 +486,12 @@ export const mutations: Mutation[] = [
     replace: "            StmtKind::If(t, ..) if let Some(folded) = decided_part(t, test, holds) => {\n",
     tests: ["test/lowering-switches.test.ts", "-t", "a match of what a value is tells undefined and null"],
   },
+  {
+    name: "mir-tidy-value-or-fallback-conditional",
+    breaks: "`if s.is_empty() { d } else { &s }` is `!s ? d : s`, not `s || d` (ADR 0744)",
+    file: "src/lower/mir/tidy/branches.rs",
+    find: "            return Expr::bin(Op::Or, no, yes);\n",
+    replace: "            return Expr::cond(test.clone(), yes, no);\n",
+    tests: ["test/lowering-written-branches.test.ts", "-t", "a value or what it falls back to is"],
+  },
 ];

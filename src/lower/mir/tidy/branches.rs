@@ -838,6 +838,15 @@ pub(super) fn conditional(test: Expr, yes: Expr, no: Expr, booleans: &HashSet<St
         ExprKind::Binary(Op::And | Op::Or, ..) => negated_bools(test, booleans),
         _ => test.negated_test(),
     };
+    // `!x ? y : x`, and `x ? x : y`, of an `x` that does nothing: `x || y`,
+    // which reads it once (ADR 0744).
+    match &test.kind {
+        ExprKind::Unary(UnaryOp::Not, x) if !x.has_effects() && js::same_path(x, &no) => {
+            return Expr::bin(Op::Or, no, yes);
+        }
+        _ if !test.has_effects() && js::same_path(&test, &yes) => return Expr::bin(Op::Or, yes, no),
+        _ => {}
+    }
     match (&yes.kind, &no.kind) {
         (ExprKind::Bool(true), ExprKind::Bool(false)) => truth(test),
         (ExprKind::Bool(false), ExprKind::Bool(true)) => truth(negate(test)),

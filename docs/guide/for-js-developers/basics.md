@@ -1327,6 +1327,9 @@ export function label(text) {
   `const name = error.name || "Error";`, as React writes it, and set again
   where it's `None`, `is_none()`, `??`
   ([ADR 0651](../../decisions/0651-a-let-then-its-fallback-is-or.md)).
+- An `if` of a value or its fallback is `||`: `if s.is_empty() { "Object"
+  } else { &s }` is `s || "Object"`
+  ([ADR 0744](../../decisions/0744-a-value-or-its-fallback-is-or.md)).
 
 A value JS gives you that may be `null` is an `Option` too:
 [JavaScript types](../interop/types.md).
