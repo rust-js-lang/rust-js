@@ -7,6 +7,7 @@ import { expect, test } from "bun:test";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { runSync } from "./child";
 import { buildReact, compiler, fixture, root, run, target } from "./support";
 
 // The settings an app's TypeScript may have, each one that changes what a
@@ -1281,6 +1282,73 @@ export const ok = <Panel label="a" onClick={(event) => event.currentTarget.align
 `);
   const errors = typeChecked(dir, "use.tsx");
   expect(errors).toEqual([]);
+});
+
+// A binding's `#[rust_js::types]` is a TypeScript type, read into the
+// declaration model: webapi's `ConsoleTask`, Flow's `{ run<T>(f: () => T):
+// T }`, is that object, its method's own `T` its own (ADR 0811), where an
+// optional field and a result add `| null | undefined` to it.
+test("a binding's object type is declared as TypeScript has it", () => {
+  buildReact();
+  const dir = fixture("declarations-written-object");
+  writeFileSync(join(dir, "Cargo.toml"), '[package]\nname = "app"\nversion = "0.0.0"\nedition = "2024"\n');
+  writeFileSync(join(dir, "lib.rs"), `use react::webapi::{ConsoleTask, console};
+
+pub struct Owner {
+    pub name: &'static str,
+    #[rust_js::nullable]
+    pub debug_task: Option<&'static ConsoleTask>,
+}
+
+pub fn debug_task() -> Option<&'static ConsoleTask> {
+    console::create_task().map(|create_task| create_task("lazy()"))
+}
+
+pub fn owner() -> Owner {
+    Owner { name: "lazy", debug_task: debug_task() }
+}
+
+// Its \`T\` is the Rust type's, but where a method has a \`T\` of its own.
+#[cfg_attr(rust_js, rust_js::types = "{ readonly value: T; values: readonly T[]; map<T>(f: (value: T) => T): T[] }")]
+pub struct Held<T>(std::marker::PhantomData<T>);
+
+pub fn held() -> Option<&'static Held<String>> {
+    None
+}
+`);
+  run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `react=${join(target, "libreact.rmeta")}`, "-L", target]);
+  const declarations = readFileSync(join(dir, "lib.d.ts"), "utf8");
+  expect(declarations).toContain("debugTask?: {\n        run<T>(f: () => T): T;\n    } | null | undefined;");
+  expect(declarations).toContain("export function debugTask(): {\n    run<T>(f: () => T): T;\n} | null | undefined;");
+  expect(declarations).toContain("export function held(): {\n    readonly value: string;\n    values: readonly string[];\n    map<T>(f: (value: T) => T): T[];\n} | null | undefined;");
+  writeFileSync(join(dir, "use.ts"), `import { debugTask, held, owner } from "./lib.js";
+export const ran: number | undefined = debugTask()?.run(() => 1);
+export const named: string | undefined = owner().debugTask?.run(() => "lazy");
+export const value: string | undefined = held()?.value;
+export const mapped: boolean[] | undefined = held()?.map((value: boolean) => !value);
+`);
+  expect(typeChecked(dir, "use.ts")).toEqual([]);
+});
+
+// What `#[rust_js::types]` says is a TypeScript type the compiler reads, or
+// an error saying what it reads, where it's written: never a declaration
+// made of what it couldn't read (ADR 0811).
+test("a #[rust_js::types] the compiler can't read is an error saying what it reads", () => {
+  const dir = fixture("declarations-written-unread");
+  const written = ["Map<string", "{ run<T>(f: () => T): T", "string |", "typeof Object.assign", "A & B"];
+  for (const types of written) {
+    writeFileSync(join(dir, "lib.rs"), `use std::marker::PhantomData;
+
+#[cfg_attr(rust_js, rust_js::types = ${JSON.stringify(types)})]
+pub struct Task(PhantomData<u8>);
+`);
+    for (const command of [[compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")], [compiler, "--rustc", "--edition=2024", "--crate-type=lib", "--crate-name=dep", "--emit=metadata", "--target=wasm32-unknown-unknown", `--out-dir=${dir}`, join(dir, "lib.rs")]]) {
+      const refused = runSync(command, root, 60_000);
+      expect(refused.code).not.toBe(0);
+      expect(refused.stderr).toContain(`rust-js: \`#[rust_js::types = ${JSON.stringify(types)}]\` isn't a TypeScript type rust-js reads`);
+      expect(refused.stderr).toContain("a name, `Element`, of a module, `react#ReactNode`");
+    }
+  }
 });
 
 // An `impl Fn(&Item, usize) -> R` parameter is the callback it says, as

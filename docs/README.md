@@ -265,7 +265,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0193 `Some` of a unit variant is tested as the variant](decisions/0193-some-of-a-unit-variant.md)
 - [0194 An attribute read before a child is read once](decisions/0194-jsx-attributes-read-once.md)
 - [0195 The props a component's struct doesn't name are `...rest`](decisions/0195-rest-props.md)
-- [0196 A crate may have a `.d.ts` beside each module's JS](decisions/0196-typescript-declarations.md)
+- [0196 A crate may have a `.d.ts` beside each module's JS](decisions/0196-typescript-declarations.md) *(amended by 0811: `#[rust_js::types]` is a TypeScript type, read)*
 - [0197 What's moved before anything can leave isn't its scope's to drop](decisions/0197-moved-before-leaving.md)
 - [0198 An optional handler passed on to an element is that handler](decisions/0198-optional-handlers.md)
 - [0199 A component takes no drop of its type parameters](decisions/0199-components-take-no-drops.md)
@@ -682,7 +682,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0805 A case's `if` is as written, whatever its other branch ends with](decisions/0805-a-cases-if-is-as-written-whatever-ends-it.md)
 - [0806 A slice's range in bounds is JS's `slice`, and a test held in a `bool` shows what it tests](decisions/0806-a-slices-range-in-bounds-is-js-slice.md)
 - [0810 An optional nullable field is absent until it's set](decisions/0810-an-optional-nullable-field-is-absent-until-set.md)
-- [0811 `console.createTask` is a property the host may lack](decisions/0811-console-create-task-may-be-absent.md)
+- [0811 `console.createTask` is a property the host may lack](decisions/0811-console-create-task-may-be-absent.md) *(amended: `#[rust_js::types]` is a TypeScript type, read into the declaration model, one it can't read an error)*
 - [0720 A labeled block's `break` and a named constant, in a body's ranges](decisions/0720-a-labeled-block-and-a-named-constant-in-a-bodys-ranges.md)
 - [0721 `js::strict_equals(a, b)` is JS's `===`](decisions/0721-strict-equals-is-jss-triple-equals.md) *(fixed by 0775: a `()` compared is `undefined`)*
 - [0722 A `#[repr(..)]` enum's variant is its number](decisions/0722-a-repr-enums-variant-is-its-number.md)
