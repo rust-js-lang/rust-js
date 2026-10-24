@@ -53,7 +53,7 @@ function main() {
   const overwritten = [{ x: 9 }, { x: 9 }];
   $copyFromSlice(overwritten, points, (item) => ({ ...item }));
   overwritten[0].x = 10;
-  const repeated = $repeatItems(points, 2, (item) => ({ ...item }));
+  const repeated = $repeatItems(points, 2, 4, (item) => ({ ...item }));
   $index(repeated, 0).x = 11;
   const joined = [...points, ...$slice(points, 0, 1)].map((item) => ({ ...item }));
   $index(joined, 0).x = 12;

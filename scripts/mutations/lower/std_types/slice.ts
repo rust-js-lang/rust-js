@@ -375,8 +375,8 @@ export const mutations: Mutation[] = [
     name: "repeat-items-shared",
     breaks: "`repeat` of `Copy` structs holds the same objects each time, so changing one changes them all",
     file: "src/lower/std_types/slice.rs",
-    find: "                helper(\"$repeatItems\", Expr::optional_args(vec![items, n], vec![copy]))",
-    replace: "                helper(\"$repeatItems\", Expr::optional_args(vec![items, n], vec![copy.filter(|_| false)]))",
+    find: "                helper(\"$repeatItems\", Expr::optional_args(vec![items, n, size], vec![copy]))",
+    replace: "                helper(\"$repeatItems\", Expr::optional_args(vec![items, n, size], vec![copy.filter(|_| false)]))",
     tests: ["test/corpus.test.ts", "-t", "^copied_structs_apart.rs$"],
   },
   {
@@ -395,5 +395,13 @@ export const mutations: Mutation[] = [
     find: "            SliceOp::FromRef => Expr::array(vec![arg()]),\n",
     replace: "            SliceOp::FromRef => arg(),\n",
     tests: ["test/corpus.test.ts", "-t", "^slice_from_ref.rs$"],
+  },
+  {
+    name: "slice-repeat-of-no-size",
+    breaks: "a slice's `repeat(n)` checks room by its items' count alone",
+    file: "src/lower/std_types/slice.rs",
+    find: "                let size = self.room_item_size(item());\n",
+    replace: "                let size = Expr::int(0);\n",
+    tests: ["test/runtime-package.test.ts", "-t", "room past"],
   },
 ];

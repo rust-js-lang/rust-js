@@ -104,7 +104,7 @@ function main() {
   console.log(
     `${stripPrefix == null ? "None" : `Some([${stripPrefix.join(", ")}])`} ${((value) => (value == null ? "None" : `Some([${value.join(", ")}])`))($sliceStrip(items, [9], true))}`,
   );
-  console.log(`[${$repeatItems([1, 2], 3).join(", ")}]`);
+  console.log(`[${$repeatItems([1, 2], 3, 4).join(", ")}]`);
   console.log(
     `[${Iterator.from($sliceSplitBy(items, (x) => x % 3 === 0, undefined, false, false))
       .toArray()

@@ -270,7 +270,8 @@ pub fn pick(c: bool, n: u32) -> u32 {
   expect(js).toContain('  return s.split(",").toReversed().slice(0, 2);\n');
   expect(js).toContain("v[0]");
   // A \`return\` the program wrote stays one, the smaller branch first.
-  expect(js).toContain("  if (!group) {\n    return;\n  }\n  return $trim(");
+  // Room for its bytes three times over checked first (ADR 0774).
+  expect(js).toContain("  if (!group) {\n    return;\n  }\n  $roomFor(3, $byteLen(group));\n  return $trim(");
   expect(js).toContain("  if (c) {\n    return (n + 1) >>> 0;\n  }\n  return (n * 2) >>> 0;\n");
   expect(js).not.toContain("$index");
   const lib = await import(join(dir, "mir.js"));
@@ -773,7 +774,9 @@ pub fn odd_to_five() -> Vec<u32> {
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
   const js = readFileSync(join(dir, "mir.js"), "utf8");
   expect(js).toContain("return $range(0, n).map((i) => Math.imul(i, i) >>> 0);");
-  expect(js).toContain('return $range(1, n + 1)\n    .toReversed()\n    .map((k) => "*".repeat(k));');
+  expect(js).toContain(
+    'return $range(1, n + 1)\n    .toReversed()\n    .map((k) => {\n      $roomFor(k, 1);\n      return "*".repeat(k);\n    });',
+  );
   expect(js).toContain("return $range(0, n).toReversed();");
   expect(js).toContain("return $range(1, n + 1);");
   expect(js).toContain("return $lazyRange(0, n)\n    .filter(");

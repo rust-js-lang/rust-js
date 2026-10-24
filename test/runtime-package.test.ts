@@ -221,6 +221,77 @@ pub fn copied() -> String {
   expect(call("copied")).toBe(error);
 });
 
+// Room past `isize::MAX` bytes, rust-js's `usize`'s, `2 ** 31 - 1`, is a
+// `capacity overflow` panic, and room up to it isn't (ADR 0774): native
+// Rust's `usize` here is 64-bit, so its corpus can't tell where it ends.
+test("room past rust-js's isize::MAX bytes panics, and room up to it doesn't", () => {
+  const dir = fixture("room-for");
+  writeFileSync(join(dir, "lib.rs"), `pub fn units(n: usize) -> usize {
+    Vec::<u16>::with_capacity(n).len()
+}
+
+pub fn bytes(n: usize) -> usize {
+    String::with_capacity(n).len()
+}
+
+pub fn text_room(n: usize) -> usize {
+    let mut s = String::from("é");
+    s.reserve(n);
+    s.len()
+}
+
+pub fn none_room(n: usize) -> usize {
+    let mut v = vec![(); 3];
+    v.reserve(n);
+    v.len()
+}
+
+// A mebibyte and one in Rust, \`undefined\` in JS.
+pub fn nones(n: usize) -> usize {
+    vec![None::<[u8; 1 << 20]>; n].len()
+}
+
+pub fn repeated_nones(n: usize) -> usize {
+    [None::<[u8; 1 << 20]>].repeat(n).len()
+}
+
+pub struct Big(Option<[u8; 1 << 20]>);
+
+impl Clone for Big {
+    fn clone(&self) -> Self {
+        Big(self.0)
+    }
+}
+
+impl Drop for Big {
+    fn drop(&mut self) {}
+}
+
+pub fn bigs(n: usize) -> usize {
+    vec![Big(None); n].len()
+}
+`);
+  const out = join(dir, "lib.js");
+  run([compiler, join(dir, "lib.rs"), "-o", out]);
+  const call = (name: string, n: number) =>
+    run([node ?? "node", "--input-type=module", "--eval", `try { console.log((await import(${JSON.stringify(out)})).${name}(${n})); } catch (e) { console.log(e.message); }`]).trim();
+  expect(call("units", 2 ** 30 - 1)).toBe("0");
+  expect(call("units", 2 ** 30)).toBe("capacity overflow");
+  expect(call("bytes", 2 ** 31 - 1)).toBe("0");
+  expect(call("bytes", 2 ** 31)).toBe("capacity overflow");
+  // "é"'s two bytes, one UTF-16 unit.
+  expect(call("textRoom", 2 ** 31 - 3)).toBe("2");
+  expect(call("textRoom", 2 ** 31 - 2)).toBe("capacity overflow");
+  // Of no size, by their count alone, `usize::MAX`.
+  expect(call("noneRoom", 2 ** 32 - 4)).toBe("3");
+  expect(call("noneRoom", 2 ** 32 - 3)).toBe("capacity overflow");
+  // 2,047 of 1,048,577 bytes fit, 2,048 don't.
+  for (const name of ["nones", "repeatedNones", "bigs"]) {
+    expect(call(name, 2047)).toBe("2047");
+    expect(call(name, 2048)).toBe("capacity overflow");
+  }
+});
+
 // A union's field read while it holds another reads the bytes it holds as
 // the field's type: plain data's, as wasm32 lays them out (ADR 0562); a
 // field of the same type reads the same bytes (ADR 0406); a field whose

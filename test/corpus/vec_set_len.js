@@ -8,6 +8,7 @@ import {
   $ptrAdd,
   $ptrCopy,
   $ptrSlice,
+  $roomFor,
   $setLen,
   $withCapacity,
 } from "@rust-js/runtime";
@@ -21,6 +22,7 @@ export function entry() {
  * its length `0` first, so the vector drops none of them.
  */
 function takeAll(v) {
+  $roomFor(v.length, 12);
   const out = $withCapacity(v.length);
   const len = v.length;
   $keepCapacity(v);

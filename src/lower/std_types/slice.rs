@@ -837,7 +837,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     true => Some(self.clone_fn("item", item(), span)?),
                     false => None,
                 };
-                helper("$repeatItems", Expr::optional_args(vec![items, n], vec![copy]))
+                // Room for them, which std checks first (ADR 0774).
+                let size = self.room_item_size(item());
+                helper("$repeatItems", Expr::optional_args(vec![items, n, size], vec![copy]))
             }
             SliceOp::FromRef => Expr::array(vec![arg()]),
             SliceOp::FromFn => {

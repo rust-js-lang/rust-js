@@ -20,6 +20,7 @@ import {
   $range,
   $removeOpt,
   $retain,
+  $roomFor,
   $someAt,
   $sortUnstable,
   $traitImpl,
@@ -76,11 +77,13 @@ function firstEvenSquare(v) {
 
 export function dijkstra(edges, n, src) {
   const item = [];
+  $roomFor(n, 12);
   const adj = Array.from({ length: n }, () => item.slice());
   for (const [a, b, w] of edges) {
     $index(adj, a).push([b, w]);
     $index(adj, b).push([a, w]);
   }
+  $roomFor(n, 8);
   const dist = new Array(n).fill(undefined);
   const heap = [];
   dist[$at(dist, src)] = 0;
@@ -109,6 +112,7 @@ export function dijkstra(edges, n, src) {
 }
 
 export function bfsOrder(n, edges) {
+  $roomFor(n, 1);
   const seen = new Array(n).fill(false);
   const q = [];
   const order = [];

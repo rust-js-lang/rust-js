@@ -157,14 +157,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^rc_dyn_destructors.rs$"],
   },
   {
-    name: "counted-rc-elsewhere-unsized",
-    breaks: "a counted `Rc<dyn Sub>` made here upcast to an `Rc<dyn Super>` is a pair around a pair",
-    file: "src/lower/traits/dyns.rs",
-    find: "            (Some(pointee), js::ExprKind::Object(props)) if !self.is_pair_dyn(pointee) => Some((pointee, props)),\n",
-    replace: "            (Some(pointee), js::ExprKind::Object(props)) => Some((pointee, props)),\n",
-    tests: ["test/traits.test.ts", "-t", "a counted Rc<dyn> upcast"],
-  },
-  {
     name: "counted-rc-same-dyn-refused",
     breaks: "an `Rc<dyn T>` unsized to itself, a slice's, is refused",
     file: "src/lower/traits/dyns.rs",
@@ -321,5 +313,14 @@ export const mutations: Mutation[] = [
     find: "            && self.is_pair_dyn(pointee)\n            && let (Some(from), Some(to))",
     replace: "            && self.is_pair_dyn(pointee)\n            && false\n            && let (Some(from), Some(to))",
     tests: ["test/corpus.test.ts", "-t", "^rc_dyn_upcast_counted.rs$"],
+  },
+  {
+    name: "counted-rc-own-trait-viewed",
+    breaks: "an `Rc<dyn Sub + Send>` as an `Rc<dyn Sub>` is a view of itself",
+    file: "src/lower/traits/dyns.rs",
+    find: "            if from == to {\n                return Ok(value);\n            }\n",
+    replace: "",
+    snapshots: true,
+    tests: ["test/corpus.test.ts", "-t", "^rc_dyn_auto_trait_dropped.rs$"],
   },
 ];

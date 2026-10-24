@@ -4,6 +4,7 @@ import {
   $capacity,
   $keepCapacity,
   $reserve,
+  $roomFor,
   $shrinkTo,
   $truncate,
   $withCapacity,
@@ -21,6 +22,7 @@ function main() {
   $keepCapacity(v);
   v.length = 0;
   console.log(`${$capacity(v) === before}`);
+  $roomFor(v.length + 20, 4);
   $reserve(v, 20);
   console.log(`${$capacity(v) >= 20}`);
   v.push(7);
