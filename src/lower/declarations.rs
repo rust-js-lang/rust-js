@@ -95,6 +95,9 @@ pub(super) fn module<'tcx>(
             declared
         });
         items.extend(declaration.map(|declaration| documented(declaration, tcx, def_id)));
+        if tcx.def_kind(def_id) == DefKind::Enum {
+            items.extend(out.variant_constants(def_id));
+        }
     }
     // A binding it holds as a value, a global function's `typeof
     // Object.assign`, as TypeScript has it (ADR 0622), a static's its type
@@ -977,12 +980,7 @@ impl<'tcx> Declarations<'_, 'tcx> {
                         {
                             return self.ts(field.ty(self.tcx, args).skip_normalization());
                         }
-                        let value = match super::bindings::variant_tag(self.tcx, v).kind {
-                            crate::js::ExprKind::Bool(b) => json!(b),
-                            crate::js::ExprKind::Num(n) => json!(n as i64),
-                            _ => json!(variant_name(self.tcx, v)),
-                        };
-                        let name = json!({ "kind": "literal", "value": value });
+                        let name = self.variant_literal(v);
                         if v.fields.is_empty() && !tagged {
                             return name;
                         }
@@ -1006,6 +1004,37 @@ impl<'tcx> Declarations<'_, 'tcx> {
             "typeParameters": self.generics(def_id),
             "type": union,
         })
+    }
+
+    /// A variant's value as its literal type, `"Empty"`, `0` or `true`.
+    fn variant_literal(&self, variant: &ty::VariantDef) -> Value {
+        let value = match super::bindings::variant_tag(self.tcx, variant).kind {
+            crate::js::ExprKind::Bool(b) => json!(b),
+            crate::js::ExprKind::Num(n) => json!(n as i64),
+            _ => json!(variant_name(self.tcx, variant)),
+        };
+        json!({ "kind": "literal", "value": value })
+    }
+
+    /// Each variant of a numbered enum, its module's `const`, `export const
+    /// Pending: 0;`, as its JS declares it (ADR 0722, amended).
+    fn variant_constants(&self, def_id: DefId) -> Vec<Value> {
+        let adt = self.tcx.adt_def(def_id);
+        if !super::bindings::numbered(self.tcx, adt) {
+            return Vec::new();
+        }
+        (adt.variants().iter())
+            .map(|v| {
+                let declared = json!({
+                    "kind": "const",
+                    "name": self.js_name(v.def_id),
+                    "exported": true,
+                    "declare": false,
+                    "type": self.variant_literal(v),
+                });
+                documented(declared, self.tcx, v.def_id)
+            })
+            .collect()
     }
 
     /// `export type Number = { int: number } | { float: number };` of a

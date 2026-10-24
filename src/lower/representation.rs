@@ -91,19 +91,37 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Some(n) = super::recognition::ordering_value(self.tcx, adt.did(), def.name) {
             return Expr::bin(Op::Eq, subject, Expr::int(n));
         }
-        let name = bindings::variant_tag(self.tcx, def);
         let unit = def.fields.is_empty() && bindings::declared_tag(self.tcx, adt.did()).is_none();
         match unit {
-            true => Expr::bin(Op::Eq, subject, name),
+            true => Expr::bin(Op::Eq, subject, self.unit_variant(adt.did(), def)),
             // A unit variant written in place, its name, is no other: a
             // string has no tag.
             false if matches!(subject.kind, js::ExprKind::Str(_)) => Expr::bool(false),
             false => Expr::bin(
                 Op::Eq,
                 Expr::member(subject, bindings::tag_key(self.tcx, adt.did())),
-                name,
+                bindings::variant_tag(self.tcx, def),
             ),
         }
+    }
+
+    /// A variant without fields, as a body writes it: of a numbered enum,
+    /// its module's `const`, by its name, `Pending`, imported where it's
+    /// another module's or crate's (ADR 0722, amended), where this body
+    /// reads it so (`reads_by_name`); else its value,
+    /// `bindings::unit_variant`'s. The one answer of each test, value and
+    /// constant of one a body writes.
+    pub(in crate::lower) fn unit_variant(&self, adt: DefId, variant: &ty::VariantDef) -> Expr {
+        match self.is_rust_fn(variant.def_id) && self.reads_by_name(variant.def_id) {
+            true => self.fn_ref(variant.def_id),
+            false => bindings::unit_variant(self.tcx, adt, variant),
+        }
+    }
+
+    /// A value rustc computed, as a body writes it: `const_js`'s, each
+    /// variant without fields `unit_variant`'s.
+    pub(in crate::lower) fn const_value(&self, value: ty::Value<'tcx>) -> Option<Expr> {
+        const_js_by(self.tcx, value, &|adt, variant| self.unit_variant(adt, variant))
     }
 
     /// Which variant `subject` is, of its enum `ty`, as rustc numbers it, its
@@ -1084,7 +1102,21 @@ pub(super) fn zero_sized_js<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Exp
     )
 }
 
+/// A value rustc computed, in JS (ADR 0031), each variant without fields
+/// its value (`bindings::unit_variant`): a module's `const`'s, made when
+/// it loads, which reads no other, nor a numbered enum's `const` of a
+/// variant another module may not have made yet (ADR 0722, amended). A
+/// body's is `FnCx::const_value`'s, each variant as it writes one.
 pub(super) fn const_js<'tcx>(tcx: TyCtxt<'tcx>, value: ty::Value<'tcx>) -> Option<Expr> {
+    const_js_by(tcx, value, &|adt, variant| bindings::unit_variant(tcx, adt, variant))
+}
+
+/// `const_js`, each variant without fields as `unit` writes it.
+fn const_js_by<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    value: ty::Value<'tcx>,
+    unit: &dyn Fn(DefId, &ty::VariantDef) -> Expr,
+) -> Option<Expr> {
     let ty = value.ty;
     if ty.is_bool() {
         return value.try_to_bool().map(Expr::bool);
@@ -1131,7 +1163,7 @@ pub(super) fn const_js<'tcx>(tcx: TyCtxt<'tcx>, value: ty::Value<'tcx>) -> Optio
             return None;
         };
         let [key] = &items[..] else { return None };
-        return Some(symbol_for(const_js(tcx, key.try_to_value()?)?));
+        return Some(symbol_for(const_js_by(tcx, key.try_to_value()?, unit)?));
     }
     // A `Discriminant`'s is its number, inside std's struct (ADR 0393).
     if super::recognition::is_discriminant_type(tcx, ty) {
@@ -1145,13 +1177,18 @@ pub(super) fn const_js<'tcx>(tcx: TyCtxt<'tcx>, value: ty::Value<'tcx>) -> Optio
             ty::ValTreeKind::Leaf(_) => None,
         }
     };
-    let all = |values: &[ty::Value<'tcx>]| values.iter().map(|&v| const_js(tcx, v)).collect::<Option<Vec<_>>>();
+    let all = |values: &[ty::Value<'tcx>]| {
+        values
+            .iter()
+            .map(|&v| const_js_by(tcx, v, unit))
+            .collect::<Option<Vec<_>>>()
+    };
     // A field's: of a `Cell`, what it holds, as a `Cell` in an object's
     // field is the property set in place (ADR 0288).
     let fields_of = |values: &[ty::Value<'tcx>]| {
         (values.iter())
             .map(|&v| {
-                let js = const_js(tcx, v)?;
+                let js = const_js_by(tcx, v, unit)?;
                 Some(match v.ty.kind() {
                     ty::Adt(adt, _) if is_std_def(tcx, adt.did(), StdItem::Cell) => Expr::held(js),
                     _ => js,
@@ -1163,12 +1200,13 @@ pub(super) fn const_js<'tcx>(tcx: TyCtxt<'tcx>, value: ty::Value<'tcx>) -> Optio
         ty::Ref(_, inner, _) if inner.is_str() => {
             Some(Expr::str(std::str::from_utf8(value.try_to_raw_bytes(tcx)?).ok()?))
         }
-        ty::Ref(_, inner, _) => const_js(
+        ty::Ref(_, inner, _) => const_js_by(
             tcx,
             ty::Value {
                 ty: *inner,
                 valtree: value.valtree,
             },
+            unit,
         ),
         ty::Tuple(items) if items.is_empty() => Some(Expr::undefined()),
         ty::Tuple(_) | ty::Array(..) | ty::Slice(_) => Some(Expr::array(all(&children()?)?)),
@@ -1178,7 +1216,7 @@ pub(super) fn const_js<'tcx>(tcx: TyCtxt<'tcx>, value: ty::Value<'tcx>) -> Optio
             let variant = adt.variant(index.try_to_leaf()?.to_u32().into());
             if tcx.is_lang_item(adt.did(), LangItem::Option) {
                 return match fields.first() {
-                    Some(&inner) => const_js(tcx, inner).map(super::std_types::option::some_literal),
+                    Some(&inner) => const_js_by(tcx, inner, unit).map(super::std_types::option::some_literal),
                     None => Some(Expr::undefined()),
                 };
             }
@@ -1187,10 +1225,10 @@ pub(super) fn const_js<'tcx>(tcx: TyCtxt<'tcx>, value: ty::Value<'tcx>) -> Optio
             }
             // An untagged enum's variant is its payload (ADR 0214).
             if super::bindings::is_untagged(tcx, adt.did()) {
-                return fields.first().and_then(|&payload| const_js(tcx, payload));
+                return fields.first().and_then(|&payload| const_js_by(tcx, payload, unit));
             }
             if fields.is_empty() {
-                return Some(super::bindings::unit_variant(tcx, adt.did(), variant));
+                return Some(unit(adt.did(), variant));
             }
             let values = fields_of(fields)?;
             let props = values
@@ -1208,7 +1246,7 @@ pub(super) fn const_js<'tcx>(tcx: TyCtxt<'tcx>, value: ty::Value<'tcx>) -> Optio
         }
         // A `#[repr(transparent)]` struct's is its field's (ADR 0584).
         ty::Adt(adt, _) if let Some(at) = super::recognition::transparent_field(tcx, *adt) => {
-            const_js(tcx, *children()?.get(at)?)
+            const_js_by(tcx, *children()?.get(at)?, unit)
         }
         // A std struct's fields are its own, not the JS value rust-js makes
         // of it: `iter::empty()` is no `[undefined]`. Only a `PhantomData`, and
@@ -1226,7 +1264,10 @@ pub(super) fn const_js<'tcx>(tcx: TyCtxt<'tcx>, value: ty::Value<'tcx>) -> Optio
                 ty::ValTreeKind::Branch(items) => items.first()?.try_to_value()?,
                 ty::ValTreeKind::Leaf(_) => return None,
             };
-            Some(Expr::object(vec![Prop::Field(js::HELD.into(), const_js(tcx, inner)?)]))
+            Some(Expr::object(vec![Prop::Field(
+                js::HELD.into(),
+                const_js_by(tcx, inner, unit)?,
+            )]))
         }
         // An atomic is `{ value }` too (ADR 0096). What it holds is stored
         // as an integer of its size, in a struct that aligns it.
@@ -1238,12 +1279,13 @@ pub(super) fn const_js<'tcx>(tcx: TyCtxt<'tcx>, value: ty::Value<'tcx>) -> Optio
                 };
                 stored = only.try_to_value()?.valtree;
             }
-            let inner = const_js(
+            let inner = const_js_by(
                 tcx,
                 ty::Value {
                     ty: args.type_at(0),
                     valtree: stored,
                 },
+                unit,
             )?;
             Some(Expr::object(vec![Prop::Field(js::HELD.into(), inner)]))
         }
@@ -1259,7 +1301,7 @@ pub(super) fn const_js<'tcx>(tcx: TyCtxt<'tcx>, value: ty::Value<'tcx>) -> Optio
             {
                 return None;
             }
-            let [start, end] = [items.first()?, items.get(1)?].map(|&v| const_js(tcx, v));
+            let [start, end] = [items.first()?, items.get(1)?].map(|&v| const_js_by(tcx, v, unit));
             Some(Expr::object(vec![
                 Prop::Field("start".into(), start?),
                 Prop::Field("end".into(), end?),
@@ -1268,14 +1310,14 @@ pub(super) fn const_js<'tcx>(tcx: TyCtxt<'tcx>, value: ty::Value<'tcx>) -> Optio
         // `a..`, `{ start }`, and `..b` or `..=b`, `{ end }`, as one made at
         // run time is.
         ty::Adt(adt, _) if tcx.is_lang_item(adt.did(), LangItem::RangeFrom) => {
-            let start = const_js(tcx, *children()?.first()?)?;
+            let start = const_js_by(tcx, *children()?.first()?, unit)?;
             Some(Expr::object(vec![Prop::Field("start".into(), start)]))
         }
         ty::Adt(adt, _)
             if tcx.is_lang_item(adt.did(), LangItem::RangeTo)
                 || tcx.is_lang_item(adt.did(), LangItem::RangeToInclusive) =>
         {
-            let end = const_js(tcx, *children()?.first()?)?;
+            let end = const_js_by(tcx, *children()?.first()?, unit)?;
             Some(Expr::object(vec![Prop::Field("end".into(), end)]))
         }
         ty::Adt(adt, _) if adt.is_struct() && !super::recognition::struct_is_its_fields(tcx, adt.did()) => None,

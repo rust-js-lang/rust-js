@@ -281,7 +281,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 DefKind::AnonConst => {
                     return match self
                         .mir_const_value(c.const_, ty, c.span)
-                        .and_then(|v| const_js(tcx, v))
+                        .and_then(|v| self.const_value(v))
                     {
                         Some(value) => Ok(value),
                         None => self.named_const(uv.def, uv.args, ty, c.span),
@@ -332,7 +332,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 });
             }
         }
-        let value = match (self.mir_const_value(c.const_, ty, c.span)).and_then(|value| const_js(tcx, value)) {
+        let value = match (self.mir_const_value(c.const_, ty, c.span)).and_then(|value| self.const_value(value)) {
             Some(value) => value,
             // A promoted value rustc's can't say as JS's, `&[("double",
             // double)]` of functions: its MIR, lowered as code.

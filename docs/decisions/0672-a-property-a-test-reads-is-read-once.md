@@ -1,7 +1,10 @@
 # 0672. A property a chain tests and binds is read once
 
 Status: Accepted. Amends tidy's `and tests` and `returning_chain`, which
-ADR 0614's chains of tests are joined by.
+ADR 0614's chains of tests are joined by; amended by
+[0842](0842-a-let-chain-after-a-test-of-its-own-reads-its-place-once.md):
+a chain after a test of its own isn't joined where it would read a place
+twice.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): R, results would
 change: a getter that runs twice, where Rust's `js::get` runs it once, is

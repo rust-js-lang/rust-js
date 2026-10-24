@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "numbered-variants-unnamed",
+    breaks: "a numbered enum's variants are no module's `const`s, each read as its number, `payload._status = 0`, not `Pending`",
+    file: "src/lower/analysis.rs",
+    find: "        .filter(|&d| tcx.def_kind(d) == DefKind::Enum && bindings::numbered(tcx, tcx.adt_def(d)))\n",
+    replace: "        .filter(|&d| tcx.def_kind(d) == DefKind::Enum && bindings::numbered(tcx, tcx.adt_def(d)) && false)\n",
+    tests: ["test/cross-crate-items.test.ts", "-t", "a library's repr enum's variant is imported by its name"],
+  },
+  {
     name: "const-reexport-dropped",
     breaks: "`pub use priorities::IDLE` re-exports nothing, so `IDLE` isn't the module's",
     file: "src/lower/analysis.rs",
@@ -70,7 +78,7 @@ export const mutations: Mutation[] = [
     name: "default-only-module-fileless",
     breaks: "a module of only another module's default gets no file",
     file: "src/lower/analysis.rs",
-    find: "        let defaulted = || !bindings::default_exports(tcx, module).is_empty();\n",
+    find: "        let defaulted = || !super::default_exports::default_exports(tcx, module).is_empty();\n",
     replace: "        let defaulted = || false;\n",
     tests: ["test/modules.test.ts", "-t", "default of another module"],
   },
@@ -277,5 +285,13 @@ export const mutations: Mutation[] = [
     find: "                && matches!(ty.kind(), ty::Adt(adt, _) if super::recognition::is_vec_like_def(tcx, adt.did()))",
     replace: "                && matches!(ty.kind(), ty::Adt(adt, _) if is_std_def(tcx, adt.did(), StdItem::Vec))",
     tests: ["test/corpus.test.ts", "-t", "^linked_list_clone.rs$"],
+  },
+  {
+    name: "library-default-named-after-file",
+    breaks: "a library's module's default is imported named after the module's file, `import version`, not its item, `import VERSION`",
+    file: "src/lower/analysis.rs",
+    find: "        uses.named.insert(export, imported.name.clone());\n",
+    replace: "",
+    tests: ["test/cross-crate-items.test.ts", "-t", "default export is imported as its default"],
   },
 ];

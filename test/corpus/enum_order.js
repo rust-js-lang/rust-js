@@ -6,13 +6,17 @@ export function entry() {
   main();
 }
 
+const Two = 2;
+const Max = 255;
+const One = 1;
+
 function main() {
   console.log(
     `${$cmpIn(["Below", "Low", "High"], "High", "Low") > 0} ${
       $cmpIn(["Below", "Low", "High"], "Low", "Below") > 0
     } ${$cmpIn(["Below", "Low", "High"], "High", "Below") > 0}`,
   );
-  console.log("true true");
+  console.log(`${Two < Max} ${One < Two}`);
   const levels = ["High", "Below", "Low"];
   levels.sort((a, b) => $cmpIn(["Below", "Low", "High"], a, b));
   const max = $maxBy(levels, (a, b) => $cmpIn(["Below", "Low", "High"], a, b));

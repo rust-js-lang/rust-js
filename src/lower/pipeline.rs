@@ -80,6 +80,7 @@ pub fn lower_crate<'tcx>(
         required,
         thread_local_inits,
         consts,
+        variants,
         codecs,
         modules,
         taken,
@@ -114,20 +115,11 @@ pub fn lower_crate<'tcx>(
         held,
     } = analyze_crate(tcx, all_bodies, initializers, dependencies, export_library, std_bodies)?;
     // Each module's default export, which a module of the crate imports as
-    // its default, not by a name of its own (ADR 0251).
-    let defaults: HashMap<LocalModId, DefId> = (modules.iter())
-        .filter_map(|&module| {
-            super::bindings::default_exports(tcx, module)
-                .into_iter()
-                .filter_map(|(item, _)| item)
-                .find(|item| {
-                    item.as_local()
-                        .is_some_and(|local| tcx.parent_module_from_def_id(local) == module)
-                })
-                .map(|item| (module, item))
-        })
+    // its default, not by a name of its own (ADR 0251), as every importer
+    // does (`default_exports::exported_as`).
+    let defaulted: HashSet<DefId> = (modules.iter())
+        .filter_map(|&module| super::default_exports::own_default(tcx, module))
         .collect();
-    let defaulted: HashSet<DefId> = defaults.values().copied().collect();
     called_from_elsewhere.retain(|id| !defaulted.contains(id));
     // A library exports what its consumers can reach (ADR 0100).
     if export_library {
@@ -234,6 +226,16 @@ pub fn lower_crate<'tcx>(
     // they're lowered, lowered or not, then resolved (ADRs 0190, 0300).
     let mut drops_observed = super::drops::DropsObserved::default();
     let plain_ref_cells = std::cell::OnceCell::new();
+    // What runs where its module loads, which reads another module's
+    // `const`s as their values (`FnCx::reads_by_name`).
+    let loads: HashSet<DefId> = (thread_local_inits.keys().map(|init| init.to_def_id()))
+        .chain(initialized.iter().map(|body| body.def_id))
+        .chain(
+            (bodies.iter())
+                .map(|body| body.def_id)
+                .filter(|&id| super::bindings::is_on_load(tcx, id)),
+        )
+        .collect();
     let crate_facts = CrateFacts {
         foreign: &foreign,
         library: export_library,
@@ -275,6 +277,7 @@ pub fn lower_crate<'tcx>(
         plain_ref_cells: &plain_ref_cells,
         named_expressions: &named_expressions,
         local_functions: &local_functions,
+        loads: &loads,
     };
     // What a library's manifest says of its writers (ADR 0137).
     let writers_take_options = crate_facts.writers_take_options();
@@ -631,6 +634,27 @@ pub fn lower_crate<'tcx>(
     for (module, consts) in pass.local_consts.drain() {
         const_items.entry(module).or_default().extend(consts);
     }
+    // A numbered enum's variant, its module's `const` of its number, where
+    // something reads it or another module or crate may, exported then, as
+    // a `const` item is (ADR 0722, amended).
+    let read_elsewhere: HashSet<DefId> = pass.references.iter().map(|&(_, id)| id).collect();
+    for &variant in &variants {
+        let id = variant.to_def_id();
+        let export =
+            tcx.visibility(id).is_public() || called_from_elsewhere.contains(&id) || read_elsewhere.contains(&id);
+        if !export && !reached.contains(&id) {
+            continue;
+        }
+        let info = &fns[&id];
+        let adt = tcx.adt_def(tcx.parent(id));
+        const_items.entry(info.module).or_default().push(js::Const {
+            name: info.name.clone(),
+            value: super::bindings::variant_tag(tcx, adt.variant_with_id(id)),
+            mutable: false,
+            export,
+            span: sources.item_span(tcx, variant),
+        });
+    }
     // An inherent impl's constant is its type's object's, `S.ID`, as its
     // methods are (ADR 0410).
     for &def_id in &consts {
@@ -753,12 +777,14 @@ pub fn lower_crate<'tcx>(
             let mut packages: Vec<js::Package> = packages.into_values().collect();
             // `js::import!("./App.css");`: `import "./App.css";`, for what a
             // module does when loaded, as a bundler's CSS does (ADR 0110).
+            let mut loaded = HashSet::new();
             for attr in super::bindings::marks(tcx, module, "import") {
                 let Some(from) = attr.value_str().map(|s| s.to_string()) else {
                     tcx.dcx()
                         .span_err(attr.span(), "rust-js: write it `js::import!(\"./file.css\");`");
                     continue;
                 };
+                loaded.insert(from.clone());
                 if !packages.iter().any(|p| p.from == from) {
                     packages.push(js::Package {
                         from,
@@ -806,7 +832,7 @@ pub fn lower_crate<'tcx>(
             let mut default_declared = false;
             // Another module's function, re-exported as the default (ADR 0240).
             let mut default_from = None;
-            for (function, span) in super::bindings::default_exports(tcx, module) {
+            for (function, span) in super::default_exports::default_exports(tcx, module) {
                 let unset = default_export.is_none() && default_from.is_none();
                 match function {
                     Some(function)
@@ -816,7 +842,7 @@ pub fn lower_crate<'tcx>(
                                 .is_some_and(|local| tcx.parent_module_from_def_id(local) == module) =>
                     {
                         default_export = Some(function);
-                        default_declared = super::bindings::default_declared(tcx, function);
+                        default_declared = super::default_exports::default_declared(tcx, function);
                     }
                     Some(function) if unset && fns.get(&function).is_some_and(|info| info.owner.is_none()) => {
                         default_from = Some(function);
@@ -858,9 +884,16 @@ pub fn lower_crate<'tcx>(
             // A constant the default is, read by name in its own module, is
             // declared and then exported by default, `const v = ..; export
             // default v;`, as JS has no name of `export default ..;`; still
-            // its default alone (ADR 0625, amended).
-            let read_default = default_export
-                .filter(|&held| default_declared && tcx.def_kind(held) != DefKind::Fn && read_at_home.contains(&held));
+            // its default alone (ADR 0625, amended). So is one a `pub use`
+            // of its module names by another name, `export { VERSION as
+            // RELEASE };`, which reads it by its name.
+            let aliased = |held: DefId| {
+                let name = super::bindings::fn_name(tcx, held);
+                aliases.iter().any(|(aliased, _)| *aliased == name)
+            };
+            let read_default = default_export.filter(|&held| {
+                default_declared && tcx.def_kind(held) != DefKind::Fn && (read_at_home.contains(&held) || aliased(held))
+            });
             if let Some(held) = read_default {
                 let name = super::bindings::fn_name(tcx, held);
                 for constant in const_items
@@ -945,6 +978,28 @@ pub fn lower_crate<'tcx>(
                 .collect();
             super::drops::inlined_drops(&mut lowered.items, &drops);
             super::std_types::map::discarded_calls(&mut lowered.items);
+            // A library's item its lowering asked for, where tidy took out
+            // what read it, a test of a numbered enum's variant an exhaustive
+            // `match` needn't write (ADR 0722): not imported, as the linker
+            // imports none of the crate's modules' the module doesn't read.
+            let mut read = HashSet::new();
+            for item in &lowered.items {
+                item.visit_vars(&mut |name| {
+                    read.insert(name.to_string());
+                });
+            }
+            let analyzed = |from: &str, export: &str| {
+                (imported.get(&(from.to_string(), export.to_string()))).is_some_and(|users| users.contains(&module))
+            };
+            lowered.packages.retain_mut(|package| {
+                let named = package.named.len();
+                (package.named).retain(|(export, local)| read.contains(local) || analyzed(&package.from, export));
+                named == package.named.len()
+                    || !package.named.is_empty()
+                    || package.default.is_some()
+                    || package.namespace.is_some()
+                    || loaded.contains(&package.from)
+            });
             let mut imports: Vec<_> = targets.remove(&module).unwrap_or_default().into_iter().collect();
             imports.sort_by(|(a, an, ..), (b, bn, ..)| (&paths[a], an).cmp(&(&paths[b], bn)));
             let candidates: Vec<_> = imports
@@ -1044,13 +1099,17 @@ fn reexports(
             }
         }
     }
-    if let Some(info) = default_from.and_then(|function| fns.get(&function))
+    // Each function of another module as that module exports it, its
+    // default where it's that one's (`default_exports::exported_as`).
+    let exported = |function: DefId, info: &FnInfo| super::default_exports::exported_as(tcx, function, &info.name);
+    if let Some(function) = default_from
+        && let Some(info) = fns.get(&function)
         && let Some(from) = paths.get(&info.module)
     {
         grouped
             .entry(from.clone())
             .or_default()
-            .push((info.name.clone(), "default".to_string()));
+            .push((exported(function, info), "default".to_string()));
     }
     for id in tcx.hir_module_items(module).free_items() {
         let item = tcx.hir_item(id);
@@ -1096,7 +1155,7 @@ fn reexports(
         grouped
             .entry(from.clone())
             .or_default()
-            .push((info.name.clone(), alias));
+            .push((exported(def_id, info), alias));
     }
     let modules = (grouped.into_iter()).map(|(path, named)| Reexport {
         from: js::ImportFrom::Module(path),

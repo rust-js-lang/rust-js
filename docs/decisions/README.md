@@ -80,7 +80,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0028 Imports from JS modules: `#[link_name = "module#path"]`](0028-js-module-imports.md)
 - [0029 `async`/`.await` are JS's `async`/`await`; a future is a promise](0029-async-await.md)
 - [0030 `Option`: `Some(x)` is `x`, `None` is `undefined`](0030-option.md)
-- [0031 A `const` is the value rustc computed, under its own name](0031-consts.md) *(amended by 0770: a library's is imported by its name)*
+- [0031 A `const` is the value rustc computed, under its own name](0031-consts.md) *(amended by 0770: a library's is imported by its name; extended by 0722: a numbered enum's variant is one too, and a module's load reads another module's as its value)*
 - [0038 Variables have JS's names and shapes: `const [count, setCount] = ..`](0038-js-names-and-destructuring.md)
 - [0039 Generic bindings: `#[rust_js::link_name]` on an ordinary function](0039-generic-bindings.md)
 - [0046 `#![rust_js::camel_case]`: a crate's own names, the JS way](0046-camel-case-crates.md) *(superseded by 0435)*
@@ -505,7 +505,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0621 A comment before a macro's opening is its code's; one after a module's last code ends its JS](0621-comments-around-macros-and-at-a-modules-end.md) *(amended by 0735: one in the macro before its `fn` is the function's)*
 - [0622 A global binding a module names is its `const`](0622-a-global-binding-a-module-names-is-its-const.md)
 - [0624 `js::is_defined` of a path of bindings asks each part](0624-is-defined-of-a-path-of-bindings.md) *(amended by 0645: a static of a path too)*
-- [0625 A default constant is its value; a comment right above the first code is its](0625-a-default-constant-is-its-value.md) *(amended: one its module reads is declared, then exported)*
+- [0625 A default constant is its value; a comment right above the first code is its](0625-a-default-constant-is-its-value.md) *(amended: one its module reads is declared, then exported; by 0773: one a `pub use` of its module renames too)*
 - [0626 What a library hands a crate is what its items reach](0626-what-a-library-hands-a-crate.md)
 - [0627 A number literal keeps its base and its exponent](0627-a-number-literal-keeps-its-base-and-exponent.md)
 - [0628 A loop after a loop is after it](0628-a-loop-after-a-loop-is-after-it.md)
@@ -552,7 +552,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0669 An adapter steps its source as std's does](0669-an-adapter-steps-its-source-as-stds-does.md) *(amended by 0687: and gives the crate's own `fold` and `nth` on)*
 - [0670 A tree's writes have one owner, and its walks one definition](0670-a-trees-writes-have-one-owner.md)
 - [0671 A nested body is lowered in one call](0671-a-nested-body-is-lowered-in-one-call.md)
-- [0672 A property a chain tests and binds is read once](0672-a-property-a-test-reads-is-read-once.md) *(amended by 0701: a read nothing after reads is gone; amended: the read says it's a getter's, `js::Known`; a getter's read held by MIR isn't written at each use)*
+- [0672 A property a chain tests and binds is read once](0672-a-property-a-test-reads-is-read-once.md) *(amended by 0701: a read nothing after reads is gone; amended: the read says it's a getter's, `js::Known`; a getter's read held by MIR isn't written at each use; amended by 0842: a chain after a test of its own isn't joined where it would read a place twice)*
 - [0676 `js::Kind` tells `undefined` and `null`](0676-kind-tells-undefined-and-null.md)
 - [0677 A weak collection's key is what `js::Kind` holds](0677-a-weak-key-is-what-kind-holds.md)
 - [0678 A parameter's leading `_` isn't in its JS name](0678-a-parameters-underscore-isnt-its-js-name.md) *(amended: a closure beside it is no binding of its function)*
@@ -618,14 +618,14 @@ reordered, and git merges this file by keeping both sides' lines
 - [0770 A library's `const` is imported by its name, as its crate reads it](0770-a-librarys-const-is-imported-by-its-name.md)
 - [0771 An `==` of a value read as the registry's symbol is its `matches!`](0771-an-equality-of-a-registered-symbol-is-its-match.md)
 - [0772 A nullable `Cell` field's `None` is `null`, made and written](0772-a-nullable-cell-field-writes-null.md) *(amended by 0791: through a reference or a helper too; extended by 0810: an optional one is absent until set)*
-- [0773 A binding a module's default names is exported as the default alone](0773-a-held-default-is-exported-once.md)
+- [0773 A binding a module's default names is exported as the default alone](0773-a-held-default-is-exported-once.md) *(amended: every importer asks what a module exports an item as)*
 - [0774 Room asked past `isize::MAX` bytes is a `capacity overflow` panic](0774-room-past-isize-max-bytes-panics.md) *(amended: a string's `repeat` is JS's own, unchecked)*
 - [0775 A `()` given to JS is `undefined`; a list of none is `[]`](0775-a-unit-given-to-js-is-undefined.md)
 - [0776 `js::get`, `js::has`, `js::set` and `js::delete` take any value](0776-get-has-set-take-any-value.md)
 - [0790 A `break` the program wrote is where it's written, a case's `break;` where its block ends a case](0790-a-break-the-program-wrote-is-where-it-is-written.md) *(amended by 0805: its `||` whatever the rest ends with, and a case's `if` with no `else` written none)*
 - [0780 An or-pattern's tests are in the order written, of a field read in place](0780-an-or-patterns-tests-are-as-written-of-a-field-read-in-place.md)
 - [0781 A `None` only nullables read is `null` where it's made](0781-a-none-only-nullables-read-is-null-where-its-made.md) *(amended by 0841: a call's `Option` too)*
-- [0782 A promise's executor may borrow, and `then` takes two handlers](0782-a-promises-executor-borrows-and-then-takes-two-handlers.md)
+- [0782 A promise's executor may borrow, and `then` takes two handlers](0782-a-promises-executor-borrows-and-then-takes-two-handlers.md) *(amended: a promise of a `Copy` value is `Copy`; what rejects one takes any value)*
 - [0791 A `Cell`'s storage says what it stores, however it's reached](0791-a-cells-storage-says-what-it-stores.md) *(amended by 0841: what's never `undefined` is stored as it is)*
 - [0800 A drop of what JS drops nothing of never unwinds](0800-a-drop-of-nothing-never-unwinds.md)
 - [0805 A case's `if` is as written, whatever its other branch ends with](0805-a-cases-if-is-as-written-whatever-ends-it.md)
@@ -640,9 +640,10 @@ reordered, and git merges this file by keeping both sides' lines
 - [0843 A `Weak` nothing upgrades is the value itself](0843-a-weak-nothing-upgrades-is-the-value-itself.md)
 - [0844 A library that reads no count counts no `Rc`](0844-a-library-that-reads-no-count-counts-no-rc.md)
 - [0845 An `Rc`'s declaration is what it points at](0845-an-rcs-declaration-is-what-it-points-at.md)
+- [0842 A let chain after a test of its own reads its place once](0842-a-let-chain-after-a-test-of-its-own-reads-its-place-once.md)
 - [0720 A labeled block's `break` and a named constant, in a body's ranges](0720-a-labeled-block-and-a-named-constant-in-a-bodys-ranges.md)
 - [0721 `js::strict_equals(a, b)` is JS's `===`](0721-strict-equals-is-jss-triple-equals.md) *(fixed by 0775: a `()` compared is `undefined`)*
-- [0722 A `#[repr(..)]` enum's variant is its number](0722-a-repr-enums-variant-is-its-number.md)
+- [0722 A `#[repr(..)]` enum's variant is its number](0722-a-repr-enums-variant-is-its-number.md) *(amended: each its module's `const`, read by its name; what a module's load makes reads another module's as its value)*
 - [0436 Every `dyn` that's a pair keeps its value's drop, `dyn Send` too](0436-every-dyn-keeps-its-drop.md) *(amended by 0691: a `dyn Any` drops where the crate makes one of what drops)*
 - [0437 A scope's drops on a panic are one `try { .. } finally { .. }`](0437-a-scopes-drops-are-one-finally.md) *(amended by 0693: its `if`s, loops and `return`s in it)*
 - [0438 An optional prop is given `Some(..)`, or left out](0438-an-optional-prop-is-given-some.md)

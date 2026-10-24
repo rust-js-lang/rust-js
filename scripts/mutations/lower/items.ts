@@ -3,6 +3,23 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "load-reads-by-name",
+    breaks: "a thread-local's value reads another module's `const` and variant by name, `{ value: Pending }`, which an import cycle may load first: `Cannot access 'Pending' before initialization` (ADR 0722)",
+    file: "src/lower/items.rs",
+    find: "        !self.krate.loads.contains(&self.item) || module.is_none_or(|module| module == self.module)\n",
+    replace: "        true\n",
+    tests: ["test/corpus.test.ts", "-t", "load_cycle_values"],
+  },
+  {
+    name: "load-reads-own-module-by-value",
+    breaks: "what a module's load makes reads its own module's variant as its number, `let state = 3`, where its `const`, made before it, is `Pending`",
+    file: "src/lower/items.rs",
+    find: "        !self.krate.loads.contains(&self.item) || module.is_none_or(|module| module == self.module)\n",
+    replace: "        !self.krate.loads.contains(&self.item) || module.is_none()\n",
+    tests: ["test/corpus.test.ts", "-t", "load_cycle_values"],
+    snapshots: true,
+  },
+  {
     name: "class-const-not-the-prototypes",
     breaks: "a class's constant read is `Counter.limit`, the constructor's, where it's the prototype's, `Counter.prototype.limit` (ADR 0761)",
     file: "src/lower/items.rs",

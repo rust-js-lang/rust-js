@@ -85,6 +85,8 @@ pub(super) fn exports(
             module: module_path(tcx, info.module),
             export: info.owner.clone().unwrap_or_else(|| info.name.clone()),
             member: info.owner.as_ref().map(|_| info.name.clone()),
+            // As its own crate imports it (ADRs 0611, 0773).
+            default: super::default_exports::is_own_default(tcx, id),
             drops: drop_params.get(&id).cloned().unwrap_or_default(),
             fails: failing.contains(&id),
             no_drops: no_drops
