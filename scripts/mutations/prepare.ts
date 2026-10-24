@@ -192,7 +192,8 @@ export const mutations: Mutation[] = [
     file: "src/prepare.rs",
     find: "    shadows(&mut function.body, None);\n",
     replace: "",
-    tests: ["test/lowering-names.test.ts", "-t", "shadowed by its own value"],
+    tests: ["test/corpus.test.ts", "-t", "^take_destructors.rs$"],
+    snapshots: true,
   },
   {
     name: "alias-of-another-name",
@@ -240,7 +241,7 @@ export const mutations: Mutation[] = [
     file: "src/prepare.rs",
     find: "            shadows(body, Some(&own));\n",
     replace: "",
-    tests: ["test/lowering-names.test.ts", "-t", "shadowed by its own value"],
+    tests: ["test/compiler.test.ts", "-t", "async code becomes async functions and await"],
   },
   {
     name: "template-values-unprepared",
