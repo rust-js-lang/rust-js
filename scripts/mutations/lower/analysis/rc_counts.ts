@@ -76,7 +76,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/rc_counts.rs",
     find: "        || params_may_drop && holds_param;\n",
     replace: ";\n",
-    tests: ["test/corpus.test.ts", "-t", "^generic_rc_drops.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(generic_rc_drops|rc_of_param_unnamed).rs$"],
   },
   {
     name: "generic-rc-of-reference-counted",

@@ -218,7 +218,12 @@ test("the app's crate is a program where no crate uses it, and a library, the sa
   const dir = fixture("crates-app-program");
   writeFileSync(join(dir, "Cargo.toml"), '[workspace]\nmembers = ["app", "user"]\nresolver = "2"\n');
   const counts = "use std::rc::Rc;\n\npub struct Shared(pub Rc<u32>);\n\npub fn enqueue(task: Box<dyn Fn()>) {\n    task();\n}\n\npub fn main() {\n    let a = Rc::new(5);\n    let b = Rc::clone(&a);\n    println!(\"{} {} {}\", *a, *b, Rc::strong_count(&a));\n}\n";
-  const reads = counts.replace(", Rc::strong_count(&a)", "").replace("{} {} {}", "{} {}");
+  // `user` reads no count, and holds a `Copy` struct a library's consumers
+  // may change in place, which a library copies and a program needn't.
+  const reads = counts
+    .replace(", Rc::strong_count(&a)", "")
+    .replace("{} {} {}", "{} {}")
+    .replace("pub fn main() {\n", "#[derive(Clone, Copy)]\npub struct Point {\n    pub x: u32,\n}\n\npub fn main() {\n    let p = Point { x: 1 };\n    let q = p;\n    println!(\"{}\", p.x + q.x);\n");
   for (const [name, uses, source] of [
     ["app", "", counts],
     ["user", 'app = { path = "../app" }\n', reads.replace("println!", "app::main();\n    println!")],
@@ -234,17 +239,18 @@ test("the app's crate is a program where no crate uses it, and a library, the sa
   const alone = readFileSync(app.js, "utf8");
   expect([printed(app.js), counted(app.js)]).toEqual(["5 5 2\n", true]);
   const user = await check(manifest, { packageName: "user" });
-  expect([printed(user.js), counted(user.js)]).toEqual(["5 5 2\n5 5\n", false]);
+  const copied = (js: string) => readFileSync(js, "utf8").includes("{ ...p }");
+  expect([printed(user.js), counted(user.js), copied(user.js)]).toEqual(["5 5 2\n2\n5 5\n", false, false]);
   expect(readFileSync(user.crates.get("app")!.js, "utf8")).toBe(alone);
   const again = await check(manifest, { packageName: "app" });
   expect(readFileSync(again.js, "utf8")).toBe(alone);
   // The whole workspace, each member a package Cargo was asked for: no app,
   // so every crate is a library, `user` too, which reads no count and is
-  // handed no `Rc`: it counts none (ADR 0844).
+  // handed no `Rc`: it counts none (ADR 0844), and copies its `Point`.
   await expect(check(manifest, { packageName: undefined })).rejects.toThrow("compiled no library");
   const deps = join(dir, "target", "wasm32-unknown-unknown", "debug", "deps");
   const marker = join(deps, readdirSync(deps).find((f) => f.startsWith("libuser-") && f.endsWith(".rust-js"))!);
   const built = JSON.parse(readFileSync(readFileSync(marker, "utf8").split("\n")[0], "utf8"));
   const root = built.modules.find((m: { module: string[] }) => m.module.length === 0).file;
-  expect(counted(root)).toBe(false);
+  expect([counted(root), copied(root)]).toEqual([false, true]);
 }, 600_000);
