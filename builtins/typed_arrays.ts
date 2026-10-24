@@ -52,8 +52,9 @@ line();
 line("// A binding's parameters are its JS function's: its body never runs.");
 line("#![allow(unused_variables)]");
 line();
-line("use super::{Defined, JsError, JsObject, Rest, StructuredClone};");
+line("use super::{Defined, JsError, JsObject, Rest, StructuredClone, Unknown};");
 line("use core::marker::PhantomData;");
+line("use core::ops::Deref;");
 
 // ── Buffers ──────────────────────────────────────────────────────────────
 
@@ -78,7 +79,7 @@ line("pub mod array_buffer {");
 line("    use super::*;");
 line();
 moduleFn(`[\`new ArrayBuffer(length)\`](${page("ArrayBuffer/ArrayBuffer")}): \`length\` bytes, each 0.`, "new ArrayBuffer", "new(length: u32) -> &'static ArrayBuffer");
-moduleFn(`[\`ArrayBuffer.isView(value)\`](${page("ArrayBuffer/isView")}): whether \`value\` is a typed array or a \`DataView\`.`, "ArrayBuffer.isView", "is_view(value: &JsObject) -> bool");
+moduleFn(`[\`ArrayBuffer.isView(value)\`](${page("ArrayBuffer/isView")}): whether \`value\`, any value, as TypeScript's \`any\`, is an [\`ArrayBufferView\`], a typed array or a \`DataView\` (ADR 0717).`, "ArrayBuffer.isView", "is_view(value: Option<&Unknown>) -> bool");
 close();
 line("}");
 line();
@@ -115,6 +116,37 @@ line();
 line("unsafe impl ArrayBufferLike for ArrayBuffer {}");
 line("unsafe impl ArrayBufferLike for SharedArrayBuffer {}");
 
+line();
+line("/// TypeScript's [`ArrayBufferView`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray):");
+line("/// a typed array or a `DataView`, each of which derefs to it, a view of");
+line("/// `B`'s bytes, of an `ArrayBuffer` unless said (ADR 0717). What a function");
+line("/// of any view takes, `fn f(view: &ArrayBufferView)`, given a `&Uint8Array`.");
+line("pub struct ArrayBufferView<B = ArrayBuffer>(PhantomData<JsObject>, PhantomData<B>);");
+line();
+line("// An object, never `undefined`, which a structured clone copies.");
+line("unsafe impl<B> Defined for ArrayBufferView<B> {}");
+line("unsafe impl<B> StructuredClone for ArrayBufferView<B> {}");
+line();
+line("impl<B> ArrayBufferView<B> {");
+method(`[\`view.buffer\`](${page("TypedArray/buffer")}): the buffer it views.`, "get buffer", "buffer(&self) -> &'static B");
+method(`[\`view.byteLength\`](${page("TypedArray/byteLength")}): how many bytes it views.`, "get byteLength", "byte_length(&self) -> u32");
+method(`[\`view.byteOffset\`](${page("TypedArray/byteOffset")}): where in its buffer it starts.`, "get byteOffset", "byte_offset(&self) -> u32");
+close();
+line("}");
+
+/** `name`'s `Deref` to the view it is: its `buffer`, `byteLength` and `byteOffset`. */
+const view = (name: string) => {
+  line();
+  line(`impl<B> Deref for ${name}<B> {`);
+  line("    type Target = ArrayBufferView<B>;");
+  line();
+  line("    fn deref(&self) -> &ArrayBufferView<B> {");
+  line("        // Never runs: rust-js compiles this `Deref` to the object itself.");
+  line("        unsafe { &*(self as *const Self as *const ArrayBufferView<B>) }");
+  line("    }");
+  line("}");
+};
+
 // ── DataView ─────────────────────────────────────────────────────────────
 
 line();
@@ -122,10 +154,9 @@ line(`/// [\`DataView\`](${page("DataView")}): a buffer's bytes read and written
 line("/// of any kind, at any offset, big-endian unless `little_endian` says.");
 line("pub struct DataView<B = ArrayBuffer>(PhantomData<JsObject>, PhantomData<B>);");
 line();
+view("DataView");
+line();
 line("impl<B> DataView<B> {");
-method(`[\`view.buffer\`](${page("DataView/buffer")}): the buffer it views.`, "get buffer", "buffer(&self) -> &'static B");
-method(`[\`view.byteLength\`](${page("DataView/byteLength")}): how many bytes it views.`, "get byteLength", "byte_length(&self) -> u32");
-method(`[\`view.byteOffset\`](${page("DataView/byteOffset")}): where in its buffer it starts.`, "get byteOffset", "byte_offset(&self) -> u32");
 for (const [kind, rust] of [["Int8", "i8"], ["Uint8", "u8"], ["Int16", "i16"], ["Uint16", "u16"], ["Int32", "i32"], ["Uint32", "u32"], ["Float32", "f32"], ["Float64", "f64"], ["BigInt64", "i64"], ["BigUint64", "u64"]]) {
   const one = BYTES[rust] === 1;
   method(`[\`view.get${kind}(offset${one ? "" : ", littleEndian"})\`](${page(`DataView/get${kind}`)}): the ${rust} at \`offset\`.`, `get${kind}`, `${snake(`get${kind}`)}(&self, offset: u32${one ? "" : ", little_endian: bool"}) -> ${rust}`);
@@ -153,12 +184,10 @@ for (const [name, e] of ELEMENTS) {
   line(`// An object, never \`undefined\`, which a structured clone copies.`);
   line(`unsafe impl<B> Defined for ${name}<B> {}`);
   line(`unsafe impl<B> StructuredClone for ${name}<B> {}`);
+  view(name);
   line();
   line(`impl<B> ${name}<B> {`);
   method(`[\`array.length\`](${t("length")}): how many elements it has.`, "get length", "length(&self) -> u32");
-  method(`[\`array.buffer\`](${t("buffer")}): the buffer it views.`, "get buffer", "buffer(&self) -> &'static B");
-  method(`[\`array.byteLength\`](${t("byteLength")}): how many bytes it views.`, "get byteLength", "byte_length(&self) -> u32");
-  method(`[\`array.byteOffset\`](${t("byteOffset")}): where in its buffer it starts.`, "get byteOffset", "byte_offset(&self) -> u32");
   method(`[\`array.BYTES_PER_ELEMENT\`](${page(`TypedArray/BYTES_PER_ELEMENT`)}): ${BYTES[e]}.`, "get BYTES_PER_ELEMENT", "bytes_per_element(&self) -> u32");
   method(`\`array[index]\`: its element at \`index\`, \`None\` past its end.`, "get []", `get(&self, index: u32) -> Option<${e}>`);
   method(`\`array[index] = value\`: \`value\` written at \`index\`; past its end, nothing.`, "set []", `set_index(&self, index: u32, value: ${e})`);

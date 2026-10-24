@@ -1708,6 +1708,7 @@ unsafe impl WeakKey for Date {}
 unsafe impl WeakKey for Symbol {}
 unsafe impl WeakKey for ArrayBuffer {}
 unsafe impl WeakKey for SharedArrayBuffer {}
+unsafe impl<B> WeakKey for ArrayBufferView<B> {}
 unsafe impl<B> WeakKey for DataView<B> {}
 unsafe impl<B> WeakKey for Int8Array<B> {}
 unsafe impl<B> WeakKey for Uint8Array<B> {}

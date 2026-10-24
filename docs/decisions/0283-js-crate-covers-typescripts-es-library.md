@@ -1,6 +1,8 @@
 # 0283. The js crate covers TypeScript's ES library, and a test holds it
 
 Status: Accepted. Extends [0102](0102-js-and-webapi.md) and [0281](0281-webapi-covers-typescripts-dom.md).
+Amended by [0717](0717-an-array-buffer-view-is-what-each-view-derefs-to.md): each view
+derefs to an `ArrayBufferView`, and `isView` takes any value.
 Amended by [0698](0698-a-catch-handler-gives-a-value-or-a-promise.md): `catch`'s handler
 gives a value or a promise; by [0699](0699-a-map-of-objects-is-a-weak-map.md): `js::Map`
 is JS's `Map` of weak keys. Amended by [0666](0666-the-js-crate-binds-objects-reflection.md): a

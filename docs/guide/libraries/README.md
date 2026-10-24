@@ -149,6 +149,11 @@ What it has:
   `js::Kind` holds of an object (a `&JsObject`, TypeScript's `object`), an
   array or a function, or a symbol; of any of them, `dyn WeakKey`
   ([ADR 0677](../../decisions/0677-a-weak-key-is-what-kind-holds.md)).
+  Each typed array and a `DataView` derefs to an `ArrayBufferView`,
+  TypeScript's, of its `buffer()`, `byte_offset()` and `byte_length()`:
+  what a function of any view takes, `view: &ArrayBufferView`; and
+  `array_buffer::is_view(value)` takes any value, `Option<&Unknown>`
+  ([ADR 0717](../../decisions/0717-an-array-buffer-view-is-what-each-view-derefs-to.md)).
 - **The module's own JS:** `js::import!` imports a file for its effects or
   an item lazily, `js::import_module!` a module, `js::export_default!` a
   module's default export, `js::directive!("use client")` its directive,

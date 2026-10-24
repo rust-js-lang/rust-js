@@ -580,6 +580,53 @@ pub fn bigs() -> (i64, bool) {
   expect(lib.bigs()).toEqual([2n, true]);
 });
 
+// ADR 0717: TypeScript's `ArrayBufferView`, what each typed array and a
+// `DataView` deref to, of its `buffer`, `byteOffset` and `byteLength`; and
+// `ArrayBuffer.isView` of any value, as React's
+// `shared/ReactPerformanceTrackProperties.js` asks it.
+test("an ArrayBufferView is any typed array or DataView, and isView takes any value", async () => {
+  const withJs = ["--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const dir = fixture("js-array-buffer-view");
+  writeFileSync(join(dir, "lib.rs"), `use js::{ArrayBufferView, Kind, Unknown, array_buffer, data_view, float64_array, uint8_array};
+
+pub fn bytes_of(view: &ArrayBufferView) -> Vec<u8> {
+    uint8_array::new_with_buffer(view.buffer(), Some(view.byte_offset()), Some(view.byte_length()))
+        .values()
+        .collect()
+}
+
+pub fn of_each() -> (Vec<u8>, Vec<u8>, Vec<u8>) {
+    let data = data_view::new(array_buffer::new(4), Some(1), Some(2));
+    data.set_uint8(0, 7);
+    let bytes = uint8_array::of((1, 2, 3));
+    (bytes_of(float64_array::of((1.0,))), bytes_of(data), bytes_of(bytes.subarray(Some(1), None)))
+}
+
+pub fn described(value: Option<&Unknown>) -> String {
+    if let Some(value) = value
+        && array_buffer::is_view(Some(value))
+    {
+        return match js::classify(js::get(value, "length")) {
+            Kind::Number(length) => format!("a view of {length}"),
+            _ => "a view".to_string(),
+        };
+    }
+    String::new()
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("new Uint8Array(view.buffer, view.byteOffset, view.byteLength)");
+  expect(js).toContain("ArrayBuffer.isView(value)");
+  const lib = await import(join(dir, "lib.js"));
+  expect(lib.ofEach()).toEqual([[0, 0, 0, 0, 0, 0, 240, 63], [7, 0], [2, 3]]);
+  expect(lib.described(new Uint8Array(3))).toBe("a view of 3");
+  expect(lib.described(new DataView(new ArrayBuffer(1)))).toBe("a view");
+  expect(lib.described([1])).toBe("");
+  expect(lib.described("text")).toBe("");
+  expect(lib.described(undefined)).toBe("");
+});
+
 // ADR 0283: JS's `Date` is the js crate's, a type with its members as
 // methods and its constructors and statics a module's, each the JS it names.
 test("a Date is JS's, its members methods", async () => {
