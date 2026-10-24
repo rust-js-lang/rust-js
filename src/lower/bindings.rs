@@ -98,6 +98,12 @@ pub(super) fn validate(tcx: TyCtxt<'_>) -> bool {
                     tcx.dcx().span_err(tcx.def_span(field.did), message);
                     valid = false;
                 }
+                // An `Option` field's `None` is left out already (ADRs 0280, 0810).
+                if is_optional(tcx, field) && !is_nullable(tcx, field) {
+                    let message = "rust-js: `#[rust_js::optional]` is of a `#[rust_js::nullable]` field, whose `None` is then left out where its struct is made and `null` where it's set; an `Option` field's `None` is left out already";
+                    tcx.dcx().span_err(tcx.def_span(field.did), message);
+                    valid = false;
+                }
             }
         }
         // A discriminated union's variants are objects of named fields, none
@@ -1051,6 +1057,17 @@ pub(super) fn is_omitted(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
 pub(super) fn is_nullable(tcx: TyCtxt<'_>, field: &FieldDef) -> bool {
     let path = [Symbol::intern("rust_js"), Symbol::intern("nullable")];
     tcx.get_attrs_by_path(field.did, &path).next().is_some()
+}
+
+/// Whether a nullable field is absent until set, `#[rust_js::optional]`, `field?: T | null` (ADR 0810).
+pub(super) fn is_optional(tcx: TyCtxt<'_>, field: &FieldDef) -> bool {
+    let path = [Symbol::intern("rust_js"), Symbol::intern("optional")];
+    tcx.get_attrs_by_path(field.did, &path).next().is_some()
+}
+
+/// Whether a field's `None` is `null` from where it's made on: a nullable one's, not an optional one's (ADR 0810).
+pub(super) fn null_where_made(tcx: TyCtxt<'_>, field: &FieldDef) -> bool {
+    is_nullable(tcx, field) && !is_optional(tcx, field)
 }
 
 /// The `Option` a `#[rust_js::nullable]` field of type `ty` holds: itself,

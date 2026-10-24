@@ -474,4 +474,20 @@ export const mutations: Mutation[] = [
     replace: "        self.export\n",
     tests: ["test/cargo-link.test.ts", "-t", "a library's module that holds a binding"],
   },
+  {
+    name: "optional-field-made-null",
+    breaks: "an optional nullable field made with `None` is `null` in its literal, not left out until it's set (ADR 0810)",
+    file: "src/lower/bindings.rs",
+    find: "    is_nullable(tcx, field) && !is_optional(tcx, field)\n",
+    replace: "    is_nullable(tcx, field)\n",
+    tests: ["test/lowering-nullable.test.ts", "-t", "an optional nullable field"],
+  },
+  {
+    name: "optional-unnullable-unrefused",
+    breaks: "`#[rust_js::optional]` of a field that isn't nullable, which says nothing, compiles (ADR 0810)",
+    file: "src/lower/bindings.rs",
+    find: "                if is_optional(tcx, field) && !is_nullable(tcx, field) {\n",
+    replace: "                if false {\n",
+    tests: ["test/diagnostics.test.ts", "-t", "an optional field that isn't nullable"],
+  },
 ];

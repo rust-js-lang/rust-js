@@ -173,9 +173,6 @@ pub(in crate::lower) enum TextOp {
     StrSlice,
     /// `s.len()`: its UTF-8 bytes.
     ByteLen,
-    /// `s.repeat(n)`: room for its bytes `n` times over asked first (ADR
-    /// 0774).
-    Repeat,
     /// `s.reserve(n)`, `reserve_exact(n)` of a `String`: room for its bytes
     /// and `n` more asked (ADR 0774).
     Reserve,
@@ -620,22 +617,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 self.parse_as(arg(), target, span, out)?
             }
             TextOp::ByteLen => Expr::call(Expr::helper("$byteLen"), vec![arg()]),
-            TextOp::Repeat => {
-                let (mut text, mut n) = (arg(), arg());
-                if !text.reads_same() {
-                    text = self.spill("text", text, out);
-                }
-                if !n.reads_same() {
-                    n = self.spill("n", n, out);
-                }
-                // A literal's bytes are known here.
-                let bytes = match &text.kind {
-                    js::ExprKind::Str(literal) => Expr::int(literal.len() as i128),
-                    _ => Expr::call(Expr::helper("$byteLen"), vec![text.clone()]),
-                };
-                self.room_for((None, n.clone()), bytes, span, out);
-                Expr::read(text, "repeat", vec![n])
-            }
             TextOp::FindBy(last) => call("$findBy", vec![arg(), arg(), Expr::bool(last)]),
             TextOp::StartsBy { end } => call("$startsBy", vec![arg(), arg(), Expr::bool(end)]),
             // Rust's ASCII whitespace: space, tab, line feed, form feed and
@@ -788,21 +769,24 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// `items` in `range`, a `range_ty`, as `op` takes them, of their
-    /// values (ADR 0364).
+    /// values (ADR 0364); `in_bounds` where the body's ranges show it is
+    /// (ADR 0806).
     pub(in crate::lower) fn slice_range_values(
         &mut self,
-        op: TextOp,
+        (op, in_bounds): (TextOp, bool),
         items: Expr,
         (range, range_ty): (Expr, Ty<'tcx>),
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<Expr> {
         let (start, end) = self.range_value_bounds(range, range_ty, span, out)?;
-        Ok(self.sliced(op, items, start, end))
+        Ok(self.sliced((op, in_bounds), items, start, end))
     }
 
     /// `items` from `start` to `end`, or to their end, as `op` takes them.
-    fn sliced(&mut self, op: TextOp, items: Expr, start: Expr, end: Option<Expr>) -> Expr {
+    /// A slice's range the body's ranges show in bounds, which can't panic,
+    /// is JS's own, `items.slice(start, end)` (ADR 0806).
+    fn sliced(&mut self, (op, in_bounds): (TextOp, bool), items: Expr, start: Expr, end: Option<Expr>) -> Expr {
         let name = match op {
             TextOp::Drain => "$drain",
             TextOp::StrSlice => "$strSlice",
@@ -818,6 +802,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // `&v[..]` of a slice: all of it, never out of bounds (ADR 0335).
         if name == "$slice" && start.as_int() == Some(0) && end.is_none() {
             return items;
+        }
+        if name == "$slice" && in_bounds {
+            let sliced = Expr::call(
+                Expr::member(items, "slice"),
+                std::iter::once(start).chain(end).collect(),
+            );
+            return Expr {
+                known: js::Known::Sliced,
+                ..sliced
+            };
         }
         let mut list = vec![items, start];
         list.extend(end);

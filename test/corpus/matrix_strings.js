@@ -16,7 +16,6 @@ import {
   $parseF64,
   $parseInt,
   $rfind,
-  $roomFor,
   $rsplit,
   $splitN,
   $splitOnce,
@@ -105,7 +104,6 @@ function main() {
     const rfind = $rfind(a, "a");
     const value$5 = $find(a, "b");
     const count = Iterator.from($matches(a, "a")).reduce((n) => n + 1, 0);
-    $roomFor(2, $byteLen(a));
     const replace = a.replaceAll("a", "xy");
     const repeat = a.repeat(2);
     const parse = $parseInt(a, -2147483648, 2147483647);

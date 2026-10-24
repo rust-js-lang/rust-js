@@ -13,7 +13,6 @@ import {
   $replaceWith,
   $rotateLeft,
   $rotateRight,
-  $slice,
   $sortedEntries,
   $sortedKeys,
   $totalCmp,
@@ -34,7 +33,7 @@ function main() {
   const v = [1, 2];
   $extend(v, [3, 4]);
   const tail = [5, 6];
-  $extend(v, $slice(tail, 1));
+  $extend(v, tail.slice(1));
   const words = ["a"];
   const more = ["b", "c"];
   $extend(words, more);

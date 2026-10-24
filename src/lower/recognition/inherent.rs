@@ -489,7 +489,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                 start: false,
                 end: true,
             },
-            "repeat" if owner.is_str() => Std::Text(TextOp::Repeat),
+            "repeat" if owner.is_str() => Std::Method("repeat"),
             // Of text, JS's `join`; of lists, their items with the separator's
             // between (ADR 0322). `connect`, deprecated, is `join`.
             "join" | "connect"

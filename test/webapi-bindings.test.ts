@@ -351,3 +351,58 @@ pub fn listed(el: &Element, children: Vec<&Element>, names: &[&str]) {
   expect(result.exitCode).not.toBe(0);
   expect(result.stderr.toString()).toContain("`&str` is not rest arguments");
 });
+
+// ADR 0811: V8's `console.createTask`, which no TypeScript lib declares and
+// Firefox, Safari, jsdom and Bun lack, is a property that may be
+// `undefined`, as React reads it: `console.createTask ? .. : ..`, and
+// `const createTask = __DEV__ && console.createTask ? console.createTask : ..`.
+test("console.createTask is a function the host may lack, and its task runs what it's given", async () => {
+  const withWeb = ["--", "--edition", "2024", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const dir = fixture("webapi-create-task");
+  writeFileSync(join(dir, "lib.rs"), `use webapi::{ConsoleTask, console};
+
+unsafe extern "Rust" {
+    pub safe static __DEV__: bool;
+}
+
+thread_local! {
+    static CREATE_TASK: Option<&'static dyn Fn(&str) -> &'static ConsoleTask> =
+        if __DEV__ { console::create_task() } else { None };
+}
+
+pub fn task_of(name: &str) -> Option<&'static ConsoleTask> {
+    CREATE_TASK.with(|create_task| create_task.map(|create_task| create_task(name)))
+}
+
+pub fn debug_task() -> Option<&'static ConsoleTask> {
+    console::create_task().map(|create_task| create_task("lazy()"))
+}
+
+pub fn run_in(task: &ConsoleTask, x: f64) -> f64 {
+    task.run(|| x * 2.0)
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("let createTask;\nif (__DEV__) {\n  createTask = console.createTask;\n}");
+  expect(js).toContain("return createTask ? createTask(name) : undefined;");
+  expect(js).toContain('export function debugTask() {\n  const createTask = console.createTask;\n  return createTask ? createTask("lazy()") : undefined;\n}');
+  expect(js).toContain("return task.run(() => x * 2);");
+  const host = console as any;
+  expect(host.createTask).toBeUndefined();
+  const made: string[] = [];
+  (globalThis as any).__DEV__ = true;
+  host.createTask = (name: string) => (made.push(name), { run: (f: () => unknown) => f() });
+  try {
+    const lib = await import(join(dir, "lib.js"));
+    const task = lib.taskOf("<App>");
+    expect([made, lib.runIn(task, 3)]).toEqual([["<App>"], 6]);
+    expect(lib.debugTask()).toBeDefined();
+    delete host.createTask;
+    expect(lib.debugTask()).toBeUndefined();
+    expect(made).toEqual(["<App>", "lazy()"]);
+  } finally {
+    delete host.createTask;
+    delete (globalThis as any).__DEV__;
+  }
+});

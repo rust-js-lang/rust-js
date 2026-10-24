@@ -296,10 +296,14 @@ pub(in crate::lower::mir::tidy) fn ending(stmts: &mut Vec<Stmt>, label: &str) {
         stmts.extend(body);
     }
     // Not a `let … else`'s, `if (c) { s; break l; } throw e;`: a guard.
-    let exits = matches!(
-        stmts.last().map(|s| &s.kind),
-        Some(StmtKind::Return(_) | StmtKind::Throw(_))
-    );
+    // Nor one before a loop that never goes on, nor to the block's end, as
+    // a `return` doesn't, `for (const k in props) { .. } return;` as MIR
+    // makes it (ADR 0805).
+    let exits = stmts.last().is_some_and(|last| match &last.kind {
+        StmtKind::Return(_) | StmtKind::Throw(_) => true,
+        StmtKind::While { .. } => ends(last) && !js::names_jump(std::slice::from_ref(last), label),
+        _ => false,
+    });
     // And `if (c) { .. if (d) { s; break l; } ..; continue; } t`, a `then`
     // that never goes on but has a way out to the block's end inside: `if
     // (c) { .. } else { t }`, whose `then` then ends where the block does, to
