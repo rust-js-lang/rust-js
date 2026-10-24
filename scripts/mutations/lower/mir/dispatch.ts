@@ -501,4 +501,12 @@ export const mutations: Mutation[] = [
     replace: "        let boxed = false && self.option_of(output)",
     tests: ["test/lowering-unwinds.test.ts", "-t", "what's given the thrown downcast is given it as it is"],
   },
+  {
+    name: "std-kind-writes-lost",
+    breaks: "what a std call's kind writes, apart, isn't kept once it takes the call",
+    file: "src/lower/mir/dispatch.rs",
+    find: "                out.extend(written);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^(vec_destructors|drop_scopes).rs$"],
+  },
 ];

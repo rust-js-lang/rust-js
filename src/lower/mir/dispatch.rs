@@ -943,8 +943,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             output,
             span,
         };
-        // A kind that says `None` has taken no argument and written nothing,
-        // so the next is given the call as it was: held where each is called.
+        // Each writes apart, the body's once it takes the call: one that says
+        // `None` changed nothing written, and took and made nothing (ADR 0713).
         let handlers: [(&str, StdHandler<'a, 'tcx>); 7] = [
             ("mir_fmt_call", Self::mir_fmt_call),
             ("mir_text_call", Self::mir_text_call),
@@ -955,14 +955,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ("mir_value_call", Self::mir_value_call),
         ];
         for (name, handler) in handlers {
-            let (args, written, pending) = (values.len(), out.len(), state.pending.len());
-            if let Some(value) = handler(self, state, call, &mut values, out)? {
+            let (args, pending, mut written) = (values.len(), state.pending.len(), Vec::new());
+            if let Some(value) = handler(self, state, call, &mut values, &mut written)? {
+                out.extend(written);
                 return Ok(value);
             }
-            assert!(
-                (values.len(), out.len(), state.pending.len()) == (args, written, pending),
-                "`{name}` declined a call it took an argument of, or wrote for"
-            );
+            let unchanged = written.is_empty() && (values.len(), state.pending.len()) == (args, pending);
+            assert!(unchanged, "`{name}` declined a call it changed");
         }
         Ok(Value::Expr(match known {
             // Panics end what runs: what's made before is made first.

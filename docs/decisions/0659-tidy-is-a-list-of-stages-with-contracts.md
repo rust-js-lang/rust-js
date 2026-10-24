@@ -161,5 +161,28 @@ pass it named had made.
   after `finish` too, and `finish` ensures what `settled` did, nothing
   after a jump and each label named. The corpus finds neither broken.
 - Held by the unit test `finish_is_the_last_stage_in_its_order`, and the
-  mutations `mir-temporaries-unnamed`, `scope-lets-not-declared-where-made`,
+  mutations `mir-temporaries-unnamed`,
   `finish-drop-scopes-unmade` and `finish-returns-through-finally-kept`.
+
+## Amendment: a stage read again is the runner's too
+
+The merge of 2026-10-24 brought ADR 0705's reading again: once each run
+of statements a drop ends is one `try { .. } finally { .. }`, where any
+was made, the `names`, `in place` and `chains` stages run again. It ran
+them inside the `finish/drop scopes` pass, calling their passes by hand,
+so `--tidy-until` couldn't stop in them, their contracts weren't checked
+after them, and a trace saw them as the one pass (a review, 2026-10-24).
+
+- **A stage says what's run again after it**, `Stage::again`, and its
+  passes say whether it must, `Hints::again`, which `tidy` takes once the
+  stage is done. Each is run by the runner as any stage is, named
+  `again/<stage>/<pass>`, its contracts checked after it, and listed by
+  `--tidy-passes` where it runs.
+- **`finish` is two stages**: `scopes`, the parameters taken apart and
+  the drops' scopes made, its returns through their `finally`, which asks
+  `names`, `in place` and `chains` again; then `finish`, the names given.
+  The order and the condition are as they were; the JS is the same, byte
+  for byte, across the corpus.
+- Held by `test/lowering-unwinds.test.ts`'s "a stage read again is its
+  own in tidy's trace", the unit test, and the mutations
+  `again-stages-not-run` and `again-stages-unchecked`.

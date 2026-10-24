@@ -134,6 +134,8 @@ for (const [name, source, message, crate] of [
   ["a map's key looked up through the crate's Borrow", "use std::borrow::Borrow;\n#[derive(PartialEq, Eq, Hash)]\npub struct Name(pub String);\nimpl Borrow<str> for Name { fn borrow(&self) -> &str { &self.0 } }\npub fn f(m: &std::collections::HashMap<Name, i32>) -> Option<&i32> { m.get(\"a\") }", "`std::collections::HashMap::<K, V, S, A>::get` of a `Name` as what its own `Borrow` gives"],
   ["items joined through the crate's Borrow", "use std::borrow::Borrow;\n#[derive(PartialEq, Eq, Hash)]\npub struct Name(pub String);\nimpl Borrow<str> for Name { fn borrow(&self) -> &str { &self.0 } }\npub fn f(v: &[Name]) -> String { v.join(\",\") }", "`std::slice::<impl [T]>::join` of a `Name` as what its own `Borrow` gives"],
   ["size_hint of an iterator whose hint isn't exact", "pub fn f(s: &str) -> usize { s.chars().size_hint().0 }", "`size_hint()` of a `std::str::Chars<'_>`"],
+  // A path's components are an array of them (ADR 0716), which keeps no path of what's left.
+  ["what's left of a path's components", "use std::path::Path;\npub fn f(a: &Path) -> &Path { let mut c = a.components(); c.next(); c.as_path() }", "calling `std::path::Components::<'a>::as_path`"],
   ["a user impl of a std trait", 'pub struct C;\nimpl std::net::ToSocketAddrs for C { type Iter = std::vec::IntoIter<std::net::SocketAddr>; fn to_socket_addrs(&self) -> std::io::Result<Self::Iter> { Ok(Vec::new().into_iter()) } }', "user implementations of `std::net::ToSocketAddrs`"],
   ["comparing another crate's struct", 'pub fn f(a: std::net::Ipv4Addr, b: std::net::Ipv4Addr) -> bool { a < b }', "does not support"],
   // Generic code given no `Clone` of its source can't clone the map it makes (ADR 0525).

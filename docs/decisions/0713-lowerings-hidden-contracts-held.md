@@ -50,3 +50,15 @@ caller had to remember, which nothing held:
   function value among them is made.
 - A failed start is still the item's failure; restoring is for what may
   come to call it otherwise.
+
+## Amendment: a declining kind writes apart
+
+The check of a kind that declines compared lengths: it couldn't tell an
+existing statement changed (a review, 2026-10-24). **Each kind writes
+into a list of its own, which is the body's once it takes the call**, so
+one that declines can't have changed what's written, and is checked to
+have written nothing, taken no argument and made no temporary. The JS is
+the same, byte for byte, across the corpus; the mutation
+`std-kind-writes-lost` holds that what a kind writes is kept. Routing a
+call to its one kind before any is given it is still the stronger step,
+left as before.

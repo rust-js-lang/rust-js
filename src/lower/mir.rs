@@ -1015,6 +1015,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 params: &params,
                 suggested: &self.temporaries_names(mir_body, &state),
                 named: &state.locals.named(),
+                again: &std::cell::Cell::new(false),
             },
         );
         let params = params.into_inner();

@@ -1339,3 +1339,32 @@ test("unwinding is refused where panics abort", () => {
   expect(p.code).not.toBe(0);
   expect(p.stderr).toContain("rust-js does not support unwinding where a panic aborts, `panic = \"abort\"`: rust-js's panics unwind yet");
 });
+
+// The stages read again once a body's drops are each one `try { .. }
+// finally { .. }` are tidy's runner's, traced as their own (ADR 0705,
+// amended): `--tidy-passes` names them `again/<stage>/<pass>`, between
+// `scopes` and `finish`, and `--tidy-until` stops in them, past what
+// `scopes` left and before what `finish` names.
+test("a stage read again is its own in tidy's trace", () => {
+  const passes = run([compiler, "--tidy-passes"]).trim().split("\n");
+  const at = (name: string) => passes.indexOf(name);
+  const again = passes.filter((name) => name.startsWith("again/"));
+  expect(again.map((name) => name.slice(0, name.lastIndexOf("/"))).filter((s, i, all) => all.indexOf(s) === i)).toEqual([
+    "again/names",
+    "again/in place",
+    "again/chains",
+  ]);
+  expect(at("scopes/returns through finally")).toBe(at(again[0]) - 1);
+  expect(at("finish/temporaries named")).toBe(at(again.at(-1)!) + 1);
+  const dir = fixture("tidy-again");
+  const after = (pass?: string) => {
+    const out = join(dir, `${pass?.replaceAll(/[/ ]/g, "_") ?? "all"}.js`);
+    run([compiler, join(root, "test/corpus/drop_scopes.rs"), "-o", out, ...(pass ? ["--tidy-until", pass] : []), "--", "-Awarnings"]);
+    // Without its map's name, which is its file's.
+    return readFileSync(out, "utf8").replace(/\/\/# sourceMappingURL=.*/, "");
+  };
+  const scoped = after("scopes/returns through finally");
+  const read = after(again.at(-1));
+  expect(read).not.toBe(scoped);
+  expect(read).not.toBe(after());
+});
