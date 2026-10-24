@@ -9,7 +9,7 @@
 // A binding's parameters are its JS function's: its body never runs.
 #![allow(unused_variables)]
 
-use super::{Defined, JsError, JsObject, Rest, StructuredClone, Unknown};
+use super::{Defined, JsError, JsObject, Rest, StructuredClone, Takes, Unknown};
 use core::marker::PhantomData;
 use core::ops::Deref;
 
@@ -324,6 +324,9 @@ pub struct Int8Array<B = ArrayBuffer>(PhantomData<JsObject>, PhantomData<B>);
 unsafe impl<B> Defined for Int8Array<B> {}
 unsafe impl<B> StructuredClone for Int8Array<B> {}
 
+// Its elements, spread, as rest arguments (ADR 0718).
+impl<'a, T: ?Sized + Takes<i8>, B> Rest<T> for &'a Int8Array<B> {}
+
 impl<B> Deref for Int8Array<B> {
     type Target = ArrayBufferView<B>;
 
@@ -589,6 +592,9 @@ pub struct Uint8Array<B = ArrayBuffer>(PhantomData<JsObject>, PhantomData<B>);
 // An object, never `undefined`, which a structured clone copies.
 unsafe impl<B> Defined for Uint8Array<B> {}
 unsafe impl<B> StructuredClone for Uint8Array<B> {}
+
+// Its elements, spread, as rest arguments (ADR 0718).
+impl<'a, T: ?Sized + Takes<u8>, B> Rest<T> for &'a Uint8Array<B> {}
 
 impl<B> Deref for Uint8Array<B> {
     type Target = ArrayBufferView<B>;
@@ -856,6 +862,9 @@ pub struct Uint8ClampedArray<B = ArrayBuffer>(PhantomData<JsObject>, PhantomData
 unsafe impl<B> Defined for Uint8ClampedArray<B> {}
 unsafe impl<B> StructuredClone for Uint8ClampedArray<B> {}
 
+// Its elements, spread, as rest arguments (ADR 0718).
+impl<'a, T: ?Sized + Takes<u8>, B> Rest<T> for &'a Uint8ClampedArray<B> {}
+
 impl<B> Deref for Uint8ClampedArray<B> {
     type Target = ArrayBufferView<B>;
 
@@ -1121,6 +1130,9 @@ pub struct Int16Array<B = ArrayBuffer>(PhantomData<JsObject>, PhantomData<B>);
 // An object, never `undefined`, which a structured clone copies.
 unsafe impl<B> Defined for Int16Array<B> {}
 unsafe impl<B> StructuredClone for Int16Array<B> {}
+
+// Its elements, spread, as rest arguments (ADR 0718).
+impl<'a, T: ?Sized + Takes<i16>, B> Rest<T> for &'a Int16Array<B> {}
 
 impl<B> Deref for Int16Array<B> {
     type Target = ArrayBufferView<B>;
@@ -1388,6 +1400,9 @@ pub struct Uint16Array<B = ArrayBuffer>(PhantomData<JsObject>, PhantomData<B>);
 unsafe impl<B> Defined for Uint16Array<B> {}
 unsafe impl<B> StructuredClone for Uint16Array<B> {}
 
+// Its elements, spread, as rest arguments (ADR 0718).
+impl<'a, T: ?Sized + Takes<u16>, B> Rest<T> for &'a Uint16Array<B> {}
+
 impl<B> Deref for Uint16Array<B> {
     type Target = ArrayBufferView<B>;
 
@@ -1653,6 +1668,9 @@ pub struct Int32Array<B = ArrayBuffer>(PhantomData<JsObject>, PhantomData<B>);
 // An object, never `undefined`, which a structured clone copies.
 unsafe impl<B> Defined for Int32Array<B> {}
 unsafe impl<B> StructuredClone for Int32Array<B> {}
+
+// Its elements, spread, as rest arguments (ADR 0718).
+impl<'a, T: ?Sized + Takes<i32>, B> Rest<T> for &'a Int32Array<B> {}
 
 impl<B> Deref for Int32Array<B> {
     type Target = ArrayBufferView<B>;
@@ -1920,6 +1938,9 @@ pub struct Uint32Array<B = ArrayBuffer>(PhantomData<JsObject>, PhantomData<B>);
 unsafe impl<B> Defined for Uint32Array<B> {}
 unsafe impl<B> StructuredClone for Uint32Array<B> {}
 
+// Its elements, spread, as rest arguments (ADR 0718).
+impl<'a, T: ?Sized + Takes<u32>, B> Rest<T> for &'a Uint32Array<B> {}
+
 impl<B> Deref for Uint32Array<B> {
     type Target = ArrayBufferView<B>;
 
@@ -2185,6 +2206,9 @@ pub struct Float32Array<B = ArrayBuffer>(PhantomData<JsObject>, PhantomData<B>);
 // An object, never `undefined`, which a structured clone copies.
 unsafe impl<B> Defined for Float32Array<B> {}
 unsafe impl<B> StructuredClone for Float32Array<B> {}
+
+// Its elements, spread, as rest arguments (ADR 0718).
+impl<'a, T: ?Sized + Takes<f32>, B> Rest<T> for &'a Float32Array<B> {}
 
 impl<B> Deref for Float32Array<B> {
     type Target = ArrayBufferView<B>;
@@ -2452,6 +2476,9 @@ pub struct Float64Array<B = ArrayBuffer>(PhantomData<JsObject>, PhantomData<B>);
 unsafe impl<B> Defined for Float64Array<B> {}
 unsafe impl<B> StructuredClone for Float64Array<B> {}
 
+// Its elements, spread, as rest arguments (ADR 0718).
+impl<'a, T: ?Sized + Takes<f64>, B> Rest<T> for &'a Float64Array<B> {}
+
 impl<B> Deref for Float64Array<B> {
     type Target = ArrayBufferView<B>;
 
@@ -2718,6 +2745,9 @@ pub struct BigInt64Array<B = ArrayBuffer>(PhantomData<JsObject>, PhantomData<B>)
 unsafe impl<B> Defined for BigInt64Array<B> {}
 unsafe impl<B> StructuredClone for BigInt64Array<B> {}
 
+// Its elements, spread, as rest arguments (ADR 0718).
+impl<'a, T: ?Sized + Takes<i64>, B> Rest<T> for &'a BigInt64Array<B> {}
+
 impl<B> Deref for BigInt64Array<B> {
     type Target = ArrayBufferView<B>;
 
@@ -2983,6 +3013,9 @@ pub struct BigUint64Array<B = ArrayBuffer>(PhantomData<JsObject>, PhantomData<B>
 // An object, never `undefined`, which a structured clone copies.
 unsafe impl<B> Defined for BigUint64Array<B> {}
 unsafe impl<B> StructuredClone for BigUint64Array<B> {}
+
+// Its elements, spread, as rest arguments (ADR 0718).
+impl<'a, T: ?Sized + Takes<u64>, B> Rest<T> for &'a BigUint64Array<B> {}
 
 impl<B> Deref for BigUint64Array<B> {
     type Target = ArrayBufferView<B>;

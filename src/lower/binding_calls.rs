@@ -30,8 +30,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let this = is_method(self.tcx, def_id).then(|| args.remove(0));
         // Its last argument is JS's rest arguments (ADRs 0221, 0640): a
         // tuple, `impl js::Rest<T>`'s or an emitter's event's, its items,
-        // `()` none; a slice or a `Vec` of them, spread, or what an array
-        // written out holds.
+        // `()` none; a slice, a `Vec` or a typed array of them, spread, or
+        // what an array written out holds.
         if is_variadic(self.tcx, def_id) {
             let sig = self.tcx.fn_sig(def_id);
             let collection = |ty: ty::Ty<'tcx>| {
@@ -68,10 +68,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let tuple = last.is_some_and(|ty| matches!(ty.kind(), ty::Tuple(_)));
             // Rest arguments as a value, `&dyn js::Rest<T>`, spread (ADR 0667).
             let rest = last.is_some_and(|ty| is_rest_value(self.tcx, ty));
-            if !last.is_some_and(collection) && !tuple && !rest {
+            // A JS object the js crate makes rest arguments of, a typed
+            // array, which is iterable: spread (ADR 0718).
+            let object = last.is_some_and(|ty| self.is_js_object(ty.peel_refs()));
+            if !last.is_some_and(collection) && !tuple && !rest && !object {
                 return Err(self.unsupported(
                     span,
-                    "a `#[rust_js::variadic]` binding whose last parameter isn't rest arguments: a tuple, a slice, a `Vec` or a `&dyn js::Rest<T>`",
+                    "a `#[rust_js::variadic]` binding whose last parameter isn't rest arguments: a tuple, a slice, a `Vec`, a typed array or a `&dyn js::Rest<T>`",
                 ));
             }
             spread_rest(&mut args);

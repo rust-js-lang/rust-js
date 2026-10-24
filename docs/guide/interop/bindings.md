@@ -649,11 +649,14 @@ export async function open(other) {
   TypeScript rest parameter, `log(...data: any[])`, is `impl js::Rest<T>`
   ([ADR 0640](../../decisions/0640-a-rest-parameter-is-a-tuple.md)):
   given a tuple, its arguments, each of its own type that a `T` takes,
-  `dyn IntoUnknown` of `any`, `str` of `string`, `f64` of `number`, `(x,)`
-  one and `()` none; given a slice or a `Vec` by reference, spread,
-  `log(&values)` being `log(...values)`, and so is rest arguments as a
-  value, a `&dyn js::Rest<T>` ([above](#a-binding-as-a-value)). A slice
-  declared is refused.
+  `dyn IntoUnknown` of `any`, `str` of `string`, `f64` of `number`, which
+  takes any number JS has as one, each `f64::from` takes, `(x,)` one and
+  `()` none; given a slice, a `Vec` or a typed array by reference, spread,
+  `log(&values)` being `log(...values)` and `string::from_char_code(bytes)`
+  `String.fromCharCode(...bytes)`
+  ([ADR 0718](../../decisions/0718-a-typed-array-is-rest-arguments-spread.md)),
+  and so is rest arguments as a value, a `&dyn js::Rest<T>`
+  ([above](#a-binding-as-a-value)). A slice declared is refused.
 - **A cast is `this`, unchecked, so it's an `unsafe fn`**; check first with
   `instanceof`. webapi has one for each interface,
   `html_input_element::unchecked_from(target)`.

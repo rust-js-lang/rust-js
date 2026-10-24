@@ -627,6 +627,58 @@ pub fn described(value: Option<&Unknown>) -> String {
   expect(lib.described(undefined)).toBe("");
 });
 
+// ADR 0718: `String.fromCharCode(...codes)`, a rest of TypeScript's
+// `number`, `f64`, which takes any number JS has as one, and a typed array
+// spread as its rest arguments, as a slice is: React's
+// `shared/binaryToComparableString.js` as a port writes it.
+test("String.fromCharCode takes its codes as rest arguments, a typed array spread", async () => {
+  const withJs = ["--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const dir = fixture("js-from-char-code");
+  writeFileSync(join(dir, "lib.rs"), `use js::{ArrayBufferView, string, uint8_array, uint16_array};
+
+// Turns a TypedArray or ArrayBuffer into a string that can be used for comparison
+// in a Map to see if the bytes are the same.
+js::export_default! {
+    fn binary_to_comparable_string(view: &ArrayBufferView) -> String {
+        string::from_char_code(uint8_array::new_with_buffer(
+            view.buffer(),
+            Some(view.byte_offset()),
+            Some(view.byte_length()),
+        ))
+    }
+}
+
+pub fn written() -> (String, String, String, String) {
+    let units: Vec<u16> = vec![0x52, 0x75];
+    let wide = uint16_array::of((0x73, 0x74));
+    (string::from_char_code((72, 105)), string::from_char_code(&units), string::from_char_code(wide), string::from_char_code(()))
+}
+
+pub fn of_view() -> String {
+    binary_to_comparable_string(uint8_array::of((97, 98, 99)).subarray(Some(1), None))
+}
+
+pub fn largest(byte: u8) -> f64 {
+    js::math::max((1, 2.5, byte))
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain(
+    "export default function binaryToComparableString(view) {\n  return String.fromCharCode(...new Uint8Array(view.buffer, view.byteOffset, view.byteLength));\n}",
+  );
+  expect(js).toContain("String.fromCharCode(72, 105)");
+  expect(js).toContain("String.fromCharCode(...units)");
+  expect(js).toContain("String.fromCharCode(...wide)");
+  expect(js).toContain("String.fromCharCode()");
+  const lib = await import(join(dir, "lib.js"));
+  expect(lib.written()).toEqual(["Hi", "Ru", "st", ""]);
+  expect(lib.ofView()).toBe("bc");
+  expect(js).toContain("return Math.max(1, 2.5, byte);");
+  expect(lib.largest(3)).toBe(3);
+  expect(lib.default(new Float32Array([1]))).toBe(String.fromCharCode(...new Uint8Array(new Float32Array([1]).buffer)));
+});
+
 // ADR 0283: JS's `Date` is the js crate's, a type with its members as
 // methods and its constructors and statics a module's, each the JS it names.
 test("a Date is JS's, its members methods", async () => {

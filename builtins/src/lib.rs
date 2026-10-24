@@ -596,7 +596,17 @@ macro_rules! takes_itself {
     };
 }
 
-takes_itself!(i8, u8, i16, u16, i32, u32, i64, u64, f32, f64);
+takes_itself!(i8, u8, i16, u16, i32, u32, i64, u64, f32);
+
+/// TypeScript's `number` itself, an `f64`: any number JS has as one, each
+/// that `f64::from` takes, a `u8` of a `Uint8Array` spread too (ADR 0718).
+macro_rules! takes_number {
+    ($($t:ty),*) => {
+        $(impl Takes<$t> for f64 {})*
+    };
+}
+
+takes_number!(i8, u8, i16, u16, i32, u32, f32, f64);
 
 /// A slice of them, spread.
 impl<'a, T: ?Sized + Takes<A>, A> Rest<T> for &'a [A] {}
@@ -1185,6 +1195,17 @@ pub mod string {
     /// its UTF-16 code units.
     #[cfg_attr(rust_js, rust_js::link_name = "get length")]
     pub fn length(this: &str) -> u32 {
+        unreachable!()
+    }
+
+    /// [`String.fromCharCode(..codes)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String/fromCharCode):
+    /// the text of these UTF-16 code units, each a number, TypeScript's
+    /// `number`, as JS makes one of it: its low 16 bits. A rest parameter,
+    /// given a tuple, `from_char_code((72, 105))`, or a slice, a `Vec` or a
+    /// typed array spread, `String.fromCharCode(...bytes)` (ADR 0718).
+    #[cfg_attr(rust_js, rust_js::link_name = "String.fromCharCode")]
+    #[cfg_attr(rust_js, rust_js::variadic)]
+    pub fn from_char_code(codes: impl super::Rest<f64>) -> String {
         unreachable!()
     }
 

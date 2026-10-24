@@ -242,4 +242,12 @@ export const mutations: Mutation[] = [
     replace: "                keyed(this, args.remove(0))\n",
     tests: ["test/js-object.test.ts", "-t", "delete is JS's operator"],
   },
+  {
+    name: "rest-typed-array-refused",
+    breaks: "a typed array given as rest arguments isn't spread but refused: `String.fromCharCode(...bytes)` doesn't compile",
+    file: "src/lower/binding_calls.rs",
+    find: "            let object = last.is_some_and(|ty| self.is_js_object(ty.peel_refs()));\n",
+    replace: "            let object = false;\n",
+    tests: ["test/js-builtins.test.ts", "-t", "String.fromCharCode takes its codes"],
+  },
 ];

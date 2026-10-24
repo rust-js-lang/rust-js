@@ -52,7 +52,7 @@ line();
 line("// A binding's parameters are its JS function's: its body never runs.");
 line("#![allow(unused_variables)]");
 line();
-line("use super::{Defined, JsError, JsObject, Rest, StructuredClone, Unknown};");
+line("use super::{Defined, JsError, JsObject, Rest, StructuredClone, Takes, Unknown};");
 line("use core::marker::PhantomData;");
 line("use core::ops::Deref;");
 
@@ -184,6 +184,9 @@ for (const [name, e] of ELEMENTS) {
   line(`// An object, never \`undefined\`, which a structured clone copies.`);
   line(`unsafe impl<B> Defined for ${name}<B> {}`);
   line(`unsafe impl<B> StructuredClone for ${name}<B> {}`);
+  line();
+  line("// Its elements, spread, as rest arguments (ADR 0718).");
+  line(`impl<'a, T: ?Sized + Takes<${e}>, B> Rest<T> for &'a ${name}<B> {}`);
   view(name);
   line();
   line(`impl<B> ${name}<B> {`);
