@@ -104,8 +104,8 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-labeled-block-unnamed",
     breaks: "a block the program labeled keeps MIR's label, `bb41`, not its own (ADR 0742)",
     file: "src/lower/mir/tidy/jumps/labels.rs",
-    find: "                    (label, body, written.map(|b| &b.label))\n",
-    replace: "                    (label, body, written.and(None))\n",
+    find: "                && taken.get(&to) == Some(&1)\n",
+    replace: "                && taken.get(&to) == Some(&7)\n",
     tests: ["test/lowering-labels.test.ts", "-t", "a block the program labeled keeps its label"],
   },
 ];

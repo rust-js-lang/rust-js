@@ -326,10 +326,18 @@ pub(super) fn tail_returns(stmts: &mut Vec<Stmt>, returns: &[js::Span]) {
         stmts.extend(then);
     }
     match stmts.last_mut().map(|s| &mut s.kind) {
+        // Each branch's, and a branch that leaves nothing, as
+        // `emptied_branch` writes it: `if (!c) {} else { s }`, a macro's
+        // function's `if let` (MIR's `return` there is where the macro is
+        // called), is `if (c) { s }`.
         Some(StmtKind::If(_, then, otherwise)) => {
             tail_returns(then, returns);
             if let Some(branch) = otherwise {
                 tail_returns(branch, returns);
+            }
+            let last = stmts.pop().expect("matched");
+            if let Some(kind) = emptied_branch(last.kind) {
+                stmts.push(kind.at(last.span));
             }
         }
         Some(StmtKind::Labeled(_, body)) => tail_returns(body, returns),

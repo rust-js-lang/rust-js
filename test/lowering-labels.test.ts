@@ -64,15 +64,15 @@ pub fn describe(value: Option<&Unknown>, indent: usize, out: &mut Vec<String>) -
 
 // ADR 0745: React's addObjectDiffToProperties is upstream's chain of `if`s,
 // each arm's `continue` where it's written, with no block MIR made; and
-// addValueToProperties' `'desc` block, which ends a branch of one MIR made,
-// is still `desc: { .. }`, not merged into that one.
+// addValueToProperties' `'desc` block, which ends a case, is the case's
+// `break`s, not merged into a block MIR made (ADR 0790).
 test("React's addObjectDiffToProperties has no block MIR made", () => {
   const of = performanceTrack();
   const diff = of("addObjectDiffToProperties");
   expect(diff).not.toMatch(/bb\d+/);
   expect(diff).toContain('          properties.push([REMOVED + line, "…"], [ADDED + line, "…"]);\n          isDeeplyEqual = false;\n          continue;\n        }\n');
   expect(diff).toContain("              if (!nestedEqual) {\n                isDeeplyEqual = false;\n              } else if (");
-  expect(of("addValueToProperties")).toMatch(/\n\s+desc: \{\n/);
+  expect(of("addValueToProperties")).not.toMatch(/bb\d+|desc: \{/);
 });
 
 // React's getArrayKind (shared/ReactPerformanceTrackProperties.js) is a
@@ -247,4 +247,113 @@ pub fn describe(value: Option<&Unknown>, name: &str, out: &mut Vec<String>) {
   expect(of([1, 2, 3, 4], "Array")).toEqual(["other", "other"]);
   expect(of({}, "Object")).toEqual(["Thing"]);
   expect(of({}, "Map", ["a", "b", "c", "d", "e", "f"])).toEqual(["a", "b", "c", "d", "e", "f", "view"]);
+});
+
+// ADR 0790: React's addValueToProperties is a `switch (typeof value)`,
+// leaving its case early, `desc = ..; break;`. Its port's one `match
+// js::classify(value)`: the object arm's guard, `if let Some(value) =
+// value`, which holds where the arm's matched, tests nothing, so the
+// `match` is a `switch`; and each `break 'desc` the program wrote is where
+// it's written, the case's `break;`, an `||`'s too, and one of a `match`'s
+// value; no label.
+test("a block the program labeled that ends a case is the case's breaks", async () => {
+  const dir = fixture("labeled-block-cases");
+  writeFileSync(join(dir, "lib.rs"), `use js::{Kind, Unknown};
+
+pub fn describe(value: Option<&Unknown>, indent: usize, out: &mut Vec<String>) -> String {
+    let desc = match js::classify(value) {
+        Kind::Null => "null".to_string(),
+        Kind::Object(_) | Kind::Array(_) if let Some(value) = value => 'desc: {
+            if js::has(value, "type") {
+                let type_name = js::string(js::get(value, "type"));
+                let keys = js::object::keys(value);
+                if keys.len() == 1 {
+                    break 'desc "<".to_string() + &type_name + " />";
+                }
+                if indent < 3 || (keys.len() == 2 && keys[0] == "children") {
+                    break 'desc "<".to_string() + &type_name + " \\u{2026} />";
+                }
+                out.push("<".to_string() + &type_name);
+                return String::new();
+            }
+            let name = js::string(Some(value));
+            if js::has(value, "length") {
+                break 'desc match js::classify(js::get(value, "length")) {
+                    Kind::Number(length) => format!("{name}({})", js::shown(length)),
+                    _ => name,
+                };
+            }
+            out.push(name);
+            return String::new();
+        }
+        Kind::Function(_) => "() => {}".to_string(),
+        Kind::Undefined => "undefined".to_string(),
+        _ => js::string(value),
+    };
+    desc
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs()]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).not.toMatch(/^\s*\w+: \{$/m);
+  expect(js).not.toMatch(/break \w+;/);
+  expect(js).not.toContain("value$1");
+  expect(js).toContain('  switch (typeof value) {\n    case "object":\n      if (value === null) {\n');
+  expect(js).toContain('        if (keys.length === 1) {\n          desc = "<" + typeName + " />";\n          break;\n        }\n');
+  expect(js).toContain(
+    '        if (indent < 3 || (keys.length === 2 && keys[0] === "children")) {\n          desc = "<" + typeName + " … />";\n          break;\n        }\n        out.push("<" + typeName);\n        return "";\n',
+  );
+  expect(js).toMatch(/\n\s+if \("length" in value\) \{\n\s+const length = value.length;\n\s+desc = typeof length === "number" \? `\$\{name\}\(\$\{length\}\)` : name;\n\s+break;\n/);
+  const lib = await import(join(dir, "lib.js"));
+  const of = (value: unknown, indent = 0) => {
+    const out: string[] = [];
+    return [lib.describe(value, indent, out), ...out];
+  };
+  expect(of(null)).toEqual(["null"]);
+  expect(of(undefined)).toEqual(["undefined"]);
+  expect(of(() => 1)).toEqual(["() => {}"]);
+  expect(of(5)).toEqual(["5"]);
+  expect(of({ type: "a" })).toEqual(["<a />"]);
+  expect(of({ type: "a", b: 1 })).toEqual(["<a … />"]);
+  expect(of({ type: "a", b: 1 }, 3)).toEqual(["", "<a"]);
+  expect(of({ children: 1, type: "a" }, 3)).toEqual(["<a … />"]);
+  expect(of([1, 2])).toEqual(["1,2(2)"]);
+  expect(of({ length: "x" })).toEqual(["[object Object]"]);
+  expect(of({ b: 1 })).toEqual(["", "[object Object]"]);
+});
+
+// ADR 0790: a guard `if let Some(v) = value` holds where the arm's kind
+// says `value` is there, only while `value` is what it was: of one the body
+// sets, it's tested; and of an arm of `undefined`, it fails.
+test("a guard of what a kind says is there is tested where it may fail", async () => {
+  const dir = fixture("labeled-block-guards");
+  writeFileSync(join(dir, "lib.rs"), `use js::{Kind, Unknown};
+
+pub fn kind(value: Option<&Unknown>) -> u32 {
+    match js::classify(value) {
+        Kind::Undefined if let Some(_) = value => 9,
+        Kind::Object(_) | Kind::Array(_) if let Some(v) = value => js::object::keys(v).len() as u32,
+        Kind::Function(_) => 1,
+        Kind::Null => 2,
+        _ => 3,
+    }
+}
+
+pub fn reset<'a>(mut value: Option<&'a Unknown>, other: Option<&'a Unknown>) -> u32 {
+    match js::classify(value) {
+        Kind::Object(_) | Kind::Array(_) if let Some(v) = value => {
+            value = other;
+            js::object::keys(v).len() as u32 + u32::from(value.is_some())
+        }
+        Kind::Function(_) => 1,
+        _ => 3,
+    }
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs()]);
+  const lib = await import(join(dir, "lib.js"));
+  expect([undefined, null, {}, { a: 1 }, [1, 2, 3], () => 1, "s"].map((v) => lib.kind(v))).toEqual([3, 2, 0, 1, 3, 1, 3]);
+  expect(lib.reset({ a: 1, b: 2 }, undefined)).toBe(2);
+  expect(lib.reset({ a: 1 }, { b: 1 })).toBe(2);
+  expect(lib.reset(undefined, undefined)).toBe(3);
 });

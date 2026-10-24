@@ -458,6 +458,9 @@ missing key, `unreachable!`, `todo!` ([0012](../decisions/0012-panics-and-runtim
   [0141](../decisions/0141-std-trait-objects.md)).
 - **Control flow is Rust's:** `loop` with a value, labeled `break` and
   `continue`, labeled blocks ([0158](../decisions/0158-labeled-blocks.md)),
+  each `break` where it's written, a case's `break;` where the block ends
+  a `match`'s arm that's a case
+  ([0790](../decisions/0790-a-break-the-program-wrote-is-where-it-is-written.md)),
   `let`-`else`, `if let` chains, match guards, `let` guards.
 
 Differences:

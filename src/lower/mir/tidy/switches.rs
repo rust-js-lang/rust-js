@@ -856,6 +856,40 @@ pub(super) fn breaks_past_switches(stmts: &mut Vec<Stmt>) {
     unlabeled(stmts);
 }
 
+/// A block a case ends with, through the branches of an `if` it ends with,
+/// `case "object": if (..) { .. } else { desc: { .. break desc; .. } }`:
+/// where it ends, the case does, so each of its `break`s, outside a loop or
+/// `switch` of its own, is the case's `break;`, as a person leaves a case
+/// early, and its label, which nothing names now, gone (ADR 0790). A block
+/// the program labeled, `'desc: { .. }`, Rust's way to leave a `match`'s
+/// arm early, reads as JS leaves a case.
+pub(super) fn blocks_ending_cases(stmts: &mut [Stmt]) {
+    fn ending(stmts: &mut Vec<Stmt>) {
+        match stmts.last_mut().map(|s| &mut s.kind) {
+            Some(StmtKind::If(_, a, b)) => {
+                ending(a);
+                if let Some(b) = b {
+                    ending(b);
+                }
+            }
+            Some(StmtKind::Labeled(label, body)) => {
+                let label = label.clone();
+                case_breaks(body, &label);
+                ending(body);
+            }
+            _ => {}
+        }
+        unlabeled(stmts);
+    }
+    for stmt in stmts.iter_mut() {
+        if let StmtKind::Switch { cases, default, .. } = &mut stmt.kind {
+            for case in js::case_lists_mut(cases, default) {
+                ending(case);
+            }
+        }
+    }
+}
+
 /// Each `switch` `stmts` end with, through the branches of an `if` they
 /// end with and a block's statements, each of its cases given to `f`.
 fn ending_switches(stmts: &mut [Stmt], f: &mut dyn FnMut(&mut Vec<Stmt>)) {

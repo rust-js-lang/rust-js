@@ -655,6 +655,74 @@ pub(super) fn present_calls<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> HashS
         .collect()
 }
 
+/// Each guard `if let Some(v) = value` of an arm of `match
+/// js::classify(value) { .. }` whose variants are each one of what's there,
+/// `Kind::Object(_) | Kind::Array(_)`: where it's written. A binding that's
+/// its argument (`given_present`'s) says of a `None`, `undefined`, only a
+/// variant that's `undefined` or `null` (ADR 0676), so where one of the
+/// arm's matched, `value` is a `Some`, and the guard holds: it tests
+/// nothing, and the arm is as one without it. Of a `value` the body never
+/// changes, so what the guard binds is `value` itself wherever it's read.
+pub(super) fn held_guards<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> HashSet<Span> {
+    let changed = changes(thir);
+    // The variable a call of a binding that's its argument, giving an
+    // untagged enum, reads: `classify(value)`'s `value`, an `Option` of a
+    // reference, whose `None` is `undefined`.
+    let classified = |scrutinee: ExprId| {
+        let ExprKind::Call { fun, ref args, .. } = thir[strip(thir, scrutinee)].kind else {
+            return None;
+        };
+        let ty::FnDef(def_id, _) = *thir[fun].ty.kind() else {
+            return None;
+        };
+        let identity = super::bindings::is_binding(tcx, def_id)
+            && matches!(super::bindings::js_form(tcx, def_id), super::bindings::JsForm::This);
+        let (adt, _) = super::untagged::untagged_adt(tcx, thir[scrutinee].ty)?;
+        let [arg] = &args[..] else { return None };
+        let ExprKind::VarRef { id } = thir[strip(thir, *arg)].kind else {
+            return None;
+        };
+        let of_ref = matches!(thir[*arg].ty.kind(), ty::Adt(option, args)
+            if tcx.is_lang_item(option.did(), LangItem::Option) && args.type_at(0).is_ref());
+        // Of an enum with a variant of each of `undefined` and `null`: no
+        // other is either, not one that's what the others aren't.
+        let nullish = super::untagged::holds_undefined_and_null(tcx, adt);
+        (identity && of_ref && nullish && !changed.contains_key(&id)).then_some((adt, id))
+    };
+    // Whether `pattern` is variants of `adt`, none `undefined` nor `null`.
+    fn present<'tcx>(tcx: TyCtxt<'tcx>, adt: ty::AdtDef<'tcx>, pattern: &Pat<'tcx>) -> bool {
+        match &pattern.kind {
+            PatKind::Or { pats } => pats.iter().all(|p| present(tcx, adt, p)),
+            PatKind::Variant {
+                adt_def, variant_index, ..
+            } => *adt_def == adt && !super::untagged::is_nullish(tcx, adt.variant(*variant_index)),
+            _ => false,
+        }
+    }
+    (thir.exprs.iter())
+        .filter_map(|e| match e.kind {
+            ExprKind::Match {
+                scrutinee, ref arms, ..
+            } => Some((classified(scrutinee)?, arms)),
+            _ => None,
+        })
+        .flat_map(|((adt, var), arms)| {
+            (arms.iter()).filter_map(move |&arm| {
+                let arm = &thir[arm];
+                let guard = strip(thir, arm.guard?);
+                let ExprKind::Let { expr, ref pat } = thir[guard].kind else {
+                    return None;
+                };
+                let some = matches!(&pat.kind, PatKind::Variant { adt_def, variant_index, subpatterns, .. }
+                    if tcx.is_lang_item(adt_def.variant(*variant_index).def_id, LangItem::OptionSome)
+                        && matches!(&subpatterns[..], [only] if matches!(only.pattern.kind, PatKind::Binding { subpattern: None, .. } | PatKind::Wild)));
+                let same = matches!(thir[strip(thir, expr)].kind, ExprKind::VarRef { id } if id == var);
+                (some && same && present(tcx, adt, &arm.pattern)).then_some(thir[guard].span)
+            })
+        })
+        .collect()
+}
+
 /// Where each `js::SymbolFor::from_value(value)` is called, its `fn_span`,
 /// whose value the body only tests against the registry's symbols: what a
 /// `match`, a `matches!` or an `if let` compares, of patterns each `_` or a
