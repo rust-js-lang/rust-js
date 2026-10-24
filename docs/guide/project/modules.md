@@ -275,7 +275,9 @@ export default page;
 ```
 
 Of the function itself, `js::export_default! { .. }`, it's the function's
-declaration as the default, which nothing else exports by name
+declaration as the default, which nothing else exports by name, a `pub`
+one's neither, in its `.d.ts` as in its JS, `export default function
+noop(): void;`
 ([ADR 0611](../../decisions/0611-a-default-export-is-where-its-macro-is.md)):
 
 ```rust
