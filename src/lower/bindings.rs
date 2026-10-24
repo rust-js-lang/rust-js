@@ -6,10 +6,10 @@ use rustc_ast::LitKind;
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_hir::def::{DefKind, Res};
 use rustc_hir::{CoroutineKind, CoroutineSource};
-use rustc_hir::{ExprKind, ItemKind, Stmt, StmtKind};
+use rustc_hir::{ExprKind, ItemKind};
 use rustc_middle::ty::{self, FieldDef, Ty, TyCtxt, VariantDef};
 use rustc_span::def_id::{DefId, LocalDefId, LocalModId};
-use rustc_span::{Span, Symbol, kw, sym};
+use rustc_span::{Span, Symbol, sym};
 use std::collections::HashMap;
 
 /// Validate tool bindings even if no function calls them. A malformed binding
@@ -599,7 +599,7 @@ fn held_of<'tcx>(
     module: LocalModId,
     modules: &mut HashMap<LocalModId, Vec<HeldBinding>>,
 ) -> Vec<HeldBinding> {
-    let default = (default_exports(tcx, module).into_iter())
+    let default = (super::default_exports::default_exports(tcx, module).into_iter())
         .find_map(|(named, _)| named.filter(|&named| held_path(tcx, named).is_some()));
     let mut held: Vec<HeldBinding> = Vec::new();
     let mut add = |made: HeldBinding| match held.iter_mut().find(|h| h.name == made.name) {
@@ -994,7 +994,7 @@ pub(super) fn is_on_load(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
 /// or `js::on_load!`'s `const _`, which is rust-js's to read, and has nothing
 /// to write? Not a constant the default is itself (ADR 0625).
 pub(super) fn is_mark(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
-    if held_by_default(tcx, def_id) {
+    if super::default_exports::held_by_default(tcx, def_id) {
         return false;
     }
     ["import", "directive", "export_default", "on_load"].iter().any(|name| {
@@ -1223,68 +1223,6 @@ pub(super) fn is_unexpanded_jsx(tcx: TyCtxt<'_>, def: DefId) -> bool {
 pub(super) fn is_jsx_node(tcx: TyCtxt<'_>, id: DefId) -> bool {
     let path = [Symbol::intern("rust_js"), Symbol::intern("jsx_node")];
     tcx.get_attrs_by_path(id, &path).next().is_some()
-}
-
-/// A module's `js::export_default!(page)`: the function its `const _`
-/// names, `let _ = page;`, and where it's written (ADR 0192).
-/// Whether `function`, its module's default export, is declared as it,
-/// `export default function noop() {}`: of `js::export_default! { fn noop()
-/// {} }`, which marks the function itself, not a `const _` naming it (ADR
-/// 0611).
-pub(super) fn default_declared(tcx: TyCtxt<'_>, function: DefId) -> bool {
-    let path = [Symbol::intern("rust_js"), Symbol::intern("export_default")];
-    held_by_default(tcx, function) && tcx.get_attrs_by_path(function, &path).next().is_some()
-}
-
-/// Whether `def`, marked `#[rust_js::export_default]`, is the default
-/// itself, as `js::export_default! { .. }` writes it: a function, or a
-/// `const` whose value is the default (ADR 0625), not the `const _` the
-/// naming form makes.
-fn held_by_default(tcx: TyCtxt<'_>, def: DefId) -> bool {
-    match tcx.def_kind(def) {
-        DefKind::Fn => true,
-        DefKind::Const { .. } => tcx.item_name(def) != kw::Underscore,
-        _ => false,
-    }
-}
-
-pub(super) fn default_exports(tcx: TyCtxt<'_>, module: LocalModId) -> Vec<(Option<DefId>, Span)> {
-    let path = [Symbol::intern("rust_js"), Symbol::intern("export_default")];
-    tcx.hir_module_free_items(module)
-        .filter(|item| tcx.get_attrs_by_path(item.owner_id.to_def_id(), &path).next().is_some())
-        .map(|item| {
-            let def = item.owner_id.def_id;
-            // Of the function itself (ADR 0611), or the constant (ADR 0625).
-            if held_by_default(tcx, def.to_def_id()) {
-                return (Some(def.to_def_id()), tcx.def_span(def));
-            }
-            // `use page as _;`: a generic function's too, which Rust can't
-            // name as a value unless it's given its types.
-            let named = match tcx.hir_body_owned_by(def).value.kind {
-                ExprKind::Block(block, _) => match block.stmts {
-                    [
-                        Stmt {
-                            kind: StmtKind::Item(item),
-                            ..
-                        },
-                    ] => match tcx.hir_item(*item).kind {
-                        // A function, or a `thread_local!`'s const, a memo'd
-                        // component's (ADR 0248), or a binding's static (ADR 0633).
-                        ItemKind::Use(path, _) => match path.res.value_ns {
-                            Some(Res::Def(DefKind::Fn | DefKind::Const { .. } | DefKind::Static { .. }, function)) => {
-                                Some(function)
-                            }
-                            _ => None,
-                        },
-                        _ => None,
-                    },
-                    _ => None,
-                },
-                _ => None,
-            };
-            (named, tcx.def_span(def))
-        })
-        .collect()
 }
 
 /// What an item is called in JS: its `#[rust_js::name]`, else its

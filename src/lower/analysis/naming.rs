@@ -25,7 +25,8 @@ pub(super) struct JsUses {
     /// The exports read through `require(module)`, not imported (ADR 0305).
     pub(super) required: HashSet<Export>,
     /// An import named after what the module it's from names it: the
-    /// `const` a library's module holds a binding as (ADR 0633).
+    /// `const` a library's module holds a binding as (ADR 0633), or its
+    /// item, its default's too (ADR 0773).
     pub(super) named: HashMap<Export, String>,
 }
 

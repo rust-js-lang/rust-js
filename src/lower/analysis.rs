@@ -630,11 +630,14 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     let held = bindings::held(tcx, &foreign);
     let mut uses = js_uses(tcx, all_bodies, &held);
     // What the crate's libraries export (ADR 0100) is named before lowering,
-    // and imported by the modules that turn out to use it.
+    // after its name there, a module's default too, `import noop from
+    // "../shared/noop.js"` (ADR 0773), and imported by the modules that turn
+    // out to use it.
     for imported in foreign.all() {
         let export = (imported.from.clone(), imported.export.clone());
         uses.bound_to.entry(export.clone()).or_default();
-        uses.imported.entry(export).or_default();
+        uses.imported.entry(export.clone()).or_default();
+        uses.named.insert(export, imported.name.clone());
     }
     // A binding a library's module holds, named after its `const` there.
     for held in foreign.all_held() {
@@ -848,7 +851,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
             .hir_module_free_items(module)
             .any(|id| is_reexport(tcx, tcx.hir_item(id)));
         // Or a default that's another module's function (ADR 0240).
-        let defaulted = || !bindings::default_exports(tcx, module).is_empty();
+        let defaulted = || !super::default_exports::default_exports(tcx, module).is_empty();
         if (reexports || defaulted()) && seen_modules.insert(module) {
             modules.push(module);
         }

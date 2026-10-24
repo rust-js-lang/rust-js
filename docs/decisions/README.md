@@ -505,7 +505,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0621 A comment before a macro's opening is its code's; one after a module's last code ends its JS](0621-comments-around-macros-and-at-a-modules-end.md) *(amended by 0735: one in the macro before its `fn` is the function's)*
 - [0622 A global binding a module names is its `const`](0622-a-global-binding-a-module-names-is-its-const.md)
 - [0624 `js::is_defined` of a path of bindings asks each part](0624-is-defined-of-a-path-of-bindings.md) *(amended by 0645: a static of a path too)*
-- [0625 A default constant is its value; a comment right above the first code is its](0625-a-default-constant-is-its-value.md) *(amended: one its module reads is declared, then exported)*
+- [0625 A default constant is its value; a comment right above the first code is its](0625-a-default-constant-is-its-value.md) *(amended: one its module reads is declared, then exported; by 0773: one a `pub use` of its module renames too)*
 - [0626 What a library hands a crate is what its items reach](0626-what-a-library-hands-a-crate.md)
 - [0627 A number literal keeps its base and its exponent](0627-a-number-literal-keeps-its-base-and-exponent.md)
 - [0628 A loop after a loop is after it](0628-a-loop-after-a-loop-is-after-it.md)
@@ -618,7 +618,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0770 A library's `const` is imported by its name, as its crate reads it](0770-a-librarys-const-is-imported-by-its-name.md)
 - [0771 An `==` of a value read as the registry's symbol is its `matches!`](0771-an-equality-of-a-registered-symbol-is-its-match.md)
 - [0772 A nullable `Cell` field's `None` is `null`, made and written](0772-a-nullable-cell-field-writes-null.md) *(amended by 0791: through a reference or a helper too; extended by 0810: an optional one is absent until set)*
-- [0773 A binding a module's default names is exported as the default alone](0773-a-held-default-is-exported-once.md)
+- [0773 A binding a module's default names is exported as the default alone](0773-a-held-default-is-exported-once.md) *(amended: every importer asks what a module exports an item as)*
 - [0774 Room asked past `isize::MAX` bytes is a `capacity overflow` panic](0774-room-past-isize-max-bytes-panics.md) *(amended: a string's `repeat` is JS's own, unchecked)*
 - [0775 A `()` given to JS is `undefined`; a list of none is `[]`](0775-a-unit-given-to-js-is-undefined.md)
 - [0776 `js::get`, `js::has`, `js::set` and `js::delete` take any value](0776-get-has-set-take-any-value.md)

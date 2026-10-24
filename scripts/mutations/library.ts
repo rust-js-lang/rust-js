@@ -34,4 +34,12 @@ export const mutations: Mutation[] = [
     replace: "            if library.version != VERSION && library.version != 2 {\n",
     tests: ["test/cargo-link.test.ts", "-t", "a real Cargo dependency links functions"],
   },
+  {
+    name: "library-default-imported-by-name",
+    breaks: "a library's module's default is imported by its name, `import { noop }`, which its module doesn't export",
+    file: "src/library.rs",
+    find: "        match self.default {\n",
+    replace: "        match false {\n",
+    tests: ["test/cross-crate-items.test.ts", "-t", "default export is imported as its default"],
+  },
 ];

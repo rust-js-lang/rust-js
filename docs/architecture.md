@@ -234,6 +234,7 @@ In this table, `lower.rs`, `names.rs` and `runtime.rs` are at the `src/` root.
 | Formatter output and MIR writer calls | `display.rs`; `mir/writer.rs` | `formatter_answer`, `written_of`, `builder_written`, `mir_writer_call` |
 | Function and binding references | `items.rs` | `fn_ref`, `js_ref`, `resolve_instance` |
 | Bindings held by modules | `bindings.rs`; `items.rs` | `held`, `held_path`; `binding_ref` |
+| A module's default export, and what a module exports an item of its own as, which every importer imports it by | `default_exports.rs` | `default_exports`, `default_declared`, `own_default`, `exported_as` |
 | Trait dictionaries and evidence | `traits/routes.rs`, `traits/dictionaries.rs`, `traits/impls.rs` | `dictionary`, `evidence_for`, `has_evidence`, `impl_call` |
 | Generic arguments and copied defaults | `traits/given.rs` | `in_impl_terms`, `given_evidence`, `given_type_fact`, `resolve_self_instance`, `enter_default` |
 | Ambiguous Option payload boxing | `std_types/option.rs` | `some`, `some_value`, `some_literal`, `is_some_box` |
