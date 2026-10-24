@@ -148,12 +148,13 @@ The `js` crate has the rest of JS's `Promise`:
 
 | JS | Rust |
 |---|---|
-| `new Promise((resolve, reject) => ..)` | `js::promise::new(\|resolve, reject\| ..)` |
+| `new Promise((resolve, reject) => ..)` | `js::promise::new(\|resolve, reject\| ..)`, which runs before it returns, so it may set the variables around it ([ADR 0782](../../decisions/0782-a-promises-executor-borrows-and-then-takes-two-handlers.md)) |
 | `Promise.resolve(v)`, `Promise.reject(e)` | `js::promise::resolve(v)`, `js::promise::reject(e)` |
 | `Promise.all([a, b])` | `js::promise::all(vec![a, b])`; of two of different types, `all2((a, b))`, up to `all4` |
 | `Promise.allSettled`, `race`, `any` | `js::promise::all_settled`, `race`, `any` |
 | `Promise.withResolvers()` | `js::promise::with_resolvers()` |
 | `p.then(f)`, `p.catch(f)`, `p.finally(f)` | `p.then(f)` (`f` gives a promise), `p.then_resolve(f)` (`f` gives a value), `p.catch(f)` (`f` gives a value, a promise, or of an `Option`'s nothing, `p.catch(\|_\| {})`, [ADR 0698](../../decisions/0698-a-catch-handler-gives-a-value-or-a-promise.md)), `p.finally(f)` |
+| `p.then(f, g)` | `p.then_with(f, g)`: each gives a value or a promise, as `catch`'s does ([ADR 0782](../../decisions/0782-a-promises-executor-borrows-and-then-takes-two-handlers.md)) |
 | an `async` call handed on, not awaited | `js::promise(future)`: the future as the `Promise` it is |
 
 ## Rejections

@@ -16,10 +16,11 @@ use crate::js::{self, Expr, StrPiece};
 
 /// The JS of `text`, the value of the string literal written at `span`, as
 /// it's written there: `concat!`'s pieces where it's what `concat!` made of
-/// literals, and otherwise the one literal it is.
-pub(super) fn string_literal(tcx: TyCtxt<'_>, text: &str, span: Span) -> Expr {
+/// literals, each where `at` says it's written, and otherwise the one
+/// literal it is.
+pub(super) fn string_literal(tcx: TyCtxt<'_>, text: &str, span: Span, at: &dyn Fn(Span) -> js::Span) -> Expr {
     let pieces = match recognition::from_concat(tcx, span) {
-        true => concat_pieces(tcx, text, span),
+        true => concat_pieces(tcx, text, span, at),
         false => None,
     };
     Expr::written(pieces.unwrap_or_else(|| {
@@ -32,6 +33,7 @@ pub(super) fn string_literal(tcx: TyCtxt<'_>, text: &str, span: Span) -> Expr {
         vec![StrPiece {
             text: text.to_owned(),
             lines,
+            span: js::Span::NONE,
         }]
     }))
 }
@@ -39,13 +41,13 @@ pub(super) fn string_literal(tcx: TyCtxt<'_>, text: &str, span: Span) -> Expr {
 /// A `const`'s or a `static`'s string, `const PAGE: &str = r#"<main>..`
 /// or one of `concat!`'s, as its literal is written, as one written in
 /// place is.
-pub(super) fn const_string(tcx: TyCtxt<'_>, def_id: LocalDefId, value: Expr) -> Expr {
+pub(super) fn const_string(tcx: TyCtxt<'_>, def_id: LocalDefId, value: Expr, at: &dyn Fn(Span) -> js::Span) -> Expr {
     let js::ExprKind::Str(text) = &value.kind else {
         return value;
     };
     match tcx.hir_maybe_body_owned_by(def_id).map(|body| body.value.kind) {
         Some(rustc_hir::ExprKind::Lit(lit)) if matches!(lit.node, rustc_ast::LitKind::Str(..)) => {
-            string_literal(tcx, text, lit.span).or_at(value.span)
+            string_literal(tcx, text, lit.span, at).or_at(value.span)
         }
         _ => value,
     }
@@ -91,7 +93,11 @@ pub(super) fn format_string(tcx: TyCtxt<'_>, span: Span) -> Option<Vec<StrPiece>
                         TokenKind::CloseParen | TokenKind::CloseBracket | TokenKind::CloseBrace
                     )
                 })?;
-                return concat_arguments(&tokens[i..=i + close]);
+                // Where its pieces are from its `concat`, `code`, isn't
+                // where they're written: the format string's is.
+                let mut pieces = concat_arguments(code, &tokens[i..=i + close])?;
+                pieces.iter_mut().for_each(|piece| piece.span = js::Span::NONE);
+                return Some(pieces);
             }
             _ => {}
         }
@@ -125,9 +131,20 @@ fn tokens(code: &str) -> Vec<(TokenKind, &str)> {
 /// or where the pieces aren't `text`, which the one literal then is. Of
 /// `println!(concat!(..))`, `text` ends with the line break `println!`
 /// writes after them, which the last piece then does.
-fn concat_pieces(tcx: TyCtxt<'_>, text: &str, span: Span) -> Option<Vec<StrPiece>> {
+fn concat_pieces(tcx: TyCtxt<'_>, text: &str, span: Span, at: &dyn Fn(Span) -> js::Span) -> Option<Vec<StrPiece>> {
     let code = tcx.sess.source_map().span_to_snippet(span).ok()?;
-    let mut pieces = concat_arguments(&tokens(&code))?;
+    let mut pieces = concat_arguments(&code, &tokens(&code))?;
+    // Each where it's written, its argument's code, from where `concat!` is.
+    let call = span.source_callsite();
+    for piece in &mut pieces {
+        let (lo, hi) = (piece.span.lo, piece.span.hi);
+        piece.span = match call.from_expansion() {
+            true => js::Span::NONE,
+            false => at(call
+                .with_lo(call.lo() + rustc_span::BytePos(lo))
+                .with_hi(call.lo() + rustc_span::BytePos(hi))),
+        };
+    }
     let joined: String = pieces.iter().map(|piece| piece.text.as_str()).collect();
     match text.strip_suffix('\n') {
         _ if joined == text => {}
@@ -137,9 +154,10 @@ fn concat_pieces(tcx: TyCtxt<'_>, text: &str, span: Span) -> Option<Vec<StrPiece
     Some(pieces)
 }
 
-/// The pieces of the call `concat!(..)`, its `tokens`: each argument's text,
-/// as `concat!` writes it, where each is a literal.
-fn concat_arguments(tokens: &[(TokenKind, &str)]) -> Option<Vec<StrPiece>> {
+/// The pieces of the call `concat!(..)`, its `tokens` of `code`: each
+/// argument's text, as `concat!` writes it, where each is a literal, and
+/// where its code is in `code`, as a span from its start.
+fn concat_arguments(code: &str, tokens: &[(TokenKind, &str)]) -> Option<Vec<StrPiece>> {
     // `concat!(..)`, or `std::concat![..]`: its path, then its arguments.
     let bang = tokens.iter().position(|(kind, _)| *kind == TokenKind::Bang)?;
     let path = &tokens[..bang];
@@ -166,15 +184,24 @@ fn concat_arguments(tokens: &[(TokenKind, &str)]) -> Option<Vec<StrPiece>> {
         _ => arguments,
     };
     let mut pieces = Vec::new();
+    // Where a token is in `code`: it's a part of it.
+    let offset = |token: &str| (token.as_ptr() as usize - code.as_ptr() as usize) as u32;
     for argument in arguments.split(|(kind, _)| *kind == TokenKind::Comma) {
-        match argument {
-            [(TokenKind::Minus, _), (kind, code)] => pieces.push(StrPiece {
+        let mut made = match argument {
+            [(TokenKind::Minus, _), (kind, code)] => StrPiece {
                 text: format!("-{}", number(*kind, code)?),
                 lines: false,
-            }),
-            [(kind, code)] => pieces.push(piece(*kind, code)?),
+                span: js::Span::NONE,
+            },
+            [(kind, code)] => piece(*kind, code)?,
             _ => return None,
-        }
+        };
+        let (first, last) = (argument.first()?.1, argument.last()?.1);
+        made.span = js::Span {
+            lo: offset(first),
+            hi: offset(last) + last.len() as u32,
+        };
+        pieces.push(made);
     }
     Some(pieces)
 }
@@ -206,7 +233,11 @@ fn piece(kind: TokenKind, code: &str) -> Option<StrPiece> {
         _ => number(kind, code)?,
     };
     let lines = written_across_lines(&text, code);
-    Some(StrPiece { text, lines })
+    Some(StrPiece {
+        text,
+        lines,
+        span: js::Span::NONE,
+    })
 }
 
 /// An integer's or a float's literal, written as `code`, as `concat!`

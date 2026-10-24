@@ -351,11 +351,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 if let Value::Discriminant(enum_value, enum_ty, present) = &subject
                     && let ty::Adt(adt, _) = enum_ty.kind()
                 {
-                    for (test, _, values) in grouped.iter_mut().filter(|(.., values)| values.len() > 1) {
-                        let variants: Vec<VariantIdx> = (values.iter())
+                    for (test, target, values) in grouped.iter_mut().filter(|(.., values)| values.len() > 1) {
+                        let mut variants: Vec<VariantIdx> = (values.iter())
                             .filter_map(|&value| adt.discriminants(self.tcx).find(|(_, d)| d.val == value))
                             .map(|(variant, _)| variant)
                             .collect();
+                        // In the order its arm's pattern names them, as the
+                        // program wrote them, not as the enum declares them.
+                        if let Some(at) = written_at(state.body, *target) {
+                            let written = self.written_variants(span, at);
+                            variants.sort_by_key(|v| written.iter().position(|w| w == v).unwrap_or(usize::MAX));
+                        }
                         *test = self.mir_variant_test(enum_value.clone(), *enum_ty, *adt, &variants, *present);
                     }
                 }
@@ -611,7 +617,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 // A value the program's patterns name by a `const`, as that
                 // reads (ADR 0590): `priorityLevel === ImmediatePriority`.
-                if let Some(Some(named)) = crate::lower::body_queries::constant_patterns(self.tcx, self.frame.thir)
+                if let Some(Some(named)) = (self.frame.facts.constant_patterns)
                     .get(&crate::lower::body_queries::PatternValue::Bits(ty, value))
                     .copied()
                 {

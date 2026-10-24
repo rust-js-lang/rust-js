@@ -145,7 +145,7 @@ macro_rules! walks {
                     | ExprKind::Await(a)
                     | ExprKind::Spread(a)
                     | ExprKind::Stringed(a)
-                    | ExprKind::Handle(a)
+                    | ExprKind::Handle(a, _)
                     | ExprKind::DropArgument(_, _, a) => a.$expr(f),
                     ExprKind::Index(a, b)
                     | ExprKind::OptionalIndex(a, b)

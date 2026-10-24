@@ -199,8 +199,8 @@ pub fn dropped(first: bool) -> Option<&'static Unknown> {
   expect(() => lib.dropped(true)).toThrow("called `Result::unwrap()` on an `Err` value: SyntaxError");
   // React's: what may be `undefined` keeps its `unwrap()`, `$unwrap`.
   const described = performanceTrack()("addValueToProperties");
-  expect(described).toContain("desc = $unwrap(\n                didTruncate\n                  ? JSON.stringify(");
-  expect(described).toContain("                  : JSON.stringify(value, null, 0),\n");
+  expect(described).toContain("desc = $unwrap(\n              didTruncate\n                ? JSON.stringify(");
+  expect(described).toContain("                : JSON.stringify(value, null, 0),\n");
   expect(described).not.toContain("$try");
 });
 
@@ -976,6 +976,72 @@ console.log(unhandled);
   const ran = runSync([node!, join(dir, "run.mjs")], root, 30_000);
   expect(ran.stderr).toBe("");
   expect(ran.stdout).toBe('[7,"no",null]\n0\n');
+});
+
+// React's lazy() stashes a promise's resolvers in its own `let`s, `new
+// Promise((resolve, reject) => { resolveDebugValue = resolve; .. })`: the
+// executor runs before `new Promise` returns, so it may borrow what's
+// outside it (ADR 0782). And `then(onfulfilled, onrejected)`, TypeScript's
+// two handlers, is `then_with`.
+test("a promise's executor may set the variables around it, and then takes two handlers", async () => {
+  const dir = fixture("js-promise-executor");
+  writeFileSync(join(dir, "lib.rs"), `use js::{JsError, Promise, js_error, promise};
+
+pub struct Debug {
+    pub resolve: &'static dyn Fn(u32),
+    pub reject: &'static dyn Fn(&JsError),
+    pub value: Promise<u32>,
+}
+
+pub fn stash() -> Debug {
+    let mut resolve_debug_value: Option<&'static dyn Fn(u32)> = None;
+    let mut reject_debug_value: Option<&'static dyn Fn(&JsError)> = None;
+    let value = promise::new(|resolve, reject| {
+        resolve_debug_value = Some(resolve);
+        reject_debug_value = Some(reject);
+    });
+    Debug {
+        resolve: resolve_debug_value.unwrap(),
+        reject: reject_debug_value.unwrap(),
+        value,
+    }
+}
+
+pub async fn settled(fail: bool) -> String {
+    let value = match fail {
+        true => promise::reject::<u32>(&js_error::new("no")),
+        false => promise::resolve(7),
+    };
+    value.then_with(|n| n.to_string(), |e| e.message()).await
+}
+
+pub fn hidden(value: Promise<u32>) {
+    let _: Promise<()> = value.then_with(|_| {}, |_| {});
+}
+`);
+  const built = runSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target], root, 600_000);
+  expect(built.code, built.stderr).toBe(0);
+  expect(built.stderr).not.toContain("warning");
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain(`  const value = new Promise((resolve, reject) => {
+    resolveDebugValue = resolve;
+    rejectDebugValue = reject;
+  });`);
+  expect(js).toContain("return await value.then(\n    (n) => String(n),\n    (e) => e.message,\n  );");
+  expect(js).toContain("  value.then(\n    () => {},\n    () => {},\n  );");
+  writeFileSync(join(dir, "run.mjs"), `import * as lib from "./lib.js";
+let unhandled = 0;
+process.on("unhandledRejection", () => unhandled++);
+const debug = lib.stash();
+debug.resolve(3);
+console.log(await debug.value, await lib.settled(false), await lib.settled(true));
+lib.hidden(Promise.reject(new Error("hidden")));
+await new Promise((resolve) => setTimeout(resolve, 10));
+console.log(unhandled);
+`);
+  const ran = runSync([node!, join(dir, "run.mjs")], root, 30_000);
+  expect(ran.stderr).toBe("");
+  expect(ran.stdout).toBe("3 7 no\n0\n");
 });
 
 // ADR 0699: a program keeps upstream's fallback where the host has no

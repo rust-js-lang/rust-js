@@ -2,7 +2,8 @@
 
 Status: Accepted. Amends [0066](0066-template-literals.md), whose string
 written across lines was the one form a literal kept of its source.
-Amended: a format string of a `concat!` is its pieces too.
+Amended: a format string of a `concat!` is its pieces too; and a comment
+between its pieces is before the piece it's written before.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N, nothing the program
 can observe: `"a " + "b"` is the string `"a b"` is.
@@ -187,3 +188,36 @@ corpus's `format_concat_pieces.rs`, against native Rust; mutations in
 `scripts/mutations/lower/format_args.ts`, `lower/literals.ts`,
 `lower/display.ts`, `lower/mir/std_calls.ts`, `lower/mir/tidy/values.ts`,
 `js/make.ts` and `to_oxc/expressions.ts`.
+
+## Amendment: a comment between the pieces
+
+React's `lazy()` splits `import` in its message with a comment of why:
+
+```js
+console.error(
+  'lazy: Expected the result of a dynamic imp' +
+    'ort() call. ' +
+    'Instead received: %s\n\nYour code should look like: \n  ' +
+    // Break up imports to avoid accidentally parsing them as dependencies.
+    'const MyComponent = lazy(() => imp' +
+    "ort('./MyComponent'))",
+  moduleObject,
+);
+```
+
+Its port writes the comment between `concat!`'s arguments, and the
+pieces had no spans: the comment had nothing to be before but the next
+argument, `moduleObject`, or, of a `const`, nothing at all. **Each piece
+of a `concat!` of a literal's, `string_literal`'s and `const_string`'s, is
+where its argument is written, `StrPiece::span`; a comment before one,
+past the first, is before it, on lines of its own after the `+`**, as a
+conditional's branch's is (ADR 0658, `to_oxc::arm_starts`, its line
+split after the `+` before it). A format string's pieces keep the call's
+span, as before: rustc's template is split by their text, and none has a
+span of its own.
+
+What holds it: `test/lowering-strings.test.ts`, "a comment inside a
+concat! is before the piece it's written before", a `const`'s and a
+call's argument's; mutations `concat-piece-unplaced`
+(`lower/literals.rs`), `concat-piece-no-start` and `concat-split-not-at-plus`
+(`to_oxc.rs`).

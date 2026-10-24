@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "or-pattern-macro-arm-unfound",
+    breaks: "`matches!`'s or-pattern isn't found where its call is, so its variants are tested in the enum's order (ADR 0780)",
+    file: "src/lower/mir/temporaries.rs",
+    find: "        if let Some(arm) = self.written_arm(span, at, |arm| arm.span.source_callsite()) {\n",
+    replace: "        if let Some(arm) = self.written_arm(span, at, |arm| arm.span) {\n",
+    tests: ["test/lowering-or-patterns.test.ts", "-t", "tested in the order written"],
+  },
+  {
     name: "mir-changed-operand-stable",
     breaks: "an operand a call may change is read before the call",
     file: "src/lower/mir/temporaries.rs",

@@ -294,3 +294,47 @@ test("what a class is refused says what to write", () => {
     expect(refused(name, rust)).toContain(message);
   }
 });
+
+// React's `/** Base class helpers .. */ function Component(..)`: the
+// struct's doc is the constructor function's, as its `.d.ts` has it of the
+// class, before `new`'s own (ADR 0761, amended).
+test("a class struct's doc is its constructor function's", () => {
+  const { js } = compiled("class-doc", `/// Base class helpers for the updating state of a component.
+#[cfg_attr(rust_js, rust_js::class)]
+pub struct Component {
+    // What it's given.
+    pub props: f64,
+}
+
+unsafe impl js::Defined for Component {}
+
+#[cfg_attr(rust_js, rust_js::class)]
+impl Component {
+    pub const LIMIT: f64 = 1.0;
+
+    /// Made of its props.
+    pub fn new(props: f64) -> Self {
+        Component { props }
+    }
+}
+
+/// A plain struct's doc is of no JS.
+pub struct Plain {
+    pub n: f64,
+}
+
+pub fn plain(n: f64) -> Plain {
+    Plain { n }
+}
+`);
+  expect(js).toContain(`/** Base class helpers for the updating state of a component. */
+/** Made of its props. */
+export function Component(props) {
+  this.props = props;
+}
+
+Component.prototype.limit = 1;
+`);
+  expect(js).not.toContain("What it's given");
+  expect(js).not.toContain("A plain struct's doc");
+});

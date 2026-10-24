@@ -14,7 +14,7 @@ impl<'a> Cx<'a> {
             return Expression::new_chain_expression(sp, self.chain_element(e), b);
         }
         match &e.kind {
-            ExprKind::Handle(_) | ExprKind::Pair(..) => unreachable!("written by preparation"),
+            ExprKind::Handle(..) | ExprKind::Pair(..) => unreachable!("written by preparation"),
             ExprKind::Num(n) => self.number(sp, *n),
             // `5n`, and `-5n` as `-` of it, as a number is written.
             ExprKind::BigInt(n) => {
@@ -84,9 +84,17 @@ impl<'a> Cx<'a> {
             // Its pieces joined by `+`, each a string literal or, written
             // across lines, a template literal of them (ADR 0641).
             ExprKind::Written(pieces) => {
-                let piece = |piece: &js::StrPiece| match piece.lines {
-                    true => self.template_literal(sp, &[&piece.text], &[], true),
-                    false => self.string_literal(sp, &piece.text),
+                // Each where it's written, which a comment before it is
+                // before; else where the whole is.
+                let piece = |piece: &js::StrPiece| {
+                    let at = match piece.span.is_none() {
+                        true => sp,
+                        false => span(piece.span),
+                    };
+                    match piece.lines {
+                        true => self.template_literal(at, &[&piece.text], &[], true),
+                        false => self.string_literal(at, &piece.text),
+                    }
                 };
                 let mut pieces = pieces.iter().map(piece);
                 let first = pieces.next().expect("a written string's pieces");

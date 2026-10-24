@@ -24,7 +24,7 @@ impl Expr {
             | ExprKind::Await(a)
             | ExprKind::Spread(a)
             | ExprKind::Stringed(a)
-            | ExprKind::Handle(a)
+            | ExprKind::Handle(a, _)
             | ExprKind::DropArgument(_, _, a) => a.visit_vars(read),
             ExprKind::Index(a, b)
             | ExprKind::OptionalIndex(a, b)
@@ -147,7 +147,7 @@ impl Expr {
             ExprKind::Arrow(..) | ExprKind::AsyncArrow(..) | ExprKind::Function(_) => return None,
             ExprKind::Member(a, field) => ExprKind::Member(one(a)?, field.clone()),
             ExprKind::OptionalMember(a, field) => ExprKind::OptionalMember(one(a)?, field.clone()),
-            ExprKind::Handle(place) => ExprKind::Handle(one(place)?),
+            ExprKind::Handle(place, stored) => ExprKind::Handle(one(place)?, stored.clone()),
             ExprKind::DropArgument(item, index, drop) => ExprKind::DropArgument(*item, *index, one(drop)?),
             ExprKind::Pair(place, dictionary) => ExprKind::Pair(one(place)?, one(dictionary)?),
             ExprKind::Index(a, b) => ExprKind::Index(one(a)?, one(b)?),
@@ -451,7 +451,7 @@ impl Expr {
                     ExprKind::Arrow(..) => true,
                     _ => false,
                 },
-                ExprKind::New(..) | ExprKind::Await(_) | ExprKind::Import(_) | ExprKind::Handle(_) => false,
+                ExprKind::New(..) | ExprKind::Await(_) | ExprKind::Import(_) | ExprKind::Handle(_, _) => false,
                 ExprKind::Arrow(_, body) => body.iter().all(|stmt| {
                     matches!(
                         &stmt.kind,
@@ -493,7 +493,7 @@ impl Expr {
             ExprKind::Spread(a) | ExprKind::Stringed(a) | ExprKind::DropArgument(_, _, a) => a.has_effects(),
             ExprKind::Member(object, _) | ExprKind::OptionalMember(object, _) => object.has_effects(),
             // Making one reads nothing: its getter does, later.
-            ExprKind::Handle(_) => false,
+            ExprKind::Handle(_, _) => false,
             ExprKind::Pair(_, dictionary) => dictionary.has_effects(),
             ExprKind::Index(object, index) | ExprKind::OptionalIndex(object, index) => {
                 object.has_effects() || index.has_effects()

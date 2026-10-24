@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "class-declared-nowhere",
+    breaks: "a class's struct isn't where it's declared, so its `///` doc isn't its constructor function's (ADR 0761)",
+    file: "src/lower/pipeline.rs",
+    find: "                                    .map_or(js::Span::NONE, |adt| sources.item_span(tcx, adt)),\n",
+    replace: "                                    .map_or(js::Span::NONE, |_| js::Span::NONE),\n",
+    tests: ["test/classes.test.ts", "-t", "doc is its constructor function's"],
+  },
+  {
     name: "default-constant-read-undeclared",
     breaks: "a constant `js::export_default!` holds, read by its name in its own module, is only `export default \"19.3.0\";`, so the read is of a name JS hasn't, a `ReferenceError`",
     file: "src/lower/pipeline.rs",

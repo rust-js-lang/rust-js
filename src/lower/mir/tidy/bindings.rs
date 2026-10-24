@@ -1010,7 +1010,7 @@ fn captured(body: &mut Vec<Stmt>) -> HashSet<String> {
     js::each_expr_mut(body, &mut |e| match &e.kind {
         ExprKind::Arrow(_, stmts) | ExprKind::AsyncArrow(_, stmts) => js::visit_stmts(stmts, &mut insert),
         ExprKind::Function(function) => js::visit_stmts(&function.body, &mut insert),
-        ExprKind::Handle(place) | ExprKind::Pair(place, _) => place.visit_vars(&mut insert),
+        ExprKind::Handle(place, _) | ExprKind::Pair(place, _) => place.visit_vars(&mut insert),
         _ => {}
     });
     js::statement_lists(body, &mut |stmts| {

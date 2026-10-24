@@ -680,7 +680,7 @@ const dispatchers: [string, string, number][] = [
   ["src/lower/recognition/calls.rs", "    pub(in crate::lower) fn classify(", 8],
   ["src/lower/mir/dispatch.rs", "    pub(super) fn mir_call(", 100], // What reads its argument through, `flatten()` and `unwrap()`, in `reads_through` (ADR 0747).
   ["src/lower/mir/dispatch.rs", "    fn mir_call_values_of(", 247],
-  ["src/lower/mir/dispatch.rs", "    fn mir_std_call(", 146],
+  ["src/lower/mir/dispatch.rs", "    fn mir_std_call(", 148], // What's given to a `Cell` it writes, MIR's `nulled` (ADR 0791).
   ["src/lower/mir.rs", "    fn mir_function(", 364], // The parameters handed to tidy's `scopes` stage in a cell, and whether it asks its stages again (ADR 0659, amended); the jumps the program wrote in one field (ADR 0742); the guards that hold (ADR 0790).
   ["src/lower/recognition/inherent.rs", "    pub(super) fn classify_inherent(", 754],
   ["src/lower/recognition/calls.rs", "    fn classify_trait_method(", 245],
@@ -958,6 +958,19 @@ test("a type known by its bounds is one by known_by_bounds alone", () => {
   const asking = files("src/lower").filter((file) => file.endsWith(".rs"))
     .flatMap((file) => read(file).split("\n").filter((line) => /matches!\(.*ty::Param\(_\) \| ty::Alias\(\.\.\)/.test(line)).map((line) => `${file}: ${line.trim()}`));
   expect(asking).toEqual(["src/lower/recognition/traits.rs: matches!(ty.kind(), ty::Param(_) | ty::Alias(..))"]);
+});
+
+// A whole body's facts, each a reading of its THIR, are its `BodyFacts`,
+// collected once before it's lowered: a call lowering one looks its
+// answer up, and never reads the body again for it, as four did, each
+// call building a set of the whole body (#191, ADR 0791). So
+// `body_queries` gives no whole body's set or map but through `BodyFacts`.
+test("a whole body's facts are its BodyFacts, read once", () => {
+  const source = read("src/lower/body_queries.rs");
+  const signature = /^(pub(?:\([^)]*\))? )?fn (\w+)<'tcx>\([^)]*thir: &Thir<'tcx>[^)]*\)\s*->\s*\(?Hash(?:Set|Map)/gm;
+  const queries = [...source.matchAll(signature)];
+  expect(queries.length).toBeGreaterThan(5);
+  expect(queries.filter((query) => query[1]).map((query) => query[2])).toEqual([]);
 });
 
 // Where a copied default's types are known, the impl's environment with the

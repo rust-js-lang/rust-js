@@ -366,7 +366,7 @@ pub(super) fn handles_in_place(body: &mut [Stmt]) {
     js::each_expr_mut(body, &mut |e| {
         if let ExprKind::Member(of, key) = &e.kind
             && key == js::HELD
-            && let ExprKind::Handle(place) = &of.kind
+            && let ExprKind::Handle(place, _) = &of.kind
             && place.reads_same()
         {
             *e = Expr {
@@ -387,7 +387,7 @@ pub(super) fn read_handles(body: &mut Vec<Stmt>) {
     js::each_list(body, &mut |stmts| {
         for (k, stmt) in stmts.iter().enumerate() {
             if let StmtKind::Const(name, value) = &stmt.kind
-                && let ExprKind::Handle(place) = &value.kind
+                && let ExprKind::Handle(place, _) = &value.kind
                 && matches!(place.kind, ExprKind::Member(..))
             {
                 handles.push((name.clone(), (**place).clone(), read_at_once(stmts, k, name)));
@@ -422,7 +422,7 @@ pub(super) fn read_handles(body: &mut Vec<Stmt>) {
         for stmt in stmts.iter_mut() {
             if let StmtKind::Const(name, value) = &mut stmt.kind
                 && read(name).is_some()
-                && let ExprKind::Handle(place) = &value.kind
+                && let ExprKind::Handle(place, _) = &value.kind
             {
                 *value = (**place).clone();
             }

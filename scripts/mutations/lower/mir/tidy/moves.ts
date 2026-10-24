@@ -4,6 +4,22 @@ import type { Mutation } from "../../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "tested-field-held",
+    breaks: "a field an or-pattern tests is held first, `const status = payload.status; status === 0 || status === -1`, not read in each test (ADR 0780)",
+    file: "src/lower/mir/tidy/moves.rs",
+    find: "    if !single && (assigned || !tested_in_place(value, expr, name, js::mentions_in(rest, name))) {\n",
+    replace: "    if !single {\n",
+    tests: ["test/lowering-or-patterns.test.ts", "-t", "tested in the order written"],
+  },
+  {
+    name: "tested-getter-in-place",
+    breaks: "a getter's value an or-pattern tests is read in each test, the getter called again for each (ADR 0780)",
+    file: "src/lower/mir/tidy/moves.rs",
+    find: "        if place.known == js::Known::Getter {\n",
+    replace: "        if false {\n",
+    tests: ["test/lowering-or-patterns.test.ts", "-t", "getter's value reads it once"],
+  },
+  {
     name: "mir-tidy-captured-kept",
     breaks: "what an element made before a branch reads stays a `const className = cn(…)`, not read where it's written",
     file: "src/lower/mir/tidy/moves.rs",
