@@ -63,30 +63,26 @@ function describe(token, limit) {
     return { TAG: "Err", _0: "Empty" };
   }
   let text;
-  bb37: {
-    if (token === "zero") {
-      text = "0";
-    } else {
-      if (token.startsWith("#")) {
-        const result = parse($strSlice(token, 1));
-        if (result.TAG === "Err") {
-          return result;
-        }
-        const n = result._0;
-        if (n > limit) {
-          return { TAG: "Err", _0: { TAG: "TooBig", at: 0, value: n } };
-        }
-        text = `#${n}`;
-        break bb37;
-      }
-      const result = parse(token);
-      if (result.TAG === "Err") {
-        return result;
-      }
-      let n = result._0;
-      n = (n * 2) | 0;
-      text = String(n);
+  if (token === "zero") {
+    text = "0";
+  } else if (token.startsWith("#")) {
+    const result = parse($strSlice(token, 1));
+    if (result.TAG === "Err") {
+      return result;
     }
+    const n = result._0;
+    if (n > limit) {
+      return { TAG: "Err", _0: { TAG: "TooBig", at: 0, value: n } };
+    }
+    text = `#${n}`;
+  } else {
+    const result = parse(token);
+    if (result.TAG === "Err") {
+      return result;
+    }
+    let n = result._0;
+    n = (n * 2) | 0;
+    text = String(n);
   }
   return { TAG: "Ok", _0: `<${text}>` };
 }

@@ -276,10 +276,13 @@ pub(in crate::lower::mir::tidy) fn branch_ends(stmts: &mut [Stmt]) {
 
 /// `stmts`, which end where block `label` does, as `branch_ends` has them.
 pub(in crate::lower::mir::tidy) fn ending(stmts: &mut Vec<Stmt>, label: &str) {
+    // Not a block the program labeled, `'desc: { .. }`, which is where
+    // it's written, by the name it gave it (ADR 0742, 0745).
     if let Some(Stmt {
         kind: StmtKind::Labeled(inner, body),
-        ..
+        span,
     }) = stmts.last_mut()
+        && span.is_none()
     {
         let (inner, mut body) = (inner.clone(), std::mem::take(body));
         js::statement_lists(&mut body, &mut |stmts| {
@@ -297,8 +300,14 @@ pub(in crate::lower::mir::tidy) fn ending(stmts: &mut Vec<Stmt>, label: &str) {
         stmts.last().map(|s| &s.kind),
         Some(StmtKind::Return(_) | StmtKind::Throw(_))
     );
+    // And `if (c) { .. if (d) { s; break l; } ..; continue; } t`, a `then`
+    // that never goes on but has a way out to the block's end inside: `if
+    // (c) { .. } else { t }`, whose `then` then ends where the block does, to
+    // be had so too (ADR 0745). Unless no `else`'s needed, as `unelsed`
+    // writes it where its `then` still never goes on.
+    let left = |then: &Vec<Stmt>| then.last().is_some_and(ends) && js::names_jump(then, label);
     let Some(at) = (stmts.iter())
-        .position(|s| matches!(&s.kind, StmtKind::If(_, then, None) if leaves(&ands(then).1, label)))
+        .position(|s| matches!(&s.kind, StmtKind::If(_, then, None) if leaves(&ands(then).1, label) || left(then)))
         .filter(|_| !exits)
     else {
         if let Some(StmtKind::If(_, then, otherwise)) = stmts.last_mut().map(|s| &mut s.kind) {
@@ -317,6 +326,13 @@ pub(in crate::lower::mir::tidy) fn ending(stmts: &mut Vec<Stmt>, label: &str) {
     else {
         unreachable!("found")
     };
+    if !leaves(&ands(&then).1, label) {
+        let (mut then, mut rest) = (then, rest);
+        ending(&mut then, label);
+        ending(&mut rest, label);
+        stmts.push(StmtKind::If(test, then, (!rest.is_empty()).then_some(rest)).at(span));
+        return;
+    }
     let (tests, mut then) = ands(&then);
     let mut rest = rest;
     ending(&mut then, label);

@@ -143,11 +143,15 @@ fn ends_going_on(stmts: &mut Vec<Stmt>, looped: &Option<String>) {
     }
 }
 
-/// A labeled block MIR made followed by a labeled jump, `l: { .. break l;
-/// .. } continue m;`: each `break l` that jump, which goes on from there
-/// anyway; `unlabeled` then leaves the block, which nothing names.
+/// A labeled block MIR made followed by a jump, `l: { .. break l; .. }
+/// continue;`: each `break l` that jump, which goes on from there anyway;
+/// `unlabeled` then leaves the block, which nothing names. A jump of no
+/// label, `continue;` once `innermost jumps` has it so, only where it goes
+/// to the same loop: not in a loop inside the block, or a `switch` for a
+/// `break` (ADR 0745).
 pub(in crate::lower::mir::tidy) fn jumps_past_blocks(stmts: &mut [Stmt]) {
     fn rejump(stmts: &mut [Stmt], label: &str, jump: &StmtKind) {
+        let unnamed = matches!(jump, StmtKind::Continue(None) | StmtKind::Break(None));
         for stmt in stmts {
             match &mut stmt.kind {
                 StmtKind::Break(Some(l)) if l == label => stmt.kind = jump.clone(),
@@ -157,10 +161,12 @@ pub(in crate::lower::mir::tidy) fn jumps_past_blocks(stmts: &mut [Stmt]) {
                         rejump(b, label, jump);
                     }
                 }
-                StmtKind::While { body, .. }
-                | StmtKind::ForOf { body, .. }
-                | StmtKind::For { body, .. }
-                | StmtKind::Labeled(_, body) => rejump(body, label, jump),
+                StmtKind::While { body, .. } | StmtKind::ForOf { body, .. } | StmtKind::For { body, .. }
+                    if !unnamed =>
+                {
+                    rejump(body, label, jump)
+                }
+                StmtKind::Labeled(_, body) => rejump(body, label, jump),
                 StmtKind::Try(a, b) | StmtKind::TryCatch(a, _, b) => {
                     rejump(a, label, jump);
                     rejump(b, label, jump);
@@ -171,15 +177,47 @@ pub(in crate::lower::mir::tidy) fn jumps_past_blocks(stmts: &mut [Stmt]) {
     }
     for i in 0..stmts.len().saturating_sub(1) {
         let jump = match &stmts[i + 1].kind {
-            jump @ (StmtKind::Continue(Some(_)) | StmtKind::Break(Some(_))) => jump.clone(),
+            jump @ (StmtKind::Continue(_) | StmtKind::Break(_)) => jump.clone(),
             _ => continue,
         };
+        // Not one the program labeled, `'sum: { .. }`, written by its name
+        // (ADR 0742): where it's written is its span.
+        let written = !stmts[i].span.is_none();
         if let StmtKind::Labeled(label, body) = &mut stmts[i].kind
             && crate::lower::mir::is_block_label(label)
+            && !written
         {
             let label = label.clone();
             rejump(body, &label, &jump);
         }
+    }
+}
+
+/// An `if` one branch of which never goes on, followed by a jump, `if (c)
+/// { a } else { b; break l; } continue;`, as `jumps past blocks` leaves a
+/// `continue` the program wrote in `a`: the jump where the other branch
+/// ends, `if (c) { a; continue; } else { b; break l; }`, where it goes on
+/// from (ADR 0745).
+pub(in crate::lower::mir::tidy) fn jumps_into_branches(stmts: &mut Vec<Stmt>) {
+    let mut i = 0;
+    while i + 1 < stmts.len() {
+        let going_on = match &stmts[i].kind {
+            StmtKind::If(_, then, Some(otherwise))
+                if matches!(stmts[i + 1].kind, StmtKind::Continue(_) | StmtKind::Break(_)) =>
+            {
+                let (a, b) = (then.last().is_some_and(ends), otherwise.last().is_some_and(ends));
+                (a != b).then_some(b)
+            }
+            _ => None,
+        };
+        if let Some(in_then) = going_on {
+            let jump = stmts.remove(i + 1);
+            let StmtKind::If(_, then, Some(otherwise)) = &mut stmts[i].kind else {
+                unreachable!("matched")
+            };
+            if in_then { then } else { otherwise }.push(jump);
+        }
+        i += 1;
     }
 }
 

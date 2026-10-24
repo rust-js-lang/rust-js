@@ -61,22 +61,16 @@ function main() {
   }
   console.log(`${b} ${y}`);
   let n = 0;
-  while (true) {
-    bb49: {
-      if (n < 2) {
-        if (!f) {
-          const x = { value: y };
-          const value = bump(x);
-          y = x.value;
-          if (value) {
-            break bb49;
-          }
-        }
-        n++;
-        continue;
+  while (n < 2) {
+    if (!f) {
+      const x = { value: y };
+      const value = bump(x);
+      y = x.value;
+      if (value) {
+        break;
       }
     }
-    break;
+    n++;
   }
   console.log(`${y} ${n}`);
 }

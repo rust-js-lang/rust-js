@@ -546,4 +546,12 @@ export const mutations: Mutation[] = [
     replace: "                let _ = b;\n",
     tests: ["test/lowering.test.ts", "-t", "a tuple let in a guard's try"],
   },
+  {
+    name: "chains-branch-ends-off",
+    breaks: "a block MIR made whose `break`s `jumps past blocks` leaves stays, `bb257: { if (c) { ..; break bb257; } .. }` (ADR 0745)",
+    file: "src/lower/mir/tidy/stages.rs",
+    find: "                js::statement_lists(b, &mut unreachable_after);\n                js::statement_lists(b, &mut |s| branch_ends(s))\n",
+    replace: "                let _ = b;\n",
+    tests: ["test/lowering-labels.test.ts", "-t", "React's addObjectDiffToProperties has no block MIR made"],
+  },
 ];

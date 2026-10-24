@@ -310,6 +310,18 @@ pub(super) const STAGES: &[Stage] = &[
                 js::statement_lists(b, &mut |s| blocks_loops_end(s))
             }),
             pass("settle jumps", |b, _| settle_jumps(b)),
+            // What those leave of each block MIR made: its `break`s
+            // `else`s, `if (c) { s; break l; } t`'s `if (c) { s } else { t
+            // }`; and a jump after an `if` one branch of which leaves, in the
+            // other (ADR 0745).
+            pass("branch ends", |b, _| {
+                js::statement_lists(b, &mut unreachable_after);
+                js::statement_lists(b, &mut |s| branch_ends(s))
+            }),
+            pass("jumps into branches", |b, _| {
+                js::statement_lists(b, &mut jumps_into_branches)
+            }),
+            pass("settle branches", |b, _| settle_jumps(b)),
             pass("declarations", |b, _| declarations(b)),
             // A loop's early `break`s, its tests read in place now, and its test.
             pass("early breaks", |b, _| {

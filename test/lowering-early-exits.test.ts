@@ -79,3 +79,111 @@ pub fn checked(keys: &[String], next: &[String], log: &mut Vec<String>) -> bool 
     [false, ["too many", "a", "b", "c", "too many"]],
   ]);
 });
+
+// ADR 0745: React's addObjectDiffToProperties
+// (shared/ReactPerformanceTrackProperties.js): each `continue` the program
+// wrote in its chain of `if`s, `if (indent === 0 && key === "children") {
+// ..; continue; }`, is a `continue` where it's written; an `if` it ends,
+// `if (!nested) { .. } else if (..) { .. } continue;`, keeps its `else`;
+// and no block MIR made is left, `bb294: { .. break bb294; .. } continue;`.
+test("a continue the program wrote in a chain is where it wrote it", async () => {
+  const { js, lib } = await compiled("continues-in-chains", `use js::{Kind, Unknown, function};
+
+fn diff_nested(prev: &Unknown, next: &Unknown, out: &mut Vec<String>) -> bool {
+    js::get(prev, "a") == js::get(next, "a") || {
+        out.push("nested".to_string());
+        false
+    }
+}
+
+pub fn diff(prev: &Unknown, next: &Unknown, out: &mut Vec<String>, indent: usize) -> bool {
+    let mut equal = true;
+    let mut checked = 0;
+    for key in js::keys_in(next) {
+        if checked > 100 {
+            equal = false;
+            break;
+        }
+
+        if js::has(prev, &key) {
+            let prev_value = js::get(prev, &key);
+            let next_value = js::get(next, &key);
+            if prev_value != next_value {
+                if indent == 0 && key == "children" {
+                    // The top level children prop.
+                    out.push(key.clone() + " children");
+                    equal = false;
+                    continue;
+                }
+                if indent >= 3 {
+                    // Deep: the two values.
+                } else if let Some(prev_object) = prev_value
+                    && let Some(next_object) = next_value
+                    && let Kind::Object(_) = js::classify(prev_value)
+                    && let Kind::Object(_) = js::classify(next_value)
+                {
+                    if js::has(next_object, "type") {
+                        if js::get(prev_object, "type") == js::get(next_object, "type")
+                            && js::get(prev_object, "key") == js::get(next_object, "key")
+                        {
+                            // Same element.
+                            out.push(key.clone() + " element");
+                            equal = false;
+                            continue;
+                        }
+                    } else {
+                        let before = out.len();
+                        if !diff_nested(prev_object, next_object, out) {
+                            equal = false;
+                        } else if before == out.len() {
+                            // Deeply equal.
+                            out.push(key.clone() + " deeply equal");
+                        }
+                        continue;
+                    }
+                } else if let Kind::Function(prev_function) = js::classify(prev_value)
+                    && let Kind::Function(next_function) = js::classify(next_value)
+                    && function::name(prev_function) == function::name(next_function)
+                {
+                    // Same function.
+                    out.push(key.clone() + " function");
+                    continue;
+                }
+
+                // Otherwise, the change.
+                out.push(key.clone() + " changed");
+                equal = false;
+            }
+        } else {
+            out.push(key + " added");
+            equal = false;
+        }
+
+        checked += 1;
+    }
+    equal
+}
+`);
+  expect(js).not.toMatch(/bb\d+/);
+  expect(js).toContain('        if (indent === 0 && key === "children") {\n          // The top level children prop.\n          out.push(key + " children");\n          equal = false;\n          continue;\n        }\n');
+  expect(js).toContain("              if (!diffNested(prevValue, nextValue, out)) {\n                equal = false;\n              } else if (before === out.length) {\n");
+  expect(js).toContain('                out.push(key + " deeply equal");\n              }\n              continue;\n            }\n          } else if (\n');
+  expect(js).toContain('            // Same function.\n            out.push(key + " function");\n            continue;\n          }\n        }\n\n        // Otherwise, the change.\n');
+  const f = () => 1;
+  const g = () => 2;
+  const runs = [
+    [{ children: 1, x: 1 }, { children: 2, x: 1, y: 2 }, 0],
+    [{ e: { type: "div", key: 1 }, o: { a: 1 }, p: { a: 1 } }, { e: { type: "div", key: 1 }, o: { a: 2 }, p: { a: 1 } }, 0],
+    [{ f, children: 1 }, { f: g, children: 2 }, 1],
+    [{ o: { a: 1 } }, { o: { a: 2 } }, 3],
+  ].map(([prev, next, indent]) => {
+    const out: string[] = [];
+    return [lib.diff(prev as never, next as never, out as never, indent as never), out];
+  });
+  expect(runs).toEqual([
+    [false, ["children children", "y added"]],
+    [false, ["e element", "nested", "p deeply equal"]],
+    [false, ["f function", "children changed"]],
+    [false, ["o changed"]],
+  ]);
+});

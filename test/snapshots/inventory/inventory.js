@@ -67,25 +67,21 @@ function storeDisplay_fmt(store) {
 
 export const Store = {
   apply(store, e) {
-    bb36: {
-      if (e.TAG === "Restock") {
-        $orInsert(store.stock, e.item, 0);
-        $mutGet(store.stock, e.item).value = ($mutGet(store.stock, e.item).value + e.qty) >>> 0;
-      } else {
-        if (e.TAG === "Sale") {
-          const have = $mutGet(store.stock, e.item);
-          if (have == null) {
-            return { TAG: "Err", _0: `unknown item ${e.item}` };
-          }
-          if (have.value < e.qty) {
-            return { TAG: "Err", _0: `not enough ${e.item}: ${have.value} < ${e.qty}` };
-          }
-          have.value = (have.value - e.qty) >>> 0;
-          store.revenue += e.qty * e.price;
-          break bb36;
-        }
-        store.log.push(`audit at ${$toFixed(store.revenue, 2)}`);
+    if (e.TAG === "Restock") {
+      $orInsert(store.stock, e.item, 0);
+      $mutGet(store.stock, e.item).value = ($mutGet(store.stock, e.item).value + e.qty) >>> 0;
+    } else if (e.TAG === "Sale") {
+      const have = $mutGet(store.stock, e.item);
+      if (have == null) {
+        return { TAG: "Err", _0: `unknown item ${e.item}` };
       }
+      if (have.value < e.qty) {
+        return { TAG: "Err", _0: `not enough ${e.item}: ${have.value} < ${e.qty}` };
+      }
+      have.value = (have.value - e.qty) >>> 0;
+      store.revenue += e.qty * e.price;
+    } else {
+      store.log.push(`audit at ${$toFixed(store.revenue, 2)}`);
     }
     return { TAG: "Ok" };
   },

@@ -152,4 +152,20 @@ export const mutations: Mutation[] = [
     replace: "if small(value) =>",
     tests: ["test/lowering-iterators.test.ts", "-t", "a string's parts from MIR are an array"],
   },
+  {
+    name: "branch-ends-written-block-merged",
+    breaks: "a block the program labeled that ends a block MIR made is merged into it, `'desc` named by MIR's block (ADR 0745)",
+    file: "src/lower/mir/tidy/jumps/tails.rs",
+    find: "    }) = stmts.last_mut()\n        && span.is_none()\n",
+    replace: "    }) = stmts.last_mut()\n        && (span.is_none() || true)\n",
+    tests: ["test/lowering-labels.test.ts", "-t", "React's addObjectDiffToProperties has no block MIR made"],
+  },
+  {
+    name: "branch-ends-left-inside-kept",
+    breaks: "an `if` whose `then` never goes on but breaks out to the block's end inside stays a guard, the block its label (ADR 0745)",
+    file: "src/lower/mir/tidy/jumps/tails.rs",
+    find: " if leaves(&ands(then).1, label) || left(then)))\n",
+    replace: " if leaves(&ands(then).1, label)))\n",
+    tests: ["test/lowering-early-exits.test.ts", "-t", "a continue the program wrote in a chain"],
+  },
 ];

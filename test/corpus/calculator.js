@@ -284,74 +284,68 @@ const Calculator = {
 
   eval(calculator, expr) {
     let powf;
-    bb92: {
-      if (expr.TAG === "Num") {
-        powf = expr._0;
-      } else if (expr.TAG === "Var") {
-        const option = calculator.vars.get(expr._0);
-        const result =
-          option != null
-            ? { TAG: "Ok", _0: option }
-            : { TAG: "Err", _0: { TAG: "Unknown", _0: expr._0 } };
-        if (result.TAG === "Err") {
-          return result;
-        }
-        powf = result._0;
-      } else if (expr.TAG !== "Neg") {
-        if (expr.TAG === "Bin") {
-          const result = Calculator.eval(calculator, expr._0);
-          if (result.TAG === "Err") {
-            return result;
-          }
-          const a = result._0;
-          const result$1 = Calculator.eval(calculator, expr._2);
-          if (result$1.TAG === "Err") {
-            return result$1;
-          }
-          const { _0: b } = result$1;
-          if (expr._1 === "+") {
-            powf = a + b;
-          } else if (expr._1 === "-") {
-            powf = a - b;
-          } else if (expr._1 === "*") {
-            powf = a * b;
-          } else if (expr._1 === "/") {
-            if (b === 0) {
-              return { TAG: "Err", _0: "DivideByZero" };
-            }
-            powf = a / b;
-          } else {
-            powf = $powf(a, b);
-          }
-          break bb92;
-        }
-        const option = calculator.functions.get(expr._0);
-        const result =
-          option != null
-            ? { TAG: "Ok", _0: option }
-            : { TAG: "Err", _0: { TAG: "Unknown", _0: expr._0 } };
-        if (result.TAG === "Err") {
-          return result;
-        }
-        const [wanted, f] = result._0;
-        if (expr._1.length !== wanted) {
-          return { TAG: "Err", _0: { TAG: "Arity", name: expr._0, wanted, got: expr._1.length } };
-        }
-        const result$2 = $collectResults(
-          expr._1.values().map((a) => Calculator.eval(calculator, a)),
-        );
-        if (result$2.TAG === "Err") {
-          return result$2;
-        }
-        const values = result$2._0;
-        powf = f(values);
-      } else {
-        const result = Calculator.eval(calculator, expr._0);
-        if (result.TAG === "Err") {
-          return result;
-        }
-        powf = -result._0;
+    if (expr.TAG === "Num") {
+      powf = expr._0;
+    } else if (expr.TAG === "Var") {
+      const option = calculator.vars.get(expr._0);
+      const result =
+        option != null
+          ? { TAG: "Ok", _0: option }
+          : { TAG: "Err", _0: { TAG: "Unknown", _0: expr._0 } };
+      if (result.TAG === "Err") {
+        return result;
       }
+      powf = result._0;
+    } else if (expr.TAG === "Neg") {
+      const result = Calculator.eval(calculator, expr._0);
+      if (result.TAG === "Err") {
+        return result;
+      }
+      powf = -result._0;
+    } else if (expr.TAG === "Bin") {
+      const result = Calculator.eval(calculator, expr._0);
+      if (result.TAG === "Err") {
+        return result;
+      }
+      const a = result._0;
+      const result$1 = Calculator.eval(calculator, expr._2);
+      if (result$1.TAG === "Err") {
+        return result$1;
+      }
+      const { _0: b } = result$1;
+      if (expr._1 === "+") {
+        powf = a + b;
+      } else if (expr._1 === "-") {
+        powf = a - b;
+      } else if (expr._1 === "*") {
+        powf = a * b;
+      } else if (expr._1 === "/") {
+        if (b === 0) {
+          return { TAG: "Err", _0: "DivideByZero" };
+        }
+        powf = a / b;
+      } else {
+        powf = $powf(a, b);
+      }
+    } else {
+      const option = calculator.functions.get(expr._0);
+      const result =
+        option != null
+          ? { TAG: "Ok", _0: option }
+          : { TAG: "Err", _0: { TAG: "Unknown", _0: expr._0 } };
+      if (result.TAG === "Err") {
+        return result;
+      }
+      const [wanted, f] = result._0;
+      if (expr._1.length !== wanted) {
+        return { TAG: "Err", _0: { TAG: "Arity", name: expr._0, wanted, got: expr._1.length } };
+      }
+      const result$2 = $collectResults(expr._1.values().map((a) => Calculator.eval(calculator, a)));
+      if (result$2.TAG === "Err") {
+        return result$2;
+      }
+      const values = result$2._0;
+      powf = f(values);
     }
     return { TAG: "Ok", _0: powf };
   },

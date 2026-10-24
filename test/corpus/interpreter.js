@@ -476,94 +476,79 @@ const Interp = {
           return result;
         }
         value = result._0;
-      } else {
-        if (e.TAG === "Binary") {
-          const result = Interp.eval(interp, e._1, env);
-          if (result.TAG === "Err") {
-            return result;
-          }
-          const l = result._0;
-          const result$1 = Interp.eval(interp, e._2, env);
-          if (result$1.TAG === "Err") {
-            return result$1;
-          }
-          const r = result$1._0;
-          if (e._0 === "+") {
-            if (l.TAG === "Num") {
-              if (r.TAG === "Num") {
-                const a = l._0;
-                const b = r._0;
-                value = { TAG: "Num", _0: a + b };
-                break bb195;
-              }
-            } else if (l.TAG === "Str") {
-              const a = l._0;
-              const b = r;
-              value = { TAG: "Str", _0: a + valueDisplay_fmt(b) };
-              break bb195;
-            }
-          } else if (e._0 === "-") {
-            if (l.TAG === "Num" && r.TAG === "Num") {
+      } else if (e.TAG === "Binary") {
+        const result = Interp.eval(interp, e._1, env);
+        if (result.TAG === "Err") {
+          return result;
+        }
+        const l = result._0;
+        const result$1 = Interp.eval(interp, e._2, env);
+        if (result$1.TAG === "Err") {
+          return result$1;
+        }
+        const r = result$1._0;
+        if (e._0 === "+") {
+          if (l.TAG === "Num") {
+            if (r.TAG === "Num") {
               const a = l._0;
               const b = r._0;
-              value = { TAG: "Num", _0: a - b };
+              value = { TAG: "Num", _0: a + b };
               break bb195;
             }
-          } else if (e._0 === "*") {
-            if (l.TAG === "Num" && r.TAG === "Num") {
-              const a = l._0;
-              const b = r._0;
-              value = { TAG: "Num", _0: a * b };
-              break bb195;
-            }
-          } else if (e._0 === "/") {
-            if (l.TAG === "Num" && r.TAG === "Num") {
-              if (r._0 === 0) {
-                const b = r._0;
-                return { TAG: "Err", _0: "division by zero" };
-              }
-              const a = l._0;
-              const b = r._0;
-              value = { TAG: "Num", _0: a / b };
-              break bb195;
-            }
-          } else if (e._0 === "<" && l.TAG === "Num" && r.TAG === "Num") {
+          } else if (l.TAG === "Str") {
             const a = l._0;
-            const b = r._0;
-            value = { TAG: "Bool", _0: a < b };
+            const b = r;
+            value = { TAG: "Str", _0: a + valueDisplay_fmt(b) };
             break bb195;
           }
-          const op = e._0;
-          const a = l;
-          const b = r;
-          return {
-            TAG: "Err",
-            _0: `cannot ${op} ${valueDisplay_fmt(a)} and ${valueDisplay_fmt(b)}`,
-          };
-        }
-        if (e.TAG !== "Lambda") {
-          const result = Interp.eval(interp, e._0, env);
-          if (result.TAG === "Err") {
-            return result;
+        } else if (e._0 === "-") {
+          if (l.TAG === "Num" && r.TAG === "Num") {
+            const a = l._0;
+            const b = r._0;
+            value = { TAG: "Num", _0: a - b };
+            break bb195;
           }
-          const f = result._0;
-          const result$2 = $collectResults(e._1.values().map((a) => Interp.eval(interp, a, env)));
-          if (result$2.TAG === "Err") {
-            return result$2;
+        } else if (e._0 === "*") {
+          if (l.TAG === "Num" && r.TAG === "Num") {
+            const a = l._0;
+            const b = r._0;
+            value = { TAG: "Num", _0: a * b };
+            break bb195;
           }
-          const args = result$2._0;
-          interp.calls = (interp.calls + 1) >>> 0;
-          if (f.TAG !== "Closure") {
-            if (f.TAG === "Builtin") {
-              const result = f._1(args);
-              if (result.TAG === "Err") {
-                return result;
-              }
-              value = result._0;
-              break bb195;
+        } else if (e._0 === "/") {
+          if (l.TAG === "Num" && r.TAG === "Num") {
+            if (r._0 === 0) {
+              const b = r._0;
+              return { TAG: "Err", _0: "division by zero" };
             }
-            return { TAG: "Err", _0: `${valueDisplay_fmt(f)} is not a function` };
+            const a = l._0;
+            const b = r._0;
+            value = { TAG: "Num", _0: a / b };
+            break bb195;
           }
+        } else if (e._0 === "<" && l.TAG === "Num" && r.TAG === "Num") {
+          const a = l._0;
+          const b = r._0;
+          value = { TAG: "Bool", _0: a < b };
+          break bb195;
+        }
+        const op = e._0;
+        const a = l;
+        const b = r;
+        return { TAG: "Err", _0: `cannot ${op} ${valueDisplay_fmt(a)} and ${valueDisplay_fmt(b)}` };
+      } else if (e.TAG !== "Lambda") {
+        const result = Interp.eval(interp, e._0, env);
+        if (result.TAG === "Err") {
+          return result;
+        }
+        const f = result._0;
+        const result$1 = $collectResults(e._1.values().map((a) => Interp.eval(interp, a, env)));
+        if (result$1.TAG === "Err") {
+          return result$1;
+        }
+        const args = result$1._0;
+        interp.calls = (interp.calls + 1) >>> 0;
+        if (f.TAG === "Closure") {
           if (f._0.length !== args.length) {
             return { TAG: "Err", _0: `expected ${f._0.length} arguments, got ${args.length}` };
           }
@@ -578,8 +563,16 @@ const Interp = {
             return result$1;
           }
           value = result$1._0;
-          break bb195;
+        } else if (f.TAG === "Builtin") {
+          const result = f._1(args);
+          if (result.TAG === "Err") {
+            return result;
+          }
+          value = result._0;
+        } else {
+          return { TAG: "Err", _0: `${valueDisplay_fmt(f)} is not a function` };
         }
+      } else {
         value = { TAG: "Closure", _0: e._0, _1: e._1, _2: env };
       }
     }

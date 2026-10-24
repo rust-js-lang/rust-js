@@ -5,7 +5,7 @@
 import { beforeAll, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { buildReact, compiler, fixture, run, target } from "./support";
+import { buildNode, buildReact, compiler, fixture, root, run, target } from "./support";
 
 beforeAll(buildReact, 600_000);
 
@@ -60,4 +60,33 @@ pub fn describe(value: Option<&Unknown>, indent: usize, out: &mut Vec<String>) -
   const got = [{}, { abcdef: 1, ghijkl: 2 }, { a: 1, b: 2 }, { c: 1 }, null].map((v) => lib.describe(v, 5, out));
   expect(got).toEqual(["empty", "abcdef,ghijkl", "deep", "", "other"]);
   expect(out).toEqual(["c"]);
+});
+
+/** React's shared/ReactPerformanceTrackProperties, as react-in-rust ports
+ * it (`test/ports/performance-track-properties`, copied with the modules it
+ * uses): its JS, a function of it at a time. */
+function performanceTrack(): (name: string) => string {
+  const node = buildNode();
+  const out = fixture("performance-track-properties");
+  const crates = ["js", "node", "webapi"].flatMap((lib) => ["--extern", `${lib}=${join(node, `lib${lib}.rmeta`)}`]);
+  run([compiler, join(root, "test/ports/performance-track-properties/lib.rs"), "-o", join(out, "lib.js"), "--", ...crates, "-L", node]);
+  const js = readFileSync(join(out, "ReactPerformanceTrackProperties.js"), "utf8");
+  return (name) => {
+    const at = js.indexOf(`function ${name}(`);
+    const ends = ["\nfunction ", "\nexport function ", "\nconst "].map((e) => js.indexOf(e, at + 1)).filter((e) => e > 0);
+    return js.slice(at, Math.min(js.length, ...ends));
+  };
+}
+
+// ADR 0745: React's addObjectDiffToProperties is upstream's chain of `if`s,
+// each arm's `continue` where it's written, with no block MIR made; and
+// addValueToProperties' `'desc` block, which ends a branch of one MIR made,
+// is still `desc: { .. }`, not merged into that one.
+test("React's addObjectDiffToProperties has no block MIR made", () => {
+  const of = performanceTrack();
+  const diff = of("addObjectDiffToProperties");
+  expect(diff).not.toMatch(/bb\d+/);
+  expect(diff).toContain('          properties.push([REMOVED + line, "…"], [ADDED + line, "…"]);\n          isDeeplyEqual = false;\n          continue;\n        }\n');
+  expect(diff).toContain("                if (!nestedEqual) {\n                  isDeeplyEqual = false;\n                } else if (");
+  expect(of("addValueToProperties")).toMatch(/\n\s+desc: \{\n/);
 });

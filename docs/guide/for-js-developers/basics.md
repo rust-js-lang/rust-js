@@ -1203,7 +1203,10 @@ export function findPair(grid, target) {
 - A `break` or `continue` is where the program wrote it: `if checked >
   limit { ..; break; }` is `if (checked > limit) { ..; break; }`, the rest
   of the body after it, not an `else` ([ADR
-  0730](../../decisions/0730-a-loops-early-break-is-in-the-if-it-was-written-in.md)).
+  0730](../../decisions/0730-a-loops-early-break-is-in-the-if-it-was-written-in.md));
+  a `continue` that ends an arm of a chain of `if`s too, `else if (..) {
+  ..; continue; }`, with no label where the arms meet ([ADR
+  0745](../../decisions/0745-a-continue-in-a-chain-is-where-it-is-written.md)).
 - A labeled block, `'desc: { .. break 'desc v; .. }`, is a labeled block
   where its JS keeps one, by its label, `desc: { desc = v; break desc; }`
   ([ADR 0742](../../decisions/0742-a-label-the-program-wrote-is-its-name.md)).
