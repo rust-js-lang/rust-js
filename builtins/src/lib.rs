@@ -320,6 +320,17 @@ pub fn truthy<T: Defined + ?Sized>(this: Option<&T>) -> bool {
     unreachable!()
 }
 
+/// `a === b`, JS's strict equality of any two values, as TypeScript's
+/// `===` compares them: the same object, or the same primitive, `NaN` not
+/// itself, and `null` not `undefined`, so two `None`s differ where JS has
+/// them so. `==` is Rust's, two `None`s equal, whichever each is (ADR
+/// 0612); this is JS's, for what a port of JS's `===` compares (ADR 0721).
+#[cfg_attr(rust_js, rust_js::link_name = "===")]
+#[allow(unused_variables)]
+pub fn strict_equals(this: impl IntoUnknown, other: impl IntoUnknown) -> bool {
+    unreachable!()
+}
+
 /// `value` as a `T`, unchecked, as TypeScript's `any` is given a type: the
 /// value itself.
 ///

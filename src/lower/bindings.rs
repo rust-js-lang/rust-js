@@ -279,6 +279,8 @@ pub(super) enum JsForm {
     In,
     /// `!!`: `!!this`, whether it's truthy.
     Truthy,
+    /// `===`: `this === other`, JS's strict equality (ADR 0721).
+    StrictEquals,
     /// `typeof`: `typeof this`, what it is, as text (ADR 0310).
     TypeOf,
     /// `typeof !== "undefined"`: whether the host has the global of the
@@ -305,6 +307,7 @@ pub(super) fn js_form(tcx: TyCtxt<'_>, def_id: DefId) -> JsForm {
         "get []" => return JsForm::GetIndex,
         "in []" => return JsForm::In,
         "!!" => return JsForm::Truthy,
+        "===" => return JsForm::StrictEquals,
         "typeof" => return JsForm::TypeOf,
         "typeof !== \"undefined\"" => return JsForm::Defined,
         "\"\" +" => return JsForm::Text,

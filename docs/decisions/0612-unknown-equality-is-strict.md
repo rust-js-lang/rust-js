@@ -64,8 +64,8 @@ which compared what's in two objects, so two objects alike were equal
 (`custom_eq`).
 
 What a port that wants JS's `===` of two values that may be `null` or
-`undefined` writes, React's `Object.is` polyfill's, is `js::classify` of
-each, which tells `Kind::Null` from `Kind::Undefined`.
+`undefined` writes, React's `Object.is` polyfill's, is
+`js::strict_equals(a, b)` ([0721](0721-strict-equals-is-jss-triple-equals.md)).
 
 ## Consequences
 

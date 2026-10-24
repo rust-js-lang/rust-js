@@ -544,7 +544,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0609 A `let` that shadows a parameter read no more is the parameter assigned](decisions/0609-a-shadowed-parameter-is-assigned.md) *(extended by 0650: any binding of its block)*
 - [0610 A function that only calls a module variable's function is that variable](decisions/0610-a-forwarding-function-is-its-variable.md)
 - [0611 A default export the macro holds is the function's declaration](decisions/0611-a-default-export-is-where-its-macro-is.md) *(amended: a `pub` one is the default alone, in its `.d.ts` too)*
-- [0612 Two values of any shape are equal by JS's `===`](decisions/0612-unknown-equality-is-strict.md) *(amended: two `Option`s of them are std's, both `None` equal)*
+- [0612 Two values of any shape are equal by JS's `===`](decisions/0612-unknown-equality-is-strict.md) *(amended: two `Option`s of them are std's, both `None` equal; extended by 0721: `js::strict_equals` is JS's `===`)*
 - [0613 `&&` and `||` mixed are one value, as written](decisions/0613-and-or-mixed-are-returned-as-written.md)
 - [0614 A match arm's pattern of parts is one test of each](decisions/0614-a-patterns-parts-are-one-test.md)
 - [0615 `Object.prototype.hasOwnProperty` is a function to call with its object](decisions/0615-has-own-property-the-function.md)
@@ -642,6 +642,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0716 A path's components are std's `Component`, as any enum is](decisions/0716-a-paths-components.md)
 - [0717 `rev()` of what's made knowing its back steps it from there](decisions/0717-rev-of-what-knows-its-back-steps-it.md)
 - [0720 A labeled block's `break` and a named constant, in a body's ranges](decisions/0720-a-labeled-block-and-a-named-constant-in-a-bodys-ranges.md)
+- [0721 `js::strict_equals(a, b)` is JS's `===`](decisions/0721-strict-equals-is-jss-triple-equals.md)
 - [0436 Every `dyn` that's a pair keeps its value's drop, `dyn Send` too](decisions/0436-every-dyn-keeps-its-drop.md) *(amended by 0691: a `dyn Any` drops where the crate makes one of what drops)*
 - [0437 A scope's drops on a panic are one `try { .. } finally { .. }`](decisions/0437-a-scopes-drops-are-one-finally.md) *(amended by 0693: its `if`s, loops and `return`s in it)*
 - [0438 An optional prop is given `Some(..)`, or left out](decisions/0438-an-optional-prop-is-given-some.md)

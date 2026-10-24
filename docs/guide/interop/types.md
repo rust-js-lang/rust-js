@@ -1031,6 +1031,24 @@ export function same(a, b) {
   return (a ?? null) === (b ?? null);
 }
 ```
+- **`js::strict_equals(a, b)` is JS's `===`**, of any two values, `None`s
+  too, where a `null` isn't an `undefined`
+  ([ADR 0721](../../decisions/0721-strict-equals-is-jss-triple-equals.md)).
+  A port writes `==` where the Rust means its values are equal, and
+  `js::strict_equals` where the JS it ports asks `===` of what may be
+  either `None`, as React's `Object.is` polyfill does:
+
+```rust
+pub fn is(a: Option<&js::Unknown>, b: Option<&js::Unknown>) -> bool {
+    js::strict_equals(a, b)
+}
+```
+
+```js
+export function is(a, b) {
+  return a === b;
+}
+```
 - `js::Json` is a JSON value, and `js::Dict<T>` a plain object of `T`s by
   name, TypeScript's `Record<string, T>`.
 
