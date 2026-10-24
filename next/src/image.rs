@@ -98,7 +98,7 @@ pub struct StaticImageData {
 /// What an `ImageProps`'s `src`, `string | StaticImport`, takes: each as it
 /// is (ADR 0229).
 #[diagnostic::on_unimplemented(message = "`{Self}` is not an image's `src`, a `&str` nor a `&StaticImageData`")]
-#[cfg_attr(rust_js, rust_js::types = "string | import(\"next/image\").StaticImageData")]
+#[cfg_attr(rust_js, rust_js::types = "string | next/image#StaticImageData")]
 pub trait IntoImageSrc: sealed::Sealed {}
 impl IntoImageSrc for &str {}
 impl IntoImageSrc for &String {}

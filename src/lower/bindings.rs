@@ -1,5 +1,6 @@
 //! Decode the binding language independently of call lowering.
 
+use super::declarations::{Written, written_types};
 use crate::js;
 use rustc_ast::LitKind;
 use rustc_hir::attrs::lang_items::LangItem;
@@ -1377,7 +1378,7 @@ fn primitive<'tcx>(tcx: TyCtxt<'tcx>, held: ty::Ty<'tcx>) -> bool {
         || held.is_str()
         || matches!(held.kind(), ty::Adt(adt, _)
             if tcx.is_lang_item(adt.did(), LangItem::String)
-                || super::declarations::written_types(tcx, adt.did()).as_deref() == Some("symbol"))
+                || written_types(tcx, adt.did()).as_ref().and_then(Written::keyword) == Some("symbol"))
 }
 
 /// Whether a `thread_local!` holds a component, of a type React marks
