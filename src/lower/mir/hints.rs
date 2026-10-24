@@ -765,6 +765,30 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Some(self.tcx.item_name(adt.did()).to_string())
     }
 
+    /// The names of the locals a `clone()` makes, `let resolved =
+    /// payload.clone()`: where that's the value itself in JS, an uncounted
+    /// `Rc`'s, tidy reads it by the name it's of (ADR 0842).
+    pub(super) fn clone_names(
+        &self,
+        mir_body: &mir::Body<'tcx>,
+        state: &State<'_, 'tcx>,
+    ) -> std::collections::HashSet<String> {
+        (mir_body.basic_blocks.iter())
+            .filter_map(|block| match &block.terminator().kind {
+                mir::TerminatorKind::Call { func, destination, .. }
+                    if destination.projection.is_empty()
+                        && func
+                            .const_fn_def()
+                            .is_some_and(|(def_id, _)| self.tcx.is_lang_item(def_id, LangItem::CloneFn)) =>
+                {
+                    Some(state.locals.names[destination.local].clone())
+                }
+                _ => None,
+            })
+            .filter(|name| !name.is_empty())
+            .collect()
+    }
+
     /// The names each of whose locals is a `bool`, a shared reference to one
     /// too, which JS reads as it, of a closure what it captures too; and the
     /// names each of whose locals is an integer.

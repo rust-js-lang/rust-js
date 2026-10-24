@@ -70,7 +70,7 @@ pub(super) const STAGES: &[Stage] = &[
             pass("unread result", |b, h| unread_result(b, h.result)),
             pass("guarded", |b, _| js::statement_lists(b, &mut guarded)),
             pass("declarations", |b, _| declarations(b)),
-            pass("aliases", |b, h| aliases(b, h.captured)),
+            pass("aliases", |b, h| aliases(b, h.captured, &h.params.borrow(), h.clones)),
             // A test an earlier one decided, `if (x != null) { return x; } ..
             // if (x != null)`, where nothing between changes what it reads:
             // its branch; and a tail MIR wrote into both branches, once,

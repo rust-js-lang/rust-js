@@ -667,8 +667,44 @@ pub(super) fn readable_temporaries(
 
 /// `const a = e; .. const b = a;`, where nothing else reads `a`, is `const
 /// b = e;` where `a` was: `b` is read nowhere before, which JS's `const`
-/// says of its block.
-pub(super) fn aliases(body: &mut Vec<Stmt>, captured: &HashSet<String>) {
+/// says of its block. And `const b = a;` that a `clone()` made, `clones`,
+/// of a parameter `a` nothing assigns or declares again, is `a`, read where
+/// `b` was: the same value, an uncounted `Rc`'s clone the same object,
+/// `payload` of `const resolved = payload` (ADR 0842).
+pub(super) fn aliases(
+    body: &mut Vec<Stmt>,
+    captured: &HashSet<String>,
+    params: &[js::Pattern],
+    clones: &HashSet<String>,
+) {
+    let fixed: HashSet<String> = (params.iter())
+        .flat_map(|param| param.names())
+        .filter(|name| !rebinds(body, name))
+        .map(str::to_string)
+        .collect();
+    js::statement_lists(body, &mut |stmts| {
+        let mut i = 0;
+        while i < stmts.len() {
+            if let StmtKind::Const(b, value) = &stmts[i].kind
+                && let ExprKind::Var(a) = &value.kind
+                && fixed.contains(a)
+                && clones.contains(b)
+                && !rebinds(&stmts[i + 1..], b)
+            {
+                let (a, b) = (a.clone(), b.clone());
+                stmts.remove(i);
+                js::each_expr_mut(&mut stmts[i..], &mut |e| {
+                    if let ExprKind::Var(v) = &mut e.kind
+                        && *v == b
+                    {
+                        v.clone_from(&a);
+                    }
+                });
+                continue;
+            }
+            i += 1;
+        }
+    });
     js::statement_lists(body, &mut |stmts| {
         let mut i = 0;
         while i < stmts.len() {

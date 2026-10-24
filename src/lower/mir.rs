@@ -994,7 +994,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .filter(|&(_, &b)| b)
                 .map(|(path, _)| path.clone()),
         );
-        let flags = state.flag_names();
         let params = std::cell::RefCell::new(params);
         tidy::tidy(
             &mut out,
@@ -1011,12 +1010,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     .collect(),
                 returns: &state.jumps.returns,
                 captured: &captured,
+                clones: &self.clone_names(mir_body, &state),
                 booleans: &booleans,
                 numbers: &numbers,
                 plain: &self.plain_names(),
                 forwarding: &self.locals.mir.forwarding.clone(),
                 concise: &self.locals.mir.concise.clone(),
-                flags: &flags,
+                flags: &state.flag_names(),
                 fuse: self.fuse_import().as_deref(),
                 until: self.krate.tidy_until,
                 params: &params,
