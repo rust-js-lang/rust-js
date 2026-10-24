@@ -239,6 +239,13 @@ or-pattern's stacked, `_` the `default`
   chain: `case "object"` would take an array.
 - **Of two cases, an `if`**, as a `match` of constants is
   ([ADR 0629](../../decisions/0629-a-match-of-constants-is-a-switch.md)).
+- **An arm that reads the value binds it with a guard**, `Kind::Object(_) |
+  Kind::Array(_) if let Some(value) = value`: what the arm's kind says is
+  there, a guard that holds, tested by nothing, its `value` the value
+  itself. And a block the arm is, `'desc: { .. }`, leaves the case where
+  it's written, each `break 'desc v` a `desc = v; break;`, as a `switch`'s
+  case is left early
+  ([ADR 0774](../../decisions/0774-a-break-the-program-wrote-is-where-it-is-written.md)).
 
 ```rust
 use js::{Kind, Unknown};
@@ -264,6 +271,21 @@ pub fn label(value: Option<&Unknown>) -> String {
         Kind::Undefined => "none".to_string(),
         _ => String::new(),
     }
+}
+
+pub fn describe(value: Option<&Unknown>) -> String {
+    let desc = match js::classify(value) {
+        Kind::Null => "null".to_string(),
+        Kind::Object(_) | Kind::Array(_) if let Some(value) = value => 'desc: {
+            if js::has(value, "name") {
+                break 'desc js::string(js::get(value, "name"));
+            }
+            "object".to_string()
+        }
+        Kind::Undefined => "none".to_string(),
+        _ => js::string(value),
+    };
+    desc + "!"
 }
 ```
 
@@ -300,6 +322,28 @@ export function label(value) {
     default:
       return "";
   }
+}
+
+export function describe(value) {
+  let desc;
+  switch (typeof value) {
+    case "object":
+      if (value === null) {
+        desc = "null";
+      } else if ("name" in value) {
+        desc = String(value.name);
+        break;
+      } else {
+        desc = "object";
+      }
+      break;
+    case "undefined":
+      desc = "none";
+      break;
+    default:
+      desc = String(value);
+  }
+  return desc + "!";
 }
 ```
 

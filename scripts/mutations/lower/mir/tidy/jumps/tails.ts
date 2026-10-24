@@ -216,4 +216,12 @@ export const mutations: Mutation[] = [
     replace: "                if false {\n                    *otherwise = None;\n",
     tests: ["test/lowering-labels.test.ts", "-t", "a block MIR made followed by a return"],
   },
+  {
+    name: "written-break-dropped-at-end",
+    breaks: "a `break` the program wrote that ends its block is dropped, so tidy makes the `if` before it an `else` (ADR 0774)",
+    file: "src/lower/mir/tidy/jumps/tails.rs",
+    find: "            if !crate::lower::mir::is_block_label(a) && !stmt.span.is_none() =>",
+    replace: "            if false =>",
+    tests: ["test/lowering-labels.test.ts", "-t", "a block the program labeled"],
+  },
 ];

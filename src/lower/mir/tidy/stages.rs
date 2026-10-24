@@ -282,6 +282,11 @@ pub(super) const STAGES: &[Stage] = &[
             pass("and tests", |b, h| {
                 bottom_up(b, &mut |s| and_tests(s, &h.written.conditions))
             }),
+            // An `||` the program wrote, its branch of a jump as written
+            // (ADR 0774).
+            pass("or blocks", |b, h| {
+                js::statement_lists(b, &mut |s| logicals::or_blocks(s, &h.written.logicals))
+            }),
             // An `if` the program wrote with an `else`, as it wrote it, its
             // tests one now; and the `continue`s its branches end with, which
             // it didn't write, gone where the loop's body ends anyway.
@@ -389,7 +394,7 @@ pub(super) const STAGES: &[Stage] = &[
                 js::each_expr_mut(b, &mut |e| concise_handlers(e, h.concise))
             }),
             pass("named labels", |b, h| {
-                js::statement_lists(b, &mut |s| named_labels(s, &h.written.loops, &h.written.blocks))
+                js::statement_lists(b, &mut |s| named_labels(s, &h.written.loops))
             }),
             pass("counted entries", |b, _| {
                 js::statement_lists(b, &mut crate::lower::std_types::map::counted_entries)
@@ -472,6 +477,10 @@ pub(super) const STAGES: &[Stage] = &[
             pass("breaks past switches", |b, _| {
                 js::statement_lists(b, &mut switches::breaks_past_switches)
             }),
+            // A block a case ends with: its `break`s the case's (ADR 0774).
+            pass("blocks ending cases", |b, _| {
+                js::statement_lists(b, &mut |s| switches::blocks_ending_cases(s))
+            }),
             pass("source spans", |b, _| js::statement_lists(b, &mut |s| source_spans(s))),
             // A `continue` the program wrote, where it wrote it, which its
             // comment is before (ADR 0684).
@@ -529,6 +538,9 @@ pub(super) const STAGES: &[Stage] = &[
 
 /// `jumps`, run twice.
 const JUMPS: &[Pass] = &[
+    // A block the program labeled, by its name, its `break`s where they're
+    // written (ADR 0774).
+    pass("written blocks", |b, h| written_blocks(b, &h.written.blocks)),
     // `?` of an `Ok` made here: the branch it takes, before what's past a
     // jump goes.
     pass("made ok tried", |b, _| js::statement_lists(b, &mut made_ok_tried)),

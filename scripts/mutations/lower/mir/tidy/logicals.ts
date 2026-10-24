@@ -93,4 +93,12 @@ export const mutations: Mutation[] = [
     tests: ["test/snapshots.test.ts", "-t", "options"],
     snapshots: true,
   },
+  {
+    name: "or-block-negated",
+    breaks: "an `||` the program wrote whose branch is a `break` is negated, `if (!a && !b) { r } s`, its `break` after (ADR 0774)",
+    file: "src/lower/mir/tidy/logicals.rs",
+    find: "        if let Some((test, span, rest)) = made {",
+    replace: "        if let Some((test, span, rest)) = made.filter(|_| false) {",
+    tests: ["test/lowering-labels.test.ts", "-t", "a block the program labeled that ends a case"],
+  },
 ];

@@ -138,4 +138,20 @@ export const mutations: Mutation[] = [
     replace: ";\n",
     tests: ["test/corpus.test.ts", "-t", "^match_trait_const\\.rs$"],
   },
+  {
+    name: "held-guard-of-a-changed-value",
+    breaks: "a guard `if let Some(v) = value` of a `value` the arm then sets is read as `value`, its new value, not the one bound (ADR 0774)",
+    file: "src/lower/body_queries.rs",
+    find: "(identity && of_ref && nullish && !changed.contains_key(&id)).then_some((adt, id))",
+    replace: "(identity && of_ref && nullish).then_some((adt, id))",
+    tests: ["test/lowering-labels.test.ts", "-t", "a guard of what a kind says is there"],
+  },
+  {
+    name: "held-guard-of-undefined",
+    breaks: "a guard `if let Some(_) = value` of an arm of `Kind::Undefined` is taken to hold, so `undefined` takes the arm (ADR 0774)",
+    file: "src/lower/body_queries.rs",
+    find: "} => *adt_def == adt && !super::untagged::is_nullish(tcx, adt.variant(*variant_index)),",
+    replace: "} => *adt_def == adt,",
+    tests: ["test/lowering-labels.test.ts", "-t", "a guard of what a kind says is there"],
+  },
 ];

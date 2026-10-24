@@ -261,6 +261,7 @@ In this table, `lower.rs`, `names.rs` and `runtime.rs` are at the `src/` root.
 | An untagged enum's `undefined` and `null`, and what's there of `classify(Some(v))` | `untagged.rs`; `body_queries.rs` | `unit_value`, `holds_nullish`, `told_by_kind`; `given_present`, `present_calls` |
 | What an untagged enum's variants are together, a test's and a `switch`'s case | `untagged.rs` | `untagged_test`, `untagged_cases` |
 | A string's count of UTF-16 units, its `length` | `recognition/types.rs` | `counts_utf16_units` |
+| A guard `if let Some(v) = value` that holds where its arm of `match js::classify(value)` matched | `body_queries.rs` | `held_guards` |
 | A binding's read of a property, which a getter may be, and a chain's test of one | `binding_calls.rs`; `mir/tidy/logicals.rs` | `answered_by_a_getter`, `Known`; `bound_into` |
 
 **Calls.** `mir/dispatch.rs::mir_call` handles special calls and sends evaluated

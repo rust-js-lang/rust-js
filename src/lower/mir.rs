@@ -332,6 +332,10 @@ struct OptionWrites {
     /// The untagged enums a call gives of a `Some(..)`, `js::classify(Some(value))`'s
     /// (`body_queries::present_calls`): never `undefined` nor `null` (ADR 0676).
     present: std::collections::HashSet<Local>,
+    /// Where each guard `if let Some(v) = value` is written that holds where
+    /// its arm of `match js::classify(value)` is reached
+    /// (`body_queries::held_guards`): its test of `value` a `Some`'s.
+    held: std::collections::HashSet<Span>,
 }
 
 /// A body's lowering state.
@@ -430,6 +434,9 @@ struct State<'m, 'tcx> {
     patterned: std::collections::HashSet<Local>,
     /// What its writes say of its `Option`s.
     options: OptionWrites,
+    /// Each block that goes on to an arm past a guard that holds, and that
+    /// arm's first block (`held_arms`): the edges to it the arm's.
+    held_arms: HashMap<BasicBlock, BasicBlock>,
     /// Which of its string offsets are only places in the string they were
     /// found in, JS's units (ADR 0642).
     offsets: offsets::Offsets,
@@ -686,7 +693,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             body: mir_body,
             awaits: &mir.awaits,
             promoted: &mir.promoted,
-            graph: cfg::Graph::of(mir_body),
+            graph: cfg::Graph::of(mir_body, &Default::default()),
             locals,
             pending: Vec::new(),
             taken: Vec::new(),
@@ -723,6 +730,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             patterned: self.mir_patterned(mir_body),
             jsx_props: self.mir_jsx_props(mir_body),
             options: Default::default(),
+            held_arms: Default::default(),
             offsets: self.mir_offsets(mir_body, seed.as_ref()),
             cuts: Default::default(),
             writer: None,
@@ -733,6 +741,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let_spans: self.mir_let_spans(mir_body),
         };
         state.options = self.mir_option_writes(mir_body, &state.locals);
+        self.mir_held_guards(&mut state);
         // A writer's `Formatter`: no parameter, but the string it writes to,
         // `let f = ""`, which it gives back, its `fmt::Result` nothing. A
         // closure's, after its environment.

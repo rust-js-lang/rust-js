@@ -237,7 +237,7 @@ export const mutations: Mutation[] = [
     "name": "mir-labels-by-block",
     "breaks": "a loop the program labeled `'rows` from MIR is labeled by its block, `bb2`",
     "file": "src/lower/mir/tidy/stages.rs",
-    "find": "            pass(\"named labels\", |b, h| {\n                js::statement_lists(b, &mut |s| named_labels(s, &h.written.loops, &h.written.blocks))\n            }),\n",
+    "find": "            pass(\"named labels\", |b, h| {\n                js::statement_lists(b, &mut |s| named_labels(s, &h.written.loops))\n            }),\n",
     "replace": "",
     "tests": ["test/lowering-loops.test.ts", "-t", "nested loops from MIR read as written"]
   },

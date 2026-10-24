@@ -651,7 +651,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0719 `for…in` is a `for` loop of `js::keys_in`, and its `enumerate()` a counter](decisions/0719-for-in-is-a-for-loop-of-keys-in.md)
 - [0740 A function's members are read of any function, `js::function`](decisions/0740-a-functions-members-are-read-of-any-function.md)
 - [0741 An `ArrayBufferView` is what each view derefs to, and `isView` takes any value](decisions/0741-an-array-buffer-view-is-what-each-view-derefs-to.md)
-- [0742 A block's label the program wrote is its name in JS](decisions/0742-a-label-the-program-wrote-is-its-name.md)
+- [0742 A block's label the program wrote is its name in JS](decisions/0742-a-label-the-program-wrote-is-its-name.md) *(amended by 0774: its `break`s are where they're written, a case's `break;` where it ends a case)*
 - [0743 A part of a chain of tests an earlier test decides is left out](decisions/0743-a-part-of-a-chain-a-test-decides-is-left-out.md)
 - [0744 A value or what it falls back to is `||`](decisions/0744-a-value-or-its-fallback-is-or.md)
 - [0745 A `continue` in a chain of `if`s is where it's written](decisions/0745-a-continue-in-a-chain-is-where-it-is-written.md) *(amended: a written `continue` its rest made an `else` stays; extended by 0754: a `return` some arms go on to is in each; 0755: a `return` after a block is each of its `break`s)*
@@ -664,6 +664,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0753 A branch of only comments keeps them](decisions/0753-a-branch-of-only-comments-keeps-them.md)
 - [0754 A `return` some arms go on to is in each, not a block's end](decisions/0754-a-return-arms-go-on-to-is-in-each.md)
 - [0755 A `return` a block MIR made leads to is each of its `break`s](decisions/0755-a-shared-return-is-each-breaks.md)
+- [0774 A `break` the program wrote is where it's written, a case's `break;` where its block ends a case](decisions/0774-a-break-the-program-wrote-is-where-it-is-written.md)
 - [0720 A labeled block's `break` and a named constant, in a body's ranges](decisions/0720-a-labeled-block-and-a-named-constant-in-a-bodys-ranges.md)
 - [0721 `js::strict_equals(a, b)` is JS's `===`](decisions/0721-strict-equals-is-jss-triple-equals.md)
 - [0722 A `#[repr(..)]` enum's variant is its number](decisions/0722-a-repr-enums-variant-is-its-number.md)

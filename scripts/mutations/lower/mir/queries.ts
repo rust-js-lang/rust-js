@@ -218,4 +218,12 @@ export const mutations: Mutation[] = [
     replace: "        Some(name) if false => {\n",
     tests: ["test/lowering-comments.test.ts", "-t", "a comment in a macro before its fn"],
   },
+  {
+    name: "written-break-not-first",
+    breaks: "of an `if` whose branches each leave, a `return` and a `break` the program wrote, the `return`'s is first, its test negated (ADR 0774)",
+    file: "src/lower/mir/queries.rs",
+    find: "        }) => !span.is_none(),\n",
+    replace: "        }) => false,\n",
+    tests: ["test/lowering-labels.test.ts", "-t", "a block the program labeled that ends a case"],
+  },
 ];

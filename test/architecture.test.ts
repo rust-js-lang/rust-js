@@ -495,10 +495,11 @@ const mirState: Record<string, string[]> = {
   "src/lower/mir/jsx_props.rs": ["body"],
   "src/lower/mir/locals.rs": ["body", "locals", "patterned"],
   "src/lower/mir/operands.rs": ["body", "locals", "pending", "promoted", "taken"],
+  "src/lower/mir/patterns.rs": ["body", "graph", "held_arms", "in_place", "locals", "options"],
   "src/lower/mir/places.rs": ["binding_var", "body", "branches", "captures", "cuts", "defaults", "deferred", "in_place", "locals", "named", "pointed"],
   "src/lower/mir/queries.rs": ["body", "borrowed_names", "locals", "own_names"],
   "src/lower/mir/rvalues.rs": ["at", "body", "branches", "cuts", "locals", "offsets", "options", "pending", "pointed", "ranges", "statement", "writer"],
-  "src/lower/mir/structure.rs": ["at", "awaits", "body", "copy_backs", "deferred", "drops", "graph", "labels", "jumps", "locals", "pending", "statement", "unwind", "writer", "writes_captured"],
+  "src/lower/mir/structure.rs": ["at", "awaits", "body", "copy_backs", "deferred", "drops", "graph", "held_arms", "labels", "jumps", "locals", "pending", "statement", "unwind", "writer", "writes_captured"],
   "src/lower/mir/temporaries.rs": ["body", "copy_backs", "in_place", "locals", "named", "own_names", "pending", "places", "pointed", "refs", "settled", "unwind"],
 };
 test("each module of mir/ reads only the fields of mir.rs's state it's listed for", () => {
@@ -680,7 +681,7 @@ const dispatchers: [string, string, number][] = [
   ["src/lower/mir/dispatch.rs", "    pub(super) fn mir_call(", 100], // What reads its argument through, `flatten()` and `unwrap()`, in `reads_through` (ADR 0747).
   ["src/lower/mir/dispatch.rs", "    fn mir_call_values_of(", 247],
   ["src/lower/mir/dispatch.rs", "    fn mir_std_call(", 146],
-  ["src/lower/mir.rs", "    fn mir_function(", 362], // The parameters handed to tidy's `scopes` stage in a cell, and whether it asks its stages again (ADR 0659, amended); the jumps the program wrote in one field (ADR 0742).
+  ["src/lower/mir.rs", "    fn mir_function(", 364], // The parameters handed to tidy's `scopes` stage in a cell, and whether it asks its stages again (ADR 0659, amended); the jumps the program wrote in one field (ADR 0742); the guards that hold (ADR 0774).
   ["src/lower/recognition/inherent.rs", "    pub(super) fn classify_inherent(", 754],
   ["src/lower/recognition/calls.rs", "    fn classify_trait_method(", 245],
   ["src/lower/combinators.rs", "    pub(in crate::lower) fn comb_values(", 602],
