@@ -224,4 +224,21 @@ export const mutations: Mutation[] = [
     replace: "            if false =>",
     tests: ["test/lowering-labels.test.ts", "-t", "a block the program labeled"],
   },
+  {
+    name: "loop-ending-goes-on",
+    breaks: "a list that ends in a loop nothing leaves is taken to go on, so an `||` the program wrote before it reads negated, `if (indent >= 3 && (..)) { ..; return; } desc = ..; break;` (ADR 0805)",
+    file: "src/lower/mir/tidy/jumps/tails.rs",
+    find: "        StmtKind::While { .. } => ends(last) && !js::names_jump(std::slice::from_ref(last), label),\n",
+    replace: "",
+    tests: ["test/lowering-labels.test.ts", "-t", "an \\|\\| before a loop"],
+  },
+  {
+    name: "loop-to-block-end-exits",
+    breaks: "a loop whose `break` of the block goes on to its end is taken to leave, so an `||` the program wrote before it reads `if (s === 1 && c === 1) { } else { .. }` (ADR 0805)",
+    file: "src/lower/mir/tidy/jumps/tails.rs",
+    find: "        StmtKind::While { .. } => ends(last) && !js::names_jump(std::slice::from_ref(last), label),\n",
+    replace: "        StmtKind::While { .. } => ends(last),\n",
+    tests: ["test/corpus.test.ts", "-t", "^signed_counter.rs$"],
+    snapshots: true,
+  },
 ];

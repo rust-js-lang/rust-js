@@ -207,3 +207,14 @@ answer by hand that the generator's chains couldn't reach (#162, #179):
 what std's consumers call of an iterator, and when a consumer's closure
 runs between its steps.
 
+
+## Amendment: a float's sign is asked of a number
+
+A program asks a float's sign only where it isn't a NaN:
+`{ let f: f64 = ..; !f.is_nan() && f.is_sign_negative() }`. A NaN's sign
+isn't kept ([0154](0154-number-methods.md), the guide's differences, 4),
+and an operation's NaN has its sign set on x86, so the nightly failed on
+a difference the guide lists: seed 12449569's
+`(-id(f64::NAN)).is_sign_negative()`, `true` natively and `false` as JS
+(#193). `-0.0`'s sign is still compared. A test holds it of 2000 seeds'
+programs.

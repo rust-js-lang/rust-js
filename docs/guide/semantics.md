@@ -152,6 +152,15 @@ sharing one is copying it: `clone()` is the string itself, and `push_str` is
   and `from_utf8_lossy` gives a U+FFFD for each
   ([0172](../decisions/0172-utf8-decoding.md)).
 
+Differences:
+
+- **A string's `repeat(n)` is JS's own, `text.repeat(n)`:** past
+  `isize::MAX` bytes, where std panics `capacity overflow`, it throws
+  the engine's `RangeError`, which in Node and Chrome is before any string
+  std would refuse is made. In Safari and Bun, whose strings are longer, a
+  string of text not all ASCII past a billion units may be made where std
+  panics ([0774](../decisions/0774-room-past-isize-max-bytes-panics.md)).
+
 What's refused of text is in [the limitations](limitations.md#numbers-and-text).
 
 ## Formatting and printing
@@ -205,7 +214,7 @@ What's refused of formatting is in [the limitations](limitations.md#formatting).
 | fieldless enum variant | its name, `"Green"` ([0013](../decisions/0013-fieldless-enums.md)); under a `#[repr(..)]` of an integer of 32 bits or fewer, its number, `0` ([0722](../decisions/0722-a-repr-enums-variant-is-its-number.md)) |
 | enum variant with fields | `{ TAG: "Circle", r }`, `{ TAG: "Some", _0: x }` ([0033](../decisions/0033-enums-with-fields.md)) |
 | `Result` | `{ TAG: "Ok", _0: v }`, `{ TAG: "Err", _0: e }` ([0035](../decisions/0035-results-and-throwing-js.md)) |
-| `Option` | the value, or `undefined` for `None` ([0030](../decisions/0030-option.md)); `null` for `None` of a `#[rust_js::nullable]` field or function ([0275](../decisions/0275-nullable-writes-null.md), [0574](../decisions/0574-what-reacts-scheduler-heap-asks.md)); a `Some` of what could look like `None`, `Option<()>` or `Option<Option<T>>`, is boxed, `{ $someNone: n }` ([0051](../decisions/0051-generic-options.md)) |
+| `Option` | the value, or `undefined` for `None` ([0030](../decisions/0030-option.md)); `null` for `None` of a `#[rust_js::nullable]` field or function ([0275](../decisions/0275-nullable-writes-null.md), [0574](../decisions/0574-what-reacts-scheduler-heap-asks.md)), and left out until set of one that's `#[rust_js::optional]` too ([0810](../decisions/0810-an-optional-nullable-field-is-absent-until-set.md)); a `Some` of what could look like `None`, `Option<()>` or `Option<Option<T>>`, is boxed, `{ $someNone: n }` ([0051](../decisions/0051-generic-options.md)) |
 | `#[repr(transparent)]` struct | its field: `Meters(x)` is `x`, `m.0` is `m` ([0584](../decisions/0584-a-transparent-struct-is-its-field.md)) |
 | `Box<T>`, `Arc<T>` | the value itself |
 | `Rc<T>` | the value itself; `{ value, strong, weak }` where the crate reads its counts, `strong_count` or `Weak` ([0320](../decisions/0320-counted-rcs.md)) |
@@ -393,8 +402,8 @@ What's refused is in [the limitations](limitations.md).
   crate's, a std `ExactSizeIterator`'s length ([0170](../decisions/0170-size-hint.md)).
 - **Room asked past `isize::MAX` bytes panics `capacity overflow`, as
   std's does:** `Vec::with_capacity(n)` is `$roomFor(n, 4); []`, of the
-  items' size, and `reserve`, `vec![x; n]` and `repeat` are checked too;
-  a JS array has no capacity, so what fits is nothing more
+  items' size, and `reserve`, `vec![x; n]` and a slice's `repeat` are
+  checked too; a JS array has no capacity, so what fits is nothing more
   ([0774](../decisions/0774-room-past-isize-max-bytes-panics.md)).
 - **A function passed where a closure goes is the arrow that calls it,**
   `.map(str::len)` being `.map((s) => $byteLen(s))` and `fold(0, i32::max)`
@@ -734,3 +743,7 @@ React and JSX are [their own pages](README.md#react).
     function's `Vec::<T>::with_capacity(n)`, is checked by their count
     alone, as if they had none, where std checks their bytes against
     `isize::MAX` (ADR 0774).
+25. A string's `repeat(n)` past `isize::MAX` bytes throws the engine's
+    `RangeError` where std panics `capacity overflow`; in Safari and
+    Bun, of text not all ASCII past a billion units, it may be made
+    (ADR 0774).

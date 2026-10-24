@@ -5,7 +5,9 @@ whose `#[rust_js::nullable]` was of an `Option` field only, and
 [0275](0275-nullable-writes-null.md), whose `null` was written where the
 struct is made. Amended by [0791](0791-a-cells-storage-says-what-it-stores.md):
 the storage says, so a `&Cell` to the field, a variable's or a helper's,
-writes `null` too, and the facts are the body's, read once.
+writes `null` too, and the facts are the body's, read once. Extended by
+[0810](0810-an-optional-nullable-field-is-absent-until-set.md): an optional
+one's `None` is left out where it's made.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): A: `null` and
 `undefined` are each `None` to the program, which reads either as one

@@ -4,11 +4,13 @@ Status: Accepted. Amends [0315](0315-vec-capacity-and-edits.md), whose
 `with_capacity` was `[]` and `reserve` nothing, and
 [0322](0322-text-and-slice-names.md), whose `String`'s were too; the
 capacity [0419](0419-a-vecs-capacity-kept-where-asked.md) keeps is
-checked as well (#183).
+checked as well (#183). Amended: a string's `repeat` is JS's own,
+unchecked, as the user decided (below).
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): C, Rust's, paid for in
 output, `$roomFor(n, 4)`; but of items whose size a type parameter gives,
-B, listed in the guide's differences, as the user decided.
+and of a string's `repeat`, B, listed in the guide's differences, as the
+user decided.
 
 ## Context
 
@@ -38,7 +40,7 @@ items, of no size too.** The size is rustc's for wasm32, `size_of`'s
 | `String::with_capacity(n)` | `$roomFor(n, 1); ""` |
 | `s.reserve(n)`, `reserve_exact(n)` of a `String` | `$textRoomFor(s, n)`, its bytes counted only where they may not fit |
 | `vec![x; n]` | `$roomFor(n, 4)` first, after `x` is made; `$repeat(x, n, 4, clone, drop)` of one with a destructor, which drops `x` where there's no room, as std's unwinding does |
-| `"ab".repeat(n)` | `$roomFor(n, 2); "ab".repeat(n)`; of text not known here, `$roomFor(n, $byteLen(s))` |
+| `"ab".repeat(n)` | `"ab".repeat(n)`, JS's own: the engine refuses a string past its length first (amended, below) |
 | `[a, b].repeat(n)` | `$repeatItems(v, n, 4)`, room for `v.length * n` |
 
 A check that can't fail is left out: room for none more, `with_capacity(0)`
@@ -72,8 +74,33 @@ the user: with_capacity makes no array in JS, so nothing runs out, and a
 - A JS string can't be as long as std's: `"-".repeat(1 << 30)`, a
   gigabyte, throws JS's `RangeError` where the engine's limit is less,
   Node's about 2²⁹ UTF-16 units; that's the engine running out, as memory
-  does.
+  does. Of a string's `repeat`, that's all there is (amended, below).
 - Tested by `capacity_overflow.rs`, against native Rust, whose `usize`
   there is 64-bit, by room past half of `usize::MAX`, which is past both
   `isize::MAX`s; and by `runtime-package.test.ts`, where rust-js's 32-bit
   `isize::MAX` ends, one item either side.
+
+## Amendment: a string's `repeat` is JS's own
+
+`"ab".repeat(n)` printed `$roomFor(n, 2); "ab".repeat(n)`, and React's
+ReactPerformanceTrackProperties, whose `prefix + '\xa0\xa0'.repeat(indent)`
+and `' '.repeat(start)` are JS's own, read `$roomFor(indent, 4);` and
+`$roomFor(start, 1);` before each. **A `str`'s or a `String`'s
+`repeat(n)` is JS's `repeat`, unchecked**, as the user decided: a JS
+string is at most 2³¹ − 1 UTF-16 units ([0682](0682-a-js-strings-length-is-at-most-int32-max.md)),
+V8's (Node's, Chrome's) less than 2²⁹, each of 3 bytes at most, so less
+than `isize::MAX` bytes. A repeat std refuses, V8 refuses too, before
+it's made: a `RangeError: Invalid string length`, where std panics
+`capacity overflow`. JavaScriptCore's (Safari's, Bun's) go to 2³¹ − 1
+units, so there a string of text not all ASCII, past a billion units, may
+be made where std panics, as memory lets it. That's case B, rare and
+harmless: a program that asks a string that long runs out either way but
+in that corner, and the error differs, which the guide lists among its
+differences.
+
+A `String::with_capacity(n)` and a `String`'s `reserve(n)` make no
+string, so nothing else would refuse them: they're checked still, as a
+`Vec`'s room and a slice's `repeat` are. `room_for` is still the one check of room asked; a string `repeat`
+makes isn't asked of it, `str::repeat` being recognized as JS's method.
+Tested by `test/lowering-strings.test.ts`, the bare `repeat` and its
+`RangeError`; `capacity_overflow.rs` no longer asks a string past it.

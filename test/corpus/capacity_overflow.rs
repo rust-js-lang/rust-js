@@ -1,8 +1,10 @@
 // Room asked past `isize::MAX` bytes is a `capacity overflow` panic, as
 // std checks it (ADR 0774): of `with_capacity`, `reserve`, `vec![x; n]`
-// and `repeat`, by the items' size, of none by their count alone; an item
-// given to `vec!` made first, and dropped as it unwinds. Room that fits is
-// no panic.
+// and a slice's `repeat`, by the items' size, of none by their count
+// alone; an item given to `vec!` made first, and dropped as it unwinds.
+// Room that fits is no panic. A string's `repeat` is JS's own, whose
+// engine refuses a string that long first, a difference the guide lists:
+// only one that fits is here.
 use std::any::Any;
 use std::panic::{self, AssertUnwindSafe};
 
@@ -42,11 +44,6 @@ fn made() -> u8 {
     7
 }
 
-fn made_text() -> String {
-    println!("made text");
-    "ab".to_string()
-}
-
 // Past half of `usize::MAX`: more than `isize::MAX` of bytes, whatever
 // `usize` is.
 fn past_half() -> usize {
@@ -83,10 +80,6 @@ fn main() {
     check("vec![Noisy; 2]", || vec![Noisy("two"); 2].len());
     check("vec![(); n]", || vec![(); 0].len());
 
-    check("str::repeat", || "ab".repeat(past_half()).len());
-    check("made repeat", || made_text().trim().repeat(past_half()).len());
-    let text = String::from("é");
-    check("String repeat", || text.repeat(usize::MAX).len());
     check("empty repeat", || "".repeat(usize::MAX).len());
     check("repeat(3)", || "ab".repeat(3));
     check("slice repeat", || [1u8, 2].repeat(past_half()).len());
