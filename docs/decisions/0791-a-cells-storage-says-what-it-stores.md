@@ -43,10 +43,14 @@ looks its answer up; the architecture test, "a whole body's facts are its
 BodyFacts, read once", fails where one's made public again.
 
 **What a `Cell` stores is its storage's, carried by the handle on it.**
-A handle is a place and, where its storage says, what a write through it
-stores of what's written, `ExprKind::Handle(place, stored)`. A nullable
-field's `Cell` (`representation::nullable_cell_field`, the one answer) is
-a handle storing `value ?? null`, `bindings::nullable_written`'s. So:
+A handle is a place and how that place stores what's written,
+`ExprKind::Handle(place, js::Storage)`: `AsGiven`, or `NullForNone`, a
+nullable field's. `Storage::written(made, nulled)` is the one answer to
+what's stored, where a struct is made, a `Cell` set, a nullable function
+returns, tidy rewrites a write and a handle's setter is printed; it moved
+from `bindings::nullable_written` into `js`, as printing can't ask
+lowering. A nullable field's `Cell` (`representation::nullable_cell_field`,
+the one answer to which is one) is a `NullForNone` handle. So:
 
 | Rust | JS |
 |---|---|
@@ -62,6 +66,15 @@ Whether what's written is `null` or a value already is MIR's `nulled`,
 the one answer, given as `Call::nulled`: `set(Some(renderer))` is
 `context.renderer = renderer;`.
 
+**A handle written through keeps its place** (#192). Tidy's
+`read_handles` takes a `const` handle whose `value` alone is used to its
+place; written through, `r.set(5)` in a closure of `let r =
+&context.value`, it read the place once where it was made, `const r =
+context.value`, and wrote the copy, `r = 5`, a `const`'s assignment that
+throws. Now one written through, `js::Writes`' `changed`, is its place at
+each use, read and written there, as its storage stores it: `context.value
+= 5;` in the closure, `context.renderer = null;` of a nullable field's.
+
 **A handle reaches its place once.** Where a reference is made of a place
 that isn't fixed, `&get(&c).value`, what holds it is named first, `const
 item = get(c);`, and the handle is on `item.value`; `replace` and `take`
@@ -76,6 +89,7 @@ read and write a place made fixed the same way.
   `swap`, `update`, `replace_with`, store what they're given; given to a
   helper, its handle stores `null`.
 - Tested by `lowering-nullable.test.ts` (a closure's facts, two calls in
-  one body; a local reference, a copied one and a helper, each of
-  `set`, `replace` and `take`, of a nullable and a plain `Cell`), and
-  `cell_reached_through_a_call.rs` against native Rust.
+  one body; a local reference, a copied one, a closure's and a helper,
+  each of `set`, `replace` and `take`, of a nullable and a plain `Cell`),
+  and `cell_reached_through_a_call.rs` and `cell_alias_in_a_closure.rs`
+  against native Rust.

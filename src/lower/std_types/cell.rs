@@ -46,7 +46,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // what's given that's `null` or a value already as it is.
         let given_nulled = call.nulled.get(1) == Some(&true);
         let written = |cell: &Expr, value: Expr| match cell.kind {
-            js::ExprKind::Handle(_, Some(_)) => crate::lower::bindings::nullable_written(value, given_nulled),
+            js::ExprKind::Handle(_, storage) => storage.written(value, given_nulled),
             _ => value,
         };
         Ok(Some(match known {

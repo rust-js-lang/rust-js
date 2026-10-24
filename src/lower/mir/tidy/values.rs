@@ -381,20 +381,27 @@ pub(super) fn handles_in_place(body: &mut [Stmt]) {
 /// field, whose `value` alone is used, the handle never given: read before
 /// anything could set `o.f`, `const h = o.f`, `h` where its `value` is
 /// read (ADR 0287); else `o.f` where its `value` is, the `o` it was made
-/// of, as MIR holds a reference written again before it's made.
+/// of, as MIR holds a reference written again before it's made, and where
+/// it's written through, a closure's `h.value = 5` too (#192).
 pub(super) fn read_handles(body: &mut Vec<Stmt>) {
-    let mut handles: Vec<(String, Expr, bool)> = Vec::new();
+    let mut handles: Vec<(String, Expr, bool, js::Storage)> = Vec::new();
     js::each_list(body, &mut |stmts| {
         for (k, stmt) in stmts.iter().enumerate() {
             if let StmtKind::Const(name, value) = &stmt.kind
-                && let ExprKind::Handle(place, _) = &value.kind
+                && let ExprKind::Handle(place, storage) = &value.kind
                 && matches!(place.kind, ExprKind::Member(..))
             {
-                handles.push((name.clone(), (**place).clone(), read_at_once(stmts, k, name)));
+                handles.push((name.clone(), (**place).clone(), read_at_once(stmts, k, name), *storage));
             }
         }
     });
-    handles.retain(|(name, place, at_once)| {
+    // Written through, `h.value = 5`, a closure's too (#192): its place
+    // where its `value` is, read and written there, never read at once.
+    let changed = js::Writes::of(body).changed;
+    for (name, _, at_once, _) in &mut handles {
+        *at_once &= !changed.contains(name);
+    }
+    handles.retain(|(name, place, at_once, _)| {
         // Each use of it one of its `value`: none left once those are.
         let mut rest = body.clone();
         js::each_expr_mut(&mut rest, &mut |e| {
@@ -415,9 +422,31 @@ pub(super) fn read_handles(body: &mut Vec<Stmt>) {
         return;
     }
     let read = |name: &str| (handles.iter()).find(|(h, ..)| h == name);
+    // What's written through one, as its storage stores it: a nullable
+    // field's `None`, `null` (ADR 0791).
+    let stored = |list: &mut Vec<Stmt>| {
+        js::statement_lists(list, &mut |stmts| {
+            for stmt in stmts.iter_mut() {
+                if let StmtKind::Assign(target, value) = &mut stmt.kind
+                    && let ExprKind::Member(of, key) = &target.kind
+                    && key == js::HELD
+                    && let ExprKind::Var(v) = &of.kind
+                    && let Some((.., storage)) = read(v)
+                {
+                    *value = storage.written(std::mem::replace(value, Expr::undefined()), false);
+                }
+            }
+        })
+    };
+    stored(body);
+    js::each_expr_mut(body, &mut |e| match &mut e.kind {
+        ExprKind::Arrow(_, inner) | ExprKind::AsyncArrow(_, inner) => stored(inner),
+        ExprKind::Function(function) => stored(&mut function.body),
+        _ => {}
+    });
     js::statement_lists(body, &mut |stmts| {
         stmts.retain(
-            |stmt| !matches!(&stmt.kind, StmtKind::Const(name, _) if read(name).is_some_and(|(.., at_once)| !at_once)),
+            |stmt| !matches!(&stmt.kind, StmtKind::Const(name, _) if read(name).is_some_and(|(_, _, at_once, _)| !at_once)),
         );
         for stmt in stmts.iter_mut() {
             if let StmtKind::Const(name, value) = &mut stmt.kind
@@ -432,7 +461,7 @@ pub(super) fn read_handles(body: &mut Vec<Stmt>) {
         if let ExprKind::Member(of, key) = &e.kind
             && key == js::HELD
             && let ExprKind::Var(v) = &of.kind
-            && let Some((_, place, at_once)) = read(v)
+            && let Some((_, place, at_once, _)) = read(v)
         {
             let read = match at_once {
                 true => Expr::var(v),

@@ -1065,9 +1065,7 @@ fn expr(e: &mut Expr) {
             vec![StmtKind::Return(Some((**place).clone())).at(place.span)],
         );
         let written = match &e.kind {
-            ExprKind::Handle(_, Some(stored)) => stored
-                .substitute(&|name| (name == js::WRITTEN).then(|| Expr::var(&param)))
-                .unwrap_or_else(|| (**stored).clone()),
+            ExprKind::Handle(_, storage) => storage.written(Expr::var(&param), false),
             _ => Expr::var(&param),
         };
         let set = Expr::arrow(

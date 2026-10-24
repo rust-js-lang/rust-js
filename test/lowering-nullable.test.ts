@@ -275,6 +275,12 @@ pub fn alias_take(context: &Context) -> bool {
     renderer.take().is_some()
 }
 
+pub fn closure_reset(context: &Context) {
+    let renderer = &context.renderer;
+    let reset = || renderer.set(None);
+    reset();
+}
+
 pub fn copied_reset(context: &Context) {
     let renderer = &context.renderer;
     let copied = renderer;
@@ -307,4 +313,8 @@ pub fn copied_reset(context: &Context) {
   expect(context.renderer).toBe(null);
   context.renderer = "dom";
   expect([lib.aliasTake(context), context.renderer]).toEqual([true, null]);
+  // A closure's, through the variable it captures (#192).
+  context.renderer = "dom";
+  lib.closureReset(context);
+  expect(context.renderer).toBe(null);
 });

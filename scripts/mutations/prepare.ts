@@ -561,8 +561,8 @@ export const mutations: Mutation[] = [
     name: "handle-setter-stores-as-given",
     breaks: "a handle's setter stores what it's given, where its storage says `?? null`",
     file: "src/prepare.rs",
-    find: "            ExprKind::Handle(_, Some(stored)) => stored\n",
-    replace: "            ExprKind::Handle(_, Some(stored)) if false => stored\n",
+    find: "            ExprKind::Handle(_, storage) => storage.written(Expr::var(&param), false),\n",
+    replace: "            ExprKind::Handle(_, _) => Expr::var(&param),\n",
     tests: ["test/lowering-nullable.test.ts", "-t", "through a reference and a helper"],
   },
 ];

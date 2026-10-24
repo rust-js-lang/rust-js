@@ -467,27 +467,11 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-nullable.test.ts", "-t", "nullable Cell field's None is null"],
   },
   {
-    name: "nullable-null-unplaced",
-    breaks: "a nullable field's `null` is where nothing is, so the comment before the field goes after it",
-    file: "src/lower/bindings.rs",
-    find: "        js::ExprKind::Undefined => js::Expr::null().or_at(made.span),\n",
-    replace: "        js::ExprKind::Undefined => js::Expr::null(),\n",
-    tests: ["test/lowering-nullable.test.ts", "-t", "nullable Cell field's None is null"],
-  },
-  {
     name: "held-default-exported-by-name",
     breaks: "a library's `pub use` of a binding its default names is `export const assign` too, which no caller reads and upstream's `shared/assign` hasn't",
     file: "src/lower/bindings.rs",
     find: "        self.export && !self.default\n",
     replace: "        self.export\n",
     tests: ["test/cargo-link.test.ts", "-t", "a library's module that holds a binding"],
-  },
-  {
-    name: "nulled-field-coalesced",
-    breaks: "what MIR says is `null` or a value already is `?? null` given to a `#[rust_js::nullable]` field",
-    file: "src/lower/bindings.rs",
-    find: "        _ if made.is_constant() || nulled => made,\n",
-    replace: "        _ if made.is_constant() => made,\n",
-    tests: ["test/lowering-options.test.ts", "-t", "a nullable field's None is null"],
   },
 ];

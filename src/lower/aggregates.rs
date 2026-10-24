@@ -162,10 +162,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let nulled = nulled.get(i) == Some(&true);
                 *value = match self.is_std_type(field.ty(self.tcx, args).skip_normalization(), StdItem::Cell) {
                     true => {
-                        let held = bindings::nullable_written(Expr::held(made), nulled);
+                        let held = js::Storage::NullForNone.written(Expr::held(made), nulled);
                         Expr::object(vec![Prop::Field(js::HELD.into(), held)])
                     }
-                    false => bindings::nullable_written(made, nulled),
+                    false => js::Storage::NullForNone.written(made, nulled),
                 };
             }
         }
