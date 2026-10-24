@@ -644,6 +644,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0730 A loop's early `break` is in the `if` it was written in](decisions/0730-a-loops-early-break-is-in-the-if-it-was-written-in.md)
 - [0731 A case's `break` past the `switch` is the case's own](decisions/0731-a-cases-break-past-the-switch-is-its-own.md)
 - [0732 A space one can't tell from `' '`, or a mark one can't see, is its escape](decisions/0732-a-space-one-cant-see-is-its-escape.md)
+- [0733 A line comment ends the line of its code, where JS has more after it](decisions/0733-a-line-comment-ends-the-line-of-its-code.md)
 - [0734 `extend` of an array written in place is `push` of its items](decisions/0734-extend-of-an-array-written-in-place-is-push.md)
 - [0436 Every `dyn` that's a pair keeps its value's drop, `dyn Send` too](decisions/0436-every-dyn-keeps-its-drop.md) *(amended by 0691: a `dyn Any` drops where the crate makes one of what drops)*
 - [0437 A scope's drops on a panic are one `try { .. } finally { .. }`](decisions/0437-a-scopes-drops-are-one-finally.md) *(amended by 0693: its `if`s, loops and `return`s in it)*
@@ -653,7 +654,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0441 A `()` given a function value is no argument](decisions/0441-a-unit-is-no-argument.md)
 - [0442 A web API that throws for what a program can't prevent is a `Result`](decisions/0442-a-web-api-that-may-throw-is-a-result.md)
 - [0443 A value a caller may leave out is an `Option`, in each direction](decisions/0443-a-value-a-caller-may-leave-out-is-an-option.md) *(amended by 0640: a `None` before a rest of none is no argument; 0648: a setter's `None` is written)*
-- [0444 A comment is in the JS where its code is, and so is a blank line](decisions/0444-a-comment-is-where-its-code-is.md) *(amended by 0658: a branch's comment is before its value; 0708: an argument's and a field's)*
+- [0444 A comment is in the JS where its code is, and so is a blank line](decisions/0444-a-comment-is-where-its-code-is.md) *(amended by 0658: a branch's comment is before its value; 0708: an argument's and a field's; 0733: a line comment ends the line of its code)*
 - [0445 Generic code extends and collects into what it's given](decisions/0445-extend-and-collect-in-generic-code.md)
 - [0446 A `dyn fmt::Write` is a pair, and `fmt::write` is `write_fmt`](decisions/0446-a-dyn-fmt-write.md)
 - [0447 The clock: a `SystemTime` and an `Instant` are their nanoseconds](decisions/0447-the-clock.md)
