@@ -147,7 +147,6 @@ pub(super) fn fresh(items: &Expr) -> bool {
                 "$windows",
                 "$chunks",
                 "$chunksExact",
-                "$chunksExactMut",
                 "$rchunks",
                 "$rchunksMut",
                 "$splitBy",

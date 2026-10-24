@@ -386,12 +386,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let source_value = self.as_double_ended((**source_value).clone(), source.peel_refs(), span)?;
             return Ok(Expr::call_helper("$filterEnds", vec![source_value, p.clone()]));
         }
-        if let Some(double_ended) = self.own_next_back(ty)? {
-            let iterator = std_item(self.tcx, StdItem::Iterator);
-            let (next, boxed) = self.user_next(ty, iterator, "next", span)?;
-            let (back, _) = self.user_next(ty, double_ended, "next_back", span)?;
-            return Ok(stepped(value, next, boxed, Some(back)));
-        }
         Err(self.unsupported(
             span,
             &format!("a `{ty}` as a `DoubleEndedIterator`, which rust-js can't step from its back"),

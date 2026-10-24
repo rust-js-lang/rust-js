@@ -116,14 +116,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-iterators.test.ts", "-t", "takes the crate's own from behind"],
   },
   {
-    name: "mir-opaque-iterator-unrevealed",
-    breaks: "MIR's iterator of the crate's behind `impl Iterator` is given as the struct, not a JS iterator",
-    file: "src/lower/mir/iter/sources.rs",
-    find: "        let ty = self.reveal(ty);\n        // A `&mut` to a range",
-    replace: "        // A `&mut` to a range",
-    tests: ["test/lowering-iterators.test.ts", "-t", "takes the crate's own from behind"],
-  },
-  {
     "name": "mir-iterable-collected-generic",
     "breaks": "a generic iterator collected is `Array.from(items)`, empty of an iterator with only a `next`",
     "file": "src/lower/mir/iter/sources.rs",

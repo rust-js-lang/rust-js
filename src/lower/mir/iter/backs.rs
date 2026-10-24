@@ -59,6 +59,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 return Ok(reversed);
             }
             None => match from_iterator(receiver) {
+                // What's made knowing its back, a chain of the crate's own
+                // `next_back` say: stepped from it, as Rust's `Rev` does,
+                // never its items from the front reversed.
+                Ok(items) if self.knows_its_back(iter_ty) => {
+                    return Ok(Expr::call_helper(
+                        "$rev",
+                        vec![self.as_double_ended(items, iter_ty, span)?],
+                    ));
+                }
                 Ok(items) => Expr::call(Expr::member(Expr::var("Array"), "from"), vec![items]),
                 // Of a lazy one, `rev()`, which rustc found steps from its
                 // back, a map's say: what steps it from there, as Rust's `Rev`

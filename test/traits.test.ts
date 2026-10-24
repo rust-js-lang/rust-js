@@ -259,7 +259,9 @@ for (const [name, source, diagnostic] of [
   // A chain whose stages do what can be seen runs lazily (ADR 0139), and a JS
   // iterator can't run from its other end, as `rev` would have it.
   // `rev` of a `map` or a `filter` over a slice is the chain over its items reversed (ADR 0164); an index made after a closure is not.
-  ["rposition of a lazy chain", `pub fn f(v: &[i32]) -> Option<usize> { v.iter().map(|x| { println!("{}", x); *x }).rposition(|x| x > 1) }`, "\`rposition\` of a lazy iterator"],
+  // `rposition` of a map over a slice, which knows its back and its
+  // length, steps it from its back, its closure run there (#184).
+  ["rposition of a lazy chain", `pub fn f(v: &[i32]) -> Option<usize> { v.iter().map(|x| { println!("{}", x); *x }).rposition(|x| x > 1) }`, null],
   ["rev of an index after a closure with effects", `pub fn f(v: &[i32]) -> Vec<(usize, i32)> { v.iter().map(|x| { println!("{}", x); *x }).enumerate().rev().collect() }`, "as a `DoubleEndedIterator`, which rust-js can't step from its back"],
   // A closure's drop drops the variables it took, where it's made (ADR 0098):
   // not part of one, nor where JS can't see them, nor given away by value

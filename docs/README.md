@@ -640,6 +640,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0714 A reference given to generic code is what it refers to](decisions/0714-a-reference-given-to-generic-code.md)
 - [0715 What an `IntoIterator` bound is given is its items, as JS steps them](decisions/0715-what-an-into-iterator-bound-is-given.md)
 - [0716 A path's components are std's `Component`, as any enum is](decisions/0716-a-paths-components.md)
+- [0717 `rev()` of what's made knowing its back steps it from there](decisions/0717-rev-of-what-knows-its-back-steps-it.md)
 - [0436 Every `dyn` that's a pair keeps its value's drop, `dyn Send` too](decisions/0436-every-dyn-keeps-its-drop.md) *(amended by 0691: a `dyn Any` drops where the crate makes one of what drops)*
 - [0437 A scope's drops on a panic are one `try { .. } finally { .. }`](decisions/0437-a-scopes-drops-are-one-finally.md) *(amended by 0693: its `if`s, loops and `return`s in it)*
 - [0438 An optional prop is given `Some(..)`, or left out](decisions/0438-an-optional-prop-is-given-some.md)
@@ -739,7 +740,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0532 A `Debug` builder held in a variable](decisions/0532-a-debug-builder-held-in-a-variable.md)
 - [0533 An associated type's `as_mut()` is its dictionary's](decisions/0533-an-associated-types-as-mut-is-its-dictionarys.md)
 - [0534 A bound of a sequence's `Index<J>` is its `J: SliceIndex<[T]>`](decisions/0534-a-sequences-index-bound-is-its-slice-index.md)
-- [0535 A lazy `map` steps from its back, its source as it is](decisions/0535-a-lazy-map-steps-from-its-back.md)
+- [0535 A lazy `map` steps from its back, its source as it is](decisions/0535-a-lazy-map-steps-from-its-back.md) *(amended by 0717: and of what JS iterates as it is)*
 - [0536 A blanket impl over `?Sized` types keeps its trait's defaults](decisions/0536-a-blanket-unsized-impl-keeps-its-defaults.md)
 - [0537 A `Cell` gives an `Option` back as it's kept](decisions/0537-a-cell-gives-its-option-as-its-kept.md)
 - [0538 A writer called through a `fn` pointer](decisions/0538-a-writer-called-through-a-fn-pointer.md)

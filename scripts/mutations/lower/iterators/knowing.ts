@@ -27,14 +27,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^generic_double_ended.rs$"],
   },
   {
-    name: "double-ended-own-no-back",
-    breaks: "the crate's iterator as a double-ended one has no `nextBack`",
-    file: "src/lower/iterators/knowing.rs",
-    find: "            return Ok(stepped(value, next, boxed, Some(back)));\n",
-    replace: "            return Ok(stepped(value, next, boxed, None));\n",
-    tests: ["test/corpus.test.ts", "-t", "^generic_double_ended.rs$"],
-  },
-  {
     name: "map-made-unstepped",
     breaks: "`rfind` of an array's map made in place, `v.iter().map(f)`, is refused",
     file: "src/lower/iterators/knowing.rs",

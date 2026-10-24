@@ -61,7 +61,8 @@ export const mutations: Mutation[] = [
       "test/corpus.test.ts",
       "-t",
       "rev_of_lazy_chains"
-    ]
+    ],
+    "snapshots": true
   },
   {
     "name": "rev-chain-index-from-back",
@@ -302,5 +303,13 @@ export const mutations: Mutation[] = [
     find: "                    || self.recognition().nths_its_own(output) =>",
     replace: "                    || false =>",
     tests: ["test/corpus.test.ts", "-t", "^own_nth_through_adapters.rs$"],
+  },
+  {
+    name: "rev-of-own-back-reversed",
+    breaks: "`rev()` of a chain made knowing its back, of the crate's own `next_back`, is its items from the front reversed",
+    file: "src/lower/mir/iter/backs.rs",
+    find: "                Ok(items) if self.knows_its_back(iter_ty) => {\n",
+    replace: "                Ok(items) if false => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^chain_rev_own_back.rs$"],
   },
 ];
