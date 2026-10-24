@@ -584,6 +584,8 @@ pub fn lower_crate<'tcx>(
                             let class = namespace.class.get_or_insert_with(|| js::Class {
                                 constructor: String::new(),
                                 prototype: Vec::new(),
+                                declared: (super::classes::class_of(tcx, def_id).and_then(|adt| adt.as_local()))
+                                    .map_or(js::Span::NONE, |adt| sources.item_span(tcx, adt)),
                             });
                             match member {
                                 super::classes::Member::Constructor => {

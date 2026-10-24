@@ -3,6 +3,30 @@ import type { Mutation } from "../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "class-doc-unattached",
+    breaks: "a class struct's `///` doc isn't before its constructor function, `/** Base class helpers .. */ function Component` (ADR 0761)",
+    file: "src/to_oxc.rs",
+    find: "                made.attached_to = classes.get(&at).copied().unwrap_or_else(|| printed_first(at));\n",
+    replace: "                made.attached_to = printed_first(at);\n",
+    tests: ["test/classes.test.ts", "-t", "doc is its constructor function's"],
+  },
+  {
+    name: "class-doc-blank-between",
+    breaks: "a blank line before a class's `new` is between its struct's doc and its constructor function (ADR 0761)",
+    file: "src/to_oxc.rs",
+    find: "                    pieces.drain(..blanks);\n",
+    replace: "",
+    tests: ["test/classes.test.ts", "-t", "doc is its constructor function's"],
+  },
+  {
+    name: "class-doc-unstarted",
+    breaks: "a class's struct is no start, and its `///` doc is lost (ADR 0761)",
+    file: "src/to_oxc.rs",
+    find: "                    starts.0.push((declared.lo, declared.hi));\n",
+    replace: "",
+    tests: ["test/classes.test.ts", "-t", "doc is its constructor function's"],
+  },
+  {
     name: "blank-before-attributes-lost",
     breaks: "a blank line before `#[cfg_attr(..)] pub const D` is lost",
     file: "src/to_oxc.rs",

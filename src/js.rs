@@ -182,6 +182,9 @@ pub struct Namespace {
 pub struct Class {
     pub constructor: String,
     pub prototype: Vec<String>,
+    /// Where its struct is declared: the comments before it, its `///`
+    /// doc, are the constructor function's (ADR 0761).
+    pub declared: Span,
 }
 
 /// `const SIZE = 4096;`, maybe exported.

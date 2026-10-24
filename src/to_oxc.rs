@@ -403,6 +403,15 @@ fn comments_of(
     let mut trailing = Vec::new();
     let mut arm_comments = Vec::new();
     let (spans, comment_ends) = statement_spans(module);
+    // Where each class's struct is, and its constructor function, which
+    // what's before the struct is before.
+    let classes: std::collections::HashMap<u32, u32> = (module.items.iter())
+        .filter_map(|item| match item {
+            js::Item::Namespace(n) => declared_class(n),
+            _ => None,
+        })
+        .map(|(declared, constructor)| (declared.lo, constructor.lo))
+        .collect();
     let noinline = noinline_starts(module);
     // A conditional's branch is a start too, its value's, that a comment
     // before it in Rust is before (ADR 0658).
@@ -573,6 +582,8 @@ fn comments_of(
         if !ends.is_empty() {
             starts_and_end.push((sources.text.len() as u32, ends));
         }
+        // The constructors a class's struct's comments are before.
+        let mut documented = std::collections::HashSet::new();
         for (at, own) in starts_and_end {
             // A branch's, its text as written, each a line of its own.
             if let Some(&hi) = arms.get(&at)
@@ -644,6 +655,19 @@ fn comments_of(
                 text.push_str(&format!("/** {NOINLINE} */"));
                 pieces.push((lo, text.len() as u32));
             }
+            // A class's struct's comments, before its constructor: the
+            // blank line before them is the function's, not one between
+            // them and it, before `new`.
+            match classes.get(&at) {
+                Some(&constructor) if !own.is_empty() => {
+                    documented.insert(constructor);
+                }
+                _ if documented.contains(&at) => {
+                    let blanks = pieces.iter().take_while(|&&(lo, hi)| lo == hi).count();
+                    pieces.drain(..blanks);
+                }
+                _ => {}
+            }
             for (lo, hi) in pieces {
                 let written = &text[lo as usize..hi as usize];
                 let kind = match (written.starts_with("/*"), written.contains('\n')) {
@@ -652,7 +676,7 @@ fn comments_of(
                     (true, true) => CommentKind::MultiLineBlock,
                 };
                 let mut made = oxc_ast::Comment::new(lo, hi, kind);
-                made.attached_to = printed_first(at);
+                made.attached_to = classes.get(&at).copied().unwrap_or_else(|| printed_first(at));
                 // A block's of only comments, where it ends: no node starts
                 // there, so oxc prints it as it does a comment whose node is
                 // gone, before what follows or the block's `}` (ADR 0753).
@@ -820,11 +844,24 @@ fn statement_spans(module: &Module) -> (Vec<(u32, u32)>, std::collections::HashS
                 for method in &n.methods {
                     function(method, &mut starts);
                 }
+                // A class's struct, whose comments are its constructor's.
+                if let Some((declared, _)) = declared_class(n) {
+                    starts.0.push((declared.lo, declared.hi));
+                }
             }
             js::Item::Statements(stmts) => of_stmts(stmts, &mut starts),
         }
     }
     starts
+}
+
+/// A class's struct, where it's declared, and its constructor function,
+/// which the comments before the struct, its `///` doc, are before (ADR
+/// 0761): `/** Base class helpers .. */ function Component(..)`.
+fn declared_class(n: &js::Namespace) -> Option<(js::Span, js::Span)> {
+    let class = n.class.as_ref().filter(|class| !class.declared.is_none())?;
+    let constructor = n.methods.iter().find(|f| f.name == class.constructor)?;
+    Some((class.declared, constructor.span))
 }
 
 /// `import clause from "from";`, an import's line, the one way it's written:
