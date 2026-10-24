@@ -138,4 +138,13 @@ export const mutations: Mutation[] = [
     replace: ";\n",
     tests: ["test/corpus.test.ts", "-t", "^match_trait_const\\.rs$"],
   },
+  {
+    name: "registered-equality-unread",
+    breaks: "`from_value(x) == Some(C)` reads `$symbolFor(x)`, where `matches!(from_value(x), Some(C))` is `x === C`: two outputs for one comparison",
+    file: "src/lower/body_queries.rs",
+    find: "            _ => registered_equality(tcx, thir, e).map(|(read, _)| read),\n",
+    replace: "            _ => None,\n",
+    tests: ["test/lowering-symbols.test.ts", "-t", "an == of a value read as the registry's symbol"],
+  },
+
 ];

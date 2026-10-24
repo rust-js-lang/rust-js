@@ -1178,7 +1178,8 @@ its own, `js::symbol::new("id")`, or a well-known one,
 `None` of any other value. Matched against the registry's symbols, its
 patterns each a `Some` of them or `_`, it's the value itself, as no other
 value is one of them, and a `match` of three cases or more is a `switch`
-of it:
+of it. An `==` or `!=` of it and a `Some` is that `matches!`, `===` and
+`!==` ([ADR 0771](../../decisions/0771-an-equality-of-a-registered-symbol-is-its-match.md)):
 
 ```rust
 use js::{SymbolFor, Unknown};
@@ -1198,6 +1199,10 @@ pub fn name(ty: Option<&Unknown>) -> Option<&'static str> {
 
 pub fn is_lazy(ty: &Unknown) -> bool {
     matches!(SymbolFor::from_value(js::get(ty, "$$typeof")), Some(REACT_LAZY_TYPE))
+}
+
+pub fn is_memo(ty: &Unknown) -> bool {
+    SymbolFor::from_value(js::get(ty, "$$typeof")) == Some(REACT_MEMO_TYPE)
 }
 
 pub fn key(value: Option<&Unknown>) -> Option<&'static str> {
@@ -1226,6 +1231,10 @@ export function name(ty) {
 
 export function isLazy(ty) {
   return ty.$$typeof === REACT_LAZY_TYPE;
+}
+
+export function isMemo(ty) {
+  return ty.$$typeof === REACT_MEMO_TYPE;
 }
 
 export function key(value) {

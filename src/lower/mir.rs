@@ -732,7 +732,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             built: Default::default(),
             let_spans: self.mir_let_spans(mir_body),
         };
-        state.options = self.mir_option_writes(mir_body, &state.locals);
+        state.options = self.mir_option_writes(mir_body, state.promoted, &state.locals);
         // A writer's `Formatter`: no parameter, but the string it writes to,
         // `let f = ""`, which it gives back, its `fmt::Result` nothing. A
         // closure's, after its environment.

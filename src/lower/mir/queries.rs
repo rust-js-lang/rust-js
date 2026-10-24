@@ -697,6 +697,42 @@ pub(super) fn referred_constant<'tcx>(body: &mir::Body<'tcx>) -> Option<ConstOpe
     (Some(local) == referred).then_some(c)
 }
 
+/// The constant a promoted `&Some(c)` holds, `_1 = Some(const c); _0 =
+/// &_1`, if that's all it is: a `Some` always, of `C` by its name where
+/// it's a named one (ADR 0771).
+pub(super) fn promoted_some<'tcx>(tcx: ty::TyCtxt<'tcx>, body: &mir::Body<'tcx>) -> Option<ConstOperand<'tcx>> {
+    if body.basic_blocks.len() != 1 {
+        return None;
+    }
+    let mut some = None;
+    let mut referred = None;
+    for statement in &body.basic_blocks[mir::START_BLOCK].statements {
+        match &statement.kind {
+            StatementKind::Assign(assign) => match &**assign {
+                (place, Rvalue::Aggregate(kind, operands))
+                    if place.projection.is_empty()
+                        && let mir::AggregateKind::Adt(did, variant, ..) = **kind
+                        && tcx.is_lang_item(did, LangItem::Option)
+                        && variant.as_u32() == 1
+                        && let [Operand::Constant(c)] = &operands.raw[..] =>
+                {
+                    some = Some((place.local, **c));
+                }
+                (place, Rvalue::Ref(_, BorrowKind::Shared, target))
+                    if place.local == mir::RETURN_PLACE && target.projection.is_empty() =>
+                {
+                    referred = Some(target.local);
+                }
+                _ => return None,
+            },
+            StatementKind::StorageLive(_) | StatementKind::StorageDead(_) | StatementKind::Nop => {}
+            _ => return None,
+        }
+    }
+    let (local, c) = some?;
+    (Some(local) == referred).then_some(c)
+}
+
 /// Whether `local` is written again after it's first given its value, a
 /// reference reassigned, so a place through it isn't the one it was. A
 /// parameter's first value is its argument.

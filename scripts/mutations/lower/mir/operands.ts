@@ -130,4 +130,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/lowering-numbers.test.ts", "-t", "a number literal keeps its base and its exponent"],
   },
+  {
+    name: "promoted-some-unnamed",
+    breaks: "a promoted `&Some(C)` of a named `const` is its value, `Symbol.for(\"react.memo\")`, where `C` is read by its name everywhere else",
+    file: "src/lower/mir/operands.rs",
+    find: "            && matches!(tcx.def_kind(named.def), DefKind::Const { .. })\n            && self.is_rust_fn(named.def)\n        {\n",
+    replace: "            && matches!(tcx.def_kind(named.def), DefKind::Const { .. })\n            && false\n        {\n",
+    tests: ["test/lowering-symbols.test.ts", "-t", "an == of a value read as the registry's symbol"],
+  },
 ];

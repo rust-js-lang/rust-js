@@ -566,7 +566,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0632 A JS string's `length` is below `u32::MAX`, and a counter below it doesn't wrap](decisions/0632-a-js-strings-length-is-below-u32-max.md) *(amended by 0682: at most `2^31 - 1`, so two add without a wrap)*
 - [0682 A JS string's `length` is at most `2^31 - 1`, so two add without a wrap](decisions/0682-a-js-strings-length-is-at-most-int32-max.md) *(amended by 0701: an array of sized items is at most `2^31 - 1` long too)*
 - [0633 A binding named through a module is read through it](decisions/0633-a-binding-named-through-a-module-is-read-through-it.md)
-- [0634 A registered symbol is a `const`, and a `match` of them a `switch`](decisions/0634-a-registered-symbol-is-a-const.md)
+- [0634 A registered symbol is a `const`, and a `match` of them a `switch`](decisions/0634-a-registered-symbol-is-a-const.md) *(amended by 0771: an `==` of a `Some` is the `matches!` form)*
 - [0635 A `filter` by truth, then a fallback, is `||`](decisions/0635-a-filter-by-truth-then-a-fallback-is-or.md) *(extended by 0646: a chain held, then its fallback; 0651: a `let`, then its fallback)*
 - [0636 A guarded arm of a `match` of constants is a case](decisions/0636-a-guarded-arm-is-a-case.md)
 - [0637 A `match` of a throwing call's `Result` is `try` and `catch`](decisions/0637-a-match-of-a-throwing-call-is-try-catch.md) *(amended by 0639: whether a call threw is `try`; 0660: `catch_unwind`'s too, and `unwrap_or(d)` returned; amended: an `Ok` arm that leaves, nothing after it, `catch {}`)*
@@ -663,6 +663,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0752 An `Option`'s function unwrapped and called panics before the call](decisions/0752-an-unwrapped-function-called-panics-first.md)
 - [0753 A branch of only comments keeps them](decisions/0753-a-branch-of-only-comments-keeps-them.md)
 - [0770 A library's `const` is imported by its name, as its crate reads it](decisions/0770-a-librarys-const-is-imported-by-its-name.md)
+- [0771 An `==` of a value read as the registry's symbol is its `matches!`](decisions/0771-an-equality-of-a-registered-symbol-is-its-match.md)
 - [0720 A labeled block's `break` and a named constant, in a body's ranges](decisions/0720-a-labeled-block-and-a-named-constant-in-a-bodys-ranges.md)
 - [0721 `js::strict_equals(a, b)` is JS's `===`](decisions/0721-strict-equals-is-jss-triple-equals.md)
 - [0722 A `#[repr(..)]` enum's variant is its number](decisions/0722-a-repr-enums-variant-is-its-number.md)

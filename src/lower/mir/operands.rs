@@ -256,6 +256,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             return self.mir_const(state, &referred);
         }
+        // A promoted `&Some(C)` of a named one rust-js compiled: its code,
+        // `Some` of `C` by its name, as `Some(C)` written elsewhere is
+        // (ADR 0771).
+        if let Const::Unevaluated(uv, _) = c.const_
+            && let Some(promoted) = uv.promoted
+            && let Some(inside) = promoted_some(tcx, &state.promoted[promoted])
+            && let Const::Unevaluated(named, _) = inside.const_
+            && named.promoted.is_none()
+            && matches!(tcx.def_kind(named.def), DefKind::Const { .. })
+            && self.is_rust_fn(named.def)
+        {
+            return self.const_as_code(Mir::new(tcx, state.promoted[promoted].clone(), IndexVec::new()));
+        }
         // A named constant (ADR 0031); a `const { .. }` block, its value, or as
         // one (ADR 0127).
         if let Const::Unevaluated(uv, _) = c.const_
