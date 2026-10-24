@@ -215,7 +215,8 @@ an optional property: an `Option` of its value, `None` where the host
 hasn't it, as reading a missing property gives `undefined` and throws
 nothing. V8's `console.createTask` is `webapi::console::create_task()`,
 typed as React's Flow declares it, and the `ConsoleTask` it makes runs
-what it's given, `task.run(f)`
+what it's given, `task.run(f)`, declared as Flow's interface is, the
+object type `{ run<T>(f: () => T): T }`
 ([ADR 0811](../../decisions/0811-console-create-task-may-be-absent.md)):
 
 ```rust

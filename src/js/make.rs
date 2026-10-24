@@ -164,6 +164,60 @@ impl Expr {
         }
     }
 
+    /// A template's value that's a template itself, a function's body put
+    /// in place of its call, `${`(${a}, ${b})`}`, or a value's text in one,
+    /// `${`${x}`}`: its text and values in the outer's, `(${a}, ${b})`, as
+    /// a template makes each value's text the same either way. Of an inner
+    /// of one piece on one line, and not of one with text into a piece
+    /// written across lines, whose line breaks are as they are where the
+    /// inner's are `\n`; one of values alone has none (ADR 0066).
+    pub fn splice_templates(&mut self) {
+        let ExprKind::Template(texts, values, layout) = &mut self.kind else {
+            return;
+        };
+        let outer_lines = layout.lines || layout.breaks.iter().any(|at| at.lines);
+        let splices = |v: &Expr| {
+            matches!(&v.kind, ExprKind::Template(inner_texts, _, inner)
+                if inner.is_plain() && (!outer_lines || inner_texts.iter().all(String::is_empty)))
+        };
+        if !values.iter().any(splices) {
+            return;
+        }
+        // Where each of the outer's texts is now, its index and how far into
+        // it: so `concat!`'s pieces break where they did (ADR 0641).
+        let mut moved = vec![(0, 0)];
+        let (mut spliced_texts, mut spliced_values) = (vec![texts[0].clone()], Vec::new());
+        for (value, after) in std::mem::take(values).into_iter().zip(texts.iter().skip(1)) {
+            let spliced = splices(&value);
+            match value.kind {
+                ExprKind::Template(inner_texts, inner_values, _) if spliced => {
+                    let mut inner = inner_texts.into_iter();
+                    spliced_texts
+                        .last_mut()
+                        .expect("a text")
+                        .push_str(&inner.next().unwrap_or_default());
+                    for (inner_value, inner_text) in inner_values.into_iter().zip(inner) {
+                        spliced_values.push(inner_value);
+                        spliced_texts.push(inner_text);
+                    }
+                }
+                _ => {
+                    spliced_values.push(value);
+                    spliced_texts.push(String::new());
+                }
+            }
+            let last = spliced_texts.last_mut().expect("a text");
+            moved.push((spliced_values.len(), last.len()));
+            last.push_str(after);
+        }
+        for at in &mut layout.breaks {
+            let (text, shift) = moved[at.text];
+            (at.text, at.at) = (text, shift + at.at);
+        }
+        *texts = spliced_texts;
+        *values = spliced_values;
+    }
+
     pub fn undefined() -> Expr {
         Expr::new(ExprKind::Undefined)
     }

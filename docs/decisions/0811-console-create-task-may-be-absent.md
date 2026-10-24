@@ -1,6 +1,7 @@
 # 0811. `console.createTask` is a property the host may lack
 
-Status: Accepted. Extends [0597](0597-whether-the-host-has-a-global-is-is-defined.md):
+Status: Accepted. Amended: `#[rust_js::types]` is a TypeScript type, read
+into the declaration model, one it can't read an error. Extends [0597](0597-whether-the-host-has-a-global-is-is-defined.md):
 a member no TypeScript lib declares.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): none: the program reads
@@ -122,3 +123,100 @@ export function debugTask() {
 - `test/webapi-coverage.test.ts`: `webapi/src/lib.rs` is what
   `webapi/generate.ts` writes.
 - The guide's [global scope](../guide/interop/global-scope.md#a-global-some-hosts-lack).
+
+## Amendment: `#[rust_js::types]` is a TypeScript type, read
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none at run time; a
+declaration TypeScript reads as the Rust is.
+
+`ConsoleTask`'s `#[rust_js::types = "{ run<T>(f: () => T): T }"]` was
+declared `{ run<T>(f: () => T): T }>`: `#[rust_js::types]` had two
+splitters, `written`'s and a type alias's, each taking a value apart at
+its first `<` and its last `#`, and printing the rest as a name. A field
+`#[rust_js::nullable] debug_task: Option<&'static ConsoleTask>` was
+`debugTask?: { run<T>(f: () => T): T }> | null | undefined;`, which isn't
+TypeScript, and an app's Prettier failed its whole build on it, as
+react-in-rust's react crate's did. A union, `string | URL`, the value of
+eighty of webapi's, came out right only as a name TypeScript's printer
+wrote as it was given; `next`'s `string | import("next/image").StaticImageData`
+did too.
+
+**The value of `#[rust_js::types]` is a TypeScript type, which one reader,
+`src/lower/declarations/written.rs`, reads into the declaration model's
+parts**, printed by TypeScript as every other type is (ADR 0207):
+
+| Written | Read |
+|---|---|
+| `Element`, `chart.js#Chart`, `NodeJS.TypedArray`, `Map<string, T>`, `ReactNode<>` | a `reference`, imported from its module, with its arguments |
+| `string`, `null`, `unknown` | a `keyword` |
+| `"auto"` | a `literal` |
+| `string \| URL` | a `union` |
+| `T[]`, `readonly T[]` | an `array` |
+| `<T>(f: () => T) => T` | a `function`, with its own type parameters |
+| `{ readonly a?: T; run<T>(f: () => T): T; [key: string]: T }` | an `object` of `property`, `method` and `index` members |
+
+A name that's one of the Rust type's type parameters is the type it's
+given, as before, anywhere in it now, but where a function or method has
+a parameter of its name: `run<T>`'s `T` is its own. A name alone takes the
+Rust type's arguments, `<>` none (ADR 0224); an alias's arguments end at
+the first left to its default (ADR 0196). **One it doesn't read is a
+compile error where it's written**, of a program, and of a binding crate
+as `rust-js --rustc` builds it, saying what it reads: never a declaration
+made of text it couldn't. `next`'s three `import("m").T` are `m#T`, the
+one way a type names its module, which a union may now hold. What asked
+of the text, whether it's `symbol`, `unknown` or `any`, or an object
+literal, asks of what's read.
+
+ConsoleTask's `.d.ts`, before and after:
+
+```ts
+debugTask?: { run<T>(f: () => T): T }> | null | undefined;
+```
+
+```ts
+debugTask?: {
+    run<T>(f: () => T): T;
+} | null | undefined;
+```
+
+### Why
+
+- **One rule, the one the attribute had already**: its values were
+  TypeScript types, unions, `{ expire?: number }`, `{ [key: string]: T }`,
+  each by a rule of its own or none. A reader of TypeScript's types, what
+  bindings write, is one rule for all of them; an object type is one of
+  them, as Flow's `ConsoleTask` is.
+- **Correctness first**: a type rust-js couldn't read was printed as a
+  name, which TypeScript's printer wrote however it read; a compile error
+  that says what to write is the only other answer.
+- **The model, not text**: what's read is the parts TypeScript prints, so
+  the `.d.ts` is laid out as TypeScript lays out its own, an object's
+  members each a line, and a later pass asks of its parts.
+
+### Alternatives
+
+- **A declared interface, `interface ConsoleTask { run<T>(f: () => T): T }`,
+  that the attribute names, `ConsoleTask`**: no binding crate declares
+  types of its own, so it would be a second place a binding says what its
+  type is, a declaration each crate's `.d.ts` would need, of a crate that
+  names it from another crate's; and every other object type
+  `#[rust_js::types]` holds would still need reading.
+- **TypeScript's own parser, in @rust-js/typescript**: the compiler would
+  print a type it couldn't check, and a value's type parameters, which
+  are the Rust type's arguments, would be substituted in text.
+- **Keeping `import("m").T`**: a second way to name a module's type.
+- **Intersections, `A & B`, and `typeof x`**: no binding writes one; one is
+  the error saying what it reads, until a binding needs one.
+
+### What holds it
+
+- `test/declarations.test.ts`, "a binding's object type is declared as
+  TypeScript has it": a nullable field of `&'static ConsoleTask` and a
+  function's `Option<&'static ConsoleTask>`, checked by tsc under each
+  tsconfig, and a type of `T` whose method has a `T` of its own.
+- `test/declarations.test.ts`, "a #[rust_js::types] the compiler can't read
+  is an error saying what it reads": of a program and of `rust-js --rustc`.
+- Every shipped binding crate's build: `react/build.sh` (js and webapi),
+  `node/build.sh`, and `next`'s, which each read every value they hold.
+- `scripts/mutations/lower/declarations.ts`'s mutations of the reader and
+  its use.

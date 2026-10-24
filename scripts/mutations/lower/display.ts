@@ -205,4 +205,28 @@ export const mutations: Mutation[] = [
     replace: "        match ty.kind() {\n            ty::Adt(_, args) if self.shows_inside(ty)",
     tests: ["test/corpus.test.ts", "-t", "^refused_drops_and_displays.rs$"],
   },
+  {
+    name: "shown-text-taken-apart",
+    breaks: "`${n}` given to `join` alone is taken apart, `n`, a number where a `String` is text",
+    file: "src/lower/display.rs",
+    find: "    if is_shown_text(&e) {\n        return vec![e];\n    }\n",
+    replace: "",
+    tests: ["test/bindings.test.ts", "-t", "js::shown's text is text"],
+  },
+  {
+    name: "shown-texts-added",
+    breaks: "`format!(\"{}{}\", js::shown(a), js::shown(b))` is `${a}` + `${b}`, not one template, `${a}${b}`",
+    file: "src/lower/display.rs",
+    find: "    let strings_alone = !pieces.iter().any(|p| is_text(p) || is_shown_text(p));\n",
+    replace: "    let strings_alone = !pieces.iter().any(is_text);\n",
+    tests: ["test/bindings.test.ts", "-t", "js::shown's text is text"],
+  },
+  {
+    name: "separable-strings-added",
+    breaks: "a `write!` of strings alone that fails part way is `s += a + b`, which loses what came before the one that fails",
+    file: "src/lower/display.rs",
+    find: "strings_alone && !(separable && pieces.len() > 1)",
+    replace: "strings_alone",
+    tests: ["test/corpus.test.ts", "-t", "^format_values_alone.rs$"],
+  },
 ];

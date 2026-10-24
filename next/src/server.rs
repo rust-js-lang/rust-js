@@ -117,7 +117,7 @@ pub mod next_response {
 /// What a `string | NextURL | URL` parameter takes: each as it is
 /// (ADR 0229).
 #[diagnostic::on_unimplemented(message = "`{Self}` is not a `string | NextURL | URL`")]
-#[cfg_attr(rust_js, rust_js::types = "string | import(\"next/dist/server/web/next-url\").NextURL | URL")]
+#[cfg_attr(rust_js, rust_js::types = "string | next/dist/server/web/next-url#NextURL | URL")]
 pub trait IntoUrl: sealed::Sealed {}
 impl IntoUrl for &str {}
 impl IntoUrl for &String {}

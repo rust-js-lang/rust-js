@@ -210,4 +210,12 @@ export const mutations: Mutation[] = [
     replace: "return Ok(Expr::str(\"an error\"));",
     tests: ["test/corpus.test.ts", "-t", "str_odds"],
   },
+  {
+    name: "shown-displayed-as-itself",
+    breaks: "`js::shown(n).to_string()`, and a `T: Display` given it, is `n`, a number, not its text, `${n}`",
+    file: "src/lower/display/written.rs",
+    find: "            return Ok(shown_text(value));\n",
+    replace: "            return Ok(value);\n",
+    tests: ["test/bindings.test.ts", "-t", "js::shown's text is text"],
+  },
 ];

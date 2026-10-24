@@ -414,7 +414,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(super) fn radix_text(&mut self, value: Expr, num: Num, radix: Radix, pretty: &Pretty) -> Expr {
         let digits = radix.digits(value, num);
         let text = match pretty.known() {
-            Some(true) => Expr::bin(Op::Add, Expr::str(radix.prefix()), digits),
+            Some(true) => join(vec![Expr::str(radix.prefix()), digits]),
             Some(false) => digits,
             None => {
                 let prefix = Expr::cond(pretty.alternate(), Expr::str(radix.prefix()), Expr::str(""));
@@ -455,6 +455,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ty::Adt(_, args) if self.shows_inside(ty) => args.types().next().expect("what it holds").peel_refs(),
             _ => ty,
         }
+    }
+
+    /// Whether `ty`'s `Display::fmt` is a binding of the value itself,
+    /// `#[link_name = "this"]`, `js::shown`'s: its text is what JS's
+    /// template makes of the value, `shown_text` (ADR 0312).
+    pub(super) fn displays_itself(&self, ty: Ty<'tcx>) -> bool {
+        let Some(fmt) = self.recognition().display_fmt() else {
+            return false;
+        };
+        let args = self.tcx.mk_args(&[self.tcx.erase_and_anonymize_regions(ty).into()]);
+        matches!(self.resolve_instance(fmt, args), Ok(Some(instance))
+            if bindings::is_binding(self.tcx, instance.def_id())
+                && matches!(bindings::js_form(self.tcx, instance.def_id()), bindings::JsForm::This))
     }
 
     /// `ToString`, which is `alloc`'s: a `#![no_std]` crate that doesn't load
@@ -606,12 +619,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 }
 
 /// Strings joined: text alone is a string, text and values a template
-/// literal, \`Some(${x})\`, and values alone `a + b`. A part that's itself
-/// strings joined is taken apart, so templates don't nest needlessly.
+/// literal, \`Some(${x})\`, and strings alone `a + b`. A part that's itself
+/// strings joined is taken apart, so templates don't nest needlessly; but
+/// not a template of values alone, \`${x}\`, `shown_text`'s, whose values
+/// only a template makes text of, which makes what it's in a template,
+/// \`${x}${s}\` (ADR 0066).
 pub(super) fn join(parts: Vec<Expr>) -> Expr {
+    joined(parts, false)
+}
+
+/// `join`, or, `separable`, of what's written piece by piece, as what may
+/// fail is (`append_written`): strings alone a template, \`${a}${b}\`,
+/// whose pieces are there to take apart, where `a + b` is one (ADR 0187).
+fn joined(parts: Vec<Expr>, separable: bool) -> Expr {
     let pieces = merged(parts);
     let is_text = |p: &Expr| matches!(p.kind, js::ExprKind::Str(_));
-    if pieces.iter().all(is_text) || !pieces.iter().any(is_text) {
+    let strings_alone = !pieces.iter().any(|p| is_text(p) || is_shown_text(p));
+    if pieces.iter().all(is_text) || strings_alone && !(separable && pieces.len() > 1) {
         return pieces
             .into_iter()
             .reduce(|a, b| Expr::bin(Op::Add, a, b))
@@ -621,14 +645,30 @@ pub(super) fn join(parts: Vec<Expr>) -> Expr {
     Expr::template(texts, values)
 }
 
+/// The text JS's template makes of `value`, \`${value}\`, as `js::shown`'s
+/// `Display` writes it (ADR 0312): a string, where the value itself may be
+/// a number or an object. It stays a template inside a template, so that
+/// what takes one apart, `append_written`'s `+=` piece by piece, appends
+/// text, not the value; preparation splices it into the outer one.
+pub(super) fn shown_text(value: Expr) -> Expr {
+    Expr::template(vec![String::new(), String::new()], vec![value])
+}
+
+/// Whether `e` is a template of values alone, \`${x}\`, which is text only
+/// as a template: `shown_text`'s, or one made of such.
+fn is_shown_text(e: &Expr) -> bool {
+    matches!(&e.kind, js::ExprKind::Template(texts, ..) if texts.iter().all(String::is_empty))
+}
+
 /// Strings joined as their format string is written, `pieces` of it, each
 /// its parts and whether it's written across lines: one, as `join` joins
 /// it; `concat!`'s, each a template where it holds a value and otherwise
-/// a string, joined by `+` (ADR 0641).
-pub(super) fn join_written(mut pieces: Vec<(Vec<Expr>, bool)>) -> Expr {
+/// a string, joined by `+` (ADR 0641). `separable`, of what's written
+/// piece by piece, as `joined` says.
+pub(super) fn join_written(mut pieces: Vec<(Vec<Expr>, bool)>, separable: bool) -> Expr {
     if pieces.len() == 1 {
         let (parts, lines) = pieces.pop().expect("a piece");
-        return join(parts).with_lines(lines);
+        return joined(parts, separable).with_lines(lines);
     }
     let pieces = (pieces.into_iter())
         .map(|(parts, lines)| {
@@ -658,7 +698,8 @@ fn merged(parts: Vec<Expr>) -> Vec<Expr> {
     pieces
 }
 
-/// A template's texts and values of `pieces`, its text and values in turn.
+/// A template's texts and values of `pieces`, its text and values in turn:
+/// a `shown_text` among them a value of it, a template in a template.
 fn texts_and_values(pieces: Vec<Expr>) -> (Vec<String>, Vec<Expr>) {
     let (mut texts, mut values) = (vec![String::new()], Vec::new());
     for piece in pieces {
@@ -683,10 +724,15 @@ fn unstringed(value: Expr) -> Expr {
     }
 }
 
-/// The pieces of strings joined: of a template, its texts and values; of
-/// `"(" + a + ")"`, which starts with a string, so that each `+` in it
-/// concatenates, its operands. Anything else is one piece.
+/// The pieces of strings joined: of a template, its texts and values, which
+/// go back into one, as there's text among them; of `"(" + a + ")"`, which
+/// starts with a string, so that each `+` in it concatenates, its operands.
+/// Anything else is one piece, a template of values alone too, whose values
+/// may not be text (`shown_text`).
 fn joined_pieces(e: Expr) -> Vec<Expr> {
+    if is_shown_text(&e) {
+        return vec![e];
+    }
     if let js::ExprKind::Template(texts, values, _) = e.kind {
         let mut pieces = Vec::new();
         let mut values = values.into_iter();
@@ -698,25 +744,7 @@ fn joined_pieces(e: Expr) -> Vec<Expr> {
         }
         return pieces;
     }
-    let mut pieces = Vec::new();
-    let mut rest = e;
-    while let js::ExprKind::Binary(Op::Add, left, right) = rest.kind {
-        pieces.push(*right);
-        rest = *left;
-    }
-    let starts_with_string = matches!(rest.kind, js::ExprKind::Str(_));
-    pieces.push(rest);
-    pieces.reverse();
-    if starts_with_string || pieces.len() == 1 {
-        pieces
-    } else {
-        vec![
-            pieces
-                .into_iter()
-                .reduce(|a, b| Expr::bin(Op::Add, a, b))
-                .expect("a piece"),
-        ]
-    }
+    vec![e]
 }
 
 fn is_var(e: &Expr, name: &str) -> bool {
