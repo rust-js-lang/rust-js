@@ -339,9 +339,9 @@ pub fn rejected(promise: Promise<String>, reason: &str) -> &'static PromiseRejec
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain('return new ErrorEvent("error", { bubbles: true, cancelable: true, message, error });');
+  expect(js).toContain('return new ErrorEvent("error", {\n    bubbles: true,\n    cancelable: true,\n    message,\n    error,\n  });');
   expect(js).toContain('return new CustomEvent("moved", { detail: { x } });');
-  expect(js).toContain('return new PromiseRejectionEvent("unhandledrejection", { promise, reason });');
+  expect(js).toContain('return new PromiseRejectionEvent("unhandledrejection", {\n    promise,\n    reason,\n  });');
   const globals = globalThis as any;
   const previous = [globals.ErrorEvent, globals.CustomEvent, globals.PromiseRejectionEvent];
   const made = (name: string) => class {

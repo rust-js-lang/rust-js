@@ -43,11 +43,13 @@ pub struct OutputPlan {
 /// build read.
 pub type DepInfo = Box<dyn FnOnce(&[PathBuf]) -> Result<Vec<u8>, String>>;
 
-/// A module's JS, as rust-js lays it out, and where it's written.
+/// A module's JS, as rust-js lays it out, where it's written, and where
+/// it goes in source, beside its Rust (`in_source`).
 struct Laid {
     js_file_name: String,
     js_path: PathBuf,
     file: PathBuf,
+    destination: PathBuf,
     printed: to_oxc::Output,
 }
 
@@ -72,6 +74,7 @@ impl OutputPlan {
             .collect();
         for module in modules {
             let js_path = self.js_path(&module.path);
+            let destination = self.in_source(&module)?;
             let rust_path = module.file.clone().unwrap_or_else(|| self.input.clone());
             let specified = |imports: &[program::LoweredImport]| {
                 imports
@@ -192,6 +195,7 @@ impl OutputPlan {
                 js_file_name: js_file_name.into_owned(),
                 js_path: js_path.clone(),
                 file,
+                destination: destination.clone(),
                 printed,
             });
             // What it exports, typed, for the TypeScript that imports it (ADR 0196).
@@ -212,26 +216,34 @@ impl OutputPlan {
                     };
                     object.insert("from".into(), from_here(&from).into());
                 }
-                typed.push((types_path(&js_path), declarations));
+                typed.push((types_path(&js_path), types_path(&destination), declarations));
             }
         }
         // Printed by TypeScript, all in one session of its (ADR 0207).
         let mut declared = Vec::new();
+        let mut declared_destinations = Vec::new();
         if !typed.is_empty() {
-            let (paths, models): (Vec<PathBuf>, Vec<serde_json::Value>) = typed.into_iter().unzip();
+            let mut paths = Vec::new();
+            let mut models = Vec::new();
+            for (path, destination, model) in typed {
+                paths.push(path);
+                declared_destinations.push(destination);
+                models.push(model);
+            }
             declared = paths
                 .into_iter()
                 .zip(crate::typescript::print(&self.settings, &models)?)
                 .collect();
         }
         // Laid out by the app's Prettier, each file it has a config for, all
-        // in one session of it (ADR 0381).
+        // in one session of it (ADR 0381), by its config for where the file
+        // goes, beside its Rust, as the app's `prettier --check` reads it.
         let mut files = Vec::new();
         for laid in &laid {
-            files.push((laid.file.clone(), laid.printed.code.as_str()));
+            files.push((laid.destination.clone(), laid.printed.code.as_str()));
         }
-        for (path, text) in &declared {
-            files.push((absolute(path)?, text.as_str()));
+        for (destination, (_, text)) in declared_destinations.into_iter().zip(&declared) {
+            files.push((destination, text.as_str()));
         }
         let prettier = crate::prettier::laid_out(&self.settings, &files)?;
         let (js_texts, types_texts) = prettier.texts.split_at(laid.len());
@@ -241,6 +253,7 @@ impl OutputPlan {
                 js_path,
                 file,
                 printed: to_oxc::Output { code, map },
+                ..
             } = laid;
             // The same program, its map moved to Prettier's layout, as a
             // transform's is; or rust-js's, and a warning says why.

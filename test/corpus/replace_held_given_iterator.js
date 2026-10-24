@@ -35,7 +35,10 @@ function restartIterator_next(restart, IIterator, IClone) {
 }
 
 function main() {
-  const ranges = { iter: { start: 0, end: 2 }, orig: { start: 5, end: 7 } };
+  const ranges = {
+    iter: { start: 0, end: 2 },
+    orig: { start: 5, end: 7 },
+  };
   const all = $iterator(
     ranges,
     (iterator) =>
@@ -49,7 +52,10 @@ function main() {
     .take(5)
     .toArray();
   console.log(`[${all.join(", ")}]`);
-  const items = { iter: $iter(["a", "b"]), orig: $iter(["x"]) };
+  const items = {
+    iter: $iter(["a", "b"]),
+    orig: $iter(["x"]),
+  };
   restartIterator_next(
     items,
     { next: $next },

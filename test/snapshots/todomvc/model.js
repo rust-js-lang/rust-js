@@ -6,7 +6,11 @@ export function reduce(todos, action) {
   if (action.TAG === "Add") {
     const id = (($max(todos.map((todo) => todo.id)) ?? 0) + 1) >>> 0;
     const next = todos.slice();
-    next.push({ id, title: action._0, completed: false });
+    next.push({
+      id,
+      title: action._0,
+      completed: false,
+    });
     return next;
   }
   if (action.TAG === "Toggle") {
@@ -19,14 +23,24 @@ export function reduce(todos, action) {
   }
   if (action.TAG === "ToggleAll") {
     const captured = action._0;
-    return todos.map((todo) => ({ completed: captured, id: todo.id, title: todo.title }));
+    return todos.map((todo) => ({
+      completed: captured,
+      id: todo.id,
+      title: todo.title,
+    }));
   }
   if (action.TAG === "Edit") {
     const value = $iter(todos);
     const { _0: captured, _1: captured$1 } = action;
     return value
       .map((todo) =>
-        todo.id === captured ? { title: captured$1, id: todo.id, completed: todo.completed } : todo,
+        todo.id === captured
+          ? {
+              title: captured$1,
+              id: todo.id,
+              completed: todo.completed,
+            }
+          : todo,
       )
       .toArray();
   }

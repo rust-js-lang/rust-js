@@ -371,7 +371,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let nullish = matches!(value.kind, js::ExprKind::Undefined | js::ExprKind::Null);
         let literal = matches!(
             value.kind,
-            js::ExprKind::Array(_) | js::ExprKind::Object(_) | js::ExprKind::Template(..)
+            js::ExprKind::Array(_) | js::ExprKind::Object(..) | js::ExprKind::Template(..)
         );
         if (value.is_constant() && !nullish) || literal {
             return value;
@@ -481,7 +481,7 @@ const SOME_NONE: &str = "$someNone";
 pub(in crate::lower) fn some_literal(inner: Expr) -> Expr {
     let depth = match &inner.kind {
         js::ExprKind::Undefined | js::ExprKind::Null => 0,
-        js::ExprKind::Object(props) => match props.as_slice() {
+        js::ExprKind::Object(props, ..) => match props.as_slice() {
             [Prop::Field(name, depth)] if name == SOME_NONE => match depth.as_int() {
                 Some(n) => n + 1,
                 None => return inner,

@@ -242,4 +242,12 @@ export const mutations: Mutation[] = [
     replace: "            '\\u{AD}' | '\\u{200D}' | '\\u{FE0F}'\n",
     tests: ["test/lowering-strings.test.ts", "-t", "written as its escape"],
   },
+  {
+    name: "objects-across-lines-untold",
+    breaks: "the formatter isn't told which objects are written across lines, and every object is on one line where it fits (ADR 0835)",
+    file: "src/to_oxc/expressions.rs",
+    find: "                    self.across_lines.borrow_mut().insert(&**made as *const _);\n",
+    replace: "                    let _ = made;\n",
+    tests: ["test/lowering-structs-enums.test.ts", "-t", "across lines where"],
+  },
 ];

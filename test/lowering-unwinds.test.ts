@@ -765,7 +765,7 @@ pub fn changed(mut previous: u32) -> u32 {
   } finally {
     if (prevProps != null) {`);
   // A variable set once the guard's made isn't what the guard holds.
-  expect(js).toContain("const _restore = { previous, dispatcher: previous };");
+  expect(js).toContain("const _restore = {\n    previous,\n    dispatcher: previous,\n  };");
   expect(js).toContain("globalThis.restored(_restore.previous, _restore.dispatcher);");
   const lib = await import(join(dir, "lib.js"));
   const g = globalThis as Record<string, unknown>;

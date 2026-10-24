@@ -515,7 +515,7 @@ pub(super) fn tuple_reads(
                             | ExprKind::Handle(_, _)
                             | ExprKind::New(..)
                             | ExprKind::Array(_)
-                            | ExprKind::Object(_)
+                            | ExprKind::Object(..)
                             | ExprKind::Jsx(_)
                             | ExprKind::Arrow(..)
                             | ExprKind::AsyncArrow(..)
@@ -557,7 +557,7 @@ pub(super) fn projected(e: &Expr) -> Option<Expr> {
     };
     let field = field_of(f)?;
     let values = items.iter().map(|item| match &item.kind {
-        ExprKind::Object(props) => {
+        ExprKind::Object(props, ..) => {
             let mut value = None;
             for prop in props {
                 match prop {

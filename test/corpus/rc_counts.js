@@ -238,7 +238,11 @@ function main() {
     }
 
     const leaf = {
-      value: { name: "leaf", parent: { value: { strong: 0, weak: 0 } }, children: { value: [] } },
+      value: {
+        name: "leaf",
+        parent: { value: { strong: 0, weak: 0 } },
+        children: { value: [] },
+      },
       strong: 1,
       weak: 0,
     };
@@ -336,7 +340,11 @@ function main() {
       throw error;
     }
     const branch = {
-      value: { name: "branch", parent: value$2, children: { value: tmp$3 } },
+      value: {
+        name: "branch",
+        parent: value$2,
+        children: { value: tmp$3 },
+      },
       strong: 1,
       weak: 0,
     };

@@ -43,7 +43,7 @@ impl Expr {
                 args.iter().for_each(|a| a.visit_vars(read));
             }
             ExprKind::Array(items) | ExprKind::Template(_, items, _) => items.iter().for_each(|a| a.visit_vars(read)),
-            ExprKind::Object(fields) => props(fields, read),
+            ExprKind::Object(fields, ..) => props(fields, read),
             ExprKind::Arrow(_, body) | ExprKind::AsyncArrow(_, body) => visit_stmts(body, read),
             ExprKind::Function(function) => visit_stmts(&function.body, read),
             ExprKind::Jsx(jsx) => {
@@ -153,7 +153,7 @@ impl Expr {
             ExprKind::Index(a, b) => ExprKind::Index(one(a)?, one(b)?),
             ExprKind::OptionalIndex(a, b) => ExprKind::OptionalIndex(one(a)?, one(b)?),
             ExprKind::Array(items) => ExprKind::Array(all(items)?),
-            ExprKind::Object(fields) => ExprKind::Object(props(fields)?),
+            ExprKind::Object(fields, layout) => ExprKind::Object(props(fields)?, *layout),
             ExprKind::Unary(op, a) => ExprKind::Unary(*op, one(a)?),
             ExprKind::Binary(op, a, b) => ExprKind::Binary(*op, one(a)?, one(b)?),
             ExprKind::Cond(a, b, c) => ExprKind::Cond(one(a)?, one(b)?, one(c)?),
@@ -326,7 +326,7 @@ impl Expr {
     /// `dyn`'s pair made of what does nothing, `{ value: f.last, impl:
     /// f.impl }`, whose `value` and `impl` are those (ADR 0409).
     pub fn parts_read_same(&self) -> bool {
-        self.reads_same() || matches!(&self.kind, ExprKind::Object(props) if is_read_pair(props))
+        self.reads_same() || matches!(&self.kind, ExprKind::Object(props, ..) if is_read_pair(props))
     }
 
     pub fn reads_same(&self) -> bool {
@@ -365,7 +365,7 @@ impl Expr {
             ExprKind::Binary(_, a, b) => a.reads_only_vars() && b.reads_only_vars(),
             ExprKind::Cond(a, b, c) => a.reads_only_vars() && b.reads_only_vars() && c.reads_only_vars(),
             ExprKind::Array(items) | ExprKind::Template(_, items, _) => items.iter().all(Expr::reads_only_vars),
-            ExprKind::Object(items) => props(items),
+            ExprKind::Object(items, ..) => props(items),
             ExprKind::Jsx(jsx) => {
                 let tag = match &jsx.tag {
                     JsxTag::Component(c) => c.reads_only_vars(),
@@ -504,7 +504,7 @@ impl Expr {
                 object.has_effects() || index.has_effects()
             }
             ExprKind::Array(items) | ExprKind::Template(_, items, _) => items.iter().any(Expr::has_effects),
-            ExprKind::Object(props) => props.iter().any(|p| match p {
+            ExprKind::Object(props, ..) => props.iter().any(|p| match p {
                 Prop::Field(_, value) | Prop::Getter(_, value) | Prop::Setter(_, value) | Prop::Spread(value) => {
                     value.has_effects()
                 }

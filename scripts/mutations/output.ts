@@ -242,4 +242,20 @@ export const mutations: Mutation[] = [
     replace: "folded.insert(path.to_string_lossy().to_string(), path)",
     tests: ["test/emission.test.ts", "-t", "differ only by case"],
   },
+  {
+    name: "prettier-at-the-built-path",
+    breaks: "the app's Prettier is asked for a file's config where Cargo's build has it, in its target directory, and an override by path, React's `trailingComma: 'all'` of `packages/*/src/**/*.js`, is never the file's (ADR 0381)",
+    file: "src/output.rs",
+    find: "            files.push((laid.destination.clone(), laid.printed.code.as_str()));\n",
+    replace: "            files.push((laid.file.clone(), laid.printed.code.as_str()));\n",
+    tests: ["test/settings.test.ts", "-t", "overrides for where the file goes"],
+  },
+  {
+    name: "prettier-declarations-at-the-built-path",
+    breaks: "the app's Prettier is asked for a `.d.ts`'s config where Cargo's build has it, and an override by path is never its (ADR 0381)",
+    file: "src/output.rs",
+    find: "                typed.push((types_path(&js_path), types_path(&destination), declarations));\n",
+    replace: "                typed.push((types_path(&js_path), types_path(&js_path), declarations));\n",
+    tests: ["test/settings.test.ts", "-t", "overrides for where the file goes"],
+  },
 ];

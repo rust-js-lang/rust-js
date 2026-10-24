@@ -6,11 +6,17 @@ export function entry() {
 
 const Bytes = {
   zeroed(CAP) {
-    return { xs: new Array(CAP).fill(0), len: 0 };
+    return {
+      xs: new Array(CAP).fill(0),
+      len: 0,
+    };
   },
 
   uninit(CAP) {
-    return { xs: Array.from({ length: CAP }), len: 0 };
+    return {
+      xs: Array.from({ length: CAP }),
+      len: 0,
+    };
   },
 
   sum(bytes, CAP) {

@@ -350,7 +350,7 @@ fn leads(e: &Expr, name: &str, guard: Option<&Expr>, passes: &dyn Fn(&Expr) -> b
             in_order(&mut std::iter::once(&**receiver).chain(args))
         }
         ExprKind::Call(f, args) | ExprKind::New(f, args) => in_order(&mut std::iter::once(&**f).chain(args)),
-        ExprKind::Object(props) => in_order(&mut props.iter().map(|p| {
+        ExprKind::Object(props, ..) => in_order(&mut props.iter().map(|p| {
             let (js::Prop::Field(_, v) | js::Prop::Getter(_, v) | js::Prop::Setter(_, v) | js::Prop::Spread(v)) = p;
             v
         })),

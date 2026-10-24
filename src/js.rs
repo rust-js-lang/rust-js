@@ -523,6 +523,16 @@ impl TemplateLayout {
     }
 }
 
+/// How an object's source writes it: across lines, its first field on a
+/// line after its `{`, as rustfmt lays out a struct literal too long for
+/// one, which its JS keeps on lines of its own, as Prettier keeps an
+/// object a person wrote so; or on one line, which its JS is on where it
+/// fits (ADR 0835). One no source writes, a representation's, is on one.
+#[derive(Clone, Copy, PartialEq, Eq, Default)]
+pub struct ObjectLayout {
+    pub lines: bool,
+}
+
 /// Where a template's source breaks it into its next piece: in a text, by
 /// its index, at a byte offset in it, as a value is never broken.
 #[derive(Clone, PartialEq)]
@@ -576,8 +586,9 @@ pub enum ExprKind {
     Array(Vec<Expr>),
     /// `...a`, an array's item only: `[...path, last]`, a slice's `concat`.
     Spread(Box<Expr>),
-    /// `{ x: a, y: b }`: a struct (ADR 0020).
-    Object(Vec<Prop>),
+    /// `{ x: a, y: b }`: a struct (ADR 0020), and how its literal is
+    /// written in its source, across lines or on one (ADR 0835).
+    Object(Vec<Prop>, ObjectLayout),
     Unary(UnaryOp, Box<Expr>),
     Binary(Op, Box<Expr>, Box<Expr>),
     Cond(Box<Expr>, Box<Expr>, Box<Expr>),

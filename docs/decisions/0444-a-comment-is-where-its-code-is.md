@@ -1,6 +1,7 @@
 # 0444. A comment is in the JS where its code is, and so is a blank line
 
-Status: Accepted. Extends [0383](0383-a-files-leading-comments-are-its-jss.md),
+Status: Accepted. Extended by [0835](0835-an-object-is-across-lines-where-its-literal-is.md):
+an object is across lines where its struct literal is. Extends [0383](0383-a-files-leading-comments-are-its-jss.md),
 whose rules for what JS can hold are now every comment's, and
 [0018](0018-print-with-oxc.md). Its amendment, a branch's comment keeps it a statement, is
 superseded by [0658](0658-a-comment-before-a-branchs-value-is-before-it-in-the-conditional.md):

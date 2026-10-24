@@ -868,7 +868,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     fn fixed_kept(&mut self, state: &mut State<'_, 'tcx>, place: Expr, out: &mut Vec<Stmt>) -> R<Expr> {
         // A cell made here, `leak()`'s `{ value: s }`: only it has it.
         if let js::ExprKind::Member(object, _) = &place.kind
-            && matches!(object.kind, js::ExprKind::Object(_))
+            && matches!(object.kind, js::ExprKind::Object(..))
         {
             return Ok(place);
         }

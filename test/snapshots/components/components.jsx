@@ -26,12 +26,24 @@ export function Card({ title, children }) {
 
 function reduce(todos, action) {
   if (action.TAG === "Add") {
-    const next = todos.map((t) => ({ id: t.id, text: t.text, done: t.done }));
-    next.push({ id: todos.length + 1, text: action._0, done: false });
+    const next = todos.map((t) => ({
+      id: t.id,
+      text: t.text,
+      done: t.done,
+    }));
+    next.push({
+      id: todos.length + 1,
+      text: action._0,
+      done: false,
+    });
     return next;
   }
   const captured = action._0;
-  return todos.map((t) => ({ id: t.id, text: t.text, done: t.id === captured ? !t.done : t.done }));
+  return todos.map((t) => ({
+    id: t.id,
+    text: t.text,
+    done: t.id === captured ? !t.done : t.done,
+  }));
 }
 
 /** A list with keys, a reducer, an input, and a conditional child. */

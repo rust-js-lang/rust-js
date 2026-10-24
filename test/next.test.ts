@@ -848,8 +848,8 @@ test("next build builds a Next.js app whose routes and components are Rust, rust
   // next/font's loaders, as Next.js's compiler reads them, and their classes.
   const fontsJsx = readFileSync(join(dir, "app/fonts.jsx"), "utf8");
   for (const written of ['import { Abel, Inter } from "next/font/google";', 'import localFont from "next/font/local";',
-    'const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });', 'const abel = Abel({ weight: "400", subsets: ["latin"] });',
-    'const mono = localFont({ src: "./mono.woff2", adjustFontFallback: false });']) {
+    'const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });', 'const abel = Abel({\n  weight: "400",\n  subsets: ["latin"],\n});',
+    'const mono = localFont({\n  src: "./mono.woff2",\n  adjustFontFallback: false,\n});']) {
     expect(fontsJsx).toContain(written);
   }
   const indexHtml = readFileSync(join(dir, ".next/server/app/index.html"), "utf8");
@@ -968,7 +968,7 @@ test("next build builds a Next.js app whose routes and components are Rust, rust
   // A page of getServerSideProps, and an API route, each the request's.
   expect([output.includes("ƒ /agent"), output.includes("ƒ /api/greet")]).toEqual([true, true]);
   const codeJsx = readFileSync(join(dir, "pages/codes/[code].jsx"), "utf8");
-  expect(codeJsx).toContain('return { redirect: { permanent: false, destination: "/codes/1" } };');
+  expect(codeJsx).toContain('return {\n        redirect: { permanent: false, destination: "/codes/1" },\n      };');
   expect(codeJsx).toContain("revalidate: 60 };");
   expect(readFileSync(join(dir, "pages/api/greet.js"), "utf8")).toContain("res.status(200).json({ hello, method: req.method ?? \"\" });");
   // The Pages Router's page, built for each path but the one not found.

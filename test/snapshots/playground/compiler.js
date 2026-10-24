@@ -263,7 +263,9 @@ export async function compile(loaded, sources, rootFile, test) {
   const wasi = new WASI(args, ["RUSTC_ICE=0"], fds, { debug: false });
 
   const t0 = performance.now();
-  const imports = { wasi_snapshot_preview1: wasi.wasiImport };
+  const imports = {
+    wasi_snapshot_preview1: wasi.wasiImport,
+  };
   const instance = await WebAssembly.instantiate(loaded.module, imports);
   const t1 = performance.now();
   const started = $try(() => wasi.start(instance));

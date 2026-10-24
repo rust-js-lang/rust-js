@@ -233,7 +233,7 @@ pub(super) fn for_of(
         // one that reads the same then, a constant or a variable the body
         // doesn't assign; else a `const end` of it first.
         _ => {
-            let ExprKind::Object(props) = &source.kind else {
+            let ExprKind::Object(props, ..) = &source.kind else {
                 return None;
             };
             let [js::Prop::Field(start_key, start), js::Prop::Field(end_key, end)] = props.as_slice() else {

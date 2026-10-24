@@ -147,7 +147,9 @@ function main() {
   console.log(
     `[${map.values.map((item) => `(${item[0]}, ${item[1]})`).join(", ")}] ${old} ${missing}`,
   );
-  const names = { values: [["a", "x"]] };
+  const names = {
+    values: [["a", "x"]],
+  };
   const value = LiteMap.firstMut(names, vecStoreMutKV());
   value.value += "!";
   const was = LiteMap.insertAt(names, 0, "y", vecStoreMutKV());

@@ -431,7 +431,11 @@ export function sample() {
       "Dot",
       { TAG: "Circle", _0: 1.5 },
       { TAG: "Rect", _0: 2, _1: 3 },
-      { TAG: "Poly", sides: 6, name: "hex" },
+      {
+        TAG: "Poly",
+        sides: 6,
+        name: "hex",
+      },
     ],
     events: ["Started", { TAG: "Moved", dx: 1, dy: -2 }, { TAG: "Placed", _0: order }],
     msgs: ["Ping", { TAG: "Text", _0: "hi" }, { TAG: "Pair", _0: 1, _1: 2 }],

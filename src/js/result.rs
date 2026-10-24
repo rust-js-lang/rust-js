@@ -68,7 +68,7 @@ pub fn made_ok(e: &Expr) -> Option<&Expr> {
 /// Whether `e` is an `Ok` just made, and what it holds: `{ TAG: "Ok", _0:
 /// value }`'s `value`, or nothing of an `Ok(())`'s, `{ TAG: "Ok" }`.
 pub fn made_ok_payload(e: &Expr) -> Option<Option<&Expr>> {
-    let ExprKind::Object(props) = &e.kind else {
+    let ExprKind::Object(props, ..) = &e.kind else {
         return None;
     };
     let ok = |tag: &str, name: &Expr| tag == TAG && matches!(&name.kind, ExprKind::Str(s) if s == self::name(true));

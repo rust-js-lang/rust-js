@@ -18,18 +18,32 @@ function showOf(p, EDisplay) {
   return `${EDisplay.fmt(inner.object)} #${inner.count}`;
 }
 
-const NUMBER = { name: "number", show: (arg0) => showOf(arg0, { fmt: String }) };
+const NUMBER = {
+  name: "number",
+  show: (arg0) => showOf(arg0, { fmt: String }),
+};
 
-const TEXT = { name: "text", show: (arg0) => showOf(arg0, { fmt: (value) => value }) };
+const TEXT = {
+  name: "text",
+  show: (arg0) => showOf(arg0, { fmt: (value) => value }),
+};
 
 function erased(inner) {
   return $ptrTo(inner);
 }
 
 function main() {
-  const boxed = { vtable: NUMBER, count: 1, object: 7 };
+  const boxed = {
+    vtable: NUMBER,
+    count: 1,
+    object: 7,
+  };
   const number = erased(boxed);
-  const text = erased({ vtable: TEXT, count: 2, object: "seven" });
+  const text = erased({
+    vtable: TEXT,
+    count: 2,
+    object: "seven",
+  });
   for (const p of [number, text]) {
     const vtable = vtableOf(p);
     console.log(`${vtable.name} ${vtable.show(p)}`);

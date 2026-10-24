@@ -504,7 +504,7 @@ impl Default for TypeWalks<'_> {
 fn in_place_method(call: Expr) -> Expr {
     if let js::ExprKind::Call(callee, list) = &call.kind
         && let js::ExprKind::Member(object, name) = &callee.kind
-        && let js::ExprKind::Object(props) = &object.kind
+        && let js::ExprKind::Object(props, ..) = &object.kind
         && !object.has_effects()
         && let Some(f) = props.iter().find_map(|p| match p {
             js::Prop::Field(field, f) if field == name && matches!(f.kind, js::ExprKind::Arrow(..)) => Some(f),

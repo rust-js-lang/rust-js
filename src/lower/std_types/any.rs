@@ -161,7 +161,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let pointee = ty.peel_refs();
         // A pair made here, `{ value: v, impl }`: `v`.
         let made = |value: &Expr| match &value.kind {
-            js::ExprKind::Object(props) => match props.as_slice() {
+            js::ExprKind::Object(props, ..) => match props.as_slice() {
                 [Prop::Field(name, inside), _] if name == js::HELD => Some(inside.clone()),
                 _ => None,
             },

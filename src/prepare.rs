@@ -1043,7 +1043,7 @@ fn entries_written_out(e: &Expr) -> Option<Expr> {
     }
     Some(Expr {
         known: js::Known::Nothing,
-        kind: ExprKind::Object(fields),
+        kind: ExprKind::Object(fields, js::ObjectLayout::default()),
         span: e.span,
     })
 }
@@ -1268,7 +1268,7 @@ fn expr(e: &mut Expr) {
             }
         }
         ExprKind::Array(items) => items.iter_mut().for_each(expr),
-        ExprKind::Object(props) => {
+        ExprKind::Object(props, ..) => {
             // A field that's `undefined`, a `None` say, is no key, `{ code }`,
             // as JS leaves it out: what reads it reads `undefined` either way
             // (ADR 0280). Not after a spread, whose field it would then be.

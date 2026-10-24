@@ -434,7 +434,7 @@ impl Expr {
         // `{ x: 0, y: 0 }.y`, a constant's field (`V::ZERO.y`), is `0`; and a
         // `dyn`'s pair made of what does nothing, `{ value: f.last, impl:
         // f.impl }.impl`, a shared reference nothing assigns through (ADR 0409).
-        if let ExprKind::Object(props) = &object.kind
+        if let ExprKind::Object(props, ..) = &object.kind
             && (props
                 .iter()
                 .all(|p| matches!(p, Prop::Field(_, value) if value.is_constant()))
@@ -467,7 +467,7 @@ impl Expr {
             {
                 return Expr::call_helper("$someValue", vec![(**place).clone()]);
             }
-            if let ExprKind::Object(props) = &object.kind
+            if let ExprKind::Object(props, ..) = &object.kind
                 && let [Prop::Field(name, value)] = props.as_slice()
                 && name == HELD
             {
@@ -514,7 +514,7 @@ impl Expr {
     }
 
     pub fn object(props: Vec<Prop>) -> Expr {
-        Expr::new(ExprKind::Object(props))
+        Expr::new(ExprKind::Object(props, ObjectLayout::default()))
     }
 
     /// The test that holds where this one doesn't, read only for its truth:
@@ -842,7 +842,7 @@ impl Expr {
             ExprKind::Undefined | ExprKind::GivenUndefined => true,
             _ if self.is_constant() => false,
             ExprKind::Array(_)
-            | ExprKind::Object(_)
+            | ExprKind::Object(..)
             | ExprKind::Arrow(..)
             | ExprKind::AsyncArrow(..)
             | ExprKind::Function(_)
@@ -879,7 +879,7 @@ impl Expr {
     /// before it or after can change.
     pub fn is_made_of_constants(&self) -> bool {
         match &self.kind {
-            ExprKind::Object(props) => {
+            ExprKind::Object(props, ..) => {
                 (props.iter()).all(|prop| matches!(prop, Prop::Field(_, value) if value.is_made_of_constants()))
             }
             _ => self.is_constant(),

@@ -809,7 +809,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
         }
         // A cell made here, `{ value: x }`: `x`.
-        if let js::ExprKind::Object(props) = &pointer.kind
+        if let js::ExprKind::Object(props, ..) = &pointer.kind
             && let [js::Prop::Field(key, value)] = props.as_slice()
             && key == js::HELD
         {
