@@ -644,6 +644,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0730 A loop's early `break` is in the `if` it was written in](decisions/0730-a-loops-early-break-is-in-the-if-it-was-written-in.md)
 - [0731 A case's `break` past the `switch` is the case's own](decisions/0731-a-cases-break-past-the-switch-is-its-own.md)
 - [0732 A space one can't tell from `' '`, or a mark one can't see, is its escape](decisions/0732-a-space-one-cant-see-is-its-escape.md)
+- [0734 `extend` of an array written in place is `push` of its items](decisions/0734-extend-of-an-array-written-in-place-is-push.md)
 - [0436 Every `dyn` that's a pair keeps its value's drop, `dyn Send` too](decisions/0436-every-dyn-keeps-its-drop.md) *(amended by 0691: a `dyn Any` drops where the crate makes one of what drops)*
 - [0437 A scope's drops on a panic are one `try { .. } finally { .. }`](decisions/0437-a-scopes-drops-are-one-finally.md) *(amended by 0693: its `if`s, loops and `return`s in it)*
 - [0438 An optional prop is given `Some(..)`, or left out](decisions/0438-an-optional-prop-is-given-some.md)

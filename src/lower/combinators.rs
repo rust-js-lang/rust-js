@@ -1035,6 +1035,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let cmp = self.cmp_fn(item, false, span)?;
             return Ok(Expr::call_helper("$heapExtend", vec![collection, items, cmp]));
         }
+        // An array written in place, onto a `Vec`, `v.extend([a, b])`: JS's
+        // own `v.push(a, b)`, which pushes each in order, made first, as the
+        // array's are (ADR 0734).
+        if self.is_std_type(into.peel_refs(), crate::lower::recognition::StdItem::Vec)
+            && matches!(items.kind, js::ExprKind::Array(_))
+        {
+            let js::ExprKind::Array(written) = items.kind else {
+                unreachable!("matched")
+            };
+            return Ok(Expr::call(Expr::member(collection, "push"), written));
+        }
         Ok(Expr::call_helper("$extend", vec![collection, items]))
     }
 
