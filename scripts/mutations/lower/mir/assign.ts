@@ -308,6 +308,7 @@ export const mutations: Mutation[] = [
     find: "                Value::Ref(mut place) => {\n                    while let js::ExprKind::Member(object, _) = place.kind {\n",
     replace: "                Value::Ref(mut place) if false => {\n                    while let js::ExprKind::Member(object, _) = place.kind {\n",
     tests: ["test/corpus.test.ts", "-t", "unread_mut_through_deref"],
+    snapshots: true,
   },
   {
     name: "union-written-as-member",

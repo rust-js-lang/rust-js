@@ -444,8 +444,9 @@ pub enum Known {
     /// name, `P.at(p)`, which may do anything.
     Read,
     /// A binding's read of a property, `get x`, `get X.y` or `get []`,
-    /// `js::get`'s: a getter may answer it, which may do anything, and may
-    /// give another value read again (ADR 0672).
+    /// `js::get`'s, or of the method a binding calls on a JS value,
+    /// `obj.send` of `obj.send(a)`: a getter may answer it, which may do
+    /// anything, and may give another value read again (ADRs 0672, 0750).
     Getter,
 }
 
