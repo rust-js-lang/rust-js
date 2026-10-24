@@ -91,14 +91,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts","-t","write_to_string"],
   },
   {
-    "name": "nulled-field-coalesced",
-    "breaks": "what MIR says is `null` or a value already is `?? null` given to a `#[rust_js::nullable]` field",
-    "file": "src/lower/aggregates.rs",
-    "find": " || nulled.get(i) == Some(&true) => made,\n",
-    "replace": " => made,\n",
-    "tests": ["test/lowering-options.test.ts", "-t", "a nullable field's None is null"]
-  },
-  {
     name: "io-unit-err-not-thrown",
     breaks: "an `io::Result<()>`'s `Err` is `undefined`, `Ok`",
     file: "src/lower/aggregates.rs",

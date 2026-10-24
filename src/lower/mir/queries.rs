@@ -729,8 +729,8 @@ pub(super) fn promoted_some<'tcx>(tcx: ty::TyCtxt<'tcx>, body: &mir::Body<'tcx>)
             _ => return None,
         }
     }
-    let (local, c) = some?;
-    (Some(local) == referred).then_some(c)
+    let (made, inside) = some?;
+    (referred == Some(made)).then_some(inside)
 }
 
 /// Whether `local` is written again after it's first given its value, a

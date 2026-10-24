@@ -342,8 +342,8 @@ export const mutations: Mutation[] = [
     name: "nullable-field-unchecked",
     breaks: "`#[rust_js::nullable]` of a field that isn't an `Option` compiles, and does nothing it says",
     file: "src/lower/bindings.rs",
-    find: "                if is_nullable(tcx, field)\n                    && !matches!(ty.kind(), ty::Adt(adt, _) if tcx.is_lang_item(adt.did(), LangItem::Option))\n",
-    replace: "                if false\n                    && !matches!(ty.kind(), ty::Adt(adt, _) if tcx.is_lang_item(adt.did(), LangItem::Option))\n",
+    find: "                if is_nullable(tcx, field) && nullable_option(tcx, ty).is_none() {\n",
+    replace: "                if false && nullable_option(tcx, ty).is_none() {\n",
     tests: ["test/diagnostics.test.ts", "-t", "nullable field"],
   },
   {
@@ -481,5 +481,13 @@ export const mutations: Mutation[] = [
     find: "        self.export && !self.default\n",
     replace: "        self.export\n",
     tests: ["test/cargo-link.test.ts", "-t", "a library's module that holds a binding"],
+  },
+  {
+    name: "nulled-field-coalesced",
+    breaks: "what MIR says is `null` or a value already is `?? null` given to a `#[rust_js::nullable]` field",
+    file: "src/lower/bindings.rs",
+    find: "        _ if made.is_constant() || nulled => made,\n",
+    replace: "        _ if made.is_constant() => made,\n",
+    tests: ["test/lowering-options.test.ts", "-t", "a nullable field's None is null"],
   },
 ];
