@@ -10,7 +10,9 @@ function too, which isn't `Defined` only because Rust can't say it is.
 Amended by [0676](0676-kind-tells-undefined-and-null.md): `classify` takes
 an `Option<&Unknown>`, and `Kind` has `Undefined` and `Null`. Amended by
 [0677](0677-a-weak-key-is-what-kind-holds.md): `Kind::Object` holds a
-`&JsObject`, which derefs to the `Unknown` it is.
+`&JsObject`, which derefs to the `Unknown` it is. Amended below: `()` is a
+structured clone's `undefined`, which a binding is given as one, and
+`Kind::Array`'s slice is the array itself, `js::unknown(items)` its value.
 
 Case: N, C, D ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -210,3 +212,33 @@ and so does react.dev, `sandpack.files[activeFile]`. An inherited key,
 `toString`, reads what it inherits there too. Of a `Dict<Option<_>>`, a JSON
 object's, `$dictGet` stays: a `null` value is `Some(None)`, which only an
 own key has, apart from a missing one.
+
+## Amendment: `()` is a structured clone's `undefined`, and a binding is given it as one
+
+React's `shared/enqueueTask.js` posts nothing, `channel.port2.postMessage(undefined)`.
+`()` wasn't `StructuredClone`, so the port posted a `None::<bool>`, a type
+of nothing. And a `()` given a binding was its tuple's array, `[]`, where
+ADR 0441 has `()` `undefined`: a receiver would get an empty array.
+
+- **`()` is `StructuredClone`**, `undefined`, which a clone copies as it
+  is. It's never `Defined`, so `Some(())`, which `None` would be too, isn't
+  one: rustc's error.
+- **A `()` given a binding is `undefined`** (`binding_calls.rs`), kept
+  where it's given, as ADR 0330 keeps an `undefined`: `post_message((),
+  None)` is `port.postMessage(undefined)`. Of one whose making does
+  something, it's still made where it was. Case N: what JS is given is
+  what Rust's `()` is, no value.
+
+`test/webapi-bindings.test.ts`, "webapi's any parameters take any value
+as JS has it", holds both; mutation `unit-given-binding-array`.
+
+## Amendment: `Kind::Array` holds the array, a slice, which is the value too
+
+Decided, no change: `Kind::Array(items)` is the array itself, as each
+variant is the value (ADR 0214), typed as a slice for Rust to read its
+items. A port that needs the array as a value of any shape asks for it as
+one, `js::unknown(items)`, which is `items`, the same array: `JSON.stringify(items)`
+of `json::stringify_with(js::unknown(items), None, 0)`. So no second
+binding, `Some(v)`, is needed to hold it; a second payload, the slice and
+an `Unknown` of it, would be two ways to read one value. `test/webapi-bindings.test.ts`
+holds it too.

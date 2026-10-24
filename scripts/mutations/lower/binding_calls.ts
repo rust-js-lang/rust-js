@@ -243,6 +243,14 @@ export const mutations: Mutation[] = [
     tests: ["test/js-object.test.ts", "-t", "delete is JS's operator"],
   },
   {
+    name: "unit-given-binding-array",
+    breaks: "a `()` given a binding is its tuple's `[]`, an array the receiver gets, not `undefined`: `postMessage([])`",
+    file: "src/lower/binding_calls.rs",
+    find: "            if ty.is_unit() && !arg.has_effects() {\n",
+    replace: "            if ty.is_unit() && !arg.has_effects() && false {\n",
+    tests: ["test/webapi-bindings.test.ts", "-t", "any parameters take any value"],
+  },
+  {
     name: "rest-typed-array-refused",
     breaks: "a typed array given as rest arguments isn't spread but refused: `String.fromCharCode(...bytes)` doesn't compile",
     file: "src/lower/binding_calls.rs",

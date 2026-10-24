@@ -562,7 +562,7 @@ pub fn set<T>(this: &Unknown, key: &str, to: T) {
 /// `Some(None)`, whose box would arrive as an object. Numbers, strings and
 /// `bool`s are, and arrays, tuples and `Vec`s of them, an `Option` of a
 /// [`Defined`] one, `Json`, `Dict`, `Unknown`, and what WebIDL marks
-/// `[Serializable]`, a `Blob`. A struct is one as its fields are: unsafe to
+/// `[Serializable]`, a `Blob`; `()`, `undefined`. A struct is one as its fields are: unsafe to
 /// implement, as its `impl` vouches they are, `unsafe impl StructuredClone for Saved {}`.
 pub unsafe trait StructuredClone {}
 
@@ -674,6 +674,9 @@ macro_rules! cloned {
 
 cloned!(bool, i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize, f32, f64, char, str, String);
 cloned!(Unknown, ArrayBuffer, Json<'_>);
+// `()`, `undefined`, which a clone copies as it is, `postMessage(undefined)`:
+// never `Defined`, so `Some(())` isn't one, as `None` is it too (ADR 0225).
+unsafe impl StructuredClone for () {}
 // An object, never nullish, though not one a clone copies, which a function
 // in it isn't (ADR 0677).
 unsafe impl Defined for JsObject {}

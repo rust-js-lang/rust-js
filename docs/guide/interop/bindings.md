@@ -742,7 +742,7 @@ A parameter of TypeScript's `any` or `unknown` is generic:
 |---|---|
 | any value that's never `undefined` or `null` | `value: &T`, `T: js::Defined + ?Sized` |
 | any value, left out or not | `value: Option<&dyn js::IntoUnknown>` |
-| a value the structured clone copies, `postMessage`'s | `value: T`, `T: js::StructuredClone` |
+| a value the structured clone copies, `postMessage`'s, `()` its `undefined` | `value: T`, `T: js::StructuredClone` |
 | a value whose type you don't know | `&js::Unknown`, or `Option<&js::Unknown>` |
 
 ```rust

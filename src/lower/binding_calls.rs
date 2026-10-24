@@ -28,6 +28,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Err(self.tcx.dcx().span_err(span, refused));
         }
         let this = is_method(self.tcx, def_id).then(|| args.remove(0));
+        // A `()` is `undefined` (ADR 0441), given a binding too, where it
+        // was its tuple's array, `[]`: `postMessage(undefined)` of
+        // `post_message((), None)` (ADR 0225 amended). Not a rest's `()`,
+        // its arguments, none.
+        let inputs = self
+            .tcx
+            .fn_sig(def_id)
+            .instantiate(self.tcx, generic_args)
+            .skip_normalization();
+        let inputs = inputs.skip_binder().inputs();
+        let rest = usize::from(is_variadic(self.tcx, def_id));
+        let given = &inputs[usize::from(this.is_some())..inputs.len() - rest];
+        for (arg, ty) in args.iter_mut().zip(given) {
+            if ty.is_unit() && !arg.has_effects() {
+                *arg = Expr::undefined();
+            }
+        }
         // Its last argument is JS's rest arguments (ADRs 0221, 0640): a
         // tuple, `impl js::Rest<T>`'s or an emitter's event's, its items,
         // `()` none; a slice, a `Vec` or a typed array of them, spread, or
