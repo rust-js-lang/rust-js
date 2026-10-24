@@ -163,6 +163,7 @@ pub(super) fn fresh(items: &Expr) -> bool {
                 "$vars",
                 "$pathParts",
                 "$pathAncestors",
+                "$pathComponents",
             ]
             .contains(&name.as_str()),
             _ => false,

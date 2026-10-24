@@ -249,6 +249,23 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         self.views_as_itself(from, to) || held && self.borrows_as_itself(from, to)
     }
 
+    /// What std's `AsRef<to>` of a `from` is, where rust-js knows: the same
+    /// JS value, a `Box`'s, an `Rc`'s, or text's as a `Path` (ADRs 0331,
+    /// 0505, 0173); or a path's `Component`'s text (ADR 0716).
+    pub(in crate::lower) fn as_ref_of(&self, from: Ty<'tcx>, to: Ty<'tcx>) -> Option<Std> {
+        if self.as_ref_is_itself(from, to) {
+            return Some(Std::Same);
+        }
+        self.as_ref_is_component_text(from, to)
+            .then_some(Std::Path(crate::lower::std_types::path::PathOp::ComponentText))
+    }
+
+    /// Whether std's `AsRef<to>` of a `from` is a path's `Component`'s, as a
+    /// `Path` or an `OsStr`: its text, `$componentText` (ADR 0716).
+    pub(in crate::lower) fn as_ref_is_component_text(&self, from: Ty<'tcx>, to: Ty<'tcx>) -> bool {
+        self.is_path_component(from) && self.is_path_like(to)
+    }
+
     pub(in crate::lower) fn views_as_itself(&self, from: Ty<'tcx>, to: Ty<'tcx>) -> bool {
         let from = from.peel_refs();
         let sequence = from.is_array() || from.is_slice() || self.is_vec_like(from);

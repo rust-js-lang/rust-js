@@ -863,11 +863,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ty::Adt(_, args) if self.is_lang_adt(ty, LangItem::Option) || ty.is_box() || self.is_vec_like(ty) => {
                 self.compares_by_value(args.type_at(0), seen)
             }
+            // Of std's, one whose `PartialEq` is derived, a path's `Component`,
+            // of what its values are made of.
             ty::Adt(adt, args) => {
-                self.is_rust_adt(adt.did())
+                (self.is_rust_adt(adt.did()) || self.std_enum_derives_eq(ty))
                     && self.recognition().derives(self.partial_eq_trait(), ty)
                     && adt
-                        .all_fields()
+                        .variants()
+                        .iter()
+                        .filter(|variant| !crate::lower::recognition::never_made(self.tcx, variant))
+                        .flat_map(|variant| variant.fields.iter())
                         .all(|field| self.compares_by_value(self.field_ty(field, args), seen))
             }
             _ => false,

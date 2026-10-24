@@ -76,6 +76,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             || self.recognition().is_slice_iter_mut(ty)
             || self.recognition().is_tree_iter(ty)
             || self.recognition().is_process_items(ty)
+            || self.recognition().is_path_items(ty)
     }
 
     /// A std iterator of type `ty` made of `value`, an array or a text, as

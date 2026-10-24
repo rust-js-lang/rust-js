@@ -362,4 +362,12 @@ export const mutations: Mutation[] = [
     replace: "Expr::str(\"(\"), left,",
     tests: ["test/corpus.test.ts", "-t", "str_odds"],
   },
+  {
+    name: "never-made-variant-shown",
+    breaks: "`{:?}` of a `Component` asks `PrefixComponent`'s, which is refused",
+    file: "src/lower/display/debug.rs",
+    find: "            if crate::lower::recognition::never_made(self.tcx, variant) {\n                continue;\n            }\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^path_components.rs$"],
+  },
 ];

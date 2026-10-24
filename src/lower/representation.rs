@@ -95,6 +95,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let unit = def.fields.is_empty() && bindings::declared_tag(self.tcx, adt.did()).is_none();
         match unit {
             true => Expr::bin(Op::Eq, subject, name),
+            // A unit variant written in place, its name, is no other: a
+            // string has no tag.
+            false if matches!(subject.kind, js::ExprKind::Str(_)) => Expr::bool(false),
             false => Expr::bin(
                 Op::Eq,
                 Expr::member(subject, bindings::tag_key(self.tcx, adt.did())),
