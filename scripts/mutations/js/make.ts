@@ -359,4 +359,28 @@ export const mutations: Mutation[] = [
     replace: "            (Storage::NullForNone, _) => made,\n",
     tests: ["test/lowering-nullable.test.ts", "-t", "where it's made and where it's written"],
   },
+  {
+    name: "shown-text-unspliced-across-lines",
+    breaks: "`${n}` in a format string written across lines stays a template in a template, `<b>\n${`${n}`}</b>`",
+    file: "src/js/make.rs",
+    find: "if inner.is_plain() && (!outer_lines || inner_texts.iter().all(String::is_empty)))",
+    replace: "if inner.is_plain() && !outer_lines)",
+    tests: ["test/bindings.test.ts", "-t", "js::shown's text is text"],
+  },
+  {
+    name: "applied-template-breaks-unmoved",
+    breaks: "a template's `concat!` pieces, after a value's template is put in its place, break where they did in texts that are now longer",
+    file: "src/js/make.rs",
+    find: "        (at.text, at.at) = (text, shift + at.at);",
+    replace: "        (at.text, at.at) = (text, at.at);",
+    tests: ["test/lowering-strings.test.ts", "-t", "a format string of a concat! is its pieces joined by"],
+  },
+  {
+    name: "applied-template-into-pieces-unspliced",
+    breaks: "a value's template put in place of its call in a template of `concat!`'s pieces is a template in a template",
+    file: "src/js/make.rs",
+    find: "        let outer_lines = layout.lines || layout.breaks.iter().any(|at| at.lines);\n",
+    replace: "        let outer_lines = layout.lines || !layout.breaks.is_empty();\n",
+    tests: ["test/lowering-strings.test.ts", "-t", "a format string of a concat! is its pieces joined by"],
+  },
 ];

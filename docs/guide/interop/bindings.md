@@ -514,6 +514,43 @@ export function willCoercionThrow(value) {
 }
 ```
 
+`js::shown(value)` displays any value as JS's template shows it,
+`` `${value}` ``: an object by its `toString`, a number as JS writes it,
+`1e+21`. Its text is a string wherever it goes, alone too, padded, and by
+`to_string()` (ADR 0312):
+
+```rust
+use js::Unknown;
+
+pub fn key(msg: Option<&Unknown>, index: usize) -> String {
+    format!("{}-{index}", js::shown(msg))
+}
+
+pub fn year(year: f64) -> String {
+    format!("{}", js::shown(year))
+}
+
+pub fn year_width(year: f64) -> usize {
+    js::shown(year).to_string().len()
+}
+```
+
+```js
+import { $byteLen } from "@rust-js/runtime";
+
+export function key(msg, index) {
+  return `${msg}-${index}`;
+}
+
+export function year(year) {
+  return `${year}`;
+}
+
+export function yearWidth(year) {
+  return $byteLen(`${year}`);
+}
+```
+
 ## Parameters and results
 
 ```rust

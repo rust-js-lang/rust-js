@@ -34,3 +34,12 @@ itself, `#[link_name = "this"]`, and `format!` writes a value whose
 Rust's `{}` of an `f64` stays `$displayF64`, as Rust writes it, `-0` and
 `1000000000000000000000` where JS writes `0` and `1e+21`: `js::shown` is
 how a program asks for JS's.
+
+## Amendment: its text is a string, wherever it goes
+
+`js::shown(value)`'s `Display` writes `` `${value}` ``, the text a template
+makes of it, not the value: `format!("{}", js::shown(n))` alone was `n`, a
+number, where a `String` is text (ADR 0066's amendment). Its text is now
+`display_string`'s, so `js::shown(n).to_string()`, a `T: Display` given
+it and a `&dyn Display` of it show it too, where they were refused, and
+`{:>4}` and `{:.1}` pad and cut it as text, where they were ignored.
