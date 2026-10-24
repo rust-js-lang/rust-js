@@ -206,8 +206,8 @@ export const mutations: Mutation[] = [
     name: "private-type-object-exported",
     breaks: "a type's object is exported though none of its methods is, `export const Tally`, where only its module uses it",
     file: "src/lower/pipeline.rs",
-    find: "                                methods: vec![lowered.function],\n                                export,\n",
-    replace: "                                methods: vec![lowered.function],\n                                export: true,\n",
+    find: "                        namespace.export |= lowered.function.export;\n",
+    replace: "                        namespace.export = true;\n",
     tests: ["test/modules.test.ts", "-t", "methods across modules and in a thread-local, by their names in JS"],
   },
   {

@@ -247,4 +247,12 @@ export const mutations: Mutation[] = [
     replace: "        state.unwind = unwind;\n",
     tests: ["test/corpus.test.ts", "-t", "^(mut_method_pointer|function_values_in_calls|as_deref|as_ref_path|deque_range_mut|expression_values|dyn_pointers|generic_guard_deref|escape_iterators|leaked_string_written|matrix_strings|option_result_methods|path_keys|poison_error|rc_counted_uses|option_sort|set_operators|rc_count_fn_value|sort_unstable_wasm32|std_function_values|text_predicates|std_function_value_panic|stock_orders|str_circumfix|vec_edits).rs$"],
   },
+  {
+    name: "getter-read-in-place",
+    breaks: "a getter's read a pattern binds is written where each use is, `child.type` read three times where Rust reads it once",
+    file: "src/lower/mir/temporaries.rs",
+    find: "                    if root.known == js::Known::Getter {\n                        return false;\n                    }\n",
+    replace: "",
+    tests: ["test/jsx-children.test.ts", "-t", "a capture of an inlined closure leaves no const behind"],
+  },
 ];

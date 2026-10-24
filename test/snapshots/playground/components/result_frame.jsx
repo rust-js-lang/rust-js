@@ -30,10 +30,10 @@ export function ResultFrame({ program, onOutcome }) {
           const report = readReport(e);
           if (report && fromFrame) {
             if (report.run === run) {
+              const height = report.height;
+              const frame$1 = frame.current;
               // As tall as its page, from the height it starts with.
-              if (report.height != null && frame.current) {
-                const height = report.height;
-                const frame$1 = frame.current;
+              if (height != null && frame$1) {
                 const style = `height: ${$displayF64($f64Min($f64Max(height, 280), 4000))}px`;
                 frame$1.setAttribute("style", style);
                 return;

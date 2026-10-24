@@ -7,6 +7,7 @@
 function $lent(it) {
   const lent = new $Steps(() => it.next());
   if (it.nth !== undefined) lent.nth = (k) => it.nth(k);
+  if (it.ownNth) lent.ownNth = true;
   if (it.tryFold !== undefined) lent.tryFold = (init, f, broke) => it.tryFold(init, f, broke);
   return lent;
 }

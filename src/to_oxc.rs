@@ -100,7 +100,10 @@ pub fn emit(
     let mut items = module.items.as_slice();
     while let [item, rest @ ..] = items {
         match item {
-            js::Item::Namespace(n) => body.push(cx.namespace(n)),
+            js::Item::Namespace(n) => match &n.class {
+                Some(class) => body.extend(cx.class(n, class)),
+                None => body.push(cx.namespace(n)),
+            },
             // A constant declared as the default is its value (ADR 0625).
             js::Item::Const(c) if defaulted(module) == Some(c.name.as_str()) => body.push(cx.default_value(c)),
             js::Item::Const(c) => body.push(cx.constant(c)),

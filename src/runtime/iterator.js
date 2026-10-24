@@ -7,7 +7,7 @@
 // it knows its back, which `$nextBack` steps; given its `len`, its length,
 // an `ExactSizeIterator`'s (ADR 0456). Given its own `fold` and `nth`, the
 // crate's impl's, std's consumers call them (#162).
-function $iterator(iterator, next, boxed = false, nextBack, len, hint, fold, nth) {
+function $iterator(iterator, next, boxed = false, nextBack, len, hint, fold, nth, last) {
   const step = (item) => (item == null ? { done: true, value: undefined } : { done: false, value: boxed ? $someValue(item) : item });
   const it = new $Steps(() => step(next(iterator)));
   // The crate's own `fold` and `nth`, where its impl writes them, which
@@ -17,10 +17,21 @@ function $iterator(iterator, next, boxed = false, nextBack, len, hint, fold, nth
     it.fold = (init, f) => fold(iterator, init, f);
     it.ownFold = true;
   }
-  if (nth !== undefined) it.nth = (k) => step(nth(iterator, k));
+  // `ownNth` and `ownLast` say they're the crate's own, which drop what
+  // they pass themselves, where std's defaults of a `$Steps` don't.
+  if (nth !== undefined) {
+    it.nth = (k) => step(nth(iterator, k));
+    it.ownNth = true;
+  }
+  // And its own `last`, which std's `last`, and a `skip`'s, a chain's, a
+  // fuse's and a peekable's, call (#182).
+  if (last !== undefined) {
+    it.last = () => step(last(iterator));
+    it.ownLast = true;
+  }
   it.of = iterator;
   // Another of a value of its type, stepped as it is: a clone's (ADR 0473).
-  it.with = (value) => $iterator(value, next, boxed, nextBack, len, hint, fold, nth);
+  it.with = (value) => $iterator(value, next, boxed, nextBack, len, hint, fold, nth, last);
   if (nextBack !== undefined) {
     it.back = () => step(nextBack(iterator));
   }
@@ -57,5 +68,5 @@ function $knowing(it, back, len) {
 // `fold`, `nth` and `size_hint` where the crate's impl writes them (#162);
 // `boxed`, its back and its length as `$iterator`'s.
 function $given(value, iterator, boxed = false, nextBack, len) {
-  return $iterator(value, iterator.next, boxed, nextBack, len, iterator.sizeHint, iterator.fold, iterator.nth);
+  return $iterator(value, iterator.next, boxed, nextBack, len, iterator.sizeHint, iterator.fold, iterator.nth, iterator.last);
 }

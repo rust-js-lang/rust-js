@@ -152,6 +152,8 @@ pub(crate) fn addresses_memory(tcx: TyCtxt<'_>, id: DefId) -> bool {
 /// (`docs/std-coverage.txt`); what reaches memory stays recognized.
 pub(super) const COMPILED_STD: &[(&str, Option<&str>, &str)] = &[
     ("Peekable", Some("Iterator"), "next"),
+    ("Peekable", Some("Iterator"), "nth"),
+    ("Peekable", Some("Iterator"), "last"),
     ("Peekable", Some("DoubleEndedIterator"), "next_back"),
     ("Peekable", Some("DoubleEndedIterator"), "rfold"),
     ("Peekable", Some("Clone"), "clone"),
@@ -162,6 +164,9 @@ pub(super) const COMPILED_STD: &[(&str, Option<&str>, &str)] = &[
     ("Fuse", Some("DoubleEndedIterator"), "rfold"),
     ("Fuse", Some("ExactSizeIterator"), "len"),
     ("Fuse", Some("FuseImpl"), "next"),
+    ("Fuse", Some("Iterator"), "nth"),
+    ("Fuse", Some("Iterator"), "last"),
+    ("Fuse", Some("FuseImpl"), "nth"),
     ("Fuse", Some("FuseImpl"), "next_back"),
     ("Fuse", Some("Clone"), "clone"),
     ("Fuse", Some("Debug"), "fmt"),

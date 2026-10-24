@@ -3,6 +3,30 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "js-class-of-the-constructor-call",
+    breaks: "`js::class::<Component>()` is `Component.new`, no function, not the constructor `Component` (ADR 0761)",
+    file: "src/lower/binding_calls.rs",
+    find: "                    js::ExprKind::Member(class, _) => *class,\n",
+    replace: "                    js::ExprKind::Member(class, name) => Expr::member(*class, name),\n",
+    tests: ["test/classes.test.ts", "-t", "React's Component is a constructor function"],
+  },
+  {
+    name: "js-throw-made-an-error",
+    breaks: "`js::throw(value)` throws `new Error(value)`, an `Error` made of it, not the value itself, so a thenable React's Suspense waits on is lost",
+    file: "src/lower/binding_calls.rs",
+    find: "                out.push(StmtKind::Throw(this).at(self.js_span(span)));\n",
+    replace: "                out.push(StmtKind::Throw(Expr::new_(Expr::var(\"Error\"), vec![this])).at(self.js_span(span)));\n",
+    tests: ["test/lowering-throws.test.ts"],
+  },
+  {
+    name: "js-throw-unthrown",
+    breaks: "`js::throw(value)` throws nothing, so the function goes on past it, its value `undefined`",
+    file: "src/lower/binding_calls.rs",
+    find: "            (JsForm::Throw, Some(this)) if args.is_empty() => {\n                out.push(StmtKind::Throw(this).at(self.js_span(span)));\n",
+    replace: "            (JsForm::Throw, Some(this)) if args.is_empty() => {\n                out.push(StmtKind::Expr(this).at(self.js_span(span)));\n",
+    tests: ["test/lowering-throws.test.ts"],
+  },
+  {
     name: "strict-equals-loose",
     breaks: "`js::strict_equals(a, b)` is `a == b`, so a `null` is an `undefined` and `1` is `\"1\"`, where JS's `===` says neither is",
     file: "src/lower/binding_calls.rs",
@@ -270,8 +294,16 @@ export const mutations: Mutation[] = [
     name: "binding-method-not-a-getter",
     breaks: "a binding's method of a JS value isn't said to be one a getter may answer, so a call's value is read past it",
     file: "src/lower/binding_calls.rs",
-    find: "Expr::call(Expr::member(this, name).answered_by_a_getter().or_at(fun_span), args)",
-    replace: "Expr::call(Expr::member(this, name).or_at(fun_span), args)",
+    find: "                    true => method.answered_by_a_getter(),\n",
+    replace: "                    true => method,\n",
     tests: ["test/lowering-moves.test.ts", "-t", "a binding's method is looked up after its arguments run"],
+  },
+  {
+    name: "typed-receiver-method-a-getters",
+    breaks: "a binding's method of a declared type, webapi's Element, is taken for one a getter may answer, so DOM calls hold their arguments",
+    file: "src/lower/binding_calls.rs",
+    find: "            |ty| matches!(ty.peel_refs().kind(), ty::Adt(adt, _) if super::declarations::any_shape(tcx, adt.did())),",
+    replace: "            |_| true,",
+    tests: ["test/snapshots.test.ts", "-t", "^counter"],
   },
 ];

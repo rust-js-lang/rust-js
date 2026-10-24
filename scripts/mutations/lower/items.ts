@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "class-const-not-the-prototypes",
+    breaks: "a class's constant read is `Counter.limit`, the constructor's, where it's the prototype's, `Counter.prototype.limit` (ADR 0761)",
+    file: "src/lower/items.rs",
+    find: "            Expr::member(Expr::member(reference, \"prototype\"), target.name.clone())\n",
+    replace: "            Expr::member(reference, target.name.clone())\n",
+    tests: ["test/corpus.test.ts", "-t", "class_methods"],
+  },
+  {
     name: "binding-value-args-raw",
     breaks: "a nullable binding as a value is given `undefined`, `(to) => rustJsReset(to)`, where its call gives `null`",
     file: "src/lower/items.rs",

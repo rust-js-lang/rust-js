@@ -11,19 +11,17 @@ export function ContactPage({ id }) {
     setLoaded("Loading");
     (async () => {
       const value = await contact(id, signal);
-      bb40: {
-        if (value.TAG === "Err") {
-          if (value._0 === "Aborted") {
-            break bb40;
-          }
-          if (value._0.TAG === "Refused" && value._0._0 === 404) {
-            setLoaded({ TAG: "Failed", _0: `There's no contact ${id}.` });
-            break bb40;
-          }
-          setLoaded({ TAG: "Failed", _0: Failure.message(value._0) });
-        } else {
-          setLoaded({ TAG: "Contact", _0: value._0 });
+      if (value.TAG === "Err") {
+        if (value._0 === "Aborted") {
+          return;
         }
+        if (value._0.TAG === "Refused" && value._0._0 === 404) {
+          setLoaded({ TAG: "Failed", _0: `There's no contact ${id}.` });
+          return;
+        }
+        setLoaded({ TAG: "Failed", _0: Failure.message(value._0) });
+      } else {
+        setLoaded({ TAG: "Contact", _0: value._0 });
       }
     })();
     return () => {

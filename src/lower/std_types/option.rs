@@ -544,15 +544,43 @@ fn optional_part(part: &Expr, m: &str, option: &Expr) -> Option<Expr> {
     }
 }
 
-/// `body`, a property chain of `param`, `param.a.b`, as one of `option`
-/// that ends where it's `None`: `option?.a.b`.
-fn optional_chain(option: &Expr, body: &Expr, param: &str) -> Option<Expr> {
-    let js::ExprKind::Member(of, field) = &body.kind else {
+/// `o.and_then(f)`, `some ? then : undefined`; of a chain of what it
+/// holds, `labels.item(0)`, held at `spilled` in `out` only to be read
+/// twice, `e?.item(0)`, which reads `e` once, as `map`'s `o?.id` does, the
+/// `const` gone.
+pub(in crate::lower) fn and_then_of(out: &mut Vec<Stmt>, spilled: Option<usize>, some: Expr, then: Expr) -> Expr {
+    let chained = (spilled.filter(|&at| out.len() == at + 1)).and_then(|at| match &out[at].kind {
+        StmtKind::Const(name, held) => optional_chain(held, &then, name),
+        _ => None,
+    });
+    match chained {
+        Some(chain) => {
+            out.pop();
+            chain
+        }
+        None => Expr::cond(some, then, Expr::undefined()),
+    }
+}
+
+/// `body`, a chain of properties and method calls of `param`, `param.a.b`
+/// or `param.item(0)`, as one of `option` that ends where it's `None`,
+/// reading it once: `option?.a.b`, `option?.item(0)`. A call's arguments
+/// don't read `param`, and run only where it's there, as the closure did.
+/// Not of a test or an operator's value, `(t ? a : b)?.f()`, which reads
+/// better held, `const s = t ? a : b; s?.f()`.
+pub(in crate::lower) fn optional_chain(option: &Expr, body: &Expr, param: &str) -> Option<Expr> {
+    if matches!(option.kind, js::ExprKind::Cond(..) | js::ExprKind::Binary(..)) {
         return None;
-    };
-    match &of.kind {
-        js::ExprKind::Var(name) if name == param => Some(Expr::optional_member(option.clone(), field.clone())),
-        _ => Some(Expr::member(optional_chain(option, of, param)?, field.clone())),
+    }
+    match &body.kind {
+        js::ExprKind::Member(of, field) => match &of.kind {
+            js::ExprKind::Var(name) if name == param => Some(Expr::optional_member(option.clone(), field.clone())),
+            _ => Some(Expr::member(optional_chain(option, of, param)?, field.clone())),
+        },
+        js::ExprKind::Call(callee, args) if !args.iter().any(|arg| arg.mentions_var(param)) => {
+            Some(Expr::call(optional_chain(option, callee, param)?, args.clone()))
+        }
+        _ => None,
     }
 }
 

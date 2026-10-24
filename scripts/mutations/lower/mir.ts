@@ -80,7 +80,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir.rs",
     "find": "                .flat_map(|imports| imports.values().cloned()),\n",
     "replace": "                .flat_map(|imports| imports.values().cloned())\n                .filter(|_| false),\n",
-    "tests": ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"]
+    "tests": ["test/lowering-functions.test.ts", "-t", "a vec's specs from MIR stay in place past a branch's temporary"],
   },
   {
     "name": "mir-array-items-not-plain",

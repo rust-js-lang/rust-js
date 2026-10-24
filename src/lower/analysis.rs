@@ -565,6 +565,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         || !reject_static_references(tcx, &all_bodies)
         || !reject_flatten_misuse(tcx, &all_bodies)
         || !reject_rest_misuse(tcx)
+        || !super::classes::reject_misuse(tcx, &all_bodies)
     {
         return None;
     }
@@ -654,8 +655,12 @@ pub(super) fn analyze_crate<'a, 'tcx>(
             // Not std's storage for a thread-local, which JS needs none of.
             DefKind::Static { .. } => !tcx.is_foreign_item(d) && in_thread_local(tcx, d).is_none(),
             // An impl's own, of a type, not a dictionary's (ADR 0176): a
-            // constant of its module too (ADR 0410).
-            DefKind::AssocConst { .. } => impl_const(tcx, d.to_def_id()),
+            // constant of its module too (ADR 0410); a class's, its
+            // prototype's property, whoever reads it (ADR 0761).
+            DefKind::AssocConst { .. } => {
+                impl_const(tcx, d.to_def_id())
+                    || super::classes::member(tcx, d.to_def_id()) == Some(super::classes::Member::Const)
+            }
             _ => false,
         })
         .chain(coded_inline_consts(tcx, all_bodies))

@@ -54,7 +54,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         } else {
             Expr::var(export)
         };
-        if target.owner.is_some() {
+        // A class's constant, its prototype's (ADR 0761).
+        if super::classes::member(self.tcx, def_id) == Some(super::classes::Member::Const) {
+            Expr::member(Expr::member(reference, "prototype"), target.name.clone())
+        } else if target.owner.is_some() {
             Expr::member(reference, target.name.clone())
         } else {
             reference

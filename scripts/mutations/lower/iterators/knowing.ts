@@ -298,4 +298,12 @@ export const mutations: Mutation[] = [
     replace: "                ;",
     tests: ["test/corpus.test.ts", "-t", "^returned_impl_ends.rs$"],
   },
+  {
+    name: "compiled-last-unhooked",
+    breaks: "a fuse's or a peekable's compiled `last` isn't given to its JS iterator",
+    file: "src/lower/iterators/knowing.rs",
+    find: "        if self.compiled_step(ty, iterator, \"last\") {\n",
+    replace: "        if false {\n",
+    tests: ["test/std-package.test.ts"],
+  },
 ];

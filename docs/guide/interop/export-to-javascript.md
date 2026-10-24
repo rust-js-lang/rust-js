@@ -16,6 +16,7 @@ it writes, without its header comment and source-map line.
 - [Optional parameters](#optional-parameters)
 - [Rest parameters](#rest-parameters)
 - [Structs, enums and their methods](#structs-enums-and-their-methods)
+- [JS classes](#js-classes)
 - [Constants, statics and thread-locals](#constants-statics-and-thread-locals)
 - [Modules and `pub use`](#modules-and-pub-use)
 - [The default export](#the-default-export)
@@ -422,6 +423,191 @@ label("Idle"); // "idle"
 
 How traits, derives and destructors look is
 [Structs, enums and traits as JavaScript sees them](objects.md).
+
+## JS classes
+
+A struct and its impl marked `#[cfg_attr(rust_js, rust_js::class)]` are a
+JS class, written as JS wrote one before `class`: a constructor function
+and its prototype ([ADR 0761](../../decisions/0761-a-rust-js-class-is-a-constructor-function-and-its-prototype.md)).
+JS's `class X extends Component` runs it, `super(props)` its constructor,
+and `this.setState(..)` its prototype's method. React's `Component`, and
+its `PureComponent`, whose prototype inherits `Component`'s:
+
+```rust
+use js::object::assign;
+use js::Unknown;
+
+pub struct Updater {
+    pub enqueue_force_update: fn(&Unknown, &str),
+}
+
+pub static NOOP: Updater = Updater {
+    enqueue_force_update: |_, _| {},
+};
+
+/// Base class helpers for the updating state of a component.
+#[cfg_attr(rust_js, rust_js::class)]
+pub struct Component {
+    pub props: Option<&'static Unknown>,
+    pub updater: &'static Updater,
+}
+
+unsafe impl js::Defined for Component {}
+
+#[cfg_attr(rust_js, rust_js::class)]
+impl Component {
+    pub const IS_REACT_COMPONENT: bool = true;
+
+    pub fn new(props: Option<&'static Unknown>, updater: Option<&'static Updater>) -> Self {
+        Component {
+            props,
+            updater: updater.unwrap_or(&NOOP),
+        }
+    }
+
+    /// Forces an update.
+    pub fn force_update(&self) {
+        (self.updater.enqueue_force_update)(js::unknown(self), "forceUpdate");
+    }
+}
+
+#[cfg_attr(rust_js, rust_js::class)]
+struct ComponentDummy {}
+
+unsafe impl js::Defined for ComponentDummy {}
+
+#[cfg_attr(rust_js, rust_js::class)]
+impl ComponentDummy {
+    fn new() -> Self {
+        ComponentDummy {}
+    }
+}
+
+#[cfg_attr(rust_js, rust_js::class)]
+pub struct PureComponent {
+    pub props: Option<&'static Unknown>,
+    pub updater: &'static Updater,
+}
+
+#[cfg_attr(rust_js, rust_js::class)]
+impl PureComponent {
+    pub fn new(props: Option<&'static Unknown>, updater: Option<&'static Updater>) -> Self {
+        PureComponent {
+            props,
+            updater: updater.unwrap_or(&NOOP),
+        }
+    }
+}
+
+js::on_load! {
+    js::class::<ComponentDummy>().set_prototype(js::class::<Component>().prototype());
+    let pure_component_prototype = js::unknown_of(ComponentDummy::new());
+    js::class::<PureComponent>().set_prototype(pure_component_prototype);
+    js::set(pure_component_prototype, "constructor", js::class::<PureComponent>());
+    assign(pure_component_prototype, (js::class::<Component>().prototype(),));
+    js::set(pure_component_prototype, "isPureReactComponent", true);
+}
+
+pub fn mounted(props: Option<&'static Unknown>) -> Component {
+    let component = Component::new(props, None);
+    component.force_update();
+    component
+}
+```
+
+```js
+export const NOOP = { enqueueForceUpdate: () => {} };
+
+export function Component(props, updater) {
+  this.props = props;
+  this.updater = updater ?? NOOP;
+}
+
+Component.prototype.isReactComponent = true;
+
+/** Forces an update. */
+Component.prototype.forceUpdate = function () {
+  this.updater.enqueueForceUpdate(this, "forceUpdate");
+};
+
+function ComponentDummy() {}
+
+export function PureComponent(props, updater) {
+  this.props = props;
+  this.updater = updater ?? NOOP;
+}
+
+ComponentDummy.prototype = Component.prototype;
+const pureComponentPrototype = new ComponentDummy();
+PureComponent.prototype = pureComponentPrototype;
+pureComponentPrototype.constructor = PureComponent;
+Object.assign(pureComponentPrototype, Component.prototype);
+pureComponentPrototype.isPureReactComponent = true;
+
+export function mounted(props) {
+  const component = new Component(props);
+  component.forceUpdate();
+  return component;
+}
+```
+
+```ts
+export interface Updater {
+    enqueueForceUpdate: (value: unknown, value2: string) => void;
+}
+
+export const NOOP: Updater;
+
+/** Base class helpers for the updating state of a component. */
+export declare class Component {
+    constructor(props?: unknown | null | undefined, updater?: Updater | null | undefined);
+    props?: unknown;
+    updater: Updater;
+    isReactComponent: boolean;
+    /** Forces an update. */
+    forceUpdate(): void;
+}
+
+export declare class PureComponent {
+    constructor(props?: unknown | null | undefined, updater?: Updater | null | undefined);
+    props?: unknown;
+    updater: Updater;
+}
+
+export function mounted(props?: unknown | null | undefined): Component;
+```
+
+- **Its fields are `this`'s**, and its `fn new(..) -> Self` is the
+  constructor function: the struct literal it returns is `this.props =
+  props;`, each field in the order it's written.
+- **A method of `&self` or `&mut self` is the prototype's**, a `function`
+  reading `this`, not an arrow, so `this` is the instance it's called on,
+  a JS subclass's too. A Rust call of it is a call of it on the value,
+  `component.forceUpdate()`, and `Component::new(..)` is `new
+  Component(..)`. As a value, it's the arrow of its call, `(a) =>
+  a.forceUpdate()`.
+- **An associated `const` is the prototype's property**, camelCase as a
+  method is: `IS_REACT_COMPONENT` is `isReactComponent`. A function of no
+  `self` is the constructor's own, `Component.from = function (..) { ..
+  }`.
+- **`js::class::<T>()` is the constructor itself**, `Component`, a
+  `&js::Class`: its `prototype()` and `set_prototype(..)` are JS's, which
+  a prototype chain is written with, as JS writes it. `js::unknown(..)` of
+  an instance needs its `unsafe impl js::Defined`, a marker.
+- **Its declaration is a class's**, `export declare class Component {
+  constructor(..); props?: unknown; forceUpdate(): void; }`, which a
+  TypeScript `class X extends Component` type-checks against.
+- **It's the one way to make a JS class.** A struct without the
+  attribute is a plain object, and its impl an object of functions, as
+  [above](#structs-enums-and-their-methods): the JS shape a caller sees,
+  which the attribute, where Rust meets JS, says.
+- **Refused, each with what to write**: a tuple or unit struct; a generic
+  one; a struct literal of it outside its `new`, which would be no
+  instance; a trait impl of it with items, a `derive(Clone)` among them,
+  whose methods would be a dictionary's, not the prototype's; a method of
+  `self` by value; a method or constant named as a field, which
+  `this.name` would hide; a class of no `new`; and the attribute on one
+  of the struct and its impl alone.
 
 ## Constants, statics and thread-locals
 
