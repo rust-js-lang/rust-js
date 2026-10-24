@@ -739,14 +739,16 @@ export function parseURL(url: string): number | null | undefined;
 | an enum without fields | the union of its names, `"Red" \| "Green"` |
 | an enum with fields | the union of its variants' objects, `{ TAG: "Loading"; percent: number }` |
 | `impl Fn(u32) -> u32` | `(value: number) => number` |
+| `Box<T>`, an `Rc<T>` whose counts nothing reads | `T` |
+| its `Weak<T>` | `T \| null` ([ADR 0845](../../decisions/0845-an-rcs-declaration-is-what-it-points-at.md)) |
 | a type alias | `export type`, by its name |
 | a function that never returns, `-> !` | `never` |
 | a `pub use` of a function | `export { firstWord } from "./text.js"` |
 | a doc comment | its JSDoc |
 
 Some types aren't declared yet, and a caller of them isn't checked: a
-`Result` and an `async fn`'s result are `any`, as are a tuple struct and
-an `impl Iterator`, and a type's methods object, `Counter`, has its
+`Result` and an `async fn`'s result are `any`, as are a tuple struct,
+an `impl Iterator` and a counted `Rc`, and a type's methods object, `Counter`, has its
 `interface` but no declaration of its methods.
 
 ## Calling Rust from a JS file in your app
