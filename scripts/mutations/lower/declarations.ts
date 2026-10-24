@@ -5,6 +5,22 @@ const tests = ["test/declarations.test.ts"];
 
 export const mutations: Mutation[] = [
   {
+    name: "uncounted-rc-declared-any",
+    breaks: "an uncounted `Rc` is declared `any`, React's `createContext` returning one (ADR 0845)",
+    file: "src/lower/declarations.rs",
+    find: "                    && !self.counted.counts(tcx, pointee)\n                {\n                    return self.ts(pointee);\n",
+    replace: "                    && false\n                {\n                    return self.ts(pointee);\n",
+    tests: ["test/declarations.test.ts", "-t", "an Rc is declared"],
+  },
+  {
+    name: "weak-declared-never-null",
+    breaks: "an uncounted `Weak` is declared what it points at, though `Weak::new()` is `null` (ADR 0845)",
+    file: "src/lower/declarations.rs",
+    find: "                    return json!({ \"kind\": \"union\", \"types\": [self.ts(pointee), keyword(\"null\")] });\n",
+    replace: "                    return self.ts(pointee);\n",
+    tests: ["test/declarations.test.ts", "-t", "an Rc is declared"],
+  },
+  {
     name: "numbered-declared-names",
     breaks: "a numbered enum is declared `\"Empty\" | ..`, its names, where its JS is its numbers",
     file: "src/lower/declarations.rs",

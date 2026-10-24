@@ -40,7 +40,7 @@ pub(super) fn module<'tcx>(
     files: &HashMap<LocalModId, Vec<String>>,
     reexports: &[Reexport],
     aliases: &[(String, String)],
-    plain_ref_cells: &HashSet<Ty<'tcx>>,
+    (plain_ref_cells, counted): (&HashSet<Ty<'tcx>>, &super::analysis::Counted<'tcx>),
     (fns, held): (&HashMap<DefId, super::FnInfo>, &[super::bindings::HeldBinding]),
 ) -> Option<Value> {
     let mut out = Declarations {
@@ -49,6 +49,7 @@ pub(super) fn module<'tcx>(
         fns,
         files,
         plain_ref_cells,
+        counted,
         imports: BTreeSet::new(),
         module_imports: BTreeSet::new(),
         unexported: BTreeMap::new(),
@@ -287,6 +288,9 @@ struct Declarations<'a, 'tcx> {
     fns: &'a HashMap<DefId, super::FnInfo>,
     /// The `RefCell`s a field holds as their value (ADR 0362).
     plain_ref_cells: &'a HashSet<Ty<'tcx>>,
+    /// The `Rc`s counted, `{ value, strong, weak }`: every other, and its
+    /// `Weak`, is the value it points at (ADRs 0320, 0843).
+    counted: &'a super::analysis::Counted<'tcx>,
     /// The crate's modules that have a file, by their path: those whose
     /// types another's declarations import (ADR 0210).
     files: &'a HashMap<LocalModId, Vec<String>>,
@@ -1187,6 +1191,18 @@ impl<'tcx> Declarations<'_, 'tcx> {
                 }
                 if ty.is_box() {
                     return self.ts(args.type_at(0));
+                }
+                // An uncounted `Rc` is what it points at, and its `Weak` that
+                // or `null`, `Weak::new()`'s (ADRs 0023, 0843).
+                if let Some(pointee) = super::recognition::rc_pointee(tcx, ty)
+                    && !self.counted.counts(tcx, pointee)
+                {
+                    return self.ts(pointee);
+                }
+                if let Some(pointee) = super::recognition::weak_pointee(tcx, ty)
+                    && !self.counted.counts(tcx, pointee)
+                {
+                    return json!({ "kind": "union", "types": [self.ts(pointee), keyword("null")] });
                 }
                 // A `Cell` of its own, or one lent, is `{ value }` (ADRs 0023, 0288).
                 if is_std_def(tcx, did, StdItem::Cell) {

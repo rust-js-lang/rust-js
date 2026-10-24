@@ -1398,3 +1398,46 @@ export const named: string = tagged(twice);
 `);
   expect(typeChecked(dir, "use.ts")).toEqual([]);
 });
+
+// ADR 0845: an uncounted `Rc` is the value it points at, and its `Weak`
+// that or `null`, `Weak::new()`'s: React's context, its own `Provider`.
+// A counted one, `{ value, strong, weak }`, isn't declared yet: `any`.
+test("an Rc is declared as what it points at, and its Weak as that or null", () => {
+  const dir = fixture("declarations-rc");
+  writeFileSync(join(dir, "Cargo.toml"), '[package]\nname = "app"\nversion = "0.0.0"\nedition = "2024"\n');
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::Cell;
+use std::rc::{Rc, Weak};
+
+pub struct Context {
+    pub value: Cell<f64>,
+    pub provider: Cell<Weak<Context>>,
+}
+
+pub fn create_context(value: f64) -> Rc<Context> {
+    let context = Rc::new(Context {
+        value: Cell::new(value),
+        provider: Cell::new(Weak::new()),
+    });
+    context.provider.set(Rc::downgrade(&context));
+    context
+}
+
+pub struct Shared {
+    pub name: String,
+}
+
+pub fn owners(shared: &Rc<Shared>) -> usize {
+    Rc::strong_count(shared)
+}
+`);
+  run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const declarations = readFileSync(join(dir, "lib.d.ts"), "utf8");
+  expect(declarations).toContain("  provider: Context | null;\n");
+  expect(declarations).toContain("export function createContext(value: number): Context;");
+  expect(declarations).toContain("export function owners(shared: any): number;");
+  writeFileSync(join(dir, "use.ts"), `import { createContext } from "./lib.js";
+const context = createContext(1);
+export const provided: number | undefined = context.provider?.value;
+`);
+  expect(typeChecked(dir, "use.ts")).toEqual([]);
+});

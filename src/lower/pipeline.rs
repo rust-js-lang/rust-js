@@ -881,7 +881,7 @@ pub fn lower_crate<'tcx>(
                 &paths,
                 &reexports,
                 &aliases,
-                plain_ref_cells,
+                (plain_ref_cells, &counted),
                 (&fns, module_held),
             );
             let mut lowered = LoweredModule {
