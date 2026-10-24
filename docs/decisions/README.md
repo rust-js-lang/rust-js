@@ -552,7 +552,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0669 An adapter steps its source as std's does](0669-an-adapter-steps-its-source-as-stds-does.md) *(amended by 0687: and gives the crate's own `fold` and `nth` on)*
 - [0670 A tree's writes have one owner, and its walks one definition](0670-a-trees-writes-have-one-owner.md)
 - [0671 A nested body is lowered in one call](0671-a-nested-body-is-lowered-in-one-call.md)
-- [0672 A property a chain tests and binds is read once](0672-a-property-a-test-reads-is-read-once.md) *(amended by 0701: a read nothing after reads is gone; amended: the read says it's a getter's, `js::Known`; a getter's read held by MIR isn't written at each use)*
+- [0672 A property a chain tests and binds is read once](0672-a-property-a-test-reads-is-read-once.md) *(amended by 0701: a read nothing after reads is gone; amended: the read says it's a getter's, `js::Known`; a getter's read held by MIR isn't written at each use; amended by 0842: a chain after a test of its own isn't joined where it would read a place twice)*
 - [0676 `js::Kind` tells `undefined` and `null`](0676-kind-tells-undefined-and-null.md)
 - [0677 A weak collection's key is what `js::Kind` holds](0677-a-weak-key-is-what-kind-holds.md)
 - [0678 A parameter's leading `_` isn't in its JS name](0678-a-parameters-underscore-isnt-its-js-name.md) *(amended: a closure beside it is no binding of its function)*
@@ -625,7 +625,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0790 A `break` the program wrote is where it's written, a case's `break;` where its block ends a case](0790-a-break-the-program-wrote-is-where-it-is-written.md) *(amended by 0805: its `||` whatever the rest ends with, and a case's `if` with no `else` written none)*
 - [0780 An or-pattern's tests are in the order written, of a field read in place](0780-an-or-patterns-tests-are-as-written-of-a-field-read-in-place.md)
 - [0781 A `None` only nullables read is `null` where it's made](0781-a-none-only-nullables-read-is-null-where-its-made.md) *(amended by 0841: a call's `Option` too)*
-- [0782 A promise's executor may borrow, and `then` takes two handlers](0782-a-promises-executor-borrows-and-then-takes-two-handlers.md)
+- [0782 A promise's executor may borrow, and `then` takes two handlers](0782-a-promises-executor-borrows-and-then-takes-two-handlers.md) *(amended: a promise of a `Copy` value is `Copy`; what rejects one takes any value)*
 - [0791 A `Cell`'s storage says what it stores, however it's reached](0791-a-cells-storage-says-what-it-stores.md) *(amended by 0841: what's never `undefined` is stored as it is)*
 - [0800 A drop of what JS drops nothing of never unwinds](0800-a-drop-of-nothing-never-unwinds.md)
 - [0805 A case's `if` is as written, whatever its other branch ends with](0805-a-cases-if-is-as-written-whatever-ends-it.md)
@@ -636,6 +636,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0835 An object is across lines where its struct literal is](0835-an-object-is-across-lines-where-its-literal-is.md)
 - [0840 A thread-local's `with` is its closure's body, wherever it's called](0840-a-thread-locals-with-is-its-closures-body.md)
 - [0841 A nullable place stores what's never `undefined` as it is](0841-a-nullable-place-stores-what-is-never-undefined-as-it-is.md)
+- [0842 A let chain after a test of its own reads its place once](0842-a-let-chain-after-a-test-of-its-own-reads-its-place-once.md)
 - [0720 A labeled block's `break` and a named constant, in a body's ranges](0720-a-labeled-block-and-a-named-constant-in-a-bodys-ranges.md)
 - [0721 `js::strict_equals(a, b)` is JS's `===`](0721-strict-equals-is-jss-triple-equals.md) *(fixed by 0775: a `()` compared is `undefined`)*
 - [0722 A `#[repr(..)]` enum's variant is its number](0722-a-repr-enums-variant-is-its-number.md)

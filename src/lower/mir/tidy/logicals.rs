@@ -185,7 +185,8 @@ fn reads_a_getter(e: &Expr) -> bool {
 /// child.type` a closure took, is gone: `b` reads it, once. Not where that
 /// would read a property twice (`bound_into`): `const url = request.url;
 /// if (typeof url === "string") { return url; }` stays, but where its `s`
-/// breaks out to a label (`read_once_first`).
+/// breaks out to a label (`read_once_first`); nor where it would read a
+/// place twice that `a` doesn't test (`read_twice_apart`).
 pub(super) fn and_tests(stmts: &mut Vec<Stmt>, conditions: &[(js::Span, js::Span)]) {
     let within = |c: &js::Span, s: js::Span| !s.is_none() && c.lo <= s.lo && s.hi <= c.hi;
     let mut first_reads = Vec::new();
@@ -203,10 +204,14 @@ pub(super) fn and_tests(stmts: &mut Vec<Stmt>, conditions: &[(js::Span, js::Span
             continue;
         }
         let again = |at: usize, name: &str| js::mentions_in(body, name) + js::mentions_in(&bound[at + 1..], name);
-        let Some(second) = bound_into(second, bound, &again) else {
+        let Some(second_joined) = bound_into(second, bound, &again) else {
             first_reads.extend(read_once_first(stmt).map(|read| (i, read)));
             continue;
         };
+        if read_twice_apart(test, bound, second, &again) {
+            continue;
+        }
+        let second = second_joined;
         let bound = bound.len();
         let Some(Stmt {
             kind: StmtKind::If(_, body, None),
@@ -225,6 +230,33 @@ pub(super) fn and_tests(stmts: &mut Vec<Stmt>, conditions: &[(js::Span, js::Span
     for (i, read) in first_reads.into_iter().rev() {
         stmts.insert(i, read);
     }
+}
+
+/// Whether joining `if (a) { const x = e; if (b) { s } }` into `if (a &&
+/// b) { const x = e; s }` would read the place `e` twice where the chain
+/// reads it once: `b` tests `x`, so the join reads `e` there, and `b` or
+/// what's after reads `x` again; and `e` reads nothing `a` tests, `a` a
+/// test of its own, `debug` of `if debug && let Some(value) =
+/// info.value.get()`. That stays as a person writes it, `if (debug) { const
+/// value = info.value; if (value != null) { .. } }` (ADR 0842). A chain that takes
+/// apart what its first test tested, `const a = value[0]` of `if (value)`,
+/// is joined, `if (value && value[0] < 10)`, the test and the binding of
+/// one value.
+fn read_twice_apart(a: &Expr, bound: &[Stmt], b: &Expr, again: &dyn Fn(usize, &str) -> usize) -> bool {
+    let mut tested = HashSet::new();
+    a.visit_vars(&mut |v| {
+        tested.insert(v.to_string());
+    });
+    let test = [StmtKind::Expr(b.clone()).at(js::Span::NONE)];
+    (bound.iter().enumerate()).any(|(at, stmt)| {
+        let StmtKind::Const(name, value) = &stmt.kind else {
+            return false;
+        };
+        let mut apart = true;
+        value.visit_vars(&mut |v| apart &= !tested.contains(v));
+        let tested = js::mentions_in(&test, name);
+        apart && tested > 0 && tested + again(at, name) > 1
+    })
 }
 
 /// Of `if (a) { const x = e; if (b) { s; break l; } }`, a chain whose `e`
