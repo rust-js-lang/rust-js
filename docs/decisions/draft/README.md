@@ -7,7 +7,7 @@ hold it: the corpus case, the mutation, the test. Proposed examples and
 acceptance criteria are not evidence of implemented support.
 
 A draft has no number, so [the architecture test](../../../test/architecture.test.ts)
-doesn't read it as a decision, and the index in [docs/README.md](../../README.md)
+doesn't read it as a decision, and the index in [docs/decisions/README.md](../README.md)
 doesn't list it. To accept one: resolve its open gates, implement it with
 a failing test first, give it the next number, move it up a folder, set
 its status, and add it to the index. Amend the decisions it changes and

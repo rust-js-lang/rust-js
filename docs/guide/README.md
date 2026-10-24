@@ -64,7 +64,7 @@ JavaScript rust-js makes of it.
 - [Semantics of rust-js: how Rust behaves in JavaScript](semantics.md)
 - [Known limitations: what rust-js refuses](limitations.md)
 - [Internals: how the compiler works](../architecture.md), and
-  [why each decision was made](../README.md#decisions)
+  [why each decision was made](../decisions/README.md)
 
 ## How these pages are written
 
