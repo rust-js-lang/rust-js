@@ -2,7 +2,9 @@
 
 Status: Accepted. Amends [0573](0573-every-rust-name-is-camel-case-in-js.md),
 whose names kept a leading `_`: a parameter's is Rust's mark of one
-unused, which its JS name and its declaration's are without.
+unused, which its JS name and its declaration's are without. Amended:
+a closure's parameter meets the bindings of the bodies it's in and its
+own, not a sibling closure's.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): A. A parameter's name
 changes nothing a program does, and where it would, another binding's
@@ -72,3 +74,31 @@ function describeClientReference(ref) {
 - Mutations in `scripts/mutations/lower.ts`,
   `scripts/mutations/lower/mir/locals.ts` and
   `scripts/mutations/lower/declarations.ts`.
+
+## Amendment: a closure beside it isn't its function
+
+React's `ReactNoopUpdateQueue` is a static of closures, `isMounted:
+|_public_instance| false` beside `enqueueForceUpdate: |public_instance,
+_callback, _caller_name| ..`. The static's value is one body, and each
+binding of it, a sibling closure's too, counted as another of the
+parameter's function: `_publicInstance` stayed, where upstream writes
+`isMounted: function (publicInstance) { return false; }`.
+
+**A parameter's name meets the bindings it can**: its function's own,
+of the closures in it too, and those of each body around it outside
+another closure; a closure beside it, in the same function or static,
+is a scope of its own, whose bindings it never sees nor they its
+parameters. `|_instance| false` beside `|instance, _callback| instance`
+is `(instance) => false`. Around it still counts: `move |_total| total`
+keeps `_total`, and a closure in it, `|_v| { let g = |v| v + 1; .. }`,
+keeps `_v`.
+
+- Case ([0262](0262-when-rust-and-js-disagree.md)): A, as before: no
+  binding beside the closure is in its scope, so no name it reads
+  changes.
+- Held by `test/lowering-names.test.ts`'s "a parameter's leading
+  underscore isn't in its JS name" (a static's sibling closures, a
+  closure in a closure) and the mutations
+  `parameter-closure-bindings-unseen`,
+  `parameter-sibling-closure-bindings-seen` and
+  `parameter-inner-closure-bindings-unseen`.

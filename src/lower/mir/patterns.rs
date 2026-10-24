@@ -56,9 +56,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .collect()
     }
 
-    /// The locals `OptionWrites::null_nones` says: each write a `Some(..)` or a
-    /// `None`, one at least, and each read a nullable field's or binding
-    /// parameter's, or a copy's only they read (ADR 0781); or a
+    /// The locals `OptionWrites::null_nones` says: each write a `Some(..)`, a
+    /// `None` or a call, one that may give `None` at least, and each read a
+    /// nullable field's or binding parameter's, or a copy's only they read
+    /// (ADR 0781, amended by 0841); or a
     /// `#[rust_js::nullable]` function's result, by its return.
     fn mir_null_nones(&self, body: &mir::Body<'tcx>, locals: &Locals) -> std::collections::HashSet<Local> {
         let mut made: std::collections::HashMap<Local, (usize, bool)> = Default::default();
@@ -97,11 +98,33 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
             }
         }
-        // And a binding's parameter it names `#[rust_js::nullable(..)]`.
+        // And a binding's parameter it names `#[rust_js::nullable(..)]`. An
+        // `Option` a call gives, which may be `undefined`, is written so,
+        // where the call's made (`nullable_written`): `c ? f(c) : null` of
+        // `map`'s `undefined`.
         for block in body.basic_blocks.iter() {
-            let mir::TerminatorKind::Call { func, args, .. } = &block.terminator().kind else {
+            let mir::TerminatorKind::Call {
+                func,
+                args,
+                destination,
+                ..
+            } = &block.terminator().kind
+            else {
                 continue;
             };
+            // Not a clone, which `nulled` gives what it's a clone of.
+            let cloned = func.const_fn_def().is_some_and(|(def_id, _)| {
+                (self.tcx.trait_of_assoc(def_id)).is_some_and(|t| self.tcx.is_lang_item(t, LangItem::Clone))
+            });
+            if !cloned
+                && destination.projection.is_empty()
+                && matches!(destination.ty(body, self.tcx).ty.kind(),
+                    ty::Adt(adt, _) if self.tcx.is_lang_item(adt.did(), LangItem::Option))
+            {
+                let (writes, none) = made.entry(destination.local).or_default();
+                *writes += 1;
+                *none = true;
+            }
             let Some((def_id, _)) = func.const_fn_def() else {
                 continue;
             };

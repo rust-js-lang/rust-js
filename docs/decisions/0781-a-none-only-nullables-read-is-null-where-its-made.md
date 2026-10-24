@@ -3,7 +3,9 @@
 Status: Accepted. Extends [0275](0275-nullable-writes-null.md), whose
 variable each write of which is an `Option` made, and each read a
 nullable field's, was already `null` where it's made, to a variable MIR
-copies before a field or a binding's parameter takes it.
+copies before a field or a binding's parameter takes it. Amended by
+[0841](0841-a-nullable-place-stores-what-is-never-undefined-as-it-is.md):
+a call's `Option` only they read is written so where the call's made.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): A: `null` and
 `undefined` are each `None` to the program, which reads either as one

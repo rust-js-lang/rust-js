@@ -477,6 +477,12 @@ pub enum Known {
     /// `items.slice(a, b)`: an array made here, which nothing else holds,
     /// as `$slice(..)` is (ADR 0806).
     Sliced,
+    /// Never `undefined`, as Rust's types tell, though maybe `null`: a
+    /// `Some`'s value, `map`'s, or what's set through a variable holding a
+    /// cell's handle that MIR shows is `null` or a value already,
+    /// `make(context)` of `set(Some(make(context)))`. A nullable place
+    /// stores it as it is (`Storage::written`, ADR 0841).
+    Defined,
 }
 
 /// A cross-module reference, resolved before preparation or printing.

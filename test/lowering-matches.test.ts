@@ -867,7 +867,7 @@ pub fn crumbs(cs: &[Crumb]) -> Vec<Option<String>> {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
   const js = readFileSync(join(dir, "mir.js"), "utf8");
-  expect(js).toContain("    if (c.path != null && !(c.skip ?? false)) {\n      return c.path + c.title;\n    }\n");
+  expect(js).toContain("    if (c.path != null && !c.skip) {\n      return c.path + c.title;\n    }\n");
   const lib = await import(join(dir, "mir.js"));
   expect(lib.crumbs([{ path: "/a", title: "A" }, { path: "/b", skip: true, title: "B" }, { title: "C" }])).toEqual(["/aA", undefined, undefined]);
 });

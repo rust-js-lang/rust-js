@@ -201,7 +201,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `made_by`, this one or another, a binding too, is `null` for `None`
     /// as it is (ADR 0638); another `Option`, a call's or a variable's, is
     /// `null` for `undefined`, `heap[0] ?? null`. Each `return` gives what
-    /// was written, so it's written where it's made.
+    /// was written, so it's written where it's made. So is a call's
+    /// `Option` that only nullable fields and parameters read
+    /// (`null_nones`), `c ? f(c) : null` of `map`'s `c ? f(c) : undefined`,
+    /// as they then take it (ADR 0841).
     pub(super) fn nullable_written(
         &mut self,
         state: &mut State<'_, 'tcx>,
@@ -210,9 +213,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         made_by: Option<rustc_span::def_id::DefId>,
         span: Span,
     ) -> R<Value<'tcx>> {
-        if place != Place::from(mir::RETURN_PLACE)
-            || state.writer.is_some()
-            || !bindings::nullable_result(self.tcx, state.body.source.def_id())
+        let read_nullable = place.projection.is_empty()
+            && place.local != mir::RETURN_PLACE
+            && state.options.null_nones.contains(&place.local);
+        if !read_nullable
+            && (place != Place::from(mir::RETURN_PLACE)
+                || state.writer.is_some()
+                || !bindings::nullable_result(self.tcx, state.body.source.def_id()))
             || made_by.is_some_and(|made_by| bindings::nullable_result(self.tcx, made_by))
         {
             return Ok(value);

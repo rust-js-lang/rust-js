@@ -309,11 +309,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             // A parameter it names `#[rust_js::nullable(..)]`: its
             // `None` is `null`, and a `Some(..)` its value (ADR 0275).
-            () if named(bindings::nullable_params(tcx, def_id)) => match value.kind {
-                js::ExprKind::Undefined => Expr::null(),
-                _ if nulled || value.is_constant() => value,
-                _ => Expr::bin(Op::Coalesce, value, Expr::null()),
-            },
+            () if named(bindings::nullable_params(tcx, def_id)) => js::Storage::NullForNone.written(value, nulled),
             // A parameter it names `#[rust_js::lazy(..)]`, a function JS
             // calls once for the value: a closure whose body does nothing
             // and gives no function is its value, `useState(0)` (ADR 0593).
