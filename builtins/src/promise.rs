@@ -16,6 +16,19 @@ impl<T> Promise<T> {
         unreachable!()
     }
 
+    /// [`promise.then(on_fulfilled, on_rejected)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Promise/then):
+    /// TypeScript's two handlers, what `on_fulfilled` gives of what it
+    /// fulfils, or `on_rejected` of a rejection's reason, each a value or a
+    /// promise of one ([`Fulfils`]), as `catch`'s is (ADR 0782).
+    #[cfg_attr(rust_js, rust_js::link_name = "then")]
+    pub fn then_with<U, F: Fulfils<U>, R: Fulfils<U>>(
+        self,
+        on_fulfilled: impl FnOnce(T) -> F + 'static,
+        on_rejected: impl FnOnce(&'static JsError) -> R + 'static,
+    ) -> Promise<U> {
+        unreachable!()
+    }
+
     /// [`promise.catch(f)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Promise/catch):
     /// of a rejection, what `f` gives of its reason, a value or a promise
     /// of one ([`Fulfils`]), TypeScript's `TResult | PromiseLike<TResult>`:
@@ -68,8 +81,10 @@ pub struct PromiseWithResolvers<T: 'static> {
 
 /// [`new Promise(executor)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Promise/Promise):
 /// a promise `executor` settles, given the functions that fulfil it and reject it.
+/// JS runs it before `new Promise` returns, so it may borrow what's around
+/// it, and set it, `resolve_debug_value = Some(resolve)` (ADR 0782).
 #[cfg_attr(rust_js, rust_js::link_name = "new Promise")]
-pub fn new<T: 'static>(executor: impl FnOnce(&'static dyn Fn(T), &'static dyn Fn(&JsError)) + 'static) -> Promise<T> {
+pub fn new<T: 'static>(executor: impl FnOnce(&'static dyn Fn(T), &'static dyn Fn(&JsError))) -> Promise<T> {
     unreachable!()
 }
 
