@@ -106,7 +106,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     Value::Fmt(_, ty, _) => self.krate.any_failing && ty.peel_refs().is_adt(),
                     _ => false,
                 });
-                let joined = crate::lower::display::join_written(parts);
+                // What may fail is written piece by piece, so that what came
+                // before is written: its pieces kept apart (ADR 0187).
+                let joined = crate::lower::display::join_written(parts, fails);
                 if fails {
                     return Ok(Some(Value::Fmt(Std::FmtNew, output, joined)));
                 }

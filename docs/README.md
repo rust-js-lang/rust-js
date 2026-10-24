@@ -108,7 +108,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0087 `println!` is `console.log`; `print!` writes as it is where JS can](decisions/0087-printing.md)
 - [0090 rustc checks programs for `wasm32-unknown-unknown`, whose `usize` is rust-js's](decisions/0090-wasm32-front-end.md)
 - [0065 The JS is formatted as oxfmt formats it, and the source map follows](decisions/0065-format-with-oxfmt.md)
-- [0066 Text with values in it is a template literal](decisions/0066-template-literals.md) *(amended by 0641: a `concat!` of literals is its pieces joined by `+`)*
+- [0066 Text with values in it is a template literal](decisions/0066-template-literals.md) *(amended by 0641: a `concat!` of literals is its pieces joined by `+`; amended: strings alone are joined by `+`, and only strings)*
 - [0067 Range patterns, `@`, `let ... else`, and a `&mut` into a map](decisions/0067-patterns.md)
 - [0069 Preserve effects before simplifying; lower once and link afterwards](decisions/0069-lowering-effects-and-linking.md)
 - [0070 A std function taken as a value is an arrow](decisions/0070-function-values.md)
