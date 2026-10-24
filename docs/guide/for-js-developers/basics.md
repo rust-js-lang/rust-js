@@ -1204,6 +1204,9 @@ export function findPair(grid, target) {
   limit { ..; break; }` is `if (checked > limit) { ..; break; }`, the rest
   of the body after it, not an `else` ([ADR
   0730](../../decisions/0730-a-loops-early-break-is-in-the-if-it-was-written-in.md)).
+- A labeled block, `'desc: { .. break 'desc v; .. }`, is a labeled block
+  where its JS keeps one, by its label, `desc: { desc = v; break desc; }`
+  ([ADR 0742](../../decisions/0742-a-label-the-program-wrote-is-its-name.md)).
 
 ## `null` and `undefined`: `Option`
 

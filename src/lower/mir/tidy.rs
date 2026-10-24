@@ -31,7 +31,7 @@ use self::{
     bindings::*, branches::*, destructuring::*, jumps::*, logicals::*, loops::*, moves::*, switches::switched,
     values::*,
 };
-use super::hints::Switch;
+use super::hints::{LabeledBlock, Switch};
 
 /// What a body's last passes ask of its locals, by name: those the program
 /// names, and its `String`s.

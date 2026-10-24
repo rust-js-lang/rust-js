@@ -63,7 +63,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let mut within = self.mir_within(state, block, inner)?;
         state.labels.pop();
         self.flush(state, &mut within)?;
-        let mut out = vec![StmtKind::Labeled(label(merge), within).at(js::Span::NONE)];
+        // Where the block the program labeled is, that MIR's breaks leave:
+        // tidy names it its label (ADR 0742).
+        let span = (state.jumps.left.get(&merge)).map_or(js::Span::NONE, |&b| state.jumps.blocks[b].span);
+        let mut out = vec![StmtKind::Labeled(label(merge), within).at(span)];
         out.extend(self.mir_tree(state, merge)?);
         Ok(out)
     }
@@ -82,30 +85,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // what jumps there is, if it's one.
         if is_return(state.body, to) {
             let mut out = self.mir_terminator(state, to)?;
-            // Back through the drops on the way, to where the value is made.
-            let mut blocks = vec![from];
-            let preds = state.body.basic_blocks.predecessors();
-            while let Some(&block) = blocks.last()
-                && !(state.body.basic_blocks[block].statements.iter())
-                    .any(|s| matches!(&s.kind, StatementKind::Assign(a) if a.0.local == mir::RETURN_PLACE))
-                && let [only] = preds[block].as_slice()
-                && !blocks.contains(only)
-            {
-                blocks.push(*only);
-            }
-            // What each does, not a temporary's storage ending, which a `?`'s
-            // has where it's written, on its way on too.
-            let spans = (blocks.iter())
-                .flat_map(|&b| {
-                    let data = &state.body.basic_blocks[b];
-                    (data.statements.iter())
-                        .filter(|s| !matches!(s.kind, StatementKind::StorageLive(_) | StatementKind::StorageDead(_)))
-                        .map(|s| s.source_info.span)
-                        .chain([data.terminator().source_info.span])
-                })
-                .map(|span| self.js_span(span));
-            let written = spans
-                .filter_map(|s| (state.returns.iter()).find(|w| !s.is_none() && w.lo <= s.lo && s.hi <= w.hi))
+            let written = (self.jumped_from(state, from).into_iter())
+                .filter_map(|s| (state.jumps.returns.iter()).find(|w| !s.is_none() && w.lo <= s.lo && s.hi <= w.hi))
                 .next()
                 .copied();
             if let Some(written) = written
@@ -116,12 +97,52 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(out);
         }
         if state.graph.merges.contains(&to) {
+            // A `break` the program wrote of a block it labeled: that block
+            // ends at `to`, or at a block after it, past the drops at its
+            // end, whose label is the one around it (ADR 0742).
+            let left = (self.jumped_from(state, from).into_iter()).find_map(|s| {
+                (state.jumps.blocks.iter())
+                    .position(|b| b.breaks.iter().any(|w| !s.is_none() && w.lo <= s.lo && s.hi <= w.hi))
+            });
+            if let Some(block) = left {
+                state.jumps.left.entry(to).or_insert(block);
+            }
             let mut out = Vec::new();
             self.flush(state, &mut out)?;
             out.push(StmtKind::Break(Some(label(to))).at(js::Span::NONE));
             return Ok(out);
         }
         self.mir_tree(state, to)
+    }
+
+    /// Where what jumps from `from` is written: of what `from` does, and
+    /// each block before it alone, back through the drops on the way to
+    /// where its value is made, not a temporary's storage ending, which a
+    /// `?`'s has where it's written, on its way on too.
+    fn jumped_from(&self, state: &State<'_, 'tcx>, from: BasicBlock) -> Vec<js::Span> {
+        let mut blocks = vec![from];
+        let preds = state.body.basic_blocks.predecessors();
+        while let Some(&block) = blocks.last()
+            && !(state.body.basic_blocks[block].statements.iter())
+                .any(|s| matches!(&s.kind, StatementKind::Assign(a) if a.0.local == mir::RETURN_PLACE))
+            && let [only] = preds[block].as_slice()
+            && !blocks.contains(only)
+        {
+            blocks.push(*only);
+        }
+        blocks.iter().flat_map(|&b| self.done_at(state, b)).collect()
+    }
+
+    /// Where what `block` does is written: its statements but a
+    /// temporary's storage, and its terminator.
+    fn done_at(&self, state: &State<'_, 'tcx>, block: BasicBlock) -> Vec<js::Span> {
+        let data = &state.body.basic_blocks[block];
+        (data.statements.iter())
+            .filter(|s| !matches!(s.kind, StatementKind::StorageLive(_) | StatementKind::StorageDead(_)))
+            .map(|s| s.source_info.span)
+            .chain([data.terminator().source_info.span])
+            .map(|span| self.js_span(span))
+            .collect()
     }
 
     /// A block's statements.

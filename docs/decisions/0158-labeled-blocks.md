@@ -1,6 +1,6 @@
 # 0158. A labeled block is JS's labeled block
 
-Status: Accepted. Extends [0015](0015-loops.md).
+Status: Accepted. Extends [0015](0015-loops.md). Kept under MIR by [0742](0742-a-label-the-program-wrote-is-its-name.md): the label is the program's.
 
 Case: N ([0262](0262-when-rust-and-js-disagree.md)).
 

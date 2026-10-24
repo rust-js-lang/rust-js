@@ -70,8 +70,8 @@ export const mutations: Mutation[] = [
     name: "mir-written-return-past-drops",
     breaks: "a `return` the program wrote, reached through drops, isn't known as written",
     file: "src/lower/mir/structure.rs",
-    find: "                && let [only] = preds[block].as_slice()\n",
-    replace: "                && let [only] = preds[block].as_slice().get(..0).unwrap_or_default()\n",
+    find: "            && let [only] = preds[block].as_slice()\n",
+    replace: "            && let [only] = preds[block].as_slice().get(..0).unwrap_or_default()\n",
     tests: ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"],
   },
   {
@@ -94,7 +94,7 @@ export const mutations: Mutation[] = [
     "name": "mir-return-written-by-storage",
     "breaks": "the value a `?` goes on to is returned at the `?`'s span, a `return` the program wrote, so its `?` stays nested, not a guard",
     "file": "src/lower/mir/structure.rs",
-    "find": "                        .filter(|s| !matches!(s.kind, StatementKind::StorageLive(_) | StatementKind::StorageDead(_)))\n",
+    "find": "            .filter(|s| !matches!(s.kind, StatementKind::StorageLive(_) | StatementKind::StorageDead(_)))\n",
     "replace": "",
     "tests": ["test/lowering-matches.test.ts", "-t", "a function's .s from MIR are guards"]
   },
@@ -218,5 +218,13 @@ export const mutations: Mutation[] = [
     find: "                        *test = self.mir_variant_test(enum_value.clone(), *enum_ty, *adt, &variants, *present);\n",
     replace: "",
     tests: ["test/lowering-switches.test.ts", "-t", "a test of an object or an array is typeof object"],
+  },
+  {
+    name: "mir-labeled-block-end-unrecorded",
+    breaks: "a block the program labeled, `'desc: { .. }`, is MIR's `bb41: { .. }` where JS keeps a label (ADR 0742)",
+    file: "src/lower/mir/structure.rs",
+    find: "                state.jumps.left.entry(to).or_insert(block);\n",
+    replace: "",
+    tests: ["test/lowering-labels.test.ts", "-t", "a block the program labeled keeps its label"],
   },
 ];

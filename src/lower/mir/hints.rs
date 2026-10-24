@@ -23,9 +23,30 @@ pub(super) struct Written {
     pub continues: Vec<(js::Span, js::Span)>,
     /// Each loop, whether as a `while`, and its label.
     pub loops: Vec<(js::Span, bool, Option<String>)>,
+    /// Each block the program labeled, `'desc: { .. }` (`labeled_blocks`).
+    pub blocks: Vec<LabeledBlock>,
     /// Each `match` the program wrote whose every arm tests constants, a
     /// `switch` (ADR 0629): its arms.
     pub switches: Vec<Switch>,
+}
+
+/// A block the program labeled, `'desc: { .. }`: where it's written, its
+/// label, and where each `break` the program wrote of it is, `break 'desc
+/// v`, of which the JS block MIR's breaks leave is its (ADR 0742).
+#[derive(Clone)]
+pub(super) struct LabeledBlock {
+    pub span: js::Span,
+    pub label: String,
+    pub breaks: Vec<js::Span>,
+}
+
+/// The jumps the program wrote in a body: where each `return` is, each
+/// block it labeled; and, as its structure is made, the JS block of each
+/// MIR block a `break` of one goes to, which is its end (ADR 0742).
+pub(super) struct Jumps {
+    pub returns: Vec<js::Span>,
+    pub blocks: Vec<LabeledBlock>,
+    pub left: std::collections::HashMap<BasicBlock, usize>,
 }
 
 /// The fewest cases a `match` of constants is a `switch` of, each constant
@@ -249,8 +270,52 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             logicals,
             continues,
             loops,
+            blocks: self.labeled_blocks(),
             switches,
         }
+    }
+
+    /// The jumps the program wrote in the body (`Jumps`), none left yet.
+    pub(super) fn written_jumps(&self) -> Jumps {
+        Jumps {
+            returns: (self.frame.thir.exprs.iter())
+                .filter(|e| matches!(e.kind, thir::ExprKind::Return { .. }))
+                .map(|e| self.js_span(e.span))
+                .collect(),
+            blocks: self.labeled_blocks(),
+            left: Default::default(),
+        }
+    }
+
+    /// Each block the program labeled, `'desc: { .. }`, and where each
+    /// `break` of it is (ADR 0742).
+    fn labeled_blocks(&self) -> Vec<LabeledBlock> {
+        let thir = &self.frame.thir;
+        // By the block a `break` of it names, the labeled expression's.
+        let mut blocks: Vec<(rustc_hir::ItemLocalId, LabeledBlock)> = (thir.exprs.iter())
+            .filter_map(|e| match e.kind {
+                thir::ExprKind::Scope { hir_id, .. } => match self.tcx.hir_expect_expr(hir_id).kind {
+                    rustc_hir::ExprKind::Block(block, Some(label)) => Some((
+                        block.hir_id.local_id,
+                        LabeledBlock {
+                            span: self.js_span(e.span.source_callsite()),
+                            label: label.ident.name.as_str().trim_start_matches('\'').to_string(),
+                            breaks: Vec::new(),
+                        },
+                    )),
+                    _ => None,
+                },
+                _ => None,
+            })
+            .collect();
+        for e in thir.exprs.iter() {
+            if let thir::ExprKind::Break { label, .. } = e.kind
+                && let Some((_, block)) = blocks.iter_mut().find(|(id, _)| *id == label.local_id)
+            {
+                block.breaks.push(self.js_span(e.span));
+            }
+        }
+        blocks.into_iter().map(|(_, block)| block).collect()
     }
 
     /// Each `match` the program wrote, not a macro, `matches!`, of three

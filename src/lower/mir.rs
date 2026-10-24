@@ -404,8 +404,9 @@ struct State<'m, 'tcx> {
     /// Each local a parameter's pattern binds, and the parameter it's moved
     /// out of, which the pattern takes apart already.
     parts: std::collections::HashMap<Local, Local>,
-    /// Where each `return` the program wrote is, of the body THIR has.
-    returns: Vec<js::Span>,
+    /// The jumps the program wrote, of the body THIR has: each `return`,
+    /// and each labeled block's `break`s, and where the jumps of each leave.
+    jumps: hints::Jumps,
     /// Where each range pattern is, `2..=5`, whose tests MIR writes bound
     /// first, `2 <= k`.
     ranges: Vec<Span>,
@@ -717,10 +718,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             at: BasicBlock::from_usize(0),
             statement: 0,
             ranges: self.range_patterns(),
-            returns: (self.frame.thir.exprs.iter())
-                .filter(|e| matches!(e.kind, thir::ExprKind::Return { .. }))
-                .map(|e| self.js_span(e.span))
-                .collect(),
+            jumps: self.written_jumps(),
             payloads: self.mir_payloads(mir_body),
             patterned: self.mir_patterned(mir_body),
             jsx_props: self.mir_jsx_props(mir_body),
@@ -1002,7 +1000,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 patterns: &(self.let_pattern_bindings(mir_body).into_iter())
                     .map(|(l, _)| state.locals.names[l].clone())
                     .collect(),
-                returns: &state.returns,
+                returns: &state.jumps.returns,
                 captured: &captured,
                 booleans: &booleans,
                 numbers: &numbers,

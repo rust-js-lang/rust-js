@@ -21,14 +21,14 @@ function firstEven(rows) {
   let found;
   while (true) {
     const value = $next(iter);
-    bb23: {
+    search: {
       if (value) {
         const i = value[0];
         const row = value[1];
         for (const x of row) {
           if (x % 2 === 0) {
             found = [i, x];
-            break bb23;
+            break search;
           }
         }
         continue;
@@ -62,12 +62,14 @@ function main() {
     log.push("not reached either");
   }
   console.log(`[${log.map((item) => $debugStr(item)).join(", ")}]`);
+
+  // A loop inside one, its own `break` and `continue` still the loop's.
   let sum = 0;
   const iter = { start: 1 };
   let total;
   while (true) {
     const n = $rangeFromNext(iter);
-    bb62: {
+    sum: {
       if (n != null) {
         if (n % 2 === 0) {
           continue;
@@ -76,7 +78,7 @@ function main() {
           sum = (sum + n) | 0;
           if (sum > 100) {
             total = -1;
-            break bb62;
+            break sum;
           }
           continue;
         }

@@ -100,4 +100,12 @@ export const mutations: Mutation[] = [
     replace: " && !breaks(body, label.as_deref())\n",
     tests: ["test/corpus.test.ts", "-t", "^loop_value_after_loop\\.rs$"],
   },
+  {
+    name: "mir-tidy-labeled-block-unnamed",
+    breaks: "a block the program labeled keeps MIR's label, `bb41`, not its own (ADR 0742)",
+    file: "src/lower/mir/tidy/jumps/labels.rs",
+    find: "                    (label, body, written.map(|b| &b.label))\n",
+    replace: "                    (label, body, written.and(None))\n",
+    tests: ["test/lowering-labels.test.ts", "-t", "a block the program labeled keeps its label"],
+  },
 ];

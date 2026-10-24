@@ -355,7 +355,7 @@ pub(super) const STAGES: &[Stage] = &[
                 js::each_expr_mut(b, &mut |e| concise_handlers(e, h.concise))
             }),
             pass("named labels", |b, h| {
-                js::statement_lists(b, &mut |s| named_labels(s, &h.written.loops))
+                js::statement_lists(b, &mut |s| named_labels(s, &h.written.loops, &h.written.blocks))
             }),
             pass("counted entries", |b, _| {
                 js::statement_lists(b, &mut crate::lower::std_types::map::counted_entries)
