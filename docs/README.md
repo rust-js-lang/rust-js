@@ -450,7 +450,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0378 A Next.js app moves to Rust one file at a time](decisions/0378-one-file-at-a-time.md)
 - [0379 A compiler that ran is no change to it](decisions/0379-a-compiler-that-ran-is-no-change.md)
 - [0380 The app's config compiles its Rust: `withRustJs(nextConfig)`](decisions/0380-with-rust-js.md) *(superseded by 0412)*
-- [0381 The app's Prettier lays out what rust-js writes](decisions/0381-the-apps-prettier-lays-it-out.md)
+- [0381 The app's Prettier lays out what rust-js writes](decisions/0381-the-apps-prettier-lays-it-out.md) *(amended: the app's build only; its config for where the file goes, beside its Rust)*
 - [0382 A module has a file for what it has, the root too](decisions/0382-a-module-has-a-file-for-what-it-has.md)
 - [0383 A file's leading comments are its JS's](decisions/0383-a-files-leading-comments-are-its-jss.md)
 - [0384 A ref a prop holds is @types/react's `Ref<T>`, and an element's props `DetailedHTMLProps`](decisions/0384-a-ref-prop-is-reacts-ref.md)

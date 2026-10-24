@@ -3,7 +3,8 @@
 Status: Accepted. Amends [0117](0117-output-hooks.md) and
 [0207](0207-declarations-printed-by-typescript.md); delivers the layout
 rule of [0378](0378-one-file-at-a-time.md). Amended below: the app's
-build only, not a file compiled alone.
+build only, not a file compiled alone; and its config, for where the
+file goes, beside its Rust.
 
 Case: N ([0262](0262-when-rust-and-js-disagree.md)): how the JS is laid
 out, not what it means.
@@ -85,3 +86,31 @@ no build wrote is nobody's `prettier --check`.
   and no config of its own keeps rust-js's layout" is what the corpus
   showed before, now of a Cargo build.
 - A small corpus case compiles in 52 ms, not 85.
+
+## Amendment: the config for where the file goes
+
+Prettier was asked for each file's config by the path Cargo's build wrote
+it at, in the app's target directory,
+`node_modules/.cache/rust-js/target/wasm32-unknown-unknown/debug/deps/rust-js/<hash>/src/ReactLazy.js`.
+A config's own options were found from there, as Prettier looks up from a
+file to its config; an override by path wasn't. React's `.prettierrc.js`
+says `trailingComma: 'es5'`, and `trailingComma: 'all'` for its
+`esNextPaths`, `packages/*/src/**/*.js`, which a path in the target
+directory never is: every file of the port had es5's commas where React's
+own have `all`'s, and its `prettier --check` failed on each.
+
+**Prettier lays out each file by its config for where the file goes,
+beside its Rust, as the app's `prettier --check` reads it**: its JS's
+path in source, `src/ReactLazy.js` of `src/ReactLazy.rs`, and its
+`.d.ts` beside it. That path is the one the manifest says,
+`OutputPlan::in_source`'s, the one answer to where a module's JS goes in
+source (ADRs 0041, 0273), asked, not made again.
+
+- A crate of an npm package's (ADR 0414) is laid out by the config for
+  where its JS is, the package's, as its author's build laid it out.
+- A crate of crates.io's (ADR 0415) is run where Cargo's registry has it,
+  which has no Prettier: rust-js's layout, as before.
+- The test "Prettier lays a file out by its config's overrides for where
+  the file goes, beside its Rust" holds it: an override of `src/**/*.{js,ts}`
+  lays out the JS and the `.d.ts`; the mutation
+  `prettier-at-the-built-path` proves it.
