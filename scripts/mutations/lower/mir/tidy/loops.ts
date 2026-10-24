@@ -46,8 +46,8 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-chars-arrayed",
     breaks: "a string's `chars()` iterated is `Array.from(code)`",
     file: "src/lower/mir/tidy/loops.rs",
-    find: "            iterable: unarrayed(iterated(source.clone())),\n",
-    replace: "            iterable: iterated(source.clone()),\n",
+    find: "            let iterable = unarrayed(iterated(source.clone()));\n",
+    replace: "            let iterable = iterated(source.clone());\n",
     tests: ["test/lowering-strings.test.ts", "-t", "arguments read out of order"],
   },
   {

@@ -28,20 +28,31 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Err(self.tcx.dcx().span_err(span, refused));
         }
         let this = is_method(self.tcx, def_id).then(|| args.remove(0));
-        // A `()` is `undefined` (ADR 0441), given a binding too, where it
-        // was its tuple's array, `[]`: `postMessage(undefined)` of
-        // `post_message((), None)` (ADR 0225 amended). Not a rest's `()`,
-        // its arguments, none.
+        // A `()` a structured clone is given is `undefined` (ADR 0441),
+        // where it was its tuple's array, `[]`: `postMessage(undefined)` of
+        // `post_message((), None)` (ADR 0225 amended). Of a parameter of a
+        // type bounded by `js::StructuredClone` alone: a tuple of hooks'
+        // dependencies, `()` of none, is still `[]`.
+        let declared = self.tcx.fn_sig(def_id).instantiate_identity().skip_normalization();
+        let declared = declared.skip_binder().inputs();
+        let cloned = |ty: ty::Ty<'tcx>| {
+            matches!(ty.kind(), ty::Param(_))
+                && self.tcx.param_env(def_id).caller_bounds().iter().any(|clause| {
+                    clause.as_trait_clause().is_some_and(|bound| {
+                        bound.self_ty().skip_binder() == ty
+                            && super::recognition::is_structured_clone(self.tcx, bound.def_id())
+                    })
+                })
+        };
         let inputs = self
             .tcx
             .fn_sig(def_id)
             .instantiate(self.tcx, generic_args)
             .skip_normalization();
         let inputs = inputs.skip_binder().inputs();
-        let rest = usize::from(is_variadic(self.tcx, def_id));
-        let given = &inputs[usize::from(this.is_some())..inputs.len() - rest];
-        for (arg, ty) in args.iter_mut().zip(given) {
-            if ty.is_unit() && !arg.has_effects() {
+        let at = usize::from(this.is_some());
+        for ((arg, ty), declared) in args.iter_mut().zip(&inputs[at..]).zip(&declared[at..]) {
+            if ty.is_unit() && cloned(*declared) && !arg.has_effects() {
                 *arg = Expr::undefined();
             }
         }

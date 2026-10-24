@@ -223,9 +223,12 @@ ADR 0441 has `()` `undefined`: a receiver would get an empty array.
 - **`()` is `StructuredClone`**, `undefined`, which a clone copies as it
   is. It's never `Defined`, so `Some(())`, which `None` would be too, isn't
   one: rustc's error.
-- **A `()` given a binding is `undefined`** (`binding_calls.rs`), kept
-  where it's given, as ADR 0330 keeps an `undefined`: `post_message((),
-  None)` is `port.postMessage(undefined)`. Of one whose making does
+- **A `()` a binding's structured clone is given is `undefined`**
+  (`binding_calls.rs`), of a parameter whose type is bounded by
+  `js::StructuredClone`, kept where it's given, as ADR 0330 keeps an
+  `undefined`: `post_message((), None)` is `port.postMessage(undefined)`.
+  A `()` of another type is still its tuple's `[]`: React's
+  `useImperativeHandle(handle, f, ())`, of no dependencies, is `[]`. Of one whose making does
   something, it's still made where it was. Case N: what JS is given is
   what Rust's `()` is, no value.
 
