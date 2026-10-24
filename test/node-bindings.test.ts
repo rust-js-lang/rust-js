@@ -970,3 +970,90 @@ console.log(JSON.stringify(seen));
   expect([p.exitCode, p.stderr.toString()]).toEqual([0, ""]);
   expect(JSON.parse(p.stdout.toString())).toEqual(["node boom", "host bang"]);
 });
+
+// ADR 0305 amended: Node's `module`, a CommonJS module's own variable,
+// whose `require` a computed key reads, past a bundler, and
+// `Function.prototype.call` of it, as React's `shared/enqueueTask.js` gets
+// Node's own `setImmediate`, past fake timers; in an ES module, which has no
+// `module`, the `ReferenceError` is caught, and `MessageChannel` is used.
+test("React's enqueueTask reads Node's setImmediate past a bundler, else posts a message", () => {
+  const dir = fixture("enqueue-task");
+  const node = buildNode();
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::Cell;
+use std::panic::catch_unwind;
+
+use js::{Unknown, function};
+use webapi::console;
+
+type EnqueueTask = fn(Box<dyn Fn()>);
+
+thread_local! {
+    static DID_WARN_ABOUT_MESSAGE_CHANNEL: Cell<bool> = const { Cell::new(false) };
+    static ENQUEUE_TASK_IMPL: Cell<Option<EnqueueTask>> = const { Cell::new(None) };
+}
+
+js::export_default! {
+    fn enqueue_task(task: Box<dyn Fn()>) {
+        if ENQUEUE_TASK_IMPL.get().is_none()
+            && let Err(_err) = catch_unwind(|| {
+                // read require off the module object to get around the bundlers.
+                // we don't want them to detect a require and bundle a Node polyfill.
+                let require_string = js::string::slice(&format!("require{}", js::shown(js::math::random())), 0.0, Some(7.0));
+                // $FlowFixMe[invalid-computed-prop]
+                let node_require: &dyn Fn(&str) -> Option<&'static Unknown> =
+                    unsafe { js::cast(js::get(js::unknown(node::module), &require_string)) };
+                // assuming we're in node, let's try to get node's
+                // version of setImmediate, bypassing fake timers if any.
+                let timers: &Unknown = unsafe { js::cast(function::call(node_require, Some(&node::module), ("timers",))) };
+                ENQUEUE_TASK_IMPL.set(Some(unsafe { js::cast(js::get(timers, "setImmediate")) }));
+            })
+        {
+            // we're in a browser
+            // we can't use regular timers because they may still be faked
+            // so we try MessageChannel+postMessage instead
+            ENQUEUE_TASK_IMPL.set(Some(|callback| {
+                if !DID_WARN_ABOUT_MESSAGE_CHANNEL.get() {
+                    DID_WARN_ABOUT_MESSAGE_CHANNEL.set(true);
+                    if !js::is_defined(webapi::message_channel::new) {
+                        console::error(("This browser does not have a MessageChannel implementation.",));
+                    }
+                }
+                let channel = webapi::message_channel::new();
+                channel.port1().set_onmessage(Some(Box::new(move |_| callback())));
+                channel.port2().post_message((), None);
+            }));
+        }
+        if let Some(enqueue_task_impl) = ENQUEUE_TASK_IMPL.get() {
+            enqueue_task_impl(task);
+        }
+    }
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `node=${join(node, "libnode.rmeta")}`, "--extern", `js=${join(node, "libjs.rmeta")}`, "--extern", `webapi=${join(node, "libwebapi.rmeta")}`, "-L", node]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("const nodeRequire = module[requireString];");
+  expect(js).toContain("const requireString = `require${Math.random()}`.slice(0, 7);");
+  expect(js).toContain('const timers = nodeRequire.call(module, "timers");\n      enqueueTaskImpl = timers.setImmediate;\n    } catch (_err) {');
+  expect(js).toContain("channel.port2.postMessage(undefined);");
+  writeFileSync(join(dir, "package.json"), '{ "type": "module" }');
+  // A CommonJS module's `module`, as Jest's is, and a faked `setImmediate`,
+  // which the real one is read past; then an ES module's, of none.
+  writeFileSync(join(dir, "run.js"), `import { createRequire } from "node:module";
+const seen = [];
+const faked = globalThis.setImmediate;
+globalThis.setImmediate = () => seen.push("faked");
+globalThis.module = { require: createRequire(import.meta.url) };
+const { default: viaNode } = await import("./lib.js");
+await new Promise((done) => viaNode(() => done(seen.push("node"))));
+delete globalThis.module;
+const { default: viaChannel } = await import("./lib.js?again");
+await new Promise((done) => viaChannel(() => done(seen.push("channel"))));
+globalThis.setImmediate = faked;
+console.log(JSON.stringify(seen));
+// A channel's ports keep Node's loop open, which the Node path doesn't.
+process.exit(0);
+`);
+  const p = Bun.spawnSync(["node", "run.js"], { cwd: dir, stderr: "pipe" });
+  expect([p.exitCode, p.stderr.toString()]).toEqual([0, ""]);
+  expect(JSON.parse(p.stdout.toString())).toEqual(["node", "channel"]);
+});

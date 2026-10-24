@@ -191,6 +191,15 @@ function bindings(): Set<string> {
       if (module) modules.push({ name: module, depth });
     }
   }
+  // A member of what a type derefs to is one of its own: a typed array's
+  // `buffer`, its `ArrayBufferView`'s (ADR 0741).
+  for (const f of files) {
+    const text = readFileSync(join(src, f), "utf8");
+    for (const [, type, target] of text.matchAll(/^impl(?:<[^>]*>)? Deref for (\w+)(?:<[^>]*>)? \{\n\s+type Target = (\w+)/gm)) {
+      const [of, to] = [classes.get(type) ?? type, classes.get(target) ?? target];
+      for (const b of [...bound]) if (b.startsWith(`${to}.`) && !b.includes(".static:") && !b.endsWith(".constructor")) bound.add(`${of}${b.slice(to.length)}`);
+    }
+  }
   return bound;
 }
 

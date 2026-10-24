@@ -346,7 +346,7 @@ pub(super) fn is_stepped_items(e: &Expr) -> bool {
 /// 0561), `$lazyScan` (ADR 0517) and `$lazyMapWhile`, not fused, and each of
 /// its generators,
 /// which the runtime package's test holds this list to; a range's, its own.
-pub(crate) const ITERATOR_HELPERS: [&str; 30] = [
+pub(crate) const ITERATOR_HELPERS: [&str; 31] = [
     "$stdIterator",
     "$memchrIter",
     "$mapEnds",
@@ -377,6 +377,7 @@ pub(crate) const ITERATOR_HELPERS: [&str; 30] = [
     "$flatMap",
     "$repeatingWith",
     "$successors",
+    "$keysIn",
 ];
 
 /// Whether `e` is a JS iterator as it's made: `Iterator.from(..)`, a
@@ -483,6 +484,22 @@ pub(super) fn iterated(e: Expr) -> Expr {
             kind,
             span: e.span,
         },
+    }
+}
+
+/// The keys `for (const key in object)` visits, `js::keys_in(object)`'s:
+/// `$keysIn(object)`, a JS iterator of them, which a `for` loop of it is
+/// that loop (ADR 0719).
+pub(in crate::lower) fn keys_in(object: Expr) -> Expr {
+    Expr::call(Expr::helper("$keysIn"), vec![object])
+}
+
+/// What `e`, a `keys_in` one, steps the keys of: `object` of
+/// `$keysIn(object)`. The one reader of its form.
+pub(in crate::lower) fn keys_in_source(e: &Expr) -> Option<&Expr> {
+    match &e.kind {
+        js::ExprKind::Call(callee, args) if callee.helper_name() == Some("$keysIn") && args.len() == 1 => args.first(),
+        _ => None,
     }
 }
 

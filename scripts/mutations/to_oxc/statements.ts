@@ -162,4 +162,12 @@ export const mutations: Mutation[] = [
     replace: "                    let falls_out = default.is_none() && Some(k) == last_case && false;\n",
     tests: ["test/lowering-switch-ends.test.ts", "-t", "a case needs no break"],
   },
+  {
+    name: "for-in-printed-of",
+    breaks: "a loop of an object's keys is printed `for (const key of o)`, which throws of an object that isn't iterable",
+    file: "src/to_oxc/statements.rs",
+    find: "                let l = if *keys {\n",
+    replace: "                let l = if *keys && false {\n",
+    tests: ["test/js-object.test.ts", "-t", "a for loop of keys_in"],
+  },
 ];

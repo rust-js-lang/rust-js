@@ -482,6 +482,180 @@ pub fn given() -> Option<&'static Unknown> {
   expect(lib.given()).toBe(1);
 });
 
+// ADR 0719: `js::keys_in(o)`, the keys `for…in` visits, its prototypes'
+// enumerable ones too, each as the loop reaches it; a `for` loop of it is
+// `for (const key in o)`, and of its `enumerate()` a counter each turn ends
+// with: React's `shared/ReactPerformanceTrackProperties.js` as a port
+// writes it. Anywhere else, a JS iterator of them.
+test("a for loop of keys_in is JS's for…in, its enumerate a counter", async () => {
+  const { js, lib, warnings } = await compiled("js-object-keys-in", `use js::Unknown;
+use js::object::has_own_property;
+
+const OBJECT_WIDTH_LIMIT: usize = 2;
+
+pub fn add_object_to_properties(object: &Unknown, properties: &mut Vec<String>) {
+    let mut added_properties = 0;
+    for key in js::keys_in(object) {
+        if has_own_property.call(object, &key) && !key.starts_with('_') {
+            added_properties += 1;
+            properties.push(key);
+            if added_properties >= OBJECT_WIDTH_LIMIT {
+                properties.push("Only 2 properties are shown.".to_string());
+                break;
+            }
+        }
+    }
+}
+
+pub fn removed(prev: &Unknown, next: &Unknown, properties: &mut Vec<String>) -> bool {
+    let mut is_deeply_equal = true;
+    for (prev_properties_checked, key) in js::keys_in(prev).enumerate() {
+        if prev_properties_checked > OBJECT_WIDTH_LIMIT {
+            properties.push("Previous object has more than 2 properties.".to_string());
+            is_deeply_equal = false;
+            break;
+        }
+        if js::has(next, &key) {
+            continue;
+        }
+        properties.push(key);
+        is_deeply_equal = false;
+    }
+    is_deeply_equal
+}
+
+pub fn deleting(object: &Unknown) -> Vec<String> {
+    let mut seen = Vec::new();
+    for key in js::keys_in(object) {
+        js::delete(object, "b");
+        seen.push(key);
+    }
+    seen
+}
+
+pub fn later(object: &Unknown) -> Vec<String> {
+    let mut reads: Vec<Box<dyn Fn() -> String>> = Vec::new();
+    for (n, key) in js::keys_in(object).enumerate() {
+        reads.push(Box::new(move || format!("{n}:{key}")));
+    }
+    reads.iter().map(|read| read()).collect()
+}
+
+pub fn numbered(object: &Unknown) -> Vec<String> {
+    let mut out = Vec::new();
+    for (n, key) in js::keys_in(object).enumerate() {
+        out.push(format!("{n}:{key}"));
+    }
+    out
+}
+
+pub fn twice(object: &Unknown) -> String {
+    let mut last = String::new();
+    for (n, key) in js::keys_in(object).enumerate() {
+        last = format!("{n}{key}");
+    }
+    let n = last.len();
+    for (n, key) in js::keys_in(object).enumerate() {
+        last += &format!("{n}{key}");
+    }
+    format!("{last}{n}")
+}
+
+pub fn all(object: &Unknown) -> Vec<String> {
+    js::keys_in(object).collect()
+}
+`);
+  expect(warnings).toEqual([]);
+  expect(js).toContain("for (const key in object) {\n    if (Object.prototype.hasOwnProperty.call(object, key) && !key.startsWith(\"_\")) {");
+  expect(js).toContain("let prevPropertiesChecked = 0;\n  for (const key in prev) {");
+  expect(js).toContain("prevPropertiesChecked++;\n      continue;");
+  expect(js).toContain("let n = 0;\n  for (const key in object) {\n    out.push(`${n}:${key}`);\n    n++;\n  }");
+  // A closure that reads the count keeps its own each turn, as a `const`.
+  expect(js).toContain("for (const [n, key] of $keysIn(object).map((x, i) => [i, x])) {");
+  expect(js).toContain("return $keysIn(object).toArray();");
+  const proto = { inherited: 1, shadowed: 2 };
+  const object = Object.assign(Object.create(proto), { own: 3, shadowed: 4, _private: 5 });
+  Object.defineProperty(object, "hidden", { value: 6, enumerable: false });
+  const properties: string[] = [];
+  lib.addObjectToProperties(object, properties);
+  expect(properties).toEqual(["own", "shadowed", "Only 2 properties are shown."]);
+  expect(lib.all(object)).toEqual(["own", "shadowed", "_private", "inherited"]);
+  const removed: string[] = [];
+  expect(lib.removed(object, { own: 1 }, removed)).toBe(false);
+  expect(removed).toEqual(["shadowed", "_private", "Previous object has more than 2 properties."]);
+  const many: string[] = [];
+  expect(lib.removed({ a: 1, b: 2, c: 3, d: 4 }, { a: 1, b: 2, c: 3, d: 4 }, many)).toBe(false);
+  expect(many).toEqual(["Previous object has more than 2 properties."]);
+  expect(lib.removed({ a: 1 }, { a: 2 }, [])).toBe(true);
+  // A key deleted before it's reached isn't visited, as `for…in` has it.
+  expect(lib.deleting({ a: 1, b: 2, c: 3 })).toEqual(["a", "c"]);
+  expect(lib.later({ x: 1, y: 2 })).toEqual(["0:x", "1:y"]);
+  expect(lib.numbered(object)).toEqual(["0:own", "1:shadowed", "2:_private", "3:inherited"]);
+  // Two counters of one name aren't one \`let\`, which JS refuses.
+  expect(lib.twice({ a: 1, b: 2 })).toBe("1b0a1b2");
+});
+
+// ADR 0740: a function's `name`, `length` and source, `Function.prototype`'s
+// members, of any function, as React's `shared/ReactPerformanceTrackProperties.js`
+// reads them: `f.name`, `f.length`, `Function.prototype.toString.call(f)`.
+test("a function's name, length and source are read of any function", async () => {
+  const { js, lib, warnings } = await compiled("js-object-function-members", `use js::{Kind, Unknown, function};
+
+pub fn described(value: Option<&Unknown>) -> String {
+    match js::classify(value) {
+        Kind::Function(f) => {
+            let function_name = function::name(f);
+            if function_name.is_empty() {
+                "() => {}".to_string()
+            } else {
+                function_name + "() {}"
+            }
+        }
+        _ => String::new(),
+    }
+}
+
+pub fn same_source(prev_value: Option<&Unknown>, next_value: Option<&Unknown>) -> bool {
+    if let Kind::Function(prev_value) = js::classify(prev_value)
+        && let Kind::Function(next_value) = js::classify(next_value)
+        && function::name(prev_value) == function::name(next_value)
+        && function::length(prev_value) == function::length(next_value)
+    {
+        let prev_src = function::to_string(prev_value);
+        let next_src = function::to_string(next_value);
+        return prev_src == next_src;
+    }
+    false
+}
+
+pub fn of_signature(f: &dyn Fn(&str) -> u32) -> (String, u32) {
+    (function::name(f), function::length(f))
+}
+
+pub fn own() -> (String, u32) {
+    fn add(a: u32, b: u32) -> u32 {
+        a + b
+    }
+    (function::name(&add), function::length(&add))
+}
+`);
+  expect(warnings).toEqual([]);
+  expect(js).toContain("const functionName = value.name;");
+  expect(js).toContain("prevValue.name === nextValue.name &&");
+  expect(js).toContain("prevValue.length === nextValue.length");
+  expect(js).toContain("const prevSrc = Function.prototype.toString.call(prevValue);");
+  expect(js).toContain("return [f.name, f.length];");
+  expect(js).toContain("return [add.name, add.length];");
+  expect(lib.described(function named() {})).toBe("named() {}");
+  expect(lib.described(() => {})).toBe("() => {}");
+  const made = () => (n: number) => n + 1;
+  expect(lib.sameSource(made(), made())).toBe(true);
+  expect(lib.sameSource(made(), (n: number) => n + 2)).toBe(false);
+  expect(lib.sameSource(function a(x: number) {}, function a(x: number, y: number) {})).toBe(false);
+  expect(lib.ofSignature(function measure(text: string) { return text.length; })).toEqual(["measure", 1]);
+  expect(lib.own()).toEqual(["add", 2]);
+});
+
 // ADRs 0695 to 0700: React's `shared/ReactComponentStackFrame.js` as a port writes
 // it, each shape upstream's: `Fake` a function declaration where it's
 // written, `new fn()`, `delete fn.prototype.props`, `fn()` for what it

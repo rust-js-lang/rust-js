@@ -679,8 +679,8 @@ const dispatchers: [string, string, number][] = [
   ["src/lower/recognition/calls.rs", "    pub(in crate::lower) fn classify(", 8],
   ["src/lower/mir/dispatch.rs", "    pub(super) fn mir_call(", 106],
   ["src/lower/mir/dispatch.rs", "    fn mir_call_values_of(", 247],
-  ["src/lower/mir/dispatch.rs", "    fn mir_std_call(", 147],
-  ["src/lower/mir.rs", "    fn mir_function(", 361], // The parameters handed to tidy's `finish` stage in a cell (ADR 0659, amended); the jumps the program wrote in one field (ADR 0742).
+  ["src/lower/mir/dispatch.rs", "    fn mir_std_call(", 146],
+  ["src/lower/mir.rs", "    fn mir_function(", 362], // The parameters handed to tidy's `scopes` stage in a cell, and whether it asks its stages again (ADR 0659, amended); the jumps the program wrote in one field (ADR 0742).
   ["src/lower/recognition/inherent.rs", "    pub(super) fn classify_inherent(", 754],
   ["src/lower/recognition/calls.rs", "    fn classify_trait_method(", 245],
   ["src/lower/combinators.rs", "    pub(in crate::lower) fn comb_values(", 602],

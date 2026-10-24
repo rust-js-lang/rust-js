@@ -9,8 +9,9 @@
 // A binding's parameters are its JS function's: its body never runs.
 #![allow(unused_variables)]
 
-use super::{Defined, JsError, JsObject, Rest, StructuredClone};
+use super::{Defined, JsError, JsObject, Rest, StructuredClone, Takes, Unknown};
 use core::marker::PhantomData;
+use core::ops::Deref;
 
 /// [`ArrayBuffer`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/ArrayBuffer): bytes, which a typed array or a
 /// `DataView` reads and writes.
@@ -75,9 +76,9 @@ pub mod array_buffer {
         unreachable!()
     }
 
-    /// [`ArrayBuffer.isView(value)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/ArrayBuffer/isView): whether `value` is a typed array or a `DataView`.
+    /// [`ArrayBuffer.isView(value)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/ArrayBuffer/isView): whether `value`, any value, as TypeScript's `any`, is an [`ArrayBufferView`], a typed array or a `DataView` (ADR 0741).
     #[cfg_attr(rust_js, rust_js::link_name = "ArrayBuffer.isView")]
-    pub fn is_view(value: &JsObject) -> bool {
+    pub fn is_view(value: Option<&Unknown>) -> bool {
         unreachable!()
     }
 }
@@ -140,29 +141,51 @@ pub unsafe trait ArrayBufferLike {}
 unsafe impl ArrayBufferLike for ArrayBuffer {}
 unsafe impl ArrayBufferLike for SharedArrayBuffer {}
 
-/// [`DataView`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/DataView): a buffer's bytes read and written as numbers
-/// of any kind, at any offset, big-endian unless `little_endian` says.
-pub struct DataView<B = ArrayBuffer>(PhantomData<JsObject>, PhantomData<B>);
+/// TypeScript's [`ArrayBufferView`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray):
+/// a typed array or a `DataView`, each of which derefs to it, a view of
+/// `B`'s bytes, of an `ArrayBuffer` unless said (ADR 0741). What a function
+/// of any view takes, `fn f(view: &ArrayBufferView)`, given a `&Uint8Array`.
+pub struct ArrayBufferView<B = ArrayBuffer>(PhantomData<JsObject>, PhantomData<B>);
 
-impl<B> DataView<B> {
-    /// [`view.buffer`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/DataView/buffer): the buffer it views.
+// An object, never `undefined`, which a structured clone copies.
+unsafe impl<B> Defined for ArrayBufferView<B> {}
+unsafe impl<B> StructuredClone for ArrayBufferView<B> {}
+
+impl<B> ArrayBufferView<B> {
+    /// [`view.buffer`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/buffer): the buffer it views.
     #[cfg_attr(rust_js, rust_js::link_name = "get buffer")]
     pub fn buffer(&self) -> &'static B {
         unreachable!()
     }
 
-    /// [`view.byteLength`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/DataView/byteLength): how many bytes it views.
+    /// [`view.byteLength`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/byteLength): how many bytes it views.
     #[cfg_attr(rust_js, rust_js::link_name = "get byteLength")]
     pub fn byte_length(&self) -> u32 {
         unreachable!()
     }
 
-    /// [`view.byteOffset`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/DataView/byteOffset): where in its buffer it starts.
+    /// [`view.byteOffset`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/byteOffset): where in its buffer it starts.
     #[cfg_attr(rust_js, rust_js::link_name = "get byteOffset")]
     pub fn byte_offset(&self) -> u32 {
         unreachable!()
     }
+}
 
+/// [`DataView`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/DataView): a buffer's bytes read and written as numbers
+/// of any kind, at any offset, big-endian unless `little_endian` says.
+pub struct DataView<B = ArrayBuffer>(PhantomData<JsObject>, PhantomData<B>);
+
+
+impl<B> Deref for DataView<B> {
+    type Target = ArrayBufferView<B>;
+
+    fn deref(&self) -> &ArrayBufferView<B> {
+        // Never runs: rust-js compiles this `Deref` to the object itself.
+        unsafe { &*(self as *const Self as *const ArrayBufferView<B>) }
+    }
+}
+
+impl<B> DataView<B> {
     /// [`view.getInt8(offset)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/DataView/getInt8): the i8 at `offset`.
     #[cfg_attr(rust_js, rust_js::link_name = "getInt8")]
     pub fn get_int8(&self, offset: u32) -> i8 {
@@ -301,28 +324,22 @@ pub struct Int8Array<B = ArrayBuffer>(PhantomData<JsObject>, PhantomData<B>);
 unsafe impl<B> Defined for Int8Array<B> {}
 unsafe impl<B> StructuredClone for Int8Array<B> {}
 
+// Its elements, spread, as rest arguments (ADR 0718).
+impl<'a, T: ?Sized + Takes<i8>, B> Rest<T> for &'a Int8Array<B> {}
+
+impl<B> Deref for Int8Array<B> {
+    type Target = ArrayBufferView<B>;
+
+    fn deref(&self) -> &ArrayBufferView<B> {
+        // Never runs: rust-js compiles this `Deref` to the object itself.
+        unsafe { &*(self as *const Self as *const ArrayBufferView<B>) }
+    }
+}
+
 impl<B> Int8Array<B> {
     /// [`array.length`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/length): how many elements it has.
     #[cfg_attr(rust_js, rust_js::link_name = "get length")]
     pub fn length(&self) -> u32 {
-        unreachable!()
-    }
-
-    /// [`array.buffer`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/buffer): the buffer it views.
-    #[cfg_attr(rust_js, rust_js::link_name = "get buffer")]
-    pub fn buffer(&self) -> &'static B {
-        unreachable!()
-    }
-
-    /// [`array.byteLength`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/byteLength): how many bytes it views.
-    #[cfg_attr(rust_js, rust_js::link_name = "get byteLength")]
-    pub fn byte_length(&self) -> u32 {
-        unreachable!()
-    }
-
-    /// [`array.byteOffset`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/byteOffset): where in its buffer it starts.
-    #[cfg_attr(rust_js, rust_js::link_name = "get byteOffset")]
-    pub fn byte_offset(&self) -> u32 {
         unreachable!()
     }
 
@@ -576,28 +593,22 @@ pub struct Uint8Array<B = ArrayBuffer>(PhantomData<JsObject>, PhantomData<B>);
 unsafe impl<B> Defined for Uint8Array<B> {}
 unsafe impl<B> StructuredClone for Uint8Array<B> {}
 
+// Its elements, spread, as rest arguments (ADR 0718).
+impl<'a, T: ?Sized + Takes<u8>, B> Rest<T> for &'a Uint8Array<B> {}
+
+impl<B> Deref for Uint8Array<B> {
+    type Target = ArrayBufferView<B>;
+
+    fn deref(&self) -> &ArrayBufferView<B> {
+        // Never runs: rust-js compiles this `Deref` to the object itself.
+        unsafe { &*(self as *const Self as *const ArrayBufferView<B>) }
+    }
+}
+
 impl<B> Uint8Array<B> {
     /// [`array.length`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/length): how many elements it has.
     #[cfg_attr(rust_js, rust_js::link_name = "get length")]
     pub fn length(&self) -> u32 {
-        unreachable!()
-    }
-
-    /// [`array.buffer`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/buffer): the buffer it views.
-    #[cfg_attr(rust_js, rust_js::link_name = "get buffer")]
-    pub fn buffer(&self) -> &'static B {
-        unreachable!()
-    }
-
-    /// [`array.byteLength`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/byteLength): how many bytes it views.
-    #[cfg_attr(rust_js, rust_js::link_name = "get byteLength")]
-    pub fn byte_length(&self) -> u32 {
-        unreachable!()
-    }
-
-    /// [`array.byteOffset`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/byteOffset): where in its buffer it starts.
-    #[cfg_attr(rust_js, rust_js::link_name = "get byteOffset")]
-    pub fn byte_offset(&self) -> u32 {
         unreachable!()
     }
 
@@ -851,28 +862,22 @@ pub struct Uint8ClampedArray<B = ArrayBuffer>(PhantomData<JsObject>, PhantomData
 unsafe impl<B> Defined for Uint8ClampedArray<B> {}
 unsafe impl<B> StructuredClone for Uint8ClampedArray<B> {}
 
+// Its elements, spread, as rest arguments (ADR 0718).
+impl<'a, T: ?Sized + Takes<u8>, B> Rest<T> for &'a Uint8ClampedArray<B> {}
+
+impl<B> Deref for Uint8ClampedArray<B> {
+    type Target = ArrayBufferView<B>;
+
+    fn deref(&self) -> &ArrayBufferView<B> {
+        // Never runs: rust-js compiles this `Deref` to the object itself.
+        unsafe { &*(self as *const Self as *const ArrayBufferView<B>) }
+    }
+}
+
 impl<B> Uint8ClampedArray<B> {
     /// [`array.length`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/length): how many elements it has.
     #[cfg_attr(rust_js, rust_js::link_name = "get length")]
     pub fn length(&self) -> u32 {
-        unreachable!()
-    }
-
-    /// [`array.buffer`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/buffer): the buffer it views.
-    #[cfg_attr(rust_js, rust_js::link_name = "get buffer")]
-    pub fn buffer(&self) -> &'static B {
-        unreachable!()
-    }
-
-    /// [`array.byteLength`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/byteLength): how many bytes it views.
-    #[cfg_attr(rust_js, rust_js::link_name = "get byteLength")]
-    pub fn byte_length(&self) -> u32 {
-        unreachable!()
-    }
-
-    /// [`array.byteOffset`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/byteOffset): where in its buffer it starts.
-    #[cfg_attr(rust_js, rust_js::link_name = "get byteOffset")]
-    pub fn byte_offset(&self) -> u32 {
         unreachable!()
     }
 
@@ -1126,28 +1131,22 @@ pub struct Int16Array<B = ArrayBuffer>(PhantomData<JsObject>, PhantomData<B>);
 unsafe impl<B> Defined for Int16Array<B> {}
 unsafe impl<B> StructuredClone for Int16Array<B> {}
 
+// Its elements, spread, as rest arguments (ADR 0718).
+impl<'a, T: ?Sized + Takes<i16>, B> Rest<T> for &'a Int16Array<B> {}
+
+impl<B> Deref for Int16Array<B> {
+    type Target = ArrayBufferView<B>;
+
+    fn deref(&self) -> &ArrayBufferView<B> {
+        // Never runs: rust-js compiles this `Deref` to the object itself.
+        unsafe { &*(self as *const Self as *const ArrayBufferView<B>) }
+    }
+}
+
 impl<B> Int16Array<B> {
     /// [`array.length`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/length): how many elements it has.
     #[cfg_attr(rust_js, rust_js::link_name = "get length")]
     pub fn length(&self) -> u32 {
-        unreachable!()
-    }
-
-    /// [`array.buffer`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/buffer): the buffer it views.
-    #[cfg_attr(rust_js, rust_js::link_name = "get buffer")]
-    pub fn buffer(&self) -> &'static B {
-        unreachable!()
-    }
-
-    /// [`array.byteLength`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/byteLength): how many bytes it views.
-    #[cfg_attr(rust_js, rust_js::link_name = "get byteLength")]
-    pub fn byte_length(&self) -> u32 {
-        unreachable!()
-    }
-
-    /// [`array.byteOffset`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/byteOffset): where in its buffer it starts.
-    #[cfg_attr(rust_js, rust_js::link_name = "get byteOffset")]
-    pub fn byte_offset(&self) -> u32 {
         unreachable!()
     }
 
@@ -1401,28 +1400,22 @@ pub struct Uint16Array<B = ArrayBuffer>(PhantomData<JsObject>, PhantomData<B>);
 unsafe impl<B> Defined for Uint16Array<B> {}
 unsafe impl<B> StructuredClone for Uint16Array<B> {}
 
+// Its elements, spread, as rest arguments (ADR 0718).
+impl<'a, T: ?Sized + Takes<u16>, B> Rest<T> for &'a Uint16Array<B> {}
+
+impl<B> Deref for Uint16Array<B> {
+    type Target = ArrayBufferView<B>;
+
+    fn deref(&self) -> &ArrayBufferView<B> {
+        // Never runs: rust-js compiles this `Deref` to the object itself.
+        unsafe { &*(self as *const Self as *const ArrayBufferView<B>) }
+    }
+}
+
 impl<B> Uint16Array<B> {
     /// [`array.length`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/length): how many elements it has.
     #[cfg_attr(rust_js, rust_js::link_name = "get length")]
     pub fn length(&self) -> u32 {
-        unreachable!()
-    }
-
-    /// [`array.buffer`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/buffer): the buffer it views.
-    #[cfg_attr(rust_js, rust_js::link_name = "get buffer")]
-    pub fn buffer(&self) -> &'static B {
-        unreachable!()
-    }
-
-    /// [`array.byteLength`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/byteLength): how many bytes it views.
-    #[cfg_attr(rust_js, rust_js::link_name = "get byteLength")]
-    pub fn byte_length(&self) -> u32 {
-        unreachable!()
-    }
-
-    /// [`array.byteOffset`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/byteOffset): where in its buffer it starts.
-    #[cfg_attr(rust_js, rust_js::link_name = "get byteOffset")]
-    pub fn byte_offset(&self) -> u32 {
         unreachable!()
     }
 
@@ -1676,28 +1669,22 @@ pub struct Int32Array<B = ArrayBuffer>(PhantomData<JsObject>, PhantomData<B>);
 unsafe impl<B> Defined for Int32Array<B> {}
 unsafe impl<B> StructuredClone for Int32Array<B> {}
 
+// Its elements, spread, as rest arguments (ADR 0718).
+impl<'a, T: ?Sized + Takes<i32>, B> Rest<T> for &'a Int32Array<B> {}
+
+impl<B> Deref for Int32Array<B> {
+    type Target = ArrayBufferView<B>;
+
+    fn deref(&self) -> &ArrayBufferView<B> {
+        // Never runs: rust-js compiles this `Deref` to the object itself.
+        unsafe { &*(self as *const Self as *const ArrayBufferView<B>) }
+    }
+}
+
 impl<B> Int32Array<B> {
     /// [`array.length`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/length): how many elements it has.
     #[cfg_attr(rust_js, rust_js::link_name = "get length")]
     pub fn length(&self) -> u32 {
-        unreachable!()
-    }
-
-    /// [`array.buffer`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/buffer): the buffer it views.
-    #[cfg_attr(rust_js, rust_js::link_name = "get buffer")]
-    pub fn buffer(&self) -> &'static B {
-        unreachable!()
-    }
-
-    /// [`array.byteLength`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/byteLength): how many bytes it views.
-    #[cfg_attr(rust_js, rust_js::link_name = "get byteLength")]
-    pub fn byte_length(&self) -> u32 {
-        unreachable!()
-    }
-
-    /// [`array.byteOffset`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/byteOffset): where in its buffer it starts.
-    #[cfg_attr(rust_js, rust_js::link_name = "get byteOffset")]
-    pub fn byte_offset(&self) -> u32 {
         unreachable!()
     }
 
@@ -1951,28 +1938,22 @@ pub struct Uint32Array<B = ArrayBuffer>(PhantomData<JsObject>, PhantomData<B>);
 unsafe impl<B> Defined for Uint32Array<B> {}
 unsafe impl<B> StructuredClone for Uint32Array<B> {}
 
+// Its elements, spread, as rest arguments (ADR 0718).
+impl<'a, T: ?Sized + Takes<u32>, B> Rest<T> for &'a Uint32Array<B> {}
+
+impl<B> Deref for Uint32Array<B> {
+    type Target = ArrayBufferView<B>;
+
+    fn deref(&self) -> &ArrayBufferView<B> {
+        // Never runs: rust-js compiles this `Deref` to the object itself.
+        unsafe { &*(self as *const Self as *const ArrayBufferView<B>) }
+    }
+}
+
 impl<B> Uint32Array<B> {
     /// [`array.length`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/length): how many elements it has.
     #[cfg_attr(rust_js, rust_js::link_name = "get length")]
     pub fn length(&self) -> u32 {
-        unreachable!()
-    }
-
-    /// [`array.buffer`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/buffer): the buffer it views.
-    #[cfg_attr(rust_js, rust_js::link_name = "get buffer")]
-    pub fn buffer(&self) -> &'static B {
-        unreachable!()
-    }
-
-    /// [`array.byteLength`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/byteLength): how many bytes it views.
-    #[cfg_attr(rust_js, rust_js::link_name = "get byteLength")]
-    pub fn byte_length(&self) -> u32 {
-        unreachable!()
-    }
-
-    /// [`array.byteOffset`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/byteOffset): where in its buffer it starts.
-    #[cfg_attr(rust_js, rust_js::link_name = "get byteOffset")]
-    pub fn byte_offset(&self) -> u32 {
         unreachable!()
     }
 
@@ -2226,28 +2207,22 @@ pub struct Float32Array<B = ArrayBuffer>(PhantomData<JsObject>, PhantomData<B>);
 unsafe impl<B> Defined for Float32Array<B> {}
 unsafe impl<B> StructuredClone for Float32Array<B> {}
 
+// Its elements, spread, as rest arguments (ADR 0718).
+impl<'a, T: ?Sized + Takes<f32>, B> Rest<T> for &'a Float32Array<B> {}
+
+impl<B> Deref for Float32Array<B> {
+    type Target = ArrayBufferView<B>;
+
+    fn deref(&self) -> &ArrayBufferView<B> {
+        // Never runs: rust-js compiles this `Deref` to the object itself.
+        unsafe { &*(self as *const Self as *const ArrayBufferView<B>) }
+    }
+}
+
 impl<B> Float32Array<B> {
     /// [`array.length`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/length): how many elements it has.
     #[cfg_attr(rust_js, rust_js::link_name = "get length")]
     pub fn length(&self) -> u32 {
-        unreachable!()
-    }
-
-    /// [`array.buffer`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/buffer): the buffer it views.
-    #[cfg_attr(rust_js, rust_js::link_name = "get buffer")]
-    pub fn buffer(&self) -> &'static B {
-        unreachable!()
-    }
-
-    /// [`array.byteLength`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/byteLength): how many bytes it views.
-    #[cfg_attr(rust_js, rust_js::link_name = "get byteLength")]
-    pub fn byte_length(&self) -> u32 {
-        unreachable!()
-    }
-
-    /// [`array.byteOffset`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/byteOffset): where in its buffer it starts.
-    #[cfg_attr(rust_js, rust_js::link_name = "get byteOffset")]
-    pub fn byte_offset(&self) -> u32 {
         unreachable!()
     }
 
@@ -2501,28 +2476,22 @@ pub struct Float64Array<B = ArrayBuffer>(PhantomData<JsObject>, PhantomData<B>);
 unsafe impl<B> Defined for Float64Array<B> {}
 unsafe impl<B> StructuredClone for Float64Array<B> {}
 
+// Its elements, spread, as rest arguments (ADR 0718).
+impl<'a, T: ?Sized + Takes<f64>, B> Rest<T> for &'a Float64Array<B> {}
+
+impl<B> Deref for Float64Array<B> {
+    type Target = ArrayBufferView<B>;
+
+    fn deref(&self) -> &ArrayBufferView<B> {
+        // Never runs: rust-js compiles this `Deref` to the object itself.
+        unsafe { &*(self as *const Self as *const ArrayBufferView<B>) }
+    }
+}
+
 impl<B> Float64Array<B> {
     /// [`array.length`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/length): how many elements it has.
     #[cfg_attr(rust_js, rust_js::link_name = "get length")]
     pub fn length(&self) -> u32 {
-        unreachable!()
-    }
-
-    /// [`array.buffer`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/buffer): the buffer it views.
-    #[cfg_attr(rust_js, rust_js::link_name = "get buffer")]
-    pub fn buffer(&self) -> &'static B {
-        unreachable!()
-    }
-
-    /// [`array.byteLength`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/byteLength): how many bytes it views.
-    #[cfg_attr(rust_js, rust_js::link_name = "get byteLength")]
-    pub fn byte_length(&self) -> u32 {
-        unreachable!()
-    }
-
-    /// [`array.byteOffset`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/byteOffset): where in its buffer it starts.
-    #[cfg_attr(rust_js, rust_js::link_name = "get byteOffset")]
-    pub fn byte_offset(&self) -> u32 {
         unreachable!()
     }
 
@@ -2776,28 +2745,22 @@ pub struct BigInt64Array<B = ArrayBuffer>(PhantomData<JsObject>, PhantomData<B>)
 unsafe impl<B> Defined for BigInt64Array<B> {}
 unsafe impl<B> StructuredClone for BigInt64Array<B> {}
 
+// Its elements, spread, as rest arguments (ADR 0718).
+impl<'a, T: ?Sized + Takes<i64>, B> Rest<T> for &'a BigInt64Array<B> {}
+
+impl<B> Deref for BigInt64Array<B> {
+    type Target = ArrayBufferView<B>;
+
+    fn deref(&self) -> &ArrayBufferView<B> {
+        // Never runs: rust-js compiles this `Deref` to the object itself.
+        unsafe { &*(self as *const Self as *const ArrayBufferView<B>) }
+    }
+}
+
 impl<B> BigInt64Array<B> {
     /// [`array.length`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/length): how many elements it has.
     #[cfg_attr(rust_js, rust_js::link_name = "get length")]
     pub fn length(&self) -> u32 {
-        unreachable!()
-    }
-
-    /// [`array.buffer`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/buffer): the buffer it views.
-    #[cfg_attr(rust_js, rust_js::link_name = "get buffer")]
-    pub fn buffer(&self) -> &'static B {
-        unreachable!()
-    }
-
-    /// [`array.byteLength`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/byteLength): how many bytes it views.
-    #[cfg_attr(rust_js, rust_js::link_name = "get byteLength")]
-    pub fn byte_length(&self) -> u32 {
-        unreachable!()
-    }
-
-    /// [`array.byteOffset`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/byteOffset): where in its buffer it starts.
-    #[cfg_attr(rust_js, rust_js::link_name = "get byteOffset")]
-    pub fn byte_offset(&self) -> u32 {
         unreachable!()
     }
 
@@ -3051,28 +3014,22 @@ pub struct BigUint64Array<B = ArrayBuffer>(PhantomData<JsObject>, PhantomData<B>
 unsafe impl<B> Defined for BigUint64Array<B> {}
 unsafe impl<B> StructuredClone for BigUint64Array<B> {}
 
+// Its elements, spread, as rest arguments (ADR 0718).
+impl<'a, T: ?Sized + Takes<u64>, B> Rest<T> for &'a BigUint64Array<B> {}
+
+impl<B> Deref for BigUint64Array<B> {
+    type Target = ArrayBufferView<B>;
+
+    fn deref(&self) -> &ArrayBufferView<B> {
+        // Never runs: rust-js compiles this `Deref` to the object itself.
+        unsafe { &*(self as *const Self as *const ArrayBufferView<B>) }
+    }
+}
+
 impl<B> BigUint64Array<B> {
     /// [`array.length`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/length): how many elements it has.
     #[cfg_attr(rust_js, rust_js::link_name = "get length")]
     pub fn length(&self) -> u32 {
-        unreachable!()
-    }
-
-    /// [`array.buffer`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/buffer): the buffer it views.
-    #[cfg_attr(rust_js, rust_js::link_name = "get buffer")]
-    pub fn buffer(&self) -> &'static B {
-        unreachable!()
-    }
-
-    /// [`array.byteLength`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/byteLength): how many bytes it views.
-    #[cfg_attr(rust_js, rust_js::link_name = "get byteLength")]
-    pub fn byte_length(&self) -> u32 {
-        unreachable!()
-    }
-
-    /// [`array.byteOffset`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/byteOffset): where in its buffer it starts.
-    #[cfg_attr(rust_js, rust_js::link_name = "get byteOffset")]
-    pub fn byte_offset(&self) -> u32 {
         unreachable!()
     }
 

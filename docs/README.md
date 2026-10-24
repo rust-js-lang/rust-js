@@ -294,7 +294,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0222 An editor checks the app through rust-js](decisions/0222-editor-check.md)
 - [0223 The webapi crate knows each event's type and each tag's element](decisions/0223-webapi-event-and-tag-maps.md)
 - [0224 A tag's element reaches its handlers and its `ref`](decisions/0224-typed-intrinsic-elements.md)
-- [0225 A JS value of unknown shape is a `js::Unknown`](decisions/0225-unknown-values.md) *(amended by 0668: `Kind::Symbol`, and a `match` of `Kind` a `switch (typeof value)`; by 0673: `js::unknown` of a function; by 0676: `classify` takes an `Option<&Unknown>`, and `Kind` has `Undefined` and `Null`; by 0677: `Kind::Object` holds a `&JsObject`; by 0695: `js::new`; by 0697: `js::delete`)*
+- [0225 A JS value of unknown shape is a `js::Unknown`](decisions/0225-unknown-values.md) *(amended by 0668: `Kind::Symbol`, and a `match` of `Kind` a `switch (typeof value)`; by 0673: `js::unknown` of a function; by 0676: `classify` takes an `Option<&Unknown>`, and `Kind` has `Undefined` and `Null`; by 0677: `Kind::Object` holds a `&JsObject`; by 0695: `js::new`; by 0697: `js::delete`; amended: `()` is a clone's `undefined`, and `Kind::Array`'s slice is the array)*
 - [0226 A component looks inside its children as React's `Children` does](decisions/0226-react-children.md)
 - [0227 The react crate's types have @types/react's names](decisions/0227-react-type-names.md)
 - [0228 A tag takes the attributes @types/react gives it](decisions/0228-per-tag-attributes.md)
@@ -352,7 +352,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0280 A field that's `undefined` is no key](decisions/0280-undefined-fields-left-out.md)
 - [0281 The webapi crate covers TypeScript's DOM, and a test holds it](decisions/0281-webapi-covers-typescripts-dom.md)
 - [0282 One method API for event listeners](decisions/0282-event-listener-methods.md)
-- [0283 The js crate covers TypeScript's ES library, and a test holds it](decisions/0283-js-crate-covers-typescripts-es-library.md) *(amended by 0666: descriptors and handlers are dictionaries, `Object` measured; by 0677: a weak collection is typed as TypeScript's; by 0698: `catch`'s handler gives a value or a promise; by 0699: `js::Map` of weak keys)*
+- [0283 The js crate covers TypeScript's ES library, and a test holds it](decisions/0283-js-crate-covers-typescripts-es-library.md) *(amended by 0666: descriptors and handlers are dictionaries, `Object` measured; by 0677: a weak collection is typed as TypeScript's; by 0698: `catch`'s handler gives a value or a promise; by 0699: `js::Map` of weak keys; by 0741: an `ArrayBufferView` each view derefs to)*
 - [0284 An enum tagged by a property of its own is a discriminated union](decisions/0284-discriminated-unions.md)
 - [0285 `std::ptr::eq` of JS objects is whether they're one](decisions/0285-ptr-eq.md)
 - [0286 A component that sometimes renders nothing returns an `Option`](decisions/0286-components-that-render-nothing.md)
@@ -374,7 +374,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0302 An `f64` known to be a whole number in range is cast as it is](decisions/0302-whole-number-casts.md)
 - [0303 Top-level statements that span lines are set apart](decisions/0303-blank-lines.md)
 - [0304 `js::import!` of an item loads its module when it's asked for](decisions/0304-dynamic-import.md)
-- [0305 A binding marked `require` is read through `require(module)`](decisions/0305-require.md)
+- [0305 A binding marked `require` is read through `require(module)`](decisions/0305-require.md) *(amended: a require no bundler sees, `node::module[requireString]` and `js::function::call`)*
 - [0306 A module's items are where its Rust has them](decisions/0306-item-order.md)
 - [0307 A trait's binding method is read of the value itself](decisions/0307-binding-trait-methods.md)
 - [0308 A function written in a body is that body's](decisions/0308-local-functions.md) *(amended by 0696: in the block it's written in, after its comments)*
@@ -572,7 +572,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0637 A `match` of a throwing call's `Result` is `try` and `catch`](decisions/0637-a-match-of-a-throwing-call-is-try-catch.md) *(amended by 0639: whether a call threw is `try`; 0660: `catch_unwind`'s too, and `unwrap_or(d)` returned; amended: an `Ok` arm that leaves, nothing after it, `catch {}`)*
 - [0638 A nullable function's call is `null` already](decisions/0638-a-nullable-functions-call-is-null-already.md)
 - [0639 `concat_text` of any value is what may throw; whether a call threw is `try`](decisions/0639-concat-text-of-any-value-may-throw.md)
-- [0640 A TypeScript rest parameter is a variadic binding of a tuple](decisions/0640-a-rest-parameter-is-a-tuple.md) *(extended by 0667: rest arguments as a value)*
+- [0640 A TypeScript rest parameter is a variadic binding of a tuple](decisions/0640-a-rest-parameter-is-a-tuple.md) *(extended by 0667: rest arguments as a value; by 0718: a typed array spread, and a rest of `number` of any JS number)*
 - [0641 A `concat!` of literals is its pieces joined by `+`](decisions/0641-concat-is-its-pieces-joined-by-plus.md)
 - [0642 A place found in a string is JS's: `indexOf`, `slice`, `startsWith`](decisions/0642-a-place-found-in-a-string-is-js-units.md)
 - [0643 `unwrap()` of a throwing JS call is the call](decisions/0643-unwrap-of-a-throwing-call-is-the-call.md)
@@ -585,16 +585,16 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0650 A `let` that shadows a binding read no more is that binding, assigned](decisions/0650-a-shadow-of-a-binding-read-no-more-is-that-binding.md)
 - [0651 A `let`, then its fallback where it's falsy, is `||`](decisions/0651-a-let-then-its-fallback-is-or.md)
 - [0652 Consecutive appends to a `String` are one `+=`](decisions/0652-consecutive-appends-are-one.md)
-- [0653 A JS function value is a `dyn Fn` of its signature](decisions/0653-a-js-function-value-is-a-dyn-fn-of-its-signature.md) *(amended by 0700: TypeScript's `Function` gives any value)*
+- [0653 A JS function value is a `dyn Fn` of its signature](decisions/0653-a-js-function-value-is-a-dyn-fn-of-its-signature.md) *(amended by 0700: TypeScript's `Function` gives any value; extended by 0740: its members, `js::function`)*
 - [0654 A dictionary's member of any value is a `dyn IntoUnknown`](decisions/0654-a-dictionary-member-of-any-value-is-a-dyn-into-unknown.md)
 - [0655 A binding of `any` as a value is a `fn` of `Option<&'static Unknown>`](decisions/0655-an-any-binding-as-a-value-is-a-fn-of-a-static-unknown.md)
 - [0656 An event's `emit` arguments are what TypeScript's `emit` takes](decisions/0656-an-events-emit-arguments-are-typescripts-emits.md)
 - [0657 An `if` of one value each, a function's too, is a conditional](decisions/0657-an-if-of-one-value-each-is-a-conditional.md) *(amended by 0658: a branch with a comment too)*
 - [0658 A comment before a branch's value is before it in the conditional](decisions/0658-a-comment-before-a-branchs-value-is-before-it-in-the-conditional.md)
-- [0659 Tidy is a list of stages, each with what it leaves a body with](decisions/0659-tidy-is-a-list-of-stages-with-contracts.md) *(amended: what finishes a body is a stage too)*
+- [0659 Tidy is a list of stages, each with what it leaves a body with](decisions/0659-tidy-is-a-list-of-stages-with-contracts.md) *(amended: what finishes a body is a stage too; a stage read again is the runner's)*
 - [0660 `catch_unwind` catches what JS throws, a panic among it](decisions/0660-catch-unwind-catches-what-js-throws.md) *(amended by 0691: a payload drops nothing where no `dyn Any` does; 0692: a thrown `Error` is a `&JsError` too; 0706: what's caught read as it was thrown)*
 - [0664 A function's last slice marked `#[rust_js::rest]` is JS's rest parameter](decisions/0664-a-functions-rest-slice-is-jss-rest-parameter.md)
-- [0666 The js crate binds `Object`'s reflection, a descriptor a dictionary](decisions/0666-the-js-crate-binds-objects-reflection.md)
+- [0666 The js crate binds `Object`'s reflection, a descriptor a dictionary](decisions/0666-the-js-crate-binds-objects-reflection.md) *(extended by 0719: `js::keys_in`, `for…in`'s keys)*
 - [0667 `console` is a value, and a `fn` of rest arguments is the JS function](decisions/0667-console-is-a-value-and-rest-arguments-are-one.md)
 - [0668 A `match` of what a value is is a `switch` of its `typeof`](decisions/0668-a-match-of-what-a-value-is-is-a-switch-of-its-typeof.md) *(amended by 0676: `undefined` is `case "undefined"`, and `null` in `case "object"`)*
 - [0673 A function is a JS value of any shape, whose property `js::set` writes](decisions/0673-a-function-is-a-value-of-any-shape.md)
@@ -636,7 +636,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0710 Every unwind's payload downcasts as the `&JsError` thrown](decisions/0710-every-unwinds-payload-is-the-js-error-thrown.md) *(amended: what's given its `Some`'s value, `and_then`'s closure, is given it)*
 - [0711 What stops early steps by `try_fold`, and `nth` is passed on, as std's adapters route them](decisions/0711-what-stops-early-steps-by-try-fold.md)
 - [0712 What lowering a function finds of drops is returned with it](decisions/0712-what-lowering-finds-of-drops-is-returned-with-it.md)
-- [0713 Lowering's hidden contracts, held where they're relied on](decisions/0713-lowerings-hidden-contracts-held.md)
+- [0713 Lowering's hidden contracts, held where they're relied on](decisions/0713-lowerings-hidden-contracts-held.md) *(amended: a declining kind writes apart)*
 - [0714 A reference given to generic code is what it refers to](decisions/0714-a-reference-given-to-generic-code.md)
 - [0715 What an `IntoIterator` bound is given is its items, as JS steps them](decisions/0715-what-an-into-iterator-bound-is-given.md)
 - [0716 A path's components are std's `Component`, as any enum is](decisions/0716-a-paths-components.md)
@@ -647,6 +647,10 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0733 A line comment ends the line of its code, where JS has more after it](decisions/0733-a-line-comment-ends-the-line-of-its-code.md)
 - [0734 `extend` of an array written in place is `push` of its items](decisions/0734-extend-of-an-array-written-in-place-is-push.md)
 - [0735 A comment in a macro, before the `fn` it writes, is the function's](decisions/0735-a-comment-in-a-macro-before-its-fn-is-the-fns.md)
+- [0718 A typed array is rest arguments, spread, and a rest of `number` takes any JS number](decisions/0718-a-typed-array-is-rest-arguments-spread.md)
+- [0719 `for…in` is a `for` loop of `js::keys_in`, and its `enumerate()` a counter](decisions/0719-for-in-is-a-for-loop-of-keys-in.md)
+- [0740 A function's members are read of any function, `js::function`](decisions/0740-a-functions-members-are-read-of-any-function.md)
+- [0741 An `ArrayBufferView` is what each view derefs to, and `isView` takes any value](decisions/0741-an-array-buffer-view-is-what-each-view-derefs-to.md)
 - [0742 A block's label the program wrote is its name in JS](decisions/0742-a-label-the-program-wrote-is-its-name.md)
 - [0436 Every `dyn` that's a pair keeps its value's drop, `dyn Send` too](decisions/0436-every-dyn-keeps-its-drop.md) *(amended by 0691: a `dyn Any` drops where the crate makes one of what drops)*
 - [0437 A scope's drops on a panic are one `try { .. } finally { .. }`](decisions/0437-a-scopes-drops-are-one-finally.md) *(amended by 0693: its `if`s, loops and `return`s in it)*

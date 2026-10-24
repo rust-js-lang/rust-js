@@ -171,6 +171,15 @@ pub fn send(text: String) {
 pub fn ping(port: &webapi::MessagePort) {
     port.post_message(1, None);
 }
+pub fn wake(port: &webapi::MessagePort) {
+    port.post_message((), None);
+}
+pub fn listed(value: Option<&js::Unknown>) -> Option<String> {
+    match js::classify(value) {
+        js::Kind::Array(items) if items.len() < 100 => js::json::stringify_with(js::unknown(items), None, 0).unwrap(),
+        _ => None,
+    }
+}
 pub fn report(error: &js::JsError) {
     window.report_error(error);
     window.report_error(|| ());
@@ -185,11 +194,16 @@ pub fn report(error: &js::JsError) {
   // One function, its options' (ADR 0594).
   expect(js).toContain('const options = { targetOrigin: "*" };\n  window.postMessage(text, options);');
   expect(js).toContain("port.postMessage(1);");
+  // \`()\` is \`undefined\`, which the browser copies as it is (ADR 0225 amended).
+  expect(js).toContain("port.postMessage(undefined);");
+  // \`Kind::Array\`'s slice is the array, its value \`js::unknown(items)\` (ADR 0225 amended).
+  expect(js).toContain("return JSON.stringify(value, null, 0);");
   expect(js).toContain("window.reportError(error);");
   for (const [written, error] of [
     ["window.structured_clone(|| (), None)", "the trait `js::StructuredClone` is not implemented for closure"],
     ["window.structured_clone(Some(None::<i32>), None)", "the trait `js::Defined` is not implemented for `std::option::Option<i32>`"],
     ["window.structured_clone(window, None)", "the trait `js::StructuredClone` is not implemented for `webapi::Window`"],
+    ["window.structured_clone(Some(()), None)", "the trait `js::Defined` is not implemented for `()`"],
   ]) {
     writeFileSync(join(dir, "lib.rs"), source.replace("window.structured_clone(text, None)", written));
     const result = Bun.spawnSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "wrong.js"), ...withWeb], { cwd: dir });
