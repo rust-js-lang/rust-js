@@ -612,6 +612,15 @@ pub fn numbers() -> bool {
     let b = Rc::new(1);
     Rc::ptr_eq(&a, &b)
 }
+
+#[repr(transparent)]
+pub struct Meters(pub f64);
+
+pub fn meters() -> bool {
+    let a = Rc::new(Meters(1.0));
+    let b = Rc::new(Meters(1.0));
+    Rc::ptr_eq(&a, &b)
+}
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
@@ -620,7 +629,9 @@ pub fn numbers() -> bool {
   expect(js).toContain("strong: 1");
   const lib = await import(join(dir, "lib.js"));
   const t = lib.task(1);
-  expect([lib.same(t, t), lib.same(t, lib.task(1)), lib.numbers()]).toEqual([true, false, false]);
+  // A transparent struct is its field, a number, whose `===` is its value
+  // (ADR 0582, amended): counted, two `Rc`s of equal ones apart.
+  expect([lib.same(t, t), lib.same(t, lib.task(1)), lib.numbers(), lib.meters()]).toEqual([true, false, false, false]);
 });
 
 // ADR 0585: a field's \`RefCell\` that \`replace\` and \`take\` write, each

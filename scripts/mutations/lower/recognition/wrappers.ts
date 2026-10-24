@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "ptr-eq-of-transparent-uncounted",
+    breaks: "`Rc::ptr_eq` of a transparent struct, its number, is `1 === 1`, `true`, of two `Rc`s (ADR 0582, amended)",
+    file: "src/lower/recognition/wrappers.rs",
+    find: "            && transparent_field(tcx, adt).is_none());\n",
+    replace: "            );\n",
+    tests: ["test/lowering-cells.test.ts", "-t", "ptr_eq of an Rc of a struct"],
+  },
+  {
     name: "downgrade-counts",
     breaks: "`Rc::downgrade` counts its `Rc`, so React's context is `{ value, strong, weak }` where nothing asks a count (ADR 0843)",
     file: "src/lower/recognition/wrappers.rs",

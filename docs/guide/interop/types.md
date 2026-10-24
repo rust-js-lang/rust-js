@@ -813,7 +813,8 @@ export function share(doc) {
 }
 ```
 
-- **`Rc::ptr_eq` of a struct with fields counts nothing**: it's `a === b`
+- **`Rc::ptr_eq` of a struct with fields counts nothing**, but a
+  `#[repr(transparent)]` one's, which is its field: it's `a === b`
   ([ADR 0582](../../decisions/0582-ptr-eq-of-an-object-is-its-identity.md)).
 - **A crate that is a rust-js library, or uses one that hands it an
   `Rc`, counts every `Rc`**, so one handle crosses crates
