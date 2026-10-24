@@ -342,42 +342,58 @@ pub(in crate::lower) fn plain_statics(items: &mut [js::Item], quiet: &std::colle
             }
             _ => {}
         });
-        // A function's own of that name, or one it binds, may be read so.
+        // A function's own of that name, or one it or what the module runs
+        // when it's loaded binds, may be read so.
         let mut bound = false;
+        let binds = |body: &mut Vec<Stmt>, bound: &mut bool| {
+            js::each_block_mut(body, &mut |stmts| {
+                for stmt in stmts.iter() {
+                    *bound |= match &stmt.kind {
+                        StmtKind::Const(n, _) | StmtKind::Let(n, _) => *n == name,
+                        StmtKind::Destructure { pattern, .. } => pattern.names().contains(&name.as_str()),
+                        _ => false,
+                    };
+                }
+            });
+            js::each_expr_mut(body, &mut |e| {
+                if let js::ExprKind::Arrow(params, _) | js::ExprKind::AsyncArrow(params, _) = &e.kind {
+                    *bound |= params.iter().any(|p| p.names().contains(&name.as_str()));
+                }
+            });
+        };
         for item in items.iter_mut() {
+            if let js::Item::Statements(stmts) = item {
+                binds(stmts, &mut bound);
+            }
             for function in item.functions_mut() {
                 bound |= function.params.iter().any(|p| p.names().contains(&name.as_str()));
-                js::each_block_mut(&mut function.body, &mut |stmts| {
-                    for stmt in stmts.iter() {
-                        bound |= match &stmt.kind {
-                            StmtKind::Const(n, _) | StmtKind::Let(n, _) => *n == name,
-                            StmtKind::Destructure { pattern, .. } => pattern.names().contains(&name.as_str()),
-                            _ => false,
-                        };
-                    }
-                });
-                js::each_expr_mut(&mut function.body, &mut |e| {
-                    if let js::ExprKind::Arrow(params, _) | js::ExprKind::AsyncArrow(params, _) = &e.kind {
-                        bound |= params.iter().any(|p| p.names().contains(&name.as_str()));
-                    }
-                });
+                binds(&mut function.body, &mut bound);
             }
         }
         if bound || reads != values {
             continue;
         }
-        for item in items.iter_mut() {
-            for function in item.functions_mut() {
-                js::each_block_mut(&mut function.body, &mut |stmts| {
-                    for stmt in stmts.iter() {
-                        if let StmtKind::Assign(target, _) = &stmt.kind
-                            && matches!(&target.kind, js::ExprKind::Member(of, key)
-                                if key == js::HELD && matches!(&of.kind, js::ExprKind::Var(v) if *v == name))
-                        {
-                            sets += 1;
-                        }
+        // What sets it, `X.value = ..`, its value replaced: in a function, a
+        // closure too, or in what the module runs when it's loaded,
+        // `js::on_load!`'s body in its place (ADR 0840, #201).
+        let mut sets_in = |body: &mut Vec<Stmt>| {
+            js::each_block_mut(body, &mut |stmts| {
+                for stmt in stmts.iter() {
+                    if let StmtKind::Assign(target, _) = &stmt.kind
+                        && matches!(&target.kind, js::ExprKind::Member(of, key)
+                            if key == js::HELD && matches!(&of.kind, js::ExprKind::Var(v) if *v == name))
+                    {
+                        sets += 1;
                     }
-                });
+                }
+            });
+        };
+        for item in items.iter_mut() {
+            if let js::Item::Statements(stmts) = item {
+                sets_in(stmts);
+            }
+            for function in item.functions_mut() {
+                sets_in(&mut function.body);
             }
         }
         // A handle on it, lent, may set it too.

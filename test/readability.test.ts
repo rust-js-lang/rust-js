@@ -4,8 +4,11 @@
 // corpus's and the snapshots', and listed in docs/readability.txt with its
 // share, how many in ten thousand lines. A share that grew fails here: a
 // construct a change adds is read first, and blessed (`BLESS=1`, `bun run
-// bless`) only where its ADR says why; one that shrank is blessed too, so
-// the file says what's true, and the diff shows what got better.
+// bless`) only where its ADR says why; one that shrank by one in ten
+// thousand lines or more is blessed too, so the file says what got better,
+// where it did. A case added, which moves each share a little either way,
+// is no reason to bless: three agents each blessing for their own cases
+// made this file a merge conflict of every change (ADR 0565, amended).
 
 import { expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
@@ -35,7 +38,10 @@ test("the generated JS reads no worse than it read: no shape's share grew", () =
     .filter(([name, share]) => share > (before.get(name) ?? 0))
     .map(([name, share]) => `${name}: ${before.get(name)} to ${share} in 10,000 lines`);
   expect(grown, "the generated JS reads worse: read the construct, and bless it only where its ADR says why").toEqual([]);
-  expect(now, "the measure changed: if the JS reads better, run `bun run bless` and review the diff").toBe(readFileSync(baseline, "utf8"));
+  const better = [...shares(now)]
+    .filter(([name, share]) => share <= (before.get(name) ?? 0) - 1)
+    .map(([name, share]) => `${name}: ${before.get(name)} to ${share} in 10,000 lines`);
+  expect(better, "the generated JS reads better: run `bun run bless` and review the diff").toEqual([]);
 });
 
 test("each shape is a line's, and the gate counts them all", async () => {

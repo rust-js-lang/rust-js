@@ -62,8 +62,8 @@ export const mutations: Mutation[] = [
     name: "mir-statics-closure-set-unseen",
     breaks: "a thread-local a closure sets is a `const`, which the closure can't set",
     file: "src/lower/std_types/cell.rs",
-    find: "                js::each_block_mut(&mut function.body, &mut |stmts| {\n                    for stmt in stmts.iter() {\n                        if let StmtKind::Assign(target, _) = &stmt.kind\n",
-    replace: "                js::statement_lists(&mut function.body, &mut |stmts| {\n                    for stmt in stmts.iter() {\n                        if let StmtKind::Assign(target, _) = &stmt.kind\n",
+    find: "            js::each_block_mut(body, &mut |stmts| {\n                for stmt in stmts.iter() {\n                    if let StmtKind::Assign(target, _) = &stmt.kind\n",
+    replace: "            js::statement_lists(body, &mut |stmts| {\n                for stmt in stmts.iter() {\n                    if let StmtKind::Assign(target, _) = &stmt.kind\n",
     tests: ["test/lowering-cells.test.ts", "-t", "thread-local only its module"],
   },
   {
@@ -219,5 +219,13 @@ export const mutations: Mutation[] = [
     find: "            _ if given_nulled && !matches!(value.kind, js::ExprKind::Undefined) => value.defined(),\n",
     replace: "",
     tests: ["test/lowering-nullable.test.ts", "-t", "what's never undefined as it is"],
+  },
+  {
+    name: "statics-loaded-set-unseen",
+    breaks: "a thread-local `js::on_load!` sets, its body in the module's statements, is a `const` assigned, which throws as the module loads (#201)",
+    file: "src/lower/std_types/cell.rs",
+    find: "            if let js::Item::Statements(stmts) = item {\n                sets_in(stmts);\n",
+    replace: "            if let js::Item::Statements(stmts) = item {\n                let _ = stmts;\n",
+    tests: ["test/modules.test.ts", "-t", "a module's items are in source order"],
   },
 ];
