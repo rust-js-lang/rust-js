@@ -106,3 +106,13 @@ value would be the string where its count is kept, is refused. Held by
 `{:?}` of an `rc::Weak` or a `sync::Weak`, a field's too, was refused. It's
 `(Weak)`, as std's shows one, of none of what it points at. Held by
 `test/corpus/weak_debug.rs`.
+
+## Amendment: a pair upcast where it's made by a call
+
+`show(&*shapes[1])`, a `&dyn Shape` of `Shape: Debug` upcast to the `&dyn
+Debug` it shows, was refused: "showing a `dyn Shape` made where it's
+shown". The pair is read twice, for its dictionary and its value, and
+`shapes[1]` is a call. It's held once where it's coerced, `const shown =
+..`, which the lowering there can write. Held by
+`test/corpus/dyn_shapes_shared.rs` and the mutation
+`dyn-debug-pair-unheld`.

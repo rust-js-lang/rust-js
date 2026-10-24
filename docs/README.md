@@ -99,7 +99,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0057 `PartialOrd` and `Ord`: an `Ordering`, and the parts in turn](decisions/0057-ordering.md) *(amended by 0687: `max()` and the rest step their iterator as each comes)*
 - [0058 Format options, where Rust applies them](decisions/0058-format-options.md)
 - [0059 `HashMap` is a JS `Map`, `HashSet` a `Set`, keyed by value](decisions/0059-hashmap.md)
-- [0060 `{:?}` by the type, and a derived `Debug` is a function](decisions/0060-debug.md)
+- [0060 `{:?}` by the type, and a derived `Debug` is a function](decisions/0060-debug.md) *(amended: a pair upcast where it's made by a call, held once)*
 - [0061 `impl Iterator` is the type it hides; a generic iterator is any JS iterable](decisions/0061-generic-iterators.md) *(amended by 0699: what an `IntoIterator` bound is given is its items)*
 - [0062 Combinators and adapters: the closure's body in place](decisions/0062-combinators.md)
 - [0063 `char`'s questions are Unicode regular expressions; `parse` is a `Result` of Rust's message](decisions/0063-text.md)

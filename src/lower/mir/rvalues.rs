@@ -368,6 +368,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         // A `&dyn Debug` is the string it shows (ADR 0060), made
                         // where it's read: by `{:#?}`, as that shows it.
                         if self.is_dyn_debug(*to) && !self.is_dyn_debug(from) {
+                            // A pair, read for its dictionary and its value: held
+                            // once where it's made, a call's, `&*shapes[1]`.
+                            let value = match self.is_pair_dyn(from) && !value.parts_read_same() {
+                                true => self.spill("shown", value, out),
+                                false => value,
+                            };
                             // In a writer, as pretty as it's asked to be: a
                             // derived `Debug`'s fields (ADR 0137).
                             if state.writer.is_some() {

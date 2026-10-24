@@ -428,4 +428,12 @@ export const mutations: Mutation[] = [
     replace: "                            return Ok(Value::Expr(it));\n",
     tests: ["test/corpus.test.ts", "-t", "^own_fold_and_nth.rs$"],
   },
+  {
+    name: "dyn-debug-pair-unheld",
+    breaks: "a pair upcast to a dyn Debug where it's made by a call is held once",
+    file: "src/lower/mir/rvalues.rs",
+    find: "                            let value = match self.is_pair_dyn(from) && !value.parts_read_same() {",
+    replace: "                            let value = match false {",
+    tests: ["test/corpus.test.ts", "-t", "^dyn_shapes_shared.rs$"],
+  },
 ];
