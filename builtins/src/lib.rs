@@ -508,21 +508,24 @@ pub fn string(value: Option<&Unknown>) -> String {
     unreachable!()
 }
 
-/// `value[key]`: a property of an object, by its name; `None` where it's
-/// `undefined` or `null`, as where there's none.
+/// `value[key]`: a property of any value, by its name, as TypeScript's
+/// `any` is read; `None` where it's `undefined` or `null`, as where there's
+/// none. Of `undefined` or `null` itself, a `None`, JS's `TypeError`, a
+/// panic, as JS throws it (ADR 0776).
 #[cfg_attr(rust_js, rust_js::link_name = "get []")]
 #[allow(unused_variables)]
-pub fn get<K: PropertyKey + ?Sized>(this: &Unknown, key: &K) -> Option<&'static Unknown> {
+pub fn get<K: PropertyKey + ?Sized>(this: impl IntoUnknown, key: &K) -> Option<&'static Unknown> {
     unreachable!()
 }
 
 /// `delete value[key]`: the object's own property of that name gone, as
 /// JS's `delete` makes it, and whether it is, `false` of one that can't
 /// be, which JS's strict mode throws a `TypeError` of, a panic (ADR 0697).
-/// Of a value of any shape, as TypeScript's `delete` is of an `any`'s.
+/// Of any value, as TypeScript's `delete` is of an `any`'s; of `undefined`
+/// or `null`, a `None`, JS's `TypeError`, a panic (ADR 0776).
 #[cfg_attr(rust_js, rust_js::link_name = "delete []")]
 #[allow(unused_variables)]
-pub fn delete<K: PropertyKey + ?Sized>(this: &Unknown, key: &K) -> bool {
+pub fn delete<K: PropertyKey + ?Sized>(this: impl IntoUnknown, key: &K) -> bool {
     unreachable!()
 }
 
@@ -586,10 +589,12 @@ pub fn class<T>() -> &'static Class {
 }
 
 /// `key in value`: whether an object has a property of that name, its own
-/// or its prototype's, as JS's `in` asks.
+/// or its prototype's, as JS's `in` asks, of any value; of what's no
+/// object, `undefined` or `null`, a `None`, or a string, JS's `TypeError`,
+/// a panic (ADR 0776).
 #[cfg_attr(rust_js, rust_js::link_name = "in []")]
 #[allow(unused_variables)]
-pub fn has<K: PropertyKey + ?Sized>(this: &Unknown, key: &K) -> bool {
+pub fn has<K: PropertyKey + ?Sized>(this: impl IntoUnknown, key: &K) -> bool {
     unreachable!()
 }
 
@@ -620,10 +625,11 @@ impl PropertyKey for i32 {}
 impl PropertyKey for usize {}
 
 /// `value[key] = to`: `to` as JS has it, a string or a number, or an
-/// object.
+/// object, set on any value; of `undefined` or `null`, a `None`, JS's
+/// `TypeError`, a panic (ADR 0776).
 #[cfg_attr(rust_js, rust_js::link_name = "set []")]
 #[allow(unused_variables)]
-pub fn set<T>(this: &Unknown, key: &str, to: T) {
+pub fn set<T>(this: impl IntoUnknown, key: &str, to: T) {
     unreachable!()
 }
 

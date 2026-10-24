@@ -301,8 +301,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             (tcx.fn_arg_idents(def_id).get(i).copied().flatten()).is_some_and(|ident| names.contains(&ident.name))
         };
         match () {
-            // `()` given to JS is what a tuple is, an array (ADR 0020).
-            () if ty.is_unit() => Expr::array(Vec::new()),
+            // A `()` is `undefined`, given as it is, or a list of none,
+            // `[]`, where it's a list's (ADR 0775).
+            () if ty.is_unit() => {
+                crate::lower::representation::unit_given(tcx, crate::lower::representation::UnitTo::Param(def_id, i))
+                    .unwrap_or(value)
+            }
             // A parameter it names `#[rust_js::nullable(..)]`: its
             // `None` is `null`, and a `Some(..)` its value (ADR 0275).
             () if named(bindings::nullable_params(tcx, def_id)) => match value.kind {

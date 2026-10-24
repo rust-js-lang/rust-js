@@ -769,21 +769,24 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// `items` in `range`, a `range_ty`, as `op` takes them, of their
-    /// values (ADR 0364).
+    /// values (ADR 0364); `in_bounds` where the body's ranges show it is
+    /// (ADR 0806).
     pub(in crate::lower) fn slice_range_values(
         &mut self,
-        op: TextOp,
+        (op, in_bounds): (TextOp, bool),
         items: Expr,
         (range, range_ty): (Expr, Ty<'tcx>),
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<Expr> {
         let (start, end) = self.range_value_bounds(range, range_ty, span, out)?;
-        Ok(self.sliced(op, items, start, end))
+        Ok(self.sliced((op, in_bounds), items, start, end))
     }
 
     /// `items` from `start` to `end`, or to their end, as `op` takes them.
-    fn sliced(&mut self, op: TextOp, items: Expr, start: Expr, end: Option<Expr>) -> Expr {
+    /// A slice's range the body's ranges show in bounds, which can't panic,
+    /// is JS's own, `items.slice(start, end)` (ADR 0806).
+    fn sliced(&mut self, (op, in_bounds): (TextOp, bool), items: Expr, start: Expr, end: Option<Expr>) -> Expr {
         let name = match op {
             TextOp::Drain => "$drain",
             TextOp::StrSlice => "$strSlice",
@@ -799,6 +802,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // `&v[..]` of a slice: all of it, never out of bounds (ADR 0335).
         if name == "$slice" && start.as_int() == Some(0) && end.is_none() {
             return items;
+        }
+        if name == "$slice" && in_bounds {
+            let sliced = Expr::call(
+                Expr::member(items, "slice"),
+                std::iter::once(start).chain(end).collect(),
+            );
+            return Expr {
+                known: js::Known::Sliced,
+                ..sliced
+            };
         }
         let mut list = vec![items, start];
         list.extend(end);

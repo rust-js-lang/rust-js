@@ -835,13 +835,16 @@ pub(crate) fn is_err_variant(tcx: TyCtxt<'_>, variant: DefId) -> bool {
 /// What a function asks of a `Vec`'s or a slice's length: its `len()`,
 /// its `is_empty()`, or that each index it's given is below it, `v[i]` of
 /// a `Vec`, `swap(i, j)`, `swap_remove(i)`; or what it does to it, a
-/// `Vec`'s `push` one more, its `pop` one fewer where it has one. What
-/// knows an index in bounds reads these (ADRs 0292, 0576).
+/// `Vec`'s `push` one more, its `pop` one fewer where it has one; or that
+/// the range it's given ends at most at it, `&v[a..b]` of a `Vec`, a slice
+/// or an array. What knows an index in bounds reads these (ADRs 0292,
+/// 0576, 0806).
 #[derive(Clone, Copy, PartialEq)]
 pub(in crate::lower) enum SliceLength {
     Len,
     IsEmpty,
     Index,
+    Range,
     Swap,
     SwapRemove,
     Push,
@@ -859,11 +862,24 @@ pub(in crate::lower) fn slice_length<'tcx>(
             if tcx.is_diagnostic_item(sym::Vec, adt.did()) || is_std_def(tcx, adt.did(), StdItem::VecDeque))
     };
     if let Some(trait_) = tcx.trait_of_assoc(def_id) {
-        let indexed = args.types().next().is_some_and(|ty| vec(ty.peel_refs()));
-        return ((tcx.is_lang_item(trait_, LangItem::Index) || tcx.is_lang_item(trait_, LangItem::IndexMut))
-            && indexed
-            && args.types().nth(1).is_some_and(|i| i.is_usize()))
-        .then_some(SliceLength::Index);
+        if !tcx.is_lang_item(trait_, LangItem::Index) && !tcx.is_lang_item(trait_, LangItem::IndexMut) {
+            return None;
+        }
+        let indexed = args.types().next().map(|ty| ty.peel_refs());
+        let index = args.types().nth(1);
+        // A range of `usize`s, `a..b`, `..b`, `a..` or `..`.
+        let range = index.is_some_and(|i| {
+            matches!(i.kind(), ty::Adt(adt, range_args)
+                if [LangItem::Range, LangItem::RangeTo, LangItem::RangeFrom, LangItem::RangeFull]
+                    .into_iter()
+                    .any(|item| tcx.is_lang_item(adt.did(), item))
+                    && range_args.types().all(|t| t.is_usize()))
+        });
+        return match indexed {
+            Some(ty) if vec(ty) && index.is_some_and(|i| i.is_usize()) => Some(SliceLength::Index),
+            Some(ty) if (vec(ty) || ty.is_slice() || ty.is_array()) && range => Some(SliceLength::Range),
+            _ => None,
+        };
     }
     let owner = tcx
         .type_of(tcx.inherent_impl_of_assoc(def_id)?)
@@ -977,10 +993,11 @@ const VEC_LIKE: &[StdItem] = &[
     StdItem::LinkedList,
 ];
 
-/// Whether `did` is `js::StructuredClone`, what a structured clone copies
-/// as it is, whose `()` is `undefined` (ADR 0225).
-pub(in crate::lower) fn is_structured_clone(tcx: TyCtxt<'_>, did: DefId) -> bool {
-    tcx.crate_name(did.krate).as_str() == "js" && tcx.item_name(did).as_str() == "StructuredClone"
+/// Whether `did` is `react::DependencyList`, a hook's dependencies, a
+/// tuple of them its array, `(count, name)`'s `[count, name]`, whose `()`
+/// is none, `[]` (ADR 0775).
+pub(in crate::lower) fn is_dependency_list(tcx: TyCtxt<'_>, did: DefId) -> bool {
+    tcx.crate_name(did.krate).as_str() == "react" && tcx.item_name(did).as_str() == "DependencyList"
 }
 
 /// Whether `did` is `js::SymbolFor`, the registry's symbol of a key, its JS

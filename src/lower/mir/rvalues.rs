@@ -720,34 +720,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
-    /// Whether `operand`, a `&Cell`, is a `nullable_cell_field`'s, which
-    /// stores its `None` as `null` (ADR 0772): a reference to that field,
-    /// or another such reborrowed or copied, held where it's written once,
-    /// `let r = &context.renderer;`.
-    pub(super) fn stores_null(&self, state: &State<'_, 'tcx>, operand: &Operand<'tcx>) -> bool {
-        let Some(place) = operand.place() else {
-            return false;
+    /// The struct's field `place` is, `p.code`, if it's one: of a struct,
+    /// or of an enum's variant it's read as.
+    pub(super) fn place_field(&self, state: &State<'_, 'tcx>, place: Place<'tcx>) -> Option<&'tcx ty::FieldDef> {
+        let (PlaceElem::Field(field, _), parent) = place.projection.split_last()? else {
+            return None;
         };
-        if !place.projection.is_empty() || state.locals.writes[place.local] != 1 {
-            return false;
-        }
-        let assigned = (state.body.basic_blocks.iter().flat_map(|b| &b.statements)).find_map(|s| match &s.kind {
-            mir::StatementKind::Assign(assign) if assign.0 == place.local.into() => Some(&assign.1),
+        let parent = mir::PlaceRef {
+            local: place.local,
+            projection: parent,
+        };
+        let mir::PlaceTy { ty, variant_index } = parent.ty(state.body, self.tcx);
+        match ty.kind() {
+            ty::Adt(adt, _) if !adt.is_enum() || variant_index.is_some() => {
+                Some(&adt.variant(variant_index.unwrap_or(VariantIdx::ZERO)).fields[*field])
+            }
             _ => None,
-        });
-        match assigned {
-            Some(Rvalue::Ref(_, _, borrowed)) => match borrowed.as_ref().last_projection() {
-                Some((parent, PlaceElem::Field(field, field_ty))) => {
-                    self.nullable_cell_field(parent.ty(state.body, self.tcx).ty, (field.index(), field_ty))
-                }
-                // A reborrow, `&*r`, as a method's receiver is.
-                Some((parent, PlaceElem::Deref)) if parent.projection.is_empty() => {
-                    self.stores_null(state, &Operand::Copy(parent.local.into()))
-                }
-                _ => false,
-            },
-            Some(Rvalue::Use(operand, _)) => self.stores_null(state, operand),
-            _ => false,
         }
     }
 
@@ -759,19 +747,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let Some(place) = operand.place() else {
             return false;
         };
-        if let Some((PlaceElem::Field(field, _), parent)) = place.projection.split_last() {
-            let parent = mir::PlaceRef {
-                local: place.local,
-                projection: parent,
-            };
-            let mir::PlaceTy { ty, variant_index } = parent.ty(state.body, self.tcx);
-            return match ty.kind() {
-                ty::Adt(adt, _) if !adt.is_enum() || variant_index.is_some() => {
-                    let variant = adt.variant(variant_index.unwrap_or(VariantIdx::ZERO));
-                    bindings::is_nullable(self.tcx, &variant.fields[*field])
-                }
-                _ => false,
-            };
+        if let Some((PlaceElem::Field(..), _)) = place.projection.split_last() {
+            return self
+                .place_field(state, place)
+                .is_some_and(|field| bindings::null_where_made(self.tcx, field));
         }
         if !place.projection.is_empty() {
             return false;

@@ -7,7 +7,6 @@ import {
   $flatView,
   $index,
   $print,
-  $slice,
   $swap,
   $view,
   $windows,
@@ -19,7 +18,7 @@ export function entry() {
 
 function main() {
   const v = [1, 2, 3, 4, 5, 6, 7];
-  const items = $slice(v, 0, 3);
+  const items = v.slice(0, 3);
   const array = items.length === 3 ? items : undefined;
   const value = v.length === 3 ? v : undefined;
   console.log(
@@ -35,7 +34,7 @@ function main() {
   console.log(
     `[${rest$1.join(", ")}] [${chunks$1.map((item) => `[${item.join(", ")}]`).join(", ")}]`,
   );
-  const pairs = $asChunks($slice(v, 0, 6), 2)[0];
+  const pairs = $asChunks(v.slice(0, 6), 2)[0];
   const arg = pairs.flat();
   console.log(`[${pairs.map((item) => `[${item.join(", ")}]`).join(", ")}] [${arg.join(", ")}]`);
 

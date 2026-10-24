@@ -309,6 +309,8 @@ fn sought(test: &Expr) -> Option<Expr> {
 pub(super) fn made_array(e: &Expr) -> bool {
     match &e.kind {
         js::ExprKind::Array(_) => true,
+        // A slice's items in a range in bounds, `items.slice(a, b)` (ADR 0806).
+        _ if e.known == js::Known::Sliced => true,
         // An `Option`'s items, `o == null ? [] : [o]`.
         js::ExprKind::Cond(..) => fresh(e),
         // A helper's that makes one, `$windows(v, 2)`.
