@@ -99,6 +99,35 @@ impl<'tcx> Elaboration<'tcx> {
     }
 }
 
+/// The blocks whose `Drop` would unwind to a cleanup but drops what JS
+/// drops nothing of, so runs nothing and can't panic.
+fn quiet_drops<'tcx>(
+    tcx: ty::TyCtxt<'tcx>,
+    body: &mir::Body<'tcx>,
+    drops: &impl Fn(Ty<'tcx>) -> bool,
+) -> HashSet<BasicBlock> {
+    (body.basic_blocks.iter_enumerated())
+        .filter(|(_, data)| {
+            matches!(&data.terminator().kind, TerminatorKind::Drop { place, unwind: UnwindAction::Cleanup(_), .. }
+                if !drops(place.ty(&body.local_decls, tcx).ty))
+        })
+        .map(|(block, _)| block)
+        .collect()
+}
+
+/// `body` with no unwind from the `Drop` ending each of `quiet`.
+fn without_unwinds<'tcx>(body: &mir::Body<'tcx>, quiet: &HashSet<BasicBlock>) -> mir::Body<'tcx> {
+    let mut body = body.clone();
+    for (block, data) in body.basic_blocks.as_mut().iter_enumerated_mut() {
+        if quiet.contains(&block)
+            && let TerminatorKind::Drop { unwind, .. } = &mut data.terminator_mut().kind
+        {
+            *unwind = UnwindAction::Unreachable;
+        }
+    }
+    body
+}
+
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// What `body`'s drops drop, `None` if none drops anything JS sees.
     pub(super) fn mir_elaboration(&self, body: &mir::Body<'tcx>) -> Option<Elaboration<'tcx>> {
@@ -118,16 +147,25 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // and its flags are the body's own locals. Its dataflow isn't run,
         // which its optimized switches wouldn't let be.
         let elaborated = !body.source.def_id().is_local();
+        // A `Drop` of what JS drops nothing of runs nothing, so it never
+        // unwinds: the cleanup it would unwind to isn't reached from it, as
+        // rustc's elaboration finds of a drop of what isn't there
+        // (`compute_dead_unwinds`). The dataflow runs on the body without
+        // those edges, so what's made after a `Box::new(closure)` isn't
+        // taken to be dropped where the box's drop would unwind.
+        let quiet = quiet_drops(tcx, body, &drops);
+        let pruned = (!quiet.is_empty()).then(|| without_unwinds(body, &quiet));
+        let flow = pruned.as_ref().unwrap_or(body);
         let mut cursors = (!elaborated).then(|| {
-            let inits = MaybeInitializedPlaces::new(tcx, body, &move_data)
+            let inits = MaybeInitializedPlaces::new(tcx, flow, &move_data)
                 .exclude_inactive_in_otherwise()
                 .skipping_unreachable_unwind()
-                .iterate_to_fixpoint(tcx, body, None)
-                .into_results_cursor(body);
-            let uninits = MaybeUninitializedPlaces::new(tcx, body, &move_data)
+                .iterate_to_fixpoint(tcx, flow, None)
+                .into_results_cursor(flow);
+            let uninits = MaybeUninitializedPlaces::new(tcx, flow, &move_data)
                 .mark_inactive_variants_as_uninit()
-                .iterate_to_fixpoint(tcx, body, None)
-                .into_results_cursor(body);
+                .iterate_to_fixpoint(tcx, flow, None)
+                .into_results_cursor(flow);
             (inits, uninits)
         });
         let mut states = HashMap::new();
