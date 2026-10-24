@@ -95,7 +95,7 @@ explain why that coupling is necessary.
 ## Making a change
 
 Read [the guide](docs/guide/README.md), which says how rust-js is used today,
-the relevant [design decisions](docs/README.md), including later
+the relevant [design decisions](docs/decisions/README.md), including later
 amendments, the [architecture](docs/architecture.md), which says where a
 change goes, and the existing implementation and tests. Follow the
 established phases and reuse evaluation-order machinery. Verify uncertain
@@ -117,8 +117,10 @@ library behavior from local source.
    A mutation that survives means a missing test.
 5. **Record the decision.** A new semantic choice or important architectural
    tradeoff gets a design decision in `docs/decisions/`, indexed in
-   [docs/README.md](docs/README.md). Explain the choice, its reasons, and the
-   alternatives and costs considered. A change to an existing decision amends
+   [docs/decisions/README.md](docs/decisions/README.md), its number
+   `bun run adr:next`'s, the next one neither `main` nor this branch has
+   (`bun run adr:renumber <from> <to>` if `main` takes it first). Explain
+   the choice, its reasons, and the alternatives and costs considered. A change to an existing decision amends
    it, saying what changed and why. A difference from native Rust also goes in
    [the semantics](docs/guide/semantics.md), with its section's other differences
    and in the list at its end.

@@ -611,18 +611,31 @@ test("each owner and question the architecture names is there", () => {
   expect(rows.flatMap(([, owner]) => names(owner)).filter(owner => !found(owner))).toEqual([]);
 });
 
-// Each decision is in the index, and one superseded or replaced, wholly or
-// in part, says so there: 64 weren't in it, and five didn't say so (the
-// third architecture audit).
-test("each decision is in the index, a superseded one marked", () => {
-  const index = read("docs/README.md");
+// Each decision is in the index, once, and one superseded or replaced,
+// wholly or in part, says so there: 64 weren't in it, and five didn't say
+// so (the third architecture audit). Git merges the index by keeping both
+// sides' lines (.gitattributes), so a line two changes each edited is in it
+// twice until one's removed.
+test("each decision is in the index once, a superseded one marked", () => {
+  const index = read("docs/decisions/README.md");
   const decisions = readdirSync(join(root, "docs/decisions")).filter(name => /^\d{4}-.*\.md$/.test(name));
   expect(decisions.length).toBeGreaterThan(300);
-  expect(decisions.filter(name => !index.includes(`(decisions/${name})`))).toEqual([]);
+  const links = (name: string) => index.split(`](${name})`).length - 1;
+  expect(decisions.filter(name => links(name) !== 1).map(name => `${name}: ${links(name)}`)).toEqual([]);
   const superseded = decisions.filter(name => /superseded|replaced by/i.test(read(`docs/decisions/${name}`).match(/^Status:.*$/m)?.[0] ?? ""));
-  const line = (name: string) => index.split("\n").find(l => l.includes(`(decisions/${name})`)) ?? "";
+  const line = (name: string) => index.split("\n").find(l => l.includes(`](${name})`)) ?? "";
   expect(superseded.length).toBeGreaterThan(4);
   expect(superseded.filter(name => !/\*\([^)]*(?:superseded|replaced)[^)]*\)\*/.test(line(name)))).toEqual([]);
+});
+
+// No two decisions share a number: two changes each taking the next one
+// land as two files git sees no conflict in (0774 was taken twice), and a
+// reference to it would name either. `bun run adr:next` gives the next
+// free one, and `bun run adr:renumber` moves a branch's own.
+test("no two decisions share a number", () => {
+  const decisions = readdirSync(join(root, "docs/decisions")).filter(name => /^\d{4}-.*\.md$/.test(name));
+  const numbers = decisions.map(name => name.slice(0, 4));
+  expect(decisions.filter((name, i) => numbers.indexOf(name.slice(0, 4)) !== i)).toEqual([]);
 });
 
 // Each module of the front end is in the architecture, by its name or its

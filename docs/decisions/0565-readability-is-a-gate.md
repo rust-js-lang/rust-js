@@ -2,7 +2,12 @@
 
 Status: Accepted. Extends [0050](0050-snapshots.md),
 [0364](0364-mir-lowering.md) and [0314](0314-std-data-structures.md),
-whose ratchet of what's known this is of how it reads.
+whose ratchet of what's known this is of how it reads. Amended
+(2026-10-24): a share that grew still fails, by any amount; one that
+shrank asks a bless only by one in ten thousand lines or more, so a corpus
+case added, which moves each share a little, asks none. With three agents
+pushing at once, each blessing the file for its own cases made it a merge
+conflict of nearly every change.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): none. Nothing a program
 can observe changes; this decides what the tests hold.

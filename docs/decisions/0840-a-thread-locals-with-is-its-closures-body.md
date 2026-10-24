@@ -139,3 +139,15 @@ Not, so the call stays:
   `applied-value-operand-unseen` (`scripts/mutations/js/applied.ts`),
   `applied-loaded-kept`, `applied-loaded-tail-return`
   (`scripts/mutations/lower/std_types/cell.ts`).
+
+## Amendment: what the module runs sets a thread-local too
+
+A thread-local's cell, its module's `const X = { value: init }`, is its
+value where nothing but its module reads it by its `value`, a `let` where
+it's set (ADR 0270). What set it was counted in functions alone, so once
+`js::on_load!`'s closure was its body in the module's statements, its
+`SEEN.with(|s| s.set(..))` was `const seen = 0; seen = ..`, which throws
+as the module loads (#201). `plain_statics` asks the module's statements
+too, what they set and what they bind of its name: `let seen = 0;`.
+`test/modules.test.ts`'s order of a module's items holds it, with
+`statics-loaded-set-unseen`.
