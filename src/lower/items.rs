@@ -250,8 +250,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// crate loads, and its own module's before what reads it
     /// (`js::in_load_order`).
     pub(super) fn reads_by_name(&self, def_id: DefId) -> bool {
-        !self.krate.loads.contains(&self.item)
-            || self.krate.fns.get(&def_id).is_none_or(|info| info.module == self.module)
+        let module = self.krate.fns.get(&def_id).map(|info| info.module);
+        !self.krate.loads.contains(&self.item) || module.is_none_or(|module| module == self.module)
     }
 
     /// Is `def_id` a trait's function that a call of runs through the trait:
