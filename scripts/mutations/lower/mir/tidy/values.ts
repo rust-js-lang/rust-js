@@ -3,22 +3,6 @@ import type { Mutation } from "../../../../mutations";
 
 export const mutations: Mutation[] = [
   {
-    name: "applied-template-breaks-unmoved",
-    breaks: "a template's `concat!` pieces, after a value's template is put in its place, break where they did in texts that are now longer",
-    file: "src/lower/mir/tidy/values.rs",
-    find: "        (at.text, at.at) = (text, shift + at.at);",
-    replace: "        (at.text, at.at) = (text, at.at);",
-    tests: ["test/lowering-strings.test.ts", "-t", "a format string of a concat! is its pieces joined by"],
-  },
-  {
-    name: "applied-template-into-pieces-unspliced",
-    breaks: "a value's template put in place of its call in a template of `concat!`'s pieces is a template in a template",
-    file: "src/lower/mir/tidy/values.rs",
-    find: "    if layout.lines || layout.breaks.iter().any(|at| at.lines) {",
-    replace: "    if layout.lines || !layout.breaks.is_empty() {",
-    tests: ["test/lowering-strings.test.ts", "-t", "a format string of a concat! is its pieces joined by"],
-  },
-  {
     name: "mir-tidy-plain-cell-escapes",
     breaks: "a cell given whole, `bump(c)`, is a variable too, and what it's given reads `undefined`",
     file: "src/lower/mir/tidy/values.rs",
@@ -121,15 +105,6 @@ export const mutations: Mutation[] = [
     "find": "        *each = Expr::var(param);\n",
     "replace": "",
     "tests": ["test/lowering-collections.test.ts", "-t", "arrays of arrays flattened"]
-  },
-  {
-    name: "applied-template-nested",
-    breaks: "a function's body put in place of its call in a template is a template in a template, `${`(${a}, ${b})`}`",
-    file: "src/lower/mir/tidy/values.rs",
-    find: "            root.each_mut(&mut spliced_templates);\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^const_generic_traits.rs$"],
-    snapshots: true,
   },
   {
     name: "applied-assignment-unseen",

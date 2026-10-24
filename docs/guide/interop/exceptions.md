@@ -701,13 +701,12 @@ export function stacks(render) {
 }
 
 export function controlStack() {
-  let control;
   try {
     throw new Error();
   } catch (x) {
-    control = x;
+    const control = x;
+    return control?.stack;
   }
-  return control?.stack;
 }
 
 export function described(value) {
@@ -719,6 +718,13 @@ export function described(value) {
 }
 ```
 
+- **`let Err(x) = catch_unwind(|| panic!(""));` is a `try`**, the
+  pattern rustc asks for where the closure never returns, its `Ok`
+  uninhabited, rather than an `if let` it warns is irrefutable. As nothing
+  after it runs but once it threw, what follows it that reads `x`, or
+  reads what that declares, is the `catch`, and the rest of the block
+  follows the `try`: `controlStack`'s `return`, and `stacks`' `control =
+  x;` before `render()` ([ADR 0830](../../decisions/0830-what-follows-a-let-err-of-a-closure-that-never-returns-is-its-catch.md)).
 - **What it unwinds through is dropped** before `catch_unwind` returns,
   as [above](#unwinding-runs-drop). The payload drops nothing, a panic's
   message or what JS threw, unless the crate makes a `dyn Any` of a value

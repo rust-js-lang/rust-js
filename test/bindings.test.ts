@@ -6,7 +6,7 @@ import { beforeAll, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { runSync } from "./child";
-import { buildReact, compiler, fixture, root, run, target } from "./support";
+import { buildReact, buildSerde, compiler, fixture, root, run, target } from "./support";
 
 beforeAll(buildReact, 600_000);
 
@@ -1051,6 +1051,111 @@ pub fn year(year: f64) -> String {
   const { key, named } = await import(join(dir, "lib.js"));
   expect(named(Symbol("s"))).toBe(" Symbol(s)");
   expect([key(undefined, 0), key(null, 1), key({}, 2), key("a", 3)]).toEqual(["undefined-0", "null-1", "[object Object]-2", "a-3"]);
+});
+
+// ADR 0312: js::shown's text is a string, `${n}`, wherever it goes: alone,
+// with another value alone, padded, by `to_string()`, in a map, in JSON.
+// It was the value itself, a number in a `Vec<String>`, and `a + b` of two.
+test("js::shown's text is text, alone or with values alone", async () => {
+  const dir = fixture("shown-text");
+  writeFileSync(join(dir, "lib.rs"), `use js::Unknown;
+use std::collections::HashMap;
+use std::fmt::{self, Display, Write};
+
+pub fn length(n: f64) -> usize {
+    format!("{}", js::shown(n)).len()
+}
+
+pub fn pushed(n: f64) -> Vec<String> {
+    let mut out = Vec::new();
+    out.push(format!("{}", js::shown(n)));
+    out
+}
+
+pub fn both(a: f64, b: f64) -> String {
+    format!("{}{}", js::shown(a), js::shown(b))
+}
+
+pub fn same(n: f64, s: String) -> bool {
+    format!("{}", js::shown(n)) == s
+}
+
+pub fn keyed(n: f64) -> usize {
+    let mut seen: HashMap<String, usize> = HashMap::new();
+    seen.insert(format!("{}", js::shown(n)), 1);
+    seen.get("5").copied().unwrap_or(0)
+}
+
+pub fn json(n: f64) -> String {
+    serde_json::to_string(&format!("{}", js::shown(n))).unwrap()
+}
+
+pub fn padded(n: f64) -> String {
+    format!("[{:>4}] [{:.1}]", js::shown(n), js::shown(n))
+}
+
+pub fn text(n: f64) -> usize {
+    js::shown(n).to_string().len()
+}
+
+fn shown<T: Display>(value: T) -> String {
+    format!("{value}")
+}
+
+pub fn generic(n: f64) -> usize {
+    shown(js::shown(n)).len()
+}
+
+struct Hours(u32);
+
+impl Display for Hours {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        if self.0 > 23 {
+            return Err(fmt::Error);
+        }
+        write!(f, "{}h", self.0)
+    }
+}
+
+pub fn written(v: Option<&Unknown>, h: u32) -> String {
+    let mut s = String::new();
+    let _ = write!(s, "{}{}", js::shown(v), Hours(h));
+    s
+}
+
+pub fn added(v: Option<&Unknown>) -> String {
+    format!("{}!", js::concat_text(v).unwrap())
+}
+
+pub fn lines(n: f64) -> String {
+    format!(
+        "<b>
+{}</b>",
+        js::shown(n)
+    )
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", ...buildSerde(), "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("return $byteLen(`${n}`);");
+  expect(js).toContain("return `${a}${b}`;");
+  expect(js).toContain("s += `${v}`;");
+  // Its template spliced into one written across lines, which has no `\n`.
+  expect(js).toContain("return `<b>\n${n}</b>`;");
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.length(5), lib.length(1e21), lib.length(-0)]).toEqual([1, 5, 1]);
+  expect(lib.pushed(5)).toEqual(["5"]);
+  expect(lib.both(1, 2)).toBe("12");
+  expect([lib.same(5, "5"), lib.same(5, "6")]).toEqual([true, false]);
+  expect(lib.keyed(5)).toBe(1);
+  expect(lib.json(5)).toBe('"5"');
+  expect(lib.padded(5)).toBe("[   5] [5]");
+  expect([lib.text(1e21), lib.generic(1e21)]).toEqual([5, 5]);
+  // An object as a template shows it, by its `toString`, not its `valueOf`.
+  const odd = { toString: () => "t", valueOf: () => 1 };
+  expect([lib.written(odd, 2), lib.written(odd, 30)]).toEqual(["t2h", "t"]);
+  // `"" + v`, `concat_text`'s, by its `valueOf`, in a template too.
+  expect(lib.added(odd)).toBe("1!");
 });
 
 // react.dev's Console's `formatStr` (ADR 0364): the string a

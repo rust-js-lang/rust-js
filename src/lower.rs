@@ -84,6 +84,9 @@ pub use analysis::{collect_bodies, collect_initializers, collect_mir, collect_ra
 /// a crate `--rustc` compiles for its metadata too (ADR 0573).
 pub use bindings::given_names_differ;
 use bindings::{Export, is_binding};
+/// Whether each `#[rust_js::types]` is a TypeScript type rust-js reads, of
+/// a crate `--rustc` compiles for its metadata too (ADR 0811).
+pub use declarations::validate_types;
 pub use pipeline::{Built, lower_crate};
 
 /// Each of tidy's passes, `stage/pass`, in the order they run (ADR 0659).

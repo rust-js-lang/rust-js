@@ -771,10 +771,15 @@ pub(crate) fn given_back(tcx: TyCtxt<'_>, closure: DefId) -> bool {
 /// a type parameter's or an associated type's, by the strongest `Fn` bound
 /// its `owner` gives it, `F: FnMut`'s; `None` of what isn't one. One called
 /// by `FnOnce` alone drops what it holds as its body ends, and one called by
-/// `&` or `&mut` is dropped by what holds it (ADR 0470).
+/// `&` or `&mut` is dropped by what holds it (ADR 0470). An
+/// `AssertUnwindSafe` is called as what it holds: its `call_once` calls
+/// `(self.0)()` and drops it as that returns (ADR 0660).
 pub(crate) fn function_kind<'tcx>(tcx: TyCtxt<'tcx>, owner: DefId, ty: Ty<'tcx>) -> Option<ty::ClosureKind> {
     match ty.kind() {
         ty::Closure(_, args) => Some(args.as_closure().kind()),
+        ty::Adt(adt, args) if super::wrappers::is_assert_unwind_safe(tcx, adt.did()) => {
+            function_kind(tcx, owner, args.type_at(0))
+        }
         ty::Param(_) | ty::Alias(..) => (tcx.param_env(owner).caller_bounds().iter())
             .filter_map(|clause| clause.as_trait_clause())
             .filter(|bound| bound.self_ty().skip_binder() == ty)

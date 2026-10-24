@@ -440,7 +440,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // `null` or a value already, which it takes as it is (ADRs 0275, 0772).
         let writes_a_cell = matches!(
             self.recognition().classify(callee.0, callee.1),
-            Some(Std::CellSet | Std::CellReplace | Std::CellTake)
+            Some(Std::CellSet | Std::CellReplace)
         );
         let nulled: Vec<bool> = match writes_a_cell || !bindings::nullable_params(self.tcx, callee.0).is_empty() {
             false => Vec::new(),
@@ -454,13 +454,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             self.flush(state, out)?;
         }
-        let mut values = self.take_operands(state, operands, out)?;
-        // A `Cell` written that MIR shows is a nullable field's, through a
-        // variable too: a handle that stores as it does (ADR 0772).
-        if writes_a_cell && self.stores_null(state, operands[0]) {
-            let cell = self.value_expr(values.remove(0), span)?;
-            values.insert(0, Value::Expr(self.nullable_cell_handle(Expr::held(cell))));
-        }
+        let values = self.take_operands(state, operands, out)?;
         match self.mir_call_values(state, callee, (values, arg_tys, &nulled), output, span, out)? {
             Value::Expr(e) if strict => Ok(Value::Expr(js::strict_equality(e))),
             value => Ok(value),
@@ -926,6 +920,25 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
+    /// A std call that gives the `&mut` it's given, of what's in the same
+    /// place: `&mut *s` of a `String`, `as_mut_str()`, a `&mut str` to all
+    /// of it, the place the `&mut String` is; a pin's `as_mut()`, its; and a
+    /// `Box`'s `as_mut()` of an object, `&mut Vec<T>` of a `&mut
+    /// Box<Vec<T>>` (#116), the object in that place, as a `&mut` to one is
+    /// (ADRs 0099, 0550). `None` of another.
+    fn same_reference(&self, known: Std, output: Ty<'tcx>, values: &[Value<'tcx>]) -> Option<Value<'tcx>> {
+        let [Value::Ref(place)] = values else { return None };
+        if !matches!(known, Std::Same | Std::Pin(crate::lower::std_types::pin::PinOp::Mut)) {
+            return None;
+        }
+        let output = self.recognition().pinned(output).unwrap_or(output);
+        if self.is_cell(output) {
+            return Some(Value::Ref(place.clone()));
+        }
+        (known == Std::Same && matches!(output.kind(), ty::Ref(_, _, ty::Mutability::Mut)))
+            .then(|| Value::Expr(place.clone()))
+    }
+
     /// A std function of its arguments' values, lowered once they're values
     /// (`std_values`).
     #[allow(clippy::too_many_arguments)]
@@ -1038,13 +1051,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Std::Map(op @ (MapOp::OrInsert | MapOp::OrInsertWith { .. } | MapOp::OrDefault)) = known {
             return self.or_insert_values(state, op, values, (generic_args, output), span, out);
         }
-        // `&mut *s` of a `String`, `as_mut_str()`: a `&mut str` to all of
-        // it, the same place the `&mut String` is; a pin's `as_mut()`, its.
-        if matches!(known, Std::Same | Std::Pin(crate::lower::std_types::pin::PinOp::Mut))
-            && self.is_cell(self.recognition().pinned(output).unwrap_or(output))
-            && let [Value::Ref(place)] = values.as_slice()
-        {
-            return Ok(Value::Ref(place.clone()));
+        if let Some(same) = self.same_reference(known, output, &values) {
+            return Ok(same);
         }
         // A `&mut` it made to an item JS can't change in place: a handle on
         // each (ADR 0152).

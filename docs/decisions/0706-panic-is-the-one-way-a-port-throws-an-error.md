@@ -7,8 +7,11 @@ and [0692](0692-a-thrown-error-is-a-panic-and-what-js-threw.md), whose
 `catch` read what it caught through `$unwound`, and whose `resume_unwind`
 of it was `$unwinding(payload)`. Amended by
 [0710](0710-every-unwinds-payload-is-the-js-error-thrown.md): a downcast to
-a `&JsError` is what was thrown of any `try`, not only one of panics; and
-below: a `catch_unwind` that heads an `if let` chain is a `try`.
+a `&JsError` is what was thrown of any `try`, not only one of panics;
+below: a `catch_unwind` that heads an `if let` chain is a `try`; and by
+[0830](0830-what-follows-a-let-err-of-a-closure-that-never-returns-is-its-catch.md):
+the `catch` of a `let Err(x)` is what follows that reads `x` or what that
+declares, with no `let` before the `try`.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): A where what's read is
 the same value, `$unwinding($unwound(e))` being `e`; for `new Error()`,
@@ -59,7 +62,9 @@ is what it reads:
 - **`let Err(x) = catch_unwind(f)` of an `f` that never returns**, whose
   `Ok` is none, `!`'s, is the `try` too: its `catch` what follows, up to
   its last read of `x`, as what follows runs only once `f` threw; what
-  that declares and the rest reads a `let` before the `try`.
+  that declares and the rest reads a `let` before the `try`. (Amended by
+  0830: what follows that reads `x` or what that declares, transitively,
+  with no `let` before the `try`.)
 
 ```rust
 let Err(x) = catch_unwind(|| panic!(""));
@@ -115,8 +120,8 @@ try {
   anything keeps its downcast's test, as what's thrown may be any value.
 
 - A `let Err(x)` in a closure that sets a variable it captures reads
-  through a temporary, `let value; try { .. } catch (x) { value = x; }
-  control = value;`: a capture's assignment isn't read in place yet.
+  through a temporary, `catch (x) { const value = x; control = value; }`
+  (0830): a capture's assignment isn't read in place yet.
 
 ## What holds it
 

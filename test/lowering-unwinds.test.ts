@@ -853,18 +853,25 @@ pub fn of_any() -> Option<String> {
     }
 }
 `);
+  // What follows that reads the payload, or what that declares, is the
+  // `catch`, as nothing after the `try` runs but once it threw (ADR 0830).
   expect(js).toContain(`export function control() {
-  let control;
   try {
     throw new Error();
   } catch (x) {
-    control = x;
+    const control = x;
+    return control?.stack;
   }
-  return control?.stack;
 }`);
   expect(js).toContain(`  } catch (x) {
-    control = x;
-  }`);
+    const control = x;
+    if (control && n > 1) {
+      const error = control;
+      return error.message;
+    }
+  }
+  return "none";
+}`);
   expect(js).toContain(`  try {
     return globalThis.render();
   } catch (payload) {
@@ -1202,7 +1209,8 @@ pub fn named(name: &str) -> bool {
 }
 `);
   expect(js).toContain(`  } catch (x) {
-    stack = x.stack ?? "";
+    const stack = x.stack ?? "";
+    return $trim(stack);
   }`);
   expect(js).toContain("  } catch (x) {\n    return x;\n  }");
   expect(js).toContain("  } catch (payload) {\n    return payload.message;\n  }");
@@ -1224,6 +1232,56 @@ pub fn named(name: &str) -> bool {
   };
   expect([lib.message(), lib.named("5")]).toEqual([undefined, false]);
   delete g.render;
+});
+
+// React's describeBuiltInComponentFrame reads the prefix and suffix off
+// the stack of what it threw, `try { throw Error(); } catch (x) { const
+// stack = ..; prefix = ..; suffix = ..; }`. Its port writes rustc's
+// irrefutable `let Err(x) = catch_unwind(|| panic!(""))`, and what follows
+// it that reads `x`, or what that declares, is the `catch`: nothing after
+// the `try` runs but once it threw (ADR 0830).
+test("what follows an irrefutable let Err of catch_unwind is its catch", async () => {
+  const { js, dir } = compiled("unwind-irrefutable", `use js::JsError;
+use std::cell::RefCell;
+use std::panic::catch_unwind;
+
+thread_local! {
+    static PREFIX: RefCell<Option<String>> = const { RefCell::new(None) };
+    static SUFFIX: RefCell<String> = const { RefCell::new(String::new()) };
+}
+
+pub fn describe_built_in_component_frame(name: &str) -> String {
+    if PREFIX.with_borrow(Option::is_none) {
+        // Extract the VM specific prefix used by each line.
+        let Err(x) = catch_unwind(|| panic!(""));
+        let stack = x
+            .downcast_ref::<&'static JsError>()
+            .and_then(|x| x.stack())
+            .unwrap_or_default();
+        let r#match = js::reg_exp::new(r"\\n( *(at )?)", "").exec(&js::string::trim(&stack));
+        PREFIX.set(Some(r#match.and_then(|m| m.get(1)).unwrap_or_default()));
+        SUFFIX.set(if stack.contains("\\n    at") { " (<anonymous>)" } else { "" }.to_string());
+    }
+    let prefix = PREFIX.with_borrow(|prefix| prefix.clone().unwrap_or_default());
+    let suffix = SUFFIX.with_borrow(String::clone);
+    format!("\\n{prefix}{name}{suffix}")
+}
+`);
+  expect(js).toContain(`  if (prefix == null) {
+    // Extract the VM specific prefix used by each line.
+    try {
+      throw new Error();
+    } catch (x) {
+      const stack = x.stack ?? "";
+      const match = /\\n( *(at )?)/.exec(stack.trim());
+      prefix = match?.[1] ?? "";
+      suffix = stack.includes("\\n    at") ? " (<anonymous>)" : "";
+    }
+  }
+  const prefix$1 = prefix ?? "";`);
+  const lib = await import(join(dir, "lib.js"));
+  expect(lib.describeBuiltInComponentFrame("App")).toBe("\n    at App (<anonymous>)");
+  expect(lib.describeBuiltInComponentFrame("Div")).toBe("\n    at Div (<anonymous>)");
 });
 
 // React's DetermineComponentFrameRoot catches its sample, then tests the
@@ -1297,6 +1355,15 @@ pub fn counted(limit: u32) -> u32 {
   }
   return [undefined, undefined];
 }`);
+  // What the control's `catch` sets, the rest of its block after it, as
+  // nothing else there reads the payload (ADR 0830).
+  expect(js).toContain(`      try {
+        throw new Error();
+      } catch (x) {
+        control = x;
+      }
+      globalThis.render();
+`);
   expect(js).toContain(`  try {
     globalThis.render();
   } catch {

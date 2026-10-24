@@ -360,7 +360,19 @@ This is how `webapi` lays out each interface: the type, its members in an
 - **A method takes `&self`.** Its `link_name` is the member's name, with no
   module: it's read of the value.
 - **`#[rust_js::types]`** names the type to TypeScript, in the `.d.ts`
-  rust-js writes. Without it, the type is `any` there.
+  rust-js writes. Without it, the type is `any` there. Its value is a
+  TypeScript type, which rust-js reads into the declaration it prints
+  ([ADR 0811](../../decisions/0811-console-create-task-may-be-absent.md)):
+  a name, of a module, `chart.js#Chart`, which the `.d.ts` imports, or of
+  a namespace, `NodeJS.TypedArray`, with its arguments, `Map<string, T>`;
+  a keyword, `string`; a string, `"auto"`; a union, `string | URL`; an
+  array, `T[]` or `readonly T[]`; a function, `(f: () => T) => T`; or an
+  object, `{ expire?: number; run<T>(f: () => T): T; [key: string]: T }`.
+  A name that's one of the Rust type's type parameters, `T`, is the type
+  it's given, but in a method or function of a `T` of its own. A name
+  alone, `chart.js#Chart`, takes the Rust type's arguments, and `Name<>`
+  none. A value it doesn't read, `A & B` or `import("m").T`, is a compile
+  error that says what it reads: write `m#T`.
 
 ### A method on another crate's type
 
@@ -503,6 +515,43 @@ export function willCoercionThrow(value) {
   } catch {
     return true;
   }
+}
+```
+
+`js::shown(value)` displays any value as JS's template shows it,
+`` `${value}` ``: an object by its `toString`, a number as JS writes it,
+`1e+21`. Its text is a string wherever it goes, alone too, padded, and by
+`to_string()` (ADR 0312):
+
+```rust
+use js::Unknown;
+
+pub fn key(msg: Option<&Unknown>, index: usize) -> String {
+    format!("{}-{index}", js::shown(msg))
+}
+
+pub fn year(year: f64) -> String {
+    format!("{}", js::shown(year))
+}
+
+pub fn year_width(year: f64) -> usize {
+    js::shown(year).to_string().len()
+}
+```
+
+```js
+import { $byteLen } from "@rust-js/runtime";
+
+export function key(msg, index) {
+  return `${msg}-${index}`;
+}
+
+export function year(year) {
+  return `${year}`;
+}
+
+export function yearWidth(year) {
+  return $byteLen(`${year}`);
 }
 ```
 
