@@ -186,3 +186,14 @@ after them, and a trace saw them as the one pass (a review, 2026-10-24).
 - Held by `test/lowering-unwinds.test.ts`'s "a stage read again is its
   own in tidy's trace", the unit test, and the mutations
   `again-stages-not-run` and `again-stages-unchecked`.
+
+## Amendment: `settled` has no pass of what's past a jump
+
+`settled`'s `unreachable` pass took away what its passes left past a
+jump, `return e; break bb195;`, before `nothing after a jump`, its
+contract, was checked. Nothing it runs after leaves any now: a build
+whose pass panicked where it took a statement away compiled the corpus,
+the lowering, JSX and snapshot tests and the ports with none, and its
+mutation, `late-unreachable-kept`, survived. The pass is gone with its
+mutation; the contract is what says none is left, and a debug build
+refuses a body where one is, as of any stage.
