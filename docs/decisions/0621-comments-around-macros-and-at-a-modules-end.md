@@ -1,6 +1,8 @@
 # 0621. A comment before a macro's opening is its code's; one after a module's last code ends its JS
 
 Status: Accepted. Extends [0444](0444-a-comment-is-where-its-code-is.md).
+Amended by [0735](0735-a-comment-in-a-macro-before-its-fn-is-the-fns.md):
+a comment in the macro, before the `fn` it writes, is the function's.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N: comments and blank
 lines, which nothing runs.

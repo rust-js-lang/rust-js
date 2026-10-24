@@ -560,7 +560,9 @@ leading comments, a license's, are its JS's first
 [ADR 0444](../../decisions/0444-a-comment-is-where-its-code-is.md)).
 
 A comment before a macro's opening, `thread_local! {`, is its code's,
-its first item's, and one after a module's last code, at its file's end
+its first item's, as one in it before the `fn` it writes, `js::export_default! {
+// .. fn f() {} }`, is ([ADR
+0735](../../decisions/0735-a-comment-in-a-macro-before-its-fn-is-the-fns.md)), and one after a module's last code, at its file's end
 or before an inline module's `}`, ends its JS
 ([ADR 0621](../../decisions/0621-comments-around-macros-and-at-a-modules-end.md)):
 

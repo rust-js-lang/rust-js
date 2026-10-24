@@ -553,7 +553,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0618 `Array.isArray` and `Object.getPrototypeOf` are the js crate's](decisions/0618-array-is-array-and-get-prototype-of.md)
 - [0619 A thread-local of a primitive is named as a constant](decisions/0619-a-primitive-thread-local-is-a-constant.md) *(amended by 0634: the registry's symbol is a `const`)*
 - [0620 An `Option` a test says is there is written as it is](decisions/0620-an-option-a-test-says-is-there.md)
-- [0621 A comment before a macro's opening is its code's; one after a module's last code ends its JS](decisions/0621-comments-around-macros-and-at-a-modules-end.md)
+- [0621 A comment before a macro's opening is its code's; one after a module's last code ends its JS](decisions/0621-comments-around-macros-and-at-a-modules-end.md) *(amended by 0735: one in the macro before its `fn` is the function's)*
 - [0622 A global binding a module names is its `const`](decisions/0622-a-global-binding-a-module-names-is-its-const.md)
 - [0624 `js::is_defined` of a path of bindings asks each part](decisions/0624-is-defined-of-a-path-of-bindings.md) *(amended by 0645: a static of a path too)*
 - [0625 A default constant is its value; a comment right above the first code is its](decisions/0625-a-default-constant-is-its-value.md)
@@ -646,6 +646,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0732 A space one can't tell from `' '`, or a mark one can't see, is its escape](decisions/0732-a-space-one-cant-see-is-its-escape.md)
 - [0733 A line comment ends the line of its code, where JS has more after it](decisions/0733-a-line-comment-ends-the-line-of-its-code.md)
 - [0734 `extend` of an array written in place is `push` of its items](decisions/0734-extend-of-an-array-written-in-place-is-push.md)
+- [0735 A comment in a macro, before the `fn` it writes, is the function's](decisions/0735-a-comment-in-a-macro-before-its-fn-is-the-fns.md)
 - [0436 Every `dyn` that's a pair keeps its value's drop, `dyn Send` too](decisions/0436-every-dyn-keeps-its-drop.md) *(amended by 0691: a `dyn Any` drops where the crate makes one of what drops)*
 - [0437 A scope's drops on a panic are one `try { .. } finally { .. }`](decisions/0437-a-scopes-drops-are-one-finally.md) *(amended by 0693: its `if`s, loops and `return`s in it)*
 - [0438 An optional prop is given `Some(..)`, or left out](decisions/0438-an-optional-prop-is-given-some.md)

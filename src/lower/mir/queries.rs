@@ -224,6 +224,21 @@ pub(super) fn continued_binding(state: &State<'_, '_>, tried: Local) -> Option<(
     }
 }
 
+/// Where a function's code starts, of `whole`, its span with its body,
+/// and `name`, its name's: of one a macro writes of what the program wrote
+/// in it, `js::export_default! { fn f() {} }`, the line its name is on, so
+/// a comment before it in the macro is its, as one before the macro is
+/// (ADR 0735).
+pub(in crate::lower::mir) fn function_start(tcx: ty::TyCtxt<'_>, whole: Span, name: Option<Span>) -> Span {
+    match name {
+        Some(name) if whole.from_expansion() && !name.from_expansion() => {
+            let line = tcx.sess.source_map().span_extend_to_line(name);
+            line.with_hi(whole.source_callsite().hi())
+        }
+        _ => whole,
+    }
+}
+
 /// Labels, by block.
 pub(super) fn label(block: BasicBlock) -> String {
     format!("bb{}", block.as_usize())

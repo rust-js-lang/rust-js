@@ -41,3 +41,24 @@ test("a line comment is after its code where JS has more on the line", async () 
   expect(js).not.toContain("// ellipsis // ellipsis");
   expect([lib.described(NaN as never), lib.described(2048 as never), lib.described(1 as never)]).toEqual(["…", "2048…!", "1!"]);
 });
+
+// React's binaryToComparableString: a comment before the macro, and one
+// in it before the `fn` it exports, the port's `// GAP:`, are both the
+// function's, in order (ADR 0735).
+test("a comment in a macro before its fn is the function's", async () => {
+  const { js, lib } = await compiled("comment-in-a-macro", `// A license.
+
+// Turns a number into a string
+// to compare.
+js::export_default! {
+    // GAP: upstream takes any view; this takes the one it can name.
+    fn compared(value: f64) -> String {
+        value.to_string()
+    }
+}
+`);
+  expect(js).toContain(
+    "// Turns a number into a string\n// to compare.\n// GAP: upstream takes any view; this takes the one it can name.\nexport default function compared(value) {\n",
+  );
+  expect(lib.default(2 as never)).toBe("2");
+});

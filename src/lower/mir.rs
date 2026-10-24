@@ -530,7 +530,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // A body of the crate's maps to where it's written; a std one,
                 // read from its MIR, nowhere (ADR 0364, 0561).
                 span: match body.def_id.as_local() {
-                    Some(local) => self.js_span(self.tcx.hir_span_with_body(self.tcx.local_def_id_to_hir_id(local))),
+                    Some(local) => {
+                        let whole = self.tcx.hir_span_with_body(self.tcx.local_def_id_to_hir_id(local));
+                        self.js_span(function_start(self.tcx, whole, self.tcx.def_ident_span(def_id)))
+                    }
                     None => js::Span::NONE,
                 },
                 name_span: self
