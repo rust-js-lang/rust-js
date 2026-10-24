@@ -567,6 +567,8 @@ fn block(body: &mut Vec<Stmt>) {
                 }
             }
             StmtKind::While { cond, body, .. } => {
+                // Its test as a test, as an `if`'s.
+                *cond = cond.tested();
                 expr(cond);
                 block(body);
             }
@@ -1189,6 +1191,11 @@ fn expr(e: &mut Expr) {
             for child in &mut jsx.children {
                 expr(child);
             }
+        }
+        // What `!` turns it reads as a test, wherever it is.
+        ExprKind::Unary(js::UnaryOp::Not, a) => {
+            **a = a.tested();
+            expr(a);
         }
         ExprKind::Member(a, _)
         | ExprKind::OptionalMember(a, _)

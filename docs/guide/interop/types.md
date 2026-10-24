@@ -593,7 +593,12 @@ export function ratio(a, b) {
   [ADR 0810](../../decisions/0810-an-optional-nullable-field-is-absent-until-set.md)),
   through a `let r = &context.renderer;` or a helper given `&Cell` too: a
   handle on it stores `value ?? null`
-  ([ADR 0791](../../decisions/0791-a-cells-storage-says-what-it-stores.md));
+  ([ADR 0791](../../decisions/0791-a-cells-storage-says-what-it-stores.md)).
+  What's never `undefined` is stored as it is, an object made there or a
+  `Some`'s value, `context.Consumer = { $$typeof: REACT_CONSUMER_TYPE,
+  _context: context }`, and a `map`'s `None` is `null` where it's made,
+  `createTask ? createTask("lazy()") : null`
+  ([ADR 0841](../../decisions/0841-a-nullable-place-stores-what-is-never-undefined-as-it-is.md));
   on anything else it's an error
   ([ADR 0586](../../decisions/0586-a-nullable-field-is-an-option.md)):
 
@@ -1330,7 +1335,8 @@ export function delete$(tasks, at) {
 - **A parameter's leading `_`**, Rust's mark of one unused, isn't in its
   JS name, nor its declaration's: `_ref` is `ref`. Where what's left is a
   word JS keeps, `_new`, or another binding's of the function, `_x` beside
-  an `x`, it stays
+  an `x`, it stays; a closure beside it doesn't count, `|_instance| false`
+  beside `|instance, _callback| ..` is `(instance) => false`
   ([ADR 0678](../../decisions/0678-a-parameters-underscore-isnt-its-js-name.md)).
 - **A `const` keeps its name**, `MAX_SIZE`, as JS writes a constant.
 - **A `thread_local!` is named as a module variable**, `CLICK_COUNT` as

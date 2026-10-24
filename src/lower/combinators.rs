@@ -14,7 +14,7 @@ use super::drops::Drops;
 use super::recognition::trait_method;
 use super::{FnCx, R, representation::Num};
 use crate::js::result;
-use crate::js::{self, Expr, Op, Prop, Stmt, StmtKind};
+use crate::js::{self, Expr, Op, Prop, Stmt, StmtKind, UnaryOp};
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_middle::ty::{self, Ty};
 use rustc_span::Span;
@@ -961,6 +961,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && tests_its_truth(&values[0])
         {
             return Ok(Some(Expr::bin(Op::Or, subject.clone(), Expr::undefined())));
+        }
+        // `is_some_and` of the truth of what it holds, an `Option<bool>`'s
+        // `|&w| w`: `!!o`, `o != null && o` read once, as what's not there is
+        // falsy too, which a test reads as `o` (ADR 0298, amended).
+        if comb == Comb::IsSomeAnd
+            && !boxed
+            && self.drops(self.option_of(subject_ty).expect("an `Option`")) == Drops::Nothing
+            && tests_its_truth(&values[0])
+        {
+            return Ok(Some(Expr::unary(
+                UnaryOp::Not,
+                Expr::unary(UnaryOp::Not, subject.clone()),
+            )));
         }
         Ok(None)
     }

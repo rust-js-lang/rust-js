@@ -3,7 +3,9 @@
 Status: Accepted. Amends [0772](0772-a-nullable-cell-field-writes-null.md),
 whose `&Cell` given elsewhere wrote `undefined`, and whose call sites were
 told by THIR's spans; and [0099](0099-mut-references.md)'s handle, which reads
-its place each time and now reaches it once (#191).
+its place each time and now reaches it once (#191). Amended by
+[0841](0841-a-nullable-place-stores-what-is-never-undefined-as-it-is.md):
+what's never `undefined` is stored as it is.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): A for the nullable
 field, `null` and `undefined` alike `None` to the program, `null` kept as

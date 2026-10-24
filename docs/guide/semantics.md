@@ -343,6 +343,18 @@ borrow throws as Rust's panics
 [0587](../decisions/0587-a-function-given-to-with-borrow-is-asked-as-a-closure.md)).
 So is one handed out by `with(|cell| ..)`, or read by another module.
 
+**A thread-local's `with(|x| ..)` is its closure's body where it's
+called**, `x` the thread-local itself: as a statement, in a function or
+in what `js::on_load!` runs, `if (enableGestureTransition) {
+ReactSharedInternals.G = null; }`; and as what a statement evaluates
+first, an `if`'s test, a `let`'s value or what's returned, its body
+before the statement and its value in the call's place, `if
+(didWarn[key])`. One that returns before its end stays a closure called
+where it's made, whose `return` is its own, and so does one in what a
+module runs when it's loaded that ends with a `return;`, which a module
+can't
+([0840](../decisions/0840-a-thread-locals-with-is-its-closures-body.md)).
+
 Differences:
 
 - **A lock is never poisoned:** a panic that unwinds through a held guard

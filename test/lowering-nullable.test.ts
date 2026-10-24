@@ -446,3 +446,103 @@ pub fn label(context: &mut Context, label: &'static str) {
   lib.relabel(prod, undefined);
   expect([prod.label, lib.unlabeled(prod)]).toEqual([null, true]);
 });
+
+// React's `createContext`, whose `Consumer` is set to an object made there,
+// and `lazy`, whose DEV-only `_debugTask` is `console.createTask`'s where
+// there's one: what's never `undefined`, an object made there, a `Some`'s
+// value, is stored as it is, through a handle too, and a `map`'s `None` is
+// `null` where it's made; what may be `undefined` is `?? null` (ADR 0841).
+test("a nullable field is written what's never undefined as it is", async () => {
+  const dir = fixture("nullable-defined");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::Cell;
+
+use js::SymbolFor;
+use webapi::console;
+
+pub const REACT_CONSUMER_TYPE: SymbolFor = SymbolFor("react.consumer");
+
+pub struct Context {
+    #[cfg_attr(rust_js, rust_js::name = "Provider")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub provider: Cell<Option<&'static Context>>,
+    #[cfg_attr(rust_js, rust_js::name = "Consumer")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub consumer: Cell<Option<&'static Consumer>>,
+}
+
+pub struct Consumer {
+    #[cfg_attr(rust_js, rust_js::name = "$$typeof")]
+    pub r#typeof: SymbolFor<'static>,
+    #[cfg_attr(rust_js, rust_js::name = "_context")]
+    pub context: &'static Context,
+}
+
+pub fn create_context() -> &'static Context {
+    let context: &'static Context = Box::leak(Box::new(Context {
+        provider: Cell::new(None),
+        consumer: Cell::new(None),
+    }));
+    context.provider.set(Some(context));
+    context.consumer.set(Some(Box::leak(Box::new(Consumer {
+        r#typeof: REACT_CONSUMER_TYPE,
+        context,
+    }))));
+    context
+}
+
+fn consumer_of(context: &'static Context) -> &'static Consumer {
+    Box::leak(Box::new(Consumer {
+        r#typeof: REACT_CONSUMER_TYPE,
+        context,
+    }))
+}
+
+pub fn reconsumed(context: &'static Context) {
+    context.consumer.set(Some(consumer_of(context)));
+}
+
+pub fn given(context: &'static Context, consumer: Option<&'static Consumer>) {
+    context.consumer.set(consumer);
+}
+
+pub struct Lazy {
+    #[cfg_attr(rust_js, rust_js::name = "_debugTask")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub debug_task: Option<&'static webapi::ConsoleTask>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub label: Option<f64>,
+}
+
+pub fn lazy(n: Option<f64>) -> Lazy {
+    Lazy {
+        debug_task: console::create_task().map(|create_task| create_task("lazy()")),
+        label: n.map(|n| n + 1.0),
+    }
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("  context.Provider = context;\n  context.Consumer = { $$typeof: REACT_CONSUMER_TYPE, _context: context };\n");
+  expect(js).toContain("  context.Consumer = consumerOf(context);\n");
+  expect(js).toContain("  context.Consumer = consumer ?? null;\n");
+  expect(js).toContain('_debugTask: createTask ? createTask("lazy()") : null');
+  expect(js).toContain("label: n != null ? n + 1 : null");
+  expect(js).not.toContain("undefined) ?? null");
+  const lib = await import(join(dir, "lib.js"));
+  const context = lib.createContext();
+  expect([context.Provider, context.Consumer._context]).toEqual([context, context]);
+  expect(context.Consumer.$$typeof).toBe(Symbol.for("react.consumer"));
+  lib.given(context, undefined);
+  expect(context.Consumer).toBe(null);
+  lib.reconsumed(context);
+  expect(context.Consumer._context).toBe(context);
+  expect(lib.lazy(undefined).label).toBe(null);
+  expect(lib.lazy(1).label).toBe(2);
+  const task = { run: (f: () => unknown) => f() };
+  const original = (console as any).createTask;
+  (console as any).createTask = undefined;
+  expect(lib.lazy(1)._debugTask).toBe(null);
+  (console as any).createTask = (name: string) => (name === "lazy()" ? task : undefined);
+  expect(lib.lazy(1)._debugTask).toBe(task);
+  (console as any).createTask = original;
+});

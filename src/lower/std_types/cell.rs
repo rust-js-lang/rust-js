@@ -43,10 +43,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let js_span = self.js_span(span);
         // What a `Cell` is written, as its storage, the handle on it, says
         // (ADR 0772): a `#[rust_js::nullable]` field's, its `None` `null`,
-        // what's given that's `null` or a value already as it is.
+        // what's given that's `null` or a value already as it is. Through a
+        // variable holding the handle, which tidy writes as its storage
+        // stores (ADR 0791), what MIR says so is marked so (ADR 0841).
         let given_nulled = call.nulled.get(1) == Some(&true);
         let written = |cell: &Expr, value: Expr| match cell.kind {
             js::ExprKind::Handle(_, storage) => storage.written(value, given_nulled),
+            _ if given_nulled && !matches!(value.kind, js::ExprKind::Undefined) => value.defined(),
             _ => value,
         };
         Ok(Some(match known {
@@ -305,10 +308,15 @@ pub(in crate::lower) fn plain_statics(items: &mut [js::Item], quiet: &std::colle
             };
         }
     });
-    // A closure of a block, called as a statement: its body (ADR 0581).
+    // A closure called where it's made: its body (ADRs 0581, 0840), in a
+    // function or in what the module runs when it's loaded, which no
+    // `return` ends.
     for item in items.iter_mut() {
+        if let js::Item::Statements(stmts) = item {
+            js::applied_blocks(stmts, false);
+        }
         for function in item.functions_mut() {
-            js::applied_blocks(&mut function.body);
+            js::applied_blocks(&mut function.body, true);
         }
     }
     let cells: Vec<String> = (items.iter())
