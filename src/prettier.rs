@@ -59,8 +59,9 @@ pub struct LaidOut {
     pub configs: Vec<PathBuf>,
 }
 
-/// `files`, each a path and the text written there, as the app's Prettier
-/// lays them out, or why it couldn't.
+/// `files`, each where it goes, beside its Rust, whose config Prettier
+/// reads, as the app's `prettier --check` does, and its text, as the app's
+/// Prettier lays them out, or why it couldn't.
 pub fn laid_out(settings: &Settings, files: &[(PathBuf, &str)]) -> Result<LaidOut, String> {
     // The playground has no app; nor does a file compiled alone, a test's
     // (ADR 0414): the `Cargo.toml` above it is maybe another's, its JS is
