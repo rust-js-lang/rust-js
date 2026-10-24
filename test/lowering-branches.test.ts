@@ -10,15 +10,14 @@ import { buildReact, compiler, fixture, run, target } from "./support";
 
 beforeAll(buildReact, 600_000);
 
-// An `else` of nothing, of only comments in Rust, which rust-js doesn't
-// carry, is no `else`, as react.dev's _app has one.
+// An `else` of nothing, no code and no comment, is no `else`. One of only
+// comments is kept, with them (ADR 0753, `test/lowering-comments.test.ts`).
 test("an else of nothing is left out", async () => {
   const dir = fixture("empty-else");
   writeFileSync(join(dir, "lib.rs"), `pub fn picked(flag: bool, out: &mut Vec<u32>) {
     if flag {
         out.push(1);
     } else {
-        // Nothing to do.
     }
 }
 `);

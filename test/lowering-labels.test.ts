@@ -82,6 +82,6 @@ test("React's addObjectDiffToProperties has no block MIR made", () => {
   const diff = of("addObjectDiffToProperties");
   expect(diff).not.toMatch(/bb\d+/);
   expect(diff).toContain('          properties.push([REMOVED + line, "…"], [ADDED + line, "…"]);\n          isDeeplyEqual = false;\n          continue;\n        }\n');
-  expect(diff).toContain("                if (!nestedEqual) {\n                  isDeeplyEqual = false;\n                } else if (");
+  expect(diff).toContain("              if (!nestedEqual) {\n                isDeeplyEqual = false;\n              } else if (");
   expect(of("addValueToProperties")).toMatch(/\n\s+desc: \{\n/);
 });

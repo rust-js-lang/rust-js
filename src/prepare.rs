@@ -608,7 +608,8 @@ fn block(body: &mut Vec<Stmt>) {
             | StmtKind::Return(None)
             | StmtKind::Break(_)
             | StmtKind::Continue(_)
-            | StmtKind::Directive(_) => {}
+            | StmtKind::Directive(_)
+            | StmtKind::Comments => {}
         }
     }
     fallen_held(body);
@@ -991,6 +992,7 @@ impl Walk {
                 | StmtKind::Break(_)
                 | StmtKind::Continue(_)
                 | StmtKind::Directive(_)
+                | StmtKind::Comments
                 | StmtKind::Return(_)
                 | StmtKind::Throw(_)
                 | StmtKind::Function(_) => {}

@@ -292,4 +292,12 @@ export const mutations: Mutation[] = [
     replace: "                    .trim_end_matches(char::is_whitespace)\n",
     tests: ["test/lowering-comments.test.ts", "-t", "a line comment is after its code"],
   },
+  {
+    name: "comments-end-not-orphaned",
+    breaks: "a block of only comments prints `{}`, its comments attached to no node oxc prints",
+    file: "src/to_oxc.rs",
+    find: "                if comment_ends.contains(&at) {\n",
+    replace: "                if false && comment_ends.contains(&at) {\n",
+    tests: ["test/lowering-comments.test.ts", "-t", "a branch of only comments"],
+  },
 ];

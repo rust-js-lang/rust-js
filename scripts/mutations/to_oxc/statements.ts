@@ -170,4 +170,12 @@ export const mutations: Mutation[] = [
     replace: "                let l = if *keys && false {\n",
     tests: ["test/js-object.test.ts", "-t", "a for loop of keys_in"],
   },
+  {
+    name: "comments-block-unspanned",
+    breaks: "a block of only comments has no span to its end, so its comments are printed after it",
+    file: "src/to_oxc/statements.rs",
+    find: "        let sp = end.map_or(SPAN, |end| Span::new(end, end + 1));\n",
+    replace: "        let sp = end.map_or(SPAN, |_| SPAN);\n",
+    tests: ["test/lowering-comments.test.ts", "-t", "a branch of only comments"],
+  },
 ];

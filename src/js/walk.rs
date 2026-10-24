@@ -53,7 +53,7 @@ macro_rules! walks {
                     | StmtKind::Expr(_)
                     | StmtKind::Break(_)
                     | StmtKind::Continue(_)
-                    | StmtKind::Directive(_)
+                    | StmtKind::Directive(_) | StmtKind::Comments
                     | StmtKind::Return(_)
                     | StmtKind::Throw(_)
                     | StmtKind::Function(_) => {}
@@ -120,7 +120,7 @@ macro_rules! walks {
                     | StmtKind::Break(_)
                     | StmtKind::Continue(_)
                     | StmtKind::Return(None)
-                    | StmtKind::Directive(_) => {}
+                    | StmtKind::Directive(_) | StmtKind::Comments => {}
                 }
             }
         }

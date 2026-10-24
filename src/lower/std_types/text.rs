@@ -1070,6 +1070,7 @@ pub(in crate::lower) fn appended(stmts: &mut Vec<Stmt>, text: &HashSet<String>) 
             | StmtKind::Break(_)
             | StmtKind::Continue(_)
             | StmtKind::Directive(_)
+            | StmtKind::Comments
             | StmtKind::Return(_)
             | StmtKind::Throw(_) => {}
         }

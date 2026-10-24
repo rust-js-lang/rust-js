@@ -9,6 +9,9 @@ the comment is before the branch's value in the conditional. Amended by
 after code a later line's JS follows ends the line of its code. Extended by
 [0708](0708-a-comment-before-an-argument-is-before-it.md): a call's
 argument and an object literal's field are starts too.
+Extended by [0753](0753-a-branch-of-only-comments-keeps-them.md): a block
+of only comments keeps them, where it ends; an `else` of only comments is
+one.
 
 Case: N ([0262](0262-when-rust-and-js-disagree.md)): comments and blank
 lines, which nothing runs.

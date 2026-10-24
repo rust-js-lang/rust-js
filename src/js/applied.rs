@@ -243,7 +243,8 @@ fn substituted(stmts: &mut [Stmt], with: &dyn Fn(&str) -> Option<Expr>) -> bool 
         | StmtKind::Break(_)
         | StmtKind::Continue(_)
         | StmtKind::Return(None)
-        | StmtKind::Directive(_) => true,
+        | StmtKind::Directive(_)
+        | StmtKind::Comments => true,
         StmtKind::Function(_) => false,
     })
 }

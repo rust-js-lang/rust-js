@@ -76,6 +76,31 @@ impl CapturedSources {
     }
 }
 
+/// Where a block of only comments ends, `{ // why }` of `if c { // why }`,
+/// in the arena: at its `}`, which its comments are printed before (ADR
+/// 0753). Not a block with code, or of nothing, or one a macro wrote.
+pub(super) fn comments_end(tcx: TyCtxt<'_>, sources: &CapturedSources, span: Span) -> Option<js::Span> {
+    use rustc_lexer::TokenKind;
+    if span.from_expansion() {
+        return None;
+    }
+    let text = tcx.sess.source_map().span_to_snippet(span).ok()?;
+    let inner = text.strip_prefix('{')?.strip_suffix('}')?;
+    let mut comments = 0;
+    for token in rustc_lexer::tokenize(inner, rustc_lexer::FrontmatterAllowed::No) {
+        match token.kind {
+            TokenKind::Whitespace => {}
+            TokenKind::LineComment { .. } | TokenKind::BlockComment { terminated: true, .. } => comments += 1,
+            _ => return None,
+        }
+    }
+    let at = sources.span(span);
+    (comments > 0 && !at.is_none()).then(|| js::Span {
+        lo: at.hi - 1,
+        hi: at.hi,
+    })
+}
+
 /// `text`'s comments, as rustc's lexer reads them, where they are in the
 /// arena, its first at `start` (ADR 0444): an outer doc comment, `///` or
 /// `/** */`, its item's; an inner one, `//!`, a plain one, as JS has none.

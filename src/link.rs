@@ -208,7 +208,11 @@ fn block(body: &mut [Stmt], visitor: &mut Visitor<'_>) {
                 }
                 block(handler, visitor);
             }
-            StmtKind::Return(None) | StmtKind::Break(_) | StmtKind::Continue(_) | StmtKind::Directive(_) => {}
+            StmtKind::Return(None)
+            | StmtKind::Break(_)
+            | StmtKind::Continue(_)
+            | StmtKind::Directive(_)
+            | StmtKind::Comments => {}
         }
     }
 }

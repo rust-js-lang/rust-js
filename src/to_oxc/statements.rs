@@ -213,6 +213,11 @@ impl<'a> Cx<'a> {
     /// `stmts`, each pushed to `out`.
     fn push_stmts(&self, stmts: &[js::Stmt], out: &mut ArenaVec<'a, Statement<'a>>) {
         for (i, s) in stmts.iter().enumerate() {
+            // Comments where they're written, which oxc prints before what
+            // follows them, or the block's end (ADR 0753): no statement.
+            if let StmtKind::Comments = s.kind {
+                continue;
+            }
             let mut statement = self.stmt(s);
             // One rust-js made, a temporary, with no Rust of its own: at the
             // start of the next that has, whose comments it's printed after
@@ -249,8 +254,16 @@ impl<'a> Cx<'a> {
         }
     }
 
+    /// A block of `stmts`. Of one that ends with comments of its own
+    /// (`StmtKind::Comments`), to where they end, which oxc prints them
+    /// before, inside the block (ADR 0753).
     fn block(&self, stmts: &[js::Stmt]) -> Statement<'a> {
-        Statement::new_block_statement(SPAN, self.stmts(stmts), &self.b)
+        let end = (stmts.iter())
+            .filter(|s| matches!(s.kind, StmtKind::Comments) && !s.span.is_none())
+            .map(|s| s.span.lo)
+            .max();
+        let sp = end.map_or(SPAN, |end| Span::new(end, end + 1));
+        Statement::new_block_statement(sp, self.stmts(stmts), &self.b)
     }
 
     fn stmt(&self, s: &js::Stmt) -> Statement<'a> {
@@ -260,6 +273,7 @@ impl<'a> Cx<'a> {
             StmtKind::Const(name, init) => self.declare(sp, VariableDeclarationKind::Const, name, Some(init)),
             StmtKind::Function(function) => self.function(function, false),
             StmtKind::Directive(_) => unreachable!("a directive is its function's body's, taken first"),
+            StmtKind::Comments => unreachable!("comments are printed before what follows them, `push_stmts`"),
             StmtKind::Let(name, init) => self.declare(sp, VariableDeclarationKind::Let, name, init.as_ref()),
             StmtKind::Destructure {
                 pattern,

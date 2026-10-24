@@ -366,7 +366,8 @@ fn declared_mut(stmts: &mut [Stmt], f: &mut dyn FnMut(&mut String)) {
             | StmtKind::Continue(_)
             | StmtKind::Return(_)
             | StmtKind::Throw(_)
-            | StmtKind::Directive(_) => {}
+            | StmtKind::Directive(_)
+            | StmtKind::Comments => {}
         }
     }
 }

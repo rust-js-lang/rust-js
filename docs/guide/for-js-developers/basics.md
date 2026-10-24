@@ -810,6 +810,30 @@ export function describe(kind, ready, dev) {
 }
 ```
 
+A branch of only comments is kept, with them, where it says why it does
+nothing; one of nothing at all, `else {}`, is left out
+([ADR 0753](../../decisions/0753-a-branch-of-only-comments-keeps-them.md)):
+
+```rust
+pub fn logged(depth: u32, value: Option<u32>, out: &mut Vec<u32>) {
+    if depth >= 3 {
+        // Too deep: logged by the caller.
+    } else if let Some(value) = value {
+        out.push(value);
+    }
+}
+```
+
+```js
+export function logged(depth, value, out) {
+  if (depth >= 3) {
+    // Too deep: logged by the caller.
+  } else if (value != null) {
+    out.push(value);
+  }
+}
+```
+
 ## `switch` and `match`
 
 `match` is `switch` that can't fall through, can't forget a case, and has a

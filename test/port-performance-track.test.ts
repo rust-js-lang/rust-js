@@ -30,5 +30,14 @@ test("ReactPerformanceTrackProperties holds no temporary of its own", () => {
   expect(js).not.toContain("const value = readReactElementTypeof");
   expect(js).not.toContain("const value = UNCHANGED");
   expect(js).not.toContain("const first = ");
-  expect(js).toContain("            if (readReactElementTypeof(nextValue) === REACT_ELEMENT_TYPE) {\n");
+  expect(js).toContain("          if (readReactElementTypeof(nextValue) === REACT_ELEMENT_TYPE) {\n");
+});
+
+// ADR 0753: upstream's `if (indent >= 3) { // .. } else if (..)`, the
+// branch of only comments kept, with them.
+test("addObjectDiffToProperties keeps its branch of only comments", () => {
+  const js = of("ReactPerformanceTrackProperties.js");
+  expect(js).toContain(
+    "        if (indent >= 3) {\n          // Just fallthrough to print the two values if we're deep.\n          // This will skip nested properties of the objects.\n        } else if (\n",
+  );
 });

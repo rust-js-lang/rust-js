@@ -1087,6 +1087,7 @@ fn shadowed_block(
             | StmtKind::Break(_)
             | StmtKind::Continue(_)
             | StmtKind::Directive(_)
+            | StmtKind::Comments
             | StmtKind::Return(_)
             | StmtKind::Throw(_) => {}
         }

@@ -37,6 +37,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 };
             }
         }
+        // The `()` of a block of only comments, `if c { // why }`'s, which
+        // MIR has no other statement of: where its comments end, which
+        // they're printed before (ADR 0753).
+        if let Rvalue::Use(Operand::Constant(c), _) = rvalue
+            && c.ty().is_unit()
+            && let Some(end) = crate::lower::sources::comments_end(self.tcx, self.krate.sources, span)
+        {
+            out.push(StmtKind::Comments.at(end));
+        }
         // What the function gives, a variable of its own nothing reads after:
         // that, handed over uncopied. Not of a `Cell` in it, which
         // a drop after may set.

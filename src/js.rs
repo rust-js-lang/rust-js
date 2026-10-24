@@ -403,6 +403,10 @@ pub enum StmtKind {
     /// `"use cache";`: a function's or an arrow's directive, first in its body
     /// (ADR 0349).
     Directive(String),
+    /// Where a block of only comments ends, `if c { // why }`'s: nothing
+    /// runs, and the comments before its span are printed there, as
+    /// written (ADR 0753).
+    Comments,
 }
 
 /// What a `try`'s `catch` of a `Result` is given (`Expr::caught`): what

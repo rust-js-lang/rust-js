@@ -399,7 +399,7 @@ fn comments_of(
     let mut found = Vec::new();
     let mut trailing = Vec::new();
     let mut arm_comments = Vec::new();
-    let spans = statement_spans(module);
+    let (spans, comment_ends) = statement_spans(module);
     let noinline = noinline_starts(module);
     // A conditional's branch is a start too, its value's, that a comment
     // before it in Rust is before (ADR 0658).
@@ -650,6 +650,12 @@ fn comments_of(
                 };
                 let mut made = oxc_ast::Comment::new(lo, hi, kind);
                 made.attached_to = printed_first(at);
+                // A block's of only comments, where it ends: no node starts
+                // there, so oxc prints it as it does a comment whose node is
+                // gone, before what follows or the block's `}` (ADR 0753).
+                if comment_ends.contains(&at) {
+                    made.content = oxc_ast::CommentContent::Legal;
+                }
                 made.position = CommentPosition::Leading;
                 made.set_preceded_by_newline(true);
                 made.set_followed_by_newline(true);
@@ -758,14 +764,23 @@ fn noinline_starts(module: &Module) -> std::collections::HashSet<u32> {
 
 /// The span of each statement and item of `module`, closures' and nested
 /// functions' too, each list's in the order it's printed: what a comment is
-/// attached to (ADR 0444).
-fn statement_spans(module: &Module) -> Vec<(u32, u32)> {
-    fn of_stmts(stmts: &[js::Stmt], starts: &mut Vec<(u32, u32)>) {
+/// attached to (ADR 0444); and where each block of only comments ends,
+/// `StmtKind::Comments`, whose comments oxc prints there (ADR 0753).
+fn statement_spans(module: &Module) -> (Vec<(u32, u32)>, std::collections::HashSet<u32>) {
+    type Found = (Vec<(u32, u32)>, std::collections::HashSet<u32>);
+    fn list(list: &[js::Stmt], (starts, ends): &mut Found) {
+        starts.extend(list_spans(list));
+        let comments = list
+            .iter()
+            .filter(|s| matches!(s.kind, StmtKind::Comments) && !s.span.is_none());
+        ends.extend(comments.map(|s| s.span.lo));
+    }
+    fn of_stmts(stmts: &[js::Stmt], starts: &mut Found) {
         let mut copy = stmts.to_vec();
         let mut functions = Vec::new();
-        js::statement_lists(&mut copy, &mut |list| {
-            starts.extend(list_spans(list));
-            for stmt in list.iter() {
+        js::statement_lists(&mut copy, &mut |stmts| {
+            list(stmts, starts);
+            for stmt in stmts.iter() {
                 if let StmtKind::Function(f) = &stmt.kind {
                     functions.push(f.body.clone());
                 }
@@ -773,7 +788,7 @@ fn statement_spans(module: &Module) -> Vec<(u32, u32)> {
         });
         js::each_expr_mut(&mut copy, &mut |e| match &mut e.kind {
             ExprKind::Arrow(_, body) | ExprKind::AsyncArrow(_, body) => {
-                js::statement_lists(body, &mut |list| starts.extend(list_spans(list)));
+                js::statement_lists(body, &mut |stmts| list(stmts, starts));
             }
             ExprKind::Function(f) => functions.push(f.body.clone()),
             _ => {}
@@ -782,10 +797,10 @@ fn statement_spans(module: &Module) -> Vec<(u32, u32)> {
             of_stmts(&body, starts);
         }
     }
-    let mut starts = Vec::new();
-    let function = |f: &js::Function, starts: &mut Vec<(u32, u32)>| {
+    let mut starts: Found = (Vec::new(), Default::default());
+    let function = |f: &js::Function, starts: &mut Found| {
         if !f.span.is_none() {
-            starts.push((f.span.lo, f.span.hi));
+            starts.0.push((f.span.lo, f.span.hi));
         }
         of_stmts(&f.body, starts);
     };
@@ -793,7 +808,7 @@ fn statement_spans(module: &Module) -> Vec<(u32, u32)> {
         match item {
             js::Item::Const(c) => {
                 if !c.span.is_none() {
-                    starts.push((c.span.lo, c.span.hi));
+                    starts.0.push((c.span.lo, c.span.hi));
                 }
                 of_stmts(&[StmtKind::Expr(c.value.clone()).at(js::Span::NONE)], &mut starts);
             }

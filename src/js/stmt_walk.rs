@@ -276,7 +276,7 @@ pub fn visit_stmts<'a>(stmts: &'a [Stmt], read: &mut dyn FnMut(&'a str)) {
                 visit_stmts(finally, read);
             }
             StmtKind::Function(function) => visit_stmts(&function.body, read),
-            StmtKind::Break(_) | StmtKind::Continue(_) | StmtKind::Directive(_) => {}
+            StmtKind::Break(_) | StmtKind::Continue(_) | StmtKind::Directive(_) | StmtKind::Comments => {}
         }
     }
 }

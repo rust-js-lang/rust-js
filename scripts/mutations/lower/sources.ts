@@ -34,4 +34,12 @@ export const mutations: Mutation[] = [
     replace: "            true => self.span(Span::with_root_ctxt(file.start_pos, file.end_position())),\n",
     tests: ["test/lowering-names.test.ts", "-t", "a comment before a macro's opening"],
   },
+  {
+    name: "comments-block-of-nothing",
+    breaks: "an `else {}` of no comment is a block of comments, kept, where it's nothing",
+    file: "src/lower/sources.rs",
+    find: "    (comments > 0 && !at.is_none()).then(",
+    replace: "    (!at.is_none()).then(",
+    tests: ["test/lowering-branches.test.ts", "-t", "an else of nothing"],
+  },
 ];

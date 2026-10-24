@@ -62,3 +62,38 @@ js::export_default! {
   );
   expect(lib.default(2 as never)).toBe("2");
 });
+
+// React's addObjectDiffToProperties: `if (indent >= 3) { // Just
+// fallthrough .. }` before its `else if`. A branch of only comments isn't
+// nothing (decided 2026-10-24): MIR has no statement of it, but its `()`,
+// which the branch's span is of, is where its comments are kept, as
+// upstream writes them (ADR 0753).
+test("a branch of only comments keeps them", async () => {
+  const { js, lib } = await compiled("comments-only-branch", `pub fn described(indent: usize, prev: Option<u32>, out: &mut Vec<String>) {
+    if indent >= 3 {
+        // Just fallthrough to print the two values if we're deep.
+        // This will skip nested properties of the objects.
+    } else if let Some(prev) = prev
+        && prev > 2
+    {
+        out.push(prev.to_string());
+    }
+    if prev.is_none() {
+        out.push("none".to_string());
+    } else {
+        /* Nothing more. */
+    }
+    out.push("end".to_string());
+}
+`);
+  expect(js).toContain(
+    "  if (indent >= 3) {\n    // Just fallthrough to print the two values if we're deep.\n    // This will skip nested properties of the objects.\n  } else if (prev != null && prev > 2) {\n",
+  );
+  expect(js).toContain('  if (prev == null) {\n    out.push("none");\n  } else {\n    /* Nothing more. */\n  }\n');
+  const ran = (indent: number, prev: number | undefined) => {
+    const out: string[] = [];
+    lib.described(indent as never, prev as never, out as never);
+    return out;
+  };
+  expect([ran(4, 5), ran(1, 5), ran(1, 1), ran(1, undefined)]).toEqual([["end"], ["5", "end"], ["end"], ["none", "end"]]);
+});

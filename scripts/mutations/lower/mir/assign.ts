@@ -490,4 +490,12 @@ export const mutations: Mutation[] = [
     replace: "        let user = state.locals.user[local];\n",
     tests: ["test/lowering-guards.test.ts"],
   },
+  {
+    name: "comments-only-block-dropped",
+    breaks: "a branch of only comments is nothing, `if (indent < 3) { .. }`, its comments gone",
+    file: "src/lower/mir/assign.rs",
+    find: "            out.push(StmtKind::Comments.at(end));\n",
+    replace: "            let _ = end;\n",
+    tests: ["test/lowering-comments.test.ts", "-t", "a branch of only comments"],
+  },
 ];

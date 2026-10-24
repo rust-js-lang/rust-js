@@ -302,7 +302,7 @@ impl Walk {
                 self.leave();
             }
             StmtKind::Function(function) => self.function(function, false),
-            StmtKind::Break(_) | StmtKind::Continue(_) | StmtKind::Directive(_) => {}
+            StmtKind::Break(_) | StmtKind::Continue(_) | StmtKind::Directive(_) | StmtKind::Comments => {}
         }
     }
 
