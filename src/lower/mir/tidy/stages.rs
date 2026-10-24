@@ -459,9 +459,6 @@ pub(super) const STAGES: &[Stage] = &[
             // An `if` of `false`, a check that can't fail once what it reads
             // is in place: its `else`, if any.
             pass("never taken", |b, _| js::statement_lists(b, &mut never_taken)),
-            // What those leave past a jump: none, as `nothing after a jump`
-            // ensures.
-            pass("unreachable", |b, _| js::statement_lists(b, &mut unreachable_after)),
             pass("holed lists", |b, _| holed_lists(b)),
             // A `match` of constants, its chain settled: a `switch` (ADR 0629).
             pass("switches", |b, h| {

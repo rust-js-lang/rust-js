@@ -443,15 +443,6 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
-    name: "late-unreachable-kept",
-    breaks: "what a jump settled late leaves past it stays, `return e; break bb195;`, which a debug build's contract refuses",
-    file: "src/lower/mir/tidy/stages.rs",
-    find: "            // ensures.\n            pass(\"unreachable\", |b, _| js::statement_lists(b, &mut unreachable_after)),\n",
-    replace: "            // ensures.\n",
-    tests: ["test/corpus.test.ts", "-t", "^(nested_loop_jumps|writer_callables|interpreter|rc_counted_uses|loop_drops).rs$"],
-    snapshots: true,
-  },
-  {
     name: "outer-break-not-early",
     breaks: "an inner loop whose way out is its `break` now ends `if (value) { .. break; } break;`, not `if (!value) { break; }` first",
     file: "src/lower/mir/tidy/stages.rs",
