@@ -142,7 +142,7 @@ export const mutations: Mutation[] = [
     name: "mir-counted-rc-plain",
     breaks: "MIR's `Arc::strong_count(&owner)` is read where it's shown, after a later `upgrade()` counted another",
     file: "src/lower/mir.rs",
-    find: "                            && self.counted_rc(t).is_none()\n                            && self.weak_of(t).is_none()\n",
+    find: "                            && self.counted_rc(t).is_none()\n                            && self.counted_weak(t).is_none()\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "rc_counted_uses"],
   },

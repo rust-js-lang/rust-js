@@ -210,17 +210,18 @@ test("what another crate's derive writes is compiled as the crate's own code", a
 // The app, the package the tooling builds, is compiled as a program where
 // no crate of the workspace uses it: an `Rc` whose counts nothing reads is
 // the value it points at. One another crate of the workspace uses is a
-// library whichever package is built, its every `Rc` counted, as the
-// crates sharing it count it (ADR 0523): a crate's JS is the same however
+// library whichever package is built, its every `Rc` counted where it reads
+// a count, as the crates sharing it count it (ADRs 0523, 0844): a crate's JS is the same however
 // it's reached, alone or through a dependent, its `dyn Fn` dropped as a
 // library's is (ADR 0521), as React's `shared` is (ADR 0360, amended).
 test("the app's crate is a program where no crate uses it, and a library, the same bytes, where one does", async () => {
   const dir = fixture("crates-app-program");
   writeFileSync(join(dir, "Cargo.toml"), '[workspace]\nmembers = ["app", "user"]\nresolver = "2"\n');
-  const counts = "use std::rc::Rc;\n\npub struct Shared(pub Rc<u32>);\n\npub fn enqueue(task: Box<dyn Fn()>) {\n    task();\n}\n\npub fn main() {\n    let a = Rc::new(5);\n    let b = Rc::clone(&a);\n    println!(\"{} {}\", *a, *b);\n}\n";
+  const counts = "use std::rc::Rc;\n\npub struct Shared(pub Rc<u32>);\n\npub fn enqueue(task: Box<dyn Fn()>) {\n    task();\n}\n\npub fn main() {\n    let a = Rc::new(5);\n    let b = Rc::clone(&a);\n    println!(\"{} {} {}\", *a, *b, Rc::strong_count(&a));\n}\n";
+  const reads = counts.replace(", Rc::strong_count(&a)", "").replace("{} {} {}", "{} {}");
   for (const [name, uses, source] of [
     ["app", "", counts],
-    ["user", 'app = { path = "../app" }\n', counts.replace("println!", "app::main();\n    println!")],
+    ["user", 'app = { path = "../app" }\n', reads.replace("println!", "app::main();\n    println!")],
   ]) {
     mkdirSync(join(dir, name, "src"), { recursive: true });
     writeFileSync(join(dir, name, "Cargo.toml"), `[package]\nname = "${name}"\nversion = "0.1.0"\nedition = "2024"\n\n[dependencies]\n${uses}`);
@@ -231,18 +232,19 @@ test("the app's crate is a program where no crate uses it, and a library, the sa
   const counted = (js: string) => readFileSync(js, "utf8").includes("strong: 1");
   const app = await check(manifest, { packageName: "app" });
   const alone = readFileSync(app.js, "utf8");
-  expect([printed(app.js), counted(app.js)]).toEqual(["5 5\n", true]);
+  expect([printed(app.js), counted(app.js)]).toEqual(["5 5 2\n", true]);
   const user = await check(manifest, { packageName: "user" });
-  expect([printed(user.js), counted(user.js)]).toEqual(["5 5\n5 5\n", false]);
+  expect([printed(user.js), counted(user.js)]).toEqual(["5 5 2\n5 5\n", false]);
   expect(readFileSync(user.crates.get("app")!.js, "utf8")).toBe(alone);
   const again = await check(manifest, { packageName: "app" });
   expect(readFileSync(again.js, "utf8")).toBe(alone);
   // The whole workspace, each member a package Cargo was asked for: no app,
-  // so every crate is a library, its `Rc`s counted.
+  // so every crate is a library, `user` too, which reads no count and is
+  // handed no `Rc`: it counts none (ADR 0844).
   await expect(check(manifest, { packageName: undefined })).rejects.toThrow("compiled no library");
   const deps = join(dir, "target", "wasm32-unknown-unknown", "debug", "deps");
   const marker = join(deps, readdirSync(deps).find((f) => f.startsWith("libuser-") && f.endsWith(".rust-js"))!);
   const built = JSON.parse(readFileSync(readFileSync(marker, "utf8").split("\n")[0], "utf8"));
   const root = built.modules.find((m: { module: string[] }) => m.module.length === 0).file;
-  expect(counted(root)).toBe(true);
+  expect(counted(root)).toBe(false);
 }, 600_000);

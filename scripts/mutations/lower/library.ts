@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "uncounted-library-rcs-unseen",
+    breaks: "a crate counting an `Rc` a library that counts none hands it isn't refused, and the two read it apart (ADR 0844)",
+    file: "src/lower/library.rs",
+    find: "            reached.uncounted_rcs.insert(tcx.crate_name(of.krate).to_string());\n",
+    replace: "",
+    tests: ["test/crates.test.ts", "-t", "reads no count"],
+  },
+  {
     name: "held-unlisted",
     breaks: "a library's manifest says nothing of the bindings its modules hold, so a consumer reads each in place",
     file: "src/lower/library.rs",
@@ -110,7 +118,7 @@ export const mutations: Mutation[] = [
     name: "library-rc-unreached",
     breaks: "an `Rc` a library hands a crate isn't counted, though the library counts it",
     file: "src/lower/library.rs",
-    find: "                reached.rcs = true;\n",
+    find: "                reached.rcs |= self.counts_rcs(krate);\n",
     replace: "",
     tests: ["test/crates.test.ts", "-t", "three crates: rc_generic"],
   },

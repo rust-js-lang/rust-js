@@ -684,11 +684,16 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         .collect();
 
     // Each `Rc` whose counts are read, or whose pointee's drop runs a
-    // destructor (ADR 0320); every one, in a library or a crate a library
-    // hands one, which share their `Rc`s (ADRs 0523, 0626).
-    let params_may_drop = crate::lower::traits::may_have_destructors(tcx, &foreign);
+    // destructor (ADR 0320); every one, in a library that counts any, or a
+    // crate a library that counts them hands one, which share their `Rc`s
+    // (ADRs 0523, 0626, 0844). A library's type parameters are its
+    // consumers' types, any of which may have a destructor.
+    let params_may_drop = crate::lower::traits::may_have_destructors(tcx, (&foreign, library));
     let reached = foreign.reached(all_bodies);
-    let shares_rcs = library || reached.rcs;
+    let shared = rc_counts::Shared {
+        library,
+        counted: reached.rcs,
+    };
     let recognition = Recognition {
         tcx,
         typing_env: ty::TypingEnv::fully_monomorphized(),
@@ -696,7 +701,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         foreign: &foreign,
     };
     let counted_with = |closure_facts: &ClosureFacts| {
-        counted_rcs(tcx, all_bodies, (params_may_drop, shares_rcs), |counted, pointee| {
+        counted_rcs(tcx, all_bodies, (params_may_drop, shared), |counted, pointee| {
             super::drops::drop_runs(recognition, (library, closure_facts), counted, pointee)
         })
     };
@@ -734,6 +739,20 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     }) {
         closure_facts.any_dyns_drop = true;
         counted = counted_with(&closure_facts);
+    }
+    // A library that counts no `Rc` hands the crate one, which the two share
+    // as it is, the value itself: the crate can count none either (ADR 0844).
+    if counted.any()
+        && let Some(name) = reached.uncounted_rcs.first()
+    {
+        let why = match (counted.all, counted.types.iter().next()) {
+            (false, Some(ty)) => format!("an `Rc<{ty}>`, whose counts it reads or whose last owner runs a destructor"),
+            _ => "its `Rc`s, as one that reads a count, or of a value with a destructor, makes it".to_string(),
+        };
+        tcx.dcx().err(format!(
+            "rust-js: this crate counts {why}, but `{name}`, a rust-js library that counts none, hands it `Rc`s, which both share as the value itself (ADR 0844)"
+        ));
+        return None;
     }
     // The map and filter types it steps from their back (ADR 0545), and of
     // an array's items with a destructor, which its native forms don't step.

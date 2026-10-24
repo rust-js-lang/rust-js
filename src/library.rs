@@ -111,6 +111,19 @@ pub struct Library {
     /// wrote before held none a consumer read through it.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub held: Vec<Held>,
+    /// Whether it counts its `Rc`s, every one `{ value, strong, weak }`
+    /// (ADR 0523), or none, each the value itself, where nothing it or a
+    /// library it shares them with does asks a count (ADR 0844): a crate it
+    /// hands one counts as it does. A library a compiler wrote before
+    /// counted every one.
+    #[serde(default = "counts_every_rc")]
+    pub counts_rcs: bool,
+}
+
+/// A library contract's `counts_rcs` where it says none: ADR 0523's, which
+/// counted every `Rc`, never read as one that counts none.
+fn counts_every_rc() -> bool {
+    true
 }
 
 /// An item as a consumer imports it: from a JS file, relative to its own
@@ -149,6 +162,8 @@ pub struct Exports {
     pub builtin: bool,
     pub keeps_capacity: bool,
     pub writers_take_options: bool,
+    /// Whether it counts its `Rc`s (ADR 0844).
+    pub counts_rcs: bool,
     pub items: HashMap<String, Imported>,
     pub impls: HashSet<String>,
     /// Each binding a module holds, by the module's key and the binding's
@@ -203,6 +218,7 @@ impl Dependencies {
                 crate_hash: library.crate_hash,
                 keeps_capacity: library.keeps_capacity,
                 writers_take_options: library.writers_take_options,
+                counts_rcs: library.counts_rcs,
                 impls: library.impls.into_iter().collect(),
                 ..Exports::default()
             };
@@ -284,6 +300,7 @@ impl Dependencies {
             builtin: true,
             keeps_capacity: library.keeps_capacity,
             writers_take_options: library.writers_take_options,
+            counts_rcs: library.counts_rcs,
             impls: library.impls.into_iter().collect(),
             ..Exports::default()
         };
