@@ -474,4 +474,12 @@ export const mutations: Mutation[] = [
     replace: "        js::ExprKind::Undefined => js::Expr::null(),\n",
     tests: ["test/lowering-nullable.test.ts", "-t", "nullable Cell field's None is null"],
   },
+  {
+    name: "held-default-exported-by-name",
+    breaks: "a library's `pub use` of a binding its default names is `export const assign` too, which no caller reads and upstream's `shared/assign` hasn't",
+    file: "src/lower/bindings.rs",
+    find: "        self.export && !self.default\n",
+    replace: "        self.export\n",
+    tests: ["test/cargo-link.test.ts", "-t", "a library's module that holds a binding"],
+  },
 ];

@@ -97,8 +97,8 @@ pub(super) fn module<'tcx>(
             _ => json!({ "kind": "const", "type": { "kind": "typeof", "name": held.path } }),
         };
         declared["name"] = json!(held.name);
-        declared["exported"] = json!(held.export);
-        declared["declare"] = json!(!held.export);
+        declared["exported"] = json!(held.exported_by_name());
+        declared["declare"] = json!(!held.exported_by_name());
         items.push(declared);
     }
     if let Some(def_id) = default_export {

@@ -817,7 +817,7 @@ pub fn lower_crate<'tcx>(
                         value: super::path_read(&held.path, &required, |export| {
                             names.expect("its imports")[export].clone()
                         }),
-                        export: held.export,
+                        export: held.exported_by_name(),
                         mutable: false,
                         span: held.span.map_or(js::Span::NONE, |span| sources.span(span)),
                     }),

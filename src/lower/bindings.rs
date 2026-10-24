@@ -371,6 +371,14 @@ pub(super) struct HeldBinding {
 }
 
 impl HeldBinding {
+    /// Whether the module exports it by its name: a `pub use` names it,
+    /// and it isn't the module's default, which is how every caller reads
+    /// it, in the crate and in another, as upstream's `shared/assign` has
+    /// it alone (ADR 0773).
+    pub(super) fn exported_by_name(&self) -> bool {
+        self.export && !self.default
+    }
+
     /// What a caller that names it through its module imports: the
     /// module's default, as a function's (ADR 0240), else its name.
     pub(super) fn import(&self) -> Option<&str> {
