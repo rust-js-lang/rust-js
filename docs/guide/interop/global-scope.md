@@ -210,6 +210,40 @@ export function later(task) {
   a `ReferenceError` where the host hasn't it, as JS does. Ask where the
   program may run without it.
 
+A member no TypeScript lib declares, which some hosts have, is declared as
+an optional property: an `Option` of its value, `None` where the host
+hasn't it, as reading a missing property gives `undefined` and throws
+nothing. V8's `console.createTask` is `webapi::console::create_task()`,
+typed as React's Flow declares it, and the `ConsoleTask` it makes runs
+what it's given, `task.run(f)`
+([ADR 0811](../../decisions/0811-console-create-task-may-be-absent.md)):
+
+```rust
+use webapi::{ConsoleTask, console};
+
+pub fn debug_task(name: &str) -> Option<&'static ConsoleTask> {
+    console::create_task().map(|create_task| create_task(name))
+}
+
+pub fn render_in(task: Option<&ConsoleTask>, render: impl FnOnce() -> u32) -> u32 {
+    match task {
+        Some(task) => task.run(render),
+        None => render(),
+    }
+}
+```
+
+```js
+export function debugTask(name) {
+  const createTask = console.createTask;
+  return createTask ? createTask(name) : undefined;
+}
+
+export function renderIn(task, render) {
+  return task ? task.run(render) : render();
+}
+```
+
 ## What a value is: `typeof`
 
 `js::type_of(value)` is `typeof value`, as text: for a message. To branch on

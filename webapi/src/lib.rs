@@ -87486,6 +87486,23 @@ pub mod web_assembly {
 #[cfg_attr(rust_js, rust_js::types = "Console")]
 pub struct Console(PhantomData<JsObject>);
 
+/// [`ConsoleTask`](https://developer.chrome.com/docs/devtools/console/api#createtask): what
+/// [`console::create_task`]'s function makes, a task whose `run` DevTools shows the stack of
+/// where it was made. No TypeScript lib declares it: it's typed as React's Flow declares it,
+/// `interface ConsoleTask { run<T>(f: () => T): T }` (ADR 0811).
+#[cfg_attr(rust_js, rust_js::types = "{ run<T>(f: () => T): T }")]
+pub struct ConsoleTask(PhantomData<JsObject>);
+
+impl ConsoleTask {
+    /// `task.run(f)`: `f` called, as part of the task, and what it gives.
+    #[cfg_attr(rust_js, rust_js::link_name = "run")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn run<T>(&self, f: impl FnOnce() -> T) -> T {
+        unreachable!()
+    }
+}
+
 /// The [`console`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/console) namespace.
 
 pub mod console {
@@ -87651,6 +87668,18 @@ pub mod console {
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn time_end(label: Option<&str>) {
+        unreachable!()
+    }
+
+    /// [Chrome](https://developer.chrome.com/docs/devtools/console/api#createtask): `console.createTask`,
+    /// the function that makes a [`ConsoleTask`] of a name, whose `run` DevTools shows the stack of
+    /// where it was made; `None`, `undefined`, where the host hasn't it, as Firefox, Safari and jsdom
+    /// haven't. No TypeScript lib declares it: it's typed as React's Flow declares it,
+    /// `createTask(label: string): ConsoleTask` (ADR 0811).
+    #[cfg_attr(rust_js, rust_js::link_name = "get console.createTask")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn create_task() -> Option<&'static dyn Fn(&str) -> &'static ConsoleTask> {
         unreachable!()
     }
 }

@@ -529,7 +529,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0594 An overload whose arguments an options dictionary holds is that one](decisions/0594-an-overload-an-options-dictionary-holds-is-it.md)
 - [0595 A thread-local `Cell`'s `take` and `replace` are its cell's](decisions/0595-a-thread-local-cells-take-is-its-cells.md)
 - [0596 A `pub use` of a module's own item exports it by that name](decisions/0596-a-pub-use-of-a-modules-own-item-exports-it.md)
-- [0597 Whether the host has a global is `js::is_defined`'s](decisions/0597-whether-the-host-has-a-global-is-is-defined.md) *(amended by 0645: a static is given as itself)*
+- [0597 Whether the host has a global is `js::is_defined`'s](decisions/0597-whether-the-host-has-a-global-is-is-defined.md) *(amended by 0645: a static is given as itself; extended by 0811: a member no TypeScript lib declares is an optional property)*
 - [0598 A temporary is no part of a named variable's pattern](decisions/0598-a-temporary-is-no-part-of-a-names-pattern.md)
 - [0599 A result its branches make before it's coerced is returned where made](decisions/0599-a-coerced-result-is-returned-where-made.md)
 - [0600 The guide is the site on GitHub Pages](decisions/0600-the-guide-is-the-site.md)
@@ -676,6 +676,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0781 A `None` only nullables read is `null` where it's made](decisions/0781-a-none-only-nullables-read-is-null-where-its-made.md)
 - [0782 A promise's executor may borrow, and `then` takes two handlers](decisions/0782-a-promises-executor-borrows-and-then-takes-two-handlers.md)
 - [0810 An optional nullable field is absent until it's set](decisions/0810-an-optional-nullable-field-is-absent-until-set.md)
+- [0811 `console.createTask` is a property the host may lack](decisions/0811-console-create-task-may-be-absent.md)
 - [0720 A labeled block's `break` and a named constant, in a body's ranges](decisions/0720-a-labeled-block-and-a-named-constant-in-a-bodys-ranges.md)
 - [0721 `js::strict_equals(a, b)` is JS's `===`](decisions/0721-strict-equals-is-jss-triple-equals.md)
 - [0722 A `#[repr(..)]` enum's variant is its number](decisions/0722-a-repr-enums-variant-is-its-number.md)
