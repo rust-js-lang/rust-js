@@ -49,6 +49,10 @@ pub fn note(line: &str) -> usize {
     LOG.with_borrow(|log| log.len())
 }
 
+pub fn lines_after(n: usize) -> usize {
+    n + LOG.with_borrow(|log| log.len())
+}
+
 pub fn shared() -> u32 {
     SHARED.set(SHARED.get() + 2);
     SHARED.get()
@@ -78,6 +82,8 @@ pub fn tick() {
   expect(js).toContain("const log = [];");
   expect(js).toContain("export const SHARED = { value: 0 };");
   expect(js).toContain("count = (count + 1) >>> 0;");
+  // Its borrow's closure where it's read, not first: the closure's body.
+  expect(js).toContain("return (n + log.length) >>> 0;");
   expect(js).not.toContain("count.value");
   expect(js).not.toContain("log.value");
   expect(js).toContain("  return log.length;\n");
@@ -818,12 +824,14 @@ pub fn values() -> [u32; 4] {
   };
   // Where the Rust has them.
   expect(at("function twice(")).toBeLessThan(at("const FIRST ="));
-  expect(at("const FIRST =")).toBeLessThan(at("const seen ="));
+  expect(at("const FIRST =")).toBeLessThan(at("let seen = 0;"));
   expect(at("const LATER =")).toBeLessThan(at("function readLater("));
   // After what they read: LATER, directly or through readLater; SEEN.
   expect(at("const LATER =")).toBeLessThan(at("const AFTER ="));
   expect(at("const LATER =")).toBeLessThan(at("const CALLED ="));
-  expect(at("const seen =")).toBeLessThan(at(/seen(\$1)?\.value =/));
+  // Set where the module's loaded, on_load!'s body in its place (ADR
+  // 0840): a `let`, not a `const` assigned (#201).
+  expect(at("let seen = 0;")).toBeLessThan(at("seen = (seen + 1) >>> 0;"));
   const { values } = await import(join(dir, "lib.js"));
   expect(values()).toEqual([2, 11, 11, 1]);
 });
