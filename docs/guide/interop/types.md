@@ -31,6 +31,7 @@ from your crate and what a binding must be given.
 | `#[rust_js::untagged]` enum | its payload itself | [Enums](#enums) |
 | `Option<T>` | the value, or `undefined` | [Option and Result](#option-and-result) |
 | `#[rust_js::nullable]` `Option<T>` | the value, or `null` | [Option and Result](#option-and-result) |
+| `#[rust_js::nullable]` `#[rust_js::optional]` field | absent until it's set, then the value or `null` | [Option and Result](#option-and-result) |
 | `Result<T, E>` | `{ TAG: "Ok", _0 }`, `{ TAG: "Err", _0 }` | [Option and Result](#option-and-result) |
 | `Box<T>`, `Rc<T>`, `Arc<T>` | the value itself | [Pointers](#box-rc-and-arc) |
 | an `Rc` whose count is read | `{ value, strong, weak }` | [Pointers](#box-rc-and-arc) |
@@ -475,6 +476,8 @@ pub struct Profile {
     pub nickname: Option<String>,
     #[cfg_attr(rust_js, rust_js::nullable)]
     pub avatar: Option<String>,
+    #[cfg_attr(rust_js, rust_js::nullable, rust_js::optional)]
+    pub banner: Option<String>,
 }
 
 pub fn profile(name: &str) -> Profile {
@@ -482,7 +485,12 @@ pub fn profile(name: &str) -> Profile {
         name: name.to_string(),
         nickname: None,
         avatar: None,
+        banner: None,
     }
+}
+
+pub fn hide_banner(profile: &mut Profile) {
+    profile.banner = None;
 }
 
 pub fn shown(profile: &Profile) -> &str {
@@ -523,6 +531,10 @@ import { $div, $some } from "@rust-js/runtime";
 
 export function profile(name) {
   return { name, avatar: null };
+}
+
+export function hideBanner(profile) {
+  profile.banner = null;
 }
 
 export function shown(profile) {
@@ -574,14 +586,30 @@ export function ratio(a, b) {
   it's made, `let owner = None;`'s `const owner = null;`, and given as it
   is ([ADR 0781](../../decisions/0781-a-none-only-nullables-read-is-null-where-its-made.md)).
   A field's is of an `Option`, or of a `Cell` of one, whose `None` is
-  `null` where it's made and where it's `set`, `replace`d or `take`n,
-  `context.renderer = null`
-  ([ADR 0772](../../decisions/0772-a-nullable-cell-field-writes-null.md));
+  `null` where it's made, where it's assigned, `profile.banner = null`,
+  and where its cell is `set`, `replace`d or `take`n, `context.renderer =
+  null`
+  ([ADR 0772](../../decisions/0772-a-nullable-cell-field-writes-null.md),
+  [ADR 0810](../../decisions/0810-an-optional-nullable-field-is-absent-until-set.md));
   on anything else it's an error
   ([ADR 0586](../../decisions/0586-a-nullable-field-is-an-option.md)):
 
   ```
   rust-js: `#[rust_js::nullable]` is of a field that's an `Option`, or a `Cell` of one, whose `None` is `null`; this one isn't
+  ```
+
+- **`#[rust_js::optional]` on a nullable field makes it absent until
+  it's set**, Flow's and TypeScript's `banner?: string | null`: made with
+  `None`, it's left out, `{ name, avatar: null }`, as a plain `Option`
+  field is; set to `None`, it's `null`, as a nullable field is. The two
+  marks are the two attributes: `nullable` the `| null`, `optional` the
+  `?`. Read, absent, `null` or a value, it's its `Option`. Its `.d.ts` is a
+  nullable field's. On a field that isn't nullable it's an error, as a
+  plain `Option` field's `None` is left out already
+  ([ADR 0810](../../decisions/0810-an-optional-nullable-field-is-absent-until-set.md)):
+
+  ```
+  rust-js: `#[rust_js::optional]` is of a `#[rust_js::nullable]` field, whose `None` is then left out where its struct is made and `null` where it's set; an `Option` field's `None` is left out already
   ```
 
 - **A `Some` of what looks like `None` is boxed**: `Some(None)`, `Some(())`

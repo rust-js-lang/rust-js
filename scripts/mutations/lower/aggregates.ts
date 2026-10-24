@@ -146,5 +146,12 @@ export const mutations: Mutation[] = [
     replace: "                *value = match false {\n",
     tests: ["test/lowering-nullable.test.ts", "-t", "nullable Cell field's None is null"],
   },
-
+  {
+    name: "optional-field-made-null-in-literal",
+    breaks: "an optional nullable field made `Cell::new(None)` is `null` in its literal, not left out (ADR 0810)",
+    file: "src/lower/aggregates.rs",
+    find: "            if bindings::null_where_made(self.tcx, field) {\n",
+    replace: "            if bindings::is_nullable(self.tcx, field) {\n",
+    tests: ["test/lowering-nullable.test.ts", "-t", "an optional nullable field"],
+  },
 ];

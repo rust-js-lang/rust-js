@@ -152,3 +152,131 @@ pub fn copied() -> (Info, Option<&'static Unknown>) {
   expect([lib.leaked().owner, lib.twice()[1].owner, lib.given(), lib.alsoTested()[0].owner, lib.alsoTested()[1]]).toEqual([null, null, false, null, true]);
   expect(lib.copied()[1]).toBeUndefined();
 });
+
+// React's `createContext`, whose DEV-only `_currentRenderer` isn't in its
+// literal and is set to `null` in DEV, Flow's `_currentRenderer?: Object |
+// null`: a nullable field marked `#[rust_js::optional]` is left out where
+// its struct is made with `None`, and `null` where it's set to `None`; read,
+// absent, `null` or set, its `None` is `None` (ADR 0810).
+test("an optional nullable field is left out where it's made and null where it's set", async () => {
+  const dir = fixture("nullable-optional-fields");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::Cell;
+
+use js::Unknown;
+
+pub struct Context {
+    pub value: Cell<f64>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub provider: Cell<Option<&'static Unknown>>,
+    #[cfg_attr(rust_js, rust_js::nullable, rust_js::optional)]
+    pub renderer: Cell<Option<&'static Unknown>>,
+    #[cfg_attr(rust_js, rust_js::nullable, rust_js::optional)]
+    pub label: Option<&'static str>,
+}
+
+pub struct Info {
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub name: Option<&'static str>,
+}
+
+pub fn make(value: f64, dev: bool) -> Context {
+    let context = Context {
+        value: Cell::new(value),
+        provider: Cell::new(None),
+        renderer: Cell::new(None),
+        label: None,
+    };
+    if dev {
+        context.renderer.set(None);
+    }
+    context
+}
+
+pub fn labeled(label: Option<&'static str>) -> Context {
+    Context {
+        value: Cell::new(0.0),
+        provider: Cell::new(None),
+        renderer: Cell::new(None),
+        label,
+    }
+}
+
+pub fn unnamed() -> Context {
+    let label = None;
+    Context {
+        value: Cell::new(1.0),
+        provider: Cell::new(None),
+        renderer: Cell::new(None),
+        label,
+    }
+}
+
+pub fn info(context: &Context) -> Info {
+    Info { name: context.label }
+}
+
+pub fn set(context: &Context, renderer: &'static Unknown) {
+    context.renderer.set(Some(renderer));
+}
+
+pub fn has(context: &Context) -> bool {
+    context.renderer.get().is_some()
+}
+
+pub fn same(a: &Context, b: &Context) -> bool {
+    a.renderer.get() == b.renderer.get()
+}
+
+pub fn which(context: &Context) -> u32 {
+    match context.renderer.get() {
+        Some(_) => 1,
+        None => 0,
+    }
+}
+
+pub fn unlabeled(context: &Context) -> bool {
+    context.label.is_none()
+}
+
+pub fn unlabel(context: &mut Context) {
+    context.label = None;
+}
+
+pub fn relabel(context: &mut Context, label: Option<&'static str>) {
+    context.label = label;
+}
+
+pub fn label(context: &mut Context, label: &'static str) {
+    context.label = Some(label);
+}
+`);
+  run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("const context = { value, provider: null };\n  if (dev) {\n    context.renderer = null;\n  }");
+  // Given an \`Option\` that may be \`None\`, as it is: \`undefined\`, as a key that isn't there reads.
+  expect(js).toContain("return { value: 0, provider: null, label };");
+  // A nullable field given one's value, which may be \`undefined\`, makes it \`null\`.
+  expect(js).toContain("return { name: context.label ?? null };");
+  expect(readFileSync(join(dir, "lib.d.ts"), "utf8")).toContain("    renderer?: unknown | null | undefined;\n    label?: string | null | undefined;\n");
+  const lib = await import(join(dir, "lib.js"));
+  const prod = lib.make(1, false);
+  const dev = lib.make(1, true);
+  expect(["renderer" in prod, "label" in prod, dev.renderer]).toEqual([false, false, null]);
+  expect([lib.has(prod), lib.has(dev), lib.which(prod), lib.which(dev), lib.same(prod, dev), lib.unlabeled(prod)]).toEqual([false, false, 0, 0, true, true]);
+  expect(lib.info(prod).name).toBe(null);
+  lib.set(dev, "dom");
+  expect([lib.has(dev), lib.which(dev), lib.same(prod, dev)]).toEqual([true, 1, false]);
+  expect([lib.labeled("a").label, "label" in lib.labeled(undefined), lib.unlabeled(lib.labeled(undefined))]).toEqual(["a", true, true]);
+  // A \`None\` only it's given isn't \`null\` where it's made, as one only nullable fields read is (ADR 0781).
+  expect([lib.unnamed().label, lib.unlabeled(lib.unnamed())]).toEqual([undefined, true]);
+  // Assigned, as its cell is set: `None` is `null`, an `Option` `?? null`, a `Some` its value.
+  expect(js).toContain("export function unlabel(context) {\n  context.label = null;\n}");
+  expect(js).toContain("export function relabel(context, label) {\n  context.label = label ?? null;\n}");
+  expect(js).toContain("export function label(context, label) {\n  context.label = label;\n}");
+  lib.label(prod, "b");
+  expect([prod.label, lib.unlabeled(prod)]).toEqual(["b", false]);
+  lib.unlabel(prod);
+  expect([prod.label, lib.unlabeled(prod)]).toEqual([null, true]);
+  lib.relabel(prod, undefined);
+  expect([prod.label, lib.unlabeled(prod)]).toEqual([null, true]);
+});

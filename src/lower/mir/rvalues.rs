@@ -709,6 +709,25 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
+    /// The struct's field `place` is, `p.code`, if it's one: of a struct,
+    /// or of an enum's variant it's read as.
+    pub(super) fn place_field(&self, state: &State<'_, 'tcx>, place: Place<'tcx>) -> Option<&'tcx ty::FieldDef> {
+        let (PlaceElem::Field(field, _), parent) = place.projection.split_last()? else {
+            return None;
+        };
+        let parent = mir::PlaceRef {
+            local: place.local,
+            projection: parent,
+        };
+        let mir::PlaceTy { ty, variant_index } = parent.ty(state.body, self.tcx);
+        match ty.kind() {
+            ty::Adt(adt, _) if !adt.is_enum() || variant_index.is_some() => {
+                Some(&adt.variant(variant_index.unwrap_or(VariantIdx::ZERO)).fields[*field])
+            }
+            _ => None,
+        }
+    }
+
     /// Whether `operand`, an `Option`, is `null` or a value already, as a
     /// `#[rust_js::nullable]` field or binding parameter takes it as it is
     /// (ADR 0275): such a field, moved where it's read, or bound to a
@@ -717,19 +736,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let Some(place) = operand.place() else {
             return false;
         };
-        if let Some((PlaceElem::Field(field, _), parent)) = place.projection.split_last() {
-            let parent = mir::PlaceRef {
-                local: place.local,
-                projection: parent,
-            };
-            let mir::PlaceTy { ty, variant_index } = parent.ty(state.body, self.tcx);
-            return match ty.kind() {
-                ty::Adt(adt, _) if !adt.is_enum() || variant_index.is_some() => {
-                    let variant = adt.variant(variant_index.unwrap_or(VariantIdx::ZERO));
-                    bindings::is_nullable(self.tcx, &variant.fields[*field])
-                }
-                _ => false,
-            };
+        if let Some((PlaceElem::Field(..), _)) = place.projection.split_last() {
+            return self
+                .place_field(state, place)
+                .is_some_and(|field| bindings::null_where_made(self.tcx, field));
         }
         if !place.projection.is_empty() {
             return false;

@@ -11,6 +11,14 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-nullable.test.ts", "-t", "a None only nullable fields and parameters read"],
   },
   {
+    name: "null-none-given-optional",
+    breaks: "`let label = None;` given to an optional nullable field is `null` where it's made, and the field's key there (ADR 0810)",
+    file: "src/lower/mir/patterns.rs",
+    find: "                    && bindings::null_where_made(self.tcx, &fields[field])\n",
+    replace: "                    && bindings::is_nullable(self.tcx, &fields[field])\n",
+    tests: ["test/lowering-nullable.test.ts", "-t", "an optional nullable field"],
+  },
+  {
     name: "null-none-param-ungiven",
     breaks: "`let owner = None;` given to a binding's nullable parameter is `undefined` where it's made (ADR 0781)",
     file: "src/lower/mir/patterns.rs",

@@ -491,4 +491,20 @@ export const mutations: Mutation[] = [
     replace: "            let _ = end;\n",
     tests: ["test/lowering-comments.test.ts", "-t", "a branch of only comments"],
   },
+  {
+    name: "nullable-assigned-undefined",
+    breaks: "a nullable field assigned `None`, `context.label = None`, is `undefined`, where its cell's `set` writes `null` (ADR 0810)",
+    file: "src/lower/mir/assign.rs",
+    find: "            Some(field) if bindings::is_nullable(self.tcx, field) => {\n",
+    replace: "            Some(field) if false && bindings::is_nullable(self.tcx, field) => {\n",
+    tests: ["test/lowering-nullable.test.ts", "-t", "an optional nullable field"],
+  },
+  {
+    name: "nullable-assigned-some-coalesced",
+    breaks: "a nullable field assigned `Some(label)`, through MIR's temporary, is `label ?? null`, where a `Some` is never `undefined` (ADR 0810)",
+    file: "src/lower/mir/assign.rs",
+    find: "                    Rvalue::Use(operand, _) => self.nulled(state, operand),\n                    _ => false,\n",
+    replace: "                    _ => false,\n",
+    tests: ["test/lowering-nullable.test.ts", "-t", "an optional nullable field"],
+  },
 ];
