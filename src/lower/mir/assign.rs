@@ -762,16 +762,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .instantiate(self.tcx, generic_args)
                 .skip_binder()
                 .inputs()[i];
-            // A handle a call made, `first_mut().unwrap()`'s: given as it is,
-            // its `value` the place (ADR 0099). A box of another place that
-            // isn't fixed couldn't be copied back; one of a type of one value,
-            // `()`'s, a unit struct's, needn't be: no write changes it.
+            // A box of a place that isn't fixed couldn't be copied back; one
+            // of a type of one value, `()`'s, a unit struct's, needn't be: no
+            // write changes it.
             let one_value = param
                 .builtin_deref(true)
                 .is_some_and(|pointee| self.has_one_value(pointee));
             // A field or an item of an object reached another way, `es[0].n`'s
-            // `$index(es, 0)`: that object named where it's borrowed, the
-            // same object, so the place is fixed.
+            // `$index(es, 0)`, a handle's `value` a call made among them,
+            // `first_mut().unwrap()`'s: that object named where it's
+            // borrowed, the same object, so the place is fixed (ADR 0099).
             let place = match place.kind {
                 js::ExprKind::Member(..) | js::ExprKind::Index(..) if !fixed_place(&place) && !one_value => {
                     self.fixed_place_of(place, out)
@@ -779,14 +779,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 _ => place,
             };
             if !fixed_place(&place) && !one_value {
-                let js::ExprKind::Member(handle, field) = &place.kind else {
-                    return Err(self.unsupported(span, "a `&mut` of a number given, from its MIR"));
-                };
-                if field != "value" {
-                    return Err(self.unsupported(span, "a `&mut` of a number given, from its MIR"));
-                }
-                exprs.push((**handle).clone());
-                continue;
+                return Err(self.unsupported(span, "a `&mut` of a number given, from its MIR"));
             }
             // What it returns, or another parameter, can hold the borrow: a
             // box would be copied back before it's used.

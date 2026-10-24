@@ -35,14 +35,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts","-t","replace_through_mut"],
   },
   {
-    name: "mir-handle-boxed-by-value",
-    breaks: "a handle `first_mut().unwrap()` made is boxed by its value, and writes to the box are lost",
-    file: "src/lower/mir/assign.rs",
-    find: "            if !fixed_place(&place) && !one_value {\n",
-    replace: "            if false && !fixed_place(&place) && !one_value {\n",
-    tests: ["test/corpus.test.ts","-t","std_mut_items"],
-  },
-  {
     name: "mir-unit-place-refused",
     breaks: "`pass(&mut unit)` of a `()`, and a unit struct's `&mut` in what a call gave, `f()[0].touch()`, are refused as places that aren't fixed, though no write changes one",
     file: "src/lower/mir/assign.rs",
@@ -303,11 +295,12 @@ export const mutations: Mutation[] = [
   },
   {
     name: "mir-unread-ref-handled",
-    breaks: "MIR's \`&mut\` nothing reads, \`let _ = &mut p.y\` through \`deref_mut\`, refused as a handle on a call's place",
+    breaks: "MIR's \`&mut\` nothing reads, \`let _ = &mut p.y\` through \`deref_mut\`, is a handle made on its place, \`\$handleOn(derefMut(p).value, \"y\");\`, where what makes the place, \`derefMut(p);\`, is all that runs",
     file: "src/lower/mir/assign.rs",
     find: "                Value::Ref(mut place) => {\n                    while let js::ExprKind::Member(object, _) = place.kind {\n",
     replace: "                Value::Ref(mut place) if false => {\n                    while let js::ExprKind::Member(object, _) = place.kind {\n",
     tests: ["test/corpus.test.ts", "-t", "unread_mut_through_deref"],
+    snapshots: true,
   },
   {
     name: "union-written-as-member",
