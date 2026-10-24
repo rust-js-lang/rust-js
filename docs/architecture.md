@@ -199,7 +199,7 @@ assumptions; rustc lang items remain available through rustc's identity API.
 | Serde and supported external crate APIs | `serde.rs`, `serde/`, `shipped.rs` |
 | JSX, JS bindings, untagged values and JS-visible uses | `jsx.rs`, `jsx_api.rs`, `bindings.rs`, `binding_calls.rs`, `untagged.rs`, `liveness.rs` |
 | JS classes, `#[rust_js::class]` | `classes.rs` |
-| Exported TypeScript declaration model | `declarations.rs` |
+| Exported TypeScript declaration model, and the reader of `#[rust_js::types]` | `declarations.rs`, `declarations/` |
 
 MIR determines execution order. `mir/cfg.rs` structures blocks;
 `mir/temporaries.rs` folds temporary reads only when intervening effects allow
@@ -261,6 +261,7 @@ In this table, `lower.rs`, `names.rs` and `runtime.rs` are at the `src/` root.
 | The order a struct literal's object lists its fields, and reads them, in | `aggregates.rs` | `written_order` |
 | An untagged enum's `undefined` and `null`, and what's there of `classify(Some(v))` | `untagged.rs`; `body_queries.rs` | `unit_value`, `holds_nullish`, `told_by_kind`; `given_present`, `present_calls` |
 | What an untagged enum's variants are together, a test's and a `switch`'s case | `untagged.rs` | `untagged_test`, `untagged_cases` |
+| What `#[rust_js::types]` says a type is to TypeScript, read, or the error saying what it reads | `declarations/written.rs` | `written_types`, `Written`, `validate_types` |
 | A string's count of UTF-16 units, its `length` | `recognition/types.rs` | `counts_utf16_units` |
 | Whether a type is a JS class, and what each item of its impl is of it | `classes.rs` | `is_class`, `member`, `constructor_of` |
 | What a place stores of what's written, a nullable field's `None` `null`, and which places store so, however reached | `js/make.rs`; `representation.rs` | `Storage`, `written`; `nullable_cell_field`, `nullable_cell_handle` |

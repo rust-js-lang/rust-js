@@ -358,42 +358,42 @@ fn try_catch(made: &Stmt, tested: &Stmt, before: &[Stmt], rest: &[Stmt]) -> Opti
 
 /// `const { _0: x } = $catchUnwind(f);` of an `f` that never returns, `let
 /// Err(x) = catch_unwind(|| panic!(""))`'s, whose `Ok` is none: `try {
-/// ..f's body } catch (thrown) { const x = $unwound(thrown); .. }`, the
-/// `catch` what follows up to its last read of `x`, as what follows runs
-/// only once `f` threw (ADR 0706).
+/// ..f's body } catch (thrown) { const x = $unwound(thrown); .. }`, as what
+/// follows runs only once `f` threw (ADR 0706); the `catch` what follows
+/// that reads `x`, or what that declares (ADR 0830).
 fn unwound_lets(body: &mut Vec<Stmt>) {
     let mut i = 0;
     while i < body.len() {
-        if let Some((made, taken)) = unwound_let(&body[i], &body[i + 1..]) {
-            let made_len = made.len();
-            body.splice(i..=i + taken, made);
-            i += made_len - 1;
+        let (before, rest) = body.split_at(i);
+        if let Some((made, taken)) = unwound_let(before, &rest[0], &rest[1..]) {
+            body.splice(i..=i + taken, [made]);
         }
         i += 1;
     }
 }
 
-/// `unwound_lets`' of `stmt`, then `rest`: the `try`, after what it
-/// declares, and how many of `rest` its `catch` takes.
-fn unwound_let(stmt: &Stmt, rest: &[Stmt]) -> Option<(Vec<Stmt>, usize)> {
-    // `const { _0: x } = r;`, or `const r = ..; const x = r._0;`.
-    let (key, payload, value, rest, skipped) = match (&stmt.kind, rest.first().map(|s| &s.kind)) {
+/// `unwound_lets`' of `stmt`, after `before`, then `rest`: the `try`, and
+/// how many of `rest` its `catch` takes.
+fn unwound_let(before: &[Stmt], stmt: &Stmt, rest: &[Stmt]) -> Option<(Stmt, usize)> {
+    // `const { _0: x } = r;`, `let` of an `x` a shadow sets again, or
+    // `const r = ..; const x = r._0;`.
+    let (key, payload, mutable, value, rest, skipped) = match (&stmt.kind, rest.first().map(|s| &s.kind)) {
         (
             StmtKind::Destructure {
                 pattern: Pattern::Object(fields, None),
                 value,
-                mutable: false,
+                mutable,
             },
             _,
         ) => match fields.as_slice() {
-            [(key, Pattern::Name(payload), None)] => (key.as_str(), payload, value, rest, 0),
+            [(key, Pattern::Name(payload), None)] => (key.as_str(), payload, *mutable, value, rest, 0),
             _ => return None,
         },
         (StmtKind::Const(result, value), Some(StmtKind::Const(payload, read))) => match &read.kind {
             ExprKind::Member(of, key)
                 if matches!(&of.kind, ExprKind::Var(v) if v == result) && js::mentions_in(rest, result) == 1 =>
             {
-                (key.as_str(), payload, value, &rest[1..], 1)
+                (key.as_str(), payload, false, value, &rest[1..], 1)
             }
             _ => return None,
         },
@@ -413,37 +413,55 @@ fn unwound_let(stmt: &Stmt, rest: &[Stmt]) -> Option<(Vec<Stmt>, usize)> {
     if key != "_0" || !never_returns || payload == THROWN || js::mentions_in(rest, THROWN) > 0 {
         return None;
     }
-    let last = rest
+    let caught = caught_run(payload, rest)?;
+    // A function the `catch` would declare that's called before it, where
+    // JS hoists it, stays where it is.
+    let hoisted = rest[..caught]
         .iter()
-        .rposition(|s| js::mentions_in(std::slice::from_ref(s), payload) > 0)?;
-    let (caught, after) = rest.split_at(last + 1);
-    // What the `catch` declares that what follows reads, `let control;`
-    // before the `try`, set in the `catch`; anything else it declares, in
-    // a block of its own, read nowhere else.
-    let read_after = |name: &str| js::mentions_in(after, name) > 0;
-    let mut declared = Vec::new();
-    let mut handler =
-        vec![StmtKind::Const(payload.clone(), Expr::call_helper("$unwound", vec![Expr::var(THROWN)])).at(stmt.span)];
-    for s in caught {
-        match &s.kind {
-            StmtKind::Const(name, value) | StmtKind::Let(name, Some(value)) if read_after(name) => {
-                declared.push(StmtKind::Let(name.clone(), None).at(s.span));
-                handler.push(StmtKind::Assign(Expr::var(name), value.clone()).at(s.span));
-            }
-            _ => handler.push(s.clone()),
-        }
-    }
-    let mut inner = HashSet::new();
-    js::each_declared(&handler, &mut |name| {
-        inner.insert(name.to_string());
-    });
-    if inner.iter().any(|name| read_after(name)) {
+        .any(|s| matches!(&s.kind, StmtKind::Function(function) if js::mentions_in(before, &function.name) > 0));
+    if hoisted {
         return None;
     }
+    let unwound = Expr::call_helper("$unwound", vec![Expr::var(THROWN)]);
+    let made = if mutable {
+        StmtKind::Let(payload.clone(), Some(unwound))
+    } else {
+        StmtKind::Const(payload.clone(), unwound)
+    };
+    let mut handler = vec![made.at(stmt.span)];
+    handler.extend(rest[..caught].iter().cloned());
     let tried = js::applied_tried(vec![StmtKind::Expr(call).at(stmt.span)]);
     let (binding, handler) = read_as_thrown(Some(THROWN.to_string()), handler);
-    declared.push(StmtKind::TryCatch(tried, binding, handler).at(stmt.span));
-    Some((declared, skipped + last + 1))
+    Some((
+        StmtKind::TryCatch(tried, binding, handler).at(stmt.span),
+        skipped + caught,
+    ))
+}
+
+/// How many of `rest` a `catch` of `payload` takes: the fewest, from the
+/// first, that hold each mention of `payload` and of every name they
+/// declare, so nothing after them reads what the `catch` declares (ADR
+/// 0830). `None` where none mentions `payload`.
+fn caught_run(payload: &str, rest: &[Stmt]) -> Option<usize> {
+    let mut names = HashSet::from([payload.to_string()]);
+    let mut taken = 0;
+    loop {
+        let mentioned = |s: &Stmt| {
+            names
+                .iter()
+                .any(|name| js::mentions_in(std::slice::from_ref(s), name) > 0)
+        };
+        let Some(last) = rest.iter().rposition(mentioned) else {
+            return (taken > 0).then_some(taken);
+        };
+        if last < taken {
+            return Some(taken);
+        }
+        taken = last + 1;
+        js::each_declared(&rest[..taken], &mut |name| {
+            names.insert(name.to_string());
+        });
+    }
 }
 
 /// A `catch (thrown) { const payload = $unwound(thrown); .. }`,

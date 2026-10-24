@@ -32,7 +32,7 @@ pub struct CacheLife {
 /// What a `CacheLifeProfiles | CacheLife` parameter takes: a profile's
 /// name, or a [`CacheLife`], each as it is (ADR 0229).
 #[diagnostic::on_unimplemented(message = "`{Self}` is not a cache life's profile, a `&str`, nor a `CacheLife`")]
-#[cfg_attr(rust_js, rust_js::types = "string | import(\"next/dist/server/use-cache/cache-life\").CacheLife")]
+#[cfg_attr(rust_js, rust_js::types = "string | next/dist/server/use-cache/cache-life#CacheLife")]
 pub trait IntoCacheLife: sealed::Sealed {}
 impl IntoCacheLife for &str {}
 impl IntoCacheLife for CacheLife {}
