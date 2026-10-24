@@ -169,7 +169,8 @@ export const mutations: Mutation[] = [
     "file": "src/lower/iterators/eager.rs",
     "find": "                \"$chunksExact\",\n",
     "replace": "",
-    "tests": ["test/lowering-collections.test.ts", "-t", "a chunks' remainder from MIR"]
+    "tests": ["test/corpus.test.ts", "-t", "^slice_methods.rs$"],
+    "snapshots": true
   },
   {
     "name": "collected-runtime-arrayed",
@@ -303,6 +304,7 @@ export const mutations: Mutation[] = [
     find: "                \"$rchunks\",\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^rchunks_remainder.rs$"],
+    snapshots: true,
   },
   {
     name: "helper-keeps-hint",

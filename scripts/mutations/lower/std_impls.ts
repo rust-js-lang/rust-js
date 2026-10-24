@@ -3,6 +3,15 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "numbered-eq-structural",
+    breaks: "`==` of two numbered enums is `$eq(a, b)`, where they're numbers JS's `===` compares",
+    file: "src/lower/std_impls.rs",
+    find: " || super::bindings::numbered(self.tcx, *adt))\n",
+    replace: ")\n",
+    tests: ["test/corpus.test.ts", "-t", "^repr_enum_numbers.rs$"],
+    snapshots: true,
+  },
+  {
     name: "untagged-undefined-loosely-null",
     breaks: "an untagged enum's `undefined` is `==` its `null`, as an `Option`'s `None` is",
     file: "src/lower/std_impls.rs",
@@ -20,10 +29,10 @@ export const mutations: Mutation[] = [
   },
   {
     name: "unknown-option-eq-loose",
-    breaks: "`Option<&Unknown>`'s `==` is `==`, where `null` is `undefined`",
+    breaks: "`Option<&Unknown>`'s `==` is `==`, which makes `\"1\"` of `1`",
     file: "src/lower/std_impls.rs",
-    find: "                return Ok(Expr::bin(if any { Op::Eq } else { Op::LooseEq }, a, b));\n",
-    replace: "                return Ok(Expr::bin(if any && false { Op::Eq } else { Op::LooseEq }, a, b));\n",
+    find: "                    true => js::nullish_equal(a, b),\n",
+    replace: "                    true => Expr::bin(Op::LooseEq, a, b),\n",
     tests: ["test/lowering-bindings.test.ts", "-t", "js::Unknown's == is ==="],
   },
   {
@@ -431,6 +440,22 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^option_boxed_eq.rs$"],
   },
   {
+    name: "option-unknown-strict",
+    breaks: "`==` of two `Option<&Unknown>`s is `a === b`, so a `null` `None` isn't an `undefined` one, as std's `Option` says it is",
+    file: "src/lower/std_impls.rs",
+    find: "                    true => js::nullish_equal(a, b),\n",
+    replace: "                    true => Expr::bin(Op::Eq, a, b),\n",
+    tests: ["test/corpus.test.ts", "-t", "^unknown_option_equality.rs$"],
+  },
+  {
+    name: "unknown-compared-by-contents",
+    breaks: "a struct, a slice or a tuple holding a value of any shape compares it by `$eq`, by what's in it, so two objects alike are equal, where `===` says they aren't",
+    file: "src/lower/std_impls.rs",
+    find: "        if self.any_shape(ty) {\n            return true;\n        }\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^unknown_option_equality.rs$"],
+  },
+  {
     name: "clone-items-made-copied",
     breaks: "a clone of an array made here, `$slice(v, 0, n)`, copies it again",
     file: "src/lower/std_impls.rs",
@@ -590,14 +615,6 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_impls.rs",
     find: "            if self.is_user_impl(tr) {\n                let eq = self.tcx.associated_item_def_ids(self.partial_eq_trait())[0];",
     replace: "            if false && self.is_user_impl(tr) {\n                let eq = self.tcx.associated_item_def_ids(self.partial_eq_trait())[0];",
-    tests: ["test/corpus.test.ts", "-t", "^partial_eq_other_type.rs$"],
-  },
-  {
-    name: "eq-dictionary-of-self",
-    breaks: "a dictionary of `PartialEq<Other>` given to generic code compares the type with itself, `{ eq: $eq }`",
-    file: "src/lower/std_impls.rs",
-    find: "        let same = self.eq_values(Expr::var(\"a\"), Expr::var(\"b\"), (ty, rhs), span, &mut body)?;",
-    replace: "        let same = self.eq_values(Expr::var(\"a\"), Expr::var(\"b\"), (ty, ty), span, &mut body)?;",
     tests: ["test/corpus.test.ts", "-t", "^partial_eq_other_type.rs$"],
   },
   {

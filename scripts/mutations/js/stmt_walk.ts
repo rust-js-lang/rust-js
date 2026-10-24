@@ -11,6 +11,22 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-options.test.ts", "-t", "React's typeName"],
   },
   {
+    name: "nullish-equal-loose",
+    breaks: "`==` of two `Option<&Unknown>`s is `a == b`, so `1` is `\"1\"`, as `==` makes one of the other",
+    file: "src/js/stmt_walk.rs",
+    find: "    Expr::bin(Op::Eq, either(a), either(b))\n",
+    replace: "    Expr::bin(Op::LooseEq, either(a), either(b))\n",
+    tests: ["test/lowering-bindings.test.ts", "-t", "Option's Somes"],
+  },
+  {
+    name: "nullish-equal-of-some-kept",
+    breaks: "`a == Some(b)` of a value of any shape is `(a ?? null) === (b ?? null)`, where `a === b` answers the same",
+    file: "src/js/stmt_walk.rs",
+    find: "            if let (Some(a), Some(b)) = (nullish_operand(a), nullish_operand(b)) =>\n",
+    replace: "            if let (Some(a), Some(b), false) = (nullish_operand(a), nullish_operand(b), true) =>\n",
+    tests: ["test/lowering-bindings.test.ts", "-t", "Option's Somes"],
+  },
+  {
     name: "returned-call-blocked",
     breaks: "a callback of one call is a block, `() => { setCount(1); }`, where what it gives is `undefined` or ignored",
     file: "src/js/stmt_walk.rs",

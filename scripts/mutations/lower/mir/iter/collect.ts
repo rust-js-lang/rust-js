@@ -96,11 +96,8 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/iter/collect.rs",
     "find": "        if self.array_source(iter_ty).is_none() {\n",
     "replace": "        if false {\n",
-    "tests": [
-      "test/traits.test.ts",
-      "-t",
-      "rposition of a lazy chain"
-    ]
+    "tests": ["test/corpus.test.ts", "-t", "^rposition_of_lazy.rs$"],
+    "snapshots": true
   },
   {
     "name": "own-from-iter-unused",

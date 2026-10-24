@@ -263,12 +263,14 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                 Some(CtorKind::Fn) if !adt.non_enum_variant().fields.is_empty() => Some(Kind::Array),
                 Some(_) => None,
             },
-            // A fieldless enum is its variant's name (ADR 0013), a string.
+            // A fieldless enum is its variant's name (ADR 0013), a string; a
+            // numbered one its number (ADR 0722).
             ty::Adt(adt, _)
                 if is_string_enum(self.tcx, *adt) && !adt.variants().is_empty() && !self.is_std(adt.did()) =>
             {
                 Some(Kind::String)
             }
+            ty::Adt(adt, _) if bindings::numbered(self.tcx, *adt) => Some(Kind::Number),
             _ => None,
         }
     }

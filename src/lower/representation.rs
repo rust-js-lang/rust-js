@@ -168,6 +168,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         big: bool,
     ) -> Result<Expr, Expr> {
         let tcx = self.tcx;
+        // A numbered enum's value is its discriminant (ADR 0722).
+        if bindings::numbered(tcx, adt) {
+            return Ok(match big {
+                true => super::std_types::number::to_bigint(subject),
+                false => subject,
+            });
+        }
         let name = if is_string_enum(tcx, adt) {
             subject
         } else if is_fieldless_enum(adt)
@@ -447,19 +454,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // is the pair, whose `value` its `&mut self` methods write.
             || matches!(ty.kind(), ty::Dynamic(..)) && self.is_pair_dyn(ty)
             // An enum each of whose variants has fields: each is an object
-            // (ADR 0033). A crate's own with a fieldless variant isn't: that
-            // variant is a string, which can't become another in place, so
-            // `*r = ..` is its place's, as a number's is (ADR 0147). One of
-            // std's or serde_json's is its methods' object, as it was; not
-            // a `Value`, whose `Null` is a string, which can't become another
-            // in place (ADR 0083). `Option` is its value itself (ADR 0030),
-            // not an object.
+            // (ADR 0033). One with a fieldless variant isn't, the crate's,
+            // std's, `Bound`'s `Unbounded`, or serde_json's `Value`'s `Null`
+            // (ADR 0083): that variant is a string, which can't become
+            // another in place, so `*r = ..` is its place's, as a number's
+            // is (ADR 0147). `Option` is its value itself (ADR 0030), not an
+            // object.
             || matches!(ty.kind(), ty::Adt(adt, _) if adt.is_enum()
                 && !self.tcx.is_lang_item(adt.did(), LangItem::Option)
-                && !self.recognition().is_json_value(ty)
-                && adt.variants().iter().any(|v| !v.fields.is_empty())
-                && (adt.variants().iter().all(|v| !v.fields.is_empty())
-                    || !(adt.did().is_local() || self.krate.foreign.in_library(adt.did()))))
+                && adt.variants().iter().all(|v| !v.fields.is_empty()))
     }
 
     /// Might a `ty` value be a JS object something changes in place? An
@@ -757,7 +760,7 @@ pub(super) fn is_fieldless_enum(adt: ty::AdtDef<'_>) -> bool {
 /// objects, `{ kind: "on" }`. What `===`, `includes` and a `Map`'s keys
 /// compare by: the one answer each asks.
 pub(super) fn is_string_enum(tcx: TyCtxt<'_>, adt: ty::AdtDef<'_>) -> bool {
-    is_fieldless_enum(adt) && super::bindings::declared_tag(tcx, adt.did()).is_none()
+    is_fieldless_enum(adt) && super::bindings::declared_tag(tcx, adt.did()).is_none() && !bindings::numbered(tcx, adt)
 }
 
 /// What rustc computes for constant `def_id` of `args`, or its `promoted`

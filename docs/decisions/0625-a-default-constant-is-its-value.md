@@ -1,7 +1,7 @@
 # 0625. A default constant is its value; a comment right above the first code is its
 
-Status: Accepted. Extends [0611](0611-a-default-export-is-where-its-macro-is.md)
-and amends [0383](0383-a-files-leading-comments-are-its-jss.md).
+Status: Accepted; amended (one its module reads, below). Extends
+[0611](0611-a-default-export-is-where-its-macro-is.md) and amends [0383](0383-a-files-leading-comments-are-its-jss.md).
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): A: what a module exports
 and how its comments sit, nothing a program does.
@@ -53,6 +53,21 @@ export's, as upstream has them.
   that's the first item's sits apart from it, and in the corpus was lost
   where the module printed no header.
 
+## Amended: one its own module reads is declared, then exported
+
+A constant the macro held and its own module read, `VERSION.len()`, was
+`export default "19.3.0";` and `$byteLen(VERSION)`: a read of a name JS
+never declared, a `ReferenceError`, a wrong answer where Rust runs.
+
+**A constant the default holds, read by name in its own module, is
+declared, then exported by default**, `const VERSION = "19.3.0"; export
+default VERSION;`, a `pub` one too, which is the default alone (ADR 0611,
+amended): not exported by its name. Which it is, `pipeline.rs` asks the
+uses lowering records, each item's of another (`read_at_home`), not the
+JS; its `.d.ts` is as before, `declare const VERSION: string; export
+default VERSION;`. One no code of its module reads is its value, as
+before.
+
 ## Consequences
 
 - Three corpus programs keep a comment that was lost before, now above
@@ -67,3 +82,6 @@ export's, as upstream has them.
 - Mutations `default-constant-a-mark`, `default-constant-unheld`,
   `default-constant-declared`, `default-constant-declared-as-default`,
   `leading-run-above-code-kept`.
+- `test/modules.test.ts`, "a default constant its own module reads is
+  declared, then exported". Mutations: `default-constant-read-undeclared`,
+  `default-constant-read-exported`.

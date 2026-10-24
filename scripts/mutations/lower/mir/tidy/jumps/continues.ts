@@ -43,14 +43,6 @@ export const mutations: Mutation[] = [
     "tests": ["test/lowering-numbers.test.ts", "-t", "division by a constant from MIR"]
   },
   {
-    "name": "mir-loop-end-block-continues",
-    "breaks": "an `else if` at a loop's end from MIR is a `continue` and an `if` after",
-    "file": "src/lower/mir/tidy/jumps/continues.rs",
-    "find": "                    ending(&mut inner, &block);\n",
-    "replace": "",
-    "tests": ["test/lowering-loops.test.ts", "-t", "react.dev's llms.txt groups its routes"]
-  },
-  {
     name: "block-jump-not-forwarded",
     breaks: "a labeled block's `break` to a `continue` of the loop after it stays, `bb3: { .. break bb3; } continue bb1;`",
     file: "src/lower/mir/tidy/jumps/continues.rs",

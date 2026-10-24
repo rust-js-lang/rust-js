@@ -702,6 +702,24 @@ test("a default export is the constant's value where the macro holds it", async 
   expect((await import(join(dir, "lib.js"))).shown()).toBe("v19.3.0");
 });
 
+// One its own module reads by name is declared, then exported by default,
+// `const VERSION = "19.3.0"; export default VERSION;`, never a name JS
+// hasn't (ADR 0625, amended); a `pub` one too, the default alone.
+test("a default constant its own module reads is declared, then exported", async () => {
+  const dir = fixture("default-constant-read");
+  writeFileSync(join(dir, "lib.rs"), 'mod version;\n\npub fn shown() -> String {\n    format!("v{} {}", version::VERSION, version::length())\n}\n');
+  writeFileSync(join(dir, "version.rs"), 'js::export_default! {\n    pub const VERSION: &str = "19.3.0";\n}\n\npub fn length() -> usize {\n    VERSION.len()\n}\n');
+  run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const version = readFileSync(join(dir, "version.js"), "utf8");
+  expect(version).toContain('\nconst VERSION = "19.3.0";\n');
+  expect(version).toContain("\nexport default VERSION;\n");
+  expect(version).not.toContain("export const");
+  expect(readFileSync(join(dir, "version.d.ts"), "utf8")).toContain("declare const VERSION: string;");
+  const module = await import(join(dir, "version.js"));
+  expect([module.default, module.length(), module.VERSION]).toEqual(["19.3.0", 6, undefined]);
+  expect((await import(join(dir, "lib.js"))).shown()).toBe("v19.3.0 6");
+});
+
 // A module's default that's another module's function is re-exported as
 // it, `export { page as default } from "./page.js"`, as react.dev's
 // errors/index makes the errors page its own (ADR 0240); a module of only

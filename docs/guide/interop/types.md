@@ -368,6 +368,32 @@ export function area(shape) {
 - **A variant without fields is its name**, `"Red"`, or its
   `#[rust_js::name]`, `"dark-green"`
   ([ADR 0013](../../decisions/0013-fieldless-enums.md)).
+- **A variant of an enum under a `#[repr(..)]` of an integer is its
+  number**, as rustc numbers it, `ArrayKind::Empty` `0`, where JS keeps a
+  kind as a number, React's `const EMPTY_ARRAY = 0;`; its `as u8` is the
+  value, its `{:?}` its name, its `.d.ts` `0 | 1 | 2 | 3`, and serde
+  still writes its name. A 64-bit `repr`, or a variant named by
+  `#[rust_js::name]`, keeps the names
+  ([ADR 0722](../../decisions/0722-a-repr-enums-variant-is-its-number.md)):
+
+```rust
+#[derive(Clone, Copy, PartialEq)]
+#[repr(u8)]
+pub enum ArrayKind {
+    Empty = 0,
+    Complex = 1,
+}
+
+pub fn kind(complex: bool) -> ArrayKind {
+    if complex { ArrayKind::Complex } else { ArrayKind::Empty }
+}
+```
+
+```js
+export function kind(complex) {
+  return complex ? 1 : 0;
+}
+```
 - **A variant with fields is an object of its `TAG`** and its fields: a
   tuple variant's are `_0`, `_1` ([ADR 0033](../../decisions/0033-enums-with-fields.md)).
 
@@ -1098,8 +1124,12 @@ export function sample(construct) {
   }
 }
 ```
-- **`==` of two is JS's `===`**, of two `Option<&Unknown>` too, where a
-  `null` isn't an `undefined`, unlike std's `Option`
+- **`==` of two is JS's `===`**; of two `Option<&Unknown>`, std's
+  `Option`'s: both `None`, whichever of `null` and `undefined` each is,
+  or `Some`s `===` finds equal, `(a ?? null) === (b ?? null)`, and `a ===
+  b` where one is a `Some`; `js::classify` tells a `null` from an
+  `undefined`. A struct, a tuple or a slice holding one compares it so,
+  never by what's in it
   ([ADR 0612](../../decisions/0612-unknown-equality-is-strict.md)):
 
 ```rust
@@ -1110,6 +1140,24 @@ pub fn same(a: Option<&js::Unknown>, b: Option<&js::Unknown>) -> bool {
 
 ```js
 export function same(a, b) {
+  return (a ?? null) === (b ?? null);
+}
+```
+- **`js::strict_equals(a, b)` is JS's `===`**, of any two values, `None`s
+  too, where a `null` isn't an `undefined`
+  ([ADR 0721](../../decisions/0721-strict-equals-is-jss-triple-equals.md)).
+  A port writes `==` where the Rust means its values are equal, and
+  `js::strict_equals` where the JS it ports asks `===` of what may be
+  either `None`, as React's `Object.is` polyfill does:
+
+```rust
+pub fn is(a: Option<&js::Unknown>, b: Option<&js::Unknown>) -> bool {
+    js::strict_equals(a, b)
+}
+```
+
+```js
+export function is(a, b) {
   return a === b;
 }
 ```

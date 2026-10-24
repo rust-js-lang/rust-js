@@ -202,7 +202,7 @@ What's refused of formatting is in [the limitations](limitations.md#formatting).
 | struct | object, `{ x, y }` ([0020](../decisions/0020-structs-and-tuples.md)) |
 | tuple, tuple struct | array, `[a, b]` |
 | unit struct, `()` | `undefined`; a unit struct named `#[rust_js::name = "click"]`, that string ([0223](../decisions/0223-webapi-event-and-tag-maps.md)) |
-| fieldless enum variant | its name, `"Green"` ([0013](../decisions/0013-fieldless-enums.md)) |
+| fieldless enum variant | its name, `"Green"` ([0013](../decisions/0013-fieldless-enums.md)); under a `#[repr(..)]` of an integer of 32 bits or fewer, its number, `0` ([0722](../decisions/0722-a-repr-enums-variant-is-its-number.md)) |
 | enum variant with fields | `{ TAG: "Circle", r }`, `{ TAG: "Some", _0: x }` ([0033](../decisions/0033-enums-with-fields.md)) |
 | `Result` | `{ TAG: "Ok", _0: v }`, `{ TAG: "Err", _0: e }` ([0035](../decisions/0035-results-and-throwing-js.md)) |
 | `Option` | the value, or `undefined` for `None` ([0030](../decisions/0030-option.md)); `null` for `None` of a `#[rust_js::nullable]` field or function ([0275](../decisions/0275-nullable-writes-null.md), [0574](../decisions/0574-what-reacts-scheduler-heap-asks.md)); a `Some` of what could look like `None`, `Option<()>` or `Option<Option<T>>`, is boxed, `{ $someNone: n }` ([0051](../decisions/0051-generic-options.md)) |

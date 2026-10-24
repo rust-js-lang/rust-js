@@ -5,6 +5,14 @@ const tests = ["test/declarations.test.ts"];
 
 export const mutations: Mutation[] = [
   {
+    name: "numbered-declared-names",
+    breaks: "a numbered enum is declared `\"Empty\" | ..`, its names, where its JS is its numbers",
+    file: "src/lower/declarations.rs",
+    find: "                            crate::js::ExprKind::Num(n) => json!(n as i64),\n",
+    replace: "",
+    tests: ["test/lowering-structs-enums.test.ts", "-t", "a repr enum's variant is its number"],
+  },
+  {
     name: "alias-undeclared",
     breaks: "a `.d.ts` has no `export { currentTime as unstable_now };`, so TypeScript finds no `unstable_now`",
     file: "src/lower/declarations.rs",
@@ -206,19 +214,35 @@ export const mutations: Mutation[] = [
   },
   {
     name: "private-default-undeclared",
-    breaks: "a component only `js::export_default!` exports isn't declared, so its `.d.ts` says `export default Callout;` of no `Callout`, which TypeScript refuses",
+    breaks: "a component only `js::export_default! { .. }` exports isn't declared, so its `.d.ts` exports no default, which TypeScript importing it refuses",
     file: "src/lower/declarations.rs",
-    find: "        if !tcx.visibility(def_id).is_public() && super::bindings::held_path(tcx, def_id).is_none() {\n",
-    replace: "        if false {\n",
+    find: "        let held = held_default == Some(def_id);\n",
+    replace: "        let held = false;\n",
     tests: ["test/declarations.test.ts", "-t", "private default"],
   },
   {
     name: "private-default-exported",
-    breaks: "a component only `js::export_default!` exports, its macro after it, is declared `export function Callout`, which its JS doesn't export by that name",
+    breaks: "a component only `js::export_default! { .. }` exports is declared `export function Callout`, which its JS doesn't export by that name",
     file: "src/lower/declarations.rs",
-    find: "            if default_declared {\n",
-    replace: "            if false {\n",
+    find: "                if function {\n                    declared[\"default\"] = json!(true);\n",
+    replace: "                if false {\n                    declared[\"default\"] = json!(true);\n",
     tests: ["test/declarations.test.ts", "-t", "private default"],
+  },
+  {
+    name: "pub-default-exported-by-name",
+    breaks: "a `pub fn` `js::export_default! { .. }` holds is declared `export function noop`, where its JS is `export default function noop`, so TypeScript imports a name the JS doesn't export",
+    file: "src/lower/declarations.rs",
+    find: "            if held {\n",
+    replace: "            if held && !tcx.visibility(def_id).is_public() {\n",
+    tests: ["test/declarations.test.ts", "-t", "pub default export the macro holds"],
+  },
+  {
+    name: "named-default-undeclared",
+    breaks: "a thread-local `js::export_default!(Memoized)` names isn't declared, so its `.d.ts` says `export default Memoized;` of no `Memoized`",
+    file: "src/lower/declarations.rs",
+    find: "        if held_default.is_none()\n            && !tcx.visibility(def_id).is_public()\n",
+    replace: "        if false\n            && !tcx.visibility(def_id).is_public()\n",
+    tests: ["test/declarations.test.ts", "-t", "thread-local default export"],
   },
   {
     name: "node-param-kept",
@@ -384,8 +408,8 @@ export const mutations: Mutation[] = [
     "name": "bool-tag-declared-string",
     "breaks": "a boolean tag is declared the string `\"true\"`",
     "file": "src/lower/declarations.rs",
-    "find": "|b| json!(b));",
-    "replace": "|b| json!(b.to_string()));",
+    "find": "                            crate::js::ExprKind::Bool(b) => json!(b),\n",
+    "replace": "                            crate::js::ExprKind::Bool(b) => json!(b.to_string()),\n",
     "tests": [
       "test/declarations.test.ts"
     ]
@@ -612,8 +636,8 @@ export const mutations: Mutation[] = [
     name: "default-constant-declared-as-default",
     breaks: "a default constant's `.d.ts` is `export default const`, which TypeScript can't read",
     file: "src/lower/declarations.rs",
-    find: "        let default_declared = default_declared && tcx.def_kind(def_id) == DefKind::Fn;\n",
-    replace: "",
+    find: "                let function = tcx.def_kind(def_id) == DefKind::Fn;\n",
+    replace: "                let function = true;\n",
     tests: ["test/modules.test.ts", "-t", "the constant's value where the macro holds it"],
   },
   {

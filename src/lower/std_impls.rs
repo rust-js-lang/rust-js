@@ -738,7 +738,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // A parse error is its message, which tells its kind, as its derived
         // `==` compares (ADR 0063); a `TypeId` its type's key (ADR 0331).
         // A value of any shape, `js::Unknown`, by JS's `===` (ADR 0612).
-        let any = matches!(ty.kind(), ty::Adt(adt, _) if super::declarations::any_shape(self.tcx, adt.did()));
+        let any = self.any_shape(ty);
         let primitive = any
             // The registry's symbols, the same where their keys are (ADR 0634).
             || self.recognition().is_symbol_for(ty)
@@ -752,12 +752,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             || Num::of(ty).is_some()
             || ty.is_bool()
             || ty.is_unit()
-            || matches!(ty.kind(), ty::Adt(adt, _) if super::representation::is_string_enum(self.tcx, *adt)
-                && !self.has_user_impl(self.partial_eq_trait(), ty));
+            || matches!(ty.kind(), ty::Adt(adt, _)
+                if (super::representation::is_string_enum(self.tcx, *adt) || super::bindings::numbered(self.tcx, *adt))
+                    && !self.has_user_impl(self.partial_eq_trait(), ty));
         primitive.then(|| match Num::of(ty).is_some_and(Num::float) || any {
             true => JsEq::Strict,
             false => JsEq::SameValue,
         })
+    }
+
+    /// Whether `ty`, through its references, is a JS value of any shape,
+    /// `js::Unknown` (`declarations::any_shape`), which `===` compares.
+    fn any_shape(&self, ty: Ty<'tcx>) -> bool {
+        matches!(ty.peel_refs().kind(), ty::Adt(adt, _) if super::declarations::any_shape(self.tcx, adt.did()))
     }
 
     /// Does `==` on `ty` run code of its own anywhere in it: a hand-written
@@ -769,6 +776,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     fn custom_eq_in(&self, ty: Ty<'tcx>, seen: &mut Vec<Ty<'tcx>>) -> bool {
         let ty = ty.peel_refs();
+        // A value of any shape is compared by `===`, not by what's in it,
+        // as `$eq` would (ADR 0612, amended).
+        if self.any_shape(ty) {
+            return true;
+        }
         if seen.contains(&ty) || self.js_eq(ty).is_some() {
             return false;
         }
@@ -986,11 +998,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // `Some` that's its payload, not one boxed, an object of its own
             // (ADR 0051), which compares by what's in it.
             if self.js_eq(inner).is_some() && !self.boxed_payload(inner) {
-                // Of a value of any shape, JS's own `===`: `null` isn't
-                // `undefined`, as React's `Object.is` polyfill tells (ADR 0612).
-                let any = matches!(inner.peel_refs().kind(), ty::Adt(adt, _)
-                    if super::declarations::any_shape(self.tcx, adt.did()));
-                return Ok(Expr::bin(if any { Op::Eq } else { Op::LooseEq }, a, b));
+                // Of a value of any shape, `(a ?? null) === (b ?? null)`:
+                // two `None`s are equal, whichever of `null` and `undefined`
+                // each is, and two `Some`s by `===`, as `==` can't, which
+                // makes `"1"` of `1` (ADR 0612, amended).
+                return Ok(match self.any_shape(inner) {
+                    true => js::nullish_equal(a, b),
+                    false => Expr::bin(Op::LooseEq, a, b),
+                });
             }
         }
         // Its bounds' (ADR 0129): `a.start === b.start && a.end === b.end`.
@@ -1216,11 +1231,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(Expr::bin(Op::And, lengths, every))
     }
 
-    /// `(a, b) => <a == b>` for a dictionary's `eq`, of a `ty` and a `rhs`,
-    /// `PartialEq<Rhs>`'s, or `$eq` itself.
-    pub(super) fn eq_fn(&mut self, (ty, rhs): (Ty<'tcx>, Ty<'tcx>), span: Span) -> R<Expr> {
+    /// `(a, b) => <a == b>` for a dictionary's `eq`, of two `ty`s, or `$eq`
+    /// itself. A `PartialEq<Rhs>` of another type than itself is its impl's
+    /// dictionary, never one made here (`of_other`), so its `Rhs` is `ty`,
+    /// but for references, which JS doesn't have.
+    pub(super) fn eq_fn(&mut self, ty: Ty<'tcx>, span: Span) -> R<Expr> {
         let mut body = Vec::new();
-        let same = self.eq_values(Expr::var("a"), Expr::var("b"), (ty, rhs), span, &mut body)?;
+        let same = self.eq_value(Expr::var("a"), Expr::var("b"), ty, span, &mut body)?;
         // A function of both, as they're given, `$eq` or an impl's `eq`: it.
         if body.is_empty()
             && let js::ExprKind::Call(callee, args) = &same.kind

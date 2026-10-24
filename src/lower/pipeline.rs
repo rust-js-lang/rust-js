@@ -433,6 +433,17 @@ pub fn lower_crate<'tcx>(
     let edges = lowered_items
         .iter()
         .flat_map(|(_, item)| item.dependencies.uses.iter().copied());
+    // What each module's own items read by name of its own: a `const` the
+    // module's default holds, read so, is declared, then exported (ADR 0625,
+    // amended).
+    let read_at_home: HashSet<DefId> = (edges.clone())
+        .filter(|&(from, to)| {
+            from.as_local()
+                .zip(to.as_local())
+                .is_some_and(|(from, to)| tcx.parent_module_from_def_id(from) == tcx.parent_module_from_def_id(to))
+        })
+        .map(|(_, to)| to)
+        .collect();
     let roots = edges
         .clone()
         .filter(|(from, _)| !derived.contains(from))
@@ -811,6 +822,23 @@ pub fn lower_crate<'tcx>(
                         span: held.span.map_or(js::Span::NONE, |span| sources.span(span)),
                     }),
             );
+            // A constant the default is, read by name in its own module, is
+            // declared and then exported by default, `const v = ..; export
+            // default v;`, as JS has no name of `export default ..;`; still
+            // its default alone (ADR 0625, amended).
+            let read_default = default_export
+                .filter(|&held| default_declared && tcx.def_kind(held) != DefKind::Fn && read_at_home.contains(&held));
+            if let Some(held) = read_default {
+                let name = super::bindings::fn_name(tcx, held);
+                for constant in const_items
+                    .entry(module)
+                    .or_default()
+                    .iter_mut()
+                    .filter(|c| c.name == name)
+                {
+                    constant.export = false;
+                }
+            }
             let no_plain = HashSet::new();
             let plain_ref_cells = plain_ref_cells.get().unwrap_or(&no_plain);
             let declarations = super::declarations::module(
@@ -857,7 +885,7 @@ pub fn lower_crate<'tcx>(
                     .collect(),
                 ),
                 default_export: default_export.map(|function| super::bindings::fn_name(tcx, function)),
-                default_declared,
+                default_declared: default_declared && read_default.is_none(),
                 declarations,
                 runtime: Vec::new(),
                 jsx: pass.jsx.contains(&module),

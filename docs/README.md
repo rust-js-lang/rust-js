@@ -82,7 +82,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 
 - [0011 Integers are JS numbers, wrapped like release Rust](decisions/0011-numbers.md)
 - [0012 Panics throw, via runtime helpers emitted on demand](decisions/0012-panics-and-runtime-helpers.md) *(helpers' place replaced by 0103; amended by 0660: `catch_unwind` catches one; 0706: a panic of no message is an `Error` of none)*
-- [0013 Fieldless enum variants are strings](decisions/0013-fieldless-enums.md)
+- [0013 Fieldless enum variants are strings](decisions/0013-fieldless-enums.md) *(extended by 0722: a `#[repr(..)]` one's are numbers)*
 - [0033 Enums with fields are ReScript's tagged objects](decisions/0033-enums-with-fields.md) *(extended by 0716: std's enums whose `PartialEq` or order is derived)*
 - [0035 JS that throws is a `Result`; `?` returns early](decisions/0035-results-and-throwing-js.md) *(amended by 0637: a `match` of its `Result` is `try` and `catch`; 0643: its `unwrap()` is the call)*
 - [0020 Structs are objects, tuples are arrays](decisions/0020-structs-and-tuples.md) *(amended by 0674: a literal's fields are listed as written)*
@@ -216,7 +216,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0144 A lock on one thread is a `RefCell`, and an `Arc` is an `Rc`](decisions/0144-locks.md)
 - [0145 A generic function is given the size and name of a type parameter it asks for](decisions/0145-type-facts.md)
 - [0146 A generic associated type of lifetimes is an associated type](decisions/0146-generic-associated-types.md)
-- [0147 Replacing a value whole through a `&mut`: an object in place, an enum by its place](decisions/0147-replacing-through-mut.md)
+- [0147 Replacing a value whole through a `&mut`: an object in place, an enum by its place](decisions/0147-replacing-through-mut.md) *(amended: std's enums with a fieldless variant are by their place too)*
 - [0148 `write!` into a `String` adds to it, and a `fmt::Result` is always `Ok`](decisions/0148-write-to-string.md)
 - [0149 A `String` changed in place is given a new string, by its byte offsets](decisions/0149-string-editing.md)
 - [0150 Splitting and searching by a pattern, as Rust searches](decisions/0150-string-patterns.md)
@@ -508,7 +508,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0573 Every Rust name is camelCase in JS](decisions/0573-every-rust-name-is-camel-case-in-js.md) *(amended by 0678: a parameter's leading `_` isn't in its JS name)*
 - [0574 What React's scheduler heap asks: a nullable result, an object's `Some`, a runtime that loads anywhere](decisions/0574-what-reacts-scheduler-heap-asks.md)
 - [0575 An `if` keeps the `else` it's written with, and a tail `if` of two values is a conditional](decisions/0575-an-if-keeps-its-else-and-a-tail-if-is-a-conditional.md)
-- [0576 What a body's integers can be: an index in bounds, an operator that can't wrap, a swap JS's own](decisions/0576-what-a-bodys-integers-can-be.md)
+- [0576 What a body's integers can be: an index in bounds, an operator that can't wrap, a swap JS's own](decisions/0576-what-a-bodys-integers-can-be.md) *(extended by 0720: a labeled block's `break` and a named constant)*
 - [0577 A function only calls reach is what its calls give it; a `push` and a `pop` change a length by one](decisions/0577-a-function-only-calls-reach.md)
 - [0578 A nullable result is `null` where it's written; an item's place known in bounds is unchecked](decisions/0578-a-nullable-result-where-its-written.md) *(amended by 0638: a nullable function's call is `null` already)*
 - [0579 A thread-local is named as its module's variable](decisions/0579-a-thread-local-is-named-as-a-variable.md)
@@ -543,8 +543,8 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0608 A `Drop` is its body at each drop](decisions/0608-a-drop-is-its-body-at-each-drop.md)
 - [0609 A `let` that shadows a parameter read no more is the parameter assigned](decisions/0609-a-shadowed-parameter-is-assigned.md) *(extended by 0650: any binding of its block)*
 - [0610 A function that only calls a module variable's function is that variable](decisions/0610-a-forwarding-function-is-its-variable.md)
-- [0611 A default export the macro holds is the function's declaration](decisions/0611-a-default-export-is-where-its-macro-is.md)
-- [0612 Two values of any shape are equal by JS's `===`](decisions/0612-unknown-equality-is-strict.md)
+- [0611 A default export the macro holds is the function's declaration](decisions/0611-a-default-export-is-where-its-macro-is.md) *(amended: a `pub` one is the default alone, in its `.d.ts` too)*
+- [0612 Two values of any shape are equal by JS's `===`](decisions/0612-unknown-equality-is-strict.md) *(amended: two `Option`s of them are std's, both `None` equal; extended by 0721: `js::strict_equals` is JS's `===`)*
 - [0613 `&&` and `||` mixed are one value, as written](decisions/0613-and-or-mixed-are-returned-as-written.md)
 - [0614 A match arm's pattern of parts is one test of each](decisions/0614-a-patterns-parts-are-one-test.md)
 - [0615 `Object.prototype.hasOwnProperty` is a function to call with its object](decisions/0615-has-own-property-the-function.md)
@@ -556,7 +556,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0621 A comment before a macro's opening is its code's; one after a module's last code ends its JS](decisions/0621-comments-around-macros-and-at-a-modules-end.md) *(amended by 0735: one in the macro before its `fn` is the function's)*
 - [0622 A global binding a module names is its `const`](decisions/0622-a-global-binding-a-module-names-is-its-const.md)
 - [0624 `js::is_defined` of a path of bindings asks each part](decisions/0624-is-defined-of-a-path-of-bindings.md) *(amended by 0645: a static of a path too)*
-- [0625 A default constant is its value; a comment right above the first code is its](decisions/0625-a-default-constant-is-its-value.md)
+- [0625 A default constant is its value; a comment right above the first code is its](decisions/0625-a-default-constant-is-its-value.md) *(amended: one its module reads is declared, then exported)*
 - [0626 What a library hands a crate is what its items reach](decisions/0626-what-a-library-hands-a-crate.md)
 - [0627 A number literal keeps its base and its exponent](decisions/0627-a-number-literal-keeps-its-base-and-exponent.md)
 - [0628 A loop after a loop is after it](decisions/0628-a-loop-after-a-loop-is-after-it.md)
@@ -655,6 +655,9 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0743 A part of a chain of tests an earlier test decides is left out](decisions/0743-a-part-of-a-chain-a-test-decides-is-left-out.md)
 - [0744 A value or what it falls back to is `||`](decisions/0744-a-value-or-its-fallback-is-or.md)
 - [0745 A `continue` in a chain of `if`s is where it's written](decisions/0745-a-continue-in-a-chain-is-where-it-is-written.md)
+- [0720 A labeled block's `break` and a named constant, in a body's ranges](decisions/0720-a-labeled-block-and-a-named-constant-in-a-bodys-ranges.md)
+- [0721 `js::strict_equals(a, b)` is JS's `===`](decisions/0721-strict-equals-is-jss-triple-equals.md)
+- [0722 A `#[repr(..)]` enum's variant is its number](decisions/0722-a-repr-enums-variant-is-its-number.md)
 - [0436 Every `dyn` that's a pair keeps its value's drop, `dyn Send` too](decisions/0436-every-dyn-keeps-its-drop.md) *(amended by 0691: a `dyn Any` drops where the crate makes one of what drops)*
 - [0437 A scope's drops on a panic are one `try { .. } finally { .. }`](decisions/0437-a-scopes-drops-are-one-finally.md) *(amended by 0693: its `if`s, loops and `return`s in it)*
 - [0438 An optional prop is given `Some(..)`, or left out](decisions/0438-an-optional-prop-is-given-some.md)

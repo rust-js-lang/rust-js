@@ -307,11 +307,11 @@ export function order(prices) {
 ```
 
 ```ts
+export default function formatProdErrorMessage(code: number, ...args: (unknown | null | undefined)[]): string;
+
 export function total(...prices: number[]): number;
 
 export function order(prices: number[]): number;
-
-export default function formatProdErrorMessage(code: number, ...args: (unknown | null | undefined)[]): string;
 ```
 
 - **A JS caller gives its items**, `formatProdErrorMessage(418)`,

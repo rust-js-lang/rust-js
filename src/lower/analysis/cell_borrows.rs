@@ -236,6 +236,7 @@ fn binding_runs_nothing(tcx: TyCtxt<'_>, id: DefId) -> bool {
                 | JsForm::In
                 | JsForm::InstanceOf(_)
                 | JsForm::Truthy
+                | JsForm::StrictEquals
         )
 }
 

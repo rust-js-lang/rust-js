@@ -159,12 +159,36 @@ fn closure_blocks(e: &mut Expr, f: &mut dyn FnMut(&mut Vec<Stmt>, Slot)) {
 }
 
 /// `a == b`, or `a != b`, as `a === b` and `a !== b`: of what either
-/// answers the same, one side never `null` or `undefined`.
+/// answers the same, one side never `null` or `undefined`. So too
+/// `nullish_equal`'s `(a ?? null) === (b ?? null)`, whose `?? null` only
+/// makes a `null` of an `undefined`.
 pub(crate) fn strict_equality(e: Expr) -> Expr {
     match e.kind {
         ExprKind::Binary(Op::LooseEq, a, b) => Expr::bin(Op::Eq, *a, *b),
         ExprKind::Binary(Op::LooseNe, a, b) => Expr::bin(Op::Ne, *a, *b),
+        ExprKind::Binary(op @ (Op::Eq | Op::Ne), ref a, ref b)
+            if let (Some(a), Some(b)) = (nullish_operand(a), nullish_operand(b)) =>
+        {
+            Expr::bin(op, a.clone(), b.clone())
+        }
         kind => Expr { kind, ..e },
+    }
+}
+
+/// `(a ?? null) === (b ?? null)`: `a === b`, where `null` and `undefined`
+/// are one, as two `None`s of an `Option` of a value of any shape are,
+/// whose `Some`s `===` compares, as `==` can't, which makes `"1"` of `1`
+/// (ADR 0612, amended). Each is read once, in order.
+pub(crate) fn nullish_equal(a: Expr, b: Expr) -> Expr {
+    let either = |x: Expr| Expr::bin(Op::Coalesce, x, Expr::null());
+    Expr::bin(Op::Eq, either(a), either(b))
+}
+
+/// What `nullish_equal` wrote `?? null` of.
+fn nullish_operand(e: &Expr) -> Option<&Expr> {
+    match &e.kind {
+        ExprKind::Binary(Op::Coalesce, x, fallback) if matches!(fallback.kind, ExprKind::Null) => Some(x),
+        _ => None,
     }
 }
 

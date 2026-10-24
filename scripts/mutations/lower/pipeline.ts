@@ -3,6 +3,22 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "default-constant-read-undeclared",
+    breaks: "a constant `js::export_default!` holds, read by its name in its own module, is only `export default \"19.3.0\";`, so the read is of a name JS hasn't, a `ReferenceError`",
+    file: "src/lower/pipeline.rs",
+    find: "                default_declared: default_declared && read_default.is_none(),\n",
+    replace: "                default_declared,\n",
+    tests: ["test/modules.test.ts", "-t", "a default constant its own module reads"],
+  },
+  {
+    name: "default-constant-read-exported",
+    breaks: "a `pub` constant the default holds, read in its own module, is exported by its name too, where it's the default alone",
+    file: "src/lower/pipeline.rs",
+    find: "                    constant.export = false;\n",
+    replace: "                    let _ = &mut constant.export;\n",
+    tests: ["test/modules.test.ts", "-t", "a default constant its own module reads"],
+  },
+  {
     name: "own-alias-dropped",
     breaks: "`pub use self::current_time as unstable_now` exports nothing by `unstable_now`",
     file: "src/lower/pipeline.rs",

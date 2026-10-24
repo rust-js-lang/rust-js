@@ -1147,3 +1147,100 @@ pub fn flat(inner: &Inner) -> Outer<'_> {
   expect(lib.updated({ info: 7, log: 8, warn: 9 })).toEqual({ info: 7, log: 2, warn: 1 });
   expect(Object.keys(lib.flat({ a: 1, b: 2 }))).toEqual(["a", "b", "last", "first"]);
 });
+
+// ADR 0722: a fieldless enum under a `#[repr(..)]` of an integer is its
+// number, `ArrayKind::Empty` `0`, as React's `const EMPTY_ARRAY = 0;` is;
+// its `as` the value, its `{:?}` its name, a `.d.ts` its numbers. One
+// without, or a variant named by `#[rust_js::name]`, its name, as ever.
+test("a repr enum's variant is its number", async () => {
+  const dir = fixture("repr-enum-numbers");
+  writeFileSync(join(dir, "lib.rs"), `#[derive(Clone, Copy, Debug, PartialEq)]
+#[repr(u8)]
+pub enum ArrayKind {
+    Empty = 0,
+    Complex = 1,
+    Primitive = 2,
+    Entries = 3,
+}
+
+#[derive(Clone, Copy, Debug)]
+#[repr(i32)]
+pub enum Sparse {
+    Low = -1,
+    High = 10,
+}
+
+#[derive(Clone, Copy, Debug)]
+#[repr(u64)]
+pub enum Wide {
+    Small = 3,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum Plain {
+    Empty,
+}
+
+pub fn kind(n: usize) -> ArrayKind {
+    if n == 0 { ArrayKind::Empty } else { ArrayKind::Entries }
+}
+
+pub fn is_empty(kind: ArrayKind) -> bool {
+    kind == ArrayKind::Empty
+}
+
+pub fn code(kind: ArrayKind) -> u8 {
+    kind as u8
+}
+
+pub fn shown(kind: ArrayKind, sparse: Sparse) -> String {
+    format!("{kind:?} {sparse:?}")
+}
+
+pub fn others(wide: Wide, plain: Plain) -> String {
+    format!("{wide:?} {plain:?}")
+}
+
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum Cell<'a> {
+    Kind(ArrayKind),
+    Text(&'a str),
+}
+
+pub fn cell(cell: Cell) -> String {
+    match cell {
+        Cell::Kind(kind) => format!("{kind:?}"),
+        Cell::Text(text) => text.to_string(),
+    }
+}
+
+pub fn name(kind: ArrayKind) -> &'static str {
+    match kind {
+        ArrayKind::Empty => "Empty",
+        ArrayKind::Complex => "Complex",
+        ArrayKind::Primitive => "Primitive",
+        ArrayKind::Entries => "Entries",
+    }
+}
+
+pub fn named(n: usize) -> String {
+    name(kind(n)).to_string()
+}
+`);
+  run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("return n === 0 ? 0 : 3;");
+  expect(js).toContain("return kind === 0;");
+  expect(js).toContain("export function code(kind) {\n  return kind;\n}");
+  const declarations = readFileSync(join(dir, "lib.d.ts"), "utf8");
+  expect(declarations).toContain("export type ArrayKind = 0 | 1 | 2 | 3;");
+  expect(declarations).toContain('export type Plain = "Empty";');
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.kind(0), lib.kind(4), lib.isEmpty(0), lib.code(3)]).toEqual([0, 3, true, 3]);
+  expect([lib.shown(2, -1), lib.shown(0, 10), lib.others("Small", "Empty")]).toEqual(["Primitive Low", "Empty High", "Small Empty"]);
+  // A function giving each variant its name gives a name, not the number.
+  expect([lib.name(0), lib.name(3), lib.named(0), lib.named(1)]).toEqual(["Empty", "Entries", "Empty", "Entries"]);
+  // Shown by its number, an untagged enum's payload told as a number.
+  expect(js).toContain('["Empty", "Complex", "Primitive", "Entries"][kind]');
+  expect([lib.cell(3), lib.cell("x")]).toEqual(["Entries", "x"]);
+});

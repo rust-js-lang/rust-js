@@ -256,7 +256,10 @@ export function parseAge(s) {
   ([ADR 0631](../../decisions/0631-a-step-of-one-is-plus-plus.md)). An
   integer's keeps its wrap, `n = (n + 1) >>> 0`, unless what comes before
   shows it can't wrap: below a length, `i < xs.len()` or `i + 1 <
-  js::string::length(s)`, `i += 1` is `i++`. A JS string's `length` is
+  js::string::length(s)`, or a constant, `i <= LIMIT`, `i += 1` is
+  `i++`, in a labeled block too
+  ([ADR 0720](../../decisions/0720-a-labeled-block-and-a-named-constant-in-a-bodys-ranges.md)).
+  A JS string's `length` is
   at most `2^31 - 1`, as every engine's is, so two steps below it don't
   wrap either, nor does the sum of two lengths; a third, or a `- 1`,
   keeps its wrap

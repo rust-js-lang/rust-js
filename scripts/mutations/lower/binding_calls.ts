@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "strict-equals-loose",
+    breaks: "`js::strict_equals(a, b)` is `a == b`, so a `null` is an `undefined` and `1` is `\"1\"`, where JS's `===` says neither is",
+    file: "src/lower/binding_calls.rs",
+    find: "            (JsForm::StrictEquals, Some(this)) if args.len() == 1 => Expr::bin(Op::Eq, this, args.remove(0)),\n",
+    replace: "            (JsForm::StrictEquals, Some(this)) if args.len() == 1 => Expr::bin(Op::LooseEq, this, args.remove(0)),\n",
+    tests: ["test/lowering-bindings.test.ts", "-t", "js::strict_equals is JS's ==="],
+  },
+  {
     name: "static-getter-call-unsupported",
     breaks: "a call of a `get X.y` binding without a receiver, a class's static property, is rejected",
     file: "src/lower/binding_calls.rs",

@@ -18,8 +18,8 @@ use rustc_span::def_id::{DefId, LocalModId};
 use serde_json::{Value, json};
 
 use super::bindings::{
-    declared_tag, field_default, field_key, fn_name, given_bool, is_binding, is_flatten, is_mark, is_nullable,
-    is_otherwise, is_rest, is_untagged, tag_key, variant_name,
+    declared_tag, field_default, field_key, fn_name, is_binding, is_flatten, is_mark, is_nullable, is_otherwise,
+    is_rest, is_untagged, tag_key, variant_name,
 };
 use super::recognition::{StdItem, is_std_def};
 use super::representation::Num;
@@ -49,10 +49,18 @@ pub(super) fn module<'tcx>(
         erased: HashMap::new(),
         named: Vec::new(),
     };
+    // What `js::export_default! { .. }` holds, a function or a constant, is
+    // the module's default and nothing else, as its JS is, `export default
+    // function noop`, whatever its visibility: declared where it is, as
+    // the default, `export default function noop(): void;`, or a constant
+    // declared, then exported, `declare const v: string; export default
+    // v;`, as TypeScript has no default `const` (ADRs 0611, 0625).
+    let held_default = default_export.filter(|_| default_declared);
     let mut items = Vec::new();
     for item in tcx.hir_module_free_items(module) {
         let def_id = item.owner_id.to_def_id();
-        if !tcx.visibility(def_id).is_public() || is_mark(tcx, def_id) {
+        let held = held_default == Some(def_id);
+        if !(held || tcx.visibility(def_id).is_public()) || is_mark(tcx, def_id) {
             continue;
         }
         out.erased = out.erased(def_id);
@@ -67,6 +75,17 @@ pub(super) fn module<'tcx>(
             }
             _ => None,
         };
+        let declaration = declaration.map(|mut declared| {
+            if held {
+                let function = tcx.def_kind(def_id) == DefKind::Fn;
+                declared["exported"] = json!(function);
+                declared["declare"] = json!(!function);
+                if function {
+                    declared["default"] = json!(true);
+                }
+            }
+            declared
+        });
         items.extend(declaration.map(|declaration| documented(declaration, tcx, def_id)));
     }
     // A binding it holds as a value, a global function's `typeof
@@ -83,28 +102,24 @@ pub(super) fn module<'tcx>(
         items.push(declared);
     }
     if let Some(def_id) = default_export {
-        // One only `js::export_default!` exports is declared, but exported
-        // by no name of its own, as `function Recap() {..}` is in JS.
-        // One declared as it is `export default function noop(): void;`, as
-        // its JS is (ADR 0611).
-        // A constant's is declared, then exported, `declare const v: string;
-        // export default v;`, as TypeScript has no default `const` (ADR 0625).
-        let default_declared = default_declared && tcx.def_kind(def_id) == DefKind::Fn;
-        // A binding's is its `const`'s, declared above.
-        if !tcx.visibility(def_id).is_public() && super::bindings::held_path(tcx, def_id).is_none() {
+        // One the naming form only exports, `js::export_default!(recap);`,
+        // is declared, but exported by no name of its own, as `function
+        // Recap() {..}` is in JS; a binding's is its `const`'s, declared
+        // above.
+        if held_default.is_none()
+            && !tcx.visibility(def_id).is_public()
+            && super::bindings::held_path(tcx, def_id).is_none()
+        {
             out.erased = out.erased(def_id);
             let mut declared = match tcx.def_kind(def_id) {
                 DefKind::Fn => out.function(def_id),
                 _ => out.constant(def_id),
             };
-            declared["exported"] = json!(default_declared);
-            declared["declare"] = json!(!default_declared);
-            if default_declared {
-                declared["default"] = json!(true);
-            }
+            declared["exported"] = json!(false);
+            declared["declare"] = json!(true);
             items.push(declared);
         }
-        if !default_declared {
+        if held_default.is_none() || tcx.def_kind(def_id) != DefKind::Fn {
             items.push(json!({ "kind": "export-default", "name": fn_name(tcx, def_id) }));
         }
     }
@@ -789,7 +804,11 @@ impl<'tcx> Declarations<'_, 'tcx> {
                         {
                             return self.ts(field.ty(self.tcx, args).skip_normalization());
                         }
-                        let value = given_bool(self.tcx, v.def_id).map_or_else(|| json!(variant_name(self.tcx, v)), |b| json!(b));
+                        let value = match super::bindings::variant_tag(self.tcx, v).kind {
+                            crate::js::ExprKind::Bool(b) => json!(b),
+                            crate::js::ExprKind::Num(n) => json!(n as i64),
+                            _ => json!(variant_name(self.tcx, v)),
+                        };
                         let name = json!({ "kind": "literal", "value": value });
                         if v.fields.is_empty() && !tagged {
                             return name;

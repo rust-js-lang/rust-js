@@ -34,7 +34,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return false;
         }
         let ty = ty.peel_refs();
-        Num::of(ty).is_some() || ty.is_bool() || self.is_lang_adt(ty, LangItem::OrderingEnum)
+        // A numbered enum whose order is derived, by its numbers, as the
+        // derive orders its variants (ADR 0722).
+        let numbered = matches!(ty.kind(), ty::Adt(adt, _) if bindings::numbered(self.tcx, *adt))
+            && !self.has_user_impl(self.partial_ord_trait(), ty)
+            && !self.has_user_impl(self.ord_trait(), ty);
+        Num::of(ty).is_some() || ty.is_bool() || self.is_lang_adt(ty, LangItem::OrderingEnum) || numbered
     }
 
     /// Strings and `char`s, which `$cmp` orders by code point (ADR 0183).

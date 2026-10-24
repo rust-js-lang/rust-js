@@ -65,7 +65,8 @@ pub fn checked(keys: &[String], next: &[String], log: &mut Vec<String>) -> bool 
   expect(js).toContain('    if (checked > LIMIT) {\n      log.push("too many");\n      equal = false;\n      break;\n    }\n');
   expect(js).toContain("    if (!next.includes(key)) {\n      log.push(key);\n      equal = false;\n    }\n  }\n");
   expect(js).toContain('    if (nextChecked > LIMIT) {\n      log.push("too many");\n      equal = false;\n      break;\n    }\n    if (keys.includes(key)) {\n');
-  expect(js).toContain("    nextChecked = (nextChecked + 1) >>> 0;\n  }\n");
+  // Its count is bounded by the check before it, so needs no wrap (ADR 0720).
+  expect(js).toContain("    nextChecked++;\n  }\n");
   expect(js).not.toContain("} else {\n      if (");
   const results = [
     [["a", "b"], ["a", "c"]],

@@ -279,6 +279,8 @@ pub(super) enum JsForm {
     In,
     /// `!!`: `!!this`, whether it's truthy.
     Truthy,
+    /// `===`: `this === other`, JS's strict equality (ADR 0721).
+    StrictEquals,
     /// `typeof`: `typeof this`, what it is, as text (ADR 0310).
     TypeOf,
     /// `typeof !== "undefined"`: whether the host has the global of the
@@ -309,6 +311,7 @@ pub(super) fn js_form(tcx: TyCtxt<'_>, def_id: DefId) -> JsForm {
         "get []" => return JsForm::GetIndex,
         "in []" => return JsForm::In,
         "!!" => return JsForm::Truthy,
+        "===" => return JsForm::StrictEquals,
         "typeof" => return JsForm::TypeOf,
         "typeof !== \"undefined\"" => return JsForm::Defined,
         "\"\" +" => return JsForm::Text,
@@ -692,14 +695,46 @@ pub(super) fn variant_name(tcx: TyCtxt<'_>, variant: &VariantDef) -> String {
         .unwrap_or_else(|| default_name(tcx, variant.def_id))
 }
 
-/// A variant's tag: its name, or a discriminated union's `true` or
-/// `false`, `#[rust_js::name = true]`, react-dom's `FormStatus`'s
-/// `pending` (ADR 0284).
+/// A variant's tag, the one answer to what a fieldless variant is in JS:
+/// its name; a numbered enum's, its number, as rustc numbers it,
+/// `ArrayKind::Empty` `0` (`numbered`, ADR 0722); or a discriminated
+/// union's `true` or `false`, `#[rust_js::name = true]`, react-dom's
+/// `FormStatus`'s `pending` (ADR 0284).
 pub(super) fn variant_tag(tcx: TyCtxt<'_>, variant: &VariantDef) -> js::Expr {
+    if let DefKind::Variant = tcx.def_kind(variant.def_id) {
+        let adt = tcx.adt_def(tcx.parent(variant.def_id));
+        if numbered(tcx, adt) {
+            let index = adt.variant_index_with_id(variant.def_id);
+            return js::Expr::int(super::discriminants(tcx, adt)[index.as_usize()].1);
+        }
+    }
     match given_bool(tcx, variant.def_id) {
         Some(b) => js::Expr::bool(b),
         None => js::Expr::str(variant_name(tcx, variant)),
     }
+}
+
+/// Whether an enum's variants are its numbers in JS, as rustc numbers
+/// them: one of no fields under a `#[repr(..)]` of an integer JS holds as
+/// a number, of 32 bits or fewer, none of its variants named
+/// (`#[rust_js::name]`), neither tagged nor untagged, nor std's (ADR
+/// 0722). What `variant_tag` asks; each other question of its value asks
+/// this.
+pub(super) fn numbered(tcx: TyCtxt<'_>, adt: ty::AdtDef<'_>) -> bool {
+    use rustc_abi::IntegerType;
+    let narrow = match adt.repr().int {
+        Some(IntegerType::Pointer(_)) => true,
+        Some(IntegerType::Fixed(int, _)) => int.size().bits() <= 32,
+        None => false,
+    };
+    narrow
+        && adt.is_enum()
+        && !adt.variants().is_empty()
+        && (adt.variants().iter())
+            .all(|v| v.fields.is_empty() && given_name(tcx, v.def_id).is_none() && given_bool(tcx, v.def_id).is_none())
+        && declared_tag(tcx, adt.did()).is_none()
+        && !is_untagged(tcx, adt.did())
+        && !super::recognition::is_std_item(tcx, adt.did())
 }
 
 /// A discriminated union's variant's `#[rust_js::name = true]` or `false`.

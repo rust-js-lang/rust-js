@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "named-constant-signed-as-unsigned",
+    breaks: "a negative `const` is read as its bits, `-1` as 2^64 - 1, so a test against it narrows what can't be",
+    file: "src/lower/body_queries.rs",
+    find: "        true => Some(scalar.to_int(scalar.size())),\n        false => i128::try_from(scalar.to_uint(scalar.size())).ok(),\n    }\n}\n\n/// Each call `given_present`",
+    replace: "        _ => i128::try_from(scalar.to_uint(scalar.size())).ok(),\n    }\n}\n\n/// Each call `given_present`",
+    tests: ["test/lowering-numbers.test.ts", "-t", "a labeled block and a named constant"],
+  },
+  {
     name: "classify-some-not-present",
     breaks: "`classify(Some(value))` may be `null`, so its object's test leaves `null` out, `value !== null`",
     file: "src/lower/body_queries.rs",
@@ -36,11 +44,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "steady-ignores-mut-borrows",
-    breaks: "a variable lent as `&mut` isn't changed, so `raw.take()` before reading what was bound of it reads `undefined`",
+    breaks: "a variable lent as `&mut` isn't changed, so an `f64` a call halves is taken as the whole number it was, and `x as u8` is `1.5`",
     file: "src/lower/body_queries.rs",
     find: "            ExprKind::Borrow {\n                borrow_kind: BorrowKind::Mut { .. },\n                arg,\n            }\n            | ExprKind::RawBorrow {",
     replace: "            ExprKind::RawBorrow {",
-    tests: ["test/lowering-names.test.ts", "test/lowering-numbers.test.ts", "-t", "a binding names a variable set again|an index a condition shows"],
+    tests: ["test/lowering-numbers.test.ts", "-t", "an f64 known to be a whole number"],
   },
   {
     name: "whole-bits-unbounded",

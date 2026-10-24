@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "numbered-discriminant-tested",
+    breaks: "a numbered enum's `as u8` tests each variant in turn, `kind === 0 ? 0 : ..`, where its value is its discriminant",
+    file: "src/lower/representation.rs",
+    find: "        if bindings::numbered(tcx, adt) {\n",
+    replace: "        if false && bindings::numbered(tcx, adt) {\n",
+    tests: ["test/lowering-structs-enums.test.ts", "-t", "a repr enum's variant is its number"],
+  },
+  {
     name: "tagged-constant-tag",
     breaks: "a constant of a discriminated union's variant is `{ TAG: \"Fulfilled\", value }`, its Rust name under `TAG`",
     file: "src/lower/representation.rs",
@@ -108,28 +116,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "nested_options"],
   },
   {
-    name: "opaque-not-revealed",
-    breaks: "a `&mut` to an `impl Iterator` a function returns is a box, so `next()` of it is `None`",
-    file: "src/lower/representation.rs",
-    find: "        let ty = self.reveal(ty);\n        // What's the value it holds",
-    replace: "        // What's the value it holds",
-    tests: ["test/corpus.test.ts", "-t", "opaque_iterators"],
-  },
-  {
     name: "mixed-enum-object",
-    breaks: "an enum with a fieldless variant is an object for a `&mut`, so `*self = Light::Off` is refused",
+    breaks: "an enum with a fieldless variant, the crate's or std's `Bound`, is an object for a `&mut`, so `*self = Light::Off` is refused, and `*r = Bound::Unbounded` a `TypeError`",
     file: "src/lower/representation.rs",
-    find: "                && (adt.variants().iter().all(|v| !v.fields.is_empty())\n                    || !(adt.did().is_local() || self.krate.foreign.in_library(adt.did()))))",
-    replace: "                && true)",
-    tests: ["test/corpus.test.ts", "-t", "replace_through_mut"],
-  },
-  {
-    name: "std-mixed-enum-place",
-    breaks: "serde_json's `Value`, whose `Null` is fieldless, is reached through its place, so `as_object_mut()` is given a handle, not the `Value`",
-    file: "src/lower/representation.rs",
-    find: "                    || !(adt.did().is_local() || self.krate.foreign.in_library(adt.did()))))",
-    replace: "                    || false))",
-    tests: ["test/compiler.test.ts", "-t", "dynamic.report"],
+    find: "                && adt.variants().iter().all(|v| !v.fields.is_empty()))",
+    replace: "                && adt.variants().iter().any(|v| !v.fields.is_empty()))",
+    tests: ["test/corpus.test.ts", "-t", "^(replace_through_mut|std_mixed_enum_mut).rs$"],
   },
   {
     name: "u128-literal-signed",
@@ -303,8 +295,8 @@ export const mutations: Mutation[] = [
     name: "tagged-enum-a-string",
     breaks: "a tagged enum's fieldless variant, an object, is taken for its name, and compared, looked for and kept as a key by JS's identity",
     file: "src/lower/representation.rs",
-    find: "    is_fieldless_enum(adt) && super::bindings::declared_tag(tcx, adt.did()).is_none()\n",
-    replace: "    let _ = tcx;\n    is_fieldless_enum(adt)\n",
+    find: "    is_fieldless_enum(adt) && super::bindings::declared_tag(tcx, adt.did()).is_none() && !bindings::numbered(tcx, adt)\n",
+    replace: "    is_fieldless_enum(adt) && !bindings::numbered(tcx, adt)\n",
     tests: ["test/corpus.test.ts", "-t", "tagged_enum_values"],
   },
   {
@@ -431,11 +423,12 @@ export const mutations: Mutation[] = [
   },
   {
     name: "one-value-never",
-    breaks: "a `&mut` to a unit struct in what a call gave, `f()[0].touch()`, is refused as a number's is, though no write changes it",
+    breaks: "a `&mut` to a unit struct in what a call gave, `f()[0].touch()`, has its place held in a variable first, as a number's is, though no write changes it",
     file: "src/lower/representation.rs",
     find: "        self.layout(ty).is_some_and(|layout| layout.is_zst())\n",
     replace: "        self.layout(ty).is_some_and(|layout| layout.is_zst() && false)\n",
     tests: ["test/corpus.test.ts", "-t", "^option_as_mut_generic.rs$"],
+    snapshots: true,
   },
   {
     name: "number-shape-fields",
@@ -564,14 +557,6 @@ export const mutations: Mutation[] = [
     find: "        !self.is_cell_pointee(ty) && !self.is_guard(ty) && (",
     replace: "        !self.is_cell_pointee(ty) && (",
     tests: ["test/corpus.test.ts", "-t", "^guard_swap_refused.rs$"],
-  },
-  {
-    name: "json-value-written-in-place",
-    breaks: "a `&mut Value` is the value itself, written in place, which `Null`, a string, can't be",
-    file: "src/lower/representation.rs",
-    find: "                && !self.recognition().is_json_value(ty)\n",
-    replace: "",
-    tests: ["test/serde.test.ts", "-t", "changes to and from Null"],
   },
   {
     name: "registered-symbol-const-its-struct",

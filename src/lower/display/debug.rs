@@ -728,10 +728,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Some(key) => Expr::member(value, key),
             None => value,
         };
-        let names: Vec<(String, String)> = adt
-            .variants()
-            .iter()
-            .map(|v| (bindings::variant_name(self.tcx, v), v.name.to_string()))
+        // A numbered one's (ADR 0722), by its number: `["Empty", ..][kind]`
+        // where they count up from 0.
+        let tags: Vec<(Expr, String)> = (adt.variants().iter())
+            .map(|v| (bindings::variant_tag(self.tcx, v), v.name.to_string()))
+            .collect();
+        let counting =
+            (tags.iter().enumerate()).all(|(i, (tag, _))| matches!(tag.kind, js::ExprKind::Num(n) if n == i as f64));
+        if counting {
+            let names = tags.into_iter().map(|(_, rust)| Expr::str(rust)).collect();
+            return Expr::index(Expr::array(names), value);
+        }
+        let names: Vec<(String, String)> = (adt.variants().iter().zip(tags))
+            .map(|(v, (tag, rust))| match tag.kind {
+                js::ExprKind::Num(n) => (format!("{n}"), rust),
+                _ => (bindings::variant_name(self.tcx, v), rust),
+            })
             .collect();
         if names.iter().all(|(js, rust)| js == rust) {
             return value;

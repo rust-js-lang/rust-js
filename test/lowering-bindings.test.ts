@@ -962,10 +962,10 @@ pub fn owns(object: &js::Unknown, key: &str) -> bool {
   expect([lib.owns(own, "mine"), lib.owns(own, "inherited"), lib.owns(Object.create(null), "x")]).toEqual([true, false, false]);
 });
 
-// ADR 0612: two values of any shape are equal as JS's \`===\` has them, an
-// \`Option\` of them too, where \`null\` isn't \`undefined\`: React's
-// \`Object.is\` polyfill compares \`mixed\` values so.
-test("js::Unknown's == is ===, of an Option too", async () => {
+// ADR 0612: two values of any shape are equal as JS's \`===\` has them,
+// and two \`Option\`s of them as std's are (amended): both \`None\`,
+// whichever of \`null\` and \`undefined\` each is, or \`===\` \`Some\`s.
+test("js::Unknown's == is ===, of an Option's Somes", async () => {
   const dir = fixture("unknown-equality");
   writeFileSync(join(dir, "lib.rs"), `use js::Unknown;
 
@@ -976,14 +976,55 @@ pub fn same(a: &Unknown, b: &Unknown) -> bool {
 pub fn same_maybe(a: Option<&Unknown>, b: Option<&Unknown>) -> bool {
     a == b
 }
+
+pub fn is(a: Option<&Unknown>, b: &Unknown) -> bool {
+    a == Some(b)
+}
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("export function same(a, b) {\n  return a === b;\n}");
-  expect(js).toContain("export function sameMaybe(a, b) {\n  return a === b;\n}");
+  expect(js).toContain("export function sameMaybe(a, b) {\n  return (a ?? null) === (b ?? null);\n}");
+  // Of a \`Some\`, never \`null\` nor \`undefined\`, \`===\` alone answers the same.
+  expect(js).toContain("export function is(a, b) {\n  return a === b;\n}");
   const lib = await import(join(dir, "lib.js"));
   const o = {};
-  expect([lib.same(o, o), lib.same(o, {}), lib.same(NaN, NaN), lib.sameMaybe(null, undefined), lib.sameMaybe(undefined, undefined)]).toEqual([true, false, false, false, true]);
+  expect([lib.same(o, o), lib.same(o, {}), lib.same(NaN, NaN), lib.sameMaybe(null, undefined), lib.sameMaybe(undefined, undefined), lib.sameMaybe(o, o), lib.sameMaybe(o, null), lib.sameMaybe(1, "1")]).toEqual([true, false, false, true, true, true, false, false]);
+});
+
+// ADR 0721: \`js::strict_equals(a, b)\` is JS's \`a === b\` of any two values,
+// \`Option\`s too, where a \`null\` isn't an \`undefined\`, as React's
+// \`Object.is\` polyfill asks; \`==\` stays Rust's (ADR 0612).
+test("js::strict_equals is JS's ===, of a null and an undefined too", async () => {
+  const dir = fixture("strict-equals");
+  writeFileSync(join(dir, "lib.rs"), `use js::{JsObject, Unknown};
+
+pub fn same(a: Option<&Unknown>, b: Option<&Unknown>) -> bool {
+    js::strict_equals(a, b)
+}
+
+pub fn same_object(a: &JsObject, b: &Unknown) -> bool {
+    js::strict_equals(a, b)
+}
+
+pub fn is_text(a: &Unknown, text: &str) -> bool {
+    js::strict_equals(a, text)
+}
+
+pub fn is_number(a: Option<&Unknown>) -> bool {
+    js::strict_equals(a, 1.0)
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("export function same(a, b) {\n  return a === b;\n}");
+  expect(js).toContain("export function sameObject(a, b) {\n  return a === b;\n}");
+  expect(js).toContain("export function isText(a, text) {\n  return a === text;\n}");
+  expect(js).toContain("export function isNumber(a) {\n  return a === 1;\n}");
+  const lib = await import(join(dir, "lib.js"));
+  const o = {};
+  expect([lib.same(null, undefined), lib.same(null, null), lib.same(o, o), lib.same(o, {}), lib.same(NaN, NaN)]).toEqual([false, true, true, false, false]);
+  expect([lib.sameObject(o, o), lib.isText("a", "a"), lib.isText(1, "1"), lib.isNumber(1), lib.isNumber(undefined)]).toEqual([true, true, false, true, false]);
 });
 
 // ADR 0624: `js::is_defined` of a path of bindings, each read from the

@@ -25,10 +25,6 @@ pub(in crate::lower::mir::tidy) fn continued(stmts: &mut [Stmt], guards: &[(js::
                     else {
                         unreachable!("matched")
                     };
-                    // Its branches first, `if (c) { s; break l; } t` an `else`,
-                    // as `branch_ends` has them: a `continue` the program
-                    // wrote, which ends one, comes back (below).
-                    ending(&mut inner, &block);
                     let clashes = declared(&inner).any(|name| declared(body).any(|n| n == name));
                     if clashes || continues(&mut inner, &block, looped.as_deref(), false).is_none() {
                         body.push(StmtKind::Labeled(block, inner).at(span));

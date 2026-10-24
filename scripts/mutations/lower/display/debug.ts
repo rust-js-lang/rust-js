@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "numbered-debug-table",
+    breaks: "a numbered enum's `{:?}` reads a table keyed by number, `{ 0: \"Empty\", .. }[kind]`, where they count from 0 and an array is the table",
+    file: "src/lower/display/debug.rs",
+    find: "        if counting {\n",
+    replace: "        if false && counting {\n",
+    tests: ["test/lowering-structs-enums.test.ts", "-t", "a repr enum's variant is its number"],
+  },
+  {
     name: "renamed-variant-debug-local",
     breaks: "the crate's fieldless enum's `{:?}` is a renamed variant's JS name, not its Rust one",
     file: "src/lower/display/debug.rs",

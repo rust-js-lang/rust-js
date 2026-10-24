@@ -55,7 +55,7 @@ export function labeledHash(THash) {
 export const smallHash = { hash: smallHash_hash, hashSlice: $hashSlice(smallHash_hash) };
 
 function smallHash_hash(small, state, HHasher) {
-  HHasher.writeU8(state, { A: 3, B: 7 }[small]);
+  HHasher.writeU8(state, small);
 }
 
 export const wideHash = { hash: wideHash_hash, hashSlice: $hashSlice(wideHash_hash) };
@@ -490,7 +490,7 @@ function main() {
       }),
     )}`,
   );
-  console.log(`${digest("A", smallHash)} ${digest("B", smallHash)}`);
+  console.log(`${digest(3, smallHash)} ${digest(7, smallHash)}`);
   console.log(`${digest("Low", wideHash)} ${digest({ TAG: "High", _0: 2 }, wideHash)}`);
   console.log(`${digest(["MiXed"], nameHash) === digest(["mixed"], nameHash)}`);
   console.log(

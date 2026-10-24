@@ -772,6 +772,42 @@ export const wrong = <Callout title={1} />;
   expect(errors[0]).toContain("use.tsx(3,");
 });
 
+// What the macro holds is the module's default alone, a \`pub\` one too, in
+// its \`.d.ts\` as in its JS: \`export default function noop\`, and a
+// constant declared, then exported (ADRs 0611, 0625, amended).
+test("declarations declare a pub default export the macro holds as the default alone", () => {
+  buildReact();
+  const dir = fixture("declarations-pub-default");
+  writeFileSync(join(dir, "Cargo.toml"), '[package]\nname = "app"\nversion = "0.0.0"\nedition = "2024"\n');
+  writeFileSync(join(dir, "lib.rs"), "pub mod noop;\npub mod version;\n");
+  writeFileSync(join(dir, "noop.rs"), `js::export_default! {
+    /// Gives what it's given.
+    pub fn noop(x: f64) -> f64 {
+        x
+    }
+}
+`);
+  writeFileSync(join(dir, "version.rs"), `js::export_default! {
+    pub const VERSION: &str = "19.3.0";
+}
+`);
+  run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  expect(readFileSync(join(dir, "noop.js"), "utf8")).toContain("\nexport default function noop(x) {\n");
+  const noop = readFileSync(join(dir, "noop.d.ts"), "utf8");
+  expect(noop).toContain("/** Gives what it's given. */\nexport default function noop(x: number): number;\n");
+  expect(noop).not.toContain("export function");
+  expect(readFileSync(join(dir, "version.js"), "utf8")).toContain('\nexport default "19.3.0";\n');
+  expect(readFileSync(join(dir, "version.d.ts"), "utf8")).toContain("declare const VERSION: string;\n\nexport default VERSION;\n");
+  writeFileSync(join(dir, "use.ts"), `import noop from "./noop.js";
+import VERSION from "./version.js";
+import { noop as named } from "./noop.js";
+export const one: number = noop(1);
+export const version: string = VERSION;
+`);
+  const errors = typeChecked(dir, "use.ts");
+  expect(errors.map((error) => error.slice(0, error.indexOf(":")))).toEqual(["use.ts(3,10)"]);
+});
+
 // A type alias is TypeScript's, \`export type Toc = TocItem[];\`, which
 // TypeScript that imports it names, as react.dev's Toc imports \`Toc\`.
 test("declarations name a type alias", () => {

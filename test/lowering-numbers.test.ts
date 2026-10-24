@@ -188,6 +188,14 @@ pub fn wide(n: u32) -> u64 {
     let x = n as f64;
     x as u64
 }
+fn halve(x: &mut f64) {
+    *x /= 2.0;
+}
+pub fn lent(n: u8) -> u8 {
+    let mut x = n as f64;
+    halve(&mut x);
+    x as u8
+}
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
@@ -196,7 +204,7 @@ pub fn wide(n: u32) -> u64 {
   expect(js).toContain("  index = -1;\n  return $f64ToInt(index, 0, 4294967295);\n}");
   expect(js).toContain("export function byte(n) {\n  const x = n;\n  return x;\n}");
   const lib = await import(join(dir, "lib.js"));
-  expect([lib.found("abc", "c"), lib.unchecked("abc", "z"), lib.setAgain("abc", "a"), lib.byte(7), lib.shifted("abc", "z"), lib.wide(7)]).toEqual([2, 0, 0, 7, 0, 7n]);
+  expect([lib.found("abc", "c"), lib.unchecked("abc", "z"), lib.setAgain("abc", "a"), lib.byte(7), lib.shifted("abc", "z"), lib.wide(7), lib.lent(3)]).toEqual([2, 0, 0, 7, 0, 7n, 1]);
 });
 
 // ADR 0292: an index a condition shows is in bounds is JS's own: react.dev's
@@ -266,18 +274,29 @@ pub fn wrong(items: &[u32]) -> u32 {
 pub fn other(items: &[u32]) -> u32 {
     if items.len() != 5 { items[0] } else { 0 }
 }
+
+pub fn shrunk(mut items: Vec<u32>) -> u32 {
+    let mut sum = 0;
+    for i in 0..items.len() {
+        items.truncate(1);
+        sum += items[i];
+    }
+    sum
+}
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   for (const read of ["items[0]", "items[1]", "items[i]", "items[i] + items[0]"]) expect(js).toContain(read);
   expect(js).toContain("$index(items, 2)");
   expect(js).toContain("$index(items, 0)");
-  expect(js.match(/\$index/g)?.length).toBe(8);
+  // A loop below a length its body changes, `truncate`'s `&mut`, checks.
+  expect(js).toContain("$index(items, i)");
+  expect(js.match(/\$index/g)?.length).toBe(9);
   const lib = await import(join(dir, "lib.js"));
   expect([lib.first([]), lib.first([4]), lib.second([1, 2]), lib.second([1]), lib.total([1, 2, 3]), lib.below([5, 6], 1), lib.below([5], 3)]).toEqual([undefined, 4, 2, 0, 6, 11, 0]);
   expect(() => lib.unchecked([1, 2])).toThrow();
   expect(() => lib.changed([1])).toThrow();
-  for (const unknown of [() => lib.either([1]), () => lib.third([1, 2]), () => lib.after([]), () => lib.wrong([]), () => lib.other([])]) {
+  for (const unknown of [() => lib.either([1]), () => lib.third([1, 2]), () => lib.after([]), () => lib.wrong([]), () => lib.other([]), () => lib.shrunk([1, 2])]) {
     expect(unknown).toThrow();
   }
 });
@@ -976,4 +995,87 @@ pub fn past(lines: &[&str]) -> usize {
   expect(lib.root(["Root"], ["Root"])).toBe(0);
   expect(lib.past(["a", "Root"])).toBe(4);
   expect(() => lib.past(["a"])).toThrow("index out of bounds");
+});
+
+// ADR 0720: a labeled block's `break` is a jump the walk follows, past the
+// block, as a loop's is, so a depth tested below a constant after one adds
+// one without a wrap; and a `const` of an integer is its value, so a
+// counter tested against `LIMIT` is as one tested against `100`. React's
+// ported `addValueToProperties` adds to its `indent` and its count as
+// upstream does.
+test("a labeled block and a named constant keep what a body's integers can be", async () => {
+  const dir = fixture("labeled-ranges");
+  writeFileSync(join(dir, "lib.rs"), `const LIMIT: usize = 100;
+const FLOOR: i32 = -5;
+
+pub fn top(n: usize) -> usize {
+    n >> (usize::BITS - 1)
+}
+
+pub fn lower(n: i32) -> i32 {
+    if n > FLOOR { n - 1 } else { FLOOR }
+}
+
+pub fn describe(out: &mut Vec<String>, indent: usize, name: &str) {
+    let desc = 'desc: {
+        if name.len() > 3 {
+            break 'desc "long".to_string();
+        }
+        if indent < 3 {
+            describe(out, indent + 1, name);
+        }
+        "short".to_string()
+    };
+    out.push(desc);
+}
+
+pub fn counted(keys: &[String], out: &mut Vec<String>) -> usize {
+    let mut seen = 0;
+    for key in keys {
+        if seen > LIMIT {
+            break;
+        }
+        out.push(key.clone());
+        seen += 1;
+    }
+    seen
+}
+
+pub fn joined(indent: usize) -> usize {
+    'desc: {
+        if indent >= 3 {
+            break 'desc;
+        }
+    }
+    indent + 1
+}
+
+pub fn deep(indent: usize) -> usize {
+    'desc: {
+        if indent < 3 {
+            break 'desc;
+        }
+        return indent + 1;
+    }
+    indent
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("describe(out, indent + 1, name);");
+  expect(js).toContain("    seen++;\n");
+  expect(js).toContain("n > FLOOR ? n - 1 : FLOOR");
+  // Of constants alone, the constant.
+  expect(js).toContain("return n >>> 31;");
+  // Past a test it isn't below, its `+ 1` may wrap.
+  expect(js).toContain("(indent + 1) >>> 0");
+  const lib = await import(join(dir, "lib.js"));
+  const out: string[] = [];
+  lib.describe(out, 0, "ab");
+  expect(out).toEqual(["short", "short", "short", "short"]);
+  expect(lib.counted(Array.from({ length: 200 }, (_, i) => String(i)), [])).toBe(101);
+  expect([lib.deep(1), lib.deep(5), lib.deep(4294967295)]).toEqual([1, 6, 0]);
+  // What a \`break\` knows goes past the block: there it may be the most.
+  expect([lib.joined(1), lib.joined(4294967295)]).toEqual([2, 0]);
+  expect([lib.lower(-4), lib.lower(-5), lib.lower(2147483647)]).toEqual([-5, -5, 2147483646]);
 });

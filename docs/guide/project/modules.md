@@ -275,7 +275,9 @@ export default page;
 ```
 
 Of the function itself, `js::export_default! { .. }`, it's the function's
-declaration as the default, which nothing else exports by name
+declaration as the default, which nothing else exports by name, a `pub`
+one's neither, in its `.d.ts` as in its JS, `export default function
+noop(): void;`
 ([ADR 0611](../../decisions/0611-a-default-export-is-where-its-macro-is.md)):
 
 ```rust
@@ -289,7 +291,9 @@ export default function noop() {}
 ```
 
 Of a `const` itself, its value is the default, JS having no declaration
-of a constant as one, and another module reads it as its default
+of a constant as one, and another module reads it as its default; one its
+own module reads is declared, then exported, `const REACT_VERSION =
+"19.3.0"; export default REACT_VERSION;`
 ([ADR 0625](../../decisions/0625-a-default-constant-is-its-value.md)):
 
 ```rust

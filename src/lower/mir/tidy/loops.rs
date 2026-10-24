@@ -402,9 +402,10 @@ pub(super) fn unarrayed(e: Expr) -> Expr {
 }
 
 /// `body; break;`, a loop's body that leaves where it ends, each `break`
-/// where the program wrote it: of a last `if (t) { a } else { b; continue;
-/// }`, `if (t) { a; break; } b`, the turn's rest after the `if`; of `if (t)
-/// { b; continue; } else { a }`, `if (t) { b } else { a; break; }`. A
+/// where the program wrote it: of `if (t) { b; continue; } else { a }`,
+/// `if (t) { b } else { a; break; }`; of `if (t) { a } else { b; continue;
+/// }`, the `break` after it, which the early breaks put in `a`, where it
+/// was written (ADR 0730). A
 /// `break` after what leaves anyway is dropped by `unreachable`, the one
 /// pass that drops what's after a leave. A `continue` of no label, in the
 /// loop's body and no loop in it, is the loop's own.
@@ -416,30 +417,12 @@ fn broken_after(body: &mut Vec<Stmt>) {
         kind: StmtKind::If(_, then, Some(otherwise)),
         ..
     }) = body.last_mut()
+        && then.last().is_some_and(goes_on)
+        && !otherwise.last().is_some_and(goes_on)
     {
-        match (then.last().is_some_and(goes_on), otherwise.last().is_some_and(goes_on)) {
-            (false, true) => {
-                otherwise.pop();
-                let rest = std::mem::take(otherwise);
-                let Some(Stmt {
-                    kind: StmtKind::If(_, then, otherwise),
-                    ..
-                }) = body.last_mut()
-                else {
-                    unreachable!("matched")
-                };
-                *otherwise = None;
-                leaves(then);
-                body.extend(rest);
-                return;
-            }
-            (true, false) => {
-                then.pop();
-                leaves(otherwise);
-                return;
-            }
-            _ => {}
-        }
+        then.pop();
+        leaves(otherwise);
+        return;
     }
     leaves(body);
 }
