@@ -107,4 +107,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^vec_destructors.rs$"],
     snapshots: true,
   },
+  {
+    name: "mir-quiet-drop-unwinds",
+    breaks: "a drop of what JS drops nothing of is taken to unwind, so a closure given to a setter is held, `const value = () => ..`",
+    file: "src/lower/mir/drops.rs",
+    find: "        let flow = pruned.as_ref().unwrap_or(body);\n",
+    replace: "        let flow = pruned.as_ref().map_or(body, |_| body);\n",
+    tests: ["test/lowering-moves.test.ts", "-t", "setter"],
+  },
 ];

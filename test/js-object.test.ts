@@ -258,9 +258,10 @@ pub fn called(name: &'static str) {
   expect(js).toContain("function disabledLog() {}\ndisabledLog.__reactDisabledLog = true;\n\nexport function disableLogs() {");
   expect(js).toContain("    prevLog = console.log;\n    prevInfo = console.info;");
   expect(js).toContain("prevGroupCollapsed = console.groupCollapsed;");
-  expect(js).toContain("const props = { configurable: true, enumerable: true, value: disabledLog, writable: true };");
+  // Across lines, as its literal is, and React's (ADR 0835).
+  expect(js).toContain("const props = {\n      configurable: true,\n      enumerable: true,\n      value: disabledLog,\n      writable: true,\n    };");
   expect(js).toContain("Object.defineProperties(console, {\n      info: props,\n      log: props,");
-  expect(js).toContain("const props = { configurable: true, enumerable: true, writable: true };");
+  expect(js).toContain("const props = {\n      configurable: true,\n      enumerable: true,\n      writable: true,\n    };");
   // Each object's keys as written, upstream's: `log` first here (ADR 0674).
   expect(js).toContain("Object.defineProperties(console, {\n      log: { ...props, value: prevLog },\n      info: { ...props, value: prevInfo },");
   expect(js).toContain("groupCollapsed: { ...props, value: prevGroupCollapsed },");
@@ -446,6 +447,53 @@ pub fn had(o: &Unknown) -> (bool, bool) {
   expect(lib.deleted(o, "gone")).toEqual([true, false]);
   expect(o).toEqual({ kept: 2 });
   expect(() => lib.deleted(Object.freeze({ props: 1 }), "x")).toThrow(TypeError);
+});
+
+// ADR 0776: `js::get`, `js::has` and `js::set` take any value, as
+// TypeScript's `any` is, `None` too: `value.key`, `key in value` and
+// `value.key = to`, which throw a TypeError of `undefined` and `null` as
+// JS's do, as React's `'default' in moduleObject` relies on, a panic.
+test("get, has and set take any value, and throw of nothing as JS does", async () => {
+  const { js, lib, warnings } = await compiled("js-object-any-get", `use js::{JsObject, Unknown};
+
+pub fn default_of(module_object: Option<&Unknown>) -> Option<&'static Unknown> {
+    js::get(module_object, "default")
+}
+
+pub fn has_default(module_object: Option<&Unknown>) -> bool {
+    js::has(module_object, "default")
+}
+
+pub fn name(render: Option<&Unknown>, name: &str) {
+    js::set(render, "displayName", name);
+}
+
+pub fn present(o: &Unknown, object: &JsObject) -> (bool, bool) {
+    js::set(o, "seen", true);
+    (js::has(o, "seen"), js::get(object, "k").is_some())
+}
+
+pub fn caught(module_object: Option<&'static Unknown>) -> bool {
+    std::panic::catch_unwind(|| js::has(module_object, "default")).is_err()
+}
+`);
+  expect(warnings).toEqual([]);
+  expect(js).toContain("return moduleObject.default;");
+  expect(js).toContain('return "default" in moduleObject;');
+  expect(js).toContain("render.displayName = name;");
+  expect(js).toContain("o.seen = true;");
+  const m = { default: 1 };
+  expect([lib.defaultOf(m), lib.hasDefault(m), lib.hasDefault({})]).toEqual([1, true, false]);
+  expect(() => lib.defaultOf(undefined)).toThrow(TypeError);
+  expect(() => lib.defaultOf(null)).toThrow(TypeError);
+  expect(() => lib.hasDefault(undefined)).toThrow(TypeError);
+  expect(() => lib.hasDefault(null)).toThrow(TypeError);
+  expect(() => lib.name(undefined, "x")).toThrow(TypeError);
+  const render: any = {};
+  lib.name(render, "Named");
+  expect(render.displayName).toBe("Named");
+  expect(lib.present({}, { k: 1 })).toEqual([true, true]);
+  expect([lib.caught(undefined), lib.caught(m)]).toEqual([true, false]);
 });
 
 // ADR 0700: TypeScript's `Function` is `&dyn Fn() -> Option<&'static

@@ -270,7 +270,7 @@ pub(super) fn reject_flatten_misuse<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&Body
                 );
             }
         }
-        let (_, bases) = crate::lower::body_queries::jsx_given_props(tcx, thir);
+        let bases = &body.facts.jsx_bases;
         // A flattened field read through, `props.html.title`, is its parent's,
         // a reference's too, `(*report.item).line`.
         let read_through: HashSet<ExprId> = (thir.exprs.iter())

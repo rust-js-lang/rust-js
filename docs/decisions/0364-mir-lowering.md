@@ -9,7 +9,9 @@ asks (`test/corpus/iterator_of_projection.rs`). Amended by
 temporary tidy keeps is named as rust-analyzer suggests, after its call or
 its type, before `value`. Extended by
 [0751](0751-a-binding-only-a-guard-reads-isnt-written.md): a binding only
-a guarded arm's guard reads isn't written in the arm.
+a guarded arm's guard reads isn't written in the arm. Amended by
+[0800](0800-a-drop-of-nothing-never-unwinds.md): a drop of what JS drops
+nothing of never unwinds, so the cleanup it would unwind to drops nothing.
 
 Case: N ([0262](0262-when-rust-and-js-disagree.md)).
 

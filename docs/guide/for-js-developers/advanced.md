@@ -784,7 +784,10 @@ pub fn grow(s: &mut Settings) {
 import { $byteLen } from "@rust-js/runtime";
 
 export function copies() {
-  const a = { theme: "dark", size: 12 };
+  const a = {
+    theme: "dark",
+    size: 12,
+  };
   const b = { ...a };
   b.size = 14;
   return [a, b];
@@ -898,8 +901,12 @@ export const Logger = {
 
 export function twoLoggers() {
   const lines = { value: [] };
-  const a = { lines };
-  const b = { lines };
+  const a = {
+    lines,
+  };
+  const b = {
+    lines,
+  };
   Logger.log(a, "from a");
   Logger.log(b, "from b");
   const borrow = $borrow(lines, true);
@@ -992,7 +999,10 @@ function fibonacciIterator_next(fibonacci) {
 }
 
 export function fibonacci() {
-  return { current: 0n, next: 1n };
+  return {
+    current: 0n,
+    next: 1n,
+  };
 }
 
 export function firstFibs(n) {

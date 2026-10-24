@@ -15,13 +15,43 @@ use rustc_middle::ty::{self, Ty};
 use rustc_span::Span;
 use rustc_span::def_id::DefId;
 
+/// How the struct literal written at `span`, `P {\n x: 1, .. }`, is
+/// written, which its object is written as (ADR 0835): across lines where
+/// its `{` ends a line, as rustfmt writes one too long for a line, and as
+/// Prettier tells an object a person wrote across lines. On one line
+/// otherwise, and of a macro's or a desugaring's, a range's, `a..b`.
+fn literal_layout(tcx: ty::TyCtxt<'_>, span: Span) -> js::ObjectLayout {
+    let code = match span.from_expansion() {
+        true => String::new(),
+        false => tcx.sess.source_map().span_to_snippet(span).unwrap_or_default(),
+    };
+    let after = code.find('{').map_or("", |brace| &code[brace + 1..]);
+    js::ObjectLayout {
+        lines: after[..after.len() - after.trim_start().len()].contains('\n'),
+    }
+}
+
+/// A `const`'s or a `static`'s object, of the value rustc computed, as its
+/// struct literal is written, as one written in place is (ADR 0835); its
+/// objects within, as rustc's value has no literal of theirs, on one line
+/// where they fit.
+pub(super) fn const_object(tcx: ty::TyCtxt<'_>, def_id: rustc_span::def_id::LocalDefId, mut value: Expr) -> Expr {
+    if let js::ExprKind::Object(_, layout) = &mut value.kind
+        && let Some(body) = tcx.hir_maybe_body_owned_by(def_id)
+        && let rustc_hir::ExprKind::Struct(..) = body.value.kind
+    {
+        *layout = literal_layout(tcx, body.value.span);
+    }
+    value
+}
+
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A struct literal: `{ x: 1, y: 2 }`, or `[1, 2]` for a tuple struct.
     /// `made`, a struct with a flattened field's object, as JS has it: the
     /// flattened field's own fields, of a struct made there, or its spread,
     /// `{ ...item, severity }`, where it's declared (ADR 0204).
     pub(super) fn flattened_object(&self, made: Expr, ty: Ty<'tcx>) -> Expr {
-        let js::ExprKind::Object(props) = made.kind else {
+        let js::ExprKind::Object(props, layout) = made.kind else {
             return made;
         };
         let Shape::Object(names) = self.shape(ty) else {
@@ -35,7 +65,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         for prop in props {
             match prop {
                 Prop::Field(name, value) if flattened(&name) => match value.kind {
-                    js::ExprKind::Object(inner) => flat.extend(inner),
+                    js::ExprKind::Object(inner, ..) => flat.extend(inner),
                     js::ExprKind::Undefined => {}
                     _ => flat.push(Prop::Spread(value)),
                 },
@@ -44,7 +74,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         Expr {
             known: js::Known::Nothing,
-            kind: js::ExprKind::Object(flat),
+            kind: js::ExprKind::Object(flat, layout),
             span: made.span,
         }
     }
@@ -76,6 +106,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             (Some(order), None) if order.len() == declared.len() => order,
             // Two at one place, of a macro, may be written two ways.
             _ => declared,
+        }
+    }
+
+    /// How the struct or variant literal made at `span` is written, which
+    /// its object is written as (`literal_layout`); on one line where THIR
+    /// has no literal of it there, of a tuple struct or variant.
+    pub(super) fn object_layout(
+        &self,
+        adt: &ty::AdtDef<'tcx>,
+        variant_index: VariantIdx,
+        span: Span,
+    ) -> js::ObjectLayout {
+        let written = adt.variant(variant_index).ctor_kind().is_none()
+            && (self.frame.thir.exprs.iter()).any(|e| {
+                matches!(&e.kind, thir::ExprKind::Adt(made)
+                    if e.span == span && made.adt_def == *adt && made.variant_index == variant_index)
+            });
+        match written {
+            true => literal_layout(self.tcx, span),
+            false => js::ObjectLayout::default(),
         }
     }
 
@@ -155,17 +205,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let mut fields = fields;
         // A `#[rust_js::nullable]` field's `None` is `null` (ADR 0275);
         // what's `nulled`, `null` or a value already, is as it is.
-        // A `Cell`'s, what it holds, which the field is (ADR 0772).
+        // A `Cell`'s, what it holds, which the field is (ADR 0772). An
+        // optional one's is as it is, its `None` left out (ADR 0810).
         for (i, (field, value)) in variant.fields.iter().zip(&mut fields).enumerate() {
-            if bindings::is_nullable(self.tcx, field) {
+            if bindings::null_where_made(self.tcx, field) {
                 let made = std::mem::replace(value, Expr::undefined());
                 let nulled = nulled.get(i) == Some(&true);
                 *value = match self.is_std_type(field.ty(self.tcx, args).skip_normalization(), StdItem::Cell) {
                     true => {
-                        let held = bindings::nullable_written(Expr::held(made), nulled);
+                        let held = js::Storage::NullForNone.written(Expr::held(made), nulled);
                         Expr::object(vec![Prop::Field(js::HELD.into(), held)])
                     }
-                    false => bindings::nullable_written(made, nulled),
+                    false => js::Storage::NullForNone.written(made, nulled),
                 };
             }
         }
@@ -196,7 +247,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Shape::Array(_) => (shape, fields),
             Shape::Other => return Err(self.unsupported(span, &format!("a `{ty}`"))),
         };
-        Ok(assembled(shape, tag, items))
+        let mut made = assembled(shape, tag, items);
+        if let js::ExprKind::Object(_, layout) = &mut made.kind {
+            *layout = self.object_layout(&adt_def, variant_index, span);
+        }
+        Ok(made)
     }
 
     /// The fields of `ty`, a struct whose `Default` is derived, when `base`

@@ -223,7 +223,7 @@ export const mutations: Mutation[] = [
     name: "assert-unwind-safe-a-struct",
     breaks: "an `AssertUnwindSafe` is an array of its closure, which `catch_unwind` calls as a function",
     file: "src/lower/recognition/wrappers.rs",
-    find: "            || std_path(self.tcx, adt.did()) == \"std::panic::AssertUnwindSafe\"\n",
+    find: "            || is_assert_unwind_safe(self.tcx, adt.did())\n",
     replace: "",
     tests: ["test/lowering-unwinds.test.ts", "-t", "resume_unwind throws what unwound"],
   },
@@ -250,5 +250,13 @@ export const mutations: Mutation[] = [
     find: "        let held = from.is_box() || rc_pointee(self.tcx, from.peel_refs()).is_some() || self.is_path_like(to);",
     replace: "        let held = from.is_box() || self.is_path_like(to);",
     tests: ["test/corpus.test.ts", "-t", "^counted_rc_borrow.rs$"],
+  },
+  {
+    name: "box-as-mut-unknown",
+    breaks: "a `Box`'s `as_mut()` is refused, a call and generic code's dictionary alike",
+    file: "src/lower/recognition/wrappers.rs",
+    find: "        self.views_as_itself(from, to) || (boxed.is_box() && boxed.boxed_ty() == Some(to))\n",
+    replace: "        self.views_as_itself(from, to)\n",
+    tests: ["test/corpus.test.ts", "-t", "^box_as_mut_and_ref.rs$"],
   },
 ];

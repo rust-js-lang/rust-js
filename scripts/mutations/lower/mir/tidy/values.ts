@@ -3,22 +3,6 @@ import type { Mutation } from "../../../../mutations";
 
 export const mutations: Mutation[] = [
   {
-    name: "applied-template-breaks-unmoved",
-    breaks: "a template's `concat!` pieces, after a value's template is put in its place, break where they did in texts that are now longer",
-    file: "src/lower/mir/tidy/values.rs",
-    find: "        (at.text, at.at) = (text, shift + at.at);",
-    replace: "        (at.text, at.at) = (text, at.at);",
-    tests: ["test/lowering-strings.test.ts", "-t", "a format string of a concat! is its pieces joined by"],
-  },
-  {
-    name: "applied-template-into-pieces-unspliced",
-    breaks: "a value's template put in place of its call in a template of `concat!`'s pieces is a template in a template",
-    file: "src/lower/mir/tidy/values.rs",
-    find: "    if layout.lines || layout.breaks.iter().any(|at| at.lines) {",
-    replace: "    if layout.lines || !layout.breaks.is_empty() {",
-    tests: ["test/lowering-strings.test.ts", "-t", "a format string of a concat! is its pieces joined by"],
-  },
-  {
     name: "mir-tidy-plain-cell-escapes",
     breaks: "a cell given whole, `bump(c)`, is a variable too, and what it's given reads `undefined`",
     file: "src/lower/mir/tidy/values.rs",
@@ -110,8 +94,8 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-handle-read-early",
     breaks: "MIR's handle on a `Cell` field is read where it's made, though set before it's read",
     file: "src/lower/mir/tidy/values.rs",
-    find: "                handles.push((name.clone(), (**place).clone(), read_at_once(stmts, k, name)));\n",
-    replace: "                handles.push((name.clone(), (**place).clone(), true));\n",
+    find: "                handles.push((name.clone(), (**place).clone(), read_at_once(stmts, k, name), *storage));\n",
+    replace: "                handles.push((name.clone(), (**place).clone(), true, *storage));\n",
     tests: ["test/lowering-cells.test.ts", "-t", "a Cell a let takes apart"],
   },
   {
@@ -121,15 +105,6 @@ export const mutations: Mutation[] = [
     "find": "        *each = Expr::var(param);\n",
     "replace": "",
     "tests": ["test/lowering-collections.test.ts", "-t", "arrays of arrays flattened"]
-  },
-  {
-    name: "applied-template-nested",
-    breaks: "a function's body put in place of its call in a template is a template in a template, `${`(${a}, ${b})`}`",
-    file: "src/lower/mir/tidy/values.rs",
-    find: "            root.each_mut(&mut spliced_templates);\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^const_generic_traits.rs$"],
-    snapshots: true,
   },
   {
     name: "applied-assignment-unseen",
@@ -173,5 +148,21 @@ export const mutations: Mutation[] = [
     find: "            let at = [vec![items.clone(), index.clone()], failure.to_vec()].concat();",
     replace: "            let at = vec![items.clone(), index.clone()];",
     tests: ["test/corpus.test.ts", "-t", "^deque_write_out_of_bounds.rs$"],
+  },
+  {
+    name: "read-handle-written-at-once",
+    breaks: "a handle written through in a closure, `r.set(5)` of `let r = &context.value`, is read where it's made, `const r = context.value; .. r = 5`",
+    file: "src/lower/mir/tidy/values.rs",
+    find: "        *at_once &= !changed.contains(name);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^cell_alias_in_a_closure.rs$"],
+  },
+  {
+    name: "read-handle-write-unstored",
+    breaks: "a nullable field's `Cell` set in a closure through a variable writes `undefined`, the handle's storage left out",
+    file: "src/lower/mir/tidy/values.rs",
+    find: "                    *value = storage.written(std::mem::replace(value, Expr::undefined()), false);\n",
+    replace: "                    let _ = storage;\n",
+    tests: ["test/lowering-nullable.test.ts", "-t", "through a reference and a helper"],
   },
 ];

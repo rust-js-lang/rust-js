@@ -183,7 +183,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 fn is_literal(value: &Expr) -> bool {
     match &value.kind {
         js::ExprKind::Array(items) => items.iter().all(is_literal),
-        js::ExprKind::Object(props) => props
+        js::ExprKind::Object(props, ..) => props
             .iter()
             .all(|p| matches!(p, js::Prop::Field(_, v) if is_literal(v))),
         _ => value.is_constant(),

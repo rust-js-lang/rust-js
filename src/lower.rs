@@ -84,6 +84,9 @@ pub use analysis::{collect_bodies, collect_initializers, collect_mir, collect_ra
 /// a crate `--rustc` compiles for its metadata too (ADR 0573).
 pub use bindings::given_names_differ;
 use bindings::{Export, is_binding};
+/// Whether each `#[rust_js::types]` is a TypeScript type rust-js reads, of
+/// a crate `--rustc` compiles for its metadata too (ADR 0811).
+pub use declarations::validate_types;
 pub use pipeline::{Built, lower_crate};
 
 /// Each of tidy's passes, `stage/pass`, in the order they run (ADR 0659).
@@ -104,7 +107,7 @@ pub struct Body<'tcx> {
     def_id: DefId,
     thir: Thir<'tcx>,
     expr: ExprId,
-    facts: body_queries::BodyFacts,
+    facts: body_queries::BodyFacts<'tcx>,
     /// Its MIR, which the body is lowered from where it's read (ADR 0364).
     mir: Option<mir::Mir<'tcx>>,
 }
@@ -435,7 +438,7 @@ struct FnCx<'a, 'tcx> {
 /// field every body has of its own goes here, and is swapped with it.
 struct BodyFrame<'a, 'tcx> {
     thir: &'a Thir<'tcx>,
-    facts: &'a body_queries::BodyFacts,
+    facts: &'a body_queries::BodyFacts<'tcx>,
     /// Whose body `thir` is: its scope tree says where temporaries end.
     owner: DefId,
 }
@@ -501,7 +504,7 @@ impl Default for TypeWalks<'_> {
 fn in_place_method(call: Expr) -> Expr {
     if let js::ExprKind::Call(callee, list) = &call.kind
         && let js::ExprKind::Member(object, name) = &callee.kind
-        && let js::ExprKind::Object(props) = &object.kind
+        && let js::ExprKind::Object(props, ..) = &object.kind
         && !object.has_effects()
         && let Some(f) = props.iter().find_map(|p| match p {
             js::Prop::Field(field, f) if field == name && matches!(f.kind, js::ExprKind::Arrow(..)) => Some(f),
@@ -992,7 +995,7 @@ fn parameter_name(tcx: TyCtxt<'_>, function: DefId, name: &str) -> String {
         return named;
     };
     let taken = || {
-        binding_names(tcx, root)
+        binding_names(tcx, root, function)
             .iter()
             .any(|other| camel_case(other.as_str()) == unmarked)
     };
@@ -1002,11 +1005,18 @@ fn parameter_name(tcx: TyCtxt<'_>, function: DefId, name: &str) -> String {
     }
 }
 
-/// The name of each binding of `root`'s body, its closures' among them.
-fn binding_names(tcx: TyCtxt<'_>, root: rustc_span::def_id::LocalDefId) -> Vec<rustc_span::Symbol> {
+/// The name of each binding of `root`'s body that `function`'s parameters
+/// could meet: `function`'s own, its closures' among them, and those of
+/// each body around it, but not of a closure beside it, whose bindings it
+/// never sees nor they its parameters (ADR 0678, amended): `|_instance|
+/// false` beside `|instance, _callback| ..` in one static's value.
+fn binding_names(tcx: TyCtxt<'_>, root: rustc_span::def_id::LocalDefId, function: DefId) -> Vec<rustc_span::Symbol> {
     use rustc_hir::intravisit::{self, Visitor};
     struct Names<'tcx> {
         tcx: TyCtxt<'tcx>,
+        function: DefId,
+        /// Whether what's walked is inside `function`'s body.
+        inside: bool,
         names: Vec<rustc_span::Symbol>,
     }
     impl<'tcx> Visitor<'tcx> for Names<'tcx> {
@@ -1018,12 +1028,24 @@ fn binding_names(tcx: TyCtxt<'_>, root: rustc_span::def_id::LocalDefId) -> Vec<r
         }
         fn visit_expr(&mut self, expr: &'tcx rustc_hir::Expr<'tcx>) {
             if let rustc_hir::ExprKind::Closure(closure) = expr.kind {
-                intravisit::walk_body(self, self.tcx.hir_body(closure.body));
+                let id = closure.def_id.to_def_id();
+                // A closure `function` is, or is in, or one inside it.
+                if self.inside || self.tcx.is_descendant_of(self.function, id) {
+                    let inside = self.inside || id == self.function;
+                    let outer = std::mem::replace(&mut self.inside, inside);
+                    intravisit::walk_body(self, self.tcx.hir_body(closure.body));
+                    self.inside = outer;
+                }
             }
             intravisit::walk_expr(self, expr);
         }
     }
-    let mut names = Names { tcx, names: Vec::new() };
+    let mut names = Names {
+        tcx,
+        function,
+        inside: function == root.to_def_id(),
+        names: Vec::new(),
+    };
     if let Some(body) = tcx.hir_maybe_body_owned_by(root) {
         intravisit::walk_body(&mut names, body);
     }

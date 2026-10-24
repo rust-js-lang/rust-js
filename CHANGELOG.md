@@ -970,6 +970,17 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### Fixed
 
+- **`js::get`, `js::has`, `js::set` and `js::delete` take any value**
+  (ADR 0776), `impl IntoUnknown`, an `Option<&Unknown>` too, as
+  TypeScript's `any` is read: `js::has(module_object, "default")` is
+  `"default" in moduleObject`, which throws JS's `TypeError` of `undefined`,
+  as React's `lazy` relies on, where a port had to guard it first.
+- **A `()` given to JS as a value of any shape was `[]`** (ADR 0775), a
+  wrong answer: `js::strict_equals(x, ())` was `x === []`, never true,
+  and `js::set(o, "k", ())` `o.k = []`. It's `undefined`, what `()` is
+  everywhere; only rest arguments' and a hook's dependencies' `()` is the
+  list of none, `useMemo(f, [])`. `use_reducer_with(reduce, (), init)` is
+  `useReducer(reduce, undefined, init)`.
 - **A writer that fails having written nothing** (ADR 0187 amended), `fn
   fmt(&self, _: &mut fmt::Formatter) -> fmt::Result { Err(fmt::Error) }`,
   threw a `ReferenceError` of the string tidy had taken; it's `throw

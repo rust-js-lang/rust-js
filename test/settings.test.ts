@@ -155,6 +155,28 @@ test("where Prettier finds a config, it lays the JS out, and the map follows it"
   expect(rustOf(styled.js, styled.map, "greeting =")).toEqual([2, 5]);
 }, 300_000);
 
+// Prettier's config is the one for where the file goes, beside its Rust,
+// as the app's `prettier --check` reads it: an override by path, React's
+// `packages/*/src/**/*.js`, is of `src/lib.js`, not of where Cargo's build
+// has it, in its target directory (ADR 0381, amended).
+test("Prettier lays a file out by its config's overrides for where the file goes, beside its Rust", async () => {
+  const source = `${long}\npub struct Point {\n    pub x: f64,\n}\n\npub fn origin() -> Point {\n    Point { x: 0.0 }\n}\n`;
+  const out = await cargoBuilt(source, { overrides: [{ files: "src/**/*.{js,ts}", options: { semi: false, tabWidth: 4 } }] });
+  expect(out.js).toContain("\n    return \"hi\"\n");
+  expect(out.types).toContain("\n    x: number\n");
+}, 300_000);
+
+// An object of a struct literal written across lines is on lines of its
+// own, a line ending after its `{`, which Prettier keeps, as it keeps an
+// object a person wrote so; one written on one line, Prettier joins
+// (ADR 0835).
+test("Prettier keeps an object across lines where its struct literal is written so", async () => {
+  const source = "pub struct Point {\n    pub x: f64,\n    pub y: f64,\n}\n\npub fn origin() -> Point {\n    Point {\n        x: 0.0,\n        y: 0.0,\n    }\n}\n\npub fn unit() -> Point {\n    Point { x: 1.0, y: 1.0 }\n}\n";
+  const out = await cargoBuilt(source, { bracketSpacing: false });
+  expect(out.js).toContain("\n  return {\n    x: 0,\n    y: 0,\n  };\n");
+  expect(out.js).toContain("\n  return {x: 1, y: 1};\n");
+}, 300_000);
+
 // A config, not Prettier installed, decides: this checkout's Prettier is
 // found from the fixture, and no config is, so the layout is rust-js's,
 // 100 columns, not Prettier's defaults' 80.

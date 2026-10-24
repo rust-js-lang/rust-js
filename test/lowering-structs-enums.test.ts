@@ -685,9 +685,10 @@ pub fn named() -> Named {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain('return { ...item, severity: item.severity > 1 ? "error" : "warning" };');
+  // Each across lines, as its literal is written (ADR 0835).
+  expect(js).toContain('return {\n    ...item,\n    severity: item.severity > 1 ? "error" : "warning",\n  };');
   expect(js).toContain("return report.line;");
-  expect(js).toContain('return { label: "x", line: 1, severity: 2 };');
+  expect(js).toContain('return {\n    label: "x",\n    line: 1,\n    severity: 2,\n  };');
   const lib = await import(join(dir, "lib.js"));
   const made = lib.reported({ line: 3, severity: 2 });
   expect([made, lib.line(made), lib.named()]).toEqual([{ line: 3, severity: "error" }, 3, { label: "x", line: 1, severity: 2 }]);
@@ -1372,4 +1373,98 @@ pub fn pace(fast: bool) -> &'static str {
   expect([lib.settle(second, false), lib.describe(second)]).toEqual([2, "rejected"]);
   expect([lib.code(false), lib.code(true), lib.requests(), lib.mode(true), lib.mode(false)]).toEqual([5, 6, "[Some(Pending), None]", 2, 1]);
   expect([lib.pace(true), lib.pace(false)]).toEqual(["fast", "slow"]);
+});
+
+// ADR 0835: an object of a struct literal written across lines, a line
+// ending after its `{`, as rustfmt writes one too long for a line, is on
+// lines of its own, as Prettier keeps an object a person wrote so; one
+// written on one line is on one where it fits, and so is an object no
+// literal writes, a range's or a tuple variant's. A `const`'s or a
+// `static`'s, rustc's value, is as its literal is written.
+test("an object is across lines where its struct literal is written so", () => {
+  const dir = fixture("objects-as-written");
+  writeFileSync(join(dir, "lib.rs"), `pub struct Ref {
+    pub kind: &'static str,
+    pub render: u32,
+}
+
+pub enum Event {
+    Moved { dx: i32, dy: i32 },
+    Placed(u32),
+}
+
+pub fn element(render: u32) -> Ref {
+    let element_type = Ref {
+        kind: "forward_ref",
+        render,
+    };
+    element_type
+}
+
+pub fn short(render: u32) -> Ref {
+    Ref { kind: "short", render }
+}
+
+pub struct Described {
+    pub description: &'static str,
+}
+
+pub fn described() -> Described {
+    Described {
+        description: "one field, too long for rustfmt's line",
+    }
+}
+
+pub fn events() -> Vec<Event> {
+    vec![
+        Event::Moved { dx: 1, dy: -2 },
+        Event::Moved {
+            dx: 3,
+            dy: 4,
+        },
+        Event::Placed(5),
+    ]
+}
+
+pub fn updated(base: Ref) -> Ref {
+    Ref {
+        kind: "updated",
+        ..base
+    }
+}
+
+pub fn span(from_the_start: bool) -> std::ops::Range<u32> {
+    (if from_the_start {
+        0
+    } else {
+        1
+    })..2
+}
+
+pub fn placed(from_the_start: bool) -> Event {
+    Event::Placed(if from_the_start {
+        0
+    } else {
+        1
+    })
+}
+
+pub const DEFAULT: Ref = Ref {
+    kind: "default",
+    render: 0,
+};
+
+pub static ONE_LINE: Ref = Ref { kind: "static", render: 1 };
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('const elementType = {\n    kind: "forward_ref",\n    render,\n  };');
+  expect(js).toContain('return { kind: "short", render };');
+  expect(js).toContain('return {\n    description: "one field, too long for rustfmt\'s line",\n  };');
+  expect(js).toContain('{ TAG: "Moved", dx: 1, dy: -2 },\n    {\n      TAG: "Moved",\n      dx: 3,\n      dy: 4,\n    },\n    { TAG: "Placed", _0: 5 },');
+  expect(js).toContain('return {\n    ...base,\n    kind: "updated",\n  };');
+  expect(js).toContain("return { start: fromTheStart ? 0 : 1, end: 2 };");
+  expect(js).toContain('return { TAG: "Placed", _0: fromTheStart ? 0 : 1 };');
+  expect(js).toContain('export const DEFAULT = {\n  kind: "default",\n  render: 0,\n};');
+  expect(js).toContain('export const ONE_LINE = { kind: "static", render: 1 };');
 });

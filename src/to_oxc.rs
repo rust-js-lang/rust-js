@@ -35,8 +35,9 @@ use oxc_ast::ast::{
     FormalParameters, FunctionBody, FunctionType, IdentifierName, ImportDeclaration, JSXAttributeItem,
     JSXAttributeName, JSXAttributeValue, JSXChild, JSXClosingElement, JSXClosingFragment, JSXElementName,
     JSXExpression, JSXIdentifier, JSXMemberExpressionObject, JSXOpeningElement, JSXOpeningFragment, LabelIdentifier,
-    ObjectPropertyKind, Program, PropertyKey, PropertyKind, SimpleAssignmentTarget, Statement, StaticMemberExpression,
-    StringLiteral, SwitchCase, TemplateElement, TemplateElementValue, VariableDeclarationKind, VariableDeclarator,
+    ObjectExpression, ObjectPropertyKind, Program, PropertyKey, PropertyKind, SimpleAssignmentTarget, Statement,
+    StaticMemberExpression, StringLiteral, SwitchCase, TemplateElement, TemplateElementValue, VariableDeclarationKind,
+    VariableDeclarator,
 };
 use oxc_ast::builder::AstBuilder;
 use oxc_ast_visit::Visit;
@@ -93,6 +94,7 @@ pub fn emit(
             .filter(|c| !c.span.is_empty())
             .map(|c| c.attached_to)
             .collect(),
+        across_lines: Default::default(),
     };
     let b = &cx.b;
 
@@ -129,6 +131,7 @@ pub fn emit(
         ..CodegenOptions::default()
     };
     let generated = Codegen::new().with_options(options).build(&program);
+    let objects = across_lines(&program, &cx.across_lines.borrow());
 
     // The header, imports and runtime helpers, plain text above the
     // generated code, none of which maps to Rust.
@@ -331,7 +334,7 @@ pub fn emit(
     };
     let map = crate::format::moved_positions(&map, to, js_file_name);
     // Laid out as oxfmt lays it out, rust-js's own layout.
-    let (code, map) = crate::format::laid_out(code, map, js_file_name);
+    let (code, map) = crate::format::laid_out(code, map, js_file_name, &objects);
     Output { code, map }
 }
 
@@ -732,7 +735,7 @@ fn part_starts(module: &Module) -> std::collections::HashMap<u32, u32> {
         js::each_expr_mut(&mut stmts, &mut |e| {
             let spans: Vec<js::Span> = match &e.kind {
                 ExprKind::Call(_, args) | ExprKind::New(_, args) => args.iter().map(|arg| arg.span).collect(),
-                ExprKind::Object(props) => (props.iter())
+                ExprKind::Object(props, ..) => (props.iter())
                     .filter_map(|prop| match prop {
                         js::Prop::Field(_, value) => Some(value.span),
                         _ => None,
@@ -971,6 +974,35 @@ struct Cx<'a> {
     source: &'a str,
     /// Where a statement a comment is printed before starts.
     commented: std::collections::HashSet<u32>,
+    /// The objects made of those the source writes across lines, by where
+    /// each is in the arena (ADR 0835): which a visit of the program tells
+    /// the formatter of, in its order (`across_lines`).
+    across_lines: std::cell::RefCell<std::collections::HashSet<*const ObjectExpression<'a>>>,
+}
+
+/// Of each object of `program`, in the order a visit meets them, as its
+/// JS's parse does, whether it's one of `across_lines`, which the source
+/// writes across lines (ADR 0835).
+fn across_lines<'a>(
+    program: &Program<'a>,
+    across_lines: &std::collections::HashSet<*const ObjectExpression<'a>>,
+) -> Vec<bool> {
+    struct Objects<'s, 'a> {
+        across_lines: &'s std::collections::HashSet<*const ObjectExpression<'a>>,
+        found: Vec<bool>,
+    }
+    impl<'a> Visit<'a> for Objects<'_, 'a> {
+        fn visit_object_expression(&mut self, it: &ObjectExpression<'a>) {
+            self.found.push(self.across_lines.contains(&(it as *const _)));
+            oxc_ast_visit::walk::walk_object_expression(self, it);
+        }
+    }
+    let mut objects = Objects {
+        across_lines,
+        found: Vec::new(),
+    };
+    objects.visit_program(program);
+    objects.found
 }
 
 #[cfg(test)]

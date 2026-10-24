@@ -248,7 +248,7 @@ fn expr(e: &mut Expr, visitor: &mut Visitor<'_>) {
         | ExprKind::Await(a)
         | ExprKind::Spread(a)
         | ExprKind::Stringed(a)
-        | ExprKind::Handle(a)
+        | ExprKind::Handle(a, _)
         | ExprKind::DropArgument(_, _, a) => expr(a, visitor),
         ExprKind::Index(a, b) | ExprKind::OptionalIndex(a, b) | ExprKind::Binary(_, a, b) | ExprKind::Pair(a, b) => {
             expr(a, visitor);
@@ -270,7 +270,7 @@ fn expr(e: &mut Expr, visitor: &mut Visitor<'_>) {
                 expr(item, visitor);
             }
         }
-        ExprKind::Object(props) => properties(props, visitor),
+        ExprKind::Object(props, ..) => properties(props, visitor),
         ExprKind::Arrow(params, body) | ExprKind::AsyncArrow(params, body) => {
             for param in params {
                 pattern(param, visitor);

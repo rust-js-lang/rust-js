@@ -46,13 +46,19 @@ function themeFor(dark) {
  * survives switching.
  */
 export function sourceState(text) {
-  return EditorState.create({ doc: text, extensions: source });
+  return EditorState.create({
+    doc: text,
+    extensions: source,
+  });
 }
 
 /** A generated file's, highlighted as JS; or rustc's diagnostics, as text. */
 export function outputState(text, js) {
   const extensions = js ? jsOutput : plainOutput;
-  return EditorState.create({ doc: text, extensions });
+  return EditorState.create({
+    doc: text,
+    extensions,
+  });
 }
 
 export function textOf(state) {
@@ -79,6 +85,8 @@ export function show(view, state) {
  * made with, so this runs after `show` too.
  */
 export function setTheme(view, dark) {
-  view.dispatch({ effects: theme.reconfigure(themeFor(dark)) });
+  view.dispatch({
+    effects: theme.reconfigure(themeFor(dark)),
+  });
 }
 //# sourceMappingURL=codemirror.js.map

@@ -1099,3 +1099,36 @@ console.log(JSON.stringify(texts.map((t) => [units(t), points(t), bytes(t), usef
     [501, 501, 501, false, 501, 167],
   ]);
 });
+
+// A string's `repeat(n)` is JS's own, as React's
+// ReactPerformanceTrackProperties writes `prefix + '\xa0\xa0'.repeat(indent)`:
+// no room is checked first. A JS string is less than `isize::MAX` bytes, so
+// a repeat std refuses, `capacity overflow`, the engine refuses first, a
+// `RangeError` (ADR 0774, amended; a difference the guide lists). A `Vec`'s
+// room is checked as std checks it still.
+test("a string's repeat is JS's own, and one too long is JS's RangeError", async () => {
+  const dir = fixture("string-repeat");
+  writeFileSync(join(dir, "lib.rs"), `pub fn indented(prefix: &str, indent: usize, name: &str) -> String {
+    prefix.to_string() + &"\\u{a0}\\u{a0}".repeat(indent) + name
+}
+
+pub fn padded(text: &str, start: usize) -> usize {
+    format!("{text}!").repeat(start).len()
+}
+
+pub fn room(n: usize) -> usize {
+    Vec::<u32>::with_capacity(n).len()
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('  return prefix + "\\xA0\\xA0".repeat(indent) + name;\n');
+  expect(js).toContain("  return $byteLen(`${text}!`.repeat(start));\n");
+  expect(js).toContain("  $roomFor(n, 4);\n");
+  expect(js.match(/\$roomFor\(/g)).toHaveLength(1);
+  installRuntime(dir);
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.indented("-", 2, "k"), lib.padded("ab", 2)]).toEqual(["-\xa0\xa0\xa0\xa0k", 6]);
+  // Past the engine's string length: its RangeError, where std panics.
+  expect(() => lib.padded("ab", 2 ** 30)).toThrow(RangeError);
+});

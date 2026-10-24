@@ -56,9 +56,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .collect()
     }
 
-    /// The locals `OptionWrites::null_nones` says: each write a `Some(..)` or a
-    /// `None`, one at least, and each read a nullable field's or binding
-    /// parameter's, or a copy's only they read (ADR 0781); or a
+    /// The locals `OptionWrites::null_nones` says: each write a `Some(..)`, a
+    /// `None` or a call, one that may give `None` at least, and each read a
+    /// nullable field's or binding parameter's, or a copy's only they read
+    /// (ADR 0781, amended by 0841); or a
     /// `#[rust_js::nullable]` function's result, by its return.
     fn mir_null_nones(&self, body: &mir::Body<'tcx>, locals: &Locals) -> std::collections::HashSet<Local> {
         let mut made: std::collections::HashMap<Local, (usize, bool)> = Default::default();
@@ -91,17 +92,39 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             for (field, operand) in operands.iter_enumerated() {
                 if let Some(read) = operand.place()
                     && read.projection.is_empty()
-                    && bindings::is_nullable(self.tcx, &fields[field])
+                    && bindings::null_where_made(self.tcx, &fields[field])
                 {
                     *given.entry(read.local).or_default() += 1;
                 }
             }
         }
-        // And a binding's parameter it names `#[rust_js::nullable(..)]`.
+        // And a binding's parameter it names `#[rust_js::nullable(..)]`. An
+        // `Option` a call gives, which may be `undefined`, is written so,
+        // where the call's made (`nullable_written`): `c ? f(c) : null` of
+        // `map`'s `undefined`.
         for block in body.basic_blocks.iter() {
-            let mir::TerminatorKind::Call { func, args, .. } = &block.terminator().kind else {
+            let mir::TerminatorKind::Call {
+                func,
+                args,
+                destination,
+                ..
+            } = &block.terminator().kind
+            else {
                 continue;
             };
+            // Not a clone, which `nulled` gives what it's a clone of.
+            let cloned = func.const_fn_def().is_some_and(|(def_id, _)| {
+                (self.tcx.trait_of_assoc(def_id)).is_some_and(|t| self.tcx.is_lang_item(t, LangItem::Clone))
+            });
+            if !cloned
+                && destination.projection.is_empty()
+                && matches!(destination.ty(body, self.tcx).ty.kind(),
+                    ty::Adt(adt, _) if self.tcx.is_lang_item(adt.did(), LangItem::Option))
+            {
+                let (writes, none) = made.entry(destination.local).or_default();
+                *writes += 1;
+                *none = true;
+            }
             let Some((def_id, _)) = func.const_fn_def() else {
                 continue;
             };
@@ -175,7 +198,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             registered: self.mir_registered(body),
             thrown: self.mir_thrown(body, locals),
             present: self.mir_present(body),
-            held: crate::lower::body_queries::held_guards(self.tcx, self.frame.thir),
+            held: self.frame.facts.held_guards.clone(),
         }
     }
 
@@ -343,7 +366,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// The locals `OptionWrites::present` says: each a call
     /// `body_queries::present_calls` says gives what's there.
     fn mir_present(&self, body: &mir::Body<'tcx>) -> std::collections::HashSet<Local> {
-        let calls = crate::lower::body_queries::present_calls(self.tcx, self.frame.thir);
+        let calls = &self.frame.facts.present_calls;
         (body.basic_blocks.iter())
             .filter_map(|data| match &data.terminator().kind {
                 TerminatorKind::Call {
@@ -358,7 +381,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `js::SymbolFor::from_value` gives, whose value the body only tests
     /// against the registry's symbols (`registered_reads`, ADR 0634).
     fn mir_registered(&self, body: &mir::Body<'tcx>) -> std::collections::HashSet<Local> {
-        let reads = crate::lower::body_queries::registered_reads(self.tcx, self.frame.thir);
+        let reads = &self.frame.facts.registered_reads;
         (body.basic_blocks.iter())
             .filter_map(|data| match &data.terminator().kind {
                 TerminatorKind::Call {

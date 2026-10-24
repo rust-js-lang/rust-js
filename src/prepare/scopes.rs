@@ -346,7 +346,7 @@ impl Walk {
             | ExprKind::Unary(_, a)
             | ExprKind::Await(a)
             | ExprKind::DropArgument(_, _, a)
-            | ExprKind::Handle(a) => self.expr(a),
+            | ExprKind::Handle(a, _) => self.expr(a),
             ExprKind::Index(a, b)
             | ExprKind::OptionalIndex(a, b)
             | ExprKind::Binary(_, a, b)
@@ -364,7 +364,7 @@ impl Walk {
                 args.iter().for_each(|a| self.expr(a));
             }
             ExprKind::Array(items) | ExprKind::Template(_, items, _) => items.iter().for_each(|i| self.expr(i)),
-            ExprKind::Object(props) => self.props(props),
+            ExprKind::Object(props, ..) => self.props(props),
             ExprKind::Arrow(params, body) | ExprKind::AsyncArrow(params, body) => self.closure(params, body),
             ExprKind::Function(function) => self.function(function, true),
             ExprKind::Jsx(jsx) => {

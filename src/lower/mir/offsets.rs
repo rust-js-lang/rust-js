@@ -159,6 +159,7 @@ impl Known {
 
 /// What a strip's `Option` read as a test and a cut needs (`Offsets::cut`):
 /// the locals that hold its string, and its pattern, wherever it's read.
+#[derive(Clone)]
 pub(super) struct Cut {
     pub(super) holders: Vec<Local>,
     pub(super) pattern_holders: Vec<Local>,

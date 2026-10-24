@@ -145,3 +145,13 @@ method is given `{ value: guard.value }`, written back after. ADR 0262's
 case: it threw, so Rust's. Held by
 `test/corpus/refcell_generic_mut_method.rs` and the mutation
 `guard-of-type-parameter-held`.
+
+## Amendment: the clone's parameter is named apart
+
+The arrow a `RefCell`'s clone is made in, `$withBorrow(cell, (value) =>
+..)`, named its parameter `value` itself, so a part its body reads more
+than once and spills, a tuple's in a `RefCell` inside, was `const value`
+too: `(value) => { const value = $borrow(value).value; .. }`, JS that
+doesn't parse (#200). Its parameter is a fresh name, `value` where none
+is taken, as the names in its body are (`refcell_clone_nested_parts`,
+`refcell-clone-param-named-alone`).

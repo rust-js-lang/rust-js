@@ -1,5 +1,6 @@
 //! Decode the binding language independently of call lowering.
 
+use super::declarations::{Written, written_types};
 use crate::js;
 use rustc_ast::LitKind;
 use rustc_hir::attrs::lang_items::LangItem;
@@ -95,6 +96,12 @@ pub(super) fn validate(tcx: TyCtxt<'_>) -> bool {
                 let ty = tcx.type_of(field.did).instantiate_identity().skip_normalization();
                 if is_nullable(tcx, field) && nullable_option(tcx, ty).is_none() {
                     let message = "rust-js: `#[rust_js::nullable]` is of a field that's an `Option`, or a `Cell` of one, whose `None` is `null`; this one isn't";
+                    tcx.dcx().span_err(tcx.def_span(field.did), message);
+                    valid = false;
+                }
+                // An `Option` field's `None` is left out already (ADRs 0280, 0810).
+                if is_optional(tcx, field) && !is_nullable(tcx, field) {
+                    let message = "rust-js: `#[rust_js::optional]` is of a `#[rust_js::nullable]` field, whose `None` is then left out where its struct is made and `null` where it's set; an `Option` field's `None` is left out already";
                     tcx.dcx().span_err(tcx.def_span(field.did), message);
                     valid = false;
                 }
@@ -1053,6 +1060,17 @@ pub(super) fn is_nullable(tcx: TyCtxt<'_>, field: &FieldDef) -> bool {
     tcx.get_attrs_by_path(field.did, &path).next().is_some()
 }
 
+/// Whether a nullable field is absent until set, `#[rust_js::optional]`, `field?: T | null` (ADR 0810).
+pub(super) fn is_optional(tcx: TyCtxt<'_>, field: &FieldDef) -> bool {
+    let path = [Symbol::intern("rust_js"), Symbol::intern("optional")];
+    tcx.get_attrs_by_path(field.did, &path).next().is_some()
+}
+
+/// Whether a field's `None` is `null` from where it's made on: a nullable one's, not an optional one's (ADR 0810).
+pub(super) fn null_where_made(tcx: TyCtxt<'_>, field: &FieldDef) -> bool {
+    is_nullable(tcx, field) && !is_optional(tcx, field)
+}
+
 /// The `Option` a `#[rust_js::nullable]` field of type `ty` holds: itself,
 /// or a `Cell`'s, whose `None` is `null` in JS (ADRs 0196, 0772). `None` of
 /// any other type.
@@ -1067,18 +1085,6 @@ pub(super) fn nullable_option<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<T
             Some(args.type_at(0))
         }
         _ => None,
-    }
-}
-
-/// What a `#[rust_js::nullable]` field is written, of `made`, its
-/// `Option`'s JS: a `None` is `null`, a constant itself, and what's
-/// `nulled`, `null` or a value already, as it is; else `made ?? null`
-/// (ADRs 0275, 0772).
-pub(super) fn nullable_written(made: js::Expr, nulled: bool) -> js::Expr {
-    match made.kind {
-        js::ExprKind::Undefined => js::Expr::null().or_at(made.span),
-        _ if made.is_constant() || nulled => made,
-        _ => js::Expr::bin(js::Op::Coalesce, made, js::Expr::null()),
     }
 }
 
@@ -1372,7 +1378,7 @@ fn primitive<'tcx>(tcx: TyCtxt<'tcx>, held: ty::Ty<'tcx>) -> bool {
         || held.is_str()
         || matches!(held.kind(), ty::Adt(adt, _)
             if tcx.is_lang_item(adt.did(), LangItem::String)
-                || super::declarations::written_types(tcx, adt.did()).as_deref() == Some("symbol"))
+                || written_types(tcx, adt.did()).as_ref().and_then(Written::keyword) == Some("symbol"))
 }
 
 /// Whether a `thread_local!` holds a component, of a type React marks

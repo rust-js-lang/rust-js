@@ -3,7 +3,7 @@ name: Check
 # Every check but the inner loop's, of each push to `main`, so a change is
 # made here and proved there while the next one is made (DEVELOPMENT.md):
 # the repository is public, and its machines cost nothing. Of another
-# branch, started by hand, `bun run ci:check`. Its jobs run at once; a red
+# branch, started by hand, `bun run ci:check`; `main`'s push starts its own. Its jobs run at once; a red
 # one is fixed at once, on `main`. A job whose snapshots or rustc's lists differ uploads what
 # blessing them writes, a `bless-*` artifact, which `bun run ci:bless`
 # applies to be read.
@@ -41,17 +41,17 @@ permissions:
   contents: read
 
 # One run at a time of each branch, and no branch's touches another's. A
-# push's run waits for the one running, then runs; of several pushes
-# waiting, only the newest runs, and the next finished run's mutations are
-# of all their changes (the `plan` job). A run started by hand, `bun run
-# ci:check`'s or rustc-tests.yml's, cancels the branch's one running: the
-# latest is what's wanted of it. (When every run cancelled the one before,
-# a push's or another branch's, half of `main`'s runs were cancelled, at
-# fifty to a hundred and fifty pushes a day.) Called by nightly.yml, a
-# group of its own, so neither cancels the other.
+# run waits for the one running, then runs, and never cancels it, a push's
+# and one started by hand alike: of several waiting, only the newest runs,
+# and the next finished run's mutations are of all their changes (the
+# `plan` job). (When a run started by hand cancelled the one running, with
+# three agents pushing to `main`, each starting one after it pushed, no
+# check of `main` finished for hours.) rustc-tests.yml's runs are a group
+# of their own, and so is nightly.yml's call, so neither waits for nor
+# cancels this.
 concurrency:
   group: ${{ github.workflow == 'Check' && format('ci-{0}', github.ref) || format('ci-{0}', github.workflow) }}
-  cancel-in-progress: ${{ github.event_name != 'push' }}
+  cancel-in-progress: false
 
 jobs:
   # Which mutations, those of what changed since `main`'s last finished

@@ -65,7 +65,14 @@ function field(config, key) {
   }
   const n = result$1._0;
   if (n < 0n) {
-    return { TAG: "Err", _0: { TAG: "Invalid", field: "count", value: n } };
+    return {
+      TAG: "Err",
+      _0: {
+        TAG: "Invalid",
+        field: "count",
+        value: n,
+      },
+    };
   }
   return { TAG: "Ok", _0: n };
 }

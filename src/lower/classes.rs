@@ -274,7 +274,7 @@ fn set_this(body: &mut Vec<Stmt>) -> Result<(), &'static str> {
         let last = std::mem::take(&mut outermost).then_some(list.len());
         let mut out = Vec::with_capacity(list.len());
         for (i, stmt) in std::mem::take(list).into_iter().enumerate() {
-            if !matches!(&stmt.kind, StmtKind::Return(Some(value)) if matches!(value.kind, ExprKind::Object(_))) {
+            if !matches!(&stmt.kind, StmtKind::Return(Some(value)) if matches!(value.kind, ExprKind::Object(..))) {
                 if matches!(stmt.kind, StmtKind::Return(Some(_))) {
                     fine = Err("a constructor that gives what's no struct literal, `Self { .. }`");
                 }
@@ -283,7 +283,7 @@ fn set_this(body: &mut Vec<Stmt>) -> Result<(), &'static str> {
             }
             let span = stmt.span;
             let StmtKind::Return(Some(Expr {
-                kind: ExprKind::Object(props),
+                kind: ExprKind::Object(props, ..),
                 ..
             })) = stmt.kind
             else {

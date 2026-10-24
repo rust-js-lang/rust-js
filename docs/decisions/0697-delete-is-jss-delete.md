@@ -3,7 +3,8 @@
 Status: Accepted. Extends [0225](0225-unknown-values.md), whose
 operators of a value of any shape were `js::get`, `js::set` and
 `js::has`, and [0695](0695-new-of-a-function-value-is-jss-new.md)'s
-`js::new`.
+`js::new`. Amended by [0776](0776-get-has-set-take-any-value.md): `js::delete`
+takes any value, `undefined` too, which JS's `TypeError` is of.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N: it's JS's
 `delete`, which removes what JS removes and throws where JS throws.

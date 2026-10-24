@@ -310,7 +310,11 @@ import { $retain, $trim } from "@rust-js/runtime";
 function reduce(todos, action) {
   const next = { ...todos, items: todos.items.map((item) => ({ ...item })) };
   if (action.TAG === "Add") {
-    next.items.push({ id: next.nextId, title: action._0, done: false });
+    next.items.push({
+      id: next.nextId,
+      title: action._0,
+      done: false,
+    });
     next.nextId = (next.nextId + 1) >>> 0;
   } else if (action.TAG === "Toggle") {
     const captured = action._0;

@@ -183,6 +183,25 @@ test("the workflows' mutation shards are ci.ts's", () => {
   for (const [n, list] of matrix) expect(list).toBe(Array.from({ length: Number(n) }, (_, i) => i + 1).join(", "));
 });
 
+// A check runs to its end: one started after it, by a push or by hand,
+// waits, and no other workflow shares its group to cancel it. When a run
+// started by hand cancelled the one running, three agents pushing to
+// `main` left no check of it finished for hours.
+test("a check is never cancelled by another run", () => {
+  const dir = join(root, ".github/workflows");
+  type Workflow = { concurrency?: { group?: string; "cancel-in-progress"?: unknown } };
+  const concurrency = (file: string) => (Bun.YAML.parse(readFileSync(join(dir, file), "utf8")) as Workflow).concurrency ?? {};
+  const check = concurrency("check.yml");
+  expect(check["cancel-in-progress"]).toBe(false);
+  // Started by hand, rustc-tests.yml's group is its own, never the check's `ci-<ref>`.
+  expect(concurrency("rustc-tests.yml").group).toContain("format('rustc-{0}', github.ref)");
+  for (const file of readdirSync(dir).filter((f) => f.endsWith(".yml") && f !== "check.yml")) {
+    const group = concurrency(file).group ?? "";
+    expect(group, file).not.toContain("== 'Check' && format('ci-{0}', github.ref)");
+    expect(group.replace(/'ci-\{0\}-/g, ""), file).not.toMatch(/format\('ci-\{0\}', github\.ref\)/);
+  }
+});
+
 // A workflow GitHub can't read runs nothing, and says so only where it's
 // started: each is YAML, its quotes closed.
 test("every workflow is YAML", () => {

@@ -3,7 +3,9 @@
 Status: Accepted. Supersedes [0583](0583-a-global-some-hosts-lack-is-an-option.md).
 Amended by [0645](0645-is-defined-of-a-static-is-of-the-static.md): a
 static is given as itself.
-Extends [0021](0021-js-interop.md)'s globals.
+Extends [0021](0021-js-interop.md)'s globals. Extended by
+[0811](0811-console-create-task-may-be-absent.md): a member no TypeScript lib
+declares is an optional property, an `Option`.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): A. A global the host
 has is read as it was; asked of one it hasn't, the answer is `false`, where

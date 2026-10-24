@@ -46,6 +46,16 @@ impl Span {
 /// `b.value` (ADR 0099): a `&mut` to what JS can't change in place, a
 /// `Cell`'s, an `Rc`'s, a guard's.
 pub const HELD: &str = "value";
+/// How a place stores what's written to it, which a handle on it keeps,
+/// wherever it's written through (`ExprKind::Handle`, ADR 0791).
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum Storage {
+    /// What's written itself.
+    AsGiven,
+    /// A `#[rust_js::nullable]` field's `Option`, or `Cell` of one: its
+    /// `None`, `null` (ADRs 0275, 0772).
+    NullForNone,
+}
 
 /// The field a `dyn` value's pair holds its dictionary in, `d.impl` (ADR
 /// 0049), beside its `value`.
@@ -463,6 +473,16 @@ pub enum Known {
     /// `obj.send` of `obj.send(a)`: a getter may answer it, which may do
     /// anything, and may give another value read again (ADRs 0672, 0750).
     Getter,
+    /// A slice's items in a range the body's ranges show in bounds,
+    /// `items.slice(a, b)`: an array made here, which nothing else holds,
+    /// as `$slice(..)` is (ADR 0806).
+    Sliced,
+    /// Never `undefined`, as Rust's types tell, though maybe `null`: a
+    /// `Some`'s value, `map`'s, or what's set through a variable holding a
+    /// cell's handle that MIR shows is `null` or a value already,
+    /// `make(context)` of `set(Some(make(context)))`. A nullable place
+    /// stores it as it is (`Storage::written`, ADR 0841).
+    Defined,
 }
 
 /// A cross-module reference, resolved before preparation or printing.
@@ -501,6 +521,16 @@ impl TemplateLayout {
     pub fn is_plain(&self) -> bool {
         !self.lines && self.breaks.is_empty()
     }
+}
+
+/// How an object's source writes it: across lines, its first field on a
+/// line after its `{`, as rustfmt lays out a struct literal too long for
+/// one, which its JS keeps on lines of its own, as Prettier keeps an
+/// object a person wrote so; or on one line, which its JS is on where it
+/// fits (ADR 0835). One no source writes, a representation's, is on one.
+#[derive(Clone, Copy, PartialEq, Eq, Default)]
+pub struct ObjectLayout {
+    pub lines: bool,
 }
 
 /// Where a template's source breaks it into its next piece: in a text, by
@@ -556,8 +586,9 @@ pub enum ExprKind {
     Array(Vec<Expr>),
     /// `...a`, an array's item only: `[...path, last]`, a slice's `concat`.
     Spread(Box<Expr>),
-    /// `{ x: a, y: b }`: a struct (ADR 0020).
-    Object(Vec<Prop>),
+    /// `{ x: a, y: b }`: a struct (ADR 0020), and how its literal is
+    /// written in its source, across lines or on one (ADR 0835).
+    Object(Vec<Prop>, ObjectLayout),
     Unary(UnaryOp, Box<Expr>),
     Binary(Op, Box<Expr>, Box<Expr>),
     Cond(Box<Expr>, Box<Expr>, Box<Expr>),
@@ -595,8 +626,9 @@ pub enum ExprKind {
     Template(Vec<String>, Vec<Expr>, TemplateLayout),
     /// `{ get value() { return x; }, set value(value) { x = value; } }`: a
     /// `&mut` kept, reading and writing its place each time (ADR 0099). The
-    /// place is what's read then, not before: it's never taken out.
-    Handle(Box<Expr>),
+    /// place is what's read then, not before: it's never taken out. And
+    /// how its place stores what's written through it, `Storage`'s.
+    Handle(Box<Expr>, Storage),
     /// `{ impl: d, get value() { return x; }, set value(value) { x = value; } }`:
     /// a `&mut dyn Trait` of a value JS can't change in place, its impl's
     /// dictionary and a handle on its place (ADR 0099).

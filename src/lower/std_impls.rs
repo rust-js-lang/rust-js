@@ -291,12 +291,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // A `RefCell`'s, while it's borrowed (ADR 0328): checked free to,
             // and held where its value's clone may ask.
             ty::Adt(_, args) if std(StdItem::RefCell) && !self.recognition().std_alone(args.type_at(0)) => {
+                // Its parameter named apart from what its body names, a
+                // part read more than once of a `RefCell` inside (#200).
+                let param = self.fresh("value");
                 let mut body = Vec::new();
-                let value = self.clone_value(Expr::var("value"), args.type_at(0), span, &mut body)?;
+                let value = self.clone_value(Expr::var(&param), args.type_at(0), span, &mut body)?;
                 body.push(StmtKind::Return(Some(value)).at(js::Span::NONE));
                 let value = Expr::call(
                     Expr::helper("$withBorrow"),
-                    vec![place, Expr::arrow(vec!["value".into()], body)],
+                    vec![place, Expr::arrow(vec![param.as_str().into()], body)],
                 );
                 return Ok(Expr::object(vec![Prop::Field(js::HELD.into(), value)]));
             }
@@ -860,8 +863,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// it by, `REACT_MEMO_TYPE` (ADRs 0590, 0634), else `Symbol.for(text)`.
     fn named_symbol(&mut self, text: &Expr, span: Span) -> R<Expr> {
         if let js::ExprKind::Str(key) = &text.kind
-            && let Some(&Some(named)) = super::body_queries::constant_patterns(self.tcx, self.frame.thir)
-                .get(&super::body_queries::PatternValue::Key(key.clone()))
+            && let Some(&Some(named)) =
+                (self.frame.facts.constant_patterns).get(&super::body_queries::PatternValue::Key(key.clone()))
         {
             let ty = self.tcx.type_of(named).instantiate_identity().skip_normalization();
             return self.named_const(named, ty::List::empty(), ty, span);

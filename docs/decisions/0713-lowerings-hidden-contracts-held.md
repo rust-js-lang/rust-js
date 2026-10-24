@@ -1,6 +1,9 @@
 # 0713. Lowering's hidden contracts, held where they're relied on
 
-Status: Accepted.
+Status: Accepted. Amended by
+[0791](0791-a-cells-storage-says-what-it-stores.md): a std call's kind is
+chosen of what it reads alone, before anything's changed, so there's no
+decline to check and nothing written apart.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): none; the JS is the
 same, byte for byte, across the corpus.

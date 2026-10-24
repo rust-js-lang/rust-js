@@ -577,17 +577,13 @@ pub fn repeat(text: &str, times: Option<usize>) -> String {
 ```
 
 ```js
-import { $byteLen, $roomFor } from "@rust-js/runtime";
-
 export function greeting(name) {
   name ??= "stranger";
   return `Hello, ${name}`;
 }
 
 export function repeat(text, times) {
-  const n = times ?? 1;
-  $roomFor(n, $byteLen(text));
-  return text.repeat(n);
+  return text.repeat(times ?? 1);
 }
 ```
 
@@ -648,7 +644,10 @@ export function shift(p, dy) {
 }
 
 export function moved(p, dx) {
-  return { x: p.x + dx, y: { ...p }.y };
+  return {
+    x: p.x + dx,
+    y: { ...p }.y,
+  };
 }
 ```
 
@@ -662,6 +661,10 @@ export function moved(p, dx) {
   them, `{ ...p, y, x }`
   ([ADR 0674](../../decisions/0674-a-struct-literals-fields-are-in-the-order-written.md)).
   `{:?}` still shows them as the struct declares them.
+- A struct literal written across lines, as rustfmt writes one too long
+  for a line, is an object on lines of its own; one written on one line is
+  on one line where it fits
+  ([ADR 0835](../../decisions/0835-an-object-is-across-lines-where-its-literal-is.md)).
 - Methods go in an `impl` block: [Advanced: classes](advanced.md#classes).
 - An object used as a dictionary, with keys only known at run time, is a
   `HashMap`: [Collections: maps](collections.md#map-and-set).
@@ -1137,7 +1140,11 @@ export function area(shape) {
 }
 
 export function unit() {
-  return { TAG: "Rect", width: 1, height: 1 };
+  return {
+    TAG: "Rect",
+    width: 1,
+    height: 1,
+  };
 }
 ```
 
@@ -1336,6 +1343,11 @@ export function isAdult(p) {
 - `if let Some(age) = p.age` is "if it's there, call it `age`".
 - rustc won't let you use an `Option<u32>` as a `u32`: you can't forget the
   missing case.
+- An `Option<bool>` that's `Some(true)`, `flag.is_some_and(|&on| on)`,
+  `flag == Some(true)` or `flag.unwrap_or(false)`, is tested by its truth,
+  as JS tests a flag that may be missing: `if (warned[key])`. As a value
+  it's a `bool`, `!!flag`
+  ([ADR 0298](../../decisions/0298-truthy-options.md)).
 
 JS's `||` falls back on any falsy value, `""` and `0` too, where `??` falls
 back on `null` and `undefined` alone. In Rust, say which values you keep,

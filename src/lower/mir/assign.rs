@@ -178,6 +178,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Rvalue::Aggregate(..) => value?,
             _ => self.nullable_written(state, *place, value?, None, span)?,
         };
+        // A `#[rust_js::nullable]` field assigned, `p.title = None`: its
+        // `None` `null`, as its cell's `set` writes it (ADRs 0772, 0810); a
+        // `Some(..)`, or what's `null` or a value already, as it is. MIR
+        // assigns what it makes through a temporary, which `nulled` follows.
+        let value = match self.place_field(state, *place) {
+            Some(field) if bindings::is_nullable(self.tcx, field) => {
+                let nulled = match rvalue {
+                    Rvalue::Use(operand, _) => self.nulled(state, operand),
+                    _ => false,
+                };
+                Value::Expr(js::Storage::NullForNone.written(self.value_expr(value, span)?, nulled))
+            }
+            _ => value,
+        };
         self.mir_store(state, *place, value, span, out)
     }
 
@@ -187,7 +201,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `made_by`, this one or another, a binding too, is `null` for `None`
     /// as it is (ADR 0638); another `Option`, a call's or a variable's, is
     /// `null` for `undefined`, `heap[0] ?? null`. Each `return` gives what
-    /// was written, so it's written where it's made.
+    /// was written, so it's written where it's made. So is a call's
+    /// `Option` that only nullable fields and parameters read
+    /// (`null_nones`), `c ? f(c) : null` of `map`'s `c ? f(c) : undefined`,
+    /// as they then take it (ADR 0841).
     pub(super) fn nullable_written(
         &mut self,
         state: &mut State<'_, 'tcx>,
@@ -196,19 +213,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         made_by: Option<rustc_span::def_id::DefId>,
         span: Span,
     ) -> R<Value<'tcx>> {
-        if place != Place::from(mir::RETURN_PLACE)
-            || state.writer.is_some()
-            || !bindings::nullable_result(self.tcx, state.body.source.def_id())
+        let read_nullable = place.projection.is_empty()
+            && place.local != mir::RETURN_PLACE
+            && state.options.null_nones.contains(&place.local);
+        if !read_nullable
+            && (place != Place::from(mir::RETURN_PLACE)
+                || state.writer.is_some()
+                || !bindings::nullable_result(self.tcx, state.body.source.def_id()))
             || made_by.is_some_and(|made_by| bindings::nullable_result(self.tcx, made_by))
         {
             return Ok(value);
         }
         let value = self.value_expr(value, span)?;
-        Ok(Value::Expr(match value.kind {
-            js::ExprKind::Undefined => Expr::null(),
-            js::ExprKind::Null => value,
-            _ => Expr::bin(Op::Coalesce, value, Expr::null()),
-        }))
+        Ok(Value::Expr(js::Storage::NullForNone.written(value, false)))
     }
 
     /// `rest = p.rest` of a `let`'s pattern, `let P { href, rest, .. } = p`:
@@ -851,7 +868,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     fn fixed_kept(&mut self, state: &mut State<'_, 'tcx>, place: Expr, out: &mut Vec<Stmt>) -> R<Expr> {
         // A cell made here, `leak()`'s `{ value: s }`: only it has it.
         if let js::ExprKind::Member(object, _) = &place.kind
-            && matches!(object.kind, js::ExprKind::Object(_))
+            && matches!(object.kind, js::ExprKind::Object(..))
         {
             return Ok(place);
         }
@@ -888,7 +905,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `place`, a field or an item, fixed: what holds it named, where it
     /// isn't fixed, an object that's the same however it's reached, and an
     /// index that isn't a constant or a name named too.
-    fn fixed_place_of(&mut self, place: Expr, out: &mut Vec<Stmt>) -> Expr {
+    pub(in crate::lower) fn fixed_place_of(&mut self, place: Expr, out: &mut Vec<Stmt>) -> Expr {
         let span = place.span;
         let mut fixed = |e: Expr, name: &str, this: &mut Self| match fixed_place(&e) {
             true => e,

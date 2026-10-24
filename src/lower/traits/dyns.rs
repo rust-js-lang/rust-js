@@ -253,7 +253,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         target: Ty<'tcx>,
         span: Span,
     ) -> R<Expr> {
-        if let js::ExprKind::Object(props) = &holder.kind
+        if let js::ExprKind::Object(props, ..) = &holder.kind
             && matches!(props.as_slice(), [Prop::Field(name, _)] if name == js::HELD)
         {
             let mut props = props.clone();
@@ -374,13 +374,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             return self.expected_text(value, self.pointee(source), span);
         }
-        // A `()` as a `dyn` JS is given the value of, a binding crate's or a
-        // marker's, is what JS is given of a tuple, an array (ADR 0020):
-        // `use_effect(f, Some(&()))`'s `[]`.
-        let value = match self.pointee(source).is_unit()
-            && (!self.is_pair_dyn(target) || self.given_as_value(self.pointee(target)))
-        {
-            true => Expr::array(Vec::new()),
+        // A `()` as a `dyn` is `undefined`, as it is, or a list of none,
+        // `[]`, of a list's: `use_effect(f, Some(&()))`'s (ADR 0775).
+        let value = match self.pointee(source).is_unit() {
+            true => crate::lower::representation::unit_given(
+                self.tcx,
+                crate::lower::representation::UnitTo::Dyn(self.pointee(target)),
+            )
+            .unwrap_or(value),
             false => value,
         };
         // A `RefCell<C>` as a `RefCell<dyn T>`: the same cell, given its
@@ -516,8 +517,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // the place the cell does (ADR 0099). A temporary's box is the pair's.
         if self.is_cell(source) {
             return Ok(match value.kind {
-                js::ExprKind::Handle(place) => Expr::pair(*place, dictionary),
-                js::ExprKind::Object(mut props) if matches!(props.as_slice(), [Prop::Field(name, _)] if name == js::HELD) =>
+                js::ExprKind::Handle(place, _) => Expr::pair(*place, dictionary),
+                js::ExprKind::Object(mut props, ..) if matches!(props.as_slice(), [Prop::Field(name, _)] if name == js::HELD) =>
                 {
                     props.push(Prop::Field(js::DICTIONARY.into(), dictionary));
                     Expr::object(props)
@@ -591,7 +592,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         let what = format!("a counted `{source}` made elsewhere as a `{target}`");
         let made_here = match (self.counted_rc(source), value.kind) {
-            (Some(pointee), js::ExprKind::Object(props)) => Some((pointee, props)),
+            (Some(pointee), js::ExprKind::Object(props, ..)) => Some((pointee, props)),
             _ => None,
         };
         let Some((pointee, mut props)) = made_here else {

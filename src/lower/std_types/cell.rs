@@ -41,15 +41,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         } = call;
         let mut arg = || values.next().expect("rustc checked the arguments");
         let js_span = self.js_span(span);
-        // What a `#[rust_js::nullable]` field's `Cell` is written: its
-        // `None`, `null` (ADR 0772).
-        let nullable = match matches!(known, Std::CellSet | Std::CellReplace | Std::CellTake) {
-            true => (crate::lower::body_queries::nullable_cell_calls(self.tcx, self.frame.thir).get(&span)).copied(),
-            false => None,
-        };
-        let written = |value: Expr| match nullable {
-            Some(nulled) => crate::lower::bindings::nullable_written(value, nulled),
-            None => value,
+        // What a `Cell` is written, as its storage, the handle on it, says
+        // (ADR 0772): a `#[rust_js::nullable]` field's, its `None` `null`,
+        // what's given that's `null` or a value already as it is. Through a
+        // variable holding the handle, which tidy writes as its storage
+        // stores (ADR 0791), what MIR says so is marked so (ADR 0841).
+        let given_nulled = call.nulled.get(1) == Some(&true);
+        let written = |cell: &Expr, value: Expr| match cell.kind {
+            js::ExprKind::Handle(_, storage) => storage.written(value, given_nulled),
+            _ if given_nulled && !matches!(value.kind, js::ExprKind::Undefined) => value.defined(),
+            _ => value,
         };
         Ok(Some(match known {
             // A `Cell` or `RefCell` is `{ value }`, so everyone sharing it sees a change.
@@ -58,7 +59,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // Of a value with a destructor, the old dropped once the new is
             // in its place, as std's `replace` and drop (ADR 0519).
             Std::CellSet => {
-                let (cell, value) = (arg(), written(arg()));
+                let cell = arg();
+                let value = written(&cell, arg());
                 let item = generic_args.type_at(0);
                 if self.drops(item) != crate::lower::drops::Drops::Nothing {
                     let cell = self.spill("cell", cell, out);
@@ -89,21 +91,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Std::CellReplace | Std::CellTake => {
                 let item = generic_args.type_at(0);
                 let cell = arg();
-                let next = written(match known {
-                    Std::CellReplace => arg(),
-                    _ => self.default_value(item, span)?,
-                });
+                let next = written(
+                    &cell,
+                    match known {
+                        Std::CellReplace => arg(),
+                        _ => self.default_value(item, span)?,
+                    },
+                );
                 let held = tys[0].peel_refs();
                 if self.is_std_type(held, StdItem::RefCell) && !self.plain_ref_cell(held) {
                     let cell = Expr::call(Expr::helper("$borrowMut"), vec![cell]);
                     return Ok(Some(Expr::call(Expr::helper("$cellReplace"), vec![cell, next])));
                 }
-                let cell = match cell.has_effects() {
-                    true => self.spill("cell", cell, out),
-                    false => cell,
-                };
-                let old = self.spill("old", Expr::held(cell.clone()), out);
-                out.push(StmtKind::Assign(Expr::held(cell), next).at(js_span));
+                // Read and written, made once: `get(c).value`'s `get(c)`
+                // first, as a handle on it reads it each time.
+                let place = self.fixed_place_of(Expr::held(cell), out);
+                let old = self.spill("old", place.clone(), out);
+                out.push(StmtKind::Assign(place, next).at(js_span));
                 old
             }
             // A `&mut` to what it holds: the object itself, or for a number or
@@ -304,17 +308,22 @@ pub(in crate::lower) fn plain_statics(items: &mut [js::Item], quiet: &std::colle
             };
         }
     });
-    // A closure of a block, called as a statement: its body (ADR 0581).
+    // A closure called where it's made: its body (ADRs 0581, 0840), in a
+    // function or in what the module runs when it's loaded, which no
+    // `return` ends.
     for item in items.iter_mut() {
+        if let js::Item::Statements(stmts) = item {
+            js::applied_blocks(stmts, false);
+        }
         for function in item.functions_mut() {
-            js::applied_blocks(&mut function.body);
+            js::applied_blocks(&mut function.body, true);
         }
     }
     let cells: Vec<String> = (items.iter())
         .filter_map(|item| match item {
             js::Item::Const(c)
                 if !c.export
-                    && matches!(&c.value.kind, js::ExprKind::Object(props)
+                    && matches!(&c.value.kind, js::ExprKind::Object(props, ..)
                         if matches!(props.as_slice(), [js::Prop::Field(key, _)] if key == js::HELD)) =>
             {
                 Some(c.name.clone())
@@ -373,7 +382,7 @@ pub(in crate::lower) fn plain_statics(items: &mut [js::Item], quiet: &std::colle
         }
         // A handle on it, lent, may set it too.
         js::each_item_expr_mut(items, &mut |e| {
-            if let js::ExprKind::Handle(place) = &e.kind
+            if let js::ExprKind::Handle(place, _) = &e.kind
                 && matches!(&place.kind, js::ExprKind::Member(of, key)
                     if key == js::HELD && matches!(&of.kind, js::ExprKind::Var(v) if *v == name))
             {
@@ -394,7 +403,7 @@ pub(in crate::lower) fn plain_statics(items: &mut [js::Item], quiet: &std::colle
         for item in items.iter_mut() {
             if let js::Item::Const(c) = item
                 && c.name == name
-                && let js::ExprKind::Object(props) = &mut c.value.kind
+                && let js::ExprKind::Object(props, ..) = &mut c.value.kind
                 && let Some(js::Prop::Field(_, init)) = props.pop()
             {
                 c.value = init;
@@ -421,7 +430,7 @@ pub(in crate::lower) fn unguarded(body: &mut Vec<Stmt>) {
         let js::ExprKind::Call(callee, args) = &value.kind else {
             return None;
         };
-        let js::ExprKind::Handle(place) = &args.first()?.kind else {
+        let js::ExprKind::Handle(place, _) = &args.first()?.kind else {
             return None;
         };
         (matches!(callee.helper_name(), Some("$borrow" | "$borrowMut")) && place.reads_same())

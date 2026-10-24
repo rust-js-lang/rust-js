@@ -22,8 +22,14 @@ function main() {
   console.log(`${tagged($dynCell({ tag: 1, value: 5 }, { fmt: String }))}`);
   console.log(`${tagged($dynCell({ tag: 2, value: "five" }, { fmt: (value) => value }))}`);
   console.log(`${named($dynCell({ tag: 0, value: "x" }, { toString: (value) => value }))}`);
-  const number = { tag: 3, value: 5 };
-  const text = { tag: 4, value: "five" };
+  const number = {
+    tag: 3,
+    value: 5,
+  };
+  const text = {
+    tag: 4,
+    value: "five",
+  };
   console.log(`${labeled($dynCell(number, { fmt: String }))}`);
   console.log(`${labeled($dynCell(text, { fmt: (value) => value }))}`);
 }

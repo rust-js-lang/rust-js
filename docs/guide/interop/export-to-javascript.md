@@ -383,7 +383,10 @@ pub fn label(status: &Status) -> String {
 ```js
 export const Counter = {
   new(stepSize) {
-    return { count: 0, stepSize };
+    return {
+      count: 0,
+      stepSize,
+    };
   },
 
   tick(counter) {
@@ -516,7 +519,9 @@ pub fn mounted(props: Option<&'static Unknown>) -> Component {
 ```
 
 ```js
-export const NOOP = { enqueueForceUpdate: () => {} };
+export const NOOP = {
+  enqueueForceUpdate: () => {},
+};
 
 /** Base class helpers for the updating state of a component. */
 export function Component(props, updater) {
@@ -640,10 +645,8 @@ export const GREETING = "hello";
 export const clickCount = { value: 0 };
 
 export function click() {
-  return ((count) => {
-    count.value = (count.value + 1) >>> 0;
-    return count.value;
-  })(clickCount);
+  clickCount.value = (clickCount.value + 1) >>> 0;
+  return clickCount.value;
 }
 ```
 

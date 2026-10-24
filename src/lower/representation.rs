@@ -399,7 +399,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         while let ty::Ref(_, inner, mutability) = *ty.kind() {
             if mutability == Mutability::Mut && self.is_cell_pointee(inner) {
                 value = match value.kind {
-                    js::ExprKind::Handle(place) => *place,
+                    js::ExprKind::Handle(place, _) => *place,
                     _ => Expr::held(value),
                 };
             }
@@ -563,9 +563,34 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // A flattened struct's fields are its parent's: read through it,
             // `props.html.title` is `props.title` (ADR 0205).
             (Shape::Object(_), _) if super::bindings::is_flatten_field(self.tcx, ty, i) => base,
-            (Shape::Object(fields), _) => self.held(Expr::member(base, fields[i].0.clone()), fields[i].1),
+            (Shape::Object(fields), _) => {
+                let field = Expr::member(base, fields[i].0.clone());
+                match self.nullable_cell_field(ty, (i, fields[i].1)) {
+                    true => self.nullable_cell_handle(field),
+                    false => self.held(field, fields[i].1),
+                }
+            }
             (Shape::Other, _) => unreachable!("fields of a type without fields"),
         }
+    }
+
+    /// Whether field `i` of `ty` is a `#[rust_js::nullable]` field's `Cell`
+    /// of an `Option`, whose `None` is `null`: the storage a handle on it
+    /// writes so, wherever it's written through (ADR 0772).
+    pub(super) fn nullable_cell_field(&self, ty: Ty<'tcx>, (i, field_ty): (usize, Ty<'tcx>)) -> bool {
+        let ty::Adt(adt, _) = ty.kind() else { return false };
+        adt.is_struct()
+            && bindings::is_nullable(
+                self.tcx,
+                &adt.non_enum_variant().fields[rustc_abi::FieldIdx::from_usize(i)],
+            )
+            && bindings::nullable_option(self.tcx, field_ty).is_some_and(|option| option != field_ty)
+    }
+
+    /// A handle on `place`, a `nullable_cell_field`'s, that stores what's
+    /// written to it as the field does: its `None`, `null` (ADR 0772).
+    pub(super) fn nullable_cell_handle(&self, place: Expr) -> Expr {
+        Expr::stored_handle(place, js::Storage::NullForNone)
     }
 
     /// What a field of type `ty` is, read where it's `field`: itself, or of
@@ -1381,4 +1406,44 @@ pub(super) fn num_literal(bits: u128, num: Num) -> Expr {
         bits as i128
     };
     num.literal(n)
+}
+
+/// What takes a `()` given to JS: a binding's parameter, its `DefId` and
+/// index, or a `dyn` of a trait, the `()` a reference to it.
+pub(super) enum UnitTo<'tcx> {
+    Param(DefId, usize),
+    Dyn(Ty<'tcx>),
+}
+
+/// What JS is given of a `()` given to `to`, where it isn't `undefined`,
+/// what `()` is everywhere (ADR 0020), as a value of any shape, `x ===
+/// undefined` of `js::strict_equals(x, ())` (ADR 0775): `[]`, a list of
+/// none, where it's a list of items, a tuple of them its array. That's
+/// rest arguments, a variadic binding's last parameter or a `dyn` of
+/// `js::Rest`, spread, and a hook's dependencies, `react::DependencyList`,
+/// `use_memo(f, ())`'s `useMemo(f, [])`. The one answer.
+pub(super) fn unit_given<'tcx>(tcx: TyCtxt<'tcx>, to: UnitTo<'tcx>) -> Option<Expr> {
+    let rest = [Symbol::intern("rust_js"), Symbol::intern("rest")];
+    let lists = |id: DefId| {
+        super::recognition::is_dependency_list(tcx, id) || tcx.get_attrs_by_path(id, &rest).next().is_some()
+    };
+    let list = match to {
+        UnitTo::Param(def_id, i) => {
+            let declared = tcx.fn_sig(def_id).instantiate_identity().skip_normalization();
+            let declared = declared.skip_binder().inputs();
+            let bounded = |ty: Ty<'tcx>| {
+                tcx.param_env(def_id).caller_bounds().iter().any(|clause| {
+                    clause
+                        .as_trait_clause()
+                        .is_some_and(|bound| bound.self_ty().skip_binder() == ty && lists(bound.def_id()))
+                })
+            };
+            (bindings::is_variadic(tcx, def_id) && i + 1 == declared.len())
+                || declared
+                    .get(i)
+                    .is_some_and(|&ty| matches!(ty.kind(), ty::Param(_)) && bounded(ty))
+        }
+        UnitTo::Dyn(ty) => matches!(ty.kind(), ty::Dynamic(traits, ..) if traits.principal_def_id().is_some_and(lists)),
+    };
+    list.then(|| Expr::array(Vec::new()))
 }
