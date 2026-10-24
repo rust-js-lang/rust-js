@@ -4,7 +4,7 @@ import type { Mutation } from "../../../../mutations";
 export const mutations: Mutation[] = [
   {
     name: "clone-alias-kept",
-    breaks: "an `Rc`'s clone of a parameter is a variable of its own, `const resolved = payload`, where it's the same object, read by its name (ADR 0842)",
+    breaks: "an `Rc`'s clone of a parameter is a variable of its own, `const resolved = payload`, where it's the same object, read by its name (ADR 0846)",
     file: "src/lower/mir/tidy/bindings.rs",
     find: "                && clones.contains(b)\n",
     replace: "                && clones.contains(b)\n                && false\n",

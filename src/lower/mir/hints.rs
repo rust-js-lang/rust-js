@@ -767,7 +767,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// The names of the locals a `clone()` makes, `let resolved =
     /// payload.clone()`: where that's the value itself in JS, an uncounted
-    /// `Rc`'s, tidy reads it by the name it's of (ADR 0842).
+    /// `Rc`'s, tidy reads it by the name it's of (ADR 0846).
     pub(super) fn clone_names(
         &self,
         mir_body: &mir::Body<'tcx>,

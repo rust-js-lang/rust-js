@@ -680,7 +680,7 @@ export function same(a, b) {
 
 A clone of a parameter's `Rc` moved into a closure is the same object, so
 the closure reads it by the parameter's name
-([ADR 0842](../../decisions/0842-a-parameters-clone-is-read-by-its-name.md)):
+([ADR 0846](../../decisions/0846-a-parameters-clone-is-read-by-its-name.md)):
 
 ```rust
 use std::cell::Cell;

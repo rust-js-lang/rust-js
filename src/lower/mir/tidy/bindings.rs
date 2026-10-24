@@ -670,7 +670,7 @@ pub(super) fn readable_temporaries(
 /// says of its block. And `const b = a;` that a `clone()` made, `clones`,
 /// of a parameter `a` nothing assigns or declares again, is `a`, read where
 /// `b` was: the same value, an uncounted `Rc`'s clone the same object,
-/// `payload` of `const resolved = payload` (ADR 0842).
+/// `payload` of `const resolved = payload` (ADR 0846).
 pub(super) fn aliases(
     body: &mut Vec<Stmt>,
     captured: &HashSet<String>,

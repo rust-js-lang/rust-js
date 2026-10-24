@@ -636,7 +636,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0835 An object is across lines where its struct literal is](0835-an-object-is-across-lines-where-its-literal-is.md)
 - [0840 A thread-local's `with` is its closure's body, wherever it's called](0840-a-thread-locals-with-is-its-closures-body.md)
 - [0841 A nullable place stores what's never `undefined` as it is](0841-a-nullable-place-stores-what-is-never-undefined-as-it-is.md)
-- [0842 A parameter's clone that is the same JS value is read by the parameter's name](0842-a-parameters-clone-is-read-by-its-name.md)
+- [0846 A parameter's clone that is the same JS value is read by the parameter's name](0846-a-parameters-clone-is-read-by-its-name.md)
 - [0843 A `Weak` nothing upgrades is the value itself](0843-a-weak-nothing-upgrades-is-the-value-itself.md)
 - [0844 A library that reads no count counts no `Rc`](0844-a-library-that-reads-no-count-counts-no-rc.md)
 - [0845 An `Rc`'s declaration is what it points at](0845-an-rcs-declaration-is-what-it-points-at.md)
