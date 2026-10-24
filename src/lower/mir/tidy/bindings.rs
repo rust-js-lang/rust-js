@@ -241,7 +241,8 @@ pub(super) fn last_assigns(stmts: &[Stmt], t: &str) -> bool {
 
 /// `const t = q.title;` of plain data, which nothing changes, held by MIR,
 /// a temporary or what an element reads: `q.title` where `t` is read, each
-/// time.
+/// time. Not a read a getter may answer, which may give another value each
+/// time it's read (`Expr::reads_same`, #189).
 pub(super) fn plain_reads(stmts: &mut Vec<Stmt>, plain: &HashSet<String>, captured: &HashSet<String>) {
     let mut i = 0;
     while i < stmts.len() {
@@ -252,6 +253,7 @@ pub(super) fn plain_reads(stmts: &mut Vec<Stmt>, plain: &HashSet<String>, captur
                     root = of;
                 }
                 (matches!(value.kind, ExprKind::Member(..))
+                    && value.reads_same()
                     && (matches!(&root.kind, ExprKind::Var(v) if plain.contains(v))
                         || field_path(value).is_some_and(|path| plain.contains(&path))))
                 .then(|| (name.clone(), value.clone()))

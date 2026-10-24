@@ -261,6 +261,9 @@ pub fn kinds(children: &'static Unknown) -> Vec<String> {
   // The type a pattern binds, a getter's read, read once there, not at
   // each use (ADR 0750).
   expect(js).toContain('out.push(type === "Recap" ? "recap" : type.toUpperCase());');
+  // And read once, as Rust reads it, before the test of its kind (#189).
+  expect(js).toContain('if (isValidElement(child)) {\n      const type = child.type;\n      if (typeof type === "string" && types.has(type)) {');
+  expect(js.match(/child\.type/g)?.length).toBe(1);
   const { kinds } = await import(join(dir, "lib.js"));
   const { createElement } = await import("react");
   expect(kinds([createElement("h1", { key: "a" }), createElement("Recap", { key: "b" }), "text"])).toEqual(["H1", "recap"]);
