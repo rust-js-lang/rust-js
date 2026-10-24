@@ -79,7 +79,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             || is_non_zero(adt.did())
             // An `AssertUnwindSafe`, what it holds, which rustc checks
             // where it's needed (ADR 0660).
-            || std_path(self.tcx, adt.did()) == "std::panic::AssertUnwindSafe"
+            || is_assert_unwind_safe(self.tcx, adt.did())
             || std_path(self.tcx, adt.did()).starts_with("std::num::niche_types::");
         // A `MaybeUninit` is a union of it and `()`.
         let mut held = adt.all_fields().map(|field| self.field_ty(field, args));
@@ -510,6 +510,11 @@ pub(in crate::lower) fn local_key_access(tcx: TyCtxt<'_>, id: DefId) -> Option<b
 pub(in crate::lower) fn local_key_of_cell(tcx: TyCtxt<'_>, key: Ty<'_>) -> bool {
     matches!(key.kind(), ty::Adt(_, args)
         if args.types().next().is_some_and(|held| matches!(held.kind(), ty::Adt(cell, _) if is_std_def(tcx, cell.did(), StdItem::Cell))))
+}
+
+/// `std::panic::AssertUnwindSafe`, the value it holds (ADR 0660).
+pub(in crate::lower) fn is_assert_unwind_safe(tcx: TyCtxt<'_>, id: DefId) -> bool {
+    std_path(tcx, id) == "std::panic::AssertUnwindSafe"
 }
 
 /// Of a `#[repr(transparent)]` struct of the crate's or a dependency's, the

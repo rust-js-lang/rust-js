@@ -28,11 +28,12 @@ export const mutations: Mutation[] = [
   },
   {
     name: "from-end-place-not-fixed",
-    breaks: "an item counted from the end, given through a `&mut`, `zero(last)`, is refused",
+    breaks: "an item counted from the end, given through a `&mut`, `zero(last)`, is `const at = v.length - 1` and `v[at]`, not its place, `v[v.length - 1]`",
     file: "src/lower/mir/queries.rs",
     find: "                && (index.is_constant() || matches!(index.kind, js::ExprKind::Var(_)) || from_end(object, index))\n",
     replace: "                && (index.is_constant() || matches!(index.kind, js::ExprKind::Var(_)))\n",
     tests: ["test/corpus.test.ts","-t","^slice_pattern_mut_rest.rs$"],
+    snapshots: true,
   },
   {
     name: "from-end-place-not-same",
