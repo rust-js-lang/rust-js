@@ -247,3 +247,52 @@ test("a value or what it falls back to is ||", async () => {
   (lib.wrapped as (p: [string, string][], i: number) => void)(properties, 1);
   expect(properties).toEqual([["a", "Promise<Object>"], ["b", "Promise<x>"]]);
 });
+
+// ADR 0842: React's lazy() reads `ioInfo.value` once where `__DEV__` holds,
+// `if (__DEV__) { const value = ioInfo.value; if (value != null) { .. } }`;
+// clippy's `collapsible_if` has the Rust write a let chain, `if debug &&
+// let Some(value) = info.value.get()`, which read `if (debug &&
+// info.value) { const value = info.value; .. }`, the place twice. A chain
+// whose first test is a bool of its own, and whose binding the body reads
+// or its tests read again, is nested as written; one that takes apart what
+// its first test tested, `if (value && value[0] < 10)`, is joined, as
+// `examples/options.rs` has it.
+test("a let chain after a test of its own reads its place once", async () => {
+  const { js, lib } = await compiled("chain-place-once", `use std::cell::Cell;
+
+use js::Unknown;
+
+pub struct Info {
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub value: Cell<Option<&'static Unknown>>,
+}
+
+pub fn settle(info: &Info, debug: bool) {
+    if debug && let Some(value) = info.value.get() {
+        js::set(value, "status", "fulfilled");
+    }
+}
+
+pub struct Counts {
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub count: Cell<Option<u32>>,
+}
+
+pub fn many(counts: &Counts, debug: bool) -> bool {
+    if debug && let Some(count) = counts.count.get() && count > 3 {
+        return true;
+    }
+    false
+}
+`);
+  expect(js).toContain("  if (debug) {\n    const value = info.value;\n    if (value != null) {\n      value.status = \"fulfilled\";\n    }\n  }\n");
+  expect(js).toContain("  if (debug) {\n    const count = counts.count;\n    if (count != null && count > 3) {\n      return true;\n    }\n  }\n  return false;\n");
+  const settle = lib.settle as unknown as (info: { value?: { status?: string } }, debug: boolean) => void;
+  const [on, off, none] = [{ value: {} as { status?: string } }, { value: {} as { status?: string } }, {}];
+  settle(on, true);
+  settle(off, false);
+  settle(none, true);
+  expect([on.value.status, off.value.status, none]).toEqual(["fulfilled", undefined, {}]);
+  const many = lib.many as unknown as (counts: { count?: number }, debug: boolean) => boolean;
+  expect([many({ count: 4 }, true), many({ count: 4 }, false), many({ count: 2 }, true), many({}, true)]).toEqual([true, false, false, false]);
+});

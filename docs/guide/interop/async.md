@@ -148,8 +148,8 @@ The `js` crate has the rest of JS's `Promise`:
 
 | JS | Rust |
 |---|---|
-| `new Promise((resolve, reject) => ..)` | `js::promise::new(\|resolve, reject\| ..)`, which runs before it returns, so it may set the variables around it ([ADR 0782](../../decisions/0782-a-promises-executor-borrows-and-then-takes-two-handlers.md)) |
-| `Promise.resolve(v)`, `Promise.reject(e)` | `js::promise::resolve(v)`, `js::promise::reject(e)` |
+| `new Promise((resolve, reject) => ..)` | `js::promise::new(\|resolve, reject\| ..)`, which runs before it returns, so it may set the variables around it; `reject` takes any value, an `Option<&Unknown>`, `reject(error)` ([ADR 0782](../../decisions/0782-a-promises-executor-borrows-and-then-takes-two-handlers.md)) |
+| `Promise.resolve(v)`, `Promise.reject(e)`, `Promise.reject()` | `js::promise::resolve(v)`, `js::promise::reject(Some(e))` of any value, `js::promise::reject(None)` |
 | `Promise.all([a, b])` | `js::promise::all(vec![a, b])`; of two of different types, `all2((a, b))`, up to `all4` |
 | `Promise.allSettled`, `race`, `any` | `js::promise::all_settled`, `race`, `any` |
 | `Promise.withResolvers()` | `js::promise::with_resolvers()` |
@@ -175,8 +175,17 @@ caller fills: `js::promise(parse(text))` of an `async fn parse() ->
 Result<u32, String>` is that promise, fulfilled with the `Result` the
 future gives, never settled ([ADR 0588](../../decisions/0588-a-binding-throws-by-its-declared-result.md)).
 
-A rejection's reason is a `&JsError`, whose `message()` and `name()` are
-the `Error`'s ([Errors, panics and exceptions](exceptions.md)).
+A rejection's reason, as a handler or `settle` reads it, is a `&JsError`,
+whose `message()` and `name()` are the `Error`'s
+([Errors, panics and exceptions](exceptions.md)); what rejects one takes
+any value, as TypeScript's `reason?: any`.
+
+A promise is a handle JS shares: `p.then(f)` leaves `p` as it was. One of
+a `Copy` value is `Copy`, so it's kept, a `Cell<Option<Promise<..>>>`
+field, and given handlers again, `info.value.get().unwrap().then_with(..)`.
+One of any other value, a `Vec`'s, is consumed by its first handler, as
+Rust's: two would each be given the one array
+([ADR 0782](../../decisions/0782-a-promises-executor-borrows-and-then-takes-two-handlers.md)).
 
 ## Fetch
 
