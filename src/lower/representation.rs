@@ -107,11 +107,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// A variant without fields, as a body writes it: of a numbered enum,
     /// its module's `const`, by its name, `Pending`, imported where it's
-    /// another module's or crate's (ADR 0722, amended); else its value,
+    /// another module's or crate's (ADR 0722, amended), where this body
+    /// reads it so (`reads_by_name`); else its value,
     /// `bindings::unit_variant`'s. The one answer of each test, value and
     /// constant of one a body writes.
     pub(in crate::lower) fn unit_variant(&self, adt: DefId, variant: &ty::VariantDef) -> Expr {
-        match self.is_rust_fn(variant.def_id) {
+        match self.is_rust_fn(variant.def_id) && self.reads_by_name(variant.def_id) {
             true => self.fn_ref(variant.def_id),
             false => bindings::unit_variant(self.tcx, adt, variant),
         }

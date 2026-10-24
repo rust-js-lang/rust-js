@@ -235,6 +235,16 @@ pub fn lower_crate<'tcx>(
     // they're lowered, lowered or not, then resolved (ADRs 0190, 0300).
     let mut drops_observed = super::drops::DropsObserved::default();
     let plain_ref_cells = std::cell::OnceCell::new();
+    // What runs where its module loads, which reads another module's
+    // `const`s as their values (`FnCx::reads_by_name`).
+    let loads: HashSet<DefId> = (thread_local_inits.keys().map(|init| init.to_def_id()))
+        .chain(initialized.iter().map(|body| body.def_id))
+        .chain(
+            (bodies.iter())
+                .map(|body| body.def_id)
+                .filter(|&id| super::bindings::is_on_load(tcx, id)),
+        )
+        .collect();
     let crate_facts = CrateFacts {
         foreign: &foreign,
         library: export_library,
@@ -276,6 +286,7 @@ pub fn lower_crate<'tcx>(
         plain_ref_cells: &plain_ref_cells,
         named_expressions: &named_expressions,
         local_functions: &local_functions,
+        loads: &loads,
     };
     // What a library's manifest says of its writers (ADR 0137).
     let writers_take_options = crate_facts.writers_take_options();

@@ -3,6 +3,14 @@ import type { Mutation } from "../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "load-reads-const-by-name",
+    breaks: "a thread-local's value reads another module's `const` by name, `{ value: LIMIT }`, which an import cycle may load first: `Cannot access 'LIMIT' before initialization` (ADR 0722)",
+    file: "src/lower.rs",
+    find: "        if let Some(value) = self.is_rust_fn(def_id).then(by_value).flatten() {\n",
+    replace: "        if let Some(value) = (false && self.is_rust_fn(def_id)).then(by_value).flatten() {\n",
+    tests: ["test/corpus.test.ts", "-t", "load_cycle_values"],
+  },
+  {
     name: "parameter-underscore-kept",
     breaks: "a parameter's `_`, Rust's mark of one unused, is in its JS name, `describeClientReference(_ref)`",
     file: "src/lower.rs",

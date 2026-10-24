@@ -46,9 +46,17 @@ export const mutations: Mutation[] = [
     name: "numbered-variant-written-as-number",
     breaks: "a numbered enum's variant a body writes is its number, `payload._status = 0`, where it's its module's `const`, `Pending`",
     file: "src/lower/representation.rs",
-    find: "        match self.is_rust_fn(variant.def_id) {\n",
+    find: "        match self.is_rust_fn(variant.def_id) && self.reads_by_name(variant.def_id) {\n",
     replace: "        match false && self.is_rust_fn(variant.def_id) {\n",
     tests: ["test/lowering-structs-enums.test.ts", "-t", "a repr enum's variants are its module's consts"],
+  },
+  {
+    name: "load-reads-variant-by-name",
+    breaks: "a thread-local's value reads another module's variant by name, `{ value: Pending }`, which an import cycle may load first: `Cannot access 'Pending' before initialization` (ADR 0722)",
+    file: "src/lower/representation.rs",
+    find: "        match self.is_rust_fn(variant.def_id) && self.reads_by_name(variant.def_id) {\n",
+    replace: "        match self.is_rust_fn(variant.def_id) {\n",
+    tests: ["test/corpus.test.ts", "-t", "load_cycle_values"],
   },
   {
     name: "numbered-variant-tested-as-number",
