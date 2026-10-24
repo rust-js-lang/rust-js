@@ -48,3 +48,58 @@ pub fn memo() -> (SymbolFor<'static>, u32, &'static str) {
   const { memo } = await import(join(dir, "app", "lib.js"));
   expect(memo()).toEqual([Symbol.for("react.memo"), 5, "memo"]);
 });
+
+// A `#[repr]` enum's variant is its module's `const` (ADR 0722, amended):
+// a library's, imported by its name, tested, made and matched as its own
+// crate's are.
+test("a library's repr enum's variant is imported by its name", async () => {
+  const dir = fixture("cross-crate-variants");
+  const { dep, app } = compiled(dir, `#[derive(Clone, Copy, PartialEq)]
+#[repr(i8)]
+pub enum Status {
+    Uninitialized = -1,
+    Pending = 0,
+    Resolved = 1,
+}
+
+pub fn started(status: Status) -> bool {
+    status != Status::Uninitialized
+}
+`, `use dep::Status;
+
+pub fn next(status: Status) -> Status {
+    match status {
+        Status::Uninitialized => Status::Pending,
+        Status::Pending | Status::Resolved => Status::Resolved,
+    }
+}
+
+pub fn settled(status: Status) -> bool {
+    dep::started(status) && status == Status::Resolved
+}
+
+pub mod report {
+    use dep::Status;
+
+    pub fn word(status: Status) -> &'static str {
+        match status {
+            Status::Uninitialized => "new",
+            Status::Pending | Status::Resolved => "started",
+        }
+    }
+}
+`);
+  expect(dep).toContain("export const Uninitialized = -1;\nexport const Pending = 0;\nexport const Resolved = 1;\n");
+  expect(dep).toContain("return status !== Uninitialized;");
+  expect(app).toContain('import { Pending, Resolved, Uninitialized, started } from "../dep/lib.js";\n');
+  expect(app).toContain("  if (status === Uninitialized) {\n    return Pending;\n  }\n  return Resolved;\n");
+  expect(app).toContain("return started(status) && status === Resolved;");
+  // Of the variants a `match` tests, those whose test it writes: its last
+  // arm's, the rest, is no import.
+  const report = readFileSync(join(dir, "app", "report.js"), "utf8");
+  expect(report).toContain('import { Uninitialized } from "../dep/lib.js";\n');
+  const { next, settled } = await import(join(dir, "app", "lib.js"));
+  expect([next(-1), next(0), next(1), settled(1), settled(0)]).toEqual([0, 1, 1, true, false]);
+  const { word } = await import(join(dir, "app", "report.js"));
+  expect([word(-1), word(0), word(1)]).toEqual(["new", "started", "started"]);
+});

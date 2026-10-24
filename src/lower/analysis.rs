@@ -452,6 +452,9 @@ pub(super) struct AnalyzedCrate<'a, 'tcx> {
     pub required: HashSet<Export>,
     pub thread_local_inits: HashMap<LocalDefId, LocalDefId>,
     pub consts: Vec<LocalDefId>,
+    /// Each variant of a numbered enum, its module's `const` of its number,
+    /// read by its name (ADR 0722, amended).
+    pub variants: Vec<LocalDefId>,
     pub codecs: Vec<DefId>,
     pub modules: Vec<LocalModId>,
     pub taken: HashMap<LocalModId, HashSet<String>>,
@@ -665,6 +668,14 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         })
         .chain(coded_inline_consts(tcx, all_bodies))
         .collect();
+    // Each variant of a numbered enum, `Status::Pending`, its module's
+    // `const Pending = 0;`, read by its name (ADR 0722, amended).
+    let variants: Vec<LocalDefId> = tcx
+        .hir_crate_items(())
+        .definitions()
+        .filter(|&d| tcx.def_kind(d) == DefKind::Enum && bindings::numbered(tcx, tcx.adt_def(d)))
+        .flat_map(|d| tcx.adt_def(d).variants().iter().filter_map(|v| v.def_id.as_local()))
+        .collect();
 
     // Each thread-local's `init` function: lowered like any function, its
     // body is the variable's value. Or, of a `const { .. }` one, the `const`
@@ -802,12 +813,13 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         .filter(|&&id| serde_impl(tcx, id).is_some() && serde_derived(tcx, id))
         .map(|&id| tcx.associated_item_def_ids(id)[0])
         .collect();
-    // What gets a JS name: functions and methods, `const`s, dictionaries,
-    // and codecs.
+    // What gets a JS name: functions and methods, `const`s, a numbered
+    // enum's variants, dictionaries, and codecs.
     let items: Vec<DefId> = bodies
         .iter()
         .map(|body| body.def_id)
         .chain(consts.iter().map(|id| id.to_def_id()))
+        .chain(variants.iter().map(|id| id.to_def_id()))
         .chain(dictionaries.iter().copied())
         .chain(codecs.iter().copied())
         .collect();
@@ -907,6 +919,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         required,
         thread_local_inits,
         consts,
+        variants,
         codecs,
         modules,
         taken,

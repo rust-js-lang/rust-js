@@ -540,6 +540,11 @@ const idioms: [string, RegExp, string[]][] = [
   ["a map's entry", /"\$orInsert"|"\$mutGet"/, ["src/lower/std_types/map.rs", "src/lower/mir/entries.rs", "src/lower/mut_refs.rs"]],
   ["a range made as stepped", /"\$lazyRange"/, ["src/lower/std_types/range.rs"]],
   ["a cell's borrow", /"\$borrow(Mut)?"|"\$unborrow"/, ["src/lower/std_types/cell.rs", "src/lower/std_impls.rs", "src/lower/drops/parts.rs"]],
+  // A variant without fields as a body writes it, a numbered enum's by its
+  // module's `const` (ADR 0722, amended), is `FnCx::unit_variant`'s: its
+  // value, `bindings::unit_variant`, asked there alone, as a body's would
+  // be the number where the name is written.
+  ["a variant without fields as its value", /bindings::unit_variant\(/, ["src/lower/representation.rs"]],
 ];
 test("a JS form of a concept is written by the concept's owner", () => {
   const strays: string[] = [];

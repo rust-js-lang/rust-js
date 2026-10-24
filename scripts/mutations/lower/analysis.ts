@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "numbered-variants-unnamed",
+    breaks: "a numbered enum's variants are no module's `const`s, each read as its number, `payload._status = 0`, not `Pending`",
+    file: "src/lower/analysis.rs",
+    find: "        .filter(|&d| tcx.def_kind(d) == DefKind::Enum && bindings::numbered(tcx, tcx.adt_def(d)))\n",
+    replace: "        .filter(|&d| tcx.def_kind(d) == DefKind::Enum && bindings::numbered(tcx, tcx.adt_def(d)) && false)\n",
+    tests: ["test/cross-crate-items.test.ts", "-t", "a library's repr enum's variant is imported by its name"],
+  },
+  {
     name: "const-reexport-dropped",
     breaks: "`pub use priorities::IDLE` re-exports nothing, so `IDLE` isn't the module's",
     file: "src/lower/analysis.rs",

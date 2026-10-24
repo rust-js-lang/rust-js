@@ -6,37 +6,47 @@ export function entry() {
   main();
 }
 
+const Empty = 0;
+const Complex = 1;
+const Primitive = 2;
+const Entries = 3;
+const Low = -1;
+const Mid = 7;
+const High = 3;
+const First = 0;
+const Second = 1;
+
 function kindOf(n, entries) {
-  let kind = 0;
+  let kind = Empty;
   if (n > 0) {
-    kind = entries ? 3 : 2;
+    kind = entries ? Entries : Primitive;
   }
-  if (kind !== 0 && n > 5) {
-    return 1;
+  if (kind !== Empty && n > 5) {
+    return Complex;
   }
   return kind;
 }
 
 function describe(kind) {
   switch (kind) {
-    case 0:
+    case Empty:
       return "empty";
-    case 1:
+    case Complex:
       return "complex";
-    case 2:
+    case Primitive:
       return "primitive";
-    case 3:
+    case Entries:
       return "entries";
   }
 }
 
 function levelName(level) {
   switch (level) {
-    case -1:
+    case Low:
       return "Low";
-    case 7:
+    case Mid:
       return "Mid";
-    case 3:
+    case High:
       return "High";
   }
 }
@@ -49,7 +59,7 @@ function main() {
       `${["Empty", "Complex", "Primitive", "Entries"][kind]} ${arg} ${kind} ${(kind + 1) | 0}`,
     );
   }
-  console.log(`${kinds[0] === 0} ${kinds[1] < kinds[2]}`);
+  console.log(`${kinds[0] === Empty} ${kinds[1] < kinds[2]}`);
   const sorted = kinds.slice();
   sorted.sort($cmp);
   const arg = $max(sorted);
@@ -58,15 +68,15 @@ function main() {
       arg == null ? "None" : `Some(${["Empty", "Complex", "Primitive", "Entries"][arg]})`
     }`,
   );
-  const levels = [7, 3, -1];
+  const levels = [Mid, High, Low];
   levels.sort($cmp);
   console.log(
     `[${levels.map((item) => ({ "-1": "Low", 7: "Mid", 3: "High" })[item]).join(", ")}] ${
-      { "-1": "Low", 7: "Mid", 3: "High" }[7]
-    } -1`,
+      { "-1": "Low", 7: "Mid", 3: "High" }[Mid]
+    } ${-1}`,
   );
   console.log(`${levels.map(levelName).join(",")}`);
-  console.log("Second 0 false");
+  console.log(`${["First", "Second"][Second]} ${0} ${Second === First}`);
   console.log("Other 0");
   const counts = new Map();
   for (const kind of [...kinds, kinds[1], kinds[2], kinds[1], kinds[2]]) {
@@ -82,13 +92,13 @@ function main() {
       .join(", ")}]`,
   );
   const seen = new Set(kinds);
-  console.log(`${seen.has(2)} ${seen.size}`);
-  const maybe = [undefined, 0, 3];
+  console.log(`${seen.has(Primitive)} ${seen.size}`);
+  const maybe = [undefined, Empty, Entries];
   for (const kind of maybe) {
     console.log(
       `${
         kind == null ? "None" : `Some(${["Empty", "Complex", "Primitive", "Entries"][kind]})`
-      } ${kind != null} ${kind === 0}`,
+      } ${kind != null} ${kind == Empty}`,
     );
   }
 }

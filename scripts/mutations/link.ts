@@ -3,6 +3,14 @@ import type { Mutation } from "../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "unread-module-imported",
+    breaks: "a module imports another's item it doesn't read, a numbered enum's variant whose test an exhaustive `match` needn't write, `import { Fast, Slow }`",
+    file: "src/link.rs",
+    find: "        .filter(|request| read.contains(&request.symbol))\n",
+    replace: "",
+    tests: ["test/lowering-structs-enums.test.ts", "-t", "a repr enum's variants are its module's consts"],
+  },
+  {
     name: "module-load-symbols-unresolved",
     breaks: "module-load statements reach the printer with unresolved cross-module symbols",
     file: "src/link.rs",

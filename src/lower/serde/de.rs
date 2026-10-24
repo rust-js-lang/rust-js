@@ -491,7 +491,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if adt.is_enum() {
             let name = variant_name(self.tcx, variant);
             if variant.fields.is_empty() {
-                return super::super::bindings::variant_tag(self.tcx, variant);
+                return self.unit_variant(adt.did(), variant);
             }
             let fields = self.field_keys(adt, variant, args).into_iter().zip(items);
             let tag = Prop::Field(js::TAG.into(), Expr::str(name));

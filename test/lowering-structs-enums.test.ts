@@ -1229,18 +1229,147 @@ pub fn named(n: usize) -> String {
 `);
   run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain("return n === 0 ? 0 : 3;");
-  expect(js).toContain("return kind === 0;");
+  // Each variant its module's `const`, read by its name (ADR 0722, amended).
+  expect(js).toContain("export const Empty = 0;\nexport const Complex = 1;\nexport const Primitive = 2;\nexport const Entries = 3;\n");
+  expect(js).toContain("export const Low = -1;\nexport const High = 10;\n");
+  expect(js).toContain("return n === 0 ? Empty : Entries;");
+  expect(js).toContain("return kind === Empty;");
   expect(js).toContain("export function code(kind) {\n  return kind;\n}");
   const declarations = readFileSync(join(dir, "lib.d.ts"), "utf8");
   expect(declarations).toContain("export type ArrayKind = 0 | 1 | 2 | 3;");
+  expect(declarations).toContain("export const Empty: 0;");
+  expect(declarations).toContain("export const Low: -1;");
   expect(declarations).toContain('export type Plain = "Empty";');
   const lib = await import(join(dir, "lib.js"));
   expect([lib.kind(0), lib.kind(4), lib.isEmpty(0), lib.code(3)]).toEqual([0, 3, true, 3]);
+  expect([lib.Empty, lib.Entries, lib.Low, lib.High]).toEqual([0, 3, -1, 10]);
   expect([lib.shown(2, -1), lib.shown(0, 10), lib.others("Small", "Empty")]).toEqual(["Primitive Low", "Empty High", "Small Empty"]);
   // A function giving each variant its name gives a name, not the number.
   expect([lib.name(0), lib.name(3), lib.named(0), lib.named(1)]).toEqual(["Empty", "Entries", "Empty", "Entries"]);
   // Shown by its number, an untagged enum's payload told as a number.
   expect(js).toContain('["Empty", "Complex", "Primitive", "Entries"][kind]');
   expect([lib.cell(3), lib.cell("x")]).toEqual(["Entries", "x"]);
+});
+
+// React's `ReactLazy` keeps a lazy component's status as module constants,
+// `const Pending = 0;`, each read by its name: a `#[repr]` enum's variant
+// is its module's `const`, as a `const` item is (ADRs 0031, 0722): tested,
+// set, matched by a `switch`'s `case Pending:` and cast, the cast its
+// number. Named apart as any of a module's names, two enums' `Pending`
+// `Pending` and `Pending$1`; another module's imported by its name.
+test("a repr enum's variants are its module's consts, each read by its name", async () => {
+  const dir = fixture("repr-enum-consts");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::Cell;
+
+#[derive(Clone, Copy, PartialEq)]
+#[repr(i8)]
+enum Status {
+    Uninitialized = -1,
+    Pending = 0,
+    Resolved = 1,
+    Rejected = 2,
+}
+
+#[derive(Clone, Copy, PartialEq, Debug)]
+#[repr(u8)]
+enum Request {
+    Pending = 5,
+    Done = 6,
+}
+
+pub struct Payload {
+    status: Cell<Status>,
+}
+
+pub fn lazy() -> Payload {
+    Payload { status: Cell::new(Status::Uninitialized) }
+}
+
+pub fn settle(payload: &Payload, ok: bool) -> i32 {
+    if payload.status.get() == Status::Uninitialized {
+        payload.status.set(Status::Pending);
+    }
+    if matches!(payload.status.get(), Status::Pending | Status::Uninitialized) {
+        payload.status.set(if ok { Status::Resolved } else { Status::Rejected });
+    }
+    payload.status.get() as i32
+}
+
+pub fn describe(payload: &Payload) -> &'static str {
+    match payload.status.get() {
+        Status::Uninitialized => "uninitialized",
+        Status::Pending => "pending",
+        Status::Resolved => "resolved",
+        Status::Rejected => "rejected",
+    }
+}
+
+pub fn code(done: bool) -> i32 {
+    let request = if done { Request::Done } else { Request::Pending };
+    Status::Pending as i32 + request as i32
+}
+
+pub fn requests() -> String {
+    format!("{:?}", [Some(Request::Pending), None])
+}
+
+pub mod theme {
+    #[derive(Clone, Copy, PartialEq)]
+    #[repr(u8)]
+    pub enum Mode {
+        Light = 1,
+        Dark = 2,
+    }
+}
+
+pub fn mode(dark: bool) -> theme::Mode {
+    if dark { theme::Mode::Dark } else { theme::Mode::Light }
+}
+
+mod motion {
+    #[derive(Clone, Copy, PartialEq)]
+    #[repr(u8)]
+    pub(crate) enum Speed {
+        Slow = 1,
+        Fast = 2,
+    }
+
+    pub(crate) fn speed(fast: bool) -> Speed {
+        if fast { Speed::Fast } else { Speed::Slow }
+    }
+}
+
+pub fn pace(fast: bool) -> &'static str {
+    match motion::speed(fast) {
+        motion::Speed::Slow => "slow",
+        motion::Speed::Fast => "fast",
+    }
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("const Uninitialized = -1;\nconst Pending = 0;\nconst Resolved = 1;\nconst Rejected = 2;\n");
+  expect(js).toContain("const Pending$1 = 5;\nconst Done = 6;\n");
+  expect(js).toContain('import { Dark, Light } from "./theme.js";');
+  expect(js).toContain("return { status: Uninitialized };");
+  expect(js).toContain("if (payload.status === Uninitialized) {\n    payload.status = Pending;\n  }");
+  expect(js).toContain("if (payload.status === Pending || payload.status === Uninitialized) {\n    payload.status = ok ? Resolved : Rejected;\n  }");
+  expect(js).toContain("case Uninitialized:");
+  expect(js).toContain("case Rejected:");
+  // A constant rustc made of one, `[Some(Request::Pending), None]`'s.
+  expect(js).toContain("[Pending$1, undefined]");
+  expect(js).toContain("const request = done ? Done : Pending$1;");
+  expect(js).toContain("return dark ? Dark : Light;");
+  expect(readFileSync(join(dir, "theme.js"), "utf8")).toContain("export const Light = 1;\nexport const Dark = 2;\n");
+  // Another module's not `pub`, exported as it's read there; the last
+  // arm's, whose test an exhaustive `match` needn't write, not imported.
+  expect(js).toContain('import { Slow, speed } from "./motion.js";');
+  expect(js).toContain('  if (speed(fast) === Slow) {\n    return "slow";\n  }\n  return "fast";\n');
+  expect(readFileSync(join(dir, "motion.js"), "utf8")).toContain("export const Slow = 1;\nexport const Fast = 2;\n");
+  const lib = await import(join(dir, "lib.js"));
+  const [first, second] = [lib.lazy(), lib.lazy()];
+  expect([lib.describe(first), lib.settle(first, true), lib.describe(first)]).toEqual(["uninitialized", 1, "resolved"]);
+  expect([lib.settle(second, false), lib.describe(second)]).toEqual([2, "rejected"]);
+  expect([lib.code(false), lib.code(true), lib.requests(), lib.mode(true), lib.mode(false)]).toEqual([5, 6, "[Some(Pending), None]", 2, 1]);
+  expect([lib.pace(true), lib.pace(false)]).toEqual(["fast", "slow"]);
 });

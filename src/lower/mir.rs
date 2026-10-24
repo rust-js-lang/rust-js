@@ -64,7 +64,7 @@ use super::recognition::{
     trait_method,
 };
 use super::refusal::{Refused, refuse};
-use super::representation::{const_js, variant_field};
+use super::representation::variant_field;
 use super::std_types::cow::CowOp;
 use super::std_types::map::MapOp;
 use super::std_types::number::NumOp;

@@ -3,6 +3,30 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "unread-library-item-imported",
+    breaks: "a module imports a library's item it doesn't read, a numbered enum's variant whose test an exhaustive `match` needn't write, `import { Pending, Resolved, Uninitialized }`",
+    file: "src/lower/pipeline.rs",
+    find: "                (package.named).retain(|(export, local)| read.contains(local) || analyzed(&package.from, export));\n",
+    replace: "",
+    tests: ["test/cross-crate-items.test.ts", "-t", "a library's repr enum's variant is imported by its name"],
+  },
+  {
+    name: "numbered-variant-const-undeclared",
+    breaks: "a numbered enum's variant read in its own module has no `const Pending = 0;`, so the read is of a name JS hasn't, a `ReferenceError`",
+    file: "src/lower/pipeline.rs",
+    find: "        if !export && !reached.contains(&id) {\n",
+    replace: "        if !export {\n",
+    tests: ["test/lowering-structs-enums.test.ts", "-t", "a repr enum's variants are its module's consts"],
+  },
+  {
+    name: "numbered-variant-const-unexported",
+    breaks: "a numbered enum's variant another module reads isn't exported, so its import, `import { Dark } from \"./theme.js\"`, finds nothing",
+    file: "src/lower/pipeline.rs",
+    find: "            tcx.visibility(id).is_public() || called_from_elsewhere.contains(&id) || read_elsewhere.contains(&id);\n",
+    replace: "            tcx.visibility(id).is_public() || called_from_elsewhere.contains(&id);\n",
+    tests: ["test/lowering-structs-enums.test.ts", "-t", "a repr enum's variants are its module's consts"],
+  },
+  {
     name: "class-declared-nowhere",
     breaks: "a class's struct isn't where it's declared, so its `///` doc isn't its constructor function's (ADR 0761)",
     file: "src/lower/pipeline.rs",

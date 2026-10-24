@@ -687,7 +687,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let variant = self
                     .default_variant(default, ty)
                     .ok_or_else(|| self.unsupported(span, &format!("`Default` of `{ty}`")))?;
-                super::bindings::unit_variant(self.tcx, adt.did(), adt.variant_with_ctor_id(variant))
+                self.unit_variant(adt.did(), adt.variant_with_ctor_id(variant))
             }
             // A std hasher's, as its `new()` (ADR 0463).
             ty::Adt(..) if let Some(which) = self.recognition().std_hasher(ty) => {

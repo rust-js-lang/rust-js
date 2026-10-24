@@ -80,6 +80,7 @@ pub fn lower_crate<'tcx>(
         required,
         thread_local_inits,
         consts,
+        variants,
         codecs,
         modules,
         taken,
@@ -629,6 +630,27 @@ pub fn lower_crate<'tcx>(
     for (module, consts) in pass.local_consts.drain() {
         const_items.entry(module).or_default().extend(consts);
     }
+    // A numbered enum's variant, its module's `const` of its number, where
+    // something reads it or another module or crate may, exported then, as
+    // a `const` item is (ADR 0722, amended).
+    let read_elsewhere: HashSet<DefId> = pass.references.iter().map(|&(_, id)| id).collect();
+    for &variant in &variants {
+        let id = variant.to_def_id();
+        let export =
+            tcx.visibility(id).is_public() || called_from_elsewhere.contains(&id) || read_elsewhere.contains(&id);
+        if !export && !reached.contains(&id) {
+            continue;
+        }
+        let info = &fns[&id];
+        let adt = tcx.adt_def(tcx.parent(id));
+        const_items.entry(info.module).or_default().push(js::Const {
+            name: info.name.clone(),
+            value: super::bindings::variant_tag(tcx, adt.variant_with_id(id)),
+            mutable: false,
+            export,
+            span: sources.item_span(tcx, variant),
+        });
+    }
     // An inherent impl's constant is its type's object's, `S.ID`, as its
     // methods are (ADR 0410).
     for &def_id in &consts {
@@ -751,12 +773,14 @@ pub fn lower_crate<'tcx>(
             let mut packages: Vec<js::Package> = packages.into_values().collect();
             // `js::import!("./App.css");`: `import "./App.css";`, for what a
             // module does when loaded, as a bundler's CSS does (ADR 0110).
+            let mut loaded = HashSet::new();
             for attr in super::bindings::marks(tcx, module, "import") {
                 let Some(from) = attr.value_str().map(|s| s.to_string()) else {
                     tcx.dcx()
                         .span_err(attr.span(), "rust-js: write it `js::import!(\"./file.css\");`");
                     continue;
                 };
+                loaded.insert(from.clone());
                 if !packages.iter().any(|p| p.from == from) {
                     packages.push(js::Package {
                         from,
@@ -943,6 +967,28 @@ pub fn lower_crate<'tcx>(
                 .collect();
             super::drops::inlined_drops(&mut lowered.items, &drops);
             super::std_types::map::discarded_calls(&mut lowered.items);
+            // A library's item its lowering asked for, where tidy took out
+            // what read it, a test of a numbered enum's variant an exhaustive
+            // `match` needn't write (ADR 0722): not imported, as the linker
+            // imports none of the crate's modules' the module doesn't read.
+            let mut read = HashSet::new();
+            for item in &lowered.items {
+                item.visit_vars(&mut |name| {
+                    read.insert(name.to_string());
+                });
+            }
+            let analyzed = |from: &str, export: &str| {
+                (imported.get(&(from.to_string(), export.to_string()))).is_some_and(|users| users.contains(&module))
+            };
+            lowered.packages.retain_mut(|package| {
+                let named = package.named.len();
+                (package.named).retain(|(export, local)| read.contains(local) || analyzed(&package.from, export));
+                named == package.named.len()
+                    || !package.named.is_empty()
+                    || package.default.is_some()
+                    || package.namespace.is_some()
+                    || loaded.contains(&package.from)
+            });
             let mut imports: Vec<_> = targets.remove(&module).unwrap_or_default().into_iter().collect();
             imports.sort_by(|(a, an, ..), (b, bn, ..)| (&paths[a], an).cmp(&(&paths[b], bn)));
             let candidates: Vec<_> = imports

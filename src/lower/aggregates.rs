@@ -147,7 +147,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(Expr::int(n));
         }
         if adt_def.is_enum() && variant.fields.is_empty() {
-            return Ok(bindings::unit_variant(self.tcx, adt_def.did(), variant));
+            return Ok(self.unit_variant(adt_def.did(), variant));
         }
         if variant.ctor_kind() == Some(CtorKind::Const) {
             return Ok(bindings::unit_name(self.tcx, adt_def.did()).map_or_else(Expr::undefined, Expr::str));

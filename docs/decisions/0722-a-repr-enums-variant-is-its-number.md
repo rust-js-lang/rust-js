@@ -1,7 +1,10 @@
 # 0722. A `#[repr(..)]` enum's variant is its number
 
 Status: Accepted. Extends [0013](0013-fieldless-enums.md) and
-[0393](0393-an-enums-discriminant.md).
+[0393](0393-an-enums-discriminant.md). Amended: each variant is its
+module's `const` of its number, read by its name, as a `const` item is
+([0031](0031-consts.md), [0770](0770-a-librarys-const-is-imported-by-its-name.md)):
+`const Pending = 0;`, `payload._status = Pending` (below).
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): A: which JS value a
 variant is, nothing a program observes but through its own `==`, order,
@@ -63,14 +66,134 @@ variant named by `#[rust_js::name]`, a tagged or untagged one, and std's.
 - `enum_order`'s and `hash_values`'s snapshots read the numbers:
   `writeU8(state, small)`, and a constant comparison folded.
 
+## Amended: each variant is its module's `const`
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): A: a variant read by
+its `const`'s name is the same number as one written in place; only how
+the JS reads changes.
+
+### Context
+
+React's `ReactLazy` keeps a lazy component's status as numbers, each a
+constant of its module: `const Uninitialized = -1; const Pending = 0;
+const Resolved = 1; const Rejected = 2;`, then `payload._status =
+Pending` and `if (payload._status === Uninitialized)`. Its port's
+`#[repr(i8)] enum Status { Uninitialized = -1, Pending = 0, .. }` was
+the numbers in place, `payload._status = 0`, `if (payload._status ===
+-1)`: the names the reader looks for were lost.
+
+### Decision
+
+**Each variant of a numbered enum is its module's `const` of its number,
+named as the variant is, and each use of it in a body reads that name**,
+as a `const` item is (ADR 0031): imported by its name where another
+module reads it, and where another crate does (ADR 0770).
+
+```rust
+#[derive(Clone, Copy, PartialEq)]
+#[repr(i8)]
+enum Status {
+    Uninitialized = -1,
+    Pending = 0,
+}
+
+fn start(payload: &Payload) {
+    if payload.status.get() == Status::Uninitialized {
+        payload.status.set(Status::Pending);
+    }
+}
+```
+
+```js
+const Uninitialized = -1;
+const Pending = 0;
+
+function start(payload) {
+  if (payload._status === Uninitialized) {
+    payload._status = Pending;
+  }
+}
+```
+
+- **The analysis names each one** an item of its enum's module
+  (`analysis.rs`'s `variants`), named apart from the module's other
+  names as any item is (`name_items`): two enums' `Pending` in one
+  module are `Pending` and `Pending$1`, and one a JS global's,
+  `Error`, is `Error$`.
+- **One answer to how a body writes a variant without fields**:
+  `FnCx::unit_variant`, its `const` by `fn_ref` where rust-js named one,
+  the crate's or a library's, else its value (`bindings::unit_variant`).
+  A test of it, a `switch`'s `case Pending:`, a value made, a `Default`,
+  a deserialized one and a constant rustc computed in a body
+  (`FnCx::const_value`) each ask it.
+- **Declared where it's read or may be**: a `const` is written where a
+  body reads it, or its enum is `pub` or another module or crate may
+  read it, exported then, as a `const` item is; in its source's place,
+  beside its enum. A `pub` enum's `.d.ts` declares each, `export const
+  Pending: 0;`, beside its type.
+- **An import is of what a module reads.** A test is written as it's
+  lowered, recording its variant as read, then tidy may take it out: of
+  an exhaustive `match`, the last arm's, `Dark` of `Light | Dark`, is
+  what the others leave. An import of it would be of a name nothing
+  reads, so the linker imports none of the crate's modules' items the
+  module doesn't read, and the pipeline none of a library's.
+- **Where the value is what's needed, it's the number**:
+  `bindings::variant_tag` still says what each variant is. A module's
+  `const` of one, `const DEFAULT: Status = Status::Pending;`, is `const
+  DEFAULT = 0;`: a module's constants read no other, so nothing depends
+  on which module loads first (ADR 0031). `{:?}`'s table is keyed by
+  the numbers, its `.d.ts` type is `-1 | 0 | 1 | 2`, and serde writes
+  its name. `as i32` is the value it casts, `status` of a variable; of
+  a variant written, `Status::Pending as i32`, rustc's number, `0`,
+  which it computed.
+
+### Why
+
+- **Upstream's JS**: React names each status; a number in place loses
+  the name a reader looks for, and reads as a magic number.
+- **One way**: a variant is read by its name as a `const` is, through
+  the same naming, imports and exports; no second way of naming a
+  module's value.
+
+### Alternatives
+
+- **The numbers in place** (this ADR as first decided): what the program
+  names, the JS doesn't.
+- **A frozen object, `Status.Pending`**: TypeScript's `enum`'s shape, not
+  React's, and an object read at each use.
+- **A constant of a variant in a module's `const` by its name**: a
+  module that reads another's at load may read it before it's made, in
+  an import cycle; the number is the same value.
+
+### Consequences
+
+- Comparisons of two variants written, `Byte::Two < Byte::Max`, are no
+  longer folded to `true`: `Two < Max`, as the Rust writes them.
+- An `Option` of one compared to `Some(Kind::Empty)` is `kind == Empty`,
+  where the number in place was `kind === 0`: `==` because the name
+  isn't a literal the comparison knows is no `null`; the same answer.
+- A `{:?}` of a variant written, `Counted::Second`, is its table's read
+  of it, `["First", "Second"][Second]`, where the number's was folded.
+- A binding's import, a JS module's export, whose only read tidy took
+  out isn't written either; a package nothing reads isn't loaded. Nor is
+  a compiled std body's, `fused_iterator`'s `fuseDoubleEndedIterator_nextBack`,
+  which no line of it read.
+
 ## What holds it
 
 - `test/lowering-structs-enums.test.ts`, "a repr enum's variant is its
-  number"; `test/corpus/repr_enum_numbers.rs` against native Rust; the
-  serde case "a repr enum serializes and deserializes by its variants'
-  names".
+  number" and "a repr enum's variants are its module's consts, each read
+  by its name"; `test/cross-crate-items.test.ts`, "a library's repr
+  enum's variant is imported by its name"; `test/corpus/repr_enum_numbers.rs`
+  against native Rust; the serde case "a repr enum serializes and
+  deserializes by its variants' names".
 - Mutations: `numbered-enum-named`, `numbered-enum-wide`,
   `numbered-discriminant-tested`, `numbered-debug-table`,
   `numbered-gives-own-name`, `numbered-ordered-by-name`,
   `numbered-declared-names`, `numbered-eq-structural`,
-  `numbered-payload-untold`, `numbered-read-as-name`.
+  `numbered-payload-untold`, `numbered-read-as-name`; and of the
+  amendment `numbered-variants-unnamed`, `numbered-variant-const-undeclared`,
+  `numbered-variant-const-unexported`, `numbered-variant-written-as-number`,
+  `numbered-variant-tested-as-number`, `numbered-constant-as-number`,
+  `numbered-variant-consts-undeclared`, `unread-module-imported`,
+  `unread-library-item-imported`.
