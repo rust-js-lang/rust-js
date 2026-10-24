@@ -255,8 +255,8 @@ export const mutations: Mutation[] = [
     name: "refcell-clone-unheld",
     breaks: "a `RefCell`'s clone of what may ask runs with it free to borrow mutably",
     file: "src/lower/std_impls.rs",
-    find: "            ty::Adt(_, args) if std(StdItem::RefCell) && !self.recognition().std_alone(args.type_at(0)) => {\n                let mut body = Vec::new();\n                let value = self.clone_value(",
-    replace: "            ty::Adt(_, args) if false => {\n                let mut body = Vec::new();\n                let value = self.clone_value(",
+    find: "            ty::Adt(_, args) if std(StdItem::RefCell) && !self.recognition().std_alone(args.type_at(0)) => {\n                // Its parameter named apart",
+    replace: "            ty::Adt(_, args) if false => {\n                // Its parameter named apart",
     tests: ["test/corpus.test.ts", "-t", "refcell_held_while_asked"],
   },
   {
@@ -672,5 +672,13 @@ export const mutations: Mutation[] = [
     find: "            || self.recognition().is_os_text(ty)\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^path_components.rs$"],
+  },
+  {
+    name: "refcell-clone-param-named-alone",
+    breaks: "a `RefCell`'s clone's arrow names its parameter `value` itself, which a part its body spills is named too: `(value) => { const value = ..`, JS that doesn't parse (#200)",
+    file: "src/lower/std_impls.rs",
+    find: "                let param = self.fresh(\"value\");\n",
+    replace: "                let param = String::from(\"value\");\n",
+    tests: ["test/corpus.test.ts", "-t", "^refcell_clone_nested_parts.rs$"],
   },
 ];

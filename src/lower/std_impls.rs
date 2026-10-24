@@ -291,12 +291,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // A `RefCell`'s, while it's borrowed (ADR 0328): checked free to,
             // and held where its value's clone may ask.
             ty::Adt(_, args) if std(StdItem::RefCell) && !self.recognition().std_alone(args.type_at(0)) => {
+                // Its parameter named apart from what its body names, a
+                // part read more than once of a `RefCell` inside (#200).
+                let param = self.fresh("value");
                 let mut body = Vec::new();
-                let value = self.clone_value(Expr::var("value"), args.type_at(0), span, &mut body)?;
+                let value = self.clone_value(Expr::var(&param), args.type_at(0), span, &mut body)?;
                 body.push(StmtKind::Return(Some(value)).at(js::Span::NONE));
                 let value = Expr::call(
                     Expr::helper("$withBorrow"),
-                    vec![place, Expr::arrow(vec!["value".into()], body)],
+                    vec![place, Expr::arrow(vec![param.as_str().into()], body)],
                 );
                 return Ok(Expr::object(vec![Prop::Field(js::HELD.into(), value)]));
             }
