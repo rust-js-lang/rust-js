@@ -115,20 +115,11 @@ pub fn lower_crate<'tcx>(
         held,
     } = analyze_crate(tcx, all_bodies, initializers, dependencies, export_library, std_bodies)?;
     // Each module's default export, which a module of the crate imports as
-    // its default, not by a name of its own (ADR 0251).
-    let defaults: HashMap<LocalModId, DefId> = (modules.iter())
-        .filter_map(|&module| {
-            super::bindings::default_exports(tcx, module)
-                .into_iter()
-                .filter_map(|(item, _)| item)
-                .find(|item| {
-                    item.as_local()
-                        .is_some_and(|local| tcx.parent_module_from_def_id(local) == module)
-                })
-                .map(|item| (module, item))
-        })
+    // its default, not by a name of its own (ADR 0251), as every importer
+    // does (`default_exports::exported_as`).
+    let defaulted: HashSet<DefId> = (modules.iter())
+        .filter_map(|&module| super::default_exports::own_default(tcx, module))
         .collect();
-    let defaulted: HashSet<DefId> = defaults.values().copied().collect();
     called_from_elsewhere.retain(|id| !defaulted.contains(id));
     // A library exports what its consumers can reach (ADR 0100).
     if export_library {
@@ -841,7 +832,7 @@ pub fn lower_crate<'tcx>(
             let mut default_declared = false;
             // Another module's function, re-exported as the default (ADR 0240).
             let mut default_from = None;
-            for (function, span) in super::bindings::default_exports(tcx, module) {
+            for (function, span) in super::default_exports::default_exports(tcx, module) {
                 let unset = default_export.is_none() && default_from.is_none();
                 match function {
                     Some(function)
@@ -851,7 +842,7 @@ pub fn lower_crate<'tcx>(
                                 .is_some_and(|local| tcx.parent_module_from_def_id(local) == module) =>
                     {
                         default_export = Some(function);
-                        default_declared = super::bindings::default_declared(tcx, function);
+                        default_declared = super::default_exports::default_declared(tcx, function);
                     }
                     Some(function) if unset && fns.get(&function).is_some_and(|info| info.owner.is_none()) => {
                         default_from = Some(function);
@@ -893,9 +884,16 @@ pub fn lower_crate<'tcx>(
             // A constant the default is, read by name in its own module, is
             // declared and then exported by default, `const v = ..; export
             // default v;`, as JS has no name of `export default ..;`; still
-            // its default alone (ADR 0625, amended).
-            let read_default = default_export
-                .filter(|&held| default_declared && tcx.def_kind(held) != DefKind::Fn && read_at_home.contains(&held));
+            // its default alone (ADR 0625, amended). So is one a `pub use`
+            // of its module names by another name, `export { VERSION as
+            // RELEASE };`, which reads it by its name.
+            let aliased = |held: DefId| {
+                let name = super::bindings::fn_name(tcx, held);
+                aliases.iter().any(|(aliased, _)| *aliased == name)
+            };
+            let read_default = default_export.filter(|&held| {
+                default_declared && tcx.def_kind(held) != DefKind::Fn && (read_at_home.contains(&held) || aliased(held))
+            });
             if let Some(held) = read_default {
                 let name = super::bindings::fn_name(tcx, held);
                 for constant in const_items
@@ -1100,13 +1098,17 @@ fn reexports(
             }
         }
     }
-    if let Some(info) = default_from.and_then(|function| fns.get(&function))
+    // Each function of another module as that module exports it, its
+    // default where it's that one's (`default_exports::exported_as`).
+    let exported = |function: DefId, info: &FnInfo| super::default_exports::exported_as(tcx, function, &info.name);
+    if let Some(function) = default_from
+        && let Some(info) = fns.get(&function)
         && let Some(from) = paths.get(&info.module)
     {
         grouped
             .entry(from.clone())
             .or_default()
-            .push((info.name.clone(), "default".to_string()));
+            .push((exported(function, info), "default".to_string()));
     }
     for id in tcx.hir_module_items(module).free_items() {
         let item = tcx.hir_item(id);
@@ -1152,7 +1154,7 @@ fn reexports(
         grouped
             .entry(from.clone())
             .or_default()
-            .push((info.name.clone(), alias));
+            .push((exported(def_id, info), alias));
     }
     let modules = (grouped.into_iter()).map(|(path, named)| Reexport {
         from: js::ImportFrom::Module(path),

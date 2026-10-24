@@ -1,6 +1,7 @@
 # 0625. A default constant is its value; a comment right above the first code is its
 
-Status: Accepted; amended (one its module reads, below). Extends
+Status: Accepted; amended (one its module reads, below; one a `pub use`
+of its module renames, by [0773](0773-a-held-default-is-exported-once.md)). Extends
 [0611](0611-a-default-export-is-where-its-macro-is.md) and amends [0383](0383-a-files-leading-comments-are-its-jss.md).
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): A: what a module exports

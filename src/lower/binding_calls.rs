@@ -232,14 +232,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && info.owner.is_none()
             && tcx.visibility(id).is_public()
         {
-            let default = super::bindings::default_exports(tcx, info.module)
-                .iter()
-                .any(|&(exported, _)| exported == Some(id));
-            let export = if default {
-                "default".to_string()
-            } else {
-                info.name.clone()
-            };
+            let export = super::default_exports::exported_as(tcx, id, &info.name);
             (js::ImportFrom::Module(super::module_path(tcx, info.module)), export)
         } else {
             return Err(self.unsupported(

@@ -27,6 +27,12 @@ pub struct Item {
     pub export: String,
     /// A method's name in that object.
     pub member: Option<String>,
+    /// Whether it's its module's default export, which its file exports it
+    /// as, `export default function noop() {}`, and a consumer imports it
+    /// as, named after `export` (ADRs 0611, 0773). A library a compiler
+    /// wrote before had none a consumer imported so.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub default: bool,
     /// The type parameters it's given a `dropT` for (ADR 0098).
     pub drops: Vec<u32>,
     /// Whether it may return `Err(fmt::Error)` (ADR 0187). A library a
@@ -59,6 +65,17 @@ pub struct Item {
     /// compiler wrote before had none, as none was one.
     #[serde(default)]
     pub rest: bool,
+}
+
+impl Item {
+    /// What its file exports it as, which a consumer imports: `default`,
+    /// or its name.
+    fn exported_as(&self) -> String {
+        match self.default {
+            true => "default".to_string(),
+            false => self.export.clone(),
+        }
+    }
 }
 
 /// A binding a module of the library holds as a value of its own, its
@@ -114,11 +131,15 @@ pub struct Library {
 }
 
 /// An item as a consumer imports it: from a JS file, relative to its own
-/// output, by name, and a method of what it names.
+/// output, by what that file exports it as, its default or its name, and a
+/// method of what it names.
 #[derive(Clone)]
 pub struct Imported {
     pub from: String,
+    /// `default`, or its name there.
     pub export: String,
+    /// Its name there, which an import of it is named after.
+    pub name: String,
     pub member: Option<String>,
     pub drops: Vec<u32>,
     pub fails: bool,
@@ -219,7 +240,8 @@ impl Dependencies {
             for item in library.items {
                 let imported = Imported {
                     from: specifier(&item.module)?,
-                    export: item.export,
+                    export: item.exported_as(),
+                    name: item.export,
                     member: item.member,
                     drops: item.drops,
                     fails: item.fails,
@@ -290,7 +312,8 @@ impl Dependencies {
         for item in library.items {
             let imported = Imported {
                 from: format!("{STD_PACKAGE}/{}.js", item.module.join("/")),
-                export: item.export,
+                export: item.exported_as(),
+                name: item.export,
                 member: item.member,
                 drops: item.drops,
                 fails: item.fails,

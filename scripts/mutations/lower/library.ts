@@ -122,4 +122,12 @@ export const mutations: Mutation[] = [
     replace: "            rest: false,\n",
     tests: ["test/rest-parameters.test.ts", "-t", "library's rest function"],
   },
+  {
+    name: "library-default-listed-by-name",
+    breaks: "a library's manifest lists a module's default by its name, which a consumer imports and the module doesn't export",
+    file: "src/lower/library.rs",
+    find: "            default: super::default_exports::is_own_default(tcx, id),\n",
+    replace: "            default: false,\n",
+    tests: ["test/cross-crate-items.test.ts", "-t", "default export is imported as its default"],
+  },
 ];

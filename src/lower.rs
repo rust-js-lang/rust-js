@@ -42,6 +42,7 @@ mod classes;
 mod combinators;
 mod copies;
 mod declarations;
+mod default_exports;
 mod display;
 mod drops;
 mod format_args;
