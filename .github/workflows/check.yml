@@ -16,7 +16,7 @@ on:
         description: 'Machines the suite is split across: more is sooner, and more minutes, as each sets itself up.'
         type: choice
         options: ['1', '2', '4']
-        default: '1'
+        default: '2'
       since:
         description: 'The commit whose changes since are the mutations run: of main, its last checked one.'
         type: string
@@ -32,7 +32,7 @@ on:
     inputs:
       test_shards:
         type: string
-        default: '1'
+        default: '2'
       nightly:
         type: boolean
         default: false

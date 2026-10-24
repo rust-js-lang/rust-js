@@ -55,7 +55,7 @@ export const mutations: Mutation[] = [
     "breaks": "`!matches!(t, \"pre\")` read in place stays `!(t === \"pre\")`",
     "file": "src/lower/mir/tidy.rs",
     "find": "            ..Expr::unary(*op, (**arg).clone())\n",
-    "replace": "            kind: ExprKind::Unary(*op, arg.clone()),\n            reads: false,\n",
+    "replace": "            kind: ExprKind::Unary(*op, arg.clone()),\n            known: js::Known::Nothing,\n",
     "tests": ["test/lowering-iterators.test.ts", "-t", "negated matches, string methods"]
   },
   {

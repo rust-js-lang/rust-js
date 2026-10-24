@@ -44,6 +44,57 @@ test("a call's value is read in a method's arguments, past the method", async ()
   expect(out).toEqual([["-a", ""], ["----b", "Map"], ["----c", "…"]]);
 });
 
+// A binding's method of a JS value, `obj.send(a, b)`, is looked up when
+// it's called, after Rust has run its arguments: a getter may answer the
+// lookup, and an argument may replace the method. A call's value isn't
+// read past it, `const effect = ..; obj.send(effect, ..)`, as Rust runs it
+// (#187); what does nothing, `flag ? 1 : 2`, is read in place still.
+test("a binding's method is looked up after its arguments run", async () => {
+  const { js, lib } = await compiled("read-past-a-binding-method", `use js::Unknown;
+
+#[cfg_attr(rust_js, rust_js::link_name = "globalThis.effect")]
+fn effect() -> i32 {
+    unreachable!()
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "send")]
+fn send(this: &Unknown, a: i32, b: i32) {
+    unreachable!()
+}
+
+pub fn run(obj: &Unknown, flag: bool) {
+    send(obj, effect(), if flag { 1 } else { 2 });
+}
+`);
+  expect(js).toContain("  const effect = globalThis.effect();\n  obj.send(effect, flag ? 1 : 2);\n");
+  const g = globalThis as Record<string, unknown>;
+  // A getter answers the lookup: after the argument, as Rust runs them.
+  const events: string[] = [];
+  g.effect = () => {
+    events.push("argument");
+    return 7;
+  };
+  const got: number[][] = [];
+  const watched = {
+    get send() {
+      events.push("method lookup");
+      return (a: number, b: number) => got.push([a, b]);
+    },
+  };
+  lib.run(watched as never, true as never);
+  expect(events).toEqual(["argument", "method lookup"]);
+  // An argument that replaces the method: the new one is called.
+  const called: string[] = [];
+  const replaced: Record<string, (a: number, b: number) => void> = { send: () => called.push("old") };
+  g.effect = () => {
+    replaced.send = () => called.push("new");
+    return 1;
+  };
+  lib.run(replaced as never, false as never);
+  expect(called).toEqual(["new"]);
+  expect(got).toEqual([[7, 1]]);
+});
+
 // React's addObjectDiffToProperties: `if (readReactElementTypeof(nextValue)
 // === REACT_ELEMENT_TYPE) { .. continue; } else { .. }`, a test MIR holds
 // before the blocks its arms' jumps leave, `const _183 = ..; bb200: {

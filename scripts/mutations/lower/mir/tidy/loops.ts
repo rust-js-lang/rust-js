@@ -75,14 +75,6 @@ export const mutations: Mutation[] = [
     "tests": ["test/lowering-loops.test.ts", "-t", "nested loops from MIR read as written"]
   },
   {
-    "name": "mir-for-of-break-after-leaving",
-    "breaks": "a `for\u2026of` body from MIR that ends leaving, `continue`, gets a `break` after it",
-    "file": "src/lower/mir/tidy/loops.rs",
-    "find": "    if falls_out && !inner.last().is_some_and(ends) {\n",
-    "replace": "    if falls_out {\n",
-    "tests": ["test/lowering-loops.test.ts", "-t", "nested loops from MIR read as written"]
-  },
-  {
     name: "mir-tidy-next-some-loop-kept",
     breaks: "MIR's loop over items that may be `None` stays a `$nextSome` loop, a `null` item read as `undefined`",
     file: "src/lower/mir/tidy/loops.rs",

@@ -8,7 +8,8 @@ export const mutations: Mutation[] = [
     "file": "src/lower/iterators.rs",
     "find": "        js::ExprKind::Call(callee, _) if matches!(callee.kind, js::ExprKind::Var(_)) => fresh(e),\n",
     "replace": "",
-    "tests": ["test/lowering-iterators.test.ts", "-t", "iterator chains from MIR are array methods"]
+    "tests": ["test/corpus.test.ts", "-t", "^(calculator|map_set_methods).rs$"],
+    "snapshots": true
   },
   {
     name: "mir-object-keys-iterated",
