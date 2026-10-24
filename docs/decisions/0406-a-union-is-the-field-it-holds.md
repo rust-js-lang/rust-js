@@ -68,3 +68,14 @@ rust-js does not support reading a union's `float` while it holds `int`, which r
 ## Amended by
 
 [ADR 0694](0694-four-refusals-of-drops-and-displays-lifted.md): `ManuallyDrop::drop(&mut m)` drops what `m` holds, in place.
+
+## Amendment: a temporary's one part is no exception
+
+The pattern tidy's guard against one part of a temporary into a
+temporary, `const [_28] = f();`, is gone: what came of it is read in place
+by later steps anyway (`show(pair(3)[0])` either way), and the one case it
+still met was made worse, `assert_eq!(N, count)`'s `const value = count;
+if (N !== value)` where it's now `if (N !== count)`
+(`copied_default_own_params`). Its mutation, `temporary-part-patterned`,
+which no test caught (#194), is removed with it; rustc's union tests pass
+as listed.
