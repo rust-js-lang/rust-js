@@ -353,6 +353,83 @@ pub(in crate::lower::mir::tidy) fn ending(stmts: &mut Vec<Stmt>, label: &str) {
     });
 }
 
+/// A block MIR made that ends `if (c) { a } else { b } return v;`, a
+/// match's arm of `return v` that some of the `if`'s paths go on to and the
+/// rest leave past with a `break` of the block, `getArrayKind`'s: the
+/// `return` at the end of each path that goes on to it, and each `break` of
+/// the block a path ends with gone, now where the block ends, so nothing
+/// names it (ADR 0754). Only of one value, a constant or a name, which reads
+/// as it's written in each; and not where a `break` of the block would be
+/// left, deeper than a path's end. The `if` has an `else`: a `let … else`'s
+/// guard, `if (c) { s; break l; } return v;`, has none, and stays one.
+pub(in crate::lower::mir::tidy) fn returns_into_branches(stmts: &mut [Stmt]) {
+    for stmt in stmts {
+        if stmt.span.is_none()
+            && let StmtKind::Labeled(label, body) = &mut stmt.kind
+            && crate::lower::mir::is_block_label(label)
+        {
+            let label = label.clone();
+            returned_into_branches(body, &label);
+        }
+    }
+}
+
+/// Block `label`'s `stmts`, as `returns_into_branches` has them.
+fn returned_into_branches(stmts: &mut Vec<Stmt>, label: &str) {
+    // `stmts`, `exit` at the end of each path of them that goes on, and the
+    // `break label` each that leaves ends with gone.
+    fn into(stmts: &mut Vec<Stmt>, exit: &Stmt, label: &str) {
+        let leaves = |last: &Stmt| match &last.kind {
+            StmtKind::Break(Some(l)) => l != label,
+            StmtKind::If(_, _, Some(_)) => false,
+            _ => ends(last),
+        };
+        if stmts.last().is_some_and(leaves) {
+            return;
+        }
+        let Some(last) = stmts.last_mut() else {
+            stmts.push(exit.clone());
+            return;
+        };
+        match &mut last.kind {
+            StmtKind::Break(Some(l)) if l == label => {
+                stmts.pop();
+            }
+            StmtKind::If(_, then, Some(otherwise)) => {
+                into(then, exit, label);
+                into(otherwise, exit, label);
+            }
+            StmtKind::If(test, then, otherwise @ None) if js::names_jump(then, label) => {
+                into(then, exit, label);
+                match then.is_empty() {
+                    true => {
+                        *test = std::mem::replace(test, Expr::undefined()).negated_test();
+                        *then = vec![exit.clone()];
+                    }
+                    false => *otherwise = Some(vec![exit.clone()]),
+                }
+            }
+            _ => stmts.push(exit.clone()),
+        }
+    }
+    let [.., before, last] = stmts.as_slice() else {
+        return;
+    };
+    let one_value =
+        |e: &Expr| e.is_constant() || matches!(e.kind, ExprKind::Var(_)) || matches!(e.kind, ExprKind::Undefined);
+    if !matches!(&before.kind, StmtKind::If(_, _, Some(_)))
+        || !matches!(&last.kind, StmtKind::Return(value) if value.as_ref().is_none_or(one_value))
+    {
+        return;
+    }
+    let mut threaded = stmts.clone();
+    let exit = threaded.pop().expect("matched");
+    into(&mut threaded, &exit, label);
+    if !js::names_jump(&threaded, label) {
+        *stmts = threaded;
+    }
+}
+
 /// Whether `stmts` always end with a `break label`.
 pub(in crate::lower::mir::tidy) fn leaves(stmts: &[Stmt], label: &str) -> bool {
     match stmts.last().map(|s| &s.kind) {

@@ -321,6 +321,12 @@ pub(super) const STAGES: &[Stage] = &[
             pass("jumps into branches", |b, _| {
                 js::statement_lists(b, &mut jumps_into_branches)
             }),
+            // A block's `return` of one value that some of the paths of the
+            // `if` before it go on to, and the rest leave past: in each that
+            // goes on, once the others' `break`s end them (ADR 0754).
+            pass("returns into branches", |b, _| {
+                js::statement_lists(b, &mut |s| returns_into_branches(s))
+            }),
             pass("settle branches", |b, _| settle_jumps(b)),
             pass("declarations", |b, _| declarations(b)),
             // A loop's early `break`s, its tests read in place now, and its test.

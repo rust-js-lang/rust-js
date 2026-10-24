@@ -33,6 +33,15 @@ test("ReactPerformanceTrackProperties holds no temporary of its own", () => {
   expect(js).toContain("          if (readReactElementTypeof(nextValue) === REACT_ELEMENT_TYPE) {\n");
 });
 
+// ADR 0754: upstream's getArrayKind is a loop of an `if`/`else` chain whose
+// arms return, with no block MIR made for the arm others go on to.
+test("getArrayKind is a chain of returns, no block MIR made", () => {
+  const js = of("ReactPerformanceTrackProperties.js");
+  const kind = js.slice(js.indexOf("function getArrayKind("), js.indexOf("export function addObjectToProperties("));
+  expect(kind).not.toMatch(/bb\d+/);
+  expect(kind).toContain('      if (typeof value === "object" && value !== null) {\n        return "Complex";\n      }\n');
+});
+
 // ADR 0753: upstream's `if (indent >= 3) { // .. } else if (..)`, the
 // branch of only comments kept, with them.
 test("addObjectDiffToProperties keeps its branch of only comments", () => {
