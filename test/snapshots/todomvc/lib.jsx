@@ -30,7 +30,7 @@ function useFilter() {
 }
 
 export function App() {
-  const [todos, dispatch] = useReducer(reduce, [], () => load());
+  const [todos, dispatch] = useReducer(reduce, undefined, () => load());
   const filter = useFilter();
   const [draft, setDraft] = useState("");
   useEffect(() => {

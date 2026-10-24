@@ -752,6 +752,12 @@ A parameter of TypeScript's `any` or `unknown` is generic:
 | a value the structured clone copies, `postMessage`'s, `()` its `undefined` | `value: T`, `T: js::StructuredClone` |
 | a value whose type you don't know | `&js::Unknown`, or `Option<&js::Unknown>` |
 
+A `()` given any of them is `undefined`, what `()` is everywhere:
+`js::strict_equals(x, ())` is `x === undefined`. Only a list's `()` is
+the list of none: rest arguments', none given, and a hook's
+dependencies', `use_memo(f, ())`'s `useMemo(f, [])`
+([ADR 0775](../../decisions/0775-a-unit-given-to-js-is-undefined.md)).
+
 ```rust
 use js::{Defined, StructuredClone};
 
