@@ -1,7 +1,9 @@
 # 0031. A `const` is the value rustc computed, under its own name
 
 Status: Accepted. Amended: a constant whose value rustc can't say is its
-initializer's, each use a copy where it may change (below).
+initializer's, each use a copy where it may change (below). Amended by
+[0770](0770-a-librarys-const-is-imported-by-its-name.md): a library's is
+imported by its name.
 
 Case: A, C, D ([0262](0262-when-rust-and-js-disagree.md)).
 

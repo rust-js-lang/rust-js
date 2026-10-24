@@ -244,12 +244,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && let Some(referred) = referred_constant(&state.promoted[promoted])
             && self.const_static(c).is_none()
         {
-            // Of the crate's named one, the one there is, uncopied, as it's
-            // only lent shared.
+            // Of a named one rust-js compiled, the crate's or a library's,
+            // the one there is, uncopied, as it's only lent shared.
             if let Const::Unevaluated(named, _) = referred.const_
                 && named.promoted.is_none()
                 && matches!(tcx.def_kind(named.def), DefKind::Const { .. })
-                && self.krate.fns.contains_key(&named.def)
+                && self.is_rust_fn(named.def)
                 && referred.ty().is_freeze(tcx, self.typing_env)
             {
                 return Ok(self.fn_ref(named.def));
@@ -293,7 +293,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
         }
         // A reference to a static, which is the static (ADR 0023): a JS
-        // global (ADR 0021), or the crate's, its module's `const` (ADR 0096).
+        // global (ADR 0021), or the crate's or a library's, its module's
+        // `const` (ADR 0096).
         let pointer = crate::lower::pointers::raw_pointee(tcx, ty);
         if (matches!(ty.kind(), ty::Ref(_, _, ty::Mutability::Not))
             || pointer.is_some_and(|(_, mutability)| mutability.is_not()))
@@ -302,7 +303,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             let referred = match tcx.is_foreign_item(def_id) {
                 true => Some(self.js_global(def_id, c.span)),
-                false => self.krate.fns.contains_key(&def_id).then(|| self.fn_ref(def_id)),
+                false => self.is_rust_fn(def_id).then(|| self.fn_ref(def_id)),
             };
             if let Some(referred) = referred {
                 // A raw pointer to one, a handle on it (ADR 0407): of what isn't
