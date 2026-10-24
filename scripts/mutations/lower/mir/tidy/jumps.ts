@@ -97,7 +97,8 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/jumps.rs",
     find: "            true => leaves_early(then),\n",
     replace: "            true => then.last().is_some_and(ends),\n",
-    tests: ["test/lowering-loops.test.ts", "-t", "a .while. loop from MIR tests where"],
+    tests: ["test/corpus.test.ts", "-t", "^(interpreter|loop_exit_moves).rs$"],
+    snapshots: true,
   },
   {
     name: "early-break-in-then-kept",
