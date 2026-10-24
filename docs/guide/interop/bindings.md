@@ -245,7 +245,14 @@ export function celebrate() {
   ([ADR 0304](../../decisions/0304-dynamic-import.md)).
 - **`#[rust_js::require]` reads it through `require(module)`**, where a
   module must be read that way, an ESLint plugin's
-  ([ADR 0305](../../decisions/0305-require.md)).
+  ([ADR 0305](../../decisions/0305-require.md)). One a bundler mustn't
+  see, Node's own `timers` past fake ones, is read off Node's `module`,
+  `node::module`, by a name the program makes, `js::get(js::unknown(node::module),
+  &require_string)`, `module[requireString]`, and called with
+  `js::function::call(node_require, Some(&node::module), ("timers",))`,
+  `nodeRequire.call(module, "timers")`; in an ES module, which has no
+  `module`, the read throws, which `catch_unwind` catches, a `try`
+  ([ADR 0305, amended](../../decisions/0305-require.md#amendment-a-require-no-bundler-sees)).
 - **Named through a module that holds it, it's read through that
   module**: where `assign.rs` holds `Object.assign` as its default, a
   call of `crate::assign::assign` imports it, `import assign from

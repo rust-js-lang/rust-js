@@ -331,6 +331,21 @@ pub mod function {
     pub fn to_string<F: AnyFunction<M> + ?Sized, M>(f: &F) -> String {
         unreachable!()
     }
+
+    /// [`f.call(thisArg, ..args)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Function/call):
+    /// `f` called with `this_arg` as its `this`, any value, `None` of
+    /// `undefined`, and `args`, a rest parameter of any values, as
+    /// TypeScript types it: what it gives, any value. `nodeRequire.call(module,
+    /// "timers")` of `function::call(node_require, Some(&module), ("timers",))`.
+    #[cfg_attr(rust_js, rust_js::link_name = "call")]
+    #[cfg_attr(rust_js, rust_js::variadic)]
+    pub fn call<F: AnyFunction<M> + ?Sized, M>(
+        this: &F,
+        this_arg: Option<&dyn super::IntoUnknown>,
+        args: impl super::Rest<dyn super::IntoUnknown>,
+    ) -> Option<&'static super::Unknown> {
+        unreachable!()
+    }
 }
 
 functions! {

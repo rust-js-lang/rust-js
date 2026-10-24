@@ -1024,8 +1024,9 @@ export function isMarked(log) {
 - **What every function has, `Function.prototype`'s, is `js::function`'s**,
   of a function of any signature, `js::AnyFunction`, as TypeScript types
   each: `function::name(f)` is `f.name`, a `String`, `function::length(f)`
-  `f.length`, and `function::to_string(f)` its source,
-  `Function.prototype.toString.call(f)`
+  `f.length`, `function::to_string(f)` its source,
+  `Function.prototype.toString.call(f)`, and `function::call(f, this_arg,
+  args)` `f.call(thisArg, ...args)`
   ([ADR 0716](../../decisions/0716-a-functions-members-are-read-of-any-function.md)):
 
 ```rust

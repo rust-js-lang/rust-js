@@ -374,7 +374,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0302 An `f64` known to be a whole number in range is cast as it is](decisions/0302-whole-number-casts.md)
 - [0303 Top-level statements that span lines are set apart](decisions/0303-blank-lines.md)
 - [0304 `js::import!` of an item loads its module when it's asked for](decisions/0304-dynamic-import.md)
-- [0305 A binding marked `require` is read through `require(module)`](decisions/0305-require.md)
+- [0305 A binding marked `require` is read through `require(module)`](decisions/0305-require.md) *(amended: a require no bundler sees, `node::module[requireString]` and `js::function::call`)*
 - [0306 A module's items are where its Rust has them](decisions/0306-item-order.md)
 - [0307 A trait's binding method is read of the value itself](decisions/0307-binding-trait-methods.md)
 - [0308 A function written in a body is that body's](decisions/0308-local-functions.md) *(amended by 0696: in the block it's written in, after its comments)*
