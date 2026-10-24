@@ -431,8 +431,8 @@ export const mutations: Mutation[] = [
     name: "nullable-result-undefined",
     breaks: "a `#[rust_js::nullable]` function's `None` it didn't make is `undefined`, which a JS caller's `!== null` takes for a value",
     file: "src/lower/mir/assign.rs",
-    find: "            || !bindings::nullable_result(self.tcx, state.body.source.def_id())\n",
-    replace: "            || true\n",
+    find: "                || !bindings::nullable_result(self.tcx, state.body.source.def_id()))\n",
+    replace: "                || true)\n",
     tests: ["test/bindings.test.ts", "-t", "a nullable function's None is null"],
   },
   {
@@ -506,5 +506,13 @@ export const mutations: Mutation[] = [
     find: "                    Rvalue::Use(operand, _) => self.nulled(state, operand),\n                    _ => false,\n",
     replace: "                    _ => false,\n",
     tests: ["test/lowering-nullable.test.ts", "-t", "an optional nullable field"],
+  },
+  {
+    name: "call-option-written-as-given",
+    breaks: "a call's `Option` only nullable fields read is written as it's given, `undefined` for `None`, which they take as it is",
+    file: "src/lower/mir/assign.rs",
+    find: "        let read_nullable = place.projection.is_empty()\n",
+    replace: "        let read_nullable = false && place.projection.is_empty()\n",
+    tests: ["test/lowering-nullable.test.ts", "-t", "what's never undefined as it is"],
   },
 ];

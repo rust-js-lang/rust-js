@@ -162,4 +162,20 @@ export const mutations: Mutation[] = [
     replace: "                    if of.projection.is_empty() =>\n",
     tests: ["test/lowering-symbols.test.ts", "-t", "an == of a value read as the registry's symbol"],
   },
+  {
+    name: "null-nones-calls-unwritten",
+    breaks: "a call's `Option` only a nullable field reads is `?? null` where it's read, not `null` where it's made",
+    file: "src/lower/mir/patterns.rs",
+    find: "                *none = true;\n",
+    replace: "                *none = true;\n                *writes += 1;\n",
+    tests: ["test/lowering-nullable.test.ts", "-t", "what's never undefined as it is"],
+  },
+  {
+    name: "null-nones-clones-written",
+    breaks: "a nullable field's clone given to one is written `?? null` where it's made, `message.id ?? null`",
+    file: "src/lower/mir/patterns.rs",
+    find: "            if !cloned\n",
+    replace: "            if true\n",
+    tests: ["test/lowering-options.test.ts", "-t", "a nullable field given a nullable field's copy"],
+  },
 ];

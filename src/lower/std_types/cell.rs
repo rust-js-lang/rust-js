@@ -305,10 +305,15 @@ pub(in crate::lower) fn plain_statics(items: &mut [js::Item], quiet: &std::colle
             };
         }
     });
-    // A closure of a block, called as a statement: its body (ADR 0581).
+    // A closure called where it's made: its body (ADRs 0581, 0840), in a
+    // function or in what the module runs when it's loaded, which no
+    // `return` ends.
     for item in items.iter_mut() {
+        if let js::Item::Statements(stmts) = item {
+            js::applied_blocks(stmts, false);
+        }
         for function in item.functions_mut() {
-            js::applied_blocks(&mut function.body);
+            js::applied_blocks(&mut function.body, true);
         }
     }
     let cells: Vec<String> = (items.iter())

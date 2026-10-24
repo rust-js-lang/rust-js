@@ -477,6 +477,11 @@ pub enum Known {
     /// `items.slice(a, b)`: an array made here, which nothing else holds,
     /// as `$slice(..)` is (ADR 0806).
     Sliced,
+    /// What a nullable place is written that MIR shows is `null` or a
+    /// value already, `make(context)` of `set(Some(make(context)))`: never
+    /// `undefined`, so a handle that stores `None` as `null` writes it as
+    /// it is wherever it's written through (`Storage::written`, ADR 0791).
+    Defined,
 }
 
 /// A cross-module reference, resolved before preparation or printing.
