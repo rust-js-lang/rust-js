@@ -187,7 +187,7 @@ pub(super) fn for_of(
             keys: false,
         },
         "$next" | "$nextSome" => {
-            let iterable = unarrayed(iterated(source.clone()));
+            let iterable = taken_part(unarrayed(iterated(source.clone())));
             // The keys `for…in` visits, `js::keys_in(o)`'s: `for (const key
             // in o)` (ADR 0719).
             if let Some(object) = crate::lower::iterators::keys_in_source(&iterable) {
@@ -379,6 +379,34 @@ fn counted(body: &mut Vec<Stmt>, counter: &str, label: Option<&str>) {
     if !body.last().is_some_and(ends) {
         body.push(step());
     }
+}
+
+/// What a `for…of` iterates of an array's items taken from,
+/// `$iter(xs).take(n)`, `.drop(n)` or both: the array's part,
+/// `xs.slice(0, n)`, as a chain's `take` is (`sliced`); of their
+/// `enumerate().take(n)`, the part's `entries()`, each index as it was. An
+/// `enumerate().skip(n)` keeps its iterator's `drop`, as the part's indices
+/// would start at 0. The part is read as the loop starts, where its
+/// iterator would read each item as it's stepped: nothing changes the
+/// array meanwhile, as Rust lends it to the iterator (ADR 0748).
+fn taken_part(iterable: Expr) -> Expr {
+    use crate::lower::mir::iter::sources::{counted_chain, sliced};
+    let span = iterable.span;
+    let part = if counted_chain(&iterable) {
+        sliced(&iterable)
+    } else if let ExprKind::Call(callee, args) = &iterable.kind
+        && let ExprKind::Member(it, name) = &callee.kind
+        && name == "take"
+        && let [n] = &args[..]
+        && let Some(items) = iterators::enumeration_source(it)
+        && counted_chain(&Expr::call(Expr::member(items.clone(), "take"), vec![n.clone()]))
+    {
+        let part = sliced(&Expr::call(Expr::member(items.clone(), "take"), vec![n.clone()]));
+        Expr::call(Expr::member(part, "entries"), Vec::new())
+    } else {
+        return iterable;
+    };
+    Expr { span, ..part }
 }
 
 /// What a `for…of` iterates, of `Array.from(xs)`, a string's `chars()`:

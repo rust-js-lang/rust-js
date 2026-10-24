@@ -6,7 +6,7 @@
 import { beforeAll, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { buildReact, compiler, fixture, root, run } from "./support";
+import { buildReact, compiler, fixture, performanceTrack, root, run } from "./support";
 
 beforeAll(buildReact, 600_000);
 
@@ -1096,4 +1096,62 @@ test("zip takes its first side's item before its second's", () => {
   expect(js).toContain("$lazyZip(");
   const zip = readFileSync(join(root, "src/runtime/lazy_zip.js"), "utf8");
   expect(zip).toContain("const item = left.next();\n    if (item.done) return item;\n    const other = right.next();");
+});
+
+// ADR 0748: a `for` of a slice's first items, or of those past some,
+// `xs.iter().take(n)`, `xs.iter().skip(n)`, is of the array's part,
+// `xs.slice(0, n)`, `xs.slice(n)`, as a chain's `take` is; of their
+// `enumerate().take(n)`, the part's `entries()`. Their `enumerate().skip(n)`
+// keeps each index, `xs.entries().drop(n)`. React's ported getArrayKind
+// steps `array.slice(0, OBJECT_WIDTH_LIMIT)`.
+test("a for of a slice's first items is of its part", async () => {
+  const dir = fixture("for-of-taken");
+  writeFileSync(join(dir, "lib.rs"), `const LIMIT: usize = 3;
+
+pub fn total(xs: &[u32]) -> u32 {
+    let mut sum = 0;
+    for x in xs.iter().take(LIMIT) {
+        sum += x;
+    }
+    sum
+}
+
+pub fn rest(xs: &[u32]) -> u32 {
+    let mut sum = 0;
+    for &x in xs.iter().skip(1) {
+        sum += x;
+    }
+    sum
+}
+
+pub fn named(xs: &[String]) -> Vec<String> {
+    let mut out = Vec::new();
+    for (i, x) in xs.iter().enumerate().take(LIMIT) {
+        out.push(format!("{i}{x}"));
+    }
+    out
+}
+
+pub fn named_past(xs: &[String]) -> Vec<String> {
+    let mut out = Vec::new();
+    for (i, x) in xs.iter().enumerate().skip(1) {
+        out.push(format!("{i}{x}"));
+    }
+    out
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("for (const x of xs.slice(0, LIMIT)) {");
+  expect(js).toContain("for (const x of xs.slice(1)) {");
+  expect(js).toContain("for (const [i, x] of xs.slice(0, LIMIT).entries()) {");
+  expect(js).toContain("for (const [i, x] of xs.entries().drop(1)) {");
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.total([1, 2, 3, 4]), lib.total([5])]).toEqual([6, 5]);
+  expect(lib.rest([1, 2, 3])).toBe(5);
+  expect(lib.named(["a", "b", "c", "d"])).toEqual(["0a", "1b", "2c"]);
+  expect(lib.namedPast(["a", "b", "c"])).toEqual(["1b", "2c"]);
+  const of = performanceTrack();
+  expect(of("getArrayKind")).toContain("for (const value of array.slice(0, OBJECT_WIDTH_LIMIT)) {");
+  expect(of("addValueToProperties")).toContain("for (const entry of value.slice(0, OBJECT_WIDTH_LIMIT)) {");
 });

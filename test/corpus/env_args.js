@@ -15,7 +15,7 @@ function main() {
   const arg = $args().length;
   console.log(`${args.length} ${arg}`);
   console.log(`${$index(args, 1).endsWith(".json")}`);
-  for (const arg of $args().values().drop(1)) {
+  for (const arg of $args().slice(1)) {
     console.log(`${arg.endsWith(".json")}`);
   }
   const value = $args()[5];
