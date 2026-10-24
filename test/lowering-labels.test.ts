@@ -162,3 +162,89 @@ pub fn get_kind(array: &[Option<&Unknown>]) -> u32 {
   const kinds = [[], ["ab"], [["a", 1]], [{}], [1, [1, 2]], ["abcd"]];
   expect(kinds.map((array) => lib.getKind(array))).toEqual([0, 5, 3, 1, 2, 4]);
 });
+
+// React's addValueToProperties (shared/ReactPerformanceTrackProperties.js)
+// returns from its Promise case, `if (value.status === 'fulfilled') { ..
+// return; } else if (value.status === 'rejected') { .. }`. Its port's
+// `return`s, past a `String`'s drop, are one block MIR made that's followed
+// by `return;`: each `break` of it that `return;`, and the chain of the
+// status's strings is the chain alone, no `typeof status === "string"`
+// around it, which no string literal's `===` needs (ADR 0755).
+test("a block MIR made followed by a return is each break's return", async () => {
+  const dir = fixture("labeled-block-returns");
+  writeFileSync(join(dir, "lib.rs"), `use js::{Kind, Unknown};
+
+pub fn describe(value: Option<&Unknown>, name: &str, out: &mut Vec<String>) {
+    let desc = if let Some(value) = value
+        && let Kind::Object(_) | Kind::Array(_) = js::classify(Some(value))
+    {
+        'desc: {
+            let mut object_name = name.to_string();
+            if out.len() > 5 {
+                break 'desc "view".to_string();
+            }
+            if object_name == "Array"
+                && let Kind::Array(array) = js::classify(Some(value))
+            {
+                if array.is_empty() {
+                    break 'desc "empty".to_string();
+                } else if array.len() > 3 {
+                    for &entry in array.iter().take(2) {
+                        describe(entry, "entry", out);
+                    }
+                    return;
+                }
+            }
+            if object_name == "Promise" {
+                match js::classify(js::get(value, "status")) {
+                    Kind::String("fulfilled") => {
+                        let idx = out.len();
+                        describe(js::get(value, "value"), "value", out);
+                        if out.len() > idx {
+                            out[idx] = "Promise<".to_string() + &out[idx] + ">";
+                            return;
+                        }
+                    }
+                    Kind::String("rejected") => {
+                        let idx = out.len();
+                        describe(js::get(value, "reason"), "reason", out);
+                        if out.len() > idx {
+                            out[idx] = "Rejected<".to_string() + &out[idx] + ">";
+                            return;
+                        }
+                    }
+                    _ => {}
+                }
+                out.push("Promise".to_string());
+                return;
+            }
+            if object_name == "Object" {
+                object_name = "Thing".to_string();
+            }
+            out.push(object_name);
+            return;
+        }
+    } else {
+        "other".to_string()
+    };
+    out.push(desc);
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs()]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).not.toMatch(/bb\d+/);
+  expect(js).not.toContain("typeof status");
+  expect(js).toMatch(/\n\s+if \(status === "fulfilled"\) \{\n/);
+  expect(js).toMatch(/\n\s+out\[idx\] = "Promise<" \+ out\[idx\] \+ ">";\n\s+return;\n/);
+  const lib = await import(join(dir, "lib.js"));
+  const of = (value: unknown, name: string, out: string[] = []) => (lib.describe(value, name, out), out);
+  expect(of({ status: "fulfilled", value: 1 }, "Promise")).toEqual(["Promise<other>"]);
+  expect(of({ status: "fulfilled", value: {} }, "Promise")).toEqual(["Promise<value>"]);
+  expect(of({ status: "rejected", reason: {} }, "Promise")).toEqual(["Rejected<reason>"]);
+  expect(of({ status: "pending" }, "Promise")).toEqual(["Promise"]);
+  expect(of({ status: 1 }, "Promise")).toEqual(["Promise"]);
+  expect(of([], "Array")).toEqual(["empty"]);
+  expect(of([1, 2, 3, 4], "Array")).toEqual(["other", "other"]);
+  expect(of({}, "Object")).toEqual(["Thing"]);
+  expect(of({}, "Map", ["a", "b", "c", "d", "e", "f"])).toEqual(["a", "b", "c", "d", "e", "f", "view"]);
+});

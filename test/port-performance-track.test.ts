@@ -42,6 +42,21 @@ test("getArrayKind is a chain of returns, no block MIR made", () => {
   expect(kind).toContain('      if (typeof value === "object" && value !== null) {\n        return "Complex";\n      }\n');
 });
 
+// ADR 0755: upstream's Promise case, `if (value.status === 'fulfilled') {
+// .. return; } else if (value.status === 'rejected') { .. }`, each `return`
+// where it's written, no block MIR made for them and no `typeof` before the
+// status's strings.
+test("addValueToProperties' Promise case returns where it's written", () => {
+  const js = of("ReactPerformanceTrackProperties.js");
+  expect(js).not.toContain("typeof status");
+  expect(js).toContain(
+    '          if (objectName === "Promise") {\n            const status = value.status;\n            if (status === "fulfilled") {\n',
+  );
+  expect(js).toContain(
+    '                insertedEntry[1] = "Promise<" + (insertedEntry[1] || "Object") + ">";\n                return;\n              }\n            } else if (status === "rejected") {\n',
+  );
+});
+
 // ADR 0753: upstream's `if (indent >= 3) { // .. } else if (..)`, the
 // branch of only comments kept, with them.
 test("addObjectDiffToProperties keeps its branch of only comments", () => {

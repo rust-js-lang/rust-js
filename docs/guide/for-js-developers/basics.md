@@ -1246,6 +1246,10 @@ export function findPair(grid, target) {
   the guard of `Kind::Array(&[first, _]) if ..` refused, is `return
   "Complex";` in each branch that goes on to it, with no label where the
   arms meet ([ADR 0754](../../decisions/0754-a-return-arms-go-on-to-is-in-each.md)).
+  A `return;` past a value's drop, which MIR shares, is where each is
+  written too, and a `match` of a string's literals, `Kind::String(
+  "fulfilled")`, is `if (status === "fulfilled")`, no `typeof` before it
+  ([ADR 0755](../../decisions/0755-a-shared-return-is-each-breaks.md)).
 - A labeled block, `'desc: { .. break 'desc v; .. }`, is a labeled block
   where its JS keeps one, by its label, `desc: { desc = v; break desc; }`
   ([ADR 0742](../../decisions/0742-a-label-the-program-wrote-is-its-name.md)).

@@ -358,24 +358,51 @@ pub(in crate::lower::mir::tidy) fn ending(stmts: &mut Vec<Stmt>, label: &str) {
 /// rest leave past with a `break` of the block, `getArrayKind`'s: the
 /// `return` at the end of each path that goes on to it, and each `break` of
 /// the block a path ends with gone, now where the block ends, so nothing
-/// names it (ADR 0754). Only of one value, a constant or a name, which reads
-/// as it's written in each; and not where a `break` of the block would be
-/// left, deeper than a path's end. The `if` has an `else`: a `let … else`'s
-/// guard, `if (c) { s; break l; } return v;`, has none, and stays one.
+/// names it (ADR 0754). So too where the `if` and its `return` end a branch
+/// of the `if` that ends the block, which ends where the block does, `l: {
+/// if (typeof s === "string") { if (s === "a") { .. } else { break l; }
+/// return; } }` (ADR 0755). Only of a `return` `returns_one_value` takes;
+/// and not where a `break` of the block would be left, deeper than a path's
+/// end. The `if` has an `else`: a `let … else`'s guard, `if (c) { s; break
+/// l; } return v;`, has none, and stays one.
 pub(in crate::lower::mir::tidy) fn returns_into_branches(stmts: &mut [Stmt]) {
+    // `stmts`, which end where block `label` does: theirs, or of the
+    // branches of the `if` they end with.
+    fn at_ends(stmts: &mut Vec<Stmt>, label: &str) {
+        if returned_into_branches(stmts, label) {
+            return;
+        }
+        if let Some(StmtKind::If(_, then, otherwise)) = stmts.last_mut().map(|s| &mut s.kind) {
+            at_ends(then, label);
+            if let Some(otherwise) = otherwise {
+                at_ends(otherwise, label);
+            }
+        }
+    }
     for stmt in stmts {
         if stmt.span.is_none()
             && let StmtKind::Labeled(label, body) = &mut stmt.kind
             && crate::lower::mir::is_block_label(label)
         {
             let label = label.clone();
-            returned_into_branches(body, &label);
+            at_ends(body, &label);
         }
     }
 }
 
-/// Block `label`'s `stmts`, as `returns_into_branches` has them.
-fn returned_into_branches(stmts: &mut Vec<Stmt>, label: &str) {
+/// Whether `stmt` is a `return` of one value, a constant or a name, or of
+/// none: one that reads as it's written wherever it's put, in each branch
+/// that goes on to it (ADR 0754), or for each `break` of a block it follows
+/// (ADR 0755).
+pub(in crate::lower::mir::tidy) fn returns_one_value(stmt: &Stmt) -> bool {
+    let one_value =
+        |e: &Expr| e.is_constant() || matches!(e.kind, ExprKind::Var(_)) || matches!(e.kind, ExprKind::Undefined);
+    matches!(&stmt.kind, StmtKind::Return(value) if value.as_ref().is_none_or(one_value))
+}
+
+/// `stmts`, which end where block `label` does, as `returns_into_branches`
+/// has them; whether they were.
+fn returned_into_branches(stmts: &mut Vec<Stmt>, label: &str) -> bool {
     // `stmts`, `exit` at the end of each path of them that goes on, and the
     // `break label` each that leaves ends with gone.
     fn into(stmts: &mut Vec<Stmt>, exit: &Stmt, label: &str) {
@@ -395,9 +422,18 @@ fn returned_into_branches(stmts: &mut Vec<Stmt>, label: &str) {
             StmtKind::Break(Some(l)) if l == label => {
                 stmts.pop();
             }
-            StmtKind::If(_, then, Some(otherwise)) => {
+            StmtKind::If(test, then, otherwise @ Some(_)) => {
                 into(then, exit, label);
-                into(otherwise, exit, label);
+                let rest = otherwise.as_mut().expect("matched");
+                into(rest, exit, label);
+                // A branch of nothing left, none: `if (c) { s }`, or `if (!c)
+                // { s }` of an empty `then`.
+                if rest.is_empty() {
+                    *otherwise = None;
+                } else if then.is_empty() {
+                    *test = std::mem::replace(test, Expr::undefined()).negated_test();
+                    *then = otherwise.take().expect("matched");
+                }
             }
             StmtKind::If(test, then, otherwise @ None) if js::names_jump(then, label) => {
                 into(then, exit, label);
@@ -413,21 +449,19 @@ fn returned_into_branches(stmts: &mut Vec<Stmt>, label: &str) {
         }
     }
     let [.., before, last] = stmts.as_slice() else {
-        return;
+        return false;
     };
-    let one_value =
-        |e: &Expr| e.is_constant() || matches!(e.kind, ExprKind::Var(_)) || matches!(e.kind, ExprKind::Undefined);
-    if !matches!(&before.kind, StmtKind::If(_, _, Some(_)))
-        || !matches!(&last.kind, StmtKind::Return(value) if value.as_ref().is_none_or(one_value))
-    {
-        return;
+    if !matches!(&before.kind, StmtKind::If(_, _, Some(_))) || !returns_one_value(last) {
+        return false;
     }
     let mut threaded = stmts.clone();
     let exit = threaded.pop().expect("matched");
     into(&mut threaded, &exit, label);
-    if !js::names_jump(&threaded, label) {
-        *stmts = threaded;
+    if js::names_jump(&threaded, label) {
+        return false;
     }
+    *stmts = threaded;
+    true
 }
 
 /// Whether `stmts` always end with a `break label`.

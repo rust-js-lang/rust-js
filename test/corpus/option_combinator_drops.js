@@ -103,41 +103,40 @@ function parseFlag(flag, BNamed) {
 // Two in one branch.
 function parsePair(a, b, both, BNamed, dropB) {
   let pair;
-  bb38: {
-    if (both) {
-      const option = BNamed.fromName(a);
-      const result$1 =
-        option != null ? { TAG: "Ok", _0: $someValue(option) } : { TAG: "Err", _0: `unknown ${a}` };
-      let result;
-      if (result$1.TAG !== "Err") {
-        const _0 = result$1._0;
-        let tmp;
-        let tmp$1;
-        try {
-          tmp = BNamed.fromName(b);
-          tmp$1 = () => `unknown ${b}`;
-        } catch (error) {
-          dropB?.(_0);
-          throw error;
-        }
-        let okOrElse;
-        try {
-          okOrElse = tmp != null ? { TAG: "Ok", _0: $someValue(tmp) } : { TAG: "Err", _0: tmp$1() };
-        } catch (error) {
-          dropB?.(_0);
-          throw error;
-        }
-        if (okOrElse.TAG !== "Err") {
-          pair = [_0, $some(okOrElse._0)];
-          break bb38;
-        }
-        result = okOrElse;
-        dropB?.(_0);
-      } else {
-        result = result$1;
-      }
+  if (both) {
+    const option = BNamed.fromName(a);
+    const result$1 =
+      option != null ? { TAG: "Ok", _0: $someValue(option) } : { TAG: "Err", _0: `unknown ${a}` };
+    let result;
+    if (result$1.TAG === "Err") {
+      result = result$1;
       return result;
     }
+    const _0 = result$1._0;
+    let tmp;
+    let tmp$1;
+    try {
+      tmp = BNamed.fromName(b);
+      tmp$1 = () => `unknown ${b}`;
+    } catch (error) {
+      dropB?.(_0);
+      throw error;
+    }
+    let okOrElse;
+    try {
+      okOrElse = tmp != null ? { TAG: "Ok", _0: $someValue(tmp) } : { TAG: "Err", _0: tmp$1() };
+    } catch (error) {
+      dropB?.(_0);
+      throw error;
+    }
+    if (okOrElse.TAG !== "Err") {
+      pair = [_0, $some(okOrElse._0)];
+    } else {
+      result = okOrElse;
+      dropB?.(_0);
+      return result;
+    }
+  } else {
     const option = BNamed.fromName(a);
     const result =
       option != null ? { TAG: "Ok", _0: $someValue(option) } : { TAG: "Err", _0: `unknown ${a}` };
