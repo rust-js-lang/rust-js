@@ -592,7 +592,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0657 An `if` of one value each, a function's too, is a conditional](decisions/0657-an-if-of-one-value-each-is-a-conditional.md) *(amended by 0658: a branch with a comment too)*
 - [0658 A comment before a branch's value is before it in the conditional](decisions/0658-a-comment-before-a-branchs-value-is-before-it-in-the-conditional.md)
 - [0659 Tidy is a list of stages, each with what it leaves a body with](decisions/0659-tidy-is-a-list-of-stages-with-contracts.md) *(amended: what finishes a body is a stage too; a stage read again is the runner's)*
-- [0660 `catch_unwind` catches what JS throws, a panic among it](decisions/0660-catch-unwind-catches-what-js-throws.md) *(amended by 0691: a payload drops nothing where no `dyn Any` does; 0692: a thrown `Error` is a `&JsError` too; 0706: what's caught read as it was thrown)*
+- [0660 `catch_unwind` catches what JS throws, a panic among it](decisions/0660-catch-unwind-catches-what-js-throws.md) *(amended by 0691: a payload drops nothing where no `dyn Any` does; 0692: a thrown `Error` is a `&JsError` too; 0706: what's caught read as it was thrown; 0830: a `let Err(x)`'s `catch` is what follows that reads it)*
 - [0664 A function's last slice marked `#[rust_js::rest]` is JS's rest parameter](decisions/0664-a-functions-rest-slice-is-jss-rest-parameter.md)
 - [0666 The js crate binds `Object`'s reflection, a descriptor a dictionary](decisions/0666-the-js-crate-binds-objects-reflection.md) *(extended by 0719: `js::keys_in`, `for…in`'s keys)*
 - [0667 `console` is a value, and a `fn` of rest arguments is the JS function](decisions/0667-console-is-a-value-and-rest-arguments-are-one.md)
@@ -630,7 +630,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0703 A closure made before a call a guard unwinds is made where it's read](decisions/0703-a-closure-made-before-a-guarded-call-is-made-where-its-read.md)
 - [0704 A module variable an `if` makes is assigned only where it's something](decisions/0704-a-module-variable-is-assigned-only-what-isnt-undefined.md)
 - [0705 A guard's scope reads as any body, its fields the variables it was made of](decisions/0705-a-guards-scope-reads-as-any-body.md) *(amended: a `while`'s test is whole, and a loop that ends a block breaks as a loop)*
-- [0706 `panic!` is the one way a port throws an `Error`, and what's caught is read as it was thrown](decisions/0706-panic-is-the-one-way-a-port-throws-an-error.md) *(amended by 0710: of any `try`; amended: a `catch_unwind` that heads an `if let` chain is a `try`)*
+- [0706 `panic!` is the one way a port throws an `Error`, and what's caught is read as it was thrown](decisions/0706-panic-is-the-one-way-a-port-throws-an-error.md) *(amended by 0710: of any `try`; amended: a `catch_unwind` that heads an `if let` chain is a `try`; amended by 0830: a `let Err(x)`'s `catch` holds what reads `x` or what that declares)*
 - [0708 A comment before an argument, or a field, is before it](decisions/0708-a-comment-before-an-argument-is-before-it.md)
 - [0709 A signed counter below a length stays below it, past its loop and through its `as`](decisions/0709-a-signed-counter-below-a-length-stays-below-it.md) *(extended by 0746: a length held in a variable, and a `push`)*
 - [0710 Every unwind's payload downcasts as the `&JsError` thrown](decisions/0710-every-unwinds-payload-is-the-js-error-thrown.md) *(amended: what's given its `Some`'s value, `and_then`'s closure, is given it)*
@@ -683,6 +683,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0806 A slice's range in bounds is JS's `slice`, and a test held in a `bool` shows what it tests](decisions/0806-a-slices-range-in-bounds-is-js-slice.md)
 - [0810 An optional nullable field is absent until it's set](decisions/0810-an-optional-nullable-field-is-absent-until-set.md)
 - [0811 `console.createTask` is a property the host may lack](decisions/0811-console-create-task-may-be-absent.md)
+- [0830 What follows a `let Err(x)` of a closure that never returns is its `catch`](decisions/0830-what-follows-a-let-err-of-a-closure-that-never-returns-is-its-catch.md)
 - [0720 A labeled block's `break` and a named constant, in a body's ranges](decisions/0720-a-labeled-block-and-a-named-constant-in-a-bodys-ranges.md)
 - [0721 `js::strict_equals(a, b)` is JS's `===`](decisions/0721-strict-equals-is-jss-triple-equals.md) *(fixed by 0775: a `()` compared is `undefined`)*
 - [0722 A `#[repr(..)]` enum's variant is its number](decisions/0722-a-repr-enums-variant-is-its-number.md)
