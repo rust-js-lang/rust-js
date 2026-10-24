@@ -457,13 +457,13 @@ pub async fn made() -> u32 {
     promise::new(|resolve, _| resolve(1)).then(|n: u32| promise::resolve(n + 1)).await
 }
 pub async fn caught() -> String {
-    promise::reject::<String>(&js_error::new("boom")).catch(|e| promise::resolve(e.message())).finally(|| {}).await
+    promise::reject::<String>(Some(js_error::new("boom"))).catch(|e| promise::resolve(e.message())).finally(|| {}).await
 }
 pub async fn paired() -> (u32, String) {
     promise::all2((promise::resolve(1), promise::resolve("a".to_string()))).await
 }
 pub async fn settled() -> Vec<String> {
-    let all = promise::all_settled(vec![promise::resolve(1), promise::reject(&js_error::new("no"))]).await;
+    let all = promise::all_settled(vec![promise::resolve(1), promise::reject(Some(js_error::new("no")))]).await;
     all.into_iter()
         .map(|r| match r {
             PromiseSettledResult::Fulfilled { value } => value.to_string(),
@@ -949,13 +949,13 @@ pub fn silenced(maybe_promise: &'static Unknown) {
     unsafe { js::cast::<Promise<Option<&'static Unknown>>>(Some(maybe_promise)) }.catch(|_| {});
 }
 pub async fn valued() -> u32 {
-    promise::reject::<u32>(&js_error::new("no")).catch(|_| 7).await
+    promise::reject::<u32>(Some(js_error::new("no"))).catch(|_| 7).await
 }
 pub async fn promised() -> String {
-    promise::reject::<String>(&js_error::new("no")).catch(|e| promise::resolve(e.message())).await
+    promise::reject::<String>(Some(js_error::new("no"))).catch(|e| promise::resolve(e.message())).await
 }
 pub async fn nothing() -> Option<u32> {
-    promise::reject::<Option<u32>>(&js_error::new("no")).catch(|_| {}).await
+    promise::reject::<Option<u32>>(Some(js_error::new("no"))).catch(|_| {}).await
 }
 `);
   const built = runSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target], root, 600_000);
@@ -982,20 +982,26 @@ console.log(unhandled);
 // Promise((resolve, reject) => { resolveDebugValue = resolve; .. })`: the
 // executor runs before `new Promise` returns, so it may borrow what's
 // outside it (ADR 0782). And `then(onfulfilled, onrejected)`, TypeScript's
-// two handlers, is `then_with`.
+// two handlers, is `then_with`. Its amendment: a promise of a `Copy` value
+// is `Copy`, a handle JS shares, kept in a `Cell` and read again,
+// `ioInfo.value.then(..)`; one of any other value is consumed, rustc's
+// E0382; and what rejects one takes any value, `rejectDebugValue(error)`
+// of a `mixed` error, `Promise.reject()` of none.
 test("a promise's executor may set the variables around it, and then takes two handlers", async () => {
   const dir = fixture("js-promise-executor");
-  writeFileSync(join(dir, "lib.rs"), `use js::{JsError, Promise, js_error, promise};
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::Cell;
+
+use js::{JsError, Promise, Unknown, js_error, promise};
 
 pub struct Debug {
     pub resolve: &'static dyn Fn(u32),
-    pub reject: &'static dyn Fn(&JsError),
+    pub reject: &'static dyn Fn(Option<&Unknown>),
     pub value: Promise<u32>,
 }
 
 pub fn stash() -> Debug {
     let mut resolve_debug_value: Option<&'static dyn Fn(u32)> = None;
-    let mut reject_debug_value: Option<&'static dyn Fn(&JsError)> = None;
+    let mut reject_debug_value: Option<&'static dyn Fn(Option<&Unknown>)> = None;
     let value = promise::new(|resolve, reject| {
         resolve_debug_value = Some(resolve);
         reject_debug_value = Some(reject);
@@ -1009,7 +1015,7 @@ pub fn stash() -> Debug {
 
 pub async fn settled(fail: bool) -> String {
     let value = match fail {
-        true => promise::reject::<u32>(&js_error::new("no")),
+        true => promise::reject::<u32>(Some(js_error::new("no"))),
         false => promise::resolve(7),
     };
     value.then_with(|n| n.to_string(), |e| e.message()).await
@@ -1017,6 +1023,35 @@ pub async fn settled(fail: bool) -> String {
 
 pub fn hidden(value: Promise<u32>) {
     let _: Promise<()> = value.then_with(|_| {}, |_| {});
+}
+
+pub struct Info {
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub value: Cell<Option<Promise<Option<&'static Unknown>>>>,
+}
+
+pub fn rejected(info: &Info, error: Option<&'static Unknown>) -> Promise<String> {
+    let mut reject_debug_value: Option<&'static dyn Fn(Option<&Unknown>)> = None;
+    info.value.set(Some(promise::new(|_resolve, reject| {
+        reject_debug_value = Some(reject);
+    })));
+    let _: Promise<()> = info.value.get().unwrap().then_with(|_| {}, |_| {});
+    reject_debug_value.unwrap()(error);
+    let shown = info.value.get().unwrap();
+    shown.then_with(|_| String::from("fulfilled"), |e| js_error::to_string(e))
+}
+
+pub fn twice(value: Promise<u32>) -> Promise<u32> {
+    let _: Promise<()> = value.then_with(|_| {}, |_| {});
+    value.then_resolve(|n| n + 1)
+}
+
+pub fn rethrown(error: &JsError) -> Promise<u32> {
+    promise::reject(Some(error))
+}
+
+pub fn of_nothing() -> Promise<u32> {
+    promise::reject(None)
 }
 `);
   const built = runSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target], root, 600_000);
@@ -1029,6 +1064,10 @@ pub fn hidden(value: Promise<u32>) {
   });`);
   expect(js).toContain("return await value.then(\n    (n) => String(n),\n    (e) => e.message,\n  );");
   expect(js).toContain("  value.then(\n    () => {},\n    () => {},\n  );");
+  expect(js).toContain("  $unwrap(rejectDebugValue)(error);\n");
+  expect(js).toContain("  return value.then((n) => (n + 1) >>> 0);\n");
+  expect(js).toContain("  return Promise.reject(error);\n");
+  expect(js).toContain("  return Promise.reject();\n");
   writeFileSync(join(dir, "run.mjs"), `import * as lib from "./lib.js";
 let unhandled = 0;
 process.on("unhandledRejection", () => unhandled++);
@@ -1036,12 +1075,28 @@ const debug = lib.stash();
 debug.resolve(3);
 console.log(await debug.value, await lib.settled(false), await lib.settled(true));
 lib.hidden(Promise.reject(new Error("hidden")));
+const info = {};
+console.log(await lib.rejected(info, "lost"), await lib.rejected({}, undefined), info.value instanceof Promise);
+console.log(await lib.twice(Promise.resolve(1)));
+console.log(await lib.rethrown(new TypeError("again")).catch(String), await lib.ofNothing().catch((e) => e));
 await new Promise((resolve) => setTimeout(resolve, 10));
 console.log(unhandled);
 `);
   const ran = runSync([node!, join(dir, "run.mjs")], root, 30_000);
   expect(ran.stderr).toBe("");
-  expect(ran.stdout).toBe("3 7 no\n0\n");
+  expect(ran.stdout).toBe("3 7 no\nlost undefined true\n2\nTypeError: again undefined\n0\n");
+  // A promise of a value that isn't `Copy` is consumed: two handlers given
+  // the one array it fulfils with would each change it.
+  writeFileSync(join(dir, "moved.rs"), `use js::Promise;
+
+pub fn both(value: Promise<Vec<u32>>) -> Promise<usize> {
+    let _: Promise<()> = value.then_resolve(|mut v| v.push(1));
+    value.then_resolve(|v| v.len())
+}
+`);
+  const moved = runSync([compiler, join(dir, "moved.rs"), "-o", join(dir, "moved.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target], root, 600_000);
+  expect(moved.code).not.toBe(0);
+  expect(moved.stderr).toContain("E0382");
 });
 
 // ADR 0699: a program keeps upstream's fallback where the host has no
