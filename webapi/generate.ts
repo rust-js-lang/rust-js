@@ -117,6 +117,52 @@ const EXTRA: Record<string, Fn[]> = {
       ],
     },
   ],
+  // V8's `console.createTask(name)`, which no WebIDL nor TypeScript lib
+  // declares, and Firefox, Safari and jsdom lack: a property that may be
+  // `undefined`, as an optional property is, read as React reads it,
+  // `console.createTask ? .. : ..`, and typed as its Flow types declare it
+  // (ADR 0811).
+  console: [
+    {
+      name: "create_task",
+      jsName: "get console.createTask",
+      params: [],
+      result: "Option<&'static dyn Fn(&str) -> &'static ConsoleTask>",
+      doc: [
+        "[Chrome](https://developer.chrome.com/docs/devtools/console/api#createtask): `console.createTask`,",
+        "the function that makes a [`ConsoleTask`] of a name, whose `run` DevTools shows the stack of",
+        "where it was made; `None`, `undefined`, where the host hasn't it, as Firefox, Safari and jsdom",
+        "haven't. No TypeScript lib declares it: it's typed as React's Flow declares it,",
+        "`createTask(label: string): ConsoleTask` (ADR 0811).",
+      ],
+    },
+  ],
+};
+
+// Types written by hand, of what no WebIDL nor TypeScript lib declares,
+// beside the namespace or interface whose member gives one: what
+// `console.createTask` makes, as React's Flow declares it (ADR 0811).
+const TYPES_BY_HAND: Record<string, string[]> = {
+  console: [
+    [
+      "/// [`ConsoleTask`](https://developer.chrome.com/docs/devtools/console/api#createtask): what",
+      "/// [`console::create_task`]'s function makes, a task whose `run` DevTools shows the stack of",
+      "/// where it was made. No TypeScript lib declares it: it's typed as React's Flow declares it,",
+      "/// `interface ConsoleTask { run<T>(f: () => T): T }` (ADR 0811).",
+      '#[cfg_attr(rust_js, rust_js::types = "{ run<T>(f: () => T): T }")]',
+      "pub struct ConsoleTask(PhantomData<JsObject>);",
+      "",
+      "impl ConsoleTask {",
+      "    /// `task.run(f)`: `f` called, as part of the task, and what it gives.",
+      '    #[cfg_attr(rust_js, rust_js::link_name = "run")]',
+      "    // rust-js writes its JS: the body never runs, nor reads a parameter.",
+      "    #[allow(unused_variables)]",
+      "    pub fn run<T>(&self, f: impl FnOnce() -> T) -> T {",
+      "        unreachable!()",
+      "    }",
+      "}",
+    ].join("\n"),
+  ],
 };
 
 // Namespaces: a module of functions, like `web_assembly::compile`.
@@ -1434,9 +1480,15 @@ for (const name of NAMESPACES) {
     line(`#[cfg_attr(rust_js, rust_js::types = "${value}")]`);
     line(`pub struct ${value}(PhantomData<JsObject>);`);
   }
+  for (const t of TYPES_BY_HAND[name] ?? []) {
+    line();
+    line(t);
+  }
   line();
   line(`/// The [\`${name}\`](${mdn(name)}) namespace.`);
-  module(snake(name), functionsOf(namespaces.get(name)!));
+  // What's written by hand is bound in place of what's generated of its name.
+  const extra = EXTRA[name] ?? [];
+  module(snake(name), [...functionsOf(namespaces.get(name)!).filter((f) => !extra.some((e) => e.name === f.name)), ...extra]);
 }
 
 line();

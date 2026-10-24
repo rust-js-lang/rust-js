@@ -1128,5 +1128,5 @@ pub fn first_of_some(keys: &[String]) -> String {
   expect(() => lib.firstOfSome([])).toThrow("index out of bounds");
   const of = performanceTrack();
   expect(of("addObjectDiffToProperties")).toContain("properties[prevLength - 1][1] =");
-  expect(of("addValueToProperties")).toContain('(propsLength !== 1 || propsKeys[0] !== "children" || key != null)');
+  expect(of("addValueToProperties")).toContain('(propsLength === 1 && propsKeys[0] === "children" && key == null)');
 });

@@ -263,14 +263,18 @@ In this table, `lower.rs`, `names.rs` and `runtime.rs` are at the `src/` root.
 | What an untagged enum's variants are together, a test's and a `switch`'s case | `untagged.rs` | `untagged_test`, `untagged_cases` |
 | A string's count of UTF-16 units, its `length` | `recognition/types.rs` | `counts_utf16_units` |
 | Whether a type is a JS class, and what each item of its impl is of it | `classes.rs` | `is_class`, `member`, `constructor_of` |
-| What a place stores of what's written, a nullable field's `None` `null`, and which places store so, however reached | `js/make.rs`; `representation.rs`; `mir/rvalues.rs` | `Storage`, `written`; `nullable_cell_field`, `nullable_cell_handle`; `stores_null` |
+| What a place stores of what's written, a nullable field's `None` `null`, and which places store so, however reached | `js/make.rs`; `representation.rs` | `Storage`, `written`; `nullable_cell_field`, `nullable_cell_handle` |
+| What JS is given of a `()`: `undefined`, or a list's `[]` | `representation.rs` | `unit_given`, `UnitTo` |
 | A guard `if let Some(v) = value` that holds where its arm of `match js::classify(value)` matched | `body_queries.rs` | `held_guards` |
+| An index or a slice's range in bounds, and the test a `bool` variable holds | `body_queries/ranges.rs`; `mir/bounds.rs` | `judge_index`, `judge_range`, `held_test`; `indexes_in_bounds` |
 | A binding's read of a property, which a getter may be, and a chain's test of one | `binding_calls.rs`; `mir/tidy/logicals.rs` | `answered_by_a_getter`, `Known`; `bound_into` |
 
 **Calls.** `mir/dispatch.rs::mir_call` handles special calls and sends evaluated
 arguments to `mir_call_values`. Calls then go to iterator, trait, binding or
 crate-function lowering. Recognized std calls go through `mir_std_call` in
-the same dispatcher, delegating place-sensitive behavior to `mir/std_calls.rs`
+the same dispatcher, which asks each kind in `mir/std_calls.rs` of what it
+reads alone and runs the lowering of the one that takes the call
+(ADR 0791), delegating place-sensitive behavior to `mir/std_calls.rs`
 and value-only behavior to `std_types/values.rs` and the owning type.
 `std_values` exhaustively matches `Std`. New behavior belongs in its domain
 module, not in a growing dispatcher;

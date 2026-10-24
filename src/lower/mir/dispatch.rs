@@ -3,15 +3,13 @@
 
 use super::*;
 
-/// One kind of std call's lowering, `std_calls`': its value, or `None`, a
-/// call it doesn't know, of which it's taken no argument and written nothing.
+/// One kind of std call's handler, `std_calls`': of what it reads alone, the
+/// call's lowering where it takes the call, else `None` (#191).
 type StdHandler<'a, 'tcx> = for<'s, 'c> fn(
-    &mut FnCx<'a, 'tcx>,
-    &mut State<'s, 'tcx>,
+    &FnCx<'a, 'tcx>,
+    &State<'s, 'tcx>,
     std_calls::StdCall<'c, 'tcx>,
-    &mut std::vec::IntoIter<Value<'tcx>>,
-    &mut Vec<Stmt>,
-) -> R<Option<Value<'tcx>>>;
+) -> Option<std_calls::StdLowering<'c, 'a, 'tcx>>;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A call of a function pointer, which may be JS's (ADR 0330): called
@@ -442,7 +440,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // `null` or a value already, which it takes as it is (ADRs 0275, 0772).
         let writes_a_cell = matches!(
             self.recognition().classify(callee.0, callee.1),
-            Some(Std::CellSet | Std::CellReplace | Std::CellTake)
+            Some(Std::CellSet | Std::CellReplace)
         );
         let nulled: Vec<bool> = match writes_a_cell || !bindings::nullable_params(self.tcx, callee.0).is_empty() {
             false => Vec::new(),
@@ -456,13 +454,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             self.flush(state, out)?;
         }
-        let mut values = self.take_operands(state, operands, out)?;
-        // A `Cell` written that MIR shows is a nullable field's, through a
-        // variable too: a handle that stores as it does (ADR 0772).
-        if writes_a_cell && self.stores_null(state, operands[0]) {
-            let cell = self.value_expr(values.remove(0), span)?;
-            values.insert(0, Value::Expr(self.nullable_cell_handle(Expr::held(cell))));
-        }
+        let values = self.take_operands(state, operands, out)?;
         match self.mir_call_values(state, callee, (values, arg_tys, &nulled), output, span, out)? {
             Value::Expr(e) if strict => Ok(Value::Expr(js::strict_equality(e))),
             value => Ok(value),
@@ -1095,8 +1087,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             output,
             span,
         };
-        // Each writes apart, the body's once it takes the call: one that says
-        // `None` changed nothing written, and took and made nothing (ADR 0713).
+        // The one kind that takes it, each asked of what it reads alone, so
+        // none changes what's lowered before it's chosen (#191).
         let handlers: [(&str, StdHandler<'a, 'tcx>); 7] = [
             ("mir_fmt_call", Self::mir_fmt_call),
             ("mir_text_call", Self::mir_text_call),
@@ -1106,14 +1098,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ("mir_place_call", Self::mir_place_call),
             ("mir_value_call", Self::mir_value_call),
         ];
-        for (name, handler) in handlers {
-            let (args, pending, mut written) = (values.len(), state.pending.len(), Vec::new());
-            if let Some(value) = handler(self, state, call, &mut values, &mut written)? {
-                out.extend(written);
-                return Ok(value);
-            }
-            let unchanged = written.is_empty() && (values.len(), state.pending.len()) == (args, pending);
-            assert!(unchanged, "`{name}` declined a call it changed");
+        let mut taken = (handlers.into_iter()).filter_map(|(name, handler)| Some((name, handler(self, state, call)?)));
+        if let Some((name, lowering)) = taken.next() {
+            let others: Vec<&str> = taken.map(|(other, _)| other).collect();
+            assert!(others.is_empty(), "`{name}` and {others:?} each took one call");
+            return lowering(self, state, &mut values, out);
         }
         Ok(Value::Expr(match known {
             // Panics end what runs: what's made before is made first.

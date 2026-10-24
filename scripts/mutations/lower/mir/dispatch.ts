@@ -502,11 +502,11 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-unwinds.test.ts", "-t", "what's given the thrown downcast is given it as it is"],
   },
   {
-    name: "std-kind-writes-lost",
-    breaks: "what a std call's kind writes, apart, isn't kept once it takes the call",
+    name: "std-kind-lowering-dropped",
+    breaks: "the std call's kind that takes it isn't what lowers it: its call goes on to the values' fallback",
     file: "src/lower/mir/dispatch.rs",
-    find: "                out.extend(written);\n",
-    replace: "",
+    find: "            return lowering(self, state, &mut values, out);\n",
+    replace: "            let _ = lowering;\n",
     tests: ["test/corpus.test.ts", "-t", "^(vec_destructors|drop_scopes).rs$"],
   },
   {
@@ -564,21 +564,5 @@ export const mutations: Mutation[] = [
     find: "        if crate::lower::binding_calls::method_may_be_a_getters(self.tcx, callee.0)\n            && operands",
     replace: "        if false\n            && operands",
     tests: ["test/lowering-moves.test.ts", "-t", "a getter's read given to a binding's method runs before its lookup"],
-  },
-  {
-    name: "nullable-cell-alias-plain",
-    breaks: "a nullable field's `Cell` set through `let r = &context.renderer` writes `undefined`",
-    file: "src/lower/mir/dispatch.rs",
-    find: "        if writes_a_cell && self.stores_null(state, operands[0]) {\n",
-    replace: "        if false {\n",
-    tests: ["test/lowering-nullable.test.ts", "-t", "through a reference and a helper"],
-  },
-  {
-    name: "nullable-cell-take-unasked",
-    breaks: "a nullable field's `Cell` taken through a reference writes `undefined`",
-    file: "src/lower/mir/dispatch.rs",
-    find: "            Some(Std::CellSet | Std::CellReplace | Std::CellTake)\n",
-    replace: "            Some(Std::CellSet | Std::CellReplace)\n",
-    tests: ["test/lowering-nullable.test.ts", "-t", "through a reference and a helper"],
   },
 ];

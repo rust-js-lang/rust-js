@@ -60,8 +60,13 @@ the one answer to which is one) is a `NullForNone` handle. So:
 | the same `reset(&context.plain)`, a `Cell` that isn't nullable | its setter `context.plain = value;` |
 
 A write `cell_call` makes (`set`, `replace`, `take`) asks the receiver's
-handle; a variable holding one, which MIR shows is a reference to such a
-field, reborrowed or copied, `stores_null`, is given that handle too.
+handle; one through a variable that holds the handle, `r.set(None)`,
+reborrowed or copied, is `r.value = ..`, which tidy writes as the handle's
+storage stores it where it takes the variable to its place
+(`read_handles`), and the handle's setter where it doesn't: the handle
+is the one carrier of its storage. A first cut also followed such a
+variable through MIR to its field, which the handle made redundant; it's
+gone.
 Whether what's written is `null` or a value already is MIR's `nulled`,
 the one answer, given as `Call::nulled`: `set(Some(renderer))` is
 `context.renderer = renderer;`.
@@ -74,6 +79,19 @@ context.value`, and wrote the copy, `r = 5`, a `const`'s assignment that
 throws. Now one written through, `js::Writes`' `changed`, is its place at
 each use, read and written there, as its storage stores it: `context.value
 = 5;` in the closure, `context.renderer = null;` of a nullable field's.
+
+**A std call's kind is chosen of what it reads alone.** Seven kinds of
+std call, `std_calls.rs`' handlers, were tried in turn, each given `&mut`
+access and the arguments, and one that declined was checked to have
+written nothing and taken nothing, by counts that don't prove its state
+the same (ADR 0713). Now each handler is `fn(&self, &State, StdCall) ->
+Option<StdLowering>`: its `match`, patterns and guards as they were, reads
+alone, and an arm that takes the call gives a closure of its work, given
+`&mut` access only once it's chosen. The dispatcher asks each, asserts
+one took it, and runs it. An arm two kinds both took, `and_then` of a
+place found in JS's units, is the iterator kind's, before its other
+combinators'. The architecture test, "a std call's kind is chosen of what
+it reads alone", fails where a handler takes `&mut` access again.
 
 **A handle reaches its place once.** Where a reference is made of a place
 that isn't fixed, `&get(&c).value`, what holds it is named first, `const

@@ -37,8 +37,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// Whether THIR's call of `def_id` at `span` has its indexes in bounds,
-    /// as the body's ranges show.
-    fn indexes_in_bounds(&self, def_id: rustc_span::def_id::DefId, span: Span) -> bool {
+    /// as the body's ranges show: of `&v[a..b]`, its range (ADR 0806).
+    pub(super) fn indexes_in_bounds(&self, def_id: rustc_span::def_id::DefId, span: Span) -> bool {
         (self.thir_call(def_id, span)).is_some_and(|(fun, _)| self.frame.facts.in_bounds.contains(&fun))
     }
 

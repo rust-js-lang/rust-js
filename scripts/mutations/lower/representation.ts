@@ -3,6 +3,38 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "unit-given-rest-not-a-list",
+    breaks: "a variadic binding's rest of none, `()`, is `undefined`, spread, `called(\"a\", ...undefined)`, which throws, not no argument (ADR 0775)",
+    file: "src/lower/representation.rs",
+    find: "            (bindings::is_variadic(tcx, def_id) && i + 1 == declared.len())\n",
+    replace: "            false\n",
+    tests: ["test/unit-given.test.ts", "-t", "rest arguments is none"],
+  },
+  {
+    name: "unit-given-dependencies-not-a-list",
+    breaks: "a hook's dependencies of none, `()`, are `undefined`, `useMemo(f)`, run each render, not `useMemo(f, [])` (ADR 0775)",
+    file: "src/lower/representation.rs",
+    find: "        super::recognition::is_dependency_list(tcx, id) || tcx.get_attrs_by_path(id, &rest).next().is_some()\n",
+    replace: "        tcx.get_attrs_by_path(id, &rest).next().is_some()\n",
+    tests: ["test/unit-given.test.ts", "-t", "hook's dependencies"],
+  },
+  {
+    name: "unit-given-bound-not-a-list",
+    breaks: "a `()` given a parameter bounded by `DependencyList`, `use_memo(f, ())`, is `undefined`, not `[]` (ADR 0775)",
+    file: "src/lower/representation.rs",
+    find: "                    .is_some_and(|&ty| matches!(ty.kind(), ty::Param(_)) && bounded(ty))\n",
+    replace: "                    .is_some_and(|&ty| matches!(ty.kind(), ty::Param(_)) && bounded(ty) && false)\n",
+    tests: ["test/unit-given.test.ts", "-t", "hook's dependencies"],
+  },
+  {
+    name: "unit-given-dyn-not-a-list",
+    breaks: "a `()` as a `&dyn DependencyList`, `use_effect(f, Some(&()))`, is `undefined`, run each render, not `[]` (ADR 0775)",
+    file: "src/lower/representation.rs",
+    find: "        UnitTo::Dyn(ty) => matches!(ty.kind(), ty::Dynamic(traits, ..) if traits.principal_def_id().is_some_and(lists)),\n",
+    replace: "        UnitTo::Dyn(ty) => matches!(ty.kind(), ty::Dynamic(traits, ..) if traits.principal_def_id().is_some_and(lists) && false),\n",
+    tests: ["test/unit-given.test.ts", "-t", "hook's dependencies"],
+  },
+  {
     name: "numbered-discriminant-tested",
     breaks: "a numbered enum's `as u8` tests each variant in turn, `kind === 0 ? 0 : ..`, where its value is its discriminant",
     file: "src/lower/representation.rs",

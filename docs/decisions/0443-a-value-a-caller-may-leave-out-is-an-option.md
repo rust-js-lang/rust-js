@@ -1,6 +1,8 @@
 # 0443. A value a caller may leave out is an `Option`, in each direction
 
-Status: Accepted; amended by [0593](0593-a-lazy-argument-is-its-value.md),
+Status: Accepted; amended by [0775](0775-a-unit-given-to-js-is-undefined.md),
+whose `()` as a `dyn` is `undefined` but of a list, a hook's dependencies',
+`[]` (point 6); and by [0593](0593-a-lazy-argument-is-its-value.md),
 whose `use_state` is one function, and [0594](0594-an-overload-an-options-dictionary-holds-is-it.md),
 whose overload an options dictionary holds is that one, and [0640](0640-a-rest-parameter-is-a-tuple.md),
 whose `None` before a rest of none is no argument, and
