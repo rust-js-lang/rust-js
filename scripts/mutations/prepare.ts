@@ -246,8 +246,8 @@ export const mutations: Mutation[] = [
     name: "template-values-unprepared",
     breaks: "an object in a `format!`'s template keeps its `undefined` field, `{ value: undefined }`, which a callback's `\"value\" in options` sees",
     file: "src/prepare.rs",
-    find: "        ExprKind::Template(_, values, _) => values.iter_mut().for_each(expr),\n",
-    replace: "        ExprKind::Template(..) => {}\n",
+    find: "            values.iter_mut().for_each(expr);\n            e.splice_templates();\n",
+    replace: "            e.splice_templates();\n",
     tests: ["test/lowering-options.test.ts", "-t", "undefined field is no key in"],
   },
   {
@@ -582,5 +582,13 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "option_bool_tested"],
     snapshots: true,
+  },
+  {
+    name: "template-in-template-kept",
+    breaks: "`format!(\"{}-{index}\", js::shown(msg))` is `${`${msg}`}-${index}`, a template in a template",
+    file: "src/prepare.rs",
+    find: "            e.splice_templates();\n",
+    replace: "",
+    tests: ["test/bindings.test.ts", "-t", "js::shown is shown as a template"],
   },
 ];

@@ -191,19 +191,20 @@ export const mutations: Mutation[] = [
   },
   {
     name: "call-part-cell-refused",
-    breaks: "a `&mut V` a store's method gives in a tuple, handed on, `lm_get_mut(i).unwrap().1`, is refused",
+    breaks: "a `&mut V` a store's method gives in a tuple, handed on, `lm_get_mut(i).unwrap().1`, is a handle on it, `$handleOn($unwrap(..))`, not the tuple's part, `$unwrap(..)[1]`",
     file: "src/lower/mir/temporaries.rs",
     find: "            && match &call_part(holder).kind {\n",
     replace: "            && match &holder.kind {\n",
     tests: ["test/corpus.test.ts", "-t", "^store_get_mut.rs$"],
+    snapshots: true,
   },
   {
     name: "settled-read-done-with",
-    breaks: "a value read in a branch that's done with is read again before a drop after it, where what it reads isn't, and JS throws",
+    breaks: "a value read in a branch that's done with is read again before a drop after it, where what it reads isn't, and JS throws: the playground's `rootFile.slice(0, -3);` before its borrow's release",
     file: "src/lower/mir/temporaries.rs",
     find: "                    .any(|b| read_from(state.body, b, l))\n",
     replace: "                    .any(|_| true)\n",
-    tests: ["test/corpus.test.ts", "-t", "^kept_read_past_branch.rs$"],
+    tests: ["test/snapshots.test.ts", "-t", "playground: the generated JS is its snapshot"],
   },
   {
     name: "mut-field-returned-refused",

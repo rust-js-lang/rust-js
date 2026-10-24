@@ -24,6 +24,12 @@ use super::bindings::{
 use super::recognition::{StdItem, is_std_def};
 use super::representation::Num;
 
+mod written;
+
+pub use written::validate_types;
+use written::{Member, Signature};
+pub(super) use written::{Written, written_types};
+
 /// What a module's `.d.ts` declares, but its header: `None` where it
 /// exports nothing.
 #[allow(clippy::too_many_arguments)]
@@ -211,18 +217,14 @@ fn param_name(ty: &Value) -> String {
     }
 }
 
-/// What `#[rust_js::types]` says an item is to TypeScript.
-pub(super) fn written_types(tcx: TyCtxt<'_>, did: DefId) -> Option<String> {
-    let path = [Symbol::intern("rust_js"), Symbol::intern("types")];
-    let declared = tcx.get_attrs_by_path(did, &path).next()?.value_str()?;
-    Some(declared.to_string())
-}
-
 /// Whether `did` is a JS value of any shape, TypeScript's `unknown` or
 /// `any`, `js::Unknown`: what may be `0` or `""`, compared by `===` (ADR
 /// 0612).
 pub(super) fn any_shape(tcx: TyCtxt<'_>, did: DefId) -> bool {
-    matches!(written_types(tcx, did).as_deref(), Some("unknown" | "any"))
+    matches!(
+        written_types(tcx, did).as_ref().and_then(Written::keyword),
+        Some("unknown" | "any")
+    )
 }
 
 /// What a type's name imports: the name, or a namespace's, `JSX` of
@@ -231,30 +233,12 @@ fn imported(name: &str) -> String {
     name.split('.').next().unwrap_or(name).to_string()
 }
 
-/// A type the model names, with its arguments: `ReactNode`, `Omit<A, "b">`;
-/// one of TypeScript's keyword types, js's `Unknown`'s `unknown`, that
-/// keyword, as every other is.
+/// A type the model names, with its arguments: `ReactNode`, `Omit<A, "b">`.
+/// A keyword written, js's `Unknown`'s `unknown`, is the keyword, as
+/// `#[rust_js::types]`'s reader has it (`written`).
 fn reference(name: &str, args: Vec<Value>) -> Value {
-    if args.is_empty() && KEYWORDS.contains(&name) {
-        return keyword(name);
-    }
     json!({ "kind": "reference", "name": name, "args": args })
 }
-
-/// TypeScript's keyword types.
-const KEYWORDS: [&str; 11] = [
-    "string",
-    "number",
-    "bigint",
-    "boolean",
-    "symbol",
-    "object",
-    "any",
-    "unknown",
-    "undefined",
-    "void",
-    "never",
-];
 
 fn keyword(keyword: &str) -> Value {
     json!({ "kind": "keyword", "keyword": keyword })
@@ -285,6 +269,14 @@ fn or_undefined(ty: Value) -> Value {
 
 fn is_any(ty: &Value) -> bool {
     ty["kind"] == "keyword" && ty["keyword"] == "any"
+}
+
+/// What a written name is of the type a `#[rust_js::types]` is of: one of
+/// its type parameters, which it's given or not, or another type.
+enum Given {
+    Is(Value),
+    Unknown,
+    NotParam,
 }
 
 struct Declarations<'a, 'tcx> {
@@ -390,52 +382,131 @@ impl<'tcx> Declarations<'_, 'tcx> {
 
     /// A type as its binding says TypeScript has it, `#[rust_js::types]`, of
     /// its Rust type's arguments `args`.
-    fn written(&mut self, did: DefId, declared: &str, args: ty::GenericArgsRef<'tcx>) -> Value {
-        let params = &self.tcx.generics_of(did).own_params;
-        // `{ [key: string]: T }`, an object of `T`s by name, as
-        // `Dict<T>` is: TypeScript's own spelling of one, which a
-        // recursive alias may hold, as `Record<string, T>` it may not.
-        if let Some(index) = declared.strip_prefix("{ [").and_then(|d| d.strip_suffix(" }"))
-            && let Some((key, value)) = index.split_once("]: ")
-            && let Some((parameter, key)) = key.split_once(": ")
-        {
-            let value = match params.iter().find(|p| p.name.as_str() == value) {
-                Some(param) => self.ts(args.type_at(param.index as usize)),
-                None => reference(value, Vec::new()),
-            };
-            return json!({ "kind": "object", "members": [
-                { "kind": "index", "parameter": parameter, "key": keyword(key), "type": value },
-            ] });
+    fn written(&mut self, did: DefId, declared: &Written, args: ty::GenericArgsRef<'tcx>) -> Value {
+        // A name alone is of the Rust type's arguments: `MemoExoticComponent<P>`,
+        // `react#NamedExoticComponent`, is a `NamedExoticComponent<P>`. Those
+        // written are all of TypeScript's type's, `<>` none: react's
+        // `JSX::Element<T>` is a `JSX.Element` whatever its tag's element
+        // (ADR 0224).
+        if let Written::Reference { from, name, args: None } = declared {
+            self.imported_from(from.as_deref(), name);
+            let type_args = args.types().map(|t| self.ts(t)).collect();
+            return reference(name, type_args);
         }
-        let (from, named) = match declared.rsplit_once('#') {
-            Some((from, named)) => (Some(from), named),
-            None => (None, declared),
+        // A name written that's one of the Rust type's own type parameters
+        // is what it's given: `Map<string, T>` of a `Dict<f64>` is
+        // `Map<string, number>`, `{ [key: string]: T }` `{ [key: string]:
+        // number }`.
+        let params = &self.tcx.generics_of(did).own_params;
+        let mut param = |out: &mut Self, name: &str| match params.iter().find(|p| p.name.as_str() == name) {
+            Some(param) if (param.index as usize) < args.len() => Given::Is(out.ts(args.type_at(param.index as usize))),
+            Some(_) => Given::Unknown,
+            None => Given::NotParam,
         };
-        // Arguments written are all of TypeScript's type's, `<>` none:
-        // react's `JSX::Element<T>` is a `JSX.Element` whatever its tag's
-        // element (ADR 0224). Else they're the Rust type's.
-        let (name, given) = match named.split_once('<') {
-            Some((name, given)) => (name, Some(given.trim_end_matches('>'))),
-            None => (named, None),
+        // One of a parameter it isn't given, a trait's of a bound, is what a
+        // type with no `#[rust_js::types]` is.
+        (self.written_value(declared, &mut param, &mut Vec::new())).unwrap_or_else(|| keyword("any"))
+    }
+
+    /// `written` in the model, each name in it that's no type parameter of
+    /// its own, `bound`'s, what `param` gives of it: `None` where it's a
+    /// parameter `param` has no type for.
+    fn written_value(
+        &mut self,
+        written: &Written,
+        param: &mut dyn FnMut(&mut Self, &str) -> Given,
+        bound: &mut Vec<String>,
+    ) -> Option<Value> {
+        Some(match written {
+            Written::Keyword(word) => keyword(word),
+            Written::Literal(value) => json!({ "kind": "literal", "value": value }),
+            Written::Reference { from, name, args } => {
+                if from.is_none() && args.is_none() && !bound.contains(name) {
+                    match param(self, name) {
+                        Given::Is(given) => return Some(given),
+                        Given::Unknown => return None,
+                        Given::NotParam => {}
+                    }
+                }
+                self.imported_from(from.as_deref(), name);
+                let args = (args.iter().flatten())
+                    .map(|arg| self.written_value(arg, param, bound))
+                    .collect::<Option<Vec<_>>>()?;
+                reference(name, args)
+            }
+            Written::Union(types) => {
+                let types = (types.iter())
+                    .map(|ty| self.written_value(ty, param, bound))
+                    .collect::<Option<Vec<_>>>()?;
+                union(types)
+            }
+            Written::Array { element, readonly } => {
+                let element = self.written_value(element, param, bound)?;
+                json!({ "kind": "array", "element": element, "readonly": readonly })
+            }
+            Written::Function(signature) => {
+                let (type_parameters, params, returns) = self.written_signature(signature, param, bound)?;
+                json!({ "kind": "function", "typeParameters": type_parameters, "params": params, "returns": returns })
+            }
+            Written::Object(members) => {
+                let mut values = Vec::new();
+                for member in members {
+                    values.push(match member {
+                        Member::Property { name, optional, readonly, ty } => {
+                            let ty = self.written_value(ty, param, bound)?;
+                            json!({ "kind": "property", "name": name, "optional": optional, "readonly": readonly, "type": ty })
+                        }
+                        Member::Method { name, optional, signature } => {
+                            let (type_parameters, params, returns) = self.written_signature(signature, param, bound)?;
+                            json!({ "kind": "method", "name": name, "optional": optional,
+                                "typeParameters": type_parameters, "params": params, "returns": returns })
+                        }
+                        Member::Index { parameter, key, ty } => {
+                            let key = self.written_value(key, param, bound)?;
+                            let ty = self.written_value(ty, param, bound)?;
+                            json!({ "kind": "index", "parameter": parameter, "key": key, "type": ty })
+                        }
+                    });
+                }
+                json!({ "kind": "object", "members": values })
+            }
+        })
+    }
+
+    /// A written function's or method's type parameters, its own, which no
+    /// name in it of theirs is the Rust type's, its parameters and result.
+    fn written_signature(
+        &mut self,
+        signature: &Signature,
+        param: &mut dyn FnMut(&mut Self, &str) -> Given,
+        bound: &mut Vec<String>,
+    ) -> Option<(Vec<Value>, Vec<Value>, Value)> {
+        let outer = bound.len();
+        bound.extend(signature.type_parameters.iter().cloned());
+        let mut signed = || {
+            let mut params = Vec::new();
+            for p in &signature.params {
+                let ty = self.written_value(&p.ty, param, bound)?;
+                params.push(json!({ "name": p.name, "optional": p.optional, "rest": p.rest, "type": ty }));
+            }
+            let returns = self.written_value(&signature.returns, param, bound)?;
+            Some((params, returns))
         };
-        // A namespace's member, `JSX.Element`, imports the namespace.
+        let signed = signed();
+        bound.truncate(outer);
+        let (params, returns) = signed?;
+        let type_parameters = (signature.type_parameters.iter())
+            .map(|name| json!({ "name": name }))
+            .collect();
+        Some((type_parameters, params, returns))
+    }
+
+    /// A type named of a module, `react#ReactNode`, imported from it; a
+    /// namespace's member, `JSX.Element`, the namespace.
+    fn imported_from(&mut self, from: Option<&str>, name: &str) {
         if let Some(from) = from {
             self.imports.insert((from.to_string(), imported(name)));
         }
-        // A written argument that's one of the Rust type's own type
-        // parameters is what it's given: `Map<string, T>` of a
-        // `Dict<f64>` would be `Map<string, number>`.
-        let type_args: Vec<Value> = match given {
-            Some(given) => (given.split(',').map(str::trim))
-                .filter(|arg| !arg.is_empty())
-                .map(|arg| match params.iter().find(|p| p.name.as_str() == arg) {
-                    Some(param) => self.ts(args.type_at(param.index as usize)),
-                    None => reference(arg, Vec::new()),
-                })
-                .collect(),
-            None => args.types().map(|t| self.ts(t)).collect(),
-        };
-        reference(name, type_args)
     }
 
     /// A type as the Rust writes it, `of` making it of rustc's: each alias
@@ -528,11 +599,6 @@ impl<'tcx> Declarations<'_, 'tcx> {
             return None;
         };
         let declared = written_types(self.tcx, did)?;
-        let (from, named) = declared.rsplit_once('#').unwrap_or(("", declared.as_str()));
-        let (name, wanted) = match named.split_once('<') {
-            Some((name, wanted)) => (name, wanted.trim_end_matches('>')),
-            None => (named, ""),
-        };
         let given: Vec<&hir::Ty<'tcx>> = (path.segments.last()?.args)
             .map(|args| args.args.iter())
             .into_iter()
@@ -546,17 +612,45 @@ impl<'tcx> Declarations<'_, 'tcx> {
             .filter(|param| matches!(param.kind, ty::GenericParamDefKind::Type { .. }))
             .map(|param| param.name)
             .collect();
-        let mut args = Vec::new();
-        for wanted in wanted.split(',').map(str::trim).filter(|w| !w.is_empty()) {
-            let at = params.iter().position(|param| param.as_str() == wanted)?;
-            let Some(given) = given.get(at) else { break };
-            let ty = rustc_hir_analysis::lower_ty(self.tcx, given);
-            args.push(self.as_written(Some(given), |out| out.ts(ty)));
+        let at = |name: &str| params.iter().position(|param| param.as_str() == name);
+        // Each of its parameters is what's written of it; one left to its
+        // default, none written.
+        let mut param = |out: &mut Self, name: &str| match at(name) {
+            Some(at) => match given.get(at) {
+                Some(given) => {
+                    let ty = rustc_hir_analysis::lower_ty(out.tcx, given);
+                    Given::Is(out.as_written(Some(given), |out| out.ts(ty)))
+                }
+                None => Given::Unknown,
+            },
+            None => Given::NotParam,
+        };
+        // Its arguments end where one's left to its default, as TypeScript's
+        // has the same: `MouseEventHandler` of `T = Element`. Where one's
+        // left so in another place, it's as rustc has it, expanded.
+        if let Written::Reference {
+            from,
+            name,
+            args: Some(wanted),
+        } = &declared
+        {
+            let mut args = Vec::new();
+            for wanted in wanted {
+                if let Written::Reference {
+                    from: None,
+                    name,
+                    args: None,
+                } = wanted
+                    && at(name).is_some_and(|at| at >= given.len())
+                {
+                    break;
+                }
+                args.push(self.written_value(wanted, &mut param, &mut Vec::new())?);
+            }
+            self.imported_from(from.as_deref(), name);
+            return Some(reference(name, args));
         }
-        if !from.is_empty() {
-            self.imports.insert((from.to_string(), imported(name)));
-        }
-        Some(reference(name, args))
+        self.written_value(&declared, &mut param, &mut Vec::new())
     }
 
     /// `Option<T>`'s `T` as written, where `written` is one.
