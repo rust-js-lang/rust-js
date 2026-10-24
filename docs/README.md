@@ -800,7 +800,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0547 A `copied()` of an iterator with a destructor drops it](decisions/0547-a-copied-iterator-with-a-destructor-is-closed.md)
 - [0548 A library's manifest says which type parameters it steps](decisions/0548-a-librarys-manifest-says-which-parameters-it-steps.md)
 - [0549 A held `Fuse` is stepped from its back as its use site knows it](decisions/0549-a-held-fuse-steps-what-a-use-site-gives.md) *(superseded by 0566)*
-- [0550 A known type's `as_mut()` is the value its `&mut` is](decisions/0550-a-known-as-mut-is-the-value.md)
+- [0550 A known type's `as_mut()` is the value its `&mut` is](decisions/0550-a-known-as-mut-is-the-value.md) *(amended: a `Box`'s `as_mut()` and `as_ref()` too)*
 - [0551 A parameter given as it is, given on where a JS iterator goes, is made one](decisions/0551-self-given-on-where-a-js-iterator-goes.md)
 - [0552 An `IntoIterator` whose iterator is held as it is is given as it is](decisions/0552-an-into-iterator-held-as-it-is-is-given-as-it-is.md)
 - [0553 `mem::replace` of a field holding an iterator given as it is](decisions/0553-replace-of-a-field-holding-a-given-iterator.md)

@@ -251,4 +251,12 @@ export const mutations: Mutation[] = [
     replace: "        let held = from.is_box() || self.is_path_like(to);",
     tests: ["test/corpus.test.ts", "-t", "^counted_rc_borrow.rs$"],
   },
+  {
+    name: "box-as-mut-unknown",
+    breaks: "a `Box`'s `as_mut()` is refused, a call and generic code's dictionary alike",
+    file: "src/lower/recognition/wrappers.rs",
+    find: "        self.views_as_itself(from, to) || (boxed.is_box() && boxed.boxed_ty() == Some(to))\n",
+    replace: "        self.views_as_itself(from, to)\n",
+    tests: ["test/corpus.test.ts", "-t", "^box_as_mut_and_ref.rs$"],
+  },
 ];
