@@ -171,6 +171,19 @@ pub(super) fn told_by_kind(tcx: TyCtxt<'_>, variant: &VariantDef) -> bool {
     !matches!(unit_kind(tcx, variant), Some(Kind::Literal(_)))
 }
 
+/// Whether `variant` of an untagged enum is `undefined` or `null`, which
+/// an `Option`'s `None` is one of (ADR 0676).
+pub(super) fn is_nullish(tcx: TyCtxt<'_>, variant: &VariantDef) -> bool {
+    matches!(unit_kind(tcx, variant), Some(Kind::Null | Kind::Undefined))
+}
+
+/// Whether the untagged enum `adt` has a variant that's `undefined` and
+/// one that's `null`: then no other variant is either.
+pub(super) fn holds_undefined_and_null(tcx: TyCtxt<'_>, adt: AdtDef<'_>) -> bool {
+    let has = |kind: Kind| (adt.variants().iter()).any(|v| unit_kind(tcx, v) == Some(kind.clone()));
+    has(Kind::Undefined) && has(Kind::Null)
+}
+
 /// The value a variant without fields of an untagged enum is in JS, the
 /// one answer: `"blocking"`, `null` or `undefined` (ADR 0676).
 pub(super) fn unit_value(tcx: TyCtxt<'_>, variant: &VariantDef) -> Option<Expr> {

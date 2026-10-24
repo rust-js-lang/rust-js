@@ -176,4 +176,12 @@ export const mutations: Mutation[] = [
     replace: "            StmtKind::Labeled(_, body) => case_breaks(body, label),\n            StmtKind::While { body, .. } | StmtKind::ForOf { body, .. } | StmtKind::For { body, .. } => case_breaks(body, label),\n            _ => {}\n",
     tests: ["test/lowering-switch-ends.test.ts", "-t", "past the switch"],
   },
+  {
+    name: "block-ending-case-labeled",
+    breaks: "a block a case ends with keeps its label, `desc: { .. break desc; }`, not the case's `break;` (ADR 0790)",
+    file: "src/lower/mir/tidy/switches.rs",
+    find: "                let label = label.clone();\n                case_breaks(body, &label);\n                ending(body);",
+    replace: "                ending(body);",
+    tests: ["test/lowering-labels.test.ts", "-t", "a block the program labeled that ends a case"],
+  },
 ];

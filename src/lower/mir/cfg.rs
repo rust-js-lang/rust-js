@@ -4,7 +4,7 @@
 //! left out, and so are the edges rustc adds for borrowck alone.
 
 use rustc_middle::mir::{BasicBlock, Body, TerminatorKind};
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 pub(super) struct Graph {
     /// Each block's successors, in the order its terminator names them.
@@ -40,9 +40,19 @@ pub(super) fn successors(body: &Body<'_>, block: BasicBlock) -> Vec<BasicBlock> 
 }
 
 impl Graph {
-    pub(super) fn of(body: &Body<'_>) -> Graph {
+    /// Of `body`, each edge to a block of `through` going on to where it
+    /// leads instead: a guard's that holds, to its arm (`held_arms`).
+    pub(super) fn of(body: &Body<'_>, through: &HashMap<BasicBlock, BasicBlock>) -> Graph {
         let n = body.basic_blocks.len();
-        let succ: Vec<Vec<BasicBlock>> = (0..n).map(|i| successors(body, BasicBlock::from_usize(i))).collect();
+        let succ: Vec<Vec<BasicBlock>> = (0..n)
+            .map(|i| {
+                let mut seen = HashSet::new();
+                (successors(body, BasicBlock::from_usize(i)).into_iter())
+                    .map(|b| through.get(&b).copied().unwrap_or(b))
+                    .filter(|b| seen.insert(*b))
+                    .collect()
+            })
+            .collect();
         // Postorder by an explicit stack, children in their order.
         let mut post = Vec::with_capacity(n);
         let mut visited = vec![false; n];

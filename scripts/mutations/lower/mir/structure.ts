@@ -235,4 +235,28 @@ export const mutations: Mutation[] = [
     replace: "                    Value::Expr(e) if self.unwrapped_where_made(state, destination.local) => {\n                        Value::Expr(e)\n",
     tests: ["test/js-builtins.test.ts", "-t", "unwrap of a throwing call each branch"],
   },
+  {
+    name: "written-break-unspanned",
+    breaks: "a `break` the program wrote has no span, so tidy makes it an `else`, not where it's written (ADR 0790)",
+    file: "src/lower/mir/structure.rs",
+    find: "            let written = left.map_or(js::Span::NONE, |(_, w)| w);",
+    replace: "            let written = left.map_or(js::Span::NONE, |_| js::Span::NONE);",
+    tests: ["test/lowering-labels.test.ts", "-t", "a block the program labeled that ends a case"],
+  },
+  {
+    name: "written-break-each-arm-of-its-value",
+    breaks: "each arm of a `break 'desc match ..`'s value is taken for the `break`, so the `match` is split, `if (..) { desc = a; break; } desc = b; break;` (ADR 0790)",
+    file: "src/lower/mir/structure.rs",
+    find: "                .filter(|&found| !self.goes_on_to_break(state, to, found));",
+    replace: "                .filter(|_| true);",
+    tests: ["test/lowering-labels.test.ts", "-t", "a block the program labeled that ends a case"],
+  },
+  {
+    name: "written-break-not-through-merges",
+    breaks: "a `break 'desc match ..` whose arms meet before it isn't the program's, so it's an `else` (ADR 0790)",
+    file: "src/lower/mir/structure.rs",
+    find: "        if preds[block].len() < 2 || seen.contains(&block) {\n            return None;",
+    replace: "        if preds[block].len() < 200 || seen.contains(&block) {\n            return None;",
+    tests: ["test/lowering-labels.test.ts", "-t", "a block the program labeled that ends a case"],
+  },
 ];

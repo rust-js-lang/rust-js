@@ -50,10 +50,27 @@ test("addValueToProperties' Promise case returns where it's written", () => {
   const js = of("ReactPerformanceTrackProperties.js");
   expect(js).not.toContain("typeof status");
   expect(js).toContain(
-    '          if (objectName === "Promise") {\n            const status = value.status;\n            if (status === "fulfilled") {\n',
+    '        if (objectName === "Promise") {\n          const status = value.status;\n          if (status === "fulfilled") {\n',
   );
   expect(js).toContain(
-    '                insertedEntry[1] = "Promise<" + (insertedEntry[1] || "Object") + ">";\n                return;\n              }\n            } else if (status === "rejected") {\n',
+    '              insertedEntry[1] = "Promise<" + (insertedEntry[1] || "Object") + ">";\n              return;\n            }\n          } else if (status === "rejected") {\n',
+  );
+});
+
+// ADR 0790: upstream's `switch (typeof value) { case 'object': .. }`, each
+// `desc = ..; break;` where it's written, which the port's one `match
+// js::classify(value)` is, its object arm's guard `if let Some(value) =
+// value` tested by nothing, and its `'desc` block's `break`s the case's:
+// no label anywhere.
+test("addValueToProperties is a switch whose case breaks where it's written", () => {
+  const js = of("ReactPerformanceTrackProperties.js");
+  const add = js.slice(js.indexOf("export function addValueToProperties("), js.indexOf("const REMOVED"));
+  expect(add).not.toMatch(/^\s*\w+: \{$/m);
+  expect(add).not.toMatch(/break \w+;/);
+  expect(add).toContain('  switch (typeof value) {\n    case "object":\n      if (value === null) {\n        desc = "null";\n');
+  expect(add).toContain('        if (key == null && propsLength === 0) {\n          desc = "<" + typeName + " />";\n          break;\n        }\n');
+  expect(add).toContain(
+    '          desc = typeof length === "number" ? `${objectName}(${length})` : objectName;\n          break;\n        }\n',
   );
 });
 

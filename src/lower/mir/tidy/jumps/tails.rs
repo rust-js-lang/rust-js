@@ -474,23 +474,26 @@ pub(in crate::lower::mir::tidy) fn leaves(stmts: &[Stmt], label: &str) -> bool {
 }
 
 /// `jump` where it ends `stmts`, or a branch of the `if` that ends them.
+/// Not a `break` the program wrote of a block it labeled, where it's
+/// written, its span (ADR 0790).
 pub(in crate::lower::mir::tidy) fn drop_tail(stmts: &mut Vec<Stmt>, jump: &StmtKind) {
-    let same = |kind: &StmtKind| match (kind, jump) {
+    let same = |stmt: &Stmt| match (&stmt.kind, jump) {
+        (StmtKind::Break(Some(a)), StmtKind::Break(Some(_)))
+            if !crate::lower::mir::is_block_label(a) && !stmt.span.is_none() =>
+        {
+            false
+        }
         (StmtKind::Break(Some(a)), StmtKind::Break(Some(b)))
         | (StmtKind::Continue(Some(a)), StmtKind::Continue(Some(b))) => a == b,
         _ => false,
     };
-    match stmts.last_mut().map(|s| &mut s.kind) {
-        Some(kind) if same(kind) => {
-            stmts.pop();
+    if stmts.last().is_some_and(same) {
+        stmts.pop();
+    } else if let Some(StmtKind::If(_, then, otherwise)) = stmts.last_mut().map(|s| &mut s.kind) {
+        drop_tail(then, jump);
+        if let Some(otherwise) = otherwise {
+            drop_tail(otherwise, jump);
         }
-        Some(StmtKind::If(_, then, otherwise)) => {
-            drop_tail(then, jump);
-            if let Some(otherwise) = otherwise {
-                drop_tail(otherwise, jump);
-            }
-        }
-        _ => {}
     }
 }
 

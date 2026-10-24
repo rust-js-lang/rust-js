@@ -99,6 +99,22 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-unwinds.test.ts", "-t", "every unwind"],
   },
   {
+    name: "held-binding-a-variable",
+    breaks: "what a guard that holds binds is a variable of its own, `value$1 = value`, set in each alternative (ADR 0790)",
+    file: "src/lower/mir/patterns.rs",
+    find: "        for &(bound, of) in &bindings {\n            let read",
+    replace: "        for &(bound, of) in &bindings[..0] {\n            let read",
+    tests: ["test/lowering-labels.test.ts", "-t", "a block the program labeled that ends a case"],
+  },
+  {
+    name: "held-arms-tested",
+    breaks: "each alternative of an arm whose guard holds goes through the guard's test, so the `match` is no `switch` (ADR 0790)",
+    file: "src/lower/mir/patterns.rs",
+    find: "            if past_guard {\n                arms.insert(start, at);",
+    replace: "            if past_guard && false {\n                arms.insert(start, at);",
+    tests: ["test/lowering-labels.test.ts", "-t", "a block the program labeled that ends a case"],
+  },
+  {
     name: "promoted-some-maybe-none",
     breaks: "an `==` of an `Option` and a promoted `&Some(C)`, never `None`, is `==`, not the `===` a person writes",
     file: "src/lower/mir/patterns.rs",
