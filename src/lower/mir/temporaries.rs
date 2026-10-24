@@ -194,15 +194,43 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// The pattern of the arm written at `at` of the `match` whose switch MIR's
     /// at `span`, its `match x`, is, for the source map.
     pub(super) fn arm_span(&self, span: Span, at: rustc_span::BytePos) -> Option<Span> {
+        Some(self.written_arm(span, at, |arm| arm.span)?.pattern.span)
+    }
+
+    /// The arm written at `at` of the `match` whose switch MIR's at `span`,
+    /// where `written` says each arm is.
+    fn written_arm(
+        &self,
+        span: Span,
+        at: rustc_span::BytePos,
+        written: impl Fn(&thir::Arm<'tcx>) -> Span,
+    ) -> Option<&thir::Arm<'tcx>> {
         let arms = (self.frame.thir.exprs.iter()).find_map(|e| match &e.kind {
             thir::ExprKind::Match { arms, .. } if e.span.lo() == span.lo() && e.span.contains(span) => Some(arms),
             _ => None,
         })?;
-        let arm = arms
-            .iter()
+        arms.iter()
             .map(|&arm| &self.frame.thir[arm])
-            .find(|arm| arm.span.lo() <= at && at < arm.span.hi())?;
-        Some(arm.pattern.span)
+            .find(|arm| written(arm).lo() <= at && at < written(arm).hi())
+    }
+
+    /// The variants the pattern of the arm written at `at` names, in the
+    /// order it names them, `Pending | Uninitialized`'s: what its test
+    /// tests in turn, as the program wrote them. Of a macro's `match`,
+    /// `matches!`'s, where its call is: the program's pattern its first arm.
+    pub(super) fn written_variants(&self, span: Span, at: rustc_span::BytePos) -> Vec<VariantIdx> {
+        fn named(pattern: &thir::Pat<'_>, found: &mut Vec<VariantIdx>) {
+            match &pattern.kind {
+                thir::PatKind::Or { pats } => pats.iter().for_each(|p| named(p, found)),
+                thir::PatKind::Variant { variant_index, .. } => found.push(*variant_index),
+                _ => {}
+            }
+        }
+        let mut found = Vec::new();
+        if let Some(arm) = self.written_arm(span, at, |arm| arm.span.source_callsite()) {
+            named(&arm.pattern, &mut found);
+        }
+        found
     }
 
     /// The temporaries made and not yet used that do something.

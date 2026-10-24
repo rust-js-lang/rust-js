@@ -1,334 +1,198 @@
 # rust-js: north star
 
-**Rust in. Readable JavaScript out.**
+**Idiomatic Rust in. Readable JavaScript out.**
 
-A compiler that turns Rust into JavaScript people would have written by hand.
-The longer-term goal is Rust across the stack: native Rust on the server,
-rust-js on the frontend, shared types between them, with Scala.js-level
-correctness, library support and interop. The first production app is a
-milestone on the way.
+Compile the Rust engineers naturally write into correct JavaScript people
+would write by hand. The goal is Rust across the stack: native on the
+server, rust-js on the frontend, shared types, and Scala.js-level
+correctness, libraries and interop. The first production app is a milestone.
 
-**Be ambitious.** We are setting out to change how people build for the web,
-so don't shy away from a big change. A representation reworked across the
-compiler, a new analysis, a crate rebound from scratch: if it serves the
-north star and keeps every promise below, do it, whatever it takes. The
-size of a change is never a reason to settle for less; only the vision and
-the promises are. Make it as safe as it is bold: a failing test first, the
-corpus and mutations as the net, an ADR that says why.
+Be ambitious: change any representation, analysis or binding needed to
+serve this goal. Size alone is no reason to settle. Make changes safe with
+a failing test, native comparisons, mutations and an ADR explaining why.
 
-## Correctness comes first
+## Correctness first
 
-**The JavaScript does what the Rust does. That is the promise rust-js lives
-or dies by.** Readable JavaScript is what sets rust-js apart, its selling
-point; correctness is what makes it worth anything at all. A compiler whose
-output reads beautifully and answers wrong is worse than no compiler: it
-breaks the trust every user puts in it, and it deserves to fail. Every rule
-below serves this one, and none outranks it.
+**The JavaScript must do what the Rust does. No rule outranks this.**
 
-- **When in doubt, correct wins.** Never trade a right answer for nicer
-  output. Where the readable form can't keep Rust's meaning, write the form
-  that does, however it reads, or refuse at compile time. Then look for the
-  readable form that is also right; never the other way round.
-- **A wrong answer is the worst bug there is**: worse than a refusal, noisy
-  output, a slow build or a missing feature. A refusal says what rust-js
-  can't do; a wrong answer lies. Fix one before anything else, or file it
-  at once and say so.
-- **Proved, not assumed.** Each behavior is checked against native Rust:
-  the corpus, rustc's tests, generated programs, mutations. "It reads right"
-  and "it should work" prove nothing; a run against rustc's answer does.
-- **Every corner counts.** An edge case, an iterator that gives `None` then
-  more, a panic's message, a drop's order: if a program can observe it, it
-  is the program's meaning, and rust-js keeps it. The one exception is ADR
-  0262's rare and harmless case, a difference decided, documented in the
-  guide and tested; never a default, and never decided alone.
+- Never trade correctness for readability. Emit the correct form or refuse
+  clearly at compile time; never approximate or emit partial output.
+- A wrong answer is the worst bug. Fix it before other work, or file it
+  immediately and report it.
+- Prove behavior against native Rust using the corpus, rustc's tests,
+  generated programs and mutations. Inspect generated JavaScript too.
+- Preserve every observable detail: evaluation order, side effects,
+  copying, overflow, errors, panic messages, drop order and iterator behavior.
+- rustc owns types, traits, ownership, borrowing, validity and diagnostics.
+  Never bypass its checks.
 
-## Exactly one way to do each job
+For Rust/JS differences, apply [ADR 0262](docs/decisions/0262-when-rust-and-js-disagree.md):
 
-**This rule comes before every other but correctness.** For any job there is exactly one
-way to do it. Two ways to do the same job is a red flag: stop, and resolve
-it before going on with anything else.
+| Observable difference | Decision |
+|---|---|
+| None | Use JavaScript's behavior; explain why. |
+| Rare and harmless | Only an explicitly decided, documented and tested exception, listed in ADR 0262's Consequences and the guide; never decide alone. |
+| Results change | Preserve Rust's behavior, however the output reads. |
+| Rust's behavior cannot be preserved | Compile error. |
 
-rust-js is a tool AI coding agents write against. An agent needs one answer
-it can't get wrong, not a choice; every second way is a chance to pick the
-wrong one, and a second thing to keep correct. The rule holds everywhere:
-
-- **What a program writes:** one attribute, one macro, one API, one way to
-  declare a binding, one option, one flag, one config key for each thing.
-- **What rust-js writes:** one form of output for each construct.
-- **Inside rust-js:** one authoritative owner for each rule, shared by
-  the modules and passes that need it; one way a host builds; one catalog
-  of each set of things. Ownership follows the next rule.
-
-When you meet two ways, whatever you were doing:
-
-1. **Stop.** Don't build on either, and don't add a third.
-2. **Choose one** by the north star: the one that covers every case,
-   reads best, and keeps Rust's checks.
-3. **Remove the other**: migrate what uses it, and make what's left of it
-   a compile error, or a test failure, that names the one way.
-4. **Hold it**: a test, often [the architecture test](test/architecture.test.ts),
-   so the second way can't come back, and an ADR that says which one and why.
-5. **Then go on** with the task you stopped.
-
-Never add a synonym, an alias, an option, a fallback or an "also accepts"
-for taste or convenience: people need preferences; an agent needs one
-answer. Before adding a form, find the one that does the job and extend
-it. If removing the second way seems out of proportion, stop and ask the
-user; never leave both standing.
-
-## Single semantic authority
-
-**Define each semantic rule once; consume its decisions everywhere.**
-One question, one authority; many consumers.
-
-For every semantic question, rust-js has one authoritative owner of the
-answer. Other components consult that owner or consume its explicit result;
-they never independently reconstruct the rule. This is Single Source of
-Truth applied to compiler decisions, and DRY applied to knowledge, not just
-repeated code. Two functions can look entirely different and still duplicate
-the same rule. Similar-looking code for different rules need not be combined.
-
-This covers what a value is in JS, when it needs copying, whether a function
-is a binding, and whether a check is written. It also covers build decisions:
-where a module's file goes, which old files a build may remove, and which
-crates rust-js ships. rustc remains the authority on Rust's types, traits,
-ownership, borrowing and validity; rust-js owns how valid Rust becomes JS.
-
-Two answers to one question drift apart, and then two code paths behave
-differently without anyone knowing: each is right alone, and the bug lives
-in the gap. rust-js has had them: whether an `Assert` is written was decided
-both by the count of reads and by the terminator, so a check was counted
-but never made; where a module's JS goes in source was the compiler's rule
-and the hosts' copy of it; a Vite build looked for committed JS where Next's
-didn't.
-
-- **Find the owner before adding a rule.** Consult
-  [the architecture](docs/architecture.md) and its table of owners. Extend
-  the existing owner when the question is already answered. For a new
-  question, name it and give it an API in the module responsible for that
-  concept. One authority per question does not mean one giant module:
-  owners may consult other owners for the facts their decision needs.
-- **Carry answers across phases.** Analysis, lowering, linking and printing
-  consume the responsible owner's API or explicit facts in a phase output.
-  For example, `copies.rs` owns when a value needs copying; consumers use
-  its decision rather than inventing their own copy conditions. A later
-  phase must not recover an earlier decision from generated names or JS
-  shapes outside the API that owns that representation.
-- **Carry answers across hosts and languages.** The compiler reports its
-  decisions through the manifest; native and browser hosts consume them.
-  Shared catalogs supply build and packaging facts. If a boundary truly
-  prevents sharing an answer, document why, identify the authoritative
-  side, and test the necessary mirror against it by running both. A mirror
-  is never independently maintained policy.
-- **Derived data is not another authority.** Caches, indexes and serialized
-  facts are allowed when derived from the owner's answer. Make their source,
-  input keys and invalidation or version checks explicit, so stale data
-  cannot silently replace the answer. Do not maintain a second editable
-  list or a fallback that decides the rule again.
-- **Hold ownership and behavior.** Use types and visibility for contracts,
-  [architecture tests](test/architecture.test.ts) for who may access or
-  decide a concept, and behavior tests for what consumers observe. When
-  ownership changes, update the architecture and record why in an ADR.
-- **Spot the red flag**: two places that must change when one rule changes,
-  even if their code differs; a repeated condition or catalog; a comment
-  that says "as X does" or "mirrors"; a decision inferred again downstream.
-  Follow the stop-and-resolve procedure above: choose the owner, route all
-  consumers through it, remove the competing rule, and hold it with a test.
-
-## Least surprise
-
-A design is right when it's the one a person, or an agent, would guess.
-Each form follows the rule it looks like it follows, everywhere it can
-appear, with nothing to learn on the side: what looks the same means the
-same, and what works in one place works the same way in the next.
-
-- **Guessable from one example.** Having seen one prop, binding, attribute,
-  flag or diagnostic, you can write the next without looking it up.
-- **No exceptions, no anomalies.** "Except when", a special case, a form
-  that works here but not there: each is a cost every reader pays, and a
-  place an agent goes wrong. Before adding one, find the rule that covers
-  the case and extend it. If none can, ask the user; an exception that
-  stays is documented where it's met, and breaking it is a compiler error
-  that says what to write.
-- **The conventions people already know.** Rust's where Rust is written,
-  JavaScript's, React's and TypeScript's where JS is read or written. Where
-  the two meet, one rule maps one to the other, the same for every case.
-- **Spot the red flag**: a rule with a list of cases it doesn't cover, two
-  spellings of one thing that differ only by where they're written, output
-  that follows one convention for some values and another for the rest.
-  Treat it as two ways to do one job, above.
+State which case each decision follows.
 
 ## Idiomatic Rust in
 
-The Rust a rust-js app is written in is the Rust people write everywhere
-else: what a Rust developer would write for a server, a CLI or a library,
-written the way the Rust book, std's docs and clippy teach it. Learning
-Rust on the frontend is learning Rust; moving to the backend, everything
-carries over.
+**Write the Rust an experienced Rust engineer would naturally write.**
+Use familiar types, APIs and patterns taught by the Rust book, std's docs
+and clippy. The compiler adapts to idiomatic Rust, not the other way around.
 
-- **No dialect.** A program uses std's types, traits and idioms (`Vec`,
-  `HashMap`, `Option`, `?`, iterators, `impl Trait`, ownership and
-  borrowing as rustc checks them), never a rust-js stand-in for one. What
-  only rust-js has is where Rust meets JS, and only there: a binding's
-  attribute, a JS value's type, `jsx!`.
-- **Nothing shaped for the compiler.** If idiomatic Rust doesn't compile,
-  or compiles to JS that doesn't read well, rust-js is what changes, never
-  the program: no restructured function, no extra clone, no type narrowed
-  or index loop written to get past it. That's the gap to close (as a
-  port's is, below).
-- **Clean under rustc's and clippy's defaults.** A rust-js program needs
-  no `#[allow]` for rust-js's sake, and is formatted by rustfmt.
-- **Spot the red flag**: an example, a test or a port written in Rust no
-  Rust developer would write, a rule only rust-js users must learn, or a
-  workaround in an app. Treat it as a gap in rust-js: fix it there.
+- Use std's types and idioms: `Vec`, `HashMap`, `Option`, `?`, iterators,
+  `impl Trait`, ownership and borrowing. No rust-js substitutes or dialect.
+- rust-js-specific APIs belong only at the JS boundary: bindings, JS value
+  types and `jsx!`.
+- Fix the compiler when idiomatic Rust fails or produces unreadable JS.
+  Never reshape an app, narrow types, add clones or replace an iterator
+  with an index loop to accommodate lowering.
+- Examples, tests and ports must not teach compiler workarounds. Format
+  with rustfmt and satisfy rustc's and clippy's defaults without `#[allow]`
+  added for rust-js's sake.
 
-## Principles
+## One way, one authority
 
-- **Each piece understood on its own.** A module owns one responsibility
-  and the concepts that job needs, no more, behind a boundary nothing
-  leaks across, so you can read, change and test it without holding
-  every other concept in your head. That's what keeps a change small and
-  safe, and the codebase open to people and AI coding agents alike. Where
-  a pass works around what a later phase does, or a module spells another's
-  representation, give the concept one owner, as each question has one
-  place (above), and have [the architecture test](test/architecture.test.ts)
-  hold it.
-- **Keep Rust's checks.** rustc owns types, traits, ownership, borrowing and
-  diagnostics. Never bypass them to make a feature compile.
-- **Generated code is a product.** Names, control flow, modules, JSX,
-  formatting and source maps must read well to JavaScript developers.
-  Inspect the output when changing the compiler.
-- **Use JavaScript's building blocks**: objects, arrays, functions, promises,
-  ES modules. Emit helpers only where behavior needs them.
-- **Make semantics explicit.** Keep the contract: evaluation order, side
-  effects, copying, overflow, errors. Differences from native Rust are
-  deliberate, documented and tested; readability never excuses an accidental
-  one.
-- **Decide a disagreement by what the program can observe**
-  ([ADR 0262](docs/decisions/0262-when-rust-and-js-disagree.md)):
-  - it can't: JavaScript's, and say why;
-  - only where it's rare and harmless: JavaScript's, listed under the ADR's
-    Consequences;
-  - results would change: Rust's, paid for in output (`>>> 0`, `$byteLen`);
-  - Rust's can't be kept: a compile error, never silent drift.
+**Within choices rust-js owns, this takes priority after correctness.**
+Provide one API, attribute, macro, binding form, option or config key per
+job; one output form per construct; one semantic owner and catalog per rule;
+one way for hosts to build.
+This does not restrict Rust's established alternatives: loops and iterator
+chains both belong. Ease of lowering must not dictate the source.
 
-  The program's meaning is rustc's: never make wrong Rust work in JavaScript
-  for nicer output. Every decision states which case it's in.
-- **Reject unsupported features clearly**: a useful compiler error, never an
-  approximation or partial output.
-- **Interop is fundamental.** Browser APIs, React, npm, Vite and JavaScript
-  callers are core. Preserve public representations and interfaces, and keep
-  the native and browser compilers consistent.
+When two ways or competing authorities appear:
 
-## Ports drive rust-js
+1. Stop; do not build on either or add a third.
+2. Choose the one that covers every case, reads best and keeps Rust's checks.
+3. Migrate consumers and remove the other. Reject its use with a compiler
+   error or test failure naming the supported way.
+4. Prevent recurrence with tests and record the choice in an ADR; then resume.
 
-We port TypeScript and JavaScript projects to Rust, react.dev first, to find
-what rust-js lacks. The port is not the goal; what it uncovers is. A port
-that lands with a gap worked around has failed at its only job, however
-well it runs.
+Never add synonyms, aliases, fallbacks or "also accepts" for convenience.
+Extend the existing form. If removing duplication seems disproportionate,
+stop and ask the user; do not silently leave both.
 
-- **Anything short stops the port.** Stop porting and fix rust-js, with a
-  failing test, the fix, its mutations and an ADR, when a port meets any of
-  these:
-  - a feature rust-js lacks, or an error where Rust is fine;
-  - a binding missing from the js, webapi or react crates, or one that
-    types a value more narrowly or loosely than TypeScript does (an
-    `any`, a missing `| undefined`);
-  - generated JavaScript that doesn't read as the original does: a
-    rename, a box, a helper, a cast, a copy, a lost name, a statement
-    where the original has an expression;
-  - Rust that has to be bent to get there: a narrower type than the
-    original's, a leak, a restructured function.
+**Define each semantic rule once; consume its answers everywhere.**
 
-  Then write the port the natural way, on the fixed rust-js.
-- **Never work around rust-js in a port**: no local stand-in bindings for
-  what a crate should bind, no `#[link_name = "this"]` casts, no
-  restructured or narrowed Rust to dodge an error, no accepting noisy
-  output. A workaround hides the gap the port exists to find.
-- **Don't decide alone that a gap is acceptable.** "Cosmetic", "correct
-  anyway" and "worth revisiting later" are not reasons to keep porting. If
-  fixing it seems out of proportion, stop and ask the user; record what
-  they decide.
-- **Read every generated file against its original before committing a
-  port**, line by line. Each difference is fixed in rust-js first, or the
-  user has accepted it by name.
-- **A port is faithful**: the same behavior, and output as close to the
-  original as its Rust allows.
+- Find its owner in [the architecture](docs/architecture.md). Extend that
+  owner, or give a new question an API in the responsible module. Owners
+  may consult other owners; one authority does not mean one giant module.
+- Share knowledge, not just code: different-looking implementations can
+  duplicate a rule; similar code for different rules need not be combined.
+- Carry decisions through analysis, lowering, linking and printing as APIs
+  or explicit facts. Never reconstruct them from names or JS shapes outside
+  the representation owner's API. For example, copying decisions belong
+  to `copies.rs`.
+- Hosts consume compiler decisions through the manifest; build and packaging
+  use shared catalogs. If sharing across a boundary is impossible, document
+  the authority and reason, and test the necessary mirror by running both.
+- Caches, indexes and serialized facts must derive from the owner, with
+  explicit source, input keys and invalidation/version checks. No second
+  editable catalog or fallback policy.
+- Enforce contracts with types and visibility, ownership with
+  [architecture tests](test/architecture.test.ts), and behavior with tests.
+  Update the architecture and an ADR when ownership changes.
 
-## The guide is how rust-js is used
+Red flags: two places must change for one rule, repeated conditions or
+catalogs, "mirrors" comments, or downstream reconstruction. Apply the
+stop-and-resolve procedure above.
 
-[The guide](docs/guide/README.md) says how to write a JavaScript app in
-rust-js as rust-js is today: what each Rust construct becomes, how to bind
-a JavaScript API, how to export one, what's refused. It's the one place
-that answers "what do I write?"; the decisions say why, as they were made,
-and a later one may have changed an earlier one.
+## Simple boundaries, unsurprising behavior
 
-- **Consult it before writing Rust for rust-js**, a port above all: write
-  what the guide says, the way it says. Where the guide has no answer, or
-  its answer doesn't work, that's a gap in rust-js or in the guide: fix
-  it, never work around it.
-- **Keep it true in the same commit.** A change that adds, amends or
-  supersedes a decision, or changes what a program writes or becomes,
-  updates the guide's page that says so. Its JavaScript is never written
-  by hand: `bun run docs` compiles each example and writes it, and
-  `test/docs.test.ts` fails where a page isn't what the compiler makes.
+- Each module owns one responsibility behind an explicit contract. It
+  should be understandable without knowing unrelated phases' internals.
+  A pass working around another phase's representation needs a shared owner
+  and an architecture test holding the boundary.
+- Make each API guessable from one example and consistent everywhere.
+  Follow Rust conventions in Rust and JS/React/TypeScript conventions in
+  output and interop.
+- Extend a general rule instead of adding exceptions. If none can cover
+  the case, ask the user; document accepted exceptions where encountered
+  and reject violations with an error explaining what to write.
+- Treat generated names, control flow, modules, JSX, formatting and source
+  maps as product features. Use objects, arrays, functions, promises and ES
+  modules; emit helpers only when behavior requires them.
+- Browser APIs, React, npm and Vite are core. Preserve public representations
+  and interfaces, and keep native and browser compilers consistent.
 
-## Making changes
+## Ports expose compiler gaps
 
-Follow [CONTRIBUTING.md](CONTRIBUTING.md): how a change is made, proved and
-recorded. [The architecture](docs/architecture.md) says where it goes, and
-[its test](test/architecture.test.ts) holds the boundaries.
+Port TypeScript/JavaScript projects, react.dev first, to discover what
+rust-js lacks. Preserve behavior and make output as close to the original
+as idiomatic Rust allows.
 
-Commit on `main` and push directly: no branches, no pull requests. If a push
-fails, keep committing locally and push later
+**Stop the port and fix rust-js** when encountering:
+
+- Unsupported valid Rust or a missing compiler feature.
+- Missing js/webapi/react bindings, or types narrower or looser than the
+  original (including `any` or missing `| undefined`).
+- Output differences such as renames, boxes, helpers, casts,
+  copies, lost names or statements replacing expressions.
+- Rust bent to fit the compiler: narrower types, leaks or restructured code.
+
+Start with a failing test, fix the compiler, add mutations and an ADR, then
+resume the natural port. Never hide gaps with local stand-in bindings,
+`#[link_name = "this"]` casts, source workarounds or accepted noisy output.
+"Cosmetic" and "correct anyway" are not exemptions: if a fix seems
+disproportionate, ask the user and record the decision.
+
+Before committing a port, compare **every generated file line by line**
+with its original. Fix each difference in rust-js unless the user has
+explicitly accepted that difference.
+
+## Keep the guide true
+
+[The guide](docs/guide/README.md) is the authority on what to write today:
+Rust constructs, JS output, bindings, exports and refusals. ADRs explain
+why; later decisions may supersede earlier ones.
+
+- Read the guide before writing Rust for rust-js, especially ports. Fix
+  missing or incorrect guidance; never work around it.
+- Update relevant guide pages in the same commit as changed decisions,
+  source conventions or output behavior.
+- Never handwrite the guide's generated JS. `bun run docs` compiles it;
+  `test/docs.test.ts` checks that it matches the compiler.
+
+## Making and checking changes
+
+Follow [CONTRIBUTING.md](CONTRIBUTING.md) for implementation, proof and
+documentation, and [the architecture](docs/architecture.md) for placement.
+
+Commit on `main` and push directly: **no branches or pull requests**. If
+a push fails, keep committing locally and push later
 ([DEVELOPMENT.md](DEVELOPMENT.md#working-on-main)).
 
-## Five minutes per local command
-
-A hard rule: every command on this Mac runs with a timeout of at most five
-minutes, the tool's own or `timeout 300`. It wins over anything else here or
-in CONTRIBUTING.md.
-
-- **Longer work goes to CI**: push `main`, then `bun run ci:check`. The whole
-  suite, all mutations, rustc's whole suite and the WASM build are CI's.
-- **A timed-out command isn't rerun with more time.** Split it (one file,
-  `-t <name>`, one mutation, one folder of rustc's tests) or send it to CI.
-
-## Keep the disk free
-
-Builds are big: each worktree's `target/`, the mutation runner's build
-dirs and corpus fixtures run to many gigabytes, and a full disk stops every
-command, and every agent, mid-task.
-
-- **Clean up once in a while**, and always when a task ends: remove the
-  `target/` of a worktree whose branch is merged, and a finished agent's
-  worktree (`git worktree remove`; its branch stays). Check with
-  `df -h ~` before starting long work.
-- **Only what's yours**: never remove another session's worktree, or one
-  holding uncommitted or unmerged work; commit it first.
-
-## Where checks run
-
-[TESTS.md](TESTS.md) is the suite at a glance: how many tests, what each
-suite proves, how long each takes. Keep it true: a change that adds or
-removes a suite, a test file or a workflow job, or moves a count or a CI
-time noticeably, updates its table and its date in the same commit, from
-the numbers its last line says how to recount.
-
-Every check runs on the Mac (its malware scan is off for the apps that run
-them, [DEVELOPMENT.md](DEVELOPMENT.md#the-mac-with-the-scan-off)) within five
-minutes; longer runs are CI's:
+**Every local command has a timeout of at most five minutes**, enforced by
+the tool or `timeout 300`. This overrides other instructions here and in
+CONTRIBUTING.md. Never retry a timeout with more time: split the work or
+send it to CI. Full suites, all mutations, all rustc tests and WASM builds
+belong in CI.
 
 | To | On the Mac | On CI |
 |---|---|---|
 | Test | `bun test test/<file>.test.ts -t <name>` | `bun run test` |
 | Bless snapshots | `BLESS=1 bun test test/<file>.test.ts -t <name>` | `bun run ci:bless` applies its patch |
-| Mutations ([ADR 0093](docs/decisions/0093-mutations.md)) | `bun scripts/mutations.ts <name>` | the changed ones; all before a release |
-| rustc's tests ([ADR 0089](docs/decisions/0089-rustc-tests.md)) | `bun run test:rustc drop/ closures/` | all, lists blessed by `bun run ci:bless` |
+| Mutations ([ADR 0093](docs/decisions/0093-mutations.md)) | `bun scripts/mutations.ts <name>` | changed ones; all before a release |
+| rustc tests ([ADR 0089](docs/decisions/0089-rustc-tests.md)) | `bun run test:rustc drop/ closures/` | all; bless lists with `bun run ci:bless` |
 | Generated programs ([ADR 0092](docs/decisions/0092-generated-programs.md)) | | `gh workflow run "rustc tests" -f fuzz_start=1000 -f fuzz_seeds=600` |
-| The playground's compiler | | the check's `wasm` job |
+| Playground compiler | | check's `wasm` job |
 
-Before pushing: `bun run typecheck`, `bun run fmt:check`,
+Before pushing, run `bun run typecheck`, `bun run fmt:check`,
 `cargo clippy --locked -- -D warnings`, and the change's tests and mutations.
-Then `bun run ci:check` runs [the check workflow](.github/workflows/check.yml).
-Workflows are started by hand ([DEVELOPMENT.md](DEVELOPMENT.md#workflows)).
+After pushing, run `bun run ci:check`. Workflows are
+[started by hand](DEVELOPMENT.md#workflows).
+
+Keep [TESTS.md](TESTS.md) accurate in the same commit when suites, test files,
+workflow jobs, counts or CI times change noticeably. Update its table and
+date using its recount instructions. Local setup is documented in
+[DEVELOPMENT.md](DEVELOPMENT.md#the-mac-with-the-scan-off).
+
+## Keep the disk free
+
+Check `df -h ~` before long work. Clean up periodically and at task end:
+remove your merged worktrees' `target/` and finished agents' worktrees with
+`git worktree remove` (the branch stays). Never remove another session's
+worktree or uncommitted/unmerged work; commit outstanding work first.

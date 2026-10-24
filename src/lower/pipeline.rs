@@ -147,7 +147,7 @@ pub fn lower_crate<'tcx>(
             DefKind::Static { mutability, .. } => (
                 static_value(tcx, def_id)
                     .and_then(|v| const_js(tcx, v))
-                    .map(|v| super::literals::const_string(tcx, def_id, v))
+                    .map(|v| super::literals::const_string(tcx, def_id, v, &|span| sources.span(span)))
                     .map(|v| match mutability.is_mut() {
                         true => Expr::object(vec![Prop::Field(js::HELD.into(), v)]),
                         false => v,
@@ -156,7 +156,7 @@ pub fn lower_crate<'tcx>(
             ),
             _ => (
                 super::representation::const_value_js(tcx, typing_env, def_id.to_def_id(), args, span)
-                    .map(|v| super::literals::const_string(tcx, def_id, v)),
+                    .map(|v| super::literals::const_string(tcx, def_id, v, &|span| sources.span(span))),
                 "constants",
             ),
         };
@@ -584,6 +584,8 @@ pub fn lower_crate<'tcx>(
                             let class = namespace.class.get_or_insert_with(|| js::Class {
                                 constructor: String::new(),
                                 prototype: Vec::new(),
+                                declared: (super::classes::class_of(tcx, def_id).and_then(|adt| adt.as_local()))
+                                    .map_or(js::Span::NONE, |adt| sources.item_span(tcx, adt)),
                             });
                             match member {
                                 super::classes::Member::Constructor => {

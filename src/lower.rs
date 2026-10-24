@@ -104,7 +104,7 @@ pub struct Body<'tcx> {
     def_id: DefId,
     thir: Thir<'tcx>,
     expr: ExprId,
-    facts: body_queries::BodyFacts,
+    facts: body_queries::BodyFacts<'tcx>,
     /// Its MIR, which the body is lowered from where it's read (ADR 0364).
     mir: Option<mir::Mir<'tcx>>,
 }
@@ -435,7 +435,7 @@ struct FnCx<'a, 'tcx> {
 /// field every body has of its own goes here, and is swapped with it.
 struct BodyFrame<'a, 'tcx> {
     thir: &'a Thir<'tcx>,
-    facts: &'a body_queries::BodyFacts,
+    facts: &'a body_queries::BodyFacts<'tcx>,
     /// Whose body `thir` is: its scope tree says where temporaries end.
     owner: DefId,
 }
@@ -545,7 +545,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             LitKind::Bool(b) => Ok(Expr::bool(b)),
             // As it's written: across lines, a template literal of them, or
             // `concat!`'s pieces joined by `+` (ADR 0641).
-            LitKind::Str(s, _) => Ok(literals::string_literal(self.tcx, s.as_str(), span)),
+            LitKind::Str(s, _) => Ok(literals::string_literal(self.tcx, s.as_str(), span, &|at| {
+                self.js_span(at)
+            })),
             // A `char` is a string of one character (ADR 0034).
             LitKind::Char(c) => Ok(Expr::str(c.to_string())),
             LitKind::Int(n, _) => {

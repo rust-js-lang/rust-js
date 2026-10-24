@@ -1050,8 +1050,9 @@ fn expr(e: &mut Expr) {
     // A `&mut`'s handle on a place (ADR 0099), and a `dyn`'s of one with its
     // dictionary, as JS writes it: `{ get value() { return n; }, set
     // value(value) { n = value; } }`, its parameter a name the place
-    // doesn't read.
-    if let ExprKind::Handle(place) | ExprKind::Pair(place, _) = &e.kind {
+    // doesn't read; what it stores where its storage says, `value ?? null`
+    // (ADR 0772).
+    if let ExprKind::Handle(place, _) | ExprKind::Pair(place, _) = &e.kind {
         let mut param = "value".to_string();
         if place.mentions_var(&param) {
             param = "newValue".to_string();
@@ -1063,9 +1064,15 @@ fn expr(e: &mut Expr) {
             Vec::new(),
             vec![StmtKind::Return(Some((**place).clone())).at(place.span)],
         );
+        let written = match &e.kind {
+            ExprKind::Handle(_, Some(stored)) => stored
+                .substitute(&|name| (name == js::WRITTEN).then(|| Expr::var(&param)))
+                .unwrap_or_else(|| (**stored).clone()),
+            _ => Expr::var(&param),
+        };
         let set = Expr::arrow(
             vec![param.as_str().into()],
-            vec![StmtKind::Assign((**place).clone(), Expr::var(&param)).at(place.span)],
+            vec![StmtKind::Assign((**place).clone(), written).at(place.span)],
         );
         let dictionary = match &e.kind {
             ExprKind::Pair(_, dictionary) => Some(Prop::Field(js::DICTIONARY.into(), (**dictionary).clone())),
@@ -1191,7 +1198,7 @@ fn expr(e: &mut Expr) {
         | ExprKind::Await(a)
         | ExprKind::Spread(a)
         | ExprKind::Stringed(a)
-        | ExprKind::Handle(a)
+        | ExprKind::Handle(a, _)
         | ExprKind::DropArgument(_, _, a) => expr(a),
         ExprKind::Binary(js::Op::Coalesce, a, b) => {
             expr(a);

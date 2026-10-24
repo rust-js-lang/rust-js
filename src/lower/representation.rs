@@ -382,7 +382,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         while let ty::Ref(_, inner, mutability) = *ty.kind() {
             if mutability == Mutability::Mut && self.is_cell_pointee(inner) {
                 value = match value.kind {
-                    js::ExprKind::Handle(place) => *place,
+                    js::ExprKind::Handle(place, _) => *place,
                     _ => Expr::held(value),
                 };
             }
@@ -546,9 +546,34 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // A flattened struct's fields are its parent's: read through it,
             // `props.html.title` is `props.title` (ADR 0205).
             (Shape::Object(_), _) if super::bindings::is_flatten_field(self.tcx, ty, i) => base,
-            (Shape::Object(fields), _) => self.held(Expr::member(base, fields[i].0.clone()), fields[i].1),
+            (Shape::Object(fields), _) => {
+                let field = Expr::member(base, fields[i].0.clone());
+                match self.nullable_cell_field(ty, (i, fields[i].1)) {
+                    true => self.nullable_cell_handle(field),
+                    false => self.held(field, fields[i].1),
+                }
+            }
             (Shape::Other, _) => unreachable!("fields of a type without fields"),
         }
+    }
+
+    /// Whether field `i` of `ty` is a `#[rust_js::nullable]` field's `Cell`
+    /// of an `Option`, whose `None` is `null`: the storage a handle on it
+    /// writes so, wherever it's written through (ADR 0772).
+    pub(super) fn nullable_cell_field(&self, ty: Ty<'tcx>, (i, field_ty): (usize, Ty<'tcx>)) -> bool {
+        let ty::Adt(adt, _) = ty.kind() else { return false };
+        adt.is_struct()
+            && bindings::is_nullable(
+                self.tcx,
+                &adt.non_enum_variant().fields[rustc_abi::FieldIdx::from_usize(i)],
+            )
+            && bindings::nullable_option(self.tcx, field_ty).is_some_and(|option| option != field_ty)
+    }
+
+    /// A handle on `place`, a `nullable_cell_field`'s, that stores what's
+    /// written to it as the field does: its `None`, `null` (ADR 0772).
+    pub(super) fn nullable_cell_handle(&self, place: Expr) -> Expr {
+        Expr::stored_handle(place, Some(bindings::nullable_written(Expr::var(js::WRITTEN), false)))
     }
 
     /// What a field of type `ty` is, read where it's `field`: itself, or of

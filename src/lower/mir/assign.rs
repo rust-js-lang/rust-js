@@ -888,7 +888,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `place`, a field or an item, fixed: what holds it named, where it
     /// isn't fixed, an object that's the same however it's reached, and an
     /// index that isn't a constant or a name named too.
-    fn fixed_place_of(&mut self, place: Expr, out: &mut Vec<Stmt>) -> Expr {
+    pub(in crate::lower) fn fixed_place_of(&mut self, place: Expr, out: &mut Vec<Stmt>) -> Expr {
         let span = place.span;
         let mut fixed = |e: Expr, name: &str, this: &mut Self| match fixed_place(&e) {
             true => e,

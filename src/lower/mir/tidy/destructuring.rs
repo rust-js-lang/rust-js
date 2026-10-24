@@ -515,7 +515,7 @@ pub(super) fn tuple_reads(
                             | ExprKind::Index(..)
                             | ExprKind::OptionalIndex(..)
                             | ExprKind::OptionalCall(..)
-                            | ExprKind::Handle(_)
+                            | ExprKind::Handle(_, _)
                             | ExprKind::New(..)
                             | ExprKind::Array(_)
                             | ExprKind::Object(_)

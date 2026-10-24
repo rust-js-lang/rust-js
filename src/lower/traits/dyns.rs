@@ -516,7 +516,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // the place the cell does (ADR 0099). A temporary's box is the pair's.
         if self.is_cell(source) {
             return Ok(match value.kind {
-                js::ExprKind::Handle(place) => Expr::pair(*place, dictionary),
+                js::ExprKind::Handle(place, _) => Expr::pair(*place, dictionary),
                 js::ExprKind::Object(mut props) if matches!(props.as_slice(), [Prop::Field(name, _)] if name == js::HELD) =>
                 {
                     props.push(Prop::Field(js::DICTIONARY.into(), dictionary));

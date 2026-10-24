@@ -327,7 +327,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     fn written_switches(&self) -> Vec<Switch> {
         // Each once, of the scopes THIR has of it.
         let mut seen = std::collections::HashSet::new();
-        let held = crate::lower::body_queries::held_guards(self.tcx, self.frame.thir);
+        let held = &self.frame.facts.held_guards;
         (self.frame.thir.exprs.iter())
             .filter_map(|e| {
                 let thir::ExprKind::Scope { mut value, hir_id, .. } = e.kind else {

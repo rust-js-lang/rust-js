@@ -518,6 +518,7 @@ pub fn mounted(props: Option<&'static Unknown>) -> Component {
 ```js
 export const NOOP = { enqueueForceUpdate: () => {} };
 
+/** Base class helpers for the updating state of a component. */
 export function Component(props, updater) {
   this.props = props;
   this.updater = updater ?? NOOP;
@@ -579,7 +580,8 @@ export function mounted(props?: unknown | null | undefined): Component;
 
 - **Its fields are `this`'s**, and its `fn new(..) -> Self` is the
   constructor function: the struct literal it returns is `this.props =
-  props;`, each field in the order it's written.
+  props;`, each field in the order it's written. The struct's `///` doc
+  is the constructor function's JSDoc, before `new`'s own.
 - **A method of `&self` or `&mut self` is the prototype's**, a `function`
   reading `this`, not an arrow, so `this` is the instance it's called on,
   a JS subclass's too. A Rust call of it is a call of it on the value,

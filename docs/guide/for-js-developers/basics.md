@@ -434,6 +434,12 @@ pub const OMITTED_PROP_ERROR: &str = concat!(
     "or more specific objects."
 );
 
+pub const LAZY_HINT: &str = concat!(
+    "const MyComponent = lazy(() => imp",
+    // Break up imports to avoid accidentally parsing them as dependencies.
+    "ort('./MyComponent'))"
+);
+
 pub const PAGE: &str = r#"<main>
   <h1>Hi</h1>
 </main>"#;
@@ -461,6 +467,11 @@ export const OMITTED_PROP_ERROR =
   "to avoid sending too much data from the server. Try logging smaller " +
   "or more specific objects.";
 
+export const LAZY_HINT =
+  "const MyComponent = lazy(() => imp" +
+  // Break up imports to avoid accidentally parsing them as dependencies.
+  "ort('./MyComponent'))";
+
 export const PAGE = `<main>
   <h1>Hi</h1>
 </main>`;
@@ -480,6 +491,7 @@ export function formatProdErrorMessage(code, url) {
 
 - Each of `concat!`'s arguments is its own JS string, in order: a
   `char`'s, a number's or a `bool`'s too, as `concat!` writes it, `"2"`.
+  A comment between them is before the piece it's written before.
 - A `\` ending a line continues one literal, as it does in Rust: one JS
   string.
 - A space one can't tell from `' '`, `\u{2007}` or `\u{a0}`, and a mark

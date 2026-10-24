@@ -22,6 +22,10 @@ pub(super) struct Call<'c, 'tcx> {
     pub(super) generic_args: ty::GenericArgsRef<'tcx>,
     /// Each argument's type.
     pub(super) tys: &'c [Ty<'tcx>],
+    /// Of an argument that's an `Option`, whether it's `null` or a value
+    /// already, MIR's `nulled`, where it's asked: a binding's nullable
+    /// parameter's, or what a `Cell` is written (ADR 0772); else empty.
+    pub(super) nulled: &'c [bool],
     pub(super) span: Span,
 }
 

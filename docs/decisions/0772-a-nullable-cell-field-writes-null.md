@@ -3,7 +3,9 @@
 Status: Accepted. Amends [0586](0586-a-nullable-field-is-an-option.md),
 whose `#[rust_js::nullable]` was of an `Option` field only, and
 [0275](0275-nullable-writes-null.md), whose `null` was written where the
-struct is made.
+struct is made. Amended by [0791](0791-a-cells-storage-says-what-it-stores.md):
+the storage says, so a `&Cell` to the field, a variable's or a helper's,
+writes `null` too, and the facts are the body's, read once.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): A: `null` and
 `undefined` are each `None` to the program, which reads either as one
@@ -81,7 +83,7 @@ nullable `Option` field's.
 - The cell's own methods, called on the field, write `null`. A `&Cell`
   to it given elsewhere, whose `set(None)` doesn't know it's a nullable
   field's, writes `undefined`, which the program reads as `None` all the
-  same (case A).
+  same (case A). (ADR 0791 lifts this: the handle stores `null`.)
 
 ## What holds it
 

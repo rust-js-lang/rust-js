@@ -237,7 +237,7 @@ fn expr(e: &mut Expr, visitor: &mut Visitor<'_>) {
         | ExprKind::Await(a)
         | ExprKind::Spread(a)
         | ExprKind::Stringed(a)
-        | ExprKind::Handle(a)
+        | ExprKind::Handle(a, _)
         | ExprKind::DropArgument(_, _, a) => expr(a, visitor),
         ExprKind::Index(a, b) | ExprKind::OptionalIndex(a, b) | ExprKind::Binary(_, a, b) | ExprKind::Pair(a, b) => {
             expr(a, visitor);

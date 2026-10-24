@@ -185,11 +185,14 @@ fn moved(stmt: &Stmt, rest: &[Stmt], facts: &MoveFacts) -> Option<(Moved, Why)> 
         true => js::mentions_in(&rest[..=at], name) == 1,
         false => js::mentions_in(rest, name) == 1,
     };
-    if !once || js::mentions_in(&rest[at..=at], name) != 1 {
-        return None;
-    }
     let read = read_of(&rest[at], name)?;
     let expr = read.of(&rest[at]);
+    let single = once && js::mentions_in(&rest[at..=at], name) == 1;
+    // Or tested more than once there and nowhere else, an or-pattern's
+    // tests of a field (ADR 0780).
+    if !single && (assigned || !tested_in_place(value, expr, name, js::mentions_in(rest, name))) {
+        return None;
+    }
     // Not an arrow into a call of it it'd be left called where it's made
     // in, `((l) => { .. })(take)`: it's held, `const map = (l) => ..;`, as
     // where no guard's `try` is (ADR 0705).
@@ -221,6 +224,36 @@ fn moved(stmt: &Stmt, rest: &[Stmt], facts: &MoveFacts) -> Option<(Moved, Why)> 
     };
     let replaced = expr.substitute(&|v| (v == name).then(|| value.clone()))?;
     Some((Moved { at, read, replaced }, why))
+}
+
+/// Whether `value`, a temporary's, `const _5 = payload._status;`, is read
+/// in each of `expr`'s tests of it, all `reads` of it there are, as an
+/// or-pattern's, `payload._status === 0 || payload._status === -1` (ADR
+/// 0780): a place's read, a variable's property no getter may answer, which
+/// reads the same where nothing between the tests does anything, and each
+/// read a side of a `===` or `!==`.
+fn tested_in_place(value: &Expr, expr: &Expr, name: &str, reads: usize) -> bool {
+    let mut place = value;
+    while let ExprKind::Member(of, _) = &place.kind {
+        if place.known == js::Known::Getter {
+            return false;
+        }
+        place = of;
+    }
+    let of_a_variable = matches!(&place.kind, ExprKind::Var(v) if v != name) || matches!(place.kind, ExprKind::This);
+    if !matches!(value.kind, ExprKind::Member(..)) || !of_a_variable || expr.has_effects() {
+        return false;
+    }
+    let mut compared = 0;
+    expr.each(&mut |e| {
+        if let ExprKind::Binary(Op::Eq | Op::Ne, a, b) = &e.kind {
+            compared += [a, b]
+                .into_iter()
+                .filter(|side| matches!(&side.kind, ExprKind::Var(v) if v == name))
+                .count();
+        }
+    });
+    compared == reads
 }
 
 /// Which of `stmt`'s expressions reads `name`, a temporary, where

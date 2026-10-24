@@ -219,6 +219,48 @@ pub fn fails() {
   expect(logged).toEqual([["a b"]]);
 });
 
+// React's lazy() splits its message's `import` with a comment of why,
+// inside the `+` of literals: a `concat!`'s comment is before the piece
+// it's written before, not after the strings (ADR 0641, amended).
+test("a comment inside a concat! is before the piece it's written before", async () => {
+  const dir = fixture("concat-comment");
+  writeFileSync(join(dir, "lib.rs"), `use react::webapi::console;
+
+pub const MESSAGE: &str = concat!(
+    "lazy: Expected the result of a dynamic imp",
+    // Break up imports to avoid accidentally parsing them as dependencies.
+    "ort() call.",
+);
+
+pub fn warn(module_object: &str) {
+    console::error((
+        concat!(
+            "Your code should look like: \\n  ",
+            // Break up imports to avoid accidentally parsing them as dependencies.
+            "const MyComponent = lazy(() => imp",
+            "ort('./MyComponent'))"
+        ),
+        module_object,
+    ));
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `react=${join(target, "libreact.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain(`export const MESSAGE =
+  "lazy: Expected the result of a dynamic imp" +
+  // Break up imports to avoid accidentally parsing them as dependencies.
+  "ort() call.";`);
+  expect(js).toContain(`  console.error(
+    "Your code should look like: \\n  " +
+      // Break up imports to avoid accidentally parsing them as dependencies.
+      "const MyComponent = lazy(() => imp" +
+      "ort('./MyComponent'))",
+    moduleObject,
+  );`);
+  const lib = await import(join(dir, "lib.js"));
+  expect(lib.MESSAGE).toBe("lazy: Expected the result of a dynamic import() call.");
+});
+
 // ADR 0641: a format string written as a `concat!` of literals is its
 // pieces joined by `+`, as React's formatProdErrorMessage writes its
 // message: each a template literal where it holds a placeholder, and
