@@ -557,4 +557,12 @@ export const mutations: Mutation[] = [
     replace: "    let link = slot == js::Slot::Block\n",
     tests: ["test/lowering-written-branches.test.ts", "-t", "an else-if chain keeps its else"],
   },
+  {
+    name: "handle-setter-stores-as-given",
+    breaks: "a handle's setter stores what it's given, where its storage says `?? null`",
+    file: "src/prepare.rs",
+    find: "            ExprKind::Handle(_, Some(stored)) => stored\n",
+    replace: "            ExprKind::Handle(_, Some(stored)) if false => stored\n",
+    tests: ["test/lowering-nullable.test.ts", "-t", "through a reference and a helper"],
+  },
 ];

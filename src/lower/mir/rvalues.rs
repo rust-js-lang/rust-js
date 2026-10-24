@@ -163,7 +163,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         (_, value) => value,
                     });
                 }
-                let place_expr = self.mir_place(state, *place, span, out)?;
+                let mut place_expr = self.mir_place(state, *place, span, out)?;
+                // A handle on a place a call reaches, `&get(c).value`'s: what
+                // holds it made once, first, as the handle reads its place
+                // each time it's used.
+                if let js::ExprKind::Handle(on, stored) = &place_expr.kind
+                    && !fixed_place(on)
+                {
+                    let stored = stored.as_deref().cloned();
+                    let on = (**on).clone();
+                    self.flush(state, out)?;
+                    let on = self.fixed_place_of(on, out);
+                    place_expr = Expr::stored_handle(on, stored);
+                }
                 if matches!(kind, BorrowKind::Shared) {
                     let read = self.with_default(state, *place, place_expr.clone(), span);
                     if !matches!(read.kind, js::ExprKind::Cond(..)) && place_expr.reads_same() {
@@ -725,6 +737,37 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Some(&adt.variant(variant_index.unwrap_or(VariantIdx::ZERO)).fields[*field])
             }
             _ => None,
+        }
+    }
+
+    /// Whether `operand`, a `&Cell`, is a `nullable_cell_field`'s, which
+    /// stores its `None` as `null` (ADR 0772): a reference to that field,
+    /// or another such reborrowed or copied, held where it's written once,
+    /// `let r = &context.renderer;`.
+    pub(super) fn stores_null(&self, state: &State<'_, 'tcx>, operand: &Operand<'tcx>) -> bool {
+        let Some(place) = operand.place() else {
+            return false;
+        };
+        if !place.projection.is_empty() || state.locals.writes[place.local] != 1 {
+            return false;
+        }
+        let assigned = (state.body.basic_blocks.iter().flat_map(|b| &b.statements)).find_map(|s| match &s.kind {
+            mir::StatementKind::Assign(assign) if assign.0 == place.local.into() => Some(&assign.1),
+            _ => None,
+        });
+        match assigned {
+            Some(Rvalue::Ref(_, _, borrowed)) => match borrowed.as_ref().last_projection() {
+                Some((parent, PlaceElem::Field(field, field_ty))) => {
+                    self.nullable_cell_field(parent.ty(state.body, self.tcx).ty, (field.index(), field_ty))
+                }
+                // A reborrow, `&*r`, as a method's receiver is.
+                Some((parent, PlaceElem::Deref)) if parent.projection.is_empty() => {
+                    self.stores_null(state, &Operand::Copy(parent.local.into()))
+                }
+                _ => false,
+            },
+            Some(Rvalue::Use(operand, _)) => self.stores_null(state, operand),
+            _ => false,
         }
     }
 

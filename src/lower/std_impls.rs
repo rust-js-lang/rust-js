@@ -860,8 +860,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// it by, `REACT_MEMO_TYPE` (ADRs 0590, 0634), else `Symbol.for(text)`.
     fn named_symbol(&mut self, text: &Expr, span: Span) -> R<Expr> {
         if let js::ExprKind::Str(key) = &text.kind
-            && let Some(&Some(named)) = super::body_queries::constant_patterns(self.tcx, self.frame.thir)
-                .get(&super::body_queries::PatternValue::Key(key.clone()))
+            && let Some(&Some(named)) =
+                (self.frame.facts.constant_patterns).get(&super::body_queries::PatternValue::Key(key.clone()))
         {
             let ty = self.tcx.type_of(named).instantiate_identity().skip_normalization();
             return self.named_const(named, ty::List::empty(), ty, span);

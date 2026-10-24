@@ -184,7 +184,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         let items = match handles {
             Some(handles) => handles,
-            None => self.std_by_values(known, into_iter, args, &[ty], vec![value], output, span, out)?,
+            None => self.std_by_values(known, into_iter, args, (&[ty], &[]), vec![value], output, span, out)?,
         };
         Ok(Some(self.std_iterator(items, output)))
     }

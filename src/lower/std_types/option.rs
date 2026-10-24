@@ -418,7 +418,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Err(self.unsupported(span, "a `&mut` to what's in an `Option` of an `Option`"));
         }
         let (place, cell) = match option.kind {
-            js::ExprKind::Handle(place) => (*place.clone(), Expr::handle(*place)),
+            js::ExprKind::Handle(place, stored) => (*place.clone(), Expr::stored_handle(*place, stored.map(|s| *s))),
             // A name, which reads the same each time: itself.
             js::ExprKind::Var(_) => (Expr::held(option.clone()), option),
             _ => {

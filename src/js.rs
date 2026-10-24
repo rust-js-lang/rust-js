@@ -46,6 +46,8 @@ impl Span {
 /// `b.value` (ADR 0099): a `&mut` to what JS can't change in place, a
 /// `Cell`'s, an `Rc`'s, a guard's.
 pub const HELD: &str = "value";
+/// What's written through a handle, in what its writes store (`ExprKind::Handle`).
+pub const WRITTEN: &str = "value";
 
 /// The field a `dyn` value's pair holds its dictionary in, `d.impl` (ADR
 /// 0049), beside its `value`.
@@ -595,8 +597,11 @@ pub enum ExprKind {
     Template(Vec<String>, Vec<Expr>, TemplateLayout),
     /// `{ get value() { return x; }, set value(value) { x = value; } }`: a
     /// `&mut` kept, reading and writing its place each time (ADR 0099). The
-    /// place is what's read then, not before: it's never taken out.
-    Handle(Box<Expr>),
+    /// place is what's read then, not before: it's never taken out. And
+    /// what a write through it stores of what's written, `WRITTEN`, where
+    /// its place's storage says, `value ?? null` of a nullable field's
+    /// `Cell` (ADR 0772); else what's written itself.
+    Handle(Box<Expr>, Option<Box<Expr>>),
     /// `{ impl: d, get value() { return x; }, set value(value) { x = value; } }`:
     /// a `&mut dyn Trait` of a value JS can't change in place, its impl's
     /// dictionary and a handle on its place (ADR 0099).
