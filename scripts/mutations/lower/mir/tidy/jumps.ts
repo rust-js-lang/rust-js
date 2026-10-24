@@ -99,4 +99,12 @@ export const mutations: Mutation[] = [
     replace: "            true => then.last().is_some_and(ends),\n",
     tests: ["test/lowering-loops.test.ts", "-t", "a .while. loop from MIR tests where"],
   },
+  {
+    name: "early-break-in-then-kept",
+    breaks: "a loop body ending `if (c) { a } else { b; continue; } break;` stays, not `if (c) { a; break; } b`",
+    file: "src/lower/mir/tidy/jumps.rs",
+    find: "        if broken_in_then(body, &continues) {\n",
+    replace: "        if false {\n",
+    tests: ["test/lowering-early-exits.test.ts", "-t", "a loop's early break"],
+  },
 ];

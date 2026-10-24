@@ -6,8 +6,8 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-continue-guard-kept",
     breaks: "a loop body ending `if (!c) { a; b }` stays, not `if (c) { continue; } a; b`",
     file: "src/lower/mir/tidy/jumps/continues.rs",
-    find: "                    if tests_continue(guards, body.last().expect(\"matched\").span)\n                        || (negated(test) && then.len() > 1) =>\n",
-    replace: "                    if false =>\n",
+    find: "                Some(StmtKind::If(_, _, None)) if tests_continue(guards, body.last().expect(\"matched\").span) => {\n",
+    replace: "                Some(StmtKind::If(_, _, None)) if false => {\n",
     tests: ["test/lowering-loops.test.ts", "-t", "if-let chains and loops from MIR"],
   },
   {
@@ -20,11 +20,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "mir-tidy-written-continue-nested",
-    breaks: "a `continue` the program wrote before one statement is the rest nested, `if (!c) { … }`",
+    breaks: "a loop body's last `if` of more than one statement is an early `continue` the program never wrote",
     file: "src/lower/mir/tidy/jumps/continues.rs",
-    find: "                    if tests_continue(guards, body.last().expect(\"matched\").span)\n                        || (negated(test) && then.len() > 1) =>\n",
-    replace: "                    if negated(test) && then.len() > 1 =>\n",
-    tests: ["test/lowering-loops.test.ts", "-t", "continue.s from MIR are where"],
+    find: "                Some(StmtKind::If(_, _, None)) if tests_continue(guards, body.last().expect(\"matched\").span) => {\n",
+    replace: "                Some(StmtKind::If(_, then, None)) if tests_continue(guards, body.last().expect(\"matched\").span) || then.len() > 1 => {\n",
+    tests: ["test/lowering-early-exits.test.ts", "-t", "a loop.s early break"],
   },
   {
     "name": "ending-continue-as-else",
@@ -38,8 +38,8 @@ export const mutations: Mutation[] = [
     "name": "mir-tidy-continue-written-negated-only",
     "breaks": "a `continue` the program wrote is an `if (i % 2 !== 0) { \u2026 }` where MIR's test isn't a `!`",
     "file": "src/lower/mir/tidy/jumps/continues.rs",
-    "find": "                    if tests_continue(guards, body.last().expect(\"matched\").span)\n                        || (negated(test) && then.len() > 1) =>\n",
-    "replace": "                    if negated(test) && (then.len() > 1 || tests_continue(guards, body.last().expect(\"matched\").span)) =>\n",
+    "find": "                Some(StmtKind::If(_, _, None)) if tests_continue(guards, body.last().expect(\"matched\").span) => {\n",
+    "replace": "                Some(StmtKind::If(test, _, None)) if tests_continue(guards, body.last().expect(\"matched\").span) && matches!(test.kind, ExprKind::Unary(UnaryOp::Not, _)) => {\n",
     "tests": ["test/lowering-numbers.test.ts", "-t", "division by a constant from MIR"]
   },
   {

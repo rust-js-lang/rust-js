@@ -58,10 +58,7 @@ pub(in crate::lower::mir::tidy) fn continued(stmts: &mut [Stmt], guards: &[(js::
                 }
                 // Of one statement, where the program wrote the `continue`,
                 // whatever its test, `i % 2 !== 0` of `i % 2 == 0`.
-                Some(StmtKind::If(test, then, None))
-                    if tests_continue(guards, body.last().expect("matched").span)
-                        || (negated(test) && then.len() > 1) =>
-                {
+                Some(StmtKind::If(_, _, None)) if tests_continue(guards, body.last().expect("matched").span) => {
                     let Some(Stmt {
                         kind: StmtKind::If(test, then, None),
                         span,

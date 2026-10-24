@@ -308,14 +308,6 @@ export const mutations: Mutation[] = [
     "tests": ["test/lowering-branches.test.ts", "-t", "a variable's value of three arms from MIR"]
   },
   {
-    "name": "mir-tidy-truth-read-negated",
-    "breaks": "a loop's last `if (size)` of an `Option` never falsy, `!!size`, is read as negated and becomes `if (!size) { continue; }`, the rest dedented",
-    "file": "src/lower/mir/tidy/branches.rs",
-    "find": "        ExprKind::Unary(UnaryOp::Not, c) => !matches!(c.kind, ExprKind::Unary(UnaryOp::Not, _)),\n",
-    "replace": "        ExprKind::Unary(UnaryOp::Not, _c) => true,\n",
-    "tests": ["test/lowering-names.test.ts", "-t", "a let a loop's branch makes is declared in the loop"]
-  },
-  {
     "name": "mir-tidy-table-taken-apart-unread",
     "breaks": "a `match` reading a table, taken apart, `let Look { name, classes } = match ..`, stays a conditional of every variant from MIR, not `LOOKS[kind]`",
     "file": "src/lower/mir/tidy/branches.rs",

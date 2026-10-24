@@ -628,16 +628,6 @@ pub(super) fn broken_chain(stmts: &[Stmt], label: &str) -> Option<(Vec<Expr>, Ve
     }
 }
 
-/// Whether `test` is `!c`, or `!(a && b)` as `not` writes it, `!a || !b`.
-/// Not `!!c`, `c`'s truth, an `Option` never falsy's presence.
-pub(super) fn negated(test: &Expr) -> bool {
-    match &test.kind {
-        ExprKind::Unary(UnaryOp::Not, c) => !matches!(c.kind, ExprKind::Unary(UnaryOp::Not, _)),
-        ExprKind::Binary(Op::Or, a, b) => negated(a) && negated(b),
-        _ => false,
-    }
-}
-
 /// `!e` of a chain of tests, part by part, `!!a || b !== c` of `!a && b ===
 /// c`: a `bool`, as `!e` is, each `!x` of what's not one `!!x`.
 pub(super) fn negated_bools(e: Expr, booleans: &HashSet<String>) -> Expr {

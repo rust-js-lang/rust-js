@@ -1193,6 +1193,10 @@ export function findPair(grid, target) {
   includes `n`.
 - `break` and `continue` work as in JS, labels too: `'outer: for ...`,
   `break 'outer;`.
+- A `break` or `continue` is where the program wrote it: `if checked >
+  limit { ..; break; }` is `if (checked > limit) { ..; break; }`, the rest
+  of the body after it, not an `else` ([ADR
+  0730](../../decisions/0730-a-loops-early-break-is-in-the-if-it-was-written-in.md)).
 
 ## `null` and `undefined`: `Option`
 

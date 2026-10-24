@@ -29,6 +29,9 @@ pub(super) fn early_breaks(stmts: &mut [Stmt], nested: bool) {
             StmtKind::Continue(Some(l)) => Some(l) == label.as_ref(),
             _ => false,
         };
+        if broken_in_then(body, &continues) {
+            continue;
+        }
         // Tests each of nothing but the next: one test, `b && c`.
         let mut tests = Vec::new();
         let mut then: &[Stmt] = match body.as_slice() {
@@ -74,6 +77,39 @@ pub(super) fn early_breaks(stmts: &mut [Stmt], nested: bool) {
         };
         body.extend(broken_early(test, then, span, &continues));
     }
+}
+
+/// A loop's body that ends `if (c) { a } else { b; continue l; } break;`,
+/// `a` going on to the `break`, MIR's of `if c { a; break; } b`: that, as
+/// the program wrote it (ADR 0730), `b` the body's own where it declares
+/// nothing beside it. Whether it was.
+fn broken_in_then(body: &mut Vec<Stmt>, continues: &dyn Fn(&Stmt) -> bool) -> bool {
+    let [.., last_if, last] = body.as_slice() else {
+        return false;
+    };
+    let StmtKind::If(_, then, Some(otherwise)) = &last_if.kind else {
+        return false;
+    };
+    if !matches!(last.kind, StmtKind::Break(None))
+        || !otherwise.last().is_some_and(continues)
+        || then.last().is_some_and(ends)
+        || !fits_in_place(&body[..body.len() - 1], body.len() - 2, otherwise)
+    {
+        return false;
+    }
+    let brk = body.pop().expect("matched");
+    let Some(Stmt {
+        kind: StmtKind::If(test, mut then, Some(mut otherwise)),
+        span,
+    }) = body.pop()
+    else {
+        unreachable!("matched")
+    };
+    then.push(brk);
+    otherwise.pop();
+    body.push(StmtKind::If(test, then, None).at(span));
+    body.extend(otherwise);
+    true
 }
 
 /// Whether `then` never goes on, or ends in an `if` whose own does so.
