@@ -5,6 +5,7 @@
 
 use super::FnCx;
 use super::bindings;
+use super::declarations::{Written, written_types};
 use super::recognition::{Recognition, StdItem, conversion_target, deref_target, serde_impl, std_item};
 use super::representation::{Num, is_string_enum};
 use crate::js::{Expr, Op, UnaryOp};
@@ -243,7 +244,10 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         // `symbol`, is that kind.
         if let ty::Adt(adt, _) = ty.kind()
             && self.is_js_object(ty)
-            && let Some(kind) = super::declarations::written_types(self.tcx, adt.did()).and_then(|t| Kind::of_types(&t))
+            && let Some(kind) = written_types(self.tcx, adt.did())
+                .as_ref()
+                .and_then(Written::keyword)
+                .and_then(Kind::of_types)
         {
             return Some(kind);
         }
@@ -257,7 +261,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         // T }`, is a plain object, of no class to test.
         if let ty::Adt(adt, _) = ty.kind()
             && self.is_js_object(ty)
-            && super::declarations::written_types(self.tcx, adt.did()).is_some_and(|t| t.trim_start().starts_with('{'))
+            && matches!(written_types(self.tcx, adt.did()), Some(Written::Object(_)))
         {
             return Some(Kind::Object);
         }
