@@ -482,7 +482,7 @@ export function moreOrderings() {
   return [
     $cmpIn(["Low", "Mid", "High"], "Low", "High") < 0,
     $index(priorities, 0) === "Low",
-    (3 == null ? (undefined == null ? 0 : -1) : undefined == null ? 1 : $cmp(3)) > 0,
+    (3 == null ? 0 : 1) > 0,
     sizes,
     inOrder("abc", "abd", { partialCmp: $cmp }),
     $index(byKey, 0).major,
