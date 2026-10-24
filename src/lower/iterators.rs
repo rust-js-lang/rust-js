@@ -346,7 +346,7 @@ pub(super) fn is_stepped_items(e: &Expr) -> bool {
 /// 0561), `$lazyScan` (ADR 0517) and `$lazyMapWhile`, not fused, and each of
 /// its generators,
 /// which the runtime package's test holds this list to; a range's, its own.
-pub(crate) const ITERATOR_HELPERS: [&str; 30] = [
+pub(crate) const ITERATOR_HELPERS: [&str; 31] = [
     "$stdIterator",
     "$memchrIter",
     "$mapEnds",
@@ -377,6 +377,7 @@ pub(crate) const ITERATOR_HELPERS: [&str; 30] = [
     "$flatMap",
     "$repeatingWith",
     "$successors",
+    "$keysIn",
 ];
 
 /// Whether `e` is a JS iterator as it's made: `Iterator.from(..)`, a
