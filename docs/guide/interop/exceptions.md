@@ -599,7 +599,7 @@ export function text(value) {
   try {
     return "" + value;
   } catch (payload) {
-    if (payload != null && payload.name === "TypeError") {
+    if (payload.name === "TypeError") {
       return "";
     }
     throw payload;
@@ -619,8 +619,10 @@ export function text(value) {
   is thrown in, which still downcasts to its own type. So the `Some` of
   `downcast_ref::<&JsError>()` is what's matched, its `None` arm never
   taken and left out, and the `catch` is of what was thrown ([ADR 0710](../../decisions/0710-every-unwinds-payload-is-the-js-error-thrown.md)).
-  A falsy one's `Option` carried on as a value, `.copied()`, `.is_some()`,
-  is `None`, as JS's `if (x)` reads it.
+  What's given its value, the closure of `and_then`, `map` or
+  `is_some_and`, is given it, as a `Some`'s: `x.stack`, `payload.name`
+  above, a falsy one's too. A falsy one's `Option` carried on as a value,
+  `.copied()`, `.is_some()`, is `None`, as JS's `if (x)` reads it.
 - **`resume_unwind(payload)` throws it again**: a thrown `Error` or what
   JS threw, itself; text, its panic; any other payload, an `Error` that a
   `catch_unwind` gives back as it was. Of a payload only read, it's
@@ -629,11 +631,31 @@ export function text(value) {
   Error()`: a JS value isn't `Send`, so rustc refuses `resume_unwind`
   and `panic_any` of a `&JsError`. Caught, its `&JsError` is that
   `Error`, its `stack` where it was thrown, and the `catch` is of the
-  `Err`'s binding ([ADR 0706](../../decisions/0706-panic-is-the-one-way-a-port-throws-an-error.md)):
+  `Err`'s binding ([ADR 0706](../../decisions/0706-panic-is-the-one-way-a-port-throws-an-error.md)).
+  An `if let Err(e) = catch_unwind(f)` that heads a chain, `&& c`, is a
+  `try` too, the rest of the chain the `catch`'s `if`, which reads what
+  the closure set; its `else`, where the `if` returns, what follows the
+  `try`:
 
 ```rust
 use js::{JsError, Unknown};
-use std::panic::catch_unwind;
+use std::panic::{AssertUnwindSafe, catch_unwind};
+
+pub fn stacks(render: &dyn Fn()) -> Option<(String, Option<String>)> {
+    let mut control = None;
+    if let Err(sample) = catch_unwind(AssertUnwindSafe(|| {
+        let Err(x) = catch_unwind(|| panic!(""));
+        control = x.downcast_ref::<&'static JsError>().copied();
+        render();
+    }))
+        && let Some(sample) = sample.downcast_ref::<&'static JsError>()
+        && let Some(control) = control
+        && let Some(sample_stack) = sample.stack()
+    {
+        return Some((sample_stack, control.stack()));
+    }
+    None
+}
 
 pub fn control_stack() -> Option<String> {
     let Err(x) = catch_unwind(|| panic!(""));
@@ -653,6 +675,25 @@ pub fn described(value: &Unknown) -> String {
 ```
 
 ```js
+export function stacks(render) {
+  let control;
+  try {
+    try {
+      throw new Error();
+    } catch (x) {
+      control = x;
+    }
+    render();
+  } catch (sample) {
+    if (control) {
+      const sampleStack = sample.stack;
+      if (sampleStack != null) {
+        return [sampleStack, control.stack];
+      }
+    }
+  }
+}
+
 export function controlStack() {
   let control;
   try {

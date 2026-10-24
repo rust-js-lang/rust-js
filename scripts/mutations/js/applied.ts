@@ -42,4 +42,12 @@ export const mutations: Mutation[] = [
     replace: "            match body_of(value).filter(|_| false) {\n",
     tests: ["test/lowering-unwinds.test.ts", "-t", "getIODescription"],
   },
+  {
+    name: "tried-last-return-dropped",
+    breaks: "a closure's body whose value nothing reads is in the `try` without its last `return`'s value, `step(n)` never called",
+    file: "src/js/applied.rs",
+    find: "                    && value.has_effects()\n",
+    replace: "                    && false\n",
+    tests: ["test/lowering-unwinds.test.ts", "-t", "a catch_unwind that heads an if let chain is a try"],
+  },
 ];

@@ -126,8 +126,9 @@ fn block_of(stmt: &Stmt, whole: &[Stmt], tail: bool) -> Option<Vec<Stmt>> {
 /// as its body: `return (() => { .. })();` its body, each `return` of it
 /// the function's, as returning what it returns is, where it never ends
 /// without one, as a closure of a value doesn't; and `(() => { .. })();`
-/// first, its body where it never returns. Not of an async closure, whose
-/// value is a promise.
+/// first, its body where it never returns, or returns only at its end,
+/// whose value it's given to nothing: `return step(n);` is `step(n);`
+/// (ADR 0706, amended). Not of an async closure, whose value is a promise.
 pub fn applied_tried(mut tried: Vec<Stmt>) -> Vec<Stmt> {
     let body_of = |value: &Expr| match &value.kind {
         ExprKind::Call(callee, args) if args.is_empty() => match &callee.kind {
@@ -147,6 +148,20 @@ pub fn applied_tried(mut tried: Vec<Stmt>) -> Vec<Stmt> {
         // names, as lowering names each, until reclaimed (ADR 0352).
         Some(StmtKind::Expr(value)) => match body_of(value) {
             Some(body) if !returns(&body).0 => {
+                tried.splice(0..1, body);
+                tried
+            }
+            Some(mut body)
+                if body
+                    .split_last()
+                    .is_some_and(|(last, before)| !returns(before).0 && matches!(last.kind, StmtKind::Return(_))) =>
+            {
+                let last = body.pop().expect("a last statement");
+                if let StmtKind::Return(Some(value)) = last.kind
+                    && value.has_effects()
+                {
+                    body.push(StmtKind::Expr(value).at(last.span));
+                }
                 tried.splice(0..1, body);
                 tried
             }

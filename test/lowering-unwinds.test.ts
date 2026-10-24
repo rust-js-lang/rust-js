@@ -872,8 +872,9 @@ pub fn of_any() -> Option<String> {
   }`);
   // Read otherwise, the payload is kept, and thrown again as it was.
   expect(js).toContain("    throw thrown;\n");
-  // What a call throws may be any value: its downcast's is what was thrown.
-  expect(js).toContain("  } catch (payload) {\n    return payload?.message;\n  }");
+  // What a call throws may be any value: its downcast is what was thrown,
+  // and `map` gives it to its closure (ADR 0710, amended).
+  expect(js).toContain("  } catch (payload) {\n    return payload.message;\n  }");
   const lib = await import(join(dir, "lib.js"));
   const g = globalThis as Record<string, unknown>;
   expect(lib.control()).toContain("Error");
@@ -1145,6 +1146,184 @@ pub fn of_any_boxed(own: bool) -> String {
   }
   expect(caught).toBeInstanceOf(Error);
   expect(caught).toBe(first);
+  delete g.render;
+});
+
+// React's describeBuiltInComponentFrame reads the stack of what it threw,
+// `catch (x) { const match = x.stack.trim().match(..); }`. The downcast
+// of what's caught is always `Some` (ADR 0710), so what's given its value,
+// `and_then(|x| x.stack())`'s closure, `map`'s and `is_some_and`'s, is
+// given it, as Rust gives a `Some`'s: `x.stack`, never `x?.stack` (ADR
+// 0710, amended).
+test("what's given the thrown downcast is given it as it is", async () => {
+  const { js, dir } = compiled("unwind-given-thrown", `use js::JsError;
+use std::panic::catch_unwind;
+
+#[cfg_attr(rust_js, rust_js::link_name = "globalThis.render")]
+fn render() -> u32 {
+    unreachable!()
+}
+
+pub fn prefix() -> String {
+    let Err(x) = catch_unwind(|| panic!(""));
+    let stack = x
+        .downcast_ref::<&'static JsError>()
+        .and_then(|x| x.stack())
+        .unwrap_or_default();
+    stack.trim().to_string()
+}
+
+pub fn control() -> Option<&'static JsError> {
+    let Err(x) = catch_unwind(|| panic!(""));
+    x.downcast_ref::<&'static JsError>().copied()
+}
+
+pub fn message() -> Option<String> {
+    match catch_unwind(render) {
+        Ok(_) => None,
+        Err(payload) => payload.downcast_ref::<&'static JsError>().map(|e| e.message()),
+    }
+}
+
+pub fn nested() -> Option<Option<u32>> {
+    match catch_unwind(render) {
+        Ok(_) => None,
+        Err(payload) => payload.downcast_ref::<&'static JsError>().map(|_| None),
+    }
+}
+
+pub fn named(name: &str) -> bool {
+    match catch_unwind(render) {
+        Ok(_) => false,
+        Err(payload) => payload
+            .downcast_ref::<&'static JsError>()
+            .is_some_and(|e| e.message() == name),
+    }
+}
+`);
+  expect(js).toContain(`  } catch (x) {
+    stack = x.stack ?? "";
+  }`);
+  expect(js).toContain("  } catch (x) {\n    return x;\n  }");
+  expect(js).toContain("  } catch (payload) {\n    return payload.message;\n  }");
+  expect(js).toContain("  } catch (payload) {\n    return payload.message === name;\n  }");
+  expect(js).not.toContain("?.");
+  const lib = await import(join(dir, "lib.js"));
+  const g = globalThis as Record<string, unknown>;
+  expect(lib.prefix()).toStartWith("Error");
+  expect(lib.control()).toBeInstanceOf(Error);
+  g.render = () => {
+    throw new TypeError("no props");
+  };
+  expect([lib.message(), lib.named("no props"), lib.named("other")]).toEqual(["no props", true, false]);
+  // `map`'s `Some` of a `None` is boxed, as an `Option` of what looks
+  // like `None` is (ADR 0051).
+  expect(lib.nested()).not.toBe(undefined);
+  g.render = () => {
+    throw 5;
+  };
+  expect([lib.message(), lib.named("5")]).toEqual([undefined, false]);
+  delete g.render;
+});
+
+// React's DetermineComponentFrameRoot catches its sample, then tests the
+// control its `try` set: `try { .. } catch (sample) { if (sample &&
+// control && ..) { return [..]; } }`. Its port's `if let Err(sample) =
+// catch_unwind(..) && let Some(control) = control && ..` is that `try`,
+// the rest of its chain the `catch`'s `if` (ADR 0706, amended); an
+// `else` where its arm returns is what follows, and a closure whose value
+// nothing reads is its body.
+test("a catch_unwind that heads an if let chain is a try", async () => {
+  const { js, dir } = compiled("unwind-chained", `use js::JsError;
+use std::panic::{AssertUnwindSafe, catch_unwind};
+
+#[cfg_attr(rust_js, rust_js::link_name = "globalThis.render")]
+fn render() -> u32 {
+    unreachable!()
+}
+
+pub fn root(construct: bool) -> (Option<String>, Option<String>) {
+    let mut control: Option<&'static JsError> = None;
+    if let Err(sample) = catch_unwind(AssertUnwindSafe(|| {
+        if construct {
+            render();
+        } else {
+            let Err(x) = catch_unwind(|| panic!(""));
+            control = x.downcast_ref::<&'static JsError>().copied();
+            render();
+        }
+    }))
+    // This is inlined manually because closure doesn't do it for us.
+        && let Some(sample) = sample.downcast_ref::<&'static JsError>()
+        && let Some(control) = control
+        && let Some(sample_stack) = sample.stack()
+    {
+        return (Some(sample_stack), control.stack());
+    }
+    (None, None)
+}
+
+pub fn otherwise(wanted: bool) -> &'static str {
+    if let Err(_) = catch_unwind(render)
+        && wanted
+    {
+        "caught"
+    } else {
+        "not"
+    }
+}
+
+pub fn counted(limit: u32) -> u32 {
+    let mut seen = 0;
+    let mut count = 0;
+    if let Err(_) = catch_unwind(AssertUnwindSafe(|| {
+        seen += 1;
+        render()
+    })) && seen <= limit
+    {
+        count += 100;
+    }
+    count + seen
+}
+`);
+  expect(js).toContain(`  } catch (sample) {
+    // This is inlined manually because closure doesn't do it for us.
+    if (control) {
+      const sampleStack = sample.stack;
+      if (sampleStack != null) {
+        return [sampleStack, control.stack];
+      }
+    }
+  }
+  return [undefined, undefined];
+}`);
+  expect(js).toContain(`  try {
+    globalThis.render();
+  } catch {
+    if (wanted) {
+      return "caught";
+    }
+  }
+  return "not";`);
+  expect(js).toContain(`  try {
+    seen = (seen + 1) >>> 0;
+    globalThis.render();
+  } catch {
+    if (seen <= limit) {`);
+  expect(js).not.toContain("$catchUnwind");
+  const lib = await import(join(dir, "lib.js"));
+  const g = globalThis as Record<string, unknown>;
+  const thrown = new TypeError("no props");
+  g.render = () => {
+    throw thrown;
+  };
+  const [sample, control] = lib.root(false);
+  expect(sample).toBe(thrown.stack);
+  expect(control).toStartWith("Error");
+  expect(lib.root(true)).toEqual([undefined, undefined]);
+  expect([lib.otherwise(true), lib.otherwise(false), lib.counted(0), lib.counted(1)]).toEqual(["caught", "not", 1, 101]);
+  g.render = () => 1;
+  expect([lib.root(false), lib.otherwise(true), lib.counted(1)]).toEqual([[undefined, undefined], "not", 1]);
   delete g.render;
 });
 

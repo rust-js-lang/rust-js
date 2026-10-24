@@ -315,6 +315,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<Value<'tcx>> {
+        if let Some(given) = self.mir_thrown_given(state, callee, operands, output, span, out)? {
+            return Ok(given);
+        }
         let strict = self.strictly_equal(state, callee.0, operands);
         // Of a binding with a nullable parameter, each `Option` that's
         // `null` or a value already, which it takes as it is (ADR 0275).
@@ -327,6 +330,41 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Value::Expr(e) if strict => Ok(Value::Expr(js::strict_equality(e))),
             value => Ok(value),
         }
+    }
+
+    /// What's given an unwind's payload's `&JsError`, the closure of
+    /// `and_then`, `map` or `is_some_and` of its downcast, a local
+    /// `OptionWrites::thrown` says is a `Some` always (ADR 0710): called
+    /// with it, as Rust calls it with a `Some`'s value, `x.stack` (ADR 0710,
+    /// amended). `None` of any other call.
+    fn mir_thrown_given(
+        &mut self,
+        state: &mut State<'_, 'tcx>,
+        (def_id, generic_args): (rustc_span::def_id::DefId, ty::GenericArgsRef<'tcx>),
+        operands: &[&Operand<'tcx>],
+        output: Ty<'tcx>,
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Option<Value<'tcx>>> {
+        use crate::lower::combinators::Comb;
+        let known = self.recognition().classify(def_id, generic_args);
+        let Some(known @ (Std::Comb(Comb::AndThen | Comb::IsSomeAnd) | Std::OptionMap)) = known else {
+            return Ok(None);
+        };
+        let [Operand::Copy(subject) | Operand::Move(subject), _] = operands[..] else {
+            return Ok(None);
+        };
+        if !subject.projection.is_empty() || !state.options.thrown.contains_key(&subject.local) {
+            return Ok(None);
+        }
+        let values = self.take_operands(state, operands, out)?;
+        let exprs = (values.into_iter())
+            .map(|v| self.value_expr(v, span))
+            .collect::<R<Vec<_>>>()?;
+        let [error, f]: [Expr; 2] = exprs.try_into().ok().expect("an `Option` and a function");
+        let given = self.call_with(f, vec![error], "then", out);
+        let boxed = known == Std::OptionMap && self.option_of(output).is_some_and(|item| self.boxed_payload(item));
+        Ok(Some(Value::Expr(if boxed { self.some(given) } else { given })))
     }
 
     /// Whether an `==` of an `Option` is `===`: of one side only ever
