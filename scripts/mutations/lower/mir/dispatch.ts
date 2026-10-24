@@ -565,20 +565,4 @@ export const mutations: Mutation[] = [
     replace: "        if false\n            && operands",
     tests: ["test/lowering-moves.test.ts", "-t", "a getter's read given to a binding's method runs before its lookup"],
   },
-  {
-    name: "nullable-cell-alias-plain",
-    breaks: "a nullable field's `Cell` set through `let r = &context.renderer` writes `undefined`",
-    file: "src/lower/mir/dispatch.rs",
-    find: "        if writes_a_cell && self.stores_null(state, operands[0]) {\n",
-    replace: "        if false {\n",
-    tests: ["test/lowering-nullable.test.ts", "-t", "through a reference and a helper"],
-  },
-  {
-    name: "nullable-cell-take-unasked",
-    breaks: "a nullable field's `Cell` taken through a reference writes `undefined`",
-    file: "src/lower/mir/dispatch.rs",
-    find: "            Some(Std::CellSet | Std::CellReplace | Std::CellTake)\n",
-    replace: "            Some(Std::CellSet | Std::CellReplace)\n",
-    tests: ["test/lowering-nullable.test.ts", "-t", "through a reference and a helper"],
-  },
 ];

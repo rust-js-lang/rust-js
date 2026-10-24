@@ -60,8 +60,13 @@ the one answer to which is one) is a `NullForNone` handle. So:
 | the same `reset(&context.plain)`, a `Cell` that isn't nullable | its setter `context.plain = value;` |
 
 A write `cell_call` makes (`set`, `replace`, `take`) asks the receiver's
-handle; a variable holding one, which MIR shows is a reference to such a
-field, reborrowed or copied, `stores_null`, is given that handle too.
+handle; one through a variable that holds the handle, `r.set(None)`,
+reborrowed or copied, is `r.value = ..`, which tidy writes as the handle's
+storage stores it where it takes the variable to its place
+(`read_handles`), and the handle's setter where it doesn't: the handle
+is the one carrier of its storage. A first cut also followed such a
+variable through MIR to its field, which the handle made redundant; it's
+gone.
 Whether what's written is `null` or a value already is MIR's `nulled`,
 the one answer, given as `Call::nulled`: `set(Some(renderer))` is
 `context.renderer = renderer;`.
