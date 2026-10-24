@@ -171,9 +171,16 @@ export function totalArea(radii: number[]): number;
 
 Where Prettier finds a config for a file, `.prettierrc` or a
 `package.json`'s `prettier` key, the app's Prettier lays out the JS and the
-`.d.ts` by it, so `prettier --check` passes on what rust-js wrote. Without
-one, rust-js lays it out its own way ([ADR 0381](../../decisions/0381-the-apps-prettier-lays-it-out.md)). There's no rust-js setting
+`.d.ts` by it, so `prettier --check` passes on what rust-js wrote. It's
+the config for where the file goes, beside its Rust, so an override by
+path, `{ files: "packages/*/src/**/*.js", options: { .. } }`, is the
+file's. Without one, rust-js lays it out its own way ([ADR 0381](../../decisions/0381-the-apps-prettier-lays-it-out.md)). There's no rust-js setting
 for layout.
+
+Either way, an object is on lines of its own where its struct literal is
+written across lines, as rustfmt writes one too long for a line, and on
+one line where it's written on one and fits, as Prettier keeps an object
+a person wrote ([ADR 0835](../../decisions/0835-an-object-is-across-lines-where-its-literal-is.md)).
 
 ## Commit the JS, not the maps
 

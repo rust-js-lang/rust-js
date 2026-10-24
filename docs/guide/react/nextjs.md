@@ -354,10 +354,15 @@ js::export_default!(RootLayout);
 import { Geist } from "next/font/google";
 import "./globals.css";
 
-const geist = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
+const geist = Geist({
+  variable: "--font-geist-sans",
+  subsets: ["latin"],
+});
 
 export function generateMetadata() {
-  return { title: "My site" };
+  return {
+    title: "My site",
+  };
 }
 
 export function RootLayout({ children }) {
@@ -448,7 +453,9 @@ export function proxy(request) {
   return NextResponse.rewrite(about);
 }
 
-export const config = { matcher: "/old" };
+export const config = {
+  matcher: "/old",
+};
 ```
 
 A `static` keeps its Rust name, as a constant does ([ADR 0579](../../decisions/0579-a-thread-local-is-named-as-a-variable.md)), so one
@@ -520,12 +527,25 @@ export function Post({ title }) {
 }
 
 export async function getStaticProps({ params }) {
-  return params ? { props: { title: params.slug } } : { notFound: true };
+  return params
+    ? {
+        props: { title: params.slug },
+      }
+    : {
+        notFound: true,
+      };
 }
 
 export async function getStaticPaths(_) {
-  const path = (slug) => ({ params: { slug } });
-  return { paths: [path("hello"), path("world")], fallback: "blocking" };
+  const path = (slug) => ({
+    params: {
+      slug,
+    },
+  });
+  return {
+    paths: [path("hello"), path("world")],
+    fallback: "blocking",
+  };
 }
 
 export default Post;

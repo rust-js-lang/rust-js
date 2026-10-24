@@ -37,7 +37,10 @@ function scaled(factor) {
 
 function main() {
   console.log(`${renamed("old")}`);
-  const list = { value: 1, next: { value: 2 } };
+  const list = {
+    value: 1,
+    next: { value: 2 },
+  };
   let node = reverse(list);
   while (node != null) {
     const n = node;

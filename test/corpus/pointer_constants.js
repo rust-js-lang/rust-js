@@ -7,7 +7,11 @@ export function entry() {
 }
 
 const NULLED = { x: null };
-const INTERNED = { field: { value: 42 }, tag: 7 };
+
+const INTERNED = {
+  field: { value: 42 },
+  tag: 7,
+};
 
 // semver's empty identifier: all ones, a pointer no allocation has.
 const HEAD = $ptrFrom(~0 >>> 0, 1);

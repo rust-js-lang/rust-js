@@ -530,7 +530,10 @@ pub fn ratio(a: u32, b: u32) -> Result<u32, String> {
 import { $div, $some } from "@rust-js/runtime";
 
 export function profile(name) {
-  return { name, avatar: null };
+  return {
+    name,
+    avatar: null,
+  };
 }
 
 export function hideBanner(profile) {
@@ -660,7 +663,10 @@ pub fn same(a: &Rc<Node>, b: &Rc<Node>) -> bool {
 
 ```js
 export function node(name) {
-  return { name, children: [] };
+  return {
+    name,
+    children: [],
+  };
 }
 
 export function adopt(parent, child) {
@@ -702,7 +708,13 @@ pub fn share(doc: &Rc<Doc>) -> Rc<Doc> {
 import { $rcClone } from "@rust-js/runtime";
 
 export function open(title) {
-  return { value: { title }, strong: 1, weak: 0 };
+  return {
+    value: {
+      title,
+    },
+    strong: 1,
+    weak: 0,
+  };
 }
 
 export function owners(doc) {

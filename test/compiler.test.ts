@@ -1152,7 +1152,7 @@ test("the report's JS: function values, case mapping, and plain array reads", as
 // iterator it is, its `peek` and `next_if` rewritten over it (ADR 0561).
 test("the lexer's JS steps through its source with $next and $peek", async () => {
   const js = await Bun.file(join(target, "lexer.js")).text();
-  expect(js).toContain("return { chars: iterator_peekable($iter(Array.from(src)), { next: $next }), line: 1 };");
+  expect(js).toContain("return {\n      chars: iterator_peekable($iter(Array.from(src)), { next: $next }),\n      line: 1,\n    };");
   expect(js).toContain("const c = $peek(lexer.chars);");
   expect(js).toContain('$nextIf(lexer.chars, (item) => item === "/") != null');
   expect(js).toContain('$nextIf(lexer.chars, (c) => c !== "\\n") == null');
@@ -1177,8 +1177,8 @@ test("values' JS: boxes for &mut to primitives, and recursive clones", async () 
 // std methods are Rust's own steps.
 test("versions' JS: struct update in Rust's order, scan, drain and total_cmp", async () => {
   const js = await Bun.file(join(target, "versions.js")).text();
-  expect(js).toContain("{ major: 0, minor: 9, patch: 0 }");
-  expect(js).toContain("const v = { patch: tick(order, 1), major: tick(order, 2), minor: made(order).minor };");
+  expect(js).toContain("{\n      major: 0,\n      minor: 9,\n      patch: 0,\n    }");
+  expect(js).toContain("const v = {\n    patch: tick(order, 1),\n    major: tick(order, 2),\n    minor: made(order).minor,\n  };");
   expect(js).toContain("const value = $nextSome(it);");
   expect(js).toContain("fs.sort((a, b) => $totalCmp(a, b));");
   expect(js).toContain("const tail = $splitOff(v, 5);");

@@ -2,7 +2,9 @@
 
 Status: Accepted. Extends [0018](0018-print-with-oxc.md). Extended by
 [0117](0117-output-hooks.md): a crate sets the formatter's options, and can run its
-own formatter after it.
+own formatter after it. Amended by [0835](0835-an-object-is-across-lines-where-its-literal-is.md):
+`objectWrap` is `preserve`, and an object is across lines where its struct
+literal is.
 
 Case: N ([0262](0262-when-rust-and-js-disagree.md)).
 

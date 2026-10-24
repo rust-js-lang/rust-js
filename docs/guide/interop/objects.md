@@ -73,7 +73,10 @@ pub fn scaled_area(side: f64) -> Meters {
 ```js
 export const Rect = {
   square(side) {
-    return { width: side, height: side };
+    return {
+      width: side,
+      height: side,
+    };
   },
 
   area(rect) {
@@ -332,7 +335,13 @@ export function largest(shapes) {
 export function mixed() {
   const shapes = [
     { value: { radius: 1 }, impl: circleShape },
-    { value: { width: 2, height: 3 }, impl: rectShape },
+    {
+      value: {
+        width: 2,
+        height: 3,
+      },
+      impl: rectShape,
+    },
   ];
   return largest(shapes);
 }
@@ -438,7 +447,10 @@ function pointDebug_fmt(point) {
 }
 
 function pointAdd_add(point, other) {
-  return { x: point.x + other.x, y: point.y + other.y };
+  return {
+    x: point.x + other.x,
+    y: point.y + other.y,
+  };
 }
 
 export const pointDisplay = { fmt: pointDisplay_fmt };

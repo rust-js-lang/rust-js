@@ -181,7 +181,7 @@ fn fields_of(body: &mut Vec<Stmt>, params: &[Pattern], guard: &str) {
                 .iter()
                 .position(|s| matches!(&s.kind, StmtKind::Const(n, _) if n == guard))
             && let StmtKind::Const(_, value) = &stmts[k].kind
-            && let ExprKind::Object(props) = &value.kind
+            && let ExprKind::Object(props, ..) = &value.kind
         {
             made = Some(props.clone());
         }

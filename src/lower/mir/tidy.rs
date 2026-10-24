@@ -247,7 +247,7 @@ fn negations(e: &mut Expr) {
 /// impl: f.impl }.impl`: as `Expr::member` makes it.
 fn pairs_fields(e: &mut Expr) {
     if let ExprKind::Member(object, field) = &e.kind
-        && let ExprKind::Object(props) = &object.kind
+        && let ExprKind::Object(props, ..) = &object.kind
         && js::is_read_pair(props)
     {
         *e = Expr {
@@ -432,7 +432,7 @@ fn inert_element(e: &Expr, changing: &HashSet<String>) -> bool {
         ExprKind::Var(v) => !changing.contains(v),
         ExprKind::Symbol(_) | ExprKind::Arrow(..) | ExprKind::AsyncArrow(..) => true,
         ExprKind::Array(items) => items.iter().all(|i| inert_element(i, changing)),
-        ExprKind::Object(fields) => props(fields),
+        ExprKind::Object(fields, ..) => props(fields),
         // A choice of them, `open ? <IconClose /> : <IconHamburger />`.
         ExprKind::Cond(a, b, c) => [a, b, c].iter().all(|e| inert_element(e, changing)),
         ExprKind::Jsx(jsx) => {

@@ -107,7 +107,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0086 An `i64` or a `u64` is a BigInt, wrapped as release Rust wraps it](decisions/0086-64-bit-integers.md)
 - [0087 `println!` is `console.log`; `print!` writes as it is where JS can](decisions/0087-printing.md)
 - [0090 rustc checks programs for `wasm32-unknown-unknown`, whose `usize` is rust-js's](decisions/0090-wasm32-front-end.md)
-- [0065 The JS is formatted as oxfmt formats it, and the source map follows](decisions/0065-format-with-oxfmt.md)
+- [0065 The JS is formatted as oxfmt formats it, and the source map follows](decisions/0065-format-with-oxfmt.md) *(amended by 0835: an object is across lines where its struct literal is)*
 - [0066 Text with values in it is a template literal](decisions/0066-template-literals.md) *(amended by 0641: a `concat!` of literals is its pieces joined by `+`; amended: strings alone are joined by `+`, and only strings)*
 - [0067 Range patterns, `@`, `let ... else`, and a `&mut` into a map](decisions/0067-patterns.md)
 - [0069 Preserve effects before simplifying; lower once and link afterwards](decisions/0069-lowering-effects-and-linking.md)
@@ -450,7 +450,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0378 A Next.js app moves to Rust one file at a time](decisions/0378-one-file-at-a-time.md)
 - [0379 A compiler that ran is no change to it](decisions/0379-a-compiler-that-ran-is-no-change.md)
 - [0380 The app's config compiles its Rust: `withRustJs(nextConfig)`](decisions/0380-with-rust-js.md) *(superseded by 0412)*
-- [0381 The app's Prettier lays out what rust-js writes](decisions/0381-the-apps-prettier-lays-it-out.md)
+- [0381 The app's Prettier lays out what rust-js writes](decisions/0381-the-apps-prettier-lays-it-out.md) *(amended: the app's build only; its config for where the file goes, beside its Rust)*
 - [0382 A module has a file for what it has, the root too](decisions/0382-a-module-has-a-file-for-what-it-has.md)
 - [0383 A file's leading comments are its JS's](decisions/0383-a-files-leading-comments-are-its-jss.md)
 - [0384 A ref a prop holds is @types/react's `Ref<T>`, and an element's props `DetailedHTMLProps`](decisions/0384-a-ref-prop-is-reacts-ref.md)
@@ -684,6 +684,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0810 An optional nullable field is absent until it's set](decisions/0810-an-optional-nullable-field-is-absent-until-set.md)
 - [0811 `console.createTask` is a property the host may lack](decisions/0811-console-create-task-may-be-absent.md) *(amended: `#[rust_js::types]` is a TypeScript type, read into the declaration model, one it can't read an error)*
 - [0830 What follows a `let Err(x)` of a closure that never returns is its `catch`](decisions/0830-what-follows-a-let-err-of-a-closure-that-never-returns-is-its-catch.md)
+- [0835 An object is across lines where its struct literal is](decisions/0835-an-object-is-across-lines-where-its-literal-is.md)
 - [0840 A thread-local's `with` is its closure's body, wherever it's called](decisions/0840-a-thread-locals-with-is-its-closures-body.md)
 - [0841 A nullable place stores what's never `undefined` as it is](decisions/0841-a-nullable-place-stores-what-is-never-undefined-as-it-is.md)
 - [0720 A labeled block's `break` and a named constant, in a body's ranges](decisions/0720-a-labeled-block-and-a-named-constant-in-a-bodys-ranges.md)
@@ -697,7 +698,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0441 A `()` given a function value is no argument](decisions/0441-a-unit-is-no-argument.md)
 - [0442 A web API that throws for what a program can't prevent is a `Result`](decisions/0442-a-web-api-that-may-throw-is-a-result.md)
 - [0443 A value a caller may leave out is an `Option`, in each direction](decisions/0443-a-value-a-caller-may-leave-out-is-an-option.md) *(amended by 0640: a `None` before a rest of none is no argument; 0648: a setter's `None` is written; 0775: a `()` as a `dyn` is `undefined` but of a list)*
-- [0444 A comment is in the JS where its code is, and so is a blank line](decisions/0444-a-comment-is-where-its-code-is.md) *(amended by 0658: a branch's comment is before its value; 0708: an argument's and a field's; 0733: a line comment ends the line of its code; extended by 0753: a branch of only comments keeps them)*
+- [0444 A comment is in the JS where its code is, and so is a blank line](decisions/0444-a-comment-is-where-its-code-is.md) *(amended by 0658: a branch's comment is before its value; 0708: an argument's and a field's; 0733: a line comment ends the line of its code; extended by 0753: a branch of only comments keeps them; 0835: an object is across lines where its struct literal is)*
 - [0445 Generic code extends and collects into what it's given](decisions/0445-extend-and-collect-in-generic-code.md)
 - [0446 A `dyn fmt::Write` is a pair, and `fmt::write` is `write_fmt`](decisions/0446-a-dyn-fmt-write.md)
 - [0447 The clock: a `SystemTime` and an `Instant` are their nanoseconds](decisions/0447-the-clock.md)

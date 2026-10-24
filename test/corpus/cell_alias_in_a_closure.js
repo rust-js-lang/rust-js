@@ -27,7 +27,10 @@ function relabel(context, labels) {
 }
 
 function main() {
-  const context = { value: 1, label: "first" };
+  const context = {
+    value: 1,
+    label: "first",
+  };
   reset(context);
   console.log(`${context.value}`);
   console.log(`${bumpTwice(context)} ${context.value}`);

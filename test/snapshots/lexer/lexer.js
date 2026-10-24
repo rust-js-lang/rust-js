@@ -31,7 +31,10 @@ function tokDebug_fmt(tok) {
 
 export const Lexer = {
   new(src) {
-    return { chars: iterator_peekable($iter(Array.from(src)), { next: $next }), line: 1 };
+    return {
+      chars: iterator_peekable($iter(Array.from(src)), { next: $next }),
+      line: 1,
+    };
   },
   number(lexer, first) {
     let n = $unwrap($toDigit(first, 10));

@@ -66,7 +66,10 @@ function main() {
   shown($borrow(cell, true), { deref: (x) => x.value }, $unborrow);
   console.log(`${firstOr($borrow(cell, true), 0, { deref: (x) => x.value }, $unborrow)}`);
   const log = { value: [] };
-  const held = { items: [4, 5, 6], log };
+  const held = {
+    items: [4, 5, 6],
+    log,
+  };
   const value = length(held, holderDeref, holderDrop_drop);
   const borrow = $borrow(log, true);
   try {

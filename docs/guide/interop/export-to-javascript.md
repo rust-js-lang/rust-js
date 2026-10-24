@@ -383,7 +383,10 @@ pub fn label(status: &Status) -> String {
 ```js
 export const Counter = {
   new(stepSize) {
-    return { count: 0, stepSize };
+    return {
+      count: 0,
+      stepSize,
+    };
   },
 
   tick(counter) {
@@ -516,7 +519,9 @@ pub fn mounted(props: Option<&'static Unknown>) -> Component {
 ```
 
 ```js
-export const NOOP = { enqueueForceUpdate: () => {} };
+export const NOOP = {
+  enqueueForceUpdate: () => {},
+};
 
 /** Base class helpers for the updating state of a component. */
 export function Component(props, updater) {

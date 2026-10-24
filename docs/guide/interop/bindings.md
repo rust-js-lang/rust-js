@@ -180,13 +180,17 @@ function quiet() {}
 
 export function silence() {
   savedLog = console.log;
-  const quieted = { value: quiet };
+  const quieted = {
+    value: quiet,
+  };
   Object.defineProperty(console, "log", quieted);
 }
 
 export function restore() {
   const saved = savedLog;
-  const restored = { value: saved };
+  const restored = {
+    value: saved,
+  };
   Object.defineProperty(console, "log", restored);
   if (saved) {
     saved("restored", 1);
@@ -650,7 +654,10 @@ import { Editor, find, load, onChange, parse, select } from "my-editor";
 import { $try } from "@rust-js/runtime";
 
 export async function open(other) {
-  const editor = new Editor({ theme: "dark", tabSize: 4 });
+  const editor = new Editor({
+    theme: "dark",
+    tabSize: 4,
+  });
   onChange(editor, (text) => {
     console.log(`${text}`);
   });

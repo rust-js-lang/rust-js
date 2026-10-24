@@ -80,7 +80,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     match self.read_local_value(state, place.local, out)? {
                         Value::Expr(cell) => {
                             let place = match cell.kind {
-                                js::ExprKind::Object(_) => {
+                                js::ExprKind::Object(..) => {
                                     let kind = js::ExprKind::Member(Box::new(cell), "value".into());
                                     Expr {
                                         kind,
@@ -650,7 +650,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let value = self.value_expr(value, span)?;
                 props.push(Prop::Field(names[i].0.clone(), self.holding(value, names[i].1)));
             }
-            return Ok(Value::Expr(Expr::object(props)));
+            let mut made = Expr::object(props);
+            if let js::ExprKind::Object(_, layout) = &mut made.kind {
+                *layout = self.object_layout(&self.tcx.adt_def(did), VariantIdx::ZERO, span);
+            }
+            return Ok(Value::Expr(made));
         }
         // A struct's or a variant's fields, read in the order its object
         // lists them, as written (ADR 0674).

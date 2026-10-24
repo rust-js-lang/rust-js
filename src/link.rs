@@ -259,7 +259,7 @@ fn expr(e: &mut Expr, visitor: &mut Visitor<'_>) {
                 expr(item, visitor);
             }
         }
-        ExprKind::Object(props) => properties(props, visitor),
+        ExprKind::Object(props, ..) => properties(props, visitor),
         ExprKind::Arrow(params, body) | ExprKind::AsyncArrow(params, body) => {
             for param in params {
                 pattern(param, visitor);

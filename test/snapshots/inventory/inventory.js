@@ -112,11 +112,34 @@ function classify(n) {
 export function report() {
   const store = { stock: new Map(), revenue: 0, log: [] };
   const events = [
-    { TAG: "Restock", item: "apple", qty: 10 },
-    { TAG: "Restock", item: "pear", qty: 3 },
-    { TAG: "Sale", item: "apple", qty: 4, price: 0.5 },
-    { TAG: "Sale", item: "kiwi", qty: 1, price: 2 },
-    { TAG: "Sale", item: "pear", qty: 5, price: 1 },
+    {
+      TAG: "Restock",
+      item: "apple",
+      qty: 10,
+    },
+    {
+      TAG: "Restock",
+      item: "pear",
+      qty: 3,
+    },
+    {
+      TAG: "Sale",
+      item: "apple",
+      qty: 4,
+      price: 0.5,
+    },
+    {
+      TAG: "Sale",
+      item: "kiwi",
+      qty: 1,
+      price: 2,
+    },
+    {
+      TAG: "Sale",
+      item: "pear",
+      qty: 5,
+      price: 1,
+    },
     "Audit",
   ];
   let out = "";
@@ -127,7 +150,13 @@ export function report() {
     }
   }
   const rules = [
-    { value: { item: "pear", min: 5 }, impl: minStockRule },
+    {
+      value: {
+        item: "pear",
+        min: 5,
+      },
+      impl: minStockRule,
+    },
     { value: [10], impl: revenueRule },
   ];
   for (const r of rules) {

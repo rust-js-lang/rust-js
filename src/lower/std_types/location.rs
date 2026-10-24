@@ -96,7 +96,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// read again, its parts; of one made where it's shown, a call's, its
     /// parts of it given a name, `((location) => ..)(at())`.
     pub(in crate::lower) fn location_shown(&mut self, value: Expr, debug: bool, span: Span) -> R<Expr> {
-        if !value.reads_same() && !matches!(value.kind, ExprKind::Object(_)) {
+        if !value.reads_same() && !matches!(value.kind, ExprKind::Object(..)) {
             let shown = self.location_shown(Expr::var("location"), debug, span)?;
             let shown = Expr::arrow(
                 vec!["location".into()],
@@ -105,7 +105,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(self.applied(shown, value));
         }
         let part = |name: &str| match &value.kind {
-            ExprKind::Object(props) => props.iter().find_map(|prop| match prop {
+            ExprKind::Object(props, ..) => props.iter().find_map(|prop| match prop {
                 Prop::Field(field, part) if field == name => Some(part.clone()),
                 _ => None,
             }),

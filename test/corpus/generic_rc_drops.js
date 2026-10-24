@@ -23,11 +23,21 @@ function loudDrop_drop(loud) {
 }
 
 function tee(iter, dropI, dropIItem) {
-  const buffer = { backlog: [], iter, owner: false };
-  const t1 = { rcbuffer: { value: { value: buffer }, strong: 1, weak: 0 }, id: true };
+  const buffer = {
+    backlog: [],
+    iter,
+    owner: false,
+  };
+  const t1 = {
+    rcbuffer: { value: { value: buffer }, strong: 1, weak: 0 },
+    id: true,
+  };
   let t2;
   try {
-    t2 = { rcbuffer: $rcClone(t1.rcbuffer), id: false };
+    t2 = {
+      rcbuffer: $rcClone(t1.rcbuffer),
+      id: false,
+    };
   } catch (error) {
     $rcDrop(t1.rcbuffer, (value) => {
       for (const item of value.value.backlog) {
