@@ -309,6 +309,12 @@ command, and every agent, mid-task.
 
 ## Where checks run
 
+[TESTS.md](TESTS.md) is the suite at a glance: how many tests, what each
+suite proves, how long each takes. Keep it true: a change that adds or
+removes a suite, a test file or a workflow job, or moves a count or a CI
+time noticeably, updates its table and its date in the same commit, from
+the numbers its last line says how to recount.
+
 Every check runs on the Mac (its malware scan is off for the apps that run
 them, [DEVELOPMENT.md](DEVELOPMENT.md#the-mac-with-the-scan-off)) within five
 minutes; longer runs are CI's:
