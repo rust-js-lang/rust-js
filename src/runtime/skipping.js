@@ -31,6 +31,16 @@ function $skipping(iter, n, drop) {
   skipping.n = n;
   // Each item's drop, which a `take` of it drops what it gives on by (#261).
   if (iter.ownNth) skipping.dropItem = drop;
+  // Std's `Skip::advance_by(m)`: its source's `advance_by(n + m)`, which
+  // drops what it passes itself where it can, a reversed `Vec`'s as one
+  // slice, else each by the item's drop (#287).
+  skipping.advanceBy = (m, dropItem = drop) => {
+    const skip = skipping.n;
+    const remainder = $advanceByOf(skipping.iter, skip + m, dropItem);
+    const advanced = skip + m - remainder;
+    skipping.n = Math.max(skip - advanced, 0);
+    return m - Math.max(advanced - skip, 0);
+  };
   // Std's `Skip::count`: its source's `nth(n - 1)`, then its `count`, where
   // its source drops what it passes over itself (#261).
   if (iter.ownNth) {

@@ -445,6 +445,43 @@ function main() {
   };
   const value$22 = last ? map$8(last) : undefined;
   console.log(`${value$22 == null ? "None" : `Some(${value$22})`}`);
+  // A `skip`'s `advance_by`, its source's of what it skips and more: a
+  // reversed `Vec`'s, one slice, front to back (#287).
+  const value$23 = $skipping(
+    $rev($closing($iter(louds(63, 3)), $dropEach(loudDrop_drop))),
+    2,
+    loudDrop_drop,
+  );
+  let tmp$15;
+  try {
+    tmp$15 = louds(66, 2);
+  } catch (error) {
+    value$23.return();
+    throw error;
+  }
+  const value$24 = $held($lazyChain(value$23, $closing($iter(tmp$15), $dropEach(loudDrop_drop))));
+  let skipped$1;
+  try {
+    skipped$1 = $nthDropping($lent(value$24), 2, loudDrop_drop, false);
+  } catch (error) {
+    value$24.return();
+    throw error;
+  }
+  try {
+    value$24.return();
+  } catch (error) {
+    if (skipped$1 != null) {
+      loudDrop_drop(skipped$1);
+    }
+    throw error;
+  }
+  const map$9 = (l) => {
+    const result = l[0];
+    loudDrop_drop(l);
+    return result;
+  };
+  const value$25 = skipped$1 ? map$9(skipped$1) : undefined;
+  console.log(`${value$25 == null ? "None" : `Some(${value$25})`}`);
   console.log("end");
 }
 //# sourceMappingURL=case.js.map

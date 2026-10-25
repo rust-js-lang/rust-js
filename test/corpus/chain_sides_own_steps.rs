@@ -58,5 +58,9 @@ fn main() {
     // A `skip`'s `last` past a `fuse()`'s items, which it drops (#285).
     let last = louds(60, 2).into_iter().fuse().chain(louds(62, 1)).skip(2).last();
     println!("{:?}", last.map(|l| l.0));
+    // A `skip`'s `advance_by`, its source's of what it skips and more: a
+    // reversed `Vec`'s, one slice, front to back (#287).
+    let skipped = louds(63, 3).into_iter().rev().skip(2).chain(louds(66, 2)).nth(2);
+    println!("{:?}", skipped.map(|l| l.0));
     println!("end");
 }

@@ -313,3 +313,14 @@ mutations `rev-advance-by-stepped`, `closing-advance-unforwarded`,
 `take-own-nth-needs-item-drop` and `fuse-advance-by-unlisted` are caught.
 Readability: the lines' `Vec`s add `$iter` (82.1 to 82.4 in 10,000
 lines) and renamed temporaries (714.1 to 715.5), as each such case does.
+
+## Amendment: an explicit `skip`'s `advance_by` is std's (#287)
+
+std's `Skip::advance_by(n)` is its source's `advance_by(skip + n)`, asked
+once. For a reversed `Vec`, that's one slice, front to back. `$skipping`
+had no `advanceBy` of its own, so a chain's `nth` past
+`rev().skip(2)` stepped each item from the back (fuzz seed 56298). It
+now asks its source through `$advanceByOf`. `chain_sides_own_steps` adds
+the case, and `skipping-advance-by-stepped` is caught.
+Readability: the line's `Vec`s add `$iter` (85.1 to 85.3 in 10,000 lines)
+and renamed temporaries (729.4 to 730.5), as each such case does.

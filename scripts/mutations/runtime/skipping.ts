@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "skipping-advance-by-stepped",
+    breaks: "an explicit `skip`'s `advance_by` steps each item, not its source's of what it skips and more, so a chain's `nth` past a reversed `Vec`'s skip drops back to front (#287)",
+    file: "src/runtime/skipping.js",
+    find: "  skipping.advanceBy = (m, dropItem = drop) => {\n",
+    replace: "  skipping.unadvanced = (m, dropItem = drop) => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^chain_sides_own_steps.rs$"],
+  },
+  {
     name: "skip-dropping-keeps-skipped",
     breaks: "`skip` of items with a destructor drops none it skips",
     file: "src/runtime/skipping.js",
