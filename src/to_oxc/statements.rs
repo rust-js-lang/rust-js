@@ -70,7 +70,7 @@ impl<'a> Cx<'a> {
             .filter(|s| !matches!(s.kind, StmtKind::Directive(_)))
             .cloned()
             .collect();
-        FunctionBody::new(SPAN, directives, self.stmts(&stmts), b)
+        FunctionBody::new(commented_end(&stmts), directives, self.stmts(&stmts), b)
     }
 
     /// `function f() {}`, `export` of one exported, or `export default` of
@@ -297,12 +297,7 @@ impl<'a> Cx<'a> {
     /// (`StmtKind::Comments`), to where they end, which oxc prints them
     /// before, inside the block (ADR 0753).
     fn block(&self, stmts: &[js::Stmt]) -> Statement<'a> {
-        let end = (stmts.iter())
-            .filter(|s| matches!(s.kind, StmtKind::Comments) && !s.span.is_none())
-            .map(|s| s.span.lo)
-            .max();
-        let sp = end.map_or(SPAN, |end| Span::new(end, end + 1));
-        Statement::new_block_statement(sp, self.stmts(stmts), &self.b)
+        Statement::new_block_statement(commented_end(stmts), self.stmts(stmts), &self.b)
     }
 
     fn stmt(&self, s: &js::Stmt) -> Statement<'a> {
@@ -667,4 +662,15 @@ impl<'a> Cx<'a> {
             _ => unreachable!("a chain's links are members and calls"),
         }
     }
+}
+
+/// The span of a block, or a function's body, of `stmts`: to where the
+/// comments of its own it ends with end (`StmtKind::Comments`), which oxc
+/// prints them before, inside it, before its `}` (ADRs 0753, 0858).
+fn commented_end(stmts: &[js::Stmt]) -> Span {
+    let end = (stmts.iter())
+        .filter(|s| matches!(s.kind, StmtKind::Comments) && !s.span.is_none())
+        .map(|s| s.span.lo)
+        .max();
+    end.map_or(SPAN, |end| Span::new(end, end + 1))
 }

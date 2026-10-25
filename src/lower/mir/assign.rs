@@ -46,6 +46,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             out.push(StmtKind::Comments.at(end));
         }
+        // A function's `None` it gives at its end, a comment before it,
+        // `// Don't return anything\n None`: where it is, which the comment
+        // is printed before, as the `return;` of nothing it is goes (ADR
+        // 0858).
+        if *place == Place::from(mir::RETURN_PLACE)
+            && let Rvalue::Aggregate(kind, _) = rvalue
+            && let AggregateKind::Adt(did, VariantIdx::ZERO, ..) = **kind
+            && self.tcx.is_lang_item(did, LangItem::Option)
+            && let Some(at) = crate::lower::sources::commented(self.krate.sources, span)
+        {
+            out.push(StmtKind::Comments.at(at));
+        }
         // What the function gives, a variable of its own nothing reads after:
         // that, handed over uncopied. Not of a `Cell` in it, which
         // a drop after may set.

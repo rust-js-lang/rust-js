@@ -610,7 +610,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0750 A temporary is read past a method, and in the block after it](0750-a-temporary-is-read-past-a-method-and-into-a-block.md) *(amended: not past a binding's method of a JS value; a getter's read does something, a declared type's method its class's)*
 - [0751 A binding only an arm's guard reads isn't written in the arm](0751-a-binding-only-a-guard-reads-isnt-written.md)
 - [0752 An `Option`'s function unwrapped and called panics before the call](0752-an-unwrapped-function-called-panics-first.md)
-- [0753 A branch of only comments keeps them](0753-a-branch-of-only-comments-keeps-them.md)
+- [0753 A branch of only comments keeps them](0753-a-branch-of-only-comments-keeps-them.md) *(extended by 0858: after a block's last code, and before a function's `None` at its end)*
 - [0754 A `return` some arms go on to is in each, not a block's end](0754-a-return-arms-go-on-to-is-in-each.md)
 - [0755 A `return` a block MIR made leads to is each of its `break`s](0755-a-shared-return-is-each-breaks.md)
 - [0760 `js::throw(value)` is `throw value`, the one way to throw a JS value](0760-js-throw-is-throw-of-a-js-value.md)
@@ -642,6 +642,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0855 A `loop` that ends an `if`'s branch breaks as a loop, its `else` kept](0855-a-loop-that-ends-a-branch-breaks-as-a-loop.md)
 - [0856 JS's iterator protocol is `js::Iterator`, and a loop is of what its test makes](0856-the-iterator-protocol-and-a-loop-of-what-its-test-makes.md)
 - [0857 A function's own nullable parameter is `null` where it's given or set `None`](0857-a-functions-own-nullable-parameter-is-set-null.md)
+- [0858 A comment at a body's end is there, before its `None` or after its last code](0858-a-comment-at-a-bodys-end-is-there.md)
 - [0843 A `Weak` nothing upgrades is the value itself](0843-a-weak-nothing-upgrades-is-the-value-itself.md)
 - [0844 A library that reads no count counts no `Rc`](0844-a-library-that-reads-no-count-counts-no-rc.md) *(extended by 0850: an `Rc` is `Defined`, a counted one given to JS refused; amended by 0852: each type's `Rc`s counted apart, and its contract lists them)*
 - [0845 An `Rc`'s declaration is what it points at](0845-an-rcs-declaration-is-what-it-points-at.md)

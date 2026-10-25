@@ -190,8 +190,16 @@ export const mutations: Mutation[] = [
     name: "comments-block-unspanned",
     breaks: "a block of only comments has no span to its end, so its comments are printed after it",
     file: "src/to_oxc/statements.rs",
-    find: "        let sp = end.map_or(SPAN, |end| Span::new(end, end + 1));\n",
-    replace: "        let sp = end.map_or(SPAN, |_| SPAN);\n",
+    find: "        Statement::new_block_statement(commented_end(stmts), self.stmts(stmts), &self.b)\n",
+    replace: "        Statement::new_block_statement(SPAN, self.stmts(stmts), &self.b)\n",
     tests: ["test/lowering-comments.test.ts", "-t", "a branch of only comments"],
+  },
+  {
+    name: "function-body-comments-outside",
+    breaks: "a function's comments at its end, `// Nothing found.`, are printed after it, outside its `}` (ADR 0858)",
+    file: "src/to_oxc/statements.rs",
+    find: "        FunctionBody::new(commented_end(&stmts), directives, self.stmts(&stmts), b)\n",
+    replace: "        FunctionBody::new(SPAN, directives, self.stmts(&stmts), b)\n",
+    tests: ["test/lowering-comments.test.ts", "-t", "a comment before a None given"],
   },
 ];

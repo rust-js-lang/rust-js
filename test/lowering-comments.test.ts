@@ -158,3 +158,51 @@ test("a comment before an unsafe block is its code's", async () => {
   expect(js).toContain("export function resolved(dispatcher) {\n  // Will result in a null access error if accessed outside render phase.\n  return dispatcher;\n}");
   expect(lib.resolved(3 as never)).toBe(3);
 });
+
+// ADR 0858: a comment before the `None` a function gives at its end, which
+// is no `return;`, and one after a block's last code, are where they're
+// written, at the end of the body: React's countChildren's callback, `n++;
+// // Don't return anything`.
+test("a comment before a None given at a function's end, or after its last code, is at its end", async () => {
+  const { js, lib } = await compiled("comments-at-ends", `use std::cell::Cell;
+
+fn each(items: &[u32], f: &dyn Fn(u32) -> Option<u32>) -> usize {
+    items.iter().filter(|&&i| f(i).is_some()).count()
+}
+
+pub fn count(items: &[u32]) -> u32 {
+    let n = Cell::new(0);
+    each(items, &|_| {
+        n.set(n.get() + 1);
+        // Don't return anything
+        None
+    });
+    n.get()
+}
+
+pub fn found(n: u32) -> Option<u32> {
+    if n > 3 {
+        return Some(n);
+    }
+    // Nothing found.
+    None
+}
+
+pub fn noted(n: u32, out: &mut Vec<u32>) {
+    if n > 1 {
+        out.push(n);
+        // And then nothing more.
+    }
+    out.push(0);
+    // Nothing to do.
+}
+`);
+  expect(js).toContain("    n = (n + 1) >>> 0;\n    // Don't return anything\n  });\n");
+  expect(js).toContain("    return n;\n  }\n  // Nothing found.\n}\n");
+  expect(js).toContain("    out.push(n);\n    // And then nothing more.\n  }\n  out.push(0);\n  // Nothing to do.\n}\n");
+  expect(lib.count([1, 2, 3] as never)).toBe(3);
+  expect([lib.found(5 as never), lib.found(1 as never)]).toEqual([5, undefined]);
+  const out: number[] = [];
+  lib.noted(2 as never, out as never);
+  expect(out).toEqual([2, 0]);
+});

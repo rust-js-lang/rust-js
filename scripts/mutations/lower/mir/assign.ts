@@ -531,4 +531,12 @@ export const mutations: Mutation[] = [
     replace: "                .is_some()\n",
     tests: ["test/lowering-nullable.test.ts", "-t", "own nullable parameter"],
   },
+  {
+    name: "tail-none-comments-dropped",
+    breaks: "a comment before the `None` a function gives at its end, `// Don't return anything`, is gone with its `return;` (ADR 0858)",
+    file: "src/lower/mir/assign.rs",
+    find: "            && let Some(at) = crate::lower::sources::commented(self.krate.sources, span)\n",
+    replace: "            && let Some(at) = crate::lower::sources::commented(self.krate.sources, span).filter(|_| false)\n",
+    tests: ["test/lowering-comments.test.ts", "-t", "a comment before a None given"],
+  },
 ];

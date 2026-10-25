@@ -76,9 +76,11 @@ impl CapturedSources {
     }
 }
 
-/// Where a block of only comments ends, `{ // why }` of `if c { // why }`,
-/// in the arena: at its `}`, which its comments are printed before (ADR
-/// 0753). Not a block with code, or of nothing, or one a macro wrote.
+/// Where a block that ends with comments ends, `{ // why }` of `if c { //
+/// why }`, or `{ let _ = a; // Nothing to do. }` of a function's, in the
+/// arena: at its `}`, which its comments are printed before (ADRs 0753,
+/// 0858). Not a block whose code is last, or of nothing, or one a macro
+/// wrote.
 pub(super) fn comments_end(tcx: TyCtxt<'_>, sources: &CapturedSources, span: Span) -> Option<js::Span> {
     use rustc_lexer::TokenKind;
     if span.from_expansion() {
@@ -86,12 +88,13 @@ pub(super) fn comments_end(tcx: TyCtxt<'_>, sources: &CapturedSources, span: Spa
     }
     let text = tcx.sess.source_map().span_to_snippet(span).ok()?;
     let inner = text.strip_prefix('{')?.strip_suffix('}')?;
+    // Those after its last code.
     let mut comments = 0;
     for token in rustc_lexer::tokenize(inner, rustc_lexer::FrontmatterAllowed::No) {
         match token.kind {
             TokenKind::Whitespace => {}
             TokenKind::LineComment { .. } | TokenKind::BlockComment { terminated: true, .. } => comments += 1,
-            _ => return None,
+            _ => comments = 0,
         }
     }
     let at = sources.span(span);
@@ -99,6 +102,37 @@ pub(super) fn comments_end(tcx: TyCtxt<'_>, sources: &CapturedSources, span: Spa
         lo: at.hi - 1,
         hi: at.hi,
     })
+}
+
+/// Where what a function gives at its end is, `None` of `// Don't return
+/// anything\n None`, where a comment is right before it, nothing but
+/// whitespace and other comments between: the comment's place, once the
+/// `return;` of nothing it is goes (ADR 0858).
+pub(super) fn commented(sources: &CapturedSources, span: Span) -> Option<js::Span> {
+    if span.from_expansion() {
+        return None;
+    }
+    let at = sources.span(span);
+    if at.is_none() {
+        return None;
+    }
+    // Its file, each one's text after the one before's and a newline.
+    let mut start = 0;
+    let file = (sources.output.files.iter()).find(|f| {
+        let end = start + f.text.len() as u32;
+        let found = (start..end).contains(&at.lo);
+        start = end + 1;
+        found
+    })?;
+    let text = &sources.output.text;
+    let mut code = at.lo;
+    for c in file.comments.iter().rev().filter(|c| c.hi <= at.lo) {
+        if !text[c.hi as usize..code as usize].trim().is_empty() {
+            break;
+        }
+        code = c.lo;
+    }
+    (code < at.lo).then_some(at)
 }
 
 /// `text`'s comments, as rustc's lexer reads them, where they are in the

@@ -3,7 +3,9 @@
 Status: Accepted. Extends [0444](0444-a-comment-is-where-its-code-is.md):
 a comment with no statement after it in its block is printed there.
 Supersedes its consequence that an `else` of only comments is no `else`.
-Amended: a branch a function's end empties is no branch either (below).
+Amended: a branch a function's end empties is no branch either (below). Extended by
+[0858](0858-a-comment-at-a-bodys-end-is-there.md): a block's comments after its last
+code, and a function's before the `None` it gives at its end.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N: comments, which
 nothing runs.

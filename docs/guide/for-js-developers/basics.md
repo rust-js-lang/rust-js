@@ -859,6 +859,34 @@ export function logged(depth, value, out) {
 }
 ```
 
+So is a comment after a body's last code, or before the `None` a function
+gives at its end, which is no `return;` of its own: it's at the end of the
+body, as written
+([ADR 0858](../../decisions/0858-a-comment-at-a-bodys-end-is-there.md)):
+
+```rust
+pub fn found(n: u32, out: &mut Vec<u32>) -> Option<u32> {
+    if n > 3 {
+        out.push(n);
+        // Logged; found.
+        return Some(n);
+    }
+    // Nothing found.
+    None
+}
+```
+
+```js
+export function found(n, out) {
+  if (n > 3) {
+    out.push(n);
+    // Logged; found.
+    return n;
+  }
+  // Nothing found.
+}
+```
+
 ## `switch` and `match`
 
 `match` is `switch` that can't fall through, can't forget a case, and has a

@@ -42,4 +42,20 @@ export const mutations: Mutation[] = [
     replace: "    (!at.is_none()).then(",
     tests: ["test/lowering-branches.test.ts", "-t", "an else of nothing"],
   },
+  {
+    name: "comments-end-only-comments",
+    breaks: "a block's comments after its last code, `out.push(0); // Nothing to do.`, are gone, as only a block of only comments kept them (ADR 0858)",
+    file: "src/lower/sources.rs",
+    find: "            _ => comments = 0,\n",
+    replace: "            _ => return None,\n",
+    tests: ["test/lowering-comments.test.ts", "-t", "a comment before a None given"],
+  },
+  {
+    name: "commented-never",
+    breaks: "a `None` given at a function's end is never taken for one a comment is before (ADR 0858)",
+    file: "src/lower/sources.rs",
+    find: "    (code < at.lo).then_some(at)\n",
+    replace: "    (code < at.lo && false).then_some(at)\n",
+    tests: ["test/lowering-comments.test.ts", "-t", "a comment before a None given"],
+  },
 ];
