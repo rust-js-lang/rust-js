@@ -855,7 +855,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     // (`plain_statics`), its quiet borrows given what's in it (ADR 0364).
     // Those made where they're first used, which aren't plain: a variable
     // can't be made as it's read (ADR 0037, amended).
-    let lazy_locals = lazy_locals::lazy_locals(tcx, all_bodies, &thread_local_inits);
+    let lazy_locals = lazy_locals::lazy_locals(tcx, all_bodies, &thread_local_inits, cell_borrows.pointers());
     let quiet_locals = plain_locals::plain_thread_locals(
         tcx,
         all_bodies,

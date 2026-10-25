@@ -180,3 +180,46 @@ against native Rust, a `Cell`'s, a `RefCell`'s and one of a value with a
 destructor, set before and after it's made, and one given what `vec!`
 makes; a `RefCell` of an array, which `set` writes as a `{ value }`, is
 #249's.
+
+## Amendment: a fn pointer's call runs what it may be
+
+React's scheduler (`packages/scheduler/src/forks/Scheduler.rs`,
+react-in-rust) picks its clock once, as upstream's `Scheduler.js` does:
+
+```rust
+thread_local! {
+    static GET_CURRENT_TIME: Box<dyn Fn() -> f64> = if js::is_defined(webapi::Performance::now) {
+        let local_performance = webapi::performance;
+        Box::new(move || local_performance.now())
+    } else {
+        let local_date_now: fn() -> f64 = js::date::now;
+        let initial_time = local_date_now();
+        Box::new(move || local_date_now() - initial_time)
+    };
+}
+```
+
+Upstream, and the port's JS before the amendment above, is `let
+getCurrentTime; if (typeof performance !== 'undefined' && ..) { ..
+getCurrentTime = () => localPerformance.now(); } else { .. }`. Since it,
+the port read `const GET_CURRENT_TIME = $local(() => { .. }); function
+getCurrentTime() { return GET_CURRENT_TIME()(); }`: `local_date_now()` is
+a fn pointer's call, which `lazy_locals` took as one that may be the
+crate's, though the only function the crate makes a `fn() -> f64` of is
+`js::date::now`, a binding's.
+
+**A fn pointer's call runs what it may be** (ADR 0907's
+`FnPointers::may_be`, which `CellBorrows` holds and gives to
+`lazy_locals`): the crate's code where any function or closure it may be
+is the crate's, by the rule a direct call of it has, or where it may be
+anything; a binding's or std's alone, none. So the scheduler's clock is
+made as its module loads, upstream's `let` and `if` again (ADRs 0601,
+0610), and one whose fn pointer may be the crate's function is made where
+it's first used, as before. Case B, as this amendment's first was decided:
+what `Date.now` does, at the module's load.
+
+- `test/corpus/thread_local_made_where_used.rs`'s `POINTED`, a
+  thread-local of a fn pointer of the crate's `noisy`, prints after `main`'s
+  first line, against native Rust; `test/port-scheduler.test.ts`'s
+  snapshot holds the scheduler's `let getCurrentTime;`.
+- Mutations `lazy-local-pointer-unseen`, `lazy-local-pointer-any`.

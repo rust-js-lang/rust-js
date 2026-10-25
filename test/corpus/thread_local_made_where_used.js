@@ -19,6 +19,13 @@ function guardDrop_drop(guard) {
 
 const loud = $local(() => ({ value: noisy(7) }));
 const plain = 3;
+// A fn pointer's call runs what it may be, the crate's `noisy` here
+// (ADR 0907): made where it's first used.
+const POINTED = $local(() => {
+  const made = noisy;
+  return made(9);
+});
+
 // Another module's `const`, read by its name, as written.
 const FROM_LIMITS = $local(() => noisy(LIMIT));
 // What it drops runs the crate's code too: made where it's first used.
@@ -48,6 +55,7 @@ function main() {
   l.value = 8;
   console.log(`${loud().value} ${plain}`);
   console.log(`${GUARDED()}`);
+  console.log(`${POINTED()}`);
   console.log(`${FROM_LIMITS()}`);
 
   const first = $catchUnwind(() => FLAKY());

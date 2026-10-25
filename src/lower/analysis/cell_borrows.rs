@@ -225,6 +225,12 @@ impl<'tcx> CellBorrows<'tcx> {
         }
     }
 
+    /// What each fn pointer the crate calls may be (ADR 0907), its owner's
+    /// answers, for another analysis to ask.
+    pub(in crate::lower) fn pointers(&self) -> &super::fn_pointers::FnPointers<'tcx> {
+        &self.pointers
+    }
+
     /// Whether calling a fn pointer of type `ptr` may ask of `held` (ADR
     /// 0907): what calling any function or closure it may be may.
     pub(in crate::lower) fn pointer_call_asks(

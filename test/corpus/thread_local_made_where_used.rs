@@ -24,6 +24,12 @@ impl Drop for Guard {
 thread_local! {
     static LOUD: Cell<u32> = Cell::new(noisy(7));
     static PLAIN: Cell<u32> = Cell::new(3);
+    // A fn pointer's call runs what it may be, the crate's `noisy` here
+    // (ADR 0907): made where it's first used.
+    static POINTED: u32 = {
+        let made: fn(u32) -> u32 = noisy;
+        made(9)
+    };
     // Another module's `const`, read by its name, as written.
     static FROM_LIMITS: u32 = noisy(limits::LIMIT);
     // What it drops runs the crate's code too: made where it's first used.
@@ -76,6 +82,7 @@ fn main() {
     LOUD.with(|l| l.set(8));
     println!("{} {}", LOUD.with(|l| l.get()), PLAIN.with(|p| p.get()));
     println!("{}", GUARDED.with(|g| *g));
+    println!("{}", POINTED.with(|p| *p));
     println!("{}", FROM_LIMITS.with(|f| *f));
 
     let first = std::panic::catch_unwind(|| FLAKY.with(|f| *f));

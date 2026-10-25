@@ -21,7 +21,6 @@ import {
   NormalPriority,
   UserBlockingPriority,
 } from "../SchedulerPriorities.js";
-import { $local } from "@rust-js/runtime";
 
 export {
   IdlePriority as unstable_IdlePriority,
@@ -31,18 +30,14 @@ export {
   UserBlockingPriority as unstable_UserBlockingPriority,
 } from "../SchedulerPriorities.js";
 
-const GET_CURRENT_TIME = $local(() => {
-  if (typeof performance !== "undefined" && typeof performance.now !== "undefined") {
-    const localPerformance = performance;
-    return () => localPerformance.now();
-  }
+let getCurrentTime;
+if (typeof performance !== "undefined" && typeof performance.now !== "undefined") {
+  const localPerformance = performance;
+  getCurrentTime = () => localPerformance.now();
+} else {
   const localDateNow = Date.now;
   const initialTime = localDateNow();
-  return () => localDateNow() - initialTime;
-});
-
-function getCurrentTime() {
-  return GET_CURRENT_TIME()();
+  getCurrentTime = () => localDateNow() - initialTime;
 }
 
 // Max 31 bit integer. The max integer size in V8 for 32-bit systems.
