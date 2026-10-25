@@ -135,10 +135,11 @@ pub(super) struct BodyFacts<'tcx> {
     pub(super) held_guards: HashSet<Span>,
     /// Where each call is whose value is told present, `present_calls`'s.
     pub(super) present_calls: HashSet<Span>,
-    /// Where each `rev()` is whose `Rev` a std iterator's method steps
-    /// where it's made, and where each such method is, `in_place_revs`'s.
-    pub(super) in_place_revs: HashSet<Span>,
-    pub(super) in_place_rev_steps: HashSet<Span>,
+    /// Where each `rev()` or `enumerate()` is whose adapter a std
+    /// iterator's method steps where it's made, and where each such method
+    /// is, `in_place_adapters`'s.
+    pub(super) in_place_adapters: HashSet<Span>,
+    pub(super) in_place_adapter_steps: HashSet<Span>,
     /// Each value the body's patterns test and the `const` they name it by,
     /// `constant_patterns`'s (ADRs 0590, 0634).
     pub(super) constant_patterns: HashMap<PatternValue<'tcx>, Option<DefId>>,
@@ -154,7 +155,7 @@ impl<'tcx> BodyFacts<'tcx> {
     /// looks its answer up, and a closure's are its own body's.
     pub(super) fn collect(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> Self {
         let (jsx_given, jsx_bases) = jsx_given_props(tcx, thir);
-        let (in_place_revs, in_place_rev_steps) = in_place_revs(tcx, thir);
+        let (in_place_adapters, in_place_adapter_steps) = in_place_adapters(tcx, thir);
         Self {
             kept_casts: whole_casts(tcx, thir),
             named_callbacks: named_callbacks(tcx, thir),
@@ -162,8 +163,8 @@ impl<'tcx> BodyFacts<'tcx> {
             registered_equalities: registered_equalities(tcx, thir),
             held_guards: held_guards(tcx, thir),
             present_calls: present_calls(tcx, thir),
-            in_place_revs,
-            in_place_rev_steps,
+            in_place_adapters,
+            in_place_adapter_steps,
             constant_patterns: constant_patterns(tcx, thir),
             jsx_given,
             jsx_bases,
@@ -727,8 +728,10 @@ fn present_calls<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> HashSet<Span> {
         .collect()
 }
 
-/// Each `rev()` whose `Rev` is given, as what's called or an argument,
-/// where it's stepped as a JS iterator: to a std function or method not
+/// Each `rev()` or `enumerate()`, `HELD_COMPILED`'s, whose adapter is given,
+/// as what's called or an argument, where it's stepped as a JS iterator, or
+/// a variable holds that it's stepped through alone: to another of them
+/// made in place, to a std function or method not
 /// compiled, `v.iter().rev().map(f)`'s `map`, a `for` loop's `into_iter`,
 /// `zip(a, v.iter().rev())`, or to a type parameter of the crate's
 /// function given a JS iterator, not as it is (ADR 0061): its `fn_span`,
@@ -736,11 +739,13 @@ fn present_calls<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> HashSet<Span> {
 /// make of it, `v.toReversed()`; one held, by a `let`, a field, a
 /// parameter of its own type or one given as it is, or given to a compiled
 /// std body, `fuse()`'s, is std's struct, `{ iter }` (ADR 0871).
-fn in_place_revs<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> (HashSet<Span>, HashSet<Span>) {
-    let Some(rev) = super::recognition::compiled_provided_method(tcx, "Iterator", "rev") else {
-        return Default::default();
-    };
-    let (mut found, mut steps) = (HashSet::new(), HashSet::new());
+fn in_place_adapters<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> (HashSet<Span>, HashSet<Span>) {
+    use super::recognition::{StdItem, std_item};
+    let iterator_traits = [std_item(tcx, StdItem::Iterator), std_item(tcx, StdItem::IntoIterator)];
+    // Each call of a `rev()` or an `enumerate()` given, as what's called or
+    // an argument, borrowed for it or not, to another call: its `fn_span`,
+    // and the call's, its callee, and the argument's place.
+    let mut given = Vec::new();
     for e in thir.exprs.indices() {
         let ExprKind::Call {
             fun,
@@ -754,15 +759,6 @@ fn in_place_revs<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> (HashSet<Span>, 
         let ty::FnDef(callee, _) = *thir[fun].ty.kind() else {
             continue;
         };
-        let std = super::recognition::is_std_crate(tcx, callee) && !super::recognition::is_compiled_std(tcx, callee);
-        // A trait's method called on it, but `Iterator`'s or
-        // `IntoIterator`'s, which step it as a JS iterator: `next_back()`,
-        // `len()` or `clone()`, `Rev`'s own compiled impl's, of its struct.
-        use super::recognition::{StdItem, std_item};
-        let on_it_by_its_impl = tcx
-            .trait_of_assoc(callee)
-            .is_some_and(|tr| ![std_item(tcx, StdItem::Iterator), std_item(tcx, StdItem::IntoIterator)].contains(&tr));
-        let inputs = tcx.fn_sig(callee).instantiate_identity().skip_binder().inputs();
         for (index, &arg) in args.iter().enumerate() {
             // Or borrowed for it, `rev().nth(n)`'s `&mut`, which it steps
             // there too.
@@ -773,21 +769,145 @@ fn in_place_revs<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> (HashSet<Span>, 
             let ExprKind::Call { fun, fn_span, .. } = thir[arg].kind else {
                 continue;
             };
-            if !matches!(*thir[fun].ty.kind(), ty::FnDef(id, _) if id == rev) {
-                continue;
-            }
-            let given_js = callee.is_local()
-                && matches!(inputs.get(index).map(|input| input.peel_refs().kind()), Some(ty::Param(param))
-                    if !super::iterators::given_as_it_is(tcx, callee, *param));
-            let its_self = matches!(inputs.get(index).map(|input| input.peel_refs().kind()),
-                Some(ty::Param(param)) if param.name == rustc_span::symbol::kw::SelfUpper);
-            if std && !(its_self && on_it_by_its_impl) || given_js {
-                found.insert(fn_span);
-                steps.insert(at);
+            if matches!(*thir[fun].ty.kind(), ty::FnDef(id, _) if super::recognition::makes_held_compiled(tcx, id)) {
+                given.push((fn_span, at, callee, index));
             }
         }
     }
-    (found, steps)
+    let steps_as_js = |callee: DefId, index: usize, in_place: &HashSet<Span>, at: Span| {
+        // Another of them, itself made in place, `enumerate().rev()`'s: in
+        // place too.
+        if super::recognition::makes_held_compiled(tcx, callee) {
+            return in_place.contains(&at);
+        }
+        let std = super::recognition::is_std_crate(tcx, callee) && !super::recognition::is_compiled_std(tcx, callee);
+        // A trait's method called on it, but `Iterator`'s or
+        // `IntoIterator`'s, which step it as a JS iterator: `next_back()`,
+        // `len()` or `clone()`, its own compiled impl's, of its struct.
+        let on_it_by_its_impl = tcx
+            .trait_of_assoc(callee)
+            .is_some_and(|tr| !iterator_traits.contains(&tr));
+        let inputs = tcx.fn_sig(callee).instantiate_identity().skip_binder().inputs();
+        let input = inputs.get(index).map(|input| input.peel_refs().kind());
+        let its_self = matches!(input, Some(ty::Param(param)) if super::recognition::is_trait_self(*param));
+        let given_js = callee.is_local()
+            && matches!(input, Some(ty::Param(param)) if !super::iterators::given_as_it_is(tcx, callee, *param));
+        std && !(its_self && on_it_by_its_impl) || given_js
+    };
+    let (mut found, mut steps) = (HashSet::new(), HashSet::new());
+    // A variable a `let` binds one to, `let mut it = s.chars().enumerate()`,
+    // read only where `Iterator`'s methods step it as a JS iterator, `next()`,
+    // a `for` loop's `into_iter`, a `by_ref()` whose `&mut` they step, or
+    // `drop`, never given anywhere else: nothing tells what it is, so it's
+    // what the recognizers make of it too, `s.entries()`.
+    let made: HashMap<LocalVarId, Span> = (thir.stmts.iter())
+        .filter_map(|stmt| match stmt.kind {
+            thir::StmtKind::Let {
+                ref pattern,
+                initializer: Some(init),
+                else_block: None,
+                ..
+            } => match (&pattern.kind, &thir[strip(thir, init)].kind) {
+                (
+                    &PatKind::Binding {
+                        var,
+                        mode: BindingMode(ByRef::No, _),
+                        subpattern: None,
+                        ..
+                    },
+                    &ExprKind::Call { fun, fn_span, .. },
+                ) if matches!(*thir[fun].ty.kind(), ty::FnDef(id, _) if super::recognition::makes_held_compiled(tcx, id)) => {
+                    Some((var, fn_span))
+                }
+                _ => None,
+            },
+            _ => None,
+        })
+        .collect();
+
+    let mut reads: HashMap<LocalVarId, usize> = HashMap::new();
+    for e in thir.exprs.iter() {
+        if let ExprKind::VarRef { id } = e.kind
+            && made.contains_key(&id)
+        {
+            *reads.entry(id).or_default() += 1;
+        }
+    }
+    // Each call that steps what it's given as a JS iterator, by `Iterator`'s
+    // methods but `by_ref()`, and `mem::drop`, which closes either: what
+    // it's given.
+    let mut js_steps: Vec<(ExprId, Span)> = Vec::new();
+    let mut lent: Vec<(ExprId, ExprId)> = Vec::new();
+    for e in thir.exprs.indices() {
+        let ExprKind::Call {
+            fun,
+            ref args,
+            fn_span: at,
+            ..
+        } = thir[e].kind
+        else {
+            continue;
+        };
+        let ty::FnDef(callee, _) = *thir[fun].ty.kind() else {
+            continue;
+        };
+        let by_iterator = tcx
+            .trait_of_assoc(callee)
+            .is_some_and(|tr| iterator_traits.contains(&tr))
+            && !super::recognition::is_compiled_std(tcx, callee);
+        let by_ref = by_iterator && super::recognition::is_by_ref(tcx, callee);
+        for &arg in args.iter() {
+            let arg = match thir[strip(thir, arg)].kind {
+                ExprKind::Borrow { arg, .. } => strip(thir, arg),
+                _ => strip(thir, arg),
+            };
+            match () {
+                // `it.by_ref()`, lent where it's stepped as a JS iterator
+                // too, `for c in it.by_ref()`.
+                _ if by_ref => lent.push((e, arg)),
+                _ if by_iterator || super::recognition::is_mem_drop(tcx, callee) => js_steps.push((arg, at)),
+                _ => {}
+            }
+        }
+    }
+    let stepped_at: HashMap<ExprId, Span> = js_steps.iter().copied().collect();
+    let mut stepped: HashMap<LocalVarId, Vec<Span>> = HashMap::new();
+    let mut note = |e: ExprId, at: Span| {
+        if let ExprKind::VarRef { id } = thir[e].kind
+            && made.contains_key(&id)
+        {
+            stepped.entry(id).or_default().push(at);
+        }
+    };
+    for &(arg, at) in &js_steps {
+        note(arg, at);
+    }
+    for &(by_ref, arg) in &lent {
+        if let Some(&at) = stepped_at.get(&by_ref) {
+            note(arg, at);
+        }
+    }
+    for (var, at) in made {
+        let uses = stepped.remove(&var).unwrap_or_default();
+        if !uses.is_empty() && reads.get(&var) == Some(&uses.len()) {
+            found.insert(at);
+            steps.extend(uses);
+        }
+    }
+    // And each given to another made in place, through a chain of them,
+    // `rev().rev()`'s first.
+    loop {
+        let before = found.len();
+        for &(made, at, callee, index) in &given {
+            if steps_as_js(callee, index, &found, at) {
+                found.insert(made);
+                steps.insert(at);
+            }
+        }
+        if found.len() == before {
+            return (found, steps);
+        }
+    }
 }
 
 /// Each guard `if let Some(v) = value` of an arm of `match

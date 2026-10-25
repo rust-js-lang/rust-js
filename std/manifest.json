@@ -8,8 +8,263 @@
   "library": {
     "version": 5,
     "name": "rust_js_std",
-    "crate_hash": "b98183f3d617c7384120f1fb9cdefc8c",
+    "crate_hash": "0c85ac2ebd9408ec7d2fa0951b5b9fbc",
     "items": [
+      {
+        "key": "608f92abc48d28da832aed8d16346cb9",
+        "rust_path": "rust_js_std::<core::iter::Enumerate<I> as core::clone::Clone>",
+        "module": [
+          "iter"
+        ],
+        "export": "enumerateClone",
+        "member": null
+      },
+      {
+        "key": "608f92abc48d28da7503cb0d2e82e3c",
+        "rust_path": "rust_js_std::<core::iter::Enumerate<I> as core::clone::Clone>::clone",
+        "module": [
+          "iter"
+        ],
+        "export": "enumerateClone_clone",
+        "member": null
+      },
+      {
+        "key": "608f92abc48d28da30ff0abc0758142a",
+        "rust_path": "rust_js_std::<core::iter::Enumerate<I> as core::fmt::Debug>",
+        "module": [
+          "iter"
+        ],
+        "export": "enumerateDebug",
+        "member": null
+      },
+      {
+        "key": "608f92abc48d28dacaafd291fa14489d",
+        "rust_path": "rust_js_std::<core::iter::Enumerate<I> as core::fmt::Debug>::fmt",
+        "module": [
+          "iter"
+        ],
+        "export": "enumerateDebug_fmt",
+        "member": null
+      },
+      {
+        "key": "608f92abc48d28da6894121514b04e55",
+        "rust_path": "rust_js_std::<core::iter::Enumerate<I> as core::iter::DoubleEndedIterator>::next_back",
+        "module": [
+          "iter"
+        ],
+        "export": "enumerateDoubleEndedIterator_nextBack",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "drop": true,
+            "stepped": [
+              "608f92abc48d28da50b3843aa530f08e",
+              "608f92abc48d28da5bb321f20939e045"
+            ]
+          },
+          {
+            "index": 1,
+            "drop": true
+          }
+        ]
+      },
+      {
+        "key": "608f92abc48d28da570817d55cdf9967",
+        "rust_path": "rust_js_std::<core::iter::Enumerate<I> as core::iter::DoubleEndedIterator>::nth_back",
+        "module": [
+          "iter"
+        ],
+        "export": "enumerateDoubleEndedIterator_nthBack",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "drop": true,
+            "stepped": [
+              "608f92abc48d28da50b3843aa530f08e",
+              "608f92abc48d28da5bb321f20939e045",
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 1,
+            "drop": true
+          }
+        ]
+      },
+      {
+        "key": "608f92abc48d28dace2f4e1088263c58",
+        "rust_path": "rust_js_std::<core::iter::Enumerate<I> as core::iter::DoubleEndedIterator>::rfold",
+        "module": [
+          "iter"
+        ],
+        "export": "enumerateDoubleEndedIterator_rfold",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "drop": true,
+            "stepped": [
+              "608f92abc48d28da50b3843aa530f08e",
+              "608f92abc48d28da5bb321f20939e045",
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 1,
+            "drop": true
+          },
+          {
+            "index": 2,
+            "drop": true
+          },
+          {
+            "index": 3,
+            "drop": true
+          }
+        ]
+      },
+      {
+        "key": "608f92abc48d28da3a379d10e24d06ca",
+        "rust_path": "rust_js_std::<core::iter::Enumerate<I> as core::iter::ExactSizeIterator>::len",
+        "module": [
+          "iter"
+        ],
+        "export": "enumerateExactSizeIterator_len",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "drop": true,
+            "stepped": [
+              "608f92abc48d28da50b3843aa530f08e"
+            ]
+          },
+          {
+            "index": 1,
+            "drop": true
+          }
+        ]
+      },
+      {
+        "key": "608f92abc48d28da77f66bb148cccfa1",
+        "rust_path": "rust_js_std::<core::iter::Enumerate<I> as core::iter::Iterator>::count",
+        "module": [
+          "iter"
+        ],
+        "export": "enumerateIterator_count",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "drop": true,
+            "stepped": [
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 1,
+            "drop": true
+          }
+        ]
+      },
+      {
+        "key": "608f92abc48d28da3ed39f264406878b",
+        "rust_path": "rust_js_std::<core::iter::Enumerate<I> as core::iter::Iterator>::fold",
+        "module": [
+          "iter"
+        ],
+        "export": "enumerateIterator_fold",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "drop": true,
+            "stepped": [
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 1,
+            "drop": true
+          },
+          {
+            "index": 2,
+            "drop": true
+          },
+          {
+            "index": 3,
+            "drop": true
+          }
+        ]
+      },
+      {
+        "key": "608f92abc48d28da71ace7d040ce1c02",
+        "rust_path": "rust_js_std::<core::iter::Enumerate<I> as core::iter::Iterator>::next",
+        "module": [
+          "iter"
+        ],
+        "export": "enumerateIterator_next",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "drop": true,
+            "stepped": [
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 1,
+            "drop": true
+          }
+        ]
+      },
+      {
+        "key": "608f92abc48d28dae9fdb7cb71967ce0",
+        "rust_path": "rust_js_std::<core::iter::Enumerate<I> as core::iter::Iterator>::nth",
+        "module": [
+          "iter"
+        ],
+        "export": "enumerateIterator_nth",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "drop": true,
+            "stepped": [
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 1,
+            "drop": true
+          }
+        ]
+      },
+      {
+        "key": "608f92abc48d28da3a224a7dbc4dc876",
+        "rust_path": "rust_js_std::<core::iter::Enumerate<I> as core::iter::Iterator>::size_hint",
+        "module": [
+          "iter"
+        ],
+        "export": "enumerateIterator_sizeHint",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "drop": true,
+            "stepped": [
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 1,
+            "drop": true
+          }
+        ]
+      },
       {
         "key": "608f92abc48d28dae88ef68b00d41a68",
         "rust_path": "rust_js_std::<core::iter::Fuse<I> as core::clone::Clone>",
@@ -879,6 +1134,28 @@
         "member": null
       },
       {
+        "key": "608f92abc48d28da628932985af920dd",
+        "rust_path": "rust_js_std::core::iter::Iterator::enumerate",
+        "module": [
+          "iter"
+        ],
+        "export": "iterator_enumerate",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "drop": true,
+            "stepped": [
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 1,
+            "drop": true
+          }
+        ]
+      },
+      {
         "key": "608f92abc48d28daef865f7868e6ce0a",
         "rust_path": "rust_js_std::core::iter::Iterator::fuse",
         "module": [
@@ -975,15 +1252,20 @@
     "impls": [
       "608f92abc48d28da10ae78768806acd4",
       "608f92abc48d28da2b3a75d574f34954",
+      "608f92abc48d28da30ff0abc0758142a",
       "608f92abc48d28da367c3b6a181fb242",
       "608f92abc48d28da5d47d88cb3baf8ee",
       "608f92abc48d28da625b60302a1e6cdf",
       "608f92abc48d28da6ccc1f127504f7e6",
+      "608f92abc48d28da705f3215720050d3",
       "608f92abc48d28da7243376338849ce",
       "608f92abc48d28da7e04e5d5f64639a",
+      "608f92abc48d28da832aed8d16346cb9",
+      "608f92abc48d28da9c027b36f4e70558",
       "608f92abc48d28daa79dd9d70cde8ae6",
       "608f92abc48d28dac4289554910bba96",
       "608f92abc48d28dacd4e5382e53ca842",
+      "608f92abc48d28dad6ec7372567ce32e",
       "608f92abc48d28dad7c6b45e359c3dfc",
       "608f92abc48d28dadba2055e241f4a9d",
       "608f92abc48d28dae88ef68b00d41a68",
@@ -1054,16 +1336,30 @@
         "revExactSizeIterator_len",
         "revClone_clone",
         "revDebug_fmt",
+        "enumerateIterator_next",
+        "enumerateIterator_sizeHint",
+        "enumerateIterator_nth",
+        "enumerateIterator_count",
+        "enumerateIterator_fold",
+        "enumerateDoubleEndedIterator_nextBack",
+        "enumerateDoubleEndedIterator_nthBack",
+        "enumerateDoubleEndedIterator_rfold",
+        "enumerateExactSizeIterator_len",
+        "enumerateClone_clone",
+        "enumerateDebug_fmt",
         "iterator_peekable",
         "iterator_fuse",
         "iterator_rev",
+        "iterator_enumerate",
         "andThenOrClear",
         "peekableClone",
         "peekableDebug",
         "fuseClone",
         "fuseDebug",
         "revClone",
-        "revDebug"
+        "revDebug",
+        "enumerateClone",
+        "enumerateDebug"
       ],
       "links": [],
       "type_links": []
@@ -1072,7 +1368,7 @@
   "artifacts": [
     {
       "file": "iter.js",
-      "hash": "fbb4414fee845083"
+      "hash": "3d3f1db6fa9a3c04"
     },
     {
       "file": "iter.js.map",

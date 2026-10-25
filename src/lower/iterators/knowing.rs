@@ -748,7 +748,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `None` of another, or where this use has neither.
     pub(in crate::lower) fn knowing_held(&mut self, it: Expr, ty: Ty<'tcx>, span: Span) -> R<Option<Expr>> {
         let ty = ty.peel_refs();
-        if self.compiled_struct_at(ty, span) {
+        if self.compiled_struct_at(ty, span) && !made_in_place(&it) {
             let traits = [
                 (self.recognition().double_ended_iterator(), "next_back"),
                 (self.recognition().exact_size_iterator(), "len"),

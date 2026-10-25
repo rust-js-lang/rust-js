@@ -225,4 +225,12 @@ export const mutations: Mutation[] = [
     replace: "            for method in [next] {\n",
     tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std"],
   },
+  {
+    name: "compiled-back-hooks-unstepped",
+    breaks: "what a held compiled iterator's back steps, which `rev()` of it asks, isn't seen, so `I`'s dictionaries aren't given",
+    file: "src/lower/analysis/iterator_steps.rs",
+    find: "                                && crate::lower::recognition::is_double_ended(tcx, by)\n",
+    replace: "                                && false\n",
+    tests: ["test/corpus.test.ts", "-t", "^(held_enumerate).rs$"],
+  },
 ];

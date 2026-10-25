@@ -310,4 +310,13 @@ export const mutations: Mutation[] = [
     replace: "(params_may_drop, foreign.any())",
     tests: ["test/cross-crate-items.test.ts", "-t", "guards make no dyn Any"],
   },
+  {
+    name: "enumerate-explicit-too",
+    breaks: "a held `Enumerate` is also an explicit adapter, `$enumerate`, beside std's struct",
+    file: "src/lower/analysis.rs",
+    find: "    explicit_adapters.retain(|&id| !super::recognition::is_held_compiled_def(tcx, id));\n",
+    replace: "",
+    snapshots: true,
+    tests: ["test/corpus.test.ts", "-t", "^(held_enumerate|std_enumerate).rs$"],
+  },
 ];

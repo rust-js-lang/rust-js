@@ -218,17 +218,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> R<()> {
         let inputs = self.tcx.fn_sig(callee).instantiate_identity().skip_binder().inputs();
         for ((value, &input), &given) in values.iter_mut().zip(inputs).zip(given) {
-            if std::env::var("RJ_DEBUG").is_ok() && crate::lower::recognition::is_compiled_std(self.tcx, callee) {
-                eprintln!(
-                    "given {callee:?} input={input:?} given={given:?} as_it_is={:?} back={} value={}",
-                    match input.kind() {
-                        ty::Param(p) => Some(crate::lower::iterators::given_as_it_is(self.tcx, callee, *p)),
-                        _ => None,
-                    },
-                    self.steps_back_by_dictionary(callee, input),
-                    matches!(value.kind, js::ExprKind::Var(_))
-                );
-            }
             let (input, given) = match *input.kind() {
                 ty::Ref(_, inner, _) => (inner, given.peel_refs()),
                 _ => (input, given),

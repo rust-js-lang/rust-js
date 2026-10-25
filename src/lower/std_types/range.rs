@@ -144,7 +144,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // std's `Rev`, what it holds, `iter` (ADR 0871).
         if reversed.is_some() {
             let first = values.first_mut()?;
-            let bounds = match self.frame.facts.in_place_rev_steps.contains(&span) {
+            let bounds = match self.frame.facts.in_place_adapter_steps.contains(&span) {
                 true => "of",
                 false => "iter",
             };

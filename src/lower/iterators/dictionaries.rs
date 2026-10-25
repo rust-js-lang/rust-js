@@ -55,7 +55,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         ty: ty::Ty<'tcx>,
         span: Span,
     ) -> R<Expr> {
-        let ty = self.reveal(ty);
+        // A `&mut` to one is it, whose impls pass on to its own.
+        let ty = self.reveal(ty.peel_refs());
         let name = crate::lower::recognition::extension_entry(self.tcx, trait_id);
         let double_ended = crate::lower::recognition::is_double_ended(self.tcx, trait_id);
         let returned = |value: Expr| {

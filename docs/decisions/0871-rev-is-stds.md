@@ -130,3 +130,49 @@ hasn't, and threw. **A `Rev` a recognizer makes to be held is std's struct,
 of a `Rev`, `$rev` of a clone of its `source`, is gone: a `Rev`'s `Clone` is
 its compiled impl's, which `clone_value` asks first. Tested by
 `shipped-crates.test.ts`, memchr's searches against native memchr's.
+
+## Amendment: `Enumerate` is std's where it's held too, and a variable that only steps one is in place
+
+P1's second adapter. **`Enumerate` is std's struct where it's held,
+`{ iter, count }`, compiled as `Rev` is**: `Iterator::enumerate`, `next`,
+`size_hint`, `nth`, `count`, `fold`, `next_back`, `nth_back`, `rfold`,
+`len`, its clone and its `Debug`; `try_fold` and `try_rfold` wait as
+`Rev`'s do. It's no explicit adapter any more (ADR 0542): a kind std's
+struct is where it's held is its own kind of held, so `explicit_adapters`
+leaves out `HELD_COMPILED`'s, the one catalog of them, `Rev`'s and
+`Enumerate`'s, which `makes_held_compiled` and `is_held_compiled` answer
+of.
+
+- **In place is a fact of the whole chain**: an adapter given to another
+  of them that's made in place is in place too, `enumerate().rev()`'s
+  first, found by `in_place_adapters` to its fixed point.
+- **A variable that only steps one is in place**: a `let` of a `rev()` or
+  an `enumerate()` read only where `Iterator`'s methods step it as a JS
+  iterator, `next()`, a `for` loop, a `by_ref()` whose `&mut` they step,
+  or `mem::drop`, which closes either, shows nothing of what it is, so
+  it's the recognizers': `let mut cs = s.chars().enumerate()` is
+  `Array.from(s).entries()` again, and a reversed range held so, its
+  `$iterator(range, $rangeNextBack)`.
+- **What the recognizers made, a step past the call that made it can
+  tell**: `iterators::made_in_place`, `$rev(..)`, `$enumerate(..)`, `xs.map((x,
+  i) => [i, x])` or an array reversed, is never given std's compiled back
+  by `knowing_held`, which `rev()` of an in-place `enumerate()`'s `map`
+  asks.
+- **A held compiled iterator stepped from its back by a `rev()` asks what
+  its compiled `next_back`, `nth_back` and `len` step**, by their
+  manifests, of the type parameters it holds, `I`'s length of a held
+  `Enumerate<I>`; not what its impl's bounds ask, which would give each
+  function dictionaries it never reads.
+- **A struct lent by `by_ref()` is stepped where it is**, as std's `&mut
+  I` steps its `I`: `$lent` of std's compiled struct reads and writes its
+  fields, `iter` and `count`, through to it, its own steps first, so a
+  `$Steps` helper's name, `count`, never hides one; what stops early
+  closes the lent, not it. And the `ExactSizeIterator` dictionary of a
+  `&mut` to the crate's iterator is the iterator's.
+
+Tested by `std_enumerate.rs` against native Rust; the corpus's 36 programs
+that enumerate and 58 that reverse, as apps and libraries. The readability
+baseline is blessed with it: a held `Enumerate` of the crate's iterator is
+std's struct, whose `next_back` and `rfold` are its compiled calls,
+`while (true)` 10 to 10.1, `return;` 9.4 to 9.6 and renames 720.9 to 721.2
+in ten thousand lines, of `std_enumerate.rs` itself mostly.

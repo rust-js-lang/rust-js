@@ -983,15 +983,15 @@
 + Fuse::size_hint	safe
 - Fuse::try_fold	spec
 - Fuse::try_rfold	spec
-# Enumerate 5 of 11; bodies: 11 safe, 0 spec, 0 opaque, 0 memory, 0 none
+# Enumerate 9 of 11; bodies: 11 safe, 0 spec, 0 opaque, 0 memory, 0 none
 + Enumerate::count	safe
 + Enumerate::fold	safe
-- Enumerate::len	safe
++ Enumerate::len	safe
 + Enumerate::next	safe
-- Enumerate::next_back	safe
++ Enumerate::next_back	safe
 + Enumerate::nth	safe
-- Enumerate::nth_back	safe
-- Enumerate::rfold	safe
++ Enumerate::nth_back	safe
++ Enumerate::rfold	safe
 + Enumerate::size_hint	safe
 - Enumerate::try_fold	safe
 - Enumerate::try_rfold	safe

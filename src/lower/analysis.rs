@@ -743,6 +743,9 @@ pub(super) fn analyze_crate<'a, 'tcx>(
             .iter()
             .filter_map(|&ty| super::recognition::counted_adapter(tcx, ty).map(|(_, id, _)| id)),
     );
+    // Not one std's struct is where it's held, `Enumerate`, compiled (ADR
+    // 0871): its own kind of held.
+    explicit_adapters.retain(|&id| !super::recognition::is_held_compiled_def(tcx, id));
     let mut closure_facts = ClosureFacts::new(tcx, all_bodies, &cloned, library);
     let mut counted = counted_with(&closure_facts);
     // A `dyn Fn` a library hands the crate may hold one already (ADR 0626).

@@ -239,12 +239,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// Whether a value of `ty` the call at `span` takes is std's compiled
-    /// struct, a compiled std iterator's (ADR 0561): not a `Rev` it steps
-    /// where it's made, which is what the recognizers make of it, a JS
-    /// iterator that closes as it ends (ADR 0871).
+    /// struct, a compiled std iterator's (ADR 0561): not a `Rev` or an
+    /// `Enumerate` it steps where it's made, which is what the recognizers
+    /// make of it, a JS iterator that closes as it ends (ADR 0871).
     pub(in crate::lower) fn compiled_struct_at(&self, ty: Ty<'tcx>, span: Span) -> bool {
         crate::lower::recognition::is_compiled_std_iterator(self.tcx, ty)
-            && !(self.recognition().reversed(ty).is_some() && self.frame.facts.in_place_rev_steps.contains(&span))
+            && !(crate::lower::recognition::is_held_compiled(self.tcx, ty)
+                && self.frame.facts.in_place_adapter_steps.contains(&span))
     }
 
     /// Whether an iterator taken by value, `items.fold(..)`'s, of a

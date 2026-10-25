@@ -116,13 +116,7 @@ function main() {
   );
 
   const louds = [[1], [2], [3]];
-  const held = iterator_rev(
-    $iter(louds),
-    { next: $next },
-    { next_back: $nextBack },
-    $dropEach(loudDrop_drop),
-    loudDrop_drop,
-  );
+  const held = $rev($closing($iter(louds), $dropEach(loudDrop_drop)));
   try {
     const loud = $next(held);
     const value = (l) => {

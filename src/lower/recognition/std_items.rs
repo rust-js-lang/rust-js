@@ -184,11 +184,77 @@ pub(super) const COMPILED_STD: &[(&str, Option<&str>, &str)] = &[
     ("Rev", Some("ExactSizeIterator"), "len"),
     ("Rev", Some("Clone"), "clone"),
     ("Rev", Some("Debug"), "fmt"),
+    ("Enumerate", Some("Iterator"), "next"),
+    ("Enumerate", Some("Iterator"), "size_hint"),
+    ("Enumerate", Some("Iterator"), "nth"),
+    ("Enumerate", Some("Iterator"), "count"),
+    ("Enumerate", Some("Iterator"), "fold"),
+    ("Enumerate", Some("DoubleEndedIterator"), "next_back"),
+    ("Enumerate", Some("DoubleEndedIterator"), "nth_back"),
+    ("Enumerate", Some("DoubleEndedIterator"), "rfold"),
+    ("Enumerate", Some("ExactSizeIterator"), "len"),
+    ("Enumerate", Some("Clone"), "clone"),
+    ("Enumerate", Some("Debug"), "fmt"),
 ];
 
 /// And the iterator traits' provided methods compiled, each by its trait and
 /// its name: a function over `Self`, given its dictionary (ADR 0185).
-const COMPILED_STD_PROVIDED: &[(&str, &str)] = &[("Iterator", "peekable"), ("Iterator", "fuse"), ("Iterator", "rev")];
+const COMPILED_STD_PROVIDED: &[(&str, &str)] = &[
+    ("Iterator", "peekable"),
+    ("Iterator", "fuse"),
+    ("Iterator", "rev"),
+    ("Iterator", "enumerate"),
+];
+
+/// Of those, the adapters std's struct is where they're held, by their
+/// type and the `Iterator` method that makes one: one a std iterator's
+/// method steps where it's made is what the recognizers make of it,
+/// `v.toReversed()`, `v.map((x, i) => [i, x])` (ADR 0871).
+const HELD_COMPILED: &[(&str, &str)] = &[("Rev", "rev"), ("Enumerate", "enumerate")];
+
+/// Whether `id` is the `Iterator` method that makes one of `HELD_COMPILED`'s
+/// adapters, `rev`: the one answer, of what's made in place.
+pub(crate) fn makes_held_compiled(tcx: TyCtxt<'_>, id: DefId) -> bool {
+    HELD_COMPILED
+        .iter()
+        .any(|&(_, method)| compiled_provided_method(tcx, "Iterator", method) == Some(id))
+}
+
+/// Whether `id` is `mem::drop`, which closes an iterator it's given, of
+/// either representation (ADR 0871).
+pub(crate) fn is_mem_drop(tcx: TyCtxt<'_>, id: DefId) -> bool {
+    tcx.is_diagnostic_item(rustc_span::sym::mem_drop, id)
+}
+
+/// Whether `id` is `Iterator::by_ref`, whose `&mut` lends what it's of.
+pub(crate) fn is_by_ref(tcx: TyCtxt<'_>, id: DefId) -> bool {
+    tcx.trait_of_assoc(id)
+        .is_some_and(|tr| is_std_def(tcx, tr, StdItem::Iterator))
+        && tcx.item_name(id).as_str() == "by_ref"
+}
+
+/// Whether `param` is a trait's `Self`.
+pub(crate) fn is_trait_self(param: ty::ParamTy) -> bool {
+    param.name == rustc_span::symbol::kw::SelfUpper
+}
+
+/// std's `ExactSizeIterator`.
+pub(crate) fn exact_size_iterator_trait(tcx: TyCtxt<'_>) -> Option<DefId> {
+    tcx.get_diagnostic_item(rustc_span::Symbol::intern("ExactSizeIterator"))
+}
+
+/// Whether `ty` is one of `HELD_COMPILED`'s adapters, a `Rev<I>`.
+pub(crate) fn is_held_compiled(tcx: TyCtxt<'_>, ty: ty::Ty<'_>) -> bool {
+    matches!(ty.peel_refs().kind(), ty::Adt(adt, _) if is_held_compiled_def(tcx, adt.did()))
+}
+
+/// Whether `id` is one of `HELD_COMPILED`'s adapters' definitions.
+pub(crate) fn is_held_compiled_def(tcx: TyCtxt<'_>, id: DefId) -> bool {
+    is_compiled_std_type(tcx, id)
+        && HELD_COMPILED
+            .iter()
+            .any(|&(name, _)| std_path(tcx, id) == format!("std::iter::{name}"))
+}
 
 thread_local! {
     /// `compiled_std`'s answer, found once for the session's rustc.

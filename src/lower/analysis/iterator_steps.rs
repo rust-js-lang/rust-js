@@ -227,6 +227,31 @@ pub(in crate::lower) fn stepped_params<'tcx>(
                             {
                                 steps_through(&mut stepped, instance.def_id(), instance.args);
                             }
+                            // And, where it's asked of it, `rev()`'s, what its
+                            // compiled methods a use site gives `$knowing`
+                            // step, its `next_back` and `nth_back`, and its
+                            // `len`, by their manifests: a held
+                            // `Enumerate<I>`'s back asks `I`'s length too (ADR
+                            // 0871).
+                            if tcx.trait_of_assoc(callee) != Some(by)
+                                && crate::lower::recognition::is_double_ended(tcx, by)
+                            {
+                                let exact = crate::lower::recognition::exact_size_iterator_trait(tcx);
+                                let given = [(Some(by), "next_back"), (Some(by), "nth_back"), (exact, "len")];
+                                for (tr, name) in given {
+                                    let Some(tr) = tr else { continue };
+                                    let method = trait_method(tcx, tr, name);
+                                    if let Ok(Some(instance)) = ty::Instance::try_resolve(
+                                        tcx,
+                                        typing_env,
+                                        method,
+                                        tcx.mk_args(&[self_ty.into()]),
+                                    ) && foreign.item(instance.def_id()).is_some()
+                                    {
+                                        steps_through(&mut stepped, instance.def_id(), instance.args);
+                                    }
+                                }
+                            }
                             continue;
                         }
                         // What its impl of it asks of what it holds, as rustc

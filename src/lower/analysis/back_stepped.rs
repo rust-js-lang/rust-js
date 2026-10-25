@@ -29,7 +29,7 @@ pub(super) fn back_stepped<'tcx>(
         // A `rev()` held, std's compiled `Rev`, which steps what it's given
         // by its dictionary, not one a std iterator's method steps where
         // it's made, which the recognizers reverse (ADR 0871).
-        let in_place = &body.facts.in_place_revs;
+        let in_place = &body.facts.in_place_adapters;
         let called: HashMap<ExprId, rustc_span::Span> = (body.thir.exprs.iter())
             .filter_map(|e| match e.kind {
                 ExprKind::Call { fun, fn_span, .. } => Some((fun, fn_span)),

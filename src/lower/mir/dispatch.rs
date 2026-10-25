@@ -583,26 +583,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Whether `def_id` is std's, as it's called with `generic_args`: not
     /// the crate's, a binding, a call of a function value, nor a trait's
     /// that resolves to the crate's impl.
-    /// Whether a call of `def_id` at `span` is a `rev()` whose `Rev` a std
-    /// iterator's method steps where it's made, `body_queries::in_place_revs`
-    /// says: what the recognizers make of it, not std's compiled `rev()`
-    /// (ADR 0871).
-    fn rev_in_place(&self, def_id: rustc_span::def_id::DefId, span: Span) -> bool {
-        crate::lower::recognition::compiled_provided_method(self.tcx, "Iterator", "rev") == Some(def_id)
-            && self.frame.facts.in_place_revs.contains(&span)
+    /// Whether a call of `def_id` at `span` is a `rev()` or an
+    /// `enumerate()` whose adapter a std iterator's method steps where it's
+    /// made, `body_queries::in_place_adapters` says: what the recognizers
+    /// make of it, not std's compiled one (ADR 0871).
+    fn adapter_in_place(&self, def_id: rustc_span::def_id::DefId, span: Span) -> bool {
+        crate::lower::recognition::makes_held_compiled(self.tcx, def_id)
+            && self.frame.facts.in_place_adapters.contains(&span)
     }
 
     /// Whether a trait method's call of `def_id` at `span` is a std
     /// iterator's, a JS iterator's method: not one the crate's impl has,
     /// in a copied default as its impl calls it (ADR 0492), nor a compiled
-    /// std body's, but a `rev()` stepped where it's made (ADR 0871).
+    /// std body's, but an adapter stepped where it's made (ADR 0871).
     fn std_iterator_call(
         &self,
         def_id: rustc_span::def_id::DefId,
         generic_args: ty::GenericArgsRef<'tcx>,
         span: Span,
     ) -> R<bool> {
-        Ok(!self.resolves_to_crate(def_id, generic_args)? || self.rev_in_place(def_id, span))
+        Ok(!self.resolves_to_crate(def_id, generic_args)? || self.adapter_in_place(def_id, span))
     }
 
     fn is_std_call(&self, def_id: rustc_span::def_id::DefId, generic_args: ty::GenericArgsRef<'tcx>) -> R<bool> {

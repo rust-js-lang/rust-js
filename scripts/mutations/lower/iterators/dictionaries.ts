@@ -164,4 +164,12 @@ export const mutations: Mutation[] = [
     snapshots: true,
     tests: ["test/corpus.test.ts", "-t", "^held_fuse_back.rs$"],
   },
+  {
+    name: "mut-iterator-extension-unpeeled",
+    breaks: "the `ExactSizeIterator` dictionary of a `&mut` to the crate's iterator is std's default hint's",
+    file: "src/lower/iterators/dictionaries.rs",
+    find: "        let ty = self.reveal(ty.peel_refs());\n",
+    replace: "        let ty = self.reveal(ty);\n",
+    tests: ["test/corpus.test.ts", "-t", "^(own_iterator_dropped_through_adapters|held_enumerate|std_enumerate).rs$"],
+  },
 ];

@@ -370,4 +370,12 @@ export const mutations: Mutation[] = [
     replace: "            if false {\n                props.push(crate::js::Prop::Field(\n",
     tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std"],
   },
+  {
+    name: "in-place-adapter-made-knowing",
+    breaks: "an `enumerate()` made in place is given std's compiled back, which it hasn't, where a `rev()` past it asks",
+    file: "src/lower/iterators/knowing.rs",
+    find: "        if self.compiled_struct_at(ty, span) && !made_in_place(&it) {\n",
+    replace: "        if self.compiled_struct_at(ty, span) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^(enumerate_rev_drops).rs$"],
+  },
 ];
