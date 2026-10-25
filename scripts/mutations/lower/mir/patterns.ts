@@ -186,4 +186,13 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/lowering-parts.test.ts", "-t", "a let of a part"],
   },
+  {
+    name: "let-taken-apart-unseen",
+    breaks: "a `let` an `if let` takes apart, `let prev_types = prev.types.borrow().clone()`, stays a `const` before the test that alone reads it",
+    file: "src/lower/mir/patterns.rs",
+    find: "            .filter(|(var, _)| scrutinees.contains(var))\n",
+    replace: "            .filter(|_| false)\n",
+    tests: ["test/corpus.test.ts", "-t", "^refcell_let_taken_apart.rs$"],
+    snapshots: true,
+  },
 ];

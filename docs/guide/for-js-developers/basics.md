@@ -1439,6 +1439,12 @@ export function isAdult(p) {
   once, as a person writes it: `if (debug) { const value = info.value; if
   (value != null) { .. } }`
   ([ADR 0842](../../decisions/0842-a-let-chain-after-a-test-of-its-own-reads-its-place-once.md)).
+- A `let` an `if let` then takes apart, as one that ends a `RefCell`'s
+  borrow first, `let types = prev.types.borrow().clone(); if dev && let
+  Some(types) = types && ..`, is the place read in the test, where only
+  the test reads it and runs no code first: `if (dev && prev.types !=
+  null && prev.types !== other)`
+  ([ADR 0866](../../decisions/0866-a-let-only-its-if-let-reads-is-read-there.md)).
 - rustc won't let you use an `Option<u32>` as a `u32`: you can't forget the
   missing case.
 - An `Option<bool>` that's `Some(true)`, `flag.is_some_and(|&on| on)`,

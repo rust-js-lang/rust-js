@@ -49,6 +49,11 @@ pub(super) struct LetNames {
     /// Of those, a variable given another type, `let lazy: &LazyComponent
     /// = unsafe { js::cast(children) };`.
     pub(super) casts: HashSet<String>,
+    /// Of those, one an `if let` takes apart, the variable alone its
+    /// scrutinee, `let types = t.types.borrow().clone(); if let Some(types)
+    /// = types`: a `let` that ends a borrow, which reads as its value
+    /// written there where only that test reads it (ADR 0866).
+    pub(super) taken_apart: HashSet<String>,
 }
 
 /// What MIR's lowering, and THIR, say of a body for tidying it.

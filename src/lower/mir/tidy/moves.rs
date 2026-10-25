@@ -398,6 +398,58 @@ fn leads(e: &Expr, name: &str, guard: Option<&Expr>, passes: &dyn Fn(&Expr) -> b
     }
 }
 
+/// `const types = prev.types; if (dev && types != null && types !== other)
+/// { .. }`: a `let` an `if let` takes apart, `taken_apart`'s, of a place's
+/// read that only the test of the `if` right after it reads, `prev.types`
+/// where the test reads `types`, each time (ADR 0866): as the program would
+/// write the place there, `if let Some(types) = &prev.types`, but for a
+/// `RefCell`'s borrow, which the `let` ends once its value's read,
+/// `prev.types.borrow().clone()`, the object (ADR 0863), and which JS
+/// doesn't have. What's read where `tested_read` says it may be.
+pub(super) fn tested_reads(stmts: &mut Vec<Stmt>, taken_apart: &HashSet<String>) {
+    let mut i = 0;
+    while i + 1 < stmts.len() {
+        let Some(test) = tested_read(&stmts[i], &stmts[i + 1..], taken_apart) else {
+            i += 1;
+            continue;
+        };
+        stmts.remove(i);
+        if let StmtKind::If(tested, ..) = &mut stmts[i].kind {
+            *tested = test;
+        }
+        // A `let` before it may now be read by the `if` too.
+        i = i.saturating_sub(1);
+    }
+}
+
+/// Of `stmt`, `const x = p.f;`, and `rest`, the statements after it, the
+/// test of the `if` `rest` starts with, `x` read there as `p.f`: where `p.f`
+/// reads a variable's property, which no getter may answer and nothing
+/// that runs before each read changes, as the test does nothing; and
+/// nothing else reads `x`, its branches nor what follows it.
+fn tested_read(stmt: &Stmt, rest: &[Stmt], taken_apart: &HashSet<String>) -> Option<Expr> {
+    let (StmtKind::Const(name, value), Some(StmtKind::If(test, ..))) = (&stmt.kind, rest.first().map(|s| &s.kind))
+    else {
+        return None;
+    };
+    if !taken_apart.contains(name) {
+        return None;
+    }
+    let mut root = value;
+    while let ExprKind::Member(of, _) = &root.kind {
+        root = of;
+    }
+    let place = matches!(value.kind, ExprKind::Member(..))
+        && matches!(&root.kind, ExprKind::Var(v) if v != name)
+        && !value.has_effects();
+    let mut tested = 0;
+    test.visit_vars(&mut |v| tested += usize::from(v == name));
+    if !place || tested == 0 || js::mentions_in(rest, name) != tested || test.has_effects() {
+        return None;
+    }
+    test.substitute(&|v| (v == name).then(|| value.clone()))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

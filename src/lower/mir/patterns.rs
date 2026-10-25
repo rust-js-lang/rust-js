@@ -513,7 +513,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// those, a variable given another type, `let lazy: &LazyComponent =
     /// unsafe { js::cast(children) };`, a binding that's its argument
     /// (`JsForm::This`), as TypeScript's `as` gives one, which JS has as it
-    /// is.
+    /// is; and one an `if let` takes apart, its scrutinee the variable
+    /// alone, `let types = t.types.borrow().clone(); if let Some(types) =
+    /// types` (ADR 0866).
     pub(super) fn let_names(&self, body: &mir::Body<'tcx>, state: &State<'_, 'tcx>) -> super::tidy::LetNames {
         let thir = self.frame.thir;
         // Through an `unsafe { .. }` of the value alone, and what `strip` is through.
@@ -540,18 +542,36 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         let mut named = Vec::new();
         let mut casts = Vec::new();
+        let mut lets = Vec::new();
         for stmt in thir.stmts.iter() {
             if let thir::StmtKind::Let {
                 pattern, initializer, ..
             } = &stmt.kind
-                && let thir::PatKind::Binding { subpattern: None, .. } = pattern.kind
+                && let thir::PatKind::Binding {
+                    subpattern: None, var, ..
+                } = pattern.kind
             {
                 named.push(pattern.span);
+                lets.push((var, pattern.span));
                 if initializer.is_some_and(cast_of_variable) {
                     casts.push(pattern.span);
                 }
             }
         }
+        // Of those, each an `if let`'s scrutinee, the variable alone.
+        let scrutinees: Vec<thir::LocalVarId> = (thir.exprs.iter())
+            .filter_map(|e| match e.kind {
+                thir::ExprKind::Let { expr, .. } => match thir[crate::lower::body_queries::strip(thir, expr)].kind {
+                    thir::ExprKind::VarRef { id } => Some(id),
+                    _ => None,
+                },
+                _ => None,
+            })
+            .collect();
+        let taken_apart: Vec<Span> = (lets.iter())
+            .filter(|(var, _)| scrutinees.contains(var))
+            .map(|&(_, span)| span)
+            .collect();
         let names = |spans: &[Span]| {
             (body.var_debug_info.iter())
                 .filter_map(|info| match info.value {
@@ -570,6 +590,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .collect(),
             named: names(&named),
             casts: names(&casts),
+            taken_apart: names(&taken_apart),
         }
     }
 

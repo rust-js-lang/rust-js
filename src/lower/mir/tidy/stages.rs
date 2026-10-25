@@ -293,6 +293,11 @@ pub(super) const STAGES: &[Stage] = &[
             pass("and tests", |b, h| {
                 bottom_up(b, &mut |s| and_tests(s, &h.written.conditions))
             }),
+            // A `let` an `if let` takes apart, of a place's read only the
+            // test after it reads, one test now: read there (ADR 0866).
+            pass("tested reads", |b, h| {
+                js::statement_lists(b, &mut |s| tested_reads(s, &h.lets.taken_apart))
+            }),
             // An `||` the program wrote, its branch of a jump as written
             // (ADR 0790).
             pass("or blocks", |b, h| {
