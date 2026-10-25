@@ -383,6 +383,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let generic = cells.keys().any(|ty| ty.has_param());
         let cells = erased(cells.into_keys().collect());
         let mut plain = erased(plain);
+        // A struct's field is the value it holds by its type and its
+        // declaration, whether or not a body borrows one of its type (ADR
+        // 0863, amended): of a type no body lends, binds or derives, which
+        // `cells` takes away below.
+        for id in tcx.hir_crate_items(()).definitions() {
+            if matches!(tcx.def_kind(id), DefKind::Struct) {
+                for field in tcx.adt_def(id).all_fields() {
+                    let ty = tcx.type_of(field.did).instantiate_identity().skip_normalization();
+                    if self.is_std_type(ty, StdItem::RefCell) {
+                        plain.insert(tcx.erase_and_anonymize_regions(ty));
+                    }
+                }
+            }
+        }
         // Not one a library shares with the crate as its cell, which a
         // field of the crate's can't hold as its value then (ADR 0863).
         plain.retain(|&ty| {

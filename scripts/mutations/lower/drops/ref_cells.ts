@@ -196,4 +196,12 @@ export const mutations: Mutation[] = [
     replace: "        return true;\n",
     tests: ["test/corpus.test.ts", "-t", "^refcell_transparent.rs$"],
   },
+  {
+    name: "field-refcell-plain-by-use",
+    breaks: "a struct's `RefCell` field is the value it holds only where a body borrows one of its type, so React's `Fiber`'s `#[rust_js::nullable]` `child` no body reads is refused",
+    file: "src/lower/drops/ref_cells.rs",
+    find: "                        plain.insert(tcx.erase_and_anonymize_regions(ty));\n",
+    replace: "                        let _ = ty;\n",
+    tests: ["test/lowering-nullable.test.ts", "-t", "no body borrows"],
+  },
 ];

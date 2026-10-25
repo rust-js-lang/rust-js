@@ -58,7 +58,9 @@ function otherClone_clone(other$1) {
 }
 
 function main() {
-  const internals = {};
+  const internals = {
+    queue: null,
+  };
   const queue = internals.queue ?? new Array(5).fill(first);
   internals.queue = queue;
   const ran = flush(queue);

@@ -142,8 +142,8 @@ export const mutations: Mutation[] = [
     name: "nullable-cell-made-undefined",
     breaks: "a nullable `Cell` field made `Cell::new(None)` is `{ value: undefined } ?? null`'s, its cell, not `null`",
     file: "src/lower/aggregates.rs",
-    find: "            let cell = self.is_std_type(field_ty, StdItem::Cell);\n",
-    replace: "            let cell = false;\n",
+    find: "            let cell = self.is_std_type(field_ty, StdItem::Cell) || self.plain_ref_cell(field_ty);\n",
+    replace: "            let cell = self.plain_ref_cell(field_ty);\n",
     tests: ["test/lowering-nullable.test.ts", "-t", "nullable Cell field's None is null"],
   },
   {
@@ -209,5 +209,13 @@ export const mutations: Mutation[] = [
     find: "                let start = lead.find('\\n').map_or(value.start, |n| before + n);\n",
     replace: "                let start = value.start;\n",
     tests: ["test/lowering-comments.test.ts", "-t", "a None field a comment is written on keeps its key and its comment"],
+  },
+  {
+    name: "nullable-refcell-made-undefined",
+    breaks: "a nullable plain `RefCell` field's `None` is left out where it's made, `{ tag }`, where upstream's `child: null` is what React's JS tests `=== null`",
+    file: "src/lower/aggregates.rs",
+    find: "            let cell = self.is_std_type(field_ty, StdItem::Cell) || self.plain_ref_cell(field_ty);\n",
+    replace: "            let cell = self.is_std_type(field_ty, StdItem::Cell);\n",
+    tests: ["test/lowering-nullable.test.ts", "-t", "no body borrows"],
   },
 ];

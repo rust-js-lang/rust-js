@@ -14,7 +14,7 @@ field). Amended by [0867](0867-a-binding-that-runs-nothing-and-aggregate-error.m
 [0868](0868-what-stds-impls-and-derives-run-is-what-their-bounds-say.md)
 (what std's impls and derives run is what their bounds say); amended
 (a `#[repr(transparent)]` struct's `RefCell`, and a thread-local
-`RefCell`'s `set`, below).
+`RefCell`'s `set`, a field's plain one by its declaration, below).
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): A, decided by the user
 (2026-10-25). A `RefCell` of an object being the object changes no run:
@@ -351,3 +351,38 @@ no output today, since a generic function's borrows across them are
 counted already, so no mutation holds it. The readability baseline's
 `while (true)` share grows by 0.1 in 10,000 lines and its `return;` by
 0.2: the new case's `for` loop and its `next`'s early `None`.
+
+## Amendment: a field's `RefCell` is plain by its declaration, borrowed or not
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): A. A field's `RefCell`
+no body borrows has no borrow to check; one that's borrowed is decided
+as before.
+
+React's `Fiber` has `child`, `sibling`, `return` and `alternate`, each a
+`#[rust_js::nullable]` `RefCell<Option<Rc<Fiber>>>`, which the
+reconciler's other files read. Its `ReactInternalTypes`, which reads
+none of them, was refused: "`#[rust_js::nullable]` of a `RefCell` is of
+one a field holds as the value it holds .. this one is lent, bound,
+held ..". A field's `RefCell` type was plain (ADR 0362) only where some
+body borrowed a field of its type for a moment, so `child` passed once
+`alternate`, of the same type, was read somewhere; and one never read
+was `{ value }`, `child: any` in the declarations. What a type is in JS
+hung on whether some function happened to borrow it.
+
+**Each `RefCell` type a struct of the crate's has as a field's is plain
+by that declaration**, as one borrowed only for a moment is: it's taken
+away where a body lends one, binds one by a pattern or derives an impl
+reading one, a generic one's, or one a library shares as a cell, as
+before (`find_ref_cells`). A borrow of one held while code that may
+borrow it runs is still counted and checked.
+
+- **A nullable one's `None` is `null` where it's made**, as a nullable
+  `Cell`'s is (ADR 0772): `Fiber { child: RefCell::new(None), .. }` is
+  `{ child: null }`, where it was left out, as only an optional one is
+  (ADR 0810). Corpus `refcell_clone_through_rc`'s `Internals { queue:
+  RefCell::new(None) }` is `{ queue: null }`.
+
+`test/lowering-nullable.test.ts`, "a nullable RefCell field no body
+borrows is the value it holds", holds it, with mutations
+`field-refcell-plain-by-use` (`lower/drops/ref_cells.ts`) and
+`nullable-refcell-made-undefined` (`lower/aggregates.ts`).

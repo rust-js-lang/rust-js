@@ -287,7 +287,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             let given = given.get(i).copied().unwrap_or_default();
             let field_ty = field.ty(self.tcx, args).skip_normalization();
-            let cell = self.is_std_type(field_ty, StdItem::Cell);
+            // And a `RefCell`'s that's the property it holds (ADR 0863).
+            let cell = self.is_std_type(field_ty, StdItem::Cell) || self.plain_ref_cell(field_ty);
             let made = std::mem::replace(value, Expr::undefined());
             let held = match cell {
                 true => Expr::held(made.clone()),

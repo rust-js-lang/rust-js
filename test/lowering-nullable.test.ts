@@ -154,6 +154,61 @@ pub fn lent(slot: &Slot) -> &RefCell<Option<u32>> {
   );
 });
 
+// React's `Fiber`, whose `child` the reconciler's other files read: a
+// struct's `RefCell` field is the value it holds by its declaration, not
+// by whether a body happens to borrow one of its type (ADR 0863, amended).
+// One no body reads is the property, typed, as is one another field of its
+// type is read beside.
+test("a nullable RefCell field no body borrows is the value it holds", async () => {
+  const dir = fixture("nullable-refcell-unread");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::RefCell;
+use std::rc::Rc;
+
+pub struct Fiber {
+    pub tag: u8,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub child: RefCell<Option<Rc<Fiber>>>,
+    pub sibling: RefCell<Option<Rc<Fiber>>>,
+}
+
+pub fn tag(f: &Fiber) -> u8 {
+    f.tag
+}
+
+pub fn leaf(tag: u8) -> Fiber {
+    Fiber {
+        tag,
+        child: RefCell::new(None),
+        sibling: RefCell::new(None),
+    }
+}
+`);
+  run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("  return {\n    tag,\n    child: null,\n  };\n");
+  const types = readFileSync(join(dir, "lib.d.ts"), "utf8");
+  expect(types).toContain("    child?: Fiber | null | undefined;\n    sibling: Fiber | null | undefined;\n");
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.tag(lib.leaf(3)), lib.leaf(3).child]).toEqual([3, null]);
+  // Not one of a type whose borrow is held while code that may borrow it
+  // runs, which is checked.
+  const held = fixture("refcell-field-held");
+  writeFileSync(join(held, "lib.rs"), `use std::cell::RefCell;
+
+pub struct Slot {
+    pub items: RefCell<Vec<u32>>,
+}
+
+pub fn during(items: &RefCell<Vec<u32>>, f: &dyn Fn()) -> usize {
+    let borrowed = items.borrow_mut();
+    f();
+    borrowed.len()
+}
+`);
+  run([compiler, join(held, "lib.rs"), "-o", join(held, "lib.js")]);
+  expect(readFileSync(join(held, "lib.js"), "utf8")).toContain("$borrowMut(items");
+});
+
 // React's lazy(): `const owner = null; .. owner: owner`. A `None` bound to a
 // variable that only nullable fields and binding parameters read is
 // `null` where it's made, and read as it is (ADR 0781).

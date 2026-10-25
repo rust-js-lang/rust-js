@@ -1099,8 +1099,13 @@ export function shared() {
   set in place ([ADR 0288](../../decisions/0288-cell-fields.md)).
 - **A `RefCell` in a field is the value it holds** where every borrow of it
   in the crate lasts a moment, as `borrow_mut().push(..)`, `replace` and
-  `take` do ([ADR 0362](../../decisions/0362-refcell-fields-never-counted.md),
-  [ADR 0585](../../decisions/0585-a-refcells-replace-holds-it-for-a-moment.md)).
+  `take` do, and where none is borrowed at all: what decides is the field
+  and its type, not whether some body borrows one
+  ([ADR 0362](../../decisions/0362-refcell-fields-never-counted.md),
+  [ADR 0585](../../decisions/0585-a-refcells-replace-holds-it-for-a-moment.md),
+  [ADR 0863](../../decisions/0863-a-refcell-of-an-object-is-the-object.md)).
+  A `#[rust_js::nullable]` one's `None` is `null` where it's made,
+  `child: null`.
   A `#[repr(transparent)]` struct's field isn't a property: the struct is
   the cell.
 - **A `RefCell` of an array, a `Map`, a `Set` or a struct's object is that
