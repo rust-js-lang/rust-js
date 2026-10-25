@@ -21,6 +21,9 @@
 
 mod expressions;
 mod statements;
+mod trailing;
+
+use self::trailing::{Inside, Trailing, with_inside_comments};
 
 pub(crate) use self::expressions::*;
 
@@ -153,12 +156,6 @@ pub fn emit(
     // to fix the map.
     let header_lines = code.matches('\n').count() as u32;
     let mut lines: Vec<u32> = Vec::new();
-    // A comment after code is after the last JS of its line (ADR 0444); of
-    // a line no JS is of, a `}`'s, it's nobody's.
-    let mut after: std::collections::HashMap<u32, Vec<&str>> = std::collections::HashMap::new();
-    // One inside an expression, after the JS of the code right before it,
-    // its line's and column's (ADR 0630).
-    let mut inside: std::collections::HashMap<u32, Vec<(u32, &str)>> = std::collections::HashMap::new();
     let generated_lines: Vec<&str> = generated.code.lines().collect();
     // A conditional's branch's comments, before its value on lines of their
     // own, `? // In modern browsers ..`, as oxc writes none before the
@@ -213,60 +210,16 @@ pub fn emit(
     for list in splits.values_mut() {
         list.sort_by_key(|&(column, _)| column);
     }
-    // A line comment after code of its line that JS has before the code of
-    // a line after it, `? "…" // ellipsis` of a conditional on one line:
-    // after the code right before it, the rest of the JS's line on the next
-    // (ADR 0733), so it's that code's, not all of it after the line's end.
-    let mut ends: std::collections::HashMap<u32, Vec<(u32, &str)>> = std::collections::HashMap::new();
-    if let Some(map) = &generated.map {
-        for comment in &trailing {
-            // The nearest before it whose JS is a name, a number or a string.
-            let before = {
-                let mut tokens: Vec<_> = (map.get_tokens())
-                    .filter(|t| t.get_src_line() == comment.line && t.get_src_col() < comment.column)
-                    .collect();
-                tokens.sort_by_key(|t| std::cmp::Reverse(t.get_src_col()));
-                tokens
-                    .into_iter()
-                    .map(|t| (t.get_dst_line(), t.get_dst_col()))
-                    .find(|&(line, column)| {
-                        (generated_lines.get(line as usize)).is_some_and(|text| word_end(text, column).is_some())
-                    })
-            };
-            // Where its JS ends, of a line comment, when a later line's JS
-            // follows it on its line: before that, and the `(`, `?`, `:` or
-            // `,` it's after.
-            let end = before.filter(|_| !comment.inside).and_then(|(line, column)| {
-                let text = generated_lines.get(line as usize)?;
-                let later = (map.get_tokens())
-                    .filter(|t| t.get_dst_line() == line && t.get_dst_col() > column && t.get_src_line() > comment.line)
-                    .map(|t| t.get_dst_col())
-                    .min()?;
-                let head = &text[..in_bytes(text, later)];
-                let cut = head
-                    .trim_end_matches(|c: char| c.is_whitespace() || "([{?:,".contains(c))
-                    .len();
-                (cut > in_bytes(text, column)).then_some((line, cut as u32))
-            });
-            match (before, end) {
-                (Some((line, column)), _) if comment.inside => {
-                    inside.entry(line).or_default().push((column, &comment.text))
-                }
-                (_, Some((line, end))) => ends.entry(line).or_default().push((end, &comment.text)),
-                _ => {
-                    let last = (map.get_tokens())
-                        .filter(|t| t.get_src_line() == comment.line)
-                        .map(|t| t.get_dst_line())
-                        .max();
-                    if let Some(last) = last {
-                        after.entry(last).or_default().push(&comment.text);
-                    }
-                }
-            }
-        }
-    }
+    // Where each comment after code on its line goes in the JS's lines.
+    let trailing::Placed { after, inside, ends } = match &generated.map {
+        Some(map) => trailing::placed(&trailing, map, &generated_lines),
+        None => trailing::Placed::default(),
+    };
     // Where each split line's pieces are: each from its column, on its line.
     let mut pieces: std::collections::HashMap<u32, Vec<(u32, u32)>> = std::collections::HashMap::new();
+    // Where each line has a comment inside it: the piece it's in, where, and
+    // how wide, what the JS after it there is moved by (ADR 0630, amended).
+    let mut widened: std::collections::HashMap<u32, Vec<(u32, u32, u32)>> = std::collections::HashMap::new();
     let mut added = 0;
     for (i, line) in generated.code.lines().enumerate() {
         let i = i as u32;
@@ -274,9 +227,9 @@ pub fn emit(
         let mut at = 0;
         let mut placed = vec![(0, out_line)];
         let inside_of = |from: u32, to: u32| {
-            let comments: Vec<(u32, &str)> = (inside.get(&i).into_iter().flatten())
-                .filter(|&&(column, _)| column >= from && column < to)
-                .map(|&(column, text)| (column - from, text))
+            let comments: Vec<(u32, Inside, &str)> = (inside.get(&i).into_iter().flatten())
+                .filter(|&&(column, ..)| column >= from && column < to)
+                .map(|&(column, inside, text)| (column - from, inside, text))
                 .collect();
             comments
         };
@@ -291,7 +244,12 @@ pub fn emit(
             let Some(head) = line.get(at as usize..column as usize).filter(|_| column > at) else {
                 continue;
             };
-            code.push_str(&with_inside_comments(head.trim_end(), &inside_of(at, column)));
+            let (head, moved) = with_inside_comments(head.trim_end(), &inside_of(at, column));
+            code.push_str(&head);
+            widened
+                .entry(i)
+                .or_default()
+                .extend(moved.into_iter().map(|(end, width)| (at, at + end, width)));
             if let Some(end) = end {
                 code.push(' ');
                 code.push_str(end);
@@ -305,7 +263,12 @@ pub fn emit(
             at = column;
             placed.push((column, header_lines + i + added));
         }
-        code.push_str(&with_inside_comments(&line[at as usize..], &inside_of(at, u32::MAX)));
+        let (rest, moved) = with_inside_comments(&line[at as usize..], &inside_of(at, u32::MAX));
+        code.push_str(&rest);
+        widened
+            .entry(i)
+            .or_default()
+            .extend(moved.into_iter().map(|(end, width)| (at, at + end, width)));
         for comment in after.get(&i).into_iter().flatten() {
             code.push(' ');
             code.push_str(comment);
@@ -350,6 +313,13 @@ pub fn emit(
     let paths: std::collections::HashMap<usize, String> = used.into_iter().map(|i| (i, path_of(i))).collect();
     let map = restore_sources(&map, sources, &paths, primary);
     let last_shift = lines.last().map_or(0, |&last| last + 1 - lines.len() as u32);
+    // Moved by the comments inside its piece of its line before it.
+    let wider = |line: u32, from: u32, column: u32| -> u32 {
+        (widened.get(&line).into_iter().flatten())
+            .filter(|&&(piece, at, _)| piece == from && at <= column)
+            .map(|&(.., width)| width)
+            .sum()
+    };
     let to = |line: u32, column: u32| match pieces.get(&line) {
         Some(placed) => {
             let &(from, to) = placed
@@ -357,63 +327,17 @@ pub fn emit(
                 .rev()
                 .find(|&&(from, _)| column >= from)
                 .expect("the first is at 0");
-            (to, column - from)
+            (to, column - from + wider(line, from, column))
         }
-        None => (lines.get(line as usize).copied().unwrap_or(line + last_shift), column),
+        None => (
+            lines.get(line as usize).copied().unwrap_or(line + last_shift),
+            column + wider(line, 0, column),
+        ),
     };
     let map = crate::format::moved_positions(&map, to, js_file_name);
     // Laid out as oxfmt lays it out, rust-js's own layout.
     let (code, map) = crate::format::laid_out(code, map, js_file_name, &written);
     Output { code, map }
-}
-
-/// A comment after code on its line (ADR 0444): its line, its column,
-/// whether code follows it there, inside an expression (ADR 0630), and its
-/// text.
-struct Trailing {
-    line: u32,
-    column: u32,
-    inside: bool,
-    text: String,
-}
-
-/// Where a map's `column` of `line`, in UTF-16 units, is in its bytes.
-fn in_bytes(line: &str, column: u32) -> usize {
-    let mut units = 0;
-    for (at, c) in line.char_indices() {
-        if units >= column {
-            return at;
-        }
-        units += c.len_utf16() as u32;
-    }
-    line.len()
-}
-
-/// Where the name, number or string at `column` of `line` ends: none of
-/// another token, `(` or `{`.
-fn word_end(line: &str, column: u32) -> Option<usize> {
-    let start = column as usize;
-    let rest = line.get(start..)?;
-    let end = match rest.chars().next()? {
-        quote @ ('"' | '\'' | '`') => rest[1..].find(quote).map(|i| i + 2)?,
-        _ => (rest.find(|c: char| !(c.is_alphanumeric() || c == '_' || c == '$' || c == '.'))).unwrap_or(rest.len()),
-    };
-    (end > 0).then_some(start + end)
-}
-
-/// `line` of the JS with each comment after the code that starts at its
-/// column: a name, a number or a string, `case 79 /* "O" */:` (ADR 0630).
-fn with_inside_comments(line: &str, comments: &[(u32, &str)]) -> String {
-    let mut out = line.to_string();
-    let mut at: Vec<(usize, &str)> = (comments.iter())
-        .filter_map(|&(column, text)| Some((word_end(line, column)?, text)))
-        .collect();
-    // From the last, so each column is still where it was.
-    at.sort_by_key(|&(end, _)| std::cmp::Reverse(end));
-    for (end, text) in at {
-        out.insert_str(end, &format!(" {text}"));
-    }
-    out
 }
 
 /// The comments of the files `module`'s code is of, past the ones each
@@ -514,10 +438,17 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
                 // A block comment with code after it on its line is inside
                 // an expression: after the code right before it (ADR 0630).
                 let inside = written.starts_with("/*") && !sources.text[c.hi as usize..line_end].trim().is_empty();
+                // One right after an `=`, an initializer's or an assignment's,
+                // not `==`'s, `<=`'s or `+=`'s, is before the value it gives,
+                // `= /* .. */ 0b0000000` (ADR 0630, amended).
+                let before_value = (sources.text[line_start..c.lo as usize].trim_end())
+                    .strip_suffix('=')
+                    .is_some_and(|before| !before.ends_with(|c: char| "=!<>+-*/%&|^".contains(c)));
                 trailing.push(Trailing {
                     line,
                     column: (c.lo as usize - line_start) as u32,
                     inside,
+                    before_value,
                     text: written.to_string(),
                 });
             }

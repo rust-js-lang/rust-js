@@ -6,6 +6,7 @@
 import { beforeAll, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { decodeMappings } from "./sourcemap";
 import { buildReact, compiler, fixture, run, target } from "./support";
 
 beforeAll(buildReact, 600_000);
@@ -1039,4 +1040,73 @@ js::export_default!(STATE);
   expect(internals.js).toContain("};\nif (state.b == null) {\n  state.a = 1;\n}\n\nif (state.a != null) {\n");
   expect(internals.js).toContain("\n\nexport default state;\n\nexport { total as sum };\n");
   expect([internals.lib.default, internals.lib.sum()]).toEqual([{ a: 1, b: 2 }, 3]);
+});
+
+// React's ReactTypeOfMode and ReactFiberFlags: `export const NoMode = /*
+// .. */ 0b0000000;`, a comment between the `=` and the value that lines the
+// values up. It's before the value's JS, after its `=`, its spaces kept, not
+// after `export` or a `const`, the code before it on its line that has a
+// name (ADR 0630, amended); one after the value is the line's, as before.
+test("a comment between an = and its value is before the value", async () => {
+  const rust = `use std::cell::Cell;
+
+#[cfg_attr(rust_js, rust_js::name = "NoMode")]
+pub const NO_MODE: u32 = /*                         */ 0b0000000;
+// TODO: Remove ConcurrentMode by reading from the root tag instead
+#[cfg_attr(rust_js, rust_js::name = "ConcurrentMode")]
+pub const CONCURRENT_MODE: u32 = /*                 */ 0b0000001;
+#[cfg_attr(rust_js, rust_js::name = "Removed")]
+pub const REMOVED: u32 = 0b01; // Removed
+
+pub fn modes(given: u32) -> u32 {
+    let mode = /*  */ given | CONCURRENT_MODE;
+    let mut last = /* first */ mode;
+    last = /* again */ last | (mode + 1);
+    last
+}
+
+pub fn same(a: u32, b: u32) -> bool {
+    let same = a == /* the other */ b;
+    same || a > 9
+}
+
+static FLAGS: u32 = /*  */ 0b0100;
+
+thread_local! {
+    static COUNT: Cell<u32> = /* none yet */ const { Cell::new(0) };
+}
+
+pub fn flags() -> u32 {
+    COUNT.with(|count| count.set(count.get() + 1));
+    FLAGS + COUNT.with(Cell::get) + NO_MODE + REMOVED
+}
+`;
+  const { js, lib, map } = await compiled("comment-before-a-value", rust);
+  expect(js).toContain("\nexport const NoMode = /*                         */ 0b0000000;\n");
+  expect(js).toContain(
+    "// TODO: Remove ConcurrentMode by reading from the root tag instead\nexport const ConcurrentMode = /*                 */ 0b0000001;\n",
+  );
+  expect(js).toContain("\nexport const Removed = 0b01; // Removed\n");
+  expect(js).toContain("  const mode = /*  */ (given | ConcurrentMode) >>> 0;\n");
+  expect(js).toContain("  let last = /* first */ mode;\n");
+  // After an `==`, `a`'s, as before.
+  expect(js).toContain("  const same = a /* the other */ === b;\n");
+  expect(js).toContain("  last = /* again */ (last | ((mode + 1) >>> 0)) >>> 0;\n");
+  expect(js).toContain("\nconst FLAGS = /*  */ 0b0100;\n");
+  expect(js).toContain("\nlet count = /* none yet */ 0;\n");
+  expect([lib.NoMode, lib.ConcurrentMode, lib.Removed, lib.modes(4 as never), lib.same(2 as never, 2 as never), lib.flags(), lib.flags()]).toEqual([0, 1, 1, 7, true, 6, 7]);
+  // The JS after the comment maps to its Rust, the comment's width further.
+  const segments = decodeMappings(map.mappings);
+  const place = (text: string, code: string) => {
+    const lines = text.split("\n");
+    const line = lines.findIndex(l => l.includes(code));
+    return [line, lines[line].indexOf(code)];
+  };
+  const mapped = (code: string) => {
+    const [line, column] = place(js, code);
+    const segment = segments.find(s => s.jsLine === line && s.jsCol === column);
+    return [segment?.srcLine, segment?.srcCol];
+  };
+  expect(mapped("given | ConcurrentMode")).toEqual(place(rust, "given | CONCURRENT_MODE"));
+  expect(mapped("0b0000001")).toEqual(place(rust, "0b0000001"));
 });

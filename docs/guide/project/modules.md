@@ -700,8 +700,10 @@ statement after it, one after code on its line is after that code's JS,
 its line ended there where JS has the next line's code on it, `? "…" //
 ellipsis` of a conditional ([ADR
 0733](../../decisions/0733-a-line-comment-ends-the-line-of-its-code.md)),
-one inside an expression after the code right before it, `37 /* "%" */`
-([ADR 0630](../../decisions/0630-a-comment-inside-an-expression.md)),
+one inside an expression after the code right before it, `37 /* "%" */`,
+or right after an `=` before the value, as written, `export const NoMode =
+/*   */ 0b0000000;` of `pub const NO_MODE: u32 = /*   */ 0b0000000;`
+([ADR 0630](../../decisions/0630-a-comment-inside-an-expression.md), amended),
 and a `///` doc comment is a JSDoc an editor shows a JS caller. A run of
 comment lines before a `match` arm is one, the arm's; a comment before a
 `let` the JS has no statement of, its value read where it's named, `let arg

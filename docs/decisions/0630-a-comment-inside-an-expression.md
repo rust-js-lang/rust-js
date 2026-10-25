@@ -1,7 +1,8 @@
 # 0630. A comment inside an expression is after the code before it
 
 Status: Accepted. Extends [0444](0444-a-comment-is-where-its-code-is.md),
-whose rule 2 was of a comment at its line's end.
+whose rule 2 was of a comment at its line's end. Amended below: one after
+an `=` is before the value.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N: comments, which
 nothing runs.
@@ -46,3 +47,61 @@ lost.
   after the code before it".
 - Mutations `inside-comment-at-line-end`, `case-constant-unplaced`,
   `switch-at-first-case`.
+
+## Amendment: a comment after an `=` is before the value
+
+React's reconciler lines its bit flags up with a comment between each
+`=` and its value, in ReactTypeOfMode.js, ReactHookEffectTags.js,
+ReactFiberFlags.js and ReactFiberLane.js, hundreds of times:
+
+```js
+export const NoMode = /*                         */ 0b0000000;
+// TODO: Remove ConcurrentMode by reading from the root tag instead
+export const ConcurrentMode = /*                 */ 0b0000001;
+```
+
+The port writes the same line, `pub const NO_MODE: TypeOfMode = /* .. */
+0b0000000;`, which rustfmt keeps. The code right before the comment is
+the `=`, no name, number or string, so the nearest token before it was
+the declaration's, and the comment was after `export`: `export /* .. */
+const NoMode = 0b0000000;`, `const /*  */ mode = ..` of a `let`.
+
+**A block comment right after an `=`, a declaration's or an
+assignment's, with code after it on its line, is before the value: after
+the `=` of the JS of its line**, its text as written, spaces and all:
+
+```js
+export const NoMode = /*                         */ 0b0000000;
+const mode = /*  */ (given | ConcurrentMode) >>> 0;
+last = /* again */ (last | ((mode + 1) >>> 0)) >>> 0;
+let count = /* none yet */ 0;
+```
+
+- **Which `=`**: the one before the JS the map places of the code nearest
+  after the comment on its line, the value's; where there's none before
+  it, the one after it, the statement's JS being placed where the value
+  is, `let last = /* first */ mode` of `let mut last`; and where the
+  value's code has no JS, a thread local's `const { Cell::new(0) }`, the
+  one after the declaration's JS. A module's `const`, a `static`, a
+  thread local, a `let` and an assignment are all written so.
+- **Only `=`**: a comment after `==`, `!=`, `<=`, `>=` or a compound
+  assignment, `+=`, is after the code before it, as before, `a /* the
+  other */ === b`. Where its line's JS has no ` = `, it's as before too.
+- **After the value, a line comment ends the line**, `export const
+  Removed = 0b01; // Removed`, unchanged.
+- **The source map moves past each comment inside a line**, this one or
+  `37 /* "%" */`: the JS after it is its width further along, where its
+  tokens had stayed where they were before the comment was added.
+
+Case N ([0262](0262-when-rust-and-js-disagree.md)): comments, which
+nothing runs.
+
+Test: `lowering-comments`'s "a comment between an = and its value is
+before the value": ReactTypeOfMode's lines, a `let`, a `let mut`, an
+assignment, a `static`, a thread local and a comment after `==`, run, and
+the map's columns after a comment. Mutations
+`value-comment-after-declaration`, `value-comment-after-comparison`,
+`inside-comment-map-unmoved` (`to_oxc.ts`) and
+`value-comment-equals-only-before` (`to_oxc/trailing.ts`): where a comment
+after code on its line goes, which this made `to_oxc.rs` too long to
+hold, is `src/to_oxc/trailing.rs`'s.
