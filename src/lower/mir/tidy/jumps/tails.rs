@@ -748,3 +748,156 @@ pub(in crate::lower::mir::tidy) fn returned_values(
         stmts.push(StmtKind::Return(Some(folded)).at(span));
     }
 }
+
+/// `if (!t) { exit } rest`, of an `if t { rest }` the program wrote without
+/// an `else` (`Written::thens`), `rest` written in its `then`, never going
+/// on, as `exit` doesn't: `if (t) { rest } exit`, as written, which runs
+/// the same either way round. MIR's structure
+/// makes a guard of it where `exit` is short, `if __DEV__ { .. } return
+/// None;`'s `if (!__DEV__) { return null; } ..` (ADR 0879, amended).
+pub(in crate::lower::mir::tidy) fn written_thens(stmts: &mut Vec<Stmt>, thens: &[(js::Span, js::Span)]) {
+    let within = |c: &js::Span, s: js::Span| !s.is_none() && c.lo <= s.lo && s.hi <= c.hi;
+    for at in 0..stmts.len() {
+        let (if_stmt, rest) = (&stmts[at], &stmts[at + 1..]);
+        let StmtKind::If(_, exit, None) = &if_stmt.kind else {
+            continue;
+        };
+        let Some((_, then)) = thens.iter().find(|(cond, _)| within(cond, if_stmt.span)) else {
+            continue;
+        };
+        let written = |s: &Stmt| within(then, s.span);
+        if !exit.last().is_some_and(ends)
+            || !rest.iter().any(written)
+            || !rest.iter().all(|s| s.span.is_none() || written(s))
+            || !rest.last().is_some_and(ends)
+        {
+            continue;
+        }
+        let rest = stmts.split_off(at + 1);
+        let StmtKind::If(test, exit, None) = std::mem::replace(&mut stmts[at].kind, StmtKind::Break(None)) else {
+            unreachable!("matched")
+        };
+        stmts[at].kind = StmtKind::If(test.negated_test(), rest, None);
+        stmts.extend(exit);
+        break;
+    }
+}
+
+/// What a run of statements a function ends with returns, as a person
+/// writes it: `if (a) { if (b) { return t; } } return f;` is `return a &&
+/// b ? t : f;` of a `bool`, and a `let … else`'s guard first, `if (!(a &&
+/// b)) { return f; } t` (`branch_values`'s last).
+pub(in crate::lower::mir::tidy) fn returned_branches(
+    stmts: &mut Vec<Stmt>,
+    returns: &[js::Span],
+    booleans: &HashSet<String>,
+    program: &crate::lower::mir::hints::Written,
+) {
+    let (continues, elses) = (&program.continues, &program.elses);
+    // `if (a) { if (b) { return t; } } return f;`, last: `return a && b ? t : f;`.
+    if let [.., last_if, last] = stmts.as_slice()
+        && let StmtKind::Return(Some(no)) = &last.kind
+        && let StmtKind::If(_, then, _) = &last_if.kind
+        && let Some((tests, yes)) = returned_chain(std::slice::from_ref(last_if))
+        && small(&yes)
+        && small(no)
+        && boolean_branch(&yes, no)
+        // Not where the program wrote `return`, an early one.
+        && !written(returns, last.span)
+        && !writes_return(std::slice::from_ref(last_if), returns)
+    {
+        let test = (tests.into_iter())
+            .rev()
+            .reduce(|b, a| Expr::bin(Op::And, a, b))
+            .expect("one");
+        // Of an `if` the program wrote with an `else`, as it wrote it.
+        let written_if = written_branches(last_if.span, then, std::slice::from_ref(last), elses)
+            || written_values(last_if.span, (&yes, no), elses);
+        let value = conditional(test, yes, no.clone(), booleans, written_if);
+        let span = last_if.span;
+        stmts.truncate(stmts.len() - 2);
+        stmts.push(StmtKind::Return(Some(value)).at(span));
+    } else if let [before @ .., last_if, last] = stmts.as_slice()
+        && let StmtKind::Return(Some(_)) = &last.kind
+        && written(returns, last.span)
+        && let Some((tests, body)) = returning_chain(std::slice::from_ref(last_if))
+        // Not `if c { return a; } else { return b; }`'s: a `let … else`'s
+        // rest ends where it goes on, not at a `return` the program wrote;
+        // nor `if c { continue; } return b;`'s, an `if` the program wrote
+        // of a `continue` (ADR 0684).
+        && !body.last().is_some_and(|s| matches!(s.kind, StmtKind::Return(_)) && written(returns, s.span))
+        && !tests_continue(continues, last_if.span)
+        && !declared(&body).any(|name| declared(before).any(|n| n == name))
+    {
+        // `f` the program wrote, a `let … else`'s else: `if (!(a && b)) {
+        // return f; } t`.
+        let test = (tests.into_iter())
+            .rev()
+            .reduce(|b, a| Expr::bin(Op::And, a, b))
+            .expect("one");
+        let (span, guard) = (last_if.span, stmts.pop().expect("the return"));
+        stmts.pop();
+        stmts.push(StmtKind::If(test.negated_test(), vec![guard], None).at(span));
+        stmts.extend(body);
+    }
+}
+
+/// Of `if (a) { const x = e; if (b) { s } }`, `s` ending where it leaves:
+/// `[a, b]` and `const x = e; s`, what a level binds before its test, a
+/// read that does nothing, written into later tests, as `broken_chain`'s:
+/// each kept, so not a property, which a test would read again
+/// (`bound_into`).
+pub(in crate::lower::mir::tidy) fn returning_chain(stmts: &[Stmt]) -> Option<(Vec<Expr>, Vec<Stmt>)> {
+    let [
+        bound @ ..,
+        Stmt {
+            kind: StmtKind::If(test, inner, None),
+            ..
+        },
+    ] = stmts
+    else {
+        return None;
+    };
+    let (mut tests, body) = match returning_chain(inner) {
+        Some(chain) => chain,
+        None if inner.last().is_some_and(ends) => (Vec::new(), inner.clone()),
+        None => return None,
+    };
+    tests.insert(0, test.clone());
+    for test in &mut tests {
+        *test = bound_into(test, bound, &|_, _| 1)?;
+    }
+    let mut all = bound.to_vec();
+    all.extend(body);
+    unread_bound(&mut all, bound.len());
+    Some((tests, all))
+}
+
+/// Whether of `c ? yes : no` one is `true` or `false`: `c || no` or `c &&
+/// yes`, not `?:`.
+pub(in crate::lower::mir::tidy) fn boolean_branch(yes: &Expr, no: &Expr) -> bool {
+    matches!(yes.kind, ExprKind::Bool(_)) || matches!(no.kind, ExprKind::Bool(_))
+}
+
+/// Of `if (a) { if (b) { return t; } }`: its tests, `[a, b]`, and `t`.
+pub(in crate::lower::mir::tidy) fn returned_chain(stmts: &[Stmt]) -> Option<(Vec<Expr>, Expr)> {
+    match stmts {
+        [
+            Stmt {
+                kind: StmtKind::Return(Some(yes)),
+                ..
+            },
+        ] => Some((Vec::new(), yes.clone())),
+        [
+            Stmt {
+                kind: StmtKind::If(test, inner, None),
+                ..
+            },
+        ] => {
+            let (mut tests, yes) = returned_chain(inner)?;
+            tests.insert(0, test.clone());
+            Some((tests, yes))
+        }
+        _ => None,
+    }
+}

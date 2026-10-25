@@ -14,20 +14,19 @@ function note(tag, x) {
 }
 
 function choose(c, first) {
-  if (c <= 3 && !id(false)) {
-    return -1;
+  if (c > 3 || id(false)) {
+    return id(first) ? 1 : 2;
   }
-  return id(first) ? 1 : 2;
+  return -1;
 }
 
 function counted(limit, stop) {
   let c = 0;
   while (true) {
     c = (c + 1) >>> 0;
-    if (!(c > id(limit)) && !note(c, stop)) {
-      continue;
+    if (c > id(limit) || note(c, stop)) {
+      return c % 2 === 0 ? 10 : 20;
     }
-    return c % 2 === 0 ? 10 : 20;
   }
 }
 

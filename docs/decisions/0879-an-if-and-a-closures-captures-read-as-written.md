@@ -184,3 +184,35 @@ negation of an && or an || stays one", run in JS, `lane_bits.rs`
 against native Rust, and the mutations `written-negation-de-morganed`,
 `written-negation-of-the-same-chain` and
 `written-negation-of-a-whole-chain-only` (`tidy/logicals.ts`).
+
+## Amendment: an `if` without an `else` keeps its body inside
+
+React's getComponentNameFromFiber writes its `Throw` case `if (__DEV__) {
+.. } return null;`; its port, `if __DEV__ { .. } return None;`, printed
+`if (!__DEV__) { return null; } ..`, the body after the guard. MIR's
+structure puts the short way out first, `if (!c) { exit } rest`, and
+`written_elses` turned it back only of an `if` written with an `else`.
+**An `if` the program wrote without an `else` (`Written::thens`) whose
+`then` MIR made the statements after a guard is that `if` again**:
+`if (!t) { exit } rest` is `if (t) { rest } exit` where `rest` is
+written in the `then` and never goes on, as `exit` doesn't
+(`jumps::written_thens`, the `chains` stage's `written thens`, after
+`written elses`). A `let … else`'s guard, which isn't an `if`, and an
+`if` MIR turned whose exit is its `then`, `if (!href.startsWith(..)) {
+return next; } return ext;`, stay as they were. Case N: each way, the
+test that holds runs the branch it ran; `rest` never goes on, so what
+follows it is the exit either way.
+
+The `if` keeps the guard's own exit too: the port's `?` inside it,
+`let r = fiber.return.borrow().clone()?;`, returns `null` there, as
+upstream's `if (fiber.return === null) { return null; }` does. In the
+corpus, `loop_break_choice.rs`'s `if c > 3 || id(false) { break .. }
+return -1;` reads so, where it read `if (c <= 3 && !id(false)) { return
+-1; }`, and a loop's `if c > id(limit) || note(c, stop) { break .. }`
+too, where it read a `continue` of the negated test.
+
+Held by `test/lowering-written-branches.test.ts`, "an if the program
+wrote before a return keeps its body inside", run in JS, the unit test
+`written_thens_turn_only_a_rest_that_leaves` (`tidy.rs`), of a rest that
+goes on, `loop_break_choice.rs` against native Rust, and the mutation
+`written-thens-as-mir-has-them` (`tidy/jumps/tails.ts`).

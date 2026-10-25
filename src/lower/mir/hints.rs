@@ -17,6 +17,9 @@ pub(super) struct Written {
     /// Each `if`'s condition alone, an `if let`'s too: a test the program
     /// wrote, which no earlier test decides away (ADR 0564, amended).
     pub ifs: Vec<js::Span>,
+    /// Each `if` written without an `else`: its condition and its `then`,
+    /// which no pass makes a guard of (`written_then`).
+    pub thens: Vec<(js::Span, js::Span)>,
     /// Each `if` written with an `else`: its condition, its `then` and its
     /// `else`, which MIR's structure may make a guard of (`written_elses`).
     pub elses: Vec<(js::Span, js::Span, js::Span)>,
@@ -297,10 +300,27 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 _ => None,
             })
             .collect();
+        // Each `if` without an `else`, as written: its condition and its
+        // `then`, which stays its body (ADR 0879, amended).
+        let thens = (self.frame.thir.exprs.iter())
+            .filter_map(|e| match e.kind {
+                thir::ExprKind::If {
+                    cond,
+                    then,
+                    else_opt: None,
+                    ..
+                } if !e.span.from_expansion() => Some((
+                    self.js_span(self.frame.thir[cond].span),
+                    self.js_span(self.frame.thir[then].span),
+                )),
+                _ => None,
+            })
+            .collect();
         Written {
             tables,
             conditions,
             ifs,
+            thens,
             elses,
             logicals,
             negations,

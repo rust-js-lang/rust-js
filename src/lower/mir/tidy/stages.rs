@@ -325,6 +325,11 @@ pub(super) const STAGES: &[Stage] = &[
             pass("written elses", |b, h| {
                 js::statement_lists(b, &mut |s| written_elses(s, &h.written.elses))
             }),
+            // And one it wrote without an `else`, its body in it (ADR 0879,
+            // amended).
+            pass("written thens", |b, h| {
+                js::statement_lists(b, &mut |s| written_thens(s, &h.written.thens))
+            }),
             // A check MIR wrote first in a chain's last `else`: the chain's arm.
             pass("chained checks", |b, _| {
                 js::statement_lists(b, &mut |s| chained_checks(s))

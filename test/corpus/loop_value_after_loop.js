@@ -24,11 +24,10 @@ function main() {
       let c421536 = 0;
       while (true) {
         c421536 = (c421536 + 1) >>> 0;
-        if (!(c421536 > id(2)) && !id(true)) {
-          continue;
+        if (c421536 > id(2) || id(true)) {
+          tmp = id(0n);
+          break;
         }
-        tmp = id(0n);
-        break;
       }
     }
     console.log(`${String(tmp).padEnd(4)}|`);

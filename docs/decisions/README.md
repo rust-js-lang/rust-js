@@ -661,7 +661,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0870 A let chain's value reads its binding first, then is a conditional](0870-a-let-chains-value-reads-its-binding-first.md) *(amended: an exported one's value of a test is a conditional)*
 - [0877 A set's `for_each` is the set's own `forEach`](0877-a-sets-for-each-is-its-own.md)
 - [0878 `instanceof` of a constructor held as a value is `js::instance_of`](0878-instanceof-of-a-constructor-value.md)
-- [0879 An `if` reads as written, and a closure's captures are read in place](0879-an-if-and-a-closures-captures-read-as-written.md) *(amended: a returned value of branches MIR turned is as written; a written negation of a chain stays one)*
+- [0879 An `if` reads as written, and a closure's captures are read in place](0879-an-if-and-a-closures-captures-read-as-written.md) *(amended: a returned value of branches MIR turned is as written; a written negation of a chain stays one; an `if` without an `else` keeps its body inside)*
 - [0882 A field that's a closure of statements is a method](0882-a-field-of-statements-is-a-method.md) *(amended: the comments and blank line before it are before the method)*
 - [0883 A closure written as its call's value is an arrow of that value](0883-a-closure-of-its-calls-value-is-an-arrow-of-it.md)
 - [0885 A closure value is given to a JS helper as it is](0885-a-closure-value-is-given-as-it-is.md)

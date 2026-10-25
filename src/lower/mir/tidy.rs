@@ -604,6 +604,46 @@ mod tests {
         assert!(one_assignment(&c, (&then, &otherwise), none, ("_0", &switches)).is_some());
     }
 
+    /// `if (!c) { return 1; } a(); return 2;` of `if c { a(); return 2; }
+    /// 1`, its rest written in the `then`, is the `if` written; not where
+    /// the rest goes on past the list, which `exit` would then run after,
+    /// nor where it isn't the `then`'s (`jumps::tails::written_thens`).
+    #[test]
+    fn written_thens_turn_only_a_rest_that_leaves() {
+        use super::jumps::written_thens;
+        let at = |lo, hi| js::Span { lo, hi };
+        let spanned = |mut s: Stmt, lo| {
+            s.span = at(lo, lo + 1);
+            s
+        };
+        let guard = || {
+            StmtKind::If(
+                Expr::unary(UnaryOp::Not, Expr::var("c")),
+                vec![StmtKind::Return(Some(Expr::num(1))).at(at(90, 91))],
+                None,
+            )
+            .at(at(1, 2))
+        };
+        let thens = [(at(0, 3), at(4, 50))];
+        let rest = |leaves: bool| {
+            let mut rest = vec![spanned(call("a"), 10)];
+            if leaves {
+                rest.push(StmtKind::Return(Some(Expr::num(2))).at(at(20, 21)));
+            }
+            rest
+        };
+        let turned = |stmts: &[Stmt]| matches!(&stmts[0].kind, StmtKind::If(test, then, None) if matches!(test.kind, ExprKind::Var(_)) && then.len() == 2);
+        let mut leaves = [vec![guard()], rest(true)].concat();
+        written_thens(&mut leaves, &thens);
+        assert!(turned(&leaves) && leaves.len() == 2);
+        let mut goes_on = [vec![guard()], rest(false)].concat();
+        written_thens(&mut goes_on, &thens);
+        assert!(matches!(&goes_on[0].kind, StmtKind::If(test, ..) if matches!(test.kind, ExprKind::Unary(..))));
+        let mut elsewhere = [vec![guard()], rest(true)].concat();
+        written_thens(&mut elsewhere, &[(at(0, 3), at(60, 80))]);
+        assert!(matches!(&elsewhere[0].kind, StmtKind::If(test, ..) if matches!(test.kind, ExprKind::Unary(..))));
+    }
+
     /// What finishes a body, after the stages that tidy it, in the order it
     /// ran when it was a function of its own, `named`: the last passes
     /// `--tidy-until` may stop after, and the contracts checked after them

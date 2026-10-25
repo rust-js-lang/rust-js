@@ -485,3 +485,68 @@ pub fn as_written(a: u32, b: u32) -> bool {
   expect([lib.counted(0 as never, 10 as never), lib.counted(8 as never, 10 as never), lib.counted(12 as never, 10 as never)]).toEqual([7, 10, 12]);
   expect([lib.asWritten(1 as never, 0 as never), lib.asWritten(2 as never, 0 as never)]).toEqual([false, true]);
 });
+
+// React's getComponentNameFromFiber, its `Throw` case: `if (__DEV__) {
+// .. } return null;`. The `if` the program wrote with its body inside stays
+// so, not `if (!__DEV__) { return null; } ..`, its body after it, the
+// guard a `let … else` is (ADR 0879, amended).
+test("an if the program wrote before a return keeps its body inside", async () => {
+  const { js, lib } = await compiled("written-if-before-return", `pub const DEV: bool = true;
+
+pub fn name(kind: u32, names: &[&str], parent: Option<&str>) -> Option<String> {
+    if DEV {
+        // The innermost name, of the last one long enough.
+        for name in names.iter().rev() {
+            if name.starts_with('x') && kind > 1 {
+                return Some(name.to_string());
+            }
+        }
+        let parent = parent?;
+        return Some(format!("{parent}!"));
+    }
+    None
+}
+
+pub struct Fiber {
+    pub kind: u32,
+    pub parent: Option<Box<Fiber>>,
+}
+
+// Its \`?\`'s \`return None\` and the one after the \`if\`, MIR's one.
+pub fn thrown(fiber: &Fiber) -> Option<u32> {
+    match fiber.kind {
+        0 => Some(0),
+        1 => {
+            if DEV {
+                if fiber.kind > 3 {
+                    return Some(3);
+                }
+                let parent = fiber.parent.as_ref()?;
+                return thrown(parent);
+            }
+            None
+        }
+        _ => None,
+    }
+}
+
+pub fn footer(href: Option<&str>) -> String {
+    let Some(href) = href else {
+        return "none".to_string();
+    };
+    if href.starts_with("https://") {
+        return format!("ext {href}");
+    }
+    format!("next {href}")
+}
+`);
+  expect(js).toContain("  if (DEV) {\n    // The innermost name, of the last one long enough.\n");
+  expect(js).not.toContain("!DEV");
+  // A \`let … else\`'s is its guard first, and an \`if\` MIR turned is as written.
+  expect(js).toContain('  if (href == null) {\n    return "none";\n  }\n  if (href.startsWith("https://")) {\n');
+  expect([lib.name(2 as never, ["a", "xb", "xc"] as never, "p" as never), lib.name(1 as never, ["x"] as never, "p" as never), lib.name(5 as never, [] as never, undefined as never)]).toEqual(["xc", "p!", undefined]);
+  expect(js).toContain("      if (DEV) {\n        if (fiber.kind > 3) {\n");
+  const root = { kind: 0, parent: undefined };
+  expect([lib.thrown({ kind: 1, parent: root } as never), lib.thrown({ kind: 1, parent: undefined } as never), lib.thrown({ kind: 2, parent: root } as never)]).toEqual([0, undefined, undefined]);
+  expect([lib.footer(undefined as never), lib.footer("https://x" as never), lib.footer("/y" as never)]).toEqual(["none", "ext https://x", "next /y"]);
+});

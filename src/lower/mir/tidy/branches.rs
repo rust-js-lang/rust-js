@@ -224,7 +224,7 @@ pub(super) fn branch_values(
     (result, switches): (&str, &[Switch]),
     program: &crate::lower::mir::hints::Written,
 ) {
-    let (continues, elses) = (&program.continues, &program.elses);
+    let elses = &program.elses;
     stmts.retain_mut(|stmt| {
         let mut span = stmt.span;
         let kind = std::mem::replace(&mut stmt.kind, StmtKind::Break(None));
@@ -326,112 +326,7 @@ pub(super) fn branch_values(
     });
     stmts.retain(|stmt| !matches!(&stmt.kind, StmtKind::Expr(e) if matches!(e.kind, ExprKind::Undefined)));
     guarded_chains(stmts);
-    // `if (a) { if (b) { return t; } } return f;`, last: `return a && b ? t : f;`.
-    if let [.., last_if, last] = stmts.as_slice()
-        && let StmtKind::Return(Some(no)) = &last.kind
-        && let StmtKind::If(_, then, _) = &last_if.kind
-        && let Some((tests, yes)) = returned_chain(std::slice::from_ref(last_if))
-        && small(&yes)
-        && small(no)
-        && boolean_branch(&yes, no)
-        // Not where the program wrote `return`, an early one.
-        && !written(returns, last.span)
-        && !writes_return(std::slice::from_ref(last_if), returns)
-    {
-        let test = (tests.into_iter())
-            .rev()
-            .reduce(|b, a| Expr::bin(Op::And, a, b))
-            .expect("one");
-        // Of an `if` the program wrote with an `else`, as it wrote it.
-        let written_if = written_branches(last_if.span, then, std::slice::from_ref(last), elses)
-            || written_values(last_if.span, (&yes, no), elses);
-        let value = conditional(test, yes, no.clone(), booleans, written_if);
-        let span = last_if.span;
-        stmts.truncate(stmts.len() - 2);
-        stmts.push(StmtKind::Return(Some(value)).at(span));
-    } else if let [before @ .., last_if, last] = stmts.as_slice()
-        && let StmtKind::Return(Some(_)) = &last.kind
-        && written(returns, last.span)
-        && let Some((tests, body)) = returning_chain(std::slice::from_ref(last_if))
-        // Not `if c { return a; } else { return b; }`'s: a `let … else`'s
-        // rest ends where it goes on, not at a `return` the program wrote;
-        // nor `if c { continue; } return b;`'s, an `if` the program wrote
-        // of a `continue` (ADR 0684).
-        && !body.last().is_some_and(|s| matches!(s.kind, StmtKind::Return(_)) && written(returns, s.span))
-        && !tests_continue(continues, last_if.span)
-        && !declared(&body).any(|name| declared(before).any(|n| n == name))
-    {
-        // `f` the program wrote, a `let … else`'s else: `if (!(a && b)) {
-        // return f; } t`.
-        let test = (tests.into_iter())
-            .rev()
-            .reduce(|b, a| Expr::bin(Op::And, a, b))
-            .expect("one");
-        let (span, guard) = (last_if.span, stmts.pop().expect("the return"));
-        stmts.pop();
-        stmts.push(StmtKind::If(test.negated_test(), vec![guard], None).at(span));
-        stmts.extend(body);
-    }
-}
-
-/// Of `if (a) { const x = e; if (b) { s } }`, `s` ending where it leaves:
-/// `[a, b]` and `const x = e; s`, what a level binds before its test, a
-/// read that does nothing, written into later tests, as `broken_chain`'s:
-/// each kept, so not a property, which a test would read again
-/// (`bound_into`).
-pub(super) fn returning_chain(stmts: &[Stmt]) -> Option<(Vec<Expr>, Vec<Stmt>)> {
-    let [
-        bound @ ..,
-        Stmt {
-            kind: StmtKind::If(test, inner, None),
-            ..
-        },
-    ] = stmts
-    else {
-        return None;
-    };
-    let (mut tests, body) = match returning_chain(inner) {
-        Some(chain) => chain,
-        None if inner.last().is_some_and(ends) => (Vec::new(), inner.clone()),
-        None => return None,
-    };
-    tests.insert(0, test.clone());
-    for test in &mut tests {
-        *test = bound_into(test, bound, &|_, _| 1)?;
-    }
-    let mut all = bound.to_vec();
-    all.extend(body);
-    unread_bound(&mut all, bound.len());
-    Some((tests, all))
-}
-
-/// Whether of `c ? yes : no` one is `true` or `false`: `c || no` or `c &&
-/// yes`, not `?:`.
-pub(super) fn boolean_branch(yes: &Expr, no: &Expr) -> bool {
-    matches!(yes.kind, ExprKind::Bool(_)) || matches!(no.kind, ExprKind::Bool(_))
-}
-
-/// Of `if (a) { if (b) { return t; } }`: its tests, `[a, b]`, and `t`.
-pub(super) fn returned_chain(stmts: &[Stmt]) -> Option<(Vec<Expr>, Expr)> {
-    match stmts {
-        [
-            Stmt {
-                kind: StmtKind::Return(Some(yes)),
-                ..
-            },
-        ] => Some((Vec::new(), yes.clone())),
-        [
-            Stmt {
-                kind: StmtKind::If(test, inner, None),
-                ..
-            },
-        ] => {
-            let (mut tests, yes) = returned_chain(inner)?;
-            tests.insert(0, test.clone());
-            Some((tests, yes))
-        }
-        _ => None,
-    }
+    returned_branches(stmts, returns, booleans, program);
 }
 
 /// `value`, which a branch of a conditional is, where its statement was,
