@@ -498,7 +498,7 @@ function main() {
         loudDrop_drop(l);
         return result;
       };
-      second = nth != null ? value$1(nth) : undefined;
+      second = nth ? value$1(nth) : undefined;
     } finally {
       value.return();
     }
