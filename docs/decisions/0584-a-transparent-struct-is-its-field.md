@@ -103,6 +103,23 @@ and this one's value is its field. Its order is its field's now, as its
 compares two, was refused (#122). Held by `test/corpus/transparent_ord.rs`
 and the mutation `transparent-order-refused`.
 
+## Amendment: its derived `<` is its field's
+
+React's ReactEventPriorities compares `EventPriority`s, a transparent
+`i32` whose order is derived, `a < b`, as upstream compares its numbers;
+the port printed `$cmp(a, b) < 0`: `ordering_call` wrote JS's own `<`
+only of a type JS's `<` orders, a number's, and the struct's order went
+through `cmp_value`, which orders it as its field already. **A
+`<`, `<=`, `>` or `>=` of a transparent struct whose order is derived is
+its field's** (`ordered_as`): JS's `<` of a number, `bool` or numbered
+enum, as a string's of a literal below U+D800. Case N: the struct is its
+field in JS, and the derive compares it as its field's `partial_cmp`
+does, an `f64`'s `NaN` false either way. A hand-written `PartialOrd` or
+`Ord` is still called. Held by `test/lowering-numbers.test.ts`, "a
+transparent struct's derived order is its number's <", `lane_bits.rs`
+against native Rust, and the mutations `transparent-order-by-cmp` and
+`transparent-order-of-its-own-impl-too` (`ordering.ts`).
+
 ## Amendment: its clone, of what's no object
 
 A derived `Clone` of a transparent struct of a function, React's

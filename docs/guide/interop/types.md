@@ -403,6 +403,7 @@ pub struct Empty;
 #[cfg_attr(rust_js, rust_js::name = "click")]
 pub struct Click;
 
+#[derive(PartialEq, PartialOrd)]
 #[repr(transparent)]
 pub struct UserId(pub u32);
 
@@ -429,6 +430,10 @@ pub fn user(id: u32) -> UserId {
 pub fn raw(user: &UserId) -> u32 {
     user.0
 }
+
+pub fn older(a: UserId, b: UserId) -> bool {
+    a < b
+}
 ```
 
 ```js
@@ -453,6 +458,10 @@ export function user(id) {
 export function raw(user) {
   return user;
 }
+
+export function older(a, b) {
+  return a < b;
+}
 ```
 
 - **A struct with named fields is an object**, its fields camelCase
@@ -463,7 +472,8 @@ export function raw(user) {
   ([ADR 0223](../../decisions/0223-webapi-event-and-tag-maps.md)).
 - **A `#[repr(transparent)]` struct is its field.** `UserId(id)` is `id`, and
   `user.0` is `user`. Rust lays it out as its field, so JS has it as its
-  field ([ADR 0584](../../decisions/0584-a-transparent-struct-is-its-field.md)).
+  field ([ADR 0584](../../decisions/0584-a-transparent-struct-is-its-field.md)),
+  and a derived order is its field's, `a < b` of numbers.
   A newtype without the attribute is an array of one, `[id]`.
 
 [Structs, enums and traits as JavaScript sees them](objects.md) covers

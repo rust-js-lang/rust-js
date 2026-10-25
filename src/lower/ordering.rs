@@ -42,6 +42,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Num::of(ty).is_some() || ty.is_bool() || self.is_lang_adt(ty, LangItem::OrderingEnum) || numbered
     }
 
+    /// What `ty` orders as: of a `#[repr(transparent)]` struct whose order
+    /// is derived, its field's, as `cmp_value` orders it, the struct being
+    /// its field in JS (ADR 0584); else `ty`.
+    fn ordered_as(&self, ty: Ty<'tcx>) -> Ty<'tcx> {
+        let derived = !self.has_user_impl(self.partial_ord_trait(), ty) && !self.has_user_impl(self.ord_trait(), ty);
+        match self.transparent(ty) {
+            Some(field) if derived => self.ordered_as(field),
+            _ => ty,
+        }
+    }
+
     /// Strings and `char`s, which `$cmp` orders by code point (ADR 0183).
     pub(super) fn is_text_ord(&self, ty: Ty<'tcx>) -> bool {
         !self.has_cell_layer(ty) && self.is_string_like(ty.peel_refs())
@@ -484,14 +495,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(Some(Expr::bin(op, order, Expr::int(0))));
         }
         // JS's own `<` orders numbers and `bool`s as Rust does, and strings
-        // where one is a literal below U+D800 (ADR 0183).
+        // where one is a literal below U+D800 (ADR 0183); and a derived
+        // order of a `#[repr(transparent)]` struct of one, which is its
+        // field (ADR 0584).
+        let field = self.ordered_as(ty);
         if let Some(op) = operator
-            && self.is_primitive_ord(ty)
+            && self.is_primitive_ord(field)
         {
             return Ok(Some(Expr::bin(op, a, b)));
         }
         if let Some(op) = operator
-            && self.is_text_ord(ty)
+            && self.is_text_ord(field)
         {
             return Ok(Some(self.text_compare(op, a, b)));
         }

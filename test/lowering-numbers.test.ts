@@ -1130,3 +1130,63 @@ pub fn first_of_some(keys: &[String]) -> String {
   expect(of("addObjectDiffToProperties")).toContain("properties[prevLength - 1][1] =");
   expect(of("addValueToProperties")).toContain('(propsLength === 1 && propsKeys[0] === "children" && key == null)');
 });
+
+// React's ReactEventPriorities: `EventPriority`, a `#[repr(transparent)]`
+// `i32` whose order is derived, compared `a < b` as upstream's numbers
+// are. The struct is its field in JS (ADR 0584), so its derived order is
+// the field's, JS's `<`; an `f64`'s too, which `NaN` makes false either
+// way. A hand-written order stays its impl's.
+test("a transparent struct's derived order is its number's <", async () => {
+  const dir = fixture("transparent-order");
+  writeFileSync(join(dir, "lib.rs"), `use std::cmp::Ordering;
+
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[repr(transparent)]
+pub struct EventPriority(i32);
+
+pub fn is_higher_event_priority(a: EventPriority, b: EventPriority) -> bool {
+    a.0 != 0 && a < b
+}
+
+pub fn at_least(a: EventPriority, b: EventPriority) -> bool {
+    a >= b
+}
+
+#[derive(Clone, Copy, PartialEq, PartialOrd)]
+#[repr(transparent)]
+pub struct Ms(f64);
+
+pub fn before(a: Ms, b: Ms) -> bool {
+    a < b
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+#[repr(transparent)]
+pub struct Reversed(i32);
+
+impl PartialOrd for Reversed {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for Reversed {
+    fn cmp(&self, other: &Self) -> Ordering {
+        other.0.cmp(&self.0)
+    }
+}
+
+pub fn reversed_less(a: Reversed, b: Reversed) -> bool {
+    a < b
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("  return a !== 0 && a < b;\n");
+  expect(js).toContain("  return a >= b;\n");
+  expect(js).toContain("export function before(a, b) {\n  return a < b;\n");
+  expect(js).not.toContain("$cmp(a, b)");
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.isHigherEventPriority(2, 8), lib.isHigherEventPriority(8, 2), lib.isHigherEventPriority(0, 8), lib.atLeast(8, 8)]).toEqual([true, false, false, true]);
+  expect([lib.before(1, 2), lib.before(NaN, 2), lib.reversedLess(1, 2), lib.reversedLess(2, 1)]).toEqual([true, false, false, true]);
+});

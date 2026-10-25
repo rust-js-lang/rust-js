@@ -228,4 +228,20 @@ export const mutations: Mutation[] = [
     replace: "|| self.is_text_ord(ty) {",
     tests: ["test/corpus.test.ts", "-t", "^path_components.rs$"],
   },
+  {
+    name: "transparent-order-by-cmp",
+    breaks: "a transparent `EventPriority`'s derived `a < b` is `$cmp(a, b) < 0`, not its number's `<`",
+    file: "src/lower/ordering.rs",
+    find: "        let field = self.ordered_as(ty);\n",
+    replace: "        let field = ty;\n",
+    tests: ["test/lowering-numbers.test.ts", "-t", "a transparent struct's derived order"],
+  },
+  {
+    name: "transparent-order-of-its-own-impl-too",
+    breaks: "a transparent struct's hand-written `Ord`, the other way round, is taken for its field's `<`",
+    file: "src/lower/ordering.rs",
+    find: "            Some(field) if derived => self.ordered_as(field),\n",
+    replace: "            Some(field) => self.ordered_as(field),\n",
+    tests: ["test/lowering-numbers.test.ts", "-t", "a transparent struct's derived order"],
+  },
 ];

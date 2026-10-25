@@ -54,7 +54,33 @@ fn flipped_sum(a: i32, b: i32) -> i32 {
     !(a + b)
 }
 
+// ReactEventPriorities' priority, a lane, ordered as its number.
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Debug)]
+#[repr(transparent)]
+struct EventPriority(i32);
+
+fn is_higher_event_priority(a: EventPriority, b: EventPriority) -> bool {
+    a.0 != 0 && a < b
+}
+
+fn priorities() {
+    let all = [EventPriority(0), EventPriority(2), EventPriority(8), EventPriority(i32::MIN)];
+    for a in all {
+        for b in all {
+            println!(
+                "{a:?} {b:?}: {} {} {} {} {:?}",
+                a < b,
+                a >= b,
+                is_higher_event_priority(a, b),
+                a.max(b) == b,
+                a.cmp(&b),
+            );
+        }
+    }
+}
+
 fn main() {
+    priorities();
     let edges = [0, 1, 6, -1, i32::MIN, i32::MAX, 1 << 30];
     for lanes in edges {
         println!(

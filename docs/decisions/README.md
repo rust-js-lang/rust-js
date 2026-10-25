@@ -465,7 +465,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0581 A closure called as a statement where it's made is its body](0581-a-closure-called-as-a-statement-is-its-body.md) *(extended by 0840: where a module's loaded, and as what a statement evaluates first)*
 - [0582 `Rc::ptr_eq` of an object is its identity, uncounted](0582-ptr-eq-of-an-object-is-its-identity.md) *(amended by 0863: of an `Rc<RefCell<T>>` of an object too)*
 - [0583 A global some hosts lack is an `Option`](0583-a-global-some-hosts-lack-is-an-option.md) *(superseded by 0597)*
-- [0584 A `#[repr(transparent)]` struct is its field](0584-a-transparent-struct-is-its-field.md) *(amended: its clone, of what's no object, is its field's)*
+- [0584 A `#[repr(transparent)]` struct is its field](0584-a-transparent-struct-is-its-field.md) *(amended: its clone, of what's no object, is its field's; its derived `<` is its field's)*
 - [0585 A `RefCell`'s `replace` and `take` hold it for a moment](0585-a-refcells-replace-holds-it-for-a-moment.md) *(amended by 0863: of a `RefCell` of an object, in place, and `get_mut` for a moment)*
 - [0586 `#[rust_js::nullable]` is of a field that's an `Option`](0586-a-nullable-field-is-an-option.md) *(amended by 0772: or a `Cell` of one; amended: or a `Vec` of them, each item's `None` `null`)*
 - [0587 A function given to `with_borrow` is asked what it borrows](0587-a-function-given-to-with-borrow-is-asked-as-a-closure.md)
