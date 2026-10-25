@@ -1633,6 +1633,9 @@ export function $closing(it, drop) {
     return step;
   }, close);
   closing.back = () => it.back();
+  // Its length, its iterator's, where it knows it: what an `enumerate`
+  // stepped from its back counts by (#211).
+  if (it.len !== undefined) closing.len = () => it.len();
   // Its `nth`, its iterator's, the crate's own where it writes one.
   if (it.nth !== undefined) closing.nth = (k) => it.nth(k);
   closing.fold = (init, f) => {

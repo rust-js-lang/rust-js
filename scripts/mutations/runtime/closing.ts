@@ -66,4 +66,12 @@ export const mutations: Mutation[] = [
     replace: "  if (false) closing.nth",
     tests: ["test/corpus.test.ts", "-t", "skip_try_fold"],
   },
+  {
+    name: "closing-length-unknown",
+    breaks: "a closed iterator doesn't pass on its source's length, so `enumerate()` of items with a destructor stepped from its back throws, `iter.len is not a function` (#211)",
+    file: "src/runtime/closing.js",
+    find: "  if (it.len !== undefined) closing.len = () => it.len();\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^enumerate_rev_drops.rs$"],
+  },
 ];

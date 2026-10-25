@@ -90,3 +90,14 @@ ADR 0262's case: C, an error where Rust is fine, and a throw. Held by
 ## Amended by
 
 [ADR 0715](0715-what-an-into-iterator-bound-is-given.md): what a type parameter bounded by `IntoIterator` is given is `iterable_items` of its argument, a `&mut` collection's handles among them, and a `&mut` range is stepped where it is.
+
+## Amendment: a closed source's length
+
+`enumerate()` of an array's items with a destructor is `$enumerate` of
+them closed, `$closing(..)`, which passed on its source's back but not
+its length, so stepped from its back, `enumerate().map(..).rev()`, it
+threw: `iter.len is not a function` (#211). `$closing` passes on its
+source's length where it has one, as it does its back and its `nth`
+(`enumerate_rev_drops`, `closing-length-unknown`). The case's two
+iterators, closed to drop what they don't give, grow the readability
+measure's `$iter` share, as any of items with a destructor do.
