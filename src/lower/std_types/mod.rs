@@ -12,7 +12,7 @@
 //! | `Cell`, `RefCell`, `Mutex`, `RwLock`, atomics | `{ value }` | `cell` |
 //! | `Rc`, `Arc` whose counts are read, `Weak` | `{ value, strong, weak }` | `rc` |
 //! | `Cow` | `{ TAG, _0 }`, what it borrowed or owns | `cow` |
-//! | `OnceCell`, `OnceLock` | `{ value }` of an `Option` | `once` |
+//! | `OnceCell`, `OnceLock` | `{ value }` of an `Option`; in a field, the property | `once` |
 //! | `LazyCell`, `LazyLock` | `{ init }`, then `{ value }` | `lazy` |
 //! | `BinaryHeap` | an `Array` in heap order | `heap` |
 //! | ranges | `{ start, end }` | `range` |

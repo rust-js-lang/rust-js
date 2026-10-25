@@ -446,6 +446,51 @@ pub(crate) fn rc_pointee<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Ty<'tc
     }
 }
 
+/// Which of a `OnceCell`'s or a `OnceLock`'s own methods `def_id` is (ADR
+/// 0317): what lowering calls, and what the body's ranges ask of a `set`,
+/// whether its cell is still empty there (ADR 0847).
+pub(in crate::lower) fn once_method(tcx: TyCtxt<'_>, def_id: DefId) -> Option<OnceOp> {
+    let owner = (tcx.type_of(tcx.inherent_impl_of_assoc(def_id)?))
+        .instantiate_identity()
+        .skip_normalization();
+    if !matches!(owner.kind(), ty::Adt(adt, _) if is_std_def(tcx, adt.did(), StdItem::OnceCell)) {
+        return None;
+    }
+    Some(match tcx.item_name(def_id).as_str() {
+        "new" => OnceOp::New,
+        "get" | "into_inner" => OnceOp::Get,
+        "get_mut" => OnceOp::GetMut,
+        "set" => OnceOp::Set,
+        "get_or_init" => OnceOp::GetOrInit,
+        "take" => OnceOp::Take,
+        _ => return None,
+    })
+}
+
+/// `Rc::new`, `Arc::new` or `Box::new`, std's, which move what they're
+/// given into a new allocation and run nothing else (ADR 0847).
+pub(in crate::lower) fn is_pointer_new(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
+    tcx.item_name(def_id) == sym::new
+        && tcx.inherent_impl_of_assoc(def_id).is_some_and(|imp| {
+            let owner = tcx.type_of(imp).instantiate_identity().skip_normalization();
+            owner.is_box() || rc_pointee(tcx, owner).is_some()
+        })
+}
+
+/// An `Rc`'s or an `Arc`'s `clone`, std's, which counts one more and runs
+/// nothing else (ADR 0847).
+pub(in crate::lower) fn is_rc_clone<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId, args: ty::GenericArgsRef<'tcx>) -> bool {
+    tcx.trait_of_assoc(def_id)
+        .is_some_and(|t| tcx.is_lang_item(t, LangItem::Clone))
+        && args.types().next().is_some_and(|of| rc_pointee(tcx, of).is_some())
+}
+
+/// An `Rc`'s or an `Arc`'s `Deref`, std's, which runs nothing (ADR 0847).
+pub(in crate::lower) fn is_rc_deref<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId, args: ty::GenericArgsRef<'tcx>) -> bool {
+    tcx.is_diagnostic_item(Symbol::intern("deref_method"), def_id)
+        && args.types().next().is_some_and(|of| rc_pointee(tcx, of).is_some())
+}
+
 /// What an `rc::Weak` or `sync::Weak` points at (ADR 0320).
 pub(crate) fn weak_pointee<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
     match ty.kind() {

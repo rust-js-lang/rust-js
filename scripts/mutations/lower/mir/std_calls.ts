@@ -759,4 +759,22 @@ export const mutations: Mutation[] = [
     replace: "                        Value::Ref(place) => Expr::held(place),\n                        cell => Expr::held(this.value_expr(cell, span)?),\n",
     tests: ["test/corpus.test.ts", "-t", "^capacity_overflow.rs$"],
   },
+  {
+    name: "once-set-never-known-empty",
+    breaks: "a `OnceCell`'s `set` is never of a cell known empty, so React's `payload._ioInfo = ioInfo` is `if (payload._ioInfo === undefined) ..`",
+    file: "src/lower/mir/std_calls.rs",
+    find: "                    (self.thir_call(def_id, span)).is_some_and(|(fun, _)| self.frame.facts.set_empty.contains(&fun));\n",
+    replace: "                    (self.thir_call(def_id, span)).is_some_and(|(fun, _)| self.frame.facts.set_empty.contains(&fun) && false);\n",
+    tests: ["test/corpus.test.ts", "-t", "^once_cell_fields.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "once-set-result-always-read",
+    breaks: "a `set`'s `Result` nothing reads is made, `const unset = .. ; if (unset) ..`, where it's `if (node.cache === undefined) ..`",
+    file: "src/lower/mir/std_calls.rs",
+    find: "                let read = !matches!(&state.body[state.at].terminator().kind,\n",
+    replace: "                let read = true || !matches!(&state.body[state.at].terminator().kind,\n",
+    tests: ["test/corpus.test.ts", "-t", "^once_cell_known_empty.rs$"],
+    snapshots: true,
+  },
 ];

@@ -2,7 +2,10 @@
 
 Status: Accepted. Extends [0025](0025-vec-loops-refcell-mut.md) and
 [0051](0051-generic-options.md); counted by
-[0314](0314-std-data-structures.md).
+[0314](0314-std-data-structures.md). Amended by
+[0847](0847-a-oncecell-field-is-absent-until-set.md): in a field it's the
+property, absent until it's set; a `set` is an assignment where the cell
+is known empty, else a test, and `$onceSet` is gone.
 
 Case: A ([0262](0262-when-rust-and-js-disagree.md)), but for `wait()`
 and a `OnceLock`'s reentrant init, D: refused.
@@ -52,3 +55,7 @@ setting it must check it's unset.**
   run `f` every time, drop the panic, copy a `get_mut` number, keep what
   `take` took, and refuse a `OnceLock`, a `static` one and a `()` one.
 - `docs/std-coverage.txt`: `OnceCell` 7 of 7, `OnceLock` 7 of 8.
+
+## Amended by
+
+- [0847](0847-a-oncecell-field-is-absent-until-set.md): A `OnceCell` in a field is the property, absent until it's set

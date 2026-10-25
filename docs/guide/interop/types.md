@@ -36,6 +36,7 @@ from your crate and what a binding must be given.
 | `Box<T>`, `Rc<T>`, `Arc<T>` | the value itself | [Pointers](#box-rc-and-arc) |
 | an `Rc` whose count is read | `{ value, strong, weak }` | [Pointers](#box-rc-and-arc) |
 | `Cell<T>`, `RefCell<T>` | `{ value }`; in a field, the property itself | [Cells](#cell-and-refcell) |
+| `OnceCell<T>`, `OnceLock<T>` | `{ value }` of an `Option`; in a field, the property, absent until it's set | [OnceCell](#oncecell-and-oncelock) |
 | `&T` | the value | [References](#references) |
 | `&mut` to an object | the object, changed in place | [References](#references) |
 | `&mut` to a number, a string, an `Option` | a box `{ value }` | [References](#references) |
@@ -914,6 +915,92 @@ export function shared() {
 
 A `thread_local!` of a cell is a module variable: see
 [Access to the JavaScript global scope](global-scope.md#module-variables).
+
+## OnceCell and OnceLock
+
+```rust
+use std::cell::OnceCell;
+use std::rc::Rc;
+
+pub struct Info {
+    pub name: String,
+}
+
+pub struct Payload {
+    pub status: u32,
+    pub info: OnceCell<Rc<Info>>,
+}
+
+pub fn payload(dev: bool) -> Rc<Payload> {
+    let payload = Rc::new(Payload {
+        status: 0,
+        info: OnceCell::new(),
+    });
+    if dev {
+        let info = Rc::new(Info {
+            name: "lazy".to_string(),
+        });
+        let _ = payload.info.set(info);
+    }
+    payload
+}
+
+pub fn name(payload: &Payload) -> Option<String> {
+    payload.info.get().map(|info| info.name.clone())
+}
+
+pub fn rename(payload: &Payload, name: &str) -> bool {
+    let info = Rc::new(Info {
+        name: name.to_string(),
+    });
+    payload.info.set(info).is_ok()
+}
+```
+
+```js
+export function payload(dev) {
+  const payload = {
+    status: 0,
+  };
+  if (dev) {
+    const info = {
+      name: "lazy",
+    };
+    payload.info = info;
+  }
+  return payload;
+}
+
+export function name(payload) {
+  return payload.info?.name;
+}
+
+export function rename(payload, name) {
+  const info = {
+    name,
+  };
+  const unset = payload.info === undefined;
+  if (unset) {
+    payload.info = info;
+  }
+  return (unset ? { TAG: "Ok" } : { TAG: "Err", _0: info }).TAG === "Ok";
+}
+```
+
+- **A `OnceCell` in a field is the property its `Option` is**, left out
+  where it's made `OnceCell::new()` and `undefined` until it's set:
+  `payload.info`, read where `get()` reads it, declared `info?: Info |
+  undefined` ([ADR 0847](../../decisions/0847-a-oncecell-field-is-absent-until-set.md)).
+- **A `set` of a cell the function made, that nothing could have set
+  since, is an assignment**, `payload.info = info`; any other `set` tests
+  it first, `if (payload.info === undefined)`, and where its `Result` is
+  read, it's `Err` of the value where the cell was set already.
+- **A `OnceCell` of its own is `{ value }`**, and one only its function
+  reads and sets is its `let`. `get_or_init` and `get_mut` of a field
+  have a handle on it.
+- What's set to a cell of a `()` or an `Option`, which look like `None`,
+  is boxed, so the cell set is never `undefined`
+  ([ADR 0317](../../decisions/0317-once-cells.md)).
 
 ## References
 

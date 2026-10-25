@@ -241,6 +241,7 @@ In this table, `lower.rs`, `names.rs` and `runtime.rs` are at the `src/` root.
 | Copy policy | `copies.rs` | `copy_if_needed`, `contains_mutated` |
 | Map/set operations and discarded results | `std_types/map.rs` | `map_values`, `discarded_calls` |
 | Cells and plain module statics | `std_types/cell.rs` | `cell_call`, `plain_statics` |
+| A field that's the property its cell holds, a `Cell`'s, a `RefCell`'s never counted, a `OnceCell`'s | `representation.rs` | `property_cell`, `held`, `holding` |
 | Std call classification | `recognition/calls.rs` | `classify`, and its answers through `shortcuts.rs` |
 | Std identities and layout | `recognition/std_items.rs`, `recognition/types.rs`, `recognition/fmt.rs`, `recognition/iterators.rs` | `StdItem`, `is_std_type`, `is_std_def`, `std_item`, `trait_method`, `cell_value_field`, `deref_target`, `debug_builder`, `builder_step`, `iterator_method` |
 | Std coverage catalog | `recognition/registry.rs` | `measured` |
@@ -271,7 +272,7 @@ In this table, `lower.rs`, `names.rs` and `runtime.rs` are at the `src/` root.
 | What a place stores of what's written, a nullable field's `None` `null`, whether a JS value may be `undefined`, and which places store so, however reached | `js/make.rs`; `representation.rs` | `Storage`, `written`, `may_be_undefined`; `nullable_cell_field`, `nullable_cell_handle` |
 | What JS is given of a `()`: `undefined`, or a list's `[]` | `representation.rs` | `unit_given`, `UnitTo` |
 | A guard `if let Some(v) = value` that holds where its arm of `match js::classify(value)` matched | `body_queries.rs` | `held_guards` |
-| An index or a slice's range in bounds, and the test a `bool` variable holds | `body_queries/ranges.rs`; `mir/bounds.rs` | `judge_index`, `judge_range`, `held_test`; `indexes_in_bounds` |
+| An index or a slice's range in bounds, the test a `bool` variable holds, and a `OnceCell` still empty where it's set | `body_queries/ranges.rs`; `mir/bounds.rs` | `judge_index`, `judge_range`, `held_test`, `made_empty`; `indexes_in_bounds` |
 | A binding's read of a property, which a getter may be, and a chain's test of one | `binding_calls.rs`; `mir/tidy/logicals.rs` | `answered_by_a_getter`, `Known`; `bound_into` |
 
 **Calls.** `mir/dispatch.rs::mir_call` handles special calls and sends evaluated

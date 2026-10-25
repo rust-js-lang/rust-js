@@ -884,10 +884,11 @@ impl<'tcx> Declarations<'_, 'tcx> {
                 hir::Node::Field(field) => Some(field.ty),
                 _ => None,
             });
-            // A nullable `Cell`'s, the `Option` it holds, the field (ADR 0772).
+            // A nullable `Cell`'s, the `Option` it holds, the field (ADR 0772);
+            // a `OnceCell`'s, absent until it's set (ADR 0847).
             let option = match is_nullable(self.tcx, field) {
                 true => super::bindings::nullable_option(self.tcx, ty).and_then(|option| self.option(option)),
-                false => self.option(ty),
+                false => self.option(ty).or_else(|| self.once_cell_item(ty)),
             };
             let (optional, ty) = match option {
                 Some(inner) => {
@@ -1082,6 +1083,15 @@ impl<'tcx> Declarations<'_, 'tcx> {
         self.tcx.hir_node_by_def_id(def_id.as_local()?).ty()
     }
 
+    /// What a `OnceCell` or a `OnceLock` holds: in a field, the property,
+    /// absent until it's set (ADR 0847).
+    fn once_cell_item(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
+        match ty.kind() {
+            ty::Adt(adt, args) if is_std_def(self.tcx, adt.did(), StdItem::OnceCell) => Some(args.type_at(0)),
+            _ => None,
+        }
+    }
+
     fn option(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
         match ty.kind() {
             ty::Adt(adt, args) if self.tcx.is_lang_item(adt.did(), LangItem::Option) => Some(args.type_at(0)),
@@ -1120,8 +1130,13 @@ impl<'tcx> Declarations<'_, 'tcx> {
     /// `ty` as a TypeScript type.
     /// A field's type: of a `Cell`, what it holds, as a `Cell` in a field
     /// is the property set in place (ADR 0288), and of a `RefCell` never
-    /// counted (ADR 0362).
+    /// counted (ADR 0362); of a `OnceCell`, what it holds or `undefined`
+    /// (ADR 0847).
     fn field_ts(&mut self, ty: Ty<'tcx>) -> Value {
+        if let Some(item) = self.once_cell_item(ty) {
+            let item = self.ts(item);
+            return or_undefined(item);
+        }
         match ty.kind() {
             ty::Adt(adt, args)
                 if is_std_def(self.tcx, adt.did(), StdItem::Cell)

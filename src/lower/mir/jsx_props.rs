@@ -250,7 +250,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// THIR's call of `def_id` at `fn_span`, MIR's call there, where it's
     /// the one: its function and its arguments.
-    pub(super) fn thir_call(
+    pub(in crate::lower) fn thir_call(
         &self,
         def_id: rustc_span::def_id::DefId,
         fn_span: Span,

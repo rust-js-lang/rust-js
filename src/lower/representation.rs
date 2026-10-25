@@ -597,24 +597,34 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// What a field of type `ty` is, read where it's `field`: itself, or of
-    /// a `Cell`, a handle on it, as a `Cell` in a field is the value it
-    /// holds, the property set in place (ADR 0288), and so is a `RefCell`
-    /// never counted (ADR 0362). Every use of a cell, `.value`, reads and
-    /// writes the property through it.
+    /// a cell that's the property it holds (`property_cell`), a `Cell`'s
+    /// say, set in place (ADR 0288), a handle on it. Every use of a cell,
+    /// `.value`, reads and writes the property through it.
     pub(super) fn held(&self, field: Expr, ty: Ty<'tcx>) -> Expr {
-        match self.is_std_type(ty, StdItem::Cell) || self.plain_ref_cell(ty) {
-            true => Expr::handle(field),
-            false => field,
+        match self.property_cell(ty) {
+            Some(_) => Expr::handle(field),
+            None => field,
         }
     }
 
+    /// Of a field of type `ty` that's the property its cell holds, what
+    /// the property is: a `Cell`'s `T` (ADR 0288), a `RefCell`'s never
+    /// counted (ADR 0362), and a `OnceCell`'s or `OnceLock`'s `Option<T>`,
+    /// absent until it's set (ADR 0847). `None` of a field that's itself.
+    pub(super) fn property_cell(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
+        let ty::Adt(_, args) = ty.kind() else { return None };
+        if self.is_std_type(ty, StdItem::Cell) || self.plain_ref_cell(ty) {
+            return Some(args.type_at(0));
+        }
+        (self.is_std_type(ty, StdItem::OnceCell)).then(|| Ty::new_option(self.tcx, args.type_at(0)))
+    }
+
     /// What a field of type `ty` holds of `value`, a field's value made: of
-    /// a `Cell`, what the cell holds (ADR 0288), and of a `RefCell` never
-    /// counted (ADR 0362).
+    /// a cell that's the property (`property_cell`), what the cell holds.
     pub(super) fn holding(&self, value: Expr, ty: Ty<'tcx>) -> Expr {
-        match self.is_std_type(ty, StdItem::Cell) || self.plain_ref_cell(ty) {
-            true => Expr::held(value),
-            false => value,
+        match self.property_cell(ty) {
+            Some(_) => Expr::held(value),
+            None => value,
         }
     }
 

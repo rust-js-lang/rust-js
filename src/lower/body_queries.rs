@@ -121,6 +121,9 @@ pub(super) struct BodyFacts<'tcx> {
     /// to be a whole number in the integer's range (`whole_casts`), and of
     /// an integer the body's ranges show in its target's (`ranges`).
     pub(super) kept_casts: HashSet<ExprId>,
+    /// The function of each `OnceCell::set` whose cell the body's ranges
+    /// show still empty there, every time it's reached (`ranges`, ADR 0847).
+    pub(super) set_empty: HashSet<ExprId>,
     /// Where each read of a registered symbol is that's only tested against
     /// the registry's, `registered_reads`'s (ADR 0634).
     pub(super) registered_reads: HashSet<Span>,

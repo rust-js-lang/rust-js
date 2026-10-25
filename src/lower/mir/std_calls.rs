@@ -6,6 +6,7 @@
 
 use super::*;
 use crate::lower::format_args::Piece;
+use crate::lower::std_types::once::OnceOp;
 
 /// What's called, a std function `classify` knows, and its type's parts.
 #[derive(Clone, Copy)]
@@ -1123,15 +1124,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// What changes a place: `mem::swap` and `replace`, an `Option`'s
-    /// `take`, an `Rc`'s `make_mut`, a `Cow`'s (ADRs 0147, 0319, 0320).
+    /// `take`, an `Rc`'s `make_mut`, a `Cow`'s, a `OnceCell`'s `set`
+    /// (ADRs 0147, 0319, 0320, 0847).
     pub(super) fn mir_place_call<'c>(
         &self,
-        _state: &State<'_, 'tcx>,
+        state: &State<'_, 'tcx>,
         call: StdCall<'c, 'tcx>,
     ) -> Option<StdLowering<'c, 'a, 'tcx>> {
         let StdCall {
             known,
             def_id,
+            generic_args,
             arg_tys,
             output,
             span,
@@ -1237,6 +1240,28 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     this.option_place_values(op, place, item, (given, &arg_tys[1..]), span, out)?
                 }))
             }),
+            // A `OnceCell`'s `set`: of a cell the body's ranges show still
+            // empty there, and of a `Result` read or not (ADR 0847).
+            Std::Once(OnceOp::Set) => {
+                let empty =
+                    (self.thir_call(def_id, span)).is_some_and(|(fun, _)| self.frame.facts.set_empty.contains(&fun));
+                let read = !matches!(&state.body[state.at].terminator().kind,
+                    TerminatorKind::Call { destination, .. }
+                        if destination.projection.is_empty() && self.unread(state, destination.local));
+                let item = generic_args.type_at(0);
+                lower(move |this, state, values, out| {
+                    let cell = this.value_expr(values.next().expect("the cell"), span)?;
+                    let value = this.value_expr(values.next().expect("what it's set to"), span)?;
+                    this.flush(state, out)?;
+                    Ok(Value::Expr(this.once_set(
+                        (cell, value),
+                        item,
+                        (empty, read),
+                        span,
+                        out,
+                    )))
+                })
+            }
             _ => return None,
         })
     }

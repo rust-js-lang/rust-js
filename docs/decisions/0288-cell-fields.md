@@ -63,3 +63,4 @@ add(&c.count, 5);                             // add({ get value() { return c.co
 ## Amended by
 
 - [0293](0293-cells-read-at-once.md): A `Cell` a `let` takes apart and reads at once is its value
+- [0847](0847-a-oncecell-field-is-absent-until-set.md): A `OnceCell` in a field is the property, absent until it's set

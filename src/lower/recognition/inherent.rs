@@ -20,7 +20,6 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         let local_key = adt(StdItem::LocalKey);
         // A thread-local of a `Cell`, whose own `take` and `replace` it has.
         let local_cell = local_key && local_key_of_cell(tcx, owner);
-        let once = self.is_std_type(owner, StdItem::OnceCell);
         let rc = rc_pointee(tcx, owner).is_some();
         let weak = weak_pointee(tcx, owner).is_some();
         let lazy = self.is_std_type(owner, StdItem::LazyCell);
@@ -42,6 +41,9 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             && let Some(cell) = cell_method(name.as_str(), adt(StdItem::RefCell))
         {
             return Some(cell);
+        }
+        if let Some(op) = once_method(tcx, def_id) {
+            return Some(Std::Once(op));
         }
         // A clock's: of its nanoseconds (ADR 0447).
         if let Some(clock) = clock_type_of(owner) {
@@ -318,12 +320,6 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "fetch_max" if adt(StdItem::Atomic) => Std::AtomicFetchMax(true),
             "fetch_min" if adt(StdItem::Atomic) => Std::AtomicFetchMax(false),
             "compare_exchange" | "compare_exchange_weak" if adt(StdItem::Atomic) => Std::AtomicCompareExchange,
-            "new" if once => Std::Once(OnceOp::New),
-            "get" | "into_inner" if once => Std::Once(OnceOp::Get),
-            "get_mut" if once => Std::Once(OnceOp::GetMut),
-            "set" if once => Std::Once(OnceOp::Set),
-            "get_or_init" if once => Std::Once(OnceOp::GetOrInit),
-            "take" if once => Std::Once(OnceOp::Take),
             "into_owned" if cow => Std::Cow(CowOp::IntoOwned),
             "to_mut" if cow => Std::Cow(CowOp::ToMut),
             "new" if lazy => Std::Lazy(LazyOp::New),

@@ -94,6 +94,7 @@ pub fn collect_ranges<'tcx>(tcx: TyCtxt<'tcx>, bodies: &mut [Body<'tcx>], initia
     for (body, ranges) in all.into_iter().zip(found) {
         body.facts.in_bounds = ranges.in_bounds;
         body.facts.exact = ranges.exact;
+        body.facts.set_empty = ranges.set_empty;
         body.facts.kept_casts.extend(ranges.kept_casts);
     }
 }

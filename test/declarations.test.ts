@@ -384,6 +384,10 @@ pub fn shelved(shelf: &Shelf, book: String) -> usize {
     shelf.books.borrow().len()
 }
 
+pub struct Loaded {
+    pub io_info: std::cell::OnceCell<String>,
+}
+
 pub fn tallied(cell: &std::cell::Cell<u32>) -> u32 {
     cell.get()
 }
@@ -437,6 +441,8 @@ pub fn fail(message: &str) -> ! {
     // So is a `RefCell` only ever borrowed for a moment (ADR 0362).
     "export interface Shelf {\n    books: string[];\n}",
     "export function tallied(cell: {\n    value: number;\n}): number;",
+    // A `OnceCell` in a field is absent until it's set (ADR 0847).
+    "export interface Loaded {\n    ioInfo?: string | undefined;\n}",
     // A function that never returns returns `never` (ADR 0386).
     "export function fail(message: string): never;",
   ]) {

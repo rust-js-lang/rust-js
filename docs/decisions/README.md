@@ -306,7 +306,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0285 `std::ptr::eq` of JS objects is whether they're one](0285-ptr-eq.md)
 - [0286 A component that sometimes renders nothing returns an `Option`](0286-components-that-render-nothing.md)
 - [0287 A cell only its function reads and sets is a `let`](0287-cells-as-variables.md) *(amended by 0791: one written through is its place where it's used)*
-- [0288 A `Cell` in a field is the property it holds](0288-cell-fields.md)
+- [0288 A `Cell` in a field is the property it holds](0288-cell-fields.md) *(extended by 0847: a `OnceCell`'s too, absent until it's set)*
 - [0289 A `Copy` bound takes a copy only where a copy isn't the value](0289-copy-bounds.md)
 - [0290 A pattern names a variable set again while nothing sets it](0290-steady-bindings.md)
 - [0291 A `let` taking a variable apart is JS's destructuring](0291-let-destructures-places.md)
@@ -335,7 +335,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0314 Each std data structure works or is refused, and coverage only grows](0314-std-data-structures.md)
 - [0315 A `Vec`'s capacity does nothing, and its edits are std's](0315-vec-capacity-and-edits.md) *(amended by 0774: the room asked is checked)*
 - [0316 A `LinkedList` is an array, as a `VecDeque` is](0316-linked-list.md)
-- [0317 A `OnceCell` is a `{ value }` of an `Option`, set once](0317-once-cells.md)
+- [0317 A `OnceCell` is a `{ value }` of an `Option`, set once](0317-once-cells.md) *(amended by 0847: in a field it's the property; a `set` of one still empty is assigned, else tested, without `$onceSet`)*
 - [0318 A `LazyCell` makes its value when it's first used, as Rust's does](0318-lazy-cells.md)
 - [0319 A `Cow` is its enum, made owned by a clone of what it borrowed](0319-cows.md)
 - [0320 An `Rc` whose counts are read is counted, as Rust counts it](0320-counted-rcs.md) *(amended by 0843: a `Weak` nothing upgrades counts nothing)*
@@ -457,7 +457,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0573 Every Rust name is camelCase in JS](0573-every-rust-name-is-camel-case-in-js.md) *(amended by 0678: a parameter's leading `_` isn't in its JS name)*
 - [0574 What React's scheduler heap asks: a nullable result, an object's `Some`, a runtime that loads anywhere](0574-what-reacts-scheduler-heap-asks.md)
 - [0575 An `if` keeps the `else` it's written with, and a tail `if` of two values is a conditional](0575-an-if-keeps-its-else-and-a-tail-if-is-a-conditional.md)
-- [0576 What a body's integers can be: an index in bounds, an operator that can't wrap, a swap JS's own](0576-what-a-bodys-integers-can-be.md) *(extended by 0720: a labeled block's `break` and a named constant)*
+- [0576 What a body's integers can be: an index in bounds, an operator that can't wrap, a swap JS's own](0576-what-a-bodys-integers-can-be.md) *(extended by 0720: a labeled block's `break` and a named constant; extended by 0847: which `OnceCell` is still empty)*
 - [0577 A function only calls reach is what its calls give it; a `push` and a `pop` change a length by one](0577-a-function-only-calls-reach.md)
 - [0578 A nullable result is `null` where it's written; an item's place known in bounds is unchecked](0578-a-nullable-result-where-its-written.md) *(amended by 0638: a nullable function's call is `null` already)*
 - [0579 A thread-local is named as its module's variable](0579-a-thread-local-is-named-as-a-variable.md)
@@ -640,6 +640,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0843 A `Weak` nothing upgrades is the value itself](0843-a-weak-nothing-upgrades-is-the-value-itself.md)
 - [0844 A library that reads no count counts no `Rc`](0844-a-library-that-reads-no-count-counts-no-rc.md)
 - [0845 An `Rc`'s declaration is what it points at](0845-an-rcs-declaration-is-what-it-points-at.md)
+- [0847 A `OnceCell` in a field is the property, absent until it's set](0847-a-oncecell-field-is-absent-until-set.md)
 - [0842 A let chain after a test of its own reads its place once](0842-a-let-chain-after-a-test-of-its-own-reads-its-place-once.md)
 - [0720 A labeled block's `break` and a named constant, in a body's ranges](0720-a-labeled-block-and-a-named-constant-in-a-bodys-ranges.md)
 - [0721 `js::strict_equals(a, b)` is JS's `===`](0721-strict-equals-is-jss-triple-equals.md) *(fixed by 0775: a `()` compared is `undefined`)*

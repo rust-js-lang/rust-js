@@ -175,8 +175,8 @@ export const mutations: Mutation[] = [
     name: "derived-clone-shares-changed-vec",
     breaks: "a derived `clone` is `{ ...s }`, sharing the `Vec` the copy is pushed to, so the push shows in the original too",
     file: "src/lower/std_impls.rs",
-    find: "            if held.map_or(self.needs_clone(t), |item| self.needs_clone(item)) {",
-    replace: "            if false && held.map_or(self.needs_clone(t), |item| self.needs_clone(item)) {",
+    find: "                .map_or(self.needs_clone(t), |item| self.needs_clone(item))\n            {\n",
+    replace: "                .map_or(self.needs_clone(t), |item| self.needs_clone(item))\n                && false\n            {\n",
     tests: ["test/compiler.test.ts", "-t", "std trait impls are direct calls, and a clone copies only what changes"],
   },
   {
@@ -205,10 +205,10 @@ export const mutations: Mutation[] = [
   },
   {
     name: "clone-cell-field-respread",
-    breaks: "a derived clone of a `Cell` field copies it again, `{ ...c, count: c.count }`, which the spread did",
+    breaks: "a derived clone of a `Cell` or a `OnceCell` field copies it again, `{ ...c, count: c.count }`, which the spread did",
     file: "src/lower/std_impls.rs",
-    find: "                ty::Adt(_, args) if self.is_std_type(t, StdItem::Cell) => Some(args.type_at(0)),\n",
-    replace: "                ty::Adt(_, args) if false && self.is_std_type(t, StdItem::Cell) => Some(args.type_at(0)),\n",
+    find: "            if self\n                .property_cell(t)\n                .map_or(self.needs_clone(t), |item| self.needs_clone(item))\n            {\n",
+    replace: "            if self.needs_clone(t) {\n",
     tests: ["test/lowering-cells.test.ts", "-t", "cell in a field is the property"],
   },
   {

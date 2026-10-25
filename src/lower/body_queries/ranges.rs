@@ -3,14 +3,18 @@
 //! it runs, each condition narrowing them where it holds. Of these: which
 //! index of a `Vec` or a slice is in bounds, read as JS reads it, `heap[i]`
 //! (ADR 0292); and which `+`, `-` or `*` of a small integer can't leave
-//! its type's range, written without its wrap, `(i + 1) * 2 - 1`.
+//! its type's range, written without its wrap, `(i + 1) * 2 - 1`. And
+//! which `OnceCell` the body made is still empty where it's set (ADR
+//! 0847), `payload._ioInfo = ioInfo`.
 
 use super::*;
 use crate::lower::bindings::reads_string_length;
-use crate::lower::recognition::{VecView, counts_utf16_units, makes_utf16_units, vec_view};
+use crate::lower::recognition::{VecView, counts_utf16_units, makes_utf16_units, once_method, vec_view};
+use crate::lower::std_types::once::OnceOp;
 use rustc_middle::middle::region;
 use rustc_middle::ty::TypeVisitableExt;
 
+mod empty;
 mod known;
 
 use known::{Below, Known, Range, either};
@@ -46,6 +50,8 @@ pub(in crate::lower) struct Ranges {
     pub(in crate::lower) in_bounds: HashSet<ExprId>,
     pub(in crate::lower) exact: HashSet<Span>,
     pub(in crate::lower) kept_casts: HashSet<ExprId>,
+    /// The function of each `OnceCell::set` of a cell still empty there.
+    pub(in crate::lower) set_empty: HashSet<ExprId>,
 }
 
 /// A parameter of a function only calls reach, a variable its pattern
@@ -64,6 +70,12 @@ struct Walk<'a, 'tcx> {
     indexes: HashMap<ExprId, bool>,
     ops: HashMap<ExprId, bool>,
     casts: HashMap<ExprId, bool>,
+    /// Each `OnceCell::set`'s, by its function: its cell empty there.
+    sets: HashMap<ExprId, bool>,
+    /// The reads of variables that give nothing their cells
+    /// (`empty::quiet_reads`).
+    quiet: HashSet<ExprId>,
+    typing_env: ty::TypingEnv<'tcx>,
     /// The most each slice's length is whose `len()` the body asks, by
     /// what its items are (`SIZED_SLICE_LENGTH_MOST`).
     length_most: HashMap<Slice, i128>,
@@ -145,6 +157,9 @@ pub(in crate::lower) fn ranges<'tcx>(
             indexes: HashMap::new(),
             ops: HashMap::new(),
             casts: HashMap::new(),
+            sets: HashMap::new(),
+            quiet: empty::quiet_reads(tcx, thir),
+            typing_env: ty::TypingEnv::post_analysis(tcx, def_id),
             length_most: HashMap::new(),
             volatile: volatile(thir),
             changes: changes(thir),
@@ -248,6 +263,7 @@ impl Walk<'_, '_> {
                 .map(|(span, _)| span)
                 .collect(),
             kept_casts: (self.casts.iter()).filter(|&(_, &ok)| ok).map(|(&id, _)| id).collect(),
+            set_empty: (self.sets.iter()).filter(|&(_, &ok)| ok).map(|(&id, _)| id).collect(),
         }
     }
 }
@@ -480,6 +496,7 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
                 _ => top(),
             },
             ExprKind::VarRef { id } | ExprKind::UpvarRef { var_hir_id: id, .. } => {
+                self.mention(e, id, known);
                 (known.as_ref()).and_then(|k| k.vars.get(&id).cloned()).or_else(top)
             }
             ExprKind::Block { block } => self.block(block, known),
@@ -677,8 +694,19 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
     /// A place walked where it's set or borrowed, not read: what its
     /// indexes compute.
     fn place(&mut self, e: ExprId, known: &mut Option<Known>) {
-        if var_of(self.thir, e).is_none() {
-            self.expr(e, known);
+        match var_of(self.thir, e) {
+            Some(var) => self.mention(strip(self.thir, e), var, known),
+            None => _ = self.expr(e, known),
+        }
+    }
+
+    /// A read of `var` at `e`: unless it's one that gives nothing its cells
+    /// (`empty::quiet_reads`), none it reaches is known empty after.
+    fn mention(&self, e: ExprId, var: LocalVarId, known: &mut Option<Known>) {
+        if !self.quiet.contains(&e)
+            && let Some(k) = known.as_mut()
+        {
+            k.escaped(var);
         }
     }
 
@@ -708,6 +736,25 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
         }
         let before = known.clone();
         self.tell_callee(fun, args, &ranges, &before);
+        // A `OnceCell`'s `set`: of a cell still empty, every time it's
+        // reached, and set after (ADR 0847). Of another, which may be one
+        // of those its variable reaches, none of them is known empty after.
+        if let Some((def_id, _)) = fn_def(thir[strip(thir, fun)].ty)
+            && once_method(self.tcx, def_id) == Some(OnceOp::Set)
+        {
+            let cell = args.first().and_then(|&cell| empty::cell_place(self.tcx, thir, cell));
+            let empty = match (cell, known.as_mut()) {
+                (Some((cell, _)), Some(k)) => {
+                    let empty = k.empty.remove(&cell);
+                    if !empty {
+                        k.escaped(cell.1);
+                    }
+                    empty
+                }
+                _ => false,
+            };
+            *self.sets.entry(fun).or_insert(true) &= empty;
+        }
         let asked = self.asks(e);
         let grows = match asked {
             Some((SliceLength::Push, items)) => self.slice(items).map(|slice| (slice, 1)),
@@ -896,16 +943,29 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
                     let mut gone = known.clone();
                     self.block(otherwise, &mut gone);
                 }
+                // What it's made of whose cells it then reaches (ADR 0847).
+                let made_of: Vec<LocalVarId> = match (initializer, else_block) {
+                    (Some(init), None) => (empty::made_of(self.tcx, self.thir, init).into_iter())
+                        .map(|(_, var)| var)
+                        .collect(),
+                    _ => Vec::new(),
+                };
                 self.forget_bound(pattern, known);
                 if let PatKind::Binding {
                     var,
+                    ty,
                     mode: BindingMode(ByRef::No, _),
                     subpattern: None,
                     ..
                 } = pattern.kind
                     && let Some(k) = known.as_mut()
-                    && !self.volatile.contains(&var)
                 {
+                    // Of one a raw pointer is taken of too, which its read
+                    // there gives what it reaches.
+                    self.reach(var, ty, &made_of, initializer, k);
+                    if self.volatile.contains(&var) {
+                        return;
+                    }
                     if let Some(value) = value {
                         k.vars.insert(var, value);
                     }
@@ -917,6 +977,34 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
                     }
                 }
             }
+        }
+    }
+
+    /// What `var`, a `let`'s of a `ty` made of `made_of`'s variables,
+    /// reaches of the cells the body made: theirs, and those `initializer`
+    /// makes, empty (ADR 0847). Of one whose drop may run code, which
+    /// could set theirs, those are no longer known empty.
+    fn reach(
+        &self,
+        var: LocalVarId,
+        ty: ty::Ty<'tcx>,
+        made_of: &[LocalVarId],
+        initializer: Option<ExprId>,
+        k: &mut Known,
+    ) {
+        let of: HashSet<LocalVarId> = (made_of.iter())
+            .flat_map(|v| k.reaches.get(v).into_iter().flatten().copied())
+            .collect();
+        if !of.is_empty() {
+            match empty::drop_runs_code(self.tcx, self.typing_env, ty) {
+                true => made_of.iter().for_each(|&v| k.escaped(v)),
+                false => k.reaches.entry(var).or_default().extend(of),
+            }
+        }
+        let made = initializer.map_or_else(Vec::new, |init| empty::made_empty(self.tcx, self.thir, init));
+        if !made.is_empty() {
+            k.reaches.entry(var).or_default().insert(var);
+            k.empty.extend(made.into_iter().map(|path| (path, var)));
         }
     }
 

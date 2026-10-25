@@ -523,13 +523,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> R<Expr> {
         let mut props = vec![Prop::Spread(place.clone())];
         for (name, t) in fields {
-            // A `Cell` in a field is what it holds (ADR 0288): a clone of
-            // one is a copy of that, which the spread makes if it needs none.
-            let held = match t.kind() {
-                ty::Adt(_, args) if self.is_std_type(t, StdItem::Cell) => Some(args.type_at(0)),
-                _ => None,
-            };
-            if held.map_or(self.needs_clone(t), |item| self.needs_clone(item)) {
+            // A cell in a field is what it holds (`property_cell`): a clone
+            // of one is a copy of that, which the spread makes if it needs none.
+            if self
+                .property_cell(t)
+                .map_or(self.needs_clone(t), |item| self.needs_clone(item))
+            {
                 let read = self.held(Expr::member(place.clone(), name.clone()), t);
                 let field = self.clone_value(read, t, span, out)?;
                 props.push(Prop::Field(name, self.holding(field, t)));

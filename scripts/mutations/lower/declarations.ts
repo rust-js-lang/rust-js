@@ -688,4 +688,12 @@ export const mutations: Mutation[] = [
     replace: "                true => self.option(ty),\n",
     tests: ["test/lowering-nullable.test.ts", "-t", "nullable Cell field's None is null"],
   },
+  {
+    name: "once-field-declared-a-cell",
+    breaks: "a `OnceCell` field is declared as one that's always there, where it's absent until it's set, `ioInfo?: string | undefined`",
+    file: "src/lower/declarations.rs",
+    find: "                false => self.option(ty).or_else(|| self.once_cell_item(ty)),\n",
+    replace: "                false => self.option(ty),\n",
+    tests: ["test/declarations.test.ts", "-t", "declarations type what a module exports"],
+  },
 ];

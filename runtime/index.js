@@ -2856,14 +2856,6 @@ export function $cellSwap(a, b) {
   [a.value, b.value] = [b.value, a.value];
 }
 
-// A `OnceCell`'s or `OnceLock`'s `set(value)`: `Ok`, holding `Some(value)`,
-// or `Err(value)` if it holds one already.
-export function $onceSet(cell, value) {
-  if (cell.value !== undefined) return { TAG: "Err", _0: value };
-  cell.value = $some(value);
-  return { TAG: "Ok", _0: undefined };
-}
-
 // A `LazyCell`'s value, made by its `init` the first time.
 // While it runs, and after it panics, `init` is `null`: std's poisoned.
 export function $force(lazy) {

@@ -397,12 +397,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let bool = state.body.local_decls[local].ty.is_bool();
             *self.locals.mir.paths.entry(path).or_insert(bool) &= bool;
         }
-        // Of a binding, one a guarded arm's pattern makes that only the
-        // guard reads, `first` of `Kind::Array(&[first, _]) if f(first) =>
-        // ..`: the arm's body, which reads none (ADR 0751).
-        let user = state.locals.user[local] && !locals::bound_for_a_guarded_arm(state.body, local);
-        let unread = !user && state.locals.reads[local] == 0 && !state.locals.borrowed[local];
-        if place.projection.is_empty() && (state.locals.names[local].is_empty() || unread) {
+        // Of a binding only a guard reads, the arm's body reads none (ADR 0751).
+        if place.projection.is_empty() && (state.locals.names[local].is_empty() || self.unread(state, local)) {
             // Of `()`, or a temporary nothing reads: what made it runs. Of
             // a reference, `let _ = &mut p.y` through `deref_mut`: what makes
             // its place, `deref_mut(p)`, no handle on it.
@@ -852,6 +848,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A variable the program declares, refused: of what drops as JS can't drop
     /// it, or of a type JS can't hold. Not std's MIR put in the body,
     /// nor a JS iterator.
+    /// Whether nothing reads `local`: a temporary, or a binding a guarded
+    /// arm's pattern makes that only the guard reads, `first` of
+    /// `Kind::Array(&[first, _]) if f(first) => ..`, whose arm's body reads
+    /// none (ADR 0751). What's made into it is made for what making it does.
+    pub(super) fn unread(&self, state: &State<'_, 'tcx>, local: Local) -> bool {
+        let user = state.locals.user[local] && !locals::bound_for_a_guarded_arm(state.body, local);
+        !user && state.locals.reads[local] == 0 && !state.locals.borrowed[local]
+    }
+
     pub(super) fn check_variable(&self, state: &State<'_, 'tcx>, local: Local, span: Span) -> R<()> {
         let ty = state.body.local_decls[local].ty;
         if !state.locals.user[local] || inlined(state.body, local) || self.implements_iterator(ty) {

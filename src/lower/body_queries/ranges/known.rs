@@ -1,10 +1,11 @@
 //! What's known of a body's integers where it is (ADR 0576): each one's
 //! range and its bound by a slice's length, and each slice's least length,
-//! joined where two paths meet.
+//! joined where two paths meet; and of its `OnceCell`s, which are still
+//! empty (ADR 0847).
 
 use super::Slice;
 use rustc_middle::thir::{ExprId, LocalVarId};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 /// An upper bound of an integer by a slice's length `L`, `⌊(c·L + b) /
 /// 2^s⌋`: `L - 1` of an index `i < xs.len()`, `L / 2 - 1` of one below its
@@ -157,6 +158,13 @@ pub(super) struct Known {
     /// variables it reads, while neither it nor they change, so a branch
     /// on it shows what the test does where it's taken (ADR 0806).
     pub(super) tests: HashMap<LocalVarId, (ExprId, Vec<LocalVarId>)>,
+    /// Each `OnceCell` the body made that's still empty, by the variable
+    /// that made it and the fields to it: `payload.io_info` of `let payload
+    /// = Rc::new(Payload { io_info: OnceCell::new(), .. })` (ADR 0847).
+    pub(super) empty: HashSet<Slice>,
+    /// The variables whose cells each variable may reach: its own, of one
+    /// that made some, and of what it's made of, a clone of their `Rc`.
+    pub(super) reaches: HashMap<LocalVarId, HashSet<LocalVarId>>,
 }
 
 impl Known {
@@ -171,7 +179,26 @@ impl Known {
             .filter(|&(v, t)| other.tests.get(v) == Some(t))
             .map(|(v, t)| (*v, t.clone()))
             .collect();
-        Known { vars, lengths, tests }
+        let empty = self.empty.intersection(&other.empty).cloned().collect();
+        let mut reaches = self.reaches.clone();
+        for (var, of) in &other.reaches {
+            reaches.entry(*var).or_default().extend(of);
+        }
+        Known {
+            vars,
+            lengths,
+            tests,
+            empty,
+            reaches,
+        }
+    }
+
+    /// What's known once `var` may have given what it reaches to code that
+    /// could set it: none of those cells is known empty.
+    pub(super) fn escaped(&mut self, var: LocalVarId) {
+        if let Some(of) = self.reaches.get(&var) {
+            self.empty.retain(|(_, made_by)| !of.contains(made_by));
+        }
     }
 
     /// What's known after `slice` grows `by` items, one more of a `push`,
@@ -213,7 +240,8 @@ impl Known {
     }
 
     /// What's known after `var` may have changed, as an integer or as what
-    /// holds a slice: nothing of it.
+    /// holds a slice: nothing of it. Of the cells it reaches, its read where
+    /// it's changed says (`escaped`).
     pub(super) fn changed(&mut self, var: LocalVarId) {
         self.vars.remove(&var);
         self.lengths.retain(|(_, v), _| *v != var);
