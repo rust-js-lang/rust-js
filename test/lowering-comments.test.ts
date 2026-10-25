@@ -1091,7 +1091,7 @@ pub fn flags() -> u32 {
   expect(js).toContain("  let last = /* first */ mode;\n");
   // After an `==`, `a`'s, as before.
   expect(js).toContain("  const same = a /* the other */ === b;\n");
-  expect(js).toContain("  last = /* again */ (last | ((mode + 1) >>> 0)) >>> 0;\n");
+  expect(js).toContain("  last = /* again */ (last | (mode + 1)) >>> 0;\n");
   expect(js).toContain("\nconst FLAGS = /*  */ 0b0100;\n");
   expect(js).toContain("\nlet count = /* none yet */ 0;\n");
   expect([lib.NoMode, lib.ConcurrentMode, lib.Removed, lib.modes(4 as never), lib.same(2 as never, 2 as never), lib.flags(), lib.flags()]).toEqual([0, 1, 1, 7, true, 6, 7]);

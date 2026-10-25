@@ -24,15 +24,12 @@ const COMPLETE_PTR = $ptrFrom(0x2, 8);
 
 function tagged(waiter, state) {
   const value = $addr(waiter, 8);
-  return $ptrAt(waiter, (((value & (~STATE_MASK >>> 0)) >>> 0) | state) >>> 0, 8);
+  return $ptrAt(waiter, ((value & ~STATE_MASK) | state) >>> 0, 8);
 }
 
 function untagged(queue) {
   const value = $addr(queue, 8);
-  return [
-    $ptrAt(queue, (value & (~STATE_MASK >>> 0)) >>> 0, 8),
-    ($addr(queue, 8) & STATE_MASK) >>> 0,
-  ];
+  return [$ptrAt(queue, (value & ~STATE_MASK) >>> 0, 8), ($addr(queue, 8) & STATE_MASK) >>> 0];
 }
 
 // semver: a 1 rotated into the top bit of a 2-aligned heap pointer, so the

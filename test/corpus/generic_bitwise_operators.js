@@ -63,7 +63,7 @@ function main() {
     { shl: (a, b) => (a << (b & 7)) & 255 },
     { shr: (a, b) => a >>> (b & 7) },
   );
-  const value$5 = shifted(-64, 3, { shl: (a, b) => (a << b) | 0 }, { shr: (a, b) => a >> b });
+  const value$5 = shifted(-64, 3, { shl: (a, b) => a << b }, { shr: (a, b) => a >> b });
   const value$6 = shifted(
     BigInt.asUintN(64, 1n << 40n),
     4,

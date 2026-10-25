@@ -231,10 +231,10 @@ function main() {
       `i32 ${a}: as ${(a << 24) >> 24} ${(a << 16) >> 16} ${a} ${value$13} ${value$14} ${a & 255} ${a & 65535} ${a >>> 0} ${value$15} ${value$16} f32 ${value$17} f64 ${arg$2}`,
     );
     for (const s of [0, 1, (bits - 1) >>> 0, bits, (bits + 1) >>> 0]) {
-      const value = s < 32 ? (a << s) | 0 : undefined;
+      const value = s < 32 ? a << s : undefined;
       const value$1 = s < 32 ? a >> s : undefined;
       console.log(
-        `i32 ${a} shift ${s}: ${(a << s) | 0} ${a >> s} ${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`}`,
+        `i32 ${a} shift ${s}: ${a << s} ${a >> s} ${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`}`,
       );
     }
     const value$18 = Math.sign(a);

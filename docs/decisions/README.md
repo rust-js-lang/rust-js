@@ -29,7 +29,7 @@ reordered, and git merges this file by keeping both sides' lines
 
 **Semantics**
 
-- [0011 Integers are JS numbers, wrapped like release Rust](0011-numbers.md)
+- [0011 Integers are JS numbers, wrapped like release Rust](0011-numbers.md) *(extended by 0891: no wrap where JS's bitwise operator makes it)*
 - [0012 Panics throw, via runtime helpers emitted on demand](0012-panics-and-runtime-helpers.md) *(helpers' place replaced by 0103; amended by 0660: `catch_unwind` catches one; 0706: a panic of no message is an `Error` of none)*
 - [0013 Fieldless enum variants are strings](0013-fieldless-enums.md) *(extended by 0722: a `#[repr(..)]` one's are numbers)*
 - [0033 Enums with fields are ReScript's tagged objects](0033-enums-with-fields.md) *(extended by 0716: std's enums whose `PartialEq` or order is derived)*
@@ -679,6 +679,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0884 A `js::Map`'s value is any value, and `get` tells a `None` from a missing key](0884-a-maps-value-is-any-value.md)
 - [0888 `rust-js clippy` lints the app as rust-js reads it](0888-rust-js-clippy.md)
 - [0890 A bitwise operator's assignment is its compound](0890-a-bitwise-assignment-is-its-compound.md)
+- [0891 An `i32`'s `<<` and an operand of a bitwise operator need no wrap](0891-an-operand-of-a-bitwise-operator-needs-no-wrap.md)
 - [0843 A `Weak` nothing upgrades is the value itself](0843-a-weak-nothing-upgrades-is-the-value-itself.md)
 - [0844 A library that reads no count counts no `Rc`](0844-a-library-that-reads-no-count-counts-no-rc.md) *(extended by 0850: an `Rc` is `Defined`, a counted one given to JS refused; amended by 0852: each type's `Rc`s counted apart, and its contract lists them)*
 - [0845 An `Rc`'s declaration is what it points at](0845-an-rcs-declaration-is-what-it-points-at.md)

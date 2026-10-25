@@ -1,6 +1,6 @@
 # 0011. Integers are JS numbers, wrapped like release Rust
 
-Status: Accepted. Extended by [0086](0086-64-bit-integers.md): `i64` and `u64` are BigInts, and an `f64` cast to an integer saturates.
+Status: Accepted. Extended by [0086](0086-64-bit-integers.md): `i64` and `u64` are BigInts, and an `f64` cast to an integer saturates; by [0891](0891-an-operand-of-a-bitwise-operator-needs-no-wrap.md): no wrap where JS's bitwise operator makes it.
 
 Case: C, D, B ([0262](0262-when-rust-and-js-disagree.md)).
 

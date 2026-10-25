@@ -346,7 +346,11 @@ export function fits(str, substr) {
 ```
 - **A bit set is written with JS's operators,** each assignment its
   compound, `lanes &= ~lane`, of a field or a `Cell`'s too
-  ([ADR 0890](../../decisions/0890-a-bitwise-assignment-is-its-compound.md)):
+  ([ADR 0890](../../decisions/0890-a-bitwise-assignment-is-its-compound.md)).
+  An `i32`'s `<<` is JS's, and what a bitwise operator takes needs no
+  wrap of its own, `lanes & -lanes`, as JS's takes it modulo 2^32 anyway;
+  elsewhere a wrap stays, `-lanes | 0` of `i32::MIN`
+  ([ADR 0891](../../decisions/0891-an-operand-of-a-bitwise-operator-needs-no-wrap.md)):
 
 ```rust
 use std::cell::Cell;
@@ -363,6 +367,14 @@ pub fn remove_lane(mut lanes: i32, lane: i32) -> i32 {
 pub fn mark_updated(root: &Root, lane: i32) {
     root.pending_lanes.set(root.pending_lanes.get() | lane);
 }
+
+pub fn lane_of(index: u32) -> i32 {
+    1 << index
+}
+
+pub fn highest_priority_lane(lanes: i32) -> i32 {
+    lanes & -lanes
+}
 ```
 
 ```js
@@ -373,6 +385,14 @@ export function removeLane(lanes, lane) {
 
 export function markUpdated(root, lane) {
   root.pendingLanes |= lane;
+}
+
+export function laneOf(index) {
+  return 1 << index;
+}
+
+export function highestPriorityLane(lanes) {
+  return lanes & -lanes;
 }
 ```
 - **A literal keeps its base and its exponent**, `0xff`, `0b1010`, `1e4`,

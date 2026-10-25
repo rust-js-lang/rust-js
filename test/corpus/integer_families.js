@@ -88,10 +88,10 @@ function main() {
 
   // Shifts: checked by the width, wrapping by the amount's low bits.
   const by = 33;
-  const value$10 = (1 << 4) | 0;
-  const value$11 = by < 32 ? (1 << by) | 0 : undefined;
+  const value$10 = 1 << 4;
+  const value$11 = by < 32 ? 1 << by : undefined;
   console.log(
-    `${value$10 == null ? "None" : `Some(${value$10})`} ${value$11 == null ? "None" : `Some(${value$11})`} ${(1 << by) | 0} ${255 >>> (9 & 7)}`,
+    `${value$10 == null ? "None" : `Some(${value$10})`} ${value$11 == null ? "None" : `Some(${value$11})`} ${1 << by} ${255 >>> (9 & 7)}`,
   );
   const value$12 = -16 >> 2;
   console.log(

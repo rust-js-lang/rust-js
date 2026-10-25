@@ -242,4 +242,12 @@ export const mutations: Mutation[] = [
     replace: "        if let Some(name) = math::function(op, num).filter(|_| false) {\n",
     tests: ["test/corpus.test.ts", "-t", "math_values"],
   },
+  {
+    name: "clz32-argument-kept-wrapped",
+    breaks: "`(lanes as u32).leading_zeros()` is `Math.clz32(lanes >>> 0)`, a wrap `clz32` makes itself (ADR 0891)",
+    file: "src/lower/std_types/number.rs",
+    find: "                \"clz32\" => values.into_iter().map(operators::bits_operand).collect(),\n",
+    replace: "                \"clz32\" => values,\n",
+    tests: ["test/lowering-bits.test.ts", "-t", "operand of a bitwise operator are unwrapped"],
+  },
 ];

@@ -64,3 +64,58 @@ pub fn marked(root: &mut Root, lane: i32) {
   lib.marked(root, 6);
   expect(root).toEqual({ pendingLanes: 7, current: { flags: 6 } });
 });
+
+// ADR 0891: JS's `<<` of an `i32` is an int32 already, so it's no wrap's,
+// `1 << i`; and an operand JS's `&`, `|`, `^`, `~` or a shift takes modulo
+// 2^32 itself needs no wrap of its own, `lanes & -lanes`, `(a + b) & m`,
+// `1 << (i + 1)`. What isn't such an operand keeps its wrap: `-lanes | 0`
+// of `i32::MIN` is itself, and `(1 << 31) - 1` wraps to `i32::MAX`.
+test("a shift and an operand of a bitwise operator are unwrapped", async () => {
+  const { js, lib } = await compiled("bits-unwrapped", `pub fn lane(i: u32) -> i32 {
+    1 << i
+}
+
+pub fn lowest(lanes: i32) -> i32 {
+    lanes & -lanes
+}
+
+pub fn negated(lanes: i32) -> i32 {
+    -lanes
+}
+
+pub fn equal_or_higher(lanes: i32) -> i32 {
+    let index = 31 - (lanes as u32).leading_zeros();
+    (1 << (index + 1)) - 1
+}
+
+pub fn masked(a: i32, b: i32, mask: i32) -> i32 {
+    (a + b) & mask
+}
+
+pub fn flipped(a: i32, b: i32) -> i32 {
+    !(a - b)
+}
+
+pub fn doubled(n: u32) -> u32 {
+    n << 1
+}
+
+pub fn joined(a: i32, b: i32) -> i32 {
+    (a | 1) & b
+}
+`);
+  expect(js).toContain("  return 1 << i;\n");
+  expect(js).toContain("  return lanes & -lanes;\n");
+  expect(js).toContain("  return -lanes | 0;\n");
+  expect(js).toContain("  const index = (31 - Math.clz32(lanes)) >>> 0;\n  return ((1 << (index + 1)) - 1) | 0;\n");
+  expect(js).toContain("  return (a + b) & mask;\n");
+  expect(js).toContain("  return ~(a - b);\n");
+  expect(js).toContain("  return (n << 1) >>> 0;\n");
+  expect(js).toContain("  return (a | 1) & b;\n");
+  const min = -2147483648;
+  expect([0, 1, 30, 31, 32, 33].map((i) => lib.lane(i))).toEqual([1, 2, 1 << 30, min, 1, 2]);
+  expect([0, 6, -1, min, 2147483647].map((n) => lib.lowest(n))).toEqual([0, 2, 1, min, 1]);
+  expect([lib.negated(min), lib.negated(5)]).toEqual([min, -5]);
+  expect([0, 1, 5, 1 << 30, min, -1].map((n) => lib.equalOrHigher(n))).toEqual([0, 1, 7, 2147483647, 0, 0]);
+  expect([lib.masked(2147483647, 1, -1), lib.flipped(min, 1), lib.doubled(0x40000000), lib.joined(2, 3)]).toEqual([min, min, 2147483648, 3]);
+});

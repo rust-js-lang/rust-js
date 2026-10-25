@@ -79,7 +79,7 @@ export function integers(a, b) {
   const checkedAdd = $checked(a + 2147483647, -2147483648, 2147483647);
   const checkedMul = $checked(a * a, -2147483648, 2147483647);
   const checkedDiv = $checkedDiv(a, ((b | 0) - 3) | 0, -2147483648);
-  return `${abs} ${pow} ${remEuclid} ${divEuclid} ${checkedSub == null ? "None" : `Some(${checkedSub})`} ${checkedAdd == null ? "None" : `Some(${checkedAdd})`} ${checkedMul == null ? "None" : `Some(${checkedMul})`} ${checkedDiv == null ? "None" : `Some(${checkedDiv})`} ${Math.max(b - 100, 0)} ${Math.min(b + 4294967290, 4294967295)} ${Math.min(Math.max(a * ((1 << 20) | 0), -2147483648), 2147483647) | 0} ${(b - 5) >>> 0} ${Math.imul(a, (1 << 30) | 0)} ${Math.sign(a)} ${Math.clz32(b)} ${$trailingZeros(b, 32)} ${$countOnes(a)} ${Math.abs(b - 100)}`;
+  return `${abs} ${pow} ${remEuclid} ${divEuclid} ${checkedSub == null ? "None" : `Some(${checkedSub})`} ${checkedAdd == null ? "None" : `Some(${checkedAdd})`} ${checkedMul == null ? "None" : `Some(${checkedMul})`} ${checkedDiv == null ? "None" : `Some(${checkedDiv})`} ${Math.max(b - 100, 0)} ${Math.min(b + 4294967290, 4294967295)} ${Math.min(Math.max(a * (1 << 20), -2147483648), 2147483647) | 0} ${(b - 5) >>> 0} ${Math.imul(a, 1 << 30)} ${Math.sign(a)} ${Math.clz32(b)} ${$trailingZeros(b, 32)} ${$countOnes(a)} ${Math.abs(b - 100)}`;
 }
 
 export function narrow(a, b) {

@@ -147,12 +147,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             BinOp::BitXor => self.bitwise(Op::BitXor, l, r, num),
             // Rust (without overflow checks) masks the shift amount to the
             // type's width. JS masks to 32, which is only right for 32 bits.
-            BinOp::Shl if num.bits() == 32 => num.wrap(Expr::bin(Op::Shl, l, r)),
-            BinOp::Shl => num.wrap(Expr::bin(Op::Shl, l, mask_shift(r, num))),
+            // An `i32`'s is JS's `<<`, an int32 already (ADR 0891).
+            BinOp::Shl if num == Num::I32 => Expr::bin(Op::Shl, bits_operand(l), bits_operand(r)),
+            BinOp::Shl if num.bits() == 32 => num.wrap(Expr::bin(Op::Shl, bits_operand(l), bits_operand(r))),
+            BinOp::Shl => num.wrap(Expr::bin(Op::Shl, bits_operand(l), mask_shift(bits_operand(r), num))),
             BinOp::Shr => {
                 let js_op = if num.signed() { Op::Shr } else { Op::UShr };
+                let r = bits_operand(r);
                 let r = if num.bits() == 32 { r } else { mask_shift(r, num) };
-                Expr::bin(js_op, l, r)
+                Expr::bin(js_op, bits_operand(l), r)
             }
             _ => return Err(self.unsupported(span, "this operator")),
         })
@@ -217,7 +220,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     pub(in crate::lower) fn bitwise(&self, op: Op, l: Expr, r: Expr, num: Num) -> Expr {
         // JS bitwise ops return signed 32-bit results; only u32 needs fixing.
-        let e = Expr::bin(op, l, r);
+        let e = Expr::bin(op, bits_operand(l), bits_operand(r));
         if num == Num::U32 { num.wrap(e) } else { e }
     }
 
@@ -229,7 +232,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 if num.float() {
                     return Err(self.unsupported(span, &format!("`!` on `{ty}`")));
                 }
-                let e = Expr::unary(UnaryOp::BitNot, a);
+                let e = Expr::unary(UnaryOp::BitNot, bits_operand(a));
                 Ok(if num.signed() { e } else { num.wrap(e) })
             }
             UnOp::Neg => {
@@ -359,6 +362,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 })
             }
         }
+    }
+}
+
+/// `x` of an `i32`'s wrap `x | 0` or a `u32`'s `x >>> 0`, as an operand
+/// JS's `&`, `|`, `^`, `~` or a shift takes modulo 2^32 itself: ToInt32 or
+/// ToUint32 of either wrap of `x` is that of `x`, so `lanes & -lanes`, not
+/// `lanes & (-lanes | 0)`, and `1 << (i + 1)`, not `1 << ((i + 1) >>> 0)`.
+/// A wrap is of a number, which the conversion reads nothing else of
+/// (ADR 0891).
+pub(in crate::lower) fn bits_operand(e: Expr) -> Expr {
+    match e.kind {
+        js::ExprKind::Binary(Op::BitOr | Op::UShr, x, zero) if zero.as_int() == Some(0) => *x,
+        kind => Expr { kind, ..e },
     }
 }
 
