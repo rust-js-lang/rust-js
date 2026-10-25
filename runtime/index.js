@@ -770,13 +770,6 @@ export function $iteratorValue(it) {
   return "of" in it ? it.of : it;
 }
 
-// A JS iterator of `f` of what `it` steps, `$iteratorValue`'s, stepped as
-// `it` is: a `$iterator`'s made again, `with`, of a clone of its value
-// (ADR 0473).
-export function $iteratorWith(it, f) {
-  return "of" in it ? it.with(f(it.of)) : f(it);
-}
-
 // A map's `remove(k)`: `Some` of the value it had, boxed where it looks
 // like `None` (ADR 0051), or `None`; of keys with a destructor, the key it
 // held dropped by `dropKey` (ADR 0467).

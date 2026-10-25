@@ -118,3 +118,15 @@ v.toReversed().map((x) => (x + 1) >>> 0);
 - Next, as the review lists: `Enumerate`, `Map`, `Flatten` and `Inspect`,
   each its own decision of this shape, and a generic `try_fold` into an
   `R: Try`, which `Rev`'s `try_fold` and `try_rfold` wait for.
+
+## Amendment: a `Rev` a recognizer gives to be held is std's too
+
+memchr's `memrchr_iter`, which its crate writes as `memchr_iter(..).rev()`,
+was `$rev($memchrIter(..))` (ADR 0529), a `Rev` given back to be held: its
+`clone()`, std's compiled `Clone`, read the struct's `iter`, which `$rev`
+hasn't, and threw. **A `Rev` a recognizer makes to be held is std's struct,
+`iterator_rev($memchrIter(..), { next: $next }, { next_back: $nextBack })`**
+(`FnCx::held_rev`), as every held `Rev` is. And `clone_value`'s own clone
+of a `Rev`, `$rev` of a clone of its `source`, is gone: a `Rev`'s `Clone` is
+its compiled impl's, which `clone_value` asks first. Tested by
+`shipped-crates.test.ts`, memchr's searches against native memchr's.

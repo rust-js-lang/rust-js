@@ -4,6 +4,7 @@
 
 use super::recognition::Std;
 use super::{Expr, FnCx};
+use crate::js;
 
 /// One of memchr's searches: the first or last index of one of its needles,
 /// or each, from either end.
@@ -33,10 +34,24 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             MemchrOp::Iter { back } => {
                 let it = Expr::call_helper("$memchrIter", vec![haystack, needles]);
                 match back {
-                    true => Expr::call_helper("$rev", vec![it]),
+                    true => self.held_rev(it),
                     false => it,
                 }
             }
         })
+    }
+
+    /// A `Rev` made of `it`, a JS iterator that knows its back, given where
+    /// it's held, `memrchr_iter`'s: std's struct, as every held `Rev` is,
+    /// `iterator_rev(it, { next: $next }, { next_back: $nextBack })` (ADR
+    /// 0871).
+    fn held_rev(&mut self, it: Expr) -> Expr {
+        let rev = super::recognition::compiled_provided_method(self.tcx, "Iterator", "rev").expect("std's `rev`");
+        let dictionary =
+            |name: &str, step: &'static str| Expr::object(vec![js::Prop::Field(name.into(), Expr::helper(step))]);
+        Expr::call(
+            self.fn_ref(rev),
+            vec![it, dictionary("next", "$next"), dictionary("next_back", "$nextBack")],
+        )
     }
 }

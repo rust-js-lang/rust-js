@@ -541,25 +541,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             // std's iterator over an array is a `$iter` that knows where it is
             // (ADR 0364): a clone, a `$iter` of what it has left, each item a
-            // clone of one where the iterator owns them; of its `rev()` too,
-            // its array reversed (ADR 0530).
+            // clone of one where the iterator owns them. A `Rev`'s is std's,
+            // its compiled `Clone` (ADR 0871).
             ty::Adt(..) if self.steps_an_array(ty) => {
-                let source = super::recognition::reversed_source(self.tcx, ty).unwrap_or(ty);
-                let owns = self.array_source(source).unwrap_or(false);
+                let owns = self.array_source(ty).unwrap_or(false);
                 let left = self.stepped_left(place, ty, owns, span)?;
                 Ok(self.stepped_items(left))
-            }
-            // Another's `rev()`: of a type parameter's given as it is, the
-            // `$iterator` of it its `next_back` steps, made again of a clone
-            // of its value; of one that knows its back,
-            // `$rev(it)`, one of a clone of what it steps.
-            ty::Adt(..) if let Some(source) = super::recognition::reversed_source(self.tcx, ty) => {
-                if self.iterator_given_as_it_is(source) {
-                    let clone = self.clone_fn("value", source, span)?;
-                    return Ok(Expr::call_helper("$iteratorWith", vec![place, clone]));
-                }
-                let clone = self.clone_value(Expr::member(place, "source"), source, span, out)?;
-                Ok(Expr::call_helper("$rev", vec![clone]))
             }
             _ if !matches!(ty.kind(), ty::Adt(adt, _) if self.is_std(adt.did())) => match self.shape(ty) {
                 Shape::Object(fields) => self.clone_fields(place, fields, span, out),

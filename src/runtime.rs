@@ -57,7 +57,6 @@ helpers! {
     Reduce,
     IntoIter,
     IteratorValue,
-    IteratorWith,
     Remove,
     Repeat,
     Local,
@@ -776,7 +775,6 @@ impl Helper {
             Helper::Reduce => include_str!("runtime/reduce.js"),
             Helper::IntoIter => include_str!("runtime/into_iter.js"),
             Helper::IteratorValue => include_str!("runtime/iterator_value.js"),
-            Helper::IteratorWith => include_str!("runtime/iterator_with.js"),
             // A map's `remove` for its value: the one it took out, or `None`.
             Helper::Remove => include_str!("runtime/remove.js"),
             // `v.extend(items)` (ADR 0062): a `push` of each, not of an array
