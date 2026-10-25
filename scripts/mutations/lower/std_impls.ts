@@ -761,4 +761,12 @@ export const mutations: Mutation[] = [
     replace: "        return false;\n",
     tests: ["test/crates.test.ts", "-t", "equal only to itself keys its consumer"],
   },
+  {
+    name: "rc-identity-unread",
+    breaks: "an `Rc` of a type equal only to itself isn't, so React's root's `HashSet<Rc<Fiber>>` is refused, \"values of type `Rc<Fiber>`\"",
+    file: "src/lower/std_impls.rs",
+    find: "    if let Some(pointee) = super::recognition::rc_pointee(recognition.tcx, ty) {\n",
+    replace: "    if let Some(pointee) = super::recognition::rc_pointee(recognition.tcx, ty).filter(|_| false) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^rc_identity_set(_counted)?.rs$"],
+  },
 ];

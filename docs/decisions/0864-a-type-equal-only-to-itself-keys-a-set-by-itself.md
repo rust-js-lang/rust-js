@@ -2,7 +2,8 @@
 
 Status: Accepted. Amended: `==` of two values of one is `===` too, and
 its `PartialEq`'s dictionary is written only where it's reached; and a
-library's contract lists its, which its consumers key by themselves.
+library's contract lists its, which its consumers key by themselves;
+and an `Rc` of one is equal only to itself too.
 Extends [0463](0463-hashing-is-stds.md) (`ptr::hash`
 writes its pointer's address) and [0582](0582-ptr-eq-of-an-object-is-its-identity.md)
 (`ptr::eq` of objects is `===`) to a set's and a map's keys, and
@@ -217,3 +218,39 @@ itself keys its consumer's Set by itself" holds its JS. Mutations
 `library-identities-unlisted` (`lower/library.ts`),
 `library-identity-runs-code` and `library-impl-always-there`
 (`lower/analysis/cell_borrows.ts`).
+
+## Amendment: an `Rc` of one is equal only to itself
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): None. Std's `Rc<T>`
+compares and hashes what it points at, `T`'s `eq` and `hash`, here its
+address's; each `Rc` of one allocation is one JS value, so `===` and a
+`Set` tell them apart as Rust does.
+
+React's `FiberRoot` keeps the fibers that scheduled updates,
+`memoizedUpdaters`, a `Set` upstream, which the port holds as a
+`RefCell<HashSet<Rc<Fiber>>>`, the `Rc`s the tree owns its fibers by.
+Every function taking a `FiberRoot` was refused, "values of type
+`Rc<Fiber>`": an `Rc` wasn't a type equal only to itself, and wasn't a
+key JS finds by its `===`.
+
+**An `Rc` or `Arc` of a type equal only to itself is equal only to
+itself** (`equal_only_to_itself`): its JS value is what it points at,
+an uncounted one's (ADR 0844), or the `{ value, strong, weak }` every
+clone of a counted one shares (ADR 0320), one allocation's either way.
+
+```rust
+fn add_updater(root: &FiberRoot, fiber: &Rc<Fiber>) {
+    root.memoized_updaters.borrow_mut().insert(Rc::clone(fiber));
+}
+```
+
+```js
+function addUpdater(root, fiber) {
+  root.memoizedUpdaters.add(fiber);
+}
+```
+
+Corpus `rc_identity_set` (uncounted, a root's set) and
+`rc_identity_set_counted` (counted: inserting one already there drops
+the clone, as std's does) run it against native Rust; mutation
+`rc-identity-unread` (`lower/std_impls.ts`).

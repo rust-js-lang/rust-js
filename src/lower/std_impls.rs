@@ -34,6 +34,12 @@ pub(super) fn equal_only_to_itself<'tcx>(
     bodies: &std::collections::HashMap<DefId, &super::Body<'tcx>>,
     ty: Ty<'tcx>,
 ) -> bool {
+    // An `Rc` or `Arc` of one, whose `==` and `Hash` are what it points
+    // at's: its JS value, what it points at or the `{ value, strong, weak }`
+    // every clone of it shares (ADR 0320), is one allocation's.
+    if let Some(pointee) = super::recognition::rc_pointee(recognition.tcx, ty) {
+        return equal_only_to_itself(recognition, bodies, pointee);
+    }
     let ty::Adt(adt, _) = ty.kind() else { return false };
     // A library's, as its contract says.
     if !adt.did().is_local() {
