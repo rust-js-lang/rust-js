@@ -654,12 +654,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // but of a variable's fields, the object JS reaches first is the
         // one, which what makes the value can't make another, a closure's
         // `more = ..` assigning it in place: `more.has = work();` (ADR 0607).
+        // And of a place JS reaches as a variable, a closure's capture's
+        // `*(_1.0)`, `result = callback();`, which JS sets once the value is
+        // made, nothing reached before it (ADR 0879).
         let mut value = expr;
         let fixed = (place.projection.iter()).all(|elem| matches!(elem, PlaceElem::Field(..)));
-        if !place.projection.is_empty() && value.has_effects() && !fixed {
-            value = self.spill("value", value, out);
-        }
-        let target = self.mir_place(state, place, span, out)?;
+        let target = if !place.projection.is_empty() && value.has_effects() && !fixed {
+            let mut reached = Vec::new();
+            let target = self.mir_place(state, place, span, &mut reached)?;
+            if !reached.is_empty() || !matches!(target.kind, js::ExprKind::Var(_)) {
+                value = self.spill("value", value, out);
+            }
+            out.extend(reached);
+            target
+        } else {
+            self.mir_place(state, place, span, out)?
+        };
         self.flush(state, out)?;
         // `*r = v` of a `&mut` to an object: the object becomes `v`, so each
         // name for it sees it.

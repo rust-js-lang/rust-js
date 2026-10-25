@@ -306,10 +306,11 @@ const Parser = {
             return result;
           }
           args.push(result._0);
-          if (Parser.peek(parser) !== "Comma") {
+          if (Parser.peek(parser) === "Comma") {
+            Parser.next(parser);
+          } else {
             break;
           }
-          Parser.next(parser);
         }
       }
       const result$2 = Parser.expect(parser, "RParen");

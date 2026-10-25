@@ -1,6 +1,6 @@
 # 0237. An `if` whose branch leaves has no `else`
 
-Status: Accepted.
+Status: Accepted. Amended by [0879](0879-an-if-and-a-closures-captures-read-as-written.md): an `else` the program wrote whose `then` goes on, `if let Some(c) = c { .. } else { break }`, is both its branches, not an early exit.
 
 Case: N ([0262](0262-when-rust-and-js-disagree.md)).
 

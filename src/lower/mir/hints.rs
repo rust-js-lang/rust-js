@@ -172,7 +172,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             })
             .collect();
         // Where each `if` with an `else` is written, its condition and each
-        // branch.
+        // branch; a `while`'s too, `if c { body } else { break }` of its
+        // desugaring, its `else` the whole loop.
         let elses: Vec<(js::Span, js::Span, js::Span)> = (self.frame.thir.exprs.iter())
             .filter_map(|e| match e.kind {
                 thir::ExprKind::If {
@@ -848,6 +849,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         numbers.retain(|name| !not_numbers.contains(name));
         (booleans, numbers)
     }
+}
+
+/// A closure's captures it took by value, each a variable its maker never
+/// assigns again from where it makes the closure (`mir_closure_fn`'s
+/// copy of one it does): as fixed in it as a parameter, which a clone of
+/// it may be read as (ADR 0879).
+pub(super) fn kept_captures(state: &State<'_, '_>) -> std::collections::HashSet<String> {
+    (state.captures.iter())
+        .filter(|(_, place)| !place)
+        .filter_map(|(capture, _)| match &capture.kind {
+            js::ExprKind::Var(name) => Some(name.clone()),
+            _ => None,
+        })
+        .collect()
 }
 
 /// A type's name as a variable's, lower camel case, as JS names one:

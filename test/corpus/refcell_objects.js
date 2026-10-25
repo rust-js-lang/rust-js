@@ -55,32 +55,32 @@ function main() {
     $unborrow(borrow);
   }
   const taken = $take($borrowMut(other), []);
-  const value$1 = $borrow(shared, true);
+  const value = $borrow(shared, true);
   try {
-    console.log(`[${taken.join(", ")}] ${value$1.length === 0} ${shared === other}`);
+    console.log(`[${taken.join(", ")}] ${value.length === 0} ${shared === other}`);
+  } finally {
+    $unborrow(value);
+  }
+  const value$1 = $borrowMut(shared, true);
+  try {
+    value$1.push(4, 5);
   } finally {
     $unborrow(value$1);
   }
-  const value$2 = $borrowMut(shared, true);
+  const before = $replaceWith(shared, (v) => v.map((n) => (n * 2) | 0), false, true);
+  const value$2 = $borrow(other, true);
   try {
-    value$2.push(4, 5);
+    console.log(`[${before.join(", ")}] [${value$2.join(", ")}]`);
   } finally {
     $unborrow(value$2);
-  }
-  const before = $replaceWith(shared, (v) => v.map((n) => (n * 2) | 0), false, true);
-  const value$3 = $borrow(other, true);
-  try {
-    console.log(`[${before.join(", ")}] [${value$3.join(", ")}]`);
-  } finally {
-    $unborrow(value$3);
   }
 
   const left = new Map([["a", 1]]);
   const right = new Map([["b", 2]]);
   $refCellSwap(left, right, true);
-  const value$4 = $borrow(left, true);
+  const value$3 = $borrow(left, true);
   try {
-    const get = value$4.get("b");
+    const get = value$3.get("b");
     const value = $borrow(right, true);
     try {
       const value$1 = value.get("a");
@@ -91,14 +91,13 @@ function main() {
       $unborrow(value);
     }
   } finally {
-    $unborrow(value$4);
+    $unborrow(value$3);
   }
 
   const seen = new Set();
   seen.add(1);
   seen.add(2);
-  const value = new Set([7]);
-  $assign(seen, value);
+  $assign(seen, new Set([7]));
   const items = Array.from(seen);
   items.sort((a, b) => a - b);
   const arg = seen.has(7);
@@ -108,20 +107,20 @@ function main() {
   add(totals, "a", 2n);
   add(totals, "b", 3n);
   const copy = $withBorrow(totals, (value) => ({ ...value, names: value.names.slice() }), true);
-  const value$5 = $borrowMut(totals, true);
-  value$5.names.length = 0;
-  $unborrow(value$5);
-  const value$6 = $eq(totals, copy, true);
+  const value$4 = $borrowMut(totals, true);
+  value$4.names.length = 0;
+  $unborrow(value$4);
+  const value$5 = $eq(totals, copy, true);
   console.log(
-    `RefCell { value: ${$showBorrowed(totals, (value) => totalsDebug_fmt(value), true)} } RefCell { value: ${$showBorrowed(copy, (value) => totalsDebug_fmt(value), true)} } ${value$6}`,
+    `RefCell { value: ${$showBorrowed(totals, (value) => totalsDebug_fmt(value), true)} } RefCell { value: ${$showBorrowed(copy, (value) => totalsDebug_fmt(value), true)} } ${value$5}`,
   );
   const names = ["c"];
-  const value$7 = $borrowMut(totals, true);
-  $assign(value$7, {
+  const value$6 = $borrowMut(totals, true);
+  $assign(value$6, {
     sum: 1n,
     names,
   });
-  $unborrow(value$7);
+  $unborrow(value$6);
   const reading = $borrow(totals, true);
   try {
     const tryBorrowMut = $tryBorrow(totals, true);

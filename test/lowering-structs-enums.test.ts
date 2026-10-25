@@ -674,7 +674,7 @@ pub fn same_choice(a: Choice, b: Choice) -> bool {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain('  return b || "blocking";');
+  expect(js).toContain('  return b ? true : "blocking";');
   expect(js).toContain('return f === "blocking";');
   const lib = await import(join(dir, "lib.js"));
   expect([lib.fallback(true), lib.fallback(false), lib.describe(true), lib.describe("blocking"), lib.same("blocking", "blocking"),

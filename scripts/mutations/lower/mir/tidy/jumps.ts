@@ -125,4 +125,13 @@ export const mutations: Mutation[] = [
     replace: "        let span = stmts[i].span;\n",
     tests: ["test/lowering-comments.test.ts", "-t", "a comment before an or's if"],
   },
+  {
+    name: "written-else-made-an-early-exit",
+    breaks: "`if let Some(c) = c { a } else { break }` is `if (c == null) { break; } a`, an early exit the program didn't write (ADR 0879)",
+    file: "src/lower/mir/tidy/jumps.rs",
+    find: "    if in_else && written_else(&rest[0], elses) {\n",
+    replace: "    if in_else && written_else(&rest[0], elses) && false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^branches_as_written.rs$"],
+    snapshots: true,
+  },
 ];

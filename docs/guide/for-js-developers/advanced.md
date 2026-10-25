@@ -901,7 +901,12 @@ export function twoLoggers() {
 ```
 
 - **An `Rc` is the value itself,** and `Rc::clone` shares it, as two JS
-  variables share one object.
+  variables share one object. A clone made to give a `move` closure its
+  own, of a parameter or of what the closure around it captured by value,
+  is read by that name, `() => flush(queue)` of `let queue =
+  Rc::clone(&queue); move || flush(&queue)`
+  ([ADR 0846](../../decisions/0846-a-parameters-clone-is-read-by-its-name.md),
+  [0879](../../decisions/0879-an-if-and-a-closures-captures-read-as-written.md)).
 - **A `RefCell` of an array, a `Map`, a `Set` or an object is that
   object**, `lines` above; of anything else, a number or an `Option`, it's
   `{ value }`. It counts its borrows where one may meet another, as std's

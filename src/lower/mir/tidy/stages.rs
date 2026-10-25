@@ -70,7 +70,9 @@ pub(super) const STAGES: &[Stage] = &[
             pass("unread result", |b, h| unread_result(b, h.result)),
             pass("guarded", |b, _| js::statement_lists(b, &mut guarded)),
             pass("declarations", |b, _| declarations(b)),
-            pass("aliases", |b, h| aliases(b, h.captured, &h.params.borrow(), h.clones)),
+            pass("aliases", |b, h| {
+                aliases(b, h.captured, (&h.params.borrow(), h.kept), h.clones)
+            }),
             // A test an earlier one decided, `if (x != null) { return x; } ..
             // if (x != null)`, where nothing between changes what it reads:
             // its branch; and a tail MIR wrote into both branches, once,
@@ -99,7 +101,9 @@ pub(super) const STAGES: &[Stage] = &[
             pass("decisions", |b, _| bottom_up(b, &mut decisions::decisions)),
             // What the program wrote after a loop, MIR moved into its way out.
             pass("exits after", |b, _| js::statement_lists(b, &mut exits_after)),
-            pass("early returns", |b, _| js::statement_lists(b, &mut early_returns)),
+            pass("early returns", |b, h| {
+                js::statement_lists(b, &mut |s| early_returns(s, &h.written.elses))
+            }),
             pass("early breaks", |b, _| {
                 js::statement_lists(b, &mut |s| early_breaks(s, false))
             }),
@@ -374,7 +378,9 @@ pub(super) const STAGES: &[Stage] = &[
             // What those leave at the end, a `return;` the program didn't write.
             pass("tail returns", |b, h| tail_returns(b, h.returns)),
             // A loop's early exits again, of what's taken its shape since.
-            pass("early returns", |b, _| js::statement_lists(b, &mut early_returns)),
+            pass("early returns", |b, h| {
+                js::statement_lists(b, &mut |s| early_returns(s, &h.written.elses))
+            }),
             // The `continue`s a loop's body ends with anyway, which the
             // program didn't write, once those have each loop's shape.
             pass("tail continues", |b, h| {
@@ -658,7 +664,7 @@ const JUMPS: &[Pass] = &[
 fn branch_values_of(body: &mut Vec<Stmt>, hints: &Hints) {
     let made = (hints.result, hints.written.switches.as_slice());
     bottom_up(body, &mut |s| {
-        branch_values(s, hints.returns, hints.booleans, made, &hints.written.continues)
+        branch_values(s, hints.returns, hints.booleans, made, hints.written)
     });
 }
 

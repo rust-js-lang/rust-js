@@ -842,7 +842,11 @@ export function total(member, code, amount) {
 ```
 
 An `if` statement is the one you wrote: its test as written and its
-branches in their order. A branch that returns needs no `else` after it,
+branches in their order, `if !queue.is_empty() { .. } else { .. }`'s
+`queue.length !== 0` first; an `else { break }` after a branch that goes
+on stays an `else`
+([ADR 0879](../../decisions/0879-an-if-and-a-closures-captures-read-as-written.md)).
+A branch that returns needs no `else` after it,
 as ESLint's `no-else-return` has it, but an `else if` after an arm that
 goes on stays one chain:
 
@@ -1452,14 +1456,17 @@ export function initial(p) {
 }
 
 export function isAdult(p) {
-  return p.age != null && p.age >= 18;
+  return p.age != null ? p.age >= 18 : false;
 }
 ```
 
 - `unwrap_or` is `??`. `map` changes the value if there is one. `?` after
   an `Option` returns `None` from the function early, as `?.` stops a
   chain.
-- `if let Some(age) = p.age` is "if it's there, call it `age`".
+- `if let Some(age) = p.age` is "if it's there, call it `age`". Its value
+  is the conditional you wrote, `?:`, its `else { false }` too; what you
+  write with `&&`, or `p.age.is_some_and(|a| a >= 18)`, is `&&`
+  ([ADR 0879](../../decisions/0879-an-if-and-a-closures-captures-read-as-written.md)).
 - An `Option` is tested by what it holds: by its truth where that's never
   falsy, an object, an array, a function, a class's instance or a symbol,
   `if (!owner)` and `while (owner)`; against `null` where it may be, a

@@ -222,8 +222,9 @@ pub(super) fn branch_values(
     returns: &[js::Span],
     booleans: &HashSet<String>,
     (result, switches): (&str, &[Switch]),
-    continues: &[(js::Span, js::Span)],
+    program: &crate::lower::mir::hints::Written,
 ) {
+    let (continues, elses) = (&program.continues, &program.elses);
     stmts.retain_mut(|stmt| {
         let mut span = stmt.span;
         let kind = std::mem::replace(&mut stmt.kind, StmtKind::Break(None));
@@ -284,9 +285,11 @@ pub(super) fn branch_values(
             StmtKind::If(test, ref then, Some(ref otherwise))
                 if let Some(one) = one_assignment(&test, (then, otherwise), span, (result, switches)) =>
             {
+                // A value the program wrote with an `if`, not `&&` or `||`.
+                let written_if = written_branches(span, then, otherwise, elses);
                 let value = match one.no_first {
-                    true => conditional(test.negated_test(), one.no, one.yes, booleans),
-                    false => conditional(test, one.yes, one.no, booleans),
+                    true => conditional(test.negated_test(), one.no, one.yes, booleans, written_if),
+                    false => conditional(test, one.yes, one.no, booleans, written_if),
                 };
                 StmtKind::Assign(Expr::var(&one.target), value)
             }
@@ -315,7 +318,7 @@ pub(super) fn branch_values(
                         .rev()
                         .reduce(|b, a| Expr::bin(Op::And, a, b))
                         .expect("one");
-                    StmtKind::Assign(Expr::var(&x), conditional(test, yes, no, booleans))
+                    StmtKind::Assign(Expr::var(&x), conditional(test, yes, no, booleans, false))
                 }
                 None => StmtKind::Labeled(label, body),
             },
@@ -329,7 +332,7 @@ pub(super) fn branch_values(
     // `if (a) { if (b) { return t; } } return f;`, last: `return a && b ? t : f;`.
     if let [.., last_if, last] = stmts.as_slice()
         && let StmtKind::Return(Some(no)) = &last.kind
-        && let StmtKind::If(..) = &last_if.kind
+        && let StmtKind::If(_, then, _) = &last_if.kind
         && let Some((tests, yes)) = returned_chain(std::slice::from_ref(last_if))
         && small(&yes)
         && small(no)
@@ -342,7 +345,10 @@ pub(super) fn branch_values(
             .rev()
             .reduce(|b, a| Expr::bin(Op::And, a, b))
             .expect("one");
-        let value = conditional(test, yes, no.clone(), booleans);
+        // Of an `if` the program wrote with an `else`, as it wrote it.
+        let written_if = written_branches(last_if.span, then, std::slice::from_ref(last), elses)
+            || written_values(last_if.span, (&yes, no), elses);
+        let value = conditional(test, yes, no.clone(), booleans, written_if);
         let span = last_if.span;
         stmts.truncate(stmts.len() - 2);
         stmts.push(StmtKind::Return(Some(value)).at(span));
@@ -775,8 +781,10 @@ pub(super) fn inner_chain(stmts: &[Stmt], label: &str) -> Option<(Vec<Expr>, Str
 }
 
 /// `test ? yes : no`: `test && yes` where `no` is `false`, and `test || no`
-/// where `yes` is `true`, the test `!!test` where it's not a `bool`.
-pub(super) fn conditional(test: Expr, yes: Expr, no: Expr, booleans: &HashSet<String>) -> Expr {
+/// where `yes` is `true`, the test `!!test` where it's not a `bool`; but of
+/// an `if` the program wrote with an `else`, `written_if`, `!c ? x : false`,
+/// as it wrote it, not the `&&` MIR makes the same branches of (ADR 0879).
+pub(super) fn conditional(test: Expr, yes: Expr, no: Expr, booleans: &HashSet<String>, written_if: bool) -> Expr {
     // Where the test itself is the value, of what's not a `bool`, `!!c`;
     // its negation too, `!!o` of `!o`'s, `is_some()`'s.
     let truth = |test: Expr| match is_boolean(&test, booleans) {
@@ -806,6 +814,7 @@ pub(super) fn conditional(test: Expr, yes: Expr, no: Expr, booleans: &HashSet<St
     match (&yes.kind, &no.kind) {
         (ExprKind::Bool(true), ExprKind::Bool(false)) => truth(test),
         (ExprKind::Bool(false), ExprKind::Bool(true)) => truth(negate(test)),
+        _ if written_if => Expr::cond(test, yes, no),
         (ExprKind::Bool(true), _) => Expr::bin(Op::Or, truth(test), no),
         (ExprKind::Bool(false), _) => Expr::bin(Op::And, truth(negate(test)), no),
         (_, ExprKind::Bool(true)) => Expr::bin(Op::Or, truth(negate(test)), yes),

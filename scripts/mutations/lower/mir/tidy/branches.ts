@@ -231,8 +231,8 @@ export const mutations: Mutation[] = [
     "name": "or-branches-reversed",
     "breaks": "`if a || b { x } else { y }` from MIR is `!a && !b ? y : x`",
     "file": "src/lower/mir/tidy/branches.rs",
-    "find": "                    true => conditional(test.negated_test(), one.no, one.yes, booleans),\n",
-    "replace": "                    true => conditional(test, one.yes, one.no, booleans),\n",
+    "find": "                    true => conditional(test.negated_test(), one.no, one.yes, booleans, written_if),\n",
+    "replace": "                    true => conditional(test, one.yes, one.no, booleans, written_if),\n",
     "tests": ["test/lowering-branches.test.ts", "-t", "an if of an or from MIR keeps its branches"]
   },
   {
@@ -534,5 +534,21 @@ export const mutations: Mutation[] = [
     replace: "            if false =>\n",
     tests: ["test/corpus.test.ts", "test/lowering-bindings.test.ts", "-t", "^let_chain_values.rs$|a thread-local of a let chain"],
     snapshots: true,
+  },
+  {
+    name: "written-if-value-folded",
+    breaks: "`if a > 1 { s == \"x\" } else { false }` is `a > 1 && s === \"x\"`, not the conditional written (ADR 0879)",
+    file: "src/lower/mir/tidy/branches.rs",
+    find: "        _ if written_if => Expr::cond(test, yes, no),\n",
+    replace: "",
+    tests: ["test/lowering-branches.test.ts", "-t", "branches from MIR read as a person writes them"],
+  },
+  {
+    name: "written-chain-value-folded",
+    breaks: "`if !js::truthy(v) && n != 0 { f() } else { true }` is `!!v || n === 0 || f()`, not the conditional written (ADR 0879)",
+    file: "src/lower/mir/tidy/branches.rs",
+    find: "            || written_values(last_if.span, (&yes, no), elses);\n",
+    replace: "            || false;\n",
+    tests: ["test/lowering-written-branches.test.ts", "-t", "a value's truth or else a bool is a bool part by part"],
   },
 ];

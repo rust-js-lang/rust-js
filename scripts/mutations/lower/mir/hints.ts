@@ -295,4 +295,12 @@ export const mutations: Mutation[] = [
     replace: "                thir::ExprKind::If { cond, .. } if !e.span.from_expansion() && false => {\n                    Some(self.js_span(self.frame.thir[cond].span))\n",
     tests: ["test/lowering-written-branches.test.ts", "-t", "earlier test decides"],
   },
+  {
+    name: "kept-captures-of-borrows-too",
+    breaks: "a capture a closure borrowed, which its maker gives another value later, is fixed in it, so a clone of it made in a call reads the new value (ADR 0879)",
+    file: "src/lower/mir/hints.rs",
+    find: "        .filter(|(_, place)| !place)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^branches_as_written.rs$"],
+  },
 ];

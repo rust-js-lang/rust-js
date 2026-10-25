@@ -300,7 +300,8 @@ pub fn many(counts: &Counts, debug: bool) -> bool {
 // A conditional of a `bool` and a value's negated truth, `!js::truthy(v)`,
 // is a `bool` part by part: `!!v && f()`, never `v && f()`, whose `v` is
 // the object, not `false`; `!!v`, not `v`, as a value; and `!!v || f()`,
-// of a chain each part's.
+// of a chain each part's. Of an `if` the program wrote, the conditional it
+// wrote, `!v ? false : f()` (ADR 0879).
 test("a value's truth or else a bool is a bool part by part", async () => {
   const { js, lib } = await compiled("negated-truth-bool", `use js::Unknown;
 
@@ -314,6 +315,10 @@ pub fn and_then(v: Option<&Unknown>) -> bool {
     if !js::truthy(v) { false } else { supports("a") }
 }
 
+pub fn and_then_written(v: Option<&Unknown>) -> bool {
+    js::truthy(v) && supports("a")
+}
+
 pub fn value(v: Option<&Unknown>) -> bool {
     if !js::truthy(v) { false } else { true }
 }
@@ -322,18 +327,38 @@ pub fn or_else(v: Option<&Unknown>) -> bool {
     if !js::truthy(v) { supports("b") } else { true }
 }
 
+pub fn or_else_written(v: Option<&Unknown>) -> bool {
+    js::truthy(v) || supports("b")
+}
+
+pub fn present_or(o: Option<&Vec<u32>>, f: &dyn Fn() -> bool) -> bool {
+    match o {
+        None => f(),
+        Some(_) => true,
+    }
+}
+
 pub fn unless(v: Option<&Unknown>, n: u32) -> bool {
     if !js::truthy(v) && n != 0 { supports("d") } else { true }
+}
+
+pub fn unless_written(v: Option<&Unknown>, n: u32) -> bool {
+    js::truthy(v) || n == 0 || supports("d")
 }
 
 pub fn parts(v: Option<&Unknown>, n: u32) -> u32 {
     if n != 0 && js::truthy(v) { 1 } else { 2 }
 }
 `);
+  expect(js).toContain('return !v ? false : globalThis.supportsIt("a");');
   expect(js).toContain('return !!v && globalThis.supportsIt("a");');
   expect(js).toContain("return !!v;");
+  expect(js).toContain('return !v ? globalThis.supportsIt("b") : true;');
   expect(js).toContain('return !!v || globalThis.supportsIt("b");');
-  // A chain's negation part by part, `!!v || n === 0`, not `!!(v || n === 0)`.
+  // A `match`'s, MIR's test of `None` first: `!!o`, not the array.
+  expect(js).toContain("return !!o || f();");
+  expect(js).toContain('return !v && n !== 0 ? globalThis.supportsIt("d") : true;');
+  // A chain's part by part, `!!v || n === 0`, not `!!(v || n === 0)`.
   expect(js).toContain('return !!v || n === 0 || globalThis.supportsIt("d");');
   // A test reads each part by its truth, `v`, not `!!v`.
   expect(js).toContain("return n !== 0 && v ? 1 : 2;");
@@ -341,6 +366,7 @@ pub fn parts(v: Option<&Unknown>, n: u32) -> u32 {
   globals.supportsIt = () => true;
   const object = {};
   expect([lib.andThen(object as never), lib.value(object as never), lib.orElse(object as never), lib.andThen(0 as never)]).toEqual([true, true, true, false]);
+  expect([lib.andThenWritten(object as never), lib.orElseWritten(object as never), lib.unlessWritten(object as never, 1 as never), lib.andThenWritten(0 as never), lib.presentOr([1] as never, (() => false) as never)]).toEqual([true, true, true, false, true]);
 });
 
 // React's startGestureTransition: `if (!enableGestureTransition) { throw

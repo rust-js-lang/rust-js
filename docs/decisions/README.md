@@ -255,7 +255,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0234 A component of an element's props is an `ElementType`, rendered as a tag](0234-element-type.md)
 - [0235 A child shown only if a test holds is `test && child`, where the test can't render](0235-children-shown-if.md)
 - [0236 What JSX makes is `JSX::Element`, TypeScript's `JSX.Element`](0236-jsx-element.md)
-- [0237 An `if` whose branch leaves has no `else`](0237-no-else-after-leaving.md) *(amended by 0683: an `else if` of an arm that goes on stays one; amended: which `else` is a link is the walk's to say)*
+- [0237 An `if` whose branch leaves has no `else`](0237-no-else-after-leaving.md) *(amended by 0683: an `else if` of an arm that goes on stays one; amended: which `else` is a link is the walk's to say; amended by 0879: an `else` the program wrote that leaves a loop stays)*
 - [0238 A value kept for good is the value; children are kept as JS values](0238-kept-values-and-children.md)
 - [0239 A local of a component's function type is that component as a tag](0239-local-components.md)
 - [0240 A `pub use` of another module's function is re-exported from it](0240-reexports.md) *(amended by 0874: every `pub use` of what has JS, as written, or refused)*
@@ -382,7 +382,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0361 Node's events are names of their own, typed by their emitters](0361-node-events.md) *(amended by 0656: `emit` takes what TypeScript's does)*
 - [0362 A field's `RefCell` never counted is the value it holds](0362-refcell-fields-never-counted.md) *(amended by 0863: a library's plain field too, by its contract)*
 - [0363 Children of any node are given by reference](0363-children-of-any-node.md)
-- [0364 Bodies are lowered from their MIR](0364-mir-lowering.md) *(amended by 0659: tidy's passes are one list of stages, each checked; extended by 0745: a `continue` in a chain; by 0751: a binding only a guard reads; amended by 0800: a drop of nothing never unwinds)*
+- [0364 Bodies are lowered from their MIR](0364-mir-lowering.md) *(amended by 0659: tidy's passes are one list of stages, each checked; extended by 0745: a `continue` in a chain; by 0751: a binding only a guard reads; amended by 0800: a drop of nothing never unwinds; amended by 0879: an `if`'s value of a branch of `false` is a conditional)*
 - [0365 JS's Math where Rust's methods differ: `js::math`](0365-js-math-where-rust-differs.md)
 - [0366 A `NodeList` of its items' type, as TypeScript's `NodeListOf`](0366-nodelist-of-its-items.md)
 - [0367 A state's setter is the function it is](0367-state-setter-is-a-function.md)
@@ -488,7 +488,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0604 A binding as a value gives its arguments as its call does](0604-a-bindings-value-gives-what-its-call-gives.md)
 - [0605 Whether an arrow only passes on what it's given has one owner](0605-an-arrow-that-passes-on-has-one-owner.md)
 - [0606 A blank line before an item's attributes is before the item](0606-a-blank-line-before-attributes.md)
-- [0607 A variable's field is given a call's value in place](0607-a-field-is-given-a-call-in-place.md)
+- [0607 A variable's field is given a call's value in place](0607-a-field-is-given-a-call-in-place.md) *(amended by 0879: a variable a closure captured too)*
 - [0608 A `Drop` is its body at each drop](0608-a-drop-is-its-body-at-each-drop.md) *(amended: a name its body shares with the caller is named apart; amended: a unit struct's guard, and a drop of nothing)*
 - [0609 A `let` that shadows a parameter read no more is the parameter assigned](0609-a-shadowed-parameter-is-assigned.md) *(extended by 0650: any binding of its block)*
 - [0610 A function that only calls a module variable's function is that variable](0610-a-forwarding-function-is-its-variable.md)
@@ -636,7 +636,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0835 An object is across lines where its struct literal is](0835-an-object-is-across-lines-where-its-literal-is.md)
 - [0840 A thread-local's `with` is its closure's body, wherever it's called](0840-a-thread-locals-with-is-its-closures-body.md) *(amended: in a closure's body too; amended: a shadow of its parameter is a name of its own)*
 - [0841 A nullable place stores what's never `undefined` as it is](0841-a-nullable-place-stores-what-is-never-undefined-as-it-is.md) *(amended: a nullable function's result, kept in a variable or a `Drop` guard's field, is stored as it is; a trait's method's isn't taken as one)*
-- [0846 A parameter's clone that is the same JS value is read by the parameter's name](0846-a-parameters-clone-is-read-by-its-name.md)
+- [0846 A parameter's clone that is the same JS value is read by the parameter's name](0846-a-parameters-clone-is-read-by-its-name.md) *(extended by 0879: of what a `move` closure captured)*
 - [0853 A variable set again is read, and given what's made, where it is](0853-a-variable-set-again-is-read-and-given-where-it-is.md)
 - [0855 A parameter's `#[rust_js::name]` is its JS name](0855-a-parameters-rust-js-name-is-its-js-name.md)
 - [0855 A `loop` that ends an `if`'s branch breaks as a loop, its `else` kept](0855-a-loop-that-ends-a-branch-breaks-as-a-loop.md)
@@ -661,6 +661,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0870 A let chain's value reads its binding first, then is a conditional](0870-a-let-chains-value-reads-its-binding-first.md) *(amended: an exported one's value of a test is a conditional)*
 - [0877 A set's `for_each` is the set's own `forEach`](0877-a-sets-for-each-is-its-own.md)
 - [0878 `instanceof` of a constructor held as a value is `js::instance_of`](0878-instanceof-of-a-constructor-value.md)
+- [0879 An `if` reads as written, and a closure's captures are read in place](0879-an-if-and-a-closures-captures-read-as-written.md)
 - [0875 A `js::Set` holds any value, and a `Set` and a `Map` are made of what they start with](0875-a-js-set-holds-any-value.md)
 - [0876 A `HashMap`'s declaration is a `Map`, a `HashSet`'s a `Set`](0876-a-maps-declaration-is-map.md)
 - [0843 A `Weak` nothing upgrades is the value itself](0843-a-weak-nothing-upgrades-is-the-value-itself.md)

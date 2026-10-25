@@ -42,8 +42,7 @@ function main() {
 
   let name = "ada";
   name += " lovelace";
-  const value = name.toUpperCase();
-  name = value;
+  name = name.toUpperCase();
   console.log(`${name}`);
 
   let o = 4;

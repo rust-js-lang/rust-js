@@ -708,15 +708,18 @@ pub(super) fn readable_temporaries(
 /// says of its block. And `const b = a;` that a `clone()` made, `clones`,
 /// of a parameter `a` nothing assigns or declares again, is `a`, read where
 /// `b` was: the same value, an uncounted `Rc`'s clone the same object,
-/// `payload` of `const resolved = payload` (ADR 0846).
+/// `payload` of `const resolved = payload` (ADR 0846); and of what a
+/// closure captured by value, `kept`, which its maker never assigns
+/// again, as fixed in it (ADR 0879).
 pub(super) fn aliases(
     body: &mut Vec<Stmt>,
     captured: &HashSet<String>,
-    params: &[js::Pattern],
+    (params, kept): (&[js::Pattern], &HashSet<String>),
     clones: &HashSet<String>,
 ) {
     let fixed: HashSet<String> = (params.iter())
         .flat_map(|param| param.names())
+        .chain(kept.iter().map(String::as_str))
         .filter(|name| !rebinds(body, name))
         .map(str::to_string)
         .collect();

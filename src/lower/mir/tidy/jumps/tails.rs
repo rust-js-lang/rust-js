@@ -529,6 +529,70 @@ pub(in crate::lower::mir::tidy) fn exits_after(stmts: &mut Vec<Stmt>) {
     }
 }
 
+/// Whether `stmt` is `if (t) { a } else { e }` of an `if` the program wrote
+/// with an `else`, `a` its `then` and `e` none of it, its `else` or the jump
+/// MIR made of it, `break` where the loop goes on to what's after it: the
+/// `else` it wrote, which an early exit of MIR's, `if (!t) { e } a`, isn't,
+/// nor a `while`'s test (ADR 0879).
+pub(in crate::lower::mir::tidy) fn written_else(stmt: &Stmt, elses: &[(js::Span, js::Span, js::Span)]) -> bool {
+    let within = |c: &js::Span, s: js::Span| !s.is_none() && c.lo <= s.lo && s.hi <= c.hi;
+    let StmtKind::If(_, first, Some(second)) = &stmt.kind else {
+        return false;
+    };
+    elses.iter().any(|(cond, then, otherwise)| {
+        // A `while`'s desugaring's, its `else` the whole loop, isn't one.
+        otherwise.lo >= then.hi
+            && within(cond, stmt.span)
+            && first.iter().any(|s| within(then, s.span))
+            && (first.iter()).all(|s| s.span.is_none() || within(then, s.span) || within(cond, s.span))
+            && (second.iter()).all(|s| !within(then, s.span) && !within(cond, s.span))
+    })
+}
+
+/// Whether the `if` at `span` of branches `a` and `b` is one the program
+/// wrote with an `else`, each branch's statements written in one of its
+/// branches, `a` in its `then` and `b` in its `else` or the other way
+/// round, MIR's turned: a value written with an `if`, not with the `&&` or
+/// `||` MIR makes the same branches of (ADR 0879).
+pub(in crate::lower::mir::tidy) fn written_branches(
+    span: js::Span,
+    a: &[Stmt],
+    b: &[Stmt],
+    elses: &[(js::Span, js::Span, js::Span)],
+) -> bool {
+    let within = |c: &js::Span, s: js::Span| !s.is_none() && c.lo <= s.lo && s.hi <= c.hi;
+    // Where it's written: a `return` MIR made of a branch's value, where
+    // the function ends, where its value is.
+    let at = |branch: &js::Span, s: &Stmt| {
+        within(branch, s.span) || matches!(&s.kind, StmtKind::Return(Some(v)) if within(branch, v.span))
+    };
+    let of = |branch: &js::Span, stmts: &[Stmt]| {
+        stmts.iter().any(|s| at(branch, s)) && stmts.iter().all(|s| s.span.is_none() || at(branch, s))
+    };
+    elses.iter().any(|(cond, then, otherwise)| {
+        otherwise.lo >= then.hi
+            && within(cond, span)
+            && ((of(then, a) && of(otherwise, b)) || (of(then, b) && of(otherwise, a)))
+    })
+}
+
+/// `written_branches` of a chain's values, `yes` where its tests hold and
+/// `no` where one doesn't, each where it's written: `if a && b { x } else {
+/// true }`'s, whose branches MIR nests in the tests (ADR 0879).
+pub(in crate::lower::mir::tidy) fn written_values(
+    span: js::Span,
+    (yes, no): (&Expr, &Expr),
+    elses: &[(js::Span, js::Span, js::Span)],
+) -> bool {
+    let within = |c: &js::Span, s: js::Span| !s.is_none() && c.lo <= s.lo && s.hi <= c.hi;
+    elses.iter().any(|(cond, then, otherwise)| {
+        otherwise.lo >= then.hi
+            && within(cond, span)
+            && ((within(then, yes.span) && within(otherwise, no.span))
+                || (within(then, no.span) && within(otherwise, yes.span)))
+    })
+}
+
 /// `if (t) { exit } rest`, of an `if` the program wrote with an `else`
 /// (`Written::elses`), as it wrote it: `if (t) { exit } else { rest }` where
 /// `exit` is its `then`, and `if (!t) { rest } else { exit }` where it's its
@@ -537,6 +601,9 @@ pub(in crate::lower::mir::tidy) fn exits_after(stmts: &mut Vec<Stmt>) {
 /// each of the `if`'s other branch, end the list, as the `if` did. A
 /// binding its condition makes, a let chain's `let Some(x) = e`, is its
 /// `then`'s, where it's in scope.
+/// And `if (t) { b } else { a }` of `if !t { a } else { b }`, its branches
+/// MIR turned, a `switchInt` testing `t`: `if (!t) { a } else { b }`, as
+/// written (ADR 0879).
 pub(in crate::lower::mir::tidy) fn written_elses(stmts: &mut Vec<Stmt>, elses: &[(js::Span, js::Span, js::Span)]) {
     let within = |c: &js::Span, s: js::Span| !s.is_none() && c.lo <= s.lo && s.hi <= c.hi;
     // Each statement written in `branch`, one at least, or in `made`, the
@@ -548,6 +615,22 @@ pub(in crate::lower::mir::tidy) fn written_elses(stmts: &mut Vec<Stmt>, elses: &
     };
     let mut at = 0;
     while at < stmts.len() {
+        // Its branches MIR turned, `if !c { a } else { b }`'s `if (c) { b }
+        // else { a }` of a `switchInt` that tests `c`: as written, `a`
+        // first (ADR 0879).
+        if let StmtKind::If(_, first, Some(second)) = &stmts[at].kind
+            && let Some((cond, then, otherwise)) = elses.iter().find(|(cond, ..)| within(cond, stmts[at].span))
+            && otherwise.lo >= then.hi
+            && of(otherwise, None, first)
+            && of(then, Some(cond), second)
+        {
+            let StmtKind::If(test, first, Some(second)) =
+                std::mem::replace(&mut stmts[at].kind, StmtKind::Expr(Expr::undefined()))
+            else {
+                unreachable!("matched")
+            };
+            stmts[at].kind = StmtKind::If(test.negated_test(), second, Some(first));
+        }
         if let StmtKind::If(_, exit, None) = &stmts[at].kind
             && exit.last().is_some_and(ends)
             && let Some((cond, then, otherwise)) = elses.iter().find(|(cond, ..)| within(cond, stmts[at].span))
@@ -616,7 +699,8 @@ pub(in crate::lower::mir::tidy) fn returned_values(
         && folds_into_return(&yes, &no)
         && elses.iter().any(|(cond, ..)| within(cond, if_stmt.span))
     {
-        let folded = conditional(test.clone(), yes, no, booleans);
+        let written_if = written_branches(if_stmt.span, then, last, elses);
+        let folded = conditional(test.clone(), yes, no, booleans, written_if);
         let span = if_stmt.span;
         stmts.truncate(at);
         stmts.push(StmtKind::Return(Some(folded)).at(span));

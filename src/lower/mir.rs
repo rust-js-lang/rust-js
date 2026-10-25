@@ -985,6 +985,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 returns: &state.facts.jumps().returns,
                 captured: &captured,
                 clones: &self.clone_names(mir_body, &state),
+                kept: &hints::kept_captures(&state),
                 booleans: &booleans,
                 numbers: &numbers,
                 plain: &self.plain_names(),

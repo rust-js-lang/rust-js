@@ -485,4 +485,13 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^unread_collected_chain.rs$"],
   },
+  {
+    name: "clone-alias-of-a-capture-kept",
+    breaks: "a clone of what a `move` closure captured stays `const prev$1 = prev`, read by that name (ADR 0879)",
+    file: "src/lower/mir/tidy/bindings.rs",
+    find: "        .chain(kept.iter().map(String::as_str))\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^branches_as_written.rs$"],
+    snapshots: true,
+  },
 ];

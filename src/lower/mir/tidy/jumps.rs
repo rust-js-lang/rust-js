@@ -155,10 +155,10 @@ fn broken_early(test: Expr, mut then: Vec<Stmt>, span: js::Span, continues: &dyn
 ///   breaks; not where something else leaves the loop, nor of what it
 ///   declares, which isn't seen after it.
 /// - `a` never going on past its own end: `if (!c) { return x; } a` (ADR 0370).
-pub(super) fn early_returns(stmts: &mut Vec<Stmt>) {
+pub(super) fn early_returns(stmts: &mut Vec<Stmt>, elses: &[(js::Span, js::Span, js::Span)]) {
     let mut at = 0;
     while at < stmts.len() {
-        while let Some(after) = early_return(&mut stmts[at]) {
+        while let Some(after) = early_return(&mut stmts[at], elses) {
             if let Some(after) = after {
                 stmts.insert(at + 1, after);
                 break;
@@ -172,8 +172,10 @@ pub(super) fn early_returns(stmts: &mut Vec<Stmt>) {
 /// it leaves after the loop, if it does. Its body's end, `if (c) { a }
 /// return x;`, or `if (c) { a } else { e }` of a lone exit `e`, `return;` as
 /// MIR's `?` is, or `break;`: `if (!c) { e } a`, as `a` goes on to the next
-/// time round where the body ends.
-pub(super) fn early_return(stmt: &mut Stmt) -> Option<Option<Stmt>> {
+/// time round where the body ends. Not of an `else` the program wrote,
+/// `if let Some(c) = c { a } else { break }`, which reads as written (ADR
+/// 0879).
+pub(super) fn early_return(stmt: &mut Stmt, elses: &[(js::Span, js::Span, js::Span)]) -> Option<Option<Stmt>> {
     let StmtKind::While { label, cond, body } = &mut stmt.kind else {
         return None;
     };
@@ -207,6 +209,9 @@ pub(super) fn early_return(stmt: &mut Stmt) -> Option<Option<Stmt>> {
         _ => return None,
     };
     let rest = &body[at..];
+    if in_else && written_else(&rest[0], elses) {
+        return None;
+    }
     let StmtKind::If(_, then, otherwise) = &rest[0].kind else {
         unreachable!("matched")
     };

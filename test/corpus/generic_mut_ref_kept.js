@@ -34,10 +34,11 @@ function toRefs(list) {
               list$2.next = value;
             },
           };
-    if (n == null) {
+    if (n != null) {
+      list = n.value;
+    } else {
       return result;
     }
-    list = n.value;
   }
 }
 

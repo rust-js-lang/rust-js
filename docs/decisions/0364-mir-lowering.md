@@ -14,7 +14,7 @@ a guarded arm's guard reads isn't written in the arm. Amended by
 nothing of never unwinds, so the cleanup it would unwind to drops nothing.
 Amended: a value a block gives last is given first only where nothing can
 tell (issue #219, below); an `|` of two values' tests is a chain of its
-arms.
+arms. Amended by [0879](0879-an-if-and-a-closures-captures-read-as-written.md): the value of an `if` the program wrote with a branch of `false` or `true` is a conditional, `c ? x : false`, not `c && x`; its branches are in the order written.
 
 Case: N ([0262](0262-when-rust-and-js-disagree.md)).
 

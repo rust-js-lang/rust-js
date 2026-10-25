@@ -1,6 +1,6 @@
 # 0607. A variable's field is given a call's value in place
 
-Status: Accepted.
+Status: Accepted. Amended by [0879](0879-an-if-and-a-closures-captures-read-as-written.md): a place JS reaches as a variable, a closure's capture's `*(_1.0)`, is given the value in place too, `result = callback();`.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): A: the same value is
 made, then set, on the same object.

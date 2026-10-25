@@ -1,7 +1,7 @@
 # 0846. A parameter's clone that is the same JS value is read by the parameter's name
 
 Status: Accepted. Extends tidy's `aliases`, of
-[0320](0320-counted-rcs.md)'s uncounted `Rc`, which is the value itself.
+[0320](0320-counted-rcs.md)'s uncounted `Rc`, which is the value itself. Extended by [0879](0879-an-if-and-a-closures-captures-read-as-written.md): a clone of what a closure captured by value, which its maker never assigns again, is read by its name too.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): A. A `clone()` whose JS
 is the value itself, `const resolved = payload`, gives the variable the

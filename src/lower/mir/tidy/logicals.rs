@@ -30,7 +30,13 @@ pub(super) fn logical_returns(
         && !written(returns, last.span)
         && !written(returns, *yes_span)
     {
-        let returned = StmtKind::Return(Some(conditional(test.clone(), yes.clone(), no.clone(), booleans)));
+        let returned = StmtKind::Return(Some(conditional(
+            test.clone(),
+            yes.clone(),
+            no.clone(),
+            booleans,
+            false,
+        )));
         let span = last_if.span;
         stmts.splice(stmts.len() - 2.., [returned.at(span)]);
     }
@@ -123,10 +129,10 @@ fn folded(test: Expr, yes: Expr, no: Expr, booleans: &HashSet<String>) -> Expr {
         }
     }
     if let Some(p) = without(&yes, &no) {
-        let test = conditional(test, Expr::bool(true), Expr::bool(false), booleans);
+        let test = conditional(test, Expr::bool(true), Expr::bool(false), booleans, false);
         return Expr::bin(Op::Or, Expr::bin(Op::And, test, p), no);
     }
-    conditional(test, yes, no, booleans)
+    conditional(test, yes, no, booleans, false)
 }
 
 /// Whether `e` holds a `c ? a : b`, which a fold left: not what `&&` and

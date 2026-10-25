@@ -18,8 +18,7 @@ function twiceIterator_next(twice, IIterator, IClone) {
   const next = IIterator.next(twice.iter);
   const captured = twice.iter;
   const fallback = () => {
-    const value = IClone.clone(twice.orig);
-    $assign(captured, value);
+    $assign(captured, IClone.clone(twice.orig));
     return IIterator.next(captured);
   };
   return next ?? fallback();

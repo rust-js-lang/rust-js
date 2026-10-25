@@ -6,8 +6,8 @@ export const mutations: Mutation[] = [
     name: "field-value-always-spilled",
     breaks: "`more.has = work();` is `const value = work(); more.has = value;`",
     file: "src/lower/mir/assign.rs",
-    find: "        if !place.projection.is_empty() && value.has_effects() && !fixed {\n",
-    replace: "        if !place.projection.is_empty() && value.has_effects() {\n",
+    find: "        let target = if !place.projection.is_empty() && value.has_effects() && !fixed {\n",
+    replace: "        let target = if !place.projection.is_empty() && value.has_effects() {\n",
     tests: ["test/lowering-functions.test.ts", "-t", "a field is given a call"],
   },
   {
@@ -554,5 +554,14 @@ export const mutations: Mutation[] = [
     find: "            true => span.to(made),\n",
     replace: "            true => span,\n",
     tests: ["test/lowering-comments.test.ts", "-t", "a comment in a value assigned over one dropped"],
+  },
+  {
+    name: "variable-target-value-spilled",
+    breaks: "`result = callback();` of a closure's capture is `const value = callback(); result = value;` (ADR 0879)",
+    file: "src/lower/mir/assign.rs",
+    find: "            if !reached.is_empty() || !matches!(target.kind, js::ExprKind::Var(_)) {\n",
+    replace: "            if true {\n",
+    tests: ["test/corpus.test.ts", "-t", "^branches_as_written.rs$"],
+    snapshots: true,
   },
 ];

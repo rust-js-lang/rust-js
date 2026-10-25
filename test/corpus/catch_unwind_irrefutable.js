@@ -51,8 +51,7 @@ function root(n) {
       throw new Error("control");
     } catch (thrown) {
       const x = $unwound(thrown);
-      const value = x.impl.typeId() === "&str" ? x.value : undefined;
-      control = value;
+      control = x.impl.typeId() === "&str" ? x.value : undefined;
     }
     console.log(`rendering ${n}`);
     if (n > 1) {

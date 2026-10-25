@@ -20,7 +20,6 @@ export function ResultFrame({ program, onOutcome }) {
     const controller = new AbortController();
     if (run > 0) {
       let reported = false;
-      const told = onOutcome;
       listen(
         window,
         "message",
@@ -41,7 +40,7 @@ export function ResultFrame({ program, onOutcome }) {
               const outcome = outcome$1(report);
               if (outcome != null) {
                 reported = true;
-                told(outcome);
+                onOutcome(outcome);
               }
               return;
             }
@@ -50,10 +49,9 @@ export function ResultFrame({ program, onOutcome }) {
         controller,
       );
       const signal = controller.signal;
-      const silent = onOutcome;
       setTimeout(() => {
         if (!signal.aborted && !reported) {
-          silent("Silent");
+          onOutcome("Silent");
         }
       }, 3000);
     }
